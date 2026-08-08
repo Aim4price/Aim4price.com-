@@ -6,6 +6,7 @@ const read = (path) => readFileSync(new URL('../' + path, import.meta.url), 'utf
 
 test('Dealer Maintenance is paginated in both Dealer App and desktop', () => {
   const pagination = read('components/DealerMaintenancePagination.tsx');
+  const paginationStyles = read('components/DealerMaintenancePagination.module.css');
   const appClient = read('app/dealer/maintenance/dealer-maintenance-client.tsx');
   const desktopClient = read('app/tracking/tracking-client.tsx');
 
@@ -14,6 +15,12 @@ test('Dealer Maintenance is paginated in both Dealer App and desktop', () => {
   assert.match(pagination, /aria-label="Maintenance pagination"/);
   assert.match(pagination, /Showing <strong>\{rangeStart\}<\/strong>-<strong>\{rangeEnd\}<\/strong>/);
   assert.match(pagination, /showPage\(cards, nextPage, safePageSize\)/);
+  assert.match(pagination, /assetStyles\.shell/);
+  assert.match(pagination, /workspaceStyles\.shell/);
+  assert.match(pagination, /assetStyles\.registerPanel/);
+  assert.match(pagination, /paginationStyles\.paginationPanel/);
+  assert.match(paginationStyles, /\.paginationPanel \{[\s\S]*?padding-top: 0 !important;[\s\S]*?padding-bottom: 0 !important;/);
+  assert.match(paginationStyles, /\.pagination \{[\s\S]*?width: 100%;/);
   assert.match(appClient, /<DealerMaintenancePagination initialOpenAccessId=\{initialOpenAccessId\}>/);
   assert.match(desktopClient, /<DealerMaintenancePagination initialOpenAccessId=\{initialOpenAccessId\}>/);
 });

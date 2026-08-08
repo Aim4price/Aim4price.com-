@@ -1,7 +1,10 @@
 'use client';
 
 import { useEffect, useRef, useState, type ReactNode } from 'react';
+import assetStyles from '../app/asset-register/page.module.css';
 import leadStyles from '../app/leads/page.module.css';
+import paginationStyles from './DealerMaintenancePagination.module.css';
+import workspaceStyles from './WorkspacePrimitives.module.css';
 
 const DEFAULT_PAGE_SIZE = 10;
 const PAGINATION_WINDOW = 5;
@@ -115,47 +118,51 @@ export default function DealerMaintenancePagination({
     <div ref={rootRef} className={leadStyles.leadsPage}>
       {children}
       {totalCards > safePageSize ? (
-        <nav className={leadStyles.leadPagination} aria-label="Maintenance pagination">
-          <div className={leadStyles.leadPaginationSummary}>
-            Showing <strong>{rangeStart}</strong>-<strong>{rangeEnd}</strong> of <strong>{totalCards}</strong> maintenance cards
-          </div>
-          <div className={leadStyles.leadPaginationControls}>
-            <button
-              type="button"
-              className={leadStyles.leadPaginationButton}
-              onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
-              disabled={visiblePage <= 1}
-              aria-label="Show previous maintenance page"
-            >
-              <ChevronLeftIcon />
-              <span>Previous</span>
-            </button>
-            <div className={leadStyles.leadPaginationPages}>
-              {pages.map((page) => (
+        <div className={`${assetStyles.shell} ${workspaceStyles.shell} ${paginationStyles.paginationShell}`}>
+          <div className={`${assetStyles.registerPanel} ${leadStyles.leadsRegisterPanel} ${paginationStyles.paginationPanel}`}>
+            <nav className={`${leadStyles.leadPagination} ${paginationStyles.pagination}`} aria-label="Maintenance pagination">
+              <div className={leadStyles.leadPaginationSummary}>
+                Showing <strong>{rangeStart}</strong>-<strong>{rangeEnd}</strong> of <strong>{totalCards}</strong> maintenance cards
+              </div>
+              <div className={leadStyles.leadPaginationControls}>
                 <button
                   type="button"
-                  key={`maintenance-page-${page}`}
-                  className={`${leadStyles.leadPaginationPageButton} ${page === visiblePage ? leadStyles.leadPaginationPageButtonActive : ''}`}
-                  onClick={() => setCurrentPage(page)}
-                  aria-current={page === visiblePage ? 'page' : undefined}
-                  aria-label={`Show maintenance page ${page}`}
+                  className={leadStyles.leadPaginationButton}
+                  onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+                  disabled={visiblePage <= 1}
+                  aria-label="Show previous maintenance page"
                 >
-                  {page}
+                  <ChevronLeftIcon />
+                  <span>Previous</span>
                 </button>
-              ))}
-            </div>
-            <button
-              type="button"
-              className={leadStyles.leadPaginationButton}
-              onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
-              disabled={visiblePage >= totalPages}
-              aria-label="Show next maintenance page"
-            >
-              <span>Next</span>
-              <ChevronRightIcon />
-            </button>
+                <div className={leadStyles.leadPaginationPages}>
+                  {pages.map((page) => (
+                    <button
+                      type="button"
+                      key={`maintenance-page-${page}`}
+                      className={`${leadStyles.leadPaginationPageButton} ${page === visiblePage ? leadStyles.leadPaginationPageButtonActive : ''}`}
+                      onClick={() => setCurrentPage(page)}
+                      aria-current={page === visiblePage ? 'page' : undefined}
+                      aria-label={`Show maintenance page ${page}`}
+                    >
+                      {page}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  className={leadStyles.leadPaginationButton}
+                  onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
+                  disabled={visiblePage >= totalPages}
+                  aria-label="Show next maintenance page"
+                >
+                  <span>Next</span>
+                  <ChevronRightIcon />
+                </button>
+              </div>
+            </nav>
           </div>
-        </nav>
+        </div>
       ) : null}
     </div>
   );

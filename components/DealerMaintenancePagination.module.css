@@ -1,0 +1,24 @@
+.paginationShell {
+  padding-top: 0 !important;
+  padding-bottom: 3.5rem !important;
+}
+
+.paginationPanel {
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.pagination {
+  width: 100%;
+  margin-top: 1rem !important;
+}
+
+@media (max-width: 760px) {
+  .paginationShell {
+    padding-top: 0 !important;
+    padding-bottom: 2.5rem !important;
+  }
+}
