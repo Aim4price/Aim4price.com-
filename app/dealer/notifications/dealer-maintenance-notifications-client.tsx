@@ -17,10 +17,13 @@ function formatNotificationTime(value: string): string {
   }).format(new Date(time));
 }
 
-async function markNotificationsChecked(): Promise<void> {
+async function markNotificationsChecked(notificationIds: string[]): Promise<void> {
+  if (!notificationIds.length) return;
   const response = await fetch('/api/dealer/maintenance/notifications', {
     method: 'POST',
     credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ notificationIds }),
   });
   if (!response.ok) throw new Error('Could not mark notifications checked.');
 }
@@ -50,8 +53,13 @@ export default function DealerMaintenanceNotificationsClient({
     setError('');
 
     try {
-      await markNotificationsChecked();
-      setItems((current) => current.map((notification) => ({ ...notification, isRead: true })));
+      const notificationIds = newItems.map((notification) => notification.id);
+      await markNotificationsChecked(notificationIds);
+      setItems((current) => current.map((notification) => (
+        notificationIds.includes(notification.id)
+          ? { ...notification, isRead: true }
+          : notification
+      )));
       setActiveView('history');
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Could not mark notifications checked.');
@@ -62,8 +70,10 @@ export default function DealerMaintenanceNotificationsClient({
 
   function handleNotificationOpen(notification: DealerMaintenanceNotification) {
     if (notification.isRead) return;
-    setItems((current) => current.map((item) => ({ ...item, isRead: true })));
-    void markNotificationsChecked().catch(() => undefined);
+    setItems((current) => current.map((item) => (
+      item.id === notification.id ? { ...item, isRead: true } : item
+    )));
+    void markNotificationsChecked([notification.id]).catch(() => undefined);
   }
 
   return (
@@ -101,13 +111,13 @@ export default function DealerMaintenanceNotificationsClient({
 
         {activeView === 'active' && newItems.length > 0 ? (
           <div className={styles.notificationBulkActions} aria-label="Notification actions">
-              <button
-                type="button"
-                onClick={() => void handleMarkChecked()}
-                disabled={marking || newItems.length === 0}
-              >
-                {marking ? 'Marking…' : 'Mark all checked'}
-              </button>
+            <button
+              type="button"
+              onClick={() => void handleMarkChecked()}
+              disabled={marking || newItems.length === 0}
+            >
+              {marking ? 'Marking…' : 'Mark all checked'}
+            </button>
           </div>
         ) : null}
       </section>
