@@ -3,7 +3,7 @@ import { getAccountProfile } from '../../../lib/account-profile';
 import { getServerSession } from '../../../lib/auth-session';
 import { getDealerAppSession } from '../../../lib/dealer-app-session';
 import { dealerRoleCan } from '../../../lib/dealer-app-access';
-import { listDealerMaintenanceNotifications } from '../../../lib/dealer-maintenance-tracker';
+import { listDealerMaintenanceNotificationsForViewer } from '../../../lib/dealer-maintenance-notification-inbox';
 import DealerMaintenanceNotificationsClient from './dealer-maintenance-notifications-client';
 import styles from '../dealer.module.css';
 
@@ -25,7 +25,13 @@ export default async function DealerNotificationsPage() {
     redirect('/dealer/login');
   }
 
-  const notifications = await listDealerMaintenanceNotifications(session.user.id);
+  const notifications = await listDealerMaintenanceNotificationsForViewer({
+    dealerUserId: session.user.id,
+    viewerKey: dealerAppSession
+      ? `dealer-staff:${dealerAppSession.staffId}`
+      : `account:${session.user.id}`,
+    staffId: dealerAppSession?.staffId ?? null,
+  });
 
   return (
     <main className={`${styles.module} ${styles.notificationOwnerPage}`}>
