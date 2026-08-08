@@ -19,21 +19,30 @@ test('Owner notifications stay account-wide but read state follows the active ap
   assert.match(inbox, /const stateKey = inboxStateKey\(input\)/);
 });
 
-test('Dealer maintenance notifications are dealership-wide with per-staff clearing', async () => {
-  const [route, inbox, client, readState] = await Promise.all([
+test('Dealer notifications are dealership-wide with per-staff clearing and assigned problem confirmation', async () => {
+  const [route, page, inbox, client, readState] = await Promise.all([
     read('app/api/dealer/maintenance/notifications/route.ts'),
+    read('app/dealer/notifications/page.tsx'),
     read('lib/dealer-maintenance-notification-inbox.ts'),
     read('app/dealer/notifications/dealer-maintenance-notifications-client.tsx'),
     read('lib/app-notification-read-state.ts'),
   ]);
 
   assert.match(route, /isDealerAppSession\(session\)/);
-  assert.match(route, /`dealer-staff:\$\{session\.dealerApp\.staffId\}`/);
+  assert.match(route, /`dealer-staff:\$\{dealerAppSession\.staffId\}`/);
   assert.match(route, /`account:\$\{session\.user\.id\}`/);
+  assert.match(route, /staffId: dealerAppSession\?\.staffId \?\? null/);
+  assert.match(page, /listDealerMaintenanceNotificationsForViewer/);
+  assert.match(page, /viewerKey: dealerAppSession[\s\S]*?`dealer-staff:\$\{dealerAppSession\.staffId\}`/);
   assert.match(inbox, /listDealerMaintenanceNotifications\(input\.dealerUserId\)/);
+  assert.match(inbox, /public\.dealer_problem_assignments/);
+  assert.match(inbox, /assignment\.assigned_staff_id = \$2::uuid/);
+  assert.match(inbox, /assignedToViewer: true/);
   assert.match(inbox, /listReadNotificationEventKeys\([\s\S]*?input\.viewerKey/);
   assert.match(client, /markNotificationsChecked\(\[notification\.id\]\)/);
   assert.match(client, /newItems\.map\(\(notification\) => notification\.id\)/);
+  assert.match(client, /This notification was specifically assigned to you\. Are you sure you want to clear it\?/);
+  assert.match(client, /Some of these notifications were specifically assigned to you\. Are you sure you want to clear them\?/);
   assert.match(readState, /unique \(viewer_key, event_key\)/i);
 });
 
