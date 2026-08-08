@@ -38,6 +38,7 @@ type NotificationInboxRow = {
 type ListNotificationInboxInput = {
   userId: string;
   accountType: AccountRole | string | null | undefined;
+  viewerKey?: string | null;
 };
 
 const MAX_INBOX_HISTORY = 500;
@@ -59,6 +60,14 @@ function asRecord(value: unknown): Record<string, unknown> {
 
 function asOptionalText(value: unknown): string | undefined {
   return typeof value === 'string' && value.trim() ? value.trim() : undefined;
+}
+
+function cleanStateKey(value: unknown): string {
+  return String(value ?? '').trim().slice(0, 240);
+}
+
+function inboxStateKey(input: Pick<ListNotificationInboxInput, 'userId' | 'viewerKey'>): string {
+  return cleanStateKey(input.viewerKey) || cleanStateKey(input.userId);
 }
 
 function isActionRequired(item: HeaderNotificationItem): boolean {
@@ -127,7 +136,7 @@ export async function ensureNotificationInboxTables(): Promise<void> {
 }
 
 async function syncNotificationSnapshots(
-  userId: string,
+  stateKey: string,
   notifications: HeaderNotificationItem[],
 ): Promise<void> {
   if (!notifications.length) return;
@@ -199,7 +208,7 @@ async function syncNotificationSnapshots(
         last_seen_at = now(),
         updated_at = now()
     `,
-    [userId, JSON.stringify(snapshots)],
+    [stateKey, JSON.stringify(snapshots)],
   );
 }
 
@@ -249,8 +258,12 @@ export async function listNotificationInbox(
 ): Promise<NotificationInboxItem[]> {
   await ensureNotificationInboxTables();
 
-  const currentNotifications = await listComputedHeaderNotifications(input);
-  await syncNotificationSnapshots(input.userId, currentNotifications);
+  const stateKey = inboxStateKey(input);
+  const currentNotifications = await listComputedHeaderNotifications({
+    userId: input.userId,
+    accountType: input.accountType,
+  });
+  await syncNotificationSnapshots(stateKey, currentNotifications);
 
   const result = await getDb().query<NotificationInboxRow>(
     `
@@ -275,7 +288,7 @@ export async function listNotificationInbox(
         event_key desc
       limit $2
     `,
-    [input.userId, MAX_INBOX_HISTORY],
+    [stateKey, MAX_INBOX_HISTORY],
   );
 
   const currentKeys = new Set(currentNotifications.map((item) => item.id));
@@ -299,6 +312,9 @@ export async function updateNotificationInboxState(input: {
 }): Promise<void> {
   await ensureNotificationInboxTables();
 
+  const stateKey = cleanStateKey(input.userId);
+  if (!stateKey) return;
+
   const notificationIds = Array.from(new Set(
     input.notificationIds
       .map((value) => String(value ?? '').trim())
@@ -314,7 +330,7 @@ export async function updateNotificationInboxState(input: {
         set read_at = coalesce(read_at, now()), updated_at = now()
         where user_id = $1 and event_key = any($2::text[])
       `,
-      [input.userId, notificationIds],
+      [stateKey, notificationIds],
     );
     return;
   }
@@ -331,7 +347,7 @@ export async function updateNotificationInboxState(input: {
           and event_key = any($2::text[])
           and action_required = false
       `,
-      [input.userId, notificationIds],
+      [stateKey, notificationIds],
     );
     return;
   }
@@ -347,6 +363,6 @@ export async function updateNotificationInboxState(input: {
         and event_key = any($2::text[])
         and action_required = true
     `,
-    [input.userId, notificationIds],
+    [stateKey, notificationIds],
   );
 }
