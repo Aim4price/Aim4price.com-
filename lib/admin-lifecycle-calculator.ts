@@ -12,6 +12,14 @@ export type LoanTerms = {
   balloon?: number;
 };
 
+export type VatTreatment = "included" | "excluded";
+
+export type VatSummary = {
+  netAmount: number;
+  vatAmount: number;
+  grossAmount: number;
+};
+
 export type LoanSummary = {
   principal: number;
   monthlyRate: number;
@@ -173,6 +181,27 @@ function nonNegative(value: number): number {
 
 export function roundCurrency(value: number): number {
   return Math.round((finite(value) + Number.EPSILON) * 100) / 100;
+}
+
+export function calculateVatSummary(
+  amount: number,
+  treatment: VatTreatment,
+  vatRatePct = 15,
+): VatSummary {
+  const enteredAmount = nonNegative(amount);
+  const rate = nonNegative(vatRatePct) / 100;
+  const grossAmount =
+    treatment === "excluded" ? enteredAmount * (1 + rate) : enteredAmount;
+  const netAmount =
+    treatment === "included" && rate > 0
+      ? enteredAmount / (1 + rate)
+      : enteredAmount;
+
+  return {
+    netAmount: roundCurrency(netAmount),
+    vatAmount: roundCurrency(grossAmount - netAmount),
+    grossAmount: roundCurrency(grossAmount),
+  };
 }
 
 function monthlyPaymentRaw(input: {
