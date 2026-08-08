@@ -3,7 +3,7 @@ import { getServerSession } from '../../../lib/auth-session';
 import { getDealerAppSession } from '../../../lib/dealer-app-session';
 import { dealerRoleCan } from '../../../lib/dealer-app-access';
 import { getAccountProfile } from '../../../lib/account-profile';
-import { listAssetLeadsForUser } from '../../../lib/partner-access';
+import { listInitialDealerReceivedLeads } from '../../../lib/dealer-leads-initial-load';
 import LeadsClient from '../../leads/leads-client';
 import styles from '../dealer.module.css';
 
@@ -24,7 +24,7 @@ export default async function DealerLeadsPage() {
       name: session.user.name,
       email: session.user.email,
     }),
-    listAssetLeadsForUser(session.user.id, { limit: INITIAL_LEAD_BATCH_SIZE + 1 }),
+    listInitialDealerReceivedLeads(session.user.id, INITIAL_LEAD_BATCH_SIZE),
   ]);
   if (profile.accountType !== 'dealer' || profile.accountStatus !== 'active') redirect('/dealer/login');
 
@@ -32,8 +32,8 @@ export default async function DealerLeadsPage() {
     <div className={`${styles.module} ${styles.leadsModule}`}>
       <LeadsClient
         dealerAppMode
-        initialLeads={initialLeads.slice(0, INITIAL_LEAD_BATCH_SIZE)}
-        initialLeadsHaveMore={initialLeads.length > INITIAL_LEAD_BATCH_SIZE}
+        initialLeads={initialLeads}
+        initialLeadsHaveMore
         initialSessionUserId={session.user.id}
       />
     </div>
