@@ -540,6 +540,15 @@ export default function AdminClient({
       : `Showing ${pageStartIndex + 1}-${pageEndIndex} of ${visibleUsers.length} ${visibleAccountLabel}${
           hasActiveFilters ? ` (${users.length} total)` : ""
         }`;
+  const accountSummary = useMemo(
+    () => ({
+      total: users.length,
+      active: users.filter((user) => user.accountStatus === "active").length,
+      pending: users.filter((user) => user.accountStatus === "pending_payment").length,
+      suspended: users.filter((user) => user.accountStatus === "suspended").length,
+    }),
+    [users],
+  );
 
   const filteredQrAssets = useMemo(() => {
     if (!qrModal) {
@@ -1065,18 +1074,68 @@ export default function AdminClient({
       <section className={styles.topBar}>
         <div className={styles.titleBlock}>
           <p className={styles.eyebrow}>Aim4price admin</p>
-          <h1>Users</h1>
-          <span>{pageRangeLabel}</span>
+          <h1>User accounts</h1>
+          <span>Manage access, account health and user tools.</span>
         </div>
 
-        <div className={styles.toolbar}>
+        <div className={styles.headerActions}>
+          <nav className={styles.adminNav} aria-label="Admin navigation">
+            <Link href="/admin" className={`${styles.adminNavLink} ${styles.adminNavActive}`} aria-current="page">
+              Users
+            </Link>
+            <Link href="/admin/dashboard" className={styles.adminNavLink}>
+              Dashboard
+            </Link>
+            <Link href="/admin/lifecycle-calculator" className={styles.adminNavLink}>
+              Lifecycle Model
+            </Link>
+          </nav>
+          <button
+            type="button"
+            className={styles.signOutButton}
+            onClick={handleSignOut}
+            disabled={isSigningOut}
+          >
+            {isSigningOut ? "Signing out..." : "Sign out"}
+          </button>
+        </div>
+      </section>
+
+      <section className={styles.userSummary} aria-label="Account summary">
+        <article><span>All accounts</span><strong>{accountSummary.total}</strong><small>Registered users</small></article>
+        <article className={styles.summaryActive}><span>Active</span><strong>{accountSummary.active}</strong><small>Can access Aim4price</small></article>
+        <article className={styles.summaryPending}><span>Pending</span><strong>{accountSummary.pending}</strong><small>Awaiting activation or payment</small></article>
+        <article className={styles.summarySuspended}><span>Suspended</span><strong>{accountSummary.suspended}</strong><small>Access currently paused</small></article>
+      </section>
+
+      <section className={styles.filterPanel} aria-label="Find and filter user accounts">
+        <div className={styles.filterHeading}>
+          <div>
+            <strong>Find an account</strong>
+            <span>{pageRangeLabel}</span>
+          </div>
+          {hasActiveFilters ? (
+            <button
+              type="button"
+              className={styles.clearFiltersButton}
+              onClick={() => {
+                setSearchTerm("");
+                setSignupDateFilter("all");
+                setProvinceFilter("all");
+              }}
+            >
+              Clear filters
+            </button>
+          ) : null}
+        </div>
+        <div className={styles.filterBar}>
           <label className={styles.searchField}>
             <span>Search users</span>
             <input
               type="search"
               value={searchTerm}
               onChange={(event) => setSearchTerm(event.target.value)}
-              placeholder="Search name, email, number, type, province or status"
+              placeholder="Name, email, phone, province or status"
             />
           </label>
 
@@ -1116,25 +1175,6 @@ export default function AdminClient({
             </select>
           </label>
 
-          <Link
-            href="/admin/lifecycle-calculator"
-            className={styles.signOutButton}
-          >
-            Lifecycle Calculator
-          </Link>
-
-          <Link href="/admin/dashboard" className={styles.signOutButton}>
-            Dashboard
-          </Link>
-
-          <button
-            type="button"
-            className={styles.signOutButton}
-            onClick={handleSignOut}
-            disabled={isSigningOut}
-          >
-            {isSigningOut ? "Signing out..." : "Sign out"}
-          </button>
         </div>
       </section>
 
