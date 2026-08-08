@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import type { ConditionKey, TractorType } from "../../../lib/tractor-data";
+import { CONDITION_FACTORS } from "../../../lib/valuation/shared";
 import {
   buildCashFlowScenarios,
   buildLifecycleTimeline,
@@ -40,17 +41,16 @@ type CalculatorState = {
   termMonths: number;
   balloon: number;
   financeFees: number;
+  packageOption: FinancePackage;
   serviceIntervalHours: number;
   serviceCost: number;
   servicePlanYears: number;
   negotiatedServicePlan: number;
-  financeServicePlan: boolean;
   reserveMode: "calculated" | "fixed";
   reserveCostPerEvent: number;
   reserveEventsPerYear: number;
   postWarrantyYears: number;
   fixedReserveAmount: number;
-  financeReserve: boolean;
   partsInflationPct: number;
   tradeMode: TradeMode;
   manualTradeValue: number;
@@ -70,6 +70,9 @@ type CalculatorState = {
   dealerNewTractorProfit: number;
   dealerRiskReserve: number;
 };
+
+type FinancePackage = "standard" | "service" | "full";
+type ResultView = "summary" | "finance" | "depreciation" | "advanced";
 
 const CURRENT_YEAR = new Date().getFullYear();
 
@@ -93,19 +96,18 @@ const INITIAL_STATE: CalculatorState = {
   termMonths: 60,
   balloon: 0,
   financeFees: 0,
+  packageOption: "standard",
   serviceIntervalHours: 250,
   serviceCost: 8_000,
   servicePlanYears: 2,
   negotiatedServicePlan: 64_000,
-  financeServicePlan: true,
   reserveMode: "fixed",
   reserveCostPerEvent: 4_000,
   reserveEventsPerYear: 4,
   postWarrantyYears: 3,
   fixedReserveAmount: 50_000,
-  financeReserve: true,
   partsInflationPct: 3,
-  tradeMode: "manual",
+  tradeMode: "haircut",
   manualTradeValue: 260_000,
   tradeHaircutPct: 12,
   dealerOffer: 260_000,
@@ -126,42 +128,49 @@ const INITIAL_STATE: CalculatorState = {
 
 const FLOW_STEPS = [
   {
+    id: "tractor",
     label: "Tractor",
     title: "Tell us about the tractor",
     description:
       "Start with the new tractor, how it will be used and how long it will be kept.",
   },
   {
+    id: "package",
+    label: "Package",
+    title: "Choose what to include",
+    description:
+      "Start with standard finance, add scheduled servicing, or include both servicing and a maintenance reserve.",
+  },
+  {
+    id: "finance",
     label: "Finance",
     title: "Set the finance structure",
     description:
       "Enter the deposit, interest rate, term and any balloon or initiation fees.",
   },
   {
+    id: "service",
+    label: "Service",
+    title: "Add the service plan",
+    description:
+      "Set the scheduled dealer servicing included during the warranty period.",
+  },
+  {
+    id: "maintenance",
     label: "Maintenance",
-    title: "Build the maintenance package",
+    title: "Add the maintenance reserve",
     description:
-      "Structure warranty servicing and the post-warranty uptime reserve.",
+      "Keep the post-warranty maintenance provision separate from scheduled servicing.",
   },
   {
-    label: "Trade-in",
-    title: "Set future value and trade assumptions",
+    id: "depreciation",
+    label: "Depreciation",
+    title: "See how the tractor value changes",
     description:
-      "Choose replacement-price inflation, expected condition and a conservative trade method.",
+      "Aim4price combines age, projected hours and end condition to calculate future value and trade equity.",
   },
   {
-    label: "Next cycle",
-    title: "Plan for refinance and replacement",
-    description:
-      "Test a refinance review point and decide how future equity should fund the next tractor cycle.",
-  },
-  {
-    label: "Report",
-    title: "Add report and dealer details",
-    description:
-      "Add optional client references and include dealer economics only when they are useful.",
-  },
-  {
+    id: "results",
     label: "Results",
     title: "Lifecycle finance results",
     description:
@@ -169,7 +178,39 @@ const FLOW_STEPS = [
   },
 ] as const;
 
-const RESULTS_STEP = FLOW_STEPS.length - 1;
+const PACKAGE_OPTIONS: Array<{
+  id: FinancePackage;
+  label: string;
+  description: string;
+}> = [
+  {
+    id: "standard",
+    label: "Standard finance",
+    description: "Finance the tractor only. Service and maintenance remain pay-as-you-go.",
+  },
+  {
+    id: "service",
+    label: "Add service",
+    description: "Include the scheduled warranty service plan in the financed amount.",
+  },
+  {
+    id: "full",
+    label: "Add service + maintenance",
+    description: "Include scheduled servicing and a separate post-warranty maintenance reserve.",
+  },
+];
+
+const CONDITION_OPTIONS: Array<{
+  id: ConditionKey;
+  label: string;
+  description: string;
+}> = [
+  { id: "excellent", label: "Excellent", description: "Exceptional care and presentation" },
+  { id: "good", label: "Good", description: "Normal wear with strong upkeep" },
+  { id: "fair", label: "Fair", description: "Visible wear but fully usable" },
+  { id: "used", label: "Used", description: "Heavy wear or repairs expected" },
+  { id: "serious", label: "Serious attention", description: "Major work likely before resale" },
+];
 
 const integerRand = new Intl.NumberFormat("en-ZA", {
   style: "currency",
@@ -314,6 +355,25 @@ export default function LifecycleCalculatorClient() {
   const [activeStep, setActiveStep] = useState(0);
   const [furthestStep, setFurthestStep] = useState(0);
   const [includeDealerEconomics, setIncludeDealerEconomics] = useState(false);
+  const [resultView, setResultView] = useState<ResultView>("summary");
+
+  const flowSteps = useMemo(
+    () =>
+      FLOW_STEPS.filter((step) => {
+        if (step.id === "service") return state.packageOption !== "standard";
+        if (step.id === "maintenance") return state.packageOption === "full";
+        return true;
+      }),
+    [state.packageOption],
+  );
+  const resultsStep = flowSteps.length - 1;
+  const currentStep = flowSteps[activeStep] ?? flowSteps[0];
+  const activeStepId = currentStep.id;
+  const includesService = state.packageOption !== "standard";
+  const includesMaintenance = state.packageOption === "full";
+  const selectedPackage =
+    PACKAGE_OPTIONS.find((option) => option.id === state.packageOption) ??
+    PACKAGE_OPTIONS[0];
 
   function update<K extends keyof CalculatorState>(
     key: K,
@@ -323,9 +383,12 @@ export default function LifecycleCalculatorClient() {
   }
 
   function moveToStep(step: number) {
-    const nextStep = Math.min(RESULTS_STEP, Math.max(0, step));
+    const nextStep = Math.min(resultsStep, Math.max(0, step));
     setActiveStep(nextStep);
     setFurthestStep((current) => Math.max(current, nextStep));
+    if (flowSteps[nextStep]?.id === "results") {
+      setResultView("summary");
+    }
     window.requestAnimationFrame(() => {
       document
         .getElementById("lifecycle-calculator-flow")
@@ -340,27 +403,31 @@ export default function LifecycleCalculatorClient() {
 
     setState(INITIAL_STATE);
     setIncludeDealerEconomics(false);
+    setResultView("summary");
     setFurthestStep(0);
     moveToStep(0);
   }
 
   const stepIsValid =
-    activeStep === 0
+    activeStepId === "tractor"
       ? state.tractorPrice > 0 &&
         state.purchaseYear >= 2000 &&
         state.powerKw > 0 &&
-        state.ownershipYears > 0
-      : activeStep === 1
+        state.ownershipYears > 0 &&
+        state.annualHours >= 0
+      : activeStepId === "finance"
         ? state.termMonths > 0 &&
           state.annualRatePct >= 0 &&
           state.deposit >= 0 &&
           state.balloon >= 0
-        : activeStep === 2
+        : activeStepId === "service"
           ? state.serviceIntervalHours > 0 &&
-            state.serviceCost >= 0 &&
+            state.serviceCost >= 0
+          : activeStepId === "maintenance"
+            ? state.reserveCostPerEvent >= 0 &&
             state.reserveEventsPerYear >= 0 &&
             state.postWarrantyYears >= 0
-          : true;
+            : true;
 
   const model = useMemo(() => {
     const servicePlan = calculateServicePlan({
@@ -379,8 +446,8 @@ export default function LifecycleCalculatorClient() {
     });
     const rawPackage =
       state.tractorPrice +
-      (state.financeServicePlan ? servicePlan.packageAmount : 0) +
-      (state.financeReserve ? reserve.packageAmount : 0) +
+      (includesService ? servicePlan.packageAmount : 0) +
+      (includesMaintenance ? reserve.packageAmount : 0) +
       state.financeFees;
     const packagePrincipal = Math.max(0, rawPackage - state.deposit);
     const loanTerms = {
@@ -439,8 +506,8 @@ export default function LifecycleCalculatorClient() {
     const tractorContribution = Math.max(
       0,
       packageLoan.monthlyPayment -
-        (state.financeServicePlan ? serviceFinance.monthlyPayment : 0) -
-        (state.financeReserve ? reserveFinance.monthlyPayment : 0) -
+        (includesService ? serviceFinance.monthlyPayment : 0) -
+        (includesMaintenance ? reserveFinance.monthlyPayment : 0) -
         feeFinance.monthlyPayment,
     );
     const targetYear = state.purchaseYear + state.ownershipYears;
@@ -455,6 +522,21 @@ export default function LifecycleCalculatorClient() {
       condition: state.condition,
       inflationRatePct: state.replacementInflationPct,
     });
+    const conditionValues = CONDITION_OPTIONS.map((option) => ({
+      ...option,
+      factor: CONDITION_FACTORS[option.id],
+      value: calculateFutureTractorValue({
+        newPrice: state.tractorPrice,
+        purchaseYear: state.purchaseYear,
+        targetYear,
+        startingHours: state.startingHours,
+        expectedAnnualHours: state.annualHours,
+        tractorType: state.tractorType,
+        powerKw: state.powerKw,
+        condition: option.id,
+        inflationRatePct: state.replacementInflationPct,
+      }).estimatedRetailValue,
+    }));
     const trade = calculateTradeValue({
       mode: state.tradeMode,
       projectedRetailValue: futureValue.estimatedRetailValue,
@@ -519,11 +601,17 @@ export default function LifecycleCalculatorClient() {
       postWarrantyYears: state.postWarrantyYears,
       partsInflationPct: state.partsInflationPct,
     });
-    const tractorOnlyCashFlow = cashFlows.find(
-      (scenario) => scenario.id === "tractor",
+    const selectedScenarioId =
+      state.packageOption === "full"
+        ? "full"
+        : state.packageOption === "service"
+          ? "service"
+          : "tractor";
+    const selectedCashFlow = cashFlows.find(
+      (scenario) => scenario.id === selectedScenarioId,
     );
     const plannedMaintenanceByYear =
-      tractorOnlyCashFlow?.years.map(
+      selectedCashFlow?.years.map(
         (year) => year.serviceCashPayments + year.maintenanceCashPayments,
       ) ?? [];
     const timeline = buildLifecycleTimeline({
@@ -565,13 +653,13 @@ export default function LifecycleCalculatorClient() {
       futureValue.expectedHours - state.startingHours,
     );
     const cashMaintenance =
-      (state.financeServicePlan ? 0 : servicePayAsYouGo.total) +
-      (state.financeReserve ? 0 : reservePayAsYouGo.total);
+      (includesService ? 0 : servicePayAsYouGo.total) +
+      (includesMaintenance ? 0 : reservePayAsYouGo.total);
     const netOwnershipCost =
       packageLoan.totalRepayment + cashMaintenance - trade.tradeValue;
     const maintenanceFinancePremium =
-      (state.financeServicePlan ? serviceFinance.totalInterest : 0) +
-      (state.financeReserve ? reserveFinance.totalInterest : 0);
+      (includesService ? serviceFinance.totalInterest : 0) +
+      (includesMaintenance ? reserveFinance.totalInterest : 0);
 
     return {
       servicePlan,
@@ -585,6 +673,7 @@ export default function LifecycleCalculatorClient() {
       feeFinance,
       tractorContribution,
       futureValue,
+      conditionValues,
       trade,
       settlementAtTrade,
       equity,
@@ -604,35 +693,35 @@ export default function LifecycleCalculatorClient() {
       costPerOperatingHour: netOwnershipCost / hoursAdded,
       additionalCostPerHour: maintenanceFinancePremium / hoursAdded,
     };
-  }, [state]);
+  }, [includesMaintenance, includesService, state]);
 
   return (
     <div
       id="lifecycle-calculator-flow"
       className={styles.calculator}
-      data-active-step={activeStep}
+      data-active-step={activeStepId}
     >
       <section className={styles.flowHeader} aria-label="Calculator progress">
         <div className={styles.flowProgressCopy}>
           <span>
-            {activeStep === RESULTS_STEP
+            {activeStepId === "results"
               ? "Calculation complete"
-              : `Step ${activeStep + 1} of ${RESULTS_STEP}`}
+              : `Step ${activeStep + 1} of ${resultsStep}`}
           </span>
-          <strong>{FLOW_STEPS[activeStep].label}</strong>
+          <strong>{currentStep.label}</strong>
         </div>
         <div className={styles.flowProgressTrack} aria-hidden="true">
           <i
             style={{
               width: `${Math.max(
                 4,
-                (activeStep / RESULTS_STEP) * 100,
+                (activeStep / resultsStep) * 100,
               )}%`,
             }}
           />
         </div>
         <ol className={styles.flowSteps}>
-          {FLOW_STEPS.map((step, index) => {
+          {flowSteps.map((step, index) => {
             const isAvailable = index <= furthestStep;
             const isActive = index === activeStep;
             const isComplete = index < activeStep || index < furthestStep;
@@ -659,17 +748,17 @@ export default function LifecycleCalculatorClient() {
 
       <section
         className={styles.flowIntro}
-        hidden={activeStep === RESULTS_STEP}
+        hidden={activeStepId === "results"}
       >
         <p className={styles.eyebrow}>Guided lifecycle calculation</p>
-        <h2>{FLOW_STEPS[activeStep].title}</h2>
-        <p>{FLOW_STEPS[activeStep].description}</p>
+        <h2>{currentStep.title}</h2>
+        <p>{currentStep.description}</p>
       </section>
 
       <aside
         className={styles.summaryPanel}
         aria-label="Deal summary"
-        hidden={activeStep !== RESULTS_STEP}
+        hidden={activeStepId !== "results"}
       >
         <div className={styles.summaryHeading}>
           <div>
@@ -677,7 +766,7 @@ export default function LifecycleCalculatorClient() {
             <h2>{state.tractorDescription || "New tractor scenario"}</h2>
             <span>
               {state.clientName || "Pre-purchase scenario"} · {state.ownershipYears}
-              -year ownership plan
+              -year ownership plan · {selectedPackage.label}
             </span>
           </div>
           <div className={styles.summaryActions}>
@@ -716,6 +805,17 @@ export default function LifecycleCalculatorClient() {
           <Metric
             label="Projected future retail"
             value={rand(model.futureValue.estimatedRetailValue)}
+          />
+          <Metric
+            label="Value reduction after depreciation"
+            value={rand(
+              Math.max(
+                0,
+                model.futureValue.projectedReplacementPrice -
+                  model.futureValue.estimatedRetailValue,
+              ),
+            )}
+            detail={`${model.futureValue.averageDepreciationPct}% age-and-hours depreciation, then ${Math.round(model.futureValue.conditionFactor * 100)}% condition factor`}
           />
           <Metric
             label="Conservative trade assumption"
@@ -759,10 +859,72 @@ export default function LifecycleCalculatorClient() {
         ) : null}
       </aside>
 
+      <nav
+        className={styles.resultTabs}
+        aria-label="Result sections"
+        hidden={activeStepId !== "results"}
+      >
+        {([
+          ["summary", "Summary"],
+          ["finance", "Finance"],
+          ["depreciation", "Depreciation & trade"],
+          ["advanced", "Advanced"],
+        ] as Array<[ResultView, string]>).map(([view, label]) => (
+          <button
+            key={view}
+            type="button"
+            className={resultView === view ? styles.resultTabActive : ""}
+            onClick={() => setResultView(view)}
+            aria-pressed={resultView === view}
+          >
+            {label}
+          </button>
+        ))}
+      </nav>
+
+      <section
+        className={styles.resultSnapshot}
+        hidden={activeStepId !== "results" || resultView !== "summary"}
+      >
+        <article>
+          <p className={styles.eyebrow}>Selected finance package</p>
+          <h2>{selectedPackage.label}</h2>
+          <div className={styles.resultLines}>
+            <div><span>Tractor</span><strong>{rand(state.tractorPrice)}</strong></div>
+            {includesService ? <div><span>Service plan</span><strong>{rand(model.servicePlan.packageAmount)}</strong></div> : null}
+            {includesMaintenance ? <div><span>Maintenance reserve</span><strong>{rand(model.reserve.packageAmount)}</strong></div> : null}
+            {state.financeFees > 0 ? <div><span>Finance fees</span><strong>{rand(state.financeFees)}</strong></div> : null}
+            {state.deposit > 0 ? <div><span>Less deposit</span><strong>− {rand(state.deposit)}</strong></div> : null}
+            <div className={styles.resultLineTotal}><span>Financed amount</span><strong>{rand(model.packageLoan.principal)}</strong></div>
+          </div>
+          <div className={styles.resultHeroValue}>
+            <span>Estimated monthly instalment</span>
+            <strong>{randCents(model.packageLoan.monthlyPayment)}</strong>
+          </div>
+        </article>
+
+        <article>
+          <p className={styles.eyebrow}>Aim4price future value</p>
+          <h2>{numberFormat.format(model.futureValue.expectedHours)} hours after {state.ownershipYears} years</h2>
+          <div className={styles.resultLines}>
+            <div><span>Projected replacement price</span><strong>{rand(model.futureValue.projectedReplacementPrice)}</strong></div>
+            <div><span>Age depreciation</span><strong>{model.futureValue.ageDepreciationPct}%</strong></div>
+            <div><span>Usage depreciation</span><strong>{numberFormat.format(model.futureValue.usageDepreciationPct)}%</strong></div>
+            <div><span>Combined depreciation</span><strong>{model.futureValue.averageDepreciationPct}%</strong></div>
+            <div><span>{CONDITION_OPTIONS.find((option) => option.id === state.condition)?.label} condition factor</span><strong>{Math.round(model.futureValue.conditionFactor * 100)}%</strong></div>
+            <div className={styles.resultLineTotal}><span>Estimated future retail</span><strong>{rand(model.futureValue.estimatedRetailValue)}</strong></div>
+          </div>
+          <div className={styles.resultHeroValue}>
+            <span>Estimated trade equity</span>
+            <strong>{rand(model.equity)}</strong>
+          </div>
+        </article>
+      </section>
+
       <div className={styles.contentGrid}>
         <section
           className={`${styles.card} ${styles.fullWidth}`}
-          hidden={activeStep !== 0}
+          hidden={activeStepId !== "tractor"}
         >
           <div className={styles.sectionHeading}>
             <div>
@@ -826,23 +988,6 @@ export default function LifecycleCalculatorClient() {
               min={1}
               max={15}
             />
-            <label className={styles.field}>
-              <span>Expected condition at end</span>
-              <div className={styles.inputShell}>
-                <select
-                  value={state.condition}
-                  onChange={(event) =>
-                    update("condition", event.target.value as ConditionKey)
-                  }
-                >
-                  <option value="excellent">Excellent</option>
-                  <option value="good">Good</option>
-                  <option value="fair">Fair</option>
-                  <option value="used">Used</option>
-                  <option value="serious">Serious attention</option>
-                </select>
-              </div>
-            </label>
           </div>
           <div className={styles.inlineResult}>
             <span>Expected future hours</span>
@@ -852,7 +997,63 @@ export default function LifecycleCalculatorClient() {
 
         <section
           className={`${styles.card} ${styles.fullWidth}`}
-          hidden={activeStep !== 1}
+          hidden={activeStepId !== "package"}
+        >
+          <div className={styles.sectionHeading}>
+            <div>
+              <h2>What should the finance include?</h2>
+              <p>Choose one clear starting point. You can change it later.</p>
+            </div>
+          </div>
+          <div className={styles.packageChoices} role="radiogroup" aria-label="Finance package">
+            {PACKAGE_OPTIONS.map((option, index) => {
+              const selected = state.packageOption === option.id;
+              const loan =
+                option.id === "full"
+                  ? model.fullPackageLoan
+                  : option.id === "service"
+                    ? model.tractorServiceLoan
+                    : model.tractorOnlyLoan;
+              const addedAmount =
+                option.id === "full"
+                  ? model.servicePlan.packageAmount + model.reserve.packageAmount
+                  : option.id === "service"
+                    ? model.servicePlan.packageAmount
+                    : 0;
+
+              return (
+                <button
+                  key={option.id}
+                  type="button"
+                  className={`${styles.packageChoice} ${selected ? styles.packageChoiceActive : ""}`}
+                  onClick={() => update("packageOption", option.id)}
+                  role="radio"
+                  aria-checked={selected}
+                >
+                  <span className={styles.packageChoiceIcon}>{index + 1}</span>
+                  <span className={styles.packageChoiceCopy}>
+                    <strong>{option.label}</strong>
+                    <small>{option.description}</small>
+                    <b>
+                      {randCents(loan.monthlyPayment)} / month
+                      {addedAmount > 0 ? ` · adds ${rand(addedAmount)}` : ""}
+                    </b>
+                  </span>
+                  <span className={styles.packageChoiceCheck}>{selected ? "✓" : "›"}</span>
+                </button>
+              );
+            })}
+          </div>
+          <div className={styles.selectionNote}>
+            <span>Selected</span>
+            <strong>{selectedPackage.label}</strong>
+            <small>Monthly values use the current finance assumptions and update automatically.</small>
+          </div>
+        </section>
+
+        <section
+          className={`${styles.card} ${styles.fullWidth}`}
+          hidden={activeStepId !== "finance"}
         >
           <div className={styles.sectionHeading}>
             <div>
@@ -897,16 +1098,26 @@ export default function LifecycleCalculatorClient() {
               prefix="R"
             />
           </div>
+          <div className={styles.financePreview}>
+            <div>
+              <span>{selectedPackage.label}</span>
+              <strong>{rand(model.packageLoan.principal)} financed</strong>
+            </div>
+            <div>
+              <span>Estimated instalment</span>
+              <strong>{randCents(model.packageLoan.monthlyPayment)} / month</strong>
+            </div>
+          </div>
           <div className={styles.stepNote}>
-            <strong>Results are shown at the end.</strong>
-            <span>
-              The calculator will combine this finance structure with the
-              maintenance choices in the next step.
-            </span>
+            <strong>The full result stays separate.</strong>
+            <span>Continue through the selected package and depreciation assumptions before reviewing the result.</span>
           </div>
         </section>
 
-        <section className={styles.card} hidden={activeStep !== 2}>
+        <section
+          className={`${styles.card} ${styles.fullWidth}`}
+          hidden={activeStepId !== "service"}
+        >
           <div className={styles.sectionHeading}>
             <div>
               <h2>Warranty Service Plan</h2>
@@ -950,16 +1161,26 @@ export default function LifecycleCalculatorClient() {
               label="Negotiated package"
               value={rand(model.servicePlan.packageAmount)}
             />
+            <Metric
+              label="Added to monthly instalment"
+              value={randCents(model.serviceFinance.monthlyPayment)}
+              detail="This service plan is included because of the selected package."
+              tone="green"
+            />
           </div>
-          <Toggle
-            label="Finance this service plan"
-            checked={state.financeServicePlan}
-            onChange={(value) => update("financeServicePlan", value)}
-            help="Adds the negotiated package to the selected finance structure."
-          />
+          <div className={styles.includedBanner}>
+            <span>✓</span>
+            <div>
+              <strong>Service plan included</strong>
+              <small>{rand(model.servicePlan.packageAmount)} is added to the financed package.</small>
+            </div>
+          </div>
         </section>
 
-        <section className={styles.card} hidden={activeStep !== 2}>
+        <section
+          className={`${styles.card} ${styles.fullWidth}`}
+          hidden={activeStepId !== "maintenance"}
+        >
           <div className={styles.sectionHeading}>
             <div>
               <h2>Uptime &amp; Maintenance Reserve</h2>
@@ -1023,13 +1244,20 @@ export default function LifecycleCalculatorClient() {
               value={rand(model.reserve.calculatedAmount)}
             />
             <Metric label="Selected reserve" value={rand(model.reserve.packageAmount)} />
+            <Metric
+              label="Added to monthly instalment"
+              value={randCents(model.reserveFinance.monthlyPayment)}
+              detail="The maintenance reserve remains separate from the service plan."
+              tone="green"
+            />
           </div>
-          <Toggle
-            label="Finance uptime reserve"
-            checked={state.financeReserve}
-            onChange={(value) => update("financeReserve", value)}
-            help="Adds the selected reserve to the finance package."
-          />
+          <div className={styles.includedBanner}>
+            <span>✓</span>
+            <div>
+              <strong>Maintenance reserve included</strong>
+              <small>{rand(model.reserve.packageAmount)} is added separately to the financed package.</small>
+            </div>
+          </div>
           <div className={styles.principleNote}>
             <strong>Transparent trade-off</strong>
             <p>
@@ -1042,7 +1270,7 @@ export default function LifecycleCalculatorClient() {
 
         <section
           className={`${styles.card} ${styles.fullWidth}`}
-          hidden={activeStep !== RESULTS_STEP}
+          hidden={activeStepId !== "results" || resultView !== "finance"}
         >
           <div className={styles.sectionHeading}>
             <div>
@@ -1051,17 +1279,17 @@ export default function LifecycleCalculatorClient() {
             </div>
           </div>
           <div className={styles.packageGrid}>
-            <article>
+            <article className={state.packageOption === "standard" ? styles.packagePrimary : ""}>
               <span>Base tractor only</span>
               <strong>{rand(state.tractorPrice)}</strong>
               <small>{randCents(model.tractorOnlyLoan.monthlyPayment)} / month</small>
             </article>
-            <article>
+            <article className={state.packageOption === "service" ? styles.packagePrimary : ""}>
               <span>Tractor + warranty servicing</span>
               <strong>{rand(state.tractorPrice + model.servicePlan.packageAmount)}</strong>
               <small>{randCents(model.tractorServiceLoan.monthlyPayment)} / month</small>
             </article>
-            <article className={styles.packagePrimary}>
+            <article className={state.packageOption === "full" ? styles.packagePrimary : ""}>
               <span>Full lifecycle package</span>
               <strong>
                 {rand(
@@ -1081,7 +1309,7 @@ export default function LifecycleCalculatorClient() {
             <div>
               <span>Service plan</span>
               <strong>
-                {state.financeServicePlan
+                {includesService
                   ? randCents(model.serviceFinance.monthlyPayment)
                   : "Not financed"}
               </strong>
@@ -1089,7 +1317,7 @@ export default function LifecycleCalculatorClient() {
             <div>
               <span>Uptime reserve</span>
               <strong>
-                {state.financeReserve
+                {includesMaintenance
                   ? randCents(model.reserveFinance.monthlyPayment)
                   : "Not financed"}
               </strong>
@@ -1103,7 +1331,7 @@ export default function LifecycleCalculatorClient() {
 
         <section
           className={`${styles.card} ${styles.fullWidth}`}
-          hidden={activeStep !== RESULTS_STEP}
+          hidden={activeStepId !== "results" || resultView !== "finance"}
         >
           <div className={styles.sectionHeading}>
             <div>
@@ -1113,7 +1341,16 @@ export default function LifecycleCalculatorClient() {
           </div>
           <div className={styles.scenarioGrid}>
             {model.cashFlows.map((scenario) => (
-              <article key={scenario.id} className={styles.scenarioCard}>
+              <article
+                key={scenario.id}
+                className={`${styles.scenarioCard} ${
+                  (state.packageOption === "standard" && scenario.id === "tractor") ||
+                  (state.packageOption === "service" && scenario.id === "service") ||
+                  (state.packageOption === "full" && scenario.id === "full")
+                    ? styles.scenarioCardSelected
+                    : ""
+                }`}
+              >
                 <div>
                   <h3>{scenario.label}</h3>
                   <p>{scenario.description}</p>
@@ -1172,8 +1409,12 @@ export default function LifecycleCalculatorClient() {
         </section>
 
         <section
-          className={styles.card}
-          hidden={activeStep !== RESULTS_STEP}
+          className={`${styles.card} ${styles.fullWidth}`}
+          hidden={
+            activeStepId !== "results" ||
+            resultView !== "finance" ||
+            !includesMaintenance
+          }
         >
           <div className={styles.sectionHeading}>
             <div>
@@ -1203,7 +1444,10 @@ export default function LifecycleCalculatorClient() {
 
         <section
           className={styles.card}
-          hidden={activeStep !== 3 && activeStep !== RESULTS_STEP}
+          hidden={
+            activeStepId !== "depreciation" &&
+            !(activeStepId === "results" && resultView === "depreciation")
+          }
         >
           <div className={styles.sectionHeading}>
             <div>
@@ -1212,33 +1456,72 @@ export default function LifecycleCalculatorClient() {
             </div>
           </div>
           <div
-            className={styles.formGrid}
-            hidden={activeStep === RESULTS_STEP}
+            className={styles.depreciationInputs}
+            hidden={activeStepId === "results"}
           >
-            <NumericField
-              label="Replacement-price inflation"
-              value={state.replacementInflationPct}
-              onChange={(value) => update("replacementInflationPct", value)}
-              suffix="%"
-              step={0.1}
-            />
+            <div className={styles.projectionStrip}>
+              <div><span>Starting hours</span><strong>{numberFormat.format(state.startingHours)} h</strong></div>
+              <div><span>Hours added</span><strong>{numberFormat.format(state.annualHours * state.ownershipYears)} h</strong></div>
+              <div><span>Hours at trade</span><strong>{numberFormat.format(model.futureValue.expectedHours)} h</strong></div>
+              <div><span>Expected lifetime</span><strong>{numberFormat.format(model.futureValue.lifetimeHours)} h</strong></div>
+            </div>
+            <div className={styles.singleFieldRow}>
+              <NumericField
+                label="Replacement-price inflation"
+                value={state.replacementInflationPct}
+                onChange={(value) => update("replacementInflationPct", value)}
+                suffix="%"
+                step={0.1}
+              />
+            </div>
+            <div>
+              <div className={styles.choiceHeading}>
+                <strong>Expected condition after {numberFormat.format(model.futureValue.expectedHours)} hours</strong>
+                <span>Changing condition immediately changes the projected value, trade-in and equity.</span>
+              </div>
+              <div className={styles.conditionChoices} role="radiogroup" aria-label="Expected condition at trade">
+                {model.conditionValues.map((option) => {
+                  const selected = option.id === state.condition;
+                  return (
+                    <button
+                      key={option.id}
+                      type="button"
+                      className={`${styles.conditionChoice} ${selected ? styles.conditionChoiceActive : ""}`}
+                      onClick={() => update("condition", option.id)}
+                      role="radio"
+                      aria-checked={selected}
+                    >
+                      <span>{selected ? "✓" : `${Math.round(option.factor * 100)}%`}</span>
+                      <strong>{option.label}</strong>
+                      <small>{option.description}</small>
+                      <b>{rand(option.value)}</b>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
           </div>
-          <div
-            className={styles.calculationTrail}
-            hidden={activeStep !== RESULTS_STEP}
-          >
+          <div className={styles.calculationTrail}>
             <div><span>New replacement price</span><strong>{rand(state.tractorPrice)}</strong></div>
             <div><span>Projected replacement price</span><strong>{rand(model.futureValue.projectedReplacementPrice)}</strong></div>
             <div><span>Age depreciation</span><strong>{model.futureValue.ageDepreciationPct}%</strong></div>
             <div><span>Usage depreciation</span><strong>{numberFormat.format(model.futureValue.usageDepreciationPct)}%</strong></div>
-            <div><span>Condition adjustment</span><strong>{Math.round(model.futureValue.conditionFactor * 100)}%</strong></div>
+            <div><span>Combined age + hours depreciation</span><strong>{model.futureValue.averageDepreciationPct}%</strong></div>
+            <div><span>Value before condition</span><strong>{rand(model.futureValue.valueBeforeCondition)}</strong></div>
+            <div><span>{CONDITION_OPTIONS.find((option) => option.id === state.condition)?.label} condition factor</span><strong>{Math.round(model.futureValue.conditionFactor * 100)}%</strong></div>
             <div className={styles.calculationTotal}><span>Estimated future retail</span><strong>{rand(model.futureValue.estimatedRetailValue)}</strong></div>
           </div>
+          <p className={styles.formulaNote}>
+            Aim4price first applies the shared age-and-engine-hours depreciation calculation to the projected replacement price, then applies the selected condition factor. This estimated retail value feeds the default trade-in calculation and equity result.
+          </p>
         </section>
 
         <section
-          className={styles.card}
-          hidden={activeStep !== 3 && activeStep !== RESULTS_STEP}
+          className={`${styles.card} ${styles.fullWidth}`}
+          hidden={
+            activeStepId !== "depreciation" &&
+            !(activeStepId === "results" && resultView === "depreciation")
+          }
         >
           <div className={styles.sectionHeading}>
             <div>
@@ -1248,7 +1531,7 @@ export default function LifecycleCalculatorClient() {
           </div>
           <div
             className={styles.formGrid}
-            hidden={activeStep === RESULTS_STEP}
+            hidden={activeStepId === "results"}
           >
             <label className={styles.field}>
               <span>Trade-in mode</span>
@@ -1273,9 +1556,25 @@ export default function LifecycleCalculatorClient() {
               <NumericField label="Direct dealer offer" value={state.dealerOffer} onChange={(value) => update("dealerOffer", value)} prefix="R" />
             ) : null}
           </div>
+          <div className={styles.tradeFlow} hidden={activeStepId === "results"}>
+            <div><span>Aim4price future retail</span><strong>{rand(model.futureValue.estimatedRetailValue)}</strong></div>
+            <i>→</i>
+            <div><span>Trade assumption</span><strong>{rand(model.trade.tradeValue)}</strong></div>
+            <i>−</i>
+            <div><span>Settlement</span><strong>{rand(model.settlementAtTrade)}</strong></div>
+            <i>=</i>
+            <div className={model.equity >= 0 ? styles.tradeFlowPositive : styles.tradeFlowNegative}>
+              <span>Estimated equity</span><strong>{rand(model.equity)}</strong>
+            </div>
+          </div>
+          {state.tradeMode !== "haircut" && activeStepId !== "results" ? (
+            <p className={styles.manualOverrideNote}>
+              This trade mode overrides the depreciation-based percentage calculation. Choose “Percentage haircut from retail” to keep trade value directly linked to Aim4price depreciation.
+            </p>
+          ) : null}
           <div
             className={styles.metricGrid}
-            hidden={activeStep !== RESULTS_STEP}
+            hidden={activeStepId !== "results" || resultView !== "depreciation"}
           >
             <Metric label="Projected retail" value={rand(model.futureValue.estimatedRetailValue)} />
             <Metric label="Assumed trade value" value={rand(model.trade.tradeValue)} />
@@ -1285,111 +1584,120 @@ export default function LifecycleCalculatorClient() {
           </div>
         </section>
 
-        <section
-          className={styles.card}
-          hidden={activeStep !== 4 && activeStep !== RESULTS_STEP}
+        <details
+          className={`${styles.card} ${styles.detailsCard}`}
+          hidden={
+            activeStepId !== "depreciation" &&
+            !(activeStepId === "results" && resultView === "advanced")
+          }
+          open={activeStepId === "results" ? true : undefined}
         >
-          <div className={styles.sectionHeading}>
+          <summary>
             <div>
               <h2>Refinance Scenario</h2>
-              <p>Model a proactive restructure while the borrower is still performing.</p>
+              <p>Optional: test a proactive restructure while the borrower is still performing.</p>
             </div>
+          </summary>
+          <div className={styles.detailsBody}>
+            <div className={styles.formGrid} hidden={activeStepId === "results"}>
+              <NumericField label="Review point" value={state.refinanceMonth} onChange={(value) => update("refinanceMonth", value)} suffix="months" min={1} max={state.termMonths} />
+              <NumericField label="New interest rate" value={state.refinanceRatePct} onChange={(value) => update("refinanceRatePct", value)} suffix="%" step={0.1} />
+              <NumericField label="New remaining term" value={state.refinanceTermMonths} onChange={(value) => update("refinanceTermMonths", value)} suffix="months" min={1} max={120} />
+              <NumericField label="New balloon" value={state.refinanceBalloon} onChange={(value) => update("refinanceBalloon", value)} prefix="R" />
+            </div>
+            <div className={styles.metricGrid} hidden={activeStepId !== "results" || resultView !== "advanced"}>
+              <Metric label="Settlement amount" value={rand(model.refinance.settlementAmount)} />
+              <Metric label="Current instalment" value={randCents(model.refinance.currentMonthlyPayment)} />
+              <Metric label="New instalment" value={randCents(model.refinance.newMonthlyPayment)} />
+              <Metric label="Monthly cash-flow relief" value={randCents(model.refinance.monthlyRelief)} tone={model.refinance.monthlyRelief >= 0 ? "green" : "amber"} />
+              <Metric label="New total finance cost" value={rand(model.refinance.newTotalFinanceCost)} />
+              <Metric label="Additional restructuring cost" value={rand(model.refinance.additionalCost)} />
+            </div>
+            <p className={styles.disclaimer}>
+              Refinancing is subject to lender approval, affordability, payment history,
+              asset valuation, settlement terms and prevailing interest rates. The
+              calculator does not imply guaranteed refinance approval.
+            </p>
           </div>
-          <div
-            className={styles.formGrid}
-            hidden={activeStep === RESULTS_STEP}
-          >
-            <NumericField label="Review point" value={state.refinanceMonth} onChange={(value) => update("refinanceMonth", value)} suffix="months" min={1} max={state.termMonths} />
-            <NumericField label="New interest rate" value={state.refinanceRatePct} onChange={(value) => update("refinanceRatePct", value)} suffix="%" step={0.1} />
-            <NumericField label="New remaining term" value={state.refinanceTermMonths} onChange={(value) => update("refinanceTermMonths", value)} suffix="months" min={1} max={120} />
-            <NumericField label="New balloon" value={state.refinanceBalloon} onChange={(value) => update("refinanceBalloon", value)} prefix="R" />
-          </div>
-          <div
-            className={styles.metricGrid}
-            hidden={activeStep !== RESULTS_STEP}
-          >
-            <Metric label="Settlement amount" value={rand(model.refinance.settlementAmount)} />
-            <Metric label="Current instalment" value={randCents(model.refinance.currentMonthlyPayment)} />
-            <Metric label="New instalment" value={randCents(model.refinance.newMonthlyPayment)} />
-            <Metric label="Monthly cash-flow relief" value={randCents(model.refinance.monthlyRelief)} tone={model.refinance.monthlyRelief >= 0 ? "green" : "amber"} />
-            <Metric label="New total finance cost" value={rand(model.refinance.newTotalFinanceCost)} />
-            <Metric label="Additional restructuring cost" value={rand(model.refinance.additionalCost)} />
-          </div>
-          <p className={styles.disclaimer}>
-            Refinancing is subject to lender approval, affordability, payment history,
-            asset valuation, settlement terms and prevailing interest rates. The
-            calculator does not imply guaranteed refinance approval.
-          </p>
-        </section>
+        </details>
 
-        <section
-          className={styles.card}
-          hidden={activeStep !== 4 && activeStep !== RESULTS_STEP}
+        <details
+          className={`${styles.card} ${styles.detailsCard}`}
+          hidden={
+            activeStepId !== "depreciation" &&
+            !(activeStepId === "results" && resultView === "advanced")
+          }
+          open={activeStepId === "results" ? true : undefined}
         >
-          <div className={styles.sectionHeading}>
+          <summary>
             <div>
               <h2>Next Tractor Cycle</h2>
-              <p>Recycle trade-in equity into maintenance protection and the next deposit.</p>
+              <p>Optional: allocate future equity to the next service plan, reserve and deposit.</p>
+            </div>
+          </summary>
+          <div className={styles.detailsBody}>
+            <div className={styles.formGrid} hidden={activeStepId === "results"}>
+              <NumericField label="Next warranty service plan" value={state.nextServicePlan} onChange={(value) => update("nextServicePlan", value)} prefix="R" />
+              <NumericField label="Next maintenance reserve" value={state.nextReserve} onChange={(value) => update("nextReserve", value)} prefix="R" />
+            </div>
+            <div className={styles.equityFlow} hidden={activeStepId !== "results" || resultView !== "advanced"}>
+              <div><span>Available equity</span><strong>{rand(Math.max(0, model.equity))}</strong></div>
+              <i>−</i>
+              <div><span>Service plan</span><strong>{rand(model.nextCycle.serviceAllocation)}</strong></div>
+              <i>−</i>
+              <div><span>Maintenance reserve</span><strong>{rand(model.nextCycle.reserveAllocation)}</strong></div>
+              <i>=</i>
+              <div className={styles.equityResult}><span>Replacement deposit</span><strong>{rand(model.nextCycle.remainingDeposit)}</strong></div>
+            </div>
+            <div className={styles.metricGrid} hidden={activeStepId !== "results" || resultView !== "advanced"}>
+              <Metric label="Expected equivalent tractor price" value={rand(model.nextCycle.nextTractorPrice)} />
+              <Metric label="Next-cycle financed amount" value={rand(model.nextCycle.nextFinancedAmount)} />
+              {model.nextCycle.allocationShortfall > 0 ? (
+                <Metric label="Maintenance allocation shortfall" value={rand(model.nextCycle.allocationShortfall)} tone="red" />
+              ) : null}
             </div>
           </div>
-          <div
-            className={styles.formGrid}
-            hidden={activeStep === RESULTS_STEP}
-          >
-            <NumericField label="Next warranty service plan" value={state.nextServicePlan} onChange={(value) => update("nextServicePlan", value)} prefix="R" />
-            <NumericField label="Next uptime reserve" value={state.nextReserve} onChange={(value) => update("nextReserve", value)} prefix="R" />
-          </div>
-          <div
-            className={styles.equityFlow}
-            hidden={activeStep !== RESULTS_STEP}
-          >
-            <div><span>Available equity</span><strong>{rand(Math.max(0, model.equity))}</strong></div>
-            <i>−</i>
-            <div><span>Service plan</span><strong>{rand(model.nextCycle.serviceAllocation)}</strong></div>
-            <i>−</i>
-            <div><span>Uptime reserve</span><strong>{rand(model.nextCycle.reserveAllocation)}</strong></div>
-            <i>=</i>
-            <div className={styles.equityResult}><span>Replacement deposit</span><strong>{rand(model.nextCycle.remainingDeposit)}</strong></div>
-          </div>
-          <div
-            className={styles.metricGrid}
-            hidden={activeStep !== RESULTS_STEP}
-          >
-            <Metric label="Expected equivalent tractor price" value={rand(model.nextCycle.nextTractorPrice)} />
-            <Metric label="Next-cycle financed amount" value={rand(model.nextCycle.nextFinancedAmount)} />
-            {model.nextCycle.allocationShortfall > 0 ? (
-              <Metric label="Maintenance allocation shortfall" value={rand(model.nextCycle.allocationShortfall)} tone="red" />
-            ) : null}
-          </div>
-        </section>
+        </details>
 
-        <section
-          className={`${styles.card} ${styles.fullWidth} ${styles.reportOptionsCard}`}
-          hidden={activeStep !== 5}
+        <details
+          className={`${styles.card} ${styles.fullWidth} ${styles.detailsCard} ${styles.reportOptionsCard}`}
+          hidden={activeStepId !== "depreciation"}
         >
-          <div className={styles.sectionHeading}>
+          <summary>
             <div>
-              <h2>Report Options</h2>
-              <p>Keep internal dealer economics out unless this discussion needs them.</p>
+              <h2>Optional quote details</h2>
+              <p>Add a client reference, notes or internal dealer economics only when needed.</p>
             </div>
+          </summary>
+          <div className={styles.detailsBody}>
+            <div className={styles.formGrid}>
+              <TextField label="Client / Farm name" value={state.clientName} onChange={(value) => update("clientName", value)} placeholder="Optional" />
+              <TextField label="Tractor description" value={state.tractorDescription} onChange={(value) => update("tractorDescription", value)} placeholder="e.g. 90 kW field tractor" />
+              <TextField label="Dealer" value={state.dealerName} onChange={(value) => update("dealerName", value)} placeholder="Optional" />
+              <TextField label="Quote reference" value={state.quoteReference} onChange={(value) => update("quoteReference", value)} placeholder="Optional" />
+              <label className={`${styles.field} ${styles.notesField}`}>
+                <span>Notes</span>
+                <textarea value={state.notes} onChange={(event) => update("notes", event.target.value)} rows={4} placeholder="Optional deal notes" />
+              </label>
+            </div>
+            <Toggle
+              label="Include dealer economics"
+              checked={includeDealerEconomics}
+              onChange={setIncludeDealerEconomics}
+              help="Adds the dealer trade spread, service and parts margin, risk reserve and commercial buffer to the advanced results."
+            />
           </div>
-          <Toggle
-            label="Include dealer economics"
-            checked={includeDealerEconomics}
-            onChange={setIncludeDealerEconomics}
-            help="Adds the dealer trade spread, service and parts margin, risk reserve and commercial buffer to the final results."
-          />
-        </section>
+        </details>
 
         <details
           className={`${styles.card} ${styles.fullWidth} ${styles.detailsCard}`}
           hidden={
             !includeDealerEconomics ||
-            (activeStep !== 5 && activeStep !== RESULTS_STEP)
+            (activeStepId !== "depreciation" &&
+              !(activeStepId === "results" && resultView === "advanced"))
           }
           open={
-            activeStep === 5 ||
-            (activeStep === RESULTS_STEP && includeDealerEconomics) ||
+            (activeStepId === "results" && includeDealerEconomics) ||
             undefined
           }
         >
@@ -1402,7 +1710,7 @@ export default function LifecycleCalculatorClient() {
           <div className={styles.detailsBody}>
             <div
               className={styles.formGrid}
-              hidden={activeStep === RESULTS_STEP}
+              hidden={activeStepId === "results"}
             >
               <NumericField label="Trade-in allowance" value={state.dealerTradeAllowance} onChange={(value) => update("dealerTradeAllowance", value)} prefix="R" />
               <NumericField label="Expected resale price" value={state.dealerExpectedResale} onChange={(value) => update("dealerExpectedResale", value)} prefix="R" />
@@ -1414,7 +1722,7 @@ export default function LifecycleCalculatorClient() {
             </div>
             <div
               className={styles.metricGrid}
-              hidden={activeStep !== RESULTS_STEP}
+              hidden={activeStepId !== "results" || resultView !== "advanced"}
             >
               <Metric label="Trade contribution" value={rand(model.dealer.tradeContribution)} />
               <Metric label="Service / parts contribution" value={rand(model.dealer.servicePartsContribution)} detail="Revenue multiplied by gross margin; not total package revenue." />
@@ -1428,7 +1736,7 @@ export default function LifecycleCalculatorClient() {
 
         <section
           className={`${styles.card} ${styles.fullWidth}`}
-          hidden={activeStep !== RESULTS_STEP}
+          hidden={activeStepId !== "results" || resultView !== "depreciation"}
         >
           <div className={styles.sectionHeading}>
             <div>
@@ -1468,27 +1776,6 @@ export default function LifecycleCalculatorClient() {
           </div>
         </section>
 
-        <section
-          className={`${styles.card} ${styles.fullWidth} ${styles.printDetails}`}
-          hidden={activeStep !== 5}
-        >
-          <div className={styles.sectionHeading}>
-            <div>
-              <h2>Deal Summary Details</h2>
-              <p>Optional references included in the print view only.</p>
-            </div>
-          </div>
-          <div className={styles.formGrid}>
-            <TextField label="Client / Farm name" value={state.clientName} onChange={(value) => update("clientName", value)} placeholder="Optional" />
-            <TextField label="Tractor description" value={state.tractorDescription} onChange={(value) => update("tractorDescription", value)} placeholder="e.g. 90 kW field tractor" />
-            <TextField label="Dealer" value={state.dealerName} onChange={(value) => update("dealerName", value)} placeholder="Optional" />
-            <TextField label="Quote reference" value={state.quoteReference} onChange={(value) => update("quoteReference", value)} placeholder="Optional" />
-            <label className={`${styles.field} ${styles.notesField}`}>
-              <span>Notes</span>
-              <textarea value={state.notes} onChange={(event) => update("notes", event.target.value)} rows={4} placeholder="Optional deal notes" />
-            </label>
-          </div>
-        </section>
       </div>
 
       <nav className={styles.flowActions} aria-label="Calculator step actions">
@@ -1505,10 +1792,10 @@ export default function LifecycleCalculatorClient() {
         )}
 
         <div className={styles.flowActionStatus}>
-          {activeStep < RESULTS_STEP && !stepIsValid ? (
+          {activeStep < resultsStep && !stepIsValid ? (
             <span>Complete the required fields before continuing.</span>
-          ) : activeStep < RESULTS_STEP ? (
-            <span>Your values are saved as you move through the flow.</span>
+          ) : activeStep < resultsStep ? (
+            <span>{selectedPackage.label} · values update as you continue.</span>
           ) : (
             <button
               type="button"
@@ -1520,14 +1807,14 @@ export default function LifecycleCalculatorClient() {
           )}
         </div>
 
-        {activeStep < RESULTS_STEP ? (
+        {activeStep < resultsStep ? (
           <button
             type="button"
             className={styles.primaryFlowButton}
             onClick={() => moveToStep(activeStep + 1)}
             disabled={!stepIsValid}
           >
-            {activeStep === RESULTS_STEP - 1 ? "View results" : "Continue"} →
+            {activeStep === resultsStep - 1 ? "View results" : "Continue"} →
           </button>
         ) : (
           <button
@@ -1542,7 +1829,7 @@ export default function LifecycleCalculatorClient() {
 
       <footer
         className={styles.footerDisclaimer}
-        hidden={activeStep !== RESULTS_STEP}
+        hidden={activeStepId !== "results"}
       >
         Aim4price calculations are indicative scenario estimates and do not
         constitute a lending decision, guaranteed future value, guaranteed
