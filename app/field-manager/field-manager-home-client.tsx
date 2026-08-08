@@ -26,6 +26,12 @@ type OverviewCountApiResponse = {
   error?: string;
 };
 
+type NotificationCountApiResponse = {
+  ok: boolean;
+  unreadCount?: number;
+  error?: string;
+};
+
 function extractError(payload: { error?: string } | null, fallback: string): string {
   return payload?.error?.trim() || fallback;
 }
@@ -33,6 +39,7 @@ function extractError(payload: { error?: string } | null, fallback: string): str
 export default function FieldManagerHomeClient() {
   const [hasManagerAccess, setHasManagerAccess] = useState(false);
   const [overviewCount, setOverviewCount] = useState<number | null>(null);
+  const [notificationCount, setNotificationCount] = useState<number | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -43,7 +50,10 @@ export default function FieldManagerHomeClient() {
   useEffect(() => {
     if (!hasManagerAccess) return undefined;
 
-    const refresh = () => void loadOverviewCount();
+    const refresh = () => {
+      void loadOverviewCount();
+      void loadNotificationCount();
+    };
     const refreshWhenVisible = () => {
       if (document.visibilityState === 'visible') refresh();
     };
@@ -81,6 +91,7 @@ export default function FieldManagerHomeClient() {
 
       setHasManagerAccess(true);
       void loadOverviewCount();
+      void loadNotificationCount();
     } catch (error) {
       setNotice(error instanceof Error ? error.message : 'Field Manager login is required.');
     } finally {
@@ -104,6 +115,24 @@ export default function FieldManagerHomeClient() {
       }
     } catch {
       // The Overview count is optional; the home actions remain available if it cannot load.
+    }
+  }
+
+  async function loadNotificationCount() {
+    try {
+      const response = await fetch('/api/field-manager/notifications', {
+        credentials: 'include',
+        cache: 'no-store',
+      });
+      const payload = (await response.json().catch(() => null)) as NotificationCountApiResponse | null;
+      if (!response.ok || !payload?.ok) return;
+
+      const count = Number(payload.unreadCount ?? 0);
+      if (Number.isFinite(count) && count >= 0) {
+        setNotificationCount(Math.floor(count));
+      }
+    } catch {
+      // Notifications remain available from their own page if the badge refresh fails.
     }
   }
 
@@ -132,6 +161,24 @@ export default function FieldManagerHomeClient() {
         {!isLoading && hasManagerAccess ? (
           <section className={styles.homeCard} aria-label="Field Manager actions">
             <div className={styles.homeActionGrid}>
+              <button
+                type="button"
+                className={styles.homeActionCard}
+                aria-label={
+                  notificationCount && notificationCount > 0
+                    ? `Notifications, ${notificationCount} unread`
+                    : 'Notifications'
+                }
+                onClick={() => window.location.assign('/field-manager/notifications')}
+              >
+                <strong>Notifications</strong>
+                {notificationCount && notificationCount > 0 ? (
+                  <span className={styles.homeActionBadge} aria-hidden="true">
+                    {notificationCount > 99 ? '99+' : notificationCount}
+                  </span>
+                ) : null}
+              </button>
+
               <button
                 type="button"
                 className={styles.homeActionCard}
