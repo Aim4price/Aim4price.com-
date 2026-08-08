@@ -4,10 +4,8 @@ import { getServerSession } from '../../lib/auth-session';
 import { getDealerAppSession } from '../../lib/dealer-app-session';
 import { getAccountProfile } from '../../lib/account-profile';
 import { dealerRoleCan, type DealerAppCapability } from '../../lib/dealer-app-access';
-import {
-  listDealerMaintenanceNotifications,
-  listDealerTrackedAssets,
-} from '../../lib/dealer-maintenance-tracker';
+import { listDealerMaintenanceNotificationsForViewer } from '../../lib/dealer-maintenance-notification-inbox';
+import { listDealerTrackedAssets } from '../../lib/dealer-maintenance-tracker';
 import { listAssetLeadsForUser } from '../../lib/partner-access';
 import styles from './dealer.module.css';
 
@@ -41,21 +39,29 @@ export default async function DealerHome() {
   const session = await getServerSession({ allowDealerApp: true });
   if (!session?.user?.id) redirect('/dealer/login');
 
-  const profile = await getAccountProfile({
-    id: session.user.id,
-    name: session.user.name,
-    email: session.user.email,
-  });
+  const [profile, dealerAppSession] = await Promise.all([
+    getAccountProfile({
+      id: session.user.id,
+      name: session.user.name,
+      email: session.user.email,
+    }),
+    getDealerAppSession(),
+  ]);
 
   if (profile.accountType !== 'dealer' || profile.accountStatus !== 'active') {
     redirect('/dealer/login');
   }
 
-  const [maintenanceNotifications, leads, trackedAssets, dealerAppSession] = await Promise.all([
-    listDealerMaintenanceNotifications(session.user.id).catch(() => []),
+  const [maintenanceNotifications, leads, trackedAssets] = await Promise.all([
+    listDealerMaintenanceNotificationsForViewer({
+      dealerUserId: session.user.id,
+      viewerKey: dealerAppSession
+        ? `dealer-staff:${dealerAppSession.staffId}`
+        : `account:${session.user.id}`,
+      staffId: dealerAppSession?.staffId ?? null,
+    }).catch(() => []),
     listAssetLeadsForUser(session.user.id).catch(() => []),
     listDealerTrackedAssets(session.user.id).catch(() => []),
-    getDealerAppSession(),
   ]);
 
   const unreadMaintenanceCount = maintenanceNotifications.filter((notification) => !notification.isRead).length;
