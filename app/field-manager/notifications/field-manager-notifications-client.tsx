@@ -13,7 +13,7 @@ type FieldManagerNotification = {
   href: string;
   createdAtIso: string;
   isRead: boolean;
-  assignedToViewer: true;
+  assignedToViewer: boolean;
 };
 
 type NotificationsResponse = {
@@ -84,17 +84,8 @@ export default function FieldManagerNotificationsClient() {
   const historyItems = useMemo(() => items.filter((item) => item.isRead), [items]);
   const visibleItems = activeView === 'active' ? activeItems : historyItems;
 
-  function requestClear(notification: FieldManagerNotification) {
-    setClearRequest({ ids: [notification.id], bulk: false });
-  }
-
-  function requestClearAll() {
-    if (!activeItems.length) return;
-    setClearRequest({ ids: activeItems.map((item) => item.id), bulk: true });
-  }
-
-  async function confirmClear() {
-    if (!clearRequest || clearing) return;
+  async function clearNotifications(notificationIds: string[], moveToHistory = false) {
+    if (!notificationIds.length || clearing) return;
     setClearing(true);
     setError('');
     try {
@@ -102,20 +93,44 @@ export default function FieldManagerNotificationsClient() {
         method: 'PATCH',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ notificationIds: clearRequest.ids }),
+        body: JSON.stringify({ notificationIds }),
       });
       const payload = await response.json().catch(() => null) as { ok?: boolean; error?: string } | null;
       if (!response.ok || !payload?.ok) throw new Error(payload?.error || 'Could not clear notifications.');
 
-      const cleared = new Set(clearRequest.ids);
+      const cleared = new Set(notificationIds);
       setItems((current) => current.map((item) => cleared.has(item.id) ? { ...item, isRead: true } : item));
-      setClearRequest(null);
-      if (clearRequest.bulk) setActiveView('history');
+      if (moveToHistory) setActiveView('history');
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Could not clear notifications.');
     } finally {
       setClearing(false);
     }
+  }
+
+  function requestClear(notification: FieldManagerNotification) {
+    if (notification.assignedToViewer) {
+      setClearRequest({ ids: [notification.id], bulk: false });
+      return;
+    }
+    void clearNotifications([notification.id]);
+  }
+
+  function requestClearAll() {
+    if (!activeItems.length) return;
+    const notificationIds = activeItems.map((item) => item.id);
+    if (activeItems.some((item) => item.assignedToViewer)) {
+      setClearRequest({ ids: notificationIds, bulk: true });
+      return;
+    }
+    void clearNotifications(notificationIds, true);
+  }
+
+  async function confirmClear() {
+    if (!clearRequest || clearing) return;
+    const request = clearRequest;
+    setClearRequest(null);
+    await clearNotifications(request.ids, request.bulk);
   }
 
   return (
@@ -155,10 +170,10 @@ export default function FieldManagerNotificationsClient() {
                   <time dateTime={notification.createdAtIso}>{formatNotificationTime(notification.createdAtIso)}</time>
                   <h2>{notification.title}</h2>
                   <p>{notification.body}</p>
-                  <span className={styles.assignedBadge}>Assigned to you</span>
+                  {notification.assignedToViewer ? <span className={styles.assignedBadge}>Assigned to you</span> : null}
                 </Link>
                 {!notification.isRead ? (
-                  <button type="button" className={styles.clearButton} onClick={() => requestClear(notification)}>
+                  <button type="button" className={styles.clearButton} onClick={() => requestClear(notification)} disabled={clearing}>
                     Clear
                   </button>
                 ) : null}
@@ -169,7 +184,7 @@ export default function FieldManagerNotificationsClient() {
 
         {!loading && !visibleItems.length ? (
           <p className={styles.empty}>
-            {activeView === 'active' ? 'No active assigned notifications.' : 'No checked notifications yet.'}
+            {activeView === 'active' ? 'No active notifications.' : 'No checked notifications yet.'}
           </p>
         ) : null}
       </div>
@@ -181,7 +196,7 @@ export default function FieldManagerNotificationsClient() {
             <h2 id="assigned-clear-title">Assigned to you</h2>
             <p>
               {clearRequest.bulk
-                ? 'These notifications were specifically assigned to you. Are you sure you want to clear them?'
+                ? 'Some of these notifications were specifically assigned to you. Are you sure you want to clear them?'
                 : 'This notification was specifically assigned to you. Are you sure you want to clear it?'}
             </p>
             <div className={styles.modalActions}>
