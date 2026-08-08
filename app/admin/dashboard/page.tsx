@@ -25,9 +25,31 @@ function formatGeneratedAt(value: string): string {
 export default async function AdminDashboardPage() {
   await requireAdminPageAccess();
   const dashboard = await getAdminDashboardStats();
-  const overviewCards = dashboard.cards.slice(0, 4);
-  const accountCards = dashboard.cards.slice(4, 8);
-  const detailedCards = dashboard.cards.slice(8);
+  const overviewIds = new Set([
+    "free-estimates",
+    "paid-estimates",
+    "total-assets-saved",
+    "total-accounts-created",
+  ]);
+  const accountIds = new Set([
+    "free-estimate-users",
+    "owner-accounts-created",
+    "dealer-accounts-created",
+    "finance-accounts-created",
+    "insurer-accounts-created",
+    "average-user-time",
+  ]);
+  const productIds = new Set([
+    "aim4price-assets-saved",
+    "asset-registers-created",
+    "storage",
+  ]);
+  const overviewCards = dashboard.cards.filter((card) => overviewIds.has(card.id));
+  const accountCards = dashboard.cards.filter((card) => accountIds.has(card.id));
+  const productCards = dashboard.cards.filter((card) => productIds.has(card.id));
+  const detailedCards = dashboard.cards.filter(
+    (card) => !overviewIds.has(card.id) && !accountIds.has(card.id) && !productIds.has(card.id),
+  );
 
   return (
     <main className={styles.page}>
@@ -100,6 +122,25 @@ export default async function AdminDashboardPage() {
             </div>
             <div className={styles.grid}>
               {accountCards.map((card) => (
+                <article key={card.id} className={styles.card}>
+                  <div className={styles.cardHeader}><h2>{card.title}</h2>{card.description ? <p>{card.description}</p> : null}</div>
+                  <dl className={styles.values}>{card.values.map((item) => (
+                    <div key={`${card.id}-${item.label}`} className={styles.valueRow}><dt>{item.label}</dt><dd><strong>{item.value}</strong>{item.detail ? <span>{item.detail}</span> : null}</dd></div>
+                  ))}</dl>
+                </article>
+              ))}
+            </div>
+          </section>
+        ) : null}
+
+        {productCards.length ? (
+          <section className={styles.dashboardSection} aria-labelledby="product-heading">
+            <div className={styles.sectionHeading}>
+              <div><p className={styles.eyebrow}>Product</p><h2 id="product-heading">Asset workspace adoption</h2></div>
+              <span>Saved Aim4price values, asset registers and storage use.</span>
+            </div>
+            <div className={styles.grid}>
+              {productCards.map((card) => (
                 <article key={card.id} className={styles.card}>
                   <div className={styles.cardHeader}><h2>{card.title}</h2>{card.description ? <p>{card.description}</p> : null}</div>
                   <dl className={styles.values}>{card.values.map((item) => (
