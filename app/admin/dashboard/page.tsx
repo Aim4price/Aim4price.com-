@@ -43,6 +43,12 @@ export default async function AdminDashboardPage() {
             <Link href="/admin/dashboard" className={styles.adminButton}>
               Dashboard
             </Link>
+            <Link
+              href="/admin/lifecycle-calculator"
+              className={styles.adminButton}
+            >
+              Lifecycle Calculator
+            </Link>
           </nav>
         </header>
 

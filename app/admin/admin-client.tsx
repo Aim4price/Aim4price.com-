@@ -1116,6 +1116,13 @@ export default function AdminClient({
             </select>
           </label>
 
+          <Link
+            href="/admin/lifecycle-calculator"
+            className={styles.signOutButton}
+          >
+            Lifecycle Calculator
+          </Link>
+
           <Link href="/admin/dashboard" className={styles.signOutButton}>
             Dashboard
           </Link>
