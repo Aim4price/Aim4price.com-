@@ -1922,3 +1922,758 @@
     font-size: 0.62rem;
   }
 }
+
+/* Lifecycle scenario workspace */
+.workspace {
+  width: 100%;
+  display: grid;
+  gap: 1rem;
+}
+
+.workspaceHeader {
+  min-width: 0;
+  padding: 1.2rem 1.3rem;
+  border: 1px solid rgba(30, 75, 58, 0.16);
+  border-radius: 1.4rem;
+  color: #ffffff;
+  background:
+    radial-gradient(circle at 90% 12%, rgba(143, 210, 177, 0.2), transparent 22rem),
+    linear-gradient(135deg, #173e32 0%, #245743 100%);
+  box-shadow: 0 18px 42px rgba(14, 49, 38, 0.13);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.workspaceHeader h2 {
+  margin: 0.15rem 0 0;
+  font-size: clamp(1.3rem, 2vw, 1.75rem);
+  line-height: 1.08;
+  letter-spacing: -0.035em;
+}
+
+.workspaceHeader > div:first-child > span {
+  display: block;
+  max-width: 52rem;
+  margin-top: 0.38rem;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.8rem;
+  font-weight: 650;
+  line-height: 1.45;
+}
+
+.workspaceHeader .eyebrow {
+  color: #b8dbc9;
+}
+
+.headerActions {
+  flex: 0 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.55rem;
+}
+
+.primaryButton,
+.secondaryButton,
+.comparisonTable button {
+  min-height: 2.8rem;
+  padding: 0.55rem 0.9rem;
+  border-radius: 0.75rem;
+  font: inherit;
+  font-size: 0.73rem;
+  font-weight: 850;
+  cursor: pointer;
+  transition: 160ms ease;
+}
+
+.primaryButton {
+  border: 1px solid #ffffff;
+  color: #173e32;
+  background: #ffffff;
+}
+
+.secondaryButton {
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.primaryButton:hover,
+.secondaryButton:hover {
+  transform: translateY(-1px);
+}
+
+.primaryButton:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
+
+.errorBanner {
+  margin: 0;
+  padding: 0.8rem 1rem;
+  border: 1px solid #e9baba;
+  border-radius: 0.85rem;
+  color: #842f2f;
+  background: #fff4f4;
+  font-size: 0.78rem;
+  font-weight: 750;
+}
+
+.answerStrip {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+
+.answerStrip .metric {
+  min-height: 6.1rem;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 10px 26px rgba(18, 53, 45, 0.045);
+}
+
+.assumptionGrid {
+  display: grid;
+  grid-template-columns: minmax(31rem, 1.25fr) minmax(23rem, 0.9fr) minmax(22rem, 0.85fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.provisionGrid,
+.outcomeGrid,
+.advancedGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  align-items: start;
+}
+
+.workspace .card {
+  padding: 1.15rem;
+  border-radius: 1.25rem;
+  box-shadow: 0 12px 34px rgba(18, 53, 45, 0.06);
+}
+
+.workspace .sectionHeading {
+  display: block;
+}
+
+.workspace .sectionHeading > div > span {
+  display: inline-block;
+  margin: 0 0 0.34rem;
+  color: #257457;
+  font-size: 0.64rem;
+  font-weight: 900;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.workspace .sectionHeading h2 {
+  font-size: 1rem;
+}
+
+.workspace .sectionHeading p {
+  max-width: 44rem;
+  margin-top: 0.3rem;
+  font-size: 0.74rem;
+}
+
+.workspace .formGrid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.68rem;
+}
+
+.workspace .field > span {
+  font-size: 0.69rem;
+}
+
+.workspace .inputShell {
+  min-height: 2.9rem;
+  border-radius: 0.76rem;
+}
+
+.workspace .inputShell select {
+  min-height: 2.8rem;
+}
+
+.workspace .toggleRow {
+  border-color: #d7e6df;
+  background: #f4f9f6;
+}
+
+.vatControl {
+  align-items: flex-start;
+  border-color: #cfdfd8;
+  background: #f3f8f5;
+}
+
+.segmentedButtons {
+  flex: 0 0 auto;
+  padding: 0.2rem;
+  border: 1px solid #d3e1da;
+  border-radius: 0.72rem;
+  background: #ffffff;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(7.2rem, 1fr));
+  gap: 0.2rem;
+}
+
+.segmentedButtons button {
+  min-height: 2.35rem;
+  padding: 0 0.7rem;
+  border: 0;
+  border-radius: 0.55rem;
+  color: #52665d;
+  background: transparent;
+  font: inherit;
+  font-size: 0.7rem;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.segmentedButtons .segmentedActive {
+  color: #ffffff;
+  background: #1f6e52;
+  box-shadow: 0 5px 12px rgba(31, 110, 82, 0.18);
+}
+
+.vatBreakdown {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.45rem;
+}
+
+.vatBreakdown > div {
+  padding: 0.7rem 0.75rem;
+  border: 1px solid #e0e9e5;
+  border-radius: 0.72rem;
+  background: #fafcfb;
+  display: grid;
+  gap: 0.18rem;
+}
+
+.vatBreakdown span,
+.positionRows span,
+.equityHero span,
+.nextCycleFlow span,
+.independenceNote span {
+  color: #6b7a74;
+  font-size: 0.63rem;
+  font-weight: 780;
+}
+
+.vatBreakdown strong,
+.positionRows strong,
+.equityHero strong,
+.nextCycleFlow strong,
+.independenceNote strong {
+  color: #15392f;
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.independenceNote {
+  padding: 0.8rem;
+  border: 1px solid #cde0d7;
+  border-radius: 0.8rem;
+  background: #edf7f2;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.55rem;
+}
+
+.independenceNote > div {
+  display: grid;
+  gap: 0.12rem;
+}
+
+.independenceNote small {
+  grid-column: 1 / -1;
+  color: #557067;
+  font-size: 0.67rem;
+  line-height: 1.45;
+}
+
+.futurePanel {
+  position: sticky;
+  top: 0.75rem;
+  border-color: #b9d9cb !important;
+  background: linear-gradient(180deg, #fbfefc 0%, #eef8f3 100%) !important;
+}
+
+.positionRows {
+  display: grid;
+  gap: 0;
+}
+
+.positionRows > div {
+  min-height: 2rem;
+  padding: 0.28rem 0;
+  border-bottom: 1px solid rgba(25, 81, 61, 0.09);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+}
+
+.positionRows strong {
+  text-align: right;
+}
+
+.positionRows .positionTotal {
+  margin-top: 0.35rem;
+  padding: 0.75rem;
+  border: 0;
+  border-radius: 0.72rem;
+  background: #1d5f48;
+}
+
+.positionTotal span,
+.positionTotal strong {
+  color: #ffffff;
+}
+
+.formulaNote {
+  margin: 0;
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.workspace .metricGrid {
+  grid-template-columns: repeat(auto-fit, minmax(10.5rem, 1fr));
+}
+
+.comparisonSection,
+.cashFlowSection,
+.dealerSection {
+  grid-column: 1 / -1;
+}
+
+.comparisonWrap {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid #dbe6e1;
+  border-radius: 0.9rem;
+  background: #ffffff;
+}
+
+.comparisonTable,
+.cashFlowTable,
+.detailTable,
+.sensitivityTable,
+.dealerTable {
+  width: 100%;
+  min-width: 52rem;
+  border-collapse: separate;
+  border-spacing: 0;
+  color: #1c3c33;
+  font-size: 0.72rem;
+}
+
+.comparisonTable th,
+.comparisonTable td,
+.cashFlowTable th,
+.cashFlowTable td,
+.detailTable th,
+.detailTable td,
+.sensitivityTable th,
+.sensitivityTable td,
+.dealerTable th,
+.dealerTable td {
+  padding: 0.65rem 0.75rem;
+  border-right: 1px solid #e5ece8;
+  border-bottom: 1px solid #e5ece8;
+  vertical-align: middle;
+  text-align: right;
+}
+
+.comparisonTable tr:last-child > *,
+.cashFlowTable tr:last-child > *,
+.detailTable tr:last-child > *,
+.sensitivityTable tr:last-child > *,
+.dealerTable tr:last-child > * {
+  border-bottom: 0;
+}
+
+.comparisonTable tr > *:last-child,
+.cashFlowTable tr > *:last-child,
+.detailTable tr > *:last-child,
+.sensitivityTable tr > *:last-child,
+.dealerTable tr > *:last-child {
+  border-right: 0;
+}
+
+.comparisonTable th:first-child,
+.cashFlowTable th:first-child,
+.detailTable th:first-child,
+.sensitivityTable th:first-child,
+.dealerTable th:first-child {
+  text-align: left;
+}
+
+.comparisonTable thead th,
+.cashFlowTable thead th,
+.detailTable thead th,
+.sensitivityTable thead th,
+.dealerTable thead th {
+  color: #ffffff;
+  background: #234d3d;
+  font-weight: 850;
+}
+
+.comparisonTable thead th:not(:first-child) {
+  width: 23%;
+  text-align: center;
+}
+
+.comparisonTable thead span {
+  display: block;
+  margin-bottom: 0.4rem;
+  font-size: 0.76rem;
+}
+
+.comparisonTable button {
+  min-height: 2rem;
+  border: 1px solid rgba(255, 255, 255, 0.38);
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.08);
+  font-size: 0.64rem;
+}
+
+.comparisonTable .structureSelected {
+  color: #164735;
+  background: #ffffff;
+}
+
+.preferredColumn {
+  background: #eaf7f0 !important;
+}
+
+.comparisonTable thead .preferredColumn {
+  color: #ffffff;
+  background: #197051 !important;
+}
+
+.comparisonStrong {
+  color: #0f5c44;
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.adviceGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+
+.adviceGrid article {
+  padding: 0.85rem;
+  border: 1px solid #dce6e1;
+  border-radius: 0.85rem;
+  background: #fafcfb;
+  display: grid;
+  gap: 0.25rem;
+}
+
+.adviceGrid span {
+  color: #207257;
+  font-size: 0.65rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.adviceGrid strong {
+  font-size: 0.77rem;
+  line-height: 1.38;
+}
+
+.adviceGrid p {
+  margin: 0;
+  color: #667770;
+  font-size: 0.69rem;
+  line-height: 1.42;
+}
+
+.adviceGrid .advicePreferred {
+  border-color: #79b99f;
+  background: #edf8f3;
+  box-shadow: inset 0 0 0 1px rgba(31, 112, 81, 0.08);
+}
+
+.inlineDetails,
+.advancedGrid details {
+  min-width: 0;
+}
+
+.inlineDetails summary,
+.advancedGrid details > summary {
+  color: #215c48;
+  font-size: 0.74rem;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.inlineDetails[open] summary {
+  margin-bottom: 0.75rem;
+}
+
+.detailTable {
+  min-width: 68rem;
+}
+
+.equityHero {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.equityHero > div {
+  padding: 0.75rem;
+  border-radius: 0.75rem;
+  background: #edf7f2;
+  display: grid;
+  gap: 0.2rem;
+}
+
+.equityRows {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.equityRows > div {
+  padding: 0.72rem 0.8rem;
+  border: 1px solid #e0e9e5;
+  border-radius: 0.75rem;
+  display: grid;
+  grid-template-columns: minmax(8rem, 0.8fr) minmax(14rem, 1.5fr) minmax(9rem, auto);
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.equityRows span {
+  font-size: 0.7rem;
+  font-weight: 850;
+}
+
+.equityRows small {
+  color: #71817b;
+  font-size: 0.66rem;
+}
+
+.equityRows strong {
+  color: #155942;
+  font-size: 0.76rem;
+  text-align: right;
+}
+
+.equityRows .equityPreferred {
+  border-color: #7ebaa3;
+  background: #edf8f3;
+}
+
+.tradeControls {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+
+.nextCycleCard {
+  border-color: #b8d8cb !important;
+  background: linear-gradient(180deg, #ffffff 0%, #f3faf6 100%) !important;
+}
+
+.nextCycleFlow {
+  display: flex;
+  align-items: stretch;
+  gap: 0.35rem;
+}
+
+.nextCycleFlow > div {
+  min-width: 0;
+  flex: 1 1 0;
+  padding: 0.7rem;
+  border: 1px solid #d9e6e0;
+  border-radius: 0.72rem;
+  background: #ffffff;
+  display: grid;
+  gap: 0.18rem;
+}
+
+.nextCycleFlow i {
+  align-self: center;
+  color: #7a9489;
+  font-style: normal;
+  font-weight: 900;
+}
+
+.advancedGrid details > summary {
+  list-style: none;
+}
+
+.advancedGrid details > summary::-webkit-details-marker {
+  display: none;
+}
+
+.detailsBody,
+.dealerBody {
+  margin-top: 0.8rem;
+  display: grid;
+  gap: 0.8rem;
+}
+
+.sensitivityTable,
+.dealerTable {
+  min-width: 44rem;
+}
+
+.dealerSection > .toggleRow {
+  max-width: 34rem;
+}
+
+.footerDisclaimer {
+  background: rgba(255, 255, 255, 0.82);
+}
+
+@media (max-width: 1380px) {
+  .assumptionGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .futurePanel {
+    position: static;
+    grid-column: 1 / -1;
+  }
+
+  .positionRows {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0 1.2rem;
+  }
+
+  .positionRows .positionTotal {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 1060px) {
+  .answerStrip {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .provisionGrid,
+  .outcomeGrid,
+  .advancedGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .workspaceHeader {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .headerActions {
+    justify-content: stretch;
+  }
+
+  .headerActions button {
+    flex: 1 1 9rem;
+  }
+
+  .answerStrip,
+  .assumptionGrid,
+  .provisionGrid,
+  .outcomeGrid,
+  .advancedGrid,
+  .workspace .formGrid,
+  .adviceGrid,
+  .equityHero,
+  .tradeControls,
+  .positionRows {
+    grid-template-columns: 1fr;
+  }
+
+  .futurePanel,
+  .positionRows .positionTotal {
+    grid-column: auto;
+  }
+
+  .vatControl {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .segmentedButtons {
+    width: 100%;
+    box-sizing: border-box;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .vatBreakdown {
+    grid-template-columns: 1fr;
+  }
+
+  .nextCycleFlow {
+    flex-direction: column;
+  }
+
+  .nextCycleFlow i {
+    transform: rotate(90deg);
+  }
+
+  .equityRows > div {
+    grid-template-columns: 1fr;
+  }
+
+  .equityRows strong {
+    text-align: left;
+  }
+}
+
+@media print {
+  .workspaceHeader {
+    color: #173e32;
+    background: #ffffff;
+  }
+
+  .workspaceHeader .eyebrow,
+  .workspaceHeader > div:first-child > span {
+    color: #52665d;
+  }
+
+  .headerActions,
+  .dealerSection:not(:has(.dealerBody)) {
+    display: none !important;
+  }
+
+  .assumptionGrid,
+  .provisionGrid,
+  .outcomeGrid,
+  .advancedGrid {
+    display: block;
+  }
+
+  .workspace .card,
+  .workspaceHeader,
+  .answerStrip .metric {
+    margin-bottom: 0.55rem;
+    box-shadow: none;
+    break-inside: avoid;
+  }
+
+  .futurePanel {
+    position: static;
+  }
+
+  .comparisonWrap {
+    overflow: visible;
+  }
+
+  .comparisonTable,
+  .cashFlowTable,
+  .detailTable,
+  .sensitivityTable,
+  .dealerTable {
+    min-width: 0;
+  }
+}
