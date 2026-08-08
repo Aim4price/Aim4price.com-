@@ -14,6 +14,7 @@ on:
       - 'app/dealer/maintenance/**'
       - 'app/field-manager/notifications/**'
       - 'app/field-manager/field-manager-home-client.tsx'
+      - 'app/account/**'
       - 'app/tracking/**'
       - 'components/AppHeader.tsx'
       - 'components/AppHeader.module.css'
@@ -30,6 +31,7 @@ on:
       - 'tests/notification-viewer-scope.test.mjs'
       - 'tests/dealer-fast-loading.test.mjs'
       - 'tests/dealer-maintenance-pagination.test.mjs'
+      - 'tests/account-app-access-modal-flow.test.mjs'
       - 'package.json'
       - 'package-lock.json'
 
@@ -62,6 +64,9 @@ jobs:
 
       - name: Test Dealer fast loading
         run: npm run test:dealer-fast-loading
+
+      - name: Test app access modal flows
+        run: npm run test:account-app-access
 
       - name: Test Owner App operations
         run: npm run test:owner-app-operations

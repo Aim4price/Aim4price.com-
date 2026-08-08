@@ -1,0 +1,1091 @@
+'use client';
+
+import {
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+  type FormEvent,
+  type ReactNode,
+} from 'react';
+import AppHeader from '../../components/AppHeader';
+import FriendlySelect, { type FriendlySelectOption } from './friendly-select';
+import refinementStyles from './access-page-refinements.module.css';
+import baseStyles from './dealer-app/page.module.css';
+import styles from './app-access-management.module.css';
+
+type DirectoryKind = 'dealer' | 'owner' | 'field';
+type ActiveFlow = 'new' | 'manage' | null;
+type NoticeTone = 'success' | 'error';
+type DealerStaffRole = 'owner' | 'sales' | 'parts' | 'technician';
+type OwnerAccessRole = 'admin' | 'operations' | 'view_only';
+
+type AccessRecord = {
+  id: string;
+  displayName: string;
+  username: string;
+  isActive: boolean;
+  lastLoginAtIso: string | null;
+  updatedAtIso: string;
+  role?: DealerStaffRole;
+  accessRole?: OwnerAccessRole;
+};
+
+type AccessDraft = {
+  displayName: string;
+  username: string;
+  password: string;
+  role: string;
+};
+
+type ApiPayload = {
+  ok?: boolean;
+  error?: string;
+  [key: string]: unknown;
+};
+
+type DirectoryConfig = {
+  eyebrow: string;
+  title: string;
+  description: string;
+  newDescription: string;
+  manageDescription: string;
+  loginLinkLabel: string;
+  loginPath: string;
+  shareTitle: string;
+  shareText: string;
+  listEndpoint: string;
+  itemEndpoint: (id: string) => string;
+  listKey: string;
+  itemKey: string;
+  itemLabel: string;
+  itemPlural: string;
+  displayNameLabel: string;
+  displayNamePlaceholder: string;
+  usernamePlaceholder: string;
+  passwordLabel: string;
+  passwordMinimum: number;
+  passwordMaximum: number;
+  roleField: 'role' | 'accessRole' | null;
+  roleLabel: string;
+  defaultRole: string;
+  roleOptions: Array<FriendlySelectOption<string>>;
+  roleValue: (record: AccessRecord) => string;
+  roleSummary: (record: AccessRecord) => string;
+  createSuccess: string;
+  updateSuccess: string;
+  updatePasswordSuccess: string;
+  activeSuccess: string;
+  inactiveSuccess: string;
+  deleteSuccess: string;
+};
+
+type ManagerAccessSettings = {
+  assetScope: 'all' | 'selected';
+  fuelScope: 'all' | 'selected';
+  canRecordWork: boolean;
+  canScheduleMaintenance: boolean;
+  canRecordFuel: boolean;
+  canRefillFuel: boolean;
+  assetIds: string[];
+  fuelStorageIds: string[];
+};
+
+type ManagerAccessResponse = {
+  ok?: boolean;
+  settings?: ManagerAccessSettings;
+  assets?: Array<{ id: string; title: string; kind: string }>;
+  storages?: Array<{ id: string; name: string; locationLabel: string }>;
+  error?: string;
+};
+
+const DEALER_ROLE_OPTIONS: Array<FriendlySelectOption<string>> = [
+  { value: 'owner', label: 'Owner / Manager', description: 'Full access and problem assignment.' },
+  { value: 'sales', label: 'Sales', description: 'All tools except Client Costs.' },
+  { value: 'parts', label: 'Parts', description: 'No Marketplace or Get Estimate.' },
+  { value: 'technician', label: 'Technician', description: 'Overview and Maintenance only.' },
+];
+
+const OWNER_ROLE_OPTIONS: Array<FriendlySelectOption<string>> = [
+  { value: 'operations', label: 'Operations', description: 'Usage, maintenance, fuel, location, photos and problems.' },
+  { value: 'view_only', label: 'View only', description: 'Can view assets and records without changing anything.' },
+  { value: 'admin', label: 'Owner / Admin', description: 'Full access, including values, finance, Marketplace and deletion.' },
+];
+
+const ASSET_SCOPE_OPTIONS: Array<FriendlySelectOption<ManagerAccessSettings['assetScope']>> = [
+  { value: 'all', label: 'All assets', description: 'Includes every current and future asset.' },
+  { value: 'selected', label: 'Selected assets only', description: 'Choose the exact assets this manager may use.' },
+];
+
+const FUEL_SCOPE_OPTIONS: Array<FriendlySelectOption<ManagerAccessSettings['fuelScope']>> = [
+  { value: 'all', label: 'All fuel tanks', description: 'Includes every current and future fuel tank.' },
+  { value: 'selected', label: 'Selected tanks only', description: 'Choose the exact tanks this manager may use.' },
+];
+
+function dealerRoleLabel(value: unknown): string {
+  const role = String(value ?? '').trim();
+  return DEALER_ROLE_OPTIONS.find((option) => option.value === role)?.label ?? 'Technician';
+}
+
+function ownerRoleLabel(value: unknown): string {
+  const role = String(value ?? '').trim();
+  return OWNER_ROLE_OPTIONS.find((option) => option.value === role)?.label ?? 'Operations';
+}
+
+const DIRECTORY_CONFIGS: Record<DirectoryKind, DirectoryConfig> = {
+  dealer: {
+    eyebrow: 'Dealer account access',
+    title: 'Dealer App Staff',
+    description: 'Create and control the role-based logins used by your Owner, Sales, Parts and Technician staff.',
+    newDescription: 'Create one clear role-based staff login.',
+    manageDescription: 'Edit roles, reset passwords or remove access.',
+    loginLinkLabel: 'Dealer App staff login link',
+    loginPath: '/dealer/login',
+    shareTitle: 'Aim4price Dealer App',
+    shareText: 'Open the Aim4price Dealer App here:',
+    listEndpoint: '/api/dealer/staff',
+    itemEndpoint: (id) => `/api/dealer/staff/${encodeURIComponent(id)}`,
+    listKey: 'staff',
+    itemKey: 'staff',
+    itemLabel: 'Dealer App staff member',
+    itemPlural: 'Dealer App staff logins',
+    displayNameLabel: 'Staff member name',
+    displayNamePlaceholder: 'Example: Sales Manager',
+    usernamePlaceholder: 'example: sales.manager',
+    passwordLabel: 'Password',
+    passwordMinimum: 8,
+    passwordMaximum: 128,
+    roleField: 'role',
+    roleLabel: 'Role',
+    defaultRole: 'technician',
+    roleOptions: DEALER_ROLE_OPTIONS,
+    roleValue: (record) => record.role ?? 'technician',
+    roleSummary: (record) => dealerRoleLabel(record.role),
+    createSuccess: 'Dealer App staff login created.',
+    updateSuccess: 'Dealer App staff login updated.',
+    updatePasswordSuccess: 'Dealer App staff login and password updated.',
+    activeSuccess: 'Dealer App staff login activated.',
+    inactiveSuccess: 'Dealer App staff login deactivated.',
+    deleteSuccess: 'Dealer App staff login deleted.',
+  },
+  owner: {
+    eyebrow: 'Owner account access',
+    title: 'Owner App Users',
+    description: 'Create and control the usernames that can use your Owner App without entering your main account.',
+    newDescription: 'Create one Owner App username and passcode.',
+    manageDescription: 'Edit access levels, reset passcodes or remove users.',
+    loginLinkLabel: 'Owner App login link',
+    loginPath: '/owner-app/login',
+    shareTitle: 'Aim4price Owner App',
+    shareText: 'Open the Aim4price Owner App here:',
+    listEndpoint: '/api/owner-app/users',
+    itemEndpoint: (id) => `/api/owner-app/users/${encodeURIComponent(id)}`,
+    listKey: 'users',
+    itemKey: 'user',
+    itemLabel: 'Owner App user',
+    itemPlural: 'Owner App users',
+    displayNameLabel: 'Display name',
+    displayNamePlaceholder: 'Example: Farm owner',
+    usernamePlaceholder: 'owner.name',
+    passwordLabel: 'Passcode',
+    passwordMinimum: 4,
+    passwordMaximum: 64,
+    roleField: 'accessRole',
+    roleLabel: 'Access',
+    defaultRole: 'operations',
+    roleOptions: OWNER_ROLE_OPTIONS,
+    roleValue: (record) => record.accessRole ?? 'operations',
+    roleSummary: (record) => ownerRoleLabel(record.accessRole),
+    createSuccess: 'Owner App user created.',
+    updateSuccess: 'Owner App user updated.',
+    updatePasswordSuccess: 'Owner App user updated and existing sessions revoked.',
+    activeSuccess: 'Owner App user activated.',
+    inactiveSuccess: 'Owner App user deactivated and existing sessions revoked.',
+    deleteSuccess: 'Owner App user deleted and existing sessions revoked.',
+  },
+  field: {
+    eyebrow: 'Owner operations access',
+    title: 'Field Manager App',
+    description: 'Create mobile access for managers who update machinery, maintenance and fuel while working in the field.',
+    newDescription: 'Create one dedicated Field Manager login.',
+    manageDescription: 'Edit login details, permissions and asset access.',
+    loginLinkLabel: 'Field Manager login link',
+    loginPath: '/field-manager/login',
+    shareTitle: 'Aim4price Field Manager',
+    shareText: 'Open Aim4price Field Manager here:',
+    listEndpoint: '/api/field-managers',
+    itemEndpoint: (id) => `/api/field-managers/${encodeURIComponent(id)}`,
+    listKey: 'managers',
+    itemKey: 'manager',
+    itemLabel: 'Field Manager',
+    itemPlural: 'Field Manager logins',
+    displayNameLabel: 'Manager display name',
+    displayNamePlaceholder: 'Example: Piet Field Manager',
+    usernamePlaceholder: 'example: piet.manager',
+    passwordLabel: 'Password',
+    passwordMinimum: 6,
+    passwordMaximum: 128,
+    roleField: null,
+    roleLabel: '',
+    defaultRole: '',
+    roleOptions: [],
+    roleValue: () => '',
+    roleSummary: () => '',
+    createSuccess: 'Field Manager login created.',
+    updateSuccess: 'Field Manager login updated.',
+    updatePasswordSuccess: 'Field Manager login and password updated.',
+    activeSuccess: 'Field Manager login activated.',
+    inactiveSuccess: 'Field Manager login deactivated.',
+    deleteSuccess: 'Field Manager login deleted.',
+  },
+};
+
+function PlusIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" aria-hidden="true">
+      <path d="M12 5v14M5 12h14" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function UsersIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" aria-hidden="true">
+      <circle cx="9" cy="8" r="3" />
+      <path d="M3.5 20v-1.5A4.5 4.5 0 0 1 8 14h2a4.5 4.5 0 0 1 4.5 4.5V20" strokeLinecap="round" />
+      <path d="M16 6.5a2.7 2.7 0 0 1 0 5.2M16.5 14.2A4 4 0 0 1 20.5 18v1.5" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function normalizeUsername(value: string): string {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, '')
+    .replace(/[^a-z0-9._@-]/g, '')
+    .slice(0, 80);
+}
+
+function formatDateTime(value: string | null): string {
+  if (!value) return 'Not yet';
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return 'Not yet';
+  return new Intl.DateTimeFormat('en-ZA', { dateStyle: 'medium', timeStyle: 'short' }).format(parsed);
+}
+
+function readRecordList(payload: ApiPayload | null, key: string): AccessRecord[] {
+  const value = payload?.[key];
+  return Array.isArray(value) ? value as AccessRecord[] : [];
+}
+
+function readRecord(payload: ApiPayload | null, key: string): AccessRecord | null {
+  const value = payload?.[key];
+  return value && typeof value === 'object' && !Array.isArray(value) ? value as AccessRecord : null;
+}
+
+function extractError(payload: ApiPayload | null, fallback: string): string {
+  return typeof payload?.error === 'string' && payload.error.trim() ? payload.error.trim() : fallback;
+}
+
+function emptyDraft(config: DirectoryConfig): AccessDraft {
+  return {
+    displayName: '',
+    username: '',
+    password: '',
+    role: config.defaultRole,
+  };
+}
+
+function draftFromRecord(record: AccessRecord, config: DirectoryConfig): AccessDraft {
+  return {
+    displayName: record.displayName,
+    username: record.username,
+    password: '',
+    role: config.roleValue(record),
+  };
+}
+
+function AppAccessModal({
+  open,
+  eyebrow,
+  title,
+  description,
+  wide = false,
+  closeDisabled = false,
+  onClose,
+  children,
+}: {
+  open: boolean;
+  eyebrow: string;
+  title: string;
+  description: string;
+  wide?: boolean;
+  closeDisabled?: boolean;
+  onClose: () => void;
+  children: ReactNode;
+}) {
+  const titleId = useId();
+  const descriptionId = useId();
+  const closeRef = useRef<HTMLButtonElement>(null);
+  const onCloseRef = useRef(onClose);
+  const closeDisabledRef = useRef(closeDisabled);
+  onCloseRef.current = onClose;
+  closeDisabledRef.current = closeDisabled;
+
+  useEffect(() => {
+    if (!open) return undefined;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const focusFrame = window.requestAnimationFrame(() => closeRef.current?.focus());
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape' && !closeDisabledRef.current) onCloseRef.current();
+    }
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.cancelAnimationFrame(focusFrame);
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [open]);
+
+  if (!open) return null;
+
+  return (
+    <div className={styles.modalOverlay}>
+      <button
+        type="button"
+        className={styles.modalBackdrop}
+        aria-label="Close dialog"
+        onClick={() => { if (!closeDisabled) onClose(); }}
+      />
+      <section
+        className={`${styles.modal} ${wide ? styles.modalWide : ''}`}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        aria-describedby={descriptionId}
+      >
+        <header className={styles.modalHeader}>
+          <span className={styles.modalEyebrow}>{eyebrow}</span>
+          <h2 id={titleId}>{title}</h2>
+          <p id={descriptionId}>{description}</p>
+          <button
+            ref={closeRef}
+            type="button"
+            className={styles.closeButton}
+            onClick={onClose}
+            disabled={closeDisabled}
+            aria-label="Close dialog"
+          >
+            ×
+          </button>
+        </header>
+        <div className={styles.modalBody}>{children}</div>
+      </section>
+    </div>
+  );
+}
+
+function AccessLauncher({
+  config,
+  count,
+  loading,
+  loginLink,
+  onNew,
+  onManage,
+  onCopy,
+  onShare,
+}: {
+  config: DirectoryConfig;
+  count: number;
+  loading: boolean;
+  loginLink: string;
+  onNew: () => void;
+  onManage: () => void;
+  onCopy: () => void;
+  onShare: () => void;
+}) {
+  return (
+    <section className={styles.launcher} aria-labelledby="app-access-title">
+      <div className={styles.launcherIntro}>
+        <span className={styles.eyebrow}>{config.eyebrow}</span>
+        <h1 id="app-access-title">{config.title}</h1>
+        <p>{config.description}</p>
+      </div>
+
+      <div className={styles.actionGrid} aria-label="Choose an access action">
+        <button type="button" className={`${styles.actionButton} ${styles.actionButtonNew}`} onClick={onNew}>
+          <span className={styles.actionIcon}><PlusIcon /></span>
+          <span className={styles.actionCopy}>
+            <strong>New</strong>
+            <small>{config.newDescription}</small>
+          </span>
+          <span className={styles.actionMeta}>
+            <span className={styles.actionArrow} aria-hidden="true">›</span>
+          </span>
+        </button>
+
+        <button type="button" className={`${styles.actionButton} ${styles.actionButtonManage}`} onClick={onManage}>
+          <span className={styles.actionIcon}><UsersIcon /></span>
+          <span className={styles.actionCopy}>
+            <strong>Manage</strong>
+            <small>{config.manageDescription}</small>
+          </span>
+          <span className={styles.actionMeta}>
+            <span className={styles.countPill}>{loading ? '…' : count}</span>
+            <span className={styles.actionArrow} aria-hidden="true">›</span>
+          </span>
+        </button>
+      </div>
+
+      <div className={styles.loginStrip}>
+        <div className={styles.loginCopy}>
+          <span className={styles.loginLabel}>{config.loginLinkLabel}</span>
+          <code>{loginLink}</code>
+        </div>
+        <div className={styles.loginActions}>
+          <button type="button" className={styles.linkButton} onClick={onCopy}>Copy link</button>
+          <button type="button" className={`${styles.linkButton} ${styles.linkButtonPrimary}`} onClick={onShare}>Share link</button>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function InlineNotice({ notice }: { notice: { tone: NoticeTone; message: string } | null }) {
+  if (!notice) return null;
+  return (
+    <div className={`${baseStyles.notice} ${notice.tone === 'success' ? baseStyles.noticeSuccess : baseStyles.noticeError} ${styles.noticeInModal}`} role={notice.tone === 'error' ? 'alert' : 'status'}>
+      {notice.message}
+    </div>
+  );
+}
+
+function AppAccessManagement({ kind }: { kind: DirectoryKind }) {
+  const config = DIRECTORY_CONFIGS[kind];
+  const [records, setRecords] = useState<AccessRecord[]>([]);
+  const [draft, setDraft] = useState<AccessDraft>(() => emptyDraft(config));
+  const [editDrafts, setEditDrafts] = useState<Record<string, AccessDraft>>({});
+  const [activeFlow, setActiveFlow] = useState<ActiveFlow>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [creating, setCreating] = useState(false);
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [showCreatePassword, setShowCreatePassword] = useState(false);
+  const [visiblePasswords, setVisiblePasswords] = useState<Record<string, boolean>>({});
+  const [notice, setNotice] = useState<{ tone: NoticeTone; message: string } | null>(null);
+  const [createUsernameError, setCreateUsernameError] = useState('');
+  const [editUsernameErrors, setEditUsernameErrors] = useState<Record<string, string>>({});
+  const [loginLink, setLoginLink] = useState(config.loginPath);
+
+  const selectedRecord = useMemo(
+    () => records.find((record) => record.id === selectedId) ?? null,
+    [records, selectedId],
+  );
+
+  useEffect(() => {
+    setLoginLink(`${window.location.origin}${config.loginPath}`);
+  }, [config.loginPath]);
+
+  useEffect(() => {
+    void loadRecords();
+  }, []);
+
+  useEffect(() => {
+    if (!notice) return undefined;
+    const timeout = window.setTimeout(() => setNotice(null), 4500);
+    return () => window.clearTimeout(timeout);
+  }, [notice]);
+
+  async function loadRecords() {
+    setLoading(true);
+    try {
+      const response = await fetch(config.listEndpoint, { credentials: 'include', cache: 'no-store' });
+      const payload = await response.json().catch(() => null) as ApiPayload | null;
+      if (!response.ok || !payload?.ok) throw new Error(extractError(payload, `Failed to load ${config.itemPlural}.`));
+      const nextRecords = readRecordList(payload, config.listKey);
+      setRecords(nextRecords);
+      setEditDrafts(Object.fromEntries(nextRecords.map((record) => [record.id, draftFromRecord(record, config)])));
+    } catch (error) {
+      setNotice({ tone: 'error', message: error instanceof Error ? error.message : `Failed to load ${config.itemPlural}.` });
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function openFlow(flow: Exclude<ActiveFlow, null>) {
+    setNotice(null);
+    setSelectedId(null);
+    setActiveFlow(flow);
+  }
+
+  function closeFlow() {
+    if (creating || busyId || deletingId) return;
+    setActiveFlow(null);
+    setSelectedId(null);
+  }
+
+  function updateEditDraft(id: string, changes: Partial<AccessDraft>) {
+    setEditDrafts((current) => ({
+      ...current,
+      [id]: { ...(current[id] ?? emptyDraft(config)), ...changes },
+    }));
+  }
+
+  async function createRecord(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const username = normalizeUsername(draft.username);
+    if (!draft.displayName.trim()) {
+      setNotice({ tone: 'error', message: `Enter the ${config.displayNameLabel.toLowerCase()}.` });
+      return;
+    }
+    if (username.length < 3) {
+      setNotice({ tone: 'error', message: 'Enter a username with at least 3 characters.' });
+      return;
+    }
+    if (draft.password.length < config.passwordMinimum) {
+      setNotice({ tone: 'error', message: `Enter a ${config.passwordLabel.toLowerCase()} with at least ${config.passwordMinimum} characters.` });
+      return;
+    }
+
+    setCreateUsernameError('');
+    setCreating(true);
+    try {
+      const body: Record<string, unknown> = {
+        displayName: draft.displayName.trim(),
+        username,
+        password: draft.password,
+      };
+      if (config.roleField) body[config.roleField] = draft.role;
+
+      const response = await fetch(config.listEndpoint, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const payload = await response.json().catch(() => null) as ApiPayload | null;
+      const created = readRecord(payload, config.itemKey);
+      if (!response.ok || !payload?.ok || !created) throw new Error(extractError(payload, `Failed to create ${config.itemLabel}.`));
+
+      setRecords((current) => [created, ...current]);
+      setEditDrafts((current) => ({ ...current, [created.id]: draftFromRecord(created, config) }));
+      setDraft(emptyDraft(config));
+      setShowCreatePassword(false);
+      setCreateUsernameError('');
+      setActiveFlow(null);
+      setNotice({ tone: 'success', message: config.createSuccess });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : `Failed to create ${config.itemLabel}.`;
+      if (/username is already in use/i.test(message)) {
+        setCreateUsernameError(message);
+        setNotice(null);
+      } else {
+        setNotice({ tone: 'error', message });
+      }
+    } finally {
+      setCreating(false);
+    }
+  }
+
+  async function patchRecord(record: AccessRecord, changes: Record<string, unknown>, successMessage: string) {
+    setEditUsernameErrors((current) => ({ ...current, [record.id]: '' }));
+    setBusyId(record.id);
+    try {
+      const response = await fetch(config.itemEndpoint(record.id), {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(changes),
+      });
+      const payload = await response.json().catch(() => null) as ApiPayload | null;
+      const updated = readRecord(payload, config.itemKey);
+      if (!response.ok || !payload?.ok || !updated) throw new Error(extractError(payload, `Failed to update ${config.itemLabel}.`));
+
+      setRecords((current) => current.map((entry) => entry.id === updated.id ? updated : entry));
+      setEditDrafts((current) => ({ ...current, [updated.id]: draftFromRecord(updated, config) }));
+      setVisiblePasswords((current) => ({ ...current, [updated.id]: false }));
+      setEditUsernameErrors((current) => ({ ...current, [updated.id]: '' }));
+      setNotice({ tone: 'success', message: successMessage });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : `Failed to update ${config.itemLabel}.`;
+      if (/username is already in use/i.test(message)) {
+        setEditUsernameErrors((current) => ({ ...current, [record.id]: message }));
+        setNotice(null);
+      } else {
+        setNotice({ tone: 'error', message });
+      }
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function saveRecord(event: FormEvent<HTMLFormElement>, record: AccessRecord) {
+    event.preventDefault();
+    const edit = editDrafts[record.id];
+    if (!edit) return;
+    const username = normalizeUsername(edit.username);
+    if (!edit.displayName.trim() || username.length < 3) {
+      setNotice({ tone: 'error', message: 'Enter a display name and a username with at least 3 characters.' });
+      return;
+    }
+
+    const changes: Record<string, unknown> = {
+      displayName: edit.displayName.trim(),
+      username,
+    };
+    if (config.roleField) changes[config.roleField] = edit.role;
+    if (edit.password) {
+      if (edit.password.length < config.passwordMinimum) {
+        setNotice({ tone: 'error', message: `The new ${config.passwordLabel.toLowerCase()} must contain at least ${config.passwordMinimum} characters.` });
+        return;
+      }
+      changes.password = edit.password;
+    }
+
+    await patchRecord(record, changes, edit.password ? config.updatePasswordSuccess : config.updateSuccess);
+  }
+
+  async function toggleRecord(record: AccessRecord) {
+    await patchRecord(record, { isActive: !record.isActive }, record.isActive ? config.inactiveSuccess : config.activeSuccess);
+  }
+
+  async function deleteRecord(record: AccessRecord) {
+    const confirmed = window.confirm(`Delete the login for ${record.displayName}? This cannot be undone.`);
+    if (!confirmed) return;
+    setDeletingId(record.id);
+    try {
+      const response = await fetch(config.itemEndpoint(record.id), { method: 'DELETE', credentials: 'include' });
+      const payload = await response.json().catch(() => null) as ApiPayload | null;
+      if (!response.ok || !payload?.ok) throw new Error(extractError(payload, `Failed to delete ${config.itemLabel}.`));
+      setRecords((current) => current.filter((entry) => entry.id !== record.id));
+      setEditDrafts((current) => {
+        const next = { ...current };
+        delete next[record.id];
+        return next;
+      });
+      setSelectedId(null);
+      setNotice({ tone: 'success', message: config.deleteSuccess });
+    } catch (error) {
+      setNotice({ tone: 'error', message: error instanceof Error ? error.message : `Failed to delete ${config.itemLabel}.` });
+    } finally {
+      setDeletingId(null);
+    }
+  }
+
+  async function copyLoginLink() {
+    try {
+      await navigator.clipboard.writeText(loginLink);
+      setNotice({ tone: 'success', message: `${config.loginLinkLabel} copied.` });
+    } catch {
+      setNotice({ tone: 'error', message: 'Copy failed. Use the link shown on this page.' });
+    }
+  }
+
+  async function shareLoginLink() {
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: config.shareTitle, text: config.shareText, url: loginLink });
+        return;
+      } catch {
+        // Clipboard fallback below.
+      }
+    }
+    await copyLoginLink();
+  }
+
+  function renderRoleSelect(value: string, onChange: (value: string) => void) {
+    if (!config.roleField || !config.roleOptions.length) return null;
+    return (
+      <FriendlySelect
+        label={config.roleLabel}
+        value={value}
+        options={config.roleOptions}
+        onChange={onChange}
+        className={refinementStyles.roleSelect}
+      />
+    );
+  }
+
+  function renderRecordSummary(record: AccessRecord, includeManageButton: boolean) {
+    const roleSummary = config.roleSummary(record);
+    return (
+      <div className={baseStyles.managerSummary}>
+        <div className={baseStyles.managerIdentity}>
+          <strong>{record.displayName}</strong>
+          <span>{record.username}</span>
+          {roleSummary ? <small className={baseStyles.rolePill}>{roleSummary}</small> : null}
+        </div>
+        <div className={baseStyles.managerSummaryMeta} aria-label={`${config.itemLabel} dates`}>
+          <span><b>Last login</b>{formatDateTime(record.lastLoginAtIso)}</span>
+          <span><b>Updated</b>{formatDateTime(record.updatedAtIso)}</span>
+        </div>
+        <span className={`${baseStyles.statusText} ${record.isActive ? baseStyles.statusActive : baseStyles.statusInactive}`}>
+          {record.isActive ? 'Active' : 'Inactive'}
+        </span>
+        {includeManageButton ? (
+          <button type="button" className={baseStyles.manageButton} onClick={() => setSelectedId(record.id)}>
+            Manage <span aria-hidden="true">›</span>
+          </button>
+        ) : null}
+      </div>
+    );
+  }
+
+  const selectedEdit = selectedRecord ? editDrafts[selectedRecord.id] ?? draftFromRecord(selectedRecord, config) : null;
+  const isSelectedBusy = selectedRecord ? busyId === selectedRecord.id || deletingId === selectedRecord.id : false;
+
+  return (
+    <main className={baseStyles.page}>
+      <AppHeader active="none" />
+      <section className={baseStyles.shell}>
+        <button type="button" className={baseStyles.backButton} onClick={() => window.location.assign('/account')}>
+          ← Back to account
+        </button>
+
+        <AccessLauncher
+          config={config}
+          count={records.length}
+          loading={loading}
+          loginLink={loginLink}
+          onNew={() => openFlow('new')}
+          onManage={() => openFlow('manage')}
+          onCopy={() => void copyLoginLink()}
+          onShare={() => void shareLoginLink()}
+        />
+
+        {notice ? (
+          <div className={`${baseStyles.notice} ${notice.tone === 'success' ? baseStyles.noticeSuccess : baseStyles.noticeError}`} role={notice.tone === 'error' ? 'alert' : 'status'}>
+            {notice.message}
+          </div>
+        ) : null}
+      </section>
+
+      <AppAccessModal
+        open={activeFlow === 'new'}
+        eyebrow="New login"
+        title={`New ${config.itemLabel}`}
+        description={`Enter the login details, then create the ${config.itemLabel.toLowerCase()}.`}
+        closeDisabled={creating}
+        onClose={closeFlow}
+      >
+        <InlineNotice notice={notice} />
+        <section className={`${baseStyles.card} ${styles.surface}`}>
+          <div className={styles.surfaceHeader}>
+            <h3>Login details</h3>
+            <p>Complete each field below. You can manage the login after it has been created.</p>
+          </div>
+          <form className={baseStyles.form} onSubmit={createRecord}>
+            <label className={baseStyles.field}>
+              <span>{config.displayNameLabel}</span>
+              <input
+                value={draft.displayName}
+                onChange={(event) => setDraft((current) => ({ ...current, displayName: event.target.value }))}
+                placeholder={config.displayNamePlaceholder}
+                autoComplete="off"
+              />
+            </label>
+            <label className={baseStyles.field}>
+              <span>Username</span>
+              <input
+                value={draft.username}
+                onChange={(event) => {
+                  setDraft((current) => ({ ...current, username: normalizeUsername(event.target.value) }));
+                  setCreateUsernameError('');
+                }}
+                placeholder={config.usernamePlaceholder}
+                autoCapitalize="none"
+                autoComplete="off"
+                aria-invalid={Boolean(createUsernameError)}
+              />
+              {createUsernameError ? <small className={baseStyles.fieldError} role="alert">{createUsernameError}</small> : null}
+            </label>
+            {renderRoleSelect(draft.role, (role) => setDraft((current) => ({ ...current, role })))}
+            <div className={baseStyles.field}>
+              <label className={baseStyles.fieldLabel} htmlFor={`${kind}-create-password`}>{config.passwordLabel}</label>
+              <div className={baseStyles.passwordInputWrap}>
+                <input
+                  id={`${kind}-create-password`}
+                  type={showCreatePassword ? 'text' : 'password'}
+                  value={draft.password}
+                  onChange={(event) => setDraft((current) => ({ ...current, password: event.target.value.slice(0, config.passwordMaximum) }))}
+                  placeholder={`Minimum ${config.passwordMinimum} characters`}
+                  minLength={config.passwordMinimum}
+                  maxLength={config.passwordMaximum}
+                  autoComplete="new-password"
+                />
+                <button type="button" className={baseStyles.passwordToggleButton} onClick={() => setShowCreatePassword((current) => !current)}>
+                  {showCreatePassword ? 'Hide' : 'Show'}
+                </button>
+              </div>
+            </div>
+            <button type="submit" className={baseStyles.primaryButton} disabled={creating}>
+              {creating ? 'Creating…' : 'Create login'}
+            </button>
+          </form>
+        </section>
+      </AppAccessModal>
+
+      <AppAccessModal
+        open={activeFlow === 'manage'}
+        eyebrow="Manage access"
+        title={selectedRecord ? `Manage ${selectedRecord.displayName}` : config.itemPlural}
+        description={selectedRecord ? 'Update this individual login, its status and its access.' : 'Choose one login to update, reset, activate, deactivate or delete.'}
+        wide
+        closeDisabled={Boolean(busyId || deletingId)}
+        onClose={closeFlow}
+      >
+        <InlineNotice notice={notice} />
+        {!selectedRecord ? (
+          <section className={`${baseStyles.card} ${styles.surface}`}>
+            <div className={styles.directoryHeader}>
+              <strong>{loading ? `Loading ${config.itemPlural.toLowerCase()}…` : `${records.length} ${records.length === 1 ? 'login' : 'logins'}`}</strong>
+              <span>Select one person to continue.</span>
+            </div>
+            {loading ? <div className={styles.emptyState}><p>Loading access details…</p></div> : null}
+            {!loading && !records.length ? (
+              <div className={styles.emptyState}>
+                <strong>No logins created yet</strong>
+                <p>Create the first login before opening the management flow.</p>
+                <button type="button" className={styles.emptyAction} onClick={() => openFlow('new')}>Create first login</button>
+              </div>
+            ) : null}
+            {!loading && records.length ? (
+              <div className={`${baseStyles.managerList} ${styles.directoryList}`}>
+                {records.map((record) => (
+                  <article key={record.id} className={`${baseStyles.managerCard} ${styles.directoryCard}`}>
+                    {renderRecordSummary(record, true)}
+                  </article>
+                ))}
+              </div>
+            ) : null}
+          </section>
+        ) : selectedEdit ? (
+          <>
+            <button type="button" className={styles.modalBackButton} onClick={() => setSelectedId(null)} disabled={isSelectedBusy}>
+              ← Back to all logins
+            </button>
+            <article className={`${baseStyles.managerCard} ${baseStyles.managerCardExpanded} ${styles.editorCard}`}>
+              {renderRecordSummary(selectedRecord, false)}
+              <div className={baseStyles.managerDropdown}>
+                <p className={refinementStyles.focusNote}>
+                  <span className={refinementStyles.focusDot} aria-hidden="true" />
+                  Update this login, save the changes, then return to the list.
+                </p>
+                <div className={refinementStyles.sectionHeading}>
+                  <span className={refinementStyles.stepNumber}>1</span>
+                  <div className={refinementStyles.sectionHeadingCopy}>
+                    <h3>Login details and status</h3>
+                    <p>Change the name, username, role or password without affecting other app users.</p>
+                  </div>
+                </div>
+                <form className={baseStyles.inlineForm} onSubmit={(event) => void saveRecord(event, selectedRecord)}>
+                  <label className={baseStyles.compactField}>
+                    <span>{config.displayNameLabel}</span>
+                    <input value={selectedEdit.displayName} onChange={(event) => updateEditDraft(selectedRecord.id, { displayName: event.target.value })} />
+                  </label>
+                  <label className={baseStyles.compactField}>
+                    <span>Username</span>
+                    <input
+                      value={selectedEdit.username}
+                      onChange={(event) => {
+                        updateEditDraft(selectedRecord.id, { username: normalizeUsername(event.target.value) });
+                        setEditUsernameErrors((current) => ({ ...current, [selectedRecord.id]: '' }));
+                      }}
+                      aria-invalid={Boolean(editUsernameErrors[selectedRecord.id])}
+                    />
+                    {editUsernameErrors[selectedRecord.id] ? <small className={baseStyles.fieldError} role="alert">{editUsernameErrors[selectedRecord.id]}</small> : null}
+                  </label>
+                  {renderRoleSelect(selectedEdit.role, (role) => updateEditDraft(selectedRecord.id, { role }))}
+                  <div className={baseStyles.compactField}>
+                    <label className={baseStyles.fieldLabel} htmlFor={`${kind}-password-${selectedRecord.id}`}>New {config.passwordLabel.toLowerCase()}</label>
+                    <div className={baseStyles.passwordInputWrap}>
+                      <input
+                        id={`${kind}-password-${selectedRecord.id}`}
+                        type={visiblePasswords[selectedRecord.id] ? 'text' : 'password'}
+                        value={selectedEdit.password}
+                        onChange={(event) => updateEditDraft(selectedRecord.id, { password: event.target.value.slice(0, config.passwordMaximum) })}
+                        placeholder={`Leave blank to keep the current ${config.passwordLabel.toLowerCase()}`}
+                        minLength={config.passwordMinimum}
+                        maxLength={config.passwordMaximum}
+                        autoComplete="new-password"
+                      />
+                      <button type="button" className={baseStyles.passwordToggleButton} onClick={() => setVisiblePasswords((current) => ({ ...current, [selectedRecord.id]: !current[selectedRecord.id] }))}>
+                        {visiblePasswords[selectedRecord.id] ? 'Hide' : 'Show'}
+                      </button>
+                    </div>
+                    <p className={baseStyles.fieldHint}>Leave blank to keep the current {config.passwordLabel.toLowerCase()}.</p>
+                  </div>
+                  <div className={baseStyles.managerActions}>
+                    <button type="submit" className={baseStyles.secondaryButton} disabled={isSelectedBusy}>
+                      {busyId === selectedRecord.id ? 'Saving…' : 'Save changes'}
+                    </button>
+                    <button
+                      type="button"
+                      className={selectedRecord.isActive ? baseStyles.dangerButton : baseStyles.primaryButton}
+                      disabled={isSelectedBusy}
+                      onClick={() => void toggleRecord(selectedRecord)}
+                    >
+                      {selectedRecord.isActive ? 'Deactivate' : 'Activate'}
+                    </button>
+                    <button type="button" className={baseStyles.deleteButton} disabled={isSelectedBusy} onClick={() => void deleteRecord(selectedRecord)}>
+                      {deletingId === selectedRecord.id ? 'Deleting…' : 'Delete'}
+                    </button>
+                  </div>
+                </form>
+                {kind === 'field' ? <FieldManagerAccessPanel managerId={selectedRecord.id} /> : null}
+              </div>
+            </article>
+          </>
+        ) : null}
+      </AppAccessModal>
+    </main>
+  );
+}
+
+function FieldManagerAccessPanel({ managerId }: { managerId: string }) {
+  const [settings, setSettings] = useState<ManagerAccessSettings | null>(null);
+  const [assets, setAssets] = useState<NonNullable<ManagerAccessResponse['assets']>>([]);
+  const [storages, setStorages] = useState<NonNullable<ManagerAccessResponse['storages']>>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState('');
+
+  useEffect(() => {
+    let active = true;
+    void fetch(`/api/field-managers/${encodeURIComponent(managerId)}/access`, { credentials: 'include', cache: 'no-store' })
+      .then(async (response) => ({ response, payload: await response.json().catch(() => null) as ManagerAccessResponse | null }))
+      .then(({ response, payload }) => {
+        if (!active) return;
+        if (!response.ok || !payload?.ok || !payload.settings) throw new Error(payload?.error || 'Failed to load access.');
+        setSettings(payload.settings);
+        setAssets(payload.assets ?? []);
+        setStorages(payload.storages ?? []);
+      })
+      .catch((error) => { if (active) setMessage(error instanceof Error ? error.message : 'Failed to load access.'); })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, [managerId]);
+
+  function toggleId(key: 'assetIds' | 'fuelStorageIds', id: string) {
+    setSettings((current) => current ? {
+      ...current,
+      [key]: current[key].includes(id) ? current[key].filter((value) => value !== id) : [...current[key], id],
+    } : current);
+  }
+
+  async function saveAccess() {
+    if (!settings) return;
+    setSaving(true);
+    setMessage('');
+    try {
+      const response = await fetch(`/api/field-managers/${encodeURIComponent(managerId)}/access`, {
+        method: 'PUT',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(settings),
+      });
+      const payload = await response.json().catch(() => null) as ManagerAccessResponse | null;
+      if (!response.ok || !payload?.ok || !payload.settings) throw new Error(payload?.error || 'Failed to save access.');
+      setSettings(payload.settings);
+      setMessage('Access saved.');
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Failed to save access.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (loading) return <div className={styles.accessPanel}><p className={styles.accessMessage}>Loading app access…</p></div>;
+  if (!settings) return <div className={styles.accessPanel}><p className={styles.accessMessage}>{message || 'Access could not be loaded.'}</p></div>;
+
+  return (
+    <section className={styles.accessPanel} aria-label="Field Manager permissions">
+      <div className={refinementStyles.sectionHeading}>
+        <span className={refinementStyles.stepNumber}>2</span>
+        <div className={refinementStyles.sectionHeadingCopy}>
+          <h3>App access</h3>
+          <p>Choose what this manager can do and which assets or fuel tanks they may use.</p>
+        </div>
+      </div>
+
+      <div className={styles.permissionGrid}>
+        {([
+          ['canRecordWork', 'Check, service and repair'],
+          ['canScheduleMaintenance', 'Schedule maintenance'],
+          ['canRecordFuel', 'Fuel assets'],
+          ['canRefillFuel', 'Refill fuel tanks'],
+        ] as const).map(([key, label]) => (
+          <label className={styles.permissionChoice} key={key}>
+            <input type="checkbox" checked={settings[key]} onChange={(event) => setSettings((current) => current ? { ...current, [key]: event.target.checked } : current)} />
+            <span>{label}</span>
+          </label>
+        ))}
+      </div>
+
+      <div className={styles.accessColumns}>
+        <div className={styles.accessColumn}>
+          <FriendlySelect
+            label="Assets"
+            value={settings.assetScope}
+            options={ASSET_SCOPE_OPTIONS}
+            onChange={(assetScope) => setSettings((current) => current ? { ...current, assetScope } : current)}
+            className={refinementStyles.accessSelect}
+          />
+          {settings.assetScope === 'selected' ? (
+            <div className={styles.accessChecklist}>
+              {assets.length ? assets.map((asset) => (
+                <label key={asset.id}>
+                  <input type="checkbox" checked={settings.assetIds.includes(asset.id)} onChange={() => toggleId('assetIds', asset.id)} />
+                  <span><strong>{asset.title}</strong><small>{asset.kind}</small></span>
+                </label>
+              )) : <p className={styles.accessMessage}>No assets available.</p>}
+            </div>
+          ) : null}
+        </div>
+
+        <div className={styles.accessColumn}>
+          <FriendlySelect
+            label="Fuel tanks"
+            value={settings.fuelScope}
+            options={FUEL_SCOPE_OPTIONS}
+            onChange={(fuelScope) => setSettings((current) => current ? { ...current, fuelScope } : current)}
+            className={refinementStyles.accessSelect}
+          />
+          {settings.fuelScope === 'selected' ? (
+            <div className={styles.accessChecklist}>
+              {storages.length ? storages.map((storage) => (
+                <label key={storage.id}>
+                  <input type="checkbox" checked={settings.fuelStorageIds.includes(storage.id)} onChange={() => toggleId('fuelStorageIds', storage.id)} />
+                  <span><strong>{storage.name}</strong><small>{storage.locationLabel || 'No location saved'}</small></span>
+                </label>
+              )) : <p className={styles.accessMessage}>No fuel tanks available.</p>}
+            </div>
+          ) : null}
+        </div>
+      </div>
+
+      {message ? <p className={styles.accessMessage}>{message}</p> : null}
+      <button type="button" className={baseStyles.primaryButton} onClick={() => void saveAccess()} disabled={saving}>
+        {saving ? 'Saving access…' : 'Save access'}
+      </button>
+    </section>
+  );
+}
+
+export function DealerAppAccessManagement() {
+  return <AppAccessManagement kind="dealer" />;
+}
+
+export function OwnerAppAccessManagement() {
+  return <AppAccessManagement kind="owner" />;
+}
+
+export function FieldManagerAppAccessManagement() {
+  return <AppAccessManagement kind="field" />;
+}
