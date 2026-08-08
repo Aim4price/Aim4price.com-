@@ -58,6 +58,7 @@ test("the dashboard prioritises headline metrics and collapses optional detail",
   assert.match(dashboard, /Live Aim4price activity/);
   assert.match(dashboard, /At a glance/);
   assert.match(dashboard, /Growth and engagement/);
+  assert.match(dashboard, /Asset workspace adoption/);
   assert.match(dashboard, /<details className=\{styles\.detailsSection\}>/);
   assert.match(dashboard, /Detailed product activity/);
   assert.match(dashboard, /styles\.adminButtonActive/);
