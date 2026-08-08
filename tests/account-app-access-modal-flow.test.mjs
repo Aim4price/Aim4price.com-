@@ -46,7 +46,10 @@ test('shared access flows preserve each app login type and its existing controls
 });
 
 test('access launcher and dialogs stay large, focused and responsive', async () => {
-  const styles = await read('app/account/app-access-management.module.css');
+  const [shared, styles] = await Promise.all([
+    read('app/account/app-access-management-client.tsx'),
+    read('app/account/app-access-management.module.css'),
+  ]);
 
   assert.match(styles, /\.actionGrid \{[\s\S]*?grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
   assert.match(styles, /\.actionButton \{[\s\S]*?min-height: clamp\(9rem, 14vw, 11\.5rem\)/);
@@ -54,4 +57,9 @@ test('access launcher and dialogs stay large, focused and responsive', async () 
   assert.match(styles, /\.modalBody \{[\s\S]*?overflow-y: auto/);
   assert.match(styles, /\.modalWide \{[\s\S]*?width: min\(100%, 72rem\)/);
   assert.match(styles, /@media \(max-width: 640px\)[\s\S]*?\.actionGrid \{[\s\S]*?grid-template-columns: 1fr/);
+
+  assert.match(shared, /const onCloseRef = useRef\(onClose\)/);
+  assert.match(shared, /const closeDisabledRef = useRef\(closeDisabled\)/);
+  assert.match(shared, /if \(event\.key === 'Escape' && !closeDisabledRef\.current\) onCloseRef\.current\(\)/);
+  assert.match(shared, /\}, \[open\]\);/);
 });
