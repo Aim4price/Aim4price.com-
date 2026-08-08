@@ -17,7 +17,9 @@ import {
   calculateServicePlan,
   calculateTradeValue,
   calculateUptimeReserve,
+  calculateVatSummary,
   type TradeMode,
+  type VatTreatment,
 } from "../../../lib/admin-lifecycle-calculator";
 import styles from "./page.module.css";
 
@@ -40,6 +42,7 @@ type CalculatorState = {
   termMonths: number;
   balloon: number;
   financeFees: number;
+  vatTreatment: VatTreatment;
   packageOption: FinancePackage;
   serviceIntervalHours: number;
   serviceCost: number;
@@ -94,6 +97,7 @@ const INITIAL_STATE: CalculatorState = {
   termMonths: 60,
   balloon: 0,
   financeFees: 0,
+  vatTreatment: "included",
   packageOption: "standard",
   serviceIntervalHours: 250,
   serviceCost: 8_000,
@@ -321,6 +325,43 @@ function Toggle({
   );
 }
 
+function VatTreatmentControl({
+  value,
+  onChange,
+}: {
+  value: VatTreatment;
+  onChange: (value: VatTreatment) => void;
+}) {
+  return (
+    <div className={styles.vatControl}>
+      <div>
+        <strong>Are the entered prices VAT inclusive?</strong>
+        <small>
+          VAT excluded adds 15% to the asset, service-plan and maintenance-reserve amounts.
+        </small>
+      </div>
+      <div className={styles.vatButtons} role="group" aria-label="VAT treatment">
+        <button
+          type="button"
+          className={value === "included" ? styles.vatButtonActive : ""}
+          aria-pressed={value === "included"}
+          onClick={() => onChange("included")}
+        >
+          VAT included
+        </button>
+        <button
+          type="button"
+          className={value === "excluded" ? styles.vatButtonActive : ""}
+          aria-pressed={value === "excluded"}
+          onClick={() => onChange("excluded")}
+        >
+          VAT excluded
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function Metric({
   label,
   value,
@@ -384,6 +425,14 @@ export default function LifecycleCalculatorClient() {
     }));
   }
 
+  function updateReserveAmount(value: number) {
+    setState((current) => ({
+      ...current,
+      reserveMode: "fixed",
+      fixedReserveAmount: value,
+    }));
+  }
+
   function moveToStep(step: number) {
     const nextStep = Math.min(resultsStep, Math.max(0, step));
     setActiveStep(nextStep);
@@ -432,22 +481,62 @@ export default function LifecycleCalculatorClient() {
             : true;
 
   const model = useMemo(() => {
-    const servicePlan = calculateServicePlan({
+    const assetVat = calculateVatSummary(
+      state.tractorPrice,
+      state.vatTreatment,
+    );
+    const rawServicePlan = calculateServicePlan({
       serviceIntervalHours: state.serviceIntervalHours,
       expectedAnnualHours: state.annualHours,
       costPerService: state.serviceCost,
       planYears: state.servicePlanYears,
       negotiatedAmount: state.negotiatedServicePlan,
     });
-    const reserve = calculateUptimeReserve({
+    const servicePackageVat = calculateVatSummary(
+      rawServicePlan.packageAmount,
+      state.vatTreatment,
+    );
+    const servicePlan = {
+      ...rawServicePlan,
+      calculatedAmount: calculateVatSummary(
+        rawServicePlan.calculatedAmount,
+        state.vatTreatment,
+      ).grossAmount,
+      packageAmount: servicePackageVat.grossAmount,
+    };
+    const rawReserve = calculateUptimeReserve({
       mode: state.reserveMode,
       costPerEvent: state.reserveCostPerEvent,
       eventsPerYear: state.reserveEventsPerYear,
       postWarrantyYears: state.postWarrantyYears,
       fixedAmount: state.fixedReserveAmount,
     });
+    const reservePackageVat = calculateVatSummary(
+      rawReserve.packageAmount,
+      state.vatTreatment,
+    );
+    const reserve = {
+      ...rawReserve,
+      calculatedAmount: calculateVatSummary(
+        rawReserve.calculatedAmount,
+        state.vatTreatment,
+      ).grossAmount,
+      packageAmount: reservePackageVat.grossAmount,
+    };
+    const serviceCostWithVat = calculateVatSummary(
+      state.serviceCost,
+      state.vatTreatment,
+    ).grossAmount;
+    const reserveCostWithVat = calculateVatSummary(
+      state.reserveCostPerEvent,
+      state.vatTreatment,
+    ).grossAmount;
+    const financedVatAmount =
+      assetVat.vatAmount +
+      (includesService ? servicePackageVat.vatAmount : 0) +
+      (includesMaintenance ? reservePackageVat.vatAmount : 0);
     const rawPackage =
-      state.tractorPrice +
+      assetVat.grossAmount +
       (includesService ? servicePlan.packageAmount : 0) +
       (includesMaintenance ? reserve.packageAmount : 0) +
       state.financeFees;
@@ -463,14 +552,14 @@ export default function LifecycleCalculatorClient() {
       ...loanTerms,
       principal: Math.max(
         0,
-        state.tractorPrice + state.financeFees - state.deposit,
+        assetVat.grossAmount + state.financeFees - state.deposit,
       ),
     });
     const tractorServiceLoan = calculateLoan({
       ...loanTerms,
       principal: Math.max(
         0,
-        state.tractorPrice +
+        assetVat.grossAmount +
           servicePlan.packageAmount +
           state.financeFees -
           state.deposit,
@@ -480,7 +569,7 @@ export default function LifecycleCalculatorClient() {
       ...loanTerms,
       principal: Math.max(
         0,
-        state.tractorPrice +
+        assetVat.grossAmount +
           servicePlan.packageAmount +
           reserve.packageAmount +
           state.financeFees -
@@ -514,7 +603,7 @@ export default function LifecycleCalculatorClient() {
     );
     const targetYear = state.purchaseYear + state.ownershipYears;
     const futureValue = calculateFutureAssetValue({
-      newPrice: state.tractorPrice,
+      newPrice: assetVat.grossAmount,
       purchaseYear: state.purchaseYear,
       targetYear,
       startingHours: state.startingHours,
@@ -527,7 +616,7 @@ export default function LifecycleCalculatorClient() {
       ...option,
       factor: CONDITION_FACTORS[option.id],
       value: calculateFutureAssetValue({
-        newPrice: state.tractorPrice,
+        newPrice: assetVat.grossAmount,
         purchaseYear: state.purchaseYear,
         targetYear,
         startingHours: state.startingHours,
@@ -564,19 +653,19 @@ export default function LifecycleCalculatorClient() {
       equity,
       nextServicePlan: state.nextServicePlan,
       nextUptimeReserve: state.nextReserve,
-      currentNewPrice: state.tractorPrice,
+      currentNewPrice: assetVat.grossAmount,
       inflationRatePct: state.replacementInflationPct,
       years: state.ownershipYears,
     });
     const reservePayAsYouGo = calculateInflatedEventSpend({
-      costPerEvent: state.reserveCostPerEvent,
+      costPerEvent: reserveCostWithVat,
       eventsPerYear: state.reserveEventsPerYear,
       years: state.postWarrantyYears,
       annualInflationPct: state.partsInflationPct,
       startAfterYears: state.servicePlanYears,
     });
     const servicePayAsYouGo = calculateInflatedEventSpend({
-      costPerEvent: state.serviceCost,
+      costPerEvent: serviceCostWithVat,
       eventsPerYear: servicePlan.servicesPerYear,
       years: state.servicePlanYears,
       annualInflationPct: state.partsInflationPct,
@@ -585,7 +674,7 @@ export default function LifecycleCalculatorClient() {
       reservePayAsYouGo.total - reserve.packageAmount;
     const reserveNetBenefit = inflationAvoided - reserveFinance.totalInterest;
     const cashFlows = buildCashFlowScenarios({
-      tractorPrice: state.tractorPrice,
+      tractorPrice: assetVat.grossAmount,
       deposit: state.deposit,
       fees: state.financeFees,
       annualRatePct: state.annualRatePct,
@@ -594,9 +683,9 @@ export default function LifecycleCalculatorClient() {
       horizonYears: state.ownershipYears,
       servicePlan,
       servicePlanYears: state.servicePlanYears,
-      serviceCostPerEvent: state.serviceCost,
+      serviceCostPerEvent: serviceCostWithVat,
       reserve,
-      reserveCostPerEvent: state.reserveCostPerEvent,
+      reserveCostPerEvent: reserveCostWithVat,
       reserveEventsPerYear: state.reserveEventsPerYear,
       postWarrantyYears: state.postWarrantyYears,
       partsInflationPct: state.partsInflationPct,
@@ -616,7 +705,7 @@ export default function LifecycleCalculatorClient() {
       ) ?? [];
     const timeline = buildLifecycleTimeline({
       futureValue: {
-        newPrice: state.tractorPrice,
+        newPrice: assetVat.grossAmount,
         purchaseYear: state.purchaseYear,
         startingHours: state.startingHours,
         expectedAnnualHours: state.annualHours,
@@ -661,6 +750,8 @@ export default function LifecycleCalculatorClient() {
       (includesMaintenance ? reserveFinance.totalInterest : 0);
 
     return {
+      assetVat,
+      financedVatAmount,
       servicePlan,
       reserve,
       packageLoan,
@@ -787,7 +878,15 @@ export default function LifecycleCalculatorClient() {
         </div>
 
         <div className={styles.summaryGrid}>
-          <Metric label="New asset" value={rand(state.tractorPrice)} />
+          <Metric
+            label="New asset"
+            value={rand(model.assetVat.grossAmount)}
+            detail={
+              state.vatTreatment === "included"
+                ? "Entered price includes VAT"
+                : "15% VAT added to entered price"
+            }
+          />
           <Metric
             label="Expected payment end"
             value={String(expectedPaymentEndYear)}
@@ -805,6 +904,11 @@ export default function LifecycleCalculatorClient() {
           <Metric
             label="Total interest"
             value={rand(model.packageLoan.totalInterest)}
+          />
+          <Metric
+            label={state.vatTreatment === "included" ? "VAT included" : "VAT added"}
+            value={rand(model.financedVatAmount)}
+            detail="Asset and selected package items"
           />
           <Metric
             label="Projected future retail"
@@ -894,9 +998,13 @@ export default function LifecycleCalculatorClient() {
           <p className={styles.eyebrow}>Selected finance package</p>
           <h2>{selectedPackage.label}</h2>
           <div className={styles.resultLines}>
-            <div><span>Asset</span><strong>{rand(state.tractorPrice)}</strong></div>
+            <div><span>Asset</span><strong>{rand(model.assetVat.grossAmount)}</strong></div>
             {includesService ? <div><span>Service plan</span><strong>{rand(model.servicePlan.packageAmount)}</strong></div> : null}
             {includesMaintenance ? <div><span>Maintenance reserve</span><strong>{rand(model.reserve.packageAmount)}</strong></div> : null}
+            <div>
+              <span>{state.vatTreatment === "included" ? "VAT included above" : "VAT added above"}</span>
+              <strong>{rand(model.financedVatAmount)}</strong>
+            </div>
             {state.financeFees > 0 ? <div><span>Finance fees</span><strong>{rand(state.financeFees)}</strong></div> : null}
             {state.deposit > 0 ? <div><span>Less deposit</span><strong>− {rand(state.deposit)}</strong></div> : null}
             <div className={styles.resultLineTotal}><span>Financed amount</span><strong>{rand(model.packageLoan.principal)}</strong></div>
@@ -1042,7 +1150,31 @@ export default function LifecycleCalculatorClient() {
               </small>
             </div>
           </div>
+          <VatTreatmentControl
+            value={state.vatTreatment}
+            onChange={(value) => update("vatTreatment", value)}
+          />
           <div className={styles.formGrid}>
+            {includesService ? (
+              <NumericField
+                label="Service plan amount"
+                value={state.negotiatedServicePlan}
+                onChange={(value) => update("negotiatedServicePlan", value)}
+                prefix="R"
+                step={1_000}
+                help="Enter the actual service-plan amount quoted for this deal."
+              />
+            ) : null}
+            {includesMaintenance ? (
+              <NumericField
+                label="Maintenance reserve amount"
+                value={state.fixedReserveAmount}
+                onChange={updateReserveAmount}
+                prefix="R"
+                step={1_000}
+                help="Enter the actual reserve amount; editing this selects entered-amount mode."
+              />
+            ) : null}
             <NumericField
               label="Deposit"
               value={state.deposit}
@@ -1083,6 +1215,11 @@ export default function LifecycleCalculatorClient() {
             <div>
               <span>{selectedPackage.label}</span>
               <strong>{rand(model.packageLoan.principal)} financed</strong>
+              <small>
+                {state.vatTreatment === "included"
+                  ? `${rand(model.financedVatAmount)} VAT included`
+                  : `${rand(model.financedVatAmount)} VAT added at 15%`}
+              </small>
             </div>
             <div>
               <span>Estimated instalment</span>
@@ -1125,11 +1262,11 @@ export default function LifecycleCalculatorClient() {
               suffix="years"
             />
             <NumericField
-              label="Negotiated service-plan amount"
+              label="Service plan amount"
               value={state.negotiatedServicePlan}
               onChange={(value) => update("negotiatedServicePlan", value)}
               prefix="R"
-              help="Set this to the dealer's agreed fixed amount."
+              help="Editable for each deal—enter the actual amount quoted by the dealer."
             />
           </div>
           <div className={styles.splitResult}>
@@ -1181,8 +1318,8 @@ export default function LifecycleCalculatorClient() {
                     )
                   }
                 >
-                  <option value="calculated">Calculated reserve</option>
-                  <option value="fixed">Fixed negotiated package</option>
+                  <option value="calculated">Calculate from maintenance events</option>
+                  <option value="fixed">Enter reserve amount</option>
                 </select>
               </div>
             </label>
@@ -1205,11 +1342,11 @@ export default function LifecycleCalculatorClient() {
               suffix="years"
             />
             <NumericField
-              label="Fixed dealer package"
+              label="Maintenance reserve amount"
               value={state.fixedReserveAmount}
-              onChange={(value) => update("fixedReserveAmount", value)}
+              onChange={updateReserveAmount}
               prefix="R"
-              help="Used when Fixed negotiated package is selected."
+              help="Editable for each deal and used when Enter reserve amount is selected."
             />
             <NumericField
               label="Annual parts inflation"
@@ -1262,19 +1399,19 @@ export default function LifecycleCalculatorClient() {
           <div className={styles.packageGrid}>
             <article className={state.packageOption === "standard" ? styles.packagePrimary : ""}>
               <span>Base asset only</span>
-              <strong>{rand(state.tractorPrice)}</strong>
+              <strong>{rand(model.assetVat.grossAmount)}</strong>
               <small>{randCents(model.tractorOnlyLoan.monthlyPayment)} / month</small>
             </article>
             <article className={state.packageOption === "service" ? styles.packagePrimary : ""}>
               <span>Asset + warranty servicing</span>
-              <strong>{rand(state.tractorPrice + model.servicePlan.packageAmount)}</strong>
+              <strong>{rand(model.assetVat.grossAmount + model.servicePlan.packageAmount)}</strong>
               <small>{randCents(model.tractorServiceLoan.monthlyPayment)} / month</small>
             </article>
             <article className={state.packageOption === "full" ? styles.packagePrimary : ""}>
               <span>Full lifecycle package</span>
               <strong>
                 {rand(
-                  state.tractorPrice +
+                  model.assetVat.grossAmount +
                     model.servicePlan.packageAmount +
                     model.reserve.packageAmount,
                 )}
@@ -1408,7 +1545,7 @@ export default function LifecycleCalculatorClient() {
               label="Estimated nominal pay-as-you-go spend"
               value={rand(model.reservePayAsYouGo.total)}
             />
-            <Metric label="Fixed package" value={rand(model.reserve.packageAmount)} />
+            <Metric label="Selected reserve" value={rand(model.reserve.packageAmount)} />
             <Metric label="Estimated inflation avoided" value={rand(model.inflationAvoided)} />
             <Metric
               label="Finance interest on package"
@@ -1483,7 +1620,7 @@ export default function LifecycleCalculatorClient() {
             </div>
           </div>
           <div className={styles.calculationTrail}>
-            <div><span>New replacement price</span><strong>{rand(state.tractorPrice)}</strong></div>
+            <div><span>New replacement price</span><strong>{rand(model.assetVat.grossAmount)}</strong></div>
             <div><span>Projected replacement price</span><strong>{rand(model.futureValue.projectedReplacementPrice)}</strong></div>
             <div><span>Age depreciation</span><strong>{model.futureValue.ageDepreciationPct}%</strong></div>
             <div><span>Usage depreciation</span><strong>{numberFormat.format(model.futureValue.usageDepreciationPct)}%</strong></div>
