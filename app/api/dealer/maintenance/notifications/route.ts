@@ -12,6 +12,7 @@ export const dynamic = 'force-dynamic';
 type DealerNotificationContext = {
   dealerUserId: string;
   viewerKey: string;
+  staffId: string | null;
 };
 
 async function dealerNotificationContext(): Promise<DealerNotificationContext | null> {
@@ -25,11 +26,13 @@ async function dealerNotificationContext(): Promise<DealerNotificationContext | 
   });
   if (profile.accountType !== 'dealer' || profile.accountStatus !== 'active') return null;
 
+  const dealerAppSession = isDealerAppSession(session) ? session.dealerApp : null;
   return {
     dealerUserId: session.user.id,
-    viewerKey: isDealerAppSession(session)
-      ? `dealer-staff:${session.dealerApp.staffId}`
+    viewerKey: dealerAppSession
+      ? `dealer-staff:${dealerAppSession.staffId}`
       : `account:${session.user.id}`,
+    staffId: dealerAppSession?.staffId ?? null,
   };
 }
 
