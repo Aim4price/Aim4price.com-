@@ -40,6 +40,18 @@ function pageNumbers(currentPage: number, totalPages: number): number[] {
   return Array.from({ length: maxButtons }, (_item, index) => startPage + index);
 }
 
+function showPage(cards: HTMLElement[], page: number, pageSize: number) {
+  const startIndex = (page - 1) * pageSize;
+  const endIndex = startIndex + pageSize;
+
+  cards.forEach((card, index) => {
+    const shouldShow = index >= startIndex && index < endIndex;
+    card.style.display = shouldShow ? '' : 'none';
+    if (shouldShow) card.removeAttribute('aria-hidden');
+    else card.setAttribute('aria-hidden', 'true');
+  });
+}
+
 export default function DealerMaintenancePagination({
   children,
   pageSize = DEFAULT_PAGE_SIZE,
@@ -51,6 +63,7 @@ export default function DealerMaintenancePagination({
 }) {
   const rootRef = useRef<HTMLDivElement>(null);
   const cardsRef = useRef<HTMLElement[]>([]);
+  const currentPageRef = useRef(1);
   const initialOpenResolvedRef = useRef(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalCards, setTotalCards] = useState(0);
@@ -58,6 +71,7 @@ export default function DealerMaintenancePagination({
   const safePageSize = Math.max(1, Math.trunc(pageSize) || DEFAULT_PAGE_SIZE);
   const totalPages = Math.max(1, Math.ceil(totalCards / safePageSize));
   const visiblePage = Math.min(Math.max(currentPage, 1), totalPages);
+  currentPageRef.current = visiblePage;
 
   useEffect(() => {
     const root = rootRef.current;
@@ -66,13 +80,19 @@ export default function DealerMaintenancePagination({
     const syncCards = () => {
       const cards = maintenanceCards(root);
       cardsRef.current = cards;
-      setTotalCards(cards.length);
+      const nextTotalPages = Math.max(1, Math.ceil(cards.length / safePageSize));
+      let nextPage = Math.min(Math.max(currentPageRef.current, 1), nextTotalPages);
 
       if (initialOpenAccessId && !initialOpenResolvedRef.current) {
         const openIndex = cards.findIndex((card) => Array.from(card.querySelectorAll('button')).some((button) => button.textContent?.replace(/\s+/g, ' ').trim() === 'Close'));
-        if (openIndex >= 0) setCurrentPage(Math.floor(openIndex / safePageSize) + 1);
+        if (openIndex >= 0) nextPage = Math.floor(openIndex / safePageSize) + 1;
         initialOpenResolvedRef.current = true;
       }
+
+      currentPageRef.current = nextPage;
+      showPage(cards, nextPage, safePageSize);
+      setTotalCards(cards.length);
+      setCurrentPage((page) => page === nextPage ? page : nextPage);
     };
 
     syncCards();
@@ -83,14 +103,8 @@ export default function DealerMaintenancePagination({
 
   useEffect(() => {
     if (currentPage !== visiblePage) setCurrentPage(visiblePage);
-
-    const startIndex = (visiblePage - 1) * safePageSize;
-    const endIndex = startIndex + safePageSize;
-    cardsRef.current.forEach((card, index) => {
-      const shouldShow = index >= startIndex && index < endIndex;
-      card.style.display = shouldShow ? '' : 'none';
-      card.setAttribute('aria-hidden', shouldShow ? 'false' : 'true');
-    });
+    currentPageRef.current = visiblePage;
+    showPage(cardsRef.current, visiblePage, safePageSize);
   }, [currentPage, safePageSize, totalCards, visiblePage]);
 
   const rangeStart = totalCards ? (visiblePage - 1) * safePageSize + 1 : 0;
@@ -98,7 +112,7 @@ export default function DealerMaintenancePagination({
   const pages = pageNumbers(visiblePage, totalPages);
 
   return (
-    <div ref={rootRef}>
+    <div ref={rootRef} className={leadStyles.leadsPage}>
       {children}
       {totalCards > safePageSize ? (
         <nav className={leadStyles.leadPagination} aria-label="Maintenance pagination">
