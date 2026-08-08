@@ -25,6 +25,9 @@ function formatGeneratedAt(value: string): string {
 export default async function AdminDashboardPage() {
   await requireAdminPageAccess();
   const dashboard = await getAdminDashboardStats();
+  const overviewCards = dashboard.cards.slice(0, 4);
+  const accountCards = dashboard.cards.slice(4, 8);
+  const detailedCards = dashboard.cards.slice(8);
 
   return (
     <main className={styles.page}>
@@ -40,44 +43,90 @@ export default async function AdminDashboardPage() {
             <Link href="/admin" className={styles.adminButton}>
               Users
             </Link>
-            <Link href="/admin/dashboard" className={styles.adminButton}>
+            <Link href="/admin/dashboard" className={`${styles.adminButton} ${styles.adminButtonActive}`} aria-current="page">
               Dashboard
             </Link>
             <Link
               href="/admin/lifecycle-calculator"
               className={styles.adminButton}
             >
-              Lifecycle Calculator
+              Lifecycle Model
             </Link>
           </nav>
         </header>
 
-        <section className={styles.summaryNote}>
-          <strong>No external analytics.</strong> Historical event-based metrics start from the new tracking table after this migration is deployed.
+        <section className={styles.dashboardHero}>
+          <div>
+            <p className={styles.eyebrow}>Live Aim4price activity</p>
+            <h2>See account and product activity at a glance</h2>
+            <span>Start with the headline measures, then open the detailed product activity only when you need it.</span>
+          </div>
+          <div>
+            <span>Last refreshed</span>
+            <strong>{formatGeneratedAt(dashboard.generatedAtIso)}</strong>
+            <small>First-party Aim4price data</small>
+          </div>
         </section>
 
-        <section className={styles.grid} aria-label="Admin usage statistics">
-          {dashboard.cards.map((card) => (
-            <article key={card.id} className={styles.card}>
-              <div className={styles.cardHeader}>
-                <h2>{card.title}</h2>
-                {card.description ? <p>{card.description}</p> : null}
-              </div>
-
-              <dl className={styles.values}>
-                {card.values.map((item) => (
-                  <div key={`${card.id}-${item.label}`} className={styles.valueRow}>
-                    <dt>{item.label}</dt>
-                    <dd>
-                      <strong>{item.value}</strong>
-                      {item.detail ? <span>{item.detail}</span> : null}
-                    </dd>
-                  </div>
-                ))}
-              </dl>
-            </article>
-          ))}
+        <section className={styles.dashboardSection} aria-labelledby="overview-heading">
+          <div className={styles.sectionHeading}>
+            <div><p className={styles.eyebrow}>Overview</p><h2 id="overview-heading">At a glance</h2></div>
+            <span>The measures most useful for a quick admin check.</span>
+          </div>
+          <div className={`${styles.grid} ${styles.overviewGrid}`}>
+            {overviewCards.map((card, index) => (
+              <article key={card.id} className={`${styles.card} ${index === 0 ? styles.featuredCard : ""}`}>
+                <div className={styles.cardHeader}>
+                  <h2>{card.title}</h2>
+                  {card.description ? <p>{card.description}</p> : null}
+                </div>
+                <dl className={styles.values}>
+                  {card.values.map((item) => (
+                    <div key={`${card.id}-${item.label}`} className={styles.valueRow}>
+                      <dt>{item.label}</dt><dd><strong>{item.value}</strong>{item.detail ? <span>{item.detail}</span> : null}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </article>
+            ))}
+          </div>
         </section>
+
+        {accountCards.length ? (
+          <section className={styles.dashboardSection} aria-labelledby="accounts-heading">
+            <div className={styles.sectionHeading}>
+              <div><p className={styles.eyebrow}>Accounts</p><h2 id="accounts-heading">Growth and engagement</h2></div>
+              <span>How users are joining and returning to Aim4price.</span>
+            </div>
+            <div className={styles.grid}>
+              {accountCards.map((card) => (
+                <article key={card.id} className={styles.card}>
+                  <div className={styles.cardHeader}><h2>{card.title}</h2>{card.description ? <p>{card.description}</p> : null}</div>
+                  <dl className={styles.values}>{card.values.map((item) => (
+                    <div key={`${card.id}-${item.label}`} className={styles.valueRow}><dt>{item.label}</dt><dd><strong>{item.value}</strong>{item.detail ? <span>{item.detail}</span> : null}</dd></div>
+                  ))}</dl>
+                </article>
+              ))}
+            </div>
+          </section>
+        ) : null}
+
+        {detailedCards.length ? (
+          <details className={styles.detailsSection}>
+            <summary><div><p className={styles.eyebrow}>Optional detail</p><strong>Detailed product activity</strong><span>{detailedCards.length} additional measures</span></div></summary>
+            <p className={styles.summaryNote}><strong>First-party reporting.</strong> Historical event-based metrics begin from the tracking migration; no external analytics are used.</p>
+            <div className={styles.grid}>
+              {detailedCards.map((card) => (
+                <article key={card.id} className={styles.card}>
+                  <div className={styles.cardHeader}><h2>{card.title}</h2>{card.description ? <p>{card.description}</p> : null}</div>
+                  <dl className={styles.values}>{card.values.map((item) => (
+                    <div key={`${card.id}-${item.label}`} className={styles.valueRow}><dt>{item.label}</dt><dd><strong>{item.value}</strong>{item.detail ? <span>{item.detail}</span> : null}</dd></div>
+                  ))}</dl>
+                </article>
+              ))}
+            </div>
+          </details>
+        ) : null}
 
         <section className={styles.storageCard} aria-label="Storage source breakdown">
           <div>
