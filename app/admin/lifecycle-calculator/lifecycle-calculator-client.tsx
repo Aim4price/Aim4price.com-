@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import type { ConditionKey } from "../../../lib/tractor-data";
 import {
   DEFAULT_LIFECYCLE_MODEL_INPUT,
@@ -133,18 +133,69 @@ function NumericField({
   step?: number;
   help?: string;
 }) {
+  const fractionDigits = String(step).includes(".")
+    ? String(step).split(".")[1]?.length ?? 0
+    : 0;
+  const formatValue = (nextValue: number) =>
+    new Intl.NumberFormat("en-ZA", {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: Math.max(fractionDigits, 2),
+    }).format(Number.isFinite(nextValue) ? nextValue : 0);
+  const [draft, setDraft] = useState(() => formatValue(value));
+  const [isFocused, setIsFocused] = useState(false);
+
+  useEffect(() => {
+    if (!isFocused) {
+      setDraft(formatValue(value));
+    }
+  }, [value, isFocused]);
+
+  function parseDraft(nextDraft: string): number | null {
+    const normalized = nextDraft
+      .replace(/[\s\u00a0]/g, "")
+      .replace(",", ".")
+      .replace(/[^0-9.-]/g, "");
+    const parsed = Number(normalized);
+    return normalized === "" || normalized === "-" || !Number.isFinite(parsed)
+      ? null
+      : parsed;
+  }
+
+  function commitDraft() {
+    const parsed = parseDraft(draft);
+    const boundedValue = Math.min(max ?? Number.POSITIVE_INFINITY, Math.max(min, parsed ?? value));
+    onChange(boundedValue);
+    setDraft(formatValue(boundedValue));
+    setIsFocused(false);
+  }
+
   return (
     <label className={styles.field}>
       <span>{label}</span>
       <div className={styles.inputShell}>
         {prefix ? <b>{prefix}</b> : null}
         <input
-          type="number"
-          value={value}
-          min={min}
-          max={max}
-          step={step}
-          onChange={(event) => onChange(Number(event.target.value))}
+          type="text"
+          inputMode="decimal"
+          value={draft}
+          onFocus={() => {
+            setIsFocused(true);
+            setDraft(String(value));
+          }}
+          onChange={(event) => {
+            const nextDraft = event.target.value;
+            setDraft(nextDraft);
+            const parsed = parseDraft(nextDraft);
+            if (parsed !== null) {
+              onChange(parsed);
+            }
+          }}
+          onBlur={commitDraft}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              event.currentTarget.blur();
+            }
+          }}
         />
         {suffix ? <b>{suffix}</b> : null}
       </div>
@@ -598,9 +649,9 @@ export default function LifecycleCalculatorClient() {
       <section className={styles.workspaceHeader}>
         <div>
           <p className={styles.eyebrow}>Aim4price Lifecycle Financial Model</p>
-          <h2>Lifecycle Scenario Workspace</h2>
+          <h2>Build the ownership case</h2>
           <span>
-            Balance finance cost, working-capital protection, future value and replacement equity.
+            Enter the deal once, compare three funding structures, then finish with the future asset and equity position.
           </span>
         </div>
         <div className={styles.headerActions}>
@@ -626,37 +677,57 @@ export default function LifecycleCalculatorClient() {
       </section>
       {exportError ? <p className={styles.errorBanner}>{exportError}</p> : null}
 
-      <section className={styles.answerStrip} aria-label="Key lifecycle answers">
-        <Metric
-          label="Standard"
-          value={`${randCents(standard.loan.monthlyPayment)} / month`}
-          detail="Lowest financed principal"
-        />
-        <Metric
-          label="Add Service"
-          value={`+ ${randCents(serviceScenario.additionalMonthlyPayment)} / month`}
-          detail={`${rand(serviceScenario.workingCapitalProtected)} working capital protected`}
-        />
-        <Metric
-          label="Add Service + Maintenance"
-          value={`+ ${randCents(fullScenario.additionalMonthlyPayment)} / month`}
-          detail={`${rand(fullScenario.workingCapitalProtected)} working capital protected`}
-        />
-        <Metric
-          label={`Projected value after ${model.input.ownershipYears} years`}
-          value={rand(model.future.projectedRetail.grossAmount)}
-          detail={`${numberFormat.format(model.future.projectedUsage)} ${model.usageUnit} projected usage`}
-          tone="green"
-        />
-        <Metric
-          label={`${preferred.label} trade equity`}
-          value={rand(preferred.equityAtDisposal)}
-          detail={`${rand(preferred.settlementAtDisposal)} settlement at disposal`}
-          tone={preferred.equityAtDisposal >= 0 ? "green" : "red"}
-        />
+      <nav className={styles.workspaceNav} aria-label="Lifecycle model sections">
+        <a href="#lifecycle-setup"><b>1</b><span>Asset</span></a>
+        <a href="#lifecycle-finance"><b>2</b><span>Finance</span></a>
+        <a href="#lifecycle-provisions"><b>3</b><span>Provisions</span></a>
+        <a href="#lifecycle-results"><b>4</b><span>Results</span></a>
+        <a href="#lifecycle-planning"><b>5</b><span>Next cycle</span></a>
+      </nav>
+
+      <section className={styles.decisionPanel} aria-label="Key lifecycle answers">
+        <div className={styles.decisionHeading}>
+          <div>
+            <p className={styles.eyebrow}>Live decision snapshot</p>
+            <h3>Choose the structure to use in the advice summary</h3>
+          </div>
+          <p><span>Currently selected</span><strong>{preferred.label}</strong></p>
+        </div>
+        <div className={styles.answerStrip}>
+          {model.scenarios.map((scenario) => (
+            <button
+              key={scenario.id}
+              type="button"
+              className={`${styles.scenarioChoice} ${scenario.id === state.preferredScenario ? styles.scenarioChoiceActive : ""}`}
+              onClick={() => setState((current) => ({ ...current, preferredScenario: scenario.id }))}
+              aria-pressed={scenario.id === state.preferredScenario}
+            >
+              <span>{scenario.id === state.preferredScenario ? "✓ Selected" : "Select option"}</span>
+              <strong>{scenario.label}</strong>
+              <b>{randCents(scenario.loan.monthlyPayment)} / month</b>
+              <small>
+                {scenario.id === "standard"
+                  ? "Standard asset finance only"
+                  : `${rand(scenario.workingCapitalProtected)} working capital protected`}
+              </small>
+            </button>
+          ))}
+          <Metric
+            label={`Projected retail after ${model.input.ownershipYears} years`}
+            value={rand(model.future.projectedRetail.grossAmount)}
+            detail={`${numberFormat.format(model.future.projectedUsage)} ${model.usageUnit} projected usage`}
+            tone="green"
+          />
+          <Metric
+            label={`${preferred.label} trade equity`}
+            value={rand(preferred.equityAtDisposal)}
+            detail={`${rand(preferred.settlementAtDisposal)} settlement at disposal`}
+            tone={preferred.equityAtDisposal >= 0 ? "green" : "red"}
+          />
+        </div>
       </section>
 
-      <section className={styles.assumptionGrid}>
+      <section id="lifecycle-setup" className={styles.assumptionGrid}>
         <article className={styles.card}>
           <SectionHeading
             eyebrow="1"
@@ -773,7 +844,7 @@ export default function LifecycleCalculatorClient() {
           </div>
         </article>
 
-        <article className={styles.card}>
+        <article id="lifecycle-finance" className={styles.card}>
           <SectionHeading
             eyebrow="2"
             title="Finance Assumptions"
@@ -863,6 +934,15 @@ export default function LifecycleCalculatorClient() {
         </aside>
       </section>
 
+      <section id="lifecycle-provisions" className={styles.flowSectionLead}>
+        <div>
+          <p className={styles.eyebrow}>3 · Choose provisions</p>
+          <h2>Add only what the client needs</h2>
+          <span>Service and maintenance remain separate. The three finance structures update automatically as these assumptions change.</span>
+        </div>
+        <strong>{rand(serviceScenario.serviceFinanced)} service · {rand(fullScenario.maintenanceFinanced)} maintenance</strong>
+      </section>
+
       <section className={styles.provisionGrid}>
         <article className={styles.card}>
           <SectionHeading
@@ -926,20 +1006,20 @@ export default function LifecycleCalculatorClient() {
           </div>
           {model.input.serviceBasis !== "manual" ? (
             <ToggleField
-              label="Override calculated amount with negotiated service-plan amount"
+              label="Use a quoted service-plan amount"
               checked={model.input.useNegotiatedServiceAmount}
               onChange={(value) => updateModel("useNegotiatedServiceAmount", value)}
-              help="The calculation remains visible for comparison."
+              help="Turn this off to use the calculated service cost."
             />
           ) : null}
           {model.input.serviceBasis === "manual" || model.input.useNegotiatedServiceAmount ? (
             <NumericField
-              label="Negotiated / planned service amount"
+              label="Quoted / planned service provision"
               value={model.input.negotiatedServiceAmount}
               onChange={(value) => updateModel("negotiatedServiceAmount", value)}
               prefix="R"
               step={1_000}
-              help="Editable for every deal; R64,000 is only the regression example."
+              help="Enter the amount quoted for this deal."
             />
           ) : null}
           <div className={styles.metricGrid}>
@@ -978,12 +1058,12 @@ export default function LifecycleCalculatorClient() {
               prefix="R"
             />
             <NumericField
-              label="Negotiated / planned reserve"
+              label="Planned maintenance reserve"
               value={model.input.negotiatedMaintenanceReserve}
               onChange={(value) => updateModel("negotiatedMaintenanceReserve", value)}
               prefix="R"
               step={1_000}
-              help="Editable for every deal; R50,000 is only the regression example."
+              help="Enter the reserve agreed for this ownership period."
             />
             <NumericField
               label="Maintenance / parts inflation"
@@ -1013,9 +1093,27 @@ export default function LifecycleCalculatorClient() {
             <Metric label="Current-money requirement" value={rand(model.maintenance.currentMoneyRequirement.grossAmount)} detail="Before future inflation" />
             <Metric label="Future pay-as-you-go estimate" value={rand(model.maintenance.nominalPayAsYouGo)} detail="Inflated at event timing" />
             <Metric label="Selected reserve" value={rand(model.maintenance.selectedReserve.grossAmount)} detail={`${rand(model.maintenance.selectedReserve.netAmount)} ex VAT`} tone="green" />
-            <Metric label="Inflation potentially avoided" value={rand(model.maintenance.inflationAvoided)} tone={model.maintenance.inflationAvoided >= 0 ? "green" : "amber"} />
+            <Metric
+              label="Reserve vs future pay-as-you-go"
+              value={rand(Math.abs(model.maintenance.inflationAvoided))}
+              detail={model.maintenance.inflationAvoided >= 0 ? "Estimated saving from fixing the reserve now" : "Reserve is above estimated future spend"}
+              tone={model.maintenance.inflationAvoided >= 0 ? "green" : "amber"}
+            />
           </div>
         </article>
+      </section>
+
+      <section id="lifecycle-results" className={styles.resultsLead}>
+        <div>
+          <p className={styles.eyebrow}>4 · Compare results</p>
+          <h2>See the cost and cash-flow trade-off clearly</h2>
+          <span>The selected option is highlighted throughout the results. You can change it here or in the snapshot above.</span>
+        </div>
+        <div>
+          <span>Preferred monthly payment</span>
+          <strong>{randCents(preferred.loan.monthlyPayment)}</strong>
+          <small>{rand(preferred.equityAtDisposal)} projected disposal equity</small>
+        </div>
       </section>
 
       <section className={`${styles.card} ${styles.comparisonSection}`}>
@@ -1082,7 +1180,7 @@ export default function LifecycleCalculatorClient() {
         </div>
       </section>
 
-      <section className={`${styles.card} ${styles.cashFlowSection}`}>
+      <section id="lifecycle-cash-flow" className={`${styles.card} ${styles.cashFlowSection}`}>
         <SectionHeading
           eyebrow="Timing"
           title="Annual Cash-Flow Comparison"
@@ -1139,6 +1237,15 @@ export default function LifecycleCalculatorClient() {
             </table>
           </div>
         </details>
+      </section>
+
+      <section id="lifecycle-planning" className={styles.flowSectionLead}>
+        <div>
+          <p className={styles.eyebrow}>5 · Plan the next cycle</p>
+          <h2>Turn future value into a replacement plan</h2>
+          <span>Review expected trade equity, then allocate it to the next asset, service provision and maintenance reserve.</span>
+        </div>
+        <strong>{rand(preferred.equityAtDisposal)} projected equity</strong>
       </section>
 
       <section className={styles.outcomeGrid}>
@@ -1210,8 +1317,8 @@ export default function LifecycleCalculatorClient() {
         </article>
       </section>
 
-      <section className={styles.advancedGrid}>
-        <details className={styles.card} open>
+      <section id="lifecycle-advanced" className={styles.advancedGrid}>
+        <details className={styles.card}>
           <summary>
             <SectionHeading eyebrow="Optional" title="Refinance / Cash-Flow Stress Test" description="Test a proactive restructure before missed payments occur." />
           </summary>
