@@ -16,6 +16,13 @@ const compiled = ts.transpileModule(source, {
 
 const moduleRecord = { exports: {} };
 const sharedValuationStub = {
+  CONDITION_FACTORS: {
+    excellent: 0.95,
+    good: 0.85,
+    fair: 0.75,
+    used: 0.65,
+    serious: 0.55,
+  },
   calculateEngineHoursValue() {
     throw new Error("Valuation stub is not used by the finance unit tests.");
   },
