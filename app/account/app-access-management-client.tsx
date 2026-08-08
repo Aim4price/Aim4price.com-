@@ -329,6 +329,10 @@ function AppAccessModal({
   const titleId = useId();
   const descriptionId = useId();
   const closeRef = useRef<HTMLButtonElement>(null);
+  const onCloseRef = useRef(onClose);
+  const closeDisabledRef = useRef(closeDisabled);
+  onCloseRef.current = onClose;
+  closeDisabledRef.current = closeDisabled;
 
   useEffect(() => {
     if (!open) return undefined;
@@ -337,7 +341,7 @@ function AppAccessModal({
     const focusFrame = window.requestAnimationFrame(() => closeRef.current?.focus());
 
     function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === 'Escape' && !closeDisabled) onClose();
+      if (event.key === 'Escape' && !closeDisabledRef.current) onCloseRef.current();
     }
 
     document.addEventListener('keydown', handleKeyDown);
@@ -346,7 +350,7 @@ function AppAccessModal({
       document.body.style.overflow = previousOverflow;
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [closeDisabled, onClose, open]);
+  }, [open]);
 
   if (!open) return null;
 
