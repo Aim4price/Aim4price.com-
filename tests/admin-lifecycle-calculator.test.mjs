@@ -66,6 +66,18 @@ test("R500,000 asset finance matches the standard amortising-loan result", () =>
   closeTo(result.totalInterest, 144_817.01);
 });
 
+test("VAT treatment preserves inclusive prices and adds 15% to exclusive prices", () => {
+  const included = calculator.calculateVatSummary(500_000, "included");
+  const excluded = calculator.calculateVatSummary(500_000, "excluded");
+
+  assert.equal(included.netAmount, 434_782.61);
+  assert.equal(included.vatAmount, 65_217.39);
+  assert.equal(included.grossAmount, 500_000);
+  assert.equal(excluded.netAmount, 500_000);
+  assert.equal(excluded.vatAmount, 75_000);
+  assert.equal(excluded.grossAmount, 575_000);
+});
+
 test("R614,000 complete package matches the agreed five-year example", () => {
   const result = calculator.calculateLoan({
     principal: 614_000,
@@ -113,7 +125,7 @@ test("month-36 settlement matches the agreed complete-package example", () => {
   closeTo(balance, 284_570.53);
 });
 
-test("service and reserve package calculations preserve the default commercial assumptions", () => {
+test("service and reserve package calculations use the entered deal amounts", () => {
   const service = calculator.calculateServicePlan({
     serviceIntervalHours: 250,
     expectedAnnualHours: 1_000,
