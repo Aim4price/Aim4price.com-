@@ -15,8 +15,12 @@ export default async function DealerMaintenancePage({ searchParams }: { searchPa
   if (!session?.user?.id) redirect('/dealer/login');
   const dealerAppSession = await getDealerAppSession();
   if (dealerAppSession && !dealerRoleCan(dealerAppSession.role, 'maintenance')) redirect('/dealer');
-  const profile = await getAccountProfile({ id: session.user.id, name: session.user.name, email: session.user.email });
+
+  const [profile, assets] = await Promise.all([
+    getAccountProfile({ id: session.user.id, name: session.user.name, email: session.user.email }),
+    listDealerTrackedAssets(session.user.id),
+  ]);
   if (profile.accountType !== 'dealer' || profile.accountStatus !== 'active') redirect('/dealer/login');
-  const assets = await listDealerTrackedAssets(session.user.id);
+
   return <div className={`${dealerStyles.module} ${dealerStyles.maintenanceModule}`}><DealerMaintenanceClient initialAssets={assets} initialOpenAccessId={String(searchParams?.open ?? '').trim() || null} /></div>;
 }
