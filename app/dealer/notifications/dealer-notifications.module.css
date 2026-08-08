@@ -1,0 +1,111 @@
+.assignedCardWrap {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.assignedBadge {
+  display: inline-flex;
+  width: fit-content;
+  margin-top: 0.7rem;
+  padding: 0.38rem 0.58rem;
+  border-radius: 999px;
+  background: #fff3d8;
+  color: #75530b;
+  font-size: 0.72rem;
+  font-weight: 850;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.assignedClearButton {
+  min-height: 44px;
+  border: 1px solid rgba(205, 218, 210, 0.98);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.96);
+  color: #183b31;
+  font: inherit;
+  font-weight: 780;
+  cursor: pointer;
+}
+
+.assignedClearButton:hover {
+  border-color: rgba(101, 178, 140, 0.55);
+  background: #f2faf6;
+}
+
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+}
+
+.modalBackdrop {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  background: rgba(10, 30, 23, 0.5);
+  cursor: default;
+}
+
+.modal {
+  position: relative;
+  width: min(100%, 420px);
+  padding: 22px;
+  border: 1px solid rgba(214, 224, 218, 0.98);
+  border-radius: 22px;
+  background: #ffffff;
+  box-shadow: 0 26px 70px rgba(13, 39, 31, 0.24);
+}
+
+.modal h2 {
+  margin: 0;
+  color: #14372d;
+  font-size: 1.35rem;
+  letter-spacing: -0.035em;
+}
+
+.modal p {
+  margin: 10px 0 0;
+  color: #5d6f68;
+  font-size: 0.96rem;
+  line-height: 1.55;
+}
+
+.modalActions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.modalActions button {
+  min-height: 46px;
+  border: 1px solid rgba(205, 218, 210, 0.98);
+  border-radius: 14px;
+  background: #ffffff;
+  color: #183b31;
+  font: inherit;
+  font-weight: 780;
+  cursor: pointer;
+}
+
+.modalActions .modalConfirm {
+  border-color: rgba(187, 139, 50, 0.46);
+  background: #fff2d6;
+  color: #684607;
+}
+
+.modalActions button:disabled,
+.assignedClearButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+@media (max-width: 390px) {
+  .modalActions {
+    grid-template-columns: 1fr;
+  }
+}
