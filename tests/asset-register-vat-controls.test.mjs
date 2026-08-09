@@ -14,31 +14,29 @@ test('the register VAT selector updates the total and every asset card', () => {
   assert.match(client, /Number\(asset\.value \|\| 0\) \* ASSET_REGISTER_SUMMARY_VAT_MULTIPLIER/);
   assert.match(client, /handleRegisterValueVatModeChange\('excluded'\)/);
   assert.match(client, /handleRegisterValueVatModeChange\('included'\)/);
-  assert.doesNotMatch(client, /assetValueVatModes\[asset\.id\] \?\? 'excluded'/);
 });
 
-test('asset quick actions live inside the asset card', () => {
+test('asset quick actions remain outside the asset card', () => {
   assert.match(
     client,
-    /<article[\s\S]*?<div className=\{styles\.assetSideActions\} role="group"[\s\S]*?<div className=\{styles\.assetHeader\}>/,
+    /assetCardRow[\s\S]*?<div className=\{styles\.assetSideActions\}>[\s\S]*?<article/,
   );
-  assert.match(styles, /\.assetCard > \.assetSideActions \{/);
-  assert.match(styles, /\.assetCard > \.assetHeader > \.assetTitleBlock \{[\s\S]*?padding-left:/);
+  assert.doesNotMatch(client, /<article[\s\S]{0,1200}<div className=\{styles\.assetSideActions\}/);
+  assert.match(styles, /\.assetSideActions \{[\s\S]*?position: absolute;[\s\S]*?left:/);
+  assert.doesNotMatch(styles, /\.assetCard > \.assetSideActions/);
 });
 
-test('the per-asset VAT control stays aligned with its amount', () => {
-  assert.match(
-    client,
-    /assetValueVatAmountRow[\s\S]*?<strong>\{money\(displayedAssetValue\)\}<\/strong>[\s\S]*?assetCardVatToggle/,
-  );
-  assert.doesNotMatch(client, /<\/article>\s*<button[\s\S]{0,400}assetCardVatToggle/);
-  assert.match(styles, /\.assetValueVatAmountRow \{[\s\S]*?flex-wrap: nowrap;[\s\S]*?align-items: center;/);
-  assert.match(styles, /\.assetValueVatAmountRow \.assetCardVatToggle \{[\s\S]*?position: static !important;/);
+test('the per-asset VAT arrow remains outside the asset card', () => {
+  assert.match(client, /<\/article>\s*<button[\s\S]{0,500}assetCardVatToggle/);
+  assert.doesNotMatch(client, /assetValueVatAmountRow/);
+  assert.match(styles, /\.assetCardVatToggle \{[\s\S]*?position: absolute;[\s\S]*?right:/);
 });
 
-test('the global VAT selector clearly explains its scope', () => {
-  assert.match(client, /Show all asset values/);
+test('the Register value selector matches the Replacement value selector', () => {
+  assert.match(client, /Show all asset values as/);
   assert.match(client, /aria-label="VAT display for all asset values"/);
-  assert.match(styles, /\.heroVatFooter \.vatToggleGroup \{[\s\S]*?border: 2px solid/);
-  assert.match(styles, /\.heroVatFooter \.vatToggleButtonActive \{[\s\S]*?background:/);
+  assert.ok((client.match(/className=\{styles\.vatToggleGroup\}/g) ?? []).length >= 2);
+  assert.match(styles, /\.vatToggleControl \{[\s\S]*?width: 100%;/);
+  assert.match(styles, /\.vatTogglePrompt \{[\s\S]*?text-align: center;/);
+  assert.match(styles, /\.heroVatFooter \.vatToggleGroup \{[\s\S]*?width: 100%;/);
 });
