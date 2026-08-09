@@ -251,35 +251,42 @@ export function orderAssetsByGroups<T extends { id: string }>(assets: T[], group
   const originalIndex = new Map(assets.map((asset, index) => [asset.id, index]));
   const assetById = new Map(assets.map((asset) => [asset.id, asset]));
   const membershipByAssetId = buildAssetGroupMembershipMap(groups);
-  const emittedGroups = new Set<string>();
   const ordered: T[] = [];
 
+  groups
+    .map((group, groupIndex) => ({
+      group,
+      groupIndex,
+      firstVisibleAssetIndex: group.members.reduce(
+        (firstIndex, member) => Math.min(
+          firstIndex,
+          originalIndex.get(member.assetId) ?? Number.MAX_SAFE_INTEGER,
+        ),
+        Number.MAX_SAFE_INTEGER,
+      ),
+    }))
+    .filter(({ firstVisibleAssetIndex }) => firstVisibleAssetIndex !== Number.MAX_SAFE_INTEGER)
+    .sort((left, right) => (
+      left.firstVisibleAssetIndex - right.firstVisibleAssetIndex
+      || left.groupIndex - right.groupIndex
+    ))
+    .forEach(({ group }) => {
+      group.members
+        .slice()
+        .sort((left, right) => {
+          if (left.role !== right.role) return left.role === 'primary' ? -1 : 1;
+          if (left.sortOrder !== right.sortOrder) return left.sortOrder - right.sortOrder;
+          return (originalIndex.get(left.assetId) ?? Number.MAX_SAFE_INTEGER)
+            - (originalIndex.get(right.assetId) ?? Number.MAX_SAFE_INTEGER);
+        })
+        .forEach((member) => {
+          const memberAsset = assetById.get(member.assetId);
+          if (memberAsset) ordered.push(memberAsset);
+        });
+    });
+
   assets.forEach((asset) => {
-    const membership = membershipByAssetId.get(asset.id);
-
-    if (!membership) {
-      ordered.push(asset);
-      return;
-    }
-
-    if (emittedGroups.has(membership.group.id)) {
-      return;
-    }
-
-    emittedGroups.add(membership.group.id);
-
-    membership.group.members
-      .slice()
-      .sort((left, right) => {
-        if (left.role !== right.role) return left.role === 'primary' ? -1 : 1;
-        if (left.sortOrder !== right.sortOrder) return left.sortOrder - right.sortOrder;
-        return (originalIndex.get(left.assetId) ?? Number.MAX_SAFE_INTEGER)
-          - (originalIndex.get(right.assetId) ?? Number.MAX_SAFE_INTEGER);
-      })
-      .forEach((member) => {
-        const memberAsset = assetById.get(member.assetId);
-        if (memberAsset) ordered.push(memberAsset);
-      });
+    if (!membershipByAssetId.has(asset.id)) ordered.push(asset);
   });
 
   return ordered;

@@ -49,6 +49,13 @@ test('separate-value groups count every member and order the primary first', asy
     helpers.orderAssetsByGroups(assets, [separateGroup]).map((asset) => asset.id),
     ['truck', 'trailer', 'bowser', 'unrelated'],
   );
+  assert.deepEqual(
+    helpers.orderAssetsByGroups(
+      [assets[1], assets[0], assets[2], assets[3]],
+      [separateGroup],
+    ).map((asset) => asset.id),
+    ['truck', 'trailer', 'bowser', 'unrelated'],
+  );
 });
 
 test('included-in-primary groups prevent register-value double counting', async () => {
@@ -185,6 +192,22 @@ test('the Switch flow can move an asset into an available umbrella', async () =>
   assert.match(client, /group\.registerId === null\s*\? group/);
   assert.match(styles, /\.assetRegisterMoveDestinationTabs/);
   assert.match(styles, /\.assetRegisterMoveDestinationTabActive/);
+});
+
+test('umbrellas stay first, start folded, and expose their unnoted alert count', async () => {
+  const [client, styles] = await Promise.all([
+    readFile(new URL('../app/asset-register/asset-register-client.tsx', import.meta.url), 'utf8'),
+    readFile(new URL('../app/asset-register/page.module.css', import.meta.url), 'utf8'),
+  ]);
+
+  assert.match(client, /const \[expandedAssetGroupIds, setExpandedAssetGroupIds\] = useState<Set<string>>\(\(\) => new Set\(\)\)/);
+  assert.match(client, /group && !expandedAssetGroupIds\.has\(group\.id\)/);
+  assert.match(client, /const isCollapsed = !expandedAssetGroupIds\.has\(group\.id\)/);
+  assert.match(client, /const groupUnnotedAlertCount = group\.members\.reduce/);
+  assert.match(client, /assetUnnotedAlertCount\(memberAsset\)/);
+  assert.match(client, /styles\.registerChangeAlertBadge.*styles\.assetGroupAlertBadge/);
+  assert.match(styles, /\.assetGroupUmbrella \{[\s\S]*?position: relative;[\s\S]*?overflow: visible;/);
+  assert.match(styles, /\.assetGroupAlertBadge \{/);
 });
 
 test('View details stays on one line inside grouped cards', async () => {
