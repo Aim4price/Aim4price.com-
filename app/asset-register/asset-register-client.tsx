@@ -6094,9 +6094,14 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     }, 120);
   }
 
+  function handleRegisterValueVatModeChange(nextMode: 'excluded' | 'included') {
+    setRegisterValueVatMode(nextMode);
+    setAssetValueVatModes({});
+  }
+
   function handleAssetValueVatToggle(assetId: string) {
     setAssetValueVatModes((currentModes) => {
-      const currentMode = currentModes[assetId] ?? 'excluded';
+      const currentMode = currentModes[assetId] ?? registerValueVatMode;
 
       return {
         ...currentModes,
@@ -13359,23 +13364,26 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                   </div>
 
                   <div className={`${styles.heroSummaryFooter} ${styles.heroVatFooter}`}>
-                    <div className={styles.vatToggleGroup} aria-label="Register value VAT display">
-                      <button
-                        type="button"
-                        className={`${styles.vatToggleButton} ${registerValueVatMode === 'excluded' ? styles.vatToggleButtonActive : ''}`}
-                        onClick={() => setRegisterValueVatMode('excluded')}
-                        aria-pressed={registerValueVatMode === 'excluded'}
-                      >
-                        Excl. VAT
-                      </button>
-                      <button
-                        type="button"
-                        className={`${styles.vatToggleButton} ${registerValueVatMode === 'included' ? styles.vatToggleButtonActive : ''}`}
-                        onClick={() => setRegisterValueVatMode('included')}
-                        aria-pressed={registerValueVatMode === 'included'}
-                      >
-                        Incl. VAT
-                      </button>
+                    <div className={styles.vatToggleControl}>
+                      <span className={styles.vatTogglePrompt}>Show all asset values</span>
+                      <div className={styles.vatToggleGroup} aria-label="VAT display for all asset values">
+                        <button
+                          type="button"
+                          className={`${styles.vatToggleButton} ${registerValueVatMode === 'excluded' ? styles.vatToggleButtonActive : ''}`}
+                          onClick={() => handleRegisterValueVatModeChange('excluded')}
+                          aria-pressed={registerValueVatMode === 'excluded'}
+                        >
+                          Excl. VAT
+                        </button>
+                        <button
+                          type="button"
+                          className={`${styles.vatToggleButton} ${registerValueVatMode === 'included' ? styles.vatToggleButtonActive : ''}`}
+                          onClick={() => handleRegisterValueVatModeChange('included')}
+                          aria-pressed={registerValueVatMode === 'included'}
+                        >
+                          Incl. VAT
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -13639,8 +13647,10 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                       ? busyDealerCorrectionId === dealerAssetCorrection.id
                       : false;
                     const isManualValueAsset = asset.selectedMethod === 'manual';
-                    const assetValueVatMode = assetValueVatModes[asset.id] ?? 'excluded';
-                    const displayedAssetValue = assetValueVatMode === 'included' ? Math.round(Number(asset.value || 0) * 1.15) : asset.value;
+                    const assetValueVatMode = assetValueVatModes[asset.id] ?? registerValueVatMode;
+                    const displayedAssetValue = assetValueVatMode === 'included'
+                      ? Math.round(Number(asset.value || 0) * ASSET_REGISTER_SUMMARY_VAT_MULTIPLIER)
+                      : asset.value;
                     const assetValueVatLabel = assetValueVatMode === 'included' ? 'Incl. VAT' : 'Excl. VAT';
                     const assetValueVatToggleLabel = assetValueVatMode === 'included' ? `Show ${asset.title} value excluding VAT` : `Show ${asset.title} value including VAT`;
                     const maintenanceDoneLabel =
@@ -13688,36 +13698,35 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
 
                     return (
                       <div className={`${styles.assetCardRow} ${expandedAssetId && !isExpanded ? styles.assetCardRowMuted : ''}`} key={asset.id}>
-                        {canUseOwnerOnlyAssetActions || isAccountantWorkspace ? (
-                          <div className={styles.assetSideActions}>
-                            <button
-                              type="button"
-                              className={`${styles.assetFlagButton} ${isFlagged ? styles.assetFlagButtonActive : ''}`}
-                              onClick={() => void handleAssetFlagToggle(asset)}
-                              disabled={isFlagBusy}
-                              aria-label={isFlagged ? `Unflag ${asset.title}` : `Flag ${asset.title}`}
-                              aria-pressed={isFlagged}
-                              title={isFlagged ? `Unflag ${asset.title}` : `Flag ${asset.title}`}
-                            >
-                              <FlagIcon className={styles.assetFlagIcon} />
-                            </button>
-
-                            <button
-                              type="button"
-                              className={styles.assetRegisterMoveButton}
-                              onClick={() => openAssetRegisterMoveManager(asset)}
-                              aria-label={`Move ${asset.title} to another asset register`}
-                              title="Move to another asset register"
-                            >
-                              <ChangeRegisterIcon className={styles.assetRegisterMoveIcon} />
-                            </button>
-                          </div>
-                        ) : null}
-
                         <article
                           id={`asset-card-${asset.id}`}
                           className={`${styles.assetCard} ${isExpanded ? styles.assetCardExpanded : ''} ${isFlagged ? styles.assetCardFlagged : ''} ${estimateNeedsUpdate ? styles.assetCardEstimateStale : ''} ${openPartnerNote ? `${styles.assetCardPartnerNote} ${partnerNoteToneClass}` : ''} ${maintenanceAlert || licenseRenewalAlert ? styles.assetCardMaintenanceUpcoming : ''} ${latestMaintenanceStatus ? styles.assetCardMaintenanceDone : ''} ${latestIssueNoteStatus ? styles.assetCardIssueNote : ''} ${dealerAssetCorrection ? styles.assetCardDealerCorrection : ''} ${dealerCorrectionRevaluationAlert ? styles.assetCardDealerCorrectionWarning : ''}`}
                         >
+                          {canUseOwnerOnlyAssetActions || isAccountantWorkspace ? (
+                            <div className={styles.assetSideActions} role="group" aria-label={`Actions for ${asset.title}`}>
+                              <button
+                                type="button"
+                                className={`${styles.assetFlagButton} ${isFlagged ? styles.assetFlagButtonActive : ''}`}
+                                onClick={() => void handleAssetFlagToggle(asset)}
+                                disabled={isFlagBusy}
+                                aria-label={isFlagged ? `Unflag ${asset.title}` : `Flag ${asset.title}`}
+                                aria-pressed={isFlagged}
+                                title={isFlagged ? `Unflag ${asset.title}` : `Flag ${asset.title}`}
+                              >
+                                <FlagIcon className={styles.assetFlagIcon} />
+                              </button>
+
+                              <button
+                                type="button"
+                                className={styles.assetRegisterMoveButton}
+                                onClick={() => openAssetRegisterMoveManager(asset)}
+                                aria-label={`Move ${asset.title} to another asset register`}
+                                title="Move to another asset register"
+                              >
+                                <ChangeRegisterIcon className={styles.assetRegisterMoveIcon} />
+                              </button>
+                            </div>
+                          ) : null}
                         <div className={styles.assetHeader}>
                           <div className={styles.assetTitleBlock}>
                             {isFlagged || isLive || estimateNeedsUpdate || openPartnerNote || maintenanceAlert || licenseRenewalAlert || latestMaintenanceStatus || latestIssueNoteStatus || dealerAssetCorrection ? (
@@ -13758,7 +13767,19 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                             <div className={styles.valueBlock}>
                               <div className={styles.assetValueVatDisplay}>
                                 <div className={styles.assetValueVatText}>
-                                  <strong>{money(displayedAssetValue)}</strong>
+                                  <div className={styles.assetValueVatAmountRow}>
+                                    <strong>{money(displayedAssetValue)}</strong>
+                                    <button
+                                      type="button"
+                                      className={`${styles.assetValueVatToggle} ${styles.assetCardVatToggle} ${assetValueVatMode === 'included' ? styles.assetValueVatToggleIncluded : ''}`}
+                                      onClick={() => handleAssetValueVatToggle(asset.id)}
+                                      aria-label={assetValueVatToggleLabel}
+                                      aria-pressed={assetValueVatMode === 'included'}
+                                      title={assetValueVatToggleLabel}
+                                    >
+                                      <span aria-hidden="true">{assetValueVatMode === 'included' ? '‹' : '›'}</span>
+                                    </button>
+                                  </div>
                                   <span>{assetValueVatLabel}</span>
                                 </div>
                               </div>
@@ -14374,16 +14395,6 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                           </div>
                         ) : null}
                         </article>
-                        <button
-                          type="button"
-                          className={`${styles.assetValueVatToggle} ${styles.assetCardVatToggle} ${assetValueVatMode === 'included' ? styles.assetValueVatToggleIncluded : ''}`}
-                          onClick={() => handleAssetValueVatToggle(asset.id)}
-                          aria-label={assetValueVatToggleLabel}
-                          aria-pressed={assetValueVatMode === 'included'}
-                          title={assetValueVatToggleLabel}
-                        >
-                          <span aria-hidden="true">{assetValueVatMode === 'included' ? '‹' : '›'}</span>
-                        </button>
                       </div>
                     );
                   })}
