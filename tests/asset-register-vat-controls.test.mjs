@@ -16,27 +16,25 @@ test('the register VAT selector updates the total and every asset card', () => {
   assert.match(client, /handleRegisterValueVatModeChange\('included'\)/);
 });
 
-test('asset quick actions remain outside the asset card', () => {
+test('asset quick actions use a boxed rail outside the asset card', () => {
   assert.match(
     client,
     /assetCardRow[\s\S]*?<div className=\{styles\.assetSideActions\}>[\s\S]*?<article/,
   );
   assert.doesNotMatch(client, /<article[\s\S]{0,1200}<div className=\{styles\.assetSideActions\}/);
-  assert.match(styles, /\.assetSideActions \{[\s\S]*?position: absolute;[\s\S]*?left:/);
-  assert.doesNotMatch(styles, /\.assetCard > \.assetSideActions/);
+  assert.match(styles, /\.assetSideActions \{[\s\S]*?left: calc\(0rem - clamp[\s\S]*?padding: 0\.38rem;[\s\S]*?border: 1px solid/);
+  assert.match(styles, /\.assetSideActions \.assetFlagButton,[\s\S]*?\.assetSideActions \.assetRegisterMoveButton \{[\s\S]*?background:/);
 });
 
 test('the per-asset VAT arrow remains outside the asset card', () => {
   assert.match(client, /<\/article>\s*<button[\s\S]{0,500}assetCardVatToggle/);
-  assert.doesNotMatch(client, /assetValueVatAmountRow/);
   assert.match(styles, /\.assetCardVatToggle \{[\s\S]*?position: absolute;[\s\S]*?right:/);
 });
 
-test('the Register value selector matches the Replacement value selector', () => {
-  assert.match(client, /Show all asset values as/);
-  assert.match(client, /aria-label="VAT display for all asset values"/);
+test('the Register value selector matches Replacement value without helper copy', () => {
+  assert.doesNotMatch(client, /Show all asset values as/);
+  assert.doesNotMatch(client, /vatTogglePrompt|vatToggleControl/);
   assert.ok((client.match(/className=\{styles\.vatToggleGroup\}/g) ?? []).length >= 2);
-  assert.match(styles, /\.vatToggleControl \{[\s\S]*?width: 100%;/);
-  assert.match(styles, /\.vatTogglePrompt \{[\s\S]*?text-align: center;/);
   assert.match(styles, /\.heroVatFooter \.vatToggleGroup \{[\s\S]*?width: 100%;/);
+  assert.doesNotMatch(styles, /\.vatTogglePrompt|\.vatToggleControl/);
 });
