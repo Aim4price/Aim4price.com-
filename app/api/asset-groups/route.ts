@@ -113,17 +113,15 @@ function errorResponse(error: unknown): NextResponse {
             ? 'Choose one primary asset for the group.'
             : message === 'ASSET_GROUP_MEMBERS_REQUIRED'
               ? 'Choose at least two assets for a group.'
-              : message === 'ASSET_GROUP_TOO_MANY_MEMBERS'
-                ? 'An asset group can contain at most 50 assets.'
-                : message === 'ASSET_GROUP_ASSET_NOT_FOUND'
-                  ? 'One or more selected assets could not be found.'
-                  : message === 'ASSET_GROUP_REGISTER_MISMATCH'
-                    ? 'All grouped assets must belong to the same Asset Register.'
-                    : message.startsWith('ASSET_GROUP_ALREADY_LINKED:')
-                      ? `An asset is already linked to ${message.split(':').slice(1).join(':') || 'another group'}.`
-                      : message === 'ASSET_GROUP_NOT_FOUND'
-                        ? 'The asset group could not be found.'
-                        : 'The asset group could not be saved.';
+              : message === 'ASSET_GROUP_ASSET_NOT_FOUND'
+                ? 'One or more selected assets could not be found.'
+                : message === 'ASSET_GROUP_REGISTER_MISMATCH'
+                  ? 'All grouped assets must belong to the same Asset Register.'
+                  : message.startsWith('ASSET_GROUP_ALREADY_LINKED:')
+                    ? `An asset is already linked to ${message.split(':').slice(1).join(':') || 'another group'}.`
+                    : message === 'ASSET_GROUP_NOT_FOUND'
+                      ? 'The asset group could not be found.'
+                      : 'The asset group could not be saved.';
 
   return NextResponse.json({ ok: false, error: friendly }, { status });
 }
