@@ -112,6 +112,18 @@ test('group persistence validates ownership, membership, and safe unlink behavio
   assert.match(persistence, /value_mode = case when \$3::boolean then 'separate'/);
 });
 
+test('umbrella membership is not capped at 50 assets', async () => {
+  const [persistence, route, client] = await Promise.all([
+    readFile(new URL('../lib/asset-groups.ts', import.meta.url), 'utf8'),
+    readFile(new URL('../app/api/asset-groups/route.ts', import.meta.url), 'utf8'),
+    readFile(new URL('../app/asset-register/asset-register-client.tsx', import.meta.url), 'utf8'),
+  ]);
+
+  assert.doesNotMatch(persistence, /MAX_GROUP_MEMBERS|ASSET_GROUP_TOO_MANY_MEMBERS/);
+  assert.doesNotMatch(route, /ASSET_GROUP_TOO_MANY_MEMBERS|at most 50 assets/);
+  assert.doesNotMatch(client, /members\.length\s*[<>]=?\s*50/);
+});
+
 test('group metadata and counted-value rules are present in PDF and Excel exports', async () => {
   const source = await readFile(new URL('../app/api/asset-register/export/route.ts', import.meta.url), 'utf8');
   assert.match(source, /name: 'Asset Groups'/);
