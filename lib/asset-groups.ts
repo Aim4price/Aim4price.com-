@@ -29,7 +29,6 @@ type AssetGroupMemberRow = {
 };
 
 const MAX_GROUP_NAME_LENGTH = 80;
-const MAX_GROUP_MEMBERS = 50;
 
 export type MoveAssetToGroupInput = {
   assetId: string;
@@ -180,7 +179,6 @@ export async function saveAssetGroup(userId: string, input: AssetGroupSaveInput)
   if (!name) throw new Error('ASSET_GROUP_NAME_REQUIRED');
   if (!primaryAssetId) throw new Error('ASSET_GROUP_PRIMARY_REQUIRED');
   if (memberIds.length < 2) throw new Error('ASSET_GROUP_MEMBERS_REQUIRED');
-  if (memberIds.length > MAX_GROUP_MEMBERS) throw new Error('ASSET_GROUP_TOO_MANY_MEMBERS');
 
   if (!isCombinedScope) {
     const register = await getAssetRegisterForUser(userId, registerId);
@@ -365,14 +363,6 @@ export async function moveAssetToGroup(
       const unchanged = await getAssetGroupById(userId, targetGroupId);
       if (!unchanged) throw new Error('ASSET_GROUP_NOT_FOUND');
       return unchanged;
-    }
-
-    const targetCountResult = await client.query<{ count: string }>(
-      'select count(*)::text as count from public.asset_group_members where group_id = $1::uuid',
-      [targetGroupId],
-    );
-    if (Number(targetCountResult.rows[0]?.count ?? 0) >= MAX_GROUP_MEMBERS) {
-      throw new Error('ASSET_GROUP_TOO_MANY_MEMBERS');
     }
 
     if (sourceMembership?.group_id) {

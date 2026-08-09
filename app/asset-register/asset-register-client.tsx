@@ -6305,7 +6305,6 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
   function canDropAssetIntoGroup(assetId: string | null, targetGroup: AssetGroup): boolean {
     if (!assetId || !canManageAssetGroups || isSavingAssetGroup) return false;
     const persistedTargetGroup = assetGroups.find((group) => group.id === targetGroup.id) ?? targetGroup;
-    if (persistedTargetGroup.members.length >= 50) return false;
     if (persistedTargetGroup.members.some((member) => member.assetId === assetId)) return false;
 
     const asset = assets.find((entry) => entry.id === assetId);
@@ -6816,8 +6815,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
 
     return assetRegisterMoveGroups
       .filter((group) => (
-        group.members.length < 50
-        && !group.members.some((member) => member.assetId === assetId)
+        !group.members.some((member) => member.assetId === assetId)
         && (!isAccountantWorkspace || group.registerId === assetRegisterMoveSourceId)
       ))
       .sort((left, right) => left.name.localeCompare(right.name, 'en-ZA'));
