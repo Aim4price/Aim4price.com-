@@ -13365,7 +13365,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
 
                   <div className={`${styles.heroSummaryFooter} ${styles.heroVatFooter}`}>
                     <div className={styles.vatToggleControl}>
-                      <span className={styles.vatTogglePrompt}>Show all asset values</span>
+                      <span className={styles.vatTogglePrompt}>Show all asset values as</span>
                       <div className={styles.vatToggleGroup} aria-label="VAT display for all asset values">
                         <button
                           type="button"
@@ -13698,35 +13698,36 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
 
                     return (
                       <div className={`${styles.assetCardRow} ${expandedAssetId && !isExpanded ? styles.assetCardRowMuted : ''}`} key={asset.id}>
+                        {canUseOwnerOnlyAssetActions || isAccountantWorkspace ? (
+                          <div className={styles.assetSideActions}>
+                            <button
+                              type="button"
+                              className={`${styles.assetFlagButton} ${isFlagged ? styles.assetFlagButtonActive : ''}`}
+                              onClick={() => void handleAssetFlagToggle(asset)}
+                              disabled={isFlagBusy}
+                              aria-label={isFlagged ? `Unflag ${asset.title}` : `Flag ${asset.title}`}
+                              aria-pressed={isFlagged}
+                              title={isFlagged ? `Unflag ${asset.title}` : `Flag ${asset.title}`}
+                            >
+                              <FlagIcon className={styles.assetFlagIcon} />
+                            </button>
+
+                            <button
+                              type="button"
+                              className={styles.assetRegisterMoveButton}
+                              onClick={() => openAssetRegisterMoveManager(asset)}
+                              aria-label={`Move ${asset.title} to another asset register`}
+                              title="Move to another asset register"
+                            >
+                              <ChangeRegisterIcon className={styles.assetRegisterMoveIcon} />
+                            </button>
+                          </div>
+                        ) : null}
+
                         <article
                           id={`asset-card-${asset.id}`}
                           className={`${styles.assetCard} ${isExpanded ? styles.assetCardExpanded : ''} ${isFlagged ? styles.assetCardFlagged : ''} ${estimateNeedsUpdate ? styles.assetCardEstimateStale : ''} ${openPartnerNote ? `${styles.assetCardPartnerNote} ${partnerNoteToneClass}` : ''} ${maintenanceAlert || licenseRenewalAlert ? styles.assetCardMaintenanceUpcoming : ''} ${latestMaintenanceStatus ? styles.assetCardMaintenanceDone : ''} ${latestIssueNoteStatus ? styles.assetCardIssueNote : ''} ${dealerAssetCorrection ? styles.assetCardDealerCorrection : ''} ${dealerCorrectionRevaluationAlert ? styles.assetCardDealerCorrectionWarning : ''}`}
                         >
-                          {canUseOwnerOnlyAssetActions || isAccountantWorkspace ? (
-                            <div className={styles.assetSideActions} role="group" aria-label={`Actions for ${asset.title}`}>
-                              <button
-                                type="button"
-                                className={`${styles.assetFlagButton} ${isFlagged ? styles.assetFlagButtonActive : ''}`}
-                                onClick={() => void handleAssetFlagToggle(asset)}
-                                disabled={isFlagBusy}
-                                aria-label={isFlagged ? `Unflag ${asset.title}` : `Flag ${asset.title}`}
-                                aria-pressed={isFlagged}
-                                title={isFlagged ? `Unflag ${asset.title}` : `Flag ${asset.title}`}
-                              >
-                                <FlagIcon className={styles.assetFlagIcon} />
-                              </button>
-
-                              <button
-                                type="button"
-                                className={styles.assetRegisterMoveButton}
-                                onClick={() => openAssetRegisterMoveManager(asset)}
-                                aria-label={`Move ${asset.title} to another asset register`}
-                                title="Move to another asset register"
-                              >
-                                <ChangeRegisterIcon className={styles.assetRegisterMoveIcon} />
-                              </button>
-                            </div>
-                          ) : null}
                         <div className={styles.assetHeader}>
                           <div className={styles.assetTitleBlock}>
                             {isFlagged || isLive || estimateNeedsUpdate || openPartnerNote || maintenanceAlert || licenseRenewalAlert || latestMaintenanceStatus || latestIssueNoteStatus || dealerAssetCorrection ? (
@@ -13767,19 +13768,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                             <div className={styles.valueBlock}>
                               <div className={styles.assetValueVatDisplay}>
                                 <div className={styles.assetValueVatText}>
-                                  <div className={styles.assetValueVatAmountRow}>
-                                    <strong>{money(displayedAssetValue)}</strong>
-                                    <button
-                                      type="button"
-                                      className={`${styles.assetValueVatToggle} ${styles.assetCardVatToggle} ${assetValueVatMode === 'included' ? styles.assetValueVatToggleIncluded : ''}`}
-                                      onClick={() => handleAssetValueVatToggle(asset.id)}
-                                      aria-label={assetValueVatToggleLabel}
-                                      aria-pressed={assetValueVatMode === 'included'}
-                                      title={assetValueVatToggleLabel}
-                                    >
-                                      <span aria-hidden="true">{assetValueVatMode === 'included' ? '‹' : '›'}</span>
-                                    </button>
-                                  </div>
+                                  <strong>{money(displayedAssetValue)}</strong>
                                   <span>{assetValueVatLabel}</span>
                                 </div>
                               </div>
@@ -14395,6 +14384,16 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                           </div>
                         ) : null}
                         </article>
+                        <button
+                          type="button"
+                          className={`${styles.assetValueVatToggle} ${styles.assetCardVatToggle} ${assetValueVatMode === 'included' ? styles.assetValueVatToggleIncluded : ''}`}
+                          onClick={() => handleAssetValueVatToggle(asset.id)}
+                          aria-label={assetValueVatToggleLabel}
+                          aria-pressed={assetValueVatMode === 'included'}
+                          title={assetValueVatToggleLabel}
+                        >
+                          <span aria-hidden="true">{assetValueVatMode === 'included' ? '‹' : '›'}</span>
+                        </button>
                       </div>
                     );
                   })}
