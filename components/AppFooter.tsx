@@ -2,28 +2,106 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import {
+  readCachedHeaderSession,
+  refreshCachedHeaderSession,
+  type HeaderSessionUser,
+} from '../lib/header-session-cache';
 import styles from './AppFooter.module.css';
 
 const footerContentId = 'aim4price-footer-content';
 
-const toolLinks = [
-  { href: '/', label: 'Home' },
-  { href: '/valuation', label: 'Get Estimate' },
-  { href: '/asset-register', label: 'Asset Registers' },
-  { href: '/marketplace', label: 'Marketplace' },
-  { href: '/account', label: 'My Account' },
-];
+type FooterLink = {
+  href: string;
+  label: string;
+};
 
-const companyLinks = [
+type FooterWorkspace = {
+  label: string;
+  links: FooterLink[];
+};
+
+const publicWorkspace: FooterWorkspace = {
+  label: 'Explore',
+  links: [{ href: '/valuation', label: 'Get Estimate' }],
+};
+
+const ownerWorkspace: FooterWorkspace = {
+  label: 'Owner tools',
+  links: [
+    { href: '/asset-register', label: 'Asset Register' },
+    { href: '/valuation', label: 'Get Estimate' },
+    { href: '/asset-map', label: 'Asset Map' },
+    { href: '/my-invoices', label: 'Cost Ledger' },
+    { href: '/maintenance', label: 'Maintenance' },
+    { href: '/fuel', label: 'Fuel Ledger' },
+    { href: '/marketplace', label: 'Marketplace' },
+    { href: '/account', label: 'Account' },
+  ],
+};
+
+const dealerWorkspace: FooterWorkspace = {
+  label: 'Dealer tools',
+  links: [
+    { href: '/leads', label: 'Leads' },
+    { href: '/tracking', label: 'Maintenance' },
+    { href: '/dealer-costs', label: 'Client Costs' },
+    { href: '/valuation', label: 'Get Estimate' },
+    { href: '/marketplace', label: 'Marketplace' },
+    { href: '/account', label: 'Account' },
+  ],
+};
+
+const financeWorkspace: FooterWorkspace = {
+  label: 'Finance tools',
+  links: [
+    { href: '/leads', label: 'My Leads' },
+    { href: '/valuation', label: 'Get Estimate' },
+    { href: '/account', label: 'Account' },
+  ],
+};
+
+const accountantWorkspace: FooterWorkspace = {
+  label: 'Accountant tools',
+  links: [
+    { href: '/leads', label: 'My Clients' },
+    { href: '/valuation', label: 'Get Estimate' },
+    { href: '/account', label: 'Account' },
+  ],
+};
+
+const insuranceWorkspace: FooterWorkspace = {
+  label: 'Insurance tools',
+  links: [
+    { href: '/leads', label: 'My Leads' },
+    { href: '/shared-registers', label: 'Shared Registers' },
+    { href: '/valuation', label: 'Get Estimate' },
+    { href: '/account', label: 'Account' },
+  ],
+};
+
+const companyLinks: FooterLink[] = [
   { href: '/about-us', label: 'About Aim4price' },
   { href: '/contact-us', label: 'Contact Us' },
 ];
 
-const legalLinks = [
+const legalLinks: FooterLink[] = [
   { href: '/privacy-policy', label: 'Privacy Policy' },
   { href: '/terms-of-service', label: 'Terms of Service' },
 ];
+
+function getWorkspace(session: HeaderSessionUser | null | undefined): FooterWorkspace {
+  if (session?.accountType === 'owner') return ownerWorkspace;
+  if (session?.accountType === 'dealer') return dealerWorkspace;
+  if (session?.accountType === 'insurance') return insuranceWorkspace;
+
+  if (session?.accountType === 'finance') {
+    return session.accountSubtype === 'accountant' ? accountantWorkspace : financeWorkspace;
+  }
+
+  return publicWorkspace;
+}
 
 function ChevronIcon() {
   return (
@@ -36,8 +114,34 @@ function ChevronIcon() {
 export default function AppFooter() {
   const pathname = usePathname();
   const footerRef = useRef<HTMLElement | null>(null);
+  const [session, setSession] = useState<HeaderSessionUser | null>();
   const [isExpanded, setIsExpanded] = useState(false);
   const currentYear = new Date().getFullYear();
+  const workspace = useMemo(() => getWorkspace(session), [session]);
+
+  useEffect(() => {
+    let mounted = true;
+    const cachedSession = readCachedHeaderSession();
+
+    if (cachedSession !== undefined) {
+      setSession(cachedSession);
+    }
+
+    async function loadSession() {
+      try {
+        const nextSession = await refreshCachedHeaderSession();
+        if (mounted) setSession(nextSession);
+      } catch {
+        if (mounted && cachedSession === undefined) setSession(null);
+      }
+    }
+
+    void loadSession();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   if (
     pathname?.startsWith('/field-manager') ||
@@ -73,30 +177,25 @@ export default function AppFooter() {
           <div className={styles.footerPanel}>
             <div className={styles.shell}>
               <div className={styles.topRow}>
-                <section className={styles.brandBlock} aria-label="Aim4price footer overview">
-                  <span className={styles.brandEyebrow}>Asset management for South Africa</span>
-                  <span className={styles.brandName}>Aim4price</span>
+                <section className={styles.brandBlock} aria-label="About Aim4price">
+                  <Link href="/" className={styles.brandName}>
+                    Aim4price
+                  </Link>
 
                   <p className={styles.brandText}>
-                    Aim4price brings asset management, detailed reports and trusted professionals
-                    together around one owner-controlled Asset Register.
+                    One secure place to value, manage and share asset information with the people
+                    you trust.
                   </p>
 
                   <p className={styles.brandSupport}>
-                    Built for machinery, vehicles, equipment and property across South African
-                    operations.
+                    Built for South African machinery, vehicles, equipment and property.
                   </p>
-
-                  <div className={styles.trustRow} aria-label="Aim4price platform principles">
-                    <span>Owner-controlled records</span>
-                    <span>Permission-based collaboration</span>
-                  </div>
                 </section>
 
                 <div className={styles.linksGrid}>
-                  <nav className={styles.linkColumn} aria-label="Aim4price tools footer links">
-                    <h3>Tools</h3>
-                    {toolLinks.map((link) => (
+                  <nav className={styles.linkColumn} aria-label={`${workspace.label} footer links`}>
+                    <h3>{workspace.label}</h3>
+                    {workspace.links.map((link) => (
                       <Link key={link.href} href={link.href}>
                         {link.label}
                       </Link>
@@ -124,10 +223,7 @@ export default function AppFooter() {
               </div>
 
               <div className={styles.bottomRow}>
-                <p>
-                  © {currentYear} Aim4price. One clear asset record, with the right people around it.
-                </p>
-                <p className={styles.rights}>All rights reserved.</p>
+                <p>© {currentYear} Aim4price. All rights reserved.</p>
               </div>
             </div>
           </div>
