@@ -1,4 +1,6 @@
 import { getAccountProfile } from './account-profile';
+import { listAssetGroups } from './asset-groups';
+import type { AssetGroup } from './asset-groups-shared';
 import {
   getAssetRegisterItemById,
   listAssetRegisterItems,
@@ -317,6 +319,7 @@ export async function getAccountantRegisterData(
   register: AssetRegisterSummary;
   registers: AssetRegisterSummary[];
   items: AccountantAsset[];
+  groups: AssetGroup[];
 }> {
   const access = await loadAccess(accountantUserId, shareId);
   const [profile, registers] = await Promise.all([
@@ -329,6 +332,9 @@ export async function getAccountantRegisterData(
   const items = options.combined
     ? (await Promise.all(registers.map((entry) => listAssetRegisterItems(access.ownerUserId, entry.id)))).flat()
     : await listAssetRegisterItems(access.ownerUserId, selectedRegister.id);
+  const groups = options.combined
+    ? (await Promise.all(registers.map((entry) => listAssetGroups(access.ownerUserId, entry.id)))).flat()
+    : await listAssetGroups(access.ownerUserId, selectedRegister.id);
   const register: AssetRegisterSummary = options.combined
     ? {
         id: '__combined_asset_registers__',
@@ -374,6 +380,7 @@ export async function getAccountantRegisterData(
     profile,
     register,
     registers,
+    groups,
     items: items.map((item) => ({ ...item, accountingValue: byAsset.get(item.id) ?? null })),
   };
 }
