@@ -59,6 +59,7 @@ type AssetLeadType = 'finance' | 'insurance' | 'replacement_quote';
 type QuoteLeadStep = 'message' | 'consent' | null;
 type QuoteScope = 'asset' | 'register';
 type DisposalReason = 'sold' | 'traded_in' | 'scrapped' | 'written_off' | 'mistake_duplicate' | 'other';
+type AssetMoveDestination = 'register' | 'umbrella';
 
 const ASSET_GROUP_DRAG_DATA_TYPE = 'application/x-aim4price-asset-id';
 
@@ -5914,9 +5915,14 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
   const [registerSwitcherSearchTerm, setRegisterSwitcherSearchTerm] = useState('');
   const [assetRegisterMoveAsset, setAssetRegisterMoveAsset] = useState<RegisterAsset | null>(null);
   const [assetRegisterMoveSearchTerm, setAssetRegisterMoveSearchTerm] = useState('');
+  const [assetRegisterMoveDestination, setAssetRegisterMoveDestination] = useState<AssetMoveDestination>('register');
   const [assetRegisterMoveTargetId, setAssetRegisterMoveTargetId] = useState('');
+  const [assetRegisterMoveGroups, setAssetRegisterMoveGroups] = useState<AssetGroup[]>([]);
+  const [assetRegisterMoveGroupLoadError, setAssetRegisterMoveGroupLoadError] = useState('');
+  const [isLoadingAssetRegisterMoveGroups, setIsLoadingAssetRegisterMoveGroups] = useState(false);
   const [assetRegisterMoveError, setAssetRegisterMoveError] = useState('');
   const [isMovingAssetRegister, setIsMovingAssetRegister] = useState(false);
+  const assetRegisterMoveGroupsRequestRef = useRef(0);
   const [accountantNoteAsset, setAccountantNoteAsset] = useState<RegisterAsset | null>(null);
   const [accountantNoteDraft, setAccountantNoteDraft] = useState('');
   const [isSavingAccountantNote, setIsSavingAccountantNote] = useState(false);
@@ -6758,6 +6764,11 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     ? registerSwitcherOptions.length > 0
     : registerSwitcherOptions.length > 1;
   const isCombinedRegisterView = activeRegister?.id === COMBINED_REGISTER_ID || activeRegisterId === COMBINED_REGISTER_ID;
+  const canUseOwnerOnlyAssetActions = !isAccountantWorkspace;
+  const canManageRegisterStructure = canUseOwnerOnlyAssetActions || isAccountantWorkspace;
+  const canManageAssetGroups =
+    canUseOwnerOnlyAssetActions
+    || (!isCombinedRegisterView && Boolean(accountantAccess?.allowDirectUpdates));
   const activeRegisterUnnotedAlertCount = useMemo(() => assetListUnnotedAlertCount(assets), [assets]);
   const registerUnnotedAlertCounts = useMemo(() => {
     const countsByRegisterId = new Map<string, number>();
@@ -6800,11 +6811,36 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     })),
     [assetRegisterMoveTargets],
   );
-  const canUseOwnerOnlyAssetActions = !isAccountantWorkspace;
-  const canManageRegisterStructure = canUseOwnerOnlyAssetActions || isAccountantWorkspace;
-  const canManageAssetGroups =
-    canUseOwnerOnlyAssetActions
-    || (!isCombinedRegisterView && Boolean(accountantAccess?.allowDirectUpdates));
+  const assetRegisterMoveGroupTargets = useMemo(() => {
+    const assetId = assetRegisterMoveAsset?.id ?? '';
+
+    return assetRegisterMoveGroups
+      .filter((group) => (
+        group.members.length < 50
+        && !group.members.some((member) => member.assetId === assetId)
+        && (!isAccountantWorkspace || group.registerId === assetRegisterMoveSourceId)
+      ))
+      .sort((left, right) => left.name.localeCompare(right.name, 'en-ZA'));
+  }, [assetRegisterMoveAsset?.id, assetRegisterMoveGroups, assetRegisterMoveSourceId, isAccountantWorkspace]);
+  const assetRegisterMoveGroupOptions = useMemo<Array<ModalSelectOption<string>>>(
+    () => assetRegisterMoveGroupTargets.map((group) => {
+      const registerName = group.registerId
+        ? assetRegisters.find((register) => register.id === group.registerId)?.businessName || 'Asset Register'
+        : '';
+      const scopeDescription = group.registerId === null
+        ? 'Combined umbrella'
+        : group.registerId === assetRegisterMoveSourceId
+          ? registerName
+          : `${registerName} · becomes a combined umbrella`;
+
+      return {
+        value: group.id,
+        label: group.name,
+        description: `${group.members.length} linked ${group.members.length === 1 ? 'asset' : 'assets'} · ${scopeDescription} · ${assetGroupValueModeLabel(group.valueMode)}`,
+      };
+    }),
+    [assetRegisterMoveGroupTargets, assetRegisterMoveSourceId, assetRegisters],
+  );
   const canUseAccountantDocumentActions = isAccountantWorkspace && Boolean(accountantAccess?.allowDirectUpdates);
   const canShareActiveRegister = canUseOwnerOnlyAssetActions;
   const canAddAssetsToActiveRegister = canManageRegisterStructure && !isCombinedRegisterView;
@@ -7210,28 +7246,151 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     }
   }
 
+  async function loadAssetRegisterMoveGroups(requestId: number) {
+    if (!canManageAssetGroups) {
+      setAssetRegisterMoveGroups([]);
+      return;
+    }
+
+    if (isAccountantWorkspace) {
+      setAssetRegisterMoveGroups(assetGroups);
+      return;
+    }
+
+    setIsLoadingAssetRegisterMoveGroups(true);
+    setAssetRegisterMoveGroupLoadError('');
+
+    try {
+      const response = await fetch(buildAssetGroupsApiUrl(undefined, undefined, true), {
+        credentials: 'include',
+      });
+      const payload = await response.json() as AssetGroupApiResponse;
+
+      if (!response.ok || !payload.ok) {
+        throw new Error(payload.error ?? 'Umbrellas could not be loaded.');
+      }
+
+      if (assetRegisterMoveGroupsRequestRef.current !== requestId) return;
+      setAssetRegisterMoveGroups(Array.isArray(payload.groups) ? payload.groups : []);
+    } catch (error) {
+      if (assetRegisterMoveGroupsRequestRef.current !== requestId) return;
+      setAssetRegisterMoveGroupLoadError(
+        error instanceof Error ? error.message : 'Umbrellas could not be loaded.',
+      );
+    } finally {
+      if (assetRegisterMoveGroupsRequestRef.current === requestId) {
+        setIsLoadingAssetRegisterMoveGroups(false);
+      }
+    }
+  }
+
+  function resetAssetRegisterMoveManager() {
+    assetRegisterMoveGroupsRequestRef.current += 1;
+    setAssetRegisterMoveAsset(null);
+    setAssetRegisterMoveSearchTerm('');
+    setAssetRegisterMoveDestination('register');
+    setAssetRegisterMoveTargetId('');
+    setAssetRegisterMoveGroups([]);
+    setAssetRegisterMoveGroupLoadError('');
+    setIsLoadingAssetRegisterMoveGroups(false);
+    setAssetRegisterMoveError('');
+  }
+
   function openAssetRegisterMoveManager(asset: RegisterAsset) {
+    const requestId = assetRegisterMoveGroupsRequestRef.current + 1;
+    assetRegisterMoveGroupsRequestRef.current = requestId;
     setNotice(null);
     setAssetRegisterMoveAsset(asset);
     setAssetRegisterMoveSearchTerm(asset.title);
+    setAssetRegisterMoveDestination('register');
     setAssetRegisterMoveTargetId('');
+    setAssetRegisterMoveGroups(assetGroups);
+    setAssetRegisterMoveGroupLoadError('');
     setAssetRegisterMoveError('');
+    void loadAssetRegisterMoveGroups(requestId);
   }
 
   function closeAssetRegisterMoveManager() {
     if (isMovingAssetRegister) return;
-
-    setAssetRegisterMoveAsset(null);
-    setAssetRegisterMoveSearchTerm('');
-    setAssetRegisterMoveTargetId('');
-    setAssetRegisterMoveError('');
+    resetAssetRegisterMoveManager();
   }
 
   async function handleMoveAssetRegister() {
     if (!assetRegisterMoveAsset || !assetRegisterMoveTargetId || isMovingAssetRegister) {
       if (!assetRegisterMoveTargetId) {
-        setAssetRegisterMoveError('Choose the target asset register first.');
+        setAssetRegisterMoveError(
+          assetRegisterMoveDestination === 'umbrella'
+            ? 'Choose the target umbrella first.'
+            : 'Choose the target Asset Register first.',
+        );
       }
+      return;
+    }
+
+    if (assetRegisterMoveDestination === 'umbrella') {
+      const targetGroup = assetRegisterMoveGroupTargets.find(
+        (group) => group.id === assetRegisterMoveTargetId,
+      ) ?? null;
+
+      if (!canManageAssetGroups || !targetGroup) {
+        setAssetRegisterMoveError('Choose an available umbrella first.');
+        return;
+      }
+
+      const combinedScope = isCombinedRegisterView
+        || targetGroup.registerId === null
+        || targetGroup.registerId !== assetRegisterMoveSourceId;
+
+      if (isAccountantWorkspace && combinedScope) {
+        setAssetRegisterMoveError('This umbrella is not available in the current Asset Register.');
+        return;
+      }
+
+      const sourceGroup = allAssetGroupMemberships.get(assetRegisterMoveAsset.id)?.group ?? null;
+      const movedAssetTitle = assetRegisterMoveAsset.title;
+
+      setIsMovingAssetRegister(true);
+      setAssetRegisterMoveError('');
+
+      try {
+        const response = await fetch(buildAssetGroupsApiUrl(accountantShareId, undefined, combinedScope), {
+          method: 'PATCH',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            assetId: assetRegisterMoveAsset.id,
+            targetGroupId: targetGroup.id,
+            registerId: combinedScope ? null : targetGroup.registerId,
+            scope: combinedScope ? 'combined' : 'register',
+          }),
+        });
+        const payload = await response.json() as AssetGroupApiResponse;
+
+        if (!response.ok || !payload.ok) {
+          throw new Error(payload.error ?? 'The asset could not be moved to this umbrella.');
+        }
+
+        applyAssetGroups(Array.isArray(payload.groups) ? payload.groups : assetRegisterMoveGroups);
+        setCollapsedAssetGroupIds((current) => {
+          const next = new Set(current);
+          next.delete(targetGroup.id);
+          if (sourceGroup) next.delete(sourceGroup.id);
+          return next;
+        });
+        resetAssetRegisterMoveManager();
+        setNotice({
+          tone: 'success',
+          message: `${movedAssetTitle} moved to ${targetGroup.name}.`,
+        });
+        window.dispatchEvent(new CustomEvent('aim4price:asset-register-updated'));
+      } catch (error) {
+        setAssetRegisterMoveError(
+          error instanceof Error ? error.message : 'The asset could not be moved to this umbrella.',
+        );
+      } finally {
+        setIsMovingAssetRegister(false);
+      }
+
       return;
     }
 
@@ -7263,11 +7422,16 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
       }
 
       setAssetGroups((currentGroups) => currentGroups
-        .map((group) => ({
-          ...group,
-          members: group.members.filter((member) => member.assetId !== assetRegisterMoveAsset.id),
-        }))
-        .filter((group) => group.members.length >= 2 && group.members.some((member) => member.role === 'primary')));
+        .map((group) => group.registerId === null
+          ? group
+          : {
+              ...group,
+              members: group.members.filter((member) => member.assetId !== assetRegisterMoveAsset.id),
+            })
+        .filter((group) => (
+          group.registerId === null
+          || (group.members.length >= 2 && group.members.some((member) => member.role === 'primary'))
+        )));
       setAssets((currentAssets) => (
         isCombinedRegisterView
           ? currentAssets.map((asset) => (
@@ -7315,9 +7479,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
       setExpandedAssetId((current) => current === assetRegisterMoveAsset.id ? null : current);
 
       const movedAssetTitle = assetRegisterMoveAsset.title;
-      setAssetRegisterMoveAsset(null);
-      setAssetRegisterMoveSearchTerm('');
-      setAssetRegisterMoveTargetId('');
+      resetAssetRegisterMoveManager();
       setNotice({
         tone: 'success',
         message: targetRegister
@@ -13691,7 +13853,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                 <div className={`${styles.modalHeader} ${styles.assetRegisterMoveModalHeader}`}>
                   <div className={styles.modalHeaderText}>
                     <h3 id="asset-register-move-title">Move Asset</h3>
-                    <p>Choose the asset register where this asset should be moved.</p>
+                    <p>Choose another Asset Register or an umbrella for this asset.</p>
                   </div>
 
                   <button
@@ -13741,33 +13903,99 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                         </div>
                       </div>
 
-                      {assetRegisterMoveTargetOptions.length ? (
-                        <ModalSelect<string>
-                          label="Target asset register"
-                          value={assetRegisterMoveTargetId}
-                          options={assetRegisterMoveTargetOptions}
-                          onChange={(value) => {
-                            setAssetRegisterMoveTargetId(value);
-                            setAssetRegisterMoveError('');
-                          }}
-                          placeholder="Choose target register"
-                          className={styles.assetRegisterMoveTargetField}
-                          usePortal
-                        />
-                      ) : (
-                        <div className={styles.assetRegisterMoveNoTarget}>
-                          <p>Create another asset register before moving this asset.</p>
-                          <Link
-                            href={isAccountantWorkspace && accountantShareId
-                              ? `/accountant/registers/${encodeURIComponent(accountantShareId)}/manage`
-                              : '/asset-registers'}
-                            className={`${styles.primaryButton} ${styles.assetRegisterMoveCreateButton}`}
-                            onClick={closeAssetRegisterMoveManager}
+                      <div className={styles.assetRegisterMoveDestination}>
+                        <span className={styles.assetRegisterMoveDestinationLabel}>Move this asset to</span>
+                        <div
+                          className={styles.assetRegisterMoveDestinationTabs}
+                          role="group"
+                          aria-label="Move destination"
+                        >
+                          <button
+                            type="button"
+                            className={`${styles.assetRegisterMoveDestinationTab} ${assetRegisterMoveDestination === 'register' ? styles.assetRegisterMoveDestinationTabActive : ''}`}
+                            onClick={() => {
+                              setAssetRegisterMoveDestination('register');
+                              setAssetRegisterMoveTargetId('');
+                              setAssetRegisterMoveError('');
+                            }}
+                            aria-pressed={assetRegisterMoveDestination === 'register'}
+                            disabled={isMovingAssetRegister}
                           >
-                            Create new asset register
-                          </Link>
+                            <ChangeRegisterIcon className={styles.buttonIcon} />
+                            <span>Asset Register</span>
+                          </button>
+                          <button
+                            type="button"
+                            className={`${styles.assetRegisterMoveDestinationTab} ${assetRegisterMoveDestination === 'umbrella' ? styles.assetRegisterMoveDestinationTabActive : ''}`}
+                            onClick={() => {
+                              setAssetRegisterMoveDestination('umbrella');
+                              setAssetRegisterMoveTargetId('');
+                              setAssetRegisterMoveError('');
+                            }}
+                            aria-pressed={assetRegisterMoveDestination === 'umbrella'}
+                            disabled={!canManageAssetGroups || isMovingAssetRegister}
+                            title={canManageAssetGroups ? 'Move to an umbrella' : 'Umbrella changes are unavailable'}
+                          >
+                            <UmbrellaIcon className={styles.buttonIcon} />
+                            <span>Umbrella</span>
+                          </button>
                         </div>
-                      )}
+
+                        {assetRegisterMoveDestination === 'register' ? (
+                          assetRegisterMoveTargetOptions.length ? (
+                            <ModalSelect<string>
+                              label="Target Asset Register"
+                              value={assetRegisterMoveTargetId}
+                              options={assetRegisterMoveTargetOptions}
+                              onChange={(value) => {
+                                setAssetRegisterMoveTargetId(value);
+                                setAssetRegisterMoveError('');
+                              }}
+                              placeholder="Choose target register"
+                              className={styles.assetRegisterMoveTargetField}
+                              usePortal
+                            />
+                          ) : (
+                            <div className={styles.assetRegisterMoveNoTarget}>
+                              <p>Create another Asset Register before moving this asset.</p>
+                              <Link
+                                href={isAccountantWorkspace && accountantShareId
+                                  ? `/accountant/registers/${encodeURIComponent(accountantShareId)}/manage`
+                                  : '/asset-registers'}
+                                className={`${styles.primaryButton} ${styles.assetRegisterMoveCreateButton}`}
+                                onClick={closeAssetRegisterMoveManager}
+                              >
+                                Create new Asset Register
+                              </Link>
+                            </div>
+                          )
+                        ) : isLoadingAssetRegisterMoveGroups ? (
+                          <div className={styles.assetRegisterMoveNoTarget} role="status">
+                            <p>Loading umbrellas...</p>
+                          </div>
+                        ) : assetRegisterMoveGroupLoadError ? (
+                          <div className={styles.assetRegisterMoveNoTarget} role="alert">
+                            <p>{assetRegisterMoveGroupLoadError}</p>
+                          </div>
+                        ) : assetRegisterMoveGroupOptions.length ? (
+                          <ModalSelect<string>
+                            label="Target umbrella"
+                            value={assetRegisterMoveTargetId}
+                            options={assetRegisterMoveGroupOptions}
+                            onChange={(value) => {
+                              setAssetRegisterMoveTargetId(value);
+                              setAssetRegisterMoveError('');
+                            }}
+                            placeholder="Choose an umbrella"
+                            className={styles.assetRegisterMoveTargetField}
+                            usePortal
+                          />
+                        ) : (
+                          <div className={styles.assetRegisterMoveNoTarget}>
+                            <p>No other umbrellas are available. Use the umbrella button beside an asset to create one first.</p>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   ) : (
                     <p className={styles.assetRegisterMoveNoMatch}>
@@ -13797,8 +14025,16 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                     onClick={() => void handleMoveAssetRegister()}
                     disabled={!assetRegisterMoveTargetId || isMovingAssetRegister}
                   >
-                    <ChangeRegisterIcon className={styles.buttonIcon} />
-                    <span>{isMovingAssetRegister ? 'Moving...' : 'Move Asset'}</span>
+                    {assetRegisterMoveDestination === 'umbrella'
+                      ? <UmbrellaIcon className={styles.buttonIcon} />
+                      : <ChangeRegisterIcon className={styles.buttonIcon} />}
+                    <span>
+                      {isMovingAssetRegister
+                        ? 'Moving...'
+                        : assetRegisterMoveDestination === 'umbrella'
+                          ? 'Move to Umbrella'
+                          : 'Move Asset'}
+                    </span>
                   </button>
                 </div>
               </div>
