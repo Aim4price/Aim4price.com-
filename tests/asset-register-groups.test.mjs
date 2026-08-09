@@ -114,3 +114,29 @@ test('quick controls use clear chevrons, balanced spacing, and concise hover lab
   assert.match(styles, /\.cardViewDetailsButton \.assetDetailsChevron/);
   assert.match(styles, /\[aria-expanded="true"\] \.customSelectChevron/);
 });
+
+test('assets can be dragged into groups without breaking group integrity', async () => {
+  const [client, route, persistence, styles] = await Promise.all([
+    readFile(new URL('../app/asset-register/asset-register-client.tsx', import.meta.url), 'utf8'),
+    readFile(new URL('../app/api/asset-groups/route.ts', import.meta.url), 'utf8'),
+    readFile(new URL('../lib/asset-groups.ts', import.meta.url), 'utf8'),
+    readFile(new URL('../app/asset-register/page.module.css', import.meta.url), 'utf8'),
+  ]);
+  assert.match(client, /draggable=\{canManageAssetGroups && !isSavingAssetGroup\}/);
+  assert.match(client, /method: 'PATCH'/);
+  assert.match(client, /Drop asset here/);
+  assert.match(route, /export async function PATCH/);
+  assert.match(route, /moveAssetToGroup/);
+  assert.match(persistence, /sourceMemberCount <= 2/);
+  assert.match(persistence, /set role = 'primary', relationship = 'primary'/);
+  assert.match(persistence, /'linked',\s*'works_with'/);
+  assert.match(styles, /\.assetGroupHeaderRowDropTarget \.assetGroupHeader/);
+});
+
+test('View details stays on one line inside grouped cards', async () => {
+  const styles = await readFile(new URL('../app/asset-register/page.module.css', import.meta.url), 'utf8');
+  assert.match(
+    styles,
+    /\.page \.assetHeaderActions \.cardViewDetailsButton > span \{[\s\S]*?white-space: nowrap !important;/,
+  );
+});
