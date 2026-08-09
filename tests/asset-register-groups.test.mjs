@@ -61,6 +61,34 @@ test('included-in-primary groups prevent register-value double counting', async 
   assert.equal(helpers.assetCountsTowardRegisterTotal('trailer', memberships), false);
 });
 
+test('combined umbrellas split safely by visible register and resolve for a single visible member', async () => {
+  const helpers = await loadGroupHelpers();
+  const combinedGroup = {
+    ...group('separate'),
+    id: 'combined-group',
+    registerId: null,
+  };
+
+  const registerOneProjection = helpers.projectAssetGroupsToAssets(
+    [combinedGroup],
+    [{ id: 'trailer' }, { id: 'bowser' }],
+  );
+  assert.equal(registerOneProjection.length, 1);
+  assert.equal(registerOneProjection[0].registerId, null);
+  assert.deepEqual(
+    registerOneProjection[0].members.map((member) => [member.assetId, member.role, member.relationship]),
+    [
+      ['trailer', 'primary', 'primary'],
+      ['bowser', 'linked', 'works_with'],
+    ],
+  );
+
+  assert.deepEqual(
+    helpers.projectAssetGroupsToAssets([combinedGroup], [{ id: 'truck' }]),
+    [],
+  );
+});
+
 test('group persistence validates ownership, membership, and safe unlink behavior', async () => {
   const [persistence, schema] = await Promise.all([
     readFile(new URL('../lib/asset-groups.ts', import.meta.url), 'utf8'),
@@ -71,6 +99,10 @@ test('group persistence validates ownership, membership, and safe unlink behavio
   assert.match(schema, /unique \(asset_id\)/);
   assert.match(schema, /unlink_asset_group_on_register_change/);
   assert.match(schema, /role = 'primary'/);
+  assert.match(schema, /alter column register_id drop not null/);
+  assert.match(schema, /asset_group\.register_id is not null/);
+  assert.match(persistence, /register_id is null/);
+  assert.match(persistence, /value_mode = case when \$3::boolean then 'separate'/);
 });
 
 test('group metadata and counted-value rules are present in PDF and Excel exports', async () => {
@@ -81,6 +113,8 @@ test('group metadata and counted-value rules are present in PDF and Excel export
   assert.match(source, /SUMIF\(\$\{countsInRegisterTotalRange\},"Yes"/);
   assert.match(source, /drawPdfAssetGroupHeading/);
   assert.match(source, /Accounting note/);
+  assert.match(source, /scope === 'combined'/);
+  assert.match(source, /projectAssetGroupsToAssets\(allGroups, combinedAssets\)/);
 });
 
 test('the Asset Register exposes create, manage, collapse, search, and relationship UI', async () => {
@@ -95,6 +129,10 @@ test('the Asset Register exposes create, manage, collapse, search, and relations
   assert.match(modal, /Count every asset separately/);
   assert.match(modal, /Linked assets are included in the primary value/);
   assert.match(modal, /The assets and their records will not be deleted|Remove group/);
+  assert.match(client, /combinedMode=\{isCombinedRegisterView\}/);
+  assert.match(client, /isResolvedCombinedGroup/);
+  assert.match(modal, /Combined umbrella/);
+  assert.match(modal, /any of your Asset Registers/);
 });
 
 test('quick controls use clear chevrons, balanced spacing, and concise hover labels', async () => {
@@ -104,7 +142,7 @@ test('quick controls use clear chevrons, balanced spacing, and concise hover lab
   ]);
   assert.match(client, /data-tooltip=\{primaryIsFlagged \? 'Remove flag' : 'Flag asset'\}/);
   assert.match(client, /data-tooltip="Move asset"/);
-  assert.match(client, /data-tooltip=\{canManageAssetGroups \? 'Create group' : 'Groups unavailable'\}/);
+  assert.match(client, /isResolvedCombinedGroup \? 'Open combined group' : 'Create group'/);
   assert.match(client, /'Show excl\. VAT' : 'Show incl\. VAT'/);
   assert.match(client, /ChevronDownIcon className=\{styles\.assetGroupCollapseChevron\}/);
   assert.match(client, /styles\.assetDetailsChevron/);
@@ -139,4 +177,29 @@ test('View details stays on one line inside grouped cards', async () => {
     styles,
     /\.page \.assetHeaderActions \.cardViewDetailsButton > span \{[\s\S]*?white-space: nowrap !important;/,
   );
+  assert.match(
+    styles,
+    /\.page \.assetHeaderActions \.cardOptionsButton,[\s\S]*?\.cardViewDetailsButton,[\s\S]*?\.cardManageButton \{[\s\S]*?height: 3\.35rem;/,
+  );
+  assert.match(styles, /width: min\(32rem, 100%\)/);
+});
+
+test('combined Asset Register groups are account-wide, separately counted, and projected in every output', async () => {
+  const [route, client, persistence, exportRoute, accountantWorkspace] = await Promise.all([
+    readFile(new URL('../app/api/asset-groups/route.ts', import.meta.url), 'utf8'),
+    readFile(new URL('../app/asset-register/asset-register-client.tsx', import.meta.url), 'utf8'),
+    readFile(new URL('../lib/asset-groups.ts', import.meta.url), 'utf8'),
+    readFile(new URL('../app/api/asset-register/export/route.ts', import.meta.url), 'utf8'),
+    readFile(new URL('../lib/accountant-workspace.ts', import.meta.url), 'utf8'),
+  ]);
+
+  assert.match(route, /isCombinedGroupRequest/);
+  assert.match(route, /scope: combined \? 'combined' : 'register'/);
+  assert.match(persistence, /const storedRegisterId = registerId \|\| null/);
+  assert.match(persistence, /const valueMode = isCombinedScope \? 'separate'/);
+  assert.match(client, /projectAssetGroupsToAssets\(assetGroups, assets\)/);
+  assert.match(client, /window\.location\.assign\('\/asset-register\?scope=combined'\)/);
+  assert.match(client, /reportAssetGroups = projectAssetGroupsToAssets\(assetGroups, reportAssets\)/);
+  assert.match(exportRoute, /combinedGroups = scope === 'combined'/);
+  assert.match(accountantWorkspace, /projectAssetGroupsToAssets/);
 });
