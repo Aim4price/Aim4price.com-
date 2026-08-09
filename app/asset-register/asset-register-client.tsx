@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { createPortal } from 'react-dom';
-import { useEffect, useMemo, useRef, useState, type CSSProperties, type ChangeEvent, type FormEvent, type KeyboardEvent as ReactKeyboardEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type ChangeEvent, type DragEvent as ReactDragEvent, type FormEvent, type KeyboardEvent as ReactKeyboardEvent } from 'react';
 import AppHeader from '../../components/AppHeader';
 import AssetGroupManagerModal from '../../components/asset-register/AssetGroupManagerModal';
 import AccountantAssetManageModal from '../../components/AccountantAssetManageModal';
@@ -58,6 +58,8 @@ type AssetLeadType = 'finance' | 'insurance' | 'replacement_quote';
 type QuoteLeadStep = 'message' | 'consent' | null;
 type QuoteScope = 'asset' | 'register';
 type DisposalReason = 'sold' | 'traded_in' | 'scrapped' | 'written_off' | 'mistake_duplicate' | 'other';
+
+const ASSET_GROUP_DRAG_DATA_TYPE = 'application/x-aim4price-asset-id';
 
 type AcquisitionDraft = {
   newlyAcquired: boolean | null;
@@ -5885,6 +5887,8 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
   const [assetGroupModalGroup, setAssetGroupModalGroup] = useState<AssetGroup | null>(null);
   const [assetGroupError, setAssetGroupError] = useState('');
   const [isSavingAssetGroup, setIsSavingAssetGroup] = useState(false);
+  const [draggingAssetId, setDraggingAssetId] = useState<string | null>(null);
+  const [assetGroupDropTargetId, setAssetGroupDropTargetId] = useState<string | null>(null);
   const [accountantAccess, setAccountantAccess] = useState<AccountantRegisterAccess | null>(null);
   const [accountProfile, setAccountProfile] = useState<AccountProfile | null>(null);
   const [assetRegisters, setAssetRegisters] = useState<AssetRegisterSummary[]>([]);
@@ -6260,6 +6264,113 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
       });
     } catch (error) {
       setAssetGroupError(error instanceof Error ? error.message : 'Failed to save the asset group.');
+    } finally {
+      setIsSavingAssetGroup(false);
+    }
+  }
+
+  function canDropAssetIntoGroup(assetId: string | null, targetGroup: AssetGroup): boolean {
+    if (!assetId || !canManageAssetGroups || isSavingAssetGroup) return false;
+    if (targetGroup.members.length >= 50) return false;
+    if (targetGroup.members.some((member) => member.assetId === assetId)) return false;
+
+    const asset = assets.find((entry) => entry.id === assetId);
+    return Boolean(asset && String(asset.registerId ?? '').trim() === targetGroup.registerId);
+  }
+
+  function handleAssetDragStart(event: ReactDragEvent<HTMLDivElement>, asset: RegisterAsset) {
+    const target = event.target as HTMLElement;
+
+    if (
+      !canManageAssetGroups
+      || isSavingAssetGroup
+      || target.closest('button, a, input, select, textarea, [role="button"]')
+    ) {
+      event.preventDefault();
+      return;
+    }
+
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData(ASSET_GROUP_DRAG_DATA_TYPE, asset.id);
+    event.dataTransfer.setData('text/plain', asset.id);
+    setDraggingAssetId(asset.id);
+    setAssetGroupDropTargetId(null);
+  }
+
+  function handleAssetDragEnd() {
+    setDraggingAssetId(null);
+    setAssetGroupDropTargetId(null);
+  }
+
+  function handleAssetGroupDragOver(event: ReactDragEvent<HTMLDivElement>, targetGroup: AssetGroup) {
+    if (!canDropAssetIntoGroup(draggingAssetId, targetGroup)) return;
+
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'move';
+    if (assetGroupDropTargetId !== targetGroup.id) {
+      setAssetGroupDropTargetId(targetGroup.id);
+    }
+  }
+
+  function handleAssetGroupDragLeave(event: ReactDragEvent<HTMLDivElement>, targetGroup: AssetGroup) {
+    const nextTarget = event.relatedTarget as Node | null;
+    if (nextTarget && event.currentTarget.contains(nextTarget)) return;
+    if (assetGroupDropTargetId === targetGroup.id) setAssetGroupDropTargetId(null);
+  }
+
+  async function handleAssetGroupDrop(event: ReactDragEvent<HTMLDivElement>, targetGroup: AssetGroup) {
+    event.preventDefault();
+    const assetId = event.dataTransfer.getData(ASSET_GROUP_DRAG_DATA_TYPE)
+      || event.dataTransfer.getData('text/plain')
+      || draggingAssetId
+      || '';
+
+    setDraggingAssetId(null);
+    setAssetGroupDropTargetId(null);
+    if (!canDropAssetIntoGroup(assetId, targetGroup)) return;
+
+    const asset = assets.find((entry) => entry.id === assetId);
+    const sourceGroup = assetGroupMemberships.get(assetId)?.group ?? null;
+    if (!asset) return;
+
+    setIsSavingAssetGroup(true);
+    setAssetGroupError('');
+
+    try {
+      const response = await fetch(buildAssetGroupsApiUrl(accountantShareId), {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          assetId,
+          targetGroupId: targetGroup.id,
+          registerId: targetGroup.registerId,
+        }),
+      });
+      const data = await response.json() as AssetGroupApiResponse;
+
+      if (!response.ok || !data.ok) {
+        throw new Error(data.error ?? 'The asset could not be added to this group.');
+      }
+
+      applyAssetGroups(Array.isArray(data.groups) ? data.groups : assetGroups);
+      setCollapsedAssetGroupIds((current) => {
+        const next = new Set(current);
+        next.delete(targetGroup.id);
+        if (sourceGroup) next.delete(sourceGroup.id);
+        return next;
+      });
+      setNotice({
+        tone: 'success',
+        message: sourceGroup
+          ? `${asset.title} moved to ${targetGroup.name}.`
+          : `${asset.title} added to ${targetGroup.name}.`,
+      });
+    } catch (error) {
+      setNotice({
+        tone: 'error',
+        message: error instanceof Error ? error.message : 'The asset could not be added to this group.',
+      });
     } finally {
       setIsSavingAssetGroup(false);
     }
@@ -13927,9 +14038,18 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                       const primaryIsFlagged = primaryAsset ? isAssetFlagged(primaryAsset) : false;
                       const primaryIsFlagBusy = primaryAsset ? busyFlagAssetId === primaryAsset.id : false;
                       const additionalAssetCount = Math.max(0, group.members.length - 1);
+                      const canReceiveDraggedAsset = canDropAssetIntoGroup(draggingAssetId, group);
+                      const isAssetGroupDropTarget = canReceiveDraggedAsset && assetGroupDropTargetId === group.id;
 
                       return (
-                        <div className={styles.assetGroupHeaderRow} key={`asset-group-${group.id}`}>
+                        <div
+                          className={`${styles.assetGroupHeaderRow} ${canReceiveDraggedAsset ? styles.assetGroupHeaderRowDragReady : ''} ${isAssetGroupDropTarget ? styles.assetGroupHeaderRowDropTarget : ''}`}
+                          key={`asset-group-${group.id}`}
+                          onDragOver={(event) => handleAssetGroupDragOver(event, group)}
+                          onDragLeave={(event) => handleAssetGroupDragLeave(event, group)}
+                          onDrop={(event) => void handleAssetGroupDrop(event, group)}
+                          data-asset-group-drop-target={isAssetGroupDropTarget ? 'true' : undefined}
+                        >
                           <div className={styles.assetGroupSideActions}>
                             {primaryAsset && (canUseOwnerOnlyAssetActions || isAccountantWorkspace) ? (
                               <>
@@ -13970,6 +14090,9 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                           </div>
 
                           <section className={`${styles.assetGroupHeader} ${isCollapsed ? styles.assetGroupHeaderCollapsed : ''}`}>
+                            {isAssetGroupDropTarget ? (
+                              <span className={styles.assetGroupDropPrompt} role="status">Drop asset here</span>
+                            ) : null}
                             <div className={styles.assetGroupIdentity}>
                               <span className={styles.assetGroupUmbrella} aria-hidden="true">
                                 <UmbrellaIcon className={styles.assetGroupUmbrellaIcon} />
@@ -14097,8 +14220,11 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
 
                     return (
                       <div
-                        className={`${styles.assetCardRow} ${assetGroup ? styles.assetGroupMemberRow : ''} ${isLastAssetGroupMember ? styles.assetGroupMemberRowLast : ''} ${expandedAssetId && !isExpanded ? styles.assetCardRowMuted : ''}`}
+                        className={`${styles.assetCardRow} ${assetGroup ? styles.assetGroupMemberRow : ''} ${isLastAssetGroupMember ? styles.assetGroupMemberRowLast : ''} ${draggingAssetId === asset.id ? styles.assetCardRowDragging : ''} ${expandedAssetId && !isExpanded ? styles.assetCardRowMuted : ''}`}
                         key={asset.id}
+                        draggable={canManageAssetGroups && !isSavingAssetGroup}
+                        onDragStart={(event) => handleAssetDragStart(event, asset)}
+                        onDragEnd={handleAssetDragEnd}
                       >
                         {!assetGroup && (canUseOwnerOnlyAssetActions || isAccountantWorkspace) ? (
                           <div className={styles.assetSideActions}>
