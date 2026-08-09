@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { recordAdminUsageEventSafely } from '../../../lib/admin-usage-events';
 import { getServerSession, isAdminSupportSession } from '../../../lib/auth-session';
 import { getAccountProfile } from '../../../lib/account-profile';
+import { listAssetGroups } from '../../../lib/asset-groups';
+import { registerValueForAssets } from '../../../lib/asset-groups-shared';
 import { disposeOrDeleteAsset, recordManualAssetLifecycle, type AssetDisposalReason } from '../../../lib/asset-lifecycle';
 import { attachOpenPartnerNotesToAssets } from '../../../lib/partner-access';
 import { attachOpenIssueNoteStatusToAssets } from '../../../lib/asset-issue-notes';
@@ -567,6 +569,10 @@ export async function GET(request: NextRequest) {
       }));
       const baseItems = itemGroups.flat();
       const items = await attachOpenAssetAlerts(session.user.id, baseItems);
+      const groups = (await Promise.all(
+        registers.map((sourceRegister) => listAssetGroups(session.user.id, sourceRegister.id)),
+      )).flat();
+      const combinedValue = registerValueForAssets(items, groups);
       const combinedRegister = {
         id: '__combined_asset_registers__',
         userId: session.user.id,
@@ -579,7 +585,7 @@ export async function GET(request: NextRequest) {
         isPrimary: false,
         isSelected: false,
         assetCount: items.length,
-        totalValue: items.reduce((sum, item) => sum + Number(item.value || 0), 0),
+        totalValue: combinedValue,
         totalReplacementPrice: items.reduce((sum, item) => sum + Number(item.replacementPriceExVat || 0), 0),
         createdAtIso: registers[0]?.createdAtIso ?? new Date().toISOString(),
         updatedAtIso: registers.reduce(
@@ -593,6 +599,7 @@ export async function GET(request: NextRequest) {
         register: combinedRegister,
         registers,
         items,
+        groups,
         summary: {
           count: items.length,
           totalValue: combinedRegister.totalValue,
@@ -611,16 +618,20 @@ export async function GET(request: NextRequest) {
 
     const baseItems = await listAssetRegisterItems(session.user.id, register.id);
     const items = await attachOpenAssetAlerts(session.user.id, baseItems);
-    const registers = await listAssetRegisters(session.user.id);
+    const [registers, groups] = await Promise.all([
+      listAssetRegisters(session.user.id),
+      listAssetGroups(session.user.id, register.id),
+    ]);
 
     return NextResponse.json({
       ok: true,
       register,
       registers,
       items,
+      groups,
       summary: {
         count: items.length,
-        totalValue: items.reduce((sum, item) => sum + Number(item.value || 0), 0),
+        totalValue: registerValueForAssets(items, groups),
       },
     });
   } catch (error) {

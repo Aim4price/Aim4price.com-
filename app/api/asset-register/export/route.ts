@@ -1,5 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAccountProfile } from '../../../../lib/account-profile';
+import { listAssetGroups } from '../../../../lib/asset-groups';
+import {
+  assetCountsTowardRegisterTotalFromMeta,
+  assetGroupRelationshipLabel,
+  assetGroupValueModeLabel,
+  decorateAssetsWithGroups,
+  type AssetGroupExportMeta,
+} from '../../../../lib/asset-groups-shared';
 import { listAssetRegisterItems, type AssetRegisterItem } from '../../../../lib/asset-register-db';
 import { getAssetRegisterForUser, getSelectedAssetRegister, getVisibleAssetRegisterLogoUrl, listAssetRegisters, type AssetRegisterSummary } from '../../../../lib/asset-registers';
 import { createXlsxWorkbook, type XlsxCellStyle, type XlsxCellValue, type XlsxSheet } from '../../../../lib/simple-xlsx';
@@ -30,6 +38,10 @@ type RegisterExportBundle = {
 type SourceAssetRow = {
   register: AssetRegisterSummary;
   item: AssetRegisterItem;
+};
+
+type GroupAwareExportAsset = AssetRegisterItem & {
+  assetGroup?: AssetGroupExportMeta | null;
 };
 
 type UsageDisplay = {
@@ -101,6 +113,7 @@ const INSURED_VALUE_INCL_VAT_COLUMN = 'T';
 const LICENSE_STATUS_COLUMN = 'U';
 const REPLACEMENT_VALUE_EX_VAT_COLUMN = 'W';
 const REPLACEMENT_VALUE_INCL_VAT_COLUMN = 'X';
+const COUNTS_IN_REGISTER_TOTAL_COLUMN = 'AC';
 
 const TABLE_HEADERS = [
   'Asset title',
@@ -127,6 +140,11 @@ const TABLE_HEADERS = [
   'License registration',
   'Replacement price ex VAT',
   'Replacement price incl VAT',
+  'Asset group',
+  'Group role',
+  'Group relationship',
+  'Group value handling',
+  'Counts in register total',
 ] as const;
 
 const WORKBOOK_COLUMN_WIDTHS = [
@@ -154,6 +172,11 @@ const WORKBOOK_COLUMN_WIDTHS = [
   24,
   22,
   22,
+  28,
+  18,
+  30,
+  34,
+  24,
 ];
 
 function unauthorized() {
@@ -559,12 +582,56 @@ function buildOwnerAddress(profile: AccountProfileResult | null): string {
     .join(', ');
 }
 
+function exportAssetGroup(item: AssetRegisterItem): AssetGroupExportMeta | null {
+  return (item as GroupAwareExportAsset).assetGroup ?? null;
+}
+
+function exportAssetCountsTowardRegisterTotal(item: AssetRegisterItem): boolean {
+  return assetCountsTowardRegisterTotalFromMeta(item as GroupAwareExportAsset);
+}
+
+function exportAssetGroupRoleLabel(item: AssetRegisterItem): string {
+  const group = exportAssetGroup(item);
+  if (!group) return '';
+  return group.role === 'primary' ? 'Primary asset' : 'Linked asset';
+}
+
+function orderGroupedExportAssets(items: AssetRegisterItem[]): AssetRegisterItem[] {
+  const originalIndex = new Map(items.map((item, index) => [item.id, index]));
+  const groupFirstIndex = new Map<string, number>();
+
+  items.forEach((item, index) => {
+    const group = exportAssetGroup(item);
+    if (group && !groupFirstIndex.has(group.id)) groupFirstIndex.set(group.id, index);
+  });
+
+  return items.slice().sort((left, right) => {
+    const leftGroup = exportAssetGroup(left);
+    const rightGroup = exportAssetGroup(right);
+    const leftRank = leftGroup ? (groupFirstIndex.get(leftGroup.id) ?? originalIndex.get(left.id) ?? 0) : (originalIndex.get(left.id) ?? 0);
+    const rightRank = rightGroup ? (groupFirstIndex.get(rightGroup.id) ?? originalIndex.get(right.id) ?? 0) : (originalIndex.get(right.id) ?? 0);
+
+    if (leftRank !== rightRank) return leftRank - rightRank;
+    if (leftGroup?.id && leftGroup.id === rightGroup?.id) {
+      if (leftGroup.role !== rightGroup.role) return leftGroup.role === 'primary' ? -1 : 1;
+    }
+
+    return (originalIndex.get(left.id) ?? 0) - (originalIndex.get(right.id) ?? 0);
+  });
+}
+
 function registerValueTotal(items: AssetRegisterItem[]): number {
-  return items.reduce((sum, item) => sum + Math.round(numericValue(item.value) ?? 0), 0);
+  return items.reduce(
+    (sum, item) => sum + (exportAssetCountsTowardRegisterTotal(item) ? Math.round(numericValue(item.value) ?? 0) : 0),
+    0,
+  );
 }
 
 function registerValueInclVatTotal(items: AssetRegisterItem[]): number {
-  return items.reduce((sum, item) => sum + moneyInclVatTotal(item.value), 0);
+  return items.reduce(
+    (sum, item) => sum + (exportAssetCountsTowardRegisterTotal(item) ? moneyInclVatTotal(item.value) : 0),
+    0,
+  );
 }
 
 function replacementValueTotal(items: AssetRegisterItem[]): number {
@@ -766,6 +833,7 @@ function buildRegisterBasicExportSummary(items: AssetRegisterItem[]): RegisterBa
 
   uniqueItems.forEach((item) => {
     const valueExVat = Math.round(numericValue(item.value) ?? 0);
+    const countedValueExVat = exportAssetCountsTowardRegisterTotal(item) ? valueExVat : 0;
     const replacementPrice = replacementPriceExVat(item);
     const insuredValue = insuredValueExVat(item);
     const isInsured = readInsuranceStatusChoice(item) === 'yes';
@@ -773,13 +841,13 @@ function buildRegisterBasicExportSummary(items: AssetRegisterItem[]): RegisterBa
     const isLicensed = readLicenseStatusChoice(item) === 'yes';
     const assetType = getRegisterSummaryAssetType(item);
 
-    currentValueExVat += valueExVat;
-    addToRegisterSummaryCountValue(assetTypes[assetType], valueExVat);
+    currentValueExVat += countedValueExVat;
+    addToRegisterSummaryCountValue(assetTypes[assetType], countedValueExVat);
 
     if (isAim4priceExportAsset(item)) {
-      addToRegisterSummaryCountValue(aim4priceAssets, valueExVat);
+      addToRegisterSummaryCountValue(aim4priceAssets, countedValueExVat);
     } else {
-      addToRegisterSummaryCountValue(manualAssets, valueExVat);
+      addToRegisterSummaryCountValue(manualAssets, countedValueExVat);
     }
 
     if (replacementPrice !== null) {
@@ -793,7 +861,7 @@ function buildRegisterBasicExportSummary(items: AssetRegisterItem[]): RegisterBa
 
     if (isFinanced) {
       assetsFinanced += 1;
-      financedValueExVat += valueExVat;
+      financedValueExVat += countedValueExVat;
     }
 
     if (isInsured) {
@@ -803,7 +871,7 @@ function buildRegisterBasicExportSummary(items: AssetRegisterItem[]): RegisterBa
 
     if (isLicensed) {
       assetsLicensed += 1;
-      licensedValueExVat += valueExVat;
+      licensedValueExVat += countedValueExVat;
     }
 
     if (isItemMapped(item)) {
@@ -957,6 +1025,7 @@ function buildAssetRow(item: AssetRegisterItem, index: number): XlsxCellValue[] 
   const insuredValue = insuredValueExVat(item);
   const replacementPrice = replacementPriceExVat(item);
   const isProperty = item.kind === 'property';
+  const group = exportAssetGroup(item);
 
   return [
     textOrNaCell(item.title),
@@ -983,6 +1052,11 @@ function buildAssetRow(item: AssetRegisterItem, index: number): XlsxCellValue[] 
     !isProperty && licenseStatus === 'yes' ? textOrNaCell(readLicenseRegistrationNumber(item)) : naCell(),
     replacementPrice === null ? naCell() : moneyCell(replacementPrice),
     replacementPrice === null ? naCell() : vatIncludedFormulaCell(REPLACEMENT_VALUE_EX_VAT_COLUMN, rowNumber, replacementPrice),
+    group ? textCell(group.name) : naCell(),
+    group ? textCell(exportAssetGroupRoleLabel(item)) : naCell(),
+    group ? textCell(assetGroupRelationshipLabel(group.relationship)) : naCell(),
+    group ? textCell(assetGroupValueModeLabel(group.valueMode)) : naCell(),
+    textCell(exportAssetCountsTowardRegisterTotal(item) ? 'Yes' : 'No'),
   ];
 }
 
@@ -1002,6 +1076,7 @@ function buildSummaryRows(items: AssetRegisterItem[]): XlsxCellValue[][] {
   const licenseRange = buildFormulaRange(LICENSE_STATUS_COLUMN, items.length);
   const replacementValueExVatRange = buildFormulaRange(REPLACEMENT_VALUE_EX_VAT_COLUMN, items.length);
   const replacementValueInclVatRange = buildFormulaRange(REPLACEMENT_VALUE_INCL_VAT_COLUMN, items.length);
+  const countsInRegisterTotalRange = buildFormulaRange(COUNTS_IN_REGISTER_TOTAL_COLUMN, items.length);
 
   return [
     [
@@ -1010,12 +1085,14 @@ function buildSummaryRows(items: AssetRegisterItem[]): XlsxCellValue[][] {
     ],
     [
       textCell('Register value ex VAT', 'metaLabel'),
-      registerValueExVatRange ? formulaCell(`SUM(${registerValueExVatRange})`, registerValueTotal(items), 'currency') : moneyCell(0),
+      registerValueExVatRange && countsInRegisterTotalRange
+        ? formulaCell(`SUMIF(${countsInRegisterTotalRange},"Yes",${registerValueExVatRange})`, registerValueTotal(items), 'currency')
+        : moneyCell(0),
     ],
     [
       textCell('Register value incl VAT', 'metaLabel'),
-      registerValueInclVatRange
-        ? formulaCell(`SUM(${registerValueInclVatRange})`, registerValueInclVatTotal(items), 'currency')
+      registerValueInclVatRange && countsInRegisterTotalRange
+        ? formulaCell(`SUMIF(${countsInRegisterTotalRange},"Yes",${registerValueInclVatRange})`, registerValueInclVatTotal(items), 'currency')
         : moneyCell(0),
     ],
     [
@@ -1106,8 +1183,76 @@ function buildWorkbookSheet(definition: SheetDefinition, profile: AccountProfile
   };
 }
 
+function buildAssetGroupsWorkbookSheet(items: AssetRegisterItem[], generatedAt: Date): XlsxSheet | null {
+  const groupedItems = orderGroupedExportAssets(items).filter((item) => Boolean(exportAssetGroup(item)));
+  if (!groupedItems.length) return null;
+
+  const groups = new Map<string, AssetRegisterItem[]>();
+  groupedItems.forEach((item) => {
+    const group = exportAssetGroup(item);
+    if (!group) return;
+    const current = groups.get(group.id) ?? [];
+    current.push(item);
+    groups.set(group.id, current);
+  });
+
+  const detailRows = Array.from(groups.values()).flatMap((members) => {
+    const firstGroup = exportAssetGroup(members[0]);
+    if (!firstGroup) return [];
+    const countedGroupValue = registerValueTotal(members);
+
+    return members.map((item, index) => {
+      const group = exportAssetGroup(item)!;
+      return [
+        index === 0 ? textCell(group.name) : textCell(''),
+        index === 0 ? textCell(assetGroupValueModeLabel(group.valueMode)) : textCell(''),
+        index === 0 ? numberCell(group.memberCount) : textCell(''),
+        index === 0 ? moneyCell(countedGroupValue) : textCell(''),
+        textOrNaCell(item.title),
+        textCell(exportAssetGroupRoleLabel(item)),
+        textCell(assetGroupRelationshipLabel(group.relationship)),
+        moneyCell(item.value),
+        textCell(exportAssetCountsTowardRegisterTotal(item) ? 'Yes' : 'No'),
+      ];
+    });
+  });
+
+  return {
+    name: 'Asset Groups',
+    tabColor: '168660',
+    columns: [30, 38, 12, 24, 34, 18, 32, 22, 24],
+    freezeRow: 7,
+    autoFilter: {
+      fromRow: 7,
+      fromColumn: 1,
+      toRow: 7 + detailRows.length,
+      toColumn: 9,
+    },
+    rows: [
+      [textCell('Aim4price Asset Groups', 'title')],
+      [textCell('Relationships and register-value treatment for linked assets.', 'subtitle')],
+      [],
+      [textCell('Generated', 'metaLabel'), { value: generatedAt, style: 'date' }],
+      [textCell('Accounting note', 'metaLabel'), textCell('Rows marked No remain fully tracked but are excluded from register totals because their value is included in the primary asset.', 'subtitle')],
+      [],
+      [
+        textCell('Group name', 'tableHeader'),
+        textCell('Value handling', 'tableHeader'),
+        textCell('Members', 'tableHeader'),
+        textCell('Counted group value ex VAT', 'tableHeader'),
+        textCell('Asset', 'tableHeader'),
+        textCell('Role', 'tableHeader'),
+        textCell('Relationship', 'tableHeader'),
+        textCell('Asset value ex VAT', 'tableHeader'),
+        textCell('Counts in register total', 'tableHeader'),
+      ],
+      ...detailRows,
+    ],
+  };
+}
+
 function buildWorkbookSheets(items: AssetRegisterItem[], profile: AccountProfileResult | null, generatedAt = new Date()): XlsxSheet[] {
-  const uniqueItems = dedupeAssetItems(items);
+  const uniqueItems = orderGroupedExportAssets(dedupeAssetItems(items));
   const definitions: SheetDefinition[] = [
     {
       name: 'Full Asset Register',
@@ -1153,7 +1298,11 @@ function buildWorkbookSheets(items: AssetRegisterItem[], profile: AccountProfile
     },
   ];
 
-  return definitions.map((definition) => buildWorkbookSheet(definition, profile, generatedAt));
+  const groupSheet = buildAssetGroupsWorkbookSheet(uniqueItems, generatedAt);
+  return [
+    ...definitions.map((definition) => buildWorkbookSheet(definition, profile, generatedAt)),
+    ...(groupSheet ? [groupSheet] : []),
+  ];
 }
 
 
@@ -1393,11 +1542,20 @@ function buildPdfAssetLines(item: AssetRegisterItem, index: number): Array<{ tex
   const replacementSummary = replacementPrice === null
     ? 'Replacement price: N/A'
     : `Replacement price: ${formatPdfMoney(replacementPrice)} excl. VAT | ${formatPdfMoney(moneyInclVatTotal(replacementPrice))} incl. VAT`;
+  const group = exportAssetGroup(item);
+  const groupLines: Array<{ text: string; font: PdfFontKey; size: number }> = group
+    ? [{
+        text: `Asset group: ${group.name} | ${exportAssetGroupRoleLabel(item)} | ${assetGroupRelationshipLabel(group.relationship)} | ${assetGroupValueModeLabel(group.valueMode)} | Counts in register total: ${exportAssetCountsTowardRegisterTotal(item) ? 'Yes' : 'No'}`,
+        font: 'F1',
+        size: 8.8,
+      }]
+    : [];
 
   if (isProperty) {
     return [
       { text: `${index + 1}. ${cleanText(item.title) || 'Asset'}`, font: 'F2', size: 11.2 },
       { text: `${kindLabel(item)} | ${PROPERTY_YEAR_LABEL}: ${year} | Size: ${propertySizeDisplay(item)} | Condition: ${condition}`, font: 'F1', size: 9.2 },
+      ...groupLines,
       { text: `Finance: ${financeStatus} | Insurance: ${insuranceStatus} | ${insuredValueSummary}`, font: 'F1', size: 9.2 },
       { text: `Register value: ${formatPdfMoney(item.value)} excl. VAT | ${formatPdfMoney(moneyInclVatTotal(item.value))} incl. VAT | ${replacementSummary} | Method: ${methodLabel(item.selectedMethod)} | Documents: ${docs ? `${docs} saved` : 'None'}`, font: 'F2', size: 9.2 },
     ];
@@ -1406,6 +1564,7 @@ function buildPdfAssetLines(item: AssetRegisterItem, index: number): Array<{ tex
   return [
     { text: `${index + 1}. ${cleanText(item.title) || 'Asset'}`, font: 'F2', size: 11.2 },
     { text: `${kindLabel(item)} | ${assetModelPdfLabel(item)} | Year: ${year} | Usage: ${usagePdfLabel(item)} | Condition: ${condition}`, font: 'F1', size: 9.2 },
+    ...groupLines,
     { text: `Serial/VIN: ${serial} | Finance: ${financeStatus} | Insurance: ${insuranceStatus} | ${insuredValueSummary} | License: ${licenseStatus}${registration ? ` (${registration})` : ''}`, font: 'F1', size: 9.2 },
     { text: `Register value: ${formatPdfMoney(item.value)} excl. VAT | ${formatPdfMoney(moneyInclVatTotal(item.value))} incl. VAT | ${replacementSummary} | Method: ${methodLabel(item.selectedMethod)} | Documents: ${docs ? `${docs} saved` : 'None'}`, font: 'F2', size: 9.2 },
   ];
@@ -1433,9 +1592,26 @@ function drawPdfAssetBlock(state: PdfBuildState, item: AssetRegisterItem, index:
   state.y = topY - blockHeight - 9;
 }
 
+function drawPdfAssetGroupHeading(state: PdfBuildState, group: AssetGroupExportMeta, members: AssetRegisterItem[]) {
+  const height = 48;
+  ensurePdfSpace(state, height + 8);
+  const topY = state.y;
+  drawPdfRect(state, PDF_MARGIN, topY - height, PDF_PAGE_WIDTH - PDF_MARGIN * 2, height, '0.925 0.970 0.950');
+  drawPdfText(state, group.name, PDF_MARGIN + 12, topY - 17, 11.5, 'F2');
+  drawPdfText(
+    state,
+    `${group.memberCount} linked assets | ${assetGroupValueModeLabel(group.valueMode)} | Counted group value ${formatPdfMoney(registerValueTotal(members))} excl. VAT`,
+    PDF_MARGIN + 12,
+    topY - 33,
+    8.2,
+    'F1',
+  );
+  state.y = topY - height - 8;
+}
+
 function buildFullRegisterPdf(items: AssetRegisterItem[], profile: AccountProfileResult | null, generatedAt = new Date()): Buffer {
   const state: PdfBuildState = { pages: [], y: 0 };
-  const uniqueItems = dedupeAssetItems(items);
+  const uniqueItems = orderGroupedExportAssets(dedupeAssetItems(items));
   const ownerName = buildOwnerName(profile);
   const ownerAddress = buildOwnerAddress(profile) || 'N/A';
   const ownerEmail = cleanText(profile?.email) || 'N/A';
@@ -1489,7 +1665,19 @@ function buildFullRegisterPdf(items: AssetRegisterItem[], profile: AccountProfil
   state.y -= 18;
 
   if (uniqueItems.length) {
-    uniqueItems.forEach((item, index) => drawPdfAssetBlock(state, item, index));
+    let previousGroupId = '';
+    uniqueItems.forEach((item, index) => {
+      const group = exportAssetGroup(item);
+      if (group && group.id !== previousGroupId) {
+        drawPdfAssetGroupHeading(
+          state,
+          group,
+          uniqueItems.filter((candidate) => exportAssetGroup(candidate)?.id === group.id),
+        );
+      }
+      previousGroupId = group?.id ?? '';
+      drawPdfAssetBlock(state, item, index);
+    });
   } else {
     drawPdfText(state, 'No assets were saved in this register at export time.', PDF_MARGIN, state.y, 10, 'F1');
     state.y -= 18;
@@ -2350,7 +2538,7 @@ function buildScopedDescription(scope: RegisterExportScope, registers: AssetRegi
 
 function flattenSourceAssetRows(bundles: RegisterExportBundle[]): SourceAssetRow[] {
   return bundles.flatMap((bundle) =>
-    dedupeAssetItems(bundle.items).map((item) => ({ register: bundle.register, item })),
+    orderGroupedExportAssets(dedupeAssetItems(bundle.items)).map((item) => ({ register: bundle.register, item })),
   );
 }
 
@@ -2371,6 +2559,7 @@ function buildSourceAssetRow(row: SourceAssetRow, index: number): XlsxCellValue[
   const replacementPrice = replacementPriceExVat(item);
   const isProperty = item.kind === 'property';
   const registerValue = numericValue(item.value);
+  const group = exportAssetGroup(item);
 
   return [
     textOrNaCell(row.register.businessName),
@@ -2398,6 +2587,11 @@ function buildSourceAssetRow(row: SourceAssetRow, index: number): XlsxCellValue[
     !isProperty && licenseStatus === 'yes' ? textOrNaCell(readLicenseRegistrationNumber(item)) : naCell(),
     replacementPrice === null ? naCell() : moneyCell(replacementPrice),
     replacementPrice === null ? naCell() : moneyCell(moneyInclVatTotal(replacementPrice)),
+    group ? textCell(group.name) : naCell(),
+    group ? textCell(exportAssetGroupRoleLabel(item)) : naCell(),
+    group ? textCell(assetGroupRelationshipLabel(group.relationship)) : naCell(),
+    group ? textCell(assetGroupValueModeLabel(group.valueMode)) : naCell(),
+    textCell(exportAssetCountsTowardRegisterTotal(item) ? 'Yes' : 'No'),
   ];
 }
 
@@ -2554,9 +2748,15 @@ function buildRegisterCollectionWorkbookSheets(
   entityName: string,
   generatedAt: Date,
 ): XlsxSheet[] {
+  const groupSheet = buildAssetGroupsWorkbookSheet(
+    bundles.flatMap((bundle) => bundle.items),
+    generatedAt,
+  );
+
   return [
     buildRegisterCollectionSummarySheet(bundles, profile, scope, entityName, generatedAt),
     buildRegisterCollectionAssetsSheet(bundles, scope, entityName, generatedAt),
+    ...(groupSheet ? [groupSheet] : []),
     ...bundles.map((bundle, index) => buildRegisterSpecificCollectionSheet(bundle, profile, generatedAt, index)),
   ];
 }
@@ -2661,7 +2861,7 @@ function buildAssetRegistersPdf(
     let globalIndex = 0;
 
     bundles.forEach((bundle) => {
-      const items = dedupeAssetItems(bundle.items);
+      const items = orderGroupedExportAssets(dedupeAssetItems(bundle.items));
       ensurePdfSpace(state, 48, 'Asset Registers export continued', 'Aim4price asset registers PDF');
       const sourceTop = state.y;
       drawPdfRect(state, PDF_MARGIN, sourceTop - 38, PDF_PAGE_WIDTH - PDF_MARGIN * 2, 38, '0.925 0.970 0.950');
@@ -2677,7 +2877,17 @@ function buildAssetRegistersPdf(
       state.y = sourceTop - 48;
 
       if (items.length) {
+        let previousGroupId = '';
         items.forEach((item) => {
+          const group = exportAssetGroup(item);
+          if (group && group.id !== previousGroupId) {
+            drawPdfAssetGroupHeading(
+              state,
+              group,
+              items.filter((candidate) => exportAssetGroup(candidate)?.id === group.id),
+            );
+          }
+          previousGroupId = group?.id ?? '';
           drawPdfSourceAssetBlock(state, bundle.register, item, globalIndex);
           globalIndex += 1;
         });
@@ -2833,10 +3043,17 @@ export async function GET(request: NextRequest) {
       const filenameDate = generatedAt.toISOString().slice(0, 10);
       const exportProfile = buildScopedExportProfile(profile, scope, selectedRegisters, entityName);
       const bundles: RegisterExportBundle[] = await Promise.all(
-        selectedRegisters.map(async (register) => ({
-          register,
-          items: await listAssetRegisterItems(ownerUserId, register.id),
-        })),
+        selectedRegisters.map(async (register) => {
+          const [items, groups] = await Promise.all([
+            listAssetRegisterItems(ownerUserId, register.id),
+            listAssetGroups(ownerUserId, register.id),
+          ]);
+
+          return {
+            register,
+            items: decorateAssetsWithGroups(items, groups),
+          };
+        }),
       );
       const ownerSlug = pdfFileSlug(entityName || buildOwnerName(exportProfile));
 
@@ -2919,7 +3136,11 @@ export async function GET(request: NextRequest) {
       addressLine2: '',
     };
 
-    const items = await listAssetRegisterItems(ownerUserId, register.id);
+    const [rawItems, groups] = await Promise.all([
+      listAssetRegisterItems(ownerUserId, register.id),
+      listAssetGroups(ownerUserId, register.id),
+    ]);
+    const items = decorateAssetsWithGroups(rawItems, groups);
     const generatedAt = new Date();
     const filenameDate = generatedAt.toISOString().slice(0, 10);
     if (format === 'pdf') {

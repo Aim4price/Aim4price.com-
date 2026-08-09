@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { createPortal } from 'react-dom';
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type ChangeEvent, type FormEvent, type KeyboardEvent as ReactKeyboardEvent } from 'react';
 import AppHeader from '../../components/AppHeader';
+import AssetGroupManagerModal from '../../components/asset-register/AssetGroupManagerModal';
 import AccountantAssetManageModal from '../../components/AccountantAssetManageModal';
 import AccountantRegisterReportsModal from '../../components/AccountantRegisterReportsModal';
 import DealerAssetShareSelection from '../../components/DealerAssetShareSelection';
@@ -36,6 +37,18 @@ import type {
   DealerMaintenanceAccessSummary,
   DealerMaintenancePermissions,
 } from '../../lib/dealer-maintenance-tracker';
+import {
+  assetCountsTowardRegisterTotal,
+  assetGroupRelationshipLabel,
+  assetGroupValueModeLabel,
+  buildAssetGroupMembershipMap,
+  getAssetGroupPrimaryAssetId,
+  groupRegisterValue,
+  orderAssetsByGroups,
+  registerValueForAssets,
+  type AssetGroup,
+  type AssetGroupSaveInput,
+} from '../../lib/asset-groups-shared';
 import styles from './page.module.css';
 import updateStyles from './asset-update-refinements.module.css';
 
@@ -590,6 +603,7 @@ type AssetRegisterApiResponse = {
   assets?: RegisterAsset[];
   register?: AssetRegisterSummary;
   registers?: AssetRegisterSummary[];
+  groups?: AssetGroup[];
   profile?: AccountProfile;
   summary?: {
     count: number;
@@ -600,6 +614,23 @@ type AssetRegisterApiResponse = {
   access?: AccountantRegisterAccess;
   error?: string;
 };
+
+type AssetGroupApiResponse = {
+  ok: boolean;
+  group?: AssetGroup;
+  groups?: AssetGroup[];
+  error?: string;
+};
+
+type AssetRegisterDisplayRow =
+  | { kind: 'group'; group: AssetGroup }
+  | {
+      kind: 'asset';
+      asset: RegisterAsset;
+      group: AssetGroup | null;
+      memberIndex: number;
+      memberCount: number;
+    };
 
 type AccountantRegisterAccess = {
   shareId: string;
@@ -1568,6 +1599,25 @@ function FlagIcon({ className }: IconProps) {
   );
 }
 
+function UmbrellaIcon({ className }: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.9"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <path d="M3 12a9 9 0 0 1 18 0" />
+      <path d="M3 12c1.4-1.7 3.2-1.7 4.6 0 1.4-1.7 3.3-1.7 4.7 0 1.4-1.7 3.3-1.7 4.7 0 1.2-1.5 2.7-1.7 4-.5" />
+      <path d="M12 3v14.5a3 3 0 0 0 6 0" />
+    </svg>
+  );
+}
+
 function NoteIcon({ className }: IconProps) {
   return (
     <svg className={className} viewBox="0 0 24 24" aria-hidden="true">
@@ -2299,19 +2349,20 @@ function filterAssetsByPdfReportKind(assetList: RegisterAsset[], reportKind: Pdf
   }
 }
 
-function sumAssetValues(assetList: RegisterAsset[]): number {
-  return assetList.reduce((sum, asset) => sum + Math.round(Number(asset.value || 0)), 0);
+function sumAssetValues(assetList: RegisterAsset[], groups: AssetGroup[] = []): number {
+  return registerValueForAssets(assetList, groups);
 }
 
 function calculateAssetStats(
   assetList: RegisterAsset[],
   predicate?: (asset: RegisterAsset) => boolean,
+  groups: AssetGroup[] = [],
 ): { count: number; value: number } {
   const matchingAssets = predicate ? assetList.filter(predicate) : assetList;
 
   return {
     count: matchingAssets.length,
-    value: sumAssetValues(matchingAssets),
+    value: sumAssetValues(matchingAssets, groups),
   };
 }
 
@@ -4928,8 +4979,9 @@ function getRegisterSummaryAssetType(asset: RegisterAsset): RegisterSummaryAsset
   return 'equipment';
 }
 
-function buildRegisterBasicSummary(assets: RegisterAsset[]): RegisterBasicSummary {
+function buildRegisterBasicSummary(assets: RegisterAsset[], groups: AssetGroup[] = []): RegisterBasicSummary {
   const uniqueAssets = dedupeRegisterAssets(assets);
+  const memberships = buildAssetGroupMembershipMap(groups);
   const assetTypes = createRegisterSummaryAssetTypes();
   const aim4priceAssets = createRegisterSummaryCountValue();
   const manualAssets = createRegisterSummaryCountValue();
@@ -4949,6 +5001,7 @@ function buildRegisterBasicSummary(assets: RegisterAsset[]): RegisterBasicSummar
 
   uniqueAssets.forEach((asset) => {
     const valueExVat = Math.round(Number(asset.value || 0));
+    const countedValueExVat = assetCountsTowardRegisterTotal(asset.id, memberships) ? valueExVat : 0;
     const replacementPrice = readAssetReplacementPriceExVat(asset);
     const insuredValue = readAssetInsuredValueExVat(asset);
     const isInsured = readInsuranceStatusChoice(asset) === 'yes';
@@ -4956,13 +5009,13 @@ function buildRegisterBasicSummary(assets: RegisterAsset[]): RegisterBasicSummar
     const isLicensed = readLicenseStatusChoice(asset) === 'yes';
     const assetType = getRegisterSummaryAssetType(asset);
 
-    currentValueExVat += valueExVat;
-    addToRegisterSummaryCountValue(assetTypes[assetType], valueExVat);
+    currentValueExVat += countedValueExVat;
+    addToRegisterSummaryCountValue(assetTypes[assetType], countedValueExVat);
 
     if (isAim4priceValuedAsset(asset)) {
-      addToRegisterSummaryCountValue(aim4priceAssets, valueExVat);
+      addToRegisterSummaryCountValue(aim4priceAssets, countedValueExVat);
     } else {
-      addToRegisterSummaryCountValue(manualAssets, valueExVat);
+      addToRegisterSummaryCountValue(manualAssets, countedValueExVat);
     }
 
     if (replacementPrice !== null) {
@@ -4976,7 +5029,7 @@ function buildRegisterBasicSummary(assets: RegisterAsset[]): RegisterBasicSummar
 
     if (isFinanced) {
       assetsFinanced += 1;
-      financedValueExVat += valueExVat;
+      financedValueExVat += countedValueExVat;
     }
 
     if (isInsured) {
@@ -4986,7 +5039,7 @@ function buildRegisterBasicSummary(assets: RegisterAsset[]): RegisterBasicSummar
 
     if (isLicensed) {
       assetsLicensed += 1;
-      licensedValueExVat += valueExVat;
+      licensedValueExVat += countedValueExVat;
     }
 
     if (hasAssetMapCoordinates(asset)) {
@@ -5484,6 +5537,14 @@ function buildAssetRegisterApiUrl(registerId?: string | null): string {
   return `/api/asset-register?${params.toString()}`;
 }
 
+function buildAssetGroupsApiUrl(accountantShareId?: string, groupId?: string): string {
+  const params = new URLSearchParams();
+  if (accountantShareId) params.set('accountantShareId', accountantShareId);
+  if (groupId) params.set('groupId', groupId);
+  const query = params.toString();
+  return `/api/asset-groups${query ? `?${query}` : ''}`;
+}
+
 function buildAssetRegisterExportUrl(registerId?: string | null, entityName = '', accountantShareId?: string): string {
   const params = new URLSearchParams({ format: 'xlsx' });
   const cleanedRegisterId = String(registerId ?? '').trim();
@@ -5818,6 +5879,12 @@ function renderManualAssetTypeIcon(assetKind: AssetKind, className?: string) {
 export default function AssetRegisterClient({ accountantShareId }: { accountantShareId?: string } = {}) {
   const isAccountantWorkspace = Boolean(accountantShareId);
   const [assets, setAssets] = useState<RegisterAsset[]>([]);
+  const [assetGroups, setAssetGroups] = useState<AssetGroup[]>([]);
+  const [collapsedAssetGroupIds, setCollapsedAssetGroupIds] = useState<Set<string>>(() => new Set());
+  const [assetGroupModalAsset, setAssetGroupModalAsset] = useState<RegisterAsset | null>(null);
+  const [assetGroupModalGroup, setAssetGroupModalGroup] = useState<AssetGroup | null>(null);
+  const [assetGroupError, setAssetGroupError] = useState('');
+  const [isSavingAssetGroup, setIsSavingAssetGroup] = useState(false);
   const [accountantAccess, setAccountantAccess] = useState<AccountantRegisterAccess | null>(null);
   const [accountProfile, setAccountProfile] = useState<AccountProfile | null>(null);
   const [assetRegisters, setAssetRegisters] = useState<AssetRegisterSummary[]>([]);
@@ -6108,6 +6175,128 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
         [assetId]: currentMode === 'included' ? 'excluded' : 'included',
       };
     });
+  }
+
+  function applyAssetGroups(nextGroups: AssetGroup[]) {
+    setAssetGroups(nextGroups);
+    const nextRegisterValue = registerValueForAssets(assets, nextGroups);
+
+    setActiveRegister((current) => (
+      current && current.id !== COMBINED_REGISTER_ID
+        ? { ...current, totalValue: nextRegisterValue }
+        : current
+    ));
+    setAssetRegisters((current) => current.map((register) => (
+      register.id === activeRegister?.id
+        ? { ...register, totalValue: nextRegisterValue }
+        : register
+    )));
+  }
+
+  function openAssetGroupManager(asset: RegisterAsset) {
+    if (!canManageAssetGroups) {
+      setNotice({
+        tone: 'warning',
+        message: isCombinedRegisterView
+          ? 'Open one Asset Register before changing groups.'
+          : 'This shared Asset Register is read-only.',
+      });
+      return;
+    }
+
+    const group = assetGroupMemberships.get(asset.id)?.group ?? null;
+    setAssetGroupModalAsset(asset);
+    setAssetGroupModalGroup(group);
+    setAssetGroupError('');
+  }
+
+  function closeAssetGroupManager() {
+    if (isSavingAssetGroup) return;
+    setAssetGroupModalAsset(null);
+    setAssetGroupModalGroup(null);
+    setAssetGroupError('');
+  }
+
+  function toggleAssetGroupCollapsed(groupId: string) {
+    setCollapsedAssetGroupIds((current) => {
+      const next = new Set(current);
+      if (next.has(groupId)) next.delete(groupId);
+      else next.add(groupId);
+      return next;
+    });
+  }
+
+  async function handleSaveAssetGroup(input: AssetGroupSaveInput) {
+    if (isSavingAssetGroup) return;
+
+    setIsSavingAssetGroup(true);
+    setAssetGroupError('');
+
+    try {
+      const response = await fetch(buildAssetGroupsApiUrl(accountantShareId), {
+        method: input.groupId ? 'PUT' : 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(input),
+      });
+      const data = await response.json() as AssetGroupApiResponse;
+
+      if (!response.ok || !data.ok) {
+        throw new Error(data.error ?? 'Failed to save the asset group.');
+      }
+
+      const nextGroups = Array.isArray(data.groups) ? data.groups : assetGroups;
+      applyAssetGroups(nextGroups);
+      setCollapsedAssetGroupIds((current) => {
+        const next = new Set(current);
+        if (data.group?.id) next.delete(data.group.id);
+        return next;
+      });
+      setAssetGroupModalAsset(null);
+      setAssetGroupModalGroup(null);
+      setNotice({
+        tone: 'success',
+        message: input.groupId ? 'Asset group updated.' : 'Asset group created.',
+      });
+    } catch (error) {
+      setAssetGroupError(error instanceof Error ? error.message : 'Failed to save the asset group.');
+    } finally {
+      setIsSavingAssetGroup(false);
+    }
+  }
+
+  async function handleDeleteAssetGroup(group: AssetGroup) {
+    if (isSavingAssetGroup) return;
+    if (!window.confirm(`Remove “${group.name}”? The assets and their records will not be deleted.`)) return;
+
+    setIsSavingAssetGroup(true);
+    setAssetGroupError('');
+
+    try {
+      const response = await fetch(buildAssetGroupsApiUrl(accountantShareId, group.id), {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+      const data = await response.json() as AssetGroupApiResponse;
+
+      if (!response.ok || !data.ok) {
+        throw new Error(data.error ?? 'Failed to remove the asset group.');
+      }
+
+      applyAssetGroups(Array.isArray(data.groups) ? data.groups : []);
+      setCollapsedAssetGroupIds((current) => {
+        const next = new Set(current);
+        next.delete(group.id);
+        return next;
+      });
+      setAssetGroupModalAsset(null);
+      setAssetGroupModalGroup(null);
+      setNotice({ tone: 'success', message: 'Asset group removed. No assets were deleted.' });
+    } catch (error) {
+      setAssetGroupError(error instanceof Error ? error.message : 'Failed to remove the asset group.');
+    } finally {
+      setIsSavingAssetGroup(false);
+    }
   }
 
   async function handleAssetFlagToggle(asset: RegisterAsset): Promise<void> {
@@ -6465,6 +6654,9 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
   );
   const canUseOwnerOnlyAssetActions = !isAccountantWorkspace;
   const canManageRegisterStructure = canUseOwnerOnlyAssetActions || isAccountantWorkspace;
+  const canManageAssetGroups =
+    !isCombinedRegisterView
+    && (canUseOwnerOnlyAssetActions || Boolean(accountantAccess?.allowDirectUpdates));
   const canUseAccountantDocumentActions = isAccountantWorkspace && Boolean(accountantAccess?.allowDirectUpdates);
   const canShareActiveRegister = canUseOwnerOnlyAssetActions;
   const canAddAssetsToActiveRegister = canManageRegisterStructure && !isCombinedRegisterView;
@@ -6629,6 +6821,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
       setIsLoading(true);
       setActiveRegister(null);
       setAssets([]);
+      setAssetGroups([]);
 
       try {
         const requestedRegisterId = readRegisterIdFromLocation();
@@ -6663,6 +6856,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
             : [];
 
         setAssets(loadedAssets);
+        setAssetGroups(Array.isArray(assetsData.groups) ? assetsData.groups : []);
 
         if (assetsData.profile) {
           setAccountProfile(assetsData.profile);
@@ -6762,6 +6956,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
           : [];
 
       setAssets(loadedAssets);
+      setAssetGroups(Array.isArray(assetsData.groups) ? assetsData.groups : []);
 
       if (assetsData.profile) {
         setAccountProfile(assetsData.profile);
@@ -6919,6 +7114,12 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
         throw new Error(extractApiError(payload, 'Failed to move asset.'));
       }
 
+      setAssetGroups((currentGroups) => currentGroups
+        .map((group) => ({
+          ...group,
+          members: group.members.filter((member) => member.assetId !== assetRegisterMoveAsset.id),
+        }))
+        .filter((group) => group.members.length >= 2 && group.members.some((member) => member.role === 'primary')));
       setAssets((currentAssets) => (
         isCombinedRegisterView
           ? currentAssets.map((asset) => (
@@ -6975,6 +7176,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
           ? `${movedAssetTitle} moved successfully to ${targetRegister.businessName}.`
           : `${movedAssetTitle} moved successfully.`,
       });
+      window.dispatchEvent(new CustomEvent('aim4price:asset-register-updated'));
     } catch (error) {
       setAssetRegisterMoveError(error instanceof Error ? error.message : 'Failed to move asset.');
     } finally {
@@ -7463,9 +7665,15 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     return undefined;
   }, [isAssetSettingsModalOpen, assetSettingsView]);
 
-  const totalValue = useMemo(() => {
-    return assets.reduce((sum, asset) => sum + Math.round(Number(asset.value || 0)), 0);
-  }, [assets]);
+  const assetGroupMemberships = useMemo(
+    () => buildAssetGroupMembershipMap(assetGroups),
+    [assetGroups],
+  );
+
+  const totalValue = useMemo(
+    () => registerValueForAssets(assets, assetGroupMemberships),
+    [assetGroupMemberships, assets],
+  );
 
   const totalValueInclVat = useMemo(() => Math.round(totalValue * 1.15), [totalValue]);
   const displayedRegisterValue = registerValueVatMode === 'included' ? totalValueInclVat : totalValue;
@@ -7481,8 +7689,15 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
   const aim4priceValuedEquipmentValue = useMemo(() => {
     return assets
       .filter((asset) => isAim4priceValuedAsset(asset))
-      .reduce((sum, asset) => sum + Math.round(Number(asset.value || 0)), 0);
-  }, [assets]);
+      .reduce(
+        (sum, asset) => sum + (
+          assetCountsTowardRegisterTotal(asset.id, assetGroupMemberships)
+            ? Math.round(Number(asset.value || 0))
+            : 0
+        ),
+        0,
+      );
+  }, [assetGroupMemberships, assets]);
 
   const manualAssetStats = useMemo(() => {
     return assets
@@ -7490,11 +7705,15 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
       .reduce(
         (stats, asset) => ({
           count: stats.count + 1,
-          value: stats.value + Math.round(Number(asset.value || 0)),
+          value: stats.value + (
+            assetCountsTowardRegisterTotal(asset.id, assetGroupMemberships)
+              ? Math.round(Number(asset.value || 0))
+              : 0
+          ),
         }),
         { count: 0, value: 0 },
       );
-  }, [assets]);
+  }, [assetGroupMemberships, assets]);
 
   const financedAssetStats = useMemo(() => {
     return assets.reduce(
@@ -7505,12 +7724,16 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
 
         return {
           count: stats.count + 1,
-          value: stats.value + Math.round(Number(asset.value || 0)),
+          value: stats.value + (
+            assetCountsTowardRegisterTotal(asset.id, assetGroupMemberships)
+              ? Math.round(Number(asset.value || 0))
+              : 0
+          ),
         };
       },
       { count: 0, value: 0 },
     );
-  }, [assets]);
+  }, [assetGroupMemberships, assets]);
 
   const insuredAssetStats = useMemo(() => {
     return assets.reduce(
@@ -7537,14 +7760,21 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
 
         return {
           count: stats.count + 1,
-          value: stats.value + Math.round(Number(asset.value || 0)),
+          value: stats.value + (
+            assetCountsTowardRegisterTotal(asset.id, assetGroupMemberships)
+              ? Math.round(Number(asset.value || 0))
+              : 0
+          ),
         };
       },
       { count: 0, value: 0 },
     );
-  }, [assets]);
+  }, [assetGroupMemberships, assets]);
 
-  const registerBasicSummary = useMemo(() => buildRegisterBasicSummary(assets), [assets]);
+  const registerBasicSummary = useMemo(
+    () => buildRegisterBasicSummary(assets, assetGroups),
+    [assetGroups, assets],
+  );
 
   const registerSummarySections = useMemo<RegisterSummaryDisplaySection[]>(
     () => {
@@ -7846,25 +8076,76 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     const normalizedSearch = normalizeRegisterSearchText(searchTerm);
     const compactSearch = normalizeCompactSearchText(searchTerm);
 
+    const matchingGroupAssetIds = new Set<string>();
+    if (normalizedSearch) {
+      assetGroups.forEach((group) => {
+        const searchableGroupName = normalizeRegisterSearchText(group.name);
+        const compactGroupName = normalizeCompactSearchText(group.name);
+        if (
+          searchableGroupName.includes(normalizedSearch)
+          || (compactSearch ? compactGroupName.includes(compactSearch) : false)
+        ) {
+          group.members.forEach((member) => matchingGroupAssetIds.add(member.assetId));
+        }
+      });
+    }
+
     return normalizedSearch
       ? assets.filter((asset) => {
           const searchableText = buildSearchableText(asset);
-          return searchableText.includes(normalizedSearch) || (compactSearch ? searchableText.includes(compactSearch) : false);
+          return matchingGroupAssetIds.has(asset.id)
+            || searchableText.includes(normalizedSearch)
+            || (compactSearch ? searchableText.includes(compactSearch) : false);
         })
       : assets;
-  }, [assets, searchTerm]);
+  }, [assetGroups, assets, searchTerm]);
 
   const filteredAssets = useMemo(() => {
     return sortAssetsByRegisterPriority(filterAssetsByRegisterFilter(searchMatchedAssets, assetFilter), assetFilter);
   }, [assetFilter, searchMatchedAssets]);
+  const groupedFilteredAssets = useMemo(
+    () => orderAssetsByGroups(filteredAssets, assetGroups),
+    [assetGroups, filteredAssets],
+  );
 
   const isShowingAllAssets = pageSize === 'all';
-  const numericPageSize: number = pageSize === 'all' ? Math.max(1, filteredAssets.length) : pageSize;
-  const pageCount = isShowingAllAssets ? 1 : Math.max(1, Math.ceil(filteredAssets.length / numericPageSize));
+  const numericPageSize: number = pageSize === 'all' ? Math.max(1, groupedFilteredAssets.length) : pageSize;
+  const pageCount = isShowingAllAssets ? 1 : Math.max(1, Math.ceil(groupedFilteredAssets.length / numericPageSize));
   const safeCurrentPage = Math.min(currentPage, pageCount);
   const pageStart = isShowingAllAssets ? 0 : (safeCurrentPage - 1) * numericPageSize;
-  const pageEnd = isShowingAllAssets ? filteredAssets.length : Math.min(filteredAssets.length, pageStart + numericPageSize);
-  const visibleAssets = isShowingAllAssets ? filteredAssets : filteredAssets.slice(pageStart, pageStart + numericPageSize);
+  const pageEnd = isShowingAllAssets ? groupedFilteredAssets.length : Math.min(groupedFilteredAssets.length, pageStart + numericPageSize);
+  const visibleAssets = isShowingAllAssets ? groupedFilteredAssets : groupedFilteredAssets.slice(pageStart, pageStart + numericPageSize);
+  const visibleAssetRows = useMemo<AssetRegisterDisplayRow[]>(() => {
+    const rows: AssetRegisterDisplayRow[] = [];
+    const emittedGroupIds = new Set<string>();
+
+    visibleAssets.forEach((asset) => {
+      const membership = assetGroupMemberships.get(asset.id);
+      const group = membership?.group ?? null;
+
+      if (group && !emittedGroupIds.has(group.id)) {
+        emittedGroupIds.add(group.id);
+        rows.push({ kind: 'group', group });
+      }
+
+      if (group && collapsedAssetGroupIds.has(group.id)) {
+        return;
+      }
+
+      const memberIndex = group
+        ? Math.max(0, group.members.findIndex((member) => member.assetId === asset.id))
+        : 0;
+      rows.push({
+        kind: 'asset',
+        asset,
+        group,
+        memberIndex,
+        memberCount: group?.members.length ?? 1,
+      });
+    });
+
+    return rows;
+  }, [assetGroupMemberships, collapsedAssetGroupIds, visibleAssets]);
   const paginationItems = useMemo(() => buildPaginationItems(safeCurrentPage, pageCount), [safeCurrentPage, pageCount]);
 
   useEffect(() => {
@@ -7876,12 +8157,12 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
   useEffect(() => {
     if (!expandedAssetId) return;
 
-    const currentPageAssets = isShowingAllAssets ? filteredAssets : filteredAssets.slice(pageStart, pageStart + numericPageSize);
+    const currentPageAssets = isShowingAllAssets ? groupedFilteredAssets : groupedFilteredAssets.slice(pageStart, pageStart + numericPageSize);
 
     if (!currentPageAssets.some((asset) => asset.id === expandedAssetId)) {
       setExpandedAssetId(null);
     }
-  }, [expandedAssetId, filteredAssets, isShowingAllAssets, numericPageSize, pageStart]);
+  }, [expandedAssetId, groupedFilteredAssets, isShowingAllAssets, numericPageSize, pageStart]);
 
   useEffect(() => {
     if (assetFocusActionHandledRef.current || typeof window === 'undefined' || !assets.length) return;
@@ -12131,8 +12412,25 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     const sharedAssets = leadType === 'replacement_quote'
       ? assets.filter((asset) => selectedAssetIds.has(asset.id))
       : assets;
-    const registerAssets = sharedAssets.map(buildFullRegisterLeadAssetSnapshot);
-    const sharedTotalValue = sharedAssets.reduce((sum, asset) => sum + (Number(asset.value) || 0), 0);
+    const registerAssets = orderAssetsByGroups(sharedAssets, assetGroups).map((asset) => {
+      const snapshot = buildFullRegisterLeadAssetSnapshot(asset);
+      const membership = assetGroupMemberships.get(asset.id);
+
+      return {
+        ...snapshot,
+        assetGroup: membership
+          ? {
+              id: membership.group.id,
+              name: membership.group.name,
+              role: membership.member.role,
+              relationship: membership.member.relationship,
+              valueMode: membership.group.valueMode,
+              countsInRegisterTotal: assetCountsTowardRegisterTotal(asset.id, assetGroupMemberships),
+            }
+          : null,
+      };
+    });
+    const sharedTotalValue = sumAssetValues(sharedAssets, assetGroups);
     const sharedTotalReplacementValue = sharedAssets.reduce(
       (sum, asset) => sum + (Number(readAssetReplacementPriceExVat(asset)) || 0),
       0,
@@ -12188,6 +12486,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
         totalReplacementValue: sharedTotalReplacementValue,
         totalReplacementValueInclVat: sharedTotalReplacementValue * 1.15,
         replacementPricedAssetCount: sharedAssets.filter((asset) => (readAssetReplacementPriceExVat(asset) ?? 0) > 0).length,
+        assetGroups,
         aim4priceAssetCount: sharedAssets.filter((asset) => asset.selectedMethod === 'aim4price').length,
         manualAssetCount: sharedAssets.filter((asset) => asset.selectedMethod !== 'aim4price').length,
         financedAssetCount: sharedAssets.filter((asset) => readFinanceStatusChoice(asset) === 'yes').length,
@@ -12363,17 +12662,18 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     const isCustomAssetSelection = Boolean(overrideAssets);
     const reportOption = overrideReportDetails ? { value: reportKind, ...overrideReportDetails } : getPdfReportOption(reportKind);
     const reportAssets = overrideAssets ?? filterAssetsByPdfReportKind(assets, reportKind);
-    const reportValue = sumAssetValues(reportAssets);
+    const orderedReportAssets = orderAssetsByGroups(reportAssets, assetGroups);
+    const reportValue = sumAssetValues(reportAssets, assetGroups);
     const reportValueInclVat = Math.round(reportValue * 1.15);
     const reportReplacementValue = sumAssetReplacementValues(reportAssets);
     const reportReplacementValueInclVat = Math.round(reportReplacementValue * 1.15);
     const reportReplacementPricedCount = countAssetsWithReplacementPrice(reportAssets);
     const reportInsuredValue = sumAssetInsuredValues(reportAssets);
     const reportInsuredValueInclVat = Math.round(reportInsuredValue * 1.15);
-    const reportAim4priceStats = calculateAssetStats(reportAssets, isAim4priceValuedAsset);
-    const reportInsuredStats = calculateAssetStats(reportAssets, (asset) => readInsuranceStatusChoice(asset) === 'yes');
-    const reportFinancedStats = calculateAssetStats(reportAssets, (asset) => readFinanceStatusChoice(asset) === 'yes');
-    const reportLicensedStats = calculateAssetStats(reportAssets, (asset) => readLicenseStatusChoice(asset) === 'yes');
+    const reportAim4priceStats = calculateAssetStats(reportAssets, isAim4priceValuedAsset, assetGroups);
+    const reportInsuredStats = calculateAssetStats(reportAssets, (asset) => readInsuranceStatusChoice(asset) === 'yes', assetGroups);
+    const reportFinancedStats = calculateAssetStats(reportAssets, (asset) => readFinanceStatusChoice(asset) === 'yes', assetGroups);
+    const reportLicensedStats = calculateAssetStats(reportAssets, (asset) => readLicenseStatusChoice(asset) === 'yes', assetGroups);
     const profile = reportProfile ?? (await ensureAccountProfile());
     const profileLocation = [profile?.townCity, profile?.province].filter(Boolean).join(' ');
     const profileAddress = [profile?.addressLine1, profile?.addressLine2, profileLocation].filter(Boolean).join(' ');
@@ -12385,7 +12685,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
         maxDimension: PRINT_LOGO_MAX_DIMENSION,
         mimeType: 'image/png',
       }),
-      buildPrintableAssetThumbnailMap(reportAssets),
+      buildPrintableAssetThumbnailMap(orderedReportAssets),
     ]);
 
     const didOpen = openAssetRegisterSummaryPrint({
@@ -12422,12 +12722,16 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
         { label: 'Licensed assets', value: String(reportLicensedStats.count), note: `${money(reportLicensedStats.value)} marked licensed.` },
       ],
       notes: reportAssets.flatMap((asset) => buildAssetPartnerNoteRows(asset, true)),
-      rows: reportAssets.map((asset) => {
+      rows: orderedReportAssets.map((asset) => {
         const initialModelValue = asset.modelName || asset.typedModelName || '';
         const reportBrandName = deriveAssetReportBrandName(asset, initialModelValue);
         const reportModelName = deriveAssetReportModelName(asset, reportBrandName);
         const documentsCount = assetDocuments(asset).length;
         const isPropertyAsset = asset.kind === 'property';
+        const membership = assetGroupMemberships.get(asset.id);
+        const groupDetail = membership
+          ? `Group: ${membership.group.name} · ${assetGroupRelationshipLabel(membership.member.relationship)} · ${assetGroupValueModeLabel(membership.group.valueMode)} · Counts in register total: ${assetCountsTowardRegisterTotal(asset.id, assetGroupMemberships) ? 'Yes' : 'No'}`
+          : '';
 
         return {
           asset: asset.title,
@@ -12435,7 +12739,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
             ? `${asset.registerName || 'Asset Register'} · ${assetKindLabel(asset)}`
             : assetKindLabel(asset),
           method: methodLabel(asset.selectedMethod),
-          detail: buildExportDetail(asset),
+          detail: [groupDetail, buildExportDetail(asset)].filter(Boolean).join(' · '),
           value: money(asset.value),
           replacementPrice: readAssetReplacementPriceExVat(asset) !== null ? money(readAssetReplacementPriceExVat(asset) ?? 0) : 'Not set',
           status: assetStatusDateLabel(asset),
@@ -13609,7 +13913,102 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
             filteredAssets.length ? (
               <>
                 <div className={styles.assetList}>
-                  {visibleAssets.map((asset) => {
+                  {visibleAssetRows.map((row) => {
+                    if (row.kind === 'group') {
+                      const group = row.group;
+                      const primaryAssetId = getAssetGroupPrimaryAssetId(group);
+                      const primaryAsset = assets.find((asset) => asset.id === primaryAssetId) ?? null;
+                      const isCollapsed = collapsedAssetGroupIds.has(group.id);
+                      const groupValueExVat = groupRegisterValue(group, assets);
+                      const displayedGroupValue = registerValueVatMode === 'included'
+                        ? Math.round(groupValueExVat * ASSET_REGISTER_SUMMARY_VAT_MULTIPLIER)
+                        : groupValueExVat;
+                      const groupVatLabel = registerValueVatMode === 'included' ? 'Incl. VAT' : 'Excl. VAT';
+                      const primaryIsFlagged = primaryAsset ? isAssetFlagged(primaryAsset) : false;
+                      const primaryIsFlagBusy = primaryAsset ? busyFlagAssetId === primaryAsset.id : false;
+                      const additionalAssetCount = Math.max(0, group.members.length - 1);
+
+                      return (
+                        <div className={styles.assetGroupHeaderRow} key={`asset-group-${group.id}`}>
+                          <div className={styles.assetGroupSideActions}>
+                            {primaryAsset && (canUseOwnerOnlyAssetActions || isAccountantWorkspace) ? (
+                              <>
+                                <button
+                                  type="button"
+                                  className={`${styles.assetFlagButton} ${primaryIsFlagged ? styles.assetFlagButtonActive : ''}`}
+                                  onClick={() => void handleAssetFlagToggle(primaryAsset)}
+                                  disabled={primaryIsFlagBusy}
+                                  aria-label={primaryIsFlagged ? `Unflag ${primaryAsset.title}` : `Flag ${primaryAsset.title}`}
+                                  aria-pressed={primaryIsFlagged}
+                                  title={primaryIsFlagged ? `Unflag ${primaryAsset.title}` : `Flag ${primaryAsset.title}`}
+                                >
+                                  <FlagIcon className={styles.assetFlagIcon} />
+                                </button>
+
+                                <button
+                                  type="button"
+                                  className={styles.assetRegisterMoveButton}
+                                  onClick={() => openAssetRegisterMoveManager(primaryAsset)}
+                                  aria-label={`Move ${primaryAsset.title} to another asset register`}
+                                  title="Move the primary asset to another Asset Register"
+                                >
+                                  <ChangeRegisterIcon className={styles.assetRegisterMoveIcon} />
+                                </button>
+                              </>
+                            ) : null}
+
+                            <button
+                              type="button"
+                              className={`${styles.assetGroupButton} ${styles.assetGroupButtonActive}`}
+                              onClick={() => primaryAsset && openAssetGroupManager(primaryAsset)}
+                              disabled={!primaryAsset || !canManageAssetGroups}
+                              aria-label={`Manage ${group.name}`}
+                              title={canManageAssetGroups ? 'Manage asset group' : 'Asset group'}
+                            >
+                              <UmbrellaIcon className={styles.assetGroupButtonIcon} />
+                            </button>
+                          </div>
+
+                          <section className={`${styles.assetGroupHeader} ${isCollapsed ? styles.assetGroupHeaderCollapsed : ''}`}>
+                            <div className={styles.assetGroupIdentity}>
+                              <span className={styles.assetGroupUmbrella} aria-hidden="true">
+                                <UmbrellaIcon className={styles.assetGroupUmbrellaIcon} />
+                              </span>
+                              <div>
+                                <h2>{group.name}</h2>
+                                <p>{group.members.length} linked assets · {assetGroupValueModeLabel(group.valueMode)}</p>
+                                {isCollapsed && primaryAsset ? (
+                                  <span className={styles.assetGroupPreview}>
+                                    {primaryAsset.title}{additionalAssetCount ? ` + ${additionalAssetCount} more` : ''}
+                                  </span>
+                                ) : null}
+                              </div>
+                            </div>
+
+                            <div className={styles.assetGroupValueRow}>
+                              <div className={styles.assetGroupValue}>
+                              <strong>{group.valueMode === 'included_in_primary' ? 'Counted value' : 'Combined value'} {money(displayedGroupValue)}</strong>
+                                <span>{groupVatLabel}</span>
+                              </div>
+                              <button
+                                type="button"
+                                className={styles.assetGroupCollapseButton}
+                                onClick={() => toggleAssetGroupCollapsed(group.id)}
+                                aria-expanded={!isCollapsed}
+                                aria-label={isCollapsed ? `Expand ${group.name}` : `Collapse ${group.name}`}
+                              >
+                                <span aria-hidden="true">{isCollapsed ? '⌄' : '⌃'}</span>
+                              </button>
+                            </div>
+                          </section>
+                        </div>
+                      );
+                    }
+
+                    const asset = row.asset;
+                    const assetGroup = row.group;
+                    const assetGroupMembership = assetGroupMemberships.get(asset.id)?.member ?? null;
+                    const isLastAssetGroupMember = Boolean(assetGroup && row.memberIndex === row.memberCount - 1);
                     const previewPhoto = assetPreviewImage(asset);
                     const isLive = isLiveOnMarketplace(asset);
                     const isFlagged = isAssetFlagged(asset);
@@ -13694,8 +14093,11 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                       : false;
 
                     return (
-                      <div className={`${styles.assetCardRow} ${expandedAssetId && !isExpanded ? styles.assetCardRowMuted : ''}`} key={asset.id}>
-                        {canUseOwnerOnlyAssetActions || isAccountantWorkspace ? (
+                      <div
+                        className={`${styles.assetCardRow} ${assetGroup ? styles.assetGroupMemberRow : ''} ${isLastAssetGroupMember ? styles.assetGroupMemberRowLast : ''} ${expandedAssetId && !isExpanded ? styles.assetCardRowMuted : ''}`}
+                        key={asset.id}
+                      >
+                        {!assetGroup && (canUseOwnerOnlyAssetActions || isAccountantWorkspace) ? (
                           <div className={styles.assetSideActions}>
                             <button
                               type="button"
@@ -13717,6 +14119,17 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                               title="Move to another asset register"
                             >
                               <ChangeRegisterIcon className={styles.assetRegisterMoveIcon} />
+                            </button>
+
+                            <button
+                              type="button"
+                              className={styles.assetGroupButton}
+                              onClick={() => openAssetGroupManager(asset)}
+                              disabled={!canManageAssetGroups}
+                              aria-label={`Create a group with ${asset.title}`}
+                              title={canManageAssetGroups ? 'Create asset group' : 'Asset grouping is not available here'}
+                            >
+                              <UmbrellaIcon className={styles.assetGroupButtonIcon} />
                             </button>
                           </div>
                         ) : null}
@@ -13743,6 +14156,11 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                               </div>
                             ) : null}
                             <h2>{asset.title}</h2>
+                            {assetGroup && assetGroupMembership ? (
+                              <p className={styles.assetGroupMemberRelationship}>
+                                {assetGroupRelationshipLabel(assetGroupMembership.relationship)}
+                              </p>
+                            ) : null}
                             <p>{buildAssetMeta(asset)}</p>
                             <div className={styles.assetMetaRow}>
                               <span className={styles.assetValueMethodLabel}>{methodLabel(asset.selectedMethod)} value</span>
@@ -18706,6 +19124,19 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
           </div>
         </div>
       ) : null}
+
+      <AssetGroupManagerModal
+        open={Boolean(assetGroupModalAsset)}
+        anchorAsset={assetGroupModalAsset}
+        group={assetGroupModalGroup}
+        assets={assets}
+        groups={assetGroups}
+        busy={isSavingAssetGroup}
+        error={assetGroupError}
+        onClose={closeAssetGroupManager}
+        onSave={handleSaveAssetGroup}
+        onDelete={handleDeleteAssetGroup}
+      />
 
       {isAccountantReportsOpen && accountantShareId && accountantAccess ? (
         <AccountantRegisterReportsModal

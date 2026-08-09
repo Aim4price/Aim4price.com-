@@ -14,6 +14,7 @@
     "test:accountant-workspace": "node --test tests/accountant-workspace.security.test.mjs",
     "test:maintenance-overview": "node --test tests/maintenance-overview-visibility.test.mjs",
     "test:owner-app-operations": "node --test tests/owner-app-operations.test.mjs",
+    "test:asset-groups": "node --test tests/asset-register-groups.test.mjs",
     "verify:insurance": "node scripts/verify-insurance-workspace.cjs"
   },
   "dependencies": {
