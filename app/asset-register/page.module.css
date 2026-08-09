@@ -7604,6 +7604,8 @@
 }
 
 .assetGroupUmbrella {
+  position: relative;
+  overflow: visible;
   display: grid;
   width: 3.1rem;
   height: 3.1rem;
@@ -29109,6 +29111,11 @@ button.documentOpenLink {
   line-height: 1;
   letter-spacing: -0.02em;
   pointer-events: none;
+}
+
+.assetGroupAlertBadge {
+  top: -0.36rem;
+  right: -0.36rem;
 }
 
 .changeRegisterModalOverlay {
