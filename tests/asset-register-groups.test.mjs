@@ -171,6 +171,22 @@ test('assets can be dragged into groups without breaking group integrity', async
   assert.match(styles, /\.assetGroupHeaderRowDropTarget \.assetGroupHeader/);
 });
 
+test('the Switch flow can move an asset into an available umbrella', async () => {
+  const [client, styles] = await Promise.all([
+    readFile(new URL('../app/asset-register/asset-register-client.tsx', import.meta.url), 'utf8'),
+    readFile(new URL('../app/asset-register/page.module.css', import.meta.url), 'utf8'),
+  ]);
+
+  assert.match(client, /type AssetMoveDestination = 'register' \| 'umbrella'/);
+  assert.match(client, /label="Target umbrella"/);
+  assert.match(client, /Move to Umbrella/);
+  assert.match(client, /buildAssetGroupsApiUrl\(accountantShareId, undefined, combinedScope\)/);
+  assert.match(client, /targetGroupId: targetGroup\.id/);
+  assert.match(client, /group\.registerId === null\s*\? group/);
+  assert.match(styles, /\.assetRegisterMoveDestinationTabs/);
+  assert.match(styles, /\.assetRegisterMoveDestinationTabActive/);
+});
+
 test('View details stays on one line inside grouped cards', async () => {
   const styles = await readFile(new URL('../app/asset-register/page.module.css', import.meta.url), 'utf8');
   assert.match(
