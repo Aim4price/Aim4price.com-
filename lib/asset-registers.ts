@@ -269,9 +269,20 @@ async function buildAssetRegisterTotalsSql(): Promise<{
     'replacement_price_ex_vat',
     'official_replacement_price_ex_vat',
   ]);
+  const countsTowardRegisterValueExpression = `
+    not exists (
+      select 1
+      from public.asset_group_members group_member
+      inner join public.asset_groups asset_group
+        on asset_group.id = group_member.group_id
+      where group_member.asset_id = ai.id
+        and asset_group.value_mode = 'included_in_primary'
+        and group_member.role <> 'primary'
+    )
+  `;
 
   return {
-    totalValueSql: `coalesce(sum(${currentValueExpression}), 0)::numeric as total_value`,
+    totalValueSql: `coalesce(sum(case when ${countsTowardRegisterValueExpression} then ${currentValueExpression} else 0 end), 0)::numeric as total_value`,
     totalReplacementPriceSql: `coalesce(sum(${replacementPriceExpression}), 0)::numeric as total_replacement_price`,
   };
 }
@@ -547,6 +558,84 @@ async function ensureAssetRegisterTablesOnce(): Promise<void> {
   `);
 
   await db.query(`
+    create table if not exists public.asset_groups (
+      id uuid primary key default gen_random_uuid(),
+      user_id text not null,
+      register_id uuid not null references public.asset_registers(id) on delete cascade,
+      name text not null,
+      value_mode text not null default 'separate'
+        check (value_mode in ('separate', 'included_in_primary')),
+      created_at timestamptz not null default now(),
+      updated_at timestamptz not null default now()
+    )
+  `);
+
+  await db.query(`
+    create table if not exists public.asset_group_members (
+      group_id uuid not null references public.asset_groups(id) on delete cascade,
+      asset_id uuid not null references public.asset_register_items(id) on delete cascade,
+      role text not null default 'linked'
+        check (role in ('primary', 'linked')),
+      relationship text not null default 'works_with'
+        check (relationship in ('primary', 'works_with', 'located_at', 'component_of', 'attached_to', 'other')),
+      sort_order integer not null default 0,
+      created_at timestamptz not null default now(),
+      primary key (group_id, asset_id),
+      unique (asset_id)
+    )
+  `);
+
+  await db.query(`
+    create or replace function public.unlink_asset_group_on_register_change()
+    returns trigger
+    language plpgsql
+    as $$
+    begin
+      if tg_op = 'DELETE' then
+        delete from public.asset_group_members
+        where asset_id = old.id;
+
+      elsif new.register_id is distinct from old.register_id then
+        delete from public.asset_group_members
+        where asset_id = old.id;
+      end if;
+
+      delete from public.asset_groups asset_group
+      where (
+          select count(*)
+          from public.asset_group_members member
+          where member.group_id = asset_group.id
+        ) < 2
+        or not exists (
+          select 1
+          from public.asset_group_members member
+          where member.group_id = asset_group.id
+            and member.role = 'primary'
+        );
+
+      if tg_op = 'DELETE' then
+        return old;
+      end if;
+
+      return new;
+    end
+    $$
+  `);
+
+  await db.query(`
+    drop trigger if exists trg_unlink_asset_group_on_register_change
+      on public.asset_register_items
+  `);
+
+  await db.query(`
+    create trigger trg_unlink_asset_group_on_register_change
+      after update of register_id or delete
+      on public.asset_register_items
+      for each row
+      execute function public.unlink_asset_group_on_register_change()
+  `);
+
+  await db.query(`
     do $$
     declare
       kind_constraint_definition text;
@@ -619,6 +708,22 @@ async function ensureAssetRegisterTablesOnce(): Promise<void> {
         on public.asset_register_items(user_id, register_id)
     `);
   });
+
+  await db.query(`
+    create index if not exists idx_asset_groups_user_register
+      on public.asset_groups(user_id, register_id, updated_at desc)
+  `);
+
+  await db.query(`
+    create unique index if not exists idx_asset_group_primary_member
+      on public.asset_group_members(group_id)
+      where role = 'primary'
+  `);
+
+  await db.query(`
+    create index if not exists idx_asset_group_members_group_order
+      on public.asset_group_members(group_id, sort_order)
+  `);
 }
 
 export async function ensureAssetRegisterTables(): Promise<void> {
