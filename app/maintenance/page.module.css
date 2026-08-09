@@ -2839,31 +2839,33 @@
 }
 
 .invoiceToolbar {
-  gap: 0.9rem;
-  margin-bottom: 1.05rem;
+  gap: clamp(0.9rem, 1.2vw, 1.1rem);
+  margin-bottom: clamp(1rem, 1.8vw, 1.3rem);
 }
 
 .searchWrap {
-  min-height: 3.45rem;
-  border-radius: 1.05rem;
-  box-shadow: 0 7px 16px rgba(30, 56, 66, 0.028), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  min-height: 3.75rem;
+  border-radius: 1.18rem;
+  box-shadow:
+    0 8px 18px rgba(30, 56, 66, 0.035),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
 }
 
 .searchInput {
-  min-height: 3.25rem;
-  font-size: 0.98rem;
-  font-weight: 620;
+  min-height: 3.45rem;
+  font-size: 1rem;
+  font-weight: 650;
 }
 
 .toolbarButtons {
-  grid-template-columns: repeat(3, minmax(9.2rem, auto));
-  gap: 0.78rem;
+  grid-template-columns: repeat(3, minmax(9.5rem, auto));
+  gap: clamp(0.8rem, 1vw, 0.95rem);
 }
 
 .toolbarButton {
-  min-height: 3.45rem;
-  border-radius: 1.02rem;
-  font-size: 0.98rem;
+  min-height: 3.75rem;
+  border-radius: 1.14rem;
+  font-size: clamp(0.96rem, 1.08vw, 1.04rem);
 }
 
 .invoiceList {
