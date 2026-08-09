@@ -4,6 +4,7 @@ import {
   getAccountantRegisterData,
   removeAccountantRegisterAccess,
 } from '../../../../../lib/accountant-workspace';
+import { registerValueForAssets } from '../../../../../lib/asset-groups-shared';
 import { getServerSession } from '../../../../../lib/auth-session';
 
 export const runtime = 'nodejs';
@@ -24,7 +25,14 @@ export async function GET(request: NextRequest, context: Context) {
       registerId: request.nextUrl.searchParams.get('registerId'),
       combined: request.nextUrl.searchParams.get('scope') === 'combined',
     });
-    return NextResponse.json({ ok: true, ...data, summary: { count: data.items.length, totalValue: data.items.reduce((sum, item) => sum + item.value, 0) } });
+    return NextResponse.json({
+      ok: true,
+      ...data,
+      summary: {
+        count: data.items.length,
+        totalValue: registerValueForAssets(data.items, data.groups),
+      },
+    });
   } catch (error) {
     console.error('accountant register GET failed', error);
     return respond(error);
