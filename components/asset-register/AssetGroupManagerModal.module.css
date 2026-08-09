@@ -145,6 +145,29 @@
   border: 0;
 }
 
+.combinedModeNotice {
+  display: grid;
+  gap: 4px;
+  margin-top: 22px;
+  padding: 15px 16px;
+  border: 1px solid #7ec5aa;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #edf9f4, #f8fcfa);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.92);
+}
+
+.combinedModeNotice strong {
+  color: #0b4437;
+  font-size: 14px;
+}
+
+.combinedModeNotice span {
+  color: #60766e;
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1.45;
+}
+
 .valueModeFieldset legend {
   margin-bottom: 9px;
 }
@@ -477,4 +500,3 @@
     width: 100%;
   }
 }
-
