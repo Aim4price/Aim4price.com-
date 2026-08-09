@@ -6,7 +6,13 @@ import {
   moveAssetToGroup,
   saveAssetGroup,
 } from '../../../lib/asset-groups';
-import type { AssetGroupRelationship, AssetGroupValueMode } from '../../../lib/asset-groups-shared';
+import { listAssetRegisterItems } from '../../../lib/asset-register-db';
+import {
+  projectAssetGroupsToAssets,
+  type AssetGroup,
+  type AssetGroupRelationship,
+  type AssetGroupValueMode,
+} from '../../../lib/asset-groups-shared';
 import { getAssetRegisterForUser } from '../../../lib/asset-registers';
 import {
   resolveOwnerWorkspaceContext,
@@ -18,6 +24,11 @@ export const dynamic = 'force-dynamic';
 
 function cleanText(value: unknown): string {
   return String(value ?? '').replace(/\s+/g, ' ').trim();
+}
+
+function isCombinedGroupRequest(request: NextRequest, bodyScope?: unknown): boolean {
+  return cleanText(bodyScope).toLowerCase() === 'combined'
+    || cleanText(request.nextUrl.searchParams.get('scope')).toLowerCase() === 'combined';
 }
 
 async function requireGroupWriteAccess(
@@ -70,6 +81,18 @@ async function resolveRegisterId(
   return register.id;
 }
 
+async function listWorkspaceGroups(
+  context: OwnerWorkspaceContext,
+  registerId: string | null,
+): Promise<AssetGroup[]> {
+  const groups = await listAssetGroups(context.ownerUserId, registerId);
+
+  if (!context.accountantAccess || !registerId) return groups;
+
+  const items = await listAssetRegisterItems(context.ownerUserId, registerId);
+  return projectAssetGroupsToAssets(groups, items);
+}
+
 function errorResponse(error: unknown): NextResponse {
   const message = error instanceof Error ? error.message : '';
   const status = message === 'ASSET_GROUP_NOT_FOUND' || message === 'ASSET_GROUP_REGISTER_NOT_FOUND'
@@ -110,12 +133,18 @@ export async function GET(request: NextRequest) {
   if (!resolved.ok) return resolved.response;
 
   try {
-    const registerId = await resolveRegisterId(
-      request,
-      resolved.context.ownerUserId,
-      resolved.context.accountantRegisterId,
-    );
-    const groups = await listAssetGroups(resolved.context.ownerUserId, registerId);
+    const combined = isCombinedGroupRequest(request);
+    if (combined && resolved.context.accountantAccess) {
+      throw new Error('ASSET_GROUP_REGISTER_FORBIDDEN');
+    }
+    const registerId = combined
+      ? ''
+      : await resolveRegisterId(
+          request,
+          resolved.context.ownerUserId,
+          resolved.context.accountantRegisterId,
+        );
+    const groups = await listWorkspaceGroups(resolved.context, registerId);
     return NextResponse.json({ ok: true, groups });
   } catch (error) {
     return errorResponse(error);
@@ -138,26 +167,34 @@ async function save(request: NextRequest) {
       primaryAssetId?: unknown;
       memberIds?: unknown;
       relationships?: unknown;
+      scope?: unknown;
     };
-    const registerId = await resolveRegisterId(
-      request,
-      resolved.context.ownerUserId,
-      resolved.context.accountantRegisterId,
-      body.registerId,
-    );
+    const combined = isCombinedGroupRequest(request, body.scope);
+    if (combined && resolved.context.accountantAccess) {
+      throw new Error('ASSET_GROUP_REGISTER_FORBIDDEN');
+    }
+    const registerId = combined
+      ? null
+      : await resolveRegisterId(
+          request,
+          resolved.context.ownerUserId,
+          resolved.context.accountantRegisterId,
+          body.registerId,
+        );
     const relationships = body.relationships && typeof body.relationships === 'object' && !Array.isArray(body.relationships)
       ? body.relationships as Record<string, AssetGroupRelationship>
       : undefined;
     const group = await saveAssetGroup(resolved.context.ownerUserId, {
       groupId: cleanText(body.groupId) || undefined,
       registerId,
+      scope: combined ? 'combined' : 'register',
       name: cleanText(body.name),
       valueMode: cleanText(body.valueMode) as AssetGroupValueMode,
       primaryAssetId: cleanText(body.primaryAssetId),
       memberIds: Array.isArray(body.memberIds) ? body.memberIds.map(cleanText) : [],
       relationships,
     });
-    const groups = await listAssetGroups(resolved.context.ownerUserId, registerId);
+    const groups = await listWorkspaceGroups(resolved.context, combined ? null : registerId);
 
     return NextResponse.json({ ok: true, group, groups });
   } catch (error) {
@@ -186,19 +223,27 @@ export async function PATCH(request: NextRequest) {
       assetId?: unknown;
       targetGroupId?: unknown;
       registerId?: unknown;
+      scope?: unknown;
     };
-    const registerId = await resolveRegisterId(
-      request,
-      resolved.context.ownerUserId,
-      resolved.context.accountantRegisterId,
-      body.registerId,
-    );
+    const combined = isCombinedGroupRequest(request, body.scope);
+    if (combined && resolved.context.accountantAccess) {
+      throw new Error('ASSET_GROUP_REGISTER_FORBIDDEN');
+    }
+    const registerId = combined
+      ? null
+      : await resolveRegisterId(
+          request,
+          resolved.context.ownerUserId,
+          resolved.context.accountantRegisterId,
+          body.registerId,
+        );
     const group = await moveAssetToGroup(resolved.context.ownerUserId, {
       assetId: cleanText(body.assetId),
       targetGroupId: cleanText(body.targetGroupId),
       registerId,
+      scope: combined ? 'combined' : 'register',
     });
-    const groups = await listAssetGroups(resolved.context.ownerUserId, registerId);
+    const groups = await listWorkspaceGroups(resolved.context, combined ? null : registerId);
 
     return NextResponse.json({ ok: true, group, groups });
   } catch (error) {
@@ -226,7 +271,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     await deleteAssetGroup(resolved.context.ownerUserId, groupId);
-    const groups = await listAssetGroups(resolved.context.ownerUserId, group.registerId);
+    const groups = await listWorkspaceGroups(resolved.context, group.registerId);
 
     return NextResponse.json({ ok: true, groups });
   } catch (error) {

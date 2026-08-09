@@ -35502,6 +35502,50 @@ button.documentOpenLink {
   white-space: nowrap !important;
 }
 
+/* === Asset card actions: roomier, equal controls in regular and umbrella cards === */
+.page .assetHeaderActions .cardOptionsButton,
+.page .assetHeaderActions .cardViewDetailsButton,
+.page .assetHeaderActions .cardManageButton {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0 !important;
+  min-height: 3.35rem !important;
+  height: 3.35rem;
+  padding: 0 0.82rem !important;
+  gap: 0.46rem;
+  flex-wrap: nowrap !important;
+  white-space: nowrap !important;
+}
+
+.page .assetHeaderActions .cardOptionsButton > span,
+.page .assetHeaderActions .cardViewDetailsButton > span,
+.page .assetHeaderActions .cardManageButton > span {
+  min-width: 0;
+  white-space: nowrap !important;
+}
+
+.page .cardViewDetailsButton .assetDetailsChevron {
+  width: 1.28rem !important;
+  height: 1.28rem !important;
+  flex: 0 0 1.28rem;
+  padding: 0.2rem;
+}
+
+@media (min-width: 901px) {
+  .page .assetHeaderAside,
+  .page .assetHeaderActions,
+  .page .assetHeaderActionsAccountant {
+    width: min(32rem, 100%);
+    min-width: min(32rem, 100%);
+  }
+
+  .page .assetHeaderActions,
+  .page .assetHeaderActionsAccountant {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.7rem;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .assetCardRowDragging,
   .assetGroupHeader {

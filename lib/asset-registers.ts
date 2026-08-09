@@ -561,13 +561,18 @@ async function ensureAssetRegisterTablesOnce(): Promise<void> {
     create table if not exists public.asset_groups (
       id uuid primary key default gen_random_uuid(),
       user_id text not null,
-      register_id uuid not null references public.asset_registers(id) on delete cascade,
+      register_id uuid references public.asset_registers(id) on delete cascade,
       name text not null,
       value_mode text not null default 'separate'
         check (value_mode in ('separate', 'included_in_primary')),
       created_at timestamptz not null default now(),
       updated_at timestamptz not null default now()
     )
+  `);
+
+  await db.query(`
+    alter table if exists public.asset_groups
+      alter column register_id drop not null
   `);
 
   await db.query(`
@@ -596,8 +601,11 @@ async function ensureAssetRegisterTablesOnce(): Promise<void> {
         where asset_id = old.id;
 
       elsif new.register_id is distinct from old.register_id then
-        delete from public.asset_group_members
-        where asset_id = old.id;
+        delete from public.asset_group_members member
+        using public.asset_groups asset_group
+        where member.asset_id = old.id
+          and asset_group.id = member.group_id
+          and asset_group.register_id is not null;
       end if;
 
       delete from public.asset_groups asset_group

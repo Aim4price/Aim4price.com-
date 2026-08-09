@@ -1,4 +1,5 @@
 export type AssetGroupValueMode = 'separate' | 'included_in_primary';
+export type AssetGroupScope = 'register' | 'combined';
 export type AssetGroupMemberRole = 'primary' | 'linked';
 export type AssetGroupRelationship =
   | 'primary'
@@ -18,7 +19,7 @@ export type AssetGroupMember = {
 export type AssetGroup = {
   id: string;
   userId: string;
-  registerId: string;
+  registerId: string | null;
   name: string;
   valueMode: AssetGroupValueMode;
   members: AssetGroupMember[];
@@ -28,7 +29,8 @@ export type AssetGroup = {
 
 export type AssetGroupSaveInput = {
   groupId?: string | null;
-  registerId: string;
+  registerId: string | null;
+  scope?: AssetGroupScope;
   name: string;
   valueMode: AssetGroupValueMode;
   primaryAssetId: string;
@@ -113,6 +115,42 @@ export function buildAssetGroupMembershipMap(groups: AssetGroup[]): Map<string, 
   });
 
   return result;
+}
+
+export function projectAssetGroupsToAssets<T extends { id: string }>(
+  groups: AssetGroup[],
+  assets: T[],
+): AssetGroup[] {
+  const visibleAssetIds = new Set(assets.map((asset) => asset.id));
+
+  return groups.flatMap((group) => {
+    const visibleMembers = group.members
+      .filter((member) => visibleAssetIds.has(member.assetId))
+      .sort((left, right) => {
+        if (left.role !== right.role) return left.role === 'primary' ? -1 : 1;
+        return left.sortOrder - right.sortOrder;
+      });
+
+    if (visibleMembers.length < 2) return [];
+
+    const visiblePrimaryAssetId = visibleMembers.some((member) => member.role === 'primary')
+      ? visibleMembers.find((member) => member.role === 'primary')?.assetId ?? visibleMembers[0].assetId
+      : visibleMembers[0].assetId;
+
+    return [{
+      ...group,
+      members: visibleMembers.map((member, index) => ({
+        ...member,
+        role: member.assetId === visiblePrimaryAssetId ? 'primary' : 'linked',
+        relationship: member.assetId === visiblePrimaryAssetId
+          ? 'primary'
+          : member.relationship === 'primary'
+            ? 'works_with'
+            : member.relationship,
+        sortOrder: index,
+      })),
+    }];
+  });
 }
 
 export function assetCountsTowardRegisterTotal(

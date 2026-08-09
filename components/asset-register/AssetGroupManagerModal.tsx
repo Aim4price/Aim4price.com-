@@ -14,6 +14,7 @@ export type AssetGroupModalAsset = {
   id: string;
   title: string;
   registerId: string | null;
+  registerName?: string | null;
   value: number;
 };
 
@@ -23,6 +24,7 @@ type Props = {
   group: AssetGroup | null;
   assets: AssetGroupModalAsset[];
   groups: AssetGroup[];
+  combinedMode?: boolean;
   busy?: boolean;
   error?: string | null;
   onClose: () => void;
@@ -57,6 +59,7 @@ export default function AssetGroupManagerModal({
   group,
   assets,
   groups,
+  combinedMode = false,
   busy = false,
   error,
   onClose,
@@ -87,14 +90,14 @@ export default function AssetGroupManagerModal({
       ?? '';
 
     setName(group?.name ?? defaultGroupName(anchorAsset));
-    setValueMode(group?.valueMode ?? 'separate');
+    setValueMode(combinedMode ? 'separate' : group?.valueMode ?? 'separate');
     setSelectedAssetIds(initialMemberIds);
     setPrimaryAssetId(initialPrimaryAssetId);
     setRelationships(Object.fromEntries(
       (group?.members ?? []).map((member) => [member.assetId, member.relationship]),
     ));
     setSearch('');
-  }, [anchorAsset, group, open]);
+  }, [anchorAsset, combinedMode, group, open]);
 
   const visibleAssets = useMemo(() => {
     const normalized = search.trim().toLowerCase();
@@ -193,39 +196,48 @@ export default function AssetGroupManagerModal({
               />
             </label>
 
-            <fieldset className={styles.valueModeFieldset}>
-              <legend>How should these values count?</legend>
-              <label className={valueMode === 'separate' ? styles.choiceActive : styles.choice}>
-                <input
-                  type="radio"
-                  name="asset-group-value-mode"
-                  checked={valueMode === 'separate'}
-                  onChange={() => setValueMode('separate')}
-                />
-                <span>
-                  <strong>Count every asset separately</strong>
-                  <small>Best for a truck and trailer, or equipment that works together but has separate value.</small>
-                </span>
-              </label>
-              <label className={valueMode === 'included_in_primary' ? styles.choiceActive : styles.choice}>
-                <input
-                  type="radio"
-                  name="asset-group-value-mode"
-                  checked={valueMode === 'included_in_primary'}
-                  onChange={() => setValueMode('included_in_primary')}
-                />
-                <span>
-                  <strong>Linked assets are included in the primary value</strong>
-                  <small>Best when land value already includes buildings, or one asset’s value already covers its components.</small>
-                </span>
-              </label>
-            </fieldset>
+            {combinedMode ? (
+              <section className={styles.combinedModeNotice} aria-label="Combined Asset Register group values">
+                <strong>Combined umbrella</strong>
+                <span>Assets stay in their own Asset Registers and every value is counted separately.</span>
+              </section>
+            ) : (
+              <fieldset className={styles.valueModeFieldset}>
+                <legend>How should these values count?</legend>
+                <label className={valueMode === 'separate' ? styles.choiceActive : styles.choice}>
+                  <input
+                    type="radio"
+                    name="asset-group-value-mode"
+                    checked={valueMode === 'separate'}
+                    onChange={() => setValueMode('separate')}
+                  />
+                  <span>
+                    <strong>Count every asset separately</strong>
+                    <small>Best for a truck and trailer, or equipment that works together but has separate value.</small>
+                  </span>
+                </label>
+                <label className={valueMode === 'included_in_primary' ? styles.choiceActive : styles.choice}>
+                  <input
+                    type="radio"
+                    name="asset-group-value-mode"
+                    checked={valueMode === 'included_in_primary'}
+                    onChange={() => setValueMode('included_in_primary')}
+                  />
+                  <span>
+                    <strong>Linked assets are included in the primary value</strong>
+                    <small>Best when land value already includes buildings, or one asset’s value already covers its components.</small>
+                  </span>
+                </label>
+              </fieldset>
+            )}
 
             <section className={styles.assetSection}>
               <div className={styles.sectionHeading}>
                 <div>
                   <span>Assets in this group</span>
-                  <small>Choose at least two assets from this Asset Register.</small>
+                  <small>{combinedMode
+                    ? 'Choose at least two assets from any of your Asset Registers.'
+                    : 'Choose at least two assets from this Asset Register.'}</small>
                 </div>
                 <strong>{selectedAssetIds.length} selected</strong>
               </div>
@@ -256,7 +268,11 @@ export default function AssetGroupManagerModal({
                         />
                         <span>
                           <strong>{asset.title}</strong>
-                          <small>{unavailable ? `Already in ${existingGroup?.name}` : money(asset.value)}</small>
+                          <small>
+                            {unavailable
+                              ? `Already in ${existingGroup?.name}`
+                              : [combinedMode ? asset.registerName : '', money(asset.value)].filter(Boolean).join(' · ')}
+                          </small>
                         </span>
                       </label>
 
@@ -302,7 +318,9 @@ export default function AssetGroupManagerModal({
             </section>
 
             <aside className={styles.summary}>
-              <span>Register value represented by this group</span>
+              <span>{combinedMode
+                ? 'Combined value represented by this umbrella'
+                : 'Register value represented by this group'}</span>
               <strong>{money(countedValue)}</strong>
               <small>{valueMode === 'separate' ? 'All selected values are counted.' : 'Only the primary asset counts toward register totals.'}</small>
             </aside>

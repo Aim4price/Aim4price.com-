@@ -3,7 +3,7 @@ import { recordAdminUsageEventSafely } from '../../../lib/admin-usage-events';
 import { getServerSession, isAdminSupportSession } from '../../../lib/auth-session';
 import { getAccountProfile } from '../../../lib/account-profile';
 import { listAssetGroups } from '../../../lib/asset-groups';
-import { registerValueForAssets } from '../../../lib/asset-groups-shared';
+import { projectAssetGroupsToAssets, registerValueForAssets } from '../../../lib/asset-groups-shared';
 import { disposeOrDeleteAsset, recordManualAssetLifecycle, type AssetDisposalReason } from '../../../lib/asset-lifecycle';
 import { attachOpenPartnerNotesToAssets } from '../../../lib/partner-access';
 import { attachOpenIssueNoteStatusToAssets } from '../../../lib/asset-issue-notes';
@@ -569,10 +569,8 @@ export async function GET(request: NextRequest) {
       }));
       const baseItems = itemGroups.flat();
       const items = await attachOpenAssetAlerts(session.user.id, baseItems);
-      const groups = (await Promise.all(
-        registers.map((sourceRegister) => listAssetGroups(session.user.id, sourceRegister.id)),
-      )).flat();
-      const combinedValue = registerValueForAssets(items, groups);
+      const groups = await listAssetGroups(session.user.id);
+      const combinedValue = registerValueForAssets(items, projectAssetGroupsToAssets(groups, items));
       const combinedRegister = {
         id: '__combined_asset_registers__',
         userId: session.user.id,
@@ -631,7 +629,7 @@ export async function GET(request: NextRequest) {
       groups,
       summary: {
         count: items.length,
-        totalValue: registerValueForAssets(items, groups),
+        totalValue: registerValueForAssets(items, projectAssetGroupsToAssets(groups, items)),
       },
     });
   } catch (error) {

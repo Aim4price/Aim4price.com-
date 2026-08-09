@@ -6,6 +6,7 @@ import {
   assetGroupRelationshipLabel,
   assetGroupValueModeLabel,
   decorateAssetsWithGroups,
+  projectAssetGroupsToAssets,
   type AssetGroupExportMeta,
 } from '../../../../lib/asset-groups-shared';
 import { listAssetRegisterItems, type AssetRegisterItem } from '../../../../lib/asset-register-db';
@@ -3042,19 +3043,26 @@ export async function GET(request: NextRequest) {
       const generatedAt = new Date();
       const filenameDate = generatedAt.toISOString().slice(0, 10);
       const exportProfile = buildScopedExportProfile(profile, scope, selectedRegisters, entityName);
-      const bundles: RegisterExportBundle[] = await Promise.all(
-        selectedRegisters.map(async (register) => {
-          const [items, groups] = await Promise.all([
-            listAssetRegisterItems(ownerUserId, register.id),
-            listAssetGroups(ownerUserId, register.id),
-          ]);
-
-          return {
-            register,
-            items: decorateAssetsWithGroups(items, groups),
-          };
-        }),
-      );
+      const [rawBundles, allGroups] = await Promise.all([
+        Promise.all(selectedRegisters.map(async (register) => ({
+          register,
+          items: await listAssetRegisterItems(ownerUserId, register.id),
+        }))),
+        listAssetGroups(ownerUserId),
+      ]);
+      const combinedAssets = rawBundles.flatMap((bundle) => bundle.items);
+      const combinedGroups = scope === 'combined'
+        ? projectAssetGroupsToAssets(allGroups, combinedAssets)
+        : [];
+      const bundles: RegisterExportBundle[] = rawBundles.map((bundle) => ({
+        register: bundle.register,
+        items: decorateAssetsWithGroups(
+          bundle.items,
+          scope === 'combined'
+            ? combinedGroups
+            : projectAssetGroupsToAssets(allGroups, bundle.items),
+        ),
+      }));
       const ownerSlug = pdfFileSlug(entityName || buildOwnerName(exportProfile));
 
       if (format === 'pdf') {
@@ -3140,7 +3148,7 @@ export async function GET(request: NextRequest) {
       listAssetRegisterItems(ownerUserId, register.id),
       listAssetGroups(ownerUserId, register.id),
     ]);
-    const items = decorateAssetsWithGroups(rawItems, groups);
+    const items = decorateAssetsWithGroups(rawItems, projectAssetGroupsToAssets(groups, rawItems));
     const generatedAt = new Date();
     const filenameDate = generatedAt.toISOString().slice(0, 10);
     if (format === 'pdf') {

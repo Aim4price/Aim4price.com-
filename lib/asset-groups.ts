@@ -13,7 +13,7 @@ import {
 type AssetGroupRow = {
   id: string;
   user_id: string;
-  register_id: string;
+  register_id: string | null;
   name: string;
   value_mode: string;
   created_at: string | Date;
@@ -34,7 +34,8 @@ const MAX_GROUP_MEMBERS = 50;
 export type MoveAssetToGroupInput = {
   assetId: string;
   targetGroupId: string;
-  registerId: string;
+  registerId: string | null;
+  scope?: 'register' | 'combined';
 };
 
 function cleanText(value: unknown): string {
@@ -69,7 +70,7 @@ function mapGroups(rows: AssetGroupRow[], memberRows: AssetGroupMemberRow[]): As
     .map((row) => ({
       id: cleanText(row.id),
       userId: cleanText(row.user_id),
-      registerId: cleanText(row.register_id),
+      registerId: cleanText(row.register_id) || null,
       name: cleanText(row.name),
       valueMode: normalizeAssetGroupValueMode(row.value_mode),
       members: (membersByGroupId.get(cleanText(row.id)) ?? []).sort((left, right) => {
@@ -120,11 +121,27 @@ export async function listAssetGroups(
   const db = getDb();
   const cleanedRegisterId = cleanText(registerId);
   const groupResult = await db.query<AssetGroupRow>(
-    `select id::text, user_id, register_id::text, name, value_mode, created_at, updated_at
-       from public.asset_groups
-       where user_id = $1
-         and ($2::text = '' or register_id::text = $2)
-       order by updated_at desc, created_at desc, id desc`,
+    `select asset_group.id::text, asset_group.user_id, asset_group.register_id::text,
+            asset_group.name, asset_group.value_mode, asset_group.created_at, asset_group.updated_at
+       from public.asset_groups asset_group
+       where asset_group.user_id = $1
+         and (
+           $2::text = ''
+           or asset_group.register_id::text = $2
+           or (
+             asset_group.register_id is null
+             and exists (
+               select 1
+               from public.asset_group_members group_member
+               inner join public.asset_register_items asset
+                 on asset.id = group_member.asset_id
+               where group_member.group_id = asset_group.id
+                 and asset.user_id = $1
+                 and asset.register_id::text = $2
+             )
+           )
+         )
+       order by asset_group.updated_at desc, asset_group.created_at desc, asset_group.id desc`,
     [userId, cleanedRegisterId],
   );
 
@@ -151,26 +168,33 @@ export async function saveAssetGroup(userId: string, input: AssetGroupSaveInput)
   await ensureAssetRegisterTables();
 
   const groupId = cleanText(input.groupId);
-  const registerId = cleanText(input.registerId);
+  const isCombinedScope = input.scope === 'combined';
+  const registerId = isCombinedScope ? '' : cleanText(input.registerId);
+  const storedRegisterId = registerId || null;
   const name = cleanText(input.name).slice(0, MAX_GROUP_NAME_LENGTH);
   const primaryAssetId = cleanText(input.primaryAssetId);
   const memberIds = normalizeMemberIds(input.memberIds, primaryAssetId);
-  const valueMode = normalizeAssetGroupValueMode(input.valueMode);
+  const valueMode = isCombinedScope ? 'separate' : normalizeAssetGroupValueMode(input.valueMode);
 
-  if (!registerId) throw new Error('ASSET_GROUP_REGISTER_REQUIRED');
+  if (!isCombinedScope && !registerId) throw new Error('ASSET_GROUP_REGISTER_REQUIRED');
   if (!name) throw new Error('ASSET_GROUP_NAME_REQUIRED');
   if (!primaryAssetId) throw new Error('ASSET_GROUP_PRIMARY_REQUIRED');
   if (memberIds.length < 2) throw new Error('ASSET_GROUP_MEMBERS_REQUIRED');
   if (memberIds.length > MAX_GROUP_MEMBERS) throw new Error('ASSET_GROUP_TOO_MANY_MEMBERS');
 
-  const register = await getAssetRegisterForUser(userId, registerId);
-  if (!register) throw new Error('ASSET_GROUP_REGISTER_NOT_FOUND');
+  if (!isCombinedScope) {
+    const register = await getAssetRegisterForUser(userId, registerId);
+    if (!register) throw new Error('ASSET_GROUP_REGISTER_NOT_FOUND');
+  }
 
   const assets = await getAssetRegisterItemsByRefs(memberIds.map((assetId) => ({ userId, assetId })));
   const assetById = new Map(assets.map((asset) => [asset.id, asset]));
 
   if (assetById.size !== memberIds.length) throw new Error('ASSET_GROUP_ASSET_NOT_FOUND');
-  if (assets.some((asset) => cleanText(asset.registerId) !== registerId)) {
+  if (assets.some((asset) => !cleanText(asset.registerId))) {
+    throw new Error('ASSET_GROUP_REGISTER_MISMATCH');
+  }
+  if (!isCombinedScope && assets.some((asset) => cleanText(asset.registerId) !== registerId)) {
     throw new Error('ASSET_GROUP_REGISTER_MISMATCH');
   }
 
@@ -184,28 +208,31 @@ export async function saveAssetGroup(userId: string, input: AssetGroupSaveInput)
     let savedGroupId = groupId;
 
     if (groupId) {
-      const existing = await client.query<{ id: string }>(
-        `select id::text
+      const existing = await client.query<{ id: string; register_id: string | null }>(
+        `select id::text, register_id::text
            from public.asset_groups
-           where id = $1::uuid and user_id = $2 and register_id = $3::uuid
+           where id = $1::uuid and user_id = $2
            for update`,
-        [groupId, userId, registerId],
+        [groupId, userId],
       );
 
       if (!existing.rows[0]) throw new Error('ASSET_GROUP_NOT_FOUND');
+      if (!isCombinedScope && cleanText(existing.rows[0].register_id) !== registerId) {
+        throw new Error('ASSET_GROUP_REGISTER_MISMATCH');
+      }
 
       await client.query(
         `update public.asset_groups
-         set name = $2, value_mode = $3, updated_at = now()
-         where id = $1::uuid and user_id = $4`,
-        [groupId, name, valueMode, userId],
+         set register_id = $2::uuid, name = $3, value_mode = $4, updated_at = now()
+         where id = $1::uuid and user_id = $5`,
+        [groupId, storedRegisterId, name, valueMode, userId],
       );
     } else {
       const created = await client.query<{ id: string }>(
         `insert into public.asset_groups (user_id, register_id, name, value_mode)
          values ($1, $2::uuid, $3, $4)
          returning id::text`,
-        [userId, registerId, name, valueMode],
+        [userId, storedRegisterId, name, valueMode],
       );
 
       savedGroupId = cleanText(created.rows[0]?.id);
@@ -275,15 +302,19 @@ export async function moveAssetToGroup(
 
   const assetId = cleanText(input.assetId);
   const targetGroupId = cleanText(input.targetGroupId);
-  const registerId = cleanText(input.registerId);
+  const isCombinedScope = input.scope === 'combined';
+  const registerId = isCombinedScope ? '' : cleanText(input.registerId);
 
   if (!assetId) throw new Error('ASSET_GROUP_ASSET_NOT_FOUND');
   if (!targetGroupId) throw new Error('ASSET_GROUP_NOT_FOUND');
-  if (!registerId) throw new Error('ASSET_GROUP_REGISTER_REQUIRED');
+  if (!isCombinedScope && !registerId) throw new Error('ASSET_GROUP_REGISTER_REQUIRED');
 
   const [asset] = await getAssetRegisterItemsByRefs([{ userId, assetId }]);
   if (!asset) throw new Error('ASSET_GROUP_ASSET_NOT_FOUND');
-  if (cleanText(asset.registerId) !== registerId) {
+  if (!cleanText(asset.registerId)) {
+    throw new Error('ASSET_GROUP_REGISTER_MISMATCH');
+  }
+  if (!isCombinedScope && cleanText(asset.registerId) !== registerId) {
     throw new Error('ASSET_GROUP_REGISTER_MISMATCH');
   }
 
@@ -306,7 +337,7 @@ export async function moveAssetToGroup(
       targetGroupId,
       cleanText(sourceMembership?.group_id),
     ].filter(Boolean))).sort();
-    const lockedGroups = await client.query<{ id: string; register_id: string }>(
+    const lockedGroups = await client.query<{ id: string; register_id: string | null }>(
       `select id::text, register_id::text
          from public.asset_groups
          where id = any($1::uuid[]) and user_id = $2
@@ -317,11 +348,19 @@ export async function moveAssetToGroup(
     const targetGroup = lockedGroups.rows.find((group) => group.id === targetGroupId);
 
     if (!targetGroup) throw new Error('ASSET_GROUP_NOT_FOUND');
-    if (cleanText(targetGroup.register_id) !== registerId) {
+    if (!isCombinedScope && cleanText(targetGroup.register_id) !== registerId) {
       throw new Error('ASSET_GROUP_REGISTER_MISMATCH');
     }
 
     if (sourceMembership?.group_id === targetGroupId) {
+      if (isCombinedScope && cleanText(targetGroup.register_id)) {
+        await client.query(
+          `update public.asset_groups
+           set register_id = null, value_mode = 'separate', updated_at = now()
+           where id = $1::uuid and user_id = $2`,
+          [targetGroupId, userId],
+        );
+      }
       await client.query('commit');
       const unchanged = await getAssetGroupById(userId, targetGroupId);
       if (!unchanged) throw new Error('ASSET_GROUP_NOT_FOUND');
@@ -402,8 +441,12 @@ export async function moveAssetToGroup(
       [targetGroupId, assetId],
     );
     await client.query(
-      'update public.asset_groups set updated_at = now() where id = $1::uuid and user_id = $2',
-      [targetGroupId, userId],
+      `update public.asset_groups
+       set register_id = case when $3::boolean then null else register_id end,
+           value_mode = case when $3::boolean then 'separate' else value_mode end,
+           updated_at = now()
+       where id = $1::uuid and user_id = $2`,
+      [targetGroupId, userId, isCombinedScope],
     );
 
     await client.query('commit');
