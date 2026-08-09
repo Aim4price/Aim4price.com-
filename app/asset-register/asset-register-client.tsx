@@ -13935,22 +13935,22 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                               <>
                                 <button
                                   type="button"
-                                  className={`${styles.assetFlagButton} ${primaryIsFlagged ? styles.assetFlagButtonActive : ''}`}
+                                  className={`${styles.assetFlagButton} ${styles.controlTooltip} ${primaryIsFlagged ? styles.assetFlagButtonActive : ''}`}
                                   onClick={() => void handleAssetFlagToggle(primaryAsset)}
                                   disabled={primaryIsFlagBusy}
                                   aria-label={primaryIsFlagged ? `Unflag ${primaryAsset.title}` : `Flag ${primaryAsset.title}`}
                                   aria-pressed={primaryIsFlagged}
-                                  title={primaryIsFlagged ? `Unflag ${primaryAsset.title}` : `Flag ${primaryAsset.title}`}
+                                  data-tooltip={primaryIsFlagged ? 'Remove flag' : 'Flag asset'}
                                 >
                                   <FlagIcon className={styles.assetFlagIcon} />
                                 </button>
 
                                 <button
                                   type="button"
-                                  className={styles.assetRegisterMoveButton}
+                                  className={`${styles.assetRegisterMoveButton} ${styles.controlTooltip}`}
                                   onClick={() => openAssetRegisterMoveManager(primaryAsset)}
                                   aria-label={`Move ${primaryAsset.title} to another asset register`}
-                                  title="Move the primary asset to another Asset Register"
+                                  data-tooltip="Move asset"
                                 >
                                   <ChangeRegisterIcon className={styles.assetRegisterMoveIcon} />
                                 </button>
@@ -13959,11 +13959,11 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
 
                             <button
                               type="button"
-                              className={`${styles.assetGroupButton} ${styles.assetGroupButtonActive}`}
+                              className={`${styles.assetGroupButton} ${styles.assetGroupButtonActive} ${styles.controlTooltip}`}
                               onClick={() => primaryAsset && openAssetGroupManager(primaryAsset)}
                               disabled={!primaryAsset || !canManageAssetGroups}
                               aria-label={`Manage ${group.name}`}
-                              title={canManageAssetGroups ? 'Manage asset group' : 'Asset group'}
+                              data-tooltip={canManageAssetGroups ? 'Manage group' : 'Asset group'}
                             >
                               <UmbrellaIcon className={styles.assetGroupButtonIcon} />
                             </button>
@@ -13992,12 +13992,15 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                               </div>
                               <button
                                 type="button"
-                                className={styles.assetGroupCollapseButton}
+                                className={`${styles.assetGroupCollapseButton} ${styles.controlTooltip}`}
                                 onClick={() => toggleAssetGroupCollapsed(group.id)}
                                 aria-expanded={!isCollapsed}
                                 aria-label={isCollapsed ? `Expand ${group.name}` : `Collapse ${group.name}`}
+                                data-tooltip={isCollapsed ? 'Expand group' : 'Collapse group'}
                               >
-                                <span aria-hidden="true">{isCollapsed ? '⌄' : '⌃'}</span>
+                                {isCollapsed
+                                  ? <ChevronDownIcon className={styles.assetGroupCollapseChevron} />
+                                  : <ChevronUpIcon className={styles.assetGroupCollapseChevron} />}
                               </button>
                             </div>
                           </section>
@@ -14048,7 +14051,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                       ? Math.round(Number(asset.value || 0) * ASSET_REGISTER_SUMMARY_VAT_MULTIPLIER)
                       : asset.value;
                     const assetValueVatLabel = assetValueVatMode === 'included' ? 'Incl. VAT' : 'Excl. VAT';
-                    const assetValueVatToggleLabel = assetValueVatMode === 'included' ? `Show ${asset.title} value excluding VAT` : `Show ${asset.title} value including VAT`;
+                    const assetValueVatToggleLabel = assetValueVatMode === 'included' ? 'Show excl. VAT' : 'Show incl. VAT';
                     const maintenanceDoneLabel =
                       latestMaintenanceStatus?.kind === 'checked'
                         ? 'Maintenance checked'
@@ -14101,33 +14104,33 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                           <div className={styles.assetSideActions}>
                             <button
                               type="button"
-                              className={`${styles.assetFlagButton} ${isFlagged ? styles.assetFlagButtonActive : ''}`}
+                              className={`${styles.assetFlagButton} ${styles.controlTooltip} ${isFlagged ? styles.assetFlagButtonActive : ''}`}
                               onClick={() => void handleAssetFlagToggle(asset)}
                               disabled={isFlagBusy}
                               aria-label={isFlagged ? `Unflag ${asset.title}` : `Flag ${asset.title}`}
                               aria-pressed={isFlagged}
-                              title={isFlagged ? `Unflag ${asset.title}` : `Flag ${asset.title}`}
+                              data-tooltip={isFlagged ? 'Remove flag' : 'Flag asset'}
                             >
                               <FlagIcon className={styles.assetFlagIcon} />
                             </button>
 
                             <button
                               type="button"
-                              className={styles.assetRegisterMoveButton}
+                              className={`${styles.assetRegisterMoveButton} ${styles.controlTooltip}`}
                               onClick={() => openAssetRegisterMoveManager(asset)}
                               aria-label={`Move ${asset.title} to another asset register`}
-                              title="Move to another asset register"
+                              data-tooltip="Move asset"
                             >
                               <ChangeRegisterIcon className={styles.assetRegisterMoveIcon} />
                             </button>
 
                             <button
                               type="button"
-                              className={styles.assetGroupButton}
+                              className={`${styles.assetGroupButton} ${styles.controlTooltip}`}
                               onClick={() => openAssetGroupManager(asset)}
                               disabled={!canManageAssetGroups}
                               aria-label={`Create a group with ${asset.title}`}
-                              title={canManageAssetGroups ? 'Create asset group' : 'Asset grouping is not available here'}
+                              data-tooltip={canManageAssetGroups ? 'Create group' : 'Groups unavailable'}
                             >
                               <UmbrellaIcon className={styles.assetGroupButtonIcon} />
                             </button>
@@ -14187,11 +14190,11 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                                     <strong>{money(displayedAssetValue)}</strong>
                                     <button
                                       type="button"
-                                      className={`${styles.assetValueVatToggle} ${styles.assetCardVatToggle} ${assetValueVatMode === 'included' ? styles.assetValueVatToggleIncluded : ''}`}
+                                      className={`${styles.assetValueVatToggle} ${styles.assetCardVatToggle} ${styles.controlTooltip} ${assetValueVatMode === 'included' ? styles.assetValueVatToggleIncluded : ''}`}
                                       onClick={() => handleAssetValueVatToggle(asset.id)}
                                       aria-label={assetValueVatToggleLabel}
                                       aria-pressed={assetValueVatMode === 'included'}
-                                      title={assetValueVatToggleLabel}
+                                      data-tooltip={assetValueVatToggleLabel}
                                     >
                                       <span aria-hidden="true">{assetValueVatMode === 'included' ? '‹' : '›'}</span>
                                     </button>
@@ -14239,12 +14242,15 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
 
                               <button
                                 type="button"
-                                className={`${styles.expandButton} ${styles.cardViewDetailsButton}`}
+                                className={`${styles.expandButton} ${styles.cardViewDetailsButton} ${styles.controlTooltip}`}
                                 onClick={() => setExpandedAssetId((current) => (current === asset.id ? null : asset.id))}
                                 aria-expanded={isExpanded}
                                 aria-controls={`asset-panel-${asset.id}`}
+                                data-tooltip={isExpanded ? 'Hide details' : 'View details'}
                               >
-                                {isExpanded ? <ChevronUpIcon className={styles.buttonIcon} /> : <ChevronDownIcon className={styles.buttonIcon} />}
+                                {isExpanded
+                                  ? <ChevronUpIcon className={`${styles.buttonIcon} ${styles.assetDetailsChevron}`} />
+                                  : <ChevronDownIcon className={`${styles.buttonIcon} ${styles.assetDetailsChevron}`} />}
                                 <span>{isExpanded ? 'Hide details' : 'View details'}</span>
                               </button>
 
