@@ -96,3 +96,21 @@ test('the Asset Register exposes create, manage, collapse, search, and relations
   assert.match(modal, /Linked assets are included in the primary value/);
   assert.match(modal, /The assets and their records will not be deleted|Remove group/);
 });
+
+test('quick controls use clear chevrons, balanced spacing, and concise hover labels', async () => {
+  const [client, styles] = await Promise.all([
+    readFile(new URL('../app/asset-register/asset-register-client.tsx', import.meta.url), 'utf8'),
+    readFile(new URL('../app/asset-register/page.module.css', import.meta.url), 'utf8'),
+  ]);
+  assert.match(client, /data-tooltip=\{primaryIsFlagged \? 'Remove flag' : 'Flag asset'\}/);
+  assert.match(client, /data-tooltip="Move asset"/);
+  assert.match(client, /data-tooltip=\{canManageAssetGroups \? 'Create group' : 'Groups unavailable'\}/);
+  assert.match(client, /'Show excl\. VAT' : 'Show incl\. VAT'/);
+  assert.match(client, /ChevronDownIcon className=\{styles\.assetGroupCollapseChevron\}/);
+  assert.match(client, /styles\.assetDetailsChevron/);
+  assert.doesNotMatch(client, /<span aria-hidden="true">\{isCollapsed \? '⌄' : '⌃'\}<\/span>/);
+  assert.match(styles, /\.assetSideActions,\s*\.assetGroupSideActions \{\s*gap: 0\.3rem;\s*padding: 0\.28rem;/);
+  assert.match(styles, /\.controlTooltip::after[\s\S]*?content: attr\(data-tooltip\)/);
+  assert.match(styles, /\.cardViewDetailsButton \.assetDetailsChevron/);
+  assert.match(styles, /\[aria-expanded="true"\] \.customSelectChevron/);
+});
