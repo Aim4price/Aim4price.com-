@@ -45,6 +45,7 @@ import {
   getAssetGroupPrimaryAssetId,
   groupRegisterValue,
   orderAssetsByGroups,
+  projectAssetGroupsToAssets,
   registerValueForAssets,
   type AssetGroup,
   type AssetGroupSaveInput,
@@ -5539,21 +5540,29 @@ function buildAssetRegisterApiUrl(registerId?: string | null): string {
   return `/api/asset-register?${params.toString()}`;
 }
 
-function buildAssetGroupsApiUrl(accountantShareId?: string, groupId?: string): string {
+function buildAssetGroupsApiUrl(accountantShareId?: string, groupId?: string, combined = false): string {
   const params = new URLSearchParams();
   if (accountantShareId) params.set('accountantShareId', accountantShareId);
   if (groupId) params.set('groupId', groupId);
+  if (combined) params.set('scope', 'combined');
   const query = params.toString();
   return `/api/asset-groups${query ? `?${query}` : ''}`;
 }
 
-function buildAssetRegisterExportUrl(registerId?: string | null, entityName = '', accountantShareId?: string): string {
+function buildAssetRegisterExportUrl(
+  registerId?: string | null,
+  entityName = '',
+  accountantShareId?: string,
+  availableRegisterIds: string[] = [],
+): string {
   const params = new URLSearchParams({ format: 'xlsx' });
   const cleanedRegisterId = String(registerId ?? '').trim();
   const cleanedEntityName = entityName.trim();
 
   if (cleanedRegisterId === COMBINED_REGISTER_ID) {
-    params.set('scope', 'all');
+    const registerIds = availableRegisterIds.filter((id) => id && id !== COMBINED_REGISTER_ID);
+    params.set('scope', registerIds.length >= 2 ? 'combined' : 'all');
+    if (registerIds.length >= 2) params.set('registerIds', registerIds.join(','));
     params.set('entityName', cleanedEntityName || 'Combined Asset Registers');
   } else if (cleanedRegisterId) {
     params.set('scope', 'single');
@@ -5566,7 +5575,11 @@ function buildAssetRegisterExportUrl(registerId?: string | null, entityName = ''
   return `/api/asset-register/export?${params.toString()}`;
 }
 
-function buildAssetRegisterSummaryExportUrl(registerId: string | null | undefined, format: ExportFormat): string {
+function buildAssetRegisterSummaryExportUrl(
+  registerId: string | null | undefined,
+  format: ExportFormat,
+  availableRegisterIds: string[] = [],
+): string {
   const params = new URLSearchParams({
     format,
     reportKind: 'summary',
@@ -5574,7 +5587,9 @@ function buildAssetRegisterSummaryExportUrl(registerId: string | null | undefine
   const cleanedRegisterId = String(registerId ?? '').trim();
 
   if (cleanedRegisterId === COMBINED_REGISTER_ID) {
-    params.set('scope', 'all');
+    const registerIds = availableRegisterIds.filter((id) => id && id !== COMBINED_REGISTER_ID);
+    params.set('scope', registerIds.length >= 2 ? 'combined' : 'all');
+    if (registerIds.length >= 2) params.set('registerIds', registerIds.join(','));
     params.set('entityName', 'Combined Asset Registers');
   } else if (cleanedRegisterId) {
     params.set('registerId', cleanedRegisterId);
@@ -6183,7 +6198,10 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
 
   function applyAssetGroups(nextGroups: AssetGroup[]) {
     setAssetGroups(nextGroups);
-    const nextRegisterValue = registerValueForAssets(assets, nextGroups);
+    const nextRegisterValue = registerValueForAssets(
+      assets,
+      projectAssetGroupsToAssets(nextGroups, assets),
+    );
 
     setActiveRegister((current) => (
       current && current.id !== COMBINED_REGISTER_ID
@@ -6201,14 +6219,16 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     if (!canManageAssetGroups) {
       setNotice({
         tone: 'warning',
-        message: isCombinedRegisterView
-          ? 'Open one Asset Register before changing groups.'
-          : 'This shared Asset Register is read-only.',
+        message: 'This shared Asset Register is read-only.',
       });
       return;
     }
 
-    const group = assetGroupMemberships.get(asset.id)?.group ?? null;
+    const group = allAssetGroupMemberships.get(asset.id)?.group ?? null;
+    if (group && group.registerId === null && !isCombinedRegisterView) {
+      window.location.assign('/asset-register?scope=combined');
+      return;
+    }
     setAssetGroupModalAsset(asset);
     setAssetGroupModalGroup(group);
     setAssetGroupError('');
@@ -6237,11 +6257,18 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     setAssetGroupError('');
 
     try {
-      const response = await fetch(buildAssetGroupsApiUrl(accountantShareId), {
+      const combinedScope = isCombinedRegisterView;
+      const payload: AssetGroupSaveInput = {
+        ...input,
+        registerId: combinedScope ? null : input.registerId,
+        scope: combinedScope ? 'combined' : 'register',
+        valueMode: combinedScope ? 'separate' : input.valueMode,
+      };
+      const response = await fetch(buildAssetGroupsApiUrl(accountantShareId, undefined, combinedScope), {
         method: input.groupId ? 'PUT' : 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(input),
+        body: JSON.stringify(payload),
       });
       const data = await response.json() as AssetGroupApiResponse;
 
@@ -6271,11 +6298,15 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
 
   function canDropAssetIntoGroup(assetId: string | null, targetGroup: AssetGroup): boolean {
     if (!assetId || !canManageAssetGroups || isSavingAssetGroup) return false;
-    if (targetGroup.members.length >= 50) return false;
-    if (targetGroup.members.some((member) => member.assetId === assetId)) return false;
+    const persistedTargetGroup = assetGroups.find((group) => group.id === targetGroup.id) ?? targetGroup;
+    if (persistedTargetGroup.members.length >= 50) return false;
+    if (persistedTargetGroup.members.some((member) => member.assetId === assetId)) return false;
 
     const asset = assets.find((entry) => entry.id === assetId);
-    return Boolean(asset && String(asset.registerId ?? '').trim() === targetGroup.registerId);
+    if (!asset || !String(asset.registerId ?? '').trim()) return false;
+    return isCombinedRegisterView
+      || targetGroup.registerId === null
+      || String(asset.registerId ?? '').trim() === targetGroup.registerId;
   }
 
   function handleAssetDragStart(event: ReactDragEvent<HTMLDivElement>, asset: RegisterAsset) {
@@ -6330,21 +6361,23 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     if (!canDropAssetIntoGroup(assetId, targetGroup)) return;
 
     const asset = assets.find((entry) => entry.id === assetId);
-    const sourceGroup = assetGroupMemberships.get(assetId)?.group ?? null;
+    const sourceGroup = allAssetGroupMemberships.get(assetId)?.group ?? null;
     if (!asset) return;
 
     setIsSavingAssetGroup(true);
     setAssetGroupError('');
 
     try {
-      const response = await fetch(buildAssetGroupsApiUrl(accountantShareId), {
+      const combinedScope = isCombinedRegisterView || targetGroup.registerId === null;
+      const response = await fetch(buildAssetGroupsApiUrl(accountantShareId, undefined, combinedScope), {
         method: 'PATCH',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           assetId,
           targetGroupId: targetGroup.id,
-          registerId: targetGroup.registerId,
+          registerId: combinedScope ? null : targetGroup.registerId,
+          scope: combinedScope ? 'combined' : 'register',
         }),
       });
       const data = await response.json() as AssetGroupApiResponse;
@@ -6384,7 +6417,11 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     setAssetGroupError('');
 
     try {
-      const response = await fetch(buildAssetGroupsApiUrl(accountantShareId, group.id), {
+      const response = await fetch(buildAssetGroupsApiUrl(
+        accountantShareId,
+        group.id,
+        isCombinedRegisterView || group.registerId === null,
+      ), {
         method: 'DELETE',
         credentials: 'include',
       });
@@ -6766,8 +6803,8 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
   const canUseOwnerOnlyAssetActions = !isAccountantWorkspace;
   const canManageRegisterStructure = canUseOwnerOnlyAssetActions || isAccountantWorkspace;
   const canManageAssetGroups =
-    !isCombinedRegisterView
-    && (canUseOwnerOnlyAssetActions || Boolean(accountantAccess?.allowDirectUpdates));
+    canUseOwnerOnlyAssetActions
+    || (!isCombinedRegisterView && Boolean(accountantAccess?.allowDirectUpdates));
   const canUseAccountantDocumentActions = isAccountantWorkspace && Boolean(accountantAccess?.allowDirectUpdates);
   const canShareActiveRegister = canUseOwnerOnlyAssetActions;
   const canAddAssetsToActiveRegister = canManageRegisterStructure && !isCombinedRegisterView;
@@ -7776,7 +7813,15 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     return undefined;
   }, [isAssetSettingsModalOpen, assetSettingsView]);
 
+  const displayAssetGroups = useMemo(
+    () => projectAssetGroupsToAssets(assetGroups, assets),
+    [assetGroups, assets],
+  );
   const assetGroupMemberships = useMemo(
+    () => buildAssetGroupMembershipMap(displayAssetGroups),
+    [displayAssetGroups],
+  );
+  const allAssetGroupMemberships = useMemo(
     () => buildAssetGroupMembershipMap(assetGroups),
     [assetGroups],
   );
@@ -8215,8 +8260,8 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     return sortAssetsByRegisterPriority(filterAssetsByRegisterFilter(searchMatchedAssets, assetFilter), assetFilter);
   }, [assetFilter, searchMatchedAssets]);
   const groupedFilteredAssets = useMemo(
-    () => orderAssetsByGroups(filteredAssets, assetGroups),
-    [assetGroups, filteredAssets],
+    () => orderAssetsByGroups(filteredAssets, displayAssetGroups),
+    [displayAssetGroups, filteredAssets],
   );
 
   const isShowingAllAssets = pageSize === 'all';
@@ -12523,9 +12568,11 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     const sharedAssets = leadType === 'replacement_quote'
       ? assets.filter((asset) => selectedAssetIds.has(asset.id))
       : assets;
-    const registerAssets = orderAssetsByGroups(sharedAssets, assetGroups).map((asset) => {
+    const sharedAssetGroups = projectAssetGroupsToAssets(assetGroups, sharedAssets);
+    const sharedAssetGroupMemberships = buildAssetGroupMembershipMap(sharedAssetGroups);
+    const registerAssets = orderAssetsByGroups(sharedAssets, sharedAssetGroups).map((asset) => {
       const snapshot = buildFullRegisterLeadAssetSnapshot(asset);
-      const membership = assetGroupMemberships.get(asset.id);
+      const membership = sharedAssetGroupMemberships.get(asset.id);
 
       return {
         ...snapshot,
@@ -12536,12 +12583,12 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
               role: membership.member.role,
               relationship: membership.member.relationship,
               valueMode: membership.group.valueMode,
-              countsInRegisterTotal: assetCountsTowardRegisterTotal(asset.id, assetGroupMemberships),
+              countsInRegisterTotal: assetCountsTowardRegisterTotal(asset.id, sharedAssetGroupMemberships),
             }
           : null,
       };
     });
-    const sharedTotalValue = sumAssetValues(sharedAssets, assetGroups);
+    const sharedTotalValue = sumAssetValues(sharedAssets, sharedAssetGroups);
     const sharedTotalReplacementValue = sharedAssets.reduce(
       (sum, asset) => sum + (Number(readAssetReplacementPriceExVat(asset)) || 0),
       0,
@@ -12597,7 +12644,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
         totalReplacementValue: sharedTotalReplacementValue,
         totalReplacementValueInclVat: sharedTotalReplacementValue * 1.15,
         replacementPricedAssetCount: sharedAssets.filter((asset) => (readAssetReplacementPriceExVat(asset) ?? 0) > 0).length,
-        assetGroups,
+        assetGroups: sharedAssetGroups,
         aim4priceAssetCount: sharedAssets.filter((asset) => asset.selectedMethod === 'aim4price').length,
         manualAssetCount: sharedAssets.filter((asset) => asset.selectedMethod !== 'aim4price').length,
         financedAssetCount: sharedAssets.filter((asset) => readFinanceStatusChoice(asset) === 'yes').length,
@@ -12651,7 +12698,11 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     setIsExporting(true);
 
     try {
-      const url = buildAssetRegisterSummaryExportUrl(activeRegister?.id || activeRegisterId, 'pdf');
+      const url = buildAssetRegisterSummaryExportUrl(
+        activeRegister?.id || activeRegisterId,
+        'pdf',
+        assetRegisters.map((register) => register.id),
+      );
       const targetName = `aim4price-register-summary-${Date.now()}`;
       const reportWindow = window.open(url, targetName);
 
@@ -12773,18 +12824,20 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     const isCustomAssetSelection = Boolean(overrideAssets);
     const reportOption = overrideReportDetails ? { value: reportKind, ...overrideReportDetails } : getPdfReportOption(reportKind);
     const reportAssets = overrideAssets ?? filterAssetsByPdfReportKind(assets, reportKind);
-    const orderedReportAssets = orderAssetsByGroups(reportAssets, assetGroups);
-    const reportValue = sumAssetValues(reportAssets, assetGroups);
+    const reportAssetGroups = projectAssetGroupsToAssets(assetGroups, reportAssets);
+    const reportAssetGroupMemberships = buildAssetGroupMembershipMap(reportAssetGroups);
+    const orderedReportAssets = orderAssetsByGroups(reportAssets, reportAssetGroups);
+    const reportValue = sumAssetValues(reportAssets, reportAssetGroups);
     const reportValueInclVat = Math.round(reportValue * 1.15);
     const reportReplacementValue = sumAssetReplacementValues(reportAssets);
     const reportReplacementValueInclVat = Math.round(reportReplacementValue * 1.15);
     const reportReplacementPricedCount = countAssetsWithReplacementPrice(reportAssets);
     const reportInsuredValue = sumAssetInsuredValues(reportAssets);
     const reportInsuredValueInclVat = Math.round(reportInsuredValue * 1.15);
-    const reportAim4priceStats = calculateAssetStats(reportAssets, isAim4priceValuedAsset, assetGroups);
-    const reportInsuredStats = calculateAssetStats(reportAssets, (asset) => readInsuranceStatusChoice(asset) === 'yes', assetGroups);
-    const reportFinancedStats = calculateAssetStats(reportAssets, (asset) => readFinanceStatusChoice(asset) === 'yes', assetGroups);
-    const reportLicensedStats = calculateAssetStats(reportAssets, (asset) => readLicenseStatusChoice(asset) === 'yes', assetGroups);
+    const reportAim4priceStats = calculateAssetStats(reportAssets, isAim4priceValuedAsset, reportAssetGroups);
+    const reportInsuredStats = calculateAssetStats(reportAssets, (asset) => readInsuranceStatusChoice(asset) === 'yes', reportAssetGroups);
+    const reportFinancedStats = calculateAssetStats(reportAssets, (asset) => readFinanceStatusChoice(asset) === 'yes', reportAssetGroups);
+    const reportLicensedStats = calculateAssetStats(reportAssets, (asset) => readLicenseStatusChoice(asset) === 'yes', reportAssetGroups);
     const profile = reportProfile ?? (await ensureAccountProfile());
     const profileLocation = [profile?.townCity, profile?.province].filter(Boolean).join(' ');
     const profileAddress = [profile?.addressLine1, profile?.addressLine2, profileLocation].filter(Boolean).join(' ');
@@ -12839,9 +12892,9 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
         const reportModelName = deriveAssetReportModelName(asset, reportBrandName);
         const documentsCount = assetDocuments(asset).length;
         const isPropertyAsset = asset.kind === 'property';
-        const membership = assetGroupMemberships.get(asset.id);
+        const membership = reportAssetGroupMemberships.get(asset.id);
         const groupDetail = membership
-          ? `Group: ${membership.group.name} · ${assetGroupRelationshipLabel(membership.member.relationship)} · ${assetGroupValueModeLabel(membership.group.valueMode)} · Counts in register total: ${assetCountsTowardRegisterTotal(asset.id, assetGroupMemberships) ? 'Yes' : 'No'}`
+          ? `Group: ${membership.group.name} · ${assetGroupRelationshipLabel(membership.member.relationship)} · ${assetGroupValueModeLabel(membership.group.valueMode)} · Counts in register total: ${assetCountsTowardRegisterTotal(asset.id, reportAssetGroupMemberships) ? 'Yes' : 'No'}`
           : '';
 
         return {
@@ -12939,7 +12992,12 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
   }
 
   async function handleExportXlsx() {
-    const response = await fetch(buildAssetRegisterExportUrl(activeRegister?.id || activeRegisterId, exportEntityName, accountantShareId), {
+    const response = await fetch(buildAssetRegisterExportUrl(
+      activeRegister?.id || activeRegisterId,
+      exportEntityName,
+      accountantShareId,
+      assetRegisters.map((register) => register.id),
+    ), {
       credentials: 'include',
       cache: 'no-store',
     });
@@ -14099,7 +14157,10 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                               </span>
                               <div>
                                 <h2>{group.name}</h2>
-                                <p>{group.members.length} linked assets · {assetGroupValueModeLabel(group.valueMode)}</p>
+                                <p>
+                                  {group.members.length} linked assets · {assetGroupValueModeLabel(group.valueMode)}
+                                  {group.registerId === null ? ' · Combined umbrella' : ''}
+                                </p>
                                 {isCollapsed && primaryAsset ? (
                                   <span className={styles.assetGroupPreview}>
                                     {primaryAsset.title}{additionalAssetCount ? ` + ${additionalAssetCount} more` : ''}
@@ -14133,6 +14194,8 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
 
                     const asset = row.asset;
                     const assetGroup = row.group;
+                    const persistedAssetGroup = allAssetGroupMemberships.get(asset.id)?.group ?? null;
+                    const isResolvedCombinedGroup = !assetGroup && persistedAssetGroup?.registerId === null;
                     const assetGroupMembership = assetGroupMemberships.get(asset.id)?.member ?? null;
                     const isLastAssetGroupMember = Boolean(assetGroup && row.memberIndex === row.memberCount - 1);
                     const previewPhoto = assetPreviewImage(asset);
@@ -14252,11 +14315,15 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
 
                             <button
                               type="button"
-                              className={`${styles.assetGroupButton} ${styles.controlTooltip}`}
+                              className={`${styles.assetGroupButton} ${styles.controlTooltip} ${isResolvedCombinedGroup ? styles.assetGroupButtonActive : ''}`}
                               onClick={() => openAssetGroupManager(asset)}
                               disabled={!canManageAssetGroups}
-                              aria-label={`Create a group with ${asset.title}`}
-                              data-tooltip={canManageAssetGroups ? 'Create group' : 'Groups unavailable'}
+                              aria-label={isResolvedCombinedGroup
+                                ? `Open the combined group containing ${asset.title}`
+                                : `Create a group with ${asset.title}`}
+                              data-tooltip={canManageAssetGroups
+                                ? isResolvedCombinedGroup ? 'Open combined group' : 'Create group'
+                                : 'Groups unavailable'}
                             >
                               <UmbrellaIcon className={styles.assetGroupButtonIcon} />
                             </button>
@@ -19263,6 +19330,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
         group={assetGroupModalGroup}
         assets={assets}
         groups={assetGroups}
+        combinedMode={isCombinedRegisterView}
         busy={isSavingAssetGroup}
         error={assetGroupError}
         onClose={closeAssetGroupManager}
