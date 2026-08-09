@@ -31,6 +31,12 @@ type AssetGroupMemberRow = {
 const MAX_GROUP_NAME_LENGTH = 80;
 const MAX_GROUP_MEMBERS = 50;
 
+export type MoveAssetToGroupInput = {
+  assetId: string;
+  targetGroupId: string;
+  registerId: string;
+};
+
 function cleanText(value: unknown): string {
   return String(value ?? '').replace(/\s+/g, ' ').trim();
 }
@@ -252,6 +258,158 @@ export async function saveAssetGroup(userId: string, input: AssetGroupSaveInput)
 
     const saved = await getAssetGroupById(userId, savedGroupId);
     if (!saved) throw new Error('ASSET_GROUP_SAVE_FAILED');
+    return saved;
+  } catch (error) {
+    await client.query('rollback').catch(() => undefined);
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+export async function moveAssetToGroup(
+  userId: string,
+  input: MoveAssetToGroupInput,
+): Promise<AssetGroup> {
+  await ensureAssetRegisterTables();
+
+  const assetId = cleanText(input.assetId);
+  const targetGroupId = cleanText(input.targetGroupId);
+  const registerId = cleanText(input.registerId);
+
+  if (!assetId) throw new Error('ASSET_GROUP_ASSET_NOT_FOUND');
+  if (!targetGroupId) throw new Error('ASSET_GROUP_NOT_FOUND');
+  if (!registerId) throw new Error('ASSET_GROUP_REGISTER_REQUIRED');
+
+  const [asset] = await getAssetRegisterItemsByRefs([{ userId, assetId }]);
+  if (!asset) throw new Error('ASSET_GROUP_ASSET_NOT_FOUND');
+  if (cleanText(asset.registerId) !== registerId) {
+    throw new Error('ASSET_GROUP_REGISTER_MISMATCH');
+  }
+
+  const db = getDb();
+  const client = await db.connect();
+
+  try {
+    await client.query('begin');
+
+    const sourceResult = await client.query<{ group_id: string; role: string }>(
+      `select member.group_id::text, member.role
+         from public.asset_group_members member
+         inner join public.asset_groups asset_group on asset_group.id = member.group_id
+         where member.asset_id = $1::uuid and asset_group.user_id = $2
+         limit 1`,
+      [assetId, userId],
+    );
+    const sourceMembership = sourceResult.rows[0];
+    const groupIdsToLock = Array.from(new Set([
+      targetGroupId,
+      cleanText(sourceMembership?.group_id),
+    ].filter(Boolean))).sort();
+    const lockedGroups = await client.query<{ id: string; register_id: string }>(
+      `select id::text, register_id::text
+         from public.asset_groups
+         where id = any($1::uuid[]) and user_id = $2
+         order by id
+         for update`,
+      [groupIdsToLock, userId],
+    );
+    const targetGroup = lockedGroups.rows.find((group) => group.id === targetGroupId);
+
+    if (!targetGroup) throw new Error('ASSET_GROUP_NOT_FOUND');
+    if (cleanText(targetGroup.register_id) !== registerId) {
+      throw new Error('ASSET_GROUP_REGISTER_MISMATCH');
+    }
+
+    if (sourceMembership?.group_id === targetGroupId) {
+      await client.query('commit');
+      const unchanged = await getAssetGroupById(userId, targetGroupId);
+      if (!unchanged) throw new Error('ASSET_GROUP_NOT_FOUND');
+      return unchanged;
+    }
+
+    const targetCountResult = await client.query<{ count: string }>(
+      'select count(*)::text as count from public.asset_group_members where group_id = $1::uuid',
+      [targetGroupId],
+    );
+    if (Number(targetCountResult.rows[0]?.count ?? 0) >= MAX_GROUP_MEMBERS) {
+      throw new Error('ASSET_GROUP_TOO_MANY_MEMBERS');
+    }
+
+    if (sourceMembership?.group_id) {
+      const sourceGroupId = cleanText(sourceMembership.group_id);
+      const sourceCountResult = await client.query<{ count: string }>(
+        'select count(*)::text as count from public.asset_group_members where group_id = $1::uuid',
+        [sourceGroupId],
+      );
+      const sourceMemberCount = Number(sourceCountResult.rows[0]?.count ?? 0);
+
+      if (sourceMemberCount <= 2) {
+        await client.query(
+          'delete from public.asset_groups where id = $1::uuid and user_id = $2',
+          [sourceGroupId, userId],
+        );
+      } else {
+        await client.query(
+          'delete from public.asset_group_members where group_id = $1::uuid and asset_id = $2::uuid',
+          [sourceGroupId, assetId],
+        );
+
+        if (cleanText(sourceMembership.role).toLowerCase() === 'primary') {
+          const replacementPrimary = await client.query<{ asset_id: string }>(
+            `select asset_id::text
+               from public.asset_group_members
+               where group_id = $1::uuid
+               order by sort_order, created_at, asset_id
+               limit 1`,
+            [sourceGroupId],
+          );
+          const replacementPrimaryAssetId = cleanText(replacementPrimary.rows[0]?.asset_id);
+
+          if (replacementPrimaryAssetId) {
+            await client.query(
+              `update public.asset_group_members
+               set role = 'primary', relationship = 'primary'
+               where group_id = $1::uuid and asset_id = $2::uuid`,
+              [sourceGroupId, replacementPrimaryAssetId],
+            );
+          }
+        }
+
+        await client.query(
+          'update public.asset_groups set updated_at = now() where id = $1::uuid and user_id = $2',
+          [sourceGroupId, userId],
+        );
+      }
+    }
+
+    await client.query(
+      `insert into public.asset_group_members (
+         group_id,
+         asset_id,
+         role,
+         relationship,
+         sort_order
+       )
+       select
+         $1::uuid,
+         $2::uuid,
+         'linked',
+         'works_with',
+         coalesce(max(sort_order), -1) + 1
+       from public.asset_group_members
+       where group_id = $1::uuid`,
+      [targetGroupId, assetId],
+    );
+    await client.query(
+      'update public.asset_groups set updated_at = now() where id = $1::uuid and user_id = $2',
+      [targetGroupId, userId],
+    );
+
+    await client.query('commit');
+
+    const saved = await getAssetGroupById(userId, targetGroupId);
+    if (!saved) throw new Error('ASSET_GROUP_NOT_FOUND');
     return saved;
   } catch (error) {
     await client.query('rollback').catch(() => undefined);
