@@ -35258,3 +35258,183 @@ button.documentOpenLink {
     padding-left: 2.9rem;
   }
 }
+
+/* === Asset Register control clarity, August 2026 === */
+.assetSideActions,
+.assetGroupSideActions {
+  gap: 0.3rem;
+  padding: 0.28rem;
+}
+
+.controlTooltip {
+  overflow: visible !important;
+}
+
+.assetSideActions .controlTooltip,
+.assetGroupSideActions .controlTooltip,
+.assetGroupCollapseButton.controlTooltip,
+.cardViewDetailsButton.controlTooltip {
+  position: relative;
+}
+
+.controlTooltip::before,
+.controlTooltip::after {
+  position: absolute;
+  z-index: 80;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 120ms ease, transform 120ms ease;
+}
+
+.controlTooltip::after {
+  content: attr(data-tooltip);
+  left: 50%;
+  bottom: calc(100% + 0.62rem);
+  padding: 0.38rem 0.56rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 0.5rem;
+  color: #ffffff;
+  background: rgba(4, 55, 44, 0.96);
+  box-shadow: 0 8px 20px rgba(4, 42, 34, 0.18);
+  font-size: 0.7rem;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  transform: translate(-50%, 0.25rem);
+}
+
+.controlTooltip::before {
+  content: "";
+  left: 50%;
+  bottom: calc(100% + 0.32rem);
+  border: 0.32rem solid transparent;
+  border-top-color: rgba(4, 55, 44, 0.96);
+  transform: translate(-50%, 0.25rem);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .controlTooltip:hover::before,
+  .controlTooltip:hover::after,
+  .controlTooltip:focus-visible::before,
+  .controlTooltip:focus-visible::after {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+.assetSideActions .controlTooltip::after,
+.assetGroupSideActions .controlTooltip::after {
+  top: 50%;
+  right: auto;
+  bottom: auto;
+  left: calc(100% + 0.66rem);
+  transform: translate(0.25rem, -50%);
+}
+
+.assetSideActions .controlTooltip::before,
+.assetGroupSideActions .controlTooltip::before {
+  top: 50%;
+  right: auto;
+  bottom: auto;
+  left: calc(100% + 0.35rem);
+  border-color: transparent;
+  border-right-color: rgba(4, 55, 44, 0.96);
+  transform: translate(0.25rem, -50%);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .assetSideActions .controlTooltip:hover::before,
+  .assetSideActions .controlTooltip:hover::after,
+  .assetSideActions .controlTooltip:focus-visible::before,
+  .assetSideActions .controlTooltip:focus-visible::after,
+  .assetGroupSideActions .controlTooltip:hover::before,
+  .assetGroupSideActions .controlTooltip:hover::after,
+  .assetGroupSideActions .controlTooltip:focus-visible::before,
+  .assetGroupSideActions .controlTooltip:focus-visible::after {
+    transform: translate(0, -50%);
+  }
+}
+
+.assetGroupCollapseButton {
+  border-color: rgba(20, 112, 82, 0.22);
+  background: rgba(232, 248, 240, 0.9);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.92);
+  transition: border-color 150ms ease, background 150ms ease, transform 150ms ease;
+}
+
+.assetGroupCollapseButton:hover {
+  border-color: rgba(20, 112, 82, 0.42);
+  background: #dff5ea;
+  transform: translateY(-1px);
+}
+
+.assetGroupCollapseChevron {
+  width: 1.08rem;
+  height: 1.08rem;
+  stroke-width: 2.5;
+}
+
+.cardViewDetailsButton .assetDetailsChevron {
+  width: 1.55rem !important;
+  height: 1.55rem !important;
+  flex: 0 0 1.55rem;
+  padding: 0.28rem;
+  border: 1px solid rgba(46, 132, 211, 0.22);
+  border-radius: 999px;
+  background: rgba(222, 240, 255, 0.84);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.94);
+  stroke-width: 2.6;
+  transition: background 150ms ease, border-color 150ms ease, transform 150ms ease;
+}
+
+.cardViewDetailsButton:hover .assetDetailsChevron {
+  border-color: rgba(46, 132, 211, 0.4);
+  background: rgba(207, 233, 255, 0.96);
+  transform: translateY(1px);
+}
+
+.cardViewDetailsButton[aria-expanded="true"]:hover .assetDetailsChevron {
+  transform: translateY(-1px);
+}
+
+.reportSelectButton .reportSelectChevron,
+.customSelectButton .customSelectChevron,
+.filterTriggerButton .filterChevron {
+  width: 1.42rem !important;
+  height: 1.42rem !important;
+  padding: 0.24rem;
+  border: 1px solid rgba(20, 112, 82, 0.18);
+  border-radius: 0.48rem;
+  background: rgba(230, 247, 239, 0.82);
+  stroke-width: 2.5;
+  transition: border-color 150ms ease, background 150ms ease, transform 150ms ease;
+}
+
+.reportSelectButton[aria-expanded="true"] .reportSelectChevron,
+.customSelectButton[aria-expanded="true"] .customSelectChevron,
+.filterTriggerButton[aria-expanded="true"] .filterChevron {
+  border-color: rgba(20, 112, 82, 0.34);
+  background: rgba(216, 242, 231, 0.96);
+  transform: rotate(180deg);
+}
+
+@media (max-width: 760px) {
+  .assetSideActions,
+  .assetGroupSideActions {
+    gap: 0.22rem;
+    padding: 0.22rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .controlTooltip::before,
+  .controlTooltip::after,
+  .assetGroupCollapseButton,
+  .cardViewDetailsButton .assetDetailsChevron,
+  .reportSelectChevron,
+  .customSelectChevron,
+  .filterChevron {
+    transition: none;
+  }
+}
