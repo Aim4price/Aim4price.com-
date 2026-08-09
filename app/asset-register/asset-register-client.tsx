@@ -5898,7 +5898,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
   const isAccountantWorkspace = Boolean(accountantShareId);
   const [assets, setAssets] = useState<RegisterAsset[]>([]);
   const [assetGroups, setAssetGroups] = useState<AssetGroup[]>([]);
-  const [collapsedAssetGroupIds, setCollapsedAssetGroupIds] = useState<Set<string>>(() => new Set());
+  const [expandedAssetGroupIds, setExpandedAssetGroupIds] = useState<Set<string>>(() => new Set());
   const [assetGroupModalAsset, setAssetGroupModalAsset] = useState<RegisterAsset | null>(null);
   const [assetGroupModalGroup, setAssetGroupModalGroup] = useState<AssetGroup | null>(null);
   const [assetGroupError, setAssetGroupError] = useState('');
@@ -6248,7 +6248,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
   }
 
   function toggleAssetGroupCollapsed(groupId: string) {
-    setCollapsedAssetGroupIds((current) => {
+    setExpandedAssetGroupIds((current) => {
       const next = new Set(current);
       if (next.has(groupId)) next.delete(groupId);
       else next.add(groupId);
@@ -6284,7 +6284,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
 
       const nextGroups = Array.isArray(data.groups) ? data.groups : assetGroups;
       applyAssetGroups(nextGroups);
-      setCollapsedAssetGroupIds((current) => {
+      setExpandedAssetGroupIds((current) => {
         const next = new Set(current);
         if (data.group?.id) next.delete(data.group.id);
         return next;
@@ -6393,7 +6393,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
       }
 
       applyAssetGroups(Array.isArray(data.groups) ? data.groups : assetGroups);
-      setCollapsedAssetGroupIds((current) => {
+      setExpandedAssetGroupIds((current) => {
         const next = new Set(current);
         next.delete(targetGroup.id);
         if (sourceGroup) next.delete(sourceGroup.id);
@@ -6438,7 +6438,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
       }
 
       applyAssetGroups(Array.isArray(data.groups) ? data.groups : []);
-      setCollapsedAssetGroupIds((current) => {
+      setExpandedAssetGroupIds((current) => {
         const next = new Set(current);
         next.delete(group.id);
         return next;
@@ -7371,7 +7371,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
         }
 
         applyAssetGroups(Array.isArray(payload.groups) ? payload.groups : assetRegisterMoveGroups);
-        setCollapsedAssetGroupIds((current) => {
+        setExpandedAssetGroupIds((current) => {
           const next = new Set(current);
           next.delete(targetGroup.id);
           if (sourceGroup) next.delete(sourceGroup.id);
@@ -7979,6 +7979,10 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     () => projectAssetGroupsToAssets(assetGroups, assets),
     [assetGroups, assets],
   );
+  const assetsById = useMemo(
+    () => new Map(assets.map((asset) => [asset.id, asset])),
+    [assets],
+  );
   const assetGroupMemberships = useMemo(
     () => buildAssetGroupMembershipMap(displayAssetGroups),
     [displayAssetGroups],
@@ -8446,7 +8450,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
         rows.push({ kind: 'group', group });
       }
 
-      if (group && collapsedAssetGroupIds.has(group.id)) {
+      if (group && !expandedAssetGroupIds.has(group.id)) {
         return;
       }
 
@@ -8463,7 +8467,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     });
 
     return rows;
-  }, [assetGroupMemberships, collapsedAssetGroupIds, visibleAssets]);
+  }, [assetGroupMemberships, expandedAssetGroupIds, visibleAssets]);
   const paginationItems = useMemo(() => buildPaginationItems(safeCurrentPage, pageCount), [safeCurrentPage, pageCount]);
 
   useEffect(() => {
@@ -14322,8 +14326,12 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                     if (row.kind === 'group') {
                       const group = row.group;
                       const primaryAssetId = getAssetGroupPrimaryAssetId(group);
-                      const primaryAsset = assets.find((asset) => asset.id === primaryAssetId) ?? null;
-                      const isCollapsed = collapsedAssetGroupIds.has(group.id);
+                      const primaryAsset = assetsById.get(primaryAssetId) ?? null;
+                      const isCollapsed = !expandedAssetGroupIds.has(group.id);
+                      const groupUnnotedAlertCount = group.members.reduce((sum, member) => {
+                        const memberAsset = assetsById.get(member.assetId);
+                        return sum + (memberAsset ? assetUnnotedAlertCount(memberAsset) : 0);
+                      }, 0);
                       const groupValueExVat = groupRegisterValue(group, assets);
                       const displayedGroupValue = registerValueVatMode === 'included'
                         ? Math.round(groupValueExVat * ASSET_REGISTER_SUMMARY_VAT_MULTIPLIER)
@@ -14388,8 +14396,21 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                               <span className={styles.assetGroupDropPrompt} role="status">Drop asset here</span>
                             ) : null}
                             <div className={styles.assetGroupIdentity}>
-                              <span className={styles.assetGroupUmbrella} aria-hidden="true">
+                              <span
+                                className={styles.assetGroupUmbrella}
+                                title={groupUnnotedAlertCount > 0
+                                  ? `${formatAlertBadgeCount(groupUnnotedAlertCount)} unnoted group alert${groupUnnotedAlertCount === 1 ? '' : 's'}`
+                                  : undefined}
+                              >
                                 <UmbrellaIcon className={styles.assetGroupUmbrellaIcon} />
+                                {groupUnnotedAlertCount > 0 ? (
+                                  <span
+                                    className={`${styles.registerChangeAlertBadge} ${styles.assetGroupAlertBadge}`}
+                                    aria-label={`${formatAlertBadgeCount(groupUnnotedAlertCount)} unnoted alert${groupUnnotedAlertCount === 1 ? '' : 's'} in ${group.name}`}
+                                  >
+                                    {formatAlertBadgeCount(groupUnnotedAlertCount)}
+                                  </span>
+                                ) : null}
                               </span>
                               <div>
                                 <h2>{group.name}</h2>
