@@ -3,6 +3,7 @@ import { getAccountProfile } from '../../../lib/account-profile';
 import {
   deleteAssetGroup,
   listAssetGroups,
+  moveAssetToGroup,
   saveAssetGroup,
 } from '../../../lib/asset-groups';
 import type { AssetGroupRelationship, AssetGroupValueMode } from '../../../lib/asset-groups-shared';
@@ -171,6 +172,39 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   return save(request);
+}
+
+export async function PATCH(request: NextRequest) {
+  const resolved = await resolveOwnerWorkspaceContext(request);
+  if (!resolved.ok) return resolved.response;
+
+  const accessError = await requireGroupWriteAccess(resolved.context);
+  if (accessError) return accessError;
+
+  try {
+    const body = await request.json() as {
+      assetId?: unknown;
+      targetGroupId?: unknown;
+      registerId?: unknown;
+    };
+    const registerId = await resolveRegisterId(
+      request,
+      resolved.context.ownerUserId,
+      resolved.context.accountantRegisterId,
+      body.registerId,
+    );
+    const group = await moveAssetToGroup(resolved.context.ownerUserId, {
+      assetId: cleanText(body.assetId),
+      targetGroupId: cleanText(body.targetGroupId),
+      registerId,
+    });
+    const groups = await listAssetGroups(resolved.context.ownerUserId, registerId);
+
+    return NextResponse.json({ ok: true, group, groups });
+  } catch (error) {
+    console.error('asset group drag and drop failed', error);
+    return errorResponse(error);
+  }
 }
 
 export async function DELETE(request: NextRequest) {
