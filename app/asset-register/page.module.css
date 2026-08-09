@@ -35438,3 +35438,73 @@ button.documentOpenLink {
     transition: none;
   }
 }
+
+/* === Asset group drag and drop, August 2026 === */
+@media (hover: hover) and (pointer: fine) {
+  .assetCardRow[draggable="true"] > .assetCard {
+    cursor: grab;
+  }
+}
+
+.assetCardRowDragging {
+  z-index: 12;
+  opacity: 0.52;
+  transform: scale(0.988);
+}
+
+.assetCardRowDragging > .assetCard {
+  cursor: grabbing !important;
+  box-shadow: 0 18px 36px rgba(7, 59, 48, 0.12) !important;
+}
+
+.assetGroupHeader {
+  position: relative;
+  transition: border-color 150ms ease, box-shadow 150ms ease, background 150ms ease;
+}
+
+.assetGroupHeaderRowDragReady .assetGroupHeader {
+  border-color: rgba(20, 135, 95, 0.56);
+  border-style: dashed;
+  box-shadow:
+    0 0 0 4px rgba(20, 135, 95, 0.07),
+    0 12px 28px rgba(7, 59, 48, 0.08);
+}
+
+.assetGroupHeaderRowDropTarget .assetGroupHeader {
+  border-color: #16815f;
+  border-style: solid;
+  background: linear-gradient(135deg, rgba(232, 248, 240, 0.99), rgba(248, 253, 251, 0.99));
+  box-shadow:
+    0 0 0 5px rgba(20, 135, 95, 0.13),
+    0 18px 36px rgba(7, 59, 48, 0.12);
+}
+
+.assetGroupDropPrompt {
+  position: absolute;
+  inset: 0.58rem;
+  z-index: 8;
+  display: grid;
+  place-items: center;
+  border: 1px dashed rgba(20, 135, 95, 0.65);
+  border-radius: 1rem;
+  color: #075d45;
+  background: rgba(238, 250, 244, 0.94);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.94);
+  font-size: 0.84rem;
+  font-weight: 850;
+  letter-spacing: 0.01em;
+  pointer-events: none;
+}
+
+.page .assetHeaderActions .cardViewDetailsButton,
+.page .assetHeaderActions .cardViewDetailsButton > span {
+  flex-wrap: nowrap !important;
+  white-space: nowrap !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .assetCardRowDragging,
+  .assetGroupHeader {
+    transition: none;
+  }
+}
