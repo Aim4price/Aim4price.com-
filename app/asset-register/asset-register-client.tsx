@@ -13364,9 +13364,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                   </div>
 
                   <div className={`${styles.heroSummaryFooter} ${styles.heroVatFooter}`}>
-                    <div className={styles.vatToggleControl}>
-                      <span className={styles.vatTogglePrompt}>Show all asset values as</span>
-                      <div className={styles.vatToggleGroup} aria-label="VAT display for all asset values">
+<div className={styles.vatToggleGroup} aria-label="VAT display for all asset values">
                         <button
                           type="button"
                           className={`${styles.vatToggleButton} ${registerValueVatMode === 'excluded' ? styles.vatToggleButtonActive : ''}`}
@@ -13384,7 +13382,6 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                           Incl. VAT
                         </button>
                       </div>
-                    </div>
                   </div>
                 </div>
 
