@@ -13765,7 +13765,19 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                             <div className={styles.valueBlock}>
                               <div className={styles.assetValueVatDisplay}>
                                 <div className={styles.assetValueVatText}>
-                                  <strong>{money(displayedAssetValue)}</strong>
+                                  <div className={styles.assetValueVatAmountRow}>
+                                    <strong>{money(displayedAssetValue)}</strong>
+                                    <button
+                                      type="button"
+                                      className={`${styles.assetValueVatToggle} ${styles.assetCardVatToggle} ${assetValueVatMode === 'included' ? styles.assetValueVatToggleIncluded : ''}`}
+                                      onClick={() => handleAssetValueVatToggle(asset.id)}
+                                      aria-label={assetValueVatToggleLabel}
+                                      aria-pressed={assetValueVatMode === 'included'}
+                                      title={assetValueVatToggleLabel}
+                                    >
+                                      <span aria-hidden="true">{assetValueVatMode === 'included' ? '‹' : '›'}</span>
+                                    </button>
+                                  </div>
                                   <span>{assetValueVatLabel}</span>
                                 </div>
                               </div>
@@ -14381,16 +14393,6 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                           </div>
                         ) : null}
                         </article>
-                        <button
-                          type="button"
-                          className={`${styles.assetValueVatToggle} ${styles.assetCardVatToggle} ${assetValueVatMode === 'included' ? styles.assetValueVatToggleIncluded : ''}`}
-                          onClick={() => handleAssetValueVatToggle(asset.id)}
-                          aria-label={assetValueVatToggleLabel}
-                          aria-pressed={assetValueVatMode === 'included'}
-                          title={assetValueVatToggleLabel}
-                        >
-                          <span aria-hidden="true">{assetValueVatMode === 'included' ? '‹' : '›'}</span>
-                        </button>
                       </div>
                     );
                   })}
