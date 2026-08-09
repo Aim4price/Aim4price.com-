@@ -29463,6 +29463,87 @@ button.documentOpenLink {
   font-weight: 850 !important;
 }
 
+.assetRegisterMoveDestination {
+  min-width: 0;
+  display: grid;
+  align-content: start;
+  gap: 0.72rem;
+}
+
+.assetRegisterMoveDestinationLabel {
+  color: #315d50;
+  font-size: 0.77rem;
+  font-weight: 850;
+  letter-spacing: 0.035em;
+  text-transform: uppercase;
+}
+
+.assetRegisterMoveDestinationTabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.38rem;
+  padding: 0.34rem;
+  border: 1.5px solid rgba(190, 214, 227, 0.96);
+  border-radius: 1rem;
+  background: #f4f8f7;
+}
+
+.assetRegisterMoveDestinationTab {
+  min-width: 0;
+  min-height: 3rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.48rem;
+  padding: 0.65rem 0.72rem;
+  border: 1px solid transparent;
+  border-radius: 0.72rem;
+  background: transparent;
+  color: #587064;
+  font: inherit;
+  font-size: 0.84rem;
+  font-weight: 850;
+  line-height: 1.15;
+  cursor: pointer;
+  transition:
+    color 150ms ease,
+    background 150ms ease,
+    border-color 150ms ease,
+    box-shadow 150ms ease,
+    transform 150ms ease;
+}
+
+.assetRegisterMoveDestinationTab:hover:not(:disabled) {
+  color: #0a543d;
+  background: rgba(255, 255, 255, 0.82);
+}
+
+.assetRegisterMoveDestinationTab:focus-visible {
+  outline: 3px solid rgba(33, 139, 98, 0.24);
+  outline-offset: 2px;
+}
+
+.assetRegisterMoveDestinationTab:disabled {
+  cursor: not-allowed;
+  opacity: 0.46;
+}
+
+.assetRegisterMoveDestinationTabActive,
+.assetRegisterMoveDestinationTabActive:hover:not(:disabled) {
+  color: #ffffff;
+  border-color: #0f7456;
+  background: linear-gradient(145deg, #198664 0%, #0d674c 100%);
+  box-shadow:
+    0 8px 18px rgba(13, 103, 76, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18);
+}
+
+.assetRegisterMoveDestinationTab .buttonIcon {
+  width: 1.05rem;
+  height: 1.05rem;
+  flex: 0 0 auto;
+}
+
 .assetRegisterMoveTargetField {
   min-width: 0;
 }
