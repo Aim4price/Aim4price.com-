@@ -46,7 +46,6 @@ type ApiPayload = {
 };
 
 type DirectoryConfig = {
-  eyebrow: string;
   title: string;
   description: string;
   newDescription: string;
@@ -155,11 +154,10 @@ function ownerRoleLabel(value: unknown): string {
 
 const DIRECTORY_CONFIGS: Record<DirectoryKind, DirectoryConfig> = {
   dealer: {
-    eyebrow: 'Dealer account access',
     title: 'Dealer App Staff',
-    description: 'Create and control the role-based logins used by your Owner, Sales, Parts and Technician staff.',
-    newDescription: 'Create one clear role-based staff login.',
-    manageDescription: 'Edit roles, reset passwords or remove access.',
+    description: 'Manage staff access.',
+    newDescription: 'Create a login.',
+    manageDescription: 'Edit access.',
     loginLinkLabel: 'Dealer App staff login link',
     loginPath: '/dealer/login',
     shareTitle: 'Aim4price Dealer App',
@@ -190,11 +188,10 @@ const DIRECTORY_CONFIGS: Record<DirectoryKind, DirectoryConfig> = {
     deleteSuccess: 'Dealer App staff login deleted.',
   },
   owner: {
-    eyebrow: 'Owner account access',
     title: 'Owner App Users',
-    description: 'Create and control the usernames that can use your Owner App without entering your main account.',
-    newDescription: 'Create one Owner App username and passcode.',
-    manageDescription: 'Edit access levels, reset passcodes or remove users.',
+    description: 'Manage user access.',
+    newDescription: 'Create a login.',
+    manageDescription: 'Edit access.',
     loginLinkLabel: 'Owner App login link',
     loginPath: '/owner-app/login',
     shareTitle: 'Aim4price Owner App',
@@ -225,11 +222,10 @@ const DIRECTORY_CONFIGS: Record<DirectoryKind, DirectoryConfig> = {
     deleteSuccess: 'Owner App user deleted and existing sessions revoked.',
   },
   field: {
-    eyebrow: 'Owner operations access',
     title: 'Field Manager App',
-    description: 'Create mobile access for managers who update machinery, maintenance and fuel while working in the field.',
-    newDescription: 'Create one dedicated Field Manager login.',
-    manageDescription: 'Edit login details, permissions and asset access.',
+    description: 'Manage manager access.',
+    newDescription: 'Create a login.',
+    manageDescription: 'Edit access.',
     loginLinkLabel: 'Field Manager login link',
     loginPath: '/field-manager/login',
     shareTitle: 'Aim4price Field Manager',
@@ -329,7 +325,6 @@ function draftFromRecord(record: AccessRecord, config: DirectoryConfig): AccessD
 
 function AppAccessModal({
   open,
-  eyebrow,
   title,
   description,
   wide = false,
@@ -338,7 +333,6 @@ function AppAccessModal({
   children,
 }: {
   open: boolean;
-  eyebrow: string;
   title: string;
   description: string;
   wide?: boolean;
@@ -390,7 +384,6 @@ function AppAccessModal({
         aria-describedby={descriptionId}
       >
         <header className={styles.modalHeader}>
-          <span className={styles.modalEyebrow}>{eyebrow}</span>
           <h2 id={titleId}>{title}</h2>
           <p id={descriptionId}>{description}</p>
           <button
@@ -432,7 +425,6 @@ function AccessLauncher({
   return (
     <section className={styles.launcher} aria-labelledby="app-access-title">
       <div className={styles.launcherIntro}>
-        <span className={styles.eyebrow}>{config.eyebrow}</span>
         <h1 id="app-access-title">{config.title}</h1>
         <p>{config.description}</p>
       </div>
@@ -788,9 +780,8 @@ function AppAccessManagement({ kind }: { kind: DirectoryKind }) {
 
       <AppAccessModal
         open={activeFlow === 'new'}
-        eyebrow="New login"
         title={`New ${config.itemLabel}`}
-        description={`Enter the login details, then create the ${config.itemLabel.toLowerCase()}.`}
+        description="Enter the login details."
         closeDisabled={creating}
         onClose={closeFlow}
       >
@@ -798,7 +789,7 @@ function AppAccessManagement({ kind }: { kind: DirectoryKind }) {
         <section className={`${baseStyles.card} ${styles.surface}`}>
           <div className={styles.surfaceHeader}>
             <h3>Login details</h3>
-            <p>Complete each field below. You can manage the login after it has been created.</p>
+            <p>Enter the required details.</p>
           </div>
           <form className={baseStyles.form} onSubmit={createRecord}>
             <label className={baseStyles.field}>
@@ -853,9 +844,8 @@ function AppAccessManagement({ kind }: { kind: DirectoryKind }) {
 
       <AppAccessModal
         open={activeFlow === 'manage'}
-        eyebrow="Manage access"
         title={selectedRecord ? `Manage ${selectedRecord.displayName}` : config.itemPlural}
-        description={selectedRecord ? 'Update this individual login, its status and its access.' : 'Choose one login to update, reset, activate, deactivate or delete.'}
+        description={selectedRecord ? 'Edit this login.' : 'Choose a login to manage.'}
         wide
         closeDisabled={Boolean(busyId || deletingId)}
         onClose={closeFlow}

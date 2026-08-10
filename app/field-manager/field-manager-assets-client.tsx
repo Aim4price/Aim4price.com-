@@ -320,7 +320,6 @@ export default function FieldManagerAssetsClient() {
           {showDirectoryHome ? (
             <section className={styles.assetDirectorySection} aria-labelledby="field-umbrella-heading">
               <div className={styles.assetDirectoryHeading}>
-                <span>Organised assets</span>
                 <h1 id="field-umbrella-heading">Umbrellas</h1>
               </div>
               <div className={styles.assetList}>
