@@ -88,6 +88,13 @@ function assetGroupAutoScrollDelta(pointerY: number, viewportHeight: number): nu
   return 0;
 }
 
+function assetGroupWheelScrollDelta(deltaY: number, deltaMode: number, viewportHeight: number): number {
+  if (!Number.isFinite(deltaY) || deltaY === 0) return 0;
+  if (deltaMode === 1) return deltaY * 24;
+  if (deltaMode === 2) return deltaY * Math.max(1, viewportHeight);
+  return deltaY;
+}
+
 type AcquisitionDraft = {
   newlyAcquired: boolean | null;
   acquisitionDate: string;
@@ -6240,6 +6247,15 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
       assetDragPointerYRef.current = event.clientY;
     }
 
+    function handleAssetDragWheel(event: WheelEvent) {
+      const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+      const scrollDelta = assetGroupWheelScrollDelta(event.deltaY, event.deltaMode, viewportHeight);
+      if (scrollDelta === 0) return;
+
+      event.preventDefault();
+      window.scrollBy({ top: scrollDelta, left: 0, behavior: 'auto' });
+    }
+
     function runAssetDragAutoScroll() {
       const pointerY = assetDragPointerYRef.current;
       const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
@@ -6253,10 +6269,12 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     }
 
     window.addEventListener('dragover', handleAssetDragOver);
+    window.addEventListener('wheel', handleAssetDragWheel, { passive: false });
     assetDragAutoScrollFrameRef.current = window.requestAnimationFrame(runAssetDragAutoScroll);
 
     return () => {
       window.removeEventListener('dragover', handleAssetDragOver);
+      window.removeEventListener('wheel', handleAssetDragWheel);
       assetDragPointerYRef.current = null;
       if (assetDragAutoScrollFrameRef.current !== null) {
         window.cancelAnimationFrame(assetDragAutoScrollFrameRef.current);
@@ -7625,17 +7643,24 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
         throw new Error(extractApiError(payload, 'Failed to move asset.'));
       }
 
-      setAssetGroups((currentGroups) => currentGroups
-        .map((group) => group.registerId === null
-          ? group
-          : {
-              ...group,
-              members: group.members.filter((member) => member.assetId !== assetRegisterMoveAsset.id),
-            })
-        .filter((group) => (
-          group.registerId === null
-          || (group.members.length >= 2 && group.members.some((member) => member.role === 'primary'))
-        )));
+      setAssetGroups((currentGroups) => currentGroups.flatMap((group) => {
+        if (group.registerId === null || !group.members.some((member) => member.assetId === assetRegisterMoveAsset.id)) {
+          return [group];
+        }
+
+        const remainingMembers = group.members.filter((member) => member.assetId !== assetRegisterMoveAsset.id);
+        if (!remainingMembers.length) return [];
+        if (remainingMembers.some((member) => member.role === 'primary')) {
+          return [{ ...group, members: remainingMembers }];
+        }
+
+        return [{
+          ...group,
+          members: remainingMembers.map((member, index) => index === 0
+            ? { ...member, role: 'primary', relationship: 'primary', sortOrder: 0 }
+            : member),
+        }];
+      }));
       setAssets((currentAssets) => (
         isCombinedRegisterView
           ? currentAssets.map((asset) => (
