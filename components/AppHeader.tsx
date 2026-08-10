@@ -979,7 +979,7 @@ export default function AppHeader({
   const hasNotificationPages = displayNotificationCount > NOTIFICATIONS_PER_PAGE;
 
   useEffect(() => {
-    const mediaQuery = window.matchMedia('(max-width: 760px)');
+    const mediaQuery = window.matchMedia('(max-width: 760px), (hover: none) and (pointer: coarse)');
     const syncSwipeNavigation = () => setUsesSwipeNavigation(mediaQuery.matches);
 
     syncSwipeNavigation();
@@ -2255,7 +2255,10 @@ export default function AppHeader({
             />
           </Link>
 
-          <nav className={styles.nav} aria-label="Primary navigation">
+          <nav
+            className={`${styles.nav} ${usesSwipeNavigation ? styles.navSwipe : ''}`}
+            aria-label="Primary navigation"
+          >
             {showNavWindowControls ? (
               <button
                 type="button"
