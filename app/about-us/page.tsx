@@ -98,14 +98,13 @@ export default async function AboutUsPage() {
                     sizes="(max-width: 900px) 88vw, 420px"
                     className={styles.portrait}
                   />
-                </div>
-
-                <div className={styles.founderCard}>
-                  <p className={styles.founderLabel}>FOUNDER</p>
-                  <p className={styles.founderName}>Kuyler Chris Geldenhuys</p>
-                  <p className={styles.founderLocation}>
-                    Built in South Africa
-                  </p>
+                  <div className={styles.founderCard}>
+                    <p className={styles.founderLabel}>FOUNDER</p>
+                    <p className={styles.founderName}>Kuyler Chris Geldenhuys</p>
+                    <p className={styles.founderLocation}>
+                      Built in South Africa
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
@@ -231,4 +230,3 @@ export default async function AboutUsPage() {
     </>
   );
 }
-
