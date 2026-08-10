@@ -13,6 +13,15 @@ import styles from './AssetGroupManagerModal.module.css';
 
 type IconProps = { className?: string };
 type AssetGroupModalView = 'menu' | 'members' | 'settings' | 'reports' | 'delete' | 'create';
+type AssetGroupReportStep = 'options' | 'format' | 'filters';
+
+export type AssetGroupReportKind = 'valuation' | 'maintenance' | 'fuel' | 'depreciation' | 'ownership';
+export type AssetGroupReportFormat = 'pdf' | 'xlsx';
+export type AssetGroupReportFilters = {
+  year?: string;
+  month?: string;
+  maintenanceType?: string;
+};
 
 function MembersIcon({ className }: IconProps) {
   return (
@@ -36,6 +45,14 @@ function DownloadIcon({ className }: IconProps) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <path d="M12 3v11M7.5 10.5 12 15l4.5-4.5M4 20h16" />
+    </svg>
+  );
+}
+
+function DocumentIcon({ className }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M6 3h8l4 4v14H6zM14 3v5h5M9 12h6M9 16h6" />
     </svg>
   );
 }
@@ -113,6 +130,12 @@ type Props = {
   onDelete: (group: AssetGroup) => void | Promise<void>;
   onDownloadPdf?: (group: AssetGroup) => void | Promise<void>;
   onDownloadXlsx?: (group: AssetGroup) => void | Promise<void>;
+  onDownloadReport?: (
+    group: AssetGroup,
+    reportKind: AssetGroupReportKind,
+    format: AssetGroupReportFormat,
+    filters: AssetGroupReportFilters,
+  ) => void | Promise<void>;
 };
 
 const RELATIONSHIP_OPTIONS: Array<{ value: AssetGroupRelationship; label: string }> = [
@@ -151,6 +174,7 @@ export default function AssetGroupManagerModal({
   onDelete,
   onDownloadPdf,
   onDownloadXlsx,
+  onDownloadReport,
 }: Props) {
   const [name, setName] = useState('');
   const [valueMode, setValueMode] = useState<AssetGroupValueMode>('separate');
@@ -159,7 +183,12 @@ export default function AssetGroupManagerModal({
   const [relationships, setRelationships] = useState<Record<string, AssetGroupRelationship>>({});
   const [search, setSearch] = useState('');
   const [view, setView] = useState<AssetGroupModalView>('create');
-  const [reportFormat, setReportFormat] = useState<'pdf' | 'xlsx'>('pdf');
+  const [reportFormat, setReportFormat] = useState<AssetGroupReportFormat>('pdf');
+  const [reportStep, setReportStep] = useState<AssetGroupReportStep>('options');
+  const [reportKind, setReportKind] = useState<AssetGroupReportKind>('valuation');
+  const [reportYear, setReportYear] = useState('all');
+  const [reportMonth, setReportMonth] = useState('all');
+  const [maintenanceType, setMaintenanceType] = useState('all');
 
   const membershipByAssetId = useMemo(() => {
     const result = new Map<string, AssetGroup>();
@@ -187,6 +216,11 @@ export default function AssetGroupManagerModal({
     setSearch('');
     setView(group ? 'menu' : 'create');
     setReportFormat('pdf');
+    setReportStep('options');
+    setReportKind('valuation');
+    setReportYear('all');
+    setReportMonth('all');
+    setMaintenanceType('all');
   }, [anchorAsset, combinedMode, group, open]);
 
   const visibleAssets = useMemo(() => {
@@ -256,6 +290,15 @@ export default function AssetGroupManagerModal({
   function handleDownloadSelectedReport() {
     if (!group || busy || reportBusy) return;
 
+    if (onDownloadReport) {
+      void onDownloadReport(group, reportKind, reportFormat, {
+        year: reportYear,
+        month: reportYear === 'all' ? 'all' : reportMonth,
+        maintenanceType: reportKind === 'maintenance' ? maintenanceType : undefined,
+      });
+      return;
+    }
+
     if (reportFormat === 'pdf') {
       void onDownloadPdf?.(group);
       return;
@@ -263,6 +306,30 @@ export default function AssetGroupManagerModal({
 
     void onDownloadXlsx?.(group);
   }
+
+  function chooseReport(nextReportKind: AssetGroupReportKind) {
+    setReportKind(nextReportKind);
+    setReportFormat('pdf');
+    setReportYear('all');
+    setReportMonth('all');
+    setMaintenanceType('all');
+
+    if (nextReportKind === 'valuation') {
+      if (group) {
+        if (onDownloadReport) {
+          void onDownloadReport(group, 'valuation', 'pdf', {});
+        } else {
+          void onDownloadPdf?.(group);
+        }
+      }
+      return;
+    }
+
+    setReportStep('format');
+  }
+
+  const currentYear = new Date().getFullYear();
+  const reportYears = Array.from({ length: 16 }, (_, index) => String(currentYear - index));
 
   const showSettingsForm = view === 'create' || view === 'settings';
   const showMembersForm = view === 'create' || view === 'members';
@@ -276,7 +343,7 @@ export default function AssetGroupManagerModal({
       : view === 'members'
         ? 'Manage linked assets'
         : view === 'settings'
-          ? 'Umbrella settings'
+          ? 'Umbrella name'
           : 'Remove umbrella';
   const modalSubtitle = !group
     ? 'Group related assets while keeping every record independent.'
@@ -340,28 +407,31 @@ export default function AssetGroupManagerModal({
                   <MembersIcon className={registerStyles.buttonIcon} />
                   <span>
                     <strong>Manage assets</strong>
-                    <small>Add, remove and organise linked assets.</small>
+                    <small className={styles.menuOptionSubtitle}>Add or remove linked assets.</small>
                   </span>
                 </button>
                 <button type="button" className={registerStyles.optionActionButton} onClick={() => setView('settings')}>
                   <SettingsIcon className={registerStyles.buttonIcon} />
                   <span>
-                    <strong>Umbrella settings</strong>
-                    <small>Rename the umbrella or change how values count.</small>
+                    <strong>Umbrella name</strong>
+                    <small className={styles.menuOptionSubtitle}>Rename this umbrella.</small>
                   </span>
                 </button>
-                <button type="button" className={registerStyles.optionActionButton} onClick={() => setView('reports')} disabled={!onDownloadPdf && !onDownloadXlsx}>
+                <button type="button" className={registerStyles.optionActionButton} onClick={() => {
+                  setReportStep('options');
+                  setView('reports');
+                }} disabled={!onDownloadReport && !onDownloadPdf && !onDownloadXlsx}>
                   <DownloadIcon className={registerStyles.buttonIcon} />
                   <span>
                     <strong>Download reports</strong>
-                    <small>Choose a report for this umbrella.</small>
+                    <small className={styles.menuOptionSubtitle}>Reports for linked assets.</small>
                   </span>
                 </button>
                 <button type="button" className={`${registerStyles.optionActionButton} ${registerStyles.optionDangerButton}`} onClick={() => setView('delete')}>
                   <TrashIcon className={registerStyles.buttonIcon} />
                   <span>
                     <strong>Remove umbrella</strong>
-                    <small>Ungroup the assets without deleting their records.</small>
+                    <small className={styles.menuOptionSubtitle}>Ungroup without deleting assets.</small>
                   </span>
                 </button>
               </div>
@@ -370,59 +440,78 @@ export default function AssetGroupManagerModal({
           </div>
         ) : group && view === 'reports' ? (
           <div className={`${registerStyles.modalScrollBody} ${registerStyles.assetReportModalBody}`}>
-            <div className={registerStyles.assetTimelineStageHeading}>
-              <strong>Choose export format</strong>
-              <span>Select PDF or Excel. Only assets linked to {group.name} are included.</span>
-            </div>
+            {reportStep === 'options' ? (
+              <div className={registerStyles.assetReportOptionsGrid}>
+                <button type="button" className={registerStyles.assetReportOptionButton} onClick={() => chooseReport('valuation')}>
+                  <PdfIcon className={registerStyles.buttonIcon} />
+                  <span><strong>Download umbrella valuation</strong><small>PDF values, notes and linked assets.</small></span>
+                </button>
+                <button type="button" className={registerStyles.assetReportOptionButton} onClick={() => chooseReport('maintenance')}>
+                  <DocumentIcon className={registerStyles.buttonIcon} />
+                  <span><strong>Download maintenance report</strong><small>Combined service and repair history.</small></span>
+                </button>
+                <button type="button" className={registerStyles.assetReportOptionButton} onClick={() => chooseReport('fuel')}>
+                  <DocumentIcon className={registerStyles.buttonIcon} />
+                  <span><strong>Download fuel report</strong><small>Combined fuel records by month.</small></span>
+                </button>
+                <button type="button" className={registerStyles.assetReportOptionButton} onClick={() => chooseReport('depreciation')}>
+                  <DocumentIcon className={registerStyles.buttonIcon} />
+                  <span><strong>Download depreciation log</strong><small>Combined saved value changes.</small></span>
+                </button>
+                <button type="button" className={registerStyles.assetReportOptionButton} onClick={() => chooseReport('ownership')}>
+                  <DocumentIcon className={registerStyles.buttonIcon} />
+                  <span><strong>Download cost of ownership report</strong><small>Combined expenses, costs and VAT.</small></span>
+                </button>
+              </div>
+            ) : reportStep === 'format' ? (
+              <>
+                <div className={registerStyles.assetTimelineStageHeading}>
+                  <strong>Choose export format</strong>
+                  <span>Select PDF or Excel, then continue to the report timeline.</span>
+                </div>
 
-            <div className={registerStyles.assetTimelineFormatGrid} aria-label={`${group.name} report format`}>
-              <button
-                type="button"
-                className={`${registerStyles.assetTimelineFormatOption} ${reportFormat === 'pdf' ? registerStyles.assetTimelineFormatOptionActive : ''}`}
-                onClick={() => setReportFormat('pdf')}
-                disabled={!onDownloadPdf || busy || reportBusy}
-                aria-pressed={reportFormat === 'pdf'}
-              >
-                <span className={registerStyles.assetTimelineFormatGraphic}>
-                  <ReportGraphic src="/brand/pdf.png" alt="PDF report" icon={<PdfIcon className={registerStyles.assetTimelineFormatFallbackIcon} />} />
-                </span>
-                <span className={registerStyles.assetTimelineFormatCopy}>
-                  <strong>PDF report</strong>
-                  <small>Open a clear report for dealers, banks or insurance partners.</small>
-                </span>
-              </button>
-
-              <button
-                type="button"
-                className={`${registerStyles.assetTimelineFormatOption} ${reportFormat === 'xlsx' ? registerStyles.assetTimelineFormatOptionActive : ''}`}
-                onClick={() => setReportFormat('xlsx')}
-                disabled={!onDownloadXlsx || busy || reportBusy}
-                aria-pressed={reportFormat === 'xlsx'}
-              >
-                <span className={registerStyles.assetTimelineFormatGraphic}>
-                  <ReportGraphic src="/brand/sheet.png" alt="Excel workbook" icon={<SpreadsheetIcon className={registerStyles.assetTimelineFormatFallbackIcon} />} />
-                </span>
-                <span className={registerStyles.assetTimelineFormatCopy}>
-                  <strong>XLSX workbook</strong>
-                  <small>Download every linked asset in an Excel-ready workbook.</small>
-                </span>
-              </button>
-            </div>
+                <div className={registerStyles.assetTimelineFormatGrid} aria-label={`${group.name} report format`}>
+                  <button type="button" className={`${registerStyles.assetTimelineFormatOption} ${reportFormat === 'pdf' ? registerStyles.assetTimelineFormatOptionActive : ''}`} onClick={() => setReportFormat('pdf')} aria-pressed={reportFormat === 'pdf'}>
+                    <span className={registerStyles.assetTimelineFormatGraphic}>
+                      <ReportGraphic src="/brand/pdf.png" alt="PDF report" icon={<PdfIcon className={registerStyles.assetTimelineFormatFallbackIcon} />} />
+                    </span>
+                    <span className={registerStyles.assetTimelineFormatCopy}><strong>PDF report</strong><small>Open a clear combined umbrella report.</small></span>
+                  </button>
+                  <button type="button" className={`${registerStyles.assetTimelineFormatOption} ${reportFormat === 'xlsx' ? registerStyles.assetTimelineFormatOptionActive : ''}`} onClick={() => setReportFormat('xlsx')} aria-pressed={reportFormat === 'xlsx'}>
+                    <span className={registerStyles.assetTimelineFormatGraphic}>
+                      <ReportGraphic src="/brand/sheet.png" alt="Excel workbook" icon={<SpreadsheetIcon className={registerStyles.assetTimelineFormatFallbackIcon} />} />
+                    </span>
+                    <span className={registerStyles.assetTimelineFormatCopy}><strong>XLSX workbook</strong><small>Download combined records in Excel.</small></span>
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className={registerStyles.assetTimelineStageHeading}>
+                  <strong>Report timeline</strong>
+                  <span>{reportKind === 'maintenance' ? 'Choose the maintenance type, year and month to include.' : 'Choose the year and month to include.'}</span>
+                </div>
+                <div className={styles.reportFilters}>
+                  {reportKind === 'maintenance' ? (
+                    <label><span>Type</span><select value={maintenanceType} onChange={(event) => setMaintenanceType(event.target.value)}><option value="all">All maintenance</option><option value="checked">Check-ups</option><option value="serviced">Services</option><option value="repaired">Repairs</option></select></label>
+                  ) : null}
+                  <label><span>Year</span><select value={reportYear} onChange={(event) => { setReportYear(event.target.value); setReportMonth('all'); }}><option value="all">All years</option>{reportYears.map((year) => <option key={year} value={year}>{year}</option>)}</select></label>
+                  <label><span>Month</span><select value={reportMonth} disabled={reportYear === 'all'} onChange={(event) => setReportMonth(event.target.value)}><option value="all">All months</option>{Array.from({ length: 12 }, (_, index) => <option key={index + 1} value={String(index + 1)}>{new Intl.DateTimeFormat('en-ZA', { month: 'long' }).format(new Date(2024, index, 1))}</option>)}</select></label>
+                </div>
+              </>
+            )}
 
             {error ? <p className={styles.error} role="alert">{error}</p> : null}
 
-            <div className={`${registerStyles.formActions} ${registerStyles.exportActions} ${registerStyles.assetFuelReportActions}`}>
-              <button type="button" className={`${registerStyles.secondaryButton} ${registerStyles.assetTimelineSecondaryButton}`} onClick={() => setView('menu')} disabled={busy || reportBusy}>Back</button>
-              <button type="button" className={`${registerStyles.secondaryButton} ${registerStyles.assetTimelineSecondaryButton}`} onClick={onClose} disabled={busy || reportBusy}>Cancel</button>
-              <button
-                type="button"
-                className={registerStyles.primaryButton}
-                onClick={handleDownloadSelectedReport}
-                disabled={busy || reportBusy || (reportFormat === 'pdf' ? !onDownloadPdf : !onDownloadXlsx)}
-              >
-                <span>{reportBusy ? 'Preparing…' : reportFormat === 'pdf' ? 'Open PDF report' : 'Download Excel'}</span>
-              </button>
-            </div>
+            {reportStep === 'options' ? null : (
+              <div className={`${registerStyles.formActions} ${registerStyles.exportActions} ${registerStyles.assetFuelReportActions}`}>
+                <button type="button" className={`${registerStyles.secondaryButton} ${registerStyles.assetTimelineSecondaryButton}`} onClick={() => setReportStep(reportStep === 'filters' ? 'format' : 'options')} disabled={busy || reportBusy}>Back</button>
+                <button type="button" className={`${registerStyles.secondaryButton} ${registerStyles.assetTimelineSecondaryButton}`} onClick={onClose} disabled={busy || reportBusy}>Cancel</button>
+                <button type="button" className={registerStyles.primaryButton} onClick={() => reportStep === 'format' ? setReportStep('filters') : handleDownloadSelectedReport()} disabled={busy || reportBusy}>
+                  <span>{reportStep === 'format' ? 'Next' : reportBusy ? 'Preparing…' : reportFormat === 'pdf' ? 'Open PDF report' : 'Download Excel'}</span>
+                </button>
+              </div>
+            )}
           </div>
         ) : group && view === 'delete' ? (
           <>
