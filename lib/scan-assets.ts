@@ -230,7 +230,7 @@ type ScanEventRow = {
   issue_date?: string | null;
   issue_time?: string | null;
   issue_time_recorded?: boolean | string | number | null;
-  entry_added_at?: string | null;
+  entry_added_at?: string | Date | null;
   added_by_name?: string | null;
   added_by_email?: string | null;
   late_entry_reason?: string | null;
@@ -1029,7 +1029,7 @@ function mapScanEventRow(row: ScanEventRow): ScanEventRecord {
     issueDate: asText(row.issue_date),
     issueTime: asText(row.issue_time),
     issueTimeRecorded: asBoolean(row.issue_time_recorded) !== false,
-    entryAddedAtIso: row.entry_added_at ?? null,
+    entryAddedAtIso: asIsoTimestamp(row.entry_added_at),
     addedByName: asText(row.added_by_name),
     addedByEmail: asText(row.added_by_email),
     lateEntryReason: asText(row.late_entry_reason),
@@ -1046,7 +1046,7 @@ function mapScanEventRow(row: ScanEventRow): ScanEventRecord {
     latitude: asNumber(row.latitude),
     longitude: asNumber(row.longitude),
     locationText: asText(row.location_text),
-    createdAtIso: row.created_at ?? new Date().toISOString(),
+    createdAtIso: asIsoTimestamp(row.created_at) ?? new Date().toISOString(),
   };
 }
 
