@@ -221,17 +221,17 @@ test('quick controls use clear chevrons, balanced spacing, and concise hover lab
     readFile(new URL('../app/asset-register/asset-register-client.tsx', import.meta.url), 'utf8'),
     readFile(new URL('../app/asset-register/page.module.css', import.meta.url), 'utf8'),
   ]);
-  assert.match(client, /data-tooltip=\{primaryIsFlagged \? 'Remove flag' : 'Flag asset'\}/);
+  assert.match(client, /data-tooltip=\{isFlagged \? 'Remove flag' : 'Flag asset'\}/);
   assert.match(client, /data-tooltip="Move asset"/);
   assert.match(client, /data-tooltip="Switch assets"/);
-  assert.match(client, /isResolvedCombinedGroup \? 'Open combined group' : 'Create group'/);
+  assert.match(client, /isResolvedCombinedGroup \? 'Open combined umbrella' : 'Create umbrella'/);
   assert.match(client, /'Show excl\. VAT' : 'Show incl\. VAT'/);
   assert.match(client, /className=\{`\$\{styles\.assetHeaderActions\} \$\{styles\.assetGroupHeaderActions\}`\}/);
   assert.match(client, /data-tooltip=\{isCollapsed \? 'View details' : 'Hide details'\}/);
   assert.match(client, /styles\.assetDetailsChevron/);
   assert.doesNotMatch(client, /assetGroupCollapseButton|assetGroupCollapseChevron/);
   assert.doesNotMatch(client, /<span aria-hidden="true">\{isCollapsed \? '⌄' : '⌃'\}<\/span>/);
-  assert.match(styles, /\.assetSideActions,\s*\.assetGroupSideActions \{\s*gap: 0\.3rem;\s*padding: 0\.28rem;/);
+  assert.match(styles, /\.assetGroupMemberActions\.assetSideActions/);
   assert.match(styles, /\.controlTooltip::after[\s\S]*?content: attr\(data-tooltip\)/);
   assert.match(styles, /\.cardViewDetailsButton \.assetDetailsChevron/);
   assert.match(styles, /\[aria-expanded="true"\] \.customSelectChevron/);
@@ -398,6 +398,59 @@ test('View details stays on one line inside grouped cards', async () => {
     /\.page \.assetHeaderActions \.cardOptionsButton,[\s\S]*?\.cardViewDetailsButton,[\s\S]*?\.cardManageButton \{[\s\S]*?height: 3\.35rem;/,
   );
   assert.match(styles, /width: min\(32rem, 100%\)/);
+});
+
+test('combined register creation always chooses a real owning register', async () => {
+  const [client, valuationClient, valuationRoute] = await Promise.all([
+    readFile(new URL('../app/asset-register/asset-register-client.tsx', import.meta.url), 'utf8'),
+    readFile(new URL('../app/valuation/valuation-client.tsx', import.meta.url), 'utf8'),
+    readFile(new URL('../app/api/valuation-runs/route.ts', import.meta.url), 'utf8'),
+  ]);
+
+  assert.match(client, /const canAddAssetsToActiveRegister = canUseOwnerOnlyAssetActions/);
+  assert.match(client, /if \(isCombinedRegisterView\) \{[\s\S]*?setIsAddAssetDestinationModalOpen\(true\)/);
+  assert.match(client, /Choose which Asset Register should own the new asset/);
+  assert.match(client, /label="Asset Register"[\s\S]*?options=\{addAssetRegisterOptions\}/);
+  assert.match(client, /const destinationRegisterId = String\([\s\S]*?addAssetTargetRegisterId/);
+  assert.match(client, /destinationRegisterId === COMBINED_REGISTER_ID/);
+  assert.match(client, /registerId: destinationRegisterId \|\| null/);
+  assert.match(client, /params\.set\('registerId', targetRegisterId\)/);
+  assert.match(valuationClient, /if \(accountantRegisterId\) \{\s*savePayload\.registerId = accountantRegisterId;/);
+  assert.match(valuationClient, /registerQuery\.set\('registerId', accountantRegisterId\)/);
+  assert.match(valuationRoute, /const targetRegister = targetRegisterId\s*\? await getAssetRegisterForUser/);
+  assert.match(valuationRoute, /if \(targetRegisterId && !targetRegister\)/);
+});
+
+test('umbrella creation is register-wide while member controls target the physical asset', async () => {
+  const [client, modal, styles] = await Promise.all([
+    readFile(new URL('../app/asset-register/asset-register-client.tsx', import.meta.url), 'utf8'),
+    readFile(new URL('../components/asset-register/AssetGroupManagerModal.tsx', import.meta.url), 'utf8'),
+    readFile(new URL('../app/asset-register/page.module.css', import.meta.url), 'utf8'),
+  ]);
+
+  assert.match(client, /onClick=\{openCreateAssetGroupManager\}[\s\S]*?<span>Create Umbrella<\/span>/);
+  assert.match(client, /open=\{isAssetGroupModalOpen\}/);
+  assert.match(modal, /if \(!open\) return null;/);
+  assert.doesNotMatch(modal, /if \(!open \|\| !anchorAsset\) return null;/);
+  assert.match(modal, /if \(!primaryAssetId\) \{[\s\S]*?setPrimaryAssetId\(asset\.id\)/);
+
+  const groupHeaderBlock = client.slice(
+    client.indexOf("if (row.kind === 'group')"),
+    client.indexOf('const asset = row.asset;'),
+  );
+  assert.doesNotMatch(groupHeaderBlock, /assetGroupSideActions/);
+  assert.match(groupHeaderBlock, /openAssetGroupShare\(group\)/);
+  assert.match(groupHeaderBlock, /openAssetGroupManager\(primaryAsset\)/);
+
+  const memberCardBlock = client.slice(
+    client.indexOf('assetGroupMemberActions'),
+    client.indexOf('<div className={styles.assetHeader}>', client.indexOf('assetGroupMemberActions')),
+  );
+  assert.match(memberCardBlock, /handleAssetFlagToggle\(asset\)/);
+  assert.match(memberCardBlock, /openAssetRegisterMoveManager\(asset\)/);
+  assert.match(memberCardBlock, /openAssetGroupManager\(asset\)/);
+  assert.match(styles, /\.assetGroupMemberRow > \.assetCard \{[\s\S]*?padding-left:/);
+  assert.match(styles, /\.assetGroupMemberActions\.assetSideActions/);
 });
 
 test('combined Asset Register groups are account-wide, separately counted, and projected in every output', async () => {
