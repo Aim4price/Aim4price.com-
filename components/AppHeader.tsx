@@ -923,9 +923,10 @@ export default function AppHeader({
     () => resolveActiveNavKey(pathname, mobileNavItems, active),
     [active, mobileNavItems, pathname],
   );
-  const [usesCompactNavWindow, setUsesCompactNavWindow] = useState(false);
-  const navWindowSize = usesCompactNavWindow
-    ? Math.min(2, navItems.length)
+  const [usesSwipeNavigation, setUsesSwipeNavigation] = useState(false);
+  const navRailRef = useRef<HTMLDivElement | null>(null);
+  const navWindowSize = usesSwipeNavigation
+    ? navItems.length
     : isAccountantWorkspace
       ? navItems.length
       : NAV_WINDOW_SIZE;
@@ -979,12 +980,19 @@ export default function AppHeader({
 
   useEffect(() => {
     const mediaQuery = window.matchMedia('(max-width: 760px)');
-    const syncCompactNavigation = () => setUsesCompactNavWindow(mediaQuery.matches);
+    const syncSwipeNavigation = () => setUsesSwipeNavigation(mediaQuery.matches);
 
-    syncCompactNavigation();
-    mediaQuery.addEventListener('change', syncCompactNavigation);
-    return () => mediaQuery.removeEventListener('change', syncCompactNavigation);
+    syncSwipeNavigation();
+    mediaQuery.addEventListener('change', syncSwipeNavigation);
+    return () => mediaQuery.removeEventListener('change', syncSwipeNavigation);
   }, []);
+
+  useEffect(() => {
+    if (!usesSwipeNavigation) return;
+
+    const activeLink = navRailRef.current?.querySelector<HTMLElement>('[aria-current="page"]');
+    activeLink?.scrollIntoView({ behavior: 'auto', block: 'nearest', inline: 'nearest' });
+  }, [activeNavKey, usesSwipeNavigation]);
 
   useEffect(() => {
     setNotificationPage((current) => Math.min(current, notificationPageCount));
@@ -2260,7 +2268,7 @@ export default function AppHeader({
               </button>
             ) : null}
 
-            <div className={styles.navRail}>
+            <div className={styles.navRail} ref={navRailRef}>
               {visibleNavItems.map((item) => {
                 const isActive = activeNavKey === item.key;
 
