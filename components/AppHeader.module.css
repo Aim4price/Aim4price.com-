@@ -4020,6 +4020,23 @@
     overflow: visible;
   }
 
+  .innerPublic .actionsRail {
+    width: clamp(11rem, 51vw, 13rem);
+    display: grid;
+    grid-template-columns: minmax(3.5rem, 0.72fr) minmax(7rem, 1.28fr);
+    gap: 0.28rem;
+    padding: 0.28rem;
+  }
+
+  .innerPublic .loginButton,
+  .innerPublic .signupButton {
+    width: 100%;
+    min-width: 0;
+    min-height: var(--tap-target-min, 44px);
+    padding-inline: 0.5rem;
+    font-size: clamp(0.74rem, 3vw, 0.82rem);
+  }
+
   .nav {
     grid-area: nav;
     width: 100%;
