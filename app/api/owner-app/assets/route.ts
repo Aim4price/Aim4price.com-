@@ -4,6 +4,8 @@ import {
   type AssetRegisterItemKind,
   type CreateManualAssetInput,
 } from '../../../../lib/asset-register-db';
+import { buildAppAssetDirectoryGroups } from '../../../../lib/app-asset-directory';
+import { listAssetGroups } from '../../../../lib/asset-groups';
 import { getOwnerAppAccess, ownerAppCan } from '../../../../lib/owner-app-access';
 import { filterOwnerAppAssets, listAllOwnerAppAssets } from '../../../../lib/owner-app-assets';
 
@@ -66,12 +68,19 @@ export async function GET(request: NextRequest) {
   if (!access) return unauthorized();
 
   try {
-    const { registers, items } = await listAllOwnerAppAssets(access.ownerUserId);
+    const [{ registers, items }, assetGroups] = await Promise.all([
+      listAllOwnerAppAssets(access.ownerUserId),
+      listAssetGroups(access.ownerUserId),
+    ]);
+    const visibleItems = access.assetScope === 'all'
+      ? items
+      : items.filter((item) => access.accessibleAssetIds.includes(item.id));
     const query = request.nextUrl.searchParams.get('q') ?? '';
     return NextResponse.json({
       ok: true,
       registers,
-      items: filterOwnerAppAssets(items, query),
+      items: filterOwnerAppAssets(visibleItems, query),
+      groups: buildAppAssetDirectoryGroups(assetGroups, visibleItems.map((item) => item.id)),
     });
   } catch (error) {
     console.error('Owner App assets GET failed.', error);
