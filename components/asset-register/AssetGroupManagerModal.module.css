@@ -5,40 +5,32 @@
   display: grid;
   place-items: center;
   padding: 24px;
-  background: rgba(5, 43, 35, 0.32);
-  backdrop-filter: blur(8px);
+  background: rgba(18, 37, 43, 0.48);
+  backdrop-filter: blur(10px);
 }
 
 .dialog {
-  width: min(920px, 100%);
+  width: min(1040px, 100%);
   max-height: min(880px, calc(100vh - 48px));
   overflow: hidden;
-  border: 1px solid rgba(14, 111, 79, 0.2);
-  border-radius: 28px;
+  border: 1px solid rgba(42, 93, 82, 0.18);
+  border-radius: 30px;
   background: #fff;
-  box-shadow: 0 30px 90px rgba(5, 43, 35, 0.24);
+  box-shadow: 0 34px 90px rgba(7, 31, 38, 0.32);
 }
 
 .header {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  gap: 16px;
+  display: flex;
+  gap: 18px;
   align-items: center;
-  padding: 24px 26px 20px;
+  padding: 30px 32px 24px;
   border-bottom: 1px solid #d9e8e2;
-  background: linear-gradient(135deg, #f5fbf8, #fff);
+  background: #fff;
 }
 
-.umbrella {
-  display: grid;
-  width: 48px;
-  height: 48px;
-  place-items: center;
-  border: 1px solid #8ccbb2;
-  border-radius: 16px;
-  color: #075641;
-  font-size: 27px;
-  line-height: 1;
+.headerText {
+  min-width: 0;
+  flex: 1;
 }
 
 .header p,
@@ -56,35 +48,60 @@
 }
 
 .header p {
-  color: #5f756e;
-  font-size: 12px;
-  font-weight: 800;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+  margin-top: 8px;
+  color: #62758b;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.4;
 }
 
 .header h2 {
-  margin-top: 3px;
+  margin: 0;
   color: #063f33;
-  font-size: clamp(22px, 3vw, 30px);
-  line-height: 1.08;
+  font-size: clamp(28px, 4vw, 38px);
+  line-height: 1.04;
+  letter-spacing: -0.035em;
+}
+
+.closeButton,
+.backButton {
+  display: grid;
+  flex: 0 0 auto;
+  width: 54px;
+  height: 54px;
+  place-items: center;
+  border: 1px solid #d5e3de;
+  border-radius: 999px;
+  background: #f8fbfd;
+  color: #173f63;
+  cursor: pointer;
+  transition: border-color 150ms ease, background 150ms ease, transform 150ms ease;
 }
 
 .closeButton {
-  width: 42px;
-  height: 42px;
-  border: 1px solid #d5e3de;
-  border-radius: 14px;
-  background: #fff;
-  color: #163f36;
-  font-size: 27px;
-  cursor: pointer;
+  font-size: 25px;
+}
+
+.closeButton:hover:not(:disabled),
+.backButton:hover:not(:disabled) {
+  border-color: #a9c9bd;
+  background: #eef8f4;
+  transform: translateY(-1px);
+}
+
+.backIcon {
+  width: 22px;
+  height: 22px;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .body {
-  max-height: calc(min(880px, 100vh - 48px) - 176px);
+  max-height: calc(min(880px, 100vh - 48px) - 185px);
   overflow-y: auto;
-  padding: 24px 26px;
+  padding: 26px 32px;
 }
 
 .intro {
@@ -381,92 +398,162 @@
   font-weight: 600;
 }
 
-.reportSection {
-  display: grid;
-  gap: 12px;
-  margin-top: 18px;
-  padding: 17px;
-  border: 1px solid #d7e5e0;
-  border-radius: 18px;
-  background: #fbfdfc;
+.menuBody,
+.subviewBody {
+  max-height: calc(min(880px, 100vh - 48px) - 145px);
+  overflow-y: auto;
+  padding: 20px 32px 32px;
 }
 
-.reportHeading {
-  display: grid;
-  gap: 3px;
-}
-
-.reportHeading span {
-  color: #153f35;
-  font-size: 15px;
-  font-weight: 800;
-}
-
-.reportHeading small {
-  color: #6d807a;
-  font-size: 12px;
-  font-weight: 600;
-}
-
-.reportActions {
+.menuGrid,
+.reportMenuGrid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
+  gap: 14px;
 }
 
-.reportActions button {
+.menuAction,
+.reportMenuAction {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
-  gap: 11px;
+  gap: 18px;
   align-items: center;
-  min-height: 64px;
-  padding: 10px 12px;
-  border: 1px solid #b8d9cc;
-  border-radius: 15px;
-  background: linear-gradient(180deg, #fff, #f1faf6);
-  color: #0c493a;
+  min-height: 112px;
+  padding: 20px 26px;
+  border: 1px solid #d5e1ea;
+  border-radius: 22px;
+  background: linear-gradient(180deg, #fff, #f8fbfd);
+  color: #123f35;
   text-align: left;
   cursor: pointer;
+  box-shadow: 0 10px 24px rgba(15, 56, 74, 0.045);
+  transition: border-color 150ms ease, background 150ms ease, box-shadow 150ms ease, transform 150ms ease;
 }
 
-.reportActions button:hover:not(:disabled) {
-  border-color: #58ae8e;
-  background: linear-gradient(180deg, #fff, #e7f7f0);
-  box-shadow: 0 10px 22px rgba(8, 85, 62, 0.08);
+.menuAction:hover:not(:disabled),
+.reportMenuAction:hover:not(:disabled) {
+  border-color: #80bda7;
+  background: linear-gradient(180deg, #fff, #eff9f5);
+  box-shadow: 0 14px 30px rgba(8, 85, 62, 0.09);
+  transform: translateY(-1px);
 }
 
-.reportActions button:disabled {
+.menuAction:disabled,
+.reportMenuAction:disabled {
   cursor: not-allowed;
   opacity: 0.56;
 }
 
-.reportActions button > span:last-child {
+.menuAction > span,
+.reportMenuAction > span {
   display: grid;
-  gap: 2px;
+  gap: 5px;
+  min-width: 0;
 }
 
-.reportActions strong {
+.menuAction strong,
+.reportMenuAction strong {
+  color: #123f35;
+  font-size: 17px;
+  line-height: 1.2;
+}
+
+.menuAction small,
+.reportMenuAction small {
+  color: #62758b;
   font-size: 13px;
+  font-weight: 700;
+  line-height: 1.35;
 }
 
-.reportActions small {
-  color: #667a73;
-  font-size: 11px;
-  font-weight: 650;
+.menuActionPrimary {
+  border-color: #adddc9;
+  background: linear-gradient(135deg, #edf9f4, #fbfefc);
+}
+
+.menuActionDanger {
+  border-color: #ffb4ae;
+  background: linear-gradient(135deg, #fff7f6, #fffafa);
+}
+
+.menuActionDanger,
+.menuActionDanger strong {
+  color: #a62d28;
+}
+
+.menuActionDanger:hover:not(:disabled) {
+  border-color: #ee8e87;
+  background: #fff2f1;
+  box-shadow: 0 14px 30px rgba(166, 45, 40, 0.08);
+}
+
+.menuActionIcon {
+  width: 28px;
+  height: 28px;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .reportFormat {
   display: grid;
-  width: 44px;
-  height: 38px;
+  width: 56px;
+  height: 48px;
   place-items: center;
   border: 1px solid #91cbb5;
-  border-radius: 11px;
+  border-radius: 14px;
   background: #e5f6ef;
   color: #08684a;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 900;
   letter-spacing: 0.04em;
+}
+
+.scopeNote {
+  margin: 16px 0 0;
+  padding: 13px 15px;
+  border: 1px solid #d8e5e0;
+  border-radius: 14px;
+  color: #60766e;
+  background: #f8fbfa;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.deleteNotice {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+  padding: 24px;
+  border: 1px solid #f2aaa4;
+  border-radius: 22px;
+  background: linear-gradient(135deg, #fff5f4, #fffafa);
+}
+
+.deleteNoticeIcon {
+  width: 30px;
+  height: 30px;
+  color: #ae302a;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.deleteNotice strong {
+  color: #9e2b26;
+  font-size: 17px;
+}
+
+.deleteNotice p {
+  margin: 7px 0 0;
+  color: #6f5553;
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 1.55;
 }
 
 .error {
@@ -483,16 +570,11 @@
 .footer {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 16px;
-  padding: 18px 26px;
+  padding: 18px 32px;
   border-top: 1px solid #d9e8e2;
   background: #fbfdfc;
-}
-
-.footer > div {
-  display: flex;
-  gap: 10px;
 }
 
 .cancelButton,
@@ -522,15 +604,17 @@
 }
 
 .deleteButton {
-  border: 1px solid #edb1ad;
-  background: #fff5f4;
-  color: #a82720;
+  border: 1px solid #aa2f29;
+  background: #b9362f;
+  color: #fff;
+  box-shadow: 0 10px 24px rgba(169, 43, 36, 0.18);
 }
 
 .cancelButton:disabled,
 .saveButton:disabled,
 .deleteButton:disabled,
-.closeButton:disabled {
+.closeButton:disabled,
+.backButton:disabled {
   cursor: not-allowed;
   opacity: 0.55;
 }
@@ -557,6 +641,8 @@
 
   .header,
   .body,
+  .menuBody,
+  .subviewBody,
   .footer {
     padding-left: 18px;
     padding-right: 18px;
@@ -574,21 +660,41 @@
     grid-row: auto;
   }
 
-  .reportActions {
+  .menuGrid,
+  .reportMenuGrid {
     grid-template-columns: 1fr;
   }
 
   .footer {
-    align-items: stretch;
-    flex-direction: column-reverse;
-  }
-
-  .footer > div {
     display: grid;
     grid-template-columns: 1fr 1fr;
   }
 
+  .cancelButton,
+  .saveButton,
   .deleteButton {
     width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .header {
+    gap: 12px;
+  }
+
+  .closeButton,
+  .backButton {
+    width: 46px;
+    height: 46px;
+  }
+
+  .menuAction,
+  .reportMenuAction {
+    min-height: 94px;
+    padding: 17px 18px;
+  }
+
+  .footer {
+    grid-template-columns: 1fr;
   }
 }
