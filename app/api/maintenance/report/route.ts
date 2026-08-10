@@ -156,13 +156,23 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ ok: false, error: 'Choose either an umbrella or a single asset maintenance report.' }, { status: 400 });
     }
 
+    const groupMemberAssetIds = group
+      ? group.members.map((member) => member.assetId)
+      : null;
     const [data, profile, rawLogoUrl] = await Promise.all([
-      listAssetMaintenanceData(userId, group ? { ...filters, assetId: null } : filters),
+      listAssetMaintenanceData(
+        userId,
+        group ? { ...filters, assetId: null } : filters,
+        {
+          includeCompletedScanHistory: true,
+          completedScanHistoryAssetIds: groupMemberAssetIds ?? undefined,
+        },
+      ),
       getAccountProfile({ id: userId, name: session.user.name, email: session.user.email }),
       getAssetRegisterReportLogoUrl(userId),
     ]);
     const logoUrl = await resolveReportLogoUrlForHtml(rawLogoUrl, request.url);
-    const groupMemberIds = group ? new Set(group.members.map((member) => member.assetId)) : null;
+    const groupMemberIds = groupMemberAssetIds ? new Set(groupMemberAssetIds) : null;
     const scopedRecords = groupMemberIds
       ? data.records.filter((record) => groupMemberIds.has(record.assetId))
       : data.records;
