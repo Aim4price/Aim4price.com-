@@ -118,7 +118,9 @@ export type AssetMaintenanceStatus = {
   kind: AssetMaintenanceStatusKind;
   summary: string;
   note: string;
+  sourceNote: string;
   operatorName: string;
+  usageReading: number | null;
   photoUrls: string[];
   photoCount: number;
   createdAtIso: string;
@@ -1158,7 +1160,9 @@ function mapMaintenanceStatusFromScanEvent(
     kind,
     summary: summary.summary,
     note: summary.note,
+    sourceNote: note,
     operatorName: asText(row.operator_name),
+    usageReading: asNumber(row.asset_usage_reading) ?? asNumber(row.hours),
     photoUrls,
     photoCount: photoUrls.length,
     createdAtIso: row.created_at ?? new Date().toISOString(),
@@ -1561,6 +1565,40 @@ function assetMaintenanceStatusSelectSql(whereClause: string): string {
       on a.id = e.asset_id
     ${whereClause}
   `;
+}
+
+export async function listCompletedMaintenanceScanEventsForAssets(
+  assetIdsInput: string[],
+): Promise<AssetMaintenanceStatus[]> {
+  const assetIds = Array.from(new Set(assetIdsInput.map(asId).filter(Boolean)));
+  if (!assetIds.length) return [];
+
+  await ensureFuelLedgerTables();
+
+  const result = await getDb().query<
+    ScanEventRow & { asset_id: string | number | null }
+  >(
+    `
+      ${assetMaintenanceStatusSelectSql(`where e.asset_id = any($1::uuid[])
+        and nullif(trim(coalesce(e.note, '')), '') is not null
+        and (
+          lower(coalesce(e.note, '')) like 'checked%'
+          or lower(coalesce(e.note, '')) like 'serviced%'
+          or lower(coalesce(e.note, '')) like 'repaired%'
+          or lower(coalesce(e.note, '')) like '%checked items:%'
+          or lower(coalesce(e.note, '')) like '%work done:%'
+          or lower(coalesce(e.note, '')) like '%service items:%'
+          or lower(coalesce(e.note, '')) like '%serviced items:%'
+          or lower(coalesce(e.note, '')) like '%repair details:%'
+        )`)}
+      order by e.created_at desc, e.id desc
+    `,
+    [assetIds],
+  );
+
+  return result.rows
+    .map(mapMaintenanceStatusFromScanEvent)
+    .filter((entry): entry is AssetMaintenanceStatus => Boolean(entry));
 }
 
 export async function markAssetMaintenanceStatusNoted(input: {
