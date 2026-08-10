@@ -447,6 +447,13 @@ test('umbrella and Maintenance page exports preserve completed maintenance histo
   assert.match(scanHistory, /sourceNote: note/);
   assert.match(scanHistory, /createdAtIso: asIsoTimestamp\(row\.created_at\)/);
   assert.match(scanHistory, /notedAtIso: asIsoTimestamp\(row\.maintenance_noted_at\)/);
+  const scanEventMapper = scanHistory.slice(
+    scanHistory.indexOf('function mapScanEventRow'),
+    scanHistory.indexOf('function splitMaintenanceNoteLines'),
+  );
+  assert.match(scanEventMapper, /entryAddedAtIso: asIsoTimestamp\(row\.entry_added_at\)/);
+  assert.match(scanEventMapper, /createdAtIso: asIsoTimestamp\(row\.created_at\)/);
+  assert.doesNotMatch(scanEventMapper, /createdAtIso: row\.created_at/);
   assert.match(scanHistory, /coalesce\(to_jsonb\(e\)->>'note', ''\) as note/);
   assert.match(scanHistory, /null::text as maintenance_noted_at/);
   assert.match(scanHistory, /order by e\.created_at desc, e\.id desc/);
