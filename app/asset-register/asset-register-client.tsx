@@ -41,10 +41,13 @@ import {
   assetCountsTowardRegisterTotal,
   assetGroupRelationshipLabel,
   assetGroupValueModeLabel,
+  assetGroupPageEntryDisplayCount,
+  buildAssetGroupPageEntries,
   buildAssetGroupMembershipMap,
   getAssetGroupPrimaryAssetId,
   groupRegisterValue,
   orderAssetsByGroups,
+  paginateAssetGroupPageEntries,
   projectAssetGroupsToAssets,
   registerValueForAssets,
   type AssetGroup,
@@ -956,6 +959,11 @@ const PAGE_SIZE_OPTIONS = [6, 12, 18] as const;
 type StandardPageSize = (typeof PAGE_SIZE_OPTIONS)[number];
 type PageSize = StandardPageSize | 'all';
 const DEFAULT_PAGE_SIZE: PageSize = 6;
+
+function pageSizeForVisibleCardCount(count: number): PageSize {
+  return PAGE_SIZE_OPTIONS.find((option) => count <= option) ?? 'all';
+}
+
 const FALLBACK_ASSET_IMAGE = '/brand/Tractor.png';
 const PROPERTY_ASSET_LABEL = 'Property, land & buildings';
 const PROPERTY_ASSET_DESCRIPTION = 'Land, buildings, structures and fixed improvements.';
@@ -6248,12 +6256,39 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
   }
 
   function toggleAssetGroupCollapsed(groupId: string) {
-    setExpandedAssetGroupIds((current) => {
-      const next = new Set(current);
-      if (next.has(groupId)) next.delete(groupId);
-      else next.add(groupId);
-      return next;
-    });
+    const nextExpandedGroupIds = new Set(expandedAssetGroupIds);
+    const willExpand = !nextExpandedGroupIds.has(groupId);
+
+    if (willExpand) nextExpandedGroupIds.add(groupId);
+    else nextExpandedGroupIds.delete(groupId);
+
+    let nextPageSize = pageSize;
+    if (willExpand && pageSize !== 'all') {
+      const requiredVisibleCardCount = visiblePaginationEntries.reduce(
+        (count, entry) => count + assetGroupPageEntryDisplayCount(entry, nextExpandedGroupIds),
+        0,
+      );
+      if (requiredVisibleCardCount > pageSize) {
+        nextPageSize = pageSizeForVisibleCardCount(requiredVisibleCardCount);
+        setPageSize(nextPageSize);
+      }
+    }
+
+    if (nextPageSize === 'all') {
+      setCurrentPage(1);
+    } else {
+      const nextPages = paginateAssetGroupPageEntries(
+        registerPaginationEntries,
+        nextPageSize,
+        nextExpandedGroupIds,
+      );
+      const targetPageIndex = nextPages.findIndex((page) => page.some(
+        (entry) => entry.kind === 'group' && entry.group.id === groupId,
+      ));
+      if (targetPageIndex >= 0) setCurrentPage(targetPageIndex + 1);
+    }
+
+    setExpandedAssetGroupIds(nextExpandedGroupIds);
   }
 
   async function handleSaveAssetGroup(input: AssetGroupSaveInput) {
@@ -8427,14 +8462,32 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     () => orderAssetsByGroups(filteredAssets, displayAssetGroups),
     [displayAssetGroups, filteredAssets],
   );
+  const registerPaginationEntries = useMemo(
+    () => buildAssetGroupPageEntries(groupedFilteredAssets, displayAssetGroups),
+    [displayAssetGroups, groupedFilteredAssets],
+  );
 
   const isShowingAllAssets = pageSize === 'all';
-  const numericPageSize: number = pageSize === 'all' ? Math.max(1, groupedFilteredAssets.length) : pageSize;
-  const pageCount = isShowingAllAssets ? 1 : Math.max(1, Math.ceil(groupedFilteredAssets.length / numericPageSize));
+  const numericPageSize: number = pageSize === 'all' ? Math.max(1, registerPaginationEntries.length) : pageSize;
+  const paginationPages = useMemo(
+    () => isShowingAllAssets
+      ? [registerPaginationEntries]
+      : paginateAssetGroupPageEntries(registerPaginationEntries, numericPageSize, expandedAssetGroupIds),
+    [expandedAssetGroupIds, isShowingAllAssets, numericPageSize, registerPaginationEntries],
+  );
+  const pageCount = Math.max(1, paginationPages.length);
   const safeCurrentPage = Math.min(currentPage, pageCount);
-  const pageStart = isShowingAllAssets ? 0 : (safeCurrentPage - 1) * numericPageSize;
-  const pageEnd = isShowingAllAssets ? groupedFilteredAssets.length : Math.min(groupedFilteredAssets.length, pageStart + numericPageSize);
-  const visibleAssets = isShowingAllAssets ? groupedFilteredAssets : groupedFilteredAssets.slice(pageStart, pageStart + numericPageSize);
+  const pageStart = isShowingAllAssets
+    ? 0
+    : paginationPages
+      .slice(0, safeCurrentPage - 1)
+      .reduce((entryCount, page) => entryCount + page.length, 0);
+  const visiblePaginationEntries = paginationPages[safeCurrentPage - 1] ?? [];
+  const pageEnd = pageStart + visiblePaginationEntries.length;
+  const visibleAssets = useMemo(
+    () => visiblePaginationEntries.flatMap((entry) => entry.assets),
+    [visiblePaginationEntries],
+  );
   const visibleAssetRows = useMemo<AssetRegisterDisplayRow[]>(() => {
     const rows: AssetRegisterDisplayRow[] = [];
     const emittedGroupIds = new Set<string>();
@@ -8477,12 +8530,10 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
   useEffect(() => {
     if (!expandedAssetId) return;
 
-    const currentPageAssets = isShowingAllAssets ? groupedFilteredAssets : groupedFilteredAssets.slice(pageStart, pageStart + numericPageSize);
-
-    if (!currentPageAssets.some((asset) => asset.id === expandedAssetId)) {
+    if (!visibleAssets.some((asset) => asset.id === expandedAssetId)) {
       setExpandedAssetId(null);
     }
-  }, [expandedAssetId, groupedFilteredAssets, isShowingAllAssets, numericPageSize, pageStart]);
+  }, [expandedAssetId, visibleAssets]);
 
   useEffect(() => {
     if (assetFocusActionHandledRef.current || typeof window === 'undefined' || !assets.length) return;
@@ -13381,8 +13432,18 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
   }
 
   const hasActiveAssetFilter = assetFilter !== 'all';
+  const hasGroupedPaginationEntries = registerPaginationEntries.some((entry) => entry.kind === 'group');
+  const visibleRegisterCardCount = visiblePaginationEntries.reduce(
+    (count, entry) => count + assetGroupPageEntryDisplayCount(entry, expandedAssetGroupIds),
+    0,
+  );
+  const hasExpandedUmbrellaOnPage = visiblePaginationEntries.some(
+    (entry) => entry.kind === 'group' && expandedAssetGroupIds.has(entry.group.id),
+  );
   const registerRangeDescription = filteredAssets.length
-    ? `Showing ${pageStart + 1}-${pageEnd} of ${filteredAssets.length} ${filteredAssets.length === 1 ? 'asset' : 'assets'}${hasActiveAssetFilter ? ` · ${activeAssetFilterLabel}` : ''}`
+    ? hasGroupedPaginationEntries
+      ? `${hasExpandedUmbrellaOnPage ? `Showing ${visibleRegisterCardCount} cards · ` : 'Showing '}${pageStart + 1}-${pageEnd} of ${registerPaginationEntries.length} register ${registerPaginationEntries.length === 1 ? 'entry' : 'entries'} · ${filteredAssets.length} ${filteredAssets.length === 1 ? 'asset' : 'assets'}${hasActiveAssetFilter ? ` · ${activeAssetFilterLabel}` : ''}`
+      : `Showing ${pageStart + 1}-${pageEnd} of ${filteredAssets.length} ${filteredAssets.length === 1 ? 'asset' : 'assets'}${hasActiveAssetFilter ? ` · ${activeAssetFilterLabel}` : ''}`
     : searchTerm.trim() || hasActiveAssetFilter
       ? 'No assets match the current search or filter.'
       : 'No saved assets yet.';
@@ -13587,11 +13648,11 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                 {canOpenRegisterSwitcher ? (
                   <button
                     type="button"
-                    className={styles.registerChangeButton}
+                    className={`${styles.registerChangeButton} ${styles.controlTooltip}`}
                     onClick={openChangeRegisterModal}
                     disabled={isLoading || Boolean(changingRegisterId)}
-                    aria-label="Change asset register"
-                    title="Change asset register"
+                    aria-label="Switch Asset Register"
+                    data-tooltip="Switch assets"
                   >
                     <ChangeRegisterIcon className={styles.registerChangeIcon} />
                     {totalRegisterUnnotedAlertCount > 0 ? (
@@ -14389,7 +14450,15 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                             </button>
                           </div>
 
-                          <section className={`${styles.assetGroupHeader} ${isCollapsed ? styles.assetGroupHeaderCollapsed : ''}`}>
+                          <section
+                            className={`${styles.assetGroupHeader} ${isCollapsed ? styles.assetGroupHeaderCollapsed : ''}`}
+                            onClick={(event) => {
+                              if (draggingAssetId) return;
+                              const target = event.target as HTMLElement;
+                              if (target.closest('button, a, input, select, textarea, [role="button"]')) return;
+                              toggleAssetGroupCollapsed(group.id);
+                            }}
+                          >
                             {isAssetGroupDropTarget ? (
                               <span className={styles.assetGroupDropPrompt} role="status">Drop asset here</span>
                             ) : null}
@@ -15277,7 +15346,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                         Page {safeCurrentPage} of {pageCount}
                       </div>
 
-                      <div className={styles.pageSizeControls} aria-label="Assets per page">
+                      <div className={styles.pageSizeControls} aria-label="Register entries per page">
                         <span>Show</span>
                         <div className={styles.pageSizeButtonGroup}>
                           {PAGE_SIZE_OPTIONS.map((option) => (

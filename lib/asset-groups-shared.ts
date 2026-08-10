@@ -60,6 +60,10 @@ export type GroupAwareAsset = {
   assetGroup?: AssetGroupExportMeta | null;
 };
 
+export type AssetGroupPageEntry<T extends { id: string }> =
+  | { kind: 'group'; key: string; group: AssetGroup; assets: T[] }
+  | { kind: 'asset'; key: string; asset: T; assets: T[] };
+
 export function normalizeAssetGroupValueMode(value: unknown): AssetGroupValueMode {
   return String(value ?? '').trim().toLowerCase().replace(/[\s-]+/g, '_') === 'included_in_primary'
     ? 'included_in_primary'
@@ -290,4 +294,82 @@ export function orderAssetsByGroups<T extends { id: string }>(assets: T[], group
   });
 
   return ordered;
+}
+
+export function buildAssetGroupPageEntries<T extends { id: string }>(
+  orderedAssets: T[],
+  groups: AssetGroup[],
+): Array<AssetGroupPageEntry<T>> {
+  if (!orderedAssets.length) return [];
+
+  const membershipByAssetId = buildAssetGroupMembershipMap(groups);
+  const assetsByGroupId = new Map<string, T[]>();
+
+  orderedAssets.forEach((asset) => {
+    const membership = membershipByAssetId.get(asset.id);
+    if (!membership) return;
+    const groupAssets = assetsByGroupId.get(membership.group.id) ?? [];
+    groupAssets.push(asset);
+    assetsByGroupId.set(membership.group.id, groupAssets);
+  });
+
+  const emittedGroupIds = new Set<string>();
+  const entries: Array<AssetGroupPageEntry<T>> = [];
+
+  orderedAssets.forEach((asset) => {
+    const membership = membershipByAssetId.get(asset.id);
+
+    if (!membership) {
+      entries.push({ kind: 'asset', key: `asset-${asset.id}`, asset, assets: [asset] });
+      return;
+    }
+
+    if (emittedGroupIds.has(membership.group.id)) return;
+    emittedGroupIds.add(membership.group.id);
+    entries.push({
+      kind: 'group',
+      key: `group-${membership.group.id}`,
+      group: membership.group,
+      assets: assetsByGroupId.get(membership.group.id) ?? [asset],
+    });
+  });
+
+  return entries;
+}
+
+export function assetGroupPageEntryDisplayCount<T extends { id: string }>(
+  entry: AssetGroupPageEntry<T>,
+  expandedGroupIds: ReadonlySet<string>,
+): number {
+  if (entry.kind === 'asset' || !expandedGroupIds.has(entry.group.id)) return 1;
+  return Math.max(1, entry.assets.length);
+}
+
+export function paginateAssetGroupPageEntries<T extends { id: string }>(
+  entries: Array<AssetGroupPageEntry<T>>,
+  pageSize: number,
+  expandedGroupIds: ReadonlySet<string>,
+): Array<Array<AssetGroupPageEntry<T>>> {
+  if (!entries.length) return [[]];
+
+  const safePageSize = Math.max(1, Math.floor(pageSize));
+  const pages: Array<Array<AssetGroupPageEntry<T>>> = [];
+  let currentPage: Array<AssetGroupPageEntry<T>> = [];
+  let currentDisplayCount = 0;
+
+  entries.forEach((entry) => {
+    const entryDisplayCount = assetGroupPageEntryDisplayCount(entry, expandedGroupIds);
+
+    if (currentPage.length > 0 && currentDisplayCount + entryDisplayCount > safePageSize) {
+      pages.push(currentPage);
+      currentPage = [];
+      currentDisplayCount = 0;
+    }
+
+    currentPage.push(entry);
+    currentDisplayCount += entryDisplayCount;
+  });
+
+  if (currentPage.length > 0) pages.push(currentPage);
+  return pages.length ? pages : [[]];
 }

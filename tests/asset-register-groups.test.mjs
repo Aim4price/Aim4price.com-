@@ -58,6 +58,55 @@ test('separate-value groups count every member and order the primary first', asy
   );
 });
 
+test('folded umbrellas occupy one page slot and expanded umbrellas stay intact', async () => {
+  const helpers = await loadGroupHelpers();
+  const groupedAssets = Array.from({ length: 7 }, (_, index) => ({
+    id: `grouped-${index + 1}`,
+    value: 1_000,
+  }));
+  const standaloneAssets = Array.from({ length: 5 }, (_, index) => ({
+    id: `standalone-${index + 1}`,
+    value: 1_000,
+  }));
+  const umbrella = {
+    ...group('separate'),
+    id: 'seven-asset-umbrella',
+    members: groupedAssets.map((asset, index) => ({
+      assetId: asset.id,
+      role: index === 0 ? 'primary' : 'linked',
+      relationship: index === 0 ? 'primary' : 'works_with',
+      sortOrder: index + 1,
+    })),
+  };
+  const entries = helpers.buildAssetGroupPageEntries(
+    helpers.orderAssetsByGroups([...groupedAssets, ...standaloneAssets], [umbrella]),
+    [umbrella],
+  );
+
+  assert.equal(entries.length, 6);
+  assert.equal(entries[0].kind, 'group');
+  assert.equal(entries[0].assets.length, 7);
+  assert.equal(
+    entries.reduce(
+      (count, entry) => count + helpers.assetGroupPageEntryDisplayCount(entry, new Set()),
+      0,
+    ),
+    6,
+  );
+
+  const expandedGroupIds = new Set([umbrella.id]);
+  const expandedPages = helpers.paginateAssetGroupPageEntries(entries, 12, expandedGroupIds);
+  assert.equal(expandedPages.length, 1);
+  assert.equal(
+    expandedPages[0].reduce(
+      (count, entry) => count + helpers.assetGroupPageEntryDisplayCount(entry, expandedGroupIds),
+      0,
+    ),
+    12,
+  );
+  assert.deepEqual(expandedPages[0][0].assets.map((asset) => asset.id), groupedAssets.map((asset) => asset.id));
+});
+
 test('included-in-primary groups prevent register-value double counting', async () => {
   const helpers = await loadGroupHelpers();
   const includedGroup = group('included_in_primary');
@@ -161,6 +210,7 @@ test('quick controls use clear chevrons, balanced spacing, and concise hover lab
   ]);
   assert.match(client, /data-tooltip=\{primaryIsFlagged \? 'Remove flag' : 'Flag asset'\}/);
   assert.match(client, /data-tooltip="Move asset"/);
+  assert.match(client, /data-tooltip="Switch assets"/);
   assert.match(client, /isResolvedCombinedGroup \? 'Open combined group' : 'Create group'/);
   assert.match(client, /'Show excl\. VAT' : 'Show incl\. VAT'/);
   assert.match(client, /ChevronDownIcon className=\{styles\.assetGroupCollapseChevron\}/);
@@ -170,6 +220,21 @@ test('quick controls use clear chevrons, balanced spacing, and concise hover lab
   assert.match(styles, /\.controlTooltip::after[\s\S]*?content: attr\(data-tooltip\)/);
   assert.match(styles, /\.cardViewDetailsButton \.assetDetailsChevron/);
   assert.match(styles, /\[aria-expanded="true"\] \.customSelectChevron/);
+});
+
+test('umbrella-aware pagination expands tiers and the full header toggles the group', async () => {
+  const [client, styles] = await Promise.all([
+    readFile(new URL('../app/asset-register/asset-register-client.tsx', import.meta.url), 'utf8'),
+    readFile(new URL('../app/asset-register/page.module.css', import.meta.url), 'utf8'),
+  ]);
+
+  assert.match(client, /buildAssetGroupPageEntries\(groupedFilteredAssets, displayAssetGroups\)/);
+  assert.match(client, /paginateAssetGroupPageEntries\(registerPaginationEntries, numericPageSize, expandedAssetGroupIds\)/);
+  assert.match(client, /pageSizeForVisibleCardCount\(requiredVisibleCardCount\)/);
+  assert.match(client, /visiblePaginationEntries\.flatMap\(\(entry\) => entry\.assets\)/);
+  assert.match(client, /target\.closest\('button, a, input, select, textarea, \[role="button"\]'\)/);
+  assert.match(client, /onClick=\{\(event\) => \{[\s\S]*?toggleAssetGroupCollapsed\(group\.id\);/);
+  assert.match(styles, /\.assetGroupHeader \{[\s\S]*?cursor: pointer;/);
 });
 
 test('assets can be dragged into groups without breaking group integrity', async () => {
