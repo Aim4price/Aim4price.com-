@@ -15,7 +15,7 @@ test('global layout tokens provide fluid gutters, spacing and stable text scalin
   assert.match(globals, /\.appRoot,[\s\S]*?\.appRoot > main,[\s\S]*?main \{[\s\S]*?min-width: 0;[\s\S]*?max-width: 100%/);
 });
 
-test('header keeps four desktop-style choices on tablets and a swipeable button rail on touch devices', async () => {
+test('header keeps desktop navigation at larger widths and uses the account dropdown on compact touch devices', async () => {
   const [header, headerClient, layout] = await Promise.all([
     read('components/AppHeader.module.css'),
     read('components/AppHeader.tsx'),
@@ -25,17 +25,17 @@ test('header keeps four desktop-style choices on tablets and a swipeable button 
   assert.match(header, /Responsive shell contract, August 2026/);
   assert.match(header, /@media \(min-width: 761px\) and \(max-width: 1180px\)[\s\S]*?\.nav \{[\s\S]*?display: grid;[\s\S]*?\.navRail \{[\s\S]*?grid-template-columns: repeat\(4, minmax\(0, 1fr\)\)/);
   assert.match(header, /@media \(min-width: 761px\) and \(max-width: 1180px\)[\s\S]*?\.mobileMenuButton,[\s\S]*?\.mobileMenuPanel \{[\s\S]*?display: none/);
-  assert.match(headerClient, /usesSwipeNavigation[\s\S]*?navItems\.length/);
+  assert.match(headerClient, /usesCompactHeader[\s\S]*?navItems\.length/);
   assert.match(layout, /width: 980/);
-  assert.match(headerClient, /window\.matchMedia\('\(max-width: 760px\), \(hover: none\) and \(pointer: coarse\)'\)/);
-  assert.match(headerClient, /styles\.nav[\s\S]*?usesSwipeNavigation \? styles\.navSwipe/);
-  assert.match(headerClient, /navRailRef[\s\S]*?scrollIntoView\(\{ behavior: 'auto', block: 'nearest', inline: 'nearest' \}\)/);
-  assert.match(header, /\.navSwipe \.navRail \{[\s\S]*?flex-wrap: nowrap;[\s\S]*?overflow-x: auto;[\s\S]*?scroll-snap-type: x mandatory;[\s\S]*?touch-action: pan-x/);
-  assert.match(header, /\.navSwipe \.navLink \{[\s\S]*?flex: 0 0 46%;[\s\S]*?scroll-snap-align: start/);
-  assert.match(header, /\.navSwipe \.navWindowButton \{[\s\S]*?display: none/);
-  assert.match(header, /@media \(max-width: 760px\)[\s\S]*?\.navRail \{[\s\S]*?overflow-x: auto;[\s\S]*?scroll-snap-type: x mandatory;[\s\S]*?touch-action: pan-x/);
-  assert.match(header, /@media \(max-width: 760px\)[\s\S]*?\.navLink \{[\s\S]*?flex: 0 0 46%;[\s\S]*?scroll-snap-align: start/);
-  assert.match(header, /@media \(max-width: 760px\)[\s\S]*?\.navWindowButton \{[\s\S]*?display: none/);
+  assert.match(headerClient, /max-device-width: 900px/);
+  assert.match(headerClient, /usesCompactHeader \? styles\.innerCompact/);
+  assert.match(headerClient, /usesCompactHeader \? styles\.navCompact/);
+  assert.match(headerClient, /\{ href: '\/', label: 'Home' \}/);
+  assert.match(headerClient, /\{ href: '\/valuation', label: 'Get Estimate' \}/);
+  assert.match(header, /\.innerCompact \{[\s\S]*?grid-template-areas: "brand actions";[\s\S]*?row-gap: 0/);
+  assert.match(header, /\.navCompact \{[\s\S]*?display: none/);
+  assert.match(header, /@media \(hover: none\) and \(pointer: coarse\) and \(max-device-width: 900px\)[\s\S]*?\.nav \{[\s\S]*?display: none/);
+  assert.doesNotMatch(header, /navSwipe/);
   assert.match(header, /@media \(max-width: 760px\)[\s\S]*?\.mobileMenuButton \{[\s\S]*?display: none;[\s\S]*?\.accountMenu \{[\s\S]*?display: block/);
   assert.match(headerClient, /!isLoadingSession && !session \? styles\.innerPublic/);
   assert.match(header, /@media \(max-width: 760px\)[\s\S]*?\.innerPublic \.actionsRail \{[\s\S]*?grid-template-columns: minmax\(3\.5rem, 0\.72fr\) minmax\(7rem, 1\.28fr\)/);
