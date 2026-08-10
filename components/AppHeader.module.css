@@ -3873,9 +3873,9 @@
 }
 
 /* === Responsive shell contract, August 2026 ===
-   Keep the complete desktop navigation through tablet widths. Only the phone
-   layout swaps it for the menu drawer. This block intentionally sits last so
-   one canonical breakpoint contract wins over older incremental refinements. */
+   Keep the complete desktop navigation through tablet widths. Phones retain
+   the same navigation language with a compact two-choice window. This block
+   intentionally sits last so one canonical breakpoint contract wins. */
 .header,
 .inner,
 .brand,
@@ -3992,35 +3992,171 @@
 @media (max-width: 760px) {
   .inner {
     width: var(--shell-width, min(calc(100% - 1.7rem), 48rem));
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-areas:
+      "brand actions"
+      "nav nav";
+    gap: 0.42rem 0.6rem;
+    padding: 0.48rem 0 0.55rem;
+  }
+
+  .brand {
+    grid-area: brand;
+  }
+
+  .brandLogo {
+    width: clamp(5.4rem, 24vw, 7.4rem);
+    max-height: 2.15rem;
+  }
+
+  .actions {
+    grid-area: actions;
+    justify-self: end;
+  }
+
+  .actionsRail {
+    width: auto;
+    gap: 0.24rem;
+    overflow: visible;
   }
 
   .nav {
+    grid-area: nav;
+    width: 100%;
+    display: grid;
+    grid-template-columns: 2.4rem minmax(0, 1fr) 2.4rem;
+    align-items: stretch;
+    gap: 0.28rem;
+    overflow: visible;
+  }
+
+  .navRail {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.26rem;
+    padding: 0.25rem;
+    border-radius: 0.92rem;
+  }
+
+  .navRail:only-child {
+    grid-column: 1 / -1;
+  }
+
+  .navLink {
+    min-width: 0;
+    max-width: none;
+    min-height: 2.55rem;
+    padding: 0.42rem 0.5rem;
+    overflow: hidden;
+    border-radius: 0.7rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: clamp(0.68rem, 2.5vw, 0.8rem);
+  }
+
+  .navLink:nth-child(n + 3) {
     display: none;
+  }
+
+  .navWindowButton {
+    width: 2.4rem;
+    min-width: 2.4rem;
+    height: auto;
+    min-height: var(--tap-target-min, 44px);
+    font-size: 1.55rem;
   }
 
   .mobileMenuButton {
-    display: inline-flex;
-    min-width: var(--tap-target-min, 44px);
+    display: none;
   }
 
   .accountMenu {
+    display: block;
+    width: clamp(6.9rem, 31vw, 8.75rem);
+    min-width: 6.9rem;
+    max-width: 8.75rem;
+    flex: 0 1 8.75rem;
+  }
+
+  .accountButton {
+    width: 100%;
+    min-width: 0;
+    justify-content: flex-start;
+    gap: 0.38rem;
+    padding: 0.28rem 0.55rem;
+  }
+
+  .accountButton > .accountAvatar {
+    position: static;
+    display: grid;
+    transform: none;
+  }
+
+  .accountButtonText {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .accountPopover {
+    top: calc(env(safe-area-inset-top) + 6.45rem);
+    max-height: calc(100dvh - 7.1rem);
+  }
+
+  .actionDivider {
     display: none;
+  }
+
+  .signupButton {
+    display: inline-flex;
+  }
+
+  .loginButton,
+  .signupButton,
+  .accountButton,
+  .notificationButton {
+    min-height: 2.55rem;
+    border-radius: 0.78rem;
+    font-size: clamp(0.68rem, 2.45vw, 0.8rem);
+  }
+
+  .loginButton,
+  .signupButton {
+    padding-inline: clamp(0.48rem, 2vw, 0.72rem);
   }
 }
 
 @media (max-width: 390px) {
-  .mobileMenuButtonText {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip-path: inset(50%);
-    white-space: nowrap;
+  .inner {
+    gap: 0.38rem 0.45rem;
   }
 
-  .mobileMenuButton {
-    width: var(--tap-target-min, 44px);
-    padding: 0;
+  .brandLogo {
+    width: clamp(5rem, 23vw, 5.8rem);
+  }
+
+  .accountMenu {
+    width: 6.7rem;
+    min-width: 6.7rem;
+  }
+
+  .accountButton {
+    padding-inline: 0.42rem;
+  }
+
+  .nav {
+    grid-template-columns: 2.15rem minmax(0, 1fr) 2.15rem;
+    gap: 0.2rem;
+  }
+
+  .navWindowButton {
+    width: 2.15rem;
+    min-width: 2.15rem;
+  }
+
+  .navLink {
+    padding-inline: 0.35rem;
+    font-size: 0.68rem;
   }
 }
-

@@ -15,13 +15,19 @@ test('global layout tokens provide fluid gutters, spacing and stable text scalin
   assert.match(globals, /\.appRoot,[\s\S]*?\.appRoot > main,[\s\S]*?main \{[\s\S]*?min-width: 0;[\s\S]*?max-width: 100%/);
 });
 
-test('header keeps the full navigation on tablets and changes to the drawer only on phones', async () => {
-  const header = await read('components/AppHeader.module.css');
+test('header keeps four desktop-style choices on tablets and a compact two-choice window on phones', async () => {
+  const [header, headerClient] = await Promise.all([
+    read('components/AppHeader.module.css'),
+    read('components/AppHeader.tsx'),
+  ]);
 
   assert.match(header, /Responsive shell contract, August 2026/);
   assert.match(header, /@media \(min-width: 761px\) and \(max-width: 1180px\)[\s\S]*?\.nav \{[\s\S]*?display: grid;[\s\S]*?\.navRail \{[\s\S]*?grid-template-columns: repeat\(4, minmax\(0, 1fr\)\)/);
   assert.match(header, /@media \(min-width: 761px\) and \(max-width: 1180px\)[\s\S]*?\.mobileMenuButton,[\s\S]*?\.mobileMenuPanel \{[\s\S]*?display: none/);
-  assert.match(header, /@media \(max-width: 760px\)[\s\S]*?\.nav \{[\s\S]*?display: none;[\s\S]*?\.mobileMenuButton \{[\s\S]*?display: inline-flex/);
+  assert.match(headerClient, /usesCompactNavWindow[\s\S]*?Math\.min\(2, navItems\.length\)/);
+  assert.match(headerClient, /window\.matchMedia\('\(max-width: 760px\)'\)/);
+  assert.match(header, /@media \(max-width: 760px\)[\s\S]*?\.nav \{[\s\S]*?display: grid;[\s\S]*?\.navRail \{[\s\S]*?grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
+  assert.match(header, /@media \(max-width: 760px\)[\s\S]*?\.mobileMenuButton \{[\s\S]*?display: none;[\s\S]*?\.accountMenu \{[\s\S]*?display: block/);
   assert.match(header, /\.navWindowButton \{[\s\S]*?min-width: var\(--tap-target-min, 44px\)/);
 });
 
@@ -30,7 +36,9 @@ test('asset register has deterministic toolbar, card-action and modal device sta
 
   assert.match(register, /Responsive foundation contract, August 2026/);
   assert.match(register, /@media \(max-width: 1040px\)[\s\S]*?\.page \.toolbarActions \{[\s\S]*?grid-template-columns: repeat\(auto-fit, minmax\(min\(9\.5rem, 100%\), 1fr\)\)/);
-  assert.match(register, /@media \(max-width: 900px\)[\s\S]*?\.page \.assetHeaderActions,[\s\S]*?\.page \.assetGroupHeaderActions \{[\s\S]*?grid-template-columns: repeat\(3, minmax\(0, 1fr\)\)/);
+  assert.match(register, /@media \(max-width: 900px\)[\s\S]*?\.page \.assetHeader \{[\s\S]*?grid-template-columns: minmax\(0, 1fr\) clamp\(9\.25rem, 28vw, 11rem\)/);
+  assert.match(register, /@media \(max-width: 900px\)[\s\S]*?\.page \.assetGroupHeader \{[\s\S]*?grid-template-columns: minmax\(0, 1fr\) clamp\(9\.25rem, 28vw, 11rem\)/);
+  assert.match(register, /@media \(max-width: 900px\)[\s\S]*?\.page \.assetHeaderActions,[\s\S]*?\.page \.assetGroupHeaderActions \{[\s\S]*?grid-template-columns: minmax\(0, 1fr\)/);
   assert.match(register, /@media \(max-width: 760px\)[\s\S]*?min-height: var\(--tap-target-min, 44px\)/);
   assert.match(register, /@media \(max-width: 560px\)[\s\S]*?\.page \.toolbarActions \{[\s\S]*?grid-template-columns: minmax\(0, 1fr\)/);
   assert.match(register, /max-height: calc\(100dvh - 1rem\) !important/);

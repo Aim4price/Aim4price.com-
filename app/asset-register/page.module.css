@@ -35882,8 +35882,16 @@ button.documentOpenLink {
 @media (max-width: 900px) {
   .page .assetHeader {
     display: grid !important;
-    grid-template-columns: minmax(0, 1fr) !important;
+    grid-template-columns: minmax(0, 1fr) clamp(9.25rem, 28vw, 11rem) !important;
+    align-items: start !important;
     gap: var(--register-layout-gap) !important;
+  }
+
+  .page .assetTitleBlock {
+    grid-column: 1;
+    grid-row: 1;
+    align-content: start;
+    padding-top: 0;
   }
 
   .page .assetHeaderAside,
@@ -35897,20 +35905,27 @@ button.documentOpenLink {
   }
 
   .page .assetHeaderAside {
+    grid-column: 2;
+    grid-row: 1;
+    align-self: start;
+    align-content: start;
     justify-items: stretch;
   }
 
   .page .valueBlock {
+    min-height: 0 !important;
+    align-content: start !important;
     justify-items: end !important;
     text-align: right !important;
+    padding: 0 !important;
   }
 
   .page .assetHeaderActions,
   .page .assetHeaderActionsAccountant,
   .page .assetGroupHeaderActions {
     display: grid !important;
-    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-    gap: clamp(0.42rem, 1.3vw, 0.65rem) !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: clamp(0.38rem, 1vw, 0.52rem) !important;
   }
 
   .page .assetHeaderActions > *,
@@ -35921,16 +35936,48 @@ button.documentOpenLink {
   }
 
   .page .assetGroupHeader {
-    align-items: stretch;
+    min-height: 0 !important;
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) clamp(9.25rem, 28vw, 11rem) !important;
+    align-items: start !important;
+    flex-direction: initial !important;
+    gap: var(--register-layout-gap) !important;
+  }
+
+  .page .assetGroupIdentity {
+    grid-column: 1;
+    grid-row: 1;
+    align-self: start;
   }
 
   .page .assetGroupSummary {
+    grid-column: 2;
+    grid-row: 1;
+    align-self: start;
+    align-content: start;
     justify-items: stretch;
+    gap: clamp(0.42rem, 1vw, 0.58rem);
   }
 
   .page .assetGroupValue {
-    justify-items: start;
-    text-align: left;
+    justify-items: end;
+    text-align: right;
+  }
+
+  .page .assetGroupValue strong {
+    line-height: 1.14;
+    text-align: right;
+  }
+
+  .page .assetHeaderActions .cardOptionsButton,
+  .page .assetHeaderActions .cardViewDetailsButton,
+  .page .assetHeaderActions .cardManageButton,
+  .page .assetGroupHeaderActions .cardOptionsButton,
+  .page .assetGroupHeaderActions .cardViewDetailsButton,
+  .page .assetGroupHeaderActions .cardManageButton {
+    min-height: 2.9rem !important;
+    height: 2.9rem !important;
+    padding-inline: 0.58rem !important;
   }
 }
 
@@ -35950,7 +35997,12 @@ button.documentOpenLink {
   .page .assetHeaderActions,
   .page .assetHeaderActionsAccountant,
   .page .assetGroupHeaderActions {
-    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .page .assetHeader,
+  .page .assetGroupHeader {
+    grid-template-columns: minmax(0, 1fr) clamp(7.8rem, 32vw, 9.5rem) !important;
   }
 
   .page .assetHeaderActions .cardOptionsButton,
@@ -35981,7 +36033,7 @@ button.documentOpenLink {
   }
 
   .page .assetGroupHeader {
-    gap: 0.9rem;
+    gap: clamp(0.58rem, 2.4vw, 0.82rem) !important;
     padding: clamp(0.9rem, 3.5vw, 1.15rem);
   }
 
@@ -35992,6 +36044,11 @@ button.documentOpenLink {
 
   .page .assetGroupValue strong {
     white-space: normal;
+  }
+
+  .page .valueBlock strong {
+    font-size: clamp(1.05rem, 4vw, 1.35rem) !important;
+    white-space: nowrap !important;
   }
 
   .modalOverlay {
@@ -36041,7 +36098,12 @@ button.documentOpenLink {
   .page .assetHeaderActions,
   .page .assetHeaderActionsAccountant,
   .page .assetGroupHeaderActions {
-    gap: 0.32rem !important;
+    gap: 0.36rem !important;
+  }
+
+  .page .assetHeader,
+  .page .assetGroupHeader {
+    grid-template-columns: minmax(0, 1fr) clamp(7rem, 35vw, 8.25rem) !important;
   }
 
   .page .assetHeaderActions .cardOptionsButton,
@@ -36050,6 +36112,16 @@ button.documentOpenLink {
   .page .assetGroupHeaderActions .cardOptionsButton,
   .page .assetGroupHeaderActions .cardViewDetailsButton,
   .page .assetGroupHeaderActions .cardManageButton {
+    min-height: var(--tap-target-min, 44px) !important;
+    height: auto !important;
     font-size: clamp(0.66rem, 2.8vw, 0.78rem) !important;
+  }
+
+  .page .valueBlock strong {
+    font-size: clamp(0.88rem, 3.7vw, 1.08rem) !important;
+  }
+
+  .page .assetGroupValue strong {
+    font-size: clamp(0.72rem, 3vw, 0.9rem);
   }
 }
