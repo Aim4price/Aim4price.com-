@@ -35559,6 +35559,135 @@ button.documentOpenLink {
   white-space: nowrap !important;
 }
 
+/* === Combined-register creation and unambiguous umbrella member controls === */
+.toolbarUmbrellaButton {
+  color: #0b5e47 !important;
+  border: 1.5px solid rgba(31, 151, 106, 0.52) !important;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(42, 158, 115, 0.1), transparent 42%),
+    linear-gradient(180deg, #fbfffd 0%, #edf9f3 100%) !important;
+  box-shadow:
+    0 10px 22px rgba(20, 112, 82, 0.07),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+}
+
+.toolbarUmbrellaButton:hover:not(:disabled) {
+  color: #064936 !important;
+  border-color: rgba(23, 130, 91, 0.72) !important;
+  background: linear-gradient(180deg, #f7fffb 0%, #e2f5eb 100%) !important;
+}
+
+.assetGroupMemberRow > .assetCard {
+  position: relative;
+  padding-left: clamp(4.35rem, 4.8vw, 4.9rem) !important;
+}
+
+.assetGroupMemberActions.assetSideActions {
+  position: absolute !important;
+  top: 1.05rem !important;
+  left: 1rem !important;
+  z-index: 7;
+  margin: 0 !important;
+}
+
+.assetGroupMemberActions .assetGroupButton {
+  border-color: rgba(20, 135, 95, 0.34) !important;
+  color: #075d45 !important;
+  background: rgba(218, 246, 234, 0.82) !important;
+}
+
+.addAssetDestinationModal {
+  width: min(100%, 680px) !important;
+  max-height: min(88vh, calc(100dvh - 2rem)) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 0 !important;
+  overflow: hidden !important;
+  padding: 0 !important;
+  border-radius: 1.65rem !important;
+}
+
+.addAssetDestinationHeader {
+  margin: 0 !important;
+  padding: clamp(1.2rem, 2vw, 1.55rem) !important;
+  border-bottom: 1px solid rgba(211, 224, 234, 0.94);
+}
+
+.addAssetDestinationBody {
+  min-height: 0;
+  display: grid;
+  gap: 1rem;
+  overflow: visible;
+  padding: clamp(1.2rem, 2vw, 1.55rem);
+  background:
+    radial-gradient(circle at 8% 0%, rgba(20, 112, 82, 0.055), transparent 34%),
+    linear-gradient(180deg, #ffffff 0%, #f8fcfa 100%);
+}
+
+.addAssetDestinationField {
+  min-width: 0;
+}
+
+.addAssetDestinationField > span {
+  color: #315d50 !important;
+  font-size: 0.78rem !important;
+  font-weight: 850 !important;
+}
+
+.addAssetDestinationFooter {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem clamp(1.2rem, 2vw, 1.55rem);
+  border-top: 1px solid rgba(211, 224, 234, 0.94);
+  background: #ffffff;
+}
+
+.addAssetDestinationFooter .primaryButton,
+.addAssetDestinationFooter .secondaryButton {
+  min-width: 8.75rem;
+}
+
+@media (max-width: 1180px) {
+  .toolbarActions {
+    flex-wrap: wrap;
+    min-width: 0;
+  }
+}
+
+@media (max-width: 760px) {
+  .assetGroupMemberRow > .assetCard {
+    padding-left: clamp(1rem, 4vw, 1.35rem) !important;
+  }
+
+  .assetGroupMemberActions.assetSideActions {
+    position: static !important;
+    width: fit-content;
+    display: flex;
+    grid-column: auto !important;
+    grid-row: auto !important;
+    margin: 0 0 0.8rem !important;
+  }
+
+  .addAssetDestinationModal {
+    width: min(100%, calc(100vw - 1rem)) !important;
+    max-height: min(92vh, calc(100dvh - 1rem)) !important;
+    border-radius: 1.3rem !important;
+  }
+
+  .addAssetDestinationFooter {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .addAssetDestinationFooter .primaryButton,
+  .addAssetDestinationFooter .secondaryButton {
+    width: 100%;
+    min-width: 0;
+  }
+}
+
 .page .assetGroupHeaderActions {
   width: min(32rem, 100%) !important;
   min-width: 0 !important;

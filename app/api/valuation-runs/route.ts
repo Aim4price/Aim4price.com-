@@ -427,10 +427,10 @@ export async function POST(request: NextRequest) {
       : null;
     const effectiveOwnerUserId = accountantAccess?.ownerUserId ?? session.user.id;
     const targetRegisterId = requestedRegisterId || accountantAccess?.registerId || '';
-    const targetRegister = accountantAccess
+    const targetRegister = targetRegisterId
       ? await getAssetRegisterForUser(effectiveOwnerUserId, targetRegisterId)
       : null;
-    if (accountantAccess && !targetRegister) {
+    if (targetRegisterId && !targetRegister) {
       return NextResponse.json<SaveValuationRunApiResponse>({ ok: false, error: 'Asset register not found.' }, { status: 404 });
     }
     if (accountantAccess && (saveForMarketplace || requestedConversionAssetId)) {
