@@ -271,11 +271,10 @@ test('umbrella cards expose aligned actions and the Manage modal uses a clear op
   assert.match(client, /onClick=\{\(\) => primaryAsset && openAssetGroupManager\(primaryAsset\)\}/);
   assert.match(client, /<span>Share<\/span>[\s\S]*?<span>\{isCollapsed \? 'View details' : 'Hide details'\}<\/span>[\s\S]*?<span>Manage<\/span>/);
   assert.match(styles, /\.page \.assetGroupHeaderActions \{[\s\S]*?grid-template-columns: repeat\(3, minmax\(0, 1fr\)\)/);
-  assert.match(client, /styles\.assetGroupValueLabel/);
-  assert.match(client, /styles\.assetGroupValueVat/);
-  assert.match(styles, /\.assetGroupValue \{[\s\S]*?grid-template-columns: minmax\(0, 1fr\) auto;/);
-  assert.match(styles, /\.assetGroupValueLabel \{/);
-  assert.match(styles, /\.assetGroupValueVat \{/);
+  assert.match(client, /'Counted value' : 'Combined value'\} \{money\(displayedGroupValue\)\}/);
+  assert.doesNotMatch(client, /styles\.assetGroupValueLabel|styles\.assetGroupValueVat/);
+  assert.match(styles, /\.assetGroupValue \{[\s\S]*?gap: 0\.18rem;[\s\S]*?text-align: right;/);
+  assert.match(styles, /\.assetGroupValue strong \{[\s\S]*?font-size: clamp\(0\.96rem, 1\.25vw, 1\.15rem\);/);
   assert.match(modal, /Manage assets/);
   assert.match(modal, /Umbrella name/);
   assert.match(modal, /Download reports/);

@@ -14905,9 +14905,8 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
 
                             <div className={styles.assetGroupSummary}>
                               <div className={styles.assetGroupValue}>
-                                <span className={styles.assetGroupValueLabel}>{group.valueMode === 'included_in_primary' ? 'Counted value' : 'Combined value'}</span>
-                                <strong>{money(displayedGroupValue)}</strong>
-                                <span className={styles.assetGroupValueVat}>{groupVatLabel}</span>
+                                <strong>{group.valueMode === 'included_in_primary' ? 'Counted value' : 'Combined value'} {money(displayedGroupValue)}</strong>
+                                <span>{groupVatLabel}</span>
                               </div>
 
                               <div className={`${styles.assetHeaderActions} ${styles.assetGroupHeaderActions}`}>
