@@ -64,6 +64,8 @@
   font-weight: 600;
   line-height: 1.58;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .actionGrid {
@@ -171,6 +173,8 @@
   font-weight: 650;
   line-height: 1.48;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .actionMeta {
@@ -694,6 +698,21 @@
   .actionButton {
     min-height: 7.8rem;
     padding: 1rem;
+  }
+
+  .launcherIntro h1,
+  .launcherIntro p,
+  .actionCopy strong,
+  .actionCopy small {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .actionCopy strong {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: clamp(1.25rem, 6vw, 1.65rem);
   }
 
   .actionIcon {
