@@ -53,7 +53,9 @@ export default async function ContactUsPage() {
                 make better decisions.
               </p>
 
-              <div className={styles.contactDetails}>
+              <div
+                className={`${styles.contactDetails} ${styles.heroContactDetails}`}
+              >
                 <p className={styles.contactName}>Kuyler Chris Geldenhuys</p>
                 <a href="tel:+27625721650" className={styles.contactLink}>
                   <span className={styles.contactIcon}>
@@ -105,12 +107,11 @@ export default async function ContactUsPage() {
                   sizes="(max-width: 900px) 88vw, 420px"
                   className={styles.portrait}
                 />
-              </div>
-
-              <div className={styles.founderCard}>
-                <p className={styles.founderLabel}>FOUNDER</p>
-                <p className={styles.founderName}>Kuyler Chris Geldenhuys</p>
-                <p className={styles.founderLocation}>Built in South Africa</p>
+                <div className={styles.founderCard}>
+                  <p className={styles.founderLabel}>FOUNDER</p>
+                  <p className={styles.founderName}>Kuyler Chris Geldenhuys</p>
+                  <p className={styles.founderLocation}>Built in South Africa</p>
+                </div>
               </div>
             </div>
           </div>

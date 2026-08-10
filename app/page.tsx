@@ -116,9 +116,9 @@ export default async function HomePage() {
               </div>
 
               <Link
-                href="/contact-us"
+                href="/about-us"
                 className={styles.heroVisual}
-                aria-label="Contact Aim4price"
+                aria-label="About Aim4price"
               >
                 <Image
                   src="/brand/aim4price-mark-white.png"
@@ -224,4 +224,3 @@ export default async function HomePage() {
     </main>
   );
 }
-

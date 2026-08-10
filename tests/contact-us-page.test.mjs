@@ -8,6 +8,7 @@ const read = (path) =>
 const contactPage = read("app/contact-us/page.tsx");
 const homePage = read("app/page.tsx");
 const homeStyles = read("app/page.module.css");
+const aboutStyles = read("app/about-us/about-us.module.css");
 const rootLayout = read("app/layout.tsx");
 const portraitPath = new URL(
   "../public/about/kuyler-geldenhuys.jpg",
@@ -23,10 +24,10 @@ test("publishes Contact Us with the founder details and supplied portrait", () =
   assert.ok(existsSync(portraitPath));
 });
 
-test("links the Home hero logo to Contact Us", () => {
+test("links the Home hero logo to About Us", () => {
   assert.match(
     homePage,
-    /<Link[\s\S]*?href="\/contact-us"[\s\S]*?className={styles\.heroVisual}[\s\S]*?aria-label="Contact Aim4price"/,
+    /<Link[\s\S]*?href="\/about-us"[\s\S]*?className={styles\.heroVisual}[\s\S]*?aria-label="About Aim4price"/,
   );
   assert.doesNotMatch(
     homePage,
@@ -34,6 +35,16 @@ test("links the Home hero logo to Contact Us", () => {
   );
   assert.match(homeStyles, /\.heroVisual:hover/);
   assert.match(homeStyles, /pointer-events:\s*auto/);
+});
+
+test("aligns the founder and contact boxes within the hero layout", () => {
+  assert.match(contactPage, /styles\.heroContactDetails/);
+  assert.match(
+    contactPage,
+    /className={styles\.portraitFrame}[\s\S]*?className={styles\.founderCard}/,
+  );
+  assert.match(aboutStyles, /\.heroContactDetails\s*{[\s\S]*?grid-template-columns:\s*repeat\(2/);
+  assert.match(aboutStyles, /\.founderCard\s*{[\s\S]*?right:\s*1rem;[\s\S]*?left:\s*1rem/);
 });
 
 test("uses one global background and keeps new public copy free of em dashes", () => {
