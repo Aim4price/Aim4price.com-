@@ -206,6 +206,11 @@ export type AssetGroupModalAsset = {
   registerId: string | null;
   registerName?: string | null;
   value: number;
+  categoryLabel?: string | null;
+  serialNumber?: string | null;
+  registrationNumber?: string | null;
+  notes?: string | null;
+  searchableText?: string | null;
 };
 
 type Props = {
@@ -250,6 +255,36 @@ function money(value: number): string {
     currency: 'ZAR',
     maximumFractionDigits: 0,
   }).format(Math.round(Number(value) || 0)).replace('ZAR', 'R');
+}
+
+function normalizeAssetSearch(value: unknown): string {
+  return String(value ?? '')
+    .toLowerCase()
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim()
+    .replace(/\s+/g, ' ');
+}
+
+function assetMatchesSearch(asset: AssetGroupModalAsset, search: string): boolean {
+  const normalizedQuery = normalizeAssetSearch(search);
+  if (!normalizedQuery) return true;
+
+  const searchableText = normalizeAssetSearch([
+    asset.title,
+    asset.categoryLabel,
+    asset.serialNumber,
+    asset.registrationNumber,
+    asset.notes,
+    asset.registerName,
+    asset.searchableText,
+  ].filter(Boolean).join(' '));
+  const compactQuery = normalizedQuery.replace(/\s+/g, '');
+  const compactSearchableText = searchableText.replace(/\s+/g, '');
+
+  return normalizedQuery.split(' ').every((term) => searchableText.includes(term))
+    || (compactQuery.length > 1 && compactSearchableText.includes(compactQuery));
 }
 
 export default function AssetGroupManagerModal({
@@ -317,10 +352,12 @@ export default function AssetGroupManagerModal({
   }, [anchorAsset, combinedMode, group, open]);
 
   const visibleAssets = useMemo(() => {
-    const normalized = search.trim().toLowerCase();
     return assets
-      .filter((asset) => !normalized || asset.title.toLowerCase().includes(normalized))
-      .sort((left, right) => left.title.localeCompare(right.title));
+      .filter((asset) => assetMatchesSearch(asset, search))
+      .sort((left, right) => {
+        const categoryDifference = String(left.categoryLabel ?? '').localeCompare(String(right.categoryLabel ?? ''));
+        return categoryDifference || left.title.localeCompare(right.title);
+      });
   }, [assets, search]);
 
   const selectedAssets = useMemo(
@@ -721,7 +758,12 @@ export default function AssetGroupManagerModal({
 
                   <label className={styles.searchField}>
                     <span className={styles.srOnly}>Search assets</span>
-                    <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search assets" />
+                    <input
+                      type="search"
+                      value={search}
+                      onChange={(event) => setSearch(event.target.value)}
+                      placeholder="Search name, category, serial, registration or notes"
+                    />
                   </label>
 
                   <div className={styles.assetList}>
@@ -738,7 +780,13 @@ export default function AssetGroupManagerModal({
                               <strong>{asset.title}</strong>
                               <small>{unavailable
                                 ? `Already in ${existingGroup?.name}`
-                                : [combinedMode ? asset.registerName : '', money(asset.value)].filter(Boolean).join(' · ')}</small>
+                                : [
+                                    asset.categoryLabel,
+                                    asset.serialNumber ? `Serial: ${asset.serialNumber}` : '',
+                                    asset.registrationNumber ? `Reg: ${asset.registrationNumber}` : '',
+                                    combinedMode ? asset.registerName : '',
+                                    money(asset.value),
+                                  ].filter(Boolean).join(' · ')}</small>
                             </span>
                           </label>
 

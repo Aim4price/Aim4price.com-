@@ -69,6 +69,23 @@ type DisposalReason = 'sold' | 'traded_in' | 'scrapped' | 'written_off' | 'mista
 type AssetMoveDestination = 'register' | 'umbrella';
 
 const ASSET_GROUP_DRAG_DATA_TYPE = 'application/x-aim4price-asset-id';
+const ASSET_GROUP_AUTO_SCROLL_EDGE_PX = 120;
+const ASSET_GROUP_AUTO_SCROLL_MAX_PX = 24;
+
+function assetGroupAutoScrollDelta(pointerY: number, viewportHeight: number): number {
+  if (pointerY < ASSET_GROUP_AUTO_SCROLL_EDGE_PX) {
+    const intensity = (ASSET_GROUP_AUTO_SCROLL_EDGE_PX - Math.max(0, pointerY)) / ASSET_GROUP_AUTO_SCROLL_EDGE_PX;
+    return -Math.max(2, Math.ceil(ASSET_GROUP_AUTO_SCROLL_MAX_PX * intensity));
+  }
+
+  if (pointerY > viewportHeight - ASSET_GROUP_AUTO_SCROLL_EDGE_PX) {
+    const distanceFromEdge = Math.max(0, viewportHeight - pointerY);
+    const intensity = (ASSET_GROUP_AUTO_SCROLL_EDGE_PX - distanceFromEdge) / ASSET_GROUP_AUTO_SCROLL_EDGE_PX;
+    return Math.max(2, Math.ceil(ASSET_GROUP_AUTO_SCROLL_MAX_PX * intensity));
+  }
+
+  return 0;
+}
 
 type AcquisitionDraft = {
   newlyAcquired: boolean | null;
@@ -6177,6 +6194,8 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
   const assetAutosaveBaselineRef = useRef('');
   const assetAutosaveLatestSignatureRef = useRef('');
   const assetAutosaveAttemptedSignatureRef = useRef('');
+  const assetDragPointerYRef = useRef<number | null>(null);
+  const assetDragAutoScrollFrameRef = useRef<number | null>(null);
 
   useEffect(() => {
     return () => {
@@ -6209,6 +6228,41 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
       clearTimeout(registerSummaryScrollTimeoutRef.current);
     }
   }, []);
+
+  useEffect(() => {
+    if (!draggingAssetId) {
+      assetDragPointerYRef.current = null;
+      return undefined;
+    }
+
+    function handleAssetDragOver(event: DragEvent) {
+      assetDragPointerYRef.current = event.clientY;
+    }
+
+    function runAssetDragAutoScroll() {
+      const pointerY = assetDragPointerYRef.current;
+      const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+
+      if (pointerY !== null && viewportHeight > 0) {
+        const scrollDelta = assetGroupAutoScrollDelta(pointerY, viewportHeight);
+        if (scrollDelta !== 0) window.scrollBy({ top: scrollDelta, left: 0, behavior: 'auto' });
+      }
+
+      assetDragAutoScrollFrameRef.current = window.requestAnimationFrame(runAssetDragAutoScroll);
+    }
+
+    window.addEventListener('dragover', handleAssetDragOver);
+    assetDragAutoScrollFrameRef.current = window.requestAnimationFrame(runAssetDragAutoScroll);
+
+    return () => {
+      window.removeEventListener('dragover', handleAssetDragOver);
+      assetDragPointerYRef.current = null;
+      if (assetDragAutoScrollFrameRef.current !== null) {
+        window.cancelAnimationFrame(assetDragAutoScrollFrameRef.current);
+        assetDragAutoScrollFrameRef.current = null;
+      }
+    };
+  }, [draggingAssetId]);
 
   useEffect(() => {
     setRegisterSummaryStartIndex((currentIndex) => Math.min(currentIndex, registerSummaryMaxIndex));
@@ -8151,6 +8205,21 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
   const allAssetGroupMemberships = useMemo(
     () => buildAssetGroupMembershipMap(assetGroups),
     [assetGroups],
+  );
+  const assetGroupModalAssets = useMemo(
+    () => assets.map((asset) => ({
+      id: asset.id,
+      title: asset.title,
+      registerId: asset.registerId,
+      registerName: asset.registerName,
+      value: asset.value,
+      categoryLabel: assetKindLabel(asset),
+      serialNumber: asset.serialNumber,
+      registrationNumber: readLicenseRegistrationNumber(asset),
+      notes: [getManualAssetNote(asset.note), asset.financeNote, asset.marketplaceNotes].filter(Boolean).join(' '),
+      searchableText: buildSearchableText(asset),
+    })),
+    [assets],
   );
 
   const totalValue = useMemo(
@@ -20091,7 +20160,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
         open={isAssetGroupModalOpen}
         anchorAsset={assetGroupModalAsset}
         group={assetGroupModalGroup}
-        assets={assets}
+        assets={assetGroupModalAssets}
         groups={assetGroups}
         combinedMode={isCombinedRegisterView}
         busy={isSavingAssetGroup}

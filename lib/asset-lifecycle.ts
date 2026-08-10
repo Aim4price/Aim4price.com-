@@ -281,7 +281,7 @@ export async function disposeOrDeleteAsset(input: {
     await getDb().query(
       `update public.asset_register_items
        set lifecycle_state = 'archived', updated_at = now(),
-           marketplace_status = case when marketplace_status is null then null else 'off' end,
+           marketplace_status = case when marketplace_status is null then null else 'withdrawn' end,
            qr_status = 'deleted'
        where user_id = $1 and id = $2::uuid`,
       [input.ownerUserId, asset.id],
@@ -289,7 +289,7 @@ export async function disposeOrDeleteAsset(input: {
   } else {
     await getDb().query(
       `update public.asset_register_items
-       set lifecycle_state = 'disposed', updated_at = now(), marketplace_status = case when marketplace_status is null then null else 'off' end
+       set lifecycle_state = 'disposed', updated_at = now(), marketplace_status = case when marketplace_status is null then null else 'withdrawn' end
        where user_id = $1 and id = $2::uuid`,
       [input.ownerUserId, asset.id],
     ).catch(async () => {
