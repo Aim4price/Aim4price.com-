@@ -170,7 +170,7 @@ export async function GET(request: NextRequest) {
         ? new Intl.DateTimeFormat('en-ZA', { month: 'long', year: 'numeric', timeZone: 'Africa/Johannesburg' }).format(new Date(Date.UTC(reportYear, reportMonth - 1, 1)))
         : String(reportYear)
       : '';
-    const scopeLabel = [group ? `Umbrella: ${group.name}` : baseScopeLabel, periodLabel].filter(Boolean).join(' · ');
+    const scopeLabel = [baseScopeLabel, group ? `Umbrella: ${group.name}` : '', periodLabel].filter(Boolean).join(' · ');
     const assetLabel = group?.name || selectedAsset?.title || 'All selected assets';
     const options = {
       title: 'Asset Maintenance Report',
