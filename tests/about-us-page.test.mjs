@@ -11,14 +11,20 @@ const portraitPath = new URL(
   "../public/about/kuyler-geldenhuys.jpg",
   import.meta.url,
 );
+const rootLayoutPath = new URL("../app/layout.tsx", import.meta.url);
 
 const pageSource = readFileSync(pagePath, "utf8");
 const stylesSource = readFileSync(stylesPath, "utf8");
+const rootLayoutSource = readFileSync(rootLayoutPath, "utf8");
 
 test("publishes the About Us route with the Aim4price public layout", () => {
   assert.doesNotMatch(pageSource, /notFound\s*\(/);
   assert.match(pageSource, /<AppHeader active="none"/);
-  assert.match(pageSource, /<AppPatternBackground>/);
+  assert.doesNotMatch(pageSource, /<AppPatternBackground>/);
+  assert.match(
+    rootLayoutSource,
+    /<AppPatternBackground>{children}<\/AppPatternBackground>/,
+  );
   assert.match(pageSource, /Better asset information\./);
 });
 

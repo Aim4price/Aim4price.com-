@@ -2,7 +2,11 @@
   min-height: 100vh;
   color: var(--text-strong);
   background:
-    radial-gradient(circle at 12% 8%, rgba(31, 108, 83, 0.065) 0, transparent 30rem),
+    radial-gradient(
+      circle at 12% 8%,
+      rgba(31, 108, 83, 0.065) 0,
+      transparent 30rem
+    ),
     linear-gradient(180deg, #f7f8f7 0%, #f1f5f3 58%, #f8faf8 100%);
 }
 
@@ -76,7 +80,11 @@
   inset: 0;
   pointer-events: none;
   background:
-    radial-gradient(circle at 80% 48%, rgba(255, 255, 255, 0.11) 0, transparent 22rem),
+    radial-gradient(
+      circle at 80% 48%,
+      rgba(255, 255, 255, 0.11) 0,
+      transparent 22rem
+    ),
     linear-gradient(
       90deg,
       rgba(7, 20, 16, 0.9) 0%,
@@ -84,7 +92,11 @@
       rgba(7, 20, 16, 0.38) 61%,
       rgba(7, 20, 16, 0.17) 100%
     ),
-    linear-gradient(180deg, rgba(7, 20, 16, 0.08) 0%, rgba(7, 20, 16, 0.28) 100%);
+    linear-gradient(
+      180deg,
+      rgba(7, 20, 16, 0.08) 0%,
+      rgba(7, 20, 16, 0.28) 100%
+    );
 }
 
 .heroGrid {
@@ -249,6 +261,22 @@
   align-items: center;
   justify-content: center;
   min-width: 0;
+  border-radius: 50%;
+  color: inherit;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    transform 180ms ease,
+    opacity 180ms ease;
+}
+
+.heroVisual:hover {
+  transform: translateY(-3px);
+}
+
+.heroVisual:focus-visible {
+  outline: 3px solid rgba(255, 255, 255, 0.48);
+  outline-offset: 7px;
 }
 
 .heroLogo {
@@ -256,6 +284,11 @@
   height: auto;
   object-fit: contain;
   filter: drop-shadow(0 24px 34px rgba(0, 0, 0, 0.24));
+  transition: transform 180ms ease;
+}
+
+.heroVisual:hover .heroLogo {
+  transform: scale(1.025);
 }
 
 .productSection {
@@ -373,7 +406,7 @@
 }
 
 .productAction::after {
-  content: '→';
+  content: "→";
   font-size: 0.98rem;
   transition: transform 180ms ease;
 }
@@ -437,7 +470,11 @@
   border-radius: clamp(1.65rem, 2.4vw, 2.2rem);
   color: #ffffff;
   background:
-    radial-gradient(circle at 88% 12%, rgba(51, 154, 116, 0.18) 0, transparent 25rem),
+    radial-gradient(
+      circle at 88% 12%,
+      rgba(51, 154, 116, 0.18) 0,
+      transparent 25rem
+    ),
     linear-gradient(135deg, #0e4939 0%, #082f27 100%);
   box-shadow: 0 24px 58px rgba(12, 49, 38, 0.15);
 }
@@ -502,8 +539,16 @@
   padding: clamp(1.7rem, 2.4vw, 2.25rem);
   border-radius: 1.45rem;
   background:
-    radial-gradient(circle at 84% 14%, rgba(250, 210, 75, 0.16) 0, transparent 13rem),
-    linear-gradient(145deg, rgba(39, 122, 94, 0.92) 0%, rgba(23, 84, 66, 0.96) 100%);
+    radial-gradient(
+      circle at 84% 14%,
+      rgba(250, 210, 75, 0.16) 0,
+      transparent 13rem
+    ),
+    linear-gradient(
+      145deg,
+      rgba(39, 122, 94, 0.92) 0%,
+      rgba(23, 84, 66, 0.96) 100%
+    );
   border: 1px solid rgba(255, 255, 255, 0.18);
   box-shadow:
     0 18px 38px rgba(3, 29, 23, 0.18),
@@ -511,7 +556,7 @@
 }
 
 .ownerHub::after {
-  content: '';
+  content: "";
   position: absolute;
   top: 50%;
   right: -2.2rem;
@@ -563,7 +608,7 @@
 }
 
 .partnerGrid::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 18%;
   bottom: 18%;
@@ -584,7 +629,7 @@
 }
 
 .partnerCard::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 50%;
   left: -1rem;
@@ -686,7 +731,9 @@
   .outlineCta,
   .marketLink,
   .productCard,
-  .productAction::after {
+  .productAction::after,
+  .heroVisual,
+  .heroLogo {
     transition: none;
   }
 
@@ -695,7 +742,9 @@
   .lightCta:hover,
   .outlineCta:hover,
   .marketLink:hover,
-  .productCard:hover {
+  .productCard:hover,
+  .heroVisual:hover,
+  .heroVisual:hover .heroLogo {
     transform: none;
   }
 
@@ -740,7 +789,7 @@
     bottom: clamp(1.5rem, 5vw, 3rem);
     width: clamp(9rem, 24vw, 13rem);
     opacity: 0.22;
-    pointer-events: none;
+    pointer-events: auto;
   }
 
   .heroLogo {
@@ -907,4 +956,3 @@
     white-space: normal;
   }
 }
-
