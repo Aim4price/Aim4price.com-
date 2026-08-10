@@ -3,8 +3,10 @@ import { getAccountProfile } from '../../../../lib/account-profile';
 import { getServerSession } from '../../../../lib/auth-session';
 import { getAssetRegisterReportLogoUrl } from '../../../../lib/asset-registers';
 import {
+  calculateAssetMaintenanceSummary,
   listAssetMaintenanceData,
   type AssetMaintenanceAssetOption,
+  type AssetMaintenanceRecord,
   type AssetMaintenanceListFilters,
   type AssetMaintenanceType,
 } from '../../../../lib/asset-maintenance';
@@ -15,6 +17,7 @@ import {
 } from '../../../../lib/asset-maintenance-report';
 import { createXlsxWorkbook } from '../../../../lib/simple-xlsx';
 import { resolveReportLogoUrlForHtml } from '../../../../lib/report-logo';
+import { getAssetGroupById } from '../../../../lib/asset-groups';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -36,11 +39,6 @@ function parseType(value: string | null): AssetMaintenanceType | 'all' | null {
   return null;
 }
 
-function parseStatus(value: string | null): 'upcoming' | 'done' | 'all' | null {
-  if (value === 'upcoming' || value === 'done') return value;
-  return null;
-}
-
 function parseFilters(request: NextRequest, scope: ReportScope): AssetMaintenanceListFilters {
   const searchParams = request.nextUrl.searchParams;
   const assetId = searchParams.get('assetId');
@@ -49,9 +47,40 @@ function parseFilters(request: NextRequest, scope: ReportScope): AssetMaintenanc
   return {
     assetId: assetId && assetId !== 'all' ? assetId : null,
     type: parseType(searchParams.get('type')),
-    status: scope === 'upcoming' ? 'upcoming' : scope === 'done' ? 'done' : parseStatus(searchParams.get('status')),
+    status: scope === 'upcoming' ? 'upcoming' : scope === 'done' ? 'done' : null,
     assignedTo: assignedTo && assignedTo !== 'all' ? assignedTo : null,
   };
+}
+
+function parseReportYear(value: string | null): number | null {
+  const parsed = Number.parseInt(String(value ?? ''), 10);
+  return Number.isInteger(parsed) && parsed >= 2000 && parsed <= 2200 ? parsed : null;
+}
+
+function parseReportMonth(value: string | null): number | null {
+  const parsed = Number.parseInt(String(value ?? ''), 10);
+  return Number.isInteger(parsed) && parsed >= 1 && parsed <= 12 ? parsed : null;
+}
+
+function maintenanceRecordReportDate(record: AssetMaintenanceRecord): Date | null {
+  const value = record.status === 'done'
+    ? record.completedAtIso || record.updatedAtIso
+    : record.dueDate || record.updatedAtIso;
+  const date = value ? new Date(value) : null;
+  return date && Number.isFinite(date.getTime()) ? date : null;
+}
+
+function filterRecordsByPeriod(records: AssetMaintenanceRecord[], year: number | null, month: number | null): AssetMaintenanceRecord[] {
+  if (!year) return records;
+  return records.filter((record) => {
+    const date = maintenanceRecordReportDate(record);
+    if (!date) return false;
+    const recordYear = Number(new Intl.DateTimeFormat('en-ZA', { year: 'numeric', timeZone: 'Africa/Johannesburg' }).format(date));
+    if (recordYear !== year) return false;
+    if (!month) return true;
+    const recordMonth = Number(new Intl.DateTimeFormat('en-ZA', { month: 'numeric', timeZone: 'Africa/Johannesburg' }).format(date));
+    return recordMonth === month;
+  });
 }
 
 function formatGeneratedDate(value = new Date()): string {
@@ -110,17 +139,39 @@ export async function GET(request: NextRequest) {
     const scope = parseScope(request.nextUrl.searchParams.get('scope'));
     const filters = parseFilters(request, scope);
     const format = parseFormat(request.nextUrl.searchParams.get('format'));
+    const groupId = String(request.nextUrl.searchParams.get('groupId') ?? '').trim();
+    const reportYear = parseReportYear(request.nextUrl.searchParams.get('year'));
+    const reportMonth = reportYear ? parseReportMonth(request.nextUrl.searchParams.get('month')) : null;
+    const group = groupId ? await getAssetGroupById(userId, groupId) : null;
+
+    if (groupId && !group) {
+      return NextResponse.json({ ok: false, error: 'Umbrella not found.' }, { status: 404 });
+    }
+    if (group && filters.assetId) {
+      return NextResponse.json({ ok: false, error: 'Choose either an umbrella or a single asset maintenance report.' }, { status: 400 });
+    }
+
     const [data, profile, rawLogoUrl] = await Promise.all([
-      listAssetMaintenanceData(userId, filters),
+      listAssetMaintenanceData(userId, group ? { ...filters, assetId: null } : filters),
       getAccountProfile({ id: userId, name: session.user.name, email: session.user.email }),
       getAssetRegisterReportLogoUrl(userId),
     ]);
     const logoUrl = await resolveReportLogoUrlForHtml(rawLogoUrl, request.url);
-
-    const selectedAsset = findSelectedAsset(data.assets, filters);
+    const groupMemberIds = group ? new Set(group.members.map((member) => member.assetId)) : null;
+    const scopedRecords = groupMemberIds
+      ? data.records.filter((record) => groupMemberIds.has(record.assetId))
+      : data.records;
+    const records = filterRecordsByPeriod(scopedRecords, reportYear, reportMonth);
+    const selectedAsset = group ? null : findSelectedAsset(data.assets, filters);
     const ownerDetails = buildAssetMaintenanceOwnerDetails(profile, session.user);
-    const scopeLabel = reportScopeLabel(scope, selectedAsset);
-    const assetLabel = selectedAsset ? selectedAsset.title : 'All selected assets';
+    const baseScopeLabel = reportScopeLabel(scope, selectedAsset);
+    const periodLabel = reportYear
+      ? reportMonth
+        ? new Intl.DateTimeFormat('en-ZA', { month: 'long', year: 'numeric', timeZone: 'Africa/Johannesburg' }).format(new Date(Date.UTC(reportYear, reportMonth - 1, 1)))
+        : String(reportYear)
+      : '';
+    const scopeLabel = [group ? `Umbrella: ${group.name}` : baseScopeLabel, periodLabel].filter(Boolean).join(' · ');
+    const assetLabel = group?.name || selectedAsset?.title || 'All selected assets';
     const options = {
       title: 'Asset Maintenance Report',
       subtitle: 'Aim4price asset register',
@@ -131,8 +182,8 @@ export async function GET(request: NextRequest) {
       reportScopeLabel: scopeLabel,
       assetLabel,
       selectedAsset,
-      summary: data.summary,
-      records: data.records,
+      summary: calculateAssetMaintenanceSummary(records),
+      records,
       xlsxUrl: buildFormatUrl(request, 'xlsx'),
     };
 
