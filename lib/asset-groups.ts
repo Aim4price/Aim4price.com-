@@ -1,6 +1,7 @@
 import { getDb } from './db';
 import { getAssetRegisterItemsByRefs } from './asset-register-db';
 import { ensureAssetRegisterTables, getAssetRegisterForUser } from './asset-registers';
+import type { PoolClient } from 'pg';
 import {
   normalizeAssetGroupRelationship,
   normalizeAssetGroupValueMode,
@@ -79,7 +80,7 @@ function mapGroups(rows: AssetGroupRow[], memberRows: AssetGroupMemberRow[]): As
       createdAtIso: iso(row.created_at),
       updatedAtIso: iso(row.updated_at),
     }))
-    .filter((group) => group.members.length >= 2);
+    .filter((group) => group.members.length >= 1);
 }
 
 function normalizeMemberIds(memberIds: unknown, primaryAssetId: string): string[] {
@@ -110,6 +111,74 @@ function normalizeRelationships(
       return [assetId, relationship === 'primary' ? 'works_with' : relationship];
     }),
   );
+}
+
+async function detachAssetsFromOtherGroups(
+  client: PoolClient,
+  userId: string,
+  targetGroupId: string,
+  memberIds: string[],
+): Promise<void> {
+  const conflicts = await client.query<{ group_id: string }>(
+    `select distinct member.group_id::text
+       from public.asset_group_members member
+       inner join public.asset_groups asset_group on asset_group.id = member.group_id
+       where member.asset_id = any($1::uuid[])
+         and member.group_id <> $2::uuid
+         and asset_group.user_id = $3
+       order by member.group_id::text`,
+    [memberIds, targetGroupId, userId],
+  );
+  const sourceGroupIds = conflicts.rows.map((row) => cleanText(row.group_id)).filter(Boolean);
+  if (!sourceGroupIds.length) return;
+
+  await client.query(
+    `select id
+       from public.asset_groups
+       where id = any($1::uuid[]) and user_id = $2
+       order by id
+       for update`,
+    [sourceGroupIds, userId],
+  );
+  await client.query(
+    `delete from public.asset_group_members
+     where group_id = any($1::uuid[])
+       and asset_id = any($2::uuid[])`,
+    [sourceGroupIds, memberIds],
+  );
+
+  for (const sourceGroupId of sourceGroupIds) {
+    const remaining = await client.query<{ asset_id: string; role: string }>(
+      `select asset_id::text, role
+         from public.asset_group_members
+         where group_id = $1::uuid
+         order by sort_order, created_at, asset_id
+         for update`,
+      [sourceGroupId],
+    );
+
+    if (!remaining.rows.length) {
+      await client.query(
+        'delete from public.asset_groups where id = $1::uuid and user_id = $2',
+        [sourceGroupId, userId],
+      );
+      continue;
+    }
+
+    if (!remaining.rows.some((member) => cleanText(member.role).toLowerCase() === 'primary')) {
+      await client.query(
+        `update public.asset_group_members
+         set role = 'primary', relationship = 'primary'
+         where group_id = $1::uuid and asset_id = $2::uuid`,
+        [sourceGroupId, cleanText(remaining.rows[0].asset_id)],
+      );
+    }
+
+    await client.query(
+      'update public.asset_groups set updated_at = now() where id = $1::uuid and user_id = $2',
+      [sourceGroupId, userId],
+    );
+  }
 }
 
 export async function listAssetGroups(
@@ -178,7 +247,7 @@ export async function saveAssetGroup(userId: string, input: AssetGroupSaveInput)
   if (!isCombinedScope && !registerId) throw new Error('ASSET_GROUP_REGISTER_REQUIRED');
   if (!name) throw new Error('ASSET_GROUP_NAME_REQUIRED');
   if (!primaryAssetId) throw new Error('ASSET_GROUP_PRIMARY_REQUIRED');
-  if (memberIds.length < 2) throw new Error('ASSET_GROUP_MEMBERS_REQUIRED');
+  if (memberIds.length < 1) throw new Error('ASSET_GROUP_MEMBERS_REQUIRED');
 
   if (!isCombinedScope) {
     const register = await getAssetRegisterForUser(userId, registerId);
@@ -236,20 +305,7 @@ export async function saveAssetGroup(userId: string, input: AssetGroupSaveInput)
       savedGroupId = cleanText(created.rows[0]?.id);
     }
 
-    const conflicts = await client.query<{ asset_id: string; group_name: string }>(
-      `select member.asset_id::text, asset_group.name as group_name
-       from public.asset_group_members member
-       inner join public.asset_groups asset_group on asset_group.id = member.group_id
-       where member.asset_id = any($1::uuid[])
-         and member.group_id <> $2::uuid
-       limit 1`,
-      [memberIds, savedGroupId],
-    );
-
-    if (conflicts.rows[0]) {
-      const conflictName = cleanText(conflicts.rows[0].group_name) || 'another group';
-      throw new Error(`ASSET_GROUP_ALREADY_LINKED:${conflictName}`);
-    }
+    await detachAssetsFromOtherGroups(client, userId, savedGroupId, memberIds);
 
     await client.query(
       'delete from public.asset_group_members where group_id = $1::uuid',
@@ -373,7 +429,7 @@ export async function moveAssetToGroup(
       );
       const sourceMemberCount = Number(sourceCountResult.rows[0]?.count ?? 0);
 
-      if (sourceMemberCount <= 2) {
+      if (sourceMemberCount <= 1) {
         await client.query(
           'delete from public.asset_groups where id = $1::uuid and user_id = $2',
           [sourceGroupId, userId],
@@ -468,21 +524,35 @@ export async function pruneAssetGroups(userId: string): Promise<void> {
   const db = getDb();
 
   await db.query(
+    `with replacement_primary as (
+       select distinct on (member.group_id) member.group_id, member.asset_id
+         from public.asset_group_members member
+         inner join public.asset_groups asset_group on asset_group.id = member.group_id
+         where asset_group.user_id = $1
+           and not exists (
+             select 1
+             from public.asset_group_members primary_member
+             where primary_member.group_id = member.group_id
+               and primary_member.role = 'primary'
+           )
+         order by member.group_id, member.sort_order, member.created_at, member.asset_id
+     )
+     update public.asset_group_members member
+     set role = 'primary', relationship = 'primary'
+     from replacement_primary replacement
+     where member.group_id = replacement.group_id
+       and member.asset_id = replacement.asset_id`,
+    [userId],
+  );
+
+  await db.query(
     `delete from public.asset_groups asset_group
      where asset_group.user_id = $1
        and (
-         (
-           select count(*)
-           from public.asset_group_members member
-           where member.group_id = asset_group.id
-         ) < 2
-         or not exists (
-           select 1
-           from public.asset_group_members member
-           where member.group_id = asset_group.id
-             and member.role = 'primary'
-         )
-       )`,
+         select count(*)
+         from public.asset_group_members member
+         where member.group_id = asset_group.id
+       ) < 1`,
     [userId],
   );
 }

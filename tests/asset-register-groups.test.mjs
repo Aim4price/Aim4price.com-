@@ -130,7 +130,7 @@ test('included-in-primary groups prevent register-value double counting', async 
   assert.equal(helpers.assetCountsTowardRegisterTotal('trailer', memberships), false);
 });
 
-test('combined umbrellas split safely by visible register and resolve for a single visible member', async () => {
+test('combined and one-asset umbrellas remain visible in their Asset Registers', async () => {
   const helpers = await loadGroupHelpers();
   const combinedGroup = {
     ...group('separate'),
@@ -152,10 +152,15 @@ test('combined umbrellas split safely by visible register and resolve for a sing
     ],
   );
 
+  const singleAssetProjection = helpers.projectAssetGroupsToAssets([combinedGroup], [{ id: 'truck' }]);
+  assert.equal(singleAssetProjection.length, 1);
   assert.deepEqual(
-    helpers.projectAssetGroupsToAssets([combinedGroup], [{ id: 'truck' }]),
-    [],
+    singleAssetProjection[0].members.map((member) => [member.assetId, member.role, member.relationship]),
+    [['truck', 'primary', 'primary']],
   );
+  const singleAssetEntries = helpers.buildAssetGroupPageEntries([{ id: 'truck' }], singleAssetProjection);
+  assert.equal(singleAssetEntries.length, 1);
+  assert.equal(singleAssetEntries[0].kind, 'group');
 });
 
 test('group persistence validates ownership, membership, and safe unlink behavior', async () => {
@@ -164,12 +169,14 @@ test('group persistence validates ownership, membership, and safe unlink behavio
     readFile(new URL('../lib/asset-registers.ts', import.meta.url), 'utf8'),
   ]);
   assert.match(persistence, /ASSET_GROUP_REGISTER_MISMATCH/);
-  assert.match(persistence, /ASSET_GROUP_ALREADY_LINKED/);
+  assert.match(persistence, /detachAssetsFromOtherGroups/);
+  assert.match(persistence, /memberIds\.length < 1/);
   assert.match(schema, /unique \(asset_id\)/);
   assert.match(schema, /unlink_asset_group_on_register_change/);
   assert.match(schema, /role = 'primary'/);
   assert.match(schema, /alter column register_id drop not null/);
   assert.match(schema, /asset_group\.register_id is not null/);
+  assert.match(schema, /\) < 1;/);
   assert.match(persistence, /register_id is null/);
   assert.match(persistence, /value_mode = case when \$3::boolean then 'separate'/);
 });
@@ -351,7 +358,7 @@ test('assets can be dragged into groups without breaking group integrity', async
   assert.match(client, /Drop asset here/);
   assert.match(route, /export async function PATCH/);
   assert.match(route, /moveAssetToGroup/);
-  assert.match(persistence, /sourceMemberCount <= 2/);
+  assert.match(persistence, /sourceMemberCount <= 1/);
   assert.match(persistence, /set role = 'primary', relationship = 'primary'/);
   assert.match(persistence, /'linked',\s*'works_with'/);
   assert.match(styles, /\.assetGroupHeaderRowDropTarget \.assetGroupHeader/);
@@ -368,7 +375,8 @@ test('the Switch flow can move an asset into an available umbrella', async () =>
   assert.match(client, /Move to Umbrella/);
   assert.match(client, /buildAssetGroupsApiUrl\(accountantShareId, undefined, combinedScope\)/);
   assert.match(client, /targetGroupId: targetGroup\.id/);
-  assert.match(client, /group\.registerId === null\s*\? group/);
+  assert.match(client, /group\.registerId === null \|\| !group\.members\.some/);
+  assert.match(client, /remainingMembers\.map/);
   assert.match(styles, /\.assetRegisterMoveDestinationTabs/);
   assert.match(styles, /\.assetRegisterMoveDestinationTabActive/);
 });
@@ -467,6 +475,9 @@ test('umbrella creation is register-wide while member controls target the physic
   assert.match(sharedInCardActions, /canUseOwnerOnlyAssetActions \|\| isAccountantWorkspace/);
   assert.match(sharedInCardActions, /styles\.assetGroupMemberActions/);
   assert.match(sharedInCardActions, /assetGroup \|\| isResolvedCombinedGroup/);
+  assert.doesNotMatch(modal, /disabled=\{unavailable \|\| asset\.id === anchorAsset\?\.id\}/);
+  assert.match(modal, /Currently in \$\{existingGroup\?\.name\} — select to move/);
+  assert.match(modal, /selectedAssetIds\.length < 1/);
 });
 
 test('umbrella drag auto-scroll and asset discovery cover long registers and saved details', async () => {
@@ -479,6 +490,9 @@ test('umbrella drag auto-scroll and asset discovery cover long registers and sav
   assert.match(client, /ASSET_GROUP_AUTO_SCROLL_MIN_PX = 8/);
   assert.match(client, /ASSET_GROUP_AUTO_SCROLL_MAX_PX = 64/);
   assert.match(client, /window\.addEventListener\('dragover', handleAssetDragOver\)/);
+  assert.match(client, /window\.addEventListener\('wheel', handleAssetDragWheel, \{ passive: false \}\)/);
+  assert.match(client, /assetGroupWheelScrollDelta\(event\.deltaY, event\.deltaMode, viewportHeight\)/);
+  assert.match(client, /event\.preventDefault\(\);[\s\S]*?window\.scrollBy\(\{ top: scrollDelta, left: 0, behavior: 'auto' \}\)/);
   assert.match(client, /window\.requestAnimationFrame\(runAssetDragAutoScroll\)/);
   assert.match(client, /window\.scrollBy\(\{ top: scrollDelta, left: 0, behavior: 'auto' \}\)/);
   assert.match(client, /const assetGroupModalAssets = useMemo/);

@@ -608,18 +608,29 @@ async function ensureAssetRegisterTablesOnce(): Promise<void> {
           and asset_group.register_id is not null;
       end if;
 
+      with replacement_primary as (
+        select distinct on (member.group_id) member.group_id, member.asset_id
+        from public.asset_group_members member
+        where not exists (
+          select 1
+          from public.asset_group_members primary_member
+          where primary_member.group_id = member.group_id
+            and primary_member.role = 'primary'
+        )
+        order by member.group_id, member.sort_order, member.created_at, member.asset_id
+      )
+      update public.asset_group_members member
+      set role = 'primary', relationship = 'primary'
+      from replacement_primary replacement
+      where member.group_id = replacement.group_id
+        and member.asset_id = replacement.asset_id;
+
       delete from public.asset_groups asset_group
       where (
           select count(*)
           from public.asset_group_members member
           where member.group_id = asset_group.id
-        ) < 2
-        or not exists (
-          select 1
-          from public.asset_group_members member
-          where member.group_id = asset_group.id
-            and member.role = 'primary'
-        );
+        ) < 1;
 
       if tg_op = 'DELETE' then
         return old;

@@ -112,7 +112,7 @@ function errorResponse(error: unknown): NextResponse {
           : message === 'ASSET_GROUP_PRIMARY_REQUIRED'
             ? 'Choose one primary asset for the group.'
             : message === 'ASSET_GROUP_MEMBERS_REQUIRED'
-              ? 'Choose at least two assets for a group.'
+              ? 'Choose at least one asset for an umbrella.'
               : message === 'ASSET_GROUP_ASSET_NOT_FOUND'
                 ? 'One or more selected assets could not be found.'
                 : message === 'ASSET_GROUP_REGISTER_MISMATCH'
