@@ -51,15 +51,29 @@ function escapeHtml(value: unknown): string {
     .replace(/'/g, '&#39;');
 }
 
-function formatDateOnly(value?: string | null): string {
-  if (!value) return '-';
-  const date = value.includes('T') ? new Date(value) : new Date(`${value}T00:00:00Z`);
-  if (Number.isNaN(date.getTime())) return '-';
+function parseReportTimestamp(value: unknown): Date | null {
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? null : value;
+  }
+
+  if (typeof value !== 'string' && typeof value !== 'number') return null;
+  const cleaned = typeof value === 'string' ? value.trim() : value;
+  if (cleaned === '') return null;
+
+  const dateOnly = typeof cleaned === 'string' && !cleaned.includes('T');
+  const date = new Date(dateOnly ? `${cleaned}T00:00:00Z` : cleaned);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function formatDateOnly(value?: unknown): string {
+  const date = parseReportTimestamp(value);
+  if (!date) return '-';
+  const dateOnly = typeof value === 'string' && !value.includes('T');
   return new Intl.DateTimeFormat('en-ZA', {
     day: '2-digit',
     month: 'short',
     year: 'numeric',
-    timeZone: value.includes('T') ? 'Africa/Johannesburg' : 'UTC',
+    timeZone: dateOnly ? 'UTC' : 'Africa/Johannesburg',
   }).format(date);
 }
 
@@ -200,9 +214,9 @@ function buildAssetRows(asset: AssetMaintenanceAssetOption | null, scope: string
 
 function latestUpdatedDate(options: AssetMaintenanceReportOptions): string {
   const latest = options.records
-    .map((record) => record.updatedAtIso)
-    .filter(Boolean)
-    .sort((a, b) => b.localeCompare(a))[0];
+    .map((record) => parseReportTimestamp(record.updatedAtIso))
+    .filter((value): value is Date => Boolean(value))
+    .sort((a, b) => b.getTime() - a.getTime())[0];
   return latest ? formatDateOnly(latest) : options.generatedAt;
 }
 

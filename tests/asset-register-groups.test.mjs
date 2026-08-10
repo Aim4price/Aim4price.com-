@@ -16,6 +16,19 @@ async function loadGroupHelpers() {
   return loadedModule.exports;
 }
 
+async function loadMaintenanceReportBuilders() {
+  const source = await readFile(new URL('../lib/asset-maintenance-report.ts', import.meta.url), 'utf8');
+  const output = ts.transpileModule(source, {
+    compilerOptions: {
+      module: ts.ModuleKind.CommonJS,
+      target: ts.ScriptTarget.ES2022,
+    },
+  }).outputText;
+  const loadedModule = { exports: {} };
+  new Function('module', 'exports', output)(loadedModule, loadedModule.exports);
+  return loadedModule.exports;
+}
+
 const assets = [
   { id: 'trailer', value: 150_000 },
   { id: 'unrelated', value: 75_000 },
@@ -432,6 +445,8 @@ test('umbrella and Maintenance page exports preserve completed maintenance histo
   assert.match(maintenance, /completedNotes: event\.sourceNote \|\| event\.summary \|\| event\.note/);
   assert.match(scanHistory, /export async function listCompletedMaintenanceScanEventsForAssets/);
   assert.match(scanHistory, /sourceNote: note/);
+  assert.match(scanHistory, /createdAtIso: asIsoTimestamp\(row\.created_at\)/);
+  assert.match(scanHistory, /notedAtIso: asIsoTimestamp\(row\.maintenance_noted_at\)/);
   assert.match(scanHistory, /coalesce\(to_jsonb\(e\)->>'note', ''\) as note/);
   assert.match(scanHistory, /null::text as maintenance_noted_at/);
   assert.match(scanHistory, /order by e\.created_at desc, e\.id desc/);
@@ -448,4 +463,58 @@ test('umbrella and Maintenance page exports preserve completed maintenance histo
   assert.match(maintenanceClient, /Completed maintenance report/);
   assert.match(modal, /All maintenance/);
   assert.match(modal, /Completed maintenance/);
+});
+
+test('maintenance PDF and Excel builders accept PostgreSQL Date timestamps', async () => {
+  const { buildAssetMaintenanceReportHtml, buildAssetMaintenanceWorkbook } = await loadMaintenanceReportBuilders();
+  const databaseTimestamp = new Date('2026-07-30T08:15:00.000Z');
+  const record = {
+    id: 'scan-history:event-1',
+    status: 'done',
+    computedStatus: 'done',
+    title: 'Historical service',
+    assetTitle: '2013 Landini 5-100H',
+    assetMeta: 'Year Model: 2013',
+    maintenanceType: 'service',
+    triggerType: 'date',
+    completedAtIso: databaseTimestamp,
+    completedUsage: 14056,
+    completedBy: 'Gerald',
+    completedNotes: 'Changed engine oil and filters.',
+    updatedAtIso: databaseTimestamp,
+  };
+  const options = {
+    title: 'Asset Maintenance Report',
+    subtitle: 'Aim4price asset register',
+    generatedAt: '10 Aug 2026',
+    ownerEmail: 'owner@example.com',
+    ownerDetails: {
+      businessName: 'Test Owner',
+      contactDetails: '',
+      businessEmail: 'owner@example.com',
+      locationAddress: '',
+    },
+    logoUrl: '',
+    reportScopeLabel: 'Total maintenance report',
+    assetLabel: 'All selected assets',
+    selectedAsset: null,
+    summary: {
+      totalCount: 1,
+      openCount: 0,
+      doneCount: 1,
+      dueSoonCount: 0,
+      dueCount: 0,
+      overdueCount: 0,
+    },
+    records: [record],
+    xlsxUrl: '/api/maintenance/report?format=xlsx',
+  };
+
+  const html = buildAssetMaintenanceReportHtml(options);
+  const workbook = buildAssetMaintenanceWorkbook(options);
+
+  assert.match(html, /Historical service/);
+  assert.match(html, /2013 Landini 5-100H/);
+  assert.match(html, /30 Jul 2026/);
+  assert.equal(workbook[0].rows.at(-1)[0].value, '2013 Landini 5-100H');
 });

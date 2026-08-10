@@ -246,8 +246,8 @@ type ScanEventRow = {
   latitude: string | number | null;
   longitude: string | number | null;
   location_text: string | null;
-  maintenance_noted_at?: string | null;
-  created_at: string | null;
+  maintenance_noted_at?: string | Date | null;
+  created_at: string | Date | null;
 };
 
 function asText(value: unknown): string {
@@ -271,6 +271,19 @@ function asId(value: unknown): string {
 function asNumber(value: unknown): number | null {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : null;
+}
+
+function asIsoTimestamp(value: unknown): string | null {
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? null : value.toISOString();
+  }
+
+  if (typeof value !== "string") return null;
+  const cleaned = value.trim();
+  if (!cleaned) return null;
+
+  const parsed = new Date(cleaned);
+  return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString();
 }
 
 function normalizeClientEventId(value: unknown): string | null {
@@ -1165,8 +1178,8 @@ function mapMaintenanceStatusFromScanEvent(
     usageReading: asNumber(row.asset_usage_reading) ?? asNumber(row.hours),
     photoUrls,
     photoCount: photoUrls.length,
-    createdAtIso: row.created_at ?? new Date().toISOString(),
-    notedAtIso: row.maintenance_noted_at ?? null,
+    createdAtIso: asIsoTimestamp(row.created_at) ?? new Date().toISOString(),
+    notedAtIso: asIsoTimestamp(row.maintenance_noted_at),
   };
 }
 
