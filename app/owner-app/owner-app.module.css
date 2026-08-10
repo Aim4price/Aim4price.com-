@@ -619,6 +619,50 @@
 .managerAssetList { min-width: 0; max-width: 100%; display: grid; gap: 14px; padding-bottom: 22px; }
 .assetListToolbar,
 .managerAssetList { width: min(100%, 560px); max-width: 100%; box-sizing: border-box; margin-inline: auto; }
+.assetDirectory {
+  width: min(100%, 560px);
+  display: grid;
+  gap: 22px;
+  margin-inline: auto;
+}
+.assetDirectorySection { min-width: 0; display: grid; gap: 12px; }
+.assetDirectoryHeading { display: grid; gap: 3px; padding: 2px 4px; text-align: left; }
+.assetDirectoryHeading span {
+  color: #237052;
+  font-size: 0.7rem;
+  font-weight: 900;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+.assetDirectoryHeading h2 { margin: 0; color: var(--owner-ink); font-size: 1.28rem; font-weight: 900; letter-spacing: -0.035em; }
+.assetDirectoryNav {
+  width: min(100%, 560px);
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  box-sizing: border-box;
+  margin: 0 auto 2px;
+  border: 1px solid rgba(18, 53, 45, 0.11);
+  border-radius: 18px;
+  background: #f7fbf8;
+  padding: 10px;
+}
+.assetDirectoryNav button {
+  min-height: 44px;
+  border: 1px solid rgba(18, 53, 45, 0.14);
+  border-radius: 13px;
+  background: #fff;
+  color: var(--owner-green);
+  padding: 0 12px;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 850;
+  cursor: pointer;
+}
+.assetDirectoryNav div { min-width: 0; display: grid; gap: 2px; }
+.assetDirectoryNav span { color: var(--owner-muted); font-size: 0.68rem; font-weight: 800; text-transform: uppercase; }
+.assetDirectoryNav strong { overflow-wrap: anywhere; color: var(--owner-ink); font-size: 0.94rem; }
 .managerAssetCard {
   width: 100%;
   min-width: 0;
@@ -632,6 +676,35 @@
   background: #fff;
   padding: 18px 16px 16px;
   box-shadow: 0 16px 36px rgba(18, 53, 45, 0.08);
+}
+.assetDirectoryUmbrellaCard,
+.assetDirectoryAllCard { justify-items: center; text-align: center; }
+.assetDirectoryUmbrellaCard {
+  border-color: rgba(32, 143, 102, 0.27);
+  background: linear-gradient(145deg, #ffffff 0%, #f1faf6 100%);
+}
+.assetDirectoryAllCard { background: linear-gradient(145deg, #ffffff 0%, #f5f8f6 100%); }
+.assetDirectoryUmbrellaCard > p,
+.assetDirectoryAllCard > p,
+.assetDirectoryBreadcrumb {
+  margin: -4px 0 0;
+  color: var(--owner-muted);
+  font-size: 0.8rem;
+  font-weight: 750;
+  line-height: 1.4;
+  text-align: center;
+}
+.assetDirectoryUmbrellaIcon {
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(31, 138, 102, 0.24);
+  border-radius: 16px;
+  background: #e9f8f1;
+  color: #0c6a4c;
+  font-size: 1.45rem;
+  font-weight: 900;
 }
 .managerAssetCard h2 {
   width: 100%;
@@ -2483,7 +2556,9 @@
   }
 
   .assetListToolbar,
-  .managerAssetList {
+  .managerAssetList,
+  .assetDirectory,
+  .assetDirectoryNav {
     width: min(100%, 720px);
   }
 
