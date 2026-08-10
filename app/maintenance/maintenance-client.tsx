@@ -535,7 +535,10 @@ function buildReportUrl(scope: DownloadScope, format: 'pdf' | 'xlsx', filters: M
   if (resolvedAssetId && resolvedAssetId !== 'all') params.set('assetId', resolvedAssetId);
   if (filters.type !== 'all') params.set('type', filters.type);
   if (filters.assignedTo !== 'all') params.set('assignedTo', filters.assignedTo);
-  if (scope !== 'upcoming' && scope !== 'done' && filters.status !== 'all') params.set('status', filters.status);
+  // Total, asset, upcoming and completed reports have explicit scope semantics.
+  // Do not let the current page status filter silently remove completed history.
+  if (scope === 'upcoming') params.set('status', 'upcoming');
+  if (scope === 'done') params.set('status', 'done');
   return `/api/maintenance/report?${params.toString()}`;
 }
 
@@ -564,10 +567,10 @@ const DOWNLOAD_FORMAT_OPTIONS: Array<{ value: DownloadFormat; title: string; des
 ];
 
 const DOWNLOAD_SCOPE_OPTIONS: Array<{ value: DownloadScope; title: string; description: string }> = [
-  { value: 'total', title: 'Total maintenance report', description: 'All maintenance records matching the current filters.' },
+  { value: 'total', title: 'Total maintenance report', description: 'All open and completed maintenance matching the selected asset and type filters.' },
   { value: 'asset', title: 'Specific asset maintenance report', description: 'Full maintenance timeline for one saved asset.' },
   { value: 'upcoming', title: 'Upcoming maintenance report', description: 'Open maintenance records, including due soon and overdue items.' },
-  { value: 'done', title: 'Done maintenance report', description: 'Completed services and checkups.' },
+  { value: 'done', title: 'Completed maintenance report', description: 'Every completed service and checkup retained in maintenance history.' },
 ];
 
 type MaintenanceDropdownProps = {
