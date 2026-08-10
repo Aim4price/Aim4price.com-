@@ -26,10 +26,13 @@ type Props = {
   groups: AssetGroup[];
   combinedMode?: boolean;
   busy?: boolean;
+  reportBusy?: boolean;
   error?: string | null;
   onClose: () => void;
   onSave: (input: AssetGroupSaveInput) => void | Promise<void>;
   onDelete: (group: AssetGroup) => void | Promise<void>;
+  onDownloadPdf?: (group: AssetGroup) => void | Promise<void>;
+  onDownloadXlsx?: (group: AssetGroup) => void | Promise<void>;
 };
 
 const RELATIONSHIP_OPTIONS: Array<{ value: AssetGroupRelationship; label: string }> = [
@@ -61,10 +64,13 @@ export default function AssetGroupManagerModal({
   groups,
   combinedMode = false,
   busy = false,
+  reportBusy = false,
   error,
   onClose,
   onSave,
   onDelete,
+  onDownloadPdf,
+  onDownloadXlsx,
 }: Props) {
   const [name, setName] = useState('');
   const [valueMode, setValueMode] = useState<AssetGroupValueMode>('separate');
@@ -324,6 +330,35 @@ export default function AssetGroupManagerModal({
               <strong>{money(countedValue)}</strong>
               <small>{valueMode === 'separate' ? 'All selected values are counted.' : 'Only the primary asset counts toward register totals.'}</small>
             </aside>
+
+            {group && (onDownloadPdf || onDownloadXlsx) ? (
+              <section className={styles.reportSection} aria-label={`${group.name} reports`}>
+                <div className={styles.reportHeading}>
+                  <span>Umbrella reports</span>
+                  <small>Download a report containing only this umbrella and its linked assets.</small>
+                </div>
+                <div className={styles.reportActions}>
+                  {onDownloadPdf ? (
+                    <button type="button" onClick={() => void onDownloadPdf(group)} disabled={busy || reportBusy}>
+                      <span className={styles.reportFormat}>PDF</span>
+                      <span>
+                        <strong>{reportBusy ? 'Preparing…' : 'Download PDF'}</strong>
+                        <small>Formatted umbrella report</small>
+                      </span>
+                    </button>
+                  ) : null}
+                  {onDownloadXlsx ? (
+                    <button type="button" onClick={() => void onDownloadXlsx(group)} disabled={busy || reportBusy}>
+                      <span className={styles.reportFormat}>XLSX</span>
+                      <span>
+                        <strong>{reportBusy ? 'Preparing…' : 'Download Excel'}</strong>
+                        <small>Detailed umbrella workbook</small>
+                      </span>
+                    </button>
+                  ) : null}
+                </div>
+              </section>
+            ) : null}
 
             {error ? <p className={styles.error} role="alert">{error}</p> : null}
           </div>
