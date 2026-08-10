@@ -432,11 +432,18 @@ test('umbrella and Maintenance page exports preserve completed maintenance histo
   assert.match(maintenance, /completedNotes: event\.sourceNote \|\| event\.summary \|\| event\.note/);
   assert.match(scanHistory, /export async function listCompletedMaintenanceScanEventsForAssets/);
   assert.match(scanHistory, /sourceNote: note/);
+  assert.match(scanHistory, /coalesce\(to_jsonb\(e\)->>'note', ''\) as note/);
+  assert.match(scanHistory, /null::text as maintenance_noted_at/);
   assert.match(scanHistory, /order by e\.created_at desc, e\.id desc/);
-  assert.doesNotMatch(
-    scanHistory.slice(scanHistory.indexOf('export async function listCompletedMaintenanceScanEventsForAssets')),
-    /limit \$\{/,
+  const historyQuery = scanHistory.slice(
+    scanHistory.indexOf('export async function listCompletedMaintenanceScanEventsForAssets'),
+    scanHistory.indexOf('export async function markAssetMaintenanceStatusNoted'),
   );
+  assert.doesNotMatch(historyQuery, /assetMaintenanceStatusSelectSql/);
+  assert.doesNotMatch(historyQuery, /inner join/);
+  assert.doesNotMatch(historyQuery, /limit \$\{/);
+  assert.match(maintenance, /must never block the current[\s\S]*?maintenance report from opening/);
+  assert.match(maintenance, /completed maintenance scan history could not be loaded/);
   assert.match(maintenanceClient, /Total maintenance report[\s\S]*?All open and completed maintenance/);
   assert.match(maintenanceClient, /Completed maintenance report/);
   assert.match(modal, /All maintenance/);
