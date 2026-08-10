@@ -240,24 +240,31 @@ test('umbrella cards expose aligned actions and the Manage modal uses a clear op
   assert.match(modal, /Umbrella settings/);
   assert.match(modal, /Download reports/);
   assert.match(modal, /Remove umbrella/);
-  assert.match(modal, /Download PDF/);
-  assert.match(modal, /Download Excel/);
+  assert.match(modal, /PDF report/);
+  assert.match(modal, /XLSX workbook/);
 });
 
-test('the umbrella Manage modal matches the application option-card pattern', async () => {
+test('the umbrella Manage modal reuses the asset Manage and report-format patterns', async () => {
   const [modal, modalStyles] = await Promise.all([
     readFile(new URL('../components/asset-register/AssetGroupManagerModal.tsx', import.meta.url), 'utf8'),
     readFile(new URL('../components/asset-register/AssetGroupManagerModal.module.css', import.meta.url), 'utf8'),
   ]);
 
   assert.match(modal, /view === 'menu'/);
-  assert.match(modal, /className=\{`\$\{styles\.menuAction\} \$\{styles\.menuActionPrimary\}`\}/);
-  assert.match(modal, /className=\{`\$\{styles\.menuAction\} \$\{styles\.menuActionDanger\}`\}/);
+  assert.match(modal, /import registerStyles from '\.\.\/\.\.\/app\/asset-register\/page\.module\.css'/);
+  assert.match(modal, /registerStyles\.optionsModal/);
+  assert.match(modal, /registerStyles\.modalOverlay/);
+  assert.match(modal, /registerStyles\.optionFeaturedButton/);
+  assert.match(modal, /registerStyles\.optionDangerButton/);
   assert.match(modal, /Ungroup the assets without deleting their records/);
   assert.match(modal, /Only assets linked to \{group\.name\} are included/);
-  assert.match(modalStyles, /\.menuGrid,[\s\S]*?grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
-  assert.match(modalStyles, /\.menuAction,[\s\S]*?\.reportMenuAction \{[\s\S]*?min-height: 112px;[\s\S]*?border-radius: 22px;/);
-  assert.match(modalStyles, /\.menuActionDanger \{[\s\S]*?border-color: #ffb4ae;/);
+  assert.match(modal, /registerStyles\.modalCloseButton/);
+  assert.match(modal, /registerStyles\.assetTimelineFormatGrid/);
+  assert.match(modal, /registerStyles\.modalCard/);
+  assert.match(modal, /src="\/brand\/pdf\.png"/);
+  assert.match(modal, /src="\/brand\/sheet\.png"/);
+  assert.match(modal, /registerStyles\.assetTimelineSecondaryButton/);
+  assert.match(modalStyles, /\.backdrop \{/);
 });
 
 test('umbrella sharing and downloads are limited to linked assets', async () => {
