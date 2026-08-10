@@ -3873,9 +3873,8 @@
 }
 
 /* === Responsive shell contract, August 2026 ===
-   Keep the complete desktop navigation through tablet widths. Phones retain
-   the same navigation language with a compact two-choice window. This block
-   intentionally sits last so one canonical breakpoint contract wins. */
+   Keep the complete desktop navigation through tablet widths. Compact touch
+   layouts use the Account/Manage dropdown instead of a second navigation row. */
 .header,
 .inner,
 .brand,
@@ -3993,10 +3992,8 @@
   .inner {
     width: var(--shell-width, min(calc(100% - 1.7rem), 48rem));
     grid-template-columns: auto minmax(0, 1fr);
-    grid-template-areas:
-      "brand actions"
-      "nav nav";
-    gap: 0.42rem 0.6rem;
+    grid-template-areas: "brand actions";
+    gap: 0 0.6rem;
     padding: 0.48rem 0 0.55rem;
   }
 
@@ -4038,49 +4035,6 @@
   }
 
   .nav {
-    grid-area: nav;
-    width: 100%;
-    display: block;
-    overflow: hidden;
-  }
-
-  .navRail {
-    width: 100%;
-    display: flex;
-    gap: 0.26rem;
-    padding: 0.25rem;
-    overflow-x: auto;
-    overflow-y: hidden;
-    border-radius: 0.92rem;
-    scroll-snap-type: x mandatory;
-    scroll-padding-inline: 0.25rem;
-    scrollbar-width: none;
-    overscroll-behavior-x: contain;
-    -webkit-overflow-scrolling: touch;
-    touch-action: pan-x;
-  }
-
-  .navRail::-webkit-scrollbar {
-    display: none;
-  }
-
-  .navLink {
-    display: inline-flex;
-    flex: 0 0 46%;
-    min-width: 0;
-    max-width: none;
-    min-height: 2.55rem;
-    padding: 0.42rem 0.5rem;
-    overflow: hidden;
-    border-radius: 0.7rem;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    font-size: clamp(0.68rem, 2.5vw, 0.8rem);
-    scroll-snap-align: start;
-    scroll-snap-stop: normal;
-  }
-
-  .navWindowButton {
     display: none;
   }
 
@@ -4162,56 +4116,28 @@
     padding-inline: 0.42rem;
   }
 
-  .navLink {
-    padding-inline: 0.35rem;
-    font-size: 0.68rem;
+}
+
+/* Aim4price keeps a 980px desktop-style canvas on phones, so the compact state
+   is also applied explicitly by the client after touch-device detection. */
+.innerCompact {
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-areas: "brand actions";
+  row-gap: 0;
+}
+
+.navCompact {
+  display: none;
+}
+
+@media (hover: none) and (pointer: coarse) and (max-device-width: 900px) {
+  .inner {
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-areas: "brand actions";
+    row-gap: 0;
   }
-}
 
-/* Touch devices use a 980px desktop-style viewport. This explicit state keeps
-   the header swipeable without changing that site-wide viewport contract. */
-.navSwipe {
-  grid-area: nav;
-  width: 100%;
-  display: block;
-  overflow: hidden;
-}
-
-.navSwipe .navRail {
-  width: 100%;
-  max-width: 100%;
-  display: flex;
-  flex: 0 0 auto;
-  flex-wrap: nowrap;
-  justify-content: flex-start;
-  gap: 0.42rem;
-  padding: 0.3rem;
-  overflow-x: auto;
-  overflow-y: hidden;
-  scroll-snap-type: x mandatory;
-  scroll-padding-inline: 0.3rem;
-  scrollbar-width: none;
-  overscroll-behavior-x: contain;
-  -webkit-overflow-scrolling: touch;
-  touch-action: pan-x;
-}
-
-.navSwipe .navRail::-webkit-scrollbar {
-  display: none;
-}
-
-.navSwipe .navLink {
-  display: inline-flex;
-  flex: 0 0 46%;
-  min-width: 0;
-  max-width: none;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  scroll-snap-align: start;
-  scroll-snap-stop: normal;
-}
-
-.navSwipe .navWindowButton {
-  display: none;
+  .nav {
+    display: none;
+  }
 }
