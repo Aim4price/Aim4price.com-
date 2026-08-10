@@ -241,7 +241,7 @@ const RELATIONSHIP_OPTIONS: Array<{ value: AssetGroupRelationship; label: string
 
 function defaultGroupName(asset: AssetGroupModalAsset | null): string {
   const title = String(asset?.title ?? '').trim();
-  return title ? `${title} group` : 'Asset group';
+  return title ? `${title} umbrella` : 'Asset umbrella';
 }
 
 function money(value: number): string {
@@ -333,7 +333,7 @@ export default function AssetGroupManagerModal({
     return sum + Math.round(Number(asset.value) || 0);
   }, 0);
 
-  if (!open || !anchorAsset) return null;
+  if (!open) return null;
 
   function toggleAsset(asset: AssetGroupModalAsset) {
     const existingGroup = membershipByAssetId.get(asset.id);
@@ -344,9 +344,24 @@ export default function AssetGroupManagerModal({
         if (asset.id === anchorAsset?.id) return current;
         const next = current.filter((assetId) => assetId !== asset.id);
         if (primaryAssetId === asset.id) {
-          setPrimaryAssetId(anchorAsset?.id ?? next[0] ?? '');
+          const nextPrimaryAssetId = anchorAsset?.id && next.includes(anchorAsset.id)
+            ? anchorAsset.id
+            : next[0] ?? '';
+          setPrimaryAssetId(nextPrimaryAssetId);
+          setRelationships((currentRelationships) => ({
+            ...currentRelationships,
+            ...(nextPrimaryAssetId ? { [nextPrimaryAssetId]: 'primary' as AssetGroupRelationship } : {}),
+          }));
         }
         return next;
+      }
+
+      if (!primaryAssetId) {
+        setPrimaryAssetId(asset.id);
+        setRelationships((currentRelationships) => ({
+          ...currentRelationships,
+          [asset.id]: 'primary',
+        }));
       }
 
       return [...current, asset.id];
@@ -371,7 +386,7 @@ export default function AssetGroupManagerModal({
 
     void onSave({
       groupId: group?.id,
-      registerId: anchorAsset?.registerId ?? '',
+      registerId: group?.registerId ?? anchorAsset?.registerId ?? selectedAssets[0]?.registerId ?? null,
       name: name.trim(),
       valueMode,
       primaryAssetId,
@@ -718,7 +733,7 @@ export default function AssetGroupManagerModal({
                       return (
                         <div className={selected ? styles.assetRowSelected : styles.assetRow} key={asset.id}>
                           <label>
-                            <input type="checkbox" checked={selected} disabled={unavailable || asset.id === anchorAsset.id} onChange={() => toggleAsset(asset)} />
+                            <input type="checkbox" checked={selected} disabled={unavailable || asset.id === anchorAsset?.id} onChange={() => toggleAsset(asset)} />
                             <span>
                               <strong>{asset.title}</strong>
                               <small>{unavailable
