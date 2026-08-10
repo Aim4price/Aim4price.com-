@@ -24,7 +24,16 @@ type Asset = {
 type ApiResponse = {
   ok: boolean;
   items?: Asset[];
+  groups?: AssetGroupSummary[];
   error?: string;
+};
+
+type AssetGroupSummary = {
+  id: string;
+  name: string;
+  primaryAssetId: string;
+  memberAssetIds: string[];
+  memberCount: number;
 };
 
 type OwnerAssetApiResponse = {
@@ -84,6 +93,9 @@ export default function OwnerAssetsClient({
 }) {
   const [query, setQuery] = useState(initialQuery);
   const [items, setItems] = useState<Asset[]>([]);
+  const [groups, setGroups] = useState<AssetGroupSummary[]>([]);
+  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
+  const [showAllAssets, setShowAllAssets] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [actionError, setActionError] = useState('');
@@ -101,6 +113,25 @@ export default function OwnerAssetsClient({
       return terms.every((term) => haystack.includes(term)) || Boolean(compactQuery && compactHaystack.includes(compactQuery));
     });
   }, [items, query]);
+
+  const selectedGroup = useMemo(
+    () => groups.find((group) => group.id === selectedGroupId) ?? null,
+    [groups, selectedGroupId],
+  );
+  const groupByAssetId = useMemo(() => new Map(
+    groups.flatMap((group) => group.memberAssetIds.map((assetId) => [assetId, group] as const)),
+  ), [groups]);
+  const selectedGroupAssetIds = useMemo(
+    () => new Set(selectedGroup?.memberAssetIds ?? []),
+    [selectedGroup],
+  );
+  const hasSearch = Boolean(query.trim());
+  const directoryItems = useMemo(() => {
+    if (hasSearch || showAllAssets || !groups.length) return filteredItems;
+    if (selectedGroup) return filteredItems.filter((asset) => selectedGroupAssetIds.has(asset.id));
+    return filteredItems.filter((asset) => !groupByAssetId.has(asset.id));
+  }, [filteredItems, groupByAssetId, groups.length, hasSearch, selectedGroup, selectedGroupAssetIds, showAllAssets]);
+  const showDirectoryHome = groups.length > 0 && !hasSearch && !selectedGroup && !showAllAssets;
 
   useEffect(() => {
     const controller = new AbortController();
@@ -123,6 +154,7 @@ export default function OwnerAssetsClient({
           throw new Error(payload?.error || 'Failed to load your assets.');
         }
         setItems(payload.items ?? []);
+        setGroups(payload.groups ?? []);
       } catch (cause) {
         if (!controller.signal.aborted) {
           setError(cause instanceof Error ? cause.message : 'Failed to load your assets.');
@@ -170,6 +202,57 @@ export default function OwnerAssetsClient({
     }
   }
 
+  function returnToDirectory() {
+    setSelectedGroupId(null);
+    setShowAllAssets(false);
+  }
+
+  function renderAssetCard(asset: Asset) {
+    const assetGroup = groupByAssetId.get(asset.id);
+    return (
+      <article key={asset.id} className={styles.managerAssetCard}>
+        <h2><BalancedHeadingText text={asset.title} /></h2>
+        {hasSearch && assetGroup ? (
+          <p className={styles.assetDirectoryBreadcrumb}>Umbrella: {assetGroup.name}</p>
+        ) : null}
+
+        <div className={`${styles.managerAssetMetaGrid} ${styles.ownerAssetMetaStack}`}>
+          <div>
+            <span>Serial</span>
+            <strong>{serialDisplayText(asset)}</strong>
+          </div>
+          <div>
+            <span>Year</span>
+            <strong>{yearDisplayText(asset)}</strong>
+          </div>
+          <div>
+            <span>Usage</span>
+            <strong>{usageDisplayText(asset)}</strong>
+          </div>
+        </div>
+
+        {mode === 'maintenance' ? (
+          <button
+            type="button"
+            className={`${styles.assetMirrorAction} ${styles.assetMirrorManageAction} ${styles.ownerAssetOpenButton}`}
+            onClick={() => void handleOpenMaintenance(asset)}
+            disabled={openingAssetId !== null}
+          >
+            {openingAssetId === asset.id ? 'Opening…' : 'Record work'}
+          </button>
+        ) : (
+          <Link
+            className={`${styles.assetMirrorAction} ${styles.assetMirrorManageAction} ${styles.ownerAssetOpenButton}`}
+            href={`/owner-app/assets/${encodeURIComponent(asset.id)}`}
+            prefetch={false}
+          >
+            Open
+          </Link>
+        )}
+      </article>
+    );
+  }
+
   return (
     <div className={styles.wideContent}>
       <section className={styles.assetListToolbar}>
@@ -190,6 +273,16 @@ export default function OwnerAssetsClient({
         ) : null}
       </section>
 
+      {!loading && !error && groups.length > 0 && !hasSearch && (selectedGroup || showAllAssets) ? (
+        <section className={styles.assetDirectoryNav} aria-label="Asset directory navigation">
+          <button type="button" onClick={returnToDirectory}>Back to umbrellas</button>
+          <div>
+            <span>{selectedGroup ? 'Umbrella' : 'My Assets'}</span>
+            <strong>{selectedGroup?.name || 'All assets'}</strong>
+          </div>
+        </section>
+      ) : null}
+
       {error ? <div className={styles.errorNotice}>{error}</div> : null}
       {actionError ? <div className={styles.errorNotice}>{actionError}</div> : null}
       {loading ? <div className={styles.loading}>Loading your assets…</div> : null}
@@ -197,47 +290,58 @@ export default function OwnerAssetsClient({
       {!loading && !error && items.length > 0 && !filteredItems.length ? <div className={styles.empty}>No assets match this search.</div> : null}
 
       {!loading && !error ? (
-        <section className={styles.managerAssetList} aria-label={mode === 'maintenance' ? 'Assets available for maintenance' : 'Owner assets'}>
-          {filteredItems.map((asset) => (
-            <article key={asset.id} className={styles.managerAssetCard}>
-              <h2><BalancedHeadingText text={asset.title} /></h2>
-
-              <div className={`${styles.managerAssetMetaGrid} ${styles.ownerAssetMetaStack}`}>
-                <div>
-                  <span>Serial</span>
-                  <strong>{serialDisplayText(asset)}</strong>
-                </div>
-                <div>
-                  <span>Year</span>
-                  <strong>{yearDisplayText(asset)}</strong>
-                </div>
-                <div>
-                  <span>Usage</span>
-                  <strong>{usageDisplayText(asset)}</strong>
-                </div>
+        <div className={styles.assetDirectory}>
+          {showDirectoryHome ? (
+            <section className={styles.assetDirectorySection} aria-labelledby="owner-umbrella-heading">
+              <div className={styles.assetDirectoryHeading}>
+                <span>Organised assets</span>
+                <h2 id="owner-umbrella-heading">Umbrellas</h2>
               </div>
+              <div className={styles.managerAssetList}>
+                {groups.map((group) => (
+                  <article key={group.id} className={`${styles.managerAssetCard} ${styles.assetDirectoryUmbrellaCard}`}>
+                    <div className={styles.assetDirectoryUmbrellaIcon} aria-hidden="true">☂</div>
+                    <h2><BalancedHeadingText text={group.name} /></h2>
+                    <p>{group.memberCount} linked {group.memberCount === 1 ? 'asset' : 'assets'}</p>
+                    <button
+                      type="button"
+                      className={`${styles.assetMirrorAction} ${styles.assetMirrorManageAction} ${styles.ownerAssetOpenButton}`}
+                      onClick={() => setSelectedGroupId(group.id)}
+                    >
+                      Open umbrella
+                    </button>
+                  </article>
+                ))}
+                <article className={`${styles.managerAssetCard} ${styles.assetDirectoryAllCard}`}>
+                  <div className={styles.assetDirectoryUmbrellaIcon} aria-hidden="true">▦</div>
+                  <h2>All assets</h2>
+                  <p>View every physical asset in one list.</p>
+                  <button
+                    type="button"
+                    className={`${styles.assetMirrorAction} ${styles.assetMirrorManageAction} ${styles.ownerAssetOpenButton}`}
+                    onClick={() => setShowAllAssets(true)}
+                  >
+                    View all assets
+                  </button>
+                </article>
+              </div>
+            </section>
+          ) : null}
 
-              {mode === 'maintenance' ? (
-                <button
-                  type="button"
-                  className={`${styles.assetMirrorAction} ${styles.assetMirrorManageAction} ${styles.ownerAssetOpenButton}`}
-                  onClick={() => void handleOpenMaintenance(asset)}
-                  disabled={openingAssetId !== null}
-                >
-                  {openingAssetId === asset.id ? 'Opening…' : 'Record work'}
-                </button>
-              ) : (
-                <Link
-                  className={`${styles.assetMirrorAction} ${styles.assetMirrorManageAction} ${styles.ownerAssetOpenButton}`}
-                  href={`/owner-app/assets/${encodeURIComponent(asset.id)}`}
-                  prefetch={false}
-                >
-                  Open
-                </Link>
-              )}
-            </article>
-          ))}
-        </section>
+          {directoryItems.length ? (
+            <section className={styles.assetDirectorySection} aria-label={mode === 'maintenance' ? 'Assets available for maintenance' : 'Owner assets'}>
+              {showDirectoryHome ? (
+                <div className={styles.assetDirectoryHeading}>
+                  <span>Not inside an umbrella</span>
+                  <h2>Other assets</h2>
+                </div>
+              ) : null}
+              <div className={styles.managerAssetList}>
+                {directoryItems.map(renderAssetCard)}
+              </div>
+            </section>
+          ) : null}
+        </div>
       ) : null}
 
       {locationGate ? (
