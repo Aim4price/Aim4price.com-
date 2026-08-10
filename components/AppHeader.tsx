@@ -923,7 +923,12 @@ export default function AppHeader({
     () => resolveActiveNavKey(pathname, mobileNavItems, active),
     [active, mobileNavItems, pathname],
   );
-  const navWindowSize = isAccountantWorkspace ? navItems.length : NAV_WINDOW_SIZE;
+  const [usesCompactNavWindow, setUsesCompactNavWindow] = useState(false);
+  const navWindowSize = usesCompactNavWindow
+    ? Math.min(2, navItems.length)
+    : isAccountantWorkspace
+      ? navItems.length
+      : NAV_WINDOW_SIZE;
   const [navWindowStart, setNavWindowStart] = useState(0);
   const navMaxWindowStart = Math.max(0, navItems.length - navWindowSize);
   const showNavWindowControls = navItems.length > navWindowSize;
@@ -971,6 +976,15 @@ export default function AppHeader({
     ? Math.min(activeNotificationPage * NOTIFICATIONS_PER_PAGE, displayNotificationCount)
     : 0;
   const hasNotificationPages = displayNotificationCount > NOTIFICATIONS_PER_PAGE;
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(max-width: 760px)');
+    const syncCompactNavigation = () => setUsesCompactNavWindow(mediaQuery.matches);
+
+    syncCompactNavigation();
+    mediaQuery.addEventListener('change', syncCompactNavigation);
+    return () => mediaQuery.removeEventListener('change', syncCompactNavigation);
+  }, []);
 
   useEffect(() => {
     setNotificationPage((current) => Math.min(current, notificationPageCount));
