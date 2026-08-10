@@ -1,4 +1,5 @@
-import { requireOwnerAppPageAccess } from '../../../../../lib/owner-app-access';
+import { notFound } from 'next/navigation';
+import { ownerAppCanAccessAsset, requireOwnerAppPageAccess } from '../../../../../lib/owner-app-access';
 import OwnerAppNav from '../../../owner-app-nav';
 import styles from '../../../owner-app.module.css';
 import OwnerAssetDetailClient from '../owner-asset-detail-client';
@@ -7,7 +8,8 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 export default async function OwnerAssetManagePage({ params }: { params: { assetId: string } }) {
-  await requireOwnerAppPageAccess();
+  const access = await requireOwnerAppPageAccess();
+  if (!ownerAppCanAccessAsset(access, params.assetId)) notFound();
   const assetHref = `/owner-app/assets/${encodeURIComponent(params.assetId)}`;
 
   return (
