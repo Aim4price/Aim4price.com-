@@ -35,7 +35,7 @@
   --action-blue-border: #7eb4df;
   --action-blue-border-hover: #558fc6;
   min-height: 100vh;
-  background: linear-gradient(180deg, #f5f8f8 0%, #edf3f4 100%);
+  background: transparent;
   color: var(--text);
 }
 

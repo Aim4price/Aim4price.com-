@@ -7,6 +7,10 @@ const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf
 const component = read('components/AppPatternBackground.tsx');
 const styles = read('components/AppPatternBackground.module.css');
 const rootLayout = read('app/layout.tsx');
+const assetRegisterStyles = [
+  read('app/asset-register/page.module.css'),
+  read('app/asset-registers/page.module.css'),
+];
 const layouts = [
   read('app/owner-app/layout.tsx'),
   read('app/dealer/layout.tsx'),
@@ -33,6 +37,13 @@ test('the component renders the complete minimal arc composition', () => {
   assert.match(component, /data-app-pattern="minimal-arc"/);
   assert.doesNotMatch(component, /\.(?:png|jpe?g|webp|gif)/i);
   assert.doesNotMatch(styles, /url\(/i);
+});
+
+test('the Asset Register keeps the shared Minimal Arc Pattern visible', () => {
+  for (const assetRegisterStyle of assetRegisterStyles) {
+    assert.match(assetRegisterStyle, /\.page\s*\{[^}]*background:\s*transparent;/s);
+    assert.doesNotMatch(assetRegisterStyle, /\.page\s*\{[^}]*background:\s*linear-gradient/s);
+  }
 });
 
 test('the background is responsive, interaction-safe, and uses the Aim4price palette', () => {
