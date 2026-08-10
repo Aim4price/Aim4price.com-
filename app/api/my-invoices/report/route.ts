@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAccountProfile } from '../../../../lib/account-profile';
 import { getAssetRegisterReportLogoUrl } from '../../../../lib/asset-registers';
-import { listMyInvoicesData, type MyInvoiceAssetOption, type MyInvoiceListFilters } from '../../../../lib/my-invoices';
+import { calculateMyInvoiceSummary, listMyInvoicesData, type MyInvoiceAssetOption, type MyInvoiceListFilters } from '../../../../lib/my-invoices';
 import {
   buildMyInvoicesOwnerDetails,
   buildMyInvoicesReportHtml,
@@ -14,6 +14,7 @@ import {
 import { createXlsxWorkbook } from '../../../../lib/simple-xlsx';
 import { resolveReportLogoUrlForHtml } from '../../../../lib/report-logo';
 import { getDealerTrackedAsset } from '../../../../lib/dealer-maintenance-tracker';
+import { getAssetGroupById } from '../../../../lib/asset-groups';
 import { filterCostLedgerForWorkspace, resolveOwnerWorkspaceContext } from '../../../../lib/owner-workspace-access';
 
 export const runtime = 'nodejs';
@@ -125,6 +126,7 @@ export async function GET(request: NextRequest) {
 
   try {
     const filters = parseFilters(request);
+    const groupId = String(request.nextUrl.searchParams.get('groupId') ?? '').trim();
     const dealerAccessId = String(request.nextUrl.searchParams.get('accessId') ?? '').trim();
     let reportOwnerUserId = workspace.ownerUserId;
     let ownerFallbackUser: { name?: unknown; email?: unknown } = workspace.accountantAccess
@@ -132,6 +134,9 @@ export async function GET(request: NextRequest) {
       : { name: workspace.actorName, email: workspace.actorEmail };
 
     if (dealerAccessId) {
+      if (groupId) {
+        return NextResponse.json({ ok: false, error: 'Dealer report access supports one asset at a time.' }, { status: 400 });
+      }
       if (workspace.accountantAccess) {
         return NextResponse.json({ ok: false, error: 'Dealer report access cannot be combined with an accountant workspace.' }, { status: 400 });
       }
@@ -152,6 +157,13 @@ export async function GET(request: NextRequest) {
       };
     }
 
+    const group = groupId ? await getAssetGroupById(reportOwnerUserId, groupId) : null;
+    if (groupId && !group) {
+      return NextResponse.json({ ok: false, error: 'Umbrella not found.' }, { status: 404 });
+    }
+
+    if (group) filters.assetId = null;
+
     const ownerAppMode = request.nextUrl.searchParams.get('source') === 'owner-app';
     const format = ownerAppMode ? 'pdf' : parseFormat(request.nextUrl.searchParams.get('format'));
     const [unfilteredData, profile, rawLogoUrl] = await Promise.all([
@@ -163,20 +175,31 @@ export async function GET(request: NextRequest) {
       }),
       getAssetRegisterReportLogoUrl(reportOwnerUserId),
     ]);
-    const data = await filterCostLedgerForWorkspace(workspace, unfilteredData);
+    const workspaceData = await filterCostLedgerForWorkspace(workspace, unfilteredData);
+    const groupMemberIds = new Set(group?.members.map((member) => member.assetId) ?? []);
+    const data = group
+      ? {
+          assets: workspaceData.assets.filter((asset) => groupMemberIds.has(asset.id)),
+          invoices: workspaceData.invoices.filter((invoice) => groupMemberIds.has(invoice.assetId)),
+          summary: calculateMyInvoiceSummary(
+            workspaceData.invoices.filter((invoice) => groupMemberIds.has(invoice.assetId)),
+          ),
+        }
+      : workspaceData;
     const logoUrl = await resolveReportLogoUrlForHtml(rawLogoUrl, request.url);
 
-    const selectedAsset = findSelectedAsset(data.assets, filters);
+    const selectedAsset = group ? null : findSelectedAsset(data.assets, filters);
     const ownerDetails = buildMyInvoicesOwnerDetails(profile, ownerFallbackUser);
+    const assetLabel = group?.name ?? selectedAsset?.title ?? 'All selected assets';
     const options = {
-      title: REPORT_NAME,
-      subtitle: 'Aim4price asset register',
+      title: group ? `${group.name} - ${REPORT_NAME}` : REPORT_NAME,
+      subtitle: group ? 'Aim4price umbrella report' : 'Aim4price asset register',
       generatedAt: formatGeneratedDate(),
       ownerEmail: ownerDetails.businessEmail || String(ownerFallbackUser.email ?? ''),
       ownerDetails,
       logoUrl,
       dateRangeLabel: dateRangeLabel(filters),
-      assetLabel: selectedAsset ? selectedAsset.title : 'All selected assets',
+      assetLabel,
       selectedAsset,
       summary: data.summary,
       invoices: data.invoices,
@@ -186,9 +209,11 @@ export async function GET(request: NextRequest) {
     };
 
     const extension = format === 'xlsx' ? 'xlsx' : format === 'csv' ? 'csv' : 'html';
-    const filename = ownerAppMode
-      ? `${slugify(options.assetLabel)}-cost-of-ownership.${extension}`
-      : `${slugify(options.title)}.${extension}`;
+    const filename = group
+      ? `${slugify(group.name)}-cost-of-ownership.${extension}`
+      : ownerAppMode
+        ? `${slugify(options.assetLabel)}-cost-of-ownership.${extension}`
+        : `${slugify(options.title)}.${extension}`;
 
     if (format === 'csv') {
       const settings = await getCostLedgerAccountingSettings(reportOwnerUserId);
