@@ -1573,24 +1573,33 @@ export async function listCompletedMaintenanceScanEventsForAssets(
   const assetIds = Array.from(new Set(assetIdsInput.map(asId).filter(Boolean)));
   if (!assetIds.length) return [];
 
-  await ensureFuelLedgerTables();
-
   const result = await getDb().query<
     ScanEventRow & { asset_id: string | number | null }
   >(
     `
-      ${assetMaintenanceStatusSelectSql(`where e.asset_id = any($1::uuid[])
-        and nullif(trim(coalesce(e.note, '')), '') is not null
+      select
+        e.id,
+        e.asset_id,
+        coalesce(to_jsonb(e)->>'operator_name', '') as operator_name,
+        nullif(to_jsonb(e)->>'hours', '') as hours,
+        null::numeric as asset_usage_reading,
+        coalesce(to_jsonb(e)->>'note', '') as note,
+        coalesce(to_jsonb(e)->'photo_urls', '[]'::jsonb) as photo_urls,
+        null::text as maintenance_noted_at,
+        e.created_at
+      from public.asset_scan_events e
+      where e.asset_id = any($1::uuid[])
+        and nullif(trim(coalesce(to_jsonb(e)->>'note', '')), '') is not null
         and (
-          lower(coalesce(e.note, '')) like 'checked%'
-          or lower(coalesce(e.note, '')) like 'serviced%'
-          or lower(coalesce(e.note, '')) like 'repaired%'
-          or lower(coalesce(e.note, '')) like '%checked items:%'
-          or lower(coalesce(e.note, '')) like '%work done:%'
-          or lower(coalesce(e.note, '')) like '%service items:%'
-          or lower(coalesce(e.note, '')) like '%serviced items:%'
-          or lower(coalesce(e.note, '')) like '%repair details:%'
-        )`)}
+          lower(coalesce(to_jsonb(e)->>'note', '')) like 'checked%'
+          or lower(coalesce(to_jsonb(e)->>'note', '')) like 'serviced%'
+          or lower(coalesce(to_jsonb(e)->>'note', '')) like 'repaired%'
+          or lower(coalesce(to_jsonb(e)->>'note', '')) like '%checked items:%'
+          or lower(coalesce(to_jsonb(e)->>'note', '')) like '%work done:%'
+          or lower(coalesce(to_jsonb(e)->>'note', '')) like '%service items:%'
+          or lower(coalesce(to_jsonb(e)->>'note', '')) like '%serviced items:%'
+          or lower(coalesce(to_jsonb(e)->>'note', '')) like '%repair details:%'
+        )
       order by e.created_at desc, e.id desc
     `,
     [assetIds],
