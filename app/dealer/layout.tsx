@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import type { ReactNode } from 'react';
 
-import AppPatternBackground from '../../components/AppPatternBackground';
 import DealerNav from './dealer-nav';
 import DealerSessionKeeper from './dealer-session-keeper';
 import styles from './dealer.module.css';
@@ -35,12 +34,13 @@ export const viewport: Viewport = {
 
 export default function DealerLayout({ children }: { children: ReactNode }) {
   return (
-    <AppPatternBackground>
+    <>
       <DealerSessionKeeper />
       <div className={styles.dealerLayout}>
         <DealerNav />
         <div className={styles.patternPageContent}>{children}</div>
       </div>
-    </AppPatternBackground>
+    </>
   );
 }
+

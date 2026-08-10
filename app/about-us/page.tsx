@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import AppHeader from "../../components/AppHeader";
-import AppPatternBackground from "../../components/AppPatternBackground";
 import { redirectAdminToAdmin } from "../../lib/account-access";
 import styles from "./about-us.module.css";
 
@@ -54,7 +53,7 @@ export default async function AboutUsPage() {
   await redirectAdminToAdmin();
 
   return (
-    <AppPatternBackground>
+    <>
       <main className={styles.page}>
         <AppHeader active="none" />
 
@@ -229,6 +228,7 @@ export default async function AboutUsPage() {
           </div>
         </section>
       </main>
-    </AppPatternBackground>
+    </>
   );
 }
+

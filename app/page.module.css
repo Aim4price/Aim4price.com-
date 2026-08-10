@@ -249,6 +249,22 @@
   align-items: center;
   justify-content: center;
   min-width: 0;
+  border-radius: 50%;
+  color: inherit;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    transform 180ms ease,
+    opacity 180ms ease;
+}
+
+.heroVisual:hover {
+  transform: translateY(-3px);
+}
+
+.heroVisual:focus-visible {
+  outline: 3px solid rgba(255, 255, 255, 0.48);
+  outline-offset: 7px;
 }
 
 .heroLogo {
@@ -256,6 +272,11 @@
   height: auto;
   object-fit: contain;
   filter: drop-shadow(0 24px 34px rgba(0, 0, 0, 0.24));
+  transition: transform 180ms ease;
+}
+
+.heroVisual:hover .heroLogo {
+  transform: scale(1.025);
 }
 
 .productSection {
@@ -686,7 +707,9 @@
   .outlineCta,
   .marketLink,
   .productCard,
-  .productAction::after {
+  .productAction::after,
+  .heroVisual,
+  .heroLogo {
     transition: none;
   }
 
@@ -695,7 +718,9 @@
   .lightCta:hover,
   .outlineCta:hover,
   .marketLink:hover,
-  .productCard:hover {
+  .productCard:hover,
+  .heroVisual:hover,
+  .heroVisual:hover .heroLogo {
     transform: none;
   }
 
@@ -740,7 +765,7 @@
     bottom: clamp(1.5rem, 5vw, 3rem);
     width: clamp(9rem, 24vw, 13rem);
     opacity: 0.22;
-    pointer-events: none;
+    pointer-events: auto;
   }
 
   .heroLogo {
@@ -907,4 +932,5 @@
     white-space: normal;
   }
 }
+
 

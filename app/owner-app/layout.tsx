@@ -1,8 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import type { ReactNode } from 'react';
 
-import AppPatternBackground from '../../components/AppPatternBackground';
-
 export const metadata: Metadata = {
   applicationName: 'Aim4price Owner',
   title: 'Aim4price Owner',
@@ -27,5 +25,6 @@ export const viewport: Viewport = {
 };
 
 export default function OwnerAppLayout({ children }: { children: ReactNode }) {
-  return <AppPatternBackground>{children}</AppPatternBackground>;
+  return <>{children}</>;
 }
+

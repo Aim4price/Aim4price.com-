@@ -1,13 +1,24 @@
 .background {
   --aim4price-card-shadow: 0 10px 30px rgba(13, 62, 49, 0.08);
   position: relative;
+  flex: 1 0 auto;
+  width: 100%;
+  min-width: 0;
   min-height: 100vh;
   min-height: 100dvh;
-  overflow: hidden;
+  overflow: clip;
   isolation: isolate;
   background:
-    radial-gradient(circle at top left, rgba(169, 220, 196, 0.12), transparent 34%),
-    radial-gradient(circle at 92% 92%, rgba(169, 220, 196, 0.07), transparent 30%),
+    radial-gradient(
+      circle at top left,
+      rgba(169, 220, 196, 0.12),
+      transparent 34%
+    ),
+    radial-gradient(
+      circle at 92% 92%,
+      rgba(169, 220, 196, 0.07),
+      transparent 30%
+    ),
     linear-gradient(180deg, #fafdfb 0%, #f7faf8 45%, #f1f7f3 100%);
 }
 
@@ -29,6 +40,8 @@
 .content {
   position: relative;
   z-index: 1;
+  width: 100%;
+  min-width: 0;
   min-height: 100vh;
   min-height: 100dvh;
 }
@@ -36,6 +49,12 @@
 .content > * {
   background-color: transparent !important;
   background-image: none !important;
+}
+
+@supports not (overflow: clip) {
+  .background {
+    overflow: hidden;
+  }
 }
 
 .arcs {

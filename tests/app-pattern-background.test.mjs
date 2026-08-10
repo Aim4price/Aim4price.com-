@@ -6,16 +6,20 @@ const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf
 
 const component = read('components/AppPatternBackground.tsx');
 const styles = read('components/AppPatternBackground.module.css');
+const rootLayout = read('app/layout.tsx');
 const layouts = [
   read('app/owner-app/layout.tsx'),
   read('app/dealer/layout.tsx'),
   read('app/field-manager/layout.tsx'),
 ];
 
-test('all three role apps use the shared pattern component', () => {
+test('the root layout applies one shared pattern background across every page', () => {
+  assert.match(rootLayout, /import AppPatternBackground/);
+  assert.match(rootLayout, /<AppPatternBackground>{children}<\/AppPatternBackground>/);
+
   for (const layout of layouts) {
-    assert.match(layout, /import AppPatternBackground/);
-    assert.match(layout, /<AppPatternBackground>/);
+    assert.doesNotMatch(layout, /import AppPatternBackground/);
+    assert.doesNotMatch(layout, /<AppPatternBackground>/);
   }
 
   assert.match(layouts[1], /className={styles\.patternPageContent}/);
@@ -37,7 +41,9 @@ test('the background is responsive, interaction-safe, and uses the Aim4price pal
   }
   assert.match(styles, /\.decoration\s*{[^}]*position:\s*fixed/s);
   assert.match(styles, /pointer-events:\s*none/);
-  assert.match(styles, /overflow:\s*hidden/);
+  assert.match(styles, /overflow:\s*clip/);
+  assert.match(styles, /@supports not \(overflow: clip\)/);
+  assert.match(styles, /flex:\s*1 0 auto/);
   assert.match(styles, /min-height:\s*100dvh/);
   assert.match(styles, /env\(safe-area-inset-/);
   assert.match(styles, /@media \(max-width: 600px\)/);
