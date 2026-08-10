@@ -35751,7 +35751,7 @@ button.documentOpenLink {
 
 @media (max-width: 640px) {
   .page .assetGroupHeaderActions {
-    grid-template-columns: 1fr !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
   }
 }
 
@@ -35803,5 +35803,253 @@ button.documentOpenLink {
   .assetCardRowDragging,
   .assetGroupHeader {
     transition: none;
+  }
+}
+
+/* === Responsive foundation contract, August 2026 ===
+   These are the structural device states for the register. Component-specific
+   polish above remains intact; this final layer prevents legacy breakpoints
+   from producing contradictory widths or action layouts. */
+.page {
+  --register-inline-gutter: clamp(0.7rem, 2vw, 1.5rem);
+  --register-layout-gap: clamp(0.72rem, 1.4vw, 1rem);
+}
+
+.page,
+.shell,
+.registerPanel,
+.registerHeader,
+.toolbar,
+.toolbarActions,
+.assetList,
+.assetCardRow,
+.assetCard,
+.assetHeader,
+.assetTitleBlock,
+.assetHeaderAside,
+.assetHeaderActions,
+.assetGroupHeaderRow,
+.assetGroupHeader,
+.assetGroupIdentity,
+.assetGroupSummary,
+.assetGroupHeaderActions {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.shell {
+  width: min(calc(100% - (var(--register-inline-gutter) * 2)), 1320px);
+}
+
+.assetTitleBlock h2,
+.assetTitleBlock p,
+.assetGroupIdentity h2,
+.assetGroupIdentity p,
+.assetGroupPreview {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 1040px) {
+  .page .toolbar {
+    width: 100%;
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    align-items: stretch;
+    gap: var(--register-layout-gap) !important;
+  }
+
+  .page .searchWrap,
+  .page .toolbarActions {
+    width: 100%;
+  }
+
+  .page .toolbarActions {
+    min-width: 0;
+    display: grid !important;
+    grid-template-columns: repeat(auto-fit, minmax(min(9.5rem, 100%), 1fr)) !important;
+    gap: var(--register-layout-gap) !important;
+  }
+
+  .page .toolbarActions > .primaryButton,
+  .page .toolbarActions > .secondaryButton,
+  .page .toolbarActions > button {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+}
+
+@media (max-width: 900px) {
+  .page .assetHeader {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: var(--register-layout-gap) !important;
+  }
+
+  .page .assetHeaderAside,
+  .page .assetHeaderActions,
+  .page .assetHeaderActionsAccountant,
+  .page .assetGroupSummary,
+  .page .assetGroupHeaderActions {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+  }
+
+  .page .assetHeaderAside {
+    justify-items: stretch;
+  }
+
+  .page .valueBlock {
+    justify-items: end !important;
+    text-align: right !important;
+  }
+
+  .page .assetHeaderActions,
+  .page .assetHeaderActionsAccountant,
+  .page .assetGroupHeaderActions {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: clamp(0.42rem, 1.3vw, 0.65rem) !important;
+  }
+
+  .page .assetHeaderActions > *,
+  .page .assetGroupHeaderActions > * {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+  }
+
+  .page .assetGroupHeader {
+    align-items: stretch;
+  }
+
+  .page .assetGroupSummary {
+    justify-items: stretch;
+  }
+
+  .page .assetGroupValue {
+    justify-items: start;
+    text-align: left;
+  }
+}
+
+@media (max-width: 760px) {
+  .shell {
+    width: min(calc(100% - (var(--register-inline-gutter) * 2)), 48rem) !important;
+  }
+
+  .page .registerPanel {
+    padding: clamp(0.65rem, 2.6vw, 0.85rem) !important;
+  }
+
+  .page .assetCard {
+    padding: clamp(0.82rem, 2.8vw, 1rem) !important;
+  }
+
+  .page .assetHeaderActions,
+  .page .assetHeaderActionsAccountant,
+  .page .assetGroupHeaderActions {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+
+  .page .assetHeaderActions .cardOptionsButton,
+  .page .assetHeaderActions .cardViewDetailsButton,
+  .page .assetHeaderActions .cardManageButton,
+  .page .assetGroupHeaderActions .cardOptionsButton,
+  .page .assetGroupHeaderActions .cardViewDetailsButton,
+  .page .assetGroupHeaderActions .cardManageButton {
+    min-height: var(--tap-target-min, 44px) !important;
+    height: auto !important;
+    padding-inline: clamp(0.25rem, 1.5vw, 0.55rem) !important;
+    gap: clamp(0.2rem, 1vw, 0.42rem) !important;
+    font-size: clamp(0.7rem, 2.2vw, 0.86rem) !important;
+  }
+
+  .page .assetHeaderActions .buttonIcon,
+  .page .assetGroupHeaderActions .buttonIcon {
+    width: 0.92rem !important;
+    height: 0.92rem !important;
+  }
+
+  .page .assetHeaderActions > * > span,
+  .page .assetGroupHeaderActions > * > span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap !important;
+  }
+
+  .page .assetGroupHeader {
+    gap: 0.9rem;
+    padding: clamp(0.9rem, 3.5vw, 1.15rem);
+  }
+
+  .page .assetGroupIdentity {
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 0.75rem;
+  }
+
+  .page .assetGroupValue strong {
+    white-space: normal;
+  }
+
+  .modalOverlay {
+    align-items: center;
+    padding: max(0.5rem, env(safe-area-inset-top)) max(0.5rem, env(safe-area-inset-right)) max(0.5rem, env(safe-area-inset-bottom)) max(0.5rem, env(safe-area-inset-left));
+  }
+
+  .assetFormModal,
+  .exportModal,
+  .marketplaceModal,
+  .optionsModal,
+  .pricingResultModal,
+  .summaryModal,
+  .registerShareModal,
+  .assetReportModal,
+  .assetFuelReportModal,
+  .assetQuoteModal,
+  .projectionModal,
+  .addAssetDestinationModal {
+    width: min(100%, calc(100vw - 1rem)) !important;
+    max-height: calc(100dvh - 1rem) !important;
+    overscroll-behavior: contain;
+  }
+}
+
+@media (max-width: 560px) {
+  .page .toolbarActions {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .page .toolbarActions > .primaryButton,
+  .page .toolbarActions > .secondaryButton,
+  .page .toolbarActions > button {
+    min-height: 3.25rem !important;
+    height: auto !important;
+  }
+
+  .page .assetGroupIdentity {
+    grid-template-columns: 2.65rem minmax(0, 1fr);
+  }
+
+  .page .assetGroupUmbrella {
+    width: 2.65rem;
+    height: 2.65rem;
+  }
+
+  .page .assetHeaderActions,
+  .page .assetHeaderActionsAccountant,
+  .page .assetGroupHeaderActions {
+    gap: 0.32rem !important;
+  }
+
+  .page .assetHeaderActions .cardOptionsButton,
+  .page .assetHeaderActions .cardViewDetailsButton,
+  .page .assetHeaderActions .cardManageButton,
+  .page .assetGroupHeaderActions .cardOptionsButton,
+  .page .assetGroupHeaderActions .cardViewDetailsButton,
+  .page .assetGroupHeaderActions .cardManageButton {
+    font-size: clamp(0.66rem, 2.8vw, 0.78rem) !important;
   }
 }

@@ -2629,6 +2629,51 @@
   }
 }
 
+/* Fluid tablet foundation: retain the app presentation while avoiding a hard
+   jump in gutters and card widths between large phones and desktop tablets. */
+@media (min-width: 600px) and (max-width: 960px) {
+  .page,
+  .module {
+    --owner-page-gutter: clamp(32px, 6vw, 48px);
+    --owner-content-gap: clamp(16px, 2.4vw, 20px);
+  }
+
+  .assetsHeader,
+  .content,
+  .wideContent,
+  .homeContent,
+  .notificationContent,
+  .overviewContent,
+  .assetListToolbar,
+  .managerAssetList,
+  .assetDirectory,
+  .assetDirectoryNav {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .assetsHeaderPair {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .assetsHeaderPair .navButton,
+  .assetsHeaderPair .logoutButton {
+    width: 100%;
+    max-width: none;
+  }
+
+  .homeLauncher,
+  .managerAssetList,
+  .notificationList {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .homeLaunchCard {
+    padding-inline: clamp(20px, 5vw, 52px);
+  }
+}
+
 /* Final phone spacing shared by the Owner App's everyday screens. */
 @media (max-width: 599px) {
   .page,

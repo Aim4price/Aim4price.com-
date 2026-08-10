@@ -2131,6 +2131,39 @@
   }
 }
 
+/* Fluid tablet foundation for the existing Field Manager app. This improves
+   the current mobile/tablet experience without introducing a desktop mode. */
+@media (min-width: 600px) and (max-width: 960px) {
+  .mobilePage {
+    --field-page-gutter: clamp(32px, 6vw, 48px);
+  }
+
+  .loginShell,
+  .assetsShell,
+  .overviewShell,
+  .maintenanceShell {
+    min-width: 0;
+    max-width: calc(100% - var(--field-page-gutter));
+  }
+
+  .homeActionGrid,
+  .assetList,
+  .overviewList {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .homeActionGrid,
+  .assetList,
+  .overviewList {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .homeActionCard {
+    padding-inline: clamp(20px, 5vw, 52px);
+  }
+}
+
 /* Final phone spacing: consistent breathing room without adding extra scrolling. */
 @media (max-width: 599px) {
   .mobilePage {

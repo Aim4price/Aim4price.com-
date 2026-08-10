@@ -15,6 +15,9 @@
   --shell-max: 1180px;
   --shell-narrow-max: 1040px;
   --shell-gutter: 1.5rem;
+  --layout-section-gap: clamp(0.9rem, 1.4vw, 1.35rem);
+  --layout-card-gap: clamp(0.7rem, 1.1vw, 1rem);
+  --control-min-height: 44px;
   --shell-width: min(calc(100% - (var(--shell-gutter) * 2)), var(--shell-max));
   --shell-narrow-width: min(calc(100% - (var(--shell-gutter) * 2)), var(--shell-narrow-max));
   color-scheme: light;
@@ -34,6 +37,8 @@ body {
 html {
   scroll-behavior: smooth;
   scrollbar-gutter: stable;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 
 body {
