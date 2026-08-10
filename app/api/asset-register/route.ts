@@ -1171,7 +1171,7 @@ export async function DELETE(request: NextRequest) {
       );
     }
     return NextResponse.json(
-      { ok: false, error: formatUnknownError(error, 'Failed to delete asset.') },
+      { ok: false, error: 'The asset could not be archived. Please try again.' },
       { status: 500 },
     );
   }
