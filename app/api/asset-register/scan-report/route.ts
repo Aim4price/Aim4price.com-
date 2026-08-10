@@ -15,6 +15,7 @@ import {
 import { createXlsxWorkbook, type XlsxCellStyle, type XlsxCellValue, type XlsxPrimitiveCellValue, type XlsxSheet } from '../../../../lib/simple-xlsx';
 import { resolveReportLogoUrlForHtml } from '../../../../lib/report-logo';
 import { getDealerTrackedAsset } from '../../../../lib/dealer-maintenance-tracker';
+import { getAssetGroupById } from '../../../../lib/asset-groups';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -3455,6 +3456,7 @@ export async function GET(request: NextRequest) {
   }
 
   const assetId = asText(request.nextUrl.searchParams.get('assetId'));
+  const groupId = asText(request.nextUrl.searchParams.get('groupId'));
   const dealerAccessId = asText(request.nextUrl.searchParams.get('accessId'));
   const reportKind = normalizeReportKind(
     request.nextUrl.searchParams.get('report') ?? request.nextUrl.searchParams.get('reportType') ?? request.nextUrl.searchParams.get('type'),
@@ -3469,8 +3471,12 @@ export async function GET(request: NextRequest) {
   const reportMonth = reportYear ? parseReportMonth(asText(request.nextUrl.searchParams.get('month'))) : null;
   const reportDateRange = buildReportDateRange(reportYear, reportMonth);
 
-  if (!assetId) {
-    return NextResponse.json({ ok: false, error: 'Asset ID is required.' }, { status: 400 });
+  if (!assetId && !groupId) {
+    return NextResponse.json({ ok: false, error: 'Asset or umbrella ID is required.' }, { status: 400 });
+  }
+
+  if (assetId && groupId) {
+    return NextResponse.json({ ok: false, error: 'Choose either an asset or an umbrella report.' }, { status: 400 });
   }
 
   if (!reportKind) {
@@ -3481,8 +3487,8 @@ export async function GET(request: NextRequest) {
   let isDealerMaintenanceReport = false;
 
   if (dealerAccessId) {
-    if (reportKind !== 'maintenance' || !UUID_PATTERN.test(dealerAccessId)) {
-      return NextResponse.json({ ok: false, error: 'Dealer tracking access only supports maintenance reports.' }, { status: 403 });
+    if (groupId || reportKind !== 'maintenance' || !UUID_PATTERN.test(dealerAccessId)) {
+      return NextResponse.json({ ok: false, error: 'Dealer tracking access only supports maintenance reports for one asset.' }, { status: 403 });
     }
 
     const trackedAsset = await getDealerTrackedAsset(session.user.id, dealerAccessId);
@@ -3498,18 +3504,66 @@ export async function GET(request: NextRequest) {
     isDealerMaintenanceReport = true;
   }
 
-  const asset = await getAssetRegisterItemById(ownerUserId, assetId);
+  let groupName = '';
+  let reportAssets: AssetRegisterItem[] = [];
 
-  if (!asset) {
-    return NextResponse.json({ ok: false, error: 'Asset not found.' }, { status: 404 });
-  }
+  if (groupId) {
+    const group = await getAssetGroupById(ownerUserId, groupId);
+    if (!group) {
+      return NextResponse.json({ ok: false, error: 'Umbrella not found.' }, { status: 404 });
+    }
 
-  if (isPropertyLikeAsset(asset) && isPropertyBlockedReportKind(reportKind)) {
-    return NextResponse.json(
-      { ok: false, error: 'Fuel and depreciation reports are not available for property, land or building assets.' },
-      { status: 400 },
+    groupName = group.name;
+    const resolvedAssets = await Promise.all(
+      group.members.map((member) => getAssetRegisterItemById(ownerUserId, member.assetId)),
     );
+    reportAssets = resolvedAssets.filter((entry): entry is AssetRegisterItem => Boolean(entry));
+
+    if (isPropertyBlockedReportKind(reportKind)) {
+      reportAssets = reportAssets.filter((entry) => !isPropertyLikeAsset(entry));
+    }
+
+    if (!reportAssets.length) {
+      return NextResponse.json(
+        { ok: false, error: isPropertyBlockedReportKind(reportKind)
+          ? 'This umbrella has no assets eligible for fuel or depreciation reports.'
+          : 'This umbrella has no available assets.' },
+        { status: 400 },
+      );
+    }
+  } else {
+    const singleAsset = await getAssetRegisterItemById(ownerUserId, assetId);
+    if (!singleAsset) {
+      return NextResponse.json({ ok: false, error: 'Asset not found.' }, { status: 404 });
+    }
+
+    if (isPropertyLikeAsset(singleAsset) && isPropertyBlockedReportKind(reportKind)) {
+      return NextResponse.json(
+        { ok: false, error: 'Fuel and depreciation reports are not available for property, land or building assets.' },
+        { status: 400 },
+      );
+    }
+
+    reportAssets = [singleAsset];
   }
+
+  const primaryAsset = reportAssets[0];
+  const combinedValue = reportAssets.reduce(
+    (sum, entry) => sum + Math.round(Number(entry.selectedValueExVat ?? entry.value) || 0),
+    0,
+  );
+  const asset: AssetRegisterItem = groupId
+    ? {
+        ...primaryAsset,
+        id: groupId,
+        title: groupName,
+        value: combinedValue,
+        selectedValueExVat: combinedValue,
+        plateLabel: '',
+        publicAssetCode: '',
+        serialNumber: '',
+      }
+    : primaryAsset;
 
   const ownerProfile = await getAccountProfile({
     id: ownerUserId,
@@ -3524,18 +3578,24 @@ export async function GET(request: NextRequest) {
     asset,
   );
   const generatedAt = formatDate(new Date().toISOString());
-  const rawLogoUrl = await getAssetRegisterReportLogoUrl(ownerUserId, asset.registerId).catch(() => '');
+  const rawLogoUrl = groupId
+    ? String(ownerProfile.logoUrl ?? '').trim()
+    : await getAssetRegisterReportLogoUrl(ownerUserId, asset.registerId).catch(() => '');
   const logoUrl = await resolveReportLogoUrlForHtml(rawLogoUrl, request.url);
-
-  const baseFileName = `${slugifyFileSegment(asset.title)}-${slugifyFileSegment(asset.plateLabel || asset.publicAssetCode || asset.id)}-${slugifyFileSegment(REPORT_LABELS[reportKind])}`;
+  const scopeLabel = groupId ? 'Umbrella' : asset.plateLabel || asset.publicAssetCode || asset.id;
+  const baseFileName = `${slugifyFileSegment(asset.title)}-${slugifyFileSegment(scopeLabel)}-${slugifyFileSegment(REPORT_LABELS[reportKind])}`;
 
   if (reportKind === 'depreciation') {
-    const logEntries = await listAssetDepreciationLogEntriesForAsset({
-      userId: ownerUserId,
-      assetId: asset.id,
-      fromIso: reportDateRange.fromIso,
-      toIso: reportDateRange.toIso,
-    });
+    const logEntries = (
+      await Promise.all(
+        reportAssets.map((entry) => listAssetDepreciationLogEntriesForAsset({
+          userId: ownerUserId,
+          assetId: entry.id,
+          fromIso: reportDateRange.fromIso,
+          toIso: reportDateRange.toIso,
+        })),
+      )
+    ).flat().sort((left, right) => String(right.capturedAtIso).localeCompare(String(left.capturedAtIso)));
     const logSummary = buildDepreciationLogSummary(logEntries, asset);
     const annualSummary = buildDepreciationAnnualSummary(logEntries);
 
@@ -3569,11 +3629,25 @@ export async function GET(request: NextRequest) {
     });
   }
 
-  const events = await listScanEventsForAsset(asset.id, 500, {
-    fromIso: reportDateRange.fromIso,
-    toIso: reportDateRange.toIso,
-    onlyFuel: reportKind === 'fuel',
-  });
+  const eventGroups = await Promise.all(
+    reportAssets.map(async (entry) => {
+      const sourceEvents = await listScanEventsForAsset(entry.id, 500, {
+        fromIso: reportDateRange.fromIso,
+        toIso: reportDateRange.toIso,
+        onlyFuel: reportKind === 'fuel',
+      });
+
+      if (!groupId) return sourceEvents;
+
+      return sourceEvents.map((event) => ({
+        ...event,
+        note: [`Asset: ${entry.title}`, normalizeSpaces(event.note)].filter(Boolean).join(' · '),
+      }));
+    }),
+  );
+  const events = eventGroups
+    .flat()
+    .sort((left, right) => String(right.createdAtIso).localeCompare(String(left.createdAtIso)));
 
   if (reportFormat === 'xlsx') {
     const workbook = createXlsxWorkbook(

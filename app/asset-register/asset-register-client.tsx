@@ -4,7 +4,11 @@ import Link from 'next/link';
 import { createPortal } from 'react-dom';
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type ChangeEvent, type DragEvent as ReactDragEvent, type FormEvent, type KeyboardEvent as ReactKeyboardEvent } from 'react';
 import AppHeader from '../../components/AppHeader';
-import AssetGroupManagerModal from '../../components/asset-register/AssetGroupManagerModal';
+import AssetGroupManagerModal, {
+  type AssetGroupReportFilters,
+  type AssetGroupReportFormat,
+  type AssetGroupReportKind,
+} from '../../components/asset-register/AssetGroupManagerModal';
 import AccountantAssetManageModal from '../../components/AccountantAssetManageModal';
 import AccountantRegisterReportsModal from '../../components/AccountantRegisterReportsModal';
 import DealerAssetShareSelection from '../../components/DealerAssetShareSelection';
@@ -5406,6 +5410,41 @@ function buildAssetOwnershipReportUrl(
     if (filters.month && filters.month !== 'all') {
       searchParams.set('month', filters.month);
     }
+  }
+
+  return `/api/my-invoices/report?${searchParams.toString()}`;
+}
+
+function buildAssetGroupTimelineReportUrl(
+  group: AssetGroup,
+  reportKind: Exclude<AssetGroupReportKind, 'valuation' | 'ownership'>,
+  filters: AssetGroupReportFilters,
+  format: AssetGroupReportFormat,
+): string {
+  const searchParams = new URLSearchParams({ groupId: group.id, report: reportKind, format });
+
+  if (filters.year && filters.year !== 'all') {
+    searchParams.set('year', filters.year);
+    if (filters.month && filters.month !== 'all') searchParams.set('month', filters.month);
+  }
+
+  if (reportKind === 'maintenance' && filters.maintenanceType && filters.maintenanceType !== 'all') {
+    searchParams.set('maintenanceType', filters.maintenanceType);
+  }
+
+  return `/api/asset-register/scan-report?${searchParams.toString()}`;
+}
+
+function buildAssetGroupOwnershipReportUrl(
+  group: AssetGroup,
+  filters: AssetGroupReportFilters,
+  format: AssetGroupReportFormat,
+): string {
+  const searchParams = new URLSearchParams({ groupId: group.id, format });
+
+  if (filters.year && filters.year !== 'all') {
+    searchParams.set('year', filters.year);
+    if (filters.month && filters.month !== 'all') searchParams.set('month', filters.month);
   }
 
   return `/api/my-invoices/report?${searchParams.toString()}`;
@@ -13104,8 +13143,10 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     const ownerName = buildOwnerName(profile);
     const ownerEmail = profile?.marketplaceEmail?.trim() || '—';
     const ownerPhone = profile?.phone?.trim() || '—';
+    const accountLogoUrl = toAbsoluteUrl(accountProfile?.logoUrl || profile?.logoUrl || '') ?? '';
+    const savedReportLogoUrl = getRegisterReportLogoUrl(activeRegister) || accountLogoUrl;
     const [reportLogoUrl, reportPhotoUrlByAssetId] = await Promise.all([
-      preparePrintableImageUrl(getRegisterReportLogoUrl(activeRegister), {
+      preparePrintableImageUrl(savedReportLogoUrl, {
         maxDimension: PRINT_LOGO_MAX_DIMENSION,
         mimeType: 'image/png',
       }),
@@ -13113,7 +13154,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     ]);
 
     const didOpen = openAssetRegisterSummaryPrint({
-      logoUrl: reportLogoUrl ?? getRegisterReportLogoUrl(activeRegister),
+      logoUrl: reportLogoUrl ?? savedReportLogoUrl,
       generatedAt: formatDate(new Date().toISOString()),
       reportTitle: `${overrideEntityName.trim() || exportEntityName.trim() || activeRegister?.businessName || 'Asset Register'} - ${reportOption.label} Report`,
       reportSubtitle: 'Aim4price asset register',
@@ -13345,6 +13386,62 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
       setNotice({
         tone: 'error',
         message: error instanceof Error ? error.message : `Failed to export ${group.name} as an Excel file.`,
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  }
+
+  async function handleDownloadAssetGroupReport(
+    group: AssetGroup,
+    reportKind: AssetGroupReportKind,
+    format: AssetGroupReportFormat,
+    filters: AssetGroupReportFilters,
+  ) {
+    if (isExporting) return;
+
+    if (reportKind === 'valuation') {
+      await handleDownloadAssetGroupPdf(group);
+      return;
+    }
+
+    const reportLabel = reportKind === 'ownership'
+      ? 'Cost of Ownership report'
+      : reportKind === 'depreciation'
+        ? 'Depreciation log'
+        : reportKind === 'fuel'
+          ? 'Fuel report'
+          : 'Maintenance report';
+    const reportUrl = reportKind === 'ownership'
+      ? buildAssetGroupOwnershipReportUrl(group, filters, format)
+      : buildAssetGroupTimelineReportUrl(group, reportKind, filters, format);
+
+    setIsExporting(true);
+
+    try {
+      if (format === 'pdf') {
+        const opened = window.open(reportUrl, '_blank', 'noopener,noreferrer');
+        if (!opened) {
+          throw new Error(`Unable to open the ${reportLabel.toLowerCase()}. Please allow pop-ups and try again.`);
+        }
+        setNotice({ tone: 'success', message: `${group.name} ${reportLabel.toLowerCase()} opened in a new tab.` });
+        return;
+      }
+
+      const response = await fetch(reportUrl, { credentials: 'include', cache: 'no-store' });
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({})) as { error?: string };
+        throw new Error(data.error ?? `Failed to download the ${reportLabel.toLowerCase()} Excel file.`);
+      }
+
+      const blob = await response.blob();
+      const groupSlug = group.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'umbrella';
+      downloadBlob(blob, parseDownloadFileName(response, `${groupSlug}-${reportKind}-report.xlsx`));
+      setNotice({ tone: 'success', message: `${group.name} ${reportLabel.toLowerCase()} Excel downloaded.` });
+    } catch (error) {
+      setNotice({
+        tone: 'error',
+        message: error instanceof Error ? error.message : `Failed to prepare the ${reportLabel.toLowerCase()}.`,
       });
     } finally {
       setIsExporting(false);
@@ -19830,6 +19927,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
         onDelete={handleDeleteAssetGroup}
         onDownloadPdf={handleDownloadAssetGroupPdf}
         onDownloadXlsx={handleDownloadAssetGroupXlsx}
+        onDownloadReport={handleDownloadAssetGroupReport}
       />
 
       {isAccountantReportsOpen && accountantShareId && accountantAccess ? (
