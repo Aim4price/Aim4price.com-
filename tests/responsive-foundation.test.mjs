@@ -28,7 +28,19 @@ test('header keeps four desktop-style choices on tablets and a compact two-choic
   assert.match(headerClient, /window\.matchMedia\('\(max-width: 760px\)'\)/);
   assert.match(header, /@media \(max-width: 760px\)[\s\S]*?\.nav \{[\s\S]*?display: grid;[\s\S]*?\.navRail \{[\s\S]*?grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
   assert.match(header, /@media \(max-width: 760px\)[\s\S]*?\.mobileMenuButton \{[\s\S]*?display: none;[\s\S]*?\.accountMenu \{[\s\S]*?display: block/);
+  assert.match(headerClient, /!isLoadingSession && !session \? styles\.innerPublic/);
+  assert.match(header, /@media \(max-width: 760px\)[\s\S]*?\.innerPublic \.actionsRail \{[\s\S]*?grid-template-columns: minmax\(3\.5rem, 0\.72fr\) minmax\(7rem, 1\.28fr\)/);
+  assert.match(header, /\.innerPublic \.loginButton,[\s\S]*?\.innerPublic \.signupButton \{[\s\S]*?min-height: var\(--tap-target-min, 44px\)/);
   assert.match(header, /\.navWindowButton \{[\s\S]*?min-width: var\(--tap-target-min, 44px\)/);
+});
+
+test('home page keeps hero and footer calls to action usable at phone and tablet widths', async () => {
+  const home = await read('app/page.module.css');
+
+  assert.match(home, /Homepage responsive contract, August 2026/);
+  assert.match(home, /@media \(max-width: 900px\)[\s\S]*?\.heroGrid \{[\s\S]*?grid-template-columns: minmax\(0, 1fr\)/);
+  assert.match(home, /@media \(max-width: 760px\)[\s\S]*?\.heroActions,[\s\S]*?\.rolesActions \{[\s\S]*?grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
+  assert.match(home, /\.heroActions > \*,[\s\S]*?\.rolesActions > \* \{[\s\S]*?min-height: var\(--tap-target-min, 44px\)/);
 });
 
 test('asset register has deterministic toolbar, card-action and modal device states', async () => {
