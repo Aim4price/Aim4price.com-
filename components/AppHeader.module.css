@@ -3872,3 +3872,155 @@
   }
 }
 
+/* === Responsive shell contract, August 2026 ===
+   Keep the complete desktop navigation through tablet widths. Only the phone
+   layout swaps it for the menu drawer. This block intentionally sits last so
+   one canonical breakpoint contract wins over older incremental refinements. */
+.header,
+.inner,
+.brand,
+.nav,
+.navRail,
+.actions,
+.actionsRail,
+.accountMenu {
+  min-width: 0;
+  max-width: 100%;
+}
+
+@media (min-width: 761px) and (max-width: 1180px) {
+  .inner {
+    width: var(--shell-width, min(calc(100% - 2.3rem), 1180px));
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-areas:
+      "brand actions"
+      "nav nav";
+    gap: 0.65rem 0.9rem;
+    padding: 0.65rem 0 0.72rem;
+  }
+
+  .brand {
+    grid-area: brand;
+  }
+
+  .brandLogo {
+    width: clamp(8.8rem, 16vw, 10.8rem);
+  }
+
+  .actions {
+    grid-area: actions;
+    justify-self: end;
+  }
+
+  .nav {
+    grid-area: nav;
+    width: 100%;
+    display: grid;
+    grid-template-columns: var(--tap-target-min, 44px) minmax(0, 1fr) var(--tap-target-min, 44px);
+    align-items: stretch;
+    gap: 0.35rem;
+    overflow: visible;
+  }
+
+  .navRail {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.35rem;
+    padding: 0.3rem;
+  }
+
+  .navLink {
+    min-width: 0;
+    max-width: none;
+    min-height: 2.85rem;
+    padding: 0.55rem 0.7rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: clamp(0.78rem, 1.6vw, 0.92rem);
+  }
+
+  .navWindowButton {
+    width: var(--tap-target-min, 44px);
+    min-width: var(--tap-target-min, 44px);
+    height: auto;
+    min-height: var(--tap-target-min, 44px);
+  }
+
+  .actionsRail {
+    width: auto;
+    overflow: visible;
+  }
+
+  .mobileMenuButton,
+  .mobileMenuBackdrop,
+  .mobileMenuPanel {
+    display: none;
+  }
+
+  .accountMenu {
+    display: block;
+    width: clamp(10.75rem, 24vw, 12.25rem);
+    min-width: 10.75rem;
+    max-width: 12.25rem;
+    flex: 0 1 12.25rem;
+  }
+
+  .accountButton {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .accountButton > .accountAvatar {
+    display: grid;
+  }
+
+  .accountPopover {
+    position: absolute;
+    top: calc(100% + 0.6rem);
+    right: 0;
+    left: auto;
+    width: min(21rem, calc(100vw - (var(--shell-gutter, 1.15rem) * 2)));
+    min-width: min(18rem, calc(100vw - (var(--shell-gutter, 1.15rem) * 2)));
+    max-width: min(21rem, calc(100vw - (var(--shell-gutter, 1.15rem) * 2)));
+    max-height: calc(100dvh - 8.5rem);
+    overflow: auto;
+  }
+}
+
+@media (max-width: 760px) {
+  .inner {
+    width: var(--shell-width, min(calc(100% - 1.7rem), 48rem));
+  }
+
+  .nav {
+    display: none;
+  }
+
+  .mobileMenuButton {
+    display: inline-flex;
+    min-width: var(--tap-target-min, 44px);
+  }
+
+  .accountMenu {
+    display: none;
+  }
+}
+
+@media (max-width: 390px) {
+  .mobileMenuButtonText {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .mobileMenuButton {
+    width: var(--tap-target-min, 44px);
+    padding: 0;
+  }
+}
+
