@@ -294,7 +294,6 @@ export default function OwnerAssetsClient({
           {showDirectoryHome ? (
             <section className={styles.assetDirectorySection} aria-labelledby="owner-umbrella-heading">
               <div className={styles.assetDirectoryHeading}>
-                <span>Organised assets</span>
                 <h2 id="owner-umbrella-heading">Umbrellas</h2>
               </div>
               <div className={styles.managerAssetList}>
