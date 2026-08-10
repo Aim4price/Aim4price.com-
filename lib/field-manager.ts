@@ -126,6 +126,7 @@ export type FieldManagerAccessSettings = {
   canRecordFuel: boolean;
   canRefillFuel: boolean;
   assetIds: string[];
+  groupIds: string[];
   fuelStorageIds: string[];
 };
 
@@ -462,6 +463,10 @@ async function ensureFieldManagerTablesOnce(): Promise<void> {
       select field_manager_id, asset_id, created_at
       from public.field_manager_asset_access
       where false
+    ), group_access_schema as (
+      select field_manager_id, group_id, created_at
+      from public.field_manager_group_access
+      where false
     ), settings_schema as (
       select
         field_manager_id,
@@ -482,6 +487,7 @@ async function ensureFieldManagerTablesOnce(): Promise<void> {
     select 1
     from manager_schema
     cross join asset_access_schema
+    cross join group_access_schema
     cross join settings_schema
     cross join fuel_access_schema
   `));
@@ -556,6 +562,20 @@ async function ensureFieldManagerTablesOnce(): Promise<void> {
   await db.query(`
     create index if not exists idx_field_manager_asset_access_asset
       on public.field_manager_asset_access(asset_id)
+  `);
+
+  await db.query(`
+    create table if not exists public.field_manager_group_access (
+      field_manager_id uuid not null references public.field_managers(id) on delete cascade,
+      group_id uuid not null,
+      created_at timestamptz not null default now(),
+      primary key (field_manager_id, group_id)
+    )
+  `);
+
+  await db.query(`
+    create index if not exists idx_field_manager_group_access_group
+      on public.field_manager_group_access(group_id)
   `);
 
   await db.query(`
@@ -879,6 +899,7 @@ export async function getFieldManagerAccessSettings(
     can_record_fuel: boolean | null;
     can_refill_fuel: boolean | null;
     asset_ids: unknown;
+    group_ids: unknown;
     fuel_storage_ids: unknown;
   }>(
     `select
@@ -889,6 +910,7 @@ export async function getFieldManagerAccessSettings(
       coalesce(s.can_record_fuel, true) as can_record_fuel,
       coalesce(s.can_refill_fuel, true) as can_refill_fuel,
       coalesce((select jsonb_agg(a.asset_id::text order by a.asset_id::text) from public.field_manager_asset_access a where a.field_manager_id = fm.id), '[]'::jsonb) as asset_ids,
+      coalesce((select jsonb_agg(g.group_id::text order by g.group_id::text) from public.field_manager_group_access g where g.field_manager_id = fm.id), '[]'::jsonb) as group_ids,
       coalesce((select jsonb_agg(f.fuel_storage_id::text order by f.fuel_storage_id::text) from public.field_manager_fuel_storage_access f where f.field_manager_id = fm.id), '[]'::jsonb) as fuel_storage_ids
     from public.field_managers fm
     left join public.field_manager_access_settings s on s.field_manager_id = fm.id
@@ -906,6 +928,7 @@ export async function getFieldManagerAccessSettings(
     canRecordFuel: row.can_record_fuel !== false,
     canRefillFuel: row.can_refill_fuel !== false,
     assetIds: uuidList(row.asset_ids),
+    groupIds: uuidList(row.group_ids),
     fuelStorageIds: uuidList(row.fuel_storage_ids),
   };
 }
@@ -924,6 +947,7 @@ export async function updateFieldManagerAccessSettings(
     canRecordFuel: normalizeBoolean(input.canRecordFuel, true),
     canRefillFuel: normalizeBoolean(input.canRefillFuel, true),
     assetIds: uuidList(input.assetIds),
+    groupIds: uuidList(input.groupIds),
     fuelStorageIds: uuidList(input.fuelStorageIds),
   };
   const db = getDb();
@@ -946,6 +970,14 @@ export async function updateFieldManagerAccessSettings(
   if (next.assetScope === 'selected' && next.assetIds.length) {
     await db.query(`insert into public.field_manager_asset_access (field_manager_id, asset_id)
       select $1::uuid, value::uuid from unnest($2::text[]) value on conflict do nothing`, [managerId, next.assetIds]);
+  }
+  await db.query('delete from public.field_manager_group_access where field_manager_id = $1::uuid', [managerId]);
+  if (next.assetScope === 'selected' && next.groupIds.length) {
+    await db.query(`insert into public.field_manager_group_access (field_manager_id, group_id)
+      select $1::uuid, value::uuid from unnest($2::text[]) value
+      inner join public.asset_groups asset_group on asset_group.id = value::uuid
+      inner join public.field_managers manager on manager.id = $1::uuid and manager.owner_user_id = asset_group.user_id
+      on conflict do nothing`, [managerId, next.groupIds]);
   }
   await db.query('delete from public.field_manager_fuel_storage_access where field_manager_id = $1::uuid', [managerId]);
   if (next.fuelScope === 'selected' && next.fuelStorageIds.length) {
@@ -1182,6 +1214,12 @@ export async function listFieldManagerAssets(
         select asset_id
         from public.field_manager_asset_access
         where field_manager_id = $2::uuid
+        union
+        select member.asset_id
+        from public.field_manager_group_access group_access
+        inner join public.asset_groups asset_group on asset_group.id = group_access.group_id and asset_group.user_id = $1
+        inner join public.asset_group_members member on member.group_id = asset_group.id
+        where group_access.field_manager_id = $2::uuid
       ), access_state as (
         select coalesce((select asset_scope from public.field_manager_access_settings where field_manager_id = $2::uuid), 'all') as scope
       )
@@ -1245,6 +1283,12 @@ export async function getFieldManagerAssetForOpen(input: {
         select asset_id
         from public.field_manager_asset_access
         where field_manager_id = $2::uuid
+        union
+        select member.asset_id
+        from public.field_manager_group_access group_access
+        inner join public.asset_groups asset_group on asset_group.id = group_access.group_id and asset_group.user_id = $3
+        inner join public.asset_group_members member on member.group_id = asset_group.id
+        where group_access.field_manager_id = $2::uuid
       ), access_state as (
         select coalesce((select asset_scope from public.field_manager_access_settings where field_manager_id = $2::uuid), 'all') as scope
       )
@@ -1263,7 +1307,7 @@ export async function getFieldManagerAssetForOpen(input: {
       `)}
       limit 1
     `,
-    [resolvedOwner.assetId, input.managerId],
+    [resolvedOwner.assetId, input.managerId, input.ownerUserId],
   );
 
   const row = result.rows[0];
@@ -1348,9 +1392,16 @@ export async function validateFieldManagerScanAsset(input: {
           where allowed.field_manager_id = $1::uuid
             and allowed.asset_id = $2::uuid
         )
+        or exists (
+          select 1
+          from public.field_manager_group_access group_access
+          inner join public.asset_groups asset_group on asset_group.id = group_access.group_id and asset_group.user_id = $3
+          inner join public.asset_group_members member on member.group_id = asset_group.id and member.asset_id = $2::uuid
+          where group_access.field_manager_id = $1::uuid
+        )
       ) as allowed
     `,
-    [input.managerId, resolvedOwner.assetId],
+    [input.managerId, resolvedOwner.assetId, input.ownerUserId],
   );
 
   if (!Boolean(accessResult.rows[0]?.allowed)) {
