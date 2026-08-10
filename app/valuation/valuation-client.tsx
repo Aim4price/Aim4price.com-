@@ -3711,9 +3711,11 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
         saveForMarketplace: options.saveForMarketplace,
         photos: options.photos,
       });
+      if (accountantRegisterId) {
+        savePayload.registerId = accountantRegisterId;
+      }
       if (isAccountantClientWorkspace) {
         savePayload.accountantShareId = accountantShareId;
-        savePayload.registerId = accountantRegisterId;
       }
       const response = await fetch('/api/valuation-runs', {
         method: 'POST',
@@ -3736,9 +3738,15 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
           const query = workspaceQuery.toString();
           router.push(`/accountant/registers/${encodeURIComponent(accountantShareId)}${query ? `?${query}` : ''}`);
         } else {
-          router.push(ownerAppMode
-            ? (focusAssetId ? `/owner-app/assets/${encodeURIComponent(focusAssetId)}` : '/owner-app/assets')
-            : (focusAssetId ? `/asset-register?convertedAssetId=${encodeURIComponent(focusAssetId)}` : '/asset-register'));
+          if (ownerAppMode) {
+            router.push(focusAssetId ? `/owner-app/assets/${encodeURIComponent(focusAssetId)}` : '/owner-app/assets');
+          } else {
+            const registerQuery = new URLSearchParams();
+            if (accountantRegisterId) registerQuery.set('registerId', accountantRegisterId);
+            if (focusAssetId) registerQuery.set('convertedAssetId', focusAssetId);
+            const query = registerQuery.toString();
+            router.push(`/asset-register${query ? `?${query}` : ''}`);
+          }
         }
       }
 
