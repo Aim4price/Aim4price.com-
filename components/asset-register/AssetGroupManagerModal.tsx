@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
+import { createPortal } from 'react-dom';
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type FormEvent } from 'react';
 import {
   assetGroupRelationshipLabel,
   type AssetGroup,
@@ -142,6 +143,115 @@ function ReportSelect({
   );
 }
 
+function AssetGroupMemberSelect({
+  label,
+  value,
+  options,
+  disabled = false,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  options: ReportSelectOption[];
+  disabled?: boolean;
+  onChange: (value: string) => void;
+}) {
+  const rootRef = useRef<HTMLDivElement | null>(null);
+  const menuRef = useRef<HTMLDivElement | null>(null);
+  const [open, setOpen] = useState(false);
+  const [menuStyle, setMenuStyle] = useState<CSSProperties>({});
+  const selected = options.find((option) => option.value === value) ?? options[0];
+
+  useEffect(() => {
+    if (!open) return;
+
+    const button = rootRef.current?.querySelector('button');
+    if (!(button instanceof HTMLButtonElement)) return;
+    const rect = button.getBoundingClientRect();
+    const estimatedMenuHeight = Math.min(240, options.length * 48 + 14);
+    const roomBelow = window.innerHeight - rect.bottom;
+    const openUpward = roomBelow < estimatedMenuHeight + 16 && rect.top > roomBelow;
+    const width = Math.min(rect.width, window.innerWidth - 24);
+
+    setMenuStyle({
+      left: Math.max(12, Math.min(rect.left, window.innerWidth - width - 12)),
+      top: openUpward
+        ? Math.max(12, rect.top - estimatedMenuHeight - 8)
+        : Math.min(window.innerHeight - estimatedMenuHeight - 12, rect.bottom + 8),
+      width,
+    });
+
+    function handleOutside(event: MouseEvent | TouchEvent) {
+      const target = event.target;
+      if (!(target instanceof Node)) return;
+      if (rootRef.current?.contains(target) || menuRef.current?.contains(target)) return;
+      setOpen(false);
+    }
+
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key === 'Escape') setOpen(false);
+    }
+
+    function closeOnViewportChange() {
+      setOpen(false);
+    }
+
+    document.addEventListener('mousedown', handleOutside);
+    document.addEventListener('touchstart', handleOutside);
+    document.addEventListener('keydown', handleEscape);
+    window.addEventListener('resize', closeOnViewportChange);
+    window.addEventListener('scroll', closeOnViewportChange, true);
+    return () => {
+      document.removeEventListener('mousedown', handleOutside);
+      document.removeEventListener('touchstart', handleOutside);
+      document.removeEventListener('keydown', handleEscape);
+      window.removeEventListener('resize', closeOnViewportChange);
+      window.removeEventListener('scroll', closeOnViewportChange, true);
+    };
+  }, [open, options.length]);
+
+  const menu = open && typeof document !== 'undefined'
+    ? createPortal(
+        <div ref={menuRef} className={styles.memberSelectMenu} role="listbox" aria-label={label} style={menuStyle}>
+          {options.map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              role="option"
+              aria-selected={option.value === value}
+              className={`${styles.memberSelectOption} ${option.value === value ? styles.memberSelectOptionActive : ''}`}
+              onClick={() => {
+                onChange(option.value);
+                setOpen(false);
+              }}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>,
+        document.body,
+      )
+    : null;
+
+  return (
+    <div ref={rootRef} className={`${styles.memberSelect} ${open ? styles.memberSelectOpen : ''}`}>
+      <span className={styles.memberSelectLabel}>{label}</span>
+      <button
+        type="button"
+        className={styles.memberSelectButton}
+        onClick={() => setOpen((current) => !current)}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        disabled={disabled}
+      >
+        <span>{selected?.label ?? 'Choose option'}</span>
+        <ChevronDownIcon className={styles.memberSelectChevron} />
+      </button>
+      {menu}
+    </div>
+  );
+}
+
 function DocumentIcon({ className }: IconProps) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -242,6 +352,11 @@ const RELATIONSHIP_OPTIONS: Array<{ value: AssetGroupRelationship; label: string
   { value: 'component_of', label: 'Component of the primary asset' },
   { value: 'attached_to', label: 'Attached to the primary asset' },
   { value: 'other', label: 'Linked to the primary asset' },
+];
+
+const ROLE_OPTIONS: ReportSelectOption[] = [
+  { value: 'primary', label: 'Primary asset' },
+  { value: 'linked', label: 'Linked asset' },
 ];
 
 function defaultGroupName(asset: AssetGroupModalAsset | null): string {
@@ -412,6 +527,17 @@ export default function AssetGroupManagerModal({
         : {}),
       [assetId]: 'primary',
     }));
+  }
+
+  function handleRoleChange(assetId: string, nextRole: string) {
+    if (nextRole === 'primary') {
+      handlePrimaryChange(assetId);
+      return;
+    }
+
+    if (assetId !== primaryAssetId) return;
+    const replacementPrimaryAssetId = selectedAssetIds.find((selectedAssetId) => selectedAssetId !== assetId);
+    if (replacementPrimaryAssetId) handlePrimaryChange(replacementPrimaryAssetId);
   }
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -788,28 +914,24 @@ export default function AssetGroupManagerModal({
 
                           {selected ? (
                             <div className={styles.memberControls}>
-                              <label>
-                                <span>Role</span>
-                                <select value={asset.id === primaryAssetId ? 'primary' : 'linked'} onChange={(event) => {
-                                  if (event.target.value === 'primary') handlePrimaryChange(asset.id);
-                                }}>
-                                  <option value="primary">Primary asset</option>
-                                  <option value="linked">Linked asset</option>
-                                </select>
-                              </label>
+                              <AssetGroupMemberSelect
+                                label="Role"
+                                value={asset.id === primaryAssetId ? 'primary' : 'linked'}
+                                options={ROLE_OPTIONS}
+                                disabled={selectedAssetIds.length === 1}
+                                onChange={(nextRole) => handleRoleChange(asset.id, nextRole)}
+                              />
 
                               {asset.id !== primaryAssetId ? (
-                                <label>
-                                  <span>Relationship</span>
-                                  <select value={relationships[asset.id] ?? 'works_with'} onChange={(event) => setRelationships((current) => ({
+                                <AssetGroupMemberSelect
+                                  label="Relationship"
+                                  value={relationships[asset.id] ?? 'works_with'}
+                                  options={RELATIONSHIP_OPTIONS}
+                                  onChange={(nextRelationship) => setRelationships((current) => ({
                                     ...current,
-                                    [asset.id]: event.target.value as AssetGroupRelationship,
-                                  }))}>
-                                    {RELATIONSHIP_OPTIONS.map((option) => (
-                                      <option key={option.value} value={option.value}>{option.label}</option>
-                                    ))}
-                                  </select>
-                                </label>
+                                    [asset.id]: nextRelationship as AssetGroupRelationship,
+                                  }))}
+                                />
                               ) : <p>{assetGroupRelationshipLabel('primary')}</p>}
                             </div>
                           ) : null}
