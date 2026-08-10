@@ -4167,3 +4167,51 @@
     font-size: 0.68rem;
   }
 }
+
+/* Touch devices use a 980px desktop-style viewport. This explicit state keeps
+   the header swipeable without changing that site-wide viewport contract. */
+.navSwipe {
+  grid-area: nav;
+  width: 100%;
+  display: block;
+  overflow: hidden;
+}
+
+.navSwipe .navRail {
+  width: 100%;
+  max-width: 100%;
+  display: flex;
+  flex: 0 0 auto;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  gap: 0.42rem;
+  padding: 0.3rem;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline: 0.3rem;
+  scrollbar-width: none;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-x;
+}
+
+.navSwipe .navRail::-webkit-scrollbar {
+  display: none;
+}
+
+.navSwipe .navLink {
+  display: inline-flex;
+  flex: 0 0 46%;
+  min-width: 0;
+  max-width: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  scroll-snap-align: start;
+  scroll-snap-stop: normal;
+}
+
+.navSwipe .navWindowButton {
+  display: none;
+}
