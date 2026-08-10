@@ -237,7 +237,7 @@ test('umbrella cards expose aligned actions and the Manage modal uses a clear op
   assert.match(client, /<span>Share<\/span>[\s\S]*?<span>\{isCollapsed \? 'View details' : 'Hide details'\}<\/span>[\s\S]*?<span>Manage<\/span>/);
   assert.match(styles, /\.page \.assetGroupHeaderActions \{[\s\S]*?grid-template-columns: repeat\(3, minmax\(0, 1fr\)\)/);
   assert.match(modal, /Manage assets/);
-  assert.match(modal, /Umbrella settings/);
+  assert.match(modal, /Umbrella name/);
   assert.match(modal, /Download reports/);
   assert.match(modal, /Remove umbrella/);
   assert.match(modal, /PDF report/);
@@ -256,8 +256,12 @@ test('the umbrella Manage modal reuses the asset Manage and report-format patter
   assert.match(modal, /registerStyles\.modalOverlay/);
   assert.match(modal, /registerStyles\.optionFeaturedButton/);
   assert.match(modal, /registerStyles\.optionDangerButton/);
-  assert.match(modal, /Ungroup the assets without deleting their records/);
-  assert.match(modal, /Only assets linked to \{group\.name\} are included/);
+  assert.match(modal, /Ungroup without deleting assets/);
+  assert.match(modal, /Download umbrella valuation/);
+  assert.match(modal, /Download maintenance report/);
+  assert.match(modal, /Download fuel report/);
+  assert.match(modal, /Download depreciation log/);
+  assert.match(modal, /Download cost of ownership report/);
   assert.match(modal, /registerStyles\.modalCloseButton/);
   assert.match(modal, /registerStyles\.assetTimelineFormatGrid/);
   assert.match(modal, /registerStyles\.modalCard/);
