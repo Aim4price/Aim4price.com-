@@ -1198,9 +1198,22 @@ export async function listAssetMaintenanceData(
   const relevantAssetIds = Array.from(
     new Set(requestedHistoryAssetIds.filter((assetId) => permittedAssetIds.has(assetId))),
   );
-  const completedScanHistory = options.includeCompletedScanHistory && filters.status !== 'upcoming'
-    ? await listCompletedMaintenanceScanEventsForAssets(relevantAssetIds)
-    : [];
+  let completedScanHistory: ScanMaintenanceStatus[] = [];
+
+  if (options.includeCompletedScanHistory && filters.status !== 'upcoming') {
+    try {
+      completedScanHistory = await listCompletedMaintenanceScanEventsForAssets(relevantAssetIds);
+    } catch (error) {
+      // Historical scan rows pre-date the maintenance table and can vary across
+      // deployed schemas. They enrich reports, but must never block the current
+      // maintenance report from opening.
+      console.warn(
+        'Aim4price completed maintenance scan history could not be loaded.',
+        error instanceof Error ? error.message : error,
+      );
+    }
+  }
+
   const records = options.includeCompletedScanHistory
     ? mergeCompletedScanHistory(userId, assets, persistedRecords, completedScanHistory, filters)
     : persistedRecords;
