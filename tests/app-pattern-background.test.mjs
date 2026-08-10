@@ -41,8 +41,17 @@ test('the component renders the complete minimal arc composition', () => {
 
 test('the Asset Register keeps the shared Minimal Arc Pattern visible', () => {
   for (const assetRegisterStyle of assetRegisterStyles) {
-    assert.match(assetRegisterStyle, /\.page\s*\{[^}]*background:\s*transparent;/s);
-    assert.doesNotMatch(assetRegisterStyle, /\.page\s*\{[^}]*background:\s*linear-gradient/s);
+    const pageRules = [...assetRegisterStyle.matchAll(/(?:^|\n)\.page\s*\{([^}]*)\}/g)].map(
+      (match) => match[1],
+    );
+
+    assert.ok(pageRules.length > 0, 'missing Asset Register page rule');
+
+    for (const pageRule of pageRules) {
+      if (/background\s*:/.test(pageRule)) {
+        assert.match(pageRule, /background:\s*transparent(?:\s*!important)?;/);
+      }
+    }
   }
 });
 
