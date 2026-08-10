@@ -5968,6 +5968,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
   const [assetGroups, setAssetGroups] = useState<AssetGroup[]>([]);
   const [expandedAssetGroupIds, setExpandedAssetGroupIds] = useState<Set<string>>(() => new Set());
   const [assetGroupShareTarget, setAssetGroupShareTarget] = useState<AssetGroup | null>(null);
+  const [isAssetGroupModalOpen, setIsAssetGroupModalOpen] = useState(false);
   const [assetGroupModalAsset, setAssetGroupModalAsset] = useState<RegisterAsset | null>(null);
   const [assetGroupModalGroup, setAssetGroupModalGroup] = useState<AssetGroup | null>(null);
   const [assetGroupError, setAssetGroupError] = useState('');
@@ -6028,6 +6029,8 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
   const isAssetSettingsMapLocationSaving = assetSettingsLocationState === 'savingMap';
   const isAssetSettingsBusy = isSavingAssetSettings || isAssetSettingsLocationBusy;
   const [isManualConversionConfirmOpen, setIsManualConversionConfirmOpen] = useState(false);
+  const [isAddAssetDestinationModalOpen, setIsAddAssetDestinationModalOpen] = useState(false);
+  const [addAssetTargetRegisterId, setAddAssetTargetRegisterId] = useState('');
   const [isAddChoiceModalOpen, setIsAddChoiceModalOpen] = useState(false);
   const [isAcquisitionChoiceOpen, setIsAcquisitionChoiceOpen] = useState(false);
   const [newAssetAcquisitionDraft, setNewAssetAcquisitionDraft] = useState<AcquisitionDraft>(createAcquisitionDraft);
@@ -6304,13 +6307,30 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
       window.location.assign('/asset-register?scope=combined');
       return;
     }
+    setIsAssetGroupModalOpen(true);
     setAssetGroupModalAsset(asset);
     setAssetGroupModalGroup(group);
     setAssetGroupError('');
   }
 
+  function openCreateAssetGroupManager() {
+    if (!canManageAssetGroups) {
+      setNotice({
+        tone: 'warning',
+        message: 'This shared Asset Register is read-only.',
+      });
+      return;
+    }
+
+    setIsAssetGroupModalOpen(true);
+    setAssetGroupModalAsset(null);
+    setAssetGroupModalGroup(null);
+    setAssetGroupError('');
+  }
+
   function closeAssetGroupManager() {
     if (isSavingAssetGroup) return;
+    setIsAssetGroupModalOpen(false);
     setAssetGroupModalAsset(null);
     setAssetGroupModalGroup(null);
     setAssetGroupError('');
@@ -6375,7 +6395,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
       const data = await response.json() as AssetGroupApiResponse;
 
       if (!response.ok || !data.ok) {
-        throw new Error(data.error ?? 'Failed to save the asset group.');
+        throw new Error(data.error ?? 'Failed to save the umbrella.');
       }
 
       const nextGroups = Array.isArray(data.groups) ? data.groups : assetGroups;
@@ -6385,14 +6405,15 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
         if (data.group?.id) next.delete(data.group.id);
         return next;
       });
+      setIsAssetGroupModalOpen(false);
       setAssetGroupModalAsset(null);
       setAssetGroupModalGroup(null);
       setNotice({
         tone: 'success',
-        message: input.groupId ? 'Asset group updated.' : 'Asset group created.',
+        message: input.groupId ? 'Umbrella updated.' : 'Umbrella created.',
       });
     } catch (error) {
-      setAssetGroupError(error instanceof Error ? error.message : 'Failed to save the asset group.');
+      setAssetGroupError(error instanceof Error ? error.message : 'Failed to save the umbrella.');
     } finally {
       setIsSavingAssetGroup(false);
     }
@@ -6529,7 +6550,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
       const data = await response.json() as AssetGroupApiResponse;
 
       if (!response.ok || !data.ok) {
-        throw new Error(data.error ?? 'Failed to remove the asset group.');
+        throw new Error(data.error ?? 'Failed to remove the umbrella.');
       }
 
       applyAssetGroups(Array.isArray(data.groups) ? data.groups : []);
@@ -6538,11 +6559,12 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
         next.delete(group.id);
         return next;
       });
+      setIsAssetGroupModalOpen(false);
       setAssetGroupModalAsset(null);
       setAssetGroupModalGroup(null);
       setNotice({ tone: 'success', message: 'Asset group removed. No assets were deleted.' });
     } catch (error) {
-      setAssetGroupError(error instanceof Error ? error.message : 'Failed to remove the asset group.');
+      setAssetGroupError(error instanceof Error ? error.message : 'Failed to remove the umbrella.');
     } finally {
       setIsSavingAssetGroup(false);
     }
@@ -6937,22 +6959,36 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
   );
   const canUseAccountantDocumentActions = isAccountantWorkspace && Boolean(accountantAccess?.allowDirectUpdates);
   const canShareActiveRegister = canUseOwnerOnlyAssetActions;
-  const canAddAssetsToActiveRegister = canManageRegisterStructure && !isCombinedRegisterView;
+  const canAddAssetsToActiveRegister = canUseOwnerOnlyAssetActions
+    || (!isCombinedRegisterView && Boolean(accountantAccess?.allowDirectUpdates));
+  const addAssetRegisterOptions = useMemo<Array<ModalSelectOption<string>>>(
+    () => assetRegisters
+      .filter((register) => register.id && register.id !== COMBINED_REGISTER_ID)
+      .map((register) => ({
+        value: register.id,
+        label: register.businessName || 'Asset Register',
+        description: `${Math.max(0, Math.round(Number(register.assetCount) || 0)).toLocaleString('en-ZA')} ${Number(register.assetCount) === 1 ? 'asset' : 'assets'} · ${money(Number(register.totalValue) || 0)} current value`,
+      })),
+    [assetRegisters],
+  );
   const canUseMarketplaceActions = !isAccountantWorkspace;
   const isQuoteModalOpen = Boolean(quoteAsset);
   const isFullRegisterQuoteLead = quoteScope === 'register';
-  const accountantValuationHref = (() => {
-    if (!isAccountantWorkspace || !accountantShareId) return '/valuation';
-
-    const params = new URLSearchParams({ accountantShareId });
-    const targetRegisterId = isCombinedRegisterView
-      ? String(accountantAccess?.registerId ?? '').trim()
-      : String(activeRegister?.id || activeRegisterId || '').trim();
+  const addAssetValuationHref = (() => {
+    const params = new URLSearchParams();
+    if (isAccountantWorkspace && accountantShareId) params.set('accountantShareId', accountantShareId);
+    const targetRegisterId = String(
+      addAssetTargetRegisterId
+      || (!isCombinedRegisterView ? activeRegister?.id || activeRegisterId : '')
+      || (isAccountantWorkspace ? accountantAccess?.registerId : '')
+      || '',
+    ).trim();
     if (targetRegisterId && targetRegisterId !== COMBINED_REGISTER_ID) {
       params.set('registerId', targetRegisterId);
     }
 
-    return `/valuation?${params.toString()}`;
+    const query = params.toString();
+    return query ? `/valuation?${query}` : '/valuation';
   })();
   const activeRegisterShareName = isCombinedRegisterView
     ? buildCombinedAssetRegisterShareName(accountProfile, assetRegisters)
@@ -7666,6 +7702,8 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
 
   const anyModalOpen =
     Boolean(photoViewerAsset && photoViewerPhoto) ||
+    isAssetGroupModalOpen ||
+    isAddAssetDestinationModalOpen ||
     isAddChoiceModalOpen ||
     isAcquisitionChoiceOpen ||
     isAssetModalOpen ||
@@ -7837,6 +7875,16 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
         return;
       }
 
+      if (isAssetGroupModalOpen) {
+        closeAssetGroupManager();
+        return;
+      }
+
+      if (isAddAssetDestinationModalOpen) {
+        closeAddAssetDestinationModal();
+        return;
+      }
+
       if (isAddChoiceModalOpen) {
         closeAddAssetChoiceModal();
         return;
@@ -7873,7 +7921,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
       document.body.style.overflow = previousOverflow;
       document.removeEventListener('keydown', handleEscape);
     };
-  }, [activeAsset, anyModalOpen, assetRegisterMoveAsset, accountantNoteAsset, isSavingAccountantNote, deleteCandidateAsset, disposalCandidateAsset, acquisitionDetailsAsset, isSavingAcquisitionDetails, isAcquisitionChoiceOpen, isAddChoiceModalOpen, isAssetFilterOpen, isChangeRegisterModalOpen, isAssetModalOpen, isAssetReportModalOpen, isExportModalOpen, isPricingModalOpen, pricingPreview, isQrModalOpen, isRegisterShareModalOpen, isSummaryModalOpen, isAccountantReportsOpen, marketplaceAsset, projectionAsset, isQuoteModalOpen, isQuoteTrackingSettingsOpen, quoteLeadStep, isAssetSettingsModalOpen, pendingUsageOverride, isManualConversionConfirmOpen, isSavingAssetSettings, replacementPriceRevaluePrompt, photoViewer]);
+  }, [activeAsset, anyModalOpen, assetRegisterMoveAsset, accountantNoteAsset, isSavingAccountantNote, deleteCandidateAsset, disposalCandidateAsset, acquisitionDetailsAsset, isSavingAcquisitionDetails, isAcquisitionChoiceOpen, isAddAssetDestinationModalOpen, isAddChoiceModalOpen, isAssetGroupModalOpen, isAssetFilterOpen, isChangeRegisterModalOpen, isAssetModalOpen, isAssetReportModalOpen, isExportModalOpen, isPricingModalOpen, pricingPreview, isQrModalOpen, isRegisterShareModalOpen, isSummaryModalOpen, isAccountantReportsOpen, marketplaceAsset, projectionAsset, isQuoteModalOpen, isQuoteTrackingSettingsOpen, quoteLeadStep, isAssetSettingsModalOpen, pendingUsageOverride, isManualConversionConfirmOpen, isSavingAssetSettings, replacementPriceRevaluePrompt, photoViewer]);
 
   useEffect(() => {
     if (!isQuoteModalOpen || !selectedQuoteLeadType) return;
@@ -8713,6 +8761,37 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
   function openAddAssetChoiceModal() {
     setNotice(null);
     setIsAssetFilterOpen(false);
+
+    if (isCombinedRegisterView) {
+      if (!addAssetRegisterOptions.length) {
+        setNotice({
+          tone: 'warning',
+          message: 'Create an Asset Register before adding an asset from the combined view.',
+        });
+        return;
+      }
+
+      setAddAssetTargetRegisterId('');
+      setIsAddAssetDestinationModalOpen(true);
+      return;
+    }
+
+    setAddAssetTargetRegisterId(String(activeRegister?.id || activeRegisterId || '').trim());
+    setIsAddChoiceModalOpen(true);
+  }
+
+  function closeAddAssetDestinationModal() {
+    setIsAddAssetDestinationModalOpen(false);
+    setAddAssetTargetRegisterId('');
+  }
+
+  function continueAddAssetForRegister() {
+    if (!addAssetTargetRegisterId) {
+      setNotice({ tone: 'error', message: 'Choose the Asset Register that should own this asset.' });
+      return;
+    }
+
+    setIsAddAssetDestinationModalOpen(false);
     setIsAddChoiceModalOpen(true);
   }
 
@@ -10836,8 +10915,24 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
   async function handleAssetSubmit(event?: FormEvent<HTMLFormElement>, options: AssetSubmitOptions = {}): Promise<boolean> {
     event?.preventDefault();
     const showFeedback = !options.silent;
+    const destinationRegisterId = String(
+      editingAsset?.registerId
+      || addAssetTargetRegisterId
+      || (!isCombinedRegisterView ? activeRegister?.id || activeRegisterId : '')
+      || '',
+    ).trim();
 
     if (manualAssetStep !== 4 && !options.autosave) {
+      return false;
+    }
+
+    if (!editingAsset && (!destinationRegisterId || destinationRegisterId === COMBINED_REGISTER_ID)) {
+      if (showFeedback) {
+        setNotice({
+          tone: 'error',
+          message: 'Choose the Asset Register that should own this asset before saving it.',
+        });
+      }
       return false;
     }
 
@@ -11131,7 +11226,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
       const documents = normalizeDocuments([...assetDraft.documents, ...uploadedDocuments]);
 
       const payload = {
-        registerId: activeRegister?.id || activeRegisterId || null,
+        registerId: destinationRegisterId || null,
         kind: editingAsset?.valuationRunId ? editingAsset.kind : assetDraft.kind,
         title,
         value,
@@ -14599,6 +14694,17 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                 <span>{isRefreshingRegister ? 'Refreshing...' : 'Refresh'}</span>
               </button>
 
+              {canManageAssetGroups ? (
+                <button
+                  type="button"
+                  className={`${styles.secondaryButton} ${styles.toolbarUmbrellaButton}`}
+                  onClick={openCreateAssetGroupManager}
+                >
+                  <UmbrellaIcon className={styles.buttonIcon} />
+                  <span>Create Umbrella</span>
+                </button>
+              ) : null}
+
               {canAddAssetsToActiveRegister ? (
                 <button type="button" className={`${styles.primaryButton} ${styles.toolbarPrimaryButton}`} onClick={openAddAssetChoiceModal}>
                   <PlusIcon className={styles.buttonIcon} />
@@ -14627,8 +14733,6 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                         ? Math.round(groupValueExVat * ASSET_REGISTER_SUMMARY_VAT_MULTIPLIER)
                         : groupValueExVat;
                       const groupVatLabel = registerValueVatMode === 'included' ? 'Incl. VAT' : 'Excl. VAT';
-                      const primaryIsFlagged = primaryAsset ? isAssetFlagged(primaryAsset) : false;
-                      const primaryIsFlagBusy = primaryAsset ? busyFlagAssetId === primaryAsset.id : false;
                       const additionalAssetCount = Math.max(0, group.members.length - 1);
                       const canReceiveDraggedAsset = canDropAssetIntoGroup(draggingAssetId, group);
                       const isAssetGroupDropTarget = canReceiveDraggedAsset && assetGroupDropTargetId === group.id;
@@ -14642,45 +14746,6 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                           onDrop={(event) => void handleAssetGroupDrop(event, group)}
                           data-asset-group-drop-target={isAssetGroupDropTarget ? 'true' : undefined}
                         >
-                          <div className={styles.assetGroupSideActions}>
-                            {primaryAsset && (canUseOwnerOnlyAssetActions || isAccountantWorkspace) ? (
-                              <>
-                                <button
-                                  type="button"
-                                  className={`${styles.assetFlagButton} ${styles.controlTooltip} ${primaryIsFlagged ? styles.assetFlagButtonActive : ''}`}
-                                  onClick={() => void handleAssetFlagToggle(primaryAsset)}
-                                  disabled={primaryIsFlagBusy}
-                                  aria-label={primaryIsFlagged ? `Unflag ${primaryAsset.title}` : `Flag ${primaryAsset.title}`}
-                                  aria-pressed={primaryIsFlagged}
-                                  data-tooltip={primaryIsFlagged ? 'Remove flag' : 'Flag asset'}
-                                >
-                                  <FlagIcon className={styles.assetFlagIcon} />
-                                </button>
-
-                                <button
-                                  type="button"
-                                  className={`${styles.assetRegisterMoveButton} ${styles.controlTooltip}`}
-                                  onClick={() => openAssetRegisterMoveManager(primaryAsset)}
-                                  aria-label={`Move ${primaryAsset.title} to another asset register`}
-                                  data-tooltip="Move asset"
-                                >
-                                  <ChangeRegisterIcon className={styles.assetRegisterMoveIcon} />
-                                </button>
-                              </>
-                            ) : null}
-
-                            <button
-                              type="button"
-                              className={`${styles.assetGroupButton} ${styles.assetGroupButtonActive} ${styles.controlTooltip}`}
-                              onClick={() => primaryAsset && openAssetGroupManager(primaryAsset)}
-                              disabled={!primaryAsset || !canManageAssetGroups}
-                              aria-label={`Manage ${group.name}`}
-                              data-tooltip={canManageAssetGroups ? 'Manage group' : 'Asset group'}
-                            >
-                              <UmbrellaIcon className={styles.assetGroupButtonIcon} />
-                            </button>
-                          </div>
-
                           <section
                             className={`${styles.assetGroupHeader} ${isCollapsed ? styles.assetGroupHeaderCollapsed : ''}`}
                             onClick={(event) => {
@@ -14900,11 +14965,11 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                               onClick={() => openAssetGroupManager(asset)}
                               disabled={!canManageAssetGroups}
                               aria-label={isResolvedCombinedGroup
-                                ? `Open the combined group containing ${asset.title}`
-                                : `Create a group with ${asset.title}`}
+                                ? `Open the combined umbrella containing ${asset.title}`
+                                : `Create an umbrella with ${asset.title}`}
                               data-tooltip={canManageAssetGroups
-                                ? isResolvedCombinedGroup ? 'Open combined group' : 'Create group'
-                                : 'Groups unavailable'}
+                                ? isResolvedCombinedGroup ? 'Open combined umbrella' : 'Create umbrella'
+                                : 'Umbrellas unavailable'}
                             >
                               <UmbrellaIcon className={styles.assetGroupButtonIcon} />
                             </button>
@@ -14915,6 +14980,42 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                           id={`asset-card-${asset.id}`}
                           className={`${styles.assetCard} ${isExpanded ? styles.assetCardExpanded : ''} ${isFlagged ? styles.assetCardFlagged : ''} ${estimateNeedsUpdate ? styles.assetCardEstimateStale : ''} ${openPartnerNote ? `${styles.assetCardPartnerNote} ${partnerNoteToneClass}` : ''} ${maintenanceAlert || licenseRenewalAlert ? styles.assetCardMaintenanceUpcoming : ''} ${latestMaintenanceStatus ? styles.assetCardMaintenanceDone : ''} ${latestIssueNoteStatus ? styles.assetCardIssueNote : ''} ${dealerAssetCorrection ? styles.assetCardDealerCorrection : ''} ${dealerCorrectionRevaluationAlert ? styles.assetCardDealerCorrectionWarning : ''}`}
                         >
+                        {assetGroup && (canUseOwnerOnlyAssetActions || isAccountantWorkspace) ? (
+                          <div className={`${styles.assetSideActions} ${styles.assetGroupMemberActions}`} aria-label={`Actions for ${asset.title}`}>
+                            <button
+                              type="button"
+                              className={`${styles.assetFlagButton} ${styles.controlTooltip} ${isFlagged ? styles.assetFlagButtonActive : ''}`}
+                              onClick={() => void handleAssetFlagToggle(asset)}
+                              disabled={isFlagBusy}
+                              aria-label={isFlagged ? `Unflag ${asset.title}` : `Flag ${asset.title}`}
+                              aria-pressed={isFlagged}
+                              data-tooltip={isFlagged ? 'Remove flag' : 'Flag asset'}
+                            >
+                              <FlagIcon className={styles.assetFlagIcon} />
+                            </button>
+
+                            <button
+                              type="button"
+                              className={`${styles.assetRegisterMoveButton} ${styles.controlTooltip}`}
+                              onClick={() => openAssetRegisterMoveManager(asset)}
+                              aria-label={`Move ${asset.title} to another asset register`}
+                              data-tooltip="Move asset"
+                            >
+                              <ChangeRegisterIcon className={styles.assetRegisterMoveIcon} />
+                            </button>
+
+                            <button
+                              type="button"
+                              className={`${styles.assetGroupButton} ${styles.assetGroupButtonActive} ${styles.controlTooltip}`}
+                              onClick={() => openAssetGroupManager(asset)}
+                              disabled={!canManageAssetGroups}
+                              aria-label={`Manage the umbrella containing ${asset.title}`}
+                              data-tooltip={canManageAssetGroups ? 'Manage umbrella' : 'Umbrella unavailable'}
+                            >
+                              <UmbrellaIcon className={styles.assetGroupButtonIcon} />
+                            </button>
+                          </div>
+                        ) : null}
                         <div className={styles.assetHeader}>
                           <div className={styles.assetTitleBlock}>
                             {isFlagged || isLive || estimateNeedsUpdate || openPartnerNote || maintenanceAlert || licenseRenewalAlert || latestMaintenanceStatus || latestIssueNoteStatus || dealerAssetCorrection ? (
@@ -15694,14 +15795,17 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
             <div className={styles.emptyState}>
               <h3>No assets saved yet</h3>
               <p>Run a valuation or add a manual asset to start building your register.</p>
-              {canManageRegisterStructure ? (
+              {canAddAssetsToActiveRegister ? (
                 <div className={styles.emptyStateActions}>
-                  <Link
-                    href={accountantValuationHref}
-                    className={styles.secondaryButton}
-                  >
-                    Go to valuation
-                  </Link>
+                  {isCombinedRegisterView ? (
+                    <button type="button" className={styles.secondaryButton} onClick={openAddAssetChoiceModal}>
+                      Go to valuation
+                    </button>
+                  ) : (
+                    <Link href={addAssetValuationHref} className={styles.secondaryButton}>
+                      Go to valuation
+                    </Link>
+                  )}
                   <button type="button" className={styles.primaryButton} onClick={openAddAssetChoiceModal}>
                     <PlusIcon className={styles.buttonIcon} />
                     <span>Add Asset</span>
@@ -15927,6 +16031,58 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
         </div>
       ) : null}
 
+      {isAddAssetDestinationModalOpen ? (
+        <div className={styles.modalOverlay}>
+          <div className={styles.modalBackdrop} onClick={closeAddAssetDestinationModal} />
+
+          <div
+            className={`${styles.modalCard} ${styles.addAssetDestinationModal}`}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="add-asset-destination-title"
+          >
+            <div className={`${styles.modalHeader} ${styles.addAssetDestinationHeader}`}>
+              <div className={styles.modalHeaderText}>
+                <h3 id="add-asset-destination-title">Choose an Asset Register</h3>
+                <p>The combined register is a view. Choose which Asset Register should own the new asset.</p>
+              </div>
+
+              <button
+                type="button"
+                className={styles.modalCloseButton}
+                onClick={closeAddAssetDestinationModal}
+                aria-label="Close Asset Register selection"
+              >
+                <CloseIcon className={styles.buttonIcon} />
+              </button>
+            </div>
+
+            <div className={styles.addAssetDestinationBody}>
+              <ModalSelect<string>
+                label="Asset Register"
+                value={addAssetTargetRegisterId}
+                options={addAssetRegisterOptions}
+                onChange={(value) => {
+                  setAddAssetTargetRegisterId(value);
+                  setNotice(null);
+                }}
+                placeholder="Choose the owning Asset Register"
+                className={styles.addAssetDestinationField}
+                autoFocus
+                usePortal
+              />
+            </div>
+
+            <div className={styles.addAssetDestinationFooter}>
+              <button type="button" className={styles.secondaryButton} onClick={closeAddAssetDestinationModal}>Cancel</button>
+              <button type="button" className={styles.primaryButton} onClick={continueAddAssetForRegister} disabled={!addAssetTargetRegisterId}>
+                <span>Continue</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       {isAddChoiceModalOpen ? (
         <div className={styles.modalOverlay}>
           <div className={styles.modalBackdrop} onClick={closeAddAssetChoiceModal} />
@@ -15954,7 +16110,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
             </div>
 
             <div className={styles.addAssetChoiceGrid}>
-              <Link href={accountantValuationHref} className={`${styles.addAssetChoiceButton} ${styles.addAssetChoiceButtonPrimary}`}>
+              <Link href={addAssetValuationHref} className={`${styles.addAssetChoiceButton} ${styles.addAssetChoiceButtonPrimary}`}>
                 <TrendIcon className={styles.buttonIcon} />
                 <span>
                   <strong>Aim4price Value</strong>
@@ -19932,7 +20088,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
       ) : null}
 
       <AssetGroupManagerModal
-        open={Boolean(assetGroupModalAsset)}
+        open={isAssetGroupModalOpen}
         anchorAsset={assetGroupModalAsset}
         group={assetGroupModalGroup}
         assets={assets}
