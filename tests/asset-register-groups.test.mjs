@@ -453,6 +453,43 @@ test('umbrella creation is register-wide while member controls target the physic
   assert.match(styles, /\.assetGroupMemberActions\.assetSideActions/);
 });
 
+test('umbrella drag auto-scroll and asset discovery cover long registers and saved details', async () => {
+  const [client, modal] = await Promise.all([
+    readFile(new URL('../app/asset-register/asset-register-client.tsx', import.meta.url), 'utf8'),
+    readFile(new URL('../components/asset-register/AssetGroupManagerModal.tsx', import.meta.url), 'utf8'),
+  ]);
+
+  assert.match(client, /ASSET_GROUP_AUTO_SCROLL_EDGE_PX/);
+  assert.match(client, /window\.addEventListener\('dragover', handleAssetDragOver\)/);
+  assert.match(client, /window\.requestAnimationFrame\(runAssetDragAutoScroll\)/);
+  assert.match(client, /window\.scrollBy\(\{ top: scrollDelta, left: 0, behavior: 'auto' \}\)/);
+  assert.match(client, /const assetGroupModalAssets = useMemo/);
+  assert.match(client, /categoryLabel: assetKindLabel\(asset\)/);
+  assert.match(client, /serialNumber: asset\.serialNumber/);
+  assert.match(client, /registrationNumber: readLicenseRegistrationNumber\(asset\)/);
+  assert.match(client, /searchableText: buildSearchableText\(asset\)/);
+  assert.match(modal, /function assetMatchesSearch/);
+  assert.match(modal, /asset\.notes/);
+  assert.match(modal, /asset\.searchableText/);
+  assert.match(modal, /Search name, category, serial, registration or notes/);
+  assert.match(modal, /asset\.categoryLabel/);
+  assert.match(modal, /Serial: \$\{asset\.serialNumber\}/);
+  assert.match(modal, /Reg: \$\{asset\.registrationNumber\}/);
+});
+
+test('asset disposal uses a valid withdrawn marketplace state and keeps database errors private', async () => {
+  const [lifecycle, route] = await Promise.all([
+    readFile(new URL('../lib/asset-lifecycle.ts', import.meta.url), 'utf8'),
+    readFile(new URL('../app/api/asset-register/route.ts', import.meta.url), 'utf8'),
+  ]);
+  const deleteHandler = route.slice(route.indexOf('export async function DELETE'));
+
+  assert.doesNotMatch(lifecycle, /marketplace_status[\s\S]{0,120}'off'/);
+  assert.equal((lifecycle.match(/marketplace_status = case when marketplace_status is null then null else 'withdrawn' end/g) ?? []).length, 2);
+  assert.match(deleteHandler, /The asset could not be archived\. Please try again\./);
+  assert.doesNotMatch(deleteHandler, /formatUnknownError\(error/);
+});
+
 test('combined Asset Register groups are account-wide, separately counted, and projected in every output', async () => {
   const [route, client, persistence, exportRoute, accountantWorkspace] = await Promise.all([
     readFile(new URL('../app/api/asset-groups/route.ts', import.meta.url), 'utf8'),
