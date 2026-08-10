@@ -205,16 +205,17 @@ const OWNER_NAV_ITEMS: NavItem[] = [
 ];
 
 const ACCOUNT_MENU_ITEMS: AccountMenuItem[] = [
+  { href: '/', label: 'Home' },
+  { href: '/valuation', label: 'Get Estimate' },
   { href: '/account', label: 'Account' },
   { href: '/asset-map', label: 'Asset Map', accountTypes: ['owner'] },
   { href: '/asset-register', label: 'Asset Register', accountTypes: ['owner'] },
   { href: '/my-invoices', label: 'Cost Ledger', accountTypes: ['owner'] },
   { href: '/tracking', label: 'Maintenance', accountTypes: ['dealer'] },
   { href: '/fuel', label: 'Fuel Ledger', accountTypes: ['owner'] },
-  { href: '/valuation', label: 'Get Estimate', accountTypes: ['dealer'] },
   { href: '/maintenance', label: 'Maintenance', accountTypes: ['owner'] },
   { href: '/marketplace', label: 'Marketplace', accountTypes: ['owner', 'dealer'] },
-  { href: '/leads', label: 'Leads', accountTypes: ['dealer'] },
+  { href: '/leads', label: 'Leads', accountTypes: ['dealer', 'finance', 'insurance'] },
   { href: '/dealer-costs', label: 'Client Costs', accountTypes: ['dealer'] },
   { href: '/shared-registers', label: 'Shared Registers', accountTypes: ['insurance'] },
 ];
@@ -923,9 +924,8 @@ export default function AppHeader({
     () => resolveActiveNavKey(pathname, mobileNavItems, active),
     [active, mobileNavItems, pathname],
   );
-  const [usesSwipeNavigation, setUsesSwipeNavigation] = useState(false);
-  const navRailRef = useRef<HTMLDivElement | null>(null);
-  const navWindowSize = usesSwipeNavigation
+  const [usesCompactHeader, setUsesCompactHeader] = useState(false);
+  const navWindowSize = usesCompactHeader
     ? navItems.length
     : isAccountantWorkspace
       ? navItems.length
@@ -979,20 +979,15 @@ export default function AppHeader({
   const hasNotificationPages = displayNotificationCount > NOTIFICATIONS_PER_PAGE;
 
   useEffect(() => {
-    const mediaQuery = window.matchMedia('(max-width: 760px), (hover: none) and (pointer: coarse)');
-    const syncSwipeNavigation = () => setUsesSwipeNavigation(mediaQuery.matches);
+    const mediaQuery = window.matchMedia(
+      '(max-width: 760px), (hover: none) and (pointer: coarse) and (max-device-width: 900px)',
+    );
+    const syncCompactHeader = () => setUsesCompactHeader(mediaQuery.matches);
 
-    syncSwipeNavigation();
-    mediaQuery.addEventListener('change', syncSwipeNavigation);
-    return () => mediaQuery.removeEventListener('change', syncSwipeNavigation);
+    syncCompactHeader();
+    mediaQuery.addEventListener('change', syncCompactHeader);
+    return () => mediaQuery.removeEventListener('change', syncCompactHeader);
   }, []);
-
-  useEffect(() => {
-    if (!usesSwipeNavigation) return;
-
-    const activeLink = navRailRef.current?.querySelector<HTMLElement>('[aria-current="page"]');
-    activeLink?.scrollIntoView({ behavior: 'auto', block: 'nearest', inline: 'nearest' });
-  }, [activeNavKey, usesSwipeNavigation]);
 
   useEffect(() => {
     setNotificationPage((current) => Math.min(current, notificationPageCount));
@@ -2242,7 +2237,7 @@ export default function AppHeader({
     <>
       <header className={styles.header}>
         <div
-          className={`${styles.inner} ${isDealerAccount ? styles.innerDealer : ''} ${!isLoadingSession && !session ? styles.innerPublic : ''}`}
+          className={`${styles.inner} ${isDealerAccount ? styles.innerDealer : ''} ${!isLoadingSession && !session ? styles.innerPublic : ''} ${usesCompactHeader ? styles.innerCompact : ''}`}
         >
           <Link href="/" className={styles.brand} aria-label="Go to Aim4price home">
             <Image
@@ -2256,7 +2251,7 @@ export default function AppHeader({
           </Link>
 
           <nav
-            className={`${styles.nav} ${usesSwipeNavigation ? styles.navSwipe : ''}`}
+            className={`${styles.nav} ${usesCompactHeader ? styles.navCompact : ''}`}
             aria-label="Primary navigation"
           >
             {showNavWindowControls ? (
@@ -2271,7 +2266,7 @@ export default function AppHeader({
               </button>
             ) : null}
 
-            <div className={styles.navRail} ref={navRailRef}>
+            <div className={styles.navRail}>
               {visibleNavItems.map((item) => {
                 const isActive = activeNavKey === item.key;
 
@@ -2357,6 +2352,23 @@ export default function AppHeader({
                       <div id="header-account-menu" className={styles.accountPopover} role="menu">
                         {isAccountantWorkspace ? (
                           <>
+                            {usesCompactHeader
+                              ? navItems.map((item) => {
+                                  const isActive = activeNavKey === item.key;
+                                  return (
+                                    <Link
+                                      key={`compact-accountant-${item.key}-${item.href}`}
+                                      href={item.href}
+                                      role="menuitem"
+                                      aria-current={isActive ? 'page' : undefined}
+                                      className={`${styles.menuLink} ${isActive ? styles.menuLinkActive : ''}`}
+                                      onClick={closeAccountMenu}
+                                    >
+                                      <span>{item.label}</span>
+                                    </Link>
+                                  );
+                                })
+                              : null}
                             <button type="button" role="menuitem" className={styles.menuLink} onClick={handleChangeAccountantRegister}>
                               <span>Change</span>
                             </button>
