@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import {
   assetGroupRelationshipLabel,
   type AssetGroup,
@@ -21,6 +21,11 @@ export type AssetGroupReportFilters = {
   year?: string;
   month?: string;
   maintenanceType?: string;
+};
+
+type ReportSelectOption = {
+  value: string;
+  label: string;
 };
 
 function MembersIcon({ className }: IconProps) {
@@ -46,6 +51,94 @@ function DownloadIcon({ className }: IconProps) {
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <path d="M12 3v11M7.5 10.5 12 15l4.5-4.5M4 20h16" />
     </svg>
+  );
+}
+
+function ChevronDownIcon({ className }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="m6 9 6 6 6-6" />
+    </svg>
+  );
+}
+
+function ReportSelect({
+  label,
+  value,
+  options,
+  onChange,
+  disabled = false,
+}: {
+  label: string;
+  value: string;
+  options: ReportSelectOption[];
+  onChange: (value: string) => void;
+  disabled?: boolean;
+}) {
+  const rootRef = useRef<HTMLDivElement | null>(null);
+  const [open, setOpen] = useState(false);
+  const selected = options.find((option) => option.value === value) ?? options[0];
+
+  useEffect(() => {
+    if (!open) return;
+
+    function handleOutside(event: MouseEvent | TouchEvent) {
+      if (event.target instanceof Node && rootRef.current && !rootRef.current.contains(event.target)) {
+        setOpen(false);
+      }
+    }
+
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key === 'Escape') setOpen(false);
+    }
+
+    document.addEventListener('mousedown', handleOutside);
+    document.addEventListener('touchstart', handleOutside);
+    document.addEventListener('keydown', handleEscape);
+    return () => {
+      document.removeEventListener('mousedown', handleOutside);
+      document.removeEventListener('touchstart', handleOutside);
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [open]);
+
+  return (
+    <div
+      ref={rootRef}
+      className={`${registerStyles.reportSelectField} ${open ? registerStyles.reportSelectFieldOpen : ''} ${disabled ? registerStyles.reportSelectFieldDisabled : ''}`}
+    >
+      <span className={registerStyles.reportSelectLabel}>{label}</span>
+      <button
+        type="button"
+        className={registerStyles.reportSelectButton}
+        onClick={() => setOpen((current) => !current)}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        disabled={disabled}
+      >
+        <span>{selected?.label ?? 'Choose option'}</span>
+        <ChevronDownIcon className={registerStyles.reportSelectChevron} />
+      </button>
+      {open ? (
+        <div className={registerStyles.reportSelectMenu} role="listbox" aria-label={label}>
+          {options.map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              role="option"
+              aria-selected={option.value === value}
+              className={`${registerStyles.reportSelectOption} ${option.value === value ? registerStyles.reportSelectOptionActive : ''}`}
+              onClick={() => {
+                onChange(option.value);
+                setOpen(false);
+              }}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+      ) : null}
+    </div>
   );
 }
 
@@ -330,6 +423,24 @@ export default function AssetGroupManagerModal({
 
   const currentYear = new Date().getFullYear();
   const reportYears = Array.from({ length: 16 }, (_, index) => String(currentYear - index));
+  const reportYearOptions: ReportSelectOption[] = [
+    { value: 'all', label: 'All years' },
+    ...reportYears.map((year) => ({ value: year, label: year })),
+  ];
+  const reportMonthOptions: ReportSelectOption[] = [
+    { value: 'all', label: 'All months' },
+    ...Array.from({ length: 12 }, (_, index) => ({
+      value: String(index + 1),
+      label: new Intl.DateTimeFormat('en-ZA', { month: 'long' }).format(new Date(2024, index, 1)),
+    })),
+  ];
+  const maintenanceOptions: ReportSelectOption[] = [
+    { value: 'all', label: 'All maintenance' },
+    { value: 'upcoming', label: 'Upcoming maintenance' },
+    { value: 'done', label: 'Completed maintenance' },
+    { value: 'service', label: 'Services only' },
+    { value: 'checkup', label: 'Check-ups only' },
+  ];
 
   const showSettingsForm = view === 'create' || view === 'settings';
   const showMembersForm = view === 'create' || view === 'members';
@@ -491,12 +602,12 @@ export default function AssetGroupManagerModal({
                   <strong>Report timeline</strong>
                   <span>{reportKind === 'maintenance' ? 'Choose the maintenance type, year and month to include.' : 'Choose the year and month to include.'}</span>
                 </div>
-                <div className={styles.reportFilters}>
+                <div className={`${styles.reportFilters} ${reportKind === 'maintenance' ? styles.reportFiltersMaintenance : ''}`}>
                   {reportKind === 'maintenance' ? (
-                    <label><span>Type</span><select value={maintenanceType} onChange={(event) => setMaintenanceType(event.target.value)}><option value="all">All maintenance</option><option value="checked">Check-ups</option><option value="serviced">Services</option><option value="repaired">Repairs</option></select></label>
+                    <ReportSelect label="Maintenance" value={maintenanceType} options={maintenanceOptions} onChange={setMaintenanceType} />
                   ) : null}
-                  <label><span>Year</span><select value={reportYear} onChange={(event) => { setReportYear(event.target.value); setReportMonth('all'); }}><option value="all">All years</option>{reportYears.map((year) => <option key={year} value={year}>{year}</option>)}</select></label>
-                  <label><span>Month</span><select value={reportMonth} disabled={reportYear === 'all'} onChange={(event) => setReportMonth(event.target.value)}><option value="all">All months</option>{Array.from({ length: 12 }, (_, index) => <option key={index + 1} value={String(index + 1)}>{new Intl.DateTimeFormat('en-ZA', { month: 'long' }).format(new Date(2024, index, 1))}</option>)}</select></label>
+                  <ReportSelect label="Year" value={reportYear} options={reportYearOptions} onChange={(value) => { setReportYear(value); setReportMonth('all'); }} />
+                  <ReportSelect label="Month" value={reportMonth} options={reportMonthOptions} disabled={reportYear === 'all'} onChange={setReportMonth} />
                 </div>
               </>
             )}
@@ -504,7 +615,7 @@ export default function AssetGroupManagerModal({
             {error ? <p className={styles.error} role="alert">{error}</p> : null}
 
             {reportStep === 'options' ? null : (
-              <div className={`${registerStyles.formActions} ${registerStyles.exportActions} ${registerStyles.assetFuelReportActions}`}>
+              <div className={`${registerStyles.formActions} ${registerStyles.exportActions} ${registerStyles.assetFuelReportActions} ${styles.reportActions}`}>
                 <button type="button" className={`${registerStyles.secondaryButton} ${registerStyles.assetTimelineSecondaryButton}`} onClick={() => setReportStep(reportStep === 'filters' ? 'format' : 'options')} disabled={busy || reportBusy}>Back</button>
                 <button type="button" className={`${registerStyles.secondaryButton} ${registerStyles.assetTimelineSecondaryButton}`} onClick={onClose} disabled={busy || reportBusy}>Cancel</button>
                 <button type="button" className={registerStyles.primaryButton} onClick={() => reportStep === 'format' ? setReportStep('filters') : handleDownloadSelectedReport()} disabled={busy || reportBusy}>
