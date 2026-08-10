@@ -51,9 +51,24 @@ test('Owner and Field Manager asset directories adapt only when umbrellas exist'
     assert.match(client, /View all assets/);
     assert.match(client, /Umbrella: \{assetGroup\.name\}/);
     assert.match(client, /Back to umbrellas/);
+    assert.doesNotMatch(client, /Organised assets/);
   }
   assert.match(ownerRoute, /buildAppAssetDirectoryGroups\(assetGroups, visibleItems\.map/);
   assert.match(fieldRoute, /buildAppAssetDirectoryGroups\(assetGroups, assets\.map/);
+});
+
+test('account app access headings stay clean and tile copy stays short', async () => {
+  const [accessUi, accessStyles] = await Promise.all([
+    read('app/account/app-access-management-client.tsx'),
+    read('app/account/app-access-management.module.css'),
+  ]);
+
+  assert.doesNotMatch(accessUi, /Dealer account access|Owner account access|Owner operations access/);
+  assert.doesNotMatch(accessUi, /modalEyebrow|styles\.eyebrow/);
+  assert.match(accessUi, /newDescription: 'Create a login\.'/);
+  assert.match(accessUi, /manageDescription: 'Edit access\.'/);
+  assert.match(accessStyles, /\.launcherIntro p[\s\S]*white-space: nowrap;/);
+  assert.match(accessStyles, /\.actionCopy small[\s\S]*white-space: nowrap;/);
 });
 
 test('whole-umbrella access is enforced for Owner App users and Field Managers', async () => {
