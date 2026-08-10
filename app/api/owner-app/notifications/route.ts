@@ -14,11 +14,15 @@ export async function GET() {
   if (!access) return NextResponse.json({ ok: false, error: 'You must sign in to Aim4price Owner.' }, { status: 401 });
 
   try {
-    const notifications = await listNotificationInbox({
+    const inbox = await listNotificationInbox({
       userId: access.ownerUserId,
       accountType: 'owner',
       viewerKey: access.viewerKey,
     });
+    const allowedAssetIds = access.assetScope === 'selected' ? new Set(access.accessibleAssetIds) : null;
+    const notifications = allowedAssetIds
+      ? inbox.filter((item) => !item.assetId || allowedAssetIds.has(item.assetId))
+      : inbox;
     return NextResponse.json({
       ok: true,
       notifications,
