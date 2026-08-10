@@ -89,14 +89,34 @@ type ManagerAccessSettings = {
   canRecordFuel: boolean;
   canRefillFuel: boolean;
   assetIds: string[];
+  groupIds: string[];
   fuelStorageIds: string[];
+};
+
+type AssetAccessSettings = Pick<ManagerAccessSettings, 'assetScope' | 'assetIds' | 'groupIds'>;
+
+type AssetAccessOption = { id: string; title: string; kind: string };
+type AssetGroupAccessOption = {
+  id: string;
+  name: string;
+  memberAssetIds: string[];
+  memberCount: number;
 };
 
 type ManagerAccessResponse = {
   ok?: boolean;
   settings?: ManagerAccessSettings;
-  assets?: Array<{ id: string; title: string; kind: string }>;
+  assets?: AssetAccessOption[];
+  groups?: AssetGroupAccessOption[];
   storages?: Array<{ id: string; name: string; locationLabel: string }>;
+  error?: string;
+};
+
+type OwnerAssetAccessResponse = {
+  ok?: boolean;
+  settings?: AssetAccessSettings;
+  assets?: AssetAccessOption[];
+  groups?: AssetGroupAccessOption[];
   error?: string;
 };
 
@@ -938,6 +958,14 @@ function AppAccessManagement({ kind }: { kind: DirectoryKind }) {
                     </button>
                   </div>
                 </form>
+                {kind === 'owner' && selectedRecord.accessRole !== 'admin' ? (
+                  <OwnerAppAssetAccessPanel userId={selectedRecord.id} />
+                ) : null}
+                {kind === 'owner' && selectedRecord.accessRole === 'admin' ? (
+                  <section className={styles.accessPanel} aria-label="Owner App asset access">
+                    <p className={styles.accessMessage}>Owner / Admin users always have access to every umbrella and asset.</p>
+                  </section>
+                ) : null}
                 {kind === 'field' ? <FieldManagerAccessPanel managerId={selectedRecord.id} /> : null}
               </div>
             </article>
@@ -951,6 +979,7 @@ function AppAccessManagement({ kind }: { kind: DirectoryKind }) {
 function FieldManagerAccessPanel({ managerId }: { managerId: string }) {
   const [settings, setSettings] = useState<ManagerAccessSettings | null>(null);
   const [assets, setAssets] = useState<NonNullable<ManagerAccessResponse['assets']>>([]);
+  const [groups, setGroups] = useState<NonNullable<ManagerAccessResponse['groups']>>([]);
   const [storages, setStorages] = useState<NonNullable<ManagerAccessResponse['storages']>>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -965,6 +994,7 @@ function FieldManagerAccessPanel({ managerId }: { managerId: string }) {
         if (!response.ok || !payload?.ok || !payload.settings) throw new Error(payload?.error || 'Failed to load access.');
         setSettings(payload.settings);
         setAssets(payload.assets ?? []);
+        setGroups(payload.groups ?? []);
         setStorages(payload.storages ?? []);
       })
       .catch((error) => { if (active) setMessage(error instanceof Error ? error.message : 'Failed to load access.'); })
@@ -972,7 +1002,7 @@ function FieldManagerAccessPanel({ managerId }: { managerId: string }) {
     return () => { active = false; };
   }, [managerId]);
 
-  function toggleId(key: 'assetIds' | 'fuelStorageIds', id: string) {
+  function toggleId(key: 'assetIds' | 'groupIds' | 'fuelStorageIds', id: string) {
     setSettings((current) => current ? {
       ...current,
       [key]: current[key].includes(id) ? current[key].filter((value) => value !== id) : [...current[key], id],
@@ -1038,13 +1068,33 @@ function FieldManagerAccessPanel({ managerId }: { managerId: string }) {
             className={refinementStyles.accessSelect}
           />
           {settings.assetScope === 'selected' ? (
-            <div className={styles.accessChecklist}>
-              {assets.length ? assets.map((asset) => (
-                <label key={asset.id}>
-                  <input type="checkbox" checked={settings.assetIds.includes(asset.id)} onChange={() => toggleId('assetIds', asset.id)} />
-                  <span><strong>{asset.title}</strong><small>{asset.kind}</small></span>
-                </label>
-              )) : <p className={styles.accessMessage}>No assets available.</p>}
+            <div className={styles.assetAccessChoices}>
+              {groups.length ? (
+                <div className={styles.accessChoiceGroup}>
+                  <strong>Umbrellas</strong>
+                  <small>Choosing an umbrella includes its current and future linked assets.</small>
+                  <div className={styles.accessChecklist}>
+                    {groups.map((group) => (
+                      <label key={group.id}>
+                        <input type="checkbox" checked={settings.groupIds.includes(group.id)} onChange={() => toggleId('groupIds', group.id)} />
+                        <span><strong>{group.name}</strong><small>{group.memberCount} linked {group.memberCount === 1 ? 'asset' : 'assets'}</small></span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+              <div className={styles.accessChoiceGroup}>
+                <strong>Individual assets</strong>
+                <small>Use these for exceptions or assets outside an umbrella.</small>
+                <div className={styles.accessChecklist}>
+                  {assets.length ? assets.map((asset) => (
+                    <label key={asset.id}>
+                      <input type="checkbox" checked={settings.assetIds.includes(asset.id)} onChange={() => toggleId('assetIds', asset.id)} />
+                      <span><strong>{asset.title}</strong><small>{asset.kind}</small></span>
+                    </label>
+                  )) : <p className={styles.accessMessage}>No assets available.</p>}
+                </div>
+              </div>
             </div>
           ) : null}
         </div>
@@ -1069,6 +1119,119 @@ function FieldManagerAccessPanel({ managerId }: { managerId: string }) {
           ) : null}
         </div>
       </div>
+
+      {message ? <p className={styles.accessMessage}>{message}</p> : null}
+      <button type="button" className={baseStyles.primaryButton} onClick={() => void saveAccess()} disabled={saving}>
+        {saving ? 'Saving access…' : 'Save access'}
+      </button>
+    </section>
+  );
+}
+
+function OwnerAppAssetAccessPanel({ userId }: { userId: string }) {
+  const [settings, setSettings] = useState<AssetAccessSettings | null>(null);
+  const [assets, setAssets] = useState<AssetAccessOption[]>([]);
+  const [groups, setGroups] = useState<AssetGroupAccessOption[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState('');
+
+  useEffect(() => {
+    let active = true;
+    void fetch(`/api/owner-app/users/${encodeURIComponent(userId)}/access`, { credentials: 'include', cache: 'no-store' })
+      .then(async (response) => ({ response, payload: await response.json().catch(() => null) as OwnerAssetAccessResponse | null }))
+      .then(({ response, payload }) => {
+        if (!active) return;
+        if (!response.ok || !payload?.ok || !payload.settings) throw new Error(payload?.error || 'Failed to load access.');
+        setSettings(payload.settings);
+        setAssets(payload.assets ?? []);
+        setGroups(payload.groups ?? []);
+      })
+      .catch((error) => { if (active) setMessage(error instanceof Error ? error.message : 'Failed to load access.'); })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, [userId]);
+
+  function toggleId(key: 'assetIds' | 'groupIds', id: string) {
+    setSettings((current) => current ? {
+      ...current,
+      [key]: current[key].includes(id) ? current[key].filter((value) => value !== id) : [...current[key], id],
+    } : current);
+  }
+
+  async function saveAccess() {
+    if (!settings) return;
+    setSaving(true);
+    setMessage('');
+    try {
+      const response = await fetch(`/api/owner-app/users/${encodeURIComponent(userId)}/access`, {
+        method: 'PUT',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(settings),
+      });
+      const payload = await response.json().catch(() => null) as OwnerAssetAccessResponse | null;
+      if (!response.ok || !payload?.ok || !payload.settings) throw new Error(payload?.error || 'Failed to save access.');
+      setSettings(payload.settings);
+      setMessage('Access saved.');
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Failed to save access.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (loading) return <div className={styles.accessPanel}><p className={styles.accessMessage}>Loading app access…</p></div>;
+  if (!settings) return <div className={styles.accessPanel}><p className={styles.accessMessage}>{message || 'Access could not be loaded.'}</p></div>;
+
+  return (
+    <section className={styles.accessPanel} aria-label="Owner App asset access">
+      <div className={refinementStyles.sectionHeading}>
+        <span className={refinementStyles.stepNumber}>2</span>
+        <div className={refinementStyles.sectionHeadingCopy}>
+          <h3>Asset access</h3>
+          <p>Choose which umbrellas and individual assets this user may see in the Owner App.</p>
+        </div>
+      </div>
+
+      <FriendlySelect
+        label="Assets"
+        value={settings.assetScope}
+        options={ASSET_SCOPE_OPTIONS}
+        onChange={(assetScope) => setSettings((current) => current ? { ...current, assetScope } : current)}
+        className={refinementStyles.accessSelect}
+      />
+
+      {settings.assetScope === 'selected' ? (
+        <div className={styles.assetAccessChoices}>
+          {groups.length ? (
+            <div className={styles.accessChoiceGroup}>
+              <strong>Umbrellas</strong>
+              <small>Choosing an umbrella includes its current and future linked assets.</small>
+              <div className={styles.accessChecklist}>
+                {groups.map((group) => (
+                  <label key={group.id}>
+                    <input type="checkbox" checked={settings.groupIds.includes(group.id)} onChange={() => toggleId('groupIds', group.id)} />
+                    <span><strong>{group.name}</strong><small>{group.memberCount} linked {group.memberCount === 1 ? 'asset' : 'assets'}</small></span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          ) : null}
+          <div className={styles.accessChoiceGroup}>
+            <strong>Individual assets</strong>
+            <small>Use these for exceptions or assets outside an umbrella.</small>
+            <div className={styles.accessChecklist}>
+              {assets.length ? assets.map((asset) => (
+                <label key={asset.id}>
+                  <input type="checkbox" checked={settings.assetIds.includes(asset.id)} onChange={() => toggleId('assetIds', asset.id)} />
+                  <span><strong>{asset.title}</strong><small>{asset.kind}</small></span>
+                </label>
+              )) : <p className={styles.accessMessage}>No assets available.</p>}
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {message ? <p className={styles.accessMessage}>{message}</p> : null}
       <button type="button" className={baseStyles.primaryButton} onClick={() => void saveAccess()} disabled={saving}>
