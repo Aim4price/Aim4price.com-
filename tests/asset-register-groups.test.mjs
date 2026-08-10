@@ -224,7 +224,9 @@ test('quick controls use clear chevrons, balanced spacing, and concise hover lab
   assert.match(client, /data-tooltip=\{isFlagged \? 'Remove flag' : 'Flag asset'\}/);
   assert.match(client, /data-tooltip="Move asset"/);
   assert.match(client, /data-tooltip="Switch assets"/);
-  assert.match(client, /isResolvedCombinedGroup \? 'Open combined umbrella' : 'Create umbrella'/);
+  assert.match(client, /assetGroup\s+\? 'Manage umbrella'/);
+  assert.match(client, /isResolvedCombinedGroup\s+\? 'Open combined umbrella'/);
+  assert.match(client, /:\s+'Create umbrella'/);
   assert.match(client, /'Show excl\. VAT' : 'Show incl\. VAT'/);
   assert.match(client, /className=\{`\$\{styles\.assetHeaderActions\} \$\{styles\.assetGroupHeaderActions\}`\}/);
   assert.match(client, /data-tooltip=\{isCollapsed \? 'View details' : 'Hide details'\}/);
@@ -449,8 +451,22 @@ test('umbrella creation is register-wide while member controls target the physic
   assert.match(memberCardBlock, /handleAssetFlagToggle\(asset\)/);
   assert.match(memberCardBlock, /openAssetRegisterMoveManager\(asset\)/);
   assert.match(memberCardBlock, /openAssetGroupManager\(asset\)/);
-  assert.match(styles, /\.assetGroupMemberRow > \.assetCard \{[\s\S]*?padding-left:/);
+  assert.match(styles, /\.assetCardRow > \.assetCard \{[\s\S]*?padding-left:/);
   assert.match(styles, /\.assetGroupMemberActions\.assetSideActions/);
+
+  const standaloneActionArea = client.slice(
+    client.indexOf('return (', client.indexOf('const isMarkingLicenseRenewalAlertNoted')),
+    client.indexOf('<article', client.indexOf('const isMarkingLicenseRenewalAlertNoted')),
+  );
+  assert.doesNotMatch(standaloneActionArea, /assetSideActions/);
+
+  const sharedInCardActions = client.slice(
+    client.indexOf('<article', client.indexOf('const isMarkingLicenseRenewalAlertNoted')),
+    client.indexOf('<div className={styles.assetHeader}>', client.indexOf('const isMarkingLicenseRenewalAlertNoted')),
+  );
+  assert.match(sharedInCardActions, /canUseOwnerOnlyAssetActions \|\| isAccountantWorkspace/);
+  assert.match(sharedInCardActions, /styles\.assetGroupMemberActions/);
+  assert.match(sharedInCardActions, /assetGroup \|\| isResolvedCombinedGroup/);
 });
 
 test('umbrella drag auto-scroll and asset discovery cover long registers and saved details', async () => {
@@ -460,6 +476,8 @@ test('umbrella drag auto-scroll and asset discovery cover long registers and sav
   ]);
 
   assert.match(client, /ASSET_GROUP_AUTO_SCROLL_EDGE_PX/);
+  assert.match(client, /ASSET_GROUP_AUTO_SCROLL_MIN_PX = 8/);
+  assert.match(client, /ASSET_GROUP_AUTO_SCROLL_MAX_PX = 64/);
   assert.match(client, /window\.addEventListener\('dragover', handleAssetDragOver\)/);
   assert.match(client, /window\.requestAnimationFrame\(runAssetDragAutoScroll\)/);
   assert.match(client, /window\.scrollBy\(\{ top: scrollDelta, left: 0, behavior: 'auto' \}\)/);
@@ -475,6 +493,14 @@ test('umbrella drag auto-scroll and asset discovery cover long registers and sav
   assert.match(modal, /asset\.categoryLabel/);
   assert.match(modal, /Serial: \$\{asset\.serialNumber\}/);
   assert.match(modal, /Reg: \$\{asset\.registrationNumber\}/);
+});
+
+test('umbrella create and manage forms keep their footer actions fully visible', async () => {
+  const styles = await readFile(new URL('../components/asset-register/AssetGroupManagerModal.module.css', import.meta.url), 'utf8');
+
+  assert.match(styles, /\.dialog > form \{[\s\S]*?flex: 1 1 auto;[\s\S]*?min-height: 0;[\s\S]*?overflow: hidden;/);
+  assert.match(styles, /\.body \{[\s\S]*?flex: 1 1 auto;[\s\S]*?max-height: none;[\s\S]*?overflow-y: auto;/);
+  assert.match(styles, /\.footer \{[\s\S]*?flex: 0 0 auto;[\s\S]*?padding: 18px 32px max\(26px, env\(safe-area-inset-bottom\)\);/);
 });
 
 test('asset disposal uses a valid withdrawn marketplace state and keeps database errors private', async () => {

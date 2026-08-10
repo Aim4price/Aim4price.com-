@@ -35309,22 +35309,22 @@ button.documentOpenLink {
 }
 
 @media (max-width: 760px) {
-  .assetCardRow.assetGroupMemberRow {
+  .assetCardRow {
     grid-template-columns: minmax(0, 1fr) 1.75rem !important;
     gap: 0.2rem !important;
     padding-right: 0.35rem;
   }
 
-  .assetCardRow.assetGroupMemberRow > .assetCard {
+  .assetCardRow > .assetCard {
     grid-column: 1 !important;
   }
 }
 
 @media (max-width: 520px) {
-  .assetCardRow.assetGroupMemberRow {
+  .assetCardRow {
     grid-template-columns: minmax(0, 1fr) 1.5rem !important;
     gap: 0.14rem !important;
-    padding-left: 2.9rem;
+    padding-left: 0;
   }
 }
 
@@ -35577,7 +35577,7 @@ button.documentOpenLink {
   background: linear-gradient(180deg, #f7fffb 0%, #e2f5eb 100%) !important;
 }
 
-.assetGroupMemberRow > .assetCard {
+.assetCardRow > .assetCard {
   position: relative;
   padding-left: clamp(4.35rem, 4.8vw, 4.9rem) !important;
 }
@@ -35657,7 +35657,7 @@ button.documentOpenLink {
 }
 
 @media (max-width: 760px) {
-  .assetGroupMemberRow > .assetCard {
+  .assetCardRow > .assetCard {
     padding-left: clamp(1rem, 4vw, 1.35rem) !important;
   }
 
