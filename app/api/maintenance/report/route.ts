@@ -44,10 +44,15 @@ function parseFilters(request: NextRequest, scope: ReportScope): AssetMaintenanc
   const assetId = searchParams.get('assetId');
   const assignedTo = searchParams.get('assignedTo');
 
+  const reportStatus: AssetMaintenanceListFilters['status'] =
+    scope === 'upcoming' ? 'upcoming' : scope === 'done' ? 'done' : 'all';
+
   return {
     assetId: assetId && assetId !== 'all' ? assetId : null,
     type: parseType(searchParams.get('type')),
-    status: scope === 'upcoming' ? 'upcoming' : scope === 'done' ? 'done' : null,
+    // "All" deliberately includes scheduled/open work and every persisted
+    // completion, including stand-alone services, check-ups and repairs.
+    status: reportStatus,
     assignedTo: assignedTo && assignedTo !== 'all' ? assignedTo : null,
   };
 }
@@ -123,7 +128,7 @@ function findSelectedAsset(
 function reportScopeLabel(scope: ReportScope, selectedAsset: AssetMaintenanceAssetOption | null): string {
   if (scope === 'asset') return selectedAsset ? `Specific asset maintenance report: ${selectedAsset.title}` : 'Specific asset maintenance report';
   if (scope === 'upcoming') return 'Upcoming maintenance report';
-  if (scope === 'done') return 'Done maintenance report';
+  if (scope === 'done') return 'Completed maintenance history report';
   return 'Total maintenance report';
 }
 

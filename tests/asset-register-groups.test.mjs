@@ -406,3 +406,26 @@ test('combined Asset Register groups are account-wide, separately counted, and p
   assert.match(exportRoute, /combinedGroups = scope === 'combined'/);
   assert.match(accountantWorkspace, /projectAssetGroupsToAssets/);
 });
+
+
+test('umbrella and Maintenance page exports preserve completed maintenance history', async () => {
+  const [route, report, maintenance, maintenanceClient, modal] = await Promise.all([
+    readFile(new URL('../app/api/maintenance/report/route.ts', import.meta.url), 'utf8'),
+    readFile(new URL('../lib/asset-maintenance-report.ts', import.meta.url), 'utf8'),
+    readFile(new URL('../lib/asset-maintenance.ts', import.meta.url), 'utf8'),
+    readFile(new URL('../app/maintenance/maintenance-client.tsx', import.meta.url), 'utf8'),
+    readFile(new URL('../components/asset-register/AssetGroupManagerModal.tsx', import.meta.url), 'utf8'),
+  ]);
+
+  assert.match(route, /scope === 'upcoming' \? 'upcoming' : scope === 'done' \? 'done' : 'all'/);
+  assert.match(route, /including stand-alone services, check-ups and repairs/);
+  assert.match(route, /groupMemberIds\.has\(record\.assetId\)/);
+  assert.match(report, /records: records\.filter\(\(record\) => record\.status === 'done'\)/);
+  assert.match(report, /title: 'Completed Maintenance'/);
+  assert.match(maintenance, /recordStandaloneAssetMaintenanceCompletion/);
+  assert.match(maintenance, /'done',[\s\S]*?source_scan_event_id/);
+  assert.match(maintenanceClient, /Total maintenance report[\s\S]*?All open and completed maintenance/);
+  assert.match(maintenanceClient, /Completed maintenance report/);
+  assert.match(modal, /All maintenance/);
+  assert.match(modal, /Completed maintenance/);
+});
