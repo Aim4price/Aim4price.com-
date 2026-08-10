@@ -13,7 +13,7 @@ import {
   updateAssetMaintenanceRecord,
 } from '../../../../../../lib/asset-maintenance';
 import { publishAssetRegisterItemToMarketplace, removeAssetRegisterItemFromMarketplace } from '../../../../../../lib/marketplace-db';
-import { getOwnerAppAccess, ownerAppCan } from '../../../../../../lib/owner-app-access';
+import { getOwnerAppAccess, ownerAppCan, ownerAppCanAccessAsset } from '../../../../../../lib/owner-app-access';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -52,6 +52,9 @@ async function maintenanceIdForAsset(userId: string, assetId: string, value: unk
 export async function POST(request: NextRequest, { params }: { params: { assetId: string } }) {
   const access = await getOwnerAppAccess();
   if (!access) return NextResponse.json({ ok: false, error: 'You must sign in to Aim4price Owner.' }, { status: 401 });
+  if (!ownerAppCanAccessAsset(access, params.assetId)) {
+    return NextResponse.json({ ok: false, error: 'Asset not found.' }, { status: 404 });
+  }
   const asset = await getAssetRegisterItemById(access.ownerUserId, params.assetId);
   if (!asset) return NextResponse.json({ ok: false, error: 'Asset not found.' }, { status: 404 });
 

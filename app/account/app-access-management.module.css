@@ -584,6 +584,30 @@
   gap: 0.65rem;
 }
 
+.assetAccessChoices {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.accessChoiceGroup {
+  min-width: 0;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.accessChoiceGroup > strong {
+  color: #244b3d;
+  font-size: 0.82rem;
+  font-weight: 900;
+}
+
+.accessChoiceGroup > small {
+  color: #71837c;
+  font-size: 0.7rem;
+  font-weight: 650;
+  line-height: 1.4;
+}
+
 .accessChecklist {
   max-height: 16rem;
   display: grid;

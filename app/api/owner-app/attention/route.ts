@@ -12,7 +12,14 @@ function range(value: unknown): OwnerAppOverviewRange {
 export async function GET(request: NextRequest) {
   const access = await getOwnerAppAccess();
   if (!access) return NextResponse.json({ ok: false, error: 'You must sign in to Aim4price Owner.' }, { status: 401 });
-  try { return NextResponse.json(await listOwnerAppOverview(access.ownerUserId, access.viewerKey, range(request.nextUrl.searchParams.get('range')))); }
+  try {
+    return NextResponse.json(await listOwnerAppOverview(
+      access.ownerUserId,
+      access.viewerKey,
+      range(request.nextUrl.searchParams.get('range')),
+      access.assetScope === 'selected' ? access.accessibleAssetIds : null,
+    ));
+  }
   catch (error) { console.error('Owner App attention GET failed.', error); return NextResponse.json({ ok: false, error: 'Failed to load Needs Attention.' }, { status: 500 }); }
 }
 
@@ -21,7 +28,14 @@ export async function POST(request: NextRequest) {
   if (!access) return NextResponse.json({ ok: false, error: 'You must sign in to Aim4price Owner.' }, { status: 401 });
   try {
     const body = await request.json() as Record<string, unknown>;
-    await dismissOwnerAppOverviewItem(access.ownerUserId, access.viewerKey, range(body.range), String(body.itemId ?? ''), String(body.sourceId ?? ''));
+    await dismissOwnerAppOverviewItem(
+      access.ownerUserId,
+      access.viewerKey,
+      range(body.range),
+      String(body.itemId ?? ''),
+      String(body.sourceId ?? ''),
+      access.assetScope === 'selected' ? access.accessibleAssetIds : null,
+    );
     return NextResponse.json({ ok: true });
   } catch (error) {
     console.error('Owner App attention dismiss failed.', error);

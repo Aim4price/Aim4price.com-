@@ -45,7 +45,16 @@ type SessionApiResponse = {
 type AssetsApiResponse = {
   ok: boolean;
   assets?: FieldManagerAssetSummary[];
+  groups?: AssetGroupSummary[];
   error?: string;
+};
+
+type AssetGroupSummary = {
+  id: string;
+  name: string;
+  primaryAssetId: string;
+  memberAssetIds: string[];
+  memberCount: number;
 };
 
 type OpenAssetApiResponse = {
@@ -101,6 +110,9 @@ function searchHaystack(asset: FieldManagerAssetSummary): string {
 
 export default function FieldManagerAssetsClient() {
   const [assets, setAssets] = useState<FieldManagerAssetSummary[]>([]);
+  const [groups, setGroups] = useState<AssetGroupSummary[]>([]);
+  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
+  const [showAllAssets, setShowAllAssets] = useState(false);
   const [search, setSearch] = useState('');
   const [notice, setNotice] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -112,6 +124,24 @@ export default function FieldManagerAssetsClient() {
     if (!query) return assets;
     return assets.filter((asset) => searchHaystack(asset).includes(query));
   }, [assets, search]);
+  const selectedGroup = useMemo(
+    () => groups.find((group) => group.id === selectedGroupId) ?? null,
+    [groups, selectedGroupId],
+  );
+  const groupByAssetId = useMemo(() => new Map(
+    groups.flatMap((group) => group.memberAssetIds.map((assetId) => [assetId, group] as const)),
+  ), [groups]);
+  const selectedGroupAssetIds = useMemo(
+    () => new Set(selectedGroup?.memberAssetIds ?? []),
+    [selectedGroup],
+  );
+  const hasSearch = Boolean(search.trim());
+  const directoryAssets = useMemo(() => {
+    if (hasSearch || showAllAssets || !groups.length) return filteredAssets;
+    if (selectedGroup) return filteredAssets.filter((asset) => selectedGroupAssetIds.has(asset.id));
+    return filteredAssets.filter((asset) => !groupByAssetId.has(asset.id));
+  }, [filteredAssets, groupByAssetId, groups.length, hasSearch, selectedGroup, selectedGroupAssetIds, showAllAssets]);
+  const showDirectoryHome = groups.length > 0 && !hasSearch && !selectedGroup && !showAllAssets;
 
   useEffect(() => {
     void loadFieldManagerAssets();
@@ -158,6 +188,7 @@ export default function FieldManagerAssetsClient() {
       }
 
       setAssets(assetsPayload.assets ?? []);
+      setGroups(assetsPayload.groups ?? []);
     } catch (error) {
       setNotice(error instanceof Error ? error.message : 'Failed to load assets.');
     } finally {
@@ -199,6 +230,51 @@ export default function FieldManagerAssetsClient() {
     }
   }
 
+  function returnToDirectory() {
+    setSelectedGroupId(null);
+    setShowAllAssets(false);
+  }
+
+  function renderAssetCard(asset: FieldManagerAssetSummary) {
+    const isOpening = openingAssetId === asset.id;
+    const assetGroup = groupByAssetId.get(asset.id);
+
+    return (
+      <article key={asset.id} className={styles.assetCard}>
+        <div className={styles.assetTopRow}>
+          <div>
+            <h2>{asset.title}</h2>
+            {hasSearch && assetGroup ? <p>Umbrella: {assetGroup.name}</p> : null}
+          </div>
+        </div>
+
+        <div className={`${styles.assetMetaGrid} ${styles.assetMetaGridVertical}`}>
+          <div>
+            <span>Serial</span>
+            <strong>{serialDisplayText(asset)}</strong>
+          </div>
+          <div>
+            <span>Year</span>
+            <strong>{formatYearModel(asset)}</strong>
+          </div>
+          <div>
+            <span>Usage</span>
+            <strong>{asset.usageLabel}</strong>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          className={`${styles.mobilePrimaryButton} ${styles.assetOpenButton}`}
+          onClick={() => void handleOpenAsset(asset)}
+          disabled={Boolean(openingAssetId)}
+        >
+          {isOpening ? 'Opening…' : 'Open'}
+        </button>
+      </article>
+    );
+  }
+
   return (
     <main className={styles.mobilePage}>
       <section className={styles.assetsShell}>
@@ -220,6 +296,16 @@ export default function FieldManagerAssetsClient() {
           </div>
         </section>
 
+        {!isLoading && groups.length > 0 && !hasSearch && (selectedGroup || showAllAssets) ? (
+          <section className={styles.assetDirectoryNav} aria-label="Asset directory navigation">
+            <button type="button" onClick={returnToDirectory}>Back to umbrellas</button>
+            <div>
+              <span>{selectedGroup ? 'Umbrella' : 'Maintenance'}</span>
+              <strong>{selectedGroup?.name || 'All assets'}</strong>
+            </div>
+          </section>
+        ) : null}
+
         {isLoading ? <p className={styles.mobileEmpty}>Loading available assets…</p> : null}
 
         {!isLoading && !assets.length ? (
@@ -230,45 +316,56 @@ export default function FieldManagerAssetsClient() {
           <p className={styles.mobileEmpty}>No assets match this search.</p>
         ) : null}
 
-        <section className={styles.assetList} aria-label="Field Manager assets">
-          {filteredAssets.map((asset) => {
-            const isOpening = openingAssetId === asset.id;
+        <div className={styles.assetDirectory}>
+          {showDirectoryHome ? (
+            <section className={styles.assetDirectorySection} aria-labelledby="field-umbrella-heading">
+              <div className={styles.assetDirectoryHeading}>
+                <span>Organised assets</span>
+                <h1 id="field-umbrella-heading">Umbrellas</h1>
+              </div>
+              <div className={styles.assetList}>
+                {groups.map((group) => (
+                  <article key={group.id} className={`${styles.assetCard} ${styles.assetDirectoryUmbrellaCard}`}>
+                    <div className={styles.assetDirectoryUmbrellaIcon} aria-hidden="true">☂</div>
+                    <div className={styles.assetTopRow}><div><h2>{group.name}</h2></div></div>
+                    <p className={styles.assetDirectoryCount}>{group.memberCount} linked {group.memberCount === 1 ? 'asset' : 'assets'}</p>
+                    <button
+                      type="button"
+                      className={`${styles.mobilePrimaryButton} ${styles.assetOpenButton}`}
+                      onClick={() => setSelectedGroupId(group.id)}
+                    >
+                      Open umbrella
+                    </button>
+                  </article>
+                ))}
+                <article className={`${styles.assetCard} ${styles.assetDirectoryUmbrellaCard}`}>
+                  <div className={styles.assetDirectoryUmbrellaIcon} aria-hidden="true">▦</div>
+                  <div className={styles.assetTopRow}><div><h2>All assets</h2></div></div>
+                  <p className={styles.assetDirectoryCount}>View every available physical asset.</p>
+                  <button
+                    type="button"
+                    className={`${styles.mobilePrimaryButton} ${styles.assetOpenButton}`}
+                    onClick={() => setShowAllAssets(true)}
+                  >
+                    View all assets
+                  </button>
+                </article>
+              </div>
+            </section>
+          ) : null}
 
-            return (
-              <article key={asset.id} className={styles.assetCard}>
-                <div className={styles.assetTopRow}>
-                  <div>
-                    <h2>{asset.title}</h2>
-                  </div>
+          {directoryAssets.length ? (
+            <section className={styles.assetDirectorySection} aria-label="Field Manager assets">
+              {showDirectoryHome ? (
+                <div className={styles.assetDirectoryHeading}>
+                  <span>Not inside an umbrella</span>
+                  <h1>Other assets</h1>
                 </div>
-
-                <div className={`${styles.assetMetaGrid} ${styles.assetMetaGridVertical}`}>
-                  <div>
-                    <span>Serial</span>
-                    <strong>{serialDisplayText(asset)}</strong>
-                  </div>
-                  <div>
-                    <span>Year</span>
-                    <strong>{formatYearModel(asset)}</strong>
-                  </div>
-                  <div>
-                    <span>Usage</span>
-                    <strong>{asset.usageLabel}</strong>
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  className={`${styles.mobilePrimaryButton} ${styles.assetOpenButton}`}
-                  onClick={() => void handleOpenAsset(asset)}
-                  disabled={Boolean(openingAssetId)}
-                >
-                  {isOpening ? 'Opening…' : 'Open'}
-                </button>
-              </article>
-            );
-          })}
-        </section>
+              ) : null}
+              <div className={styles.assetList}>{directoryAssets.map(renderAssetCard)}</div>
+            </section>
+          ) : null}
+        </div>
 
         {locationGate ? (
           <FieldManagerServiceLocationModal

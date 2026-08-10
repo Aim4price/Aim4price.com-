@@ -15,6 +15,7 @@
     "test:maintenance-overview": "node --test tests/maintenance-overview-visibility.test.mjs",
     "test:owner-app-operations": "node --test tests/owner-app-operations.test.mjs",
     "test:asset-groups": "node --test tests/asset-register-groups.test.mjs",
+    "test:app-umbrella-access": "node --test tests/app-umbrella-directory-access.test.mjs",
     "verify:insurance": "node scripts/verify-insurance-workspace.cjs"
   },
   "dependencies": {

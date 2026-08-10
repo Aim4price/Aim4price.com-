@@ -627,6 +627,45 @@
   padding-bottom: 22px;
 }
 
+.assetDirectory { display: grid; gap: 22px; }
+.assetDirectorySection { min-width: 0; display: grid; gap: 12px; }
+.assetDirectorySection > .assetList { margin-top: 0; }
+.assetDirectoryHeading { display: grid; gap: 3px; padding: 2px 4px; }
+.assetDirectoryHeading > span {
+  color: #237052;
+  font-size: 0.7rem;
+  font-weight: 900;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+.assetDirectoryHeading > h1 { margin: 0; color: #12352d; font-size: 1.28rem; font-weight: 900; letter-spacing: -0.035em; }
+.assetDirectoryNav {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  margin: 0 0 14px;
+  border: 1px solid rgba(18, 53, 45, 0.11);
+  border-radius: 18px;
+  background: #f7fbf8;
+  padding: 10px;
+}
+.assetDirectoryNav button {
+  min-height: 44px;
+  border: 1px solid rgba(18, 53, 45, 0.14);
+  border-radius: 13px;
+  background: #fff;
+  color: #15533e;
+  padding: 0 12px;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 850;
+  cursor: pointer;
+}
+.assetDirectoryNav div { min-width: 0; display: grid; gap: 2px; }
+.assetDirectoryNav span { color: rgba(18, 53, 45, 0.58); font-size: 0.68rem; font-weight: 800; text-transform: uppercase; }
+.assetDirectoryNav strong { overflow-wrap: anywhere; color: #12352d; font-size: 0.94rem; }
+
 .assetCard {
   display: grid;
   gap: 14px;
@@ -634,6 +673,33 @@
   border-radius: 24px;
   padding: 18px 16px 16px;
   box-shadow: 0 16px 36px rgba(18, 53, 45, 0.08);
+}
+
+.assetDirectoryUmbrellaCard {
+  justify-items: center;
+  border-color: rgba(32, 143, 102, 0.27);
+  background: linear-gradient(145deg, #ffffff 0%, #f1faf6 100%);
+  text-align: center;
+}
+.assetDirectoryUmbrellaIcon {
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(31, 138, 102, 0.24);
+  border-radius: 16px;
+  background: #e9f8f1;
+  color: #0c6a4c;
+  font-size: 1.45rem;
+  font-weight: 900;
+}
+.assetDirectoryCount {
+  margin: -4px 0 0;
+  color: rgba(18, 53, 45, 0.62);
+  font-size: 0.8rem;
+  font-weight: 750;
+  line-height: 1.4;
+  text-align: center;
 }
 
 .assetTopRow {

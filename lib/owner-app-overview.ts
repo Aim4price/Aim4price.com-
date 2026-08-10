@@ -55,8 +55,14 @@ function maintenanceItem(item: AssetMaintenanceRecord, asset: OwnerAppAssetSumma
   };
 }
 
-async function buildOverview(ownerUserId: string, range: OwnerAppOverviewRange): Promise<OwnerAppOverviewItem[]> {
-  const { items: assets } = await listAllOwnerAppAssets(ownerUserId);
+async function buildOverview(
+  ownerUserId: string,
+  range: OwnerAppOverviewRange,
+  allowedAssetIds: readonly string[] | null = null,
+): Promise<OwnerAppOverviewItem[]> {
+  const { items } = await listAllOwnerAppAssets(ownerUserId);
+  const allowed = allowedAssetIds ? new Set(allowedAssetIds) : null;
+  const assets = allowed ? items.filter((asset) => allowed.has(asset.id)) : items;
   const ids = assets.map((asset) => asset.id);
   if (!ids.length) return [];
   const byId = new Map(assets.map((asset) => [asset.id, asset]));
@@ -119,10 +125,15 @@ async function buildOverview(ownerUserId: string, range: OwnerAppOverviewRange):
   });
 }
 
-export async function listOwnerAppOverview(ownerUserId: string, viewerKey: string, range: OwnerAppOverviewRange) {
+export async function listOwnerAppOverview(
+  ownerUserId: string,
+  viewerKey: string,
+  range: OwnerAppOverviewRange,
+  allowedAssetIds: readonly string[] | null = null,
+) {
   await ensureOwnerAppTables();
   const [items, dismissed] = await Promise.all([
-    buildOverview(ownerUserId, range),
+    buildOverview(ownerUserId, range, allowedAssetIds),
     getDb().query<{ source_kind: string; source_id: string }>('select source_kind, source_id from public.owner_app_overview_dismissals where parent_owner_user_id = $1 and viewer_key = $2', [ownerUserId, viewerKey]),
   ]);
   const hidden = new Set(dismissed.rows.map((row) => `${row.source_kind}\u0000${row.source_id}`));
@@ -131,9 +142,16 @@ export async function listOwnerAppOverview(ownerUserId: string, viewerKey: strin
   return { ok: true as const, range, items: visible, summary: { totalCount: visible.length, needsAttentionCount, comingUpCount: visible.length - needsAttentionCount } };
 }
 
-export async function dismissOwnerAppOverviewItem(ownerUserId: string, viewerKey: string, range: OwnerAppOverviewRange, itemId: string, sourceId: string) {
+export async function dismissOwnerAppOverviewItem(
+  ownerUserId: string,
+  viewerKey: string,
+  range: OwnerAppOverviewRange,
+  itemId: string,
+  sourceId: string,
+  allowedAssetIds: readonly string[] | null = null,
+) {
   await ensureOwnerAppTables();
-  const items = await buildOverview(ownerUserId, range);
+  const items = await buildOverview(ownerUserId, range, allowedAssetIds);
   const item = items.find((entry) => entry.id === itemId && entry.sourceId === sourceId);
   if (!item) throw new Error('OVERVIEW_ITEM_NOT_FOUND');
   await getDb().query(`insert into public.owner_app_overview_dismissals (

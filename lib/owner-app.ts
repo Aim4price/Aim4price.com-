@@ -1,6 +1,8 @@
 import { randomBytes, scrypt, timingSafeEqual } from 'node:crypto';
 import { promisify } from 'node:util';
 import { getDb } from './db';
+import { listAssetGroups } from './asset-groups';
+import { listAllOwnerAppAssets } from './owner-app-assets';
 
 const scryptAsync = promisify(scrypt);
 
@@ -37,6 +39,12 @@ export type OwnerAppUserRecord = {
   lastLoginAtIso: string | null;
   createdAtIso: string;
   updatedAtIso: string;
+};
+
+export type OwnerAppAssetAccessSettings = {
+  assetScope: 'all' | 'selected';
+  assetIds: string[];
+  groupIds: string[];
 };
 
 let ownerAppTablesPromise: Promise<void> | null = null;
@@ -94,6 +102,31 @@ async function ensureOwnerAppTablesOnce(): Promise<void> {
   await db.query('create index if not exists idx_owner_app_users_parent on public.owner_app_users(parent_owner_user_id, created_at desc)');
   await db.query('create index if not exists idx_owner_app_users_active on public.owner_app_users(parent_owner_user_id, is_active)');
   await db.query(`
+    create table if not exists public.owner_app_user_access_settings (
+      owner_app_user_id uuid primary key references public.owner_app_users(id) on delete cascade,
+      asset_scope text not null default 'all' check (asset_scope in ('all', 'selected')),
+      updated_at timestamptz not null default now()
+    )
+  `);
+  await db.query(`
+    create table if not exists public.owner_app_user_asset_access (
+      owner_app_user_id uuid not null references public.owner_app_users(id) on delete cascade,
+      asset_id uuid not null,
+      created_at timestamptz not null default now(),
+      primary key (owner_app_user_id, asset_id)
+    )
+  `);
+  await db.query('create index if not exists idx_owner_app_user_asset_access_asset on public.owner_app_user_asset_access(asset_id)');
+  await db.query(`
+    create table if not exists public.owner_app_user_group_access (
+      owner_app_user_id uuid not null references public.owner_app_users(id) on delete cascade,
+      group_id uuid not null,
+      created_at timestamptz not null default now(),
+      primary key (owner_app_user_id, group_id)
+    )
+  `);
+  await db.query('create index if not exists idx_owner_app_user_group_access_group on public.owner_app_user_group_access(group_id)');
+  await db.query(`
     create table if not exists public.owner_app_overview_dismissals (
       parent_owner_user_id text not null references public."user"(id) on delete cascade,
       viewer_key text not null default 'legacy-owner',
@@ -134,6 +167,133 @@ export function normalizeOwnerAppAccessRole(value: unknown): OwnerAppAccessRole 
   if (normalized === 'admin' || normalized === 'owner_admin') return 'admin';
   if (normalized === 'view_only' || normalized === 'viewer') return 'view_only';
   return 'operations';
+}
+
+function ownerAssetAccessScope(value: unknown): 'all' | 'selected' {
+  return cleanText(value).toLowerCase() === 'selected' ? 'selected' : 'all';
+}
+
+function uuidList(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return Array.from(new Set(value.map(cleanText).filter((id) => (
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)
+  ))));
+}
+
+export async function getOwnerAppAssetAccessSettings(
+  parentOwnerUserId: string,
+  ownerAppUserId: string,
+): Promise<OwnerAppAssetAccessSettings> {
+  await ensureOwnerAppTables();
+  const result = await getDb().query<{
+    asset_scope: string | null;
+    asset_ids: unknown;
+    group_ids: unknown;
+    access_role: OwnerAppAccessRole;
+  }>(
+    `select
+      coalesce(settings.asset_scope, 'all') as asset_scope,
+      owner_user.access_role,
+      coalesce((
+        select jsonb_agg(access.asset_id::text order by access.asset_id::text)
+        from public.owner_app_user_asset_access access
+        where access.owner_app_user_id = owner_user.id
+      ), '[]'::jsonb) as asset_ids,
+      coalesce((
+        select jsonb_agg(access.group_id::text order by access.group_id::text)
+        from public.owner_app_user_group_access access
+        where access.owner_app_user_id = owner_user.id
+      ), '[]'::jsonb) as group_ids
+    from public.owner_app_users owner_user
+    left join public.owner_app_user_access_settings settings on settings.owner_app_user_id = owner_user.id
+    where owner_user.parent_owner_user_id = $1 and owner_user.id = $2::uuid
+    limit 1`,
+    [parentOwnerUserId, ownerAppUserId],
+  );
+  const row = result.rows[0];
+  if (!row) throw new Error('Owner App user not found.');
+  if (normalizeOwnerAppAccessRole(row.access_role) === 'admin') {
+    return { assetScope: 'all', assetIds: [], groupIds: [] };
+  }
+  return {
+    assetScope: ownerAssetAccessScope(row.asset_scope),
+    assetIds: uuidList(row.asset_ids),
+    groupIds: uuidList(row.group_ids),
+  };
+}
+
+export async function resolveOwnerAppAccessibleAssetIds(
+  parentOwnerUserId: string,
+  ownerAppUserId: string,
+): Promise<string[]> {
+  const settings = await getOwnerAppAssetAccessSettings(parentOwnerUserId, ownerAppUserId);
+  if (settings.assetScope === 'all') return [];
+
+  const result = await getDb().query<{ asset_id: string }>(
+    `select explicit.asset_id::text as asset_id
+       from public.owner_app_user_asset_access explicit
+       inner join public.owner_app_users owner_user on owner_user.id = explicit.owner_app_user_id
+       where explicit.owner_app_user_id = $1::uuid and owner_user.parent_owner_user_id = $2
+     union
+     select member.asset_id::text as asset_id
+       from public.owner_app_user_group_access group_access
+       inner join public.owner_app_users owner_user on owner_user.id = group_access.owner_app_user_id
+       inner join public.asset_groups asset_group on asset_group.id = group_access.group_id and asset_group.user_id = $2
+       inner join public.asset_group_members member on member.group_id = asset_group.id
+       where group_access.owner_app_user_id = $1::uuid and owner_user.parent_owner_user_id = $2`,
+    [ownerAppUserId, parentOwnerUserId],
+  );
+  return Array.from(new Set(result.rows.map((row) => cleanText(row.asset_id)).filter(Boolean)));
+}
+
+export async function updateOwnerAppAssetAccessSettings(
+  parentOwnerUserId: string,
+  ownerAppUserId: string,
+  input: Record<string, unknown>,
+): Promise<OwnerAppAssetAccessSettings> {
+  const current = await getOwnerAppAssetAccessSettings(parentOwnerUserId, ownerAppUserId);
+  const ownerAppUser = await getOwnerAppUserById(ownerAppUserId);
+  if (!ownerAppUser || ownerAppUser.parent_owner_user_id !== parentOwnerUserId) {
+    throw new Error('Owner App user not found.');
+  }
+  if (normalizeOwnerAppAccessRole(ownerAppUser.access_role) === 'admin') return current;
+
+  const assetScope = ownerAssetAccessScope(input.assetScope);
+  const requestedAssetIds = uuidList(input.assetIds);
+  const requestedGroupIds = uuidList(input.groupIds);
+  const [assetData, groups] = await Promise.all([
+    listAllOwnerAppAssets(parentOwnerUserId),
+    listAssetGroups(parentOwnerUserId),
+  ]);
+  const ownedAssetIds = new Set(assetData.items.map((asset) => asset.id));
+  const ownedGroupIds = new Set(groups.map((group) => group.id));
+  const assetIds = requestedAssetIds.filter((assetId) => ownedAssetIds.has(assetId));
+  const groupIds = requestedGroupIds.filter((groupId) => ownedGroupIds.has(groupId));
+  const db = getDb();
+
+  await db.query(
+    `insert into public.owner_app_user_access_settings (owner_app_user_id, asset_scope, updated_at)
+     values ($1::uuid, $2, now())
+     on conflict (owner_app_user_id) do update set asset_scope = excluded.asset_scope, updated_at = now()`,
+    [ownerAppUserId, assetScope],
+  );
+  await db.query('delete from public.owner_app_user_asset_access where owner_app_user_id = $1::uuid', [ownerAppUserId]);
+  await db.query('delete from public.owner_app_user_group_access where owner_app_user_id = $1::uuid', [ownerAppUserId]);
+  if (assetScope === 'selected' && assetIds.length) {
+    await db.query(
+      `insert into public.owner_app_user_asset_access (owner_app_user_id, asset_id)
+       select $1::uuid, value::uuid from unnest($2::text[]) value on conflict do nothing`,
+      [ownerAppUserId, assetIds],
+    );
+  }
+  if (assetScope === 'selected' && groupIds.length) {
+    await db.query(
+      `insert into public.owner_app_user_group_access (owner_app_user_id, group_id)
+       select $1::uuid, value::uuid from unnest($2::text[]) value on conflict do nothing`,
+      [ownerAppUserId, groupIds],
+    );
+  }
+  return getOwnerAppAssetAccessSettings(parentOwnerUserId, ownerAppUserId);
 }
 
 async function hashOwnerAppPassword(password: string): Promise<string> {
@@ -237,6 +397,18 @@ export async function updateOwnerAppUser(
       returning *`,
       [id, parentOwnerUserId, displayName, username, passwordHash, isActive, accessRole, mustRevoke ? 1 : 0],
     );
+    if (accessRole === 'admin') {
+      await Promise.all([
+        getDb().query(
+          `insert into public.owner_app_user_access_settings (owner_app_user_id, asset_scope, updated_at)
+           values ($1::uuid, 'all', now())
+           on conflict (owner_app_user_id) do update set asset_scope = 'all', updated_at = now()`,
+          [id],
+        ),
+        getDb().query('delete from public.owner_app_user_asset_access where owner_app_user_id = $1::uuid', [id]),
+        getDb().query('delete from public.owner_app_user_group_access where owner_app_user_id = $1::uuid', [id]),
+      ]);
+    }
     return mapOwnerAppUser(result.rows[0]);
   } catch (error: any) {
     if (error?.code === '23505') throw new Error('That username is already in use.');
