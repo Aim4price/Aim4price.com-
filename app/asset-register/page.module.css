@@ -7659,18 +7659,35 @@
 
 .assetGroupValue {
   display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: 0.65rem;
+  row-gap: 0.12rem;
+  align-items: baseline;
   justify-items: end;
-  gap: 0.18rem;
+  width: 100%;
   text-align: right;
 }
 
 .assetGroupValue strong {
+  grid-column: 2;
+  justify-self: end;
   color: #064336;
-  font-size: clamp(0.96rem, 1.25vw, 1.15rem);
+  font-size: clamp(1.08rem, 1.35vw, 1.28rem);
   white-space: nowrap;
 }
 
-.assetGroupValue span {
+.assetGroupValueLabel {
+  grid-column: 1;
+  justify-self: end;
+  color: #245f50;
+  font-size: 0.82rem;
+  font-weight: 850;
+  white-space: nowrap;
+}
+
+.assetGroupValueVat {
+  grid-column: 2;
+  justify-self: end;
   color: #5f746d;
   font-size: 0.78rem;
   font-weight: 800;
@@ -7761,8 +7778,17 @@
   }
 
   .assetGroupValue {
+    grid-template-columns: auto auto;
+    justify-content: start;
     justify-items: start;
+    width: auto;
     text-align: left;
+  }
+
+  .assetGroupValueLabel,
+  .assetGroupValue strong,
+  .assetGroupValueVat {
+    justify-self: start;
   }
 
   .assetGroupMemberRow {
@@ -35077,11 +35103,13 @@ button.documentOpenLink {
 
 
 /* Keep attention on the asset whose details are open. */
-.assetCardRow {
+.assetCardRow,
+.assetGroupHeaderRow {
   transition: filter 190ms ease, opacity 190ms ease, transform 190ms ease;
 }
 
-.assetCardRowMuted {
+.assetCardRowMuted,
+.assetGroupHeaderRowMuted {
   opacity: 0.3;
   filter: blur(1.7px);
   transform: scale(0.987);
@@ -35094,14 +35122,16 @@ button.documentOpenLink {
 }
 
 @media (max-width: 760px) {
-  .assetCardRowMuted {
+  .assetCardRowMuted,
+  .assetGroupHeaderRowMuted {
     opacity: 0.22;
     filter: blur(1.4px);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .assetCardRow {
+  .assetCardRow,
+  .assetGroupHeaderRow {
     transition: none;
   }
 }

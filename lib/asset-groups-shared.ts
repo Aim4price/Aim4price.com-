@@ -271,7 +271,8 @@ export function orderAssetsByGroups<T extends { id: string }>(assets: T[], group
     }))
     .filter(({ firstVisibleAssetIndex }) => firstVisibleAssetIndex !== Number.MAX_SAFE_INTEGER)
     .sort((left, right) => (
-      left.firstVisibleAssetIndex - right.firstVisibleAssetIndex
+      left.group.name.localeCompare(right.group.name, 'en-ZA', { sensitivity: 'base' })
+      || left.firstVisibleAssetIndex - right.firstVisibleAssetIndex
       || left.groupIndex - right.groupIndex
     ))
     .forEach(({ group }) => {

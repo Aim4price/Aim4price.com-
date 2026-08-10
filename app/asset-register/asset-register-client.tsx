@@ -4213,6 +4213,22 @@ function sortAssetsByRegisterPriority(assetList: RegisterAsset[], assetFilter: A
   return [...assetList].sort((left, right) => compareAssetsByRegisterPriority(left, right, assetFilter));
 }
 
+function compareUmbrellaAssetsByAttention(left: RegisterAsset, right: RegisterAsset): number {
+  const leftRank = assetAttentionRank(left);
+  const rightRank = assetAttentionRank(right);
+  const attentionDifference = Number(rightRank > 0) - Number(leftRank > 0);
+  if (attentionDifference) return attentionDifference;
+  if (!leftRank && !rightRank) return 0;
+
+  const rankDifference = rightRank - leftRank;
+  if (rankDifference) return rankDifference;
+
+  const alertCountDifference = assetUnnotedAlertCount(right) - assetUnnotedAlertCount(left);
+  if (alertCountDifference) return alertCountDifference;
+
+  return assetAttentionTimestamp(right) - assetAttentionTimestamp(left);
+}
+
 function assetKindLabel(asset: RegisterAsset): string {
   return assetFamilyLabel(asset);
 }
@@ -6410,11 +6426,9 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
   }
 
   function toggleAssetGroupCollapsed(groupId: string) {
-    const nextExpandedGroupIds = new Set(expandedAssetGroupIds);
-    const willExpand = !nextExpandedGroupIds.has(groupId);
-
-    if (willExpand) nextExpandedGroupIds.add(groupId);
-    else nextExpandedGroupIds.delete(groupId);
+    const willExpand = !expandedAssetGroupIds.has(groupId);
+    const nextExpandedGroupIds = willExpand ? new Set([groupId]) : new Set<string>();
+    if (willExpand) setExpandedAssetId(null);
 
     let nextPageSize = pageSize;
     if (willExpand && pageSize !== 'all') {
@@ -8217,7 +8231,8 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
   }, [isAssetSettingsModalOpen, assetSettingsView]);
 
   const displayAssetGroups = useMemo(
-    () => projectAssetGroupsToAssets(assetGroups, assets),
+    () => projectAssetGroupsToAssets(assetGroups, assets)
+      .sort((left, right) => left.name.localeCompare(right.name, 'en-ZA', { sensitivity: 'base' }) || left.id.localeCompare(right.id)),
     [assetGroups, assets],
   );
   const assetsById = useMemo(
@@ -8686,7 +8701,11 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     [displayAssetGroups, filteredAssets],
   );
   const registerPaginationEntries = useMemo(
-    () => buildAssetGroupPageEntries(groupedFilteredAssets, displayAssetGroups),
+    () => buildAssetGroupPageEntries(groupedFilteredAssets, displayAssetGroups).map((entry) => (
+      entry.kind === 'group'
+        ? { ...entry, assets: [...entry.assets].sort(compareUmbrellaAssetsByAttention) }
+        : entry
+    )),
     [displayAssetGroups, groupedFilteredAssets],
   );
 
@@ -8713,35 +8732,32 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
   );
   const visibleAssetRows = useMemo<AssetRegisterDisplayRow[]>(() => {
     const rows: AssetRegisterDisplayRow[] = [];
-    const emittedGroupIds = new Set<string>();
-
-    visibleAssets.forEach((asset) => {
-      const membership = assetGroupMemberships.get(asset.id);
-      const group = membership?.group ?? null;
-
-      if (group && !emittedGroupIds.has(group.id)) {
-        emittedGroupIds.add(group.id);
-        rows.push({ kind: 'group', group });
-      }
-
-      if (group && !expandedAssetGroupIds.has(group.id)) {
+    visiblePaginationEntries.forEach((entry) => {
+      if (entry.kind === 'asset') {
+        rows.push({ kind: 'asset', asset: entry.asset, group: null, memberIndex: 0, memberCount: 1 });
         return;
       }
 
-      const memberIndex = group
-        ? Math.max(0, group.members.findIndex((member) => member.assetId === asset.id))
-        : 0;
-      rows.push({
-        kind: 'asset',
-        asset,
-        group,
-        memberIndex,
-        memberCount: group?.members.length ?? 1,
+      rows.push({ kind: 'group', group: entry.group });
+      if (!expandedAssetGroupIds.has(entry.group.id)) return;
+
+      entry.assets.forEach((asset, memberIndex) => {
+        rows.push({
+          kind: 'asset',
+          asset,
+          group: entry.group,
+          memberIndex,
+          memberCount: entry.assets.length,
+        });
       });
     });
 
     return rows;
-  }, [assetGroupMemberships, expandedAssetGroupIds, visibleAssets]);
+  }, [expandedAssetGroupIds, visiblePaginationEntries]);
+  const focusedAssetGroupId = expandedAssetGroupIds.values().next().value ?? null;
+  const expandedAssetGroupId = expandedAssetId
+    ? assetGroupMemberships.get(expandedAssetId)?.group.id ?? null
+    : null;
   const paginationItems = useMemo(() => buildPaginationItems(safeCurrentPage, pageCount), [safeCurrentPage, pageCount]);
 
   useEffect(() => {
@@ -14831,10 +14847,13 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                       const additionalAssetCount = Math.max(0, group.members.length - 1);
                       const canReceiveDraggedAsset = canDropAssetIntoGroup(draggingAssetId, group);
                       const isAssetGroupDropTarget = canReceiveDraggedAsset && assetGroupDropTargetId === group.id;
+                      const isAssetGroupMuted = expandedAssetId
+                        ? expandedAssetGroupId !== group.id
+                        : Boolean(focusedAssetGroupId && focusedAssetGroupId !== group.id);
 
                       return (
                         <div
-                          className={`${styles.assetGroupHeaderRow} ${canReceiveDraggedAsset ? styles.assetGroupHeaderRowDragReady : ''} ${isAssetGroupDropTarget ? styles.assetGroupHeaderRowDropTarget : ''}`}
+                          className={`${styles.assetGroupHeaderRow} ${isAssetGroupMuted ? styles.assetGroupHeaderRowMuted : ''} ${canReceiveDraggedAsset ? styles.assetGroupHeaderRowDragReady : ''} ${isAssetGroupDropTarget ? styles.assetGroupHeaderRowDropTarget : ''}`}
                           key={`asset-group-${group.id}`}
                           onDragOver={(event) => handleAssetGroupDragOver(event, group)}
                           onDragLeave={(event) => handleAssetGroupDragLeave(event, group)}
@@ -14886,8 +14905,9 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
 
                             <div className={styles.assetGroupSummary}>
                               <div className={styles.assetGroupValue}>
-                                <strong>{group.valueMode === 'included_in_primary' ? 'Counted value' : 'Combined value'} {money(displayedGroupValue)}</strong>
-                                <span>{groupVatLabel}</span>
+                                <span className={styles.assetGroupValueLabel}>{group.valueMode === 'included_in_primary' ? 'Counted value' : 'Combined value'}</span>
+                                <strong>{money(displayedGroupValue)}</strong>
+                                <span className={styles.assetGroupValueVat}>{groupVatLabel}</span>
                               </div>
 
                               <div className={`${styles.assetHeaderActions} ${styles.assetGroupHeaderActions}`}>
@@ -14944,6 +14964,9 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                     const isFlagged = isAssetFlagged(asset);
                     const isFlagBusy = busyFlagAssetId === asset.id;
                     const isExpanded = expandedAssetId === asset.id;
+                    const isAssetRowMuted = expandedAssetId
+                      ? !isExpanded
+                      : Boolean(focusedAssetGroupId && assetGroup?.id !== focusedAssetGroupId);
                     const detailDocuments = assetDocuments(asset);
                     const insuredValueExVat = readAssetInsuredValueExVat(asset);
                     const estimateNeedsUpdate = doesEstimateNeedUpdate(asset) && isValuationUpdateAvailable(asset);
@@ -15024,7 +15047,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
 
                     return (
                       <div
-                        className={`${styles.assetCardRow} ${assetGroup ? styles.assetGroupMemberRow : ''} ${isLastAssetGroupMember ? styles.assetGroupMemberRowLast : ''} ${draggingAssetId === asset.id ? styles.assetCardRowDragging : ''} ${expandedAssetId && !isExpanded ? styles.assetCardRowMuted : ''}`}
+                        className={`${styles.assetCardRow} ${assetGroup ? styles.assetGroupMemberRow : ''} ${isLastAssetGroupMember ? styles.assetGroupMemberRowLast : ''} ${draggingAssetId === asset.id ? styles.assetCardRowDragging : ''} ${isAssetRowMuted ? styles.assetCardRowMuted : ''}`}
                         key={asset.id}
                         draggable={canManageAssetGroups && !isSavingAssetGroup}
                         onDragStart={(event) => handleAssetDragStart(event, asset)}
