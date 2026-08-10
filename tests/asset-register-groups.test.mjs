@@ -213,13 +213,50 @@ test('quick controls use clear chevrons, balanced spacing, and concise hover lab
   assert.match(client, /data-tooltip="Switch assets"/);
   assert.match(client, /isResolvedCombinedGroup \? 'Open combined group' : 'Create group'/);
   assert.match(client, /'Show excl\. VAT' : 'Show incl\. VAT'/);
-  assert.match(client, /ChevronDownIcon className=\{styles\.assetGroupCollapseChevron\}/);
+  assert.match(client, /className=\{`\$\{styles\.assetHeaderActions\} \$\{styles\.assetGroupHeaderActions\}`\}/);
+  assert.match(client, /data-tooltip=\{isCollapsed \? 'View details' : 'Hide details'\}/);
   assert.match(client, /styles\.assetDetailsChevron/);
+  assert.doesNotMatch(client, /assetGroupCollapseButton|assetGroupCollapseChevron/);
   assert.doesNotMatch(client, /<span aria-hidden="true">\{isCollapsed \? '⌄' : '⌃'\}<\/span>/);
   assert.match(styles, /\.assetSideActions,\s*\.assetGroupSideActions \{\s*gap: 0\.3rem;\s*padding: 0\.28rem;/);
   assert.match(styles, /\.controlTooltip::after[\s\S]*?content: attr\(data-tooltip\)/);
   assert.match(styles, /\.cardViewDetailsButton \.assetDetailsChevron/);
   assert.match(styles, /\[aria-expanded="true"\] \.customSelectChevron/);
+});
+
+test('umbrella cards expose aligned Share, View details, and Manage actions without a separate fold button', async () => {
+  const [client, modal, styles] = await Promise.all([
+    readFile(new URL('../app/asset-register/asset-register-client.tsx', import.meta.url), 'utf8'),
+    readFile(new URL('../components/asset-register/AssetGroupManagerModal.tsx', import.meta.url), 'utf8'),
+    readFile(new URL('../app/asset-register/page.module.css', import.meta.url), 'utf8'),
+  ]);
+
+  assert.match(client, /onClick=\{\(\) => openAssetGroupShare\(group\)\}/);
+  assert.match(client, /onClick=\{\(\) => toggleAssetGroupCollapsed\(group\.id\)\}/);
+  assert.match(client, /onClick=\{\(\) => primaryAsset && openAssetGroupManager\(primaryAsset\)\}/);
+  assert.match(client, /<span>Share<\/span>[\s\S]*?<span>\{isCollapsed \? 'View details' : 'Hide details'\}<\/span>[\s\S]*?<span>Manage<\/span>/);
+  assert.match(styles, /\.page \.assetGroupHeaderActions \{[\s\S]*?grid-template-columns: repeat\(3, minmax\(0, 1fr\)\)/);
+  assert.match(modal, /Umbrella reports/);
+  assert.match(modal, /Download PDF/);
+  assert.match(modal, /Download Excel/);
+});
+
+test('umbrella sharing and downloads are limited to linked assets', async () => {
+  const [client, exportRoute] = await Promise.all([
+    readFile(new URL('../app/asset-register/asset-register-client.tsx', import.meta.url), 'utf8'),
+    readFile(new URL('../app/api/asset-register/export/route.ts', import.meta.url), 'utf8'),
+  ]);
+
+  assert.match(client, /const assetGroupShareAssets = useMemo/);
+  assert.match(client, /source: isAssetGroupShare \? 'asset_group' : 'full_asset_register'/);
+  assert.match(client, /snapshotType: isAssetGroupShare \? 'asset_group' : 'full_asset_register'/);
+  assert.match(client, /without exposing unrelated assets/);
+  assert.match(client, /onDownloadPdf=\{handleDownloadAssetGroupPdf\}/);
+  assert.match(client, /onDownloadXlsx=\{handleDownloadAssetGroupXlsx\}/);
+  assert.match(client, /params\.set\('groupId', groupId\.trim\(\)\)/);
+  assert.match(exportRoute, /const requestedGroupId = cleanText\(params\.get\('groupId'\)\)/);
+  assert.match(exportRoute, /requestedGroupAssetIds\.has\(item\.id\)/);
+  assert.match(exportRoute, /scopedRawBundles/);
 });
 
 test('umbrella-aware pagination expands tiers and the full header toggles the group', async () => {
