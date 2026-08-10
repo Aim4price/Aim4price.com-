@@ -186,7 +186,8 @@ export async function GET(request: NextRequest) {
           ),
         }
       : workspaceData;
-    const logoUrl = await resolveReportLogoUrlForHtml(rawLogoUrl, request.url);
+    const reportLogoUrl = group ? String(profile.logoUrl ?? '').trim() || rawLogoUrl : rawLogoUrl;
+    const logoUrl = await resolveReportLogoUrlForHtml(reportLogoUrl, request.url);
 
     const selectedAsset = group ? null : findSelectedAsset(data.assets, filters);
     const ownerDetails = buildMyInvoicesOwnerDetails(profile, ownerFallbackUser);
