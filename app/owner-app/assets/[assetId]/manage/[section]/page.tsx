@@ -1,5 +1,5 @@
 import { notFound, redirect } from 'next/navigation';
-import { ownerAppCan, requireOwnerAppPageAccess } from '../../../../../../lib/owner-app-access';
+import { ownerAppCan, ownerAppCanAccessAsset, requireOwnerAppPageAccess } from '../../../../../../lib/owner-app-access';
 import OwnerAppNav from '../../../../owner-app-nav';
 import styles from '../../../../owner-app.module.css';
 import OwnerAssetDetailClient, { type OwnerAssetManageSection } from '../../owner-asset-detail-client';
@@ -27,6 +27,7 @@ export default async function OwnerAssetManageSectionPage({ params }: {
   params: { assetId: string; section: string };
 }) {
   const access = await requireOwnerAppPageAccess();
+  if (!ownerAppCanAccessAsset(access, params.assetId)) notFound();
   const section = params.section as OwnerAssetManageSection;
   if (!MANAGE_SECTIONS.has(section)) notFound();
   const canOpen = ['activity', 'reports'].includes(section)
