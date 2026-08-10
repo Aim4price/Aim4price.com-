@@ -8,6 +8,7 @@ import {
   type AssetGroupSaveInput,
   type AssetGroupValueMode,
 } from '../../lib/asset-groups-shared';
+import registerStyles from '../../app/asset-register/page.module.css';
 import styles from './AssetGroupManagerModal.module.css';
 
 type IconProps = { className?: string };
@@ -15,7 +16,7 @@ type AssetGroupModalView = 'menu' | 'members' | 'settings' | 'reports' | 'delete
 
 function MembersIcon({ className }: IconProps) {
   return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <path d="M8 8.5a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM16.5 10a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z" />
       <path d="M2.75 20v-2.1A5.25 5.25 0 0 1 8 12.65a5.25 5.25 0 0 1 5.25 5.25V20M14.25 13.05a4.6 4.6 0 0 1 7 3.92V20" />
     </svg>
@@ -24,7 +25,7 @@ function MembersIcon({ className }: IconProps) {
 
 function SettingsIcon({ className }: IconProps) {
   return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <path d="M4 6h10M18 6h2M4 12h3M11 12h9M4 18h8M16 18h4" />
       <circle cx="16" cy="6" r="2" /><circle cx="9" cy="12" r="2" /><circle cx="14" cy="18" r="2" />
     </svg>
@@ -33,7 +34,7 @@ function SettingsIcon({ className }: IconProps) {
 
 function DownloadIcon({ className }: IconProps) {
   return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <path d="M12 3v11M7.5 10.5 12 15l4.5-4.5M4 20h16" />
     </svg>
   );
@@ -41,18 +42,52 @@ function DownloadIcon({ className }: IconProps) {
 
 function TrashIcon({ className }: IconProps) {
   return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <path d="M4 7h16M9 3h6l1 4H8l1-4ZM7 7l1 14h8l1-14M10 11v6M14 11v6" />
     </svg>
   );
 }
 
-function BackIcon({ className }: IconProps) {
+function CloseIcon({ className }: IconProps) {
   return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path d="m14.5 5-7 7 7 7" />
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+      <path d="m6 6 12 12" />
+      <path d="m18 6-12 12" />
     </svg>
   );
+}
+
+function SpreadsheetIcon({ className }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+      <rect x="4" y="3" width="16" height="18" rx="2" />
+      <path d="M8 7h8M8 11h8M8 15h8M12 7v8" />
+    </svg>
+  );
+}
+
+function PdfIcon({ className }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+      <path d="M7 3h7l5 5v13H7zM14 3v5h5M9 15h6M9 18h5" />
+    </svg>
+  );
+}
+
+type ReportGraphicProps = {
+  src: string;
+  alt: string;
+  icon: JSX.Element;
+};
+
+function ReportGraphic({ src, alt, icon }: ReportGraphicProps) {
+  const [hasError, setHasError] = useState(false);
+
+  if (hasError) {
+    return <span className={registerStyles.exportGraphicFallback}>{icon}</span>;
+  }
+
+  return <img src={src} alt={alt} className={registerStyles.exportGraphicImage} onError={() => setHasError(true)} />;
 }
 
 export type AssetGroupModalAsset = {
@@ -124,6 +159,7 @@ export default function AssetGroupManagerModal({
   const [relationships, setRelationships] = useState<Record<string, AssetGroupRelationship>>({});
   const [search, setSearch] = useState('');
   const [view, setView] = useState<AssetGroupModalView>('create');
+  const [reportFormat, setReportFormat] = useState<'pdf' | 'xlsx'>('pdf');
 
   const membershipByAssetId = useMemo(() => {
     const result = new Map<string, AssetGroup>();
@@ -150,6 +186,7 @@ export default function AssetGroupManagerModal({
     ));
     setSearch('');
     setView(group ? 'menu' : 'create');
+    setReportFormat('pdf');
   }, [anchorAsset, combinedMode, group, open]);
 
   const visibleAssets = useMemo(() => {
@@ -216,115 +253,177 @@ export default function AssetGroupManagerModal({
     });
   }
 
+  function handleDownloadSelectedReport() {
+    if (!group || busy || reportBusy) return;
+
+    if (reportFormat === 'pdf') {
+      void onDownloadPdf?.(group);
+      return;
+    }
+
+    void onDownloadXlsx?.(group);
+  }
+
   const showSettingsForm = view === 'create' || view === 'settings';
   const showMembersForm = view === 'create' || view === 'members';
+  const groupSummary = group
+    ? `${group.members.length} linked ${group.members.length === 1 ? 'asset' : 'assets'} · ${money(countedValue)} represented value`
+    : '';
   const modalTitle = !group
     ? 'Create an umbrella'
-    : view === 'menu'
+    : view === 'menu' || view === 'reports'
       ? group.name
       : view === 'members'
         ? 'Manage linked assets'
         : view === 'settings'
           ? 'Umbrella settings'
-          : view === 'reports'
-            ? 'Download reports'
-            : 'Remove umbrella';
+          : 'Remove umbrella';
   const modalSubtitle = !group
     ? 'Group related assets while keeping every record independent.'
-    : view === 'menu'
-      ? `${group.members.length} linked ${group.members.length === 1 ? 'asset' : 'assets'} · ${money(countedValue)} represented value`
+    : view === 'menu' || view === 'reports'
+      ? groupSummary
       : view === 'members'
         ? `Add, remove and organise assets in ${group.name}.`
         : view === 'settings'
           ? `Rename ${group.name} or change how its values count.`
-          : view === 'reports'
-            ? `Download reports containing only ${group.name}.`
-            : `Remove the grouping without deleting its assets.`;
+          : `Remove the grouping without deleting its assets.`;
+  const useManageModalDesign = Boolean(group && view === 'menu');
+  const useReportModalDesign = Boolean(group && view === 'reports');
+  const useSharedAssetModalDesign = useManageModalDesign || useReportModalDesign;
 
   return (
-    <div className={styles.backdrop} role="presentation" onMouseDown={(event) => {
+    <div className={useSharedAssetModalDesign ? registerStyles.modalOverlay : styles.backdrop} role="presentation" onMouseDown={(event) => {
       if (event.target === event.currentTarget && !busy && !reportBusy) onClose();
     }}>
-      <section className={styles.dialog} role="dialog" aria-modal="true" aria-labelledby="asset-group-title">
-        <header className={styles.header}>
-          {group && view !== 'menu' ? (
-            <button type="button" className={styles.backButton} onClick={() => setView('menu')} disabled={busy || reportBusy} aria-label="Back to umbrella options">
-              <BackIcon className={styles.backIcon} />
-            </button>
-          ) : null}
-          <div className={styles.headerText}>
-            <h2 id="asset-group-title">{modalTitle}</h2>
+      {useSharedAssetModalDesign ? (
+        <div className={registerStyles.modalBackdrop} onClick={() => {
+          if (!busy && !reportBusy) onClose();
+        }} />
+      ) : null}
+      <section
+        className={useManageModalDesign
+          ? registerStyles.optionsModal
+          : useReportModalDesign
+            ? `${registerStyles.modalCard} ${registerStyles.assetReportModal}`
+            : styles.dialog}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="asset-group-title"
+      >
+        <header className={useManageModalDesign
+          ? `${registerStyles.modalHeader} ${registerStyles.optionsModalHeader}`
+          : useReportModalDesign
+            ? `${registerStyles.modalHeader} ${registerStyles.assetReportModalHeader}`
+            : styles.header}>
+          <div className={useSharedAssetModalDesign ? registerStyles.modalHeaderText : styles.headerText}>
+            {useSharedAssetModalDesign
+              ? <h3 id="asset-group-title">{modalTitle}</h3>
+              : <h2 id="asset-group-title">{modalTitle}</h2>}
             <p>{modalSubtitle}</p>
           </div>
-          <button type="button" className={styles.closeButton} onClick={onClose} disabled={busy || reportBusy} aria-label="Close umbrella manager">
-            ×
+          <button
+            type="button"
+            className={useSharedAssetModalDesign ? registerStyles.modalCloseButton : styles.closeButton}
+            onClick={onClose}
+            disabled={busy || reportBusy}
+            aria-label="Close umbrella manager"
+          >
+            {useSharedAssetModalDesign ? <CloseIcon className={registerStyles.buttonIcon} /> : '×'}
           </button>
         </header>
 
         {group && view === 'menu' ? (
-          <div className={styles.menuBody}>
-            <div className={styles.menuGrid}>
-              <button type="button" className={`${styles.menuAction} ${styles.menuActionPrimary}`} onClick={() => setView('members')}>
-                <MembersIcon className={styles.menuActionIcon} />
-                <span>
-                  <strong>Manage assets</strong>
-                  <small>Add, remove and organise linked assets.</small>
-                </span>
-              </button>
-              <button type="button" className={styles.menuAction} onClick={() => setView('settings')}>
-                <SettingsIcon className={styles.menuActionIcon} />
-                <span>
-                  <strong>Umbrella settings</strong>
-                  <small>Rename the umbrella or change how values count.</small>
-                </span>
-              </button>
-              <button type="button" className={styles.menuAction} onClick={() => setView('reports')} disabled={!onDownloadPdf && !onDownloadXlsx}>
-                <DownloadIcon className={styles.menuActionIcon} />
-                <span>
-                  <strong>Download reports</strong>
-                  <small>Choose a report containing only this umbrella.</small>
-                </span>
-              </button>
-              <button type="button" className={`${styles.menuAction} ${styles.menuActionDanger}`} onClick={() => setView('delete')}>
-                <TrashIcon className={styles.menuActionIcon} />
-                <span>
-                  <strong>Remove umbrella</strong>
-                  <small>Ungroup the assets without deleting their records.</small>
-                </span>
-              </button>
+          <div className={`${registerStyles.modalScrollBody} ${registerStyles.optionsScrollBody}`}>
+            <div className={registerStyles.optionsContent}>
+              <div className={`${registerStyles.optionsGrid} ${registerStyles.assetOptionsGrid}`}>
+                <button type="button" className={`${registerStyles.optionActionButton} ${registerStyles.optionFeaturedButton}`} onClick={() => setView('members')}>
+                  <MembersIcon className={registerStyles.buttonIcon} />
+                  <span>
+                    <strong>Manage assets</strong>
+                    <small>Add, remove and organise linked assets.</small>
+                  </span>
+                </button>
+                <button type="button" className={registerStyles.optionActionButton} onClick={() => setView('settings')}>
+                  <SettingsIcon className={registerStyles.buttonIcon} />
+                  <span>
+                    <strong>Umbrella settings</strong>
+                    <small>Rename the umbrella or change how values count.</small>
+                  </span>
+                </button>
+                <button type="button" className={registerStyles.optionActionButton} onClick={() => setView('reports')} disabled={!onDownloadPdf && !onDownloadXlsx}>
+                  <DownloadIcon className={registerStyles.buttonIcon} />
+                  <span>
+                    <strong>Download reports</strong>
+                    <small>Choose a report for this umbrella.</small>
+                  </span>
+                </button>
+                <button type="button" className={`${registerStyles.optionActionButton} ${registerStyles.optionDangerButton}`} onClick={() => setView('delete')}>
+                  <TrashIcon className={registerStyles.buttonIcon} />
+                  <span>
+                    <strong>Remove umbrella</strong>
+                    <small>Ungroup the assets without deleting their records.</small>
+                  </span>
+                </button>
+              </div>
             </div>
             {error ? <p className={styles.error} role="alert">{error}</p> : null}
           </div>
         ) : group && view === 'reports' ? (
-          <>
-            <div className={styles.subviewBody}>
-              <div className={styles.reportMenuGrid} aria-label={`${group.name} reports`}>
-                {onDownloadPdf ? (
-                  <button type="button" className={styles.reportMenuAction} onClick={() => void onDownloadPdf(group)} disabled={busy || reportBusy}>
-                    <span className={styles.reportFormat}>PDF</span>
-                    <span>
-                      <strong>{reportBusy ? 'Preparing…' : 'Download PDF'}</strong>
-                      <small>Formatted umbrella report for sharing or printing.</small>
-                    </span>
-                  </button>
-                ) : null}
-                {onDownloadXlsx ? (
-                  <button type="button" className={styles.reportMenuAction} onClick={() => void onDownloadXlsx(group)} disabled={busy || reportBusy}>
-                    <span className={styles.reportFormat}>XLSX</span>
-                    <span>
-                      <strong>{reportBusy ? 'Preparing…' : 'Download Excel'}</strong>
-                      <small>Detailed workbook of every linked asset.</small>
-                    </span>
-                  </button>
-                ) : null}
-              </div>
-              <p className={styles.scopeNote}>Only assets linked to {group.name} are included. Unrelated Asset Register items stay private.</p>
-              {error ? <p className={styles.error} role="alert">{error}</p> : null}
+          <div className={`${registerStyles.modalScrollBody} ${registerStyles.assetReportModalBody}`}>
+            <div className={registerStyles.assetTimelineStageHeading}>
+              <strong>Choose export format</strong>
+              <span>Select PDF or Excel. Only assets linked to {group.name} are included.</span>
             </div>
-            <footer className={styles.footer}>
-              <button type="button" className={styles.cancelButton} onClick={() => setView('menu')} disabled={busy || reportBusy}>Back</button>
-            </footer>
-          </>
+
+            <div className={registerStyles.assetTimelineFormatGrid} aria-label={`${group.name} report format`}>
+              <button
+                type="button"
+                className={`${registerStyles.assetTimelineFormatOption} ${reportFormat === 'pdf' ? registerStyles.assetTimelineFormatOptionActive : ''}`}
+                onClick={() => setReportFormat('pdf')}
+                disabled={!onDownloadPdf || busy || reportBusy}
+                aria-pressed={reportFormat === 'pdf'}
+              >
+                <span className={registerStyles.assetTimelineFormatGraphic}>
+                  <ReportGraphic src="/brand/pdf.png" alt="PDF report" icon={<PdfIcon className={registerStyles.assetTimelineFormatFallbackIcon} />} />
+                </span>
+                <span className={registerStyles.assetTimelineFormatCopy}>
+                  <strong>PDF report</strong>
+                  <small>Open a clear report for dealers, banks or insurance partners.</small>
+                </span>
+              </button>
+
+              <button
+                type="button"
+                className={`${registerStyles.assetTimelineFormatOption} ${reportFormat === 'xlsx' ? registerStyles.assetTimelineFormatOptionActive : ''}`}
+                onClick={() => setReportFormat('xlsx')}
+                disabled={!onDownloadXlsx || busy || reportBusy}
+                aria-pressed={reportFormat === 'xlsx'}
+              >
+                <span className={registerStyles.assetTimelineFormatGraphic}>
+                  <ReportGraphic src="/brand/sheet.png" alt="Excel workbook" icon={<SpreadsheetIcon className={registerStyles.assetTimelineFormatFallbackIcon} />} />
+                </span>
+                <span className={registerStyles.assetTimelineFormatCopy}>
+                  <strong>XLSX workbook</strong>
+                  <small>Download every linked asset in an Excel-ready workbook.</small>
+                </span>
+              </button>
+            </div>
+
+            {error ? <p className={styles.error} role="alert">{error}</p> : null}
+
+            <div className={`${registerStyles.formActions} ${registerStyles.exportActions} ${registerStyles.assetFuelReportActions}`}>
+              <button type="button" className={`${registerStyles.secondaryButton} ${registerStyles.assetTimelineSecondaryButton}`} onClick={() => setView('menu')} disabled={busy || reportBusy}>Back</button>
+              <button type="button" className={`${registerStyles.secondaryButton} ${registerStyles.assetTimelineSecondaryButton}`} onClick={onClose} disabled={busy || reportBusy}>Cancel</button>
+              <button
+                type="button"
+                className={registerStyles.primaryButton}
+                onClick={handleDownloadSelectedReport}
+                disabled={busy || reportBusy || (reportFormat === 'pdf' ? !onDownloadPdf : !onDownloadXlsx)}
+              >
+                <span>{reportBusy ? 'Preparing…' : reportFormat === 'pdf' ? 'Open PDF report' : 'Download Excel'}</span>
+              </button>
+            </div>
+          </div>
         ) : group && view === 'delete' ? (
           <>
             <div className={styles.subviewBody}>
