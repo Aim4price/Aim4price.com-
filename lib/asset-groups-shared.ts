@@ -135,7 +135,7 @@ export function projectAssetGroupsToAssets<T extends { id: string }>(
         return left.sortOrder - right.sortOrder;
       });
 
-    if (visibleMembers.length < 2) return [];
+    if (visibleMembers.length < 1) return [];
 
     const visiblePrimaryAssetId = visibleMembers.some((member) => member.role === 'primary')
       ? visibleMembers.find((member) => member.role === 'primary')?.assetId ?? visibleMembers[0].assetId
