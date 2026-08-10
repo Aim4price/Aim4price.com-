@@ -373,9 +373,6 @@ export default function AssetGroupManagerModal({
   if (!open) return null;
 
   function toggleAsset(asset: AssetGroupModalAsset) {
-    const existingGroup = membershipByAssetId.get(asset.id);
-    if (existingGroup && existingGroup.id !== group?.id) return;
-
     setSelectedAssetIds((current) => {
       if (current.includes(asset.id)) {
         if (asset.id === anchorAsset?.id) return current;
@@ -419,7 +416,7 @@ export default function AssetGroupManagerModal({
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (busy || selectedAssetIds.length < 2 || !primaryAssetId || !name.trim()) return;
+    if (busy || selectedAssetIds.length < 1 || !primaryAssetId || !name.trim()) return;
 
     void onSave({
       groupId: group?.id,
@@ -750,8 +747,8 @@ export default function AssetGroupManagerModal({
                     <div>
                       <span>Assets in this umbrella</span>
                       <small>{combinedMode
-                        ? 'Choose at least two assets from any of your Asset Registers.'
-                        : 'Choose at least two assets from this Asset Register.'}</small>
+                        ? 'Choose one or more assets from any of your Asset Registers.'
+                        : 'Choose one or more assets from this Asset Register.'}</small>
                     </div>
                     <strong>{selectedAssetIds.length} selected</strong>
                   </div>
@@ -769,24 +766,23 @@ export default function AssetGroupManagerModal({
                   <div className={styles.assetList}>
                     {visibleAssets.map((asset) => {
                       const existingGroup = membershipByAssetId.get(asset.id);
-                      const unavailable = Boolean(existingGroup && existingGroup.id !== group?.id);
+                      const movingFromAnotherGroup = Boolean(existingGroup && existingGroup.id !== group?.id);
                       const selected = selectedAssetIds.includes(asset.id);
 
                       return (
                         <div className={selected ? styles.assetRowSelected : styles.assetRow} key={asset.id}>
                           <label>
-                            <input type="checkbox" checked={selected} disabled={unavailable || asset.id === anchorAsset?.id} onChange={() => toggleAsset(asset)} />
+                            <input type="checkbox" checked={selected} disabled={asset.id === anchorAsset?.id} onChange={() => toggleAsset(asset)} />
                             <span>
                               <strong>{asset.title}</strong>
-                              <small>{unavailable
-                                ? `Already in ${existingGroup?.name}`
-                                : [
-                                    asset.categoryLabel,
-                                    asset.serialNumber ? `Serial: ${asset.serialNumber}` : '',
-                                    asset.registrationNumber ? `Reg: ${asset.registrationNumber}` : '',
-                                    combinedMode ? asset.registerName : '',
-                                    money(asset.value),
-                                  ].filter(Boolean).join(' · ')}</small>
+                              <small>{[
+                                movingFromAnotherGroup ? `Currently in ${existingGroup?.name} — select to move` : '',
+                                asset.categoryLabel,
+                                asset.serialNumber ? `Serial: ${asset.serialNumber}` : '',
+                                asset.registrationNumber ? `Reg: ${asset.registrationNumber}` : '',
+                                combinedMode ? asset.registerName : '',
+                                money(asset.value),
+                              ].filter(Boolean).join(' · ')}</small>
                             </span>
                           </label>
 
@@ -837,7 +833,7 @@ export default function AssetGroupManagerModal({
               <button type="button" className={styles.cancelButton} onClick={() => group ? setView('menu') : onClose()} disabled={busy}>
                 {group ? 'Back' : 'Cancel'}
               </button>
-              <button type="submit" className={styles.saveButton} disabled={busy || selectedAssetIds.length < 2 || !primaryAssetId || !name.trim()}>
+              <button type="submit" className={styles.saveButton} disabled={busy || selectedAssetIds.length < 1 || !primaryAssetId || !name.trim()}>
                 {busy ? 'Saving…' : group ? 'Save changes' : 'Create umbrella'}
               </button>
             </footer>
