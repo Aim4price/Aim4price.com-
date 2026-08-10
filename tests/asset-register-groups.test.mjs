@@ -283,6 +283,10 @@ test('umbrella sharing and downloads are limited to linked assets', async () => 
   assert.match(client, /without exposing unrelated assets/);
   assert.match(client, /onDownloadPdf=\{handleDownloadAssetGroupPdf\}/);
   assert.match(client, /onDownloadXlsx=\{handleDownloadAssetGroupXlsx\}/);
+  assert.match(client, /onDownloadReport=\{handleDownloadAssetGroupReport\}/);
+  assert.match(client, /new URLSearchParams\(\{ groupId: group\.id, report: reportKind, format \}\)/);
+  assert.match(client, /new URLSearchParams\(\{ groupId: group\.id, format \}\)/);
+  assert.match(client, /const savedReportLogoUrl = getRegisterReportLogoUrl\(activeRegister\) \|\| accountLogoUrl/);
   assert.match(client, /params\.set\('groupId', groupId\.trim\(\)\)/);
   assert.match(exportRoute, /const requestedGroupId = cleanText\(params\.get\('groupId'\)\)/);
   assert.match(exportRoute, /requestedGroupAssetIds\.has\(item\.id\)/);
