@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { listAssetActivity } from '../../../../../../lib/asset-activity';
 import { getAssetRegisterItemById } from '../../../../../../lib/asset-register-db';
-import { getOwnerAppAccess } from '../../../../../../lib/owner-app-access';
+import { getOwnerAppAccess, ownerAppCanAccessAsset } from '../../../../../../lib/owner-app-access';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -10,6 +10,9 @@ export async function GET(_request: Request, { params }: { params: { assetId: st
   const access = await getOwnerAppAccess();
   if (!access) {
     return NextResponse.json({ ok: false, error: 'You must sign in to Aim4price Owner.' }, { status: 401 });
+  }
+  if (!ownerAppCanAccessAsset(access, params.assetId)) {
+    return NextResponse.json({ ok: false, error: 'Asset not found.' }, { status: 404 });
   }
 
   const asset = await getAssetRegisterItemById(access.ownerUserId, params.assetId);
