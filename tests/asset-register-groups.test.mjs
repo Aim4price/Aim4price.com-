@@ -196,7 +196,7 @@ test('the Asset Register exposes create, manage, collapse, search, and relations
   assert.match(client, /Counted value/);
   assert.match(modal, /Count every asset separately/);
   assert.match(modal, /Linked assets are included in the primary value/);
-  assert.match(modal, /The assets and their records will not be deleted|Remove group/);
+  assert.match(modal, /without deleting their records|linked asset records[\s\S]*?will remain unchanged/);
   assert.match(client, /combinedMode=\{isCombinedRegisterView\}/);
   assert.match(client, /isResolvedCombinedGroup/);
   assert.match(modal, /Combined umbrella/);
@@ -224,7 +224,7 @@ test('quick controls use clear chevrons, balanced spacing, and concise hover lab
   assert.match(styles, /\[aria-expanded="true"\] \.customSelectChevron/);
 });
 
-test('umbrella cards expose aligned Share, View details, and Manage actions without a separate fold button', async () => {
+test('umbrella cards expose aligned actions and the Manage modal uses a clear option-card menu', async () => {
   const [client, modal, styles] = await Promise.all([
     readFile(new URL('../app/asset-register/asset-register-client.tsx', import.meta.url), 'utf8'),
     readFile(new URL('../components/asset-register/AssetGroupManagerModal.tsx', import.meta.url), 'utf8'),
@@ -236,9 +236,28 @@ test('umbrella cards expose aligned Share, View details, and Manage actions with
   assert.match(client, /onClick=\{\(\) => primaryAsset && openAssetGroupManager\(primaryAsset\)\}/);
   assert.match(client, /<span>Share<\/span>[\s\S]*?<span>\{isCollapsed \? 'View details' : 'Hide details'\}<\/span>[\s\S]*?<span>Manage<\/span>/);
   assert.match(styles, /\.page \.assetGroupHeaderActions \{[\s\S]*?grid-template-columns: repeat\(3, minmax\(0, 1fr\)\)/);
-  assert.match(modal, /Umbrella reports/);
+  assert.match(modal, /Manage assets/);
+  assert.match(modal, /Umbrella settings/);
+  assert.match(modal, /Download reports/);
+  assert.match(modal, /Remove umbrella/);
   assert.match(modal, /Download PDF/);
   assert.match(modal, /Download Excel/);
+});
+
+test('the umbrella Manage modal matches the application option-card pattern', async () => {
+  const [modal, modalStyles] = await Promise.all([
+    readFile(new URL('../components/asset-register/AssetGroupManagerModal.tsx', import.meta.url), 'utf8'),
+    readFile(new URL('../components/asset-register/AssetGroupManagerModal.module.css', import.meta.url), 'utf8'),
+  ]);
+
+  assert.match(modal, /view === 'menu'/);
+  assert.match(modal, /className=\{`\$\{styles\.menuAction\} \$\{styles\.menuActionPrimary\}`\}/);
+  assert.match(modal, /className=\{`\$\{styles\.menuAction\} \$\{styles\.menuActionDanger\}`\}/);
+  assert.match(modal, /Ungroup the assets without deleting their records/);
+  assert.match(modal, /Only assets linked to \{group\.name\} are included/);
+  assert.match(modalStyles, /\.menuGrid,[\s\S]*?grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
+  assert.match(modalStyles, /\.menuAction,[\s\S]*?\.reportMenuAction \{[\s\S]*?min-height: 112px;[\s\S]*?border-radius: 22px;/);
+  assert.match(modalStyles, /\.menuActionDanger \{[\s\S]*?border-color: #ffb4ae;/);
 });
 
 test('umbrella sharing and downloads are limited to linked assets', async () => {
