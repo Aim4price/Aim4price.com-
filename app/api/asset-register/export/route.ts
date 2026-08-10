@@ -3001,6 +3001,7 @@ export async function GET(request: NextRequest) {
     }
 
     const reportKind = cleanText(params.get('reportKind')).toLowerCase() || 'full';
+    const requestedGroupId = cleanText(params.get('groupId'));
 
     if (reportKind !== 'full' && reportKind !== 'summary') {
       return NextResponse.json({ ok: false, error: 'Invalid asset register export type.' }, { status: 400 });
@@ -3050,11 +3051,34 @@ export async function GET(request: NextRequest) {
         }))),
         listAssetGroups(ownerUserId),
       ]);
-      const combinedAssets = rawBundles.flatMap((bundle) => bundle.items);
+      const availableAssets = rawBundles.flatMap((bundle) => bundle.items);
+      const requestedGroup = requestedGroupId
+        ? allGroups.find((group) => group.id === requestedGroupId) ?? null
+        : null;
+
+      if (requestedGroupId && !requestedGroup) {
+        return NextResponse.json({ ok: false, error: 'The requested umbrella could not be found.' }, { status: 404 });
+      }
+
+      const requestedGroupAssetIds = new Set(requestedGroup?.members.map((member) => member.assetId) ?? []);
+      const scopedRawBundles = requestedGroup
+        ? rawBundles
+            .map((bundle) => ({
+              ...bundle,
+              items: bundle.items.filter((item) => requestedGroupAssetIds.has(item.id)),
+            }))
+            .filter((bundle) => bundle.items.length > 0)
+        : rawBundles;
+
+      if (requestedGroup && !scopedRawBundles.some((bundle) => bundle.items.length > 0)) {
+        return NextResponse.json({ ok: false, error: 'No linked assets from this umbrella are available in the selected Asset Register scope.' }, { status: 404 });
+      }
+
+      const combinedAssets = scopedRawBundles.flatMap((bundle) => bundle.items);
       const combinedGroups = scope === 'combined'
         ? projectAssetGroupsToAssets(allGroups, combinedAssets)
         : [];
-      const bundles: RegisterExportBundle[] = rawBundles.map((bundle) => ({
+      const bundles: RegisterExportBundle[] = scopedRawBundles.map((bundle) => ({
         register: bundle.register,
         items: decorateAssetsWithGroups(
           bundle.items,
@@ -3148,7 +3172,24 @@ export async function GET(request: NextRequest) {
       listAssetRegisterItems(ownerUserId, register.id),
       listAssetGroups(ownerUserId, register.id),
     ]);
-    const items = decorateAssetsWithGroups(rawItems, projectAssetGroupsToAssets(groups, rawItems));
+    const requestedGroup = requestedGroupId
+      ? groups.find((group) => group.id === requestedGroupId) ?? null
+      : null;
+
+    if (requestedGroupId && !requestedGroup) {
+      return NextResponse.json({ ok: false, error: 'The requested umbrella could not be found in this Asset Register.' }, { status: 404 });
+    }
+
+    const requestedGroupAssetIds = new Set(requestedGroup?.members.map((member) => member.assetId) ?? []);
+    const scopedRawItems = requestedGroup
+      ? rawItems.filter((item) => requestedGroupAssetIds.has(item.id))
+      : rawItems;
+
+    if (requestedGroup && !scopedRawItems.length) {
+      return NextResponse.json({ ok: false, error: 'No linked assets from this umbrella are available to export.' }, { status: 404 });
+    }
+
+    const items = decorateAssetsWithGroups(scopedRawItems, projectAssetGroupsToAssets(groups, scopedRawItems));
     const generatedAt = new Date();
     const filenameDate = generatedAt.toISOString().slice(0, 10);
     if (format === 'pdf') {
