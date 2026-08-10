@@ -3578,10 +3578,9 @@ export async function GET(request: NextRequest) {
     asset,
   );
   const generatedAt = formatDate(new Date().toISOString());
-  const rawLogoUrl = await getAssetRegisterReportLogoUrl(
-    ownerUserId,
-    groupId ? undefined : asset.registerId,
-  ).catch(() => '');
+  const rawLogoUrl = groupId
+    ? String(ownerProfile.logoUrl ?? '').trim()
+    : await getAssetRegisterReportLogoUrl(ownerUserId, asset.registerId).catch(() => '');
   const logoUrl = await resolveReportLogoUrlForHtml(rawLogoUrl, request.url);
   const scopeLabel = groupId ? 'Umbrella' : asset.plateLabel || asset.publicAssetCode || asset.id;
   const baseFileName = `${slugifyFileSegment(asset.title)}-${slugifyFileSegment(scopeLabel)}-${slugifyFileSegment(REPORT_LABELS[reportKind])}`;
