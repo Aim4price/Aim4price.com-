@@ -22,6 +22,7 @@ export const dynamic = 'force-dynamic';
 
 type PdfReportKind = 'fuel' | 'maintenance' | 'depreciation';
 type ReportFormat = 'pdf' | 'xlsx';
+type ScopedScanEventRecord = ScanEventRecord & { reportAsset?: AssetRegisterItem };
 
 type AssetStatusChoice = 'yes' | 'no' | 'unknown' | 'not_applicable';
 
@@ -1400,6 +1401,14 @@ function buildMaintenanceReportSummary(asset: AssetRegisterItem, entries: Mainte
   };
 }
 
+function reportAssetForEvent(event: ScanEventRecord, fallbackAsset: AssetRegisterItem): AssetRegisterItem {
+  return (event as ScopedScanEventRecord).reportAsset ?? fallbackAsset;
+}
+
+function reportAssetTitleForEvent(event: ScanEventRecord, fallbackAsset: AssetRegisterItem): string {
+  return reportAssetForEvent(event, fallbackAsset).title || fallbackAsset.title || 'Asset';
+}
+
 function buildFuelBody(asset: AssetRegisterItem, events: ScanEventRecord[]): string {
   const totalLitres = events
     .filter(isRealFuelFillRecord)
@@ -1407,6 +1416,7 @@ function buildFuelBody(asset: AssetRegisterItem, events: ScanEventRecord[]): str
     .filter((value): value is number => typeof value === 'number' && Number.isFinite(value) && value > 0)
     .reduce((sum, value) => sum + value, 0);
   const rows = events.map((event) => {
+    const eventAsset = reportAssetForEvent(event, asset);
     const noteParts = [
       normalizeSpaces(event.note),
       event.isLateEntry && event.evidenceFileName ? `Evidence: ${event.evidenceFileName}` : '',
@@ -1415,26 +1425,17 @@ function buildFuelBody(asset: AssetRegisterItem, events: ScanEventRecord[]): str
     const note = noteParts.join(' · ') || '-';
 
     return [
+      `<strong>${escapeHtml(reportAssetTitleForEvent(event, asset))}</strong>`,
       escapeHtml(fuelIssueDateTimeLabel(event)),
       event.isLateEntry ? '<span class="assetReportLateBadge">Late Entry</span><br/>Asset filled' : escapeHtml(fuelLedgerActivityLabel(event)),
       escapeHtml(fuelStorageLabel(event)),
       `<strong>${escapeHtml(formatLitres(event.fuelLitres))}</strong>`,
       `<strong>${escapeHtml(formatLitres(calculateAssetDieselBeforeFill(event)))}</strong>`,
-      escapeHtml(formatEventUsage(asset, event)),
-      escapeHtml(fuelUsageMetricLabel(asset, event)),
-      escapeHtml(fuelHistoricalStorageLabel(event, event.fuelStorageLevelBefore)),
-      `<strong>${escapeHtml(fuelHistoricalStorageLabel(event, event.fuelStorageLevelAfter))}</strong>`,
-      escapeHtml(formatFuel(event.assetFuelPercentBefore)),
-      `<strong>${escapeHtml(formatFuel(event.assetFuelPercentAfter ?? event.fuelPercent))}</strong>`,
+      escapeHtml(formatEventUsage(eventAsset, event)),
       escapeHtml(formatOperatorLabel(event)),
       escapeHtml(formatEventActivity(event)),
       escapeHtml(formatEventWorkArea(event)),
       escapeHtml(fuelGpsLabel(event)),
-      escapeHtml(fuelEntryAddedLabel(event)),
-      escapeHtml(fuelAddedByLabel(event)),
-      escapeHtml(fuelEvidenceStatusLabel(event)),
-      escapeHtml(fuelBalanceTreatmentLabel(event)),
-      escapeHtml(event.isLateEntry ? event.lateEntryReason || '-' : '-'),
       escapeHtml(note.length > 180 ? `${note.slice(0, 177)}...` : note),
     ];
   });
@@ -1451,10 +1452,8 @@ function buildFuelBody(asset: AssetRegisterItem, events: ScanEventRecord[]): str
       ${renderTable({
         className: 'assetReportFuelTable',
         headers: [
-          'Fuel Issued On', 'Source / Activity', 'Storage Unit', 'Litres Issued', 'Before Fill', 'Usage Reading', 'Usage Metric',
-          'Historical Storage Before', 'Historical Storage After', '% Before', '% After', 'Operator', 'Activity',
-          'Work Area', 'GPS', 'Entry Added On', 'Added By', 'Evidence / Review Status', 'Tank Balance Treatment',
-          'Late-entry Reason', 'Notes / Evidence',
+          'Asset', 'Fuel Issued On', 'Source / Activity', 'Storage Unit', 'Litres Issued', 'Before Fill',
+          'Usage Reading', 'Operator', 'Activity', 'Work Area', 'GPS', 'Notes / Evidence',
         ],
         rows,
         emptyText: 'No fuel readings have been recorded for this asset yet.',
@@ -1772,9 +1771,11 @@ function buildDepreciationReport(
   generatedAt: string,
   logoUrl: string,
   dateRangeLabel = 'All available entries',
+  scopeAssets: AssetRegisterItem[] = [asset],
 ): string {
   const summary = buildDepreciationLogSummary(entries, asset);
   const annualSummaries = buildDepreciationAnnualSummary(entries);
+  const isUmbrellaReport = scopeAssets.length > 1 || entries.some((entry) => entry.assetTitle !== asset.title);
 
   return buildReportHtml({
     reportKind: 'depreciation',
@@ -1785,6 +1786,21 @@ function buildDepreciationReport(
     summary: buildDepreciationReportSummary(asset, summary),
     recordRows: buildDepreciationRecordRows(asset, entries, summary, dateRangeLabel),
     bodyHtml: buildDepreciationBody(entries, summary, annualSummaries),
+    identityKicker: isUmbrellaReport ? 'Asset umbrella' : undefined,
+    heroMeta: isUmbrellaReport ? `${scopeAssets.length} linked assets · every value movement retains its asset name` : undefined,
+    detailHeading: isUmbrellaReport ? 'Umbrella Scope' : undefined,
+    detailRows: isUmbrellaReport
+      ? [
+          { label: 'Umbrella', value: asset.title },
+          { label: 'Linked Assets', value: formatNumber(scopeAssets.length) },
+          { label: 'Value-change Entries', value: formatNumber(entries.length) },
+          { label: 'Report Period', value: dateRangeLabel },
+        ]
+      : undefined,
+    locationHeading: isUmbrellaReport ? 'Entry Attribution' : undefined,
+    locationRows: isUmbrellaReport
+      ? [{ label: 'Asset Identity', value: 'Shown on every depreciation entry' }]
+      : undefined,
   });
 }
 
@@ -1810,6 +1826,12 @@ function buildReportHtml(options: {
   recordRows: KeyValueRow[];
   bodyHtml: string;
   sideExtraHtml?: string;
+  identityKicker?: string;
+  heroMeta?: string;
+  detailHeading?: string;
+  detailRows?: KeyValueRow[];
+  locationHeading?: string;
+  locationRows?: KeyValueRow[];
 }): string {
   const reportTitle = REPORT_LABELS[options.reportKind];
   const asset = options.asset;
@@ -2862,9 +2884,9 @@ function buildReportHtml(options: {
 
         <section class="assetReportOverview">
           <div class="assetReportIdentity">
-            <p class="assetReportKicker">${escapeHtml(formatAssetKind(asset))}</p>
+            <p class="assetReportKicker">${escapeHtml(options.identityKicker ?? formatAssetKind(asset))}</p>
             <h1 class="assetReportTitle">${safeTitle}</h1>
-            <p class="assetReportMeta">${escapeHtml(formatAssetHeroMeta(asset))}</p>
+            <p class="assetReportMeta">${escapeHtml(options.heroMeta ?? formatAssetHeroMeta(asset))}</p>
           </div>
 
           <aside class="assetReportValuationCard">
@@ -2880,8 +2902,8 @@ function buildReportHtml(options: {
         <div class="assetReportContentGrid">
           <div class="assetReportMainStack">
             <section class="assetReportSection assetReportTechnical">
-              <h2>Asset Details</h2>
-              ${renderRows(buildAssetDetailRows(asset), 'No asset details available.')}
+              <h2>${escapeHtml(options.detailHeading ?? 'Asset Details')}</h2>
+              ${renderRows(options.detailRows ?? buildAssetDetailRows(asset), 'No asset details available.')}
             </section>
 
             <section class="assetReportSection assetReportClientCard">
@@ -2897,8 +2919,8 @@ function buildReportHtml(options: {
             </section>
 
             <section class="assetReportSideCard assetReportRecordRows">
-              <h2>Latest Location</h2>
-              ${renderRows(buildLocationRows(asset), 'No location captured yet.')}
+              <h2>${escapeHtml(options.locationHeading ?? 'Latest Location')}</h2>
+              ${renderRows(options.locationRows ?? buildLocationRows(asset), 'No location captured yet.')}
             </section>
 
             ${options.sideExtraHtml ?? ''}
@@ -2977,8 +2999,11 @@ function buildFuelReport(
   generatedAt: string,
   logoUrl: string,
   dateRangeLabel = 'All available entries',
+  scopeAssets: AssetRegisterItem[] = [asset],
 ): string {
   const fuelEvents = filterFuelReportEvents(events);
+  const isUmbrellaReport = scopeAssets.length > 1 || fuelEvents.some((event) => Boolean((event as ScopedScanEventRecord).reportAsset));
+  const assetsWithFuel = new Set(fuelEvents.map((event) => reportAssetForEvent(event, asset).id)).size;
 
   return buildReportHtml({
     reportKind: 'fuel',
@@ -2989,7 +3014,22 @@ function buildFuelReport(
     summary: buildFuelReportSummary(asset, fuelEvents),
     recordRows: buildFuelRecordRows(asset, fuelEvents, dateRangeLabel),
     bodyHtml: buildFuelBody(asset, fuelEvents),
-    sideExtraHtml: renderFuelAverageCard(asset, fuelEvents),
+    sideExtraHtml: isUmbrellaReport ? undefined : renderFuelAverageCard(asset, fuelEvents),
+    identityKicker: isUmbrellaReport ? 'Asset umbrella' : undefined,
+    heroMeta: isUmbrellaReport ? `${scopeAssets.length} linked assets · each fuel entry is attributed to its actual asset` : undefined,
+    detailHeading: isUmbrellaReport ? 'Umbrella Scope' : undefined,
+    detailRows: isUmbrellaReport
+      ? [
+          { label: 'Umbrella', value: asset.title },
+          { label: 'Linked Assets', value: formatNumber(scopeAssets.length) },
+          { label: 'Assets with Fuel Records', value: formatNumber(assetsWithFuel) },
+          { label: 'Report Period', value: dateRangeLabel },
+        ]
+      : undefined,
+    locationHeading: isUmbrellaReport ? 'Entry Locations' : undefined,
+    locationRows: isUmbrellaReport
+      ? [{ label: 'Location Source', value: 'Shown separately on each fuel entry' }]
+      : undefined,
   });
 }
 
@@ -3092,7 +3132,7 @@ function buildFuelReportWorkbook(
     ...buildFuelAverageRows(fuelAverage),
   ];
   const headers = [
-    'Fuel Issued On', 'Source / Activity', 'Storage Unit', 'Litres Issued', 'Before Fill Litres', 'Usage Reading', 'Usage Metric', 'Usage Display',
+    'Asset', 'Fuel Issued On', 'Source / Activity', 'Storage Unit', 'Litres Issued', 'Before Fill Litres', 'Usage Reading', 'Usage Metric', 'Usage Display',
     'Historical Storage Before', 'Historical Storage After', 'Fuel % Before', 'Fuel % After', 'Operator',
     'Activity', 'Work Area', 'GPS', 'Latitude', 'Longitude', 'Entry Added On', 'Added By',
     'Evidence / Review Status', 'Evidence Type', 'Evidence Reference', 'Evidence File', 'Tank Balance Treatment',
@@ -3111,15 +3151,18 @@ function buildFuelReportWorkbook(
     ],
     [],
     headers.map((header) => styled(header, 'tableHeader')),
-    ...fuelEvents.map((event) => [
+    ...fuelEvents.map((event) => {
+      const eventAsset = reportAssetForEvent(event, asset);
+      return [
+      styled(reportAssetTitleForEvent(event, asset), 'text'),
       styled(fuelIssueDateTimeLabel(event), 'text'),
       styled(fuelLedgerActivityLabel(event), event.isLateEntry ? 'statusInfo' : 'text'),
       styled(excelText(fuelStorageLabel(event)), 'text'),
       styled(numberForExcel(event.fuelLitres), 'decimal'),
       styled(numberForExcel(calculateAssetDieselBeforeFill(event)), 'decimal'),
       styled(numberForExcel(event.assetUsageReading ?? event.hours), 'decimal'),
-      styled(fuelUsageMetricLabel(asset, event), 'text'),
-      styled(formatEventUsage(asset, event), 'text'),
+      styled(fuelUsageMetricLabel(eventAsset, event), 'text'),
+      styled(formatEventUsage(eventAsset, event), 'text'),
       styled(event.isLateEntry ? 'Not recorded' : numberForExcel(event.fuelStorageLevelBefore), event.isLateEntry ? 'text' : 'decimal'),
       styled(event.isLateEntry ? 'Not recorded' : numberForExcel(event.fuelStorageLevelAfter), event.isLateEntry ? 'text' : 'decimal'),
       styled(percentForExcel(event.assetFuelPercentBefore), 'percent'),
@@ -3139,7 +3182,8 @@ function buildFuelReportWorkbook(
       styled(fuelBalanceTreatmentLabel(event), 'text'),
       styled(event.isLateEntry ? event.lateEntryReason || '' : '', 'note'),
       styled(normalizeSpaces(event.note), 'note'),
-    ]),
+      ];
+    }),
   ];
 
   return [
@@ -3154,7 +3198,7 @@ function buildFuelReportWorkbook(
     {
       name: 'Fuel Records',
       rows: recordSheetRows,
-      columns: [22, 24, 24, 16, 18, 18, 16, 22, 23, 23, 14, 14, 22, 24, 24, 36, 14, 14, 22, 24, 36, 24, 26, 26, 36, 42, 42],
+      columns: [30, 22, 24, 24, 16, 18, 18, 16, 22, 23, 23, 14, 14, 22, 24, 24, 36, 14, 14, 22, 24, 36, 24, 26, 26, 36, 42, 42],
       merges: [
         { fromRow: 1, fromColumn: 1, toRow: 1, toColumn: headers.length },
         { fromRow: 2, fromColumn: 1, toRow: 2, toColumn: headers.length },
@@ -3552,16 +3596,76 @@ export async function GET(request: NextRequest) {
     (sum, entry) => sum + Math.round(Number(entry.selectedValueExVat ?? entry.value) || 0),
     0,
   );
+  const combinedReplacementValue = reportAssets.reduce(
+    (sum, entry) => sum + Math.round(Number(entry.replacementPriceExVat) || 0),
+    0,
+  );
+  // An umbrella is a reporting scope, not a substitute for its designated primary asset.
+  // Start from a real item only to satisfy the complete record shape, then neutralise every
+  // asset-specific display field so no primary-asset metadata can leak into the report.
   const asset: AssetRegisterItem = groupId
     ? {
         ...primaryAsset,
         id: groupId,
+        registerId: null,
+        valuationRunId: null,
+        sectorId: null,
+        equipmentFamilyId: null,
+        equipmentFamilyKey: '',
+        equipmentFamilyLabel: '',
+        equipmentModelId: null,
+        typedModelName: '',
+        normalizedTypedModelName: '',
+        specsJson: {},
+        depreciationMethodUsed: '',
+        lifeWorkedPercent: null,
+        lifeRemainingPercent: null,
+        estimatedHours: null,
+        maxLifetimeHours: null,
+        kind: 'manual',
         title: groupName,
         value: combinedValue,
+        selectedMethod: 'manual',
         selectedValueExVat: combinedValue,
+        replacementPriceExVat: combinedReplacementValue || null,
+        brandName: 'Asset umbrella',
+        modelName: `${reportAssets.length} linked assets`,
+        drive: '',
+        tractorType: '',
+        cab: '',
+        powerKw: null,
+        yearModel: null,
+        hours: null,
+        condition: '',
+        aim4priceValueExVat: null,
+        marketMidExVat: null,
+        note: '',
+        serialNumber: '',
+        isFinanced: false,
+        isInsured: false,
+        insuredValueExVat: null,
+        isLicensed: false,
+        licenseRegistrationNumber: '',
+        financeNote: '',
+        sellerPhone: '',
+        marketplaceNotes: '',
+        marketplaceStatus: '',
+        marketplacePriceExVat: null,
+        marketplaceSellerName: '',
+        marketplaceSellerCompany: '',
+        marketplaceSellerEmail: '',
+        marketplaceProvince: '',
+        marketplaceArea: '',
+        photos: [],
+        documents: [],
         plateLabel: '',
         publicAssetCode: '',
-        serialNumber: '',
+        qrStatus: '',
+        lastScannedAtIso: null,
+        lastKnownLat: null,
+        lastKnownLng: null,
+        lastKnownLocationText: '',
+        fuelPercent: null,
       }
     : primaryAsset;
 
@@ -3579,7 +3683,7 @@ export async function GET(request: NextRequest) {
   );
   const generatedAt = formatDate(new Date().toISOString());
   const rawLogoUrl = groupId
-    ? String(ownerProfile.logoUrl ?? '').trim()
+    ? String(ownerProfile.logoUrl ?? '').trim() || await getAssetRegisterReportLogoUrl(ownerUserId).catch(() => '')
     : await getAssetRegisterReportLogoUrl(ownerUserId, asset.registerId).catch(() => '');
   const logoUrl = await resolveReportLogoUrlForHtml(rawLogoUrl, request.url);
   const scopeLabel = groupId ? 'Umbrella' : asset.plateLabel || asset.publicAssetCode || asset.id;
@@ -3616,7 +3720,7 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    const html = buildDepreciationReport(asset, logEntries, ownerDetails, generatedAt, logoUrl, reportDateRange.label);
+    const html = buildDepreciationReport(asset, logEntries, ownerDetails, generatedAt, logoUrl, reportDateRange.label, reportAssets);
 
     return new NextResponse(html, {
       status: 200,
@@ -3639,9 +3743,9 @@ export async function GET(request: NextRequest) {
 
       if (!groupId) return sourceEvents;
 
-      return sourceEvents.map((event) => ({
+      return sourceEvents.map((event): ScopedScanEventRecord => ({
         ...event,
-        note: [`Asset: ${entry.title}`, normalizeSpaces(event.note)].filter(Boolean).join(' · '),
+        reportAsset: entry,
       }));
     }),
   );
@@ -3669,7 +3773,7 @@ export async function GET(request: NextRequest) {
   }
 
   const html = reportKind === 'fuel'
-    ? buildFuelReport(asset, events, ownerDetails, generatedAt, logoUrl, reportDateRange.label)
+    ? buildFuelReport(asset, events, ownerDetails, generatedAt, logoUrl, reportDateRange.label, reportAssets)
     : buildMaintenanceReport(asset, events, ownerDetails, generatedAt, logoUrl, reportDateRange.label, maintenanceReportType);
 
   return new NextResponse(html, {

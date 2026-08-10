@@ -271,6 +271,22 @@ test('the umbrella Manage modal reuses the asset Manage and report-format patter
   assert.match(modalStyles, /\.backdrop \{/);
 });
 
+test('umbrella report downloads use custom selectors, clear spacing, and the shared maintenance exporter', async () => {
+  const [client, modal, modalStyles] = await Promise.all([
+    readFile(new URL('../app/asset-register/asset-register-client.tsx', import.meta.url), 'utf8'),
+    readFile(new URL('../components/asset-register/AssetGroupManagerModal.tsx', import.meta.url), 'utf8'),
+    readFile(new URL('../components/asset-register/AssetGroupManagerModal.module.css', import.meta.url), 'utf8'),
+  ]);
+
+  assert.match(client, /return `\/api\/maintenance\/report\?\$\{maintenanceParams\.toString\(\)\}`/);
+  assert.match(client, /maintenanceSelection === 'upcoming' \|\| maintenanceSelection === 'done'/);
+  assert.match(modal, /function ReportSelect/);
+  assert.match(modal, /Completed maintenance/);
+  assert.match(modal, /registerStyles\.reportSelectMenu/);
+  assert.doesNotMatch(modal, /<select value=\{maintenanceType\}/);
+  assert.match(modalStyles, /\.reportActions \{[\s\S]*?margin-top: 1\.75rem !important;[\s\S]*?border-top:/);
+});
+
 test('umbrella sharing and downloads are limited to linked assets', async () => {
   const [client, exportRoute] = await Promise.all([
     readFile(new URL('../app/asset-register/asset-register-client.tsx', import.meta.url), 'utf8'),
