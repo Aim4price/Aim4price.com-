@@ -10,6 +10,8 @@
 }
 
 .dialog {
+  display: flex;
+  flex-direction: column;
   width: min(1040px, 100%);
   max-height: min(880px, calc(100vh - 48px));
   overflow: hidden;
@@ -17,6 +19,14 @@
   border-radius: 30px;
   background: #fff;
   box-shadow: 0 34px 90px rgba(7, 31, 38, 0.32);
+}
+
+.dialog > form {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .header {
@@ -99,7 +109,9 @@
 }
 
 .body {
-  max-height: calc(min(880px, 100vh - 48px) - 185px);
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: none;
   overflow-y: auto;
   padding: 26px 32px;
 }
@@ -629,10 +641,11 @@
 
 .footer {
   display: flex;
+  flex: 0 0 auto;
   align-items: center;
   justify-content: flex-end;
   gap: 16px;
-  padding: 18px 32px;
+  padding: 18px 32px max(26px, env(safe-area-inset-bottom));
   border-top: 1px solid #d9e8e2;
   background: #fbfdfc;
 }
