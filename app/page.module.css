@@ -704,3 +704,207 @@
   }
 }
 
+/* === Homepage responsive contract, August 2026 ===
+   Preserve the desktop visual language while giving the public hero and
+   conversion actions predictable space at tablet and phone widths. */
+@media (max-width: 900px) {
+  .heroMedia,
+  .heroGrid {
+    min-height: clamp(29rem, 72vw, 34rem);
+  }
+
+  .heroGrid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+  }
+
+  .heroCopy {
+    position: relative;
+    z-index: 2;
+    max-width: min(100%, 48rem);
+  }
+
+  .heroTitle {
+    max-width: min(100%, 46rem);
+    font-size: clamp(3rem, 7.8vw, 4.4rem);
+  }
+
+  .heroText {
+    max-width: min(100%, 44rem);
+  }
+
+  .heroVisual {
+    position: absolute;
+    z-index: 1;
+    right: clamp(-2rem, -2vw, -0.5rem);
+    bottom: clamp(1.5rem, 5vw, 3rem);
+    width: clamp(9rem, 24vw, 13rem);
+    opacity: 0.22;
+    pointer-events: none;
+  }
+
+  .heroLogo {
+    width: 100%;
+  }
+
+  .productGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .collaborationMap {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1rem;
+  }
+
+  .ownerHub {
+    min-height: 0;
+  }
+
+  .ownerHub::after,
+  .partnerGrid::before,
+  .partnerCard::before {
+    display: none;
+  }
+
+  .partnerGrid {
+    padding-left: 0;
+  }
+
+  .rolesFooter {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+}
+
+@media (max-width: 760px) {
+  .heroSection {
+    padding-bottom: clamp(2.5rem, 9vw, 3.25rem);
+  }
+
+  .heroMedia,
+  .heroGrid {
+    min-height: 0;
+  }
+
+  .heroGrid {
+    padding: clamp(2.4rem, 8vw, 3.25rem) 0;
+  }
+
+  .heroEyebrow {
+    max-width: 100%;
+    min-height: 0;
+    flex-wrap: wrap;
+    gap: 0.35rem 0.48rem;
+    padding: 0.7rem 0.8rem;
+    font-size: clamp(0.64rem, 2.4vw, 0.74rem);
+    line-height: 1.25;
+  }
+
+  .heroTitle {
+    margin-top: clamp(1.15rem, 4vw, 1.45rem);
+    max-width: 100%;
+    font-size: clamp(2.45rem, 10vw, 3.6rem);
+    line-height: 0.98;
+  }
+
+  .heroTitle span {
+    white-space: normal;
+  }
+
+  .heroText {
+    font-size: clamp(0.92rem, 3.4vw, 1.05rem);
+    line-height: 1.48;
+    text-wrap: pretty;
+  }
+
+  .heroActions,
+  .rolesActions {
+    width: 100%;
+    max-width: 34rem;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: clamp(0.5rem, 2vw, 0.7rem);
+  }
+
+  .heroActions > *,
+  .rolesActions > * {
+    width: 100%;
+    min-width: 0;
+    min-height: var(--tap-target-min, 44px);
+    padding-inline: clamp(0.55rem, 2.5vw, 0.9rem);
+    text-align: center;
+    white-space: nowrap;
+    font-size: clamp(0.76rem, 3vw, 0.9rem);
+  }
+
+  .heroVisual {
+    right: -1.25rem;
+    bottom: 1.25rem;
+    width: clamp(7rem, 27vw, 10rem);
+    opacity: 0.16;
+  }
+
+  .sectionTitle,
+  .rolesTitle {
+    font-size: clamp(2rem, 7.5vw, 2.65rem);
+  }
+
+  .marketPrompt {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 1rem;
+  }
+
+  .rolesPanel {
+    padding: clamp(1.35rem, 5vw, 2rem);
+  }
+
+  .rolesFooter {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1rem;
+  }
+}
+
+@media (max-width: 520px) {
+  .heroVideoPlay {
+    right: max(0.7rem, env(safe-area-inset-right));
+    bottom: max(0.7rem, env(safe-area-inset-bottom));
+    min-width: 0;
+    min-height: var(--tap-target-min, 44px);
+    height: auto;
+  }
+
+  .heroActions,
+  .rolesActions {
+    max-width: none;
+  }
+
+  .heroActions > *,
+  .rolesActions > * {
+    padding-inline: 0.48rem;
+    font-size: clamp(0.72rem, 3.15vw, 0.82rem);
+  }
+
+  .productGrid,
+  .partnerGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .productCard {
+    min-height: 0;
+  }
+
+  .marketPrompt {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .marketLink {
+    width: 100%;
+    min-height: var(--tap-target-min, 44px);
+  }
+
+  .partnerTitle {
+    white-space: normal;
+  }
+}
+

@@ -2233,7 +2233,9 @@ export default function AppHeader({
   return (
     <>
       <header className={styles.header}>
-        <div className={`${styles.inner} ${isDealerAccount ? styles.innerDealer : ''}`}>
+        <div
+          className={`${styles.inner} ${isDealerAccount ? styles.innerDealer : ''} ${!isLoadingSession && !session ? styles.innerPublic : ''}`}
+        >
           <Link href="/" className={styles.brand} aria-label="Go to Aim4price home">
             <Image
               src="/brand/Aim4price_Home_Logo.png"
