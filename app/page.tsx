@@ -1,12 +1,12 @@
-import Image from "next/image";
-import Link from "next/link";
-import { redirectAdminToAdmin } from "../lib/account-access";
-import AppHeader from "../components/AppHeader";
-import HomeHeroVideo from "./home-hero-video";
-import styles from "./page.module.css";
+import Image from 'next/image';
+import Link from 'next/link';
+import { redirectAdminToAdmin } from '../lib/account-access';
+import AppHeader from '../components/AppHeader';
+import HomeHeroVideo from './home-hero-video';
+import styles from './page.module.css';
 
-export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 
 type ProductStep = {
   number: string;
@@ -23,51 +23,51 @@ type RolePlayer = {
 
 const productSteps: ProductStep[] = [
   {
-    number: "01",
-    title: "Estimate the value",
-    text: "Create a structured estimate using the asset details and condition.",
-    href: "/valuation",
-    action: "Start estimate",
+    number: '01',
+    title: 'Estimate the value',
+    text: 'Create a structured estimate using the asset details and condition.',
+    href: '/valuation',
+    action: 'Start estimate',
   },
   {
-    number: "02",
-    title: "Create the record",
-    text: "Keep values, photos, documents and QR-linked details together.",
-    href: "/asset-register",
-    action: "Open Asset Register",
+    number: '02',
+    title: 'Create the record',
+    text: 'Keep values, photos, documents and QR-linked details together.',
+    href: '/asset-register',
+    action: 'Open Asset Register',
   },
   {
-    number: "03",
-    title: "Manage ownership",
-    text: "Track costs, fuel, maintenance, finance, insurance and licensing.",
-    href: "/asset-register",
-    action: "Explore Asset Register",
+    number: '03',
+    title: 'Manage ownership',
+    text: 'Track costs, fuel, maintenance, finance, insurance and licensing.',
+    href: '/asset-register',
+    action: 'Explore Asset Register',
   },
   {
-    number: "04",
-    title: "Work with your team",
-    text: "Give trusted professionals controlled access to the same asset information.",
-    href: "#roleplayers",
-    action: "View role players",
+    number: '04',
+    title: 'Work with your team',
+    text: 'Give trusted professionals controlled access to the same asset information.',
+    href: '#roleplayers',
+    action: 'View role players',
   },
 ];
 
 const rolePlayers: RolePlayer[] = [
   {
-    role: "Dealers",
-    text: "Valuation, servicing and replacement support.",
+    role: 'Dealers',
+    text: 'Valuation, servicing and replacement support.',
   },
   {
-    role: "Accountants",
-    text: "Financial records, documents and reports.",
+    role: 'Accountants',
+    text: 'Financial records, documents and reports.',
   },
   {
-    role: "Financiers",
-    text: "Asset values, finance agreements and funding needs.",
+    role: 'Financiers',
+    text: 'Asset values, finance agreements and funding needs.',
   },
   {
-    role: "Insurers & brokers",
-    text: "Cover values, schedules and supporting evidence.",
+    role: 'Insurers & brokers',
+    text: 'Cover values, schedules and supporting evidence.',
   },
 ];
 
@@ -89,10 +89,7 @@ export default async function HomePage() {
               <div className={styles.heroCopy}>
                 <p className={styles.heroEyebrow}>
                   <span>AIM4PRICE.COM</span>
-                  <span
-                    className={styles.heroEyebrowDivider}
-                    aria-hidden="true"
-                  >
+                  <span className={styles.heroEyebrowDivider} aria-hidden="true">
                     |
                   </span>
                   <span>Asset management for South Africa</span>
@@ -104,9 +101,8 @@ export default async function HomePage() {
                 </h1>
 
                 <p className={styles.heroText}>
-                  Build detailed records and reports, manage every stage of
-                  ownership and collaborate with trusted professionals through
-                  one owner-controlled Asset Register.
+                  Build detailed records and reports, manage every stage of ownership and
+                  collaborate with trusted professionals through one owner-controlled Asset Register.
                 </p>
 
                 <div className={styles.heroActions}>
@@ -142,9 +138,7 @@ export default async function HomePage() {
         <div className={styles.shell}>
           <div className={styles.sectionHeading}>
             <p className={styles.sectionEyebrow}>What Aim4price does</p>
-            <h2 className={styles.sectionTitle}>
-              From estimate to a complete asset record.
-            </h2>
+            <h2 className={styles.sectionTitle}>From estimate to a complete asset record.</h2>
             <p className={styles.sectionText}>
               Create the record once, then keep it useful throughout ownership.
             </p>
@@ -152,11 +146,7 @@ export default async function HomePage() {
 
           <div className={styles.productGrid}>
             {productSteps.map((step) => (
-              <Link
-                key={step.number}
-                href={step.href}
-                className={styles.productCard}
-              >
+              <Link key={step.number} href={step.href} className={styles.productCard}>
                 <span className={styles.productNumber}>{step.number}</span>
                 <h3 className={styles.productTitle}>{step.title}</h3>
                 <p className={styles.productText}>{step.text}</p>
@@ -168,9 +158,7 @@ export default async function HomePage() {
           <div className={styles.marketPrompt}>
             <div>
               <p className={styles.marketLabel}>Explore the market</p>
-              <p className={styles.marketText}>
-                Browse listings and owner-authorised opportunities.
-              </p>
+              <p className={styles.marketText}>Browse listings and owner-authorised opportunities.</p>
             </div>
             <Link href="/marketplace" className={styles.marketLink}>
               View Marketplace
@@ -188,9 +176,7 @@ export default async function HomePage() {
                 <span className={styles.rolesTitleLine}>
                   The owner controls the Asset Register.
                 </span>
-                <span className={styles.rolesTitleLine}>
-                  Every role can contribute.
-                </span>
+                <span className={styles.rolesTitleLine}>Every role can contribute.</span>
               </h2>
               <p className={styles.rolesText}>
                 Trusted professionals contribute only where relevant.
@@ -202,8 +188,7 @@ export default async function HomePage() {
                 <p className={styles.ownerHubEyebrow}>Owner controlled</p>
                 <h3 className={styles.ownerHubTitle}>One Asset Register</h3>
                 <p className={styles.ownerHubText}>
-                  The owner sees the full record and controls who can access or
-                  update it.
+                  The owner sees the full record and controls who can access or update it.
                 </p>
               </article>
 
@@ -239,3 +224,4 @@ export default async function HomePage() {
     </main>
   );
 }
+
