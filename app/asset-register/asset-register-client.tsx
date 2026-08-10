@@ -69,19 +69,20 @@ type DisposalReason = 'sold' | 'traded_in' | 'scrapped' | 'written_off' | 'mista
 type AssetMoveDestination = 'register' | 'umbrella';
 
 const ASSET_GROUP_DRAG_DATA_TYPE = 'application/x-aim4price-asset-id';
-const ASSET_GROUP_AUTO_SCROLL_EDGE_PX = 120;
-const ASSET_GROUP_AUTO_SCROLL_MAX_PX = 24;
+const ASSET_GROUP_AUTO_SCROLL_EDGE_PX = 140;
+const ASSET_GROUP_AUTO_SCROLL_MIN_PX = 8;
+const ASSET_GROUP_AUTO_SCROLL_MAX_PX = 64;
 
 function assetGroupAutoScrollDelta(pointerY: number, viewportHeight: number): number {
   if (pointerY < ASSET_GROUP_AUTO_SCROLL_EDGE_PX) {
     const intensity = (ASSET_GROUP_AUTO_SCROLL_EDGE_PX - Math.max(0, pointerY)) / ASSET_GROUP_AUTO_SCROLL_EDGE_PX;
-    return -Math.max(2, Math.ceil(ASSET_GROUP_AUTO_SCROLL_MAX_PX * intensity));
+    return -Math.max(ASSET_GROUP_AUTO_SCROLL_MIN_PX, Math.ceil(ASSET_GROUP_AUTO_SCROLL_MAX_PX * intensity));
   }
 
   if (pointerY > viewportHeight - ASSET_GROUP_AUTO_SCROLL_EDGE_PX) {
     const distanceFromEdge = Math.max(0, viewportHeight - pointerY);
     const intensity = (ASSET_GROUP_AUTO_SCROLL_EDGE_PX - distanceFromEdge) / ASSET_GROUP_AUTO_SCROLL_EDGE_PX;
-    return Math.max(2, Math.ceil(ASSET_GROUP_AUTO_SCROLL_MAX_PX * intensity));
+    return Math.max(ASSET_GROUP_AUTO_SCROLL_MIN_PX, Math.ceil(ASSET_GROUP_AUTO_SCROLL_MAX_PX * intensity));
   }
 
   return 0;
@@ -15004,52 +15005,11 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                         onDragStart={(event) => handleAssetDragStart(event, asset)}
                         onDragEnd={handleAssetDragEnd}
                       >
-                        {!assetGroup && (canUseOwnerOnlyAssetActions || isAccountantWorkspace) ? (
-                          <div className={styles.assetSideActions}>
-                            <button
-                              type="button"
-                              className={`${styles.assetFlagButton} ${styles.controlTooltip} ${isFlagged ? styles.assetFlagButtonActive : ''}`}
-                              onClick={() => void handleAssetFlagToggle(asset)}
-                              disabled={isFlagBusy}
-                              aria-label={isFlagged ? `Unflag ${asset.title}` : `Flag ${asset.title}`}
-                              aria-pressed={isFlagged}
-                              data-tooltip={isFlagged ? 'Remove flag' : 'Flag asset'}
-                            >
-                              <FlagIcon className={styles.assetFlagIcon} />
-                            </button>
-
-                            <button
-                              type="button"
-                              className={`${styles.assetRegisterMoveButton} ${styles.controlTooltip}`}
-                              onClick={() => openAssetRegisterMoveManager(asset)}
-                              aria-label={`Move ${asset.title} to another asset register`}
-                              data-tooltip="Move asset"
-                            >
-                              <ChangeRegisterIcon className={styles.assetRegisterMoveIcon} />
-                            </button>
-
-                            <button
-                              type="button"
-                              className={`${styles.assetGroupButton} ${styles.controlTooltip} ${isResolvedCombinedGroup ? styles.assetGroupButtonActive : ''}`}
-                              onClick={() => openAssetGroupManager(asset)}
-                              disabled={!canManageAssetGroups}
-                              aria-label={isResolvedCombinedGroup
-                                ? `Open the combined umbrella containing ${asset.title}`
-                                : `Create an umbrella with ${asset.title}`}
-                              data-tooltip={canManageAssetGroups
-                                ? isResolvedCombinedGroup ? 'Open combined umbrella' : 'Create umbrella'
-                                : 'Umbrellas unavailable'}
-                            >
-                              <UmbrellaIcon className={styles.assetGroupButtonIcon} />
-                            </button>
-                          </div>
-                        ) : null}
-
                         <article
                           id={`asset-card-${asset.id}`}
                           className={`${styles.assetCard} ${isExpanded ? styles.assetCardExpanded : ''} ${isFlagged ? styles.assetCardFlagged : ''} ${estimateNeedsUpdate ? styles.assetCardEstimateStale : ''} ${openPartnerNote ? `${styles.assetCardPartnerNote} ${partnerNoteToneClass}` : ''} ${maintenanceAlert || licenseRenewalAlert ? styles.assetCardMaintenanceUpcoming : ''} ${latestMaintenanceStatus ? styles.assetCardMaintenanceDone : ''} ${latestIssueNoteStatus ? styles.assetCardIssueNote : ''} ${dealerAssetCorrection ? styles.assetCardDealerCorrection : ''} ${dealerCorrectionRevaluationAlert ? styles.assetCardDealerCorrectionWarning : ''}`}
                         >
-                        {assetGroup && (canUseOwnerOnlyAssetActions || isAccountantWorkspace) ? (
+                        {(canUseOwnerOnlyAssetActions || isAccountantWorkspace) ? (
                           <div className={`${styles.assetSideActions} ${styles.assetGroupMemberActions}`} aria-label={`Actions for ${asset.title}`}>
                             <button
                               type="button"
@@ -15075,11 +15035,21 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
 
                             <button
                               type="button"
-                              className={`${styles.assetGroupButton} ${styles.assetGroupButtonActive} ${styles.controlTooltip}`}
+                              className={`${styles.assetGroupButton} ${styles.controlTooltip} ${assetGroup || isResolvedCombinedGroup ? styles.assetGroupButtonActive : ''}`}
                               onClick={() => openAssetGroupManager(asset)}
                               disabled={!canManageAssetGroups}
-                              aria-label={`Manage the umbrella containing ${asset.title}`}
-                              data-tooltip={canManageAssetGroups ? 'Manage umbrella' : 'Umbrella unavailable'}
+                              aria-label={assetGroup
+                                ? `Manage the umbrella containing ${asset.title}`
+                                : isResolvedCombinedGroup
+                                  ? `Open the combined umbrella containing ${asset.title}`
+                                  : `Create an umbrella with ${asset.title}`}
+                              data-tooltip={canManageAssetGroups
+                                ? assetGroup
+                                  ? 'Manage umbrella'
+                                  : isResolvedCombinedGroup
+                                    ? 'Open combined umbrella'
+                                    : 'Create umbrella'
+                                : 'Umbrella unavailable'}
                             >
                               <UmbrellaIcon className={styles.assetGroupButtonIcon} />
                             </button>
