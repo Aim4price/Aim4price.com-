@@ -69,6 +69,19 @@ test('separate-value groups count every member and order the primary first', asy
     ).map((asset) => asset.id),
     ['truck', 'trailer', 'bowser', 'unrelated'],
   );
+
+  const alphaGroup = {
+    ...group('separate'),
+    id: 'alpha-group',
+    name: 'Alpha Equipment',
+    members: [
+      { assetId: 'unrelated', role: 'primary', relationship: 'primary', sortOrder: 0 },
+    ],
+  };
+  assert.deepEqual(
+    helpers.orderAssetsByGroups(assets, [separateGroup, alphaGroup]).map((asset) => asset.id),
+    ['unrelated', 'truck', 'trailer', 'bowser'],
+  );
 });
 
 test('folded umbrellas occupy one page slot and expanded umbrellas stay intact', async () => {
@@ -258,6 +271,11 @@ test('umbrella cards expose aligned actions and the Manage modal uses a clear op
   assert.match(client, /onClick=\{\(\) => primaryAsset && openAssetGroupManager\(primaryAsset\)\}/);
   assert.match(client, /<span>Share<\/span>[\s\S]*?<span>\{isCollapsed \? 'View details' : 'Hide details'\}<\/span>[\s\S]*?<span>Manage<\/span>/);
   assert.match(styles, /\.page \.assetGroupHeaderActions \{[\s\S]*?grid-template-columns: repeat\(3, minmax\(0, 1fr\)\)/);
+  assert.match(client, /styles\.assetGroupValueLabel/);
+  assert.match(client, /styles\.assetGroupValueVat/);
+  assert.match(styles, /\.assetGroupValue \{[\s\S]*?grid-template-columns: minmax\(0, 1fr\) auto;/);
+  assert.match(styles, /\.assetGroupValueLabel \{/);
+  assert.match(styles, /\.assetGroupValueVat \{/);
   assert.match(modal, /Manage assets/);
   assert.match(modal, /Umbrella name/);
   assert.match(modal, /Download reports/);
@@ -290,6 +308,13 @@ test('the umbrella Manage modal reuses the asset Manage and report-format patter
   assert.match(modal, /src="\/brand\/pdf\.png"/);
   assert.match(modal, /src="\/brand\/sheet\.png"/);
   assert.match(modal, /registerStyles\.assetTimelineSecondaryButton/);
+  assert.match(modal, /function AssetGroupMemberSelect/);
+  assert.match(modal, /createPortal/);
+  assert.match(modal, /label="Role"/);
+  assert.match(modal, /label="Relationship"/);
+  assert.doesNotMatch(modal, /<select value=\{asset\.id === primaryAssetId/);
+  assert.match(modalStyles, /\.memberSelectMenu \{[\s\S]*?position: fixed;[\s\S]*?z-index: 1400;/);
+  assert.match(modalStyles, /\.memberSelectOptionActive/);
   assert.match(modalStyles, /\.backdrop \{/);
 });
 
@@ -343,7 +368,12 @@ test('umbrella-aware pagination expands tiers and the full header toggles the gr
   assert.match(client, /visiblePaginationEntries\.flatMap\(\(entry\) => entry\.assets\)/);
   assert.match(client, /target\.closest\('button, a, input, select, textarea, \[role="button"\]'\)/);
   assert.match(client, /onClick=\{\(event\) => \{[\s\S]*?toggleAssetGroupCollapsed\(group\.id\);/);
+  assert.match(client, /const nextExpandedGroupIds = willExpand \? new Set\(\[groupId\]\) : new Set<string>\(\)/);
+  assert.match(client, /compareUmbrellaAssetsByAttention/);
+  assert.match(client, /assets: \[\.\.\.entry\.assets\]\.sort\(compareUmbrellaAssetsByAttention\)/);
+  assert.match(client, /styles\.assetGroupHeaderRowMuted/);
   assert.match(styles, /\.assetGroupHeader \{[\s\S]*?cursor: pointer;/);
+  assert.match(styles, /\.assetCardRowMuted,\s*\.assetGroupHeaderRowMuted/);
 });
 
 test('assets can be dragged into groups without breaking group integrity', async () => {
@@ -381,20 +411,21 @@ test('the Switch flow can move an asset into an available umbrella', async () =>
   assert.match(styles, /\.assetRegisterMoveDestinationTabActive/);
 });
 
-test('umbrellas stay first, start folded, and expose their unnoted alert count', async () => {
-  const [client, styles] = await Promise.all([
+test('umbrellas stay first, sort alphabetically, start folded, and expose their unnoted alert count', async () => {
+  const [client, styles, helpers] = await Promise.all([
     readFile(new URL('../app/asset-register/asset-register-client.tsx', import.meta.url), 'utf8'),
     readFile(new URL('../app/asset-register/page.module.css', import.meta.url), 'utf8'),
+    readFile(new URL('../lib/asset-groups-shared.ts', import.meta.url), 'utf8'),
   ]);
 
   assert.match(client, /const \[expandedAssetGroupIds, setExpandedAssetGroupIds\] = useState<Set<string>>\(\(\) => new Set\(\)\)/);
-  assert.match(client, /group && !expandedAssetGroupIds\.has\(group\.id\)/);
   assert.match(client, /const isCollapsed = !expandedAssetGroupIds\.has\(group\.id\)/);
   assert.match(client, /const groupUnnotedAlertCount = group\.members\.reduce/);
   assert.match(client, /assetUnnotedAlertCount\(memberAsset\)/);
   assert.match(client, /styles\.registerChangeAlertBadge.*styles\.assetGroupAlertBadge/);
   assert.match(styles, /\.assetGroupUmbrella \{[\s\S]*?position: relative;[\s\S]*?overflow: visible;/);
   assert.match(styles, /\.assetGroupAlertBadge \{/);
+  assert.match(helpers, /left\.group\.name\.localeCompare\(right\.group\.name, 'en-ZA'/);
 });
 
 test('View details stays on one line inside grouped cards', async () => {
