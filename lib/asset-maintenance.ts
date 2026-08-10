@@ -4,6 +4,10 @@ import { listAssetRegisters } from './asset-registers';
 import { resolveAssetUsage } from './asset-usage';
 import { ensureFieldManagerTables, listFieldManagers } from './field-manager';
 import { isDatabaseSchemaReady } from './database-schema-readiness';
+import {
+  listCompletedMaintenanceScanEventsForAssets,
+  type AssetMaintenanceStatus as ScanMaintenanceStatus,
+} from './scan-assets';
 import type { PoolClient } from 'pg';
 
 export type AssetMaintenanceType = 'service' | 'checkup';
@@ -94,6 +98,11 @@ export type AssetMaintenanceListFilters = {
   type?: AssetMaintenanceType | 'all' | null;
   status?: 'all' | 'upcoming' | 'done' | null;
   assignedTo?: string | null;
+};
+
+export type AssetMaintenanceDataOptions = {
+  includeCompletedScanHistory?: boolean;
+  completedScanHistoryAssetIds?: string[];
 };
 
 export type AssetMaintenanceListResult = {
@@ -1054,12 +1063,147 @@ export function calculateAssetMaintenanceSummary(records: AssetMaintenanceRecord
   };
 }
 
-export async function listAssetMaintenanceData(userId: string, filters: AssetMaintenanceListFilters = {}): Promise<AssetMaintenanceListResult> {
-  const [assets, fieldManagers, records] = await Promise.all([
+function maintenanceHistoryDateOnly(value: string | null | undefined): string {
+  const parsed = value ? new Date(value) : null;
+  return parsed && Number.isFinite(parsed.getTime()) ? parsed.toISOString().slice(0, 10) : '';
+}
+
+function normalizedMaintenanceHistoryText(value: unknown): string {
+  return asText(value).toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+}
+
+function scanHistoryMatchesPersistedRecord(
+  event: ScanMaintenanceStatus,
+  record: AssetMaintenanceRecord,
+): boolean {
+  if (record.sourceScanEventId && record.sourceScanEventId === event.id) return true;
+  if (record.status !== 'done' || record.assetId !== event.assetRegisterItemId) return false;
+
+  const eventType: AssetMaintenanceType = event.kind === 'checked' ? 'checkup' : 'service';
+  if (record.maintenanceType !== eventType) return false;
+
+  const eventDate = maintenanceHistoryDateOnly(event.createdAtIso);
+  const recordDate = maintenanceHistoryDateOnly(record.completedAtIso || record.updatedAtIso);
+  if (!eventDate || eventDate !== recordDate) return false;
+
+  const eventText = normalizedMaintenanceHistoryText(event.sourceNote || event.summary || event.note);
+  const recordText = normalizedMaintenanceHistoryText(record.completedNotes || record.notes);
+  const sameDetails = Boolean(
+    eventText
+    && recordText
+    && (eventText.includes(recordText) || recordText.includes(eventText)),
+  );
+  const eventOperator = normalizedMaintenanceHistoryText(event.operatorName);
+  const recordOperator = normalizedMaintenanceHistoryText(record.completedBy || record.assignedName);
+  const sameOperator = Boolean(eventOperator && recordOperator && eventOperator === recordOperator);
+
+  return sameDetails || sameOperator;
+}
+
+function completedScanHistoryRecord(
+  userId: string,
+  event: ScanMaintenanceStatus,
+  asset: AssetMaintenanceAssetOption,
+): AssetMaintenanceRecord {
+  const maintenanceType: AssetMaintenanceType = event.kind === 'checked' ? 'checkup' : 'service';
+  const title = event.kind === 'checked' ? 'Check-up' : event.kind === 'repaired' ? 'Repair' : 'Service';
+
+  return {
+    id: `scan-history:${event.id}`,
+    userId,
+    assetId: asset.id,
+    assetTitle: asset.title,
+    assetKind: asset.kind,
+    assetCategoryLabel: asset.categoryLabel,
+    assetYearModel: asset.yearModel,
+    assetUsageReading: asset.usageReading,
+    assetUsageMetric: asset.usageMetric,
+    assetCondition: asset.condition,
+    assetValue: asset.value,
+    assetMeta: asset.meta,
+    maintenanceType,
+    triggerType: 'date',
+    status: 'done',
+    computedStatus: 'done',
+    computedStatusLabel: 'Done',
+    title,
+    notes: '',
+    assignedFieldManagerId: null,
+    assignedName: event.operatorName,
+    dueDate: null,
+    dueUsage: null,
+    usageMetric: null,
+    currentUsage: null,
+    remainingUsage: null,
+    daysUntilDue: null,
+    alertBeforeValue: null,
+    alertBeforeUnit: null,
+    recurringEnabled: false,
+    recurringIntervalValue: null,
+    recurringIntervalUnit: null,
+    generatedFromMaintenanceId: null,
+    sourceScanEventId: event.id,
+    completedAtIso: event.createdAtIso,
+    completedUsage: event.usageReading,
+    completedNotes: event.sourceNote || event.summary || event.note,
+    completedBy: event.operatorName,
+    alertNotedAtIso: event.notedAtIso,
+    createdAtIso: event.createdAtIso,
+    updatedAtIso: event.createdAtIso,
+  };
+}
+
+function mergeCompletedScanHistory(
+  userId: string,
+  assets: AssetMaintenanceAssetOption[],
+  records: AssetMaintenanceRecord[],
+  events: ScanMaintenanceStatus[],
+  filters: AssetMaintenanceListFilters,
+): AssetMaintenanceRecord[] {
+  if (filters.status === 'upcoming') return records;
+  if (filters.assignedTo && filters.assignedTo !== 'all') return records;
+
+  const assetsById = new Map(assets.map((asset) => [asset.id, asset]));
+  const merged = [...records];
+
+  for (const event of events) {
+    const asset = assetsById.get(event.assetRegisterItemId);
+    if (!asset) continue;
+    if (filters.assetId && asset.id !== filters.assetId) continue;
+
+    const eventType: AssetMaintenanceType = event.kind === 'checked' ? 'checkup' : 'service';
+    if (filters.type && filters.type !== 'all' && filters.type !== eventType) continue;
+    if (merged.some((record) => scanHistoryMatchesPersistedRecord(event, record))) continue;
+
+    merged.push(completedScanHistoryRecord(userId, event, asset));
+  }
+
+  return sortMaintenanceRecords(merged);
+}
+
+export async function listAssetMaintenanceData(
+  userId: string,
+  filters: AssetMaintenanceListFilters = {},
+  options: AssetMaintenanceDataOptions = {},
+): Promise<AssetMaintenanceListResult> {
+  const [assets, fieldManagers, persistedRecords] = await Promise.all([
     listAssetMaintenanceAssets(userId),
     listAssetMaintenanceFieldManagers(userId),
     listAssetMaintenanceRecords(userId, filters),
   ]);
+
+  const permittedAssetIds = new Set(assets.map((asset) => asset.id));
+  const requestedHistoryAssetIds = options.completedScanHistoryAssetIds
+    ?? (filters.assetId ? [filters.assetId] : assets.map((asset) => asset.id));
+  const relevantAssetIds = Array.from(
+    new Set(requestedHistoryAssetIds.filter((assetId) => permittedAssetIds.has(assetId))),
+  );
+  const completedScanHistory = options.includeCompletedScanHistory && filters.status !== 'upcoming'
+    ? await listCompletedMaintenanceScanEventsForAssets(relevantAssetIds)
+    : [];
+  const records = options.includeCompletedScanHistory
+    ? mergeCompletedScanHistory(userId, assets, persistedRecords, completedScanHistory, filters)
+    : persistedRecords;
 
   return {
     assets,
