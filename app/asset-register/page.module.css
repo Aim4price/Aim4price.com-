@@ -7648,12 +7648,13 @@
   font-weight: 800;
 }
 
-.assetGroupValueRow {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 0.7rem;
-  flex: 0 0 auto;
+.assetGroupSummary {
+  display: grid;
+  justify-items: end;
+  gap: 0.82rem;
+  flex: 0 1 32rem;
+  width: min(32rem, 100%);
+  min-width: 0;
 }
 
 .assetGroupValue {
@@ -7673,29 +7674,6 @@
   color: #5f746d;
   font-size: 0.78rem;
   font-weight: 800;
-}
-
-.assetGroupCollapseButton {
-  display: inline-grid;
-  width: 2.35rem;
-  height: 2.35rem;
-  place-items: center;
-  border: 1px solid transparent;
-  border-radius: 999px;
-  color: #075d45;
-  background: transparent;
-  cursor: pointer;
-}
-
-.assetGroupCollapseButton:hover {
-  border-color: rgba(20, 112, 82, 0.22);
-  background: rgba(219, 244, 233, 0.7);
-}
-
-.assetGroupCollapseButton span {
-  font-size: 1.45rem;
-  font-weight: 900;
-  line-height: 1;
 }
 
 .assetGroupMemberRow {
@@ -7777,9 +7755,9 @@
     padding: 1rem;
   }
 
-  .assetGroupValueRow {
+  .assetGroupSummary {
     width: 100%;
-    justify-content: space-between;
+    justify-items: stretch;
   }
 
   .assetGroupValue {
@@ -35361,7 +35339,6 @@ button.documentOpenLink {
 
 .assetSideActions .controlTooltip,
 .assetGroupSideActions .controlTooltip,
-.assetGroupCollapseButton.controlTooltip,
 .cardViewDetailsButton.controlTooltip {
   position: relative;
 }
@@ -35445,25 +35422,6 @@ button.documentOpenLink {
   }
 }
 
-.assetGroupCollapseButton {
-  border-color: rgba(20, 112, 82, 0.22);
-  background: rgba(232, 248, 240, 0.9);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.92);
-  transition: border-color 150ms ease, background 150ms ease, transform 150ms ease;
-}
-
-.assetGroupCollapseButton:hover {
-  border-color: rgba(20, 112, 82, 0.42);
-  background: #dff5ea;
-  transform: translateY(-1px);
-}
-
-.assetGroupCollapseChevron {
-  width: 1.08rem;
-  height: 1.08rem;
-  stroke-width: 2.5;
-}
-
 .cardViewDetailsButton .assetDetailsChevron {
   width: 1.55rem !important;
   height: 1.55rem !important;
@@ -35519,7 +35477,6 @@ button.documentOpenLink {
 @media (prefers-reduced-motion: reduce) {
   .controlTooltip::before,
   .controlTooltip::after,
-  .assetGroupCollapseButton,
   .cardViewDetailsButton .assetDetailsChevron,
   .reportSelectChevron,
   .customSelectChevron,
@@ -35598,6 +35555,69 @@ button.documentOpenLink {
 .page .assetHeaderActions .cardViewDetailsButton > span {
   flex-wrap: nowrap !important;
   white-space: nowrap !important;
+}
+
+.page .assetGroupHeaderActions {
+  width: min(32rem, 100%) !important;
+  min-width: 0 !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 0.7rem !important;
+}
+
+.assetGroupShareSummary {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.8rem;
+  align-items: center;
+  padding: 0.9rem 1rem;
+  border: 1px solid rgba(20, 135, 95, 0.28);
+  border-radius: 1rem;
+  background: linear-gradient(135deg, rgba(236, 249, 243, 0.96), rgba(250, 253, 252, 0.98));
+}
+
+.assetGroupShareSummaryIcon {
+  width: 1.55rem;
+  height: 1.55rem;
+  color: #087553;
+}
+
+.assetGroupShareSummary > span {
+  display: grid;
+  gap: 0.18rem;
+}
+
+.assetGroupShareSummary strong {
+  color: #0b4437;
+  font-size: 0.9rem;
+}
+
+.assetGroupShareSummary small {
+  color: #60766e;
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+@media (max-width: 1180px) {
+  .assetGroupHeader {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .assetGroupSummary {
+    width: 100%;
+    justify-items: stretch;
+  }
+
+  .assetGroupValue {
+    justify-items: start;
+    text-align: left;
+  }
+}
+
+@media (max-width: 640px) {
+  .page .assetGroupHeaderActions {
+    grid-template-columns: 1fr !important;
+  }
 }
 
 /* === Asset card actions: roomier, equal controls in regular and umbrella cards === */

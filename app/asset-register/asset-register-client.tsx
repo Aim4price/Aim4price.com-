@@ -5563,6 +5563,7 @@ function buildAssetRegisterExportUrl(
   entityName = '',
   accountantShareId?: string,
   availableRegisterIds: string[] = [],
+  groupId = '',
 ): string {
   const params = new URLSearchParams({ format: 'xlsx' });
   const cleanedRegisterId = String(registerId ?? '').trim();
@@ -5580,6 +5581,7 @@ function buildAssetRegisterExportUrl(
   }
 
   if (accountantShareId) params.set('accountantShareId', accountantShareId);
+  if (groupId.trim()) params.set('groupId', groupId.trim());
 
   return `/api/asset-register/export?${params.toString()}`;
 }
@@ -5907,6 +5909,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
   const [assets, setAssets] = useState<RegisterAsset[]>([]);
   const [assetGroups, setAssetGroups] = useState<AssetGroup[]>([]);
   const [expandedAssetGroupIds, setExpandedAssetGroupIds] = useState<Set<string>>(() => new Set());
+  const [assetGroupShareTarget, setAssetGroupShareTarget] = useState<AssetGroup | null>(null);
   const [assetGroupModalAsset, setAssetGroupModalAsset] = useState<RegisterAsset | null>(null);
   const [assetGroupModalGroup, setAssetGroupModalGroup] = useState<AssetGroup | null>(null);
   const [assetGroupError, setAssetGroupError] = useState('');
@@ -6896,6 +6899,25 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
   const activeRegisterShareName = isCombinedRegisterView
     ? buildCombinedAssetRegisterShareName(accountProfile, assetRegisters)
     : activeRegister?.businessName || buildOwnerName(accountProfile);
+  const assetGroupShareAssets = useMemo(() => {
+    if (!assetGroupShareTarget) return [];
+    const memberAssetIds = new Set(assetGroupShareTarget.members.map((member) => member.assetId));
+    return orderAssetsByGroups(
+      assets.filter((asset) => memberAssetIds.has(asset.id)),
+      [assetGroupShareTarget],
+    );
+  }, [assetGroupShareTarget, assets]);
+  const activeShareAssets = assetGroupShareTarget ? assetGroupShareAssets : assets;
+  const activeShareGroups = useMemo(
+    () => projectAssetGroupsToAssets(assetGroups, activeShareAssets),
+    [activeShareAssets, assetGroups],
+  );
+  const activeShareValue = useMemo(
+    () => sumAssetValues(activeShareAssets, activeShareGroups),
+    [activeShareAssets, activeShareGroups],
+  );
+  const activeShareName = assetGroupShareTarget?.name || activeRegisterShareName;
+  const isAssetGroupShare = Boolean(assetGroupShareTarget);
 
   const selectedQuoteOption = useMemo(() => quoteOptionForLeadType(selectedQuoteLeadType), [selectedQuoteLeadType]);
   const availableAssetQuoteOptions = useMemo(
@@ -10028,6 +10050,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
   function openAssetQuoteOptions(asset: RegisterAsset) {
     setNotice(null);
     setIsAssetFilterOpen(false);
+    setAssetGroupShareTarget(null);
     resetAssetQuoteState('asset');
     setQuoteAsset(asset);
   }
@@ -10035,6 +10058,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
   function closeAssetQuoteModal() {
     if (isSendingQuoteLead) return;
     setQuoteAsset(null);
+    setAssetGroupShareTarget(null);
     resetAssetQuoteState('asset');
   }
 
@@ -10262,9 +10286,9 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
       setNotice({
         tone: 'success',
         message: isSelectedDealerRegisterShare
-          ? `${selectedDealerShareAssetIds.length} ${selectedDealerShareAssetIds.length === 1 ? 'asset' : 'assets'} shared with ${quotePartnerName(selectedQuotePartner)}.`
+          ? `${activeShareName} shared with ${quotePartnerName(selectedQuotePartner)} · ${selectedDealerShareAssetIds.length} ${selectedDealerShareAssetIds.length === 1 ? 'asset' : 'assets'}.`
           : isFullRegisterQuoteLead
-          ? `${activeRegisterShareName} ${fullRegisterQuoteLabel} sent to ${quotePartnerName(selectedQuotePartner)}.`
+          ? `${activeShareName} ${fullRegisterQuoteLabel} sent to ${quotePartnerName(selectedQuotePartner)}.`
           : `${selectedQuoteOption.shortTitle.toLowerCase()} request sent to ${quotePartnerName(selectedQuotePartner)}.`,
       });
       closeAssetQuoteModal();
@@ -12713,12 +12737,24 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
 
     setNotice(null);
     setIsAssetFilterOpen(false);
+    setAssetGroupShareTarget(null);
+    setIsRegisterShareModalOpen(true);
+  }
+
+  function openAssetGroupShare(group: AssetGroup) {
+    const groupAssetIds = new Set(group.members.map((member) => member.assetId));
+    if (!assets.some((asset) => groupAssetIds.has(asset.id)) || isLoading) return;
+
+    setNotice(null);
+    setIsAssetFilterOpen(false);
+    setAssetGroupShareTarget(group);
     setIsRegisterShareModalOpen(true);
   }
 
   function closeRegisterShareModal() {
     if (isExporting || isSendingQuoteLead) return;
     setIsRegisterShareModalOpen(false);
+    setAssetGroupShareTarget(null);
   }
 
   function buildFullRegisterLeadAssetSnapshot(asset: RegisterAsset): Record<string, unknown> {
@@ -12780,9 +12816,11 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
 
   function buildFullRegisterLeadSections(leadType: AssetLeadType, profile: AccountProfile | null): Record<string, unknown> {
     const selectedAssetIds = new Set(selectedDealerShareAssetIds);
-    const sharedAssets = leadType === 'replacement_quote'
-      ? assets.filter((asset) => selectedAssetIds.has(asset.id))
-      : assets;
+    const sharedAssets = isAssetGroupShare
+      ? assetGroupShareAssets
+      : leadType === 'replacement_quote'
+        ? assets.filter((asset) => selectedAssetIds.has(asset.id))
+        : assets;
     const sharedAssetGroups = projectAssetGroupsToAssets(assetGroups, sharedAssets);
     const sharedAssetGroupMemberships = buildAssetGroupMembershipMap(sharedAssetGroups);
     const registerAssets = orderAssetsByGroups(sharedAssets, sharedAssetGroups).map((asset) => {
@@ -12810,17 +12848,19 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     );
     const generatedAtIso = new Date().toISOString();
     const leadLabel = leadType === 'insurance'
-      ? 'Full insurance quote'
+      ? isAssetGroupShare ? 'Umbrella insurance request' : 'Full insurance quote'
       : leadType === 'replacement_quote'
-        ? 'Full dealership request'
-        : 'Full refinance quote';
+        ? isAssetGroupShare ? 'Umbrella dealership request' : 'Full dealership request'
+        : isAssetGroupShare ? 'Umbrella finance request' : 'Full refinance quote';
     const registerLeadType = leadType === 'insurance'
       ? 'full_insurance_quote'
       : leadType === 'replacement_quote'
         ? 'full_dealership_request'
         : 'full_refinance_quote';
     const combinedRegisterName = buildCombinedAssetRegisterShareName(accountProfile ?? profile, assetRegisters);
-    const snapshotTitle = isCombinedRegisterView ? combinedRegisterName : 'Full Asset Register';
+    const snapshotTitle = isAssetGroupShare
+      ? assetGroupShareTarget?.name || 'Asset umbrella'
+      : isCombinedRegisterView ? combinedRegisterName : 'Full Asset Register';
     const snapshotOwnerName = isCombinedRegisterView ? combinedRegisterName : buildOwnerName(profile);
     const snapshotLogoUrl = isCombinedRegisterView
       ? toAbsoluteUrl(accountProfile?.logoUrl || profile?.logoUrl) ?? ''
@@ -12831,19 +12871,22 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
       valuationSummary: true,
       mainPhoto: true,
       photos: true,
-      documents: leadType === 'finance' && selectedQuotePartner?.accountSubtype === 'accountant',
+      documents: isAssetGroupShare || (leadType === 'finance' && selectedQuotePartner?.accountSubtype === 'accountant'),
       scanHistory: false,
       registerLead: true,
-      source: 'full_asset_register',
+      source: isAssetGroupShare ? 'asset_group' : 'full_asset_register',
       registerLeadType,
       pdfReport: true,
       registerId: activeRegister?.id || activeRegisterId || null,
-      liveAccess: leadType === 'finance' && selectedQuotePartner?.accountSubtype === 'accountant',
-      allowDirectUpdates: leadType === 'finance' && selectedQuotePartner?.accountSubtype === 'accountant' && quoteAllowDirectUpdates,
-      includeFuelLedger: leadType === 'finance' && selectedQuotePartner?.accountSubtype === 'accountant' && quoteIncludeFuelLedger,
-      includeCostLedger: leadType === 'finance' && selectedQuotePartner?.accountSubtype === 'accountant' && quoteIncludeCostLedger,
+      groupId: assetGroupShareTarget?.id ?? null,
+      liveAccess: !isAssetGroupShare && leadType === 'finance' && selectedQuotePartner?.accountSubtype === 'accountant',
+      allowDirectUpdates: !isAssetGroupShare && leadType === 'finance' && selectedQuotePartner?.accountSubtype === 'accountant' && quoteAllowDirectUpdates,
+      includeFuelLedger: !isAssetGroupShare && leadType === 'finance' && selectedQuotePartner?.accountSubtype === 'accountant' && quoteIncludeFuelLedger,
+      includeCostLedger: !isAssetGroupShare && leadType === 'finance' && selectedQuotePartner?.accountSubtype === 'accountant' && quoteIncludeCostLedger,
       registerSnapshot: {
-        snapshotType: 'full_asset_register',
+        snapshotType: isAssetGroupShare ? 'asset_group' : 'full_asset_register',
+        groupId: assetGroupShareTarget?.id ?? null,
+        groupName: assetGroupShareTarget?.name ?? null,
         title: snapshotTitle,
         registerName: snapshotTitle,
         leadLabel,
@@ -12871,10 +12914,11 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
   }
 
   function openFullRegisterQuotePartnerPicker(leadType: AssetLeadType) {
-    const anchorAsset = assets[0];
+    const shareAssets = isAssetGroupShare ? assetGroupShareAssets : assets;
+    const anchorAsset = shareAssets[0];
 
     if (!anchorAsset) {
-      setNotice({ tone: 'error', message: 'Add at least one asset before sending a full-register lead.' });
+      setNotice({ tone: 'error', message: isAssetGroupShare ? 'This umbrella has no visible assets to share.' : 'Add at least one asset before sharing this Asset Register.' });
       return;
     }
 
@@ -12891,7 +12935,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     setQuoteIncludePhotos(false);
     setQuoteIncludeDocuments(false);
     setQuoteIncludeScanHistory(false);
-    setSelectedDealerShareAssetIds(leadType === 'replacement_quote' ? assets.map((asset) => asset.id) : []);
+    setSelectedDealerShareAssetIds(leadType === 'replacement_quote' ? shareAssets.map((asset) => asset.id) : []);
     setQuoteTrackMaintenance(leadType === 'replacement_quote');
     setQuoteTrackingPermissions({ ...DEFAULT_DEALER_MAINTENANCE_PERMISSIONS });
   }
@@ -13035,6 +13079,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     reportKind: PdfReportKind = pdfReportKind,
     overrideAssets?: RegisterAsset[],
     overrideReportDetails?: PdfReportDetails,
+    overrideEntityName = '',
   ) {
     const isCustomAssetSelection = Boolean(overrideAssets);
     const reportOption = overrideReportDetails ? { value: reportKind, ...overrideReportDetails } : getPdfReportOption(reportKind);
@@ -13070,7 +13115,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     const didOpen = openAssetRegisterSummaryPrint({
       logoUrl: reportLogoUrl ?? getRegisterReportLogoUrl(activeRegister),
       generatedAt: formatDate(new Date().toISOString()),
-      reportTitle: `${exportEntityName.trim() || activeRegister?.businessName || 'Asset Register'} - ${reportOption.label} Report`,
+      reportTitle: `${overrideEntityName.trim() || exportEntityName.trim() || activeRegister?.businessName || 'Asset Register'} - ${reportOption.label} Report`,
       reportSubtitle: 'Aim4price asset register',
       valueLabel: isCustomAssetSelection ? 'Selected Register Value' : reportKind === 'full' ? 'Register Value' : 'Filtered Register Value',
       assetSectionTitle: reportOption.sectionTitle,
@@ -13206,12 +13251,13 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     }
   }
 
-  async function handleExportXlsx() {
+  async function handleExportXlsx(options: { entityName?: string; groupId?: string } = {}) {
     const response = await fetch(buildAssetRegisterExportUrl(
       activeRegister?.id || activeRegisterId,
-      exportEntityName,
+      options.entityName ?? exportEntityName,
       accountantShareId,
       assetRegisters.map((register) => register.id),
+      options.groupId,
     ), {
       credentials: 'include',
       cache: 'no-store',
@@ -13234,6 +13280,75 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     const fallbackName = `aim4price-asset-register-${new Date().toISOString().slice(0, 10)}.xlsx`;
     const fileName = parseDownloadFileName(response, fallbackName);
     downloadBlob(blob, fileName);
+  }
+
+  function assetsForGroup(group: AssetGroup): RegisterAsset[] {
+    const memberAssetIds = new Set(group.members.map((member) => member.assetId));
+    return orderAssetsByGroups(
+      assets.filter((asset) => memberAssetIds.has(asset.id)),
+      [group],
+    );
+  }
+
+  async function handleDownloadAssetGroupPdf(group: AssetGroup) {
+    if (isExporting) return;
+
+    const groupAssets = assetsForGroup(group);
+    if (!groupAssets.length) {
+      setNotice({ tone: 'error', message: `${group.name} does not contain any available assets to export.` });
+      return;
+    }
+
+    setExportFormat('pdf');
+    setIsExporting(true);
+
+    try {
+      await handleExportPdf(
+        'full',
+        groupAssets,
+        {
+          label: 'Umbrella',
+          description: `Only the linked assets in ${group.name}.`,
+          intro: `This report contains only ${group.name} and its linked assets. Unrelated Asset Register items are excluded.`,
+          sectionTitle: `${group.name} assets`,
+          emptyLabel: 'No linked assets are available in this umbrella.',
+        },
+        group.name,
+      );
+      setNotice({ tone: 'success', message: `${group.name} PDF opened.` });
+    } catch (error) {
+      setNotice({
+        tone: 'error',
+        message: error instanceof Error ? error.message : `Failed to export ${group.name} as a PDF.`,
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  }
+
+  async function handleDownloadAssetGroupXlsx(group: AssetGroup) {
+    if (isExporting) return;
+
+    const groupAssets = assetsForGroup(group);
+    if (!groupAssets.length) {
+      setNotice({ tone: 'error', message: `${group.name} does not contain any available assets to export.` });
+      return;
+    }
+
+    setExportFormat('xlsx');
+    setIsExporting(true);
+
+    try {
+      await handleExportXlsx({ entityName: group.name, groupId: group.id });
+      setNotice({ tone: 'success', message: `${group.name} Excel downloaded.` });
+    } catch (error) {
+      setNotice({
+        tone: 'error',
+        message: error instanceof Error ? error.message : `Failed to export ${group.name} as an Excel file.`,
+      });
+    } finally {
+      setIsExporting(false);
+    }
   }
 
   async function handleQuickExportXlsx() {
@@ -14493,23 +14608,49 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                               </div>
                             </div>
 
-                            <div className={styles.assetGroupValueRow}>
+                            <div className={styles.assetGroupSummary}>
                               <div className={styles.assetGroupValue}>
-                              <strong>{group.valueMode === 'included_in_primary' ? 'Counted value' : 'Combined value'} {money(displayedGroupValue)}</strong>
+                                <strong>{group.valueMode === 'included_in_primary' ? 'Counted value' : 'Combined value'} {money(displayedGroupValue)}</strong>
                                 <span>{groupVatLabel}</span>
                               </div>
-                              <button
-                                type="button"
-                                className={`${styles.assetGroupCollapseButton} ${styles.controlTooltip}`}
-                                onClick={() => toggleAssetGroupCollapsed(group.id)}
-                                aria-expanded={!isCollapsed}
-                                aria-label={isCollapsed ? `Expand ${group.name}` : `Collapse ${group.name}`}
-                                data-tooltip={isCollapsed ? 'Expand group' : 'Collapse group'}
-                              >
-                                {isCollapsed
-                                  ? <ChevronDownIcon className={styles.assetGroupCollapseChevron} />
-                                  : <ChevronUpIcon className={styles.assetGroupCollapseChevron} />}
-                              </button>
+
+                              <div className={`${styles.assetHeaderActions} ${styles.assetGroupHeaderActions}`}>
+                                {canShareActiveRegister ? (
+                                  <button
+                                    type="button"
+                                    className={`${styles.optionsButton} ${styles.cardOptionsButton}`}
+                                    onClick={() => openAssetGroupShare(group)}
+                                    aria-label={`Share ${group.name}`}
+                                  >
+                                    <ShareIcon className={styles.buttonIcon} />
+                                    <span>Share</span>
+                                  </button>
+                                ) : null}
+
+                                <button
+                                  type="button"
+                                  className={`${styles.expandButton} ${styles.cardViewDetailsButton} ${styles.controlTooltip}`}
+                                  onClick={() => toggleAssetGroupCollapsed(group.id)}
+                                  aria-expanded={!isCollapsed}
+                                  data-tooltip={isCollapsed ? 'View details' : 'Hide details'}
+                                >
+                                  {isCollapsed
+                                    ? <ChevronDownIcon className={`${styles.buttonIcon} ${styles.assetDetailsChevron}`} />
+                                    : <ChevronUpIcon className={`${styles.buttonIcon} ${styles.assetDetailsChevron}`} />}
+                                  <span>{isCollapsed ? 'View details' : 'Hide details'}</span>
+                                </button>
+
+                                <button
+                                  type="button"
+                                  className={`${styles.optionsButton} ${styles.cardManageButton}`}
+                                  onClick={() => primaryAsset && openAssetGroupManager(primaryAsset)}
+                                  disabled={!primaryAsset || !canManageAssetGroups}
+                                  aria-label={`Manage ${group.name}`}
+                                >
+                                  <ManageIcon className={styles.buttonIcon} />
+                                  <span>Manage</span>
+                                </button>
+                              </div>
                             </div>
                           </section>
                         </div>
@@ -15525,8 +15666,10 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
           >
             <div className={`${styles.modalHeader} ${styles.optionsModalHeader} ${styles.assetQuoteModalHeader} ${styles.registerShareModalHeader}`}>
               <div className={styles.modalHeaderText}>
-                <h3 id="asset-register-share-title">Share {activeRegisterShareName}</h3>
-                <p>Share with accountants, financiers, banks, insurers or dealers. Accountant access can stay live when you authorise it.</p>
+                <h3 id="asset-register-share-title">Share {activeShareName}</h3>
+                <p>{isAssetGroupShare
+                  ? `Share this umbrella and its ${activeShareAssets.length} linked ${activeShareAssets.length === 1 ? 'asset' : 'assets'} without exposing unrelated assets.`
+                  : 'Share with accountants, financiers, banks, insurers or dealers. Accountant access can stay live when you authorise it.'}</p>
               </div>
 
               <button
@@ -15555,7 +15698,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                     <span className={styles.assetQuoteChoiceText}>
                       <strong>Accountants &amp; finance</strong>
                       <small>
-                        <span>Share with an accountant, financier or bank.</span>
+                        <span>{isAssetGroupShare ? 'Send this umbrella to an accountant, financier or bank.' : 'Share with an accountant, financier or bank.'}</span>
                       </small>
                     </span>
                   </button>
@@ -15572,7 +15715,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                     <span className={styles.assetQuoteChoiceText}>
                       <strong>Get insurance help</strong>
                       <small>
-                        <span>Send {activeRegisterShareName} to an insurance partner.</span>
+                        <span>Send {activeShareName} to an insurance partner.</span>
                       </small>
                     </span>
                   </button>
@@ -15587,9 +15730,9 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                       {renderQuoteOptionIcon('replacement_quote', styles.assetQuoteChoiceIcon)}
                     </span>
                     <span className={styles.assetQuoteChoiceText}>
-                      <strong>Share with a dealer</strong>
+                      <strong>{isAssetGroupShare ? 'Share umbrella with a dealer' : 'Share with a dealer'}</strong>
                       <small>
-                        <span>Choose assets and grant dealer access.</span>
+                        <span>{isAssetGroupShare ? 'Share every linked asset as one organised package.' : 'Choose assets and grant dealer access.'}</span>
                       </small>
                     </span>
                   </button>
@@ -17548,14 +17691,16 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
           >
             <div className={`${styles.modalHeader} ${styles.optionsModalHeader} ${styles.assetQuoteModalHeader}`}>
               <div className={styles.modalHeaderText}>
-                <h3 id="asset-quote-title">{selectedQuoteOption ? selectedQuoteOption.mapTitle : isFullRegisterQuoteLead ? `Share ${activeRegisterShareName}` : quoteAsset?.title}</h3>
+                <h3 id="asset-quote-title">{selectedQuoteOption ? selectedQuoteOption.mapTitle : isFullRegisterQuoteLead ? `Share ${activeShareName}` : quoteAsset?.title}</h3>
                 {!selectedQuoteOption ? (
                   <p>{quoteAsset ? `${buildAssetMeta(quoteAsset)} · ${money(quoteAsset.value)} excl. VAT` : ''}</p>
                 ) : isFullRegisterQuoteLead ? (
                   selectedQuoteOption.leadType === 'replacement_quote' ? (
-                    <p>{selectedDealerShareAssetIds.length} of {assets.length} assets selected · ongoing access can be revoked</p>
+                    <p>{isAssetGroupShare
+                      ? `${selectedDealerShareAssetIds.length} linked assets in ${activeShareName} · ongoing access can be revoked`
+                      : `${selectedDealerShareAssetIds.length} of ${assets.length} assets selected · ongoing access can be revoked`}</p>
                   ) : (
-                    <p>Once-off {activeRegisterShareName} snapshot · {assets.length} {assets.length === 1 ? 'asset' : 'assets'} · {money(totalValue)} excl. VAT</p>
+                    <p>Once-off {activeShareName} snapshot · {activeShareAssets.length} {activeShareAssets.length === 1 ? 'asset' : 'assets'} · {money(activeShareValue)} excl. VAT</p>
                   )
                 ) : null}
               </div>
@@ -17765,7 +17910,9 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                             <div className={styles.assetQuoteMessagePanel}>
                               <p className={styles.assetQuoteStepNotice}>
                                 {isFullRegisterQuoteLead
-                                  ? selectedQuoteOption.leadType === 'finance' && selectedQuotePartner?.accountSubtype === 'accountant'
+                                  ? isAssetGroupShare
+                                    ? `This sends one organised snapshot containing only ${activeShareName} and its linked assets.`
+                                    : selectedQuoteOption.leadType === 'finance' && selectedQuotePartner?.accountSubtype === 'accountant'
                                     ? 'This grants the selected accountant live access to the latest authorised information in this Asset Register.'
                                     : selectedQuoteOption.leadType === 'replacement_quote'
                                       ? 'Choose the assets this dealer can work with. You can change permissions or revoke access later.'
@@ -17773,7 +17920,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                                   : 'This sends one asset only. It does not share the full register.'}
                               </p>
 
-                              {isFullRegisterQuoteLead && selectedQuoteOption.leadType === 'finance' && selectedQuotePartner?.accountSubtype === 'accountant' ? (
+                              {isFullRegisterQuoteLead && !isAssetGroupShare && selectedQuoteOption.leadType === 'finance' && selectedQuotePartner?.accountSubtype === 'accountant' ? (
                                 <div className={styles.assetLifecycleFields}>
                                   <button type="button" className={`${styles.assetQuoteConsentCheck} ${styles.assetQuoteTrackingChoice}`} onClick={() => setQuoteAllowDirectUpdates((current) => !current)} aria-pressed={quoteAllowDirectUpdates}>
                                     <span className={`${styles.assetQuoteTrackingCheckbox} ${quoteAllowDirectUpdates ? styles.assetQuoteTrackingCheckboxActive : ''}`} aria-hidden="true">{quoteAllowDirectUpdates ? '✓' : ''}</span>
@@ -17794,18 +17941,28 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                               ) : null}
 
                               {isFullRegisterQuoteLead && selectedQuoteOption.leadType === 'replacement_quote' ? (
-                                <DealerAssetShareSelection
-                                  assets={assets.map((asset) => ({
-                                    id: asset.id,
-                                    title: asset.title,
-                                    yearModel: asset.yearModel,
-                                    serialNumber: asset.serialNumber,
-                                    registrationNumber: readLicenseRegistrationNumber(asset),
-                                  }))}
-                                  selectedAssetIds={selectedDealerShareAssetIds}
-                                  onChange={setSelectedDealerShareAssetIds}
-                                  disabled={isSendingQuoteLead}
-                                />
+                                isAssetGroupShare ? (
+                                  <section className={styles.assetGroupShareSummary} aria-label={`${activeShareName} assets included`}>
+                                    <UmbrellaIcon className={styles.assetGroupShareSummaryIcon} />
+                                    <span>
+                                      <strong>{activeShareName}</strong>
+                                      <small>{activeShareAssets.length} linked {activeShareAssets.length === 1 ? 'asset' : 'assets'} included automatically.</small>
+                                    </span>
+                                  </section>
+                                ) : (
+                                  <DealerAssetShareSelection
+                                    assets={assets.map((asset) => ({
+                                      id: asset.id,
+                                      title: asset.title,
+                                      yearModel: asset.yearModel,
+                                      serialNumber: asset.serialNumber,
+                                      registrationNumber: readLicenseRegistrationNumber(asset),
+                                    }))}
+                                    selectedAssetIds={selectedDealerShareAssetIds}
+                                    onChange={setSelectedDealerShareAssetIds}
+                                    disabled={isSendingQuoteLead}
+                                  />
+                                )
                               ) : null}
 
                               <label className={styles.assetQuoteMessageField}>
@@ -17818,7 +17975,9 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                                   onChange={(event) => setQuoteOwnerMessage(event.target.value)}
                                   placeholder={
                                     isFullRegisterQuoteLead
-                                      ? 'Example: Please review my full register for refinance or insurance options.'
+                                      ? isAssetGroupShare
+                                        ? `Example: Please review ${activeShareName} and its linked assets.`
+                                        : 'Example: Please review my full register for refinance or insurance options.'
                                       : 'Example: Please contact me about cover or finance options for this asset.'
                                   }
                                 />
@@ -17839,7 +17998,11 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                                   </span>
                                   <span className={styles.assetQuoteTrackingCopy}>
                                     <strong>{isFullRegisterQuoteLead ? 'Ongoing dealer access' : 'Enable dealer tracking'}</strong>
-                                    <small>{isFullRegisterQuoteLead ? 'Apply these permissions to every selected asset. Access stays revocable.' : 'The dealer can download maintenance reports and propose maintenance schedules for your approval.'}</small>
+                                    <small>{isFullRegisterQuoteLead
+                                      ? isAssetGroupShare
+                                        ? 'Apply these permissions to every linked asset in this umbrella. Access stays revocable.'
+                                        : 'Apply these permissions to every selected asset. Access stays revocable.'
+                                      : 'The dealer can download maintenance reports and propose maintenance schedules for your approval.'}</small>
                                     <em>{quoteTrackMaintenance ? 'Permissions selected. Click to review.' : 'Choose the dealer permissions before sharing.'}</em>
                                   </span>
                                 </button>
@@ -17852,7 +18015,9 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                               <strong>Disclaimer and POPIA note</strong>
                               <p>
                                 {isFullRegisterQuoteLead
-                                  ? selectedQuoteOption.leadType === 'finance' && selectedQuotePartner?.accountSubtype === 'accountant'
+                                  ? isAssetGroupShare
+                                    ? `By sending this request, you allow Aim4price to share ${activeShareName}, its linked asset information and your saved business contact details with the chosen company.`
+                                    : selectedQuoteOption.leadType === 'finance' && selectedQuotePartner?.accountSubtype === 'accountant'
                                     ? `By sending this request, you allow Aim4price to share live Asset Register information and your saved business contact details with the chosen accountant.${quoteAllowDirectUpdates ? ' You also allow the accountant to save the selected direct updates, with audit history.' : ' The workspace will remain read-only.'}`
                                     : selectedQuoteOption.leadType === 'replacement_quote'
                                       ? 'By continuing, you allow Aim4price to share the selected assets and your saved business contact details with this dealer. Ongoing access uses the permissions shown and can be revoked.'
@@ -17862,7 +18027,9 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                               </p>
                               <p>
                                 {isFullRegisterQuoteLead
-                                  ? selectedQuoteOption.leadType === 'replacement_quote'
+                                  ? isAssetGroupShare
+                                    ? 'You confirm that you may share every linked asset in this umbrella and understand that the selected company may contact you outside Aim4price.'
+                                    : selectedQuoteOption.leadType === 'replacement_quote'
                                     ? 'You confirm that you may share the selected asset information and understand that the dealer may contact you outside Aim4price.'
                                     : 'You confirm that you have permission to share the complete register information and understand that the selected company may contact you outside Aim4price.'
                                   : 'You confirm that you have permission to share this asset information and understand that the selected company may contact you outside Aim4price.'}
@@ -19656,10 +19823,13 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
         groups={assetGroups}
         combinedMode={isCombinedRegisterView}
         busy={isSavingAssetGroup}
+        reportBusy={isExporting}
         error={assetGroupError}
         onClose={closeAssetGroupManager}
         onSave={handleSaveAssetGroup}
         onDelete={handleDeleteAssetGroup}
+        onDownloadPdf={handleDownloadAssetGroupPdf}
+        onDownloadXlsx={handleDownloadAssetGroupXlsx}
       />
 
       {isAccountantReportsOpen && accountantShareId && accountantAccess ? (

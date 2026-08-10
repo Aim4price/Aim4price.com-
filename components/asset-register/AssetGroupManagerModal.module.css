@@ -381,6 +381,94 @@
   font-weight: 600;
 }
 
+.reportSection {
+  display: grid;
+  gap: 12px;
+  margin-top: 18px;
+  padding: 17px;
+  border: 1px solid #d7e5e0;
+  border-radius: 18px;
+  background: #fbfdfc;
+}
+
+.reportHeading {
+  display: grid;
+  gap: 3px;
+}
+
+.reportHeading span {
+  color: #153f35;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.reportHeading small {
+  color: #6d807a;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.reportActions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.reportActions button {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 11px;
+  align-items: center;
+  min-height: 64px;
+  padding: 10px 12px;
+  border: 1px solid #b8d9cc;
+  border-radius: 15px;
+  background: linear-gradient(180deg, #fff, #f1faf6);
+  color: #0c493a;
+  text-align: left;
+  cursor: pointer;
+}
+
+.reportActions button:hover:not(:disabled) {
+  border-color: #58ae8e;
+  background: linear-gradient(180deg, #fff, #e7f7f0);
+  box-shadow: 0 10px 22px rgba(8, 85, 62, 0.08);
+}
+
+.reportActions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.56;
+}
+
+.reportActions button > span:last-child {
+  display: grid;
+  gap: 2px;
+}
+
+.reportActions strong {
+  font-size: 13px;
+}
+
+.reportActions small {
+  color: #667a73;
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.reportFormat {
+  display: grid;
+  width: 44px;
+  height: 38px;
+  place-items: center;
+  border: 1px solid #91cbb5;
+  border-radius: 11px;
+  background: #e5f6ef;
+  color: #08684a;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+}
+
 .error {
   margin: 15px 0 0;
   padding: 12px 14px;
@@ -484,6 +572,10 @@
 
   .summary strong {
     grid-row: auto;
+  }
+
+  .reportActions {
+    grid-template-columns: 1fr;
   }
 
   .footer {
