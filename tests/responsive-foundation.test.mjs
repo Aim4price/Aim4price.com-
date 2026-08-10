@@ -15,7 +15,7 @@ test('global layout tokens provide fluid gutters, spacing and stable text scalin
   assert.match(globals, /\.appRoot,[\s\S]*?\.appRoot > main,[\s\S]*?main \{[\s\S]*?min-width: 0;[\s\S]*?max-width: 100%/);
 });
 
-test('header keeps four desktop-style choices on tablets and a compact two-choice window on phones', async () => {
+test('header keeps four desktop-style choices on tablets and a swipeable button rail on phones', async () => {
   const [header, headerClient] = await Promise.all([
     read('components/AppHeader.module.css'),
     read('components/AppHeader.tsx'),
@@ -24,9 +24,12 @@ test('header keeps four desktop-style choices on tablets and a compact two-choic
   assert.match(header, /Responsive shell contract, August 2026/);
   assert.match(header, /@media \(min-width: 761px\) and \(max-width: 1180px\)[\s\S]*?\.nav \{[\s\S]*?display: grid;[\s\S]*?\.navRail \{[\s\S]*?grid-template-columns: repeat\(4, minmax\(0, 1fr\)\)/);
   assert.match(header, /@media \(min-width: 761px\) and \(max-width: 1180px\)[\s\S]*?\.mobileMenuButton,[\s\S]*?\.mobileMenuPanel \{[\s\S]*?display: none/);
-  assert.match(headerClient, /usesCompactNavWindow[\s\S]*?Math\.min\(2, navItems\.length\)/);
+  assert.match(headerClient, /usesSwipeNavigation[\s\S]*?navItems\.length/);
   assert.match(headerClient, /window\.matchMedia\('\(max-width: 760px\)'\)/);
-  assert.match(header, /@media \(max-width: 760px\)[\s\S]*?\.nav \{[\s\S]*?display: grid;[\s\S]*?\.navRail \{[\s\S]*?grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
+  assert.match(headerClient, /navRailRef[\s\S]*?scrollIntoView\(\{ behavior: 'auto', block: 'nearest', inline: 'nearest' \}\)/);
+  assert.match(header, /@media \(max-width: 760px\)[\s\S]*?\.navRail \{[\s\S]*?overflow-x: auto;[\s\S]*?scroll-snap-type: x mandatory;[\s\S]*?touch-action: pan-x/);
+  assert.match(header, /@media \(max-width: 760px\)[\s\S]*?\.navLink \{[\s\S]*?flex: 0 0 46%;[\s\S]*?scroll-snap-align: start/);
+  assert.match(header, /@media \(max-width: 760px\)[\s\S]*?\.navWindowButton \{[\s\S]*?display: none/);
   assert.match(header, /@media \(max-width: 760px\)[\s\S]*?\.mobileMenuButton \{[\s\S]*?display: none;[\s\S]*?\.accountMenu \{[\s\S]*?display: block/);
   assert.match(headerClient, /!isLoadingSession && !session \? styles\.innerPublic/);
   assert.match(header, /@media \(max-width: 760px\)[\s\S]*?\.innerPublic \.actionsRail \{[\s\S]*?grid-template-columns: minmax\(3\.5rem, 0\.72fr\) minmax\(7rem, 1\.28fr\)/);
