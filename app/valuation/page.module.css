@@ -107,35 +107,6 @@
   margin-top: 0.85rem;
 }
 
-.extrasBreakdown {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
-  gap: 0.7rem;
-  padding: 0.85rem;
-  border: 1px solid rgba(5, 94, 74, 0.16);
-  border-radius: 16px;
-  background: rgba(247, 252, 249, 0.94);
-}
-
-.extrasBreakdown > div {
-  display: grid;
-  gap: 0.25rem;
-  padding: 0.7rem;
-  border-radius: 11px;
-  background: #fff;
-}
-
-.extrasBreakdown span {
-  color: #64746d;
-  font-size: 0.76rem;
-  font-weight: 700;
-}
-
-.extrasBreakdown strong {
-  color: #07513f;
-  font-size: 0.95rem;
-}
-
 .dealerAssessmentGroup {
   margin: 0;
   padding: 0.9rem 0;
@@ -11494,20 +11465,21 @@
 }
 
 .dealerAssessmentGroup {
-  padding: 0.9rem 0 0.8rem;
+  padding: 1.15rem 0 0.9rem;
 }
 
 .detailedAssessmentHeader {
-  justify-items: center;
-  padding: 1rem 0 0.65rem;
-  text-align: center;
+  justify-items: start;
+  padding: 1rem 0 0.8rem;
+  text-align: left;
 }
 
 .dealerAssessmentGroup legend {
   width: 100%;
-  margin: 0 0 0.75rem;
+  margin: 0 0 0.8rem;
+  padding-inline: 0.1rem;
   line-height: 1.35;
-  text-align: center;
+  text-align: left;
 }
 
 .pathSelectionPlaceholder {
@@ -11555,24 +11527,66 @@
   margin-top: 0.75rem;
 }
 
+.tractorExtrasGrid .choiceCard {
+  min-height: 6.7rem;
+  padding: 1rem 1.1rem;
+}
+
+.tractorExtrasGrid .choiceCardNote {
+  font-size: 0.82rem;
+  line-height: 1.35;
+  white-space: nowrap;
+}
+
+.otherExtraCardNote {
+  white-space: nowrap;
+}
+
 .otherExtraFields {
   margin-top: 1rem;
 }
 
-.extrasBreakdown small {
-  color: #6c7b74;
-  font-size: 0.7rem;
-  line-height: 1.35;
-}
-
 .replacementFieldsGrid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(215px, 1fr));
   gap: 0.8rem;
 }
 
 .replacementInputPanel {
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: stretch;
+}
+
+.replacementFieldHint {
+  color: #687870;
+  font-size: 0.74rem;
+  font-weight: 650;
+  line-height: 1.35;
+}
+
+.replacementInputActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+}
+
+.replacementResetButton {
+  min-height: 2.85rem;
+  padding: 0.65rem 0.9rem;
+  border: 1px solid rgba(17, 56, 45, 0.14);
+  border-radius: 0.78rem;
+  background: #fff;
+  color: #23483d;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.replacementResetButton:disabled {
+  cursor: wait;
+  opacity: 0.55;
 }
 
 @media (max-width: 900px) {
@@ -11596,6 +11610,12 @@
 
   .replacementInputPanel {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .replacementInputActions,
+  .replacementInputActions .assetButton,
+  .replacementResetButton {
+    width: 100%;
   }
 }
 
