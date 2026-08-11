@@ -2,13 +2,13 @@ import type { ConditionKey, TractorType } from '../tractor-data';
 import type { GpsType } from '../tractor-logic';
 import {
   DEFAULT_ENGINE_FLOOR_PERCENT,
-  applyFloor,
   calculateEngineHoursValue,
   clamp,
   currentBaseYear,
-  roundMoney,
   tractorLifetimeHours,
+  type EngineHoursMethodResult,
 } from './shared';
+import { resolveSalvageValue } from './valuation-rules';
 
 export const FRONT_PTO_REPLACEMENT_EX_VAT = 250_000;
 export const GPS_FULL_AUTOSTEER_REPLACEMENT_EX_VAT = 250_000;
@@ -37,6 +37,24 @@ export function calculateTractorAim4priceValue(
   replacementPriceOverrideExVat?: number | null,
   options?: TractorAssumptionOptions,
 ): number {
+  return calculateTractorAim4priceDetails(
+    model,
+    yearModel,
+    hours,
+    condition,
+    replacementPriceOverrideExVat,
+    options,
+  ).finalValueExVat;
+}
+
+export function calculateTractorAim4priceDetails(
+  model: TractorValuationModel,
+  yearModel: number,
+  hours: number,
+  condition: ConditionKey,
+  replacementPriceOverrideExVat?: number | null,
+  options?: TractorAssumptionOptions,
+): EngineHoursMethodResult {
   const replacementPriceExVat =
     typeof replacementPriceOverrideExVat === 'number' && Number.isFinite(replacementPriceOverrideExVat) && replacementPriceOverrideExVat > 0
       ? replacementPriceOverrideExVat
@@ -50,7 +68,7 @@ export function calculateTractorAim4priceValue(
     maxLifetimeHours: options?.maxLifetimeHours ?? tractorLifetimeHours(model.tractorType, model.powerKw),
     floorPercent: DEFAULT_ENGINE_FLOOR_PERCENT,
     conditionFactorOverride: options?.conditionFactorOverride,
-  }).finalValueExVat;
+  });
 }
 
 export function calculateTractorFrontPtoValue(
@@ -61,7 +79,7 @@ export function calculateTractorFrontPtoValue(
   enabled: boolean,
   options?: TractorAssumptionOptions,
 ): number {
-  if (!enabled || !model.frontPtoSupported || model.powerKw < 70) {
+  if (!enabled) {
     return 0;
   }
 
@@ -87,16 +105,16 @@ export function calculateTractorLoaderValue(
   yearModel: number,
   enabled: boolean,
 ): number {
-  if (!enabled || !model.frontLoaderSupported) {
+  if (!enabled) {
     return 0;
   }
 
   const replacementPrice = loaderReplacementPrice(model.powerKw);
   const age = Math.max(0, currentBaseYear() - Math.round(yearModel));
-  const depreciation = clamp(age * 10, 0, 75);
+  const depreciation = clamp(age * 10, 0, 100);
   const currentValue = replacementPrice * (1 - depreciation / 100);
 
-  return roundMoney(applyFloor(currentValue, replacementPrice, 0.25));
+  return resolveSalvageValue(currentValue, replacementPrice).finalValueExVat;
 }
 
 function parseGpsYear(value: number | string | null | undefined, fallbackYear: number): number {
@@ -116,7 +134,7 @@ export function calculateTractorGpsValue(
   gpsYear: number | string | null | undefined,
   fallbackYear: number,
 ): number {
-  if (!enabled || !model.gpsSupported) {
+  if (!enabled) {
     return 0;
   }
 
@@ -128,8 +146,8 @@ export function calculateTractorGpsValue(
 
   const actualGpsYear = parseGpsYear(gpsYear, fallbackYear);
   const age = Math.max(0, currentBaseYear() - actualGpsYear);
-  const depreciation = clamp(age * 10, 0, 80);
+  const depreciation = clamp(age * 10, 0, 100);
   const currentValue = replacementPrice * (1 - depreciation / 100);
 
-  return roundMoney(applyFloor(currentValue, replacementPrice, 0.2));
+  return resolveSalvageValue(currentValue, replacementPrice).finalValueExVat;
 }
