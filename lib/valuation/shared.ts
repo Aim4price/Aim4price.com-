@@ -1,10 +1,13 @@
 import type { ConditionKey, TractorType } from '../tractor-data';
 import {
+  applyPopularityToConditionFactor,
   dealerAssessmentWasRequested,
   getDealerConditionFactor,
   normalizeDealerAssessment,
+  normalizePopularityStars,
   type DealerAssessmentInput,
   type NormalizedDealerAssessment,
+  type PopularityStars,
 } from './dealer-assessment';
 import { resolveSalvageValue } from './valuation-rules';
 
@@ -32,12 +35,14 @@ export type AdvancedAssumptionsInput = {
   maxLifetimeHours?: number | string | null;
   conditionFactorPercent?: number | string | null;
   dealerAssessment?: DealerAssessmentInput;
+  popularityStars?: number | string | null;
 } | null | undefined;
 
 export type NormalizedAdvancedAssumptions = {
   maxLifetimeUsage: number | null;
   conditionFactorPercent: number | null;
   dealerAssessment: NormalizedDealerAssessment | null;
+  popularityStars: PopularityStars | null;
 };
 
 export type EngineHoursMethodInput = {
@@ -161,12 +166,15 @@ export function advancedAssumptionsWereRequested(value: unknown): boolean {
   if (!source) return false;
   return hasAdvancedValue(pickAdvancedValue(source, ['maxLifetimeUsage', 'maxLifetimeHours']))
     || hasAdvancedValue(pickAdvancedValue(source, ['conditionFactorPercent']))
-    || dealerAssessmentWasRequested(pickAdvancedValue(source, ['dealerAssessment']));
+    || dealerAssessmentWasRequested(pickAdvancedValue(source, ['dealerAssessment']))
+    || hasAdvancedValue(pickAdvancedValue(source, ['popularityStars']));
 }
 
-export function dealerAssessmentWasRequestedFromAssumptions(value: unknown): boolean {
+export function advancedAssumptionsRequireActiveAccess(value: unknown): boolean {
   const source = asAdvancedObject(value);
-  return Boolean(source && dealerAssessmentWasRequested(pickAdvancedValue(source, ['dealerAssessment'])));
+  if (!source) return false;
+  return hasAdvancedValue(pickAdvancedValue(source, ['maxLifetimeUsage', 'maxLifetimeHours']))
+    || hasAdvancedValue(pickAdvancedValue(source, ['conditionFactorPercent']));
 }
 
 export function normalizeAdvancedAssumptions(
@@ -179,6 +187,7 @@ export function normalizeAdvancedAssumptions(
   const lifetimeRaw = pickAdvancedValue(source, ['maxLifetimeUsage', 'maxLifetimeHours']);
   const conditionRaw = pickAdvancedValue(source, ['conditionFactorPercent']);
   const dealerAssessmentRaw = pickAdvancedValue(source, ['dealerAssessment']);
+  const popularityRaw = pickAdvancedValue(source, ['popularityStars']);
   const lifetimeProvided = hasAdvancedValue(lifetimeRaw);
   const conditionProvided = hasAdvancedValue(conditionRaw);
 
@@ -186,6 +195,7 @@ export function normalizeAdvancedAssumptions(
     maxLifetimeUsage: null,
     conditionFactorPercent: null,
     dealerAssessment: null,
+    popularityStars: null,
   };
 
   if (lifetimeProvided) {
@@ -215,8 +225,12 @@ export function normalizeAdvancedAssumptions(
   }
 
   normalized.dealerAssessment = normalizeDealerAssessment(dealerAssessmentRaw as DealerAssessmentInput);
+  normalized.popularityStars = normalizePopularityStars(popularityRaw);
 
-  return normalized.maxLifetimeUsage !== null || normalized.conditionFactorPercent !== null || normalized.dealerAssessment !== null
+  return normalized.maxLifetimeUsage !== null
+      || normalized.conditionFactorPercent !== null
+      || normalized.dealerAssessment !== null
+      || normalized.popularityStars !== null
     ? normalized
     : null;
 }
@@ -227,6 +241,27 @@ export function getAdvancedConditionFactorOverride(advancedAssumptions?: Normali
   if (dealerFactor !== null) return dealerFactor;
   if (advancedAssumptions.conditionFactorPercent === null) return null;
   return advancedAssumptions.conditionFactorPercent / 100;
+}
+
+export function getValuationConditionFactorOverride(
+  condition: ConditionKey,
+  advancedAssumptions?: NormalizedAdvancedAssumptions | null,
+): number {
+  const detailedFactor = getDealerConditionFactor(advancedAssumptions?.dealerAssessment);
+  if (detailedFactor !== null) {
+    return applyPopularityToConditionFactor(detailedFactor, advancedAssumptions?.popularityStars);
+  }
+
+  const customConditionPercent = advancedAssumptions?.conditionFactorPercent;
+  if (typeof customConditionPercent === 'number') {
+    return applyPopularityToConditionFactor(
+      customConditionPercent / 100,
+      advancedAssumptions?.popularityStars,
+      { min: ADVANCED_CONDITION_FACTOR_MIN_PERCENT / 100, max: ADVANCED_CONDITION_FACTOR_MAX_PERCENT / 100 },
+    );
+  }
+
+  return applyPopularityToConditionFactor(CONDITION_FACTORS[condition], advancedAssumptions?.popularityStars);
 }
 
 export function applyCondition(value: number, condition: ConditionKey, conditionFactorOverride?: number | null): number {
