@@ -23,7 +23,10 @@ import type { ConditionKey } from '../../../lib/tractor-data';
 import type { GpsType, RunValuationInput } from '../../../lib/tractor-logic';
 import { isSectorKey, type SectorKey } from '../../../lib/equipment-types';
 import { runGenericValuation, type GenericCondition, type GenericSelectedMethod } from '../../../lib/generic-valuation';
-import { advancedAssumptionsWereRequested } from '../../../lib/valuation/shared';
+import {
+  advancedAssumptionsWereRequested,
+  dealerAssessmentWasRequestedFromAssumptions,
+} from '../../../lib/valuation/shared';
 import { getAccountantRegisterAccess } from '../../../lib/accountant-workspace';
 import { getAssetRegisterForUser } from '../../../lib/asset-registers';
 
@@ -417,6 +420,13 @@ export async function POST(request: NextRequest) {
           ok: false,
           error: 'Advanced assumptions are available for active Aim4price accounts.',
         },
+        { status: 403 },
+      );
+    }
+
+    if (dealerAssessmentWasRequestedFromAssumptions(body.advancedAssumptions) && profile.accountType !== 'dealer') {
+      return NextResponse.json<SaveValuationRunApiResponse>(
+        { ok: false, error: 'Dealer assessments are available for active dealer accounts.' },
         { status: 403 },
       );
     }
