@@ -299,7 +299,7 @@ test('path availability is checked with one model before the full list is reques
   assert.match(source, /limit: '1'/);
   assert.match(source, /loadFullGenericCatalog/);
   assert.match(source, /limit: '500'/);
-  assert.match(source, /Please check the replacement price\./);
+  assert.match(source, /Check the replacement price/);
   assert.match(source, /Add detailed condition/);
   assert.match(source, /<h3 className=\{styles\.currentTitle\}>Popularity<\/h3>/);
   assert.match(source, /<span className=\{styles\.currentEyebrow\}>Step 4<\/span>/);
@@ -316,4 +316,18 @@ test('detailed condition and popularity are standard inputs rather than dealer-o
   assert.match(tractorRoute, /advancedAssumptionsRequireActiveAccess/);
   assert.doesNotMatch(genericRoute, /accountType !== 'dealer'/);
   assert.doesNotMatch(tractorRoute, /accountType !== 'dealer'/);
+});
+
+test('valuation flow supports accessible back-step navigation and concise actions', async () => {
+  const valuationSource = await readFile(new URL('../app/valuation/valuation-client.tsx', import.meta.url), 'utf8');
+  const valuationStyles = await readFile(new URL('../app/valuation/page.module.css', import.meta.url), 'utf8');
+
+  assert.match(valuationSource, /function handleWizardStepJump\(targetStep: Step\)/);
+  assert.match(valuationSource, /onClick=\{\(\) => handleWizardStepJump\(item\.step\)\}/);
+  assert.match(valuationSource, /disabled=\{!canJumpBack\}/);
+  assert.match(valuationSource, /aria-current=\{active \? 'step' : undefined\}/);
+  assert.doesNotMatch(valuationSource, /Use this year|Save answer|Live now|Open estimate flow/);
+  assert.match(valuationStyles, /font-family: var\(--font-body, 'Montserrat'\)/);
+  assert.match(valuationStyles, /\.stepperItemClickable/);
+  assert.match(valuationStyles, /August 2026 — valuation experience polish/);
 });
