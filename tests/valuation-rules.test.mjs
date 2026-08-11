@@ -286,10 +286,16 @@ test('detailed assessment price outcomes remain proportionate on a R200,000 pre-
 
 test('selected tractor extras always add a calculated value and are shown transparently', async () => {
   const tractorSource = await readFile(new URL('../lib/valuation/tractors.ts', import.meta.url), 'utf8');
+  const serverSource = await readFile(new URL('../lib/server-valuation.ts', import.meta.url), 'utf8');
   const valuationSource = await readFile(new URL('../app/valuation/valuation-client.tsx', import.meta.url), 'utf8');
 
   assert.doesNotMatch(tractorSource, /!model\.(frontPtoSupported|frontLoaderSupported|gpsSupported)/);
+  assert.match(tractorSource, /replacementPriceOverrideExVat/);
+  assert.match(serverSource, /frontPtoValueExVat \+ frontLoaderValueExVat \+ gpsValueExVat \+ otherExtraValueExVat/);
   assert.match(valuationSource, /Tractor extras value breakdown/);
+  assert.match(valuationSource, /<strong>Other<\/strong>/);
+  assert.match(valuationSource, /Other extra current value \(excl\. VAT\)/);
+  assert.match(valuationSource, /Front PTO replacement price \(excl\. VAT\)/);
   assert.match(valuationSource, /frontLoaderValueExVat/);
   assert.match(valuationSource, /gpsValueExVat/);
 });
@@ -297,6 +303,9 @@ test('selected tractor extras always add a calculated value and are shown transp
 test('path availability is checked with one model before the full list is requested', async () => {
   const source = await readFile(new URL('../app/valuation/valuation-client.tsx', import.meta.url), 'utf8');
   assert.match(source, /limit: '1'/);
+  assert.match(source, /const pathOptionsLoading/);
+  assert.match(source, /Preparing estimate paths/);
+  assert.match(source, /pathLoadingSpinner/);
   assert.match(source, /loadFullGenericCatalog/);
   assert.match(source, /limit: '500'/);
   assert.match(source, /Check the replacement price/);

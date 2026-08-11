@@ -50,6 +50,16 @@ function normalizeGpsType(value: string | null | undefined): GpsType | null {
   return null;
 }
 
+function normalizePositiveMoney(value: unknown): number | null {
+  if (value === null || typeof value === 'undefined') return null;
+  const numeric = Number(String(value).replace(/[^0-9.-]/g, ''));
+  return Number.isFinite(numeric) && numeric > 0 ? Math.round(numeric) : null;
+}
+
+function normalizeOtherExtraName(value: unknown): string | null {
+  return String(value ?? '').trim().slice(0, 100) || null;
+}
+
 function buildInputFromSearchParams(request: NextRequest): RunValuationInput | null {
   const { searchParams } = new URL(request.url);
 
@@ -77,7 +87,12 @@ function buildInputFromSearchParams(request: NextRequest): RunValuationInput | n
     gpsEnabled: parseBoolean(searchParams.get('gpsEnabled')),
     gpsType: normalizeGpsType(searchParams.get('gpsType')),
     gpsYear: searchParams.get('gpsYear'),
-    userReplacementPriceExVat: Number(searchParams.get('userReplacementPriceExVat')) || null,
+    frontPtoReplacementPriceExVat: normalizePositiveMoney(searchParams.get('frontPtoReplacementPriceExVat')),
+    frontLoaderReplacementPriceExVat: normalizePositiveMoney(searchParams.get('frontLoaderReplacementPriceExVat')),
+    gpsReplacementPriceExVat: normalizePositiveMoney(searchParams.get('gpsReplacementPriceExVat')),
+    otherExtraName: normalizeOtherExtraName(searchParams.get('otherExtraName')),
+    otherExtraValueExVat: normalizePositiveMoney(searchParams.get('otherExtraValueExVat')),
+    userReplacementPriceExVat: normalizePositiveMoney(searchParams.get('userReplacementPriceExVat')),
     advancedAssumptions: advancedAssumptionsWereRequested(advancedAssumptions) ? advancedAssumptions : null,
   };
 }
@@ -104,10 +119,12 @@ function buildInputFromBody(body: Partial<RunValuationInput> | null | undefined)
     gpsEnabled: Boolean(body.gpsEnabled),
     gpsType: body.gpsType === 'full-autosteer' || body.gpsType === 'guidance-only' ? body.gpsType : null,
     gpsYear: body.gpsYear ?? null,
-    userReplacementPriceExVat:
-      typeof body.userReplacementPriceExVat === 'number' && Number.isFinite(body.userReplacementPriceExVat) && body.userReplacementPriceExVat > 0
-        ? body.userReplacementPriceExVat
-        : null,
+    frontPtoReplacementPriceExVat: normalizePositiveMoney(body.frontPtoReplacementPriceExVat),
+    frontLoaderReplacementPriceExVat: normalizePositiveMoney(body.frontLoaderReplacementPriceExVat),
+    gpsReplacementPriceExVat: normalizePositiveMoney(body.gpsReplacementPriceExVat),
+    otherExtraName: normalizeOtherExtraName(body.otherExtraName),
+    otherExtraValueExVat: normalizePositiveMoney(body.otherExtraValueExVat),
+    userReplacementPriceExVat: normalizePositiveMoney(body.userReplacementPriceExVat),
     advancedAssumptions: body.advancedAssumptions ?? null,
   };
 }

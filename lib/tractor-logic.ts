@@ -13,6 +13,11 @@ export type RunValuationInput = {
   gpsEnabled?: boolean;
   gpsType?: GpsType | null;
   gpsYear?: number | string | null;
+  frontPtoReplacementPriceExVat?: number | null;
+  frontLoaderReplacementPriceExVat?: number | null;
+  gpsReplacementPriceExVat?: number | null;
+  otherExtraName?: string | null;
+  otherExtraValueExVat?: number | null;
   userReplacementPriceExVat?: number | null;
   advancedAssumptions?: AdvancedAssumptionsInput | null;
 };
@@ -36,6 +41,11 @@ export type Result = {
   frontPtoValueExVat: number;
   frontLoaderValueExVat: number;
   gpsValueExVat: number;
+  frontPtoReplacementPriceExVat: number | null;
+  frontLoaderReplacementPriceExVat: number | null;
+  gpsReplacementPriceExVat: number | null;
+  otherExtraName: string | null;
+  otherExtraValueExVat: number;
   replacementPriceBasis: 'aim4price' | 'user';
   replacementPriceUsedExVat: number | null;
   userReplacementPriceExVat: number | null;

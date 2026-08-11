@@ -1728,6 +1728,12 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
   const [gpsType, setGpsType] = useState<GpsType>('guidance-only');
   const [gpsTypeDropdownOpen, setGpsTypeDropdownOpen] = useState(false);
   const [gpsYear, setGpsYear] = useState('');
+  const [frontPtoReplacementPrice, setFrontPtoReplacementPrice] = useState('');
+  const [frontLoaderReplacementPrice, setFrontLoaderReplacementPrice] = useState('');
+  const [gpsReplacementPrice, setGpsReplacementPrice] = useState('');
+  const [otherExtraEnabled, setOtherExtraEnabled] = useState(false);
+  const [otherExtraName, setOtherExtraName] = useState('');
+  const [otherExtraValue, setOtherExtraValue] = useState('');
   const [userReplacementPrice, setUserReplacementPrice] = useState('');
   const [replacementPriceBasis, setReplacementPriceBasis] = useState<ReplacementPriceBasis>('aim4price');
   const [yearModelUnknown, setYearModelUnknown] = useState(false);
@@ -2839,6 +2845,17 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     applyGenericModelSpecDefaults(selectedGenericModel);
   }, [genericValuationPath, genericModelMode, selectedGenericModel, specQuestions]);
 
+  useEffect(() => {
+    if (resultState?.kind !== 'tractor') return;
+    const currentResult = resultState.result;
+    setFrontPtoReplacementPrice(currentResult.frontPtoReplacementPriceExVat ? String(currentResult.frontPtoReplacementPriceExVat) : '');
+    setFrontLoaderReplacementPrice(currentResult.frontLoaderReplacementPriceExVat ? String(currentResult.frontLoaderReplacementPriceExVat) : '');
+    setGpsReplacementPrice(currentResult.gpsReplacementPriceExVat ? String(currentResult.gpsReplacementPriceExVat) : '');
+    setOtherExtraEnabled(Boolean(currentResult.otherExtraName && currentResult.otherExtraValueExVat > 0));
+    setOtherExtraName(currentResult.otherExtraName ?? '');
+    setOtherExtraValue(currentResult.otherExtraValueExVat > 0 ? String(currentResult.otherExtraValueExVat) : '');
+  }, [resultState]);
+
   function resetResult() {
     setResultState(null);
     setSelectedMethod('aim4price');
@@ -2854,6 +2871,21 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     setFinalSaveError('');
     setPdfError('');
     setSavedMarketplaceAssetId(null);
+  }
+
+  function getTractorExtrasRequestFields() {
+    return {
+      frontPto,
+      frontLoader,
+      gpsEnabled,
+      gpsType,
+      gpsYear,
+      frontPtoReplacementPriceExVat: frontPto ? parseMoneyInput(frontPtoReplacementPrice) : null,
+      frontLoaderReplacementPriceExVat: frontLoader ? parseMoneyInput(frontLoaderReplacementPrice) : null,
+      gpsReplacementPriceExVat: gpsEnabled ? parseMoneyInput(gpsReplacementPrice) : null,
+      otherExtraName: otherExtraEnabled ? normalizeText(otherExtraName) : null,
+      otherExtraValueExVat: otherExtraEnabled ? parseMoneyInput(otherExtraValue) : null,
+    };
   }
 
   function clearDetailedAssessment(resetPopularity = true) {
@@ -2973,6 +3005,16 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     setUsageAmount('');
     setLifeWorkedPercent('');
     setUserReplacementPrice('');
+    setFrontPto(false);
+    setFrontLoader(false);
+    setGpsEnabled(false);
+    setGpsYear('');
+    setFrontPtoReplacementPrice('');
+    setFrontLoaderReplacementPrice('');
+    setGpsReplacementPrice('');
+    setOtherExtraEnabled(false);
+    setOtherExtraName('');
+    setOtherExtraValue('');
     setCondition('good');
     setSpecAnswers(isMotorSector(selectedSector) ? getMotorCanonicalTypeSpecs(selectedFamily?.familyKey, selectedMotorTypeOption) : selectedMotorSubtypeSpecs);
     setOpenSpecDropdownKey(null);
@@ -3029,6 +3071,11 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     if (!popularityStepComplete) return 'Choose a popularity rating from 1 to 5 stars.';
     if (flowMode === 'exact_model' && exactTractorAvailable && !tractorSetupComplete) return 'Complete the type, drive and cab setup first.';
     if (flowMode === 'exact_model' && exactTractorAvailable && !selectedModel) return 'Choose the exact model first.';
+
+    if (!genericPath && otherExtraEnabled) {
+      if (!normalizeText(otherExtraName)) return 'Enter a name for the other extra.';
+      if (!parseMoneyInput(otherExtraValue)) return 'Enter the current value of the other extra, excluding VAT.';
+    }
 
     if (genericValuationPath) {
       const genericModelMessage = validateGenericModelSelection();
@@ -3192,11 +3239,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
             year: calculationYear,
             hours: usageNumber ?? estimateHoursFromWorkedPercent(currentResult.model, lifeWorkedPercentNumber) ?? 0,
             condition,
-            frontPto,
-            frontLoader,
-            gpsEnabled,
-            gpsType,
-            gpsYear,
+            ...getTractorExtrasRequestFields(),
             userReplacementPriceExVat: replacementPriceBasis === 'user' ? currentResult.userReplacementPriceExVat ?? null : null,
             advancedAssumptions,
           }),
@@ -3297,11 +3340,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
           year: calculationYear,
           hours: usageNumber ?? estimateHoursFromWorkedPercent(selectedModel, lifeWorkedPercentNumber) ?? 0,
           condition,
-          frontPto,
-          frontLoader,
-          gpsEnabled,
-          gpsType,
-          gpsYear,
+          ...getTractorExtrasRequestFields(),
           userReplacementPriceExVat: priceExVat,
           advancedAssumptions,
         }),
@@ -3359,11 +3398,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
             year: calculationYear,
             hours: usageNumber ?? estimateHoursFromWorkedPercent(selectedModel, lifeWorkedPercentNumber) ?? 0,
             condition,
-            frontPto,
-            frontLoader,
-            gpsEnabled,
-            gpsType,
-            gpsYear,
+            ...getTractorExtrasRequestFields(),
             userReplacementPriceExVat: null,
             advancedAssumptions,
           }),
@@ -3443,11 +3478,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
         yearModelUnknown,
         hours: usageNumber ?? estimateHoursFromWorkedPercent(selectedModel, lifeWorkedPercentNumber) ?? 0,
         condition,
-        frontPto,
-        frontLoader,
-        gpsEnabled,
-        gpsType,
-        gpsYear,
+        ...getTractorExtrasRequestFields(),
         userReplacementPriceExVat: replacementPriceForSave,
         advancedAssumptions: resultState.result.advancedAssumptions ?? null,
         selectedMethod: 'aim4price',
@@ -3680,10 +3711,31 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
       { label: 'Cab', value: cabValue },
       { label: 'Year', value: yearSummary },
       { label: 'Usage', value: usageSummary },
-      { label: 'Condition', value: appliedDealerAssessment ? 'Detailed assessment' : conditionLabel(resultCondition) },
+      { label: 'Condition', value: appliedDealerAssessment ? 'Detailed' : conditionLabel(resultCondition) },
       { label: 'Popularity', value: `${appliedAdvancedAssumptions?.popularityStars ?? 3} / 5 stars` },
       { label: 'Replacement Price', value: moneyExVat(replacementPriceExVat) },
       { label: 'Estimate Path', value: valuationPath },
+      ...(tractorResult?.frontPtoValueExVat
+        ? [
+            { label: 'Front PTO replacement price', value: moneyExVat(tractorResult.frontPtoReplacementPriceExVat) },
+            { label: 'Front PTO value added', value: moneyExVat(tractorResult.frontPtoValueExVat) },
+          ]
+        : []),
+      ...(tractorResult?.frontLoaderValueExVat
+        ? [
+            { label: 'Front Loader replacement price', value: moneyExVat(tractorResult.frontLoaderReplacementPriceExVat) },
+            { label: 'Front Loader value added', value: moneyExVat(tractorResult.frontLoaderValueExVat) },
+          ]
+        : []),
+      ...(tractorResult?.gpsValueExVat
+        ? [
+            { label: 'GPS replacement price', value: moneyExVat(tractorResult.gpsReplacementPriceExVat) },
+            { label: 'GPS value added', value: moneyExVat(tractorResult.gpsValueExVat) },
+          ]
+        : []),
+      ...(tractorResult?.otherExtraName && tractorResult.otherExtraValueExVat > 0
+        ? [{ label: tractorResult.otherExtraName, value: `${moneyExVat(tractorResult.otherExtraValueExVat)} current value` }]
+        : []),
     ]);
 
     const signedInBusinessName = accountProfile?.businessName || accountProfile?.displayName || accountProfile?.name;
@@ -3734,7 +3786,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
       confidenceNote,
       yearSummary,
       usageSummary,
-      conditionSummary: appliedDealerAssessment ? 'Detailed assessment' : conditionLabel(resultCondition),
+      conditionSummary: appliedDealerAssessment ? 'Detailed' : conditionLabel(resultCondition),
       replacementPriceExVat,
       replacementBasisText,
       notes: [
@@ -3823,12 +3875,32 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
 
   function hasPendingReplacementPriceInput(): boolean {
     const typedReplacementPrice = parseMoneyInput(userReplacementPrice);
-    if (typedReplacementPrice === null) return false;
-
     const currentReplacementPrice = getCurrentResultReplacementPriceExVat();
-    if (currentReplacementPrice === null) return true;
+    if (typedReplacementPrice !== null) {
+      if (currentReplacementPrice === null) return true;
+      if (Math.round(typedReplacementPrice) !== Math.round(currentReplacementPrice)) return true;
+    }
 
-    return Math.round(typedReplacementPrice) !== Math.round(currentReplacementPrice);
+    if (resultState?.kind !== 'tractor') return false;
+
+    const result = resultState.result;
+    const replacementChanged = (enabled: boolean, inputValue: string, currentValue: number | null) => {
+      if (!enabled) return false;
+      const parsed = parseMoneyInput(inputValue);
+      return parsed === null || currentValue === null || Math.round(parsed) !== Math.round(currentValue);
+    };
+
+    if (replacementChanged(frontPto, frontPtoReplacementPrice, result.frontPtoReplacementPriceExVat)) return true;
+    if (replacementChanged(frontLoader, frontLoaderReplacementPrice, result.frontLoaderReplacementPriceExVat)) return true;
+    if (replacementChanged(gpsEnabled, gpsReplacementPrice, result.gpsReplacementPriceExVat)) return true;
+
+    if (otherExtraEnabled) {
+      const parsedOtherValue = parseMoneyInput(otherExtraValue);
+      if (normalizeText(otherExtraName) !== normalizeText(result.otherExtraName)) return true;
+      if (parsedOtherValue === null || Math.round(parsedOtherValue) !== Math.round(result.otherExtraValueExVat)) return true;
+    }
+
+    return false;
   }
 
   function openFinalSaveModal(intent: FinalSaveIntent) {
@@ -3932,7 +4004,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     }
 
     if (hasPendingReplacementPriceInput()) {
-      setError('You changed the replacement price input. Click Update and recalculate before saving or listing this asset.');
+      setError('You changed a replacement price or extra value. Click Update and recalculate before saving or listing this asset.');
       return null;
     }
 
@@ -5175,6 +5247,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
   }
 
   function renderPathStep() {
+    const pathOptionsLoading = Boolean(!selectedBrandIsUnknown && !genericModelAvailabilityChecked);
     const exactModelSelectionLocked = Boolean(
       flowMode === 'exact_model' &&
         ((exactTractorAvailable && selectedModel) || (!exactTractorAvailable && selectedGenericModel)),
@@ -5193,6 +5266,15 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
           </>
         ) : null}
 
+        {pathOptionsLoading ? (
+          <div className={styles.pathSelectionPlaceholder} role="status" aria-live="polite">
+            <span className={styles.pathLoadingSpinner} aria-hidden="true" />
+            <div>
+              <strong>Preparing estimate paths</strong>
+              <span>Checking exact-model availability so all available options appear together.</span>
+            </div>
+          </div>
+        ) : (
         <div className={pathDeckClassName}>
           {showExactPathCard ? (
             <button
@@ -5235,14 +5317,11 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
             </button>
           ) : null}
         </div>
+        )}
 
-        {!selectedBrandIsUnknown && !genericModelAvailabilityChecked && genericModelsLoading ? (
-          <div className={styles.pathSelectionPlaceholder}>Checking exact model availability...</div>
-        ) : null}
-
-        {flowMode === 'exact_model' && exactTractorAvailable && showExactPathCard ? renderTractorModelPicker() : null}
-        {genericExactModelPath && showExactPathCard ? renderGenericModelPicker() : null}
-        {flowMode === 'generic_specs' ? renderUnknownModelChoice() : null}
+        {!pathOptionsLoading && flowMode === 'exact_model' && exactTractorAvailable && showExactPathCard ? renderTractorModelPicker() : null}
+        {!pathOptionsLoading && genericExactModelPath && showExactPathCard ? renderGenericModelPicker() : null}
+        {!pathOptionsLoading && flowMode === 'generic_specs' ? renderUnknownModelChoice() : null}
       </div>
     );
   }
@@ -6242,18 +6321,53 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
         {!genericPath && popularityStepComplete ? (
           <div className={styles.currentCard} style={{ marginTop: '1rem' }}>
             <h3 className={styles.currentTitle}>Tractor extras</h3>
-            <div className={styles.choiceGrid}>
-              <button type="button" className={`${styles.choiceCard} ${frontPto ? styles.choiceCardActive : ''}`} aria-pressed={frontPto} onClick={() => setFrontPto((value) => !value)}>
+            <p className={styles.currentHint}>Select every fitted extra. Aim4price adds each extra&apos;s estimated current value.</p>
+            <div className={`${styles.choiceGrid} ${styles.tractorExtrasGrid}`}>
+              <button type="button" className={`${styles.choiceCard} ${frontPto ? styles.choiceCardActive : ''}`} aria-pressed={frontPto} onClick={() => {
+                setFrontPto((value) => {
+                  if (value) setFrontPtoReplacementPrice('');
+                  return !value;
+                });
+                resetResult();
+              }}>
                 <strong>Front PTO</strong>
                 <span className={styles.choiceCardNote}>Fitted - adds its current value</span>
               </button>
-              <button type="button" className={`${styles.choiceCard} ${frontLoader ? styles.choiceCardActive : ''}`} aria-pressed={frontLoader} onClick={() => setFrontLoader((value) => !value)}>
+              <button type="button" className={`${styles.choiceCard} ${frontLoader ? styles.choiceCardActive : ''}`} aria-pressed={frontLoader} onClick={() => {
+                setFrontLoader((value) => {
+                  if (value) setFrontLoaderReplacementPrice('');
+                  return !value;
+                });
+                resetResult();
+              }}>
                 <strong>Front Loader</strong>
                 <span className={styles.choiceCardNote}>Fitted - adds its current value</span>
               </button>
-              <button type="button" className={`${styles.choiceCard} ${gpsEnabled ? styles.choiceCardActive : ''}`} aria-pressed={gpsEnabled} onClick={() => setGpsEnabled((value) => !value)}>
+              <button type="button" className={`${styles.choiceCard} ${gpsEnabled ? styles.choiceCardActive : ''}`} aria-pressed={gpsEnabled} onClick={() => {
+                setGpsEnabled((value) => {
+                  if (value) {
+                    setGpsReplacementPrice('');
+                    setGpsYear('');
+                  }
+                  return !value;
+                });
+                resetResult();
+              }}>
                 <strong>GPS</strong>
                 <span className={styles.choiceCardNote}>Fitted - adds its current value</span>
+              </button>
+              <button type="button" className={`${styles.choiceCard} ${otherExtraEnabled ? styles.choiceCardActive : ''}`} aria-pressed={otherExtraEnabled} onClick={() => {
+                setOtherExtraEnabled((value) => {
+                  if (value) {
+                    setOtherExtraName('');
+                    setOtherExtraValue('');
+                  }
+                  return !value;
+                });
+                resetResult();
+              }}>
+                <strong>Other</strong>
+                <span className={styles.choiceCardNote}>Add a named extra and its current value</span>
               </button>
             </div>
             {gpsEnabled ? (
@@ -6284,7 +6398,9 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                             className={`${styles.equipmentDropdownOption} ${styles.specDropdownOption} ${gpsType === option.value ? styles.equipmentDropdownOptionActive : ''}`}
                             onClick={() => {
                               setGpsType(option.value);
+                              setGpsReplacementPrice('');
                               setGpsTypeDropdownOpen(false);
+                              resetResult();
                             }}
                           >
                             <span>{option.label}</span>
@@ -6296,7 +6412,40 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                 </div>
                 <label className={styles.field}>
                   <span className={styles.fieldLabel}>GPS year</span>
-                  <input value={gpsYear} onChange={(event) => setGpsYear(event.target.value)} placeholder="Optional" />
+                  <input value={gpsYear} onChange={(event) => {
+                    setGpsYear(event.target.value);
+                    resetResult();
+                  }} placeholder="Optional" />
+                </label>
+              </div>
+            ) : null}
+            {otherExtraEnabled ? (
+              <div className={`${styles.inputGrid} ${styles.otherExtraFields}`}>
+                <label className={styles.field}>
+                  <span className={styles.fieldLabel}>Extra name</span>
+                  <input
+                    value={otherExtraName}
+                    onChange={(event) => {
+                      setOtherExtraName(event.target.value);
+                      resetResult();
+                    }}
+                    maxLength={100}
+                    placeholder="e.g. Weight set"
+                  />
+                </label>
+                <label className={styles.field}>
+                  <span className={styles.fieldLabel}>Current value (excl. VAT)</span>
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    value={otherExtraValue}
+                    onChange={(event) => {
+                      setOtherExtraValue(event.target.value);
+                      resetResult();
+                    }}
+                    placeholder="e.g. 25 000"
+                  />
+                  <small className={styles.advancedFieldHelp}>Enter today&apos;s current value; no standard depreciation rule is applied.</small>
                 </label>
               </div>
             ) : null}
@@ -6362,6 +6511,19 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
       ? genericSelectedCalculation?.valuationMidExVat ?? null
       : tractorResult?.aim4priceValueExVat ?? null;
     const userPriceInput = parseMoneyInput(userReplacementPrice);
+    const frontPtoReplacementInput = parseMoneyInput(frontPtoReplacementPrice);
+    const frontLoaderReplacementInput = parseMoneyInput(frontLoaderReplacementPrice);
+    const gpsReplacementInput = parseMoneyInput(gpsReplacementPrice);
+    const otherExtraValueInput = parseMoneyInput(otherExtraValue);
+    const tractorExtraReplacementInputsReady = Boolean(
+      tractorResult && (
+        (frontPto && frontPtoReplacementInput) ||
+        (frontLoader && frontLoaderReplacementInput) ||
+        (gpsEnabled && gpsReplacementInput) ||
+        (otherExtraEnabled && normalizeText(otherExtraName) && otherExtraValueInput)
+      ),
+    );
+    const replacementUpdateReady = isGeneric ? Boolean(userPriceInput) : Boolean(userPriceInput || tractorExtraReplacementInputsReady);
     const confidenceContext: ConfidenceContext = {
       selectedMethod,
       yearKnown: !yearModelUnknown,
@@ -6427,7 +6589,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
         <div className={styles.resultsMain}>
           <section className={`${styles.resultHero} ${resultHeroTone}`}>
             <div className={styles.resultHeroTopline}>
-              <span className={styles.resultKicker}>{isSalvageEstimate ? 'Indicative salvage estimate' : appliedDealerAssessment ? 'Detailed-assessment estimate' : 'Aim4price estimate'}</span>
+              <span className={styles.resultKicker}>{isSalvageEstimate ? 'Indicative salvage estimate' : appliedDealerAssessment ? 'Detailed estimate' : 'Aim4price estimate'}</span>
               <span className={`${styles.resultConfidenceBadge} ${getConfidenceClass(resultState, confidenceContext)}`}>{confidenceText}</span>
             </div>
             <div className={`${styles.resultValueLine} ${resultValueSizeClass}`}>
@@ -6477,7 +6639,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
               </div>
               <div className={styles.resultFactCard}>
                 <span>Condition</span>
-                <strong>{appliedDealerAssessment ? 'Detailed assessment' : conditionLabel(resultCondition)}</strong>
+                <strong>{appliedDealerAssessment ? 'Detailed' : conditionLabel(resultCondition)}</strong>
               </div>
               <div className={styles.resultFactCard}>
                 <span>Popularity</span>
@@ -6491,10 +6653,12 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
               <div>
                 <span>Base tractor</span>
                 <strong>{money(tractorResult.baseAim4priceValueExVat)}</strong>
+                <small>Replacement price: {moneyExVat(tractorResult.replacementPriceUsedExVat)}</small>
               </div>
-              {tractorResult.frontPtoValueExVat > 0 ? <div><span>Front PTO</span><strong>+{money(tractorResult.frontPtoValueExVat)}</strong></div> : null}
-              {tractorResult.frontLoaderValueExVat > 0 ? <div><span>Front Loader</span><strong>+{money(tractorResult.frontLoaderValueExVat)}</strong></div> : null}
-              {tractorResult.gpsValueExVat > 0 ? <div><span>GPS</span><strong>+{money(tractorResult.gpsValueExVat)}</strong></div> : null}
+              {tractorResult.frontPtoValueExVat > 0 ? <div><span>Front PTO</span><strong>+{money(tractorResult.frontPtoValueExVat)}</strong><small>Replacement price: {moneyExVat(tractorResult.frontPtoReplacementPriceExVat)}</small></div> : null}
+              {tractorResult.frontLoaderValueExVat > 0 ? <div><span>Front Loader</span><strong>+{money(tractorResult.frontLoaderValueExVat)}</strong><small>Replacement price: {moneyExVat(tractorResult.frontLoaderReplacementPriceExVat)}</small></div> : null}
+              {tractorResult.gpsValueExVat > 0 ? <div><span>GPS</span><strong>+{money(tractorResult.gpsValueExVat)}</strong><small>Replacement price: {moneyExVat(tractorResult.gpsReplacementPriceExVat)}</small></div> : null}
+              {tractorResult.otherExtraName && tractorResult.otherExtraValueExVat > 0 ? <div><span>{tractorResult.otherExtraName}</span><strong>+{money(tractorResult.otherExtraValueExVat)}</strong><small>Entered current value</small></div> : null}
             </section>
           ) : null}
 
@@ -6597,7 +6761,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
               {replacementPanelOpen ? (
                 <div className={styles.resultAccordionBody}>
                   <p className={styles.resultAccordionCopy}>
-                    Aim4price uses the saved replacement price immediately. Only change it here if you want to update the replacement price and recalculate before saving the asset.
+                    Aim4price uses the saved replacement prices immediately. Check the asset and every selected extra, then change only the figures that need updating.
                   </p>
 
                   {isGeneric && genericResult ? (
@@ -6665,26 +6829,59 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                   ) : null}
 
                   <div className={styles.replacementInputPanel}>
-                    <label className={styles.field}>
-                      <span className={styles.fieldLabel}>Cost to replace new (excl. VAT)</span>
-                      <input
-                        type="text"
-                        inputMode="decimal"
-                        value={userReplacementPrice}
-                        onChange={(event) => setUserReplacementPrice(event.target.value)}
-                        placeholder="Optional, ex VAT"
-                      />
-                    </label>
+                    <div className={styles.replacementFieldsGrid}>
+                      <label className={styles.field}>
+                        <span className={styles.fieldLabel}>Asset replacement price (excl. VAT)</span>
+                        <input
+                          type="text"
+                          inputMode="decimal"
+                          value={userReplacementPrice}
+                          onChange={(event) => setUserReplacementPrice(event.target.value)}
+                          placeholder={moneyExVat(getCurrentResultReplacementPriceExVat())}
+                        />
+                      </label>
+                      {tractorResult && frontPto ? (
+                        <label className={styles.field}>
+                          <span className={styles.fieldLabel}>Front PTO replacement price (excl. VAT)</span>
+                          <input type="text" inputMode="decimal" value={frontPtoReplacementPrice} onChange={(event) => setFrontPtoReplacementPrice(event.target.value)} />
+                        </label>
+                      ) : null}
+                      {tractorResult && frontLoader ? (
+                        <label className={styles.field}>
+                          <span className={styles.fieldLabel}>Front Loader replacement price (excl. VAT)</span>
+                          <input type="text" inputMode="decimal" value={frontLoaderReplacementPrice} onChange={(event) => setFrontLoaderReplacementPrice(event.target.value)} />
+                        </label>
+                      ) : null}
+                      {tractorResult && gpsEnabled ? (
+                        <label className={styles.field}>
+                          <span className={styles.fieldLabel}>GPS replacement price (excl. VAT)</span>
+                          <input type="text" inputMode="decimal" value={gpsReplacementPrice} onChange={(event) => setGpsReplacementPrice(event.target.value)} />
+                        </label>
+                      ) : null}
+                      {tractorResult && otherExtraEnabled ? (
+                        <>
+                          <label className={styles.field}>
+                            <span className={styles.fieldLabel}>Other extra name</span>
+                            <input value={otherExtraName} onChange={(event) => setOtherExtraName(event.target.value)} maxLength={100} />
+                          </label>
+                          <label className={styles.field}>
+                            <span className={styles.fieldLabel}>Other extra current value (excl. VAT)</span>
+                            <input type="text" inputMode="decimal" value={otherExtraValue} onChange={(event) => setOtherExtraValue(event.target.value)} />
+                          </label>
+                        </>
+                      ) : null}
+                    </div>
                     <button
                       type="button"
                       className={styles.assetButton}
-                      disabled={!userPriceInput || replacementRecalculateLoading || advancedRecalculateLoading}
+                      disabled={!replacementUpdateReady || replacementRecalculateLoading || advancedRecalculateLoading}
                       onClick={() => {
-                        if (!userPriceInput) return;
                         if (isGeneric) {
+                          if (!userPriceInput) return;
                           void calculateGenericWithReplacementPrice(userPriceInput);
                         } else {
-                          void calculateTractorWithReplacementPrice(userPriceInput);
+                          const tractorBasePrice = userPriceInput ?? (replacementPriceBasis === 'user' ? tractorResult?.userReplacementPriceExVat ?? null : null);
+                          void calculateTractorWithReplacementPrice(tractorBasePrice);
                         }
                       }}
                     >
@@ -6913,7 +7110,6 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
             aria-labelledby="replacement-notice-title"
             onClick={(event) => event.stopPropagation()}
           >
-            <span className={styles.replacementNoticeKicker}>Before Aim4price calculates</span>
             <h2 id="replacement-notice-title">Check the replacement price</h2>
             <p>
               Aim4price uses current replacement prices to calculate the estimate. Confirm the price shown with the result and adjust it if needed.
@@ -7001,7 +7197,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
 
             {finalSaveHasPendingReplacementPrice ? (
               <p className={styles.finalSaveWarning}>
-                You changed the replacement price input. Click Update and recalculate before saving or listing this asset.
+                You changed a replacement price or extra value. Click Update and recalculate before saving or listing this asset.
               </p>
             ) : null}
 

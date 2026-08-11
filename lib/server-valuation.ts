@@ -4,6 +4,9 @@ import {
   calculateTractorFrontPtoValue,
   calculateTractorGpsValue,
   calculateTractorLoaderValue,
+  getTractorFrontPtoReplacementPrice,
+  getTractorGpsReplacementPrice,
+  getTractorLoaderReplacementPrice,
 } from './valuation/tractors';
 import {
   getValuationConditionFactorOverride,
@@ -242,10 +245,41 @@ export async function runServerValuation(input: RunValuationInput): Promise<Resu
   );
   const baseAim4priceValueExVat = baseCalculation.finalValueExVat;
 
-  const frontPtoValueExVat = calculateTractorFrontPtoValue(model, safeYear, safeHours, input.condition, Boolean(input.frontPto), assumptionOptions);
-  const frontLoaderValueExVat = calculateTractorLoaderValue(model, safeYear, Boolean(input.frontLoader));
-  const gpsValueExVat = calculateTractorGpsValue(model, Boolean(input.gpsEnabled), input.gpsType, input.gpsYear, safeYear);
-  const extrasValueExVat = frontPtoValueExVat + frontLoaderValueExVat + gpsValueExVat;
+  const frontPtoReplacementPriceExVat = input.frontPto
+    ? getTractorFrontPtoReplacementPrice(toPositiveNumber(input.frontPtoReplacementPriceExVat))
+    : null;
+  const frontLoaderReplacementPriceExVat = input.frontLoader
+    ? getTractorLoaderReplacementPrice(model, toPositiveNumber(input.frontLoaderReplacementPriceExVat))
+    : null;
+  const gpsReplacementPriceExVat = input.gpsEnabled
+    ? getTractorGpsReplacementPrice(input.gpsType, toPositiveNumber(input.gpsReplacementPriceExVat))
+    : null;
+  const otherExtraName = normalizeText(input.otherExtraName).slice(0, 100) || null;
+  const otherExtraValueExVat = otherExtraName ? roundMoney(toPositiveNumber(input.otherExtraValueExVat) ?? 0) : 0;
+  const frontPtoValueExVat = calculateTractorFrontPtoValue(
+    model,
+    safeYear,
+    safeHours,
+    input.condition,
+    Boolean(input.frontPto),
+    assumptionOptions,
+    frontPtoReplacementPriceExVat,
+  );
+  const frontLoaderValueExVat = calculateTractorLoaderValue(
+    model,
+    safeYear,
+    Boolean(input.frontLoader),
+    frontLoaderReplacementPriceExVat,
+  );
+  const gpsValueExVat = calculateTractorGpsValue(
+    model,
+    Boolean(input.gpsEnabled),
+    input.gpsType,
+    input.gpsYear,
+    safeYear,
+    gpsReplacementPriceExVat,
+  );
+  const extrasValueExVat = frontPtoValueExVat + frontLoaderValueExVat + gpsValueExVat + otherExtraValueExVat;
 
   const aim4priceValueExVat = addExtras(baseAim4priceValueExVat, extrasValueExVat);
   const previewValueExVat = aim4priceValueExVat;
@@ -270,6 +304,11 @@ export async function runServerValuation(input: RunValuationInput): Promise<Resu
     frontPtoValueExVat,
     frontLoaderValueExVat,
     gpsValueExVat,
+    frontPtoReplacementPriceExVat,
+    frontLoaderReplacementPriceExVat,
+    gpsReplacementPriceExVat,
+    otherExtraName,
+    otherExtraValueExVat,
     replacementPriceBasis,
     replacementPriceUsedExVat,
     userReplacementPriceExVat,
