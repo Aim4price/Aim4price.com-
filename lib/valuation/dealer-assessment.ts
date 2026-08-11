@@ -3,6 +3,7 @@ export type DealerBodyCondition = 'excellent' | 'good' | 'average' | 'poor' | 'd
 export type DealerTyreCondition = '75_100' | '50_75' | '25_50' | 'below_25' | 'replacement_required';
 export type DealerServiceHistory = 'complete_verified' | 'partial' | 'owner_recorded' | 'none' | 'unknown';
 export type DealerRequiredWork = 'ready' | 'minor' | 'moderate' | 'significant' | 'major';
+export type PopularityStars = 1 | 2 | 3 | 4 | 5;
 
 export type DealerAssessmentInput = {
   mechanicalCondition?: unknown;
@@ -10,7 +11,6 @@ export type DealerAssessmentInput = {
   tyreCondition?: unknown;
   serviceHistory?: unknown;
   requiredWork?: unknown;
-  popularityStars?: unknown;
 } | null | undefined;
 
 export type NormalizedDealerAssessment = {
@@ -19,7 +19,6 @@ export type NormalizedDealerAssessment = {
   tyreCondition: DealerTyreCondition;
   serviceHistory: DealerServiceHistory;
   requiredWork: DealerRequiredWork;
-  popularityStars: 1 | 2 | 3 | 4 | 5;
   conditionFactorPercent: number;
 };
 
@@ -59,14 +58,14 @@ const SERVICE_ADJUSTMENTS: Record<DealerServiceHistory, number> = {
 // already capture most defects, so this is a market-readiness adjustment rather
 // than a second full repair-cost deduction.
 const WORK_ADJUSTMENTS: Record<DealerRequiredWork, number> = {
-  ready: 0.02,
+  ready: 0.01,
   minor: 0,
-  moderate: -0.04,
-  significant: -0.1,
-  major: -0.18,
+  moderate: -0.02,
+  significant: -0.05,
+  major: -0.08,
 };
 
-const POPULARITY_ADJUSTMENTS: Record<1 | 2 | 3 | 4 | 5, number> = {
+const POPULARITY_ADJUSTMENTS: Record<PopularityStars, number> = {
   1: -0.08,
   2: -0.04,
   3: 0,
@@ -81,7 +80,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 function normalizeEnum<T extends string>(value: unknown, allowed: readonly T[], label: string): T {
   const normalized = String(value ?? '').trim().toLowerCase();
   if ((allowed as readonly string[]).includes(normalized)) return normalized as T;
-  throw new Error(`${label} is required for a dealer assessment.`);
+  throw new Error(`${label} is required for a detailed asset assessment.`);
 }
 
 export function dealerAssessmentWasRequested(value: unknown): boolean {
@@ -95,8 +94,7 @@ export function calculateDealerConditionFactor(input: Omit<NormalizedDealerAsses
     + TYRE_FACTORS[input.tyreCondition] * 0.2;
   const adjusted = componentFactor
     + SERVICE_ADJUSTMENTS[input.serviceHistory]
-    + WORK_ADJUSTMENTS[input.requiredWork]
-    + POPULARITY_ADJUSTMENTS[input.popularityStars];
+    + WORK_ADJUSTMENTS[input.requiredWork];
 
   return Math.min(0.98, Math.max(0.4, adjusted));
 }
@@ -104,10 +102,6 @@ export function calculateDealerConditionFactor(input: Omit<NormalizedDealerAsses
 export function normalizeDealerAssessment(value: DealerAssessmentInput): NormalizedDealerAssessment | null {
   if (!dealerAssessmentWasRequested(value)) return null;
   const source = value as Record<string, unknown>;
-  const popularity = Number(source.popularityStars);
-  if (!Number.isInteger(popularity) || popularity < 1 || popularity > 5) {
-    throw new Error('Popularity must be selected from 1 to 5 stars.');
-  }
 
   const normalized = {
     mechanicalCondition: normalizeEnum(source.mechanicalCondition, ['excellent', 'good', 'average', 'below_average', 'poor'] as const, 'Mechanical condition'),
@@ -115,7 +109,6 @@ export function normalizeDealerAssessment(value: DealerAssessmentInput): Normali
     tyreCondition: normalizeEnum(source.tyreCondition, ['75_100', '50_75', '25_50', 'below_25', 'replacement_required'] as const, 'Tyre or wear-component condition'),
     serviceHistory: normalizeEnum(source.serviceHistory, ['complete_verified', 'partial', 'owner_recorded', 'none', 'unknown'] as const, 'Service history'),
     requiredWork: normalizeEnum(source.requiredWork, ['ready', 'minor', 'moderate', 'significant', 'major'] as const, 'Required work'),
-    popularityStars: popularity as 1 | 2 | 3 | 4 | 5,
   };
 
   return {
@@ -127,4 +120,23 @@ export function normalizeDealerAssessment(value: DealerAssessmentInput): Normali
 export function getDealerConditionFactor(value: NormalizedDealerAssessment | null | undefined): number | null {
   if (!value) return null;
   return value.conditionFactorPercent / 100;
+}
+
+export function normalizePopularityStars(value: unknown): PopularityStars | null {
+  if (value === null || typeof value === 'undefined' || String(value).trim() === '') return null;
+  const popularity = Number(value);
+  if (!Number.isInteger(popularity) || popularity < 1 || popularity > 5) {
+    throw new Error('Popularity must be selected from 1 to 5 stars.');
+  }
+  return popularity as PopularityStars;
+}
+
+export function applyPopularityToConditionFactor(
+  baseConditionFactor: number,
+  popularityStars: PopularityStars | null | undefined,
+  bounds: { min: number; max: number } = { min: 0.4, max: 0.98 },
+): number {
+  const normalizedPopularity = popularityStars ?? 3;
+  const adjusted = baseConditionFactor + POPULARITY_ADJUSTMENTS[normalizedPopularity];
+  return Math.min(bounds.max, Math.max(bounds.min, adjusted));
 }
