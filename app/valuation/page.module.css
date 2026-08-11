@@ -7,6 +7,183 @@
   color: var(--text-strong);
 }
 
+.salvageNotice,
+.marketabilityNotice {
+  margin-top: 0.85rem;
+  padding: 0.8rem 0.9rem;
+  border: 1px solid rgba(161, 98, 7, 0.24);
+  border-radius: 12px;
+  background: rgba(255, 247, 237, 0.9);
+  color: #7c4a03;
+  font-size: 0.86rem;
+  line-height: 1.45;
+}
+
+.marketabilityNotice {
+  border-color: rgba(14, 116, 144, 0.2);
+  background: rgba(236, 254, 255, 0.84);
+  color: #155e75;
+}
+
+.extrasBreakdown {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
+  gap: 0.7rem;
+  padding: 0.85rem;
+  border: 1px solid rgba(5, 94, 74, 0.16);
+  border-radius: 16px;
+  background: rgba(247, 252, 249, 0.94);
+}
+
+.extrasBreakdown > div {
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.7rem;
+  border-radius: 11px;
+  background: #fff;
+}
+
+.extrasBreakdown span {
+  color: #64746d;
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.extrasBreakdown strong {
+  color: #07513f;
+  font-size: 0.95rem;
+}
+
+.dealerAssessmentGroup {
+  margin: 0;
+  padding: 0.9rem 0;
+  border: 0;
+  border-bottom: 1px solid rgba(5, 94, 74, 0.1);
+}
+
+.dealerAssessmentGroup:last-of-type {
+  border-bottom: 0;
+}
+
+.dealerAssessmentGroup legend {
+  margin-bottom: 0.65rem;
+  padding: 0;
+  color: #123f34;
+  font-size: 0.86rem;
+  font-weight: 800;
+}
+
+.dealerAssessmentOptions {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.45rem;
+}
+
+.dealerAssessmentOption {
+  min-height: 42px;
+  padding: 0.55rem 0.45rem;
+  border: 1px solid rgba(5, 94, 74, 0.16);
+  border-radius: 10px;
+  background: #fff;
+  color: #37534b;
+  font: inherit;
+  font-size: 0.76rem;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.dealerAssessmentOption:hover,
+.dealerAssessmentOptionActive {
+  border-color: #0b7a5c;
+  background: #e8f6f0;
+  color: #07513f;
+}
+
+.popularityStars {
+  display: flex;
+  gap: 0.4rem;
+  margin-bottom: 0.45rem;
+}
+
+.popularityStars button {
+  width: 42px;
+  height: 42px;
+  border: 1px solid rgba(5, 94, 74, 0.16);
+  border-radius: 10px;
+  background: #fff;
+  color: #b8c4bf;
+  font-size: 1.35rem;
+  cursor: pointer;
+}
+
+.popularityStars button.popularityStarActive {
+  border-color: #d49b22;
+  background: #fff8dc;
+  color: #d49b22;
+}
+
+.replacementNoticeOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(2, 29, 22, 0.58);
+  backdrop-filter: blur(4px);
+}
+
+.replacementNoticeModal {
+  width: min(520px, 100%);
+  padding: 1.5rem;
+  border: 1px solid rgba(5, 94, 74, 0.16);
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: 0 24px 70px rgba(2, 29, 22, 0.25);
+}
+
+.replacementNoticeKicker {
+  color: #0b7a5c;
+  font-size: 0.72rem;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.replacementNoticeModal h2 {
+  margin: 0.45rem 0 0.65rem;
+  color: #063f31;
+  font-size: clamp(1.35rem, 3vw, 1.75rem);
+}
+
+.replacementNoticeModal p {
+  margin: 0;
+  color: #526861;
+  line-height: 1.58;
+}
+
+.replacementNoticeActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.65rem;
+  margin-top: 1.25rem;
+}
+
+@media (max-width: 760px) {
+  .dealerAssessmentOptions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .replacementNoticeActions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .replacementNoticeActions button {
+    width: 100%;
+  }
+}
+
 .container {
   width: var(--shell-width);
   margin-inline: auto;
