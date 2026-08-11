@@ -1,0 +1,241 @@
+import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
+import test from 'node:test';
+
+import {
+  MAX_SALVAGE_PERCENT,
+  calculateOlderPassengerCarMarketability,
+  calculateSalvagePercent,
+  calculateSalvageValue,
+  resolveSalvageValue,
+} from '../lib/valuation/valuation-rules.ts';
+import {
+  calculateDealerConditionFactor,
+  normalizeDealerAssessment,
+} from '../lib/valuation/dealer-assessment.ts';
+
+function ageDepreciationPercent(yearModel, baseYear = 2026) {
+  const age = Math.max(0, baseYear - yearModel);
+  let depreciation = 0;
+  if (age >= 1) depreciation += 20;
+  if (age >= 2) depreciation += 15;
+  if (age >= 3) depreciation += 10;
+  if (age >= 4) depreciation += (age - 3) * 2.5;
+  return Math.min(100, depreciation);
+}
+
+function simulatePassengerCarValue({
+  replacementPrice,
+  yearModel,
+  kilometres,
+  conditionFactor,
+  bodyType,
+}) {
+  const marketability = calculateOlderPassengerCarMarketability({
+    sectorKey: 'motor',
+    familyKey: 'cars_suvs',
+    bodyType,
+    yearModel,
+    baseYear: 2026,
+  });
+  const ageDepreciation = ageDepreciationPercent(yearModel);
+  const usageDepreciation = Math.min(100, (kilometres / 300_000) * 100);
+  const averageDepreciation = Math.round((ageDepreciation + usageDepreciation) / 2);
+  const rawValue = replacementPrice
+    * (1 - averageDepreciation / 100)
+    * conditionFactor
+    * marketability.factor;
+  return {
+    value: resolveSalvageValue(rawValue, replacementPrice).finalValueExVat,
+    marketability,
+  };
+}
+
+test('R800,000 uses the agreed 2.25% / R18,000 salvage reference', () => {
+  assert.equal(calculateSalvagePercent(800_000), 2.25);
+  assert.equal(calculateSalvageValue(800_000), 18_000);
+});
+
+test('salvage percentage never exceeds 3% and salvage value never falls at a price boundary', () => {
+  let previousValue = 0;
+  for (let replacementPrice = 0; replacementPrice <= 12_000_000; replacementPrice += 10_000) {
+    const percent = calculateSalvagePercent(replacementPrice);
+    const value = calculateSalvageValue(replacementPrice);
+    assert.ok(percent <= MAX_SALVAGE_PERCENT);
+    assert.ok(percent >= 0);
+    assert.ok(value >= previousValue, `salvage fell at ${replacementPrice.toLocaleString('en-ZA')}`);
+    previousValue = value;
+  }
+});
+
+test('depreciation only switches to salvage when the calculated value reaches the reference', () => {
+  assert.deepEqual(resolveSalvageValue(0, 800_000), {
+    rawValueExVat: 0,
+    finalValueExVat: 18_000,
+    salvagePercent: 2.25,
+    salvageValueExVat: 18_000,
+    isSalvageEstimate: true,
+  });
+  assert.equal(resolveSalvageValue(50_000, 800_000).finalValueExVat, 50_000);
+  assert.equal(resolveSalvageValue(50_000, 800_000).isSalvageEstimate, false);
+});
+
+test('the 2001 BMW example lands close to R50,000 from an R800,000 replacement price', () => {
+  const scenario = simulatePassengerCarValue({
+    replacementPrice: 800_000,
+    yearModel: 2001,
+    kilometres: 220_000,
+    conditionFactor: 0.85,
+    bodyType: 'sedan',
+  });
+
+  assert.equal(scenario.marketability.applies, true);
+  assert.equal(scenario.marketability.yearsAfterThreshold, 10);
+  assert.ok(scenario.value >= 49_000 && scenario.value <= 51_000, `received R${scenario.value}`);
+});
+
+test('passenger-car scenarios remain sensible around the 15-year marketability threshold', () => {
+  const recentSedan = simulatePassengerCarValue({
+    replacementPrice: 500_000,
+    yearModel: 2018,
+    kilometres: 150_000,
+    conditionFactor: 0.85,
+    bodyType: 'sedan',
+  });
+  const olderSedan = simulatePassengerCarValue({
+    replacementPrice: 500_000,
+    yearModel: 2010,
+    kilometres: 180_000,
+    conditionFactor: 0.85,
+    bodyType: 'sedan',
+  });
+  const olderSuv = simulatePassengerCarValue({
+    replacementPrice: 500_000,
+    yearModel: 2010,
+    kilometres: 180_000,
+    conditionFactor: 0.85,
+    bodyType: 'suv',
+  });
+
+  assert.equal(recentSedan.marketability.applies, false);
+  assert.equal(recentSedan.value, 195_500);
+  assert.equal(olderSedan.marketability.applies, true);
+  assert.ok(olderSedan.value >= 124_000 && olderSedan.value <= 125_000);
+  assert.equal(olderSuv.marketability.applies, false);
+  assert.equal(olderSuv.value, 131_750);
+});
+
+test('fully depreciated assets use the sliding salvage scale across price ranges', () => {
+  const scenarios = [
+    { replacementPrice: 100_000, expectedPercent: 3, expectedValue: 3_000 },
+    { replacementPrice: 250_000, expectedPercent: 2.85, expectedValue: 7_125 },
+    { replacementPrice: 800_000, expectedPercent: 2.25, expectedValue: 18_000 },
+    { replacementPrice: 2_000_000, expectedPercent: 1.7, expectedValue: 34_000 },
+    { replacementPrice: 5_000_000, expectedPercent: 1.25, expectedValue: 62_500 },
+    { replacementPrice: 10_000_000, expectedPercent: 1, expectedValue: 100_000 },
+  ];
+
+  for (const scenario of scenarios) {
+    const result = resolveSalvageValue(0, scenario.replacementPrice);
+    assert.equal(result.salvagePercent, scenario.expectedPercent);
+    assert.equal(result.finalValueExVat, scenario.expectedValue);
+    assert.equal(result.isSalvageEstimate, true);
+  }
+});
+
+test('older-car marketability excludes SUVs and specialist body styles', () => {
+  for (const bodyType of ['suv', 'coupe', 'cabriolet', 'sportback']) {
+    const result = calculateOlderPassengerCarMarketability({
+      sectorKey: 'motor',
+      familyKey: 'cars_suvs',
+      bodyType,
+      yearModel: 2001,
+      baseYear: 2026,
+    });
+    assert.equal(result.applies, false, bodyType);
+    assert.equal(result.factor, 1, bodyType);
+  }
+});
+
+test('a normal dealer assessment reproduces the existing Good condition factor', () => {
+  const assessment = normalizeDealerAssessment({
+    mechanicalCondition: 'good',
+    bodyCondition: 'good',
+    tyreCondition: '50_75',
+    serviceHistory: 'partial',
+    requiredWork: 'minor',
+    popularityStars: 3,
+  });
+  assert.equal(assessment?.conditionFactorPercent, 85);
+});
+
+test('dealer condition outcomes stay inside the controlled 40%-98% range', () => {
+  const excellent = calculateDealerConditionFactor({
+    mechanicalCondition: 'excellent',
+    bodyCondition: 'excellent',
+    tyreCondition: '75_100',
+    serviceHistory: 'complete_verified',
+    requiredWork: 'ready',
+    popularityStars: 5,
+  });
+  const poor = calculateDealerConditionFactor({
+    mechanicalCondition: 'poor',
+    bodyCondition: 'damaged',
+    tyreCondition: 'replacement_required',
+    serviceHistory: 'none',
+    requiredWork: 'major',
+    popularityStars: 1,
+  });
+  assert.equal(excellent, 0.98);
+  assert.equal(poor, 0.4);
+});
+
+test('dealer assessments produce an ordered range without assuming a gearbox', () => {
+  const ready = calculateDealerConditionFactor({
+    mechanicalCondition: 'excellent',
+    bodyCondition: 'good',
+    tyreCondition: '75_100',
+    serviceHistory: 'complete_verified',
+    requiredWork: 'ready',
+    popularityStars: 5,
+  });
+  const working = calculateDealerConditionFactor({
+    mechanicalCondition: 'average',
+    bodyCondition: 'average',
+    tyreCondition: '25_50',
+    serviceHistory: 'owner_recorded',
+    requiredWork: 'moderate',
+    popularityStars: 2,
+  });
+  const project = calculateDealerConditionFactor({
+    mechanicalCondition: 'poor',
+    bodyCondition: 'damaged',
+    tyreCondition: 'replacement_required',
+    serviceHistory: 'none',
+    requiredWork: 'major',
+    popularityStars: 1,
+  });
+
+  assert.equal(ready, 0.98);
+  assert.ok(Math.abs(working - 0.66) < Number.EPSILON * 2);
+  assert.equal(project, 0.4);
+  assert.ok(ready > working && working > project);
+});
+
+test('selected tractor extras always add a calculated value and are shown transparently', async () => {
+  const tractorSource = await readFile(new URL('../lib/valuation/tractors.ts', import.meta.url), 'utf8');
+  const valuationSource = await readFile(new URL('../app/valuation/valuation-client.tsx', import.meta.url), 'utf8');
+
+  assert.doesNotMatch(tractorSource, /!model\.(frontPtoSupported|frontLoaderSupported|gpsSupported)/);
+  assert.match(valuationSource, /Tractor extras value breakdown/);
+  assert.match(valuationSource, /frontLoaderValueExVat/);
+  assert.match(valuationSource, /gpsValueExVat/);
+});
+
+test('path availability is checked with one model before the full list is requested', async () => {
+  const source = await readFile(new URL('../app/valuation/valuation-client.tsx', import.meta.url), 'utf8');
+  assert.match(source, /limit: '1'/);
+  assert.match(source, /loadFullGenericCatalog/);
+  assert.match(source, /limit: '500'/);
+  assert.match(source, /Please check the replacement price\./);
+});
