@@ -4714,13 +4714,26 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     setStep(previousStep(step));
   }
 
+  function handleWizardStepJump(targetStep: Step) {
+    if (targetStep >= step || targetStep === 5) return;
+
+    setMessage('');
+    setReplacementNoticeOpen(false);
+    setActiveDetailsModal(null);
+    setStep(isMotorSector(selectedSector) && targetStep === 3 ? 2 : targetStep);
+
+    requestAnimationFrame(() => {
+      document.getElementById('valuation-wizard-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  }
+
   function renderMachineStep() {
     if (!selectedSector) {
       return (
         <div className={styles.sectorStart}>
           <div className={styles.sectorIntro}>
             <h2 className={styles.stepTitle}>Choose sector</h2>
-            <p className={styles.stepText}>{compactAppMode ? 'Choose a sector.' : 'Pick the sector first. Hover over a card to preview that sector.'}</p>
+            <p className={styles.stepText}>{compactAppMode ? 'Choose a sector.' : 'Choose a sector to start your estimate.'}</p>
           </div>
 
           <div className={styles.sectorLargeGrid}>
@@ -4761,15 +4774,15 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                   <span className={styles.sectorVideoOverlay} />
 
                   <span className={styles.sectorBigCardContent}>
-                    <span className={styles.sectorCardTopRow}>
-                      <span className={isAvailable ? styles.liveBadge : styles.soonBadge}>
-                        {isAvailable ? 'Live now' : 'Coming soon'}
+                    {!isAvailable ? (
+                      <span className={styles.sectorCardTopRow}>
+                        <span className={styles.soonBadge}>Coming soon</span>
                       </span>
-                    </span>
+                    ) : null}
 
                     <span className={styles.sectorLabelWrap}>
                       <strong className={styles.sectorLabel}>{sector.label}</strong>
-                      {isAvailable ? <span className={styles.sectorCardHint}>{compactAppMode ? 'Open' : 'Open estimate flow'}</span> : null}
+                      {isAvailable ? <span className={styles.sectorCardHint}>{compactAppMode ? 'Open' : 'Start estimate →'}</span> : null}
                     </span>
                   </span>
                 </button>
@@ -4789,7 +4802,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
         {!compactAppMode ? (
           <div className={styles.equipmentStageIntro}>
             <h2 className={styles.stepTitle}>Choose {getAssetTypeLabel(selectedSector)}</h2>
-            <p className={styles.stepText}>Search or choose the {getAssetTypeLabel(selectedSector)}. Selecting one moves to the brand step automatically.</p>
+            <p className={styles.stepText}>Search or select the {getAssetTypeLabel(selectedSector)}.</p>
           </div>
         ) : null}
 
@@ -4797,7 +4810,6 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
           <div className={styles.equipmentPickerHead}>
             <div>
               <span className={styles.fieldLabel}>Search {getAssetTypeLabel(selectedSector)}</span>
-              <p className={styles.equipmentPickerHint}>{compactAppMode ? 'Type a name or choose below.' : <>Type a normal word, then pick the matching {getAssetItemLabel(selectedSector)} from the dropdown.</>}</p>
             </div>
             <span className={styles.equipmentCountPill}>{familiesLoading ? 'Loading' : `${filteredFamilies.length} found`}</span>
           </div>
@@ -4879,7 +4891,6 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
           <div className={styles.equipmentPickerHead}>
             <div>
               <span className={styles.fieldLabel}>{config.fieldLabel}</span>
-              <p className={styles.equipmentPickerHint}>Select the closest type from the dropdown. This narrows the model list later.</p>
             </div>
             <span className={styles.equipmentCountPill}>{config.options.length} options</span>
           </div>
@@ -5087,7 +5098,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
         {!compactAppMode ? (
           <div className={styles.equipmentStageIntro}>
             <h2 className={styles.stepTitle}>Choose brand</h2>
-            <p className={styles.stepText}>Search or choose the brand for this {selectedMotorSubtypeConfig ? selectedMotorSubtypeConfig.fieldLabel.toLowerCase() : getAssetItemLabel(selectedSector)}. Selecting one moves to the next step automatically.</p>
+            <p className={styles.stepText}>Search or select the brand.</p>
           </div>
         ) : null}
 
@@ -5095,7 +5106,6 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
           <div className={styles.equipmentPickerHead}>
             <div>
               <span className={styles.fieldLabel}>Search brand</span>
-              <p className={styles.equipmentPickerHint}>{compactAppMode ? 'Type a name or choose below.' : 'Type the brand name, then pick the matching brand from the dropdown.'}</p>
             </div>
             <span className={styles.equipmentCountPill}>{brandsLoading ? 'Loading' : `${filteredBrands.length} found`}</span>
           </div>
@@ -5179,7 +5189,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
         {!compactAppMode ? (
           <>
             <h2 className={styles.stepTitle}>Choose estimate path</h2>
-            <p className={styles.stepText}>Choose one path first. Aim4price only shows the matching setup after you select it.</p>
+            <p className={styles.stepText}>Choose the route that best matches what you know.</p>
           </>
         ) : null}
 
@@ -5230,7 +5240,6 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
           <div className={styles.pathSelectionPlaceholder}>Checking exact model availability...</div>
         ) : null}
 
-        {!flowMode ? <div className={styles.pathSelectionPlaceholder}>{compactAppMode ? 'Choose a path.' : 'Select a path above to continue.'}</div> : null}
         {flowMode === 'exact_model' && exactTractorAvailable && showExactPathCard ? renderTractorModelPicker() : null}
         {genericExactModelPath && showExactPathCard ? renderGenericModelPicker() : null}
         {flowMode === 'generic_specs' ? renderUnknownModelChoice() : null}
@@ -5243,8 +5252,8 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
       <div className={`${styles.currentCard} ${styles.tractorSetupCard}`} style={{ marginTop: '1rem' }}>
         <div className={styles.currentCardHead}>
           <div>
-            <h3 className={styles.currentTitle}>Find the tractor model</h3>
-            <p className={styles.currentHint}>{compactAppMode ? 'Choose type, drive and cab.' : 'Choose the basic setup first. The model list appears after type, drive and cab are selected.'}</p>
+            <h3 className={styles.currentTitle}>Choose the tractor model</h3>
+            <p className={styles.currentHint}>Select type, drive and cab to show matching models.</p>
           </div>
         </div>
 
@@ -5787,7 +5796,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
               {!compactAppMode ? (
                 <>
                   <h3 className={styles.detailsModalTitle}>{getAssetNounTitle(selectedSector)} manufacturing year</h3>
-                  <p className={styles.detailsModalText}>Slide to the year, fine-tune it if needed, then continue.</p>
+                  <p className={styles.detailsModalText}>Select the manufacturing year.</p>
                 </>
               ) : null}
             </div>
@@ -5879,7 +5888,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
               Cancel
             </button>
             <button type="button" className={styles.primaryButton} onClick={saveYearFromInput}>
-              Use this year
+              Continue
             </button>
           </div>
         </div>
@@ -5981,7 +5990,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
               Cancel
             </button>
             <button type="button" className={styles.primaryButton} onClick={() => saveUsageAnswer(showHoursInput)}>
-              Save answer
+              Continue
             </button>
           </div>
         </div>
@@ -6200,7 +6209,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                 <div>
                   <span className={styles.currentEyebrow}>Step 4</span>
                   <h3 className={styles.currentTitle}>Popularity</h3>
-                  <p className={styles.currentHint}>How easy is this asset type and model to sell in the current market?</p>
+                  <p className={styles.currentHint}>Rate current market demand for this asset.</p>
                 </div>
                 <span className={styles.selectedSummaryPill} data-selection-status={popularityStepComplete ? 'selected' : 'pending'}>
                   {popularityStepComplete ? `${popularityStars} / 5 stars` : 'Choose rating'}
@@ -6821,13 +6830,23 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                   {WIZARD_STEPS.map((item) => {
                     const active = item.step === step;
                     const complete = item.step < step;
+                    const canJumpBack = complete && item.step <= 4;
+                    const stepLabel = getWizardStepLabel(item.step, selectedSector);
                     return (
-                      <div key={item.step} className={`${styles.stepperItem} ${active ? styles.stepperItemActive : ''} ${complete ? styles.stepperItemComplete : ''}`}>
+                      <button
+                        key={item.step}
+                        type="button"
+                        className={`${styles.stepperItem} ${canJumpBack ? styles.stepperItemClickable : ''} ${active ? styles.stepperItemActive : ''} ${complete ? styles.stepperItemComplete : ''}`}
+                        onClick={() => handleWizardStepJump(item.step)}
+                        disabled={!canJumpBack}
+                        aria-current={active ? 'step' : undefined}
+                        aria-label={canJumpBack ? `Go back to ${stepLabel}` : stepLabel}
+                      >
                         <span className={`${styles.stepperBullet} ${active ? styles.stepperBulletActive : ''} ${complete ? styles.stepperBulletComplete : ''}`}>
                           {complete ? '✓' : item.step}
                         </span>
-                        <span className={`${styles.stepperLabel} ${active ? styles.stepperLabelActive : ''} ${complete ? styles.stepperLabelComplete : ''}`}>{getWizardStepLabel(item.step, selectedSector)}</span>
-                      </div>
+                        <span className={`${styles.stepperLabel} ${active ? styles.stepperLabelActive : ''} ${complete ? styles.stepperLabelComplete : ''}`}>{stepLabel}</span>
+                      </button>
                     );
                   })}
                 </div>
@@ -6895,9 +6914,9 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
             onClick={(event) => event.stopPropagation()}
           >
             <span className={styles.replacementNoticeKicker}>Before Aim4price calculates</span>
-            <h2 id="replacement-notice-title">Please check the replacement price.</h2>
+            <h2 id="replacement-notice-title">Check the replacement price</h2>
             <p>
-              Aim4price uses up-to-date replacement prices as an important part of the estimate. Please make sure the replacement price shown with the result is accurate and update it before saving when needed.
+              Aim4price uses current replacement prices to calculate the estimate. Confirm the price shown with the result and adjust it if needed.
             </p>
             <div className={styles.replacementNoticeActions}>
               <button type="button" className={styles.secondaryButton} onClick={() => setReplacementNoticeOpen(false)}>

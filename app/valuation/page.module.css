@@ -11188,3 +11188,402 @@
     0 10px 20px rgba(15, 53, 42, 0.07),
     inset 0 1px 0 rgba(255, 255, 255, 0.96);
 }
+
+/* August 2026 — valuation experience polish */
+.page {
+  font-family: var(--font-body, 'Montserrat'), 'Montserrat', ui-sans-serif, system-ui, sans-serif;
+}
+
+.page h1,
+.page h2,
+.page h3,
+.page h4,
+.page button,
+.page input,
+.page select,
+.page textarea {
+  font-family: inherit;
+}
+
+.container {
+  padding-top: clamp(1rem, 1.7vw, 1.45rem);
+}
+
+.wizardHeader {
+  padding: 0.75rem 0.9rem;
+}
+
+.stepper {
+  gap: 0.5rem;
+}
+
+.stepperItem {
+  width: 100%;
+  min-height: 2.85rem;
+  appearance: none;
+  padding: 0.38rem 0.62rem;
+  border: 1px solid transparent;
+  border-radius: 0.85rem;
+  background: rgba(255, 255, 255, 0.58);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  box-shadow: none;
+  cursor: default;
+  transition: border-color 160ms ease, background 160ms ease, transform 160ms ease;
+}
+
+.stepperItem:disabled {
+  opacity: 1;
+  cursor: default;
+}
+
+.stepperItemClickable {
+  cursor: pointer;
+}
+
+.stepperItemClickable:hover,
+.stepperItemClickable:focus-visible {
+  border-color: rgba(24, 77, 61, 0.18);
+  background: rgba(233, 243, 238, 0.9);
+  transform: translateY(-1px);
+}
+
+.stepperItemActive {
+  border-color: rgba(24, 77, 61, 0.18);
+  background: rgba(239, 247, 243, 0.96);
+  box-shadow: none;
+}
+
+.stepperItemComplete {
+  border-color: transparent;
+  background: rgba(230, 239, 234, 0.68);
+}
+
+.stepperBullet {
+  width: 1.8rem;
+  height: 1.8rem;
+  font-size: 0.75rem;
+  box-shadow: none;
+}
+
+.stepperLabel {
+  font-size: 0.79rem;
+  font-weight: 750;
+}
+
+.stepContent {
+  padding: clamp(1.2rem, 2vw, 1.55rem);
+}
+
+.sectorStepContent {
+  padding: clamp(1.25rem, 1.9vw, 1.75rem);
+}
+
+.sectorStart {
+  gap: clamp(0.9rem, 1.35vw, 1.25rem);
+}
+
+.sectorIntro .stepTitle,
+.equipmentStageIntro .stepTitle,
+.stepTitle {
+  max-width: none;
+  font-size: clamp(2.3rem, 3.7vw, 3.35rem);
+  line-height: 1;
+  letter-spacing: -0.052em;
+  text-wrap: pretty;
+}
+
+.sectorIntro .stepText,
+.equipmentStageIntro .stepText,
+.stepText {
+  line-height: 1.48;
+  text-wrap: pretty;
+}
+
+.sectorLargeGrid {
+  gap: clamp(0.75rem, 1.1vw, 1rem);
+}
+
+.sectorBigCard {
+  min-height: clamp(11.9rem, 14.5vw, 13.8rem);
+  border-radius: 1.35rem;
+}
+
+.sectorBigCardContent {
+  padding: clamp(1rem, 1.35vw, 1.2rem);
+}
+
+.sectorLabel,
+.sectorBigCard .sectorLabel {
+  font-size: clamp(1.8rem, 2.55vw, 2.45rem);
+  letter-spacing: -0.05em;
+}
+
+.sectorCardHint,
+.sectorBigCard .sectorCardHint {
+  font-size: 0.84rem;
+  font-weight: 700;
+  opacity: 0.88;
+}
+
+.equipmentStage {
+  gap: 0.65rem;
+}
+
+.equipmentStageTopSolo {
+  min-height: 0;
+}
+
+.equipmentStageIntro {
+  gap: 0.35rem;
+}
+
+.selectedSummaryPill,
+.equipmentCountPill,
+.currentEyebrow {
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: #3e6659;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.065em;
+  line-height: 1.35;
+  text-transform: uppercase;
+}
+
+.equipmentCountPill {
+  color: #60736b;
+  letter-spacing: 0.035em;
+}
+
+.selectedSummaryPill[data-selection-status='selected'] {
+  color: #146049;
+}
+
+.selectedSummaryPill[data-selection-status='selected']::before {
+  content: '✓';
+  margin-right: 0.32rem;
+}
+
+.selectedSummaryPill[data-selection-status='pending'] {
+  color: #77847e;
+}
+
+.selectedSummaryButton {
+  border-bottom: 1px solid rgba(24, 77, 61, 0.24);
+}
+
+.selectedSummaryButton:hover,
+.selectedSummaryButton:focus-visible {
+  border-color: #184d3d;
+  background: transparent;
+  box-shadow: none;
+}
+
+.equipmentPickerCard {
+  gap: 0.72rem;
+  padding: clamp(0.95rem, 1.35vw, 1.15rem);
+  border-radius: 1.15rem;
+}
+
+.equipmentPickerHead {
+  align-items: center;
+}
+
+.equipmentPickerCard .searchInput,
+.equipmentDropdownTrigger {
+  min-height: 3.4rem;
+  border-radius: 0.9rem;
+}
+
+.equipmentDropdownTrigger {
+  padding-left: 1rem;
+}
+
+.pathChoiceDeck {
+  margin-top: 0.8rem;
+}
+
+.pathChoiceGrid .choiceCard,
+.pathChoiceCard {
+  min-height: 6.55rem;
+  padding: 0.95rem 1rem;
+  border-radius: 1rem;
+}
+
+.tractorSetupCard {
+  gap: 0.75rem;
+  margin-top: 0.8rem !important;
+  padding: 1rem;
+}
+
+.tractorSetupProgress {
+  gap: 0.7rem;
+}
+
+.inlineSetupGroup {
+  gap: 0.55rem;
+  padding: 0.75rem;
+  border-radius: 0.9rem;
+  box-shadow: none;
+}
+
+.inlineOptionRow {
+  gap: 0.55rem;
+}
+
+.inlineOptionButton {
+  flex: 1 1 8rem;
+  min-height: 2.65rem;
+  border-radius: 0.78rem;
+  box-shadow: none;
+}
+
+.inlineOptionButtonActive {
+  box-shadow: 0 0 0 3px rgba(24, 77, 61, 0.055);
+}
+
+.specFlowStack {
+  gap: 0.72rem;
+  margin-top: 1rem;
+}
+
+.specStepCard {
+  min-height: 4.65rem;
+  padding: 0.78rem 0.9rem;
+  border-radius: 0.95rem;
+  box-shadow: none;
+}
+
+.specStepAction {
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.conditionStepCard,
+.popularityStepCard {
+  gap: 0.75rem;
+}
+
+.conditionButtonGrid {
+  gap: 0.55rem;
+}
+
+.conditionChoiceButton {
+  min-height: 3rem;
+  border-radius: 0.78rem;
+  box-shadow: none;
+}
+
+.detailedAssessmentEntry {
+  margin-top: 0.65rem;
+  padding: 0.72rem 0.8rem;
+}
+
+.detailedAssessmentPanel {
+  margin-top: 0.65rem;
+  padding: 0.15rem 0.8rem 0.75rem;
+}
+
+.dealerAssessmentGroup {
+  padding: 0.7rem 0;
+}
+
+.dealerAssessmentOption {
+  min-height: 38px;
+  border-radius: 0.65rem;
+}
+
+.detailsModal,
+.yearDetailsModal {
+  gap: 0.8rem;
+  padding: 1.1rem;
+}
+
+.detailsModalTitle {
+  margin-top: 0.3rem;
+  font-size: clamp(1.65rem, 2.6vw, 2.2rem);
+  line-height: 1.04;
+  letter-spacing: -0.045em;
+  text-wrap: pretty;
+}
+
+.detailsModalText {
+  margin-top: 0.25rem;
+  line-height: 1.45;
+}
+
+.yearSliderPanel {
+  gap: 0.8rem;
+  padding: 0.8rem;
+  border-radius: 1.05rem;
+}
+
+.yearSliderReadout {
+  min-height: 9.3rem;
+}
+
+.yearFineTuneButton,
+.modalInputField input,
+.unknownAnswerButton {
+  min-height: 2.8rem;
+  border-radius: 0.78rem;
+}
+
+.replacementNoticeModal {
+  width: min(590px, 100%);
+  padding: 1.35rem;
+  border-radius: 1.15rem;
+}
+
+.replacementNoticeModal h2 {
+  margin-top: 0.35rem;
+  font-size: clamp(1.45rem, 2.5vw, 1.9rem);
+  line-height: 1.08;
+  letter-spacing: -0.035em;
+}
+
+.replacementNoticeModal p {
+  line-height: 1.5;
+}
+
+@media (max-width: 900px) {
+  .stepperItem {
+    width: auto;
+  }
+}
+
+@media (max-width: 720px) {
+  .stepTitle,
+  .sectorIntro .stepTitle,
+  .equipmentStageIntro .stepTitle {
+    font-size: clamp(1.9rem, 8.5vw, 2.5rem);
+    line-height: 1.04;
+  }
+
+  .sectorBigCard {
+    min-height: 10.25rem;
+  }
+
+  .sectorCardTopRow {
+    min-height: 0;
+  }
+
+  .stepContent,
+  .sectorStepContent {
+    padding: 0.95rem 0.85rem;
+  }
+
+  .conditionButtonGrid,
+  .dealerAssessmentOptions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
