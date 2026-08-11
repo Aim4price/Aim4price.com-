@@ -761,15 +761,16 @@
   .heroVisual {
     position: absolute;
     z-index: 1;
-    right: clamp(-2rem, -2vw, -0.5rem);
+    right: clamp(0.9rem, 2.5vw, 1.5rem);
     bottom: clamp(1.5rem, 5vw, 3rem);
     width: clamp(9rem, 24vw, 13rem);
-    opacity: 0.72;
+    opacity: 1;
     pointer-events: auto;
   }
 
   .heroLogo {
     width: 100%;
+    filter: brightness(0) invert(1) drop-shadow(0 16px 24px rgba(0, 0, 0, 0.34));
   }
 
   .productGrid {
@@ -863,10 +864,10 @@
   }
 
   .heroVisual {
-    right: -1.25rem;
+    right: max(1rem, env(safe-area-inset-right));
     bottom: 1.25rem;
     width: clamp(7rem, 27vw, 10rem);
-    opacity: 0.68;
+    opacity: 1;
   }
 
   .sectionTitle,
