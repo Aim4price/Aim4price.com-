@@ -11494,7 +11494,109 @@
 }
 
 .dealerAssessmentGroup {
-  padding: 0.7rem 0;
+  padding: 0.9rem 0 0.8rem;
+}
+
+.detailedAssessmentHeader {
+  justify-items: center;
+  padding: 1rem 0 0.65rem;
+  text-align: center;
+}
+
+.dealerAssessmentGroup legend {
+  width: 100%;
+  margin: 0 0 0.75rem;
+  line-height: 1.35;
+  text-align: center;
+}
+
+.pathSelectionPlaceholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.85rem;
+  min-height: 8.5rem;
+  text-align: left;
+}
+
+.pathSelectionPlaceholder > div {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.pathSelectionPlaceholder strong {
+  color: #173f34;
+}
+
+.pathSelectionPlaceholder span:not(.pathLoadingSpinner) {
+  color: #6b7973;
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.pathLoadingSpinner {
+  width: 2rem;
+  height: 2rem;
+  flex: 0 0 auto;
+  border: 3px solid rgba(11, 81, 63, 0.16);
+  border-top-color: #0b684f;
+  border-radius: 50%;
+  animation: pathLoadingSpin 0.75s linear infinite;
+}
+
+@keyframes pathLoadingSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.tractorExtrasGrid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-top: 0.75rem;
+}
+
+.otherExtraFields {
+  margin-top: 1rem;
+}
+
+.extrasBreakdown small {
+  color: #6c7b74;
+  font-size: 0.7rem;
+  line-height: 1.35;
+}
+
+.replacementFieldsGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.8rem;
+}
+
+.replacementInputPanel {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+@media (max-width: 900px) {
+  .tractorExtrasGrid,
+  .replacementFieldsGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .pathSelectionPlaceholder {
+    align-items: flex-start;
+    min-height: 7rem;
+    padding: 1rem;
+  }
+
+  .tractorExtrasGrid,
+  .replacementFieldsGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .replacementInputPanel {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 .dealerAssessmentOption {
