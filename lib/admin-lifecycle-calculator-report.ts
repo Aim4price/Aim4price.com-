@@ -233,6 +233,7 @@ function comparisonRows(model: LifecycleWorkspaceModel): XlsxCellValue[][] {
     row("Amount financed", model.scenarios.map((scenario) => currency(scenario.loan.principal))),
     row("Interest rate", model.scenarios.map(() => pct(model.input.annualRatePct))),
     row("Finance term (months)", model.scenarios.map((scenario) => styled(scenario.loan.termMonths, "integer"))),
+    row("Effective balloon / residual", model.scenarios.map((scenario) => currency(scenario.loan.balloon))),
     row("Monthly instalment", model.scenarios.map((scenario) => currency(scenario.loan.monthlyPayment))),
     row("Total finance repayment", model.scenarios.map((scenario) => currency(scenario.loan.totalRepayment))),
     row("Total finance interest", model.scenarios.map((scenario) => currency(scenario.loan.totalInterest))),
@@ -312,7 +313,7 @@ function assumptionsSheet(context: LifecycleReportContext): XlsxSheet {
     [styled("Finance", "section"), styled("Deposit", "text"), currency(input.deposit)],
     [styled("Finance", "text"), styled("Annual rate", "text"), pct(input.annualRatePct)],
     [styled("Finance", "text"), styled("Term months", "text"), styled(input.financeTermMonths, "integer")],
-    [styled("Finance", "text"), styled("Balloon", "text"), currency(input.balloon)],
+    [styled("Finance", "text"), styled("Entered balloon", "text"), currency(input.balloon)],
     [styled("Finance", "text"), styled("Fees", "text"), currency(input.financeFees)],
     [styled("Service", "section"), styled("Service basis", "text"), styled(input.serviceBasis, "text")],
     [styled("Service", "text"), styled("Service interval", "text"), styled(input.serviceInterval, "decimal")],
@@ -367,7 +368,7 @@ function financeComparisonSheet(model: LifecycleWorkspaceModel): XlsxSheet {
     "Amount financed",
     "Annual rate",
     "Term months",
-    "Balloon",
+    "Effective balloon / residual",
     "Monthly payment",
     "Total payments",
     "Total interest",
@@ -392,7 +393,7 @@ function financeComparisonSheet(model: LifecycleWorkspaceModel): XlsxSheet {
         9: currency(scenario.deposit),
         11: pct(model.input.annualRatePct),
         12: styled(model.input.financeTermMonths, "integer"),
-        13: currency(model.input.balloon),
+        13: currency(scenario.loan.balloon),
       };
       return direct[rowNumber] ?? styled("", "text");
     });
@@ -433,7 +434,7 @@ function cashFlowSheet(model: LifecycleWorkspaceModel): XlsxSheet {
   const [standard, service, full] = model.scenarios;
   const rows: XlsxCellValue[][] = [
     [styled("Annual Cash-Flow Comparison", "title"), ...Array(headers.length - 1).fill("")],
-    [styled("When cash leaves the business under each structure", "subtitle"), ...Array(headers.length - 1).fill("")],
+    [styled("When cash leaves the business; a balloon settled from disposal proceeds is not counted twice", "subtitle"), ...Array(headers.length - 1).fill("")],
     [],
     headers.map((header) => styled(header, "tableHeader")),
     ...standard.cashFlow.map((standardYear, index) => {
@@ -590,6 +591,7 @@ function nextCycleSheet(context: LifecycleReportContext): XlsxSheet {
     [styled("Disposal trade value", "text"), currency(context.model.future.tradeValue.grossAmount)],
     [styled("Finance settlement", "text"), currency(preferred.settlementAtDisposal)],
     [styled("Available equity", "text"), currency(preferred.equityAtDisposal)],
+    [styled("Negative equity shortfall", "text"), currency(nextCycle.negativeEquityShortfall)],
     [styled("Next service allocation", "text"), currency(nextCycle.serviceAllocation)],
     [styled("Next maintenance allocation", "text"), currency(nextCycle.reserveAllocation)],
     [styled("Remaining replacement deposit", "text"), currency(nextCycle.remainingDeposit)],
