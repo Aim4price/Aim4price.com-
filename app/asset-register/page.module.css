@@ -36229,13 +36229,6 @@ button.documentOpenLink {
   line-height: 1.15;
 }
 
-.projectionConditionButton span {
-  color: #6b7c74;
-  font-size: 0.68rem;
-  font-weight: 720;
-  line-height: 1.2;
-}
-
 .projectionConditionButtonActive,
 .projectionConditionButtonActive:hover {
   color: #ffffff;
@@ -36244,10 +36237,6 @@ button.documentOpenLink {
   box-shadow:
     0 11px 22px rgba(25, 116, 84, 0.18),
     inset 0 1px 0 rgba(255, 255, 255, 0.16);
-}
-
-.projectionConditionButtonActive span {
-  color: rgba(235, 249, 243, 0.8);
 }
 
 .projectionSimpleMeta {

@@ -212,7 +212,6 @@ function projectionConditionRetainedPercent(condition: ConditionKey): number {
 const PROJECTION_CONDITION_OPTIONS = conditionOptions.map((option) => ({
   key: option.key,
   label: option.label,
-  retainedPercent: projectionConditionRetainedPercent(option.key),
 }));
 type UsageMetric = 'hours' | 'km';
 type AssetDraftUsageMetric = UsageMetric | 'percentage' | 'not_applicable';
@@ -20191,7 +20190,6 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                             onClick={() => handleProjectionPreset({ targetCondition: option.key })}
                           >
                             <strong>{option.label}</strong>
-                            <span>{option.retainedPercent}% retained</span>
                           </button>
                         );
                       })}
