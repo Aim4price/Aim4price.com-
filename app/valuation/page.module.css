@@ -25,6 +25,88 @@
   color: #155e75;
 }
 
+.detailedAssessmentEntry {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 0.9rem;
+  padding: 0.85rem 0.9rem;
+  border: 1px solid rgba(5, 94, 74, 0.14);
+  border-radius: 12px;
+  background: rgba(241, 249, 245, 0.88);
+}
+
+.detailedAssessmentEntry > div {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.detailedAssessmentEntry strong {
+  color: #123f34;
+  font-size: 0.86rem;
+}
+
+.detailedAssessmentEntry span {
+  color: #5f746d;
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
+.detailedAssessmentToggle {
+  flex: 0 0 auto;
+  min-height: 40px;
+  padding: 0.55rem 0.8rem;
+  border: 1px solid #0b7a5c;
+  border-radius: 10px;
+  background: #fff;
+  color: #07513f;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.detailedAssessmentToggle:hover {
+  background: #e8f6f0;
+}
+
+.detailedAssessmentPanel {
+  margin-top: 0.9rem;
+  padding: 0.3rem 0.9rem 0.9rem;
+  border: 1px solid rgba(5, 94, 74, 0.16);
+  border-radius: 14px;
+  background: #fff;
+}
+
+.detailedAssessmentHeader {
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.9rem 0 0.45rem;
+}
+
+.detailedAssessmentHeader strong {
+  color: #0b513f;
+  font-size: 0.95rem;
+}
+
+.detailedAssessmentHeader span {
+  color: #64746d;
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+
+.detailedAssessmentReady {
+  margin: 0.75rem 0 0;
+  color: #087358;
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.popularityStepCard .popularityStars {
+  margin-top: 0.85rem;
+}
+
 .extrasBreakdown {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
@@ -180,6 +262,15 @@
   }
 
   .replacementNoticeActions button {
+    width: 100%;
+  }
+
+  .detailedAssessmentEntry {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .detailedAssessmentToggle {
     width: 100%;
   }
 }
@@ -6455,7 +6546,7 @@
 
 .resultFactsGrid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 0.75rem;
   margin-top: 0.1rem;
 }
