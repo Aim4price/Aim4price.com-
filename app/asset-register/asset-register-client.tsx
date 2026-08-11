@@ -59,6 +59,8 @@ import {
 } from '../../lib/asset-groups-shared';
 import styles from './page.module.css';
 import updateStyles from './asset-update-refinements.module.css';
+import { conditionOptions } from '../../lib/tractor-data';
+import { CONDITION_FACTORS } from '../../lib/valuation/shared';
 
 type NoticeTone = 'success' | 'warning' | 'error';
 type PartnerType = 'dealer' | 'finance' | 'insurance';
@@ -200,6 +202,18 @@ type RevalueAdvancedAssumptionsRequest = {
 };
 type ConditionKey = 'excellent' | 'good' | 'fair' | 'used' | 'serious';
 type AssetConditionValue = ConditionKey | '';
+
+const PROJECTION_INFLATION_PRESETS = ['3', '5', '8', '10'] as const;
+
+function projectionConditionRetainedPercent(condition: ConditionKey): number {
+  return Math.round((CONDITION_FACTORS[condition] ?? CONDITION_FACTORS.good) * 100);
+}
+
+const PROJECTION_CONDITION_OPTIONS = conditionOptions.map((option) => ({
+  key: option.key,
+  label: option.label,
+  retainedPercent: projectionConditionRetainedPercent(option.key),
+}));
 type UsageMetric = 'hours' | 'km';
 type AssetDraftUsageMetric = UsageMetric | 'percentage' | 'not_applicable';
 type ProjectionUsageMetric = UsageMetric | 'percent';
@@ -776,6 +790,8 @@ type AssetFutureProjection = {
   usageMetric?: ProjectionUsageMetric;
   usageUnitLabel?: string;
   condition: ConditionKey;
+  currentCondition: ConditionKey;
+  targetCondition: ConditionKey;
   current: ProjectionSnapshot;
   projected: ProjectionSnapshot;
 };
@@ -972,6 +988,7 @@ type DraftPhotoItem = {
 type ProjectionFormState = {
   targetYear: string;
   inflationRatePct: string;
+  targetCondition: ConditionKey;
   extraHours: string;
   targetLifeWorkedPercent: string;
 };
@@ -1567,6 +1584,7 @@ function createDefaultProjectionForm(asset?: RegisterAsset | null): ProjectionFo
   return {
     targetYear: String(nextYear),
     inflationRatePct: '5',
+    targetCondition: asset?.condition || 'good',
     extraHours: '',
     targetLifeWorkedPercent: currentLifeWorkedPercent === null ? '' : formatLifetimePercentPlain(currentLifeWorkedPercent),
   };
@@ -13784,6 +13802,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
           assetId: asset.id,
           targetYear,
           inflationRatePct,
+          targetCondition: formState.targetCondition,
           ...(usesPercentProjection
             ? { targetLifeWorkedPercent: Math.round(targetLifeWorkedPercent * 10) / 10 }
             : { extraUsage }),
@@ -13848,7 +13867,21 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
   }
 
   function handleProjectionPreset(nextState: Partial<ProjectionFormState>) {
-    updateProjectionForm(nextState);
+    if (!projectionAsset) {
+      updateProjectionForm(nextState);
+      return;
+    }
+
+    const nextForm = {
+      ...projectionForm,
+      ...nextState,
+    };
+
+    setProjectionForm(nextForm);
+    setProjectionResult(null);
+    setProjectionError(null);
+    setShouldScrollToProjectionResult(false);
+    void requestProjection(projectionAsset, nextForm);
   }
 
   function handleProjectionSubmit() {
@@ -14015,6 +14048,8 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
   const projectionUsageMetaLabel = projectionUsageMetric === 'percent' ? 'Worked %' : projectionUsageMetric === 'km' ? 'Kilometres' : 'Hours';
   const projectionCurrentWorkedPercent = projectionResult?.current.lifeWorkedPercent ?? (projectionAsset ? getAssetLifeWorkedPercent(projectionAsset) : null);
   const projectionTargetWorkedPercent = projectionResult?.projected.lifeWorkedPercent ?? projectionResult?.targetLifeWorkedPercent ?? null;
+  const projectionCurrentCondition = projectionResult?.currentCondition ?? (projectionAsset?.condition || 'good');
+  const projectionTargetCondition = projectionResult?.targetCondition ?? projectionForm.targetCondition;
   const pricingPreviewWizardStep = pricingPreview?.method === 'aim4price'
     ? isLoadingPricingPreview || pricingPreview.result || pricingPreview.error
       ? 3
@@ -20044,7 +20079,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
             <div className={`${styles.modalHeader} ${styles.projectionModalHeader}`}>
               <div className={styles.modalHeaderText}>
                 <h3 id="projection-title">{projectionAsset.title}</h3>
-                <p>{projectionUsesPercentUsage ? 'Change the year, inflation, or expected worked percentage. Then calculate the estimated future value.' : 'Change the year, inflation, or extra usage. Then calculate the estimated future value.'}</p>
+                <p>Choose the future year, inflation, condition and usage. Quick selections recalculate instantly.</p>
               </div>
 
               <button type="button" className={styles.modalCloseButton} onClick={closeProjectionModal} aria-label="Close future price modal">
@@ -20060,7 +20095,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                     <strong>{money(projectionAsset.value)}</strong>
                   </div>
                   <div>
-                    <span>Condition</span>
+                    <span>Current condition</span>
                     <strong>{conditionLabel(projectionAsset.condition)}</strong>
                   </div>
                   <div>
@@ -20115,16 +20150,52 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                   </div>
 
                   <div className={styles.projectionQuickRow}>
-                    <span>Quick inflation</span>
-                    <button type="button" className={styles.projectionPresetButton} onClick={() => handleProjectionPreset({ inflationRatePct: '5' })}>
-                      5%
-                    </button>
-                    <button type="button" className={styles.projectionPresetButton} onClick={() => handleProjectionPreset({ inflationRatePct: '8' })}>
-                      8%
-                    </button>
-                    <button type="button" className={styles.projectionPresetButton} onClick={() => handleProjectionPreset({ inflationRatePct: '10' })}>
-                      10%
-                    </button>
+                    <div className={styles.projectionQuickCopy}>
+                      <span>Quick inflation</span>
+                      <small>Choose a rate to recalculate instantly.</small>
+                    </div>
+                    <div className={styles.projectionQuickButtons}>
+                      {PROJECTION_INFLATION_PRESETS.map((rate) => {
+                        const isSelected = projectionForm.inflationRatePct === rate;
+
+                        return (
+                          <button
+                            key={rate}
+                            type="button"
+                            className={`${styles.projectionPresetButton} ${isSelected ? styles.projectionPresetButtonActive : ''}`}
+                            aria-pressed={isSelected}
+                            onClick={() => handleProjectionPreset({ inflationRatePct: rate })}
+                          >
+                            {rate}%
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className={styles.projectionConditionCard}>
+                    <div className={styles.projectionConditionHeader}>
+                      <span>Future condition</span>
+                      <small>Select the expected condition. The retained value percentage matches the estimate page.</small>
+                    </div>
+                    <div className={styles.projectionConditionGrid}>
+                      {PROJECTION_CONDITION_OPTIONS.map((option) => {
+                        const isSelected = projectionForm.targetCondition === option.key;
+
+                        return (
+                          <button
+                            key={option.key}
+                            type="button"
+                            className={`${styles.projectionConditionButton} ${isSelected ? styles.projectionConditionButtonActive : ''}`}
+                            aria-pressed={isSelected}
+                            onClick={() => handleProjectionPreset({ targetCondition: option.key })}
+                          >
+                            <strong>{option.label}</strong>
+                            <span>{option.retainedPercent}% retained</span>
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
 
                   <button type="button" className={`${styles.primaryButton} ${styles.projectionFullWidthButton}`} onClick={handleProjectionSubmit} disabled={isLoadingProjection}>
@@ -20156,6 +20227,13 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                       <div>
                         <span>Inflation</span>
                         <strong>{formatPercent(projectionResult.inflationRatePct)} p.a.</strong>
+                      </div>
+                      <div>
+                        <span>Condition</span>
+                        <strong>{conditionLabel(projectionCurrentCondition)} → {conditionLabel(projectionTargetCondition)}</strong>
+                        <small>
+                          {projectionConditionRetainedPercent(projectionCurrentCondition)}% → {projectionConditionRetainedPercent(projectionTargetCondition)}% retained
+                        </small>
                       </div>
                     </div>
                   </section>

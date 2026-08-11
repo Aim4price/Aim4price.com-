@@ -1,9 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '../../../../lib/auth-session';
 import { calculateFuturePriceForAsset } from '../../../../lib/asset-register-projection';
+import type { ConditionKey } from '../../../../lib/tractor-data';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+
+const CONDITION_KEYS: readonly ConditionKey[] = ['excellent', 'good', 'fair', 'used', 'serious'];
+
+function isConditionKey(value: string): value is ConditionKey {
+  return CONDITION_KEYS.includes(value as ConditionKey);
+}
 
 function unauthorized() {
   return NextResponse.json({ ok: false, error: 'You must be signed in.' }, { status: 401 });
@@ -27,6 +34,7 @@ export async function POST(request: NextRequest) {
     extraHours: number;
     extraUsage: number;
     targetLifeWorkedPercent: number;
+    targetCondition: string;
   }>;
 
   const assetId = String(body.assetId ?? '').trim();
@@ -37,6 +45,8 @@ export async function POST(request: NextRequest) {
     typeof body.targetLifeWorkedPercent !== 'undefined' &&
     String(body.targetLifeWorkedPercent).trim() !== '';
   const targetLifeWorkedPercent = hasTargetLifeWorkedPercent ? Number(body.targetLifeWorkedPercent) : null;
+  const targetConditionInput = String(body.targetCondition ?? '').trim().toLowerCase();
+  const targetCondition = targetConditionInput && isConditionKey(targetConditionInput) ? targetConditionInput : null;
 
   if (!assetId) {
     return badRequest('A valid asset id is required.');
@@ -48,6 +58,10 @@ export async function POST(request: NextRequest) {
 
   if (!Number.isFinite(inflationRatePct)) {
     return badRequest('A valid inflation percentage is required.');
+  }
+
+  if (targetConditionInput && !targetCondition) {
+    return badRequest('Choose a valid future condition.');
   }
 
   if (!Number.isFinite(extraUsage) || extraUsage < 0) {
@@ -66,6 +80,7 @@ export async function POST(request: NextRequest) {
       inflationRatePct,
       extraHours: extraUsage,
       targetLifeWorkedPercent,
+      targetCondition,
     });
 
     return NextResponse.json({ ok: true, projection });
