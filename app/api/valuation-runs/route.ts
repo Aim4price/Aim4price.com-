@@ -188,7 +188,9 @@ function buildInput(
     frontLoaderReplacementPriceExVat: normalizeReplacementPrice(body.frontLoaderReplacementPriceExVat),
     gpsReplacementPriceExVat: normalizeReplacementPrice(body.gpsReplacementPriceExVat),
     otherExtraName: String(body.otherExtraName ?? '').trim().slice(0, 100) || null,
-    otherExtraValueExVat: normalizeReplacementPrice(body.otherExtraValueExVat),
+    otherExtraReplacementPriceExVat: normalizeReplacementPrice(
+      body.otherExtraReplacementPriceExVat ?? body.otherExtraValueExVat,
+    ),
     userReplacementPriceExVat,
     advancedAssumptions: body.advancedAssumptions ?? null,
     selectedMethod,

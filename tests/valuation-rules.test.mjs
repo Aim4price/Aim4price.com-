@@ -291,11 +291,14 @@ test('selected tractor extras always add a calculated value and are shown transp
 
   assert.doesNotMatch(tractorSource, /!model\.(frontPtoSupported|frontLoaderSupported|gpsSupported)/);
   assert.match(tractorSource, /replacementPriceOverrideExVat/);
-  assert.match(serverSource, /frontPtoValueExVat \+ frontLoaderValueExVat \+ gpsValueExVat \+ otherExtraValueExVat/);
-  assert.match(valuationSource, /Tractor extras value breakdown/);
+  assert.match(serverSource, /combinedBaseCalculation/);
+  assert.match(serverSource, /combinedBaseCalculation\.finalValueExVat - baseAim4priceValueExVat/);
+  assert.match(serverSource, /otherExtraReplacementPriceExVat/);
+  assert.doesNotMatch(valuationSource, /Tractor extras value breakdown/);
   assert.match(valuationSource, /<strong>Other<\/strong>/);
-  assert.match(valuationSource, /Other extra current value \(excl\. VAT\)/);
-  assert.match(valuationSource, /Front PTO replacement price \(excl\. VAT\)/);
+  assert.match(valuationSource, /Add another extra/);
+  assert.match(valuationSource, /Replacement price \(excl\. VAT\)/);
+  assert.match(valuationSource, /Front PTO replacement/);
   assert.match(valuationSource, /frontLoaderValueExVat/);
   assert.match(valuationSource, /gpsValueExVat/);
 });
@@ -325,6 +328,16 @@ test('detailed condition and popularity are standard inputs rather than dealer-o
   assert.match(tractorRoute, /advancedAssumptionsRequireActiveAccess/);
   assert.doesNotMatch(genericRoute, /accountType !== 'dealer'/);
   assert.doesNotMatch(tractorRoute, /accountType !== 'dealer'/);
+});
+
+test('detailed assessment and extras keep a clear left-aligned hierarchy', async () => {
+  const valuationSource = await readFile(new URL('../app/valuation/valuation-client.tsx', import.meta.url), 'utf8');
+  const valuationStyles = await readFile(new URL('../app/valuation/page.module.css', import.meta.url), 'utf8');
+
+  assert.match(valuationStyles, /\.detailedAssessmentHeader\s*\{[^}]*justify-items:\s*start;[^}]*text-align:\s*left;/s);
+  assert.match(valuationStyles, /\.dealerAssessmentGroup legend\s*\{[^}]*text-align:\s*left;/s);
+  assert.match(valuationStyles, /\.otherExtraCardNote\s*\{[^}]*white-space:\s*nowrap;/s);
+  assert.doesNotMatch(valuationSource, /aria-label="Tractor extras value breakdown"/);
 });
 
 test('valuation flow supports accessible back-step navigation and concise actions', async () => {

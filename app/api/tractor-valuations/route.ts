@@ -91,7 +91,9 @@ function buildInputFromSearchParams(request: NextRequest): RunValuationInput | n
     frontLoaderReplacementPriceExVat: normalizePositiveMoney(searchParams.get('frontLoaderReplacementPriceExVat')),
     gpsReplacementPriceExVat: normalizePositiveMoney(searchParams.get('gpsReplacementPriceExVat')),
     otherExtraName: normalizeOtherExtraName(searchParams.get('otherExtraName')),
-    otherExtraValueExVat: normalizePositiveMoney(searchParams.get('otherExtraValueExVat')),
+    otherExtraReplacementPriceExVat: normalizePositiveMoney(
+      searchParams.get('otherExtraReplacementPriceExVat') ?? searchParams.get('otherExtraValueExVat'),
+    ),
     userReplacementPriceExVat: normalizePositiveMoney(searchParams.get('userReplacementPriceExVat')),
     advancedAssumptions: advancedAssumptionsWereRequested(advancedAssumptions) ? advancedAssumptions : null,
   };
@@ -123,7 +125,9 @@ function buildInputFromBody(body: Partial<RunValuationInput> | null | undefined)
     frontLoaderReplacementPriceExVat: normalizePositiveMoney(body.frontLoaderReplacementPriceExVat),
     gpsReplacementPriceExVat: normalizePositiveMoney(body.gpsReplacementPriceExVat),
     otherExtraName: normalizeOtherExtraName(body.otherExtraName),
-    otherExtraValueExVat: normalizePositiveMoney(body.otherExtraValueExVat),
+    otherExtraReplacementPriceExVat: normalizePositiveMoney(
+      body.otherExtraReplacementPriceExVat ?? body.otherExtraValueExVat,
+    ),
     userReplacementPriceExVat: normalizePositiveMoney(body.userReplacementPriceExVat),
     advancedAssumptions: body.advancedAssumptions ?? null,
   };

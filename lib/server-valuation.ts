@@ -244,6 +244,24 @@ export async function runServerValuation(input: RunValuationInput): Promise<Resu
     assumptionOptions,
   );
   const baseAim4priceValueExVat = baseCalculation.finalValueExVat;
+  const otherExtraName = normalizeText(input.otherExtraName).slice(0, 100) || null;
+  const otherExtraReplacementPriceExVat = otherExtraName
+    ? roundMoney(toPositiveNumber(input.otherExtraReplacementPriceExVat ?? input.otherExtraValueExVat) ?? 0)
+    : 0;
+  const assetAndOtherReplacementPriceExVat = roundMoney(
+    Math.max(0, replacementPriceUsedExVat ?? 0) + otherExtraReplacementPriceExVat,
+  );
+  const combinedBaseCalculation = otherExtraReplacementPriceExVat > 0
+    ? calculateTractorAim4priceDetails(
+        model,
+        safeYear,
+        safeHours,
+        input.condition,
+        assetAndOtherReplacementPriceExVat,
+        assumptionOptions,
+      )
+    : baseCalculation;
+  const otherExtraValueExVat = Math.max(0, combinedBaseCalculation.finalValueExVat - baseAim4priceValueExVat);
 
   const frontPtoReplacementPriceExVat = input.frontPto
     ? getTractorFrontPtoReplacementPrice(toPositiveNumber(input.frontPtoReplacementPriceExVat))
@@ -254,8 +272,12 @@ export async function runServerValuation(input: RunValuationInput): Promise<Resu
   const gpsReplacementPriceExVat = input.gpsEnabled
     ? getTractorGpsReplacementPrice(input.gpsType, toPositiveNumber(input.gpsReplacementPriceExVat))
     : null;
-  const otherExtraName = normalizeText(input.otherExtraName).slice(0, 100) || null;
-  const otherExtraValueExVat = otherExtraName ? roundMoney(toPositiveNumber(input.otherExtraValueExVat) ?? 0) : 0;
+  const totalReplacementPriceUsedExVat = roundMoney(
+    assetAndOtherReplacementPriceExVat
+      + (frontPtoReplacementPriceExVat ?? 0)
+      + (frontLoaderReplacementPriceExVat ?? 0)
+      + (gpsReplacementPriceExVat ?? 0),
+  );
   const frontPtoValueExVat = calculateTractorFrontPtoValue(
     model,
     safeYear,
@@ -279,7 +301,8 @@ export async function runServerValuation(input: RunValuationInput): Promise<Resu
     safeYear,
     gpsReplacementPriceExVat,
   );
-  const extrasValueExVat = frontPtoValueExVat + frontLoaderValueExVat + gpsValueExVat + otherExtraValueExVat;
+  const knownExtrasValueExVat = frontPtoValueExVat + frontLoaderValueExVat + gpsValueExVat;
+  const extrasValueExVat = knownExtrasValueExVat + otherExtraValueExVat;
 
   const aim4priceValueExVat = addExtras(baseAim4priceValueExVat, extrasValueExVat);
   const previewValueExVat = aim4priceValueExVat;
@@ -308,14 +331,16 @@ export async function runServerValuation(input: RunValuationInput): Promise<Resu
     frontLoaderReplacementPriceExVat,
     gpsReplacementPriceExVat,
     otherExtraName,
+    otherExtraReplacementPriceExVat: otherExtraReplacementPriceExVat || null,
     otherExtraValueExVat,
     replacementPriceBasis,
     replacementPriceUsedExVat,
+    totalReplacementPriceUsedExVat,
     userReplacementPriceExVat,
     maxLifetimeHours,
     advancedAssumptions,
-    salvagePercent: baseCalculation.salvagePercent,
-    salvageValueExVat: baseCalculation.salvageValueExVat,
-    isSalvageEstimate: baseCalculation.isSalvageEstimate && extrasValueExVat === 0,
+    salvagePercent: combinedBaseCalculation.salvagePercent,
+    salvageValueExVat: combinedBaseCalculation.salvageValueExVat,
+    isSalvageEstimate: combinedBaseCalculation.isSalvageEstimate && knownExtrasValueExVat === 0,
   };
 }

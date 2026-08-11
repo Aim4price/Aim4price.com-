@@ -17,6 +17,7 @@ export type RunValuationInput = {
   frontLoaderReplacementPriceExVat?: number | null;
   gpsReplacementPriceExVat?: number | null;
   otherExtraName?: string | null;
+  otherExtraReplacementPriceExVat?: number | null;
   otherExtraValueExVat?: number | null;
   userReplacementPriceExVat?: number | null;
   advancedAssumptions?: AdvancedAssumptionsInput | null;
@@ -45,9 +46,11 @@ export type Result = {
   frontLoaderReplacementPriceExVat: number | null;
   gpsReplacementPriceExVat: number | null;
   otherExtraName: string | null;
+  otherExtraReplacementPriceExVat: number | null;
   otherExtraValueExVat: number;
   replacementPriceBasis: 'aim4price' | 'user';
   replacementPriceUsedExVat: number | null;
+  totalReplacementPriceUsedExVat: number | null;
   userReplacementPriceExVat: number | null;
   maxLifetimeHours: number | null;
   advancedAssumptions: NormalizedAdvancedAssumptions | null;
