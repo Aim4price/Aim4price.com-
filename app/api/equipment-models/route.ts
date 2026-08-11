@@ -39,7 +39,10 @@ export async function GET(request: NextRequest) {
       limit: limit ? Number(limit) : null,
     });
 
-    return NextResponse.json({ ok: true, count: models.length, models });
+    return NextResponse.json(
+      { ok: true, count: models.length, models },
+      { headers: { 'Cache-Control': 'public, max-age=60, s-maxage=300, stale-while-revalidate=900' } },
+    );
   } catch (error) {
     console.error('equipment-models route failed', error);
     return NextResponse.json(

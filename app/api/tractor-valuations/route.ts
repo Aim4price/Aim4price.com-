@@ -5,7 +5,10 @@ import { getAnyServerSession } from '../../../lib/auth-session';
 import { runServerValuation } from '../../../lib/server-valuation';
 import type { ConditionKey } from '../../../lib/tractor-data';
 import type { GpsType, RunValuationInput } from '../../../lib/tractor-logic';
-import { advancedAssumptionsWereRequested } from '../../../lib/valuation/shared';
+import {
+  advancedAssumptionsWereRequested,
+  dealerAssessmentWasRequestedFromAssumptions,
+} from '../../../lib/valuation/shared';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -120,12 +123,11 @@ function badRequest(message: string) {
 }
 
 
-async function hasActiveAdvancedAccess(): Promise<boolean> {
+async function getAdvancedAccessProfile() {
   const session = await getAnyServerSession();
   const user = session?.user;
-  if (!user?.id) return false;
-  const profile = await getAccountProfile({ id: user.id, name: user.name, email: user.email });
-  return profile.accountStatus === 'active';
+  if (!user?.id) return null;
+  return getAccountProfile({ id: user.id, name: user.name, email: user.email });
 }
 
 function advancedAccessDenied() {
@@ -138,9 +140,19 @@ function advancedAccessDenied() {
   );
 }
 
+function dealerAssessmentAccessDenied() {
+  return NextResponse.json<TractorValuationApiResponse>(
+    { ok: false, error: 'Dealer assessments are available for active dealer accounts.' },
+    { status: 403 },
+  );
+}
+
 function isAdvancedValidationError(error: unknown): boolean {
   if (!(error instanceof Error)) return false;
-  return error.message.startsWith('Expected lifetime') || error.message.startsWith('Condition retained value');
+  return error.message.startsWith('Expected lifetime')
+    || error.message.startsWith('Condition retained value')
+    || error.message.includes('dealer assessment')
+    || error.message.startsWith('Popularity must');
 }
 
 async function getUsageUserId(): Promise<string | null> {
@@ -157,8 +169,12 @@ async function handleValuation(input: RunValuationInput | null) {
     return badRequest('modelId, year, hours and condition are required.');
   }
 
-  if (advancedAssumptionsWereRequested(input.advancedAssumptions) && !(await hasActiveAdvancedAccess())) {
-    return advancedAccessDenied();
+  if (advancedAssumptionsWereRequested(input.advancedAssumptions)) {
+    const profile = await getAdvancedAccessProfile();
+    if (profile?.accountStatus !== 'active') return advancedAccessDenied();
+    if (dealerAssessmentWasRequestedFromAssumptions(input.advancedAssumptions) && profile.accountType !== 'dealer') {
+      return dealerAssessmentAccessDenied();
+    }
   }
 
   try {

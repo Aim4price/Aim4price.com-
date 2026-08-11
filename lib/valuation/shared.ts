@@ -1,4 +1,12 @@
 import type { ConditionKey, TractorType } from '../tractor-data';
+import {
+  dealerAssessmentWasRequested,
+  getDealerConditionFactor,
+  normalizeDealerAssessment,
+  type DealerAssessmentInput,
+  type NormalizedDealerAssessment,
+} from './dealer-assessment';
+import { resolveSalvageValue } from './valuation-rules';
 
 export const CONDITION_FACTORS: Record<ConditionKey, number> = {
   excellent: 0.95,
@@ -23,11 +31,13 @@ export type AdvancedAssumptionsInput = {
   maxLifetimeUsage?: number | string | null;
   maxLifetimeHours?: number | string | null;
   conditionFactorPercent?: number | string | null;
+  dealerAssessment?: DealerAssessmentInput;
 } | null | undefined;
 
 export type NormalizedAdvancedAssumptions = {
   maxLifetimeUsage: number | null;
   conditionFactorPercent: number | null;
+  dealerAssessment: NormalizedDealerAssessment | null;
 };
 
 export type EngineHoursMethodInput = {
@@ -40,6 +50,7 @@ export type EngineHoursMethodInput = {
   floorPercent?: number;
   baseYear?: number;
   conditionFactorOverride?: number | null;
+  marketabilityFactor?: number | null;
 };
 
 export type EngineHoursMethodResult = {
@@ -49,6 +60,10 @@ export type EngineHoursMethodResult = {
   averageDepPct: number;
   depreciatedValueExVat: number;
   conditionAdjustedValueExVat: number;
+  marketabilityAdjustedValueExVat: number;
+  salvagePercent: number;
+  salvageValueExVat: number;
+  isSalvageEstimate: boolean;
   finalValueExVat: number;
 };
 
@@ -59,12 +74,17 @@ export type YearConditionMethodInput = {
   floorPercent?: number;
   baseYear?: number;
   conditionFactorOverride?: number | null;
+  marketabilityFactor?: number | null;
 };
 
 export type YearConditionMethodResult = {
   ageDepPct: number;
   depreciatedValueExVat: number;
   conditionAdjustedValueExVat: number;
+  marketabilityAdjustedValueExVat: number;
+  salvagePercent: number;
+  salvageValueExVat: number;
+  isSalvageEstimate: boolean;
   finalValueExVat: number;
 };
 
@@ -74,6 +94,7 @@ export type PercentUsedMethodInput = {
   condition: ConditionKey;
   floorPercent?: number;
   conditionFactorOverride?: number | null;
+  marketabilityFactor?: number | null;
 };
 
 export type PercentUsedMethodResult = {
@@ -81,6 +102,10 @@ export type PercentUsedMethodResult = {
   remainingPercent: number;
   baseValueExVat: number;
   conditionAdjustedValueExVat: number;
+  marketabilityAdjustedValueExVat: number;
+  salvagePercent: number;
+  salvageValueExVat: number;
+  isSalvageEstimate: boolean;
   finalValueExVat: number;
 };
 
@@ -135,7 +160,13 @@ export function advancedAssumptionsWereRequested(value: unknown): boolean {
   const source = asAdvancedObject(value);
   if (!source) return false;
   return hasAdvancedValue(pickAdvancedValue(source, ['maxLifetimeUsage', 'maxLifetimeHours']))
-    || hasAdvancedValue(pickAdvancedValue(source, ['conditionFactorPercent']));
+    || hasAdvancedValue(pickAdvancedValue(source, ['conditionFactorPercent']))
+    || dealerAssessmentWasRequested(pickAdvancedValue(source, ['dealerAssessment']));
+}
+
+export function dealerAssessmentWasRequestedFromAssumptions(value: unknown): boolean {
+  const source = asAdvancedObject(value);
+  return Boolean(source && dealerAssessmentWasRequested(pickAdvancedValue(source, ['dealerAssessment'])));
 }
 
 export function normalizeAdvancedAssumptions(
@@ -147,12 +178,14 @@ export function normalizeAdvancedAssumptions(
 
   const lifetimeRaw = pickAdvancedValue(source, ['maxLifetimeUsage', 'maxLifetimeHours']);
   const conditionRaw = pickAdvancedValue(source, ['conditionFactorPercent']);
+  const dealerAssessmentRaw = pickAdvancedValue(source, ['dealerAssessment']);
   const lifetimeProvided = hasAdvancedValue(lifetimeRaw);
   const conditionProvided = hasAdvancedValue(conditionRaw);
 
   const normalized: NormalizedAdvancedAssumptions = {
     maxLifetimeUsage: null,
     conditionFactorPercent: null,
+    dealerAssessment: null,
   };
 
   if (lifetimeProvided) {
@@ -181,11 +214,18 @@ export function normalizeAdvancedAssumptions(
     normalized.conditionFactorPercent = Math.round(conditionPercent * 10) / 10;
   }
 
-  return normalized.maxLifetimeUsage !== null || normalized.conditionFactorPercent !== null ? normalized : null;
+  normalized.dealerAssessment = normalizeDealerAssessment(dealerAssessmentRaw as DealerAssessmentInput);
+
+  return normalized.maxLifetimeUsage !== null || normalized.conditionFactorPercent !== null || normalized.dealerAssessment !== null
+    ? normalized
+    : null;
 }
 
 export function getAdvancedConditionFactorOverride(advancedAssumptions?: NormalizedAdvancedAssumptions | null): number | null {
-  if (!advancedAssumptions || advancedAssumptions.conditionFactorPercent === null) return null;
+  if (!advancedAssumptions) return null;
+  const dealerFactor = getDealerConditionFactor(advancedAssumptions.dealerAssessment);
+  if (dealerFactor !== null) return dealerFactor;
+  if (advancedAssumptions.conditionFactorPercent === null) return null;
   return advancedAssumptions.conditionFactorPercent / 100;
 }
 
@@ -246,13 +286,9 @@ export function calculateEngineHoursValue(input: EngineHoursMethodInput): Engine
   const averageDepPct = Math.round((ageDepPct + usageDepPct) / 2);
   const depreciatedValueExVat = replacementPriceExVat * (1 - averageDepPct / 100);
   const conditionAdjustedValueExVat = applyCondition(depreciatedValueExVat, input.condition, input.conditionFactorOverride);
-  const finalValueExVat = roundMoney(
-    applyFloor(
-      conditionAdjustedValueExVat,
-      replacementPriceExVat,
-      input.floorPercent ?? DEFAULT_ENGINE_FLOOR_PERCENT,
-    ),
-  );
+  const marketabilityFactor = clamp(Number(input.marketabilityFactor) || 1, 0, 1);
+  const marketabilityAdjustedValueExVat = conditionAdjustedValueExVat * marketabilityFactor;
+  const salvage = resolveSalvageValue(marketabilityAdjustedValueExVat, replacementPriceExVat);
 
   return {
     hoursUsed,
@@ -261,7 +297,11 @@ export function calculateEngineHoursValue(input: EngineHoursMethodInput): Engine
     averageDepPct,
     depreciatedValueExVat: roundMoney(depreciatedValueExVat),
     conditionAdjustedValueExVat: roundMoney(conditionAdjustedValueExVat),
-    finalValueExVat,
+    marketabilityAdjustedValueExVat: roundMoney(marketabilityAdjustedValueExVat),
+    salvagePercent: salvage.salvagePercent,
+    salvageValueExVat: salvage.salvageValueExVat,
+    isSalvageEstimate: salvage.isSalvageEstimate,
+    finalValueExVat: salvage.finalValueExVat,
   };
 }
 
@@ -270,19 +310,19 @@ export function calculateYearConditionValue(input: YearConditionMethodInput): Ye
   const ageDepPct = tractorAgeDepPct(input.yearModel, input.baseYear ?? currentBaseYear());
   const depreciatedValueExVat = replacementPriceExVat * (1 - ageDepPct / 100);
   const conditionAdjustedValueExVat = applyCondition(depreciatedValueExVat, input.condition, input.conditionFactorOverride);
-  const finalValueExVat = roundMoney(
-    applyFloor(
-      conditionAdjustedValueExVat,
-      replacementPriceExVat,
-      input.floorPercent ?? DEFAULT_NON_PROPELLED_FLOOR_PERCENT,
-    ),
-  );
+  const marketabilityFactor = clamp(Number(input.marketabilityFactor) || 1, 0, 1);
+  const marketabilityAdjustedValueExVat = conditionAdjustedValueExVat * marketabilityFactor;
+  const salvage = resolveSalvageValue(marketabilityAdjustedValueExVat, replacementPriceExVat);
 
   return {
     ageDepPct,
     depreciatedValueExVat: roundMoney(depreciatedValueExVat),
     conditionAdjustedValueExVat: roundMoney(conditionAdjustedValueExVat),
-    finalValueExVat,
+    marketabilityAdjustedValueExVat: roundMoney(marketabilityAdjustedValueExVat),
+    salvagePercent: salvage.salvagePercent,
+    salvageValueExVat: salvage.salvageValueExVat,
+    isSalvageEstimate: salvage.isSalvageEstimate,
+    finalValueExVat: salvage.finalValueExVat,
   };
 }
 
@@ -292,19 +332,19 @@ export function calculatePercentUsedValue(input: PercentUsedMethodInput): Percen
   const remainingPercent = 100 - percentUsed;
   const baseValueExVat = replacementPriceExVat * (remainingPercent / 100);
   const conditionAdjustedValueExVat = applyCondition(baseValueExVat, input.condition, input.conditionFactorOverride);
-  const finalValueExVat = roundMoney(
-    applyFloor(
-      conditionAdjustedValueExVat,
-      replacementPriceExVat,
-      input.floorPercent ?? DEFAULT_NON_PROPELLED_FLOOR_PERCENT,
-    ),
-  );
+  const marketabilityFactor = clamp(Number(input.marketabilityFactor) || 1, 0, 1);
+  const marketabilityAdjustedValueExVat = conditionAdjustedValueExVat * marketabilityFactor;
+  const salvage = resolveSalvageValue(marketabilityAdjustedValueExVat, replacementPriceExVat);
 
   return {
     percentUsed,
     remainingPercent,
     baseValueExVat: roundMoney(baseValueExVat),
     conditionAdjustedValueExVat: roundMoney(conditionAdjustedValueExVat),
-    finalValueExVat,
+    marketabilityAdjustedValueExVat: roundMoney(marketabilityAdjustedValueExVat),
+    salvagePercent: salvage.salvagePercent,
+    salvageValueExVat: salvage.salvageValueExVat,
+    isSalvageEstimate: salvage.isSalvageEstimate,
+    finalValueExVat: salvage.finalValueExVat,
   };
 }

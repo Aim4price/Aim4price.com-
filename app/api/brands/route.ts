@@ -35,7 +35,10 @@ export async function GET(request: NextRequest) {
       brands = result.rows.map((row) => ({ slug: row.slug, name: row.name }));
     }
 
-    return NextResponse.json({ ok: true, count: brands.length, brands });
+    return NextResponse.json(
+      { ok: true, count: brands.length, brands },
+      { headers: { 'Cache-Control': 'public, max-age=60, s-maxage=300, stale-while-revalidate=900' } },
+    );
   } catch (error) {
     console.error('brands route failed', error);
     return NextResponse.json({ ok: false, error: 'Failed to load brands' }, { status: 500 });

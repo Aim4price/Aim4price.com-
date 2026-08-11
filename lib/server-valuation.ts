@@ -1,6 +1,6 @@
 import { getDb } from './db';
 import {
-  calculateTractorAim4priceValue,
+  calculateTractorAim4priceDetails,
   calculateTractorFrontPtoValue,
   calculateTractorGpsValue,
   calculateTractorLoaderValue,
@@ -232,7 +232,7 @@ export async function runServerValuation(input: RunValuationInput): Promise<Resu
   const conditionFactorOverride = getAdvancedConditionFactorOverride(advancedAssumptions);
   const assumptionOptions = { maxLifetimeHours, conditionFactorOverride };
 
-  const baseAim4priceValueExVat = calculateTractorAim4priceValue(
+  const baseCalculation = calculateTractorAim4priceDetails(
     model,
     safeYear,
     safeHours,
@@ -240,6 +240,7 @@ export async function runServerValuation(input: RunValuationInput): Promise<Resu
     userReplacementPriceExVat,
     assumptionOptions,
   );
+  const baseAim4priceValueExVat = baseCalculation.finalValueExVat;
 
   const frontPtoValueExVat = calculateTractorFrontPtoValue(model, safeYear, safeHours, input.condition, Boolean(input.frontPto), assumptionOptions);
   const frontLoaderValueExVat = calculateTractorLoaderValue(model, safeYear, Boolean(input.frontLoader));
@@ -274,5 +275,8 @@ export async function runServerValuation(input: RunValuationInput): Promise<Resu
     userReplacementPriceExVat,
     maxLifetimeHours,
     advancedAssumptions,
+    salvagePercent: baseCalculation.salvagePercent,
+    salvageValueExVat: baseCalculation.salvageValueExVat,
+    isSalvageEstimate: baseCalculation.isSalvageEstimate && extrasValueExVat === 0,
   };
 }

@@ -4,7 +4,6 @@ import {
   DEFAULT_FALLBACK_LIFETIME_USED_PERCENT,
   DEFAULT_NON_PROPELLED_FLOOR_PERCENT,
   applyCondition,
-  applyFloor,
   calculateEngineHoursValue,
   clamp,
   currentBaseYear,
@@ -15,6 +14,10 @@ import {
   type AdvancedAssumptionsInput,
   type NormalizedAdvancedAssumptions,
 } from './valuation/shared';
+import {
+  calculateOlderPassengerCarMarketability,
+  resolveSalvageValue,
+} from './valuation/valuation-rules';
 import {
   getUsageSentenceLabel,
   isUsageAmountMetric,
@@ -47,6 +50,11 @@ export type GenericValuationCalculation = {
   ageDepPct: number | null;
   usageDepPct: number | null;
   averageDepPct: number | null;
+  marketabilityFactor: number;
+  marketabilityReductionPercent: number;
+  salvagePercent: number | null;
+  salvageValueExVat: number | null;
+  isSalvageEstimate: boolean;
   advancedAssumptions: NormalizedAdvancedAssumptions | null;
 };
 
@@ -374,6 +382,7 @@ function scoreBand(band: ReplacementPriceBand): number {
 }
 
 type DepreciationInput = {
+  sectorKey: SectorKey;
   replacementPrice: number | null;
   year: number;
   yearModelUnknown?: boolean | null;
@@ -526,6 +535,10 @@ type AgeAwarePercentValueResult = {
   averageDepPct: number;
   baseValueExVat: number;
   conditionAdjustedValueExVat: number;
+  marketabilityAdjustedValueExVat: number;
+  salvagePercent: number;
+  salvageValueExVat: number;
+  isSalvageEstimate: boolean;
   finalValueExVat: number;
 };
 
@@ -545,6 +558,7 @@ function calculateAgeAwarePercentValue(input: {
   condition: GenericCondition;
   floorPercent?: number;
   conditionFactorOverride?: number | null;
+  marketabilityFactor?: number | null;
 }): AgeAwarePercentValueResult {
   const replacementPriceExVat = Math.max(0, Number(input.replacementPriceExVat) || 0);
   const usageDepPct = clamp(Math.round(Number(input.percentUsed) || 0), 0, 100);
@@ -553,13 +567,9 @@ function calculateAgeAwarePercentValue(input: {
   const averageDepPct = ageDepPct === null ? usageDepPct : Math.round((ageDepPct + usageDepPct) / 2);
   const baseValueExVat = replacementPriceExVat * (1 - averageDepPct / 100);
   const conditionAdjustedValueExVat = applyCondition(baseValueExVat, input.condition, input.conditionFactorOverride);
-  const finalValueExVat = Math.round(
-    applyFloor(
-      conditionAdjustedValueExVat,
-      replacementPriceExVat,
-      input.floorPercent ?? DEFAULT_NON_PROPELLED_FLOOR_PERCENT,
-    ),
-  );
+  const marketabilityFactor = clamp(Number(input.marketabilityFactor) || 1, 0, 1);
+  const marketabilityAdjustedValueExVat = conditionAdjustedValueExVat * marketabilityFactor;
+  const salvage = resolveSalvageValue(marketabilityAdjustedValueExVat, replacementPriceExVat);
 
   return {
     percentUsed: usageDepPct,
@@ -569,7 +579,11 @@ function calculateAgeAwarePercentValue(input: {
     averageDepPct,
     baseValueExVat: Math.round(baseValueExVat),
     conditionAdjustedValueExVat: Math.round(conditionAdjustedValueExVat),
-    finalValueExVat,
+    marketabilityAdjustedValueExVat: Math.round(marketabilityAdjustedValueExVat),
+    salvagePercent: salvage.salvagePercent,
+    salvageValueExVat: salvage.salvageValueExVat,
+    isSalvageEstimate: salvage.isSalvageEstimate,
+    finalValueExVat: salvage.finalValueExVat,
   };
 }
 
@@ -583,7 +597,20 @@ function resolveDepreciation(input: DepreciationInput): {
   ageDepPct: number | null;
   usageDepPct: number | null;
   averageDepPct: number | null;
+  marketabilityFactor: number;
+  marketabilityReductionPercent: number;
+  salvagePercent: number | null;
+  salvageValueExVat: number | null;
+  isSalvageEstimate: boolean;
 } {
+  const marketability = calculateOlderPassengerCarMarketability({
+    sectorKey: input.sectorKey,
+    familyKey: input.familyKey,
+    bodyType: input.specsJson.body_type ?? input.specsJson.vehicle_type,
+    yearModel: input.year,
+    yearModelUnknown: input.yearModelUnknown,
+  });
+
   if (!input.replacementPrice || input.replacementPrice <= 0) {
     const fallbackMethod: DepreciationMethodUsed = input.isPropelled || isUsageAmountMetric(input.usageMetricType)
       ? 'semi_depreciation'
@@ -599,6 +626,11 @@ function resolveDepreciation(input: DepreciationInput): {
       ageDepPct: null,
       usageDepPct: null,
       averageDepPct: null,
+      marketabilityFactor: marketability.factor,
+      marketabilityReductionPercent: marketability.reductionPercent,
+      salvagePercent: null,
+      salvageValueExVat: null,
+      isSalvageEstimate: false,
     };
   }
 
@@ -616,6 +648,7 @@ function resolveDepreciation(input: DepreciationInput): {
       condition: input.condition,
       floorPercent: resolveResidualFloorPercent(input, DEFAULT_NON_PROPELLED_FLOOR_PERCENT),
       conditionFactorOverride: getAdvancedConditionFactorOverride(input.advancedAssumptions),
+      marketabilityFactor: marketability.factor,
     });
 
     return {
@@ -628,6 +661,11 @@ function resolveDepreciation(input: DepreciationInput): {
       ageDepPct: calculated.ageDepPct,
       usageDepPct: calculated.usageDepPct,
       averageDepPct: calculated.averageDepPct,
+      marketabilityFactor: marketability.factor,
+      marketabilityReductionPercent: marketability.reductionPercent,
+      salvagePercent: calculated.salvagePercent,
+      salvageValueExVat: calculated.salvageValueExVat,
+      isSalvageEstimate: calculated.isSalvageEstimate,
     };
   }
 
@@ -644,6 +682,7 @@ function resolveDepreciation(input: DepreciationInput): {
         maxLifetimeHours,
         floorPercent: resolveResidualFloorPercent(input, DEFAULT_ENGINE_FLOOR_PERCENT),
         conditionFactorOverride: getAdvancedConditionFactorOverride(input.advancedAssumptions),
+        marketabilityFactor: marketability.factor,
       });
       const lifeWorkedPercent = clamp(Math.round((knownHours / maxLifetimeHours) * 100), 0, 100);
 
@@ -657,6 +696,11 @@ function resolveDepreciation(input: DepreciationInput): {
         ageDepPct: calculated.ageDepPct,
         usageDepPct: calculated.usageDepPct,
         averageDepPct: calculated.averageDepPct,
+        marketabilityFactor: marketability.factor,
+        marketabilityReductionPercent: marketability.reductionPercent,
+        salvagePercent: calculated.salvagePercent,
+        salvageValueExVat: calculated.salvageValueExVat,
+        isSalvageEstimate: calculated.isSalvageEstimate,
       };
     }
 
@@ -670,6 +714,7 @@ function resolveDepreciation(input: DepreciationInput): {
       maxLifetimeHours,
       floorPercent: resolveResidualFloorPercent(input, DEFAULT_ENGINE_FLOOR_PERCENT),
       conditionFactorOverride: getAdvancedConditionFactorOverride(input.advancedAssumptions),
+      marketabilityFactor: marketability.factor,
     });
 
     return {
@@ -682,6 +727,11 @@ function resolveDepreciation(input: DepreciationInput): {
       ageDepPct: calculated.ageDepPct,
       usageDepPct: calculated.usageDepPct,
       averageDepPct: calculated.averageDepPct,
+      marketabilityFactor: marketability.factor,
+      marketabilityReductionPercent: marketability.reductionPercent,
+      salvagePercent: calculated.salvagePercent,
+      salvageValueExVat: calculated.salvageValueExVat,
+      isSalvageEstimate: calculated.isSalvageEstimate,
     };
   }
 
@@ -694,6 +744,7 @@ function resolveDepreciation(input: DepreciationInput): {
     condition: input.condition,
     floorPercent: resolveResidualFloorPercent(input, DEFAULT_NON_PROPELLED_FLOOR_PERCENT),
     conditionFactorOverride: getAdvancedConditionFactorOverride(input.advancedAssumptions),
+    marketabilityFactor: marketability.factor,
   });
 
   return {
@@ -706,6 +757,11 @@ function resolveDepreciation(input: DepreciationInput): {
     ageDepPct: calculated.ageDepPct,
     usageDepPct: calculated.usageDepPct,
     averageDepPct: calculated.averageDepPct,
+    marketabilityFactor: marketability.factor,
+    marketabilityReductionPercent: marketability.reductionPercent,
+    salvagePercent: calculated.salvagePercent,
+    salvageValueExVat: calculated.salvageValueExVat,
+    isSalvageEstimate: calculated.isSalvageEstimate,
   };
 }
 
@@ -735,6 +791,11 @@ function buildCalculation(input: DepreciationInput & {
     ageDepPct: depreciation.ageDepPct,
     usageDepPct: depreciation.usageDepPct,
     averageDepPct: depreciation.averageDepPct,
+    marketabilityFactor: depreciation.marketabilityFactor,
+    marketabilityReductionPercent: depreciation.marketabilityReductionPercent,
+    salvagePercent: depreciation.salvagePercent,
+    salvageValueExVat: depreciation.salvageValueExVat,
+    isSalvageEstimate: depreciation.isSalvageEstimate,
     advancedAssumptions: input.advancedAssumptions ?? null,
   };
 }
@@ -1725,6 +1786,7 @@ export async function runGenericValuation(input: GenericValuationInput): Promise
   const marketSources: MarketMatch[] = [];
 
   const commonCalculationInput = {
+    sectorKey: family.sectorKey,
     year: inputYear,
     yearModelUnknown: input.yearModelUnknown,
     usageAmount: toNumber(input.usageAmount),
@@ -1842,6 +1904,12 @@ export async function runGenericValuation(input: GenericValuationInput): Promise
   }
   notes.push('Aim4price used replacement price, usage, age, condition and specs.');
   if (advancedAssumptions) notes.push('Advanced assumptions were applied to this valuation run.');
+  if (selectedCalculation.marketabilityReductionPercent > 0) {
+    notes.push(`Older passenger-car marketability adjustment applied: ${selectedCalculation.marketabilityReductionPercent}% after 15 years.`);
+  }
+  if (selectedCalculation.isSalvageEstimate && selectedCalculation.salvagePercent !== null) {
+    notes.push(`Depreciation reached the indicative salvage range of ${selectedCalculation.salvagePercent}% of replacement price.`);
+  }
 
   const usageSentenceLabel = getUsageSentenceLabel(family.sectorKey, family.usageMetricType);
 
