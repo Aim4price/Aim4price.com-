@@ -35,6 +35,8 @@ export type AssetFutureProjection = {
   usageMetric: UsageMetric;
   usageUnitLabel: string;
   condition: ConditionKey;
+  currentCondition: ConditionKey;
+  targetCondition: ConditionKey;
   current: ProjectionSnapshot;
   projected: ProjectionSnapshot;
 };
@@ -728,7 +730,8 @@ function buildProjectionResult(input: {
   inflationRatePct: number;
   extraUsage: number;
   usageMetric: UsageMetric;
-  condition: ConditionKey;
+  currentCondition: ConditionKey;
+  targetCondition: ConditionKey;
   currentModelSnapshot: ProjectionSnapshot;
   projectedModelSnapshot: ProjectionSnapshot;
 }): AssetFutureProjection {
@@ -756,7 +759,9 @@ function buildProjectionResult(input: {
     targetLifeWorkedPercent: input.projectedModelSnapshot.lifeWorkedPercent ?? null,
     usageMetric: input.usageMetric,
     usageUnitLabel: input.usageMetric === 'percent' ? '%' : input.usageMetric === 'km' ? 'km' : 'hours',
-    condition: input.condition,
+    condition: input.targetCondition,
+    currentCondition: input.currentCondition,
+    targetCondition: input.targetCondition,
     current,
     projected,
   };
@@ -773,6 +778,7 @@ function calculatePercentProjection(input: {
   targetYear: number;
   inflationRatePct: number;
   targetLifeWorkedPercent: number | null;
+  targetCondition: ConditionKey | null;
 }): AssetFutureProjection {
   const replacementPriceExVat = readReplacementPriceForProjection(input);
 
@@ -797,14 +803,15 @@ function calculatePercentProjection(input: {
     throw new Error('TARGET_PERCENT_BELOW_CURRENT');
   }
 
-  const condition = normalizeCondition(input.asset.condition || pick(input.row, ['condition']) || input.valuationInput.condition);
+  const currentCondition = normalizeCondition(input.asset.condition || pick(input.row, ['condition']) || input.valuationInput.condition);
+  const targetCondition = input.targetCondition ?? currentCondition;
 
   const currentModelSnapshot = calculatePercentBasedSnapshot({
     targetYear: input.baseYear,
     baseYear: input.baseYear,
     replacementPriceExVat,
     percentUsed: currentLifeWorkedPercent,
-    condition,
+    condition: currentCondition,
     inflationRatePct: 0,
   }).snapshot;
 
@@ -813,7 +820,7 @@ function calculatePercentProjection(input: {
     baseYear: input.baseYear,
     replacementPriceExVat,
     percentUsed: targetLifeWorkedPercent,
-    condition,
+    condition: targetCondition,
     inflationRatePct: input.inflationRatePct,
   }).snapshot;
 
@@ -826,7 +833,8 @@ function calculatePercentProjection(input: {
     inflationRatePct: input.inflationRatePct,
     extraUsage: 0,
     usageMetric: 'percent',
-    condition,
+    currentCondition,
+    targetCondition,
     currentModelSnapshot,
     projectedModelSnapshot,
   });
@@ -843,6 +851,7 @@ function calculateMotorProjection(input: {
   targetYear: number;
   inflationRatePct: number;
   extraUsage: number;
+  targetCondition: ConditionKey | null;
 }): AssetFutureProjection {
   const familyKey = getFamilyKey(input);
   const replacementPriceExVat = readReplacementPriceForProjection(input);
@@ -855,7 +864,8 @@ function calculateMotorProjection(input: {
     asNumber(input.asset.yearModel) ?? asNumber(pick(input.row, ['year_model'])) ?? asNumber(input.valuationInput.year) ?? input.baseYear,
   );
   const usageStart = readUsageAmount(input);
-  const condition = normalizeCondition(input.asset.condition || pick(input.row, ['condition']) || input.valuationInput.condition);
+  const currentCondition = normalizeCondition(input.asset.condition || pick(input.row, ['condition']) || input.valuationInput.condition);
+  const targetCondition = input.targetCondition ?? currentCondition;
   const maxLifetimeUsage = readMotorLifetimeUsage({ ...input, familyKey });
   const usageMetric: UsageMetric = 'km';
 
@@ -866,7 +876,7 @@ function calculateMotorProjection(input: {
     yearModel,
     usageStart,
     extraUsage: 0,
-    condition,
+    condition: currentCondition,
     maxLifetimeUsage,
     inflationRatePct: 0,
   }).snapshot;
@@ -878,7 +888,7 @@ function calculateMotorProjection(input: {
     yearModel,
     usageStart,
     extraUsage: input.extraUsage,
-    condition,
+    condition: targetCondition,
     maxLifetimeUsage,
     inflationRatePct: input.inflationRatePct,
   }).snapshot;
@@ -892,7 +902,8 @@ function calculateMotorProjection(input: {
     inflationRatePct: input.inflationRatePct,
     extraUsage: input.extraUsage,
     usageMetric,
-    condition,
+    currentCondition,
+    targetCondition,
     currentModelSnapshot,
     projectedModelSnapshot,
   });
@@ -908,6 +919,7 @@ async function calculateTractorProjection(input: {
   targetYear: number;
   inflationRatePct: number;
   extraHours: number;
+  targetCondition: ConditionKey | null;
 }): Promise<AssetFutureProjection> {
   requireTractorProjectionAsset(input.asset);
 
@@ -920,9 +932,10 @@ async function calculateTractorProjection(input: {
       asNumber(input.asset.hours) ?? asNumber(pick(input.row, ['hours'])) ?? asNumber(input.valuationInput.hours) ?? 0,
     ),
   );
-  const condition = normalizeCondition(
+  const currentCondition = normalizeCondition(
     input.asset.condition ?? pick(input.row, ['condition']) ?? input.valuationInput.condition,
   );
+  const targetCondition = input.targetCondition ?? currentCondition;
   const tractorType = normalizeTractorType(input.asset.tractorType ?? pick(input.row, ['tractor_type']));
   const powerKw = Math.max(
     0,
@@ -958,7 +971,7 @@ async function calculateTractorProjection(input: {
     tractorType,
     hoursStart,
     extraHours: 0,
-    condition,
+    condition: currentCondition,
     frontPtoEnabled,
     frontLoaderEnabled,
     gpsEnabled,
@@ -976,7 +989,7 @@ async function calculateTractorProjection(input: {
     tractorType,
     hoursStart,
     extraHours: input.extraHours,
-    condition,
+    condition: targetCondition,
     frontPtoEnabled,
     frontLoaderEnabled,
     gpsEnabled,
@@ -994,7 +1007,8 @@ async function calculateTractorProjection(input: {
     inflationRatePct: input.inflationRatePct,
     extraUsage: input.extraHours,
     usageMetric: 'hours',
-    condition,
+    currentCondition,
+    targetCondition,
     currentModelSnapshot,
     projectedModelSnapshot,
   });
@@ -1007,6 +1021,7 @@ export async function calculateFuturePriceForAsset(input: {
   inflationRatePct: number;
   extraHours?: number;
   targetLifeWorkedPercent?: number | null;
+  targetCondition?: ConditionKey | null;
 }): Promise<AssetFutureProjection> {
   const asset = await getAssetRegisterItemById(input.userId, input.assetId);
 
@@ -1036,6 +1051,7 @@ export async function calculateFuturePriceForAsset(input: {
   const targetLifeWorkedPercent = typeof input.targetLifeWorkedPercent === 'number' && Number.isFinite(input.targetLifeWorkedPercent)
     ? Math.round(input.targetLifeWorkedPercent * 10) / 10
     : null;
+  const targetCondition = input.targetCondition ? normalizeCondition(input.targetCondition) : null;
 
   const baseContext = {
     asset,
@@ -1047,6 +1063,7 @@ export async function calculateFuturePriceForAsset(input: {
     baseYear,
     targetYear,
     inflationRatePct,
+    targetCondition,
   };
 
   if (isPercentProjectionCandidate({ asset, row: valuationRow, valuationInput, valuationOutput })) {
