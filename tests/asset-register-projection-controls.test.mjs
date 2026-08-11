@@ -31,7 +31,7 @@ test('future condition uses the same retained-value percentages as the estimate 
 
   assert.match(client, /PROJECTION_CONDITION_OPTIONS\s*=\s*conditionOptions\.map/);
   assert.match(client, /Future condition/);
-  assert.match(client, /retainedPercent\}% retained/);
+  assert.doesNotMatch(client, /option\.retainedPercent/);
   assert.match(route, /CONDITION_KEYS:[^\n]*\['excellent', 'good', 'fair', 'used', 'serious'\]/);
   assert.match(route, /Choose a valid future condition\./);
   assert.match(route, /calculateFuturePriceForAsset\(\{[\s\S]*targetCondition/);
