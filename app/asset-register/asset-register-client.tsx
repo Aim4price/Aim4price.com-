@@ -15154,11 +15154,6 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                               </div>
                             ) : null}
                             <h2>{asset.title}</h2>
-                            {assetGroup && assetGroupMembership ? (
-                              <p className={styles.assetGroupMemberRelationship}>
-                                {assetGroupRelationshipLabel(assetGroupMembership.relationship)}
-                              </p>
-                            ) : null}
                             <p>{buildAssetMeta(asset)}</p>
                             <div className={styles.assetMetaRow}>
                               <span className={styles.assetValueMethodLabel}>{methodLabel(asset.selectedMethod)} value</span>
