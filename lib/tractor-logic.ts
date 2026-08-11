@@ -41,6 +41,9 @@ export type Result = {
   userReplacementPriceExVat: number | null;
   maxLifetimeHours: number | null;
   advancedAssumptions: NormalizedAdvancedAssumptions | null;
+  salvagePercent: number;
+  salvageValueExVat: number;
+  isSalvageEstimate: boolean;
 };
 
 export const conditionLabel = (key: ConditionKey): string =>
