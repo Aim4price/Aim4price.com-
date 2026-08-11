@@ -7,7 +7,7 @@ import {
   calculateEngineHoursValue,
   clamp,
   currentBaseYear,
-  getAdvancedConditionFactorOverride,
+  getValuationConditionFactorOverride,
   normalizeAdvancedAssumptions,
   tractorAgeDepPct,
   tractorLifetimeHours,
@@ -647,7 +647,7 @@ function resolveDepreciation(input: DepreciationInput): {
       includeAgeDepreciation: shouldBlendAgeIntoPercentageDepreciation(input),
       condition: input.condition,
       floorPercent: resolveResidualFloorPercent(input, DEFAULT_NON_PROPELLED_FLOOR_PERCENT),
-      conditionFactorOverride: getAdvancedConditionFactorOverride(input.advancedAssumptions),
+      conditionFactorOverride: getValuationConditionFactorOverride(input.condition, input.advancedAssumptions),
       marketabilityFactor: marketability.factor,
     });
 
@@ -681,7 +681,7 @@ function resolveDepreciation(input: DepreciationInput): {
         condition: input.condition,
         maxLifetimeHours,
         floorPercent: resolveResidualFloorPercent(input, DEFAULT_ENGINE_FLOOR_PERCENT),
-        conditionFactorOverride: getAdvancedConditionFactorOverride(input.advancedAssumptions),
+        conditionFactorOverride: getValuationConditionFactorOverride(input.condition, input.advancedAssumptions),
         marketabilityFactor: marketability.factor,
       });
       const lifeWorkedPercent = clamp(Math.round((knownHours / maxLifetimeHours) * 100), 0, 100);
@@ -713,7 +713,7 @@ function resolveDepreciation(input: DepreciationInput): {
       condition: input.condition,
       maxLifetimeHours,
       floorPercent: resolveResidualFloorPercent(input, DEFAULT_ENGINE_FLOOR_PERCENT),
-      conditionFactorOverride: getAdvancedConditionFactorOverride(input.advancedAssumptions),
+      conditionFactorOverride: getValuationConditionFactorOverride(input.condition, input.advancedAssumptions),
       marketabilityFactor: marketability.factor,
     });
 
@@ -743,7 +743,7 @@ function resolveDepreciation(input: DepreciationInput): {
     includeAgeDepreciation: shouldBlendAgeIntoPercentageDepreciation(input),
     condition: input.condition,
     floorPercent: resolveResidualFloorPercent(input, DEFAULT_NON_PROPELLED_FLOOR_PERCENT),
-    conditionFactorOverride: getAdvancedConditionFactorOverride(input.advancedAssumptions),
+    conditionFactorOverride: getValuationConditionFactorOverride(input.condition, input.advancedAssumptions),
     marketabilityFactor: marketability.factor,
   });
 
@@ -1903,7 +1903,11 @@ export async function runGenericValuation(input: GenericValuationInput): Promise
     }
   }
   notes.push('Aim4price used replacement price, usage, age, condition and specs.');
-  if (advancedAssumptions) notes.push('Advanced assumptions were applied to this valuation run.');
+  if (advancedAssumptions && (advancedAssumptions.maxLifetimeUsage !== null || advancedAssumptions.conditionFactorPercent !== null)) {
+    notes.push('Advanced assumptions were applied to this valuation run.');
+  }
+  if (advancedAssumptions?.dealerAssessment) notes.push('Detailed Asset Assessment applied to the condition adjustment.');
+  if (advancedAssumptions?.popularityStars) notes.push(`Popularity rating applied: ${advancedAssumptions.popularityStars} of 5 stars.`);
   if (selectedCalculation.marketabilityReductionPercent > 0) {
     notes.push(`Older passenger-car marketability adjustment applied: ${selectedCalculation.marketabilityReductionPercent}% after 15 years.`);
   }

@@ -5,8 +5,7 @@ import { getAnyServerSession } from '../../../lib/auth-session';
 import { isSectorKey, type SectorKey } from '../../../lib/equipment-types';
 import { runGenericValuation, type GenericCondition } from '../../../lib/generic-valuation';
 import {
-  advancedAssumptionsWereRequested,
-  dealerAssessmentWasRequestedFromAssumptions,
+  advancedAssumptionsRequireActiveAccess,
 } from '../../../lib/valuation/shared';
 
 export const runtime = 'nodejs';
@@ -73,18 +72,11 @@ function advancedAccessDenied() {
   );
 }
 
-function dealerAssessmentAccessDenied() {
-  return NextResponse.json(
-    { ok: false, error: 'Dealer assessments are available for active dealer accounts.' },
-    { status: 403 },
-  );
-}
-
 function isAdvancedValidationError(error: unknown): boolean {
   if (!(error instanceof Error)) return false;
   return error.message.startsWith('Expected lifetime')
     || error.message.startsWith('Condition retained value')
-    || error.message.includes('dealer assessment')
+    || error.message.includes('detailed asset assessment')
     || error.message.startsWith('Popularity must');
 }
 
@@ -125,12 +117,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (advancedAssumptionsWereRequested(body.advancedAssumptions)) {
+    if (advancedAssumptionsRequireActiveAccess(body.advancedAssumptions)) {
       const profile = await getAdvancedAccessProfile();
       if (profile?.accountStatus !== 'active') return advancedAccessDenied();
-      if (dealerAssessmentWasRequestedFromAssumptions(body.advancedAssumptions) && profile.accountType !== 'dealer') {
-        return dealerAssessmentAccessDenied();
-      }
     }
 
     const result = await runGenericValuation({

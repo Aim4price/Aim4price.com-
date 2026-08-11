@@ -61,6 +61,7 @@ type AdvancedAssumptionsRequest = {
   maxLifetimeUsage?: number | null;
   conditionFactorPercent?: number | null;
   dealerAssessment?: DealerAssessmentInput;
+  popularityStars?: number | null;
 };
 
 type EquipmentFamilyRecord = {
@@ -1747,15 +1748,14 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
   const [advancedConditionFactorPercent, setAdvancedConditionFactorPercent] = useState('');
   const [advancedRecalculateLoading, setAdvancedRecalculateLoading] = useState(false);
   const [advancedError, setAdvancedError] = useState('');
-  const [dealerAssessmentPanelOpen, setDealerAssessmentPanelOpen] = useState(false);
+  const [detailedAssessmentOpen, setDetailedAssessmentOpen] = useState(false);
   const [dealerMechanicalCondition, setDealerMechanicalCondition] = useState('');
   const [dealerBodyCondition, setDealerBodyCondition] = useState('');
   const [dealerTyreCondition, setDealerTyreCondition] = useState('');
   const [dealerServiceHistory, setDealerServiceHistory] = useState('');
   const [dealerRequiredWork, setDealerRequiredWork] = useState('');
-  const [dealerPopularityStars, setDealerPopularityStars] = useState(0);
-  const [dealerAssessmentLoading, setDealerAssessmentLoading] = useState(false);
-  const [dealerAssessmentError, setDealerAssessmentError] = useState('');
+  const [popularityStars, setPopularityStars] = useState(0);
+  const [detailedAssessmentError, setDetailedAssessmentError] = useState('');
   const [replacementNoticeOpen, setReplacementNoticeOpen] = useState(false);
   const [saveLoading, setSaveLoading] = useState(false);
   const [pdfLoading, setPdfLoading] = useState(false);
@@ -2120,11 +2120,20 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
   const canUseAdvancedAssumptions = isSignedIn && accountProfile?.accountStatus === 'active';
   const normalizedSignedInAccountType = normalizeAccountType(accountType);
   const isDealerAccount = normalizedSignedInAccountType === 'dealer';
+  const detailedAssessmentComplete = Boolean(
+    dealerMechanicalCondition
+      && dealerBodyCondition
+      && dealerTyreCondition
+      && dealerServiceHistory
+      && dealerRequiredWork,
+  );
+  const popularityStepComplete = popularityStars >= 1 && popularityStars <= 5;
   const canUseMarketplacePublishFlow = isSignedIn && (normalizedSignedInAccountType === 'owner' || normalizedSignedInAccountType === 'dealer');
   const isAccountantClientWorkspace = normalizedSignedInAccountType === 'finance' && Boolean(accountantShareId);
   const canSaveToAssetRegister = isSignedIn && (normalizedSignedInAccountType === 'owner' || isAccountantClientWorkspace);
   const requiredSpecQuestionsCompleted = Boolean(
     conditionStepComplete &&
+      popularityStepComplete &&
       shouldAskGenericSpecQuestions &&
       effectiveSpecQuestions.length > 0 &&
       effectiveSpecQuestions.every((question) => !question.isRequired || isSpecQuestionAnswered(question, specAnswers[question.specKey])),
@@ -2155,25 +2164,28 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
   }, [resultState, condition]);
 
   useEffect(() => {
+    if (!resultState) return;
     const assessment = getAppliedDealerAssessmentFromState(resultState);
     if (!assessment) {
+      setDetailedAssessmentOpen(false);
       setDealerMechanicalCondition('');
       setDealerBodyCondition('');
       setDealerTyreCondition('');
       setDealerServiceHistory('');
       setDealerRequiredWork('');
-      setDealerPopularityStars(0);
-      setDealerAssessmentError('');
+      setPopularityStars(getAppliedAdvancedAssumptionsFromState(resultState)?.popularityStars ?? 0);
+      setDetailedAssessmentError('');
       return;
     }
 
+    setDetailedAssessmentOpen(true);
     setDealerMechanicalCondition(assessment.mechanicalCondition);
     setDealerBodyCondition(assessment.bodyCondition);
     setDealerTyreCondition(assessment.tyreCondition);
     setDealerServiceHistory(assessment.serviceHistory);
     setDealerRequiredWork(assessment.requiredWork);
-    setDealerPopularityStars(assessment.popularityStars);
-    setDealerAssessmentError('');
+    setPopularityStars(getAppliedAdvancedAssumptionsFromState(resultState)?.popularityStars ?? 0);
+    setDetailedAssessmentError('');
   }, [resultState]);
 
   useEffect(() => {
@@ -2462,6 +2474,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     setYearStepComplete(false);
     setUsageStepComplete(false);
     setConditionStepComplete(false);
+    clearDetailedAssessment();
     setActiveDetailsModal(null);
     setUsageModalMode('hours');
     setResultState(null);
@@ -2551,6 +2564,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     setUsageStepComplete(false);
     setConditionStepComplete(false);
     setCondition('good');
+    clearDetailedAssessment();
     setActiveDetailsModal(null);
     setUsageModalMode('hours');
     setFlowMode(nextFlowMode);
@@ -2842,6 +2856,17 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     setSavedMarketplaceAssetId(null);
   }
 
+  function clearDetailedAssessment(resetPopularity = true) {
+    setDetailedAssessmentOpen(false);
+    setDealerMechanicalCondition('');
+    setDealerBodyCondition('');
+    setDealerTyreCondition('');
+    setDealerServiceHistory('');
+    setDealerRequiredWork('');
+    setDetailedAssessmentError('');
+    if (resetPopularity) setPopularityStars(0);
+  }
+
   function removeGenericModelPrefilledAnswers() {
     const prefilledKeys = genericModelPrefilledSpecKeysRef.current;
     if (!prefilledKeys.size) return;
@@ -2957,6 +2982,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     setYearStepComplete(false);
     setUsageStepComplete(false);
     setConditionStepComplete(false);
+    clearDetailedAssessment();
     setActiveDetailsModal(null);
     setUsageModalMode('hours');
     resetResult();
@@ -2997,6 +3023,10 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     }
 
     if (!conditionStepComplete || !condition) return 'Choose the condition.';
+    if (detailedAssessmentOpen && !detailedAssessmentComplete) {
+      return 'Complete all five detailed asset assessment questions or use the simple condition.';
+    }
+    if (!popularityStepComplete) return 'Choose a popularity rating from 1 to 5 stars.';
     if (flowMode === 'exact_model' && exactTractorAvailable && !tractorSetupComplete) return 'Complete the type, drive and cab setup first.';
     if (flowMode === 'exact_model' && exactTractorAvailable && !selectedModel) return 'Choose the exact model first.';
 
@@ -3017,8 +3047,15 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
   }
 
 
-  function getCurrentAdvancedAssumptionsForRequest(): NormalizedAdvancedAssumptions | null {
-    return getAppliedAdvancedAssumptionsFromState(resultState);
+  function getCurrentAdvancedAssumptionsForRequest(): AdvancedAssumptionsRequest {
+    const applied = getAppliedAdvancedAssumptionsFromState(resultState);
+    const detailedAssessment = detailedAssessmentOpen ? buildDealerAssessmentRequest() : null;
+    return {
+      maxLifetimeUsage: applied?.maxLifetimeUsage ?? null,
+      conditionFactorPercent: detailedAssessment ? null : applied?.conditionFactorPercent ?? null,
+      dealerAssessment: detailedAssessment,
+      popularityStars: popularityStepComplete ? popularityStars : null,
+    };
   }
 
   function buildAdvancedAssumptionsRequestFromFields(): AdvancedAssumptionsRequest | null {
@@ -3050,13 +3087,15 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
       return null;
     }
 
-    if (!isDealerAccount && conditionPercent === null) {
+    const appliedDetailedAssessment = getAppliedDealerAssessmentFromState(resultState);
+
+    if (!appliedDetailedAssessment && conditionPercent === null) {
       setAdvancedError('Enter the condition percentage.');
       return null;
     }
 
     if (
-      !isDealerAccount
+      !appliedDetailedAssessment
       && conditionPercent !== null
       && (
         conditionPercent < ADVANCED_CONDITION_FACTOR_MIN_PERCENT
@@ -3071,18 +3110,15 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
 
     return {
       maxLifetimeUsage: showLifetimeInput && lifetimeValue !== null ? Math.round(lifetimeValue) : null,
-      conditionFactorPercent: !isDealerAccount && conditionPercent !== null ? Math.round(conditionPercent * 10) / 10 : null,
-      dealerAssessment: getAppliedDealerAssessmentFromState(resultState),
+      conditionFactorPercent: !appliedDetailedAssessment && conditionPercent !== null ? Math.round(conditionPercent * 10) / 10 : null,
+      dealerAssessment: appliedDetailedAssessment,
+      popularityStars: getAppliedAdvancedAssumptionsFromState(resultState)?.popularityStars ?? popularityStars,
     };
   }
 
   function buildDealerAssessmentRequest(): DealerAssessmentInput | null {
     if (!dealerMechanicalCondition || !dealerBodyCondition || !dealerTyreCondition || !dealerServiceHistory || !dealerRequiredWork) {
-      setDealerAssessmentError('Complete all five condition questions.');
-      return null;
-    }
-    if (dealerPopularityStars < 1 || dealerPopularityStars > 5) {
-      setDealerAssessmentError('Choose a popularity rating from 1 to 5 stars.');
+      setDetailedAssessmentError('Complete all five detailed condition questions.');
       return null;
     }
 
@@ -3092,97 +3128,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
       tyreCondition: dealerTyreCondition,
       serviceHistory: dealerServiceHistory,
       requiredWork: dealerRequiredWork,
-      popularityStars: dealerPopularityStars,
     };
-  }
-
-  async function applyDealerAssessmentAndRecalculate() {
-    if (!resultState) {
-      setDealerAssessmentError('Run an estimate before adding a dealer assessment.');
-      return;
-    }
-    if (!isDealerAccount || !canUseAdvancedAssumptions) {
-      setDealerAssessmentError('Dealer assessments are available for active dealer accounts.');
-      return;
-    }
-
-    const dealerAssessment = buildDealerAssessmentRequest();
-    if (!dealerAssessment) return;
-    const existingAdvanced = getAppliedAdvancedAssumptionsFromState(resultState);
-    const advancedAssumptions: AdvancedAssumptionsRequest = {
-      maxLifetimeUsage: existingAdvanced?.maxLifetimeUsage ?? null,
-      conditionFactorPercent: null,
-      dealerAssessment,
-    };
-
-    setDealerAssessmentLoading(true);
-    setDealerAssessmentError('');
-    setMessage('');
-
-    try {
-      if (resultState.kind === 'generic') {
-        const currentResult = resultState.result;
-        const userReplacementPriceExVat = replacementPriceBasis === 'user'
-          ? currentResult.userReplacementPriceExVat ?? currentResult.userReplacementCalculation?.replacementPriceExVat ?? null
-          : null;
-        const response = await fetch('/api/generic-valuations', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            sectorKey: currentResult.sector.key,
-            familyKey: currentResult.family.key,
-            brandSlug: currentResult.brand.slug,
-            equipmentModelId: toNumberOrNull(currentResult.specsJson.catalog_model_id),
-            typedModelName: currentResult.typedModelName,
-            saveModelCandidate: false,
-            specsJson: currentResult.specsJson,
-            year: currentResult.year,
-            yearModelUnknown: Boolean(currentResult.specsJson.year_model_unknown ?? yearModelUnknown),
-            usageAmount: currentResult.usageAmount,
-            lifeWorkedPercent: currentResult.lifeWorkedPercent,
-            condition: currentResult.condition,
-            userReplacementPriceExVat,
-            userReplacementPriceYear: userReplacementPriceExVat ? currentResult.userReplacementPriceYear ?? CURRENT_YEAR : null,
-            advancedAssumptions,
-          }),
-        });
-        const data = (await response.json()) as GenericValuationApiResponse;
-        if (!response.ok || !data.ok || !data.result) throw new Error(data.error ?? 'Failed to apply dealer assessment.');
-        setResultState({ kind: 'generic', result: data.result });
-        setReplacementPriceBasis(data.result.replacementPriceBasis ?? replacementPriceBasis);
-      } else {
-        const currentResult = resultState.result;
-        const response = await fetch('/api/tractor-valuations', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            modelId: currentResult.model.id,
-            year: calculationYear,
-            hours: usageNumber ?? estimateHoursFromWorkedPercent(currentResult.model, lifeWorkedPercentNumber) ?? 0,
-            condition,
-            frontPto,
-            frontLoader,
-            gpsEnabled,
-            gpsType,
-            gpsYear,
-            userReplacementPriceExVat: replacementPriceBasis === 'user' ? currentResult.userReplacementPriceExVat ?? null : null,
-            advancedAssumptions,
-          }),
-        });
-        const data = (await response.json()) as TractorValuationApiResponse;
-        if (!response.ok || !data.ok || !data.result) throw new Error(data.error ?? 'Failed to apply dealer assessment.');
-        setResultState({ kind: 'tractor', result: data.result });
-        setReplacementPriceBasis(data.result.replacementPriceBasis ?? replacementPriceBasis);
-      }
-
-      setSelectedMethod('aim4price');
-      setSavedMarketplaceAssetId(null);
-    } catch (error) {
-      console.error(error);
-      setDealerAssessmentError(error instanceof Error ? error.message : 'Failed to apply dealer assessment.');
-    } finally {
-      setDealerAssessmentLoading(false);
-    }
   }
 
   async function updateAdvancedAssumptionsAndRecalculate() {
@@ -3401,6 +3347,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     setFinalSaveIntent(null);
     setFinalSaveError('');
     setSavedMarketplaceAssetId(null);
+    const advancedAssumptions = getCurrentAdvancedAssumptionsForRequest();
 
     try {
       if (flowMode === 'exact_model' && exactTractorAvailable && selectedModel) {
@@ -3418,6 +3365,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
             gpsType,
             gpsYear,
             userReplacementPriceExVat: null,
+            advancedAssumptions,
           }),
         });
         const data = (await response.json()) as TractorValuationApiResponse;
@@ -3445,6 +3393,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
             condition,
             userReplacementPriceExVat: null,
             userReplacementPriceYear: null,
+            advancedAssumptions,
           }),
         });
         const data = (await response.json()) as GenericValuationApiResponse;
@@ -3683,15 +3632,14 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
           },
         ])
       : [];
-    const dealerAssessmentRows = appliedDealerAssessment
+    const detailedAssessmentRows = appliedDealerAssessment
       ? compactPdfRows([
-          { label: 'Dealer assessment', value: 'Applied' },
+          { label: 'Detailed Asset Assessment', value: 'Applied' },
           { label: 'Mechanical condition', value: getDealerOptionLabel(DEALER_MECHANICAL_OPTIONS, appliedDealerAssessment.mechanicalCondition) },
-          { label: 'Body condition', value: getDealerOptionLabel(DEALER_BODY_OPTIONS, appliedDealerAssessment.bodyCondition) },
+          { label: 'Body / frame / structure', value: getDealerOptionLabel(DEALER_BODY_OPTIONS, appliedDealerAssessment.bodyCondition) },
           { label: 'Tyres / wear components', value: getDealerOptionLabel(DEALER_TYRE_OPTIONS, appliedDealerAssessment.tyreCondition) },
           { label: 'Service history', value: getDealerOptionLabel(DEALER_SERVICE_OPTIONS, appliedDealerAssessment.serviceHistory) },
           { label: 'Required work', value: getDealerOptionLabel(DEALER_WORK_OPTIONS, appliedDealerAssessment.requiredWork) },
-          { label: 'Popularity', value: `${appliedDealerAssessment.popularityStars} / 5 stars` },
         ])
       : [];
 
@@ -3732,7 +3680,8 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
       { label: 'Cab', value: cabValue },
       { label: 'Year', value: yearSummary },
       { label: 'Usage', value: usageSummary },
-      { label: 'Condition', value: conditionLabel(resultCondition) },
+      { label: 'Condition', value: appliedDealerAssessment ? 'Detailed assessment' : conditionLabel(resultCondition) },
+      { label: 'Popularity', value: `${appliedAdvancedAssumptions?.popularityStars ?? 3} / 5 stars` },
       { label: 'Replacement Price', value: moneyExVat(replacementPriceExVat) },
       { label: 'Estimate Path', value: valuationPath },
     ]);
@@ -3768,7 +3717,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
         { label: 'Generated', value: formatPdfReportDate(generatedAt) },
       ]),
       ...advancedRecordRows,
-      ...dealerAssessmentRows,
+      ...detailedAssessmentRows,
     ];
 
     return {
@@ -3785,7 +3734,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
       confidenceNote,
       yearSummary,
       usageSummary,
-      conditionSummary: appliedDealerAssessment ? 'Dealer assessed' : conditionLabel(resultCondition),
+      conditionSummary: appliedDealerAssessment ? 'Detailed assessment' : conditionLabel(resultCondition),
       replacementPriceExVat,
       replacementBasisText,
       notes: [
@@ -6051,7 +6000,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
       return (
         <div className={`${styles.currentCard} ${styles.specProgressCard}`}>
           <h3 className={styles.currentTitle}>Answer a few simple questions</h3>
-          <p className={styles.message}>No further family-specific questions are needed. Aim4price will use the selected type, year, usage, condition, brand and replacement bands if available.</p>
+          <p className={styles.message}>No further family-specific questions are needed. Aim4price will use the selected type, year, usage, condition, popularity, brand and replacement bands if available.</p>
         </div>
       );
     }
@@ -6066,7 +6015,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
       <div className={`${styles.currentCard} ${styles.specProgressCard}`}>
         <div className={styles.currentCardHead}>
           <div>
-            <span className={styles.currentEyebrow}>Step 4</span>
+            <span className={styles.currentEyebrow}>Step 5</span>
             <h3 className={styles.currentTitle}>Answer a few simple questions</h3>
             <p className={styles.currentHint}>Answer each question in order. The next question appears underneath once the required answer is captured.</p>
           </div>
@@ -6107,8 +6056,8 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
         : 'Tractor details';
     const detailsIntro = genericExactModelPath
       ? compactAppMode
-        ? `Add year, ${usageTitle.toLowerCase()} and condition.`
-        : `Aim4price will use the selected catalogue model replacement price. Add year, ${usageTitle.toLowerCase()} and condition to calculate the estimate.`
+        ? `Add year, ${usageTitle.toLowerCase()}, condition and popularity.`
+        : `Aim4price will use the selected catalogue model replacement price. Add year, ${usageTitle.toLowerCase()}, condition and popularity to calculate the estimate.`
       : compactAppMode
         ? 'Answer each step.'
         : 'Answer one step at a time. Aim4price only reveals the next question after the current one is saved.';
@@ -6159,7 +6108,9 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                   <p className={styles.currentHint}>{compactAppMode ? 'Choose one.' : 'Choose the closest current condition.'}</p>
                 </div>
                 {conditionStepComplete ? (
-                  <span className={styles.selectedSummaryPill} data-selection-status="selected">{conditionLabel(condition)}</span>
+                  <span className={styles.selectedSummaryPill} data-selection-status="selected">
+                    {detailedAssessmentOpen ? 'Detailed condition' : conditionLabel(condition)}
+                  </span>
                 ) : (
                   <span className={styles.selectedSummaryPill} data-selection-status="pending">Choose one</span>
                 )}
@@ -6175,6 +6126,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                     onClick={() => {
                       setCondition(option.key);
                       setConditionStepComplete(true);
+                      clearDetailedAssessment();
                       resetResult();
                     }}
                   >
@@ -6182,12 +6134,103 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                   </button>
                 ))}
               </div>
+
+              {conditionStepComplete ? (
+                <>
+              <div className={styles.detailedAssessmentEntry}>
+                <div>
+                  <strong>Want a more accurate condition adjustment?</strong>
+                  <span>Assess the mechanical condition, body, tyres or wear components, service history and required work.</span>
+                </div>
+                <button
+                  type="button"
+                  className={styles.detailedAssessmentToggle}
+                  onClick={() => {
+                    if (detailedAssessmentOpen) {
+                      clearDetailedAssessment(false);
+                    } else {
+                      setDetailedAssessmentOpen(true);
+                      setDetailedAssessmentError('');
+                    }
+                    resetResult();
+                  }}
+                >
+                  {detailedAssessmentOpen ? 'Use simple condition' : 'Add detailed condition'}
+                </button>
+              </div>
+
+              {detailedAssessmentOpen ? (
+                <div className={styles.detailedAssessmentPanel}>
+                  <div className={styles.detailedAssessmentHeader}>
+                    <strong>Detailed Asset Assessment</strong>
+                    <span>This replaces the broad condition percentage. It is not applied as a second condition deduction.</span>
+                  </div>
+                  {renderDealerAssessmentGroup('Mechanical condition', dealerMechanicalCondition, DEALER_MECHANICAL_OPTIONS, (value) => {
+                    setDealerMechanicalCondition(value);
+                    resetResult();
+                  })}
+                  {renderDealerAssessmentGroup('Body / frame / structure', dealerBodyCondition, DEALER_BODY_OPTIONS, (value) => {
+                    setDealerBodyCondition(value);
+                    resetResult();
+                  })}
+                  {renderDealerAssessmentGroup('Tyres / wear components', dealerTyreCondition, DEALER_TYRE_OPTIONS, (value) => {
+                    setDealerTyreCondition(value);
+                    resetResult();
+                  })}
+                  {renderDealerAssessmentGroup('Service history', dealerServiceHistory, DEALER_SERVICE_OPTIONS, (value) => {
+                    setDealerServiceHistory(value);
+                    resetResult();
+                  })}
+                  {renderDealerAssessmentGroup('Required work', dealerRequiredWork, DEALER_WORK_OPTIONS, (value) => {
+                    setDealerRequiredWork(value);
+                    resetResult();
+                  })}
+                  {detailedAssessmentError ? <p className={styles.advancedError}>{detailedAssessmentError}</p> : null}
+                  {detailedAssessmentComplete ? <p className={styles.detailedAssessmentReady}>Detailed condition complete.</p> : null}
+                </div>
+              ) : null}
+                </>
+              ) : null}
             </div>
           ) : null}
-          {conditionStepComplete && shouldAskGenericSpecQuestions ? renderSpecQuestionsProgress() : null}
+
+          {conditionStepComplete && (!detailedAssessmentOpen || detailedAssessmentComplete) ? (
+            <div className={`${styles.currentCard} ${styles.popularityStepCard}`}>
+              <div className={styles.currentCardHead}>
+                <div>
+                  <span className={styles.currentEyebrow}>Step 4</span>
+                  <h3 className={styles.currentTitle}>Popularity</h3>
+                  <p className={styles.currentHint}>How easy is this asset type and model to sell in the current market?</p>
+                </div>
+                <span className={styles.selectedSummaryPill} data-selection-status={popularityStepComplete ? 'selected' : 'pending'}>
+                  {popularityStepComplete ? `${popularityStars} / 5 stars` : 'Choose rating'}
+                </span>
+              </div>
+              <div className={styles.popularityStars} role="group" aria-label="Popularity from 1 to 5 stars">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <button
+                    key={star}
+                    type="button"
+                    className={star <= popularityStars ? styles.popularityStarActive : ''}
+                    onClick={() => {
+                      setPopularityStars(star);
+                      resetResult();
+                    }}
+                    aria-label={`${star} star${star === 1 ? '' : 's'}`}
+                    aria-pressed={popularityStars === star}
+                  >
+                    ★
+                  </button>
+                ))}
+              </div>
+              <small className={styles.advancedFieldHelp}>1 = difficult to sell, 3 = normal demand, 5 = highly sought after.</small>
+            </div>
+          ) : null}
+
+          {popularityStepComplete && shouldAskGenericSpecQuestions ? renderSpecQuestionsProgress() : null}
         </div>
 
-        {!genericPath && conditionStepComplete ? (
+        {!genericPath && popularityStepComplete ? (
           <div className={styles.currentCard} style={{ marginTop: '1rem' }}>
             <h3 className={styles.currentTitle}>Tractor extras</h3>
             <div className={styles.choiceGrid}>
@@ -6275,7 +6318,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
               aria-pressed={value === option.value}
               onClick={() => {
                 onChange(option.value);
-                setDealerAssessmentError('');
+                setDetailedAssessmentError('');
               }}
             >
               {option.label}
@@ -6375,7 +6418,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
         <div className={styles.resultsMain}>
           <section className={`${styles.resultHero} ${resultHeroTone}`}>
             <div className={styles.resultHeroTopline}>
-              <span className={styles.resultKicker}>{isSalvageEstimate ? 'Indicative salvage estimate' : appliedDealerAssessment ? 'Dealer-assessed estimate' : 'Aim4price estimate'}</span>
+              <span className={styles.resultKicker}>{isSalvageEstimate ? 'Indicative salvage estimate' : appliedDealerAssessment ? 'Detailed-assessment estimate' : 'Aim4price estimate'}</span>
               <span className={`${styles.resultConfidenceBadge} ${getConfidenceClass(resultState, confidenceContext)}`}>{confidenceText}</span>
             </div>
             <div className={`${styles.resultValueLine} ${resultValueSizeClass}`}>
@@ -6425,7 +6468,11 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
               </div>
               <div className={styles.resultFactCard}>
                 <span>Condition</span>
-                <strong>{appliedDealerAssessment ? 'Dealer assessed' : conditionLabel(resultCondition)}</strong>
+                <strong>{appliedDealerAssessment ? 'Detailed assessment' : conditionLabel(resultCondition)}</strong>
+              </div>
+              <div className={styles.resultFactCard}>
+                <span>Popularity</span>
+                <strong>{appliedAdvancedAssumptions?.popularityStars ?? 3} / 5 stars</strong>
               </div>
             </div>
           </section>
@@ -6439,68 +6486,6 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
               {tractorResult.frontPtoValueExVat > 0 ? <div><span>Front PTO</span><strong>+{money(tractorResult.frontPtoValueExVat)}</strong></div> : null}
               {tractorResult.frontLoaderValueExVat > 0 ? <div><span>Front Loader</span><strong>+{money(tractorResult.frontLoaderValueExVat)}</strong></div> : null}
               {tractorResult.gpsValueExVat > 0 ? <div><span>GPS</span><strong>+{money(tractorResult.gpsValueExVat)}</strong></div> : null}
-            </section>
-          ) : null}
-
-          {isDealerAccount ? (
-            <section className={`${styles.resultAccordion} ${!canUseAdvancedAssumptions ? styles.advancedAssumptionsLocked : ''}`}>
-              <button
-                type="button"
-                className={styles.resultAccordionToggle}
-                onClick={() => setDealerAssessmentPanelOpen((open) => !open)}
-                aria-expanded={dealerAssessmentPanelOpen}
-              >
-                <span className={styles.resultAccordionTitleGroup}>
-                  <strong>Dealer condition assessment</strong>
-                  <small>{appliedDealerAssessment ? 'Dealer assessment applied.' : canUseAdvancedAssumptions ? 'Add a quick inspected-condition assessment.' : 'For active dealer accounts only.'}</small>
-                </span>
-                <span className={styles.resultAccordionAction}>{dealerAssessmentPanelOpen ? 'Hide' : appliedDealerAssessment ? 'Edit' : canUseAdvancedAssumptions ? 'Add' : 'Locked'}</span>
-              </button>
-
-              {dealerAssessmentPanelOpen ? (
-                <div className={styles.resultAccordionBody}>
-                  <p className={styles.resultAccordionCopy}>Assess the asset as it stands now. These universal questions work for vehicles, machinery and implements.</p>
-                  <div className={!canUseAdvancedAssumptions ? styles.advancedControlsLocked : ''}>
-                    {renderDealerAssessmentGroup('Mechanical condition', dealerMechanicalCondition, DEALER_MECHANICAL_OPTIONS, setDealerMechanicalCondition)}
-                    {renderDealerAssessmentGroup('Body condition', dealerBodyCondition, DEALER_BODY_OPTIONS, setDealerBodyCondition)}
-                    {renderDealerAssessmentGroup('Tyres / wear components', dealerTyreCondition, DEALER_TYRE_OPTIONS, setDealerTyreCondition)}
-                    {renderDealerAssessmentGroup('Service history', dealerServiceHistory, DEALER_SERVICE_OPTIONS, setDealerServiceHistory)}
-                    {renderDealerAssessmentGroup('Required work', dealerRequiredWork, DEALER_WORK_OPTIONS, setDealerRequiredWork)}
-
-                    <fieldset className={styles.dealerAssessmentGroup}>
-                      <legend>Popularity</legend>
-                      <div className={styles.popularityStars} role="group" aria-label="Popularity from 1 to 5 stars">
-                        {[1, 2, 3, 4, 5].map((star) => (
-                          <button
-                            key={star}
-                            type="button"
-                            className={star <= dealerPopularityStars ? styles.popularityStarActive : ''}
-                            onClick={() => {
-                              setDealerPopularityStars(star);
-                              setDealerAssessmentError('');
-                            }}
-                            aria-label={`${star} star${star === 1 ? '' : 's'}`}
-                            aria-pressed={dealerPopularityStars === star}
-                          >
-                            ★
-                          </button>
-                        ))}
-                      </div>
-                      <small className={styles.advancedFieldHelp}>1 = difficult to sell, 3 = normal demand, 5 = highly sought after.</small>
-                    </fieldset>
-
-                    {dealerAssessmentError ? <p className={styles.advancedError}>{dealerAssessmentError}</p> : null}
-                    <button
-                      type="button"
-                      className={styles.assetButton}
-                      onClick={() => void applyDealerAssessmentAndRecalculate()}
-                      disabled={!canUseAdvancedAssumptions || dealerAssessmentLoading || advancedRecalculateLoading || replacementRecalculateLoading || saveLoading}
-                    >
-                      {dealerAssessmentLoading ? 'Applying assessment...' : appliedDealerAssessment ? 'Update dealer assessment' : 'Apply dealer assessment'}
-                    </button>
-                  </div>
-                </div>
-              ) : null}
             </section>
           ) : null}
 
@@ -6550,7 +6535,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                       </label>
                     ) : null}
 
-                    {!isDealerAccount ? (
+                    {!appliedDealerAssessment ? (
                       <label className={styles.field}>
                         <span className={styles.fieldLabel}>{advancedConditionQuestionLabel}</span>
                         <input
@@ -6564,7 +6549,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                         <small className={styles.advancedFieldHelp}>100% = full value before condition adjustment.</small>
                       </label>
                     ) : (
-                      <p className={styles.advancedFieldHelp}>Dealer condition is controlled by the structured dealer assessment above.</p>
+                      <p className={styles.advancedFieldHelp}>Condition is controlled by the Detailed Asset Assessment used for this estimate.</p>
                     )}
                   </div>
 
