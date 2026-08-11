@@ -10,6 +10,7 @@ import {
   resolveSalvageValue,
 } from '../lib/valuation/valuation-rules.ts';
 import {
+  applyPopularityToConditionFactor,
   calculateDealerConditionFactor,
   normalizeDealerAssessment,
 } from '../lib/valuation/dealer-assessment.ts';
@@ -157,26 +158,24 @@ test('older-car marketability excludes SUVs and specialist body styles', () => {
   }
 });
 
-test('a normal dealer assessment reproduces the existing Good condition factor', () => {
+test('a normal detailed assessment reproduces the existing Good condition factor', () => {
   const assessment = normalizeDealerAssessment({
     mechanicalCondition: 'good',
     bodyCondition: 'good',
     tyreCondition: '50_75',
     serviceHistory: 'partial',
     requiredWork: 'minor',
-    popularityStars: 3,
   });
   assert.equal(assessment?.conditionFactorPercent, 85);
 });
 
-test('dealer condition outcomes stay inside the controlled 40%-98% range', () => {
+test('detailed physical-condition outcomes stay inside the controlled 40%-98% range', () => {
   const excellent = calculateDealerConditionFactor({
     mechanicalCondition: 'excellent',
     bodyCondition: 'excellent',
     tyreCondition: '75_100',
     serviceHistory: 'complete_verified',
     requiredWork: 'ready',
-    popularityStars: 5,
   });
   const poor = calculateDealerConditionFactor({
     mechanicalCondition: 'poor',
@@ -184,20 +183,18 @@ test('dealer condition outcomes stay inside the controlled 40%-98% range', () =>
     tyreCondition: 'replacement_required',
     serviceHistory: 'none',
     requiredWork: 'major',
-    popularityStars: 1,
   });
   assert.equal(excellent, 0.98);
   assert.equal(poor, 0.4);
 });
 
-test('dealer assessments produce an ordered range without assuming a gearbox', () => {
+test('detailed assessments produce an ordered physical range without assuming a gearbox', () => {
   const ready = calculateDealerConditionFactor({
     mechanicalCondition: 'excellent',
     bodyCondition: 'good',
     tyreCondition: '75_100',
     serviceHistory: 'complete_verified',
     requiredWork: 'ready',
-    popularityStars: 5,
   });
   const working = calculateDealerConditionFactor({
     mechanicalCondition: 'average',
@@ -205,7 +202,6 @@ test('dealer assessments produce an ordered range without assuming a gearbox', (
     tyreCondition: '25_50',
     serviceHistory: 'owner_recorded',
     requiredWork: 'moderate',
-    popularityStars: 2,
   });
   const project = calculateDealerConditionFactor({
     mechanicalCondition: 'poor',
@@ -213,13 +209,79 @@ test('dealer assessments produce an ordered range without assuming a gearbox', (
     tyreCondition: 'replacement_required',
     serviceHistory: 'none',
     requiredWork: 'major',
-    popularityStars: 1,
   });
 
-  assert.equal(ready, 0.98);
-  assert.ok(Math.abs(working - 0.66) < Number.EPSILON * 2);
+  assert.ok(Math.abs(ready - 0.95) < Number.EPSILON * 2);
+  assert.equal(working, 0.72);
   assert.equal(project, 0.4);
   assert.ok(ready > working && working > project);
+});
+
+test('popularity is a separate controlled market adjustment for simple and detailed condition', () => {
+  assert.equal(applyPopularityToConditionFactor(0.85, 1), 0.77);
+  assert.equal(applyPopularityToConditionFactor(0.85, 2), 0.8099999999999999);
+  assert.equal(applyPopularityToConditionFactor(0.85, 3), 0.85);
+  assert.equal(applyPopularityToConditionFactor(0.85, 4), 0.875);
+  assert.equal(applyPopularityToConditionFactor(0.85, 5), 0.9);
+  assert.equal(applyPopularityToConditionFactor(0.98, 5), 0.98);
+  assert.equal(applyPopularityToConditionFactor(0.4, 1), 0.4);
+});
+
+test('required work is deliberately limited to avoid deducting the same physical fault twice', () => {
+  const averageMinor = calculateDealerConditionFactor({
+    mechanicalCondition: 'average',
+    bodyCondition: 'average',
+    tyreCondition: '25_50',
+    serviceHistory: 'partial',
+    requiredWork: 'minor',
+  });
+  const averageModerate = calculateDealerConditionFactor({
+    mechanicalCondition: 'average',
+    bodyCondition: 'average',
+    tyreCondition: '25_50',
+    serviceHistory: 'partial',
+    requiredWork: 'moderate',
+  });
+  const averageMajor = calculateDealerConditionFactor({
+    mechanicalCondition: 'average',
+    bodyCondition: 'average',
+    tyreCondition: '25_50',
+    serviceHistory: 'partial',
+    requiredWork: 'major',
+  });
+
+  assert.equal(averageMinor, 0.75);
+  assert.equal(averageModerate, 0.73);
+  assert.equal(averageMajor, 0.67);
+});
+
+test('detailed assessment price outcomes remain proportionate on a R200,000 pre-condition value', () => {
+  const readyPhysical = calculateDealerConditionFactor({
+    mechanicalCondition: 'excellent',
+    bodyCondition: 'good',
+    tyreCondition: '75_100',
+    serviceHistory: 'complete_verified',
+    requiredWork: 'ready',
+  });
+  const workingPhysical = calculateDealerConditionFactor({
+    mechanicalCondition: 'average',
+    bodyCondition: 'average',
+    tyreCondition: '25_50',
+    serviceHistory: 'owner_recorded',
+    requiredWork: 'moderate',
+  });
+  const projectPhysical = calculateDealerConditionFactor({
+    mechanicalCondition: 'poor',
+    bodyCondition: 'damaged',
+    tyreCondition: 'replacement_required',
+    serviceHistory: 'none',
+    requiredWork: 'major',
+  });
+
+  assert.equal(Math.round(200_000 * applyPopularityToConditionFactor(readyPhysical, 5)), 196_000);
+  assert.equal(Math.round(200_000 * applyPopularityToConditionFactor(0.85, 3)), 170_000);
+  assert.equal(Math.round(200_000 * applyPopularityToConditionFactor(workingPhysical, 2)), 136_000);
+  assert.equal(Math.round(200_000 * applyPopularityToConditionFactor(projectPhysical, 1)), 80_000);
 });
 
 test('selected tractor extras always add a calculated value and are shown transparently', async () => {
@@ -238,4 +300,20 @@ test('path availability is checked with one model before the full list is reques
   assert.match(source, /loadFullGenericCatalog/);
   assert.match(source, /limit: '500'/);
   assert.match(source, /Please check the replacement price\./);
+  assert.match(source, /Add detailed condition/);
+  assert.match(source, /<h3 className=\{styles\.currentTitle\}>Popularity<\/h3>/);
+  assert.match(source, /<span className=\{styles\.currentEyebrow\}>Step 4<\/span>/);
+});
+
+test('detailed condition and popularity are standard inputs rather than dealer-only controls', async () => {
+  const valuationSource = await readFile(new URL('../app/valuation/valuation-client.tsx', import.meta.url), 'utf8');
+  const genericRoute = await readFile(new URL('../app/api/generic-valuations/route.ts', import.meta.url), 'utf8');
+  const tractorRoute = await readFile(new URL('../app/api/tractor-valuations/route.ts', import.meta.url), 'utf8');
+
+  assert.match(valuationSource, /Detailed Asset Assessment/);
+  assert.doesNotMatch(valuationSource, /Dealer condition assessment/);
+  assert.match(genericRoute, /advancedAssumptionsRequireActiveAccess/);
+  assert.match(tractorRoute, /advancedAssumptionsRequireActiveAccess/);
+  assert.doesNotMatch(genericRoute, /accountType !== 'dealer'/);
+  assert.doesNotMatch(tractorRoute, /accountType !== 'dealer'/);
 });
