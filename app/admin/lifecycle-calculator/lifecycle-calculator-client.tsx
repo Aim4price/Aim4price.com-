@@ -627,6 +627,7 @@ export default function LifecycleCalculatorClient() {
     { label: "Amount financed", strong: true, render: (scenario) => rand(scenario.loan.principal) },
     { label: "Interest rate", render: () => `${numberFormat.format(model.input.annualRatePct)}%` },
     { label: "Finance term", render: () => `${model.input.financeTermMonths} months` },
+    { label: "Effective balloon / residual", render: (scenario) => rand(scenario.loan.balloon) },
     { label: "Monthly instalment", strong: true, render: (scenario) => randCents(scenario.loan.monthlyPayment) },
     { label: "Total finance repayment", render: (scenario) => rand(scenario.loan.totalRepayment) },
     { label: "Total finance interest", render: (scenario) => rand(scenario.loan.totalInterest) },
@@ -879,6 +880,8 @@ export default function LifecycleCalculatorClient() {
               onChange={(value) => updateModel("balloon", value)}
               prefix="R"
               step={1_000}
+              max={standard.loan.principal}
+              help={`Maximum ${rand(standard.loan.principal)} for Standard finance.`}
             />
             <NumericField
               label="Finance / initiation fees"
@@ -898,8 +901,9 @@ export default function LifecycleCalculatorClient() {
             </div>
             <small>
               {model.input.ownershipYears * 12} months owned versus {model.input.financeTermMonths} months
-              financed. Disposal settlement is calculated at the ownership horizon without changing
-              the finance term.
+              financed. When the finance and disposal horizons match, the balloon is settled once
+              from the disposal proceeds. If finance ends earlier, it is paid once in that year&apos;s
+              cash flow.
             </small>
           </div>
         </article>
@@ -1312,6 +1316,7 @@ export default function LifecycleCalculatorClient() {
           <div className={styles.metricGrid}>
             <Metric label="Next equivalent asset price" value={rand(nextCycle.nextAssetPrice)} detail={`${model.input.assetInflationPct}% inflation over ${model.input.ownershipYears} years`} />
             <Metric label="Next financed amount" value={rand(nextCycle.nextFinancedAmount)} tone="green" />
+            <Metric label="Negative equity shortfall" value={rand(nextCycle.negativeEquityShortfall)} tone={nextCycle.negativeEquityShortfall > 0 ? "red" : "green"} />
             <Metric label="Allocation shortfall" value={rand(nextCycle.allocationShortfall)} tone={nextCycle.allocationShortfall > 0 ? "red" : "green"} />
           </div>
         </article>

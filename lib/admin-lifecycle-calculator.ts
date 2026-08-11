@@ -281,6 +281,26 @@ export function calculateRemainingBalance(
   return roundCurrency(Math.max(loan.balloon, balance));
 }
 
+function calculateSettlementAtHorizon(
+  input: LoanTerms,
+  paymentsMade: number,
+  balloonPaidAsScheduled = false,
+): number {
+  const loan = calculateLoan(input);
+  const made = Math.max(0, Math.round(finite(paymentsMade)));
+
+  // At an exact disposal/finance horizon the residual is settled from the
+  // disposal proceeds. When ownership continues beyond the term, the balloon
+  // is paid when due and must no longer reduce later timeline equity.
+  if (
+    made > loan.termMonths ||
+    (balloonPaidAsScheduled && made >= loan.termMonths)
+  ) {
+    return 0;
+  }
+  return calculateRemainingBalance(input, made);
+}
+
 export function calculateServicePlan(
   input: ServicePlanInput,
 ): ServicePlanSummary {
@@ -465,14 +485,18 @@ export function calculateNextCycle(input: {
   serviceAllocation: number;
   reserveAllocation: number;
   remainingDeposit: number;
+  negativeEquityShortfall: number;
   allocationShortfall: number;
   nextFinancedAmount: number;
 } {
-  const equity = Math.max(0, finite(input.equity));
+  const equity = finite(input.equity);
+  const availableEquity = Math.max(0, equity);
+  const negativeEquityShortfall = Math.max(0, -equity);
   const serviceAllocation = nonNegative(input.nextServicePlan);
   const reserveAllocation = nonNegative(input.nextUptimeReserve);
   const allocationTotal = serviceAllocation + reserveAllocation;
-  const remainingDeposit = Math.max(0, equity - allocationTotal);
+  const remainingDeposit = Math.max(0, availableEquity - allocationTotal);
+  const allocationShortfall = Math.max(0, allocationTotal - availableEquity);
   const nextTractorPrice =
     nonNegative(input.currentNewPrice) *
     Math.pow(
@@ -486,9 +510,16 @@ export function calculateNextCycle(input: {
     serviceAllocation: roundCurrency(serviceAllocation),
     reserveAllocation: roundCurrency(reserveAllocation),
     remainingDeposit: roundCurrency(remainingDeposit),
-    allocationShortfall: roundCurrency(Math.max(0, allocationTotal - equity)),
+    negativeEquityShortfall: roundCurrency(negativeEquityShortfall),
+    allocationShortfall: roundCurrency(allocationShortfall),
     nextFinancedAmount: roundCurrency(
-      Math.max(0, nextTractorPrice + Math.max(0, allocationTotal - equity) - remainingDeposit),
+      Math.max(
+        0,
+        nextTractorPrice +
+          negativeEquityShortfall +
+          allocationShortfall -
+          remainingDeposit,
+      ),
     ),
   };
 }
@@ -533,11 +564,16 @@ export function calculateRefinanceScenario(
   };
 }
 
-function loanCashForYear(loan: LoanSummary, year: number): number {
+function loanCashForYear(
+  loan: LoanSummary,
+  year: number,
+  includeBalloonDue = true,
+): number {
   const startMonth = year * 12;
   const remainingMonths = Math.max(0, loan.termMonths - startMonth);
   const paidMonths = Math.min(12, remainingMonths);
   const balloonDue =
+    includeBalloonDue &&
     loan.balloon > 0 &&
     loan.termMonths > startMonth &&
     loan.termMonths <= startMonth + 12
@@ -1240,6 +1276,8 @@ export function buildLifecycleWorkspaceModel(
     },
   ];
   const ownershipMonths = input.ownershipYears * 12;
+  const balloonPaidBeforeDisposal =
+    input.financeTermMonths < ownershipMonths;
   const preliminary = definitions.map((definition) => {
     const principal = Math.max(
       0,
@@ -1256,12 +1294,20 @@ export function buildLifecycleWorkspaceModel(
       balloon: input.balloon,
     };
     const loan = calculateLoan(loanTerms);
-    const settlementAtDisposal = calculateRemainingBalance(loanTerms, ownershipMonths);
+    const settlementAtDisposal = calculateSettlementAtHorizon(
+      loanTerms,
+      ownershipMonths,
+      balloonPaidBeforeDisposal,
+    );
     const equityAtDisposal = calculateEquity(future.tradeValue.grossAmount, settlementAtDisposal);
     let cumulativeCash = 0;
     const cashFlow = Array.from({ length: input.ownershipYears }, (_, index): LifecycleCashFlowYear => {
       const depositPayment = index === 0 ? roundCurrency(input.deposit) : 0;
-      const loanPayments = loanCashForYear(loan, index);
+      const loanPayments = loanCashForYear(
+        loan,
+        index,
+        balloonPaidBeforeDisposal,
+      );
       const serviceCashPayments = definition.serviceCashRequiredLater
         ? service.payAsYouGoByYear[index] ?? 0
         : 0;
@@ -1317,9 +1363,21 @@ export function buildLifecycleWorkspaceModel(
   const timeline = Array.from({ length: input.ownershipYears + 1 }, (_, year): LifecycleTimelineRow => {
     const position = calculateFuturePositionAtYear(input, year);
     const paymentsMade = year * 12;
-    const settlementStandard = calculateRemainingBalance(scenarioById.standard.loanTerms, paymentsMade);
-    const settlementService = calculateRemainingBalance(scenarioById.service.loanTerms, paymentsMade);
-    const settlementFull = calculateRemainingBalance(scenarioById.full.loanTerms, paymentsMade);
+    const settlementStandard = calculateSettlementAtHorizon(
+      scenarioById.standard.loanTerms,
+      paymentsMade,
+      balloonPaidBeforeDisposal,
+    );
+    const settlementService = calculateSettlementAtHorizon(
+      scenarioById.service.loanTerms,
+      paymentsMade,
+      balloonPaidBeforeDisposal,
+    );
+    const settlementFull = calculateSettlementAtHorizon(
+      scenarioById.full.loanTerms,
+      paymentsMade,
+      balloonPaidBeforeDisposal,
+    );
     return {
       year,
       projectedUsage: position.projectedUsage,

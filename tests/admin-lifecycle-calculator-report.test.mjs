@@ -133,6 +133,30 @@ test("finance worksheet uses numeric typed cells and auditable formulas", () => 
   assert.ok(numericCells.every((cell) => !String(cell.value).startsWith("R ")));
 });
 
+test("finance worksheet uses each scenario's effective capped balloon", () => {
+  const modelInput = {
+    ...calculator.DEFAULT_LIFECYCLE_MODEL_INPUT,
+    purchaseYear: 2026,
+    balloon: 600_000,
+  };
+  const context = report.buildLifecycleReportContext(request({ modelInput }));
+  const finance = report
+    .buildLifecycleWorkbook(request({ modelInput }))
+    .find((sheet) => sheet.name === "Finance Comparison");
+  const balloonRow = finance.rows.find(
+    (row) => row[0]?.value === "Effective balloon / residual",
+  );
+
+  assert.deepEqual(
+    context.model.scenarios.map((scenario) => scenario.loan.balloon),
+    [500_000, 564_000, 600_000],
+  );
+  assert.deepEqual(
+    balloonRow.slice(1).map((cell) => cell.value),
+    [500_000, 564_000, 600_000],
+  );
+});
+
 test("simple XLSX writer creates a valid uncompressed workbook with numeric values", () => {
   const workbook = xlsx.createXlsxWorkbook(report.buildLifecycleWorkbook(request()));
   const raw = workbook.toString("utf8");

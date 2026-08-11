@@ -71,6 +71,28 @@ function closeTo(actual, expected, tolerance = 0.02) {
   );
 }
 
+function balloonLifecycleModel({
+  ownershipYears,
+  financeTermMonths = 60,
+  balloon = 100_000,
+}) {
+  return calculator.buildLifecycleWorkspaceModel({
+    ...calculator.DEFAULT_LIFECYCLE_MODEL_INPUT,
+    purchaseYear: 2026,
+    ownershipYears,
+    financeTermMonths,
+    balloon,
+    serviceBasis: "manual",
+    negotiatedServiceAmount: 0,
+    maintenanceStartAfterYears: 0,
+    maintenanceYears: 0,
+    maintenanceEventsPerYear: 0,
+    negotiatedMaintenanceReserve: 0,
+    tradeMode: "manual",
+    manualTradeValue: 260_000,
+  });
+}
+
 test("R500,000 asset finance matches the standard amortising-loan result", () => {
   const result = calculator.calculateLoan({
     principal: 500_000,
@@ -193,6 +215,102 @@ test("zero-percent finance and balloon values do not divide by zero", () => {
   );
 });
 
+test("positive-interest balloon finance matches an independently amortised schedule", () => {
+  const result = calculator.calculateLoan({
+    principal: 500_000,
+    annualRatePct: 10.5,
+    termMonths: 60,
+    balloon: 100_000,
+  });
+
+  closeTo(result.monthlyPayment, 9_472.56);
+  closeTo(result.totalRepayment, 668_353.61);
+  closeTo(result.totalInterest, 168_353.61);
+  closeTo(
+    calculator.calculateRemainingBalance(
+      {
+        principal: 500_000,
+        annualRatePct: 10.5,
+        termMonths: 60,
+        balloon: 100_000,
+      },
+      36,
+    ),
+    285_387.97,
+  );
+  assert.equal(
+    calculator.calculateRemainingBalance(
+      {
+        principal: 500_000,
+        annualRatePct: 10.5,
+        termMonths: 60,
+        balloon: 100_000,
+      },
+      60,
+    ),
+    100_000,
+  );
+});
+
+test("balloon is counted once when disposal matches the finance horizon", () => {
+  const model = balloonLifecycleModel({ ownershipYears: 5 });
+  const tradeValue = model.future.tradeValue.grossAmount;
+
+  for (const scenario of model.scenarios) {
+    const financeCash = scenario.cashFlow.reduce(
+      (total, year) => total + year.loanPayments,
+      0,
+    );
+
+    assert.equal(scenario.settlementAtDisposal, 100_000);
+    closeTo(
+      financeCash + scenario.settlementAtDisposal,
+      scenario.loan.totalRepayment,
+      0.1,
+    );
+    closeTo(
+      scenario.netOwnershipCostAfterTrade,
+      scenario.loan.totalRepayment - tradeValue,
+      0.1,
+    );
+  }
+  assert.equal(model.timeline.at(-1).settlementStandard, 100_000);
+});
+
+test("balloon remains in settlement when disposal is before the finance horizon", () => {
+  const model = balloonLifecycleModel({ ownershipYears: 4 });
+  const standard = model.scenarios[0];
+  const financeCash = standard.cashFlow.reduce(
+    (total, year) => total + year.loanPayments,
+    0,
+  );
+
+  closeTo(financeCash, standard.loan.monthlyPayment * 48, 0.1);
+  assert.ok(standard.settlementAtDisposal > standard.loan.balloon);
+});
+
+test("balloon paid before disposal is not left in settlement or timeline equity", () => {
+  const model = balloonLifecycleModel({ ownershipYears: 6 });
+  const tradeValue = model.future.tradeValue.grossAmount;
+
+  for (const scenario of model.scenarios) {
+    const financeCash = scenario.cashFlow.reduce(
+      (total, year) => total + year.loanPayments,
+      0,
+    );
+
+    assert.equal(scenario.settlementAtDisposal, 0);
+    closeTo(financeCash, scenario.loan.totalRepayment, 0.1);
+    closeTo(
+      scenario.netOwnershipCostAfterTrade,
+      scenario.loan.totalRepayment - tradeValue,
+      0.1,
+    );
+  }
+  assert.equal(model.timeline.find((year) => year.year === 5).settlementStandard, 0);
+  assert.equal(model.timeline.at(-1).settlementStandard, 0);
+});
+
 test("settled finance leaves the full trade value as equity", () => {
   assert.equal(calculator.calculateEquity(260_000, 0), 260_000);
 });
@@ -208,8 +326,25 @@ test("next-cycle allocation funds both maintenance packages before the deposit",
   });
 
   assert.equal(result.remainingDeposit, 146_000);
+  assert.equal(result.negativeEquityShortfall, 0);
   assert.equal(result.allocationShortfall, 0);
   closeTo(result.nextTractorPrice, 579_637.04);
+});
+
+test("next-cycle funding carries negative equity instead of discarding it", () => {
+  const result = calculator.calculateNextCycle({
+    equity: -50_000,
+    nextServicePlan: 64_000,
+    nextUptimeReserve: 50_000,
+    currentNewPrice: 500_000,
+    inflationRatePct: 0,
+    years: 5,
+  });
+
+  assert.equal(result.remainingDeposit, 0);
+  assert.equal(result.negativeEquityShortfall, 50_000);
+  assert.equal(result.allocationShortfall, 114_000);
+  assert.equal(result.nextFinancedAmount, 664_000);
 });
 
 test("parts inflation is compounded at each event date rather than for five full years", () => {
