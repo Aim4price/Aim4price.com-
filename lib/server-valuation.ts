@@ -6,7 +6,7 @@ import {
   calculateTractorLoaderValue,
 } from './valuation/tractors';
 import {
-  getAdvancedConditionFactorOverride,
+  getValuationConditionFactorOverride,
   normalizeAdvancedAssumptions,
   tractorLifetimeHours,
 } from './valuation/shared';
@@ -229,7 +229,7 @@ export async function runServerValuation(input: RunValuationInput): Promise<Resu
   const defaultMaxLifetimeHours = tractorLifetimeHours(model.tractorType, model.powerKw);
   const advancedAssumptions = normalizeAdvancedAssumptions(input.advancedAssumptions, 'hours');
   const maxLifetimeHours = advancedAssumptions?.maxLifetimeUsage ?? defaultMaxLifetimeHours;
-  const conditionFactorOverride = getAdvancedConditionFactorOverride(advancedAssumptions);
+  const conditionFactorOverride = getValuationConditionFactorOverride(input.condition, advancedAssumptions);
   const assumptionOptions = { maxLifetimeHours, conditionFactorOverride };
 
   const baseCalculation = calculateTractorAim4priceDetails(
