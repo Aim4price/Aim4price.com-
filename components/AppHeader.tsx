@@ -230,7 +230,7 @@ const ACCOUNTANT_ACCOUNT_MENU_ITEMS: AccountMenuItem[] = [
 ];
 
 const LICENSING_ACCOUNT_MENU_ITEMS: AccountMenuItem[] = [
-  { href: '/licensing', label: 'Home' },
+  { href: '/', label: 'Home' },
   { href: '/leads', label: 'My Leads' },
   { href: '/asset-discovery', label: 'Discovery' },
   { href: '/account', label: 'Account' },
@@ -303,7 +303,7 @@ function buildNavItems(
 
   if (accountType === 'licensing') {
     return [
-      { key: 'home', href: '/licensing', label: 'Home' },
+      { key: 'home', href: '/', label: 'Home' },
       { key: 'leads', href: '/leads', label: 'My Leads' },
       { key: 'asset-discovery', href: '/asset-discovery', label: 'Discovery' },
     ];
