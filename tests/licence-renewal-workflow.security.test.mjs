@@ -50,6 +50,7 @@ test('the owner share modal includes licence renewals and selected eligible asse
   assert.match(registerClient, /aria-pressed=\{isSelected\}/);
   assert.match(registerClient, /Continue with \$\{selectedQuotePartners\.length\}/);
   assert.match(registerClient, /for \(const partner of selectedPartners\)/);
+  assert.match(registerClient, /const preservedSelections = current\.filter\(\(partner\) => selectedQuotePartnerIds\.includes\(partner\.userId\)\)/);
   assert.doesNotMatch(registerClient, /assetQuotePartnerChoose/);
   assert.match(registerStyles, /Partner picker: full-card multi-select/);
   assert.match(registerStyles, /assetQuotePartnerCard\.assetQuotePartnerCardActive[\s\S]*background: linear-gradient\(135deg, #e9f8f1/);
