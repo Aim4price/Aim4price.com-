@@ -6,6 +6,7 @@ import DealerMaintenanceAccessSettings from '../../../../components/DealerMainte
 import GroupedCurrencyInput, { parseCurrencyInput } from '../../../../components/GroupedCurrencyInput';
 import { formatResolvedAssetUsage, resolveAssetUsage, type AssetUsageMetric } from '../../../../lib/asset-usage';
 import type { DealerMaintenanceAccessSummary } from '../../../../lib/dealer-maintenance-tracker';
+import type { DealerAssetCorrectionRequest } from '../../../../lib/dealer-asset-corrections';
 import { openAssetSheetPrint } from '../../../../lib/report-print';
 import BalancedHeadingText from '../../balanced-heading';
 import OwnerAppNav from '../../owner-app-nav';
@@ -28,6 +29,7 @@ type Asset = {
   marketplaceSellerName: string; marketplaceSellerCompany: string; marketplaceSellerEmail: string;
   marketplaceProvince: string; marketplaceArea: string; lastScannedAtIso: string | null; lastKnownLat: number | null;
   lastKnownLng: number | null; lastKnownLocationText: string; createdAtIso: string; updatedAtIso: string;
+  dealerAssetCorrection?: DealerAssetCorrectionRequest | null;
 };
 type Register = { id: string; businessName: string };
 type OwnerContext = {
@@ -341,6 +343,41 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
       setNotice({ tone: 'error', message: cause instanceof Error ? cause.message : 'Failed to load this asset.' });
     } finally {
       if (!silent) setLoading(false);
+    }
+  }
+
+  async function decideRenewalUpdate(decision: 'accept' | 'reject') {
+    const correction = draft?.dealerAssetCorrection;
+    if (!draft || !correction || actionBusy) return;
+    setActionBusy('renewal-decision');
+    setNotice(null);
+    try {
+      const response = await fetch(`/api/asset-corrections/${encodeURIComponent(correction.id)}`, {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ decision }),
+      });
+      const payload = await response.json().catch(() => null) as {
+        ok?: boolean;
+        message?: string;
+        asset?: Asset | null;
+        error?: string;
+      } | null;
+      if (!response.ok || !payload?.ok) throw new Error(payload?.error || 'Failed to save your decision.');
+      setDraft((current) => current ? {
+        ...current,
+        ...(payload.asset ?? {}),
+        dealerAssetCorrection: null,
+      } : current);
+      setNotice({
+        tone: 'success',
+        message: payload.message || (decision === 'accept' ? 'Renewal date accepted and saved.' : 'Renewal date declined.'),
+      });
+    } catch (cause) {
+      setNotice({ tone: 'error', message: cause instanceof Error ? cause.message : 'Failed to save your decision.' });
+    } finally {
+      setActionBusy('');
     }
   }
 
@@ -672,11 +709,34 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
   const editorHeader = (title: string, description: string) => (
     <p className={styles.editorIntro} aria-label={title}>{description}</p>
   );
+  const renewalUpdate = draft.dealerAssetCorrection?.licenseRenewalDateChanged
+    ? draft.dealerAssetCorrection
+    : null;
+  const renewalUpdateBanner = renewalUpdate ? (
+    <section className={`${styles.section} ${styles.ownerRenewalApproval}`} role="status">
+      <div>
+        <strong>Licence renewal awaiting approval</strong>
+        <p>
+          {renewalUpdate.dealerName || 'Your licence expert'} changed the renewal date from{' '}
+          {dateOnly(renewalUpdate.currentLicenseRenewalDate)} to {dateOnly(renewalUpdate.proposedLicenseRenewalDate)}.
+        </p>
+      </div>
+      <div className={styles.notificationCorrectionActions}>
+        <button type="button" className={styles.notificationCorrectionDecline} onClick={() => void decideRenewalUpdate('reject')} disabled={Boolean(actionBusy) || !permissions.includes('manage_assets')}>
+          {actionBusy === 'renewal-decision' ? 'Saving…' : 'Decline'}
+        </button>
+        <button type="button" className={styles.notificationCorrectionAccept} onClick={() => void decideRenewalUpdate('accept')} disabled={Boolean(actionBusy) || !permissions.includes('manage_assets')}>
+          {actionBusy === 'renewal-decision' ? 'Saving…' : 'Accept update'}
+        </button>
+      </div>
+    </section>
+  ) : null;
 
   if (view === 'summary') {
     return (
       <div className={styles.wideContent}>
         {notice ? <div className={notice.tone === 'success' ? styles.successNotice : styles.errorNotice}>{notice.message}</div> : null}
+        {renewalUpdateBanner}
         <section className={`${styles.summaryCard} ${styles.detailHero} ${styles.assetMirrorCard}`}>
           <div className={styles.detailPhotoStage}>
             {primaryPhoto ? (
@@ -793,6 +853,7 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
     return (
       <div className={styles.wideContent}>
         {notice ? <div className={notice.tone === 'success' ? styles.successNotice : styles.errorNotice}>{notice.message}</div> : null}
+        {renewalUpdateBanner}
 
         <section className={`${styles.summaryCard} ${styles.detailHero} ${styles.assetMirrorCard} ${styles.assetDetailsPageCard}`}>
           <div className={styles.detailPhotoStage}>
@@ -1012,6 +1073,8 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
     ));
     return (
       <div className={styles.wideContent}>
+        {notice ? <div className={notice.tone === 'success' ? styles.successNotice : styles.errorNotice}>{notice.message}</div> : null}
+        {renewalUpdateBanner}
         <section className={styles.manageAssetIdentity}>
           <div className={styles.manageAssetIdentityCopy}>
             <h1><BalancedHeadingText text={draft.title} /></h1>

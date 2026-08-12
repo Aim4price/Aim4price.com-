@@ -341,7 +341,7 @@ function formatCostAmount(value: number): string {
 }
 
 function correctionActor(correction: DealerAssetCorrectionRequest): string {
-  const dealerName = asText(correction.dealerName) || 'the dealer';
+  const dealerName = asText(correction.dealerName) || 'the partner';
   const actorName = asText(correction.actorName);
   if (!actorName || actorName.toLowerCase() === dealerName.toLowerCase()) return dealerName;
   return `${actorName} at ${dealerName}`;
@@ -365,6 +365,15 @@ function correctionValueSummary(correction: DealerAssetCorrectionRequest): strin
       ? 'not saved'
       : currency.format(correction.currentReplacementPriceExVat);
     changes.push(`replacement price from ${previous} to ${currency.format(correction.proposedReplacementPriceExVat)} excl. VAT`);
+  }
+
+  if (correction.licenseRenewalDateChanged && correction.proposedLicenseRenewalDate) {
+    const formatter = new Intl.DateTimeFormat('en-ZA', { dateStyle: 'medium' });
+    const formatDate = (value: string) => {
+      const parsed = new Date(`${value}T00:00:00`);
+      return Number.isNaN(parsed.getTime()) ? value || 'not saved' : formatter.format(parsed);
+    };
+    changes.push(`licence renewal date from ${formatDate(correction.currentLicenseRenewalDate)} to ${formatDate(correction.proposedLicenseRenewalDate)}`);
   }
 
   return changes.join(' and ');
@@ -402,7 +411,7 @@ async function listOwnerDealerAssetCorrectionNotifications(userId: string): Prom
         id: `dealer-correction:${correction.id}:${correction.updatedAtIso}`,
         category: 'dealer_correction',
         tone: 'warning',
-        title: 'Dealer updated asset details',
+        title: correction.licenseRenewalDateChanged ? 'Licence expert updated renewal date' : 'Dealer updated asset details',
         body: `${correctionActor(correction)} updated the ${correctionValueSummary(correction)} for ${correction.assetTitle}. Accept the change to update your Asset Register.`,
         href: '',
         createdAtIso: correction.updatedAtIso,
@@ -413,7 +422,7 @@ async function listOwnerDealerAssetCorrectionNotifications(userId: string): Prom
       } satisfies HeaderNotificationItem;
     });
   } catch (error) {
-    console.error('Failed to load dealer asset correction notifications', error);
+    console.error('Failed to load asset correction notifications', error);
     return [];
   }
 }

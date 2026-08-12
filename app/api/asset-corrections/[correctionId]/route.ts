@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAccountProfile } from '../../../../lib/account-profile';
 import { getServerSession, isOwnerAppSession } from '../../../../lib/auth-session';
 import { resolveDealerAssetCorrection } from '../../../../lib/dealer-asset-corrections';
+import { getOwnerAppAccess, ownerAppCan } from '../../../../lib/owner-app-access';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -25,6 +26,13 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
   const session = await getServerSession({ allowOwnerApp: true });
   if (!session?.user?.id) {
     return NextResponse.json({ ok: false, error: 'Owner sign-in is required.' }, { status: 401 });
+  }
+
+  if (isOwnerAppSession(session)) {
+    const access = await getOwnerAppAccess();
+    if (!access || access.ownerUserId !== session.user.id || !ownerAppCan(access, 'manage_assets')) {
+      return NextResponse.json({ ok: false, error: 'Only an Owner / Admin login can decide this update.' }, { status: 403 });
+    }
   }
 
   const profile = await getAccountProfile({
@@ -59,10 +67,10 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
   } catch (error) {
     const message = error instanceof Error ? error.message : '';
     if (message === 'CORRECTION_NOT_FOUND') {
-      return NextResponse.json({ ok: false, error: 'This dealer correction was not found.' }, { status: 404 });
+      return NextResponse.json({ ok: false, error: 'This asset update was not found.' }, { status: 404 });
     }
     if (message === 'CORRECTION_ALREADY_RESOLVED') {
-      return NextResponse.json({ ok: false, error: 'This dealer correction has already been decided.' }, { status: 409 });
+      return NextResponse.json({ ok: false, error: 'This asset update has already been decided.' }, { status: 409 });
     }
     if (message === 'ASSET_NOT_FOUND') {
       return NextResponse.json({ ok: false, error: 'The asset is no longer available.' }, { status: 404 });
@@ -87,7 +95,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
       );
     }
 
-    console.error('Owner dealer asset correction PATCH failed.', error);
+    console.error('Owner asset correction PATCH failed.', error);
     return NextResponse.json({ ok: false, error: 'Failed to save the correction decision.' }, { status: 500 });
   }
 }
