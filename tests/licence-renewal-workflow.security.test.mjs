@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import test from 'node:test';
 
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
@@ -11,6 +11,7 @@ const registerClient = read('app/asset-register/asset-register-client.tsx');
 const registerStyles = read('app/asset-register/page.module.css');
 const leadsClient = read('app/leads/leads-client.tsx');
 const header = read('components/AppHeader.tsx');
+const headerStyles = read('components/AppHeader.module.css');
 const signup = read('app/auth/auth-client.tsx');
 const assetRegisterRoute = read('app/api/asset-register/route.ts');
 const ownerAssetActionsRoute = read('app/api/owner-app/assets/[assetId]/actions/route.ts');
@@ -44,6 +45,9 @@ test('the owner share modal includes licence renewals and selected eligible asse
   assert.match(registerClient, /readLicenseStatusChoice\(asset\) === 'yes'/);
   assert.match(registerClient, /selectedDealerShareAssetIds/);
   assert.match(registerClient, /source: 'licence_register_share'/);
+  assert.match(registerClient, /onClick=\{\(\) => openQuoteLeadMessage\(partner\)\}/);
+  assert.doesNotMatch(registerClient, /All Companies|href="\/companies"/);
+  assert.equal(existsSync(new URL('../app/companies/page.tsx', import.meta.url)), false);
 });
 
 test('the asset share modal uses four concise desktop choices', () => {
@@ -127,9 +131,12 @@ test('every document constructor supplies category and document type metadata', 
 
 test('licensing Discovery exposes only a coarse renewal window before approval', () => {
   assert.match(discovery, /LICENSING_DISCOVERY_ASSET_SQL/);
-  assert.match(discovery, /Renewal due/);
+  assert.match(discovery, /month: 'long', year: 'numeric'/);
   assert.match(discoveryClient, /Offer renewal help/);
+  assert.match(discoveryClient, /styles\.discoveryRenewalAction/);
   assert.match(discoveryClient, /Exact details remain private until the owner approves/);
+  assert.match(discoveryClient, /\["Renewal", details\.asset\.renewalWindow\]/);
+  assert.match(registerStyles, /assetQuotePartnerChoose/);
   const listSql = discovery.slice(
     discovery.indexOf('const listSql = `'),
     discovery.indexOf('const assetRows =', discovery.indexOf('const listSql = `')),
@@ -145,6 +152,13 @@ test('an approved Discovery offer creates a renewal lead with photos and licence
   assert.match(leadsClient, /LICENCE RENEWAL LEADS/);
   assert.match(leadsClient, /Renewal due/);
   assert.match(leadsClient, /licenceLeadThumbnail/);
+  assert.match(notifications, /Licence renewal help offered/);
+  assert.match(notifications, /It is now in My Leads/);
+  assert.match(header, /Renewal help offer/);
+  assert.match(header, /Accept help/);
+  assert.match(header, /expert&apos;s My Leads/);
+  assert.match(headerStyles, /notificationRenewalDetailModal/);
+  assert.match(headerStyles, /notificationRenewalDateCard/);
 });
 
 test('renewal lead snapshots do not carry valuation or unrelated private specs', () => {

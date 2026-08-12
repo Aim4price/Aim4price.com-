@@ -20512,6 +20512,18 @@
   overflow-wrap: anywhere !important;
 }
 
+.assetQuotePartnerChoose {
+  flex: 0 0 auto !important;
+  padding: 0.34rem 0.62rem !important;
+  border: 1px solid rgba(18, 100, 77, 0.16) !important;
+  border-radius: 999px !important;
+  color: #12644d !important;
+  background: #eef8f3 !important;
+  font-size: 0.68rem !important;
+  font-weight: 850 !important;
+  line-height: 1 !important;
+}
+
 .assetQuoteSelectedCompanyTitle span {
   color: #657684 !important;
   font-size: 0.86rem !important;
@@ -20610,37 +20622,16 @@
   }
 }
 
-/* Companies page entry point in partner picker */
+/* Partner picker search */
 .assetQuoteSearchBar,
 .assetQuotePartnerPickerModal .assetQuoteSearchBar {
-  grid-template-columns: minmax(0, 1fr) auto auto !important;
-}
-
-.assetQuoteAllCompaniesButton {
-  min-height: 4.25rem !important;
-  min-width: 11.25rem !important;
-  border-radius: 1.25rem !important;
-  text-decoration: none !important;
-  white-space: nowrap !important;
-  color: #102f27 !important;
-  background: #ffffff !important;
-  border-color: rgba(18, 45, 37, 0.16) !important;
-}
-
-.assetQuoteAllCompaniesButton:hover {
-  color: #12644d !important;
-  border-color: rgba(31, 108, 83, 0.32) !important;
-  box-shadow: 0 14px 28px rgba(18, 45, 37, 0.08) !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
 }
 
 @media (max-width: 860px) {
   .assetQuoteSearchBar,
   .assetQuotePartnerPickerModal .assetQuoteSearchBar {
     grid-template-columns: 1fr !important;
-  }
-
-  .assetQuoteAllCompaniesButton {
-    width: 100% !important;
   }
 }
 

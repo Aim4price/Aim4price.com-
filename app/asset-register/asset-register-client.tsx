@@ -5985,7 +5985,8 @@ function quotePartnerServicesDisplay(partner: PartnerDirectoryEntry): string {
 }
 
 function quotePartnerRadiusDisplay(partner: PartnerDirectoryEntry): string {
-  return partner.serviceRadiusKm ? `${partner.serviceRadiusKm} km service radius` : 'Radius not saved';
+  if (partner.serviceRadiusKm) return `${partner.serviceRadiusKm} km service radius`;
+  return partner.partnerType === 'licensing' ? 'Available for renewal requests' : 'Service area not saved';
 }
 
 function hasQuotePartnerCoordinates(partner: PartnerDirectoryEntry): boolean {
@@ -18367,9 +18368,6 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                       <SearchIcon className={styles.buttonIcon} />
                       <span>{isLoadingQuotePartners ? 'Searching...' : 'Search'}</span>
                     </button>
-                    <Link href="/companies" className={`${styles.secondaryButton} ${styles.assetQuoteAllCompaniesButton}`}>
-                      <span>All Companies</span>
-                    </Link>
                   </form>
 
                   <div className={styles.assetQuoteMapStage}>
@@ -18390,11 +18388,13 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                               key={partner.userId}
                               type="button"
                               className={`${styles.assetQuotePartnerCard} ${quoteToneClassForPartnerType(partner.partnerType)} ${selectedQuotePartnerId === partner.userId ? styles.assetQuotePartnerCardActive : ''}`}
-                              onClick={() => focusQuotePartnerOnMap(partner)}
+                              onClick={() => openQuoteLeadMessage(partner)}
+                              aria-label={`Choose ${quotePartnerName(partner)}`}
                             >
                               <span className={styles.assetQuotePartnerBody}>
                                 <span className={styles.assetQuotePartnerHeader}>
                                   <strong>{quotePartnerName(partner)}</strong>
+                                  <span className={styles.assetQuotePartnerChoose}>Choose</span>
                                 </span>
                                 <span className={styles.assetQuotePartnerMeta}>
                                   <span>{quotePartnerLocation(partner)}</span>
@@ -18417,7 +18417,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                       ) : (
                         <div className={styles.assetQuoteMapFallback}>
                           <OptionsIcon className={styles.buttonIcon} />
-                          <p>Businesses with saved latitude and longitude will appear on this map.</p>
+                          <p>Choose any business from the list. Map pins appear when a location is saved.</p>
                         </div>
                       )}
                     </div>
