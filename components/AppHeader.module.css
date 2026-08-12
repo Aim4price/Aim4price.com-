@@ -1203,6 +1203,88 @@
   font-size: 1rem;
 }
 
+.notificationRenewalDetailModal {
+  width: min(52rem, calc(100vw - 2rem));
+  border-color: rgba(109, 40, 217, 0.18);
+  background:
+    radial-gradient(circle at 100% 0%, rgba(139, 92, 246, 0.11), transparent 20rem),
+    linear-gradient(180deg, #ffffff 0%, #fcfbff 100%);
+}
+
+.notificationRenewalDetailModal .notificationDetailHeader {
+  background: linear-gradient(135deg, rgba(248, 245, 255, 0.9) 0%, rgba(255, 255, 255, 0.96) 72%);
+}
+
+.notificationRenewalEyebrow {
+  display: inline-flex;
+  width: fit-content;
+  margin-bottom: 0.55rem;
+  padding: 0.38rem 0.68rem;
+  border: 1px solid rgba(109, 40, 217, 0.16);
+  border-radius: 999px;
+  color: #6426bd;
+  background: #f5efff;
+  font-size: 0.72rem;
+  font-weight: 850;
+  letter-spacing: 0.05em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.notificationRenewalDateCard {
+  border-color: rgba(109, 40, 217, 0.2) !important;
+  background: linear-gradient(180deg, #ffffff 0%, #f7f1ff 100%) !important;
+  box-shadow: 0 12px 26px rgba(109, 40, 217, 0.07) !important;
+}
+
+.notificationRenewalDateCard span,
+.notificationRenewalDateCard strong {
+  color: #6426bd !important;
+}
+
+.notificationRenewalShareNote {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.35rem 0.85rem;
+  align-items: center;
+  padding: 1rem 1.1rem;
+  border: 1px solid rgba(109, 40, 217, 0.14);
+  border-radius: 1.05rem;
+  background: rgba(248, 245, 255, 0.86);
+}
+
+.notificationRenewalShareNote strong {
+  color: #542099;
+  font-size: 0.82rem;
+  white-space: nowrap;
+}
+
+.notificationRenewalShareNote p {
+  margin: 0;
+  color: #5d6572;
+  font-size: 0.86rem;
+  font-weight: 650;
+  line-height: 1.45;
+}
+
+.notificationRenewalDetailModal .notificationPrimaryButton {
+  min-width: 9rem;
+}
+
+.notificationRenewalDetailModal .notificationSoftDangerButton {
+  min-width: 7rem;
+}
+
+@media (max-width: 620px) {
+  .notificationRenewalShareNote {
+    grid-template-columns: 1fr;
+  }
+
+  .notificationRenewalShareNote strong {
+    white-space: normal;
+  }
+}
+
 .notificationDetailHeader {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
