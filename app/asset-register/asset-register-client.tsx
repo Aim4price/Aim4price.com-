@@ -10395,10 +10395,14 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
         throw new Error(extractApiError(payload, 'Failed to load partner directory.'));
       }
 
-      setQuotePartners(data.partners);
-      setSelectedQuotePartnerIds((current) => current.filter((partnerId) => (
-        data.partners?.some((partner) => partner.userId === partnerId)
-      )));
+      const loadedPartners = data.partners;
+      setQuotePartners((current) => {
+        const preservedSelections = current.filter((partner) => selectedQuotePartnerIds.includes(partner.userId));
+        const nextPartners = new Map(
+          [...preservedSelections, ...loadedPartners].map((partner) => [partner.userId, partner]),
+        );
+        return Array.from(nextPartners.values());
+      });
     } catch (error) {
       setQuotePartners([]);
       setSelectedQuotePartnerIds([]);
