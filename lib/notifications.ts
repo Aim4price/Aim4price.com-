@@ -667,18 +667,25 @@ async function listOwnerAssetDiscoveryNotifications(userId: string): Promise<Hea
   try {
     const enquiries = await listPendingAssetDiscoveryEnquiriesForOwner(userId);
 
-    return enquiries.map((enquiry) => ({
-      id: `asset-discovery-owner:${enquiry.id}:${enquiry.updatedAtIso}`,
-      category: 'asset_discovery',
-      tone: 'warning',
-      title: '#1 priority · Discovery enquiry',
-      body: `Another user is looking for a machine like your ${enquiry.asset.brand} ${enquiry.asset.model}. Interested in selling it?`,
-      href: '',
-      createdAtIso: isoFallback(enquiry.createdAtIso || enquiry.updatedAtIso),
-      assetId: enquiry.assetId,
-      assetDiscoveryEnquiryId: enquiry.id,
-      priority: true,
-    } satisfies HeaderNotificationItem));
+    return enquiries.map((enquiry) => {
+      const licensingOffer = enquiry.requesterAccountType === 'licensing';
+      const assetName = `${enquiry.asset.brand} ${enquiry.asset.model}`.trim();
+
+      return {
+        id: `asset-discovery-owner:${enquiry.id}:${enquiry.updatedAtIso}`,
+        category: 'asset_discovery',
+        tone: 'warning',
+        title: licensingOffer ? 'Licence renewal help offered' : '#1 priority · Discovery enquiry',
+        body: licensingOffer
+          ? `A licence renewal expert offered to help with your ${assetName}${enquiry.asset.renewalWindow ? `, due ${enquiry.asset.renewalWindow}` : ''}.`
+          : `Another user is looking for a machine like your ${assetName}. Interested in selling it?`,
+        href: '',
+        createdAtIso: isoFallback(enquiry.createdAtIso || enquiry.updatedAtIso),
+        assetId: enquiry.assetId,
+        assetDiscoveryEnquiryId: enquiry.id,
+        priority: true,
+      } satisfies HeaderNotificationItem;
+    });
   } catch (error) {
     console.error('Failed to load owner Discovery notifications', error);
     return [];
@@ -691,6 +698,8 @@ async function listRequesterAssetDiscoveryNotifications(userId: string): Promise
 
     return enquiries.map((enquiry) => {
       const approved = enquiry.status === 'approved';
+      const licensingOffer = enquiry.requesterAccountType === 'licensing';
+      const assetName = `${enquiry.asset.brand} ${enquiry.asset.model}`.trim();
       const retryDate = enquiry.status === 'temporarily_denied'
         && enquiry.requestAgainAtIso
         ? new Intl.DateTimeFormat('en-ZA', { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date(enquiry.requestAgainAtIso))
@@ -700,10 +709,16 @@ async function listRequesterAssetDiscoveryNotifications(userId: string): Promise
         id: `asset-discovery-requester:${enquiry.id}:${enquiry.status}:${enquiry.updatedAtIso}`,
         category: 'asset_discovery',
         tone: approved ? 'success' : 'warning',
-        title: approved ? 'Asset enquiry approved' : 'Asset unavailable for 90 days',
-        body: approved
-          ? `Your enquiry for ${enquiry.asset.brand} ${enquiry.asset.model} was approved.`
-          : `The owner is not interested in selling ${enquiry.asset.brand} ${enquiry.asset.model} right now.${retryDate ? ` You can enquire again after ${retryDate}.` : ''}`,
+        title: licensingOffer
+          ? approved ? 'Renewal help approved' : 'Renewal help not accepted'
+          : approved ? 'Asset enquiry approved' : 'Asset unavailable for 90 days',
+        body: licensingOffer
+          ? approved
+            ? `The owner approved renewal help for ${assetName}. It is now in My Leads.`
+            : `The owner did not accept renewal help for ${assetName} right now.${retryDate ? ` You can offer again after ${retryDate}.` : ''}`
+          : approved
+            ? `Your enquiry for ${assetName} was approved.`
+            : `The owner is not interested in selling ${assetName} right now.${retryDate ? ` You can enquire again after ${retryDate}.` : ''}`,
         href: '',
         createdAtIso: isoFallback(enquiry.updatedAtIso),
         assetDiscoveryEnquiryId: enquiry.id,
