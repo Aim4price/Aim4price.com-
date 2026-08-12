@@ -794,7 +794,7 @@ export default function AuthClient() {
       const authRedirectUrl = extractRedirectUrl(payload) ?? POST_LOGIN_REDIRECT;
       const authenticatedSession = await refreshCachedHeaderSession().catch(() => null);
       const partnerWorkspaceUrl = authenticatedSession?.accountType === "licensing"
-        ? getAbsoluteUrl("/licensing")
+        ? getAbsoluteUrl("/")
         : getAbsoluteUrl("/leads");
       const redirectUrl =
         !getSafeReturnTo() &&
