@@ -45,7 +45,14 @@ test('the owner share modal includes licence renewals and selected eligible asse
   assert.match(registerClient, /readLicenseStatusChoice\(asset\) === 'yes'/);
   assert.match(registerClient, /selectedDealerShareAssetIds/);
   assert.match(registerClient, /source: 'licence_register_share'/);
-  assert.match(registerClient, /onClick=\{\(\) => openQuoteLeadMessage\(partner\)\}/);
+  assert.match(registerClient, /const \[selectedQuotePartnerIds, setSelectedQuotePartnerIds\] = useState<string\[\]>\(\[\]\)/);
+  assert.match(registerClient, /onClick=\{\(\) => toggleQuotePartnerSelection\(partner\)\}/);
+  assert.match(registerClient, /aria-pressed=\{isSelected\}/);
+  assert.match(registerClient, /Continue with \$\{selectedQuotePartners\.length\}/);
+  assert.match(registerClient, /for \(const partner of selectedPartners\)/);
+  assert.doesNotMatch(registerClient, /assetQuotePartnerChoose/);
+  assert.match(registerStyles, /Partner picker: full-card multi-select/);
+  assert.match(registerStyles, /assetQuotePartnerCard\.assetQuotePartnerCardActive[\s\S]*background: linear-gradient\(135deg, #e9f8f1/);
   assert.doesNotMatch(registerClient, /All Companies|href="\/companies"/);
   assert.equal(existsSync(new URL('../app/companies/page.tsx', import.meta.url)), false);
 });
@@ -136,7 +143,6 @@ test('licensing Discovery exposes only a coarse renewal window before approval',
   assert.match(discoveryClient, /styles\.discoveryRenewalAction/);
   assert.match(discoveryClient, /Exact details remain private until the owner approves/);
   assert.match(discoveryClient, /\["Renewal", details\.asset\.renewalWindow\]/);
-  assert.match(registerStyles, /assetQuotePartnerChoose/);
   const listSql = discovery.slice(
     discovery.indexOf('const listSql = `'),
     discovery.indexOf('const assetRows =', discovery.indexOf('const listSql = `')),
