@@ -27,6 +27,7 @@ const correctionEditor = read('components/DealerAssetCorrectionEditor.tsx');
 const licensingRenewalRoute = read('app/api/licensing/renewal-updates/route.ts');
 const correctionMigration = read('database/migrations/70-license-renewal-corrections.sql');
 const notifications = read('lib/notifications.ts');
+const licensingWorkspaceLeads = read('lib/licensing-workspace-leads.ts');
 
 test('licence renewal experts have a dedicated account and focused workspace', () => {
   assert.match(signup, /value: "licensing"/);
@@ -160,10 +161,11 @@ test('an approved Discovery offer creates a renewal lead with photos and licence
   assert.match(discovery, /documents: true/);
   assert.match(leadsClient, /LICENCE RENEWAL LEADS/);
   assert.match(leadsClient, /Renewal due/);
-  assert.match(leadsClient, /licenceLeadThumbnail/);
+  assert.doesNotMatch(leadsClient, /const licenceLeadPhoto/);
+  assert.doesNotMatch(leadsClient, /className=\{styles\.licenceLeadThumbnail\}/);
   assert.match(leadsClient, /licenceRenewalMeta/);
   assert.match(leadsStyles, /Licence renewal lead cards/);
-  assert.match(leadsStyles, /licensingLeadIdentityWithPhoto/);
+  assert.match(leadsStyles, /licenceOutcomeWon/);
   assert.match(notifications, /Licence renewal help offered/);
   assert.match(notifications, /It is now in My Leads/);
   assert.match(header, /Renewal help offer/);
@@ -171,6 +173,29 @@ test('an approved Discovery offer creates a renewal lead with photos and licence
   assert.match(header, /expert&apos;s My Leads/);
   assert.match(headerStyles, /notificationRenewalDetailModal/);
   assert.match(headerStyles, /notificationRenewalDateCard/);
+});
+
+test('licensing My Leads records pending, won and denied renewal outcomes safely', () => {
+  assert.match(discovery, /listLicensingAssetDiscoveryLeadOpportunities/);
+  assert.match(discovery, /enquiry\.status in \('pending', 'temporarily_denied'\)/);
+  assert.match(licensingWorkspaceLeads, /renewalOutcome: outcome/);
+  assert.match(licensingWorkspaceLeads, /opportunityOnly: true/);
+  assert.match(licensingWorkspaceLeads, /status: outcome === 'denied' \? 'declined' : 'sent'/);
+  assert.doesNotMatch(licensingWorkspaceLeads, /photo|document|ownerContactPhone: [^']|ownerContactEmail: [^']/i);
+  assert.match(leadsClient, /LICENSING_STATUS_FILTER_OPTIONS/);
+  assert.match(leadsClient, /label: 'Pending'/);
+  assert.match(leadsClient, /label: 'Won'/);
+  assert.match(leadsClient, /label: 'Denied'/);
+  assert.match(leadsClient, /renewalLeadOutcome\(lead\) !== statusFilter/);
+  assert.match(leadsClient, /isRenewalOpportunityOnly\(leadToOpen\)/);
+});
+
+test('licensing Manage removes reports and uses dedicated spacing', () => {
+  assert.match(leadsClient, /!licensingWorkspaceMode \? \([\s\S]*?<strong>Reports<\/strong>/);
+  assert.match(leadsClient, /styles\.licensingManageModal/);
+  assert.match(leadsStyles, /\.licensingManageModal\.licensingManageModal/);
+  assert.match(leadsStyles, /width: min\(54rem/);
+  assert.match(leadsStyles, /grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
 });
 
 test('a declined renewal offer is final for that licence expert', () => {

@@ -38,7 +38,8 @@ const DealerMaintenanceScheduleModal = dynamic(
 type LeadType = 'finance' | 'insurance' | 'replacement_quote' | 'license_renewal';
 type LeadStatus = 'sent' | 'viewed' | 'accepted' | 'quoted' | 'declined' | 'closed';
 type NoticeTone = 'success' | 'error';
-type LeadStatusFilter = 'all' | 'new' | 'open' | 'completed' | 'tracking';
+type LeadStatusFilter = 'all' | 'new' | 'open' | 'completed' | 'tracking' | 'pending' | 'won' | 'denied';
+type RenewalOutcome = 'pending' | 'won' | 'denied';
 type FilterDropdownKey = 'month' | 'year' | 'status';
 type AssetStatusChoice = 'yes' | 'no' | 'unknown' | 'not_applicable';
 type PdfReportKind = 'full' | 'financed' | 'insured' | 'licensed' | 'not-financed' | 'not-insured' | 'not-licensed';
@@ -231,6 +232,13 @@ const ACCOUNTANT_STATUS_FILTER_OPTIONS: LeadFilterOption[] = [
   { value: 'new', label: 'New clients' },
   { value: 'open', label: 'Open clients' },
   { value: 'completed', label: 'Handled clients' },
+];
+
+const LICENSING_STATUS_FILTER_OPTIONS: LeadFilterOption[] = [
+  { value: 'all', label: 'All renewals' },
+  { value: 'pending', label: 'Pending' },
+  { value: 'won', label: 'Won' },
+  { value: 'denied', label: 'Denied' },
 ];
 
 const PDF_REPORT_OPTIONS: PdfReportOption[] = [
@@ -670,6 +678,17 @@ function isTrackingLead(lead: AssetLead): boolean {
   );
 }
 
+function renewalLeadOutcome(lead: AssetLead): RenewalOutcome {
+  const savedOutcome = asText(lead.includedSections.renewalOutcome).toLowerCase();
+  if (savedOutcome === 'pending' || savedOutcome === 'denied') return savedOutcome;
+  if (lead.status === 'declined') return 'denied';
+  return 'won';
+}
+
+function isRenewalOpportunityOnly(lead: AssetLead): boolean {
+  return asBoolean(lead.includedSections.opportunityOnly);
+}
+
 function leadDateParts(lead: AssetLead): { month: string; year: string } | null {
   const parsed = new Date(lead.createdAtIso);
   if (Number.isNaN(parsed.getTime())) return null;
@@ -1079,6 +1098,12 @@ function leadLicenceRenewalDate(lead: AssetLead): string {
       specs?.licenceRenewalDate ??
       specs?.licence_renewal_date,
   );
+}
+
+function leadLicenceRenewalDisplay(lead: AssetLead): string {
+  const exactDate = leadLicenceRenewalDate(lead);
+  if (exactDate) return formatMonthYear(exactDate);
+  return asText(lead.assetSnapshot.renewalWindow) || 'Not saved';
 }
 
 function getLeadLifeWorkedPercent(lead: AssetLead): number | null {
@@ -1723,6 +1748,9 @@ export default function LeadsClient({
     const query = searchTerm.trim().toLowerCase();
 
     return periodLeads.filter((lead) => {
+      if (licensingWorkspaceMode && statusFilter !== 'all') {
+        if (renewalLeadOutcome(lead) !== statusFilter) return false;
+      }
       if (statusFilter === 'new' && !isNewLead(lead)) return false;
       if (statusFilter === 'open' && (isNewLead(lead) || isCompletedLead(lead))) return false;
       if (statusFilter === 'completed' && !isCompletedLead(lead)) return false;
@@ -1730,7 +1758,7 @@ export default function LeadsClient({
 
       return leadMatchesSearch(lead, query);
     });
-  }, [periodLeads, searchTerm, statusFilter]);
+  }, [licensingWorkspaceMode, periodLeads, searchTerm, statusFilter]);
 
   const summaryLeads = useMemo(() => {
     const query = searchTerm.trim().toLowerCase();
@@ -1743,6 +1771,18 @@ export default function LeadsClient({
   );
   const completedLeadCount = useMemo(
     () => summaryLeads.filter((lead) => isCompletedLead(lead)).length,
+    [summaryLeads],
+  );
+  const pendingRenewalCount = useMemo(
+    () => summaryLeads.filter((lead) => renewalLeadOutcome(lead) === 'pending').length,
+    [summaryLeads],
+  );
+  const wonRenewalCount = useMemo(
+    () => summaryLeads.filter((lead) => renewalLeadOutcome(lead) === 'won').length,
+    [summaryLeads],
+  );
+  const deniedRenewalCount = useMemo(
+    () => summaryLeads.filter((lead) => renewalLeadOutcome(lead) === 'denied').length,
     [summaryLeads],
   );
   const totalLeadPages = Math.max(1, Math.ceil(filteredLeads.length / LEADS_PER_PAGE));
@@ -1776,6 +1816,9 @@ export default function LeadsClient({
     if (statusFilter === 'open') labels.push('Open leads');
     if (statusFilter === 'completed') labels.push('Handled leads');
     if (statusFilter === 'tracking') labels.push('Tracking requests');
+    if (statusFilter === 'pending') labels.push('Pending');
+    if (statusFilter === 'won') labels.push('Won');
+    if (statusFilter === 'denied') labels.push('Denied');
 
     if (!labels.length) return 'Filter';
     if (labels.length === 1) return labels[0];
@@ -2026,7 +2069,7 @@ export default function LeadsClient({
   }
 
   async function markLeadViewed(leadToOpen: AssetLead) {
-    if (!isNewLead(leadToOpen)) return;
+    if (!isNewLead(leadToOpen) || isRenewalOpportunityOnly(leadToOpen)) return;
 
     const viewedAtIso = new Date().toISOString();
 
@@ -3247,39 +3290,39 @@ export default function LeadsClient({
 
           {useDealerWorkspaceStyles ? (
             <section className={`${assetStyles.summaryRow} ${assetStyles.heroSummaryRow} ${styles.leadSummaryRow}`} aria-label="Lead summary">
-              <button type="button" className={`${assetStyles.summaryTile} ${assetStyles.metricSummaryTile} ${assetStyles.heroSummaryTile} ${styles.leadOwnerSummaryCard} ${styles.leadOwnerSummaryCardNew} ${styles.leadSummaryFilterButton} ${statusFilter === 'new' ? styles.leadSummaryFilterButtonActive : ''}`} onClick={() => chooseLeadStatusFilter('new')} aria-pressed={statusFilter === 'new'}>
+              <button type="button" className={`${assetStyles.summaryTile} ${assetStyles.metricSummaryTile} ${assetStyles.heroSummaryTile} ${styles.leadOwnerSummaryCard} ${styles.leadOwnerSummaryCardNew} ${styles.leadSummaryFilterButton} ${statusFilter === (licensingWorkspaceMode ? 'pending' : 'new') ? styles.leadSummaryFilterButtonActive : ''}`} onClick={() => chooseLeadStatusFilter(licensingWorkspaceMode ? 'pending' : 'new')} aria-pressed={statusFilter === (licensingWorkspaceMode ? 'pending' : 'new')}>
                 <span className={assetStyles.heroSummaryHead}>
-                  <span className={`${assetStyles.heroSummaryTitle} ${styles.leadOwnerSummaryText}`}>New</span>
+                  <span className={`${assetStyles.heroSummaryTitle} ${styles.leadOwnerSummaryText}`}>{licensingWorkspaceMode ? 'Pending' : 'New'}</span>
                 </span>
                 <span className={assetStyles.heroSummaryValueRow}>
-                  <strong className={`${assetStyles.heroSummaryValue} ${styles.leadOwnerSummaryText}`}>{newLeadCount}</strong>
+                  <strong className={`${assetStyles.heroSummaryValue} ${styles.leadOwnerSummaryText}`}>{licensingWorkspaceMode ? pendingRenewalCount : newLeadCount}</strong>
                 </span>
                 <span className={`${assetStyles.heroSummaryFooter} ${assetStyles.heroTotalFooter} ${styles.leadOwnerSummaryFooter}`}>
-                  <small className={styles.leadOwnerSummaryText}>Show requests not yet opened.</small>
+                  <small className={styles.leadOwnerSummaryText}>{licensingWorkspaceMode ? 'Waiting for the owner’s decision.' : 'Show requests not yet opened.'}</small>
                 </span>
               </button>
 
-              <button type="button" className={`${assetStyles.summaryTile} ${assetStyles.metricSummaryTile} ${assetStyles.heroSummaryTile} ${styles.leadOwnerSummaryCard} ${styles.leadOwnerSummaryCardOpen} ${styles.leadSummaryFilterButton} ${statusFilter === 'open' ? styles.leadSummaryFilterButtonActive : ''}`} onClick={() => chooseLeadStatusFilter('open')} aria-pressed={statusFilter === 'open'}>
+              <button type="button" className={`${assetStyles.summaryTile} ${assetStyles.metricSummaryTile} ${assetStyles.heroSummaryTile} ${styles.leadOwnerSummaryCard} ${styles.leadOwnerSummaryCardOpen} ${styles.leadSummaryFilterButton} ${statusFilter === (licensingWorkspaceMode ? 'won' : 'open') ? styles.leadSummaryFilterButtonActive : ''}`} onClick={() => chooseLeadStatusFilter(licensingWorkspaceMode ? 'won' : 'open')} aria-pressed={statusFilter === (licensingWorkspaceMode ? 'won' : 'open')}>
                 <span className={assetStyles.heroSummaryHead}>
-                  <span className={`${assetStyles.heroSummaryTitle} ${styles.leadOwnerSummaryText}`}>{licensingWorkspaceMode ? 'In progress' : 'Open'}</span>
+                  <span className={`${assetStyles.heroSummaryTitle} ${styles.leadOwnerSummaryText}`}>{licensingWorkspaceMode ? 'Won' : 'Open'}</span>
                 </span>
                 <span className={assetStyles.heroSummaryValueRow}>
-                  <strong className={`${assetStyles.heroSummaryValue} ${styles.leadOwnerSummaryText}`}>{activeLeadCount}</strong>
+                  <strong className={`${assetStyles.heroSummaryValue} ${styles.leadOwnerSummaryText}`}>{licensingWorkspaceMode ? wonRenewalCount : activeLeadCount}</strong>
                 </span>
                 <span className={`${assetStyles.heroSummaryFooter} ${assetStyles.heroTotalFooter} ${styles.leadOwnerSummaryFooter}`}>
-                  <small className={styles.leadOwnerSummaryText}>Show requests being actioned.</small>
+                  <small className={styles.leadOwnerSummaryText}>{licensingWorkspaceMode ? 'Owner-approved renewal work.' : 'Show requests being actioned.'}</small>
                 </span>
               </button>
 
-              <button type="button" className={`${assetStyles.summaryTile} ${assetStyles.metricSummaryTile} ${assetStyles.heroSummaryTile} ${styles.leadOwnerSummaryCard} ${styles.leadOwnerSummaryCardDone} ${styles.leadSummaryFilterButton} ${statusFilter === 'completed' ? styles.leadSummaryFilterButtonActive : ''}`} onClick={() => chooseLeadStatusFilter('completed')} aria-pressed={statusFilter === 'completed'}>
+              <button type="button" className={`${assetStyles.summaryTile} ${assetStyles.metricSummaryTile} ${assetStyles.heroSummaryTile} ${styles.leadOwnerSummaryCard} ${styles.leadOwnerSummaryCardDone} ${styles.leadSummaryFilterButton} ${statusFilter === (licensingWorkspaceMode ? 'denied' : 'completed') ? styles.leadSummaryFilterButtonActive : ''}`} onClick={() => chooseLeadStatusFilter(licensingWorkspaceMode ? 'denied' : 'completed')} aria-pressed={statusFilter === (licensingWorkspaceMode ? 'denied' : 'completed')}>
                 <span className={assetStyles.heroSummaryHead}>
-                  <span className={`${assetStyles.heroSummaryTitle} ${styles.leadOwnerSummaryText}`}>{licensingWorkspaceMode ? 'Completed' : 'Handled'}</span>
+                  <span className={`${assetStyles.heroSummaryTitle} ${styles.leadOwnerSummaryText}`}>{licensingWorkspaceMode ? 'Denied' : 'Handled'}</span>
                 </span>
                 <span className={assetStyles.heroSummaryValueRow}>
-                  <strong className={`${assetStyles.heroSummaryValue} ${styles.leadOwnerSummaryText}`}>{completedLeadCount}</strong>
+                  <strong className={`${assetStyles.heroSummaryValue} ${styles.leadOwnerSummaryText}`}>{licensingWorkspaceMode ? deniedRenewalCount : completedLeadCount}</strong>
                 </span>
                 <span className={`${assetStyles.heroSummaryFooter} ${assetStyles.heroTotalFooter} ${styles.leadOwnerSummaryFooter}`}>
-                  <small className={styles.leadOwnerSummaryText}>Show requests that need no further action.</small>
+                  <small className={styles.leadOwnerSummaryText}>{licensingWorkspaceMode ? 'Declined offers stay recorded.' : 'Show requests that need no further action.'}</small>
                 </span>
               </button>
             </section>
@@ -3370,26 +3413,19 @@ export default function LeadsClient({
             <div className={styles.leadStack}>
               {paginatedLeads.map((lead) => {
                 const isLeadOpen = openLeadId === lead.id;
-                const isLeadNew = isNewLead(lead);
-                const isLeadDone = isCompletedLead(lead);
+                const renewalOutcome = renewalLeadOutcome(lead);
+                const renewalOpportunityOnly = isRenewalOpportunityOnly(lead);
+                const isLeadNew = licensingWorkspaceMode ? renewalOutcome === 'pending' : isNewLead(lead);
+                const isLeadDone = licensingWorkspaceMode ? renewalOutcome === 'denied' : isCompletedLead(lead);
                 const isLeadActive = !isLeadNew && !isLeadDone;
                 const isTrackingRequest = isTrackingLead(lead);
                 const isMarkingThisLeadDone = markingLeadDoneId === lead.id;
-                const licenceLeadPhoto = licensingWorkspaceMode ? assetPhotos(lead)[0] ?? '' : '';
 
                 return (
                   <article key={lead.id} className={`${useDealerWorkspaceStyles ? workspaceStyles.card : ''} ${styles.leadThread} ${licensingWorkspaceMode ? styles.licensingLeadThread : ''} ${isLeadNew ? styles.leadThreadNew : ''} ${isLeadActive ? styles.leadThreadActive : ''} ${isLeadDone ? styles.leadThreadDone : ''} ${isTrackingRequest ? styles.leadThreadTracking : ''} ${isLeadOpen ? styles.leadThreadOpen : ''} ${openLeadId && !isLeadOpen ? styles.leadThreadMuted : ''}`}>
                     <div className={styles.clientPanel}>
                       <div className={`${styles.clientPanelHeader} ${licensingWorkspaceMode ? styles.licensingLeadHeader : ''}`}>
-                        <div className={`${styles.clientIdentity} ${licensingWorkspaceMode ? styles.licensingLeadIdentity : ''} ${licenceLeadPhoto ? styles.licensingLeadIdentityWithPhoto : ''} ${isTrackingRequest ? styles.trackingLeadIdentity : ''}`}>
-                          {licenceLeadPhoto ? (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img
-                              src={licenceLeadPhoto}
-                              alt={`${assetTitle(lead)} thumbnail`}
-                              className={styles.licenceLeadThumbnail}
-                            />
-                          ) : null}
+                        <div className={`${styles.clientIdentity} ${licensingWorkspaceMode ? styles.licensingLeadIdentity : ''} ${isTrackingRequest ? styles.trackingLeadIdentity : ''}`}>
                           <div className={styles.leadCardTitleRow}>
                             <h3>{lead.ownerBusinessName || ownerDisplayName(lead)}</h3>
                           </div>
@@ -3401,7 +3437,7 @@ export default function LeadsClient({
                                 <DocumentIcon className={assetStyles.buttonIcon} />
                               </span>
                               <span className={styles.licenceRenewalMetaCopy}>
-                                <strong>Renewal due {formatMonthYear(leadLicenceRenewalDate(lead))}</strong>
+                                <strong>Renewal due {leadLicenceRenewalDisplay(lead)}</strong>
                                 <small>{readLeadLicenseRegistrationNumber(lead) || 'Registration not supplied'}</small>
                               </span>
                             </span>
@@ -3429,7 +3465,23 @@ export default function LeadsClient({
                                 : ''
                             }`}
                           >
-                            {accountantWorkspaceMode ? (
+                            {licensingWorkspaceMode ? (
+                              <>
+                                <span className={`${styles.licenceOutcomeBadge} ${renewalOutcome === 'won' ? styles.licenceOutcomeWon : renewalOutcome === 'denied' ? styles.licenceOutcomeDenied : styles.licenceOutcomePending}`}>
+                                  {renewalOutcome === 'won' ? 'Won' : renewalOutcome === 'denied' ? 'Denied' : 'Pending'}
+                                </span>
+                                <button
+                                  type="button"
+                                  className={`${isLeadOpen ? assetStyles.secondaryButton : assetStyles.primaryButton} ${workspaceStyles.actionButton} ${isLeadOpen ? workspaceStyles.actionNeutral : workspaceStyles.actionGreen} ${styles.openLeadButton}`}
+                                  onClick={() => {
+                                    if (isLeadOpen) setOpenLeadId(null);
+                                    else void openLead(lead);
+                                  }}
+                                >
+                                  {isLeadOpen ? 'Close' : 'Open'}
+                                </button>
+                              </>
+                            ) : accountantWorkspaceMode ? (
                               <>
                                 <button
                                   type="button"
@@ -3555,7 +3607,7 @@ export default function LeadsClient({
                               </div>
                             ) : null}
 
-                            <div className={`${assetStyles.assetHeaderActions} ${styles.leadAssetHeaderActions}`}>
+                            {!renewalOpportunityOnly ? <div className={`${assetStyles.assetHeaderActions} ${styles.leadAssetHeaderActions}`}>
                               <button
                                 type="button"
                                 className={`${assetStyles.optionsButton} ${assetStyles.sharedNoteActionButton} ${styles.leadQuickActionButton}`}
@@ -3576,7 +3628,7 @@ export default function LeadsClient({
                                 <ManageIcon className={assetStyles.buttonIcon} />
                                 <span>Manage</span>
                               </button>
-                            </div>
+                            </div> : null}
                           </div>
                         </div>
 
@@ -3694,11 +3746,13 @@ export default function LeadsClient({
           >
             <div className={`${assetStyles.modalHeader} ${dealerWorkspaceClass(workspaceStyles.modalHeader)} ${styles.leadFilterHeader}`}>
               <div className={assetStyles.modalHeaderText}>
-                <h3 id="lead-filter-title">{accountantWorkspaceMode ? 'Filter clients' : 'Filter leads'}</h3>
+                <h3 id="lead-filter-title">{accountantWorkspaceMode ? 'Filter clients' : licensingWorkspaceMode ? 'Filter renewals' : 'Filter leads'}</h3>
                 <p className={styles.leadFilterIntro}>
                   {accountantWorkspaceMode
                     ? 'Choose a received date or client status.'
-                    : 'Choose a received date, lead status, or show only asset tracking requests.'}
+                    : licensingWorkspaceMode
+                      ? 'Choose a received date or renewal outcome.'
+                      : 'Choose a received date, lead status, or show only asset tracking requests.'}
                 </p>
               </div>
 
@@ -3734,7 +3788,11 @@ export default function LeadsClient({
                 label="Status"
                 dropdownKey="status"
                 value={statusFilter}
-                options={accountantWorkspaceMode ? ACCOUNTANT_STATUS_FILTER_OPTIONS : STATUS_FILTER_OPTIONS}
+                options={accountantWorkspaceMode
+                  ? ACCOUNTANT_STATUS_FILTER_OPTIONS
+                  : licensingWorkspaceMode
+                    ? LICENSING_STATUS_FILTER_OPTIONS
+                    : STATUS_FILTER_OPTIONS}
                 openDropdown={openFilterDropdown}
                 onOpenChange={setOpenFilterDropdown}
                 onChange={(value) => setStatusFilter(value as LeadStatusFilter)}
@@ -3758,7 +3816,7 @@ export default function LeadsClient({
         <div className={`${assetStyles.modalOverlay} ${dealerWorkspaceClass(workspaceStyles.modalOverlay)} ${styles.leadManageOverlay}`}>
           <div className={assetStyles.modalBackdrop} onClick={() => setManagedLead(null)} />
 
-          <div className={`${assetStyles.optionsModal} ${dealerWorkspaceClass(workspaceStyles.modal)} ${styles.leadManageModal}`} role="dialog" aria-modal="true" aria-labelledby="lead-manage-title">
+          <div className={`${assetStyles.optionsModal} ${dealerWorkspaceClass(workspaceStyles.modal)} ${styles.leadManageModal} ${licensingWorkspaceMode ? styles.licensingManageModal : ''}`} role="dialog" aria-modal="true" aria-labelledby="lead-manage-title">
             <div className={`${assetStyles.modalHeader} ${assetStyles.optionsModalHeader} ${dealerWorkspaceClass(workspaceStyles.modalHeader)}`}>
               <div className={assetStyles.modalHeaderText}>
                 <h3 id="lead-manage-title">{assetTitle(managedLead)}</h3>
@@ -3850,13 +3908,15 @@ export default function LeadsClient({
                         </span>
                       </button>
 
-                      <button type="button" className={assetStyles.optionActionButton} onClick={() => openLeadReportModal(managedLead)}>
-                        <DownloadIcon className={assetStyles.buttonIcon} />
-                        <span>
-                          <strong>Reports</strong>
-                          <small>Choose a report.</small>
-                        </span>
-                      </button>
+                      {!licensingWorkspaceMode ? (
+                        <button type="button" className={assetStyles.optionActionButton} onClick={() => openLeadReportModal(managedLead)}>
+                          <DownloadIcon className={assetStyles.buttonIcon} />
+                          <span>
+                            <strong>Reports</strong>
+                            <small>Choose a report.</small>
+                          </span>
+                        </button>
+                      ) : null}
 
 
                       {isDealerLeadsMode ? (

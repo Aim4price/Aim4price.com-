@@ -8,6 +8,7 @@ import {
 } from '../../../lib/dealer-maintenance-tracker';
 import { createAssetLead, listAssetLeadsForUser, normalizeLeadType } from '../../../lib/partner-access';
 import { syncAccountantShareSettingsFromLead } from '../../../lib/accountant-workspace';
+import { listLicensingWorkspaceLeads } from '../../../lib/licensing-workspace-leads';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -87,7 +88,10 @@ export async function GET() {
   }
 
   try {
-    const leads = await listAssetLeadsForUser(session.user.id);
+    const profile = await getAccountProfile(session.user);
+    const leads = profile.accountType === 'licensing'
+      ? await listLicensingWorkspaceLeads(session.user.id)
+      : await listAssetLeadsForUser(session.user.id);
     return NextResponse.json({ ok: true, leads });
   } catch (error) {
     console.error('asset leads GET failed', error);

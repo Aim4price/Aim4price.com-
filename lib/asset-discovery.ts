@@ -2386,6 +2386,27 @@ export async function listRecentAssetDiscoveryEnquiriesForRequester(
   return result.rows.map(mapNotification);
 }
 
+export async function listLicensingAssetDiscoveryLeadOpportunities(
+  requesterUserId: string,
+): Promise<AssetDiscoveryNotification[]> {
+  await ensureAssetDiscoveryTables();
+  const result = await getDb().query<EnquiryRow>(
+    enquirySelectSql(`
+      where enquiry.requester_user_id = $1
+        and enquiry.requester_account_type = 'licensing'
+        and enquiry.status in ('pending', 'temporarily_denied')
+        and owner.account_status = 'active'
+        and requester.account_status = 'active'
+        and requester.account_type = 'licensing'
+      order by enquiry.updated_at desc
+      limit 100
+    `),
+    [requesterUserId],
+  );
+
+  return result.rows.map(mapNotification);
+}
+
 /** @deprecated Use listRecentAssetDiscoveryEnquiriesForRequester. */
 export const listRecentAssetDiscoveryEnquiriesForDealer =
   listRecentAssetDiscoveryEnquiriesForRequester;
