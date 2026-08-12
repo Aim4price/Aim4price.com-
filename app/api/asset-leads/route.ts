@@ -119,8 +119,8 @@ export async function POST(request: NextRequest) {
       { status: 400 },
     );
   }
-  if (dealerShareAssetIds.length && leadType !== 'replacement_quote') {
-    return NextResponse.json({ ok: false, error: 'Bulk asset sharing is only available for dealers.' }, { status: 400 });
+  if (dealerShareAssetIds.length && leadType !== 'replacement_quote' && leadType !== 'license_renewal') {
+    return NextResponse.json({ ok: false, error: 'Bulk asset sharing is only available for dealers and licence renewal experts.' }, { status: 400 });
   }
   if (dealerShareAssetIds.length && !dealerShareAssetIds.includes(assetId)) {
     return NextResponse.json({ ok: false, error: 'The lead asset must be included in the dealer share.' }, { status: 400 });
@@ -131,7 +131,7 @@ export async function POST(request: NextRequest) {
       const profile = await getAccountProfile(session.user);
       if (profile.accountType !== 'owner' || isOwnerAppSession(session)) {
         return NextResponse.json(
-          { ok: false, error: 'Bulk dealer sharing is only available from the owner Asset Register.' },
+          { ok: false, error: 'Bulk partner sharing is only available from the owner Asset Register.' },
           { status: 403 },
         );
       }
@@ -142,22 +142,44 @@ export async function POST(request: NextRequest) {
       if (ownedAssets.some((selectedAsset) => !selectedAsset)) {
         return NextResponse.json({ ok: false, error: 'One or more selected assets could not be found.' }, { status: 404 });
       }
+      if (leadType === 'license_renewal' && ownedAssets.some((selectedAsset) => {
+        if (!selectedAsset?.isLicensed) return true;
+        const specs = selectedAsset.specsJson ?? {};
+        return ![
+          specs.licenseRenewalDate,
+          specs.license_renewal_date,
+          specs.licenceRenewalDate,
+          specs.licence_renewal_date,
+        ].some((value) => String(value ?? '').trim());
+      })) {
+        return NextResponse.json({
+          ok: false,
+          error: 'Every selected asset must be licensed and have a renewal date.',
+        }, { status: 400 });
+      }
     }
 
     const savedSections = {
       ...(includedSections ?? {}),
       maintenanceTrackingEnabled: trackMaintenance,
     };
-    const lead = await createAssetLead({
-      ownerUserId: session.user.id,
-      ownerName: session.user.name,
-      ownerEmail: session.user.email,
-      assetId,
-      partnerUserId,
-      leadType,
-      ownerMessage: typeof body.ownerMessage === 'string' ? body.ownerMessage : null,
-      includedSections: savedSections,
-    });
+    const leadAssetIds = leadType === 'license_renewal' && dealerShareAssetIds.length
+      ? dealerShareAssetIds
+      : [assetId];
+    const leads = [];
+    for (const selectedAssetId of leadAssetIds) {
+      leads.push(await createAssetLead({
+        ownerUserId: session.user.id,
+        ownerName: session.user.name,
+        ownerEmail: session.user.email,
+        assetId: selectedAssetId,
+        partnerUserId,
+        leadType,
+        ownerMessage: typeof body.ownerMessage === 'string' ? body.ownerMessage : null,
+        includedSections: savedSections,
+      }));
+    }
+    const lead = leads[0];
 
     if (leadType === 'finance') {
       await syncAccountantShareSettingsFromLead(lead.id, savedSections);
@@ -186,6 +208,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       ok: true,
       lead,
+      leads,
       trackingAccess: trackingAccesses[0] ?? null,
       trackingAccesses,
       sharedAssetCount: dealerShareAssetIds.length || 1,
@@ -197,6 +220,13 @@ export async function POST(request: NextRequest) {
 
     if (error instanceof Error && error.message === 'PARTNER_NOT_FOUND') {
       return NextResponse.json({ ok: false, error: 'Selected partner could not be found.' }, { status: 404 });
+    }
+
+    if (error instanceof Error && error.message === 'LICENSE_RENEWAL_DETAILS_REQUIRED') {
+      return NextResponse.json({
+        ok: false,
+        error: 'Every selected asset must be licensed and have a renewal date.',
+      }, { status: 400 });
     }
 
     console.error('asset leads POST failed', error);

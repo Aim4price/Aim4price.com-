@@ -6,6 +6,10 @@ import {
   type AssetRegisterDocument,
   type AssetRegisterItemKind,
 } from '../../../../../lib/asset-register-db';
+import {
+  normalizeAssetDocumentCategory,
+  normalizeAssetDocumentType,
+} from '../../../../../lib/asset-document-permissions';
 import { disposeOrDeleteAsset, type AssetDisposalReason } from '../../../../../lib/asset-lifecycle';
 import { deleteUnreferencedAssetRegisterUploads, listInternalAssetRegisterUploadIds } from '../../../../../lib/asset-register-uploads';
 import { resolveAssetUsage, type AssetUsageMetric } from '../../../../../lib/asset-usage';
@@ -68,6 +72,8 @@ function documents(value: unknown): AssetRegisterDocument[] {
       contentType: text(record.contentType) || 'application/octet-stream',
       byteSize: Math.max(0, Math.round(Number(record.byteSize) || 0)),
       uploadedAtIso: text(record.uploadedAtIso) || new Date().toISOString(),
+      category: normalizeAssetDocumentCategory(record.category ?? record.documentCategory),
+      documentType: normalizeAssetDocumentType(record.documentType ?? record.type),
     }];
   }).slice(0, 20);
 }

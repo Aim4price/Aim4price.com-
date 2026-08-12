@@ -30,7 +30,7 @@ export default async function AssetDiscoveryPage({
     email: session.user.email,
   });
 
-  if (profile.accountType !== 'dealer' && profile.accountType !== 'owner') {
+  if (!['dealer', 'owner', 'licensing'].includes(profile.accountType)) {
     redirect('/leads');
   }
 

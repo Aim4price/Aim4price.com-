@@ -1,4 +1,4 @@
-export type HeaderAccountType = 'owner' | 'dealer' | 'finance' | 'insurance';
+export type HeaderAccountType = 'owner' | 'dealer' | 'finance' | 'insurance' | 'licensing';
 
 export type HeaderSessionUser = {
   id: string;
@@ -33,7 +33,7 @@ type HeaderSessionCacheEntry = {
 
 const HEADER_SESSION_CACHE_KEY = 'aim4price-header-session-v2';
 const HEADER_SESSION_CACHE_MAX_AGE_MS = 5 * 60 * 1000;
-const ACCOUNT_TYPES = new Set<HeaderAccountType>(['owner', 'dealer', 'finance', 'insurance']);
+const ACCOUNT_TYPES = new Set<HeaderAccountType>(['owner', 'dealer', 'finance', 'insurance', 'licensing']);
 
 function normalizeText(value: unknown): string {
   return typeof value === 'string' ? value.trim() : '';

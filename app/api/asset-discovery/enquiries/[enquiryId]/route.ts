@@ -10,16 +10,8 @@ import {
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-type RouteContext = {
-  params: {
-    enquiryId: string;
-  };
-};
-
-type PatchBody = {
-  decision?: unknown;
-  status?: unknown;
-};
+type RouteContext = { params: { enquiryId: string } };
+type PatchBody = { decision?: unknown; status?: unknown };
 
 function unauthorized() {
   return NextResponse.json({ ok: false, error: 'You must be signed in.' }, { status: 401 });
@@ -34,25 +26,16 @@ function errorMessage(error: unknown, fallback: string): string {
 }
 
 export async function GET(_request: NextRequest, context: RouteContext) {
-  const session = await getServerSession({
-    allowDealerApp: true,
-    allowOwnerApp: true,
-  });
-
+  const session = await getServerSession({ allowDealerApp: true, allowOwnerApp: true });
   if (!session?.user?.id) return unauthorized();
 
   try {
-    const profile = await getAccountProfile({
-      id: session.user.id,
-      name: session.user.name,
-      email: session.user.email,
-    });
+    const profile = await getAccountProfile({ id: session.user.id, name: session.user.name, email: session.user.email });
     const enquiry = await getAssetDiscoveryEnquiryForUser({
       enquiryId: context.params.enquiryId,
       userId: session.user.id,
       accountType: profile.accountType,
     });
-
     return NextResponse.json({ ok: true, enquiry });
   } catch (error) {
     const message = errorMessage(error, 'Failed to load enquiry.');
@@ -61,11 +44,7 @@ export async function GET(_request: NextRequest, context: RouteContext) {
 }
 
 export async function PATCH(request: NextRequest, context: RouteContext) {
-  const session = await getServerSession({
-    allowDealerApp: true,
-    allowOwnerApp: true,
-  });
-
+  const session = await getServerSession({ allowDealerApp: true, allowOwnerApp: true });
   if (!session?.user?.id) return unauthorized();
 
   let body: PatchBody;
@@ -76,23 +55,15 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
   }
 
   try {
-    const profile = await getAccountProfile({
-      id: session.user.id,
-      name: session.user.name,
-      email: session.user.email,
-    });
-
+    const profile = await getAccountProfile({ id: session.user.id, name: session.user.name, email: session.user.email });
     if (profile.accountType !== 'owner') {
       return NextResponse.json({ ok: false, error: 'Only the asset owner can update this enquiry.' }, { status: 403 });
     }
-
-    const decision = asText(body.decision || body.status);
     const enquiry = await updateAssetDiscoveryOwnerDecision({
       enquiryId: context.params.enquiryId,
       ownerUserId: session.user.id,
-      decision,
+      decision: asText(body.decision || body.status),
     });
-
     return NextResponse.json({ ok: true, enquiry });
   } catch (error) {
     const message = errorMessage(error, 'Failed to save decision.');
@@ -101,30 +72,19 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
 }
 
 export async function DELETE(_request: NextRequest, context: RouteContext) {
-  const session = await getServerSession({
-    allowDealerApp: true,
-    allowOwnerApp: true,
-  });
-
+  const session = await getServerSession({ allowDealerApp: true, allowOwnerApp: true });
   if (!session?.user?.id) return unauthorized();
 
   try {
-    const profile = await getAccountProfile({
-      id: session.user.id,
-      name: session.user.name,
-      email: session.user.email,
-    });
-
-    if (profile.accountType !== 'dealer' && profile.accountType !== 'owner') {
+    const profile = await getAccountProfile({ id: session.user.id, name: session.user.name, email: session.user.email });
+    if (!['owner', 'dealer', 'licensing'].includes(profile.accountType)) {
       return NextResponse.json({ ok: false, error: 'Only the requester can retract this enquiry.' }, { status: 403 });
     }
-
     await retractAssetDiscoveryEnquiry({
       enquiryId: context.params.enquiryId,
       requesterUserId: session.user.id,
-      requesterAccountType: profile.accountType,
+      requesterAccountType: profile.accountType as 'owner' | 'dealer' | 'licensing',
     });
-
     return NextResponse.json({ ok: true });
   } catch (error) {
     const message = errorMessage(error, 'Failed to retract enquiry.');
