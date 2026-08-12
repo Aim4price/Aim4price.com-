@@ -538,6 +538,61 @@ function isoNowFallback(value: string | null | undefined): string {
   return value || new Date().toISOString();
 }
 
+async function ensurePartnerRoleConstraints(
+  db: ReturnType<typeof getDb>,
+): Promise<void> {
+  await db.query(`
+    do $migration$
+    begin
+      perform pg_advisory_xact_lock(
+        hashtext('aim4price:partner-access:licensing-role')
+      );
+
+      if to_regclass('public.asset_register_access_grants') is not null
+        and not exists (
+          select 1
+          from pg_constraint
+          where conrelid = 'public.asset_register_access_grants'::regclass
+            and conname = 'asset_register_access_grants_partner_type_check'
+            and pg_get_constraintdef(oid) ilike '%licensing%'
+        ) then
+        alter table public.asset_register_access_grants
+          drop constraint if exists asset_register_access_grants_partner_type_check;
+
+        alter table public.asset_register_access_grants
+          add constraint asset_register_access_grants_partner_type_check
+          check (partner_type in ('dealer', 'finance', 'insurance', 'licensing'))
+          not valid;
+
+        alter table public.asset_register_access_grants
+          validate constraint asset_register_access_grants_partner_type_check;
+      end if;
+
+      if to_regclass('public.asset_leads') is not null
+        and not exists (
+          select 1
+          from pg_constraint
+          where conrelid = 'public.asset_leads'::regclass
+            and conname = 'asset_leads_lead_type_check'
+            and pg_get_constraintdef(oid) ilike '%license_renewal%'
+        ) then
+        alter table public.asset_leads
+          drop constraint if exists asset_leads_lead_type_check;
+
+        alter table public.asset_leads
+          add constraint asset_leads_lead_type_check
+          check (lead_type in
+            ('finance', 'insurance', 'replacement_quote', 'license_renewal'))
+          not valid;
+
+        alter table public.asset_leads
+          validate constraint asset_leads_lead_type_check;
+      end if;
+    end
+    $migration$;
+  `);
+}
+
 async function ensurePartnerAccessTablesOnce(): Promise<void> {
   await ensureAccountProfileColumns();
   const db = getDb();
@@ -581,6 +636,7 @@ async function ensurePartnerAccessTablesOnce(): Promise<void> {
   `));
 
   if (schemaReady) {
+    await ensurePartnerRoleConstraints(db);
     partnerAccessTablesEnsured = true;
     return;
   }
@@ -754,6 +810,8 @@ async function ensurePartnerAccessTablesOnce(): Promise<void> {
     create index if not exists idx_access_audit_owner_created
       on access_audit_events(owner_user_id, created_at desc)
   `);
+
+  await ensurePartnerRoleConstraints(db);
 
   partnerAccessTablesEnsured = true;
 }
