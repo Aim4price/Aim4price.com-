@@ -1137,6 +1137,14 @@ function baseAssetWhere(input: {
   ];
   if (asText(input.viewerAccountType).toLowerCase() === 'licensing') {
     where.push(`(${LICENSING_DISCOVERY_ASSET_SQL})`);
+    where.push(`not exists (
+      select 1
+      from public.asset_discovery_enquiries permanent_licensing_denial
+      where permanent_licensing_denial.asset_register_item_id = asset.id
+        and permanent_licensing_denial.requester_user_id = $1
+        and permanent_licensing_denial.requester_account_type = 'licensing'
+        and permanent_licensing_denial.status = 'temporarily_denied'
+    )`);
   }
 
   const search = asText(input.search);
@@ -1413,6 +1421,17 @@ async function findSafeAssetForEnquiry(
         and owner.discovery_participation_enabled = true
         and (${DISCOVERY_ELIGIBLE_ASSET_SQL})
         and ($3 <> 'licensing' or (${LICENSING_DISCOVERY_ASSET_SQL}))
+        and (
+          $3 <> 'licensing'
+          or not exists (
+            select 1
+            from public.asset_discovery_enquiries permanent_licensing_denial
+            where permanent_licensing_denial.asset_register_item_id = asset.id
+              and permanent_licensing_denial.requester_user_id = $2
+              and permanent_licensing_denial.requester_account_type = 'licensing'
+              and permanent_licensing_denial.status = 'temporarily_denied'
+          )
+        )
         and ${RESOLVED_ASSET_TYPE_SQL} !~* '${PROPERTY_LIKE_ASSET_PATTERN}'
         and coalesce(asset.title, '') !~* '${PROPERTY_LIKE_ASSET_PATTERN}'
         and not exists (
@@ -1483,6 +1502,13 @@ export async function createAssetDiscoveryEnquiry(input: {
 
   if (
     current?.status === "temporarily_denied" &&
+    input.requesterAccountType === "licensing"
+  ) {
+    throw new Error("The owner declined renewal help for this asset. You cannot offer again.");
+  }
+
+  if (
+    current?.status === "temporarily_denied" &&
     current.request_again_at &&
     Date.parse(current.request_again_at) > Date.now()
   ) {
@@ -1524,6 +1550,17 @@ export async function createAssetDiscoveryEnquiry(input: {
           and blocked_enquiry.status = 'temporarily_denied'
           and blocked_enquiry.request_again_at > now()
       )
+        and (
+          $4 <> 'licensing'
+          or not exists (
+            select 1
+            from public.asset_discovery_enquiries permanent_licensing_denial
+            where permanent_licensing_denial.asset_register_item_id = $1::uuid
+              and permanent_licensing_denial.requester_user_id = $3
+              and permanent_licensing_denial.requester_account_type = 'licensing'
+              and permanent_licensing_denial.status = 'temporarily_denied'
+          )
+        )
       returning id::text
     `,
     [
@@ -2100,7 +2137,7 @@ export async function updateAssetDiscoveryOwnerDecision(input: {
     nextStatus === "temporarily_denied"
       ? `
         with target as (
-          select candidate.id, candidate.asset_register_item_id
+          select candidate.id, candidate.asset_register_item_id, candidate.requester_account_type
           from public.asset_discovery_enquiries candidate
           where candidate.id = $1::uuid
             and candidate.owner_user_id = $2
@@ -2140,10 +2177,22 @@ export async function updateAssetDiscoveryOwnerDecision(input: {
           set
             status = 'temporarily_denied',
             denied_at = now(),
-            request_again_at = now() + interval '90 days',
+            request_again_at = case
+              when target.requester_account_type = 'licensing' then null
+              else now() + interval '90 days'
+            end,
             updated_at = now()
           from target
-          where enquiry.asset_register_item_id = target.asset_register_item_id
+          where (
+              (
+                target.requester_account_type = 'licensing'
+                and enquiry.id = target.id
+              )
+              or (
+                target.requester_account_type <> 'licensing'
+                and enquiry.asset_register_item_id = target.asset_register_item_id
+              )
+            )
             and enquiry.owner_user_id = $2
             and enquiry.status = 'pending'
           returning enquiry.id

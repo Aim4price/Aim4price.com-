@@ -230,6 +230,7 @@ const ACCOUNTANT_ACCOUNT_MENU_ITEMS: AccountMenuItem[] = [
 ];
 
 const LICENSING_ACCOUNT_MENU_ITEMS: AccountMenuItem[] = [
+  { href: '/licensing', label: 'Home' },
   { href: '/leads', label: 'My Leads' },
   { href: '/asset-discovery', label: 'Discovery' },
   { href: '/account', label: 'Account' },
@@ -302,6 +303,7 @@ function buildNavItems(
 
   if (accountType === 'licensing') {
     return [
+      { key: 'home', href: '/licensing', label: 'Home' },
       { key: 'leads', href: '/leads', label: 'My Leads' },
       { key: 'asset-discovery', href: '/asset-discovery', label: 'Discovery' },
     ];
@@ -1754,7 +1756,8 @@ export default function AppHeader({
     const isProcessing = processingAssetDiscoveryEnquiryIds.has(enquiry.id);
     const isPending = enquiry.status === 'pending';
     const isApproved = enquiry.status === 'approved';
-    const canOpenDiscoveryAsset = isApproved && Boolean(enquiry.ownerContact);
+    const isDenied = !isPending && !isApproved;
+    const isLicensingExpert = session?.accountType === 'licensing';
     const retryDate = formatDateTime(enquiry.requestAgainAtIso);
     const contact = enquiry.requesterContact || enquiry.ownerContact || enquiry.dealerContact;
     const requesterLabel = enquiry.requesterAccountType === 'owner'
@@ -1763,6 +1766,13 @@ export default function AppHeader({
         ? 'licence renewal expert'
         : 'dealer';
     const isLicensingEnquiry = enquiry.requesterAccountType === 'licensing';
+    const detailTitle = isLicensingEnquiry
+      ? isPending
+        ? 'Renewal help offer'
+        : isApproved
+          ? 'Renewal help accepted'
+          : 'Renewal help declined'
+      : 'Discovery enquiry';
 
     return (
       <section
@@ -1774,12 +1784,16 @@ export default function AppHeader({
         <div className={styles.notificationDetailHeader}>
           <div className={styles.notificationDetailHeaderText}>
             {isLicensingEnquiry ? <span className={styles.notificationRenewalEyebrow}>Licence renewal</span> : null}
-            <h2 id="notification-asset-discovery-title">{isLicensingEnquiry ? 'Renewal help offer' : 'Discovery enquiry'}</h2>
+            <h2 id="notification-asset-discovery-title">{detailTitle}</h2>
             <p>{isPending
               ? isLicensingEnquiry
                 ? 'An expert offered to manage this renewal. Review the asset, then accept or decline.'
                 : `${requesterLabel === 'owner' ? 'An' : 'A'} ${requesterLabel} is looking for a machine like this. Interested in making contact?`
-              : 'Asset-specific enquiry status.'}</p>
+              : isLicensingEnquiry
+                ? isApproved
+                  ? 'The owner accepted this renewal request.'
+                  : 'The owner declined this renewal request.'
+                : 'Asset-specific enquiry status.'}</p>
           </div>
           <button type="button" className={styles.notificationDetailCloseButton} onClick={closeNotificationDetailModal} aria-label={`Close ${isLicensingEnquiry ? 'renewal help offer' : 'Discovery enquiry'}`}>
             ×
@@ -1814,15 +1828,19 @@ export default function AppHeader({
           ) : null}
 
           {!isPending ? (
-            <div className={styles.notificationDetailStatusBox}>
-              <strong>Decision saved</strong>
+            <div className={`${styles.notificationDetailStatusBox} ${isDenied ? styles.notificationDetailStatusBoxDenied : ''}`}>
+              <strong>{isApproved ? 'Access approved' : 'Request declined'}</strong>
               <p>{isApproved
                 ? isLicensingEnquiry
                   ? 'Accepted. This asset is now in the licence expert’s My Leads.'
                   : 'Approved. Your contact details are now visible to the interested user for three months.'
-                : retryDate
-                  ? `Not interested right now. This asset is hidden from Discovery until ${retryDate}.`
-                  : 'Not interested right now. This asset is hidden from Discovery for 90 days.'}</p>
+                : isLicensingEnquiry
+                  ? isLicensingExpert
+                    ? 'Not accepted. You cannot offer renewal help for this asset again.'
+                    : 'Declined. This expert cannot offer renewal help for this asset again.'
+                  : retryDate
+                    ? `Not interested right now. This asset is hidden from Discovery until ${retryDate}.`
+                    : 'Not interested right now. This asset is hidden from Discovery for 90 days.'}</p>
             </div>
           ) : null}
 
@@ -1879,7 +1897,15 @@ export default function AppHeader({
             <button type="button" className={styles.notificationSecondaryButton} onClick={closeNotificationDetailModal}>
               Close
             </button>
-            {canOpenDiscoveryAsset ? (
+            {isApproved && isLicensingEnquiry && isLicensingExpert ? (
+              <a
+                className={styles.notificationPrimaryButton}
+                href="/leads"
+                onClick={markNotificationsSeen}
+              >
+                Open lead
+              </a>
+            ) : isApproved && Boolean(enquiry.ownerContact) ? (
               <a
                 className={styles.notificationPrimaryButton}
                 href={`/asset-discovery?openAsset=${encodeURIComponent(enquiry.assetId)}`}

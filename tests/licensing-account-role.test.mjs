@@ -45,13 +45,23 @@ test('licensing signup remains a separate pending account role', async () => {
   assert.match(migration, /Optional repair for one incorrectly created pending account/);
 });
 
-test('licensing workspace exposes only My Leads and Discovery navigation', async () => {
-  const header = await read('components/AppHeader.tsx');
+test('licensing workspace exposes Home, My Leads and Discovery navigation', async () => {
+  const [header, authClient, licensingHome] = await Promise.all([
+    read('components/AppHeader.tsx'),
+    read('app/auth/auth-client.tsx'),
+    read('app/licensing/page.tsx'),
+  ]);
   const licensingNav = header.match(/if \(accountType === 'licensing'\) \{\n    return \[([\s\S]*?)\n    \];\n  \}/)?.[1] ?? '';
 
+  assert.match(licensingNav, /label: 'Home'/);
   assert.match(licensingNav, /label: 'My Leads'/);
   assert.match(licensingNav, /label: 'Discovery'/);
-  assert.doesNotMatch(licensingNav, /Home|Get Estimate|Marketplace|Maintenance|Asset Register/);
-  assert.match(header, /const LICENSING_ACCOUNT_MENU_ITEMS[\s\S]*?My Leads[\s\S]*?Discovery[\s\S]*?Account/);
+  assert.doesNotMatch(licensingNav, /Get Estimate|Marketplace|Maintenance|Asset Register/);
+  assert.match(header, /const LICENSING_ACCOUNT_MENU_ITEMS[\s\S]*?Home[\s\S]*?My Leads[\s\S]*?Discovery[\s\S]*?Account/);
   assert.match(header, /if \(accountType === 'licensing'\) \{\n    return items;\n  \}/);
+  assert.match(authClient, /accountType === "licensing"[\s\S]*?getAbsoluteUrl\("\/licensing"\)/);
+  assert.match(licensingHome, /profile\.accountType !== 'licensing'/);
+  assert.match(licensingHome, /getAssetLeadSummaryCountsForPartner/);
+  assert.match(licensingHome, /href="\/leads"/);
+  assert.match(licensingHome, /href="\/asset-discovery"/);
 });

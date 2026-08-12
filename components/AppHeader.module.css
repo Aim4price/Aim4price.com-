@@ -1504,6 +1504,24 @@
   background: linear-gradient(180deg, rgba(240, 251, 246, 0.98) 0%, rgba(250, 253, 251, 0.98) 100%);
 }
 
+.notificationDetailStatusBoxDenied {
+  border-color: rgba(109, 40, 217, 0.2);
+  background: linear-gradient(135deg, rgba(249, 246, 255, 0.98) 0%, rgba(255, 251, 252, 0.98) 100%);
+}
+
+.notificationDetailStatusBoxDenied strong {
+  color: #5d249f;
+}
+
+.notificationRenewalDetailModal .notificationDetailBody {
+  gap: 0.85rem;
+}
+
+.notificationRenewalDetailModal .notificationDetailMetaCard {
+  min-height: 5.25rem;
+  align-content: center;
+}
+
 .notificationDetailActions {
   display: flex;
   justify-content: flex-end;

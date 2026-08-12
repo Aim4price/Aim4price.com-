@@ -710,12 +710,12 @@ async function listRequesterAssetDiscoveryNotifications(userId: string): Promise
         category: 'asset_discovery',
         tone: approved ? 'success' : 'warning',
         title: licensingOffer
-          ? approved ? 'Renewal help approved' : 'Renewal help not accepted'
+          ? approved ? 'Renewal help approved' : 'Renewal help declined'
           : approved ? 'Asset enquiry approved' : 'Asset unavailable for 90 days',
         body: licensingOffer
           ? approved
             ? `The owner approved renewal help for ${assetName}. It is now in My Leads.`
-            : `The owner did not accept renewal help for ${assetName} right now.${retryDate ? ` You can offer again after ${retryDate}.` : ''}`
+            : `The owner declined renewal help for ${assetName}. You cannot offer again for this asset.`
           : approved
             ? `Your enquiry for ${assetName} was approved.`
             : `The owner is not interested in selling ${assetName} right now.${retryDate ? ` You can enquire again after ${retryDate}.` : ''}`,
@@ -835,7 +835,9 @@ export async function listComputedHeaderNotifications(input: ListHeaderNotificat
       ])
     : await Promise.all([
         listPartnerLeadNotifications(input.userId),
-        accountType === 'dealer' ? listRequesterAssetDiscoveryNotifications(input.userId) : Promise.resolve([]),
+        accountType === 'dealer' || accountType === 'licensing'
+          ? listRequesterAssetDiscoveryNotifications(input.userId)
+          : Promise.resolve([]),
       ]);
 
   return notificationGroups

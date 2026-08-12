@@ -610,6 +610,13 @@ function formatDate(value?: string | null): string {
   return new Intl.DateTimeFormat('en-ZA', { day: 'numeric', month: 'short', year: 'numeric' }).format(parsed);
 }
 
+function formatMonthYear(value?: string | null): string {
+  if (!value) return 'Not saved';
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return 'Not saved';
+  return new Intl.DateTimeFormat('en-ZA', { month: 'long', year: 'numeric' }).format(parsed);
+}
+
 function formatByteSize(value: unknown): string {
   const bytes = Math.max(0, Math.round(Number(value) || 0));
 
@@ -3214,7 +3221,7 @@ export default function LeadsClient({
   const hasMultipleSentPhotos = Boolean(sentPhotoModal && sentPhotoModal.urls.length > 1);
 
   return (
-    <main className={`${assetStyles.page} ${useDealerWorkspaceStyles ? workspaceStyles.page : ''} ${styles.leadsPage} ${useDealerWorkspaceStyles ? styles.dealerOwnerParity : ''} ${dealerAppMode ? `${styles.dealerAppLeads} ${dealerStyles.dealerLeadsSurface}` : ''} ${dealerWorkspaceMode && !accountantWorkspaceMode ? styles.dealerDesktopLeads : ''}`}>
+    <main className={`${assetStyles.page} ${useDealerWorkspaceStyles ? workspaceStyles.page : ''} ${styles.leadsPage} ${useDealerWorkspaceStyles ? styles.dealerOwnerParity : ''} ${licensingWorkspaceMode ? styles.licensingLeadsPage : ''} ${dealerAppMode ? `${styles.dealerAppLeads} ${dealerStyles.dealerLeadsSurface}` : ''} ${dealerWorkspaceMode && !accountantWorkspaceMode ? styles.dealerDesktopLeads : ''}`}>
       {!dealerAppMode ? <AppHeader active="leads" /> : null}
 
       <section className={`${assetStyles.shell} ${useDealerWorkspaceStyles ? workspaceStyles.shell : ''}`}>
@@ -3368,16 +3375,17 @@ export default function LeadsClient({
                 const isLeadActive = !isLeadNew && !isLeadDone;
                 const isTrackingRequest = isTrackingLead(lead);
                 const isMarkingThisLeadDone = markingLeadDoneId === lead.id;
+                const licenceLeadPhoto = licensingWorkspaceMode ? assetPhotos(lead)[0] ?? '' : '';
 
                 return (
-                  <article key={lead.id} className={`${useDealerWorkspaceStyles ? workspaceStyles.card : ''} ${styles.leadThread} ${isLeadNew ? styles.leadThreadNew : ''} ${isLeadActive ? styles.leadThreadActive : ''} ${isLeadDone ? styles.leadThreadDone : ''} ${isTrackingRequest ? styles.leadThreadTracking : ''} ${isLeadOpen ? styles.leadThreadOpen : ''} ${openLeadId && !isLeadOpen ? styles.leadThreadMuted : ''}`}>
+                  <article key={lead.id} className={`${useDealerWorkspaceStyles ? workspaceStyles.card : ''} ${styles.leadThread} ${licensingWorkspaceMode ? styles.licensingLeadThread : ''} ${isLeadNew ? styles.leadThreadNew : ''} ${isLeadActive ? styles.leadThreadActive : ''} ${isLeadDone ? styles.leadThreadDone : ''} ${isTrackingRequest ? styles.leadThreadTracking : ''} ${isLeadOpen ? styles.leadThreadOpen : ''} ${openLeadId && !isLeadOpen ? styles.leadThreadMuted : ''}`}>
                     <div className={styles.clientPanel}>
-                      <div className={styles.clientPanelHeader}>
-                        <div className={`${styles.clientIdentity} ${isTrackingRequest ? styles.trackingLeadIdentity : ''}`}>
-                          {licensingWorkspaceMode && assetPhotos(lead)[0] ? (
+                      <div className={`${styles.clientPanelHeader} ${licensingWorkspaceMode ? styles.licensingLeadHeader : ''}`}>
+                        <div className={`${styles.clientIdentity} ${licensingWorkspaceMode ? styles.licensingLeadIdentity : ''} ${licenceLeadPhoto ? styles.licensingLeadIdentityWithPhoto : ''} ${isTrackingRequest ? styles.trackingLeadIdentity : ''}`}>
+                          {licenceLeadPhoto ? (
                             // eslint-disable-next-line @next/next/no-img-element
                             <img
-                              src={assetPhotos(lead)[0]}
+                              src={licenceLeadPhoto}
                               alt={`${assetTitle(lead)} thumbnail`}
                               className={styles.licenceLeadThumbnail}
                             />
@@ -3388,9 +3396,12 @@ export default function LeadsClient({
                           <strong className={styles.leadAssetName}>{assetTitle(lead)}</strong>
                           <span className={styles.clientKicker}>{formatLeadDisplayType(lead)} · Received {formatDate(lead.createdAtIso)}</span>
                           {licensingWorkspaceMode ? (
-                            <span className={styles.trackingLeadPurpose}>
-                              <span className={styles.trackingLeadPurposeCopy}>
-                                <strong>Renewal due {formatDate(leadLicenceRenewalDate(lead))}</strong>
+                            <span className={styles.licenceRenewalMeta}>
+                              <span className={styles.licenceRenewalMetaIcon} aria-hidden="true">
+                                <DocumentIcon className={assetStyles.buttonIcon} />
+                              </span>
+                              <span className={styles.licenceRenewalMetaCopy}>
+                                <strong>Renewal due {formatMonthYear(leadLicenceRenewalDate(lead))}</strong>
                                 <small>{readLeadLicenseRegistrationNumber(lead) || 'Registration not supplied'}</small>
                               </span>
                             </span>
