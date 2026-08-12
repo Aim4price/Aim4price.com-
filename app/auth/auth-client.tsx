@@ -556,8 +556,8 @@ async function saveSignupProfileFallback(
   displayName: string,
   phone: string,
 ) {
-  await fetch("/api/account-profile", {
-    method: "PUT",
+  const response = await fetch("/api/account-profile/complete-signup", {
+    method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
@@ -572,6 +572,12 @@ async function saveSignupProfileFallback(
       phone,
     }),
   }).catch(() => null);
+
+  if (!response?.ok) {
+    throw new Error(
+      "Your account was created, but its workspace could not be completed. Please contact Aim4price before trying again.",
+    );
+  }
 }
 
 export default function AuthClient() {

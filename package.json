@@ -11,7 +11,7 @@
     "test:dealer-fast-loading": "node --test tests/dealer-fast-loading.test.mjs tests/dealer-maintenance-pagination.test.mjs",
     "test:account-app-access": "node --test tests/account-app-access-modal-flow.test.mjs",
     "test:asset-discovery": "node --test tests/asset-discovery.security.test.mjs",
-    "test:license-renewals": "node --test tests/licence-renewal-workflow.security.test.mjs",
+    "test:license-renewals": "node --test tests/licence-renewal-workflow.security.test.mjs tests/licensing-account-role.test.mjs",
     "test:accountant-workspace": "node --test tests/accountant-workspace.security.test.mjs",
     "test:maintenance-overview": "node --test tests/maintenance-overview-visibility.test.mjs",
     "test:owner-app-operations": "node --test tests/owner-app-operations.test.mjs",

@@ -776,6 +776,7 @@ export async function createInitialAccountProfile(
 
   const db = getDb();
   const initialAccountType = normalizeAccountType(input?.accountType);
+  const hasExplicitAccountType = Boolean(asText(input?.accountType));
   const initialAccountSubtype = normalizeAccountSubtype(
     initialAccountType,
     input?.accountSubtype,
@@ -817,10 +818,19 @@ export async function createInitialAccountProfile(
       )
       values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, now(), now())
       on conflict (user_id) do update set
+        account_type = case
+          when $12 then excluded.account_type
+          else account_profiles.account_type
+        end,
+        account_subtype = case
+          when $12 then excluded.account_subtype
+          else account_profiles.account_subtype
+        end,
         phone = coalesce(nullif(account_profiles.phone, ''), excluded.phone),
         province = coalesce(nullif(account_profiles.province, ''), excluded.province),
         town_city = coalesce(nullif(account_profiles.town_city, ''), excluded.town_city),
         partner_directory_enabled = case
+          when $12 then excluded.partner_directory_enabled
           when account_profiles.account_type <> 'owner' and excluded.partner_directory_enabled then true
           else account_profiles.partner_directory_enabled
         end,
@@ -838,6 +848,7 @@ export async function createInitialAccountProfile(
       province || null,
       townCity || null,
       initialPartnerDirectoryEnabled,
+      hasExplicitAccountType,
     ],
   );
 }

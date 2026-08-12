@@ -229,6 +229,12 @@ const ACCOUNTANT_ACCOUNT_MENU_ITEMS: AccountMenuItem[] = [
   { href: '/leads', label: 'My Clients' },
 ];
 
+const LICENSING_ACCOUNT_MENU_ITEMS: AccountMenuItem[] = [
+  { href: '/leads', label: 'My Leads' },
+  { href: '/asset-discovery', label: 'Discovery' },
+  { href: '/account', label: 'Account' },
+];
+
 function isAccountMenuItemVisible(item: AccountMenuItem, accountType: AccountType | undefined): boolean {
   if (!item.accountTypes?.length) {
     return true;
@@ -296,7 +302,7 @@ function buildNavItems(
 
   if (accountType === 'licensing') {
     return [
-      { key: 'leads', href: '/leads', label: 'Leads' },
+      { key: 'leads', href: '/leads', label: 'My Leads' },
       { key: 'asset-discovery', href: '/asset-discovery', label: 'Discovery' },
     ];
   }
@@ -315,6 +321,10 @@ function buildMobileNavItems(
   accountantWorkspaceRegisterId?: string | null,
 ): NavItem[] {
   const items = buildNavItems(accountType, accountSubtype, accountantWorkspaceShareId, accountantWorkspaceRegisterId);
+
+  if (accountType === 'licensing') {
+    return items;
+  }
 
   if (accountType === 'finance' && accountSubtype === 'accountant' && accountantWorkspaceShareId) {
     return items;
@@ -2395,9 +2405,11 @@ export default function AppHeader({
                           </>
                         ) : (
                           <>
-                            {(isAccountantAccount
-                              ? ACCOUNTANT_ACCOUNT_MENU_ITEMS
-                              : ACCOUNT_MENU_ITEMS.filter((item) => isAccountMenuItemVisible(item, session?.accountType))
+                            {(session?.accountType === 'licensing'
+                              ? LICENSING_ACCOUNT_MENU_ITEMS
+                              : isAccountantAccount
+                                ? ACCOUNTANT_ACCOUNT_MENU_ITEMS
+                                : ACCOUNT_MENU_ITEMS.filter((item) => isAccountMenuItemVisible(item, session?.accountType))
                             ).map((item) => {
                               const isActive = isAccountMenuLinkActive(item.href);
                               const menuLinkClassName = [
