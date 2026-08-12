@@ -704,34 +704,6 @@
   gap: 0.3rem 1rem !important;
 }
 
-.licensingLeadIdentityWithPhoto {
-  grid-template-columns: 7.65rem minmax(0, 1fr) !important;
-}
-
-.licensingLeadIdentityWithPhoto .licenceLeadThumbnail {
-  grid-column: 1;
-  grid-row: 1 / span 4;
-  align-self: stretch;
-  width: 7.65rem;
-  height: 6.25rem;
-  margin: 0;
-}
-
-.licensingLeadIdentityWithPhoto > :not(.licenceLeadThumbnail) {
-  grid-column: 2;
-}
-
-.licenceLeadThumbnail {
-  width: 7.65rem;
-  height: 6.25rem;
-  margin: 0;
-  border: 1px solid rgba(17, 74, 59, 0.16);
-  border-radius: 1rem;
-  object-fit: cover;
-  background: #f1f7f4;
-  box-shadow: 0 10px 24px rgba(17, 74, 59, 0.09);
-}
-
 .licensingLeadThread .leadCardTitleRow h3 {
   font-size: clamp(1.22rem, 1.8vw, 1.55rem) !important;
 }
@@ -807,6 +779,37 @@
   min-height: 3.15rem !important;
 }
 
+.licenceOutcomeBadge {
+  min-width: 7.5rem;
+  min-height: 3.15rem;
+  display: inline-grid;
+  place-items: center;
+  padding: 0.75rem 1.15rem;
+  border: 1px solid transparent;
+  border-radius: 1rem;
+  font-size: 0.82rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.licenceOutcomePending {
+  color: #7a4a0a;
+  border-color: rgba(211, 137, 31, 0.3);
+  background: #fff4df;
+}
+
+.licenceOutcomeWon {
+  color: #176047;
+  border-color: rgba(43, 138, 99, 0.3);
+  background: #e9f7ef;
+}
+
+.licenceOutcomeDenied {
+  color: #963737;
+  border-color: rgba(204, 58, 58, 0.25);
+  background: #fff0f0;
+}
+
 @media (max-width: 900px) {
   .licensingLeadHeader {
     grid-template-columns: 1fr !important;
@@ -821,31 +824,13 @@
   .licensingLeadThread .clientActionRow > button {
     width: 100%;
   }
+
+  .licenceOutcomeBadge {
+    width: 100%;
+  }
 }
 
 @media (max-width: 560px) {
-  .licensingLeadIdentityWithPhoto {
-    grid-template-columns: 5.75rem minmax(0, 1fr) !important;
-  }
-
-  .licensingLeadIdentityWithPhoto .licenceLeadThumbnail {
-    grid-row: 1 / span 3;
-    width: 5.75rem;
-    height: 5rem;
-    margin: 0;
-  }
-
-  .licenceLeadThumbnail {
-    width: 5.75rem;
-    height: 5rem;
-    border-radius: 0.82rem;
-  }
-
-  .licensingLeadIdentityWithPhoto .licenceRenewalMeta {
-    grid-column: 1 / -1;
-    margin-top: 0.55rem;
-  }
-
   .licenceRenewalMeta {
     width: 100%;
   }
@@ -4172,16 +4157,6 @@
   margin: 0.26rem 0 0;
 }
 
-.licenceLeadThumbnail {
-  width: 104px;
-  height: 76px;
-  margin-bottom: 0.3rem;
-  border: 1px solid rgba(17, 74, 59, 0.14);
-  border-radius: 14px;
-  object-fit: cover;
-  background: #f1f7f4;
-}
-
 .trackingLeadActions {
   display: grid !important;
   gap: 0.72rem;
@@ -4827,6 +4802,48 @@
   margin: 0 !important;
 }
 
+.licensingManageModal.licensingManageModal {
+  width: min(54rem, calc(100vw - 1.5rem)) !important;
+  max-width: 54rem !important;
+  border-radius: 1.65rem !important;
+}
+
+.licensingManageModal [class*='optionsModalHeader'] {
+  min-height: 0 !important;
+  padding: 1.5rem 5rem 1.25rem 1.6rem !important;
+}
+
+.licensingManageModal [class*='modalHeaderText'] {
+  min-width: 0;
+  gap: 0.35rem !important;
+}
+
+.licensingManageModal [class*='modalHeaderText'] h3 {
+  margin: 0 !important;
+  font-size: clamp(1.7rem, 3.2vw, 2.35rem) !important;
+  line-height: 1.05 !important;
+  overflow-wrap: anywhere;
+}
+
+.licensingManageModal .leadManageScrollBody {
+  padding: 1.2rem 1.3rem 1.35rem !important;
+}
+
+.licensingManageModal .manageOptionsGrid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem !important;
+}
+
+.licensingManageModal .manageOptionsGrid > button {
+  min-height: 6.5rem;
+  padding: 1rem 1.15rem !important;
+  border-radius: 1.1rem !important;
+}
+
+.licensingManageModal .manageOptionsGrid > :last-child:nth-child(odd) {
+  grid-column: 1 / -1;
+}
+
 @media (max-width: 900px) {
   .dealerAppLeads .trackingLeadActionsSingle.trackingLeadActionsClosed {
     width: 100% !important;
@@ -4858,6 +4875,23 @@
 
   .leadManageModal .manageOptionsGrid > button {
     min-height: 5.75rem;
+  }
+
+  .licensingManageModal [class*='optionsModalHeader'] {
+    padding: 1.25rem 4.25rem 1rem 1.2rem !important;
+  }
+
+  .licensingManageModal .leadManageScrollBody {
+    padding: 0.9rem !important;
+  }
+
+  .licensingManageModal .manageOptionsGrid {
+    grid-template-columns: 1fr;
+    gap: 0.75rem !important;
+  }
+
+  .licensingManageModal .manageOptionsGrid > :last-child:nth-child(odd) {
+    grid-column: auto;
   }
 }
 
