@@ -2389,6 +2389,27 @@
   cursor: wait;
   opacity: 0.62;
 }
+
+.ownerRenewalApproval {
+  border-color: rgba(119, 70, 196, 0.24);
+  background: linear-gradient(135deg, #fbf8ff 0%, #f4edff 100%);
+}
+.ownerRenewalApproval > div:first-child {
+  display: grid;
+  gap: 6px;
+}
+.ownerRenewalApproval strong {
+  color: #5625a5;
+  font-size: 0.9rem;
+  font-weight: 900;
+}
+.ownerRenewalApproval p {
+  margin: 0;
+  color: #665879;
+  font-size: 0.8rem;
+  font-weight: 700;
+  line-height: 1.48;
+}
 .notificationEmpty {
   margin: 0;
   border: 1px dashed rgba(18, 53, 45, 0.15);

@@ -2323,7 +2323,7 @@ function money(value: number | null | undefined): string {
 }
 
 function dealerCorrectionActor(correction: DealerAssetCorrectionRequest): string {
-  const dealerName = correction.dealerName.trim() || 'the dealer';
+  const dealerName = correction.dealerName.trim() || 'the partner';
   const actorName = correction.actorName.trim();
 
   if (!actorName || actorName.toLowerCase() === dealerName.toLowerCase()) {
@@ -2345,6 +2345,10 @@ function dealerCorrectionDescription(correction: DealerAssetCorrectionRequest): 
       ? 'not saved'
       : `${money(correction.currentReplacementPriceExVat)} excl. VAT`;
     return `${actor} proposed changing the replacement price from ${currentValue} to ${money(correction.proposedReplacementPriceExVat)} excl. VAT.`;
+  }
+
+  if (correction.licenseRenewalDateChanged && correction.proposedLicenseRenewalDate) {
+    return `${actor} proposed changing the licence renewal date from ${formatDate(correction.currentLicenseRenewalDate) || 'not saved'} to ${formatDate(correction.proposedLicenseRenewalDate)}.`;
   }
 
   return `${actor} proposed an update to this asset.`;
@@ -10399,6 +10403,21 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
   }
 
   function openQuotePartnerPicker(leadType: AssetLeadType) {
+    if (
+      leadType === 'license_renewal'
+      && quoteAsset
+      && (
+        readLicenseStatusChoice(quoteAsset) !== 'yes'
+        || !readSpecsText(quoteAsset, ['licenseRenewalDate', 'license_renewal_date', 'licenceRenewalDate', 'licence_renewal_date'])
+      )
+    ) {
+      const asset = quoteAsset;
+      setQuoteAsset(null);
+      resetAssetQuoteState('asset');
+      openQuickAssetStatusEditor(asset, 'license');
+      return;
+    }
+
     setSelectedQuoteLeadType(leadType);
     setSelectedQuotePartnerId('');
     setQuotePartnerSearch('');
@@ -13276,6 +13295,14 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     const anchorAsset = eligibleShareAssets[0];
 
     if (!anchorAsset) {
+      if (leadType === 'license_renewal') {
+        const assetNeedingRenewalDate = shareAssets.find((asset) => assetKindSupportsLicensing(asset.kind));
+        if (assetNeedingRenewalDate) {
+          setIsRegisterShareModalOpen(false);
+          openQuickAssetStatusEditor(assetNeedingRenewalDate, 'license');
+          return;
+        }
+      }
       setNotice({
         tone: 'error',
         message: leadType === 'license_renewal'
@@ -15110,7 +15137,9 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                         : 'Valuation pending'
                       : dealerAssetCorrection?.serialNumberChanged
                         ? 'Serial number update'
-                        : 'Replacement price update';
+                        : dealerAssetCorrection?.replacementPriceChanged
+                          ? 'Replacement price update'
+                          : 'Renewal date update';
                     const isDecidingDealerCorrection = dealerAssetCorrection
                       ? busyDealerCorrectionId === dealerAssetCorrection.id
                       : false;
@@ -15350,7 +15379,9 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                                     ? dealerAssetCorrection.revaluationStatus === 'failed'
                                       ? 'Replacement price saved — valuation retry needed'
                                       : 'Replacement price saved — valuation pending'
-                                    : 'Dealer update awaiting your approval'}</strong>
+                                    : dealerAssetCorrection.licenseRenewalDateChanged
+                                      ? 'Licence renewal awaiting your approval'
+                                      : 'Dealer update awaiting your approval'}</strong>
                                   <p>{dealerCorrectionRevaluationAlert
                                     ? dealerAssetCorrection.revaluationStatus === 'failed'
                                       ? dealerAssetCorrection.revaluationFailureMessage || 'Aim4price could not recalculate this asset automatically.'
@@ -15358,7 +15389,9 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                                     : dealerCorrectionDescription(dealerAssetCorrection)}</p>
                                   <small>{dealerCorrectionRevaluationAlert
                                     ? 'The accepted replacement price remains saved regardless of the valuation result.'
-                                    : 'Review this one change before the dealer can submit another update for this asset.'}</small>
+                                    : dealerAssetCorrection.licenseRenewalDateChanged
+                                      ? 'Review this date before the licence expert can submit another update.'
+                                      : 'Review this one change before the dealer can submit another update for this asset.'}</small>
                                 </div>
                               </div>
                               <div className={styles.dealerCorrectionActions}>
@@ -16188,7 +16221,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                     <span className={styles.assetQuoteChoiceText}>
                       <strong>Licence renewal</strong>
                       <small>
-                        <span>Choose licensed assets for renewal.</span>
+                        <span>Only assets with a renewal date can be shared.</span>
                       </small>
                     </span>
                   </button>
@@ -18288,7 +18321,12 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
               {!selectedQuoteOption ? (
                 <div className={styles.optionsContent}>
                   <div className={`${styles.optionsGrid} ${styles.assetOptionsGrid} ${styles.assetQuoteChoiceGrid}`}>
-                    {availableAssetQuoteOptions.map((option) => (
+                    {availableAssetQuoteOptions.map((option) => {
+                      const needsLicenceRenewalDate = option.leadType === 'license_renewal' && Boolean(quoteAsset) && (
+                        readLicenseStatusChoice(quoteAsset!) !== 'yes'
+                        || !readSpecsText(quoteAsset!, ['licenseRenewalDate', 'license_renewal_date', 'licenceRenewalDate', 'licence_renewal_date'])
+                      );
+                      return (
                       <button
                         key={option.leadType}
                         type="button"
@@ -18301,11 +18339,12 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                         <span className={styles.assetQuoteChoiceText}>
                           <strong>{option.title}</strong>
                           <small>
-                            <span>{option.description}</span>
+                            <span>{needsLicenceRenewalDate ? 'Add a renewal date before sharing.' : option.description}</span>
                           </small>
                         </span>
                       </button>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               ) : (
@@ -18513,7 +18552,9 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                                     <UmbrellaIcon className={styles.assetGroupShareSummaryIcon} />
                                     <span>
                                       <strong>{activeShareName}</strong>
-                                      <small>{activeShareAssets.length} linked {activeShareAssets.length === 1 ? 'asset' : 'assets'} included automatically.</small>
+                                      <small>{selectedQuoteOption.leadType === 'license_renewal'
+                                        ? `${selectedDealerShareAssetIds.length} linked ${selectedDealerShareAssetIds.length === 1 ? 'asset' : 'assets'} with renewal dates included.`
+                                        : `${activeShareAssets.length} linked ${activeShareAssets.length === 1 ? 'asset' : 'assets'} included automatically.`}</small>
                                     </span>
                                   </section>
                                 ) : (

@@ -271,8 +271,8 @@ export default function OwnerNotificationsClient({ viewerId: _viewerId }: { view
         tone: needsAttention ? 'warning' : 'success',
         message: payload.message || (
           decision === 'reject'
-            ? 'Dealer correction declined.'
-            : 'Dealer update accepted and saved.'
+            ? 'Asset update declined.'
+            : 'Asset update accepted and saved.'
         ),
       });
     } catch (cause) {

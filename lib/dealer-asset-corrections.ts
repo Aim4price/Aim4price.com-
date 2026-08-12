@@ -8,7 +8,7 @@ import { isDatabaseSchemaReady } from './database-schema-readiness';
 import { getDb } from './db';
 
 export type DealerAssetCorrectionSource = 'lead' | 'maintenance';
-export type DealerAssetCorrectionField = 'serialNumber' | 'replacementPriceExVat';
+export type DealerAssetCorrectionField = 'serialNumber' | 'replacementPriceExVat' | 'licenseRenewalDate';
 export type DealerAssetCorrectionStatus = 'pending' | 'accepted' | 'rejected' | 'superseded';
 export type DealerAssetCorrectionRevaluationStatus = 'not_required' | 'pending' | 'succeeded' | 'failed';
 export type DealerAssetCorrectionResolutionOutcome =
@@ -32,8 +32,11 @@ export type DealerAssetCorrectionRequest = {
   proposedSerialNumber: string | null;
   currentReplacementPriceExVat: number | null;
   proposedReplacementPriceExVat: number | null;
+  currentLicenseRenewalDate: string;
+  proposedLicenseRenewalDate: string | null;
   serialNumberChanged: boolean;
   replacementPriceChanged: boolean;
+  licenseRenewalDateChanged: boolean;
   status: DealerAssetCorrectionStatus;
   revaluationStatus: DealerAssetCorrectionRevaluationStatus;
   revaluationAttemptCount: number;
@@ -72,8 +75,11 @@ type DealerAssetCorrectionRow = {
   proposed_serial_number: string | null;
   current_replacement_price_ex_vat: string | number | null;
   proposed_replacement_price_ex_vat: string | number | null;
+  current_license_renewal_date: string | Date | null;
+  proposed_license_renewal_date: string | Date | null;
   serial_number_changed: boolean | null;
   replacement_price_changed: boolean | null;
+  license_renewal_date_changed: boolean | null;
   status: string;
   revaluation_status: string | null;
   revaluation_attempt_count: string | number | null;
@@ -139,6 +145,25 @@ function nullableIso(value: string | Date | null | undefined): string | null {
   return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString();
 }
 
+function dateOnly(value: unknown): string {
+  if (!value) return '';
+  if (value instanceof Date) return Number.isNaN(value.getTime()) ? '' : value.toISOString().slice(0, 10);
+  const text = asText(value);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(text)) return '';
+  const parsed = new Date(`${text}T00:00:00.000Z`);
+  return Number.isNaN(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== text ? '' : text;
+}
+
+function assetLicenseRenewalDate(asset: AssetRegisterItem): string {
+  const specs = asset.specsJson ?? {};
+  return dateOnly(
+    specs.licenseRenewalDate
+    ?? specs.license_renewal_date
+    ?? specs.licenceRenewalDate
+    ?? specs.licence_renewal_date,
+  );
+}
+
 function normalizeSource(value: unknown): DealerAssetCorrectionSource | null {
   const source = asText(value).toLowerCase();
   return source === 'lead' || source === 'maintenance' ? source : null;
@@ -180,8 +205,11 @@ function mapCorrection(row: DealerAssetCorrectionRow): DealerAssetCorrectionRequ
     proposedSerialNumber: row.proposed_serial_number === null ? null : asText(row.proposed_serial_number),
     currentReplacementPriceExVat: asNumber(row.current_replacement_price_ex_vat),
     proposedReplacementPriceExVat: asNumber(row.proposed_replacement_price_ex_vat),
+    currentLicenseRenewalDate: dateOnly(row.current_license_renewal_date),
+    proposedLicenseRenewalDate: row.proposed_license_renewal_date === null ? null : dateOnly(row.proposed_license_renewal_date),
     serialNumberChanged: Boolean(row.serial_number_changed),
     replacementPriceChanged: Boolean(row.replacement_price_changed),
+    licenseRenewalDateChanged: Boolean(row.license_renewal_date_changed),
     status,
     revaluationStatus,
     revaluationAttemptCount: Math.max(0, asInteger(row.revaluation_attempt_count) ?? 0),
@@ -222,8 +250,11 @@ function correctionSelectSql(whereClause: string): string {
       correction.proposed_serial_number,
       correction.current_replacement_price_ex_vat,
       correction.proposed_replacement_price_ex_vat,
+      correction.current_license_renewal_date,
+      correction.proposed_license_renewal_date,
       correction.serial_number_changed,
       correction.replacement_price_changed,
+      correction.license_renewal_date_changed,
       correction.status,
       correction.revaluation_status,
       correction.revaluation_attempt_count,
@@ -256,6 +287,9 @@ async function ensureDealerAssetCorrectionTablesOnce(): Promise<void> {
       source_id,
       serial_number_changed,
       replacement_price_changed,
+      license_renewal_date_changed,
+      current_license_renewal_date,
+      proposed_license_renewal_date,
       status,
       revaluation_status,
       revaluation_attempt_count,
@@ -292,18 +326,24 @@ async function ensureDealerAssetCorrectionTablesOnce(): Promise<void> {
       proposed_serial_number text,
       current_replacement_price_ex_vat numeric(14, 2),
       proposed_replacement_price_ex_vat numeric(14, 2),
+      current_license_renewal_date date,
+      proposed_license_renewal_date date,
       serial_number_changed boolean not null default false,
       replacement_price_changed boolean not null default false,
+      license_renewal_date_changed boolean not null default false,
       status text not null default 'pending' check (status in ('pending', 'accepted', 'rejected', 'superseded')),
       resolved_by_user_id text,
       resolved_at timestamptz,
       created_at timestamptz not null default now(),
       updated_at timestamptz not null default now(),
-      check (serial_number_changed or replacement_price_changed)
+      check ((serial_number_changed::int + replacement_price_changed::int + license_renewal_date_changed::int) = 1)
     )
   `);
   await db.query(`
     alter table public.dealer_asset_correction_requests
+      add column if not exists current_license_renewal_date date,
+      add column if not exists proposed_license_renewal_date date,
+      add column if not exists license_renewal_date_changed boolean not null default false,
       add column if not exists revaluation_status text not null default 'not_required',
       add column if not exists revaluation_attempt_count integer not null default 0,
       add column if not exists revaluation_last_attempted_at timestamptz,
@@ -358,8 +398,7 @@ async function ensureDealerAssetCorrectionTablesOnce(): Promise<void> {
         resolved_at = coalesce(resolved_at, now()),
         updated_at = now()
     where status = 'pending'
-      and serial_number_changed = true
-      and replacement_price_changed = true
+      and (serial_number_changed::int + replacement_price_changed::int + license_renewal_date_changed::int) > 1
   `);
   await db.query(`
     with ranked_pending as (
@@ -381,20 +420,12 @@ async function ensureDealerAssetCorrectionTablesOnce(): Promise<void> {
       and ranked_pending.pending_rank > 1
   `);
   await db.query(`
-    do $$
-    begin
-      if not exists (
-        select 1
-        from pg_constraint
-        where conname = 'dealer_asset_correction_single_field_check'
-          and conrelid = 'public.dealer_asset_correction_requests'::regclass
-      ) then
-        alter table public.dealer_asset_correction_requests
-          add constraint dealer_asset_correction_single_field_check
-          check (serial_number_changed <> replacement_price_changed) not valid;
-      end if;
-    end;
-    $$;
+    alter table public.dealer_asset_correction_requests
+      drop constraint if exists dealer_asset_correction_requests_check,
+      drop constraint if exists dealer_asset_correction_single_field_check;
+    alter table public.dealer_asset_correction_requests
+      add constraint dealer_asset_correction_single_field_check
+      check ((serial_number_changed::int + replacement_price_changed::int + license_renewal_date_changed::int) = 1) not valid;
   `);
   await db.query(`
     create unique index if not exists dealer_asset_correction_asset_pending_unique_idx
@@ -443,10 +474,12 @@ async function resolveDealerAccess(input: {
       `
         select owner_user_id, asset_register_item_id::text
         from public.asset_leads
-        where id = $1::uuid and partner_user_id = $2
+        where id = $1::uuid
+          and partner_user_id = $2
+          and ($3 <> 'licenseRenewalDate' or lead_type = 'license_renewal')
         limit 1
       `,
-      [input.sourceId, input.dealerUserId],
+      [input.sourceId, input.dealerUserId, input.field],
     );
     return result.rows[0] ?? null;
   }
@@ -499,6 +532,9 @@ export async function createOrUpdateDealerAssetCorrection(input: {
   const replacementPriceExVat = input.field === 'replacementPriceExVat'
     ? asNumber(input.value)
     : null;
+  const licenseRenewalDate = input.field === 'licenseRenewalDate'
+    ? dateOnly(input.value)
+    : null;
 
   if (input.field === 'serialNumber' && !serialNumber) {
     throw new Error('SERIAL_NUMBER_REQUIRED');
@@ -508,6 +544,9 @@ export async function createOrUpdateDealerAssetCorrection(input: {
     && (replacementPriceExVat === null || replacementPriceExVat <= 0 || replacementPriceExVat > 999_999_999_999)
   ) {
     throw new Error('REPLACEMENT_PRICE_INVALID');
+  }
+  if (input.field === 'licenseRenewalDate' && !licenseRenewalDate) {
+    throw new Error('LICENSE_RENEWAL_DATE_INVALID');
   }
 
   const roundedReplacementPrice = replacementPriceExVat === null
@@ -540,7 +579,9 @@ export async function createOrUpdateDealerAssetCorrection(input: {
       throw new Error(
         existing.serialNumberChanged
           ? 'CORRECTION_SERIAL_PENDING'
-          : 'CORRECTION_REPLACEMENT_PENDING',
+          : existing.replacementPriceChanged
+            ? 'CORRECTION_REPLACEMENT_PENDING'
+            : 'CORRECTION_LICENSE_RENEWAL_PENDING',
       );
     }
 
@@ -550,11 +591,18 @@ export async function createOrUpdateDealerAssetCorrection(input: {
     const proposedReplacementPriceExVat = input.field === 'replacementPriceExVat'
       ? roundedReplacementPrice
       : null;
+    const proposedLicenseRenewalDate = input.field === 'licenseRenewalDate'
+      ? licenseRenewalDate
+      : null;
     const serialNumberChanged = Boolean(proposedSerialNumber && proposedSerialNumber !== asset.serialNumber);
     const replacementPriceChanged = proposedReplacementPriceExVat !== null
       && proposedReplacementPriceExVat !== asset.replacementPriceExVat;
+    const currentLicenseRenewalDate = assetLicenseRenewalDate(asset);
+    const licenseRenewalDateChanged = Boolean(
+      proposedLicenseRenewalDate && proposedLicenseRenewalDate !== currentLicenseRenewalDate,
+    );
 
-    if (!serialNumberChanged && !replacementPriceChanged) {
+    if (!serialNumberChanged && !replacementPriceChanged && !licenseRenewalDateChanged) {
       throw new Error('CORRECTION_NO_CHANGES');
     }
 
@@ -574,13 +622,16 @@ export async function createOrUpdateDealerAssetCorrection(input: {
           proposed_serial_number,
           current_replacement_price_ex_vat,
           proposed_replacement_price_ex_vat,
+          current_license_renewal_date,
+          proposed_license_renewal_date,
           serial_number_changed,
           replacement_price_changed,
+          license_renewal_date_changed,
           status,
           created_at,
           updated_at
         )
-        values ($1, $2, $3::uuid, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, 'pending', now(), now())
+        values ($1, $2, $3::uuid, $4, $5, $6, $7, $8, $9, $10, $11, $12::date, $13::date, $14, $15, $16, 'pending', now(), now())
         returning id::text
       `,
       [
@@ -595,8 +646,11 @@ export async function createOrUpdateDealerAssetCorrection(input: {
         serialNumberChanged ? proposedSerialNumber : null,
         replacementPriceChanged ? asset.replacementPriceExVat : null,
         replacementPriceChanged ? proposedReplacementPriceExVat : null,
+        licenseRenewalDateChanged ? currentLicenseRenewalDate || null : null,
+        licenseRenewalDateChanged ? proposedLicenseRenewalDate : null,
         serialNumberChanged,
         replacementPriceChanged,
+        licenseRenewalDateChanged,
       ],
     );
     const correctionId = inserted.rows[0]?.id ?? '';
@@ -811,6 +865,32 @@ async function applyAcceptedCorrectionToAsset(input: {
     if (!replacementColumn && !userReplacementColumn && !specsColumn) {
       throw new Error('ASSET_UPDATE_UNSUPPORTED');
     }
+  }
+
+  if (current.licenseRenewalDateChanged && current.proposedLicenseRenewalDate) {
+    const specsColumn = firstAvailableColumn(assetColumns, ['specs_json']);
+    if (!specsColumn) throw new Error('ASSET_UPDATE_UNSUPPORTED');
+    const specsMeta = assetColumns.get(specsColumn);
+    values.push(JSON.stringify({
+      licenseRenewalDate: current.proposedLicenseRenewalDate,
+      license_renewal_date: current.proposedLicenseRenewalDate,
+      licenceRenewalDate: current.proposedLicenseRenewalDate,
+      licence_renewal_date: current.proposedLicenseRenewalDate,
+      licenseStatus: 'yes',
+      license_status: 'yes',
+    }));
+    const placeholder = `$${values.length}::jsonb`;
+    if (specsMeta?.data_type === 'json' || specsMeta?.udt_name === 'json') {
+      assignments.push(
+        `${quotedIdentifier(specsColumn)} = (coalesce(${quotedIdentifier(specsColumn)}, '{}'::json)::jsonb || ${placeholder})::json`,
+      );
+    } else {
+      assignments.push(
+        `${quotedIdentifier(specsColumn)} = coalesce(${quotedIdentifier(specsColumn)}, '{}'::jsonb) || ${placeholder}`,
+      );
+    }
+    assignedColumns.add(specsColumn);
+    pushValueAssignment(firstAvailableColumn(assetColumns, ['is_licensed']), true);
   }
 
   const updatedAtColumn = firstAvailableColumn(assetColumns, ['updated_at', 'modified_at', 'updatedon']);
@@ -1104,9 +1184,9 @@ function resolutionMessage(outcome: DealerAssetCorrectionResolutionOutcome): str
     return 'Replacement price accepted and saved. Aim4price recalculation is still pending.';
   }
   if (outcome === 'accepted_no_revaluation') {
-    return 'Dealer serial number accepted and saved. No valuation recalculation was required.';
+    return 'Asset update accepted and saved. No valuation recalculation was required.';
   }
-  return 'Dealer correction declined.';
+  return 'Asset update declined.';
 }
 
 async function loadOwnerCorrection(
@@ -1547,6 +1627,20 @@ export function applyDealerCorrectionToSnapshot(
       ? next.specsJson as Record<string, unknown>
       : {};
     next.specsJson = { ...specs, ...replacementPatch };
+  }
+
+  if (correction.licenseRenewalDateChanged && correction.proposedLicenseRenewalDate) {
+    const specs = next.specsJson && typeof next.specsJson === 'object' && !Array.isArray(next.specsJson)
+      ? next.specsJson as Record<string, unknown>
+      : {};
+    const renewalPatch = {
+      licenseRenewalDate: correction.proposedLicenseRenewalDate,
+      license_renewal_date: correction.proposedLicenseRenewalDate,
+      licenceRenewalDate: correction.proposedLicenseRenewalDate,
+      licence_renewal_date: correction.proposedLicenseRenewalDate,
+    };
+    Object.assign(next, renewalPatch);
+    next.specsJson = { ...specs, ...renewalPatch };
   }
 
   next.dealerCorrectionPending = true;

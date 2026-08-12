@@ -717,6 +717,20 @@ function leadWithDealerCorrection(lead: AssetLead, correction: DealerAssetCorrec
     };
   }
 
+  if (correction.licenseRenewalDateChanged && correction.proposedLicenseRenewalDate) {
+    const renewalPatch = {
+      licenseRenewalDate: correction.proposedLicenseRenewalDate,
+      license_renewal_date: correction.proposedLicenseRenewalDate,
+      licenceRenewalDate: correction.proposedLicenseRenewalDate,
+      licence_renewal_date: correction.proposedLicenseRenewalDate,
+    };
+    Object.assign(assetSnapshot, renewalPatch);
+    assetSnapshot.specsJson = {
+      ...(asRecord(assetSnapshot.specsJson) ?? {}),
+      ...renewalPatch,
+    };
+  }
+
   assetSnapshot.dealerCorrectionPending = true;
   assetSnapshot.dealerCorrectionUpdatedAtIso = correction.updatedAtIso;
   return {
@@ -2134,7 +2148,12 @@ export default function LeadsClient({
         ? leadWithDealerCorrection(current, correction)
         : current
     ));
-    setNotice({ tone: 'success', message: 'Dealer correction sent to the owner for approval.' });
+    setNotice({
+      tone: 'success',
+      message: correction.licenseRenewalDateChanged
+        ? 'Renewal date sent to the owner for approval.'
+        : 'Dealer correction sent to the owner for approval.',
+    });
   }
 
   function resetLeadFilters() {
@@ -3537,7 +3556,7 @@ export default function LeadsClient({
                                 <span>Send</span>
                               </button>
 
-                              {!licensingWorkspaceMode ? <button
+                              <button
                                 type="button"
                                 className={`${assetStyles.optionsButton} ${styles.leadManageButton} ${styles.leadQuickActionButton}`}
                                 onClick={() => setManagedLead(lead)}
@@ -3545,7 +3564,7 @@ export default function LeadsClient({
                               >
                                 <ManageIcon className={assetStyles.buttonIcon} />
                                 <span>Manage</span>
-                              </button> : null}
+                              </button>
                             </div>
                           </div>
                         </div>
@@ -3879,6 +3898,24 @@ export default function LeadsClient({
                           serialNumber={asText(managedLead.assetSnapshot.serialNumber)}
                           replacementPriceExVat={snapshotReplacementPrice(managedLead.assetSnapshot)}
                           correction={managedLead.dealerCorrection}
+                          actionClassName={assetStyles.optionActionButton}
+                          iconClassName={assetStyles.buttonIcon}
+                          onSaved={handleDealerCorrectionSaved}
+                        />
+                      ) : null}
+
+                      {licensingWorkspaceMode && managedLead.leadType === 'license_renewal' && !isFullRegisterLead(managedLead) ? (
+                        <DealerAssetCorrectionEditor
+                          assetTitle={assetTitle(managedLead)}
+                          sourceType="lead"
+                          sourceId={managedLead.id}
+                          serialNumber={asText(managedLead.assetSnapshot.serialNumber)}
+                          replacementPriceExVat={snapshotReplacementPrice(managedLead.assetSnapshot)}
+                          licenseRenewalDate={leadLicenceRenewalDate(managedLead)}
+                          correction={managedLead.dealerCorrection}
+                          canUpdateSerial={false}
+                          canUpdateReplacementPrice={false}
+                          canUpdateLicenseRenewalDate
                           actionClassName={assetStyles.optionActionButton}
                           iconClassName={assetStyles.buttonIcon}
                           onSaved={handleDealerCorrectionSaved}

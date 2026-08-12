@@ -274,7 +274,7 @@ export default function OwnerAssetOptionsClient({ assetId, assetTitle, assetKind
 
   async function chooseOption(option: QuoteOption) {
     if (option.leadType === 'license_renewal' && (!assetIsLicensed || !licenceRenewalDate)) {
-      setNotice({ tone: 'error', message: 'Add the licence status and renewal date before sharing.' });
+      window.location.assign(`${assetHref}/manage/licence`);
       return;
     }
     setSelectedLeadType(option.leadType);
@@ -387,7 +387,7 @@ export default function OwnerAssetOptionsClient({ assetId, assetTitle, assetKind
               return (
               <button key={option.leadType} type="button" className={`${styles.ownerOptionChoice} ${optionTone(option.leadType)} ${needsLicenceDetails ? styles.ownerOptionChoiceNeedsSetup : ''}`} onClick={() => void chooseOption(option)}>
                 <span className={styles.ownerOptionChoiceIconTile}>{renderOptionIcon(option.leadType)}</span>
-                <span className={styles.ownerOptionChoiceCopy}><strong>{option.title}</strong><small>{needsLicenceDetails ? 'Add licence status and renewal date first.' : option.description}</small></span>
+                <span className={styles.ownerOptionChoiceCopy}><strong>{option.title}</strong><small>{needsLicenceDetails ? 'Add a renewal date before sharing.' : option.description}</small></span>
               </button>
               );
             })}

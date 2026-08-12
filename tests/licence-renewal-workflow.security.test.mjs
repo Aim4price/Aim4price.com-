@@ -19,6 +19,12 @@ const accountantWorkspace = read('lib/accountant-workspace.ts');
 const ownerAssetOptions = read('app/owner-app/assets/[assetId]/owner-asset-options-client.tsx');
 const ownerAssetDetail = read('app/owner-app/assets/[assetId]/owner-asset-detail-client.tsx');
 const ownerStyles = read('app/owner-app/owner-app.module.css');
+const assetLeadsRoute = read('app/api/asset-leads/route.ts');
+const correctionLibrary = read('lib/dealer-asset-corrections.ts');
+const correctionEditor = read('components/DealerAssetCorrectionEditor.tsx');
+const licensingRenewalRoute = read('app/api/licensing/renewal-updates/route.ts');
+const correctionMigration = read('database/migrations/70-license-renewal-corrections.sql');
+const notifications = read('lib/notifications.ts');
 
 test('licence renewal experts have a dedicated account and two-item workspace', () => {
   assert.match(signup, /value: "licensing"/);
@@ -82,6 +88,32 @@ test('the Owner App includes the licence renewal sharing flow', () => {
   assert.match(ownerAssetOptions, /basic details, renewal date, saved photos, licence documents/);
   assert.match(ownerAssetDetail, /assetIsLicensed=\{licenseStatus === 'yes'\}/);
   assert.match(ownerStyles, /\.ownerOptionLicensing/);
+});
+
+test('licence renewal sharing is date-gated in the API, desktop and Owner App', () => {
+  assert.match(assetLeadsRoute, /leadType === 'license_renewal' && !dealerShareAssetIds\.length/);
+  assert.match(assetLeadsRoute, /hasLicenceRenewalDate\(ownedAsset\)/);
+  assert.match(assetLeadsRoute, /Every selected asset must be licensed and have a renewal date/);
+  assert.match(registerClient, /openQuickAssetStatusEditor\(asset, 'license'\)/);
+  assert.match(registerClient, /Only assets with a renewal date can be shared/);
+  assert.match(ownerAssetOptions, /window\.location\.assign\(`\$\{assetHref\}\/manage\/licence`\)/);
+  assert.match(ownerAssetOptions, /Add a renewal date before sharing/);
+});
+
+test('licence experts propose renewal dates for owner approval', () => {
+  assert.match(licensingRenewalRoute, /profile\.accountType !== 'licensing'/);
+  assert.match(licensingRenewalRoute, /field: 'licenseRenewalDate'/);
+  assert.match(correctionLibrary, /licenseRenewalDateChanged/);
+  assert.match(correctionLibrary, /proposedLicenseRenewalDate/);
+  assert.match(correctionLibrary, /applyAcceptedCorrectionToAsset/);
+  assert.match(correctionLibrary, /licence_renewal_date: current\.proposedLicenseRenewalDate/);
+  assert.match(correctionEditor, /Update renewal date/);
+  assert.match(leadsClient, /canUpdateLicenseRenewalDate/);
+  assert.match(ownerAssetDetail, /Licence renewal awaiting approval/);
+  assert.match(ownerAssetDetail, /decideRenewalUpdate\('accept'\)/);
+  assert.match(notifications, /Licence expert updated renewal date/);
+  assert.match(notifications, /licence renewal date from/);
+  assert.match(correctionMigration, /license_renewal_date_changed/);
 });
 
 test('every document constructor supplies category and document type metadata', () => {

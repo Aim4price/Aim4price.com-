@@ -22,9 +22,11 @@ type DealerAssetCorrectionEditorProps = {
   sourceId: string;
   serialNumber: string;
   replacementPriceExVat: number | null;
+  licenseRenewalDate?: string;
   correction?: DealerAssetCorrectionRequest | null;
   canUpdateSerial?: boolean;
   canUpdateReplacementPrice?: boolean;
+  canUpdateLicenseRenewalDate?: boolean;
   actionClassName?: string;
   iconClassName?: string;
   onSaved?: (correction: DealerAssetCorrectionRequest) => void;
@@ -48,6 +50,15 @@ function PriceIcon({ className = '' }: { className?: string }) {
   );
 }
 
+function LicenseIcon({ className = '' }: { className?: string }) {
+  return (
+    <svg className={`${styles.actionIcon} ${className}`} viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M7 3.75h7l3 3V20.25H7z" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinejoin="round" />
+      <path d="M14 3.75v3h3M9.5 11h5M9.5 14.5h5" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 function formatCurrency(value: number | null): string {
   if (value === null || !Number.isFinite(value)) return 'Not saved';
   return new Intl.NumberFormat('en-ZA', {
@@ -57,15 +68,25 @@ function formatCurrency(value: number | null): string {
   }).format(value);
 }
 
+function formatDate(value: string | null | undefined): string {
+  if (!value) return 'Not saved';
+  const parsed = new Date(`${value}T00:00:00`);
+  return Number.isNaN(parsed.getTime())
+    ? 'Not saved'
+    : new Intl.DateTimeFormat('en-ZA', { dateStyle: 'medium' }).format(parsed);
+}
+
 export default function DealerAssetCorrectionEditor({
   assetTitle,
   sourceType,
   sourceId,
   serialNumber,
   replacementPriceExVat,
+  licenseRenewalDate = '',
   correction,
   canUpdateSerial = true,
   canUpdateReplacementPrice = true,
+  canUpdateLicenseRenewalDate = false,
   actionClassName = '',
   iconClassName = '',
   onSaved,
@@ -89,11 +110,16 @@ export default function DealerAssetCorrectionEditor({
   const effectiveReplacementPrice = effectiveCorrection?.replacementPriceChanged
     ? effectiveCorrection.proposedReplacementPriceExVat
     : replacementPriceExVat;
+  const effectiveLicenseRenewalDate = effectiveCorrection?.licenseRenewalDateChanged
+    ? effectiveCorrection.proposedLicenseRenewalDate || licenseRenewalDate
+    : licenseRenewalDate;
   const pendingFieldLabel = effectiveCorrection?.serialNumberChanged
     ? 'serial number'
     : effectiveCorrection?.replacementPriceChanged
       ? 'replacement price'
-      : '';
+      : effectiveCorrection?.licenseRenewalDateChanged
+        ? 'renewal date'
+        : '';
 
   useEffect(() => {
     if (!activeField) return undefined;
@@ -117,9 +143,11 @@ export default function DealerAssetCorrectionEditor({
     setDraft(
       field === 'serialNumber'
         ? effectiveSerialNumber
-        : effectiveReplacementPrice === null
-          ? ''
-          : String(effectiveReplacementPrice),
+        : field === 'licenseRenewalDate'
+          ? effectiveLicenseRenewalDate
+          : effectiveReplacementPrice === null
+            ? ''
+            : String(effectiveReplacementPrice),
     );
   }
 
@@ -135,7 +163,9 @@ export default function DealerAssetCorrectionEditor({
     setError('');
 
     try {
-      const response = await fetch('/api/dealer/asset-corrections', {
+      const response = await fetch(
+        activeField === 'licenseRenewalDate' ? '/api/licensing/renewal-updates' : '/api/dealer/asset-corrections',
+        {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -163,9 +193,12 @@ export default function DealerAssetCorrectionEditor({
   }
 
   const fieldIsSerial = activeField === 'serialNumber';
+  const fieldIsLicenseRenewal = activeField === 'licenseRenewalDate';
   const ownerValue = fieldIsSerial
     ? effectiveCorrection?.currentSerialNumber || serialNumber || 'Not saved'
-    : formatCurrency(effectiveCorrection?.currentReplacementPriceExVat ?? replacementPriceExVat);
+    : fieldIsLicenseRenewal
+      ? formatDate(effectiveCorrection?.currentLicenseRenewalDate || licenseRenewalDate)
+      : formatCurrency(effectiveCorrection?.currentReplacementPriceExVat ?? replacementPriceExVat);
 
   return (
     <>
@@ -201,9 +234,25 @@ export default function DealerAssetCorrectionEditor({
         </button>
       ) : null}
 
+      {canUpdateLicenseRenewalDate ? (
+        <button
+          type="button"
+          className={`${actionClassName || styles.actionButton} ${styles.actionButtonBase}`}
+          onClick={() => openEditor('licenseRenewalDate')}
+          disabled={Boolean(effectiveCorrection)}
+          title={effectiveCorrection ? 'The owner must decide the pending update first.' : undefined}
+        >
+          <LicenseIcon className={iconClassName} />
+          <span>
+            <strong>Update renewal date</strong>
+            <small>{formatDate(effectiveLicenseRenewalDate)}.</small>
+          </span>
+        </button>
+      ) : null}
+
       {pendingFieldLabel ? (
         <div className={styles.pendingNotice}>
-          <strong>{pendingFieldLabel === 'serial number' ? 'Serial number' : 'Replacement price'} update waiting for owner approval</strong>
+          <strong>{pendingFieldLabel === 'serial number' ? 'Serial number' : pendingFieldLabel === 'replacement price' ? 'Replacement price' : 'Renewal date'} update waiting for owner approval</strong>
           <span>The owner must accept or decline this update before another asset detail can be changed.</span>
         </div>
       ) : null}
@@ -216,7 +265,7 @@ export default function DealerAssetCorrectionEditor({
             <header className={styles.modalHeader}>
               <div className={styles.modalTitleGroup}>
                 <div className={styles.modalHeaderCopy}>
-                  <h2 id={titleId}>{fieldIsSerial ? 'Update serial number' : 'Update replacement price'}</h2>
+                  <h2 id={titleId}>{fieldIsSerial ? 'Update serial number' : fieldIsLicenseRenewal ? 'Update renewal date' : 'Update replacement price'}</h2>
                   <p>{assetTitle}</p>
                 </div>
               </div>
@@ -230,23 +279,23 @@ export default function DealerAssetCorrectionEditor({
               </div>
 
               <label className={styles.field}>
-                <span>{fieldIsSerial ? 'Correct serial number' : 'Correct replacement price (excl. VAT)'}</span>
+                <span>{fieldIsSerial ? 'Correct serial number' : fieldIsLicenseRenewal ? 'New renewal date' : 'Correct replacement price (excl. VAT)'}</span>
                 <input
                   autoFocus
-                  type={fieldIsSerial ? 'text' : 'number'}
-                  inputMode={fieldIsSerial ? 'text' : 'decimal'}
-                  min={fieldIsSerial ? undefined : '1'}
-                  step={fieldIsSerial ? undefined : '0.01'}
+                  type={fieldIsSerial ? 'text' : fieldIsLicenseRenewal ? 'date' : 'number'}
+                  inputMode={fieldIsSerial || fieldIsLicenseRenewal ? undefined : 'decimal'}
+                  min={fieldIsSerial || fieldIsLicenseRenewal ? undefined : '1'}
+                  step={fieldIsSerial || fieldIsLicenseRenewal ? undefined : '0.01'}
                   maxLength={fieldIsSerial ? 200 : undefined}
                   value={draft}
                   onChange={(event) => setDraft(event.target.value)}
-                  placeholder={fieldIsSerial ? 'Enter the serial number' : 'Enter the VAT-exclusive amount'}
+                  placeholder={fieldIsSerial ? 'Enter the serial number' : fieldIsLicenseRenewal ? undefined : 'Enter the VAT-exclusive amount'}
                 />
               </label>
 
               <div className={styles.explainer}>
                 <strong>How this works</strong>
-                <p>Your dealer view updates immediately. The owner receives an approval notification, and the owner&apos;s Asset Register changes only after acceptance.</p>
+                <p>Your view updates immediately. The owner receives an approval notification, and the owner&apos;s Asset Register changes only after acceptance.</p>
               </div>
 
               {error ? <p className={styles.error} role="alert">{error}</p> : null}

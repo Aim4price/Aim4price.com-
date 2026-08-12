@@ -16,6 +16,7 @@ import { resolveAssetUsage, type AssetUsageMetric } from '../../../../../lib/ass
 import { listAssetMaintenanceData } from '../../../../../lib/asset-maintenance';
 import { getAssetRegisterForUser, getAssetRegisterReportLogoUrl, listAssetRegisters, moveAssetRegisterItems } from '../../../../../lib/asset-registers';
 import { getOwnerAppAccess, ownerAppCan, ownerAppCanAccessAsset } from '../../../../../lib/owner-app-access';
+import { listOwnerAssetCorrectionAlerts } from '../../../../../lib/dealer-asset-corrections';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -81,15 +82,16 @@ function documents(value: unknown): AssetRegisterDocument[] {
 async function loadDetail(ownerUserId: string, assetId: string) {
   const item = await getAssetRegisterItemById(ownerUserId, assetId);
   if (!item) return null;
-  const [registers, maintenance, profile, reportLogoUrl] = await Promise.all([
+  const [registers, maintenance, profile, reportLogoUrl, corrections] = await Promise.all([
     listAssetRegisters(ownerUserId),
     listAssetMaintenanceData(ownerUserId, { assetId }),
     getAccountProfile({ id: ownerUserId }),
     getAssetRegisterReportLogoUrl(ownerUserId, item.registerId),
+    listOwnerAssetCorrectionAlerts(ownerUserId, [item.id]),
   ]);
   const register = item.registerId ? await getAssetRegisterForUser(ownerUserId, item.registerId) : null;
   return {
-    item,
+    item: { ...item, dealerAssetCorrection: corrections[0] ?? null },
     register,
     registers,
     maintenance: maintenance.records,

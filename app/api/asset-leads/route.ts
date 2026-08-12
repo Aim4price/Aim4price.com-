@@ -68,6 +68,17 @@ function readDealerShareAssetIds(value: unknown): string[] | null {
   return assetIds;
 }
 
+function hasLicenceRenewalDate(asset: Awaited<ReturnType<typeof getAssetRegisterItemById>>): boolean {
+  if (!asset?.isLicensed) return false;
+  const specs = asset.specsJson ?? {};
+  return [
+    specs.licenseRenewalDate,
+    specs.license_renewal_date,
+    specs.licenceRenewalDate,
+    specs.licence_renewal_date,
+  ].some((value) => String(value ?? '').trim());
+}
+
 export async function GET() {
   const session = await getServerSession({ allowDealerApp: true, allowOwnerApp: true });
 
@@ -127,6 +138,10 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    const leadAssetIds = leadType === 'license_renewal' && dealerShareAssetIds.length
+      ? dealerShareAssetIds
+      : [assetId];
+
     if (dealerShareAssetIds.length) {
       const profile = await getAccountProfile(session.user);
       if (profile.accountType !== 'owner' || isOwnerAppSession(session)) {
@@ -142,19 +157,23 @@ export async function POST(request: NextRequest) {
       if (ownedAssets.some((selectedAsset) => !selectedAsset)) {
         return NextResponse.json({ ok: false, error: 'One or more selected assets could not be found.' }, { status: 404 });
       }
-      if (leadType === 'license_renewal' && ownedAssets.some((selectedAsset) => {
-        if (!selectedAsset?.isLicensed) return true;
-        const specs = selectedAsset.specsJson ?? {};
-        return ![
-          specs.licenseRenewalDate,
-          specs.license_renewal_date,
-          specs.licenceRenewalDate,
-          specs.licence_renewal_date,
-        ].some((value) => String(value ?? '').trim());
-      })) {
+      if (leadType === 'license_renewal' && ownedAssets.some((selectedAsset) => !hasLicenceRenewalDate(selectedAsset))) {
         return NextResponse.json({
           ok: false,
           error: 'Every selected asset must be licensed and have a renewal date.',
+        }, { status: 400 });
+      }
+    }
+
+    if (leadType === 'license_renewal' && !dealerShareAssetIds.length) {
+      const ownedAsset = await getAssetRegisterItemById(session.user.id, assetId);
+      if (!ownedAsset) {
+        return NextResponse.json({ ok: false, error: 'The selected asset could not be found.' }, { status: 404 });
+      }
+      if (!hasLicenceRenewalDate(ownedAsset)) {
+        return NextResponse.json({
+          ok: false,
+          error: 'Add the asset licence status and renewal date before sharing it.',
         }, { status: 400 });
       }
     }
@@ -163,9 +182,6 @@ export async function POST(request: NextRequest) {
       ...(includedSections ?? {}),
       maintenanceTrackingEnabled: trackMaintenance,
     };
-    const leadAssetIds = leadType === 'license_renewal' && dealerShareAssetIds.length
-      ? dealerShareAssetIds
-      : [assetId];
     const leads = [];
     for (const selectedAssetId of leadAssetIds) {
       leads.push(await createAssetLead({
