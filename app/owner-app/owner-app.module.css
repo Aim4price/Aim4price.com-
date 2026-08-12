@@ -1402,6 +1402,9 @@
 .ownerOptionFinance { border-color: rgba(196, 130, 32, 0.34); background: #fffaf1; color: #74460b; }
 .ownerOptionInsurance { border-color: rgba(48, 113, 169, 0.32); background: #f4f9fd; color: #244f76; }
 .ownerOptionDealer { border-color: rgba(66, 144, 102, 0.32); background: #f2faf5; color: #1d6545; }
+.ownerOptionLicensing { border-color: rgba(125, 78, 197, 0.3); background: #faf7ff; color: #6030ad; }
+.ownerOptionChoiceNeedsSetup { border-style: dashed; }
+.ownerOptionChoiceNeedsSetup small { color: #705e84; }
 .ownerOptionsFlowHeader { display: grid; gap: 12px; text-align: center; }
 .ownerOptionsFlowHeader > div { display: grid; justify-items: center; gap: 5px; }
 .ownerOptionsFlowHeader h2 { max-width: 100%; margin: 0; font-size: clamp(1.35rem, 5.8vw, 1.75rem); font-weight: 800; text-align: center; text-wrap: balance; }

@@ -16,6 +16,9 @@ const assetRegisterRoute = read('app/api/asset-register/route.ts');
 const ownerAssetActionsRoute = read('app/api/owner-app/assets/[assetId]/actions/route.ts');
 const ownerAssetRoute = read('app/api/owner-app/assets/[assetId]/route.ts');
 const accountantWorkspace = read('lib/accountant-workspace.ts');
+const ownerAssetOptions = read('app/owner-app/assets/[assetId]/owner-asset-options-client.tsx');
+const ownerAssetDetail = read('app/owner-app/assets/[assetId]/owner-asset-detail-client.tsx');
+const ownerStyles = read('app/owner-app/owner-app.module.css');
 
 test('licence renewal experts have a dedicated account and two-item workspace', () => {
   assert.match(signup, /value: "licensing"/);
@@ -37,6 +40,17 @@ test('the owner share modal includes licence renewals and selected eligible asse
   assert.match(registerClient, /source: 'licence_register_share'/);
 });
 
+test('the asset share modal uses four concise desktop choices', () => {
+  assert.match(registerStyles, /assetQuoteModal:not\(\.assetQuotePartnerPickerModal\)[\s\S]*repeat\(4, minmax\(0, 1fr\)\)/);
+  assert.match(registerStyles, /assetQuoteChoiceGrid\.registerShareOptionGrid[\s\S]*repeat\(4, minmax\(0, 1fr\)\)/);
+  assert.match(registerClient, /title: 'Finance & accounting'/);
+  assert.match(registerClient, /title: 'Insurance'/);
+  assert.match(registerClient, /title: 'Dealer'/);
+  assert.match(registerClient, /title: 'Licence renewal'/);
+  assert.match(registerClient, /Choose who to share with\. Each partner sees only what they need\./);
+  assert.doesNotMatch(registerClient, /descriptionLines/);
+});
+
 test('document categories enforce the requested role visibility matrix', () => {
   assert.match(permissions, /role === 'owner'/);
   assert.match(permissions, /role === 'finance' && subtype === 'accountant'/);
@@ -52,8 +66,22 @@ test('status paperwork uploads are categorized before saving', () => {
   assert.match(registerClient, /handleDocumentFilesSelected\(event, 'finance'\)/);
   assert.match(registerClient, /handleDocumentFilesSelected\(event, 'insurance'\)/);
   assert.match(registerClient, /handleDocumentFilesSelected\(event, 'licensing'\)/);
-  assert.match(registerClient, /current or older licensing papers/);
+  assert.match(registerClient, /current or older licensing papers/i);
   assert.match(registerClient, /documentType: normalizeAssetDocumentType/);
+  assert.match(registerClient, /Add finance documents/);
+  assert.match(registerClient, /Add insurance documents/);
+  assert.match(registerClient, /Add licence documents/);
+  assert.match(registerClient, /assetStatusDocumentPicker/);
+});
+
+test('the Owner App includes the licence renewal sharing flow', () => {
+  assert.match(ownerAssetOptions, /partnerType: 'licensing'/);
+  assert.match(ownerAssetOptions, /leadType: 'license_renewal'/);
+  assert.match(ownerAssetOptions, /title: 'Licence renewal'/);
+  assert.match(ownerAssetOptions, /valuationSummary: selectedOption\.leadType !== 'license_renewal'/);
+  assert.match(ownerAssetOptions, /basic details, renewal date, saved photos, licence documents/);
+  assert.match(ownerAssetDetail, /assetIsLicensed=\{licenseStatus === 'yes'\}/);
+  assert.match(ownerStyles, /\.ownerOptionLicensing/);
 });
 
 test('every document constructor supplies category and document type metadata', () => {
@@ -92,15 +120,4 @@ test('renewal lead snapshots do not carry valuation or unrelated private specs',
   assert.match(partnerAccess, /licenseStatus: 'yes'/);
   assert.match(partnerAccess, /licenceRenewalDate: licenseRenewalDate/);
   assert.match(partnerAccess, /if \(leadType === 'license_renewal'\) return baseSnapshot/);
-});
-
-test('the asset share modal uses four concise desktop choices', () => {
-  assert.match(registerStyles, /assetQuoteModal:not\(\.assetQuotePartnerPickerModal\)[\s\S]*repeat\(4, minmax\(0, 1fr\)\)/);
-  assert.match(registerStyles, /assetQuoteChoiceGrid\.registerShareOptionGrid[\s\S]*repeat\(4, minmax\(0, 1fr\)\)/);
-  assert.match(registerClient, /title: 'Finance & accounting'/);
-  assert.match(registerClient, /title: 'Insurance'/);
-  assert.match(registerClient, /title: 'Dealer'/);
-  assert.match(registerClient, /title: 'Licence renewal'/);
-  assert.match(registerClient, /Choose who to share with\. Each partner sees only what they need\./);
-  assert.doesNotMatch(registerClient, /descriptionLines/);
 });

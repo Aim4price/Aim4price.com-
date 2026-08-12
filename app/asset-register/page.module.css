@@ -36315,7 +36315,6 @@ button.documentOpenLink {
   }
 }
 
-
 /* === Asset share choices: four concise desktop cards === */
 .assetQuoteModal:not(.assetQuotePartnerPickerModal) {
   width: min(calc(100vw - 3rem), 1760px) !important;
@@ -36371,7 +36370,6 @@ button.documentOpenLink {
     white-space: normal !important;
   }
 }
-
 
 /* === Full-register share modal: balanced four-card layout === */
 .assetQuoteModal.registerShareModal {
@@ -36457,5 +36455,60 @@ button.documentOpenLink {
 
   .optionsModal .assetQuoteChoiceGrid.registerShareOptionGrid .registerShareOptionCard {
     min-height: 10.8rem !important;
+  }
+}
+
+/* === Categorised paperwork: branded file picker === */
+.assetStatusDocumentUpload {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.7rem 1rem;
+  padding: 1rem 1.05rem;
+  border: 1px dashed rgba(190, 208, 220, 0.98);
+  border-radius: 1rem;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(246, 250, 251, 0.98));
+}
+
+.assetStatusDocumentUploadCopy {
+  min-width: 0;
+  display: grid;
+  gap: 0.18rem;
+}
+
+.assetStatusDocumentUploadCopy strong {
+  color: #173d31;
+  font-size: 0.94rem;
+  font-weight: 850;
+  line-height: 1.2;
+}
+
+.assetStatusDocumentUploadCopy small,
+.assetStatusDocumentCount {
+  color: #687a8b;
+  font-size: 0.76rem;
+  font-weight: 680;
+  line-height: 1.35;
+}
+
+.assetStatusDocumentPicker {
+  min-width: 12.75rem !important;
+  min-height: 3rem !important;
+  justify-content: center !important;
+  border-radius: 0.85rem !important;
+}
+
+.assetStatusDocumentCount {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 620px) {
+  .assetStatusDocumentUpload {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .assetStatusDocumentPicker {
+    width: 100% !important;
+    min-width: 0 !important;
   }
 }
