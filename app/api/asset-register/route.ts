@@ -10,6 +10,10 @@ import { attachOpenIssueNoteStatusToAssets } from '../../../lib/asset-issue-note
 import { attachLatestMaintenanceStatusToAssets } from '../../../lib/scan-assets';
 import { attachUpcomingMaintenanceAlertsToAssets } from '../../../lib/asset-maintenance';
 import { attachUpcomingLicenseRenewalAlertsToAssets } from '../../../lib/asset-license-renewal';
+import {
+  normalizeAssetDocumentCategory,
+  normalizeAssetDocumentType,
+} from '../../../lib/asset-document-permissions';
 import { resolveOwnerWorkspaceContext } from '../../../lib/owner-workspace-access';
 import {
   listOwnerAssetCorrectionAlerts,
@@ -486,6 +490,8 @@ function normalizeDocuments(value: unknown): AssetRegisterDocument[] {
       contentType: String(record.contentType ?? record.mimeType ?? 'application/octet-stream').trim() || 'application/octet-stream',
       byteSize: Math.max(0, Math.round(Number(record.byteSize ?? record.sizeBytes ?? 0) || 0)),
       uploadedAtIso: String(record.uploadedAtIso ?? record.uploadedAt ?? '').trim() || new Date().toISOString(),
+      category: normalizeAssetDocumentCategory(record.category ?? record.documentCategory),
+      documentType: normalizeAssetDocumentType(record.documentType ?? record.type),
     };
 
     const duplicateKey = document.url || document.id;

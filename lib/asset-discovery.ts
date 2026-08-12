@@ -671,7 +671,7 @@ function safeSummary(
     ? titleCase(asText(row.condition))
     : "Unknown";
   const province = asText(row.province) || "Province not saved";
-  const specs = asRecord(row.specs_json);
+  const specs = isRecord(row.specs_json) ? row.specs_json : {};
   const renewalDate = readFirstText([
     specs.licenseRenewalDate,
     specs.license_renewal_date,

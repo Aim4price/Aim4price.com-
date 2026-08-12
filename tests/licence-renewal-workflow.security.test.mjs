@@ -11,6 +11,10 @@ const registerClient = read('app/asset-register/asset-register-client.tsx');
 const leadsClient = read('app/leads/leads-client.tsx');
 const header = read('components/AppHeader.tsx');
 const signup = read('app/auth/auth-client.tsx');
+const assetRegisterRoute = read('app/api/asset-register/route.ts');
+const ownerAssetActionsRoute = read('app/api/owner-app/assets/[assetId]/actions/route.ts');
+const ownerAssetRoute = read('app/api/owner-app/assets/[assetId]/route.ts');
+const accountantWorkspace = read('lib/accountant-workspace.ts');
 
 test('licence renewal experts have a dedicated account and two-item workspace', () => {
   assert.match(signup, /value: "licensing"/);
@@ -49,6 +53,15 @@ test('status paperwork uploads are categorized before saving', () => {
   assert.match(registerClient, /handleDocumentFilesSelected\(event, 'licensing'\)/);
   assert.match(registerClient, /current or older licensing papers/);
   assert.match(registerClient, /documentType: normalizeAssetDocumentType/);
+});
+
+test('every document constructor supplies category and document type metadata', () => {
+  for (const source of [assetRegisterRoute, ownerAssetActionsRoute, ownerAssetRoute]) {
+    assert.match(source, /category: normalizeAssetDocumentCategory/);
+    assert.match(source, /documentType: normalizeAssetDocumentType/);
+  }
+  assert.match(accountantWorkspace, /category: 'accounting'/);
+  assert.match(accountantWorkspace, /documentType: 'accountant_upload'/);
 });
 
 test('licensing Discovery exposes only a coarse renewal window before approval', () => {

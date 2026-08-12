@@ -573,6 +573,8 @@ export async function uploadAccountantDocument(input: {
   const document: AssetRegisterDocument = {
     id: upload.id, url: upload.url, fileName: upload.fileName, contentType: upload.contentType,
     byteSize: upload.byteSize, uploadedAtIso: new Date().toISOString(),
+    category: 'accounting',
+    documentType: 'accountant_upload',
   };
   const updated = await updateAssetRegisterItemMedia(access.ownerUserId, {
     assetId: asset.id,
