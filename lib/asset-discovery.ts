@@ -116,6 +116,7 @@ export type AssetDiscoveryNotification = {
   createdAtIso: string;
   updatedAtIso: string;
   requestAgainAtIso: string | null;
+  requesterAccountType: "owner" | "dealer" | "licensing";
   asset: SafeAssetSummary;
 };
 
@@ -682,7 +683,7 @@ function safeSummary(
     ? Date.parse(`${renewalDate}T00:00:00.000Z`)
     : Number.NaN;
   const renewalWindow = Number.isFinite(renewalTimestamp)
-    ? `Renewal due ${new Intl.DateTimeFormat('en-ZA', { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(new Date(renewalTimestamp))}`
+    ? new Intl.DateTimeFormat('en-ZA', { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(new Date(renewalTimestamp))
     : '';
 
   return {
@@ -792,6 +793,7 @@ function mapEnquiryForAudience(
 }
 
 function mapNotification(row: EnquiryRow): AssetDiscoveryNotification {
+  const savedRequesterType = asText(row.requester_account_type).toLowerCase();
   return {
     id: row.id,
     assetId: row.asset_register_item_id,
@@ -799,6 +801,11 @@ function mapNotification(row: EnquiryRow): AssetDiscoveryNotification {
     createdAtIso: row.created_at || new Date().toISOString(),
     updatedAtIso: row.updated_at || row.created_at || new Date().toISOString(),
     requestAgainAtIso: row.request_again_at,
+    requesterAccountType: savedRequesterType === "owner"
+      ? "owner"
+      : savedRequesterType === "licensing"
+        ? "licensing"
+        : "dealer",
     asset: safeSummary({ ...row, province: row.owner_province }),
   };
 }
