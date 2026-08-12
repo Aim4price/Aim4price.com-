@@ -13,7 +13,7 @@ import { refreshCachedHeaderSession } from "../../lib/header-session-cache";
 import styles from "./page.module.css";
 
 type Mode = "signup" | "login" | "forgot";
-type SignupAccountType = "owner" | "finance" | "insurance" | "dealer";
+type SignupAccountType = "owner" | "finance" | "insurance" | "dealer" | "licensing";
 type SignupAccountSubtype =
   | "farmer"
   | "contractor"
@@ -25,7 +25,9 @@ type SignupAccountSubtype =
   | "short-term-insurer"
   | "machinery-dealer"
   | "motor-dealer"
-  | "auctioneer";
+  | "auctioneer"
+  | "licence-renewal-expert"
+  | "fleet-licensing-service";
 type SignupIntroducedByOption = "" | "kuyler" | "andre" | "direct" | "other";
 type SignupProvince =
   | ""
@@ -86,6 +88,7 @@ const SIGNUP_ACCOUNT_TYPE_OPTIONS: Array<SelectOption<SignupAccountType>> = [
   { value: "finance", label: "Finance, accounting and banking" },
   { value: "insurance", label: "Insurance provider" },
   { value: "dealer", label: "Dealer / auctioneer" },
+  { value: "licensing", label: "Licence renewal expert" },
 ];
 
 const SIGNUP_ACCOUNT_SUBTYPE_OPTIONS: Record<
@@ -110,6 +113,10 @@ const SIGNUP_ACCOUNT_SUBTYPE_OPTIONS: Record<
     { value: "machinery-dealer", label: "Machinery dealer" },
     { value: "motor-dealer", label: "Motor dealer" },
     { value: "auctioneer", label: "Auctioneer / broker" },
+  ],
+  licensing: [
+    { value: "licence-renewal-expert", label: "Licence renewal expert" },
+    { value: "fleet-licensing-service", label: "Fleet licensing service" },
   ],
 };
 
@@ -827,7 +834,8 @@ export default function AuthClient() {
       const redirectUrl =
         !getSafeReturnTo() &&
         normalizeEmail(email) !== ADMIN_EMAIL &&
-        authenticatedSession?.accountType === "dealer"
+        (authenticatedSession?.accountType === "dealer" ||
+          authenticatedSession?.accountType === "licensing")
           ? getAbsoluteUrl("/leads")
           : authRedirectUrl;
 

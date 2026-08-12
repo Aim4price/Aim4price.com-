@@ -225,6 +225,16 @@ function normalizeAccountType(value: unknown): string {
     return "insurance";
   }
 
+  if (
+    normalized === "licensing" ||
+    normalized === "license-renewal" ||
+    normalized === "licence-renewal" ||
+    normalized === "licensing-expert" ||
+    normalized === "licence-renewal-expert"
+  ) {
+    return "licensing";
+  }
+
   return "owner";
 }
 
@@ -252,12 +262,17 @@ function normalizeAccountSubtype(accountType: string, value: unknown): string {
       "auctioneer",
       "auction-house",
     ]),
+    licensing: new Set([
+      "licence-renewal-expert",
+      "fleet-licensing-service",
+    ]),
   };
   const defaults: Record<string, string> = {
     owner: "farmer",
     finance: "bank",
     insurance: "short-term-insurer",
     dealer: "machinery-dealer",
+    licensing: "licence-renewal-expert",
   };
 
   if (

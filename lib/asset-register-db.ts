@@ -10,6 +10,11 @@ import type { Result } from './tractor-logic';
 import type { GenericSelectedMethod, GenericValuationResult } from './generic-valuation';
 import { captureAssetDepreciationLogEntry } from './asset-depreciation-timeline';
 import { ensureFuelLedgerTables } from './fuel-ledger';
+import {
+  normalizeAssetDocumentCategory,
+  normalizeAssetDocumentType,
+  type AssetDocumentCategory,
+} from './asset-document-permissions';
 
 export type AssetRegisterItemKind = 'tractor' | 'equipment' | 'manual' | 'property' | 'vehicle' | 'tools' | 'stock';
 export type AssetRegisterItemMethod = MethodKey | 'manual';
@@ -24,6 +29,8 @@ export type AssetRegisterDocument = {
   contentType: string;
   byteSize: number;
   uploadedAtIso: string;
+  category: AssetDocumentCategory;
+  documentType: string;
 };
 
 export type AssetRegisterItem = {
@@ -1535,6 +1542,8 @@ function normalizeDocumentArray(value: unknown): AssetRegisterDocument[] {
           contentType: 'application/octet-stream',
           byteSize: 0,
           uploadedAtIso: new Date().toISOString(),
+          category: 'other',
+          documentType: 'other',
         };
       }
     } else if (isRecord(entry)) {
@@ -1548,6 +1557,8 @@ function normalizeDocumentArray(value: unknown): AssetRegisterDocument[] {
           contentType: asText(entry.contentType) || asText(entry.mimeType) || 'application/octet-stream',
           byteSize: Math.max(0, Math.round(asNumber(entry.byteSize) ?? asNumber(entry.sizeBytes) ?? 0)),
           uploadedAtIso: asText(entry.uploadedAtIso) || asText(entry.uploadedAt) || new Date().toISOString(),
+          category: normalizeAssetDocumentCategory(entry.category ?? entry.documentCategory),
+          documentType: normalizeAssetDocumentType(entry.documentType ?? entry.type),
         };
       }
     }

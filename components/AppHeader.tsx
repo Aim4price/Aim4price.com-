@@ -135,6 +135,7 @@ type AssetDiscoverySafeSummary = {
   usage: string;
   condition: string;
   province: string;
+  renewalWindow?: string;
 };
 
 type AssetDiscoveryContactDetails = {
@@ -154,7 +155,7 @@ type AssetDiscoveryEnquiry = {
   deniedAtIso: string | null;
   requestAgainAtIso: string | null;
   asset: AssetDiscoverySafeSummary;
-  requesterAccountType: 'owner' | 'dealer';
+  requesterAccountType: 'owner' | 'dealer' | 'licensing';
   requesterMessage: string;
   requesterContact: AssetDiscoveryContactDetails | null;
   dealerContact: AssetDiscoveryContactDetails | null;
@@ -215,7 +216,8 @@ const ACCOUNT_MENU_ITEMS: AccountMenuItem[] = [
   { href: '/fuel', label: 'Fuel Ledger', accountTypes: ['owner'] },
   { href: '/maintenance', label: 'Maintenance', accountTypes: ['owner'] },
   { href: '/marketplace', label: 'Marketplace', accountTypes: ['owner', 'dealer'] },
-  { href: '/leads', label: 'Leads', accountTypes: ['dealer', 'finance', 'insurance'] },
+  { href: '/leads', label: 'Leads', accountTypes: ['dealer', 'finance', 'insurance', 'licensing'] },
+  { href: '/asset-discovery', label: 'Discovery', accountTypes: ['licensing'] },
   { href: '/dealer-costs', label: 'Client Costs', accountTypes: ['dealer'] },
   { href: '/shared-registers', label: 'Shared Registers', accountTypes: ['insurance'] },
 ];
@@ -289,6 +291,13 @@ function buildNavItems(
       { key: 'tracking', href: '/tracking', label: 'Maintenance' },
       { key: 'marketplace', href: '/marketplace', label: 'Marketplace' },
       { key: 'cost', href: '/dealer-costs', label: 'Client Costs' },
+    ];
+  }
+
+  if (accountType === 'licensing') {
+    return [
+      { key: 'leads', href: '/leads', label: 'Leads' },
+      { key: 'asset-discovery', href: '/asset-discovery', label: 'Discovery' },
     ];
   }
 
@@ -1738,7 +1747,11 @@ export default function AppHeader({
     const canOpenDiscoveryAsset = isApproved && Boolean(enquiry.ownerContact);
     const retryDate = formatDateTime(enquiry.requestAgainAtIso);
     const contact = enquiry.requesterContact || enquiry.ownerContact || enquiry.dealerContact;
-    const requesterLabel = enquiry.requesterAccountType === 'owner' ? 'owner' : 'dealer';
+    const requesterLabel = enquiry.requesterAccountType === 'owner'
+      ? 'owner'
+      : enquiry.requesterAccountType === 'licensing'
+        ? 'licence renewal expert'
+        : 'dealer';
 
     return (
       <section
@@ -1750,7 +1763,11 @@ export default function AppHeader({
         <div className={styles.notificationDetailHeader}>
           <div className={styles.notificationDetailHeaderText}>
             <h2 id="notification-asset-discovery-title">Discovery enquiry</h2>
-            <p>{isPending ? `${requesterLabel === 'owner' ? 'An' : 'A'} ${requesterLabel} is looking for a machine like this. Interested in making contact?` : 'Asset-specific enquiry status.'}</p>
+            <p>{isPending
+              ? enquiry.requesterAccountType === 'licensing'
+                ? 'A licence renewal expert has offered to help with this upcoming renewal. Approve access?'
+                : `${requesterLabel === 'owner' ? 'An' : 'A'} ${requesterLabel} is looking for a machine like this. Interested in making contact?`
+              : 'Asset-specific enquiry status.'}</p>
           </div>
           <button type="button" className={styles.notificationDetailCloseButton} onClick={closeNotificationDetailModal} aria-label="Close Discovery enquiry">
             ×
@@ -1786,7 +1803,7 @@ export default function AppHeader({
 
           {isApproved && enquiry.requesterMessage ? (
             <div className={styles.notificationDetailMessageBox}>
-              <strong>{enquiry.requesterAccountType === 'dealer' ? 'Dealer' : 'Owner'} message</strong>
+              <strong>{enquiry.requesterAccountType === 'dealer' ? 'Dealer' : enquiry.requesterAccountType === 'licensing' ? 'Licence renewal expert' : 'Owner'} message</strong>
               <p>{enquiry.requesterMessage}</p>
             </div>
           ) : null}

@@ -3992,6 +3992,16 @@
   margin: 0.26rem 0 0;
 }
 
+.licenceLeadThumbnail {
+  width: 104px;
+  height: 76px;
+  margin-bottom: 0.3rem;
+  border: 1px solid rgba(17, 74, 59, 0.14);
+  border-radius: 14px;
+  object-fit: cover;
+  background: #f1f7f4;
+}
+
 .trackingLeadActions {
   display: grid !important;
   gap: 0.72rem;

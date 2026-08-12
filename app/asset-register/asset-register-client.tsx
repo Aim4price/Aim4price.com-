@@ -61,10 +61,16 @@ import styles from './page.module.css';
 import updateStyles from './asset-update-refinements.module.css';
 import { conditionOptions } from '../../lib/tractor-data';
 import { CONDITION_FACTORS } from '../../lib/valuation/shared';
+import {
+  assetDocumentCategoryLabel,
+  normalizeAssetDocumentCategory,
+  normalizeAssetDocumentType,
+  type AssetDocumentCategory,
+} from '../../lib/asset-document-permissions';
 
 type NoticeTone = 'success' | 'warning' | 'error';
-type PartnerType = 'dealer' | 'finance' | 'insurance';
-type AssetLeadType = 'finance' | 'insurance' | 'replacement_quote';
+type PartnerType = 'dealer' | 'finance' | 'insurance' | 'licensing';
+type AssetLeadType = 'finance' | 'insurance' | 'replacement_quote' | 'license_renewal';
 type QuoteLeadStep = 'message' | 'consent' | null;
 type QuoteScope = 'asset' | 'register';
 type DisposalReason = 'sold' | 'traded_in' | 'scrapped' | 'written_off' | 'mistake_duplicate' | 'other';
@@ -422,6 +428,8 @@ type AssetDocument = {
   contentType: string;
   byteSize: number;
   uploadedAtIso: string;
+  category: AssetDocumentCategory;
+  documentType: string;
 };
 
 type OpenPartnerNoteAttachment = {
@@ -1470,6 +1478,16 @@ const ASSET_QUOTE_OPTIONS: AssetQuoteOption[] = [
     sendLabel: 'Send replacement price request',
     emptyPartnerText: 'No listed dealers found yet. Dealer accounts must enable their directory listing under Account details.',
   },
+  {
+    leadType: 'license_renewal',
+    partnerType: 'licensing',
+    title: 'Get licence renewal help',
+    shortTitle: 'Licence renewal',
+    descriptionLines: ['Send this asset to a licence renewal expert.', 'Share only licence-related paperwork.'],
+    mapTitle: 'Choose a licence renewal expert.',
+    sendLabel: 'Send licence renewal request',
+    emptyPartnerText: 'No listed licence renewal experts found yet. Licensing accounts must enable their directory listing under Account details.',
+  },
 ];
 
 type QuoteToneStyle = {
@@ -1505,6 +1523,14 @@ const QUOTE_TONE_STYLES: Record<PartnerType, QuoteToneStyle> = {
     soft: '#ecfdf5',
     border: '#bbf7d0',
     shadow: 'rgba(22, 130, 88, 0.34)',
+  },
+  licensing: {
+    primary: '#7c3aed',
+    dark: '#5b21b6',
+    text: '#4c1d95',
+    soft: '#f5f3ff',
+    border: '#ddd6fe',
+    shadow: 'rgba(124, 58, 237, 0.28)',
   },
 };
 
@@ -3645,6 +3671,8 @@ function normalizeDocuments(value: unknown): AssetDocument[] {
           contentType: 'application/octet-stream',
           byteSize: 0,
           uploadedAtIso: new Date().toISOString(),
+          category: 'other',
+          documentType: 'other',
         };
       }
     } else if (isPlainRecord(entry)) {
@@ -3659,6 +3687,8 @@ function normalizeDocuments(value: unknown): AssetDocument[] {
           contentType: String(entry.contentType ?? entry.mimeType ?? 'application/octet-stream').trim() || 'application/octet-stream',
           byteSize: Math.max(0, Math.round(Number(entry.byteSize ?? entry.sizeBytes ?? 0) || 0)),
           uploadedAtIso: String(entry.uploadedAtIso ?? entry.uploadedAt ?? '').trim() || new Date().toISOString(),
+          category: normalizeAssetDocumentCategory(entry.category ?? entry.documentCategory),
+          documentType: normalizeAssetDocumentType(entry.documentType ?? entry.type),
         };
       }
     }
@@ -5816,18 +5846,21 @@ function quoteOptionForLeadType(leadType: AssetLeadType | null): AssetQuoteOptio
 function formatQuotePartnerType(value: PartnerType): string {
   if (value === 'dealer') return 'Dealer';
   if (value === 'finance') return 'Accountant or finance';
+  if (value === 'licensing') return 'Licence renewal expert';
   return 'Insurance';
 }
 
 function quoteStyleForPartnerType(partnerType: PartnerType | null | undefined): QuoteToneStyle {
   if (partnerType === 'finance') return QUOTE_TONE_STYLES.finance;
   if (partnerType === 'insurance') return QUOTE_TONE_STYLES.insurance;
+  if (partnerType === 'licensing') return QUOTE_TONE_STYLES.licensing;
   return QUOTE_TONE_STYLES.dealer;
 }
 
 function quoteToneClassForLeadType(leadType: AssetLeadType): string {
   if (leadType === 'finance') return styles.assetQuoteToneFinance;
   if (leadType === 'insurance') return styles.assetQuoteToneInsurance;
+  if (leadType === 'license_renewal') return styles.assetQuoteToneLicensing;
   return styles.assetQuoteToneDealer;
 }
 
@@ -5835,6 +5868,7 @@ function quoteToneClassForPartnerType(partnerType: PartnerType | null | undefine
   if (partnerType === 'finance') return styles.assetQuoteToneFinance;
   if (partnerType === 'insurance') return styles.assetQuoteToneInsurance;
   if (partnerType === 'dealer') return styles.assetQuoteToneDealer;
+  if (partnerType === 'licensing') return styles.assetQuoteToneLicensing;
   return '';
 }
 
@@ -6008,6 +6042,7 @@ function extractApiError(payload: unknown, fallback: string): string {
 function renderQuoteOptionIcon(leadType: AssetLeadType, className?: string) {
   if (leadType === 'finance') return <MoneyBagIcon className={className} />;
   if (leadType === 'insurance') return <ShieldIcon className={className} />;
+  if (leadType === 'license_renewal') return <DocumentIcon className={className} />;
   return <ReplacementQuoteIcon className={className} />;
 }
 
@@ -6157,6 +6192,8 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
   const [mainPhotoSelection, setMainPhotoSelection] = useState<MainPhotoSelection | null>(null);
   const pendingPhotoFilesRef = useRef<PendingPhotoFile[]>([]);
   const [pendingDocumentFiles, setPendingDocumentFiles] = useState<File[]>([]);
+  const pendingDocumentCategoriesRef = useRef<WeakMap<File, AssetDocumentCategory>>(new WeakMap());
+  const [detailDocumentCategoryByAssetId, setDetailDocumentCategoryByAssetId] = useState<Record<string, AssetDocumentCategory>>({});
   const [expandedAssetId, setExpandedAssetId] = useState<string | null>(null);
   const [detailPhotoIndexByAsset, setDetailPhotoIndexByAsset] = useState<Record<string, number>>({});
   const [photoViewer, setPhotoViewer] = useState<PhotoViewerState | null>(null);
@@ -10483,11 +10520,14 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
       return;
     }
 
-    const isSelectedDealerRegisterShare = isFullRegisterQuoteLead && selectedQuoteOption.leadType === 'replacement_quote';
-    const leadAssetId = isSelectedDealerRegisterShare ? selectedDealerShareAssetIds[0] : quoteAsset.id;
+    const isSelectedRegisterAssetShare = isFullRegisterQuoteLead && (
+      selectedQuoteOption.leadType === 'replacement_quote' ||
+      selectedQuoteOption.leadType === 'license_renewal'
+    );
+    const leadAssetId = isSelectedRegisterAssetShare ? selectedDealerShareAssetIds[0] : quoteAsset.id;
 
-    if (isSelectedDealerRegisterShare && !leadAssetId) {
-      setNotice({ tone: 'error', message: 'Choose at least one asset to share with the dealer.' });
+    if (isSelectedRegisterAssetShare && !leadAssetId) {
+      setNotice({ tone: 'error', message: `Choose at least one asset to share with the ${formatQuotePartnerType(selectedQuoteOption.partnerType).toLowerCase()}.` });
       return;
     }
 
@@ -10506,7 +10546,17 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     try {
       const profile = isFullRegisterQuoteLead ? reportProfile ?? (await ensureAccountProfile()) : null;
       const includedSections = isFullRegisterQuoteLead
-        ? buildFullRegisterLeadSections(selectedQuoteOption.leadType, profile)
+        ? selectedQuoteOption.leadType === 'license_renewal'
+          ? {
+              assetDetails: true,
+              valuationSummary: false,
+              mainPhoto: true,
+              photos: true,
+              documents: true,
+              scanHistory: false,
+              source: 'licence_register_share',
+            }
+          : buildFullRegisterLeadSections(selectedQuoteOption.leadType, profile)
         : {
             assetDetails: true,
             valuationSummary: true,
@@ -10531,7 +10581,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
           trackingPermissions: selectedQuoteOption.leadType === 'replacement_quote' && quoteTrackMaintenance
             ? quoteTrackingPermissions
             : undefined,
-          assetIds: isSelectedDealerRegisterShare ? selectedDealerShareAssetIds : undefined,
+          assetIds: isSelectedRegisterAssetShare ? selectedDealerShareAssetIds : undefined,
         }),
       });
 
@@ -10546,11 +10596,13 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
         ? 'insurance quote'
         : selectedQuoteOption.leadType === 'replacement_quote'
           ? 'dealer request'
+          : selectedQuoteOption.leadType === 'license_renewal'
+            ? 'licence renewal request'
           : 'refinance quote';
 
       setNotice({
         tone: 'success',
-        message: isSelectedDealerRegisterShare
+        message: isSelectedRegisterAssetShare
           ? `${activeShareName} shared with ${quotePartnerName(selectedQuotePartner)} · ${selectedDealerShareAssetIds.length} ${selectedDealerShareAssetIds.length === 1 ? 'asset' : 'assets'}.`
           : isFullRegisterQuoteLead
           ? `${activeShareName} ${fullRegisterQuoteLabel} sent to ${quotePartnerName(selectedQuotePartner)}.`
@@ -10788,7 +10840,10 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
   }
 
 
-  function handleDocumentFilesSelected(event: ChangeEvent<HTMLInputElement>) {
+  function handleDocumentFilesSelected(
+    event: ChangeEvent<HTMLInputElement>,
+    category: AssetDocumentCategory = 'other',
+  ) {
     const selectedFiles = Array.from(event.target.files ?? []);
     event.target.value = '';
 
@@ -10804,6 +10859,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     }
 
     const filesToQueue = selectedFiles.slice(0, remainingSlots);
+    filesToQueue.forEach((file) => pendingDocumentCategoriesRef.current.set(file, category));
 
     setPendingDocumentFiles((current) => [...current, ...filesToQueue]);
     setNotice({
@@ -10872,15 +10928,26 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     }
   }
 
-  function uploadedFilesToDocuments(uploads: UploadedAssetFile[]): AssetDocument[] {
-    return uploads.map((entry) => ({
+  function uploadedFilesToDocuments(
+    uploads: UploadedAssetFile[],
+    sourceFiles: File[] = [],
+    categoryOverride?: AssetDocumentCategory,
+  ): AssetDocument[] {
+    return uploads.map((entry, index) => {
+      const category = normalizeAssetDocumentCategory(
+        categoryOverride ?? pendingDocumentCategoriesRef.current.get(sourceFiles[index]) ?? 'other',
+      );
+      return {
       id: entry.uploadId || entry.url,
       url: entry.url,
       fileName: entry.fileName,
       contentType: entry.contentType,
       byteSize: entry.byteSize,
+      category,
+      documentType: normalizeAssetDocumentType(`${category}_document`),
       uploadedAtIso: new Date().toISOString(),
-    }));
+      };
+    });
   }
 
   async function uploadQueuedDocumentFiles(files: File[]): Promise<AssetDocument[]> {
@@ -10890,7 +10957,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
 
     try {
       const uploads = await uploadAssetMediaFiles(files, 'document');
-      return uploadedFilesToDocuments(uploads);
+      return uploadedFilesToDocuments(uploads, files);
     } finally {
       setIsUploadingDocuments(false);
     }
@@ -11020,7 +11087,8 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
       }
 
       const uploads = await uploadAssetMediaFiles(filesToUpload, 'document');
-      const uploadedDocuments = uploadedFilesToDocuments(uploads);
+      const detailCategory = detailDocumentCategoryByAssetId[asset.id] ?? 'other';
+      const uploadedDocuments = uploadedFilesToDocuments(uploads, filesToUpload, detailCategory);
       const nextDocuments = normalizeDocuments([...currentDocuments, ...uploadedDocuments]);
       const updatedAsset = await patchAssetMedia(asset, normalizePhotos(asset.photos), nextDocuments);
 
@@ -13038,7 +13106,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     setAssetGroupShareTarget(null);
   }
 
-  function buildFullRegisterLeadAssetSnapshot(asset: RegisterAsset): Record<string, unknown> {
+  function buildFullRegisterLeadAssetSnapshot(asset: RegisterAsset, leadType: AssetLeadType): Record<string, unknown> {
     const financeStatus = readFinanceStatusChoice(asset);
     const insuranceStatus = readInsuranceStatusChoice(asset);
     const licenseStatus = readLicenseStatusChoice(asset);
@@ -13086,6 +13154,9 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
       insuredValueExVat: asset.insuredValueExVat,
       photoUrl: toAbsoluteUrl(assetPreviewImage(asset)),
       photos: normalizePhotos(asset.photos).map((photo) => toAbsoluteUrl(photo)).filter(Boolean),
+      documents: leadType === 'finance' || leadType === 'insurance'
+        ? assetDocuments(asset)
+        : [],
       lastScannedAtIso: asset.lastScannedAtIso,
       lastKnownLat: asset.lastKnownLat,
       lastKnownLng: asset.lastKnownLng,
@@ -13099,13 +13170,13 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     const selectedAssetIds = new Set(selectedDealerShareAssetIds);
     const sharedAssets = isAssetGroupShare
       ? assetGroupShareAssets
-      : leadType === 'replacement_quote'
+      : leadType === 'replacement_quote' || leadType === 'license_renewal'
         ? assets.filter((asset) => selectedAssetIds.has(asset.id))
         : assets;
     const sharedAssetGroups = projectAssetGroupsToAssets(assetGroups, sharedAssets);
     const sharedAssetGroupMemberships = buildAssetGroupMembershipMap(sharedAssetGroups);
     const registerAssets = orderAssetsByGroups(sharedAssets, sharedAssetGroups).map((asset) => {
-      const snapshot = buildFullRegisterLeadAssetSnapshot(asset);
+      const snapshot = buildFullRegisterLeadAssetSnapshot(asset, leadType);
       const membership = sharedAssetGroupMemberships.get(asset.id);
 
       return {
@@ -13152,7 +13223,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
       valuationSummary: true,
       mainPhoto: true,
       photos: true,
-      documents: isAssetGroupShare || (leadType === 'finance' && selectedQuotePartner?.accountSubtype === 'accountant'),
+      documents: leadType === 'finance' || leadType === 'insurance',
       scanHistory: false,
       registerLead: true,
       source: isAssetGroupShare ? 'asset_group' : 'full_asset_register',
@@ -13196,10 +13267,21 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
 
   function openFullRegisterQuotePartnerPicker(leadType: AssetLeadType) {
     const shareAssets = isAssetGroupShare ? assetGroupShareAssets : assets;
-    const anchorAsset = shareAssets[0];
+    const eligibleShareAssets = leadType === 'license_renewal'
+      ? shareAssets.filter((asset) => (
+          readLicenseStatusChoice(asset) === 'yes' &&
+          Boolean(readSpecsText(asset, ['licenseRenewalDate', 'license_renewal_date', 'licenceRenewalDate', 'licence_renewal_date']))
+        ))
+      : shareAssets;
+    const anchorAsset = eligibleShareAssets[0];
 
     if (!anchorAsset) {
-      setNotice({ tone: 'error', message: isAssetGroupShare ? 'This umbrella has no visible assets to share.' : 'Add at least one asset before sharing this Asset Register.' });
+      setNotice({
+        tone: 'error',
+        message: leadType === 'license_renewal'
+          ? 'Add a licensed asset and its renewal date before sharing with a licence renewal expert.'
+          : isAssetGroupShare ? 'This umbrella has no visible assets to share.' : 'Add at least one asset before sharing this Asset Register.',
+      });
       return;
     }
 
@@ -13216,7 +13298,11 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     setQuoteIncludePhotos(false);
     setQuoteIncludeDocuments(false);
     setQuoteIncludeScanHistory(false);
-    setSelectedDealerShareAssetIds(leadType === 'replacement_quote' ? shareAssets.map((asset) => asset.id) : []);
+    setSelectedDealerShareAssetIds(
+      leadType === 'replacement_quote' || leadType === 'license_renewal'
+        ? eligibleShareAssets.map((asset) => asset.id)
+        : [],
+    );
     setQuoteTrackMaintenance(leadType === 'replacement_quote');
     setQuoteTrackingPermissions({ ...DEFAULT_DEALER_MAINTENANCE_PERMISSIONS });
   }
@@ -15599,6 +15685,24 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                                   </div>
 
                                   <div className={styles.assetDocumentsPanel}>
+                                    {canUseOwnerOnlyAssetActions || canUseAccountantDocumentActions ? (
+                                      <label className={styles.field}>
+                                        <span>Document category</span>
+                                        <select
+                                          value={detailDocumentCategoryByAssetId[asset.id] ?? 'other'}
+                                          onChange={(event) => setDetailDocumentCategoryByAssetId((current) => ({
+                                            ...current,
+                                            [asset.id]: normalizeAssetDocumentCategory(event.target.value),
+                                          }))}
+                                        >
+                                          <option value="licensing">Licence</option>
+                                          <option value="insurance">Insurance</option>
+                                          <option value="finance">Finance</option>
+                                          <option value="accounting">Accounting</option>
+                                          <option value="other">Other</option>
+                                        </select>
+                                      </label>
+                                    ) : null}
                                     <input
                                       id={mediaInputId(asset.id, 'document')}
                                       type="file"
@@ -15636,7 +15740,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                                     >
                                       <div className={styles.assetDocumentsMainLabel}>
                                         <DocumentIcon className={styles.buttonIcon} />
-                                        <strong>Documents</strong>
+                                        <strong>{assetDocumentCategoryLabel(detailDocumentCategoryByAssetId[asset.id] ?? 'other')} documents</strong>
                                       </div>
                                       <span className={styles.assetMediaHint}>
                                         {isDetailDocumentUploading
@@ -15660,7 +15764,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                                             title={`Open ${document.fileName}`}
                                           >
                                             <DocumentIcon className={styles.buttonIcon} />
-                                            <span>{displayDocumentName(document.fileName, documentIndex)}</span>
+                                            <span>{assetDocumentCategoryLabel(document.category)} · {displayDocumentName(document.fileName, documentIndex)}</span>
                                           </button>
                                         ))}
                                       </div>
@@ -16004,7 +16108,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                 <h3 id="asset-register-share-title">Share {activeShareName}</h3>
                 <p>{isAssetGroupShare
                   ? `Share this umbrella and its ${activeShareAssets.length} linked ${activeShareAssets.length === 1 ? 'asset' : 'assets'} without exposing unrelated assets.`
-                  : 'Share with accountants, financiers, banks, insurers or dealers. Accountant access can stay live when you authorise it.'}</p>
+                  : 'Share with accountants, financiers, banks, insurers, dealers or licence renewal experts. Access is limited to the information each role needs.'}</p>
               </div>
 
               <button
@@ -16068,6 +16172,23 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                       <strong>{isAssetGroupShare ? 'Share umbrella with a dealer' : 'Share with a dealer'}</strong>
                       <small>
                         <span>{isAssetGroupShare ? 'Share every linked asset as one organised package.' : 'Choose assets and grant dealer access.'}</span>
+                      </small>
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    className={`${styles.optionActionButton} ${styles.assetQuoteChoiceCard} ${styles.registerShareOptionCard} ${quoteToneClassForLeadType('license_renewal')}`}
+                    onClick={() => openFullRegisterQuotePartnerPicker('license_renewal')}
+                    disabled={isExporting}
+                  >
+                    <span className={styles.assetQuoteChoiceIconTile}>
+                      {renderQuoteOptionIcon('license_renewal', styles.assetQuoteChoiceIcon)}
+                    </span>
+                    <span className={styles.assetQuoteChoiceText}>
+                      <strong>Licence renewals</strong>
+                      <small>
+                        <span>Choose licensed assets and share only renewal details and licence documents.</span>
                       </small>
                     </span>
                   </button>
@@ -17058,6 +17179,16 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                                   rows={3}
                                 />
                               </label>
+
+                              <label className={`${styles.field} ${styles.assetStatusWideField}`}>
+                                <span>Finance documents <small>(agreements, statements or settlement letters)</small></span>
+                                <input
+                                  type="file"
+                                  multiple
+                                  accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.jpg,.jpeg,.png,.webp"
+                                  onChange={(event) => handleDocumentFilesSelected(event, 'finance')}
+                                />
+                              </label>
                             </>
                           ) : null}
                         </div>
@@ -17235,6 +17366,16 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                                   rows={3}
                                 />
                               </label>
+
+                              <label className={`${styles.field} ${styles.assetStatusWideField}`}>
+                                <span>Insurance documents <small>(policy schedules, certificates or claims paperwork)</small></span>
+                                <input
+                                  type="file"
+                                  multiple
+                                  accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.jpg,.jpeg,.png,.webp"
+                                  onChange={(event) => handleDocumentFilesSelected(event, 'insurance')}
+                                />
+                              </label>
                             </>
                           ) : null}
                         </div>
@@ -17299,6 +17440,16 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                                   rows={3}
                                 />
                               </label>
+
+                              <label className={`${styles.field} ${styles.assetStatusWideField}`}>
+                                <span>Licence documents <small>(current or older licensing papers)</small></span>
+                                <input
+                                  type="file"
+                                  multiple
+                                  accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.webp"
+                                  onChange={(event) => handleDocumentFilesSelected(event, 'licensing')}
+                                />
+                              </label>
                             </>
                           ) : null}
                         </div>
@@ -17324,7 +17475,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                   <section className={`${styles.manualStageCard} ${styles.manualSingleStageCard} ${styles.manualCompactStageCard} ${styles.assetUpdateStageCard} ${styles.fullWidth}`}>
                     <div className={`${styles.manualStageGrid} ${styles.manualUploadGrid}`}>
                       <div className={styles.field}>
-                        <span>Documents</span>
+                        <span>Other documents</span>
 
                         <div className={styles.documentUploadPanel}>
                           <div className={styles.uploadRow}>
@@ -17387,7 +17538,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                             </span>
                             <div>
                               <strong>{displayDocumentName(document.fileName, documentIndex)}</strong>
-                              <small>{formatByteSize(document.byteSize)}</small>
+                              <small>{assetDocumentCategoryLabel(document.category)} · {formatByteSize(document.byteSize)}</small>
                             </div>
                             <button
                               type="button"
@@ -18082,10 +18233,10 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                 {!selectedQuoteOption ? (
                   <p>{quoteAsset ? `${buildAssetMeta(quoteAsset)} · ${money(quoteAsset.value)} excl. VAT` : ''}</p>
                 ) : isFullRegisterQuoteLead ? (
-                  selectedQuoteOption.leadType === 'replacement_quote' ? (
+                  selectedQuoteOption.leadType === 'replacement_quote' || selectedQuoteOption.leadType === 'license_renewal' ? (
                     <p>{isAssetGroupShare
-                      ? `${selectedDealerShareAssetIds.length} linked assets in ${activeShareName} · ongoing access can be revoked`
-                      : `${selectedDealerShareAssetIds.length} of ${assets.length} assets selected · ongoing access can be revoked`}</p>
+                      ? `${selectedDealerShareAssetIds.length} linked assets in ${activeShareName}`
+                      : `${selectedDealerShareAssetIds.length} assets selected`}</p>
                   ) : (
                     <p>Once-off {activeShareName} snapshot · {activeShareAssets.length} {activeShareAssets.length === 1 ? 'asset' : 'assets'} · {money(activeShareValue)} excl. VAT</p>
                   )
@@ -18301,8 +18452,8 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                                     ? `This sends one organised snapshot containing only ${activeShareName} and its linked assets.`
                                     : selectedQuoteOption.leadType === 'finance' && selectedQuotePartner?.accountSubtype === 'accountant'
                                     ? 'This grants the selected accountant live access to the latest authorised information in this Asset Register.'
-                                    : selectedQuoteOption.leadType === 'replacement_quote'
-                                      ? 'Choose the assets this dealer can work with. You can change permissions or revoke access later.'
+                                    : selectedQuoteOption.leadType === 'replacement_quote' || selectedQuoteOption.leadType === 'license_renewal'
+                                      ? `Choose the assets this ${formatQuotePartnerType(selectedQuoteOption.partnerType).toLowerCase()} can work with.`
                                       : 'This sends a once-off full Asset Register snapshot. It does not grant live register access.'
                                   : 'This sends one asset only. It does not share the full register.'}
                               </p>
@@ -18327,7 +18478,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                                 </div>
                               ) : null}
 
-                              {isFullRegisterQuoteLead && selectedQuoteOption.leadType === 'replacement_quote' ? (
+                              {isFullRegisterQuoteLead && (selectedQuoteOption.leadType === 'replacement_quote' || selectedQuoteOption.leadType === 'license_renewal') ? (
                                 isAssetGroupShare ? (
                                   <section className={styles.assetGroupShareSummary} aria-label={`${activeShareName} assets included`}>
                                     <UmbrellaIcon className={styles.assetGroupShareSummaryIcon} />
@@ -18338,7 +18489,12 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                                   </section>
                                 ) : (
                                   <DealerAssetShareSelection
-                                    assets={assets.map((asset) => ({
+                                    assets={assets
+                                      .filter((asset) => selectedQuoteOption.leadType !== 'license_renewal' || (
+                                        readLicenseStatusChoice(asset) === 'yes' &&
+                                        Boolean(readSpecsText(asset, ['licenseRenewalDate', 'license_renewal_date', 'licenceRenewalDate', 'licence_renewal_date']))
+                                      ))
+                                      .map((asset) => ({
                                       id: asset.id,
                                       title: asset.title,
                                       yearModel: asset.yearModel,

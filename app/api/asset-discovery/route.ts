@@ -26,7 +26,7 @@ function forbidden() {
   return NextResponse.json(
     {
       ok: false,
-      error: "Discovery is available to active owner and dealer accounts.",
+      error: "Discovery is available to active owner, dealer and licence renewal accounts.",
     },
     { status: 403 },
   );
@@ -64,7 +64,7 @@ export async function GET(request: NextRequest) {
       email: session.user.email,
     });
 
-    if (profile.accountType !== "dealer" && profile.accountType !== "owner") {
+    if (!["dealer", "owner", "licensing"].includes(profile.accountType)) {
       return forbidden();
     }
 
@@ -80,7 +80,7 @@ export async function GET(request: NextRequest) {
         assets: [],
         provinceOptions: [],
         typeOptions: [],
-        summary: { totalAssets: 0, typeCount: 0, provinceCount: 0 },
+        summary: { totalAssets: 0, typeCount: 0, provinceCount: 0, dueSoonCount: 0, overdueCount: 0 },
         pagination: {
           page: 1,
           pageSize: 10,
@@ -141,13 +141,13 @@ export async function POST(request: NextRequest) {
       email: session.user.email,
     });
 
-    if (profile.accountType !== "dealer" && profile.accountType !== "owner") {
+    if (!["dealer", "owner", "licensing"].includes(profile.accountType)) {
       return forbidden();
     }
 
     const enquiry = await createAssetDiscoveryEnquiry({
       requesterUserId: session.user.id,
-      requesterAccountType: profile.accountType,
+      requesterAccountType: profile.accountType as "owner" | "dealer" | "licensing",
       assetId: asText(body.assetId),
       message: asText(body.message),
     });

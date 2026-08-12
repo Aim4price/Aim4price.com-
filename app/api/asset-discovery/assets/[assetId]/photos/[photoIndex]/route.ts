@@ -6,21 +6,11 @@ import { getServerSession } from "../../../../../../../lib/auth-session";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-type RouteContext = {
-  params: {
-    assetId: string;
-    photoIndex: string;
-  };
-};
+type RouteContext = { params: { assetId: string; photoIndex: string } };
 
 export async function GET(_request: Request, context: RouteContext) {
-  const session = await getServerSession({
-    allowDealerApp: true,
-    allowOwnerApp: true,
-  });
-  if (!session?.user?.id) {
-    return new NextResponse("Not found", { status: 404 });
-  }
+  const session = await getServerSession({ allowDealerApp: true, allowOwnerApp: true });
+  if (!session?.user?.id) return new NextResponse("Not found", { status: 404 });
 
   const photoIndex = Number(context.params.photoIndex);
   if (!Number.isInteger(photoIndex) || photoIndex < 0 || photoIndex > 11) {
@@ -33,17 +23,15 @@ export async function GET(_request: Request, context: RouteContext) {
       name: session.user.name,
       email: session.user.email,
     });
-    if (profile.accountType !== "owner" && profile.accountType !== "dealer") {
+    if (!["owner", "dealer", "licensing"].includes(profile.accountType)) {
       return new NextResponse("Not found", { status: 404 });
     }
-
     const photo = await getAssetDiscoveryPhoto({
       assetId: context.params.assetId,
       photoIndex,
       viewerUserId: session.user.id,
-      viewerAccountType: profile.accountType,
+      viewerAccountType: profile.accountType as "owner" | "dealer" | "licensing",
     });
-
     return new NextResponse(photo.data, {
       status: 200,
       headers: {
@@ -55,11 +43,6 @@ export async function GET(_request: Request, context: RouteContext) {
       },
     });
   } catch {
-    return new NextResponse("Not found", {
-      status: 404,
-      headers: {
-        "Cache-Control": "private, no-store",
-      },
-    });
+    return new NextResponse("Not found", { status: 404, headers: { "Cache-Control": "private, no-store" } });
   }
 }

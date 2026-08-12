@@ -35,7 +35,7 @@ const DealerMaintenanceScheduleModal = dynamic(
   { ssr: false },
 );
 
-type LeadType = 'finance' | 'insurance' | 'replacement_quote';
+type LeadType = 'finance' | 'insurance' | 'replacement_quote' | 'license_renewal';
 type LeadStatus = 'sent' | 'viewed' | 'accepted' | 'quoted' | 'declined' | 'closed';
 type NoticeTone = 'success' | 'error';
 type LeadStatusFilter = 'all' | 'new' | 'open' | 'completed' | 'tracking';
@@ -629,6 +629,7 @@ function isPdfFile(file: File): boolean {
 function formatLeadType(value: LeadType): string {
   if (value === 'finance') return 'Finance lead';
   if (value === 'insurance') return 'Insurance lead';
+  if (value === 'license_renewal') return 'Licence renewal';
   return 'Dealer lead';
 }
 
@@ -1043,6 +1044,20 @@ function assetPhotos(lead: AssetLead): string[] {
 
 function assetSpecs(lead: AssetLead): Record<string, unknown> | null {
   return asRecord(lead.assetSnapshot.specsJson) ?? asRecord(lead.assetSnapshot.specs) ?? asRecord(lead.assetSnapshot.specAnswers);
+}
+
+function leadLicenceRenewalDate(lead: AssetLead): string {
+  const specs = assetSpecs(lead);
+  return asText(
+    lead.assetSnapshot.licenseRenewalDate ??
+      lead.assetSnapshot.license_renewal_date ??
+      lead.assetSnapshot.licenceRenewalDate ??
+      lead.assetSnapshot.licence_renewal_date ??
+      specs?.licenseRenewalDate ??
+      specs?.license_renewal_date ??
+      specs?.licenceRenewalDate ??
+      specs?.licence_renewal_date,
+  );
 }
 
 function getLeadLifeWorkedPercent(lead: AssetLead): number | null {
@@ -1590,6 +1605,7 @@ type LeadsClientProps = {
   accountantWorkspaceMode?: boolean;
   dealerAppMode?: boolean;
   dealerWorkspaceMode?: boolean;
+  licensingWorkspaceMode?: boolean;
   initialLeads?: AssetLead[];
   initialLeadsHaveMore?: boolean;
   initialSessionUserId?: string;
@@ -1599,11 +1615,12 @@ export default function LeadsClient({
   accountantWorkspaceMode = false,
   dealerAppMode = false,
   dealerWorkspaceMode,
+  licensingWorkspaceMode = false,
   initialLeads = [],
   initialLeadsHaveMore = false,
   initialSessionUserId = '',
 }: LeadsClientProps = {}) {
-  const useDealerWorkspaceStyles = accountantWorkspaceMode || (dealerWorkspaceMode ?? dealerAppMode);
+  const useDealerWorkspaceStyles = licensingWorkspaceMode || accountantWorkspaceMode || (dealerWorkspaceMode ?? dealerAppMode);
   const isDealerLeadsMode = Boolean(dealerAppMode || dealerWorkspaceMode);
   const canAddDealerCosts = isDealerLeadsMode;
   const dealerWorkspaceClass = (...classNames: string[]) =>
@@ -3003,6 +3020,13 @@ export default function LeadsClient({
     const licenseStatus = readLeadLicenseStatusChoice(lead);
     const licenseRegistrationNumber = readLeadLicenseRegistrationNumber(lead);
     const replacementPrice = snapshotReplacementPrice(lead.assetSnapshot);
+    const isLicenceRenewal = licensingWorkspaceMode || lead.leadType === 'license_renewal';
+    const licenceRenewalDate = leadLicenceRenewalDate(lead);
+    const licenceDocuments = Array.isArray(lead.assetSnapshot.documents)
+      ? lead.assetSnapshot.documents
+          .map((document) => asRecord(document))
+          .filter((document): document is Record<string, unknown> => Boolean(document))
+      : [];
 
     return (
       <div className={`${assetStyles.assetBody} ${styles.leadAssetBody}`} id={`lead-panel-${lead.id}`}>
@@ -3089,32 +3113,36 @@ export default function LeadsClient({
           <div className={assetStyles.assetDetailsGrid}>
             <div className={assetStyles.assetPrimaryDetails}>
               <div className={assetStyles.assetDetailRow}>
-                <span>Serial</span>
-                <strong>{asText(lead.assetSnapshot.serialNumber) || '—'}</strong>
+                <span>{isLicenceRenewal ? 'Registration' : 'Serial'}</span>
+                <strong>{isLicenceRenewal ? licenseRegistrationNumber || '—' : asText(lead.assetSnapshot.serialNumber) || '—'}</strong>
               </div>
               <div className={assetStyles.assetDetailRow}>
-                <span>{asText(lead.assetSnapshot.kind).toLowerCase() === 'property' ? 'Year Built' : 'Year'}</span>
-                <strong>{lead.assetSnapshot.yearModel ? String(lead.assetSnapshot.yearModel) : '—'}</strong>
+                <span>{isLicenceRenewal ? 'Renewal date' : asText(lead.assetSnapshot.kind).toLowerCase() === 'property' ? 'Year Built' : 'Year'}</span>
+                <strong>{isLicenceRenewal ? formatDate(licenceRenewalDate) : lead.assetSnapshot.yearModel ? String(lead.assetSnapshot.yearModel) : '—'}</strong>
               </div>
               <div className={assetStyles.assetDetailRow}>
-                <span>Usage</span>
-                <strong>{assetUsageValue(lead)}</strong>
+                <span>{isLicenceRenewal ? 'Year' : 'Usage'}</span>
+                <strong>{isLicenceRenewal ? lead.assetSnapshot.yearModel ? String(lead.assetSnapshot.yearModel) : '—' : assetUsageValue(lead)}</strong>
               </div>
               <div className={assetStyles.assetDetailRow}>
-                <span>Condition</span>
-                <strong>{conditionLabel(lead.assetSnapshot.condition)}</strong>
+                <span>{isLicenceRenewal ? 'Asset type' : 'Condition'}</span>
+                <strong>{isLicenceRenewal ? familyLabel : conditionLabel(lead.assetSnapshot.condition)}</strong>
               </div>
             </div>
 
             <div className={assetStyles.assetStatusDetails}>
-              <div className={assetStyles.assetStatusRow}>
-                <span>Financed</span>
-                {renderLeadAssetStatusMark(readLeadFinanceStatusChoice(lead))}
-              </div>
-              <div className={assetStyles.assetStatusRow}>
-                <span>Insured</span>
-                {renderLeadAssetStatusMark(readLeadInsuranceStatusChoice(lead))}
-              </div>
+              {!isLicenceRenewal ? (
+                <>
+                  <div className={assetStyles.assetStatusRow}>
+                    <span>Financed</span>
+                    {renderLeadAssetStatusMark(readLeadFinanceStatusChoice(lead))}
+                  </div>
+                  <div className={assetStyles.assetStatusRow}>
+                    <span>Insured</span>
+                    {renderLeadAssetStatusMark(readLeadInsuranceStatusChoice(lead))}
+                  </div>
+                </>
+              ) : null}
               <div className={assetStyles.assetStatusRow}>
                 <span>Licensed</span>
                 {renderLeadAssetStatusMark(licenseStatus)}
@@ -3127,11 +3155,27 @@ export default function LeadsClient({
             </div>
           </div>
 
-          <div className={assetStyles.assetReplacementPriceBubble}>
-            <span>Replacement Price</span>
-            <strong>{replacementPrice === null ? 'Not set' : formatCurrency(replacementPrice)}</strong>
-            <small>Excl. VAT</small>
-          </div>
+          {isLicenceRenewal ? (
+            <div className={assetStyles.assetReplacementPriceBubble}>
+              <span>Licence documents</span>
+              <strong>{licenceDocuments.length}</strong>
+              <small>{licenceDocuments.length === 1 ? 'document shared' : 'documents shared'}</small>
+              {licenceDocuments.map((document, index) => {
+                const url = asText(document.url);
+                return url ? (
+                  <a key={`${lead.id}-licence-document-${index}`} href={url} target="_blank" rel="noreferrer">
+                    {asText(document.fileName) || `Licence document ${index + 1}`}
+                  </a>
+                ) : null;
+              })}
+            </div>
+          ) : (
+            <div className={assetStyles.assetReplacementPriceBubble}>
+              <span>Replacement Price</span>
+              <strong>{replacementPrice === null ? 'Not set' : formatCurrency(replacementPrice)}</strong>
+              <small>Excl. VAT</small>
+            </div>
+          )}
 
           {renderOwnerMessageBlock(lead)}
         </div>
@@ -3164,13 +3208,13 @@ export default function LeadsClient({
         <section className={`${assetStyles.registerPanel} ${styles.leadsRegisterPanel}`}>
           {useDealerWorkspaceStyles ? (
             <WorkspaceTitlePanel
-              title={accountantWorkspaceMode ? 'CLIENT MANAGEMENT SYSTEM' : dealerAppMode ? 'LEADS SYSTEM' : 'LEAD MANAGEMENT SYSTEM'}
+              title={licensingWorkspaceMode ? 'LICENCE RENEWAL LEADS' : accountantWorkspaceMode ? 'CLIENT MANAGEMENT SYSTEM' : dealerAppMode ? 'LEADS SYSTEM' : 'LEAD MANAGEMENT SYSTEM'}
               className={dealerAppMode ? styles.leadsTitlePanel : undefined}
             />
           ) : (
             <div className={`${assetStyles.registerHeader} ${styles.leadsRegisterHeader}`}>
               <div className={`${assetStyles.registerTitleBlock} ${styles.leadsHeroTitleBlock}`}>
-                <h1>LEAD MANAGEMENT SYSTEM</h1>
+                <h1>{licensingWorkspaceMode ? 'LICENCE RENEWAL LEADS' : 'LEAD MANAGEMENT SYSTEM'}</h1>
               </div>
             </div>
           )}
@@ -3191,7 +3235,7 @@ export default function LeadsClient({
 
               <button type="button" className={`${assetStyles.summaryTile} ${assetStyles.metricSummaryTile} ${assetStyles.heroSummaryTile} ${styles.leadOwnerSummaryCard} ${styles.leadOwnerSummaryCardOpen} ${styles.leadSummaryFilterButton} ${statusFilter === 'open' ? styles.leadSummaryFilterButtonActive : ''}`} onClick={() => chooseLeadStatusFilter('open')} aria-pressed={statusFilter === 'open'}>
                 <span className={assetStyles.heroSummaryHead}>
-                  <span className={`${assetStyles.heroSummaryTitle} ${styles.leadOwnerSummaryText}`}>Open</span>
+                  <span className={`${assetStyles.heroSummaryTitle} ${styles.leadOwnerSummaryText}`}>{licensingWorkspaceMode ? 'In progress' : 'Open'}</span>
                 </span>
                 <span className={assetStyles.heroSummaryValueRow}>
                   <strong className={`${assetStyles.heroSummaryValue} ${styles.leadOwnerSummaryText}`}>{activeLeadCount}</strong>
@@ -3203,7 +3247,7 @@ export default function LeadsClient({
 
               <button type="button" className={`${assetStyles.summaryTile} ${assetStyles.metricSummaryTile} ${assetStyles.heroSummaryTile} ${styles.leadOwnerSummaryCard} ${styles.leadOwnerSummaryCardDone} ${styles.leadSummaryFilterButton} ${statusFilter === 'completed' ? styles.leadSummaryFilterButtonActive : ''}`} onClick={() => chooseLeadStatusFilter('completed')} aria-pressed={statusFilter === 'completed'}>
                 <span className={assetStyles.heroSummaryHead}>
-                  <span className={`${assetStyles.heroSummaryTitle} ${styles.leadOwnerSummaryText}`}>Handled</span>
+                  <span className={`${assetStyles.heroSummaryTitle} ${styles.leadOwnerSummaryText}`}>{licensingWorkspaceMode ? 'Completed' : 'Handled'}</span>
                 </span>
                 <span className={assetStyles.heroSummaryValueRow}>
                   <strong className={`${assetStyles.heroSummaryValue} ${styles.leadOwnerSummaryText}`}>{completedLeadCount}</strong>
@@ -3311,11 +3355,27 @@ export default function LeadsClient({
                     <div className={styles.clientPanel}>
                       <div className={styles.clientPanelHeader}>
                         <div className={`${styles.clientIdentity} ${isTrackingRequest ? styles.trackingLeadIdentity : ''}`}>
+                          {licensingWorkspaceMode && assetPhotos(lead)[0] ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={assetPhotos(lead)[0]}
+                              alt={`${assetTitle(lead)} thumbnail`}
+                              className={styles.licenceLeadThumbnail}
+                            />
+                          ) : null}
                           <div className={styles.leadCardTitleRow}>
                             <h3>{lead.ownerBusinessName || ownerDisplayName(lead)}</h3>
                           </div>
                           <strong className={styles.leadAssetName}>{assetTitle(lead)}</strong>
                           <span className={styles.clientKicker}>{formatLeadDisplayType(lead)} · Received {formatDate(lead.createdAtIso)}</span>
+                          {licensingWorkspaceMode ? (
+                            <span className={styles.trackingLeadPurpose}>
+                              <span className={styles.trackingLeadPurposeCopy}>
+                                <strong>Renewal due {formatDate(leadLicenceRenewalDate(lead))}</strong>
+                                <small>{readLeadLicenseRegistrationNumber(lead) || 'Registration not supplied'}</small>
+                              </span>
+                            </span>
+                          ) : null}
                           {isTrackingRequest ? (
                             <span className={styles.trackingLeadPurpose}>
                               <span className={styles.trackingLeadPurposeIcon} aria-hidden="true">
@@ -3452,16 +3512,18 @@ export default function LeadsClient({
                             <h2>{assetTitle(lead)}</h2>
                             <p>{leadAssetMeta(lead)}</p>
                             <div className={assetStyles.assetMetaRow}>
-                              <span className={assetStyles.assetValueMethodLabel}>{isFullRegisterLead(lead) ? 'Register' : methodLabel(lead.assetSnapshot.selectedMethod)} value</span>
+                              <span className={assetStyles.assetValueMethodLabel}>{licensingWorkspaceMode ? 'Licence renewal' : isFullRegisterLead(lead) ? 'Register' : `${methodLabel(lead.assetSnapshot.selectedMethod)} value`}</span>
                               <span className={assetStyles.assetSavedDateLabel}>Updated {formatDate(asText(lead.assetSnapshot.updatedAtIso) || lead.updatedAtIso)}</span>
                             </div>
                           </div>
 
                           <div className={`${assetStyles.assetHeaderAside} ${styles.leadAssetHeaderAside}`}>
-                            <div className={`${assetStyles.valueBlock} ${styles.leadValueBlock}`}>
-                              <strong>{formatCurrency(assetValue(lead))}</strong>
-                              <span>Excl. VAT</span>
-                            </div>
+                            {!licensingWorkspaceMode ? (
+                              <div className={`${assetStyles.valueBlock} ${styles.leadValueBlock}`}>
+                                <strong>{formatCurrency(assetValue(lead))}</strong>
+                                <span>Excl. VAT</span>
+                              </div>
+                            ) : null}
 
                             <div className={`${assetStyles.assetHeaderActions} ${styles.leadAssetHeaderActions}`}>
                               <button
@@ -3475,7 +3537,7 @@ export default function LeadsClient({
                                 <span>Send</span>
                               </button>
 
-                              <button
+                              {!licensingWorkspaceMode ? <button
                                 type="button"
                                 className={`${assetStyles.optionsButton} ${styles.leadManageButton} ${styles.leadQuickActionButton}`}
                                 onClick={() => setManagedLead(lead)}
@@ -3483,7 +3545,7 @@ export default function LeadsClient({
                               >
                                 <ManageIcon className={assetStyles.buttonIcon} />
                                 <span>Manage</span>
-                              </button>
+                              </button> : null}
                             </div>
                           </div>
                         </div>

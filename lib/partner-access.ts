@@ -12,10 +12,13 @@ import {
 } from './dealer-maintenance-tracker';
 import { isDatabaseSchemaReady } from './database-schema-readiness';
 import { getDb } from './db';
+import {
+  filterAssetDocumentsForRole,
+} from './asset-document-permissions';
 
-export type AccountRole = 'owner' | 'dealer' | 'finance' | 'insurance';
+export type AccountRole = 'owner' | 'dealer' | 'finance' | 'insurance' | 'licensing';
 export type PartnerType = Exclude<AccountRole, 'owner'>;
-export type LeadType = 'finance' | 'insurance' | 'replacement_quote';
+export type LeadType = 'finance' | 'insurance' | 'replacement_quote' | 'license_renewal';
 export type AssetLeadStatus = 'sent' | 'viewed' | 'accepted' | 'quoted' | 'declined' | 'closed';
 
 export type PartnerDirectoryEntry = {
@@ -195,9 +198,9 @@ type LeadAttachmentSummaryRow = {
   latest_attachment_created_at: string | null;
 };
 
-const ACCOUNT_ROLES = new Set<AccountRole>(['owner', 'dealer', 'finance', 'insurance']);
-const PARTNER_TYPES = new Set<PartnerType>(['dealer', 'finance', 'insurance']);
-const LEAD_TYPES = new Set<LeadType>(['finance', 'insurance', 'replacement_quote']);
+const ACCOUNT_ROLES = new Set<AccountRole>(['owner', 'dealer', 'finance', 'insurance', 'licensing']);
+const PARTNER_TYPES = new Set<PartnerType>(['dealer', 'finance', 'insurance', 'licensing']);
+const LEAD_TYPES = new Set<LeadType>(['finance', 'insurance', 'replacement_quote', 'license_renewal']);
 const LEAD_STATUSES = new Set<AssetLeadStatus>(['sent', 'viewed', 'accepted', 'quoted', 'declined', 'closed']);
 const ASSET_PARTNER_NOTE_STATUSES = new Set<AssetPartnerNoteStatus>(['open', 'noted']);
 
@@ -329,12 +332,63 @@ function isBlockedLeadDocument(document: AssetRegisterItem['documents'][number])
 function leadDocumentsForSnapshot(
   documents: AssetRegisterItem['documents'],
   includedSections: Record<string, unknown>,
+  leadType: LeadType,
+  partnerSubtype: string | null,
 ): AssetRegisterItem['documents'] {
   if (includedSections.documents !== true) {
     return [];
   }
 
-  return documents.filter((document) => !isBlockedLeadDocument(document));
+  const role = leadType === 'replacement_quote' ? 'dealer' : partnerTypeForLeadType(leadType);
+
+  if (role === 'dealer') return [];
+
+  return filterAssetDocumentsForRole(
+    documents.filter((document) => !isBlockedLeadDocument(document)),
+    role,
+    partnerSubtype,
+  );
+}
+
+function sanitizeRegisterSnapshotDocuments(
+  includedSections: Record<string, unknown>,
+  leadType: LeadType,
+  partnerSubtype: string | null,
+): Record<string, unknown> {
+  const registerSnapshot = asRecord(includedSections.registerSnapshot);
+  if (!registerSnapshot || !Array.isArray(registerSnapshot.assets)) {
+    return includedSections;
+  }
+
+  const role = leadType === 'replacement_quote' ? 'dealer' : partnerTypeForLeadType(leadType);
+  const assets = registerSnapshot.assets.map((entry) => {
+    const asset = asRecord(entry);
+    if (!asset) return entry;
+    const documents = Array.isArray(asset.documents)
+      ? asset.documents
+          .map((document) => asRecord(document))
+          .filter((document): document is Record<string, unknown> => Boolean(document))
+          .filter((document) => {
+            const fileName = asText(document.fileName).toLowerCase();
+            const contentType = asText(document.contentType).toLowerCase();
+            return !fileName.endsWith('.xlsx') &&
+              contentType !== 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+          })
+      : [];
+
+    return {
+      ...asset,
+      documents: filterAssetDocumentsForRole(documents, role, partnerSubtype),
+    };
+  });
+
+  return {
+    ...includedSections,
+    registerSnapshot: {
+      ...registerSnapshot,
+      assets,
+    },
+  };
 }
 
 function sanitizeLeadMessagePhotoUrl(value: unknown): string {
@@ -441,6 +495,7 @@ export function normalizeAccountRole(value: unknown): AccountRole {
 
   if (normalized === 'bank') return 'finance';
   if (normalized === 'broker' || normalized === 'insurer' || normalized === 'short-term-insurer') return 'insurance';
+  if (['licence-renewal', 'license-renewal', 'licensing-expert', 'licence-expert'].includes(normalized)) return 'licensing';
   if (ACCOUNT_ROLES.has(normalized as AccountRole)) return normalized as AccountRole;
 
   return 'owner';
@@ -454,12 +509,14 @@ export function normalizePartnerType(value: unknown): PartnerType | null {
 export function normalizeLeadType(value: unknown): LeadType | null {
   const normalized = asText(value).toLowerCase();
   if (normalized === 'replacement' || normalized === 'machinery' || normalized === 'dealer') return 'replacement_quote';
+  if (['licence_renewal', 'license', 'licence', 'licensing'].includes(normalized)) return 'license_renewal';
   return LEAD_TYPES.has(normalized as LeadType) ? (normalized as LeadType) : null;
 }
 
 export function partnerTypesForLeadType(leadType: LeadType): PartnerType[] {
   if (leadType === 'replacement_quote') return ['dealer'];
   if (leadType === 'insurance') return ['insurance'];
+  if (leadType === 'license_renewal') return ['licensing'];
   return ['finance'];
 }
 
@@ -551,10 +608,13 @@ async function ensurePartnerAccessTablesOnce(): Promise<void> {
       when 'insurance' then 'insurance'
       when 'finance' then 'finance'
       when 'dealer' then 'dealer'
+      when 'licensing' then 'licensing'
+      when 'licence-renewal-expert' then 'licensing'
+      when 'license-renewal-expert' then 'licensing'
       else 'owner'
     end
     where account_type is null
-       or lower(trim(account_type)) not in ('owner', 'dealer', 'finance', 'insurance')
+       or lower(trim(account_type)) not in ('owner', 'dealer', 'finance', 'insurance', 'licensing')
        or lower(trim(account_type)) in ('bank', 'broker', 'insurer')
   `);
 
@@ -1042,7 +1102,7 @@ export async function listPartnerDirectory(input: {
   const params: unknown[] = [input.currentUserId];
   const filters = [
     `user_id <> $1`,
-    `account_type in ('dealer', 'finance', 'insurance')`,
+    `account_type in ('dealer', 'finance', 'insurance', 'licensing')`,
     `partner_directory_enabled = true`,
     `partner_directory_status = 'approved'`,
   ];
@@ -1213,7 +1273,20 @@ export async function markAssetPartnerNoteNoted(input: {
   return updatedNote;
 }
 
-function buildAssetLeadSnapshot(asset: AssetRegisterItem, includedSections: Record<string, unknown>): Record<string, unknown> {
+function readLeadSnapshotText(specs: Record<string, unknown>, keys: string[]): string {
+  for (const key of keys) {
+    const value = asText(specs[key]);
+    if (value) return value;
+  }
+  return '';
+}
+
+function buildAssetLeadSnapshot(
+  asset: AssetRegisterItem,
+  includedSections: Record<string, unknown>,
+  leadType: LeadType,
+  partnerSubtype: string | null,
+): Record<string, unknown> {
   const ownerMessagePhotoUrls = ownerMessagePhotoUrlsFromSections(includedSections);
   const ownerMessagePhotoUrlSet = new Set(ownerMessagePhotoUrls);
   const assetGalleryPhotos = asset.photos.filter((url) => !ownerMessagePhotoUrlSet.has(sanitizeLeadMessagePhotoUrl(url)));
@@ -1233,15 +1306,28 @@ function buildAssetLeadSnapshot(asset: AssetRegisterItem, includedSections: Reco
           replacement_price: replacementPriceExVat,
         }
       : {};
+  const licenseRenewalDate = readLeadSnapshotText(asset.specsJson, [
+    'licenseRenewalDate',
+    'license_renewal_date',
+    'licenceRenewalDate',
+    'licence_renewal_date',
+  ]);
+  const snapshotSpecs = leadType === 'license_renewal'
+    ? {
+        licenseStatus: 'yes',
+        licenceStatus: 'yes',
+        licenseRenewalDate,
+        licenceRenewalDate: licenseRenewalDate,
+      }
+    : {
+        ...asset.specsJson,
+        ...replacementPriceSnapshot,
+      };
 
-  return {
+  const baseSnapshot = {
     id: asset.id,
     title: asset.title,
     kind: asset.kind,
-    value: asset.value,
-    selectedValueExVat: asset.selectedValueExVat,
-    ...replacementPriceSnapshot,
-    selectedMethod: asset.selectedMethod,
     brandName: asset.brandName,
     modelName: asset.modelName,
     typedModelName: asset.typedModelName,
@@ -1249,35 +1335,48 @@ function buildAssetLeadSnapshot(asset: AssetRegisterItem, includedSections: Reco
     equipmentFamilyLabel: asset.equipmentFamilyLabel,
     yearModel: asset.yearModel,
     hours: asset.hours,
-    specsJson: {
-      ...asset.specsJson,
-      ...replacementPriceSnapshot,
-    },
+    specsJson: snapshotSpecs,
+    condition: asset.condition,
+    isLicensed: asset.isLicensed,
+    licenseRegistrationNumber: asset.licenseRegistrationNumber,
+    licenseRenewalDate,
+    photos: assetGalleryPhotos,
+    ownerMessagePhotoUrls,
+    messageAttachmentPhotoUrls: ownerMessagePhotoUrls,
+    documents: leadDocumentsForSnapshot(
+      asset.documents,
+      includedSections,
+      leadType,
+      partnerSubtype,
+    ),
+    createdAtIso: asset.createdAtIso,
+    updatedAtIso: asset.updatedAtIso,
+  };
+
+  if (leadType === 'license_renewal') return baseSnapshot;
+
+  return {
+    ...baseSnapshot,
+    value: asset.value,
+    selectedValueExVat: asset.selectedValueExVat,
+    ...replacementPriceSnapshot,
+    selectedMethod: asset.selectedMethod,
     depreciationMethodUsed: asset.depreciationMethodUsed,
     lifeWorkedPercent: asset.lifeWorkedPercent,
     lifeRemainingPercent: asset.lifeRemainingPercent,
     estimatedHours: asset.estimatedHours,
     maxLifetimeHours: asset.maxLifetimeHours,
-    condition: asset.condition,
     powerKw: asset.powerKw,
     serialNumber: asset.serialNumber,
     isFinanced: asset.isFinanced,
     isInsured: asset.isInsured,
-    isLicensed: asset.isLicensed,
-    licenseRegistrationNumber: asset.licenseRegistrationNumber,
     aim4priceValueExVat: asset.aim4priceValueExVat,
     marketMidExVat: asset.marketMidExVat,
-    photos: assetGalleryPhotos,
-    ownerMessagePhotoUrls,
-    messageAttachmentPhotoUrls: ownerMessagePhotoUrls,
-    documents: leadDocumentsForSnapshot(asset.documents, includedSections),
     publicAssetCode: asset.publicAssetCode,
     lastScannedAtIso: asset.lastScannedAtIso,
     lastKnownLat: asset.lastKnownLat,
     lastKnownLng: asset.lastKnownLng,
     lastKnownLocationText: asset.lastKnownLocationText,
-    createdAtIso: asset.createdAtIso,
-    updatedAtIso: asset.updatedAtIso,
   };
 }
 
@@ -1306,8 +1405,24 @@ export async function createAssetLead(input: {
     throw new Error('ASSET_NOT_FOUND');
   }
 
-  const includedSections = withNormalizedOwnerMessagePhotoSections(
-    input.includedSections ?? { assetDetails: true, valuationSummary: true, mainPhoto: true },
+  if (input.leadType === 'license_renewal') {
+    const renewalDate = readLeadSnapshotText(asset.specsJson, [
+      'licenseRenewalDate',
+      'license_renewal_date',
+      'licenceRenewalDate',
+      'licence_renewal_date',
+    ]);
+    if (!asset.isLicensed || !renewalDate) {
+      throw new Error('LICENSE_RENEWAL_DETAILS_REQUIRED');
+    }
+  }
+
+  const includedSections = sanitizeRegisterSnapshotDocuments(
+    withNormalizedOwnerMessagePhotoSections(
+      input.includedSections ?? { assetDetails: true, valuationSummary: true, mainPhoto: true },
+    ),
+    input.leadType,
+    partner.account_subtype,
   );
   const registerLogoUrl = await getAssetRegisterReportLogoUrl(input.ownerUserId, asset.registerId).catch(() => '');
 
@@ -1342,7 +1457,15 @@ export async function createAssetLead(input: {
       input.partnerUserId,
       asset.id,
       input.leadType,
-      JSON.stringify({ ...buildAssetLeadSnapshot(asset, includedSections), logoUrl: registerLogoUrl }),
+      JSON.stringify({
+        ...buildAssetLeadSnapshot(
+          asset,
+          includedSections,
+          input.leadType,
+          partner.account_subtype,
+        ),
+        logoUrl: registerLogoUrl,
+      }),
       JSON.stringify(includedSections),
       asText(input.ownerMessage) || null,
       ownerContactName,
