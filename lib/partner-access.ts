@@ -82,6 +82,13 @@ export type AssetLead = {
   updatedAtIso: string;
 };
 
+export type AssetLeadSummaryCounts = {
+  newLeads: number;
+  inProgress: number;
+  completed: number;
+  total: number;
+};
+
 export type AssetPartnerNoteStatus = 'open' | 'noted';
 
 export type AssetPartnerNoteAttachment = {
@@ -1580,6 +1587,46 @@ export async function listAssetLeadsForUser(
     dealerCorrection: correctionLeads[index]?.dealerCorrection,
     maintenanceAccess: maintenanceLeads[index]?.maintenanceAccess,
   }));
+}
+
+export async function getAssetLeadSummaryCountsForPartner(
+  userId: string,
+  leadType?: LeadType,
+): Promise<AssetLeadSummaryCounts> {
+  await ensurePartnerAccessTables();
+  const params: unknown[] = [userId];
+  const leadTypeSql = leadType ? 'and lead_type = $2' : '';
+  if (leadType) params.push(leadType);
+
+  const result = await getDb().query<{
+    new_count: number | string;
+    in_progress_count: number | string;
+    completed_count: number | string;
+    total_count: number | string;
+  }>(
+    `
+      select
+        count(*) filter (where status = 'sent' and viewed_at is null)::int as new_count,
+        count(*) filter (
+          where not (status = 'sent' and viewed_at is null)
+            and status not in ('quoted', 'closed')
+        )::int as in_progress_count,
+        count(*) filter (where status in ('quoted', 'closed'))::int as completed_count,
+        count(*)::int as total_count
+      from public.asset_leads
+      where partner_user_id = $1
+        ${leadTypeSql}
+    `,
+    params,
+  );
+  const row = result.rows[0];
+
+  return {
+    newLeads: Number(row?.new_count ?? 0),
+    inProgress: Number(row?.in_progress_count ?? 0),
+    completed: Number(row?.completed_count ?? 0),
+    total: Number(row?.total_count ?? 0),
+  };
 }
 
 export async function getAssetLeadForPartner(input: {

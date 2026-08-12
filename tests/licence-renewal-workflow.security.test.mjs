@@ -10,6 +10,7 @@ const discoveryClient = read('app/asset-discovery/asset-discovery-client.tsx');
 const registerClient = read('app/asset-register/asset-register-client.tsx');
 const registerStyles = read('app/asset-register/page.module.css');
 const leadsClient = read('app/leads/leads-client.tsx');
+const leadsStyles = read('app/leads/page.module.css');
 const header = read('components/AppHeader.tsx');
 const headerStyles = read('components/AppHeader.module.css');
 const signup = read('app/auth/auth-client.tsx');
@@ -27,9 +28,10 @@ const licensingRenewalRoute = read('app/api/licensing/renewal-updates/route.ts')
 const correctionMigration = read('database/migrations/70-license-renewal-corrections.sql');
 const notifications = read('lib/notifications.ts');
 
-test('licence renewal experts have a dedicated account and two-item workspace', () => {
+test('licence renewal experts have a dedicated account and focused workspace', () => {
   assert.match(signup, /value: "licensing"/);
   assert.match(header, /accountType === 'licensing'/);
+  assert.match(header, /label: 'Home'/);
   assert.match(header, /label: 'Leads'/);
   assert.match(header, /label: 'Discovery'/);
   const licensingNav = header.slice(
@@ -159,6 +161,9 @@ test('an approved Discovery offer creates a renewal lead with photos and licence
   assert.match(leadsClient, /LICENCE RENEWAL LEADS/);
   assert.match(leadsClient, /Renewal due/);
   assert.match(leadsClient, /licenceLeadThumbnail/);
+  assert.match(leadsClient, /licenceRenewalMeta/);
+  assert.match(leadsStyles, /Licence renewal lead cards/);
+  assert.match(leadsStyles, /licensingLeadIdentityWithPhoto/);
   assert.match(notifications, /Licence renewal help offered/);
   assert.match(notifications, /It is now in My Leads/);
   assert.match(header, /Renewal help offer/);
@@ -166,6 +171,19 @@ test('an approved Discovery offer creates a renewal lead with photos and licence
   assert.match(header, /expert&apos;s My Leads/);
   assert.match(headerStyles, /notificationRenewalDetailModal/);
   assert.match(headerStyles, /notificationRenewalDateCard/);
+});
+
+test('a declined renewal offer is final for that licence expert', () => {
+  assert.match(discovery, /permanent_licensing_denial/);
+  assert.match(discovery, /requester_user_id = \$1[\s\S]*?requester_account_type = 'licensing'[\s\S]*?status = 'temporarily_denied'/);
+  assert.match(discovery, /You cannot offer again/);
+  assert.match(discovery, /when target\.requester_account_type = 'licensing' then null/);
+  assert.match(header, /Renewal help declined/);
+  assert.match(header, /cannot offer renewal help for this asset again/);
+  assert.match(headerStyles, /notificationDetailStatusBoxDenied/);
+  assert.match(notifications, /Renewal help declined/);
+  assert.match(notifications, /You cannot offer again for this asset/);
+  assert.match(notifications, /accountType === 'dealer' \|\| accountType === 'licensing'/);
 });
 
 test('renewal lead snapshots do not carry valuation or unrelated private specs', () => {
