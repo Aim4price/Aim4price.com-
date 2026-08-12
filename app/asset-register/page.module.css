@@ -36314,3 +36314,60 @@ button.documentOpenLink {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+
+/* === Asset share choices: four concise desktop cards === */
+.assetQuoteModal:not(.assetQuotePartnerPickerModal) {
+  width: min(calc(100vw - 3rem), 1760px) !important;
+}
+
+.assetQuoteModal:not(.assetQuotePartnerPickerModal) .assetQuoteChoiceGrid {
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: clamp(0.9rem, 1.25vw, 1.35rem) !important;
+}
+
+.assetQuoteModal:not(.assetQuotePartnerPickerModal) .assetQuoteChoiceCard {
+  min-height: 12.75rem !important;
+  padding: clamp(1.25rem, 1.7vw, 1.65rem) !important;
+}
+
+.assetQuoteModal:not(.assetQuotePartnerPickerModal) .assetQuoteChoiceCard > .assetQuoteChoiceIconTile {
+  width: 4.8rem !important;
+  height: 4.8rem !important;
+  border-radius: 1.25rem !important;
+}
+
+.assetQuoteModal:not(.assetQuotePartnerPickerModal) .assetQuoteChoiceText {
+  max-width: none !important;
+  gap: 0.45rem !important;
+}
+
+.assetQuoteModal:not(.assetQuotePartnerPickerModal) .assetQuoteChoiceText strong {
+  white-space: nowrap !important;
+}
+
+.assetQuoteModal:not(.assetQuotePartnerPickerModal) .assetQuoteChoiceText small,
+.assetQuoteModal:not(.assetQuotePartnerPickerModal) .assetQuoteChoiceText small span {
+  white-space: normal !important;
+  text-wrap: pretty !important;
+}
+
+@media (max-width: 1240px) {
+  .assetQuoteModal:not(.assetQuotePartnerPickerModal) .assetQuoteChoiceGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 700px) {
+  .assetQuoteModal:not(.assetQuotePartnerPickerModal) {
+    width: min(100%, calc(100vw - 1rem)) !important;
+  }
+
+  .assetQuoteModal:not(.assetQuotePartnerPickerModal) .assetQuoteChoiceGrid {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .assetQuoteModal:not(.assetQuotePartnerPickerModal) .assetQuoteChoiceText strong {
+    white-space: normal !important;
+  }
+}

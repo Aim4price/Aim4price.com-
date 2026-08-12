@@ -175,7 +175,7 @@ type AssetQuoteOption = {
   partnerType: PartnerType;
   title: string;
   shortTitle: string;
-  descriptionLines: readonly [string, string];
+  description: string;
   mapTitle: string;
   sendLabel: string;
   emptyPartnerText: string;
@@ -1451,9 +1451,9 @@ const ASSET_QUOTE_OPTIONS: AssetQuoteOption[] = [
   {
     leadType: 'finance',
     partnerType: 'finance',
-    title: 'Get finance help',
+    title: 'Finance & accounting',
     shortTitle: 'Finance help',
-    descriptionLines: ['Send this asset to an accountant, financier or bank.', 'Request record review, finance or refinance.'],
+    description: 'Share with an accountant, financier or bank.',
     mapTitle: 'Choose an accountant, financier or bank.',
     sendLabel: 'Send finance request',
     emptyPartnerText: 'No listed accountants, financiers or banks found yet. Finance accounts must enable their directory listing under Account details.',
@@ -1461,9 +1461,9 @@ const ASSET_QUOTE_OPTIONS: AssetQuoteOption[] = [
   {
     leadType: 'insurance',
     partnerType: 'insurance',
-    title: 'Get insurance help',
+    title: 'Insurance',
     shortTitle: 'Insurance help',
-    descriptionLines: ['Send this asset to an insurer or broker.', 'Request cover or value review.'],
+    description: 'Share with an insurer or broker.',
     mapTitle: 'Choose an insurer or broker.',
     sendLabel: 'Send insurance request',
     emptyPartnerText: 'No listed insurers or brokers found yet. Insurance accounts must enable their directory listing under Account details.',
@@ -1471,9 +1471,9 @@ const ASSET_QUOTE_OPTIONS: AssetQuoteOption[] = [
   {
     leadType: 'replacement_quote',
     partnerType: 'dealer',
-    title: 'Get dealership help',
+    title: 'Dealer',
     shortTitle: 'Dealership help',
-    descriptionLines: ['Send this asset to a dealer.', 'Request a replacement price.'],
+    description: 'Share with a dealer.',
     mapTitle: 'Choose a dealer.',
     sendLabel: 'Send replacement price request',
     emptyPartnerText: 'No listed dealers found yet. Dealer accounts must enable their directory listing under Account details.',
@@ -1481,9 +1481,9 @@ const ASSET_QUOTE_OPTIONS: AssetQuoteOption[] = [
   {
     leadType: 'license_renewal',
     partnerType: 'licensing',
-    title: 'Get licence renewal help',
+    title: 'Licence renewal',
     shortTitle: 'Licence renewal',
-    descriptionLines: ['Send this asset to a licence renewal expert.', 'Share only licence-related paperwork.'],
+    description: 'Share with a renewal expert.',
     mapTitle: 'Choose a licence renewal expert.',
     sendLabel: 'Send licence renewal request',
     emptyPartnerText: 'No listed licence renewal experts found yet. Licensing accounts must enable their directory listing under Account details.',
@@ -18271,8 +18271,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                         <span className={styles.assetQuoteChoiceText}>
                           <strong>{option.title}</strong>
                           <small>
-                            <span>{option.descriptionLines[0]}</span>
-                            <span>{option.descriptionLines[1]}</span>
+                            <span>{option.description}</span>
                           </small>
                         </span>
                       </button>

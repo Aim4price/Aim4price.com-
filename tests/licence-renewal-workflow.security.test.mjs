@@ -8,6 +8,7 @@ const partnerAccess = read('lib/partner-access.ts');
 const discovery = read('lib/asset-discovery.ts');
 const discoveryClient = read('app/asset-discovery/asset-discovery-client.tsx');
 const registerClient = read('app/asset-register/asset-register-client.tsx');
+const registerStyles = read('app/asset-register/page.module.css');
 const leadsClient = read('app/leads/leads-client.tsx');
 const header = read('components/AppHeader.tsx');
 const signup = read('app/auth/auth-client.tsx');
@@ -91,4 +92,13 @@ test('renewal lead snapshots do not carry valuation or unrelated private specs',
   assert.match(partnerAccess, /licenseStatus: 'yes'/);
   assert.match(partnerAccess, /licenceRenewalDate: licenseRenewalDate/);
   assert.match(partnerAccess, /if \(leadType === 'license_renewal'\) return baseSnapshot/);
+});
+
+test('the asset share modal uses four concise desktop choices', () => {
+  assert.match(registerStyles, /assetQuoteModal:not\(\.assetQuotePartnerPickerModal\)[\s\S]*repeat\(4, minmax\(0, 1fr\)\)/);
+  assert.match(registerClient, /title: 'Finance & accounting'/);
+  assert.match(registerClient, /title: 'Insurance'/);
+  assert.match(registerClient, /title: 'Dealer'/);
+  assert.match(registerClient, /title: 'Licence renewal'/);
+  assert.doesNotMatch(registerClient, /descriptionLines/);
 });
