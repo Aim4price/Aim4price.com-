@@ -7,19 +7,28 @@ import { deleteUserWorkspaceData } from "./account-deletion";
 import { createInitialAccountProfile } from "./account-profile";
 import { recordAdminUsageEventSafely } from "./admin-usage-events";
 import { getDb } from "./db";
+import {
+  readSignupWorkspaceField,
+  type SignupWorkspaceField,
+} from "./signup-workspace-context";
 
-function readSignupField(context: unknown, fieldName: string): unknown {
+function readSignupField(
+  context: unknown,
+  fieldName: SignupWorkspaceField,
+): unknown {
   if (!context || typeof context !== "object") {
-    return null;
+    return readSignupWorkspaceField(fieldName);
   }
 
   const body = (context as { body?: unknown }).body;
 
   if (!body || typeof body !== "object" || Array.isArray(body)) {
-    return null;
+    return readSignupWorkspaceField(fieldName);
   }
 
-  return (body as Record<string, unknown>)[fieldName];
+  const value = (body as Record<string, unknown>)[fieldName];
+
+  return value ?? readSignupWorkspaceField(fieldName);
 }
 
 function normalizeTrustedOrigin(value: string): string | null {

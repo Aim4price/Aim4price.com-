@@ -547,39 +547,6 @@ async function postAuth(path: string, body: Record<string, unknown>) {
   return payload;
 }
 
-async function saveSignupProfileFallback(
-  accountType: SignupAccountType,
-  accountSubtype: SignupAccountSubtype,
-  province: Exclude<SignupProvince, "">,
-  townCity: string,
-  partnerDirectoryEnabled: boolean,
-  displayName: string,
-  phone: string,
-) {
-  const response = await fetch("/api/account-profile/complete-signup", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    credentials: "include",
-    body: JSON.stringify({
-      accountType,
-      accountSubtype,
-      province,
-      townCity,
-      partnerDirectoryEnabled,
-      displayName,
-      phone,
-    }),
-  }).catch(() => null);
-
-  if (!response?.ok) {
-    throw new Error(
-      "Your account was created, but its workspace could not be completed. Please contact Aim4price before trying again.",
-    );
-  }
-}
-
 export default function AuthClient() {
   const [mode, setMode] = useState<Mode>("signup");
   const [showSignupPassword, setShowSignupPassword] = useState(false);
@@ -765,17 +732,6 @@ export default function AuthClient() {
       });
 
       const redirectUrl = extractRedirectUrl(payload);
-
-      await saveSignupProfileFallback(
-        signupForm.accountType,
-        signupForm.accountSubtype,
-        province,
-        townCity,
-        signupForm.accountType !== "owner" &&
-          signupForm.directoryParticipation,
-        name,
-        phone,
-      );
 
       setSignupForm(initialSignupState);
       setNotice({
