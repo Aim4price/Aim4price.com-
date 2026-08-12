@@ -1823,7 +1823,7 @@ export default function AppHeader({
           {isPending && isLicensingEnquiry ? (
             <div className={styles.notificationRenewalShareNote}>
               <strong>What approval shares</strong>
-              <p>Basic asset details, renewal date, photos and licence documents. The request then appears in the expert&apos;s My Leads.</p>
+              <p>Basic asset details, renewal date, photos and licence documents. Accepted offers are marked Won in the expert&apos;s Discovery.</p>
             </div>
           ) : null}
 
@@ -1832,7 +1832,7 @@ export default function AppHeader({
               <strong>{isApproved ? 'Access approved' : 'Request declined'}</strong>
               <p>{isApproved
                 ? isLicensingEnquiry
-                  ? 'Accepted. This asset is now in the licence expert’s My Leads.'
+                  ? 'Accepted. This offer is now marked Won in the licence expert’s Discovery.'
                   : 'Approved. Your contact details are now visible to the interested user for three months.'
                 : isLicensingEnquiry
                   ? isLicensingExpert

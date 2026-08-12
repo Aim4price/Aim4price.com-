@@ -101,6 +101,8 @@ export async function GET(request: NextRequest) {
       search: searchParams.get("search") ?? undefined,
       province: searchParams.get("province") ?? undefined,
       type: searchParams.get("type") ?? undefined,
+      renewalTiming: searchParams.get("renewalTiming") ?? undefined,
+      enquiryStatus: searchParams.get("status") ?? undefined,
       focusAssetId: searchParams.get("focusAssetId") ?? undefined,
       page: positiveIntParam(searchParams.get("page"), 1),
       pageSize: positiveIntParam(searchParams.get("pageSize"), 10),

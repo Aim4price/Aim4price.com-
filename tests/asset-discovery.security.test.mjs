@@ -177,7 +177,7 @@ test("owner and dealer Discovery follow the Overview layout", () => {
   assert.match(client, /mobileStyles\.overviewList/);
   assert.match(client, /mobileStyles\.overviewCard/);
   assert.match(client, /styles\.discoveryFilterRow/);
-  assert.match(client, />Available assets</);
+  assert.match(client, /"Available assets"/);
   assert.match(dealerDiscoveryPage, /<AssetDiscoveryClient dealerAppMode \/>/);
   assert.match(ownerDiscoveryPage, /<AssetDiscoveryClient ownerAppMode \/>/);
   assert.match(css, /\.discoveryOverviewIntro/);
@@ -207,13 +207,13 @@ test("dealer Discovery Open actions use the visible Overview treatment", () => {
   assert.match(dealerCss, /color: #0a543d !important/);
 });
 
-test("desktop navigation exposes Discovery only through the Marketplace entry page", () => {
+test("desktop navigation exposes Discovery directly only to licensing accounts", () => {
   const navigationConfig = header.slice(
     header.indexOf("const BASE_NAV_ITEMS"),
     header.indexOf("function isAccountMenuItemVisible"),
   );
 
-  assert.doesNotMatch(navigationConfig, /href:\s*['"]\/asset-discovery['"]/);
+  assert.match(navigationConfig, /href:\s*['"]\/asset-discovery['"], label: ['"]Discovery['"], accountTypes: \[['"]licensing['"]\]/);
   assert.match(marketplaceEntry, /href="\/asset-discovery"/);
   assert.match(marketplaceEntry, /href="\/marketplace\/browse"/);
 });
@@ -228,7 +228,7 @@ test("approved notification opens the matching Discovery card", () => {
     header,
     /href=\{`\/asset-discovery\?openAsset=\$\{encodeURIComponent\(enquiry\.assetId\)\}`\}/,
   );
-  assert.match(header, /canOpenDiscoveryAsset = isApproved && Boolean\(enquiry\.ownerContact\)/);
+  assert.match(header, /isApproved && Boolean\(enquiry\.ownerContact\)/);
   assert.match(discoveryPage, /initialOpenAssetId=/);
   assert.match(discoveryRoute, /focusAssetId: searchParams\.get\("focusAssetId"\)/);
   assert.match(discovery, /focusOrderSql/);
@@ -239,4 +239,29 @@ test("approved notification opens the matching Discovery card", () => {
 test("Owner App keeps direct separate Discovery and Marketplace buttons", () => {
   assert.match(ownerAppHome, /href:\s*['"]\/owner-app\/discovery['"]/);
   assert.match(ownerAppHome, /href:\s*['"]\/owner-app\/marketplace['"]/);
+});
+
+test("licensing Discovery includes every valid renewal date and keeps the pipeline visible", () => {
+  const licensingEligibility = discovery.slice(
+    discovery.indexOf("const LICENSING_DISCOVERY_ASSET_SQL"),
+    discovery.indexOf("const PROVINCE_ABBREVIATION_SQL"),
+  );
+  assert.match(licensingEligibility, /SAFE_LICENSE_RENEWAL_DATE_SQL} is not null/);
+  assert.doesNotMatch(licensingEligibility, /120 days|30 days/);
+  assert.match(discovery, /renewalTiming === 'later'/);
+  assert.match(discovery, /requestedStatus === 'available'/);
+  assert.match(discovery, /requester_account_type = 'licensing' and e\.status in \('approved', 'temporarily_denied'\) then true/);
+  assert.match(client, /label: "All renewal dates"/);
+  assert.match(client, /label: "Won"/);
+  assert.match(client, /label: "Denied"/);
+  assert.match(client, /statusPillLabel\(asset, true\)/);
+  assert.match(css, /\.discoveryFutureCard/);
+});
+
+test("Discovery filter modal uses balanced two-column spacing", () => {
+  assert.match(client, /label="Renewal timing"/);
+  assert.match(client, /label="Opportunity status"/);
+  assert.match(client, /styles\.discoveryFilterWideField/);
+  assert.match(css, /\.discoveryFilterForm[\s\S]*repeat\(2, minmax\(0, 1fr\)\)/);
+  assert.match(css, /\.discoveryFilterWideField[\s\S]*grid-column: 1 \/ -1/);
 });

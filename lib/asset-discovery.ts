@@ -13,6 +13,11 @@ export type AssetDiscoveryEnquiryStatus =
   | "revoked";
 export type AssetDiscoveryAccountType =
   "owner" | "dealer" | "finance" | "insurance" | string;
+export type AssetDiscoveryRenewalTiming =
+  | "overdue"
+  | "next_30_days"
+  | "next_6_months"
+  | "later";
 
 export type SafeAssetSummary = {
   type: string;
@@ -23,6 +28,7 @@ export type SafeAssetSummary = {
   condition: string;
   province: string;
   renewalWindow: string;
+  renewalTiming: AssetDiscoveryRenewalTiming | null;
 };
 
 export type AssetDiscoveryAsset = SafeAssetSummary & {
@@ -267,8 +273,7 @@ const SAFE_LICENSE_RENEWAL_DATE_SQL = `(case
   else null
 end)`;
 const LICENSING_DISCOVERY_ASSET_SQL = `
-  coalesce(asset.is_licensed, false) = true
-  and ${SAFE_LICENSE_RENEWAL_DATE_SQL} between current_date - interval '30 days' and current_date + interval '120 days'
+  ${SAFE_LICENSE_RENEWAL_DATE_SQL} is not null
 `;
 const PROVINCE_ABBREVIATION_SQL = `case lower(nullif(trim(owner.province), ''))
   when 'western cape' then 'WC'
@@ -685,6 +690,19 @@ function safeSummary(
   const renewalWindow = Number.isFinite(renewalTimestamp)
     ? new Intl.DateTimeFormat('en-ZA', { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(new Date(renewalTimestamp))
     : '';
+  const today = new Date();
+  const todayUtc = Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate());
+  const in30Days = todayUtc + 30 * 24 * 60 * 60 * 1000;
+  const in6Months = Date.UTC(today.getUTCFullYear(), today.getUTCMonth() + 6, today.getUTCDate());
+  const renewalTiming: AssetDiscoveryRenewalTiming | null = !Number.isFinite(renewalTimestamp)
+    ? null
+    : renewalTimestamp < todayUtc
+      ? 'overdue'
+      : renewalTimestamp <= in30Days
+        ? 'next_30_days'
+        : renewalTimestamp <= in6Months
+          ? 'next_6_months'
+          : 'later';
 
   return {
     type,
@@ -695,6 +713,7 @@ function safeSummary(
     condition,
     province,
     renewalWindow,
+    renewalTiming,
   };
 }
 
@@ -1107,17 +1126,22 @@ function baseAssetWhere(input: {
   search?: string;
   province?: string;
   type?: string;
+  renewalTiming?: string;
+  enquiryStatus?: string;
 }) {
+  const licensingViewer = asText(input.viewerAccountType).toLowerCase() === 'licensing';
   const params: unknown[] = [input.viewerUserId];
   const where = [
     "owner.account_type = 'owner'",
     "owner.account_status = 'active'",
     "owner.discovery_participation_enabled = true",
     "asset.user_id <> $1",
-    `(${DISCOVERY_ELIGIBLE_ASSET_SQL})`,
+    `(${licensingViewer ? LICENSING_DISCOVERY_ASSET_SQL : DISCOVERY_ELIGIBLE_ASSET_SQL})`,
     `${RESOLVED_ASSET_TYPE_SQL} !~* '${PROPERTY_LIKE_ASSET_PATTERN}'`,
     `coalesce(asset.title, '') !~* '${PROPERTY_LIKE_ASSET_PATTERN}'`,
-    `(
+  ];
+  if (!licensingViewer) {
+    where.push(`(
       not exists (
         select 1
         from public.asset_discovery_enquiries blocked_enquiry
@@ -1133,18 +1157,40 @@ function baseAssetWhere(input: {
           and viewer_denial.status = 'temporarily_denied'
           and viewer_denial.request_again_at > now()
       )
-    )`,
-  ];
-  if (asText(input.viewerAccountType).toLowerCase() === 'licensing') {
-    where.push(`(${LICENSING_DISCOVERY_ASSET_SQL})`);
-    where.push(`not exists (
-      select 1
-      from public.asset_discovery_enquiries permanent_licensing_denial
-      where permanent_licensing_denial.asset_register_item_id = asset.id
-        and permanent_licensing_denial.requester_user_id = $1
-        and permanent_licensing_denial.requester_account_type = 'licensing'
-        and permanent_licensing_denial.status = 'temporarily_denied'
     )`);
+  }
+  if (licensingViewer) {
+    const renewalTiming = asText(input.renewalTiming).toLowerCase();
+    if (renewalTiming === 'overdue') {
+      where.push(`${SAFE_LICENSE_RENEWAL_DATE_SQL} < current_date`);
+    } else if (renewalTiming === 'next_30_days') {
+      where.push(`${SAFE_LICENSE_RENEWAL_DATE_SQL} between current_date and current_date + interval '30 days'`);
+    } else if (renewalTiming === 'next_6_months') {
+      where.push(`${SAFE_LICENSE_RENEWAL_DATE_SQL} between current_date and current_date + interval '6 months'`);
+    } else if (renewalTiming === 'later') {
+      where.push(`${SAFE_LICENSE_RENEWAL_DATE_SQL} > current_date + interval '6 months'`);
+    }
+
+    const requestedStatus = asText(input.enquiryStatus).toLowerCase();
+    const savedStatus = requestedStatus === 'won'
+      ? 'approved'
+      : requestedStatus === 'denied'
+        ? 'temporarily_denied'
+        : requestedStatus;
+    const latestStatusSql = `(select latest_enquiry.status
+      from public.asset_discovery_enquiries latest_enquiry
+      where latest_enquiry.asset_register_item_id = asset.id
+        and latest_enquiry.requester_user_id = $1
+        and latest_enquiry.requester_account_type = 'licensing'
+        and latest_enquiry.status in ('pending', 'approved', 'temporarily_denied')
+      order by latest_enquiry.created_at desc
+      limit 1)`;
+    if (requestedStatus === 'available') {
+      where.push(`${latestStatusSql} is null`);
+    } else if (['pending', 'approved', 'temporarily_denied'].includes(savedStatus)) {
+      params.push(savedStatus);
+      where.push(`${latestStatusSql} = $${params.length}`);
+    }
   }
 
   const search = asText(input.search);
@@ -1191,6 +1237,8 @@ export async function listAssetDiscoveryAssets(input: {
   search?: string;
   province?: string;
   type?: string;
+  renewalTiming?: string;
+  enquiryStatus?: string;
   focusAssetId?: string;
   page?: number;
   pageSize?: number;
@@ -1267,6 +1315,7 @@ export async function listAssetDiscoveryAssets(input: {
   const offset = (page - 1) * pageSize;
 
   const listParams = [...params];
+  const licensingViewer = asText(input.viewerAccountType).toLowerCase() === 'licensing';
   const focusAssetId = asText(input.focusAssetId);
   let focusOrderSql = "";
   if (focusAssetId) {
@@ -1311,6 +1360,7 @@ export async function listAssetDiscoveryAssets(input: {
         e.approved_at,
         e.created_at,
         case
+          when e.requester_account_type = 'licensing' and e.status in ('approved', 'temporarily_denied') then true
           when e.status = 'approved' then
             coalesce(e.approved_at, e.updated_at, e.created_at) > now() - interval '3 months'
           when e.status = 'temporarily_denied' then
@@ -1330,9 +1380,11 @@ export async function listAssetDiscoveryAssets(input: {
       case
         when enquiry.is_active and enquiry.status = 'approved' then 0
         when enquiry.is_active and enquiry.status = 'pending' then 1
-        else 2
+        when enquiry.is_active and enquiry.status = 'temporarily_denied' then 2
+        else 3
       end,
       case when enquiry.is_active then enquiry.created_at end desc nulls last,
+      ${licensingViewer ? `${SAFE_LICENSE_RENEWAL_DATE_SQL} asc nulls last,` : ''}
       asset.updated_at desc nulls last,
       asset.created_at desc nulls last,
       asset.id desc
@@ -1419,8 +1471,10 @@ async function findSafeAssetForEnquiry(
         and owner.account_type = 'owner'
         and owner.account_status = 'active'
         and owner.discovery_participation_enabled = true
-        and (${DISCOVERY_ELIGIBLE_ASSET_SQL})
-        and ($3 <> 'licensing' or (${LICENSING_DISCOVERY_ASSET_SQL}))
+        and (
+          ($3 = 'licensing' and (${LICENSING_DISCOVERY_ASSET_SQL}))
+          or ($3 <> 'licensing' and (${DISCOVERY_ELIGIBLE_ASSET_SQL}))
+        )
         and (
           $3 <> 'licensing'
           or not exists (
@@ -1434,13 +1488,13 @@ async function findSafeAssetForEnquiry(
         )
         and ${RESOLVED_ASSET_TYPE_SQL} !~* '${PROPERTY_LIKE_ASSET_PATTERN}'
         and coalesce(asset.title, '') !~* '${PROPERTY_LIKE_ASSET_PATTERN}'
-        and not exists (
+        and ($3 = 'licensing' or not exists (
           select 1
           from public.asset_discovery_enquiries blocked_enquiry
           where blocked_enquiry.asset_register_item_id = asset.id
             and blocked_enquiry.status = 'temporarily_denied'
             and blocked_enquiry.request_again_at > now()
-        )
+        ))
       limit 1
     `,
     [assetId, requesterUserId, requesterAccountType],
@@ -1661,7 +1715,7 @@ async function loadDiscoveryDetailRow(
       where asset.id = $1::uuid
         and owner.account_type = 'owner'
         and owner.account_status = 'active'
-        and (${DISCOVERY_ELIGIBLE_ASSET_SQL})
+        and ((${DISCOVERY_ELIGIBLE_ASSET_SQL}) or (${LICENSING_DISCOVERY_ASSET_SQL}))
         and ${RESOLVED_ASSET_TYPE_SQL} !~* '${PROPERTY_LIKE_ASSET_PATTERN}'
         and coalesce(asset.title, '') !~* '${PROPERTY_LIKE_ASSET_PATTERN}'
       limit 1

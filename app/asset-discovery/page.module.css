@@ -462,15 +462,65 @@
 }
 
 .discoveryFilterModal {
-  width: min(100%, 920px) !important;
+  width: min(calc(100vw - 2rem), 64rem) !important;
 }
 
 .discoveryFilterForm {
-  grid-template-columns: minmax(20rem, 1.4fr) repeat(2, minmax(13rem, 1fr)) !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 1rem 1.1rem !important;
+  padding: 1.35rem 1.6rem 1.55rem !important;
 }
 
 .discoveryFilterModal p {
   white-space: normal !important;
+}
+
+.discoveryFilterWideField {
+  min-width: 0;
+  grid-column: 1 / -1;
+}
+
+.discoveryFilterWideField > * {
+  width: 100%;
+}
+
+.discoveryPipelineStatus {
+  min-width: 6.4rem !important;
+  min-height: 2.45rem !important;
+  padding-inline: 0.8rem !important;
+}
+
+.discoveryFutureCard {
+  position: relative;
+  opacity: 0.78;
+  background-image: linear-gradient(135deg, rgba(247, 249, 251, 0.82), rgba(238, 243, 246, 0.72)) !important;
+}
+
+.discoveryFutureCard [class*='clientIdentity'] h3,
+.discoveryFutureCard .assetIdentity h2 {
+  filter: blur(0.65px);
+  transition: filter 160ms ease;
+}
+
+.discoveryFutureCard:hover [class*='clientIdentity'] h3,
+.discoveryFutureCard:focus-within [class*='clientIdentity'] h3,
+.discoveryFutureCard:hover .assetIdentity h2,
+.discoveryFutureCard:focus-within .assetIdentity h2 {
+  filter: none;
+}
+
+.discoveryFutureNote {
+  width: fit-content;
+  display: inline-flex;
+  align-items: center;
+  margin-top: 0.45rem;
+  padding: 0.32rem 0.65rem;
+  border: 1px solid #d7e0e6;
+  border-radius: 999px;
+  color: #607286;
+  background: rgba(255, 255, 255, 0.82);
+  font-size: 0.73rem;
+  font-weight: 760;
 }
 
 .contactModal {

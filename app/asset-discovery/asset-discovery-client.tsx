@@ -13,6 +13,7 @@ import styles from "./page.module.css";
 import dealerStyles from "../dealer/dealer.module.css";
 
 type EnquiryStatus = "pending" | "approved" | "temporarily_denied";
+type RenewalTiming = "overdue" | "next_30_days" | "next_6_months" | "later";
 
 type AssetDiscoveryAsset = {
   id: string;
@@ -24,6 +25,7 @@ type AssetDiscoveryAsset = {
   condition: string;
   province: string;
   renewalWindow: string;
+  renewalTiming: RenewalTiming | null;
   enquiryId: string | null;
   enquiryStatus: EnquiryStatus | null;
   requestAgainAtIso: string | null;
@@ -130,7 +132,7 @@ type IconProps = {
   className?: string;
 };
 
-type DiscoveryFilterKey = "type" | "province" | "pageSize";
+type DiscoveryFilterKey = "type" | "province" | "renewalTiming" | "status" | "pageSize";
 
 type DiscoveryFilterOption = {
   value: string;
@@ -147,6 +149,20 @@ type DiscoveryPhotoModal = {
 const SEARCH_DEBOUNCE_MS = 250;
 const DISCOVERY_PAGE_SIZE = 10;
 const DISCOVERY_PAGE_SIZE_OPTIONS = [10, 25, 50] as const;
+const RENEWAL_TIMING_OPTIONS: DiscoveryFilterOption[] = [
+  { value: "all", label: "All renewal dates" },
+  { value: "overdue", label: "Overdue" },
+  { value: "next_30_days", label: "Next 30 days" },
+  { value: "next_6_months", label: "Next 6 months" },
+  { value: "later", label: "More than 6 months away" },
+];
+const RENEWAL_STATUS_OPTIONS: DiscoveryFilterOption[] = [
+  { value: "all", label: "All opportunities" },
+  { value: "available", label: "Available" },
+  { value: "pending", label: "Pending" },
+  { value: "won", label: "Won" },
+  { value: "denied", label: "Denied" },
+];
 type DiscoveryPageSize = (typeof DISCOVERY_PAGE_SIZE_OPTIONS)[number];
 
 const EMPTY_SUMMARY: DiscoverySummary = {
@@ -500,25 +516,26 @@ function temporaryDenialExpired(asset: AssetDiscoveryAsset): boolean {
   return Number.isFinite(retryTime) && retryTime <= Date.now();
 }
 
-function statusPillLabel(asset: AssetDiscoveryAsset): string {
-  if (asset.enquiryStatus === "approved") return "Contact open";
-  if (asset.enquiryStatus === "pending") return "Enquiry pending";
+function statusPillLabel(asset: AssetDiscoveryAsset, licensing = false): string {
+  if (asset.enquiryStatus === "approved") return licensing ? "Won" : "Contact open";
+  if (asset.enquiryStatus === "pending") return licensing ? "Pending" : "Enquiry pending";
   if (
     asset.enquiryStatus === "temporarily_denied" &&
     !temporaryDenialExpired(asset)
   )
-    return "Temporarily denied";
+    return licensing ? "Denied" : "Temporarily denied";
   return "";
 }
 
-function statusDescription(asset: AssetDiscoveryAsset): string {
-  if (asset.enquiryStatus === "approved") return "Approved by owner.";
+function statusDescription(asset: AssetDiscoveryAsset, licensing = false): string {
+  if (asset.enquiryStatus === "approved") return licensing ? "Renewal work accepted by the owner." : "Approved by owner.";
   if (asset.enquiryStatus === "pending") return "Waiting for owner approval.";
   if (
     asset.enquiryStatus === "temporarily_denied" &&
     !temporaryDenialExpired(asset)
   ) {
     const retryDate = formatDate(asset.requestAgainAtIso);
+    if (licensing && !retryDate) return "Denied by the owner. You cannot offer again for this asset.";
     return retryDate
       ? `Temporarily denied. Available again after ${retryDate}.`
       : "Temporarily denied.";
@@ -606,6 +623,8 @@ export default function AssetDiscoveryClient({
   const [search, setSearch] = useState("");
   const [province, setProvince] = useState("all");
   const [type, setType] = useState("all");
+  const [renewalTiming, setRenewalTiming] = useState("all");
+  const [enquiryStatus, setEnquiryStatus] = useState("all");
   const [openFilter, setOpenFilter] = useState<DiscoveryFilterKey | null>(null);
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
@@ -658,6 +677,8 @@ export default function AssetDiscoveryClient({
     setSearch("");
     setProvince("all");
     setType("all");
+    setRenewalTiming("all");
+    setEnquiryStatus("all");
     setCurrentPage(1);
   }, [requestedOpenAssetId]);
 
@@ -733,6 +754,8 @@ export default function AssetDiscoveryClient({
     if (search) params.set("search", search);
     if (province !== "all") params.set("province", province);
     if (type !== "all") params.set("type", type);
+    if (renewalTiming !== "all") params.set("renewalTiming", renewalTiming);
+    if (enquiryStatus !== "all") params.set("status", enquiryStatus);
     if (requestedOpenAssetId) {
       params.set("focusAssetId", requestedOpenAssetId);
     }
@@ -805,6 +828,8 @@ export default function AssetDiscoveryClient({
     currentPage,
     pageSize,
     province,
+    renewalTiming,
+    enquiryStatus,
     refreshVersion,
     requestedOpenAssetId,
     search,
@@ -867,6 +892,8 @@ export default function AssetDiscoveryClient({
   const hasActiveDiscoveryFilter =
     type !== "all" ||
     province !== "all" ||
+    renewalTiming !== "all" ||
+    enquiryStatus !== "all" ||
     pageSize !== DISCOVERY_PAGE_SIZE;
 
   const activeDiscoveryFilterLabel = useMemo(() => {
@@ -878,12 +905,18 @@ export default function AssetDiscoveryClient({
 
     if (selectedType) labels.push(selectedType.label);
     if (selectedProvince) labels.push(selectedProvince.label);
+    if (renewalTiming !== "all") {
+      labels.push(RENEWAL_TIMING_OPTIONS.find((option) => option.value === renewalTiming)?.label ?? "Renewal date");
+    }
+    if (enquiryStatus !== "all") {
+      labels.push(RENEWAL_STATUS_OPTIONS.find((option) => option.value === enquiryStatus)?.label ?? "Status");
+    }
     if (pageSize !== DISCOVERY_PAGE_SIZE) labels.push(`${pageSize} per page`);
 
     if (!labels.length) return "Filter";
     if (labels.length === 1) return labels[0];
     return `${labels.length} filters`;
-  }, [pageSize, province, provinceOptions, type, typeOptions]);
+  }, [enquiryStatus, pageSize, province, provinceOptions, renewalTiming, type, typeOptions]);
 
   function handleSearchChange(value: string) {
     setSearchInput(value);
@@ -896,6 +929,16 @@ export default function AssetDiscoveryClient({
 
   function handleProvinceChange(value: string) {
     setProvince(value);
+    setCurrentPage(1);
+  }
+
+  function handleRenewalTimingChange(value: string) {
+    setRenewalTiming(value);
+    setCurrentPage(1);
+  }
+
+  function handleEnquiryStatusChange(value: string) {
+    setEnquiryStatus(value);
     setCurrentPage(1);
   }
 
@@ -912,6 +955,8 @@ export default function AssetDiscoveryClient({
   function resetDiscoveryFilters() {
     setType("all");
     setProvince("all");
+    setRenewalTiming("all");
+    setEnquiryStatus("all");
     setPageSize(DISCOVERY_PAGE_SIZE);
     setCurrentPage(1);
     setOpenFilter(null);
@@ -1275,7 +1320,7 @@ export default function AssetDiscoveryClient({
   }
 
   function renderEnquiryControl(asset: AssetDiscoveryAsset) {
-    const pillLabel = statusPillLabel(asset);
+    const pillLabel = statusPillLabel(asset, licensingDiscovery);
     const isProcessing = processingAssetIds.has(asset.id);
 
     if (asset.enquiryStatus === "approved" && asset.enquiryId) {
@@ -1322,7 +1367,7 @@ export default function AssetDiscoveryClient({
               ? statusClassName(asset)
               : `${workspaceStyles.actionButton} ${styles.discoveryStatusAction} ${styles.discoveryDeniedAction}`
           }
-          title={statusDescription(asset)}
+          title={statusDescription(asset, licensingDiscovery)}
         >
           {pillLabel}
         </span>
@@ -1346,6 +1391,18 @@ export default function AssetDiscoveryClient({
             ? "Offer renewal help"
             : "Request access"}
       </button>
+    );
+  }
+
+  function renderDiscoveryOutcome(asset: AssetDiscoveryAsset) {
+    if (!licensingDiscovery) return null;
+    const label = statusPillLabel(asset, true);
+    if (!label) return null;
+
+    return (
+      <span className={`${statusClassName(asset)} ${styles.discoveryPipelineStatus}`} title={statusDescription(asset, true)}>
+        {label}
+      </span>
     );
   }
 
@@ -2175,7 +2232,7 @@ export default function AssetDiscoveryClient({
             return compactAppMode ? (
               <article
                 key={asset.id}
-                className={`${workspaceStyles.card} ${mobileStyles.overviewCard} ${styles.assetCard} ${styles.dealerAssetCard} ${assetCardStatusClass(asset)} ${expandedAssetId && expandedAssetId !== asset.id ? styles.discoveryCardMuted : ""}`}
+                className={`${workspaceStyles.card} ${mobileStyles.overviewCard} ${styles.assetCard} ${styles.dealerAssetCard} ${assetCardStatusClass(asset)} ${licensingDiscovery && asset.renewalTiming === "later" ? styles.discoveryFutureCard : ""} ${expandedAssetId && expandedAssetId !== asset.id ? styles.discoveryCardMuted : ""}`}
               >
                 <div className={`${styles.assetCardHeader} ${styles.dealerAssetCardHeader}`}>
                   <div className={styles.assetIdentity}>
@@ -2194,6 +2251,7 @@ export default function AssetDiscoveryClient({
                   </div>
 
                   <div className={styles.assetActionRow}>
+                    {renderDiscoveryOutcome(asset)}
                     {renderOpenControl(asset)}
                   </div>
                 </div>
@@ -2202,7 +2260,7 @@ export default function AssetDiscoveryClient({
             ) : (
               <article
                 key={asset.id}
-                className={`${workspaceStyles.card} ${leadStyles.leadThread} ${leadParityAssetCardStatusClass(asset)} ${expandedAssetId === asset.id ? leadStyles.leadThreadOpen : ""} ${expandedAssetId && expandedAssetId !== asset.id ? styles.discoveryCardMuted : ""} ${
+                className={`${workspaceStyles.card} ${leadStyles.leadThread} ${leadParityAssetCardStatusClass(asset)} ${licensingDiscovery && asset.renewalTiming === "later" ? styles.discoveryFutureCard : ""} ${expandedAssetId === asset.id ? leadStyles.leadThreadOpen : ""} ${expandedAssetId && expandedAssetId !== asset.id ? styles.discoveryCardMuted : ""} ${
                   asset.enquiryStatus === "temporarily_denied" &&
                   !temporaryDenialExpired(asset)
                     ? styles.discoveryAssetCardDenied
@@ -2219,10 +2277,14 @@ export default function AssetDiscoveryClient({
                       <span className={leadStyles.clientKicker}>
                         {[cleanText(asset.type) || "Asset", cleanText(asset.province) || "Location not saved"].join(" · ")}
                       </span>
+                      {licensingDiscovery && asset.renewalTiming === "later" ? (
+                        <span className={styles.discoveryFutureNote}>More than 6 months away</span>
+                      ) : null}
                     </div>
 
                     <div className={leadStyles.clientDecisionArea}>
                       <div className={leadStyles.clientActionRow}>
+                        {renderDiscoveryOutcome(asset)}
                         {renderOpenControl(asset)}
                       </div>
                     </div>
@@ -2262,11 +2324,13 @@ export default function AssetDiscoveryClient({
             aria-modal="true"
             aria-labelledby="discovery-filter-title"
           >
-            <div className={`${assetStyles.modalHeader} ${workspaceStyles.modalHeader}`}>
+            <div className={`${assetStyles.modalHeader} ${workspaceStyles.modalHeader} ${leadStyles.leadFilterHeader}`}>
               <div className={assetStyles.modalHeaderText}>
-                <h3 id="discovery-filter-title">Choose which assets to show.</h3>
+                <h3 id="discovery-filter-title">Choose which assets to show</h3>
                 <p className={leadStyles.leadFilterIntro}>
-                  Filter Asset Discovery by equipment type, owner province and page size.
+                  {licensingDiscovery
+                    ? "Filter renewals by asset, location, timing or opportunity status."
+                    : "Filter Discovery by equipment type, owner province or page size."}
                 </p>
               </div>
 
@@ -2301,15 +2365,41 @@ export default function AssetDiscoveryClient({
                 onChange={handleProvinceChange}
               />
 
-              <DiscoveryFilterDropdown
-                label="Assets per page"
-                filterKey="pageSize"
-                value={String(pageSize)}
-                options={pageSizeFilterOptions}
-                openFilter={openFilter}
-                onOpenChange={setOpenFilter}
-                onChange={handlePageSizeChange}
-              />
+              {licensingDiscovery ? (
+                <>
+                  <DiscoveryFilterDropdown
+                    label="Renewal timing"
+                    filterKey="renewalTiming"
+                    value={renewalTiming}
+                    options={RENEWAL_TIMING_OPTIONS}
+                    openFilter={openFilter}
+                    onOpenChange={setOpenFilter}
+                    onChange={handleRenewalTimingChange}
+                  />
+
+                  <DiscoveryFilterDropdown
+                    label="Opportunity status"
+                    filterKey="status"
+                    value={enquiryStatus}
+                    options={RENEWAL_STATUS_OPTIONS}
+                    openFilter={openFilter}
+                    onOpenChange={setOpenFilter}
+                    onChange={handleEnquiryStatusChange}
+                  />
+                </>
+              ) : null}
+
+              <div className={styles.discoveryFilterWideField}>
+                <DiscoveryFilterDropdown
+                  label="Assets per page"
+                  filterKey="pageSize"
+                  value={String(pageSize)}
+                  options={pageSizeFilterOptions}
+                  openFilter={openFilter}
+                  onOpenChange={setOpenFilter}
+                  onChange={handlePageSizeChange}
+                />
+              </div>
             </div>
 
             <div className={`${assetStyles.formActions} ${workspaceStyles.modalFooter} ${leadStyles.leadFilterActions}`}>
