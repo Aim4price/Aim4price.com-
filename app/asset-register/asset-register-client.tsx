@@ -6010,7 +6010,7 @@ function escapeHtml(value: string): string {
 }
 
 
-function buildQuotePartnerPopupHtml(partner: PartnerDirectoryEntry): string {
+function buildQuotePartnerPopupHtml(partner: PartnerDirectoryEntry, isSelected = false): string {
   const name = escapeHtml(quotePartnerName(partner));
   const location = escapeHtml(quotePartnerLocation(partner));
   const radius = escapeHtml(quotePartnerRadiusDisplay(partner));
@@ -6029,7 +6029,7 @@ function buildQuotePartnerPopupHtml(partner: PartnerDirectoryEntry): string {
         <strong>${name}</strong>
       </div>
       <div class="assetQuotePopupDetails assetQuotePopupSimpleDetails">${details}</div>
-      <button type="button" data-quote-partner-id="${escapeHtml(partner.userId)}" class="assetQuotePopupChooseButton">Choose this business</button>
+      <button type="button" data-quote-partner-id="${escapeHtml(partner.userId)}" class="assetQuotePopupChooseButton">${isSelected ? 'Remove selection' : 'Select this business'}</button>
     </div>
   `;
 }
@@ -6139,7 +6139,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
   const [quoteScope, setQuoteScope] = useState<QuoteScope>('asset');
   const [selectedQuoteLeadType, setSelectedQuoteLeadType] = useState<AssetLeadType | null>(null);
   const [quotePartners, setQuotePartners] = useState<PartnerDirectoryEntry[]>([]);
-  const [selectedQuotePartnerId, setSelectedQuotePartnerId] = useState('');
+  const [selectedQuotePartnerIds, setSelectedQuotePartnerIds] = useState<string[]>([]);
   const [quotePartnerSearch, setQuotePartnerSearch] = useState('');
   const [quoteOwnerMessage, setQuoteOwnerMessage] = useState('');
   const [quoteLeadStep, setQuoteLeadStep] = useState<QuoteLeadStep>(null);
@@ -7168,10 +7168,11 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     ),
     [quoteAsset?.kind],
   );
-  const selectedQuotePartner = useMemo(
-    () => quotePartners.find((partner) => partner.userId === selectedQuotePartnerId) ?? null,
-    [quotePartners, selectedQuotePartnerId],
-  );
+  const selectedQuotePartners = useMemo(() => {
+    const selectedIds = new Set(selectedQuotePartnerIds);
+    return quotePartners.filter((partner) => selectedIds.has(partner.userId));
+  }, [quotePartners, selectedQuotePartnerIds]);
+  const selectedQuotePartner = selectedQuotePartners[0] ?? null;
   const selectedQuotePartnerWebsiteHref = selectedQuotePartner ? normalizeWebsiteHref(selectedQuotePartner.websiteUrl) : '';
   const selectedQuotePartnerEmailHref = selectedQuotePartner ? normalizeEmailHref(selectedQuotePartner.email) : '';
   const selectedQuotePartnerPhoneHref = selectedQuotePartner ? normalizePhoneHref(selectedQuotePartner.phone) : '';
@@ -8117,7 +8118,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
         quotePartnersWithCoordinates.forEach((partner) => {
           const lat = Number(partner.latitude);
           const lng = Number(partner.longitude);
-          const isActive = selectedQuotePartnerId === partner.userId;
+          const isActive = selectedQuotePartnerIds.includes(partner.userId);
           const icon = L.divIcon({
             className: `assetQuoteMapMarker ${quoteMarkerClassForPartnerType(partner.partnerType)}${isActive ? ' assetQuoteMapMarker--active' : ''}`,
             html: '<span class="assetQuoteMapMarkerPin"></span>',
@@ -8126,7 +8127,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
             popupAnchor: [0, -36],
           });
           const marker = L.marker([lat, lng], { icon, title: quotePartnerName(partner) }).addTo(quoteMarkerLayerRef.current);
-          marker.bindPopup(buildQuotePartnerPopupHtml(partner), {
+          marker.bindPopup(buildQuotePartnerPopupHtml(partner, isActive), {
             className: 'assetQuotePartnerPopup',
             minWidth: 320,
             maxWidth: 430,
@@ -8142,7 +8143,9 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
           quoteLeafletMapRef.current.fitBounds(bounds.pad(0.18), { maxZoom: 12 });
         }
 
-        const selectedMarker = selectedQuotePartnerId ? quoteMarkersByPartnerRef.current.get(selectedQuotePartnerId) : null;
+        const selectedMarker = selectedQuotePartnerIds.length === 1
+          ? quoteMarkersByPartnerRef.current.get(selectedQuotePartnerIds[0])
+          : null;
         if (selectedMarker) {
           window.setTimeout(() => {
             if (!cancelled) {
@@ -8170,7 +8173,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     return () => {
       cancelled = true;
     };
-  }, [isQuoteModalOpen, selectedQuoteOption, quotePartnersWithCoordinates, selectedQuotePartnerId]);
+  }, [isQuoteModalOpen, selectedQuoteOption, quotePartnersWithCoordinates, selectedQuotePartnerIds]);
 
   useEffect(() => {
     if (!isQuoteModalOpen || !selectedQuoteOption) return undefined;
@@ -8188,7 +8191,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
 
       event.preventDefault();
       event.stopPropagation();
-      openQuoteLeadMessage(partner);
+      toggleQuotePartnerSelection(partner);
     };
 
     document.addEventListener('click', handleQuotePopupSelect, true);
@@ -10328,7 +10331,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     setQuoteScope(nextScope);
     setSelectedQuoteLeadType(null);
     setQuotePartners([]);
-    setSelectedQuotePartnerId('');
+    setSelectedQuotePartnerIds([]);
     setQuotePartnerSearch('');
     setQuoteLeadStep(null);
     setQuoteConsentAccepted(false);
@@ -10374,7 +10377,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
 
     if (!option) {
       setQuotePartners([]);
-      setSelectedQuotePartnerId('');
+      setSelectedQuotePartnerIds([]);
       return;
     }
 
@@ -10392,11 +10395,17 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
         throw new Error(extractApiError(payload, 'Failed to load partner directory.'));
       }
 
-      setQuotePartners(data.partners);
-      setSelectedQuotePartnerId((current) => (data.partners?.some((partner) => partner.userId === current) ? current : ''));
+      const loadedPartners = data.partners;
+      setQuotePartners((current) => {
+        const preservedSelections = current.filter((partner) => selectedQuotePartnerIds.includes(partner.userId));
+        const nextPartners = new Map(
+          [...preservedSelections, ...loadedPartners].map((partner) => [partner.userId, partner]),
+        );
+        return Array.from(nextPartners.values());
+      });
     } catch (error) {
       setQuotePartners([]);
-      setSelectedQuotePartnerId('');
+      setSelectedQuotePartnerIds([]);
       setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'Failed to load partner directory.' });
     } finally {
       setIsLoadingQuotePartners(false);
@@ -10420,7 +10429,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     }
 
     setSelectedQuoteLeadType(leadType);
-    setSelectedQuotePartnerId('');
+    setSelectedQuotePartnerIds([]);
     setQuotePartnerSearch('');
     setQuoteOwnerMessage('');
     setQuoteLeadStep(null);
@@ -10444,7 +10453,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
 
     setSelectedQuoteLeadType(null);
     setQuotePartners([]);
-    setSelectedQuotePartnerId('');
+    setSelectedQuotePartnerIds([]);
     setQuotePartnerSearch('');
     setQuoteLeadStep(null);
     setQuoteConsentAccepted(false);
@@ -10461,8 +10470,6 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
   }
 
   function focusQuotePartnerOnMap(partner: PartnerDirectoryEntry) {
-    setSelectedQuotePartnerId(partner.userId);
-
     const marker = quoteMarkersByPartnerRef.current.get(partner.userId);
     const map = quoteLeafletMapRef.current;
 
@@ -10483,8 +10490,21 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     }, 120);
   }
 
-  function openQuoteLeadMessage(partner: PartnerDirectoryEntry) {
-    setSelectedQuotePartnerId(partner.userId);
+  function toggleQuotePartnerSelection(partner: PartnerDirectoryEntry) {
+    setSelectedQuotePartnerIds((current) => (
+      current.includes(partner.userId)
+        ? current.filter((partnerId) => partnerId !== partner.userId)
+        : [...current, partner.userId]
+    ));
+    setQuoteConsentAccepted(false);
+  }
+
+  function openQuoteLeadMessage() {
+    if (!selectedQuotePartners.length) {
+      setNotice({ tone: 'error', message: 'Select at least one company first.' });
+      return;
+    }
+
     setQuoteConsentAccepted(false);
     setQuoteLeadStep('message');
   }
@@ -10519,8 +10539,8 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
   }
 
   function goToQuoteLeadConsent() {
-    if (!selectedQuotePartner || !selectedQuoteOption) {
-      setNotice({ tone: 'error', message: 'Choose a company first.' });
+    if (!selectedQuotePartners.length || !selectedQuoteOption) {
+      setNotice({ tone: 'error', message: 'Select at least one company first.' });
       return;
     }
 
@@ -10551,8 +10571,8 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
       return;
     }
 
-    if (!selectedQuotePartner) {
-      setNotice({ tone: 'error', message: `Choose a ${formatQuotePartnerType(selectedQuoteOption.partnerType).toLowerCase()} company first.` });
+    if (!selectedQuotePartners.length) {
+      setNotice({ tone: 'error', message: `Select at least one ${formatQuotePartnerType(selectedQuoteOption.partnerType).toLowerCase()} company first.` });
       return;
     }
 
@@ -10564,6 +10584,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     setIsSendingQuoteLead(true);
 
     try {
+      const selectedPartners = [...selectedQuotePartners];
       const profile = isFullRegisterQuoteLead ? reportProfile ?? (await ensureAccountProfile()) : null;
       const includedSections = isFullRegisterQuoteLead
         ? selectedQuoteOption.leadType === 'license_renewal'
@@ -10587,29 +10608,41 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
             source: 'asset_register_options',
           };
 
-      const response = await fetch('/api/asset-leads', {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          assetId: leadAssetId,
-          partnerUserId: selectedQuotePartner.userId,
-          leadType: selectedQuoteOption.leadType,
-          ownerMessage: quoteOwnerMessage,
-          includedSections,
-          trackMaintenance: selectedQuoteOption.leadType === 'replacement_quote' && quoteTrackMaintenance,
-          trackingPermissions: selectedQuoteOption.leadType === 'replacement_quote' && quoteTrackMaintenance
-            ? quoteTrackingPermissions
-            : undefined,
-          assetIds: isSelectedRegisterAssetShare ? selectedDealerShareAssetIds : undefined,
-        }),
-      });
+      const successfulPartnerIds: string[] = [];
 
-      const payload = await response.json().catch(() => null);
-      const data = payload as AssetLeadApiResponse | null;
+      for (const partner of selectedPartners) {
+        const response = await fetch('/api/asset-leads', {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            assetId: leadAssetId,
+            partnerUserId: partner.userId,
+            leadType: selectedQuoteOption.leadType,
+            ownerMessage: quoteOwnerMessage,
+            includedSections,
+            trackMaintenance: selectedQuoteOption.leadType === 'replacement_quote' && quoteTrackMaintenance,
+            trackingPermissions: selectedQuoteOption.leadType === 'replacement_quote' && quoteTrackMaintenance
+              ? quoteTrackingPermissions
+              : undefined,
+            assetIds: isSelectedRegisterAssetShare ? selectedDealerShareAssetIds : undefined,
+          }),
+        });
 
-      if (!response.ok || !data?.ok) {
-        throw new Error(extractApiError(payload, 'Failed to send asset lead.'));
+        const payload = await response.json().catch(() => null);
+        const data = payload as AssetLeadApiResponse | null;
+
+        if (!response.ok || !data?.ok) {
+          if (successfulPartnerIds.length) {
+            setSelectedQuotePartnerIds((current) => current.filter((partnerId) => !successfulPartnerIds.includes(partnerId)));
+          }
+          const sentPrefix = successfulPartnerIds.length
+            ? `${successfulPartnerIds.length} ${successfulPartnerIds.length === 1 ? 'request was' : 'requests were'} sent. `
+            : '';
+          throw new Error(`${sentPrefix}${quotePartnerName(partner)}: ${extractApiError(payload, 'Failed to send request.')}`);
+        }
+
+        successfulPartnerIds.push(partner.userId);
       }
 
       const fullRegisterQuoteLabel = selectedQuoteOption.leadType === 'insurance'
@@ -10623,10 +10656,10 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
       setNotice({
         tone: 'success',
         message: isSelectedRegisterAssetShare
-          ? `${activeShareName} shared with ${quotePartnerName(selectedQuotePartner)} · ${selectedDealerShareAssetIds.length} ${selectedDealerShareAssetIds.length === 1 ? 'asset' : 'assets'}.`
+          ? `${activeShareName} shared with ${selectedPartners.length === 1 ? quotePartnerName(selectedPartners[0]) : `${selectedPartners.length} selected companies`} · ${selectedDealerShareAssetIds.length} ${selectedDealerShareAssetIds.length === 1 ? 'asset' : 'assets'}.`
           : isFullRegisterQuoteLead
-          ? `${activeShareName} ${fullRegisterQuoteLabel} sent to ${quotePartnerName(selectedQuotePartner)}.`
-          : `${selectedQuoteOption.shortTitle.toLowerCase()} request sent to ${quotePartnerName(selectedQuotePartner)}.`,
+          ? `${activeShareName} ${fullRegisterQuoteLabel} sent to ${selectedPartners.length === 1 ? quotePartnerName(selectedPartners[0]) : `${selectedPartners.length} selected companies`}.`
+          : `${selectedQuoteOption.shortTitle.toLowerCase()} request sent to ${selectedPartners.length === 1 ? quotePartnerName(selectedPartners[0]) : `${selectedPartners.length} selected companies`}.`,
       });
       closeAssetQuoteModal();
     } catch (error) {
@@ -13251,10 +13284,10 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
       pdfReport: true,
       registerId: activeRegister?.id || activeRegisterId || null,
       groupId: assetGroupShareTarget?.id ?? null,
-      liveAccess: !isAssetGroupShare && leadType === 'finance' && selectedQuotePartner?.accountSubtype === 'accountant',
-      allowDirectUpdates: !isAssetGroupShare && leadType === 'finance' && selectedQuotePartner?.accountSubtype === 'accountant' && quoteAllowDirectUpdates,
-      includeFuelLedger: !isAssetGroupShare && leadType === 'finance' && selectedQuotePartner?.accountSubtype === 'accountant' && quoteIncludeFuelLedger,
-      includeCostLedger: !isAssetGroupShare && leadType === 'finance' && selectedQuotePartner?.accountSubtype === 'accountant' && quoteIncludeCostLedger,
+      liveAccess: !isAssetGroupShare && leadType === 'finance' && selectedQuotePartners.length === 1 && selectedQuotePartner?.accountSubtype === 'accountant',
+      allowDirectUpdates: !isAssetGroupShare && leadType === 'finance' && selectedQuotePartners.length === 1 && selectedQuotePartner?.accountSubtype === 'accountant' && quoteAllowDirectUpdates,
+      includeFuelLedger: !isAssetGroupShare && leadType === 'finance' && selectedQuotePartners.length === 1 && selectedQuotePartner?.accountSubtype === 'accountant' && quoteIncludeFuelLedger,
+      includeCostLedger: !isAssetGroupShare && leadType === 'finance' && selectedQuotePartners.length === 1 && selectedQuotePartner?.accountSubtype === 'accountant' && quoteIncludeCostLedger,
       registerSnapshot: {
         snapshotType: isAssetGroupShare ? 'asset_group' : 'full_asset_register',
         groupId: assetGroupShareTarget?.id ?? null,
@@ -13317,7 +13350,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     resetAssetQuoteState('register');
     setQuoteAsset(anchorAsset);
     setSelectedQuoteLeadType(leadType);
-    setSelectedQuotePartnerId('');
+    setSelectedQuotePartnerIds([]);
     setQuotePartnerSearch('');
     setQuoteOwnerMessage('');
     setQuoteLeadStep(null);
@@ -18383,31 +18416,50 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                         {isLoadingQuotePartners ? (
                           <p className={styles.assetQuoteEmptyState}>Loading companies...</p>
                         ) : quotePartners.length ? (
-                          quotePartners.map((partner) => (
-                            <button
-                              key={partner.userId}
-                              type="button"
-                              className={`${styles.assetQuotePartnerCard} ${quoteToneClassForPartnerType(partner.partnerType)} ${selectedQuotePartnerId === partner.userId ? styles.assetQuotePartnerCardActive : ''}`}
-                              onClick={() => openQuoteLeadMessage(partner)}
-                              aria-label={`Choose ${quotePartnerName(partner)}`}
-                            >
-                              <span className={styles.assetQuotePartnerBody}>
-                                <span className={styles.assetQuotePartnerHeader}>
-                                  <strong>{quotePartnerName(partner)}</strong>
-                                  <span className={styles.assetQuotePartnerChoose}>Choose</span>
+                          quotePartners.map((partner) => {
+                            const isSelected = selectedQuotePartnerIds.includes(partner.userId);
+                            return (
+                              <button
+                                key={partner.userId}
+                                type="button"
+                                className={`${styles.assetQuotePartnerCard} ${quoteToneClassForPartnerType(partner.partnerType)} ${isSelected ? styles.assetQuotePartnerCardActive : ''}`}
+                                onClick={() => toggleQuotePartnerSelection(partner)}
+                                aria-label={`${isSelected ? 'Remove' : 'Select'} ${quotePartnerName(partner)}`}
+                                aria-pressed={isSelected}
+                              >
+                                <span className={styles.assetQuotePartnerBody}>
+                                  <span className={styles.assetQuotePartnerHeader}>
+                                    <strong>{quotePartnerName(partner)}</strong>
+                                  </span>
+                                  <span className={styles.assetQuotePartnerMeta}>
+                                    <span>{quotePartnerLocation(partner)}</span>
+                                    <span>{quotePartnerServicesDisplay(partner)}</span>
+                                    <span>{quotePartnerRadiusDisplay(partner)}</span>
+                                  </span>
+                                  {partner.brandFocus ? <span className={styles.assetQuotePartnerCopy}>Brands: {partner.brandFocus}</span> : null}
                                 </span>
-                                <span className={styles.assetQuotePartnerMeta}>
-                                  <span>{quotePartnerLocation(partner)}</span>
-                                  <span>{quotePartnerServicesDisplay(partner)}</span>
-                                  <span>{quotePartnerRadiusDisplay(partner)}</span>
-                                </span>
-                                {partner.brandFocus ? <span className={styles.assetQuotePartnerCopy}>Brands: {partner.brandFocus}</span> : null}
-                              </span>
-                            </button>
-                          ))
+                              </button>
+                            );
+                          })
                         ) : (
                           <p className={styles.assetQuoteEmptyState}>{selectedQuoteOption.emptyPartnerText}</p>
                         )}
+                      </div>
+
+                      <div className={styles.assetQuoteSidebarFooter}>
+                        <span>
+                          {selectedQuotePartners.length
+                            ? `${selectedQuotePartners.length} selected`
+                            : 'Select one or more'}
+                        </span>
+                        <button
+                          type="button"
+                          className={styles.primaryButton}
+                          onClick={openQuoteLeadMessage}
+                          disabled={!selectedQuotePartners.length || isSendingQuoteLead}
+                        >
+                          {selectedQuotePartners.length ? `Continue with ${selectedQuotePartners.length}` : 'Continue'}
+                        </button>
                       </div>
                     </aside>
 
@@ -18436,7 +18488,9 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                       <section className={`${styles.assetQuoteStepModal} ${quoteLeadStep === 'message' ? styles.assetQuoteMessageStepModal : ''}`} aria-live="polite">
                         <div className={styles.assetQuoteStepHeader}>
                           <div>
-                            <h4>{quoteLeadStep === 'message' ? 'Message to selected company' : 'Confirm and send request'}</h4>
+                            <h4>{quoteLeadStep === 'message'
+                              ? `Message to selected ${selectedQuotePartners.length === 1 ? 'company' : 'companies'}`
+                              : 'Confirm and send request'}</h4>
                           </div>
                           <button
                             type="button"
@@ -18451,6 +18505,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
 
                         {quoteLeadStep === 'message' ? (
                           <div className={`${styles.assetQuoteStepBody} ${styles.assetQuoteMessageStepBody}`}>
+                            {selectedQuotePartners.length === 1 ? (
                             <aside className={styles.assetQuoteSelectedCompanyPanel} aria-label="Selected company details">
                               <div className={styles.assetQuoteSelectedMediaGrid}>
                                 <span className={`${styles.assetQuoteSelectedMediaTile} ${styles.assetQuoteSelectedLogoTile}`}>
@@ -18512,21 +18567,43 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                                 </div>
                               </div>
                             </aside>
+                            ) : (
+                              <aside className={styles.assetQuoteSelectedPartnersPanel} aria-label="Selected companies">
+                                <div className={styles.assetQuoteSelectedPartnersHeading}>
+                                  <span className={styles.assetQuoteSelectedPartnersCount}>{selectedQuotePartners.length}</span>
+                                  <span>
+                                    <strong>Companies selected</strong>
+                                    <small>Each receives a separate request.</small>
+                                  </span>
+                                </div>
+                                <div className={styles.assetQuoteSelectedPartnersList}>
+                                  {selectedQuotePartners.map((partner) => (
+                                    <div key={partner.userId} className={styles.assetQuoteSelectedPartnerSummary}>
+                                      <span>{quotePartnerInitial(partner)}</span>
+                                      <span>
+                                        <strong>{quotePartnerName(partner)}</strong>
+                                        <small>{quotePartnerLocation(partner)}</small>
+                                      </span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </aside>
+                            )}
 
                             <div className={styles.assetQuoteMessagePanel}>
                               <p className={styles.assetQuoteStepNotice}>
                                 {isFullRegisterQuoteLead
                                   ? isAssetGroupShare
                                     ? `This sends one organised snapshot containing only ${activeShareName} and its linked assets.`
-                                    : selectedQuoteOption.leadType === 'finance' && selectedQuotePartner?.accountSubtype === 'accountant'
+                                    : selectedQuotePartners.length === 1 && selectedQuoteOption.leadType === 'finance' && selectedQuotePartner?.accountSubtype === 'accountant'
                                     ? 'This grants the selected accountant live access to the latest authorised information in this Asset Register.'
                                     : selectedQuoteOption.leadType === 'replacement_quote' || selectedQuoteOption.leadType === 'license_renewal'
-                                      ? `Choose the assets this ${formatQuotePartnerType(selectedQuoteOption.partnerType).toLowerCase()} can work with.`
+                                      ? `Choose the assets ${selectedQuotePartners.length === 1 ? 'this company' : 'these companies'} can work with.`
                                       : 'This sends a once-off full Asset Register snapshot. It does not grant live register access.'
                                   : 'This sends one asset only. It does not share the full register.'}
                               </p>
 
-                              {isFullRegisterQuoteLead && !isAssetGroupShare && selectedQuoteOption.leadType === 'finance' && selectedQuotePartner?.accountSubtype === 'accountant' ? (
+                              {isFullRegisterQuoteLead && !isAssetGroupShare && selectedQuotePartners.length === 1 && selectedQuoteOption.leadType === 'finance' && selectedQuotePartner?.accountSubtype === 'accountant' ? (
                                 <div className={styles.assetLifecycleFields}>
                                   <button type="button" className={`${styles.assetQuoteConsentCheck} ${styles.assetQuoteTrackingChoice}`} onClick={() => setQuoteAllowDirectUpdates((current) => !current)} aria-pressed={quoteAllowDirectUpdates}>
                                     <span className={`${styles.assetQuoteTrackingCheckbox} ${quoteAllowDirectUpdates ? styles.assetQuoteTrackingCheckboxActive : ''}`} aria-hidden="true">{quoteAllowDirectUpdates ? '✓' : ''}</span>
@@ -18580,7 +18657,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
 
                               <label className={styles.assetQuoteMessageField}>
                                 <span>
-                                  Message to company
+                                  Message to selected {selectedQuotePartners.length === 1 ? 'company' : 'companies'}
                                   <small>Optional</small>
                                 </span>
                                 <textarea
@@ -18629,26 +18706,26 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                               <p>
                                 {isFullRegisterQuoteLead
                                   ? isAssetGroupShare
-                                    ? `By sending this request, you allow Aim4price to share ${activeShareName}, its linked asset information and your saved business contact details with the chosen company.`
-                                    : selectedQuoteOption.leadType === 'finance' && selectedQuotePartner?.accountSubtype === 'accountant'
+                                    ? `By sending this request, you allow Aim4price to share ${activeShareName}, its linked asset information and your saved business contact details with the selected ${selectedQuotePartners.length === 1 ? 'company' : 'companies'}.`
+                                    : selectedQuotePartners.length === 1 && selectedQuoteOption.leadType === 'finance' && selectedQuotePartner?.accountSubtype === 'accountant'
                                     ? `By sending this request, you allow Aim4price to share live Asset Register information and your saved business contact details with the chosen accountant.${quoteAllowDirectUpdates ? ' You also allow the accountant to save the selected direct updates, with audit history.' : ' The workspace will remain read-only.'}`
                                     : selectedQuoteOption.leadType === 'replacement_quote'
-                                      ? 'By continuing, you allow Aim4price to share the selected assets and your saved business contact details with this dealer. Ongoing access uses the permissions shown and can be revoked.'
-                                      : 'By sending this request, you allow Aim4price to share a once-off full Asset Register snapshot, saved valuation details and your saved business contact details with the chosen company.'
-                                  : 'By sending this request, you allow Aim4price to share this selected asset, its saved valuation details and your saved business contact details with the chosen company.'}
+                                      ? `By continuing, you allow Aim4price to share the selected assets and your saved business contact details with the selected ${selectedQuotePartners.length === 1 ? 'dealer' : 'dealers'}. Ongoing access uses the permissions shown and can be revoked.`
+                                      : `By sending this request, you allow Aim4price to share a once-off full Asset Register snapshot, saved valuation details and your saved business contact details with the selected ${selectedQuotePartners.length === 1 ? 'company' : 'companies'}.`
+                                  : `By sending this request, you allow Aim4price to share this selected asset, its saved valuation details and your saved business contact details with the selected ${selectedQuotePartners.length === 1 ? 'company' : 'companies'}.`}
                                 {' '}This is only a lead request and does not create a finance, insurance, valuation or sales agreement.
                               </p>
                               <p>
                                 {isFullRegisterQuoteLead
                                   ? isAssetGroupShare
-                                    ? 'You confirm that you may share every linked asset in this umbrella and understand that the selected company may contact you outside Aim4price.'
+                                    ? `You confirm that you may share every linked asset in this umbrella and understand that the selected ${selectedQuotePartners.length === 1 ? 'company may' : 'companies may'} contact you outside Aim4price.`
                                     : selectedQuoteOption.leadType === 'replacement_quote'
-                                    ? 'You confirm that you may share the selected asset information and understand that the dealer may contact you outside Aim4price.'
-                                    : 'You confirm that you have permission to share the complete register information and understand that the selected company may contact you outside Aim4price.'
-                                  : 'You confirm that you have permission to share this asset information and understand that the selected company may contact you outside Aim4price.'}
+                                    ? `You confirm that you may share the selected asset information and understand that the selected ${selectedQuotePartners.length === 1 ? 'dealer may' : 'dealers may'} contact you outside Aim4price.`
+                                    : `You confirm that you have permission to share the complete register information and understand that the selected ${selectedQuotePartners.length === 1 ? 'company may' : 'companies may'} contact you outside Aim4price.`
+                                  : `You confirm that you have permission to share this asset information and understand that the selected ${selectedQuotePartners.length === 1 ? 'company may' : 'companies may'} contact you outside Aim4price.`}
                               </p>
                               {selectedQuoteOption.leadType === 'replacement_quote' && quoteTrackMaintenance ? (
-                                <p>The selected dealer will receive ongoing Maintenance Tracker access with the permissions you selected. Proposed schedules and asset changes still require your approval.</p>
+                                <p>The selected {selectedQuotePartners.length === 1 ? 'dealer will' : 'dealers will'} receive ongoing Maintenance Tracker access with the permissions you selected. Proposed schedules and asset changes still require your approval.</p>
                               ) : null}
                             </div>
 
@@ -18684,7 +18761,11 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                                 onClick={() => void handleSendAssetQuoteLead()}
                                 disabled={isSendingQuoteLead || !quoteConsentAccepted}
                               >
-                                {isSendingQuoteLead ? 'Sending...' : `Send to ${quotePartnerName(selectedQuotePartner)}`}
+                                {isSendingQuoteLead
+                                  ? 'Sending...'
+                                  : selectedQuotePartners.length === 1
+                                    ? `Send to ${quotePartnerName(selectedQuotePartners[0])}`
+                                    : `Send to ${selectedQuotePartners.length} companies`}
                               </button>
                             </>
                           )}
