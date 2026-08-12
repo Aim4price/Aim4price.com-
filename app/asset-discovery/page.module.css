@@ -684,7 +684,7 @@
 .discoveryLeadAssetCard .discoveryStatusAction,
 .discoveryLeadAssetCard .enquireButton,
 .discoveryLeadAssetCard .statusPill {
-  min-width: clamp(140px, 10.5vw, 166px) !important;
+  min-width: clamp(190px, 12vw, 216px) !important;
   min-height: 3.06rem !important;
   border-radius: 14px !important;
   font-weight: 800 !important;
