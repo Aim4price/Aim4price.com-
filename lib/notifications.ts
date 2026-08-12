@@ -714,7 +714,7 @@ async function listRequesterAssetDiscoveryNotifications(userId: string): Promise
           : approved ? 'Asset enquiry approved' : 'Asset unavailable for 90 days',
         body: licensingOffer
           ? approved
-            ? `The owner approved renewal help for ${assetName}. It is now in My Leads.`
+            ? `The owner approved renewal help for ${assetName}. It is marked Won in Discovery.`
             : `The owner declined renewal help for ${assetName}. You cannot offer again for this asset.`
           : approved
             ? `Your enquiry for ${assetName} was approved.`

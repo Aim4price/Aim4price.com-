@@ -165,29 +165,26 @@ test('an approved Discovery offer creates a renewal lead with photos and licence
   assert.doesNotMatch(leadsClient, /className=\{styles\.licenceLeadThumbnail\}/);
   assert.match(leadsClient, /licenceRenewalMeta/);
   assert.match(leadsStyles, /Licence renewal lead cards/);
-  assert.match(leadsStyles, /licenceOutcomeWon/);
+  assert.doesNotMatch(leadsClient, /licenceOutcomeWon/);
   assert.match(notifications, /Licence renewal help offered/);
-  assert.match(notifications, /It is now in My Leads/);
+  assert.match(notifications, /marked Won in Discovery/);
   assert.match(header, /Renewal help offer/);
   assert.match(header, /Accept help/);
-  assert.match(header, /expert&apos;s My Leads/);
+  assert.match(header, /marked Won in the expert&apos;s Discovery/);
   assert.match(headerStyles, /notificationRenewalDetailModal/);
   assert.match(headerStyles, /notificationRenewalDateCard/);
 });
 
-test('licensing My Leads records pending, won and denied renewal outcomes safely', () => {
-  assert.match(discovery, /listLicensingAssetDiscoveryLeadOpportunities/);
-  assert.match(discovery, /enquiry\.status in \('pending', 'temporarily_denied'\)/);
-  assert.match(licensingWorkspaceLeads, /renewalOutcome: outcome/);
-  assert.match(licensingWorkspaceLeads, /opportunityOnly: true/);
-  assert.match(licensingWorkspaceLeads, /status: outcome === 'denied' \? 'declined' : 'sent'/);
-  assert.doesNotMatch(licensingWorkspaceLeads, /photo|document|ownerContactPhone: [^']|ownerContactEmail: [^']/i);
-  assert.match(leadsClient, /LICENSING_STATUS_FILTER_OPTIONS/);
-  assert.match(leadsClient, /label: 'Pending'/);
-  assert.match(leadsClient, /label: 'Won'/);
-  assert.match(leadsClient, /label: 'Denied'/);
-  assert.match(leadsClient, /renewalLeadOutcome\(lead\) !== statusFilter/);
-  assert.match(leadsClient, /isRenewalOpportunityOnly\(leadToOpen\)/);
+test('licensing My Leads contains direct work while Discovery owns opportunity outcomes', () => {
+  assert.match(licensingWorkspaceLeads, /lead\.leadType === 'license_renewal'/);
+  assert.match(licensingWorkspaceLeads, /!== 'asset_discovery'/);
+  assert.doesNotMatch(licensingWorkspaceLeads, /renewalOutcome|opportunityOnly/);
+  assert.doesNotMatch(leadsClient, /LICENSING_STATUS_FILTER_OPTIONS|renewalLeadOutcome/);
+  assert.match(leadsClient, /STATUS_FILTER_OPTIONS/);
+  assert.match(discoveryClient, /label: "Pending"/);
+  assert.match(discoveryClient, /label: "Won"/);
+  assert.match(discoveryClient, /label: "Denied"/);
+  assert.match(discoveryClient, /renderDiscoveryOutcome/);
 });
 
 test('licensing Manage removes reports and uses dedicated spacing', () => {
