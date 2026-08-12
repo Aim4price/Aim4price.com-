@@ -1762,24 +1762,26 @@ export default function AppHeader({
       : enquiry.requesterAccountType === 'licensing'
         ? 'licence renewal expert'
         : 'dealer';
+    const isLicensingEnquiry = enquiry.requesterAccountType === 'licensing';
 
     return (
       <section
-        className={`${styles.notificationDetailModal} ${styles.notificationDiscoveryDetailModal}`}
+        className={`${styles.notificationDetailModal} ${styles.notificationDiscoveryDetailModal} ${isLicensingEnquiry ? styles.notificationRenewalDetailModal : ''}`}
         role="dialog"
         aria-modal="true"
         aria-labelledby="notification-asset-discovery-title"
       >
         <div className={styles.notificationDetailHeader}>
           <div className={styles.notificationDetailHeaderText}>
-            <h2 id="notification-asset-discovery-title">Discovery enquiry</h2>
+            {isLicensingEnquiry ? <span className={styles.notificationRenewalEyebrow}>Licence renewal</span> : null}
+            <h2 id="notification-asset-discovery-title">{isLicensingEnquiry ? 'Renewal help offer' : 'Discovery enquiry'}</h2>
             <p>{isPending
-              ? enquiry.requesterAccountType === 'licensing'
-                ? 'A licence renewal expert has offered to help with this upcoming renewal. Approve access?'
+              ? isLicensingEnquiry
+                ? 'An expert offered to manage this renewal. Review the asset, then accept or decline.'
                 : `${requesterLabel === 'owner' ? 'An' : 'A'} ${requesterLabel} is looking for a machine like this. Interested in making contact?`
               : 'Asset-specific enquiry status.'}</p>
           </div>
-          <button type="button" className={styles.notificationDetailCloseButton} onClick={closeNotificationDetailModal} aria-label="Close Discovery enquiry">
+          <button type="button" className={styles.notificationDetailCloseButton} onClick={closeNotificationDetailModal} aria-label={`Close ${isLicensingEnquiry ? 'renewal help offer' : 'Discovery enquiry'}`}>
             ×
           </button>
         </div>
@@ -1787,16 +1789,16 @@ export default function AppHeader({
         <div className={styles.notificationDetailBody}>
           <div className={styles.notificationDetailMetaGrid}>
             <div className={styles.notificationDetailMetaCard}>
-              <span>Type</span>
-              <strong>{enquiry.asset.type}</strong>
+              <span>{isLicensingEnquiry ? 'Asset' : 'Type'}</span>
+              <strong>{isLicensingEnquiry ? [enquiry.asset.brand, enquiry.asset.model].filter(Boolean).join(' ') : enquiry.asset.type}</strong>
+            </div>
+            <div className={`${styles.notificationDetailMetaCard} ${isLicensingEnquiry ? styles.notificationRenewalDateCard : ''}`}>
+              <span>{isLicensingEnquiry ? 'Renewal due' : 'Brand / model'}</span>
+              <strong>{isLicensingEnquiry ? enquiry.asset.renewalWindow || 'Not saved' : [enquiry.asset.brand, enquiry.asset.model].filter(Boolean).join(' ')}</strong>
             </div>
             <div className={styles.notificationDetailMetaCard}>
-              <span>Brand / model</span>
-              <strong>{[enquiry.asset.brand, enquiry.asset.model].filter(Boolean).join(' ')}</strong>
-            </div>
-            <div className={styles.notificationDetailMetaCard}>
-              <span>Year / usage</span>
-              <strong>{enquiry.asset.year} · {enquiry.asset.usage}</strong>
+              <span>{isLicensingEnquiry ? 'Year' : 'Year / usage'}</span>
+              <strong>{isLicensingEnquiry ? enquiry.asset.year : `${enquiry.asset.year} · ${enquiry.asset.usage}`}</strong>
             </div>
             <div className={styles.notificationDetailMetaCard}>
               <span>Province</span>
@@ -1804,10 +1806,23 @@ export default function AppHeader({
             </div>
           </div>
 
+          {isPending && isLicensingEnquiry ? (
+            <div className={styles.notificationRenewalShareNote}>
+              <strong>What approval shares</strong>
+              <p>Basic asset details, renewal date, photos and licence documents. The request then appears in the expert&apos;s My Leads.</p>
+            </div>
+          ) : null}
+
           {!isPending ? (
             <div className={styles.notificationDetailStatusBox}>
               <strong>Decision saved</strong>
-              <p>{isApproved ? 'Approved. Your contact details are now visible to the interested user for three months.' : retryDate ? `Not interested right now. This asset is hidden from Discovery until ${retryDate}.` : 'Not interested right now. This asset is hidden from Discovery for 90 days.'}</p>
+              <p>{isApproved
+                ? isLicensingEnquiry
+                  ? 'Accepted. This asset is now in the licence expert’s My Leads.'
+                  : 'Approved. Your contact details are now visible to the interested user for three months.'
+                : retryDate
+                  ? `Not interested right now. This asset is hidden from Discovery until ${retryDate}.`
+                  : 'Not interested right now. This asset is hidden from Discovery for 90 days.'}</p>
             </div>
           ) : null}
 
@@ -1848,7 +1863,7 @@ export default function AppHeader({
               onClick={() => handleAssetDiscoveryDecision(enquiry.id, 'denied')}
               disabled={isProcessing}
             >
-              {isProcessing ? 'Saving...' : 'No'}
+              {isProcessing ? 'Saving...' : isLicensingEnquiry ? 'Decline' : 'No'}
             </button>
             <button
               type="button"
@@ -1856,7 +1871,7 @@ export default function AppHeader({
               onClick={() => handleAssetDiscoveryDecision(enquiry.id, 'approved')}
               disabled={isProcessing}
             >
-              {isProcessing ? 'Saving...' : 'Yes'}
+              {isProcessing ? 'Saving...' : isLicensingEnquiry ? 'Accept help' : 'Yes'}
             </button>
           </div>
         ) : (
