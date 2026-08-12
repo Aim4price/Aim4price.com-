@@ -989,7 +989,16 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
   }
 
   if (view === 'options') {
-    return <OwnerAssetOptionsClient assetId={assetId} assetTitle={draft.title} assetKind={draft.kind} assetValue={draft.value} />;
+    return (
+      <OwnerAssetOptionsClient
+        assetId={assetId}
+        assetTitle={draft.title}
+        assetKind={draft.kind}
+        assetValue={draft.value}
+        assetIsLicensed={licenseStatus === 'yes'}
+        licenceRenewalDate={extra('licenseRenewalDate', 'license_renewal_date', 'licenceRenewalDate', 'licence_renewal_date')}
+      />
+    );
   }
 
   if (view === 'manage') {

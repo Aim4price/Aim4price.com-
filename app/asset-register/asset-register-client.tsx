@@ -17180,15 +17180,25 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                                 />
                               </label>
 
-                              <label className={`${styles.field} ${styles.assetStatusWideField}`}>
-                                <span>Finance documents <small>(agreements, statements or settlement letters)</small></span>
-                                <input
-                                  type="file"
-                                  multiple
-                                  accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.jpg,.jpeg,.png,.webp"
-                                  onChange={(event) => handleDocumentFilesSelected(event, 'finance')}
-                                />
-                              </label>
+                              <div className={`${styles.assetStatusDocumentUpload} ${styles.assetStatusWideField}`}>
+                                <div className={styles.assetStatusDocumentUploadCopy}>
+                                  <strong>Finance documents</strong>
+                                  <small>Agreements, statements or settlement letters</small>
+                                </div>
+                                <label className={`${styles.secondaryButton} ${styles.filePickerButton} ${styles.assetStatusDocumentPicker} ${isUploadingDocuments || manualDraftDocumentCount >= MAX_DOCUMENTS ? styles.filePickerButtonDisabled : ''}`}>
+                                  <span>{isUploadingDocuments ? 'Adding documents...' : 'Add finance documents'}</span>
+                                  <input
+                                    type="file"
+                                    multiple
+                                    className={styles.fileInput}
+                                    aria-label="Add finance documents"
+                                    accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.jpg,.jpeg,.png,.webp"
+                                    onChange={(event) => handleDocumentFilesSelected(event, 'finance')}
+                                    disabled={isUploadingDocuments || manualDraftDocumentCount >= MAX_DOCUMENTS}
+                                  />
+                                </label>
+                                <small className={styles.assetStatusDocumentCount}>{manualDraftDocumentCount} / {MAX_DOCUMENTS} documents</small>
+                              </div>
                             </>
                           ) : null}
                         </div>
@@ -17367,15 +17377,25 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                                 />
                               </label>
 
-                              <label className={`${styles.field} ${styles.assetStatusWideField}`}>
-                                <span>Insurance documents <small>(policy schedules, certificates or claims paperwork)</small></span>
-                                <input
-                                  type="file"
-                                  multiple
-                                  accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.jpg,.jpeg,.png,.webp"
-                                  onChange={(event) => handleDocumentFilesSelected(event, 'insurance')}
-                                />
-                              </label>
+                              <div className={`${styles.assetStatusDocumentUpload} ${styles.assetStatusWideField}`}>
+                                <div className={styles.assetStatusDocumentUploadCopy}>
+                                  <strong>Insurance documents</strong>
+                                  <small>Policy schedules, certificates or claims paperwork</small>
+                                </div>
+                                <label className={`${styles.secondaryButton} ${styles.filePickerButton} ${styles.assetStatusDocumentPicker} ${isUploadingDocuments || manualDraftDocumentCount >= MAX_DOCUMENTS ? styles.filePickerButtonDisabled : ''}`}>
+                                  <span>{isUploadingDocuments ? 'Adding documents...' : 'Add insurance documents'}</span>
+                                  <input
+                                    type="file"
+                                    multiple
+                                    className={styles.fileInput}
+                                    aria-label="Add insurance documents"
+                                    accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.jpg,.jpeg,.png,.webp"
+                                    onChange={(event) => handleDocumentFilesSelected(event, 'insurance')}
+                                    disabled={isUploadingDocuments || manualDraftDocumentCount >= MAX_DOCUMENTS}
+                                  />
+                                </label>
+                                <small className={styles.assetStatusDocumentCount}>{manualDraftDocumentCount} / {MAX_DOCUMENTS} documents</small>
+                              </div>
                             </>
                           ) : null}
                         </div>
@@ -17441,15 +17461,25 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                                 />
                               </label>
 
-                              <label className={`${styles.field} ${styles.assetStatusWideField}`}>
-                                <span>Licence documents <small>(current or older licensing papers)</small></span>
-                                <input
-                                  type="file"
-                                  multiple
-                                  accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.webp"
-                                  onChange={(event) => handleDocumentFilesSelected(event, 'licensing')}
-                                />
-                              </label>
+                              <div className={`${styles.assetStatusDocumentUpload} ${styles.assetStatusWideField}`}>
+                                <div className={styles.assetStatusDocumentUploadCopy}>
+                                  <strong>Licence documents</strong>
+                                  <small>Current or older licensing papers</small>
+                                </div>
+                                <label className={`${styles.secondaryButton} ${styles.filePickerButton} ${styles.assetStatusDocumentPicker} ${isUploadingDocuments || manualDraftDocumentCount >= MAX_DOCUMENTS ? styles.filePickerButtonDisabled : ''}`}>
+                                  <span>{isUploadingDocuments ? 'Adding documents...' : 'Add licence documents'}</span>
+                                  <input
+                                    type="file"
+                                    multiple
+                                    className={styles.fileInput}
+                                    aria-label="Add licence documents"
+                                    accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.webp"
+                                    onChange={(event) => handleDocumentFilesSelected(event, 'licensing')}
+                                    disabled={isUploadingDocuments || manualDraftDocumentCount >= MAX_DOCUMENTS}
+                                  />
+                                </label>
+                                <small className={styles.assetStatusDocumentCount}>{manualDraftDocumentCount} / {MAX_DOCUMENTS} documents</small>
+                              </div>
                             </>
                           ) : null}
                         </div>

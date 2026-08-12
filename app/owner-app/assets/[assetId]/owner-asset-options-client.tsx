@@ -11,8 +11,8 @@ import OwnerAppNav from '../../owner-app-nav';
 import type { DealerMaintenancePermissions } from '../../../../lib/dealer-maintenance-tracker';
 import styles from '../../owner-app.module.css';
 
-type PartnerType = 'dealer' | 'finance' | 'insurance';
-type AssetLeadType = 'finance' | 'insurance' | 'replacement_quote';
+type PartnerType = 'dealer' | 'finance' | 'insurance' | 'licensing';
+type AssetLeadType = 'finance' | 'insurance' | 'replacement_quote' | 'license_renewal';
 type OptionsStage = 'choices' | 'partners' | 'message' | 'consent' | 'sent';
 type IconProps = { className?: string };
 
@@ -71,6 +71,15 @@ const QUOTE_OPTIONS: QuoteOption[] = [
     description: 'Send this asset to a dealer and request a replacement price.',
     pickerTitle: 'Choose a dealer',
     emptyText: 'No listed dealers were found.',
+  },
+  {
+    leadType: 'license_renewal',
+    partnerType: 'licensing',
+    title: 'Licence renewal',
+    shortTitle: 'Licence renewal',
+    description: 'Share renewal details and licence documents.',
+    pickerTitle: 'Choose a renewal expert',
+    emptyText: 'No listed licence renewal experts were found.',
   },
 ];
 
@@ -132,6 +141,25 @@ function DealershipHelpIcon({ className }: IconProps) {
   );
 }
 
+function LicenceRenewalIcon({ className }: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <path d="M7 3h7l4 4v14H7z" />
+      <path d="M14 3v5h5" />
+      <path d="M10 12h5M10 16h5" />
+    </svg>
+  );
+}
+
 function money(value: number) {
   return value > 0 ? `R ${Math.round(value).toLocaleString('en-ZA')}` : 'Not saved';
 }
@@ -147,26 +175,31 @@ function partnerLocation(partner: Partner) {
 function partnerTypeLabel(type: PartnerType) {
   if (type === 'finance') return 'Finance provider';
   if (type === 'insurance') return 'Insurer or broker';
+  if (type === 'licensing') return 'Licence renewal expert';
   return 'Dealer';
 }
 
 function optionTone(type: AssetLeadType) {
   if (type === 'finance') return styles.ownerOptionFinance;
   if (type === 'insurance') return styles.ownerOptionInsurance;
+  if (type === 'license_renewal') return styles.ownerOptionLicensing;
   return styles.ownerOptionDealer;
 }
 
 function renderOptionIcon(type: AssetLeadType) {
   if (type === 'finance') return <FinanceHelpIcon className={styles.ownerOptionChoiceIcon} />;
   if (type === 'insurance') return <InsuranceHelpIcon className={styles.ownerOptionChoiceIcon} />;
+  if (type === 'license_renewal') return <LicenceRenewalIcon className={styles.ownerOptionChoiceIcon} />;
   return <DealershipHelpIcon className={styles.ownerOptionChoiceIcon} />;
 }
 
-export default function OwnerAssetOptionsClient({ assetId, assetTitle, assetKind, assetValue }: {
+export default function OwnerAssetOptionsClient({ assetId, assetTitle, assetKind, assetValue, assetIsLicensed, licenceRenewalDate }: {
   assetId: string;
   assetTitle: string;
   assetKind: string;
   assetValue: number;
+  assetIsLicensed: boolean;
+  licenceRenewalDate: string;
 }) {
   const [stage, setStage] = useState<OptionsStage>('choices');
   const [selectedLeadType, setSelectedLeadType] = useState<AssetLeadType | null>(null);
@@ -240,6 +273,10 @@ export default function OwnerAssetOptionsClient({ assetId, assetTitle, assetKind
   }
 
   async function chooseOption(option: QuoteOption) {
+    if (option.leadType === 'license_renewal' && (!assetIsLicensed || !licenceRenewalDate)) {
+      setNotice({ tone: 'error', message: 'Add the licence status and renewal date before sharing.' });
+      return;
+    }
     setSelectedLeadType(option.leadType);
     setSelectedPartnerId('');
     setSearch('');
@@ -305,7 +342,7 @@ export default function OwnerAssetOptionsClient({ assetId, assetTitle, assetKind
           ownerMessage: message,
           includedSections: {
             assetDetails: true,
-            valuationSummary: true,
+            valuationSummary: selectedOption.leadType !== 'license_renewal',
             mainPhoto: true,
             photos: true,
             documents: true,
@@ -345,12 +382,15 @@ export default function OwnerAssetOptionsClient({ assetId, assetTitle, assetKind
       {stage === 'choices' ? (
         <section className={`${styles.section} ${styles.ownerOptionsSection}`}>
           <div className={styles.ownerOptionChoiceList}>
-            {availableOptions.map((option) => (
-              <button key={option.leadType} type="button" className={`${styles.ownerOptionChoice} ${optionTone(option.leadType)}`} onClick={() => void chooseOption(option)}>
+            {availableOptions.map((option) => {
+              const needsLicenceDetails = option.leadType === 'license_renewal' && (!assetIsLicensed || !licenceRenewalDate);
+              return (
+              <button key={option.leadType} type="button" className={`${styles.ownerOptionChoice} ${optionTone(option.leadType)} ${needsLicenceDetails ? styles.ownerOptionChoiceNeedsSetup : ''}`} onClick={() => void chooseOption(option)}>
                 <span className={styles.ownerOptionChoiceIconTile}>{renderOptionIcon(option.leadType)}</span>
-                <span className={styles.ownerOptionChoiceCopy}><strong>{option.title}</strong><small>{option.description}</small></span>
+                <span className={styles.ownerOptionChoiceCopy}><strong>{option.title}</strong><small>{needsLicenceDetails ? 'Add licence status and renewal date first.' : option.description}</small></span>
               </button>
-            ))}
+              );
+            })}
           </div>
         </section>
       ) : null}
@@ -442,8 +482,12 @@ export default function OwnerAssetOptionsClient({ assetId, assetTitle, assetKind
 
           <div className={styles.ownerPopiaBox}>
             <strong>Disclaimer and POPIA note</strong>
-            <p>By sending this request, you allow Aim4price to share this selected asset, its saved valuation details and your saved business contact details with {partnerName(selectedPartner)}.</p>
-            <p>This is a lead request only. It does not create a finance, insurance, valuation or sales agreement. The selected company may contact you outside Aim4price.</p>
+            {selectedOption.leadType === 'license_renewal' ? (
+              <p>By sending this request, you allow Aim4price to share this asset's basic details, renewal date, saved photos, licence documents and your saved business contact details with {partnerName(selectedPartner)}.</p>
+            ) : (
+              <p>By sending this request, you allow Aim4price to share this selected asset, its saved valuation details and your saved business contact details with {partnerName(selectedPartner)}.</p>
+            )}
+            <p>This is a lead request only. It does not create a finance, insurance, licence renewal, valuation or sales agreement. The selected company may contact you outside Aim4price.</p>
             {selectedOption.leadType === 'replacement_quote' && trackMaintenance ? <p>The dealer will receive ongoing Maintenance Tracker access with the permissions you selected. Proposed schedules and asset changes still require your approval.</p> : null}
           </div>
           <label className={styles.ownerConsentField}>
