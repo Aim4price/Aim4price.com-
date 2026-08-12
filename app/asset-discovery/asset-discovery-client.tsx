@@ -1285,7 +1285,7 @@ export default function AssetDiscoveryClient({
           className={
             compactAppMode
               ? `${styles.primaryButton} ${styles.enquireButton}`
-              : `${assetStyles.primaryButton} ${workspaceStyles.actionButton} ${workspaceStyles.actionGreen} ${leadStyles.openLeadButton} ${styles.discoveryPrimaryAction}`
+              : `${assetStyles.primaryButton} ${workspaceStyles.actionButton} ${workspaceStyles.actionGreen} ${leadStyles.openLeadButton} ${styles.discoveryPrimaryAction} ${licensingDiscovery ? styles.discoveryRenewalAction : ""}`
           }
           onClick={() => void openApprovedContact(asset)}
           disabled={loadingEnquiryId === asset.enquiryId}
@@ -1335,7 +1335,7 @@ export default function AssetDiscoveryClient({
         className={
           compactAppMode
             ? `${styles.primaryButton} ${styles.enquireButton}`
-            : `${assetStyles.primaryButton} ${workspaceStyles.actionButton} ${workspaceStyles.actionGreen} ${leadStyles.openLeadButton} ${styles.discoveryPrimaryAction}`
+            : `${assetStyles.primaryButton} ${workspaceStyles.actionButton} ${workspaceStyles.actionGreen} ${leadStyles.openLeadButton} ${styles.discoveryPrimaryAction} ${licensingDiscovery ? styles.discoveryRenewalAction : ""}`
         }
         onClick={() => handleEnquire(asset)}
         disabled={isProcessing}
