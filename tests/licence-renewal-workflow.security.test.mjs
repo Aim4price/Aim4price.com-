@@ -133,6 +133,7 @@ test('licensing Discovery exposes only a coarse renewal window before approval',
   assert.match(discovery, /LICENSING_DISCOVERY_ASSET_SQL/);
   assert.match(discovery, /month: 'long', year: 'numeric'/);
   assert.match(discoveryClient, /Offer renewal help/);
+  assert.match(discoveryClient, /styles\.discoveryRenewalAction/);
   assert.match(discoveryClient, /Exact details remain private until the owner approves/);
   assert.match(discoveryClient, /\["Renewal", details\.asset\.renewalWindow\]/);
   assert.match(registerStyles, /assetQuotePartnerChoose/);
