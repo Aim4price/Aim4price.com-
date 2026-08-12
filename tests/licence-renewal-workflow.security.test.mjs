@@ -30,7 +30,7 @@ test('licence renewal experts have a dedicated account and two-item workspace', 
 });
 
 test('the owner share modal includes licence renewals and selected eligible assets', () => {
-  assert.match(registerClient, /<strong>Licence renewals<\/strong>/);
+  assert.match(registerClient, /<strong>Licence renewal<\/strong>/);
   assert.match(registerClient, /openFullRegisterQuotePartnerPicker\('license_renewal'\)/);
   assert.match(registerClient, /readLicenseStatusChoice\(asset\) === 'yes'/);
   assert.match(registerClient, /selectedDealerShareAssetIds/);
@@ -96,9 +96,11 @@ test('renewal lead snapshots do not carry valuation or unrelated private specs',
 
 test('the asset share modal uses four concise desktop choices', () => {
   assert.match(registerStyles, /assetQuoteModal:not\(\.assetQuotePartnerPickerModal\)[\s\S]*repeat\(4, minmax\(0, 1fr\)\)/);
+  assert.match(registerStyles, /assetQuoteChoiceGrid\.registerShareOptionGrid[\s\S]*repeat\(4, minmax\(0, 1fr\)\)/);
   assert.match(registerClient, /title: 'Finance & accounting'/);
   assert.match(registerClient, /title: 'Insurance'/);
   assert.match(registerClient, /title: 'Dealer'/);
   assert.match(registerClient, /title: 'Licence renewal'/);
+  assert.match(registerClient, /Choose who to share with\. Each partner sees only what they need\./);
   assert.doesNotMatch(registerClient, /descriptionLines/);
 });

@@ -36371,3 +36371,91 @@ button.documentOpenLink {
     white-space: normal !important;
   }
 }
+
+
+/* === Full-register share modal: balanced four-card layout === */
+.assetQuoteModal.registerShareModal {
+  width: min(calc(100vw - 3rem), 1680px) !important;
+  padding: clamp(1.6rem, 2.2vw, 2.15rem) !important;
+}
+
+.registerShareModal .registerShareModalHeader {
+  padding-bottom: clamp(1rem, 1.35vw, 1.2rem) !important;
+}
+
+.registerShareModal .registerShareModalHeader .modalHeaderText {
+  gap: 0.35rem !important;
+}
+
+.registerShareModal .registerShareModalHeader p {
+  margin-top: 0 !important;
+  font-size: clamp(0.96rem, 1vw, 1.05rem) !important;
+  line-height: 1.38 !important;
+}
+
+.registerShareModal .registerShareModalBody {
+  padding: clamp(1.35rem, 1.8vw, 1.7rem) 0 0.2rem !important;
+}
+
+.optionsModal .assetQuoteChoiceGrid.registerShareOptionGrid {
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  max-width: 86rem !important;
+  gap: clamp(0.85rem, 1.1vw, 1.15rem) !important;
+}
+
+.optionsModal .assetQuoteChoiceGrid.registerShareOptionGrid .registerShareOptionCard {
+  min-height: 12.8rem !important;
+  gap: 0.82rem !important;
+  padding: clamp(1.15rem, 1.45vw, 1.45rem) !important;
+  border-radius: 1.4rem !important;
+}
+
+.optionsModal .assetQuoteChoiceGrid.registerShareOptionGrid .registerShareOptionCard > .assetQuoteChoiceIconTile {
+  width: 4.35rem !important;
+  height: 4.35rem !important;
+  border-radius: 1.15rem !important;
+}
+
+.optionsModal .assetQuoteChoiceGrid.registerShareOptionGrid .registerShareOptionCard > .assetQuoteChoiceText {
+  max-width: 18rem !important;
+  gap: 0.42rem !important;
+}
+
+.optionsModal .assetQuoteChoiceGrid.registerShareOptionGrid .registerShareOptionCard strong {
+  font-size: clamp(1rem, 1.15vw, 1.14rem) !important;
+  line-height: 1.12 !important;
+  white-space: nowrap !important;
+}
+
+.optionsModal .assetQuoteChoiceGrid.registerShareOptionGrid .registerShareOptionCard small {
+  max-width: 16rem !important;
+  font-size: clamp(0.86rem, 0.95vw, 0.96rem) !important;
+  line-height: 1.36 !important;
+}
+
+@media (max-width: 1240px) {
+  .optionsModal .assetQuoteChoiceGrid.registerShareOptionGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    max-width: 50rem !important;
+  }
+}
+
+@media (max-width: 700px) {
+  .assetQuoteModal.registerShareModal {
+    width: min(100%, calc(100vw - 1rem)) !important;
+    padding: 1rem !important;
+  }
+
+  .registerShareModal .registerShareModalHeader p {
+    white-space: normal !important;
+  }
+
+  .optionsModal .assetQuoteChoiceGrid.registerShareOptionGrid {
+    grid-template-columns: minmax(0, 1fr) !important;
+    max-width: 30rem !important;
+  }
+
+  .optionsModal .assetQuoteChoiceGrid.registerShareOptionGrid .registerShareOptionCard {
+    min-height: 10.8rem !important;
+  }
+}

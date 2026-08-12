@@ -16107,8 +16107,8 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
               <div className={styles.modalHeaderText}>
                 <h3 id="asset-register-share-title">Share {activeShareName}</h3>
                 <p>{isAssetGroupShare
-                  ? `Share this umbrella and its ${activeShareAssets.length} linked ${activeShareAssets.length === 1 ? 'asset' : 'assets'} without exposing unrelated assets.`
-                  : 'Share with accountants, financiers, banks, insurers, dealers or licence renewal experts. Access is limited to the information each role needs.'}</p>
+                  ? `Share this umbrella and its ${activeShareAssets.length} linked ${activeShareAssets.length === 1 ? 'asset' : 'assets'}. Unrelated assets stay private.`
+                  : 'Choose who to share with. Each partner sees only what they need.'}</p>
               </div>
 
               <button
@@ -16135,9 +16135,9 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                       {renderQuoteOptionIcon('finance', styles.assetQuoteChoiceIcon)}
                     </span>
                     <span className={styles.assetQuoteChoiceText}>
-                      <strong>Accountants &amp; finance</strong>
+                      <strong>Finance &amp; accounting</strong>
                       <small>
-                        <span>{isAssetGroupShare ? 'Send this umbrella to an accountant, financier or bank.' : 'Share with an accountant, financier or bank.'}</span>
+                        <span>Share with an accountant, financier or bank.</span>
                       </small>
                     </span>
                   </button>
@@ -16152,9 +16152,9 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                       {renderQuoteOptionIcon('insurance', styles.assetQuoteChoiceIcon)}
                     </span>
                     <span className={styles.assetQuoteChoiceText}>
-                      <strong>Get insurance help</strong>
+                      <strong>Insurance</strong>
                       <small>
-                        <span>Send {activeShareName} to an insurance partner.</span>
+                        <span>Share with an insurer or broker.</span>
                       </small>
                     </span>
                   </button>
@@ -16169,9 +16169,9 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                       {renderQuoteOptionIcon('replacement_quote', styles.assetQuoteChoiceIcon)}
                     </span>
                     <span className={styles.assetQuoteChoiceText}>
-                      <strong>{isAssetGroupShare ? 'Share umbrella with a dealer' : 'Share with a dealer'}</strong>
+                      <strong>Dealer</strong>
                       <small>
-                        <span>{isAssetGroupShare ? 'Share every linked asset as one organised package.' : 'Choose assets and grant dealer access.'}</span>
+                        <span>{isAssetGroupShare ? 'Share every linked asset with a dealer.' : 'Choose assets to share with a dealer.'}</span>
                       </small>
                     </span>
                   </button>
@@ -16186,9 +16186,9 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                       {renderQuoteOptionIcon('license_renewal', styles.assetQuoteChoiceIcon)}
                     </span>
                     <span className={styles.assetQuoteChoiceText}>
-                      <strong>Licence renewals</strong>
+                      <strong>Licence renewal</strong>
                       <small>
-                        <span>Choose licensed assets and share only renewal details and licence documents.</span>
+                        <span>Choose licensed assets for renewal.</span>
                       </small>
                     </span>
                   </button>
