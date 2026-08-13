@@ -344,9 +344,15 @@ test('path availability is checked with one model before the full list is reques
   assert.match(source, /pathLoadingSpinner/);
   assert.match(source, /loadFullGenericCatalog/);
   assert.match(source, /limit: '500'/);
-  assert.match(source, /Check the replacement price and usage/);
-  assert.match(source, /Important: check both values/);
-  assert.match(source, /indicative estimate only, not a certified valuation/);
+  assert.match(source, /Ready for your estimate\?/);
+  assert.match(source, /Get estimate/);
+  assert.match(source, /indicative estimate only\. It is not a certified valuation/);
+  assert.doesNotMatch(source, /Check the replacement price and usage/);
+  assert.doesNotMatch(source, /Important: check both values/);
+  assert.doesNotMatch(source, /replacementNoticePriceExVat|replacementNoticeUsage|Current usage/);
+  assert.match(source, /replacementNoticeGoBackRef\.current\?\.focus\(\)/);
+  assert.match(source, /event\.key === 'Escape'/);
+  assert.match(source, /aria-describedby="replacement-notice-description replacement-notice-disclaimer"/);
   assert.match(source, /Add detailed condition/);
   assert.match(source, /<h3 className=\{styles\.currentTitle\}>Popularity<\/h3>/);
   assert.match(source, /<span className=\{styles\.currentEyebrow\}>Step 4<\/span>/);
@@ -375,7 +381,8 @@ test('detailed assessment and extras keep a clear left-aligned hierarchy', async
   assert.match(valuationStyles, /\.otherExtraCardNote\s*\{[^}]*white-space:\s*nowrap;/s);
   assert.match(valuationStyles, /\.replacementField\s*\{[^}]*grid-template-rows:/s);
   assert.match(valuationStyles, /\.replacementOtherFields\s*\{[^}]*grid-column:\s*1 \/ -1;/s);
-  assert.match(valuationStyles, /\.replacementNoticeWarning\s*\{[^}]*border:\s*1px solid #d83b32;/s);
+  assert.match(valuationStyles, /\.replacementNoticeModal\s*\{[^}]*width:\s*min\(500px,\s*100%\)/s);
+  assert.doesNotMatch(valuationStyles, /\.replacementNoticeWarning\s*\{/);
   assert.doesNotMatch(valuationSource, /aria-label="Tractor extras value breakdown"/);
   assert.doesNotMatch(valuationSource, /Condition is controlled by the Detailed Asset Assessment/);
 });

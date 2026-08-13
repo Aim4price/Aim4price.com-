@@ -1788,6 +1788,9 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
   const [replacementPanelOpen, setReplacementPanelOpen] = useState(false);
   const [completionToastVisible, setCompletionToastVisible] = useState(false);
   const marketplacePhotoInputRef = useRef<HTMLInputElement | null>(null);
+  const replacementNoticeDialogRef = useRef<HTMLElement | null>(null);
+  const replacementNoticeGoBackRef = useRef<HTMLButtonElement | null>(null);
+  const replacementNoticeReturnFocusRef = useRef<HTMLElement | null>(null);
   const genericModelPrefilledSpecKeysRef = useRef<Set<string>>(new Set());
   const requiredQuestionsCompletedRef = useRef(false);
   const completionToastTimerRef = useRef<number | null>(null);
@@ -2150,6 +2153,47 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     const target = document.getElementById('valuation-wizard-card');
     target?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, [step]);
+
+  useEffect(() => {
+    if (!replacementNoticeOpen) return undefined;
+
+    const dialog = replacementNoticeDialogRef.current;
+    const returnFocusTarget = replacementNoticeReturnFocusRef.current;
+    const focusTimer = window.requestAnimationFrame(() => {
+      replacementNoticeGoBackRef.current?.focus();
+    });
+
+    function handleReplacementNoticeKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        setReplacementNoticeOpen(false);
+        return;
+      }
+
+      if (event.key !== 'Tab' || !dialog) return;
+      const focusableElements = Array.from(dialog.querySelectorAll<HTMLElement>(
+        'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      ));
+      if (focusableElements.length === 0) return;
+
+      const firstFocusable = focusableElements[0];
+      const lastFocusable = focusableElements[focusableElements.length - 1];
+      if (event.shiftKey && (document.activeElement === firstFocusable || !dialog.contains(document.activeElement))) {
+        event.preventDefault();
+        lastFocusable.focus();
+      } else if (!event.shiftKey && document.activeElement === lastFocusable) {
+        event.preventDefault();
+        firstFocusable.focus();
+      }
+    }
+
+    document.addEventListener('keydown', handleReplacementNoticeKeyDown);
+    return () => {
+      window.cancelAnimationFrame(focusTimer);
+      document.removeEventListener('keydown', handleReplacementNoticeKeyDown);
+      returnFocusTarget?.focus();
+    };
+  }, [replacementNoticeOpen]);
 
   useEffect(() => {
     if (!resultState) {
@@ -4373,7 +4417,14 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
       return;
     }
     setMessage('');
+    replacementNoticeReturnFocusRef.current = document.activeElement instanceof HTMLElement
+      ? document.activeElement
+      : null;
     setReplacementNoticeOpen(true);
+  }
+
+  function closeReplacementPriceNotice() {
+    setReplacementNoticeOpen(false);
   }
 
   function handleNext() {
@@ -7044,12 +7095,6 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     : ownerAppMode ? 'Save to My Assets' : 'Save to Asset Register';
   const finalSaveCta = finalSaveIntent === 'marketplace' ? 'Save and continue to Marketplace' : 'Confirm and save';
   const isSectorIntroStep = step === 1 && !selectedSector;
-  const replacementNoticeShowsUsageReading = !genericValuationPath || Boolean(
-    selectedFamily?.isPropelled || selectedFamily?.usageMetricType === 'hours' || selectedFamily?.usageMetricType === 'km',
-  );
-  const replacementNoticeUsage = getUsageAnswerLabel(replacementNoticeShowsUsageReading);
-  const replacementNoticePriceExVat =
-    selectedModel?.aim4priceReplacementExVat ?? selectedGenericModel?.aim4priceReplacementPriceExVat ?? null;
 
   return (
     <main className={`${styles.page} ${compactAppMode ? dealerStyles.dealerValuationSurface : ''}`}>
@@ -7143,52 +7188,42 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
       </div>
 
       {replacementNoticeOpen ? (
-        <div className={styles.replacementNoticeOverlay} onClick={() => setReplacementNoticeOpen(false)}>
+        <div className={styles.replacementNoticeOverlay} onClick={closeReplacementPriceNotice}>
           <section
+            ref={replacementNoticeDialogRef}
             className={styles.replacementNoticeModal}
             role="dialog"
             aria-modal="true"
             aria-labelledby="replacement-notice-title"
+            aria-describedby="replacement-notice-description replacement-notice-disclaimer"
             onClick={(event) => event.stopPropagation()}
           >
-            <h2 id="replacement-notice-title">Check the replacement price and usage</h2>
-            <p className={styles.replacementNoticeIntro}>
-              Both inputs materially affect the estimate. Confirm them before continuing.
+            <h2 id="replacement-notice-title">Ready for your estimate?</h2>
+            <p id="replacement-notice-description" className={styles.replacementNoticeIntro}>
+              We will calculate an indicative estimate using the details you provided. You can review the result on the next screen and go back to change your details if needed.
             </p>
-            <div className={styles.replacementNoticeWarning} role="note" aria-label="Important valuation inputs">
-              <div className={styles.replacementNoticeWarningTitle}>
-                <span aria-hidden="true">!</span>
-                <strong>Important: check both values</strong>
-              </div>
-              <dl className={styles.replacementNoticeFacts}>
-                <div>
-                  <dt>Replacement price</dt>
-                  <dd>{replacementNoticePriceExVat ? moneyExVat(replacementNoticePriceExVat) : 'Confirm on the result page'}</dd>
-                </div>
-                <div className={styles.replacementNoticeUsageFact}>
-                  <dt>Current usage</dt>
-                  <dd>{replacementNoticeUsage}</dd>
-                </div>
-              </dl>
-              <p>Go back now if the usage is not correct. You can check and adjust the replacement price with the result.</p>
-            </div>
             <div className={styles.replacementNoticeActions}>
-              <button type="button" className={styles.secondaryButton} onClick={() => setReplacementNoticeOpen(false)}>
+              <button
+                ref={replacementNoticeGoBackRef}
+                type="button"
+                className={styles.secondaryButton}
+                onClick={closeReplacementPriceNotice}
+              >
                 Go back
               </button>
               <button
                 type="button"
                 className={styles.primaryButton}
                 onClick={() => {
-                  setReplacementNoticeOpen(false);
+                  closeReplacementPriceNotice();
                   void calculateValuation();
                 }}
               >
-                Continue to estimate
+                Get estimate
               </button>
             </div>
-            <small className={styles.replacementNoticeDisclaimer}>
-              Aim4price provides an indicative estimate only, not a certified valuation, inspection or guaranteed price. Confirm all inputs and the result before relying on it.
+            <small id="replacement-notice-disclaimer" className={styles.replacementNoticeDisclaimer}>
+              Aim4price provides an indicative estimate only. It is not a certified valuation, inspection, or guaranteed price.
             </small>
           </section>
         </div>
