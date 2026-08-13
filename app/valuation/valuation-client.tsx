@@ -4933,35 +4933,39 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                 <button
                   key={sector.key}
                   type="button"
-                  className={`${styles.sectorBigCard} ${isAvailable ? styles.sectorBigCardLive : styles.sectorBigCardSoon}`}
+                  className={`${styles.sectorBigCard} ${compactAppMode ? styles.sectorBigCardApp : ''} ${isAvailable ? styles.sectorBigCardLive : styles.sectorBigCardSoon}`}
                   onClick={() => handleSectorSelect(sector.key)}
                   onMouseEnter={(event) => {
-                    if (!shouldAutoPlaySectorVideos) playSectorPreview(event.currentTarget);
+                    if (!compactAppMode && !shouldAutoPlaySectorVideos) playSectorPreview(event.currentTarget);
                   }}
                   onMouseLeave={(event) => {
-                    if (!shouldAutoPlaySectorVideos) resetSectorPreview(event.currentTarget);
+                    if (!compactAppMode && !shouldAutoPlaySectorVideos) resetSectorPreview(event.currentTarget);
                   }}
                   onFocus={(event) => {
-                    if (!shouldAutoPlaySectorVideos) playSectorPreview(event.currentTarget);
+                    if (!compactAppMode && !shouldAutoPlaySectorVideos) playSectorPreview(event.currentTarget);
                   }}
                   onBlur={(event) => {
-                    if (!shouldAutoPlaySectorVideos) resetSectorPreview(event.currentTarget);
+                    if (!compactAppMode && !shouldAutoPlaySectorVideos) resetSectorPreview(event.currentTarget);
                   }}
                   aria-label={isAvailable ? `Choose ${sector.label}` : `${sector.label} coming soon`}
                 >
-                  <video
-                    className={`${styles.sectorVideo} ${shouldAutoPlaySectorVideos ? styles.sectorVideoMobileActive : ''}`}
-                    muted
-                    loop
-                    playsInline
-                    autoPlay={shouldAutoPlaySectorVideos}
-                    preload="auto"
-                    poster=""
-                  >
-                    <source src={sector.videoSrc} type="video/mp4" />
-                  </video>
+                  {!compactAppMode ? (
+                    <>
+                      <video
+                        className={`${styles.sectorVideo} ${shouldAutoPlaySectorVideos ? styles.sectorVideoMobileActive : ''}`}
+                        muted
+                        loop
+                        playsInline
+                        autoPlay={shouldAutoPlaySectorVideos}
+                        preload="auto"
+                        poster=""
+                      >
+                        <source src={sector.videoSrc} type="video/mp4" />
+                      </video>
 
-                  <span className={styles.sectorVideoOverlay} />
+                      <span className={styles.sectorVideoOverlay} />
+                    </>
+                  ) : null}
 
                   <span className={styles.sectorBigCardContent}>
                     {!isAvailable ? (

@@ -21,6 +21,17 @@ test('Owner and Dealer continue to share one valuation client with app-only pres
   assert.match(appStyles, /stepperLabel[^\{]*\{[\s\S]*?display: none !important/);
 });
 
+test('app sector choices are static green cards and progress numbers are centered circles', () => {
+  assert.match(client, /compactAppMode \? styles\.sectorBigCardApp : ''/);
+  assert.match(client, /\{!compactAppMode \? \([\s\S]*?<video/);
+  assert.match(client, /!compactAppMode && !shouldAutoPlaySectorVideos/);
+  assert.match(valuationStyles, /\.appValuation \.sectorBigCardApp[^\{]*\{[\s\S]*?place-items: center;[\s\S]*?background: #1d5742;/);
+  assert.match(appStyles, /button\[class\*='sectorBigCardApp'\][^\{]*\{[\s\S]*?place-items: center !important;[\s\S]*?background: #1d5742 !important;/);
+  assert.match(appStyles, /wizardHeader[^\n]*> \[class\*='stepper'\][^\{]*\{[\s\S]*?grid-template-columns: repeat\(5, minmax\(0, 1fr\)\) !important;[\s\S]*?align-items: center !important;/);
+  assert.match(appStyles, /\[class\*='stepperItem'\][^\{]*\{[\s\S]*?place-items: center !important;[\s\S]*?width: 36px !important;[\s\S]*?height: 36px !important;[\s\S]*?background: transparent !important;/);
+  assert.match(appStyles, /\[class\*='stepperBullet'\][^\{]*\{[\s\S]*?place-items: center !important;[\s\S]*?width: 34px !important;[\s\S]*?height: 34px !important;[\s\S]*?border-radius: 50% !important;[\s\S]*?line-height: 1 !important;/);
+});
+
 test('app selections open as searchable lists and remain available when navigating backwards', () => {
   assert.match(client, /setEquipmentDropdownOpen\(compactAppMode\)/);
   assert.match(client, /setBrandDropdownOpen\(compactAppMode\)/);
