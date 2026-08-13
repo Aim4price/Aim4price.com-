@@ -63,7 +63,7 @@ test('Field Manager notifications are shared operationally while assigned items 
   assert.match(notifications, /const assignedToViewer = record\.assignedFieldManagerId === input\.managerId/);
   assert.match(notifications, /listReadNotificationEventKeys\(viewerKey\(input\.managerId\), keys\)/);
   assert.match(route, /requireActiveFieldManagerSession/);
-  assert.match(client, /notification\.assignedToViewer[\s\S]*?setClearRequest\(\{ ids: \[notification\.id\], bulk: false \}\)/);
+  assert.match(client, /notification\.assignedToViewer[\s\S]*?setClearRequest\(\{ ids: \[notification\.id\], bulk: false, step: 'confirm' \}\)/);
   assert.match(client, /This notification was specifically assigned to you\. Are you sure you want to clear it\?/);
   assert.match(client, /Some of these notifications were specifically assigned to you\. Are you sure you want to clear them\?/);
   assert.match(client, /void clearNotifications\(\[notification\.id\]\)/);

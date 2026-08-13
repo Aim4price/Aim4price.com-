@@ -18,20 +18,34 @@ function formatNotificationTime(value: string): string {
   }).format(new Date(time));
 }
 
-async function markNotificationsChecked(notificationIds: string[]): Promise<void> {
-  if (!notificationIds.length) return;
+type NotificationsResponse = {
+  ok?: boolean;
+  notifications?: DealerMaintenanceViewerNotification[];
+  error?: string;
+};
+
+async function markNotificationsChecked(
+  notificationIds: string[],
+  completed = false,
+): Promise<NotificationsResponse> {
+  if (!notificationIds.length) return { ok: true, notifications: [] };
   const response = await fetch('/api/dealer/maintenance/notifications', {
     method: 'POST',
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ notificationIds }),
+    body: JSON.stringify({ notificationIds, completed }),
   });
-  if (!response.ok) throw new Error('Could not mark notifications checked.');
+  const payload = await response.json().catch(() => null) as NotificationsResponse | null;
+  if (!response.ok || !payload?.ok) {
+    throw new Error(payload?.error || 'Could not mark notifications checked.');
+  }
+  return payload;
 }
 
 type ClearRequest = {
   ids: string[];
   bulk: boolean;
+  step: 'confirm' | 'completion';
 };
 
 export default function DealerMaintenanceNotificationsClient({
@@ -54,22 +68,32 @@ export default function DealerMaintenanceNotificationsClient({
     [activeView, historyItems, newItems],
   );
 
-  async function clearNotifications(notificationIds: string[], moveToHistory = false) {
-    if (!notificationIds.length || marking) return;
+  async function clearNotifications(
+    notificationIds: string[],
+    moveToHistory = false,
+    completed = false,
+  ): Promise<boolean> {
+    if (!notificationIds.length || marking) return false;
     setMarking(true);
     setError('');
 
     try {
-      await markNotificationsChecked(notificationIds);
-      const clearedIds = new Set(notificationIds);
-      setItems((current) => current.map((notification) => (
-        clearedIds.has(notification.id)
-          ? { ...notification, isRead: true }
-          : notification
-      )));
+      const payload = await markNotificationsChecked(notificationIds, completed);
+      if (Array.isArray(payload.notifications)) {
+        setItems(payload.notifications);
+      } else {
+        const clearedIds = new Set(notificationIds);
+        setItems((current) => current.map((notification) => (
+          clearedIds.has(notification.id)
+            ? { ...notification, isRead: true }
+            : notification
+        )));
+      }
       if (moveToHistory) setActiveView('history');
+      return true;
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Could not mark notifications checked.');
+      return false;
     } finally {
       setMarking(false);
     }
@@ -79,7 +103,7 @@ export default function DealerMaintenanceNotificationsClient({
     if (!newItems.length || marking) return;
     const notificationIds = newItems.map((notification) => notification.id);
     if (newItems.some((notification) => notification.assignedToViewer)) {
-      setClearRequest({ ids: notificationIds, bulk: true });
+      setClearRequest({ ids: notificationIds, bulk: true, step: 'confirm' });
       return;
     }
     void clearNotifications(notificationIds, true);
@@ -95,14 +119,19 @@ export default function DealerMaintenanceNotificationsClient({
 
   function requestAssignedClear(notification: DealerMaintenanceViewerNotification) {
     if (notification.isRead || !notification.assignedToViewer || marking) return;
-    setClearRequest({ ids: [notification.id], bulk: false });
+    setClearRequest({ ids: [notification.id], bulk: false, step: 'confirm' });
   }
 
-  async function confirmAssignedClear() {
+  function confirmAssignedClear() {
+    if (!clearRequest || marking) return;
+    setClearRequest((current) => current ? { ...current, step: 'completion' } : null);
+  }
+
+  async function finishAssignedClear(completed: boolean) {
     if (!clearRequest || marking) return;
     const request = clearRequest;
-    setClearRequest(null);
-    await clearNotifications(request.ids, request.bulk);
+    const cleared = await clearNotifications(request.ids, request.bulk, completed);
+    if (cleared) setClearRequest(null);
   }
 
   return (
@@ -224,25 +253,49 @@ export default function DealerMaintenanceNotificationsClient({
             aria-modal="true"
             aria-labelledby="dealer-assigned-clear-title"
           >
-            <h2 id="dealer-assigned-clear-title">Assigned to you</h2>
-            <p>
-              {clearRequest.bulk
-                ? 'Some of these notifications were specifically assigned to you. Are you sure you want to clear them?'
-                : 'This notification was specifically assigned to you. Are you sure you want to clear it?'}
-            </p>
-            <div className={dealerNotificationStyles.modalActions}>
-              <button type="button" onClick={() => setClearRequest(null)} disabled={marking}>
-                Cancel
-              </button>
-              <button
-                type="button"
-                className={dealerNotificationStyles.modalConfirm}
-                onClick={() => void confirmAssignedClear()}
-                disabled={marking}
-              >
-                {marking ? 'Clearing…' : clearRequest.bulk ? 'Clear notifications' : 'Clear notification'}
-              </button>
-            </div>
+            {clearRequest.step === 'confirm' ? (
+              <>
+                <h2 id="dealer-assigned-clear-title">Assigned to you</h2>
+                <p>
+                  {clearRequest.bulk
+                    ? 'Some of these notifications were specifically assigned to you. Are you sure you want to clear them?'
+                    : 'This notification was specifically assigned to you. Are you sure you want to clear it?'}
+                </p>
+                <div className={dealerNotificationStyles.modalActions}>
+                  <button type="button" onClick={() => setClearRequest(null)} disabled={marking}>
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    className={dealerNotificationStyles.modalConfirm}
+                    onClick={confirmAssignedClear}
+                    disabled={marking}
+                  >
+                    {clearRequest.bulk ? 'Clear notifications' : 'Clear notification'}
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <h2 id="dealer-assigned-clear-title">
+                  {clearRequest.bulk ? 'Were they completed?' : 'Was it completed?'}
+                </h2>
+                <p>Save a basic maintenance record?</p>
+                <div className={dealerNotificationStyles.modalActions}>
+                  <button type="button" onClick={() => void finishAssignedClear(false)} disabled={marking}>
+                    {marking ? 'Clearing…' : 'Not sure'}
+                  </button>
+                  <button
+                    type="button"
+                    className={dealerNotificationStyles.modalConfirm}
+                    onClick={() => void finishAssignedClear(true)}
+                    disabled={marking}
+                  >
+                    {marking ? 'Saving…' : 'Yes'}
+                  </button>
+                </div>
+              </>
+            )}
           </section>
         </div>
       ) : null}

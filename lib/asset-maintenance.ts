@@ -148,6 +148,11 @@ export type AssetMaintenanceCompletionGuard = {
   assetId?: string | null;
   assignedFieldManagerId?: string | null;
   maintenanceType?: AssetMaintenanceType | null;
+  allowUnknownDetails?: boolean;
+};
+
+export type AssetMaintenanceCompletionOptions = {
+  allowUnknownDetails?: boolean;
 };
 
 export type AssetMaintenanceProcedureKind = 'checked' | 'serviced' | 'repaired';
@@ -278,6 +283,14 @@ export function assetMaintenanceProcedureMatchesType(
   return maintenanceType === 'checkup'
     ? procedureKind === 'checked'
     : procedureKind === 'serviced' || procedureKind === 'repaired';
+}
+
+export function unknownMaintenanceCompletionNote(
+  maintenanceType: AssetMaintenanceType,
+): string {
+  return maintenanceType === 'checkup'
+    ? 'Check-up done, no additional information available.'
+    : 'Service done, no additional information available.';
 }
 
 function asLongText(value: unknown, maxLength = 5000): string {
@@ -1333,6 +1346,7 @@ async function verifyAssetBelongsToUser(userId: string, assetId: string): Promis
 export async function recordStandaloneAssetMaintenanceCompletion(
   userId: string,
   input: AssetMaintenanceStandaloneCompletionInput,
+  options: AssetMaintenanceCompletionOptions = {},
 ): Promise<AssetMaintenanceRecord> {
   await ensureAssetMaintenanceTables();
 
@@ -1349,12 +1363,16 @@ export async function recordStandaloneAssetMaintenanceCompletion(
   const completedBy = asText(input.completedBy);
   const procedureKind = assetMaintenanceProcedureKindFromNote(completedNotes);
 
-  if (!assetMaintenanceProcedureMatchesType(maintenanceType, procedureKind)) {
+  if (
+    !options.allowUnknownDetails
+    && !assetMaintenanceProcedureMatchesType(maintenanceType, procedureKind)
+  ) {
     throw new Error('COMPLETION_DETAILS_REQUIRED');
   }
   if (!completedBy) throw new Error('COMPLETION_PERFORMER_REQUIRED');
   if (
-    maintenanceType === 'service'
+    !options.allowUnknownDetails
+    && maintenanceType === 'service'
     && (!/^Company:\s*\S/im.test(completedNotes) || !/^Mechanic:\s*\S/im.test(completedNotes))
   ) {
     throw new Error('COMPLETION_SERVICE_PROVIDER_REQUIRED');
@@ -1915,12 +1933,16 @@ export async function completeAssetMaintenanceRecord(
         throw new Error('MAINTENANCE_SOURCE_EVENT_REQUIRED');
       }
       const procedureKind = assetMaintenanceProcedureKindFromNote(completedNotes);
-      if (!assetMaintenanceProcedureMatchesType(existing.maintenanceType, procedureKind)) {
+      if (
+        !guard.allowUnknownDetails
+        && !assetMaintenanceProcedureMatchesType(existing.maintenanceType, procedureKind)
+      ) {
         throw new Error('COMPLETION_DETAILS_REQUIRED');
       }
       if (!completedBy) throw new Error('COMPLETION_PERFORMER_REQUIRED');
       if (
-        existing.maintenanceType === 'service'
+        !guard.allowUnknownDetails
+        && existing.maintenanceType === 'service'
         && (!/^Company:\s*\S/im.test(completedNotes) || !/^Mechanic:\s*\S/im.test(completedNotes))
       ) {
         throw new Error('COMPLETION_SERVICE_PROVIDER_REQUIRED');

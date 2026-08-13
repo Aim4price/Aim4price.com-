@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import {
+  clearFieldManagerNotifications,
   listFieldManagerNotifications,
-  markFieldManagerNotificationsRead,
 } from '../../../../lib/field-manager-notifications';
 import { requireActiveFieldManagerSession } from '../../../../lib/field-manager-session';
 
@@ -37,17 +37,31 @@ export async function PATCH(request: NextRequest) {
   }
 
   try {
-    const body = await request.json().catch(() => null) as { notificationIds?: unknown[] } | null;
+    const body = await request.json().catch(() => null) as {
+      notificationIds?: unknown[];
+      completed?: unknown;
+    } | null;
     const notificationIds = Array.isArray(body?.notificationIds)
       ? body.notificationIds.map((value) => String(value ?? '').trim()).filter(Boolean)
       : [];
 
-    await markFieldManagerNotificationsRead({
+    const result = await clearFieldManagerNotifications({
       ownerUserId: access.session.ownerUserId,
       managerId: access.session.managerId,
       notificationIds,
+      completed: body?.completed === true,
+      completedBy: access.session.displayName,
     });
-    return NextResponse.json({ ok: true });
+    const notifications = await listFieldManagerNotifications({
+      ownerUserId: access.session.ownerUserId,
+      managerId: access.session.managerId,
+    });
+    return NextResponse.json({
+      ok: true,
+      ...result,
+      notifications,
+      unreadCount: notifications.filter((notification) => !notification.isRead).length,
+    });
   } catch (error) {
     console.error('Field Manager notifications PATCH failed.', error);
     return NextResponse.json({ ok: false, error: 'Failed to clear notifications.' }, { status: 500 });
