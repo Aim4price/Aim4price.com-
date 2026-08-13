@@ -4428,6 +4428,454 @@
   }
 }
 
+/* App estimate flow: phone-first guided presentation for Owner and Dealer. */
+.mobileStepSummary,
+.conditionModeToggle,
+.detailedAssessmentSummary {
+  display: none;
+}
+
+@media (max-width: 720px) {
+  .appValuation {
+    min-height: 100dvh;
+    padding-bottom: calc(5.35rem + env(safe-area-inset-bottom));
+  }
+
+  .appValuation .container {
+    width: 100%;
+    padding-top: 0.55rem;
+  }
+
+  .appValuation .wizardCard,
+  .appValuation .sectorWizardCard {
+    overflow: visible;
+    border-radius: 1.15rem;
+  }
+
+  .appValuation .wizardHeader {
+    position: sticky;
+    top: 0;
+    z-index: 35;
+    display: grid;
+    gap: 0.65rem;
+    padding: 0.7rem 0.75rem;
+    border-radius: 1.15rem 1.15rem 0 0;
+    box-shadow: 0 8px 18px rgba(17, 63, 50, 0.06);
+  }
+
+  .appValuation .mobileStepSummary {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding-inline: 0.12rem;
+  }
+
+  .appValuation .mobileStepSummary span {
+    color: #577068;
+    font-size: 0.68rem;
+    font-weight: 850;
+    letter-spacing: 0.075em;
+    text-transform: uppercase;
+  }
+
+  .appValuation .mobileStepSummary strong {
+    color: #153e32;
+    font-size: 0.78rem;
+    font-weight: 850;
+    text-align: right;
+  }
+
+  .appValuation .stepper {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 0.42rem;
+    overflow: visible;
+  }
+
+  .appValuation .stepperItem,
+  .appValuation .stepperItemActive {
+    width: 100%;
+    min-width: 0;
+    min-height: 2.35rem;
+    justify-content: center;
+    padding: 0.18rem;
+  }
+
+  .appValuation .stepperLabel {
+    display: none;
+  }
+
+  .appValuation .stepperBullet {
+    width: 2rem;
+    height: 2rem;
+  }
+
+  .appValuation .stepContent,
+  .appValuation .sectorStepContent {
+    padding: 0.85rem 0.72rem 1rem;
+  }
+
+  .appValuation .sectorStart {
+    gap: 0.75rem;
+  }
+
+  .appValuation .sectorIntro .stepTitle,
+  .appValuation .stepTitle {
+    font-size: clamp(1.72rem, 8vw, 2.15rem);
+  }
+
+  .appValuation .sectorIntro .stepText,
+  .appValuation .stepText {
+    margin-top: 0.38rem;
+    font-size: 0.9rem;
+  }
+
+  .appValuation .sectorLargeGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.65rem;
+  }
+
+  .appValuation .sectorBigCard {
+    min-height: 8.35rem;
+    border-radius: 1rem;
+  }
+
+  .appValuation .sectorBigCardContent {
+    padding: 0.78rem;
+  }
+
+  .appValuation .sectorLabel,
+  .appValuation .sectorBigCard .sectorLabel {
+    font-size: clamp(1.12rem, 5.5vw, 1.42rem);
+    line-height: 1.02;
+  }
+
+  .appValuation .equipmentPickerCard {
+    gap: 0.6rem;
+    padding: 0.82rem;
+    box-shadow: none;
+  }
+
+  .appValuation .equipmentPickerHead {
+    align-items: baseline;
+  }
+
+  .appValuation .equipmentPickerCard .equipmentDropdownTrigger {
+    display: none;
+  }
+
+  .appValuation .equipmentPickerCard .equipmentDropdownMenu {
+    max-height: min(20rem, 49dvh);
+    padding: 0.28rem;
+    border: 0;
+    border-radius: 0.75rem;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .appValuation .equipmentPickerCard .equipmentDropdownOption {
+    min-height: 3.15rem;
+    padding: 0.72rem 0.78rem;
+    border-radius: 0.75rem;
+    border-bottom: 1px solid rgba(17, 56, 45, 0.08);
+    box-shadow: none;
+  }
+
+  .appValuation .pathChoiceDeck {
+    grid-template-columns: 1fr;
+    gap: 0.7rem;
+  }
+
+  .appValuation .pathChoiceCard {
+    min-height: 5.4rem;
+    padding: 0.88rem 3rem 0.88rem 0.9rem;
+  }
+
+  .appValuation .tractorSetupCard,
+  .appValuation .inlineSetupGroup {
+    padding: 0.75rem;
+    box-shadow: none;
+  }
+
+  .appValuation .tractorSetupProgress {
+    gap: 0.58rem;
+  }
+
+  .appValuation .inlineSetupGroup:not(:last-child) {
+    margin-bottom: 0;
+  }
+
+  .appValuation .specStepCard {
+    grid-template-columns: 2.45rem minmax(0, 1fr) auto;
+    min-height: 4.2rem;
+    padding: 0.72rem;
+  }
+
+  .appValuation .specStepAction {
+    align-self: center;
+    white-space: nowrap;
+  }
+
+  .appValuation .conditionModeToggle {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.3rem;
+    padding: 0.28rem;
+    border: 1px solid rgba(17, 56, 45, 0.1);
+    border-radius: 0.85rem;
+    background: #eef4f0;
+  }
+
+  .appValuation .conditionModeToggle button {
+    min-height: 2.75rem;
+    border: 0;
+    border-radius: 0.68rem;
+    background: transparent;
+    color: #52665e;
+    font: inherit;
+    font-size: 0.86rem;
+    font-weight: 800;
+  }
+
+  .appValuation .conditionModeToggle .conditionModeToggleActive {
+    background: #1a5944;
+    color: #fff;
+    box-shadow: 0 7px 16px rgba(17, 63, 50, 0.16);
+  }
+
+  .appValuation .detailedAssessmentPanel {
+    display: grid;
+    gap: 0.55rem;
+    margin-top: 0.1rem;
+    padding: 0.7rem;
+  }
+
+  .appValuation .detailedAssessmentHeader {
+    padding: 0.2rem 0 0.6rem;
+  }
+
+  .appValuation .detailedAssessmentHeader span {
+    font-size: 0.8rem;
+  }
+
+  .appValuation .dealerAssessmentGroup {
+    margin: 0;
+    padding: 0.7rem 0 0;
+  }
+
+  .appValuation .dealerAssessmentOptions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.45rem;
+  }
+
+  .appValuation .dealerAssessmentOption {
+    min-height: 3rem;
+  }
+
+  .appValuation .detailedAssessmentSummary {
+    display: grid;
+    grid-template-columns: 1.8rem minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 0.6rem;
+    width: 100%;
+    min-height: 3.45rem;
+    padding: 0.6rem 0.7rem;
+    border: 1px solid rgba(24, 77, 61, 0.14);
+    border-radius: 0.78rem;
+    background: #f2f8f4;
+    color: #184d3d;
+    font: inherit;
+    text-align: left;
+  }
+
+  .appValuation .detailedAssessmentSummary > span:first-child {
+    display: grid;
+    place-items: center;
+    width: 1.7rem;
+    height: 1.7rem;
+    border-radius: 50%;
+    background: #1a5944;
+    color: #fff;
+    font-size: 0.72rem;
+  }
+
+  .appValuation .detailedAssessmentSummary > span:nth-child(2) {
+    display: grid;
+    gap: 0.12rem;
+  }
+
+  .appValuation .detailedAssessmentSummary small {
+    color: #65766e;
+    font-size: 0.74rem;
+  }
+
+  .appValuation .detailedAssessmentSummary > span:last-child {
+    font-size: 0.74rem;
+    font-weight: 850;
+  }
+
+  .appValuation .popularityStars {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 0.42rem;
+  }
+
+  .appValuation .popularityStars button {
+    width: 100%;
+    min-width: 0;
+    min-height: 3rem;
+  }
+
+  .appValuation .tractorExtrasGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.55rem;
+  }
+
+  .appValuation .tractorExtrasGrid .choiceCard {
+    min-height: 4.2rem;
+    padding: 0.72rem 2.2rem 0.72rem 0.65rem;
+  }
+
+  .appValuation .detailsModalOverlay {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .appValuation .detailsModal,
+  .appValuation .yearDetailsModal {
+    width: 100%;
+    max-height: calc(100dvh - 0.35rem);
+    overflow-y: auto;
+    gap: 0.7rem;
+    padding: 0.9rem 0.9rem max(0.9rem, env(safe-area-inset-bottom));
+    border-radius: 1.25rem 1.25rem 0 0;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .appValuation .detailsModalHeader {
+    position: sticky;
+    top: -0.9rem;
+    z-index: 4;
+    padding: 0.9rem 0 0.55rem;
+    background: rgba(255, 255, 255, 0.97);
+  }
+
+  .appValuation .detailsModalActions {
+    position: sticky;
+    bottom: calc(-0.9rem - env(safe-area-inset-bottom));
+    z-index: 4;
+    grid-template-columns: minmax(6.5rem, 0.72fr) minmax(0, 1.28fr);
+    padding: 0.65rem 0 max(0.9rem, env(safe-area-inset-bottom));
+    background: rgba(250, 252, 251, 0.97);
+    box-shadow: 0 -8px 20px rgba(17, 63, 50, 0.06);
+  }
+
+  .appValuation .yearSliderReadout {
+    min-height: 7.2rem;
+  }
+
+  .appValuation :is(input, select, textarea) {
+    font-size: 16px;
+  }
+
+  .appValuation .wizardFooter {
+    position: sticky;
+    bottom: 0;
+    z-index: 34;
+    display: grid;
+    grid-template-columns: minmax(6.4rem, 0.72fr) minmax(0, 1.28fr);
+    gap: 0.55rem;
+    padding: 0.65rem 0.72rem max(0.72rem, env(safe-area-inset-bottom));
+    border-radius: 0 0 1.15rem 1.15rem;
+    background: rgba(250, 252, 251, 0.97);
+    box-shadow: 0 -10px 24px rgba(17, 63, 50, 0.08);
+    backdrop-filter: blur(12px);
+  }
+
+  .appValuation .wizardFooter[data-has-disclaimer='true'] .preEstimateDisclaimer {
+    grid-column: 1 / -1;
+    grid-row: 1;
+  }
+
+  .appValuation .resultHero {
+    padding: 0.9rem;
+  }
+
+  .appValuation .resultHeroTopline {
+    align-items: center;
+  }
+
+  .appValuation .resultValue {
+    font-size: clamp(2.2rem, 11.5vw, 3rem);
+  }
+
+  .appValuation .resultConfidenceNote {
+    font-size: 0.84rem;
+    line-height: 1.45;
+  }
+
+  .appValuation .resultFactsGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5rem;
+  }
+
+  .appValuation .resultFactCard {
+    min-height: 3.8rem;
+    padding: 0.65rem 0.7rem;
+    border-radius: 0.75rem;
+  }
+
+  .appValuation .resultAccordionToggle {
+    min-height: 4.25rem;
+    padding: 0.82rem;
+  }
+
+  .appValuation .resultAccordionTitleGroup small {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    font-size: 0.78rem;
+  }
+
+  .appValuation .resultAccordionAction {
+    min-width: 4.5rem;
+    padding-inline: 0.65rem;
+    font-size: 0.76rem;
+  }
+
+  .appValuation .resultFinalActions {
+    gap: 0.8rem;
+    padding: 0.9rem;
+  }
+
+  .appValuation .resultFinalActionsCopy p {
+    font-size: 0.86rem;
+  }
+
+  .appValuation .replacementNoticeOverlay {
+    align-items: center;
+    padding: 0.75rem;
+  }
+
+  .appValuation .replacementNoticeModal {
+    max-height: calc(100dvh - 1.5rem);
+    padding: 1.05rem;
+  }
+}
+
+@media (max-width: 370px) {
+  .appValuation .sectorLargeGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .appValuation .sectorBigCard {
+    min-height: 7.6rem;
+  }
+}
+
 
 /* === valuation results polish pass === */
 .resultsLayout {

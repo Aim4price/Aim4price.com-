@@ -1756,6 +1756,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
   const [advancedRecalculateLoading, setAdvancedRecalculateLoading] = useState(false);
   const [advancedError, setAdvancedError] = useState('');
   const [detailedAssessmentOpen, setDetailedAssessmentOpen] = useState(false);
+  const [activeDetailedAssessmentSection, setActiveDetailedAssessmentSection] = useState('');
   const [dealerMechanicalCondition, setDealerMechanicalCondition] = useState('');
   const [dealerBodyCondition, setDealerBodyCondition] = useState('');
   const [dealerTyreCondition, setDealerTyreCondition] = useState('');
@@ -2938,6 +2939,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
 
   function clearDetailedAssessment(resetPopularity = true) {
     setDetailedAssessmentOpen(false);
+    setActiveDetailedAssessmentSection('');
     setDealerMechanicalCondition('');
     setDealerBodyCondition('');
     setDealerTyreCondition('');
@@ -4541,6 +4543,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
 
     setMessage('');
     setSelectedSector(sectorKey);
+    setEquipmentDropdownOpen(compactAppMode);
     if (sectorKey === 'motor') {
       setStep(2);
     }
@@ -4700,7 +4703,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     setGenericModelsFullyLoadedKey('');
     clearGenericModelSelection({ clearManual: true, clearPrefilledSpecs: true });
     setBrandSearch('');
-    setBrandDropdownOpen(false);
+    setBrandDropdownOpen(compactAppMode);
     setBrandSlug('');
     setUnlistedBrandName('');
     resetResult();
@@ -4861,6 +4864,8 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
       setStep(2);
       return;
     }
+    if (compactAppMode && step === 2) setEquipmentDropdownOpen(true);
+    if (compactAppMode && step === 3) setBrandDropdownOpen(true);
     setStep(previousStep(step));
   }
 
@@ -4870,6 +4875,8 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     setMessage('');
     setReplacementNoticeOpen(false);
     setActiveDetailsModal(null);
+    if (compactAppMode && targetStep === 1) setEquipmentDropdownOpen(true);
+    if (compactAppMode && targetStep === 2) setBrandDropdownOpen(true);
     setStep(isMotorSector(selectedSector) && targetStep === 3 ? 2 : targetStep);
 
     requestAnimationFrame(() => {
@@ -4932,7 +4939,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
 
                     <span className={styles.sectorLabelWrap}>
                       <strong className={styles.sectorLabel}>{sector.label}</strong>
-                      {isAvailable ? <span className={styles.sectorCardHint}>{compactAppMode ? 'Open' : 'Start estimate →'}</span> : null}
+                      {isAvailable && !compactAppMode ? <span className={styles.sectorCardHint}>Start estimate →</span> : null}
                     </span>
                   </span>
                 </button>
@@ -5949,7 +5956,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
         <div className={`${styles.detailsModal} ${styles.yearDetailsModal}`}>
           <div className={`${styles.detailsModalHeader} ${compactAppMode ? dealerStyles.dealerCompactModalHeader : ''}`}>
             <div>
-              <span className={styles.currentEyebrow}>Step 1</span>
+              <span className={styles.currentEyebrow}>{compactAppMode ? 'Asset details 1 of 5' : 'Step 1'}</span>
               {!compactAppMode ? (
                 <>
                   <h3 className={styles.detailsModalTitle}>{getAssetNounTitle(selectedSector)} manufacturing year</h3>
@@ -6062,7 +6069,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
         <div className={styles.detailsModal}>
           <div className={`${styles.detailsModalHeader} ${compactAppMode ? dealerStyles.dealerCompactModalHeader : ''}`}>
             <div>
-              <span className={styles.currentEyebrow}>Step 2</span>
+              <span className={styles.currentEyebrow}>{compactAppMode ? 'Asset details 2 of 5' : 'Step 2'}</span>
               {!compactAppMode ? (
                 <>
                   <h3 className={styles.detailsModalTitle}>{usageModalMode === 'hours' && showHoursInput ? selectedUsageFieldLabel : 'Worked percentage'}</h3>
@@ -6181,7 +6188,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
       <div className={`${styles.currentCard} ${styles.specProgressCard}`}>
         <div className={styles.currentCardHead}>
           <div>
-            <span className={styles.currentEyebrow}>Step 5</span>
+            <span className={styles.currentEyebrow}>{compactAppMode ? 'Asset details 5 of 5' : 'Step 5'}</span>
             <h3 className={styles.currentTitle}>Answer a few simple questions</h3>
             <p className={styles.currentHint}>Answer each question in order. The next question appears underneath once the required answer is captured.</p>
           </div>
@@ -6227,6 +6234,15 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
       : compactAppMode
         ? 'Answer each step.'
         : 'Answer one step at a time. Aim4price only reveals the next question after the current one is saved.';
+    const detailedAssessmentSections = [
+      { label: 'Mechanical condition', value: dealerMechanicalCondition },
+      { label: 'Body / frame / structure', value: dealerBodyCondition },
+      { label: 'Tyres / wear components', value: dealerTyreCondition },
+      { label: 'Service history', value: dealerServiceHistory },
+      { label: 'Required work', value: dealerRequiredWork },
+    ];
+    const firstIncompleteDetailedSection = detailedAssessmentSections.find((section) => !section.value)?.label ?? '';
+    const currentDetailedSection = activeDetailedAssessmentSection || firstIncompleteDetailedSection;
 
     return (
       <div>
@@ -6269,7 +6285,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
             <div className={`${styles.currentCard} ${styles.conditionStepCard}`}>
               <div className={styles.currentCardHead}>
                 <div>
-                  <span className={styles.currentEyebrow}>Step 3</span>
+                  <span className={styles.currentEyebrow}>{compactAppMode ? 'Asset details 3 of 5' : 'Step 3'}</span>
                   <h3 className={styles.currentTitle}>Condition</h3>
                   <p className={styles.currentHint}>{compactAppMode ? 'Choose one.' : 'Choose the closest current condition.'}</p>
                 </div>
@@ -6282,28 +6298,61 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                 )}
               </div>
 
-              <div className={styles.conditionButtonGrid}>
-                {conditionOptions.map((option) => (
+              {compactAppMode ? (
+                <div className={styles.conditionModeToggle} role="group" aria-label="Condition assessment type">
                   <button
-                    key={option.key}
                     type="button"
-                    className={`${styles.conditionChoiceButton} ${conditionStepComplete && condition === option.key ? styles.conditionChoiceButtonActive : ''}`}
-                    aria-pressed={conditionStepComplete && condition === option.key}
+                    className={!detailedAssessmentOpen ? styles.conditionModeToggleActive : ''}
+                    aria-pressed={!detailedAssessmentOpen}
                     onClick={() => {
-                      setCondition(option.key);
+                      clearDetailedAssessment(false);
                       setConditionStepComplete(true);
-                      clearDetailedAssessment();
                       resetResult();
                     }}
                   >
-                    {option.label}
+                    Simple
                   </button>
-                ))}
-              </div>
+                  <button
+                    type="button"
+                    className={detailedAssessmentOpen ? styles.conditionModeToggleActive : ''}
+                    aria-pressed={detailedAssessmentOpen}
+                    onClick={() => {
+                      setConditionStepComplete(true);
+                      setDetailedAssessmentOpen(true);
+                      setActiveDetailedAssessmentSection(firstIncompleteDetailedSection || 'Mechanical condition');
+                      setDetailedAssessmentError('');
+                      resetResult();
+                    }}
+                  >
+                    Detailed
+                  </button>
+                </div>
+              ) : null}
+
+              {!compactAppMode || !detailedAssessmentOpen ? (
+                <div className={styles.conditionButtonGrid}>
+                  {conditionOptions.map((option) => (
+                    <button
+                      key={option.key}
+                      type="button"
+                      className={`${styles.conditionChoiceButton} ${conditionStepComplete && condition === option.key ? styles.conditionChoiceButtonActive : ''}`}
+                      aria-pressed={conditionStepComplete && condition === option.key}
+                      onClick={() => {
+                        setCondition(option.key);
+                        setConditionStepComplete(true);
+                        clearDetailedAssessment();
+                        resetResult();
+                      }}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
 
               {conditionStepComplete ? (
                 <>
-              <div className={styles.detailedAssessmentEntry}>
+              {!compactAppMode ? <div className={styles.detailedAssessmentEntry}>
                 <div>
                   <strong>Want a more accurate condition adjustment?</strong>
                   <span>Assess the mechanical condition, body, tyres or wear components, service history and required work.</span>
@@ -6323,7 +6372,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                 >
                   {detailedAssessmentOpen ? 'Use simple condition' : 'Add detailed condition'}
                 </button>
-              </div>
+              </div> : null}
 
               {detailedAssessmentOpen ? (
                 <div className={styles.detailedAssessmentPanel}>
@@ -6334,23 +6383,23 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                   {renderDealerAssessmentGroup('Mechanical condition', dealerMechanicalCondition, DEALER_MECHANICAL_OPTIONS, (value) => {
                     setDealerMechanicalCondition(value);
                     resetResult();
-                  })}
+                  }, currentDetailedSection === 'Mechanical condition', 'Body / frame / structure')}
                   {renderDealerAssessmentGroup('Body / frame / structure', dealerBodyCondition, DEALER_BODY_OPTIONS, (value) => {
                     setDealerBodyCondition(value);
                     resetResult();
-                  })}
+                  }, currentDetailedSection === 'Body / frame / structure', 'Tyres / wear components')}
                   {renderDealerAssessmentGroup('Tyres / wear components', dealerTyreCondition, DEALER_TYRE_OPTIONS, (value) => {
                     setDealerTyreCondition(value);
                     resetResult();
-                  })}
+                  }, currentDetailedSection === 'Tyres / wear components', 'Service history')}
                   {renderDealerAssessmentGroup('Service history', dealerServiceHistory, DEALER_SERVICE_OPTIONS, (value) => {
                     setDealerServiceHistory(value);
                     resetResult();
-                  })}
+                  }, currentDetailedSection === 'Service history', 'Required work')}
                   {renderDealerAssessmentGroup('Required work', dealerRequiredWork, DEALER_WORK_OPTIONS, (value) => {
                     setDealerRequiredWork(value);
                     resetResult();
-                  })}
+                  }, currentDetailedSection === 'Required work', '')}
                   {detailedAssessmentError ? <p className={styles.advancedError}>{detailedAssessmentError}</p> : null}
                   {detailedAssessmentComplete ? <p className={styles.detailedAssessmentReady}>Detailed condition complete.</p> : null}
                 </div>
@@ -6364,7 +6413,11 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
             <div className={`${styles.currentCard} ${styles.popularityStepCard}`}>
               <div className={styles.currentCardHead}>
                 <div>
-                  <span className={styles.currentEyebrow}>Step 4</span>
+                  {compactAppMode ? (
+                    <span className={styles.currentEyebrow}>Asset details 4 of 5</span>
+                  ) : (
+                    <span className={styles.currentEyebrow}>Step 4</span>
+                  )}
                   <h3 className={styles.currentTitle}>Popularity</h3>
                   <p className={styles.currentHint}>Rate current market demand for this asset.</p>
                 </div>
@@ -6409,7 +6462,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                 resetResult();
               }}>
                 <strong>Front PTO</strong>
-                <span className={styles.choiceCardNote}>Adds depreciated value</span>
+                {!compactAppMode ? <span className={styles.choiceCardNote}>Adds depreciated value</span> : null}
               </button>
               <button type="button" className={`${styles.choiceCard} ${frontLoader ? styles.choiceCardActive : ''}`} aria-pressed={frontLoader} onClick={() => {
                 setFrontLoader((value) => {
@@ -6422,7 +6475,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                 resetResult();
               }}>
                 <strong>Front Loader</strong>
-                <span className={styles.choiceCardNote}>Adds depreciated value</span>
+                {!compactAppMode ? <span className={styles.choiceCardNote}>Adds depreciated value</span> : null}
               </button>
               <button type="button" className={`${styles.choiceCard} ${gpsEnabled ? styles.choiceCardActive : ''}`} aria-pressed={gpsEnabled} onClick={() => {
                 setGpsEnabled((value) => {
@@ -6435,7 +6488,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                 resetResult();
               }}>
                 <strong>GPS</strong>
-                <span className={styles.choiceCardNote}>Adds depreciated value</span>
+                {!compactAppMode ? <span className={styles.choiceCardNote}>Adds depreciated value</span> : null}
               </button>
               <button type="button" className={`${styles.choiceCard} ${otherExtraEnabled ? styles.choiceCardActive : ''}`} aria-pressed={otherExtraEnabled} onClick={() => {
                 setOtherExtraEnabled((value) => {
@@ -6448,7 +6501,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                 resetResult();
               }}>
                 <strong>Other</strong>
-                <span className={`${styles.choiceCardNote} ${styles.otherExtraCardNote}`}>Add another extra</span>
+                {!compactAppMode ? <span className={`${styles.choiceCardNote} ${styles.otherExtraCardNote}`}>Add another extra</span> : null}
               </button>
             </div>
             {frontLoader ? (
@@ -6560,9 +6613,32 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     value: string,
     options: readonly { value: string; label: string }[],
     onChange: (value: string) => void,
+    isActive = true,
+    nextSection = '',
   ) {
+    const selectedOptionLabel = options.find((option) => option.value === value)?.label ?? value;
+
+    if (compactAppMode && value && !isActive) {
+      return (
+        <button
+          type="button"
+          className={styles.detailedAssessmentSummary}
+          onClick={() => setActiveDetailedAssessmentSection(label)}
+        >
+          <span>✓</span>
+          <span>
+            <strong>{label}</strong>
+            <small>{selectedOptionLabel}</small>
+          </span>
+          <span>Edit</span>
+        </button>
+      );
+    }
+
+    if (compactAppMode && !isActive) return null;
+
     return (
-      <fieldset className={styles.dealerAssessmentGroup}>
+      <fieldset className={styles.dealerAssessmentGroup} data-assessment-active={isActive}>
         <legend>{label}</legend>
         <div className={styles.dealerAssessmentOptions}>
           {options.map((option) => (
@@ -6574,6 +6650,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
               onClick={() => {
                 onChange(option.value);
                 setDetailedAssessmentError('');
+                if (compactAppMode) setActiveDetailedAssessmentSection(nextSection);
               }}
             >
               {option.label}
@@ -7097,7 +7174,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
   const isSectorIntroStep = step === 1 && !selectedSector;
 
   return (
-    <main className={`${styles.page} ${compactAppMode ? dealerStyles.dealerValuationSurface : ''}`}>
+    <main className={`${styles.page} ${compactAppMode ? `${styles.appValuation} ${dealerStyles.dealerValuationSurface}` : ''}`}>
       {!compactAppMode ? <AppHeader active="valuation" /> : null}
       {completionToastVisible ? (
         <div className={styles.completionToast} role="status" aria-live="polite">
@@ -7107,8 +7184,14 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
       <div className={styles.container}>
         <section className={`${styles.wizardShell} ${isSectorIntroStep ? styles.sectorWizardShell : ''}`}>
           <div id="valuation-wizard-card" className={`${styles.wizardCard} ${isSectorIntroStep ? styles.sectorWizardCard : ''}`}>
-            {step > 1 ? (
+            {step > 1 || (compactAppMode && selectedSector) ? (
               <div className={styles.wizardHeader}>
+                {compactAppMode ? (
+                  <div className={styles.mobileStepSummary} aria-live="polite">
+                    <span>Estimate {step} of {WIZARD_STEPS.length}</span>
+                    <strong>{getWizardStepLabel(step, selectedSector)}</strong>
+                  </div>
+                ) : null}
                 <div className={styles.stepper}>
                   {WIZARD_STEPS.map((item) => {
                     const active = item.step === step;
