@@ -11762,96 +11762,34 @@
 }
 
 .replacementNoticeModal .replacementNoticeIntro {
+  max-width: 43ch;
+  margin-top: 0.65rem;
   color: #3f554e;
 }
 
-.replacementNoticeWarning {
-  display: grid;
-  gap: 0.8rem;
-  margin-top: 1rem;
-  padding: 0.95rem 1rem;
-  border: 1px solid #d83b32;
-  border-left-width: 4px;
-  border-radius: 0.9rem;
-  background: #fff3f1;
-  color: #7f211c;
+.replacementNoticeModal {
+  width: min(500px, 100%);
+  max-height: calc(100dvh - 2rem);
+  padding: 1.5rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
-.replacementNoticeWarningTitle {
-  display: flex;
-  align-items: center;
-  gap: 0.55rem;
-  color: #a5221b;
-}
-
-.replacementNoticeWarningTitle > span {
-  display: inline-grid;
-  place-items: center;
-  width: 1.55rem;
-  height: 1.55rem;
-  flex: 0 0 auto;
-  border-radius: 50%;
-  background: #c92e25;
-  color: #fff;
-  font-size: 0.9rem;
-  font-weight: 900;
-}
-
-.replacementNoticeFacts {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.65rem;
+.replacementNoticeModal h2 {
   margin: 0;
 }
 
-.replacementNoticeFacts > div {
-  display: grid;
-  gap: 0.25rem;
-  padding: 0.7rem 0.75rem;
-  border: 1px solid rgba(165, 34, 27, 0.18);
-  border-radius: 0.7rem;
-  background: rgba(255, 255, 255, 0.72);
-}
-
-.replacementNoticeFacts dt {
-  color: #74433f;
-  font-size: 0.7rem;
-  font-weight: 800;
-  letter-spacing: 0.045em;
-  text-transform: uppercase;
-}
-
-.replacementNoticeFacts dd {
-  margin: 0;
-  color: #53231f;
-  font-size: 0.9rem;
-  font-weight: 800;
-  line-height: 1.35;
-}
-
-.replacementNoticeFacts .replacementNoticeUsageFact {
-  border-color: rgba(181, 35, 27, 0.55);
-  background: #ffe7e3;
-}
-
-.replacementNoticeUsageFact dt,
-.replacementNoticeUsageFact dd {
-  color: #ad211a;
-}
-
-.replacementNoticeWarning p {
-  margin: 0;
-  color: #7f332d;
-  font-size: 0.78rem;
-  font-weight: 650;
-  line-height: 1.45;
+.replacementNoticeActions {
+  margin-top: 1.25rem;
 }
 
 .replacementNoticeDisclaimer {
   display: block;
-  margin-top: 0.75rem;
-  color: #718078;
-  font-size: 0.66rem;
+  margin-top: 1rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(5, 94, 74, 0.12);
+  color: #526861;
+  font-size: 0.75rem;
   line-height: 1.4;
 }
 
@@ -11861,8 +11799,7 @@
   }
 
   .replacementFieldsGrid,
-  .replacementOtherFields,
-  .replacementNoticeFacts {
+  .replacementOtherFields {
     grid-template-columns: minmax(0, 1fr);
   }
 
