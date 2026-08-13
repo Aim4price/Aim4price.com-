@@ -2759,24 +2759,59 @@
     min-height: 18px !important;
   }
 
-  .dealerValuationSurface [class*='stepper'] {
+  .dealerValuationSurface [class*='wizardHeader'] > [class*='stepper'] {
     display: grid !important;
     grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
-    gap: 8px !important;
+    align-items: center !important;
+    gap: 6px !important;
     overflow: visible !important;
   }
 
   .dealerValuationSurface [class*='stepperItem'] {
-    width: 100% !important;
-    min-width: 0 !important;
+    position: static !important;
+    display: grid !important;
+    place-items: center !important;
+    justify-self: center !important;
+    width: 36px !important;
+    min-width: 36px !important;
+    max-width: 36px !important;
+    height: 36px !important;
     min-height: 36px !important;
-    justify-content: center !important;
-    padding: 2px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 50% !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    transform: none !important;
   }
 
   .dealerValuationSurface [class*='stepperBullet'] {
-    width: 32px !important;
-    height: 32px !important;
+    position: static !important;
+    inset: auto !important;
+    display: grid !important;
+    place-items: center !important;
+    width: 34px !important;
+    min-width: 34px !important;
+    height: 34px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 1px solid rgba(28, 75, 59, 0.04) !important;
+    border-radius: 50% !important;
+    background: #e7eeea !important;
+    color: #718078 !important;
+    font-size: 13px !important;
+    line-height: 1 !important;
+    text-align: center !important;
+    box-shadow: none !important;
+    transform: none !important;
+  }
+
+  .dealerValuationSurface [class*='stepperBulletActive'],
+  .dealerValuationSurface [class*='stepperBulletComplete'] {
+    border-color: #1d5742 !important;
+    background: #1d5742 !important;
+    color: #ffffff !important;
   }
 
   .dealerValuationSurface [class*='stepperLabel'] {
@@ -2792,17 +2827,50 @@
     gap: 10px !important;
   }
 
-  .dealerValuationSurface [class*='sectorBigCard'] {
+  .dealerValuationSurface button[class*='sectorBigCard'] {
     min-height: 132px !important;
     border-radius: 16px !important;
   }
 
+  .dealerValuationSurface button[class*='sectorBigCardApp'] {
+    display: grid !important;
+    place-items: center !important;
+    min-height: 112px !important;
+    border: 1px solid rgba(116, 185, 156, 0.5) !important;
+    background: #1d5742 !important;
+    box-shadow: 0 10px 22px rgba(14, 55, 42, 0.14) !important;
+    transform: none !important;
+  }
+
+  .dealerValuationSurface button[class*='sectorBigCardApp']::before,
+  .dealerValuationSurface button[class*='sectorBigCardApp']::after {
+    display: none !important;
+  }
+
   .dealerValuationSurface [class*='sectorBigCardContent'] {
-    padding: 12px !important;
+    position: relative !important;
+    inset: auto !important;
+    display: grid !important;
+    place-items: center !important;
+    width: 100% !important;
+    height: 100% !important;
+    padding: 14px !important;
+    text-align: center !important;
+  }
+
+  .dealerValuationSurface [class*='sectorBigCardApp'] [class*='sectorLabelWrap'] {
+    align-items: center !important;
+    justify-content: center !important;
+    width: 100% !important;
+    text-align: center !important;
   }
 
   .dealerValuationSurface [class*='sectorLabel'] {
-    font-size: clamp(1.12rem, 5.5vw, 1.42rem) !important;
+    color: #ffffff !important;
+    font-size: clamp(1.05rem, 4.8vw, 1.3rem) !important;
+    line-height: 1.12 !important;
+    letter-spacing: -0.02em !important;
+    text-align: center !important;
   }
 
   .dealerValuationSurface [class*='equipmentPickerCard'] [class*='equipmentDropdownTrigger'] {
@@ -3008,7 +3076,7 @@
     gap: 8px !important;
   }
 
-  .dealerValuationSurface [class*='sectorBigCard'] {
+  .dealerValuationSurface button[class*='sectorBigCard'] {
     min-height: 112px !important;
   }
 

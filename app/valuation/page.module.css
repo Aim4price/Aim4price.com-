@@ -12323,3 +12323,54 @@
     padding: 1.3rem;
   }
 }
+
+/* Owner/Dealer apps use calm, static sector choices instead of video previews. */
+.appValuation .sectorBigCardApp {
+  display: grid;
+  place-items: center;
+  min-height: clamp(7rem, 22vw, 10rem);
+  border: 1px solid rgba(105, 177, 147, 0.46);
+  background: #1d5742;
+  box-shadow:
+    0 12px 26px rgba(15, 56, 43, 0.13),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.appValuation .sectorBigCardApp::before,
+.appValuation .sectorBigCardApp::after {
+  display: none;
+}
+
+.appValuation .sectorBigCardApp:hover,
+.appValuation .sectorBigCardApp:focus-visible {
+  transform: translateY(-2px);
+  border-color: rgba(150, 211, 185, 0.7);
+  background: #23634b;
+}
+
+.appValuation .sectorBigCardApp .sectorBigCardContent {
+  position: relative;
+  inset: auto;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  padding: 1rem;
+  text-align: center;
+}
+
+.appValuation .sectorBigCardApp .sectorLabelWrap {
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  text-align: center;
+}
+
+.appValuation .sectorBigCardApp .sectorLabel {
+  color: #ffffff;
+  font-size: clamp(1.05rem, 4.7vw, 1.4rem);
+  line-height: 1.12;
+  letter-spacing: -0.025em;
+  text-align: center;
+  text-shadow: 0 3px 12px rgba(5, 27, 20, 0.24);
+}
