@@ -6289,6 +6289,8 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     ];
     const firstIncompleteDetailedSection = detailedAssessmentSections.find((section) => !section.value)?.label ?? '';
     const currentDetailedSection = activeDetailedAssessmentSection || firstIncompleteDetailedSection;
+    const currentDetailedSectionIndex = detailedAssessmentSections.findIndex((section) => section.label === currentDetailedSection);
+    const currentDetailedSectionNumber = currentDetailedSectionIndex >= 0 ? currentDetailedSectionIndex + 1 : detailedAssessmentSections.length;
 
     return (
       <div>
@@ -6340,94 +6342,89 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                   <span className={styles.selectedSummaryPill} data-selection-status="selected">
                     {detailedAssessmentOpen ? 'Detailed condition' : conditionLabel(condition)}
                   </span>
-                ) : (
+                ) : !compactAppMode ? (
                   <span className={styles.selectedSummaryPill} data-selection-status="pending">Choose one</span>
-                )}
+                ) : null}
               </div>
-
-              {compactAppMode ? (
-                <div className={styles.conditionModeToggle} role="group" aria-label="Condition assessment type">
-                  <button
-                    type="button"
-                    className={!detailedAssessmentOpen ? styles.conditionModeToggleActive : ''}
-                    aria-pressed={!detailedAssessmentOpen}
-                    onClick={() => {
-                      clearDetailedAssessment(false);
-                      setConditionStepComplete(true);
-                      resetResult();
-                      scrollToDetailsCard('valuation-popularity-step');
-                    }}
-                  >
-                    Simple
-                  </button>
-                  <button
-                    type="button"
-                    className={detailedAssessmentOpen ? styles.conditionModeToggleActive : ''}
-                    aria-pressed={detailedAssessmentOpen}
-                    onClick={() => {
-                      setConditionStepComplete(true);
-                      setDetailedAssessmentOpen(true);
-                      setActiveDetailedAssessmentSection(firstIncompleteDetailedSection || 'Mechanical condition');
-                      setDetailedAssessmentError('');
-                      resetResult();
-                    }}
-                  >
-                    Detailed
-                  </button>
-                </div>
-              ) : null}
 
               {!compactAppMode || !detailedAssessmentOpen ? (
                 <div className={styles.conditionButtonGrid}>
-                  {conditionOptions.map((option) => (
-                    <button
-                      key={option.key}
-                      type="button"
-                      className={`${styles.conditionChoiceButton} ${conditionStepComplete && condition === option.key ? styles.conditionChoiceButtonActive : ''}`}
-                      aria-pressed={conditionStepComplete && condition === option.key}
-                      onClick={() => {
-                        setCondition(option.key);
-                        setConditionStepComplete(true);
-                        clearDetailedAssessment();
-                        resetResult();
-                        scrollToDetailsCard('valuation-popularity-step');
-                      }}
-                    >
-                      {option.label}
-                    </button>
-                  ))}
+                  {conditionOptions.map((option) => {
+                    const selected = conditionStepComplete && condition === option.key;
+                    return (
+                      <button
+                        key={option.key}
+                        type="button"
+                        className={`${styles.conditionChoiceButton} ${selected ? styles.conditionChoiceButtonActive : ''}`}
+                        aria-pressed={selected}
+                        onClick={() => {
+                          setCondition(option.key);
+                          setConditionStepComplete(true);
+                          clearDetailedAssessment();
+                          resetResult();
+                          scrollToDetailsCard('valuation-detailed-condition-entry');
+                        }}
+                      >
+                        {compactAppMode ? <span className={styles.conditionChoiceIndicator} aria-hidden="true">{selected ? '✓' : ''}</span> : null}
+                        <span className={styles.conditionChoiceLabel}>{option.label}</span>
+                      </button>
+                    );
+                  })}
                 </div>
               ) : null}
 
               {conditionStepComplete ? (
                 <>
-              {!compactAppMode ? <div className={styles.detailedAssessmentEntry}>
-                <div>
-                  <strong>Want a more accurate condition adjustment?</strong>
-                  <span>Assess the mechanical condition, body, tyres or wear components, service history and required work.</span>
-                </div>
-                <button
-                  type="button"
-                  className={styles.detailedAssessmentToggle}
-                  onClick={() => {
-                    if (detailedAssessmentOpen) {
-                      clearDetailedAssessment(false);
-                    } else {
-                      setDetailedAssessmentOpen(true);
-                      setDetailedAssessmentError('');
-                    }
-                    resetResult();
-                  }}
-                >
-                  {detailedAssessmentOpen ? 'Use simple condition' : 'Add detailed condition'}
-                </button>
-              </div> : null}
+                  <div id="valuation-detailed-condition-entry" className={styles.detailedAssessmentEntry}>
+                    <div>
+                      <strong>{compactAppMode ? detailedAssessmentOpen ? 'Detailed condition' : 'Add more detail?' : 'Want a more accurate condition adjustment?'}</strong>
+                      <span>
+                        {compactAppMode
+                          ? detailedAssessmentOpen
+                            ? 'These answers replace the broad condition choice.'
+                            : 'Answer five quick condition questions for a more accurate estimate.'
+                          : 'Assess the mechanical condition, body, tyres or wear components, service history and required work.'}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      className={styles.detailedAssessmentToggle}
+                      aria-expanded={detailedAssessmentOpen}
+                      aria-controls="detailed-condition-assessment"
+                      onClick={() => {
+                        if (detailedAssessmentOpen) {
+                          clearDetailedAssessment(false);
+                          scrollToDetailsCard('valuation-detailed-condition-entry');
+                        } else {
+                          setDetailedAssessmentOpen(true);
+                          setActiveDetailedAssessmentSection(firstIncompleteDetailedSection || 'Mechanical condition');
+                          setDetailedAssessmentError('');
+                          scrollToDetailsCard('detailed-condition-assessment');
+                        }
+                        resetResult();
+                      }}
+                    >
+                      {detailedAssessmentOpen ? 'Use broad condition' : compactAppMode ? 'Add details' : 'Add detailed condition'}
+                    </button>
+                  </div>
 
               {detailedAssessmentOpen ? (
-                <div className={styles.detailedAssessmentPanel}>
+                <div id="detailed-condition-assessment" className={styles.detailedAssessmentPanel}>
                   <div className={styles.detailedAssessmentHeader}>
-                    <strong>Detailed Asset Assessment</strong>
-                    <span>This replaces the broad condition percentage. It is not applied as a second condition deduction.</span>
+                    <strong>
+                      {compactAppMode
+                        ? currentDetailedSection
+                          ? `Detailed condition ${currentDetailedSectionNumber} of ${detailedAssessmentSections.length}`
+                          : 'Detailed condition complete'
+                        : 'Detailed Asset Assessment'}
+                    </strong>
+                    <span>
+                      {compactAppMode
+                        ? currentDetailedSection
+                          ? 'Choose the closest answer for this asset.'
+                          : 'You can edit any answer below.'
+                        : 'This replaces the broad condition percentage. It is not applied as a second condition deduction.'}
+                    </span>
                   </div>
                   {renderDealerAssessmentGroup('Mechanical condition', dealerMechanicalCondition, DEALER_MECHANICAL_OPTIONS, (value) => {
                     setDealerMechanicalCondition(value);
@@ -6450,7 +6447,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                     resetResult();
                   }, currentDetailedSection === 'Required work', '')}
                   {detailedAssessmentError ? <p className={styles.advancedError}>{detailedAssessmentError}</p> : null}
-                  {detailedAssessmentComplete ? <p className={styles.detailedAssessmentReady}>Detailed condition complete.</p> : null}
+                  {detailedAssessmentComplete && !compactAppMode ? <p className={styles.detailedAssessmentReady}>Detailed condition complete.</p> : null}
                 </div>
               ) : null}
                 </>
