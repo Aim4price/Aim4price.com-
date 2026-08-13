@@ -124,10 +124,107 @@
   line-height: 1.55;
 }
 
-.stepStack {
+.wizardProgress {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0;
+  margin: 24px 0 0;
+  padding: 0;
+}
+
+.wizardProgressStep {
+  position: relative;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  color: #7a8b84;
+}
+
+.wizardProgressStep:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  z-index: 0;
+  top: 22px;
+  right: 16px;
+  left: 54px;
+  height: 2px;
+  background: #dce8e3;
+}
+
+.wizardProgressStep > span {
+  position: relative;
+  z-index: 1;
+  width: 44px;
+  height: 44px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border: 1px solid #c8dbd4;
+  border-radius: 999px;
+  color: #597068;
+  background: #f7faf8;
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.wizardProgressStep > strong {
+  position: relative;
+  z-index: 1;
+  padding-right: 12px;
+  color: inherit;
+  background: #fff;
+  font-size: 14px;
+  font-weight: 850;
+  line-height: 1.25;
+}
+
+.wizardProgressStepCurrent,
+.wizardProgressStepComplete {
+  color: #087553;
+}
+
+.wizardProgressStepCurrent > span {
+  border-color: #168660;
+  color: #fff;
+  background: #168660;
+  box-shadow: 0 0 0 5px rgba(22, 134, 96, 0.11);
+}
+
+.wizardProgressStepComplete > span {
+  border-color: #92cdb7;
+  color: #087553;
+  background: #e5f6ef;
+}
+
+.wizardProgressStepComplete:not(:last-child)::after {
+  background: #83c8ae;
+}
+
+.wizardBody {
   display: grid;
   gap: 18px;
   margin-top: 22px;
+}
+
+.wizardPanel {
+  min-height: clamp(20rem, 43vh, 29rem);
+  display: grid;
+  align-content: start;
+  animation: umbrellaWizardStepIn 180ms ease both;
+}
+
+@keyframes umbrellaWizardStepIn {
+  from {
+    opacity: 0;
+    transform: translateX(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 .stepCard {
@@ -819,6 +916,10 @@
   background: #fbfdfc;
 }
 
+.wizardFooter {
+  min-height: 84px;
+}
+
 .cancelButton,
 .saveButton,
 .deleteButton {
@@ -900,6 +1001,29 @@
     border-radius: 18px;
   }
 
+  .wizardProgressStep {
+    display: grid;
+    justify-items: center;
+    gap: 7px;
+    text-align: center;
+  }
+
+  .wizardProgressStep:not(:last-child)::after {
+    top: 21px;
+    right: -50%;
+    left: 50%;
+  }
+
+  .wizardProgressStep > strong {
+    padding: 0 4px;
+    background: transparent;
+    font-size: 11px;
+  }
+
+  .wizardPanel {
+    min-height: 0;
+  }
+
   .stepHeader {
     grid-template-columns: auto minmax(0, 1fr);
   }
@@ -931,6 +1055,16 @@
   .footer {
     display: grid;
     grid-template-columns: 1fr 1fr;
+  }
+
+  .wizardFooter > :first-child {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+
+  .wizardFooter > .saveButton:nth-child(2):last-child {
+    grid-column: 1 / -1;
+    grid-row: 1;
   }
 
   .cancelButton,
@@ -978,5 +1112,15 @@
 
   .footer {
     grid-template-columns: 1fr;
+  }
+
+  .wizardFooter {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wizardPanel {
+    animation: none;
   }
 }

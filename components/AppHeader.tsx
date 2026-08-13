@@ -236,6 +236,19 @@ const LICENSING_ACCOUNT_MENU_ITEMS: AccountMenuItem[] = [
   { href: '/account', label: 'Account' },
 ];
 
+const ACCOUNT_MENU_COLLATOR = new Intl.Collator('en-ZA', {
+  sensitivity: 'base',
+  numeric: true,
+  ignorePunctuation: true,
+});
+
+function sortAccountMenuItems<T extends { href: string; label: string }>(items: readonly T[]): T[] {
+  return [...items].sort((left, right) =>
+    ACCOUNT_MENU_COLLATOR.compare(left.label, right.label)
+      || ACCOUNT_MENU_COLLATOR.compare(left.href, right.href),
+  );
+}
+
 function isAccountMenuItemVisible(item: AccountMenuItem, accountType: AccountType | undefined): boolean {
   if (!item.accountTypes?.length) {
     return true;
@@ -2421,7 +2434,7 @@ export default function AppHeader({
                         {isAccountantWorkspace ? (
                           <>
                             {usesCompactHeader
-                              ? navItems.map((item) => {
+                              ? sortAccountMenuItems(navItems).map((item) => {
                                   const isActive = activeNavKey === item.key;
                                   return (
                                     <Link
@@ -2446,7 +2459,7 @@ export default function AppHeader({
                           </>
                         ) : (
                           <>
-                            {(session?.accountType === 'licensing'
+                            {sortAccountMenuItems(session?.accountType === 'licensing'
                               ? LICENSING_ACCOUNT_MENU_ITEMS
                               : isAccountantAccount
                                 ? ACCOUNTANT_ACCOUNT_MENU_ITEMS

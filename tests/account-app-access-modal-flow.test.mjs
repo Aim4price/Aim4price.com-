@@ -58,6 +58,16 @@ test('all Manage directories and access choices stay alphabetical after every up
   assert.match(shared, /setStorages\(sortAccessOptions\(payload\.storages \?\? \[\], \(storage\) => storage\.name\)\)/);
 });
 
+test('the header Manage popover always sorts visible destinations alphabetically', async () => {
+  const header = await read('components/AppHeader.tsx');
+
+  assert.match(header, /const ACCOUNT_MENU_COLLATOR = new Intl\.Collator\('en-ZA'/);
+  assert.match(header, /function sortAccountMenuItems<T extends \{ href: string; label: string \}>/);
+  assert.match(header, /ACCOUNT_MENU_COLLATOR\.compare\(left\.label, right\.label\)/);
+  assert.match(header, /sortAccountMenuItems\(navItems\)\.map/);
+  assert.match(header, /sortAccountMenuItems\(session\?\.accountType === 'licensing'/);
+});
+
 test('access launcher and dialogs stay large, focused and responsive', async () => {
   const [shared, styles] = await Promise.all([
     read('app/account/app-access-management-client.tsx'),
