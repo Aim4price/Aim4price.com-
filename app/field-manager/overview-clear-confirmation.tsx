@@ -79,6 +79,23 @@ export default function OverviewClearConfirmation({
         aria-labelledby="overview-clear-title"
         aria-describedby="overview-clear-description"
       >
+        <button
+          type="button"
+          className={styles.overviewConfirmClose}
+          onClick={onCancel}
+          disabled={isClearing}
+          aria-label="Close Overview clear confirmation"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.2"
+            aria-hidden="true"
+          >
+            <path d="m7 7 10 10M17 7 7 17" strokeLinecap="round" />
+          </svg>
+        </button>
         <span className={styles.overviewConfirmEyebrow}>Overview</span>
         <h2 id="overview-clear-title">{title}</h2>
 
