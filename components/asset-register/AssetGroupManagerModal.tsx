@@ -3,9 +3,7 @@
 import { createPortal } from 'react-dom';
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type FormEvent } from 'react';
 import {
-  assetGroupRelationshipLabel,
   type AssetGroup,
-  type AssetGroupRelationship,
   type AssetGroupSaveInput,
   type AssetGroupValueMode,
 } from '../../lib/asset-groups-shared';
@@ -13,7 +11,7 @@ import registerStyles from '../../app/asset-register/page.module.css';
 import styles from './AssetGroupManagerModal.module.css';
 
 type IconProps = { className?: string };
-type AssetGroupModalView = 'menu' | 'members' | 'settings' | 'reports' | 'delete' | 'create';
+type AssetGroupModalView = 'menu' | 'members' | 'reports' | 'delete' | 'create';
 type AssetGroupReportStep = 'options' | 'format' | 'filters';
 
 export type AssetGroupReportKind = 'valuation' | 'maintenance' | 'fuel' | 'depreciation' | 'ownership';
@@ -34,15 +32,6 @@ function MembersIcon({ className }: IconProps) {
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <path d="M8 8.5a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM16.5 10a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z" />
       <path d="M2.75 20v-2.1A5.25 5.25 0 0 1 8 12.65a5.25 5.25 0 0 1 5.25 5.25V20M14.25 13.05a4.6 4.6 0 0 1 7 3.92V20" />
-    </svg>
-  );
-}
-
-function SettingsIcon({ className }: IconProps) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M4 6h10M18 6h2M4 12h3M11 12h9M4 18h8M16 18h4" />
-      <circle cx="16" cy="6" r="2" /><circle cx="9" cy="12" r="2" /><circle cx="14" cy="18" r="2" />
     </svg>
   );
 }
@@ -346,17 +335,9 @@ type Props = {
   ) => void | Promise<void>;
 };
 
-const RELATIONSHIP_OPTIONS: Array<{ value: AssetGroupRelationship; label: string }> = [
-  { value: 'works_with', label: 'Works with the primary asset' },
-  { value: 'located_at', label: 'Located at the primary asset' },
-  { value: 'component_of', label: 'Component of the primary asset' },
-  { value: 'attached_to', label: 'Attached to the primary asset' },
-  { value: 'other', label: 'Linked to the primary asset' },
-];
-
 const ROLE_OPTIONS: ReportSelectOption[] = [
-  { value: 'primary', label: 'Primary asset' },
-  { value: 'linked', label: 'Linked asset' },
+  { value: 'primary', label: 'Primary asset: add to total' },
+  { value: 'linked', label: 'Linked asset: do not add again' },
 ];
 
 function defaultGroupName(asset: AssetGroupModalAsset | null): string {
@@ -423,7 +404,6 @@ export default function AssetGroupManagerModal({
   const [valueMode, setValueMode] = useState<AssetGroupValueMode>('separate');
   const [selectedAssetIds, setSelectedAssetIds] = useState<string[]>([]);
   const [primaryAssetId, setPrimaryAssetId] = useState('');
-  const [relationships, setRelationships] = useState<Record<string, AssetGroupRelationship>>({});
   const [search, setSearch] = useState('');
   const [view, setView] = useState<AssetGroupModalView>('create');
   const [reportFormat, setReportFormat] = useState<AssetGroupReportFormat>('pdf');
@@ -453,9 +433,6 @@ export default function AssetGroupManagerModal({
     setValueMode(combinedMode ? 'separate' : group?.valueMode ?? 'separate');
     setSelectedAssetIds(initialMemberIds);
     setPrimaryAssetId(initialPrimaryAssetId);
-    setRelationships(Object.fromEntries(
-      (group?.members ?? []).map((member) => [member.assetId, member.relationship]),
-    ));
     setSearch('');
     setView(group ? 'menu' : 'create');
     setReportFormat('pdf');
@@ -470,8 +447,8 @@ export default function AssetGroupManagerModal({
     return assets
       .filter((asset) => assetMatchesSearch(asset, search))
       .sort((left, right) => {
-        const categoryDifference = String(left.categoryLabel ?? '').localeCompare(String(right.categoryLabel ?? ''));
-        return categoryDifference || left.title.localeCompare(right.title);
+        const titleDifference = left.title.localeCompare(right.title, 'en-ZA', { sensitivity: 'base', numeric: true });
+        return titleDifference || String(left.categoryLabel ?? '').localeCompare(String(right.categoryLabel ?? ''), 'en-ZA', { sensitivity: 'base', numeric: true });
       });
   }, [assets, search]);
 
@@ -497,20 +474,12 @@ export default function AssetGroupManagerModal({
             ? anchorAsset.id
             : next[0] ?? '';
           setPrimaryAssetId(nextPrimaryAssetId);
-          setRelationships((currentRelationships) => ({
-            ...currentRelationships,
-            ...(nextPrimaryAssetId ? { [nextPrimaryAssetId]: 'primary' as AssetGroupRelationship } : {}),
-          }));
         }
         return next;
       }
 
       if (!primaryAssetId) {
         setPrimaryAssetId(asset.id);
-        setRelationships((currentRelationships) => ({
-          ...currentRelationships,
-          [asset.id]: 'primary',
-        }));
       }
 
       return [...current, asset.id];
@@ -518,15 +487,14 @@ export default function AssetGroupManagerModal({
   }
 
   function handlePrimaryChange(assetId: string) {
-    const previousPrimaryAssetId = primaryAssetId;
     setPrimaryAssetId(assetId);
-    setRelationships((current) => ({
-      ...current,
-      ...(previousPrimaryAssetId && previousPrimaryAssetId !== assetId
-        ? { [previousPrimaryAssetId]: 'works_with' as AssetGroupRelationship }
-        : {}),
-      [assetId]: 'primary',
-    }));
+  }
+
+  function handleValueModeChange(nextValueMode: AssetGroupValueMode) {
+    setValueMode(nextValueMode);
+    if (nextValueMode === 'included_in_primary' && !selectedAssetIds.includes(primaryAssetId)) {
+      setPrimaryAssetId(selectedAssetIds[0] ?? '');
+    }
   }
 
   function handleRoleChange(assetId: string, nextRole: string) {
@@ -551,7 +519,6 @@ export default function AssetGroupManagerModal({
       valueMode,
       primaryAssetId,
       memberIds: selectedAssetIds,
-      relationships,
     });
   }
 
@@ -617,8 +584,6 @@ export default function AssetGroupManagerModal({
     { value: 'checkup', label: 'Check-ups only' },
   ];
 
-  const showSettingsForm = view === 'create' || view === 'settings';
-  const showMembersForm = view === 'create' || view === 'members';
   const groupSummary = group
     ? `${group.members.length} linked ${group.members.length === 1 ? 'asset' : 'assets'} · ${money(countedValue)} represented value`
     : '';
@@ -627,19 +592,15 @@ export default function AssetGroupManagerModal({
     : view === 'menu' || view === 'reports'
       ? group.name
       : view === 'members'
-        ? 'Manage linked assets'
-        : view === 'settings'
-          ? 'Umbrella name'
-          : 'Remove umbrella';
+        ? 'Edit umbrella'
+        : 'Remove umbrella';
   const modalSubtitle = !group
     ? 'Group related assets while keeping every record independent.'
     : view === 'menu' || view === 'reports'
       ? groupSummary
       : view === 'members'
-        ? `Add, remove and organise assets in ${group.name}.`
-        : view === 'settings'
-          ? `Rename ${group.name} or change how its values count.`
-          : `Remove the grouping without deleting its assets.`;
+        ? `Update the name, value rule and assets in ${group.name}.`
+        : `Remove the grouping without deleting its assets.`;
   const useManageModalDesign = Boolean(group && view === 'menu');
   const useReportModalDesign = Boolean(group && view === 'reports');
   const useSharedAssetModalDesign = useManageModalDesign || useReportModalDesign;
@@ -692,15 +653,8 @@ export default function AssetGroupManagerModal({
                 <button type="button" className={`${registerStyles.optionActionButton} ${registerStyles.optionFeaturedButton}`} onClick={() => setView('members')}>
                   <MembersIcon className={registerStyles.buttonIcon} />
                   <span>
-                    <strong>Manage assets</strong>
-                    <small className={styles.menuOptionSubtitle}>Add or remove linked assets.</small>
-                  </span>
-                </button>
-                <button type="button" className={registerStyles.optionActionButton} onClick={() => setView('settings')}>
-                  <SettingsIcon className={registerStyles.buttonIcon} />
-                  <span>
-                    <strong>Umbrella name</strong>
-                    <small className={styles.menuOptionSubtitle}>Rename this umbrella.</small>
+                    <strong>Edit umbrella</strong>
+                    <small className={styles.menuOptionSubtitle}>Name, value rule and assets.</small>
                   </span>
                 </button>
                 <button type="button" className={registerStyles.optionActionButton} onClick={() => {
@@ -821,16 +775,19 @@ export default function AssetGroupManagerModal({
         ) : (
           <form onSubmit={handleSubmit}>
             <div className={styles.body}>
-              <p className={styles.intro}>
-                {view === 'members'
-                  ? 'Choose the assets that belong together. Each asset keeps its own details, maintenance, documents and valuation history.'
-                  : 'Keep related assets together while every asset keeps its own independent record.'}
-              </p>
+              <p className={styles.intro}>Complete the three steps below. Every selected asset keeps its own records, maintenance, documents and valuation history.</p>
 
-              {showSettingsForm ? (
-                <>
+              <div className={styles.stepStack}>
+                <section className={styles.stepCard} aria-labelledby="umbrella-step-name">
+                  <div className={styles.stepHeader}>
+                    <span className={styles.stepNumber}>1</span>
+                    <div className={styles.stepCopy}>
+                      <strong id="umbrella-step-name">Umbrella name</strong>
+                      <small>Use a short name that makes this group easy to recognise.</small>
+                    </div>
+                  </div>
                   <label className={styles.field}>
-                    <span>Umbrella name</span>
+                    <span>Name</span>
                     <input
                       value={name}
                       onChange={(event) => setName(event.target.value.slice(0, 80))}
@@ -839,44 +796,53 @@ export default function AssetGroupManagerModal({
                       required
                     />
                   </label>
+                </section>
+
+                <section className={styles.stepCard} aria-labelledby="umbrella-step-values">
+                  <div className={styles.stepHeader}>
+                    <span className={styles.stepNumber}>2</span>
+                    <div className={styles.stepCopy}>
+                      <strong id="umbrella-step-values">Choose how values count</strong>
+                      <small>Add every asset value, or count one primary asset to avoid adding linked values twice.</small>
+                    </div>
+                  </div>
 
                   {combinedMode ? (
                     <section className={styles.combinedModeNotice} aria-label="Combined Asset Register umbrella values">
-                      <strong>Combined umbrella</strong>
-                      <span>Assets stay in their own Asset Registers and every value is counted separately.</span>
+                      <strong>Add every asset to the total</strong>
+                      <span>Combined umbrellas keep assets in their own Asset Registers, so every selected value is counted.</span>
                     </section>
                   ) : (
-                    <fieldset className={styles.valueModeFieldset}>
-                      <legend>How should these values count?</legend>
+                    <fieldset className={styles.valueModeFieldset} aria-label="Choose how umbrella values count">
+                      <legend className={styles.srOnly}>Choose how umbrella values count</legend>
                       <label className={valueMode === 'separate' ? styles.choiceActive : styles.choice}>
-                        <input type="radio" name="asset-group-value-mode" checked={valueMode === 'separate'} onChange={() => setValueMode('separate')} />
+                        <input type="radio" name="asset-group-value-mode" checked={valueMode === 'separate'} onChange={() => handleValueModeChange('separate')} />
                         <span>
-                          <strong>Count every asset separately</strong>
-                          <small>Best for a truck and trailer, or equipment that works together but has separate value.</small>
+                          <strong>Add every asset to the total</strong>
+                          <small>Each selected asset keeps its own value and every value is counted.</small>
                         </span>
                       </label>
                       <label className={valueMode === 'included_in_primary' ? styles.choiceActive : styles.choice}>
-                        <input type="radio" name="asset-group-value-mode" checked={valueMode === 'included_in_primary'} onChange={() => setValueMode('included_in_primary')} />
+                        <input type="radio" name="asset-group-value-mode" checked={valueMode === 'included_in_primary'} onChange={() => handleValueModeChange('included_in_primary')} />
                         <span>
-                          <strong>Linked assets are included in the primary value</strong>
-                          <small>Best when land value already includes buildings, or one asset’s value already covers its components.</small>
+                          <strong>Count one primary asset only</strong>
+                          <small>Choose the primary asset in Step 3. Linked values stay visible but are not added again.</small>
                         </span>
                       </label>
                     </fieldset>
                   )}
-                </>
-              ) : null}
+                </section>
 
-              {showMembersForm ? (
-                <section className={styles.assetSection}>
-                  <div className={styles.sectionHeading}>
-                    <div>
-                      <span>Assets in this umbrella</span>
+                <section className={`${styles.stepCard} ${styles.assetSection}`} aria-labelledby="umbrella-step-assets">
+                  <div className={styles.stepHeader}>
+                    <span className={styles.stepNumber}>3</span>
+                    <div className={styles.stepCopy}>
+                      <strong id="umbrella-step-assets">Choose assets</strong>
                       <small>{combinedMode
                         ? 'Choose one or more assets from any of your Asset Registers.'
                         : 'Choose one or more assets from this Asset Register.'}</small>
                     </div>
-                    <strong>{selectedAssetIds.length} selected</strong>
+                    <strong className={styles.selectedCount}>{selectedAssetIds.length} selected</strong>
                   </div>
 
                   <label className={styles.searchField}>
@@ -912,27 +878,15 @@ export default function AssetGroupManagerModal({
                             </span>
                           </label>
 
-                          {selected ? (
+                          {selected && valueMode === 'included_in_primary' ? (
                             <div className={styles.memberControls}>
                               <AssetGroupMemberSelect
-                                label="Role"
+                                label="Value in total"
                                 value={asset.id === primaryAssetId ? 'primary' : 'linked'}
                                 options={ROLE_OPTIONS}
                                 disabled={selectedAssetIds.length === 1}
                                 onChange={(nextRole) => handleRoleChange(asset.id, nextRole)}
                               />
-
-                              {asset.id !== primaryAssetId ? (
-                                <AssetGroupMemberSelect
-                                  label="Relationship"
-                                  value={relationships[asset.id] ?? 'works_with'}
-                                  options={RELATIONSHIP_OPTIONS}
-                                  onChange={(nextRelationship) => setRelationships((current) => ({
-                                    ...current,
-                                    [asset.id]: nextRelationship as AssetGroupRelationship,
-                                  }))}
-                                />
-                              ) : <p>{assetGroupRelationshipLabel('primary')}</p>}
                             </div>
                           ) : null}
                         </div>
@@ -940,12 +894,12 @@ export default function AssetGroupManagerModal({
                     })}
                   </div>
                 </section>
-              ) : null}
+              </div>
 
               <aside className={styles.summary}>
                 <span>{combinedMode ? 'Combined value represented by this umbrella' : 'Register value represented by this umbrella'}</span>
                 <strong>{money(countedValue)}</strong>
-                <small>{valueMode === 'separate' ? 'All selected values are counted.' : 'Only the primary asset counts toward register totals.'}</small>
+                <small>{valueMode === 'separate' ? 'Every selected asset is added to totals.' : 'Only the primary asset is added to totals.'}</small>
               </aside>
 
               {error ? <p className={styles.error} role="alert">{error}</p> : null}

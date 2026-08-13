@@ -218,7 +218,7 @@ test('group metadata and counted-value rules are present in PDF and Excel export
   assert.match(source, /projectAssetGroupsToAssets\(allGroups, combinedAssets\)/);
 });
 
-test('the Asset Register exposes create, manage, collapse, search, and relationship UI', async () => {
+test('the Asset Register exposes create, manage, collapse, search, and clear umbrella value rules', async () => {
   const [client, modal] = await Promise.all([
     readFile(new URL('../app/asset-register/asset-register-client.tsx', import.meta.url), 'utf8'),
     readFile(new URL('../components/asset-register/AssetGroupManagerModal.tsx', import.meta.url), 'utf8'),
@@ -227,8 +227,11 @@ test('the Asset Register exposes create, manage, collapse, search, and relations
   assert.match(client, /toggleAssetGroupCollapsed/);
   assert.match(client, /matchingGroupAssetIds/);
   assert.match(client, /Counted value/);
-  assert.match(modal, /Count every asset separately/);
-  assert.match(modal, /Linked assets are included in the primary value/);
+  assert.match(modal, /Add every asset to the total/);
+  assert.match(modal, /Count one primary asset only/);
+  assert.match(modal, /Primary asset: add to total/);
+  assert.match(modal, /Linked asset: do not add again/);
+  assert.doesNotMatch(modal, /label="Relationship"|RELATIONSHIP_OPTIONS|assetGroupRelationshipLabel/);
   assert.match(modal, /without deleting their records|linked asset records[\s\S]*?will remain unchanged/);
   assert.match(client, /combinedMode=\{isCombinedRegisterView\}/);
   assert.match(client, /isResolvedCombinedGroup/);
@@ -275,8 +278,11 @@ test('umbrella cards expose aligned actions and the Manage modal uses a clear op
   assert.doesNotMatch(client, /styles\.assetGroupValueLabel|styles\.assetGroupValueVat/);
   assert.match(styles, /\.assetGroupValue \{[\s\S]*?gap: 0\.18rem;[\s\S]*?text-align: right;/);
   assert.match(styles, /\.assetGroupValue strong \{[\s\S]*?font-size: clamp\(0\.96rem, 1\.25vw, 1\.15rem\);/);
-  assert.match(modal, /Manage assets/);
+  assert.match(modal, /Edit umbrella/);
+  assert.match(modal, /Name, value rule and assets/);
   assert.match(modal, /Umbrella name/);
+  assert.match(modal, /Choose how values count/);
+  assert.match(modal, /Choose assets/);
   assert.match(modal, /Download reports/);
   assert.match(modal, /Remove umbrella/);
   assert.match(modal, /PDF report/);
@@ -309,11 +315,15 @@ test('the umbrella Manage modal reuses the asset Manage and report-format patter
   assert.match(modal, /registerStyles\.assetTimelineSecondaryButton/);
   assert.match(modal, /function AssetGroupMemberSelect/);
   assert.match(modal, /createPortal/);
-  assert.match(modal, /label="Role"/);
-  assert.match(modal, /label="Relationship"/);
+  assert.match(modal, /selected && valueMode === 'included_in_primary'/);
+  assert.match(modal, /label="Value in total"/);
+  assert.doesNotMatch(modal, /label="Relationship"|RELATIONSHIP_OPTIONS|assetGroupRelationshipLabel/);
   assert.doesNotMatch(modal, /<select value=\{asset\.id === primaryAssetId/);
   assert.match(modalStyles, /\.memberSelectMenu \{[\s\S]*?position: fixed;[\s\S]*?z-index: 1400;/);
   assert.match(modalStyles, /\.memberSelectOptionActive/);
+  assert.match(modalStyles, /\.stepStack \{/);
+  assert.match(modalStyles, /\.stepNumber \{[\s\S]*?width: 46px;[\s\S]*?height: 46px;/);
+  assert.match(modalStyles, /\.stepCopy strong \{[\s\S]*?font-size: 19px/);
   assert.match(modalStyles, /\.backdrop \{/);
 });
 
@@ -342,7 +352,7 @@ test('umbrella sharing and downloads are limited to linked assets', async () => 
   assert.match(client, /const assetGroupShareAssets = useMemo/);
   assert.match(client, /source: isAssetGroupShare \? 'asset_group' : 'full_asset_register'/);
   assert.match(client, /snapshotType: isAssetGroupShare \? 'asset_group' : 'full_asset_register'/);
-  assert.match(client, /without exposing unrelated assets/);
+  assert.match(client, /Unrelated assets stay private/);
   assert.match(client, /onDownloadPdf=\{handleDownloadAssetGroupPdf\}/);
   assert.match(client, /onDownloadXlsx=\{handleDownloadAssetGroupXlsx\}/);
   assert.match(client, /onDownloadReport=\{handleDownloadAssetGroupReport\}/);

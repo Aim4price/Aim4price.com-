@@ -45,6 +45,19 @@ test('shared access flows preserve each app login type and its existing controls
   assert.match(shared, /Share link/);
 });
 
+test('all Manage directories and access choices stay alphabetical after every update', async () => {
+  const shared = await read('app/account/app-access-management-client.tsx');
+
+  assert.match(shared, /const ACCESS_DIRECTORY_COLLATOR = new Intl\.Collator\('en-ZA'/);
+  assert.match(shared, /function sortAccessRecords\(records: AccessRecord\[\]\)/);
+  assert.match(shared, /const nextRecords = sortAccessRecords\(readRecordList\(payload, config\.listKey\)\)/);
+  assert.match(shared, /setRecords\(\(current\) => sortAccessRecords\(\[\.\.\.current, created\]\)\)/);
+  assert.match(shared, /setRecords\(\(current\) => sortAccessRecords\(current\.map/);
+  assert.match(shared, /setAssets\(sortAccessOptions\(payload\.assets \?\? \[\], \(asset\) => asset\.title\)\)/);
+  assert.match(shared, /setGroups\(sortAccessOptions\(payload\.groups \?\? \[\], \(group\) => group\.name\)\)/);
+  assert.match(shared, /setStorages\(sortAccessOptions\(payload\.storages \?\? \[\], \(storage\) => storage\.name\)\)/);
+});
+
 test('access launcher and dialogs stay large, focused and responsive', async () => {
   const [shared, styles] = await Promise.all([
     read('app/account/app-access-management-client.tsx'),
@@ -56,6 +69,9 @@ test('access launcher and dialogs stay large, focused and responsive', async () 
   assert.match(styles, /\.modalOverlay \{[\s\S]*?position: fixed;[\s\S]*?z-index: 12000/);
   assert.match(styles, /\.modalBody \{[\s\S]*?overflow-y: auto/);
   assert.match(styles, /\.modalWide \{[\s\S]*?width: min\(100%, 72rem\)/);
+  assert.match(styles, /\.modalHeader p \{[\s\S]*?font-size: 1rem/);
+  assert.match(styles, /\.surfaceHeader h3 \{[\s\S]*?font-size: 1\.2rem/);
+  assert.match(styles, /\.directoryHeader strong \{[\s\S]*?font-size: 1\.05rem/);
   assert.match(styles, /@media \(max-width: 640px\)[\s\S]*?\.actionGrid \{[\s\S]*?grid-template-columns: 1fr/);
 
   assert.match(shared, /const onCloseRef = useRef\(onClose\)/);
