@@ -4435,6 +4435,10 @@
   display: none;
 }
 
+.pathSetupContent {
+  display: contents;
+}
+
 @media (max-width: 720px) {
   .appValuation {
     min-height: 100dvh;
@@ -4466,7 +4470,7 @@
   .appValuation .mobileStepSummary {
     display: flex;
     align-items: baseline;
-    justify-content: space-between;
+    justify-content: center;
     gap: 0.75rem;
     padding-inline: 0.12rem;
   }
@@ -4503,7 +4507,7 @@
   }
 
   .appValuation .stepperLabel {
-    display: none;
+    display: none !important;
   }
 
   .appValuation .stepperBullet {
@@ -4590,6 +4594,16 @@
   .appValuation .pathChoiceCard {
     min-height: 5.4rem;
     padding: 0.88rem 3rem 0.88rem 0.9rem;
+  }
+
+  .appValuation .pathSetupPage,
+  .appValuation .pathSetupContent {
+    display: block;
+    min-width: 0;
+  }
+
+  .appValuation .pathSetupContent > .currentCard {
+    margin-top: 0 !important;
   }
 
   .appValuation .tractorSetupCard,
@@ -4868,11 +4882,17 @@
 
 @media (max-width: 370px) {
   .appValuation .sectorLargeGrid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5rem;
   }
 
   .appValuation .sectorBigCard {
-    min-height: 7.6rem;
+    min-height: 7rem;
+  }
+
+  .appValuation .sectorLabel,
+  .appValuation .sectorBigCard .sectorLabel {
+    font-size: 1rem;
   }
 }
 

@@ -16,14 +16,27 @@ test('Owner and Dealer continue to share one valuation client with app-only pres
   assert.match(dealerPage, /<ValuationClient dealerAppMode \/>/);
   assert.match(client, /styles\.appValuation/);
   assert.match(client, /Estimate \{step\} of \{WIZARD_STEPS\.length\}/);
+  assert.match(client, /compactAppMode \? item\.step : complete \? '✓' : item\.step/);
+  assert.match(client, /!compactAppMode \? \([\s\S]*?styles\.stepperLabel/);
+  assert.match(appStyles, /stepperLabel[^\{]*\{[\s\S]*?display: none !important/);
 });
 
 test('app selections open as searchable lists and remain available when navigating backwards', () => {
   assert.match(client, /setEquipmentDropdownOpen\(compactAppMode\)/);
   assert.match(client, /setBrandDropdownOpen\(compactAppMode\)/);
+  assert.match(client, /setEquipmentDropdownOpen\(compactAppMode && Boolean\(selectedSector\)\)/);
   assert.match(client, /compactAppMode && step === 2[\s\S]*?setEquipmentDropdownOpen\(true\)/);
   assert.match(appStyles, /equipmentPickerCard[^\n]*equipmentDropdownTrigger[^\{]*\{[\s\S]*?display: none !important/);
   assert.match(appStyles, /equipmentPickerCard[^\n]*equipmentDropdownMenu[^\{]*\{[\s\S]*?background: transparent !important/);
+});
+
+test('choosing a path opens a separate app setup page at the top', () => {
+  assert.match(client, /const showPathChoices = !compactAppMode \|\| !flowMode/);
+  assert.match(client, /styles\.pathSetupPage/);
+  assert.match(client, /compactAppMode && step === 3 && flowMode && !selectedBrandIsUnknown/);
+  assert.match(client, /const compactPathChoicePage = compactAppMode && step === 3 && !flowMode/);
+  assert.match(client, /scrollWizardToStart\(\)/);
+  assert.match(valuationStyles, /pathSetupContent > \.currentCard[^\{]*\{[\s\S]*?margin-top: 0 !important/);
 });
 
 test('condition assessment is a guided Simple or Detailed mobile flow', () => {
@@ -44,6 +57,8 @@ test('phone estimate uses compact sectors, safe sheets and persistent actions', 
   assert.match(appStyles, /font-size: 16px !important/);
   assert.match(appStyles, /wizardFooter[^\{]*\{[\s\S]*?position: sticky !important;[\s\S]*?env\(safe-area-inset-bottom\)/);
   assert.match(appStyles, /detailsModalActions[^\{]*\{[\s\S]*?position: sticky !important/);
+  assert.match(appStyles, /dealerCompactModalHeader[^\{]*\{[\s\S]*?grid-template-columns: minmax\(0, 1fr\) 44px !important/);
+  assert.doesNotMatch(appStyles, /@media \(max-width: 370px\)[\s\S]*?sectorLargeGrid[^\{]*\{[\s\S]*?grid-template-columns: 1fr !important/);
 });
 
 test('result facts remain visible as a compact two-column mobile summary', () => {
