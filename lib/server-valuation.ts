@@ -289,8 +289,9 @@ export async function runServerValuation(input: RunValuationInput): Promise<Resu
   );
   const frontLoaderValueExVat = calculateTractorLoaderValue(
     model,
-    safeYear,
     Boolean(input.frontLoader),
+    input.frontLoaderYear,
+    safeYear,
     frontLoaderReplacementPriceExVat,
   );
   const gpsValueExVat = calculateTractorGpsValue(

@@ -43,3 +43,11 @@ test('projection anchoring keeps the saved condition current and applies the sel
   assert.match(projection, /currentCondition:\s*input\.currentCondition/);
   assert.match(projection, /targetCondition:\s*input\.targetCondition/);
 });
+
+test('front-loader projections use the saved loader year and replacement price independently', () => {
+  assert.match(projection, /input\.valuationInput\.frontLoaderYear/);
+  assert.match(projection, /input\.valuationInput\.frontLoaderReplacementPriceExVat/);
+  assert.match(projection, /input\.valuationOutput\.frontLoaderReplacementPriceExVat/);
+  assert.match(projection, /loaderValueAtYear\([\s\S]*?input\.frontLoaderYear/);
+  assert.doesNotMatch(projection, /loaderValueAtYear\(input\.powerKw, input\.yearModel/);
+});

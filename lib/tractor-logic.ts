@@ -10,6 +10,7 @@ export type RunValuationInput = {
   condition: ConditionKey;
   frontPto?: boolean;
   frontLoader?: boolean;
+  frontLoaderYear?: number | string | null;
   gpsEnabled?: boolean;
   gpsType?: GpsType | null;
   gpsYear?: number | string | null;

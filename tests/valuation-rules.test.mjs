@@ -4,6 +4,7 @@ import test from 'node:test';
 
 import {
   MAX_SALVAGE_PERCENT,
+  calculateInstalledExtraValue,
   calculateOlderPassengerCarMarketability,
   calculateSalvagePercent,
   calculateSalvageValue,
@@ -79,6 +80,24 @@ test('depreciation only switches to salvage when the calculated value reaches th
   });
   assert.equal(resolveSalvageValue(50_000, 800_000).finalValueExVat, 50_000);
   assert.equal(resolveSalvageValue(50_000, 800_000).isSalvageEstimate, false);
+});
+
+test('front loaders depreciate from their own year with a legacy tractor-year fallback', () => {
+  const currentYear = new Date().getFullYear();
+  const calculateLoader = (yearAdded) => calculateInstalledExtraValue({
+    replacementPriceExVat: 225_000,
+    yearAdded,
+    fallbackYear: 2012,
+    baseYear: currentYear,
+    annualDepreciationPercent: 10,
+  });
+  const recentLoader = calculateLoader(currentYear - 2);
+  const legacyFallback = calculateLoader(null);
+
+  assert.equal(recentLoader, 180_000);
+  assert.ok(recentLoader > legacyFallback);
+  assert.equal(calculateLoader('not-a-year'), legacyFallback);
+  assert.equal(calculateLoader(currentYear), 225_000);
 });
 
 test('the 2001 BMW example lands close to R50,000 from an R800,000 replacement price', () => {
@@ -288,6 +307,11 @@ test('selected tractor extras always add a calculated value and are shown transp
   const tractorSource = await readFile(new URL('../lib/valuation/tractors.ts', import.meta.url), 'utf8');
   const serverSource = await readFile(new URL('../lib/server-valuation.ts', import.meta.url), 'utf8');
   const valuationSource = await readFile(new URL('../app/valuation/valuation-client.tsx', import.meta.url), 'utf8');
+  const runsSource = await readFile(new URL('../lib/valuation-runs.ts', import.meta.url), 'utf8');
+  const revaluationSource = await readFile(new URL('../lib/asset-register-revaluation.ts', import.meta.url), 'utf8');
+  const projectionSource = await readFile(new URL('../lib/asset-register-projection.ts', import.meta.url), 'utf8');
+  const tractorRouteSource = await readFile(new URL('../app/api/tractor-valuations/route.ts', import.meta.url), 'utf8');
+  const valuationRunsRouteSource = await readFile(new URL('../app/api/valuation-runs/route.ts', import.meta.url), 'utf8');
 
   assert.doesNotMatch(tractorSource, /!model\.(frontPtoSupported|frontLoaderSupported|gpsSupported)/);
   assert.match(tractorSource, /replacementPriceOverrideExVat/);
@@ -301,6 +325,15 @@ test('selected tractor extras always add a calculated value and are shown transp
   assert.match(valuationSource, /Front PTO replacement/);
   assert.match(valuationSource, /frontLoaderValueExVat/);
   assert.match(valuationSource, /gpsValueExVat/);
+  assert.match(valuationSource, /Front Loader year added/);
+  assert.match(serverSource, /input\.frontLoaderYear/);
+  assert.match(runsSource, /frontLoaderYear: input\.frontLoader \? parseExtraYear/);
+  assert.match(tractorRouteSource, /frontLoaderYear/);
+  assert.match(valuationRunsRouteSource, /frontLoaderYear/);
+  assert.match(revaluationSource, /payloadInput\.frontLoaderYear/);
+  assert.match(projectionSource, /input\.frontLoaderYear/);
+  assert.match(projectionSource, /frontLoaderReplacementPriceExVat/);
+  assert.doesNotMatch(valuationSource, /This is depreciated with the tractor before being added to the estimate/);
 });
 
 test('path availability is checked with one model before the full list is requested', async () => {
@@ -311,7 +344,9 @@ test('path availability is checked with one model before the full list is reques
   assert.match(source, /pathLoadingSpinner/);
   assert.match(source, /loadFullGenericCatalog/);
   assert.match(source, /limit: '500'/);
-  assert.match(source, /Check the replacement price/);
+  assert.match(source, /Check the replacement price and usage/);
+  assert.match(source, /Important: check both values/);
+  assert.match(source, /indicative estimate only, not a certified valuation/);
   assert.match(source, /Add detailed condition/);
   assert.match(source, /<h3 className=\{styles\.currentTitle\}>Popularity<\/h3>/);
   assert.match(source, /<span className=\{styles\.currentEyebrow\}>Step 4<\/span>/);
@@ -336,8 +371,13 @@ test('detailed assessment and extras keep a clear left-aligned hierarchy', async
 
   assert.match(valuationStyles, /\.detailedAssessmentHeader\s*\{[^}]*justify-items:\s*start;[^}]*text-align:\s*left;/s);
   assert.match(valuationStyles, /\.dealerAssessmentGroup legend\s*\{[^}]*text-align:\s*left;/s);
+  assert.match(valuationStyles, /\.dealerAssessmentGroup \+ \.dealerAssessmentGroup\s*\{[^}]*margin-top:/s);
   assert.match(valuationStyles, /\.otherExtraCardNote\s*\{[^}]*white-space:\s*nowrap;/s);
+  assert.match(valuationStyles, /\.replacementField\s*\{[^}]*grid-template-rows:/s);
+  assert.match(valuationStyles, /\.replacementOtherFields\s*\{[^}]*grid-column:\s*1 \/ -1;/s);
+  assert.match(valuationStyles, /\.replacementNoticeWarning\s*\{[^}]*border:\s*1px solid #d83b32;/s);
   assert.doesNotMatch(valuationSource, /aria-label="Tractor extras value breakdown"/);
+  assert.doesNotMatch(valuationSource, /Condition is controlled by the Detailed Asset Assessment/);
 });
 
 test('valuation flow supports accessible back-step navigation and concise actions', async () => {

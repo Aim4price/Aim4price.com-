@@ -18,6 +18,14 @@ export type OlderPassengerCarMarketability = {
   yearsAfterThreshold: number;
 };
 
+export type InstalledExtraValueInput = {
+  replacementPriceExVat: number;
+  yearAdded: number | string | null | undefined;
+  fallbackYear: number;
+  baseYear?: number;
+  annualDepreciationPercent?: number;
+};
+
 export const MAX_SALVAGE_PERCENT = 3;
 export const OLDER_PASSENGER_CAR_AGE_THRESHOLD = 15;
 export const OLDER_PASSENGER_CAR_ANNUAL_REDUCTION = 0.055;
@@ -95,6 +103,23 @@ export function resolveSalvageValue(rawValueExVat: number, replacementPriceExVat
     salvageValueExVat,
     isSalvageEstimate,
   };
+}
+
+export function calculateInstalledExtraValue(input: InstalledExtraValueInput): number {
+  const baseYear = Number.isInteger(input.baseYear) ? Math.round(Number(input.baseYear)) : new Date().getFullYear();
+  const parsedYear = Number(typeof input.yearAdded === 'string' ? input.yearAdded.trim() : input.yearAdded);
+  const parsedFallbackYear = Number.isInteger(input.fallbackYear) ? Math.round(input.fallbackYear) : baseYear;
+  const fallbackYear = parsedFallbackYear >= 1950 && parsedFallbackYear <= baseYear + 1 ? parsedFallbackYear : baseYear;
+  const yearAdded = Number.isInteger(parsedYear) && parsedYear >= 1950 && parsedYear <= baseYear + 1
+    ? parsedYear
+    : fallbackYear;
+  const replacementPriceExVat = Math.max(0, Number(input.replacementPriceExVat) || 0);
+  const annualDepreciationPercent = Math.max(0, Number(input.annualDepreciationPercent) || 0);
+  const age = Math.max(0, baseYear - yearAdded);
+  const depreciationPercent = clamp(age * annualDepreciationPercent, 0, 100);
+  const currentValueExVat = replacementPriceExVat * (1 - depreciationPercent / 100);
+
+  return resolveSalvageValue(currentValueExVat, replacementPriceExVat).finalValueExVat;
 }
 
 export function calculateOlderPassengerCarMarketability(input: {

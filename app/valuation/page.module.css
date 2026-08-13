@@ -3011,7 +3011,6 @@
   }
 }
 
-
 @media (max-width: 860px) {
   .heroIntro {
     padding: 1.25rem 1.15rem;
@@ -11707,5 +11706,171 @@
   .conditionButtonGrid,
   .dealerAssessmentOptions {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* --- August 2026: valuation input clarity and component alignment --- */
+.dealerAssessmentGroup + .dealerAssessmentGroup {
+  margin-top: 1.25rem;
+}
+
+.frontLoaderFields {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  max-width: calc((100% - 1.1rem) / 2);
+  margin-top: 1rem;
+  align-items: start;
+}
+
+.otherExtraFields {
+  align-items: end;
+}
+
+.otherExtraFields > .field {
+  grid-template-rows: minmax(1.15rem, auto) minmax(3.35rem, auto);
+  align-content: end;
+}
+
+.advancedAssumptionsGridSingle {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.replacementFieldsGrid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+}
+
+.replacementField {
+  grid-template-rows: 2.25rem 3.35rem minmax(2.1rem, auto);
+  align-content: start;
+}
+
+.replacementField > .fieldLabel {
+  align-self: end;
+}
+
+.replacementField > input {
+  align-self: stretch;
+}
+
+.replacementOtherFields {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.8rem;
+  align-items: start;
+}
+
+.replacementNoticeModal .replacementNoticeIntro {
+  color: #3f554e;
+}
+
+.replacementNoticeWarning {
+  display: grid;
+  gap: 0.8rem;
+  margin-top: 1rem;
+  padding: 0.95rem 1rem;
+  border: 1px solid #d83b32;
+  border-left-width: 4px;
+  border-radius: 0.9rem;
+  background: #fff3f1;
+  color: #7f211c;
+}
+
+.replacementNoticeWarningTitle {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  color: #a5221b;
+}
+
+.replacementNoticeWarningTitle > span {
+  display: inline-grid;
+  place-items: center;
+  width: 1.55rem;
+  height: 1.55rem;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: #c92e25;
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 900;
+}
+
+.replacementNoticeFacts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem;
+  margin: 0;
+}
+
+.replacementNoticeFacts > div {
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.7rem 0.75rem;
+  border: 1px solid rgba(165, 34, 27, 0.18);
+  border-radius: 0.7rem;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.replacementNoticeFacts dt {
+  color: #74433f;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.045em;
+  text-transform: uppercase;
+}
+
+.replacementNoticeFacts dd {
+  margin: 0;
+  color: #53231f;
+  font-size: 0.9rem;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.replacementNoticeFacts .replacementNoticeUsageFact {
+  border-color: rgba(181, 35, 27, 0.55);
+  background: #ffe7e3;
+}
+
+.replacementNoticeUsageFact dt,
+.replacementNoticeUsageFact dd {
+  color: #ad211a;
+}
+
+.replacementNoticeWarning p {
+  margin: 0;
+  color: #7f332d;
+  font-size: 0.78rem;
+  font-weight: 650;
+  line-height: 1.45;
+}
+
+.replacementNoticeDisclaimer {
+  display: block;
+  margin-top: 0.75rem;
+  color: #718078;
+  font-size: 0.66rem;
+  line-height: 1.4;
+}
+
+@media (max-width: 640px) {
+  .dealerAssessmentGroup + .dealerAssessmentGroup {
+    margin-top: 0.85rem;
+  }
+
+  .replacementFieldsGrid,
+  .replacementOtherFields,
+  .replacementNoticeFacts {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .replacementField {
+    grid-template-rows: auto minmax(3.35rem, auto) auto;
+  }
+
+  .frontLoaderFields {
+    max-width: none;
   }
 }

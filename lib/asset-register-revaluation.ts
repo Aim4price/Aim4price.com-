@@ -721,6 +721,10 @@ async function revalueTractorAsset(input: {
     condition,
     frontPto: asBoolean(payloadInput.frontPto ?? input.row.front_pto),
     frontLoader: asBoolean(payloadInput.frontLoader ?? input.row.front_loader),
+    frontLoaderYear: asText(payloadInput.frontLoaderYear) || null,
+    frontLoaderReplacementPriceExVat: optionalReplacementPrice(
+      payloadInput.frontLoaderReplacementPriceExVat ?? payloadOutput.frontLoaderReplacementPriceExVat,
+    ),
     gpsEnabled: asBoolean(payloadInput.gpsEnabled ?? input.row.gps_enabled),
     gpsType: normalizeGpsType(payloadInput.gpsType ?? input.row.gps_type),
     gpsYear: asText(payloadInput.gpsYear ?? input.row.gps_year) || null,
