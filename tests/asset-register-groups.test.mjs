@@ -344,6 +344,7 @@ test('umbrella cards expose aligned actions and the Manage modal uses a clear op
   assert.match(styles, /\.assetGroupValue \{[\s\S]*?gap: 0\.18rem;[\s\S]*?text-align: right;/);
   assert.match(styles, /\.assetGroupValue strong \{[\s\S]*?font-size: clamp\(0\.96rem, 1\.25vw, 1\.15rem\);/);
   assert.match(modal, /Edit umbrella/);
+  assert.match(modal, /<strong>Manage umbrella<\/strong>/);
   assert.match(modal, /Name, structure and assets/);
   assert.match(modal, /Umbrella name/);
   assert.match(modal, /Choose the umbrella structure/);
@@ -394,8 +395,10 @@ test('the umbrella Manage modal reuses the asset Manage and report-format patter
   assert.doesNotMatch(modal, /<select value=\{asset\.id === primaryAssetId/);
   assert.match(modalStyles, /\.memberSelectMenu \{[\s\S]*?position: fixed;[\s\S]*?z-index: 1400;/);
   assert.match(modalStyles, /\.memberSelectOptionActive/);
-  assert.match(modalStyles, /\.wizardProgress \{[\s\S]*?grid-template-columns: repeat\(3, minmax\(0, 1fr\)\)/);
-  assert.match(modalStyles, /\.wizardPanel \{[\s\S]*?min-height: clamp\(20rem, 43vh, 29rem\)/);
+  assert.match(modalStyles, /\.wizardProgress \{[\s\S]*?display: flex;[\s\S]*?width: 100%;[\s\S]*?max-width: none;/);
+  assert.match(modalStyles, /\.wizardProgressStep:not\(:last-child\)::after \{[\s\S]*?flex: 1 1 auto;[\s\S]*?margin: 0 18px;/);
+  assert.match(modalStyles, /\.manageMenuGrid \.manageMenuDanger \{[\s\S]*?grid-column: 1 \/ -1;/);
+  assert.doesNotMatch(modalStyles, /\.wizardPanel \{[\s\S]*?min-height: clamp\(20rem, 43vh, 29rem\)/);
   assert.match(modalStyles, /\.wizardFooter/);
   assert.match(modalStyles, /\.stepNumber \{[\s\S]*?width: 46px;[\s\S]*?height: 46px;/);
   assert.match(modalStyles, /\.stepCopy strong \{[\s\S]*?font-size: 19px/);
@@ -630,7 +633,7 @@ test('umbrella create and manage forms keep their footer actions fully visible',
 
   assert.match(styles, /\.dialog > form \{[\s\S]*?flex: 1 1 auto;[\s\S]*?min-height: 0;[\s\S]*?overflow: hidden;/);
   assert.match(styles, /\.body \{[\s\S]*?flex: 1 1 auto;[\s\S]*?max-height: none;[\s\S]*?overflow-y: auto;/);
-  assert.match(styles, /\.footer \{[\s\S]*?flex: 0 0 auto;[\s\S]*?padding: 18px 32px max\(26px, env\(safe-area-inset-bottom\)\);/);
+  assert.match(styles, /\.footer \{[\s\S]*?flex: 0 0 auto;[\s\S]*?padding: 18px 36px max\(24px, env\(safe-area-inset-bottom\)\);/);
 });
 
 test('asset disposal uses a valid withdrawn marketplace state and keeps database errors private', async () => {

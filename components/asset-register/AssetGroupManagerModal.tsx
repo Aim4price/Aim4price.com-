@@ -703,7 +703,7 @@ export default function AssetGroupManagerModal({
       ) : null}
       <section
         className={useManageModalDesign
-          ? registerStyles.optionsModal
+          ? `${registerStyles.optionsModal} ${styles.manageModal}`
           : useReportModalDesign
             ? `${registerStyles.modalCard} ${registerStyles.assetReportModal}`
             : styles.dialog}
@@ -712,7 +712,7 @@ export default function AssetGroupManagerModal({
         aria-labelledby="asset-group-title"
       >
         <header className={useManageModalDesign
-          ? `${registerStyles.modalHeader} ${registerStyles.optionsModalHeader}`
+          ? `${registerStyles.modalHeader} ${registerStyles.optionsModalHeader} ${styles.manageHeader}`
           : useReportModalDesign
             ? `${registerStyles.modalHeader} ${registerStyles.assetReportModalHeader}`
             : styles.header}>
@@ -724,7 +724,11 @@ export default function AssetGroupManagerModal({
           </div>
           <button
             type="button"
-            className={useSharedAssetModalDesign ? registerStyles.modalCloseButton : styles.closeButton}
+            className={useManageModalDesign
+              ? `${registerStyles.modalCloseButton} ${styles.manageCloseButton}`
+              : useSharedAssetModalDesign
+                ? registerStyles.modalCloseButton
+                : styles.closeButton}
             onClick={onClose}
             disabled={busy || reportBusy}
             aria-label="Close umbrella manager"
@@ -734,31 +738,31 @@ export default function AssetGroupManagerModal({
         </header>
 
         {group && view === 'menu' ? (
-          <div className={`${registerStyles.modalScrollBody} ${registerStyles.optionsScrollBody}`}>
-            <div className={registerStyles.optionsContent}>
-              <div className={`${registerStyles.optionsGrid} ${registerStyles.assetOptionsGrid}`}>
-                <button type="button" className={`${registerStyles.optionActionButton} ${registerStyles.optionFeaturedButton}`} onClick={() => {
+          <div className={`${registerStyles.modalScrollBody} ${registerStyles.optionsScrollBody} ${styles.manageMenuBody}`}>
+            <div className={`${registerStyles.optionsContent} ${styles.manageMenuContent}`}>
+              <div className={`${registerStyles.optionsGrid} ${registerStyles.assetOptionsGrid} ${styles.manageMenuGrid}`}>
+                <button type="button" className={`${registerStyles.optionActionButton} ${registerStyles.optionFeaturedButton} ${styles.manageMenuAction}`} onClick={() => {
                   setEditorStep(1);
                   setView('members');
                 }}>
-                  <MembersIcon className={registerStyles.buttonIcon} />
+                  <MembersIcon className={`${registerStyles.buttonIcon} ${styles.manageMenuIcon}`} />
                   <span>
-                    <strong>Edit umbrella</strong>
+                    <strong>Manage umbrella</strong>
                     <small className={styles.menuOptionSubtitle}>Name, structure and assets.</small>
                   </span>
                 </button>
-                <button type="button" className={registerStyles.optionActionButton} onClick={() => {
+                <button type="button" className={`${registerStyles.optionActionButton} ${styles.manageMenuAction} ${styles.manageMenuReport}`} onClick={() => {
                   setReportStep('options');
                   setView('reports');
                 }} disabled={!onDownloadReport && !onDownloadPdf && !onDownloadXlsx}>
-                  <DownloadIcon className={registerStyles.buttonIcon} />
+                  <DownloadIcon className={`${registerStyles.buttonIcon} ${styles.manageMenuIcon}`} />
                   <span>
                     <strong>Download reports</strong>
                     <small className={styles.menuOptionSubtitle}>Reports for grouped assets.</small>
                   </span>
                 </button>
-                <button type="button" className={`${registerStyles.optionActionButton} ${registerStyles.optionDangerButton}`} onClick={() => setView('delete')}>
-                  <TrashIcon className={registerStyles.buttonIcon} />
+                <button type="button" className={`${registerStyles.optionActionButton} ${registerStyles.optionDangerButton} ${styles.manageMenuAction} ${styles.manageMenuDanger}`} onClick={() => setView('delete')}>
+                  <TrashIcon className={`${registerStyles.buttonIcon} ${styles.manageMenuIcon}`} />
                   <span>
                     <strong>Remove umbrella</strong>
                     <small className={styles.menuOptionSubtitle}>Ungroup without deleting assets.</small>
