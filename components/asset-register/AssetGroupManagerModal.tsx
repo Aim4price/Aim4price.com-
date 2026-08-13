@@ -13,6 +13,7 @@ import styles from './AssetGroupManagerModal.module.css';
 type IconProps = { className?: string };
 type AssetGroupModalView = 'menu' | 'members' | 'reports' | 'delete' | 'create';
 type AssetGroupReportStep = 'options' | 'format' | 'filters';
+type AssetGroupEditorStep = 1 | 2 | 3;
 
 export type AssetGroupReportKind = 'valuation' | 'maintenance' | 'fuel' | 'depreciation' | 'ownership';
 export type AssetGroupReportFormat = 'pdf' | 'xlsx';
@@ -340,6 +341,31 @@ const ROLE_OPTIONS: ReportSelectOption[] = [
   { value: 'linked', label: 'Linked asset: do not add again' },
 ];
 
+const ASSET_GROUP_EDITOR_STEP_LABELS = ['Umbrella name', 'Value rule', 'Choose assets'] as const;
+
+function AssetGroupEditorProgress({ currentStep }: { currentStep: AssetGroupEditorStep }) {
+  return (
+    <ol className={styles.wizardProgress} aria-label="Umbrella setup progress">
+      {ASSET_GROUP_EDITOR_STEP_LABELS.map((label, index) => {
+        const step = (index + 1) as AssetGroupEditorStep;
+        const isCurrent = step === currentStep;
+        const isComplete = step < currentStep;
+
+        return (
+          <li
+            key={label}
+            className={`${styles.wizardProgressStep} ${isCurrent ? styles.wizardProgressStepCurrent : ''} ${isComplete ? styles.wizardProgressStepComplete : ''}`}
+            aria-current={isCurrent ? 'step' : undefined}
+          >
+            <span>{isComplete ? '✓' : step}</span>
+            <strong>{label}</strong>
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
+
 function defaultGroupName(asset: AssetGroupModalAsset | null): string {
   const title = String(asset?.title ?? '').trim();
   return title ? `${title} umbrella` : 'Asset umbrella';
@@ -406,6 +432,7 @@ export default function AssetGroupManagerModal({
   const [primaryAssetId, setPrimaryAssetId] = useState('');
   const [search, setSearch] = useState('');
   const [view, setView] = useState<AssetGroupModalView>('create');
+  const [editorStep, setEditorStep] = useState<AssetGroupEditorStep>(1);
   const [reportFormat, setReportFormat] = useState<AssetGroupReportFormat>('pdf');
   const [reportStep, setReportStep] = useState<AssetGroupReportStep>('options');
   const [reportKind, setReportKind] = useState<AssetGroupReportKind>('valuation');
@@ -435,6 +462,7 @@ export default function AssetGroupManagerModal({
     setPrimaryAssetId(initialPrimaryAssetId);
     setSearch('');
     setView(group ? 'menu' : 'create');
+    setEditorStep(1);
     setReportFormat('pdf');
     setReportStep('options');
     setReportKind('valuation');
@@ -508,9 +536,22 @@ export default function AssetGroupManagerModal({
     if (replacementPrimaryAssetId) handlePrimaryChange(replacementPrimaryAssetId);
   }
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  function handleEditorSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (busy || selectedAssetIds.length < 1 || !primaryAssetId || !name.trim()) return;
+    if (busy) return;
+
+    if (editorStep === 1) {
+      if (!name.trim()) return;
+      setEditorStep(2);
+      return;
+    }
+
+    if (editorStep === 2) {
+      setEditorStep(3);
+      return;
+    }
+
+    if (selectedAssetIds.length < 1 || !primaryAssetId || !name.trim()) return;
 
     void onSave({
       groupId: group?.id,
@@ -650,7 +691,10 @@ export default function AssetGroupManagerModal({
           <div className={`${registerStyles.modalScrollBody} ${registerStyles.optionsScrollBody}`}>
             <div className={registerStyles.optionsContent}>
               <div className={`${registerStyles.optionsGrid} ${registerStyles.assetOptionsGrid}`}>
-                <button type="button" className={`${registerStyles.optionActionButton} ${registerStyles.optionFeaturedButton}`} onClick={() => setView('members')}>
+                <button type="button" className={`${registerStyles.optionActionButton} ${registerStyles.optionFeaturedButton}`} onClick={() => {
+                  setEditorStep(1);
+                  setView('members');
+                }}>
                   <MembersIcon className={registerStyles.buttonIcon} />
                   <span>
                     <strong>Edit umbrella</strong>
@@ -773,12 +817,14 @@ export default function AssetGroupManagerModal({
             </footer>
           </>
         ) : (
-          <form onSubmit={handleSubmit}>
+          <form onSubmit={handleEditorSubmit}>
             <div className={styles.body}>
-              <p className={styles.intro}>Complete the three steps below. Every selected asset keeps its own records, maintenance, documents and valuation history.</p>
+              <p className={styles.intro}>Complete one short step at a time. Your umbrella is saved on the final step.</p>
+              <AssetGroupEditorProgress currentStep={editorStep} />
 
-              <div className={styles.stepStack}>
-                <section className={styles.stepCard} aria-labelledby="umbrella-step-name">
+              <div className={styles.wizardBody}>
+                {editorStep === 1 ? (
+                <section className={`${styles.stepCard} ${styles.wizardPanel}`} aria-labelledby="umbrella-step-name">
                   <div className={styles.stepHeader}>
                     <span className={styles.stepNumber}>1</span>
                     <div className={styles.stepCopy}>
@@ -797,8 +843,10 @@ export default function AssetGroupManagerModal({
                     />
                   </label>
                 </section>
+                ) : null}
 
-                <section className={styles.stepCard} aria-labelledby="umbrella-step-values">
+                {editorStep === 2 ? (
+                <section className={`${styles.stepCard} ${styles.wizardPanel}`} aria-labelledby="umbrella-step-values">
                   <div className={styles.stepHeader}>
                     <span className={styles.stepNumber}>2</span>
                     <div className={styles.stepCopy}>
@@ -832,8 +880,10 @@ export default function AssetGroupManagerModal({
                     </fieldset>
                   )}
                 </section>
+                ) : null}
 
-                <section className={`${styles.stepCard} ${styles.assetSection}`} aria-labelledby="umbrella-step-assets">
+                {editorStep === 3 ? (
+                <section className={`${styles.stepCard} ${styles.assetSection} ${styles.wizardPanel}`} aria-labelledby="umbrella-step-assets">
                   <div className={styles.stepHeader}>
                     <span className={styles.stepNumber}>3</span>
                     <div className={styles.stepCopy}>
@@ -852,6 +902,7 @@ export default function AssetGroupManagerModal({
                       value={search}
                       onChange={(event) => setSearch(event.target.value)}
                       placeholder="Search name, category, serial, registration or notes"
+                      autoFocus
                     />
                   </label>
 
@@ -893,24 +944,34 @@ export default function AssetGroupManagerModal({
                       );
                     })}
                   </div>
-                </section>
-              </div>
 
-              <aside className={styles.summary}>
-                <span>{combinedMode ? 'Combined value represented by this umbrella' : 'Register value represented by this umbrella'}</span>
-                <strong>{money(countedValue)}</strong>
-                <small>{valueMode === 'separate' ? 'Every selected asset is added to totals.' : 'Only the primary asset is added to totals.'}</small>
-              </aside>
+                  <aside className={styles.summary}>
+                    <span>{combinedMode ? 'Combined value represented by this umbrella' : 'Register value represented by this umbrella'}</span>
+                    <strong>{money(countedValue)}</strong>
+                    <small>{valueMode === 'separate' ? 'Every selected asset is added to totals.' : 'Only the primary asset is added to totals.'}</small>
+                  </aside>
+                </section>
+                ) : null}
+              </div>
 
               {error ? <p className={styles.error} role="alert">{error}</p> : null}
             </div>
 
-            <footer className={styles.footer}>
+            <footer className={`${styles.footer} ${styles.wizardFooter}`}>
               <button type="button" className={styles.cancelButton} onClick={() => group ? setView('menu') : onClose()} disabled={busy}>
-                {group ? 'Back' : 'Cancel'}
+                Cancel
               </button>
-              <button type="submit" className={styles.saveButton} disabled={busy || selectedAssetIds.length < 1 || !primaryAssetId || !name.trim()}>
-                {busy ? 'Saving…' : group ? 'Save changes' : 'Create umbrella'}
+              {editorStep > 1 ? (
+                <button type="button" className={styles.cancelButton} onClick={() => setEditorStep((editorStep - 1) as AssetGroupEditorStep)} disabled={busy}>
+                  Back
+                </button>
+              ) : null}
+              <button
+                type="submit"
+                className={styles.saveButton}
+                disabled={busy || (editorStep === 1 && !name.trim()) || (editorStep === 3 && (selectedAssetIds.length < 1 || !primaryAssetId))}
+              >
+                {editorStep < 3 ? 'Next' : busy ? 'Saving…' : group ? 'Save changes' : 'Create umbrella'}
               </button>
             </footer>
           </form>
