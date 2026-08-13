@@ -2,8 +2,8 @@ import { NextResponse } from 'next/server';
 import { getAccountProfile } from '../../../../../lib/account-profile';
 import { getServerSession, isDealerAppSession } from '../../../../../lib/auth-session';
 import {
-  clearDealerMaintenanceNotificationsForViewer,
   listDealerMaintenanceNotificationsForViewer,
+  markDealerMaintenanceNotificationsReadForViewer,
 } from '../../../../../lib/dealer-maintenance-notification-inbox';
 
 export const runtime = 'nodejs';
@@ -13,7 +13,6 @@ type DealerNotificationContext = {
   dealerUserId: string;
   viewerKey: string;
   staffId: string | null;
-  displayName: string;
 };
 
 async function dealerNotificationContext(): Promise<DealerNotificationContext | null> {
@@ -34,11 +33,6 @@ async function dealerNotificationContext(): Promise<DealerNotificationContext | 
       ? `dealer-staff:${dealerAppSession.staffId}`
       : `account:${session.user.id}`,
     staffId: dealerAppSession?.staffId ?? null,
-    displayName: dealerAppSession?.displayName
-      || profile.displayName
-      || profile.businessName
-      || session.user.name
-      || 'Dealer App user',
   };
 }
 
@@ -64,10 +58,7 @@ export async function POST(request: Request) {
   if (!context) return NextResponse.json({ ok: false, error: 'Dealer App login is required.' }, { status: 401 });
 
   try {
-    const body = await request.json().catch(() => null) as {
-      notificationIds?: unknown[];
-      completed?: unknown;
-    } | null;
+    const body = await request.json().catch(() => null) as { notificationIds?: unknown[] } | null;
     let notificationIds = Array.isArray(body?.notificationIds)
       ? body.notificationIds.map((value) => String(value ?? '').trim()).filter(Boolean)
       : [];
@@ -79,21 +70,14 @@ export async function POST(request: Request) {
       notificationIds = notifications.filter((notification) => !notification.isRead).map((notification) => notification.id);
     }
 
-    const result = await clearDealerMaintenanceNotificationsForViewer({
+    await markDealerMaintenanceNotificationsReadForViewer({
       ...context,
       notificationIds,
-      completed: body?.completed === true,
-      completedBy: context.displayName,
     });
-    const notifications = await listDealerMaintenanceNotificationsForViewer(context);
-    return NextResponse.json({
-      ok: true,
-      ...result,
-      notifications,
-      unreadCount: notifications.filter((notification) => !notification.isRead).length,
-    });
+    return NextResponse.json({ ok: true });
   } catch (error) {
     console.error('Dealer maintenance notifications POST failed.', error);
     return NextResponse.json({ ok: false, error: 'Failed to mark notifications as read.' }, { status: 500 });
   }
 }
+

@@ -1,12 +1,7 @@
 import {
   listDealerMaintenanceNotifications,
-  getDealerTrackedAsset,
   type DealerMaintenanceNotification,
 } from './dealer-maintenance-tracker';
-import {
-  recordStandaloneAssetMaintenanceCompletion,
-  unknownMaintenanceCompletionNote,
-} from './asset-maintenance';
 import {
   listReadNotificationEventKeys,
   markNotificationEventKeysRead,
@@ -166,78 +161,19 @@ export async function markDealerMaintenanceNotificationsReadForViewer(input: {
   staffId?: string | null;
   notificationIds: string[];
 }): Promise<void> {
-  await clearDealerMaintenanceNotificationsForViewer({
-    ...input,
-    completed: false,
-    completedBy: '',
-  });
-}
-
-function assignedProblemId(notificationId: string): string {
-  const match = /^assigned-problem:([0-9a-f-]{36}):/i.exec(notificationId);
-  return match?.[1] ?? '';
-}
-
-export async function clearDealerMaintenanceNotificationsForViewer(input: {
-  dealerUserId: string;
-  viewerKey: string;
-  staffId?: string | null;
-  notificationIds: string[];
-  completed: boolean;
-  completedBy: string;
-}): Promise<{ completedCount: number }> {
   const requestedIds = new Set(
     input.notificationIds.map((value) => String(value ?? '').trim()).filter(Boolean),
   );
-  if (!requestedIds.size) return { completedCount: 0 };
+  if (!requestedIds.size) return;
 
   const notifications = await listDealerMaintenanceNotificationsForViewer(input);
-  const selectedNotifications = notifications.filter(
-    (notification) => requestedIds.has(notification.id),
-  );
-  const allowedIds = selectedNotifications.map((notification) => notification.id);
-
-  let completedCount = 0;
-  if (input.completed && input.staffId) {
-    const assignedProblems = selectedNotifications.filter(
-      (notification) => notification.assignedToViewer && notification.status === 'assigned_problem',
-    );
-
-    for (const notification of assignedProblems) {
-      const assignmentId = assignedProblemId(notification.id);
-      const asset = await getDealerTrackedAsset(input.dealerUserId, notification.accessId);
-      if (!assignmentId || !asset || asset.assetId !== notification.assetId) continue;
-
-      await recordStandaloneAssetMaintenanceCompletion(
-        asset.ownerUserId,
-        {
-          assetId: asset.assetId,
-          maintenanceType: 'service',
-          sourceScanEventId: assignmentId,
-          completedNotes: unknownMaintenanceCompletionNote('service'),
-          completedBy: input.completedBy,
-        },
-        { allowUnknownDetails: true },
-      );
-
-      await getDb().query(
-        `
-          update public.dealer_problem_assignments
-          set workflow_status = 'resolved', resolved_at = now(), updated_at = now()
-          where id = $1::uuid
-            and dealer_user_id = $2
-            and assigned_staff_id = $3::uuid
-            and workflow_status <> 'resolved'
-        `,
-        [assignmentId, input.dealerUserId, input.staffId],
-      );
-      completedCount += 1;
-    }
-  }
+  const allowedIds = notifications
+    .map((notification) => notification.id)
+    .filter((id) => requestedIds.has(id));
 
   await markNotificationEventKeysRead(
     input.viewerKey,
     allowedIds.map(eventKey),
   );
-  return { completedCount };
 }
+

@@ -1257,6 +1257,75 @@
   font-weight: 850;
 }
 
+.overviewConfirmSharedNote {
+  border: 1px solid rgba(35, 104, 81, 0.14);
+  border-radius: 14px;
+  background: #f2faf6;
+  padding: 11px 13px;
+  color: #236851 !important;
+  font-size: 0.82rem !important;
+}
+
+.overviewConfirmScope {
+  display: grid;
+  gap: 9px;
+  margin: 18px 0 0;
+  border: 0;
+  padding: 0;
+  text-align: left;
+}
+
+.overviewConfirmScope legend {
+  margin-bottom: 2px;
+  color: rgba(18, 53, 45, 0.72);
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.overviewConfirmScope label {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 11px;
+  align-items: center;
+  border: 1px solid rgba(18, 53, 45, 0.13);
+  border-radius: 15px;
+  background: #ffffff;
+  padding: 12px 13px;
+  cursor: pointer;
+}
+
+.overviewConfirmScope label.overviewConfirmScopeSelected {
+  border-color: rgba(31, 139, 100, 0.48);
+  background: #eff9f4;
+  box-shadow: 0 0 0 3px rgba(31, 139, 100, 0.08);
+}
+
+.overviewConfirmScope input {
+  width: 18px;
+  height: 18px;
+  accent-color: #18795a;
+}
+
+.overviewConfirmScope span {
+  display: grid;
+  gap: 2px;
+}
+
+.overviewConfirmScope strong {
+  color: #12352d;
+  font-size: 0.86rem;
+  font-weight: 850;
+}
+
+.overviewConfirmScope small {
+  color: rgba(18, 53, 45, 0.62);
+  font-size: 0.74rem;
+  font-weight: 650;
+  line-height: 1.35;
+}
+
 .overviewConfirmActions {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

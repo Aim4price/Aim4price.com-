@@ -237,7 +237,10 @@ export default function FieldManagerOverviewClient() {
     }
   }
 
-  async function handleClearItem(item: OverviewItem) {
+  async function handleClearItem(
+    item: OverviewItem,
+    outcome: 'clear' | 'completed' | 'problem_done',
+  ) {
     setClearingItemId(item.id);
     setActionError(null);
 
@@ -251,6 +254,7 @@ export default function FieldManagerOverviewClient() {
           range,
           itemId: item.id,
           sourceId: item.sourceId,
+          outcome,
         }),
       });
       const payload = (await response.json().catch(() => null)) as OverviewApiResponse | null;
@@ -264,9 +268,13 @@ export default function FieldManagerOverviewClient() {
         throw new Error(extractError(payload, 'This item could not be cleared.'));
       }
 
-      setItems((current) => current.filter(
-        (candidate) => candidate.id !== item.id || candidate.sourceId !== item.sourceId,
-      ));
+      if (Array.isArray(payload.items)) {
+        setItems(payload.items);
+      } else {
+        setItems((current) => current.filter(
+          (candidate) => candidate.id !== item.id || candidate.sourceId !== item.sourceId,
+        ));
+      }
       setClearCandidate(null);
     } catch (error) {
       setActionError(error instanceof Error ? error.message : 'This item could not be cleared.');
@@ -402,9 +410,11 @@ export default function FieldManagerOverviewClient() {
           <OverviewClearConfirmation
             assetTitle={clearCandidate.assetTitle}
             itemLabel={TYPE_LABELS[clearCandidate.type]}
+            itemType={clearCandidate.type}
             isClearing={clearingItemId === clearCandidate.id}
+            clearsForEveryone
             onCancel={() => setClearCandidate(null)}
-            onConfirm={() => void handleClearItem(clearCandidate)}
+            onConfirm={({ outcome }) => void handleClearItem(clearCandidate, outcome)}
           />
         ) : null}
 

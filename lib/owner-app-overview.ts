@@ -19,6 +19,18 @@ type LicenseRow = {
   specs_json: unknown; license_renewal_alert_noted_for_date: string | null;
 };
 
+export type SharedOverviewSourceKind = 'maintenance' | 'problem' | 'license';
+
+export type SharedOverviewDismissalInput = {
+  ownerUserId: string;
+  sourceKind: SharedOverviewSourceKind;
+  sourceId: string;
+  itemId: string;
+  assetId: string;
+};
+
+const ALL_OVERVIEW_VIEWERS_KEY = 'everyone';
+
 function text(value: unknown) { return String(value ?? '').replace(/\s+/g, ' ').trim(); }
 function record(value: unknown): Record<string, unknown> { return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {}; }
 function rangeDays(range: OwnerAppOverviewRange): number | null { return range === 'week' ? 7 : null; }
@@ -134,12 +146,58 @@ export async function listOwnerAppOverview(
   await ensureOwnerAppTables();
   const [items, dismissed] = await Promise.all([
     buildOverview(ownerUserId, range, allowedAssetIds),
-    getDb().query<{ source_kind: string; source_id: string }>('select source_kind, source_id from public.owner_app_overview_dismissals where parent_owner_user_id = $1 and viewer_key = $2', [ownerUserId, viewerKey]),
+    getDb().query<{ source_kind: string; source_id: string }>(
+      'select source_kind, source_id from public.owner_app_overview_dismissals where parent_owner_user_id = $1 and viewer_key = any($2::text[])',
+      [ownerUserId, [...new Set([viewerKey, ALL_OVERVIEW_VIEWERS_KEY])]],
+    ),
   ]);
   const hidden = new Set(dismissed.rows.map((row) => `${row.source_kind}\u0000${row.source_id}`));
   const visible = items.filter((item) => !hidden.has(`${item.sourceKind}\u0000${item.sourceId}`));
   const needsAttentionCount = visible.filter((item) => item.section === 'needs_attention').length;
   return { ok: true as const, range, items: visible, summary: { totalCount: visible.length, needsAttentionCount, comingUpCount: visible.length - needsAttentionCount } };
+}
+
+export async function getOwnerAppOverviewItem(
+  ownerUserId: string,
+  range: OwnerAppOverviewRange,
+  itemId: string,
+  sourceId: string,
+  allowedAssetIds: readonly string[] | null = null,
+): Promise<OwnerAppOverviewItem> {
+  const items = await buildOverview(ownerUserId, range, allowedAssetIds);
+  const item = items.find((entry) => entry.id === itemId && entry.sourceId === sourceId);
+  if (!item) throw new Error('OVERVIEW_ITEM_NOT_FOUND');
+  return item;
+}
+
+async function saveOwnerAppOverviewDismissal(
+  viewerKey: string,
+  input: SharedOverviewDismissalInput,
+): Promise<void> {
+  await ensureOwnerAppTables();
+  await getDb().query(`insert into public.owner_app_overview_dismissals (
+    parent_owner_user_id, viewer_key, source_kind, source_id, overview_item_id, asset_register_item_id, dismissed_at
+  ) values ($1, $2, $3, $4, $5, $6::uuid, now())
+  on conflict (parent_owner_user_id, viewer_key, source_kind, source_id) do update set
+    overview_item_id = excluded.overview_item_id, asset_register_item_id = excluded.asset_register_item_id, dismissed_at = now()`,
+  [input.ownerUserId, viewerKey, input.sourceKind, input.sourceId, input.itemId, input.assetId]);
+}
+
+export async function dismissOwnerAppOverviewSourceForEveryone(
+  input: SharedOverviewDismissalInput,
+): Promise<void> {
+  await saveOwnerAppOverviewDismissal(ALL_OVERVIEW_VIEWERS_KEY, input);
+}
+
+export async function listOwnerAppOverviewGlobalDismissalKeys(
+  ownerUserId: string,
+): Promise<Set<string>> {
+  await ensureOwnerAppTables();
+  const result = await getDb().query<{ source_kind: string; source_id: string }>(
+    'select source_kind, source_id from public.owner_app_overview_dismissals where parent_owner_user_id = $1 and viewer_key = $2',
+    [ownerUserId, ALL_OVERVIEW_VIEWERS_KEY],
+  );
+  return new Set(result.rows.map((row) => `${row.source_kind}\u0000${row.source_id}`));
 }
 
 export async function dismissOwnerAppOverviewItem(
@@ -149,15 +207,23 @@ export async function dismissOwnerAppOverviewItem(
   itemId: string,
   sourceId: string,
   allowedAssetIds: readonly string[] | null = null,
+  clearForEveryone = false,
 ) {
-  await ensureOwnerAppTables();
-  const items = await buildOverview(ownerUserId, range, allowedAssetIds);
-  const item = items.find((entry) => entry.id === itemId && entry.sourceId === sourceId);
-  if (!item) throw new Error('OVERVIEW_ITEM_NOT_FOUND');
-  await getDb().query(`insert into public.owner_app_overview_dismissals (
-    parent_owner_user_id, viewer_key, source_kind, source_id, overview_item_id, asset_register_item_id, dismissed_at
-  ) values ($1, $2, $3, $4, $5, $6::uuid, now())
-  on conflict (parent_owner_user_id, viewer_key, source_kind, source_id) do update set
-    overview_item_id = excluded.overview_item_id, asset_register_item_id = excluded.asset_register_item_id, dismissed_at = now()`,
-  [ownerUserId, viewerKey, item.sourceKind, item.sourceId, item.id, item.assetId]);
+  const item = await getOwnerAppOverviewItem(
+    ownerUserId,
+    range,
+    itemId,
+    sourceId,
+    allowedAssetIds,
+  );
+  await saveOwnerAppOverviewDismissal(
+    clearForEveryone ? ALL_OVERVIEW_VIEWERS_KEY : viewerKey,
+    {
+      ownerUserId,
+      sourceKind: item.sourceKind,
+      sourceId: item.sourceId,
+      itemId: item.id,
+      assetId: item.assetId,
+    },
+  );
 }

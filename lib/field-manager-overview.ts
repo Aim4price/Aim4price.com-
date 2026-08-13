@@ -11,6 +11,10 @@ import {
 import { listOpenIssueNoteGroupsForAssets } from './asset-issue-notes';
 import { getDb } from './db';
 import {
+  dismissOwnerAppOverviewSourceForEveryone,
+  listOwnerAppOverviewGlobalDismissalKeys,
+} from './owner-app-overview';
+import {
   ensureFieldManagerTables,
   listFieldManagerAssets,
   type FieldManagerAssetSummary,
@@ -580,13 +584,14 @@ export async function listFieldManagerOverview(input: {
   managerId: string;
   range: FieldManagerOverviewRange;
 }): Promise<FieldManagerOverviewResult> {
-  const [overview, dismissedKeys] = await Promise.all([
+  const [overview, dismissedKeys, globallyDismissedKeys] = await Promise.all([
     buildFieldManagerOverview(input),
     listFieldManagerOverviewDismissalKeys(input.managerId),
+    listOwnerAppOverviewGlobalDismissalKeys(input.ownerUserId),
   ]);
   const items = overview.items.filter((item) => {
     const key = overviewDismissalKey(overviewSourceKind(item), item.sourceId);
-    return !dismissedKeys.has(key);
+    return !dismissedKeys.has(key) && !globallyDismissedKeys.has(key);
   });
   const needsAttentionCount = items.filter(
     (item) => item.section === 'needs_attention',
@@ -630,32 +635,13 @@ export async function dismissFieldManagerOverviewItem(input: {
     throw new Error('OVERVIEW_ITEM_NOT_FOUND');
   }
 
-  await ensureFieldManagerOverviewDismissalTable();
-  await getDb().query(
-    `
-      insert into public.field_manager_overview_dismissals (
-        field_manager_id,
-        source_kind,
-        source_id,
-        overview_item_id,
-        asset_register_item_id,
-        dismissed_at
-      )
-      values ($1::uuid, $2, $3, $4, $5::uuid, now())
-      on conflict (field_manager_id, source_kind, source_id)
-      do update set
-        overview_item_id = excluded.overview_item_id,
-        asset_register_item_id = excluded.asset_register_item_id,
-        dismissed_at = now()
-    `,
-    [
-      input.managerId,
-      overviewSourceKind(item),
-      item.sourceId,
-      item.id,
-      item.assetId,
-    ],
-  );
+  await dismissOwnerAppOverviewSourceForEveryone({
+    ownerUserId: input.ownerUserId,
+    sourceKind: overviewSourceKind(item),
+    sourceId: item.sourceId,
+    itemId: item.id,
+    assetId: item.assetId,
+  });
 
   return { itemId: item.id, sourceId: item.sourceId };
 }

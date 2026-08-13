@@ -8,6 +8,9 @@ import type {
   DealerProblemWorkflowStatus,
 } from '../../../lib/dealer-overview';
 import overviewStyles from '../../field-manager/page.module.css';
+import OverviewClearConfirmation, {
+  type OverviewClearOutcome,
+} from '../../field-manager/overview-clear-confirmation';
 import dealerStyles from './dealer-overview.module.css';
 
 type OverviewResponse = {
@@ -57,6 +60,8 @@ export default function DealerOverviewClient({ initialOverview }: { initialOverv
   const [assignmentItem, setAssignmentItem] = useState<DealerOverviewItem | null>(null);
   const [assignmentDraft, setAssignmentDraft] = useState<AssignmentDraft>(defaultDraft);
   const [isSaving, setIsSaving] = useState(false);
+  const [clearCandidate, setClearCandidate] = useState<DealerOverviewItem | null>(null);
+  const [clearingItemId, setClearingItemId] = useState<string | null>(null);
 
   const visibleItems = useMemo(() => {
     const query = searchQuery.trim().toLocaleLowerCase();
@@ -140,20 +145,61 @@ export default function DealerOverviewClient({ initialOverview }: { initialOverv
     }
   }
 
+  async function clearOverviewItem(item: DealerOverviewItem, outcome: OverviewClearOutcome) {
+    if (clearingItemId) return;
+    setClearingItemId(item.id);
+    setLoadError('');
+    try {
+      const response = await fetch('/api/dealer/overview/clear', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          itemId: item.id,
+          sourceId: item.sourceId,
+          outcome,
+        }),
+      });
+      const payload = await response.json().catch(() => null) as OverviewResponse | null;
+      if (!response.ok || !payload?.ok || !payload.overview) {
+        throw new Error(errorText(payload, 'The Overview item could not be cleared.'));
+      }
+      setOverview(payload.overview);
+      setClearCandidate(null);
+    } catch (error) {
+      setLoadError(error instanceof Error ? error.message : 'The Overview item could not be cleared.');
+      setClearCandidate(null);
+    } finally {
+      setClearingItemId(null);
+    }
+  }
+
   function renderOverviewCard(item: DealerOverviewItem) {
     const canManage = overview.canManageAssignments && item.sourceKind === 'problem';
+    const isClearing = clearingItemId === item.id;
+    const hasPendingAction = Boolean(clearingItemId) || isSaving;
     return (
       <article key={`${item.id}:${item.sourceId}`} className={cardClassName(item)}>
         <h3>{item.assetTitle}</h3>
         <p className={overviewStyles.overviewHeadline}>{item.headline}</p>
         {item.detail.trim() ? <p className={overviewStyles.overviewDetail}>{item.detail}</p> : null}
         {item.notes.trim() ? <p className={overviewStyles.overviewNotes}>{item.notes}</p> : null}
-        <div className={`${overviewStyles.overviewCardActions} ${canManage ? '' : dealerStyles.dealerOverviewActionsSingle}`}>
+        <div className={`${overviewStyles.overviewCardActions} ${canManage ? dealerStyles.dealerOverviewActionsThree : ''}`}>
+          <button
+            type="button"
+            className={overviewStyles.overviewClearButton}
+            onClick={() => setClearCandidate(item)}
+            disabled={hasPendingAction}
+            aria-busy={isClearing}
+          >
+            {isClearing ? 'Clearing…' : 'Clear'}
+          </button>
           {canManage ? (
             <button
               type="button"
               className={overviewStyles.overviewClearButton}
               onClick={() => openAssignment(item)}
+              disabled={hasPendingAction}
             >
               Assign
             </button>
@@ -162,6 +208,7 @@ export default function DealerOverviewClient({ initialOverview }: { initialOverv
             type="button"
             className={`${overviewStyles.mobilePrimaryButton} ${overviewStyles.overviewOpenButton}`}
             onClick={() => window.location.assign(item.href)}
+            disabled={hasPendingAction}
           >
             Open
           </button>
@@ -226,6 +273,17 @@ export default function DealerOverviewClient({ initialOverview }: { initialOverv
           </section>
         </div>
       </section>
+
+      {clearCandidate ? (
+        <OverviewClearConfirmation
+          assetTitle={clearCandidate.assetTitle}
+          itemLabel={TYPE_LABELS[clearCandidate.type]}
+          itemType={clearCandidate.type}
+          isClearing={clearingItemId === clearCandidate.id}
+          onCancel={() => setClearCandidate(null)}
+          onConfirm={({ outcome }) => void clearOverviewItem(clearCandidate, outcome)}
+        />
+      ) : null}
 
       {assignmentItem ? (
         <div className={dealerStyles.dealerAssignmentOverlay}>
