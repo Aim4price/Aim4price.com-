@@ -44,9 +44,9 @@ function group(valueMode) {
     name: 'Farm Transport Set',
     valueMode,
     members: [
-      { assetId: 'trailer', role: 'linked', relationship: 'attached_to', sortOrder: 2 },
-      { assetId: 'truck', role: 'primary', relationship: 'primary', sortOrder: 1 },
-      { assetId: 'bowser', role: 'linked', relationship: 'works_with', sortOrder: 3 },
+      { assetId: 'trailer', role: 'linked', relationship: 'attached_to', countsTowardTotal: valueMode === 'separate', sortOrder: 2 },
+      { assetId: 'truck', role: 'primary', relationship: 'primary', countsTowardTotal: true, sortOrder: 1 },
+      { assetId: 'bowser', role: 'linked', relationship: 'works_with', countsTowardTotal: valueMode === 'separate', sortOrder: 3 },
     ],
     createdAtIso: '2026-08-09T00:00:00.000Z',
     updatedAtIso: '2026-08-09T00:00:00.000Z',
@@ -75,7 +75,7 @@ test('separate-value groups count every member and order the primary first', asy
     id: 'alpha-group',
     name: 'Alpha Equipment',
     members: [
-      { assetId: 'unrelated', role: 'primary', relationship: 'primary', sortOrder: 0 },
+      { assetId: 'unrelated', role: 'primary', relationship: 'primary', countsTowardTotal: true, sortOrder: 0 },
     ],
   };
   assert.deepEqual(
@@ -101,6 +101,7 @@ test('folded umbrellas occupy one page slot and expanded umbrellas stay intact',
       assetId: asset.id,
       role: index === 0 ? 'primary' : 'linked',
       relationship: index === 0 ? 'primary' : 'works_with',
+      countsTowardTotal: true,
       sortOrder: index + 1,
     })),
   };
@@ -143,6 +144,59 @@ test('included-in-primary groups prevent register-value double counting', async 
   assert.equal(helpers.assetCountsTowardRegisterTotal('trailer', memberships), false);
 });
 
+test('ordinary umbrellas need no primary and count every grouped asset by default', async () => {
+  const helpers = await loadGroupHelpers();
+  const tractorGroup = {
+    ...group('separate'),
+    id: 'tractor-group',
+    name: 'Working tractors',
+    members: [
+      { assetId: 'truck', role: 'member', relationship: 'grouped', countsTowardTotal: true, sortOrder: 0 },
+      { assetId: 'trailer', role: 'member', relationship: 'grouped', countsTowardTotal: true, sortOrder: 1 },
+      { assetId: 'bowser', role: 'member', relationship: 'grouped', countsTowardTotal: true, sortOrder: 2 },
+    ],
+  };
+
+  assert.equal(helpers.getAssetGroupPrimaryAssetId(tractorGroup), '');
+  assert.equal(helpers.groupRegisterValue(tractorGroup, assets), 472_400);
+  assert.equal(helpers.assetGroupValueModeLabel(tractorGroup), 'Every asset counted');
+});
+
+test('any member can be excluded without requiring a primary asset', async () => {
+  const helpers = await loadGroupHelpers();
+  const groupedWithOneExcluded = {
+    ...group('separate'),
+    id: 'grouped-with-one-excluded',
+    members: [
+      { assetId: 'truck', role: 'member', relationship: 'grouped', countsTowardTotal: true, sortOrder: 0 },
+      { assetId: 'trailer', role: 'member', relationship: 'grouped', countsTowardTotal: false, sortOrder: 1 },
+      { assetId: 'bowser', role: 'member', relationship: 'grouped', countsTowardTotal: true, sortOrder: 2 },
+    ],
+  };
+
+  assert.equal(helpers.getAssetGroupPrimaryAssetId(groupedWithOneExcluded), '');
+  assert.equal(helpers.groupRegisterValue(groupedWithOneExcluded, assets), 322_400);
+  assert.equal(helpers.assetGroupValueModeLabel(groupedWithOneExcluded), '2 of 3 assets counted');
+});
+
+test('a primary may include linked values while other independent assets still count', async () => {
+  const helpers = await loadGroupHelpers();
+  const buildingGroup = {
+    ...group('separate'),
+    id: 'building-group',
+    members: [
+      { assetId: 'truck', role: 'primary', relationship: 'primary', countsTowardTotal: true, sortOrder: 0 },
+      { assetId: 'trailer', role: 'linked', relationship: 'component_of', countsTowardTotal: false, sortOrder: 1 },
+      { assetId: 'bowser', role: 'member', relationship: 'grouped', countsTowardTotal: true, sortOrder: 2 },
+    ],
+  };
+
+  assert.equal(helpers.getAssetGroupPrimaryAssetId(buildingGroup), 'truck');
+  assert.equal(helpers.groupRegisterValue(buildingGroup, assets), 322_400);
+  assert.equal(helpers.assetCountsTowardRegisterTotal('trailer', [buildingGroup]), false);
+  assert.equal(helpers.assetCountsTowardRegisterTotal('bowser', [buildingGroup]), true);
+});
+
 test('combined and one-asset umbrellas remain visible in their Asset Registers', async () => {
   const helpers = await loadGroupHelpers();
   const combinedGroup = {
@@ -160,26 +214,24 @@ test('combined and one-asset umbrellas remain visible in their Asset Registers',
   assert.deepEqual(
     registerOneProjection[0].members.map((member) => [member.assetId, member.role, member.relationship]),
     [
-      ['trailer', 'primary', 'primary'],
+      ['trailer', 'linked', 'attached_to'],
       ['bowser', 'linked', 'works_with'],
     ],
   );
 
   const singleAssetProjection = helpers.projectAssetGroupsToAssets([combinedGroup], [{ id: 'truck' }]);
   assert.equal(singleAssetProjection.length, 1);
-  assert.deepEqual(
-    singleAssetProjection[0].members.map((member) => [member.assetId, member.role, member.relationship]),
-    [['truck', 'primary', 'primary']],
-  );
+  assert.deepEqual(singleAssetProjection[0].members.map((member) => member.assetId), ['truck']);
   const singleAssetEntries = helpers.buildAssetGroupPageEntries([{ id: 'truck' }], singleAssetProjection);
   assert.equal(singleAssetEntries.length, 1);
   assert.equal(singleAssetEntries[0].kind, 'group');
 });
 
-test('group persistence validates ownership, membership, and safe unlink behavior', async () => {
-  const [persistence, schema] = await Promise.all([
+test('group persistence validates ownership, optional primaries, per-member counting, and safe unlink behavior', async () => {
+  const [persistence, schema, migration] = await Promise.all([
     readFile(new URL('../lib/asset-groups.ts', import.meta.url), 'utf8'),
     readFile(new URL('../lib/asset-registers.ts', import.meta.url), 'utf8'),
+    readFile(new URL('../database/migrations/72-asset-group-member-value-counting.sql', import.meta.url), 'utf8'),
   ]);
   assert.match(persistence, /ASSET_GROUP_REGISTER_MISMATCH/);
   assert.match(persistence, /detachAssetsFromOtherGroups/);
@@ -187,11 +239,20 @@ test('group persistence validates ownership, membership, and safe unlink behavio
   assert.match(schema, /unique \(asset_id\)/);
   assert.match(schema, /unlink_asset_group_on_register_change/);
   assert.match(schema, /role = 'primary'/);
+  assert.match(schema, /counts_toward_total boolean not null default true/);
+  assert.match(schema, /role in \('primary', 'linked', 'member'\)/);
+  assert.match(schema, /relationship in \('primary', 'grouped'/);
   assert.match(schema, /alter column register_id drop not null/);
   assert.match(schema, /asset_group\.register_id is not null/);
   assert.match(schema, /\) < 1;/);
   assert.match(persistence, /register_id is null/);
-  assert.match(persistence, /value_mode = case when \$3::boolean then 'separate'/);
+  assert.match(persistence, /countsTowardTotalByAssetId/);
+  assert.match(persistence, /'member',\s*'grouped',\s*true/);
+  assert.doesNotMatch(persistence, /ASSET_GROUP_PRIMARY_REQUIRED/);
+  assert.doesNotMatch(persistence, /set role = 'primary', relationship = 'primary'/);
+  assert.match(migration, /counts_toward_total/);
+  assert.match(migration, /value_mode = 'included_in_primary' THEN member\.role = 'primary'/);
+  assert.match(migration, /ELSE 'member'/);
 });
 
 test('umbrella membership is not capped at 50 assets', async () => {
@@ -210,7 +271,8 @@ test('group metadata and counted-value rules are present in PDF and Excel export
   const source = await readFile(new URL('../app/api/asset-register/export/route.ts', import.meta.url), 'utf8');
   assert.match(source, /name: 'Asset Groups'/);
   assert.match(source, /Counts in register total/);
-  assert.match(source, /const COUNTS_IN_REGISTER_TOTAL_COLUMN = 'AC'/);
+  assert.match(source, /const COUNTS_IN_REGISTER_TOTAL_COLUMN = 'AB'/);
+  assert.doesNotMatch(source, /Group relationship|textCell\('Relationship', 'tableHeader'\)/);
   assert.match(source, /SUMIF\(\$\{countsInRegisterTotalRange\},"Yes"/);
   assert.match(source, /drawPdfAssetGroupHeading/);
   assert.match(source, /Accounting note/);
@@ -218,7 +280,7 @@ test('group metadata and counted-value rules are present in PDF and Excel export
   assert.match(source, /projectAssetGroupsToAssets\(allGroups, combinedAssets\)/);
 });
 
-test('the Asset Register exposes create, manage, collapse, search, and clear umbrella value rules', async () => {
+test('the Asset Register exposes create, manage, collapse, search, and clear umbrella counting rules', async () => {
   const [client, modal] = await Promise.all([
     readFile(new URL('../app/asset-register/asset-register-client.tsx', import.meta.url), 'utf8'),
     readFile(new URL('../components/asset-register/AssetGroupManagerModal.tsx', import.meta.url), 'utf8'),
@@ -227,15 +289,17 @@ test('the Asset Register exposes create, manage, collapse, search, and clear umb
   assert.match(client, /toggleAssetGroupCollapsed/);
   assert.match(client, /matchingGroupAssetIds/);
   assert.match(client, /Counted value/);
-  assert.match(modal, /Add every asset to the total/);
-  assert.match(modal, /Count one primary asset only/);
+  assert.match(modal, /No primary asset/);
+  assert.match(modal, /Choose a primary asset/);
+  assert.match(modal, /Every asset is added to the total by default/);
   assert.match(modal, /Primary asset: add to total/);
-  assert.match(modal, /Linked asset: do not add again/);
+  assert.match(modal, /Linked to primary: do not add again/);
+  assert.match(modal, /Do not add to umbrella total/);
   assert.doesNotMatch(modal, /label="Relationship"|RELATIONSHIP_OPTIONS|assetGroupRelationshipLabel/);
-  assert.match(modal, /without deleting their records|linked asset records[\s\S]*?will remain unchanged/);
+  assert.match(modal, /without deleting their records|grouped asset records[\s\S]*?will remain unchanged/);
   assert.match(client, /combinedMode=\{isCombinedRegisterView\}/);
   assert.match(client, /isResolvedCombinedGroup/);
-  assert.match(modal, /Combined umbrella/);
+  assert.match(modal, /Combined value represented by this umbrella/);
   assert.match(modal, /any of your Asset Registers/);
 });
 
@@ -271,17 +335,18 @@ test('umbrella cards expose aligned actions and the Manage modal uses a clear op
 
   assert.match(client, /onClick=\{\(\) => openAssetGroupShare\(group\)\}/);
   assert.match(client, /onClick=\{\(\) => toggleAssetGroupCollapsed\(group\.id\)\}/);
-  assert.match(client, /onClick=\{\(\) => primaryAsset && openAssetGroupManager\(primaryAsset\)\}/);
+  assert.match(client, /const groupAnchorAsset = assetsById\.get\(primaryAssetId\)/);
+  assert.match(client, /onClick=\{\(\) => groupAnchorAsset && openAssetGroupManager\(groupAnchorAsset\)\}/);
   assert.match(client, /<span>Share<\/span>[\s\S]*?<span>\{isCollapsed \? 'View details' : 'Hide details'\}<\/span>[\s\S]*?<span>Manage<\/span>/);
   assert.match(styles, /\.page \.assetGroupHeaderActions \{[\s\S]*?grid-template-columns: repeat\(3, minmax\(0, 1fr\)\)/);
-  assert.match(client, /'Counted value' : 'Combined value'\} \{money\(displayedGroupValue\)\}/);
+  assert.match(client, /<strong>Counted value \{money\(displayedGroupValue\)\}<\/strong>/);
   assert.doesNotMatch(client, /styles\.assetGroupValueLabel|styles\.assetGroupValueVat/);
   assert.match(styles, /\.assetGroupValue \{[\s\S]*?gap: 0\.18rem;[\s\S]*?text-align: right;/);
   assert.match(styles, /\.assetGroupValue strong \{[\s\S]*?font-size: clamp\(0\.96rem, 1\.25vw, 1\.15rem\);/);
   assert.match(modal, /Edit umbrella/);
-  assert.match(modal, /Name, value rule and assets/);
+  assert.match(modal, /Name, structure and assets/);
   assert.match(modal, /Umbrella name/);
-  assert.match(modal, /Choose how values count/);
+  assert.match(modal, /Choose the umbrella structure/);
   assert.match(modal, /Choose assets/);
   assert.match(modal, /Download reports/);
   assert.match(modal, /Remove umbrella/);
@@ -322,8 +387,9 @@ test('the umbrella Manage modal reuses the asset Manage and report-format patter
   assert.match(modal, /editorStep === 2/);
   assert.match(modal, /editorStep === 3/);
   assert.match(modal, /editorStep < 3 \? 'Next'/);
-  assert.match(modal, /selected && valueMode === 'included_in_primary'/);
-  assert.match(modal, /label="Value in total"/);
+  assert.match(modal, /hasPrimaryAsset \? 'Role and value' : 'Value in total'/);
+  assert.match(modal, /countsTowardTotalByAssetId/);
+  assert.match(modal, /primaryAssetId: hasPrimaryAsset \? primaryAssetId : null/);
   assert.doesNotMatch(modal, /label="Relationship"|RELATIONSHIP_OPTIONS|assetGroupRelationshipLabel/);
   assert.doesNotMatch(modal, /<select value=\{asset\.id === primaryAssetId/);
   assert.match(modalStyles, /\.memberSelectMenu \{[\s\S]*?position: fixed;[\s\S]*?z-index: 1400;/);
@@ -352,7 +418,7 @@ test('umbrella report downloads use custom selectors, clear spacing, and the sha
   assert.match(modalStyles, /\.reportActions \{[\s\S]*?margin-top: 1\.75rem !important;[\s\S]*?border-top:/);
 });
 
-test('umbrella sharing and downloads are limited to linked assets', async () => {
+test('umbrella sharing and downloads are limited to grouped assets', async () => {
   const [client, exportRoute] = await Promise.all([
     readFile(new URL('../app/asset-register/asset-register-client.tsx', import.meta.url), 'utf8'),
     readFile(new URL('../app/api/asset-register/export/route.ts', import.meta.url), 'utf8'),
@@ -407,8 +473,9 @@ test('assets can be dragged into groups without breaking group integrity', async
   assert.match(route, /export async function PATCH/);
   assert.match(route, /moveAssetToGroup/);
   assert.match(persistence, /sourceMemberCount <= 1/);
-  assert.match(persistence, /set role = 'primary', relationship = 'primary'/);
-  assert.match(persistence, /'linked',\s*'works_with'/);
+  assert.match(persistence, /set role = 'member', relationship = 'grouped'/);
+  assert.match(persistence, /'member',\s*'grouped',\s*true/);
+  assert.doesNotMatch(persistence, /set role = 'primary', relationship = 'primary'/);
   assert.match(styles, /\.assetGroupHeaderRowDropTarget \.assetGroupHeader/);
 });
 
@@ -491,7 +558,7 @@ test('umbrella creation is register-wide while member controls target the physic
   assert.match(client, /open=\{isAssetGroupModalOpen\}/);
   assert.match(modal, /if \(!open\) return null;/);
   assert.doesNotMatch(modal, /if \(!open \|\| !anchorAsset\) return null;/);
-  assert.match(modal, /if \(!primaryAssetId\) \{[\s\S]*?setPrimaryAssetId\(asset\.id\)/);
+  assert.match(modal, /if \(hasPrimaryAsset && !primaryAssetId\) \{[\s\S]*?setPrimaryAssetId\(asset\.id\)/);
 
   const groupHeaderBlock = client.slice(
     client.indexOf("if (row.kind === 'group')"),
@@ -499,7 +566,7 @@ test('umbrella creation is register-wide while member controls target the physic
   );
   assert.doesNotMatch(groupHeaderBlock, /assetGroupSideActions/);
   assert.match(groupHeaderBlock, /openAssetGroupShare\(group\)/);
-  assert.match(groupHeaderBlock, /openAssetGroupManager\(primaryAsset\)/);
+  assert.match(groupHeaderBlock, /openAssetGroupManager\(groupAnchorAsset\)/);
 
   const memberCardBlock = client.slice(
     client.indexOf('assetGroupMemberActions'),
@@ -579,7 +646,7 @@ test('asset disposal uses a valid withdrawn marketplace state and keeps database
   assert.doesNotMatch(deleteHandler, /formatUnknownError\(error/);
 });
 
-test('combined Asset Register groups are account-wide, separately counted, and projected in every output', async () => {
+test('combined Asset Register groups are account-wide, preserve member counting, and project in every output', async () => {
   const [route, client, persistence, exportRoute, accountantWorkspace] = await Promise.all([
     readFile(new URL('../app/api/asset-groups/route.ts', import.meta.url), 'utf8'),
     readFile(new URL('../app/asset-register/asset-register-client.tsx', import.meta.url), 'utf8'),
@@ -591,7 +658,8 @@ test('combined Asset Register groups are account-wide, separately counted, and p
   assert.match(route, /isCombinedGroupRequest/);
   assert.match(route, /scope: combined \? 'combined' : 'register'/);
   assert.match(persistence, /const storedRegisterId = registerId \|\| null/);
-  assert.match(persistence, /const valueMode = isCombinedScope \? 'separate'/);
+  assert.match(persistence, /input\.countsTowardTotalByAssetId/);
+  assert.doesNotMatch(persistence, /const valueMode = isCombinedScope \? 'separate'/);
   assert.match(client, /projectAssetGroupsToAssets\(assetGroups, assets\)/);
   assert.match(client, /window\.location\.assign\('\/asset-register\?scope=combined'\)/);
   assert.match(client, /reportAssetGroups = projectAssetGroupsToAssets\(assetGroups, reportAssets\)/);

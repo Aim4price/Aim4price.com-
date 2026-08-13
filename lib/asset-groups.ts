@@ -7,6 +7,7 @@ import {
   normalizeAssetGroupValueMode,
   type AssetGroup,
   type AssetGroupMember,
+  type AssetGroupMemberRole,
   type AssetGroupRelationship,
   type AssetGroupSaveInput,
 } from './asset-groups-shared';
@@ -26,6 +27,7 @@ type AssetGroupMemberRow = {
   asset_id: string;
   role: string;
   relationship: string;
+  counts_toward_total: boolean | null;
   sort_order: number | string | null;
 };
 
@@ -48,10 +50,18 @@ function iso(value: unknown): string {
 }
 
 function mapMember(row: AssetGroupMemberRow): AssetGroupMember {
+  const normalizedRole = cleanText(row.role).toLowerCase();
+  const role: AssetGroupMemberRole = normalizedRole === 'primary'
+    ? 'primary'
+    : normalizedRole === 'linked'
+      ? 'linked'
+      : 'member';
+
   return {
     assetId: cleanText(row.asset_id),
-    role: cleanText(row.role).toLowerCase() === 'primary' ? 'primary' : 'linked',
+    role,
     relationship: normalizeAssetGroupRelationship(row.relationship),
+    countsTowardTotal: row.counts_toward_total !== false,
     sortOrder: Math.max(0, Math.round(Number(row.sort_order) || 0)),
   };
 }
@@ -74,7 +84,7 @@ function mapGroups(rows: AssetGroupRow[], memberRows: AssetGroupMemberRow[]): As
       name: cleanText(row.name),
       valueMode: normalizeAssetGroupValueMode(row.value_mode),
       members: (membersByGroupId.get(cleanText(row.id)) ?? []).sort((left, right) => {
-        if (left.role !== right.role) return left.role === 'primary' ? -1 : 1;
+        if (left.role !== right.role) return left.role === 'primary' ? -1 : right.role === 'primary' ? 1 : 0;
         return left.sortOrder - right.sortOrder;
       }),
       createdAtIso: iso(row.created_at),
@@ -108,8 +118,56 @@ function normalizeRelationships(
     memberIds.map((assetId) => {
       if (assetId === primaryAssetId) return [assetId, 'primary'];
       const relationship = normalizeAssetGroupRelationship(relationships?.[assetId]);
-      return [assetId, relationship === 'primary' ? 'works_with' : relationship];
+      return [assetId, relationship === 'primary' || relationship === 'grouped' ? 'works_with' : relationship];
     }),
+  );
+}
+
+function normalizeCountsTowardTotal(
+  memberIds: string[],
+  primaryAssetId: string,
+  valueMode: unknown,
+  countsTowardTotalByAssetId?: Record<string, boolean>,
+): Record<string, boolean> {
+  const legacyPrimaryOnly = normalizeAssetGroupValueMode(valueMode) === 'included_in_primary';
+
+  return Object.fromEntries(memberIds.map((assetId) => {
+    if (assetId === primaryAssetId) return [assetId, true];
+    if (typeof countsTowardTotalByAssetId?.[assetId] === 'boolean') {
+      return [assetId, countsTowardTotalByAssetId[assetId]];
+    }
+    return [assetId, !legacyPrimaryOnly];
+  }));
+}
+
+function memberRole(
+  assetId: string,
+  primaryAssetId: string,
+  countsTowardTotal: boolean,
+): AssetGroupMemberRole {
+  if (assetId === primaryAssetId) return 'primary';
+  if (primaryAssetId && !countsTowardTotal) return 'linked';
+  return 'member';
+}
+
+async function syncLegacyGroupValueMode(client: PoolClient, groupId: string): Promise<void> {
+  await client.query(
+    `update public.asset_groups asset_group
+     set value_mode = case
+           when exists (
+             select 1 from public.asset_group_members member
+             where member.group_id = asset_group.id and member.role = 'primary'
+           ) and not exists (
+             select 1 from public.asset_group_members member
+             where member.group_id = asset_group.id
+               and member.role <> 'primary'
+               and member.counts_toward_total
+           ) then 'included_in_primary'
+           else 'separate'
+         end,
+         updated_at = now()
+     where asset_group.id = $1::uuid`,
+    [groupId],
   );
 }
 
@@ -168,16 +226,13 @@ async function detachAssetsFromOtherGroups(
     if (!remaining.rows.some((member) => cleanText(member.role).toLowerCase() === 'primary')) {
       await client.query(
         `update public.asset_group_members
-         set role = 'primary', relationship = 'primary'
-         where group_id = $1::uuid and asset_id = $2::uuid`,
-        [sourceGroupId, cleanText(remaining.rows[0].asset_id)],
+         set role = 'member', relationship = 'grouped'
+         where group_id = $1::uuid and role = 'linked'`,
+        [sourceGroupId],
       );
     }
 
-    await client.query(
-      'update public.asset_groups set updated_at = now() where id = $1::uuid and user_id = $2',
-      [sourceGroupId, userId],
-    );
+    await syncLegacyGroupValueMode(client, sourceGroupId);
   }
 }
 
@@ -217,7 +272,7 @@ export async function listAssetGroups(
 
   const groupIds = groupResult.rows.map((row) => row.id);
   const memberResult = await db.query<AssetGroupMemberRow>(
-    `select group_id::text, asset_id::text, role, relationship, sort_order
+    `select group_id::text, asset_id::text, role, relationship, counts_toward_total, sort_order
        from public.asset_group_members
        where group_id = any($1::uuid[])
        order by group_id, case when role = 'primary' then 0 else 1 end, sort_order, created_at, asset_id`,
@@ -242,11 +297,23 @@ export async function saveAssetGroup(userId: string, input: AssetGroupSaveInput)
   const name = cleanText(input.name).slice(0, MAX_GROUP_NAME_LENGTH);
   const primaryAssetId = cleanText(input.primaryAssetId);
   const memberIds = normalizeMemberIds(input.memberIds, primaryAssetId);
-  const valueMode = isCombinedScope ? 'separate' : normalizeAssetGroupValueMode(input.valueMode);
+  const countsTowardTotal = normalizeCountsTowardTotal(
+    memberIds,
+    primaryAssetId,
+    input.valueMode,
+    input.countsTowardTotalByAssetId,
+  );
+  const roles = Object.fromEntries(memberIds.map((assetId) => [
+    assetId,
+    memberRole(assetId, primaryAssetId, countsTowardTotal[assetId]),
+  ])) as Record<string, AssetGroupMemberRole>;
+  const valueMode = primaryAssetId
+    && memberIds.every((assetId) => assetId === primaryAssetId || !countsTowardTotal[assetId])
+    ? 'included_in_primary'
+    : 'separate';
 
   if (!isCombinedScope && !registerId) throw new Error('ASSET_GROUP_REGISTER_REQUIRED');
   if (!name) throw new Error('ASSET_GROUP_NAME_REQUIRED');
-  if (!primaryAssetId) throw new Error('ASSET_GROUP_PRIMARY_REQUIRED');
   if (memberIds.length < 1) throw new Error('ASSET_GROUP_MEMBERS_REQUIRED');
 
   if (!isCombinedScope) {
@@ -318,20 +385,28 @@ export async function saveAssetGroup(userId: string, input: AssetGroupSaveInput)
          asset_id,
          role,
          relationship,
+         counts_toward_total,
          sort_order
        )
        select
          $1::uuid,
          member.asset_id::uuid,
-         case when member.asset_id = $2 then 'primary' else 'linked' end,
-         case when member.asset_id = $2 then 'primary' else member.relationship end,
+         member.role,
+         member.relationship,
+         member.counts_toward_total,
          member.ordinality - 1
-       from unnest($3::text[], $4::text[]) with ordinality as member(asset_id, relationship, ordinality)`,
+       from unnest($2::text[], $3::text[], $4::text[], $5::boolean[])
+         with ordinality as member(asset_id, role, relationship, counts_toward_total, ordinality)`,
       [
         savedGroupId,
-        primaryAssetId,
         memberIds,
-        memberIds.map((assetId) => relationships[assetId]),
+        memberIds.map((assetId) => roles[assetId]),
+        memberIds.map((assetId) => roles[assetId] === 'primary'
+          ? 'primary'
+          : roles[assetId] === 'linked'
+            ? relationships[assetId]
+            : 'grouped'),
+        memberIds.map((assetId) => countsTowardTotal[assetId]),
       ],
     );
 
@@ -410,7 +485,7 @@ export async function moveAssetToGroup(
       if (isCombinedScope && cleanText(targetGroup.register_id)) {
         await client.query(
           `update public.asset_groups
-           set register_id = null, value_mode = 'separate', updated_at = now()
+           set register_id = null, updated_at = now()
            where id = $1::uuid and user_id = $2`,
           [targetGroupId, userId],
         );
@@ -441,30 +516,15 @@ export async function moveAssetToGroup(
         );
 
         if (cleanText(sourceMembership.role).toLowerCase() === 'primary') {
-          const replacementPrimary = await client.query<{ asset_id: string }>(
-            `select asset_id::text
-               from public.asset_group_members
-               where group_id = $1::uuid
-               order by sort_order, created_at, asset_id
-               limit 1`,
+          await client.query(
+            `update public.asset_group_members
+             set role = 'member', relationship = 'grouped'
+             where group_id = $1::uuid and role = 'linked'`,
             [sourceGroupId],
           );
-          const replacementPrimaryAssetId = cleanText(replacementPrimary.rows[0]?.asset_id);
-
-          if (replacementPrimaryAssetId) {
-            await client.query(
-              `update public.asset_group_members
-               set role = 'primary', relationship = 'primary'
-               where group_id = $1::uuid and asset_id = $2::uuid`,
-              [sourceGroupId, replacementPrimaryAssetId],
-            );
-          }
         }
 
-        await client.query(
-          'update public.asset_groups set updated_at = now() where id = $1::uuid and user_id = $2',
-          [sourceGroupId, userId],
-        );
+        await syncLegacyGroupValueMode(client, sourceGroupId);
       }
     }
 
@@ -474,13 +534,15 @@ export async function moveAssetToGroup(
          asset_id,
          role,
          relationship,
+         counts_toward_total,
          sort_order
        )
        select
          $1::uuid,
          $2::uuid,
-         'linked',
-         'works_with',
+         'member',
+         'grouped',
+         true,
          coalesce(max(sort_order), -1) + 1
        from public.asset_group_members
        where group_id = $1::uuid`,
@@ -489,11 +551,11 @@ export async function moveAssetToGroup(
     await client.query(
       `update public.asset_groups
        set register_id = case when $3::boolean then null else register_id end,
-           value_mode = case when $3::boolean then 'separate' else value_mode end,
            updated_at = now()
        where id = $1::uuid and user_id = $2`,
       [targetGroupId, userId, isCombinedScope],
     );
+    await syncLegacyGroupValueMode(client, targetGroupId);
 
     await client.query('commit');
 
@@ -524,24 +586,36 @@ export async function pruneAssetGroups(userId: string): Promise<void> {
   const db = getDb();
 
   await db.query(
-    `with replacement_primary as (
-       select distinct on (member.group_id) member.group_id, member.asset_id
-         from public.asset_group_members member
-         inner join public.asset_groups asset_group on asset_group.id = member.group_id
-         where asset_group.user_id = $1
-           and not exists (
-             select 1
-             from public.asset_group_members primary_member
-             where primary_member.group_id = member.group_id
-               and primary_member.role = 'primary'
-           )
-         order by member.group_id, member.sort_order, member.created_at, member.asset_id
-     )
-     update public.asset_group_members member
-     set role = 'primary', relationship = 'primary'
-     from replacement_primary replacement
-     where member.group_id = replacement.group_id
-       and member.asset_id = replacement.asset_id`,
+    `update public.asset_group_members member
+     set role = 'member', relationship = 'grouped'
+     from public.asset_groups asset_group
+     where member.group_id = asset_group.id
+       and asset_group.user_id = $1
+       and member.role = 'linked'
+       and not exists (
+         select 1
+         from public.asset_group_members primary_member
+         where primary_member.group_id = member.group_id
+           and primary_member.role = 'primary'
+       )`,
+    [userId],
+  );
+
+  await db.query(
+    `update public.asset_groups asset_group
+     set value_mode = case
+           when exists (
+             select 1 from public.asset_group_members member
+             where member.group_id = asset_group.id and member.role = 'primary'
+           ) and not exists (
+             select 1 from public.asset_group_members member
+             where member.group_id = asset_group.id
+               and member.role <> 'primary'
+               and member.counts_toward_total
+           ) then 'included_in_primary'
+           else 'separate'
+         end
+     where asset_group.user_id = $1`,
     [userId],
   );
 

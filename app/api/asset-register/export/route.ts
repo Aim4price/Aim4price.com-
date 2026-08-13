@@ -3,7 +3,6 @@ import { getAccountProfile } from '../../../../lib/account-profile';
 import { listAssetGroups } from '../../../../lib/asset-groups';
 import {
   assetCountsTowardRegisterTotalFromMeta,
-  assetGroupRelationshipLabel,
   assetGroupValueModeLabel,
   decorateAssetsWithGroups,
   projectAssetGroupsToAssets,
@@ -114,7 +113,7 @@ const INSURED_VALUE_INCL_VAT_COLUMN = 'T';
 const LICENSE_STATUS_COLUMN = 'U';
 const REPLACEMENT_VALUE_EX_VAT_COLUMN = 'W';
 const REPLACEMENT_VALUE_INCL_VAT_COLUMN = 'X';
-const COUNTS_IN_REGISTER_TOTAL_COLUMN = 'AC';
+const COUNTS_IN_REGISTER_TOTAL_COLUMN = 'AB';
 
 const TABLE_HEADERS = [
   'Asset title',
@@ -143,7 +142,6 @@ const TABLE_HEADERS = [
   'Replacement price incl VAT',
   'Asset group',
   'Group role',
-  'Group relationship',
   'Group value handling',
   'Counts in register total',
 ] as const;
@@ -175,7 +173,6 @@ const WORKBOOK_COLUMN_WIDTHS = [
   22,
   28,
   18,
-  30,
   34,
   24,
 ];
@@ -594,7 +591,9 @@ function exportAssetCountsTowardRegisterTotal(item: AssetRegisterItem): boolean 
 function exportAssetGroupRoleLabel(item: AssetRegisterItem): string {
   const group = exportAssetGroup(item);
   if (!group) return '';
-  return group.role === 'primary' ? 'Primary asset' : 'Linked asset';
+  if (group.role === 'primary') return 'Primary asset';
+  if (group.role === 'linked') return 'Linked to primary';
+  return 'Grouped asset';
 }
 
 function orderGroupedExportAssets(items: AssetRegisterItem[]): AssetRegisterItem[] {
@@ -1055,8 +1054,7 @@ function buildAssetRow(item: AssetRegisterItem, index: number): XlsxCellValue[] 
     replacementPrice === null ? naCell() : vatIncludedFormulaCell(REPLACEMENT_VALUE_EX_VAT_COLUMN, rowNumber, replacementPrice),
     group ? textCell(group.name) : naCell(),
     group ? textCell(exportAssetGroupRoleLabel(item)) : naCell(),
-    group ? textCell(assetGroupRelationshipLabel(group.relationship)) : naCell(),
-    group ? textCell(assetGroupValueModeLabel(group.valueMode)) : naCell(),
+    group ? textCell(assetGroupValueModeLabel(group)) : naCell(),
     textCell(exportAssetCountsTowardRegisterTotal(item) ? 'Yes' : 'No'),
   ];
 }
@@ -1206,12 +1204,11 @@ function buildAssetGroupsWorkbookSheet(items: AssetRegisterItem[], generatedAt: 
       const group = exportAssetGroup(item)!;
       return [
         index === 0 ? textCell(group.name) : textCell(''),
-        index === 0 ? textCell(assetGroupValueModeLabel(group.valueMode)) : textCell(''),
+        index === 0 ? textCell(assetGroupValueModeLabel(group)) : textCell(''),
         index === 0 ? numberCell(group.memberCount) : textCell(''),
         index === 0 ? moneyCell(countedGroupValue) : textCell(''),
         textOrNaCell(item.title),
         textCell(exportAssetGroupRoleLabel(item)),
-        textCell(assetGroupRelationshipLabel(group.relationship)),
         moneyCell(item.value),
         textCell(exportAssetCountsTowardRegisterTotal(item) ? 'Yes' : 'No'),
       ];
@@ -1221,20 +1218,20 @@ function buildAssetGroupsWorkbookSheet(items: AssetRegisterItem[], generatedAt: 
   return {
     name: 'Asset Groups',
     tabColor: '168660',
-    columns: [30, 38, 12, 24, 34, 18, 32, 22, 24],
+    columns: [30, 38, 12, 24, 34, 22, 22, 24],
     freezeRow: 7,
     autoFilter: {
       fromRow: 7,
       fromColumn: 1,
       toRow: 7 + detailRows.length,
-      toColumn: 9,
+      toColumn: 8,
     },
     rows: [
       [textCell('Aim4price Asset Groups', 'title')],
-      [textCell('Relationships and register-value treatment for linked assets.', 'subtitle')],
+      [textCell('Umbrella structure and register-value treatment for grouped assets.', 'subtitle')],
       [],
       [textCell('Generated', 'metaLabel'), { value: generatedAt, style: 'date' }],
-      [textCell('Accounting note', 'metaLabel'), textCell('Rows marked No remain fully tracked but are excluded from register totals because their value is included in the primary asset.', 'subtitle')],
+      [textCell('Accounting note', 'metaLabel'), textCell('Rows marked No remain fully tracked but are excluded from register totals according to the saved umbrella setting.', 'subtitle')],
       [],
       [
         textCell('Group name', 'tableHeader'),
@@ -1243,7 +1240,6 @@ function buildAssetGroupsWorkbookSheet(items: AssetRegisterItem[], generatedAt: 
         textCell('Counted group value ex VAT', 'tableHeader'),
         textCell('Asset', 'tableHeader'),
         textCell('Role', 'tableHeader'),
-        textCell('Relationship', 'tableHeader'),
         textCell('Asset value ex VAT', 'tableHeader'),
         textCell('Counts in register total', 'tableHeader'),
       ],
@@ -1546,7 +1542,7 @@ function buildPdfAssetLines(item: AssetRegisterItem, index: number): Array<{ tex
   const group = exportAssetGroup(item);
   const groupLines: Array<{ text: string; font: PdfFontKey; size: number }> = group
     ? [{
-        text: `Asset group: ${group.name} | ${exportAssetGroupRoleLabel(item)} | ${assetGroupRelationshipLabel(group.relationship)} | ${assetGroupValueModeLabel(group.valueMode)} | Counts in register total: ${exportAssetCountsTowardRegisterTotal(item) ? 'Yes' : 'No'}`,
+        text: `Asset group: ${group.name} | ${exportAssetGroupRoleLabel(item)} | ${assetGroupValueModeLabel(group)} | Counts in register total: ${exportAssetCountsTowardRegisterTotal(item) ? 'Yes' : 'No'}`,
         font: 'F1',
         size: 8.8,
       }]
@@ -1601,7 +1597,7 @@ function drawPdfAssetGroupHeading(state: PdfBuildState, group: AssetGroupExportM
   drawPdfText(state, group.name, PDF_MARGIN + 12, topY - 17, 11.5, 'F2');
   drawPdfText(
     state,
-    `${group.memberCount} linked assets | ${assetGroupValueModeLabel(group.valueMode)} | Counted group value ${formatPdfMoney(registerValueTotal(members))} excl. VAT`,
+    `${group.memberCount} grouped assets | ${assetGroupValueModeLabel(group)} | Counted group value ${formatPdfMoney(registerValueTotal(members))} excl. VAT`,
     PDF_MARGIN + 12,
     topY - 33,
     8.2,
@@ -2590,8 +2586,7 @@ function buildSourceAssetRow(row: SourceAssetRow, index: number): XlsxCellValue[
     replacementPrice === null ? naCell() : moneyCell(moneyInclVatTotal(replacementPrice)),
     group ? textCell(group.name) : naCell(),
     group ? textCell(exportAssetGroupRoleLabel(item)) : naCell(),
-    group ? textCell(assetGroupRelationshipLabel(group.relationship)) : naCell(),
-    group ? textCell(assetGroupValueModeLabel(group.valueMode)) : naCell(),
+    group ? textCell(assetGroupValueModeLabel(group)) : naCell(),
     textCell(exportAssetCountsTowardRegisterTotal(item) ? 'Yes' : 'No'),
   ];
 }
@@ -3071,7 +3066,7 @@ export async function GET(request: NextRequest) {
         : rawBundles;
 
       if (requestedGroup && !scopedRawBundles.some((bundle) => bundle.items.length > 0)) {
-        return NextResponse.json({ ok: false, error: 'No linked assets from this umbrella are available in the selected Asset Register scope.' }, { status: 404 });
+        return NextResponse.json({ ok: false, error: 'No grouped assets from this umbrella are available in the selected Asset Register scope.' }, { status: 404 });
       }
 
       const combinedAssets = scopedRawBundles.flatMap((bundle) => bundle.items);
@@ -3186,7 +3181,7 @@ export async function GET(request: NextRequest) {
       : rawItems;
 
     if (requestedGroup && !scopedRawItems.length) {
-      return NextResponse.json({ ok: false, error: 'No linked assets from this umbrella are available to export.' }, { status: 404 });
+      return NextResponse.json({ ok: false, error: 'No grouped assets from this umbrella are available to export.' }, { status: 404 });
     }
 
     const items = decorateAssetsWithGroups(scopedRawItems, projectAssetGroupsToAssets(groups, scopedRawItems));
