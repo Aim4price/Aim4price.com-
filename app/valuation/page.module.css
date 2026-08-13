@@ -12514,3 +12514,76 @@
     box-shadow: 0 8px 18px rgba(24, 75, 57, 0.15);
   }
 }
+
+/* Mobile detail cards and final estimate refinement. */
+@media (max-width: 720px) {
+  .appValuation .specStepCard {
+    grid-template-columns: 2.45rem minmax(0, 1fr);
+    column-gap: 0.7rem;
+    row-gap: 0.3rem;
+  }
+
+  .appValuation .specStepCard > .specStepNumber {
+    grid-row: 1 / span 2;
+    align-self: center;
+  }
+
+  .appValuation .specStepContent {
+    align-self: center;
+    padding: 0;
+  }
+
+  .appValuation .specStepAction {
+    grid-column: 2;
+    justify-self: start;
+    align-self: start;
+    white-space: nowrap;
+  }
+
+  .appValuation .resultsLayout,
+  .appValuation .resultsMain {
+    gap: 0.75rem;
+  }
+
+  .appValuation .resultHero {
+    gap: 0.66rem;
+    padding: 0.85rem;
+    border-radius: 1.15rem;
+  }
+
+  .appValuation .resultHeroTopline {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    align-items: center;
+    gap: 0.45rem;
+  }
+
+  .appValuation .resultKicker,
+  .appValuation .resultConfidenceBadge {
+    min-height: 1.75rem;
+    padding-inline: 0.62rem;
+    font-size: 0.7rem;
+  }
+
+  .appValuation .resultConfidenceNote + .resultConfidenceNote {
+    margin-top: -0.45rem;
+  }
+
+  .appValuation .resultAccordion {
+    border-radius: 1rem;
+    box-shadow: 0 10px 26px rgba(16, 42, 34, 0.05);
+  }
+
+  .appValuation .resultAccordionToggle {
+    gap: 0.65rem;
+  }
+
+  .appValuation .resultAccordionAction {
+    min-height: 2.75rem;
+  }
+
+  .appValuation .wizardFooter {
+    border-top: 1px solid rgba(17, 56, 45, 0.08);
+  }
+}

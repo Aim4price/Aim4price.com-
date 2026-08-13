@@ -511,7 +511,7 @@ const DRIVE_OPTIONS: Array<{ value: DriveType; label: string }> = [
 
 const CAB_OPTIONS: Array<{ value: CabType; label: string }> = [
   { value: 'cab', label: 'Cab' },
-  { value: 'open-station', label: 'Open station' },
+  { value: 'open-station', label: 'Open' },
 ];
 
 const GPS_TYPE_OPTIONS: Array<{ value: GpsType; label: string }> = [
@@ -3031,8 +3031,12 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     const manualModelName = normalizeText(typedModelName);
 
     if (selectedBrandIsUnknown) {
-      if (genericModelMode === 'manual' && !manualModelName) return 'Enter the model name or choose Model unknown.';
-      if (genericModelMode !== 'manual' && genericModelMode !== 'unknown') return 'Enter a model name or choose Model unknown.';
+      if (genericModelMode === 'manual' && !manualModelName) {
+        return compactAppMode ? 'Enter the model name or choose Unknown.' : 'Enter the model name or choose Model unknown.';
+      }
+      if (genericModelMode !== 'manual' && genericModelMode !== 'unknown') {
+        return compactAppMode ? 'Enter a model name or choose Unknown.' : 'Enter a model name or choose Model unknown.';
+      }
       return null;
     }
 
@@ -5738,7 +5742,9 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
         <div className={styles.currentCardHead}>
           <div>
             <h3 className={styles.currentTitle}>Model details</h3>
-            <p className={styles.currentHint}>Enter the model when you know it, or continue with the model marked as unknown.</p>
+            <p className={styles.currentHint}>
+              {compactAppMode ? 'Enter the model, or choose Unknown.' : 'Enter the model when you know it, or continue with the model marked as unknown.'}
+            </p>
           </div>
         </div>
 
@@ -5765,7 +5771,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
             aria-pressed={genericModelMode === 'manual'}
             onClick={handleGenericModelNotListed}
           >
-            Enter model manually
+            {compactAppMode ? 'Enter' : 'Enter model manually'}
           </button>
           <button
             type="button"
@@ -5773,7 +5779,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
             aria-pressed={genericModelMode === 'unknown'}
             onClick={handleGenericModelUnknown}
           >
-            Model unknown
+            {compactAppMode ? 'Unknown' : 'Model unknown'}
           </button>
         </div>
 
@@ -6546,7 +6552,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                 });
                 resetResult();
               }}>
-                <strong>Other</strong>
+                <strong>Extra&apos;s</strong>
                 {!compactAppMode ? <span className={`${styles.choiceCardNote} ${styles.otherExtraCardNote}`}>Add another extra</span> : null}
               </button>
             </div>
@@ -7056,7 +7062,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                             <input value={otherExtraName} onChange={(event) => setOtherExtraName(event.target.value)} maxLength={100} />
                           </label>
                           <label className={`${styles.field} ${styles.replacementField}`}>
-                            <span className={styles.fieldLabel}>Other replacement price</span>
+                            <span className={styles.fieldLabel}>Extra replacement price</span>
                             <input
                               type="text"
                               inputMode="decimal"

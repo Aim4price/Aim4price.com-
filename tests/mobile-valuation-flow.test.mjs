@@ -50,6 +50,22 @@ test('choosing a path opens a separate app setup page at the top', () => {
   assert.match(valuationStyles, /pathSetupContent > \.currentCard[^\{]*\{[\s\S]*?margin-top: 0 !important/);
 });
 
+test('compact model and tractor choices use concise app wording', () => {
+  assert.match(client, /compactAppMode \? 'Enter' : 'Enter model manually'/);
+  assert.match(client, /compactAppMode \? 'Unknown' : 'Model unknown'/);
+  assert.match(client, /\{ value: 'open-station', label: 'Open' \}/);
+  assert.match(client, /<strong>Extra&apos;s<\/strong>/);
+  assert.doesNotMatch(client, /<strong>Other<\/strong>/);
+});
+
+test('mobile year and usage cards reserve their full text width', () => {
+  assert.match(valuationStyles, /\.appValuation \.specStepCard[^\{]*\{[\s\S]*?grid-template-columns: 2\.45rem minmax\(0, 1fr\)/);
+  assert.match(valuationStyles, /\.appValuation \.specStepContent[^\{]*\{[\s\S]*?padding: 0;/);
+  assert.match(valuationStyles, /\.appValuation \.specStepAction[^\{]*\{[\s\S]*?grid-column: 2;/);
+  assert.match(appStyles, /\[class\*='specStepCard'\][^\{]*\{[\s\S]*?grid-template-columns: 40px minmax\(0, 1fr\) !important/);
+  assert.match(appStyles, /\[class\*='specStepContent'\][^\{]*\{[\s\S]*?padding: 0 !important/);
+});
+
 test('condition assessment starts broad and reveals detail only when requested', () => {
   assert.doesNotMatch(client, /conditionModeToggle/);
   assert.match(client, /id="valuation-detailed-condition-entry"/);
@@ -87,4 +103,9 @@ test('result facts remain visible as a compact two-column mobile summary', () =>
   assert.match(client, /<span>Usage<\/span>/);
   assert.match(client, /<span>Condition<\/span>/);
   assert.match(client, /<span>Popularity<\/span>/);
+  assert.match(client, /role="group" aria-label="VAT display mode"/);
+  assert.match(valuationStyles, /\.appValuation \.resultHeroTopline[^\{]*\{[\s\S]*?flex-direction: row;[\s\S]*?flex-wrap: wrap;[\s\S]*?justify-content: flex-start;/);
+  assert.match(valuationStyles, /\.appValuation \.resultKicker,[\s\S]*?\.appValuation \.resultConfidenceBadge[^\{]*\{[\s\S]*?min-height: 1\.75rem;/);
+  assert.match(valuationStyles, /\.appValuation \.resultConfidenceNote \+ \.resultConfidenceNote[^\{]*\{[\s\S]*?margin-top: -0\.45rem;/);
+  assert.match(valuationStyles, /\.appValuation \.resultAccordionAction[^\{]*\{[\s\S]*?min-height: 2\.75rem;/);
 });
