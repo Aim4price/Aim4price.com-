@@ -146,6 +146,7 @@ test('Owner and Field Manager Overview Clear actions require the item-specific c
   assert.match(confirmation, /Not sure<\/strong> clears the reminder without saving maintenance\./);
   assert.match(confirmation, /Not sure/);
   assert.match(confirmation, /Yes, done/);
+  assert.match(confirmation, /aria-label="Close Overview clear confirmation"/);
   assert.match(confirmation, /aria-modal="true"/);
 });
 

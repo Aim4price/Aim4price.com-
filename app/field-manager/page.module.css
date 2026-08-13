@@ -1215,6 +1215,7 @@
 }
 
 .overviewConfirmCard {
+  position: relative;
   width: min(100%, 400px);
   max-height: calc(100vh - 32px);
   max-height: calc(100dvh - 32px);
@@ -1226,6 +1227,47 @@
   overflow-y: auto;
   text-align: center;
   box-shadow: 0 26px 70px rgba(9, 31, 25, 0.25);
+}
+
+.overviewConfirmClose {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: grid;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  border: 1px solid rgba(18, 53, 45, 0.12);
+  border-radius: 999px;
+  background: rgba(247, 251, 249, 0.96);
+  padding: 0;
+  color: #174637;
+  cursor: pointer;
+  transition: transform 0.16s ease, border-color 0.16s ease, background 0.16s ease, box-shadow 0.16s ease, opacity 0.16s ease;
+}
+
+.overviewConfirmClose svg {
+  width: 17px;
+  height: 17px;
+}
+
+.overviewConfirmClose:hover:not(:disabled) {
+  border-color: rgba(35, 104, 81, 0.26);
+  background: #eff7f3;
+}
+
+.overviewConfirmClose:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(35, 104, 81, 0.14);
+}
+
+.overviewConfirmClose:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.overviewConfirmClose:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
 }
 
 .overviewConfirmEyebrow {
@@ -1280,7 +1322,7 @@
 }
 
 .overviewConfirmScope legend {
-  margin-bottom: 2px;
+  margin-bottom: 8px;
   color: rgba(18, 53, 45, 0.72);
   font-size: 0.72rem;
   font-weight: 900;
@@ -1399,6 +1441,13 @@
   .overviewConfirmCard {
     border-radius: 22px;
     padding: 22px 18px 18px;
+  }
+
+  .overviewConfirmClose {
+    top: 10px;
+    right: 10px;
+    width: 36px;
+    height: 36px;
   }
 
   .overviewConfirmScope label {

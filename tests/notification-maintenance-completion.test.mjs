@@ -20,7 +20,10 @@ test('Overview Clear asks the correct follow-up for maintenance and problems', a
   assert.match(confirmation, /outcome: 'problem_done'[\s\S]*?Yes, done/);
   assert.match(confirmation, /This clears it for the Owner and all Field Managers\./);
   assert.doesNotMatch(confirmation, /No, just clear/);
+  assert.match(confirmation, /className=\{styles\.overviewConfirmClose\}[\s\S]*?onClick=\{onCancel\}[\s\S]*?disabled=\{isClearing\}[\s\S]*?aria-label="Close Overview clear confirmation"/);
   assert.match(styles, /\.overviewConfirmCard\[data-step='completion'\]/);
+  assert.match(styles, /\.overviewConfirmScope legend \{[\s\S]*?margin-bottom: 8px/);
+  assert.match(styles, /\.overviewConfirmClose \{[\s\S]*?position: absolute/);
   assert.match(styles, /white-space: nowrap/);
 });
 
