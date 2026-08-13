@@ -50,15 +50,24 @@ test('choosing a path opens a separate app setup page at the top', () => {
   assert.match(valuationStyles, /pathSetupContent > \.currentCard[^\{]*\{[\s\S]*?margin-top: 0 !important/);
 });
 
-test('condition assessment is a guided Simple or Detailed mobile flow', () => {
-  assert.match(client, /conditionModeToggle/);
-  assert.match(client, /Condition assessment type/);
+test('condition assessment starts broad and reveals detail only when requested', () => {
+  assert.doesNotMatch(client, /conditionModeToggle/);
+  assert.match(client, /id="valuation-detailed-condition-entry"/);
+  assert.match(client, /aria-controls="detailed-condition-assessment"/);
+  assert.match(client, /compactAppMode \? 'Add details' : 'Add detailed condition'/);
+  assert.match(client, /scrollToDetailsCard\('valuation-detailed-condition-entry'\)/);
+  assert.match(client, /id="detailed-condition-assessment"/);
+  assert.match(client, /Detailed condition \$\{currentDetailedSectionNumber\} of \$\{detailedAssessmentSections\.length\}/);
   assert.match(client, /activeDetailedAssessmentSection/);
   assert.match(client, /detailedAssessmentSummary/);
   assert.match(client, /currentDetailedSection === 'Mechanical condition'/);
   assert.match(client, /currentDetailedSection === 'Required work'/);
-  assert.match(valuationStyles, /\.appValuation \.conditionModeToggle/);
+  assert.match(valuationStyles, /conditionButtonGrid > \.conditionChoiceButton:last-child:nth-child\(odd\)[^\{]*\{[\s\S]*?grid-column: 1 \/ -1/);
+  assert.match(valuationStyles, /\.appValuation \.conditionChoiceButtonActive[^\{]*\{[\s\S]*?background: #1d5742;/);
+  assert.match(valuationStyles, /\.appValuation \.detailedAssessmentEntry[^\{]*\{[\s\S]*?display: grid;[\s\S]*?background: #f0f7f3;/);
   assert.match(valuationStyles, /\.appValuation \.detailedAssessmentSummary/);
+  assert.match(valuationStyles, /detailedAssessmentSummary \+ \.dealerAssessmentGroup[^\{]*\{[\s\S]*?margin-top: 0\.75rem/);
+  assert.match(appStyles, /\[class\*='dealerAssessmentOptionActive'\][^\{]*\{[\s\S]*?background: #1d5742 !important/);
 });
 
 test('phone estimate uses compact sectors, safe sheets and persistent actions', () => {

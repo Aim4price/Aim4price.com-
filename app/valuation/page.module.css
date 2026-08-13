@@ -4430,7 +4430,6 @@
 
 /* App estimate flow: phone-first guided presentation for Owner and Dealer. */
 .mobileStepSummary,
-.conditionModeToggle,
 .detailedAssessmentSummary {
   display: none;
 }
@@ -4629,33 +4628,6 @@
   .appValuation .specStepAction {
     align-self: center;
     white-space: nowrap;
-  }
-
-  .appValuation .conditionModeToggle {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.3rem;
-    padding: 0.28rem;
-    border: 1px solid rgba(17, 56, 45, 0.1);
-    border-radius: 0.85rem;
-    background: #eef4f0;
-  }
-
-  .appValuation .conditionModeToggle button {
-    min-height: 2.75rem;
-    border: 0;
-    border-radius: 0.68rem;
-    background: transparent;
-    color: #52665e;
-    font: inherit;
-    font-size: 0.86rem;
-    font-weight: 800;
-  }
-
-  .appValuation .conditionModeToggle .conditionModeToggleActive {
-    background: #1a5944;
-    color: #fff;
-    box-shadow: 0 7px 16px rgba(17, 63, 50, 0.16);
   }
 
   .appValuation .detailedAssessmentPanel {
@@ -12373,4 +12345,172 @@
   letter-spacing: -0.025em;
   text-align: center;
   text-shadow: 0 3px 12px rgba(5, 27, 20, 0.24);
+}
+
+/* Mobile condition flow: choose broadly first, then optionally add detail. */
+.conditionChoiceIndicator,
+.conditionChoiceLabel {
+  display: block;
+}
+
+@media (max-width: 720px) {
+  .appValuation .conditionStepCard {
+    gap: 0.85rem;
+    padding: 0.9rem;
+  }
+
+  .appValuation .conditionStepCard .currentCardHead {
+    align-items: start;
+  }
+
+  .appValuation .conditionButtonGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.6rem;
+  }
+
+  .appValuation .conditionChoiceButton {
+    position: relative;
+    display: grid;
+    grid-template-columns: 1.45rem minmax(0, 1fr);
+    align-items: center;
+    gap: 0.55rem;
+    min-height: 3.7rem;
+    padding: 0.72rem 0.8rem;
+    border: 1px solid rgba(23, 77, 62, 0.16);
+    border-radius: 0.9rem;
+    background: #ffffff;
+    color: #29473e;
+    font-size: 0.9rem;
+    line-height: 1.2;
+    text-align: left;
+    box-shadow: 0 5px 14px rgba(18, 53, 45, 0.035);
+  }
+
+  .appValuation .conditionButtonGrid > .conditionChoiceButton:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+  }
+
+  .appValuation .conditionChoiceIndicator {
+    display: grid;
+    place-items: center;
+    width: 1.35rem;
+    height: 1.35rem;
+    border: 1.5px solid #b7c8c0;
+    border-radius: 50%;
+    color: #1d5742;
+    font-size: 0.72rem;
+    font-weight: 900;
+    line-height: 1;
+  }
+
+  .appValuation .conditionChoiceLabel {
+    min-width: 0;
+    text-align: left;
+  }
+
+  .appValuation .conditionChoiceButtonActive {
+    border-color: #1d5742;
+    background: #1d5742;
+    color: #ffffff;
+    box-shadow: 0 10px 22px rgba(24, 75, 57, 0.18);
+  }
+
+  .appValuation .conditionChoiceButtonActive .conditionChoiceIndicator {
+    border-color: #ffffff;
+    background: #ffffff;
+    color: #1d5742;
+  }
+
+  .appValuation .detailedAssessmentEntry {
+    display: grid;
+    gap: 0.75rem;
+    margin-top: 0.1rem;
+    padding: 0.85rem;
+    border-color: rgba(29, 87, 66, 0.18);
+    border-radius: 0.95rem;
+    background: #f0f7f3;
+  }
+
+  .appValuation .detailedAssessmentEntry > div {
+    gap: 0.3rem;
+  }
+
+  .appValuation .detailedAssessmentEntry strong {
+    font-size: 0.92rem;
+  }
+
+  .appValuation .detailedAssessmentEntry span {
+    font-size: 0.8rem;
+    line-height: 1.45;
+  }
+
+  .appValuation .detailedAssessmentToggle {
+    width: 100%;
+    min-height: 3rem;
+    border-color: #1d5742;
+    border-radius: 0.75rem;
+    background: #ffffff;
+    color: #174b39;
+    font-size: 0.82rem;
+  }
+
+  .appValuation .detailedAssessmentToggle[aria-expanded='true'] {
+    border-color: rgba(29, 87, 66, 0.18);
+    background: #e6f0eb;
+  }
+
+  .appValuation .detailedAssessmentPanel {
+    gap: 0.65rem;
+    margin-top: 0;
+    padding: 0.85rem;
+    border-radius: 0.95rem;
+    background: #ffffff;
+  }
+
+  .appValuation .detailedAssessmentHeader {
+    gap: 0.3rem;
+    padding: 0 0 0.7rem;
+    border-bottom: 1px solid rgba(23, 77, 62, 0.1);
+  }
+
+  .appValuation .detailedAssessmentHeader strong {
+    font-size: 0.95rem;
+  }
+
+  .appValuation .dealerAssessmentGroup {
+    padding: 0.7rem 0 0;
+  }
+
+  .appValuation .detailedAssessmentSummary + .dealerAssessmentGroup {
+    margin-top: 0.75rem;
+  }
+
+  .appValuation .dealerAssessmentGroup legend {
+    margin: 0 0 0.65rem;
+    font-size: 0.9rem;
+    line-height: 1.3;
+  }
+
+  .appValuation .dealerAssessmentOptions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5rem;
+  }
+
+  .appValuation .dealerAssessmentOption {
+    min-height: 3.25rem;
+    padding: 0.65rem 0.5rem;
+    border: 1px solid rgba(23, 77, 62, 0.16);
+    border-radius: 0.78rem;
+    background: #ffffff;
+    color: #37534b;
+    font-size: 0.78rem;
+    line-height: 1.25;
+  }
+
+  .appValuation .dealerAssessmentOptionActive {
+    border-color: #1d5742;
+    background: #1d5742;
+    color: #ffffff;
+    box-shadow: 0 8px 18px rgba(24, 75, 57, 0.15);
+  }
 }
