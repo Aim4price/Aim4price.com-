@@ -59,11 +59,16 @@ test('compact model and tractor choices use concise app wording', () => {
 });
 
 test('mobile year and usage cards reserve their full text width', () => {
+  assert.match(client, /compactAppMode \? 'Manufacturing year' : `\$\{getAssetNounTitle\(selectedSector\)\} manufacturing year`/);
   assert.match(valuationStyles, /\.appValuation \.specStepCard[^\{]*\{[\s\S]*?grid-template-columns: 2\.45rem minmax\(0, 1fr\)/);
   assert.match(valuationStyles, /\.appValuation \.specStepContent[^\{]*\{[\s\S]*?padding: 0;/);
   assert.match(valuationStyles, /\.appValuation \.specStepAction[^\{]*\{[\s\S]*?grid-column: 2;/);
+  assert.match(valuationStyles, /\.appValuation \.specStepCardComplete[^\{]*\{[\s\S]*?grid-template-columns: 2\.45rem minmax\(0, 1fr\) auto;/);
+  assert.match(valuationStyles, /\.appValuation \.specStepCardComplete > \.specStepAction[^\{]*\{[\s\S]*?grid-column: 3;[\s\S]*?grid-row: 1;/);
   assert.match(appStyles, /\[class\*='specStepCard'\][^\{]*\{[\s\S]*?grid-template-columns: 40px minmax\(0, 1fr\) !important/);
   assert.match(appStyles, /\[class\*='specStepContent'\][^\{]*\{[\s\S]*?padding: 0 !important/);
+  assert.match(appStyles, /\[class\*='specStepCardComplete'\][^\{]*\{[\s\S]*?grid-template-columns: 40px minmax\(0, 1fr\) auto !important/);
+  assert.match(appStyles, /\[class\*='specStepCardComplete'\] \[class\*='specStepAction'\][^\{]*\{[\s\S]*?grid-column: 3 !important/);
 });
 
 test('condition assessment starts broad and reveals detail only when requested', () => {
@@ -105,6 +110,11 @@ test('result facts remain visible as a compact two-column mobile summary', () =>
   assert.match(client, /<span>Popularity<\/span>/);
   assert.match(client, /role="group" aria-label="VAT display mode"/);
   assert.match(valuationStyles, /\.appValuation \.resultHeroTopline[^\{]*\{[\s\S]*?flex-direction: row;[\s\S]*?flex-wrap: wrap;[\s\S]*?justify-content: flex-start;/);
+  assert.match(valuationStyles, /\.appValuation \.resultValueLine \.resultValue[^\{]*\{[\s\S]*?font-size: clamp\(2\.85rem, 13\.2vw, 3\.3rem\)/);
+  assert.match(valuationStyles, /\.appValuation \.resultValueLineCompact \.resultValue[^\{]*\{[\s\S]*?font-size: clamp\(2\.55rem, 12\.3vw, 3\.05rem\)/);
+  assert.match(valuationStyles, /\.appValuation \.resultValueLineTight \.resultValue[^\{]*\{[\s\S]*?font-size: clamp\(2rem, 10vw, 2\.55rem\)/);
+  assert.match(client, /digitCount >= 8[\s\S]*?resultValueLineTight/);
+  assert.match(client, /digitCount >= 7[\s\S]*?resultValueLineCompact/);
   assert.match(valuationStyles, /\.appValuation \.resultKicker,[\s\S]*?\.appValuation \.resultConfidenceBadge[^\{]*\{[\s\S]*?min-height: 1\.75rem;/);
   assert.match(valuationStyles, /\.appValuation \.resultConfidenceNote \+ \.resultConfidenceNote[^\{]*\{[\s\S]*?margin-top: -0\.45rem;/);
   assert.match(valuationStyles, /\.appValuation \.resultAccordionAction[^\{]*\{[\s\S]*?min-height: 2\.75rem;/);

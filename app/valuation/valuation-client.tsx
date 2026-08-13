@@ -6314,7 +6314,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
           >
             <span className={`${styles.specStepNumber} ${yearStepComplete ? styles.specStepNumberDone : ''}`}>{yearStepComplete ? '✓' : 1}</span>
             <span className={styles.specStepContent}>
-              <strong>{getAssetNounTitle(selectedSector)} manufacturing year</strong>
+              <strong>{compactAppMode ? 'Manufacturing year' : `${getAssetNounTitle(selectedSector)} manufacturing year`}</strong>
               <small>{yearStepComplete ? getYearAnswerLabel() : compactAppMode ? 'Choose the year.' : 'Choose the manufacturing year to start.'}</small>
             </span>
             <span className={styles.specStepAction}>{yearStepComplete ? 'Edit' : 'Choose year'}</span>
