@@ -357,7 +357,7 @@
   max-width: 60rem;
   margin: 0;
   color: #63766f;
-  font-size: 0.88rem;
+  font-size: 1rem;
   font-weight: 620;
   line-height: 1.48;
 }
@@ -425,7 +425,7 @@
   margin: 0;
   color: #123b30;
   font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
-  font-size: 1.05rem;
+  font-size: 1.2rem;
   font-weight: 900;
   letter-spacing: -0.035em;
 }
@@ -433,7 +433,7 @@
 .surfaceHeader p {
   margin: 0.25rem 0 0;
   color: #667970;
-  font-size: 0.8rem;
+  font-size: 0.92rem;
   font-weight: 620;
   line-height: 1.45;
 }
@@ -452,13 +452,13 @@
 
 .directoryHeader strong {
   color: #143d32;
-  font-size: 0.92rem;
+  font-size: 1.05rem;
   font-weight: 900;
 }
 
 .directoryHeader span {
   color: #6a7d75;
-  font-size: 0.78rem;
+  font-size: 0.9rem;
   font-weight: 700;
 }
 
@@ -491,7 +491,7 @@
   color: #174b3b;
   background: #f2f8f5;
   font: inherit;
-  font-size: 0.8rem;
+  font-size: 0.92rem;
   font-weight: 850;
   cursor: pointer;
 }
@@ -510,14 +510,14 @@
 
 .emptyState strong {
   color: #173f34;
-  font-size: 1rem;
+  font-size: 1.1rem;
   font-weight: 900;
 }
 
 .emptyState p {
   max-width: 34rem;
   margin: 0;
-  font-size: 0.82rem;
+  font-size: 0.92rem;
   font-weight: 620;
   line-height: 1.48;
 }
@@ -530,7 +530,7 @@
   color: #ffffff;
   background: linear-gradient(180deg, #218a67 0%, #155b43 100%);
   font: inherit;
-  font-size: 0.82rem;
+  font-size: 0.92rem;
   font-weight: 900;
   cursor: pointer;
 }
@@ -562,7 +562,7 @@
   border-radius: 0.85rem;
   color: #244b3d;
   background: #ffffff;
-  font-size: 0.8rem;
+  font-size: 0.92rem;
   font-weight: 760;
   cursor: pointer;
 }
@@ -601,13 +601,13 @@
 
 .accessChoiceGroup > strong {
   color: #244b3d;
-  font-size: 0.82rem;
+  font-size: 0.96rem;
   font-weight: 900;
 }
 
 .accessChoiceGroup > small {
   color: #71837c;
-  font-size: 0.7rem;
+  font-size: 0.82rem;
   font-weight: 650;
   line-height: 1.4;
 }
@@ -641,18 +641,18 @@
 .accessChecklist strong {
   overflow-wrap: anywhere;
   color: #244b3d;
-  font-size: 0.82rem;
+  font-size: 0.94rem;
 }
 
 .accessChecklist small {
   color: #71837c;
-  font-size: 0.7rem;
+  font-size: 0.8rem;
 }
 
 .accessMessage {
   margin: 0;
   color: #315d4d;
-  font-size: 0.78rem;
+  font-size: 0.9rem;
   font-weight: 750;
 }
 

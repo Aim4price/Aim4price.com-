@@ -284,6 +284,28 @@ function normalizeUsername(value: string): string {
     .slice(0, 80);
 }
 
+const ACCESS_DIRECTORY_COLLATOR = new Intl.Collator('en-ZA', {
+  sensitivity: 'base',
+  numeric: true,
+  ignorePunctuation: true,
+});
+
+function compareAccessDirectoryText(left: unknown, right: unknown): number {
+  return ACCESS_DIRECTORY_COLLATOR.compare(String(left ?? '').trim(), String(right ?? '').trim());
+}
+
+function sortAccessRecords(records: AccessRecord[]): AccessRecord[] {
+  return [...records].sort((left, right) => (
+    compareAccessDirectoryText(left.displayName, right.displayName)
+    || compareAccessDirectoryText(left.username, right.username)
+    || compareAccessDirectoryText(left.id, right.id)
+  ));
+}
+
+function sortAccessOptions<T>(options: T[], readLabel: (option: T) => unknown): T[] {
+  return [...options].sort((left, right) => compareAccessDirectoryText(readLabel(left), readLabel(right)));
+}
+
 function formatDateTime(value: string | null): string {
   if (!value) return 'Not yet';
   const parsed = new Date(value);
@@ -520,7 +542,7 @@ function AppAccessManagement({ kind }: { kind: DirectoryKind }) {
       const response = await fetch(config.listEndpoint, { credentials: 'include', cache: 'no-store' });
       const payload = await response.json().catch(() => null) as ApiPayload | null;
       if (!response.ok || !payload?.ok) throw new Error(extractError(payload, `Failed to load ${config.itemPlural}.`));
-      const nextRecords = readRecordList(payload, config.listKey);
+      const nextRecords = sortAccessRecords(readRecordList(payload, config.listKey));
       setRecords(nextRecords);
       setEditDrafts(Object.fromEntries(nextRecords.map((record) => [record.id, draftFromRecord(record, config)])));
     } catch (error) {
@@ -585,7 +607,7 @@ function AppAccessManagement({ kind }: { kind: DirectoryKind }) {
       const created = readRecord(payload, config.itemKey);
       if (!response.ok || !payload?.ok || !created) throw new Error(extractError(payload, `Failed to create ${config.itemLabel}.`));
 
-      setRecords((current) => [created, ...current]);
+      setRecords((current) => sortAccessRecords([...current, created]));
       setEditDrafts((current) => ({ ...current, [created.id]: draftFromRecord(created, config) }));
       setDraft(emptyDraft(config));
       setShowCreatePassword(false);
@@ -619,7 +641,7 @@ function AppAccessManagement({ kind }: { kind: DirectoryKind }) {
       const updated = readRecord(payload, config.itemKey);
       if (!response.ok || !payload?.ok || !updated) throw new Error(extractError(payload, `Failed to update ${config.itemLabel}.`));
 
-      setRecords((current) => current.map((entry) => entry.id === updated.id ? updated : entry));
+      setRecords((current) => sortAccessRecords(current.map((entry) => entry.id === updated.id ? updated : entry)));
       setEditDrafts((current) => ({ ...current, [updated.id]: draftFromRecord(updated, config) }));
       setVisiblePasswords((current) => ({ ...current, [updated.id]: false }));
       setEditUsernameErrors((current) => ({ ...current, [updated.id]: '' }));
@@ -983,9 +1005,9 @@ function FieldManagerAccessPanel({ managerId }: { managerId: string }) {
         if (!active) return;
         if (!response.ok || !payload?.ok || !payload.settings) throw new Error(payload?.error || 'Failed to load access.');
         setSettings(payload.settings);
-        setAssets(payload.assets ?? []);
-        setGroups(payload.groups ?? []);
-        setStorages(payload.storages ?? []);
+        setAssets(sortAccessOptions(payload.assets ?? [], (asset) => asset.title));
+        setGroups(sortAccessOptions(payload.groups ?? [], (group) => group.name));
+        setStorages(sortAccessOptions(payload.storages ?? [], (storage) => storage.name));
       })
       .catch((error) => { if (active) setMessage(error instanceof Error ? error.message : 'Failed to load access.'); })
       .finally(() => { if (active) setLoading(false); });
@@ -1134,8 +1156,8 @@ function OwnerAppAssetAccessPanel({ userId }: { userId: string }) {
         if (!active) return;
         if (!response.ok || !payload?.ok || !payload.settings) throw new Error(payload?.error || 'Failed to load access.');
         setSettings(payload.settings);
-        setAssets(payload.assets ?? []);
-        setGroups(payload.groups ?? []);
+        setAssets(sortAccessOptions(payload.assets ?? [], (asset) => asset.title));
+        setGroups(sortAccessOptions(payload.groups ?? [], (group) => group.name));
       })
       .catch((error) => { if (active) setMessage(error instanceof Error ? error.message : 'Failed to load access.'); })
       .finally(() => { if (active) setLoading(false); });
