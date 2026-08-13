@@ -345,7 +345,7 @@ test('path availability is checked with one model before the full list is reques
   assert.match(source, /loadFullGenericCatalog/);
   assert.match(source, /limit: '500'/);
   assert.match(source, /Ready for your estimate\?/);
-  assert.match(source, /Get estimate/);
+  assert.match(source, /I understand, get estimate/);
   assert.match(source, /indicative estimate only\. It is not a certified valuation/);
   assert.doesNotMatch(source, /Check the replacement price and usage/);
   assert.doesNotMatch(source, /Important: check both values/);
@@ -381,7 +381,9 @@ test('detailed assessment and extras keep a clear left-aligned hierarchy', async
   assert.match(valuationStyles, /\.otherExtraCardNote\s*\{[^}]*white-space:\s*nowrap;/s);
   assert.match(valuationStyles, /\.replacementField\s*\{[^}]*grid-template-rows:/s);
   assert.match(valuationStyles, /\.replacementOtherFields\s*\{[^}]*grid-column:\s*1 \/ -1;/s);
-  assert.match(valuationStyles, /\.replacementNoticeModal\s*\{[^}]*width:\s*min\(500px,\s*100%\)/s);
+  assert.match(valuationStyles, /\.replacementNoticeModal\s*\{[^}]*width:\s*min\(680px,\s*100%\)[^}]*background:\s*#fff4f2;/s);
+  assert.match(valuationStyles, /\.replacementNoticeActions \.primaryButton\s*\{[^}]*background:\s*#b92f28;/s);
+  assert.doesNotMatch(valuationStyles, /\.replacementNoticeModal \.replacementNoticeIntro\s*\{[^}]*max-width:/s);
   assert.doesNotMatch(valuationStyles, /\.replacementNoticeWarning\s*\{/);
   assert.doesNotMatch(valuationSource, /aria-label="Tractor extras value breakdown"/);
   assert.doesNotMatch(valuationSource, /Condition is controlled by the Detailed Asset Assessment/);
