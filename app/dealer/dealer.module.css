@@ -2748,26 +2748,28 @@
     top: 0;
     z-index: 35;
     display: grid !important;
-    gap: 8px !important;
-    padding: 10px !important;
+    gap: 6px !important;
+    padding: 8px 10px !important;
     box-shadow: 0 8px 20px rgba(18, 53, 45, 0.07) !important;
   }
 
   .dealerValuationSurface [class*='mobileStepSummary'] {
     display: flex !important;
+    justify-content: center !important;
+    min-height: 18px !important;
   }
 
   .dealerValuationSurface [class*='stepper'] {
     display: grid !important;
     grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
-    gap: 6px !important;
+    gap: 8px !important;
     overflow: visible !important;
   }
 
   .dealerValuationSurface [class*='stepperItem'] {
     width: 100% !important;
     min-width: 0 !important;
-    min-height: 38px !important;
+    min-height: 36px !important;
     justify-content: center !important;
     padding: 2px !important;
   }
@@ -2775,6 +2777,10 @@
   .dealerValuationSurface [class*='stepperBullet'] {
     width: 32px !important;
     height: 32px !important;
+  }
+
+  .dealerValuationSurface [class*='stepperLabel'] {
+    display: none !important;
   }
 
   .dealerValuationSurface [class*='stepContent'] {
@@ -2826,6 +2832,10 @@
   .dealerValuationSurface [class*='pathChoiceCard'] {
     min-height: 86px !important;
     padding: 14px 48px 14px 14px !important;
+  }
+
+  .dealerValuationSurface [class*='pathSetupContent'] > [class*='currentCard'] {
+    margin-top: 0 !important;
   }
 
   .dealerValuationSurface [class*='tractorSetupCard'],
@@ -2912,6 +2922,23 @@
     background: rgba(255, 255, 255, 0.97) !important;
   }
 
+  .dealerValuationSurface .dealerCompactModalHeader {
+    min-height: 48px !important;
+    grid-template-columns: minmax(0, 1fr) 44px !important;
+    justify-items: stretch !important;
+    gap: 8px !important;
+    padding: 8px 0 !important;
+  }
+
+  .dealerValuationSurface .dealerCompactModalHeader > div {
+    justify-content: flex-start !important;
+  }
+
+  .dealerValuationSurface .dealerCompactModalHeader [class*='saveModalClose'] {
+    position: static !important;
+    justify-self: end !important;
+  }
+
   .dealerValuationSurface [class*='detailsModalActions'] {
     position: sticky !important;
     bottom: calc(-14px - env(safe-area-inset-bottom));
@@ -2945,6 +2972,10 @@
     backdrop-filter: blur(12px);
   }
 
+  .dealerValuationSurface [class*='wizardFooterSingle'] {
+    grid-template-columns: 1fr !important;
+  }
+
   .dealerValuationSurface [class*='wizardFooter'][data-has-disclaimer='true'] > [data-valuation-disclaimer] {
     grid-column: 1 / -1 !important;
     grid-row: 1 !important;
@@ -2973,10 +3004,15 @@
 
 @media (max-width: 370px) {
   .dealerValuationSurface [class*='sectorLargeGrid'] {
-    grid-template-columns: 1fr !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px !important;
   }
 
   .dealerValuationSurface [class*='sectorBigCard'] {
-    min-height: 120px !important;
+    min-height: 112px !important;
+  }
+
+  .dealerValuationSurface [class*='sectorLabel'] {
+    font-size: 1rem !important;
   }
 }

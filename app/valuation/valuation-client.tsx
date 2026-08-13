@@ -2485,7 +2485,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     setMotorSubtypeValue('');
     setMotorSubtypeDropdownOpen(false);
     setFamilySearch('');
-    setEquipmentDropdownOpen(false);
+    setEquipmentDropdownOpen(compactAppMode && Boolean(selectedSector));
     setBrandSearch('');
     setBrandDropdownOpen(false);
     setBrands([]);
@@ -2566,7 +2566,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     return () => {
       ignore = true;
     };
-  }, [selectedSector]);
+  }, [compactAppMode, selectedSector]);
 
   useEffect(() => {
     if (!selectedFamily || !selectedSector) return;
@@ -2590,7 +2590,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     setMotorSubtypeValue('');
     setMotorSubtypeDropdownOpen(false);
     setBrandSearch('');
-    setBrandDropdownOpen(false);
+    setBrandDropdownOpen(compactAppMode);
     setBrandSlug('');
     setUnlistedBrandName('');
     setBrands([]);
@@ -2648,7 +2648,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     return () => {
       ignore = true;
     };
-  }, [selectedFamily, selectedSector]);
+  }, [compactAppMode, selectedFamily, selectedSector]);
 
   useEffect(() => {
     let ignore = false;
@@ -3508,6 +3508,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
         setGuestValuationCount(incrementGuestValuationCount());
       }
       setStep(5);
+      scrollWizardToStart();
     } catch (error) {
       console.error(error);
       setMessage(error instanceof Error ? error.message : 'Failed to calculate estimate.');
@@ -4429,6 +4430,24 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     setReplacementNoticeOpen(false);
   }
 
+  function scrollWizardToStart() {
+    if (!compactAppMode) return;
+
+    requestAnimationFrame(() => {
+      document.getElementById('valuation-wizard-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  }
+
+  function scrollToDetailsCard(targetId: string) {
+    if (!compactAppMode) return;
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        document.getElementById(targetId)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    });
+  }
+
   function handleNext() {
     setMessage('');
     if (isMotorSector(selectedSector)) {
@@ -4439,6 +4458,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
           return;
         }
         setStep(4);
+        scrollWizardToStart();
         return;
       }
       if (step === 4) {
@@ -4484,6 +4504,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
       return;
     }
     setStep(nextStep(step));
+    scrollWizardToStart();
   }
 
   function resetToSectorSelection() {
@@ -4656,6 +4677,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
 
     if (result.typeOptions.length <= 1) {
       setStep(4);
+      scrollWizardToStart();
     }
   }
 
@@ -4669,6 +4691,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     setMessage('');
     resetResult();
     setStep(4);
+    scrollWizardToStart();
   }
 
   function validateMotorCanonicalSelection(): string | null {
@@ -4708,6 +4731,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     setUnlistedBrandName('');
     resetResult();
     setStep(2);
+    scrollWizardToStart();
   }
 
   function handleMotorSubtypeSelection(nextSubtypeValue: string) {
@@ -4776,6 +4800,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     clearGenericModelSelection({ clearManual: true, clearPrefilledSpecs: true });
     resetResult();
     setStep(3);
+    scrollWizardToStart();
   }
 
   function resetExactModelSelection() {
@@ -4812,6 +4837,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     setMessage('');
     resetResult();
     setStep(4);
+    scrollWizardToStart();
   }
 
   function handleGenericModelSelection(nextModelId: number) {
@@ -4862,11 +4888,18 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     }
     if (isMotorSector(selectedSector) && step === 4) {
       setStep(2);
+      scrollWizardToStart();
+      return;
+    }
+    if (compactAppMode && step === 3 && flowMode && !selectedBrandIsUnknown) {
+      setFlowMode('');
+      scrollWizardToStart();
       return;
     }
     if (compactAppMode && step === 2) setEquipmentDropdownOpen(true);
     if (compactAppMode && step === 3) setBrandDropdownOpen(true);
     setStep(previousStep(step));
+    scrollWizardToStart();
   }
 
   function handleWizardStepJump(targetStep: Step) {
@@ -5341,9 +5374,10 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     const showSpecsPathCard = !exactModelSelectionLocked;
     const pathCardCount = (showExactPathCard ? 1 : 0) + (showSpecsPathCard ? 1 : 0);
     const pathDeckClassName = `${styles.choiceGrid} ${styles.pathChoiceGrid} ${styles.pathChoiceDeck} ${pathCardCount === 1 ? styles.pathChoiceDeckSingle : ''}`;
+    const showPathChoices = !compactAppMode || !flowMode;
 
     return (
-      <div>
+      <div className={compactAppMode && flowMode ? styles.pathSetupPage : undefined}>
         {!compactAppMode ? (
           <>
             <h2 className={styles.stepTitle}>Choose estimate path</h2>
@@ -5351,7 +5385,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
           </>
         ) : null}
 
-        {pathOptionsLoading ? (
+        {showPathChoices ? pathOptionsLoading ? (
           <div className={styles.pathSelectionPlaceholder} role="status" aria-live="polite">
             <span className={styles.pathLoadingSpinner} aria-hidden="true" />
             <div>
@@ -5376,6 +5410,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                 setCab('');
                 resetExactModelSelection();
                 resetDetailsFlow();
+                scrollWizardToStart();
               }}
             >
               <strong>Use exact model</strong>
@@ -5395,6 +5430,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                 setCab('');
                 resetExactModelSelection();
                 resetDetailsFlow();
+                scrollWizardToStart();
               }}
             >
               <strong>Use {getSpecsLabel(selectedSector)}</strong>
@@ -5402,11 +5438,13 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
             </button>
           ) : null}
         </div>
-        )}
+        ) : null}
 
-        {!pathOptionsLoading && flowMode === 'exact_model' && exactTractorAvailable && showExactPathCard ? renderTractorModelPicker() : null}
-        {!pathOptionsLoading && genericExactModelPath && showExactPathCard ? renderGenericModelPicker() : null}
-        {!pathOptionsLoading && flowMode === 'generic_specs' ? renderUnknownModelChoice() : null}
+        <div className={styles.pathSetupContent}>
+          {!pathOptionsLoading && flowMode === 'exact_model' && exactTractorAvailable && showExactPathCard ? renderTractorModelPicker() : null}
+          {!pathOptionsLoading && genericExactModelPath && showExactPathCard ? renderGenericModelPicker() : null}
+          {!pathOptionsLoading && flowMode === 'generic_specs' ? renderUnknownModelChoice() : null}
+        </div>
       </div>
     );
   }
@@ -5903,6 +5941,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     setActiveDetailsModal(null);
     setMessage('');
     resetResult();
+    scrollToDetailsCard('valuation-usage-step');
   }
 
   function saveUnknownYear() {
@@ -5912,6 +5951,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     setActiveDetailsModal(null);
     setMessage('');
     resetResult();
+    scrollToDetailsCard('valuation-usage-step');
   }
 
   function saveUsageAnswer(showHoursInput: boolean) {
@@ -5928,6 +5968,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
       setActiveDetailsModal(null);
       setMessage('');
       resetResult();
+      scrollToDetailsCard('valuation-condition-step');
       return;
     }
 
@@ -5939,6 +5980,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     setActiveDetailsModal(null);
     setMessage('');
     resetResult();
+    scrollToDetailsCard('valuation-condition-step');
   }
 
   function renderYearModal() {
@@ -6268,6 +6310,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
 
           {yearStepComplete ? (
             <button
+              id="valuation-usage-step"
               type="button"
               className={`${styles.specStepCard} ${usageStepComplete ? styles.specStepCardComplete : styles.specStepCardActive}`}
               onClick={() => openUsageModal(showHoursInput)}
@@ -6282,7 +6325,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
           ) : null}
 
           {usageStepComplete ? (
-            <div className={`${styles.currentCard} ${styles.conditionStepCard}`}>
+            <div id="valuation-condition-step" className={`${styles.currentCard} ${styles.conditionStepCard}`}>
               <div className={styles.currentCardHead}>
                 <div>
                   <span className={styles.currentEyebrow}>{compactAppMode ? 'Asset details 3 of 5' : 'Step 3'}</span>
@@ -6308,6 +6351,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                       clearDetailedAssessment(false);
                       setConditionStepComplete(true);
                       resetResult();
+                      scrollToDetailsCard('valuation-popularity-step');
                     }}
                   >
                     Simple
@@ -6342,6 +6386,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                         setConditionStepComplete(true);
                         clearDetailedAssessment();
                         resetResult();
+                        scrollToDetailsCard('valuation-popularity-step');
                       }}
                     >
                       {option.label}
@@ -6410,7 +6455,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
           ) : null}
 
           {conditionStepComplete && (!detailedAssessmentOpen || detailedAssessmentComplete) ? (
-            <div className={`${styles.currentCard} ${styles.popularityStepCard}`}>
+            <div id="valuation-popularity-step" className={`${styles.currentCard} ${styles.popularityStepCard}`}>
               <div className={styles.currentCardHead}>
                 <div>
                   {compactAppMode ? (
@@ -6650,7 +6695,10 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
               onClick={() => {
                 onChange(option.value);
                 setDetailedAssessmentError('');
-                if (compactAppMode) setActiveDetailedAssessmentSection(nextSection);
+                if (compactAppMode) {
+                  setActiveDetailedAssessmentSection(nextSection);
+                  if (!nextSection) scrollToDetailsCard('valuation-popularity-step');
+                }
               }}
             >
               {option.label}
@@ -7172,6 +7220,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     : ownerAppMode ? 'Save to My Assets' : 'Save to Asset Register';
   const finalSaveCta = finalSaveIntent === 'marketplace' ? 'Save and continue to Marketplace' : 'Confirm and save';
   const isSectorIntroStep = step === 1 && !selectedSector;
+  const compactPathChoicePage = compactAppMode && step === 3 && !flowMode;
 
   return (
     <main className={`${styles.page} ${compactAppMode ? `${styles.appValuation} ${dealerStyles.dealerValuationSurface}` : ''}`}>
@@ -7189,7 +7238,6 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                 {compactAppMode ? (
                   <div className={styles.mobileStepSummary} aria-live="polite">
                     <span>Estimate {step} of {WIZARD_STEPS.length}</span>
-                    <strong>{getWizardStepLabel(step, selectedSector)}</strong>
                   </div>
                 ) : null}
                 <div className={styles.stepper}>
@@ -7209,9 +7257,11 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                         aria-label={canJumpBack ? `Go back to ${stepLabel}` : stepLabel}
                       >
                         <span className={`${styles.stepperBullet} ${active ? styles.stepperBulletActive : ''} ${complete ? styles.stepperBulletComplete : ''}`}>
-                          {complete ? '✓' : item.step}
+                          {compactAppMode ? item.step : complete ? '✓' : item.step}
                         </span>
-                        <span className={`${styles.stepperLabel} ${active ? styles.stepperLabelActive : ''} ${complete ? styles.stepperLabelComplete : ''}`}>{stepLabel}</span>
+                        {!compactAppMode ? (
+                          <span className={`${styles.stepperLabel} ${active ? styles.stepperLabelActive : ''} ${complete ? styles.stepperLabelComplete : ''}`}>{stepLabel}</span>
+                        ) : null}
                       </button>
                     );
                   })}
@@ -7225,7 +7275,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
             </div>
 
             <div
-              className={`${styles.wizardFooter} ${step === 1 ? styles.wizardFooterSingle : ''}`}
+              className={`${styles.wizardFooter} ${step === 1 || compactPathChoicePage ? styles.wizardFooterSingle : ''}`}
               data-has-disclaimer={step === 4}
             >
               <button
@@ -7244,7 +7294,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                     : 'Aim4price provides an indicative estimate only. It is not a certified valuation or inspection report. Final value should still be checked against asset condition, documents, location and current market demand.'}
                 </p>
               ) : null}
-              {step === 1 ? null : step === 5 ? (
+              {step === 1 || compactPathChoicePage ? null : step === 5 ? (
                 <button
                   type="button"
                   className={styles.secondaryButton}
