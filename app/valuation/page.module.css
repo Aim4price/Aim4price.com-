@@ -12540,6 +12540,22 @@
     white-space: nowrap;
   }
 
+  .appValuation .specStepCardComplete {
+    grid-template-columns: 2.45rem minmax(0, 1fr) auto;
+    row-gap: 0;
+  }
+
+  .appValuation .specStepCardComplete > .specStepNumber {
+    grid-row: 1;
+  }
+
+  .appValuation .specStepCardComplete > .specStepAction {
+    grid-column: 3;
+    grid-row: 1;
+    justify-self: end;
+    align-self: center;
+  }
+
   .appValuation .resultsLayout,
   .appValuation .resultsMain {
     gap: 0.75rem;
@@ -12557,6 +12573,18 @@
     justify-content: flex-start;
     align-items: center;
     gap: 0.45rem;
+  }
+
+  .appValuation .resultValueLine .resultValue {
+    font-size: clamp(2.85rem, 13.2vw, 3.3rem);
+  }
+
+  .appValuation .resultValueLineCompact .resultValue {
+    font-size: clamp(2.55rem, 12.3vw, 3.05rem);
+  }
+
+  .appValuation .resultValueLineTight .resultValue {
+    font-size: clamp(2rem, 10vw, 2.55rem);
   }
 
   .appValuation .resultKicker,

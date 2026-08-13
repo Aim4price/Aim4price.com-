@@ -2938,6 +2938,22 @@
     white-space: nowrap;
   }
 
+  .dealerValuationSurface [class*='specStepCardComplete'] {
+    grid-template-columns: 40px minmax(0, 1fr) auto !important;
+    row-gap: 0 !important;
+  }
+
+  .dealerValuationSurface [class*='specStepCardComplete'] > [class*='specStepNumber'] {
+    grid-row: 1 !important;
+  }
+
+  .dealerValuationSurface [class*='specStepCardComplete'] [class*='specStepAction'] {
+    grid-column: 3 !important;
+    grid-row: 1 !important;
+    justify-self: end !important;
+    align-self: center !important;
+  }
+
   .dealerValuationSurface [class*='conditionStepCard'] {
     gap: 12px !important;
     padding: 14px !important;
