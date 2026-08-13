@@ -1724,6 +1724,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
   const [condition, setCondition] = useState<ConditionKey>('good');
   const [frontPto, setFrontPto] = useState(false);
   const [frontLoader, setFrontLoader] = useState(false);
+  const [frontLoaderYear, setFrontLoaderYear] = useState('');
   const [gpsEnabled, setGpsEnabled] = useState(false);
   const [gpsType, setGpsType] = useState<GpsType>('guidance-only');
   const [gpsTypeDropdownOpen, setGpsTypeDropdownOpen] = useState(false);
@@ -2879,6 +2880,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     return {
       frontPto,
       frontLoader,
+      frontLoaderYear: frontLoader ? normalizeText(frontLoaderYear) || null : null,
       gpsEnabled,
       gpsType,
       gpsYear,
@@ -3009,6 +3011,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     setUserReplacementPrice('');
     setFrontPto(false);
     setFrontLoader(false);
+    setFrontLoaderYear('');
     setGpsEnabled(false);
     setGpsYear('');
     setFrontPtoReplacementPrice('');
@@ -3077,6 +3080,20 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     if (!genericPath && otherExtraEnabled) {
       if (!normalizeText(otherExtraName)) return 'Enter a name for the other extra.';
       if (!parseMoneyInput(otherExtraReplacementPrice)) return 'Enter the replacement price of the other extra, excluding VAT.';
+    }
+
+    if (!genericPath && frontLoader && normalizeText(frontLoaderYear)) {
+      const parsedFrontLoaderYear = Number(frontLoaderYear);
+      if (!Number.isInteger(parsedFrontLoaderYear) || parsedFrontLoaderYear < 1950 || parsedFrontLoaderYear > CURRENT_YEAR) {
+        return `Enter a Front Loader year between 1950 and ${CURRENT_YEAR}, or leave it blank to use the tractor year.`;
+      }
+    }
+
+    if (!genericPath && gpsEnabled && normalizeText(gpsYear)) {
+      const parsedGpsYear = Number(gpsYear);
+      if (!Number.isInteger(parsedGpsYear) || parsedGpsYear < 1950 || parsedGpsYear > CURRENT_YEAR) {
+        return `Enter a GPS year between 1950 and ${CURRENT_YEAR}, or leave it blank to use the tractor year.`;
+      }
     }
 
     if (genericValuationPath) {
@@ -3726,6 +3743,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
       ...(tractorResult?.frontLoaderValueExVat
         ? [
             { label: 'Front Loader replacement price', value: moneyExVat(tractorResult.frontLoaderReplacementPriceExVat) },
+            { label: 'Front Loader year added', value: normalizeText(frontLoaderYear) || 'Same as tractor' },
             { label: 'Front Loader value added', value: moneyExVat(tractorResult.frontLoaderValueExVat) },
           ]
         : []),
@@ -6344,7 +6362,10 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
               </button>
               <button type="button" className={`${styles.choiceCard} ${frontLoader ? styles.choiceCardActive : ''}`} aria-pressed={frontLoader} onClick={() => {
                 setFrontLoader((value) => {
-                  if (value) setFrontLoaderReplacementPrice('');
+                  if (value) {
+                    setFrontLoaderReplacementPrice('');
+                    setFrontLoaderYear('');
+                  }
                   return !value;
                 });
                 resetResult();
@@ -6379,6 +6400,23 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                 <span className={`${styles.choiceCardNote} ${styles.otherExtraCardNote}`}>Add another extra</span>
               </button>
             </div>
+            {frontLoader ? (
+              <div className={styles.frontLoaderFields}>
+                <label className={styles.field}>
+                  <span className={styles.fieldLabel}>Front Loader year added</span>
+                  <input
+                    value={frontLoaderYear}
+                    onChange={(event) => {
+                      setFrontLoaderYear(event.target.value);
+                      resetResult();
+                    }}
+                    inputMode="numeric"
+                    placeholder="Same as tractor"
+                  />
+                  <small className={styles.advancedFieldHelp}>Used to depreciate the loader separately from the tractor.</small>
+                </label>
+              </div>
+            ) : null}
             {gpsEnabled ? (
               <div className={styles.inputGrid} style={{ marginTop: '1rem' }}>
                 <div className={styles.field}>
@@ -6454,7 +6492,6 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                     }}
                     placeholder="e.g. 25 000"
                   />
-                  <small className={styles.advancedFieldHelp}>This is depreciated with the tractor before being added to the estimate.</small>
                 </label>
               </div>
             ) : null}
@@ -6692,7 +6729,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                   ) : null}
 
                   <div className={`${styles.advancedControlsContent} ${!canUseAdvancedAssumptions ? styles.advancedControlsLocked : ''}`}>
-                    <div className={styles.advancedAssumptionsGrid}>
+                    <div className={`${styles.advancedAssumptionsGrid} ${appliedDealerAssessment ? styles.advancedAssumptionsGridSingle : ''}`}>
                     {advancedShowLifetimeInput ? (
                       <label className={styles.field}>
                         <span className={styles.fieldLabel}>{advancedLifetimeInputLabel}</span>
@@ -6723,9 +6760,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                         />
                         <small className={styles.advancedFieldHelp}>100% = full value before condition adjustment.</small>
                       </label>
-                    ) : (
-                      <p className={styles.advancedFieldHelp}>Condition is controlled by the Detailed Asset Assessment used for this estimate.</p>
-                    )}
+                    ) : null}
                   </div>
 
                   {canUseAdvancedAssumptions && advancedError ? <p className={styles.advancedError}>{advancedError}</p> : null}
@@ -6803,7 +6838,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
 
                   <div className={styles.replacementInputPanel}>
                     <div className={styles.replacementFieldsGrid}>
-                      <label className={styles.field}>
+                      <label className={`${styles.field} ${styles.replacementField}`}>
                         <span className={styles.fieldLabel}>Asset replacement price</span>
                         <input
                           type="text"
@@ -6815,33 +6850,35 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                         <small className={styles.replacementFieldHint}>Current: {moneyExVat(getCurrentResultReplacementPriceExVat())}</small>
                       </label>
                       {tractorResult && frontPto ? (
-                        <label className={styles.field}>
+                        <label className={`${styles.field} ${styles.replacementField}`}>
                           <span className={styles.fieldLabel}>Front PTO replacement</span>
                           <input type="text" inputMode="decimal" value={frontPtoReplacementPrice} onChange={(event) => setFrontPtoReplacementPrice(event.target.value)} />
                           <small className={styles.replacementFieldHint}>Adds {moneyExVat(tractorResult.frontPtoValueExVat)} after depreciation</small>
                         </label>
                       ) : null}
                       {tractorResult && frontLoader ? (
-                        <label className={styles.field}>
+                        <label className={`${styles.field} ${styles.replacementField}`}>
                           <span className={styles.fieldLabel}>Front Loader replacement</span>
                           <input type="text" inputMode="decimal" value={frontLoaderReplacementPrice} onChange={(event) => setFrontLoaderReplacementPrice(event.target.value)} />
-                          <small className={styles.replacementFieldHint}>Adds {moneyExVat(tractorResult.frontLoaderValueExVat)} after depreciation</small>
+                          <small className={styles.replacementFieldHint}>
+                            Year added: {normalizeText(frontLoaderYear) || 'same as tractor'}. Adds {moneyExVat(tractorResult.frontLoaderValueExVat)} after depreciation.
+                          </small>
                         </label>
                       ) : null}
                       {tractorResult && gpsEnabled ? (
-                        <label className={styles.field}>
+                        <label className={`${styles.field} ${styles.replacementField}`}>
                           <span className={styles.fieldLabel}>GPS replacement</span>
                           <input type="text" inputMode="decimal" value={gpsReplacementPrice} onChange={(event) => setGpsReplacementPrice(event.target.value)} />
                           <small className={styles.replacementFieldHint}>Adds {moneyExVat(tractorResult.gpsValueExVat)} after depreciation</small>
                         </label>
                       ) : null}
                       {tractorResult && otherExtraEnabled ? (
-                        <>
-                          <label className={styles.field}>
+                        <div className={styles.replacementOtherFields}>
+                          <label className={`${styles.field} ${styles.replacementField}`}>
                             <span className={styles.fieldLabel}>Extra name</span>
                             <input value={otherExtraName} onChange={(event) => setOtherExtraName(event.target.value)} maxLength={100} />
                           </label>
-                          <label className={styles.field}>
+                          <label className={`${styles.field} ${styles.replacementField}`}>
                             <span className={styles.fieldLabel}>Other replacement price</span>
                             <input
                               type="text"
@@ -6851,7 +6888,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                             />
                             <small className={styles.replacementFieldHint}>Adds {moneyExVat(tractorResult.otherExtraValueExVat)} after depreciation</small>
                           </label>
-                        </>
+                        </div>
                       ) : null}
                     </div>
                     <div className={styles.replacementInputActions}>
@@ -7007,6 +7044,12 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     : ownerAppMode ? 'Save to My Assets' : 'Save to Asset Register';
   const finalSaveCta = finalSaveIntent === 'marketplace' ? 'Save and continue to Marketplace' : 'Confirm and save';
   const isSectorIntroStep = step === 1 && !selectedSector;
+  const replacementNoticeShowsUsageReading = !genericValuationPath || Boolean(
+    selectedFamily?.isPropelled || selectedFamily?.usageMetricType === 'hours' || selectedFamily?.usageMetricType === 'km',
+  );
+  const replacementNoticeUsage = getUsageAnswerLabel(replacementNoticeShowsUsageReading);
+  const replacementNoticePriceExVat =
+    selectedModel?.aim4priceReplacementExVat ?? selectedGenericModel?.aim4priceReplacementPriceExVat ?? null;
 
   return (
     <main className={`${styles.page} ${compactAppMode ? dealerStyles.dealerValuationSurface : ''}`}>
@@ -7108,10 +7151,27 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
             aria-labelledby="replacement-notice-title"
             onClick={(event) => event.stopPropagation()}
           >
-            <h2 id="replacement-notice-title">Check the replacement price</h2>
-            <p>
-              Aim4price uses current replacement prices to calculate the estimate. Confirm the price shown with the result and adjust it if needed.
+            <h2 id="replacement-notice-title">Check the replacement price and usage</h2>
+            <p className={styles.replacementNoticeIntro}>
+              Both inputs materially affect the estimate. Confirm them before continuing.
             </p>
+            <div className={styles.replacementNoticeWarning} role="note" aria-label="Important valuation inputs">
+              <div className={styles.replacementNoticeWarningTitle}>
+                <span aria-hidden="true">!</span>
+                <strong>Important: check both values</strong>
+              </div>
+              <dl className={styles.replacementNoticeFacts}>
+                <div>
+                  <dt>Replacement price</dt>
+                  <dd>{replacementNoticePriceExVat ? moneyExVat(replacementNoticePriceExVat) : 'Confirm on the result page'}</dd>
+                </div>
+                <div className={styles.replacementNoticeUsageFact}>
+                  <dt>Current usage</dt>
+                  <dd>{replacementNoticeUsage}</dd>
+                </div>
+              </dl>
+              <p>Go back now if the usage is not correct. You can check and adjust the replacement price with the result.</p>
+            </div>
             <div className={styles.replacementNoticeActions}>
               <button type="button" className={styles.secondaryButton} onClick={() => setReplacementNoticeOpen(false)}>
                 Go back
@@ -7127,6 +7187,9 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                 Continue to estimate
               </button>
             </div>
+            <small className={styles.replacementNoticeDisclaimer}>
+              Aim4price provides an indicative estimate only, not a certified valuation, inspection or guaranteed price. Confirm all inputs and the result before relying on it.
+            </small>
           </section>
         </div>
       ) : null}

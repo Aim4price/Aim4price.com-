@@ -181,6 +181,7 @@ function buildInput(
     condition,
     frontPto: parseBoolean(body.frontPto),
     frontLoader: parseBoolean(body.frontLoader),
+    frontLoaderYear: body.frontLoaderYear ?? null,
     gpsEnabled: parseBoolean(body.gpsEnabled),
     gpsType: normalizeGpsType(body.gpsType),
     gpsYear: body.gpsYear ?? null,

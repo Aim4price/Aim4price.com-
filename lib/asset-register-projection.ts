@@ -3,6 +3,7 @@ import { getAssetRegisterItemById, type AssetRegisterItem, type AssetRegisterIte
 import type { ConditionKey, TractorType } from './tractor-data';
 import type { GpsType } from './tractor-logic';
 import { calculateEngineHoursValue, calculatePercentUsedValue, tractorLifetimeHours, applyFloor, clamp, roundMoney } from './valuation/shared';
+import { calculateInstalledExtraValue } from './valuation/valuation-rules';
 import {
   FRONT_PTO_REPLACEMENT_EX_VAT,
   GPS_FULL_AUTOSTEER_REPLACEMENT_EX_VAT,
@@ -323,12 +324,21 @@ function inflationFactor(ratePct: number, yearsForward: number): number {
   return Math.pow(1 + safeRate, Math.max(0, yearsForward));
 }
 
-function loaderValueAtYear(powerKw: number, yearModel: number, targetYear: number, inflation: number): number {
-  const replacementPrice = loaderReplacementPrice(powerKw) * inflation;
-  const age = Math.max(0, targetYear - yearModel);
-  const depreciation = clamp(age * 10, 0, 75);
-  const currentValue = replacementPrice * (1 - depreciation / 100);
-  return roundMoney(applyFloor(currentValue, replacementPrice, 0.25));
+function loaderValueAtYear(
+  powerKw: number,
+  frontLoaderYear: number,
+  targetYear: number,
+  inflation: number,
+  replacementPriceOverrideExVat: number | null,
+): number {
+  const replacementPrice = (replacementPriceOverrideExVat ?? loaderReplacementPrice(powerKw)) * inflation;
+  return calculateInstalledExtraValue({
+    replacementPriceExVat: replacementPrice,
+    yearAdded: frontLoaderYear,
+    fallbackYear: frontLoaderYear,
+    baseYear: targetYear,
+    annualDepreciationPercent: 10,
+  });
 }
 
 function gpsValueAtYear(gpsType: GpsType, gpsYear: number, targetYear: number, inflation: number): number {
@@ -354,6 +364,8 @@ function calculateTractorSnapshot(input: {
   condition: ConditionKey;
   frontPtoEnabled: boolean;
   frontLoaderEnabled: boolean;
+  frontLoaderYear: number;
+  frontLoaderReplacementPriceExVat: number | null;
   gpsEnabled: boolean;
   gpsType: GpsType;
   gpsYear: number;
@@ -376,7 +388,13 @@ function calculateTractorSnapshot(input: {
   }).finalValueExVat;
 
   const loaderExVat = input.frontLoaderEnabled
-    ? loaderValueAtYear(input.powerKw, input.yearModel, input.targetYear, inflator)
+    ? loaderValueAtYear(
+        input.powerKw,
+        input.frontLoaderYear,
+        input.targetYear,
+        inflator,
+        input.frontLoaderReplacementPriceExVat,
+      )
     : 0;
 
   const gpsExVat = input.gpsEnabled
@@ -913,6 +931,7 @@ async function calculateTractorProjection(input: {
   asset: AssetRegisterItem;
   row: GenericDbRow;
   valuationInput: Record<string, unknown>;
+  valuationOutput: Record<string, unknown>;
   selectedMethod: AssetRegisterItemMethod;
   currentRegisterValueExVat: number;
   baseYear: number;
@@ -944,6 +963,14 @@ async function calculateTractorProjection(input: {
 
   const frontPtoEnabled = asBoolean(pick(input.row, ['front_pto'])) || asBoolean(input.valuationInput.frontPto);
   const frontLoaderEnabled = asBoolean(pick(input.row, ['front_loader'])) || asBoolean(input.valuationInput.frontLoader);
+  const frontLoaderYear = Math.max(
+    1950,
+    Math.round(asNumber(input.valuationInput.frontLoaderYear) ?? yearModel),
+  );
+  const frontLoaderReplacementPriceExVat = firstPositiveNumber(
+    input.valuationInput.frontLoaderReplacementPriceExVat,
+    input.valuationOutput.frontLoaderReplacementPriceExVat,
+  );
   const gpsEnabled = asBoolean(pick(input.row, ['gps_enabled'])) || asBoolean(input.valuationInput.gpsEnabled);
   const gpsType = normalizeGpsType(pick(input.row, ['gps_type']) ?? input.valuationInput.gpsType);
   const gpsYear = Math.max(
@@ -974,6 +1001,8 @@ async function calculateTractorProjection(input: {
     condition: currentCondition,
     frontPtoEnabled,
     frontLoaderEnabled,
+    frontLoaderYear,
+    frontLoaderReplacementPriceExVat,
     gpsEnabled,
     gpsType,
     gpsYear,
@@ -992,6 +1021,8 @@ async function calculateTractorProjection(input: {
     condition: targetCondition,
     frontPtoEnabled,
     frontLoaderEnabled,
+    frontLoaderYear,
+    frontLoaderReplacementPriceExVat,
     gpsEnabled,
     gpsType,
     gpsYear,

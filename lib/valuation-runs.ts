@@ -81,7 +81,7 @@ function getPersistableReplacementPriceBandId(result: GenericValuationResult): n
   return toPositiveIntegerOrNull(band.id);
 }
 
-function parseGpsYear(value: number | string | null | undefined): number | null {
+function parseExtraYear(value: number | string | null | undefined): number | null {
   if (value === null || value === undefined) return null;
   const parsed = Number(typeof value === 'string' ? value.trim() : value);
   if (!Number.isInteger(parsed) || parsed < 1950 || parsed > new Date().getFullYear() + 1) return null;
@@ -125,9 +125,10 @@ function buildValuationPayload(input: SaveValuationRunInput, result: Result, sel
       condition: input.condition,
       frontPto: Boolean(input.frontPto),
       frontLoader: Boolean(input.frontLoader),
+      frontLoaderYear: input.frontLoader ? parseExtraYear(input.frontLoaderYear) : null,
       gpsEnabled: Boolean(input.gpsEnabled),
       gpsType: input.gpsType ?? null,
-      gpsYear: parseGpsYear(input.gpsYear),
+      gpsYear: parseExtraYear(input.gpsYear),
       frontPtoReplacementPriceExVat: input.frontPtoReplacementPriceExVat ?? null,
       frontLoaderReplacementPriceExVat: input.frontLoaderReplacementPriceExVat ?? null,
       gpsReplacementPriceExVat: input.gpsReplacementPriceExVat ?? null,
@@ -188,7 +189,7 @@ export async function saveValuationRunFromResult(
   const valuationVersion = String(input.valuationVersion ?? 'v1').trim() || 'v1';
   const gpsEnabled = Boolean(input.gpsEnabled);
   const gpsType = gpsEnabled ? input.gpsType ?? null : null;
-  const gpsYear = gpsEnabled ? parseGpsYear(input.gpsYear) : null;
+  const gpsYear = gpsEnabled ? parseExtraYear(input.gpsYear) : null;
   const valuationPayload = buildValuationPayload(input, result, roundMoney(selectedValueExVat));
   const savedYearModel = input.yearModelUnknown ? null : Math.round(input.year);
 

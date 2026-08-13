@@ -8,7 +8,7 @@ import {
   tractorLifetimeHours,
   type EngineHoursMethodResult,
 } from './shared';
-import { resolveSalvageValue } from './valuation-rules';
+import { calculateInstalledExtraValue, resolveSalvageValue } from './valuation-rules';
 
 export const FRONT_PTO_REPLACEMENT_EX_VAT = 250_000;
 export const GPS_FULL_AUTOSTEER_REPLACEMENT_EX_VAT = 250_000;
@@ -124,8 +124,9 @@ export function getTractorGpsReplacementPrice(gpsType: GpsType | null | undefine
 
 export function calculateTractorLoaderValue(
   model: TractorValuationModel,
-  yearModel: number,
   enabled: boolean,
+  frontLoaderYear: number | string | null | undefined,
+  fallbackYear: number,
   replacementPriceOverrideExVat?: number | null,
 ): number {
   if (!enabled) {
@@ -133,14 +134,16 @@ export function calculateTractorLoaderValue(
   }
 
   const replacementPrice = getTractorLoaderReplacementPrice(model, replacementPriceOverrideExVat);
-  const age = Math.max(0, currentBaseYear() - Math.round(yearModel));
-  const depreciation = clamp(age * 10, 0, 100);
-  const currentValue = replacementPrice * (1 - depreciation / 100);
-
-  return resolveSalvageValue(currentValue, replacementPrice).finalValueExVat;
+  return calculateInstalledExtraValue({
+    replacementPriceExVat: replacementPrice,
+    yearAdded: frontLoaderYear,
+    fallbackYear,
+    baseYear: currentBaseYear(),
+    annualDepreciationPercent: 10,
+  });
 }
 
-function parseGpsYear(value: number | string | null | undefined, fallbackYear: number): number {
+function parseExtraYear(value: number | string | null | undefined, fallbackYear: number): number {
   const parsed = Number(typeof value === 'string' ? value.trim() : value);
 
   if (!Number.isInteger(parsed) || parsed < 1950 || parsed > currentBaseYear() + 1) {
@@ -165,7 +168,7 @@ export function calculateTractorGpsValue(
   const normalizedType: GpsType = gpsType === 'full-autosteer' ? 'full-autosteer' : 'guidance-only';
   const replacementPrice = getTractorGpsReplacementPrice(normalizedType, replacementPriceOverrideExVat);
 
-  const actualGpsYear = parseGpsYear(gpsYear, fallbackYear);
+  const actualGpsYear = parseExtraYear(gpsYear, fallbackYear);
   const age = Math.max(0, currentBaseYear() - actualGpsYear);
   const depreciation = clamp(age * 10, 0, 100);
   const currentValue = replacementPrice * (1 - depreciation / 100);
