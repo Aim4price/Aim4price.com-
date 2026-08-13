@@ -319,7 +319,7 @@ test('selected tractor extras always add a calculated value and are shown transp
   assert.match(serverSource, /combinedBaseCalculation\.finalValueExVat - baseAim4priceValueExVat/);
   assert.match(serverSource, /otherExtraReplacementPriceExVat/);
   assert.doesNotMatch(valuationSource, /Tractor extras value breakdown/);
-  assert.match(valuationSource, /<strong>Other<\/strong>/);
+  assert.match(valuationSource, /<strong>Extra&apos;s<\/strong>/);
   assert.match(valuationSource, /Add another extra/);
   assert.match(valuationSource, /Replacement price \(excl\. VAT\)/);
   assert.match(valuationSource, /Front PTO replacement/);
