@@ -73,6 +73,7 @@ export default function OverviewClearConfirmation({
     >
       <section
         className={styles.overviewConfirmCard}
+        data-step={step}
         role="dialog"
         aria-modal="true"
         aria-labelledby="overview-clear-title"
@@ -98,7 +99,7 @@ export default function OverviewClearConfirmation({
                     onChange={() => setClearForEveryone(false)}
                   />
                   <span>
-                    <strong>My Overview only</strong>
+                    <strong>My overview only</strong>
                     <small>Other app users will still see it.</small>
                   </span>
                 </label>
@@ -110,14 +111,14 @@ export default function OverviewClearConfirmation({
                     onChange={() => setClearForEveryone(true)}
                   />
                   <span>
-                    <strong>Everyone’s Overview</strong>
+                    <strong>Everyone’s overview</strong>
                     <small>Clear it for the Owner and all Field Managers.</small>
                   </span>
                 </label>
               </fieldset>
             ) : clearsForEveryone ? (
               <p className={styles.overviewConfirmSharedNote}>
-                This will also clear it from the Owner Overview.
+                This clears it for the Owner and all Field Managers.
               </p>
             ) : null}
 
@@ -144,7 +145,7 @@ export default function OverviewClearConfirmation({
         ) : isProblem ? (
           <>
             <p id="overview-clear-description">
-              Only mark this problem done once it has been dealt with.
+              Only choose <strong>Yes, done</strong> once the problem has been dealt with.
             </p>
             <div className={styles.overviewConfirmActions}>
               <button
@@ -153,7 +154,7 @@ export default function OverviewClearConfirmation({
                 onClick={onCancel}
                 disabled={isClearing}
               >
-                No
+                Not yet
               </button>
               <button
                 type="button"
@@ -169,7 +170,7 @@ export default function OverviewClearConfirmation({
         ) : (
           <>
             <p id="overview-clear-description">
-              Choose Yes to save a basic {itemLabel.toLowerCase()} record. No clears the reminder without saving maintenance.
+              <strong>Yes</strong> saves a basic {itemLabel.toLowerCase()} record. <strong>Not sure</strong> clears the reminder without saving maintenance.
             </p>
             <div className={styles.overviewConfirmActions}>
               <button
@@ -178,7 +179,7 @@ export default function OverviewClearConfirmation({
                 onClick={() => onConfirm({ outcome: 'clear', clearForEveryone })}
                 disabled={isClearing}
               >
-                {isClearing ? 'Clearing…' : 'No, just clear'}
+                {isClearing ? 'Clearing…' : 'Not sure'}
               </button>
               <button
                 type="button"

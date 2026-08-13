@@ -5,19 +5,26 @@ import test from 'node:test';
 const read = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
 
 test('Overview Clear asks the correct follow-up for maintenance and problems', async () => {
-  const confirmation = await read('app/field-manager/overview-clear-confirmation.tsx');
+  const [confirmation, styles] = await Promise.all([
+    read('app/field-manager/overview-clear-confirmation.tsx'),
+    read('app/field-manager/page.module.css'),
+  ]);
 
   assert.match(confirmation, /step.*'confirm' \| 'completion'/);
   assert.match(confirmation, /isProblem[\s\S]*?'Has the problem been dealt with\?'/);
   assert.match(confirmation, /'Was it completed\?'/);
-  assert.match(confirmation, /No clears the reminder without saving maintenance\./);
+  assert.match(confirmation, /Not sure<\/strong> clears the reminder without saving maintenance\./);
   assert.match(confirmation, /outcome: 'clear'/);
   assert.match(confirmation, /outcome: 'completed'/);
-  assert.match(confirmation, /onClick=\{onCancel\}[\s\S]*?>\s*No\s*</);
+  assert.match(confirmation, /onClick=\{onCancel\}[\s\S]*?>\s*Not yet\s*</);
   assert.match(confirmation, /outcome: 'problem_done'[\s\S]*?Yes, done/);
+  assert.match(confirmation, /This clears it for the Owner and all Field Managers\./);
+  assert.doesNotMatch(confirmation, /No, just clear/);
+  assert.match(styles, /\.overviewConfirmCard\[data-step='completion'\]/);
+  assert.match(styles, /white-space: nowrap/);
 });
 
-test('scheduled maintenance No only dismisses while Yes records basic work and keeps recurrence', async () => {
+test('scheduled maintenance Not sure only dismisses while Yes records basic work and keeps recurrence', async () => {
   const [dealerRoute, fieldRoute, ownerRoute, maintenance] = await Promise.all([
     read('app/api/dealer/overview/clear/route.ts'),
     read('app/api/field-manager/overview/dismiss/route.ts'),

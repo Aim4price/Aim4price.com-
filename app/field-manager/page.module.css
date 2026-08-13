@@ -1210,24 +1210,27 @@
   place-items: center;
   overflow-y: auto;
   background: rgba(9, 31, 25, 0.54);
-  padding: max(18px, env(safe-area-inset-top)) 18px max(18px, env(safe-area-inset-bottom));
+  padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom));
   backdrop-filter: blur(5px);
 }
 
 .overviewConfirmCard {
-  width: min(100%, 430px);
+  width: min(100%, 400px);
+  max-height: calc(100vh - 32px);
+  max-height: calc(100dvh - 32px);
   box-sizing: border-box;
   border: 1px solid rgba(18, 53, 45, 0.13);
-  border-radius: 24px;
+  border-radius: 26px;
   background: #ffffff;
-  padding: 24px;
+  padding: 26px 24px 24px;
+  overflow-y: auto;
   text-align: center;
   box-shadow: 0 26px 70px rgba(9, 31, 25, 0.25);
 }
 
 .overviewConfirmEyebrow {
   display: block;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
   color: #236851;
   font-size: 0.7rem;
   font-weight: 950;
@@ -1238,18 +1241,19 @@
 .overviewConfirmCard h2 {
   margin: 0;
   color: #12352d;
-  font-size: clamp(1.48rem, 6vw, 1.82rem);
+  font-size: clamp(1.42rem, 6vw, 1.72rem);
   font-weight: 850;
   letter-spacing: -0.035em;
   line-height: 1.12;
 }
 
 .overviewConfirmCard p {
-  margin: 12px auto 0;
+  max-width: 340px;
+  margin: 10px auto 0;
   color: rgba(18, 53, 45, 0.7);
   font-size: 0.92rem;
   font-weight: 650;
-  line-height: 1.5;
+  line-height: 1.45;
 }
 
 .overviewConfirmCard p strong {
@@ -1261,15 +1265,15 @@
   border: 1px solid rgba(35, 104, 81, 0.14);
   border-radius: 14px;
   background: #f2faf6;
-  padding: 11px 13px;
+  padding: 10px 12px;
   color: #236851 !important;
   font-size: 0.82rem !important;
 }
 
 .overviewConfirmScope {
   display: grid;
-  gap: 9px;
-  margin: 18px 0 0;
+  gap: 8px;
+  margin: 16px 0 0;
   border: 0;
   padding: 0;
   text-align: left;
@@ -1288,9 +1292,9 @@
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   gap: 11px;
-  align-items: center;
+  align-items: start;
   border: 1px solid rgba(18, 53, 45, 0.13);
-  border-radius: 15px;
+  border-radius: 16px;
   background: #ffffff;
   padding: 12px 13px;
   cursor: pointer;
@@ -1305,6 +1309,7 @@
 .overviewConfirmScope input {
   width: 18px;
   height: 18px;
+  margin: 2px 0 0;
   accent-color: #18795a;
 }
 
@@ -1330,17 +1335,19 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
-  margin-top: 22px;
+  margin-top: 20px;
 }
 
 .overviewConfirmCancel,
 .overviewConfirmButton {
-  min-height: 54px;
+  min-width: 0;
+  min-height: 52px;
   border-radius: 16px;
-  padding: 0 14px;
+  padding: 0 10px;
   font: inherit;
-  font-size: 0.94rem;
+  font-size: 0.9rem;
   font-weight: 900;
+  white-space: nowrap;
   cursor: pointer;
   transition: transform 0.16s ease, box-shadow 0.16s ease, opacity 0.16s ease;
 }
@@ -1373,6 +1380,43 @@
 .overviewConfirmButton:disabled {
   cursor: not-allowed;
   opacity: 0.6;
+}
+
+.overviewConfirmCard[data-step='completion'] {
+  padding-top: 24px;
+}
+
+.overviewConfirmCard[data-step='completion'] .overviewConfirmActions {
+  margin-top: 18px;
+}
+
+@media (max-width: 380px) {
+  .overviewConfirmBackdrop {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+
+  .overviewConfirmCard {
+    border-radius: 22px;
+    padding: 22px 18px 18px;
+  }
+
+  .overviewConfirmScope label {
+    gap: 10px;
+    padding: 11px 12px;
+  }
+
+  .overviewConfirmActions {
+    gap: 8px;
+    margin-top: 18px;
+  }
+
+  .overviewConfirmCancel,
+  .overviewConfirmButton {
+    min-height: 50px;
+    padding: 0 8px;
+    font-size: 0.87rem;
+  }
 }
 
 .overviewEmpty {
