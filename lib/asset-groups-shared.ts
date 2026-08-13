@@ -1,8 +1,9 @@
 export type AssetGroupValueMode = 'separate' | 'included_in_primary';
 export type AssetGroupScope = 'register' | 'combined';
-export type AssetGroupMemberRole = 'primary' | 'linked';
+export type AssetGroupMemberRole = 'primary' | 'linked' | 'member';
 export type AssetGroupRelationship =
   | 'primary'
+  | 'grouped'
   | 'works_with'
   | 'located_at'
   | 'component_of'
@@ -13,6 +14,7 @@ export type AssetGroupMember = {
   assetId: string;
   role: AssetGroupMemberRole;
   relationship: AssetGroupRelationship;
+  countsTowardTotal: boolean;
   sortOrder: number;
 };
 
@@ -33,8 +35,9 @@ export type AssetGroupSaveInput = {
   scope?: AssetGroupScope;
   name: string;
   valueMode: AssetGroupValueMode;
-  primaryAssetId: string;
+  primaryAssetId: string | null;
   memberIds: string[];
+  countsTowardTotalByAssetId?: Record<string, boolean>;
   relationships?: Record<string, AssetGroupRelationship>;
 };
 
@@ -48,9 +51,11 @@ export type AssetGroupExportMeta = {
   name: string;
   role: AssetGroupMemberRole;
   relationship: AssetGroupRelationship;
+  countsTowardTotal: boolean;
   valueMode: AssetGroupValueMode;
-  primaryAssetId: string;
+  primaryAssetId: string | null;
   memberCount: number;
+  countedMemberCount: number;
 };
 
 export type GroupAwareAsset = {
@@ -74,6 +79,7 @@ export function normalizeAssetGroupRelationship(value: unknown): AssetGroupRelat
   const normalized = String(value ?? '').trim().toLowerCase().replace(/[\s-]+/g, '_');
 
   if (normalized === 'primary') return 'primary';
+  if (normalized === 'grouped') return 'grouped';
   if (normalized === 'located_at') return 'located_at';
   if (normalized === 'component_of') return 'component_of';
   if (normalized === 'attached_to') return 'attached_to';
@@ -81,8 +87,26 @@ export function normalizeAssetGroupRelationship(value: unknown): AssetGroupRelat
   return 'works_with';
 }
 
-export function assetGroupValueModeLabel(valueMode: AssetGroupValueMode): string {
-  return valueMode === 'included_in_primary'
+export function assetGroupValueModeLabel(valueModeOrGroup: AssetGroupValueMode | AssetGroup | AssetGroupExportMeta): string {
+  if (typeof valueModeOrGroup !== 'string') {
+    const memberCount = 'members' in valueModeOrGroup
+      ? valueModeOrGroup.members.length
+      : valueModeOrGroup.memberCount;
+    const countedMemberCount = 'members' in valueModeOrGroup
+      ? valueModeOrGroup.members.filter((member) => (
+          assetGroupMemberCountsTowardTotal(valueModeOrGroup, member)
+        )).length
+      : valueModeOrGroup.countedMemberCount;
+    const primaryAssetId = 'members' in valueModeOrGroup
+      ? getAssetGroupPrimaryAssetId(valueModeOrGroup)
+      : valueModeOrGroup.primaryAssetId;
+
+    if (countedMemberCount === memberCount) return 'Every asset counted';
+    if (countedMemberCount === 1 && primaryAssetId) return 'Only primary asset counted';
+    return `${countedMemberCount} of ${memberCount} assets counted`;
+  }
+
+  return valueModeOrGroup === 'included_in_primary'
     ? 'Linked values included in primary asset'
     : 'Values counted separately';
 }
@@ -91,6 +115,8 @@ export function assetGroupRelationshipLabel(relationship: AssetGroupRelationship
   switch (relationship) {
     case 'primary':
       return 'Primary asset';
+    case 'grouped':
+      return 'Grouped asset';
     case 'located_at':
       return 'Located at the primary asset';
     case 'component_of':
@@ -106,7 +132,15 @@ export function assetGroupRelationshipLabel(relationship: AssetGroupRelationship
 }
 
 export function getAssetGroupPrimaryAssetId(group: AssetGroup): string {
-  return group.members.find((member) => member.role === 'primary')?.assetId ?? group.members[0]?.assetId ?? '';
+  return group.members.find((member) => member.role === 'primary')?.assetId ?? '';
+}
+
+export function assetGroupMemberCountsTowardTotal(
+  group: AssetGroup,
+  member: AssetGroupMember,
+): boolean {
+  if (typeof member.countsTowardTotal === 'boolean') return member.countsTowardTotal;
+  return group.valueMode === 'separate' || member.role === 'primary';
 }
 
 export function buildAssetGroupMembershipMap(groups: AssetGroup[]): Map<string, AssetGroupMembership> {
@@ -131,28 +165,15 @@ export function projectAssetGroupsToAssets<T extends { id: string }>(
     const visibleMembers = group.members
       .filter((member) => visibleAssetIds.has(member.assetId))
       .sort((left, right) => {
-        if (left.role !== right.role) return left.role === 'primary' ? -1 : 1;
+        if (left.role !== right.role) return left.role === 'primary' ? -1 : right.role === 'primary' ? 1 : 0;
         return left.sortOrder - right.sortOrder;
       });
 
     if (visibleMembers.length < 1) return [];
 
-    const visiblePrimaryAssetId = visibleMembers.some((member) => member.role === 'primary')
-      ? visibleMembers.find((member) => member.role === 'primary')?.assetId ?? visibleMembers[0].assetId
-      : visibleMembers[0].assetId;
-
     return [{
       ...group,
-      members: visibleMembers.map((member, index) => ({
-        ...member,
-        role: member.assetId === visiblePrimaryAssetId ? 'primary' : 'linked',
-        relationship: member.assetId === visiblePrimaryAssetId
-          ? 'primary'
-          : member.relationship === 'primary'
-            ? 'works_with'
-            : member.relationship,
-        sortOrder: index,
-      })),
+      members: visibleMembers.map((member, index) => ({ ...member, sortOrder: index })),
     }];
   });
 }
@@ -166,21 +187,16 @@ export function assetCountsTowardRegisterTotal(
     : buildAssetGroupMembershipMap(groupsOrMemberships);
   const membership = memberships.get(assetId);
 
-  if (!membership || membership.group.valueMode === 'separate') {
-    return true;
-  }
-
-  return membership.member.role === 'primary';
+  if (!membership) return true;
+  return assetGroupMemberCountsTowardTotal(membership.group, membership.member);
 }
 
 export function assetCountsTowardRegisterTotalFromMeta(asset: GroupAwareAsset): boolean {
   const group = asset.assetGroup;
 
-  if (!group || group.valueMode === 'separate') {
-    return true;
-  }
-
-  return group.role === 'primary';
+  if (!group) return true;
+  if (typeof group.countsTowardTotal === 'boolean') return group.countsTowardTotal;
+  return group.valueMode === 'separate' || group.role === 'primary';
 }
 
 export function registerValueForAssets<T extends GroupAwareAsset>(
@@ -241,9 +257,13 @@ export function decorateAssetsWithGroups<T extends GroupAwareAsset>(
         name: membership.group.name,
         role: membership.member.role,
         relationship: membership.member.relationship,
+        countsTowardTotal: assetGroupMemberCountsTowardTotal(membership.group, membership.member),
         valueMode: membership.group.valueMode,
-        primaryAssetId: getAssetGroupPrimaryAssetId(membership.group),
+        primaryAssetId: getAssetGroupPrimaryAssetId(membership.group) || null,
         memberCount: membership.group.members.length,
+        countedMemberCount: membership.group.members.filter((member) => (
+          assetGroupMemberCountsTowardTotal(membership.group, member)
+        )).length,
       },
     };
   });
@@ -279,7 +299,7 @@ export function orderAssetsByGroups<T extends { id: string }>(assets: T[], group
       group.members
         .slice()
         .sort((left, right) => {
-          if (left.role !== right.role) return left.role === 'primary' ? -1 : 1;
+          if (left.role !== right.role) return left.role === 'primary' ? -1 : right.role === 'primary' ? 1 : 0;
           if (left.sortOrder !== right.sortOrder) return left.sortOrder - right.sortOrder;
           return (originalIndex.get(left.assetId) ?? Number.MAX_SAFE_INTEGER)
             - (originalIndex.get(right.assetId) ?? Number.MAX_SAFE_INTEGER);

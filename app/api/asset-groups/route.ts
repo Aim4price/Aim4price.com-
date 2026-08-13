@@ -109,19 +109,17 @@ function errorResponse(error: unknown): NextResponse {
         ? 'This Asset Register is not available in the current workspace.'
         : message === 'ASSET_GROUP_NAME_REQUIRED'
           ? 'Enter a clear name for this asset group.'
-          : message === 'ASSET_GROUP_PRIMARY_REQUIRED'
-            ? 'Choose one primary asset for the group.'
-            : message === 'ASSET_GROUP_MEMBERS_REQUIRED'
-              ? 'Choose at least one asset for an umbrella.'
-              : message === 'ASSET_GROUP_ASSET_NOT_FOUND'
-                ? 'One or more selected assets could not be found.'
-                : message === 'ASSET_GROUP_REGISTER_MISMATCH'
-                  ? 'All grouped assets must belong to the same Asset Register.'
-                  : message.startsWith('ASSET_GROUP_ALREADY_LINKED:')
-                    ? `An asset is already linked to ${message.split(':').slice(1).join(':') || 'another group'}.`
-                    : message === 'ASSET_GROUP_NOT_FOUND'
-                      ? 'The asset group could not be found.'
-                      : 'The asset group could not be saved.';
+          : message === 'ASSET_GROUP_MEMBERS_REQUIRED'
+            ? 'Choose at least one asset for an umbrella.'
+            : message === 'ASSET_GROUP_ASSET_NOT_FOUND'
+              ? 'One or more selected assets could not be found.'
+              : message === 'ASSET_GROUP_REGISTER_MISMATCH'
+                ? 'All grouped assets must belong to the same Asset Register.'
+                : message.startsWith('ASSET_GROUP_ALREADY_LINKED:')
+                  ? `An asset is already linked to ${message.split(':').slice(1).join(':') || 'another group'}.`
+                  : message === 'ASSET_GROUP_NOT_FOUND'
+                    ? 'The asset group could not be found.'
+                    : 'The asset group could not be saved.';
 
   return NextResponse.json({ ok: false, error: friendly }, { status });
 }
@@ -164,6 +162,7 @@ async function save(request: NextRequest) {
       valueMode?: unknown;
       primaryAssetId?: unknown;
       memberIds?: unknown;
+      countsTowardTotalByAssetId?: unknown;
       relationships?: unknown;
       scope?: unknown;
     };
@@ -182,6 +181,11 @@ async function save(request: NextRequest) {
     const relationships = body.relationships && typeof body.relationships === 'object' && !Array.isArray(body.relationships)
       ? body.relationships as Record<string, AssetGroupRelationship>
       : undefined;
+    const countsTowardTotalByAssetId = body.countsTowardTotalByAssetId
+      && typeof body.countsTowardTotalByAssetId === 'object'
+      && !Array.isArray(body.countsTowardTotalByAssetId)
+      ? body.countsTowardTotalByAssetId as Record<string, boolean>
+      : undefined;
     const group = await saveAssetGroup(resolved.context.ownerUserId, {
       groupId: cleanText(body.groupId) || undefined,
       registerId,
@@ -190,6 +194,7 @@ async function save(request: NextRequest) {
       valueMode: cleanText(body.valueMode) as AssetGroupValueMode,
       primaryAssetId: cleanText(body.primaryAssetId),
       memberIds: Array.isArray(body.memberIds) ? body.memberIds.map(cleanText) : [],
+      countsTowardTotalByAssetId,
       relationships,
     });
     const groups = await listWorkspaceGroups(resolved.context, combined ? null : registerId);

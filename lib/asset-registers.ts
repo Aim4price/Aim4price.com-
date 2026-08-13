@@ -273,11 +273,8 @@ async function buildAssetRegisterTotalsSql(): Promise<{
     not exists (
       select 1
       from public.asset_group_members group_member
-      inner join public.asset_groups asset_group
-        on asset_group.id = group_member.group_id
       where group_member.asset_id = ai.id
-        and asset_group.value_mode = 'included_in_primary'
-        and group_member.role <> 'primary'
+        and not group_member.counts_toward_total
     )
   `;
 
@@ -579,15 +576,91 @@ async function ensureAssetRegisterTablesOnce(): Promise<void> {
     create table if not exists public.asset_group_members (
       group_id uuid not null references public.asset_groups(id) on delete cascade,
       asset_id uuid not null references public.asset_register_items(id) on delete cascade,
-      role text not null default 'linked'
-        check (role in ('primary', 'linked')),
-      relationship text not null default 'works_with'
-        check (relationship in ('primary', 'works_with', 'located_at', 'component_of', 'attached_to', 'other')),
+      role text not null default 'member'
+        check (role in ('primary', 'linked', 'member')),
+      relationship text not null default 'grouped'
+        check (relationship in ('primary', 'grouped', 'works_with', 'located_at', 'component_of', 'attached_to', 'other')),
+      counts_toward_total boolean not null default true,
       sort_order integer not null default 0,
       created_at timestamptz not null default now(),
       primary key (group_id, asset_id),
       unique (asset_id)
     )
+  `);
+
+  await db.query(`
+    alter table if exists public.asset_group_members
+      add column if not exists counts_toward_total boolean
+  `);
+
+  await db.query(`
+    do $$
+    declare
+      role_constraint_definition text;
+      relationship_constraint_definition text;
+    begin
+      if to_regclass('public.asset_group_members') is not null then
+        select pg_get_constraintdef(oid)
+        into role_constraint_definition
+        from pg_constraint
+        where conrelid = 'public.asset_group_members'::regclass
+          and conname = 'asset_group_members_role_check'
+        limit 1;
+
+        if role_constraint_definition is null
+          or position('member' in lower(role_constraint_definition)) = 0 then
+          alter table public.asset_group_members
+            drop constraint if exists asset_group_members_role_check;
+          alter table public.asset_group_members
+            add constraint asset_group_members_role_check
+              check (role in ('primary', 'linked', 'member'));
+        end if;
+
+        select pg_get_constraintdef(oid)
+        into relationship_constraint_definition
+        from pg_constraint
+        where conrelid = 'public.asset_group_members'::regclass
+          and conname = 'asset_group_members_relationship_check'
+        limit 1;
+
+        if relationship_constraint_definition is null
+          or position('grouped' in lower(relationship_constraint_definition)) = 0 then
+          alter table public.asset_group_members
+            drop constraint if exists asset_group_members_relationship_check;
+          alter table public.asset_group_members
+            add constraint asset_group_members_relationship_check
+              check (relationship in ('primary', 'grouped', 'works_with', 'located_at', 'component_of', 'attached_to', 'other'));
+        end if;
+      end if;
+    end
+    $$
+  `);
+
+  await db.query(`
+    update public.asset_group_members member
+    set counts_toward_total = case
+          when asset_group.value_mode = 'included_in_primary' then member.role = 'primary'
+          else true
+        end,
+        role = case
+          when asset_group.value_mode = 'included_in_primary' then member.role
+          else 'member'
+        end,
+        relationship = case
+          when asset_group.value_mode = 'included_in_primary' then member.relationship
+          else 'grouped'
+        end
+    from public.asset_groups asset_group
+    where asset_group.id = member.group_id
+      and member.counts_toward_total is null
+  `);
+
+  await db.query(`
+    alter table public.asset_group_members
+      alter column role set default 'member',
+      alter column relationship set default 'grouped',
+      alter column counts_toward_total set default true,
+      alter column counts_toward_total set not null
   `);
 
   await db.query(`
@@ -608,22 +681,29 @@ async function ensureAssetRegisterTablesOnce(): Promise<void> {
           and asset_group.register_id is not null;
       end if;
 
-      with replacement_primary as (
-        select distinct on (member.group_id) member.group_id, member.asset_id
-        from public.asset_group_members member
-        where not exists (
+      update public.asset_group_members member
+      set role = 'member', relationship = 'grouped'
+      where member.role = 'linked'
+        and not exists (
           select 1
           from public.asset_group_members primary_member
           where primary_member.group_id = member.group_id
             and primary_member.role = 'primary'
-        )
-        order by member.group_id, member.sort_order, member.created_at, member.asset_id
-      )
-      update public.asset_group_members member
-      set role = 'primary', relationship = 'primary'
-      from replacement_primary replacement
-      where member.group_id = replacement.group_id
-        and member.asset_id = replacement.asset_id;
+        );
+
+      update public.asset_groups asset_group
+      set value_mode = case
+            when exists (
+              select 1 from public.asset_group_members member
+              where member.group_id = asset_group.id and member.role = 'primary'
+            ) and not exists (
+              select 1 from public.asset_group_members member
+              where member.group_id = asset_group.id
+                and member.role <> 'primary'
+                and member.counts_toward_total
+            ) then 'included_in_primary'
+            else 'separate'
+          end;
 
       delete from public.asset_groups asset_group
       where (
