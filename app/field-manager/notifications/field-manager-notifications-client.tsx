@@ -25,6 +25,7 @@ type NotificationsResponse = {
 type ClearRequest = {
   ids: string[];
   bulk: boolean;
+  step: 'confirm' | 'completion';
 };
 
 function formatNotificationTime(value: string): string {
@@ -84,8 +85,12 @@ export default function FieldManagerNotificationsClient() {
   const historyItems = useMemo(() => items.filter((item) => item.isRead), [items]);
   const visibleItems = activeView === 'active' ? activeItems : historyItems;
 
-  async function clearNotifications(notificationIds: string[], moveToHistory = false) {
-    if (!notificationIds.length || clearing) return;
+  async function clearNotifications(
+    notificationIds: string[],
+    moveToHistory = false,
+    completed = false,
+  ): Promise<boolean> {
+    if (!notificationIds.length || clearing) return false;
     setClearing(true);
     setError('');
     try {
@@ -93,16 +98,26 @@ export default function FieldManagerNotificationsClient() {
         method: 'PATCH',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ notificationIds }),
+        body: JSON.stringify({ notificationIds, completed }),
       });
-      const payload = await response.json().catch(() => null) as { ok?: boolean; error?: string } | null;
+      const payload = await response.json().catch(() => null) as NotificationsResponse | null;
       if (!response.ok || !payload?.ok) throw new Error(payload?.error || 'Could not clear notifications.');
 
-      const cleared = new Set(notificationIds);
-      setItems((current) => current.map((item) => cleared.has(item.id) ? { ...item, isRead: true } : item));
-      if (moveToHistory) setActiveView('history');
+      if (Array.isArray(payload.notifications)) {
+        setItems(payload.notifications);
+      } else {
+        const cleared = new Set(notificationIds);
+        setItems((current) => current.map((item) => cleared.has(item.id) ? { ...item, isRead: true } : item));
+      }
+      if (completed && payload.notifications?.some((item) => !item.isRead)) {
+        setActiveView('active');
+      } else if (moveToHistory) {
+        setActiveView('history');
+      }
+      return true;
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Could not clear notifications.');
+      return false;
     } finally {
       setClearing(false);
     }
@@ -110,7 +125,7 @@ export default function FieldManagerNotificationsClient() {
 
   function requestClear(notification: FieldManagerNotification) {
     if (notification.assignedToViewer) {
-      setClearRequest({ ids: [notification.id], bulk: false });
+      setClearRequest({ ids: [notification.id], bulk: false, step: 'confirm' });
       return;
     }
     void clearNotifications([notification.id]);
@@ -120,17 +135,22 @@ export default function FieldManagerNotificationsClient() {
     if (!activeItems.length) return;
     const notificationIds = activeItems.map((item) => item.id);
     if (activeItems.some((item) => item.assignedToViewer)) {
-      setClearRequest({ ids: notificationIds, bulk: true });
+      setClearRequest({ ids: notificationIds, bulk: true, step: 'confirm' });
       return;
     }
     void clearNotifications(notificationIds, true);
   }
 
-  async function confirmClear() {
+  function confirmClear() {
+    if (!clearRequest || clearing) return;
+    setClearRequest((current) => current ? { ...current, step: 'completion' } : null);
+  }
+
+  async function finishClear(completed: boolean) {
     if (!clearRequest || clearing) return;
     const request = clearRequest;
-    setClearRequest(null);
-    await clearNotifications(request.ids, request.bulk);
+    const cleared = await clearNotifications(request.ids, request.bulk, completed);
+    if (cleared) setClearRequest(null);
   }
 
   return (
@@ -193,18 +213,37 @@ export default function FieldManagerNotificationsClient() {
         <div className={styles.modalOverlay} role="presentation">
           <button type="button" className={styles.modalBackdrop} onClick={() => !clearing && setClearRequest(null)} aria-label="Close clear confirmation" />
           <section className={styles.modal} role="alertdialog" aria-modal="true" aria-labelledby="assigned-clear-title">
-            <h2 id="assigned-clear-title">Assigned to you</h2>
-            <p>
-              {clearRequest.bulk
-                ? 'Some of these notifications were specifically assigned to you. Are you sure you want to clear them?'
-                : 'This notification was specifically assigned to you. Are you sure you want to clear it?'}
-            </p>
-            <div className={styles.modalActions}>
-              <button type="button" onClick={() => setClearRequest(null)} disabled={clearing}>Cancel</button>
-              <button type="button" className={styles.modalConfirm} onClick={() => void confirmClear()} disabled={clearing}>
-                {clearing ? 'Clearing…' : clearRequest.bulk ? 'Clear notifications' : 'Clear notification'}
-              </button>
-            </div>
+            {clearRequest.step === 'confirm' ? (
+              <>
+                <h2 id="assigned-clear-title">Assigned to you</h2>
+                <p>
+                  {clearRequest.bulk
+                    ? 'Some of these notifications were specifically assigned to you. Are you sure you want to clear them?'
+                    : 'This notification was specifically assigned to you. Are you sure you want to clear it?'}
+                </p>
+                <div className={styles.modalActions}>
+                  <button type="button" onClick={() => setClearRequest(null)} disabled={clearing}>Cancel</button>
+                  <button type="button" className={styles.modalConfirm} onClick={confirmClear} disabled={clearing}>
+                    {clearRequest.bulk ? 'Clear notifications' : 'Clear notification'}
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <h2 id="assigned-clear-title">
+                  {clearRequest.bulk ? 'Were they completed?' : 'Was it completed?'}
+                </h2>
+                <p>Save a basic maintenance record?</p>
+                <div className={styles.modalActions}>
+                  <button type="button" onClick={() => void finishClear(false)} disabled={clearing}>
+                    {clearing ? 'Clearing…' : 'Not sure'}
+                  </button>
+                  <button type="button" className={styles.modalConfirm} onClick={() => void finishClear(true)} disabled={clearing}>
+                    {clearing ? 'Saving…' : 'Yes'}
+                  </button>
+                </div>
+              </>
+            )}
           </section>
         </div>
       ) : null}

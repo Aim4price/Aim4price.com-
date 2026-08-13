@@ -1,4 +1,9 @@
-import { listAssetMaintenanceRecords, type AssetMaintenanceRecord } from './asset-maintenance';
+import {
+  completeAssetMaintenanceRecord,
+  listAssetMaintenanceRecords,
+  unknownMaintenanceCompletionNote,
+  type AssetMaintenanceRecord,
+} from './asset-maintenance';
 import {
   listReadNotificationEventKeys,
   markNotificationEventKeysRead,
@@ -124,12 +129,55 @@ export async function markFieldManagerNotificationsRead(input: {
   managerId: string;
   notificationIds: string[];
 }): Promise<void> {
+  await clearFieldManagerNotifications({
+    ...input,
+    completed: false,
+    completedBy: '',
+  });
+}
+
+export async function clearFieldManagerNotifications(input: {
+  ownerUserId: string;
+  managerId: string;
+  notificationIds: string[];
+  completed: boolean;
+  completedBy: string;
+}): Promise<{ completedCount: number }> {
   const requested = new Set(
     input.notificationIds.map((value) => String(value ?? '').trim()).filter(Boolean),
   );
-  if (!requested.size) return;
+  if (!requested.size) return { completedCount: 0 };
 
   const records = await currentNotificationRecords(input);
-  const allowedKeys = records.map(eventKey).filter((key) => requested.has(key));
+  const selectedRecords = records.filter((record) => requested.has(eventKey(record)));
+  const allowedKeys = selectedRecords.map(eventKey);
+
+  if (input.completed) {
+    const assignedRecords = selectedRecords.filter(
+      (record) => record.assignedFieldManagerId === input.managerId,
+    );
+
+    for (const record of assignedRecords) {
+      await completeAssetMaintenanceRecord(
+        input.ownerUserId,
+        record.id,
+        {
+          completedNotes: unknownMaintenanceCompletionNote(record.maintenanceType),
+          completedBy: input.completedBy,
+        },
+        {
+          assetId: record.assetId,
+          assignedFieldManagerId: input.managerId,
+          maintenanceType: record.maintenanceType,
+          allowUnknownDetails: true,
+        },
+      );
+    }
+
+    await markNotificationEventKeysRead(viewerKey(input.managerId), allowedKeys);
+    return { completedCount: assignedRecords.length };
+  }
+
   await markNotificationEventKeysRead(viewerKey(input.managerId), allowedKeys);
+  return { completedCount: 0 };
 }
