@@ -7198,7 +7198,10 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
             aria-describedby="replacement-notice-description replacement-notice-disclaimer"
             onClick={(event) => event.stopPropagation()}
           >
-            <h2 id="replacement-notice-title">Ready for your estimate?</h2>
+            <div className={styles.replacementNoticeTitle}>
+              <span aria-hidden="true">!</span>
+              <h2 id="replacement-notice-title">Ready for your estimate?</h2>
+            </div>
             <p id="replacement-notice-description" className={styles.replacementNoticeIntro}>
               We will calculate an indicative estimate using the details you provided. You can review the result on the next screen and go back to change your details if needed.
             </p>
@@ -7219,7 +7222,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                   void calculateValuation();
                 }}
               >
-                Get estimate
+                I understand, get estimate
               </button>
             </div>
             <small id="replacement-notice-disclaimer" className={styles.replacementNoticeDisclaimer}>

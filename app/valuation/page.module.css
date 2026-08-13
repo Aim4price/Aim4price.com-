@@ -11762,33 +11762,73 @@
 }
 
 .replacementNoticeModal .replacementNoticeIntro {
-  max-width: 43ch;
-  margin-top: 0.65rem;
-  color: #3f554e;
+  margin-top: 0.8rem;
+  color: #613f3b;
 }
 
 .replacementNoticeModal {
-  width: min(500px, 100%);
+  width: min(680px, 100%);
   max-height: calc(100dvh - 2rem);
-  padding: 1.5rem;
+  padding: 1.75rem;
   overflow-y: auto;
+  border-color: #e4a39d;
+  background: #fff4f2;
+  box-shadow: 0 24px 70px rgba(91, 25, 20, 0.28);
   overscroll-behavior: contain;
+}
+
+.replacementNoticeTitle {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.replacementNoticeTitle > span {
+  display: inline-grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: #c6352e;
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 900;
 }
 
 .replacementNoticeModal h2 {
   margin: 0;
+  color: #76251f;
 }
 
 .replacementNoticeActions {
-  margin-top: 1.25rem;
+  margin-top: 1.5rem;
+}
+
+.replacementNoticeActions .secondaryButton {
+  border-color: #ddb2ae;
+  background: rgba(255, 255, 255, 0.72);
+  color: #612e29;
+}
+
+.replacementNoticeActions .primaryButton {
+  border-color: #b92f28;
+  background: #b92f28;
+  color: #fff;
+  box-shadow: 0 10px 24px rgba(151, 35, 29, 0.2);
+}
+
+.replacementNoticeActions .primaryButton:hover {
+  border-color: #9f251f;
+  background: #9f251f;
 }
 
 .replacementNoticeDisclaimer {
   display: block;
   margin-top: 1rem;
   padding-top: 0.75rem;
-  border-top: 1px solid rgba(5, 94, 74, 0.12);
-  color: #526861;
+  border-top: 1px solid rgba(168, 51, 43, 0.2);
+  color: #6d4b47;
   font-size: 0.75rem;
   line-height: 1.4;
 }
@@ -11809,5 +11849,9 @@
 
   .frontLoaderFields {
     max-width: none;
+  }
+
+  .replacementNoticeModal {
+    padding: 1.3rem;
   }
 }
