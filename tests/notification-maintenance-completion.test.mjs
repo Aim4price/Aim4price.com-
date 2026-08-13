@@ -4,50 +4,67 @@ import test from 'node:test';
 
 const read = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
 
-test('Dealer and Field Manager clear confirmations ask whether assigned work was completed', async () => {
-  const [dealerClient, fieldClient] = await Promise.all([
-    read('app/dealer/notifications/dealer-maintenance-notifications-client.tsx'),
-    read('app/field-manager/notifications/field-manager-notifications-client.tsx'),
-  ]);
+test('Overview Clear asks the correct follow-up for maintenance and problems', async () => {
+  const confirmation = await read('app/field-manager/overview-clear-confirmation.tsx');
 
-  for (const client of [dealerClient, fieldClient]) {
-    assert.match(client, /step: 'confirm' \| 'completion'/);
-    assert.match(client, /Was it completed\?/);
-    assert.match(client, /'Not sure'/);
-    assert.match(client, /'Yes'/);
-    assert.match(client, /JSON\.stringify\(\{ notificationIds, completed \}\)/);
-  }
+  assert.match(confirmation, /step.*'confirm' \| 'completion'/);
+  assert.match(confirmation, /isProblem[\s\S]*?'Has the problem been dealt with\?'/);
+  assert.match(confirmation, /'Was it completed\?'/);
+  assert.match(confirmation, /No clears the reminder without saving maintenance\./);
+  assert.match(confirmation, /outcome: 'clear'/);
+  assert.match(confirmation, /outcome: 'completed'/);
+  assert.match(confirmation, /onClick=\{onCancel\}[\s\S]*?>\s*No\s*</);
+  assert.match(confirmation, /outcome: 'problem_done'[\s\S]*?Yes, done/);
 });
 
-test('Not sure only clears while Yes records Field Manager maintenance and preserves recurrence', async () => {
-  const [route, notifications, maintenance] = await Promise.all([
-    read('app/api/field-manager/notifications/route.ts'),
-    read('lib/field-manager-notifications.ts'),
+test('scheduled maintenance No only dismisses while Yes records basic work and keeps recurrence', async () => {
+  const [dealerRoute, fieldRoute, ownerRoute, maintenance] = await Promise.all([
+    read('app/api/dealer/overview/clear/route.ts'),
+    read('app/api/field-manager/overview/dismiss/route.ts'),
+    read('app/api/owner-app/attention/route.ts'),
     read('lib/asset-maintenance.ts'),
   ]);
 
-  assert.match(route, /completed: body\?\.completed === true/);
-  assert.match(route, /completedBy: access\.session\.displayName/);
-  assert.match(notifications, /if \(input\.completed\)/);
-  assert.match(notifications, /record\.assignedFieldManagerId === input\.managerId/);
-  assert.match(notifications, /completeAssetMaintenanceRecord\(/);
-  assert.match(notifications, /allowUnknownDetails: true/);
+  for (const route of [dealerRoute, fieldRoute, ownerRoute]) {
+    assert.match(route, /if \([^)]*Outcome === 'completed'\)|if \(outcome === 'completed'\)/);
+    assert.match(route, /completeAssetMaintenanceRecord\(/);
+    assert.match(route, /unknownMaintenanceCompletionNote\(item\.type\)/);
+    assert.match(route, /allowUnknownDetails: true/);
+    assert.match(route, /else if \([^)]*Outcome === 'problem_done'\)|else if \(outcome === 'problem_done'\)/);
+    assert.match(route, /if \(item\.type === 'problem'\) throw new Error\('OVERVIEW_PROBLEM_NOT_DONE'\)/);
+  }
+
+  assert.match(maintenance, /Check-up done, no additional information available\./);
+  assert.match(maintenance, /Service done, no additional information available\./);
   assert.match(maintenance, /const nextRecord = await createNextRecurringRecord\(client, userId, completed\)/);
 });
 
-test('Dealer completed work logs a service, resolves the assignment and uses concise report notes', async () => {
-  const [route, inbox, maintenance] = await Promise.all([
+test('Dealer Overview uses the same maintenance and problem Clear decisions, not Notifications', async () => {
+  const [client, overview, notificationRoute, notificationInbox] = await Promise.all([
+    read('app/dealer/overview/dealer-overview-client.tsx'),
+    read('lib/dealer-overview.ts'),
     read('app/api/dealer/maintenance/notifications/route.ts'),
     read('lib/dealer-maintenance-notification-inbox.ts'),
-    read('lib/asset-maintenance.ts'),
   ]);
 
-  assert.match(route, /completed: body\?\.completed === true/);
-  assert.match(inbox, /notification\.status === 'assigned_problem'/);
-  assert.match(inbox, /recordStandaloneAssetMaintenanceCompletion\(/);
-  assert.match(inbox, /maintenanceType: 'service'/);
-  assert.match(inbox, /workflow_status = 'resolved'/);
-  assert.match(maintenance, /Check-up done, no additional information available\./);
-  assert.match(maintenance, /Service done, no additional information available\./);
-  assert.match(maintenance, /allowUnknownDetails/);
+  assert.match(client, /<OverviewClearConfirmation/);
+  assert.match(client, /fetch\('\/api\/dealer\/overview\/clear'/);
+  assert.match(overview, /dealer_overview_dismissals/);
+  assert.match(overview, /dismissDealerOverviewItem/);
+  assert.doesNotMatch(notificationRoute, /completed|clearDealerMaintenanceNotificationsForViewer/);
+  assert.doesNotMatch(notificationInbox, /recordStandaloneAssetMaintenanceCompletion|unknownMaintenanceCompletionNote/);
+});
+
+test('Overview clears can be shared across Owner and Field Manager viewers', async () => {
+  const [ownerOverview, fieldOverview, ownerRoute] = await Promise.all([
+    read('lib/owner-app-overview.ts'),
+    read('lib/field-manager-overview.ts'),
+    read('app/api/owner-app/attention/route.ts'),
+  ]);
+
+  assert.match(ownerOverview, /ALL_OVERVIEW_VIEWERS_KEY = 'everyone'/);
+  assert.match(ownerOverview, /viewer_key = any\(\$2::text\[\]\)/);
+  assert.match(fieldOverview, /listOwnerAppOverviewGlobalDismissalKeys/);
+  assert.match(fieldOverview, /dismissOwnerAppOverviewSourceForEveryone\(/);
+  assert.match(ownerRoute, /body\.clearForEveryone === true && access\.accessRole === 'admin'/);
 });

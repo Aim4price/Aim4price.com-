@@ -65,6 +65,7 @@ type AssignmentRow = {
 const ATTENTION_STATUSES = new Set(['overdue', 'due', 'due_soon', 'usage_needed']);
 const PRIORITY_RANK: Record<DealerProblemPriority, number> = { urgent: 0, high: 1, normal: 2, low: 3 };
 let assignmentStoragePromise: Promise<void> | null = null;
+let overviewDismissalStoragePromise: Promise<void> | null = null;
 
 function text(value: unknown): string {
   return String(value ?? '').replace(/\s+/g, ' ').trim();
@@ -141,6 +142,49 @@ async function ensureAssignmentStorage(): Promise<void> {
     });
   }
   await assignmentStoragePromise;
+}
+
+async function ensureOverviewDismissalStorage(): Promise<void> {
+  if (!overviewDismissalStoragePromise) {
+    overviewDismissalStoragePromise = (async () => {
+      await getDb().query(`
+        create table if not exists public.dealer_overview_dismissals (
+          dealer_user_id text not null,
+          source_kind text not null check (source_kind in ('maintenance', 'problem')),
+          source_id text not null,
+          overview_item_id text not null,
+          asset_register_item_id uuid not null,
+          dismissed_at timestamptz not null default now(),
+          primary key (dealer_user_id, source_kind, source_id)
+        )
+      `);
+      await getDb().query(`
+        create index if not exists dealer_overview_dismissals_asset_idx
+          on public.dealer_overview_dismissals (asset_register_item_id)
+      `);
+    })().catch((error) => {
+      overviewDismissalStoragePromise = null;
+      throw error;
+    });
+  }
+  await overviewDismissalStoragePromise;
+}
+
+function dismissalKey(sourceKind: DealerOverviewItem['sourceKind'], sourceId: string): string {
+  return `${sourceKind}\u0000${sourceId}`;
+}
+
+async function listDealerOverviewDismissalKeys(dealerUserId: string): Promise<Set<string>> {
+  await ensureOverviewDismissalStorage();
+  const result = await getDb().query<{ source_kind: DealerOverviewItem['sourceKind']; source_id: string }>(
+    `
+      select source_kind, source_id
+      from public.dealer_overview_dismissals
+      where dealer_user_id = $1
+    `,
+    [dealerUserId],
+  );
+  return new Set(result.rows.map((row) => dismissalKey(row.source_kind, row.source_id)));
 }
 
 async function listAssignments(dealerUserId: string, problemIds: string[]): Promise<Map<string, AssignmentRow>> {
@@ -264,9 +308,10 @@ export async function listDealerOverview(input: {
   currentStaffId: string | null;
   role: DealerStaffRole;
 }): Promise<DealerOverviewData> {
-  const [assets, staffRecords] = await Promise.all([
+  const [assets, staffRecords, dismissalKeys] = await Promise.all([
     listDealerTrackedAssets(input.dealerUserId),
     listDealerStaff(input.dealerUserId),
+    listDealerOverviewDismissalKeys(input.dealerUserId),
   ]);
   const problemIds = assets.flatMap((asset) => asset.loggedProblems.map((problem) => problem.id));
   const assignments = await listAssignments(input.dealerUserId, problemIds);
@@ -289,8 +334,53 @@ export async function listDealerOverview(input: {
     items: sortItems([
       ...problemItems(assets, assignments),
       ...maintenanceItems(assets),
-    ]),
+    ]).filter((item) => !dismissalKeys.has(dismissalKey(item.sourceKind, item.sourceId))),
   };
+}
+
+export async function dismissDealerOverviewItem(input: {
+  dealerUserId: string;
+  item: DealerOverviewItem;
+}): Promise<void> {
+  await ensureOverviewDismissalStorage();
+  await getDb().query(
+    `
+      insert into public.dealer_overview_dismissals (
+        dealer_user_id,
+        source_kind,
+        source_id,
+        overview_item_id,
+        asset_register_item_id,
+        dismissed_at
+      ) values ($1, $2, $3, $4, $5::uuid, now())
+      on conflict (dealer_user_id, source_kind, source_id) do update set
+        overview_item_id = excluded.overview_item_id,
+        asset_register_item_id = excluded.asset_register_item_id,
+        dismissed_at = now()
+    `,
+    [
+      input.dealerUserId,
+      input.item.sourceKind,
+      input.item.sourceId,
+      input.item.id,
+      input.item.assetId,
+    ],
+  );
+}
+
+export async function resolveDealerOverviewProblemAssignment(
+  dealerUserId: string,
+  issueNoteStatusId: string,
+): Promise<void> {
+  await ensureAssignmentStorage();
+  await getDb().query(
+    `
+      update public.dealer_problem_assignments
+      set workflow_status = 'resolved', resolved_at = coalesce(resolved_at, now()), updated_at = now()
+      where dealer_user_id = $1 and issue_note_status_id = $2
+    `,
+    [dealerUserId, issueNoteStatusId],
+  );
 }
 
 export async function updateDealerProblemAssignment(input: {

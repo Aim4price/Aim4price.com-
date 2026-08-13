@@ -50,11 +50,12 @@ test('Dealer notifications are dealership-wide with per-staff clearing and assig
   assert.match(readState, /unique \(viewer_key, event_key\)/i);
 });
 
-test('Field Manager notifications are shared operationally while assigned items require confirmation', async () => {
-  const [notifications, route, client, home] = await Promise.all([
+test('Field Manager notifications are shared operationally and match the Owner App notification experience', async () => {
+  const [notifications, route, client, ownerClient, home] = await Promise.all([
     read('lib/field-manager-notifications.ts'),
     read('app/api/field-manager/notifications/route.ts'),
     read('app/field-manager/notifications/field-manager-notifications-client.tsx'),
+    read('app/owner-app/notifications/owner-notifications-client.tsx'),
     read('app/field-manager/field-manager-home-client.tsx'),
   ]);
 
@@ -63,10 +64,22 @@ test('Field Manager notifications are shared operationally while assigned items 
   assert.match(notifications, /const assignedToViewer = record\.assignedFieldManagerId === input\.managerId/);
   assert.match(notifications, /listReadNotificationEventKeys\(viewerKey\(input\.managerId\), keys\)/);
   assert.match(route, /requireActiveFieldManagerSession/);
-  assert.match(client, /notification\.assignedToViewer[\s\S]*?setClearRequest\(\{ ids: \[notification\.id\], bulk: false, step: 'confirm' \}\)/);
-  assert.match(client, /This notification was specifically assigned to you\. Are you sure you want to clear it\?/);
-  assert.match(client, /Some of these notifications were specifically assigned to you\. Are you sure you want to clear them\?/);
-  assert.match(client, /void clearNotifications\(\[notification\.id\]\)/);
+  assert.match(route, /markFieldManagerNotificationsRead/);
+  assert.doesNotMatch(route, /completeAssetMaintenanceRecord|completed:/);
+  assert.match(client, /styles from '\.\.\/\.\.\/owner-app\/owner-app\.module\.css'/);
+  for (const label of [
+    'Notifications',
+    'Updates that need your attention.',
+    'Active',
+    'History',
+    'Mark all checked',
+    'Clear all',
+  ]) {
+    assert.ok(client.includes(label), `Field Manager notifications should include ${label}`);
+    assert.ok(ownerClient.includes(label), `Owner notifications should include ${label}`);
+  }
+  assert.match(client, /Just now/);
+  assert.doesNotMatch(client, /Was it completed\?|clearRequest|completed/);
   assert.match(home, /\/field-manager\/notifications/);
   assert.match(home, /notificationCount/);
 });

@@ -1,23 +1,39 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import styles from './page.module.css';
+
+export type OverviewClearOutcome = 'clear' | 'completed' | 'problem_done';
 
 type OverviewClearConfirmationProps = {
   assetTitle: string;
   itemLabel: string;
+  itemType: 'problem' | 'service' | 'checkup' | 'license';
   isClearing: boolean;
+  canClearForEveryone?: boolean;
+  clearsForEveryone?: boolean;
   onCancel: () => void;
-  onConfirm: () => void;
+  onConfirm: (input: {
+    outcome: OverviewClearOutcome;
+    clearForEveryone: boolean;
+  }) => void;
 };
 
 export default function OverviewClearConfirmation({
   assetTitle,
   itemLabel,
+  itemType,
   isClearing,
+  canClearForEveryone = false,
+  clearsForEveryone = false,
   onCancel,
   onConfirm,
 }: OverviewClearConfirmationProps) {
+  const [step, setStep] = useState<'confirm' | 'completion'>('confirm');
+  const [clearForEveryone, setClearForEveryone] = useState(clearsForEveryone);
+  const isMaintenance = itemType === 'service' || itemType === 'checkup';
+  const isProblem = itemType === 'problem';
+
   useEffect(() => {
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
@@ -32,6 +48,21 @@ export default function OverviewClearConfirmation({
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [isClearing, onCancel]);
+
+  function continueFromConfirmation() {
+    if (isMaintenance || isProblem) {
+      setStep('completion');
+      return;
+    }
+
+    onConfirm({ outcome: 'clear', clearForEveryone });
+  }
+
+  const title = step === 'confirm'
+    ? 'Are you sure?'
+    : isProblem
+      ? 'Has the problem been dealt with?'
+      : 'Was it completed?';
 
   return (
     <div
@@ -48,31 +79,119 @@ export default function OverviewClearConfirmation({
         aria-describedby="overview-clear-description"
       >
         <span className={styles.overviewConfirmEyebrow}>Overview</span>
-        <h2 id="overview-clear-title">Are you sure?</h2>
-        <p id="overview-clear-description">
-          Clear the {itemLabel.toLowerCase()} for <strong>{assetTitle}</strong> from your Overview?
-          This will not delete the asset or its records.
-        </p>
-        <div className={styles.overviewConfirmActions}>
-          <button
-            type="button"
-            className={styles.overviewConfirmCancel}
-            onClick={onCancel}
-            disabled={isClearing}
-            autoFocus
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            className={styles.overviewConfirmButton}
-            onClick={onConfirm}
-            disabled={isClearing}
-            aria-busy={isClearing}
-          >
-            {isClearing ? 'Clearing…' : 'Yes, clear'}
-          </button>
-        </div>
+        <h2 id="overview-clear-title">{title}</h2>
+
+        {step === 'confirm' ? (
+          <>
+            <p id="overview-clear-description">
+              Clear the {itemLabel.toLowerCase()} for <strong>{assetTitle}</strong> from Overview?
+            </p>
+
+            {canClearForEveryone && !isProblem ? (
+              <fieldset className={styles.overviewConfirmScope}>
+                <legend>Clear from</legend>
+                <label className={clearForEveryone ? '' : styles.overviewConfirmScopeSelected}>
+                  <input
+                    type="radio"
+                    name="overview-clear-scope"
+                    checked={!clearForEveryone}
+                    onChange={() => setClearForEveryone(false)}
+                  />
+                  <span>
+                    <strong>My Overview only</strong>
+                    <small>Other app users will still see it.</small>
+                  </span>
+                </label>
+                <label className={clearForEveryone ? styles.overviewConfirmScopeSelected : ''}>
+                  <input
+                    type="radio"
+                    name="overview-clear-scope"
+                    checked={clearForEveryone}
+                    onChange={() => setClearForEveryone(true)}
+                  />
+                  <span>
+                    <strong>Everyone’s Overview</strong>
+                    <small>Clear it for the Owner and all Field Managers.</small>
+                  </span>
+                </label>
+              </fieldset>
+            ) : clearsForEveryone ? (
+              <p className={styles.overviewConfirmSharedNote}>
+                This will also clear it from the Owner Overview.
+              </p>
+            ) : null}
+
+            <div className={styles.overviewConfirmActions}>
+              <button
+                type="button"
+                className={styles.overviewConfirmCancel}
+                onClick={onCancel}
+                disabled={isClearing}
+                autoFocus
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className={styles.overviewConfirmButton}
+                onClick={continueFromConfirmation}
+                disabled={isClearing}
+              >
+                {isMaintenance || isProblem ? 'Continue' : 'Yes, clear'}
+              </button>
+            </div>
+          </>
+        ) : isProblem ? (
+          <>
+            <p id="overview-clear-description">
+              Only mark this problem done once it has been dealt with.
+            </p>
+            <div className={styles.overviewConfirmActions}>
+              <button
+                type="button"
+                className={styles.overviewConfirmCancel}
+                onClick={onCancel}
+                disabled={isClearing}
+              >
+                No
+              </button>
+              <button
+                type="button"
+                className={styles.overviewConfirmButton}
+                onClick={() => onConfirm({ outcome: 'problem_done', clearForEveryone: true })}
+                disabled={isClearing}
+                aria-busy={isClearing}
+              >
+                {isClearing ? 'Saving…' : 'Yes, done'}
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            <p id="overview-clear-description">
+              Choose Yes to save a basic {itemLabel.toLowerCase()} record. No clears the reminder without saving maintenance.
+            </p>
+            <div className={styles.overviewConfirmActions}>
+              <button
+                type="button"
+                className={styles.overviewConfirmCancel}
+                onClick={() => onConfirm({ outcome: 'clear', clearForEveryone })}
+                disabled={isClearing}
+              >
+                {isClearing ? 'Clearing…' : 'No, just clear'}
+              </button>
+              <button
+                type="button"
+                className={styles.overviewConfirmButton}
+                onClick={() => onConfirm({ outcome: 'completed', clearForEveryone: true })}
+                disabled={isClearing}
+                aria-busy={isClearing}
+              >
+                {isClearing ? 'Saving…' : 'Yes'}
+              </button>
+            </div>
+          </>
+        )}
       </section>
     </div>
   );

@@ -23,7 +23,7 @@ const [
   read('lib/field-manager.ts'),
   read('lib/field-manager-session.ts'),
   read('app/api/field-manager/login/route.ts'),
-  read('app/account/field-manager/field-manager-client.tsx'),
+  read('app/account/app-access-management-client.tsx'),
   read('lib/owner-app.ts'),
   read('lib/owner-app-access.ts'),
   read('lib/owner-app-overview.ts'),
@@ -41,7 +41,7 @@ test('Field Manager passwords are hash-only and reset sessions', () => {
   assert.doesNotMatch(fieldManager, /savedPassword/);
   assert.match(fieldManager, /drop column if exists password_display/);
   assert.doesNotMatch(fieldManagerUi, /savedPassword|Saved password/);
-  assert.match(fieldManagerUi, /Passwords are never displayed/);
+  assert.match(fieldManagerUi, /Leave blank to keep the current/);
   assert.match(migration, /DROP COLUMN IF EXISTS password_display/);
   assert.match(fieldManager, /session_version = session_version \+ case/);
   assert.match(fieldManagerSession, /manager\.sessionVersion !== claims\.sessionVersion/);
@@ -71,13 +71,15 @@ test('Field Manager assignments cover assets, fuel tanks, and actions', () => {
   assert.match(fieldManager, /FieldManagerPermission = 'record_work' \| 'schedule_maintenance' \| 'record_fuel' \| 'refill_fuel'/);
 });
 
-test('Owner Overview clearing is isolated per viewer', () => {
+test('Owner Overview supports per-viewer and explicit account-wide clearing', () => {
   assert.match(migration, /viewer_key text NOT NULL/);
   assert.match(ownerApp, /create table if not exists public\.owner_app_overview_dismissals \([\s\S]*viewer_key text not null default 'legacy-owner'/);
   assert.doesNotMatch(ownerApp, /create table if not exists public\.owner_app_users \([\s\S]*parent_owner_user_id[^;]*viewer_key text not null[^;]*display_name/);
-  assert.match(overview, /where parent_owner_user_id = \$1 and viewer_key = \$2/);
+  assert.match(overview, /ALL_OVERVIEW_VIEWERS_KEY = 'everyone'/);
+  assert.match(overview, /where parent_owner_user_id = \$1 and viewer_key = any\(\$2::text\[\]\)/);
   assert.match(overview, /on conflict \(parent_owner_user_id, viewer_key, source_kind, source_id\)/);
   assert.match(attentionRoute, /access\.viewerKey/);
+  assert.match(attentionRoute, /body\.clearForEveryone === true && access\.accessRole === 'admin'/);
 });
 
 test('Owner asset activity combines work, fuel, maintenance, and lifecycle history', () => {

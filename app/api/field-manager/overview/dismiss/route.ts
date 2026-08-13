@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import {
+  completeAssetMaintenanceRecord,
+  unknownMaintenanceCompletionNote,
+} from '../../../../../lib/asset-maintenance';
+import { markAssetIssueNoteStatusNoted } from '../../../../../lib/asset-issue-notes';
+import {
   dismissFieldManagerOverviewItem,
+  listFieldManagerOverview,
   type FieldManagerOverviewRange,
 } from '../../../../../lib/field-manager-overview';
 import { requireActiveFieldManagerSession } from '../../../../../lib/field-manager-session';
@@ -8,10 +14,13 @@ import { requireActiveFieldManagerSession } from '../../../../../lib/field-manag
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
+type OverviewClearOutcome = 'clear' | 'completed' | 'problem_done';
+
 type DismissOverviewBody = {
   range?: unknown;
   itemId?: unknown;
   sourceId?: unknown;
+  outcome?: unknown;
 };
 
 function asText(value: unknown, maxLength: number): string {
@@ -21,6 +30,11 @@ function asText(value: unknown, maxLength: number): string {
 function readRange(value: unknown): FieldManagerOverviewRange | null {
   if (value === 'week') return 'week';
   if (value === 'upcoming' || value === 'month') return 'upcoming';
+  return null;
+}
+
+function readOutcome(value: unknown): OverviewClearOutcome | null {
+  if (value === 'clear' || value === 'completed' || value === 'problem_done') return value;
   return null;
 }
 
@@ -48,8 +62,9 @@ export async function POST(request: NextRequest) {
   const range = readRange(body.range);
   const itemId = asText(body.itemId, 500);
   const sourceId = asText(body.sourceId, 500);
+  const outcome = readOutcome(body.outcome);
 
-  if (!range || !itemId || !sourceId) {
+  if (!range || !itemId || !sourceId || !outcome) {
     return NextResponse.json(
       { ok: false, error: 'The Overview item could not be cleared.' },
       { status: 400 },
@@ -57,23 +72,68 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const dismissed = await dismissFieldManagerOverviewItem({
+    const currentOverview = await listFieldManagerOverview({
       ownerUserId: access.session.ownerUserId,
       managerId: access.session.managerId,
       range,
-      itemId,
-      sourceId,
     });
+    const item = currentOverview.items.find(
+      (candidate) => candidate.id === itemId && candidate.sourceId === sourceId,
+    );
+    if (!item) throw new Error('OVERVIEW_ITEM_NOT_FOUND');
 
-    return NextResponse.json({ ok: true, ...dismissed });
-  } catch (error) {
-    if (error instanceof Error && error.message === 'OVERVIEW_ITEM_NOT_FOUND') {
-      return NextResponse.json(
+    if (outcome === 'completed') {
+      if (item.type !== 'service' && item.type !== 'checkup') {
+        throw new Error('OVERVIEW_MAINTENANCE_REQUIRED');
+      }
+      await completeAssetMaintenanceRecord(
+        access.session.ownerUserId,
+        item.sourceId,
         {
-          ok: false,
-          error: 'This Overview item is no longer available. Refresh and try again.',
+          completedNotes: unknownMaintenanceCompletionNote(item.type),
+          completedBy: access.session.displayName,
         },
+        {
+          assetId: item.assetId,
+          maintenanceType: item.type,
+          allowUnknownDetails: true,
+        },
+      );
+    } else if (outcome === 'problem_done') {
+      if (item.type !== 'problem') throw new Error('OVERVIEW_PROBLEM_REQUIRED');
+      await markAssetIssueNoteStatusNoted({
+        currentUserId: access.session.ownerUserId,
+        issueNoteStatusId: item.sourceId,
+      });
+    } else {
+      if (item.type === 'problem') throw new Error('OVERVIEW_PROBLEM_NOT_DONE');
+      await dismissFieldManagerOverviewItem({
+        ownerUserId: access.session.ownerUserId,
+        managerId: access.session.managerId,
+        range,
+        itemId,
+        sourceId,
+      });
+    }
+
+    const overview = await listFieldManagerOverview({
+      ownerUserId: access.session.ownerUserId,
+      managerId: access.session.managerId,
+      range,
+    });
+    return NextResponse.json({ ...overview, outcome });
+  } catch (error) {
+    const code = error instanceof Error ? error.message : '';
+    if (code === 'OVERVIEW_ITEM_NOT_FOUND') {
+      return NextResponse.json(
+        { ok: false, error: 'This Overview item is no longer available. Refresh and try again.' },
         { status: 404 },
+      );
+    }
+    if (code === 'OVERVIEW_PROBLEM_NOT_DONE') {
+      return NextResponse.json(
+        { ok: false, error: 'A problem can only be cleared after it has been marked done.' },
+        { status: 400 },
       );
     }
 

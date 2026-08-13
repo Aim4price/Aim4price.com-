@@ -31,6 +31,7 @@ type OverviewItem = {
 type OverviewApiResponse = {
   ok?: boolean;
   items?: OverviewItem[];
+  canClearForEveryone?: boolean;
   error?: string;
 };
 
@@ -95,6 +96,7 @@ export default function OwnerAttentionClient() {
   const [openingItemId, setOpeningItemId] = useState<string | null>(null);
   const [clearingItemId, setClearingItemId] = useState<string | null>(null);
   const [clearCandidate, setClearCandidate] = useState<OverviewItem | null>(null);
+  const [canClearForEveryone, setCanClearForEveryone] = useState(false);
   const [locationGate, setLocationGate] = useState<LocationGateRequest | null>(null);
   const [reloadToken, setReloadToken] = useState(0);
   const requestIdRef = useRef(0);
@@ -151,6 +153,7 @@ export default function OwnerAttentionClient() {
 
         if (requestId === requestIdRef.current) {
           setItems(payload.items);
+          setCanClearForEveryone(payload.canClearForEveryone === true);
         }
       } catch (error) {
         if (controller.signal.aborted) return;
@@ -233,7 +236,11 @@ export default function OwnerAttentionClient() {
     }
   }
 
-  async function handleClearItem(item: OverviewItem) {
+  async function handleClearItem(
+    item: OverviewItem,
+    outcome: 'clear' | 'completed' | 'problem_done',
+    clearForEveryone: boolean,
+  ) {
     setClearingItemId(item.id);
     setActionError(null);
 
@@ -247,6 +254,8 @@ export default function OwnerAttentionClient() {
           range,
           itemId: item.id,
           sourceId: item.sourceId,
+          outcome,
+          clearForEveryone,
         }),
       });
       const payload = (await response.json().catch(() => null)) as OverviewApiResponse | null;
@@ -260,9 +269,13 @@ export default function OwnerAttentionClient() {
         throw new Error(extractError(payload, 'This item could not be cleared.'));
       }
 
-      setItems((current) => current.filter(
-        (candidate) => candidate.id !== item.id || candidate.sourceId !== item.sourceId,
-      ));
+      if (Array.isArray(payload.items)) {
+        setItems(payload.items);
+      } else {
+        setItems((current) => current.filter(
+          (candidate) => candidate.id !== item.id || candidate.sourceId !== item.sourceId,
+        ));
+      }
       setClearCandidate(null);
     } catch (error) {
       setActionError(error instanceof Error ? error.message : 'This item could not be cleared.');
@@ -396,9 +409,15 @@ export default function OwnerAttentionClient() {
           <OverviewClearConfirmation
             assetTitle={clearCandidate.assetTitle}
             itemLabel={TYPE_LABELS[clearCandidate.type]}
+            itemType={clearCandidate.type}
             isClearing={clearingItemId === clearCandidate.id}
+            canClearForEveryone={canClearForEveryone}
             onCancel={() => setClearCandidate(null)}
-            onConfirm={() => void handleClearItem(clearCandidate)}
+            onConfirm={({ outcome, clearForEveryone }) => void handleClearItem(
+              clearCandidate,
+              outcome,
+              clearForEveryone,
+            )}
           />
         ) : null}
 

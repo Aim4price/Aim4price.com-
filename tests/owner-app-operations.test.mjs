@@ -127,7 +127,7 @@ test('Owner Overview only completes scheduled maintenance through recorded work'
   assert.doesNotMatch(ownerActions, /completeAssetMaintenanceRecord/);
 });
 
-test('Owner and Field Manager Overview Clear actions require confirmation', async () => {
+test('Owner and Field Manager Overview Clear actions require the item-specific confirmation flow', async () => {
   const [ownerOverview, managerOverview, confirmation] = await Promise.all([
     source('app/owner-app/attention/owner-attention-client.tsx'),
     source('app/field-manager/field-manager-overview-client.tsx'),
@@ -141,7 +141,10 @@ test('Owner and Field Manager Overview Clear actions require confirmation', asyn
   }
 
   assert.match(confirmation, /Are you sure\?/);
-  assert.match(confirmation, /This will not delete the asset or its records\./);
+  assert.match(confirmation, /Was it completed\?/);
+  assert.match(confirmation, /Has the problem been dealt with\?/);
+  assert.match(confirmation, /No clears the reminder without saving maintenance\./);
+  assert.match(confirmation, /Yes, done/);
   assert.match(confirmation, /aria-modal="true"/);
 });
 
