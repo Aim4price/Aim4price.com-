@@ -129,7 +129,7 @@ export function normalizeAdBrandSnapshot(
   };
 }
 
-export function sanitizeAdBrandKitInput(input: SaveAdBrandKitInput): AdBrandSnapshot {
+export function sanitizeAdBrandKitInput(input: unknown): AdBrandSnapshot {
   const normalized = normalizeAdBrandSnapshot(input);
   return normalized ?? {
     name: 'Default style',
