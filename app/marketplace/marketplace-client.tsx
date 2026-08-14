@@ -912,7 +912,7 @@ function buildListingShareUrl(listing: MarketplaceListing): string {
 function buildListingShareText(listing: MarketplaceListing): string {
   return [
     listingDisplayTitle(listing),
-    `${money(listing.askingPriceExVat)} + VAT`,
+    `${money(listing.askingPriceExVat)} ${getAdVatLabel(listing)}`,
     formatLocation(listing),
     'View this listing on Aim4price.',
   ].join(' • ');
@@ -1225,8 +1225,8 @@ function isPlaceholderContactPhone(value: unknown): boolean {
 }
 
 function getAdSellerName(listing: MarketplaceListing): string {
-  const contactPerson = String(listing.sellerName ?? '').trim();
-  const company = String(listing.sellerCompany ?? '').trim();
+  const contactPerson = String(listing.adBrand?.contactName || listing.sellerName || '').trim();
+  const company = String(listing.adBrand?.businessName || listing.sellerCompany || '').trim();
 
   if (!isPlaceholderContactName(contactPerson)) {
     return contactPerson;
@@ -1240,8 +1240,15 @@ function getAdSellerName(listing: MarketplaceListing): string {
 }
 
 function getAdSellerPhone(listing: MarketplaceListing): string {
-  const phone = String(listing.sellerPhone ?? '').trim();
+  const phone = String(listing.adBrand?.phone || listing.sellerPhone || '').trim();
   return isPlaceholderContactPhone(phone) ? DEFAULT_MARKETPLACE_CONTACT_PHONE : phone;
+}
+
+function getAdVatLabel(listing: MarketplaceListing): string {
+  const language = listing.adBrand?.language === 'af' ? 'af' : 'en';
+  if (listing.adBrand?.vatLabel === 'vat-included') return language === 'af' ? 'BTW INGESLUIT' : 'VAT INCLUDED';
+  if (listing.adBrand?.vatLabel === 'no-vat') return language === 'af' ? 'GEEN BTW' : 'NO VAT';
+  return language === 'af' ? '+ BTW' : '+ VAT';
 }
 
 function getPublicMarketplaceListing(listing: MarketplaceListing): MarketplaceListing {
@@ -1297,6 +1304,7 @@ function drawAdLogoBadge(
   y: number,
   width: number,
   height: number,
+  fallbackLabel = 'AIM4PRICE',
 ) {
   context.save();
   context.shadowColor = 'rgba(5, 5, 5, 0.14)';
@@ -1317,7 +1325,7 @@ function drawAdLogoBadge(
     context.font = '900 25px Montserrat, Inter, Arial, sans-serif';
     context.letterSpacing = '-1.3px';
     context.textBaseline = 'middle';
-    context.fillText('AIM4PRICE', x + 22, y + height / 2 + 1);
+    context.fillText(fitCanvasText(context, fallbackLabel, width - 44), x + 22, y + height / 2 + 1);
   }
   context.restore();
 }
@@ -1509,6 +1517,229 @@ function drawAdContactCard(
   drawAdContactBox(context, 'Phone / WhatsApp', sellerPhone, x, y + fieldHeight + fieldGap, width, fieldHeight);
 }
 
+function canvasContrastColor(hexColor: string): string {
+  const normalized = hexColor.replace('#', '');
+  const red = Number.parseInt(normalized.slice(0, 2), 16);
+  const green = Number.parseInt(normalized.slice(2, 4), 16);
+  const blue = Number.parseInt(normalized.slice(4, 6), 16);
+  const luminance = (red * 299 + green * 587 + blue * 114) / 1000;
+  return luminance > 148 ? '#10251f' : '#ffffff';
+}
+
+function drawAim4priceCredit(
+  context: CanvasRenderingContext2D,
+  aim4priceLogo: HTMLImageElement | null,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  dark = false,
+) {
+  fillRoundedRect(context, x, y, width, height, height / 2, dark ? 'rgba(255,255,255,0.92)' : 'rgba(255,255,255,0.94)');
+  context.save();
+  context.textBaseline = 'middle';
+
+  if (aim4priceLogo) {
+    const ratio = (aim4priceLogo.naturalWidth || aim4priceLogo.width) / Math.max(1, aim4priceLogo.naturalHeight || aim4priceLogo.height);
+    const logoHeight = height - 18;
+    const logoWidth = Math.min(width * 0.48, logoHeight * ratio);
+    context.drawImage(aim4priceLogo, x + width - logoWidth - 14, y + (height - logoHeight) / 2, logoWidth, logoHeight);
+  } else {
+    context.fillStyle = '#165340';
+    context.font = '900 18px Montserrat, Inter, Arial, sans-serif';
+    context.textAlign = 'right';
+    context.fillText('Aim4price', x + width - 14, y + height / 2 + 1);
+  }
+
+  context.fillStyle = '#50655e';
+  context.font = '750 13px Montserrat, Inter, Arial, sans-serif';
+  context.textAlign = 'left';
+  context.fillText('CREATED WITH', x + 15, y + height / 2 + 1);
+  context.restore();
+}
+
+function drawBrandedAdvertDetails(
+  context: CanvasRenderingContext2D,
+  listing: MarketplaceListing,
+  x: number,
+  y: number,
+  width: number,
+  textColor: string,
+  accentColor: string,
+  options: { compact?: boolean; centered?: boolean } = {},
+) {
+  context.save();
+  context.fillStyle = textColor;
+  context.textAlign = options.centered ? 'center' : 'left';
+  const textX = options.centered ? x + width / 2 : x;
+  context.font = `950 ${options.compact ? 38 : 52}px Montserrat, Inter, Arial, sans-serif`;
+  context.letterSpacing = '-1.8px';
+  const titleBottom = drawWrappedCanvasText(
+    context,
+    listingDisplayTitle(listing),
+    textX,
+    y,
+    width,
+    options.compact ? 43 : 57,
+    2,
+  );
+  context.letterSpacing = '0px';
+  context.font = `750 ${options.compact ? 22 : 27}px Montserrat, Inter, Arial, sans-serif`;
+  context.globalAlpha = 0.78;
+  context.fillText(
+    fitCanvasText(
+      context,
+      `${listing.yearModel || 'N/A'} · ${formatUsage(listing)} · ${formatConditionLabel(getListingConditionKey(listing))}`,
+      width,
+    ),
+    textX,
+    titleBottom + 10,
+  );
+  context.globalAlpha = 1;
+
+  context.fillStyle = accentColor;
+  const lineX = options.centered ? x + width * 0.26 : x;
+  context.fillRect(lineX, titleBottom + 35, options.centered ? width * 0.48 : Math.min(170, width), 7);
+  context.restore();
+}
+
+function drawAlternateBrandedAdCanvas(
+  context: CanvasRenderingContext2D,
+  listing: MarketplaceListing,
+  templateId: 'price-focus' | 'photo-first' | 'classic' | 'minimal',
+  listingImage: HTMLImageElement | undefined,
+  sellerLogo: HTMLImageElement | null,
+  aim4priceLogo: HTMLImageElement | null,
+) {
+  const width = JPEG_AD_WIDTH;
+  const height = JPEG_AD_HEIGHT;
+  const primary = listing.adBrand?.primaryColor || '#165340';
+  const secondary = listing.adBrand?.secondaryColor || '#0D3329';
+  const accent = listing.adBrand?.accentColor || '#F2B84B';
+  const primaryText = canvasContrastColor(primary);
+  const secondaryText = canvasContrastColor(secondary);
+  const sellerBrand = listing.adBrand?.businessName || listing.sellerCompany || listing.sellerName || 'Marketplace seller';
+  const price = `${money(listing.askingPriceExVat)} ${getAdVatLabel(listing)}`;
+  const contact = `${getAdSellerName(listing)}  ·  ${getAdSellerPhone(listing)}`;
+
+  context.clearRect(0, 0, width, height);
+  context.fillStyle = templateId === 'minimal' ? '#f7f8f7' : primary;
+  context.fillRect(0, 0, width, height);
+
+  if (templateId === 'photo-first') {
+    if (listingImage) drawCoverImage(context, listingImage, 34, 34, 1532, 832, 34);
+    else drawAdPlaceholder(context, listing, 34, 34, 1532, 832);
+
+    const overlay = context.createLinearGradient(0, 470, 0, 866);
+    overlay.addColorStop(0, 'rgba(0,0,0,0)');
+    overlay.addColorStop(1, 'rgba(0,0,0,0.84)');
+    context.fillStyle = overlay;
+    context.fillRect(34, 390, 1532, 476);
+    drawAdLogoBadge(context, sellerLogo, 68, 67, 310, 82, sellerBrand);
+
+    drawBrandedAdvertDetails(context, listing, 80, 610, 920, '#ffffff', accent);
+    fillRoundedRect(context, 1035, 642, 470, 112, 22, accent);
+    context.save();
+    context.fillStyle = canvasContrastColor(accent);
+    context.textAlign = 'center';
+    context.textBaseline = 'middle';
+    context.font = '950 44px Montserrat, Inter, Arial, sans-serif';
+    context.fillText(fitCanvasText(context, price, 430), 1270, 700);
+    context.fillStyle = '#ffffff';
+    context.font = '800 25px Montserrat, Inter, Arial, sans-serif';
+    context.fillText(fitCanvasText(context, contact, 430), 1270, 797);
+    context.restore();
+    drawAim4priceCredit(context, aim4priceLogo, 1318, 64, 214, 52, true);
+    return;
+  }
+
+  if (templateId === 'minimal') {
+    context.fillStyle = '#ffffff';
+    context.fillRect(0, 0, width, height);
+    if (listingImage) drawCoverImage(context, listingImage, 720, 42, 838, 816, 28);
+    else drawAdPlaceholder(context, listing, 720, 42, 838, 816);
+    context.fillStyle = primary;
+    context.fillRect(680, 0, 12, height);
+    drawAdLogoBadge(context, sellerLogo, 62, 58, 326, 86, sellerBrand);
+    drawBrandedAdvertDetails(context, listing, 66, 245, 550, secondary, accent, { compact: true });
+    context.save();
+    context.fillStyle = secondary;
+    context.font = '950 55px Montserrat, Inter, Arial, sans-serif';
+    context.fillText(fitCanvasText(context, money(listing.askingPriceExVat), 545), 66, 520);
+    context.fillStyle = primary;
+    context.font = '850 24px Montserrat, Inter, Arial, sans-serif';
+    context.fillText(getAdVatLabel(listing), 68, 563);
+    context.fillStyle = '#455c54';
+    context.font = '800 26px Montserrat, Inter, Arial, sans-serif';
+    context.fillText(fitCanvasText(context, contact, 550), 68, 680);
+    context.restore();
+    drawAim4priceCredit(context, aim4priceLogo, 62, 794, 230, 54);
+    return;
+  }
+
+  if (templateId === 'classic') {
+    context.fillStyle = '#ffffff';
+    context.fillRect(28, 28, width - 56, height - 56);
+    context.fillStyle = primary;
+    context.fillRect(28, 28, width - 56, 132);
+    context.fillStyle = accent;
+    context.fillRect(28, 160, width - 56, 10);
+    drawAdLogoBadge(context, sellerLogo, 58, 51, 340, 86, sellerBrand);
+    context.save();
+    context.fillStyle = primaryText;
+    context.font = '900 32px Montserrat, Inter, Arial, sans-serif';
+    context.textAlign = 'right';
+    context.fillText(fitCanvasText(context, sellerBrand, 760), 1515, 107);
+    context.restore();
+    if (listingImage) drawCoverImage(context, listingImage, 62, 207, 880, 594, 12);
+    else drawAdPlaceholder(context, listing, 62, 207, 880, 594);
+    drawBrandedAdvertDetails(context, listing, 990, 260, 500, secondary, accent, { compact: true });
+    fillRoundedRect(context, 986, 498, 510, 106, 4, accent);
+    context.save();
+    context.fillStyle = canvasContrastColor(accent);
+    context.textAlign = 'center';
+    context.textBaseline = 'middle';
+    context.font = '950 41px Montserrat, Inter, Arial, sans-serif';
+    context.fillText(fitCanvasText(context, price, 470), 1241, 552);
+    context.fillStyle = secondary;
+    context.font = '850 27px Montserrat, Inter, Arial, sans-serif';
+    context.fillText(fitCanvasText(context, contact, 490), 1241, 688);
+    context.restore();
+    drawAim4priceCredit(context, aim4priceLogo, 1260, 772, 230, 54);
+    return;
+  }
+
+  // Price Focus
+  context.fillStyle = '#ffffff';
+  context.fillRect(30, 30, width - 60, height - 60);
+  context.fillStyle = secondary;
+  context.fillRect(30, 30, width - 60, 130);
+  drawAdLogoBadge(context, sellerLogo, 62, 53, 320, 84, sellerBrand);
+  if (listingImage) drawCoverImage(context, listingImage, 62, 194, 835, 622, 22);
+  else drawAdPlaceholder(context, listing, 62, 194, 835, 622);
+  fillRoundedRect(context, 940, 192, 586, 176, 22, accent);
+  context.save();
+  context.fillStyle = canvasContrastColor(accent);
+  context.textAlign = 'center';
+  context.textBaseline = 'middle';
+  context.font = '950 57px Montserrat, Inter, Arial, sans-serif';
+  context.fillText(fitCanvasText(context, money(listing.askingPriceExVat), 530), 1233, 260);
+  context.font = '850 28px Montserrat, Inter, Arial, sans-serif';
+  context.fillText(getAdVatLabel(listing), 1233, 326);
+  context.restore();
+  drawBrandedAdvertDetails(context, listing, 962, 442, 540, secondary, accent, { compact: true, centered: true });
+  context.save();
+  context.fillStyle = secondary;
+  context.font = '850 28px Montserrat, Inter, Arial, sans-serif';
+  context.textAlign = 'center';
+  context.fillText(fitCanvasText(context, contact, 530), 1233, 701);
+  context.fillStyle = secondary;
+  context.font = '750 18px Montserrat, Inter, Arial, sans-serif';
+  context.fillText(fitCanvasText(context, getAdProvince(listing), 530), 1233, 755);
+  context.restore();
+  drawAim4priceCredit(context, aim4priceLogo, 1278, 792, 230, 54);
+}
+
 async function drawListingAdCanvas(
   context: CanvasRenderingContext2D,
   listing: MarketplaceListing,
@@ -1525,8 +1756,11 @@ async function drawListingAdCanvas(
   const listingImages = (
     await Promise.all(imageSources.map((imageSrc) => loadCanvasImage(imageSrc).catch(() => null)))
   ).filter((image): image is HTMLImageElement => image !== null);
-  const logoImage = await loadCanvasImage(JPEG_AD_LOGO_SRC).catch(() => null);
-  const watermarkImage = await loadCanvasImage(JPEG_AD_WATERMARK_SRC).catch(() => logoImage);
+  const aim4priceLogoImage = await loadCanvasImage(JPEG_AD_LOGO_SRC).catch(() => null);
+  const sellerLogoImage = listing.adBrand?.logoUrl
+    ? await loadCanvasImage(listing.adBrand.logoUrl).catch(() => null)
+    : null;
+  const watermarkImage = await loadCanvasImage(JPEG_AD_WATERMARK_SRC).catch(() => aim4priceLogoImage);
   const width = JPEG_AD_WIDTH;
   const height = JPEG_AD_HEIGHT;
   const margin = 64;
@@ -1546,12 +1780,29 @@ async function drawListingAdCanvas(
   const detailCardTop = 416;
   const contactTop = 642;
   const contactHeight = 218;
+  const brandPrimary = listing.adBrand?.primaryColor || '#165340';
+  const brandSecondary = listing.adBrand?.secondaryColor || '#0D3329';
+  const brandAccent = listing.adBrand?.accentColor || '#F2B84B';
+  const templateId = listing.adBrand?.templateId || 'showcase';
+  const sellerBrand = listing.adBrand?.businessName || listing.sellerCompany || listing.sellerName || 'Marketplace seller';
+
+  if (templateId !== 'showcase') {
+    drawAlternateBrandedAdCanvas(
+      context,
+      listing,
+      templateId,
+      listingImages[0],
+      sellerLogoImage,
+      aim4priceLogoImage,
+    );
+    return;
+  }
 
   context.clearRect(0, 0, width, height);
 
   const backgroundGradient = context.createLinearGradient(0, 0, width, height);
-  backgroundGradient.addColorStop(0, '#edf3f0');
-  backgroundGradient.addColorStop(1, '#dfe9e4');
+  backgroundGradient.addColorStop(0, `${brandPrimary}18`);
+  backgroundGradient.addColorStop(1, `${brandSecondary}24`);
   context.fillStyle = backgroundGradient;
   context.fillRect(0, 0, width, height);
 
@@ -1572,7 +1823,7 @@ async function drawListingAdCanvas(
 
   drawAdProvincePill(context, province, width - margin - 286, 72, 286, 58);
   drawAdImageShowcase(context, listing, listingImages, photoX, photoY, photoWidth, photoHeight);
-  drawAdLogoBadge(context, logoImage, photoX + 22, photoY + 22, 250, 68);
+  drawAdLogoBadge(context, sellerLogoImage, photoX + 22, photoY + 22, 300, 72, sellerBrand);
 
   context.save();
   context.fillStyle = '#050505';
@@ -1595,7 +1846,8 @@ async function drawListingAdCanvas(
   const adPriceWidth = context.measureText(adPriceText).width;
   context.letterSpacing = '0px';
   context.font = `850 ${Math.max(28, Math.round(priceFontSize * 0.47))}px Montserrat, Inter, Arial, sans-serif`;
-  context.fillText('+ VAT', contentX + Math.min(contentWidth - 118, adPriceWidth + 24), contentY + 58);
+  context.fillStyle = brandPrimary;
+  context.fillText(getAdVatLabel(listing), contentX + Math.min(contentWidth - 118, adPriceWidth + 24), contentY + 58);
 
   context.fillStyle = '#0c0d0d';
   context.font = '850 38px Montserrat, Inter, Arial, sans-serif';
@@ -1628,6 +1880,9 @@ async function drawListingAdCanvas(
   );
 
   drawAdContactCard(context, listing, contentX + 14, contactTop, contentWidth - 14, contactHeight);
+  context.fillStyle = brandAccent;
+  context.fillRect(contentX, 146, Math.min(contentWidth, 190), 7);
+  drawAim4priceCredit(context, aim4priceLogoImage, width - margin - 232, height - 58, 224, 48);
 }
 
 function canvasToJpegBlob(canvas: HTMLCanvasElement): Promise<Blob> {
@@ -1803,6 +2058,7 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
   const [isCreatingJpegAd, setIsCreatingJpegAd] = useState(false);
   const [createListingModalOpen, setCreateListingModalOpen] = useState(false);
   const [listingQueryId, setListingQueryId] = useState('');
+  const [openCreatedAdFromUrl, setOpenCreatedAdFromUrl] = useState(false);
   const [sectorFilter, setSectorFilter] = useState<SectorKey | ''>('');
   const [familyFilter, setFamilyFilter] = useState('');
   const [dealRatingFilter, setDealRatingFilter] = useState<DealRatingFilterValue>('any');
@@ -1813,6 +2069,7 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
   const [dealerListingView, setDealerListingView] = useState<DealerListingView>('browse');
   const [dealerFiltersOpen, setDealerFiltersOpen] = useState(false);
   const modalDetailsRef = useRef<HTMLElement | null>(null);
+  const createdAdOpenedRef = useRef('');
   const resultsAreaRef = useRef<HTMLElement | null>(null);
   const [modalScrollState, setModalScrollState] = useState({ visible: false, top: 0, height: 100 });
 
@@ -1917,6 +2174,7 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
     const syncListingFromUrl = () => {
       const searchParams = new URLSearchParams(window.location.search);
       setListingQueryId(String(searchParams.get('listing') ?? '').trim());
+      setOpenCreatedAdFromUrl(searchParams.get('createAd') === '1');
     };
 
     syncListingFromUrl();
@@ -2162,7 +2420,12 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
 
     setActiveListing(nextListing);
     setActiveImageIndex(0);
-  }, [isSignedIn, items, listingQueryId]);
+    if (openCreatedAdFromUrl && createdAdOpenedRef.current !== listingQueryId) {
+      createdAdOpenedRef.current = listingQueryId;
+      setShareListing(nextListing);
+      setShareFeedback('Your advert is live on Marketplace. Download the JPEG or share the listing below.');
+    }
+  }, [isSignedIn, items, listingQueryId, openCreatedAdFromUrl]);
 
   useEffect(() => {
     if (!activeListing) {

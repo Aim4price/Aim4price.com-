@@ -1,6 +1,8 @@
 import { getDb } from './db';
 import { ensureAccountProfileColumns } from './account-profile';
 import { calculateMarketplaceDealRating, type MarketplaceListing } from './marketplace';
+import { normalizeAdBrandSnapshot, toAdBrandSnapshot } from './ad-studio';
+import { getAdBrandKitForUser } from './ad-studio-db';
 
 const FALLBACK_MARKETPLACE_IMAGE = '/brand/Tractor.png';
 const PUBLIC_MARKETPLACE_CONTACT_NAME = 'Kuyler';
@@ -307,6 +309,7 @@ async function ensureMarketplaceColumns(): Promise<void> {
       add column if not exists marketplace_seller_email text,
       add column if not exists marketplace_province text,
       add column if not exists marketplace_area text,
+      add column if not exists marketplace_ad_brand jsonb,
       add column if not exists photo_urls jsonb not null default '[]'::jsonb
   `);
 
@@ -700,7 +703,10 @@ async function createMarketplaceListingSnapshot(row: MarketplaceAssetRow): Promi
         brandName,
         modelName,
         normalizeListingModelName(modelName),
-        JSON.stringify(pickJsonObject(pick(row, ['specs_json']))),
+        JSON.stringify({
+          ...pickJsonObject(pick(row, ['specs_json'])),
+          marketplaceAdBrand: pick(row, ['marketplace_ad_brand']) ?? undefined,
+        }),
       ],
     );
   } catch (error) {
@@ -784,6 +790,9 @@ function buildMarketplaceListing(
   const familyLabel = linkedFamilyLabel || assetKindFamilyLabel;
   const familyKey = linkedFamilyKey || slugify(familyLabel);
   const conditionKey = normalizeConditionKey(pick(row, ['condition', 'valuation_last_condition']));
+  const adBrand = normalizeAdBrandSnapshot(pick(row, ['marketplace_ad_brand']), {
+    exposeContact: options.exposeContact,
+  });
 
   return {
     id: `asset-${assetId}`,
@@ -833,6 +842,7 @@ function buildMarketplaceListing(
     publishedBy: 'asset-register',
     assetKind: assetKind || undefined,
     canManage: Boolean(options.viewerUserId && options.viewerUserId === asText(row.user_id)),
+    adBrand: adBrand ?? undefined,
   };
 }
 
@@ -894,6 +904,7 @@ export async function publishAssetRegisterItemToMarketplace(input: {
   province?: string | null;
   area?: string | null;
   photos?: string[] | null;
+  brandKitId?: string | null;
 }): Promise<MarketplaceListing> {
   await ensureMarketplaceColumns();
 
@@ -974,6 +985,12 @@ export async function publishAssetRegisterItemToMarketplace(input: {
   const sellerEmail = asText(input.sellerEmail) || asText(row.profile_email);
   const province = asText(input.province) || asText(row.profile_province);
   const area = asText(input.area) || asText(row.profile_location) || asText(row.profile_town_city);
+  const requestedBrandKitId = asText(input.brandKitId);
+  const brandKit = await getAdBrandKitForUser(input.userId, requestedBrandKitId || null);
+
+  if (requestedBrandKitId && !brandKit) {
+    throw new Error('Choose a valid Brand Kit before creating the advert.');
+  }
 
   const updateValues: unknown[] = [
     input.userId,
@@ -1001,6 +1018,11 @@ export async function publishAssetRegisterItemToMarketplace(input: {
   const incomingPhotos = Array.isArray(input.photos)
     ? input.photos.map((entry) => safeImage(entry)).filter(Boolean)
     : [];
+
+  if (brandKit) {
+    updateValues.push(JSON.stringify(toAdBrandSnapshot(brandKit)));
+    updateAssignments.push(`marketplace_ad_brand = $${updateValues.length}::jsonb`);
+  }
 
   if (incomingPhotos.length) {
     const mergedPhotosJson = JSON.stringify(mergePhotoLists(buildPhotoList(row), incomingPhotos));

@@ -9545,7 +9545,8 @@
 }
 
 .marketplaceField input,
-.marketplaceField textarea {
+.marketplaceField textarea,
+.marketplaceField select {
   width: 100%;
   border: 1px solid rgba(198, 217, 231, 0.98);
   border-radius: 0.9rem;
@@ -9568,8 +9569,24 @@
   resize: vertical;
 }
 
+.marketplaceField select {
+  min-height: 3.15rem;
+  padding: 0 1rem;
+}
+
+.marketplaceField small {
+  color: #657b73;
+  line-height: 1.45;
+}
+
+.marketplaceField small a {
+  color: #176247;
+  font-weight: 850;
+}
+
 .marketplaceField input:focus,
 .marketplaceField textarea:focus,
+.marketplaceField select:focus,
 .marketplaceCurrencyInput:focus-within {
   border-color: #165340;
   box-shadow: 0 0 0 4px rgba(22, 83, 64, 0.12);
@@ -10925,6 +10942,7 @@
 .field textarea,
 .modalInputField input,
 .marketplaceField input,
+.marketplaceField select,
 .marketplaceField textarea,
 .finalReplacementField input {
   width: 100%;

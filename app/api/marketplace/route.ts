@@ -138,6 +138,7 @@ export async function POST(request: NextRequest) {
     province?: unknown;
     area?: unknown;
     photos?: unknown;
+    brandKitId?: unknown;
   };
   const assetId = String(body.assetId ?? '').trim();
 
@@ -154,6 +155,7 @@ export async function POST(request: NextRequest) {
   let province = String(body.province ?? '').trim();
   let area = String(body.area ?? '').trim();
   const photoUrls = normalizePhotos(body.photos);
+  const brandKitId = String(body.brandKitId ?? '').trim();
 
   try {
     const profile = await getAccountProfile({
@@ -183,6 +185,7 @@ export async function POST(request: NextRequest) {
       province: province || null,
       area: area || null,
       photos: photoUrls,
+      brandKitId: brandKitId || null,
     });
 
     return NextResponse.json({
