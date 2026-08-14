@@ -912,7 +912,7 @@ function buildListingShareUrl(listing: MarketplaceListing): string {
 function buildListingShareText(listing: MarketplaceListing): string {
   return [
     listingDisplayTitle(listing),
-    `${money(listing.askingPriceExVat)} + VAT`,
+    `${money(listing.askingPriceExVat)} ${getAdVatLabel(listing)}`,
     formatLocation(listing),
     'View this listing on Aim4price.',
   ].join(' • ');
@@ -1733,7 +1733,7 @@ function drawAlternateBrandedAdCanvas(
   context.font = '850 28px Montserrat, Inter, Arial, sans-serif';
   context.textAlign = 'center';
   context.fillText(fitCanvasText(context, contact, 530), 1233, 701);
-  context.fillStyle = secondaryText;
+  context.fillStyle = secondary;
   context.font = '750 18px Montserrat, Inter, Arial, sans-serif';
   context.fillText(fitCanvasText(context, getAdProvince(listing), 530), 1233, 755);
   context.restore();
