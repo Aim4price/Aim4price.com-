@@ -8,6 +8,7 @@ import {
   type TractorType,
 } from './tractor-data';
 import type { SavedItem } from './register';
+import type { AdBrandSnapshot } from './ad-studio';
 
 export const MARKETPLACE_STORAGE_KEY = 'aim4price-tractors-kit-marketplace';
 export const FALLBACK_MARKETPLACE_IMAGE = '/brand/Tractor.png';
@@ -97,6 +98,7 @@ export type MarketplaceListing = {
   publishedBy: 'seed' | 'asset-register';
   assetKind?: string;
   canManage?: boolean;
+  adBrand?: AdBrandSnapshot;
   sectorKey?: string;
   sectorLabel?: string;
   familyKey?: string;

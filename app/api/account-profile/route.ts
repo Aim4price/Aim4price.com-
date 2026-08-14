@@ -46,6 +46,9 @@ export async function GET() {
         marketplacePhone: profile.marketplacePhone,
         marketplaceEmail: profile.marketplaceEmail,
         marketplaceLocation: profile.marketplaceLocation,
+        logoUrl: profile.logoUrl,
+        phone: profile.phone,
+        websiteUrl: profile.websiteUrl,
       },
     });
   }

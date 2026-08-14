@@ -20,6 +20,7 @@ const BROWSE_PARAM_KEYS = [
   'query',
   'listing',
   'preview',
+  'createAd',
 ] as const;
 
 type MarketplaceEntryPageProps = {

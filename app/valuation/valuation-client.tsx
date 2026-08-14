@@ -45,6 +45,7 @@ import {
   getGuestValuationCount,
   incrementGuestValuationCount,
 } from '../../lib/guest-valuation-limit';
+import type { AdBrandKit } from '../../lib/ad-studio';
 
 type Step = 1 | 2 | 3 | 4 | 5;
 type MethodKey = 'aim4price';
@@ -360,6 +361,8 @@ type AccountProfile = Partial<{
   marketplacePhone: string;
   marketplaceEmail: string;
   marketplaceLocation: string;
+  logoUrl: string;
+  websiteUrl: string;
 }>;
 
 type AccountProfileApiResponse = {
@@ -375,6 +378,7 @@ type MarketplacePendingPhoto = {
 };
 
 type MarketplacePublishDraft = {
+  brandKitId: string;
   askingPriceExVat: string;
   marketplaceNotes: string;
   sellerName: string;
@@ -383,6 +387,12 @@ type MarketplacePublishDraft = {
   sellerEmail: string;
   province: string;
   area: string;
+};
+
+type AdBrandKitsApiResponse = {
+  ok: boolean;
+  kits?: AdBrandKit[];
+  selectedBrandKitId?: string | null;
 };
 
 type MarketplaceUploadApiResponse = {
@@ -1781,6 +1791,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
   const [accountantShareId, setAccountantShareId] = useState('');
   const [accountantRegisterId, setAccountantRegisterId] = useState('');
   const [accountProfile, setAccountProfile] = useState<AccountProfile | null>(null);
+  const [adBrandKits, setAdBrandKits] = useState<AdBrandKit[]>([]);
   const [marketplaceDraft, setMarketplaceDraft] = useState<MarketplacePublishDraft | null>(null);
   const [marketplaceIntroOpen, setMarketplaceIntroOpen] = useState(false);
   const [marketplacePhotoFiles, setMarketplacePhotoFiles] = useState<MarketplacePendingPhoto[]>([]);
@@ -2412,14 +2423,26 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
           } catch {
             if (mounted) setAccountProfile(null);
           }
+
+          try {
+            const brandKitsResponse = await fetch('/api/ad-studio/brand-kits', { credentials: 'include', cache: 'no-store' });
+            const brandKitsData = (await brandKitsResponse.json()) as AdBrandKitsApiResponse;
+            if (mounted && brandKitsResponse.ok && brandKitsData.ok) {
+              setAdBrandKits(brandKitsData.kits ?? []);
+            }
+          } catch {
+            if (mounted) setAdBrandKits([]);
+          }
         } else {
           setAccountProfile(null);
+          setAdBrandKits([]);
         }
       } catch {
         if (!mounted) return;
         setIsSignedIn(false);
         setAccountType('public');
         setAccountProfile(null);
+        setAdBrandKits([]);
       } finally {
         if (mounted) {
           setGuestValuationCount(getGuestValuationCount());
@@ -3926,16 +3949,18 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
   function buildDefaultMarketplaceDraft(): MarketplacePublishDraft {
     const selectedValue = headlineValue ?? 0;
     const title = buildMarketplaceEstimateTitle();
+    const defaultBrandKit = adBrandKits.find((kit) => kit.isDefault) ?? adBrandKits[0];
     const sellerName =
       (isSignedIn
-        ? accountProfile?.marketplaceSellerName || accountProfile?.displayName || accountProfile?.name || accountProfile?.businessName
+        ? defaultBrandKit?.contactName || accountProfile?.marketplaceSellerName || accountProfile?.displayName || accountProfile?.name || accountProfile?.businessName
         : '') || '';
-    const sellerCompany = (isSignedIn ? accountProfile?.businessName : '') || '';
-    const sellerPhone = (isSignedIn ? accountProfile?.marketplacePhone || accountProfile?.phone : '') || '';
-    const sellerEmail = (isSignedIn ? accountProfile?.marketplaceEmail : '') || '';
+    const sellerCompany = (isSignedIn ? defaultBrandKit?.businessName || accountProfile?.businessName : '') || '';
+    const sellerPhone = (isSignedIn ? defaultBrandKit?.phone || accountProfile?.marketplacePhone || accountProfile?.phone : '') || '';
+    const sellerEmail = (isSignedIn ? defaultBrandKit?.email || accountProfile?.marketplaceEmail : '') || '';
     const area = (isSignedIn ? accountProfile?.marketplaceLocation || accountProfile?.townCity : '') || '';
 
     return {
+      brandKitId: defaultBrandKit?.id ?? '',
       askingPriceExVat: selectedValue > 0 ? formatMoneyInput(selectedValue) : '',
       marketplaceNotes: `${title} listed from a current Aim4price estimate.`,
       sellerName,
@@ -3988,7 +4013,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     }
 
     if (!isSignedIn) {
-      setMessage('Create an account or sign in to save this estimate to your Asset Register or send it to Marketplace.');
+      setMessage('Create an account or sign in to save this estimate or create a Marketplace advert.');
       return;
     }
 
@@ -4061,7 +4086,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     }
 
     if (!isSignedIn) {
-      setError('Create an account or sign in to save this estimate to your Asset Register or send it to Marketplace.');
+      setError('Create an account or sign in to save this estimate or create a Marketplace advert.');
       return null;
     }
 
@@ -4216,6 +4241,19 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     setMarketplaceDraft((current) => (current ? { ...current, [name]: value } : current));
   }
 
+  function handleMarketplaceBrandKitChange(event: ChangeEvent<HTMLSelectElement>) {
+    const brandKitId = event.target.value;
+    const selectedKit = adBrandKits.find((kit) => kit.id === brandKitId);
+    setMarketplaceDraft((current) => current ? {
+      ...current,
+      brandKitId,
+      sellerName: selectedKit?.contactName || current.sellerName,
+      sellerCompany: selectedKit?.businessName || current.sellerCompany,
+      sellerPhone: selectedKit?.phone || current.sellerPhone,
+      sellerEmail: selectedKit?.email || current.sellerEmail,
+    } : current);
+  }
+
   function handleMarketplacePriceChange(event: ChangeEvent<HTMLInputElement>) {
     const next = formatMoneyInput(event.target.value);
     setMarketplaceDraft((current) => (current ? { ...current, askingPriceExVat: next } : current));
@@ -4291,13 +4329,13 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     event.preventDefault();
 
     if (!resultState || !marketplaceDraft) {
-      setMarketplacePublishError('Run an estimate before sending to marketplace.');
+      setMarketplacePublishError('Run an estimate before creating an advert.');
       return;
     }
 
     const selectedValue = getHeadlineValue(resultState, selectedMethod, replacementPriceBasis);
     if (selectedValue === null) {
-      setMarketplacePublishError('Choose an available value before sending to marketplace.');
+      setMarketplacePublishError('Choose an available value before creating the advert.');
       return;
     }
 
@@ -4369,6 +4407,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
           province: marketplaceDraft.province,
           area: marketplaceDraft.area,
           photos: photoUrls,
+          brandKitId: marketplaceDraft.brandKitId || null,
         }),
       });
       const published = (await publishResponse.json()) as MarketplaceApiResponse;
@@ -4382,7 +4421,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
       setMarketplaceDraft(null);
       setSavedMarketplaceAssetId(null);
       router.push(
-        `${marketplacePath}?listing=${encodeURIComponent(String(listingReference))}`,
+        `${marketplacePath}?listing=${encodeURIComponent(String(listingReference))}&createAd=1`,
       );
     } catch (error) {
       console.error(error);
@@ -4413,7 +4452,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     openFinalSaveModal('asset-register');
   }
 
-  function saveAndSendToMarketplace() {
+  function createAdFromEstimate() {
     openFinalSaveModal('marketplace');
   }
 
@@ -7161,10 +7200,10 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                       <button
                         type="button"
                         className={styles.resultAlternateActionButton}
-                        onClick={saveAndSendToMarketplace}
+                        onClick={createAdFromEstimate}
                         disabled={saveLoading || isPublishingMarketplace || replacementRecalculateLoading || advancedRecalculateLoading || !canUseMarketplacePublishFlow || headlineValue === null}
                       >
-                        {saveLoading && finalSaveIntent === 'marketplace' ? 'Saving...' : isPublishingMarketplace ? 'Sending...' : 'Send to Marketplace'}
+                        {saveLoading && finalSaveIntent === 'marketplace' ? 'Saving...' : isPublishingMarketplace ? 'Creating ad...' : 'Create Ad'}
                       </button>
                       {!compactAppMode ? (
                         <button
@@ -7179,7 +7218,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                     </>
                   ) : (
                     <div className={styles.resultSignedOutNotice}>
-                      <p>Sign in to save this estimate to your Asset Register or send it to Marketplace.</p>
+                      <p>Sign in to save this estimate or create a Marketplace advert.</p>
                     </div>
                   )}
                   <button
@@ -7223,9 +7262,9 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     finalSaveReplacementPrice > 0 &&
     !finalSaveHasPendingReplacementPrice;
   const finalSaveTitle = finalSaveIntent === 'marketplace'
-    ? 'Send to Marketplace'
+    ? 'Create advert'
     : ownerAppMode ? 'Save to My Assets' : 'Save to Asset Register';
-  const finalSaveCta = finalSaveIntent === 'marketplace' ? 'Save and continue to Marketplace' : 'Confirm and save';
+  const finalSaveCta = finalSaveIntent === 'marketplace' ? 'Save and continue to advert details' : 'Confirm and save';
   const isSectorIntroStep = step === 1 && !selectedSector;
   const compactPathChoicePage = compactAppMode && step === 3 && !flowMode;
 
@@ -7485,7 +7524,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
             <h2 id="marketplace-intro-title">Get an Aim4price value before the listing goes live.</h2>
             <p>
               The marketplace only accepts listings that start with an Aim4price estimate. Run the estimate first, then use
-              Send to Marketplace on the result screen to confirm the asking price, photos and seller details.
+              Create Ad on the result screen to confirm the asking price, photos, Brand Kit and seller details.
             </p>
             <div className={styles.marketplaceIntroNote}>
               {!isSignedIn ? (
@@ -7539,9 +7578,9 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
             </button>
 
             <div className={styles.marketplacePublishHeader}>
-              <span>Send to marketplace</span>
-              <h2>Confirm the marketplace listing.</h2>
-              <p>Check the title, asking price, photos and seller details before it goes live.</p>
+              <span>Create advert</span>
+              <h2>Confirm the advert and Marketplace listing.</h2>
+              <p>One confirmation creates the branded advert and publishes it to Marketplace automatically.</p>
             </div>
 
             <div className={styles.marketplaceSummaryGrid}>
@@ -7559,6 +7598,21 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
 
             <div className={styles.marketplacePublishGrid}>
               <section className={styles.marketplacePublishPanel}>
+                <label className={styles.marketplaceField}>
+                  <span>Brand Kit</span>
+                  <select name="brandKitId" value={marketplaceDraft.brandKitId} onChange={handleMarketplaceBrandKitChange}>
+                    {!adBrandKits.length ? <option value="">Aim4price standard</option> : null}
+                    {adBrandKits.map((kit) => (
+                      <option key={kit.id} value={kit.id}>{kit.name}{kit.isDefault ? ' — default' : ''}</option>
+                    ))}
+                  </select>
+                  <small>
+                    {adBrandKits.length
+                      ? 'Your saved logo, colours, wording and contact details will be applied.'
+                      : 'No Brand Kit yet. The Aim4price standard layout will be used.'}
+                    {' '}<a href={dealerAppMode ? '/dealer/ad-studio' : '/ad-studio'}>Open Ad Studio</a>
+                  </small>
+                </label>
                 <label className={styles.marketplaceField}>
                   <span>Asking price excl. VAT</span>
                   <div className={styles.marketplaceCurrencyInput}>
@@ -7663,7 +7717,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                 Close
               </button>
               <button type="submit" className={styles.primaryButton} disabled={isPublishingMarketplace}>
-                {isPublishingMarketplace ? 'Publishing...' : isSignedIn ? 'Confirm and publish' : 'Create account to publish'}
+                {isPublishingMarketplace ? 'Creating and publishing...' : isSignedIn ? 'Create ad and publish' : 'Create account to publish'}
               </button>
             </div>
           </form>
