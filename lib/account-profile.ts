@@ -14,6 +14,7 @@ import {
   updateAssetRegisterLogo,
 } from "./asset-registers";
 import { isDatabaseSchemaReady } from "./database-schema-readiness";
+import { isMiddlemanAccountSubtype } from "./middleman-account";
 
 export type AccountProfile = {
   userId: string;
@@ -965,7 +966,9 @@ export async function createInitialAccountProfile(
   );
   const initialAccountStatus = isAim4priceAdminEmail(user.email)
     ? "active"
-    : "pending_payment";
+    : isMiddlemanAccountSubtype(initialAccountSubtype)
+      ? "active"
+      : "pending_payment";
   const introducedByOption = normalizeIntroducedByOption(
     input?.introducedByOption,
   );
@@ -977,6 +980,7 @@ export async function createInitialAccountProfile(
   const townCity = asText(input?.townCity);
   const initialPartnerDirectoryEnabled =
     initialAccountType !== "owner" &&
+    !isMiddlemanAccountSubtype(initialAccountSubtype) &&
     (input?.partnerDirectoryEnabled === true ||
       String(input?.partnerDirectoryEnabled ?? "").trim().toLowerCase() === "true");
   const phone = asText(input?.phone);
@@ -1136,7 +1140,9 @@ export async function upsertAccountProfile(
     input.partnerServiceRadiusKm,
   );
   const partnerDirectoryEnabled =
-    normalizedAccountType !== "owner" && Boolean(input.partnerDirectoryEnabled);
+    normalizedAccountType !== "owner" &&
+    !isMiddlemanAccountSubtype(normalizedAccountSubtype) &&
+    Boolean(input.partnerDirectoryEnabled);
   const discoveryParticipationEnabled =
     normalizedAccountType === "owner"
       ? typeof input.discoveryParticipationEnabled === "boolean"

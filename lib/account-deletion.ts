@@ -13,6 +13,7 @@ const USER_ID_TABLES = [
   'asset_register_items',
   'valuation_runs',
   'marketplace_listings',
+  'middleman_showrooms',
   'asset_registers',
   'account_profiles',
   'dealer_app_staff',
@@ -172,3 +173,4 @@ export async function deleteUserWorkspaceDataWithClient(
 ): Promise<void> {
   await deleteUserWorkspaceDataInTransaction(client, userId);
 }
+

@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { getAccountAccess } from "../../lib/account-access";
 import { getAccountProfile } from "../../lib/account-profile";
 import { getAnyServerSession } from "../../lib/auth-session";
+import { isMiddlemanAccountSubtype } from "../../lib/middleman-account";
 import AuthClient from "./auth-client";
 
 export const runtime = "nodejs";
@@ -22,7 +23,13 @@ export default async function AuthPage() {
 
     if (access.isActive) {
       const profile = await getAccountProfile({ id: session.user.id, name: session.user.name, email: session.user.email });
-      redirect(profile.accountType === "dealer" ? "/leads" : "/asset-register");
+      redirect(
+        profile.accountType === "dealer"
+          ? isMiddlemanAccountSubtype(profile.accountSubtype)
+            ? "/my-showroom"
+            : "/leads"
+          : "/asset-register",
+      );
     }
 
     redirect("/pending-payment");
