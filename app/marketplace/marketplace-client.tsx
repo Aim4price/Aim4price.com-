@@ -41,6 +41,10 @@ type MarketplaceClientProps = {
   initialFilters: MarketplaceFilters;
   isSignedIn: boolean;
   accountType?: MarketplaceAccountType | null;
+  initialListings?: MarketplaceListing[];
+  embeddedMode?: boolean;
+  showroomMode?: boolean;
+  exposeSellerContact?: boolean;
 };
 
 type MarketplaceApiResponse = {
@@ -2138,7 +2142,17 @@ function mergeFamilies(records: EquipmentFamilyRecord[]): FamilyOption[] {
   });
 }
 
-export default function MarketplaceClient({ initialFilters, isSignedIn, accountType = 'public', dealerAppMode = false, ownerAppMode = false }: MarketplaceClientProps & { dealerAppMode?: boolean; ownerAppMode?: boolean }) {
+export default function MarketplaceClient({
+  initialFilters,
+  isSignedIn,
+  accountType = 'public',
+  initialListings,
+  embeddedMode = false,
+  showroomMode = false,
+  exposeSellerContact = false,
+  dealerAppMode = false,
+  ownerAppMode = false,
+}: MarketplaceClientProps & { dealerAppMode?: boolean; ownerAppMode?: boolean }) {
   const initialSearch = [initialFilters.brand, initialFilters.model]
     .map((value) => String(value ?? '').trim())
     .filter(Boolean)
@@ -2147,12 +2161,13 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
   const isOwnerAccount = normalizedAccountType === 'owner';
   const isDealerAccount = normalizedAccountType === 'dealer';
   const compactAppMode = dealerAppMode || ownerAppMode;
+  const canExposeSellerContact = isSignedIn || exposeSellerContact;
   const valuationPath = ownerAppMode ? '/owner-app/valuation' : dealerAppMode ? '/dealer/valuation' : '/valuation';
 
   const [query, setQuery] = useState(initialSearch);
-  const [items, setItems] = useState<MarketplaceListing[]>(seedMarketplaceListings);
+  const [items, setItems] = useState<MarketplaceListing[]>(initialListings ?? seedMarketplaceListings);
   const [families, setFamilies] = useState<FamilyOption[]>(FALLBACK_FAMILIES);
-  const [isLoadingListings, setIsLoadingListings] = useState(true);
+  const [isLoadingListings, setIsLoadingListings] = useState(!initialListings);
   const [listingLoadError, setListingLoadError] = useState('');
   const [isLoadingFamilies, setIsLoadingFamilies] = useState(true);
   const [activeListing, setActiveListing] = useState<MarketplaceListing | null>(null);
@@ -2187,6 +2202,13 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
   const [modalScrollState, setModalScrollState] = useState({ visible: false, top: 0, height: 100 });
 
   useEffect(() => {
+    if (showroomMode) {
+      setItems(initialListings ?? []);
+      setIsLoadingListings(false);
+      setListingLoadError('');
+      return undefined;
+    }
+
     let mounted = true;
 
     async function refresh(options: { silent?: boolean } = {}) {
@@ -2239,7 +2261,7 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
       mounted = false;
       window.removeEventListener('focus', refreshSilently);
     };
-  }, []);
+  }, [initialListings, showroomMode]);
 
   useEffect(() => {
     let mounted = true;
@@ -2506,7 +2528,7 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
       window.clearTimeout(timeout);
       window.removeEventListener('resize', syncScrollRail);
     };
-  }, [activeImages.length, activeListing, canManageActiveListing, isSignedIn, updateModalScrollRail]);
+  }, [activeImages.length, activeListing, canManageActiveListing, canExposeSellerContact, updateModalScrollRail]);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -2529,7 +2551,7 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
       return;
     }
 
-    const nextListing = getListingForCurrentViewer(matchedListing, isSignedIn);
+    const nextListing = getListingForCurrentViewer(matchedListing, canExposeSellerContact);
 
     setActiveListing(nextListing);
     setActiveImageIndex(0);
@@ -2538,7 +2560,7 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
       setShareListing(nextListing);
       setShareFeedback('Your advert is live on Marketplace. Download the JPEG or share the listing below.');
     }
-  }, [isSignedIn, items, listingQueryId, openCreatedAdFromUrl]);
+  }, [canExposeSellerContact, items, listingQueryId, openCreatedAdFromUrl]);
 
   useEffect(() => {
     if (!activeListing) {
@@ -2719,7 +2741,7 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
   }
 
   function openListing(listing: MarketplaceListing) {
-    setActiveListing(getListingForCurrentViewer(listing, isSignedIn));
+    setActiveListing(getListingForCurrentViewer(listing, canExposeSellerContact));
     setActiveImageIndex(0);
     setPhotoViewerOpen(false);
     updateListingUrl(listing.id);
@@ -2739,7 +2761,7 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
   }
 
   function openShareSheet(listing: MarketplaceListing) {
-    setShareListing(getListingForCurrentViewer(listing, isSignedIn));
+    setShareListing(getListingForCurrentViewer(listing, canExposeSellerContact));
     setShareFeedback('');
   }
 
@@ -3007,7 +3029,7 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
 
   return (
     <main className={`${styles.page} ${compactAppMode ? dealerStyles.dealerMarketplaceSurface : ''}`}>
-      {!compactAppMode ? (
+      {!compactAppMode && !embeddedMode ? (
         <div className={styles.topBand}>
           <AppHeader active="marketplace" />
         </div>
@@ -3108,12 +3130,14 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
                 ) : null}
               </label>
 
-              <button type="button" className={styles.createButton} onClick={handleCreateListingClick}>
-                <span className={styles.createIcon} aria-hidden="true">
-                  <IconPlus />
-                </span>
-                Create new listing
-              </button>
+              {!showroomMode ? (
+                <button type="button" className={styles.createButton} onClick={handleCreateListingClick}>
+                  <span className={styles.createIcon} aria-hidden="true">
+                    <IconPlus />
+                  </span>
+                  Create new listing
+                </button>
+              ) : null}
               <div className={styles.sidebarDivider} />
             </>
           ) : null}
@@ -3625,7 +3649,7 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
               <section className={styles.modalSection}>
                 <h3>Seller information</h3>
 
-                {isSignedIn ? (
+                {canExposeSellerContact ? (
                   <div className={styles.contactRows}>
                     <div className={styles.contactRow}>
                       <span>Seller</span>

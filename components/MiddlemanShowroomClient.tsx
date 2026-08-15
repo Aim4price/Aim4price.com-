@@ -1,7 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
+import MarketplaceClient from '../app/marketplace/marketplace-client';
 import type { MarketplaceDealRating, MarketplaceListing } from '../lib/marketplace';
 import {
   createMarketplaceAdJpeg,
@@ -284,17 +285,8 @@ export function PublicMiddlemanShowroom({ showroom, listings }: {
   showroom: MiddlemanShowroom;
   listings: MarketplaceListing[];
 }) {
-  const [query, setQuery] = useState('');
-  const [family, setFamily] = useState('all');
-  const families = useMemo(() => Array.from(new Set(listings.map((listing) => listing.familyLabel).filter(Boolean) as string[])).sort(), [listings]);
-  const filtered = useMemo(() => listings.filter((listing) => {
-    const matchesFamily = family === 'all' || listing.familyLabel === family;
-    const haystack = `${listing.title} ${listing.brandName} ${listing.modelName} ${listing.familyLabel} ${listing.location}`.toLowerCase();
-    return matchesFamily && haystack.includes(query.trim().toLowerCase());
-  }), [family, listings, query]);
-
   return (
-    <main className={styles.publicPage}>
+    <div className={styles.publicPage}>
       <header className={styles.publicTopbar}>
         <Link href="/" className={styles.aim4priceMark}>AIM4PRICE</Link>
         <span>Valuation-backed machinery</span>
@@ -319,49 +311,22 @@ export function PublicMiddlemanShowroom({ showroom, listings }: {
         </div>
       </section>
 
-      <section className={styles.publicInventory}>
-        <div className={styles.inventoryHeading}>
-          <div><span>Available machinery</span><h2>{filtered.length} {filtered.length === 1 ? 'listing' : 'listings'}</h2></div>
-          <div className={styles.publicFilters}>
-            <input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search make, model or location" />
-            <select value={family} onChange={(event) => setFamily(event.target.value)} aria-label="Filter by machinery type">
-              <option value="all">All machinery</option>
-              {families.map((item) => <option value={item} key={item}>{item}</option>)}
-            </select>
-          </div>
-        </div>
-
-        {filtered.length ? (
-          <div className={styles.publicGrid}>
-            {filtered.map((listing) => {
-              const rating = listingRating(listing);
-              return (
-                <article className={styles.publicCard} key={listing.id}>
-                  <div className={styles.publicImage}>
-                    <img src={listing.imageSrc || '/brand/Tractor.png'} alt={listing.title} />
-                    {rating ? <span className={`${styles.rating} ${styles[`rating_${rating.value}`]}`}>{rating.label}</span> : null}
-                    {listing.imageUrls.length > 1 ? <small>{listing.imageUrls.length} photos</small> : null}
-                  </div>
-                  <div className={styles.publicCardBody}>
-                    <span>{listing.familyLabel || 'Machinery'} · {listing.location}</span>
-                    <h3>{listing.title}</h3>
-                    <p>{listingDetails(listing)}</p>
-                    <strong>{money(listing.askingPriceExVat)} <small>excl. VAT</small></strong>
-                    {showroom.phone ? <a href={whatsappHref(showroom.phone, listing)} target="_blank" rel="noreferrer">Enquire on WhatsApp</a> : null}
-                  </div>
-                </article>
-              );
-            })}
-          </div>
-        ) : (
-          <div className={styles.publicEmpty}><h3>No matching machinery</h3><p>Try a different search or choose All machinery.</p></div>
-        )}
+      <section className={styles.marketplaceInventory} aria-label={`${showroom.name} showroom inventory`}>
+        <MarketplaceClient
+          initialFilters={{ brand: '', model: '', drive: '', type: '' }}
+          initialListings={listings}
+          isSignedIn={false}
+          accountType="public"
+          embeddedMode
+          showroomMode
+          exposeSellerContact
+        />
       </section>
 
       <footer className={styles.publicFooter}>
         <div><strong>Created with Aim4price</strong><span>Machinery valuation and professional advertising in one flow.</span></div>
         <Link href="/valuation">Value your machinery</Link>
       </footer>
-    </main>
+    </div>
   );
 }
