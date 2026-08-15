@@ -61,6 +61,18 @@ function titleCase(value: string): string {
     .join(' ');
 }
 
+function naturalTitle(value: string): string {
+  const preservedWords = new Set(['AI', 'ATV', 'CAT', 'GPS', 'JCB', 'MF', 'PTO', 'SUV', 'UTV']);
+  return clean(value)
+    .split(/(\s+|\/|-)/)
+    .map((part) => {
+      if (!/[A-Za-z]/.test(part) || part !== part.toUpperCase()) return part;
+      if (/\d/.test(part) || preservedWords.has(part)) return part;
+      return `${part.charAt(0)}${part.slice(1).toLowerCase()}`;
+    })
+    .join('');
+}
+
 function money(value: number): string {
   return new Intl.NumberFormat('en-ZA', {
     style: 'currency',
@@ -209,6 +221,24 @@ function fitText(context: CanvasRenderingContext2D, text: string, maxWidth: numb
   return `${next}…`;
 }
 
+function setFittedFont(
+  context: CanvasRenderingContext2D,
+  text: string,
+  maxWidth: number,
+  weight: number,
+  maximumSize: number,
+  minimumSize: number,
+): number {
+  let size = maximumSize;
+  while (size > minimumSize) {
+    context.font = `${weight} ${size}px Montserrat, Inter, Arial, sans-serif`;
+    if (context.measureText(text).width <= maxWidth) break;
+    size -= 1;
+  }
+  context.font = `${weight} ${size}px Montserrat, Inter, Arial, sans-serif`;
+  return size;
+}
+
 function wrapText(context: CanvasRenderingContext2D, text: string, x: number, y: number, maxWidth: number, lineHeight: number, lines = 2): number {
   const words = text.split(/\s+/).filter(Boolean);
   const output: string[] = [];
@@ -265,7 +295,61 @@ async function loadImage(source: string): Promise<HTMLImageElement | null> {
   });
 }
 
-function drawPhoto(context: CanvasRenderingContext2D, content: MarketplaceAdContent, image: HTMLImageElement | null, index: number, rect: Rect, primary: boolean) {
+function isGenericEquipmentPlaceholder(source: string): boolean {
+  const normalized = clean(source).split(/[?#]/)[0].toLowerCase();
+  return normalized.endsWith('/brand/tractor.png') || normalized === 'brand/tractor.png';
+}
+
+function drawCameraIcon(context: CanvasRenderingContext2D, rect: Rect, color: string) {
+  const unit = Math.max(42, Math.min(94, Math.min(rect.width, rect.height) * .23));
+  const width = unit * 1.36;
+  const height = unit * .86;
+  const x = rect.x + (rect.width - width) / 2;
+  const y = rect.y + (rect.height - height) / 2 - unit * .09;
+  const lineWidth = Math.max(4, unit * .075);
+
+  context.save();
+  context.strokeStyle = color;
+  context.fillStyle = color;
+  context.lineWidth = lineWidth;
+  context.lineCap = 'round';
+  context.lineJoin = 'round';
+
+  roundedPath(context, { x, y: y + unit * .16, width, height: height - unit * .16 }, unit * .14);
+  context.stroke();
+
+  context.beginPath();
+  context.moveTo(x + unit * .25, y + unit * .18);
+  context.lineTo(x + unit * .41, y);
+  context.lineTo(x + unit * .78, y);
+  context.lineTo(x + unit * .95, y + unit * .18);
+  context.stroke();
+
+  context.beginPath();
+  context.arc(x + width * .52, y + height * .57, unit * .22, 0, Math.PI * 2);
+  context.stroke();
+  context.beginPath();
+  context.arc(x + width * .52, y + height * .57, unit * .075, 0, Math.PI * 2);
+  context.fill();
+
+  fillRounded(context, {
+    x: x + width - unit * .27,
+    y: y + unit * .27,
+    width: unit * .13,
+    height: unit * .09,
+  }, unit * .035, color);
+  context.restore();
+}
+
+function drawPhoto(
+  context: CanvasRenderingContext2D,
+  content: MarketplaceAdContent,
+  image: HTMLImageElement | null,
+  index: number,
+  rect: Rect,
+  primary: boolean,
+  options: { showPlaceholderLabel?: boolean } = {},
+) {
   context.save();
   context.shadowColor = 'rgba(9, 35, 28, 0.14)';
   context.shadowBlur = 18;
@@ -279,16 +363,16 @@ function drawPhoto(context: CanvasRenderingContext2D, content: MarketplaceAdCont
     gradient.addColorStop(0, '#eef4f1');
     gradient.addColorStop(1, '#dce8e2');
     fillRounded(context, rect, 21, gradient);
-    context.save();
-    context.fillStyle = '#205c48';
-    context.textAlign = 'center';
-    context.textBaseline = 'middle';
-    context.font = '850 24px Montserrat, Inter, Arial, sans-serif';
-    context.fillText(`PHOTO ${index + 1}`, rect.x + rect.width / 2, rect.y + rect.height / 2 - 12);
-    context.fillStyle = '#778b84';
-    context.font = '700 18px Montserrat, Inter, Arial, sans-serif';
-    context.fillText(fitText(context, content.familyLabel, rect.width - 54), rect.x + rect.width / 2, rect.y + rect.height / 2 + 24);
-    context.restore();
+    drawCameraIcon(context, rect, content.brand.primaryColor);
+    if (options.showPlaceholderLabel !== false) {
+      context.save();
+      context.fillStyle = '#617a71';
+      context.textAlign = 'center';
+      context.textBaseline = 'middle';
+      context.font = '750 17px Montserrat, Inter, Arial, sans-serif';
+      context.fillText(primary ? 'Main photo' : `Photo ${index + 1}`, rect.x + rect.width / 2, rect.y + rect.height * .72);
+      context.restore();
+    }
   }
   strokeRounded(context, rect, 21, primary ? content.brand.primaryColor : 'rgba(255,255,255,.95)', primary ? 5 : 3);
   fillRounded(context, { x: rect.x + 14, y: rect.y + 14, width: 42, height: 42 }, 12, primary ? content.brand.primaryColor : 'rgba(255,255,255,.94)');
@@ -348,6 +432,87 @@ function drawAim4priceCredit(context: CanvasRenderingContext2D, x: number, y: nu
   context.restore();
 }
 
+function displayWebsite(value: string): string {
+  return clean(value)
+    .replace(/^https?:\/\//i, '')
+    .replace(/\/+$/, '');
+}
+
+function optionalBrandContacts(content: MarketplaceAdContent): string[] {
+  return [clean(content.brand.email), displayWebsite(content.brand.website)].filter(Boolean);
+}
+
+function drawPriceCard(context: CanvasRenderingContext2D, content: MarketplaceAdContent, rect: Rect) {
+  const accent = content.brand.accentColor;
+  const foreground = contrast(accent);
+  const price = money(content.askingPriceExVat);
+  const vat = vatLabel(content.brand);
+
+  fillRounded(context, rect, Math.min(18, rect.height * .14), accent);
+  context.save();
+  context.fillStyle = foreground;
+  context.textBaseline = 'middle';
+  context.globalAlpha = .74;
+  context.font = '750 16px Montserrat, Inter, Arial, sans-serif';
+  context.textAlign = 'left';
+  context.fillText('Asking price', rect.x + 24, rect.y + 25);
+  context.globalAlpha = 1;
+
+  context.font = '900 17px Montserrat, Inter, Arial, sans-serif';
+  const vatWidth = Math.max(80, context.measureText(vat).width + 24);
+  const priceLeft = rect.x + 20;
+  const priceWidth = rect.width - vatWidth - 38;
+  setFittedFont(context, price, priceWidth, 950, Math.min(62, rect.height * .43), 38);
+  context.textAlign = 'center';
+  context.fillText(price, priceLeft + priceWidth / 2, rect.y + rect.height * .64);
+
+  context.font = '900 17px Montserrat, Inter, Arial, sans-serif';
+  context.textAlign = 'right';
+  context.fillText(vat, rect.x + rect.width - 20, rect.y + rect.height * .67);
+  context.restore();
+}
+
+function drawContactDetails(
+  context: CanvasRenderingContext2D,
+  content: MarketplaceAdContent,
+  rect: Rect,
+  color: string,
+  options: { wide?: boolean } = {},
+) {
+  const optional = optionalBrandContacts(content);
+  const primaryLine = [clean(content.sellerName), clean(content.sellerPhone)].filter(Boolean).join(' · ');
+  const availableWidth = rect.width;
+
+  context.save();
+  context.strokeStyle = color;
+  context.globalAlpha = .2;
+  context.lineWidth = 1;
+  context.beginPath();
+  context.moveTo(rect.x, rect.y);
+  context.lineTo(rect.x + rect.width, rect.y);
+  context.stroke();
+
+  context.fillStyle = color;
+  context.globalAlpha = .92;
+  context.font = '800 18px Montserrat, Inter, Arial, sans-serif';
+  context.textAlign = 'left';
+  context.textBaseline = 'alphabetic';
+  context.fillText(fitText(context, primaryLine, availableWidth), rect.x, rect.y + 34);
+
+  if (options.wide && optional.length > 1) {
+    context.globalAlpha = .78;
+    context.font = '650 17px Montserrat, Inter, Arial, sans-serif';
+    context.fillText(fitText(context, optional.join(' · '), availableWidth), rect.x, rect.y + 65);
+  } else {
+    optional.slice(0, 2).forEach((line, index) => {
+      context.globalAlpha = .78;
+      context.font = '650 17px Montserrat, Inter, Arial, sans-serif';
+      context.fillText(fitText(context, line, availableWidth), rect.x, rect.y + 65 + index * 29);
+    });
+  }
+  context.restore();
+}
+
 function drawInformationPanel(
   context: CanvasRenderingContext2D,
   content: MarketplaceAdContent,
@@ -357,45 +522,40 @@ function drawInformationPanel(
 ) {
   const primary = content.brand.primaryColor;
   const secondary = content.brand.secondaryColor;
-  const accent = content.brand.accentColor;
   const background = options.light ? '#ffffff' : primary;
   const foreground = options.light ? secondary : contrast(primary);
   context.fillStyle = background;
   context.fillRect(rect.x, rect.y, rect.width, rect.height);
   const pad = Math.max(32, rect.width * .07);
-  drawBrand(context, content, logo, { x: rect.x + pad, y: rect.y + 22, width: rect.width - pad * 2, height: 82 }, !options.light);
-  drawRating(context, content, rect.x + pad, rect.y + 132);
+  drawBrand(context, content, logo, { x: rect.x + pad, y: rect.y + 18, width: rect.width - pad * 2, height: 84 }, !options.light);
+  drawRating(context, content, rect.x + pad, rect.y + 120);
 
-  const titleY = options.priceFirst ? rect.y + 420 : rect.y + 246;
-  const priceY = options.priceFirst ? rect.y + 244 : rect.y + 474;
+  const titleY = options.priceFirst ? rect.y + 398 : rect.y + 222;
+  const priceY = options.priceFirst ? rect.y + 192 : rect.y + 398;
   context.save();
   context.fillStyle = foreground;
-  context.font = '850 38px Montserrat, Inter, Arial, sans-serif';
-  const titleBottom = wrapText(context, content.title, rect.x + pad, titleY, rect.width - pad * 2, 43, 2);
+  context.font = '850 39px Montserrat, Inter, Arial, sans-serif';
+  const titleBottom = wrapText(context, naturalTitle(content.title), rect.x + pad, titleY, rect.width - pad * 2, 44, 2);
   context.globalAlpha = .78;
-  context.font = '700 20px Montserrat, Inter, Arial, sans-serif';
-  context.fillText(fitText(context, `${content.year} · ${content.usage} · ${content.condition}`, rect.width - pad * 2), rect.x + pad, titleBottom + 18);
+  context.font = '700 19px Montserrat, Inter, Arial, sans-serif';
+  context.fillText(fitText(context, `${content.year} · ${content.usage} · ${content.condition}`, rect.width - pad * 2), rect.x + pad, titleBottom + 17);
   context.globalAlpha = 1;
   context.restore();
 
-  fillRounded(context, { x: rect.x + pad, y: priceY, width: rect.width - pad * 2, height: 104 }, 15, accent);
-  context.save();
-  context.fillStyle = contrast(accent);
-  context.font = '950 43px Montserrat, Inter, Arial, sans-serif';
-  context.textAlign = 'center';
-  context.textBaseline = 'middle';
-  context.fillText(fitText(context, money(content.askingPriceExVat), rect.width - pad * 2 - 120), rect.x + rect.width / 2 - 28, priceY + 53);
-  context.font = '900 18px Montserrat, Inter, Arial, sans-serif';
-  context.fillText(vatLabel(content.brand), rect.x + rect.width - pad - 68, priceY + 55);
-  context.restore();
+  drawPriceCard(context, content, {
+    x: rect.x + pad,
+    y: priceY,
+    width: rect.width - pad * 2,
+    height: 144,
+  });
 
-  context.save();
-  context.fillStyle = foreground;
-  context.globalAlpha = .86;
-  context.font = '750 20px Montserrat, Inter, Arial, sans-serif';
-  context.fillText(fitText(context, `${content.sellerName} · ${content.sellerPhone}`, rect.width - pad * 2), rect.x + pad, rect.y + rect.height - 94);
-  context.restore();
-  drawAim4priceCredit(context, rect.x + rect.width - pad, rect.y + rect.height - 34, foreground);
+  drawContactDetails(context, content, {
+    x: rect.x + pad,
+    y: rect.y + rect.height - 196,
+    width: rect.width - pad * 2,
+    height: 120,
+  }, foreground);
+  drawAim4priceCredit(context, rect.x + rect.width - pad, rect.y + rect.height - 25, foreground);
 }
 
 function photoRects(templateId: AdTemplateId, photoRect: Rect): Rect[] {
@@ -459,7 +619,7 @@ export async function renderMarketplaceAdCanvas(
   const sources = options.includeImages === false ? [] : content.imageUrls.slice(0, imageCount);
   const [logo, ...images] = await Promise.all([
     loadImage(content.brand.logoUrl),
-    ...sources.map((source) => loadImage(source)),
+    ...sources.map((source) => isGenericEquipmentPlaceholder(source) ? Promise.resolve(null) : loadImage(source)),
   ]);
 
   const width = MARKETPLACE_AD_WIDTH;
@@ -470,7 +630,7 @@ export async function renderMarketplaceAdCanvas(
 
   if (templateId === 'photo-first') {
     const full: Rect = { x: 28, y: 28, width: width - 56, height: height - 56 };
-    drawPhoto(context, content, images[0] ?? null, 0, full, true);
+    drawPhoto(context, content, images[0] ?? null, 0, full, true, { showPlaceholderLabel: false });
     context.save();
     roundedPath(context, full, 26);
     context.clip();
@@ -480,27 +640,20 @@ export async function renderMarketplaceAdCanvas(
     context.fillStyle = overlay;
     context.fillRect(full.x, full.y, full.width, full.height);
     context.restore();
-    drawBrand(context, content, logo, { x: 72, y: 62, width: 620, height: 84 }, true);
-    drawRating(context, content, 1315, 72);
+    fillRounded(context, { x: 58, y: 50, width: 680, height: 108 }, 18, 'rgba(9, 40, 32, .78)');
+    drawBrand(context, content, logo, { x: 78, y: 62, width: 640, height: 84 }, true);
+    drawRating(context, content, 1320, 68);
     context.save();
     context.fillStyle = '#fff';
-    context.font = '850 50px Montserrat, Inter, Arial, sans-serif';
-    const bottom = wrapText(context, content.title, 76, 622, 850, 56, 2);
+    context.font = '850 51px Montserrat, Inter, Arial, sans-serif';
+    const bottom = wrapText(context, naturalTitle(content.title), 76, 575, 850, 57, 2);
     context.globalAlpha = .8;
-    context.font = '750 24px Montserrat, Inter, Arial, sans-serif';
-    context.fillText(`${content.year} · ${content.usage} · ${content.condition}`, 78, bottom + 12);
+    context.font = '750 23px Montserrat, Inter, Arial, sans-serif';
+    context.fillText(fitText(context, `${content.year} · ${content.usage} · ${content.condition}`, 850), 78, bottom + 15);
     context.restore();
-    fillRounded(context, { x: 1030, y: 644, width: 480, height: 112 }, 17, content.brand.accentColor);
-    context.save();
-    context.fillStyle = contrast(content.brand.accentColor);
-    context.font = '950 42px Montserrat, Inter, Arial, sans-serif';
-    context.textAlign = 'center';
-    context.textBaseline = 'middle';
-    context.fillText(fitText(context, money(content.askingPriceExVat), 340), 1235, 700);
-    context.font = '900 18px Montserrat, Inter, Arial, sans-serif';
-    context.fillText(vatLabel(content.brand), 1438, 702);
-    context.restore();
-    drawAim4priceCredit(context, 1510, 830, '#ffffff');
+    drawPriceCard(context, content, { x: 1012, y: 578, width: 500, height: 168 });
+    drawContactDetails(context, content, { x: 76, y: 755, width: 875, height: 82 }, '#ffffff', { wide: true });
+    drawAim4priceCredit(context, 1510, 832, '#ffffff');
     return templateId;
   }
 
