@@ -21,6 +21,11 @@ import {
   type MarketplaceListing,
 } from '../../lib/marketplace';
 import type { AdTemplateId } from '../../lib/ad-studio';
+import {
+  createMarketplaceAdJpeg as createSharedMarketplaceAdJpeg,
+  downloadMarketplaceAd,
+  marketplaceAdFilename,
+} from '../../lib/marketplace-ad-renderer';
 import { money } from '../../lib/tractor-logic';
 
 type MarketplaceFilters = {
@@ -2801,8 +2806,8 @@ export default function MarketplaceClient({ initialFilters, isSignedIn, accountT
     setShareFeedback('Creating JPEG ad...');
 
     try {
-      const blob = await createListingJpegAd(shareListing);
-      downloadBlob(blob, `${sanitizeDownloadFilename(listingDisplayTitle(shareListing))}-aim4price-ad.jpg`);
+      const { blob } = await createSharedMarketplaceAdJpeg(shareListing);
+      downloadMarketplaceAd(blob, marketplaceAdFilename(listingDisplayTitle(shareListing)));
       setShareFeedback('JPEG ad downloaded.');
     } catch {
       setShareFeedback('JPEG ad could not be created. Please try again.');

@@ -2505,6 +2505,38 @@
   padding: 0;
 }
 
+.middlemanHomeIntro {
+  display: grid;
+  gap: 7px;
+  margin: 0 auto 22px;
+  text-align: center;
+}
+
+.middlemanHomeIntro span {
+  color: #ad6d00;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+
+.middlemanHomeIntro h1 {
+  margin: 0;
+  color: var(--dealer-ink);
+  font-size: clamp(1.85rem, 8vw, 2.6rem);
+  font-weight: 900;
+  letter-spacing: -0.055em;
+  line-height: 1.02;
+}
+
+.middlemanHomeIntro p {
+  max-width: 34rem;
+  margin: 0 auto;
+  color: #62766f;
+  font-size: 0.94rem;
+  line-height: 1.5;
+}
+
 .homeLauncher {
   width: min(100%, 400px);
   min-width: 0;
@@ -2625,6 +2657,14 @@
 
   .homeContent {
     width: min(100%, 820px);
+  }
+
+  .middlemanHomeIntro {
+    margin-bottom: 30px;
+  }
+
+  .middlemanHomeIntro p {
+    font-size: 1.02rem;
   }
 
   .homeLauncher {

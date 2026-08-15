@@ -9674,19 +9674,44 @@
   object-fit: cover;
 }
 
-.marketplacePhotoThumb button {
+.marketplacePhotoCoverBadge {
   position: absolute;
   top: 0.38rem;
-  right: 0.38rem;
-  width: 1.85rem;
-  height: 1.85rem;
-  border: 0;
-  border-radius: 999px;
-  background: rgba(10, 25, 30, 0.74);
+  left: 0.38rem;
+  padding: 0.34rem 0.48rem;
+  border-radius: 0.48rem;
+  background: #165340;
   color: #ffffff;
-  font-size: 1.1rem;
+  font-size: 0.66rem;
+  font-weight: 850;
+  line-height: 1;
+}
+
+.marketplacePhotoControls {
+  position: absolute;
+  right: 0.38rem;
+  bottom: 0.38rem;
+  display: flex;
+  gap: 0.28rem;
+}
+
+.marketplacePhotoControls button {
+  display: grid;
+  width: 2rem;
+  height: 2rem;
+  place-items: center;
+  border: 0;
+  border-radius: 0.55rem;
+  background: rgba(10, 25, 30, 0.82);
+  color: #ffffff;
+  font-size: 0.95rem;
   line-height: 1;
   cursor: pointer;
+}
+
+.marketplacePhotoControls button:disabled {
+  opacity: 0.35;
+  cursor: default;
 }
 
 .marketplaceEmptyPhotos {
@@ -9697,6 +9722,49 @@
   background: rgba(255, 255, 255, 0.82);
   color: #607485;
   font-weight: 650;
+}
+
+.marketplaceAdvertSuccessModal {
+  max-width: 42rem;
+  text-align: left;
+}
+
+.marketplaceAdvertSuccessChecklist {
+  display: grid;
+  gap: 0.55rem;
+  margin: 1.1rem 0;
+  padding: 1rem;
+  border: 1px solid rgba(151, 194, 174, 0.72);
+  border-radius: 1rem;
+  background: #f1faf5;
+  color: #18533f;
+  font-weight: 800;
+}
+
+.marketplaceAdvertSuccessModal .marketplaceIntroActions a {
+  text-align: center;
+}
+
+@media (max-width: 680px) {
+  .marketplacePhotoGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .marketplacePhotoButton {
+    width: 100%;
+    min-height: 3.15rem;
+    justify-self: stretch;
+  }
+
+  .marketplacePhotoControls button {
+    width: 2.35rem;
+    height: 2.35rem;
+  }
+
+  .marketplaceAdvertSuccessModal .marketplaceIntroActions {
+    align-items: stretch;
+    flex-direction: column;
+  }
 }
 
 .marketplaceSellerHeader h3 {

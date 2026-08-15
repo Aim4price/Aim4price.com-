@@ -11,10 +11,16 @@ import {
   type AdTemplateId,
   type AdVatLabel,
 } from '../lib/ad-studio';
+import {
+  getMarketplaceAdRating,
+  renderMarketplaceAdCanvas,
+  type MarketplaceAdContent,
+} from '../lib/marketplace-ad-renderer';
 import styles from './AdStudioClient.module.css';
 
 type AdStudioClientProps = {
   dealerAppMode?: boolean;
+  middlemanMode?: boolean;
 };
 
 type ProfileDefaults = {
@@ -59,13 +65,6 @@ const TEMPLATE_CLASS_NAMES: Record<AdTemplateId, string> = {
   'gallery-three': styles.templateGalleryThree,
   'catalogue-grid': styles.templateCatalogueGrid,
 };
-
-const PREVIEW_PHOTO_CLASSES = [
-  styles.adPhotoOne,
-  styles.adPhotoTwo,
-  styles.adPhotoThree,
-  styles.adPhotoFour,
-];
 
 const EMPTY_KIT: EditableBrandKit = {
   id: '',
@@ -123,7 +122,7 @@ function vatPreview(language: AdLanguage, label: AdVatLabel): string {
   return language === 'af' ? '+ BTW' : '+ VAT';
 }
 
-export default function AdStudioClient({ dealerAppMode = false }: AdStudioClientProps) {
+export default function AdStudioClient({ dealerAppMode = false, middlemanMode = false }: AdStudioClientProps) {
   const [kits, setKits] = useState<AdBrandKit[]>([]);
   const [draft, setDraft] = useState<EditableBrandKit>(EMPTY_KIT);
   const [profileDefaults, setProfileDefaults] = useState<ProfileDefaults>({});
@@ -134,12 +133,52 @@ export default function AdStudioClient({ dealerAppMode = false }: AdStudioClient
   const [error, setError] = useState('');
   const [activeStep, setActiveStep] = useState<StudioStep>(1);
   const editorRef = useRef<HTMLFormElement | null>(null);
+  const previewCanvasRef = useRef<HTMLCanvasElement | null>(null);
 
   const previewName = draft.businessName || draft.contactName || 'Your business';
   const selectedTemplate = useMemo(
     () => AD_TEMPLATE_OPTIONS.find((option) => option.id === draft.templateId) ?? AD_TEMPLATE_OPTIONS[0],
     [draft.templateId],
   );
+  const previewContent = useMemo<MarketplaceAdContent>(() => ({
+    title: '2019 Example 110 Tractor',
+    year: '2019',
+    usage: '3 450 hours',
+    condition: 'Good',
+    familyLabel: 'Tractors',
+    askingPriceExVat: 685_000,
+    aim4priceValueExVat: 700_000,
+    dealRating: 'fair',
+    sellerName: draft.contactName || 'Sales contact',
+    sellerPhone: draft.phone || '082 000 0000',
+    sellerCompany: previewName,
+    imageUrls: Array.from({ length: selectedTemplate.photoCount }, () => '/brand/Tractor.png'),
+    brand: {
+      name: draft.name,
+      templateId: draft.templateId,
+      logoUrl: draft.logoUrl,
+      primaryColor: draft.primaryColor,
+      secondaryColor: draft.secondaryColor,
+      accentColor: draft.accentColor,
+      businessName: draft.businessName,
+      contactName: draft.contactName,
+      phone: draft.phone,
+      email: draft.email,
+      website: draft.website,
+      language: draft.language,
+      vatLabel: draft.vatLabel,
+    },
+  }), [draft, previewName, selectedTemplate.photoCount]);
+  const previewRating = getMarketplaceAdRating(previewContent);
+
+  useEffect(() => {
+    const canvas = previewCanvasRef.current;
+    if (!canvas) return;
+    void renderMarketplaceAdCanvas(canvas, previewContent, {
+      includeImages: true,
+      useBestPhotoFit: false,
+    });
+  }, [previewContent]);
 
   async function loadBrandKits(preferredId?: string, showLoading = true) {
     if (showLoading) setLoading(true);
@@ -304,10 +343,10 @@ export default function AdStudioClient({ dealerAppMode = false }: AdStudioClient
   }
 
   return (
-    <div className={`${styles.page} ${dealerAppMode ? styles.dealerPage : ''}`}>
+    <div className={`${styles.page} ${dealerAppMode ? styles.dealerPage : ''} ${middlemanMode ? styles.middlemanPage : ''}`}>
       <header className={styles.hero}>
         <div className={styles.heroCopy}>
-          <span className={styles.eyebrow}>Dealer Ad Studio</span>
+          <span className={styles.eyebrow}>{middlemanMode ? 'Middleman Ad Studio' : 'Dealer Ad Studio'}</span>
           <h1>Build adverts that look like your business</h1>
           <p>Create, save and manage reusable Brand Kits for every Marketplace advert.</p>
         </div>
@@ -584,7 +623,7 @@ export default function AdStudioClient({ dealerAppMode = false }: AdStudioClient
                   </div>
                   <div className={styles.reviewCallout}>
                     <strong>What happens next?</strong>
-                    <p>After a valuation, choose <b>Create Ad</b>. Aim4price applies this Brand Kit and publishes the confirmed listing to Marketplace in one step.</p>
+                    <p>After a valuation, choose <b>Create Advert</b>. Aim4price applies this Brand Kit, publishes the listing in the background and downloads the matching JPEG to your device.</p>
                   </div>
                 </section>
               ) : null}
@@ -619,39 +658,16 @@ export default function AdStudioClient({ dealerAppMode = false }: AdStudioClient
                 <span className={styles.previewPill}>{draft.language === 'af' ? 'Afrikaans' : 'English'}</span>
               </div>
             </div>
-            <div
-              className={`${styles.adPreview} ${TEMPLATE_CLASS_NAMES[draft.templateId]}`}
-              style={{
-                '--brand-primary': draft.primaryColor,
-                '--brand-secondary': draft.secondaryColor,
-                '--brand-accent': draft.accentColor,
-              } as CSSProperties}
-            >
-              <header className={styles.adBrand}>
-                {draft.logoUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={draft.logoUrl} alt="" />
-                ) : <span className={styles.logoPlaceholder}>YOUR LOGO</span>}
-                <strong>{previewName}</strong>
-              </header>
-              <div className={styles.adPhotos} role="img" aria-label={`${selectedTemplate.photoCount}-photo advert layout example`}>
-                {Array.from({ length: selectedTemplate.photoCount }, (_, index) => (
-                  <div key={index} className={`${styles.adPhoto} ${PREVIEW_PHOTO_CLASSES[index]}`}>
-                    <span>{index + 1}</span>
-                  </div>
-                ))}
-              </div>
-              <div className={styles.adInfo}>
-                <div className={styles.adTitle}>2019 EXAMPLE 110 TRACTOR</div>
-                <div className={styles.adDetails}>81 kW · 4WD · 3 450 hours</div>
-                <div className={styles.adPrice}>R685 000 <small>{vatPreview(draft.language, draft.vatLabel)}</small></div>
-                <div className={styles.adContact}>{draft.contactName || 'Sales contact'} · {draft.phone || '082 000 0000'}</div>
-              </div>
-              <footer className={styles.aimFooter}>Created with <strong>Aim4price</strong></footer>
-            </div>
+            <canvas
+              ref={previewCanvasRef}
+              className={styles.adCanvasPreview}
+              width="1600"
+              height="900"
+              aria-label={`${selectedTemplate.name} advert preview with ${previewRating.label.toLowerCase()} rating`}
+            />
             <div className={styles.previewNote}>
               <span aria-hidden="true">✓</span>
-              <p><strong>Filled automatically</strong>The first {selectedTemplate.photoCount} listing photo{selectedTemplate.photoCount === 1 ? ' is' : 's are'} placed into this design with the valuation details and asking price.</p>
+              <p><strong>The downloaded JPEG matches this preview</strong>The first {selectedTemplate.photoCount} listing photo{selectedTemplate.photoCount === 1 ? ' is' : 's are'} placed into the design with valuation details, asking price and the {previewRating.label.toLowerCase()} rating.</p>
             </div>
           </aside>
           </div>

@@ -12,6 +12,7 @@ import {
   writeCachedHeaderSession,
   type HeaderSessionUser,
 } from '../lib/header-session-cache';
+import { isMiddlemanAccountSubtype } from '../lib/middleman-account';
 import DealerCostDecisionModal from './DealerCostDecisionModal';
 import styles from './AppHeader.module.css';
 
@@ -238,6 +239,15 @@ const LICENSING_ACCOUNT_MENU_ITEMS: AccountMenuItem[] = [
   { href: '/account', label: 'Account' },
 ];
 
+const MIDDLEMAN_ACCOUNT_MENU_ITEMS: AccountMenuItem[] = [
+  { href: '/', label: 'Home' },
+  { href: '/valuation', label: 'Get Estimate' },
+  { href: '/ad-studio', label: 'Ad Studio' },
+  { href: '/marketplace', label: 'My Listings' },
+  { href: '/leads', label: 'Leads' },
+  { href: '/account', label: 'Account' },
+];
+
 const ACCOUNT_MENU_COLLATOR = new Intl.Collator('en-ZA', {
   sensitivity: 'base',
   numeric: true,
@@ -307,6 +317,15 @@ function buildNavItems(
   }
 
   if (accountType === 'dealer') {
+    if (isMiddlemanAccountSubtype(accountSubtype)) {
+      return [
+        { key: 'home', href: '/', label: 'Home' },
+        { key: 'valuation', href: '/valuation', label: 'Get Estimate' },
+        { key: 'ad-studio', href: '/ad-studio', label: 'Ad Studio' },
+        { key: 'marketplace', href: '/marketplace', label: 'My Listings' },
+        { key: 'leads', href: '/leads', label: 'Leads' },
+      ];
+    }
     return [
       ...BASE_NAV_ITEMS,
       { key: 'leads', href: '/leads', label: 'Leads' },
@@ -944,6 +963,7 @@ export default function AppHeader({
     : sessionAccountLogoUrl;
   const isOwnerAccount = session?.accountType === 'owner';
   const isDealerAccount = session?.accountType === 'dealer';
+  const isMiddlemanAccount = isDealerAccount && isMiddlemanAccountSubtype(session?.accountSubtype);
   const isAccountantAccount = session?.accountType === 'finance' && session.accountSubtype === 'accountant';
   const isAccountantWorkspace = isAccountantAccount && Boolean(accountantWorkspaceShareId);
   const navAccountType = isLoadingSession ? null : (session?.accountType ?? 'public');
@@ -2466,7 +2486,9 @@ export default function AppHeader({
                               ? LICENSING_ACCOUNT_MENU_ITEMS
                               : isAccountantAccount
                                 ? ACCOUNTANT_ACCOUNT_MENU_ITEMS
-                                : ACCOUNT_MENU_ITEMS.filter((item) => isAccountMenuItemVisible(item, session?.accountType))
+                                : isMiddlemanAccount
+                                  ? MIDDLEMAN_ACCOUNT_MENU_ITEMS
+                                  : ACCOUNT_MENU_ITEMS.filter((item) => isAccountMenuItemVisible(item, session?.accountType))
                             ).map((item) => {
                               const isActive = isAccountMenuLinkActive(item.href);
                               const menuLinkClassName = [

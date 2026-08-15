@@ -10,6 +10,7 @@
 }
 
 .dealerPage { padding-top: 32px; }
+.middlemanPage { padding-top: 22px; }
 
 .hero,
 .libraryPanel,
@@ -318,6 +319,16 @@
 .previewPills { display: flex; flex-wrap: wrap; justify-content: end; gap: 6px; }
 .previewPill { border-radius: 7px; padding: 6px 8px; color: #527066 !important; background: #edf3f1; font-size: .56rem !important; letter-spacing: .06em !important; }
 
+.adCanvasPreview {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 9;
+  border-radius: 18px;
+  background: #eef3f0;
+  box-shadow: 0 14px 28px rgba(18,45,37,.14);
+}
+
 .adPreview {
   position: relative;
   overflow: hidden;
@@ -391,22 +402,31 @@
 @media (max-width: 1180px) {
   .kitGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .workspace { grid-template-columns: 1fr; }
-  .previewPanel { position: static; }
+  .previewPanel { position: static; grid-row: 1; }
   .stepContent { min-height: 0; }
 }
 
 @media (max-width: 760px) {
   .page { padding-inline: 12px; padding-bottom: 42px; }
   .dealerPage { padding-top: 18px; }
+  .middlemanPage { padding-top: 10px; }
   .hero { align-items: start; flex-direction: column; min-height: 0; padding: 28px 22px; }
   .heroMetric { min-width: 0; width: 100%; }
   .sectionHeader,
   .editorHeader { align-items: stretch; flex-direction: column; }
-  .kitGrid,
   .fieldGrid,
   .styleGrid,
   .reviewGrid,
   .templateGrid { grid-template-columns: 1fr; }
+  .kitGrid {
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(280px, 86vw);
+    grid-template-columns: none;
+    overflow-x: auto;
+    padding: 3px 3px 14px;
+    scroll-snap-type: x mandatory;
+  }
+  .kitCard { scroll-snap-align: start; }
   .emptyLibrary { align-items: stretch; flex-direction: column; }
   .stepper { grid-template-columns: repeat(4, 1fr); padding: 10px; }
   .stepButton { justify-content: center; padding: 7px; }
@@ -418,6 +438,7 @@
   .actions { align-items: stretch; flex-direction: column; }
   .actions > div { justify-content: flex-end; }
   .previewPanel { padding: 16px; }
+  .adCanvasPreview { border-radius: 12px; }
   .adPreview { grid-template-columns: 56% 44%; }
   .adInfo { gap: 6px; padding: 11px; }
   .adBrand { padding: 9px; }

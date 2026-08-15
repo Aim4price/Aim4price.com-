@@ -4,6 +4,7 @@ import { getAccountProfile } from '../../../lib/account-profile';
 import { getServerSession } from '../../../lib/auth-session';
 import { dealerRoleCan } from '../../../lib/dealer-app-access';
 import { getDealerAppSession } from '../../../lib/dealer-app-session';
+import { isMiddlemanAccountSubtype } from '../../../lib/middleman-account';
 import styles from '../dealer.module.css';
 
 export const runtime = 'nodejs';
@@ -27,7 +28,10 @@ export default async function DealerAdStudioPage() {
 
   return (
     <div className={styles.module}>
-      <AdStudioClient dealerAppMode />
+      <AdStudioClient
+        dealerAppMode
+        middlemanMode={isMiddlemanAccountSubtype(profile.accountSubtype)}
+      />
     </div>
   );
 }
