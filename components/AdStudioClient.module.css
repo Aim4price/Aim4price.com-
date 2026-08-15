@@ -584,54 +584,706 @@
   color: var(--brand-secondary);
 }
 
-.previewNote {
-  margin: 14px 2px 0;
-  color: #70847d;
-  font-size: 0.83rem;
-  line-height: 1.5;
+.page {
+  padding: 92px clamp(16px, 3.4vw, 52px) 64px;
+  background:
+    radial-gradient(circle at 92% 4%, rgba(242, 184, 75, 0.13), transparent 25rem),
+    linear-gradient(180deg, #f8fbf9 0%, #edf5f1 100%);
 }
 
-@media (max-width: 1050px) {
+.dealerPage {
+  padding-top: 24px;
+}
+
+.hero {
+  max-width: 1360px;
+  margin-bottom: 18px;
+  padding: 22px 26px;
+  align-items: center;
+  border: 1px solid rgba(20, 77, 59, 0.1);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.78);
+  box-shadow: 0 14px 34px rgba(24, 67, 53, 0.06);
+}
+
+.eyebrow {
+  margin-bottom: 5px;
+  color: #a96700;
+  font-size: 0.72rem;
+}
+
+.hero h1 {
+  max-width: none;
+  font-size: clamp(1.8rem, 3vw, 2.85rem);
+  line-height: 1.05;
+  letter-spacing: -0.04em;
+}
+
+.hero p:not(.eyebrow) {
+  max-width: 700px;
+  margin-top: 8px;
+  font-size: 0.94rem;
+  line-height: 1.45;
+}
+
+.heroFlow {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex: 0 0 auto;
+  padding: 9px 12px;
+  border: 1px solid #d8e5df;
+  border-radius: 999px;
+  color: #31584b;
+  background: #f8fbfa;
+  font-size: 0.76rem;
+  font-weight: 850;
+}
+
+.heroFlow i {
+  color: #c18010;
+  font-style: normal;
+}
+
+.notice {
+  max-width: 1360px;
+  margin-bottom: 10px;
+  padding: 11px 14px;
+  border-radius: 12px;
+  font-size: 0.88rem;
+}
+
+.workspace {
+  max-width: 1360px;
+  grid-template-columns: minmax(0, 1.08fr) minmax(390px, 0.92fr);
+  gap: 20px;
+}
+
+.formPanel,
+.previewPanel {
+  border-radius: 20px;
+  border-color: rgba(15, 69, 52, 0.11);
+  box-shadow: 0 18px 42px rgba(26, 64, 51, 0.08);
+}
+
+.formPanel {
+  overflow: hidden;
+  padding: 0;
+}
+
+.formToolbar {
+  margin: 0;
+  padding: 16px 20px;
+  border-bottom: 1px solid #e1ebe6;
+  background: #fbfdfc;
+}
+
+.formToolbar label {
+  grid-template-columns: auto minmax(220px, 1fr);
+  align-items: center;
+  gap: 12px;
+}
+
+.formToolbar label > span {
+  white-space: nowrap;
+}
+
+.formPanel input,
+.formPanel select {
+  min-height: 46px;
+  border-radius: 12px;
+  border-color: #c9d9d2;
+  padding: 10px 13px;
+}
+
+.formPanel input::placeholder {
+  color: #93a49e;
+  font-weight: 520;
+}
+
+.secondaryButton,
+.primaryButton,
+.valuationLink,
+.dangerButton,
+.backButton {
+  min-height: 44px;
+  border: 0;
+  border-radius: 999px;
+  padding: 11px 18px;
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 850;
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease;
+}
+
+.secondaryButton {
+  color: #15523f;
+  background: #e6f1ec;
+}
+
+.backButton {
+  color: #254d40;
+  background: #eef4f1;
+}
+
+.stepper {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 7px;
+  padding: 12px 14px;
+  border-bottom: 1px solid #e1ebe6;
+  background: #f5f9f7;
+}
+
+.stepButton {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr);
+  gap: 8px;
+  align-items: center;
+  min-width: 0;
+  padding: 9px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  color: #61786f;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.stepButton > span:first-child {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border: 1px solid #cbd9d3;
+  border-radius: 50%;
+  color: #416258;
+  background: #fff;
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.stepButton > span:last-child {
+  display: grid;
+  min-width: 0;
+  gap: 1px;
+}
+
+.stepButton strong {
+  color: inherit;
+  font-size: 0.78rem;
+  line-height: 1.2;
+}
+
+.stepButton small {
+  overflow: hidden;
+  color: #81938d;
+  font-size: 0.62rem;
+  font-weight: 580;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stepButtonActive {
+  border-color: rgba(185, 121, 10, 0.28);
+  color: #174d3d;
+  background: #fff8e9;
+}
+
+.stepButtonActive > span:first-child {
+  border-color: #e1a235;
+  color: #143c31;
+  background: #f2b84b;
+}
+
+.stepButtonComplete {
+  color: #1b6049;
+}
+
+.stepButtonComplete > span:first-child {
+  border-color: #23634f;
+  color: #fff;
+  background: #23634f;
+}
+
+.stepContent {
+  min-height: 424px;
+  padding: 24px 26px 20px;
+}
+
+.stepIntro {
+  margin-bottom: 20px;
+}
+
+.stepIntro > span {
+  color: #a66a04;
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.stepIntro h2 {
+  margin: 4px 0 5px;
+  color: #123e32;
+  font-size: clamp(1.28rem, 2.1vw, 1.7rem);
+  line-height: 1.18;
+  letter-spacing: -0.025em;
+}
+
+.stepIntro p {
+  max-width: 640px;
+  margin: 0;
+  color: #667d74;
+  font-size: 0.86rem;
+  line-height: 1.45;
+}
+
+.formPanel .stepFieldset {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.formPanel .stepFieldset:disabled {
+  opacity: 0.72;
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
+.fieldGrid,
+.styleGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.logoField {
+  display: grid;
+  grid-template-columns: minmax(140px, 1fr) auto auto;
+  align-items: center;
+  gap: 14px;
+  margin-top: 16px;
+  padding: 14px;
+  border: 1px dashed #bdd0c7;
+  border-radius: 14px;
+  background: #f8fbf9;
+}
+
+.logoCopy {
+  display: grid;
+  gap: 3px;
+}
+
+.logoCopy strong {
+  color: #294f43;
+  font-size: 0.83rem;
+}
+
+.logoCopy span,
+.logoPlaceholderBox {
+  color: #778b84;
+  font-size: 0.72rem;
+}
+
+.logoUpload {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  padding: 9px 13px;
+  border-radius: 999px;
+  color: #15523f;
+  background: #e4f0eb;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.logoUpload input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.logoThumb {
+  align-items: center;
+}
+
+.logoThumb img {
+  width: 62px;
+  height: 44px;
+}
+
+.logoPlaceholderBox {
+  display: grid;
+  width: 72px;
+  height: 44px;
+  place-items: center;
+  border: 1px solid #d7e2dd;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.templateGrid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.templateChoice {
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid #d6e2dd;
+  border-radius: 13px;
+  transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+
+.templateChoice:hover {
+  transform: translateY(-1px);
+  border-color: #91ad9f;
+}
+
+.templateChoiceActive {
+  border-color: #c88712;
+  box-shadow: 0 0 0 3px rgba(242, 184, 75, 0.17);
+}
+
+.templateTitle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.templateTitle strong {
+  color: #1a4c3d;
+  font-size: 0.8rem;
+}
+
+.templateTitle b {
+  padding: 3px 6px;
+  border-radius: 999px;
+  color: #896015;
+  background: #fff5dc;
+  font-size: 0.55rem;
+  text-transform: uppercase;
+}
+
+.templateChoice small {
+  font-size: 0.69rem;
+}
+
+.styleGrid > label {
+  padding: 13px;
+  border: 1px solid #dbe6e1;
+  border-radius: 13px;
+  background: #fbfdfc;
+}
+
+.colorField span {
+  grid-template-columns: 48px 1fr;
+}
+
+.colorField input[type='color'] {
+  min-height: 42px;
+}
+
+.checkField {
+  grid-template-columns: auto 1fr;
+  align-self: stretch;
+  padding: 13px;
+}
+
+.checkField > span {
+  display: grid;
+  gap: 2px;
+}
+
+.checkField strong {
+  color: #294f43;
+  font-size: 0.8rem;
+}
+
+.checkField small {
+  color: #73877f;
+  font-size: 0.68rem;
+  line-height: 1.35;
+}
+
+.reviewGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 11px;
+}
+
+.reviewGrid article {
+  display: grid;
+  align-content: start;
+  gap: 5px;
+  min-height: 112px;
+  padding: 14px;
+  border: 1px solid #dce7e2;
+  border-radius: 14px;
+  background: #fbfdfc;
+}
+
+.reviewGrid article > span {
+  color: #91702e;
+  font-size: 0.65rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.reviewGrid article > strong {
+  color: #1d4c3e;
+  font-size: 0.9rem;
+}
+
+.reviewGrid article > small {
+  color: #6e837b;
+  font-size: 0.72rem;
+  line-height: 1.4;
+}
+
+.reviewColours > div {
+  display: flex;
+  gap: 7px;
+}
+
+.reviewColours i {
+  width: 31px;
+  height: 31px;
+  border: 3px solid #fff;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px #cad7d1;
+}
+
+.reviewCallout {
+  margin-top: 12px;
+  padding: 13px 15px;
+  border-left: 4px solid #f2b84b;
+  border-radius: 10px;
+  color: #31584b;
+  background: #fff8e8;
+}
+
+.reviewCallout strong {
+  font-size: 0.8rem;
+}
+
+.reviewCallout p {
+  margin: 3px 0 0;
+  font-size: 0.74rem;
+  line-height: 1.4;
+}
+
+.actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 75px;
+  padding: 14px 20px;
+  border-top: 1px solid #e1ebe6;
+  background: #fbfdfc;
+}
+
+.actions > div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.actions button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.previewPanel {
+  top: 88px;
+  padding: 21px;
+}
+
+.dealerPage .previewPanel {
+  top: 18px;
+}
+
+.previewHeading {
+  margin-bottom: 13px;
+}
+
+.previewHeading span {
+  font-size: 0.68rem;
+}
+
+.previewHeading strong {
+  color: #173f34;
+  font-size: 1rem;
+}
+
+.previewPill {
+  padding: 5px 8px;
+}
+
+.previewNote {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  gap: 9px;
+  align-items: start;
+  margin: 14px 1px 0;
+  color: #70847d;
+}
+
+.previewNote > span {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border-radius: 50%;
+  color: #fff;
+  background: #216048;
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
+.previewNote p {
+  display: grid;
+  gap: 1px;
+  margin: 0;
+  font-size: 0.72rem;
+  line-height: 1.4;
+}
+
+.previewNote strong {
+  color: #31584b;
+  font-size: 0.76rem;
+}
+
+@media (max-width: 1120px) {
   .workspace {
     grid-template-columns: 1fr;
   }
 
   .previewPanel {
     position: static;
-    grid-row: 1;
+    grid-row: auto;
+  }
+
+  .adPreview {
+    max-width: 780px;
+    margin: 0 auto;
   }
 }
 
-@media (max-width: 680px) {
+@media (max-width: 760px) {
   .page {
-    padding: 88px 12px 42px;
+    padding: 82px 12px 40px;
   }
 
   .dealerPage {
-    padding-top: 16px;
+    padding-top: 14px;
   }
 
   .hero {
     align-items: flex-start;
     flex-direction: column;
+    padding: 18px;
   }
 
-  .fieldGrid,
-  .templateGrid {
-    grid-template-columns: 1fr;
+  .heroFlow {
+    align-self: stretch;
+    justify-content: center;
   }
 
   .formToolbar {
     grid-template-columns: 1fr;
   }
 
+  .formToolbar label {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  .stepper {
+    grid-template-columns: none;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(145px, 1fr);
+    overflow-x: auto;
+    scroll-snap-type: x proximity;
+  }
+
+  .stepButton {
+    scroll-snap-align: start;
+  }
+
+  .stepContent {
+    min-height: 0;
+    padding: 21px 18px 18px;
+  }
+
+  .fieldGrid,
+  .styleGrid,
+  .templateGrid,
+  .reviewGrid {
+    grid-template-columns: 1fr;
+  }
+
   .logoField {
+    grid-template-columns: 1fr auto;
+  }
+
+  .logoCopy {
+    grid-column: 1 / -1;
+  }
+
+  .actions {
     align-items: stretch;
-    flex-direction: column;
+    flex-direction: column-reverse;
+  }
+
+  .actions > div {
+    justify-content: flex-end;
+    flex-wrap: wrap;
+  }
+
+  .actions > div:first-child {
+    justify-content: space-between;
   }
 
   .previewPanel,
-  .formPanel {
-    border-radius: 18px;
+  .formPanel,
+  .hero {
+    border-radius: 16px;
+  }
+}
+
+@media (max-width: 430px) {
+  .logoField {
+    grid-template-columns: 1fr;
+  }
+
+  .logoCopy {
+    grid-column: auto;
+  }
+
+  .actions > div,
+  .actions > div:first-child {
+    justify-content: stretch;
+  }
+
+  .actions a,
+  .actions button {
+    flex: 1;
+    text-align: center;
   }
 }

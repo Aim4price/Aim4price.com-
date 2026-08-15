@@ -905,6 +905,7 @@ export async function publishAssetRegisterItemToMarketplace(input: {
   area?: string | null;
   photos?: string[] | null;
   brandKitId?: string | null;
+  allowBrandKit?: boolean;
 }): Promise<MarketplaceListing> {
   await ensureMarketplaceColumns();
 
@@ -986,9 +987,11 @@ export async function publishAssetRegisterItemToMarketplace(input: {
   const province = asText(input.province) || asText(row.profile_province);
   const area = asText(input.area) || asText(row.profile_location) || asText(row.profile_town_city);
   const requestedBrandKitId = asText(input.brandKitId);
-  const brandKit = await getAdBrandKitForUser(input.userId, requestedBrandKitId || null);
+  const brandKit = input.allowBrandKit
+    ? await getAdBrandKitForUser(input.userId, requestedBrandKitId || null)
+    : null;
 
-  if (requestedBrandKitId && !brandKit) {
+  if (input.allowBrandKit && requestedBrandKitId && !brandKit) {
     throw new Error('Choose a valid Brand Kit before creating the advert.');
   }
 
@@ -1019,10 +1022,8 @@ export async function publishAssetRegisterItemToMarketplace(input: {
     ? input.photos.map((entry) => safeImage(entry)).filter(Boolean)
     : [];
 
-  if (brandKit) {
-    updateValues.push(JSON.stringify(toAdBrandSnapshot(brandKit)));
-    updateAssignments.push(`marketplace_ad_brand = $${updateValues.length}::jsonb`);
-  }
+  updateValues.push(brandKit ? JSON.stringify(toAdBrandSnapshot(brandKit)) : null);
+  updateAssignments.push(`marketplace_ad_brand = $${updateValues.length}::jsonb`);
 
   if (incomingPhotos.length) {
     const mergedPhotosJson = JSON.stringify(mergePhotoLists(buildPhotoList(row), incomingPhotos));

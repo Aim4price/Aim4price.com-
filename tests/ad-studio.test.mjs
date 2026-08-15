@@ -16,14 +16,15 @@ test('Ad Studio exposes five reusable layout choices and safe Brand Kit fields',
   assert.match(source, /normalizeAdBrandSnapshot/);
 });
 
-test('Brand Kits are owned per account and only dealer owners may edit company kits', async () => {
+test('Brand Kits are dealer-only and only dealer owners may edit company kits', async () => {
   const [route, database, capability] = await Promise.all([
     read('app/api/ad-studio/brand-kits/route.ts'),
     read('lib/ad-studio-db.ts'),
     read('lib/dealer-app-access.ts'),
   ]);
 
-  assert.match(route, /profile\.accountType !== 'owner'.*profile\.accountType !== 'dealer'/s);
+  assert.match(route, /profile\.accountType !== 'dealer'/);
+  assert.doesNotMatch(route, /profile\.accountType !== 'owner'/);
   assert.match(route, /canManage: !dealerSession \|\| dealerSession\.role === 'owner'/);
   assert.match(route, /Only the Dealer Owner can change company Brand Kits/);
   assert.match(database, /where user_id = \$1/);
@@ -41,6 +42,7 @@ test('schema preserves the selected branding as a Marketplace advert snapshot', 
   assert.match(migration, /unique index if not exists idx_ad_brand_kits_one_default/);
   assert.match(migration, /marketplace_ad_brand jsonb/);
   assert.match(marketplaceDatabase, /toAdBrandSnapshot\(brandKit\)/);
+  assert.match(marketplaceDatabase, /input\.allowBrandKit/);
   assert.match(marketplaceDatabase, /marketplace_ad_brand = \$\$\{updateValues\.length\}::jsonb/);
   assert.match(marketplaceDatabase, /normalizeAdBrandSnapshot\(pick\(row, \['marketplace_ad_brand'\]\)/);
 });
@@ -53,6 +55,8 @@ test('valuation Create Ad flow selects a Brand Kit and publishes without a secon
   assert.match(valuation, /brandKitId: marketplaceDraft\.brandKitId \|\| null/);
   assert.match(valuation, /Create ad and publish/);
   assert.match(valuation, /&createAd=1/);
+  assert.match(valuation, /Owner listings use the standard Aim4price Marketplace advert design/);
+  assert.match(valuation, /resolvedAccountType === 'dealer'/);
   assert.doesNotMatch(valuation, /saveAndSendToMarketplace/);
 });
 
@@ -67,15 +71,29 @@ test('Marketplace opens the advert sheet and renders the saved layout and dealer
   assert.match(marketplace, /drawAim4priceCredit/);
 });
 
-test('owner and Dealer App Ad Studio pages share one implementation', async () => {
-  const [ownerPage, dealerPage, client] = await Promise.all([
+test('Ad Studio is limited to dealer accounts and uses a four-step guided setup', async () => {
+  const [desktopPage, dealerPage, client, header] = await Promise.all([
     read('app/ad-studio/page.tsx'),
     read('app/dealer/ad-studio/page.tsx'),
     read('components/AdStudioClient.tsx'),
+    read('components/AppHeader.tsx'),
   ]);
 
-  assert.match(ownerPage, /<AdStudioClient/);
+  assert.match(desktopPage, /profile\.accountType !== 'dealer'/);
+  assert.match(desktopPage, /<AdStudioClient/);
   assert.match(dealerPage, /<AdStudioClient dealerAppMode/);
   assert.match(client, /Save Brand Kit/);
-  assert.match(client, /Build your advert style once/);
+  assert.match(client, /type StudioStep = 1 \| 2 \| 3 \| 4/);
+  assert.match(client, /Details.*Layout.*Style.*Review/s);
+  assert.match(client, /activeStep === 1/);
+  assert.match(client, /activeStep === 4/);
+  assert.match(header, /href: '\/ad-studio', label: 'Ad Studio', accountTypes: \['dealer'\]/);
+  assert.doesNotMatch(header, /href: '\/ad-studio', label: 'Ad Studio', accountTypes: \['owner'/);
+});
+
+test('Marketplace only applies Brand Kits to dealer listings', async () => {
+  const route = await read('app/api/marketplace/route.ts');
+
+  assert.match(route, /brandKitId: accountType === 'dealer'/);
+  assert.match(route, /allowBrandKit: accountType === 'dealer'/);
 });

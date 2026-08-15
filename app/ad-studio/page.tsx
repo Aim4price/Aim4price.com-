@@ -18,10 +18,7 @@ export default async function AdStudioPage() {
     email: session.user.email,
   });
 
-  if (
-    (profile.accountType !== 'owner' && profile.accountType !== 'dealer') ||
-    profile.accountStatus !== 'active'
-  ) {
+  if (profile.accountType !== 'dealer' || profile.accountStatus !== 'active') {
     redirect('/account');
   }
 

@@ -40,6 +40,15 @@ type EditableBrandKit = AdBrandSnapshot & {
   isDefault: boolean;
 };
 
+type StudioStep = 1 | 2 | 3 | 4;
+
+const STUDIO_STEPS: Array<{ id: StudioStep; label: string; helper: string }> = [
+  { id: 1, label: 'Details', helper: 'Logo and contact details' },
+  { id: 2, label: 'Layout', helper: 'Choose the advert structure' },
+  { id: 3, label: 'Style', helper: 'Colours and wording' },
+  { id: 4, label: 'Review', helper: 'Check and save' },
+];
+
 const TEMPLATE_CLASS_NAMES: Record<AdTemplateId, string> = {
   showcase: styles.templateShowcase,
   'price-focus': styles.templatePriceFocus,
@@ -113,6 +122,7 @@ export default function AdStudioClient({ dealerAppMode = false }: AdStudioClient
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState('');
   const [error, setError] = useState('');
+  const [activeStep, setActiveStep] = useState<StudioStep>(1);
 
   const previewName = draft.businessName || draft.contactName || 'Your business';
   const selectedTemplate = useMemo(
@@ -157,13 +167,31 @@ export default function AdStudioClient({ dealerAppMode = false }: AdStudioClient
 
   function chooseKit(kitId: string) {
     const selected = kits.find((kit) => kit.id === kitId);
-    if (selected) setDraft(editableKit(selected));
+    if (selected) {
+      setDraft(editableKit(selected));
+      setActiveStep(1);
+      setFeedback('');
+      setError('');
+    }
   }
 
   function startNewKit() {
     setDraft({ ...kitFromDefaults(profileDefaults), name: `Advert style ${kits.length + 1}`, isDefault: kits.length === 0 });
+    setActiveStep(1);
     setFeedback('New Brand Kit ready to customise.');
     setError('');
+  }
+
+  function moveToStep(step: StudioStep) {
+    if (step > 1 && !draft.name.trim()) {
+      setActiveStep(1);
+      setError('Give this Brand Kit a name before continuing.');
+      return;
+    }
+
+    setActiveStep(step);
+    setError('');
+    setFeedback('');
   }
 
   function handleLogo(event: ChangeEvent<HTMLInputElement>) {
@@ -239,31 +267,28 @@ export default function AdStudioClient({ dealerAppMode = false }: AdStudioClient
     <div className={`${styles.page} ${dealerAppMode ? styles.dealerPage : ''}`}>
       <header className={styles.hero}>
         <div>
-          <p className={styles.eyebrow}>Aim4price Ad Studio</p>
-          <h1>Build your advert style once. Reuse it on every valuation.</h1>
-          <p>
-            Save your logo, contact details, colours and preferred layout as a Brand Kit. When you choose
-            <strong> Create Ad</strong> after a valuation, Aim4price applies the kit and publishes the listing to Marketplace.
-          </p>
+          <p className={styles.eyebrow}>Dealer Ad Studio</p>
+          <h1>Create your reusable advert style</h1>
+          <p>Set it up once, then apply it when you choose <strong>Create Ad</strong> after a valuation.</p>
         </div>
-        <Link className={styles.valuationLink} href={dealerAppMode ? '/dealer/valuation' : '/valuation'}>
-          Start a valuation
-        </Link>
+        <div className={styles.heroFlow} aria-label="How Ad Studio works">
+          <span>Set up</span><i aria-hidden="true">→</i><span>Value</span><i aria-hidden="true">→</i><span>Publish</span>
+        </div>
       </header>
 
       {loading ? <div className={styles.notice}>Loading your Brand Kits…</div> : null}
       {error ? <div className={`${styles.notice} ${styles.error}`} role="alert">{error}</div> : null}
       {feedback ? <div className={`${styles.notice} ${styles.success}`} role="status">{feedback}</div> : null}
       {!canManage && !loading ? (
-        <div className={styles.notice}>You can use the company Brand Kits when creating adverts. Only the Dealer Owner can edit them.</div>
+        <div className={styles.notice}>You can review and use the company Brand Kits. Only the Dealer Owner can change them.</div>
       ) : null}
 
       {!loading ? (
-        <div className={styles.workspace}>
+        <div className={styles.workspace} id="ad-studio-workspace">
           <form className={styles.formPanel} onSubmit={saveKit}>
             <div className={styles.formToolbar}>
               <label>
-                Saved Brand Kit
+                <span>Saved Brand Kit</span>
                 <select value={draft.id} onChange={(event) => chooseKit(event.target.value)} disabled={!kits.length}>
                   {!kits.length ? <option value="">No saved Brand Kits</option> : null}
                   {kits.map((kit) => (
@@ -271,122 +296,223 @@ export default function AdStudioClient({ dealerAppMode = false }: AdStudioClient
                   ))}
                 </select>
               </label>
-              {canManage ? <button className={styles.secondaryButton} type="button" onClick={startNewKit}>New kit</button> : null}
+              {canManage ? <button className={styles.secondaryButton} type="button" onClick={startNewKit}>+ New kit</button> : null}
             </div>
 
-            <fieldset disabled={!canManage || saving}>
-              <legend>Brand details</legend>
-              <div className={styles.fieldGrid}>
-                <label>
-                  Brand Kit name
-                  <input value={draft.name} onChange={(event) => update('name', event.target.value)} maxLength={100} required />
-                </label>
-                <label>
-                  Business name
-                  <input value={draft.businessName} onChange={(event) => update('businessName', event.target.value)} maxLength={160} />
-                </label>
-                <label>
-                  Contact person
-                  <input value={draft.contactName} onChange={(event) => update('contactName', event.target.value)} maxLength={120} />
-                </label>
-                <label>
-                  Phone / WhatsApp
-                  <input value={draft.phone} onChange={(event) => update('phone', event.target.value)} maxLength={80} />
-                </label>
-                <label>
-                  Email
-                  <input type="email" value={draft.email} onChange={(event) => update('email', event.target.value)} maxLength={220} />
-                </label>
-                <label>
-                  Website
-                  <input value={draft.website} onChange={(event) => update('website', event.target.value)} maxLength={300} placeholder="www.example.co.za" />
-                </label>
-              </div>
-              <div className={styles.logoField}>
-                <label>
-                  Logo
-                  <input type="file" accept="image/png,image/jpeg,image/webp" onChange={handleLogo} />
-                </label>
-                {draft.logoUrl ? (
-                  <div className={styles.logoThumb}>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={draft.logoUrl} alt="Uploaded business logo" />
-                    <button type="button" onClick={() => update('logoUrl', '')}>Remove</button>
+            <nav className={styles.stepper} aria-label="Brand Kit setup steps">
+              {STUDIO_STEPS.map((step) => (
+                <button
+                  key={step.id}
+                  type="button"
+                  className={`${styles.stepButton} ${activeStep === step.id ? styles.stepButtonActive : ''} ${activeStep > step.id ? styles.stepButtonComplete : ''}`}
+                  onClick={() => moveToStep(step.id)}
+                  aria-current={activeStep === step.id ? 'step' : undefined}
+                >
+                  <span>{activeStep > step.id ? '✓' : step.id}</span>
+                  <span><strong>{step.label}</strong><small>{step.helper}</small></span>
+                </button>
+              ))}
+            </nav>
+
+            <div className={styles.stepContent}>
+              {activeStep === 1 ? (
+                <section aria-labelledby="studio-details-title">
+                  <div className={styles.stepIntro}>
+                    <span>Step 1 of 4</span>
+                    <h2 id="studio-details-title">Add the details customers should see</h2>
+                    <p>These details are saved for future adverts, so you will not need to enter them again.</p>
                   </div>
-                ) : <span className={styles.fieldHint}>PNG, JPEG or WebP, up to 2 MB.</span>}
-              </div>
-            </fieldset>
+                  <fieldset className={styles.stepFieldset} disabled={!canManage || saving}>
+                    <legend className={styles.srOnly}>Business and contact details</legend>
+                    <div className={styles.fieldGrid}>
+                      <label>
+                        Brand Kit name
+                        <input value={draft.name} onChange={(event) => update('name', event.target.value)} maxLength={100} required placeholder="e.g. Main dealer style" />
+                      </label>
+                      <label>
+                        Business name
+                        <input value={draft.businessName} onChange={(event) => update('businessName', event.target.value)} maxLength={160} placeholder="Shown at the top of the advert" />
+                      </label>
+                      <label>
+                        Contact person
+                        <input value={draft.contactName} onChange={(event) => update('contactName', event.target.value)} maxLength={120} />
+                      </label>
+                      <label>
+                        Phone / WhatsApp
+                        <input value={draft.phone} onChange={(event) => update('phone', event.target.value)} maxLength={80} />
+                      </label>
+                      <label>
+                        Email
+                        <input type="email" value={draft.email} onChange={(event) => update('email', event.target.value)} maxLength={220} />
+                      </label>
+                      <label>
+                        Website
+                        <input value={draft.website} onChange={(event) => update('website', event.target.value)} maxLength={300} placeholder="www.example.co.za" />
+                      </label>
+                    </div>
+                    <div className={styles.logoField}>
+                      <div className={styles.logoCopy}>
+                        <strong>Business logo</strong>
+                        <span>PNG, JPEG or WebP, up to 2 MB.</span>
+                      </div>
+                      <label className={styles.logoUpload}>
+                        <span>{draft.logoUrl ? 'Replace logo' : 'Choose logo'}</span>
+                        <input type="file" accept="image/png,image/jpeg,image/webp" onChange={handleLogo} />
+                      </label>
+                      {draft.logoUrl ? (
+                        <div className={styles.logoThumb}>
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={draft.logoUrl} alt="Uploaded business logo" />
+                          <button type="button" onClick={() => update('logoUrl', '')}>Remove</button>
+                        </div>
+                      ) : <span className={styles.logoPlaceholderBox}>Logo preview</span>}
+                    </div>
+                  </fieldset>
+                </section>
+              ) : null}
 
-            <fieldset disabled={!canManage || saving}>
-              <legend>Choose a layout</legend>
-              <div className={styles.templateGrid}>
-                {AD_TEMPLATE_OPTIONS.map((template) => (
-                  <button
-                    key={template.id}
-                    type="button"
-                    className={`${styles.templateChoice} ${draft.templateId === template.id ? styles.templateChoiceActive : ''}`}
-                    onClick={() => update('templateId', template.id)}
-                    aria-pressed={draft.templateId === template.id}
-                  >
-                    <span className={`${styles.miniTemplate} ${TEMPLATE_CLASS_NAMES[template.id]}`} aria-hidden="true">
-                      <i /><b /><em />
-                    </span>
-                    <strong>{template.name}</strong>
-                    <small>{template.description}</small>
-                  </button>
-                ))}
-              </div>
-            </fieldset>
+              {activeStep === 2 ? (
+                <section aria-labelledby="studio-layout-title">
+                  <div className={styles.stepIntro}>
+                    <span>Step 2 of 4</span>
+                    <h2 id="studio-layout-title">Choose a layout</h2>
+                    <p>Every layout fills itself with the valuation photo, equipment details and asking price.</p>
+                  </div>
+                  <fieldset className={styles.stepFieldset} disabled={!canManage || saving}>
+                    <legend className={styles.srOnly}>Advert layout</legend>
+                    <div className={styles.templateGrid}>
+                      {AD_TEMPLATE_OPTIONS.map((template, index) => (
+                        <button
+                          key={template.id}
+                          type="button"
+                          className={`${styles.templateChoice} ${draft.templateId === template.id ? styles.templateChoiceActive : ''}`}
+                          onClick={() => update('templateId', template.id)}
+                          aria-pressed={draft.templateId === template.id}
+                        >
+                          <span className={`${styles.miniTemplate} ${TEMPLATE_CLASS_NAMES[template.id]}`} aria-hidden="true">
+                            <i /><b /><em />
+                          </span>
+                          <span className={styles.templateTitle}>
+                            <strong>{template.name}</strong>
+                            <b>{draft.templateId === template.id ? 'Selected' : `Option ${index + 1}`}</b>
+                          </span>
+                          <small>{template.description}</small>
+                        </button>
+                      ))}
+                    </div>
+                  </fieldset>
+                </section>
+              ) : null}
 
-            <fieldset disabled={!canManage || saving}>
-              <legend>Colours and wording</legend>
-              <div className={styles.fieldGrid}>
-                <label className={styles.colorField}>
-                  Primary colour
-                  <span><input type="color" value={draft.primaryColor} onChange={(event) => update('primaryColor', event.target.value)} /><code>{draft.primaryColor}</code></span>
-                </label>
-                <label className={styles.colorField}>
-                  Secondary colour
-                  <span><input type="color" value={draft.secondaryColor} onChange={(event) => update('secondaryColor', event.target.value)} /><code>{draft.secondaryColor}</code></span>
-                </label>
-                <label className={styles.colorField}>
-                  Accent colour
-                  <span><input type="color" value={draft.accentColor} onChange={(event) => update('accentColor', event.target.value)} /><code>{draft.accentColor}</code></span>
-                </label>
-                <label>
-                  Advert language
-                  <select value={draft.language} onChange={(event) => update('language', event.target.value as AdLanguage)}>
-                    <option value="en">English</option>
-                    <option value="af">Afrikaans</option>
-                  </select>
-                </label>
-                <label>
-                  Price wording
-                  <select value={draft.vatLabel} onChange={(event) => update('vatLabel', event.target.value as AdVatLabel)}>
-                    <option value="plus-vat">Plus VAT / + BTW</option>
-                    <option value="vat-included">VAT included / BTW ingesluit</option>
-                    <option value="no-vat">No VAT / Geen BTW</option>
-                  </select>
-                </label>
-                <label className={styles.checkField}>
-                  <input type="checkbox" checked={draft.isDefault} onChange={(event) => update('isDefault', event.target.checked)} />
-                  Use as my default Brand Kit
-                </label>
-              </div>
-            </fieldset>
+              {activeStep === 3 ? (
+                <section aria-labelledby="studio-style-title">
+                  <div className={styles.stepIntro}>
+                    <span>Step 3 of 4</span>
+                    <h2 id="studio-style-title">Match the advert to your business</h2>
+                    <p>Choose colours and wording. The live preview updates immediately.</p>
+                  </div>
+                  <fieldset className={styles.stepFieldset} disabled={!canManage || saving}>
+                    <legend className={styles.srOnly}>Advert colours and wording</legend>
+                    <div className={styles.styleGrid}>
+                      <label className={styles.colorField}>
+                        Primary colour
+                        <span><input type="color" value={draft.primaryColor} onChange={(event) => update('primaryColor', event.target.value)} /><code>{draft.primaryColor}</code></span>
+                      </label>
+                      <label className={styles.colorField}>
+                        Secondary colour
+                        <span><input type="color" value={draft.secondaryColor} onChange={(event) => update('secondaryColor', event.target.value)} /><code>{draft.secondaryColor}</code></span>
+                      </label>
+                      <label className={styles.colorField}>
+                        Accent colour
+                        <span><input type="color" value={draft.accentColor} onChange={(event) => update('accentColor', event.target.value)} /><code>{draft.accentColor}</code></span>
+                      </label>
+                      <label>
+                        Advert language
+                        <select value={draft.language} onChange={(event) => update('language', event.target.value as AdLanguage)}>
+                          <option value="en">English</option>
+                          <option value="af">Afrikaans</option>
+                        </select>
+                      </label>
+                      <label>
+                        Price wording
+                        <select value={draft.vatLabel} onChange={(event) => update('vatLabel', event.target.value as AdVatLabel)}>
+                          <option value="plus-vat">Plus VAT / + BTW</option>
+                          <option value="vat-included">VAT included / BTW ingesluit</option>
+                          <option value="no-vat">No VAT / Geen BTW</option>
+                        </select>
+                      </label>
+                      <label className={styles.checkField}>
+                        <input type="checkbox" checked={draft.isDefault} onChange={(event) => update('isDefault', event.target.checked)} />
+                        <span><strong>Use as the default</strong><small>Preselect this kit whenever you create an advert.</small></span>
+                      </label>
+                    </div>
+                  </fieldset>
+                </section>
+              ) : null}
 
-            {canManage ? (
-              <div className={styles.actions}>
-                <button className={styles.primaryButton} type="submit" disabled={saving}>{saving ? 'Saving…' : 'Save Brand Kit'}</button>
-                {draft.id ? <button className={styles.dangerButton} type="button" onClick={deleteKit} disabled={saving}>Delete</button> : null}
+              {activeStep === 4 ? (
+                <section aria-labelledby="studio-review-title">
+                  <div className={styles.stepIntro}>
+                    <span>Step 4 of 4</span>
+                    <h2 id="studio-review-title">Review and save</h2>
+                    <p>Check the essentials below. You can return to any step to make a change.</p>
+                  </div>
+                  <div className={styles.reviewGrid}>
+                    <article>
+                      <span>Brand</span>
+                      <strong>{draft.businessName || 'Business name not added'}</strong>
+                      <small>{draft.contactName || 'No contact person'} · {draft.phone || 'No phone number'}</small>
+                    </article>
+                    <article>
+                      <span>Layout</span>
+                      <strong>{selectedTemplate.name}</strong>
+                      <small>{selectedTemplate.description}</small>
+                    </article>
+                    <article>
+                      <span>Wording</span>
+                      <strong>{draft.language === 'af' ? 'Afrikaans' : 'English'} · {vatPreview(draft.language, draft.vatLabel)}</strong>
+                      <small>{draft.isDefault ? 'Default Brand Kit' : 'Optional Brand Kit'}</small>
+                    </article>
+                    <article className={styles.reviewColours}>
+                      <span>Colours</span>
+                      <div>
+                        {[draft.primaryColor, draft.secondaryColor, draft.accentColor].map((color, index) => (
+                          <i key={`${color}-${index}`} style={{ backgroundColor: color }} title={color} />
+                        ))}
+                      </div>
+                      <small>Primary, secondary and accent</small>
+                    </article>
+                  </div>
+                  <div className={styles.reviewCallout}>
+                    <strong>What happens next?</strong>
+                    <p>After a valuation, choose <b>Create Ad</b>. Aim4price applies this Brand Kit and publishes the confirmed listing to Marketplace in one step.</p>
+                  </div>
+                </section>
+              ) : null}
+            </div>
+
+            <div className={styles.actions}>
+              <div>
+                {activeStep > 1 ? <button className={styles.backButton} type="button" onClick={() => moveToStep((activeStep - 1) as StudioStep)}>Back</button> : null}
+                {draft.id && activeStep === 4 && canManage ? <button className={styles.dangerButton} type="button" onClick={deleteKit} disabled={saving}>Delete kit</button> : null}
               </div>
-            ) : null}
+              <div>
+                {activeStep < 4 ? (
+                  <button className={styles.primaryButton} type="button" onClick={() => moveToStep((activeStep + 1) as StudioStep)}>Continue</button>
+                ) : (
+                  <>
+                    {draft.id ? <Link className={styles.secondaryButton} href={dealerAppMode ? '/dealer/valuation' : '/valuation'}>Start a valuation</Link> : null}
+                    {canManage ? <button className={styles.primaryButton} type="submit" disabled={saving}>{saving ? 'Saving…' : 'Save Brand Kit'}</button> : null}
+                  </>
+                )}
+              </div>
+            </div>
           </form>
 
           <aside className={styles.previewPanel}>
             <div className={styles.previewHeading}>
               <div>
-                <span>Live preview</span>
+                <span>Live advert preview</span>
                 <strong>{selectedTemplate.name}</strong>
               </div>
               <span className={styles.previewPill}>{draft.language === 'af' ? 'Afrikaans' : 'English'}</span>
@@ -415,7 +541,10 @@ export default function AdStudioClient({ dealerAppMode = false }: AdStudioClient
               </div>
               <footer className={styles.aimFooter}>Created with <strong>Aim4price</strong></footer>
             </div>
-            <p className={styles.previewNote}>The advert uses the valuation photo, equipment details, price and deal rating automatically.</p>
+            <div className={styles.previewNote}>
+              <span aria-hidden="true">✓</span>
+              <p><strong>Filled automatically</strong>Valuation photos, equipment details, price and deal rating are inserted when the advert is created.</p>
+            </div>
           </aside>
         </div>
       ) : null}
