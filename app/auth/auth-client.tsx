@@ -47,7 +47,6 @@ type NoticeTone = "success" | "error" | "info";
 type SelectOption<T extends string> = {
   value: T;
   label: string;
-  description?: string;
 };
 
 type AuthNotice = {
@@ -87,12 +86,12 @@ const POST_LOGIN_REDIRECT = "/asset-register";
 const ADMIN_EMAIL = "aim4price@gmail.com";
 
 const SIGNUP_ACCOUNT_TYPE_OPTIONS: Array<SelectOption<SignupAccountType>> = [
-  { value: "owner", label: "Asset owner", description: "Value, save and manage machinery you own." },
-  { value: "middleman", label: "Middleman", description: "Value machinery, create adverts and share your showroom." },
-  { value: "dealer", label: "Dealer / auctioneer", description: "Paid workspace with leads, Discovery and dealer tools." },
-  { value: "finance", label: "Finance & accounting", description: "Support finance, accounting and asset decisions." },
-  { value: "insurance", label: "Insurance provider", description: "Work with insured assets and owner information." },
-  { value: "licensing", label: "Licence renewal expert", description: "Manage licence-renewal opportunities and fleets." },
+  { value: "owner", label: "Asset owner" },
+  { value: "middleman", label: "Middleman" },
+  { value: "dealer", label: "Dealer / auctioneer" },
+  { value: "finance", label: "Finance & accounting" },
+  { value: "insurance", label: "Insurance provider" },
+  { value: "licensing", label: "Licence renewal expert" },
 ];
 
 const SIGNUP_ACCOUNT_SUBTYPE_OPTIONS: Record<
@@ -959,57 +958,42 @@ export default function AuthClient() {
                 <div className={styles.signupTypeRow}>
                   <div className={styles.field}>
                     <span className={styles.label}>What would you like to use Aim4price for?</span>
-                    <div className={styles.accountTypeGrid} role="radiogroup" aria-label="Choose account type">
-                      {SIGNUP_ACCOUNT_TYPE_OPTIONS.map((option) => {
-                        const selected = signupForm.accountType === option.value;
-                        return (
-                          <button
-                            key={option.value}
-                            type="button"
-                            role="radio"
-                            aria-checked={selected}
-                            className={`${styles.accountTypeCard} ${selected ? styles.accountTypeCardSelected : ""}`}
-                            onClick={() => {
-                              setSignupForm((current) => ({
-                                ...current,
-                                accountType: option.value,
-                                accountSubtype: getDefaultSubtype(option.value),
-                                directoryParticipation: option.value !== "owner" && option.value !== "middleman",
-                              }));
-                            }}
-                          >
-                            <span className={styles.accountTypeIndicator} aria-hidden="true" />
-                            <strong>{option.label}</strong>
-                            <small>{option.description}</small>
-                          </button>
-                        );
-                      })}
-                    </div>
+                    <CustomSelect
+                      name="accountType"
+                      value={signupForm.accountType}
+                      options={SIGNUP_ACCOUNT_TYPE_OPTIONS}
+                      onChange={(accountType) => {
+                        setSignupForm((current) => ({
+                          ...current,
+                          accountType,
+                          accountSubtype: getDefaultSubtype(accountType),
+                          directoryParticipation:
+                            accountType !== "owner" && accountType !== "middleman",
+                        }));
+                      }}
+                    />
                   </div>
 
                   <div className={styles.field}>
                     <span className={styles.label}>
                       Which best describes your work?
                     </span>
+                    <CustomSelect
+                      name="accountSubtype"
+                      value={signupForm.accountSubtype}
+                      options={SIGNUP_ACCOUNT_SUBTYPE_OPTIONS[signupForm.accountType]}
+                      onChange={(nextAccountSubtype) =>
+                        setSignupForm((current) => ({
+                          ...current,
+                          accountSubtype: nextAccountSubtype,
+                        }))
+                      }
+                    />
                     {signupForm.accountType === "middleman" ? (
-                      <div className={styles.middlemanWorkspaceSummary}>
-                        <strong>Free Middleman workspace</strong>
-                        <span>Get Estimate · Ad Studio · My Showroom · Account</span>
-                        <small>No Leads or Discovery. Every advert must start with an Aim4price valuation.</small>
-                      </div>
-                    ) : (
-                      <CustomSelect
-                        name="accountSubtype"
-                        value={signupForm.accountSubtype}
-                        options={SIGNUP_ACCOUNT_SUBTYPE_OPTIONS[signupForm.accountType]}
-                        onChange={(nextAccountSubtype) =>
-                          setSignupForm((current) => ({
-                            ...current,
-                            accountSubtype: nextAccountSubtype,
-                          }))
-                        }
-                      />
-                    )}
+                      <small className={styles.selectionHelp}>
+                        Free workspace for valuation-backed adverts and your public showroom.
+                      </small>
+                    ) : null}
                   </div>
                 </div>
 
@@ -1399,4 +1383,3 @@ export default function AuthClient() {
     </main>
   );
 }
-
