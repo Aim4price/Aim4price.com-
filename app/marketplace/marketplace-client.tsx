@@ -109,8 +109,6 @@ type MarketplaceEditDraft = {
 const LISTINGS_PER_PAGE = 24;
 const JPEG_AD_WIDTH = 1600;
 const JPEG_AD_HEIGHT = 900;
-const JPEG_AD_LOGO_SRC = '/brand/Aim4price_Home_Logo.png';
-const JPEG_AD_WATERMARK_SRC = '/brand/aim4price-mark-black.png';
 const DEFAULT_MARKETPLACE_CONTACT_NAME = 'Kuyler';
 const DEFAULT_MARKETPLACE_CONTACT_PHONE = '062 572 1650';
 const DEFAULT_MARKETPLACE_CONTACT_TEL = '0625721650';
@@ -1202,22 +1200,6 @@ function drawAdLabelValue(
   context.restore();
 }
 
-function drawAim4priceWordmarkFallback(
-  context: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  fontSize: number,
-  alpha: number,
-) {
-  context.save();
-  context.globalAlpha = alpha;
-  context.fillStyle = '#165340';
-  context.font = `900 ${fontSize}px Montserrat, Inter, Arial, sans-serif`;
-  context.letterSpacing = '-3px';
-  context.fillText('Aim4price', x, y);
-  context.restore();
-}
-
 function getAdProvince(listing: MarketplaceListing): string {
   return String(listing.province ?? '').trim() || 'South Africa';
 }
@@ -1281,38 +1263,6 @@ function getListingForCurrentViewer(listing: MarketplaceListing, exposeSellerCon
   return exposeSellerContact ? listing : getPublicMarketplaceListing(listing);
 }
 
-function drawAdWatermark(
-  context: CanvasRenderingContext2D,
-  logoImage: HTMLImageElement | null,
-  x: number,
-  y: number,
-  width: number,
-  height: number,
-) {
-  context.save();
-  context.globalAlpha = 0.045;
-
-  if (logoImage) {
-    const logoWidth = width * 0.82;
-    const ratio = (logoImage.naturalHeight || logoImage.height) / Math.max(1, logoImage.naturalWidth || logoImage.width);
-    const logoHeight = logoWidth * ratio;
-    context.drawImage(
-      logoImage,
-      x + width - logoWidth - 18,
-      y + (height - logoHeight) / 2,
-      logoWidth,
-      logoHeight,
-    );
-  } else {
-    context.fillStyle = '#165340';
-    context.font = '900 112px Montserrat, Inter, Arial, sans-serif';
-    context.letterSpacing = '-5px';
-    context.fillText('Aim4price', x + 170, y + height / 2 + 34);
-  }
-
-  context.restore();
-}
-
 function drawAdLogoBadge(
   context: CanvasRenderingContext2D,
   logoImage: HTMLImageElement | null,
@@ -1320,7 +1270,7 @@ function drawAdLogoBadge(
   y: number,
   width: number,
   height: number,
-  fallbackLabel = 'AIM4PRICE',
+  fallbackLabel = 'Marketplace seller',
 ) {
   context.save();
   context.shadowColor = 'rgba(5, 5, 5, 0.14)';
@@ -1544,7 +1494,6 @@ function canvasContrastColor(hexColor: string): string {
 
 function drawAim4priceCredit(
   context: CanvasRenderingContext2D,
-  aim4priceLogo: HTMLImageElement | null,
   x: number,
   y: number,
   width: number,
@@ -1553,24 +1502,11 @@ function drawAim4priceCredit(
 ) {
   fillRoundedRect(context, x, y, width, height, height / 2, dark ? 'rgba(255,255,255,0.92)' : 'rgba(255,255,255,0.94)');
   context.save();
+  context.fillStyle = '#314c43';
+  context.font = '800 15px Montserrat, Inter, Arial, sans-serif';
+  context.textAlign = 'center';
   context.textBaseline = 'middle';
-
-  if (aim4priceLogo) {
-    const ratio = (aim4priceLogo.naturalWidth || aim4priceLogo.width) / Math.max(1, aim4priceLogo.naturalHeight || aim4priceLogo.height);
-    const logoHeight = height - 18;
-    const logoWidth = Math.min(width * 0.48, logoHeight * ratio);
-    context.drawImage(aim4priceLogo, x + width - logoWidth - 14, y + (height - logoHeight) / 2, logoWidth, logoHeight);
-  } else {
-    context.fillStyle = '#165340';
-    context.font = '900 18px Montserrat, Inter, Arial, sans-serif';
-    context.textAlign = 'right';
-    context.fillText('Aim4price', x + width - 14, y + height / 2 + 1);
-  }
-
-  context.fillStyle = '#50655e';
-  context.font = '750 13px Montserrat, Inter, Arial, sans-serif';
-  context.textAlign = 'left';
-  context.fillText('CREATED WITH', x + 15, y + height / 2 + 1);
+  context.fillText('Powered by Aim4price.com', x + width / 2, y + height / 2 + 1);
   context.restore();
 }
 
@@ -1625,7 +1561,6 @@ function drawAlternateBrandedAdCanvas(
   templateId: AdTemplateId,
   listingImages: HTMLImageElement[],
   sellerLogo: HTMLImageElement | null,
-  aim4priceLogo: HTMLImageElement | null,
 ) {
   const width = JPEG_AD_WIDTH;
   const height = JPEG_AD_HEIGHT;
@@ -1664,7 +1599,7 @@ function drawAlternateBrandedAdCanvas(
     context.font = '800 24px Montserrat, Inter, Arial, sans-serif';
     context.fillText(fitCanvasText(context, contact, 480), 1290, 690);
     context.restore();
-    drawAim4priceCredit(context, aim4priceLogo, 1292, 798, 244, 54, true);
+    drawAim4priceCredit(context, 1292, 798, 244, 54, true);
     return;
   }
 
@@ -1690,7 +1625,7 @@ function drawAlternateBrandedAdCanvas(
     context.font = '800 20px Montserrat, Inter, Arial, sans-serif';
     context.fillText(fitCanvasText(context, contact, 458), 1291, 841);
     context.restore();
-    drawAim4priceCredit(context, aim4priceLogo, 54, 814, 236, 52, true);
+    drawAim4priceCredit(context, 54, 814, 236, 52, true);
     return;
   }
 
@@ -1739,7 +1674,7 @@ function drawAlternateBrandedAdCanvas(
     context.font = '800 24px Montserrat, Inter, Arial, sans-serif';
     context.fillText(fitCanvasText(context, contact, 500), 1265, 700);
     context.restore();
-    drawAim4priceCredit(context, aim4priceLogo, 1274, 772, 244, 54);
+    drawAim4priceCredit(context, 1274, 772, 244, 54);
     return;
   }
 
@@ -1766,7 +1701,7 @@ function drawAlternateBrandedAdCanvas(
     context.font = '800 25px Montserrat, Inter, Arial, sans-serif';
     context.fillText(fitCanvasText(context, contact, 430), 1270, 797);
     context.restore();
-    drawAim4priceCredit(context, aim4priceLogo, 1318, 64, 214, 52, true);
+    drawAim4priceCredit(context, 1318, 64, 214, 52, true);
     return;
   }
 
@@ -1790,7 +1725,7 @@ function drawAlternateBrandedAdCanvas(
     context.font = '800 26px Montserrat, Inter, Arial, sans-serif';
     context.fillText(fitCanvasText(context, contact, 550), 68, 680);
     context.restore();
-    drawAim4priceCredit(context, aim4priceLogo, 62, 794, 230, 54);
+    drawAim4priceCredit(context, 62, 794, 230, 54);
     return;
   }
 
@@ -1822,7 +1757,7 @@ function drawAlternateBrandedAdCanvas(
     context.font = '850 27px Montserrat, Inter, Arial, sans-serif';
     context.fillText(fitCanvasText(context, contact, 490), 1241, 688);
     context.restore();
-    drawAim4priceCredit(context, aim4priceLogo, 1260, 772, 230, 54);
+    drawAim4priceCredit(context, 1260, 772, 230, 54);
     return;
   }
 
@@ -1854,7 +1789,7 @@ function drawAlternateBrandedAdCanvas(
   context.font = '750 18px Montserrat, Inter, Arial, sans-serif';
   context.fillText(fitCanvasText(context, getAdProvince(listing), 530), 1233, 755);
   context.restore();
-  drawAim4priceCredit(context, aim4priceLogo, 1278, 792, 230, 54);
+  drawAim4priceCredit(context, 1278, 792, 230, 54);
 }
 
 async function drawListingAdCanvas(
@@ -1873,11 +1808,9 @@ async function drawListingAdCanvas(
   const listingImages = (
     await Promise.all(imageSources.map((imageSrc) => loadCanvasImage(imageSrc).catch(() => null)))
   ).filter((image): image is HTMLImageElement => image !== null);
-  const aim4priceLogoImage = await loadCanvasImage(JPEG_AD_LOGO_SRC).catch(() => null);
   const sellerLogoImage = listing.adBrand?.logoUrl
     ? await loadCanvasImage(listing.adBrand.logoUrl).catch(() => null)
     : null;
-  const watermarkImage = await loadCanvasImage(JPEG_AD_WATERMARK_SRC).catch(() => aim4priceLogoImage);
   const width = JPEG_AD_WIDTH;
   const height = JPEG_AD_HEIGHT;
   const margin = 64;
@@ -1910,7 +1843,6 @@ async function drawListingAdCanvas(
       templateId,
       listingImages,
       sellerLogoImage,
-      aim4priceLogoImage,
     );
     return;
   }
@@ -1930,8 +1862,6 @@ async function drawListingAdCanvas(
   fillRoundedRect(context, frameInset, frameInset, width - frameInset * 2, height - frameInset * 2, frameRadius, '#ffffff');
   context.restore();
   strokeRoundedRect(context, frameInset, frameInset, width - frameInset * 2, height - frameInset * 2, frameRadius, '#d7dde1', 2);
-
-  drawAdWatermark(context, watermarkImage, contentX - 22, 286, contentWidth + 28, 380);
 
   context.save();
   context.fillStyle = 'rgba(13, 51, 41, 0.08)';
@@ -1999,7 +1929,7 @@ async function drawListingAdCanvas(
   drawAdContactCard(context, listing, contentX + 14, contactTop, contentWidth - 14, contactHeight);
   context.fillStyle = brandAccent;
   context.fillRect(contentX, 146, Math.min(contentWidth, 190), 7);
-  drawAim4priceCredit(context, aim4priceLogoImage, width - margin - 232, height - 58, 224, 48);
+  drawAim4priceCredit(context, width - margin - 232, height - 58, 224, 48);
 }
 
 function canvasToJpegBlob(canvas: HTMLCanvasElement): Promise<Blob> {

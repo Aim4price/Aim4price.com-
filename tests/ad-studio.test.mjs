@@ -86,7 +86,7 @@ test('Studio and Marketplace use the same rated WYSIWYG JPEG renderer', async ()
 
   assert.match(marketplace, /createSharedMarketplaceAdJpeg\(shareListing\)/);
   assert.match(studio, /renderMarketplaceAdCanvas\(canvas, previewContent/);
-  assert.match(studio, /The downloaded JPEG matches this preview/);
+  assert.match(studio, /Your downloaded JPEG will match this preview/);
   assert.match(renderer, /id === templateId/);
   assert.match(renderer, /return 'gallery-three'/);
   assert.match(renderer, /return 'duo-split'/);
@@ -96,13 +96,19 @@ test('Studio and Marketplace use the same rated WYSIWYG JPEG renderer', async ()
   assert.match(renderer, /HIGH PRICE/);
   assert.match(renderer, /#22b24b/);
   assert.match(renderer, /#1e9bb3/);
+  assert.match(renderer, /Powered by Aim4price\.com/);
+  assert.doesNotMatch(renderer, /Created with/);
+  assert.doesNotMatch(renderer, /content\.title\.toUpperCase\(\)/);
+  assert.match(renderer, /loadImage\(content\.brand\.logoUrl\)/);
+  assert.doesNotMatch(marketplace, /JPEG_AD_LOGO_SRC|JPEG_AD_WATERMARK_SRC|CREATED WITH/);
 });
 
 test('Ad Studio is limited to dealer accounts and uses a four-step guided setup', async () => {
-  const [desktopPage, dealerPage, client, header] = await Promise.all([
+  const [desktopPage, dealerPage, client, css, header] = await Promise.all([
     read('app/ad-studio/page.tsx'),
     read('app/dealer/ad-studio/page.tsx'),
     read('components/AdStudioClient.tsx'),
+    read('components/AdStudioClient.module.css'),
     read('components/AppHeader.tsx'),
   ]);
 
@@ -110,15 +116,19 @@ test('Ad Studio is limited to dealer accounts and uses a four-step guided setup'
   assert.match(desktopPage, /<AdStudioClient/);
   assert.match(dealerPage, /dealerAppMode/);
   assert.match(dealerPage, /middlemanMode=\{isMiddlemanAccountSubtype\(profile\.accountSubtype\)\}/);
-  assert.match(client, /Save Brand Kit/);
+  assert.match(client, /Save brand kit/);
   assert.match(client, /type StudioStep = 1 \| 2 \| 3 \| 4/);
   assert.match(client, /Details.*Layout.*Style.*Review/s);
   assert.match(client, /activeStep === 1/);
   assert.match(client, /activeStep === 4/);
-  assert.match(client, /My Brand Kits/);
+  assert.match(client, /Brand kits/);
+  assert.match(client, /function StudioIcon/);
+  assert.match(client, /Create professional adverts/);
   assert.match(client, /setDefaultKit/);
   assert.match(client, /deleteKit\(kit\)/);
   assert.match(client, /selectedTemplate\.photoCount/);
+  assert.match(css, /\.stepButton small \{ display: none; \}/);
+  assert.doesNotMatch(css, /\.stepButton > span:last-child \{ display: none; \}/);
   assert.match(header, /href: '\/ad-studio', label: 'Ad Studio', accountTypes: \['dealer'\]/);
   assert.doesNotMatch(header, /href: '\/ad-studio', label: 'Ad Studio', accountTypes: \['owner'/);
 });
@@ -198,6 +208,8 @@ test('dealer showrooms are standard, valuation-backed and reuse the Marketplace 
   assert.match(marketplaceUi, /if \(showroomMode\)/);
   assert.match(marketplaceUi, /!showroomMode \? \(/);
   assert.match(manager, /Download JPEG/);
+  assert.match(manager, /Powered by Aim4price\.com/);
+  assert.doesNotMatch(manager, /Created with Aim4price/);
   assert.match(marketplaceDb, /requireValuationSource && !pick\(row, \['valuation_run_id'\]\)/);
   assert.match(dealerHome, /new Set<DealerAppCapability>\(\['valuation', 'ad_studio', 'showroom', 'marketplace'\]\)/);
   assert.match(header, /href: '\/my-showroom', label: 'My Showroom', accountTypes: \['dealer'\]/);
