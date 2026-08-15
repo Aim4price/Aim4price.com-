@@ -46,6 +46,12 @@ import {
   incrementGuestValuationCount,
 } from '../../lib/guest-valuation-limit';
 import type { AdBrandKit } from '../../lib/ad-studio';
+import type { MarketplaceListing } from '../../lib/marketplace';
+import {
+  createMarketplaceAdJpeg,
+  downloadMarketplaceAd,
+  marketplaceAdFilename,
+} from '../../lib/marketplace-ad-renderer';
 
 type Step = 1 | 2 | 3 | 4 | 5;
 type MethodKey = 'aim4price';
@@ -405,11 +411,15 @@ type MarketplaceApiResponse = {
   ok: boolean;
   assetId?: string;
   marketplaceStatus?: string;
-  listing?: {
-    id?: string | number | null;
-    sourceAssetId?: string | number | null;
-  } | null;
+  listing?: MarketplaceListing | null;
   error?: string;
+};
+
+type PublishedAdvertDownload = {
+  listing: MarketplaceListing;
+  listingReference: string;
+  status: 'downloaded' | 'failed';
+  message: string;
 };
 
 type ValuationPdfKeyValue = {
@@ -1797,6 +1807,8 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
   const [marketplacePhotoFiles, setMarketplacePhotoFiles] = useState<MarketplacePendingPhoto[]>([]);
   const [marketplacePublishError, setMarketplacePublishError] = useState('');
   const [isPublishingMarketplace, setIsPublishingMarketplace] = useState(false);
+  const [publishedAdvertDownload, setPublishedAdvertDownload] = useState<PublishedAdvertDownload | null>(null);
+  const [isDownloadingPublishedAdvert, setIsDownloadingPublishedAdvert] = useState(false);
   const [replacementPanelOpen, setReplacementPanelOpen] = useState(false);
   const [completionToastVisible, setCompletionToastVisible] = useState(false);
   const marketplacePhotoInputRef = useRef<HTMLInputElement | null>(null);
@@ -4303,6 +4315,43 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     });
   }
 
+  function moveMarketplacePhoto(photoId: string, direction: -1 | 1) {
+    setMarketplacePhotoFiles((current) => {
+      const index = current.findIndex((photo) => photo.id === photoId);
+      const nextIndex = index + direction;
+      if (index < 0 || nextIndex < 0 || nextIndex >= current.length) return current;
+      const next = [...current];
+      [next[index], next[nextIndex]] = [next[nextIndex], next[index]];
+      return next;
+    });
+  }
+
+  async function downloadPublishedAdvert(listing: MarketplaceListing): Promise<'downloaded' | 'failed'> {
+    setIsDownloadingPublishedAdvert(true);
+    try {
+      const { blob } = await createMarketplaceAdJpeg(listing);
+      downloadMarketplaceAd(blob, marketplaceAdFilename(listing.title));
+      return 'downloaded';
+    } catch (error) {
+      console.error('Automatic advert download failed', error);
+      return 'failed';
+    } finally {
+      setIsDownloadingPublishedAdvert(false);
+    }
+  }
+
+  async function retryPublishedAdvertDownload() {
+    if (!publishedAdvertDownload || isDownloadingPublishedAdvert) return;
+    const status = await downloadPublishedAdvert(publishedAdvertDownload.listing);
+    setPublishedAdvertDownload((current) => current ? {
+      ...current,
+      status,
+      message: status === 'downloaded'
+        ? 'The JPEG advert has downloaded again.'
+        : 'The listing is still live, but the JPEG download could not be created. Please try again.',
+    } : current);
+  }
+
   async function uploadMarketplacePhotos(): Promise<string[]> {
     if (!marketplacePhotoFiles.length) return [];
 
@@ -4422,13 +4471,23 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
         throw new Error(published.error ?? 'Failed to publish this marketplace listing.');
       }
 
-      const listingReference = published.listing?.id ?? published.listing?.sourceAssetId ?? published.assetId ?? assetId;
+      if (!published.listing) {
+        throw new Error('The advert was published, but the listing details were not returned for the JPEG download.');
+      }
+
+      const listingReference = published.listing.id ?? published.listing.sourceAssetId ?? published.assetId ?? assetId;
+      const downloadStatus = await downloadPublishedAdvert(published.listing);
       clearMarketplacePhotoFiles();
       setMarketplaceDraft(null);
       setSavedMarketplaceAssetId(null);
-      router.push(
-        `${marketplacePath}?listing=${encodeURIComponent(String(listingReference))}&createAd=1`,
-      );
+      setPublishedAdvertDownload({
+        listing: published.listing,
+        listingReference: String(listingReference),
+        status: downloadStatus,
+        message: downloadStatus === 'downloaded'
+          ? 'The JPEG advert downloaded and the listing is live on Marketplace.'
+          : 'The listing is live on Marketplace, but the JPEG download could not be created. Please try the download again.',
+      });
     } catch (error) {
       console.error(error);
       setMarketplacePublishError(error instanceof Error ? error.message : 'Failed to publish this marketplace listing.');
@@ -7585,8 +7644,8 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
 
             <div className={styles.marketplacePublishHeader}>
               <span>Create advert</span>
-              <h2>Confirm the advert and Marketplace listing.</h2>
-              <p>One confirmation creates the branded advert and publishes it to Marketplace automatically.</p>
+              <h2>Confirm and download your advert.</h2>
+              <p>Aim4price publishes the listing in the background, downloads the JPEG and keeps you on this valuation.</p>
             </div>
 
             <div className={styles.marketplaceSummaryGrid}>
@@ -7644,7 +7703,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                 <div className={styles.marketplacePhotoPanel}>
                   <div>
                     <span>Photos</span>
-                    <p>Upload the listing photos directly here. JPG, PNG and WEBP are supported.</p>
+                    <p>The first photo is the main image. Use the arrows to change the order. If there are fewer photos than the saved style needs, Aim4price selects the best-fitting layout automatically.</p>
                   </div>
                   <input
                     ref={marketplacePhotoInputRef}
@@ -7660,12 +7719,15 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
 
                   {marketplacePhotoFiles.length ? (
                     <div className={styles.marketplacePhotoGrid}>
-                      {marketplacePhotoFiles.map((photo) => (
+                      {marketplacePhotoFiles.map((photo, index) => (
                         <div key={photo.id} className={styles.marketplacePhotoThumb}>
                           <img src={photo.previewUrl} alt="Marketplace upload preview" />
-                          <button type="button" onClick={() => removeMarketplacePhoto(photo.id)} aria-label="Remove photo">
-                            ×
-                          </button>
+                          {index === 0 ? <strong className={styles.marketplacePhotoCoverBadge}>Main photo</strong> : null}
+                          <div className={styles.marketplacePhotoControls}>
+                            <button type="button" onClick={() => moveMarketplacePhoto(photo.id, -1)} disabled={index === 0} aria-label="Move photo earlier">←</button>
+                            <button type="button" onClick={() => moveMarketplacePhoto(photo.id, 1)} disabled={index === marketplacePhotoFiles.length - 1} aria-label="Move photo later">→</button>
+                            <button type="button" onClick={() => removeMarketplacePhoto(photo.id)} aria-label="Remove photo">×</button>
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -7731,10 +7793,51 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                 Close
               </button>
               <button type="submit" className={styles.primaryButton} disabled={isPublishingMarketplace}>
-                {isPublishingMarketplace ? 'Creating and publishing...' : isSignedIn ? 'Create ad and publish' : 'Create account to publish'}
+                {isPublishingMarketplace ? 'Creating advert...' : isSignedIn ? 'Create advert' : 'Create account to publish'}
               </button>
             </div>
           </form>
+        </div>
+      ) : null}
+
+      {publishedAdvertDownload ? (
+        <div className={styles.marketplaceIntroOverlay} onClick={() => setPublishedAdvertDownload(null)}>
+          <section
+            className={`${styles.marketplaceIntroModal} ${styles.marketplaceAdvertSuccessModal}`}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="advert-download-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <span className={styles.marketplaceIntroKicker}>Advert created</span>
+            <h2 id="advert-download-title">
+              {publishedAdvertDownload.status === 'downloaded' ? 'Your JPEG is ready.' : 'Your listing is live.'}
+            </h2>
+            <p>{publishedAdvertDownload.message}</p>
+            <div className={styles.marketplaceAdvertSuccessChecklist}>
+              <span>✓ Published to Marketplace</span>
+              <span>{publishedAdvertDownload.status === 'downloaded' ? '✓ JPEG downloaded' : '! JPEG download needs another try'}</span>
+            </div>
+            <div className={styles.marketplaceIntroActions}>
+              <button type="button" className={styles.secondaryButton} onClick={() => setPublishedAdvertDownload(null)}>
+                Stay here
+              </button>
+              <a
+                className={styles.secondaryButton}
+                href={`${marketplacePath}?listing=${encodeURIComponent(publishedAdvertDownload.listingReference)}`}
+              >
+                View Marketplace
+              </a>
+              <button
+                type="button"
+                className={styles.primaryButton}
+                onClick={() => void retryPublishedAdvertDownload()}
+                disabled={isDownloadingPublishedAdvert}
+              >
+                {isDownloadingPublishedAdvert ? 'Creating JPEG...' : 'Download again'}
+              </button>
+            </div>
+          </section>
         </div>
       ) : null}
     </main>

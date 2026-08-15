@@ -3,6 +3,7 @@ import AppHeader from '../../components/AppHeader';
 import AdStudioClient from '../../components/AdStudioClient';
 import { getAccountProfile } from '../../lib/account-profile';
 import { getServerSession, isDealerAppSession } from '../../lib/auth-session';
+import { isMiddlemanAccountSubtype } from '../../lib/middleman-account';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -25,7 +26,7 @@ export default async function AdStudioPage() {
   return (
     <main>
       <AppHeader active="ad-studio" />
-      <AdStudioClient />
+      <AdStudioClient middlemanMode={isMiddlemanAccountSubtype(profile.accountSubtype)} />
     </main>
   );
 }

@@ -39,6 +39,7 @@ export async function GET() {
         displayName: profile.displayName,
         businessName: profile.businessName,
         accountType: "dealer",
+        accountSubtype: profile.accountSubtype,
         accountStatus: profile.accountStatus,
         province: profile.province,
         townCity: profile.townCity,

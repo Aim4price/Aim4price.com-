@@ -209,6 +209,9 @@ function normalizeAccountType(value: unknown): string {
   if (
     normalized === "auction-house" ||
     normalized === "auctioneer" ||
+    normalized === "middleman" ||
+    normalized === "machinery-middleman" ||
+    normalized === "equipment-middleman" ||
     normalized === "dealer" ||
     normalized === "machinery-dealer" ||
     normalized === "motor-dealer"
@@ -261,6 +264,9 @@ function normalizeAccountSubtype(accountType: string, value: unknown): string {
       "motor-dealer",
       "auctioneer",
       "auction-house",
+      "equipment-middleman",
+      "machinery-middleman",
+      "middleman",
     ]),
     licensing: new Set([
       "licence-renewal-expert",
@@ -284,6 +290,10 @@ function normalizeAccountSubtype(accountType: string, value: unknown): string {
 
   if (accountType === "dealer" && normalized === "auction-house") {
     return "auctioneer";
+  }
+
+  if (accountType === "dealer" && ["middleman", "machinery-middleman"].includes(normalized)) {
+    return "equipment-middleman";
   }
 
   if (allowedByType[accountType]?.has(normalized)) {
@@ -532,6 +542,9 @@ async function ensureAccountRoleSchema(
         when 'insurance' then 'insurance'
         when 'auction-house' then 'dealer'
         when 'auctioneer' then 'dealer'
+        when 'middleman' then 'dealer'
+        when 'machinery-middleman' then 'dealer'
+        when 'equipment-middleman' then 'dealer'
         when 'machinery-dealer' then 'dealer'
         when 'motor-dealer' then 'dealer'
         when 'dealer' then 'dealer'
@@ -567,6 +580,9 @@ async function ensureAccountRoleSchema(
           when lower(regexp_replace(trim(coalesce(account_subtype, '')), '[ _]+', '-', 'g')) in
             ('auction-house', 'auctioneer')
             then 'auctioneer'
+          when lower(regexp_replace(trim(coalesce(account_subtype, '')), '[ _]+', '-', 'g')) in
+            ('middleman', 'machinery-middleman', 'equipment-middleman')
+            then 'equipment-middleman'
           else 'machinery-dealer'
         end
         when 'licensing' then case
@@ -592,7 +608,7 @@ async function ensureAccountRoleSchema(
             ('bank', 'finance-house', 'accountant'))
           or (account_type = 'insurance' and account_subtype = 'short-term-insurer')
           or (account_type = 'dealer' and account_subtype in
-            ('machinery-dealer', 'motor-dealer', 'auctioneer'))
+            ('machinery-dealer', 'motor-dealer', 'auctioneer', 'equipment-middleman'))
           or (account_type = 'licensing' and account_subtype in
             ('licence-renewal-expert', 'fleet-licensing-service'))
         ) not valid;

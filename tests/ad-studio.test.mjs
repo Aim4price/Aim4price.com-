@@ -60,32 +60,42 @@ test('schema preserves the selected branding as a Marketplace advert snapshot', 
   assert.match(marketplaceDatabase, /normalizeAdBrandSnapshot\(pick\(row, \['marketplace_ad_brand'\]\)/);
 });
 
-test('valuation Create Ad flow selects a Brand Kit and publishes without a second Marketplace action', async () => {
+test('valuation Create Advert publishes in the background and downloads the matching JPEG', async () => {
   const valuation = await read('app/valuation/valuation-client.tsx');
 
   assert.match(valuation, /'Create Ad'/);
   assert.match(valuation, /name="brandKitId"/);
   assert.match(valuation, /brandKitId: marketplaceDraft\.brandKitId \|\| null/);
-  assert.match(valuation, /Create ad and publish/);
-  assert.match(valuation, /&createAd=1/);
+  assert.match(valuation, /createMarketplaceAdJpeg\(listing\)/);
+  assert.match(valuation, /downloadMarketplaceAd\(blob, marketplaceAdFilename\(listing\.title\)\)/);
+  assert.match(valuation, /The JPEG advert downloaded and the listing is live on Marketplace/);
+  assert.doesNotMatch(valuation, /router\.push\(`\$\{marketplacePath\}.*createAd=1/);
   assert.match(valuation, /Owner listings use the standard Aim4price Marketplace advert design/);
   assert.match(valuation, /resolvedAccountType === 'dealer'/);
+  assert.match(valuation, /moveMarketplacePhoto/);
+  assert.match(valuation, /Main photo/);
   assert.doesNotMatch(valuation, /saveAndSendToMarketplace/);
 });
 
-test('Marketplace opens the advert sheet and renders the saved layout and dealer branding', async () => {
-  const marketplace = await read('app/marketplace/marketplace-client.tsx');
+test('Studio and Marketplace use the same rated WYSIWYG JPEG renderer', async () => {
+  const [marketplace, studio, renderer] = await Promise.all([
+    read('app/marketplace/marketplace-client.tsx'),
+    read('components/AdStudioClient.tsx'),
+    read('lib/marketplace-ad-renderer.ts'),
+  ]);
 
-  assert.match(marketplace, /searchParams\.get\('createAd'\) === '1'/);
-  assert.match(marketplace, /setShareListing\(nextListing\)/);
-  assert.match(marketplace, /listing\.adBrand\?\.logoUrl/);
-  assert.match(marketplace, /listing\.adBrand\?\.templateId/);
-  assert.match(marketplace, /drawAlternateBrandedAdCanvas/);
-  assert.match(marketplace, /drawAim4priceCredit/);
-  assert.match(marketplace, /templateId === 'duo-split'/);
-  assert.match(marketplace, /templateId === 'gallery-three'/);
-  assert.match(marketplace, /templateId === 'catalogue-grid'/);
-  assert.match(marketplace, /listingImages\[index\]/);
+  assert.match(marketplace, /createSharedMarketplaceAdJpeg\(shareListing\)/);
+  assert.match(studio, /renderMarketplaceAdCanvas\(canvas, previewContent/);
+  assert.match(studio, /The downloaded JPEG matches this preview/);
+  assert.match(renderer, /id === templateId/);
+  assert.match(renderer, /return 'gallery-three'/);
+  assert.match(renderer, /return 'duo-split'/);
+  assert.match(renderer, /return 'photo-first'/);
+  assert.match(renderer, /GREAT PRICE/);
+  assert.match(renderer, /FAIR PRICE/);
+  assert.match(renderer, /HIGH PRICE/);
+  assert.match(renderer, /#22b24b/);
+  assert.match(renderer, /#1e9bb3/);
 });
 
 test('Ad Studio is limited to dealer accounts and uses a four-step guided setup', async () => {
@@ -98,7 +108,8 @@ test('Ad Studio is limited to dealer accounts and uses a four-step guided setup'
 
   assert.match(desktopPage, /profile\.accountType !== 'dealer'/);
   assert.match(desktopPage, /<AdStudioClient/);
-  assert.match(dealerPage, /<AdStudioClient dealerAppMode/);
+  assert.match(dealerPage, /dealerAppMode/);
+  assert.match(dealerPage, /middlemanMode=\{isMiddlemanAccountSubtype\(profile\.accountSubtype\)\}/);
   assert.match(client, /Save Brand Kit/);
   assert.match(client, /type StudioStep = 1 \| 2 \| 3 \| 4/);
   assert.match(client, /Details.*Layout.*Style.*Review/s);
@@ -110,6 +121,28 @@ test('Ad Studio is limited to dealer accounts and uses a four-step guided setup'
   assert.match(client, /selectedTemplate\.photoCount/);
   assert.match(header, /href: '\/ad-studio', label: 'Ad Studio', accountTypes: \['dealer'\]/);
   assert.doesNotMatch(header, /href: '\/ad-studio', label: 'Ad Studio', accountTypes: \['owner'/);
+});
+
+test('middlemen have a focused phone-first workspace and a supported account subtype', async () => {
+  const [profile, subtype, dealerHome, header, migration, css] = await Promise.all([
+    read('lib/account-profile.ts'),
+    read('lib/middleman-account.ts'),
+    read('app/dealer/page.tsx'),
+    read('components/AppHeader.tsx'),
+    read('database/migrations/74-middleman-account-subtype.sql'),
+    read('app/dealer/dealer.module.css'),
+  ]);
+
+  assert.match(subtype, /equipment-middleman/);
+  assert.match(profile, /equipment-middleman/);
+  assert.match(migration, /equipment-middleman/);
+  assert.match(dealerHome, /Middleman workspace/);
+  assert.match(dealerHome, /Value it\. Advertise it\. Move it\./);
+  assert.match(dealerHome, /middlemanCapabilities/);
+  assert.match(header, /MIDDLEMAN_ACCOUNT_MENU_ITEMS/);
+  assert.match(header, /My Listings/);
+  assert.match(css, /\.middlemanHomeIntro/);
+  assert.match(css, /100dvh/);
 });
 
 test('Marketplace only applies Brand Kits to dealer listings', async () => {

@@ -7,6 +7,7 @@ import { dealerRoleCan, type DealerAppCapability } from '../../lib/dealer-app-ac
 import { listDealerMaintenanceNotificationsForViewer } from '../../lib/dealer-maintenance-notification-inbox';
 import { listDealerTrackedAssets } from '../../lib/dealer-maintenance-tracker';
 import { listAssetLeadsForUser } from '../../lib/partner-access';
+import { isMiddlemanAccountSubtype } from '../../lib/middleman-account';
 import styles from './dealer.module.css';
 
 export const runtime = 'nodejs';
@@ -75,6 +76,7 @@ export default async function DealerHome() {
     0,
   );
   const role = dealerAppSession?.role ?? 'owner';
+  const middlemanMode = isMiddlemanAccountSubtype(profile.accountSubtype);
 
   const allTools: DealerHomeTool[] = [
     {
@@ -107,12 +109,23 @@ export default async function DealerHome() {
     { label: 'Client Costs', href: '/dealer/cost', capability: 'client_costs' },
     { label: 'Marketplace', href: '/dealer/marketplace', capability: 'marketplace' },
   ];
-  const tools = allTools.filter((tool) => dealerRoleCan(role, tool.capability));
+  const middlemanCapabilities = new Set<DealerAppCapability>(['valuation', 'ad_studio', 'marketplace', 'leads', 'notifications']);
+  const tools = allTools.filter((tool) =>
+    dealerRoleCan(role, tool.capability)
+    && (!middlemanMode || middlemanCapabilities.has(tool.capability)),
+  );
 
   return (
     <main className={`${styles.shell} ${styles.homeShell}`}>
       <div className={styles.homeContent}>
-        <nav className={styles.homeLauncher} aria-label="Dealer tools">
+        {middlemanMode ? (
+          <header className={styles.middlemanHomeIntro}>
+            <span>Middleman workspace</span>
+            <h1>Value it. Advertise it. Move it.</h1>
+            <p>Create professional machinery adverts from your phone and keep every enquiry together.</p>
+          </header>
+        ) : null}
+        <nav className={styles.homeLauncher} aria-label={middlemanMode ? 'Middleman tools' : 'Dealer tools'}>
           {tools.map((tool) => <ToolCard key={tool.href} tool={tool} />)}
         </nav>
       </div>
