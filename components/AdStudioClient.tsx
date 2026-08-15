@@ -62,7 +62,10 @@ type StudioIconName =
   | 'back'
   | 'next'
   | 'preview'
-  | 'image';
+  | 'image'
+  | 'language'
+  | 'price'
+  | 'chevron';
 
 function StudioIcon({ name }: { name: StudioIconName }) {
   const svgProps = {
@@ -147,6 +150,19 @@ function StudioIcon({ name }: { name: StudioIconName }) {
           <path {...strokeProps} d="m6.5 17 4.1-4.2 2.6 2.5 1.7-1.7 2.6 3.4" />
         </>
       ) : null}
+      {name === 'language' ? (
+        <>
+          <circle {...strokeProps} cx="12" cy="12" r="8" />
+          <path {...strokeProps} d="M4.5 9h15M4.5 15h15M12 4c2.1 2.2 3.1 4.9 3.1 8s-1 5.8-3.1 8c-2.1-2.2-3.1-4.9-3.1-8S9.9 6.2 12 4Z" />
+        </>
+      ) : null}
+      {name === 'price' ? (
+        <>
+          <path {...strokeProps} d="M4.5 6.5v5.1L12.9 20l7.1-7.1-8.4-8.4H6.5a2 2 0 0 0-2 2Z" />
+          <circle cx="8.3" cy="8.3" r="1.25" fill="currentColor" />
+        </>
+      ) : null}
+      {name === 'chevron' ? <path {...strokeProps} d="m7 9.5 5 5 5-5" /> : null}
     </svg>
   );
 }
@@ -255,7 +271,7 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
     sellerName: draft.contactName || 'Sales contact',
     sellerPhone: draft.phone || '082 000 0000',
     sellerCompany: previewName,
-    imageUrls: Array.from({ length: selectedTemplate.photoCount }, () => '/brand/Tractor.png'),
+    imageUrls: [],
     brand: {
       name: draft.name,
       templateId: draft.templateId,
@@ -271,7 +287,7 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
       language: draft.language,
       vatLabel: draft.vatLabel,
     },
-  }), [draft, previewName, selectedTemplate.photoCount]);
+  }), [draft, previewName]);
   const previewRating = getMarketplaceAdRating(previewContent);
 
   useEffect(() => {
@@ -689,20 +705,28 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
                         Accent colour
                         <span><input type="color" value={draft.accentColor} onChange={(event) => update('accentColor', event.target.value)} /><code>{draft.accentColor}</code></span>
                       </label>
-                      <label>
-                        Advert language
-                        <select value={draft.language} onChange={(event) => update('language', event.target.value as AdLanguage)}>
-                          <option value="en">English</option>
-                          <option value="af">Afrikaans</option>
-                        </select>
+                      <label className={styles.selectField}>
+                        <span className={styles.fieldLabel}>Advert language</span>
+                        <span className={styles.selectControl}>
+                          <span className={styles.selectLeadingIcon} aria-hidden="true"><StudioIcon name="language" /></span>
+                          <select value={draft.language} onChange={(event) => update('language', event.target.value as AdLanguage)}>
+                            <option value="en">English</option>
+                            <option value="af">Afrikaans</option>
+                          </select>
+                          <span className={styles.selectChevron} aria-hidden="true"><StudioIcon name="chevron" /></span>
+                        </span>
                       </label>
-                      <label>
-                        Price wording
-                        <select value={draft.vatLabel} onChange={(event) => update('vatLabel', event.target.value as AdVatLabel)}>
-                          <option value="plus-vat">Plus VAT / + BTW</option>
-                          <option value="vat-included">VAT included / BTW ingesluit</option>
-                          <option value="no-vat">No VAT / Geen BTW</option>
-                        </select>
+                      <label className={styles.selectField}>
+                        <span className={styles.fieldLabel}>Price wording</span>
+                        <span className={styles.selectControl}>
+                          <span className={styles.selectLeadingIcon} aria-hidden="true"><StudioIcon name="price" /></span>
+                          <select value={draft.vatLabel} onChange={(event) => update('vatLabel', event.target.value as AdVatLabel)}>
+                            <option value="plus-vat">Plus VAT / + BTW</option>
+                            <option value="vat-included">VAT included / BTW ingesluit</option>
+                            <option value="no-vat">No VAT / Geen BTW</option>
+                          </select>
+                          <span className={styles.selectChevron} aria-hidden="true"><StudioIcon name="chevron" /></span>
+                        </span>
                       </label>
                       <label className={styles.checkField}>
                         <input type="checkbox" checked={draft.isDefault} onChange={(event) => update('isDefault', event.target.checked)} />
@@ -795,7 +819,7 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
             />
             <div className={styles.previewNote}>
               <span aria-hidden="true"><StudioIcon name="check" /></span>
-              <p><strong>Your downloaded JPEG will match this preview</strong>The first {selectedTemplate.photoCount} listing photo{selectedTemplate.photoCount === 1 ? ' is' : 's are'} placed into the design with valuation details, asking price and the {previewRating.label.toLowerCase()} rating.</p>
+              <p><strong>Your downloaded JPEG will match this preview</strong>Camera placeholders show where the first {selectedTemplate.photoCount} listing photo{selectedTemplate.photoCount === 1 ? ' will' : 's will'} appear, together with the valuation details, asking price and {previewRating.label.toLowerCase()} rating.</p>
             </div>
           </aside>
           </div>
