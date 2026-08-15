@@ -127,7 +127,7 @@ export function marketplaceListingToAdContent(listing: MarketplaceListing): Mark
     primaryColor: DEFAULT_AD_BRAND_COLORS.primary,
     secondaryColor: DEFAULT_AD_BRAND_COLORS.secondary,
     accentColor: DEFAULT_AD_BRAND_COLORS.accent,
-    businessName: clean(listing.sellerCompany) || 'Aim4price Marketplace',
+    businessName: clean(listing.sellerCompany) || clean(listing.sellerName) || 'Marketplace seller',
     contactName: clean(listing.sellerName),
     phone: clean(listing.sellerPhone),
     email: clean(listing.sellerEmail),
@@ -341,13 +341,10 @@ function drawRating(context: CanvasRenderingContext2D, content: MarketplaceAdCon
 function drawAim4priceCredit(context: CanvasRenderingContext2D, x: number, y: number, color: string) {
   context.save();
   context.fillStyle = color;
-  context.globalAlpha = .68;
-  context.font = '700 13px Montserrat, Inter, Arial, sans-serif';
+  context.globalAlpha = .74;
+  context.font = '800 15px Montserrat, Inter, Arial, sans-serif';
   context.textAlign = 'right';
-  context.fillText('Created with', x - 80, y);
-  context.globalAlpha = 1;
-  context.font = '900 17px Montserrat, Inter, Arial, sans-serif';
-  context.fillText('Aim4price', x, y);
+  context.fillText('Powered by Aim4price.com', x, y);
   context.restore();
 }
 
@@ -373,8 +370,8 @@ function drawInformationPanel(
   const priceY = options.priceFirst ? rect.y + 244 : rect.y + 474;
   context.save();
   context.fillStyle = foreground;
-  context.font = '950 40px Montserrat, Inter, Arial, sans-serif';
-  const titleBottom = wrapText(context, content.title.toUpperCase(), rect.x + pad, titleY, rect.width - pad * 2, 45, 2);
+  context.font = '850 38px Montserrat, Inter, Arial, sans-serif';
+  const titleBottom = wrapText(context, content.title, rect.x + pad, titleY, rect.width - pad * 2, 43, 2);
   context.globalAlpha = .78;
   context.font = '700 20px Montserrat, Inter, Arial, sans-serif';
   context.fillText(fitText(context, `${content.year} · ${content.usage} · ${content.condition}`, rect.width - pad * 2), rect.x + pad, titleBottom + 18);
@@ -487,8 +484,8 @@ export async function renderMarketplaceAdCanvas(
     drawRating(context, content, 1315, 72);
     context.save();
     context.fillStyle = '#fff';
-    context.font = '950 57px Montserrat, Inter, Arial, sans-serif';
-    const bottom = wrapText(context, content.title.toUpperCase(), 76, 622, 850, 61, 2);
+    context.font = '850 50px Montserrat, Inter, Arial, sans-serif';
+    const bottom = wrapText(context, content.title, 76, 622, 850, 56, 2);
     context.globalAlpha = .8;
     context.font = '750 24px Montserrat, Inter, Arial, sans-serif';
     context.fillText(`${content.year} · ${content.usage} · ${content.condition}`, 78, bottom + 12);

@@ -324,7 +324,7 @@ export function PublicMiddlemanShowroom({ showroom, listings }: {
       </section>
 
       <footer className={styles.publicFooter}>
-        <div><strong>Created with Aim4price</strong><span>Machinery valuation and professional advertising in one flow.</span></div>
+        <div><strong>Powered by Aim4price.com</strong><span>Machinery valuation and professional advertising in one flow.</span></div>
         <Link href="/valuation">Value your machinery</Link>
       </footer>
     </div>
