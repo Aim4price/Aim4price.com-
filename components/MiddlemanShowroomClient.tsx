@@ -68,6 +68,9 @@ export function MiddlemanShowroomManager({
   const [bio, setBio] = useState(initialShowroom.bio);
   const [isPublic, setIsPublic] = useState(initialShowroom.isPublic);
   const [saving, setSaving] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteConfirmation, setDeleteConfirmation] = useState('');
+  const [deletingShowroom, setDeletingShowroom] = useState(false);
   const [busyListingId, setBusyListingId] = useState('');
   const [message, setMessage] = useState('');
   const valuationHref = dealerAppMode ? '/dealer/valuation' : '/valuation';
@@ -136,6 +139,26 @@ export function MiddlemanShowroomManager({
     }
   }
 
+  async function deleteShowroom() {
+    if (deleteConfirmation !== 'DELETE') return;
+    setDeletingShowroom(true);
+    setMessage('');
+    try {
+      const response = await fetch('/api/middleman-showroom', {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+      const data = await response.json() as { ok?: boolean; deletedAdvertCount?: number; error?: string };
+      if (!response.ok || !data.ok) throw new Error(data.error || 'Failed to delete your showroom.');
+      setListings([]);
+      window.location.assign(dealerAppMode ? '/dealer' : '/account');
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Failed to delete your showroom.');
+      setDeletingShowroom(false);
+      setDeleteDialogOpen(false);
+    }
+  }
+
   return (
     <div className={`${styles.managerPage} ${dealerAppMode ? styles.managerPageMobile : ''}`}>
       <section className={styles.managerHero}>
@@ -179,13 +202,20 @@ export function MiddlemanShowroomManager({
           </label>
           <label className={styles.switchRow}>
             <input type="checkbox" checked={isPublic} onChange={(event) => setIsPublic(event.target.checked)} />
-            <span><strong>Public showroom</strong><small>Anyone with your link can see your live adverts and contact details.</small></span>
+            <span><strong>Public showroom</strong><small>Anyone with your link can see your live adverts and contact details. Hiding this page does not remove adverts from Marketplace.</small></span>
           </label>
           <div className={styles.settingsActions}>
             <button className={styles.primaryButton} type="button" onClick={saveShowroom} disabled={saving}>{saving ? 'Saving...' : 'Save showroom'}</button>
             <button className={styles.secondaryButton} type="button" onClick={copyPublicLink} disabled={!showroom.isPublic}>Copy link</button>
           </div>
           {message ? <p className={styles.feedback} role="status">{message}</p> : null}
+          <div className={styles.dangerZone}>
+            <div>
+              <strong>Delete showroom</strong>
+              <small>Permanently removes the public showroom and withdraws all its adverts from Marketplace. Saved valuations and assets remain available.</small>
+            </div>
+            <button type="button" onClick={() => setDeleteDialogOpen(true)}>Delete showroom</button>
+          </div>
         </section>
 
         <section className={styles.stockCard}>
@@ -228,6 +258,24 @@ export function MiddlemanShowroomManager({
           )}
         </section>
       </div>
+
+      {deleteDialogOpen ? (
+        <div className={styles.deleteBackdrop} onClick={() => !deletingShowroom && setDeleteDialogOpen(false)}>
+          <section className={styles.deleteDialog} role="dialog" aria-modal="true" aria-labelledby="delete-showroom-title" onClick={(event) => event.stopPropagation()}>
+            <span className={styles.deleteIcon}>!</span>
+            <h2 id="delete-showroom-title">Delete showroom and every advert?</h2>
+            <p>This withdraws all {listings.length} live {listings.length === 1 ? 'advert' : 'adverts'} from the normal Aim4price Marketplace and permanently deletes the public showroom. Your valuations and saved asset records are not deleted.</p>
+            <label>
+              <span>Type DELETE to confirm</span>
+              <input value={deleteConfirmation} onChange={(event) => setDeleteConfirmation(event.target.value.toUpperCase())} placeholder="DELETE" autoComplete="off" />
+            </label>
+            <div>
+              <button type="button" className={styles.secondaryButton} onClick={() => setDeleteDialogOpen(false)} disabled={deletingShowroom}>Cancel</button>
+              <button type="button" className={styles.deleteConfirmButton} onClick={deleteShowroom} disabled={deleteConfirmation !== 'DELETE' || deletingShowroom}>{deletingShowroom ? 'Deleting...' : 'Delete showroom & adverts'}</button>
+            </div>
+          </section>
+        </div>
+      ) : null}
     </div>
   );
 }

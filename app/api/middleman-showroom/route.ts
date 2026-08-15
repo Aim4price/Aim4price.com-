@@ -3,6 +3,7 @@ import { getAccountProfile } from '../../../lib/account-profile';
 import { getServerSession } from '../../../lib/auth-session';
 import { listPublishedMarketplaceAssetListings } from '../../../lib/marketplace-db';
 import {
+  deleteMiddlemanShowroomAndAdverts,
   getOrCreateMiddlemanShowroom,
   updateMiddlemanShowroom,
 } from '../../../lib/middleman-showroom-db';
@@ -19,6 +20,19 @@ async function getMiddlemanContext() {
     email: session.user.email,
   });
   return { session, profile };
+}
+
+export async function DELETE() {
+  try {
+    const context = await getMiddlemanContext();
+    if (!context) return NextResponse.json({ ok: false, error: 'You must be signed in.' }, { status: 401 });
+    const deletedAdvertCount = await deleteMiddlemanShowroomAndAdverts(context.profile);
+    return NextResponse.json({ ok: true, deletedAdvertCount });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Failed to delete your showroom.';
+    const status = message === 'MIDDLEMAN_SHOWROOM_FORBIDDEN' ? 403 : 500;
+    return NextResponse.json({ ok: false, error: message }, { status });
+  }
 }
 
 export async function GET() {

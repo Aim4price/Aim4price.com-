@@ -149,6 +149,29 @@ test('middlemen have a focused phone-first workspace and a supported account sub
   assert.match(css, /100dvh/);
 });
 
+test('signup presents Middleman as a separate free account choice', async () => {
+  const [authClient, authPage, profile, accountClient] = await Promise.all([
+    read('app/auth/auth-client.tsx'),
+    read('app/auth/page.tsx'),
+    read('lib/account-profile.ts'),
+    read('app/account/account-client.tsx'),
+  ]);
+
+  assert.match(authClient, /value: "middleman", label: "Middleman"/);
+  assert.match(authClient, /value: "equipment-middleman"/);
+  assert.match(authClient, /accountType: signupForm\.accountType === "middleman" \? "dealer"/);
+  assert.match(authClient, /Free Middleman workspace/);
+  assert.match(authClient, /No Leads or Discovery/);
+  assert.match(authClient, /signupForm\.accountType === "middleman" \? "\/my-showroom"/);
+  assert.match(authClient, /signupForm\.accountType !== "middleman"/);
+  assert.match(authPage, /isMiddlemanAccountSubtype\(profile\.accountSubtype\)[\s\S]*?"\/my-showroom"/);
+  assert.match(profile, /isMiddlemanAccountSubtype\(initialAccountSubtype\)[\s\S]*?"active"/);
+  assert.match(profile, /!isMiddlemanAccountSubtype\(normalizedAccountSubtype\)/);
+  assert.match(accountClient, /isMiddlemanAccountSubtype\(normalizedSubtype\).*return 'Middleman'/);
+  assert.match(accountClient, /isPartnerAccount = !isOwnerAccount && !isMiddlemanAccount/);
+  assert.match(accountClient, /isDealerAccount && !isMiddlemanAccount/);
+});
+
 test('middleman showroom is public, valuation-backed and excludes paid dealer tools', async () => {
   const [showroomDb, publicPage, manager, marketplaceDb, dealerHome, leadsPage, discoveryPage, leadsApi] = await Promise.all([
     read('lib/middleman-showroom-db.ts'),
@@ -172,6 +195,26 @@ test('middleman showroom is public, valuation-backed and excludes paid dealer to
   assert.match(leadsPage, /isMiddlemanAccountSubtype\(profile\.accountSubtype\).*redirect\('\/dealer\/showroom'\)/s);
   assert.match(discoveryPage, /isMiddlemanAccountSubtype\(profile\.accountSubtype\).*redirect\('\/dealer\/showroom'\)/s);
   assert.match(leadsApi, /Leads are available to paid dealer accounts/);
+});
+
+test('deleting a Middleman showroom withdraws all of its Marketplace adverts', async () => {
+  const [showroomDb, route, manager, accountDeletion] = await Promise.all([
+    read('lib/middleman-showroom-db.ts'),
+    read('app/api/middleman-showroom/route.ts'),
+    read('components/MiddlemanShowroomClient.tsx'),
+    read('lib/account-deletion.ts'),
+  ]);
+
+  assert.match(showroomDb, /deleteMiddlemanShowroomAndAdverts/);
+  assert.match(showroomDb, /update asset_register_items[\s\S]*marketplace_status = 'draft'/);
+  assert.match(showroomDb, /delete from marketplace_listings where user_id = \$1/);
+  assert.match(showroomDb, /delete from middleman_showrooms where user_id = \$1/);
+  assert.match(showroomDb, /BEGIN[\s\S]*COMMIT/);
+  assert.match(route, /export async function DELETE/);
+  assert.match(route, /deletedAdvertCount/);
+  assert.match(manager, /Delete showroom & adverts/);
+  assert.match(manager, /Your valuations and saved asset records are not deleted/);
+  assert.match(accountDeletion, /'middleman_showrooms'/);
 });
 
 test('rating visibility follows the advert through Marketplace, showroom and JPEG export', async () => {

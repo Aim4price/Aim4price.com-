@@ -10,10 +10,11 @@ import {
   type KeyboardEvent,
 } from "react";
 import { refreshCachedHeaderSession } from "../../lib/header-session-cache";
+import { isMiddlemanAccountSubtype } from "../../lib/middleman-account";
 import styles from "./page.module.css";
 
 type Mode = "signup" | "login" | "forgot";
-type SignupAccountType = "owner" | "finance" | "insurance" | "dealer" | "licensing";
+type SignupAccountType = "owner" | "middleman" | "dealer" | "finance" | "insurance" | "licensing";
 type SignupAccountSubtype =
   | "farmer"
   | "contractor"
@@ -26,6 +27,7 @@ type SignupAccountSubtype =
   | "machinery-dealer"
   | "motor-dealer"
   | "auctioneer"
+  | "equipment-middleman"
   | "licence-renewal-expert"
   | "fleet-licensing-service";
 type SignupIntroducedByOption = "" | "kuyler" | "andre" | "direct" | "other";
@@ -45,6 +47,7 @@ type NoticeTone = "success" | "error" | "info";
 type SelectOption<T extends string> = {
   value: T;
   label: string;
+  description?: string;
 };
 
 type AuthNotice = {
@@ -84,11 +87,12 @@ const POST_LOGIN_REDIRECT = "/asset-register";
 const ADMIN_EMAIL = "aim4price@gmail.com";
 
 const SIGNUP_ACCOUNT_TYPE_OPTIONS: Array<SelectOption<SignupAccountType>> = [
-  { value: "owner", label: "Asset owner" },
-  { value: "finance", label: "Finance, accounting and banking" },
-  { value: "insurance", label: "Insurance provider" },
-  { value: "dealer", label: "Dealer / auctioneer" },
-  { value: "licensing", label: "Licence renewal expert" },
+  { value: "owner", label: "Asset owner", description: "Value, save and manage machinery you own." },
+  { value: "middleman", label: "Middleman", description: "Value machinery, create adverts and share your showroom." },
+  { value: "dealer", label: "Dealer / auctioneer", description: "Paid workspace with leads, Discovery and dealer tools." },
+  { value: "finance", label: "Finance & accounting", description: "Support finance, accounting and asset decisions." },
+  { value: "insurance", label: "Insurance provider", description: "Work with insured assets and owner information." },
+  { value: "licensing", label: "Licence renewal expert", description: "Manage licence-renewal opportunities and fleets." },
 ];
 
 const SIGNUP_ACCOUNT_SUBTYPE_OPTIONS: Record<
@@ -108,6 +112,9 @@ const SIGNUP_ACCOUNT_SUBTYPE_OPTIONS: Record<
   ],
   insurance: [
     { value: "short-term-insurer", label: "Short-term insurance provider" },
+  ],
+  middleman: [
+    { value: "equipment-middleman", label: "Equipment middleman" },
   ],
   dealer: [
     { value: "machinery-dealer", label: "Machinery dealer" },
@@ -509,9 +516,11 @@ function getSafeReturnTo(): string | null {
   return value && value.startsWith("/") && !value.startsWith("//") ? value : null;
 }
 
-function getCallbackUrl(email?: string) {
+function getCallbackUrl(email?: string, preferredPath?: string) {
   return getAbsoluteUrl(
-    email && normalizeEmail(email) === ADMIN_EMAIL ? "/admin" : (getSafeReturnTo() ?? POST_LOGIN_REDIRECT),
+    email && normalizeEmail(email) === ADMIN_EMAIL
+      ? "/admin"
+      : (preferredPath ?? getSafeReturnTo() ?? POST_LOGIN_REDIRECT),
   );
 }
 
@@ -579,7 +588,7 @@ export default function AuthClient() {
     if (mode === "signup") {
       return {
         title: "Create your account",
-        text: "Tell us how you plan to use Aim4price so we can set up the right workspace for you. Access remains pending until payment or admin approval is complete.",
+        text: "Choose the workspace that matches what you actually do. Middleman accounts are free and ready immediately; paid workspaces still require activation.",
         action: "Create account",
         footer: "Already have an account?",
         footerAction: "Log in",
@@ -718,17 +727,21 @@ export default function AuthClient() {
         email,
         password: signupForm.password,
         phone,
-        accountType: signupForm.accountType,
+        accountType: signupForm.accountType === "middleman" ? "dealer" : signupForm.accountType,
         accountSubtype: signupForm.accountSubtype,
         province,
         townCity,
         partnerDirectoryEnabled:
           signupForm.accountType !== "owner" &&
+          signupForm.accountType !== "middleman" &&
           signupForm.directoryParticipation,
         introducedByOption: signupForm.introducedByOption,
         introducedByName:
           signupForm.introducedByOption === "other" ? introducedByName : "",
-        callbackURL: getCallbackUrl(email),
+        callbackURL: getCallbackUrl(
+          email,
+          signupForm.accountType === "middleman" ? "/my-showroom" : undefined,
+        ),
       });
 
       const redirectUrl = extractRedirectUrl(payload);
@@ -737,7 +750,9 @@ export default function AuthClient() {
       setNotice({
         tone: "success",
         title: "Account created",
-        text: "Your account has been created and is awaiting payment/admin approval. You will not be able to use protected pages until Aim4price activates the account.",
+        text: signupForm.accountType === "middleman"
+          ? "Your free Middleman workspace is ready. Opening your showroom now."
+          : "Your account has been created and is awaiting payment/admin approval. You will not be able to use protected pages until Aim4price activates the account.",
       });
 
       if (redirectUrl && typeof window !== "undefined") {
@@ -793,9 +808,13 @@ export default function AuthClient() {
 
       const authRedirectUrl = extractRedirectUrl(payload) ?? POST_LOGIN_REDIRECT;
       const authenticatedSession = await refreshCachedHeaderSession().catch(() => null);
-      const partnerWorkspaceUrl = authenticatedSession?.accountType === "licensing"
-        ? getAbsoluteUrl("/")
-        : getAbsoluteUrl("/leads");
+      const isMiddlemanSession = authenticatedSession?.accountType === "dealer"
+        && isMiddlemanAccountSubtype(authenticatedSession.accountSubtype);
+      const partnerWorkspaceUrl = isMiddlemanSession
+        ? getAbsoluteUrl("/my-showroom")
+        : authenticatedSession?.accountType === "licensing"
+          ? getAbsoluteUrl("/")
+          : getAbsoluteUrl("/leads");
       const redirectUrl =
         !getSafeReturnTo() &&
         normalizeEmail(email) !== ADMIN_EMAIL &&
@@ -939,39 +958,58 @@ export default function AuthClient() {
               >
                 <div className={styles.signupTypeRow}>
                   <div className={styles.field}>
-                    <span className={styles.label}>Choose account type</span>
-                    <CustomSelect
-                      name="accountType"
-                      value={signupForm.accountType}
-                      options={SIGNUP_ACCOUNT_TYPE_OPTIONS}
-                      onChange={(nextAccountType) => {
-                        setSignupForm((current) => ({
-                          ...current,
-                          accountType: nextAccountType,
-                          accountSubtype: getDefaultSubtype(nextAccountType),
-                          directoryParticipation: nextAccountType !== "owner",
-                        }));
-                      }}
-                    />
+                    <span className={styles.label}>What would you like to use Aim4price for?</span>
+                    <div className={styles.accountTypeGrid} role="radiogroup" aria-label="Choose account type">
+                      {SIGNUP_ACCOUNT_TYPE_OPTIONS.map((option) => {
+                        const selected = signupForm.accountType === option.value;
+                        return (
+                          <button
+                            key={option.value}
+                            type="button"
+                            role="radio"
+                            aria-checked={selected}
+                            className={`${styles.accountTypeCard} ${selected ? styles.accountTypeCardSelected : ""}`}
+                            onClick={() => {
+                              setSignupForm((current) => ({
+                                ...current,
+                                accountType: option.value,
+                                accountSubtype: getDefaultSubtype(option.value),
+                                directoryParticipation: option.value !== "owner" && option.value !== "middleman",
+                              }));
+                            }}
+                          >
+                            <span className={styles.accountTypeIndicator} aria-hidden="true" />
+                            <strong>{option.label}</strong>
+                            <small>{option.description}</small>
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
 
                   <div className={styles.field}>
                     <span className={styles.label}>
-                      Which best describes you?
+                      Which best describes your work?
                     </span>
-                    <CustomSelect
-                      name="accountSubtype"
-                      value={signupForm.accountSubtype}
-                      options={
-                        SIGNUP_ACCOUNT_SUBTYPE_OPTIONS[signupForm.accountType]
-                      }
-                      onChange={(nextAccountSubtype) =>
-                        setSignupForm((current) => ({
-                          ...current,
-                          accountSubtype: nextAccountSubtype,
-                        }))
-                      }
-                    />
+                    {signupForm.accountType === "middleman" ? (
+                      <div className={styles.middlemanWorkspaceSummary}>
+                        <strong>Free Middleman workspace</strong>
+                        <span>Get Estimate · Ad Studio · My Showroom · Account</span>
+                        <small>No Leads or Discovery. Every advert must start with an Aim4price valuation.</small>
+                      </div>
+                    ) : (
+                      <CustomSelect
+                        name="accountSubtype"
+                        value={signupForm.accountSubtype}
+                        options={SIGNUP_ACCOUNT_SUBTYPE_OPTIONS[signupForm.accountType]}
+                        onChange={(nextAccountSubtype) =>
+                          setSignupForm((current) => ({
+                            ...current,
+                            accountSubtype: nextAccountSubtype,
+                          }))
+                        }
+                      />
+                    )}
                   </div>
                 </div>
 
@@ -1052,7 +1090,7 @@ export default function AuthClient() {
                   />
                 </label>
 
-                {signupForm.accountType !== "owner" ? (
+                {signupForm.accountType !== "owner" && signupForm.accountType !== "middleman" ? (
                   <label className={styles.checkboxRow}>
                     <input
                       type="checkbox"
@@ -1361,3 +1399,4 @@ export default function AuthClient() {
     </main>
   );
 }
+

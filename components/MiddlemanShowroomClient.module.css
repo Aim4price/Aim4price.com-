@@ -117,6 +117,25 @@
 .settingsActions { margin-top: 1.15rem; }
 .feedback { margin: 0.9rem 0 0; border-left: 3px solid var(--gold); padding-left: 0.7rem; color: #566d65; font-size: 0.8rem; line-height: 1.45; }
 
+.dangerZone { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-top: 1.35rem; border-top: 1px solid #f0d5d1; padding-top: 1rem; }
+.dangerZone > div { display: grid; gap: 0.25rem; }
+.dangerZone strong { color: #8f2f27; font: 850 0.78rem var(--font-heading, 'Montserrat'), sans-serif; }
+.dangerZone small { color: #7e706d; font-size: 0.7rem; line-height: 1.4; }
+.dangerZone button { flex: 0 0 auto; min-height: 2.35rem; border: 1px solid #e4b7b1; border-radius: 999px; padding: 0 0.8rem; color: #9b3028; background: #fff5f3; font: 820 0.66rem var(--font-heading, 'Montserrat'), sans-serif; cursor: pointer; }
+
+.deleteBackdrop { position: fixed; inset: 0; z-index: 120; display: grid; place-items: center; padding: 1rem; background: rgba(7, 25, 20, 0.7); backdrop-filter: blur(8px); }
+.deleteDialog { display: grid; justify-items: center; width: min(480px, 100%); border: 1px solid #efc3bd; border-radius: 1.25rem; padding: 1.35rem; background: #fffafa; box-shadow: 0 28px 80px rgba(12, 34, 27, 0.24); text-align: center; }
+.deleteIcon { display: grid; place-items: center; width: 48px; height: 48px; border-radius: 50%; color: #fff; background: #ba3c32; font: 900 1.3rem var(--font-heading, 'Montserrat'), sans-serif; }
+.deleteDialog h2 { margin: 0.85rem 0 0.35rem; color: #72261f; font: 900 1.35rem var(--font-heading, 'Montserrat'), sans-serif; letter-spacing: -0.035em; }
+.deleteDialog p { margin: 0; color: #73635f; font-size: 0.82rem; line-height: 1.55; }
+.deleteDialog label { display: grid; gap: 0.4rem; width: 100%; margin-top: 1rem; text-align: left; }
+.deleteDialog label span { color: #6e312b; font: 800 0.7rem var(--font-heading, 'Montserrat'), sans-serif; }
+.deleteDialog input { width: 100%; min-height: 3rem; border: 1px solid #e4b7b1; border-radius: 0.8rem; padding: 0 0.9rem; color: #72261f; background: #fff; font: 800 0.85rem var(--font-heading, 'Montserrat'), sans-serif; outline: none; }
+.deleteDialog input:focus { border-color: #ba3c32; box-shadow: 0 0 0 4px rgba(186, 60, 50, 0.1); }
+.deleteDialog > div:last-child { display: grid; grid-template-columns: 1fr 1.2fr; gap: 0.55rem; width: 100%; margin-top: 1rem; }
+.deleteConfirmButton { min-height: 2.9rem; border: 0; border-radius: 999px; padding: 0 0.9rem; color: #fff; background: #a8322a; font: 850 0.72rem var(--font-heading, 'Montserrat'), sans-serif; cursor: pointer; }
+.deleteConfirmButton:disabled { opacity: 0.45; cursor: not-allowed; }
+
 .managerListings { display: grid; gap: 0.7rem; }
 .managerListing { display: grid; grid-template-columns: 105px minmax(0, 1fr) auto; align-items: center; gap: 0.85rem; padding: 0.7rem; border: 1px solid #e2e9e6; border-radius: 1rem; background: #fbfdfc; }
 .managerListing > img { width: 105px; height: 82px; border-radius: 0.75rem; object-fit: cover; background: #e6eeea; }
@@ -207,6 +226,8 @@
   .listingActions { grid-column: 1 / -1; grid-template-columns: 1fr 1fr; }
   .listingTitleRow { align-items: start; flex-direction: column; }
   .listingTitleRow > strong { width: 100%; white-space: normal; }
+  .dangerZone { align-items: stretch; flex-direction: column; }
+  .dangerZone button { width: 100%; }
   .publicTopbar > span { display: none; }
   .publicHero { padding-top: 1.5rem; }
   .profileIdentity { align-items: flex-start; }

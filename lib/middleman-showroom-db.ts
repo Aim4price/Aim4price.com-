@@ -190,3 +190,31 @@ export async function updateMiddlemanShowroom(input: {
     throw error;
   }
 }
+
+export async function deleteMiddlemanShowroomAndAdverts(profile: AccountProfile): Promise<number> {
+  assertMiddlemanProfile(profile);
+  await ensureMiddlemanShowroomSchema();
+  const db = getDb();
+  const client = await db.connect();
+
+  try {
+    await client.query('BEGIN');
+    const withdrawn = await client.query(
+      `
+        update asset_register_items
+        set marketplace_status = 'draft', updated_at = now()
+        where user_id = $1 and coalesce(marketplace_status, 'draft') = 'live'
+      `,
+      [profile.userId],
+    );
+    await client.query(`delete from marketplace_listings where user_id = $1`, [profile.userId]);
+    await client.query(`delete from middleman_showrooms where user_id = $1`, [profile.userId]);
+    await client.query('COMMIT');
+    return withdrawn.rowCount ?? 0;
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+}

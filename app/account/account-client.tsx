@@ -11,6 +11,7 @@ import {
   type PointerEvent as ReactPointerEvent,
 } from "react";
 import AppHeader from "../../components/AppHeader";
+import { isMiddlemanAccountSubtype } from "../../lib/middleman-account";
 import styles from "./page.module.css";
 
 type NoticeTone = "success" | "error";
@@ -601,6 +602,7 @@ function formatAccountTypeLabel(value: string, subtype = ''): string {
     return "Owner";
   }
 
+  if (isMiddlemanAccountSubtype(normalizedSubtype)) return 'Middleman';
   if (normalized === 'finance' && normalizedSubtype === 'accountant') return 'Accountant';
   return ACCOUNT_TYPE_LABELS[normalized] ?? normalized;
 }
@@ -1208,7 +1210,9 @@ export default function AccountClient({
     .toLowerCase();
   const isOwnerAccount = normalizedAccountType === "owner";
   const isDealerAccount = normalizedAccountType === "dealer";
-  const isPartnerAccount = !isOwnerAccount;
+  const isMiddlemanAccount =
+    isDealerAccount && isMiddlemanAccountSubtype(profile?.accountSubtype);
+  const isPartnerAccount = !isOwnerAccount && !isMiddlemanAccount;
   const showScanPinControls = !isLoading && isOwnerAccount;
   const showPartnerDirectory = !isLoading && isPartnerAccount;
   const showMarketplaceContact = isLoading || isOwnerAccount || isDealerAccount;
@@ -2032,7 +2036,7 @@ export default function AccountClient({
 
           <div className={styles.heroStatusGroup}>
             <span className={styles.statusBadge}>Active</span>
-            {isDealerAccount ? (
+            {isDealerAccount && !isMiddlemanAccount ? (
               <span className={`${styles.statusBadge} ${styles.directoryHeroBadge}`}>
                 Directory {directoryStatusLabel.toLowerCase()}
               </span>
@@ -2158,7 +2162,7 @@ export default function AccountClient({
                 </button>
               ) : null}
 
-              {isDealerAccount ? (
+              {isDealerAccount && !isMiddlemanAccount ? (
                 <button
                   type="button"
                   className={styles.quickActionButton}
