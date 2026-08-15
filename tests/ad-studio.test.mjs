@@ -100,6 +100,14 @@ test('Studio and Marketplace use the same rated WYSIWYG JPEG renderer', async ()
   assert.doesNotMatch(renderer, /Created with/);
   assert.doesNotMatch(renderer, /content\.title\.toUpperCase\(\)/);
   assert.match(renderer, /loadImage\(content\.brand\.logoUrl\)/);
+  assert.match(renderer, /content\.brand\.email/);
+  assert.match(renderer, /content\.brand\.website/);
+  assert.match(renderer, /function drawCameraIcon/);
+  assert.match(renderer, /function drawPriceCard/);
+  assert.match(renderer, /isGenericEquipmentPlaceholder/);
+  assert.match(renderer, /naturalTitle\(content\.title\)/);
+  assert.match(studio, /imageUrls: \[\]/);
+  assert.doesNotMatch(studio, /\/brand\/Tractor\.png/);
   assert.doesNotMatch(marketplace, /JPEG_AD_LOGO_SRC|JPEG_AD_WATERMARK_SRC|CREATED WITH/);
 });
 
@@ -131,7 +139,12 @@ test('Ad Studio is limited to dealer accounts and uses a four-step guided setup'
   assert.doesNotMatch(client, /step\.helper|Business and contact details.*Choose an advert layout.*Colours and wording.*Check and save/s);
   assert.match(client, /logoPreviewCard/);
   assert.match(client, /A transparent logo works best/);
+  assert.match(client, /selectControl/);
+  assert.match(client, /StudioIcon name="language"/);
+  assert.match(client, /StudioIcon name="price"/);
   assert.match(css, /\.logoPreviewCard/);
+  assert.match(css, /\.selectControl select/);
+  assert.match(css, /appearance: none/);
   assert.doesNotMatch(css, /\.stepButton small/);
   assert.doesNotMatch(css, /\.stepButton > span:last-child \{ display: none; \}/);
   assert.match(header, /href: '\/ad-studio', label: 'Ad Studio', accountTypes: \['dealer'\]/);
