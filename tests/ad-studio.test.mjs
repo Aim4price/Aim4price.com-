@@ -160,8 +160,10 @@ test('signup presents Middleman as a separate free account choice', async () => 
   assert.match(authClient, /value: "middleman", label: "Middleman"/);
   assert.match(authClient, /value: "equipment-middleman"/);
   assert.match(authClient, /accountType: signupForm\.accountType === "middleman" \? "dealer"/);
-  assert.match(authClient, /Free Middleman workspace/);
-  assert.match(authClient, /No Leads or Discovery/);
+  assert.match(authClient, /name="accountType"[\s\S]*?options=\{SIGNUP_ACCOUNT_TYPE_OPTIONS\}/);
+  assert.match(authClient, /name="accountSubtype"[\s\S]*?options=\{SIGNUP_ACCOUNT_SUBTYPE_OPTIONS\[signupForm\.accountType\]\}/);
+  assert.match(authClient, /Free workspace for valuation-backed adverts and your public showroom/);
+  assert.doesNotMatch(authClient, /accountTypeGrid|role="radiogroup"/);
   assert.match(authClient, /signupForm\.accountType === "middleman" \? "\/my-showroom"/);
   assert.match(authClient, /signupForm\.accountType !== "middleman"/);
   assert.match(authPage, /isMiddlemanAccountSubtype\(profile\.accountSubtype\)[\s\S]*?"\/my-showroom"/);
