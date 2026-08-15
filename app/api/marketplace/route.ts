@@ -185,7 +185,8 @@ export async function POST(request: NextRequest) {
       province: province || null,
       area: area || null,
       photos: photoUrls,
-      brandKitId: brandKitId || null,
+      brandKitId: accountType === 'dealer' ? brandKitId || null : null,
+      allowBrandKit: accountType === 'dealer',
     });
 
     return NextResponse.json({

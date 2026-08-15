@@ -2409,8 +2409,9 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
         if (!mounted) return;
 
         const signedIn = Boolean(data?.signedIn);
+        let resolvedAccountType = signedIn ? normalizeAccountType(data.user?.accountType ?? 'owner') : 'public';
         setIsSignedIn(signedIn);
-        setAccountType(signedIn ? normalizeAccountType(data.user?.accountType ?? 'owner') : 'public');
+        setAccountType(resolvedAccountType);
 
         if (signedIn) {
           try {
@@ -2418,20 +2419,25 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
             const profileData = (await profileResponse.json()) as AccountProfileApiResponse;
             if (mounted && profileResponse.ok && profileData.ok) {
               setAccountProfile(profileData.profile ?? null);
-              setAccountType(normalizeAccountType(profileData.profile?.accountType ?? data.user?.accountType ?? 'owner'));
+              resolvedAccountType = normalizeAccountType(profileData.profile?.accountType ?? data.user?.accountType ?? 'owner');
+              setAccountType(resolvedAccountType);
             }
           } catch {
             if (mounted) setAccountProfile(null);
           }
 
-          try {
-            const brandKitsResponse = await fetch('/api/ad-studio/brand-kits', { credentials: 'include', cache: 'no-store' });
-            const brandKitsData = (await brandKitsResponse.json()) as AdBrandKitsApiResponse;
-            if (mounted && brandKitsResponse.ok && brandKitsData.ok) {
-              setAdBrandKits(brandKitsData.kits ?? []);
+          if (resolvedAccountType === 'dealer') {
+            try {
+              const brandKitsResponse = await fetch('/api/ad-studio/brand-kits', { credentials: 'include', cache: 'no-store' });
+              const brandKitsData = (await brandKitsResponse.json()) as AdBrandKitsApiResponse;
+              if (mounted && brandKitsResponse.ok && brandKitsData.ok) {
+                setAdBrandKits(brandKitsData.kits ?? []);
+              }
+            } catch {
+              if (mounted) setAdBrandKits([]);
             }
-          } catch {
-            if (mounted) setAdBrandKits([]);
+          } else if (mounted) {
+            setAdBrandKits([]);
           }
         } else {
           setAccountProfile(null);
@@ -7598,21 +7604,29 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
 
             <div className={styles.marketplacePublishGrid}>
               <section className={styles.marketplacePublishPanel}>
-                <label className={styles.marketplaceField}>
-                  <span>Brand Kit</span>
-                  <select name="brandKitId" value={marketplaceDraft.brandKitId} onChange={handleMarketplaceBrandKitChange}>
-                    {!adBrandKits.length ? <option value="">Aim4price standard</option> : null}
-                    {adBrandKits.map((kit) => (
-                      <option key={kit.id} value={kit.id}>{kit.name}{kit.isDefault ? ' — default' : ''}</option>
-                    ))}
-                  </select>
-                  <small>
-                    {adBrandKits.length
-                      ? 'Your saved logo, colours, wording and contact details will be applied.'
-                      : 'No Brand Kit yet. The Aim4price standard layout will be used.'}
-                    {' '}<a href={dealerAppMode ? '/dealer/ad-studio' : '/ad-studio'}>Open Ad Studio</a>
-                  </small>
-                </label>
+                {isDealerAccount ? (
+                  <label className={styles.marketplaceField}>
+                    <span>Brand Kit</span>
+                    <select name="brandKitId" value={marketplaceDraft.brandKitId} onChange={handleMarketplaceBrandKitChange}>
+                      {!adBrandKits.length ? <option value="">Aim4price standard</option> : null}
+                      {adBrandKits.map((kit) => (
+                        <option key={kit.id} value={kit.id}>{kit.name}{kit.isDefault ? ' — default' : ''}</option>
+                      ))}
+                    </select>
+                    <small>
+                      {adBrandKits.length
+                        ? 'Your saved logo, colours, wording and contact details will be applied.'
+                        : 'No Brand Kit yet. The Aim4price standard layout will be used.'}
+                      {' '}<a href={dealerAppMode ? '/dealer/ad-studio' : '/ad-studio'}>Open Ad Studio</a>
+                    </small>
+                  </label>
+                ) : (
+                  <div className={styles.marketplaceField}>
+                    <span>Advert style</span>
+                    <strong>Aim4price standard</strong>
+                    <small>Owner listings use the standard Aim4price Marketplace advert design.</small>
+                  </div>
+                )}
                 <label className={styles.marketplaceField}>
                   <span>Asking price excl. VAT</span>
                   <div className={styles.marketplaceCurrencyInput}>

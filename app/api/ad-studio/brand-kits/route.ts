@@ -26,7 +26,7 @@ async function resolveAccess() {
     getDealerAppSession(),
   ]);
 
-  if ((profile.accountType !== 'owner' && profile.accountType !== 'dealer') || profile.accountStatus !== 'active') return null;
+  if (profile.accountType !== 'dealer' || profile.accountStatus !== 'active') return null;
   if (dealerSession && !dealerRoleCan(dealerSession.role, 'ad_studio')) return null;
 
   return {

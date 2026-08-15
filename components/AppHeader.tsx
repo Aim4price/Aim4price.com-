@@ -195,7 +195,6 @@ const DEFAULT_NAV_ITEMS: NavItem[] = [
   ...BASE_NAV_ITEMS,
   { key: 'asset-register', href: '/asset-register', label: 'Asset Register' },
   { key: 'marketplace', href: '/marketplace', label: 'Marketplace' },
-  { key: 'ad-studio', href: '/ad-studio', label: 'Ad Studio' },
 ];
 
 const OWNER_NAV_ITEMS: NavItem[] = [
@@ -218,7 +217,7 @@ const ACCOUNT_MENU_ITEMS: AccountMenuItem[] = [
   { href: '/fuel', label: 'Fuel Ledger', accountTypes: ['owner'] },
   { href: '/maintenance', label: 'Maintenance', accountTypes: ['owner'] },
   { href: '/marketplace', label: 'Marketplace', accountTypes: ['owner', 'dealer'] },
-  { href: '/ad-studio', label: 'Ad Studio', accountTypes: ['owner', 'dealer'] },
+  { href: '/ad-studio', label: 'Ad Studio', accountTypes: ['dealer'] },
   { href: '/leads', label: 'Leads', accountTypes: ['dealer', 'finance', 'insurance', 'licensing'] },
   { href: '/asset-discovery', label: 'Discovery', accountTypes: ['licensing'] },
   { href: '/dealer-costs', label: 'Client Costs', accountTypes: ['dealer'] },
