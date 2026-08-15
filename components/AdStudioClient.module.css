@@ -52,16 +52,6 @@
 
 .heroCopy { position: relative; z-index: 1; max-width: 900px; }
 
-.heroKickerRow {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 9px;
-  margin-bottom: 8px;
-}
-
-.eyebrow,
-.sectionEyebrow,
 .stepIntro > span,
 .previewLabel,
 .reviewGrid article > span {
@@ -71,20 +61,6 @@
   font-size: 0.73rem;
   font-weight: 850;
   letter-spacing: 0.01em;
-}
-
-.hero .eyebrow { color: #f6bd4d; }
-
-.rolePill {
-  display: inline-flex;
-  align-items: center;
-  min-height: 25px;
-  padding: 4px 9px;
-  border: 1px solid rgba(255,255,255,.14);
-  border-radius: 999px;
-  color: rgba(255,255,255,.78);
-  background: rgba(255,255,255,.08);
-  font: 750 .66rem var(--font-heading, "Montserrat", sans-serif);
 }
 
 .hero h1,
@@ -167,7 +143,7 @@
 
 .sectionHeader { margin-bottom: 18px; }
 .sectionHeader h2,
-.editorHeader h2 { margin-top: 4px; font-size: clamp(1.25rem, 1.65vw, 1.5rem); letter-spacing: -.032em; }
+.editorHeader h2 { font-size: clamp(1.25rem, 1.65vw, 1.5rem); letter-spacing: -.032em; }
 .sectionHeader p,
 .editorHeader p { margin: 6px 0 0; color: #70857e; line-height: 1.5; }
 
@@ -178,7 +154,8 @@
 .iconDangerButton,
 .dangerButton,
 .backButton,
-.logoUpload {
+.logoUpload,
+.logoRemove {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -204,13 +181,15 @@
 .smallButton { color: #17362c; background: #f8fbfa; border-color: rgba(18,45,37,.1); }
 .iconDangerButton,
 .dangerButton { color: #a63832; background: #fff7f6; border-color: rgba(198,75,75,.2); }
+.logoRemove { color: #a63832; background: #fff; border-color: rgba(198,75,75,.18); }
 .primaryButton:hover,
 .secondaryButton:hover,
 .ghostButton:hover,
 .smallButton:hover,
 .iconDangerButton:hover,
 .dangerButton:hover,
-.backButton:hover { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(18,45,37,.11); }
+.backButton:hover,
+.logoRemove:hover { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(18,45,37,.11); }
 .primaryButton:disabled,
 .ghostButton:disabled,
 .iconDangerButton:disabled { cursor: wait; opacity: .55; }
@@ -249,7 +228,6 @@
 .stepButton > span:first-child .studioIcon { width: 17px; height: 17px; }
 .stepButton > span:last-child { display: grid; min-width: 0; }
 .stepButton strong { font: 800 .75rem var(--font-heading, "Montserrat", sans-serif); }
-.stepButton small { margin-top: 2px; font-size: .61rem; line-height: 1.25; }
 .stepButtonActive { color: #173c32; background: #fff4dd; box-shadow: inset 0 0 0 1px #efcb87; }
 .stepButtonActive > span:first-child { border-color: #f1b842; color: #173c32; background: #f2b84b; }
 .stepButtonComplete > span:first-child { border-color: #176247; color: #fff; background: linear-gradient(180deg, #1f8a66, #176247); }
@@ -271,18 +249,24 @@
 .formPanel input:focus,
 .formPanel select:focus { outline: 3px solid rgba(45,111,85,.16); border-color: #32765c; }
 
-.logoField { display: flex; align-items: center; gap: 14px; margin-top: 20px; padding: 17px; border: 1px dashed #bfd0c9; border-radius: 15px; background: #fbfdfc; }
-.logoCopy { flex: 1; display: grid; gap: 4px; }
+.logoField { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 22px; margin-top: 20px; padding: 18px; border: 1px solid rgba(31,138,102,.13); border-radius: 16px; background: linear-gradient(135deg, #fbfdfc, #f4f9f7); }
+.logoCopy { min-width: 0; display: flex; align-items: center; gap: 12px; }
+.logoCopy > div { min-width: 0; display: grid; gap: 4px; }
 .logoCopy strong { font: 850 .83rem var(--font-heading, "Montserrat", sans-serif); }
-.logoCopy span { color: #7a8f87; font-size: .75rem; }
-.logoUpload { position: relative; overflow: hidden; min-height: 43px; color: #245448; background: #eaf3ef; border-color: rgba(31,138,102,.1); }
+.logoCopy > div > span { max-width: 26rem; color: #7a8f87; font-size: .75rem; line-height: 1.45; }
+.logoFieldIcon { display: inline-grid; flex: 0 0 auto; place-items: center; width: 42px; height: 42px; border: 1px solid rgba(31,138,102,.13); border-radius: 12px; color: #176247; background: linear-gradient(135deg, rgba(31,138,102,.13), rgba(62,110,213,.07)), #fff; }
+.logoFieldIcon .studioIcon { width: 19px; height: 19px; }
+.logoControls { display: flex; align-items: center; justify-content: flex-end; gap: 12px; }
+.logoPreviewCard { position: relative; overflow: hidden; display: grid; place-items: center; width: 136px; height: 86px; border: 1px dashed #b8cbc3; border-radius: 13px; background-color: #fff; background-image: linear-gradient(45deg, #f2f6f4 25%, transparent 25%), linear-gradient(-45deg, #f2f6f4 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #f2f6f4 75%), linear-gradient(-45deg, transparent 75%, #f2f6f4 75%); background-position: 0 0, 0 7px, 7px -7px, -7px 0; background-size: 14px 14px; box-shadow: inset 0 1px 0 rgba(255,255,255,.9), 0 8px 20px rgba(18,45,37,.06); }
+.logoPreviewReady { border-style: solid; border-color: rgba(31,138,102,.2); }
+.logoPreviewCard img { display: block; width: 100%; height: 100%; padding: 10px; object-fit: contain; background: rgba(255,255,255,.88); }
+.logoPreviewEmpty { display: grid; place-items: center; gap: 5px; color: #718981; }
+.logoPreviewEmpty .studioIcon { width: 22px; height: 22px; }
+.logoPreviewEmpty small { font: 750 .64rem var(--font-heading, "Montserrat", sans-serif); }
+.logoButtons { display: grid; gap: 7px; }
+.logoUpload { position: relative; overflow: hidden; display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-width: 142px; min-height: 43px; color: #245448; background: #eaf3ef; border-color: rgba(31,138,102,.1); }
 .logoUpload input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
-.logoThumb { display: flex; align-items: center; gap: 7px; }
-.logoThumb img,
-.logoPlaceholderBox { width: 70px; height: 48px; border: 1px solid #d5e0dc; border-radius: 9px; background: #fff; }
-.logoThumb img { object-fit: contain; }
-.logoThumb button { border: 0; color: #9b332a; background: transparent; font-weight: 800; cursor: pointer; }
-.logoPlaceholderBox { display: grid; place-items: center; color: #8ca099; font-size: .62rem; }
+.logoRemove { min-width: 142px; min-height: 41px; }
 
 .templateGrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
 .templateChoice { position: relative; display: grid; align-content: start; gap: 8px; min-width: 0; border: 1px solid #d5e1dc; border-radius: 15px; padding: 11px; color: #21493d; background: #fff; text-align: left; cursor: pointer; transition: transform 150ms ease, border-color 150ms ease, box-shadow 150ms ease; }
@@ -479,11 +463,16 @@
   .stepButton > span:first-child { width: 31px; height: 31px; border-radius: 10px; }
   .stepButton > span:last-child { display: grid; }
   .stepButton strong { font-size: .61rem; }
-  .stepButton small { display: none; }
   .stepContent { padding: 22px 19px 19px; }
   .editorHeader,
   .actions { padding-inline: 20px; }
-  .logoField { align-items: stretch; flex-direction: column; }
+  .logoField { grid-template-columns: 1fr; align-items: stretch; }
+  .logoControls { align-items: stretch; flex-direction: column; }
+  .logoPreviewCard { width: 100%; height: 112px; }
+  .logoButtons { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .logoButtons > :only-child { grid-column: 1 / -1; }
+  .logoUpload,
+  .logoRemove { min-width: 0; width: 100%; }
   .actions { align-items: stretch; flex-direction: column; }
   .actions > div { justify-content: flex-end; }
   .actions > div:last-child { display: grid; grid-template-columns: 1fr; }
