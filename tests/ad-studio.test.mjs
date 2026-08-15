@@ -174,29 +174,62 @@ test('signup presents Middleman as a separate free account choice', async () => 
   assert.match(accountClient, /isDealerAccount && !isMiddlemanAccount/);
 });
 
-test('middleman showroom is public, valuation-backed and excludes paid dealer tools', async () => {
-  const [showroomDb, publicPage, manager, marketplaceDb, dealerHome, leadsPage, discoveryPage, leadsApi] = await Promise.all([
+test('dealer showrooms are standard, valuation-backed and reuse the Marketplace experience', async () => {
+  const [showroomDb, publicPage, manager, marketplaceUi, marketplaceDb, dealerHome, header] = await Promise.all([
     read('lib/middleman-showroom-db.ts'),
     read('app/showroom/[slug]/page.tsx'),
     read('components/MiddlemanShowroomClient.tsx'),
+    read('app/marketplace/marketplace-client.tsx'),
     read('lib/marketplace-db.ts'),
     read('app/dealer/page.tsx'),
-    read('app/dealer/leads/page.tsx'),
-    read('app/dealer/discovery/page.tsx'),
-    read('app/api/dealer/leads/route.ts'),
+    read('components/AppHeader.tsx'),
   ]);
 
   assert.match(showroomDb, /middleman_showrooms/);
-  assert.match(showroomDb, /isMiddlemanAccountSubtype/);
+  assert.match(showroomDb, /function assertDealerProfile/);
+  assert.doesNotMatch(showroomDb, /isMiddlemanAccountSubtype/);
   assert.match(publicPage, /sellerUserId: showroom\.userId/);
   assert.match(manager, /Value & create advert/);
-  assert.match(manager, /Enquire on WhatsApp/);
+  assert.match(manager, /<MarketplaceClient/);
+  assert.match(manager, /initialListings=\{listings\}/);
+  assert.match(manager, /embeddedMode/);
+  assert.match(manager, /showroomMode/);
+  assert.match(marketplaceUi, /initialListings\?: MarketplaceListing\[\]/);
+  assert.match(marketplaceUi, /if \(showroomMode\)/);
+  assert.match(marketplaceUi, /!showroomMode \? \(/);
   assert.match(manager, /Download JPEG/);
   assert.match(marketplaceDb, /requireValuationSource && !pick\(row, \['valuation_run_id'\]\)/);
-  assert.match(dealerHome, /new Set<DealerAppCapability>\(\['valuation', 'ad_studio', 'showroom'\]\)/);
+  assert.match(dealerHome, /new Set<DealerAppCapability>\(\['valuation', 'ad_studio', 'showroom', 'marketplace'\]\)/);
+  assert.match(header, /href: '\/my-showroom', label: 'My Showroom', accountTypes: \['dealer'\]/);
+});
+
+test('Middleman navigation, app access and Marketplace stay focused without paid Dealer tools', async () => {
+  const [header, dealerHome, dealerMarketplace, account, accessPage, accessClient, leadsPage, discoveryPage] = await Promise.all([
+    read('components/AppHeader.tsx'),
+    read('app/dealer/page.tsx'),
+    read('app/dealer/marketplace/page.tsx'),
+    read('app/account/account-client.tsx'),
+    read('app/account/dealer-app/page.tsx'),
+    read('app/account/app-access-management-client.tsx'),
+    read('app/dealer/leads/page.tsx'),
+    read('app/dealer/discovery/page.tsx'),
+  ]);
+
+  const middlemanHeader = header.match(/if \(isMiddlemanAccountSubtype\(accountSubtype\)\) \{[\s\S]*?\n    \}/)?.[0] ?? '';
+  assert.match(middlemanHeader, /Get Estimate/);
+  assert.match(middlemanHeader, /Ad Studio/);
+  assert.match(middlemanHeader, /My Showroom/);
+  assert.match(middlemanHeader, /Marketplace/);
+  assert.doesNotMatch(middlemanHeader, /label: 'Account'/);
+  assert.doesNotMatch(middlemanHeader, /Leads|Discovery/);
+  assert.match(dealerHome, /'showroom', 'marketplace'/);
+  assert.doesNotMatch(dealerMarketplace, /isMiddlemanAccountSubtype/);
+  assert.match(account, /isMiddlemanAccount \? 'Middleman app access' : 'Manage Dealer App staff'/);
+  assert.match(accessPage, /middlemanMode=\{isMiddlemanAccountSubtype\(profile\.accountSubtype\)\}/);
+  assert.match(accessClient, /Middleman App Access/);
+  assert.match(accessClient, /change passwords or remove a login/);
   assert.match(leadsPage, /isMiddlemanAccountSubtype\(profile\.accountSubtype\).*redirect\('\/dealer\/showroom'\)/s);
   assert.match(discoveryPage, /isMiddlemanAccountSubtype\(profile\.accountSubtype\).*redirect\('\/dealer\/showroom'\)/s);
-  assert.match(leadsApi, /Leads are available to paid dealer accounts/);
 });
 
 test('deleting a Middleman showroom withdraws all of its Marketplace adverts', async () => {

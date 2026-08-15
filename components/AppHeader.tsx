@@ -220,6 +220,7 @@ const ACCOUNT_MENU_ITEMS: AccountMenuItem[] = [
   { href: '/maintenance', label: 'Maintenance', accountTypes: ['owner'] },
   { href: '/marketplace', label: 'Marketplace', accountTypes: ['owner', 'dealer'] },
   { href: '/ad-studio', label: 'Ad Studio', accountTypes: ['dealer'] },
+  { href: '/my-showroom', label: 'My Showroom', accountTypes: ['dealer'] },
   { href: '/leads', label: 'Leads', accountTypes: ['dealer', 'finance', 'insurance', 'licensing'] },
   { href: '/asset-discovery', label: 'Discovery', accountTypes: ['licensing'] },
   { href: '/dealer-costs', label: 'Client Costs', accountTypes: ['dealer'] },
@@ -244,6 +245,7 @@ const MIDDLEMAN_ACCOUNT_MENU_ITEMS: AccountMenuItem[] = [
   { href: '/valuation', label: 'Get Estimate' },
   { href: '/ad-studio', label: 'Ad Studio' },
   { href: '/my-showroom', label: 'My Showroom' },
+  { href: '/marketplace', label: 'Marketplace' },
   { href: '/account', label: 'Account' },
 ];
 
@@ -321,7 +323,7 @@ function buildNavItems(
         { key: 'valuation', href: '/valuation', label: 'Get Estimate' },
         { key: 'ad-studio', href: '/ad-studio', label: 'Ad Studio' },
         { key: 'showroom', href: '/my-showroom', label: 'My Showroom' },
-        { key: 'account', href: '/account', label: 'Account' },
+        { key: 'marketplace', href: '/marketplace', label: 'Marketplace' },
       ];
     }
     return [
@@ -330,6 +332,7 @@ function buildNavItems(
       { key: 'tracking', href: '/tracking', label: 'Maintenance' },
       { key: 'marketplace', href: '/marketplace', label: 'Marketplace' },
       { key: 'ad-studio', href: '/ad-studio', label: 'Ad Studio' },
+      { key: 'showroom', href: '/my-showroom', label: 'My Showroom' },
       { key: 'cost', href: '/dealer-costs', label: 'Client Costs' },
     ];
   }

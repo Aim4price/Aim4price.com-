@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { getServerSession, isDealerAppSession } from '../../../lib/auth-session';
 import { getAccountProfile } from '../../../lib/account-profile';
+import { isMiddlemanAccountSubtype } from '../../../lib/middleman-account';
 import DealerAccessClient from './dealer-access-client';
 
 export const runtime = 'nodejs';
@@ -20,5 +21,5 @@ export default async function DealerAppAccessPage() {
     redirect('/account');
   }
 
-  return <DealerAccessClient />;
+  return <DealerAccessClient middlemanMode={isMiddlemanAccountSubtype(profile.accountSubtype)} />;
 }

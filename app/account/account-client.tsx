@@ -2162,14 +2162,14 @@ export default function AccountClient({
                 </button>
               ) : null}
 
-              {isDealerAccount && !isMiddlemanAccount ? (
+              {isDealerAccount ? (
                 <button
                   type="button"
                   className={styles.quickActionButton}
                   onClick={openDealerAppAccessPage}
                 >
                   <QuickActionIcon name="dealer" />
-                  <strong>Manage Dealer App staff</strong>
+                  <strong>{isMiddlemanAccount ? 'Middleman app access' : 'Manage Dealer App staff'}</strong>
                   <span className={styles.quickActionChevron}>›</span>
                 </button>
               ) : null}

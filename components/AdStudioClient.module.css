@@ -27,9 +27,9 @@
   align-items: end;
   justify-content: space-between;
   gap: 28px;
-  min-height: 230px;
+  min-height: 190px;
   margin-bottom: 24px;
-  padding: clamp(30px, 4vw, 56px);
+  padding: clamp(28px, 3.4vw, 46px);
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 26px;
   color: #fff;
@@ -78,7 +78,7 @@
   letter-spacing: -0.045em;
 }
 
-.hero h1 { max-width: 820px; font-size: clamp(2.25rem, 4.2vw, 4.55rem); line-height: 0.98; }
+.hero h1 { max-width: 820px; font-size: clamp(2.1rem, 3.5vw, 3.65rem); line-height: 1; }
 .hero p { max-width: 720px; margin: 18px 0 0; color: rgba(255,255,255,.75); font-size: 1.02rem; line-height: 1.65; }
 
 .heroMetric {
@@ -201,24 +201,24 @@
 .emptyLibrary strong { font: 850 1rem var(--font-heading, "Montserrat", sans-serif); }
 .emptyLibrary p { margin: 4px 0 0; color: #71857e; }
 
-.workspace { display: grid; grid-template-columns: minmax(0, 1.08fr) minmax(390px, .92fr); gap: 24px; align-items: start; scroll-margin-top: 110px; }
+.workspace { display: grid; grid-template-columns: minmax(0, .94fr) minmax(520px, 1.06fr); gap: 22px; align-items: start; scroll-margin-top: 110px; }
 .formPanel { overflow: hidden; }
-.editorHeader { padding: 25px 30px; border-bottom: 1px solid #e1e9e6; }
+.editorHeader { padding: 21px 25px; border-bottom: 1px solid #e1e9e6; }
 
 .stepper { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); padding: 13px 18px; border-bottom: 1px solid #e1e9e6; background: #f6f9f8; }
 .stepButton { display: flex; align-items: center; gap: 9px; min-width: 0; border: 0; border-radius: 11px; padding: 9px 10px; color: #60776f; background: transparent; text-align: left; cursor: pointer; }
 .stepButton > span:first-child { display: grid; flex: 0 0 auto; place-items: center; width: 32px; height: 32px; border: 1px solid #ccd9d4; border-radius: 50%; color: #35584c; background: #fff; font: 850 .75rem var(--font-heading, "Montserrat", sans-serif); }
 .stepButton > span:last-child { display: grid; min-width: 0; }
 .stepButton strong { font: 800 .75rem var(--font-heading, "Montserrat", sans-serif); }
-.stepButton small { overflow: hidden; margin-top: 2px; font-size: .63rem; text-overflow: ellipsis; white-space: nowrap; }
+.stepButton small { margin-top: 2px; font-size: .61rem; line-height: 1.25; }
 .stepButtonActive { color: #173c32; background: #fff4dd; box-shadow: inset 0 0 0 1px #efcb87; }
 .stepButtonActive > span:first-child { border-color: #f1b842; background: #f2b84b; }
 .stepButtonComplete > span:first-child { border-color: #176247; color: #fff; background: #176247; }
 
-.stepContent { min-height: 530px; padding: 31px 32px 25px; }
-.stepIntro { margin-bottom: 25px; }
+.stepContent { min-height: 500px; padding: 26px 27px 23px; }
+.stepIntro { margin-bottom: 21px; }
 .stepIntro > span { margin-bottom: 7px; }
-.stepIntro h2 { font-size: clamp(1.6rem, 2.4vw, 2.25rem); }
+.stepIntro h2 { max-width: 680px; font-size: clamp(1.45rem, 1.9vw, 1.9rem); line-height: 1.1; }
 .stepIntro p { margin: 7px 0 0; color: #71857e; line-height: 1.5; }
 .stepFieldset { min-width: 0; margin: 0; padding: 0; border: 0; }
 .stepFieldset:disabled { opacity: .7; }
@@ -311,7 +311,7 @@
 .actions { padding: 18px 26px; border-top: 1px solid #e1e9e6; background: #fbfcfc; }
 .actions > div { display: flex; gap: 9px; }
 
-.previewPanel { position: sticky; top: 104px; padding: 25px; }
+.previewPanel { position: sticky; top: 104px; padding: 21px; }
 .previewHeading { margin-bottom: 14px; }
 .previewHeading > div:first-child { display: grid; gap: 4px; }
 .previewHeading span { color: #73877f; }

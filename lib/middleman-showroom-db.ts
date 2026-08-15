@@ -1,6 +1,5 @@
 import { ensureAccountProfileColumns, getAccountProfile, type AccountProfile } from './account-profile';
 import { getDb } from './db';
-import { isMiddlemanAccountSubtype } from './middleman-account';
 
 export type MiddlemanShowroom = {
   userId: string;
@@ -87,18 +86,17 @@ export async function ensureMiddlemanShowroomSchema(): Promise<void> {
   showroomSchemaEnsured = true;
 }
 
-function assertMiddlemanProfile(profile: AccountProfile) {
+function assertDealerProfile(profile: AccountProfile) {
   if (
     profile.accountType !== 'dealer'
     || profile.accountStatus !== 'active'
-    || !isMiddlemanAccountSubtype(profile.accountSubtype)
   ) {
-    throw new Error('MIDDLEMAN_SHOWROOM_FORBIDDEN');
+    throw new Error('DEALER_SHOWROOM_FORBIDDEN');
   }
 }
 
 export async function getOrCreateMiddlemanShowroom(profile: AccountProfile): Promise<MiddlemanShowroom> {
-  assertMiddlemanProfile(profile);
+  assertDealerProfile(profile);
   await ensureMiddlemanShowroomSchema();
   const db = getDb();
   const existing = await db.query<ShowroomRow>(
@@ -153,7 +151,6 @@ export async function getPublicMiddlemanShowroomBySlug(slugValue: string): Promi
   if (
     profile.accountType !== 'dealer'
     || profile.accountStatus !== 'active'
-    || !isMiddlemanAccountSubtype(profile.accountSubtype)
   ) return null;
   return mapShowroom(row, profile);
 }
@@ -192,7 +189,7 @@ export async function updateMiddlemanShowroom(input: {
 }
 
 export async function deleteMiddlemanShowroomAndAdverts(profile: AccountProfile): Promise<number> {
-  assertMiddlemanProfile(profile);
+  assertDealerProfile(profile);
   await ensureMiddlemanShowroomSchema();
   const db = getDb();
   const client = await db.connect();

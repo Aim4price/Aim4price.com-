@@ -126,6 +126,11 @@ const DEALER_ROLE_OPTIONS: Array<FriendlySelectOption<string>> = [
   { value: 'technician', label: 'Technician', description: 'Overview and Maintenance only.' },
 ];
 
+const MIDDLEMAN_ROLE_OPTIONS: Array<FriendlySelectOption<string>> = [
+  { value: 'owner', label: 'Owner / Manager', description: 'Full access to the Middleman workspace and login management.' },
+  { value: 'sales', label: 'Sales', description: 'Valuations, Ad Studio, Marketplace and the shared showroom.' },
+];
+
 const OWNER_ROLE_OPTIONS: Array<FriendlySelectOption<string>> = [
   { value: 'operations', label: 'Operations', description: 'Usage, maintenance, fuel, location, photos and problems.' },
   { value: 'view_only', label: 'View only', description: 'Can view assets and records without changing anything.' },
@@ -499,8 +504,14 @@ function InlineNotice({ notice }: { notice: { tone: NoticeTone; message: string 
   );
 }
 
-function AppAccessManagement({ kind }: { kind: DirectoryKind }) {
-  const config = DIRECTORY_CONFIGS[kind];
+function AppAccessManagement({ kind, configOverride }: {
+  kind: DirectoryKind;
+  configOverride?: Partial<DirectoryConfig>;
+}) {
+  const config = useMemo(
+    () => ({ ...DIRECTORY_CONFIGS[kind], ...configOverride }),
+    [configOverride, kind],
+  );
   const [records, setRecords] = useState<AccessRecord[]>([]);
   const [draft, setDraft] = useState<AccessDraft>(() => emptyDraft(config));
   const [editDrafts, setEditDrafts] = useState<Record<string, AccessDraft>>({});
@@ -1253,8 +1264,30 @@ function OwnerAppAssetAccessPanel({ userId }: { userId: string }) {
   );
 }
 
-export function DealerAppAccessManagement() {
-  return <AppAccessManagement kind="dealer" />;
+export function DealerAppAccessManagement({ middlemanMode = false }: { middlemanMode?: boolean }) {
+  const middlemanConfig = useMemo<Partial<DirectoryConfig> | undefined>(() => middlemanMode ? {
+    title: 'Middleman App Access',
+    description: 'Create and manage secure logins for your Middleman workspace.',
+    newDescription: 'Create a Middleman App login.',
+    manageDescription: 'Edit access, change passwords or remove a login.',
+    loginLinkLabel: 'Middleman App login link',
+    shareTitle: 'Aim4price Middleman App',
+    shareText: 'Open the Aim4price Middleman App here:',
+    itemLabel: 'Middleman App user',
+    itemPlural: 'Middleman App users',
+    displayNameLabel: 'User name',
+    displayNamePlaceholder: 'Example: Sales agent',
+    defaultRole: 'sales',
+    roleOptions: MIDDLEMAN_ROLE_OPTIONS,
+    createSuccess: 'Middleman App login created.',
+    updateSuccess: 'Middleman App login updated.',
+    updatePasswordSuccess: 'Middleman App login and password updated.',
+    activeSuccess: 'Middleman App login activated.',
+    inactiveSuccess: 'Middleman App login deactivated.',
+    deleteSuccess: 'Middleman App login deleted.',
+  } : undefined, [middlemanMode]);
+
+  return <AppAccessManagement kind="dealer" configOverride={middlemanConfig} />;
 }
 
 export function OwnerAppAccessManagement() {
