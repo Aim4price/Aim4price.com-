@@ -140,9 +140,49 @@ test('middlemen have a focused phone-first workspace and a supported account sub
   assert.match(dealerHome, /Value it\. Advertise it\. Move it\./);
   assert.match(dealerHome, /middlemanCapabilities/);
   assert.match(header, /MIDDLEMAN_ACCOUNT_MENU_ITEMS/);
-  assert.match(header, /My Listings/);
+  assert.match(header, /My Showroom/);
+  assert.doesNotMatch(
+    header.match(/const MIDDLEMAN_ACCOUNT_MENU_ITEMS:[\s\S]*?\];/)?.[0] ?? '',
+    /Leads|Discovery|My Listings/,
+  );
   assert.match(css, /\.middlemanHomeIntro/);
   assert.match(css, /100dvh/);
+});
+
+test('middleman showroom is public, valuation-backed and excludes paid dealer tools', async () => {
+  const [showroomDb, publicPage, manager, marketplaceDb, dealerHome] = await Promise.all([
+    read('lib/middleman-showroom-db.ts'),
+    read('app/showroom/[slug]/page.tsx'),
+    read('components/MiddlemanShowroomClient.tsx'),
+    read('lib/marketplace-db.ts'),
+    read('app/dealer/page.tsx'),
+  ]);
+
+  assert.match(showroomDb, /middleman_showrooms/);
+  assert.match(showroomDb, /isMiddlemanAccountSubtype/);
+  assert.match(publicPage, /sellerUserId: showroom\.userId/);
+  assert.match(manager, /Value & create advert/);
+  assert.match(manager, /Enquire on WhatsApp/);
+  assert.match(manager, /Download JPEG/);
+  assert.match(marketplaceDb, /requireValuationSource && !pick\(row, \['valuation_run_id'\]\)/);
+  assert.match(dealerHome, /new Set<DealerAppCapability>\(\['valuation', 'ad_studio', 'showroom'\]\)/);
+});
+
+test('rating visibility follows the advert through Marketplace, showroom and JPEG export', async () => {
+  const [valuation, route, marketplaceDb, marketplaceUi, renderer] = await Promise.all([
+    read('app/valuation/valuation-client.tsx'),
+    read('app/api/marketplace/route.ts'),
+    read('lib/marketplace-db.ts'),
+    read('app/marketplace/marketplace-client.tsx'),
+    read('lib/marketplace-ad-renderer.ts'),
+  ]);
+
+  assert.match(valuation, /Show the Aim4price price rating/);
+  assert.match(valuation, /showDealRating: marketplaceDraft\.showDealRating/);
+  assert.match(route, /showDealRating: body\.showDealRating !== false/);
+  assert.match(marketplaceDb, /marketplace_show_deal_rating/);
+  assert.match(marketplaceUi, /listing\.showDealRating === false/);
+  assert.match(renderer, /if \(content\.showDealRating === false\) return/);
 });
 
 test('Marketplace only applies Brand Kits to dealer listings', async () => {

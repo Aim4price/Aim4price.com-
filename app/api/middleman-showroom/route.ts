@@ -1,0 +1,59 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { getAccountProfile } from '../../../lib/account-profile';
+import { getServerSession } from '../../../lib/auth-session';
+import { listPublishedMarketplaceAssetListings } from '../../../lib/marketplace-db';
+import {
+  getOrCreateMiddlemanShowroom,
+  updateMiddlemanShowroom,
+} from '../../../lib/middleman-showroom-db';
+
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
+async function getMiddlemanContext() {
+  const session = await getServerSession({ allowDealerApp: true });
+  if (!session?.user?.id) return null;
+  const profile = await getAccountProfile({
+    id: session.user.id,
+    name: session.user.name,
+    email: session.user.email,
+  });
+  return { session, profile };
+}
+
+export async function GET() {
+  try {
+    const context = await getMiddlemanContext();
+    if (!context) return NextResponse.json({ ok: false, error: 'You must be signed in.' }, { status: 401 });
+    const showroom = await getOrCreateMiddlemanShowroom(context.profile);
+    const listings = await listPublishedMarketplaceAssetListings({
+      viewerUserId: context.session.user.id,
+      sellerUserId: context.session.user.id,
+      exposeContact: true,
+    });
+    return NextResponse.json({ ok: true, showroom, listings });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Failed to load your showroom.';
+    const status = message === 'MIDDLEMAN_SHOWROOM_FORBIDDEN' ? 403 : 500;
+    return NextResponse.json({ ok: false, error: message }, { status });
+  }
+}
+
+export async function PUT(request: NextRequest) {
+  try {
+    const context = await getMiddlemanContext();
+    if (!context) return NextResponse.json({ ok: false, error: 'You must be signed in.' }, { status: 401 });
+    const body = (await request.json()) as { slug?: unknown; bio?: unknown; isPublic?: unknown };
+    const showroom = await updateMiddlemanShowroom({
+      profile: context.profile,
+      slug: String(body.slug ?? ''),
+      bio: String(body.bio ?? ''),
+      isPublic: body.isPublic !== false,
+    });
+    return NextResponse.json({ ok: true, showroom });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Failed to save your showroom.';
+    const status = message === 'MIDDLEMAN_SHOWROOM_FORBIDDEN' ? 403 : 400;
+    return NextResponse.json({ ok: false, error: message }, { status });
+  }
+}

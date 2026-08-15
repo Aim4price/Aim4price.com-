@@ -105,11 +105,12 @@ export default async function DealerHome() {
     },
     { label: 'Get Estimate', href: '/dealer/valuation', capability: 'valuation' },
     { label: 'Ad Studio', href: '/dealer/ad-studio', capability: 'ad_studio' },
+    { label: 'My Showroom', href: '/dealer/showroom', capability: 'showroom' },
     { label: 'Discover Assets', href: '/dealer/discovery', capability: 'discovery' },
     { label: 'Client Costs', href: '/dealer/cost', capability: 'client_costs' },
     { label: 'Marketplace', href: '/dealer/marketplace', capability: 'marketplace' },
   ];
-  const middlemanCapabilities = new Set<DealerAppCapability>(['valuation', 'ad_studio', 'marketplace', 'leads', 'notifications']);
+  const middlemanCapabilities = new Set<DealerAppCapability>(['valuation', 'ad_studio', 'showroom']);
   const tools = allTools.filter((tool) =>
     dealerRoleCan(role, tool.capability)
     && (!middlemanMode || middlemanCapabilities.has(tool.capability)),
@@ -122,7 +123,7 @@ export default async function DealerHome() {
           <header className={styles.middlemanHomeIntro}>
             <span>Middleman workspace</span>
             <h1>Value it. Advertise it. Move it.</h1>
-            <p>Create professional machinery adverts from your phone and keep every enquiry together.</p>
+            <p>Create professional machinery adverts from your phone and share one valuation-backed showroom.</p>
           </header>
         ) : null}
         <nav className={styles.homeLauncher} aria-label={middlemanMode ? 'Middleman tools' : 'Dealer tools'}>

@@ -708,6 +708,10 @@ function isManualMarketplaceListing(listing: MarketplaceListing): boolean {
 }
 
 function getListingDealRating(listing: MarketplaceListing): MarketplaceDealRating {
+  if (listing.showDealRating === false) {
+    return 'none';
+  }
+
   if (isDealRatingKey(listing.dealRating)) {
     return listing.dealRating;
   }
@@ -749,6 +753,8 @@ function DealRatingBadge({
   listing: MarketplaceListing;
   variant?: 'card' | 'modal';
 }) {
+  if (listing.showDealRating === false) return null;
+
   const rating = getListingDealRating(listing);
   const label = variant === 'card' ? getDealRatingShortLabel(rating) : getDealRatingLabel(rating);
 

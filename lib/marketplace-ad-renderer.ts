@@ -24,6 +24,7 @@ export type MarketplaceAdContent = {
   askingPriceExVat: number;
   aim4priceValueExVat?: number | null;
   dealRating?: MarketplaceDealRating | null;
+  showDealRating?: boolean;
   sellerName: string;
   sellerPhone: string;
   sellerCompany: string;
@@ -149,6 +150,7 @@ export function marketplaceListingToAdContent(listing: MarketplaceListing): Mark
     askingPriceExVat: Number(listing.askingPriceExVat) || 0,
     aim4priceValueExVat: Number(listing.aim4priceValueExVat) || null,
     dealRating: isRating(listing.dealRating) ? listing.dealRating : calculatedRating,
+    showDealRating: listing.showDealRating !== false,
     sellerName: clean(brand.contactName || listing.sellerName) || 'Sales contact',
     sellerPhone: clean(brand.phone || listing.sellerPhone) || '082 000 0000',
     sellerCompany: clean(brand.businessName || listing.sellerCompany) || 'Marketplace seller',
@@ -323,6 +325,7 @@ function drawBrand(context: CanvasRenderingContext2D, content: MarketplaceAdCont
 }
 
 function drawRating(context: CanvasRenderingContext2D, content: MarketplaceAdContent, x: number, y: number) {
+  if (content.showDealRating === false) return;
   const rating = getMarketplaceAdRating(content);
   context.save();
   context.font = '900 20px Montserrat, Inter, Arial, sans-serif';
