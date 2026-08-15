@@ -127,7 +127,12 @@ test('Ad Studio is limited to dealer accounts and uses a four-step guided setup'
   assert.match(client, /setDefaultKit/);
   assert.match(client, /deleteKit\(kit\)/);
   assert.match(client, /selectedTemplate\.photoCount/);
-  assert.match(css, /\.stepButton small \{ display: none; \}/);
+  assert.doesNotMatch(client, /Saved advert styles|Middleman workspace|styles\.sectionEyebrow/);
+  assert.doesNotMatch(client, /step\.helper|Business and contact details.*Choose an advert layout.*Colours and wording.*Check and save/s);
+  assert.match(client, /logoPreviewCard/);
+  assert.match(client, /A transparent logo works best/);
+  assert.match(css, /\.logoPreviewCard/);
+  assert.doesNotMatch(css, /\.stepButton small/);
   assert.doesNotMatch(css, /\.stepButton > span:last-child \{ display: none; \}/);
   assert.match(header, /href: '\/ad-studio', label: 'Ad Studio', accountTypes: \['dealer'\]/);
   assert.doesNotMatch(header, /href: '\/ad-studio', label: 'Ad Studio', accountTypes: \['owner'/);

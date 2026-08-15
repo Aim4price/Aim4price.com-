@@ -151,11 +151,11 @@ function StudioIcon({ name }: { name: StudioIconName }) {
   );
 }
 
-const STUDIO_STEPS: Array<{ id: StudioStep; label: string; helper: string; icon: StudioIconName }> = [
-  { id: 1, label: 'Details', helper: 'Business and contact details', icon: 'details' },
-  { id: 2, label: 'Layout', helper: 'Choose an advert layout', icon: 'layout' },
-  { id: 3, label: 'Style', helper: 'Colours and wording', icon: 'palette' },
-  { id: 4, label: 'Review', helper: 'Check and save', icon: 'review' },
+const STUDIO_STEPS: Array<{ id: StudioStep; label: string; icon: StudioIconName }> = [
+  { id: 1, label: 'Details', icon: 'details' },
+  { id: 2, label: 'Layout', icon: 'layout' },
+  { id: 3, label: 'Style', icon: 'palette' },
+  { id: 4, label: 'Review', icon: 'review' },
 ];
 
 const TEMPLATE_CLASS_NAMES: Record<AdTemplateId, string> = {
@@ -449,10 +449,6 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
     <div className={`${styles.page} ${dealerAppMode ? styles.dealerPage : ''} ${middlemanMode ? styles.middlemanPage : ''}`}>
       <header className={styles.hero}>
         <div className={styles.heroCopy}>
-          <div className={styles.heroKickerRow}>
-            <span className={styles.eyebrow}>Ad Studio</span>
-            <span className={styles.rolePill}>{middlemanMode ? 'Middleman workspace' : 'Dealer workspace'}</span>
-          </div>
           <h1>Create professional adverts</h1>
           <p>Save your business details and style once, then reuse them on every valuation-backed advert.</p>
         </div>
@@ -477,7 +473,6 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
           <section className={styles.libraryPanel} aria-labelledby="brand-kit-library-title">
             <div className={styles.sectionHeader}>
               <div>
-                <span className={styles.sectionEyebrow}>Saved advert styles</span>
                 <h2 id="brand-kit-library-title">Brand kits</h2>
                 <p>Select a kit to edit, set as the default or delete.</p>
               </div>
@@ -538,7 +533,6 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
           <form className={styles.formPanel} onSubmit={saveKit} ref={editorRef}>
             <div className={styles.editorHeader}>
               <div>
-                <span className={styles.sectionEyebrow}>{draft.id ? 'Editing saved kit' : 'New brand kit'}</span>
                 <h2>{draft.id ? draft.name : 'Create a brand kit'}</h2>
                 <p>Four quick steps. Your preview updates while you work.</p>
               </div>
@@ -558,7 +552,7 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
                     <StudioIcon name={activeStep > step.id ? 'check' : step.icon} />
                     <span className={styles.srOnly}>{activeStep > step.id ? 'Complete' : `Step ${step.id}`}</span>
                   </span>
-                  <span><strong>{step.label}</strong><small>{step.helper}</small></span>
+                  <span><strong>{step.label}</strong></span>
                 </button>
               ))}
             </nav>
@@ -601,21 +595,39 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
                     </div>
                     <div className={styles.logoField}>
                       <div className={styles.logoCopy}>
-                        <strong>Business logo</strong>
-                        <span>PNG, JPEG or WebP, up to 2 MB.</span>
-                      </div>
-                      <label className={styles.logoUpload}>
-                        <StudioIcon name="image" />
-                        <span>{draft.logoUrl ? 'Replace logo' : 'Choose logo'}</span>
-                        <input type="file" accept="image/png,image/jpeg,image/webp" onChange={handleLogo} />
-                      </label>
-                      {draft.logoUrl ? (
-                        <div className={styles.logoThumb}>
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={draft.logoUrl} alt="Uploaded business logo" />
-                          <button type="button" onClick={() => update('logoUrl', '')}>Remove</button>
+                        <span className={styles.logoFieldIcon} aria-hidden="true"><StudioIcon name="image" /></span>
+                        <div>
+                          <strong>Business logo</strong>
+                          <span>PNG, JPEG or WebP, up to 2 MB. A transparent logo works best.</span>
                         </div>
-                      ) : <span className={styles.logoPlaceholderBox}>Logo preview</span>}
+                      </div>
+                      <div className={styles.logoControls}>
+                        <div className={`${styles.logoPreviewCard} ${draft.logoUrl ? styles.logoPreviewReady : ''}`}>
+                          {draft.logoUrl ? (
+                            <>
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img src={draft.logoUrl} alt="Uploaded business logo" />
+                            </>
+                          ) : (
+                            <span className={styles.logoPreviewEmpty}>
+                              <StudioIcon name="image" />
+                              <small>Logo preview</small>
+                            </span>
+                          )}
+                        </div>
+                        <div className={styles.logoButtons}>
+                          <label className={styles.logoUpload}>
+                            <StudioIcon name="image" />
+                            <span>{draft.logoUrl ? 'Replace logo' : 'Choose logo'}</span>
+                            <input type="file" accept="image/png,image/jpeg,image/webp" onChange={handleLogo} />
+                          </label>
+                          {draft.logoUrl ? (
+                            <button className={styles.logoRemove} type="button" onClick={() => update('logoUrl', '')}>
+                              <StudioIcon name="delete" />Remove
+                            </button>
+                          ) : null}
+                        </div>
+                      </div>
                     </div>
                   </fieldset>
                 </section>
