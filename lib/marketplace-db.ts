@@ -310,6 +310,7 @@ async function ensureMarketplaceColumns(): Promise<void> {
       add column if not exists marketplace_province text,
       add column if not exists marketplace_area text,
       add column if not exists marketplace_ad_brand jsonb,
+      add column if not exists marketplace_show_deal_rating boolean not null default true,
       add column if not exists photo_urls jsonb not null default '[]'::jsonb
   `);
 
@@ -831,6 +832,7 @@ function buildMarketplaceListing(
     aim4priceValueExVat: aim4priceValueExVat > 0 ? aim4priceValueExVat : undefined,
     dealRating: dealRating.rating,
     dealRatingPercentDiff: dealRating.percentDiff,
+    showDealRating: pick(row, ['marketplace_show_deal_rating']) !== false,
     imageSrc: imageUrls[0] ?? '',
     imageUrls,
     sectorKey,
@@ -859,6 +861,7 @@ function isPublishableEquipment(row: Record<string, unknown>): boolean {
 export async function listPublishedMarketplaceAssetListings(options: {
   viewerUserId?: string | null;
   exposeContact: boolean;
+  sellerUserId?: string | null;
 }): Promise<MarketplaceListing[]> {
   await ensureMarketplaceColumns();
 
@@ -885,8 +888,10 @@ export async function listPublishedMarketplaceAssetListings(options: {
       left join public.sectors s on s.id = coalesce(a.sector_id, ef.sector_id)
       left join account_profiles p on p.user_id = a.user_id
       where coalesce(a.marketplace_status, 'draft') = 'live'
+        and ($1::text is null or a.user_id = $1)
       order by coalesce(a.updated_at, a.created_at) desc, a.id desc
     `,
+    [options.sellerUserId ?? null],
   );
 
   return result.rows.map((row) => buildMarketplaceListing(row, options));
@@ -906,6 +911,8 @@ export async function publishAssetRegisterItemToMarketplace(input: {
   photos?: string[] | null;
   brandKitId?: string | null;
   allowBrandKit?: boolean;
+  showDealRating?: boolean;
+  requireValuationSource?: boolean;
 }): Promise<MarketplaceListing> {
   await ensureMarketplaceColumns();
 
@@ -945,6 +952,10 @@ export async function publishAssetRegisterItemToMarketplace(input: {
 
   if (!isPublishableEquipment(row)) {
     throw new Error('Property/Buildings cannot be sent to the marketplace.');
+  }
+
+  if (input.requireValuationSource && !pick(row, ['valuation_run_id'])) {
+    throw new Error('Middleman adverts must be created from a completed Aim4price valuation.');
   }
 
   const currentAskingPrice = Math.round(
@@ -1024,6 +1035,9 @@ export async function publishAssetRegisterItemToMarketplace(input: {
 
   updateValues.push(brandKit ? JSON.stringify(toAdBrandSnapshot(brandKit)) : null);
   updateAssignments.push(`marketplace_ad_brand = $${updateValues.length}::jsonb`);
+
+  updateValues.push(input.showDealRating !== false);
+  updateAssignments.push(`marketplace_show_deal_rating = $${updateValues.length}`);
 
   if (incomingPhotos.length) {
     const mergedPhotosJson = JSON.stringify(mergePhotoLists(buildPhotoList(row), incomingPhotos));

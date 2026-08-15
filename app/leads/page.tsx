@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getAccountProfile } from "../../lib/account-profile";
 import { requireActivePageAccess } from "../../lib/account-access";
+import { isMiddlemanAccountSubtype } from "../../lib/middleman-account";
 import { listAssetLeadsForUser } from "../../lib/partner-access";
 import { listLicensingWorkspaceLeads } from "../../lib/licensing-workspace-leads";
 import LeadsClient from "./leads-client";
@@ -18,6 +19,8 @@ export default async function LeadsPage() {
     name: session.user.name,
     email: session.user.email,
   });
+
+  if (isMiddlemanAccountSubtype(profile.accountSubtype)) redirect("/my-showroom");
 
   if (!PARTNER_ACCOUNT_TYPES.has(profile.accountType)) {
     redirect("/account");
@@ -38,3 +41,4 @@ export default async function LeadsPage() {
     />
   );
 }
+

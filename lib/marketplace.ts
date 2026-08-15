@@ -93,6 +93,7 @@ export type MarketplaceListing = {
   aim4priceValueExVat?: number;
   dealRating?: MarketplaceDealRating;
   dealRatingPercentDiff?: number | null;
+  showDealRating?: boolean;
   imageSrc: string;
   imageUrls: string[];
   publishedBy: 'seed' | 'asset-register';

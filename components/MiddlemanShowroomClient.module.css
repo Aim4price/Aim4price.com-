@@ -1,0 +1,223 @@
+.managerPage,
+.publicPage {
+  --ink: #123a30;
+  --green: #165f49;
+  --pale: #edf6f2;
+  --line: #d8e4df;
+  --gold: #f3b640;
+  color: var(--ink);
+  font-family: var(--font-body, 'Montserrat'), 'Montserrat', ui-sans-serif, system-ui, sans-serif;
+}
+
+.managerPage {
+  min-height: calc(100vh - 7rem);
+  padding: clamp(1.2rem, 3vw, 2.6rem);
+  background: radial-gradient(circle at 90% 5%, rgba(243, 182, 64, 0.13), transparent 27rem), #f2f8f5;
+}
+
+.managerPageMobile { min-height: 100dvh; padding: 0.9rem; }
+
+.managerHero,
+.managerGrid {
+  width: min(1380px, 100%);
+  margin-inline: auto;
+}
+
+.managerHero {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 1.5rem;
+  padding: clamp(1.4rem, 3vw, 2.2rem);
+  border: 1px solid rgba(216, 228, 223, 0.8);
+  border-radius: 1.5rem;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 18px 55px rgba(18, 58, 48, 0.07);
+}
+
+.eyebrow,
+.sectionHeading span,
+.inventoryHeading span,
+.profileIdentity small {
+  color: #a96a00;
+  font: 850 0.72rem var(--font-heading, 'Montserrat'), sans-serif;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.managerHero h1 {
+  max-width: 780px;
+  margin: 0.35rem 0 0.55rem;
+  font: 900 clamp(2rem, 4.4vw, 3.7rem)/0.98 var(--font-heading, 'Montserrat'), sans-serif;
+  letter-spacing: -0.055em;
+}
+
+.managerHero p { max-width: 770px; margin: 0; color: #637a72; font-size: 1rem; line-height: 1.6; }
+.heroActions, .settingsActions, .publicContactActions { display: flex; flex-wrap: wrap; gap: 0.65rem; }
+
+.primaryButton,
+.secondaryButton,
+.whatsappButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.9rem;
+  border: 0;
+  border-radius: 999px;
+  padding: 0 1.15rem;
+  font: 850 0.82rem var(--font-heading, 'Montserrat'), sans-serif;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.primaryButton { color: #fff; background: var(--green); box-shadow: 0 9px 24px rgba(22, 95, 73, 0.18); }
+.secondaryButton { border: 1px solid var(--line); color: var(--ink); background: #fff; }
+.whatsappButton { color: #fff; background: #1eaa59; }
+.primaryButton:disabled, .secondaryButton:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.managerGrid {
+  display: grid;
+  grid-template-columns: minmax(290px, 0.72fr) minmax(0, 1.28fr);
+  gap: 1.2rem;
+  margin-top: 1.2rem;
+}
+
+.settingsCard,
+.stockCard {
+  align-self: start;
+  border: 1px solid rgba(216, 228, 223, 0.9);
+  border-radius: 1.35rem;
+  padding: clamp(1.15rem, 2.4vw, 1.65rem);
+  background: #fff;
+  box-shadow: 0 16px 45px rgba(18, 58, 48, 0.06);
+}
+
+.sectionHeading { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 1.2rem; }
+.sectionHeading h2 { margin: 0.2rem 0 0; font: 900 1.45rem var(--font-heading, 'Montserrat'), sans-serif; letter-spacing: -0.035em; }
+.statusPill { border-radius: 999px; padding: 0.45rem 0.65rem; color: #687a74; background: #edf1ef; font: 850 0.68rem var(--font-heading, 'Montserrat'), sans-serif; }
+.statusLive { color: #147047; background: #e2f5e9; }
+
+.settingsCard > label { display: grid; gap: 0.45rem; margin-top: 0.95rem; }
+.settingsCard > label > span:first-child { font: 800 0.78rem var(--font-heading, 'Montserrat'), sans-serif; }
+.settingsCard input, .settingsCard textarea { border: 1px solid var(--line); border-radius: 0.85rem; color: var(--ink); background: #fbfdfc; font: inherit; outline: 0; }
+.settingsCard textarea { padding: 0.85rem 0.9rem; resize: vertical; }
+.settingsCard input:focus, .settingsCard textarea:focus { border-color: var(--green); box-shadow: 0 0 0 4px rgba(22, 95, 73, 0.1); }
+.settingsCard label > small { justify-self: end; color: #7c8f88; font-size: 0.72rem; }
+
+.slugField { display: flex; align-items: center; min-width: 0; overflow: hidden; border: 1px solid var(--line); border-radius: 0.85rem; background: #fbfdfc; }
+.slugField:focus-within { border-color: var(--green); box-shadow: 0 0 0 4px rgba(22, 95, 73, 0.1); }
+.slugField b { flex: 0 0 auto; padding-left: 0.85rem; color: #72847e; font-size: 0.72rem; }
+.slugField input { min-width: 0; width: 100%; min-height: 3rem; border: 0; border-radius: 0; padding: 0 0.85rem 0 0.18rem; box-shadow: none !important; }
+
+.switchRow { grid-template-columns: auto minmax(0, 1fr) !important; align-items: start; padding: 0.9rem; border-radius: 0.9rem; background: var(--pale); cursor: pointer; }
+.switchRow input { width: 1.15rem; height: 1.15rem; margin-top: 0.1rem; accent-color: var(--green); }
+.switchRow > span { display: grid; gap: 0.18rem; }
+.switchRow strong { font: 850 0.8rem var(--font-heading, 'Montserrat'), sans-serif; }
+.switchRow small { color: #647971; line-height: 1.4; }
+.settingsActions { margin-top: 1.15rem; }
+.feedback { margin: 0.9rem 0 0; border-left: 3px solid var(--gold); padding-left: 0.7rem; color: #566d65; font-size: 0.8rem; line-height: 1.45; }
+
+.managerListings { display: grid; gap: 0.7rem; }
+.managerListing { display: grid; grid-template-columns: 105px minmax(0, 1fr) auto; align-items: center; gap: 0.85rem; padding: 0.7rem; border: 1px solid #e2e9e6; border-radius: 1rem; background: #fbfdfc; }
+.managerListing > img { width: 105px; height: 82px; border-radius: 0.75rem; object-fit: cover; background: #e6eeea; }
+.managerListing > div:nth-child(2) { display: grid; gap: 0.3rem; min-width: 0; }
+.listingTitleRow { display: flex; align-items: center; gap: 0.5rem; min-width: 0; }
+.listingTitleRow > strong { overflow: hidden; font: 850 0.88rem var(--font-heading, 'Montserrat'), sans-serif; text-overflow: ellipsis; white-space: nowrap; }
+.managerListing small { color: #71837c; }
+.managerListing b { font: 850 0.86rem var(--font-heading, 'Montserrat'), sans-serif; }
+.listingActions { display: grid; gap: 0.4rem; }
+.listingActions button { min-height: 2.2rem; border: 1px solid var(--line); border-radius: 999px; padding: 0 0.8rem; color: var(--green); background: #fff; font: 800 0.68rem var(--font-heading, 'Montserrat'), sans-serif; cursor: pointer; }
+.listingActions .dangerButton { color: #9d2f25; }
+.listingActions button:disabled { opacity: 0.45; }
+
+.rating { flex: 0 0 auto; border-radius: 999px; padding: 0.34rem 0.52rem; color: #fff; font: 850 0.58rem var(--font-heading, 'Montserrat'), sans-serif; text-transform: uppercase; }
+.rating_low { background: #f0782c; }
+.rating_great { background: #239b50; }
+.rating_fair { background: #208aa0; }
+.rating_high { background: #df4c44; }
+.rating_none { background: #74847e; }
+
+.emptyStock, .publicEmpty { display: grid; justify-items: center; padding: 2.8rem 1.2rem; text-align: center; }
+.emptyStock > span { display: grid; place-items: center; width: 58px; height: 58px; border-radius: 1rem; color: #fff; background: var(--green); font: 900 0.9rem var(--font-heading, 'Montserrat'), sans-serif; }
+.emptyStock h3, .publicEmpty h3 { margin: 0.9rem 0 0.3rem; font: 900 1.2rem var(--font-heading, 'Montserrat'), sans-serif; }
+.emptyStock p, .publicEmpty p { max-width: 480px; margin: 0 0 1rem; color: #6d8079; line-height: 1.55; }
+
+.publicPage { min-height: 100vh; background: #f3f6f5; }
+.publicTopbar { display: flex; align-items: center; justify-content: space-between; min-height: 4.6rem; padding: 0 clamp(1rem, 5vw, 4.5rem); border-bottom: 1px solid var(--line); background: #fff; }
+.aim4priceMark { color: #0d2e26; font: italic 900 1rem var(--font-heading, 'Montserrat'), sans-serif; text-decoration: none; letter-spacing: -0.04em; }
+.publicTopbar > span { color: #74847e; font-size: 0.72rem; font-weight: 750; }
+
+.publicHero { padding: clamp(2rem, 5vw, 4.5rem) clamp(1rem, 6vw, 6rem); color: #fff; background: radial-gradient(circle at 87% 15%, rgba(243,182,64,.28), transparent 28rem), linear-gradient(135deg, #103b30, #176149); }
+.profileIdentity { display: flex; align-items: center; gap: 1.2rem; }
+.profileIdentity > img, .profileIdentity > span { display: grid; place-items: center; width: 92px; height: 92px; border-radius: 1.15rem; object-fit: contain; color: var(--ink); background: #fff; font: 900 1.45rem var(--font-heading, 'Montserrat'), sans-serif; }
+.profileIdentity small { color: #f3c569; }
+.profileIdentity h1 { margin: 0.28rem 0 0.2rem; font: 900 clamp(2rem, 5vw, 4.25rem)/0.98 var(--font-heading, 'Montserrat'), sans-serif; letter-spacing: -0.06em; }
+.profileIdentity p { margin: 0; color: rgba(255,255,255,.76); }
+.publicContactActions { margin-top: 1.5rem; }
+.publicBio { max-width: 760px; margin: 1.4rem 0 0; color: rgba(255,255,255,.82); font-size: 1rem; line-height: 1.7; }
+.trustStrip { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-top: 2.2rem; border: 1px solid rgba(255,255,255,.15); border-radius: 1rem; padding: 1rem 1.1rem; background: rgba(255,255,255,.07); }
+.trustStrip strong { font: 820 0.84rem var(--font-heading, 'Montserrat'), sans-serif; }
+.trustStrip span { color: rgba(255,255,255,.68); font-size: 0.74rem; }
+
+.publicInventory { padding: clamp(1.4rem, 4vw, 3.5rem) clamp(1rem, 6vw, 6rem); }
+.inventoryHeading { display: flex; align-items: end; justify-content: space-between; gap: 1rem; margin-bottom: 1.3rem; }
+.inventoryHeading h2 { margin: 0.25rem 0 0; font: 900 clamp(1.55rem, 3vw, 2.25rem) var(--font-heading, 'Montserrat'), sans-serif; letter-spacing: -0.045em; }
+.publicFilters { display: flex; flex-wrap: wrap; gap: 0.55rem; }
+.publicFilters input, .publicFilters select { min-height: 2.85rem; border: 1px solid var(--line); border-radius: 999px; padding: 0 1rem; color: var(--ink); background: #fff; font: inherit; outline: 0; }
+.publicFilters input { width: min(320px, 70vw); }
+.publicFilters input:focus, .publicFilters select:focus { border-color: var(--green); box-shadow: 0 0 0 4px rgba(22,95,73,.1); }
+
+.publicGrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
+.publicCard { overflow: hidden; border: 1px solid var(--line); border-radius: 1.15rem; background: #fff; box-shadow: 0 10px 28px rgba(18,58,48,.06); }
+.publicImage { position: relative; aspect-ratio: 4 / 3; background: #e8efec; }
+.publicImage img { width: 100%; height: 100%; object-fit: cover; }
+.publicImage .rating { position: absolute; top: 0.75rem; left: 0.75rem; }
+.publicImage > small { position: absolute; right: 0.75rem; bottom: 0.75rem; border-radius: 999px; padding: 0.38rem 0.55rem; color: #fff; background: rgba(12,42,34,.8); font-size: 0.65rem; font-weight: 800; }
+.publicCardBody { display: grid; gap: 0.48rem; padding: 1rem; }
+.publicCardBody > span { overflow: hidden; color: #75867f; font-size: 0.7rem; font-weight: 720; text-overflow: ellipsis; white-space: nowrap; }
+.publicCardBody h3 { margin: 0; font: 900 1.05rem/1.16 var(--font-heading, 'Montserrat'), sans-serif; letter-spacing: -0.03em; }
+.publicCardBody p { margin: 0; color: #71827c; font-size: 0.76rem; }
+.publicCardBody > strong { margin-top: 0.25rem; font: 900 1.25rem var(--font-heading, 'Montserrat'), sans-serif; }
+.publicCardBody > strong small { color: #74857f; font-size: 0.62rem; }
+.publicCardBody > a { display: flex; justify-content: center; margin-top: 0.35rem; border-radius: 999px; padding: 0.72rem; color: #fff; background: var(--green); font: 820 0.72rem var(--font-heading, 'Montserrat'), sans-serif; text-decoration: none; }
+
+.publicFooter { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1.5rem clamp(1rem, 6vw, 6rem); color: #fff; background: #102f27; }
+.publicFooter > div { display: grid; gap: 0.25rem; }
+.publicFooter strong { font: 850 0.8rem var(--font-heading, 'Montserrat'), sans-serif; }
+.publicFooter span { color: rgba(255,255,255,.62); font-size: 0.7rem; }
+.publicFooter a { border-radius: 999px; padding: 0.75rem 1rem; color: #102f27; background: var(--gold); font: 850 0.72rem var(--font-heading, 'Montserrat'), sans-serif; text-decoration: none; }
+
+@media (max-width: 980px) {
+  .managerGrid { grid-template-columns: 1fr; }
+  .publicGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 680px) {
+  .managerPage { padding: 0.7rem; }
+  .managerHero { align-items: stretch; flex-direction: column; border-radius: 1.15rem; }
+  .managerHero h1 { font-size: 2rem; }
+  .heroActions, .heroActions a { width: 100%; }
+  .managerGrid { margin-top: 0.7rem; gap: 0.7rem; }
+  .settingsCard, .stockCard { border-radius: 1.05rem; padding: 1rem; }
+  .slugField { display: grid; }
+  .slugField b { padding: 0.65rem 0.8rem 0; }
+  .slugField input { padding: 0 0.8rem; }
+  .managerListing { grid-template-columns: 82px minmax(0, 1fr); align-items: start; }
+  .managerListing > img { width: 82px; height: 76px; }
+  .listingActions { grid-column: 1 / -1; grid-template-columns: 1fr 1fr; }
+  .listingTitleRow { align-items: start; flex-direction: column; }
+  .listingTitleRow > strong { width: 100%; white-space: normal; }
+  .publicTopbar > span { display: none; }
+  .publicHero { padding-top: 1.5rem; }
+  .profileIdentity { align-items: flex-start; }
+  .profileIdentity > img, .profileIdentity > span { width: 66px; height: 66px; border-radius: 0.85rem; }
+  .profileIdentity h1 { font-size: 1.85rem; }
+  .publicContactActions a { flex: 1; }
+  .trustStrip { align-items: flex-start; flex-direction: column; }
+  .inventoryHeading { align-items: stretch; flex-direction: column; }
+  .publicFilters { display: grid; grid-template-columns: 1fr; }
+  .publicFilters input { width: 100%; }
+  .publicGrid { grid-template-columns: 1fr; }
+  .publicFooter { align-items: stretch; flex-direction: column; }
+  .publicFooter a { text-align: center; }
+}

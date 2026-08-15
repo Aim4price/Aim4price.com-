@@ -3,6 +3,7 @@ import { getServerSession } from '../../../lib/auth-session';
 import { getDealerAppSession } from '../../../lib/dealer-app-session';
 import { dealerRoleCan } from '../../../lib/dealer-app-access';
 import { getAccountProfile } from '../../../lib/account-profile';
+import { isMiddlemanAccountSubtype } from '../../../lib/middleman-account';
 import { listInitialDealerReceivedLeads } from '../../../lib/dealer-leads-initial-load';
 import DealerLeadsClient from './dealer-leads-client';
 import styles from '../dealer.module.css';
@@ -21,15 +22,14 @@ export default async function DealerLeadsPage() {
   if (dealerAppSession && !dealerRoleCan(dealerAppSession.role, 'leads')) redirect('/dealer');
 
   const dealerUserId = dealerAppSession?.dealerUserId || session?.user?.id || '';
-  const [profile, initialLeads] = await Promise.all([
-    getAccountProfile({
-      id: dealerUserId,
-      name: dealerAppSession?.displayName || session?.user?.name || null,
-      email: dealerAppSession ? null : session?.user?.email || null,
-    }),
-    listInitialDealerReceivedLeads(dealerUserId, INITIAL_LEAD_BATCH_SIZE),
-  ]);
+  const profile = await getAccountProfile({
+    id: dealerUserId,
+    name: dealerAppSession?.displayName || session?.user?.name || null,
+    email: dealerAppSession ? null : session?.user?.email || null,
+  });
   if (profile.accountType !== 'dealer' || profile.accountStatus !== 'active') redirect('/dealer/login');
+  if (isMiddlemanAccountSubtype(profile.accountSubtype)) redirect('/dealer/showroom');
+  const initialLeads = await listInitialDealerReceivedLeads(dealerUserId, INITIAL_LEAD_BATCH_SIZE);
 
   return (
     <div className={`${styles.module} ${styles.leadsModule}`}>
@@ -37,3 +37,4 @@ export default async function DealerLeadsPage() {
     </div>
   );
 }
+

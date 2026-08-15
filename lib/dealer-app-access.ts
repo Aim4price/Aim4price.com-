@@ -9,7 +9,8 @@ export type DealerAppCapability =
   | 'discovery'
   | 'client_costs'
   | 'marketplace'
-  | 'ad_studio';
+  | 'ad_studio'
+  | 'showroom';
 
 const ROLE_CAPABILITIES: Record<DealerStaffRole, ReadonlySet<DealerAppCapability>> = {
   owner: new Set([
@@ -22,6 +23,7 @@ const ROLE_CAPABILITIES: Record<DealerStaffRole, ReadonlySet<DealerAppCapability
     'client_costs',
     'marketplace',
     'ad_studio',
+    'showroom',
   ]),
   sales: new Set([
     'overview',
@@ -32,6 +34,7 @@ const ROLE_CAPABILITIES: Record<DealerStaffRole, ReadonlySet<DealerAppCapability
     'discovery',
     'marketplace',
     'ad_studio',
+    'showroom',
   ]),
   parts: new Set([
     'overview',

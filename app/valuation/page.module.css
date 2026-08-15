@@ -9544,6 +9544,40 @@
   gap: 0.45rem;
 }
 
+.marketplaceRatingChoice {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 0.78rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid rgba(198, 217, 231, 0.98);
+  border-radius: 0.9rem;
+  background: #fff;
+  cursor: pointer;
+}
+
+.marketplaceRatingChoice input {
+  width: 1.15rem;
+  height: 1.15rem;
+  margin-top: 0.18rem;
+  accent-color: #165340;
+}
+
+.marketplaceRatingChoice span {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.marketplaceRatingChoice strong {
+  color: #173c31;
+  font: 800 0.9rem var(--font-heading, 'Montserrat'), sans-serif;
+}
+
+.marketplaceRatingChoice small {
+  color: #657b73;
+  line-height: 1.4;
+}
+
 .marketplaceField input,
 .marketplaceField textarea,
 .marketplaceField select {

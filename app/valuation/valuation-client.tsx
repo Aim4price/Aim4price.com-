@@ -385,6 +385,7 @@ type MarketplacePendingPhoto = {
 
 type MarketplacePublishDraft = {
   brandKitId: string;
+  showDealRating: boolean;
   askingPriceExVat: string;
   marketplaceNotes: string;
   sellerName: string;
@@ -3979,6 +3980,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
 
     return {
       brandKitId: defaultBrandKit?.id ?? '',
+      showDealRating: true,
       askingPriceExVat: selectedValue > 0 ? formatMoneyInput(selectedValue) : '',
       marketplaceNotes: `${title} listed from a current Aim4price estimate.`,
       sellerName,
@@ -4277,6 +4279,11 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     setMarketplaceDraft((current) => (current ? { ...current, askingPriceExVat: next } : current));
   }
 
+  function handleMarketplaceRatingVisibilityChange(event: ChangeEvent<HTMLInputElement>) {
+    const showDealRating = event.target.checked;
+    setMarketplaceDraft((current) => (current ? { ...current, showDealRating } : current));
+  }
+
   function handleMarketplacePhotoChange(event: ChangeEvent<HTMLInputElement>) {
     const files = Array.from(event.target.files ?? []).filter((file) => file.type.startsWith('image/'));
     if (!files.length) return;
@@ -4463,6 +4470,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
           area: marketplaceDraft.area,
           photos: photoUrls,
           brandKitId: marketplaceDraft.brandKitId || null,
+          showDealRating: marketplaceDraft.showDealRating,
         }),
       });
       const published = (await publishResponse.json()) as MarketplaceApiResponse;
@@ -7698,6 +7706,18 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                       placeholder="0"
                     />
                   </div>
+                </label>
+
+                <label className={styles.marketplaceRatingChoice}>
+                  <input
+                    type="checkbox"
+                    checked={marketplaceDraft.showDealRating}
+                    onChange={handleMarketplaceRatingVisibilityChange}
+                  />
+                  <span>
+                    <strong>Show the Aim4price price rating</strong>
+                    <small>Turn this off to hide the rating on the JPEG, Marketplace and your showroom.</small>
+                  </span>
                 </label>
 
                 <div className={styles.marketplacePhotoPanel}>

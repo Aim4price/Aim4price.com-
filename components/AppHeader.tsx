@@ -33,6 +33,7 @@ type ActivePage =
   | 'shared-registers'
   | 'marketplace'
   | 'ad-studio'
+  | 'showroom'
   | 'none';
 
 type AppHeaderProps = {
@@ -240,11 +241,9 @@ const LICENSING_ACCOUNT_MENU_ITEMS: AccountMenuItem[] = [
 ];
 
 const MIDDLEMAN_ACCOUNT_MENU_ITEMS: AccountMenuItem[] = [
-  { href: '/', label: 'Home' },
   { href: '/valuation', label: 'Get Estimate' },
   { href: '/ad-studio', label: 'Ad Studio' },
-  { href: '/marketplace', label: 'My Listings' },
-  { href: '/leads', label: 'Leads' },
+  { href: '/my-showroom', label: 'My Showroom' },
   { href: '/account', label: 'Account' },
 ];
 
@@ -319,11 +318,10 @@ function buildNavItems(
   if (accountType === 'dealer') {
     if (isMiddlemanAccountSubtype(accountSubtype)) {
       return [
-        { key: 'home', href: '/', label: 'Home' },
         { key: 'valuation', href: '/valuation', label: 'Get Estimate' },
         { key: 'ad-studio', href: '/ad-studio', label: 'Ad Studio' },
-        { key: 'marketplace', href: '/marketplace', label: 'My Listings' },
-        { key: 'leads', href: '/leads', label: 'Leads' },
+        { key: 'showroom', href: '/my-showroom', label: 'My Showroom' },
+        { key: 'account', href: '/account', label: 'Account' },
       ];
     }
     return [

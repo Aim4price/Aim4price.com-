@@ -7,6 +7,7 @@ import {
   removeAssetRegisterItemFromMarketplace,
 } from '../../../lib/marketplace-db';
 import { MAX_ASSET_REGISTER_PHOTOS } from '../../../lib/asset-register-uploads';
+import { isMiddlemanAccountSubtype } from '../../../lib/middleman-account';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -139,6 +140,7 @@ export async function POST(request: NextRequest) {
     area?: unknown;
     photos?: unknown;
     brandKitId?: unknown;
+    showDealRating?: unknown;
   };
   const assetId = String(body.assetId ?? '').trim();
 
@@ -187,6 +189,8 @@ export async function POST(request: NextRequest) {
       photos: photoUrls,
       brandKitId: accountType === 'dealer' ? brandKitId || null : null,
       allowBrandKit: accountType === 'dealer',
+      showDealRating: body.showDealRating !== false,
+      requireValuationSource: isMiddlemanAccountSubtype(profile.accountSubtype),
     });
 
     return NextResponse.json({

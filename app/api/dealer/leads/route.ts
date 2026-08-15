@@ -3,6 +3,7 @@ import { getAccountProfile } from '../../../../lib/account-profile';
 import { getServerSession } from '../../../../lib/auth-session';
 import { getDealerAppSession } from '../../../../lib/dealer-app-session';
 import { listAssetLeadsForUser } from '../../../../lib/partner-access';
+import { isMiddlemanAccountSubtype } from '../../../../lib/middleman-account';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -31,6 +32,10 @@ export async function GET() {
   }
 
   try {
+    const profile = await getAccountProfile({ id: dealerUserId });
+    if (isMiddlemanAccountSubtype(profile.accountSubtype)) {
+      return NextResponse.json({ ok: false, error: 'Leads are available to paid dealer accounts.' }, { status: 403 });
+    }
     const leads = await listAssetLeadsForUser(dealerUserId);
     return NextResponse.json({
       ok: true,
@@ -42,3 +47,4 @@ export async function GET() {
     return NextResponse.json({ ok: false, error: 'Failed to load Dealer leads.' }, { status: 500 });
   }
 }
+
