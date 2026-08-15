@@ -9,6 +9,7 @@ import {
 import { createAssetLead, listAssetLeadsForUser, normalizeLeadType } from '../../../lib/partner-access';
 import { syncAccountantShareSettingsFromLead } from '../../../lib/accountant-workspace';
 import { listLicensingWorkspaceLeads } from '../../../lib/licensing-workspace-leads';
+import { isMiddlemanAccountSubtype } from '../../../lib/middleman-account';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -89,6 +90,9 @@ export async function GET() {
 
   try {
     const profile = await getAccountProfile(session.user);
+    if (isMiddlemanAccountSubtype(profile.accountSubtype)) {
+      return NextResponse.json({ ok: false, error: 'Leads are available to paid dealer accounts.' }, { status: 403 });
+    }
     const leads = profile.accountType === 'licensing'
       ? await listLicensingWorkspaceLeads(session.user.id)
       : await listAssetLeadsForUser(session.user.id);
@@ -104,6 +108,11 @@ export async function POST(request: NextRequest) {
 
   if (!session?.user?.id) {
     return unauthorized();
+  }
+
+  const requesterProfile = await getAccountProfile(session.user);
+  if (isMiddlemanAccountSubtype(requesterProfile.accountSubtype)) {
+    return NextResponse.json({ ok: false, error: 'Leads are available to paid dealer accounts.' }, { status: 403 });
   }
 
   let body: CreateAssetLeadBody;
@@ -253,3 +262,4 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: false, error: 'Failed to create lead.' }, { status: 500 });
   }
 }
+

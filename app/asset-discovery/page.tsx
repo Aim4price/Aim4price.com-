@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import AppHeader from '../../components/AppHeader';
 import { getAccountProfile } from '../../lib/account-profile';
 import { requireActivePageAccess } from '../../lib/account-access';
+import { isMiddlemanAccountSubtype } from '../../lib/middleman-account';
 import AssetDiscoveryClient from './asset-discovery-client';
 import { workspaceStyles } from '../../components/WorkspacePrimitives';
 import leadStyles from '../leads/page.module.css';
@@ -30,6 +31,8 @@ export default async function AssetDiscoveryPage({
     email: session.user.email,
   });
 
+  if (isMiddlemanAccountSubtype(profile.accountSubtype)) redirect('/my-showroom');
+
   if (!['dealer', 'owner', 'licensing'].includes(profile.accountType)) {
     redirect('/leads');
   }
@@ -43,3 +46,4 @@ export default async function AssetDiscoveryPage({
     </main>
   );
 }
+

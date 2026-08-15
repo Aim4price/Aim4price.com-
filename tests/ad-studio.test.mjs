@@ -150,12 +150,15 @@ test('middlemen have a focused phone-first workspace and a supported account sub
 });
 
 test('middleman showroom is public, valuation-backed and excludes paid dealer tools', async () => {
-  const [showroomDb, publicPage, manager, marketplaceDb, dealerHome] = await Promise.all([
+  const [showroomDb, publicPage, manager, marketplaceDb, dealerHome, leadsPage, discoveryPage, leadsApi] = await Promise.all([
     read('lib/middleman-showroom-db.ts'),
     read('app/showroom/[slug]/page.tsx'),
     read('components/MiddlemanShowroomClient.tsx'),
     read('lib/marketplace-db.ts'),
     read('app/dealer/page.tsx'),
+    read('app/dealer/leads/page.tsx'),
+    read('app/dealer/discovery/page.tsx'),
+    read('app/api/dealer/leads/route.ts'),
   ]);
 
   assert.match(showroomDb, /middleman_showrooms/);
@@ -166,6 +169,9 @@ test('middleman showroom is public, valuation-backed and excludes paid dealer to
   assert.match(manager, /Download JPEG/);
   assert.match(marketplaceDb, /requireValuationSource && !pick\(row, \['valuation_run_id'\]\)/);
   assert.match(dealerHome, /new Set<DealerAppCapability>\(\['valuation', 'ad_studio', 'showroom'\]\)/);
+  assert.match(leadsPage, /isMiddlemanAccountSubtype\(profile\.accountSubtype\).*redirect\('\/dealer\/showroom'\)/s);
+  assert.match(discoveryPage, /isMiddlemanAccountSubtype\(profile\.accountSubtype\).*redirect\('\/dealer\/showroom'\)/s);
+  assert.match(leadsApi, /Leads are available to paid dealer accounts/);
 });
 
 test('rating visibility follows the advert through Marketplace, showroom and JPEG export', async () => {
