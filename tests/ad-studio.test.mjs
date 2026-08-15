@@ -4,11 +4,24 @@ import test from 'node:test';
 
 const read = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
 
-test('Ad Studio exposes five reusable layout choices and safe Brand Kit fields', async () => {
+test('Ad Studio exposes eight reusable one-to-four-photo layouts and safe Brand Kit fields', async () => {
   const source = await read('lib/ad-studio.ts');
-  for (const template of ['showcase', 'price-focus', 'photo-first', 'classic', 'minimal']) {
+  for (const template of [
+    'showcase',
+    'price-focus',
+    'photo-first',
+    'classic',
+    'minimal',
+    'duo-split',
+    'gallery-three',
+    'catalogue-grid',
+  ]) {
     assert.match(source, new RegExp(`id: '${template}'`));
   }
+  assert.match(source, /photoCount: 1/);
+  assert.match(source, /photoCount: 2/);
+  assert.match(source, /photoCount: 3/);
+  assert.match(source, /photoCount: 4/);
   assert.match(source, /logoUrl: string/);
   assert.match(source, /primaryColor: string/);
   assert.match(source, /contactName: string/);
@@ -69,6 +82,10 @@ test('Marketplace opens the advert sheet and renders the saved layout and dealer
   assert.match(marketplace, /listing\.adBrand\?\.templateId/);
   assert.match(marketplace, /drawAlternateBrandedAdCanvas/);
   assert.match(marketplace, /drawAim4priceCredit/);
+  assert.match(marketplace, /templateId === 'duo-split'/);
+  assert.match(marketplace, /templateId === 'gallery-three'/);
+  assert.match(marketplace, /templateId === 'catalogue-grid'/);
+  assert.match(marketplace, /listingImages\[index\]/);
 });
 
 test('Ad Studio is limited to dealer accounts and uses a four-step guided setup', async () => {
@@ -87,6 +104,10 @@ test('Ad Studio is limited to dealer accounts and uses a four-step guided setup'
   assert.match(client, /Details.*Layout.*Style.*Review/s);
   assert.match(client, /activeStep === 1/);
   assert.match(client, /activeStep === 4/);
+  assert.match(client, /My Brand Kits/);
+  assert.match(client, /setDefaultKit/);
+  assert.match(client, /deleteKit\(kit\)/);
+  assert.match(client, /selectedTemplate\.photoCount/);
   assert.match(header, /href: '\/ad-studio', label: 'Ad Studio', accountTypes: \['dealer'\]/);
   assert.doesNotMatch(header, /href: '\/ad-studio', label: 'Ad Studio', accountTypes: \['owner'/);
 });

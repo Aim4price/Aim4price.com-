@@ -20,6 +20,7 @@ import {
   type MarketplaceDealRating,
   type MarketplaceListing,
 } from '../../lib/marketplace';
+import type { AdTemplateId } from '../../lib/ad-studio';
 import { money } from '../../lib/tractor-logic';
 
 type MarketplaceFilters = {
@@ -1606,8 +1607,8 @@ function drawBrandedAdvertDetails(
 function drawAlternateBrandedAdCanvas(
   context: CanvasRenderingContext2D,
   listing: MarketplaceListing,
-  templateId: 'price-focus' | 'photo-first' | 'classic' | 'minimal',
-  listingImage: HTMLImageElement | undefined,
+  templateId: AdTemplateId,
+  listingImages: HTMLImageElement[],
   sellerLogo: HTMLImageElement | null,
   aim4priceLogo: HTMLImageElement | null,
 ) {
@@ -1621,10 +1622,111 @@ function drawAlternateBrandedAdCanvas(
   const sellerBrand = listing.adBrand?.businessName || listing.sellerCompany || listing.sellerName || 'Marketplace seller';
   const price = `${money(listing.askingPriceExVat)} ${getAdVatLabel(listing)}`;
   const contact = `${getAdSellerName(listing)}  ·  ${getAdSellerPhone(listing)}`;
+  const listingImage = listingImages[0];
 
   context.clearRect(0, 0, width, height);
   context.fillStyle = templateId === 'minimal' ? '#f7f8f7' : primary;
   context.fillRect(0, 0, width, height);
+
+  if (templateId === 'duo-split') {
+    context.fillStyle = '#f5f8f6';
+    context.fillRect(0, 0, width, height);
+    context.fillStyle = primary;
+    context.fillRect(1000, 0, 600, height);
+
+    drawAdThumbnailCell(context, listing, listingImages[0], 0, 36, 36, 928, 404);
+    drawAdThumbnailCell(context, listing, listingImages[1], 1, 36, 460, 928, 404);
+    drawAdLogoBadge(context, sellerLogo, 1040, 46, 470, 92, sellerBrand);
+    drawBrandedAdvertDetails(context, listing, 1042, 224, 500, primaryText, accent, { compact: true });
+    fillRoundedRect(context, 1040, 494, 500, 108, 18, accent);
+    context.save();
+    context.fillStyle = canvasContrastColor(accent);
+    context.textAlign = 'center';
+    context.textBaseline = 'middle';
+    context.font = '950 43px Montserrat, Inter, Arial, sans-serif';
+    context.fillText(fitCanvasText(context, price, 454), 1290, 550);
+    context.fillStyle = primaryText;
+    context.font = '800 24px Montserrat, Inter, Arial, sans-serif';
+    context.fillText(fitCanvasText(context, contact, 480), 1290, 690);
+    context.restore();
+    drawAim4priceCredit(context, aim4priceLogo, 1292, 798, 244, 54, true);
+    return;
+  }
+
+  if (templateId === 'gallery-three') {
+    context.fillStyle = '#f3f6f4';
+    context.fillRect(0, 0, width, height);
+    drawAdThumbnailCell(context, listing, listingImages[0], 0, 34, 34, 930, 592);
+    drawAdThumbnailCell(context, listing, listingImages[1], 1, 986, 34, 580, 286);
+    drawAdThumbnailCell(context, listing, listingImages[2], 2, 986, 340, 580, 286);
+
+    context.fillStyle = secondary;
+    context.fillRect(0, 654, width, 246);
+    drawAdLogoBadge(context, sellerLogo, 48, 704, 330, 86, sellerBrand);
+    drawBrandedAdvertDetails(context, listing, 430, 712, 570, secondaryText, accent, { compact: true });
+    fillRoundedRect(context, 1050, 702, 482, 102, 18, accent);
+    context.save();
+    context.fillStyle = canvasContrastColor(accent);
+    context.textAlign = 'center';
+    context.textBaseline = 'middle';
+    context.font = '950 40px Montserrat, Inter, Arial, sans-serif';
+    context.fillText(fitCanvasText(context, price, 440), 1291, 754);
+    context.fillStyle = secondaryText;
+    context.font = '800 20px Montserrat, Inter, Arial, sans-serif';
+    context.fillText(fitCanvasText(context, contact, 458), 1291, 841);
+    context.restore();
+    drawAim4priceCredit(context, aim4priceLogo, 54, 814, 236, 52, true);
+    return;
+  }
+
+  if (templateId === 'catalogue-grid') {
+    context.fillStyle = '#ffffff';
+    context.fillRect(0, 0, width, height);
+    context.fillStyle = secondary;
+    context.fillRect(0, 0, width, 136);
+    drawAdLogoBadge(context, sellerLogo, 48, 27, 350, 84, sellerBrand);
+    context.save();
+    context.fillStyle = secondaryText;
+    context.textAlign = 'right';
+    context.font = '850 26px Montserrat, Inter, Arial, sans-serif';
+    context.fillText('FOUR-VIEW EQUIPMENT ADVERT', 1538, 82);
+    context.restore();
+
+    const gridX = 42;
+    const gridY = 166;
+    const cellWidth = 435;
+    const cellHeight = 321;
+    const gridGap = 18;
+    for (let index = 0; index < 4; index += 1) {
+      drawAdThumbnailCell(
+        context,
+        listing,
+        listingImages[index],
+        index,
+        gridX + (index % 2) * (cellWidth + gridGap),
+        gridY + Math.floor(index / 2) * (cellHeight + gridGap),
+        cellWidth,
+        cellHeight,
+      );
+    }
+
+    context.fillStyle = '#f5f8f6';
+    context.fillRect(972, 166, 586, 678);
+    drawBrandedAdvertDetails(context, listing, 1010, 224, 510, secondary, accent, { compact: true });
+    fillRoundedRect(context, 1010, 490, 510, 112, 18, accent);
+    context.save();
+    context.fillStyle = canvasContrastColor(accent);
+    context.textAlign = 'center';
+    context.textBaseline = 'middle';
+    context.font = '950 43px Montserrat, Inter, Arial, sans-serif';
+    context.fillText(fitCanvasText(context, price, 468), 1265, 548);
+    context.fillStyle = secondary;
+    context.font = '800 24px Montserrat, Inter, Arial, sans-serif';
+    context.fillText(fitCanvasText(context, contact, 500), 1265, 700);
+    context.restore();
+    drawAim4priceCredit(context, aim4priceLogo, 1274, 772, 244, 54);
+    return;
+  }
 
   if (templateId === 'photo-first') {
     if (listingImage) drawCoverImage(context, listingImage, 34, 34, 1532, 832, 34);
@@ -1791,7 +1893,7 @@ async function drawListingAdCanvas(
       context,
       listing,
       templateId,
-      listingImages[0],
+      listingImages,
       sellerLogoImage,
       aim4priceLogoImage,
     );

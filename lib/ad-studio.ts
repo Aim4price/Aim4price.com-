@@ -1,28 +1,51 @@
 export const AD_TEMPLATE_OPTIONS = [
   {
     id: 'showcase',
-    name: 'Showcase',
-    description: 'Large equipment photo with a clean information panel.',
+    name: 'Showcase gallery',
+    description: 'One hero photo with up to three supporting views.',
+    photoCount: 4,
   },
   {
     id: 'price-focus',
     name: 'Price focus',
     description: 'Makes the asking price the strongest part of the advert.',
+    photoCount: 1,
   },
   {
     id: 'photo-first',
     name: 'Photo first',
     description: 'Keeps the equipment image dominant with compact details.',
+    photoCount: 1,
   },
   {
     id: 'classic',
     name: 'Classic',
     description: 'A familiar dealer layout with strong borders and contact details.',
+    photoCount: 1,
   },
   {
     id: 'minimal',
     name: 'Minimal',
     description: 'A restrained layout for premium or newer equipment.',
+    photoCount: 1,
+  },
+  {
+    id: 'duo-split',
+    name: 'Duo split',
+    description: 'Two large photos beside a clear sales information panel.',
+    photoCount: 2,
+  },
+  {
+    id: 'gallery-three',
+    name: 'Triple gallery',
+    description: 'One main view with two supporting detail photos.',
+    photoCount: 3,
+  },
+  {
+    id: 'catalogue-grid',
+    name: 'Four-photo grid',
+    description: 'Four balanced photos with a compact catalogue-style footer.',
+    photoCount: 4,
   },
 ] as const;
 
