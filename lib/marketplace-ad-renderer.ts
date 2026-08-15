@@ -28,7 +28,6 @@ export type MarketplaceAdContent = {
   sellerName: string;
   sellerPhone: string;
   sellerCompany: string;
-  location: string;
   imageUrls: string[];
   brand: AdBrandSnapshot;
 };
@@ -138,15 +137,6 @@ function equipmentMeta(content: MarketplaceAdContent): string {
   return values.join(' · ') || clean(content.familyLabel);
 }
 
-function listingLocation(listing: MarketplaceListing): string {
-  const direct = clean(listing.location);
-  if (direct && !/^undisclosed(?:, south africa)?$/i.test(direct)) return direct;
-
-  const parts = [clean(listing.area), clean(listing.province)]
-    .filter((value) => value && !/^undisclosed$/i.test(value));
-  return Array.from(new Set(parts)).join(', ');
-}
-
 export function marketplaceListingToAdContent(listing: MarketplaceListing): MarketplaceAdContent {
   const familyLabel = clean(listing.familyLabel) || clean(listing.assetKind) || 'Equipment';
   const brand = listing.adBrand ?? {
@@ -183,7 +173,6 @@ export function marketplaceListingToAdContent(listing: MarketplaceListing): Mark
     sellerName: clean(brand.contactName || listing.sellerName) || 'Sales contact',
     sellerPhone: clean(brand.phone || listing.sellerPhone) || '082 000 0000',
     sellerCompany: clean(brand.businessName || listing.sellerCompany) || 'Marketplace seller',
-    location: listingLocation(listing),
     imageUrls: listingImages(listing),
     brand,
   };
@@ -470,26 +459,6 @@ function drawBrand(context: CanvasRenderingContext2D, content: MarketplaceAdCont
   }
 }
 
-function drawLocationLine(
-  context: CanvasRenderingContext2D,
-  location: string,
-  x: number,
-  y: number,
-  maxWidth: number,
-  color: string,
-  fontSize = 18,
-) {
-  const value = clean(location);
-  if (!value) return;
-  context.save();
-  context.fillStyle = color;
-  context.globalAlpha = .76;
-  context.font = `700 ${fontSize}px Montserrat, Inter, Arial, sans-serif`;
-  context.textAlign = 'left';
-  context.fillText(fitText(context, `Location · ${value}`, maxWidth), x, y);
-  context.restore();
-}
-
 function drawRating(context: CanvasRenderingContext2D, content: MarketplaceAdContent, x: number, y: number) {
   if (content.showDealRating === false) return;
   const rating = getMarketplaceAdRating(content);
@@ -635,7 +604,6 @@ function drawInformationPanel(
   context.fillText(fitText(context, equipmentMeta(content), rect.width - pad * 2), rect.x + pad, titleBottom + 17);
   context.globalAlpha = 1;
   context.restore();
-  drawLocationLine(context, content.location, rect.x + pad, titleBottom + 49, rect.width - pad * 2, foreground);
 
   drawPriceCard(context, content, {
     x: rect.x + pad,
@@ -746,7 +714,6 @@ export async function renderMarketplaceAdCanvas(
     context.font = '750 23px Montserrat, Inter, Arial, sans-serif';
     context.fillText(fitText(context, equipmentMeta(content), 850), 78, bottom + 15);
     context.restore();
-    drawLocationLine(context, content.location, 78, bottom + 49, 850, '#ffffff', 20);
     drawPriceCard(context, content, { x: 1012, y: 578, width: 500, height: 168 });
     drawContactDetails(context, content, { x: 76, y: 755, width: 875, height: 82 }, '#ffffff', { wide: true });
     drawAim4priceCredit(context, 1510, 832, '#ffffff');

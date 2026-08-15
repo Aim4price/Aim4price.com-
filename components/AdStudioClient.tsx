@@ -271,7 +271,6 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
     sellerName: draft.contactName || 'Sales contact',
     sellerPhone: draft.phone || '082 000 0000',
     sellerCompany: previewName,
-    location: 'George, Western Cape',
     imageUrls: [],
     brand: {
       name: draft.name,
