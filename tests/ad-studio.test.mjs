@@ -103,10 +103,18 @@ test('Studio and Marketplace use the same rated WYSIWYG JPEG renderer', async ()
   assert.match(renderer, /content\.brand\.email/);
   assert.match(renderer, /content\.brand\.website/);
   assert.match(renderer, /function drawCameraIcon/);
+  assert.match(renderer, /Main equipment photo/);
+  assert.match(renderer, /Location ·/);
+  assert.match(renderer, /location: listingLocation\(listing\)/);
+  assert.match(renderer, /const maxLogoWidth = Math\.min\(210, rect\.width \* \.36\)/);
+  assert.match(renderer, /const plateWidth = Math\.max\(102, logoWidth \+ 28\)/);
+  assert.match(renderer, /function equipmentMeta/);
+  assert.match(renderer, /function displayPhone/);
   assert.match(renderer, /function drawPriceCard/);
   assert.match(renderer, /isGenericEquipmentPlaceholder/);
   assert.match(renderer, /naturalTitle\(content\.title\)/);
   assert.match(studio, /imageUrls: \[\]/);
+  assert.match(studio, /location: 'George, Western Cape'/);
   assert.doesNotMatch(studio, /\/brand\/Tractor\.png/);
   assert.doesNotMatch(marketplace, /JPEG_AD_LOGO_SRC|JPEG_AD_WATERMARK_SRC|CREATED WITH/);
 });
