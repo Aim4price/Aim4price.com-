@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useMemo, useState, type ChangeEvent, type CSSProperties, type FormEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type ChangeEvent, type CSSProperties, type FormEvent } from 'react';
 import {
   AD_TEMPLATE_OPTIONS,
   DEFAULT_AD_BRAND_COLORS,
@@ -55,7 +55,17 @@ const TEMPLATE_CLASS_NAMES: Record<AdTemplateId, string> = {
   'photo-first': styles.templatePhotoFirst,
   classic: styles.templateClassic,
   minimal: styles.templateMinimal,
+  'duo-split': styles.templateDuoSplit,
+  'gallery-three': styles.templateGalleryThree,
+  'catalogue-grid': styles.templateCatalogueGrid,
 };
+
+const PREVIEW_PHOTO_CLASSES = [
+  styles.adPhotoOne,
+  styles.adPhotoTwo,
+  styles.adPhotoThree,
+  styles.adPhotoFour,
+];
 
 const EMPTY_KIT: EditableBrandKit = {
   id: '',
@@ -123,6 +133,7 @@ export default function AdStudioClient({ dealerAppMode = false }: AdStudioClient
   const [feedback, setFeedback] = useState('');
   const [error, setError] = useState('');
   const [activeStep, setActiveStep] = useState<StudioStep>(1);
+  const editorRef = useRef<HTMLFormElement | null>(null);
 
   const previewName = draft.businessName || draft.contactName || 'Your business';
   const selectedTemplate = useMemo(
@@ -130,8 +141,8 @@ export default function AdStudioClient({ dealerAppMode = false }: AdStudioClient
     [draft.templateId],
   );
 
-  async function loadBrandKits(preferredId?: string) {
-    setLoading(true);
+  async function loadBrandKits(preferredId?: string, showLoading = true) {
+    if (showLoading) setLoading(true);
     setError('');
 
     try {
@@ -151,7 +162,7 @@ export default function AdStudioClient({ dealerAppMode = false }: AdStudioClient
     } catch (nextError) {
       setError(nextError instanceof Error ? nextError.message : 'Brand Kits could not be loaded.');
     } finally {
-      setLoading(false);
+      if (showLoading) setLoading(false);
     }
   }
 
@@ -165,13 +176,18 @@ export default function AdStudioClient({ dealerAppMode = false }: AdStudioClient
     setError('');
   }
 
-  function chooseKit(kitId: string) {
+  function revealEditor() {
+    window.requestAnimationFrame(() => editorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+  }
+
+  function chooseKit(kitId: string, shouldReveal = true) {
     const selected = kits.find((kit) => kit.id === kitId);
     if (selected) {
       setDraft(editableKit(selected));
       setActiveStep(1);
       setFeedback('');
       setError('');
+      if (shouldReveal) revealEditor();
     }
   }
 
@@ -180,6 +196,7 @@ export default function AdStudioClient({ dealerAppMode = false }: AdStudioClient
     setActiveStep(1);
     setFeedback('New Brand Kit ready to customise.');
     setError('');
+    revealEditor();
   }
 
   function moveToStep(step: StudioStep) {
@@ -233,7 +250,7 @@ export default function AdStudioClient({ dealerAppMode = false }: AdStudioClient
       const payload = (await response.json().catch(() => null)) as { ok?: boolean; kit?: AdBrandKit; error?: string } | null;
       if (!response.ok || !payload?.ok || !payload.kit) throw new Error(payload?.error || 'Brand Kit could not be saved.');
       setFeedback('Brand Kit saved. It is now available when you create an advert from a valuation.');
-      await loadBrandKits(payload.kit.id);
+      await loadBrandKits(payload.kit.id, false);
     } catch (nextError) {
       setError(nextError instanceof Error ? nextError.message : 'Brand Kit could not be saved.');
     } finally {
@@ -241,23 +258,46 @@ export default function AdStudioClient({ dealerAppMode = false }: AdStudioClient
     }
   }
 
-  async function deleteKit() {
-    if (!canManage || !draft.id || saving) return;
-    if (!window.confirm(`Remove “${draft.name}”? Existing adverts will keep their saved branding.`)) return;
+  async function deleteKit(target: AdBrandKit | EditableBrandKit = draft) {
+    if (!canManage || !target.id || saving) return;
+    if (!window.confirm(`Remove “${target.name}”? Existing adverts will keep their saved branding.`)) return;
 
     setSaving(true);
     setError('');
     setFeedback('');
     try {
-      const response = await fetch(`/api/ad-studio/brand-kits?brandKitId=${encodeURIComponent(draft.id)}`, {
+      const response = await fetch(`/api/ad-studio/brand-kits?brandKitId=${encodeURIComponent(target.id)}`, {
         method: 'DELETE',
       });
       const payload = (await response.json().catch(() => null)) as { ok?: boolean; error?: string } | null;
       if (!response.ok || !payload?.ok) throw new Error(payload?.error || 'Brand Kit could not be removed.');
       setFeedback('Brand Kit removed.');
-      await loadBrandKits();
+      await loadBrandKits(undefined, false);
     } catch (nextError) {
       setError(nextError instanceof Error ? nextError.message : 'Brand Kit could not be removed.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function setDefaultKit(kit: AdBrandKit) {
+    if (!canManage || kit.isDefault || saving) return;
+    setSaving(true);
+    setError('');
+    setFeedback('');
+
+    try {
+      const response = await fetch('/api/ad-studio/brand-kits', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...editableKit(kit), isDefault: true }),
+      });
+      const payload = (await response.json().catch(() => null)) as { ok?: boolean; kit?: AdBrandKit; error?: string } | null;
+      if (!response.ok || !payload?.ok || !payload.kit) throw new Error(payload?.error || 'The default Brand Kit could not be changed.');
+      setFeedback(`“${kit.name}” is now the default Brand Kit.`);
+      await loadBrandKits(payload.kit.id, false);
+    } catch (nextError) {
+      setError(nextError instanceof Error ? nextError.message : 'The default Brand Kit could not be changed.');
     } finally {
       setSaving(false);
     }
@@ -266,13 +306,14 @@ export default function AdStudioClient({ dealerAppMode = false }: AdStudioClient
   return (
     <div className={`${styles.page} ${dealerAppMode ? styles.dealerPage : ''}`}>
       <header className={styles.hero}>
-        <div>
-          <p className={styles.eyebrow}>Dealer Ad Studio</p>
-          <h1>Create your reusable advert style</h1>
-          <p>Set it up once, then apply it when you choose <strong>Create Ad</strong> after a valuation.</p>
+        <div className={styles.heroCopy}>
+          <span className={styles.eyebrow}>Dealer Ad Studio</span>
+          <h1>Build adverts that look like your business</h1>
+          <p>Create, save and manage reusable Brand Kits for every Marketplace advert.</p>
         </div>
-        <div className={styles.heroFlow} aria-label="How Ad Studio works">
-          <span>Set up</span><i aria-hidden="true">→</i><span>Value</span><i aria-hidden="true">→</i><span>Publish</span>
+        <div className={styles.heroMetric}>
+          <strong>{kits.length}</strong>
+          <span>saved Brand Kit{kits.length === 1 ? '' : 's'}</span>
         </div>
       </header>
 
@@ -284,19 +325,76 @@ export default function AdStudioClient({ dealerAppMode = false }: AdStudioClient
       ) : null}
 
       {!loading ? (
-        <div className={styles.workspace} id="ad-studio-workspace">
-          <form className={styles.formPanel} onSubmit={saveKit}>
-            <div className={styles.formToolbar}>
-              <label>
-                <span>Saved Brand Kit</span>
-                <select value={draft.id} onChange={(event) => chooseKit(event.target.value)} disabled={!kits.length}>
-                  {!kits.length ? <option value="">No saved Brand Kits</option> : null}
-                  {kits.map((kit) => (
-                    <option key={kit.id} value={kit.id}>{kit.name}{kit.isDefault ? ' — default' : ''}</option>
-                  ))}
-                </select>
-              </label>
-              {canManage ? <button className={styles.secondaryButton} type="button" onClick={startNewKit}>+ New kit</button> : null}
+        <>
+          <section className={styles.libraryPanel} aria-labelledby="brand-kit-library-title">
+            <div className={styles.sectionHeader}>
+              <div>
+                <span className={styles.sectionEyebrow}>Your saved styles</span>
+                <h2 id="brand-kit-library-title">My Brand Kits</h2>
+                <p>Select a kit to edit it, make it the default or remove it.</p>
+              </div>
+              {canManage ? <button className={styles.primaryButton} type="button" onClick={startNewKit}>Create Brand Kit</button> : null}
+            </div>
+
+            {kits.length ? (
+              <div className={styles.kitGrid}>
+                {kits.map((kit) => {
+                  const template = AD_TEMPLATE_OPTIONS.find((option) => option.id === kit.templateId) ?? AD_TEMPLATE_OPTIONS[0];
+                  return (
+                    <article key={kit.id} className={`${styles.kitCard} ${draft.id === kit.id ? styles.kitCardSelected : ''}`}>
+                      <div
+                        className={styles.kitVisual}
+                        style={{
+                          '--brand-primary': kit.primaryColor,
+                          '--brand-secondary': kit.secondaryColor,
+                          '--brand-accent': kit.accentColor,
+                        } as CSSProperties}
+                      >
+                        <span className={`${styles.miniTemplate} ${TEMPLATE_CLASS_NAMES[kit.templateId]}`} aria-hidden="true">
+                          <i /><b /><em /><u />
+                        </span>
+                        <span className={styles.kitColourStrip}>
+                          <i style={{ backgroundColor: kit.primaryColor }} />
+                          <i style={{ backgroundColor: kit.secondaryColor }} />
+                          <i style={{ backgroundColor: kit.accentColor }} />
+                        </span>
+                      </div>
+                      <div className={styles.kitCardBody}>
+                        <div className={styles.kitCardTitle}>
+                          <div>
+                            <strong>{kit.name}</strong>
+                            <span>{template.name} · up to {template.photoCount} photo{template.photoCount === 1 ? '' : 's'}</span>
+                          </div>
+                          {kit.isDefault ? <b>Default</b> : null}
+                        </div>
+                        <div className={styles.kitCardActions}>
+                          <button type="button" className={styles.smallButton} onClick={() => chooseKit(kit.id)}>{canManage ? 'Edit' : 'View'}</button>
+                          {canManage && !kit.isDefault ? <button type="button" className={styles.ghostButton} onClick={() => void setDefaultKit(kit)} disabled={saving}>Set default</button> : null}
+                          {canManage ? <button type="button" className={styles.iconDangerButton} onClick={() => void deleteKit(kit)} disabled={saving} aria-label={`Delete ${kit.name}`}>Delete</button> : null}
+                        </div>
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className={styles.emptyLibrary}>
+                <span aria-hidden="true">Aa</span>
+                <div><strong>No Brand Kits yet</strong><p>Create your first reusable advert style. It will appear here for quick editing.</p></div>
+                {canManage ? <button type="button" className={styles.secondaryButton} onClick={startNewKit}>Create the first kit</button> : null}
+              </div>
+            )}
+          </section>
+
+          <div className={styles.workspace} id="ad-studio-workspace">
+          <form className={styles.formPanel} onSubmit={saveKit} ref={editorRef}>
+            <div className={styles.editorHeader}>
+              <div>
+                <span className={styles.sectionEyebrow}>{draft.id ? 'Editing saved kit' : 'New Brand Kit'}</span>
+                <h2>{draft.id ? draft.name : 'Create a Brand Kit'}</h2>
+                <p>Complete the four short steps. Your preview updates while you work.</p>
+              </div>
+              {draft.id && canManage ? <button className={styles.ghostButton} type="button" onClick={startNewKit}>Start another</button> : null}
             </div>
 
             <nav className={styles.stepper} aria-label="Brand Kit setup steps">
@@ -376,7 +474,7 @@ export default function AdStudioClient({ dealerAppMode = false }: AdStudioClient
                   <div className={styles.stepIntro}>
                     <span>Step 2 of 4</span>
                     <h2 id="studio-layout-title">Choose a layout</h2>
-                    <p>Every layout fills itself with the valuation photo, equipment details and asking price.</p>
+                    <p>Choose how many listing photos should appear. Missing photo spaces are filled automatically.</p>
                   </div>
                   <fieldset className={styles.stepFieldset} disabled={!canManage || saving}>
                     <legend className={styles.srOnly}>Advert layout</legend>
@@ -390,13 +488,14 @@ export default function AdStudioClient({ dealerAppMode = false }: AdStudioClient
                           aria-pressed={draft.templateId === template.id}
                         >
                           <span className={`${styles.miniTemplate} ${TEMPLATE_CLASS_NAMES[template.id]}`} aria-hidden="true">
-                            <i /><b /><em />
+                            <i /><b /><em /><u />
                           </span>
                           <span className={styles.templateTitle}>
                             <strong>{template.name}</strong>
-                            <b>{draft.templateId === template.id ? 'Selected' : `Option ${index + 1}`}</b>
+                            <b>{draft.templateId === template.id ? 'Selected' : `Style ${index + 1}`}</b>
                           </span>
                           <small>{template.description}</small>
+                          <span className={styles.photoCountBadge}>{template.photoCount} photo{template.photoCount === 1 ? '' : 's'}</span>
                         </button>
                       ))}
                     </div>
@@ -466,7 +565,7 @@ export default function AdStudioClient({ dealerAppMode = false }: AdStudioClient
                     <article>
                       <span>Layout</span>
                       <strong>{selectedTemplate.name}</strong>
-                      <small>{selectedTemplate.description}</small>
+                      <small>{selectedTemplate.description} Uses up to {selectedTemplate.photoCount} photo{selectedTemplate.photoCount === 1 ? '' : 's'}.</small>
                     </article>
                     <article>
                       <span>Wording</span>
@@ -494,7 +593,7 @@ export default function AdStudioClient({ dealerAppMode = false }: AdStudioClient
             <div className={styles.actions}>
               <div>
                 {activeStep > 1 ? <button className={styles.backButton} type="button" onClick={() => moveToStep((activeStep - 1) as StudioStep)}>Back</button> : null}
-                {draft.id && activeStep === 4 && canManage ? <button className={styles.dangerButton} type="button" onClick={deleteKit} disabled={saving}>Delete kit</button> : null}
+                {draft.id && activeStep === 4 && canManage ? <button className={styles.dangerButton} type="button" onClick={() => void deleteKit()} disabled={saving}>Delete kit</button> : null}
               </div>
               <div>
                 {activeStep < 4 ? (
@@ -515,7 +614,10 @@ export default function AdStudioClient({ dealerAppMode = false }: AdStudioClient
                 <span>Live advert preview</span>
                 <strong>{selectedTemplate.name}</strong>
               </div>
-              <span className={styles.previewPill}>{draft.language === 'af' ? 'Afrikaans' : 'English'}</span>
+              <div className={styles.previewPills}>
+                <span className={styles.previewPill}>{selectedTemplate.photoCount} photo{selectedTemplate.photoCount === 1 ? '' : 's'}</span>
+                <span className={styles.previewPill}>{draft.language === 'af' ? 'Afrikaans' : 'English'}</span>
+              </div>
             </div>
             <div
               className={`${styles.adPreview} ${TEMPLATE_CLASS_NAMES[draft.templateId]}`}
@@ -532,7 +634,13 @@ export default function AdStudioClient({ dealerAppMode = false }: AdStudioClient
                 ) : <span className={styles.logoPlaceholder}>YOUR LOGO</span>}
                 <strong>{previewName}</strong>
               </header>
-              <div className={styles.adPhoto} role="img" aria-label="Example tractor photograph" />
+              <div className={styles.adPhotos} role="img" aria-label={`${selectedTemplate.photoCount}-photo advert layout example`}>
+                {Array.from({ length: selectedTemplate.photoCount }, (_, index) => (
+                  <div key={index} className={`${styles.adPhoto} ${PREVIEW_PHOTO_CLASSES[index]}`}>
+                    <span>{index + 1}</span>
+                  </div>
+                ))}
+              </div>
               <div className={styles.adInfo}>
                 <div className={styles.adTitle}>2019 EXAMPLE 110 TRACTOR</div>
                 <div className={styles.adDetails}>81 kW · 4WD · 3 450 hours</div>
@@ -543,10 +651,11 @@ export default function AdStudioClient({ dealerAppMode = false }: AdStudioClient
             </div>
             <div className={styles.previewNote}>
               <span aria-hidden="true">✓</span>
-              <p><strong>Filled automatically</strong>Valuation photos, equipment details, price and deal rating are inserted when the advert is created.</p>
+              <p><strong>Filled automatically</strong>The first {selectedTemplate.photoCount} listing photo{selectedTemplate.photoCount === 1 ? ' is' : 's are'} placed into this design with the valuation details and asking price.</p>
             </div>
           </aside>
-        </div>
+          </div>
+        </>
       ) : null}
     </div>
   );
