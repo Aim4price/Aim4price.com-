@@ -19,6 +19,7 @@ export type FuelStorageEventType = 'opening_balance' | 'stock_in' | 'asset_issue
 export type FuelScanActorType = 'owner_session' | 'scan_pin' | 'field_manager';
 export type FuelSlipTargetType = 'asset' | 'storage_tank';
 export type FuelSlipExtractionStatus = 'manual' | 'extracted' | 'needs_review';
+export type FuelLedgerRecordStatus = 'active' | 'voided';
 export type FuelUsageMetric = 'hours' | 'km' | 'percentage' | 'none';
 export type FuelTankBalanceTreatment = 'already_reflected' | 'not_yet_reflected' | 'not_sure';
 export type FuelEvidenceStatus = 'internal_record_only' | 'evidence_supplied_review_required';
@@ -110,6 +111,8 @@ export type FuelLedgerEvent = {
   adjustmentKind: string;
   idempotencyKey: string;
   gpsCaptureStatus: string;
+  workUseExcluded: boolean;
+  workUseExclusionReason: string;
   createdAtIso: string;
 };
 
@@ -164,6 +167,12 @@ export type FuelSlipTransaction = {
   reviewRequired: boolean;
   rawExtractedText: string;
   extractionWarnings: string[];
+  workUseExcluded: boolean;
+  workUseExclusionReason: string;
+  recordStatus: FuelLedgerRecordStatus;
+  voidedAtIso: string | null;
+  voidedByName: string;
+  voidReason: string;
   createdAtIso: string;
   updatedAtIso: string;
 };
@@ -188,6 +197,27 @@ export type FuelLedgerAsset = {
   isActive: boolean;
   usageMetric: 'hours' | 'km' | 'both' | 'percentage' | 'none';
   lifeWorkedPercent: number | null;
+  workUseExcluded: boolean;
+  workUseExclusionReason: string;
+};
+
+export type FuelLedgerAuditEvent = {
+  id: string;
+  recordType: string;
+  recordId: string;
+  action: string;
+  actorName: string;
+  actorEmail: string;
+  reason: string;
+  beforeSnapshot: Record<string, unknown> | null;
+  afterSnapshot: Record<string, unknown> | null;
+  createdAtIso: string;
+};
+
+export type FuelLedgerAuditActor = {
+  userId?: unknown;
+  name?: unknown;
+  email?: unknown;
 };
 
 export type FuelLedgerSummary = {
@@ -313,6 +343,8 @@ type FuelEventRow = {
   adjustment_kind: string | null;
   idempotency_key: string | null;
   gps_capture_status: string | null;
+  work_use_excluded: boolean | null;
+  work_use_exclusion_reason: string | null;
   created_at: string | null;
 };
 
@@ -337,6 +369,8 @@ type FuelAssetRow = {
   current_value?: string | number | null;
   family_is_propelled: boolean | string | number | null;
   specs_json: unknown;
+  work_use_excluded?: boolean | null;
+  work_use_exclusion_reason?: string | null;
 };
 
 type FuelSlipRow = {
@@ -390,6 +424,12 @@ type FuelSlipRow = {
   review_required: boolean | null;
   raw_extracted_text: string | null;
   extraction_warnings: unknown;
+  work_use_excluded: boolean | null;
+  work_use_exclusion_reason: string | null;
+  record_status: string | null;
+  voided_at: string | null;
+  voided_by_name: string | null;
+  void_reason: string | null;
   created_at: string | null;
   updated_at: string | null;
 };
@@ -1056,6 +1096,8 @@ function mapFuelEventRow(row: FuelEventRow): FuelLedgerEvent {
     adjustmentKind: asText(row.adjustment_kind),
     idempotencyKey: asText(row.idempotency_key),
     gpsCaptureStatus: asText(row.gps_capture_status) || (row.latitude === null || row.longitude === null ? 'not_captured' : 'captured'),
+    workUseExcluded: Boolean(row.work_use_excluded),
+    workUseExclusionReason: asText(row.work_use_exclusion_reason),
     createdAtIso: reportDateIso,
   };
 }
@@ -1132,6 +1174,12 @@ function mapFuelSlipRow(row: FuelSlipRow): FuelSlipTransaction {
     reviewRequired: Boolean(row.review_required),
     rawExtractedText: maskStoredFuelSlipRawText(asText(row.raw_extracted_text)),
     extractionWarnings: normalizeExtractionWarningsFromDb(row.extraction_warnings),
+    workUseExcluded: Boolean(row.work_use_excluded),
+    workUseExclusionReason: asText(row.work_use_exclusion_reason),
+    recordStatus: asText(row.record_status) === 'voided' ? 'voided' : 'active',
+    voidedAtIso: row.voided_at ?? null,
+    voidedByName: asText(row.voided_by_name),
+    voidReason: asText(row.void_reason),
     createdAtIso: row.created_at ?? new Date().toISOString(),
     updatedAtIso: row.updated_at ?? row.created_at ?? new Date().toISOString(),
   };
@@ -1374,7 +1422,226 @@ function mapFuelAssetRow(row: FuelAssetRow): FuelLedgerAsset {
     canReceiveFuel: inferAssetCanReceiveFuel(row),
     isActive: (asText(row.qr_status) || 'active').toLowerCase() === 'active',
     usageMetric: inferAssetUsageMetric(row),
+    workUseExcluded: Boolean(row.work_use_excluded),
+    workUseExclusionReason: asText(row.work_use_exclusion_reason),
   };
+}
+
+function normalizeFuelWorkUseReason(value: unknown, excluded: boolean): string {
+  const reason = asText(value).replace(/\s+/g, ' ').slice(0, 500);
+  return excluded ? reason || 'Not used for work purposes' : '';
+}
+
+function normalizeFuelAuditActor(actor: FuelLedgerAuditActor | undefined): { userId: string; name: string; email: string } {
+  return {
+    userId: asText(actor?.userId),
+    name: asText(actor?.name) || 'Account user',
+    email: asText(actor?.email),
+  };
+}
+
+async function insertFuelLedgerAuditEvent(
+  client: Pick<PoolClient, 'query'>,
+  input: {
+    userId: string;
+    recordType: string;
+    recordId: string;
+    action: string;
+    actor?: FuelLedgerAuditActor;
+    reason?: unknown;
+    beforeSnapshot?: unknown;
+    afterSnapshot?: unknown;
+  },
+): Promise<void> {
+  const actor = normalizeFuelAuditActor(input.actor);
+  await client.query(
+    `
+      insert into public.fuel_ledger_audit_events (
+        user_id, record_type, record_id, action,
+        actor_user_id, actor_name, actor_email, reason,
+        before_snapshot, after_snapshot
+      ) values ($1, $2, $3, $4, $5, $6, $7, $8, $9::jsonb, $10::jsonb)
+    `,
+    [
+      input.userId,
+      input.recordType,
+      input.recordId,
+      input.action,
+      actor.userId || null,
+      actor.name,
+      actor.email || null,
+      asText(input.reason).slice(0, 500) || null,
+      typeof input.beforeSnapshot === 'undefined' ? null : JSON.stringify(input.beforeSnapshot),
+      typeof input.afterSnapshot === 'undefined' ? null : JSON.stringify(input.afterSnapshot),
+    ],
+  );
+}
+
+async function getFuelAssetWorkUseExclusion(
+  client: Pick<PoolClient, 'query'>,
+  userId: string,
+  assetId: string,
+): Promise<{ excluded: boolean; reason: string }> {
+  const result = await client.query<{ is_excluded: boolean | null; reason: string | null }>(
+    `
+      select is_excluded, reason
+      from public.fuel_asset_exclusions
+      where user_id = $1 and asset_register_item_id::text = $2
+      limit 1
+    `,
+    [userId, assetId],
+  );
+  return {
+    excluded: Boolean(result.rows[0]?.is_excluded),
+    reason: asText(result.rows[0]?.reason),
+  };
+}
+
+export async function setFuelAssetWorkUseExclusion(
+  userId: string,
+  assetId: string,
+  input: { excluded?: unknown; reason?: unknown; actor?: FuelLedgerAuditActor },
+): Promise<FuelLedgerAsset> {
+  await ensureFuelLedgerTables();
+  const client = await getDb().connect();
+  const excluded = input.excluded === true || asText(input.excluded).toLowerCase() === 'true';
+  const reason = normalizeFuelWorkUseReason(input.reason, excluded);
+  let committed = false;
+
+  try {
+    await client.query('BEGIN');
+    const assetResult = await client.query<{ id: string; title: string | null }>(
+      `
+        select id::text, title
+        from public.asset_register_items a
+        where a.user_id = $1 and a.id::text = $2
+          and coalesce(nullif(lower(to_jsonb(a)->>'qr_status'), ''), 'active') <> 'deleted'
+        for update
+      `,
+      [userId, assetId],
+    );
+    const assetRow = assetResult.rows[0];
+    if (!assetRow) throw new Error('Asset not found.');
+
+    const before = await getFuelAssetWorkUseExclusion(client, userId, assetId);
+    await client.query(
+      `
+        insert into public.fuel_asset_exclusions (
+          user_id, asset_register_item_id, is_excluded, reason,
+          updated_by_user_id, updated_by_name, updated_by_email, updated_at
+        ) values ($1, $2::uuid, $3, $4, $5, $6, $7, now())
+        on conflict (user_id, asset_register_item_id) do update set
+          is_excluded = excluded.is_excluded,
+          reason = excluded.reason,
+          updated_by_user_id = excluded.updated_by_user_id,
+          updated_by_name = excluded.updated_by_name,
+          updated_by_email = excluded.updated_by_email,
+          updated_at = now()
+      `,
+      [
+        userId,
+        assetId,
+        excluded,
+        reason || null,
+        normalizeFuelAuditActor(input.actor).userId || null,
+        normalizeFuelAuditActor(input.actor).name,
+        normalizeFuelAuditActor(input.actor).email || null,
+      ],
+    );
+
+    const eventUpdate = await client.query(
+      `
+        update public.fuel_storage_events
+        set work_use_excluded = $3, work_use_exclusion_reason = $4
+        where user_id = $1 and asset_register_item_id = $2
+      `,
+      [userId, assetId, excluded, reason || null],
+    );
+    const slipUpdate = await client.query(
+      `
+        update public.fuel_slips
+        set work_use_excluded = $3, work_use_exclusion_reason = $4, updated_at = now()
+        where user_id = $1 and asset_register_item_id::text = $2
+      `,
+      [userId, assetId, excluded, reason || null],
+    );
+
+    await insertFuelLedgerAuditEvent(client, {
+      userId,
+      recordType: 'asset_exclusion',
+      recordId: assetId,
+      action: 'exclusion_changed',
+      actor: input.actor,
+      reason,
+      beforeSnapshot: { assetTitle: asText(assetRow.title), ...before },
+      afterSnapshot: {
+        assetTitle: asText(assetRow.title),
+        excluded,
+        reason,
+        affectedFuelEvents: eventUpdate.rowCount ?? 0,
+        affectedFuelSlips: slipUpdate.rowCount ?? 0,
+      },
+    });
+
+    await client.query('COMMIT');
+    committed = true;
+  } catch (error) {
+    if (!committed) await client.query('ROLLBACK').catch(() => null);
+    throw error;
+  } finally {
+    client.release();
+  }
+
+  const asset = (await listFuelAssetsForUser(userId)).find((item) => item.id === assetId);
+  if (!asset) throw new Error('Asset could not be loaded after updating the exclusion.');
+  return asset;
+}
+
+export async function listFuelLedgerAuditEvents(
+  userId: string,
+  input: { recordType?: unknown; recordId?: unknown; limit?: number } = {},
+): Promise<FuelLedgerAuditEvent[]> {
+  await ensureFuelLedgerTables();
+  const params: unknown[] = [userId];
+  let filter = 'user_id = $1';
+  const recordType = asText(input.recordType);
+  const recordId = asText(input.recordId);
+  if (recordType) {
+    params.push(recordType);
+    filter += ` and record_type = $${params.length}`;
+  }
+  if (recordId) {
+    params.push(recordId);
+    filter += ` and record_id = $${params.length}`;
+  }
+  const limit = Math.max(1, Math.min(100, Math.round(input.limit ?? 30)));
+  const result = await getDb().query<{
+    id: string; record_type: string; record_id: string; action: string;
+    actor_name: string | null; actor_email: string | null; reason: string | null;
+    before_snapshot: unknown; after_snapshot: unknown; created_at: string | null;
+  }>(
+    `
+      select id::text, record_type, record_id, action, actor_name, actor_email, reason,
+             before_snapshot, after_snapshot, created_at
+      from public.fuel_ledger_audit_events
+      where ${filter}
+      order by created_at desc, id desc
+      limit ${limit}
+    `,
+    params,
+  );
+  return result.rows.map((row) => ({
+    id: asText(row.id),
+    recordType: asText(row.record_type),
+    recordId: asText(row.record_id),
+    action: asText(row.action),
+    actorName: asText(row.actor_name),
+    actorEmail: asText(row.actor_email),
+    reason: asText(row.reason),
+    beforeSnapshot: row.before_snapshot ? asRecord(row.before_snapshot) : null,
+    afterSnapshot: row.after_snapshot ? asRecord(row.after_snapshot) : null,
+    createdAtIso: row.created_at ?? new Date().toISOString(),
+  }));
 }
 
 function fuelStorageSelectSql(): string {
@@ -1467,6 +1734,8 @@ function fuelEventSelectSql(): string {
     e.adjustment_kind,
     e.idempotency_key,
     e.gps_capture_status,
+    e.work_use_excluded,
+    e.work_use_exclusion_reason,
     e.created_at
   `;
 }
@@ -1524,6 +1793,12 @@ function fuelSlipSelectSql(): string {
     fs.review_required,
     fs.raw_extracted_text,
     fs.extraction_warnings,
+    fs.work_use_excluded,
+    fs.work_use_exclusion_reason,
+    fs.record_status,
+    fs.voided_at,
+    fs.voided_by_name,
+    fs.void_reason,
     fs.created_at,
     fs.updated_at
   `;
@@ -2129,6 +2404,61 @@ export async function ensureFuelLedgerTables(): Promise<void> {
 
     create index if not exists idx_fuel_late_entry_evidence_user_created
       on public.fuel_late_entry_evidence(user_id, created_at desc);
+
+    alter table if exists public.fuel_storage_events
+      add column if not exists work_use_excluded boolean not null default false,
+      add column if not exists work_use_exclusion_reason text;
+
+    alter table if exists public.fuel_slips
+      add column if not exists work_use_excluded boolean not null default false,
+      add column if not exists work_use_exclusion_reason text,
+      add column if not exists record_status text not null default 'active',
+      add column if not exists voided_at timestamptz,
+      add column if not exists voided_by_user_id text,
+      add column if not exists voided_by_name text,
+      add column if not exists voided_by_email text,
+      add column if not exists void_reason text;
+
+    update public.fuel_slips
+    set record_status = case when record_status = 'voided' then 'voided' else 'active' end;
+
+    alter table if exists public.fuel_slips drop constraint if exists fuel_slips_record_status_check;
+    alter table if exists public.fuel_slips
+      add constraint fuel_slips_record_status_check check (record_status in ('active', 'voided'));
+
+    create table if not exists public.fuel_asset_exclusions (
+      user_id text not null,
+      asset_register_item_id uuid not null references public.asset_register_items(id) on delete cascade,
+      is_excluded boolean not null default true,
+      reason text,
+      updated_by_user_id text,
+      updated_by_name text,
+      updated_by_email text,
+      created_at timestamptz not null default now(),
+      updated_at timestamptz not null default now(),
+      primary key (user_id, asset_register_item_id)
+    );
+
+    create index if not exists idx_fuel_asset_exclusions_user
+      on public.fuel_asset_exclusions(user_id, is_excluded, updated_at desc);
+
+    create table if not exists public.fuel_ledger_audit_events (
+      id uuid primary key default gen_random_uuid(),
+      user_id text not null,
+      record_type text not null,
+      record_id text not null,
+      action text not null,
+      actor_user_id text,
+      actor_name text,
+      actor_email text,
+      reason text,
+      before_snapshot jsonb,
+      after_snapshot jsonb,
+      created_at timestamptz not null default now()
+    );
+
+    create index if not exists idx_fuel_ledger_audit_record
+      on public.fuel_ledger_audit_events(user_id, record_type, record_id, created_at desc);
   `);
 
   fuelLedgerTablesEnsured = true;
@@ -2209,12 +2539,16 @@ export async function listFuelAssetsForUser(userId: string): Promise<FuelLedgerA
           to_jsonb(a)->>'opening_value'
         ) as current_value,
         ef.is_propelled as family_is_propelled,
-        coalesce(a.specs_json, '{}'::jsonb) as specs_json
+        coalesce(a.specs_json, '{}'::jsonb) as specs_json,
+        coalesce(fae.is_excluded, false) as work_use_excluded,
+        coalesce(fae.reason, '') as work_use_exclusion_reason
       from public.asset_register_items a
       left join public.valuation_runs vr
         on vr.id = a.valuation_run_id
       left join public.equipment_families ef
         on ef.id = coalesce(a.equipment_family_id, vr.equipment_family_id)
+      left join public.fuel_asset_exclusions fae
+        on fae.user_id = a.user_id and fae.asset_register_item_id = a.id
       where a.user_id = $1
         and coalesce(to_jsonb(a)->>'qr_status', 'active') <> 'deleted'
       order by lower(coalesce(a.title, '')), a.id::text
@@ -2377,6 +2711,8 @@ function mapFuelSlipToReportEvent(slip: FuelSlipTransaction): FuelLedgerEvent {
     adjustmentKind: '',
     idempotencyKey: '',
     gpsCaptureStatus: '',
+    workUseExcluded: slip.workUseExcluded,
+    workUseExclusionReason: slip.workUseExclusionReason,
     createdAtIso: fuelSlipReportDateIso(slip),
   };
 }
@@ -2391,7 +2727,7 @@ async function listFuelSlipEventsForReport(
   const limitClause = limit === null ? '' : `limit ${limit}`;
   const params: unknown[] = [userId];
   const dateExpression = `coalesce(${fuelSlipReportDateSql('fs')}, fs.created_at)`;
-  let filter = `fs.user_id = $1 and (fs.target_type = 'asset' or fs.fuel_storage_event_id is null)`;
+  let filter = `fs.user_id = $1 and fs.record_status = 'active' and (fs.target_type = 'asset' or fs.fuel_storage_event_id is null)`;
 
   if (options.storageId) {
     params.push(options.storageId);
@@ -2435,7 +2771,7 @@ async function listFuelSlips(userId: string, options: { limit?: number } = {}): 
       from public.fuel_slips fs
       left join public.asset_register_items a on a.id = fs.asset_register_item_id
       left join public.fuel_storage_units s on s.id = fs.storage_id
-      where fs.user_id = $1
+      where fs.user_id = $1 and fs.record_status = 'active'
       order by fs.created_at desc, fs.id desc
       limit ${limit}
     `,
@@ -2453,7 +2789,7 @@ export async function getFuelSlipTransactionById(userId: string, fuelSlipId: str
       from public.fuel_slips fs
       left join public.asset_register_items a on a.id = fs.asset_register_item_id
       left join public.fuel_storage_units s on s.id = fs.storage_id
-      where fs.user_id = $1 and fs.id::text = $2
+      where fs.user_id = $1 and fs.id::text = $2 and fs.record_status = 'active'
       limit 1
     `,
     [userId, fuelSlipId],
@@ -2632,6 +2968,10 @@ export async function updateFuelStorage(
     reorderLevelLitres?: unknown;
     locationLabel?: unknown;
     notes?: unknown;
+    auditActorUserId?: unknown;
+    auditActorName?: unknown;
+    auditActorEmail?: unknown;
+    auditReason?: unknown;
   },
 ): Promise<FuelLedgerStorage> {
   await ensureFuelLedgerTables();
@@ -2714,6 +3054,21 @@ export async function updateFuelStorage(
         [storageId, userId, Math.abs(nextCurrentLitres - currentStorage.currentLitres), currentStorage.currentLitres, nextCurrentLitres],
       );
     }
+
+    await insertFuelLedgerAuditEvent(client, {
+      userId,
+      recordType: 'storage',
+      recordId: storageId,
+      action: 'updated',
+      actor: {
+        userId: input.auditActorUserId,
+        name: input.auditActorName,
+        email: input.auditActorEmail,
+      },
+      reason: input.auditReason,
+      beforeSnapshot: currentStorage,
+      afterSnapshot: updatedStorage,
+    });
 
     await client.query('COMMIT');
     return updatedStorage;
@@ -2883,84 +3238,61 @@ export async function saveFuelStorageDipstickNote(
 }
 
 
-export async function archiveFuelStorage(userId: string, storageId: string): Promise<void> {
+export async function archiveFuelStorage(
+  userId: string,
+  storageId: string,
+  input: { actor?: FuelLedgerAuditActor; reason?: unknown } = {},
+): Promise<void> {
   await ensureFuelLedgerTables();
-  const db = getDb();
-
-  await db.query(
-    `
-      update public.fuel_storage_units
-      set status = 'archived', updated_at = now()
-      where user_id = $1 and id::text = $2
-    `,
-    [userId, storageId],
-  );
-}
-
-export async function deleteFuelStorage(userId: string, storageId: string): Promise<void> {
-  await ensureFuelLedgerTables();
-  const db = getDb();
-  const client = await db.connect();
+  const client = await getDb().connect();
+  let committed = false;
 
   try {
     await client.query('BEGIN');
-
-    const storageResult = await client.query<{ id: string }>(
+    const storageResult = await client.query<FuelStorageRow>(
       `
-        select id::text
+        select ${fuelStorageSelectSql()}
         from public.fuel_storage_units
         where user_id = $1 and id::text = $2
-        limit 1
+        for update
       `,
       [userId, storageId],
     );
-
-    if (!storageResult.rows[0]) {
-      throw new Error('Fuel storage not found.');
+    const before = storageResult.rows[0] ? mapStorageRow(storageResult.rows[0]) : null;
+    if (!before) throw new Error('Fuel storage not found.');
+    if (before.status === 'archived') {
+      await client.query('COMMIT');
+      committed = true;
+      return;
     }
 
-    const protectedAuditResult = await client.query<{ count: string | number }>(
+    const updated = await client.query<FuelStorageRow>(
       `
-        select count(*)::text as count
-        from public.fuel_storage_events
-        where user_id = $1
-          and storage_id::text = $2
-          and (is_late_entry = true or linked_missing_entry_event_id is not null or linked_adjustment_event_id is not null)
-      `,
-      [userId, storageId],
-    );
-
-    if (Number(protectedAuditResult.rows[0]?.count || 0) > 0) {
-      throw new Error('This tank contains append-only late-entry audit records and cannot be hard deleted. Archive it instead.');
-    }
-
-    await client.query(
-      `
-        delete from public.asset_scan_events
-        where fuel_storage_id::text = $1
-      `,
-      [storageId],
-    );
-
-    await client.query(
-      `
-        delete from public.fuel_storage_events
-        where user_id = $1 and storage_id::text = $2
-      `,
-      [userId, storageId],
-    );
-
-    await client.query(
-      `
-        delete from public.fuel_storage_units
+        update public.fuel_storage_units
+        set status = 'archived', updated_at = now()
         where user_id = $1 and id::text = $2
+        returning ${fuelStorageSelectSql()}
       `,
       [userId, storageId],
     );
+    const after = updated.rows[0] ? mapStorageRow(updated.rows[0]) : null;
+    if (!after) throw new Error('Fuel storage could not be archived.');
+
+    await insertFuelLedgerAuditEvent(client, {
+      userId,
+      recordType: 'storage',
+      recordId: storageId,
+      action: 'archived',
+      actor: input.actor,
+      reason: input.reason,
+      beforeSnapshot: before,
+      afterSnapshot: after,
+    });
 
     await client.query('COMMIT');
+    committed = true;
   } catch (error) {
-    await client.query('ROLLBACK');
+    if (!committed) await client.query('ROLLBACK').catch(() => null);
     throw error;
   } finally {
     client.release();
@@ -3140,6 +3472,8 @@ async function insertFuelStorageEvent(
     fieldManagerId?: string | null;
     fieldManagerDisplayName?: string | null;
     fieldManagerSessionId?: string | null;
+    workUseExcluded?: boolean;
+    workUseExclusionReason?: string | null;
   },
 ): Promise<FuelLedgerEvent> {
   const card = normalizeMaskedCard(input.cardNumberMasked, null);
@@ -3178,9 +3512,11 @@ async function insertFuelStorageEvent(
         field_manager_id,
         field_manager_display_name,
         field_manager_session_id,
+        work_use_excluded,
+        work_use_exclusion_reason,
         created_at
       )
-      values ($1::uuid, $2, $3, $4, $5, $6::uuid, $7::numeric, $8, $9, $10, $11, $12::numeric, $13::numeric, $14::numeric, $15::integer, $16::integer, $17::numeric, $18, $19, $20, $21, $22::double precision, $23::double precision, $24, $25::text, $26::timestamptz, now(), $27::double precision, $28::uuid, $29::text, $30::text, coalesce($26::timestamptz, now()))
+      values ($1::uuid, $2, $3, $4, $5, $6::uuid, $7::numeric, $8, $9, $10, $11, $12::numeric, $13::numeric, $14::numeric, $15::integer, $16::integer, $17::numeric, $18, $19, $20, $21, $22::double precision, $23::double precision, $24, $25::text, $26::timestamptz, now(), $27::double precision, $28::uuid, $29::text, $30::text, $31::boolean, $32, coalesce($26::timestamptz, now()))
       returning id::text
     `,
     [
@@ -3214,6 +3550,8 @@ async function insertFuelStorageEvent(
       input.fieldManagerId ?? null,
       input.fieldManagerDisplayName ?? null,
       input.fieldManagerSessionId ?? null,
+      Boolean(input.workUseExcluded),
+      input.workUseExclusionReason ?? null,
     ],
   );
 
@@ -3399,6 +3737,7 @@ export async function recordFuelAssetIssue(
     if (!asset) {
       throw new Error('Asset not found.');
     }
+    const assetWorkUse = await getFuelAssetWorkUseExclusion(client, input.userId, input.assetId);
 
     const currentUsageReading = normalizeUsageReading(asset.hours);
     if (assetUsageReading !== null && currentUsageReading !== null && assetUsageReading < currentUsageReading) {
@@ -3451,6 +3790,8 @@ export async function recordFuelAssetIssue(
       fieldManagerId,
       fieldManagerDisplayName,
       fieldManagerSessionId,
+      workUseExcluded: assetWorkUse.excluded,
+      workUseExclusionReason: assetWorkUse.reason || null,
     });
 
     await client.query(
@@ -3878,6 +4219,7 @@ export async function recordMissingFuelAssetIssue(
     );
     const asset = assetResult.rows[0] ? mapFuelAssetRow(assetResult.rows[0]) : null;
     if (!asset) throw new Error('Asset not found or is no longer active.');
+    const assetWorkUse = await getFuelAssetWorkUseExclusion(client, userId, assetId);
     if (!asset.canReceiveFuel) throw new Error('This asset is not eligible to receive fuel.');
     if (!usageMetricAllowedForAsset(asset.usageMetric, usageMetric)) {
       throw new Error(`The selected usage metric does not match this asset's saved usage metric (${asset.usageMetric}).`);
@@ -3906,14 +4248,16 @@ export async function recordMissingFuelAssetIssue(
           operator_name, activity_text, work_area_text, note, latitude, longitude, location_text,
           client_event_id, idempotency_key, is_late_entry, issue_date, issue_time, issue_time_recorded, issue_at,
           entry_added_at, added_by_user_id, added_by_name, added_by_email, late_entry_reason,
-          evidence_type, evidence_reference, evidence_status, tank_balance_treatment, gps_capture_status, created_at
+          evidence_type, evidence_reference, evidence_status, tank_balance_treatment, gps_capture_status,
+          work_use_excluded, work_use_exclusion_reason, created_at
         )
         values (
           $1::uuid, $2, 'asset_issue', 'desktop_late_entry', 'Late Entry', $3, $4::numeric,
           null, null, $5::integer, $6::integer, $7::numeric, $8,
           $9, $10, $11, $12, null, null, $11,
           $13, $13, true, $14::date, $15::time, $16::boolean, $17::timestamptz,
-          now(), $2, $18, $19, $20, $21, $22, $23, $24, 'not_captured_desktop_late_entry', $17::timestamptz
+          now(), $2, $18, $19, $20, $21, $22, $23, $24, 'not_captured_desktop_late_entry',
+          $25::boolean, $26, $17::timestamptz
         )
         returning id::text
       `,
@@ -3922,6 +4266,7 @@ export async function recordMissingFuelAssetIssue(
         operatorName, activityText, workAreaText, note || null, idempotencyKey, issueDate, issueTime.time,
         issueTime.recorded, issueAtIso, addedByName || null, addedByEmail || null, lateEntryReason || null,
         evidenceType, evidenceReference || null, evidenceStatus, tankBalanceTreatment,
+        assetWorkUse.excluded, assetWorkUse.reason || null,
       ],
     );
     const eventId = eventInsert.rows[0]?.id;
@@ -4245,6 +4590,10 @@ type SaveFuelSlipInput = {
   reviewRequired?: unknown;
   rawExtractedText?: unknown;
   extractionWarnings?: unknown;
+  auditActorUserId?: unknown;
+  auditActorName?: unknown;
+  auditActorEmail?: unknown;
+  auditReason?: unknown;
 };
 
 type FuelSlipSaveResult = {
@@ -4350,6 +4699,12 @@ function fuelSlipDirectSelectSql(): string {
     fs.review_required,
     fs.raw_extracted_text,
     fs.extraction_warnings,
+    fs.work_use_excluded,
+    fs.work_use_exclusion_reason,
+    fs.record_status,
+    fs.voided_at,
+    fs.voided_by_name,
+    fs.void_reason,
     fs.created_at,
     fs.updated_at
   `;
@@ -4360,7 +4715,7 @@ async function loadFuelSlipRowForUpdate(client: PoolClient, userId: string, fuel
     `
       select ${fuelSlipDirectSelectSql()}
       from public.fuel_slips fs
-      where fs.user_id = $1 and fs.id::text = $2
+      where fs.user_id = $1 and fs.id::text = $2 and fs.record_status = 'active'
       for update
     `,
     [userId, fuelSlipId],
@@ -4543,7 +4898,11 @@ async function removeFuelSlipSideEffects(client: PoolClient, userId: string, sli
   await clearFuelSlipAssetLastFields(client, userId, asText(slip.asset_register_item_id), fuelSlipId);
 }
 
-export async function deleteFuelSlipTransaction(userId: string, fuelSlipId: string): Promise<void> {
+export async function voidFuelSlipTransaction(
+  userId: string,
+  fuelSlipId: string,
+  input: { actor?: FuelLedgerAuditActor; reason?: unknown } = {},
+): Promise<void> {
   await ensureFuelLedgerTables();
   const db = getDb();
   const client = await db.connect();
@@ -4553,12 +4912,37 @@ export async function deleteFuelSlipTransaction(userId: string, fuelSlipId: stri
     await client.query('BEGIN');
 
     const slip = await loadFuelSlipRowForUpdate(client, userId, fuelSlipId);
+    const before = mapFuelSlipRow(slip);
     await removeFuelSlipSideEffects(client, userId, slip);
 
+    const actor = normalizeFuelAuditActor(input.actor);
+    const reason = asText(input.reason).slice(0, 500) || 'Fuel slip corrected or cancelled';
     await client.query(
-      `delete from public.fuel_slips where user_id = $1 and id::text = $2`,
-      [userId, fuelSlipId],
+      `
+        update public.fuel_slips
+        set
+          record_status = 'voided',
+          voided_at = now(),
+          voided_by_user_id = $3,
+          voided_by_name = $4,
+          voided_by_email = $5,
+          void_reason = $6,
+          updated_at = now()
+        where user_id = $1 and id::text = $2 and record_status = 'active'
+      `,
+      [userId, fuelSlipId, actor.userId || null, actor.name, actor.email || null, reason],
     );
+
+    await insertFuelLedgerAuditEvent(client, {
+      userId,
+      recordType: 'fuel_slip',
+      recordId: fuelSlipId,
+      action: 'voided',
+      actor: input.actor,
+      reason,
+      beforeSnapshot: before,
+      afterSnapshot: { ...before, recordStatus: 'voided', voidedByName: actor.name, voidReason: reason },
+    });
 
     await client.query('COMMIT');
     committed = true;
@@ -4658,6 +5042,8 @@ export async function saveFuelSlipTransaction(userId: string, input: SaveFuelSli
 
     let asset: FuelLedgerAsset | null = null;
     let storage: FuelLedgerStorage | null = null;
+    let workUseExcluded = false;
+    let workUseExclusionReason = '';
     let usageComplete = true;
     let usageMetric: 'km' | 'hours' | 'none' = 'none';
     let usageReading: number | null = null;
@@ -4711,6 +5097,9 @@ export async function saveFuelSlipTransaction(userId: string, input: SaveFuelSli
       const assetRow = assetResult.rows[0];
       if (!assetRow) throw new Error('Asset not found.');
       asset = mapFuelAssetRow(assetRow);
+      const assetWorkUse = await getFuelAssetWorkUseExclusion(client, userId, assetId);
+      workUseExcluded = assetWorkUse.excluded;
+      workUseExclusionReason = assetWorkUse.reason;
       assetFuelPercentBefore = asset.fuelPercent ?? inputAssetFuelPercentBefore;
 
       if (asset.usageMetric === 'km') {
@@ -4822,6 +5211,8 @@ export async function saveFuelSlipTransaction(userId: string, input: SaveFuelSli
       finalReviewRequired,
       rawExtractedText || null,
       JSON.stringify(extractionWarnings),
+      workUseExcluded,
+      workUseExclusionReason || null,
     ];
 
     const savedSlip = existingFuelSlipId
@@ -4872,8 +5263,10 @@ export async function saveFuelSlipTransaction(userId: string, input: SaveFuelSli
               review_required = $40::boolean,
               raw_extracted_text = $41,
               extraction_warnings = $42::jsonb,
+              work_use_excluded = $43::boolean,
+              work_use_exclusion_reason = $44,
               updated_at = now()
-            where user_id = $1 and id::text = $43
+            where user_id = $1 and id::text = $45
             returning id::text
           `,
           [...fuelSlipValues, existingFuelSlipId],
@@ -4924,8 +5317,10 @@ export async function saveFuelSlipTransaction(userId: string, input: SaveFuelSli
               ocr_confidence,
               review_required,
               raw_extracted_text,
-              extraction_warnings
-            ) values ($1, 'fuel_slip', 'Fuel Slip', $2, $3::uuid, $4::uuid, $5, $6, $7, $8, $9::integer, $10, $11, $12, $13, $14::date, $15, $16, $17::numeric, $18::numeric, $19::numeric, $20::numeric, $21::boolean, $22::numeric, $23, $24, $25, $26, $27, $28, $29, $30::numeric, $31::numeric, $32, $33, $34, $35, $36::integer, $37::integer, $38, $39::numeric, $40::boolean, $41, $42::jsonb)
+              extraction_warnings,
+              work_use_excluded,
+              work_use_exclusion_reason
+            ) values ($1, 'fuel_slip', 'Fuel Slip', $2, $3::uuid, $4::uuid, $5, $6, $7, $8, $9::integer, $10, $11, $12, $13, $14::date, $15, $16, $17::numeric, $18::numeric, $19::numeric, $20::numeric, $21::boolean, $22::numeric, $23, $24, $25, $26, $27, $28, $29, $30::numeric, $31::numeric, $32, $33, $34, $35, $36::integer, $37::integer, $38, $39::numeric, $40::boolean, $41, $42::jsonb, $43::boolean, $44)
             returning id::text
           `,
           fuelSlipValues,
@@ -5191,6 +5586,20 @@ export async function saveFuelSlipTransaction(userId: string, input: SaveFuelSli
     }
 
     const fuelSlip = await loadFuelSlipById(client, fuelSlipId);
+    await insertFuelLedgerAuditEvent(client, {
+      userId,
+      recordType: 'fuel_slip',
+      recordId: fuelSlipId,
+      action: existingSlip ? 'updated' : 'created',
+      actor: {
+        userId: input.auditActorUserId,
+        name: input.auditActorName,
+        email: input.auditActorEmail,
+      },
+      reason: input.auditReason,
+      beforeSnapshot: existingSlip ? mapFuelSlipRow(existingSlip) : undefined,
+      afterSnapshot: fuelSlip,
+    });
     let updatedStorage: FuelLedgerStorage | null = null;
     if (targetType === 'storage_tank') {
       const storageResult = await client.query<FuelStorageRow>(
