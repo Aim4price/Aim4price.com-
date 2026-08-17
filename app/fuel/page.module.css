@@ -4121,6 +4121,216 @@
   }
 }
 
+/* Fuel Ledger work-use exclusions and preserved history */
+.topActionButtons {
+  width: min(100%, 56rem);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.topExclusionsButton {
+  color: #79420c;
+  border-color: #e9c58f;
+  background: linear-gradient(180deg, #fffdf8 0%, #fff5df 100%);
+}
+
+.topExclusionsButton:hover:not(:disabled) {
+  color: #633507;
+  border-color: #d9aa64;
+  background: linear-gradient(180deg, #ffffff 0%, #ffedc9 100%);
+}
+
+.workUseBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: fit-content;
+  max-width: 100%;
+  padding: 0.34rem 0.62rem;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font-size: 0.76rem;
+  font-weight: 900;
+  line-height: 1.15;
+  text-align: center;
+}
+
+.workUseBadgeIncluded {
+  color: #15563e;
+  border-color: #b9ddcb;
+  background: #edf9f3;
+}
+
+.workUseBadgeExcluded {
+  color: #8a3e08;
+  border-color: #efc993;
+  background: #fff5df;
+}
+
+.exclusionNotice {
+  margin: 0 clamp(1.25rem, 2.4vw, 2rem) 1rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid currentColor;
+  border-radius: 1rem;
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
+.exclusionEditor {
+  display: grid;
+  gap: 1.2rem;
+  margin: 0 clamp(1.25rem, 2.4vw, 2rem);
+  padding: clamp(1.1rem, 2vw, 1.5rem);
+  border: 1px solid #dce5ec;
+  border-radius: 1.3rem;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbfc 100%);
+  overflow-y: auto;
+}
+
+.exclusionEditorHeading {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.exclusionEditorHeading h3,
+.exclusionEditorHeading p {
+  margin: 0;
+}
+
+.exclusionEditorHeading h3 {
+  color: #10382f;
+  font-size: clamp(1.25rem, 2vw, 1.55rem);
+}
+
+.exclusionEditorHeading p,
+.exclusionReasonField small {
+  color: #667586;
+  font-size: 0.9rem;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.exclusionReasonField,
+.exclusionReasonSummary {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.exclusionReasonField > span,
+.exclusionReasonSummary > span {
+  color: #17362c;
+  font-size: 0.88rem;
+  font-weight: 900;
+}
+
+.exclusionReasonField input {
+  width: 100%;
+  min-height: 3.3rem;
+  padding: 0 1rem;
+  border: 1px solid #cfdce5;
+  border-radius: 1rem;
+  color: #17362c;
+  background: #ffffff;
+  font: inherit;
+  font-weight: 750;
+  outline: none;
+}
+
+.exclusionReasonField input:focus {
+  border-color: rgba(22, 83, 64, 0.48);
+  box-shadow: 0 0 0 4px rgba(22, 83, 64, 0.09);
+}
+
+.exclusionReasonSummary {
+  padding: 1rem;
+  border: 1px solid #efcf9d;
+  border-radius: 1rem;
+  background: #fff9ed;
+}
+
+.exclusionReasonSummary strong {
+  color: #6e3a0a;
+  line-height: 1.45;
+}
+
+.exclusionDangerButton {
+  border-color: #bd6b2a !important;
+  background: linear-gradient(180deg, #b96120 0%, #934514 100%) !important;
+}
+
+.fuelHistoryModal {
+  width: min(100%, 46rem);
+}
+
+.fuelHistoryList {
+  display: grid;
+  gap: 0.75rem;
+  max-height: min(55vh, 34rem);
+  padding: 1rem clamp(1.25rem, 2.4vw, 2rem);
+  overflow-y: auto;
+}
+
+.fuelHistoryRow {
+  display: grid;
+  gap: 0.55rem;
+  padding: 0.95rem 1rem;
+  border: 1px solid #dce5ec;
+  border-radius: 1rem;
+  background: #ffffff;
+}
+
+.fuelHistoryRow > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.fuelHistoryRow strong {
+  color: #10382f;
+}
+
+.fuelHistoryRow span,
+.fuelHistoryRow p {
+  color: #667586;
+  font-size: 0.85rem;
+  font-weight: 750;
+}
+
+.fuelHistoryRow p {
+  margin: 0;
+}
+
+@media (max-width: 960px) {
+  .topActionButtons {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .topActionButtons {
+    grid-template-columns: 1fr !important;
+  }
+
+  .mobileQuickActions {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .mobileQuickButton {
+    font-size: 0.73rem;
+    padding-inline: 0.25rem;
+  }
+
+  .exclusionEditor {
+    margin-inline: 1rem;
+  }
+
+  .fuelHistoryRow > div {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.2rem;
+  }
+}
+
 @media (max-width: 520px) {
   .fuelSlipReviewStepProgress {
     grid-template-columns: 1fr;
