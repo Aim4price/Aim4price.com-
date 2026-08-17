@@ -19,6 +19,8 @@ type FuelAsset = {
   lifeWorkedPercent: number | null;
   canReceiveFuel: boolean;
   usageMetric: 'hours' | 'km' | 'both' | 'percentage' | 'none';
+  workUseExcluded: boolean;
+  workUseExclusionReason: string;
 };
 
 type FuelLedgerResponse = {
@@ -58,7 +60,7 @@ const STEP_TITLES: Record<Step, string> = {
   amount: 'Fuel and cost',
   after: 'Fuel after',
   activity: 'Petrol station',
-  slip: 'Receipt photo',
+  slip: 'Proof (optional)',
 };
 
 function todayDate(): string {
@@ -263,7 +265,6 @@ export default function PetrolStationFuelClient({
       if (stationName.trim().length < 2) return 'Enter the petrol station name.';
       if (activityText.trim().length < 2) return 'Enter the reason or activity for this fuel.';
     }
-    if (step === 'slip' && !receipt) return 'Take or choose a photo of the fuel slip.';
     return '';
   }
 
@@ -302,28 +303,31 @@ export default function PetrolStationFuelClient({
       setNotice('GPS location is required before saving this fuel cost.');
       return;
     }
-    if (!selectedAsset || !receipt) return;
+    if (!selectedAsset) return;
 
     setIsSaving(true);
     setNotice('');
 
     try {
-      const formData = new FormData();
-      formData.append('file', receipt);
+      let upload: NonNullable<UploadResponse['uploads']>[number] | null = null;
+      if (receipt) {
+        const formData = new FormData();
+        formData.append('file', receipt);
 
-      const uploadOptions: RequestInit = {
-        method: 'POST',
-        credentials: 'include',
-        body: formData,
-      };
-      const uploadResponse = fieldManagerMode
-        ? await fetch('/api/field-manager/petrol-station/upload', uploadOptions)
-        : await fetch('/api/fuel/slips/upload', uploadOptions);
-      const uploadPayload = (await uploadResponse.json().catch(() => null)) as UploadResponse | null;
-      const upload = uploadPayload?.uploads?.[0];
+        const uploadOptions: RequestInit = {
+          method: 'POST',
+          credentials: 'include',
+          body: formData,
+        };
+        const uploadResponse = fieldManagerMode
+          ? await fetch('/api/field-manager/petrol-station/upload', uploadOptions)
+          : await fetch('/api/fuel/slips/upload', uploadOptions);
+        const uploadPayload = (await uploadResponse.json().catch(() => null)) as UploadResponse | null;
+        upload = uploadPayload?.uploads?.[0] ?? null;
 
-      if (!uploadResponse.ok || !uploadPayload?.ok || !upload) {
-        throw new Error(uploadPayload?.error || 'The fuel slip photo could not be uploaded.');
+        if (!uploadResponse.ok || !uploadPayload?.ok || !upload) {
+          throw new Error(uploadPayload?.error || 'The fuel slip photo could not be uploaded.');
+        }
       }
 
       const litresNumber = numberValue(litres) as number;
@@ -337,15 +341,15 @@ export default function PetrolStationFuelClient({
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          mode: 'automatic',
+          mode: upload ? 'automatic' : 'manual',
           targetType: 'asset',
           targetId: selectedAsset.id,
           assetId: selectedAsset.id,
-          uploadId: upload.uploadId,
-          documentFileUrl: upload.url,
-          originalFilename: upload.fileName,
-          contentType: upload.contentType,
-          byteSize: upload.byteSize,
+          uploadId: upload?.uploadId || '',
+          documentFileUrl: upload?.url || '',
+          originalFilename: upload?.fileName || '',
+          contentType: upload?.contentType || '',
+          byteSize: upload?.byteSize ?? null,
           supplierName: stationName.trim(),
           slipNumber: slipNumber.trim(),
           documentDate,
@@ -455,6 +459,7 @@ export default function PetrolStationFuelClient({
             {visibleAssets.map((asset) => (
               <article key={asset.id} className={styles.assetCard}>
                 <h2><BalancedHeadingText text={assetName(asset)} /></h2>
+                {asset.workUseExcluded ? <span className={styles.workUseNotice}>Excluded from work use</span> : null}
                 <div className={styles.assetMetaGrid}>
                   <div>
                     <span>Serial</span>
@@ -542,8 +547,8 @@ export default function PetrolStationFuelClient({
         <label className={styles.receiptButton}>
           <input type="file" accept="image/jpeg,image/png,image/webp" capture="environment" onChange={handleReceiptChange} />
           <span className={styles.receiptIcon} aria-hidden="true">▣</span>
-          <strong>{receipt ? 'Replace fuel slip photo' : 'Take fuel slip photo'}</strong>
-          <small>JPG, PNG or WEBP</small>
+          <strong>{receipt ? 'Replace fuel slip photo' : 'Add fuel slip photo (optional)'}</strong>
+          <small>Proof can be added now, or kept separately by your accountant.</small>
         </label>
         {receiptPreview ? <img src={receiptPreview} alt="Selected fuel slip" className={styles.receiptPreview} /> : null}
         {receipt ? <p className={styles.fileName}>{receipt.name}</p> : null}
@@ -551,6 +556,7 @@ export default function PetrolStationFuelClient({
           <div><span>Asset</span><strong>{selectedAsset ? assetName(selectedAsset) : '—'}</strong></div>
           <div><span>Fuel</span><strong>{fuelType === 'diesel' ? 'Diesel' : 'Petrol'} · {litres || '0'} L</strong></div>
           <div><span>Cost</span><strong>R {Number(totalAmount || 0).toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></div>
+          {selectedAsset?.workUseExcluded ? <div><span>Work use</span><strong>Excluded · {selectedAsset.workUseExclusionReason || 'Not used for work purposes'}</strong></div> : null}
         </div>
       </div>
     );
@@ -561,7 +567,7 @@ export default function PetrolStationFuelClient({
       <section className={styles.doneCard}>
         <span aria-hidden="true">✓</span>
         <h1>Fuel cost saved</h1>
-        <p>The fuel record and slip photo are now saved against {selectedAsset ? assetName(selectedAsset) : 'the asset'}.</p>
+        <p>The fuel record{receipt ? ' and slip photo are' : ' is'} now saved against {selectedAsset ? assetName(selectedAsset) : 'the asset'}.</p>
         <button type="button" onClick={resetFlow}>Record another fill</button>
         <a href={fieldManagerMode ? '/field-manager/diesel' : '/owner-app/operations/fuel'}>Back to fuel options</a>
       </section>
