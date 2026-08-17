@@ -350,3 +350,15 @@
   .fuelTypeGrid button { min-height: 92px; }
   .costSummary { grid-template-columns: 1fr; }
 }
+.workUseNotice {
+  display: inline-flex;
+  width: fit-content;
+  padding: 0.34rem 0.62rem;
+  border: 1px solid #efc993;
+  border-radius: 999px;
+  color: #84400b;
+  background: #fff5df;
+  font-size: 0.75rem;
+  font-weight: 900;
+  line-height: 1.15;
+}
