@@ -45,6 +45,8 @@ type FuelReportOptions = {
   storageCode: string;
   storageFuelType: string;
   totalIssued: number;
+  totalWorkUseIssued: number;
+  totalExcludedIssued: number;
   totalStockIn: number;
   currentLitres: number;
   storageCount: number;
@@ -490,6 +492,8 @@ function renderFuelEventTable(events: FuelLedgerEvent[]): string {
       { label: 'Entry Added On', value: event.isLateEntry || event.sourceType === 'fuel_slip' ? formatDateTime(event.entryAddedAtIso) : '' },
       { label: 'Added By', value: eventAddedBy(event) },
       { label: 'Evidence / Review', value: eventEvidenceStatus(event), wide: true },
+      { label: 'Work-use Status', value: event.eventType === 'asset_issue' ? (event.workUseExcluded ? 'Excluded from work use' : 'Included as work use') : '', wide: true },
+      { label: 'Exclusion Reason', value: event.workUseExcluded ? event.workUseExclusionReason || 'Not used for work purposes' : '', wide: true },
       { label: 'Tank Balance Treatment', value: eventBalanceTreatment(event), wide: true },
       { label: 'Late-entry Reason', value: event.isLateEntry ? event.lateEntryReason || '-' : '', wide: true },
       { label: 'Notes', value: eventNoteLabel(event), wide: true },
@@ -544,6 +548,8 @@ function buildReportHtml(options: FuelReportOptions): string {
   const cards: SummaryCard[] = [
     { label: 'Current Storage', value: formatLitres(options.currentLitres), subtext: 'Current ledger stock' },
     { label: 'Fuel Issued', value: formatLitres(options.totalIssued), subtext: 'Issued to assets' },
+    { label: 'Work-use Recorded', value: formatLitres(options.totalWorkUseIssued), subtext: 'Issued entries not excluded' },
+    { label: 'Excluded', value: formatLitres(options.totalExcludedIssued), subtext: 'Marked not for work use' },
     { label: 'Fuel Filled', value: formatLitres(options.totalStockIn), subtext: 'Opening balance and stock in' },
     { label: 'Entries', value: options.eventCount.toLocaleString('en-ZA'), subtext: options.eventCount === 1 ? 'Fuel movement' : 'Fuel movements' },
   ];
@@ -558,6 +564,8 @@ function buildReportHtml(options: FuelReportOptions): string {
   const summaryRows: KeyValueRow[] = [
     { label: 'Storage Units', value: options.storageCount.toLocaleString('en-ZA') },
     { label: 'Fuel Issued', value: formatLitres(options.totalIssued) },
+    { label: 'Work-use Recorded', value: formatLitres(options.totalWorkUseIssued) },
+    { label: 'Excluded from Work Use', value: formatLitres(options.totalExcludedIssued) },
     { label: 'Fuel Filled', value: formatLitres(options.totalStockIn) },
     { label: 'Current Stock', value: formatLitres(options.currentLitres) },
   ];
@@ -1324,7 +1332,7 @@ function buildReportHtml(options: FuelReportOptions): string {
             <div class="assetReportSectionHeading">
               <div>
                 <h2>Fuel Movement Records</h2>
-                <p>Each entry keeps the movement figures together, with operator, work area, GPS, audit and non-cost Fuel Slip details directly underneath.</p>
+                <p>Each entry keeps the movement figures together, including its work-use classification, operator, work area, GPS, audit and Fuel Slip details.</p>
               </div>
               <strong>${escapeHtml(String(options.eventCount))} ${options.eventCount === 1 ? 'entry' : 'entries'}</strong>
             </div>
@@ -1335,7 +1343,7 @@ function buildReportHtml(options: FuelReportOptions): string {
         <footer class="assetReportFooter">
           <div>
             <p class="assetReportPowered">Powered by Aim4price.com</p>
-            <div class="assetReportDisclaimer">Fuel ledger records are operational records captured from storage QR entries and owner stock adjustments. The litres-before value is calculated from litres issued and the captured fuel-gauge percentage change, and remains subject to physical verification.</div>
+            <div class="assetReportDisclaimer">Fuel ledger records are operational records. Work-use inclusion or exclusion is an owner/accountant classification and is not, by itself, a tax determination. The litres-before value is calculated from litres issued and the captured fuel-gauge percentage change, and remains subject to physical verification.</div>
           </div>
           <div class="assetReportPageNumber">Complete fuel ledger</div>
         </footer>
@@ -1404,6 +1412,8 @@ function buildFuelWorkbook(options: FuelReportOptions): XlsxSheet[] {
     [styled('Storage', 'metaLabel'), styled(options.storageName, 'metaValue')],
     [styled('Fuel type', 'metaLabel'), styled(options.storageFuelType, 'metaValue')],
     [styled('Storage code', 'metaLabel'), styled(options.storageCode, 'metaValue')],
+    [styled('Work-use recorded', 'metaLabel'), styled(roundLitres(options.totalWorkUseIssued), 'decimal')],
+    [styled('Excluded from work use', 'metaLabel'), styled(roundLitres(options.totalExcludedIssued), 'decimal')],
     [],
     [styled('Storage units', 'tableHeader'), styled('Fuel issued', 'tableHeader'), styled('Fuel filled', 'tableHeader'), styled('Current stock', 'tableHeader'), styled('Entries', 'tableHeader')],
     [
@@ -1420,12 +1430,13 @@ function buildFuelWorkbook(options: FuelReportOptions): XlsxSheet[] {
     'Litres Before Fill', 'Usage Reading', 'Usage Metric', 'Historical Storage Before', 'Historical Storage After', '% Before', '% After',
     'Operator', 'Activity', 'Work Area', 'GPS', 'Entry Added On', 'Added By', 'Evidence / Review Status',
     'Evidence Type', 'Evidence Reference', 'Tank Balance Treatment', 'Late-entry Reason', 'Notes',
+    'Work-use Status', 'Exclusion Reason',
   ];
   const movementHeaderRow = 7;
   const movementRows: XlsxCellValue[][] = [
-    [styled('Fuel Movement Records', 'title'), ...Array(24).fill('')],
-    [styled(`Filtered report: ${options.dateRangeLabel}`, 'subtitle'), ...Array(24).fill('')],
-    [styled('Late entries show their historical issue date separately from the real date added. Historical tank levels remain Not recorded.', 'note'), ...Array(24).fill('')],
+    [styled('Fuel Movement Records', 'title'), ...Array(26).fill('')],
+    [styled(`Filtered report: ${options.dateRangeLabel}`, 'subtitle'), ...Array(26).fill('')],
+    [styled('Late entries show their historical issue date separately from the real date added. Work-use status is a classification, not a tax determination.', 'note'), ...Array(26).fill('')],
     [],
     [styled('Storage', 'metaLabel'), styled(options.storageName, 'metaValue'), styled('Fuel type', 'metaLabel'), styled(options.storageFuelType, 'metaValue')],
     [],
@@ -1463,6 +1474,8 @@ function buildFuelWorkbook(options: FuelReportOptions): XlsxSheet[] {
         styled(eventBalanceTreatment(event), 'text'),
         styled(event.isLateEntry ? event.lateEntryReason || '' : '', 'note'),
         styled(eventNoteLabel(event), 'note'),
+        styled(event.eventType === 'asset_issue' ? (event.workUseExcluded ? 'Excluded from work use' : 'Included as work use') : '', event.workUseExcluded ? 'statusWarn' : 'statusGood'),
+        styled(event.workUseExcluded ? event.workUseExclusionReason || 'Not used for work purposes' : '', 'note'),
       ];
     }),
   ];
@@ -1481,11 +1494,11 @@ function buildFuelWorkbook(options: FuelReportOptions): XlsxSheet[] {
     {
       name: 'Fuel Movement Records',
       rows: movementRows,
-      columns: [22, 22, 14, 22, 28, 16, 18, 18, 14, 22, 22, 13, 13, 20, 24, 24, 34, 22, 24, 34, 24, 26, 34, 42, 42],
+      columns: [22, 22, 14, 22, 28, 16, 18, 18, 14, 22, 22, 13, 13, 20, 24, 24, 34, 22, 24, 34, 24, 26, 34, 42, 42, 24, 38],
       merges: [
-        { fromRow: 1, fromColumn: 1, toRow: 1, toColumn: 25 },
-        { fromRow: 2, fromColumn: 1, toRow: 2, toColumn: 25 },
-        { fromRow: 3, fromColumn: 1, toRow: 3, toColumn: 25 },
+        { fromRow: 1, fromColumn: 1, toRow: 1, toColumn: 27 },
+        { fromRow: 2, fromColumn: 1, toRow: 2, toColumn: 27 },
+        { fromRow: 3, fromColumn: 1, toRow: 3, toColumn: 27 },
       ],
       freezeRow: movementHeaderRow,
       autoFilter: {
@@ -1536,6 +1549,12 @@ export async function GET(request: NextRequest) {
     const totalIssued = events
       .filter((event) => event.eventType === 'asset_issue')
       .reduce((sum, event) => sum + event.litres, 0);
+    const totalWorkUseIssued = events
+      .filter((event) => event.eventType === 'asset_issue' && !event.workUseExcluded)
+      .reduce((sum, event) => sum + event.litres, 0);
+    const totalExcludedIssued = events
+      .filter((event) => event.eventType === 'asset_issue' && event.workUseExcluded)
+      .reduce((sum, event) => sum + event.litres, 0);
     const totalStockIn = events
       .filter((event) => event.eventType === 'stock_in' || event.eventType === 'opening_balance')
       .reduce((sum, event) => sum + event.litres, 0);
@@ -1579,6 +1598,8 @@ export async function GET(request: NextRequest) {
       storageCode,
       storageFuelType,
       totalIssued,
+      totalWorkUseIssued,
+      totalExcludedIssued,
       totalStockIn,
       currentLitres: storage ? storage.currentLitres : ledger.summary.currentLitres,
       storageCount: storage ? 1 : ledger.summary.totalStorageUnits,
