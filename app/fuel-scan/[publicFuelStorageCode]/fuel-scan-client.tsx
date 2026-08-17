@@ -62,6 +62,8 @@ type FuelLedgerAsset = {
   yearModel: number | null;
   usageMetric: 'hours' | 'km' | 'both' | 'percentage' | 'none';
   canReceiveFuel: boolean;
+  workUseExcluded: boolean;
+  workUseExclusionReason: string;
 };
 
 type FuelLedgerEvent = {
@@ -1294,6 +1296,7 @@ export default function FuelScanClient({
                 <article key={asset.id} className={styles.fieldManagerAssetCard}>
                   <div className={styles.fieldManagerAssetTopRow}>
                     <h2>{displayName}</h2>
+                    {asset.workUseExcluded ? <span className={styles.workUseNotice}>Excluded from work use</span> : null}
                   </div>
 
                   <div className={styles.fieldManagerAssetMetaGrid}>
@@ -1474,6 +1477,7 @@ export default function FuelScanClient({
           <div><span>Your name</span><strong>{operatorName || '—'}</strong></div>
           <div><span>Activity</span><strong>{activityText || '—'}</strong></div>
           <div><span>Where</span><strong>{workAreaText || '—'}</strong></div>
+          {selectedAsset?.workUseExcluded ? <div><span>Work use</span><strong>Excluded · {selectedAsset.workUseExclusionReason || 'Not used for work purposes'}</strong></div> : null}
         </div>
         {renderStepControls({ submit: true })}
       </section>
