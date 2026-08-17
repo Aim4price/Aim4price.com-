@@ -1,0 +1,43 @@
+name: Fuel Ledger validation
+
+on:
+  pull_request:
+    paths:
+      - 'app/api/fuel/**'
+      - 'app/api/fuel-scan/**'
+      - 'app/api/field-manager/petrol-station/**'
+      - 'app/fuel/**'
+      - 'app/fuel-scan/**'
+      - 'app/owner-app/operations/fuel/**'
+      - 'lib/fuel-ledger.ts'
+      - 'database/migrations/**fuel**'
+      - 'tests/fuel-*.test.mjs'
+      - 'package.json'
+      - '.github/workflows/fuel-ledger-validation.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'app/api/fuel/**'
+      - 'app/api/fuel-scan/**'
+      - 'app/api/field-manager/petrol-station/**'
+      - 'app/fuel/**'
+      - 'app/fuel-scan/**'
+      - 'app/owner-app/operations/fuel/**'
+      - 'lib/fuel-ledger.ts'
+      - 'database/migrations/**fuel**'
+      - 'tests/fuel-*.test.mjs'
+      - 'package.json'
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run test:fuel-ledger
