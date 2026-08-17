@@ -248,18 +248,10 @@ function eventTargetLabel(event: FuelLedgerEvent): string {
 }
 
 function eventWorkActivityLabel(event: FuelLedgerEvent): string {
-  if (event.sourceType === 'fuel_slip') {
-    return asText(event.fuelSlipSupplierName) || asText(event.operatorName) || 'Fuel Slip';
-  }
-
-  return asText(event.activityText) || '-';
+  return asText(event.activityText) || (event.sourceType === 'fuel_slip' ? 'Fuel Slip' : '-');
 }
 
 function eventWorkAreaLabel(event: FuelLedgerEvent): string {
-  if (event.sourceType === 'fuel_slip') {
-    return asText(event.fuelSlipFuelType) || asText(event.workAreaText) || '-';
-  }
-
   return asText(event.workAreaText) || '-';
 }
 
@@ -288,6 +280,17 @@ function eventNoteLabel(event: FuelLedgerEvent): string {
 }
 
 function eventIssuedDateTime(event: FuelLedgerEvent): string {
+  if (event.sourceType === 'fuel_slip' && /^\d{4}-\d{2}-\d{2}$/.test(event.fuelSlipDocumentDate)) {
+    const recordedTime = asText(event.fuelSlipDocumentTime);
+    const hasRecordedTime = /^(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d)?$/.test(recordedTime);
+    const time = hasRecordedTime ? (recordedTime.length === 5 ? `${recordedTime}:00` : recordedTime) : '00:00:00';
+    const documentDate = new Date(`${event.fuelSlipDocumentDate}T${time}+02:00`);
+
+    if (!Number.isNaN(documentDate.getTime())) {
+      return hasRecordedTime ? formatDateTime(documentDate.toISOString()) : formatDate(documentDate);
+    }
+  }
+
   if (!event.isLateEntry) return formatDateTime(event.createdAtIso);
   const date = asText(event.issueDate) || formatDateTime(event.issueAtIso || event.createdAtIso);
   return event.issueTimeRecorded && asText(event.issueTime) ? `${date} ${asText(event.issueTime).slice(0, 5)}` : `${date} · Time not recorded`;
@@ -324,6 +327,20 @@ function eventUsageLabel(event: FuelLedgerEvent): string {
 function historicalStorageLabel(event: FuelLedgerEvent, value: number | null): string {
   if (event.isLateEntry) return 'Not recorded';
   return formatLitres(value);
+}
+
+function eventStorageBalanceLabel(event: FuelLedgerEvent): string {
+  const before = historicalStorageLabel(event, event.storageLevelBefore);
+  const after = historicalStorageLabel(event, event.storageLevelAfter);
+  if (before === 'Not recorded' && after === 'Not recorded') return 'Not recorded';
+  return `${before} to ${after}`;
+}
+
+function eventFuelGaugeLabel(event: FuelLedgerEvent): string {
+  const before = formatPercent(event.assetFuelPercentBefore);
+  const after = formatPercent(event.assetFuelPercentAfter);
+  if (before === '-' && after === '-') return 'Not recorded';
+  return `${before} to ${after}`;
 }
 
 function slugifyFileSegment(value: string): string {
@@ -460,35 +477,51 @@ function renderFuelEventTable(events: FuelLedgerEvent[]): string {
     return '<div class="assetReportEmpty">No fuel ledger entries have been captured for this report period.</div>';
   }
 
-  const rows = events.map((event) => {
+  const rowGroups = events.map((event) => {
     const activity = event.isLateEntry
       ? `<span class="lateEntryBadge">Late Entry</span><span>Asset filled</span>`
       : escapeHtml(eventActivityLabel(event));
+
+    const details = [
+      { label: 'Operator', value: asText(event.operatorName) || '-' },
+      { label: 'Activity', value: eventWorkActivityLabel(event) },
+      { label: 'Work Area', value: eventWorkAreaLabel(event) },
+      { label: 'GPS', value: formatLocation(event), wide: true },
+      { label: 'Entry Added On', value: event.isLateEntry || event.sourceType === 'fuel_slip' ? formatDateTime(event.entryAddedAtIso) : '' },
+      { label: 'Added By', value: eventAddedBy(event) },
+      { label: 'Evidence / Review', value: eventEvidenceStatus(event), wide: true },
+      { label: 'Tank Balance Treatment', value: eventBalanceTreatment(event), wide: true },
+      { label: 'Late-entry Reason', value: event.isLateEntry ? event.lateEntryReason || '-' : '', wide: true },
+      { label: 'Notes', value: eventNoteLabel(event), wide: true },
+    ].filter((detail) => asText(detail.value) && detail.value !== '-');
+
+    const detailHtml = details.length
+      ? details.map((detail) => `
+          <div class="assetReportFuelDetail${detail.wide ? ' assetReportFuelDetailWide' : ''}">
+            <span>${escapeHtml(detail.label)}</span>
+            <strong>${escapeHtml(detail.value)}</strong>
+          </div>
+        `).join('')
+      : '<div class="assetReportFuelNoDetails">No additional details recorded.</div>';
+
     return `
-      <tr>
-        <td>${escapeHtml(eventIssuedDateTime(event))}</td>
-        <td>${activity}</td>
-        <td><strong>${escapeHtml(eventDirectionLabel(event))}</strong></td>
-        <td>${escapeHtml(event.storageName || '-')}</td>
-        <td>${escapeHtml(eventTargetLabel(event))}</td>
-        <td><strong>${escapeHtml(formatLitres(event.litres))}</strong></td>
-        <td><strong>${escapeHtml(formatLitres(calculateAssetDieselBeforeFill(event)))}</strong></td>
-        <td>${escapeHtml(eventUsageLabel(event))}</td>
-        <td>${escapeHtml(historicalStorageLabel(event, event.storageLevelBefore))}</td>
-        <td>${escapeHtml(historicalStorageLabel(event, event.storageLevelAfter))}</td>
-        <td>${escapeHtml(formatPercent(event.assetFuelPercentBefore))}</td>
-        <td>${escapeHtml(formatPercent(event.assetFuelPercentAfter))}</td>
-        <td>${escapeHtml(event.operatorName || '-')}</td>
-        <td>${escapeHtml(eventWorkActivityLabel(event))}</td>
-        <td>${escapeHtml(eventWorkAreaLabel(event))}</td>
-        <td>${escapeHtml(formatLocation(event))}</td>
-        <td>${escapeHtml(event.isLateEntry ? formatDateTime(event.entryAddedAtIso) : '-')}</td>
-        <td>${escapeHtml(eventAddedBy(event))}</td>
-        <td>${escapeHtml(eventEvidenceStatus(event))}</td>
-        <td>${escapeHtml(eventBalanceTreatment(event))}</td>
-        <td>${escapeHtml(event.isLateEntry ? event.lateEntryReason || '-' : '-')}</td>
-        <td>${escapeHtml(eventNoteLabel(event))}</td>
-      </tr>
+      <tbody class="assetReportFuelEventGroup">
+        <tr class="assetReportFuelPrimaryRow">
+          <td>${escapeHtml(eventIssuedDateTime(event))}</td>
+          <td>${activity}</td>
+          <td><strong>${escapeHtml(eventDirectionLabel(event))}</strong></td>
+          <td>${escapeHtml(event.storageName || '-')}</td>
+          <td>${escapeHtml(eventTargetLabel(event))}</td>
+          <td><strong>${escapeHtml(formatLitres(event.litres))}</strong></td>
+          <td><strong>${escapeHtml(formatLitres(calculateAssetDieselBeforeFill(event)))}</strong></td>
+          <td>${escapeHtml(eventUsageLabel(event))}</td>
+          <td>${escapeHtml(eventStorageBalanceLabel(event))}</td>
+          <td>${escapeHtml(eventFuelGaugeLabel(event))}</td>
+        </tr>
+        <tr class="assetReportFuelDetailsRow">
+          <td colspan="10"><div class="assetReportFuelDetails">${detailHtml}</div></td>
+        </tr>
+      </tbody>
     `;
   }).join('');
 
@@ -497,14 +530,11 @@ function renderFuelEventTable(events: FuelLedgerEvent[]): string {
       <table class="assetReportTable assetReportFuelLedgerTable">
         <thead>
           <tr>
-            <th>Fuel Issued On</th><th>Activity / Source</th><th>Direction</th><th>Storage Unit</th><th>Asset</th>
-            <th>Litres Issued</th><th>Litres Before Fill</th><th>Usage Reading</th><th>Historical Storage Before</th><th>Historical Storage After</th>
-            <th>% Before</th><th>% After</th><th>Operator</th><th>Activity</th><th>Work Area</th><th>GPS</th>
-            <th>Entry Added On</th><th>Added By</th><th>Evidence / Review Status</th><th>Tank Balance Treatment</th>
-            <th>Late-entry Reason</th><th>Notes</th>
+            <th>Date / Time</th><th>Activity / Source</th><th>Direction</th><th>Storage Unit</th><th>Asset / Target</th>
+            <th>Litres</th><th>Litres Before Fill</th><th>Usage Reading</th><th>Storage Balance</th><th>Fuel Gauge</th>
           </tr>
         </thead>
-        <tbody>${rows}</tbody>
+        ${rowGroups}
       </table>
     </div>
   `;
@@ -989,6 +1019,10 @@ function buildReportHtml(options: FuelReportOptions): string {
         text-transform: uppercase;
       }
 
+      .assetReportTable thead {
+        display: table-header-group;
+      }
+
       .assetReportTable td strong {
         color: var(--strong);
         font-weight: 800;
@@ -1011,40 +1045,90 @@ function buildReportHtml(options: FuelReportOptions): string {
         text-transform: uppercase;
       }
 
+      .assetReportFuelEventGroup {
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+
+      .assetReportFuelEventGroup + .assetReportFuelEventGroup .assetReportFuelPrimaryRow td {
+        border-top: 1px solid var(--line-strong);
+      }
+
+      .assetReportFuelPrimaryRow td {
+        padding-top: 7px;
+        padding-bottom: 5px;
+        font-size: 6.25px;
+        line-height: 1.28;
+      }
+
+      .assetReportFuelDetailsRow td {
+        padding: 0 5px 7px;
+        border-bottom: 1px solid var(--line);
+        background: var(--soft-2);
+      }
+
+      .assetReportFuelDetails {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 4px 9px;
+        padding-top: 5px;
+      }
+
+      .assetReportFuelDetail {
+        min-width: 0;
+      }
+
+      .assetReportFuelDetailWide {
+        grid-column: span 2;
+      }
+
+      .assetReportFuelDetail span {
+        display: block;
+        margin-bottom: 1px;
+        color: var(--muted);
+        font-size: 4.9px;
+        line-height: 1.15;
+        font-weight: 800;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+
+      .assetReportFuelDetail strong,
+      .assetReportFuelNoDetails {
+        display: block;
+        color: #2f3742;
+        font-size: 5.75px;
+        line-height: 1.3;
+        font-weight: 600;
+        overflow-wrap: anywhere;
+      }
+
+      .assetReportFuelNoDetails {
+        grid-column: 1 / -1;
+        color: var(--muted);
+        font-style: italic;
+      }
+
       .assetReportFuelLedgerTable th:nth-child(1),
-      .assetReportFuelLedgerTable td:nth-child(1) { width: 19mm; }
+      .assetReportFuelPrimaryRow td:nth-child(1) { width: 9%; }
       .assetReportFuelLedgerTable th:nth-child(2),
-      .assetReportFuelLedgerTable td:nth-child(2) { width: 17mm; }
+      .assetReportFuelPrimaryRow td:nth-child(2) { width: 9%; }
       .assetReportFuelLedgerTable th:nth-child(3),
-      .assetReportFuelLedgerTable td:nth-child(3) { width: 10mm; }
+      .assetReportFuelPrimaryRow td:nth-child(3) { width: 6%; }
       .assetReportFuelLedgerTable th:nth-child(4),
-      .assetReportFuelLedgerTable td:nth-child(4) { width: 18mm; }
+      .assetReportFuelPrimaryRow td:nth-child(4) { width: 10%; }
       .assetReportFuelLedgerTable th:nth-child(5),
-      .assetReportFuelLedgerTable td:nth-child(5) { width: 23mm; }
+      .assetReportFuelPrimaryRow td:nth-child(5) { width: 14%; }
       .assetReportFuelLedgerTable th:nth-child(6),
-      .assetReportFuelLedgerTable td:nth-child(6) { width: 15mm; }
+      .assetReportFuelPrimaryRow td:nth-child(6) { width: 8%; }
       .assetReportFuelLedgerTable th:nth-child(7),
-      .assetReportFuelLedgerTable td:nth-child(7) { width: 16mm; }
+      .assetReportFuelPrimaryRow td:nth-child(7) { width: 9%; }
       .assetReportFuelLedgerTable th:nth-child(8),
-      .assetReportFuelLedgerTable td:nth-child(8) { width: 15mm; }
+      .assetReportFuelPrimaryRow td:nth-child(8) { width: 9%; }
       .assetReportFuelLedgerTable th:nth-child(9),
-      .assetReportFuelLedgerTable td:nth-child(9) { width: 15mm; }
+      .assetReportFuelPrimaryRow td:nth-child(9) { width: 14%; }
       .assetReportFuelLedgerTable th:nth-child(10),
-      .assetReportFuelLedgerTable td:nth-child(10),
-      .assetReportFuelLedgerTable th:nth-child(11),
-      .assetReportFuelLedgerTable td:nth-child(11) { width: 11mm; }
-      .assetReportFuelLedgerTable th:nth-child(12),
-      .assetReportFuelLedgerTable td:nth-child(12) { width: 13mm; }
-      .assetReportFuelLedgerTable th:nth-child(13),
-      .assetReportFuelLedgerTable td:nth-child(13) { width: 16mm; }
-      .assetReportFuelLedgerTable th:nth-child(14),
-      .assetReportFuelLedgerTable td:nth-child(14) { width: 24mm; }
-      .assetReportFuelLedgerTable th:nth-child(15),
-      .assetReportFuelLedgerTable td:nth-child(15) { width: 18mm; }
-      .assetReportFuelLedgerTable th:nth-child(16),
-      .assetReportFuelLedgerTable td:nth-child(16) { width: 17mm; }
-      .assetReportFuelLedgerTable th:nth-child(17),
-      .assetReportFuelLedgerTable td:nth-child(17) { width: 23mm; }
+      .assetReportFuelPrimaryRow td:nth-child(10) { width: 12%; }
 
       .assetReportFooter {
         display: grid;
@@ -1240,7 +1324,7 @@ function buildReportHtml(options: FuelReportOptions): string {
             <div class="assetReportSectionHeading">
               <div>
                 <h2>Fuel Movement Records</h2>
-                <p>Each line includes the date, activity, direction, asset, litres filled, litres before fill, storage balances, odometer, operator and non-cost Fuel Slip details where available.</p>
+                <p>Each entry keeps the movement figures together, with operator, work area, GPS, audit and non-cost Fuel Slip details directly underneath.</p>
               </div>
               <strong>${escapeHtml(String(options.eventCount))} ${options.eventCount === 1 ? 'entry' : 'entries'}</strong>
             </div>
@@ -1253,7 +1337,7 @@ function buildReportHtml(options: FuelReportOptions): string {
             <p class="assetReportPowered">Powered by Aim4price.com</p>
             <div class="assetReportDisclaimer">Fuel ledger records are operational records captured from storage QR entries and owner stock adjustments. The litres-before value is calculated from litres issued and the captured fuel-gauge percentage change, and remains subject to physical verification.</div>
           </div>
-          <div class="assetReportPageNumber">Page 1 of 1</div>
+          <div class="assetReportPageNumber">Complete fuel ledger</div>
         </footer>
       </div>
     </main>
@@ -1332,7 +1416,7 @@ function buildFuelWorkbook(options: FuelReportOptions): XlsxSheet[] {
   ];
 
   const movementHeader = [
-    'Fuel Issued On', 'Activity / Source', 'Direction', 'Storage Unit', 'Asset', 'Litres Issued',
+    'Date / Time', 'Activity / Source', 'Direction', 'Storage Unit', 'Asset / Target', 'Litres',
     'Litres Before Fill', 'Usage Reading', 'Usage Metric', 'Historical Storage Before', 'Historical Storage After', '% Before', '% After',
     'Operator', 'Activity', 'Work Area', 'GPS', 'Entry Added On', 'Added By', 'Evidence / Review Status',
     'Evidence Type', 'Evidence Reference', 'Tank Balance Treatment', 'Late-entry Reason', 'Notes',
