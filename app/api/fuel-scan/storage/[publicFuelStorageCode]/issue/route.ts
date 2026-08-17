@@ -119,14 +119,17 @@ export async function POST(request: NextRequest, context: RouteContext) {
       fieldManagerSessionId: access.fieldManagerSessionId ?? null,
     });
 
-    const recentEvents = await listFuelEventsForReport(access.ownerUserId, access.storage.id);
+    const recentEvents = await listFuelEventsForReport(access.ownerUserId, {
+      storageId: access.storage.id,
+      limit: 20,
+    });
 
     return NextResponse.json({
       ok: true,
       storage: saved.storage,
       event: saved.event,
       assets: saved.assets,
-      recentEvents: recentEvents.slice(0, 20),
+      recentEvents,
     });
   } catch (error) {
     return NextResponse.json(

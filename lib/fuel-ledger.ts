@@ -966,12 +966,32 @@ function mapStorageRow(row: FuelStorageRow): FuelLedgerStorage {
   };
 }
 
+function fuelSlipDocumentDateIso(documentDate: string, documentTime: string, fallbackIso: string): string {
+  if (/^\d{4}-\d{2}-\d{2}$/.test(documentDate)) {
+    const rawTime = /^(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d)?$/.test(documentTime) ? documentTime : '00:00:00';
+    const time = rawTime.length === 5 ? `${rawTime}:00` : rawTime;
+    const parsed = new Date(`${documentDate}T${time}+02:00`);
+
+    if (!Number.isNaN(parsed.getTime())) {
+      return parsed.toISOString();
+    }
+  }
+
+  return fallbackIso;
+}
+
 function mapFuelEventRow(row: FuelEventRow): FuelLedgerEvent {
   const sourceType = asText(row.source_type);
   const isFuelSlip = sourceType === 'fuel_slip';
   const extractionStatus = isFuelSlip ? asText(row.fs_extraction_status) : '';
   const reviewRequired = isFuelSlip ? Boolean(row.fs_review_required) : false;
   const card = normalizeMaskedCard(isFuelSlip ? row.fs_card_number_masked ?? row.card_number_masked : row.card_number_masked, isFuelSlip ? row.fs_card_last4 : null);
+  const fuelSlipDocumentDate = isFuelSlip ? toDateOnly(row.fs_document_date) ?? '' : '';
+  const fuelSlipDocumentTime = isFuelSlip ? asText(row.fs_document_time) : '';
+  const recordedAtIso = row.issue_at ?? row.created_at ?? new Date().toISOString();
+  const reportDateIso = isFuelSlip
+    ? fuelSlipDocumentDateIso(fuelSlipDocumentDate, fuelSlipDocumentTime, recordedAtIso)
+    : recordedAtIso;
 
   return {
     id: asText(row.id),
@@ -985,8 +1005,8 @@ function mapFuelEventRow(row: FuelEventRow): FuelLedgerEvent {
     fuelSlipTargetType: asText(row.fs_target_type),
     fuelSlipSupplierName: maskStoredFuelSlipRawText(asText(row.fs_supplier_name)),
     fuelSlipFuelType: maskStoredFuelSlipRawText(asText(row.fs_fuel_type)),
-    fuelSlipDocumentDate: toDateOnly(row.fs_document_date) ?? '',
-    fuelSlipDocumentTime: asText(row.fs_document_time),
+    fuelSlipDocumentDate,
+    fuelSlipDocumentTime,
     fuelSlipExtractionStatus: extractionStatus,
     fuelSlipReviewRequired: reviewRequired,
     fuelSlipReviewStatus: isFuelSlip ? fuelSlipReviewStatusLabel(extractionStatus, reviewRequired) : '',
@@ -1036,7 +1056,7 @@ function mapFuelEventRow(row: FuelEventRow): FuelLedgerEvent {
     adjustmentKind: asText(row.adjustment_kind),
     idempotencyKey: asText(row.idempotency_key),
     gpsCaptureStatus: asText(row.gps_capture_status) || (row.latitude === null || row.longitude === null ? 'not_captured' : 'captured'),
-    createdAtIso: row.issue_at ?? row.created_at ?? new Date().toISOString(),
+    createdAtIso: reportDateIso,
   };
 }
 
@@ -2205,11 +2225,30 @@ export async function listFuelAssetsForUser(userId: string): Promise<FuelLedgerA
   return result.rows.map(mapFuelAssetRow);
 }
 
-async function listFuelEvents(userId: string, options: { storageId?: string; limit?: number; fromIso?: string; toIso?: string; includeFuelSlipEvents?: boolean } = {}): Promise<FuelLedgerEvent[]> {
+function fuelSlipReportDateSql(alias: string): string {
+  return `
+    case
+      when ${alias}.document_date is not null then
+        (
+          ${alias}.document_date::text || ' ' ||
+          case
+            when coalesce(${alias}.document_time, '') ~ '^([01][0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?$'
+              then ${alias}.document_time
+            else '00:00:00'
+          end
+        )::timestamp at time zone 'Africa/Johannesburg'
+      else null
+    end
+  `;
+}
+
+async function listFuelEvents(userId: string, options: { storageId?: string; limit?: number | null; fromIso?: string; toIso?: string; includeFuelSlipEvents?: boolean } = {}): Promise<FuelLedgerEvent[]> {
   await ensureFuelLedgerTables();
   const db = getDb();
-  const limit = Math.max(1, Math.min(2000, Math.round(options.limit ?? 80)));
+  const limit = options.limit === null ? null : Math.max(1, Math.min(2000, Math.round(options.limit ?? 80)));
+  const limitClause = limit === null ? '' : `limit ${limit}`;
   const params: unknown[] = [userId];
+  const eventDateExpression = `coalesce(${fuelSlipReportDateSql('fs')}, e.issue_at, e.created_at)`;
   let filter = 'e.user_id = $1';
 
   if (options.storageId) {
@@ -2223,12 +2262,12 @@ async function listFuelEvents(userId: string, options: { storageId?: string; lim
 
   if (options.fromIso) {
     params.push(options.fromIso);
-    filter += ` and e.created_at >= $${params.length}::timestamptz`;
+    filter += ` and ${eventDateExpression} >= $${params.length}::timestamptz`;
   }
 
   if (options.toIso) {
     params.push(options.toIso);
-    filter += ` and e.created_at < $${params.length}::timestamptz`;
+    filter += ` and ${eventDateExpression} < $${params.length}::timestamptz`;
   }
 
   const result = await db.query<FuelEventRow>(
@@ -2239,8 +2278,8 @@ async function listFuelEvents(userId: string, options: { storageId?: string; lim
       left join public.asset_register_items a on a.id::text = e.asset_register_item_id
       left join public.fuel_slips fs on fs.id = e.fuel_slip_id
       where ${filter}
-      order by e.created_at desc, e.id desc
-      limit ${limit}
+      order by ${eventDateExpression} desc, e.id desc
+      ${limitClause}
     `,
     params,
   );
@@ -2251,17 +2290,7 @@ async function listFuelEvents(userId: string, options: { storageId?: string; lim
 
 
 function fuelSlipReportDateIso(slip: FuelSlipTransaction): string {
-  if (slip.documentDate) {
-    const rawTime = /^\d{2}:\d{2}(?::\d{2})?$/.test(slip.documentTime) ? slip.documentTime : '00:00:00';
-    const time = rawTime.length === 5 ? `${rawTime}:00` : rawTime;
-    const parsed = new Date(`${slip.documentDate}T${time}+02:00`);
-
-    if (!Number.isNaN(parsed.getTime())) {
-      return parsed.toISOString();
-    }
-  }
-
-  return slip.createdAtIso;
+  return fuelSlipDocumentDateIso(slip.documentDate, slip.documentTime, slip.createdAtIso);
 }
 
 function fuelSlipReportNote(slip: FuelSlipTransaction): string {
@@ -2354,13 +2383,14 @@ function mapFuelSlipToReportEvent(slip: FuelSlipTransaction): FuelLedgerEvent {
 
 async function listFuelSlipEventsForReport(
   userId: string,
-  options: { storageId?: string; limit?: number; fromIso?: string; toIso?: string } = {},
+  options: { storageId?: string; limit?: number | null; fromIso?: string; toIso?: string } = {},
 ): Promise<FuelLedgerEvent[]> {
   await ensureFuelLedgerTables();
   const db = getDb();
-  const limit = Math.max(1, Math.min(2000, Math.round(options.limit ?? 2000)));
+  const limit = options.limit === null ? null : Math.max(1, Math.min(2000, Math.round(options.limit ?? 2000)));
+  const limitClause = limit === null ? '' : `limit ${limit}`;
   const params: unknown[] = [userId];
-  const dateExpression = `coalesce(fs.document_date::timestamptz, fs.created_at)`;
+  const dateExpression = `coalesce(${fuelSlipReportDateSql('fs')}, fs.created_at)`;
   let filter = `fs.user_id = $1 and (fs.target_type = 'asset' or fs.fuel_storage_event_id is null)`;
 
   if (options.storageId) {
@@ -2386,7 +2416,7 @@ async function listFuelSlipEventsForReport(
       left join public.fuel_storage_units s on s.id = fs.storage_id
       where ${filter}
       order by ${dateExpression} desc, fs.created_at desc, fs.id desc
-      limit ${limit}
+      ${limitClause}
     `,
     params,
   );
@@ -5408,7 +5438,7 @@ export async function listFuelEventsForReport(
   storageIdOrOptions?: string | { storageId?: string; fromIso?: string; toIso?: string; limit?: number; includeFuelSlips?: boolean },
 ): Promise<FuelLedgerEvent[]> {
   const options = typeof storageIdOrOptions === 'string' ? { storageId: storageIdOrOptions } : storageIdOrOptions ?? {};
-  const limit = Math.max(1, Math.min(2000, Math.round(options.limit ?? 2000)));
+  const limit = options.limit === undefined ? null : Math.max(1, Math.min(2000, Math.round(options.limit)));
   const includeFuelSlips = options.includeFuelSlips !== false;
   const [events, fuelSlipEvents] = await Promise.all([
     listFuelEvents(userId, {
@@ -5428,7 +5458,7 @@ export async function listFuelEventsForReport(
       : Promise.resolve([]),
   ]);
 
-  return [...events, ...fuelSlipEvents]
+  const sortedEvents = [...events, ...fuelSlipEvents]
     .sort((left, right) => {
       const leftDate = new Date(left.createdAtIso).getTime();
       const rightDate = new Date(right.createdAtIso).getTime();
@@ -5438,6 +5468,7 @@ export async function listFuelEventsForReport(
       }
 
       return right.id.localeCompare(left.id);
-    })
-    .slice(0, limit);
+    });
+
+  return limit === null ? sortedEvents : sortedEvents.slice(0, limit);
 }
