@@ -7,7 +7,7 @@ import { fuelSlipDecimalToInput, parseFuelSlipDecimal } from '../../lib/fuel-sli
 import { ManageFuelStorageChoiceModal, MissingFuelEntryModal, ReconcileFuelBalanceModal, type MissingFuelLedgerPayload } from './missing-fuel-entry-modal';
 
 type FuelStorageStatus = 'active' | 'archived';
-type ModalMode = 'create-storage' | 'edit-storage' | 'manage-storage-choice' | 'missing-entry' | 'reconcile-balance' | 'pin' | 'report' | 'qr' | 'fuel-slip' | 'fuel-slip-menu' | 'fuel-slip-manager' | null;
+type ModalMode = 'create-storage' | 'edit-storage' | 'manage-storage-choice' | 'missing-entry' | 'reconcile-balance' | 'pin' | 'report' | 'qr' | 'fuel-slip' | 'fuel-slip-menu' | 'fuel-slip-manager' | 'exclusions' | null;
 type FuelSlipFlowStep = 'source-choice' | 'target-manual' | 'target-automatic' | 'manual-form' | 'upload' | 'review' | null;
 type FuelSlipFormPage = 'details' | 'extra';
 type ReportFormat = 'pdf' | 'xlsx';
@@ -78,6 +78,8 @@ type FuelLedgerAsset = {
   isActive?: boolean;
   usageMetric: 'hours' | 'km' | 'both' | 'percentage' | 'none';
   lifeWorkedPercent: number | null;
+  workUseExcluded: boolean;
+  workUseExclusionReason: string;
 };
 
 type FuelSlipRecord = {
@@ -130,6 +132,12 @@ type FuelSlipRecord = {
   reviewRequired: boolean;
   rawExtractedText: string;
   extractionWarnings: string[];
+  workUseExcluded: boolean;
+  workUseExclusionReason: string;
+  recordStatus: 'active' | 'voided';
+  voidedAtIso: string | null;
+  voidedByName: string;
+  voidReason: string;
   createdAtIso: string;
   updatedAtIso: string;
 };
@@ -156,6 +164,15 @@ type FuelLedgerResponse = {
   error?: string;
   pendingReview?: boolean;
   message?: string;
+};
+
+type FuelLedgerAuditEvent = {
+  id: string;
+  action: string;
+  actorName: string;
+  actorEmail: string;
+  reason: string;
+  createdAtIso: string;
 };
 
 type AccountantFuelLedgerResponse = FuelLedgerResponse & {
@@ -611,6 +628,15 @@ function FilterIcon(props: SVGProps<SVGSVGElement>) {
       <path d="M4 5h16" />
       <path d="M7 12h10" />
       <path d="M10 19h4" />
+    </IconBase>
+  );
+}
+
+function ExclusionIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <IconBase {...props}>
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="M6 18 18 6" />
     </IconBase>
   );
 }
@@ -1637,6 +1663,14 @@ export default function FuelClient({
   const [isDownloadingFuelSlips, setIsDownloadingFuelSlips] = useState(false);
   const [deleteCandidateFuelSlip, setDeleteCandidateFuelSlip] = useState<FuelSlipRecord | null>(null);
   const [busyFuelSlipDeleteId, setBusyFuelSlipDeleteId] = useState<string | null>(null);
+  const [exclusionSearch, setExclusionSearch] = useState('');
+  const [selectedExclusionAssetId, setSelectedExclusionAssetId] = useState<string | null>(null);
+  const [exclusionReason, setExclusionReason] = useState('');
+  const [busyExclusionAssetId, setBusyExclusionAssetId] = useState<string | null>(null);
+  const [historyFuelSlip, setHistoryFuelSlip] = useState<FuelSlipRecord | null>(null);
+  const [fuelHistoryEvents, setFuelHistoryEvents] = useState<FuelLedgerAuditEvent[]>([]);
+  const [isFuelHistoryLoading, setIsFuelHistoryLoading] = useState(false);
+  const [fuelHistoryError, setFuelHistoryError] = useState('');
   const [fuelSlipAttemptedSubmit, setFuelSlipAttemptedSubmit] = useState(false);
   const [fuelSlipValidationNotice, setFuelSlipValidationNotice] = useState('');
   const [fuelSlipFocusField, setFuelSlipFocusField] = useState<FuelSlipMissingFieldKey | null>(null);
@@ -1650,6 +1684,16 @@ export default function FuelClient({
     () => storages.filter((storage) => matchesSearch(storage, searchText)),
     [searchText, storages],
   );
+
+  const selectedExclusionAsset = useMemo(
+    () => assets.find((asset) => asset.id === selectedExclusionAssetId) ?? null,
+    [assets, selectedExclusionAssetId],
+  );
+  const filteredExclusionAssets = useMemo(() => {
+    const term = exclusionSearch.trim().toLowerCase();
+    if (!term) return assets;
+    return assets.filter((asset) => matchesFuelSlipAsset(asset, term));
+  }, [assets, exclusionSearch]);
 
   const reportDateEntries = useMemo(
     () => [...recentEvents, ...recentFuelSlips.map((slip) => ({ createdAtIso: slip.createdAtIso, documentDate: slip.documentDate }))],
@@ -2049,6 +2093,33 @@ export default function FuelClient({
     setNotice(null);
   }
 
+  async function openFuelSlipHistory(slip: FuelSlipRecord) {
+    setHistoryFuelSlip(slip);
+    setFuelHistoryEvents([]);
+    setFuelHistoryError('');
+    setIsFuelHistoryLoading(true);
+    try {
+      const response = await fetch(scopedApiUrl(`/api/fuel/audit?recordType=fuel_slip&recordId=${encodeURIComponent(slip.id)}`), {
+        credentials: 'include',
+        cache: 'no-store',
+      });
+      const data = (await response.json()) as { ok: boolean; events?: FuelLedgerAuditEvent[]; error?: string };
+      if (!response.ok || !data.ok) throw new Error(data.error || 'Change history could not be loaded.');
+      setFuelHistoryEvents(data.events ?? []);
+    } catch (error) {
+      setFuelHistoryError(error instanceof Error ? error.message : 'Change history could not be loaded.');
+    } finally {
+      setIsFuelHistoryLoading(false);
+    }
+  }
+
+  function closeFuelSlipHistory() {
+    setHistoryFuelSlip(null);
+    setFuelHistoryEvents([]);
+    setFuelHistoryError('');
+    setIsFuelHistoryLoading(false);
+  }
+
   function openReportModal() {
     setReportYear('all');
     setReportMonth('all');
@@ -2061,8 +2132,50 @@ export default function FuelClient({
     setModalMode('report');
   }
 
+  function openExclusionsModal() {
+    setExclusionSearch('');
+    setSelectedExclusionAssetId(null);
+    setExclusionReason('');
+    setNotice(null);
+    setModalMode('exclusions');
+  }
+
+  function selectExclusionAsset(asset: FuelLedgerAsset) {
+    setSelectedExclusionAssetId(asset.id);
+    setExclusionReason(asset.workUseExclusionReason || '');
+    setNotice(null);
+  }
+
+  async function updateAssetWorkUseExclusion(asset: FuelLedgerAsset) {
+    if (busyExclusionAssetId) return;
+    const excluded = !asset.workUseExcluded;
+    if (excluded && exclusionReason.trim().length < 2) {
+      setNotice({ tone: 'error', message: 'Add a short reason, for example “Generator serving normal houses”.' });
+      return;
+    }
+
+    setBusyExclusionAssetId(asset.id);
+    setNotice(null);
+    try {
+      const response = await fetch(scopedApiUrl(`/api/fuel/exclusions/${encodeURIComponent(asset.id)}`), {
+        method: 'PUT',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ excluded, reason: excluded ? exclusionReason.trim() : '' }),
+      });
+      const data = await applyLedgerResponse(response);
+      setNotice({ tone: 'success', message: data.message || (excluded ? 'Asset excluded from work-use totals.' : 'Asset included in work-use totals.') });
+      setSelectedExclusionAssetId(null);
+      setExclusionReason('');
+    } catch (error) {
+      setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'The exclusion could not be updated.' });
+    } finally {
+      setBusyExclusionAssetId(null);
+    }
+  }
+
   function closeModal() {
-    if (isSaving) return;
+    if (isSaving || busyExclusionAssetId) return;
     setModalMode(null);
     setSelectedStorageId(null);
     setStorageDraft(emptyStorageDraft);
@@ -2092,6 +2205,10 @@ export default function FuelClient({
     setFuelSlipAttemptedSubmit(false);
     setFuelSlipValidationNotice('');
     setFuelSlipFocusField(null);
+    setExclusionSearch('');
+    setSelectedExclusionAssetId(null);
+    setExclusionReason('');
+    closeFuelSlipHistory();
   }
 
   function resetFuelSlipValidationState() {
@@ -2411,7 +2528,7 @@ export default function FuelClient({
     }
   }
 
-  async function confirmDeleteFuelSlip() {
+  async function confirmVoidFuelSlip() {
     if (!deleteCandidateFuelSlip || busyFuelSlipDeleteId) return;
 
     setBusyFuelSlipDeleteId(deleteCandidateFuelSlip.id);
@@ -2421,13 +2538,15 @@ export default function FuelClient({
       const response = await fetch(scopedApiUrl(`/api/fuel/slips/${encodeURIComponent(deleteCandidateFuelSlip.id)}`), {
         method: 'DELETE',
         credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reason: 'Voided from Fuel Ledger manager' }),
       });
 
-      await applyLedgerResponse(response);
-      setNotice({ tone: 'success', message: 'Fuel slip deleted.' });
+      const data = await applyLedgerResponse(response);
+      setNotice({ tone: 'success', message: data.message || 'Fuel slip voided. Its change history has been kept.' });
       setDeleteCandidateFuelSlip(null);
     } catch (error) {
-      setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'Failed to delete fuel slip.' });
+      setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'Failed to void fuel slip.' });
     } finally {
       setBusyFuelSlipDeleteId(null);
     }
@@ -2647,7 +2766,7 @@ export default function FuelClient({
     }
   }
 
-  async function handleConfirmDeleteStorage() {
+  async function handleConfirmArchiveStorage() {
     if (!deleteCandidateStorage) return;
 
     setBusyDeleteId(deleteCandidateStorage.id);
@@ -2657,13 +2776,15 @@ export default function FuelClient({
       const response = await fetch(scopedApiUrl(`/api/fuel/storage/${deleteCandidateStorage.id}`), {
         method: 'DELETE',
         credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reason: 'Archived from Fuel Ledger' }),
       });
 
-      await applyLedgerResponse(response);
-      setNotice({ tone: 'success', message: 'Fuel storage unit deleted.' });
+      const data = await applyLedgerResponse(response);
+      setNotice({ tone: 'success', message: data.message || 'Fuel storage archived. Its ledger history has been kept.' });
       setDeleteCandidateStorage(null);
     } catch (error) {
-      setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'Failed to delete storage.' });
+      setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'Failed to archive storage.' });
     } finally {
       setBusyDeleteId(null);
     }
@@ -3036,6 +3157,14 @@ export default function FuelClient({
                   ) : null}
                   <button
                     type="button"
+                    className={`${styles.secondaryButton} ${styles.topActionButton} ${styles.topExclusionsButton}`}
+                    onClick={openExclusionsModal}
+                  >
+                    <ExclusionIcon className={styles.buttonIcon} />
+                    <span>Exclusions</span>
+                  </button>
+                  <button
+                    type="button"
                     className={`${styles.secondaryButton} ${styles.topActionButton} ${styles.topFuelSlipButton}`}
                     onClick={openFuelSlipMenu}
                   >
@@ -3129,7 +3258,7 @@ export default function FuelClient({
                         </button>
                         <button type="button" className={`${styles.unitButton} ${styles.deleteUnitButton}`} onClick={() => setDeleteCandidateStorage(storage)} disabled={isSaving}>
                           <TrashIcon className={styles.buttonIcon} />
-                          <span>Delete Unit</span>
+                          <span>Archive Unit</span>
                         </button>
                       </div>
                     </div> : null}
@@ -3193,6 +3322,10 @@ export default function FuelClient({
             <FuelSlipsIcon className={styles.buttonIcon} />
             <span>Slips</span>
           </button>
+          <button type="button" className={styles.mobileQuickButton} onClick={openExclusionsModal}>
+            <ExclusionIcon className={styles.buttonIcon} />
+            <span>Exclude</span>
+          </button>
           <button type="button" className={styles.mobileQuickButton} onClick={openReportModal}>
             <DownloadIcon className={styles.buttonIcon} />
             <span>Reports</span>
@@ -3228,11 +3361,107 @@ export default function FuelClient({
           accountantShareId={accountantShareId}
           accountantRegisterId={accountantRegisterId}
           onClose={closeModal}
-          onLedgerUpdated={(data) => {
+          onLedgerUpdated={(data: MissingFuelLedgerPayload) => {
             applyLedgerData(data);
             setNotice({ tone: 'success', message: 'Tank balance reconciled.' });
           }}
         />
+      ) : null}
+
+      {modalMode === 'exclusions' ? (
+        <div className={styles.fuelSlipFlowBackdrop} role="dialog" aria-modal="true" aria-label="Fuel ledger exclusions">
+          <div className={`${styles.assetModal} ${styles.exclusionsModal}`}>
+            <div className={styles.modalHeader}>
+              <div>
+                <h2>{selectedExclusionAsset ? 'Confirm Fuel Exclusion' : 'Choose Saved Asset'}</h2>
+                <p>{selectedExclusionAsset ? selectedExclusionAsset.title : 'Exclude assets whose fuel is not used for work, such as a generator serving normal houses.'}</p>
+              </div>
+              <button type="button" className={styles.closeButton} onClick={closeModal} aria-label="Close exclusions"><CloseIcon /></button>
+            </div>
+            <div className={styles.modalDivider} />
+
+            {notice ? <div className={`${styles.exclusionNotice} ${notice.tone === 'error' ? styles.noticeError : styles.noticeSuccess}`}>{notice.message}</div> : null}
+
+            {selectedExclusionAsset ? (
+              <div className={styles.exclusionEditor}>
+                <div className={styles.exclusionEditorHeading}>
+                  <span className={`${styles.workUseBadge} ${selectedExclusionAsset.workUseExcluded ? styles.workUseBadgeExcluded : styles.workUseBadgeIncluded}`}>
+                    {selectedExclusionAsset.workUseExcluded ? 'Excluded from work use' : 'Currently included'}
+                  </span>
+                  <h3>{selectedExclusionAsset.workUseExcluded ? 'Include this asset again?' : 'Exclude this asset from work-use totals?'}</h3>
+                  <p>
+                    Fuel movement and tank balances will stay unchanged. Only the work-use classification changes, and the change is kept in history.
+                  </p>
+                </div>
+                {!selectedExclusionAsset.workUseExcluded ? (
+                  <label className={styles.exclusionReasonField}>
+                    <span>Reason</span>
+                    <input
+                      value={exclusionReason}
+                      onChange={(event) => setExclusionReason(event.target.value)}
+                      placeholder="Example: Generator serving normal houses"
+                      maxLength={500}
+                      autoFocus
+                    />
+                    <small>Only exclude an asset when its fuel is fully outside work use.</small>
+                  </label>
+                ) : (
+                  <div className={styles.exclusionReasonSummary}>
+                    <span>Saved reason</span>
+                    <strong>{selectedExclusionAsset.workUseExclusionReason || 'Not used for work purposes'}</strong>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <>
+                <div className={styles.pickerToolbar}>
+                  <input
+                    value={exclusionSearch}
+                    onChange={(event) => setExclusionSearch(event.target.value)}
+                    placeholder="Search saved assets..."
+                    aria-label="Search saved assets for fuel exclusions"
+                  />
+                  <button type="button" className={styles.secondaryButton} onClick={() => setExclusionSearch('')}>Clear</button>
+                </div>
+                <div className={styles.assetList}>
+                  {isLoading ? <div className={styles.emptyState}>Loading saved assets...</div> : filteredExclusionAssets.length ? filteredExclusionAssets.map((asset) => (
+                    <button type="button" key={asset.id} className={styles.assetRow} onClick={() => selectExclusionAsset(asset)}>
+                      <span className={styles.assetInfo}>
+                        <strong>{asset.title}</strong>
+                        <small>{fuelSlipAssetMeta(asset) || 'Asset details not set'}</small>
+                        <small>{asset.workUseExcluded ? asset.workUseExclusionReason || 'Not used for work purposes' : 'Fuel entries included as work use'}</small>
+                      </span>
+                      <span className={styles.assetValue}>
+                        <span className={`${styles.workUseBadge} ${asset.workUseExcluded ? styles.workUseBadgeExcluded : styles.workUseBadgeIncluded}`}>
+                          {asset.workUseExcluded ? 'Excluded' : 'Included'}
+                        </span>
+                        <small>{asset.workUseExcluded ? 'Select to include' : 'Select to exclude'}</small>
+                      </span>
+                    </button>
+                  )) : <div className={styles.emptyState}>No matching saved assets found.</div>}
+                </div>
+              </>
+            )}
+
+            <div className={styles.modalFooter}>
+              {selectedExclusionAsset ? (
+                <>
+                  <button type="button" className={styles.secondaryButton} onClick={() => setSelectedExclusionAssetId(null)} disabled={Boolean(busyExclusionAssetId)}>Back</button>
+                  <button
+                    type="button"
+                    className={`${styles.primaryButton} ${!selectedExclusionAsset.workUseExcluded ? styles.exclusionDangerButton : ''}`}
+                    onClick={() => void updateAssetWorkUseExclusion(selectedExclusionAsset)}
+                    disabled={Boolean(busyExclusionAssetId)}
+                  >
+                    {busyExclusionAssetId ? 'Saving...' : selectedExclusionAsset.workUseExcluded ? 'Include in work use' : 'Exclude from work use'}
+                  </button>
+                </>
+              ) : (
+                <button type="button" className={styles.secondaryButton} onClick={closeModal}>Close</button>
+              )}
+            </div>
+          </div>
+        </div>
       ) : null}
 
       {modalMode === 'fuel-slip-menu' ? (
@@ -3384,6 +3613,10 @@ export default function FuelClient({
                           <small>Card</small>
                           <strong>{cardEndingLabel || '—'}</strong>
                         </span>
+                        <span>
+                          <small>Work use</small>
+                          <strong>{slip.workUseExcluded ? 'Excluded' : 'Included'}</strong>
+                        </span>
                       </div>
 
                       <div className={styles.fuelSlipManagerRowFooter}>
@@ -3395,6 +3628,14 @@ export default function FuelClient({
                               <span>Open file</span>
                             </a>
                           ) : null}
+                          <button
+                            type="button"
+                            className={`${styles.secondaryButton} ${styles.fuelSlipManagerOpenButton}`}
+                            onClick={() => void openFuelSlipHistory(slip)}
+                            disabled={deletingThisSlip}
+                          >
+                            <span>Change History</span>
+                          </button>
                           {!isAccountantReadOnly ? (
                             <>
                               {needsReview ? (
@@ -3425,7 +3666,7 @@ export default function FuelClient({
                                 disabled={deletingThisSlip}
                               >
                                 <TrashIcon className={styles.buttonIcon} />
-                                <span>{deletingThisSlip ? 'Deleting...' : 'Delete'}</span>
+                                <span>{deletingThisSlip ? 'Voiding...' : 'Void'}</span>
                               </button>
                             </>
                           ) : null}
@@ -3607,6 +3848,40 @@ export default function FuelClient({
         </div>
       ) : null}
 
+      {modalMode === 'fuel-slip-manager' && historyFuelSlip ? (
+        <div className={styles.fuelSlipSubModalBackdrop} role="dialog" aria-modal="true" aria-label="Fuel slip change history">
+          <div className={`${styles.fuelSlipFilterModal} ${styles.fuelHistoryModal}`}>
+            <div className={styles.modalHeader}>
+              <div>
+                <h2>Change History</h2>
+                <p>{historyFuelSlip.supplierName || 'Fuel slip'} · {formatFuelSlipDate(historyFuelSlip.documentDate)}</p>
+              </div>
+              <button type="button" className={styles.closeButton} onClick={closeFuelSlipHistory} aria-label="Close change history"><CloseIcon /></button>
+            </div>
+            <div className={styles.modalDivider} />
+            <div className={styles.fuelHistoryList}>
+              {isFuelHistoryLoading ? <div className={styles.fuelSlipManagerEmptyState}>Loading change history...</div> : null}
+              {fuelHistoryError ? <div className={`${styles.exclusionNotice} ${styles.noticeError}`}>{fuelHistoryError}</div> : null}
+              {!isFuelHistoryLoading && !fuelHistoryError && !fuelHistoryEvents.length ? (
+                <div className={styles.fuelSlipManagerEmptyState}>No recorded changes yet.</div>
+              ) : null}
+              {fuelHistoryEvents.map((event) => (
+                <article className={styles.fuelHistoryRow} key={event.id}>
+                  <div>
+                    <strong>{event.action === 'created' ? 'Created' : event.action === 'updated' ? 'Corrected' : event.action === 'voided' ? 'Voided' : event.action}</strong>
+                    <span>{formatFuelSlipDateTime(event.createdAtIso)}</span>
+                  </div>
+                  <p>{event.actorName || event.actorEmail || 'Account user'}{event.reason ? ` · ${event.reason}` : ''}</p>
+                </article>
+              ))}
+            </div>
+            <div className={styles.modalFooter}>
+              <button type="button" className={styles.secondaryButton} onClick={closeFuelSlipHistory}>Close</button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       {modalMode === 'fuel-slip-manager' && deleteCandidateFuelSlip ? (
         <div className={`${styles.modalOverlay} ${styles.confirmDeleteOverlay} ${styles.fuelSlipDeleteOverlay}`} role="alertdialog" aria-modal="true" aria-labelledby="fuel-slip-delete-title" aria-describedby="fuel-slip-delete-copy">
           <div className={styles.deleteConfirmModal}>
@@ -3614,16 +3889,16 @@ export default function FuelClient({
               type="button"
               className={styles.deleteConfirmCloseButton}
               onClick={() => setDeleteCandidateFuelSlip(null)}
-              aria-label="Close delete fuel slip confirmation"
+              aria-label="Close void fuel slip confirmation"
               disabled={busyFuelSlipDeleteId === deleteCandidateFuelSlip.id}
             >
               ×
             </button>
 
             <div className={styles.deleteConfirmContent}>
-              <h3 id="fuel-slip-delete-title">Are you sure you want to delete this?</h3>
+              <h3 id="fuel-slip-delete-title">Void this fuel slip?</h3>
               <p id="fuel-slip-delete-copy">
-                This permanently removes this fuel slip from your Fuel Ledger and reverses linked posting records where applicable.
+                The active posting will be reversed, but the original slip and who changed it remain in Change History.
               </p>
 
               <div className={styles.deleteConfirmAsset}>
@@ -3639,8 +3914,8 @@ export default function FuelClient({
                   Cancel
                 </button>
 
-                <button type="button" className={`${styles.primaryButton} ${styles.deleteConfirmButton}`} onClick={confirmDeleteFuelSlip} disabled={busyFuelSlipDeleteId === deleteCandidateFuelSlip.id}>
-                  <span>{busyFuelSlipDeleteId === deleteCandidateFuelSlip.id ? 'Deleting...' : 'Yes, delete slip'}</span>
+                <button type="button" className={`${styles.primaryButton} ${styles.deleteConfirmButton}`} onClick={confirmVoidFuelSlip} disabled={busyFuelSlipDeleteId === deleteCandidateFuelSlip.id}>
+                  <span>{busyFuelSlipDeleteId === deleteCandidateFuelSlip.id ? 'Voiding...' : 'Yes, void slip'}</span>
                 </button>
               </div>
             </div>
@@ -3726,6 +4001,7 @@ export default function FuelClient({
                       <span className={styles.assetValue}>
                         <strong>{formatCurrency(asset.currentValue)}</strong>
                         <small>current value</small>
+                        {asset.workUseExcluded ? <span className={`${styles.workUseBadge} ${styles.workUseBadgeExcluded}`}>Excluded from work use</span> : null}
                       </span>
                     </button>
                   ))}
@@ -4118,17 +4394,16 @@ export default function FuelClient({
               type="button"
               className={styles.deleteConfirmCloseButton}
               onClick={() => setDeleteCandidateStorage(null)}
-              aria-label="Close delete confirmation"
+              aria-label="Close archive confirmation"
               disabled={busyDeleteId === deleteCandidateStorage.id}
             >
               ×
             </button>
 
             <div className={styles.deleteConfirmContent}>
-              <h3 id="delete-fuel-title">Are you sure you want to delete this?</h3>
+              <h3 id="delete-fuel-title">Archive this storage unit?</h3>
               <p id="delete-fuel-copy">
-                All data will be lost. This permanently removes <strong>{deleteCandidateStorage.name}</strong> from your Fuel Ledger,
-                including stock records, QR access, issue history and fuel report data.
+                <strong>{deleteCandidateStorage.name}</strong> will disappear from active storage and its QR access will stop. Its issue history and report records will be kept.
               </p>
 
               <div className={styles.deleteConfirmAsset}>
@@ -4145,10 +4420,10 @@ export default function FuelClient({
                 <button
                   type="button"
                   className={`${styles.primaryButton} ${styles.deleteConfirmButton}`}
-                  onClick={() => void handleConfirmDeleteStorage()}
+                  onClick={() => void handleConfirmArchiveStorage()}
                   disabled={busyDeleteId === deleteCandidateStorage.id}
                 >
-                  <span>{busyDeleteId === deleteCandidateStorage.id ? 'Deleting...' : 'Yes, delete unit'}</span>
+                  <span>{busyDeleteId === deleteCandidateStorage.id ? 'Archiving...' : 'Yes, archive unit'}</span>
                 </button>
               </div>
             </div>
