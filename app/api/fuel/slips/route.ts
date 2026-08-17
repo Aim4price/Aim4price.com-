@@ -26,7 +26,12 @@ export async function POST(request: Request) {
     if (String(payload.targetType ?? '').trim() === 'asset') {
       await assertWorkspaceAssetAccess(workspace, payload.assetId ?? payload.targetId);
     }
-    const result = await saveFuelSlipTransaction(workspace.ownerUserId, payload);
+    const result = await saveFuelSlipTransaction(workspace.ownerUserId, {
+      ...payload,
+      auditActorUserId: workspace.actorUserId,
+      auditActorName: workspace.actorName,
+      auditActorEmail: workspace.actorEmail,
+    });
     const ledger = await filterFuelLedgerForWorkspace(
       workspace,
       await listFuelLedger(workspace.ownerUserId),
