@@ -90,6 +90,8 @@ function fuelEvent(overrides = {}) {
     adjustmentKind: '',
     idempotencyKey: '',
     gpsCaptureStatus: 'captured',
+    workUseExcluded: false,
+    workUseExclusionReason: '',
     createdAtIso: '2026-08-15T14:49:00.000Z',
     ...overrides,
   };
@@ -160,6 +162,19 @@ test('fuel-slip activity and work-area columns contain the fields named by their
   assert.equal(helpers.eventWorkAreaLabel(event), 'Block S2');
 });
 
+test('work-use exclusions stay visible without changing physical litres', () => {
+  const event = fuelEvent({
+    litres: 42.5,
+    workUseExcluded: true,
+    workUseExclusionReason: 'Generator serving normal houses',
+  });
+  const html = helpers.renderFuelEventTable([event]);
+
+  assert.match(html, /42[,.]5 L/);
+  assert.match(html, /Excluded from work use/);
+  assert.match(html, /Generator serving normal houses/);
+});
+
 test('complete reports are not silently capped and scan responses stay intentionally small', () => {
   assert.ok(fuelLedger.includes('const limit = options.limit === undefined ? null'));
   assert.ok(fuelLedger.includes('return limit === null ? sortedEvents : sortedEvents.slice(0, limit)'));
@@ -188,6 +203,8 @@ test('the printable report does not claim a false one-page count', () => {
     storageCode: 'All storage QR codes + slips',
     storageFuelType: 'All fuel types',
     totalIssued: 60.3,
+    totalWorkUseIssued: 60.3,
+    totalExcludedIssued: 0,
     totalStockIn: 0,
     currentLitres: 2048.3,
     storageCount: 1,
@@ -200,4 +217,6 @@ test('the printable report does not claim a false one-page count', () => {
   assert.match(html, /Complete fuel ledger/);
   assert.doesNotMatch(html, /nth-child\((?:1[1-9]|[2-9][0-9])\)/);
   assert.match(html, /page-break-inside: avoid/);
+  assert.match(html, /Work-use Recorded/);
+  assert.match(html, /not, by itself, a tax determination/);
 });
