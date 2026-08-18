@@ -6,6 +6,7 @@ import {
   listAssetMaintenanceData,
   recordStandaloneAssetMaintenanceCompletion,
   reopenAssetMaintenanceRecord,
+  unknownMaintenanceCompletionNote,
   type AssetMaintenanceCompleteInput,
   type AssetMaintenanceListFilters,
   type AssetMaintenanceType,
@@ -28,6 +29,7 @@ type StatusToggleInput = AssetMaintenanceCompleteInput & {
   status?: unknown;
   confirmedComplete?: unknown;
   linkToScheduledMaintenance?: unknown;
+  quickComplete?: unknown;
   clientEventId?: unknown;
 };
 
@@ -35,7 +37,35 @@ async function saveCompletedMaintenance(
   userId: string,
   maintenanceId: string,
   body: StatusToggleInput,
+  completedByFallback: string,
 ) {
+  if (body.quickComplete === true) {
+    if (body.confirmedComplete !== true) {
+      throw new Error('COMPLETION_CONFIRMATION_REQUIRED');
+    }
+
+    const scheduled = await getAssetMaintenanceRecordById(userId, maintenanceId);
+    if (!scheduled || scheduled.status === 'cancelled' || scheduled.status === 'done') {
+      throw new Error('MAINTENANCE_NOT_FOUND');
+    }
+
+    return completeAssetMaintenanceRecord(
+      userId,
+      maintenanceId,
+      {
+        completedAt: body.completedAt,
+        completedUsage: body.completedUsage,
+        completedNotes: unknownMaintenanceCompletionNote(scheduled.maintenanceType),
+        completedBy: completedByFallback,
+      },
+      {
+        assetId: scheduled.assetId,
+        maintenanceType: scheduled.maintenanceType,
+        allowUnknownDetails: true,
+      },
+    );
+  }
+
   if (body.linkToScheduledMaintenance !== false) {
     return completeAssetMaintenanceRecord(userId, maintenanceId, body);
   }
@@ -90,6 +120,7 @@ function errorMessage(error: unknown): string {
   if (message === 'COMPLETION_DETAILS_REQUIRED') return 'Select completed work or add notes/problems before saving.';
   if (message === 'COMPLETION_PERFORMER_REQUIRED') return 'Enter who completed the maintenance.';
   if (message === 'COMPLETION_SERVICE_PROVIDER_REQUIRED') return 'Enter the service company and mechanic before saving.';
+  if (message === 'COMPLETION_CONFIRMATION_REQUIRED') return 'Confirm that the maintenance was completed before clearing it.';
   if (message === 'MAINTENANCE_SOURCE_EVENT_REQUIRED') return 'This service could not be safely identified. Close it and try again.';
   if (message === 'RECURRING_INTERVAL_REQUIRED') return 'Recurring maintenance needs an interval before it can create the next record.';
   if (message === 'RECURRING_FOLLOWUP_ALREADY_COMPLETED') return 'This maintenance record cannot be reopened because its next recurring service has already been completed.';
@@ -98,13 +129,16 @@ function errorMessage(error: unknown): string {
   return 'The maintenance record could not be completed.';
 }
 
-async function currentUserId() {
+async function currentUser() {
   const session = await getServerSession({ requireActive: true });
-  return session?.user?.id ?? '';
+  const id = session?.user?.id ?? '';
+  const displayName = String(session?.user?.name || session?.user?.email || 'Account owner').trim();
+  return { id, displayName };
 }
 
 export async function POST(request: NextRequest, context: RouteContext) {
-  const userId = await currentUserId();
+  const user = await currentUser();
+  const userId = user.id;
   const maintenanceId = context.params.maintenanceId ?? '';
 
   if (!userId) {
@@ -124,7 +158,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
   }
 
   try {
-    const result = await saveCompletedMaintenance(userId, maintenanceId, body);
+    const result = await saveCompletedMaintenance(userId, maintenanceId, body, user.displayName);
     const data = await listAssetMaintenanceData(userId, parseFilters(request));
     return NextResponse.json({ ok: true, ...result, ...data });
   } catch (error) {
@@ -136,7 +170,8 @@ export async function POST(request: NextRequest, context: RouteContext) {
 }
 
 export async function PATCH(request: NextRequest, context: RouteContext) {
-  const userId = await currentUserId();
+  const user = await currentUser();
+  const userId = user.id;
   const maintenanceId = context.params.maintenanceId ?? '';
 
   if (!userId) {
@@ -168,7 +203,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
 
   try {
     const result = requestedStatus === 'done'
-      ? await saveCompletedMaintenance(userId, maintenanceId, body)
+      ? await saveCompletedMaintenance(userId, maintenanceId, body, user.displayName)
       : { reopened: await reopenAssetMaintenanceRecord(userId, maintenanceId) };
     const data = await listAssetMaintenanceData(userId, parseFilters(request));
     return NextResponse.json({ ok: true, ...result, ...data });
