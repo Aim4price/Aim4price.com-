@@ -131,6 +131,10 @@ test('desktop and mobile maps ask for an area, cluster markers and refresh on ma
   assert.match(client, /Use current location/);
   assert.match(client, /quoteInitialMapLocationRef/);
   assert.match(client, /autoPan: false/);
+  assert.match(client, /isQuoteMapExpanded/);
+  assert.match(client, /Click the map to expand/);
+  assert.match(client, /Expand partner map/);
+  assert.match(client, /invalidateSize\(\{ animate: false, pan: false \}\)/);
   assert.doesNotMatch(client, /focusQuotePartnerOnMap/);
   assert.doesNotMatch(client, /const selectedMarker = selectedQuotePartnerIds/);
   assert.match(client, /params\.set\('west'/);
@@ -141,6 +145,9 @@ test('desktop and mobile maps ask for an area, cluster markers and refresh on ma
   assert.match(css, /assetQuoteMapEmptyOverlay/);
   assert.match(css, /assetQuoteLocationPickerModal/);
   assert.match(css, /assetQuoteChangeLocationButton/);
+  assert.match(css, /\.optionsModal\.assetQuoteModal\.assetQuoteLocationPickerModal/);
+  assert.match(css, /assetQuoteMapExpandButton/);
+  assert.match(css, /assetQuoteMapExpandedModal/);
 });
 
 test('managed selection shares all selected assets with the master and records grouped context', async () => {

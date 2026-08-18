@@ -2068,6 +2068,21 @@ function CloseIcon({ className }: IconProps) {
   );
 }
 
+function ExpandIcon({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden="true">
+      <path d="M8 3H3v5" />
+      <path d="m3 3 6 6" />
+      <path d="M16 3h5v5" />
+      <path d="m21 3-6 6" />
+      <path d="M8 21H3v-5" />
+      <path d="m3 21 6-6" />
+      <path d="M16 21h5v-5" />
+      <path d="m21 21-6-6" />
+    </svg>
+  );
+}
+
 function ChevronLeftIcon({ className }: IconProps) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden="true">
@@ -6261,6 +6276,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
   const [quoteLocationInput, setQuoteLocationInput] = useState('');
   const [quoteLocationError, setQuoteLocationError] = useState('');
   const [isResolvingQuoteLocation, setIsResolvingQuoteLocation] = useState(false);
+  const [isQuoteMapExpanded, setIsQuoteMapExpanded] = useState(false);
   const [quotePartners, setQuotePartners] = useState<PartnerDirectoryEntry[]>([]);
   const [selectedQuotePartnerIds, setSelectedQuotePartnerIds] = useState<string[]>([]);
   const [quotePartnerSearch, setQuotePartnerSearch] = useState('');
@@ -8149,6 +8165,11 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
       }
 
       if (isQuoteModalOpen) {
+        if (isQuoteMapExpanded) {
+          setIsQuoteMapExpanded(false);
+          return;
+        }
+
         if (quoteLeadStep) {
           closeQuoteLeadStep();
           return;
@@ -8209,7 +8230,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
       document.body.style.overflow = previousOverflow;
       document.removeEventListener('keydown', handleEscape);
     };
-  }, [activeAsset, anyModalOpen, assetRegisterMoveAsset, accountantNoteAsset, isSavingAccountantNote, deleteCandidateAsset, disposalCandidateAsset, acquisitionDetailsAsset, isSavingAcquisitionDetails, isAcquisitionChoiceOpen, isAddAssetDestinationModalOpen, isAddChoiceModalOpen, isAssetGroupModalOpen, isAssetFilterOpen, isChangeRegisterModalOpen, isAssetModalOpen, isAssetReportModalOpen, isExportModalOpen, isPricingModalOpen, pricingPreview, isQrModalOpen, isRegisterShareModalOpen, isSummaryModalOpen, isAccountantReportsOpen, marketplaceAsset, projectionAsset, isQuoteModalOpen, isQuoteTrackingSettingsOpen, quoteLeadStep, isAssetSettingsModalOpen, pendingUsageOverride, isManualConversionConfirmOpen, isSavingAssetSettings, replacementPriceRevaluePrompt, photoViewer]);
+  }, [activeAsset, anyModalOpen, assetRegisterMoveAsset, accountantNoteAsset, isSavingAccountantNote, deleteCandidateAsset, disposalCandidateAsset, acquisitionDetailsAsset, isSavingAcquisitionDetails, isAcquisitionChoiceOpen, isAddAssetDestinationModalOpen, isAddChoiceModalOpen, isAssetGroupModalOpen, isAssetFilterOpen, isChangeRegisterModalOpen, isAssetModalOpen, isAssetReportModalOpen, isExportModalOpen, isPricingModalOpen, pricingPreview, isQrModalOpen, isRegisterShareModalOpen, isSummaryModalOpen, isAccountantReportsOpen, marketplaceAsset, projectionAsset, isQuoteMapExpanded, isQuoteModalOpen, isQuoteTrackingSettingsOpen, quoteLeadStep, isAssetSettingsModalOpen, pendingUsageOverride, isManualConversionConfirmOpen, isSavingAssetSettings, replacementPriceRevaluePrompt, photoViewer]);
 
   useEffect(() => {
     if (!isQuoteModalOpen || !selectedQuoteOption || quoteDirectoryStage !== 'map' || !quoteMapElementRef.current) {
@@ -8300,7 +8321,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
           quoteLeafletMapRef.current.fitBounds(bounds.pad(0.18), { maxZoom: 12 });
         }
 
-        window.setTimeout(() => quoteLeafletMapRef.current?.invalidateSize(), 80);
+        window.setTimeout(() => quoteLeafletMapRef.current?.invalidateSize({ animate: false, pan: false }), 80);
       } catch (error) {
         setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'Failed to load the partner map.' });
       }
@@ -8335,6 +8356,19 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     document.addEventListener('click', handleQuotePopupSelect, true);
     return () => document.removeEventListener('click', handleQuotePopupSelect, true);
   }, [isQuoteModalOpen, quoteDirectoryStage, selectedQuoteOption, quotePartners]);
+
+  useEffect(() => {
+    if (!isQuoteModalOpen || quoteDirectoryStage !== 'map' || !quoteLeafletMapRef.current) return undefined;
+
+    const resizeMap = () => quoteLeafletMapRef.current?.invalidateSize({ animate: false, pan: false });
+    const immediateResize = window.setTimeout(resizeMap, 0);
+    const settledResize = window.setTimeout(resizeMap, 220);
+
+    return () => {
+      window.clearTimeout(immediateResize);
+      window.clearTimeout(settledResize);
+    };
+  }, [isQuoteMapExpanded, isQuoteModalOpen, quoteDirectoryStage]);
 
   useEffect(() => {
     if (isQuoteModalOpen && selectedQuoteOption && quoteDirectoryStage === 'map') {
@@ -10490,6 +10524,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     setQuoteLocationInput(defaultQuoteLocationInput(asset, accountProfile));
     setQuoteLocationError('');
     setIsResolvingQuoteLocation(false);
+    setIsQuoteMapExpanded(false);
   }
 
   function resetAssetQuoteState(nextScope: QuoteScope = 'asset') {
@@ -10502,6 +10537,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     setQuoteLocationInput('');
     setQuoteLocationError('');
     setIsResolvingQuoteLocation(false);
+    setIsQuoteMapExpanded(false);
     setQuotePartners([]);
     setSelectedQuotePartnerIds([]);
     setQuotePartnerSearch('');
@@ -10610,6 +10646,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     options: { preservePartners?: boolean } = {},
   ) {
     removeQuoteMap();
+    setIsQuoteMapExpanded(false);
     quoteInitialMapLocationRef.current = location;
     quoteFitResultsRef.current = false;
     quotePartnerSearchRef.current = '';
@@ -10699,6 +10736,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     quoteInitialMapLocationRef.current = null;
     quoteFitResultsRef.current = false;
     quotePartnerSearchRef.current = '';
+    setIsQuoteMapExpanded(false);
     setQuoteDirectoryStage('location');
     setQuoteLocationError('');
     setQuotePartnerSearch('');
@@ -10751,6 +10789,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     setQuoteLocationInput('');
     setQuoteLocationError('');
     setIsResolvingQuoteLocation(false);
+    setIsQuoteMapExpanded(false);
     quoteInitialMapLocationRef.current = null;
     setQuotePartners([]);
     setSelectedQuotePartnerIds([]);
@@ -18625,7 +18664,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
           <div className={styles.modalBackdrop} onClick={closeAssetQuoteModal} />
 
           <div
-            className={`${styles.optionsModal} ${styles.assetQuoteModal} ${selectedQuoteOption && quoteDirectoryStage === 'map' ? styles.assetQuotePartnerPickerModal : ''} ${selectedQuoteOption && quoteDirectoryStage === 'location' ? styles.assetQuoteLocationPickerModal : ''}`}
+            className={`${styles.optionsModal} ${styles.assetQuoteModal} ${selectedQuoteOption && quoteDirectoryStage === 'map' ? styles.assetQuotePartnerPickerModal : ''} ${selectedQuoteOption && quoteDirectoryStage === 'location' ? styles.assetQuoteLocationPickerModal : ''} ${isQuoteMapExpanded ? styles.assetQuoteMapExpandedModal : ''}`}
             role="dialog"
             aria-modal="true"
             aria-labelledby="asset-quote-title"
@@ -18849,8 +18888,34 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                       </div>
                     </aside>
 
-                    <div className={styles.assetQuoteMapShell}>
+                    <div
+                      className={`${styles.assetQuoteMapShell} ${isQuoteMapExpanded ? styles.assetQuoteMapShellExpanded : ''}`}
+                      onClick={() => {
+                        if (!isQuoteMapExpanded) setIsQuoteMapExpanded(true);
+                      }}
+                    >
                       <div ref={quoteMapElementRef} className={styles.assetQuoteMapCanvas} aria-label="Business and Aim4price assistance map" />
+                      <div className={styles.assetQuoteMapControls} onClick={(event) => event.stopPropagation()}>
+                        {isQuoteMapExpanded ? (
+                          <span className={styles.assetQuoteExpandedMapArea}>
+                            <small>Showing near</small>
+                            <strong>{quoteLocationInput}</strong>
+                          </span>
+                        ) : null}
+                        <button
+                          type="button"
+                          className={styles.assetQuoteMapExpandButton}
+                          onClick={() => setIsQuoteMapExpanded((current) => !current)}
+                          aria-label={isQuoteMapExpanded ? 'Minimise partner map' : 'Expand partner map'}
+                          title={isQuoteMapExpanded ? 'Return to partner results' : 'Open full map'}
+                        >
+                          {isQuoteMapExpanded ? <CloseIcon className={styles.buttonIcon} /> : <ExpandIcon className={styles.buttonIcon} />}
+                          <span>{isQuoteMapExpanded ? 'Return to results' : 'Expand map'}</span>
+                        </button>
+                      </div>
+                      {!isQuoteMapExpanded ? (
+                        <span className={styles.assetQuoteMapExpandHint}>Click the map to expand</span>
+                      ) : null}
                       {!isLoadingQuotePartners && !quotePartnersWithCoordinates.length ? (
                         <div className={styles.assetQuoteMapEmptyOverlay}>
                           <OptionsIcon className={styles.buttonIcon} />
