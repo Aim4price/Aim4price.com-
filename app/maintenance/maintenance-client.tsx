@@ -127,7 +127,8 @@ type MaintenanceDraft = {
   recurringIntervalUnit: IntervalUnit;
 };
 
-type ModalMode = 'asset-picker' | 'maintenance-type' | 'trigger-type' | 'form' | 'filter' | 'download' | 'complete' | 'delete' | null;
+type ModalMode = 'asset-picker' | 'maintenance-type' | 'trigger-type' | 'form' | 'filter' | 'download' | 'complete' | 'quick-clear' | 'delete' | null;
+type QuickClearStep = 'confirm' | 'completion';
 
 type DownloadScope = 'total' | 'asset' | 'upcoming' | 'done';
 type DownloadFormat = 'pdf' | 'xlsx';
@@ -769,6 +770,8 @@ export default function MaintenanceClient() {
   const [editingRecordId, setEditingRecordId] = useState<string | null>(null);
   const [recordPendingDelete, setRecordPendingDelete] = useState<MaintenanceRecord | null>(null);
   const [recordPendingComplete, setRecordPendingComplete] = useState<MaintenanceRecord | null>(null);
+  const [recordPendingQuickClear, setRecordPendingQuickClear] = useState<MaintenanceRecord | null>(null);
+  const [quickClearStep, setQuickClearStep] = useState<QuickClearStep>('confirm');
   const [deletingRecordId, setDeletingRecordId] = useState<string | null>(null);
   const [busyCompleteId, setBusyCompleteId] = useState<string | null>(null);
   const completeRequestInFlight = useRef(false);
@@ -790,8 +793,9 @@ export default function MaintenanceClient() {
   }, []);
 
   const loadData = useCallback(
-    async (filters = activeFilters) => {
-      setIsLoading(true);
+    async (filters = activeFilters, options: { silent?: boolean } = {}) => {
+      const silent = options.silent === true;
+      if (!silent) setIsLoading(true);
       try {
         const response = await fetch(buildListUrl(filters), { cache: 'no-store' });
         const payload = (await response.json().catch(() => ({}))) as MaintenancePayload;
@@ -802,9 +806,11 @@ export default function MaintenanceClient() {
 
         applyPayload(payload);
       } catch (error) {
-        setNotice({ type: 'error', text: error instanceof Error ? error.message : 'Maintenance data could not be loaded.' });
+        if (!silent) {
+          setNotice({ type: 'error', text: error instanceof Error ? error.message : 'Maintenance data could not be loaded.' });
+        }
       } finally {
-        setIsLoading(false);
+        if (!silent) setIsLoading(false);
       }
     },
     [activeFilters, applyPayload],
@@ -812,6 +818,22 @@ export default function MaintenanceClient() {
 
   useEffect(() => {
     void loadData(activeFilters);
+  }, [activeFilters, loadData]);
+
+  useEffect(() => {
+    const refresh = () => {
+      if (document.visibilityState === 'visible') {
+        void loadData(activeFilters, { silent: true });
+      }
+    };
+    const interval = window.setInterval(refresh, 60_000);
+    window.addEventListener('focus', refresh);
+    document.addEventListener('visibilitychange', refresh);
+    return () => {
+      window.clearInterval(interval);
+      window.removeEventListener('focus', refresh);
+      document.removeEventListener('visibilitychange', refresh);
+    };
   }, [activeFilters, loadData]);
 
   const filteredRecords = useMemo(() => {
@@ -877,6 +899,8 @@ export default function MaintenanceClient() {
     setEditingRecordId(null);
     setRecordPendingDelete(null);
     setRecordPendingComplete(null);
+    setRecordPendingQuickClear(null);
+    setQuickClearStep('confirm');
     setDraft(null);
   }
 
@@ -975,6 +999,13 @@ export default function MaintenanceClient() {
     setModalMode('complete');
   }
 
+  function openQuickClear(record: MaintenanceRecord) {
+    setNotice(null);
+    setRecordPendingQuickClear(record);
+    setQuickClearStep('confirm');
+    setModalMode('quick-clear');
+  }
+
   async function completeMaintenance(record: MaintenanceRecord, completion: DesktopServiceCompletion) {
     if (completeRequestInFlight.current) return;
 
@@ -1012,6 +1043,48 @@ export default function MaintenanceClient() {
       setNotice({
         type: 'error',
         text: error instanceof Error ? error.message : 'Maintenance record could not be marked done.',
+      });
+    } finally {
+      completeRequestInFlight.current = false;
+      setBusyCompleteId(null);
+    }
+  }
+
+  async function quickCompleteMaintenance(record: MaintenanceRecord) {
+    if (completeRequestInFlight.current) return;
+
+    completeRequestInFlight.current = true;
+    setBusyCompleteId(record.id);
+    setNotice(null);
+
+    try {
+      const response = await fetch(buildCompletionUrl(record.id, activeFilters), {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          status: 'done',
+          confirmedComplete: true,
+          quickComplete: true,
+        }),
+      });
+      const payload = (await response.json().catch(() => ({}))) as MaintenancePayload;
+
+      if (!response.ok || payload.ok === false) {
+        throw new Error(payload.error || 'Maintenance could not be cleared.');
+      }
+
+      applyPayload(payload);
+      setNotice({
+        type: 'success',
+        text: record.recurringEnabled && payload.nextRecord
+          ? `Maintenance marked done with no additional information. The next recurring maintenance is due at ${maintenanceDueValue(payload.nextRecord)}.`
+          : 'Maintenance marked done with no additional information.',
+      });
+      closeModal();
+    } catch (error) {
+      setNotice({
+        type: 'error',
+        text: error instanceof Error ? error.message : 'Maintenance could not be cleared.',
       });
     } finally {
       completeRequestInFlight.current = false;
@@ -1160,18 +1233,39 @@ export default function MaintenanceClient() {
                 const isDone = record.status === 'done';
                 const isRecurringFollowUp = Boolean(record.generatedFromMaintenanceId);
                 const isUpcomingRecurringFollowUp = isRecurringFollowUp && !isDone;
+                const needsAttention = !isDone && (record.computedStatus === 'due' || record.computedStatus === 'overdue');
+                const isDueSoon = !isDone && record.computedStatus === 'due_soon';
+                const cardStatusClass = isDone
+                  ? styles.maintenanceCardDone
+                  : needsAttention
+                    ? styles.maintenanceCardOpen
+                    : isDueSoon
+                      ? styles.maintenanceCardDueSoon
+                      : styles.maintenanceCardUpcoming;
+                const statusPillClass = isDone
+                  ? styles.maintenanceStatusGood
+                  : needsAttention
+                    ? styles.maintenanceStatusDanger
+                    : isDueSoon || isRecurringFollowUp
+                      ? styles.maintenanceStatusWarning
+                      : styles.maintenanceStatusNeutral;
+                const statusText = isDone
+                  ? 'Maintenance completed'
+                  : isRecurringFollowUp
+                    ? `Next recurring maintenance · ${record.computedStatusLabel}`
+                    : record.computedStatusLabel || 'Maintenance upcoming';
 
                 return (
                   <article
-                    className={`${styles.invoiceRow} ${isDone ? styles.maintenanceCardDone : styles.maintenanceCardOpen} ${isUpcomingRecurringFollowUp ? styles.maintenanceRecurringFollowUp : ''}`}
+                    className={`${styles.invoiceRow} ${cardStatusClass} ${isUpcomingRecurringFollowUp && !needsAttention ? styles.maintenanceRecurringFollowUp : ''}`}
                     key={record.id}
                   >
                     <div className={styles.invoiceHeader}>
                       <div className={styles.invoiceTitleBlock}>
                         <span
-                          className={`${styles.maintenanceStatusPill} ${isDone ? styles.maintenanceStatusGood : isRecurringFollowUp ? styles.maintenanceStatusWarning : styles.maintenanceStatusDanger}`}
+                          className={`${styles.maintenanceStatusPill} ${statusPillClass}`}
                         >
-                          {isDone ? 'Maintenance completed' : isRecurringFollowUp ? 'Next recurring maintenance' : 'Maintenance upcoming'}
+                          {statusText}
                         </span>
                         <h2 className={styles.invoiceTitle}>{record.assetTitle}</h2>
                         <p className={styles.maintenanceServiceTitle}>
@@ -1210,6 +1304,18 @@ export default function MaintenanceClient() {
                             <CheckIcon />
                             <span>{busyCompleteId === record.id ? 'Saving...' : isDone ? 'Done' : record.maintenanceType === 'checkup' ? 'Record check-up' : 'Record service'}</span>
                           </button>
+                          {!isDone ? (
+                            <button
+                              className={`${styles.secondaryButtonSmall} ${styles.maintenanceQuickClearButton}`}
+                              type="button"
+                              onClick={() => openQuickClear(record)}
+                              disabled={busyCompleteId !== null}
+                              aria-label={`Clear ${record.maintenanceType} for ${record.assetTitle}`}
+                            >
+                              <CheckIcon />
+                              <span>Clear</span>
+                            </button>
+                          ) : null}
                           <button className={`${styles.secondaryButtonSmall} ${styles.invoiceEditButton}`} type="button" onClick={() => openEdit(record)}>
                             <EditIcon />
                             <span>Edit</span>
@@ -1476,6 +1582,72 @@ export default function MaintenanceClient() {
               <button className={styles.primaryButton} type="button" onClick={() => void submitDraft()} disabled={isSaving}>
                 {isSaving ? 'Saving...' : editingRecordId ? 'Save changes' : `Add ${draft.maintenanceType}`}
               </button>
+            </footer>
+          </section>
+        </div>
+      ) : null}
+
+      {modalMode === 'quick-clear' && recordPendingQuickClear ? (
+        <div className={styles.modalBackdrop} role="dialog" aria-modal="true" aria-labelledby="maintenance-quick-clear-title" aria-describedby="maintenance-quick-clear-description">
+          <section className={`${styles.deleteConfirmModal} ${styles.maintenanceQuickClearModal}`}>
+            <header className={styles.modalHeader}>
+              <div>
+                <h2 id="maintenance-quick-clear-title">
+                  {quickClearStep === 'confirm' ? 'Clear maintenance?' : 'Was it completed?'}
+                </h2>
+              </div>
+              <button
+                className={styles.closeButton}
+                type="button"
+                onClick={closeModal}
+                disabled={busyCompleteId === recordPendingQuickClear.id}
+                aria-label="Close maintenance clear confirmation"
+              >
+                <CloseIcon />
+              </button>
+            </header>
+            <div className={styles.modalDivider} />
+            <div className={styles.deleteConfirmBody}>
+              {quickClearStep === 'confirm' ? (
+                <p id="maintenance-quick-clear-description">
+                  Clear this scheduled {typeLabel(recordPendingQuickClear.maintenanceType).toLowerCase()} for <strong>{recordPendingQuickClear.assetTitle}</strong>?
+                </p>
+              ) : (
+                <>
+                  <p id="maintenance-quick-clear-description">
+                    Choose <strong>Yes</strong> only if the {typeLabel(recordPendingQuickClear.maintenanceType).toLowerCase()} was physically completed.
+                  </p>
+                  <p className={styles.maintenanceQuickClearNote}>
+                    Aim4price will save it as completed with no additional information. Choosing <strong>Not sure</strong> leaves the maintenance open.
+                  </p>
+                </>
+              )}
+              <div className={styles.deleteRecordSummary}>
+                <span>Selected maintenance</span>
+                <strong>{recordPendingQuickClear.assetTitle}</strong>
+                <small>{typeLabel(recordPendingQuickClear.maintenanceType)} · {maintenanceDueValue(recordPendingQuickClear)} · {recordPendingQuickClear.assignedName || 'Unassigned'}</small>
+              </div>
+            </div>
+            <footer className={styles.modalFooter}>
+              {quickClearStep === 'confirm' ? (
+                <>
+                  <button className={styles.secondaryButton} type="button" onClick={closeModal}>Cancel</button>
+                  <button className={styles.primaryButton} type="button" onClick={() => setQuickClearStep('completion')}>Continue</button>
+                </>
+              ) : (
+                <>
+                  <button className={styles.secondaryButton} type="button" onClick={closeModal} disabled={busyCompleteId === recordPendingQuickClear.id}>Not sure</button>
+                  <button
+                    className={styles.primaryButton}
+                    type="button"
+                    onClick={() => void quickCompleteMaintenance(recordPendingQuickClear)}
+                    disabled={busyCompleteId === recordPendingQuickClear.id}
+                    aria-busy={busyCompleteId === recordPendingQuickClear.id}
+                  >
+                    {busyCompleteId === recordPendingQuickClear.id ? 'Saving...' : 'Yes, completed'}
+                  </button>
+                </>
+              )}
             </footer>
           </section>
         </div>

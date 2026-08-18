@@ -4433,6 +4433,36 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.96);
 }
 
+.invoiceRow.maintenanceCardDueSoon {
+  border-color: rgba(193, 123, 51, 0.36);
+  background: linear-gradient(180deg, #fffdf9 0%, #fff8ee 58%, #ffffff 100%);
+  box-shadow:
+    0 18px 42px rgba(182, 111, 38, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+}
+
+.invoiceRow.maintenanceCardDueSoon:hover {
+  border-color: rgba(193, 123, 51, 0.5);
+  box-shadow:
+    0 20px 44px rgba(182, 111, 38, 0.11),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+}
+
+.invoiceRow.maintenanceCardUpcoming {
+  border-color: rgba(159, 180, 170, 0.38);
+  background: linear-gradient(180deg, #ffffff 0%, #f7faf8 58%, #ffffff 100%);
+  box-shadow:
+    0 16px 36px rgba(38, 76, 61, 0.055),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+}
+
+.invoiceRow.maintenanceCardUpcoming:hover {
+  border-color: rgba(122, 158, 141, 0.5);
+  box-shadow:
+    0 18px 40px rgba(38, 76, 61, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+}
+
 .invoiceRow.maintenanceCardOpen:hover {
   border-color: rgba(160, 53, 53, 0.48);
   box-shadow:
@@ -4470,7 +4500,7 @@
   line-height: 1.35;
 }
 
-.invoiceRow.maintenanceCardOpen.maintenanceRecurringFollowUp {
+.invoiceRow.maintenanceRecurringFollowUp {
   position: relative;
   border-color: rgba(193, 123, 51, 0.42);
   background:
@@ -4487,7 +4517,13 @@
   background: #fff0dc;
 }
 
-.invoiceRow.maintenanceCardOpen.maintenanceRecurringFollowUp::after {
+.maintenanceStatusNeutral {
+  color: #3c5d50;
+  border-color: rgba(132, 166, 149, 0.34);
+  background: #f3f8f5;
+}
+
+.invoiceRow.maintenanceRecurringFollowUp::after {
   content: "";
   position: absolute;
   left: 2.15rem;
@@ -4503,9 +4539,39 @@
 }
 
 @media (max-width: 760px) {
-  .invoiceRow.maintenanceCardOpen.maintenanceRecurringFollowUp::after {
+  .invoiceRow.maintenanceRecurringFollowUp::after {
     left: 1.5rem;
   }
+}
+
+.maintenanceQuickClearButton {
+  color: #345a4b;
+  border-color: rgba(116, 160, 139, 0.5);
+  background: linear-gradient(180deg, #ffffff 0%, #f0f7f3 100%);
+}
+
+.maintenanceQuickClearButton:hover:not(:disabled) {
+  color: #164b39;
+  border-color: rgba(76, 145, 112, 0.68);
+  background: linear-gradient(180deg, #ffffff 0%, #e4f3eb 100%);
+}
+
+.maintenanceQuickClearModal {
+  width: min(100%, 620px);
+  border-color: rgba(213, 154, 154, 0.72);
+  background:
+    radial-gradient(circle at top left, rgba(184, 64, 64, 0.07), transparent 34%),
+    linear-gradient(180deg, #fffdfd 0%, #fff7f7 100%);
+}
+
+.maintenanceQuickClearNote {
+  margin: 0;
+  padding: 0.9rem 1rem;
+  border: 1px solid rgba(203, 151, 74, 0.28);
+  border-radius: 0.9rem;
+  color: #654717;
+  background: rgba(255, 246, 225, 0.86);
+  line-height: 1.55;
 }
 
 /* Dealer scheduling: compact, thumb-friendly phone flow. */
