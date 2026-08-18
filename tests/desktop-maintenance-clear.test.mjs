@@ -13,7 +13,7 @@ test('Desktop quick clear safely records unknown completion details', () => {
   assert.match(desktopClient, /type QuickClearStep = 'confirm' \| 'completion'/);
   assert.match(desktopClient, /Was it completed\?/);
   assert.match(desktopClient, /quickComplete: true/);
-  assert.match(desktopClient, /Choosing <strong>Not sure<\/strong> leaves the maintenance open/);
+  assert.match(desktopClient, /Yes saves a basic completed record\. <strong>Not sure<\/strong> leaves it open/);
   assert.match(completionRoute, /body\.quickComplete === true/);
   assert.match(completionRoute, /unknownMaintenanceCompletionNote\(scheduled\.maintenanceType\)/);
   assert.match(completionRoute, /completedBy: completedByFallback/);
@@ -33,4 +33,15 @@ test('Desktop maintenance refreshes and reserves red cards for due work', () => 
   assert.match(styles, /\.invoiceRow\.maintenanceCardDueSoon/);
   assert.match(styles, /\.invoiceRow\.maintenanceCardUpcoming/);
   assert.match(styles, /\.maintenanceStatusNeutral/);
+});
+
+test('Desktop maintenance copy stays compact and four actions use a two-by-two grid', () => {
+  const desktopClient = source('app/maintenance/maintenance-client.tsx');
+  const styles = source('app/maintenance/page.module.css');
+  const refinements = styles.slice(styles.indexOf('/* Desktop maintenance cards and quick-clear spacing. */'));
+
+  assert.match(desktopClient, /Clear this \{typeLabel\(recordPendingQuickClear\.maintenanceType\)\.toLowerCase\(\)\} for/);
+  assert.match(desktopClient, /styles\.rowActionsFour/);
+  assert.match(refinements, /\.rowActionsFour\s*\{[\s\S]*?grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
+  assert.match(refinements, /\.maintenanceQuickClearModal \.deleteConfirmBody > p,[\s\S]*?white-space: nowrap/);
 });

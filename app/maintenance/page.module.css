@@ -4557,7 +4557,8 @@
 }
 
 .maintenanceQuickClearModal {
-  width: min(100%, 620px);
+  box-sizing: border-box;
+  width: min(100%, 47rem);
   border-color: rgba(213, 154, 154, 0.72);
   background:
     radial-gradient(circle at top left, rgba(184, 64, 64, 0.07), transparent 34%),
@@ -4566,12 +4567,12 @@
 
 .maintenanceQuickClearNote {
   margin: 0;
-  padding: 0.9rem 1rem;
+  padding: 0.75rem 0.9rem;
   border: 1px solid rgba(203, 151, 74, 0.28);
   border-radius: 0.9rem;
   color: #654717;
   background: rgba(255, 246, 225, 0.86);
-  line-height: 1.55;
+  line-height: 1.4;
 }
 
 /* Dealer scheduling: compact, thumb-friendly phone flow. */
@@ -4687,5 +4688,79 @@
   .maintenanceStepModal .modalFooter .primaryButton,
   .maintenanceStepModal .modalFooter button:only-child {
     grid-column: 1 / -1;
+  }
+}
+
+/* Desktop maintenance cards and quick-clear spacing. */
+@media (min-width: 961px) {
+  .invoiceHeader {
+    grid-template-columns: minmax(0, 1fr) minmax(360px, auto);
+    gap: clamp(1.25rem, 2vw, 2rem);
+  }
+
+  .invoiceHeaderAside {
+    width: 100%;
+    min-width: 0;
+    gap: 0.7rem;
+  }
+
+  .rowActionsFour {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.65rem;
+  }
+
+  .rowActionsFour .secondaryButtonSmall,
+  .rowActionsFour .dangerButtonSmall {
+    width: 100%;
+    min-width: 0;
+    min-height: 3rem;
+    padding-inline: 0.8rem;
+    white-space: nowrap;
+  }
+
+  .invoiceTitle,
+  .maintenanceServiceTitle,
+  .invoiceAsset,
+  .invoiceMetaList span {
+    overflow: hidden;
+    overflow-wrap: normal;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .maintenanceQuickClearModal .modalHeader {
+    padding: 1.3rem 1.6rem 0;
+  }
+
+  .maintenanceQuickClearModal .modalHeader h2 {
+    font-size: 2rem;
+  }
+
+  .maintenanceQuickClearModal .modalDivider {
+    margin: 0.8rem 1.6rem;
+  }
+
+  .maintenanceQuickClearModal .deleteConfirmBody {
+    gap: 0.8rem;
+    padding: 0 1.6rem 1rem;
+  }
+
+  .maintenanceQuickClearModal .deleteConfirmBody > p,
+  .maintenanceQuickClearModal .deleteRecordSummary strong,
+  .maintenanceQuickClearModal .deleteRecordSummary small {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .maintenanceQuickClearModal .deleteRecordSummary {
+    gap: 0.22rem;
+    padding: 0.85rem 1rem;
+  }
+
+  .maintenanceQuickClearModal .modalFooter {
+    padding: 0.9rem 1.6rem 1.2rem;
   }
 }
