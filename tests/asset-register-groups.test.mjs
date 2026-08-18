@@ -84,7 +84,7 @@ test('separate-value groups count every member and order the primary first', asy
   );
 });
 
-test('folded umbrellas occupy one page slot and expanded umbrellas stay intact', async () => {
+test('umbrellas stay visible and unpaginated while standalone assets move between pages', async () => {
   const helpers = await loadGroupHelpers();
   const groupedAssets = Array.from({ length: 7 }, (_, index) => ({
     id: `grouped-${index + 1}`,
@@ -121,17 +121,17 @@ test('folded umbrellas occupy one page slot and expanded umbrellas stay intact',
     6,
   );
 
-  const expandedGroupIds = new Set([umbrella.id]);
-  const expandedPages = helpers.paginateAssetGroupPageEntries(entries, 12, expandedGroupIds);
-  assert.equal(expandedPages.length, 1);
-  assert.equal(
-    expandedPages[0].reduce(
-      (count, entry) => count + helpers.assetGroupPageEntryDisplayCount(entry, expandedGroupIds),
-      0,
-    ),
-    12,
+  const expandedPages = helpers.paginateAssetGroupPageEntries(entries, 2, new Set([umbrella.id]));
+  assert.equal(expandedPages.length, 3);
+  assert.ok(expandedPages.every((page) => page[0].kind === 'group'));
+  assert.ok(expandedPages.every((page) => page[0].group.id === umbrella.id));
+  assert.ok(expandedPages.every((page) => (
+    page[0].assets.map((asset) => asset.id).join(',') === groupedAssets.map((asset) => asset.id).join(',')
+  )));
+  assert.deepEqual(
+    expandedPages.flatMap((page) => page.filter((entry) => entry.kind === 'asset').map((entry) => entry.asset.id)),
+    standaloneAssets.map((asset) => asset.id),
   );
-  assert.deepEqual(expandedPages[0][0].assets.map((asset) => asset.id), groupedAssets.map((asset) => asset.id));
 });
 
 test('included-in-primary groups prevent register-value double counting', async () => {
@@ -443,7 +443,7 @@ test('umbrella sharing and downloads are limited to grouped assets', async () =>
   assert.match(exportRoute, /scopedRawBundles/);
 });
 
-test('umbrella-aware pagination expands tiers and the full header toggles the group', async () => {
+test('umbrella-aware pagination keeps every umbrella visible and the full header toggles the group', async () => {
   const [client, styles] = await Promise.all([
     readFile(new URL('../app/asset-register/asset-register-client.tsx', import.meta.url), 'utf8'),
     readFile(new URL('../app/asset-register/page.module.css', import.meta.url), 'utf8'),
@@ -451,7 +451,9 @@ test('umbrella-aware pagination expands tiers and the full header toggles the gr
 
   assert.match(client, /buildAssetGroupPageEntries\(groupedFilteredAssets, displayAssetGroups\)/);
   assert.match(client, /paginateAssetGroupPageEntries\(registerPaginationEntries, numericPageSize, expandedAssetGroupIds\)/);
-  assert.match(client, /pageSizeForVisibleCardCount\(requiredVisibleCardCount\)/);
+  assert.match(client, /umbrellaPaginationEntryCount/);
+  assert.match(client, /Standalone assets per page/);
+  assert.doesNotMatch(client, /pageSizeForVisibleCardCount/);
   assert.match(client, /visiblePaginationEntries\.flatMap\(\(entry\) => entry\.assets\)/);
   assert.match(client, /target\.closest\('button, a, input, select, textarea, \[role="button"\]'\)/);
   assert.match(client, /onClick=\{\(event\) => \{[\s\S]*?toggleAssetGroupCollapsed\(group\.id\);/);

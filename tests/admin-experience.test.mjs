@@ -54,6 +54,21 @@ test("the users page separates navigation, account health and filtering", () => 
   assert.match(userStyles, /\.adminNavActive/);
 });
 
+test("selecting an admin account opens an accessible options modal", () => {
+  assert.match(users, /onClick=\{\(\) => setAccountActionModal\(user\)\}/);
+  assert.match(users, /role="dialog"/);
+  assert.match(users, /aria-labelledby="admin-account-action-modal-title"/);
+  assert.match(users, /Open account/);
+  assert.match(users, /Send password reset/);
+  assert.match(users, /Manage asset names/);
+  assert.match(users, /Print QR labels/);
+  assert.match(users, /Delete account/);
+  assert.doesNotMatch(users, /<th>Actions<\/th>/);
+  assert.match(userStyles, /\.accountActionGrid/);
+  assert.match(userStyles, /\.accountRow:focus-visible/);
+  assert.match(userStyles, /min-width: 1710px/);
+});
+
 test("the dashboard prioritises headline metrics and collapses optional detail", () => {
   assert.match(dashboard, /Live Aim4price activity/);
   assert.match(dashboard, /At a glance/);
