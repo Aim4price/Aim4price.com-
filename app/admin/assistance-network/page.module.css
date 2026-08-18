@@ -1,0 +1,205 @@
+.page {
+  min-height: 100vh;
+  padding: 32px;
+  background: #f4f4f1;
+  color: #171817;
+}
+
+.shell {
+  width: min(1420px, 100%);
+  margin: 0 auto;
+}
+
+.topBar {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 28px;
+  border-radius: 24px;
+  background: #171817;
+  color: #fff;
+}
+
+.titleBlock h1,
+.accountCard h2,
+.notice p {
+  margin: 0;
+}
+
+.titleBlock h1 {
+  margin: 4px 0 7px;
+  font-size: clamp(1.8rem, 4vw, 3rem);
+}
+
+.titleBlock span,
+.accountCard p,
+.locationRow span,
+.notice p,
+.summary small {
+  color: #686c68;
+}
+
+.titleBlock span { color: #c5c9c5; }
+
+.eyebrow {
+  margin: 0;
+  color: #a8e96d;
+  font-size: .75rem;
+  font-weight: 900;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.adminButton {
+  padding: 10px 13px;
+  border: 1px solid #505250;
+  border-radius: 999px;
+  color: #fff;
+  font-size: .82rem;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.adminButtonActive {
+  border-color: #a8e96d;
+  background: #a8e96d;
+  color: #171817;
+}
+
+.summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin: 18px 0;
+}
+
+.summary article,
+.notice,
+.accountCard {
+  border: 1px solid #dbddd9;
+  border-radius: 20px;
+  background: #fff;
+}
+
+.summary article {
+  display: grid;
+  gap: 5px;
+  padding: 22px;
+}
+
+.summary span { font-weight: 800; }
+.summary strong { font-size: 2rem; }
+.summary small { font-size: .78rem; }
+
+.notice {
+  margin-bottom: 18px;
+  padding: 18px 22px;
+  border-left: 5px solid #7dbb44;
+}
+
+.notice p { margin-top: 5px; line-height: 1.5; }
+.error { padding: 13px 16px; border-radius: 12px; background: #ffe5e5; color: #8d1515; font-weight: 800; }
+.accountList { display: grid; gap: 14px; }
+.accountCard { overflow: hidden; }
+
+.accountCard summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 22px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.accountCard summary::-webkit-details-marker { display: none; }
+.accountCard h2 { margin: 8px 0 4px; font-size: 1.2rem; }
+.accountCard p { font-size: .86rem; }
+
+.badge {
+  display: inline-block;
+  padding: 5px 9px;
+  border-radius: 999px;
+  background: #eaf8dc;
+  color: #426c1e;
+  font-size: .7rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.accountControls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 13px 22px;
+  border-top: 1px solid #e4e5e2;
+  background: #f8faf7;
+  color: #686c68;
+  font-size: .78rem;
+  font-weight: 800;
+}
+
+.townCount { color: #686c68; font-size: .78rem; font-weight: 800; }
+
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 96px;
+  cursor: pointer;
+  font-size: .78rem;
+  font-weight: 900;
+}
+
+.toggle input {
+  width: 19px;
+  height: 19px;
+  accent-color: #5f9d2b;
+}
+
+.toggle input:disabled { cursor: wait; opacity: .55; }
+
+.locationGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1px;
+  border-top: 1px solid #e4e5e2;
+  background: #e4e5e2;
+}
+
+.locationRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 76px;
+  padding: 14px 18px;
+  background: #fff;
+}
+
+.locationRow div { display: grid; gap: 3px; }
+.locationRow span { font-size: .74rem; }
+
+@media (max-width: 900px) {
+  .page { padding: 16px; }
+  .topBar { align-items: flex-start; flex-direction: column; }
+  .locationGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 620px) {
+  .page { padding: 8px; }
+  .topBar { padding: 22px 18px; border-radius: 18px; }
+  .summary { grid-template-columns: 1fr; }
+  .accountCard summary { align-items: flex-start; flex-direction: column; }
+  .accountControls { width: auto; justify-content: space-between; }
+  .locationGrid { grid-template-columns: 1fr; }
+  .locationRow { min-height: 68px; }
+}

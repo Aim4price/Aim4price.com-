@@ -74,6 +74,9 @@ export default async function AdminDashboardPage() {
             >
               Lifecycle Model
             </Link>
+            <Link href="/admin/assistance-network" className={styles.adminButton}>
+              Assistance Network
+            </Link>
           </nav>
         </header>
 

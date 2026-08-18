@@ -131,6 +131,7 @@ function createDisposalDraft(): DisposalDraft {
 
 type PartnerDirectoryEntry = {
   userId: string;
+  masterAccountUserId?: string;
   partnerType: PartnerType;
   accountSubtype: string;
   displayName: string;
@@ -149,6 +150,11 @@ type PartnerDirectoryEntry = {
   serviceRadiusKm: number | null;
   brandFocus: string;
   services: string;
+  isAim4priceManaged?: boolean;
+  isActivePartner?: boolean;
+  assistanceLocationId?: string;
+  assistanceServiceKey?: string;
+  serviceAreaNotice?: string;
 };
 
 type PartnerDirectoryApiResponse = {
@@ -160,6 +166,7 @@ type PartnerDirectoryApiResponse = {
 type AssetLeadApiResponse = {
   ok: boolean;
   lead?: unknown;
+  confirmation?: string | null;
   error?: string;
 };
 
@@ -1298,6 +1305,9 @@ const SECONDARY_ASSET_FILTER_OPTIONS = ASSET_FILTER_OPTIONS.filter((option) => o
 
 const LEAFLET_SCRIPT_ID = 'aim4price-leaflet-script';
 const LEAFLET_CSS_ID = 'aim4price-leaflet-css';
+const LEAFLET_CLUSTER_SCRIPT_ID = 'aim4price-leaflet-cluster-script';
+const LEAFLET_CLUSTER_CSS_ID = 'aim4price-leaflet-cluster-css';
+const LEAFLET_CLUSTER_DEFAULT_CSS_ID = 'aim4price-leaflet-cluster-default-css';
 const DEFAULT_PARTNER_MAP_CENTER: [number, number] = [-29, 24];
 const DEFAULT_PARTNER_MAP_ZOOM = 5;
 const ASSET_SETTINGS_SAVED_ASSET_ZOOM = 13;
@@ -5788,12 +5798,53 @@ function getRegisterReportLogoUrl(register: AssetRegisterSummary | null): string
   return toAbsoluteUrl(registerLogoUrl) ?? '';
 }
 
+function loadLeafletMarkerCluster(leaflet: any): Promise<any> {
+  if (leaflet?.markerClusterGroup) return Promise.resolve(leaflet);
+
+  if (!document.getElementById(LEAFLET_CLUSTER_CSS_ID)) {
+    const link = document.createElement('link');
+    link.id = LEAFLET_CLUSTER_CSS_ID;
+    link.rel = 'stylesheet';
+    link.href = 'https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css';
+    link.crossOrigin = '';
+    document.head.appendChild(link);
+  }
+  if (!document.getElementById(LEAFLET_CLUSTER_DEFAULT_CSS_ID)) {
+    const link = document.createElement('link');
+    link.id = LEAFLET_CLUSTER_DEFAULT_CSS_ID;
+    link.rel = 'stylesheet';
+    link.href = 'https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css';
+    link.crossOrigin = '';
+    document.head.appendChild(link);
+  }
+
+  return new Promise((resolve, reject) => {
+    const existingScript = document.getElementById(LEAFLET_CLUSTER_SCRIPT_ID) as HTMLScriptElement | null;
+    const handleLoaded = () => leaflet?.markerClusterGroup
+      ? resolve(leaflet)
+      : reject(new Error('Marker clustering did not initialise correctly.'));
+    if (existingScript) {
+      existingScript.addEventListener('load', handleLoaded, { once: true });
+      existingScript.addEventListener('error', () => reject(new Error('Failed to load marker clustering.')), { once: true });
+      return;
+    }
+    const script = document.createElement('script');
+    script.id = LEAFLET_CLUSTER_SCRIPT_ID;
+    script.src = 'https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js';
+    script.async = true;
+    script.crossOrigin = '';
+    script.addEventListener('load', handleLoaded, { once: true });
+    script.addEventListener('error', () => reject(new Error('Failed to load marker clustering.')), { once: true });
+    document.body.appendChild(script);
+  });
+}
+
 function loadLeaflet(): Promise<any> {
   if (typeof window === 'undefined') {
     return Promise.reject(new Error('Leaflet can only load in the browser.'));
   }
 
-  if (window.L) {
+  if (window.L?.markerClusterGroup) {
     return Promise.resolve(window.L);
   }
 
@@ -5802,6 +5853,11 @@ function loadLeaflet(): Promise<any> {
   }
 
   leafletLoaderPromise = new Promise((resolve, reject) => {
+    if (window.L) {
+      void loadLeafletMarkerCluster(window.L).then(resolve, () => resolve(window.L));
+      return;
+    }
+
     if (!document.getElementById(LEAFLET_CSS_ID)) {
       const link = document.createElement('link');
       link.id = LEAFLET_CSS_ID;
@@ -5815,7 +5871,7 @@ function loadLeaflet(): Promise<any> {
 
     const handleLoaded = () => {
       if (window.L) {
-        resolve(window.L);
+        void loadLeafletMarkerCluster(window.L).then(resolve, () => resolve(window.L));
         return;
       }
 
@@ -5918,6 +5974,7 @@ function buildAssetPartnerNoteRows(asset: RegisterAsset, includeAssetTitle = fal
 function quoteMarkerClassForPartnerType(partnerType: PartnerType | null | undefined): string {
   if (partnerType === 'finance') return 'assetQuoteMapMarker--finance';
   if (partnerType === 'insurance') return 'assetQuoteMapMarker--insurance';
+  if (partnerType === 'licensing') return 'assetQuoteMapMarker--licensing';
   return 'assetQuoteMapMarker--dealer';
 }
 
@@ -5976,6 +6033,7 @@ function normalizeEmailHref(value: string): string {
 }
 
 function quotePartnerAddress(partner: PartnerDirectoryEntry): string {
+  if (partner.isAim4priceManaged) return 'Service area — not a physical branch';
   return [partner.addressLine1, partner.townCity, partner.province].filter(Boolean).join(', ') || 'Address not saved';
 }
 
@@ -6013,7 +6071,7 @@ function buildQuotePartnerPopupHtml(partner: PartnerDirectoryEntry, isSelected =
   const name = escapeHtml(quotePartnerName(partner));
   const location = escapeHtml(quotePartnerLocation(partner));
   const radius = escapeHtml(quotePartnerRadiusDisplay(partner));
-  const brands = partner.brandFocus ? escapeHtml(partner.brandFocus) : '';
+  const brands = !partner.isAim4priceManaged && partner.brandFocus ? escapeHtml(partner.brandFocus) : '';
   const services = escapeHtml(quotePartnerServicesDisplay(partner));
   const details = [
     `<div><span>Location</span><strong>${location}</strong></div>`,
@@ -6026,9 +6084,11 @@ function buildQuotePartnerPopupHtml(partner: PartnerDirectoryEntry, isSelected =
     <div class="assetQuotePopupCard assetQuotePopupCardSimple assetQuotePopupCard--${escapeHtml(partner.partnerType)}">
       <div class="assetQuotePopupSimpleHeader">
         <strong>${name}</strong>
+        ${partner.isAim4priceManaged ? '<span class="assetQuoteManagedBadge">Aim4price managed</span>' : ''}
       </div>
       <div class="assetQuotePopupDetails assetQuotePopupSimpleDetails">${details}</div>
-      <button type="button" data-quote-partner-id="${escapeHtml(partner.userId)}" class="assetQuotePopupChooseButton">${isSelected ? 'Remove selection' : 'Select this business'}</button>
+      ${partner.isAim4priceManaged ? '<p class="assetQuoteManagedNotice">This is a service area, not a physical branch. Aim4price will help locate a suitable provider.</p>' : ''}
+      <button type="button" data-quote-partner-id="${escapeHtml(partner.userId)}" class="assetQuotePopupChooseButton">${isSelected ? 'Remove selection' : partner.isAim4priceManaged ? 'Select this service area' : 'Select this business'}</button>
     </div>
   `;
 }
@@ -6165,6 +6225,11 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
   const quoteLeafletMapRef = useRef<any>(null);
   const quoteMarkerLayerRef = useRef<any>(null);
   const quoteMarkersByPartnerRef = useRef<Map<string, any>>(new Map());
+  const quoteViewportTimeoutRef = useRef<number | null>(null);
+  const quotePartnerRequestRef = useRef(0);
+  const quoteFitResultsRef = useRef(false);
+  const selectedQuoteLeadTypeRef = useRef<AssetLeadType | null>(null);
+  const quotePartnerSearchRef = useRef('');
   const assetSettingsMapElementRef = useRef<HTMLDivElement | null>(null);
   const assetSettingsLeafletMapRef = useRef<any>(null);
   const assetSettingsMapMarkerRef = useRef<any>(null);
@@ -7171,10 +7236,16 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     return quotePartners.filter((partner) => selectedIds.has(partner.userId));
   }, [quotePartners, selectedQuotePartnerIds]);
   const selectedQuotePartner = selectedQuotePartners[0] ?? null;
+  const hasManagedAssistanceSelection = selectedQuotePartners.some((partner) => partner.isAim4priceManaged);
   const selectedQuotePartnerWebsiteHref = selectedQuotePartner ? normalizeWebsiteHref(selectedQuotePartner.websiteUrl) : '';
   const selectedQuotePartnerEmailHref = selectedQuotePartner ? normalizeEmailHref(selectedQuotePartner.email) : '';
   const selectedQuotePartnerPhoneHref = selectedQuotePartner ? normalizePhoneHref(selectedQuotePartner.phone) : '';
   const quotePartnersWithCoordinates = useMemo(() => quotePartners.filter(hasQuotePartnerCoordinates), [quotePartners]);
+
+  useEffect(() => {
+    selectedQuoteLeadTypeRef.current = selectedQuoteLeadType;
+    quotePartnerSearchRef.current = quotePartnerSearch;
+  }, [quotePartnerSearch, selectedQuoteLeadType]);
 
   useEffect(() => {
     pendingPhotoFilesRef.current = pendingPhotoFiles;
@@ -8077,12 +8148,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
   }, [activeAsset, anyModalOpen, assetRegisterMoveAsset, accountantNoteAsset, isSavingAccountantNote, deleteCandidateAsset, disposalCandidateAsset, acquisitionDetailsAsset, isSavingAcquisitionDetails, isAcquisitionChoiceOpen, isAddAssetDestinationModalOpen, isAddChoiceModalOpen, isAssetGroupModalOpen, isAssetFilterOpen, isChangeRegisterModalOpen, isAssetModalOpen, isAssetReportModalOpen, isExportModalOpen, isPricingModalOpen, pricingPreview, isQrModalOpen, isRegisterShareModalOpen, isSummaryModalOpen, isAccountantReportsOpen, marketplaceAsset, projectionAsset, isQuoteModalOpen, isQuoteTrackingSettingsOpen, quoteLeadStep, isAssetSettingsModalOpen, pendingUsageOverride, isManualConversionConfirmOpen, isSavingAssetSettings, replacementPriceRevaluePrompt, photoViewer]);
 
   useEffect(() => {
-    if (!isQuoteModalOpen || !selectedQuoteLeadType) return;
-    void loadQuotePartners(selectedQuoteLeadType, '');
-  }, [isQuoteModalOpen, selectedQuoteLeadType]);
-
-  useEffect(() => {
-    if (!isQuoteModalOpen || !selectedQuoteOption || !quoteMapElementRef.current || !quotePartnersWithCoordinates.length) {
+    if (!isQuoteModalOpen || !selectedQuoteOption || !quoteMapElementRef.current) {
       return undefined;
     }
 
@@ -8103,12 +8169,39 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
             maxZoom: 19,
           }).addTo(quoteLeafletMapRef.current);
+
+          const handleViewportChange = () => {
+            if (quoteViewportTimeoutRef.current !== null) {
+              window.clearTimeout(quoteViewportTimeoutRef.current);
+            }
+            quoteViewportTimeoutRef.current = window.setTimeout(() => {
+              const map = quoteLeafletMapRef.current;
+              const leadType = selectedQuoteLeadTypeRef.current;
+              if (!map || !leadType) return;
+              const mapBounds = map.getBounds();
+              void loadQuotePartners(leadType, quotePartnerSearchRef.current, {
+                west: mapBounds.getWest(),
+                south: mapBounds.getSouth(),
+                east: mapBounds.getEast(),
+                north: mapBounds.getNorth(),
+              });
+            }, 220);
+          };
+          quoteLeafletMapRef.current.on('moveend', handleViewportChange);
+          handleViewportChange();
         }
 
         if (quoteMarkerLayerRef.current) {
           quoteMarkerLayerRef.current.clearLayers();
         } else {
-          quoteMarkerLayerRef.current = L.layerGroup().addTo(quoteLeafletMapRef.current);
+          quoteMarkerLayerRef.current = typeof L.markerClusterGroup === 'function'
+            ? L.markerClusterGroup({
+                chunkedLoading: true,
+                maxClusterRadius: 52,
+                showCoverageOnHover: false,
+                removeOutsideVisibleBounds: true,
+              }).addTo(quoteLeafletMapRef.current)
+            : L.layerGroup().addTo(quoteLeafletMapRef.current);
         }
 
         quoteMarkersByPartnerRef.current.clear();
@@ -8119,7 +8212,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
           const lng = Number(partner.longitude);
           const isActive = selectedQuotePartnerIds.includes(partner.userId);
           const icon = L.divIcon({
-            className: `assetQuoteMapMarker ${quoteMarkerClassForPartnerType(partner.partnerType)}${isActive ? ' assetQuoteMapMarker--active' : ''}`,
+            className: `assetQuoteMapMarker ${quoteMarkerClassForPartnerType(partner.partnerType)}${partner.isAim4priceManaged ? ' assetQuoteMapMarker--managed' : ''}${isActive ? ' assetQuoteMapMarker--active' : ''}`,
             html: '<span class="assetQuoteMapMarkerPin"></span>',
             iconSize: [38, 44],
             iconAnchor: [19, 40],
@@ -8138,7 +8231,8 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
           bounds.extend([lat, lng]);
         });
 
-        if (bounds.isValid()) {
+        if (quoteFitResultsRef.current && bounds.isValid()) {
+          quoteFitResultsRef.current = false;
           quoteLeafletMapRef.current.fitBounds(bounds.pad(0.18), { maxZoom: 12 });
         }
 
@@ -8198,8 +8292,13 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
   }, [isQuoteModalOpen, selectedQuoteOption, quotePartners]);
 
   useEffect(() => {
-    if (isQuoteModalOpen && selectedQuoteOption && quotePartnersWithCoordinates.length) {
+    if (isQuoteModalOpen && selectedQuoteOption) {
       return undefined;
+    }
+
+    if (quoteViewportTimeoutRef.current !== null) {
+      window.clearTimeout(quoteViewportTimeoutRef.current);
+      quoteViewportTimeoutRef.current = null;
     }
 
     if (quoteLeafletMapRef.current) {
@@ -8210,7 +8309,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     }
 
     return undefined;
-  }, [isQuoteModalOpen, selectedQuoteOption, quotePartnersWithCoordinates.length]);
+  }, [isQuoteModalOpen, selectedQuoteOption]);
 
   useEffect(() => {
     if (!isAssetSettingsModalOpen || assetSettingsView !== 'locationMap' || !assetSettingsMapElementRef.current) {
@@ -10327,6 +10426,12 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
   }
 
   function resetAssetQuoteState(nextScope: QuoteScope = 'asset') {
+    quotePartnerRequestRef.current += 1;
+    quoteFitResultsRef.current = false;
+    if (quoteViewportTimeoutRef.current !== null) {
+      window.clearTimeout(quoteViewportTimeoutRef.current);
+      quoteViewportTimeoutRef.current = null;
+    }
     setQuoteScope(nextScope);
     setSelectedQuoteLeadType(null);
     setQuotePartners([]);
@@ -10371,7 +10476,11 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     resetAssetQuoteState('asset');
   }
 
-  async function loadQuotePartners(leadType: AssetLeadType | null = selectedQuoteLeadType, searchValue = quotePartnerSearch) {
+  async function loadQuotePartners(
+    leadType: AssetLeadType | null = selectedQuoteLeadType,
+    searchValue = quotePartnerSearch,
+    bounds?: { west: number; south: number; east: number; north: number },
+  ) {
     const option = quoteOptionForLeadType(leadType);
 
     if (!option) {
@@ -10380,11 +10489,28 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
       return;
     }
 
+    const requestId = quotePartnerRequestRef.current + 1;
+    quotePartnerRequestRef.current = requestId;
     setIsLoadingQuotePartners(true);
 
     try {
       const params = new URLSearchParams({ type: option.partnerType });
       if (searchValue.trim()) params.set('search', searchValue.trim());
+      const currentMapBounds = !bounds && quoteLeafletMapRef.current
+        ? quoteLeafletMapRef.current.getBounds()
+        : null;
+      const effectiveBounds = bounds ?? (currentMapBounds ? {
+        west: currentMapBounds.getWest(),
+        south: currentMapBounds.getSouth(),
+        east: currentMapBounds.getEast(),
+        north: currentMapBounds.getNorth(),
+      } : null);
+      if (effectiveBounds) {
+        params.set('west', String(effectiveBounds.west));
+        params.set('south', String(effectiveBounds.south));
+        params.set('east', String(effectiveBounds.east));
+        params.set('north', String(effectiveBounds.north));
+      }
 
       const response = await fetch(`/api/partners?${params.toString()}`, { cache: 'no-store', credentials: 'include' });
       const payload = await response.json().catch(() => null);
@@ -10393,6 +10519,8 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
       if (!response.ok || !data?.ok || !Array.isArray(data.partners)) {
         throw new Error(extractApiError(payload, 'Failed to load partner directory.'));
       }
+
+      if (requestId !== quotePartnerRequestRef.current) return;
 
       const loadedPartners = data.partners;
       setQuotePartners((current) => {
@@ -10403,11 +10531,12 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
         return Array.from(nextPartners.values());
       });
     } catch (error) {
+      if (requestId !== quotePartnerRequestRef.current) return;
       setQuotePartners([]);
       setSelectedQuotePartnerIds([]);
       setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'Failed to load partner directory.' });
     } finally {
-      setIsLoadingQuotePartners(false);
+      if (requestId === quotePartnerRequestRef.current) setIsLoadingQuotePartners(false);
     }
   }
 
@@ -10490,11 +10619,22 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
   }
 
   function toggleQuotePartnerSelection(partner: PartnerDirectoryEntry) {
-    setSelectedQuotePartnerIds((current) => (
-      current.includes(partner.userId)
-        ? current.filter((partnerId) => partnerId !== partner.userId)
-        : [...current, partner.userId]
-    ));
+    setSelectedQuotePartnerIds((current) => {
+      if (current.includes(partner.userId)) {
+        return current.filter((partnerId) => partnerId !== partner.userId);
+      }
+      if (!partner.isAim4priceManaged) return [...current, partner.userId];
+
+      // Every managed town points at a master assistance account. Keep only one
+      // service area per master so a single request cannot be routed twice.
+      const matchingMasterId = partner.masterAccountUserId;
+      const withoutDuplicateMaster = current.filter((partnerId) => {
+        const selectedPartner = quotePartners.find((entry) => entry.userId === partnerId);
+        return !selectedPartner?.isAim4priceManaged
+          || selectedPartner.masterAccountUserId !== matchingMasterId;
+      });
+      return [...withoutDuplicateMaster, partner.userId];
+    });
     setQuoteConsentAccepted(false);
   }
 
@@ -10610,13 +10750,18 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
       const successfulPartnerIds: string[] = [];
 
       for (const partner of selectedPartners) {
+        const managedAssetIds = isFullRegisterQuoteLead
+          ? selectedQuoteOption.leadType === 'replacement_quote' || selectedQuoteOption.leadType === 'license_renewal'
+            ? selectedDealerShareAssetIds
+            : activeShareAssets.map((asset) => asset.id)
+          : [quoteAsset.id];
         const response = await fetch('/api/asset-leads', {
           method: 'POST',
           credentials: 'include',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             assetId: leadAssetId,
-            partnerUserId: partner.userId,
+            partnerUserId: partner.masterAccountUserId || partner.userId,
             leadType: selectedQuoteOption.leadType,
             ownerMessage: quoteOwnerMessage,
             includedSections,
@@ -10624,7 +10769,12 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
             trackingPermissions: selectedQuoteOption.leadType === 'replacement_quote' && quoteTrackMaintenance
               ? quoteTrackingPermissions
               : undefined,
-            assetIds: isSelectedRegisterAssetShare ? selectedDealerShareAssetIds : undefined,
+            assetIds: partner.isAim4priceManaged
+              ? managedAssetIds.length > 1 ? managedAssetIds : undefined
+              : isSelectedRegisterAssetShare ? selectedDealerShareAssetIds : undefined,
+            assistanceLocationId: partner.assistanceLocationId,
+            assetGroupId: assetGroupShareTarget?.id,
+            assetGroupName: assetGroupShareTarget?.name,
           }),
         });
 
@@ -10654,7 +10804,9 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
 
       setNotice({
         tone: 'success',
-        message: isSelectedRegisterAssetShare
+        message: hasManagedAssistanceSelection
+          ? `Request sent to Aim4price. Aim4price will help locate a suitable provider for the selected service area. Your assets will not be shared with an external provider without your further approval.`
+          : isSelectedRegisterAssetShare
           ? `${activeShareName} shared with ${selectedPartners.length === 1 ? quotePartnerName(selectedPartners[0]) : `${selectedPartners.length} selected companies`} · ${selectedDealerShareAssetIds.length} ${selectedDealerShareAssetIds.length === 1 ? 'asset' : 'assets'}.`
           : isFullRegisterQuoteLead
           ? `${activeShareName} ${fullRegisterQuoteLabel} sent to ${selectedPartners.length === 1 ? quotePartnerName(selectedPartners[0]) : `${selectedPartners.length} selected companies`}.`
@@ -18394,6 +18546,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                     className={styles.assetQuoteSearchBar}
                     onSubmit={(event) => {
                       event.preventDefault();
+                      quoteFitResultsRef.current = Boolean(quotePartnerSearch.trim());
                       void loadQuotePartners(selectedQuoteOption.leadType, quotePartnerSearch);
                     }}
                   >
@@ -18437,13 +18590,24 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                                 <span className={styles.assetQuotePartnerBody}>
                                   <span className={styles.assetQuotePartnerHeader}>
                                     <strong>{quotePartnerName(partner)}</strong>
+                                    {partner.isAim4priceManaged ? (
+                                      <small className={styles.assetQuoteManagedBadge}>Aim4price managed</small>
+                                    ) : partner.isActivePartner ? (
+                                      <small className={styles.assetQuoteActivePartnerBadge}>Active partner</small>
+                                    ) : null}
                                   </span>
                                   <span className={styles.assetQuotePartnerMeta}>
                                     <span>{quotePartnerLocation(partner)}</span>
                                     <span>{quotePartnerServicesDisplay(partner)}</span>
                                     <span>{quotePartnerRadiusDisplay(partner)}</span>
                                   </span>
-                                  {partner.brandFocus ? <span className={styles.assetQuotePartnerCopy}>Brands: {partner.brandFocus}</span> : null}
+                                  {partner.isAim4priceManaged ? (
+                                    <span className={styles.assetQuoteManagedCopy}>
+                                      This is a service area, not a physical branch. Aim4price will help locate a suitable provider.
+                                    </span>
+                                  ) : partner.brandFocus ? (
+                                    <span className={styles.assetQuotePartnerCopy}>Brands: {partner.brandFocus}</span>
+                                  ) : null}
                                 </span>
                               </button>
                             );
@@ -18471,14 +18635,13 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                     </aside>
 
                     <div className={styles.assetQuoteMapShell}>
-                      {quotePartnersWithCoordinates.length ? (
-                        <div ref={quoteMapElementRef} className={styles.assetQuoteMapCanvas} aria-label="Business map" />
-                      ) : (
-                        <div className={styles.assetQuoteMapFallback}>
+                      <div ref={quoteMapElementRef} className={styles.assetQuoteMapCanvas} aria-label="Business and Aim4price assistance map" />
+                      {!isLoadingQuotePartners && !quotePartnersWithCoordinates.length ? (
+                        <div className={styles.assetQuoteMapEmptyOverlay}>
                           <OptionsIcon className={styles.buttonIcon} />
-                          <p>Choose any business from the list. Map pins appear when a location is saved.</p>
+                          <p>Move the map or search a town to load nearby partners and Aim4price service areas.</p>
                         </div>
-                      )}
+                      ) : null}
                     </div>
                   </div>
 
@@ -18527,7 +18690,15 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                               <div className={styles.assetQuoteSelectedCompanyInfo}>
                                 <div className={styles.assetQuoteSelectedCompanyTitle}>
                                   <strong>{quotePartnerName(selectedQuotePartner)}</strong>
+                                  {selectedQuotePartner.isAim4priceManaged ? (
+                                    <small className={styles.assetQuoteManagedBadge}>Aim4price managed</small>
+                                  ) : null}
                                   <span>{quotePartnerLocation(selectedQuotePartner)}</span>
+                                  {selectedQuotePartner.isAim4priceManaged ? (
+                                    <p className={styles.assetQuoteManagedSelectedNotice}>
+                                      This service area is not a physical branch. Aim4price will help locate a suitable provider and will not share your assets with an external provider without your further approval.
+                                    </p>
+                                  ) : null}
                                 </div>
 
                                 <div className={styles.assetQuoteSelectedContactList}>
@@ -18711,7 +18882,9 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                             <div className={styles.assetQuotePopiaBox}>
                               <strong>Disclaimer and POPIA note</strong>
                               <p>
-                                {isFullRegisterQuoteLead
+                                {hasManagedAssistanceSelection
+                                  ? `By sending this request, you allow Aim4price to share the selected asset information and your saved business contact details with the relevant Aim4price master assistance account. Aim4price will help locate a suitable provider and will not share your assets with an external provider without your further approval.`
+                                  : isFullRegisterQuoteLead
                                   ? isAssetGroupShare
                                     ? `By sending this request, you allow Aim4price to share ${activeShareName}, its grouped asset information and your saved business contact details with the selected ${selectedQuotePartners.length === 1 ? 'company' : 'companies'}.`
                                     : selectedQuotePartners.length === 1 && selectedQuoteOption.leadType === 'finance' && selectedQuotePartner?.accountSubtype === 'accountant'
@@ -18723,7 +18896,9 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                                 {' '}This is only a lead request and does not create a finance, insurance, valuation or sales agreement.
                               </p>
                               <p>
-                                {isFullRegisterQuoteLead
+                                {hasManagedAssistanceSelection
+                                  ? 'You confirm that you may share the selected asset information and understand that the chosen town represents a service area, not a physical Aim4price branch.'
+                                  : isFullRegisterQuoteLead
                                   ? isAssetGroupShare
                                     ? `You confirm that you may share every grouped asset in this umbrella and understand that the selected ${selectedQuotePartners.length === 1 ? 'company may' : 'companies may'} contact you outside Aim4price.`
                                     : selectedQuoteOption.leadType === 'replacement_quote'

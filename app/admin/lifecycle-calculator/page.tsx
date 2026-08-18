@@ -33,6 +33,9 @@ export default async function LifecycleCalculatorPage() {
             >
               Lifecycle Model
             </Link>
+            <Link href="/admin/assistance-network" className={styles.adminButton}>
+              Assistance Network
+            </Link>
           </nav>
         </header>
 

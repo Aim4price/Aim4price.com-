@@ -4494,6 +4494,122 @@
     letter-spacing: -0.026em;
   }
 }
+
+/* Aim4price-managed national assistance map */
+.assetQuoteManagedBadge,
+.assetQuoteActivePartnerBadge {
+  display: inline-flex !important;
+  align-items: center !important;
+  width: fit-content !important;
+  padding: 0.28rem 0.55rem !important;
+  border: 1px solid #b9d69d !important;
+  border-radius: 999px !important;
+  color: #315f18 !important;
+  background: #edf9e3 !important;
+  font-size: 0.66rem !important;
+  font-weight: 850 !important;
+  letter-spacing: 0.02em !important;
+  text-transform: uppercase !important;
+}
+
+.assetQuoteActivePartnerBadge {
+  border-color: #b7d2ed !important;
+  color: #21547e !important;
+  background: #edf6ff !important;
+}
+
+.assetQuoteManagedCopy,
+.assetQuoteManagedSelectedNotice {
+  color: #426226 !important;
+  font-size: 0.78rem !important;
+  font-weight: 700 !important;
+  line-height: 1.45 !important;
+}
+
+.assetQuoteManagedSelectedNotice {
+  margin: 0.35rem 0 0 !important;
+  padding: 0.72rem !important;
+  border: 1px solid #cfe4bb !important;
+  border-radius: 0.8rem !important;
+  background: #f3faed !important;
+}
+
+.assetQuoteMapShell {
+  position: relative !important;
+}
+
+.assetQuoteMapEmptyOverlay {
+  position: absolute !important;
+  z-index: 500 !important;
+  left: 50% !important;
+  bottom: 1rem !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.55rem !important;
+  width: min(90%, 29rem) !important;
+  padding: 0.7rem 0.9rem !important;
+  border: 1px solid rgba(200, 212, 219, 0.94) !important;
+  border-radius: 0.9rem !important;
+  background: rgba(255, 255, 255, 0.94) !important;
+  box-shadow: 0 12px 30px rgba(20, 35, 46, 0.14) !important;
+  transform: translateX(-50%) !important;
+}
+
+.assetQuoteMapEmptyOverlay p { margin: 0 !important; font-size: 0.78rem !important; line-height: 1.4 !important; }
+
+.assetQuoteMapShell :global(.assetQuoteMapMarker--licensing) {
+  --quote-marker-color: #7c3aed;
+  --quote-marker-shadow: rgba(124, 58, 237, 0.3);
+  --quote-marker-ring: rgba(124, 58, 237, 0.16);
+}
+
+.assetQuoteMapShell :global(.assetQuoteMapMarker--managed .assetQuoteMapMarkerPin) {
+  border-color: #f5e6a6 !important;
+  outline: 3px solid rgba(188, 132, 23, 0.34) !important;
+}
+
+.assetQuoteMapShell :global(.marker-cluster-small),
+.assetQuoteMapShell :global(.marker-cluster-medium),
+.assetQuoteMapShell :global(.marker-cluster-large) {
+  background: rgba(41, 82, 54, 0.22) !important;
+}
+
+.assetQuoteMapShell :global(.marker-cluster-small div),
+.assetQuoteMapShell :global(.marker-cluster-medium div),
+.assetQuoteMapShell :global(.marker-cluster-large div) {
+  color: #fff !important;
+  background: #295236 !important;
+  font-weight: 850 !important;
+}
+
+.assetQuoteMapShell :global(.assetQuoteManagedBadge) {
+  display: inline-flex !important;
+  margin-top: 0.45rem !important;
+  padding: 0.22rem 0.5rem !important;
+  border-radius: 999px !important;
+  color: #315f18 !important;
+  background: #edf9e3 !important;
+  font-size: 0.65rem !important;
+  font-weight: 850 !important;
+  text-transform: uppercase !important;
+}
+
+.assetQuoteMapShell :global(.assetQuoteManagedNotice) {
+  margin: 0.7rem 0 !important;
+  padding: 0.65rem !important;
+  border-radius: 0.7rem !important;
+  color: #426226 !important;
+  background: #f3faed !important;
+  font-size: 0.75rem !important;
+  line-height: 1.4 !important;
+}
+
+@media (max-width: 760px) {
+  .assetQuoteMapEmptyOverlay {
+    bottom: 0.65rem !important;
+    padding: 0.58rem 0.7rem !important;
+  }
+}
 /* === Export modal cleanup and spacing polish === */
 .exportModal {
   width: min(100%, 780px) !important;

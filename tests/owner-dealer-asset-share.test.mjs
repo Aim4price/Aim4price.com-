@@ -16,7 +16,7 @@ test('bulk dealer sharing is owner-only, bounded and ownership checked before cr
   assert.match(routeSource, /profile\.accountType !== 'owner' \|\| isOwnerAppSession\(session\)/);
   assert.match(routeSource, /dealerShareAssetIds\.map\(\(selectedAssetId\) => getAssetRegisterItemById\(session\.user\.id, selectedAssetId\)\)/);
   assert.ok(
-    routeSource.indexOf('ownedAssets.some') < routeSource.indexOf('const lead = await createAssetLead'),
+    routeSource.indexOf('ownedAssets.some') < routeSource.indexOf('const leads = []'),
     'all selected assets must be verified before the lead is written',
   );
 });
@@ -32,11 +32,11 @@ test('one dealer lead grants the same revocable permissions to every selected as
 
 test('owner register dealer flow supports selected or all assets', () => {
   assert.match(registerSource, /selectedDealerShareAssetIds/);
-  assert.match(registerSource, /setSelectedDealerShareAssetIds\(leadType === 'replacement_quote' \? assets\.map/);
+  assert.match(registerSource, /setSelectedDealerShareAssetIds\([\s\S]*?leadType === 'replacement_quote' \|\| leadType === 'license_renewal'[\s\S]*?eligibleShareAssets\.map/);
   assert.match(registerSource, /<DealerAssetShareSelection/);
-  assert.match(registerSource, /assetIds: isSelectedDealerRegisterShare \? selectedDealerShareAssetIds : undefined/);
-  assert.match(registerSource, /ongoing access can be revoked/);
-  assert.match(registerSource, /Choose at least one asset to share with the dealer/);
+  assert.match(registerSource, /isSelectedRegisterAssetShare \? selectedDealerShareAssetIds : undefined/);
+  assert.match(registerSource, /Access stays revocable/);
+  assert.match(registerSource, /Choose at least one asset to share with the \$\{formatQuotePartnerType/);
 });
 
 test('asset selector is accessible and remains usable for long registers', () => {
