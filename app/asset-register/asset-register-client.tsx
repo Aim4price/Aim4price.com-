@@ -66,12 +66,14 @@ import {
   normalizeAssetDocumentType,
   type AssetDocumentCategory,
 } from '../../lib/asset-document-permissions';
+import assistanceServiceLocations from '../../database/seeds/aim4price-assistance-locations.json';
 
 type NoticeTone = 'success' | 'warning' | 'error';
 type PartnerType = 'dealer' | 'finance' | 'insurance' | 'licensing';
 type AssetLeadType = 'finance' | 'insurance' | 'replacement_quote' | 'license_renewal';
 type QuoteLeadStep = 'message' | 'consent' | null;
 type QuoteScope = 'asset' | 'register';
+type QuoteDirectoryStage = 'location' | 'map';
 type DisposalReason = 'sold' | 'traded_in' | 'scrapped' | 'written_off' | 'mistake_duplicate' | 'other';
 type AssetMoveDestination = 'register' | 'umbrella';
 
@@ -1310,6 +1312,7 @@ const LEAFLET_CLUSTER_CSS_ID = 'aim4price-leaflet-cluster-css';
 const LEAFLET_CLUSTER_DEFAULT_CSS_ID = 'aim4price-leaflet-cluster-default-css';
 const DEFAULT_PARTNER_MAP_CENTER: [number, number] = [-29, 24];
 const DEFAULT_PARTNER_MAP_ZOOM = 5;
+const QUOTE_LOCATION_TOWN_ZOOM = 9;
 const ASSET_SETTINGS_SAVED_ASSET_ZOOM = 13;
 const ASSET_SETTINGS_PROFILE_PIN_ZOOM = 12;
 const ASSET_SETTINGS_TOWN_ZOOM = 11;
@@ -1377,6 +1380,11 @@ const ASSET_SETTINGS_SA_PROVINCE_MAP_LOCATIONS: AssetSettingsMapLookupLocation[]
   { keys: ['north west', 'northwest'], center: [-26.6639, 25.2838] },
 ];
 
+const QUOTE_LOCATION_SUGGESTIONS = Array.from(new Set([
+  ...assistanceServiceLocations.map((location) => `${location.town}, ${location.province}`),
+  ...assistanceServiceLocations.map((location) => location.province),
+]));
+
 function normalizeAssetSettingsMapLookupText(value: unknown): string {
   return String(value ?? '')
     .normalize('NFD')
@@ -1418,6 +1426,58 @@ function findAssetSettingsLookupLocation(
   }
 
   return null;
+}
+
+function resolveQuoteLocationMapTarget(value: string): AssetSettingsApproximateMapLocation | null {
+  const lookupText = normalizeAssetSettingsMapLookupText(value);
+  if (!lookupText) return null;
+
+  const coordinateText = value.trim();
+  if (/^(?:gps\s*)?-?\d+(?:[.,]\d+)?\s*[,;]\s*-?\d+(?:[.,]\d+)?$/i.test(coordinateText)) {
+    const coordinatePair = parseAssetSettingsCoordinatePair(coordinateText);
+    if (
+      coordinatePair
+      && coordinatePair.latitude >= -90
+      && coordinatePair.latitude <= 90
+      && coordinatePair.longitude >= -180
+      && coordinatePair.longitude <= 180
+    ) {
+      return { center: [coordinatePair.latitude, coordinatePair.longitude], zoom: QUOTE_LOCATION_TOWN_ZOOM };
+    }
+  }
+
+  const paddedLookupText = ` ${lookupText} `;
+  const seededLocation = assistanceServiceLocations.find((location) => (
+    paddedLookupText.includes(` ${normalizeAssetSettingsMapLookupText(location.town)} `)
+  ));
+
+  if (seededLocation) {
+    return {
+      center: [seededLocation.latitude, seededLocation.longitude],
+      zoom: seededLocation.serviceRadiusKm >= 120 ? 8 : QUOTE_LOCATION_TOWN_ZOOM,
+    };
+  }
+
+  const knownTown = findAssetSettingsLookupLocation(
+    lookupText,
+    ASSET_SETTINGS_SA_TOWN_MAP_LOCATIONS,
+    QUOTE_LOCATION_TOWN_ZOOM,
+  );
+  if (knownTown) {
+    return { ...knownTown, zoom: Math.min(knownTown.zoom, QUOTE_LOCATION_TOWN_ZOOM) };
+  }
+
+  return findAssetSettingsLookupLocation(
+    lookupText,
+    ASSET_SETTINGS_SA_PROVINCE_MAP_LOCATIONS,
+    ASSET_SETTINGS_PROVINCE_ZOOM,
+  );
+}
+
+function defaultQuoteLocationInput(asset: RegisterAsset | null, profile: AccountProfile | null): string {
+  const assetLocation = getAssetSettingsManualLocationTextInput(asset);
+  if (assetLocation) return assetLocation;
+  return [profile?.townCity, profile?.province].filter(Boolean).join(', ');
 }
 
 function resolveAssetSettingsProfileMapLocation(profile: AccountProfile | null): AssetSettingsApproximateMapLocation | null {
@@ -6197,6 +6257,10 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
   const [quoteAsset, setQuoteAsset] = useState<RegisterAsset | null>(null);
   const [quoteScope, setQuoteScope] = useState<QuoteScope>('asset');
   const [selectedQuoteLeadType, setSelectedQuoteLeadType] = useState<AssetLeadType | null>(null);
+  const [quoteDirectoryStage, setQuoteDirectoryStage] = useState<QuoteDirectoryStage>('location');
+  const [quoteLocationInput, setQuoteLocationInput] = useState('');
+  const [quoteLocationError, setQuoteLocationError] = useState('');
+  const [isResolvingQuoteLocation, setIsResolvingQuoteLocation] = useState(false);
   const [quotePartners, setQuotePartners] = useState<PartnerDirectoryEntry[]>([]);
   const [selectedQuotePartnerIds, setSelectedQuotePartnerIds] = useState<string[]>([]);
   const [quotePartnerSearch, setQuotePartnerSearch] = useState('');
@@ -6224,10 +6288,10 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
   const quoteMapElementRef = useRef<HTMLDivElement | null>(null);
   const quoteLeafletMapRef = useRef<any>(null);
   const quoteMarkerLayerRef = useRef<any>(null);
-  const quoteMarkersByPartnerRef = useRef<Map<string, any>>(new Map());
   const quoteViewportTimeoutRef = useRef<number | null>(null);
   const quotePartnerRequestRef = useRef(0);
   const quoteFitResultsRef = useRef(false);
+  const quoteInitialMapLocationRef = useRef<AssetSettingsApproximateMapLocation | null>(null);
   const selectedQuoteLeadTypeRef = useRef<AssetLeadType | null>(null);
   const quotePartnerSearchRef = useRef('');
   const assetSettingsMapElementRef = useRef<HTMLDivElement | null>(null);
@@ -8148,7 +8212,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
   }, [activeAsset, anyModalOpen, assetRegisterMoveAsset, accountantNoteAsset, isSavingAccountantNote, deleteCandidateAsset, disposalCandidateAsset, acquisitionDetailsAsset, isSavingAcquisitionDetails, isAcquisitionChoiceOpen, isAddAssetDestinationModalOpen, isAddChoiceModalOpen, isAssetGroupModalOpen, isAssetFilterOpen, isChangeRegisterModalOpen, isAssetModalOpen, isAssetReportModalOpen, isExportModalOpen, isPricingModalOpen, pricingPreview, isQrModalOpen, isRegisterShareModalOpen, isSummaryModalOpen, isAccountantReportsOpen, marketplaceAsset, projectionAsset, isQuoteModalOpen, isQuoteTrackingSettingsOpen, quoteLeadStep, isAssetSettingsModalOpen, pendingUsageOverride, isManualConversionConfirmOpen, isSavingAssetSettings, replacementPriceRevaluePrompt, photoViewer]);
 
   useEffect(() => {
-    if (!isQuoteModalOpen || !selectedQuoteOption || !quoteMapElementRef.current) {
+    if (!isQuoteModalOpen || !selectedQuoteOption || quoteDirectoryStage !== 'map' || !quoteMapElementRef.current) {
       return undefined;
     }
 
@@ -8160,9 +8224,13 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
         if (cancelled || !quoteMapElementRef.current) return;
 
         if (!quoteLeafletMapRef.current) {
+          const initialMapLocation = quoteInitialMapLocationRef.current ?? {
+            center: DEFAULT_PARTNER_MAP_CENTER,
+            zoom: DEFAULT_PARTNER_MAP_ZOOM,
+          };
           quoteLeafletMapRef.current = L.map(quoteMapElementRef.current, { zoomControl: true }).setView(
-            DEFAULT_PARTNER_MAP_CENTER,
-            DEFAULT_PARTNER_MAP_ZOOM,
+            initialMapLocation.center,
+            initialMapLocation.zoom,
           );
 
           L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -8204,7 +8272,6 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
             : L.layerGroup().addTo(quoteLeafletMapRef.current);
         }
 
-        quoteMarkersByPartnerRef.current.clear();
         const bounds = L.latLngBounds([]);
 
         quotePartnersWithCoordinates.forEach((partner) => {
@@ -8223,36 +8290,14 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
             className: 'assetQuotePartnerPopup',
             minWidth: 320,
             maxWidth: 430,
-            autoPan: true,
-            autoPanPadding: [34, 34],
+            autoPan: false,
           });
-          marker.on('click', () => focusQuotePartnerOnMap(partner));
-          quoteMarkersByPartnerRef.current.set(partner.userId, marker);
           bounds.extend([lat, lng]);
         });
 
         if (quoteFitResultsRef.current && bounds.isValid()) {
           quoteFitResultsRef.current = false;
           quoteLeafletMapRef.current.fitBounds(bounds.pad(0.18), { maxZoom: 12 });
-        }
-
-        const selectedMarker = selectedQuotePartnerIds.length === 1
-          ? quoteMarkersByPartnerRef.current.get(selectedQuotePartnerIds[0])
-          : null;
-        if (selectedMarker) {
-          window.setTimeout(() => {
-            if (!cancelled) {
-              const selectedLatLng = selectedMarker.getLatLng();
-              const currentZoom = typeof quoteLeafletMapRef.current?.getZoom === 'function' ? quoteLeafletMapRef.current.getZoom() : DEFAULT_PARTNER_MAP_ZOOM;
-              const nextZoom = Math.max(currentZoom, 11);
-              selectedMarker.openPopup();
-              if (typeof quoteLeafletMapRef.current?.flyTo === 'function') {
-                quoteLeafletMapRef.current.flyTo(selectedLatLng, nextZoom, { animate: true, duration: 0.35 });
-              } else {
-                quoteLeafletMapRef.current?.setView(selectedLatLng, nextZoom, { animate: true });
-              }
-            }
-          }, 120);
         }
 
         window.setTimeout(() => quoteLeafletMapRef.current?.invalidateSize(), 80);
@@ -8266,10 +8311,10 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     return () => {
       cancelled = true;
     };
-  }, [isQuoteModalOpen, selectedQuoteOption, quotePartnersWithCoordinates, selectedQuotePartnerIds]);
+  }, [isQuoteModalOpen, quoteDirectoryStage, selectedQuoteOption, quotePartnersWithCoordinates, selectedQuotePartnerIds]);
 
   useEffect(() => {
-    if (!isQuoteModalOpen || !selectedQuoteOption) return undefined;
+    if (!isQuoteModalOpen || !selectedQuoteOption || quoteDirectoryStage !== 'map') return undefined;
 
     const handleQuotePopupSelect = (event: MouseEvent) => {
       const target = event.target;
@@ -8289,10 +8334,10 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
 
     document.addEventListener('click', handleQuotePopupSelect, true);
     return () => document.removeEventListener('click', handleQuotePopupSelect, true);
-  }, [isQuoteModalOpen, selectedQuoteOption, quotePartners]);
+  }, [isQuoteModalOpen, quoteDirectoryStage, selectedQuoteOption, quotePartners]);
 
   useEffect(() => {
-    if (isQuoteModalOpen && selectedQuoteOption) {
+    if (isQuoteModalOpen && selectedQuoteOption && quoteDirectoryStage === 'map') {
       return undefined;
     }
 
@@ -8305,11 +8350,10 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
       quoteLeafletMapRef.current.remove();
       quoteLeafletMapRef.current = null;
       quoteMarkerLayerRef.current = null;
-      quoteMarkersByPartnerRef.current.clear();
     }
 
     return undefined;
-  }, [isQuoteModalOpen, selectedQuoteOption]);
+  }, [isQuoteModalOpen, quoteDirectoryStage, selectedQuoteOption]);
 
   useEffect(() => {
     if (!isAssetSettingsModalOpen || assetSettingsView !== 'locationMap' || !assetSettingsMapElementRef.current) {
@@ -10425,15 +10469,39 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     setProjectionAsset((current) => (current?.id === nextAsset.id ? preserveLicenseRenewalAlert(current, nextAsset) : current));
   }
 
-  function resetAssetQuoteState(nextScope: QuoteScope = 'asset') {
-    quotePartnerRequestRef.current += 1;
-    quoteFitResultsRef.current = false;
+  function removeQuoteMap() {
     if (quoteViewportTimeoutRef.current !== null) {
       window.clearTimeout(quoteViewportTimeoutRef.current);
       quoteViewportTimeoutRef.current = null;
     }
+
+    if (quoteLeafletMapRef.current) {
+      quoteLeafletMapRef.current.remove();
+      quoteLeafletMapRef.current = null;
+      quoteMarkerLayerRef.current = null;
+    }
+  }
+
+  function prepareQuoteLocationStep(asset: RegisterAsset | null) {
+    quoteInitialMapLocationRef.current = null;
+    quoteFitResultsRef.current = false;
+    quotePartnerSearchRef.current = '';
+    setQuoteDirectoryStage('location');
+    setQuoteLocationInput(defaultQuoteLocationInput(asset, accountProfile));
+    setQuoteLocationError('');
+    setIsResolvingQuoteLocation(false);
+  }
+
+  function resetAssetQuoteState(nextScope: QuoteScope = 'asset') {
+    quotePartnerRequestRef.current += 1;
+    quoteFitResultsRef.current = false;
+    quoteInitialMapLocationRef.current = null;
     setQuoteScope(nextScope);
     setSelectedQuoteLeadType(null);
+    setQuoteDirectoryStage('location');
+    setQuoteLocationInput('');
+    setQuoteLocationError('');
+    setIsResolvingQuoteLocation(false);
     setQuotePartners([]);
     setSelectedQuotePartnerIds([]);
     setQuotePartnerSearch('');
@@ -10452,13 +10520,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     setQuoteIncludeCostLedger(true);
     setIsLoadingQuotePartners(false);
     setIsSendingQuoteLead(false);
-
-    if (quoteLeafletMapRef.current) {
-      quoteLeafletMapRef.current.remove();
-      quoteLeafletMapRef.current = null;
-      quoteMarkerLayerRef.current = null;
-      quoteMarkersByPartnerRef.current.clear();
-    }
+    removeQuoteMap();
   }
 
   function openAssetQuoteOptions(asset: RegisterAsset) {
@@ -10480,13 +10542,13 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     leadType: AssetLeadType | null = selectedQuoteLeadType,
     searchValue = quotePartnerSearch,
     bounds?: { west: number; south: number; east: number; north: number },
-  ) {
+  ): Promise<PartnerDirectoryEntry[]> {
     const option = quoteOptionForLeadType(leadType);
 
     if (!option) {
       setQuotePartners([]);
       setSelectedQuotePartnerIds([]);
-      return;
+      return [];
     }
 
     const requestId = quotePartnerRequestRef.current + 1;
@@ -10520,7 +10582,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
         throw new Error(extractApiError(payload, 'Failed to load partner directory.'));
       }
 
-      if (requestId !== quotePartnerRequestRef.current) return;
+      if (requestId !== quotePartnerRequestRef.current) return [];
 
       const loadedPartners = data.partners;
       setQuotePartners((current) => {
@@ -10530,14 +10592,118 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
         );
         return Array.from(nextPartners.values());
       });
+      return loadedPartners;
     } catch (error) {
-      if (requestId !== quotePartnerRequestRef.current) return;
+      if (requestId !== quotePartnerRequestRef.current) return [];
       setQuotePartners([]);
       setSelectedQuotePartnerIds([]);
       setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'Failed to load partner directory.' });
+      return [];
     } finally {
       if (requestId === quotePartnerRequestRef.current) setIsLoadingQuotePartners(false);
     }
+  }
+
+  function showQuoteMapForLocation(
+    location: AssetSettingsApproximateMapLocation,
+    label: string,
+    options: { preservePartners?: boolean } = {},
+  ) {
+    removeQuoteMap();
+    quoteInitialMapLocationRef.current = location;
+    quoteFitResultsRef.current = false;
+    quotePartnerSearchRef.current = '';
+    setQuotePartnerSearch('');
+    setQuoteLocationInput(label);
+    setQuoteLocationError('');
+    setSelectedQuotePartnerIds([]);
+    if (!options.preservePartners) setQuotePartners([]);
+    setQuoteDirectoryStage('map');
+  }
+
+  async function submitQuoteLocation(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!selectedQuoteOption || isResolvingQuoteLocation) return;
+
+    const locationValue = quoteLocationInput.replace(/\s+/g, ' ').trim();
+    if (locationValue.length < 2) {
+      setQuoteLocationError('Enter a town, city or province to show nearby assistance.');
+      return;
+    }
+
+    setQuoteLocationError('');
+    const knownLocation = resolveQuoteLocationMapTarget(locationValue);
+    if (knownLocation) {
+      quotePartnerRequestRef.current += 1;
+      showQuoteMapForLocation(knownLocation, locationValue);
+      return;
+    }
+
+    setIsResolvingQuoteLocation(true);
+    try {
+      const matches = await loadQuotePartners(selectedQuoteOption.leadType, locationValue);
+      const firstLocatedMatch = matches.find(hasQuotePartnerCoordinates);
+      if (!firstLocatedMatch) {
+        setQuoteLocationError('We could not place that area on the map. Try the nearest town or province.');
+        return;
+      }
+
+      showQuoteMapForLocation({
+        center: [Number(firstLocatedMatch.latitude), Number(firstLocatedMatch.longitude)],
+        zoom: QUOTE_LOCATION_TOWN_ZOOM,
+      }, locationValue, { preservePartners: true });
+    } finally {
+      setIsResolvingQuoteLocation(false);
+    }
+  }
+
+  async function useCurrentQuoteLocation() {
+    if (isResolvingQuoteLocation) return;
+    if (typeof navigator === 'undefined' || !navigator.geolocation) {
+      setQuoteLocationError('Current location is not available in this browser. Enter your town or province instead.');
+      return;
+    }
+
+    setQuoteLocationError('');
+    setIsResolvingQuoteLocation(true);
+    try {
+      const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          enableHighAccuracy: false,
+          timeout: 10000,
+          maximumAge: 300000,
+        });
+      });
+      const latitude = position.coords.latitude;
+      const longitude = position.coords.longitude;
+      if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+        throw new Error('Your current location could not be read. Enter your town or province instead.');
+      }
+
+      quotePartnerRequestRef.current += 1;
+      showQuoteMapForLocation({ center: [latitude, longitude], zoom: QUOTE_LOCATION_TOWN_ZOOM }, 'Current location');
+    } catch (error) {
+      const permissionDenied = typeof error === 'object' && error !== null && 'code' in error && Number((error as { code?: unknown }).code) === 1;
+      setQuoteLocationError(permissionDenied
+        ? 'Location permission was denied. Enter your town or province instead.'
+        : error instanceof Error ? error.message : 'Your current location could not be read. Enter your town or province instead.');
+    } finally {
+      setIsResolvingQuoteLocation(false);
+    }
+  }
+
+  function changeQuoteLocation() {
+    if (isSendingQuoteLead) return;
+    quotePartnerRequestRef.current += 1;
+    removeQuoteMap();
+    quoteInitialMapLocationRef.current = null;
+    quoteFitResultsRef.current = false;
+    quotePartnerSearchRef.current = '';
+    setQuoteDirectoryStage('location');
+    setQuoteLocationError('');
+    setQuotePartnerSearch('');
+    setQuotePartners([]);
+    setSelectedQuotePartnerIds([]);
   }
 
   function openQuotePartnerPicker(leadType: AssetLeadType) {
@@ -10557,6 +10723,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     }
 
     setSelectedQuoteLeadType(leadType);
+    prepareQuoteLocationStep(quoteAsset);
     setSelectedQuotePartnerIds([]);
     setQuotePartnerSearch('');
     setQuoteOwnerMessage('');
@@ -10580,6 +10747,11 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     }
 
     setSelectedQuoteLeadType(null);
+    setQuoteDirectoryStage('location');
+    setQuoteLocationInput('');
+    setQuoteLocationError('');
+    setIsResolvingQuoteLocation(false);
+    quoteInitialMapLocationRef.current = null;
     setQuotePartners([]);
     setSelectedQuotePartnerIds([]);
     setQuotePartnerSearch('');
@@ -10589,33 +10761,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     setQuoteTrackingPermissions({ ...DEFAULT_DEALER_MAINTENANCE_PERMISSIONS });
     setIsQuoteTrackingSettingsOpen(false);
 
-    if (quoteLeafletMapRef.current) {
-      quoteLeafletMapRef.current.remove();
-      quoteLeafletMapRef.current = null;
-      quoteMarkerLayerRef.current = null;
-      quoteMarkersByPartnerRef.current.clear();
-    }
-  }
-
-  function focusQuotePartnerOnMap(partner: PartnerDirectoryEntry) {
-    const marker = quoteMarkersByPartnerRef.current.get(partner.userId);
-    const map = quoteLeafletMapRef.current;
-
-    if (!map || !marker) return;
-
-    const latLng = marker.getLatLng();
-    const currentZoom = typeof map.getZoom === 'function' ? map.getZoom() : DEFAULT_PARTNER_MAP_ZOOM;
-    const nextZoom = Math.max(currentZoom, 11);
-
-    if (typeof map.flyTo === 'function') {
-      map.flyTo(latLng, nextZoom, { animate: true, duration: 0.35 });
-    } else {
-      map.setView(latLng, nextZoom, { animate: true });
-    }
-
-    window.setTimeout(() => {
-      marker.openPopup();
-    }, 120);
+    removeQuoteMap();
   }
 
   function toggleQuotePartnerSelection(partner: PartnerDirectoryEntry) {
@@ -13505,6 +13651,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     resetAssetQuoteState('register');
     setQuoteAsset(anchorAsset);
     setSelectedQuoteLeadType(leadType);
+    prepareQuoteLocationStep(anchorAsset);
     setSelectedQuotePartnerIds([]);
     setQuotePartnerSearch('');
     setQuoteOwnerMessage('');
@@ -18478,16 +18625,20 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
           <div className={styles.modalBackdrop} onClick={closeAssetQuoteModal} />
 
           <div
-            className={`${styles.optionsModal} ${styles.assetQuoteModal} ${selectedQuoteOption ? styles.assetQuotePartnerPickerModal : ''}`}
+            className={`${styles.optionsModal} ${styles.assetQuoteModal} ${selectedQuoteOption && quoteDirectoryStage === 'map' ? styles.assetQuotePartnerPickerModal : ''} ${selectedQuoteOption && quoteDirectoryStage === 'location' ? styles.assetQuoteLocationPickerModal : ''}`}
             role="dialog"
             aria-modal="true"
             aria-labelledby="asset-quote-title"
           >
             <div className={`${styles.modalHeader} ${styles.optionsModalHeader} ${styles.assetQuoteModalHeader}`}>
               <div className={styles.modalHeaderText}>
-                <h3 id="asset-quote-title">{selectedQuoteOption ? selectedQuoteOption.mapTitle : isFullRegisterQuoteLead ? `Share ${activeShareName}` : quoteAsset?.title}</h3>
+                <h3 id="asset-quote-title">{selectedQuoteOption
+                  ? quoteDirectoryStage === 'location' ? 'Where do you need help?' : selectedQuoteOption.mapTitle
+                  : isFullRegisterQuoteLead ? `Share ${activeShareName}` : quoteAsset?.title}</h3>
                 {!selectedQuoteOption ? (
                   <p>{quoteAsset ? `${buildAssetMeta(quoteAsset)} · ${money(quoteAsset.value)} excl. VAT` : ''}</p>
+                ) : quoteDirectoryStage === 'location' ? (
+                  <p>Choose an area first. We will open the map there and show nearby active partners before Aim4price assistance listings.</p>
                 ) : isFullRegisterQuoteLead ? (
                   selectedQuoteOption.leadType === 'replacement_quote' || selectedQuoteOption.leadType === 'license_renewal' ? (
                     <p>{isAssetGroupShare
@@ -18540,6 +18691,63 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                     })}
                   </div>
                 </div>
+              ) : quoteDirectoryStage === 'location' ? (
+                <div className={styles.assetQuoteLocationStage}>
+                  <section className={styles.assetQuoteLocationCard} aria-labelledby="asset-quote-location-heading">
+                    <span className={styles.assetQuoteLocationIcon} aria-hidden="true">
+                      <SearchIcon className={styles.buttonIcon} />
+                    </span>
+
+                    <div className={styles.assetQuoteLocationCopy}>
+                      <h4 id="asset-quote-location-heading">Start with your town or area</h4>
+                      <p>This keeps the map steady and loads only the partners and Aim4price service areas near you.</p>
+                    </div>
+
+                    <form className={styles.assetQuoteLocationForm} onSubmit={submitQuoteLocation}>
+                      <label htmlFor="asset-quote-location-input">Town, city or province</label>
+                      <input
+                        id="asset-quote-location-input"
+                        className={styles.assetQuoteLocationInput}
+                        value={quoteLocationInput}
+                        onChange={(event) => {
+                          setQuoteLocationInput(event.target.value);
+                          if (quoteLocationError) setQuoteLocationError('');
+                        }}
+                        placeholder="e.g. Johannesburg or Northern Cape"
+                        list="asset-quote-location-options"
+                        autoComplete="address-level2"
+                        autoFocus
+                        aria-describedby="asset-quote-location-hint"
+                        aria-invalid={Boolean(quoteLocationError)}
+                      />
+                      <datalist id="asset-quote-location-options">
+                        {QUOTE_LOCATION_SUGGESTIONS.map((location) => (
+                          <option key={location} value={location} />
+                        ))}
+                      </datalist>
+
+                      <small id="asset-quote-location-hint" className={styles.assetQuoteLocationHint}>
+                        You can also use your current device location. We only use it to centre this search.
+                      </small>
+                      {quoteLocationError ? (
+                        <p className={styles.assetQuoteLocationError} role="alert">{quoteLocationError}</p>
+                      ) : null}
+
+                      <div className={styles.assetQuoteLocationActions}>
+                        <button type="button" className={styles.assetQuoteBackButton} onClick={goBackToQuoteOptions} disabled={isResolvingQuoteLocation}>
+                          <ChevronLeftIcon className={styles.buttonIcon} />
+                          <span>Back</span>
+                        </button>
+                        <button type="button" className={styles.secondaryButton} onClick={() => void useCurrentQuoteLocation()} disabled={isResolvingQuoteLocation}>
+                          Use current location
+                        </button>
+                        <button type="submit" className={styles.primaryButton} disabled={isResolvingQuoteLocation || !quoteLocationInput.trim()}>
+                          {isResolvingQuoteLocation ? 'Finding area...' : 'Show nearby help'}
+                        </button>
+                      </div>
+                    </form>
+                  </section>
+                </div>
               ) : (
                 <div className={styles.assetQuoteContent}>
                   <form
@@ -18554,7 +18762,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                       className={styles.assetQuoteSearchInput}
                       value={quotePartnerSearch}
                       onChange={(event) => setQuotePartnerSearch(event.target.value)}
-                      placeholder="Search by business, town, province, service or brand"
+                      placeholder="Search another area, company, service or brand"
                       aria-label="Search business directory"
                     />
                     <button type="submit" className={styles.secondaryButton} disabled={isLoadingQuotePartners}>
@@ -18569,6 +18777,13 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                         <button type="button" className={styles.assetQuoteBackButton} onClick={goBackToQuoteOptions} disabled={isSendingQuoteLead}>
                           <ChevronLeftIcon className={styles.buttonIcon} />
                           <span>Back</span>
+                        </button>
+                        <span className={styles.assetQuoteAreaSummary}>
+                          <small>Showing near</small>
+                          <strong>{quoteLocationInput}</strong>
+                        </span>
+                        <button type="button" className={styles.assetQuoteChangeLocationButton} onClick={changeQuoteLocation} disabled={isSendingQuoteLead}>
+                          Change area
                         </button>
                       </div>
 

@@ -113,7 +113,7 @@ test('directory keeps real partners first and loads managed listings by viewport
   assert.match(route, /west, south, east, north/);
 });
 
-test('desktop and mobile maps cluster markers and refresh on map movement', async () => {
+test('desktop and mobile maps ask for an area, cluster markers and refresh on map movement', async () => {
   const [client, css] = await Promise.all([
     read('app/asset-register/asset-register-client.tsx'),
     read('app/asset-register/page.module.css'),
@@ -124,12 +124,23 @@ test('desktop and mobile maps cluster markers and refresh on map movement', asyn
   assert.match(client, /removeOutsideVisibleBounds: true/);
   assert.match(client, /\.on\('moveend', handleViewportChange\)/);
   assert.match(client, /quoteViewportTimeoutRef/);
+  assert.match(client, /type QuoteDirectoryStage = 'location' \| 'map'/);
+  assert.match(client, /Where do you need help\?/);
+  assert.match(client, /resolveQuoteLocationMapTarget/);
+  assert.match(client, /QUOTE_LOCATION_SUGGESTIONS/);
+  assert.match(client, /Use current location/);
+  assert.match(client, /quoteInitialMapLocationRef/);
+  assert.match(client, /autoPan: false/);
+  assert.doesNotMatch(client, /focusQuotePartnerOnMap/);
+  assert.doesNotMatch(client, /const selectedMarker = selectedQuotePartnerIds/);
   assert.match(client, /params\.set\('west'/);
   assert.match(client, /Aim4price managed/);
   assert.match(client, /service area, not a physical branch/i);
   assert.match(css, /\.marker-cluster-small/);
   assert.match(css, /@media \(max-width: 760px\)/);
   assert.match(css, /assetQuoteMapEmptyOverlay/);
+  assert.match(css, /assetQuoteLocationPickerModal/);
+  assert.match(css, /assetQuoteChangeLocationButton/);
 });
 
 test('managed selection shares all selected assets with the master and records grouped context', async () => {
