@@ -414,7 +414,7 @@ async function seedAssistanceNetwork(): Promise<void> {
         master.notificationEmail,
         AIM4PRICE_SERVICE_AREA_NOTICE,
         master.displayName,
-        `System-managed by ${master.routingEmail}. This is not a login account.`,
+        `Aim4price-managed assistance login; operationally managed by ${master.routingEmail}.`,
       ]);
 
       await client.query(`

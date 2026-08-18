@@ -1,9 +1,88 @@
--- Aim4price-managed national assistance network.
--- Idempotent: preserves existing partner data and administrator enabled/disabled choices.
+-- Aim4price-managed national assistance network with five login-capable master accounts.
+-- DBeaver/PostgreSQL: safe to run repeatedly after migrations 1-76.
+-- Preserves existing partner data, administrator visibility choices, and changed passwords.
 BEGIN;
 
 SELECT pg_advisory_xact_lock(hashtext('aim4price:national-assistance-network:v1'));
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
+DO $preflight$
+DECLARE
+  conflicting_email text;
+  conflicting_user_id text;
+BEGIN
+  IF to_regclass('public."user"') IS NULL
+     OR to_regclass('public."account"') IS NULL
+     OR to_regclass('public.account_profiles') IS NULL THEN
+    RAISE EXCEPTION
+      'Better Auth tables and account_profiles must exist. Apply migrations 1-76 first.';
+  END IF;
+
+  SELECT auth_user.email, auth_user.id
+  INTO conflicting_email, conflicting_user_id
+  FROM public."user" auth_user
+  JOIN (
+    VALUES
+      ('aim4price-assistance-finance', 'finance@aim4price.com'),
+      ('aim4price-assistance-accounting', 'accounting@aim4price.com'),
+      ('aim4price-assistance-insurance', 'insurance@aim4price.com'),
+      ('aim4price-assistance-dealer', 'dealers@aim4price.com'),
+      ('aim4price-assistance-licensing', 'licensing@aim4price.com')
+  ) seed(user_id, email)
+    ON lower(auth_user.email) = seed.email
+   AND auth_user.id <> seed.user_id
+  LIMIT 1;
+
+  IF FOUND THEN
+    RAISE EXCEPTION
+      'Email % already belongs to user %. No records were changed.',
+      conflicting_email,
+      conflicting_user_id;
+  END IF;
+
+  SELECT auth_user.email, auth_user.id
+  INTO conflicting_email, conflicting_user_id
+  FROM public."user" auth_user
+  JOIN (
+    VALUES
+      ('aim4price-assistance-finance', 'finance@aim4price.com'),
+      ('aim4price-assistance-accounting', 'accounting@aim4price.com'),
+      ('aim4price-assistance-insurance', 'insurance@aim4price.com'),
+      ('aim4price-assistance-dealer', 'dealers@aim4price.com'),
+      ('aim4price-assistance-licensing', 'licensing@aim4price.com')
+  ) seed(user_id, email)
+    ON auth_user.id = seed.user_id
+   AND lower(auth_user.email) <> seed.email
+  LIMIT 1;
+
+  IF FOUND THEN
+    RAISE EXCEPTION
+      'Assistance user ID % already uses email %. No records were changed.',
+      conflicting_user_id,
+      conflicting_email;
+  END IF;
+
+  IF EXISTS (
+    SELECT 1
+    FROM public."account" credential
+    JOIN (
+      VALUES
+        ('aim4price-assistance-finance-credential', 'aim4price-assistance-finance'),
+        ('aim4price-assistance-accounting-credential', 'aim4price-assistance-accounting'),
+        ('aim4price-assistance-insurance-credential', 'aim4price-assistance-insurance'),
+        ('aim4price-assistance-dealer-credential', 'aim4price-assistance-dealer'),
+        ('aim4price-assistance-licensing-credential', 'aim4price-assistance-licensing')
+    ) seed(credential_id, user_id)
+      ON credential.id = seed.credential_id
+    WHERE credential."userId" <> seed.user_id
+       OR credential."providerId" <> 'credential'
+  ) THEN
+    RAISE EXCEPTION
+      'A reserved assistance credential ID is already in use. No records were changed.';
+  END IF;
+END
+$preflight$;
+
 
 CREATE TABLE IF NOT EXISTS public.aim4price_assistance_accounts (
   service_key text PRIMARY KEY,
@@ -88,6 +167,145 @@ CREATE INDEX IF NOT EXISTS idx_assistance_locations_viewport
   ON public.aim4price_assistance_locations(service_key, enabled, latitude, longitude);
 CREATE INDEX IF NOT EXISTS idx_assistance_requests_owner_created
   ON public.aim4price_assistance_requests(owner_user_id, created_at DESC);
+
+
+-- Create five real Better Auth users using the same IDs already used by sharing.
+-- Passwords are Better Auth 1.6 scrypt hashes; plaintext passwords are supplied
+-- separately. Existing non-empty credential passwords are never overwritten.
+WITH login_seed(
+  user_id, display_name, email, password_hash
+) AS (
+  VALUES
+    (
+      'aim4price-assistance-finance',
+      'Aim4price Finance Assistance',
+      'finance@aim4price.com',
+      '1776e1877bfbb0cb95c7e70711e8d845:c367a54bd7a557678eae9901dbde1d042a9a7e83565fec81f64b29bb37f43708430582af7dd3b59e3719a6c408af4e9dfd5165fa2b6f1a756955094d885a76b5'
+    ),
+    (
+      'aim4price-assistance-accounting',
+      'Aim4price Accounting Assistance',
+      'accounting@aim4price.com',
+      '98c210ea5a6dd49bc966ddb964d5bc08:c1906a9a03da02340c1ed99c31e04d4c77ccd6c04bb1eff4790ec05d5f85e571e951b123f63d172e3d98857e975ff9f7765e725af7b1a6c7ca0faae1d3277159'
+    ),
+    (
+      'aim4price-assistance-insurance',
+      'Aim4price Insurance Assistance',
+      'insurance@aim4price.com',
+      'a52367afa76ab4ea5820fd4a6a561635:4f958dde3d77837fa3f9d8c4caa7656e72bc6f7338dc0f1217ecd38fb06dc2cf8152ec3f3bd78b19d3f78eca650a13c8e86eaebb7cf68d1ae527867e611d5a55'
+    ),
+    (
+      'aim4price-assistance-dealer',
+      'Aim4price Dealer Assistance',
+      'dealers@aim4price.com',
+      'e0665d6eb875ea66e9c22a2fafbbbc50:cddcc50f90929f44b818b66236f14d97454eadc27dbba4b07ec5aff7150104e9685dd658392f5d2d135f1e17d4197937929d1f96f94e4a19a93cfa063b34aa40'
+    ),
+    (
+      'aim4price-assistance-licensing',
+      'Aim4price Licence Renewal Assistance',
+      'licensing@aim4price.com',
+      '01710643d73798ca813c05be8103e274:76547c833ada25494621d713e3254313f50afc62cc06dffe8306bc355f8744e020d033c2f4eac64fa456e31e3daa24dca9a20ece51e53e4997e72bd6f7540b42'
+    )
+)
+INSERT INTO public."user" AS auth_user (
+  id, name, email, "emailVerified", image, "createdAt", "updatedAt"
+)
+SELECT
+  seed.user_id,
+  seed.display_name,
+  seed.email,
+  true,
+  NULL,
+  now(),
+  now()
+FROM login_seed seed
+ON CONFLICT (id) DO UPDATE SET
+  name = excluded.name,
+  "emailVerified" = true,
+  "updatedAt" = now()
+WHERE lower(auth_user.email) = lower(excluded.email);
+
+WITH login_seed(user_id, password_hash) AS (
+  VALUES
+    (
+      'aim4price-assistance-finance',
+      '1776e1877bfbb0cb95c7e70711e8d845:c367a54bd7a557678eae9901dbde1d042a9a7e83565fec81f64b29bb37f43708430582af7dd3b59e3719a6c408af4e9dfd5165fa2b6f1a756955094d885a76b5'
+    ),
+    (
+      'aim4price-assistance-accounting',
+      '98c210ea5a6dd49bc966ddb964d5bc08:c1906a9a03da02340c1ed99c31e04d4c77ccd6c04bb1eff4790ec05d5f85e571e951b123f63d172e3d98857e975ff9f7765e725af7b1a6c7ca0faae1d3277159'
+    ),
+    (
+      'aim4price-assistance-insurance',
+      'a52367afa76ab4ea5820fd4a6a561635:4f958dde3d77837fa3f9d8c4caa7656e72bc6f7338dc0f1217ecd38fb06dc2cf8152ec3f3bd78b19d3f78eca650a13c8e86eaebb7cf68d1ae527867e611d5a55'
+    ),
+    (
+      'aim4price-assistance-dealer',
+      'e0665d6eb875ea66e9c22a2fafbbbc50:cddcc50f90929f44b818b66236f14d97454eadc27dbba4b07ec5aff7150104e9685dd658392f5d2d135f1e17d4197937929d1f96f94e4a19a93cfa063b34aa40'
+    ),
+    (
+      'aim4price-assistance-licensing',
+      '01710643d73798ca813c05be8103e274:76547c833ada25494621d713e3254313f50afc62cc06dffe8306bc355f8744e020d033c2f4eac64fa456e31e3daa24dca9a20ece51e53e4997e72bd6f7540b42'
+    )
+)
+UPDATE public."account" credential
+SET
+  password = seed.password_hash,
+  "updatedAt" = now()
+FROM login_seed seed
+WHERE credential."userId" = seed.user_id
+  AND credential."providerId" = 'credential'
+  AND coalesce(credential.password, '') = '';
+
+WITH login_seed(
+  credential_id, user_id, password_hash
+) AS (
+  VALUES
+    (
+      'aim4price-assistance-finance-credential',
+      'aim4price-assistance-finance',
+      '1776e1877bfbb0cb95c7e70711e8d845:c367a54bd7a557678eae9901dbde1d042a9a7e83565fec81f64b29bb37f43708430582af7dd3b59e3719a6c408af4e9dfd5165fa2b6f1a756955094d885a76b5'
+    ),
+    (
+      'aim4price-assistance-accounting-credential',
+      'aim4price-assistance-accounting',
+      '98c210ea5a6dd49bc966ddb964d5bc08:c1906a9a03da02340c1ed99c31e04d4c77ccd6c04bb1eff4790ec05d5f85e571e951b123f63d172e3d98857e975ff9f7765e725af7b1a6c7ca0faae1d3277159'
+    ),
+    (
+      'aim4price-assistance-insurance-credential',
+      'aim4price-assistance-insurance',
+      'a52367afa76ab4ea5820fd4a6a561635:4f958dde3d77837fa3f9d8c4caa7656e72bc6f7338dc0f1217ecd38fb06dc2cf8152ec3f3bd78b19d3f78eca650a13c8e86eaebb7cf68d1ae527867e611d5a55'
+    ),
+    (
+      'aim4price-assistance-dealer-credential',
+      'aim4price-assistance-dealer',
+      'e0665d6eb875ea66e9c22a2fafbbbc50:cddcc50f90929f44b818b66236f14d97454eadc27dbba4b07ec5aff7150104e9685dd658392f5d2d135f1e17d4197937929d1f96f94e4a19a93cfa063b34aa40'
+    ),
+    (
+      'aim4price-assistance-licensing-credential',
+      'aim4price-assistance-licensing',
+      '01710643d73798ca813c05be8103e274:76547c833ada25494621d713e3254313f50afc62cc06dffe8306bc355f8744e020d033c2f4eac64fa456e31e3daa24dca9a20ece51e53e4997e72bd6f7540b42'
+    )
+)
+INSERT INTO public."account" (
+  id, "accountId", "providerId", "userId", password, "createdAt", "updatedAt"
+)
+SELECT
+  seed.credential_id,
+  seed.user_id,
+  'credential',
+  seed.user_id,
+  seed.password_hash,
+  now(),
+  now()
+FROM login_seed seed
+WHERE NOT EXISTS (
+  SELECT 1
+  FROM public."account" existing_credential
+  WHERE existing_credential."userId" = seed.user_id
+    AND existing_credential."providerId" = 'credential'
+)
+ON CONFLICT (id) DO NOTHING;
 
 WITH master_seed(
   service_key, partner_user_id, partner_type, account_subtype, display_name,
@@ -191,7 +409,7 @@ SELECT
   'This location represents an Aim4price service area, not a physical branch.',
   'Aim4price national assistance network',
   seed.display_name,
-  'System-managed by aim4price@gmail.com. This is not a login account.',
+  'Login-capable Aim4price-managed assistance account; operationally managed by aim4price@gmail.com.',
   now(),
   now()
 FROM master_seed seed
@@ -254,3 +472,47 @@ ON CONFLICT (service_key, town_slug) DO UPDATE SET
   updated_at = now();
 
 COMMIT;
+
+-- Read-only verification: expect five login accounts and 100 locations per service.
+SELECT
+  auth_user.id AS user_id,
+  auth_user.email,
+  auth_user."emailVerified" AS email_verified,
+  profile.account_type,
+  profile.account_subtype,
+  profile.account_status,
+  EXISTS (
+    SELECT 1
+    FROM public."account" credential
+    WHERE credential."userId" = auth_user.id
+      AND credential."providerId" = 'credential'
+      AND coalesce(credential.password, '') <> ''
+  ) AS password_set
+FROM public."user" auth_user
+JOIN public.account_profiles profile
+  ON profile.user_id = auth_user.id
+WHERE auth_user.id IN (
+  'aim4price-assistance-finance',
+  'aim4price-assistance-accounting',
+  'aim4price-assistance-insurance',
+  'aim4price-assistance-dealer',
+  'aim4price-assistance-licensing'
+)
+ORDER BY auth_user.email;
+
+SELECT
+  account.service_key,
+  account.notification_email,
+  account.routing_email,
+  account.enabled,
+  count(location.id) AS service_locations,
+  count(location.id) FILTER (WHERE location.enabled) AS enabled_locations
+FROM public.aim4price_assistance_accounts account
+LEFT JOIN public.aim4price_assistance_locations location
+  ON location.service_key = account.service_key
+GROUP BY
+  account.service_key,
+  account.notification_email,
+  account.routing_email,
+  account.enabled
+ORDER BY account.service_key;
