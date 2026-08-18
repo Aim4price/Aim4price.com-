@@ -1089,6 +1089,9 @@ export default function AdminClient({
             <Link href="/admin/lifecycle-calculator" className={styles.adminNavLink}>
               Lifecycle Model
             </Link>
+            <Link href="/admin/assistance-network" className={styles.adminNavLink}>
+              Assistance Network
+            </Link>
           </nav>
           <button
             type="button"

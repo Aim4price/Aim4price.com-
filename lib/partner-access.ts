@@ -15,6 +15,11 @@ import { getDb } from './db';
 import {
   filterAssetDocumentsForRole,
 } from './asset-document-permissions';
+import {
+  isAssistanceMasterAccountUserId,
+  listAssistanceDirectoryEntries,
+  type AssistanceMapBounds,
+} from './assistance-network';
 
 export type AccountRole = 'owner' | 'dealer' | 'finance' | 'insurance' | 'licensing';
 export type PartnerType = Exclude<AccountRole, 'owner'>;
@@ -23,6 +28,7 @@ export type AssetLeadStatus = 'sent' | 'viewed' | 'accepted' | 'quoted' | 'decli
 
 export type PartnerDirectoryEntry = {
   userId: string;
+  masterAccountUserId?: string;
   partnerType: PartnerType;
   accountSubtype: string;
   displayName: string;
@@ -41,6 +47,11 @@ export type PartnerDirectoryEntry = {
   serviceRadiusKm: number | null;
   brandFocus: string;
   services: string;
+  isAim4priceManaged?: boolean;
+  isActivePartner?: boolean;
+  assistanceLocationId?: string;
+  assistanceServiceKey?: string;
+  serviceAreaNotice?: string;
 };
 
 export type AssetLead = {
@@ -141,6 +152,7 @@ type AccountPartnerProfileRow = {
   partner_service_radius_km: string | number | null;
   partner_brand_focus: string | null;
   partner_services: string | null;
+  account_status?: string | null;
 };
 
 type LeadRow = {
@@ -863,7 +875,24 @@ function mapPartnerRow(row: AccountPartnerProfileRow): PartnerDirectoryEntry {
     serviceRadiusKm: asInteger(row.partner_service_radius_km),
     brandFocus: asText(row.partner_brand_focus),
     services: asText(row.partner_services),
+    isAim4priceManaged: false,
+    isActivePartner: asText(row.account_status).toLowerCase() === 'active',
   };
+}
+
+function distanceKm(
+  latitude: number | null,
+  longitude: number | null,
+  center: { latitude: number; longitude: number } | null,
+): number {
+  if (latitude === null || longitude === null || !center) return Number.POSITIVE_INFINITY;
+  const radians = (degrees: number) => degrees * Math.PI / 180;
+  const latitudeDelta = radians(center.latitude - latitude);
+  const longitudeDelta = radians(center.longitude - longitude);
+  const a = Math.sin(latitudeDelta / 2) ** 2
+    + Math.cos(radians(latitude)) * Math.cos(radians(center.latitude))
+    * Math.sin(longitudeDelta / 2) ** 2;
+  return 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
 function mapLeadRow(row: LeadRow): AssetLead {
@@ -1158,6 +1187,7 @@ export async function listPartnerDirectory(input: {
   currentUserId: string;
   partnerType?: PartnerType | null;
   search?: string | null;
+  bounds?: AssistanceMapBounds | null;
 }): Promise<PartnerDirectoryEntry[]> {
   await ensurePartnerAccessTables();
   const db = getDb();
@@ -1187,6 +1217,17 @@ export async function listPartnerDirectory(input: {
       or lower(coalesce(partner_brand_focus, '')) like $${params.length}
       or lower(coalesce(partner_services, '')) like $${params.length}
     )`);
+  } else if (input.bounds) {
+    const { west, south, east, north } = input.bounds;
+    params.push(south, north, west, east);
+    const southIndex = params.length - 3;
+    const northIndex = params.length - 2;
+    const westIndex = params.length - 1;
+    const eastIndex = params.length;
+    filters.push(`partner_latitude between $${southIndex} and $${northIndex}`);
+    filters.push(west <= east
+      ? `partner_longitude between $${westIndex} and $${eastIndex}`
+      : `(partner_longitude >= $${westIndex} or partner_longitude <= $${eastIndex})`);
   }
 
   const result = await db.query<AccountPartnerProfileRow>(
@@ -1210,7 +1251,8 @@ export async function listPartnerDirectory(input: {
         partner_longitude,
         partner_service_radius_km,
         partner_brand_focus,
-        partner_services
+        partner_services,
+        account_status
       from account_profiles
       where ${filters.join('\n        and ')}
       order by
@@ -1222,7 +1264,30 @@ export async function listPartnerDirectory(input: {
     params,
   );
 
-  return result.rows.map(mapPartnerRow);
+  const genuinePartners = result.rows.map(mapPartnerRow);
+  const bounds = input.bounds ?? null;
+  const center = bounds ? {
+    latitude: (bounds.south + bounds.north) / 2,
+    longitude: bounds.west <= bounds.east
+      ? (bounds.west + bounds.east) / 2
+      : (((bounds.west + bounds.east + 360) / 2 + 540) % 360) - 180,
+  } : null;
+  genuinePartners.sort((left, right) => {
+    const activeDifference = Number(Boolean(right.isActivePartner)) - Number(Boolean(left.isActivePartner));
+    if (activeDifference) return activeDifference;
+    const distanceDifference = distanceKm(left.latitude, left.longitude, center)
+      - distanceKm(right.latitude, right.longitude, center);
+    if (Number.isFinite(distanceDifference) && distanceDifference !== 0) return distanceDifference;
+    return left.displayName.localeCompare(right.displayName);
+  });
+
+  const assistancePartners = partnerType
+    ? await listAssistanceDirectoryEntries({ partnerType, search, bounds })
+    : [];
+
+  // Genuine registered partners remain first, with nearby active partners ranked
+  // highest. Aim4price service-area fallbacks follow them.
+  return [...genuinePartners, ...assistancePartners];
 }
 
 async function getPartnerProfile(partnerUserId: string): Promise<AccountPartnerProfileRow | null> {
@@ -1454,8 +1519,12 @@ export async function createAssetLead(input: {
   leadType: LeadType;
   ownerMessage?: string | null;
   includedSections?: Record<string, unknown> | null;
+  allowAim4priceAssistance?: boolean;
 }): Promise<AssetLead> {
   await ensurePartnerAccessTables();
+  if (isAssistanceMasterAccountUserId(input.partnerUserId) && input.allowAim4priceAssistance !== true) {
+    throw new Error('PARTNER_NOT_FOUND');
+  }
   const allowedPartnerTypes = partnerTypesForLeadType(input.leadType);
   const partner = await getPartnerProfile(input.partnerUserId);
   const actualPartnerType = normalizePartnerType(partner?.account_type);

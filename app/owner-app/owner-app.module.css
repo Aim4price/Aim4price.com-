@@ -1474,6 +1474,8 @@
 .ownerPartnerCopy { min-width: 0; display: grid; gap: 4px; }
 .ownerPartnerCopy strong { font-size: 0.94rem; font-weight: 800; line-height: 1.25; overflow-wrap: anywhere; }
 .ownerPartnerCopy small { color: var(--owner-muted); font-size: 0.78rem; font-weight: 650; line-height: 1.4; overflow-wrap: anywhere; }
+.ownerManagedBadge { width: fit-content; padding: 3px 7px; border-radius: 999px; color: #315f18; background: #edf9e3; font-size: 0.62rem; font-style: normal; font-weight: 900; letter-spacing: 0.03em; text-transform: uppercase; }
+.ownerPartnerCopy .ownerManagedCopy { color: #426226; font-weight: 800; }
 .ownerOptionsEmpty { margin: 0; border: 1px dashed rgba(18, 53, 45, 0.16); border-radius: 15px; color: var(--owner-muted); padding: 18px 14px; font-size: 0.88rem; font-weight: 700; text-align: center; }
 .ownerSelectedPartner { display: flex; align-items: center; gap: 12px; border: 1px solid rgba(66, 144, 102, 0.24); border-radius: 17px; background: linear-gradient(180deg, #f7fcf9 0%, #edf7f1 100%); padding: 14px; box-shadow: 0 9px 22px rgba(18, 53, 45, 0.055); }
 .ownerSelectedPartner > div { min-width: 0; display: grid; gap: 4px; }

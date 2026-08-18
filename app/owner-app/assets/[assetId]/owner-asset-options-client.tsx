@@ -18,6 +18,7 @@ type IconProps = { className?: string };
 
 type Partner = {
   userId: string;
+  masterAccountUserId?: string;
   partnerType: PartnerType;
   displayName: string;
   businessName: string;
@@ -32,6 +33,9 @@ type Partner = {
   serviceRadiusKm: number | null;
   brandFocus: string;
   services: string;
+  isAim4priceManaged?: boolean;
+  assistanceLocationId?: string;
+  serviceAreaNotice?: string;
 };
 
 type QuoteOption = {
@@ -337,7 +341,8 @@ export default function OwnerAssetOptionsClient({ assetId, assetTitle, assetKind
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           assetId,
-          partnerUserId: selectedPartner.userId,
+          partnerUserId: selectedPartner.masterAccountUserId || selectedPartner.userId,
+          assistanceLocationId: selectedPartner.assistanceLocationId,
           leadType: selectedOption.leadType,
           ownerMessage: message,
           includedSections: {
@@ -355,11 +360,16 @@ export default function OwnerAssetOptionsClient({ assetId, assetTitle, assetKind
             : undefined,
         }),
       });
-      const payload = await response.json().catch(() => null) as { ok?: boolean; error?: string } | null;
+      const payload = await response.json().catch(() => null) as { ok?: boolean; confirmation?: string | null; error?: string } | null;
       if (response.status === 401) { window.location.replace('/owner-app/login'); return; }
       if (!response.ok || !payload?.ok) throw new Error(payload?.error || 'Failed to send this request.');
       setStage('sent');
-      setNotice({ tone: 'success', message: `${selectedOption.shortTitle} request sent to ${partnerName(selectedPartner)}.` });
+      setNotice({
+        tone: 'success',
+        message: selectedPartner.isAim4priceManaged
+          ? payload.confirmation || 'Aim4price will help locate a suitable provider. Your asset will not be shared with an external provider without your further approval.'
+          : `${selectedOption.shortTitle} request sent to ${partnerName(selectedPartner)}.`,
+      });
     } catch (cause) {
       setNotice({ tone: 'error', message: cause instanceof Error ? cause.message : 'Failed to send this request.' });
     } finally {
@@ -414,8 +424,10 @@ export default function OwnerAssetOptionsClient({ assetId, assetTitle, assetKind
                 </span>
                 <span className={styles.ownerPartnerCopy}>
                   <strong>{partnerName(partner)}</strong>
+                  {partner.isAim4priceManaged ? <em className={styles.ownerManagedBadge}>Aim4price managed</em> : null}
                   <small>{partnerLocation(partner)}</small>
                   <small>{partner.services || partnerTypeLabel(partner.partnerType)}</small>
+                  {partner.isAim4priceManaged ? <small className={styles.ownerManagedCopy}>Service area — not a physical branch.</small> : null}
                 </span>
                 <b aria-hidden="true">›</b>
               </button>
@@ -437,16 +449,23 @@ export default function OwnerAssetOptionsClient({ assetId, assetTitle, assetKind
             <span className={styles.ownerPartnerLogo}>
               {selectedPartner.logoUrl ? <img src={selectedPartner.logoUrl} alt="" /> : <b>{partnerName(selectedPartner).charAt(0).toUpperCase()}</b>}
             </span>
-            <div><small>Selected company</small><strong>{partnerName(selectedPartner)}</strong><span>{partnerLocation(selectedPartner)}</span></div>
+            <div>
+              <small>{selectedPartner.isAim4priceManaged ? 'Selected service area' : 'Selected company'}</small>
+              <strong>{partnerName(selectedPartner)}</strong>
+              {selectedPartner.isAim4priceManaged ? <em className={styles.ownerManagedBadge}>Aim4price managed</em> : null}
+              <span>{partnerLocation(selectedPartner)}</span>
+            </div>
           </div>
 
           <div className={styles.ownerPartnerContacts}>
             {selectedPartner.email ? <a href={`mailto:${selectedPartner.email}`}><small>Email</small><span>{selectedPartner.email}</span></a> : null}
             {selectedPartner.phone ? <a href={`tel:${selectedPartner.phone.replace(/[^+\d]/g, '')}`}><small>Phone</small><span>{selectedPartner.phone}</span></a> : null}
-            <span><small>Address</small><b>{[selectedPartner.addressLine1, selectedPartner.townCity, selectedPartner.province].filter(Boolean).join(', ') || 'Not saved'}</b></span>
+            <span><small>Address</small><b>{selectedPartner.isAim4priceManaged ? 'Service area — not a physical branch' : [selectedPartner.addressLine1, selectedPartner.townCity, selectedPartner.province].filter(Boolean).join(', ') || 'Not saved'}</b></span>
           </div>
 
-          <p className={styles.ownerShareNotice}>This sends this asset only. It does not share the full asset register.</p>
+          <p className={styles.ownerShareNotice}>{selectedPartner.isAim4priceManaged
+            ? 'Aim4price will help locate a suitable provider. Your asset will remain with the Aim4price master assistance account unless you later approve sharing it with an external provider.'
+            : 'This sends this asset only. It does not share the full asset register.'}</p>
           <label className={styles.ownerOptionMessageField}>
             <span>Your message <small>Optional</small></span>
             <textarea value={message} onChange={(event) => setMessage(event.target.value)} placeholder="Please contact me about this asset." />
@@ -482,12 +501,14 @@ export default function OwnerAssetOptionsClient({ assetId, assetTitle, assetKind
 
           <div className={styles.ownerPopiaBox}>
             <strong>Disclaimer and POPIA note</strong>
-            {selectedOption.leadType === 'license_renewal' ? (
+            {selectedPartner.isAim4priceManaged ? (
+              <p>By sending this request, you allow Aim4price to share this asset and your saved business contact details with the relevant Aim4price master assistance account. Aim4price will not share it with an external provider without your further approval.</p>
+            ) : selectedOption.leadType === 'license_renewal' ? (
               <p>By sending this request, you allow Aim4price to share this asset's basic details, renewal date, saved photos, licence documents and your saved business contact details with {partnerName(selectedPartner)}.</p>
             ) : (
               <p>By sending this request, you allow Aim4price to share this selected asset, its saved valuation details and your saved business contact details with {partnerName(selectedPartner)}.</p>
             )}
-            <p>This is a lead request only. It does not create a finance, insurance, licence renewal, valuation or sales agreement. The selected company may contact you outside Aim4price.</p>
+            <p>This is a lead request only. It does not create a finance, insurance, licence renewal, valuation or sales agreement. {selectedPartner.isAim4priceManaged ? 'The selected town is a service area, not a physical Aim4price branch.' : 'The selected company may contact you outside Aim4price.'}</p>
             {selectedOption.leadType === 'replacement_quote' && trackMaintenance ? <p>The dealer will receive ongoing Maintenance Tracker access with the permissions you selected. Proposed schedules and asset changes still require your approval.</p> : null}
           </div>
           <label className={styles.ownerConsentField}>
@@ -503,7 +524,9 @@ export default function OwnerAssetOptionsClient({ assetId, assetTitle, assetKind
       {stage === 'sent' ? (
         <section className={`${styles.section} ${styles.ownerOptionsSent}`}>
           <h2>Request sent</h2>
-          <p>The selected company can now review the saved asset details and contact you.</p>
+          <p>{selectedPartner?.isAim4priceManaged
+            ? 'Aim4price will help locate a suitable provider. No external provider will receive your asset without your further approval.'
+            : 'The selected company can now review the saved asset details and contact you.'}</p>
           <Link className={styles.primaryButton} href={assetHref} prefetch={false}>Back to asset</Link>
         </section>
       ) : null}

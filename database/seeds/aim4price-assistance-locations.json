@@ -1,0 +1,902 @@
+[
+  {
+    "province": "Gauteng",
+    "town": "Johannesburg",
+    "slug": "johannesburg",
+    "latitude": -26.20227,
+    "longitude": 28.04363,
+    "serviceRadiusKm": 80,
+    "geonamesId": "993800"
+  },
+  {
+    "province": "Gauteng",
+    "town": "Pretoria",
+    "slug": "pretoria",
+    "latitude": -25.74486,
+    "longitude": 28.18783,
+    "serviceRadiusKm": 80,
+    "geonamesId": "964137"
+  },
+  {
+    "province": "Gauteng",
+    "town": "Centurion",
+    "slug": "centurion",
+    "latitude": -25.85891,
+    "longitude": 28.18577,
+    "serviceRadiusKm": 75,
+    "geonamesId": "1105777"
+  },
+  {
+    "province": "Gauteng",
+    "town": "Midrand",
+    "slug": "midrand",
+    "latitude": -25.976,
+    "longitude": 28.118,
+    "serviceRadiusKm": 75,
+    "geonamesId": "1105776"
+  },
+  {
+    "province": "Gauteng",
+    "town": "Benoni",
+    "slug": "benoni",
+    "latitude": -26.18848,
+    "longitude": 28.32078,
+    "serviceRadiusKm": 75,
+    "geonamesId": "1020098"
+  },
+  {
+    "province": "Gauteng",
+    "town": "Boksburg",
+    "slug": "boksburg",
+    "latitude": -26.21197,
+    "longitude": 28.25958,
+    "serviceRadiusKm": 75,
+    "geonamesId": "1017780"
+  },
+  {
+    "province": "Gauteng",
+    "town": "Vereeniging",
+    "slug": "vereeniging",
+    "latitude": -26.67313,
+    "longitude": 27.92615,
+    "serviceRadiusKm": 90,
+    "geonamesId": "944385"
+  },
+  {
+    "province": "Western Cape",
+    "town": "Cape Town",
+    "slug": "cape-town",
+    "latitude": -33.92584,
+    "longitude": 18.42322,
+    "serviceRadiusKm": 85,
+    "geonamesId": "3369157"
+  },
+  {
+    "province": "Western Cape",
+    "town": "Stellenbosch",
+    "slug": "stellenbosch",
+    "latitude": -33.93462,
+    "longitude": 18.86676,
+    "serviceRadiusKm": 75,
+    "geonamesId": "3361025"
+  },
+  {
+    "province": "Western Cape",
+    "town": "Paarl",
+    "slug": "paarl",
+    "latitude": -33.73378,
+    "longitude": 18.97523,
+    "serviceRadiusKm": 75,
+    "geonamesId": "3363094"
+  },
+  {
+    "province": "Western Cape",
+    "town": "Worcester",
+    "slug": "worcester",
+    "latitude": -33.64651,
+    "longitude": 19.44852,
+    "serviceRadiusKm": 100,
+    "geonamesId": "3359041"
+  },
+  {
+    "province": "Western Cape",
+    "town": "Ceres",
+    "slug": "ceres",
+    "latitude": -33.36889,
+    "longitude": 19.31095,
+    "serviceRadiusKm": 100,
+    "geonamesId": "3369129"
+  },
+  {
+    "province": "Western Cape",
+    "town": "Malmesbury",
+    "slug": "malmesbury",
+    "latitude": -33.4608,
+    "longitude": 18.72714,
+    "serviceRadiusKm": 100,
+    "geonamesId": "3364346"
+  },
+  {
+    "province": "Western Cape",
+    "town": "Moorreesburg",
+    "slug": "moorreesburg",
+    "latitude": -33.15388,
+    "longitude": 18.66031,
+    "serviceRadiusKm": 100,
+    "geonamesId": "3363957"
+  },
+  {
+    "province": "Western Cape",
+    "town": "Vredendal",
+    "slug": "vredendal",
+    "latitude": -31.66833,
+    "longitude": 18.50119,
+    "serviceRadiusKm": 130,
+    "geonamesId": "3359736"
+  },
+  {
+    "province": "Western Cape",
+    "town": "Caledon",
+    "slug": "caledon",
+    "latitude": -34.22997,
+    "longitude": 19.4265,
+    "serviceRadiusKm": 100,
+    "geonamesId": "3369179"
+  },
+  {
+    "province": "Western Cape",
+    "town": "Robertson",
+    "slug": "robertson",
+    "latitude": -33.80342,
+    "longitude": 19.88537,
+    "serviceRadiusKm": 100,
+    "geonamesId": "3362349"
+  },
+  {
+    "province": "Western Cape",
+    "town": "Swellendam",
+    "slug": "swellendam",
+    "latitude": -34.02262,
+    "longitude": 20.44171,
+    "serviceRadiusKm": 100,
+    "geonamesId": "950709"
+  },
+  {
+    "province": "Western Cape",
+    "town": "Riversdale",
+    "slug": "riversdale",
+    "latitude": -34.09345,
+    "longitude": 21.25725,
+    "serviceRadiusKm": 100,
+    "geonamesId": "961152"
+  },
+  {
+    "province": "Western Cape",
+    "town": "George",
+    "slug": "george",
+    "latitude": -33.963,
+    "longitude": 22.46173,
+    "serviceRadiusKm": 100,
+    "geonamesId": "1002145"
+  },
+  {
+    "province": "Western Cape",
+    "town": "Oudtshoorn",
+    "slug": "oudtshoorn",
+    "latitude": -33.60047,
+    "longitude": 22.19955,
+    "serviceRadiusKm": 100,
+    "geonamesId": "967106"
+  },
+  {
+    "province": "Western Cape",
+    "town": "Beaufort West",
+    "slug": "beaufort-west",
+    "latitude": -32.35671,
+    "longitude": 22.58295,
+    "serviceRadiusKm": 180,
+    "geonamesId": "1020641"
+  },
+  {
+    "province": "Eastern Cape",
+    "town": "Gqeberha",
+    "slug": "gqeberha",
+    "latitude": -33.96109,
+    "longitude": 25.61494,
+    "serviceRadiusKm": 100,
+    "geonamesId": "964420"
+  },
+  {
+    "province": "Eastern Cape",
+    "town": "East London",
+    "slug": "east-london",
+    "latitude": -33.01529,
+    "longitude": 27.91162,
+    "serviceRadiusKm": 100,
+    "geonamesId": "1006984"
+  },
+  {
+    "province": "Eastern Cape",
+    "town": "Mthatha",
+    "slug": "mthatha",
+    "latitude": -31.58893,
+    "longitude": 28.78443,
+    "serviceRadiusKm": 120,
+    "geonamesId": "946058"
+  },
+  {
+    "province": "Eastern Cape",
+    "town": "Komani",
+    "slug": "komani",
+    "latitude": -31.89756,
+    "longitude": 26.87533,
+    "serviceRadiusKm": 100,
+    "geonamesId": "963516"
+  },
+  {
+    "province": "Eastern Cape",
+    "town": "Cradock",
+    "slug": "cradock",
+    "latitude": -32.16422,
+    "longitude": 25.61918,
+    "serviceRadiusKm": 120,
+    "geonamesId": "1012600"
+  },
+  {
+    "province": "Eastern Cape",
+    "town": "Graaff-Reinet",
+    "slug": "graaff-reinet",
+    "latitude": -32.25215,
+    "longitude": 24.53075,
+    "serviceRadiusKm": 130,
+    "geonamesId": "1000543"
+  },
+  {
+    "province": "Eastern Cape",
+    "town": "Somerset East",
+    "slug": "somerset-east",
+    "latitude": -32.72173,
+    "longitude": 25.58804,
+    "serviceRadiusKm": 100,
+    "geonamesId": "954161"
+  },
+  {
+    "province": "Eastern Cape",
+    "town": "Humansdorp",
+    "slug": "humansdorp",
+    "latitude": -34.02903,
+    "longitude": 24.76912,
+    "serviceRadiusKm": 100,
+    "geonamesId": "995094"
+  },
+  {
+    "province": "Eastern Cape",
+    "town": "Kirkwood",
+    "slug": "kirkwood",
+    "latitude": -33.39829,
+    "longitude": 25.44279,
+    "serviceRadiusKm": 100,
+    "geonamesId": "990802"
+  },
+  {
+    "province": "Eastern Cape",
+    "town": "Aliwal North",
+    "slug": "aliwal-north",
+    "latitude": -30.69366,
+    "longitude": 26.71141,
+    "serviceRadiusKm": 130,
+    "geonamesId": "1023309"
+  },
+  {
+    "province": "Eastern Cape",
+    "town": "Butterworth",
+    "slug": "butterworth",
+    "latitude": -32.33083,
+    "longitude": 28.14981,
+    "serviceRadiusKm": 100,
+    "geonamesId": "1014489"
+  },
+  {
+    "province": "Eastern Cape",
+    "town": "Stutterheim",
+    "slug": "stutterheim",
+    "latitude": -32.57076,
+    "longitude": 27.42396,
+    "serviceRadiusKm": 100,
+    "geonamesId": "951650"
+  },
+  {
+    "province": "Northern Cape",
+    "town": "Kimberley",
+    "slug": "kimberley",
+    "latitude": -28.73226,
+    "longitude": 24.76232,
+    "serviceRadiusKm": 120,
+    "geonamesId": "990930"
+  },
+  {
+    "province": "Northern Cape",
+    "town": "Upington",
+    "slug": "upington",
+    "latitude": -28.44776,
+    "longitude": 21.25612,
+    "serviceRadiusKm": 180,
+    "geonamesId": "945945"
+  },
+  {
+    "province": "Northern Cape",
+    "town": "Kuruman",
+    "slug": "kuruman",
+    "latitude": -27.46353,
+    "longitude": 23.43552,
+    "serviceRadiusKm": 150,
+    "geonamesId": "986134"
+  },
+  {
+    "province": "Northern Cape",
+    "town": "Kathu",
+    "slug": "kathu",
+    "latitude": -27.69569,
+    "longitude": 23.04929,
+    "serviceRadiusKm": 150,
+    "geonamesId": "991664"
+  },
+  {
+    "province": "Northern Cape",
+    "town": "De Aar",
+    "slug": "de-aar",
+    "latitude": -30.64966,
+    "longitude": 24.0123,
+    "serviceRadiusKm": 170,
+    "geonamesId": "1011632"
+  },
+  {
+    "province": "Northern Cape",
+    "town": "Prieska",
+    "slug": "prieska",
+    "latitude": -29.66803,
+    "longitude": 22.74251,
+    "serviceRadiusKm": 170,
+    "geonamesId": "964090"
+  },
+  {
+    "province": "Northern Cape",
+    "town": "Douglas",
+    "slug": "douglas",
+    "latitude": -29.05531,
+    "longitude": 23.7743,
+    "serviceRadiusKm": 150,
+    "geonamesId": "1008612"
+  },
+  {
+    "province": "Northern Cape",
+    "town": "Kakamas",
+    "slug": "kakamas",
+    "latitude": -28.77341,
+    "longitude": 20.6147,
+    "serviceRadiusKm": 170,
+    "geonamesId": "993014"
+  },
+  {
+    "province": "Northern Cape",
+    "town": "Springbok",
+    "slug": "springbok",
+    "latitude": -29.66434,
+    "longitude": 17.8865,
+    "serviceRadiusKm": 200,
+    "geonamesId": "3361142"
+  },
+  {
+    "province": "Northern Cape",
+    "town": "Calvinia",
+    "slug": "calvinia",
+    "latitude": -31.47069,
+    "longitude": 19.77601,
+    "serviceRadiusKm": 200,
+    "geonamesId": "3369174"
+  },
+  {
+    "province": "Free State",
+    "town": "Bloemfontein",
+    "slug": "bloemfontein",
+    "latitude": -29.12107,
+    "longitude": 26.214,
+    "serviceRadiusKm": 100,
+    "geonamesId": "1018725"
+  },
+  {
+    "province": "Free State",
+    "town": "Bethlehem",
+    "slug": "bethlehem",
+    "latitude": -28.23078,
+    "longitude": 28.30707,
+    "serviceRadiusKm": 100,
+    "geonamesId": "1019704"
+  },
+  {
+    "province": "Free State",
+    "town": "Harrismith",
+    "slug": "harrismith",
+    "latitude": -28.27276,
+    "longitude": 29.12946,
+    "serviceRadiusKm": 100,
+    "geonamesId": "997751"
+  },
+  {
+    "province": "Free State",
+    "town": "Kroonstad",
+    "slug": "kroonstad",
+    "latitude": -27.65036,
+    "longitude": 27.23488,
+    "serviceRadiusKm": 100,
+    "geonamesId": "986846"
+  },
+  {
+    "province": "Free State",
+    "town": "Welkom",
+    "slug": "welkom",
+    "latitude": -27.97742,
+    "longitude": 26.73506,
+    "serviceRadiusKm": 100,
+    "geonamesId": "940909"
+  },
+  {
+    "province": "Free State",
+    "town": "Bothaville",
+    "slug": "bothaville",
+    "latitude": -27.3887,
+    "longitude": 26.61701,
+    "serviceRadiusKm": 100,
+    "geonamesId": "1016698"
+  },
+  {
+    "province": "Free State",
+    "town": "Reitz",
+    "slug": "reitz",
+    "latitude": -27.80138,
+    "longitude": 28.42726,
+    "serviceRadiusKm": 100,
+    "geonamesId": "962847"
+  },
+  {
+    "province": "Free State",
+    "town": "Frankfort",
+    "slug": "frankfort",
+    "latitude": -27.27888,
+    "longitude": 28.49696,
+    "serviceRadiusKm": 100,
+    "geonamesId": "1003763"
+  },
+  {
+    "province": "Free State",
+    "town": "Parys",
+    "slug": "parys",
+    "latitude": -26.9033,
+    "longitude": 27.45727,
+    "serviceRadiusKm": 100,
+    "geonamesId": "966166"
+  },
+  {
+    "province": "Free State",
+    "town": "Sasolburg",
+    "slug": "sasolburg",
+    "latitude": -26.81358,
+    "longitude": 27.81695,
+    "serviceRadiusKm": 100,
+    "geonamesId": "957487"
+  },
+  {
+    "province": "Free State",
+    "town": "Ficksburg",
+    "slug": "ficksburg",
+    "latitude": -28.872,
+    "longitude": 27.87506,
+    "serviceRadiusKm": 100,
+    "geonamesId": "1004303"
+  },
+  {
+    "province": "Free State",
+    "town": "Ladybrand",
+    "slug": "ladybrand",
+    "latitude": -29.19448,
+    "longitude": 27.45739,
+    "serviceRadiusKm": 100,
+    "geonamesId": "985015"
+  },
+  {
+    "province": "Free State",
+    "town": "Bultfontein",
+    "slug": "bultfontein",
+    "latitude": -28.28756,
+    "longitude": 26.14996,
+    "serviceRadiusKm": 100,
+    "geonamesId": "1014747"
+  },
+  {
+    "province": "Free State",
+    "town": "Heilbron",
+    "slug": "heilbron",
+    "latitude": -27.28115,
+    "longitude": 27.9709,
+    "serviceRadiusKm": 100,
+    "geonamesId": "997140"
+  },
+  {
+    "province": "KwaZulu-Natal",
+    "town": "Durban",
+    "slug": "durban",
+    "latitude": -29.8579,
+    "longitude": 31.0292,
+    "serviceRadiusKm": 90,
+    "geonamesId": "1007311"
+  },
+  {
+    "province": "KwaZulu-Natal",
+    "town": "Pietermaritzburg",
+    "slug": "pietermaritzburg",
+    "latitude": -29.61679,
+    "longitude": 30.39278,
+    "serviceRadiusKm": 90,
+    "geonamesId": "965301"
+  },
+  {
+    "province": "KwaZulu-Natal",
+    "town": "Richards Bay",
+    "slug": "richards-bay",
+    "latitude": -28.78301,
+    "longitude": 32.03768,
+    "serviceRadiusKm": 100,
+    "geonamesId": "962367"
+  },
+  {
+    "province": "KwaZulu-Natal",
+    "town": "Newcastle",
+    "slug": "newcastle",
+    "latitude": -27.75796,
+    "longitude": 29.9318,
+    "serviceRadiusKm": 100,
+    "geonamesId": "971421"
+  },
+  {
+    "province": "KwaZulu-Natal",
+    "town": "Ladysmith",
+    "slug": "ladysmith",
+    "latitude": -28.55874,
+    "longitude": 29.77896,
+    "serviceRadiusKm": 100,
+    "geonamesId": "984998"
+  },
+  {
+    "province": "KwaZulu-Natal",
+    "town": "Kokstad",
+    "slug": "kokstad",
+    "latitude": -30.54723,
+    "longitude": 29.42412,
+    "serviceRadiusKm": 120,
+    "geonamesId": "988356"
+  },
+  {
+    "province": "KwaZulu-Natal",
+    "town": "Vryheid",
+    "slug": "vryheid",
+    "latitude": -27.76952,
+    "longitude": 30.79165,
+    "serviceRadiusKm": 120,
+    "geonamesId": "942470"
+  },
+  {
+    "province": "KwaZulu-Natal",
+    "town": "Dundee",
+    "slug": "dundee",
+    "latitude": -28.16678,
+    "longitude": 30.23371,
+    "serviceRadiusKm": 100,
+    "geonamesId": "1007400"
+  },
+  {
+    "province": "KwaZulu-Natal",
+    "town": "Estcourt",
+    "slug": "estcourt",
+    "latitude": -29.01269,
+    "longitude": 29.86619,
+    "serviceRadiusKm": 100,
+    "geonamesId": "1004962"
+  },
+  {
+    "province": "KwaZulu-Natal",
+    "town": "Port Shepstone",
+    "slug": "port-shepstone",
+    "latitude": -30.74137,
+    "longitude": 30.45499,
+    "serviceRadiusKm": 100,
+    "geonamesId": "964406"
+  },
+  {
+    "province": "KwaZulu-Natal",
+    "town": "Pongola",
+    "slug": "pongola",
+    "latitude": -27.37808,
+    "longitude": 31.61904,
+    "serviceRadiusKm": 120,
+    "geonamesId": "964574"
+  },
+  {
+    "province": "KwaZulu-Natal",
+    "town": "Eshowe",
+    "slug": "eshowe",
+    "latitude": -28.88649,
+    "longitude": 31.4699,
+    "serviceRadiusKm": 100,
+    "geonamesId": "1005040"
+  },
+  {
+    "province": "Mpumalanga",
+    "town": "Mbombela",
+    "slug": "mbombela",
+    "latitude": -25.47512,
+    "longitude": 30.96935,
+    "serviceRadiusKm": 100,
+    "geonamesId": "971534"
+  },
+  {
+    "province": "Mpumalanga",
+    "town": "eMalahleni",
+    "slug": "emalahleni",
+    "latitude": -25.87133,
+    "longitude": 29.23323,
+    "serviceRadiusKm": 100,
+    "geonamesId": "939270"
+  },
+  {
+    "province": "Mpumalanga",
+    "town": "Middelburg",
+    "slug": "middelburg",
+    "latitude": -25.77507,
+    "longitude": 29.46482,
+    "serviceRadiusKm": 100,
+    "geonamesId": "976361"
+  },
+  {
+    "province": "Mpumalanga",
+    "town": "Secunda",
+    "slug": "secunda",
+    "latitude": -26.55,
+    "longitude": 29.16667,
+    "serviceRadiusKm": 100,
+    "geonamesId": "956767"
+  },
+  {
+    "province": "Mpumalanga",
+    "town": "Ermelo",
+    "slug": "ermelo",
+    "latitude": -26.53333,
+    "longitude": 29.98333,
+    "serviceRadiusKm": 100,
+    "geonamesId": "1005125"
+  },
+  {
+    "province": "Mpumalanga",
+    "town": "Standerton",
+    "slug": "standerton",
+    "latitude": -26.93366,
+    "longitude": 29.24152,
+    "serviceRadiusKm": 100,
+    "geonamesId": "952747"
+  },
+  {
+    "province": "Mpumalanga",
+    "town": "eMkhondo",
+    "slug": "emkhondo",
+    "latitude": -27.00706,
+    "longitude": 30.81323,
+    "serviceRadiusKm": 120,
+    "geonamesId": "965241"
+  },
+  {
+    "province": "Mpumalanga",
+    "town": "Komatipoort",
+    "slug": "komatipoort",
+    "latitude": -25.43321,
+    "longitude": 31.95478,
+    "serviceRadiusKm": 120,
+    "geonamesId": "988290"
+  },
+  {
+    "province": "Mpumalanga",
+    "town": "Malalane",
+    "slug": "malalane",
+    "latitude": -25.49489,
+    "longitude": 31.50891,
+    "serviceRadiusKm": 120,
+    "geonamesId": "979837"
+  },
+  {
+    "province": "Mpumalanga",
+    "town": "Delmas",
+    "slug": "delmas",
+    "latitude": -26.1466,
+    "longitude": 28.68322,
+    "serviceRadiusKm": 100,
+    "geonamesId": "1011031"
+  },
+  {
+    "province": "Limpopo",
+    "town": "Polokwane",
+    "slug": "polokwane",
+    "latitude": -23.90449,
+    "longitude": 29.46885,
+    "serviceRadiusKm": 100,
+    "geonamesId": "965289"
+  },
+  {
+    "province": "Limpopo",
+    "town": "Tzaneen",
+    "slug": "tzaneen",
+    "latitude": -23.83322,
+    "longitude": 30.16351,
+    "serviceRadiusKm": 100,
+    "geonamesId": "946973"
+  },
+  {
+    "province": "Limpopo",
+    "town": "Makhado",
+    "slug": "makhado",
+    "latitude": -23.04385,
+    "longitude": 29.90319,
+    "serviceRadiusKm": 120,
+    "geonamesId": "981827"
+  },
+  {
+    "province": "Limpopo",
+    "town": "Mokopane",
+    "slug": "mokopane",
+    "latitude": -24.19436,
+    "longitude": 29.00974,
+    "serviceRadiusKm": 100,
+    "geonamesId": "964315"
+  },
+  {
+    "province": "Limpopo",
+    "town": "Bela-Bela",
+    "slug": "bela-bela",
+    "latitude": -24.88333,
+    "longitude": 28.28333,
+    "serviceRadiusKm": 100,
+    "geonamesId": "941966"
+  },
+  {
+    "province": "Limpopo",
+    "town": "Lephalale",
+    "slug": "lephalale",
+    "latitude": -23.66607,
+    "longitude": 27.74477,
+    "serviceRadiusKm": 150,
+    "geonamesId": "7730334"
+  },
+  {
+    "province": "Limpopo",
+    "town": "Groblersdal",
+    "slug": "groblersdal",
+    "latitude": -25.16843,
+    "longitude": 29.39412,
+    "serviceRadiusKm": 110,
+    "geonamesId": "999964"
+  },
+  {
+    "province": "Limpopo",
+    "town": "Hoedspruit",
+    "slug": "hoedspruit",
+    "latitude": -24.35122,
+    "longitude": 30.95332,
+    "serviceRadiusKm": 120,
+    "geonamesId": "996195"
+  },
+  {
+    "province": "Limpopo",
+    "town": "Phalaborwa",
+    "slug": "phalaborwa",
+    "latitude": -23.94299,
+    "longitude": 31.14107,
+    "serviceRadiusKm": 120,
+    "geonamesId": "965528"
+  },
+  {
+    "province": "Limpopo",
+    "town": "Musina",
+    "slug": "musina",
+    "latitude": -22.34881,
+    "longitude": 30.04074,
+    "serviceRadiusKm": 160,
+    "geonamesId": "8030223"
+  },
+  {
+    "province": "North West",
+    "town": "Rustenburg",
+    "slug": "rustenburg",
+    "latitude": -25.66756,
+    "longitude": 27.24208,
+    "serviceRadiusKm": 100,
+    "geonamesId": "958724"
+  },
+  {
+    "province": "North West",
+    "town": "Mahikeng",
+    "slug": "mahikeng",
+    "latitude": -25.86522,
+    "longitude": 25.64421,
+    "serviceRadiusKm": 110,
+    "geonamesId": "980595"
+  },
+  {
+    "province": "North West",
+    "town": "Klerksdorp",
+    "slug": "klerksdorp",
+    "latitude": -26.85213,
+    "longitude": 26.66672,
+    "serviceRadiusKm": 100,
+    "geonamesId": "989921"
+  },
+  {
+    "province": "North West",
+    "town": "Potchefstroom",
+    "slug": "potchefstroom",
+    "latitude": -26.71667,
+    "longitude": 27.1,
+    "serviceRadiusKm": 100,
+    "geonamesId": "964349"
+  },
+  {
+    "province": "North West",
+    "town": "Brits",
+    "slug": "brits",
+    "latitude": -25.63473,
+    "longitude": 27.78022,
+    "serviceRadiusKm": 100,
+    "geonamesId": "1015621"
+  },
+  {
+    "province": "North West",
+    "town": "Lichtenburg",
+    "slug": "lichtenburg",
+    "latitude": -26.152,
+    "longitude": 26.15968,
+    "serviceRadiusKm": 100,
+    "geonamesId": "982899"
+  },
+  {
+    "province": "North West",
+    "town": "Vryburg",
+    "slug": "vryburg",
+    "latitude": -26.95659,
+    "longitude": 24.7284,
+    "serviceRadiusKm": 140,
+    "geonamesId": "942511"
+  },
+  {
+    "province": "North West",
+    "town": "Schweizer-Reneke",
+    "slug": "schweizer-reneke",
+    "latitude": -27.18871,
+    "longitude": 25.32931,
+    "serviceRadiusKm": 120,
+    "geonamesId": "956907"
+  },
+  {
+    "province": "North West",
+    "town": "Wolmaransstad",
+    "slug": "wolmaransstad",
+    "latitude": -27.1974,
+    "longitude": 25.98311,
+    "serviceRadiusKm": 120,
+    "geonamesId": "938457"
+  },
+  {
+    "province": "North West",
+    "town": "Zeerust",
+    "slug": "zeerust",
+    "latitude": -25.53695,
+    "longitude": 26.07512,
+    "serviceRadiusKm": 120,
+    "geonamesId": "937136"
+  }
+]
