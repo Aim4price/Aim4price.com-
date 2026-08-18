@@ -11978,16 +11978,19 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     setBusyDeleteId(assetId);
 
     try {
+      const removalDetails = draft.reason === 'mistake_duplicate'
+        ? { reason: draft.reason }
+        : {
+            reason: draft.reason,
+            disposalDate: draft.disposalDate,
+            disposalAmountExVat: draft.disposalAmountExVat,
+            note: draft.note,
+          };
       const response = await fetch(`/api/asset-register?id=${assetId}`, {
         method: 'DELETE',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          reason: draft.reason,
-          disposalDate: draft.disposalDate,
-          disposalAmountExVat: draft.disposalAmountExVat,
-          note: draft.note,
-        }),
+        body: JSON.stringify(removalDetails),
       });
 
       const data = (await response.json()) as AssetRegisterApiResponse & { mode?: 'disposed' | 'deleted' };
@@ -20290,23 +20293,25 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                   </button>
                 ))}
               </div>
-              <div className={`${styles.assetLifecycleFields} ${styles.assetDisposalFields}`}>
-                <label className={styles.assetSettingsField}>
-                  <span>Disposal date</span>
-                  <input type="date" required value={disposalDraft.disposalDate} onChange={(event) => setDisposalDraft((current) => ({ ...current, disposalDate: event.target.value }))} />
-                </label>
-                <label className={styles.assetSettingsField}>
-                  <span>Disposal amount <small>Optional, excl. VAT</small></span>
-                  <input inputMode="decimal" value={disposalDraft.disposalAmountExVat} onChange={(event) => setDisposalDraft((current) => ({ ...current, disposalAmountExVat: event.target.value }))} placeholder="R 0" />
-                </label>
-                <label className={`${styles.assetSettingsField} ${styles.assetDisposalNoteField}`}>
-                  <span>Note <small>Optional</small></span>
-                  <textarea value={disposalDraft.note} onChange={(event) => setDisposalDraft((current) => ({ ...current, note: event.target.value }))} placeholder="Add a buyer, trade-in, write-off or other reference" />
-                </label>
-              </div>
+              {disposalDraft.reason !== 'mistake_duplicate' ? (
+                <div className={`${styles.assetLifecycleFields} ${styles.assetDisposalFields}`}>
+                  <label className={styles.assetSettingsField}>
+                    <span>Disposal date</span>
+                    <input type="date" required value={disposalDraft.disposalDate} onChange={(event) => setDisposalDraft((current) => ({ ...current, disposalDate: event.target.value }))} />
+                  </label>
+                  <label className={styles.assetSettingsField}>
+                    <span>Disposal amount <small>Optional, excl. VAT</small></span>
+                    <input inputMode="decimal" value={disposalDraft.disposalAmountExVat} onChange={(event) => setDisposalDraft((current) => ({ ...current, disposalAmountExVat: event.target.value }))} placeholder="R 0" />
+                  </label>
+                  <label className={`${styles.assetSettingsField} ${styles.assetDisposalNoteField}`}>
+                    <span>Note <small>Optional</small></span>
+                    <textarea value={disposalDraft.note} onChange={(event) => setDisposalDraft((current) => ({ ...current, note: event.target.value }))} placeholder="Add a buyer, trade-in, write-off or other reference" />
+                  </label>
+                </div>
+              ) : null}
               {disposalDraft.reason === 'mistake_duplicate' ? (
                 <p className={`${styles.assetLifecycleNotice} ${styles.assetDisposalDeleteNotice}`}>
-                  This permanently removes the duplicate asset. A deletion audit and final asset snapshot are retained.
+                  No explanation is required. This permanently removes the duplicate asset while retaining its deletion audit and final snapshot.
                 </p>
               ) : null}
               <div className={`${styles.assetSettingsActions} ${styles.assetDisposalActions}`}>

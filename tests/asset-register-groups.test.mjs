@@ -639,16 +639,24 @@ test('umbrella create and manage forms keep their footer actions fully visible',
 });
 
 test('asset disposal uses a valid withdrawn marketplace state and keeps database errors private', async () => {
-  const [lifecycle, route] = await Promise.all([
+  const [client, styles, lifecycle, route] = await Promise.all([
+    readFile(new URL('../app/asset-register/asset-register-client.tsx', import.meta.url), 'utf8'),
+    readFile(new URL('../app/asset-register/page.module.css', import.meta.url), 'utf8'),
     readFile(new URL('../lib/asset-lifecycle.ts', import.meta.url), 'utf8'),
     readFile(new URL('../app/api/asset-register/route.ts', import.meta.url), 'utf8'),
   ]);
   const deleteHandler = route.slice(route.indexOf('export async function DELETE'));
+  const disposalModal = client.slice(client.indexOf('{disposalCandidateAsset ? ('), client.indexOf('{isExportModalOpen ? ('));
 
   assert.doesNotMatch(lifecycle, /marketplace_status[\s\S]{0,120}'off'/);
   assert.equal((lifecycle.match(/marketplace_status = case when marketplace_status is null then null else 'withdrawn' end/g) ?? []).length, 2);
   assert.match(deleteHandler, /The asset could not be archived\. Please try again\./);
   assert.doesNotMatch(deleteHandler, /formatUnknownError\(error/);
+  assert.match(client, /draft\.reason === 'mistake_duplicate'[\s\S]{0,100}\? \{ reason: draft\.reason \}/);
+  assert.match(disposalModal, /disposalDraft\.reason !== 'mistake_duplicate' \? \([\s\S]*?assetDisposalFields/);
+  assert.match(disposalModal, /No explanation is required\./);
+  assert.match(styles, /\.assetDisposalModal \{[\s\S]*?display: flex !important;[\s\S]*?flex-direction: column !important;[\s\S]*?overflow: hidden !important;/);
+  assert.match(styles, /\.assetDisposalBody \{[\s\S]*?flex: 1 1 auto !important;[\s\S]*?min-height: 0 !important;[\s\S]*?overflow-y: auto !important;/);
 });
 
 test('combined Asset Register groups are account-wide, preserve member counting, and project in every output', async () => {
