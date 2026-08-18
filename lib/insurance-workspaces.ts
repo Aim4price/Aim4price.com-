@@ -1414,6 +1414,14 @@ export async function deleteInsuranceShare(input: { brokerUserId: string; shareI
   const client = await getDb().connect();
   try {
     await client.query('begin');
+    await client.query(
+      'delete from insurance_snapshot_revisions where source_share_id = $1::uuid',
+      [lead.id],
+    );
+    await client.query(
+      'delete from insurance_workspaces where source_lead_id = $1::uuid and broker_user_id = $2',
+      [lead.id, input.brokerUserId],
+    );
     const deleted = await client.query(
       'delete from asset_leads where id = $1::uuid and partner_user_id = $2 returning id',
       [lead.id, input.brokerUserId],

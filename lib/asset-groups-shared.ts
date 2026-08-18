@@ -369,28 +369,23 @@ export function assetGroupPageEntryDisplayCount<T extends { id: string }>(
 export function paginateAssetGroupPageEntries<T extends { id: string }>(
   entries: Array<AssetGroupPageEntry<T>>,
   pageSize: number,
-  expandedGroupIds: ReadonlySet<string>,
+  _expandedGroupIds: ReadonlySet<string>,
 ): Array<Array<AssetGroupPageEntry<T>>> {
   if (!entries.length) return [[]];
 
   const safePageSize = Math.max(1, Math.floor(pageSize));
+  const umbrellaEntries = entries.filter((entry) => entry.kind === 'group');
+  const standaloneEntries = entries.filter((entry) => entry.kind === 'asset');
+
+  if (!standaloneEntries.length) return [umbrellaEntries];
+
   const pages: Array<Array<AssetGroupPageEntry<T>>> = [];
-  let currentPage: Array<AssetGroupPageEntry<T>> = [];
-  let currentDisplayCount = 0;
+  for (let start = 0; start < standaloneEntries.length; start += safePageSize) {
+    pages.push([
+      ...umbrellaEntries,
+      ...standaloneEntries.slice(start, start + safePageSize),
+    ]);
+  }
 
-  entries.forEach((entry) => {
-    const entryDisplayCount = assetGroupPageEntryDisplayCount(entry, expandedGroupIds);
-
-    if (currentPage.length > 0 && currentDisplayCount + entryDisplayCount > safePageSize) {
-      pages.push(currentPage);
-      currentPage = [];
-      currentDisplayCount = 0;
-    }
-
-    currentPage.push(entry);
-    currentDisplayCount += entryDisplayCount;
-  });
-
-  if (currentPage.length > 0) pages.push(currentPage);
-  return pages.length ? pages : [[]];
+  return pages;
 }

@@ -497,6 +497,8 @@ export default function AdminClient({
   const [busyUserAction, setBusyUserAction] = useState<string | null>(null);
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [accountActionModal, setAccountActionModal] =
+    useState<AdminUserRow | null>(null);
   const [qrModal, setQrModal] = useState<QrModalState>(null);
   const [assetNameModal, setAssetNameModal] =
     useState<AssetNameModalState>(null);
@@ -515,6 +517,21 @@ export default function AdminClient({
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm, signupDateFilter, provinceFilter]);
+
+  useEffect(() => {
+    if (!accountActionModal || typeof window === "undefined") {
+      return;
+    }
+
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key === "Escape" && busyUserAction === null) {
+        setAccountActionModal(null);
+      }
+    }
+
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [accountActionModal, busyUserAction]);
 
   const pageCount = Math.max(
     1,
@@ -572,6 +589,8 @@ export default function AdminClient({
     ? assetNameModal.preview.rows.filter((row) => row.status === "changed")
         .length
     : 0;
+  const selectedAccountIsProtected =
+    accountActionModal?.email.trim().toLowerCase() === "aim4price@gmail.com";
 
   async function handleSignOut() {
     try {
@@ -633,6 +652,13 @@ export default function AdminClient({
 
       if (data.users) {
         setUsers(data.users);
+        setAccountActionModal((current) => {
+          if (!current || current.userId !== user.userId) {
+            return current;
+          }
+
+          return data.users?.find((candidate) => candidate.userId === user.userId) ?? null;
+        });
       }
 
       setNotice({
@@ -1191,6 +1217,7 @@ export default function AdminClient({
       ) : null}
 
       <section className={styles.tableCard} aria-label="User accounts">
+        <p className={styles.tableHint}>Select any account to view its options.</p>
         <div className={styles.tableWrap}>
           <table className={styles.userTable}>
             <thead>
@@ -1206,23 +1233,31 @@ export default function AdminClient({
                 <th>Password</th>
                 <th>Last active</th>
                 <th>Signed up</th>
-                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
               {visibleUsers.length === 0 ? (
                 <tr>
-                  <td colSpan={12} className={styles.emptyCell}>
+                  <td colSpan={11} className={styles.emptyCell}>
                     No matching users found.
                   </td>
                 </tr>
               ) : (
-                paginatedUsers.map((user) => {
-                  const isProtectedAdmin =
-                    user.email.trim().toLowerCase() === "aim4price@gmail.com";
-
-                  return (
-                    <tr key={user.userId}>
+                paginatedUsers.map((user) => (
+                  <tr
+                    key={user.userId}
+                    className={styles.accountRow}
+                    role="button"
+                    tabIndex={0}
+                    aria-label={`Manage ${user.name || user.email}`}
+                    onClick={() => setAccountActionModal(user)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        setAccountActionModal(user);
+                      }
+                    }}
+                  >
                       <td>
                         <strong className={styles.nameCell}>{user.name}</strong>
                       </td>
@@ -1266,108 +1301,8 @@ export default function AdminClient({
                         </span>
                       </td>
                       <td>{formatDate(user.createdAtIso)}</td>
-                      <td>
-                        <div className={styles.actionGroup}>
-                          <button
-                            type="button"
-                            className={styles.openButton}
-                            onClick={() => runAction(user, "open_account")}
-                            disabled={
-                              busyUserAction !== null || isProtectedAdmin
-                            }
-                          >
-                            {busyUserAction === `${user.userId}:open_account`
-                              ? getBusyText("open_account")
-                              : "Open"}
-                          </button>
-
-                          <button
-                            type="button"
-                            className={styles.activateButton}
-                            onClick={() => runAction(user, "activate")}
-                            disabled={
-                              busyUserAction !== null ||
-                              user.accountStatus === "active"
-                            }
-                          >
-                            {busyUserAction === `${user.userId}:activate`
-                              ? getBusyText("activate")
-                              : "Activate"}
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() => runAction(user, "pending")}
-                            disabled={
-                              busyUserAction !== null ||
-                              isProtectedAdmin ||
-                              user.accountStatus === "pending_payment"
-                            }
-                          >
-                            {busyUserAction === `${user.userId}:pending`
-                              ? getBusyText("pending")
-                              : "Pending"}
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() => runAction(user, "suspend")}
-                            disabled={
-                              busyUserAction !== null ||
-                              isProtectedAdmin ||
-                              user.accountStatus === "suspended"
-                            }
-                          >
-                            {busyUserAction === `${user.userId}:suspend`
-                              ? getBusyText("suspend")
-                              : "Suspend"}
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() => runAction(user, "send_reset")}
-                            disabled={busyUserAction !== null}
-                          >
-                            {busyUserAction === `${user.userId}:send_reset`
-                              ? getBusyText("send_reset")
-                              : "Reset"}
-                          </button>
-
-                          <button
-                            type="button"
-                            className={styles.namesButton}
-                            onClick={() => openAssetNameModal(user)}
-                            disabled={busyUserAction !== null}
-                          >
-                            Names
-                          </button>
-
-                          <button
-                            type="button"
-                            className={styles.qrButton}
-                            onClick={() => openQrModal(user)}
-                            disabled={busyUserAction !== null}
-                          >
-                            QR
-                          </button>
-
-                          <button
-                            type="button"
-                            className={styles.deleteButton}
-                            onClick={() => runAction(user, "delete_user")}
-                            disabled={
-                              busyUserAction !== null || isProtectedAdmin
-                            }
-                          >
-                            {busyUserAction === `${user.userId}:delete_user`
-                              ? getBusyText("delete_user")
-                              : "Delete"}
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })
+                  </tr>
+                ))
               )}
             </tbody>
           </table>
@@ -1414,6 +1349,186 @@ export default function AdminClient({
           </div>
         </div>
       </section>
+
+      {accountActionModal ? (
+        <div
+          className={styles.modalBackdrop}
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget && busyUserAction === null) {
+              setAccountActionModal(null);
+            }
+          }}
+        >
+          <section
+            className={`${styles.qrModal} ${styles.accountActionModal}`}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="admin-account-action-modal-title"
+            aria-busy={busyUserAction !== null}
+          >
+            <header className={styles.qrModalHeader}>
+              <div>
+                <p className={styles.qrModalEyebrow}>Account options</p>
+                <h2 id="admin-account-action-modal-title">
+                  {accountActionModal.name || "Unnamed account"}
+                </h2>
+                <span>{accountActionModal.email || "No email saved"}</span>
+              </div>
+
+              <button
+                type="button"
+                className={styles.modalCloseButton}
+                onClick={() => setAccountActionModal(null)}
+                disabled={busyUserAction !== null}
+                aria-label="Close account options"
+                autoFocus
+              >
+                ×
+              </button>
+            </header>
+
+            <div className={styles.accountActionSummary}>
+              <div>
+                <span>Account</span>
+                <strong>
+                  {formatAccountValue(accountActionModal.accountType)} ·{" "}
+                  {formatAccountValue(accountActionModal.accountSubtype)}
+                </strong>
+              </div>
+              <div>
+                <span>Status</span>
+                <strong>{accountActionModal.accountStatusLabel}</strong>
+              </div>
+              <div>
+                <span>Province</span>
+                <strong>{formatProvince(accountActionModal.province)}</strong>
+              </div>
+              <div>
+                <span>Phone</span>
+                <strong>{accountActionModal.phone || "Not saved"}</strong>
+              </div>
+              <div>
+                <span>Last active</span>
+                <strong>{formatLastActive(accountActionModal.lastActiveAtIso)}</strong>
+              </div>
+              <div>
+                <span>Signed up</span>
+                <strong>{formatDate(accountActionModal.createdAtIso)}</strong>
+              </div>
+            </div>
+
+            <div className={styles.accountActionGrid} aria-label="Account actions">
+              <button
+                type="button"
+                className={`${styles.accountActionButton} ${styles.openButton}`}
+                onClick={() => runAction(accountActionModal, "open_account")}
+                disabled={busyUserAction !== null || selectedAccountIsProtected}
+              >
+                {busyUserAction === `${accountActionModal.userId}:open_account`
+                  ? getBusyText("open_account")
+                  : "Open account"}
+              </button>
+
+              <button
+                type="button"
+                className={`${styles.accountActionButton} ${styles.activateButton}`}
+                onClick={() => runAction(accountActionModal, "activate")}
+                disabled={
+                  busyUserAction !== null || accountActionModal.accountStatus === "active"
+                }
+              >
+                {busyUserAction === `${accountActionModal.userId}:activate`
+                  ? getBusyText("activate")
+                  : "Activate account"}
+              </button>
+
+              <button
+                type="button"
+                className={styles.accountActionButton}
+                onClick={() => runAction(accountActionModal, "pending")}
+                disabled={
+                  busyUserAction !== null ||
+                  selectedAccountIsProtected ||
+                  accountActionModal.accountStatus === "pending_payment"
+                }
+              >
+                {busyUserAction === `${accountActionModal.userId}:pending`
+                  ? getBusyText("pending")
+                  : "Set as pending"}
+              </button>
+
+              <button
+                type="button"
+                className={`${styles.accountActionButton} ${styles.suspendButton}`}
+                onClick={() => runAction(accountActionModal, "suspend")}
+                disabled={
+                  busyUserAction !== null ||
+                  selectedAccountIsProtected ||
+                  accountActionModal.accountStatus === "suspended"
+                }
+              >
+                {busyUserAction === `${accountActionModal.userId}:suspend`
+                  ? getBusyText("suspend")
+                  : "Suspend account"}
+              </button>
+
+              <button
+                type="button"
+                className={styles.accountActionButton}
+                onClick={() => runAction(accountActionModal, "send_reset")}
+                disabled={busyUserAction !== null}
+              >
+                {busyUserAction === `${accountActionModal.userId}:send_reset`
+                  ? getBusyText("send_reset")
+                  : "Send password reset"}
+              </button>
+
+              <button
+                type="button"
+                className={`${styles.accountActionButton} ${styles.namesButton}`}
+                onClick={() => {
+                  const user = accountActionModal;
+                  setAccountActionModal(null);
+                  openAssetNameModal(user);
+                }}
+                disabled={busyUserAction !== null}
+              >
+                Manage asset names
+              </button>
+
+              <button
+                type="button"
+                className={`${styles.accountActionButton} ${styles.qrButton}`}
+                onClick={() => {
+                  const user = accountActionModal;
+                  setAccountActionModal(null);
+                  void openQrModal(user);
+                }}
+                disabled={busyUserAction !== null}
+              >
+                Print QR labels
+              </button>
+            </div>
+
+            <div className={styles.accountActionDanger}>
+              <div>
+                <strong>Delete account</strong>
+                <span>Permanently removes the account and its saved workspace data.</span>
+              </div>
+              <button
+                type="button"
+                className={`${styles.accountActionButton} ${styles.deleteButton}`}
+                onClick={() => runAction(accountActionModal, "delete_user")}
+                disabled={busyUserAction !== null || selectedAccountIsProtected}
+              >
+                {busyUserAction === `${accountActionModal.userId}:delete_user`
+                  ? getBusyText("delete_user")
+                  : "Delete account"}
+              </button>
+            </div>
+          </section>
+        </div>
+      ) : null}
 
       {qrModal ? (
         <div className={styles.modalBackdrop}>

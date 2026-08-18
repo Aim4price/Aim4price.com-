@@ -30,6 +30,8 @@ const PARTNER_ACCESS_TABLES = [
   'asset_partner_notes',
   'asset_register_access_grants',
   'access_audit_events',
+  'insurance_snapshot_revisions',
+  'insurance_workspaces',
 ] as const;
 
 const USER_COMMUNICATION_TABLES = [
@@ -95,6 +97,26 @@ async function deleteUserWorkspaceDataInTransaction(
 
   if (tableSet.has('asset_lifecycle_events')) {
     await queryable.query('delete from asset_lifecycle_events where owner_user_id = $1 or actor_user_id = $1', [userId]);
+  }
+
+  if (tableSet.has('asset_leads') && tableSet.has('insurance_snapshot_revisions')) {
+    await queryable.query(
+      `delete from insurance_snapshot_revisions
+       where source_share_id in (
+         select id from asset_leads where owner_user_id = $1 or partner_user_id = $1
+       )`,
+      [userId],
+    );
+  }
+
+  if (tableSet.has('asset_leads') && tableSet.has('insurance_workspaces')) {
+    await queryable.query(
+      `delete from insurance_workspaces
+       where source_lead_id in (
+         select id from asset_leads where owner_user_id = $1 or partner_user_id = $1
+       )`,
+      [userId],
+    );
   }
 
   if (tableSet.has('asset_leads')) {
@@ -173,4 +195,3 @@ export async function deleteUserWorkspaceDataWithClient(
 ): Promise<void> {
   await deleteUserWorkspaceDataInTransaction(client, userId);
 }
-
