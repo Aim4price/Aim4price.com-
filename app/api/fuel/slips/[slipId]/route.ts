@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { deleteFuelSlipTransaction, getFuelSlipTransactionById, listFuelLedger, saveFuelSlipTransaction } from '../../../../../lib/fuel-ledger';
+import { getFuelSlipTransactionById, listFuelLedger, saveFuelSlipTransaction, voidFuelSlipTransaction } from '../../../../../lib/fuel-ledger';
 import {
   assertWorkspaceAssetAccess,
   filterFuelLedgerForWorkspace,
@@ -39,7 +39,15 @@ export async function PATCH(request: Request, context: RouteContext) {
     if (String(payload.targetType ?? '').trim() === 'asset') {
       await assertWorkspaceAssetAccess(workspace, payload.assetId ?? payload.targetId);
     }
-    const result = await saveFuelSlipTransaction(workspace.ownerUserId, { ...payload, id: slipId, slipId, fuelSlipId: slipId });
+    const result = await saveFuelSlipTransaction(workspace.ownerUserId, {
+      ...payload,
+      id: slipId,
+      slipId,
+      fuelSlipId: slipId,
+      auditActorUserId: workspace.actorUserId,
+      auditActorName: workspace.actorName,
+      auditActorEmail: workspace.actorEmail,
+    });
     const ledger = await filterFuelLedgerForWorkspace(
       workspace,
       await listFuelLedger(workspace.ownerUserId),
@@ -77,7 +85,15 @@ export async function DELETE(request: Request, context: RouteContext) {
   try {
     const existing = await getFuelSlipTransactionById(workspace.ownerUserId, slipId);
     if (existing?.assetId) await assertWorkspaceAssetAccess(workspace, existing.assetId);
-    await deleteFuelSlipTransaction(workspace.ownerUserId, slipId);
+    const payload = await request.json().catch(() => ({})) as Record<string, unknown>;
+    await voidFuelSlipTransaction(workspace.ownerUserId, slipId, {
+      actor: {
+        userId: workspace.actorUserId,
+        name: workspace.actorName,
+        email: workspace.actorEmail,
+      },
+      reason: payload.reason,
+    });
     const ledger = await filterFuelLedgerForWorkspace(
       workspace,
       await listFuelLedger(workspace.ownerUserId),
@@ -85,13 +101,13 @@ export async function DELETE(request: Request, context: RouteContext) {
 
     return NextResponse.json({
       ok: true,
-      message: 'Fuel slip deleted.',
+      message: 'Fuel slip voided. Its change history has been kept.',
       ...ledger,
     });
   } catch (error) {
-    console.error('Aim4price fuel slip delete failed.', error);
+    console.error('Aim4price fuel slip void failed.', error);
     return NextResponse.json(
-      { ok: false, error: error instanceof Error ? error.message : 'The fuel slip could not be deleted.' },
+      { ok: false, error: error instanceof Error ? error.message : 'The fuel slip could not be voided.' },
       { status: 400 },
     );
   }

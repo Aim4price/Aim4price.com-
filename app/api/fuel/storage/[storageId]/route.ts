@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { deleteFuelStorage, listFuelLedger, updateFuelStorage } from '../../../../../lib/fuel-ledger';
+import { archiveFuelStorage, listFuelLedger, updateFuelStorage } from '../../../../../lib/fuel-ledger';
 import { filterFuelLedgerForWorkspace, resolveOwnerWorkspaceContext } from '../../../../../lib/owner-workspace-access';
 
 export const runtime = 'nodejs';
@@ -41,7 +41,12 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
   }
 
   try {
-    const storage = await updateFuelStorage(resolved.context.ownerUserId, context.params.storageId, body);
+    const storage = await updateFuelStorage(resolved.context.ownerUserId, context.params.storageId, {
+      ...body,
+      auditActorUserId: resolved.context.actorUserId,
+      auditActorName: resolved.context.actorName,
+      auditActorEmail: resolved.context.actorEmail,
+    });
     const ledger = await filterFuelLedgerForWorkspace(
       resolved.context,
       await listFuelLedger(resolved.context.ownerUserId),
@@ -60,15 +65,23 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
   if (!resolved.ok) return resolved.response;
 
   try {
-    await deleteFuelStorage(resolved.context.ownerUserId, context.params.storageId);
+    const body = await request.json().catch(() => ({})) as Record<string, unknown>;
+    await archiveFuelStorage(resolved.context.ownerUserId, context.params.storageId, {
+      actor: {
+        userId: resolved.context.actorUserId,
+        name: resolved.context.actorName,
+        email: resolved.context.actorEmail,
+      },
+      reason: body.reason,
+    });
     const ledger = await filterFuelLedgerForWorkspace(
       resolved.context,
       await listFuelLedger(resolved.context.ownerUserId),
     );
-    return NextResponse.json({ ok: true, ...ledger });
+    return NextResponse.json({ ok: true, message: 'Fuel storage archived. Its ledger history has been kept.', ...ledger });
   } catch (error) {
     return NextResponse.json(
-      { ok: false, error: errorMessage(error, 'Failed to delete fuel storage.') },
+      { ok: false, error: errorMessage(error, 'Failed to archive fuel storage.') },
       { status: 400 },
     );
   }

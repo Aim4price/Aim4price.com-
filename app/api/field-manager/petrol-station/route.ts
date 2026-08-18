@@ -94,6 +94,9 @@ export async function POST(request: NextRequest) {
       targetId: asset.id,
       assetId: asset.id,
       operatorName: access.session.displayName,
+      auditActorUserId: access.session.managerId,
+      auditActorName: access.session.displayName,
+      auditActorEmail: '',
     });
 
     return NextResponse.json({
