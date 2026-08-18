@@ -48,7 +48,7 @@ test('location seed contains the 100 requested unique South African service area
   assert.ok(seed.filter((entry) => entry.province === 'Northern Cape').every((entry) => entry.serviceRadiusKm >= 120));
 });
 
-test('exactly five non-login master accounts route through the required Aim4price addresses', async () => {
+test('exactly five login-capable master accounts route through the required Aim4price addresses', async () => {
   const [network, migration] = await Promise.all([
     read('lib/assistance-network.ts'),
     read('database/migrations/77-national-assistance-network.sql'),
@@ -68,9 +68,12 @@ test('exactly five non-login master accounts route through the required Aim4pric
   assert.match(network, /AIM4PRICE_ASSISTANCE_ROUTING_EMAIL = 'aim4price@gmail\.com'/);
   assert.match(network, /managed_by_user_id/);
   assert.match(network, /partner_directory_enabled = false/);
-  assert.match(network, /This is not a login account/);
+  assert.match(network, /Aim4price-managed assistance login/);
   assert.doesNotMatch(network, /insert into\s+(public\.)?"?user"?/i);
-  assert.doesNotMatch(migration, /INSERT INTO\s+public\."user"/i);
+  assert.match(migration, /INSERT INTO\s+public\."user"/i);
+  assert.match(migration, /INSERT INTO\s+public\."account"/i);
+  assert.match(migration, /"providerId"\s*=\s*'credential'/i);
+  assert.match(migration, /Existing non-empty credential passwords are never overwritten/);
 });
 
 test('seed and schema are idempotent, duplicate-safe and preserve admin visibility choices', async () => {
