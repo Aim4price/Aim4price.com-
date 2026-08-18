@@ -35156,6 +35156,8 @@ button.documentOpenLink {
 .assetDisposalModal {
   width: min(52rem, calc(100vw - 2rem)) !important;
   max-height: min(90dvh, 52rem) !important;
+  display: flex !important;
+  flex-direction: column !important;
   overflow: hidden !important;
   padding: 0 !important;
 }
@@ -35171,6 +35173,11 @@ button.documentOpenLink {
 }
 
 .assetDisposalBody {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain !important;
+  scrollbar-gutter: stable !important;
   gap: 1rem !important;
   padding: 1.15rem 1.5rem 1.4rem !important;
 }
