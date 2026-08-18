@@ -37091,3 +37091,339 @@ button.documentOpenLink {
     width: 100%;
   }
 }
+
+/* === Assistance directory polish + click-to-expand map === */
+.optionsModal.assetQuoteModal.assetQuoteLocationPickerModal {
+  width: min(calc(100vw - 1.5rem), 780px) !important;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: min(90dvh, 760px) !important;
+  padding: clamp(1.2rem, 2vw, 1.6rem) !important;
+  border-radius: 1.65rem !important;
+}
+
+.assetQuoteLocationPickerModal .assetQuoteModalHeader {
+  padding-bottom: 0.95rem !important;
+}
+
+.assetQuoteLocationPickerModal .assetQuoteModalHeader h3 {
+  font-size: clamp(2rem, 4vw, 2.75rem) !important;
+  line-height: 1 !important;
+  letter-spacing: -0.055em !important;
+}
+
+.assetQuoteLocationPickerModal .assetQuoteModalHeader p {
+  max-width: 41rem !important;
+  color: #647488 !important;
+  font-size: 0.92rem !important;
+  line-height: 1.48 !important;
+}
+
+.assetQuoteLocationPickerModal .assetQuoteScrollBody {
+  flex: 0 1 auto !important;
+  min-height: 0 !important;
+  padding: 0.85rem 0 0 !important;
+}
+
+.assetQuoteLocationPickerModal .assetQuoteLocationStage {
+  min-height: 0 !important;
+  place-items: stretch !important;
+}
+
+.assetQuoteLocationPickerModal .assetQuoteLocationCard {
+  width: 100% !important;
+  gap: 0.85rem 1rem !important;
+  padding: clamp(1rem, 2vw, 1.3rem) !important;
+  border-radius: 1.25rem !important;
+  border-color: rgba(195, 213, 222, 0.88) !important;
+  background:
+    radial-gradient(circle at 0 0, rgba(25, 113, 82, 0.075), transparent 34%),
+    linear-gradient(180deg, #ffffff 0%, #f7fbf9 100%) !important;
+  box-shadow: 0 14px 34px rgba(18, 45, 37, 0.07) !important;
+}
+
+.assetQuoteLocationPickerModal .assetQuoteLocationIcon {
+  width: 3.05rem !important;
+  height: 3.05rem !important;
+  border-radius: 0.9rem !important;
+  box-shadow: 0 10px 20px rgba(18, 75, 59, 0.17) !important;
+}
+
+.assetQuoteLocationPickerModal .assetQuoteLocationCopy h4 {
+  font-size: 1.2rem !important;
+}
+
+.assetQuoteLocationPickerModal .assetQuoteLocationCopy p {
+  max-width: 35rem !important;
+  font-size: 0.84rem !important;
+}
+
+.assetQuoteLocationPickerModal .assetQuoteLocationInput {
+  min-height: 3.55rem !important;
+  border-radius: 0.95rem !important;
+}
+
+.assetQuoteLocationPickerModal .assetQuoteLocationActions {
+  grid-template-columns: auto minmax(0, 1fr) minmax(0, 1fr) !important;
+}
+
+.optionsModal.assetQuoteModal.assetQuotePartnerPickerModal {
+  width: min(calc(100vw - 1rem), 1720px) !important;
+  height: min(calc(100dvh - 1rem), 980px) !important;
+  max-height: calc(100dvh - 1rem) !important;
+  padding: clamp(0.9rem, 1.45vw, 1.3rem) !important;
+  border-radius: 1.65rem !important;
+}
+
+.assetQuotePartnerPickerModal .assetQuoteModalHeader {
+  padding-bottom: 0.75rem !important;
+}
+
+.assetQuotePartnerPickerModal .assetQuoteModalHeader h3 {
+  font-size: clamp(2rem, 3vw, 2.75rem) !important;
+  line-height: 1 !important;
+}
+
+.assetQuotePartnerPickerModal .assetQuoteModalHeader p {
+  margin-top: 0.15rem !important;
+  color: #607287 !important;
+  font-size: 0.9rem !important;
+  line-height: 1.4 !important;
+}
+
+.assetQuotePartnerPickerModal .modalCloseButton,
+.assetQuoteLocationPickerModal .modalCloseButton {
+  width: 3.1rem !important;
+  height: 3.1rem !important;
+}
+
+.assetQuotePartnerPickerModal .assetQuoteScrollBody {
+  padding: 0.7rem 0 0 !important;
+}
+
+.assetQuotePartnerPickerModal .assetQuoteContent {
+  gap: 0.8rem !important;
+}
+
+.assetQuotePartnerPickerModal .assetQuoteSearchInput,
+.assetQuotePartnerPickerModal .assetQuoteSearchBar .secondaryButton {
+  min-height: 3.5rem !important;
+  height: 3.5rem !important;
+  border-radius: 1rem !important;
+}
+
+.assetQuotePartnerPickerModal .assetQuoteSearchBar .secondaryButton {
+  min-width: 9rem !important;
+}
+
+.assetQuotePartnerPickerModal .assetQuoteMapStage {
+  grid-template-columns: minmax(21rem, 23.5rem) minmax(0, 1fr) !important;
+  border-radius: 1.25rem !important;
+  box-shadow: 0 18px 44px rgba(18, 45, 37, 0.08) !important;
+}
+
+.assetQuoteMapControls {
+  position: absolute;
+  z-index: 1200;
+  top: 0.85rem;
+  right: 0.85rem;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.65rem;
+  max-width: calc(100% - 5rem);
+}
+
+.assetQuoteMapExpandButton {
+  appearance: none;
+  min-height: 2.8rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.48rem;
+  padding: 0 0.9rem;
+  border: 1px solid rgba(194, 210, 218, 0.94);
+  border-radius: 0.9rem;
+  background: rgba(255, 255, 255, 0.96);
+  color: #173f61;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 850;
+  cursor: pointer;
+  box-shadow: 0 12px 28px rgba(17, 38, 51, 0.16);
+  backdrop-filter: blur(10px);
+}
+
+.assetQuoteMapExpandButton:hover {
+  border-color: rgba(31, 108, 83, 0.35);
+  color: #0f6047;
+  background: #ffffff;
+}
+
+.assetQuoteMapExpandButton .buttonIcon {
+  width: 1.05rem;
+  height: 1.05rem;
+}
+
+.assetQuoteExpandedMapArea {
+  min-width: 0;
+  max-width: min(42vw, 24rem);
+  display: grid;
+  gap: 0.05rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid rgba(194, 210, 218, 0.94);
+  border-radius: 0.9rem;
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 12px 28px rgba(17, 38, 51, 0.14);
+  backdrop-filter: blur(10px);
+}
+
+.assetQuoteExpandedMapArea small {
+  color: #718184;
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.045em;
+  text-transform: uppercase;
+}
+
+.assetQuoteExpandedMapArea strong {
+  overflow: hidden;
+  color: #173d31;
+  font-size: 0.8rem;
+  font-weight: 850;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.assetQuoteMapExpandHint {
+  position: absolute;
+  z-index: 1100;
+  left: 50%;
+  top: 0.85rem;
+  padding: 0.48rem 0.72rem;
+  border: 1px solid rgba(197, 212, 221, 0.88);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.9);
+  color: #506778;
+  font-size: 0.7rem;
+  font-weight: 800;
+  box-shadow: 0 9px 22px rgba(17, 38, 51, 0.12);
+  pointer-events: none;
+  transform: translateX(-50%);
+  backdrop-filter: blur(8px);
+}
+
+.optionsModal.assetQuoteModal.assetQuotePartnerPickerModal.assetQuoteMapExpandedModal {
+  width: calc(100vw - 0.75rem) !important;
+  height: calc(100dvh - 0.75rem) !important;
+  max-width: none !important;
+  max-height: calc(100dvh - 0.75rem) !important;
+  padding: 0.35rem !important;
+  border-radius: 1.25rem !important;
+  background: #e5ede8 !important;
+  box-shadow: 0 36px 100px rgba(7, 25, 19, 0.4) !important;
+}
+
+.assetQuoteMapExpandedModal .assetQuoteModalHeader,
+.assetQuoteMapExpandedModal .assetQuoteSearchBar,
+.assetQuoteMapExpandedModal .assetQuoteMapSidebar {
+  display: none !important;
+}
+
+.assetQuoteMapExpandedModal .assetQuoteScrollBody {
+  height: 100% !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+}
+
+.assetQuoteMapExpandedModal .assetQuoteContent {
+  height: 100% !important;
+  min-height: 0 !important;
+  display: grid !important;
+  grid-template-rows: minmax(0, 1fr) !important;
+  gap: 0 !important;
+}
+
+.assetQuoteMapExpandedModal .assetQuoteMapStage {
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  border: 0 !important;
+  border-radius: 0.95rem !important;
+  box-shadow: none !important;
+}
+
+.assetQuoteMapExpandedModal .assetQuoteMapShell,
+.assetQuoteMapExpandedModal .assetQuoteMapCanvas,
+.assetQuoteMapExpandedModal .assetQuoteMapFallback {
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  border-radius: 0.95rem !important;
+}
+
+.assetQuoteMapShellExpanded :global(.leaflet-control-zoom) {
+  margin-top: 1rem !important;
+  margin-left: 1rem !important;
+}
+
+@media (max-width: 860px) {
+  .optionsModal.assetQuoteModal.assetQuoteLocationPickerModal {
+    width: calc(100vw - 0.75rem) !important;
+    max-height: calc(100dvh - 0.75rem) !important;
+    padding: 1rem !important;
+  }
+
+  .assetQuoteLocationPickerModal .assetQuoteLocationActions {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .assetQuoteLocationPickerModal .assetQuoteLocationActions .assetQuoteBackButton {
+    order: 3;
+  }
+
+  .optionsModal.assetQuoteModal.assetQuotePartnerPickerModal {
+    width: calc(100vw - 0.5rem) !important;
+    height: calc(100dvh - 0.5rem) !important;
+    max-height: calc(100dvh - 0.5rem) !important;
+    padding: 0.75rem !important;
+    border-radius: 1.15rem !important;
+  }
+
+  .assetQuotePartnerPickerModal .assetQuoteMapStage {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .assetQuoteMapExpandHint {
+    display: none;
+  }
+
+  .assetQuoteMapControls {
+    top: 0.65rem;
+    right: 0.65rem;
+    max-width: calc(100% - 4.25rem);
+  }
+
+  .assetQuoteMapExpandButton span {
+    display: none;
+  }
+
+  .assetQuoteMapExpandButton {
+    width: 2.8rem;
+    padding: 0;
+  }
+
+  .assetQuoteExpandedMapArea {
+    max-width: calc(100vw - 8.5rem);
+  }
+
+  .optionsModal.assetQuoteModal.assetQuotePartnerPickerModal.assetQuoteMapExpandedModal {
+    width: calc(100vw - 0.3rem) !important;
+    height: calc(100dvh - 0.3rem) !important;
+    max-height: calc(100dvh - 0.3rem) !important;
+    padding: 0.2rem !important;
+    border-radius: 0.9rem !important;
+  }
+}
