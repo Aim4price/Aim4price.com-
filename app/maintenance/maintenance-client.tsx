@@ -1267,7 +1267,7 @@ export default function MaintenanceClient() {
                         >
                           {statusText}
                         </span>
-                        <h2 className={styles.invoiceTitle}>{record.assetTitle}</h2>
+                        <h2 className={styles.invoiceTitle} title={record.assetTitle}>{record.assetTitle}</h2>
                         <p className={styles.maintenanceServiceTitle}>
                           {record.title || (record.maintenanceType === 'checkup' ? 'Maintenance checkup' : 'Maintenance service')}
                         </p>
@@ -1290,7 +1290,7 @@ export default function MaintenanceClient() {
                           <span className={styles.invoiceVatLabel}>{maintenanceCardCaption(record)}</span>
                         </div>
 
-                        <div className={styles.rowActions}>
+                        <div className={`${styles.rowActions} ${!isDone ? styles.rowActionsFour : ''}`}>
                           <button
                             className={`${styles.secondaryButtonSmall} ${styles.invoiceOpenButton} ${isDone ? styles.invoiceCompletedButton : ''}`}
                             type="button"
@@ -1610,15 +1610,15 @@ export default function MaintenanceClient() {
             <div className={styles.deleteConfirmBody}>
               {quickClearStep === 'confirm' ? (
                 <p id="maintenance-quick-clear-description">
-                  Clear this scheduled {typeLabel(recordPendingQuickClear.maintenanceType).toLowerCase()} for <strong>{recordPendingQuickClear.assetTitle}</strong>?
+                  Clear this {typeLabel(recordPendingQuickClear.maintenanceType).toLowerCase()} for <strong>{recordPendingQuickClear.assetTitle}</strong>?
                 </p>
               ) : (
                 <>
                   <p id="maintenance-quick-clear-description">
-                    Choose <strong>Yes</strong> only if the {typeLabel(recordPendingQuickClear.maintenanceType).toLowerCase()} was physically completed.
+                    Only choose <strong>Yes</strong> if this {typeLabel(recordPendingQuickClear.maintenanceType).toLowerCase()} was completed.
                   </p>
                   <p className={styles.maintenanceQuickClearNote}>
-                    Aim4price will save it as completed with no additional information. Choosing <strong>Not sure</strong> leaves the maintenance open.
+                    Yes saves a basic completed record. <strong>Not sure</strong> leaves it open.
                   </p>
                 </>
               )}
