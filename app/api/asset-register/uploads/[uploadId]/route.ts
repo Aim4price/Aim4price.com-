@@ -1,10 +1,12 @@
 import { NextResponse } from 'next/server';
+import { getAccountDocumentUploadOwner } from '../../../../../lib/account-documents';
 import {
   createAssetRegisterSignedGetUrl,
   getLegacyAssetRegisterUploadResponse,
   isBucketOnlyAssetRegisterUploadId,
   resolveBucketOnlyAssetRegisterDownload,
 } from '../../../../../lib/asset-register-uploads';
+import { getServerSession } from '../../../../../lib/auth-session';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -20,6 +22,17 @@ export async function GET(_request: Request, context: RouteContext) {
 
   if (!uploadId) {
     return new NextResponse('Not found', { status: 404 });
+  }
+
+  // Asset photos and historical attachments use this shared route. Vault
+  // uploads are stricter: even a leaked upload id must not bypass the
+  // owner-scoped /api/documents/[documentId]/download endpoint.
+  const documentOwnerUserId = await getAccountDocumentUploadOwner(uploadId);
+  if (documentOwnerUserId) {
+    const session = await getServerSession();
+    if (!session?.user?.id || session.user.id !== documentOwnerUserId) {
+      return new NextResponse('Not found', { status: 404 });
+    }
   }
 
   if (isBucketOnlyAssetRegisterUploadId(uploadId)) {
