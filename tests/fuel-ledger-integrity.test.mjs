@@ -11,6 +11,7 @@ const exclusionRoute = read('app/api/fuel/exclusions/[assetId]/route.ts');
 const slipRoute = read('app/api/fuel/slips/[slipId]/route.ts');
 const storageRoute = read('app/api/fuel/storage/[storageId]/route.ts');
 const petrolStationClient = read('app/owner-app/operations/fuel/petrol-station/petrol-station-fuel-client.tsx');
+const fuelScanClient = read('app/fuel-scan/[publicFuelStorageCode]/fuel-scan-client.tsx');
 
 test('asset exclusion is additive and propagated to existing and future ledger records', () => {
   assert.match(migration, /create table if not exists public\.fuel_asset_exclusions/);
@@ -20,6 +21,13 @@ test('asset exclusion is additive and propagated to existing and future ledger r
   assert.match(ledger, /getFuelAssetWorkUseExclusion\(client, input\.userId, input\.assetId\)/);
   assert.match(ledger, /workUseExcluded: assetWorkUse\.excluded/);
   assert.match(exclusionRoute, /assertWorkspaceAssetAccess\(workspace, assetId\)/);
+});
+
+test('fuel exclusions stay manageable on desktop but are hidden from operational app pickers', () => {
+  assert.match(fuelClient, /Choose Saved Asset/);
+  assert.match(petrolStationClient, /asset\.canReceiveFuel && !asset\.workUseExcluded/);
+  assert.match(fuelScanClient, /isAuthenticatedAppMode \? assets\.filter\(\(asset\) => !asset\.workUseExcluded\) : assets/);
+  assert.match(fuelScanClient, /if \(!query\) return appVisibleAssets/);
 });
 
 test('exclusions never alter physical tank movement', () => {

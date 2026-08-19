@@ -314,12 +314,16 @@ export default function FuelScanClient({
     ? ownerAppReturnTo
     : '/owner-app/operations/fuel/storage';
   const appReturnHref = ownerAppMode ? safeOwnerReturnTo : '/field-manager/diesel';
+  const appVisibleAssets = useMemo(
+    () => isAuthenticatedAppMode ? assets.filter((asset) => !asset.workUseExcluded) : assets,
+    [assets, isAuthenticatedAppMode],
+  );
 
   const filteredAssets = useMemo(() => {
     const query = assetSearch.trim().toLowerCase();
-    if (!query) return assets;
-    return assets.filter((asset) => assetSearchText(asset).includes(query));
-  }, [assetSearch, assets]);
+    if (!query) return appVisibleAssets;
+    return appVisibleAssets.filter((asset) => assetSearchText(asset).includes(query));
+  }, [appVisibleAssets, assetSearch]);
 
   function captureLocation() {
     if (typeof navigator === 'undefined' || !navigator.geolocation) {
@@ -1296,7 +1300,7 @@ export default function FuelScanClient({
                 <article key={asset.id} className={styles.fieldManagerAssetCard}>
                   <div className={styles.fieldManagerAssetTopRow}>
                     <h2>{displayName}</h2>
-                    {asset.workUseExcluded ? <span className={styles.workUseNotice}>Excluded from work use</span> : null}
+                    {!isAuthenticatedAppMode && asset.workUseExcluded ? <span className={styles.workUseNotice}>Excluded from work use</span> : null}
                   </div>
 
                   <div className={styles.fieldManagerAssetMetaGrid}>

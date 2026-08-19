@@ -209,7 +209,9 @@ export default function PetrolStationFuelClient({
           throw new Error(payload?.error || 'Failed to load assets that can receive fuel.');
         }
 
-        if (active) setAssets(payload.assets.filter((asset) => asset.canReceiveFuel));
+        if (active) {
+          setAssets(payload.assets.filter((asset) => asset.canReceiveFuel && !asset.workUseExcluded));
+        }
       } catch (error) {
         if (active) setLoadError(error instanceof Error ? error.message : 'Failed to load fuel assets.');
       } finally {
@@ -459,7 +461,6 @@ export default function PetrolStationFuelClient({
             {visibleAssets.map((asset) => (
               <article key={asset.id} className={styles.assetCard}>
                 <h2><BalancedHeadingText text={assetName(asset)} /></h2>
-                {asset.workUseExcluded ? <span className={styles.workUseNotice}>Excluded from work use</span> : null}
                 <div className={styles.assetMetaGrid}>
                   <div>
                     <span>Serial</span>
@@ -556,7 +557,6 @@ export default function PetrolStationFuelClient({
           <div><span>Asset</span><strong>{selectedAsset ? assetName(selectedAsset) : '—'}</strong></div>
           <div><span>Fuel</span><strong>{fuelType === 'diesel' ? 'Diesel' : 'Petrol'} · {litres || '0'} L</strong></div>
           <div><span>Cost</span><strong>R {Number(totalAmount || 0).toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></div>
-          {selectedAsset?.workUseExcluded ? <div><span>Work use</span><strong>Excluded · {selectedAsset.workUseExclusionReason || 'Not used for work purposes'}</strong></div> : null}
         </div>
       </div>
     );

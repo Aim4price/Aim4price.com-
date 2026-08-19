@@ -115,6 +115,69 @@
   gap: 3px;
 }
 
+.scheduleSummary {
+  display: grid;
+  gap: 5px;
+  padding: 18px 20px;
+  border: 1px solid #c8e4da;
+  border-radius: 18px;
+  background: #edf8f4;
+}
+
+.scheduleSummary > span {
+  color: #25725b;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.scheduleSummary > strong {
+  color: #123f35;
+  font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
+  font-size: 1.02rem;
+  font-weight: 800;
+}
+
+.scheduleSummary > small {
+  color: #627770;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.choiceComparison {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.choiceComparison > div {
+  display: grid;
+  align-content: start;
+  gap: 6px;
+  padding: 16px 18px;
+  border: 1px solid #d9e5e2;
+  border-radius: 16px;
+  background: #fff;
+}
+
+.choiceComparison strong {
+  color: #173f36;
+  font-size: 14px;
+}
+
+.choiceComparison span {
+  color: #657871;
+  font-size: 12px;
+  font-weight: 620;
+  line-height: 1.5;
+}
+
+.separateBanner {
+  border-color: #efcf99;
+  background: #fff8e9;
+}
+
 .infoBanner strong,
 .recurringBanner strong {
   font-size: 14px;
@@ -197,6 +260,12 @@
 
 .field > span small {
   color: #7c8e89;
+  font-weight: 650;
+}
+
+.fieldHint {
+  color: #71837d;
+  font-size: 11px;
   font-weight: 650;
 }
 
@@ -328,6 +397,19 @@
   gap: 2px;
 }
 
+.infoIcon {
+  display: grid;
+  width: 22px;
+  height: 22px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 50%;
+  background: #a96614;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 900;
+}
+
 .error {
   padding: 13px 15px;
   border: 1px solid #efaaa6;
@@ -384,7 +466,7 @@
   .header p { max-width: 76vw; }
   .body { padding: 16px; }
   .section { padding: 15px; }
-  .fieldGrid, .checklist { grid-template-columns: 1fr; }
+  .fieldGrid, .checklist, .choiceComparison { grid-template-columns: 1fr; }
   .sectionHeading { grid-template-columns: 30px minmax(0, 1fr); }
   .selectedCount { grid-column: 2; justify-self: start; }
   .footer { padding: 14px 16px; }

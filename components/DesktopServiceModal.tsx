@@ -127,6 +127,11 @@ export default function DesktopServiceModal({
   >(askScheduleLink ? null : 'scheduled');
   const actionName = record.maintenanceType === 'checkup' ? 'check-up' : 'service';
   const unit = usageUnit(record.usageMetric ?? record.assetUsageMetric ?? null);
+  const isSeparateCompletion = scheduleDecision === 'separate';
+  const requiresUsageReading = record.triggerType === 'usage';
+  const savedUsageLabel = record.currentUsage === null
+    ? `No saved ${unit} reading`
+    : `Saved reading: ${record.currentUsage.toLocaleString('en-ZA', { maximumFractionDigits: 1 })} ${unit}`;
 
   function toggleItem(label: string) {
     setSelectedItems((current) => current.includes(label)
@@ -162,6 +167,10 @@ export default function DesktopServiceModal({
     }
 
     const usage = completedUsage.trim() === '' ? null : Number(completedUsage);
+    if (requiresUsageReading && usage === null) {
+      setError(`Enter the final ${unit} reading for this usage-based maintenance.`);
+      return;
+    }
     if (usage !== null && (!Number.isFinite(usage) || usage < 0)) {
       setError('Enter a valid non-negative usage reading.');
       return;
@@ -196,7 +205,7 @@ export default function DesktopServiceModal({
         <section className={styles.modal} role="dialog" aria-modal="true" aria-labelledby="scheduled-service-choice-title">
           <header className={styles.header}>
             <div>
-              <h2 id="scheduled-service-choice-title">Scheduled {actionName} found</h2>
+              <h2 id="scheduled-service-choice-title">How should this {actionName} be saved?</h2>
               <p>{serviceAssetMeta(record)}</p>
             </div>
             <button className={styles.closeButton} type="button" onClick={onClose} aria-label="Close service choice" disabled={busy}>
@@ -204,9 +213,20 @@ export default function DesktopServiceModal({
             </button>
           </header>
           <div className={styles.body}>
-            <div className={styles.infoBanner}>
-              <strong>Is this work for “{record.title}”?</strong>
-              <span>Choose whether to complete the scheduled item or keep it open and save this work separately.</span>
+            <div className={styles.scheduleSummary}>
+              <span>Scheduled {actionName}</span>
+              <strong>{record.title}</strong>
+              <small>{intervalLabel(record) || 'One-time scheduled maintenance'}</small>
+            </div>
+            <div className={styles.choiceComparison}>
+              <div>
+                <strong>Complete this scheduled item</strong>
+                <span>Choose “Yes” when the completed work was for “{record.title}”. The scheduled item will close.</span>
+              </div>
+              <div>
+                <strong>Keep the scheduled item open</strong>
+                <span>Choose “No” when different work was done. A separate record will be saved and this schedule will stay unchanged.</span>
+              </div>
             </div>
           </div>
           <footer className={styles.footer}>
@@ -238,7 +258,7 @@ export default function DesktopServiceModal({
       <section className={styles.modal} role="dialog" aria-modal="true" aria-labelledby="desktop-service-title">
         <header className={styles.header}>
           <div>
-            <h2 id="desktop-service-title">Record {actionName}</h2>
+            <h2 id="desktop-service-title">Record completed {actionName}</h2>
             <p>{serviceAssetMeta(record)}</p>
           </div>
           <button className={styles.closeButton} type="button" onClick={onClose} aria-label="Close service form" disabled={busy}>
@@ -248,34 +268,18 @@ export default function DesktopServiceModal({
 
         <form onSubmit={(event) => void submit(event)}>
           <div className={styles.body}>
-            <div className={styles.infoBanner}>
-              <strong>Log work that has already been completed.</strong>
-              <span>Use the actual date and final usage reading. This saves the same service record as the app.</span>
+            <div className={`${styles.infoBanner} ${isSeparateCompletion ? styles.separateBanner : ''}`}>
+              <strong>{isSeparateCompletion ? `Saving a separate ${actionName}` : `Completing “${record.title}”`}</strong>
+              <span>
+                {isSeparateCompletion
+                  ? `Log work that has already been completed. “${record.title}” will remain open and unchanged.`
+                  : 'Log work that has already been completed. This scheduled item will be marked as done.'}
+              </span>
             </div>
 
             <section className={styles.section}>
               <div className={styles.sectionHeading}>
                 <span>1</span>
-                <div><h3>When was it done?</h3><p>Capture the actual completion date and reading.</p></div>
-              </div>
-              <div className={styles.fieldGrid}>
-                <label className={styles.field}>
-                  <span>Completion date</span>
-                  <input type="date" value={completedAt} max={today} onChange={(event) => setCompletedAt(event.target.value)} required />
-                </label>
-                <label className={styles.field}>
-                  <span>Usage at completion <small>({unit})</small></span>
-                  <div className={styles.usageInput}>
-                    <input type="number" min={record.currentUsage ?? 0} step="0.1" value={completedUsage} onChange={(event) => setCompletedUsage(event.target.value)} placeholder={`Current ${unit} (optional)`} />
-                    <b>{unit}</b>
-                  </div>
-                </label>
-              </div>
-            </section>
-
-            <section className={styles.section}>
-              <div className={styles.sectionHeading}>
-                <span>2</span>
                 <div>
                   <h3>{mode === 'checked' ? copy.checkedHeader : copy.servicedHeader}</h3>
                   <p>{mode === 'checked' ? copy.checkedSubheader : copy.servicedSubheader}</p>
@@ -298,6 +302,27 @@ export default function DesktopServiceModal({
                     </button>
                   );
                 })}
+              </div>
+            </section>
+
+            <section className={styles.section}>
+              <div className={styles.sectionHeading}>
+                <span>2</span>
+                <div><h3>When was it completed?</h3><p>Use the actual date and the reading after the work.</p></div>
+              </div>
+              <div className={styles.fieldGrid}>
+                <label className={styles.field}>
+                  <span>Completion date</span>
+                  <input type="date" value={completedAt} max={today} onChange={(event) => setCompletedAt(event.target.value)} required />
+                </label>
+                <label className={styles.field}>
+                  <span>Usage at completion <small>({unit}, {requiresUsageReading ? 'required' : 'optional'})</small></span>
+                  <div className={styles.usageInput}>
+                    <input type="number" min={record.currentUsage ?? 0} step="0.1" value={completedUsage} onChange={(event) => setCompletedUsage(event.target.value)} placeholder={`Final ${unit} reading`} required={requiresUsageReading} />
+                    <b>{unit}</b>
+                  </div>
+                  <small className={styles.fieldHint}>{savedUsageLabel}</small>
+                </label>
               </div>
             </section>
 
@@ -327,10 +352,17 @@ export default function DesktopServiceModal({
               </div>
             </section>
 
-            {record.recurringEnabled ? (
+            {record.recurringEnabled && !isSeparateCompletion ? (
               <div className={styles.recurringBanner}>
                 <CheckIcon />
-                <div><strong>Recurring maintenance</strong><span>This entry will be saved as done and a new schedule will be created automatically{intervalLabel(record) ? ` · ${intervalLabel(record)}` : ''}.</span></div>
+                <div><strong>What happens after saving</strong><span>This scheduled item will close and the next one will be created automatically{intervalLabel(record) ? ` · ${intervalLabel(record)}` : ''}.</span></div>
+              </div>
+            ) : null}
+
+            {isSeparateCompletion ? (
+              <div className={`${styles.recurringBanner} ${styles.separateBanner}`}>
+                <span className={styles.infoIcon} aria-hidden="true">i</span>
+                <div><strong>The scheduled item stays open</strong><span>Only this separate completed {actionName} will be added to the asset history.</span></div>
               </div>
             ) : null}
 
@@ -340,7 +372,13 @@ export default function DesktopServiceModal({
           <footer className={styles.footer}>
             <button className={styles.cancelButton} type="button" onClick={onClose} disabled={busy}>Cancel</button>
             <button className={styles.submitButton} type="submit" disabled={busy}>
-              {busy ? 'Saving service…' : `Save ${actionName} as done`}
+              {busy
+                ? `Saving ${actionName}…`
+                : isSeparateCompletion
+                  ? `Save separate ${actionName}`
+                  : askScheduleLink
+                    ? `Complete scheduled ${actionName}`
+                    : `Save completed ${actionName}`}
             </button>
           </footer>
         </form>
