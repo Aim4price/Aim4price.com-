@@ -6120,6 +6120,10 @@ function isDealerAssistancePartner(partner: PartnerDirectoryEntry): boolean {
   return Boolean(partner.isAim4priceManaged && partner.partnerType === 'dealer');
 }
 
+function isAim4priceAssistancePartner(partner: PartnerDirectoryEntry): boolean {
+  return Boolean(partner.isAim4priceManaged);
+}
+
 function quotePartnerWebsiteDisplay(partner: PartnerDirectoryEntry): string {
   return isDealerAssistancePartner(partner) ? 'www.aim4price.com' : formatWebsiteDisplay(partner.websiteUrl);
 }
@@ -6166,7 +6170,7 @@ function buildQuotePartnerPopupHtml(partner: PartnerDirectoryEntry, isSelected =
     emailHref ? `<a href="${escapeHtml(emailHref)}"><span>Email</span><strong>${escapeHtml(partner.email)}</strong></a>` : '',
     phoneHref ? `<a href="${escapeHtml(phoneHref)}"><span>Contact</span><strong>${escapeHtml(partner.phone)}</strong></a>` : '',
   ].filter(Boolean).join('') : '';
-  const opensMessage = isDealerAssistance && !isSelected;
+  const opensMessage = isAim4priceAssistancePartner(partner) && !isSelected;
   const actionLabel = isSelected
     ? 'Remove selection'
     : opensMessage
@@ -8345,8 +8349,8 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
 
       event.preventDefault();
       event.stopPropagation();
-      if (button.getAttribute('data-quote-partner-action') === 'message' && isDealerAssistancePartner(partner)) {
-        openDealerAssistanceMessage(partner);
+      if (button.getAttribute('data-quote-partner-action') === 'message' && isAim4priceAssistancePartner(partner)) {
+        openAim4priceAssistanceMessage(partner);
         return;
       }
       toggleQuotePartnerSelection(partner);
@@ -10839,7 +10843,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     removeQuoteMap();
   }
 
-  function openDealerAssistanceMessage(partner: PartnerDirectoryEntry) {
+  function openAim4priceAssistanceMessage(partner: PartnerDirectoryEntry) {
     setSelectedQuotePartnerIds([partner.userId]);
     setQuoteConsentAccepted(false);
     setIsQuoteMapExpanded(false);
@@ -18879,13 +18883,13 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                                 type="button"
                                 className={`${styles.assetQuotePartnerCard} ${quoteToneClassForPartnerType(partner.partnerType)} ${isSelected ? styles.assetQuotePartnerCardActive : ''}`}
                                 onClick={() => {
-                                  if (isDealerAssistancePartner(partner) && !isSelected) {
-                                    openDealerAssistanceMessage(partner);
+                                  if (isAim4priceAssistancePartner(partner) && !isSelected) {
+                                    openAim4priceAssistanceMessage(partner);
                                     return;
                                   }
                                   toggleQuotePartnerSelection(partner);
                                 }}
-                                aria-label={`${isSelected ? 'Remove' : isDealerAssistancePartner(partner) ? 'Message' : 'Select'} ${quotePartnerName(partner)}`}
+                                aria-label={`${isSelected ? 'Remove' : isAim4priceAssistancePartner(partner) ? 'Message' : 'Select'} ${quotePartnerName(partner)}`}
                                 aria-pressed={isSelected}
                               >
                                 <span className={styles.assetQuotePartnerBody}>
@@ -18904,15 +18908,11 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                                     ) : null}
                                     <span>{quotePartnerRadiusDisplay(partner)}</span>
                                   </span>
-                                  {partner.isAim4priceManaged ? (
-                                    <span className={styles.assetQuoteManagedCopy}>
-                                      Service area only — Aim4price will help find a suitable provider.
-                                    </span>
-                                  ) : partner.brandFocus ? (
+                                  {!partner.isAim4priceManaged && partner.brandFocus ? (
                                     <span className={styles.assetQuotePartnerCopy}>Brands: {partner.brandFocus}</span>
                                   ) : null}
                                   <span className={styles.assetQuotePartnerAction}>
-                                    <span>{isSelected ? 'Selected' : isDealerAssistancePartner(partner) ? 'Message Aim4price' : 'Select company'}</span>
+                                    <span>{isSelected ? 'Selected' : isAim4priceAssistancePartner(partner) ? 'Message Aim4price' : 'Select company'}</span>
                                     <ChevronRightIcon className={styles.buttonIcon} />
                                   </span>
                                 </span>
