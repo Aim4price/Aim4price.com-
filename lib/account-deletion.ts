@@ -20,6 +20,9 @@ const USER_ID_TABLES = [
   'owner_app_users',
   'owner_app_overview_dismissals',
   'asset_discovery_enquiries',
+  // Delete Bucket metadata last. Migration 81 queues the exact private object
+  // for a 30-day recovery delay before any physical Bucket purge.
+  'asset_register_bucket_uploads',
 ] as const;
 
 const PARTNER_ACCESS_TABLES = [
@@ -81,6 +84,30 @@ async function deleteUserWorkspaceDataInTransaction(
   queryable: Queryable,
   userId: string,
 ): Promise<void> {
+  // Bucket-only uploads hold the matching session advisory lock while their
+  // pending row is written and verified. Account deletion waits here so a
+  // concurrent upload cannot create an object after its only catalog row has
+  // already been removed.
+  await queryable.query('select pg_advisory_xact_lock(hashtextextended($1, 0))', [userId]);
+
+  // Better Auth deletes its user row after the workspace-deletion hook
+  // returns. Persist a tombstone while this lock is held so an upload request
+  // that was authenticated earlier cannot wait, resume, and create a new
+  // Bucket object in that gap. Keep pre-migration deployments compatible.
+  const bucketDeletionGuard = await queryable.query<{ exists: boolean }>(
+    `select to_regclass('public.asset_register_bucket_deleted_accounts') is not null as exists`,
+  );
+  if (bucketDeletionGuard.rows[0]?.exists) {
+    await queryable.query(
+      `
+        insert into public.asset_register_bucket_deleted_accounts (user_id)
+        values ($1)
+        on conflict (user_id) do nothing
+      `,
+      [userId],
+    );
+  }
+
   const tableSet = await getExistingTableSet(queryable, [
     ...USER_ID_TABLES,
     ...PARTNER_ACCESS_TABLES,

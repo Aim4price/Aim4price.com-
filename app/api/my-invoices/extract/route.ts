@@ -76,6 +76,22 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ ok: true, extraction, document });
   } catch (error) {
+    if (error instanceof Error && error.message === 'INVOICE_DOCUMENT_UPLOAD_UNAVAILABLE') {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: 'The uploaded invoice/photo is temporarily unavailable. Please try again shortly.',
+        },
+        {
+          status: 503,
+          headers: {
+            'Cache-Control': 'private, no-store',
+            'Retry-After': '60',
+          },
+        },
+      );
+    }
+
     console.error('Aim4price My Cost Ledger extraction failed.', error);
     return NextResponse.json(
       {

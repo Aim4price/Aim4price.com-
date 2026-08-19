@@ -97,19 +97,33 @@ export async function POST(request: NextRequest) {
     preparedFiles.push(validation);
   }
 
-  const uploads = await Promise.all(
-    preparedFiles.map(async ({ file }) => {
-      const saved = await createAssetRegisterUpload({ userId: access.ownerUserId, file, category: 'scan-photo' });
+  const uploads: Array<{
+    uploadId: string;
+    url: string;
+    fileName: string;
+    contentType: string;
+    byteSize: number;
+  }> = [];
 
-      return {
-        uploadId: saved.id,
-        url: saved.url,
-        fileName: saved.fileName,
-        contentType: saved.contentType,
-        byteSize: saved.byteSize,
-      };
-    }),
-  );
+  // A scan can contain twelve 5 MB images. Process only two at a time so a
+  // verified Bucket PUT/read-back does not hold every file buffer and network
+  // request in memory simultaneously on the Hobby service.
+  for (let offset = 0; offset < preparedFiles.length; offset += 2) {
+    const batch = await Promise.all(
+      preparedFiles.slice(offset, offset + 2).map(async ({ file }) => {
+        const saved = await createAssetRegisterUpload({ userId: access.ownerUserId, file, category: 'scan-photo' });
+
+        return {
+          uploadId: saved.id,
+          url: saved.url,
+          fileName: saved.fileName,
+          contentType: saved.contentType,
+          byteSize: saved.byteSize,
+        };
+      }),
+    );
+    uploads.push(...batch);
+  }
 
   return NextResponse.json({ ok: true, uploads });
 }

@@ -45,6 +45,10 @@ export type AdminDashboardStats = {
       p90Label: string;
       addedLast30DaysBytes: number;
       addedLast30DaysLabel: string;
+      pendingBucketUploads: number;
+      pendingBucketUploadsLabel: string;
+      failedBucketUploads: number;
+      failedBucketUploadsLabel: string;
     };
   };
 };
@@ -371,6 +375,8 @@ async function sumOctetLengthIfPresent(tableName: string, columnName: string): P
 
 async function getStorageStats(): Promise<AdminDashboardStats['storage']> {
   const assetRegisterUploadBytes = await sumOctetLengthIfPresent('asset_register_uploads', 'data');
+  const hasBucketUploadCatalog = await tableExists('public.asset_register_bucket_uploads');
+  const hasBucketPurgeQueue = await tableExists('public.asset_register_bucket_upload_purge_queue');
   const hasUploadStorageState = await columnExists('asset_register_uploads', 'storage_state');
   const hasUploadByteSize = await columnExists('asset_register_uploads', 'byte_size');
   const hasUploadCreatedAt = await columnExists('asset_register_uploads', 'created_at');
@@ -380,6 +386,35 @@ async function getStorageStats(): Promise<AdminDashboardStats['storage']> {
         select coalesce(sum(byte_size), 0)::bigint as total
         from public.asset_register_uploads
         where storage_state = 'dual_verified'
+      `)).rows[0]?.total)
+    : 0;
+  const bucketCatalogResult = hasBucketUploadCatalog
+    ? await getDb().query<{
+        ready_bytes: CountValue;
+        pending_bytes: CountValue;
+        pending_count: CountValue;
+        failed_count: CountValue;
+      }>(`
+        select
+          coalesce(sum(byte_size) filter (where storage_state = 'ready'), 0)::bigint as ready_bytes,
+          coalesce(sum(byte_size) filter (where storage_state = 'pending'), 0)::bigint as pending_bytes,
+          count(*) filter (where storage_state = 'pending' and last_error is null)::bigint as pending_count,
+          count(*) filter (
+            where storage_state = 'delete_failed'
+               or (storage_state = 'pending' and last_error is not null)
+          )::bigint as failed_count
+        from public.asset_register_bucket_uploads
+      `)
+    : null;
+  const bucketReadyBytes = asNumber(bucketCatalogResult?.rows[0]?.ready_bytes);
+  const bucketPendingBytes = asNumber(bucketCatalogResult?.rows[0]?.pending_bytes);
+  const pendingBucketUploads = asNumber(bucketCatalogResult?.rows[0]?.pending_count);
+  const failedBucketUploads = asNumber(bucketCatalogResult?.rows[0]?.failed_count);
+  const bucketPurgeQueueBytes = hasBucketPurgeQueue
+    ? asNumber((await getDb().query<{ total: CountValue }>(`
+        select coalesce(sum(byte_size), 0)::bigint as total
+        from public.asset_register_bucket_upload_purge_queue
+        where purged_at is null
       `)).rows[0]?.total)
     : 0;
 
@@ -394,9 +429,21 @@ async function getStorageStats(): Promise<AdminDashboardStats['storage']> {
     p90Label: '0 B',
     addedLast30DaysBytes: 0,
     addedLast30DaysLabel: '0 B',
+    pendingBucketUploads,
+    pendingBucketUploadsLabel: formatCount(pendingBucketUploads),
+    failedBucketUploads,
+    failedBucketUploadsLabel: formatCount(failedBucketUploads),
   };
 
   if (hasUploadByteSize && hasUploadCreatedAt && hasUploadUserId) {
+    const bucketUsageUnion = hasBucketUploadCatalog
+      ? `
+          union all
+          select user_id, byte_size, created_at
+          from public.asset_register_bucket_uploads
+          where storage_state = 'ready'
+        `
+      : '';
     const usageResult = await getDb().query<{
       account_count: CountValue;
       average_bytes: CountValue;
@@ -404,10 +451,15 @@ async function getStorageStats(): Promise<AdminDashboardStats['storage']> {
       p90_bytes: CountValue;
       added_last_30_days_bytes: CountValue;
     }>(`
-      with per_account as (
-        select user_id, coalesce(sum(byte_size), 0)::bigint as total_bytes
+      with all_uploads as (
+        select user_id, byte_size::bigint as byte_size, created_at
         from public.asset_register_uploads
         where user_id is not null
+        ${bucketUsageUnion}
+      ),
+      per_account as (
+        select user_id, coalesce(sum(byte_size), 0)::bigint as total_bytes
+        from all_uploads
         group by user_id
       )
       select
@@ -417,7 +469,7 @@ async function getStorageStats(): Promise<AdminDashboardStats['storage']> {
         coalesce(percentile_cont(0.9) within group (order by total_bytes), 0)::bigint as p90_bytes,
         (
           select coalesce(sum(byte_size), 0)::bigint
-          from public.asset_register_uploads
+          from all_uploads
           where created_at >= now() - interval '30 days'
         ) as added_last_30_days_bytes
       from per_account
@@ -440,6 +492,10 @@ async function getStorageStats(): Promise<AdminDashboardStats['storage']> {
       p90Label: formatBytes(p90Bytes),
       addedLast30DaysBytes,
       addedLast30DaysLabel: formatBytes(addedLast30DaysBytes),
+      pendingBucketUploads,
+      pendingBucketUploadsLabel: formatCount(pendingBucketUploads),
+      failedBucketUploads,
+      failedBucketUploadsLabel: formatCount(failedBucketUploads),
     };
   }
 
@@ -468,6 +524,23 @@ async function getStorageStats(): Promise<AdminDashboardStats['storage']> {
       label: 'Verified Railway Bucket copies',
       bytes: mirroredBucketBytes,
       value: formatBytes(mirroredBucketBytes),
+    }] : []),
+    ...(hasBucketUploadCatalog ? [
+      {
+        label: 'Ready Bucket-only uploads',
+        bytes: bucketReadyBytes,
+        value: formatBytes(bucketReadyBytes),
+      },
+      {
+        label: 'Pending Bucket-only upload allowance',
+        bytes: bucketPendingBytes,
+        value: formatBytes(bucketPendingBytes),
+      },
+    ] : []),
+    ...(hasBucketPurgeQueue ? [{
+      label: 'Bucket deletion recovery queue',
+      bytes: bucketPurgeQueueBytes,
+      value: formatBytes(bucketPurgeQueueBytes),
     }] : []),
     {
       label: 'User message attachments',

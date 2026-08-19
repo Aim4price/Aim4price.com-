@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 
-import { getLegacyAssetRegisterUploadResponse } from './asset-register-uploads';
+import { resolveAssetRegisterUploadBytes } from './asset-register-uploads';
 
 const FALLBACK_REPORT_LOGO_PUBLIC_PATH = '/brand/aim4price-mark-black.png';
 const ASSET_REGISTER_UPLOAD_ROUTE_PREFIX = '/api/asset-register/uploads/';
@@ -87,7 +87,8 @@ async function internalAssetRegisterUploadToDataUri(rawLogoUrl: string, requestU
   if (!uploadId) return '';
 
   try {
-    const upload = await getLegacyAssetRegisterUploadResponse(uploadId);
+    const uploadResult = await resolveAssetRegisterUploadBytes(uploadId);
+    const upload = uploadResult.status === 'ready' ? uploadResult.upload : null;
     const mimeType = normalizeImageMimeType(upload?.mimeType, upload?.fileName);
 
     if (!upload?.data?.length || !mimeType) {

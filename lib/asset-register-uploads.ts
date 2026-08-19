@@ -1,12 +1,16 @@
 import { randomUUID } from 'node:crypto';
 import { getDb } from './db';
 import {
+  createBucketOnlyUploadObjectKey,
   createUploadObjectKey,
   createBucketSignedGetUrl,
   getUploadStorageMode,
+  isBucketOnlyNewApproved,
   isBucketWriteCostApproved,
   mirrorUploadToBucket,
+  readVerifiedBucketUploadObjectBytes,
   sha256Hex,
+  storeBucketOnlyUpload,
 } from './upload-object-storage';
 
 export const MAX_ASSET_REGISTER_PHOTOS = 12;
@@ -45,6 +49,8 @@ export const ALLOWED_ASSET_REGISTER_DOCUMENT_EXTENSIONS = new Set([
 ]);
 
 const ASSET_REGISTER_UPLOAD_ROUTE_PREFIX = '/api/asset-register/uploads/';
+const BUCKET_ONLY_UPLOAD_ID_PREFIX = 'bkt-';
+const BUCKET_ONLY_UPLOAD_ID_PATTERN = /^bkt-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 
 const CONTENT_TYPE_BY_EXTENSION = new Map<string, string>([
   ['.pdf', 'application/pdf'],
@@ -89,7 +95,7 @@ type CreatedAssetRegisterUpload = {
   byteSize: number;
 };
 
-type LegacyAssetRegisterUploadResponse = {
+export type LegacyAssetRegisterUploadResponse = {
   data: Buffer;
   mimeType: string;
   sizeBytes: number;
@@ -105,6 +111,25 @@ type AssetRegisterUploadRow = {
   storage_state?: string | null;
   object_key?: string | null;
 };
+
+type BucketOnlyUploadRow = {
+  storage_state: string | null;
+  object_key: string | null;
+  byte_size: string | number | null;
+  content_sha256: string | null;
+  content_type: string | null;
+  file_name: string | null;
+};
+
+export type BucketOnlyUploadDownloadResult =
+  | { status: 'not-found' }
+  | { status: 'unavailable' }
+  | { status: 'ready'; url: string };
+
+export type AssetRegisterUploadBytesResult =
+  | { status: 'not-found' }
+  | { status: 'unavailable' }
+  | { status: 'ready'; upload: LegacyAssetRegisterUploadResponse };
 
 type UploadColumnInfo = {
   column_name: string;
@@ -481,6 +506,58 @@ async function assertObjectStorageSchemaReady(): Promise<void> {
   }
 }
 
+async function assertBucketOnlyCatalogReady(): Promise<void> {
+  const result = await getDb().query<{
+    has_catalog: boolean;
+    has_purge_queue: boolean;
+    has_deleted_account_guard: boolean;
+    has_id_constraint: boolean;
+    has_state_constraint: boolean;
+    has_ready_constraint: boolean;
+    has_delete_trigger: boolean;
+  }>(`
+    select
+      to_regclass('public.asset_register_bucket_uploads') is not null as has_catalog,
+      to_regclass('public.asset_register_bucket_upload_purge_queue') is not null as has_purge_queue,
+      to_regclass('public.asset_register_bucket_deleted_accounts') is not null as has_deleted_account_guard,
+      exists (
+        select 1 from pg_constraint
+        where conrelid = to_regclass('public.asset_register_bucket_uploads')
+          and conname = 'asset_register_bucket_uploads_id_format_check'
+      ) as has_id_constraint,
+      exists (
+        select 1 from pg_constraint
+        where conrelid = to_regclass('public.asset_register_bucket_uploads')
+          and conname = 'asset_register_bucket_uploads_storage_state_check'
+      ) as has_state_constraint,
+      exists (
+        select 1 from pg_constraint
+        where conrelid = to_regclass('public.asset_register_bucket_uploads')
+          and conname = 'asset_register_bucket_uploads_state_metadata_check'
+      ) as has_ready_constraint,
+      exists (
+        select 1 from pg_trigger
+        where tgrelid = to_regclass('public.asset_register_bucket_uploads')
+          and tgname = 'queue_deleted_bucket_upload_trigger'
+          and not tgisinternal
+          and tgenabled <> 'D'
+      ) as has_delete_trigger
+  `);
+  const readiness = result.rows[0];
+
+  if (
+    !readiness?.has_catalog
+    || !readiness.has_purge_queue
+    || !readiness.has_deleted_account_guard
+    || !readiness.has_id_constraint
+    || !readiness.has_state_constraint
+    || !readiness.has_ready_constraint
+    || !readiness.has_delete_trigger
+  ) {
+    throw new Error('Migration 81 is not fully applied; Bucket-only writes and reads remain disabled.');
+  }
+}
+
 async function ensureAssetRegisterUploadsTableOnce(): Promise<void> {
   const db = getDb();
 
@@ -661,17 +738,230 @@ export function isAllowedAssetRegisterDocument(file: File): boolean {
   return ALLOWED_ASSET_REGISTER_DOCUMENT_TYPES.has(contentType) || ALLOWED_ASSET_REGISTER_DOCUMENT_EXTENSIONS.has(extension);
 }
 
+export function isBucketOnlyAssetRegisterUploadId(value: string): boolean {
+  return BUCKET_ONLY_UPLOAD_ID_PATTERN.test(normalizeUploadId(value));
+}
+
+function bucketUploadErrorMessage(error: unknown): string {
+  const candidate = error && typeof error === 'object'
+    ? error as { name?: unknown; $metadata?: { httpStatusCode?: unknown } }
+    : {};
+  const safeName = String(candidate.name ?? 'BucketUploadError')
+    .replace(/[^0-9A-Za-z_.-]+/g, '')
+    .slice(0, 80) || 'BucketUploadError';
+  const rawStatus = Number(candidate.$metadata?.httpStatusCode);
+  const status = Number.isInteger(rawStatus) && rawStatus >= 400 && rawStatus <= 599
+    ? ` (HTTP ${rawStatus})`
+    : '';
+
+  // Never persist SDK messages, endpoints, request headers, stack traces or
+  // credentials. The class and HTTP status are enough to diagnose the row.
+  return `Bucket upload failed: ${safeName}${status}`;
+}
+
+async function createBucketOnlyAssetRegisterUpload(input: {
+  userId: string;
+  fileName: string;
+  contentType: string;
+  byteSize: number;
+  buffer: Buffer;
+  category: string;
+}): Promise<CreatedAssetRegisterUpload> {
+  if (!isBucketWriteCostApproved() || !isBucketOnlyNewApproved()) {
+    throw new Error('Bucket-only upload storage is not fully approved.');
+  }
+
+  await assertBucketOnlyCatalogReady();
+
+  const userId = String(input.userId ?? '').trim();
+  if (!userId) {
+    throw new Error('A valid upload owner is required.');
+  }
+
+  if (
+    !Number.isSafeInteger(input.byteSize)
+    || input.byteSize <= 0
+    || input.byteSize > MAX_ASSET_REGISTER_DOCUMENT_UPLOAD_BYTES
+  ) {
+    throw new Error('Bucket-only upload size is outside the supported range.');
+  }
+
+  const id = `bkt-${randomUUID()}`;
+  const objectKey = createBucketOnlyUploadObjectKey(id);
+  const contentSha256 = sha256Hex(input.buffer);
+  const client = await getDb().connect();
+  let accountLockHeld = false;
+  let discardClient = false;
+
+  try {
+    // The same per-account advisory lock is used by account deletion. Holding
+    // it across the verified Bucket write prevents a concurrent deletion from
+    // losing the only metadata that identifies a possibly-created object.
+    accountLockHeld = true;
+    await client.query('select pg_advisory_lock(hashtextextended($1, 0))', [userId]);
+
+    // An upload request can be authenticated just before account deletion and
+    // then wait on the same lock. The durable deletion tombstone is written by
+    // workspace cleanup before its Bucket rows are removed; checking it under
+    // this lock closes the gap before Better Auth deletes the user row itself.
+    const ownerState = await client.query<{
+      owner_exists: boolean;
+      deletion_started: boolean;
+    }>(
+      `
+        select
+          exists (
+            select 1 from public."user" where id::text = $1
+          ) as owner_exists,
+          exists (
+            select 1
+            from public.asset_register_bucket_deleted_accounts
+            where user_id = $1
+          ) as deletion_started
+      `,
+      [userId],
+    );
+    const owner = ownerState.rows[0];
+    if (!owner?.owner_exists || owner.deletion_started) {
+      throw new Error('The upload owner account no longer exists.');
+    }
+
+    await client.query(
+      `
+        insert into public.asset_register_bucket_uploads (
+          id,
+          user_id,
+          file_name,
+          content_type,
+          byte_size,
+          object_key,
+          content_sha256,
+          storage_state,
+          upload_category
+        ) values ($1, $2, $3, $4, $5, $6, $7, 'pending', $8)
+      `,
+      [
+        id,
+        userId,
+        input.fileName,
+        input.contentType,
+        input.byteSize,
+        objectKey,
+        contentSha256,
+        input.category,
+      ],
+    );
+
+    try {
+      const stored = await storeBucketOnlyUpload({
+        uploadId: id,
+        data: input.buffer,
+        contentType: input.contentType,
+      });
+
+      if (stored.objectKey !== objectKey || stored.contentSha256 !== contentSha256) {
+        throw new Error('The verified Bucket upload metadata does not match its pending catalog row.');
+      }
+
+      const updated = await client.query(
+        `
+          update public.asset_register_bucket_uploads
+          set
+            storage_state = 'ready',
+            object_etag = $2,
+            verified_at = now(),
+            last_error = null
+          where id = $1
+            and user_id = $3
+            and storage_state = 'pending'
+            and object_key = $4
+            and content_sha256 = $5
+          returning id
+        `,
+        [id, stored.etag, userId, objectKey, contentSha256],
+      );
+
+      if (updated.rowCount !== 1) {
+        throw new Error('The Bucket upload catalog row changed before it could be marked ready.');
+      }
+    } catch (error) {
+      try {
+        await client.query(
+          `
+            update public.asset_register_bucket_uploads
+            set last_error = $2
+            where id = $1
+              and storage_state = 'pending'
+          `,
+          [id, bucketUploadErrorMessage(error)],
+        );
+      } catch (catalogError) {
+        console.error('Bucket upload failure could not be recorded in its pending catalog row', {
+          uploadId: id,
+          catalogError,
+        });
+      }
+
+      throw new Error('File storage is temporarily unavailable. Please try again.');
+    }
+
+    return {
+      id,
+      url: buildAssetRegisterUploadUrl(id),
+      fileName: input.fileName,
+      contentType: input.contentType,
+      byteSize: input.byteSize,
+    };
+  } finally {
+    if (accountLockHeld) {
+      try {
+        await client.query('select pg_advisory_unlock(hashtextextended($1, 0))', [userId]);
+      } catch (unlockError) {
+        discardClient = true;
+        console.error('Bucket upload account lock could not be released explicitly', {
+          uploadId: id,
+          unlockError,
+        });
+      }
+    }
+    // Never return a connection with a possibly-held session advisory lock to
+    // the pool. Passing true makes node-postgres destroy it instead.
+    client.release(discardClient);
+  }
+}
+
 export async function createAssetRegisterUpload(
   input: CreateAssetRegisterUploadInput,
 ): Promise<CreatedAssetRegisterUpload> {
-  await ensureAssetRegisterUploadsTable();
-
-  const id = randomUUID();
   const fileName = sanitizeFileName(input.file.name);
   const contentType = normalizeContentType(fileName, input.file.type);
+  const storageMode = getUploadStorageMode();
+
+  if (
+    storageMode === 'bucket-only-new'
+    && (!isBucketWriteCostApproved() || !isBucketOnlyNewApproved())
+  ) {
+    throw new Error('Bucket-only upload storage is not fully approved.');
+  }
+
   const buffer = Buffer.from(await input.file.arrayBuffer());
   const byteSize = buffer.length;
   const category = normalizeUploadCategory(input.category);
+
+  if (storageMode === 'bucket-only-new') {
+    return createBucketOnlyAssetRegisterUpload({
+      userId: input.userId,
+      fileName,
+      contentType,
+      byteSize,
+      buffer,
+      category,
+    });
+  }
+
+  await ensureAssetRegisterUploadsTable();
+
+  const id = randomUUID();
 
   await insertAssetRegisterUploadRow({
     id,
@@ -682,8 +972,6 @@ export async function createAssetRegisterUpload(
     buffer,
     category,
   });
-
-  const storageMode = getUploadStorageMode();
 
   if (storageMode !== 'postgres') {
     try {
@@ -793,13 +1081,194 @@ export async function deleteUnreferencedAssetRegisterUploads(input: {
   );
 }
 
+export async function resolveBucketOnlyAssetRegisterDownload(
+  uploadId: string,
+): Promise<BucketOnlyUploadDownloadResult> {
+  const normalizedUploadId = normalizeUploadId(uploadId);
+
+  if (!BUCKET_ONLY_UPLOAD_ID_PATTERN.test(normalizedUploadId)) {
+    return { status: 'not-found' };
+  }
+
+  try {
+    await assertBucketOnlyCatalogReady();
+  } catch (error) {
+    console.error('Bucket-only upload read is unavailable because migration 81 is incomplete', {
+      uploadId: normalizedUploadId,
+      error,
+    });
+    return { status: 'unavailable' };
+  }
+
+  let row: BucketOnlyUploadRow | undefined;
+  try {
+    const result = await getDb().query<BucketOnlyUploadRow>(
+      `
+        select storage_state, object_key, content_type, file_name
+        from public.asset_register_bucket_uploads
+        where id = $1
+        limit 1
+      `,
+      [normalizedUploadId],
+    );
+    row = result.rows[0];
+  } catch (error) {
+    console.error('Bucket-only upload metadata could not be read for download', {
+      uploadId: normalizedUploadId,
+      error,
+    });
+    return { status: 'unavailable' };
+  }
+
+  // Pending uploads were never accepted by the application. Deletion states
+  // are hidden immediately even though their private object may remain in the
+  // 30-day recovery queue.
+  if (
+    row?.storage_state !== 'ready'
+    || !row.object_key
+    || row.object_key !== createBucketOnlyUploadObjectKey(normalizedUploadId)
+  ) {
+    return { status: 'not-found' };
+  }
+
+  try {
+    const fileName = sanitizeFileName(row.file_name ?? 'asset-register-upload');
+    const url = await createBucketSignedGetUrl({
+      objectKey: row.object_key,
+      contentType: normalizeContentType(fileName, String(row.content_type ?? '')),
+      fileName,
+    });
+    return { status: 'ready', url };
+  } catch (error) {
+    console.error('Bucket-only upload signed URL could not be created', {
+      uploadId: normalizedUploadId,
+      error,
+    });
+    return { status: 'unavailable' };
+  }
+}
+
+async function resolveBucketOnlyAssetRegisterUploadBytes(
+  normalizedUploadId: string,
+): Promise<AssetRegisterUploadBytesResult> {
+  try {
+    await assertBucketOnlyCatalogReady();
+  } catch (error) {
+    console.error('Bucket-only upload byte read is unavailable because migration 81 is incomplete', {
+      uploadId: normalizedUploadId,
+      error,
+    });
+    return { status: 'unavailable' };
+  }
+
+  let row: BucketOnlyUploadRow | undefined;
+  try {
+    const result = await getDb().query<BucketOnlyUploadRow>(
+      `
+        select
+          storage_state,
+          object_key,
+          byte_size,
+          content_sha256,
+          content_type,
+          file_name
+        from public.asset_register_bucket_uploads
+        where id = $1
+          and storage_state = 'ready'
+        limit 1
+      `,
+      [normalizedUploadId],
+    );
+    row = result.rows[0];
+  } catch (error) {
+    console.error('Bucket-only upload metadata could not be read', {
+      uploadId: normalizedUploadId,
+      error,
+    });
+    return { status: 'unavailable' };
+  }
+
+  // Pending uploads were never accepted. Deletion states are hidden
+  // immediately, even while their private object remains recoverable.
+  if (!row || row.storage_state !== 'ready') {
+    return { status: 'not-found' };
+  }
+
+  const expectedObjectKey = createBucketOnlyUploadObjectKey(normalizedUploadId);
+  if (row.object_key !== expectedObjectKey) {
+    console.error('Bucket-only upload metadata contains an unexpected object key', {
+      uploadId: normalizedUploadId,
+    });
+    return { status: 'unavailable' };
+  }
+
+  const expectedByteSize = Number(row.byte_size);
+  const expectedSha256 = String(row.content_sha256 ?? '').trim().toLowerCase();
+
+  try {
+    const data = await readVerifiedBucketUploadObjectBytes({
+      objectKey: expectedObjectKey,
+      expectedByteSize,
+      expectedSha256,
+    });
+    const fileName = sanitizeFileName(row.file_name ?? 'asset-register-upload');
+    const mimeType = normalizeContentType(fileName, String(row.content_type ?? ''));
+
+    return {
+      status: 'ready',
+      upload: {
+        data,
+        mimeType,
+        sizeBytes: data.length,
+        fileName,
+        disposition: contentDispositionForType(mimeType),
+      },
+    };
+  } catch (error) {
+    console.error('Bucket-only upload bytes could not be read and verified', {
+      uploadId: normalizedUploadId,
+      error,
+    });
+    return { status: 'unavailable' };
+  }
+}
+
+export async function resolveAssetRegisterUploadBytes(
+  uploadId: string,
+): Promise<AssetRegisterUploadBytesResult> {
+  const normalizedUploadId = normalizeUploadId(uploadId);
+
+  if (!normalizedUploadId) {
+    return { status: 'not-found' };
+  }
+
+  // The namespace boundary is deliberate: a Bucket-only id can never fall
+  // through to PostgreSQL, including during a Bucket outage.
+  if (normalizedUploadId.toLowerCase().startsWith(BUCKET_ONLY_UPLOAD_ID_PREFIX)) {
+    return BUCKET_ONLY_UPLOAD_ID_PATTERN.test(normalizedUploadId)
+      ? resolveBucketOnlyAssetRegisterUploadBytes(normalizedUploadId)
+      : { status: 'not-found' };
+  }
+
+  try {
+    const upload = await getLegacyAssetRegisterUploadResponse(normalizedUploadId);
+    return upload ? { status: 'ready', upload } : { status: 'not-found' };
+  } catch (error) {
+    console.error('Legacy asset register upload bytes could not be read', {
+      uploadId: normalizedUploadId,
+      error,
+    });
+    return { status: 'unavailable' };
+  }
+}
+
 export async function createAssetRegisterSignedGetUrl(uploadId: string): Promise<string | null> {
   if (getUploadStorageMode() !== 'bucket-preferred') {
     return null;
   }
 
   const normalizedUploadId = normalizeUploadId(uploadId);
-  if (!normalizedUploadId) return null;
+  if (!normalizedUploadId || normalizedUploadId.toLowerCase().startsWith(BUCKET_ONLY_UPLOAD_ID_PREFIX)) return null;
 
   await ensureAssetRegisterUploadsTable();
 
@@ -848,7 +1317,7 @@ export async function getLegacyAssetRegisterUploadResponse(
 ): Promise<LegacyAssetRegisterUploadResponse | null> {
   const normalizedUploadId = normalizeUploadId(uploadId);
 
-  if (!normalizedUploadId) {
+  if (!normalizedUploadId || normalizedUploadId.toLowerCase().startsWith(BUCKET_ONLY_UPLOAD_ID_PREFIX)) {
     return null;
   }
 

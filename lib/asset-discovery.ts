@@ -1,5 +1,5 @@
 import { ensureAccountProfileColumns } from "./account-profile";
-import { getLegacyAssetRegisterUploadResponse } from "./asset-register-uploads";
+import { resolveAssetRegisterUploadBytes } from "./asset-register-uploads";
 import { ensureDealerMaintenanceTrackerTables } from "./dealer-maintenance-tracker";
 import { getDb } from "./db";
 import { createAssetLead, ensurePartnerAccessTables } from "./partner-access";
@@ -1920,10 +1920,17 @@ function decodeDataImage(source: string): AssetDiscoveryPhoto | null {
 }
 
 function internalUploadId(source: string): string {
-  const match = /^\/api\/asset-register\/uploads\/([a-f0-9-]{20,})(?:[/?#]|$)/i.exec(
-    source,
-  );
-  return match?.[1] ?? "";
+  const bucketOnlyMatch =
+    /^\/api\/asset-register\/uploads\/(bkt-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})(?:[/?#]|$)/.exec(
+      source,
+    );
+  if (bucketOnlyMatch?.[1]) return bucketOnlyMatch[1];
+
+  const legacyMatch =
+    /^\/api\/asset-register\/uploads\/([a-f0-9-]{20,})(?:[/?#]|$)/i.exec(
+      source,
+    );
+  return legacyMatch?.[1] ?? "";
 }
 
 function isSafeRemotePhotoUrl(value: string): boolean {
@@ -1978,10 +1985,17 @@ export async function getAssetDiscoveryPhoto(input: {
 
   const uploadId = internalUploadId(source);
   if (uploadId) {
-    const upload = await getLegacyAssetRegisterUploadResponse(uploadId);
-    if (!upload || !upload.mimeType.toLowerCase().startsWith("image/")) {
+    const uploadResult = await resolveAssetRegisterUploadBytes(uploadId);
+    if (uploadResult.status === "unavailable") {
+      throw new Error("Discovery photo temporarily unavailable.");
+    }
+    if (
+      uploadResult.status !== "ready"
+      || !uploadResult.upload.mimeType.toLowerCase().startsWith("image/")
+    ) {
       throw new Error("Discovery photo not found.");
     }
+    const upload = uploadResult.upload;
     return {
       data: upload.data,
       contentType: upload.mimeType,

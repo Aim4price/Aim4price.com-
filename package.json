@@ -21,7 +21,7 @@
     "test:assistance-network": "node --test tests/assistance-network.test.mjs",
     "test:app-umbrella-access": "node --test tests/app-umbrella-directory-access.test.mjs",
     "test:responsive-foundation": "node --test tests/responsive-foundation.test.mjs",
-    "test:upload-storage": "node --test tests/asset-register-upload-storage.test.mjs tests/upload-object-storage-foundation.test.mjs",
+    "test:upload-storage": "node --test tests/asset-register-upload-storage.test.mjs tests/upload-object-storage-foundation.test.mjs tests/bucket-only-upload-catalog.test.mjs tests/bucket-only-upload-runtime.test.mjs tests/bucket-only-upload-purge.test.mjs",
     "test:ad-studio": "node --test tests/ad-studio.test.mjs",
     "test:valuation-rules": "node --experimental-strip-types --test tests/valuation-rules.test.mjs",
     "verify:insurance": "node scripts/verify-insurance-workspace.cjs"
