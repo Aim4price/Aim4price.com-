@@ -460,6 +460,14 @@ export default function OwnerAssetOptionsClient({ assetId, assetTitle, assetKind
           <div className={styles.ownerPartnerContacts}>
             {selectedPartner.email ? <a href={`mailto:${selectedPartner.email}`}><small>Email</small><span>{selectedPartner.email}</span></a> : null}
             {selectedPartner.phone ? <a href={`tel:${selectedPartner.phone.replace(/[^+\d]/g, '')}`}><small>Phone</small><span>{selectedPartner.phone}</span></a> : null}
+            {selectedPartner.websiteUrl ? (
+              <a href={/^https?:\/\//i.test(selectedPartner.websiteUrl) ? selectedPartner.websiteUrl : `https://${selectedPartner.websiteUrl}`} target="_blank" rel="noreferrer">
+                <small>Website</small>
+                <span>{selectedPartner.isAim4priceManaged && selectedPartner.partnerType === 'dealer'
+                  ? 'www.aim4price.com'
+                  : selectedPartner.websiteUrl.replace(/^https?:\/\//i, '').replace(/\/$/, '')}</span>
+              </a>
+            ) : null}
             <span><small>Address</small><b>{selectedPartner.isAim4priceManaged ? 'Service area — not a physical branch' : [selectedPartner.addressLine1, selectedPartner.townCity, selectedPartner.province].filter(Boolean).join(', ') || 'Not saved'}</b></span>
           </div>
 

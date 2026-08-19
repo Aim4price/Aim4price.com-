@@ -6116,6 +6116,14 @@ function quotePartnerRadiusDisplay(partner: PartnerDirectoryEntry): string {
   return partner.partnerType === 'licensing' ? 'Available for renewal requests' : 'Service area not saved';
 }
 
+function isDealerAssistancePartner(partner: PartnerDirectoryEntry): boolean {
+  return Boolean(partner.isAim4priceManaged && partner.partnerType === 'dealer');
+}
+
+function quotePartnerWebsiteDisplay(partner: PartnerDirectoryEntry): string {
+  return isDealerAssistancePartner(partner) ? 'www.aim4price.com' : formatWebsiteDisplay(partner.websiteUrl);
+}
+
 function hasQuotePartnerCoordinates(partner: PartnerDirectoryEntry): boolean {
   return (
     partner.latitude !== null &&
@@ -6143,22 +6151,40 @@ function buildQuotePartnerPopupHtml(partner: PartnerDirectoryEntry, isSelected =
   const radius = escapeHtml(quotePartnerRadiusDisplay(partner));
   const brands = !partner.isAim4priceManaged && partner.brandFocus ? escapeHtml(partner.brandFocus) : '';
   const services = escapeHtml(quotePartnerServicesDisplay(partner));
+  const isDealerAssistance = isDealerAssistancePartner(partner);
+  const websiteHref = normalizeWebsiteHref(partner.websiteUrl);
+  const emailHref = normalizeEmailHref(partner.email);
+  const phoneHref = normalizePhoneHref(partner.phone);
   const details = [
-    `<div><span>Location</span><strong>${location}</strong></div>`,
-    services ? `<div><span>Service</span><strong>${services}</strong></div>` : '',
+    `<div><span>Area</span><strong>${location}</strong></div>`,
+    services ? `<div><span>Support</span><strong>${services}</strong></div>` : '',
     brands ? `<div><span>Brands</span><strong>${brands}</strong></div>` : '',
-    `<div><span>Radius</span><strong>${radius}</strong></div>`,
+    `<div><span>Coverage</span><strong>${radius}</strong></div>`,
   ].filter(Boolean).join('');
+  const dealerContacts = isDealerAssistance ? [
+    websiteHref ? `<a href="${escapeHtml(websiteHref)}" target="_blank" rel="noreferrer"><span>Website</span><strong>${escapeHtml(quotePartnerWebsiteDisplay(partner))}</strong></a>` : '',
+    emailHref ? `<a href="${escapeHtml(emailHref)}"><span>Email</span><strong>${escapeHtml(partner.email)}</strong></a>` : '',
+    phoneHref ? `<a href="${escapeHtml(phoneHref)}"><span>Contact</span><strong>${escapeHtml(partner.phone)}</strong></a>` : '',
+  ].filter(Boolean).join('');
+  const opensMessage = isDealerAssistance && !isSelected;
+  const actionLabel = isSelected
+    ? 'Remove selection'
+    : opensMessage
+      ? 'Message Aim4price'
+      : partner.isAim4priceManaged
+        ? 'Select this service area'
+        : 'Select this business';
 
   return `
     <div class="assetQuotePopupCard assetQuotePopupCardSimple assetQuotePopupCard--${escapeHtml(partner.partnerType)}">
       <div class="assetQuotePopupSimpleHeader">
+        ${partner.isAim4priceManaged ? '<span class="assetQuoteManagedKicker"><i></i>Aim4price service area</span>' : ''}
         <strong>${name}</strong>
-        ${partner.isAim4priceManaged ? '<span class="assetQuoteManagedBadge">Aim4price managed</span>' : ''}
       </div>
       <div class="assetQuotePopupDetails assetQuotePopupSimpleDetails">${details}</div>
+      ${dealerContacts ? `<div class="assetQuotePopupContacts">${dealerContacts}</div>` : ''}
       ${partner.isAim4priceManaged ? '<p class="assetQuoteManagedNotice">This is a service area, not a physical branch. Aim4price will help locate a suitable provider.</p>' : ''}
-      <button type="button" data-quote-partner-id="${escapeHtml(partner.userId)}" class="assetQuotePopupChooseButton">${isSelected ? 'Remove selection' : partner.isAim4priceManaged ? 'Select this service area' : 'Select this business'}</button>
+      <button type="button" data-quote-partner-id="${escapeHtml(partner.userId)}" data-quote-partner-action="${opensMessage ? 'message' : 'toggle'}" class="assetQuotePopupChooseButton">${actionLabel}</button>
     </div>
   `;
 }
@@ -8277,8 +8303,8 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
           const marker = L.marker([lat, lng], { icon, title: quotePartnerName(partner) }).addTo(quoteMarkerLayerRef.current);
           marker.bindPopup(buildQuotePartnerPopupHtml(partner, isActive), {
             className: 'assetQuotePartnerPopup',
-            minWidth: 320,
-            maxWidth: 430,
+            minWidth: 380,
+            maxWidth: 500,
             autoPan: false,
           });
           bounds.extend([lat, lng]);
@@ -8318,6 +8344,10 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
 
       event.preventDefault();
       event.stopPropagation();
+      if (button.getAttribute('data-quote-partner-action') === 'message' && isDealerAssistancePartner(partner)) {
+        openDealerAssistanceMessage(partner);
+        return;
+      }
       toggleQuotePartnerSelection(partner);
     };
 
@@ -10806,6 +10836,13 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     setIsQuoteTrackingSettingsOpen(false);
 
     removeQuoteMap();
+  }
+
+  function openDealerAssistanceMessage(partner: PartnerDirectoryEntry) {
+    setSelectedQuotePartnerIds([partner.userId]);
+    setQuoteConsentAccepted(false);
+    setIsQuoteMapExpanded(false);
+    setQuoteLeadStep('message');
   }
 
   function toggleQuotePartnerSelection(partner: PartnerDirectoryEntry) {
@@ -18840,15 +18877,21 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                                 key={partner.userId}
                                 type="button"
                                 className={`${styles.assetQuotePartnerCard} ${quoteToneClassForPartnerType(partner.partnerType)} ${isSelected ? styles.assetQuotePartnerCardActive : ''}`}
-                                onClick={() => toggleQuotePartnerSelection(partner)}
-                                aria-label={`${isSelected ? 'Remove' : 'Select'} ${quotePartnerName(partner)}`}
+                                onClick={() => {
+                                  if (isDealerAssistancePartner(partner) && !isSelected) {
+                                    openDealerAssistanceMessage(partner);
+                                    return;
+                                  }
+                                  toggleQuotePartnerSelection(partner);
+                                }}
+                                aria-label={`${isSelected ? 'Remove' : isDealerAssistancePartner(partner) ? 'Open message with' : 'Select'} ${quotePartnerName(partner)}`}
                                 aria-pressed={isSelected}
                               >
                                 <span className={styles.assetQuotePartnerBody}>
                                   <span className={styles.assetQuotePartnerHeader}>
                                     <strong>{quotePartnerName(partner)}</strong>
                                     {partner.isAim4priceManaged ? (
-                                      <small className={styles.assetQuoteManagedBadge}>Aim4price managed</small>
+                                      <span className={styles.assetQuoteManagedLabel}><i aria-hidden="true" />Aim4price service area</span>
                                     ) : partner.isActivePartner ? (
                                       <small className={styles.assetQuoteActivePartnerBadge}>Active partner</small>
                                     ) : null}
@@ -18865,6 +18908,10 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                                   ) : partner.brandFocus ? (
                                     <span className={styles.assetQuotePartnerCopy}>Brands: {partner.brandFocus}</span>
                                   ) : null}
+                                  <span className={styles.assetQuotePartnerAction}>
+                                    <span>{isSelected ? 'Selected' : isDealerAssistancePartner(partner) ? 'Open message' : 'Select company'}</span>
+                                    <ChevronRightIcon className={styles.buttonIcon} />
+                                  </span>
                                 </span>
                               </button>
                             );
@@ -18960,29 +19007,29 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                           <div className={`${styles.assetQuoteStepBody} ${styles.assetQuoteMessageStepBody}`}>
                             {selectedQuotePartners.length === 1 ? (
                             <aside className={styles.assetQuoteSelectedCompanyPanel} aria-label="Selected company details">
-                              <div className={styles.assetQuoteSelectedMediaGrid}>
-                                <span className={`${styles.assetQuoteSelectedMediaTile} ${styles.assetQuoteSelectedLogoTile}`}>
-                                  {selectedQuotePartner.logoUrl ? (
-                                    <img src={selectedQuotePartner.logoUrl} alt={`${quotePartnerName(selectedQuotePartner)} logo`} />
-                                  ) : (
-                                    <span className={styles.assetQuoteSelectedLogoFallback}>{quotePartnerInitial(selectedQuotePartner)}</span>
-                                  )}
-                                </span>
-                              </div>
-
                               <div className={styles.assetQuoteSelectedCompanyInfo}>
-                                <div className={styles.assetQuoteSelectedCompanyTitle}>
-                                  <strong>{quotePartnerName(selectedQuotePartner)}</strong>
-                                  {selectedQuotePartner.isAim4priceManaged ? (
-                                    <small className={styles.assetQuoteManagedBadge}>Aim4price managed</small>
-                                  ) : null}
-                                  <span>{quotePartnerLocation(selectedQuotePartner)}</span>
-                                  {selectedQuotePartner.isAim4priceManaged ? (
-                                    <p className={styles.assetQuoteManagedSelectedNotice}>
-                                      This service area is not a physical branch. Aim4price will help locate a suitable provider and will not share your assets with an external provider without your further approval.
-                                    </p>
-                                  ) : null}
+                                <div className={styles.assetQuoteSelectedCompanyHero}>
+                                  <span className={`${styles.assetQuoteSelectedMediaTile} ${styles.assetQuoteSelectedLogoTile}`}>
+                                    {selectedQuotePartner.logoUrl ? (
+                                      <img src={selectedQuotePartner.logoUrl} alt={`${quotePartnerName(selectedQuotePartner)} logo`} />
+                                    ) : (
+                                      <span className={styles.assetQuoteSelectedLogoFallback}>{quotePartnerInitial(selectedQuotePartner)}</span>
+                                    )}
+                                  </span>
+                                  <div className={styles.assetQuoteSelectedCompanyTitle}>
+                                    {selectedQuotePartner.isAim4priceManaged ? (
+                                      <span className={styles.assetQuoteManagedLabel}><i aria-hidden="true" />Aim4price service area</span>
+                                    ) : null}
+                                    <strong>{quotePartnerName(selectedQuotePartner)}</strong>
+                                    <span>{quotePartnerLocation(selectedQuotePartner)}</span>
+                                  </div>
                                 </div>
+
+                                {selectedQuotePartner.isAim4priceManaged ? (
+                                  <p className={styles.assetQuoteManagedSelectedNotice}>
+                                    Aim4price will find a suitable provider for this area. Nothing is shared with an external provider without your approval.
+                                  </p>
+                                ) : null}
 
                                 <div className={styles.assetQuoteSelectedContactList}>
                                   {selectedQuotePartner.email && selectedQuotePartnerEmailHref ? (
@@ -19012,7 +19059,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                                   {selectedQuotePartnerWebsiteHref ? (
                                     <a className={styles.assetQuoteSelectedContactRow} href={selectedQuotePartnerWebsiteHref} target="_blank" rel="noreferrer">
                                       <small>Website</small>
-                                      <span>{formatWebsiteDisplay(selectedQuotePartnerWebsiteHref)}</span>
+                                      <span>{quotePartnerWebsiteDisplay(selectedQuotePartner)}</span>
                                     </a>
                                   ) : (
                                     <span className={styles.assetQuoteSelectedContactRow}>

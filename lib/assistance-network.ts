@@ -35,6 +35,9 @@ export type AssistanceMasterDefinition = {
 };
 
 export const AIM4PRICE_ASSISTANCE_ROUTING_EMAIL = 'aim4price@gmail.com';
+export const AIM4PRICE_DEALER_ASSISTANCE_EMAIL = 'aim4price@gmail.com';
+export const AIM4PRICE_DEALER_ASSISTANCE_PHONE = '062 572 1650';
+export const AIM4PRICE_DEALER_ASSISTANCE_WEBSITE = 'https://www.aim4price.com';
 export const AIM4PRICE_MANAGED_BADGE = 'Aim4price managed';
 export const AIM4PRICE_SERVICE_AREA_NOTICE =
   'This location represents an Aim4price service area, not a physical branch.';
@@ -587,13 +590,13 @@ export async function listAssistanceDirectoryEntries(input: {
     accountSubtype: row.account_subtype,
     displayName: `${row.listing_prefix} – ${row.town}`,
     businessName: `${row.listing_prefix} – ${row.town}`,
-    phone: '',
-    email: row.notification_email,
+    phone: row.service_key === 'dealer' ? AIM4PRICE_DEALER_ASSISTANCE_PHONE : '',
+    email: row.service_key === 'dealer' ? AIM4PRICE_DEALER_ASSISTANCE_EMAIL : row.notification_email,
     province: row.province,
     townCity: row.town,
     addressLine1: '',
     logoUrl: '',
-    websiteUrl: '',
+    websiteUrl: row.service_key === 'dealer' ? AIM4PRICE_DEALER_ASSISTANCE_WEBSITE : '',
     extraPhotoUrls: [],
     description: AIM4PRICE_SERVICE_AREA_NOTICE,
     latitude: asNumber(row.latitude),
