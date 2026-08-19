@@ -45,6 +45,8 @@ export const ALLOWED_ASSET_REGISTER_DOCUMENT_EXTENSIONS = new Set([
 ]);
 
 const ASSET_REGISTER_UPLOAD_ROUTE_PREFIX = '/api/asset-register/uploads/';
+const ASSET_REGISTER_UPLOAD_ID_PATTERN = /^[0-9A-Za-z_-]{20,128}$/;
+const ASSET_UPLOAD_RECOVERY_WINDOW_SQL = "interval '30 days'";
 
 const CONTENT_TYPE_BY_EXTENSION = new Map<string, string>([
   ['.pdf', 'application/pdf'],
@@ -152,6 +154,11 @@ function normalizeUploadId(value: string): string {
   } catch {
     return withoutQuery.trim();
   }
+}
+
+function normalizeCleanupUploadId(value: string): string {
+  const normalized = normalizeUploadId(value);
+  return ASSET_REGISTER_UPLOAD_ID_PATTERN.test(normalized) ? normalized : '';
 }
 
 function normalizeContentType(fileName: string, value: string): string {
@@ -442,6 +449,14 @@ async function assertObjectStorageSchemaReady(): Promise<void> {
     has_key_constraint: boolean;
     has_purge_queue: boolean;
     has_delete_trigger: boolean;
+    has_reference_ledger: boolean;
+    has_reference_sources: boolean;
+    has_reference_rollout: boolean;
+    has_reference_ready_function: boolean;
+    has_live_reference_function: boolean;
+    has_prepare_deletion_function: boolean;
+    has_catalog_reference_function: boolean;
+    has_queue_upload_id: boolean;
   }>(`
     select
       exists (
@@ -466,7 +481,26 @@ async function assertObjectStorageSchemaReady(): Promise<void> {
           and tgname = 'queue_deleted_asset_upload_object_trigger'
           and not tgisinternal
           and tgenabled <> 'D'
-      ) as has_delete_trigger
+      ) as has_delete_trigger,
+      to_regclass('public.asset_upload_references') is not null as has_reference_ledger,
+      to_regclass('public.asset_upload_reference_sources') is not null as has_reference_sources,
+      to_regclass('public.asset_upload_reference_rollout') is not null as has_reference_rollout,
+      to_regprocedure('public.asset_upload_reference_ledger_ready()') is not null
+        as has_reference_ready_function,
+      to_regprocedure('public.asset_upload_has_live_reference(text)') is not null
+        as has_live_reference_function,
+      to_regprocedure('public.asset_upload_prepare_for_deletion(text)') is not null
+        as has_prepare_deletion_function,
+      to_regprocedure('public.asset_upload_has_unregistered_catalog_reference(text)') is not null
+        as has_catalog_reference_function,
+      exists (
+        select 1
+        from information_schema.columns
+        where table_schema = 'public'
+          and table_name = 'asset_upload_object_purge_queue'
+          and column_name = 'upload_id'
+          and data_type = 'text'
+      ) as has_queue_upload_id
   `);
   const readiness = result.rows[0];
 
@@ -476,8 +510,77 @@ async function assertObjectStorageSchemaReady(): Promise<void> {
     || !readiness.has_key_constraint
     || !readiness.has_purge_queue
     || !readiness.has_delete_trigger
+    || !readiness.has_reference_ledger
+    || !readiness.has_reference_sources
+    || !readiness.has_reference_rollout
+    || !readiness.has_reference_ready_function
+    || !readiness.has_live_reference_function
+    || !readiness.has_prepare_deletion_function
+    || !readiness.has_catalog_reference_function
+    || !readiness.has_queue_upload_id
   ) {
-    throw new Error('Migration 80 is not fully applied; Bucket writes and reads remain disabled.');
+    throw new Error('Migrations 80 and 81 are not fully applied; Bucket writes and reads remain disabled.');
+  }
+
+  // Infrastructure readiness is intentionally separate from rollout
+  // completion so database-only reconciliation can run while migration holds
+  // still protect legacy rows. Bucket traffic must wait until that reviewed
+  // reconciliation has completed and every migration hold has been released.
+  const rollout = await getDb().query<{ complete: boolean }>(`
+    select exists (
+      select 1
+      from public.asset_upload_reference_rollout as rollout
+      where rollout.singleton
+        and rollout.backfill_completed_at is not null
+        and rollout.holds_released_at is not null
+        and not exists (
+          select 1
+          from public.asset_upload_references as reference
+          where reference.reference_kind = 'migration_hold'
+        )
+    ) as complete
+  `);
+
+  if (rollout.rows[0]?.complete !== true) {
+    throw new Error(
+      'Upload-reference reconciliation is incomplete; Bucket writes and reads remain disabled.',
+    );
+  }
+
+  const referenceReadiness = await getDb().query<{ ready: boolean }>(
+    'select public.asset_upload_reference_ledger_ready() as ready',
+  );
+
+  if (referenceReadiness.rows[0]?.ready !== true) {
+    throw new Error('Migration 81 upload-reference ledger is not ready; Bucket writes and reads remain disabled.');
+  }
+}
+
+async function isAssetUploadReferenceLedgerReady(): Promise<boolean> {
+  try {
+    const functions = await getDb().query<{
+      has_ready_function: boolean;
+      has_live_reference_function: boolean;
+    }>(`
+      select
+        to_regprocedure('public.asset_upload_reference_ledger_ready()') is not null
+          as has_ready_function,
+        to_regprocedure('public.asset_upload_has_live_reference(text)') is not null
+          as has_live_reference_function
+    `);
+    const available = functions.rows[0];
+
+    if (!available?.has_ready_function || !available.has_live_reference_function) {
+      return false;
+    }
+
+    const result = await getDb().query<{ ready: boolean }>(
+      'select public.asset_upload_reference_ledger_ready() as ready',
+    );
+    return result.rows[0]?.ready === true;
+  } catch (error) {
+    console.error('asset upload reference ledger readiness check failed; cleanup skipped', error);
+    return false;
   }
 }
 
@@ -764,7 +867,9 @@ export async function deleteUnreferencedAssetRegisterUploads(input: {
   uploadIds: string[];
   excludeAssetId?: string | null;
 }): Promise<void> {
-  const uploadIds = listInternalAssetRegisterUploadIds(input.uploadIds);
+  const uploadIds = Array.from(
+    new Set(input.uploadIds.map(normalizeCleanupUploadId).filter(Boolean)),
+  );
 
   if (!uploadIds.length) {
     return;
@@ -772,24 +877,24 @@ export async function deleteUnreferencedAssetRegisterUploads(input: {
 
   await ensureAssetRegisterUploadsTable();
 
+  if (!(await isAssetUploadReferenceLedgerReady())) {
+    // Failing to prove the global reference ledger is ready must retain the
+    // upload. Asset updates should still succeed while cleanup stays disabled.
+    return;
+  }
+
   await getDb().query(
     `
-      delete from public.asset_register_uploads upload
+      update public.asset_register_uploads upload
+      set
+        deleted_at = coalesce(upload.deleted_at, now()),
+        purge_after = coalesce(upload.purge_after, now() + ${ASSET_UPLOAD_RECOVERY_WINDOW_SQL})
       where upload.user_id = $1
         and upload.id::text = any($2::text[])
-        and coalesce(upload.storage_state, 'postgres') = 'postgres'
-        and not exists (
-          select 1
-          from public.asset_register_items item
-          where item.user_id = $1
-            and ($3::text is null or item.id::text <> $3::text)
-            and (
-              coalesce(item.photos::text, '') like '%' || $4::text || upload.id::text || '%'
-              or coalesce(item.documents::text, '') like '%' || $4::text || upload.id::text || '%'
-            )
-        )
+        and upload.created_at <= now() - interval '24 hours'
+        and not public.asset_upload_has_live_reference(upload.id)
     `,
-    [input.userId, uploadIds, input.excludeAssetId ?? null, ASSET_REGISTER_UPLOAD_ROUTE_PREFIX],
+    [input.userId, uploadIds],
   );
 }
 
@@ -806,7 +911,7 @@ export async function createAssetRegisterSignedGetUrl(uploadId: string): Promise
   try {
     await assertObjectStorageSchemaReady();
   } catch (error) {
-    console.error('asset register Bucket read disabled because migration 80 is incomplete', error);
+    console.error('asset register Bucket read disabled because storage/reference guards are incomplete', error);
     return null;
   }
 
@@ -817,6 +922,7 @@ export async function createAssetRegisterSignedGetUrl(uploadId: string): Promise
       where id::text = $1
         and storage_state = 'dual_verified'
         and object_key is not null
+        and deleted_at is null
       limit 1
     `,
     [normalizedUploadId],
@@ -859,6 +965,7 @@ export async function getLegacyAssetRegisterUploadResponse(
       select data, content_type, byte_size, file_name
       from public.asset_register_uploads
       where id::text = $1
+        and deleted_at is null
       limit 1
     `,
     [normalizedUploadId],
