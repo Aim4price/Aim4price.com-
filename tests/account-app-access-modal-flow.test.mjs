@@ -64,7 +64,7 @@ test('the header Manage popover always sorts visible destinations alphabetically
   assert.match(header, /const ACCOUNT_MENU_COLLATOR = new Intl\.Collator\('en-ZA'/);
   assert.match(header, /function sortAccountMenuItems<T extends \{ href: string; label: string \}>/);
   assert.match(header, /ACCOUNT_MENU_COLLATOR\.compare\(left\.label, right\.label\)/);
-  assert.match(header, /sortAccountMenuItems\(navItems\)\.map/);
+  assert.match(header, /sortAccountMenuItems\(navItems\.filter\(\(item\) => item\.href !== '\/'\)\)\.map/);
   assert.match(header, /sortAccountMenuItems\(session\?\.accountType === 'licensing'/);
 });
 

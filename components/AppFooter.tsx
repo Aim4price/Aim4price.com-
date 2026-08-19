@@ -31,7 +31,6 @@ const ownerWorkspace: FooterWorkspace = {
   label: 'Owner tools',
   links: [
     { href: '/asset-register', label: 'Asset Register' },
-    { href: '/documents', label: 'Documents' },
     { href: '/valuation', label: 'Get Estimate' },
     { href: '/asset-map', label: 'Asset Map' },
     { href: '/my-invoices', label: 'Cost Ledger' },

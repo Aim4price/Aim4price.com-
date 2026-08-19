@@ -1898,3 +1898,169 @@
     transition: none;
   }
 }
+
+.comingSoonStage {
+  position: relative;
+  min-height: calc(100dvh - 7rem);
+}
+
+.comingSoonPreview {
+  display: grid;
+  filter: blur(7px);
+  opacity: 0.48;
+  pointer-events: none;
+  user-select: none;
+}
+
+.comingSoonPreview .searchBox > span {
+  color: #8494a5;
+  font-size: 1rem;
+  font-weight: 650;
+}
+
+.previewCategory {
+  overflow: hidden;
+  margin-top: clamp(1.65rem, 2.6vw, 2.4rem);
+  border: 1.3px solid #acd7c3;
+  border-radius: clamp(1.45rem, 2.4vw, 2rem);
+  background: rgba(251, 254, 253, 0.94);
+  box-shadow: 0 23px 52px rgba(19, 63, 49, 0.075), inset 0 1px 0 #ffffff;
+}
+
+.previewCategory > header {
+  min-height: 7.1rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.2rem clamp(1.25rem, 2.5vw, 2rem);
+  border-bottom: 1px solid #d4e6dd;
+  background: linear-gradient(90deg, rgba(247, 253, 250, 0.98), rgba(255, 255, 255, 0.98));
+}
+
+.previewCategory h2,
+.previewCategory p {
+  margin: 0;
+}
+
+.previewCategory h2 {
+  color: var(--brand-dark);
+  font-size: 1.35rem;
+}
+
+.previewCategory p {
+  margin-top: 0.25rem;
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.previewRows {
+  display: grid;
+  gap: 0.85rem;
+  padding: 1.3rem;
+}
+
+.previewRows span {
+  min-height: 5.6rem;
+  border: 1px solid var(--line);
+  border-radius: 1.2rem;
+  background: rgba(255, 255, 255, 0.96);
+}
+
+.comingSoonCard {
+  position: absolute;
+  z-index: 2;
+  top: clamp(7rem, 16vw, 12rem);
+  left: 50%;
+  width: min(36rem, calc(100% - 2rem));
+  display: grid;
+  justify-items: center;
+  padding: clamp(2rem, 4vw, 3.25rem);
+  border: 1px solid rgba(139, 203, 172, 0.86);
+  border-radius: clamp(1.65rem, 3vw, 2.25rem);
+  color: var(--ink-soft);
+  background:
+    radial-gradient(circle at 50% 0%, rgba(50, 166, 119, 0.13), transparent 52%),
+    rgba(255, 255, 255, 0.96);
+  box-shadow: 0 32px 80px rgba(9, 65, 49, 0.22), inset 0 1px 0 #ffffff;
+  text-align: center;
+  transform: translateX(-50%);
+}
+
+.comingSoonCard > span {
+  margin-top: 1.15rem;
+  color: #27755c;
+  font-size: 0.73rem;
+  font-weight: 900;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+.comingSoonCard h1 {
+  margin: 0.42rem 0 0;
+  color: var(--brand-dark);
+  font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
+  font-size: clamp(2.6rem, 6vw, 4.8rem);
+  font-weight: 950;
+  line-height: 0.95;
+  letter-spacing: -0.065em;
+  text-transform: uppercase;
+}
+
+.comingSoonCard p {
+  max-width: 29rem;
+  margin: 1rem 0 0;
+  color: var(--muted-dark);
+  font-size: clamp(0.9rem, 1.6vw, 1.03rem);
+  font-weight: 680;
+  line-height: 1.55;
+}
+
+.comingSoonCard a {
+  min-height: 3.2rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 1.45rem;
+  padding: 0 1.4rem;
+  border: 1px solid #0a6145;
+  border-radius: 1rem;
+  color: #ffffff;
+  background: linear-gradient(180deg, #1d7c59 0%, #0d6247 100%);
+  box-shadow: 0 14px 28px rgba(15, 102, 73, 0.22);
+  font-weight: 860;
+  text-decoration: none;
+}
+
+.comingSoonIcon {
+  width: 4.8rem;
+  height: 4.8rem;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(80, 165, 132, 0.38);
+  border-radius: 1.5rem;
+  color: #12664a;
+  background: linear-gradient(145deg, #eaf8f1, #ffffff);
+  box-shadow: 0 16px 32px rgba(17, 89, 65, 0.14);
+}
+
+.comingSoonIcon svg,
+.previewCategory svg,
+.comingSoonPreview .searchBox svg {
+  width: 1.8rem;
+  height: 1.8rem;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+@media (max-width: 700px) {
+  .comingSoonStage {
+    min-height: calc(100dvh - 5rem);
+  }
+
+  .comingSoonCard {
+    top: 4rem;
+  }
+}
