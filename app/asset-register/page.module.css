@@ -37436,13 +37436,21 @@ button.documentOpenLink {
 }
 
 /* === Assistance cards: larger, calmer and action-led === */
-.assetQuotePartnerPickerModal .assetQuoteMapStage {
-  grid-template-columns: minmax(26rem, 29rem) minmax(0, 1fr) !important;
+.assetQuotePartnerPickerModal:not(.assetQuoteMapExpandedModal) .assetQuoteMapStage {
+  grid-template-columns: minmax(23rem, 25rem) minmax(0, 1fr) !important;
+}
+
+.optionsModal.assetQuoteModal.assetQuotePartnerPickerModal.assetQuoteMapExpandedModal .assetQuoteMapStage {
+  grid-template-columns: minmax(0, 1fr) !important;
+}
+
+.assetQuoteMapExpandedModal .assetQuoteMapShell {
+  grid-column: 1 / -1 !important;
 }
 
 .assetQuotePartnerList {
-  gap: 0.9rem !important;
-  padding: 1rem !important;
+  gap: 0.75rem !important;
+  padding: 0.8rem !important;
 }
 
 .assetQuotePartnerCard,
@@ -37450,9 +37458,12 @@ button.documentOpenLink {
 .assetQuotePartnerCard.assetQuoteToneInsurance,
 .assetQuotePartnerCard.assetQuoteToneDealer,
 .assetQuotePartnerCard.assetQuoteToneLicensing {
-  min-height: 12rem !important;
-  padding: 1.25rem 1.3rem !important;
-  border-radius: 1.2rem !important;
+  min-height: 10.25rem !important;
+  height: auto !important;
+  align-items: stretch !important;
+  overflow: hidden !important;
+  padding: 1.1rem 1.15rem !important;
+  border-radius: 1.1rem !important;
 }
 
 .assetQuotePartnerCard::after {
@@ -37461,8 +37472,10 @@ button.documentOpenLink {
 
 .assetQuotePartnerBody {
   display: grid !important;
-  gap: 0.65rem !important;
+  grid-template-rows: auto auto minmax(0, 1fr) auto !important;
+  gap: 0.52rem !important;
   align-content: start !important;
+  height: 100% !important;
 }
 
 .assetQuotePartnerHeader {
@@ -37472,7 +37485,7 @@ button.documentOpenLink {
 
 .assetQuotePartnerHeader strong {
   padding-right: 0 !important;
-  font-size: 1.08rem !important;
+  font-size: 1.02rem !important;
   line-height: 1.25 !important;
 }
 
@@ -37504,24 +37517,25 @@ button.documentOpenLink {
 }
 
 .assetQuotePartnerMeta {
-  gap: 0.3rem !important;
-  font-size: 0.86rem !important;
+  gap: 0.24rem !important;
+  font-size: 0.82rem !important;
   line-height: 1.42 !important;
 }
 
 .assetQuoteManagedCopy,
 .assetQuotePartnerCopy {
-  font-size: 0.82rem !important;
-  line-height: 1.45 !important;
+  font-size: 0.78rem !important;
+  line-height: 1.42 !important;
 }
 
 .assetQuotePartnerAction {
   display: flex !important;
+  grid-row: 4 !important;
   align-items: center !important;
   justify-content: space-between !important;
   gap: 0.75rem !important;
-  margin-top: 0.1rem !important;
-  padding-top: 0.7rem !important;
+  margin-top: auto !important;
+  padding-top: 0.6rem !important;
   border-top: 1px solid rgba(207, 222, 215, 0.86) !important;
   color: #126247 !important;
   font-size: 0.78rem !important;
@@ -37702,13 +37716,13 @@ button.documentOpenLink {
 }
 
 @media (max-width: 1080px) {
-  .assetQuotePartnerPickerModal .assetQuoteMapStage {
-    grid-template-columns: minmax(23rem, 25rem) minmax(0, 1fr) !important;
+  .assetQuotePartnerPickerModal:not(.assetQuoteMapExpandedModal) .assetQuoteMapStage {
+    grid-template-columns: minmax(21.5rem, 23rem) minmax(0, 1fr) !important;
   }
 }
 
 @media (max-width: 860px) {
-  .assetQuotePartnerPickerModal .assetQuoteMapStage,
+  .assetQuotePartnerPickerModal:not(.assetQuoteMapExpandedModal) .assetQuoteMapStage,
   .assetQuoteMessageStepBody {
     grid-template-columns: minmax(0, 1fr) !important;
   }
