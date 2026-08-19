@@ -88,6 +88,64 @@ async function bodyBytes(body) {
   return Buffer.from(await body.transformToByteArray());
 }
 
+async function referenceGuardsReady(queryable) {
+  const schema = await queryable.query(`
+    select
+      to_regclass('public.asset_upload_references') is not null as has_references,
+      to_regclass('public.asset_upload_reference_sources') is not null as has_sources,
+      to_regclass('public.asset_upload_reference_rollout') is not null as has_rollout,
+      to_regprocedure('public.asset_upload_reference_ledger_ready()') is not null
+        as has_readiness,
+      to_regprocedure('public.asset_upload_has_live_reference(text)') is not null
+        as has_live_reference,
+      to_regprocedure('public.asset_upload_prepare_for_deletion(text)') is not null
+        as has_prepare_for_deletion,
+      to_regprocedure('public.asset_upload_has_unregistered_catalog_reference(text)') is not null
+        as has_catalog_reference,
+      exists (
+        select 1
+        from information_schema.columns
+        where table_schema = 'public'
+          and table_name = 'asset_upload_object_purge_queue'
+          and column_name = 'upload_id'
+          and data_type = 'text'
+      ) as has_queue_upload_id
+  `);
+  const guard = schema.rows[0];
+
+  if (
+    !guard?.has_references
+    || !guard.has_sources
+    || !guard.has_rollout
+    || !guard.has_readiness
+    || !guard.has_live_reference
+    || !guard.has_prepare_for_deletion
+    || !guard.has_catalog_reference
+    || !guard.has_queue_upload_id
+  ) {
+    return false;
+  }
+
+  const readiness = await queryable.query(`
+    select
+      public.asset_upload_reference_ledger_ready() as infrastructure_ready,
+      exists (
+        select 1
+        from public.asset_upload_reference_rollout as rollout
+        where rollout.singleton
+          and rollout.backfill_completed_at is not null
+          and rollout.holds_released_at is not null
+          and not exists (
+            select 1
+            from public.asset_upload_references as reference
+            where reference.reference_kind = 'migration_hold'
+          )
+      ) as rollout_complete
+  `);
+  return readiness.rows[0]?.infrastructure_ready === true
+    && readiness.rows[0]?.rollout_complete === true;
+}
+
 const pool = createPool();
 const client = await pool.connect();
 let advisoryLockHeld = false;
@@ -123,6 +181,23 @@ try {
       );
     }
 
+    // This preflight is database-only. It must pass before Bucket configuration
+    // is parsed, an S3 client is created, or a potentially billable request is
+    // attempted.
+    if (!(await referenceGuardsReady(client))) {
+      throw new Error(
+        'Migration 81 reference reconciliation is incomplete; no Bucket client was created and no paid copy was attempted.',
+      );
+    }
+
+    const lockResult = await client.query(`
+      select pg_try_advisory_lock(hashtext('aim4price_asset_upload_bucket_migration')) as acquired
+    `);
+    advisoryLockHeld = Boolean(lockResult.rows[0]?.acquired);
+    if (!advisoryLockHeld) {
+      throw new Error('Another asset-upload Bucket migration is already running.');
+    }
+
     const config = readBucketConfig();
     console.log(JSON.stringify({
       approvedBucket: config.bucket,
@@ -138,20 +213,17 @@ try {
         secretAccessKey: config.secretAccessKey,
       },
     });
-    const lockResult = await client.query(`
-      select pg_try_advisory_lock(hashtext('aim4price_asset_upload_bucket_migration')) as acquired
-    `);
-    advisoryLockHeld = Boolean(lockResult.rows[0]?.acquired);
-    if (!advisoryLockHeld) {
-      throw new Error('Another asset-upload Bucket migration is already running.');
-    }
-
     let copied = 0;
     for (let item = 0; item < limit; item += 1) {
       let transactionOpen = false;
       try {
         await client.query('begin');
         transactionOpen = true;
+        if (!(await referenceGuardsReady(client))) {
+          throw new Error(
+            'Migration 81 reference reconciliation became incomplete before copy; no Bucket request was made for this row.',
+          );
+        }
         const claimed = await client.query(
           `
             with candidate as (
