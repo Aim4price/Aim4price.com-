@@ -5,7 +5,9 @@ import test from 'node:test';
 const [
   page,
   client,
+  comingSoon,
   styles,
+  headerStyles,
   collectionRoute,
   itemRoute,
   downloadRoute,
@@ -18,7 +20,9 @@ const [
 ] = await Promise.all([
   readFile(new URL('../app/documents/page.tsx', import.meta.url), 'utf8'),
   readFile(new URL('../app/documents/documents-client.tsx', import.meta.url), 'utf8'),
+  readFile(new URL('../app/documents/documents-coming-soon.tsx', import.meta.url), 'utf8'),
   readFile(new URL('../app/documents/page.module.css', import.meta.url), 'utf8'),
+  readFile(new URL('../components/AppHeader.module.css', import.meta.url), 'utf8'),
   readFile(new URL('../app/api/documents/route.ts', import.meta.url), 'utf8'),
   readFile(new URL('../app/api/documents/[documentId]/route.ts', import.meta.url), 'utf8'),
   readFile(new URL('../app/api/documents/[documentId]/download/route.ts', import.meta.url), 'utf8'),
@@ -92,24 +96,42 @@ test('Recycle Bin keeps recoverable documents for 90 days and purges expired upl
   assert.match(accountDeletion, /'account_documents'/);
 });
 
-test('owner navigation exposes Documents across desktop, mobile and footer surfaces', () => {
+test('Documents appears only in the owner account dropdown', () => {
+  const ownerNavigation = header.slice(
+    header.indexOf('const OWNER_NAV_ITEMS'),
+    header.indexOf('const ACCOUNT_MENU_ITEMS'),
+  );
+  const accountMenus = header.slice(
+    header.indexOf('const ACCOUNT_MENU_ITEMS'),
+    header.indexOf('const ACCOUNT_MENU_COLLATOR'),
+  );
+
   assert.match(header, /\| 'documents'/);
-  assert.match(header, /key: 'documents', href: '\/documents', label: 'Documents'/);
   assert.match(header, /case 'documents':/);
   assert.match(header, /href: '\/documents', label: 'Documents', accountTypes: \['owner'\]/);
-  assert.match(footer, /href: '\/documents', label: 'Documents'/);
+  assert.doesNotMatch(ownerNavigation, /href: '\/documents'/);
+  assert.doesNotMatch(accountMenus, /href: '\/', label: 'Home'/);
+  assert.doesNotMatch(footer, /href: '\/documents', label: 'Documents'/);
+  assert.match(header, /navItems\.filter\(\(item\) => item\.href !== '\/'\)/);
 });
 
-test('visual treatment follows the Asset Register card language and remains responsive', () => {
-  assert.match(client, /<AppHeader active="documents"/);
-  assert.match(client, /Document Vault/);
-  assert.match(client, /summaryGrid/);
-  assert.match(client, /categoryGroup/);
-  assert.match(client, /documentCard/);
+test('the account dropdown scrolls when its actions exceed the viewport', () => {
+  assert.match(headerStyles, /\.accountPopover\s*\{[\s\S]*?max-height:\s*min\(36rem, calc\(100dvh - 7rem\)\)/);
+  assert.match(headerStyles, /overflow-y:\s*auto/);
+  assert.match(headerStyles, /overscroll-behavior:\s*contain/);
+});
+
+test('Documents is an owner-only blurred Coming Soon preview', () => {
+  assert.match(page, /<DocumentsComingSoon/);
+  assert.match(comingSoon, /<AppHeader active="documents"/);
+  assert.match(comingSoon, /Document Vault/);
+  assert.match(comingSoon, /Coming soon/i);
+  assert.match(comingSoon, /comingSoonPreview/);
+  assert.match(comingSoon, /comingSoonCard/);
   assert.match(styles, /\.hero\s*\{/);
   assert.match(styles, /\.summaryGrid\s*\{/);
-  assert.match(styles, /\.categoryGroup\s*\{/);
-  assert.match(styles, /\.documentCard\s*\{/);
+  assert.match(styles, /\.comingSoonPreview\s*\{[\s\S]*?filter:\s*blur\(7px\)/);
+  assert.match(styles, /\.comingSoonCard\s*\{/);
   assert.match(styles, /@media \(max-width: 700px\)/);
   assert.match(styles, /@media \(prefers-reduced-motion: reduce\)/);
 });

@@ -201,10 +201,7 @@ const DEFAULT_NAV_ITEMS: NavItem[] = [
 ];
 
 const OWNER_NAV_ITEMS: NavItem[] = [
-  ...BASE_NAV_ITEMS,
-  { key: 'asset-register', href: '/asset-register', label: 'Asset Register' },
-  { key: 'documents', href: '/documents', label: 'Documents' },
-  { key: 'marketplace', href: '/marketplace', label: 'Marketplace' },
+  ...DEFAULT_NAV_ITEMS,
   { key: 'asset-map', href: '/asset-map', label: 'Asset Map' },
   { key: 'cost', href: '/my-invoices', label: 'Cost Ledger' },
   { key: 'maintenance', href: '/maintenance', label: 'Maintenance' },
@@ -213,7 +210,6 @@ const OWNER_NAV_ITEMS: NavItem[] = [
 ];
 
 const ACCOUNT_MENU_ITEMS: AccountMenuItem[] = [
-  { href: '/', label: 'Home' },
   { href: '/valuation', label: 'Get Estimate' },
   { href: '/account', label: 'Account' },
   { href: '/asset-map', label: 'Asset Map', accountTypes: ['owner'] },
@@ -234,13 +230,11 @@ const ACCOUNT_MENU_ITEMS: AccountMenuItem[] = [
 
 const ACCOUNTANT_ACCOUNT_MENU_ITEMS: AccountMenuItem[] = [
   { href: '/account', label: 'Account' },
-  { href: '/', label: 'Home' },
   { href: '/valuation', label: 'Get Estimate' },
   { href: '/leads', label: 'My Clients' },
 ];
 
 const LICENSING_ACCOUNT_MENU_ITEMS: AccountMenuItem[] = [
-  { href: '/', label: 'Home' },
   { href: '/leads', label: 'My Leads' },
   { href: '/asset-discovery', label: 'Discovery' },
   { href: '/account', label: 'Account' },
@@ -2471,7 +2465,7 @@ export default function AppHeader({
                         {isAccountantWorkspace ? (
                           <>
                             {usesCompactHeader
-                              ? sortAccountMenuItems(navItems).map((item) => {
+                              ? sortAccountMenuItems(navItems.filter((item) => item.href !== '/')).map((item) => {
                                   const isActive = activeNavKey === item.key;
                                   return (
                                     <Link
