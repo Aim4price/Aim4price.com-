@@ -123,6 +123,10 @@ export async function POST(request: NextRequest) {
       byteSize: number;
     }> = [];
 
+    // Validate the complete request before storing the first file. Otherwise a
+    // later invalid file would make the request fail after earlier files had
+    // already consumed PostgreSQL or Bucket storage without returning their
+    // upload ids to the client.
     for (const file of files) {
       const contentType = String(file.type ?? '').trim().toLowerCase();
 
@@ -157,7 +161,9 @@ export async function POST(request: NextRequest) {
           { status: 400 },
         );
       }
+    }
 
+    for (const file of files) {
       const saved = await createAssetRegisterUpload({
         userId: ownerUserId,
         file,

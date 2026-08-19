@@ -29,6 +29,20 @@ test('new uploads write only to the canonical data bytea column', () => {
   assert.match(insertSource, /if \(!usedColumns\.has\('data'\)\)/);
 });
 
+test('Bucket-only mode branches before the legacy bytea table is prepared', () => {
+  const createStart = uploadSource.indexOf('export async function createAssetRegisterUpload');
+  const createEnd = uploadSource.indexOf('export function buildAssetRegisterUploadUrl');
+  const createSource = uploadSource.slice(createStart, createEnd);
+  const bucketBranch = createSource.indexOf("storageMode === 'bucket-only-new'");
+  const legacyTable = createSource.indexOf('await ensureAssetRegisterUploadsTable()');
+  const legacyInsert = createSource.indexOf('await insertAssetRegisterUploadRow({');
+
+  assert.ok(bucketBranch >= 0);
+  assert.ok(legacyTable > bucketBranch);
+  assert.ok(legacyInsert > legacyTable);
+  assert.match(createSource, /return createBucketOnlyAssetRegisterUpload\(/);
+});
+
 test('migration preserves legacy-only data and refuses mismatches', () => {
   assert.match(migration, /set data = file_bytes/i);
   assert.match(migration, /where data is null\s+and file_bytes is not null/i);

@@ -169,6 +169,16 @@ AIM4PRICE_UPLOAD_STORAGE_MODE=postgres
 
 # Keep unset. Exact acknowledgement required before any Bucket write is allowed.
 AIM4PRICE_ALLOW_BUCKET_WRITES=
+
+# Required only for the separately approved new-upload Bucket-only mode.
+AIM4PRICE_ALLOW_BUCKET_ONLY=
+
+# Private Railway Bucket references. Keep these server-side.
+AIM4PRICE_BUCKET_NAME=
+AIM4PRICE_BUCKET_ENDPOINT=
+AIM4PRICE_BUCKET_REGION=auto
+AIM4PRICE_BUCKET_ACCESS_KEY_ID=
+AIM4PRICE_BUCKET_SECRET_ACCESS_KEY=
 ```
 
 Never commit real secrets or production database credentials.
@@ -231,8 +241,9 @@ No custom Dockerfile is required by the current project.
 
 The guarded upload-storage rollout is documented in
 [`docs/railway-bucket-rollout.md`](docs/railway-bucket-rollout.md). The
-foundation code defaults to PostgreSQL and does not create a Railway Bucket or
-contact object storage unless an explicit non-default mode is configured.
+code defaults to PostgreSQL. Migration 81 adds a separate metadata-only catalog
+for new Bucket uploads without moving existing files; no object storage is
+contacted unless all documented non-default activation gates are configured.
 
 ## Data and workflow guardrails
 

@@ -42,7 +42,21 @@ export async function GET(_request: Request, context: RouteContext) {
         "X-Content-Type-Options": "nosniff",
       },
     });
-  } catch {
+  } catch (error) {
+    if (
+      error instanceof Error
+      && error.message === "Discovery photo temporarily unavailable."
+    ) {
+      return new NextResponse("Photo temporarily unavailable", {
+        status: 503,
+        headers: {
+          "Cache-Control": "private, no-store",
+          "Retry-After": "60",
+          "X-Content-Type-Options": "nosniff",
+        },
+      });
+    }
+
     return new NextResponse("Not found", { status: 404, headers: { "Cache-Control": "private, no-store" } });
   }
 }

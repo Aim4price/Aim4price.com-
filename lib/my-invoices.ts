@@ -2,7 +2,7 @@ import type { PoolClient } from 'pg';
 import { getDb } from './db';
 import { getAssetRegisterItemById, listAssetRegisterItems, type AssetRegisterItem } from './asset-register-db';
 import { listAssetRegisters } from './asset-registers';
-import { buildAssetRegisterUploadUrl, getLegacyAssetRegisterUploadResponse } from './asset-register-uploads';
+import { buildAssetRegisterUploadUrl, resolveAssetRegisterUploadBytes } from './asset-register-uploads';
 
 export type MyInvoiceSource = 'manual' | 'automatic' | 'fuel_slip';
 export type MyInvoiceUsageMetric = 'none' | 'hours' | 'km' | 'percentage';
@@ -1398,8 +1398,12 @@ export async function getInvoiceDocumentUpload(input: {
   const document = mapDocumentRow(result.rows[0]);
   if (!document) return null;
 
-  const upload = await getLegacyAssetRegisterUploadResponse(document.uploadId || document.uploadUrl);
-  if (!upload) return null;
+  const uploadResult = await resolveAssetRegisterUploadBytes(document.uploadId || document.uploadUrl);
+  if (uploadResult.status === 'not-found') return null;
+  if (uploadResult.status === 'unavailable') {
+    throw new Error('INVOICE_DOCUMENT_UPLOAD_UNAVAILABLE');
+  }
+  const upload = uploadResult.upload;
 
   return {
     document,

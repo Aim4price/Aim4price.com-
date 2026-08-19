@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import {
   createAssetRegisterSignedGetUrl,
   getLegacyAssetRegisterUploadResponse,
+  isBucketOnlyAssetRegisterUploadId,
+  resolveBucketOnlyAssetRegisterDownload,
 } from '../../../../../lib/asset-register-uploads';
 
 export const runtime = 'nodejs';
@@ -17,6 +19,31 @@ export async function GET(_request: Request, context: RouteContext) {
   const uploadId = String(context.params?.uploadId ?? '').trim();
 
   if (!uploadId) {
+    return new NextResponse('Not found', { status: 404 });
+  }
+
+  if (isBucketOnlyAssetRegisterUploadId(uploadId)) {
+    const bucketOnlyDownload = await resolveBucketOnlyAssetRegisterDownload(uploadId);
+
+    if (bucketOnlyDownload.status === 'ready') {
+      return NextResponse.redirect(bucketOnlyDownload.url, {
+        status: 302,
+        headers: {
+          'Cache-Control': 'private, no-store',
+        },
+      });
+    }
+
+    if (bucketOnlyDownload.status === 'unavailable') {
+      return new NextResponse('Upload temporarily unavailable', {
+        status: 503,
+        headers: {
+          'Cache-Control': 'private, no-store',
+          'Retry-After': '60',
+        },
+      });
+    }
+
     return new NextResponse('Not found', { status: 404 });
   }
 

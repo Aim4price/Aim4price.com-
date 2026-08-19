@@ -206,6 +206,14 @@ export default async function AdminDashboardPage() {
               <span>Central uploads added in the last 30 days</span>
               <strong>{dashboard.storage.customerUsage.addedLast30DaysLabel}</strong>
             </div>
+            <div className={styles.storageRow}>
+              <span>Bucket uploads still processing</span>
+              <strong>{dashboard.storage.customerUsage.pendingBucketUploadsLabel}</strong>
+            </div>
+            <div className={styles.storageRow}>
+              <span>Bucket uploads needing attention</span>
+              <strong>{dashboard.storage.customerUsage.failedBucketUploadsLabel}</strong>
+            </div>
           </div>
         </section>
       </section>

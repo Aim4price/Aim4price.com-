@@ -32,7 +32,7 @@ test('PostgreSQL is the fail-safe default and bucket access requires an explicit
   assert.match(objectStorageSource, /AIM4PRICE_ALLOW_BUCKET_WRITES === 'YES_I_ACCEPT_COST'/);
   assert.doesNotMatch(objectStorageSource, /^import .*@aws-sdk/m);
   assert.match(objectStorageSource, /import\('@aws-sdk\/client-s3'\)/);
-  assert.match(objectStorageSource, /if \(mode === 'mirror' \|\| mode === 'bucket-preferred'\)/);
+  assert.match(objectStorageSource, /mode === 'bucket-only-new'/);
   assert.match(uploadSource, /if \(storageMode !== 'postgres'\)/);
   assert.match(uploadSource, /assertObjectStorageSchemaReady\(\)/);
   assert.match(uploadSource, /storage_state = 'copying'/);
@@ -54,7 +54,7 @@ test('object keys are opaque and do not contain account data or file names', () 
 
 test('a mirror is marked verified only after exact read-back hashing', () => {
   const putPosition = objectStorageSource.indexOf('new sdk.PutObjectCommand');
-  const readBackPosition = objectStorageSource.indexOf('downloadObjectBytes(objectKey)');
+  const readBackPosition = objectStorageSource.indexOf('downloadObjectBytes(input.objectKey)');
   const hashCheckPosition = objectStorageSource.indexOf('downloadedSha256 !== contentSha256');
   const verifiedReturnPosition = objectStorageSource.indexOf('verifiedAt: new Date()');
 

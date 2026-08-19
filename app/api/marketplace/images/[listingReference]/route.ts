@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getLegacyAssetRegisterUploadResponse } from '../../../../../lib/asset-register-uploads';
+import { resolveAssetRegisterUploadBytes } from '../../../../../lib/asset-register-uploads';
 import {
   findMarketplaceShareListing,
   getListingPrimaryImage,
@@ -99,7 +99,20 @@ async function internalUploadImageResponse(imageUrl: string): Promise<NextRespon
     return null;
   }
 
-  const upload = await getLegacyAssetRegisterUploadResponse(imageUrl);
+  const uploadResult = await resolveAssetRegisterUploadBytes(imageUrl);
+
+  if (uploadResult.status === 'unavailable') {
+    return new NextResponse('Image temporarily unavailable', {
+      status: 503,
+      headers: {
+        'Cache-Control': 'private, no-store',
+        'Retry-After': '60',
+        'X-Content-Type-Options': 'nosniff',
+      },
+    });
+  }
+
+  const upload = uploadResult.status === 'ready' ? uploadResult.upload : null;
 
   if (!upload || !isSupportedImageType(upload.mimeType)) {
     return null;
