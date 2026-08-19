@@ -151,6 +151,7 @@ test('desktop and mobile maps ask for an area, cluster markers and refresh on ma
   assert.match(client, /Message Aim4price/);
   assert.match(client, /setQuoteLeadStep\('message'\)/);
   assert.match(client, /quotePartnerWebsiteDisplay/);
+  assert.match(client, /useCompactQuotePopup \? 280 : 380/);
   assert.match(css, /\.marker-cluster-small/);
   assert.match(css, /@media \(max-width: 760px\)/);
   assert.match(css, /assetQuoteMapEmptyOverlay/);

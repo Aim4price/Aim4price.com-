@@ -8288,6 +8288,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
         }
 
         const bounds = L.latLngBounds([]);
+        const useCompactQuotePopup = window.innerWidth <= 620;
 
         quotePartnersWithCoordinates.forEach((partner) => {
           const lat = Number(partner.latitude);
@@ -8303,8 +8304,8 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
           const marker = L.marker([lat, lng], { icon, title: quotePartnerName(partner) }).addTo(quoteMarkerLayerRef.current);
           marker.bindPopup(buildQuotePartnerPopupHtml(partner, isActive), {
             className: 'assetQuotePartnerPopup',
-            minWidth: 380,
-            maxWidth: 500,
+            minWidth: useCompactQuotePopup ? 280 : 380,
+            maxWidth: useCompactQuotePopup ? 330 : 500,
             autoPan: false,
           });
           bounds.extend([lat, lng]);
