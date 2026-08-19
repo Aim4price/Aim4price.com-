@@ -11,6 +11,11 @@
 
 begin;
 
+-- Fail safely instead of queueing behind active uploads. SET LOCAL resets
+-- automatically whether this transaction commits or rolls back.
+set local lock_timeout = '5s';
+set local statement_timeout = '5min';
+
 do $migration$
 declare
   unsafe_row_count bigint;
@@ -27,8 +32,18 @@ begin
     where table_schema = 'public'
       and table_name = 'asset_register_uploads'
       and column_name = 'file_bytes'
-      and udt_name = 'bytea'
   ) then
+    if not exists (
+      select 1
+      from information_schema.columns
+      where table_schema = 'public'
+        and table_name = 'asset_register_uploads'
+        and column_name = 'file_bytes'
+        and udt_name = 'bytea'
+    ) then
+      raise exception 'Refusing to alter file_bytes because it is not a bytea column';
+    end if;
+
     update public.asset_register_uploads
     set data = file_bytes
     where data is null
@@ -73,4 +88,3 @@ comment on column public.asset_register_uploads.data is
   'Canonical raw upload payload. Legacy bytea columns must never receive duplicate writes.';
 
 commit;
-
