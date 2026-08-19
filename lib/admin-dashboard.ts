@@ -34,6 +34,18 @@ export type AdminDashboardStats = {
     leftBytes: number | null;
     leftLabel: string;
     sources: Array<{ label: string; bytes: number; value: string }>;
+    customerUsage: {
+      accountCount: number;
+      accountCountLabel: string;
+      averageBytes: number;
+      averageLabel: string;
+      medianBytes: number;
+      medianLabel: string;
+      p90Bytes: number;
+      p90Label: string;
+      addedLast30DaysBytes: number;
+      addedLast30DaysLabel: string;
+    };
   };
 };
 
@@ -358,9 +370,78 @@ async function sumOctetLengthIfPresent(tableName: string, columnName: string): P
 }
 
 async function getStorageStats(): Promise<AdminDashboardStats['storage']> {
-  const assetRegisterUploadBytes = (await columnExists('asset_register_uploads', 'byte_size'))
-    ? await sumColumnIfPresent('asset_register_uploads', 'byte_size')
-    : await sumOctetLengthIfPresent('asset_register_uploads', 'data');
+  const assetRegisterUploadBytes = await sumOctetLengthIfPresent('asset_register_uploads', 'data');
+  const hasUploadStorageState = await columnExists('asset_register_uploads', 'storage_state');
+  const hasUploadByteSize = await columnExists('asset_register_uploads', 'byte_size');
+  const hasUploadCreatedAt = await columnExists('asset_register_uploads', 'created_at');
+  const hasUploadUserId = await columnExists('asset_register_uploads', 'user_id');
+  const mirroredBucketBytes = hasUploadStorageState && hasUploadByteSize
+    ? asNumber((await getDb().query<{ total: CountValue }>(`
+        select coalesce(sum(byte_size), 0)::bigint as total
+        from public.asset_register_uploads
+        where storage_state = 'dual_verified'
+      `)).rows[0]?.total)
+    : 0;
+
+  let customerUsage = {
+    accountCount: 0,
+    accountCountLabel: '0',
+    averageBytes: 0,
+    averageLabel: '0 B',
+    medianBytes: 0,
+    medianLabel: '0 B',
+    p90Bytes: 0,
+    p90Label: '0 B',
+    addedLast30DaysBytes: 0,
+    addedLast30DaysLabel: '0 B',
+  };
+
+  if (hasUploadByteSize && hasUploadCreatedAt && hasUploadUserId) {
+    const usageResult = await getDb().query<{
+      account_count: CountValue;
+      average_bytes: CountValue;
+      median_bytes: CountValue;
+      p90_bytes: CountValue;
+      added_last_30_days_bytes: CountValue;
+    }>(`
+      with per_account as (
+        select user_id, coalesce(sum(byte_size), 0)::bigint as total_bytes
+        from public.asset_register_uploads
+        where user_id is not null
+        group by user_id
+      )
+      select
+        count(*)::bigint as account_count,
+        coalesce(avg(total_bytes), 0)::bigint as average_bytes,
+        coalesce(percentile_cont(0.5) within group (order by total_bytes), 0)::bigint as median_bytes,
+        coalesce(percentile_cont(0.9) within group (order by total_bytes), 0)::bigint as p90_bytes,
+        (
+          select coalesce(sum(byte_size), 0)::bigint
+          from public.asset_register_uploads
+          where created_at >= now() - interval '30 days'
+        ) as added_last_30_days_bytes
+      from per_account
+    `);
+    const usage = usageResult.rows[0];
+    const accountCount = asNumber(usage?.account_count);
+    const averageBytes = asNumber(usage?.average_bytes);
+    const medianBytes = asNumber(usage?.median_bytes);
+    const p90Bytes = asNumber(usage?.p90_bytes);
+    const addedLast30DaysBytes = asNumber(usage?.added_last_30_days_bytes);
+
+    customerUsage = {
+      accountCount,
+      accountCountLabel: formatCount(accountCount),
+      averageBytes,
+      averageLabel: formatBytes(averageBytes),
+      medianBytes,
+      medianLabel: formatBytes(medianBytes),
+      p90Bytes,
+      p90Label: formatBytes(p90Bytes),
+      addedLast30DaysBytes,
+      addedLast30DaysLabel: formatBytes(addedLast30DaysBytes),
+    };
+  }
 
   const userMessageBytes =
     (await sumColumnIfPresent('account_user_messages', 'image_size_bytes')) +
@@ -372,12 +453,22 @@ async function getStorageStats(): Promise<AdminDashboardStats['storage']> {
     ? await sumColumnIfPresent('asset_partner_notes', 'attachment_byte_size')
     : await sumOctetLengthIfPresent('asset_partner_notes', 'attachment_data');
 
+  const lateFuelEvidenceBytes = await sumOctetLengthIfPresent('fuel_late_entry_evidence', 'data');
+  const inlineBrandingBytes =
+    (await sumOctetLengthIfPresent('account_profiles', 'logo_url'))
+    + (await sumOctetLengthIfPresent('ad_brand_kits', 'logo_url'));
+
   const sources = [
     {
-      label: 'Asset Register uploads',
+      label: 'Asset uploads in PostgreSQL',
       bytes: assetRegisterUploadBytes,
       value: formatBytes(assetRegisterUploadBytes),
     },
+    ...(hasUploadStorageState ? [{
+      label: 'Verified Railway Bucket copies',
+      bytes: mirroredBucketBytes,
+      value: formatBytes(mirroredBucketBytes),
+    }] : []),
     {
       label: 'User message attachments',
       bytes: userMessageBytes,
@@ -387,6 +478,16 @@ async function getStorageStats(): Promise<AdminDashboardStats['storage']> {
       label: 'Partner note PDFs',
       bytes: partnerNoteAttachmentBytes,
       value: formatBytes(partnerNoteAttachmentBytes),
+    },
+    {
+      label: 'Late fuel-entry evidence',
+      bytes: lateFuelEvidenceBytes,
+      value: formatBytes(lateFuelEvidenceBytes),
+    },
+    {
+      label: 'Inline profile and Brand Kit logos',
+      bytes: inlineBrandingBytes,
+      value: formatBytes(inlineBrandingBytes),
     },
   ];
   const usedBytes = sources.reduce((sum, source) => sum + source.bytes, 0);
@@ -401,6 +502,7 @@ async function getStorageStats(): Promise<AdminDashboardStats['storage']> {
     leftBytes,
     leftLabel: leftBytes === null ? 'Limit not set' : formatBytes(leftBytes),
     sources,
+    customerUsage,
   };
 }
 
@@ -517,7 +619,8 @@ export async function getAdminDashboardStats(): Promise<AdminDashboardStats> {
     },
     {
       id: 'storage',
-      title: 'Storage used / estimated storage left',
+      title: 'Known file payload / configured allowance',
+      description: 'Logical uploaded bytes only—not PostgreSQL table overhead, WAL, backups or Railway volume headroom.',
       values: [
         { label: 'Used', value: storage.usedLabel },
         { label: 'Limit', value: storage.limitLabel },

@@ -78,7 +78,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const upload = await createAssetRegisterUpload({ userId: resolved.context.ownerUserId, file });
+    const upload = await createAssetRegisterUpload({ userId: resolved.context.ownerUserId, file, category: 'fuel-slip' });
     const buffer = Buffer.from(await file.arrayBuffer());
     const extraction = await extractFuelSlipFromUpload({
       data: buffer,

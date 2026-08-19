@@ -43,7 +43,7 @@ export async function GET(_request: Request, context: RouteContext) {
       'Content-Type': legacyUpload.mimeType || 'application/octet-stream',
       'Content-Length': String(legacyUpload.sizeBytes),
       'Cache-Control': 'public, max-age=31536000, immutable',
-      'Content-Disposition': `inline; filename="${encodeURIComponent(legacyUpload.fileName)}"`,
+      'Content-Disposition': `${legacyUpload.disposition}; filename="${encodeURIComponent(legacyUpload.fileName)}"`,
       'X-Content-Type-Options': 'nosniff',
     },
   });

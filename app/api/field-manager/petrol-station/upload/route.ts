@@ -58,6 +58,7 @@ export async function POST(request: NextRequest) {
     const upload = await createAssetRegisterUpload({
       userId: access.session.ownerUserId,
       file,
+      category: 'fuel-slip',
     });
 
     return NextResponse.json({

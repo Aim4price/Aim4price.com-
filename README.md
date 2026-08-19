@@ -163,6 +163,12 @@ FUEL_SCAN_COOKIE_SECRET=
 
 # Optional value used by the admin storage dashboard.
 AIM4PRICE_STORAGE_LIMIT_BYTES=
+
+# Safe default. Do not change until the private Bucket rollout is approved.
+AIM4PRICE_UPLOAD_STORAGE_MODE=postgres
+
+# Keep unset. Exact acknowledgement required before any Bucket write is allowed.
+AIM4PRICE_ALLOW_BUCKET_WRITES=
 ```
 
 Never commit real secrets or production database credentials.
@@ -222,6 +228,11 @@ Available package commands:
 7. Test sign-in, account access, asset uploads, QR links, password reset and role-specific workspaces after deployment.
 
 No custom Dockerfile is required by the current project.
+
+The guarded upload-storage rollout is documented in
+[`docs/railway-bucket-rollout.md`](docs/railway-bucket-rollout.md). The
+foundation code defaults to PostgreSQL and does not create a Railway Bucket or
+contact object storage unless an explicit non-default mode is configured.
 
 ## Data and workflow guardrails
 

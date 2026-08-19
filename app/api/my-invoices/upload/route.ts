@@ -74,7 +74,7 @@ export async function POST(request: Request) {
 
   try {
     await assertWorkspaceAssetAccess(context, assetId);
-    const upload = await createAssetRegisterUpload({ userId: context.ownerUserId, file });
+    const upload = await createAssetRegisterUpload({ userId: context.ownerUserId, file, category: 'invoice' });
     const document = await createInvoiceDocumentRecord({
       userId: context.ownerUserId,
       assetId,
