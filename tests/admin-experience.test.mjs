@@ -8,6 +8,9 @@ const lifecycle = read("app/admin/lifecycle-calculator/lifecycle-calculator-clie
 const lifecycleStyles = read("app/admin/lifecycle-calculator/page.module.css");
 const users = read("app/admin/admin-client.tsx");
 const userStyles = read("app/admin/page.module.css");
+const adminUsers = read("lib/admin-users.ts");
+const adminStorageUsage = read("lib/admin-storage-usage.ts");
+const adminDashboard = read("lib/admin-dashboard.ts");
 const dashboard = read("app/admin/dashboard/page.tsx");
 const dashboardStyles = read("app/admin/dashboard/page.module.css");
 
@@ -55,9 +58,11 @@ test("the users page separates navigation, account health and filtering", () => 
 });
 
 test("selecting an admin account opens an accessible options modal", () => {
-  assert.match(users, /onClick=\{\(\) => setAccountActionModal\(user\)\}/);
+  assert.match(users, /className=\{styles\.rowAccountButton\}/);
   assert.match(users, /role="dialog"/);
   assert.match(users, /aria-labelledby="admin-account-action-modal-title"/);
+  assert.match(users, /keepFocusInsideModal/);
+  assert.match(users, /accountModalTriggerRef\.current\?\.focus\(\)/);
   assert.match(users, /Open account/);
   assert.match(users, /Send password reset/);
   assert.match(users, /Manage asset names/);
@@ -65,8 +70,44 @@ test("selecting an admin account opens an accessible options modal", () => {
   assert.match(users, /Delete account/);
   assert.doesNotMatch(users, /<th>Actions<\/th>/);
   assert.match(userStyles, /\.accountActionGrid/);
-  assert.match(userStyles, /\.accountRow:focus-visible/);
-  assert.match(userStyles, /min-width: 1710px/);
+  assert.match(userStyles, /\.accountRow:focus-within/);
+  assert.match(userStyles, /min-width: 900px/);
+});
+
+test("admin users and pricing metrics share one logical storage ledger", () => {
+  assert.match(adminUsers, /with upload_storage as/);
+  assert.match(adminUsers, /buildLogicalClientStorageSelect/);
+  assert.match(adminDashboard, /buildLogicalClientStorageSelect/);
+  assert.match(adminDashboard, /with all_uploads as/);
+  assert.doesNotMatch(adminDashboard, /1024 \* 1024/);
+  assert.doesNotMatch(
+    adminDashboard,
+    /sumOctetLengthIfPresent\('account_profiles', 'extra_photo_urls'\)/,
+  );
+  assert.match(adminDashboard, /sumJsonbTextArrayOctetLengthIfPresent/);
+  assert.match(adminStorageUsage, /from public\.asset_register_uploads/);
+  assert.match(adminStorageUsage, /from public\.asset_register_bucket_uploads/);
+  assert.match(adminStorageUsage, /storage_state = 'ready'/);
+  assert.match(adminStorageUsage, /tableName: "account_user_messages"/);
+  assert.match(adminStorageUsage, /tableName: "asset_partner_notes"/);
+  assert.match(adminStorageUsage, /tableName: "fuel_late_entry_evidence"/);
+  assert.match(adminStorageUsage, /logo_url like 'data:image\/%;base64,%'/);
+  assert.match(adminStorageUsage, /extra_photo_urls/);
+  assert.match(adminStorageUsage, /jsonb_array_elements_text/);
+  assert.match(adminStorageUsage, /null::timestamptz as created_at/);
+  assert.match(adminUsers, /left join storage_by_user storage on storage\.user_id = u\.id/);
+  assert.match(users, /<th>Storage<\/th>/);
+  assert.match(users, /accountActionModal\.storageGigabytesLabel/);
+  assert.match(users, /accountActionModal\.bucketStorageLabel/);
+  assert.match(users, /accountActionModal\.postgresStorageLabel/);
+  assert.match(users, /Most storage/);
+  assert.match(users, /1000 \*\* 3/);
+  assert.match(adminStorageUsage, /1000 \*\* 3/);
+  assert.match(users, /Tracked client storage/);
+  assert.match(userStyles, /\.accountStorageOverview/);
+  assert.match(dashboard, /Average tracked storage \/ account/);
+  assert.match(dashboard, /Tracked storage added in the last 30 days/);
+  assert.doesNotMatch(dashboard, /central uploads/i);
 });
 
 test("the dashboard prioritises headline metrics and collapses optional detail", () => {

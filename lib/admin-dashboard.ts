@@ -1,5 +1,9 @@
 import { AIM4PRICE_ADMIN_EMAIL } from './account-constants';
 import { ensureAdminUsageTrackingSchema, type AdminUsageEventType } from './admin-usage-events';
+import {
+  buildLogicalClientStorageSelect,
+  formatAdminStorageBytes as formatBytes,
+} from './admin-storage-usage';
 import { getDb } from './db';
 
 type CountValue = string | number | null | undefined;
@@ -83,24 +87,6 @@ function cleanSqlIdentifier(value: string): string {
 
 function formatCount(value: number): string {
   return Math.max(0, Math.round(value)).toLocaleString('en-ZA');
-}
-
-function formatBytes(bytes: number): string {
-  const safeBytes = Math.max(0, Math.round(bytes));
-
-  if (safeBytes >= 1024 * 1024 * 1024) {
-    return `${(safeBytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
-  }
-
-  if (safeBytes >= 1024 * 1024) {
-    return `${(safeBytes / (1024 * 1024)).toFixed(2)} MB`;
-  }
-
-  if (safeBytes >= 1024) {
-    return `${(safeBytes / 1024).toFixed(2)} KB`;
-  }
-
-  return `${safeBytes} B`;
 }
 
 function formatAverageMinutes(minutes: number): string {
@@ -373,6 +359,31 @@ async function sumOctetLengthIfPresent(tableName: string, columnName: string): P
   return asNumber(result.rows[0]?.total);
 }
 
+async function sumJsonbTextArrayOctetLengthIfPresent(
+  tableName: string,
+  columnName: string,
+): Promise<number> {
+  cleanSqlIdentifier(tableName);
+  cleanSqlIdentifier(columnName);
+
+  if (!(await tableExists(`public.${tableName}`)) || !(await columnExists(tableName, columnName))) {
+    return 0;
+  }
+
+  const result = await getDb().query<{ total: CountValue }>(`
+    select coalesce(sum(octet_length(item.value)), 0)::bigint as total
+    from public.${tableName} source
+    cross join lateral jsonb_array_elements_text(
+      case
+        when jsonb_typeof(source.${columnName}) = 'array' then source.${columnName}
+        else '[]'::jsonb
+      end
+    ) item(value)
+  `);
+
+  return asNumber(result.rows[0]?.total);
+}
+
 async function getStorageStats(): Promise<AdminDashboardStats['storage']> {
   const assetRegisterUploadBytes = await sumOctetLengthIfPresent('asset_register_uploads', 'data');
   const hasBucketUploadCatalog = await tableExists('public.asset_register_bucket_uploads');
@@ -436,14 +447,7 @@ async function getStorageStats(): Promise<AdminDashboardStats['storage']> {
   };
 
   if (hasUploadByteSize && hasUploadCreatedAt && hasUploadUserId) {
-    const bucketUsageUnion = hasBucketUploadCatalog
-      ? `
-          union all
-          select user_id, byte_size, created_at
-          from public.asset_register_bucket_uploads
-          where storage_state = 'ready'
-        `
-      : '';
+    const logicalStorageSelect = await buildLogicalClientStorageSelect();
     const usageResult = await getDb().query<{
       account_count: CountValue;
       average_bytes: CountValue;
@@ -452,10 +456,7 @@ async function getStorageStats(): Promise<AdminDashboardStats['storage']> {
       added_last_30_days_bytes: CountValue;
     }>(`
       with all_uploads as (
-        select user_id, byte_size::bigint as byte_size, created_at
-        from public.asset_register_uploads
-        where user_id is not null
-        ${bucketUsageUnion}
+        ${logicalStorageSelect}
       ),
       per_account as (
         select user_id, coalesce(sum(byte_size), 0)::bigint as total_bytes
@@ -512,6 +513,7 @@ async function getStorageStats(): Promise<AdminDashboardStats['storage']> {
   const lateFuelEvidenceBytes = await sumOctetLengthIfPresent('fuel_late_entry_evidence', 'data');
   const inlineBrandingBytes =
     (await sumOctetLengthIfPresent('account_profiles', 'logo_url'))
+    + (await sumJsonbTextArrayOctetLengthIfPresent('account_profiles', 'extra_photo_urls'))
     + (await sumOctetLengthIfPresent('ad_brand_kits', 'logo_url'));
 
   const sources = [
@@ -558,7 +560,7 @@ async function getStorageStats(): Promise<AdminDashboardStats['storage']> {
       value: formatBytes(lateFuelEvidenceBytes),
     },
     {
-      label: 'Inline profile and Brand Kit logos',
+      label: 'Inline profile photos and Brand Kit logos',
       bytes: inlineBrandingBytes,
       value: formatBytes(inlineBrandingBytes),
     },

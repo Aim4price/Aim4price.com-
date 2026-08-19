@@ -9,6 +9,11 @@ import {
   type AccountStatus,
 } from "./account-constants";
 import { ensureAccountProfileColumns } from "./account-profile";
+import {
+  buildLogicalClientStorageSelect,
+  formatAdminStorageBytes,
+  formatAdminStorageGigabytes,
+} from "./admin-storage-usage";
 import { getDb } from "./db";
 
 export type AdminUserRow = {
@@ -27,6 +32,14 @@ export type AdminUserRow = {
   passwordStatus: "Set" | "Not set";
   lastActiveAtIso: string | null;
   createdAtIso: string | null;
+  storageBytes: number;
+  storageLabel: string;
+  storageGigabytesLabel: string;
+  storageFileCount: number;
+  postgresStorageBytes: number;
+  postgresStorageLabel: string;
+  bucketStorageBytes: number;
+  bucketStorageLabel: string;
 };
 
 type DbAdminUserRow = {
@@ -45,6 +58,10 @@ type DbAdminUserRow = {
   last_active_at: string | Date | null;
   auth_created_at: string | Date | null;
   profile_created_at: string | Date | null;
+  storage_bytes: string | number | null;
+  storage_file_count: string | number | null;
+  postgres_storage_bytes: string | number | null;
+  bucket_storage_bytes: string | number | null;
 };
 
 type AdminUserIdentity = {
@@ -66,6 +83,11 @@ function toIso(value: string | Date | null | undefined): string | null {
   return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString();
 }
 
+function asSafeNumber(value: string | number | null | undefined): number {
+  const parsed = typeof value === "number" ? value : Number(value ?? 0);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
+}
+
 function mapAdminUserRow(row: DbAdminUserRow): AdminUserRow {
   const accountStatus = isAim4priceAdminEmail(row.email)
     ? "active"
@@ -74,6 +96,10 @@ function mapAdminUserRow(row: DbAdminUserRow): AdminUserRow {
     row.introduced_by_option,
   );
   const introducedByName = cleanIntroducedByName(row.introduced_by_name);
+  const storageBytes = asSafeNumber(row.storage_bytes);
+  const storageFileCount = Math.round(asSafeNumber(row.storage_file_count));
+  const postgresStorageBytes = asSafeNumber(row.postgres_storage_bytes);
+  const bucketStorageBytes = asSafeNumber(row.bucket_storage_bytes);
 
   return {
     userId: row.user_id,
@@ -94,6 +120,14 @@ function mapAdminUserRow(row: DbAdminUserRow): AdminUserRow {
     passwordStatus: row.password_set ? "Set" : "Not set",
     lastActiveAtIso: toIso(row.last_active_at),
     createdAtIso: toIso(row.auth_created_at) || toIso(row.profile_created_at),
+    storageBytes,
+    storageLabel: formatAdminStorageBytes(storageBytes),
+    storageGigabytesLabel: formatAdminStorageGigabytes(storageBytes),
+    storageFileCount,
+    postgresStorageBytes,
+    postgresStorageLabel: formatAdminStorageBytes(postgresStorageBytes),
+    bucketStorageBytes,
+    bucketStorageLabel: formatAdminStorageBytes(bucketStorageBytes),
   };
 }
 
@@ -122,8 +156,24 @@ export async function listAdminUsers(): Promise<AdminUserRow[]> {
   await ensureAccountProfileColumns();
 
   const db = getDb();
+  const logicalStorageSelect = await buildLogicalClientStorageSelect();
   const result = await db.query<DbAdminUserRow>(
     `
+      with upload_storage as (
+        ${logicalStorageSelect}
+      ),
+      storage_by_user as (
+        select
+          user_id,
+          coalesce(sum(byte_size), 0)::bigint as storage_bytes,
+          count(*)::bigint as storage_file_count,
+          coalesce(sum(byte_size) filter (where storage_source = 'postgres'), 0)::bigint
+            as postgres_storage_bytes,
+          coalesce(sum(byte_size) filter (where storage_source = 'bucket'), 0)::bigint
+            as bucket_storage_bytes
+        from upload_storage
+        group by user_id
+      )
       select
         u.id as user_id,
         u.name as auth_name,
@@ -146,9 +196,14 @@ export async function listAdminUsers(): Promise<AdminUserRow[]> {
         ) as password_set,
         ap.last_active_at,
         u."createdAt" as auth_created_at,
-        ap.created_at as profile_created_at
+        ap.created_at as profile_created_at,
+        coalesce(storage.storage_bytes, 0)::bigint as storage_bytes,
+        coalesce(storage.storage_file_count, 0)::bigint as storage_file_count,
+        coalesce(storage.postgres_storage_bytes, 0)::bigint as postgres_storage_bytes,
+        coalesce(storage.bucket_storage_bytes, 0)::bigint as bucket_storage_bytes
       from "user" u
       left join account_profiles ap on ap.user_id = u.id
+      left join storage_by_user storage on storage.user_id = u.id
       order by u."createdAt" desc nulls last, lower(u.email) asc
     `,
   );
