@@ -92,12 +92,11 @@ export default function DocumentsComingSoon() {
 
         <section className={styles.comingSoonCard} aria-labelledby="documents-coming-soon-title">
           <div className={styles.comingSoonIcon}><LockIcon /></div>
-          <span>Document Vault</span>
-          <h1 id="documents-coming-soon-title">Coming soon</h1>
-          <p>
-            We’re preparing a secure place for the important documents that belong to your
-            account, even when they are not linked to a specific asset.
-          </p>
+          <div className={styles.comingSoonCopy}>
+            <span>Document Vault</span>
+            <h1 id="documents-coming-soon-title">Coming soon</h1>
+            <p>Secure storage for important account documents, with or without a linked asset.</p>
+          </div>
           <Link href="/asset-register">Back to Asset Register</Link>
         </section>
       </main>

@@ -128,10 +128,14 @@ test('Documents is an owner-only blurred Coming Soon preview', () => {
   assert.match(comingSoon, /Coming soon/i);
   assert.match(comingSoon, /comingSoonPreview/);
   assert.match(comingSoon, /comingSoonCard/);
+  assert.match(comingSoon, /comingSoonCopy/);
+  assert.match(comingSoon, /with or without a linked asset/);
   assert.match(styles, /\.hero\s*\{/);
   assert.match(styles, /\.summaryGrid\s*\{/);
-  assert.match(styles, /\.comingSoonPreview\s*\{[\s\S]*?filter:\s*blur\(7px\)/);
-  assert.match(styles, /\.comingSoonCard\s*\{/);
+  assert.match(styles, /\.comingSoonPreview\s*\{[\s\S]*?filter:\s*blur\(9px\)/);
+  assert.match(styles, /\.comingSoonCard\s*\{[\s\S]*?grid-template-columns:\s*auto minmax\(0, 1fr\) auto/);
+  assert.match(styles, /\.comingSoonCopy h1\s*\{[\s\S]*?white-space:\s*nowrap/);
+  assert.match(styles, /@media \(max-width: 1050px\)/);
   assert.match(styles, /@media \(max-width: 700px\)/);
   assert.match(styles, /@media \(prefers-reduced-motion: reduce\)/);
 });
