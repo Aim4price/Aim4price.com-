@@ -66,6 +66,9 @@ test('exactly five login-capable master accounts route through the required Aim4
   }
   assert.equal((network.match(/serviceKey: '/g) ?? []).length, 5);
   assert.match(network, /AIM4PRICE_ASSISTANCE_ROUTING_EMAIL = 'aim4price@gmail\.com'/);
+  assert.match(network, /AIM4PRICE_DEALER_ASSISTANCE_EMAIL = 'aim4price@gmail\.com'/);
+  assert.match(network, /AIM4PRICE_DEALER_ASSISTANCE_PHONE = '062 572 1650'/);
+  assert.match(network, /AIM4PRICE_DEALER_ASSISTANCE_WEBSITE = 'https:\/\/www\.aim4price\.com'/);
   assert.match(network, /managed_by_user_id/);
   assert.match(network, /partner_directory_enabled = false/);
   assert.match(network, /Aim4price-managed assistance login/);
@@ -111,6 +114,9 @@ test('directory keeps real partners first and loads managed listings by viewport
   assert.match(partnerAccess, /return \[\.\.\.genuinePartners, \.\.\.assistancePartners\]/);
   assert.match(route, /readBounds/);
   assert.match(route, /west, south, east, north/);
+  assert.match(network, /row\.service_key === 'dealer' \? AIM4PRICE_DEALER_ASSISTANCE_PHONE/);
+  assert.match(network, /row\.service_key === 'dealer' \? AIM4PRICE_DEALER_ASSISTANCE_EMAIL/);
+  assert.match(network, /row\.service_key === 'dealer' \? AIM4PRICE_DEALER_ASSISTANCE_WEBSITE/);
 });
 
 test('desktop and mobile maps ask for an area, cluster markers and refresh on map movement', async () => {
@@ -138,8 +144,14 @@ test('desktop and mobile maps ask for an area, cluster markers and refresh on ma
   assert.doesNotMatch(client, /focusQuotePartnerOnMap/);
   assert.doesNotMatch(client, /const selectedMarker = selectedQuotePartnerIds/);
   assert.match(client, /params\.set\('west'/);
-  assert.match(client, /Aim4price managed/);
+  assert.match(client, /Aim4price service area/);
   assert.match(client, /service area, not a physical branch/i);
+  assert.match(client, /function openDealerAssistanceMessage/);
+  assert.match(client, /data-quote-partner-action="\$\{opensMessage \? 'message' : 'toggle'\}"/);
+  assert.match(client, /Message Aim4price/);
+  assert.match(client, /setQuoteLeadStep\('message'\)/);
+  assert.match(client, /quotePartnerWebsiteDisplay/);
+  assert.match(client, /useCompactQuotePopup \? 280 : 380/);
   assert.match(css, /\.marker-cluster-small/);
   assert.match(css, /@media \(max-width: 760px\)/);
   assert.match(css, /assetQuoteMapEmptyOverlay/);
@@ -148,6 +160,9 @@ test('desktop and mobile maps ask for an area, cluster markers and refresh on ma
   assert.match(css, /\.optionsModal\.assetQuoteModal\.assetQuoteLocationPickerModal/);
   assert.match(css, /assetQuoteMapExpandButton/);
   assert.match(css, /assetQuoteMapExpandedModal/);
+  assert.match(css, /assetQuotePartnerAction/);
+  assert.match(css, /assetQuoteSelectedCompanyHero/);
+  assert.match(css, /assetQuoteManagedKicker/);
 });
 
 test('managed selection shares all selected assets with the master and records grouped context', async () => {
@@ -165,6 +180,7 @@ test('managed selection shares all selected assets with the master and records g
   assert.match(ownerAppClient, /partnerUserId: selectedPartner\.masterAccountUserId \|\| selectedPartner\.userId/);
   assert.match(ownerAppClient, /assistanceLocationId: selectedPartner\.assistanceLocationId/);
   assert.match(ownerAppClient, /No external provider will receive your asset without your further approval/);
+  assert.match(ownerAppClient, /www\.aim4price\.com/);
   assert.match(route, /resolveAssistanceSelection/);
   assert.match(route, /assistanceSelection && dealerShareAssetIds\.length/);
   assert.match(route, /createAssistanceRequest/);

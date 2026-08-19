@@ -37434,3 +37434,319 @@ button.documentOpenLink {
     border-radius: 0.9rem !important;
   }
 }
+
+/* === Assistance cards: larger, calmer and action-led === */
+.assetQuotePartnerPickerModal .assetQuoteMapStage {
+  grid-template-columns: minmax(26rem, 29rem) minmax(0, 1fr) !important;
+}
+
+.assetQuotePartnerList {
+  gap: 0.9rem !important;
+  padding: 1rem !important;
+}
+
+.assetQuotePartnerCard,
+.assetQuotePartnerCard.assetQuoteToneFinance,
+.assetQuotePartnerCard.assetQuoteToneInsurance,
+.assetQuotePartnerCard.assetQuoteToneDealer,
+.assetQuotePartnerCard.assetQuoteToneLicensing {
+  min-height: 12rem !important;
+  padding: 1.25rem 1.3rem !important;
+  border-radius: 1.2rem !important;
+}
+
+.assetQuotePartnerCard::after {
+  display: none !important;
+}
+
+.assetQuotePartnerBody {
+  display: grid !important;
+  gap: 0.65rem !important;
+  align-content: start !important;
+}
+
+.assetQuotePartnerHeader {
+  display: grid !important;
+  gap: 0.42rem !important;
+}
+
+.assetQuotePartnerHeader strong {
+  padding-right: 0 !important;
+  font-size: 1.08rem !important;
+  line-height: 1.25 !important;
+}
+
+.assetQuoteManagedLabel,
+.assetQuoteMapShell :global(.assetQuoteManagedKicker) {
+  width: fit-content;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0.42rem !important;
+  color: #39705d !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  font-size: 0.7rem !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.035em !important;
+  line-height: 1.25 !important;
+  text-transform: uppercase !important;
+}
+
+.assetQuoteManagedLabel i,
+.assetQuoteMapShell :global(.assetQuoteManagedKicker i) {
+  width: 0.45rem;
+  height: 0.45rem;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: #16815c;
+  box-shadow: 0 0 0 0.22rem rgba(22, 129, 92, 0.11);
+}
+
+.assetQuotePartnerMeta {
+  gap: 0.3rem !important;
+  font-size: 0.86rem !important;
+  line-height: 1.42 !important;
+}
+
+.assetQuoteManagedCopy,
+.assetQuotePartnerCopy {
+  font-size: 0.82rem !important;
+  line-height: 1.45 !important;
+}
+
+.assetQuotePartnerAction {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 0.75rem !important;
+  margin-top: 0.1rem !important;
+  padding-top: 0.7rem !important;
+  border-top: 1px solid rgba(207, 222, 215, 0.86) !important;
+  color: #126247 !important;
+  font-size: 0.78rem !important;
+  font-weight: 850 !important;
+}
+
+.assetQuotePartnerAction .buttonIcon {
+  width: 1rem !important;
+  height: 1rem !important;
+}
+
+.assetQuoteMapShell :global(.assetQuotePartnerPopup .leaflet-popup-content-wrapper) {
+  border-radius: 1.35rem !important;
+  box-shadow: 0 24px 60px rgba(14, 35, 28, 0.22) !important;
+}
+
+.assetQuoteMapShell :global(.assetQuotePopupCardSimple) {
+  width: 100% !important;
+}
+
+.assetQuoteMapShell :global(.assetQuotePopupSimpleHeader) {
+  display: grid !important;
+  gap: 0.52rem !important;
+  padding: 1.35rem 1.3rem 1rem !important;
+}
+
+.assetQuoteMapShell :global(.assetQuotePopupSimpleHeader strong) {
+  font-size: 1.26rem !important;
+  line-height: 1.16 !important;
+}
+
+.assetQuoteMapShell :global(.assetQuotePopupSimpleDetails) {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 0.85rem 1rem !important;
+  padding: 0 1.3rem 1.05rem !important;
+}
+
+.assetQuoteMapShell :global(.assetQuotePopupSimpleDetails div:first-child) {
+  grid-column: 1 / -1 !important;
+}
+
+.assetQuoteMapShell :global(.assetQuotePopupSimpleDetails span) {
+  font-size: 0.64rem !important;
+}
+
+.assetQuoteMapShell :global(.assetQuotePopupSimpleDetails strong) {
+  font-size: 0.91rem !important;
+  line-height: 1.38 !important;
+}
+
+.assetQuoteMapShell :global(.assetQuotePopupContacts) {
+  display: grid !important;
+  margin: 0 1.3rem 1rem !important;
+  border-top: 1px solid #dce7e2 !important;
+  border-bottom: 1px solid #dce7e2 !important;
+}
+
+.assetQuoteMapShell :global(.assetQuotePopupContacts a) {
+  display: grid !important;
+  grid-template-columns: 4.7rem minmax(0, 1fr) !important;
+  gap: 0.65rem !important;
+  align-items: center !important;
+  padding: 0.58rem 0 !important;
+  color: inherit !important;
+  text-decoration: none !important;
+}
+
+.assetQuoteMapShell :global(.assetQuotePopupContacts a:not(:last-child)) {
+  border-bottom: 1px solid #e5ede9 !important;
+}
+
+.assetQuoteMapShell :global(.assetQuotePopupContacts span) {
+  color: #718390 !important;
+  font-size: 0.63rem !important;
+  font-weight: 820 !important;
+  letter-spacing: 0.045em !important;
+  text-transform: uppercase !important;
+}
+
+.assetQuoteMapShell :global(.assetQuotePopupContacts strong) {
+  min-width: 0 !important;
+  color: #173d31 !important;
+  font-size: 0.82rem !important;
+  font-weight: 720 !important;
+  overflow-wrap: anywhere !important;
+}
+
+.assetQuoteMapShell :global(.assetQuoteManagedNotice) {
+  margin: 0 1.3rem 1rem !important;
+  padding: 0.85rem 0.9rem !important;
+  border-radius: 0.9rem !important;
+  font-size: 0.78rem !important;
+  line-height: 1.45 !important;
+}
+
+.assetQuoteMapShell :global(.assetQuotePopupChooseButton) {
+  width: calc(100% - 2.6rem) !important;
+  min-height: 3.35rem !important;
+  margin: 0 1.3rem 1.3rem !important;
+  border-radius: 0.95rem !important;
+  font-size: 0.92rem !important;
+}
+
+.assetQuoteMessageStepModal {
+  width: min(100%, 1320px) !important;
+  max-height: min(92vh, calc(100dvh - 1.25rem)) !important;
+}
+
+.assetQuoteMessageStepBody {
+  grid-template-columns: minmax(24rem, 26rem) minmax(0, 1fr) !important;
+  overflow: hidden !important;
+}
+
+.assetQuoteSelectedCompanyPanel {
+  display: block !important;
+  overflow-y: auto !important;
+}
+
+.assetQuoteSelectedCompanyInfo {
+  gap: 1rem !important;
+  padding: 1.3rem !important;
+}
+
+.assetQuoteSelectedCompanyHero {
+  display: grid !important;
+  grid-template-columns: 5.4rem minmax(0, 1fr) !important;
+  gap: 1rem !important;
+  align-items: center !important;
+}
+
+.assetQuoteSelectedCompanyHero .assetQuoteSelectedMediaTile {
+  width: 5.4rem !important;
+  height: 5.4rem !important;
+  min-height: 5.4rem !important;
+  padding: 0.65rem !important;
+  border-radius: 1rem !important;
+}
+
+.assetQuoteSelectedCompanyHero .assetQuoteSelectedLogoFallback {
+  font-size: 1.75rem !important;
+}
+
+.assetQuoteSelectedCompanyTitle {
+  gap: 0.35rem !important;
+}
+
+.assetQuoteSelectedCompanyTitle strong {
+  font-size: 1.08rem !important;
+  line-height: 1.2 !important;
+}
+
+.assetQuoteSelectedCompanyTitle > span:not(.assetQuoteManagedLabel) {
+  font-size: 0.82rem !important;
+}
+
+.assetQuoteManagedSelectedNotice {
+  margin: 0 !important;
+  padding: 0.9rem 1rem !important;
+  border-radius: 0.95rem !important;
+  font-size: 0.8rem !important;
+  line-height: 1.45 !important;
+}
+
+.assetQuoteSelectedContactRow {
+  grid-template-columns: 4.75rem minmax(0, 1fr) !important;
+  gap: 0.7rem !important;
+  padding: 0.68rem 0 !important;
+}
+
+.assetQuoteSelectedContactRow span {
+  font-size: 0.8rem !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
+}
+
+.assetQuoteMessagePanel {
+  overflow-y: auto !important;
+}
+
+@media (max-width: 1080px) {
+  .assetQuotePartnerPickerModal .assetQuoteMapStage {
+    grid-template-columns: minmax(23rem, 25rem) minmax(0, 1fr) !important;
+  }
+}
+
+@media (max-width: 860px) {
+  .assetQuotePartnerPickerModal .assetQuoteMapStage,
+  .assetQuoteMessageStepBody {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .assetQuotePartnerCard {
+    min-height: 0 !important;
+  }
+
+  .assetQuoteSelectedCompanyPanel,
+  .assetQuoteMessagePanel {
+    overflow: visible !important;
+  }
+}
+
+@media (max-width: 620px) {
+  .assetQuotePartnerList {
+    padding: 0.75rem !important;
+  }
+
+  .assetQuotePartnerCard {
+    padding: 1.05rem !important;
+  }
+
+  .assetQuoteMapShell :global(.assetQuotePopupSimpleDetails) {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .assetQuoteMapShell :global(.assetQuotePopupSimpleDetails div:first-child) {
+    grid-column: auto !important;
+  }
+
+  .assetQuoteSelectedCompanyHero {
+    grid-template-columns: 4.6rem minmax(0, 1fr) !important;
+  }
+
+  .assetQuoteSelectedCompanyHero .assetQuoteSelectedMediaTile {
+    width: 4.6rem !important;
+    height: 4.6rem !important;
+    min-height: 4.6rem !important;
+  }
+}
