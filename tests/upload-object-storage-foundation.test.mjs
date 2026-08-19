@@ -22,6 +22,10 @@ const purgeScript = await readFile(
   new URL('../scripts/purge-deleted-asset-upload-objects.mjs', import.meta.url),
   'utf8',
 );
+const accountDeletionSource = await readFile(
+  new URL('../lib/account-deletion.ts', import.meta.url),
+  'utf8',
+);
 const adminSource = await readFile(
   new URL('../lib/admin-dashboard.ts', import.meta.url),
   'utf8',
@@ -35,6 +39,9 @@ test('PostgreSQL is the fail-safe default and bucket access requires an explicit
   assert.match(objectStorageSource, /if \(mode === 'mirror' \|\| mode === 'bucket-preferred'\)/);
   assert.match(uploadSource, /if \(storageMode !== 'postgres'\)/);
   assert.match(uploadSource, /assertObjectStorageSchemaReady\(\)/);
+  assert.match(uploadSource, /backfill_completed_at is not null/);
+  assert.match(uploadSource, /holds_released_at is not null/);
+  assert.match(uploadSource, /reference_kind = 'migration_hold'/);
   assert.match(uploadSource, /storage_state = 'copying'/);
   assert.ok(
     uploadSource.indexOf('prepareAssetRegisterUploadMirror({')
@@ -102,15 +109,76 @@ test('copy command is dry-run by default and retains database payloads', () => {
   assert.match(migrationScript, /GetObjectCommand/);
   assert.match(migrationScript, /actualSha256 !== expectedSha256/);
   assert.doesNotMatch(migrationScript, /set\s+data\s*=\s*null/i);
+  assert.match(migrationScript, /asset_upload_reference_ledger_ready\(\)/);
+  assert.match(migrationScript, /asset_upload_prepare_for_deletion\(text\)/);
+  assert.match(migrationScript, /asset_upload_has_unregistered_catalog_reference\(text\)/);
+  assert.match(migrationScript, /backfill_completed_at is not null/);
+  assert.match(migrationScript, /holds_released_at is not null/);
+  assert.match(migrationScript, /reference_kind = 'migration_hold'/);
+  const readinessPreflight = migrationScript.indexOf(
+    'if (!(await referenceGuardsReady(client)))',
+  );
+  const bucketConfigRead = migrationScript.indexOf('const config = readBucketConfig()');
+  const bucketClientCreation = migrationScript.indexOf('const s3 = new S3Client');
+  assert.ok(readinessPreflight >= 0 && readinessPreflight < bucketConfigRead);
+  assert.ok(bucketConfigRead < bucketClientCreation);
 });
 
-test('unsafe mirrored objects are not immediately deleted by legacy cleanup', () => {
-  assert.match(uploadSource, /coalesce\(upload\.storage_state, 'postgres'\) = 'postgres'/);
+test('cleanup is soft, reference-guarded, and cannot directly delete an object', () => {
+  assert.match(uploadSource, /asset_upload_reference_ledger_ready\(\)/);
+  assert.match(uploadSource, /asset_upload_has_live_reference\(upload\.id\)/);
+  assert.match(uploadSource, /deleted_at = coalesce\(upload\.deleted_at, now\(\)\)/);
+  assert.match(uploadSource, /purge_after = coalesce\(upload\.purge_after/);
+  assert.match(uploadSource, /interval '24 hours'/);
   assert.doesNotMatch(uploadSource, /DeleteObjectCommand/);
   assert.match(purgeScript, /process\.argv\.includes\('--apply'\)/);
   assert.match(purgeScript, /purge_after <= now\(\)/);
   assert.match(purgeScript, /No Bucket connection or database write was made/);
   assert.match(purgeScript, /Refusing to delete an object with an unsafe key/);
+  assert.match(uploadSource, /and deleted_at is null/g);
+  assert.match(purgeScript, /asset_upload_prepare_for_deletion\(\$1\)/);
+  assert.match(purgeScript, /for update skip locked/i);
+  assert.match(purgeScript, /AIM4PRICE_ALLOW_UPLOAD_PURGE === 'YES_I_REVIEWED_THE_DRY_RUN'/);
+  assert.match(purgeScript, /AIM4PRICE_ALLOW_BUCKET_WRITES === 'YES_I_ACCEPT_COST'/);
+  assert.match(purgeScript, /orphansToSchedule/);
+  assert.match(purgeScript, /dueMetadataRows/);
+  assert.match(purgeScript, /dueObjectQueueRows/);
+  assert.match(purgeScript, /lockPotentialUploadSourceTables/);
+  assert.match(purgeScript, /lock table .* in share row exclusive mode/i);
+  assert.match(purgeScript, /from pg_catalog\.pg_class as relation/);
+  assert.match(purgeScript, /domain_array_element_type/);
+  assert.match(purgeScript, /asset_upload_has_unregistered_catalog_reference\(text\)/);
+});
+
+test('account deletion removes upload-bearing sources first and fails closed on held uploads', () => {
+  assert.doesNotMatch(accountDeletionSource, /delete from (?:public\.)?asset_register_uploads/i);
+  assert.doesNotMatch(accountDeletionSource, /select id::text as id[\s\S]+for update/i);
+
+  for (const table of [
+    'ad_brand_kits',
+    'fuel_ledger_audit_events',
+    'fuel_slips',
+    'asset_invoices',
+    'asset_invoice_documents',
+  ]) {
+    assert.match(accountDeletionSource, new RegExp(`'${table}'`));
+  }
+
+  const scanDelete = accountDeletionSource.indexOf('delete from public.asset_scan_events');
+  const itemDeleteLoop = accountDeletionSource.indexOf('for (const tableName of USER_ID_TABLES)');
+  const uploadSchedule = accountDeletionSource.lastIndexOf('await scheduleOwnedUploadsLast');
+  assert.ok(scanDelete >= 0 && scanDelete < itemDeleteLoop);
+  assert.ok(accountDeletionSource.indexOf("'asset_invoices'")
+    < accountDeletionSource.indexOf("'asset_invoice_documents'"));
+  assert.ok(accountDeletionSource.indexOf("'asset_invoice_documents'")
+    < accountDeletionSource.indexOf("'asset_register_items'"));
+  assert.ok(itemDeleteLoop < uploadSchedule);
+  assert.match(accountDeletionSource, /asset_upload_reference_ledger_ready\(\)/);
+  assert.match(accountDeletionSource, /where table_schema = 'public'/);
+  assert.match(accountDeletionSource, /set local lock_timeout = '5s'/);
+  assert.match(accountDeletionSource, /set local statement_timeout = '5min'/);
+  assert.match(accountDeletionSource, /and upload\.deleted_at is null/);
+  assert.match(accountDeletionSource, /account deletion was rolled back for reconciliation/);
 });
 
 test('admin measurement captures pricing-relevant account distribution', () => {
