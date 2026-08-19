@@ -183,12 +183,12 @@ export default function AppFooter() {
                   </Link>
 
                   <p className={styles.brandText}>
-                    One secure place to value, manage and share asset information with the people
-                    you trust.
+                    Asset Intelligence, Management &amp; Pricing.
                   </p>
 
                   <p className={styles.brandSupport}>
-                    Built for South African machinery, vehicles, equipment and property.
+                    One secure place to value, manage and share information for South African
+                    machinery, vehicles, equipment and property.
                   </p>
                 </section>
 

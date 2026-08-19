@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   title: "About Us",
   description:
-    "Learn how Aim4price connects asset information, daily management and trusted partners to create better business decisions.",
+    "Learn how Aim4price brings asset intelligence, management and pricing together to create better business decisions.",
 };
 
 const valueSteps = [
@@ -67,10 +67,10 @@ export default async function AboutUsPage() {
                   <span>Better business decisions.</span>
                 </h1>
                 <p className={styles.heroText}>
-                  Aim4price is a connected asset management and intelligence
-                  platform that brings owners, dealers, service providers,
-                  insurers, financiers and accountants together around one
-                  trusted asset record.
+                  Aim4price stands for Asset Intelligence, Management &amp;
+                  Pricing. It connects owners, dealers, service providers,
+                  insurers, financiers and accountants around one trusted
+                  asset record.
                 </p>
 
                 <div className={styles.heroActions}>

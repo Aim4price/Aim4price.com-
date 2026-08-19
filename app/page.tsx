@@ -92,7 +92,7 @@ export default async function HomePage() {
                   <span className={styles.heroEyebrowDivider} aria-hidden="true">
                     |
                   </span>
-                  <span>Asset management for South Africa</span>
+                  <span>Asset Intelligence, Management &amp; Pricing</span>
                 </p>
 
                 <h1 className={styles.heroTitle}>

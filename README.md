@@ -1,6 +1,6 @@
 # Aim4price
 
-Aim4price is a South African asset intelligence and lifecycle platform for machinery, equipment and vehicles.
+Aim4price stands for **Asset Intelligence, Management & Pricing**. It is a South African asset intelligence and lifecycle platform for machinery, equipment and vehicles.
 
 It helps asset owners, dealers, financiers and insurance professionals value, save, manage, share and market assets through one connected record. The platform is built around a simple idea: an asset should not become a disconnected spreadsheet row after it is valued. Its identity, value, documents, location, usage, maintenance, fuel, costs and approved partner activity should remain connected throughout its working life.
 
