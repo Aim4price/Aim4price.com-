@@ -308,10 +308,9 @@ async function insertAssetRegisterUploadRow(input: {
     push(columnName, input.byteSize, isNumericColumn);
   }
 
+  // Legacy bytea columns are migration sources only. Writing to them duplicates
+  // every upload in PostgreSQL's TOAST storage.
   push('data', input.buffer, isByteaColumn);
-  for (const columnName of LEGACY_DATA_COLUMN_CANDIDATES) {
-    push(columnName, input.buffer, isByteaColumn);
-  }
 
   const uploadedAt = new Date();
   push('created_at', uploadedAt);
@@ -319,8 +318,8 @@ async function insertAssetRegisterUploadRow(input: {
   push('created_on', uploadedAt);
   push('updated_at', uploadedAt);
 
-  if (!usedColumns.has('data') && !LEGACY_DATA_COLUMN_CANDIDATES.some((columnName) => usedColumns.has(columnName))) {
-    throw new Error('Asset register upload storage is missing a usable bytea column.');
+  if (!usedColumns.has('data')) {
+    throw new Error('Asset register upload storage is missing the canonical data bytea column.');
   }
 
   const columnSql = fields.map((field) => quoteIdentifier(field.name)).join(', ');
@@ -628,3 +627,4 @@ export async function getLegacyAssetRegisterUploadResponse(
     fileName: sanitizeFileName(row.file_name ?? 'asset-register-upload'),
   };
 }
+
