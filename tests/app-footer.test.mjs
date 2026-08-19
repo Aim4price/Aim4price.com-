@@ -16,8 +16,9 @@ test('footer links match the signed-in account type', () => {
 });
 
 test('footer uses concise copy without decorative pills', () => {
-  assert.match(footer, /One secure place to value, manage and share asset information/);
-  assert.match(footer, /Built for South African machinery, vehicles, equipment and property/);
+  assert.match(footer, /Asset Intelligence, Management &amp; Pricing/);
+  assert.match(footer, /One secure place to value, manage and share information for South African/);
+  assert.match(footer, /machinery, vehicles, equipment and property/);
   assert.doesNotMatch(footer, /brandEyebrow|trustRow|Owner-controlled records|Permission-based collaboration/);
   assert.doesNotMatch(styles, /border-radius: 999px/);
 });

@@ -4,13 +4,28 @@ import AppFooter from '../components/AppFooter';
 import AppPatternBackground from '../components/AppPatternBackground';
 import './globals.css';
 
+const brandTitle = 'Aim4price | Asset Intelligence, Management & Pricing';
+const brandDescription =
+  'Asset intelligence, management and pricing for South African assets. Value, record, manage and share machinery, vehicles, equipment and property in one connected system.';
+
 export const metadata: Metadata = {
   title: {
-    default: 'Aim4price - Agricultural & Industrial Machinery Pricing',
+    default: brandTitle,
     template: '%s | Aim4price',
   },
-  description:
-    'Discover machinery values, build asset registers, and browse the marketplace from one clear workflow.',
+  description: brandDescription,
+  applicationName: 'Aim4price',
+  openGraph: {
+    type: 'website',
+    siteName: 'Aim4price',
+    title: brandTitle,
+    description: brandDescription,
+  },
+  twitter: {
+    card: 'summary',
+    title: brandTitle,
+    description: brandDescription,
+  },
   icons: {
     icon: [
       { url: '/favicon.ico?v=3', sizes: 'any' },
