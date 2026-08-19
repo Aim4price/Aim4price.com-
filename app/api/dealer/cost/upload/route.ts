@@ -75,7 +75,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const upload = await createAssetRegisterUpload({ userId: access.owner_user_id, file });
+    const upload = await createAssetRegisterUpload({ userId: access.owner_user_id, file, category: 'dealer-cost' });
     const document = await createInvoiceDocumentRecord({
       userId: access.owner_user_id,
       assetId,

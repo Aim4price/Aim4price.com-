@@ -145,6 +145,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
       const upload = await createAssetRegisterUpload({
         userId: access.lead.ownerUserId,
         file,
+        category: 'lead-media',
       });
       uploads.push(upload);
     }

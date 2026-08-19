@@ -185,6 +185,27 @@ export default async function AdminDashboardPage() {
                 <strong>{source.value}</strong>
               </div>
             ))}
+            <div className={styles.storageDivider} aria-hidden="true" />
+            <div className={styles.storageRow}>
+              <span>Accounts with uploads</span>
+              <strong>{dashboard.storage.customerUsage.accountCountLabel}</strong>
+            </div>
+            <div className={styles.storageRow}>
+              <span>Average central uploads / account</span>
+              <strong>{dashboard.storage.customerUsage.averageLabel}</strong>
+            </div>
+            <div className={styles.storageRow}>
+              <span>Median central uploads / account</span>
+              <strong>{dashboard.storage.customerUsage.medianLabel}</strong>
+            </div>
+            <div className={styles.storageRow}>
+              <span>Central-upload 90th percentile / account</span>
+              <strong>{dashboard.storage.customerUsage.p90Label}</strong>
+            </div>
+            <div className={styles.storageRow}>
+              <span>Central uploads added in the last 30 days</span>
+              <strong>{dashboard.storage.customerUsage.addedLast30DaysLabel}</strong>
+            </div>
           </div>
         </section>
       </section>

@@ -161,6 +161,7 @@ export async function POST(request: NextRequest) {
       const saved = await createAssetRegisterUpload({
         userId: ownerUserId,
         file,
+        category: uploadType,
       });
 
       uploads.push({

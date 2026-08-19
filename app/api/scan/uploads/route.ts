@@ -99,7 +99,7 @@ export async function POST(request: NextRequest) {
 
   const uploads = await Promise.all(
     preparedFiles.map(async ({ file }) => {
-      const saved = await createAssetRegisterUpload({ userId: access.ownerUserId, file });
+      const saved = await createAssetRegisterUpload({ userId: access.ownerUserId, file, category: 'scan-photo' });
 
       return {
         uploadId: saved.id,

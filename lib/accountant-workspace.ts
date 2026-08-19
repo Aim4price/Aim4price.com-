@@ -569,7 +569,11 @@ export async function uploadAccountantDocument(input: {
   if (!input.file.size || input.file.size > MAX_ASSET_REGISTER_DOCUMENT_UPLOAD_BYTES) throw new Error('ACCOUNTANT_DOCUMENT_SIZE_INVALID');
   if (asset.documents.length >= MAX_ASSET_REGISTER_DOCUMENTS) throw new Error('ACCOUNTANT_DOCUMENT_LIMIT');
   const actor = await getAccountProfile({ id: input.accountantUserId });
-  const upload = await createAssetRegisterUpload({ userId: access.ownerUserId, file: input.file });
+  const upload = await createAssetRegisterUpload({
+    userId: access.ownerUserId,
+    file: input.file,
+    category: 'accountant-document',
+  });
   const document: AssetRegisterDocument = {
     id: upload.id, url: upload.url, fileName: upload.fileName, contentType: upload.contentType,
     byteSize: upload.byteSize, uploadedAtIso: new Date().toISOString(),

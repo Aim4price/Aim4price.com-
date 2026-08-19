@@ -1,5 +1,13 @@
 import { randomUUID } from 'node:crypto';
 import { getDb } from './db';
+import {
+  createUploadObjectKey,
+  createBucketSignedGetUrl,
+  getUploadStorageMode,
+  isBucketWriteCostApproved,
+  mirrorUploadToBucket,
+  sha256Hex,
+} from './upload-object-storage';
 
 export const MAX_ASSET_REGISTER_PHOTOS = 12;
 export const MAX_ASSET_REGISTER_DOCUMENTS = 20;
@@ -70,6 +78,7 @@ const LEGACY_BYTE_SIZE_COLUMN_CANDIDATES = ['size_bytes', 'size', 'file_size'];
 type CreateAssetRegisterUploadInput = {
   userId: string;
   file: File;
+  category?: string;
 };
 
 type CreatedAssetRegisterUpload = {
@@ -85,6 +94,7 @@ type LegacyAssetRegisterUploadResponse = {
   mimeType: string;
   sizeBytes: number;
   fileName: string;
+  disposition: 'inline' | 'attachment';
 };
 
 type AssetRegisterUploadRow = {
@@ -92,6 +102,8 @@ type AssetRegisterUploadRow = {
   content_type: string | null;
   byte_size: string | number | null;
   file_name: string | null;
+  storage_state?: string | null;
+  object_key?: string | null;
 };
 
 type UploadColumnInfo = {
@@ -111,6 +123,16 @@ function sanitizeFileName(value: string): string {
     .trim();
 
   return (cleaned || 'asset-register-upload').slice(0, 180);
+}
+
+function normalizeUploadCategory(value: string | undefined): string {
+  const normalized = String(value ?? 'other')
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9-]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+
+  return (normalized || 'other').slice(0, 60);
 }
 
 function normalizeUploadId(value: string): string {
@@ -135,11 +157,21 @@ function normalizeUploadId(value: string): string {
 function normalizeContentType(fileName: string, value: string): string {
   const explicitType = String(value ?? '').trim().toLowerCase();
 
-  if (explicitType) {
+  if (
+    ALLOWED_ASSET_REGISTER_IMAGE_TYPES.has(explicitType)
+    || ALLOWED_ASSET_REGISTER_DOCUMENT_TYPES.has(explicitType)
+  ) {
     return explicitType;
   }
 
   return CONTENT_TYPE_BY_EXTENSION.get(getFileExtension(fileName)) ?? 'application/octet-stream';
+}
+
+function contentDispositionForType(contentType: string): 'inline' | 'attachment' {
+  const normalized = String(contentType ?? '').trim().toLowerCase();
+  return ALLOWED_ASSET_REGISTER_IMAGE_TYPES.has(normalized) || normalized === 'application/pdf'
+    ? 'inline'
+    : 'attachment';
 }
 
 function normalizeDatabaseBuffer(value: Buffer | Uint8Array | string | null): Buffer {
@@ -279,6 +311,7 @@ async function insertAssetRegisterUploadRow(input: {
   contentType: string;
   byteSize: number;
   buffer: Buffer;
+  category: string;
 }): Promise<void> {
   const columns = columnInfoMap(await readUploadTableColumns());
   const fields: UploadInsertField[] = [];
@@ -311,6 +344,8 @@ async function insertAssetRegisterUploadRow(input: {
   // Legacy bytea columns are migration sources only. Writing to them duplicates
   // every upload in PostgreSQL's TOAST storage.
   push('data', input.buffer, isByteaColumn);
+  push('storage_state', 'postgres', isTextColumn);
+  push('upload_category', input.category, isTextColumn);
 
   const uploadedAt = new Date();
   push('created_at', uploadedAt);
@@ -331,6 +366,121 @@ async function insertAssetRegisterUploadRow(input: {
   );
 }
 
+async function markAssetRegisterUploadMirrored(input: {
+  uploadId: string;
+  objectKey: string;
+  objectEtag: string | null;
+  contentSha256: string;
+  verifiedAt: Date;
+}): Promise<void> {
+  const columns = columnInfoMap(await readUploadTableColumns());
+  const requiredColumns = [
+    'storage_state',
+    'object_key',
+    'content_sha256',
+    'object_etag',
+    'object_verified_at',
+  ];
+
+  if (requiredColumns.some((column) => !columns.has(column))) {
+    throw new Error('Asset upload object-storage metadata migration has not been applied.');
+  }
+
+  const updated = await getDb().query(
+    `
+      update public.asset_register_uploads
+      set
+        storage_state = 'dual_verified',
+        object_key = $2,
+        object_etag = $3,
+        content_sha256 = $4,
+        object_verified_at = $5
+      where id::text = $1
+        and storage_state = 'copying'
+        and object_key = $2
+      returning id
+    `,
+    [input.uploadId, input.objectKey, input.objectEtag, input.contentSha256, input.verifiedAt],
+  );
+
+  if (updated.rowCount !== 1) {
+    throw new Error('The upload row changed before its Bucket copy could be marked verified.');
+  }
+}
+
+async function prepareAssetRegisterUploadMirror(input: {
+  uploadId: string;
+  objectKey: string;
+  contentSha256: string;
+}): Promise<void> {
+  const updated = await getDb().query(
+    `
+      update public.asset_register_uploads
+      set
+        storage_state = 'copying',
+        object_key = $2,
+        content_sha256 = $3,
+        object_etag = null,
+        object_verified_at = null
+      where id::text = $1
+        and data is not null
+        and storage_state = 'postgres'
+      returning id
+    `,
+    [input.uploadId, input.objectKey, input.contentSha256],
+  );
+
+  if (updated.rowCount !== 1) {
+    throw new Error('The upload row could not enter the safe Bucket copying state.');
+  }
+}
+
+async function assertObjectStorageSchemaReady(): Promise<void> {
+  const result = await getDb().query<{
+    has_state_constraint: boolean;
+    has_verified_constraint: boolean;
+    has_key_constraint: boolean;
+    has_purge_queue: boolean;
+    has_delete_trigger: boolean;
+  }>(`
+    select
+      exists (
+        select 1 from pg_constraint
+        where conrelid = 'public.asset_register_uploads'::regclass
+          and conname = 'asset_register_uploads_storage_state_check'
+      ) as has_state_constraint,
+      exists (
+        select 1 from pg_constraint
+        where conrelid = 'public.asset_register_uploads'::regclass
+          and conname = 'asset_register_uploads_verified_object_check'
+      ) as has_verified_constraint,
+      exists (
+        select 1 from pg_constraint
+        where conrelid = 'public.asset_register_uploads'::regclass
+          and conname = 'asset_register_uploads_object_key_check'
+      ) as has_key_constraint,
+      to_regclass('public.asset_upload_object_purge_queue') is not null as has_purge_queue,
+      exists (
+        select 1 from pg_trigger
+        where tgrelid = 'public.asset_register_uploads'::regclass
+          and tgname = 'queue_deleted_asset_upload_object_trigger'
+          and not tgisinternal
+          and tgenabled <> 'D'
+      ) as has_delete_trigger
+  `);
+  const readiness = result.rows[0];
+
+  if (
+    !readiness?.has_state_constraint
+    || !readiness.has_verified_constraint
+    || !readiness.has_key_constraint
+    || !readiness.has_purge_queue
+    || !readiness.has_delete_trigger
+  ) {
+    throw new Error('Migration 80 is not fully applied; Bucket writes and reads remain disabled.');
+  }
+}
+
 async function ensureAssetRegisterUploadsTableOnce(): Promise<void> {
   const db = getDb();
 
@@ -342,6 +492,14 @@ async function ensureAssetRegisterUploadsTableOnce(): Promise<void> {
       content_type text,
       byte_size integer,
       data bytea,
+      storage_state text not null default 'postgres',
+      object_key text,
+      content_sha256 text,
+      object_etag text,
+      object_verified_at timestamptz,
+      upload_category text not null default 'other',
+      deleted_at timestamptz,
+      purge_after timestamptz,
       created_at timestamptz
     )
   `);
@@ -354,6 +512,14 @@ async function ensureAssetRegisterUploadsTableOnce(): Promise<void> {
       add column if not exists content_type text,
       add column if not exists byte_size integer,
       add column if not exists data bytea,
+      add column if not exists storage_state text not null default 'postgres',
+      add column if not exists object_key text,
+      add column if not exists content_sha256 text,
+      add column if not exists object_etag text,
+      add column if not exists object_verified_at timestamptz,
+      add column if not exists upload_category text not null default 'other',
+      add column if not exists deleted_at timestamptz,
+      add column if not exists purge_after timestamptz,
       add column if not exists created_at timestamptz
   `);
 
@@ -456,6 +622,12 @@ async function ensureAssetRegisterUploadsTableOnce(): Promise<void> {
   `);
 
   await db.query(`
+    create unique index if not exists asset_register_uploads_object_key_uidx
+      on public.asset_register_uploads (object_key)
+      where object_key is not null
+  `);
+
+  await db.query(`
     comment on table public.asset_register_uploads is
       'Binary storage for Asset Register photos, documents and register logos. Asset JSON stores only the short API URL.';
 
@@ -497,8 +669,9 @@ export async function createAssetRegisterUpload(
   const id = randomUUID();
   const fileName = sanitizeFileName(input.file.name);
   const contentType = normalizeContentType(fileName, input.file.type);
-  const byteSize = Number(input.file.size) || 0;
   const buffer = Buffer.from(await input.file.arrayBuffer());
+  const byteSize = buffer.length;
+  const category = normalizeUploadCategory(input.category);
 
   await insertAssetRegisterUploadRow({
     id,
@@ -507,7 +680,43 @@ export async function createAssetRegisterUpload(
     contentType,
     byteSize,
     buffer,
+    category,
   });
+
+  const storageMode = getUploadStorageMode();
+
+  if (storageMode !== 'postgres') {
+    try {
+      if (!isBucketWriteCostApproved()) {
+        throw new Error('Bucket writes require explicit cost approval. PostgreSQL copy retained.');
+      }
+      await assertObjectStorageSchemaReady();
+      await prepareAssetRegisterUploadMirror({
+        uploadId: id,
+        objectKey: createUploadObjectKey(id),
+        contentSha256: sha256Hex(buffer),
+      });
+      const mirrored = await mirrorUploadToBucket({
+        uploadId: id,
+        data: buffer,
+        contentType,
+      });
+      await markAssetRegisterUploadMirrored({
+        uploadId: id,
+        objectKey: mirrored.objectKey,
+        objectEtag: mirrored.etag,
+        contentSha256: mirrored.contentSha256,
+        verifiedAt: mirrored.verifiedAt,
+      });
+    } catch (error) {
+      // PostgreSQL was written first and remains authoritative. A bucket or
+      // metadata failure must never lose a user's accepted upload.
+      console.error('asset register upload mirror failed; PostgreSQL copy retained', {
+        uploadId: id,
+        error,
+      });
+    }
+  }
 
   return {
     id,
@@ -568,6 +777,7 @@ export async function deleteUnreferencedAssetRegisterUploads(input: {
       delete from public.asset_register_uploads upload
       where upload.user_id = $1
         and upload.id::text = any($2::text[])
+        and coalesce(upload.storage_state, 'postgres') = 'postgres'
         and not exists (
           select 1
           from public.asset_register_items item
@@ -583,8 +793,54 @@ export async function deleteUnreferencedAssetRegisterUploads(input: {
   );
 }
 
-export async function createAssetRegisterSignedGetUrl(_uploadId: string): Promise<string | null> {
-  return null;
+export async function createAssetRegisterSignedGetUrl(uploadId: string): Promise<string | null> {
+  if (getUploadStorageMode() !== 'bucket-preferred') {
+    return null;
+  }
+
+  const normalizedUploadId = normalizeUploadId(uploadId);
+  if (!normalizedUploadId) return null;
+
+  await ensureAssetRegisterUploadsTable();
+
+  try {
+    await assertObjectStorageSchemaReady();
+  } catch (error) {
+    console.error('asset register Bucket read disabled because migration 80 is incomplete', error);
+    return null;
+  }
+
+  const result = await getDb().query<AssetRegisterUploadRow>(
+    `
+      select storage_state, object_key, content_type, file_name
+      from public.asset_register_uploads
+      where id::text = $1
+        and storage_state = 'dual_verified'
+        and object_key is not null
+      limit 1
+    `,
+    [normalizedUploadId],
+  );
+  const row = result.rows[0];
+
+  if (!row?.object_key) {
+    return null;
+  }
+
+  try {
+    const fileName = sanitizeFileName(row.file_name ?? 'asset-register-upload');
+    return await createBucketSignedGetUrl({
+      objectKey: row.object_key,
+      contentType: normalizeContentType(fileName, String(row.content_type ?? '')),
+      fileName,
+    });
+  } catch (error) {
+    console.error('asset register signed bucket URL failed; using PostgreSQL fallback', {
+      uploadId: normalizedUploadId,
+      error,
+    });
+    return null;
+  }
 }
 
 export async function getLegacyAssetRegisterUploadResponse(
@@ -620,11 +876,14 @@ export async function getLegacyAssetRegisterUploadResponse(
     return null;
   }
 
+  const fileName = sanitizeFileName(row.file_name ?? 'asset-register-upload');
+  const mimeType = normalizeContentType(fileName, String(row.content_type ?? ''));
+
   return {
     data,
-    mimeType: String(row.content_type ?? '').trim() || 'application/octet-stream',
+    mimeType,
     sizeBytes: Math.max(0, Math.round(Number(row.byte_size) || data.length)),
-    fileName: sanitizeFileName(row.file_name ?? 'asset-register-upload'),
+    fileName,
+    disposition: contentDispositionForType(mimeType),
   };
 }
-
