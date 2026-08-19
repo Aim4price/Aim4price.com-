@@ -146,7 +146,11 @@ test('desktop and mobile maps ask for an area, cluster markers and refresh on ma
   assert.match(client, /params\.set\('west'/);
   assert.match(client, /Aim4price service area/);
   assert.match(client, /service area, not a physical branch/i);
-  assert.match(client, /function openDealerAssistanceMessage/);
+  assert.match(client, /function isAim4priceAssistancePartner/);
+  assert.match(client, /return Boolean\(partner\.isAim4priceManaged\);/);
+  assert.match(client, /function openAim4priceAssistanceMessage/);
+  assert.doesNotMatch(client, /openDealerAssistanceMessage/);
+  assert.match(client, /const opensMessage = isAim4priceAssistancePartner\(partner\) && !isSelected;/);
   assert.match(client, /data-quote-partner-action="\$\{opensMessage \? 'message' : 'toggle'\}"/);
   assert.match(client, /Message Aim4price/);
   assert.match(client, /setQuoteLeadStep\('message'\)/);
@@ -162,13 +166,15 @@ test('desktop and mobile maps ask for an area, cluster markers and refresh on ma
     client.indexOf("selectedQuoteOption.emptyPartnerText"),
   );
   assert.match(assistanceCardMarkup, /!partner\.isAim4priceManaged/);
-  assert.match(assistanceCardMarkup, /Service area only — Aim4price will help find a suitable provider\./);
+  assert.match(assistanceCardMarkup, /isAim4priceAssistancePartner\(partner\)/);
+  assert.doesNotMatch(assistanceCardMarkup, /assetQuoteManagedCopy/);
+  assert.doesNotMatch(assistanceCardMarkup, /Service area only/);
   assert.match(assistanceCardMarkup, /Message Aim4price/);
   const assistanceCardCss = css.slice(css.indexOf('/* === Assistance cards: larger, calmer and action-led === */'));
   assert.match(assistanceCardCss, /\.assetQuotePartnerPickerModal:not\(\.assetQuoteMapExpandedModal\) \.assetQuoteMapStage/);
   assert.match(assistanceCardCss, /\.assetQuoteMapExpandedModal \.assetQuoteMapShell\s*\{[\s\S]*?grid-column: 1 \/ -1 !important;/);
   assert.doesNotMatch(assistanceCardCss, /\.assetQuotePartnerPickerModal \.assetQuoteMapStage/);
-  assert.match(assistanceCardCss, /min-height: 10\.25rem !important;/);
+  assert.match(assistanceCardCss, /min-height: 9\.5rem !important;/);
   assert.doesNotMatch(assistanceCardCss, /min-height: 12rem !important;/);
   assert.match(css, /\.marker-cluster-small/);
   assert.match(css, /@media \(max-width: 760px\)/);
