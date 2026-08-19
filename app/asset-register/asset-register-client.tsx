@@ -18885,7 +18885,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                                   }
                                   toggleQuotePartnerSelection(partner);
                                 }}
-                                aria-label={`${isSelected ? 'Remove' : isDealerAssistancePartner(partner) ? 'Open message with' : 'Select'} ${quotePartnerName(partner)}`}
+                                aria-label={`${isSelected ? 'Remove' : isDealerAssistancePartner(partner) ? 'Message' : 'Select'} ${quotePartnerName(partner)}`}
                                 aria-pressed={isSelected}
                               >
                                 <span className={styles.assetQuotePartnerBody}>
@@ -18899,18 +18899,20 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                                   </span>
                                   <span className={styles.assetQuotePartnerMeta}>
                                     <span>{quotePartnerLocation(partner)}</span>
-                                    <span>{quotePartnerServicesDisplay(partner)}</span>
+                                    {!partner.isAim4priceManaged ? (
+                                      <span>{quotePartnerServicesDisplay(partner)}</span>
+                                    ) : null}
                                     <span>{quotePartnerRadiusDisplay(partner)}</span>
                                   </span>
                                   {partner.isAim4priceManaged ? (
                                     <span className={styles.assetQuoteManagedCopy}>
-                                      This is a service area, not a physical branch. Aim4price will help locate a suitable provider.
+                                      Service area only — Aim4price will help find a suitable provider.
                                     </span>
                                   ) : partner.brandFocus ? (
                                     <span className={styles.assetQuotePartnerCopy}>Brands: {partner.brandFocus}</span>
                                   ) : null}
                                   <span className={styles.assetQuotePartnerAction}>
-                                    <span>{isSelected ? 'Selected' : isDealerAssistancePartner(partner) ? 'Open message' : 'Select company'}</span>
+                                    <span>{isSelected ? 'Selected' : isDealerAssistancePartner(partner) ? 'Message Aim4price' : 'Select company'}</span>
                                     <ChevronRightIcon className={styles.buttonIcon} />
                                   </span>
                                 </span>
