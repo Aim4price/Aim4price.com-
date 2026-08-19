@@ -157,6 +157,19 @@ test('desktop and mobile maps ask for an area, cluster markers and refresh on ma
     client.indexOf('const opensMessage'),
   );
   assert.match(dealerContacts, /\]\.filter\(Boolean\)\.join\(''\) : '';/);
+  const assistanceCardMarkup = client.slice(
+    client.indexOf('quotePartners.map((partner)'),
+    client.indexOf("selectedQuoteOption.emptyPartnerText"),
+  );
+  assert.match(assistanceCardMarkup, /!partner\.isAim4priceManaged/);
+  assert.match(assistanceCardMarkup, /Service area only — Aim4price will help find a suitable provider\./);
+  assert.match(assistanceCardMarkup, /Message Aim4price/);
+  const assistanceCardCss = css.slice(css.indexOf('/* === Assistance cards: larger, calmer and action-led === */'));
+  assert.match(assistanceCardCss, /\.assetQuotePartnerPickerModal:not\(\.assetQuoteMapExpandedModal\) \.assetQuoteMapStage/);
+  assert.match(assistanceCardCss, /\.assetQuoteMapExpandedModal \.assetQuoteMapShell\s*\{[\s\S]*?grid-column: 1 \/ -1 !important;/);
+  assert.doesNotMatch(assistanceCardCss, /\.assetQuotePartnerPickerModal \.assetQuoteMapStage/);
+  assert.match(assistanceCardCss, /min-height: 10\.25rem !important;/);
+  assert.doesNotMatch(assistanceCardCss, /min-height: 12rem !important;/);
   assert.match(css, /\.marker-cluster-small/);
   assert.match(css, /@media \(max-width: 760px\)/);
   assert.match(css, /assetQuoteMapEmptyOverlay/);
