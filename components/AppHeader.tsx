@@ -22,6 +22,7 @@ type ActivePage =
   | 'home'
   | 'valuation'
   | 'asset-register'
+  | 'documents'
   | 'asset-map'
   | 'cost'
   | 'maintenance'
@@ -200,7 +201,10 @@ const DEFAULT_NAV_ITEMS: NavItem[] = [
 ];
 
 const OWNER_NAV_ITEMS: NavItem[] = [
-  ...DEFAULT_NAV_ITEMS,
+  ...BASE_NAV_ITEMS,
+  { key: 'asset-register', href: '/asset-register', label: 'Asset Register' },
+  { key: 'documents', href: '/documents', label: 'Documents' },
+  { key: 'marketplace', href: '/marketplace', label: 'Marketplace' },
   { key: 'asset-map', href: '/asset-map', label: 'Asset Map' },
   { key: 'cost', href: '/my-invoices', label: 'Cost Ledger' },
   { key: 'maintenance', href: '/maintenance', label: 'Maintenance' },
@@ -214,6 +218,7 @@ const ACCOUNT_MENU_ITEMS: AccountMenuItem[] = [
   { href: '/account', label: 'Account' },
   { href: '/asset-map', label: 'Asset Map', accountTypes: ['owner'] },
   { href: '/asset-register', label: 'Asset Register', accountTypes: ['owner'] },
+  { href: '/documents', label: 'Documents', accountTypes: ['owner'] },
   { href: '/my-invoices', label: 'Cost Ledger', accountTypes: ['owner'] },
   { href: '/tracking', label: 'Maintenance', accountTypes: ['dealer'] },
   { href: '/fuel', label: 'Fuel Ledger', accountTypes: ['owner'] },
@@ -577,6 +582,14 @@ function MobileNavIcon({ page }: { page: ActivePage }) {
         <>
           <path d="M4.3 5.4h5l1.7 2h8.7v11.2H4.3z" />
           <path d="M8 11h8M8 14.4h6" />
+        </>
+      );
+      break;
+    case 'documents':
+      icon = (
+        <>
+          <path d="M6.2 3.8h8.1l3.5 3.5v12.9H6.2z" />
+          <path d="M14.3 3.8v3.6h3.5M9 11h6M9 14.4h6M9 17.8h4.1" />
         </>
       );
       break;

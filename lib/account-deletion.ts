@@ -6,6 +6,9 @@ type Queryable = {
 };
 
 const USER_ID_TABLES = [
+  // Document metadata must be removed before its underlying upload catalog.
+  // Asset links cascade from account_documents.
+  'account_documents',
   'asset_register_uploads',
   'fuel_late_entry_evidence',
   'fuel_storage_events',
