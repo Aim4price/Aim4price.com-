@@ -13,7 +13,7 @@ test('Owner and Field Manager apps show the active schedule instead of another s
   assert.match(fieldClient, /const upcomingMaintenance = maintenanceRecords\.find/);
   assert.match(fieldClient, /\{!upcomingMaintenance \? \(/);
   assert.match(fieldClient, /A recurring schedule is already in place\./);
-  assert.match(fieldClient, /Next: \{ownerMaintenanceDueLabel\(upcomingMaintenance\)\}/);
+  assert.match(fieldClient, /Next due[\s\S]*ownerMaintenanceDueLabel\(upcomingMaintenance\)/);
   assert.match(ownerClient, /Recurring schedule already in place/);
   assert.match(ownerClient, /Next: \{upcomingMaintenance\.title\}/);
   assert.match(ownerClient, /upcomingMaintenance \? \([\s\S]*\) : \(\s*<form/);
@@ -48,7 +48,8 @@ test('Desktop completion uses the servicing form and server acknowledgement', ()
   assert.match(desktopClient, /<DesktopServiceModal/);
   assert.match(desktopClient, /Record service/);
   assert.match(serviceModal, /Log work that has already been completed\./);
-  assert.match(serviceModal, /This entry will be saved as done and a new schedule will be created automatically/);
+  assert.match(serviceModal, /This scheduled item will close and the next one will be created automatically/);
+  assert.match(serviceModal, /The scheduled item stays open/);
   assert.match(desktopClient, /confirmedComplete: true/);
   assert.match(completionRoute, /requestedStatus === 'done' && body\.confirmedComplete !== true/);
   assert.match(completionRoute, /Confirm that the maintenance has physically been completed/);

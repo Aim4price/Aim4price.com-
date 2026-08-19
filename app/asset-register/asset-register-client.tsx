@@ -8976,6 +8976,23 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
   const paginationItems = useMemo(() => buildPaginationItems(safeCurrentPage, pageCount), [safeCurrentPage, pageCount]);
 
   useEffect(() => {
+    if (!focusedAssetGroupId) return undefined;
+
+    function handleOutsideUmbrellaPointerDown(event: PointerEvent) {
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+
+      const clickedUmbrella = target.closest<HTMLElement>('[data-asset-group-id]');
+      if (clickedUmbrella?.dataset.assetGroupId === focusedAssetGroupId) return;
+
+      setExpandedAssetGroupIds(new Set());
+    }
+
+    document.addEventListener('pointerdown', handleOutsideUmbrellaPointerDown);
+    return () => document.removeEventListener('pointerdown', handleOutsideUmbrellaPointerDown);
+  }, [focusedAssetGroupId]);
+
+  useEffect(() => {
     if (currentPage > pageCount) {
       setCurrentPage(pageCount);
     }
@@ -15365,6 +15382,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                         <div
                           className={`${styles.assetGroupHeaderRow} ${isAssetGroupMuted ? styles.assetGroupHeaderRowMuted : ''} ${canReceiveDraggedAsset ? styles.assetGroupHeaderRowDragReady : ''} ${isAssetGroupDropTarget ? styles.assetGroupHeaderRowDropTarget : ''}`}
                           key={`asset-group-${group.id}`}
+                          data-asset-group-id={group.id}
                           onDragOver={(event) => handleAssetGroupDragOver(event, group)}
                           onDragLeave={(event) => handleAssetGroupDragLeave(event, group)}
                           onDrop={(event) => void handleAssetGroupDrop(event, group)}
@@ -15560,6 +15578,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                       <div
                         className={`${styles.assetCardRow} ${assetGroup ? styles.assetGroupMemberRow : ''} ${isLastAssetGroupMember ? styles.assetGroupMemberRowLast : ''} ${draggingAssetId === asset.id ? styles.assetCardRowDragging : ''} ${isAssetRowMuted ? styles.assetCardRowMuted : ''}`}
                         key={asset.id}
+                        data-asset-group-id={assetGroup?.id}
                         draggable={canManageAssetGroups && !isSavingAssetGroup}
                         onDragStart={(event) => handleAssetDragStart(event, asset)}
                         onDragEnd={handleAssetDragEnd}

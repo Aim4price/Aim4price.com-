@@ -287,6 +287,10 @@ test('the Asset Register exposes create, manage, collapse, search, and clear umb
   ]);
   assert.match(client, /AssetGroupManagerModal/);
   assert.match(client, /toggleAssetGroupCollapsed/);
+  assert.match(client, /document\.addEventListener\('pointerdown', handleOutsideUmbrellaPointerDown\)/);
+  assert.match(client, /clickedUmbrella\?\.dataset\.assetGroupId === focusedAssetGroupId/);
+  assert.match(client, /data-asset-group-id=\{group\.id\}/);
+  assert.match(client, /data-asset-group-id=\{assetGroup\?\.id\}/);
   assert.match(client, /matchingGroupAssetIds/);
   assert.match(client, /Counted value/);
   assert.match(modal, /No primary asset/);
