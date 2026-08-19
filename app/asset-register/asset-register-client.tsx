@@ -6165,7 +6165,7 @@ function buildQuotePartnerPopupHtml(partner: PartnerDirectoryEntry, isSelected =
     websiteHref ? `<a href="${escapeHtml(websiteHref)}" target="_blank" rel="noreferrer"><span>Website</span><strong>${escapeHtml(quotePartnerWebsiteDisplay(partner))}</strong></a>` : '',
     emailHref ? `<a href="${escapeHtml(emailHref)}"><span>Email</span><strong>${escapeHtml(partner.email)}</strong></a>` : '',
     phoneHref ? `<a href="${escapeHtml(phoneHref)}"><span>Contact</span><strong>${escapeHtml(partner.phone)}</strong></a>` : '',
-  ].filter(Boolean).join('');
+  ].filter(Boolean).join('') : '';
   const opensMessage = isDealerAssistance && !isSelected;
   const actionLabel = isSelected
     ? 'Remove selection'
