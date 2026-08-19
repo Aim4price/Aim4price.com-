@@ -187,23 +187,23 @@ export default async function AdminDashboardPage() {
             ))}
             <div className={styles.storageDivider} aria-hidden="true" />
             <div className={styles.storageRow}>
-              <span>Accounts with uploads</span>
+              <span>Accounts with tracked files</span>
               <strong>{dashboard.storage.customerUsage.accountCountLabel}</strong>
             </div>
             <div className={styles.storageRow}>
-              <span>Average central uploads / account</span>
+              <span>Average tracked storage / account</span>
               <strong>{dashboard.storage.customerUsage.averageLabel}</strong>
             </div>
             <div className={styles.storageRow}>
-              <span>Median central uploads / account</span>
+              <span>Median tracked storage / account</span>
               <strong>{dashboard.storage.customerUsage.medianLabel}</strong>
             </div>
             <div className={styles.storageRow}>
-              <span>Central-upload 90th percentile / account</span>
+              <span>Tracked-storage 90th percentile / account</span>
               <strong>{dashboard.storage.customerUsage.p90Label}</strong>
             </div>
             <div className={styles.storageRow}>
-              <span>Central uploads added in the last 30 days</span>
+              <span>Tracked storage added in the last 30 days</span>
               <strong>{dashboard.storage.customerUsage.addedLast30DaysLabel}</strong>
             </div>
             <div className={styles.storageRow}>

@@ -119,5 +119,5 @@ test('admin measurement captures pricing-relevant account distribution', () => {
   assert.match(adminSource, /interval '30 days'/);
   assert.match(adminSource, /Verified Railway Bucket copies/);
   assert.match(adminSource, /fuel_late_entry_evidence/);
-  assert.match(adminSource, /Inline profile and Brand Kit logos/);
+  assert.match(adminSource, /Inline profile photos and Brand Kit logos/);
 });

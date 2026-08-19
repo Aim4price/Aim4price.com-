@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { clearCachedHeaderSession } from "../../lib/header-session-cache";
 import styles from "./page.module.css";
 
@@ -23,6 +23,14 @@ type AdminUserRow = {
   passwordStatus: "Set" | "Not set";
   lastActiveAtIso: string | null;
   createdAtIso: string | null;
+  storageBytes: number;
+  storageLabel: string;
+  storageGigabytesLabel: string;
+  storageFileCount: number;
+  postgresStorageBytes: number;
+  postgresStorageLabel: string;
+  bucketStorageBytes: number;
+  bucketStorageLabel: string;
 };
 
 type ApiResponse = {
@@ -152,6 +160,7 @@ const SOUTH_AFRICAN_PROVINCES = [
 ] as const;
 
 type SignupDateFilter = "all" | "week" | "month" | "year";
+type AccountSort = "newest" | "storage" | "recent" | "name";
 type ProvinceName = (typeof SOUTH_AFRICAN_PROVINCES)[number];
 type ProvinceFilter = "all" | "__unknown__" | ProvinceName;
 
@@ -179,6 +188,13 @@ const SIGNUP_DATE_FILTER_LABELS: Record<SignupDateFilter, string> = {
   week: "This week",
   month: "This month",
   year: "This year",
+};
+
+const ACCOUNT_SORT_LABELS: Record<AccountSort, string> = {
+  newest: "Newest accounts",
+  storage: "Most storage",
+  recent: "Recently active",
+  name: "Account name",
 };
 
 const PROVINCE_FILTER_OPTIONS: Array<{ value: ProvinceFilter; label: string }> =
@@ -238,6 +254,47 @@ function formatAccountValue(value: string): string {
     .join(" ");
 }
 
+function formatStorageBytes(value: number): string {
+  const bytes = Math.max(0, Math.round(value));
+
+  if (bytes >= 1000 ** 4) return `${(bytes / 1000 ** 4).toFixed(2)} TB`;
+  if (bytes >= 1000 ** 3) return `${(bytes / 1000 ** 3).toFixed(2)} GB`;
+  if (bytes >= 1000 ** 2) return `${(bytes / 1000 ** 2).toFixed(2)} MB`;
+  if (bytes >= 1000) return `${(bytes / 1000).toFixed(2)} KB`;
+  return `${bytes} B`;
+}
+
+function compareIsoDescending(left: string | null, right: string | null): number {
+  const leftTime = left ? new Date(left).getTime() : 0;
+  const rightTime = right ? new Date(right).getTime() : 0;
+  const safeLeft = Number.isFinite(leftTime) ? leftTime : 0;
+  const safeRight = Number.isFinite(rightTime) ? rightTime : 0;
+  return safeRight - safeLeft;
+}
+
+function sortAdminUsers(users: AdminUserRow[], sort: AccountSort): AdminUserRow[] {
+  return [...users].sort((left, right) => {
+    if (sort === "storage") {
+      return (
+        right.storageBytes - left.storageBytes ||
+        left.name.localeCompare(right.name)
+      );
+    }
+
+    if (sort === "recent") {
+      return compareIsoDescending(left.lastActiveAtIso, right.lastActiveAtIso);
+    }
+
+    if (sort === "name") {
+      return left.name.localeCompare(right.name, "en-ZA", {
+        sensitivity: "base",
+      });
+    }
+
+    return compareIsoDescending(left.createdAtIso, right.createdAtIso);
+  });
+}
+
 function normalizeProvinceSearchValue(value: string): string {
   return value.trim().toLowerCase().replace(/[-_]+/g, " ").replace(/\s+/g, " ");
 }
@@ -294,6 +351,8 @@ function matchesSearch(user: AdminUserRow, searchTerm: string): boolean {
     user.introducedBy,
     user.accountStatusLabel,
     user.passwordStatus,
+    user.storageLabel,
+    user.storageGigabytesLabel,
     formatLastActive(user.lastActiveAtIso),
     formatDate(user.createdAtIso),
   ]
@@ -493,45 +552,92 @@ export default function AdminClient({
   const [signupDateFilter, setSignupDateFilter] =
     useState<SignupDateFilter>("all");
   const [provinceFilter, setProvinceFilter] = useState<ProvinceFilter>("all");
+  const [accountSort, setAccountSort] = useState<AccountSort>("newest");
   const [notice, setNotice] = useState<Notice>(null);
   const [busyUserAction, setBusyUserAction] = useState<string | null>(null);
+  const busyUserActionRef = useRef<string | null>(null);
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [accountActionModal, setAccountActionModal] =
     useState<AdminUserRow | null>(null);
+  const accountModalRef = useRef<HTMLElement | null>(null);
+  const accountModalTriggerRef = useRef<HTMLButtonElement | null>(null);
   const [qrModal, setQrModal] = useState<QrModalState>(null);
   const [assetNameModal, setAssetNameModal] =
     useState<AssetNameModalState>(null);
 
+  busyUserActionRef.current = busyUserAction;
+  const isAccountActionModalOpen = accountActionModal !== null;
+
   const visibleUsers = useMemo(
     () =>
-      users.filter(
-        (user) =>
-          matchesSearch(user, searchTerm) &&
-          matchesSignupDateFilter(user, signupDateFilter) &&
-          matchesProvinceFilter(user, provinceFilter),
+      sortAdminUsers(
+        users.filter(
+          (user) =>
+            matchesSearch(user, searchTerm) &&
+            matchesSignupDateFilter(user, signupDateFilter) &&
+            matchesProvinceFilter(user, provinceFilter),
+        ),
+        accountSort,
       ),
-    [users, searchTerm, signupDateFilter, provinceFilter],
+    [users, searchTerm, signupDateFilter, provinceFilter, accountSort],
   );
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, signupDateFilter, provinceFilter]);
+  }, [searchTerm, signupDateFilter, provinceFilter, accountSort]);
 
   useEffect(() => {
-    if (!accountActionModal || typeof window === "undefined") {
+    if (!isAccountActionModalOpen || typeof window === "undefined") {
       return;
     }
 
-    function closeOnEscape(event: KeyboardEvent) {
-      if (event.key === "Escape" && busyUserAction === null) {
+    const modal = accountModalRef.current;
+    const previousBodyOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    function keepFocusInsideModal(event: KeyboardEvent) {
+      if (event.key === "Escape" && busyUserActionRef.current === null) {
+        event.preventDefault();
         setAccountActionModal(null);
+        return;
+      }
+
+      if (event.key !== "Tab" || !modal) {
+        return;
+      }
+
+      const focusable = Array.from(
+        modal.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ),
+      ).filter((element) => !element.hasAttribute("hidden"));
+
+      if (focusable.length === 0) {
+        event.preventDefault();
+        modal.focus();
+        return;
+      }
+
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
       }
     }
 
-    window.addEventListener("keydown", closeOnEscape);
-    return () => window.removeEventListener("keydown", closeOnEscape);
-  }, [accountActionModal, busyUserAction]);
+    window.addEventListener("keydown", keepFocusInsideModal);
+    return () => {
+      window.removeEventListener("keydown", keepFocusInsideModal);
+      document.body.style.overflow = previousBodyOverflow;
+      accountModalTriggerRef.current?.focus();
+    };
+  }, [isAccountActionModalOpen]);
 
   const pageCount = Math.max(
     1,
@@ -557,15 +663,36 @@ export default function AdminClient({
       : `Showing ${pageStartIndex + 1}-${pageEndIndex} of ${visibleUsers.length} ${visibleAccountLabel}${
           hasActiveFilters ? ` (${users.length} total)` : ""
         }`;
-  const accountSummary = useMemo(
-    () => ({
+  const accountSummary = useMemo(() => {
+    const storageBytes = users.reduce(
+      (total, user) => total + user.storageBytes,
+      0,
+    );
+    const storageFileCount = users.reduce(
+      (total, user) => total + user.storageFileCount,
+      0,
+    );
+
+    return {
       total: users.length,
       active: users.filter((user) => user.accountStatus === "active").length,
-      pending: users.filter((user) => user.accountStatus === "pending_payment").length,
-      suspended: users.filter((user) => user.accountStatus === "suspended").length,
-    }),
-    [users],
-  );
+      pending: users.filter(
+        (user) => user.accountStatus === "pending_payment",
+      ).length,
+      suspended: users.filter((user) => user.accountStatus === "suspended")
+        .length,
+      storageLabel: formatStorageBytes(storageBytes),
+      storageFileCount,
+    };
+  }, [users]);
+
+  function openAccountActionModal(
+    user: AdminUserRow,
+    trigger: HTMLButtonElement | null,
+  ) {
+    accountModalTriggerRef.current = trigger;
+    setAccountActionModal(user);
+  }
 
   const filteredQrAssets = useMemo(() => {
     if (!qrModal) {
@@ -1106,13 +1233,20 @@ export default function AdminClient({
 
         <div className={styles.headerActions}>
           <nav className={styles.adminNav} aria-label="Admin navigation">
-            <Link href="/admin" className={`${styles.adminNavLink} ${styles.adminNavActive}`} aria-current="page">
+            <Link
+              href="/admin"
+              className={`${styles.adminNavLink} ${styles.adminNavActive}`}
+              aria-current="page"
+            >
               Users
             </Link>
             <Link href="/admin/dashboard" className={styles.adminNavLink}>
               Dashboard
             </Link>
-            <Link href="/admin/lifecycle-calculator" className={styles.adminNavLink}>
+            <Link
+              href="/admin/lifecycle-calculator"
+              className={styles.adminNavLink}
+            >
               Lifecycle Model
             </Link>
             <Link href="/admin/assistance-network" className={styles.adminNavLink}>
@@ -1131,13 +1265,40 @@ export default function AdminClient({
       </section>
 
       <section className={styles.userSummary} aria-label="Account summary">
-        <article><span>All accounts</span><strong>{accountSummary.total}</strong><small>Registered users</small></article>
-        <article className={styles.summaryActive}><span>Active</span><strong>{accountSummary.active}</strong><small>Can access Aim4price</small></article>
-        <article className={styles.summaryPending}><span>Pending</span><strong>{accountSummary.pending}</strong><small>Awaiting activation or payment</small></article>
-        <article className={styles.summarySuspended}><span>Suspended</span><strong>{accountSummary.suspended}</strong><small>Access currently paused</small></article>
+        <article>
+          <span>All accounts</span>
+          <strong>{accountSummary.total}</strong>
+          <small>Registered users</small>
+        </article>
+        <article className={styles.summaryActive}>
+          <span>Active</span>
+          <strong>{accountSummary.active}</strong>
+          <small>Can access Aim4price</small>
+        </article>
+        <article className={styles.summaryPending}>
+          <span>Pending</span>
+          <strong>{accountSummary.pending}</strong>
+          <small>Awaiting activation or payment</small>
+        </article>
+        <article className={styles.summarySuspended}>
+          <span>Suspended</span>
+          <strong>{accountSummary.suspended}</strong>
+          <small>Access currently paused</small>
+        </article>
+        <article className={styles.summaryStorage}>
+          <span>Tracked client storage</span>
+          <strong>{accountSummary.storageLabel}</strong>
+          <small>
+            {accountSummary.storageFileCount.toLocaleString("en-ZA")} logical
+            files · PostgreSQL + Bucket
+          </small>
+        </article>
       </section>
 
-      <section className={styles.filterPanel} aria-label="Find and filter user accounts">
+      <section
+        className={styles.filterPanel}
+        aria-label="Find and filter user accounts"
+      >
         <div className={styles.filterHeading}>
           <div>
             <strong>Find an account</strong>
@@ -1204,6 +1365,22 @@ export default function AdminClient({
             </select>
           </label>
 
+          <label className={styles.signupFilter}>
+            <span>Sort accounts</span>
+            <select
+              value={accountSort}
+              onChange={(event) =>
+                setAccountSort(event.target.value as AccountSort)
+              }
+              aria-label="Sort user accounts"
+            >
+              {Object.entries(ACCOUNT_SORT_LABELS).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </label>
         </div>
       </section>
 
@@ -1222,23 +1399,18 @@ export default function AdminClient({
           <table className={styles.userTable}>
             <thead>
               <tr>
-                <th>Name</th>
-                <th>Email</th>
-                <th>Number</th>
-                <th>Account type</th>
-                <th>Subtype</th>
+                <th>Account</th>
+                <th>Type</th>
                 <th>Province</th>
-                <th>Introduced by</th>
-                <th>Payment/account status</th>
-                <th>Password</th>
+                <th>Storage</th>
+                <th>Status</th>
                 <th>Last active</th>
-                <th>Signed up</th>
               </tr>
             </thead>
             <tbody>
               {visibleUsers.length === 0 ? (
                 <tr>
-                  <td colSpan={11} className={styles.emptyCell}>
+                  <td colSpan={6} className={styles.emptyCell}>
                     No matching users found.
                   </td>
                 </tr>
@@ -1247,60 +1419,60 @@ export default function AdminClient({
                   <tr
                     key={user.userId}
                     className={styles.accountRow}
-                    role="button"
-                    tabIndex={0}
-                    aria-label={`Manage ${user.name || user.email}`}
-                    onClick={() => setAccountActionModal(user)}
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter" || event.key === " ") {
-                        event.preventDefault();
-                        setAccountActionModal(user);
-                      }
+                    onClick={(event) => {
+                      const trigger =
+                        event.currentTarget.querySelector<HTMLButtonElement>(
+                          `.${styles.rowAccountButton}`,
+                        );
+                      openAccountActionModal(user, trigger);
                     }}
                   >
-                      <td>
+                    <td>
+                      <button
+                          type="button"
+                          className={styles.rowAccountButton}
+                          aria-label={`Manage ${user.name || user.email}`}
+                          onClick={(event) => {
+                          event.stopPropagation();
+                          openAccountActionModal(user, event.currentTarget);
+                        }}
+                      >
                         <strong className={styles.nameCell}>{user.name}</strong>
-                      </td>
-                      <td>{user.email}</td>
-                      <td>
-                        {user.phone ? (
-                          <span className={styles.phoneCell}>{user.phone}</span>
-                        ) : (
-                          <span className={styles.mutedText}>Not saved</span>
-                        )}
-                      </td>
-                      <td>{formatAccountValue(user.accountType)}</td>
-                      <td>{formatAccountValue(user.accountSubtype)}</td>
-                      <td>
-                        {user.province.trim() ? (
-                          formatProvince(user.province)
-                        ) : (
-                          <span className={styles.mutedText}>Not saved</span>
-                        )}
-                      </td>
-                      <td>{user.introducedBy}</td>
-                      <td>
-                        <span className={statusClassName(user.accountStatus)}>
-                          {user.accountStatusLabel}
+                        <span>{user.email || "No email saved"}</span>
+                      </button>
+                    </td>
+                    <td>
+                      <div className={styles.accountTypeCell}>
+                        <strong>{formatAccountValue(user.accountType)}</strong>
+                        <span>{formatAccountValue(user.accountSubtype)}</span>
+                      </div>
+                    </td>
+                    <td>
+                      {user.province.trim() ? (
+                        formatProvince(user.province)
+                      ) : (
+                        <span className={styles.mutedText}>Not saved</span>
+                      )}
+                    </td>
+                    <td>
+                      <div className={styles.storageCell}>
+                        <strong>{user.storageLabel}</strong>
+                        <span>
+                          {user.storageFileCount.toLocaleString("en-ZA")} {" "}
+                          {user.storageFileCount === 1 ? "file" : "files"}
                         </span>
-                      </td>
-                      <td>
-                        <span
-                          className={
-                            user.passwordStatus === "Set"
-                              ? styles.passwordSet
-                              : styles.passwordMissing
-                          }
-                        >
-                          {user.passwordStatus}
-                        </span>
-                      </td>
-                      <td>
-                        <span className={styles.mutedText}>
-                          {formatLastActive(user.lastActiveAtIso)}
-                        </span>
-                      </td>
-                      <td>{formatDate(user.createdAtIso)}</td>
+                      </div>
+                    </td>
+                    <td>
+                      <span className={statusClassName(user.accountStatus)}>
+                        {user.accountStatusLabel}
+                      </span>
+                    </td>
+                    <td>
+                      <span className={styles.mutedText}>
+                        {formatLastActive(user.lastActiveAtIso)}
+                      </span>
+                    </td>
                   </tr>
                 ))
               )}
@@ -1361,10 +1533,12 @@ export default function AdminClient({
         >
           <section
             className={`${styles.qrModal} ${styles.accountActionModal}`}
+            ref={accountModalRef}
             role="dialog"
             aria-modal="true"
             aria-labelledby="admin-account-action-modal-title"
             aria-busy={busyUserAction !== null}
+            tabIndex={-1}
           >
             <header className={styles.qrModalHeader}>
               <div>
@@ -1387,6 +1561,34 @@ export default function AdminClient({
               </button>
             </header>
 
+            <section className={styles.accountStorageOverview} aria-label="Account storage usage">
+              <div className={styles.accountStoragePrimary}>
+                <span>Tracked client storage</span>
+                <strong>{accountActionModal.storageLabel}</strong>
+                <small>
+                  {accountActionModal.storageGigabytesLabel} · {" "}
+                  {accountActionModal.storageFileCount.toLocaleString("en-ZA")} {" "}
+                  {accountActionModal.storageFileCount === 1 ? "file" : "files"}
+                </small>
+              </div>
+              <div>
+                <span>Bucket-only uploads</span>
+                <strong>{accountActionModal.bucketStorageLabel}</strong>
+                <small>New low-cost uploads</small>
+              </div>
+              <div>
+                <span>PostgreSQL files</span>
+                <strong>{accountActionModal.postgresStorageLabel}</strong>
+                <small>Uploads, evidence and inline logos</small>
+              </div>
+            </section>
+
+            <p className={styles.accountStorageNote}>
+              Logical file size for client storage tracking. Internal URL
+              references are counted once; database overhead, mirrors, backups
+              and temporary recovery copies are excluded.
+            </p>
+
             <div className={styles.accountActionSummary}>
               <div>
                 <span>Account</span>
@@ -1408,6 +1610,14 @@ export default function AdminClient({
                 <strong>{accountActionModal.phone || "Not saved"}</strong>
               </div>
               <div>
+                <span>Introduced by</span>
+                <strong>{accountActionModal.introducedBy}</strong>
+              </div>
+              <div>
+                <span>Password</span>
+                <strong>{accountActionModal.passwordStatus}</strong>
+              </div>
+              <div>
                 <span>Last active</span>
                 <strong>{formatLastActive(accountActionModal.lastActiveAtIso)}</strong>
               </div>
@@ -1417,7 +1627,16 @@ export default function AdminClient({
               </div>
             </div>
 
-            <div className={styles.accountActionGrid} aria-label="Account actions">
+            <div className={styles.accountActionSectionHeading}>
+              <strong>Account actions</strong>
+              <span>Manage access and workspace tools.</span>
+            </div>
+
+            <div
+              className={styles.accountActionGrid}
+              role="group"
+              aria-label="Account actions"
+            >
               <button
                 type="button"
                 className={`${styles.accountActionButton} ${styles.openButton}`}
@@ -1488,6 +1707,7 @@ export default function AdminClient({
                 className={`${styles.accountActionButton} ${styles.namesButton}`}
                 onClick={() => {
                   const user = accountActionModal;
+                  accountModalTriggerRef.current = null;
                   setAccountActionModal(null);
                   openAssetNameModal(user);
                 }}
@@ -1501,6 +1721,7 @@ export default function AdminClient({
                 className={`${styles.accountActionButton} ${styles.qrButton}`}
                 onClick={() => {
                   const user = accountActionModal;
+                  accountModalTriggerRef.current = null;
                   setAccountActionModal(null);
                   void openQrModal(user);
                 }}
