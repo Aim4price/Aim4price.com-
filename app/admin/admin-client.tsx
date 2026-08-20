@@ -1037,6 +1037,42 @@ export default function AdminClient({
     }
   }
 
+  async function startWork(user: AdminUserRow) {
+    setNotice(null);
+    setBusyUserAction(`${user.userId}:start_work`);
+
+    try {
+      const response = await fetch("/api/admin/work-tracker", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          action: "start",
+          clientUserId: user.userId,
+          pathname: "/admin",
+        }),
+      });
+      const data = (await response.json()) as ApiResponse;
+
+      if (!response.ok || !data.ok) {
+        throw new Error(data.error || "Failed to start work.");
+      }
+
+      setNotice({
+        tone: "success",
+        message: data.message || `Work started for ${user.name || user.email}.`,
+      });
+      window.dispatchEvent(new Event("aim4price:admin-work-session-changed"));
+    } catch (error) {
+      setNotice({
+        tone: "error",
+        message: error instanceof Error ? error.message : "Failed to start work.",
+      });
+    } finally {
+      setBusyUserAction(null);
+    }
+  }
+
   async function sendAccountNotification(user: AdminUserRow) {
     const draft = notificationComposer;
     if (!draft || draft.userId !== user.userId) return;
@@ -1603,6 +1639,9 @@ export default function AdminClient({
             </Link>
             <Link href="/admin/dashboard" className={styles.adminNavLink}>
               Dashboard
+            </Link>
+            <Link href="/admin/work-tracker" className={styles.adminNavLink}>
+              Work Tracker
             </Link>
             <Link href="/admin/capture-queue" className={styles.adminNavLink}>
               Capture Queue
@@ -2267,6 +2306,17 @@ export default function AdminClient({
                 aria-controls="admin-notification-composer"
               >
                 Send notification
+              </button>
+
+              <button
+                type="button"
+                className={`${styles.accountActionButton} ${styles.workStartButton}`}
+                onClick={() => void startWork(accountActionModal)}
+                disabled={busyUserAction !== null || selectedAccountIsProtected}
+              >
+                {busyUserAction === `${accountActionModal.userId}:start_work`
+                  ? "Starting work..."
+                  : "Start work"}
               </button>
 
               <button

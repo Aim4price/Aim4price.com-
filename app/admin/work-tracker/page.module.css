@@ -1,0 +1,648 @@
+.page {
+  min-height: 100vh;
+  color: #17362c;
+  background: #f4f7f5;
+}
+
+.shell {
+  width: 100%;
+  padding: 1.35rem clamp(1rem, 3vw, 4rem) 7rem;
+  display: grid;
+  gap: 1rem;
+  box-sizing: border-box;
+}
+
+.topBar {
+  padding: 0.25rem 0 0.45rem;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 2rem;
+}
+
+.titleBlock {
+  min-width: 16rem;
+}
+
+.eyebrow {
+  margin: 0 0 0.18rem;
+  color: #60716a;
+  font-size: 0.7rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.titleBlock h1 {
+  margin: 0;
+  color: #0e2e26;
+  font-size: clamp(2rem, 3vw, 2.75rem);
+  line-height: 0.98;
+  letter-spacing: -0.055em;
+}
+
+.titleBlock span {
+  display: inline-block;
+  margin-top: 0.42rem;
+  color: #697973;
+  font-size: 0.93rem;
+  font-weight: 720;
+}
+
+.adminNav {
+  padding: 0.25rem;
+  border: 1px solid #d7e1dc;
+  border-radius: 999px;
+  background: #ffffff;
+  box-shadow: 0 12px 28px rgba(18, 45, 37, 0.045);
+  display: flex;
+  align-items: center;
+  gap: 0.18rem;
+}
+
+.adminNavLink {
+  min-height: 2.4rem;
+  padding: 0 0.95rem;
+  border-radius: 999px;
+  color: #52645d;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  font-size: 0.78rem;
+  font-weight: 850;
+  white-space: nowrap;
+}
+
+.adminNavLink:hover {
+  color: #145840;
+  background: #eef7f2;
+}
+
+.adminNavActive,
+.adminNavActive:hover {
+  color: #ffffff;
+  background: #176c50;
+  box-shadow: 0 5px 12px rgba(23, 108, 80, 0.18);
+}
+
+.privacyBanner,
+.activeCard,
+.historyCard,
+.notice {
+  border: 1px solid #dfe8e3;
+  border-radius: 1rem;
+  background: #ffffff;
+  box-shadow: 0 14px 34px rgba(18, 45, 37, 0.045);
+}
+
+.privacyBanner {
+  padding: 0.9rem 1rem;
+  border-color: rgba(35, 93, 135, 0.2);
+  background: #f2f8fc;
+}
+
+.privacyBanner > div {
+  display: grid;
+  gap: 0.14rem;
+}
+
+.privacyBanner strong {
+  color: #235d87;
+  font-size: 0.83rem;
+  font-weight: 920;
+}
+
+.privacyBanner span {
+  color: #607772;
+  font-size: 0.74rem;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.notice {
+  padding: 0.82rem 1rem;
+  font-size: 0.86rem;
+  font-weight: 820;
+}
+
+.noticeSuccess {
+  border-color: rgba(44, 173, 126, 0.22);
+  color: #176047;
+  background: #edf8f3;
+}
+
+.noticeError {
+  border-color: rgba(198, 75, 75, 0.2);
+  color: #8f3333;
+  background: #fff4f4;
+}
+
+.activeCard,
+.historyCard {
+  padding: 1.05rem;
+}
+
+.activeCardRunning {
+  border-color: rgba(23, 108, 80, 0.3);
+  background: linear-gradient(145deg, #f1faf6 0%, #ffffff 58%);
+}
+
+.sectionHeading,
+.historyToolbar,
+.sessionHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.sectionHeading > div,
+.historyToolbar > div:first-child {
+  display: grid;
+  gap: 0.14rem;
+}
+
+.sectionHeading h2,
+.historyToolbar h2 {
+  margin: 0;
+  color: #17362c;
+  font-size: 1.2rem;
+  font-weight: 940;
+  letter-spacing: -0.025em;
+}
+
+.liveTime {
+  color: #176047;
+  font-size: 1.35rem;
+  font-weight: 950;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.startRow {
+  margin-top: 0.9rem;
+  display: grid;
+  grid-template-columns: minmax(18rem, 1fr) auto;
+  align-items: end;
+  gap: 0.75rem;
+}
+
+.startRow label,
+.reportBar label,
+.noteField {
+  min-width: 0;
+  display: grid;
+  gap: 0.34rem;
+}
+
+.startRow label > span,
+.reportBar label > span,
+.noteField > span {
+  color: #52645d;
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.startRow select,
+.reportBar select {
+  width: 100%;
+  min-height: 2.85rem;
+  padding: 0 0.9rem;
+  border: 1px solid #d5e0da;
+  border-radius: 0.82rem;
+  color: #17362c;
+  background: #ffffff;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 740;
+}
+
+.startButton,
+.stopButton,
+.secondaryButton,
+.reportButton {
+  min-height: 2.85rem;
+  padding: 0 1rem;
+  border-radius: 0.82rem;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 900;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.startButton,
+.reportButton {
+  border: 1px solid #176c50;
+  color: #ffffff;
+  background: #176c50;
+  box-shadow: 0 9px 20px rgba(23, 108, 80, 0.14);
+}
+
+.stopButton {
+  border: 1px solid #9b3434;
+  color: #ffffff;
+  background: #9b3434;
+}
+
+.secondaryButton {
+  border: 1px solid #ccd9d3;
+  color: #31574a;
+  background: #ffffff;
+}
+
+.startButton:disabled,
+.stopButton:disabled,
+.secondaryButton:disabled,
+.reportButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.activeLayout {
+  margin-top: 0.85rem;
+  display: grid;
+  gap: 0.8rem;
+}
+
+.activeDetails {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+
+.activeDetails > div {
+  min-width: 0;
+  padding: 0.72rem 0.78rem;
+  border: 1px solid #dbe7e1;
+  border-radius: 0.85rem;
+  background: rgba(255, 255, 255, 0.82);
+  display: grid;
+  gap: 0.16rem;
+}
+
+.activeDetails span {
+  color: #6d7d77;
+  font-size: 0.64rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.activeDetails strong {
+  overflow: hidden;
+  color: #17362c;
+  font-size: 0.77rem;
+  font-weight: 850;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.noteField textarea {
+  width: 100%;
+  min-height: 4.8rem;
+  resize: vertical;
+  padding: 0.72rem 0.78rem;
+  border: 1px solid #d5e0da;
+  border-radius: 0.82rem;
+  color: #17362c;
+  background: #ffffff;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 670;
+  line-height: 1.45;
+  box-sizing: border-box;
+}
+
+.noteField small {
+  color: #74837d;
+  font-size: 0.66rem;
+  font-weight: 680;
+}
+
+.activeActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.55rem;
+}
+
+.historyCard {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.historyToolbar > div:first-child > span {
+  color: #71817b;
+  font-size: 0.74rem;
+  font-weight: 720;
+}
+
+.periodControls {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.periodToggle,
+.periodMove {
+  padding: 0.2rem;
+  border: 1px solid #d6e1db;
+  border-radius: 999px;
+  background: #f8faf9;
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+}
+
+.periodToggle button,
+.periodMove button {
+  min-height: 2.25rem;
+  padding: 0 0.78rem;
+  border: 0;
+  border-radius: 999px;
+  color: #51645c;
+  background: transparent;
+  font: inherit;
+  font-size: 0.7rem;
+  font-weight: 880;
+  cursor: pointer;
+}
+
+.periodToggle .periodActive {
+  color: #ffffff;
+  background: #176c50;
+}
+
+.reportBar {
+  padding: 0.82rem;
+  border: 1px solid #dfe8e3;
+  border-radius: 0.9rem;
+  background: #f7faf8;
+  display: grid;
+  grid-template-columns: minmax(16rem, 1fr) auto minmax(12rem, auto);
+  align-items: end;
+  gap: 0.7rem;
+}
+
+.reportBar small {
+  align-self: center;
+  color: #708079;
+  font-size: 0.67rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.summaryGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+
+.summaryGrid article {
+  min-width: 0;
+  padding: 0.8rem;
+  border: 1px solid #dfe8e3;
+  border-radius: 0.9rem;
+  background: #ffffff;
+  display: grid;
+  gap: 0.18rem;
+}
+
+.summaryGrid span {
+  color: #687a73;
+  font-size: 0.64rem;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.summaryGrid strong {
+  color: #17362c;
+  font-size: 1.15rem;
+  font-weight: 950;
+}
+
+.summaryGrid small {
+  color: #7a8983;
+  font-size: 0.63rem;
+  font-weight: 680;
+}
+
+.reportableSummary {
+  border-color: rgba(23, 108, 80, 0.26) !important;
+  background: #f0f9f4 !important;
+}
+
+.reportableSummary strong {
+  color: #176047;
+}
+
+.sessionList {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.sessionCard {
+  padding: 0.9rem;
+  border: 1px solid #dfe8e3;
+  border-radius: 0.95rem;
+  background: #ffffff;
+  display: grid;
+  gap: 0.72rem;
+}
+
+.sessionExcluded {
+  border-style: dashed;
+  background: #f8faf9;
+  opacity: 0.82;
+}
+
+.sessionHeader > div {
+  min-width: 0;
+  display: grid;
+  gap: 0.14rem;
+}
+
+.sessionHeader strong {
+  color: #17362c;
+  font-size: 0.88rem;
+  font-weight: 920;
+}
+
+.sessionHeader span {
+  color: #6e7e78;
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
+.sessionHeader b {
+  color: #176047;
+  font-size: 0.9rem;
+  font-weight: 950;
+  white-space: nowrap;
+}
+
+.pagePills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.pagePills span {
+  padding: 0.36rem 0.55rem;
+  border-radius: 999px;
+  color: #31574a;
+  background: #edf7f2;
+  font-size: 0.65rem;
+  font-weight: 760;
+}
+
+.pagePills small {
+  color: #7b8984;
+  font-size: 0.67rem;
+}
+
+.sessionControls {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 0.48rem;
+}
+
+.sessionControls label {
+  min-height: 2.25rem;
+  padding: 0 0.65rem;
+  border: 1px solid #d8e2dd;
+  border-radius: 999px;
+  color: #486159;
+  background: #f8faf9;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.65rem;
+  font-weight: 820;
+  cursor: pointer;
+}
+
+.sessionControls input {
+  width: 0.92rem;
+  height: 0.92rem;
+  margin: 0;
+  accent-color: #176c50;
+}
+
+.sessionControls button {
+  min-height: 2.25rem;
+  padding: 0 0.75rem;
+  border: 1px solid #cddad4;
+  border-radius: 999px;
+  color: #31574a;
+  background: #ffffff;
+  font: inherit;
+  font-size: 0.65rem;
+  font-weight: 880;
+  cursor: pointer;
+}
+
+.sessionControls button:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+
+.emptyState {
+  margin: 0;
+  padding: 1.5rem;
+  border: 1px dashed #d2ddd7;
+  border-radius: 0.9rem;
+  color: #71817b;
+  background: #fafcfb;
+  font-size: 0.82rem;
+  font-weight: 740;
+  text-align: center;
+}
+
+@media (max-width: 980px) {
+  .topBar,
+  .historyToolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .adminNav {
+    align-self: stretch;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    border-radius: 0.9rem;
+  }
+
+  .periodControls {
+    justify-content: space-between;
+  }
+
+  .reportBar {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .reportBar small {
+    grid-column: 1 / -1;
+  }
+
+  .summaryGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 980px) {
+  .shell {
+    padding: 0.9rem 0.65rem 8rem;
+  }
+
+  .adminNav,
+  .startRow,
+  .activeDetails,
+  .reportBar,
+  .summaryGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .periodControls,
+  .activeActions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .periodToggle,
+  .periodMove {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .periodMove {
+    grid-template-columns: auto 1fr auto;
+  }
+
+  .reportBar small {
+    grid-column: auto;
+  }
+
+  .sessionHeader {
+    align-items: flex-start;
+  }
+
+  .sessionControls {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .sessionControls label,
+  .sessionControls button,
+  .activeActions button {
+    width: 100%;
+    box-sizing: border-box;
+  }
+}
