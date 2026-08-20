@@ -55,6 +55,32 @@ test('owner-app capture status, review detail, decisions and files stay inside a
   assert.match(fileRoute, /!capture\.assetId \|\| !ownerAppCanAccessAsset\(owner\.ownerAppAccess, capture\.assetId\)/);
 });
 
+test('capture retraction is owner-only, finance-gated, channel-limited and asset-scoped', async () => {
+  const [route, finalizer, statusRoute, statusView] = await Promise.all([
+    read('app/api/capture-requests/[requestId]/route.ts'),
+    read('lib/capture-finalization.ts'),
+    read('app/api/capture-requests/route.ts'),
+    read('lib/capture-request-view.ts'),
+  ]);
+
+  assert.match(route, /profile\.accountType !== 'owner' \|\| profile\.accountStatus !== 'active'/);
+  assert.match(route, /ownerAppCan\(resolved\.access, 'manage_finance'\)/);
+  assert.match(route, /capture\.ownerUserId !== access\.ownerUserId/);
+  assert.match(route, /capture\.submissionChannel !== 'owner_upload'/);
+  assert.match(route, /access\.sessionKind !== 'owner-app-user' \|\| access\.assetScope !== 'selected'/);
+  assert.match(route, /capture\.assetId && ownerAppCanAccessAsset\(access, capture\.assetId\)/);
+  assert.match(route, /retractCaptureRequestForOwner\(capture\.id, resolved\.actor\)/);
+  assert.match(route, /This capture request was not found/);
+  assert.doesNotMatch(route, /resolveOwnerWorkspaceContext/);
+
+  const retraction = finalizer.slice(finalizer.indexOf('export async function retractCaptureRequestForOwner'));
+  assert.match(retraction, /request\.ownerUserId !== ownerActor\.userId/);
+  assert.match(retraction, /request\.submissionChannel !== 'owner_upload'/);
+  assert.match(statusRoute, /ownerAppCan\(ownerAppAccess, 'manage_finance'\)/);
+  assert.match(statusRoute, /capture\.submissionChannel === 'owner_upload'/);
+  assert.match(statusView, /options\.canRetract && !isTerminal/);
+});
+
 test('Invoice Drop code mutations require finance permission and all code access is asset-scoped', async () => {
   const route = await read('app/api/invoice-drop-codes/[assetId]/route.ts');
 

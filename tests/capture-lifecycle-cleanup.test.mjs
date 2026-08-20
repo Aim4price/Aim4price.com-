@@ -38,6 +38,22 @@ test('terminal capture, promotion and file deletion all reactivate exact cleanup
   );
 });
 
+test('owner retraction keeps the audit record and enters terminal cleanup through cancelled status', async () => {
+  const [route, finalizer, migration] = await Promise.all([
+    read('app/api/capture-requests/[requestId]/route.ts'),
+    read('lib/capture-finalization.ts'),
+    read('database/migrations/84-assisted-capture-file-lifecycle.sql'),
+  ]);
+  const retraction = finalizer.slice(finalizer.indexOf('export async function retractCaptureRequestForOwner'));
+
+  assert.match(route, /retractCaptureRequestForOwner/);
+  assert.match(retraction, /removeOrphanedCaptureInvoiceDocument\(request\)/);
+  assert.match(retraction, /transitionCaptureRequest\(request\.id, 'cancelled'/);
+  assert.doesNotMatch(retraction, /delete from public\.document_capture_(requests|files|events)/);
+  assert.match(migration, /new\.status not in \('declined', 'rejected', 'cancelled'\)/);
+  assert.match(migration, /queue_terminal_capture_file_cleanup_trigger/);
+});
+
 test('quarantine storage registers before returning and queues failed direct deletion', async () => {
   const storage = await read('lib/capture-quarantine-storage.ts');
   const verified = storage.indexOf('const verifiedBytes = await readObjectWithinLimit');

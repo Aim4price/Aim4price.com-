@@ -396,23 +396,46 @@ async function existingCanonicalOutput(request: CaptureRequestDetail): Promise<s
     const result = await getDb().query<{ id: string }>(
       `select id::text as id from public.asset_invoices
         where capture_request_id = $1::uuid
-          and user_id = $2
-          and asset_register_item_id = $3::uuid
         limit 1`,
-      [request.id, request.ownerUserId, request.assetId],
+      [request.id],
     );
     return result.rows[0]?.id ?? null;
   }
   const result = await getDb().query<{ id: string }>(
     `select id::text as id from public.fuel_slips
       where capture_request_id = $1::uuid
-        and user_id = $2
-        and ($3::uuid is null or asset_register_item_id = $3::uuid)
-        and ($4::uuid is null or storage_id = $4::uuid)
       limit 1`,
-    [request.id, request.ownerUserId, request.assetId, request.fuelStorageId],
+    [request.id],
   );
   return result.rows[0]?.id ?? null;
+}
+
+async function removeOrphanedCaptureInvoiceDocument(request: CaptureRequestDetail): Promise<void> {
+  if (request.requestType !== 'invoice' || !request.ownerUserId || !request.assetId) return;
+  await getDb().query(
+    `delete from public.asset_invoice_documents document
+      where document.capture_request_id = $1::uuid
+        and document.user_id = $2
+        and document.asset_register_item_id = $3::uuid
+        and document.source = 'automatic'
+        and not exists (
+          select 1 from public.asset_invoices invoice
+          where invoice.invoice_document_id = document.id
+             or invoice.capture_request_id = $1::uuid
+        )
+        and not exists (
+          select 1 from public.fuel_slips slip
+          where slip.invoice_document_id = document.id
+        )`,
+    [request.id, request.ownerUserId, request.assetId],
+  );
+  const remaining = await getDb().query(
+    `select 1 from public.asset_invoice_documents
+      where capture_request_id = $1::uuid
+      limit 1`,
+    [request.id],
+  );
+  if (remaining.rows[0]) throw new Error('CAPTURE_RETRACTION_DOCUMENT_EXISTS');
 }
 
 async function createInvoiceOutput(
@@ -449,26 +472,36 @@ async function createInvoiceOutput(
     source: 'automatic',
     actor: outputActor,
   });
-  const result = await createMyInvoice(request.ownerUserId, {
-    captureRequestId: request.id,
-    assetId: request.assetId,
-    invoiceDocumentId: document.id,
-    supplierName: captured.supplierName,
-    invoiceNumber: captured.invoiceNumber,
-    invoiceDate: captured.invoiceDate,
-    subtotalExVat: captured.subtotalExVat,
-    vatAmount: captured.vatAmount,
-    totalIncVat: captured.totalIncVat,
-    usageReading: captured.usageReading,
-    usageMetric: captured.usageMetric,
-    source: 'automatic',
-    maintenanceWorkDone: captured.maintenanceWorkDone,
-    partsSupplied: captured.partsSupplied,
-    repairWorkDone: captured.repairWorkDone,
-    notes: captured.notes,
-  }, outputActor);
-  if (!result.invoice) throw new Error('CAPTURE_INVOICE_CREATE_FAILED');
-  return result.invoice.id;
+  try {
+    const result = await createMyInvoice(request.ownerUserId, {
+      captureRequestId: request.id,
+      assetId: request.assetId,
+      invoiceDocumentId: document.id,
+      supplierName: captured.supplierName,
+      invoiceNumber: captured.invoiceNumber,
+      invoiceDate: captured.invoiceDate,
+      subtotalExVat: captured.subtotalExVat,
+      vatAmount: captured.vatAmount,
+      totalIncVat: captured.totalIncVat,
+      usageReading: captured.usageReading,
+      usageMetric: captured.usageMetric,
+      source: 'automatic',
+      maintenanceWorkDone: captured.maintenanceWorkDone,
+      partsSupplied: captured.partsSupplied,
+      repairWorkDone: captured.repairWorkDone,
+      notes: captured.notes,
+    }, outputActor);
+    if (!result.invoice) throw new Error('CAPTURE_INVOICE_CREATE_FAILED');
+    return result.invoice.id;
+  } catch (error) {
+    await removeOrphanedCaptureInvoiceDocument(request).catch((cleanupError) => {
+      console.error('Failed to remove an orphaned assisted-capture invoice document.', {
+        requestId: request.id,
+        cleanupError,
+      });
+    });
+    throw error;
+  }
 }
 
 async function assertFuelOperationalFields(
@@ -659,6 +692,34 @@ export async function declineCaptureRequestForOwner(
     return transitionCaptureRequest(request.id, 'declined', {
       actor: ownerActor,
       reason: text(reason, 1_000) || 'Owner declined the verified document.',
+    });
+  });
+}
+
+export async function retractCaptureRequestForOwner(
+  requestId: string,
+  ownerActor: CaptureEventActor & { actorType: 'owner'; userId: string },
+): Promise<CaptureRequest> {
+  return withFinalizationLock(requestId, async () => {
+    const request = await getCaptureRequestDetail(requestId);
+    if (
+      !request
+      || request.ownerUserId !== ownerActor.userId
+      || request.submissionChannel !== 'owner_upload'
+    ) {
+      throw new Error('CAPTURE_REQUEST_NOT_FOUND');
+    }
+    if (request.status === 'cancelled') return request;
+    if (request.status === 'completed' || request.status === 'declined' || request.status === 'rejected') {
+      throw new Error('CAPTURE_RETRACTION_INVALID');
+    }
+    if (await existingCanonicalOutput(request)) {
+      throw new Error('CAPTURE_RETRACTION_OUTPUT_EXISTS');
+    }
+    await removeOrphanedCaptureInvoiceDocument(request);
+    return transitionCaptureRequest(request.id, 'cancelled', {
+      actor: ownerActor,
+      note: 'Retracted by the asset owner before ledger creation.',
     });
   });
 }

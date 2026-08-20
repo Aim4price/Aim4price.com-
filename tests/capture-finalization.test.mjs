@@ -37,6 +37,45 @@ test('canonical records retain unique capture provenance for retry-safe completi
   assert.match(finalizer, /existingCanonicalOutput/);
 });
 
+test('owner retraction shares the finalization lock and refuses an existing canonical output', async () => {
+  const finalizer = await read('lib/capture-finalization.ts');
+  const start = finalizer.indexOf('export async function retractCaptureRequestForOwner');
+  const retraction = finalizer.slice(start);
+
+  assert.ok(start >= 0);
+  assert.match(retraction, /withFinalizationLock\(requestId/);
+  assert.match(retraction, /getCaptureRequestDetail\(requestId\)/);
+  assert.match(retraction, /existingCanonicalOutput\(request\)/);
+  assert.match(retraction, /CAPTURE_RETRACTION_OUTPUT_EXISTS/);
+  assert.match(retraction, /removeOrphanedCaptureInvoiceDocument\(request\)/);
+  assert.match(retraction, /transitionCaptureRequest\(request\.id, 'cancelled'/);
+  assert.ok(
+    retraction.indexOf('existingCanonicalOutput(request)')
+      < retraction.indexOf("transitionCaptureRequest(request.id, 'cancelled'"),
+  );
+  assert.ok(
+    retraction.indexOf('removeOrphanedCaptureInvoiceDocument(request)')
+      < retraction.indexOf("transitionCaptureRequest(request.id, 'cancelled'"),
+  );
+});
+
+test('partial invoice finalization cannot leave a downloadable orphan after retraction', async () => {
+  const finalizer = await read('lib/capture-finalization.ts');
+  const cleanupStart = finalizer.indexOf('async function removeOrphanedCaptureInvoiceDocument');
+  const cleanupEnd = finalizer.indexOf('async function createInvoiceOutput', cleanupStart);
+  const cleanup = finalizer.slice(cleanupStart, cleanupEnd);
+
+  assert.ok(cleanupStart >= 0 && cleanupEnd > cleanupStart);
+  assert.match(cleanup, /delete from public\.asset_invoice_documents document/);
+  assert.match(cleanup, /document\.capture_request_id = \$1::uuid/);
+  assert.match(cleanup, /document\.source = 'automatic'/);
+  assert.match(cleanup, /invoice\.invoice_document_id = document\.id/);
+  assert.match(cleanup, /invoice\.capture_request_id = \$1::uuid/);
+  assert.match(cleanup, /slip\.invoice_document_id = document\.id/);
+  assert.match(cleanup, /CAPTURE_RETRACTION_DOCUMENT_EXISTS/);
+  assert.match(finalizer, /catch \(error\) \{[\s\S]*?removeOrphanedCaptureInvoiceDocument\(request\)[\s\S]*?throw error/);
+});
+
 test('public quarantine bytes are integrity checked, privately promoted, and never exposed raw', async () => {
   const [finalizer, ownerFileRoute] = await Promise.all([
     read('lib/capture-finalization.ts'),

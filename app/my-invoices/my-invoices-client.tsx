@@ -137,6 +137,7 @@ type CaptureRequestResponse = {
   ok: boolean;
   request?: CaptureRequestStatusItem;
   requests?: CaptureRequestStatusItem[];
+  message?: string;
   error?: string;
 };
 
@@ -1012,6 +1013,7 @@ export default function MyInvoicesClient({
   const accountScopedUrl = (url: string) => withAccountantShare(url, accountantShareId, accountantRegisterId);
   const shouldShowAppHeader = showAppHeader ?? !dealerMode;
   const canManageInvoiceDropCodes = !dealerMode && !accountantShareId && !accountantRegisterId;
+  const canRetractCaptureRequests = !dealerMode && !accountantShareId && !accountantRegisterId;
   const [assets, setAssets] = useState<AssetOption[]>([]);
   const [invoices, setInvoices] = useState<InvoiceRecord[]>([]);
   const [availableYears, setAvailableYears] = useState<number[]>([]);
@@ -2230,6 +2232,23 @@ export default function MyInvoicesClient({
     }
   }
 
+  async function retractCaptureRequest(requestId: string): Promise<void> {
+    const response = await fetch(`/api/capture-requests/${encodeURIComponent(requestId)}`, {
+      method: 'DELETE',
+      credentials: 'include',
+    });
+    const data = (await response.json().catch(() => null)) as CaptureRequestResponse | null;
+    if (!response.ok || !data?.ok) {
+      throw new Error(data?.error || 'This submission could not be retracted. Please try again.');
+    }
+
+    setCaptureRequests((current) => current.filter((request) => request.id !== requestId));
+    setNotice({
+      tone: 'success',
+      message: data.message || 'Submission retracted. It was removed from assisted capture.',
+    });
+  }
+
   function closeCaptureReview() {
     setCaptureReviewRequestId(null);
     const url = new URL(window.location.href);
@@ -2290,6 +2309,7 @@ export default function MyInvoicesClient({
         <CaptureRequestStatusList
           requests={captureRequests}
           onReview={canManageInvoiceDropCodes ? setCaptureReviewRequestId : undefined}
+          onRetract={canRetractCaptureRequests ? retractCaptureRequest : undefined}
         />
 
         <section className={styles.invoiceToolbar} aria-label="Saved cost record controls">

@@ -12,6 +12,8 @@ const [
   ownerDecisionModal,
   ownerDecisionRoute,
   ownerCaptureFileRoute,
+  adminCaptureFileRoute,
+  ownerRetractionRoute,
   retiredInvoiceReader,
   retiredFuelReader,
 ] = await Promise.all([
@@ -24,6 +26,8 @@ const [
   readFile(new URL('../components/CaptureRequestDecisionModal.tsx', import.meta.url), 'utf8'),
   readFile(new URL('../app/api/capture-requests/[requestId]/decision/route.ts', import.meta.url), 'utf8'),
   readFile(new URL('../app/api/capture-requests/[requestId]/files/[fileId]/route.ts', import.meta.url), 'utf8'),
+  readFile(new URL('../app/api/admin/capture-requests/[requestId]/files/[fileId]/route.ts', import.meta.url), 'utf8'),
+  readFile(new URL('../app/api/capture-requests/[requestId]/route.ts', import.meta.url), 'utf8'),
   readFile(new URL('../app/api/my-invoices/extract/route.ts', import.meta.url), 'utf8'),
   readFile(new URL('../app/api/fuel/slips/extract/route.ts', import.meta.url), 'utf8'),
 ]);
@@ -71,6 +75,30 @@ test('pending captures are shown separately from financial ledger records', () =
   assert.match(statusList, /Could not process/);
 });
 
+test('owners can retract unfinished assisted captures from both ledgers with a clear confirmation', () => {
+  assert.match(statusList, /request\.canRetract && onRetract/);
+  assert.match(statusList, /Retract this submission\?/);
+  assert.match(statusList, /won&apos;t be added to your ledger/);
+  assert.match(statusList, /Keep submission/);
+  assert.match(statusList, /Retracting…/);
+  assert.match(statusList, /role="dialog"/);
+  assert.match(statusList, /role="alert"/);
+
+  for (const client of [costClient, fuelClient]) {
+    const handler = client.slice(
+      client.indexOf('async function retractCaptureRequest'),
+      client.indexOf('async function retractCaptureRequest') + 1_500,
+    );
+    assert.match(handler, /method: 'DELETE'/);
+    assert.match(handler, /credentials: 'include'/);
+    assert.match(handler, /current\.filter\(\(request\) => request\.id !== requestId\)/);
+    assert.match(client, /onRetract=/);
+  }
+  assert.match(costClient, /canRetractCaptureRequests = !dealerMode && !accountantShareId && !accountantRegisterId/);
+  assert.match(fuelClient, /onRetract=\{!accountantShareId && !accountantRegisterId/);
+  assert.match(ownerRetractionRoute, /status: 'cancelled'/);
+});
+
 test('invoice bytes use an authorised no-store download instead of public upload URLs', () => {
   assert.match(invoiceStore, /buildMyInvoiceDocumentDownloadUrl/);
   assert.match(invoiceStore, /getInvoiceDocumentUploadForActor/);
@@ -96,4 +124,14 @@ test('owners review externally contributed documents before a ledger record is c
   assert.doesNotMatch(ownerCaptureFileRoute, /capture\.submissionChannel/);
   assert.match(ownerCaptureFileRoute, /file\.securityStatus !== 'clean'/);
   assert.match(ownerCaptureFileRoute, /Content-Security-Policy': "sandbox; default-src 'none'"/);
+});
+
+test('retracted source files are immediately hidden while asynchronous cleanup runs', () => {
+  for (const route of [ownerCaptureFileRoute, adminCaptureFileRoute]) {
+    assert.match(route, /HIDDEN_TERMINAL_STATUSES/);
+    assert.match(route, /cancelled/);
+    assert.match(route, /declined/);
+    assert.match(route, /rejected/);
+    assert.match(route, /HIDDEN_TERMINAL_STATUSES\.has\(capture\.status\)/);
+  }
 });

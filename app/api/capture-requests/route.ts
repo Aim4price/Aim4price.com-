@@ -5,7 +5,7 @@ import {
   type CaptureRequestType,
 } from '../../../lib/capture-requests';
 import { toCaptureRequestStatusView } from '../../../lib/capture-request-view';
-import { getOwnerAppAccess, ownerAppCanAccessAsset } from '../../../lib/owner-app-access';
+import { getOwnerAppAccess, ownerAppCan, ownerAppCanAccessAsset } from '../../../lib/owner-app-access';
 import {
   getWorkspaceAssetIds,
   resolveOwnerWorkspaceContext,
@@ -64,7 +64,14 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       ok: true,
-      requests: visibleRequests.map(toCaptureRequestStatusView),
+      requests: visibleRequests.map((capture) => toCaptureRequestStatusView(capture, {
+        canRetract: Boolean(
+          ownerAppAccess
+          && ownerAppCan(ownerAppAccess, 'manage_finance')
+          && capture.submissionChannel === 'owner_upload'
+          && capture.ownerUserId === ownerAppAccess.ownerUserId
+        ),
+      })),
     });
   } catch (error) {
     console.error('Aim4price capture status load failed.', error);

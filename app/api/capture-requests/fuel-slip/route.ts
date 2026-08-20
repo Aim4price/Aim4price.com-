@@ -135,7 +135,10 @@ export async function POST(request: Request) {
     }, actor);
     captureFileLinked = true;
 
-    return NextResponse.json({ ok: true, request: toCaptureRequestStatusView(capture) }, { status: 202 });
+    return NextResponse.json({
+      ok: true,
+      request: toCaptureRequestStatusView(capture, { canRetract: actor.actorType === 'owner' }),
+    }, { status: 202 });
   } catch (error) {
     if (createdCaptureId && !captureFileLinked) {
       await transitionCaptureRequest(createdCaptureId, 'rejected', {

@@ -145,6 +145,7 @@ test("pending quarantine files use a private sandboxed inspection before an expl
   assert.match(fileRoute, /Cache-Control": "private, no-store/);
   assert.match(fileRoute, /Content-Security-Policy": "sandbox/);
   assert.match(fileRoute, /X-Aim4price-File-Security-Status/);
+  assert.match(fileRoute, /HIDDEN_TERMINAL_STATUSES\.has\(capture\.status\)/);
 });
 
 test("admin workflow exposes guarded claim, draft, information, duplicate, complete and reject actions", () => {

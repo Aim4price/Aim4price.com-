@@ -13,6 +13,7 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 type RouteContext = { params: { requestId?: string; fileId?: string } };
+const HIDDEN_TERMINAL_STATUSES = new Set(['cancelled', 'declined', 'rejected']);
 
 function cleanText(value: unknown, maxLength = 500): string {
   return typeof value === 'string' ? value.trim().slice(0, maxLength) : '';
@@ -57,6 +58,7 @@ export async function GET(_request: NextRequest, context: RouteContext) {
       !capture
       || !file
       || capture.ownerUserId !== ownerId
+      || HIDDEN_TERMINAL_STATUSES.has(capture.status)
       || (
         owner.ownerAppAccess.sessionKind === 'owner-app-user'
         && owner.ownerAppAccess.assetScope === 'selected'
