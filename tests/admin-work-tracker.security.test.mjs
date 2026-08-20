@@ -28,6 +28,9 @@ const shared = read("lib/admin-work-tracker-shared.ts");
 const migration = read("database/migrations/83-admin-work-tracker.sql");
 const trackerPage = read("app/admin/work-tracker/page.tsx");
 const trackerClient = read("app/admin/work-tracker/work-tracker-client.tsx");
+const trackerStyles = read("app/admin/work-tracker/page.module.css");
+const accountPicker = read("app/admin/work-tracker/account-picker.tsx");
+const accountPickerStyles = read("app/admin/work-tracker/account-picker.module.css");
 const trackerBar = read("components/AdminWorkTrackerBar.tsx");
 const adminClient = read("app/admin/admin-client.tsx");
 const report = read("lib/admin-work-tracker-report.ts");
@@ -123,4 +126,101 @@ test("only completed Admin-owned work sessions can be permanently deleted", () =
   assert.match(trackerClient, /This cannot be undone/);
   assert.match(trackerClient, /"Delete entry"/);
   assert.match(trackerClient, /deletingSessionId !== null/);
+});
+
+test("account pickers are searchable, keyboard accessible and bounded", () => {
+  assert.match(accountPicker, /type="search"/);
+  assert.match(accountPicker, /role="combobox"/);
+  assert.match(accountPicker, /aria-autocomplete="list"/);
+  assert.match(accountPicker, /aria-expanded=/);
+  assert.match(accountPicker, /aria-controls=/);
+  assert.match(accountPicker, /aria-activedescendant=/);
+  assert.match(accountPicker, /role="listbox"/);
+  assert.match(accountPicker, /role="option"/);
+  assert.match(accountPicker, /aria-selected=/);
+  assert.match(accountPicker, /aria-live="polite"/);
+  assert.match(accountPicker, /tabIndex=\{-1\}/);
+  assert.match(accountPicker, /closeAndMoveFocus\(event\.shiftKey\)/);
+  assert.match(accountPicker, /aria-labelledby=\{`\$\{labelId\} \$\{valueId\}`\}/);
+
+  for (const key of ["ArrowDown", "ArrowUp", "Home", "End", "Enter", "Escape"]) {
+    assert.match(accountPicker, new RegExp(`[\"']${key}[\"']`));
+  }
+
+  assert.match(accountPicker, /option\.label/);
+  assert.match(accountPicker, /option\.description/);
+  assert.match(accountPicker, /option\.searchText/);
+  assert.match(accountPicker, /toLocaleLowerCase|toLowerCase/);
+  assert.match(accountPicker, /includes\(/);
+  assert.match(accountPicker, /Recent accounts/);
+  assert.match(accountPicker, /No accounts (?:found|match)/);
+
+  assert.match(accountPickerStyles, /max-height\s*:/);
+  assert.match(accountPickerStyles, /overflow-y\s*:\s*auto/);
+  assert.match(accountPickerStyles, /scrollbar-width\s*:/);
+  assert.match(accountPickerStyles, /::-webkit-scrollbar/);
+  assert.match(accountPickerStyles, /::-webkit-scrollbar-thumb/);
+});
+
+test("the calm tracker keeps account selection compact and native selects out", () => {
+  assert.match(
+    trackerClient,
+    /import AccountPicker(?:,\s*\{[^}]+\})? from "\.\/account-picker"/,
+  );
+  assert.ok(
+    (trackerClient.match(/<AccountPicker\b/g) || []).length >= 2,
+    "start and report account selection should both use the searchable picker",
+  );
+  assert.match(trackerClient, /client\.name/);
+  assert.match(trackerClient, /client\.email/);
+  assert.match(trackerClient, /client\.accountType/);
+  assert.doesNotMatch(trackerClient, /<select(?:\s|>)/);
+  assert.match(trackerClient, /Start work (?:&|&amp;) open account/);
+  assert.match(trackerClient, /Preview (?:&|&amp;) print report/);
+  assert.match(trackerClient, /styles\.privacyNote/);
+  assert.match(trackerStyles, /\.privacyNote\s*\{/);
+});
+
+test("history navigation and optional session detail stay clear and progressive", () => {
+  assert.match(trackerClient, /aria-pressed=\{period === "week"\}/);
+  assert.match(trackerClient, /aria-pressed=\{period === "month"\}/);
+  assert.match(trackerClient, /Previous\s+\{period\}/);
+  assert.match(trackerClient, /This\s+\{period\}/);
+  assert.match(trackerClient, /Next\s+\{period\}/);
+  assert.match(trackerClient, /shiftAdminWorkAnchor\(period, value, -1\)/);
+  assert.match(trackerClient, /setAnchor\(getJohannesburgDateKey\(\)\)/);
+  assert.match(trackerClient, /shiftAdminWorkAnchor\(period, value, 1\)/);
+
+  const pageDetails = trackerClient.match(
+    /<details className=\{styles\.pageDetails\}[^>]*>[\s\S]*?<\/details>/,
+  )?.[0] || "";
+  const reportOptions = trackerClient.match(
+    /<details className=\{styles\.reportOptions\}[^>]*>[\s\S]*?<\/details>/,
+  )?.[0] || "";
+
+  assert.ok(pageDetails, "page areas should use a native expandable details element");
+  assert.match(pageDetails, /<summary(?:\s[^>]*)?>/);
+  assert.match(pageDetails, /session\.pages\.length/);
+  assert.match(pageDetails, /page\.pageLabel/);
+  assert.match(pageDetails, /formatAdminWorkDuration\(page\.durationSeconds\)/);
+  assert.doesNotMatch(pageDetails, /<details[^>]*\sopen(?:\s|=|>)/);
+
+  assert.ok(reportOptions, "owner report switches should be collapsed in a details element");
+  assert.match(reportOptions, /<summary(?:\s[^>]*)?>/);
+  assert.match(reportOptions, /showTimesInReport/);
+  assert.match(reportOptions, /showNoteInReport/);
+  assert.match(trackerClient, /styles\.sessionMainControls[\s\S]*?includeInReport/);
+  assert.doesNotMatch(reportOptions, /includeInReport/);
+  assert.doesNotMatch(reportOptions, /Delete entry/);
+  assert.doesNotMatch(reportOptions, /<details[^>]*\sopen(?:\s|=|>)/);
+
+  assert.match(trackerStyles, /\.pageDetails\b/);
+  assert.match(trackerStyles, /\.reportOptions\b/);
+  assert.match(trackerStyles, /\.pageDetails\s+summary/);
+  assert.match(trackerStyles, /\.reportOptions\s+summary/);
+  assert.ok(
+    trackerClient.indexOf("styles.deleteSessionButton") >
+      trackerClient.indexOf("styles.reportOptions"),
+    "Delete entry should remain outside and after the collapsed report options",
+  );
 });
