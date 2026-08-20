@@ -246,7 +246,8 @@ function mapInboxItem(row: NotificationInboxRow, currentKeys: Set<string>): Noti
   const payload = asRecord(row.payload);
   const readAtIso = iso(row.read_at);
   const archivedAtIso = iso(row.archived_at);
-  const current = currentKeys.has(row.event_key);
+  const current = currentKeys.has(row.event_key)
+    || payload.source === 'admin_account_message';
   const resolvedAtIso = iso(row.resolved_at)
     || (row.action_required && !current ? new Date().toISOString() : null);
 

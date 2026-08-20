@@ -101,7 +101,7 @@ type AccountProfileLogoState = {
   logoUrl: string | null;
 };
 
-type HeaderNotificationCategory = 'partner_note' | 'lead' | 'qr_scan' | 'fuel' | 'maintenance' | 'dealer_schedule' | 'dealer_cost' | 'capture' | 'dealer_correction' | 'asset_discovery';
+type HeaderNotificationCategory = 'admin_message' | 'partner_note' | 'lead' | 'qr_scan' | 'fuel' | 'maintenance' | 'dealer_schedule' | 'dealer_cost' | 'capture' | 'dealer_correction' | 'asset_discovery';
 
 type HeaderNotificationTone = 'neutral' | 'success' | 'warning' | 'info';
 

@@ -16,6 +16,12 @@ import {
   listAdminUsers,
   setAdminUserAccountStatus,
 } from "../../../../lib/admin-users";
+import {
+  DEFAULT_ADMIN_NOTIFICATION_TITLE,
+  MAX_ADMIN_NOTIFICATION_BODY_LENGTH,
+  MAX_ADMIN_NOTIFICATION_TITLE_LENGTH,
+  sendAdminAccountNotification,
+} from "../../../../lib/admin-account-notifications";
 import { auth } from "../../../../lib/auth";
 import { getResetPasswordRedirectUrl } from "../../../../lib/email";
 
@@ -33,6 +39,7 @@ type AdminAction =
   | "pending"
   | "suspend"
   | "send_reset"
+  | "send_notification"
   | "open_account"
   | "close_account"
   | "delete_user";
@@ -112,7 +119,7 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const { response } = await requireAdminSession();
+  const { session, response } = await requireAdminSession();
 
   if (response) {
     return response;
@@ -144,6 +151,44 @@ export async function POST(request: Request) {
   }
 
   try {
+    if (action === "send_notification") {
+      const notificationTitle =
+        typeof body.notificationTitle === "string"
+          ? body.notificationTitle.trim()
+          : DEFAULT_ADMIN_NOTIFICATION_TITLE;
+      const notificationBody =
+        typeof body.notificationBody === "string"
+          ? body.notificationBody.trim()
+          : "";
+
+      if (!notificationBody) {
+        return jsonError("A notification message is required.");
+      }
+      if (notificationTitle.length > MAX_ADMIN_NOTIFICATION_TITLE_LENGTH) {
+        return jsonError(
+          `Notification titles may not exceed ${MAX_ADMIN_NOTIFICATION_TITLE_LENGTH} characters.`,
+        );
+      }
+      if (notificationBody.length > MAX_ADMIN_NOTIFICATION_BODY_LENGTH) {
+        return jsonError(
+          `Notification messages may not exceed ${MAX_ADMIN_NOTIFICATION_BODY_LENGTH} characters.`,
+        );
+      }
+
+      const sent = await sendAdminAccountNotification({
+        targetUserId: userId,
+        senderUserId: session?.user?.id || "",
+        title: notificationTitle,
+        body: notificationBody,
+      });
+      return NextResponse.json({
+        ok: true,
+        message: sent.targetEmail
+          ? `Notification sent to ${sent.targetEmail}.`
+          : "Notification sent.",
+      });
+    }
+
     if (action === "open_account") {
       const email = await assertAdminCanOpenUser(userId);
       const users = await listAdminUsers();

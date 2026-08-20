@@ -28,6 +28,7 @@ import {
 import { listCaptureRequests } from './capture-requests';
 
 export type HeaderNotificationCategory =
+  | 'admin_message'
   | 'partner_note'
   | 'lead'
   | 'qr_scan'
