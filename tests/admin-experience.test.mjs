@@ -23,7 +23,7 @@ test("the one-page lifecycle flow has clear navigation and selectable structures
   assert.match(lifecycle, /href="#lifecycle-results"/);
   assert.match(lifecycle, /href="#lifecycle-planning"/);
   assert.match(lifecycle, /aria-pressed=\{scenario\.id === state\.preferredScenario\}/);
-  assert.match(lifecycle, /Choose the structure to use in the advice summary/);
+  assert.match(lifecycle, /Choose the structure to use in the ownership summary/);
   assert.match(lifecycle, /See the cost and cash-flow trade-off clearly/);
   assert.match(lifecycleStyles, /\.workspaceNav \{[\s\S]*?position: sticky/);
   assert.match(lifecycleStyles, /\.scenarioChoiceActive/);
@@ -58,6 +58,8 @@ test("the users page separates navigation, account health and filtering", () => 
   assert.match(userStyles, /\.filterPanel/);
   assert.match(adminNavigation, /aria-current=\{isActive \? "page" : undefined\}/);
   assert.match(adminNavigationStyles, /\.active/);
+  assert.match(adminNavigationStyles, /@media \(max-width: 980px\)/);
+  assert.match(adminNavigationStyles, /@media print[\s\S]*?display: none !important/);
 });
 
 test("selecting an admin account opens an accessible options modal", () => {
@@ -86,6 +88,9 @@ test("admin users and pricing metrics share one logical storage ledger", () => {
   assert.match(adminUsers, /buildLogicalClientStorageSelect/);
   assert.match(adminDashboard, /buildLogicalClientStorageSelect/);
   assert.match(adminDashboard, /with all_uploads as/);
+  assert.match(adminDashboard, /Full estimates saved/);
+  assert.doesNotMatch(adminDashboard, /PayFast\/payment logic/);
+  assert.match(dashboard, /timeZone: "Africa\/Johannesburg"/);
   assert.doesNotMatch(adminDashboard, /1024 \* 1024/);
   assert.doesNotMatch(
     adminDashboard,

@@ -471,6 +471,11 @@
   cursor: pointer;
 }
 
+.requestButton:disabled {
+  cursor: wait;
+  opacity: 0.58;
+}
+
 .requestButton strong {
   display: block;
   color: #17664c;
@@ -536,6 +541,17 @@
 
 .workbench {
   scroll-margin-top: 1rem;
+}
+
+.workbenchLoading {
+  min-height: 7rem;
+  padding: 1.25rem;
+  box-sizing: border-box;
+  color: #60736b;
+  display: grid;
+  place-items: center;
+  font-size: 0.84rem;
+  font-weight: 780;
 }
 
 .workbenchHeader {

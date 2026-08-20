@@ -674,24 +674,25 @@
 
 .openButton {
   border-color: rgba(23, 77, 62, 0.22) !important;
-  color: #ffffff !important;
-  background: #174d3e !important;
-  box-shadow: 0 7px 16px rgba(23, 77, 62, 0.12);
+  color: #174d3e !important;
+  background: #ffffff !important;
+  box-shadow: none;
 }
 
 .workStartButton {
-  border-color: rgba(35, 93, 135, 0.28) !important;
+  border-color: rgba(23, 77, 62, 0.28) !important;
   color: #ffffff !important;
-  background: #235d87 !important;
-  box-shadow: 0 7px 16px rgba(35, 93, 135, 0.14);
+  background: #174d3e !important;
+  box-shadow: 0 7px 16px rgba(23, 77, 62, 0.14);
 }
 
 .workStartButton:hover:not(:disabled) {
-  background: #194e75 !important;
+  background: #10392f !important;
 }
 
 .openButton:hover:not(:disabled) {
-  background: #10392f !important;
+  border-color: rgba(23, 77, 62, 0.38) !important;
+  background: #f1f7f4 !important;
 }
 
 .activateButton {

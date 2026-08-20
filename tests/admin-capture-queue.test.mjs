@@ -61,7 +61,7 @@ test("all current admin navigation surfaces expose Capture Queue", () => {
 test("queue prioritises deadline work and includes useful operational filters", () => {
   assert.match(client, /sortOverdueFirst/);
   assert.match(client, /Overdue/);
-  assert.match(client, /Due today/);
+  assert.match(client, /Due in 24 hours/);
   assert.match(client, /Needs information/);
   assert.match(client, /Awaiting owner/);
   assert.match(client, /Completed today/);
@@ -90,6 +90,13 @@ test("selected work uses a split private document and verified capture workbench
   assert.match(client, /Internal admin note/);
   assert.match(client, /Audit history/);
   assert.match(client, /\/api\/admin\/capture-requests\/\$\{encodeURIComponent\(requestId\)\}/);
+  assert.match(client, /detailLoadGenerationRef/);
+  assert.match(client, /queueLoadGenerationRef/);
+  assert.match(client, /scrollIntoView\(\{ behavior: "smooth", block: "start" \}\)/);
+  assert.match(client, /Discard the unsaved changes in this capture request/);
+  assert.match(client, /beforeunload/);
+  assert.match(client, /sandbox=""/);
+  assert.match(client, /activeFile\.securityStatus === "clean"/);
   assert.match(styles, /grid-template-columns: minmax\(25rem, 0\.95fr\) minmax\(32rem, 1\.05fr\)/);
   assert.match(styles, /@media \(max-width: 980px\)/);
 });
@@ -141,7 +148,9 @@ test("matching uses an admin-scoped customer and destination search instead of r
 
 test("pending quarantine files use a private sandboxed inspection before an explicit security decision", () => {
   assert.match(client, /Security decision required/);
-  assert.match(client, /private sandboxed preview/);
+  assert.match(client, /private preview/);
+  assert.match(client, /<iframe sandbox="" referrerPolicy="no-referrer"/);
+  assert.match(client, /activeFile\?\.downloadUrl && activeFile\.securityStatus === "clean"/);
   assert.match(client, /Mark check passed/);
   assert.doesNotMatch(fileRoute, /locked until its security check passes\.\", 423/);
   assert.match(fileRoute, /file\.securityStatus === "rejected"/);

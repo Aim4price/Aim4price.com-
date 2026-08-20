@@ -144,6 +144,6 @@ test("workspace comparison tables and panels adapt to smaller screens and print"
   assert.match(styles, /\.workspace \{/);
   assert.match(styles, /\.answerStrip \{[\s\S]*?grid-template-columns: repeat\(5/);
   assert.match(styles, /\.comparisonWrap \{[\s\S]*?overflow-x: auto/);
-  assert.match(styles, /@media \(max-width: 760px\)[\s\S]*?\.answerStrip,[\s\S]*?grid-template-columns: 1fr/);
+  assert.match(styles, /@media \(max-width: 980px\)[\s\S]*?\.answerStrip,[\s\S]*?grid-template-columns: 1fr/);
   assert.match(styles, /@media print[\s\S]*?\.headerActions/);
 });

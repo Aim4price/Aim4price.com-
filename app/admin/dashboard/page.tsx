@@ -14,6 +14,7 @@ function formatGeneratedAt(value: string): string {
   }
 
   return new Intl.DateTimeFormat("en-ZA", {
+    timeZone: "Africa/Johannesburg",
     day: "2-digit",
     month: "short",
     year: "numeric",
