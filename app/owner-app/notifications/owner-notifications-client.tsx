@@ -9,7 +9,7 @@ type NotificationTone = 'neutral' | 'success' | 'warning' | 'info';
 type NotificationState = 'needs_action' | 'new' | 'history';
 type NotificationView = 'active' | 'history';
 type InboxAction = 'mark_read' | 'archive' | 'resolve';
-type NotificationCategoryFilter = 'all' | 'maintenance' | 'costs' | 'leads' | 'notes' | 'fuel' | 'assets' | 'discovery';
+type NotificationCategoryFilter = 'all' | 'messages' | 'maintenance' | 'costs' | 'leads' | 'notes' | 'fuel' | 'assets' | 'discovery';
 
 type Notification = {
   id: string;
@@ -45,6 +45,7 @@ type NotificationsResponse = {
 
 const CATEGORY_FILTERS: Array<{ value: NotificationCategoryFilter; label: string }> = [
   { value: 'all', label: 'All' },
+  { value: 'messages', label: 'Messages' },
   { value: 'maintenance', label: 'Maintenance' },
   { value: 'costs', label: 'Costs' },
   { value: 'leads', label: 'Leads' },
@@ -55,6 +56,7 @@ const CATEGORY_FILTERS: Array<{ value: NotificationCategoryFilter; label: string
 ];
 
 function destination(item: Notification): string {
+  if (item.category === 'admin_message') return '/owner-app/notifications';
   if (item.href.startsWith('/owner-app/')) return item.href;
   if (item.category === 'capture' && item.href) return item.href;
   if (item.assetId) return `/owner-app/assets/${encodeURIComponent(item.assetId)}`;
@@ -89,6 +91,7 @@ function formatNotificationTime(value: string): string {
 
 function matchesCategory(item: Notification, filter: NotificationCategoryFilter): boolean {
   if (filter === 'all') return true;
+  if (filter === 'messages') return item.category === 'admin_message';
   if (filter === 'maintenance') return item.category === 'maintenance' || item.category === 'dealer_schedule';
   if (filter === 'costs') return item.category === 'dealer_cost' || item.category === 'capture';
   if (filter === 'leads') return item.category === 'lead';
