@@ -17,6 +17,7 @@ export const MAX_ASSET_REGISTER_PHOTOS = 12;
 export const MAX_ASSET_REGISTER_DOCUMENTS = 20;
 export const MAX_ASSET_REGISTER_UPLOAD_BYTES = 5 * 1024 * 1024;
 export const MAX_ASSET_REGISTER_DOCUMENT_UPLOAD_BYTES = 12 * 1024 * 1024;
+export const MAX_DOCUMENT_VAULT_UPLOAD_BYTES = 25 * 1024 * 1024;
 export const ALLOWED_ASSET_REGISTER_IMAGE_TYPES = new Set([
   'image/jpeg',
   'image/png',
@@ -781,7 +782,7 @@ async function createBucketOnlyAssetRegisterUpload(input: {
   if (
     !Number.isSafeInteger(input.byteSize)
     || input.byteSize <= 0
-    || input.byteSize > MAX_ASSET_REGISTER_DOCUMENT_UPLOAD_BYTES
+    || input.byteSize > MAX_DOCUMENT_VAULT_UPLOAD_BYTES
   ) {
     throw new Error('Bucket-only upload size is outside the supported range.');
   }

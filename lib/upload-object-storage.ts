@@ -28,7 +28,7 @@ let cachedConfigKey = '';
 
 const BUCKET_ONLY_UPLOAD_ID_PATTERN = /^bkt-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 const BUCKET_ONLY_OBJECT_KEY_PATTERN = /^v2\/asset-register\/[0-9a-f]{2}\/bkt-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
-const MAX_BUCKET_ONLY_OBJECT_READ_BYTES = 12 * 1024 * 1024;
+const MAX_BUCKET_ONLY_OBJECT_READ_BYTES = 25 * 1024 * 1024;
 
 function firstEnvironmentValue(...values: Array<string | undefined>): string {
   for (const value of values) {
@@ -446,3 +446,4 @@ export async function createBucketSignedGetUrl(input: {
     { expiresIn: 60 },
   );
 }
+

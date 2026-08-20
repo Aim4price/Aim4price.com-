@@ -80,9 +80,36 @@ test('documents may stay account-level or link to multiple owned assets', () => 
 
 test('upload validation and orphan cleanup protect storage', () => {
   assert.match(collectionRoute, /isAllowedAssetRegisterDocument\(fileEntry\)/);
-  assert.match(collectionRoute, /MAX_ASSET_REGISTER_DOCUMENT_UPLOAD_BYTES/);
+  assert.match(collectionRoute, /MAX_DOCUMENT_VAULT_UPLOAD_BYTES/);
+  assert.match(collectionRoute, /isAccountDocumentCategory\(categoryEntry\)/);
+  assert.ok(collectionRoute.indexOf('isAccountDocumentCategory(categoryEntry)') < collectionRoute.indexOf('createAssetRegisterUpload({'));
   assert.match(collectionRoute, /removeUnusedAccountDocumentUpload\(owner\.userId, savedUploadId\)/);
   assert.match(documentStore, /not exists \([\s\S]*?public\.account_documents document/);
+  assert.match(documentStore, /throw new Error\('DOCUMENT_CATEGORY_INVALID'\)/);
+  assert.match(itemRoute, /message === 'DOCUMENT_CATEGORY_INVALID'/);
+});
+
+test('Document Vault accepts larger files and uploads a validated batch sequentially', () => {
+  assert.match(client, /MAX_DOCUMENT_FILES_PER_BATCH = 20/);
+  assert.match(client, /MAX_DOCUMENT_FILE_BYTES = 25 \* 1024 \* 1024/);
+  assert.match(client, /MAX_DOCUMENT_BATCH_BYTES = 250 \* 1024 \* 1024/);
+  assert.match(client, /type="file"[\s\S]*?multiple/);
+  assert.match(client, /for \(let index = 0; index < filesToUpload\.length; index \+= 1\)/);
+  assert.match(client, /Uploading \$\{uploadProgress\.current\} of \$\{uploadProgress\.total\}/);
+  assert.match(client, /setSelectedFiles\(failedFiles\)/);
+  assert.match(client, /titleFromFileName\(file\.name\) \|\| file\.name/);
+  assert.match(client, /Drop documents here or browse/);
+});
+
+test('empty-vault onboarding removes zero-value controls and foregrounds core categories', () => {
+  assert.match(client, /showSummary && view === 'documents'[\s\S]*?summary\.totalDocuments > 0/);
+  assert.match(client, /hasDocumentsInView \? <section className=\{styles\.toolbar\}/);
+  assert.match(client, /Keep every important document in one place/);
+  assert.match(client, /Finance/);
+  assert.match(client, /Accounting &amp; tax/);
+  assert.match(client, /Licences &amp; permits/);
+  assert.match(client, /account-level by default/i);
+  assert.match(client, /showAssetPicker && assets\.length/);
 });
 
 test('Recycle Bin keeps recoverable documents for 90 days and purges expired uploads', () => {
@@ -169,6 +196,9 @@ test('live vault interactions keep errors, focus and view mutations safe', () =>
   assert.match(client, /pageContent\?\.setAttribute\('inert', ''\)/);
   assert.match(client, /event\.key !== 'Tab'/);
   assert.match(client, /returnFocusRef\.current\?\.focus\(\)/);
+  assert.match(client, /<fieldset className=\{styles\.modalFields\} disabled=\{busy\}>/);
+  assert.match(client, /role="status" aria-live="polite"/);
+  assert.match(client, /async function readVaultResponse/);
   assert.match(client, /setOperationBusy\(false\);\s*setModalMode\(null\);/);
   assert.match(client, /disabled=\{busy \|\| loading\}/);
   assert.match(client, /disabled=\{loading \|\| busy\}/);
@@ -176,5 +206,5 @@ test('live vault interactions keep errors, focus and view mutations safe', () =>
   assert.match(styles, /\.fileMeta \.fileName\s*\{[\s\S]*?text-overflow:\s*ellipsis/);
   assert.match(styles, /\.filePicker:focus-within/);
   assert.match(styles, /\.assetOptions label:focus-within/);
-  assert.match(client, /showSummary && !loadFailed/);
+  assert.match(client, /showSummary && view === 'documents' && !loading && !loadFailed/);
 });
