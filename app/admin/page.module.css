@@ -679,6 +679,17 @@
   box-shadow: 0 7px 16px rgba(23, 77, 62, 0.12);
 }
 
+.workStartButton {
+  border-color: rgba(35, 93, 135, 0.28) !important;
+  color: #ffffff !important;
+  background: #235d87 !important;
+  box-shadow: 0 7px 16px rgba(35, 93, 135, 0.14);
+}
+
+.workStartButton:hover:not(:disabled) {
+  background: #194e75 !important;
+}
+
 .openButton:hover:not(:disabled) {
   background: #10392f !important;
 }
@@ -1993,7 +2004,7 @@
 
   .adminNav {
     display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-columns: repeat(6, minmax(0, 1fr));
     border-radius: 0.9rem;
   }
 

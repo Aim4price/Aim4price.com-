@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import type { ReactNode } from 'react';
+import AdminWorkTrackerBar from '../components/AdminWorkTrackerBar';
 import AppFooter from '../components/AppFooter';
 import AppPatternBackground from '../components/AppPatternBackground';
 import './globals.css';
@@ -61,10 +62,10 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <body>
         <div className="appRoot">
           <AppPatternBackground>{children}</AppPatternBackground>
+          <AdminWorkTrackerBar />
           <AppFooter />
         </div>
       </body>
     </html>
   );
 }
-
