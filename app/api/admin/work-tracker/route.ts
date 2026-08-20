@@ -1,12 +1,15 @@
 import { NextResponse } from "next/server";
 import { isAim4priceAdminEmail } from "../../../../lib/account-constants";
 import {
+  ADMIN_SUPPORT_COOKIE_MAX_AGE_SECONDS,
+  ADMIN_SUPPORT_COOKIE_NAME,
   getAnyServerSession,
   getServerSession,
   isAdminSupportSession,
 } from "../../../../lib/auth-session";
 import {
   AdminWorkTrackerError,
+  deleteAdminWorkSession,
   getActiveAdminWorkSession,
   getAdminWorkHistory,
   heartbeatAdminWorkSession,
@@ -21,6 +24,28 @@ export const dynamic = "force-dynamic";
 
 function jsonError(message: string, status = 400) {
   return NextResponse.json({ ok: false, error: message }, { status });
+}
+
+function withAdminSupportCookie(response: NextResponse, userId: string): NextResponse {
+  response.cookies.set(ADMIN_SUPPORT_COOKIE_NAME, userId, {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    maxAge: ADMIN_SUPPORT_COOKIE_MAX_AGE_SECONDS,
+  });
+  return response;
+}
+
+function withClearedAdminSupportCookie(response: NextResponse): NextResponse {
+  response.cookies.set(ADMIN_SUPPORT_COOKIE_NAME, "", {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    maxAge: 0,
+  });
+  return response;
 }
 
 async function requireAdminSession() {
@@ -137,7 +162,15 @@ export async function POST(request: Request) {
         pathname: body.pathname,
         supportTargetUserId,
       });
-      return NextResponse.json({ ok: true, activeSession, message: `Work started for ${activeSession.clientName}.` });
+      return withAdminSupportCookie(
+        NextResponse.json({
+          ok: true,
+          activeSession,
+          redirectUrl: "/account",
+          message: `Work started for ${activeSession.clientName}.`,
+        }),
+        activeSession.clientUserId,
+      );
     }
 
     if (action === "heartbeat") {
@@ -167,14 +200,17 @@ export async function POST(request: Request) {
         adminUserId: session.user.id,
         sessionId: body.sessionId,
       });
-      return NextResponse.json({
-        ok: true,
-        activeSession: null,
-        stoppedSession,
-        message: stoppedSession
-          ? `Work stopped for ${stoppedSession.clientName}.`
-          : "No work timer was running.",
-      });
+      return withClearedAdminSupportCookie(
+        NextResponse.json({
+          ok: true,
+          activeSession: null,
+          stoppedSession,
+          redirectUrl: "/admin",
+          message: stoppedSession
+            ? `Work stopped for ${stoppedSession.clientName}.`
+            : "No work timer was running.",
+        }),
+      );
     }
 
     return jsonError("Unsupported work tracker action.");
@@ -206,5 +242,31 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ ok: true, workSession, message: "Work session updated." });
   } catch (error) {
     return responseForError(error, "Failed to update the work session.");
+  }
+}
+
+export async function DELETE(request: Request) {
+  const { session, response } = await requireAdminSession();
+  if (response || !session) return response;
+
+  let body: Record<string, unknown>;
+  try {
+    body = (await request.json()) as Record<string, unknown>;
+  } catch {
+    return jsonError("Invalid request body.");
+  }
+
+  try {
+    const deletedSessionId = await deleteAdminWorkSession({
+      adminUserId: session.user.id,
+      sessionId: body.sessionId,
+    });
+    return NextResponse.json({
+      ok: true,
+      deletedSessionId,
+      message: "Tracked work entry deleted.",
+    });
+  } catch (error) {
+    return responseForError(error, "Failed to delete the tracked work entry.");
   }
 }

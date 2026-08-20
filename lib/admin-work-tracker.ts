@@ -780,6 +780,35 @@ export async function updateAdminWorkSession(input: {
   return mapSession(row, pageSelection?.pages ?? []);
 }
 
+export async function deleteAdminWorkSession(input: {
+  adminUserId: string;
+  sessionId: unknown;
+}): Promise<string> {
+  const adminUserId = cleanText(input.adminUserId, 200);
+  const sessionId = cleanText(input.sessionId, 200);
+  if (!adminUserId || !sessionId) {
+    throw new AdminWorkTrackerError("Completed work session not found.", 404);
+  }
+  await ensureAdminWorkTrackerSchema();
+
+  const result = await getDb().query<{ id: string }>(
+    `
+      delete from public.admin_work_sessions
+      where id = $1
+        and admin_user_id = $2
+        and stopped_at is not null
+      returning id
+    `,
+    [sessionId, adminUserId],
+  );
+  const deletedSessionId = result.rows[0]?.id;
+  if (!deletedSessionId) {
+    throw new AdminWorkTrackerError("Completed work session not found.", 404);
+  }
+
+  return deletedSessionId;
+}
+
 export async function getAdminWorkHistory(input: {
   adminUserId: string;
   period?: unknown;
@@ -834,8 +863,7 @@ export async function getAdminWorkHistory(input: {
         periodStartedAt,
         periodStoppedAt,
       );
-    })
-    .filter((session) => session.durationSeconds > 0 || session.pages.length > 0);
+    });
   const included = sessions.filter((session) => session.includeInReport);
   const reportPageKeys = new Set(
     included.flatMap((session) => session.pages.map((page) => page.pageKey)),

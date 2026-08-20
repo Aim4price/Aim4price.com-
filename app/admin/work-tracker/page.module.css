@@ -554,6 +554,18 @@
   cursor: wait;
 }
 
+.sessionControls .deleteSessionButton {
+  border-color: #d7aaaa;
+  color: #8f2f2f;
+  background: #fff8f8;
+}
+
+.sessionControls .deleteSessionButton:hover:not(:disabled) {
+  border-color: #9b3434;
+  color: #ffffff;
+  background: #9b3434;
+}
+
 .emptyState {
   margin: 0;
   padding: 1.5rem;
