@@ -38,7 +38,6 @@ function firstEnvironmentValue(...values: Array<string | undefined>): string {
 
   return '';
 }
-
 export function getUploadStorageMode(): UploadStorageMode {
   const mode = String(process.env.AIM4PRICE_UPLOAD_STORAGE_MODE ?? 'postgres')
     .trim()
@@ -446,4 +445,3 @@ export async function createBucketSignedGetUrl(input: {
     { expiresIn: 60 },
   );
 }
-
