@@ -72,7 +72,7 @@ function errorResponse(error: unknown, fallback: string) {
   }
 
   return NextResponse.json(
-    { ok: false, error: message && !message.includes('DOCUMENT_') ? message : fallback },
+    { ok: false, error: fallback },
     { status: 500 },
   );
 }

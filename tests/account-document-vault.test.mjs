@@ -5,7 +5,6 @@ import test from 'node:test';
 const [
   page,
   client,
-  comingSoon,
   styles,
   headerStyles,
   collectionRoute,
@@ -20,7 +19,6 @@ const [
 ] = await Promise.all([
   readFile(new URL('../app/documents/page.tsx', import.meta.url), 'utf8'),
   readFile(new URL('../app/documents/documents-client.tsx', import.meta.url), 'utf8'),
-  readFile(new URL('../app/documents/documents-coming-soon.tsx', import.meta.url), 'utf8'),
   readFile(new URL('../app/documents/page.module.css', import.meta.url), 'utf8'),
   readFile(new URL('../components/AppHeader.module.css', import.meta.url), 'utf8'),
   readFile(new URL('../app/api/documents/route.ts', import.meta.url), 'utf8'),
@@ -65,7 +63,9 @@ test('download proves document ownership before resolving shared upload bytes', 
   assert.match(downloadRoute, /Cache-Control': 'private, no-store'/);
   assert.doesNotMatch(client, /\/api\/asset-register\/uploads\//);
   assert.match(sharedUploadRoute, /getAccountDocumentUploadOwner\(uploadId\)/);
-  assert.match(sharedUploadRoute, /session\.user\.id !== documentOwnerUserId/);
+  assert.match(sharedUploadRoute, /if \(documentOwnerUserId\) \{[\s\S]*?status: 404/);
+  assert.doesNotMatch(sharedUploadRoute, /session\.user\.id !== documentOwnerUserId/);
+  assert.match(sharedUploadRoute, /Cache-Control': 'private, no-store'/);
   assert.match(sharedUploadRoute, /return new NextResponse\('Not found', \{ status: 404 \}\)/);
 });
 
@@ -121,21 +121,60 @@ test('the account dropdown scrolls when its actions exceed the viewport', () => 
   assert.match(headerStyles, /overscroll-behavior:\s*contain/);
 });
 
-test('Documents is an owner-only blurred Coming Soon preview', () => {
-  assert.match(page, /<DocumentsComingSoon/);
-  assert.match(comingSoon, /<AppHeader active="documents"/);
-  assert.match(comingSoon, /Document Vault/);
-  assert.match(comingSoon, /Coming soon/i);
-  assert.match(comingSoon, /comingSoonPreview/);
-  assert.match(comingSoon, /comingSoonCard/);
-  assert.match(comingSoon, /comingSoonCopy/);
-  assert.match(comingSoon, /with or without a linked asset/);
-  assert.match(styles, /\.hero\s*\{/);
-  assert.match(styles, /\.summaryGrid\s*\{/);
-  assert.match(styles, /\.comingSoonPreview\s*\{[\s\S]*?filter:\s*blur\(9px\)/);
-  assert.match(styles, /\.comingSoonCard\s*\{[\s\S]*?grid-template-columns:\s*auto minmax\(0, 1fr\) auto/);
-  assert.match(styles, /\.comingSoonCopy h1\s*\{[\s\S]*?white-space:\s*nowrap/);
-  assert.match(styles, /@media \(max-width: 1050px\)/);
-  assert.match(styles, /@media \(max-width: 700px\)/);
+test('Documents activates the full vault with the Asset Register visual system', () => {
+  assert.match(page, /import DocumentsClient from '.\/documents-client'/);
+  assert.match(page, /<DocumentsClient/);
+  assert.doesNotMatch(page, /ComingSoon/);
+  assert.match(client, /<AppHeader active="documents"/);
+  assert.match(client, /id="document-vault-title">Document Vault/);
+  assert.match(client, /Recycle Bin/);
+  assert.match(client, /Summary/);
+  assert.match(client, /Filters/);
+  assert.match(client, /Upload document/);
+  assert.match(styles, /\.shell\s*\{[\s\S]*?1320px/);
+  assert.match(styles, /\.vaultCanvas\s*\{[\s\S]*?padding:\s*clamp\(1\.15rem, 1\.9vw, 1\.7rem\)/);
+  assert.match(styles, /\.hero h1\s*\{[\s\S]*?font-size:\s*clamp\(2\.35rem, 4\.15vw, 3\.55rem\)/);
+  assert.match(styles, /\.hero h1\s*\{[\s\S]*?font-weight:\s*900/);
+  assert.match(styles, /\.topActions\s*\{[\s\S]*?repeat\(4, minmax\(0, 1fr\)\)/);
+  assert.match(styles, /\.recycleButton\s*\{[\s\S]*?#fff0e3/);
+  assert.match(styles, /\.summaryButton\s*\{[\s\S]*?#eaf5ff/);
+  assert.match(styles, /--header-action-light-green-bg:\s*#ecf9f1/);
+  assert.match(styles, /\.filtersButton\s*\{[\s\S]*?--header-action-light-green-bg/);
+  assert.match(styles, /\.primaryHeaderButton\s*\{[\s\S]*?--header-action-dark-green-top/);
+  assert.match(client, /summaryViewportRef/);
+  assert.match(client, /scrollSummary\(-1\)/);
+  assert.match(client, /scrollSummary\(1\)/);
+  assert.match(client, /hasOverflow:\s*maxScrollLeft > 2/);
+  assert.match(client, /disabled=\{!summaryNavigation\.hasOverflow \|\| summaryNavigation\.atStart\}/);
+  assert.match(client, /disabled=\{!summaryNavigation\.hasOverflow \|\| summaryNavigation\.atEnd\}/);
+  assert.match(client, /hidden=\{!summaryNavigation\.hasOverflow\}/);
+  assert.match(styles, /\.summaryViewport\s*\{[\s\S]*?scroll-snap-type:\s*x mandatory/);
+  assert.match(styles, /flex:\s*0 0 calc\(\(100% - \(var\(--summary-gap\) \* 2\)\) \/ 3\)/);
+  assert.match(styles, /@media \(max-width: 1180px\)[\s\S]*?flex-basis:\s*calc\(\(100% - var\(--summary-gap\)\) \/ 2\)/);
+  assert.match(styles, /@media \(max-width: 760px\)[\s\S]*?flex-basis:\s*100%/);
+  assert.match(styles, /@media \(max-width: 760px\)[\s\S]*?\.summaryNav\s*\{[\s\S]*?display:\s*none/);
+  assert.match(styles, /\.documentCard\s*\{[\s\S]*?rgba\(198, 216, 223, 0\.98\)/);
+  assert.doesNotMatch(styles, /comingSoon/i);
   assert.match(styles, /@media \(prefers-reduced-motion: reduce\)/);
+});
+
+test('internal server errors do not leak implementation details to vault clients', () => {
+  assert.match(collectionRoute, /\{ ok: false, error: fallback \}/);
+  assert.doesNotMatch(collectionRoute, /!message\.includes\('DOCUMENT_'\)/);
+});
+
+test('live vault interactions keep errors, focus and view mutations safe', () => {
+  assert.match(client, /setModalNotice\(\{ tone: 'error'/);
+  assert.match(client, /className=\{styles\.modalNotice\} role="alert"/);
+  assert.match(client, /pageContent\?\.setAttribute\('inert', ''\)/);
+  assert.match(client, /event\.key !== 'Tab'/);
+  assert.match(client, /returnFocusRef\.current\?\.focus\(\)/);
+  assert.match(client, /setOperationBusy\(false\);\s*setModalMode\(null\);/);
+  assert.match(client, /disabled=\{busy \|\| loading\}/);
+  assert.match(client, /disabled=\{loading \|\| busy\}/);
+  assert.match(client, /className=\{styles\.fileName\}/);
+  assert.match(styles, /\.fileMeta \.fileName\s*\{[\s\S]*?text-overflow:\s*ellipsis/);
+  assert.match(styles, /\.filePicker:focus-within/);
+  assert.match(styles, /\.assetOptions label:focus-within/);
+  assert.match(client, /showSummary && !loadFailed/);
 });

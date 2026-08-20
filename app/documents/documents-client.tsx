@@ -64,9 +64,13 @@ type VaultResponse = {
 type VaultView = 'documents' | 'recycle-bin';
 type ModalMode = 'upload' | 'edit';
 type Notice = { tone: 'success' | 'error'; message: string };
+type SummaryNavigation = { hasOverflow: boolean; atStart: boolean; atEnd: boolean };
 type IconName =
   | 'archive'
   | 'calendar'
+  | 'chevron-down'
+  | 'chevron-left'
+  | 'chevron-right'
   | 'close'
   | 'document'
   | 'download'
@@ -128,6 +132,15 @@ function Icon({ name, ...props }: { name: IconName } & SVGProps<SVGSVGElement>) 
       break;
     case 'calendar':
       paths = <><rect x="4" y="5.5" width="16" height="14" rx="2" /><path d="M8 3.5v4M16 3.5v4M4 10h16M8 14h2M13.5 14h2" /></>;
+      break;
+    case 'chevron-down':
+      paths = <path d="m7 9.5 5 5 5-5" />;
+      break;
+    case 'chevron-left':
+      paths = <path d="m14.5 6.5-5.5 5.5 5.5 5.5" />;
+      break;
+    case 'chevron-right':
+      paths = <path d="m9.5 6.5 5.5 5.5-5.5 5.5" />;
       break;
     case 'close':
       paths = <path d="m6 6 12 12M18 6 6 18" />;
@@ -236,16 +249,29 @@ export default function DocumentsClient() {
   const [view, setView] = useState<VaultView>('documents');
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState<'all' | DocumentCategory>('all');
+  const [showSummary, setShowSummary] = useState(true);
   const [showFilters, setShowFilters] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<Notice | null>(null);
+  const [modalNotice, setModalNotice] = useState<Notice | null>(null);
   const [modalMode, setModalMode] = useState<ModalMode | null>(null);
   const [editingDocument, setEditingDocument] = useState<VaultDocument | null>(null);
   const [draft, setDraft] = useState<DocumentDraft>(createEmptyDraft);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [assetSearch, setAssetSearch] = useState('');
+  const [summaryNavigation, setSummaryNavigation] = useState<SummaryNavigation>({
+    hasOverflow: false,
+    atStart: true,
+    atEnd: true,
+  });
   const requestSequence = useRef(0);
+  const summaryViewportRef = useRef<HTMLDivElement | null>(null);
+  const modalRef = useRef<HTMLElement | null>(null);
+  const pageContentRef = useRef<HTMLDivElement | null>(null);
+  const returnFocusRef = useRef<HTMLElement | null>(null);
+  const busyRef = useRef(false);
 
   const loadDocuments = useCallback(async (targetView: VaultView, options: { quiet?: boolean } = {}) => {
     const sequence = ++requestSequence.current;
@@ -258,11 +284,13 @@ export default function DocumentsClient() {
       if (!response.ok || !data.ok) throw new Error(data.error || 'The Document Vault could not be loaded.');
       if (sequence !== requestSequence.current) return;
 
+      setLoadFailed(false);
       setDocuments(data.documents ?? []);
       setSummary(data.summary ?? EMPTY_SUMMARY);
       setAssets(data.assets ?? []);
     } catch (error) {
       if (sequence !== requestSequence.current) return;
+      setLoadFailed(true);
       setNotice({
         tone: 'error',
         message: error instanceof Error ? error.message : 'The Document Vault could not be loaded.',
@@ -277,17 +305,71 @@ export default function DocumentsClient() {
   }, [loadDocuments, view]);
 
   useEffect(() => {
+    if (!showSummary || loadFailed) return;
+    const viewport = summaryViewportRef.current;
+    if (!viewport) return;
+
+    const updateNavigation = () => {
+      const maxScrollLeft = Math.max(0, viewport.scrollWidth - viewport.clientWidth);
+      setSummaryNavigation({
+        hasOverflow: maxScrollLeft > 2,
+        atStart: viewport.scrollLeft <= 2,
+        atEnd: viewport.scrollLeft >= maxScrollLeft - 2,
+      });
+    };
+
+    const frame = window.requestAnimationFrame(updateNavigation);
+    viewport.addEventListener('scroll', updateNavigation, { passive: true });
+    window.addEventListener('resize', updateNavigation);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      viewport.removeEventListener('scroll', updateNavigation);
+      window.removeEventListener('resize', updateNavigation);
+    };
+  }, [loadFailed, showSummary]);
+
+  useEffect(() => {
     if (!modalMode) return;
+
+    const dialog = modalRef.current;
+    const pageContent = pageContentRef.current;
+    dialog?.querySelector<HTMLElement>('[data-modal-initial-focus]')?.focus();
+    pageContent?.setAttribute('inert', '');
+    pageContent?.setAttribute('aria-hidden', 'true');
+
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && !busy) setModalMode(null);
+      if (event.key === 'Escape' && !busyRef.current) {
+        setModalNotice(null);
+        setModalMode(null);
+        return;
+      }
+      if (event.key !== 'Tab' || !dialog) return;
+
+      const focusable = Array.from(dialog.querySelectorAll<HTMLElement>(
+        'a[href], button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])',
+      )).filter((element) => element.getClientRects().length > 0);
+      if (!focusable.length) return;
+
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
     };
     document.addEventListener('keydown', handleKeyDown);
     document.body.style.overflow = 'hidden';
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
       document.body.style.overflow = '';
+      pageContent?.removeAttribute('inert');
+      pageContent?.removeAttribute('aria-hidden');
+      returnFocusRef.current?.focus();
     };
-  }, [busy, modalMode]);
+  }, [modalMode]);
 
   const filteredDocuments = useMemo(() => {
     const needle = search.trim().toLowerCase();
@@ -322,6 +404,7 @@ export default function DocumentsClient() {
   }, [assetSearch, assets]);
 
   function switchView(nextView: VaultView) {
+    if (busyRef.current || loading) return;
     setView(nextView);
     setCategory('all');
     setSearch('');
@@ -330,15 +413,18 @@ export default function DocumentsClient() {
   }
 
   function openUploadModal() {
+    returnFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     setEditingDocument(null);
     setDraft(createEmptyDraft());
     setSelectedFile(null);
     setAssetSearch('');
+    setModalNotice(null);
     setModalMode('upload');
     setNotice(null);
   }
 
   function openEditModal(document: VaultDocument) {
+    returnFocusRef.current = window.document.activeElement instanceof HTMLElement ? window.document.activeElement : null;
     setEditingDocument(document);
     setDraft({
       title: document.title,
@@ -349,12 +435,18 @@ export default function DocumentsClient() {
     });
     setSelectedFile(null);
     setAssetSearch('');
+    setModalNotice(null);
     setModalMode('edit');
     setNotice(null);
   }
 
   function updateDraft<K extends keyof DocumentDraft>(key: K, value: DocumentDraft[K]) {
     setDraft((current) => ({ ...current, [key]: value }));
+  }
+
+  function setOperationBusy(nextBusy: boolean) {
+    busyRef.current = nextBusy;
+    setBusy(nextBusy);
   }
 
   function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
@@ -372,20 +464,27 @@ export default function DocumentsClient() {
     }));
   }
 
+  function scrollSummary(direction: -1 | 1) {
+    const viewport = summaryViewportRef.current;
+    if (!viewport) return;
+    viewport.scrollBy({ left: direction * Math.max(320, viewport.clientWidth * 0.88), behavior: 'smooth' });
+  }
+
   async function submitDocument(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!modalMode || busy) return;
 
     if (!draft.title.trim()) {
-      setNotice({ tone: 'error', message: 'Add a clear document title.' });
+      setModalNotice({ tone: 'error', message: 'Add a clear document title.' });
       return;
     }
     if (modalMode === 'upload' && !selectedFile) {
-      setNotice({ tone: 'error', message: 'Select a document to upload.' });
+      setModalNotice({ tone: 'error', message: 'Select a document to upload.' });
       return;
     }
 
-    setBusy(true);
+    setOperationBusy(true);
+    setModalNotice(null);
     setNotice(null);
 
     try {
@@ -411,6 +510,7 @@ export default function DocumentsClient() {
       const data = await response.json() as VaultResponse;
       if (!response.ok || !data.ok) throw new Error(data.error || 'The document could not be saved.');
 
+      setOperationBusy(false);
       setModalMode(null);
       setEditingDocument(null);
       setSelectedFile(null);
@@ -420,13 +520,19 @@ export default function DocumentsClient() {
       });
       await loadDocuments('documents', { quiet: true });
     } catch (error) {
-      setNotice({
+      setModalNotice({
         tone: 'error',
         message: error instanceof Error ? error.message : 'The document could not be saved.',
       });
     } finally {
-      setBusy(false);
+      setOperationBusy(false);
     }
+  }
+
+  function closeModal() {
+    if (busyRef.current) return;
+    setModalNotice(null);
+    setModalMode(null);
   }
 
   async function moveToRecycleBin(document: VaultDocument) {
@@ -435,7 +541,7 @@ export default function DocumentsClient() {
     );
     if (!confirmed) return;
 
-    setBusy(true);
+    setOperationBusy(true);
     setNotice(null);
     try {
       const response = await fetch(`/api/documents/${encodeURIComponent(document.id)}`, { method: 'DELETE' });
@@ -447,12 +553,12 @@ export default function DocumentsClient() {
     } catch (error) {
       setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'The document could not be moved.' });
     } finally {
-      setBusy(false);
+      setOperationBusy(false);
     }
   }
 
   async function restoreDocument(document: VaultDocument) {
-    setBusy(true);
+    setOperationBusy(true);
     setNotice(null);
     try {
       const response = await fetch(`/api/documents/${encodeURIComponent(document.id)}`, {
@@ -468,7 +574,7 @@ export default function DocumentsClient() {
     } catch (error) {
       setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'The document could not be restored.' });
     } finally {
-      setBusy(false);
+      setOperationBusy(false);
     }
   }
 
@@ -487,7 +593,6 @@ export default function DocumentsClient() {
         <div className={styles.documentBody}>
           <div className={styles.documentTitleRow}>
             <div>
-              <span className={styles.categoryPill}>{categoryLabel(document.category)}</span>
               <h3>{document.title}</h3>
             </div>
             {isDeleted ? (
@@ -503,7 +608,8 @@ export default function DocumentsClient() {
           </div>
 
           <div className={styles.fileMeta}>
-            <span>{document.fileName}</span>
+            <span className={styles.categoryPill}>{categoryLabel(document.category)}</span>
+            <span className={styles.fileName} title={document.fileName}>{document.fileName}</span>
             <i aria-hidden="true" />
             <span>{formatBytes(document.byteSize)}</span>
             <i aria-hidden="true" />
@@ -527,10 +633,10 @@ export default function DocumentsClient() {
         </div>
 
         <div className={styles.documentActions}>
-          <a href={downloadUrl} target="_blank" rel="noreferrer" className={styles.actionButton}>
+          <a href={downloadUrl} target="_blank" rel="noreferrer" className={`${styles.actionButton} ${styles.previewButton}`}>
             <Icon name="eye" /> Preview
           </a>
-          <a href={`${downloadUrl}?download=1`} className={styles.actionButton}>
+          <a href={`${downloadUrl}?download=1`} className={`${styles.actionButton} ${styles.downloadButton}`}>
             <Icon name="download" /> Download
           </a>
           {isDeleted ? (
@@ -539,7 +645,7 @@ export default function DocumentsClient() {
             </button>
           ) : (
             <>
-              <button type="button" className={styles.actionButton} disabled={busy} onClick={() => openEditModal(document)}>
+              <button type="button" className={`${styles.actionButton} ${styles.editButton}`} disabled={busy} onClick={() => openEditModal(document)}>
                 <Icon name="edit" /> Edit
               </button>
               <button type="button" className={styles.trashButton} disabled={busy} onClick={() => void moveToRecycleBin(document)} aria-label={`Move ${document.title} to Recycle Bin`}>
@@ -554,11 +660,13 @@ export default function DocumentsClient() {
 
   return (
     <div className={styles.page}>
-      <AppHeader active="documents" />
+      <div ref={pageContentRef} className={styles.pageContent}>
+        <AppHeader active="documents" />
 
-      <main className={styles.shell}>
+        <main className={styles.shell}>
+          <div className={styles.vaultCanvas}>
         {notice ? (
-          <div className={`${styles.notice} ${notice.tone === 'success' ? styles.noticeSuccess : styles.noticeError}`} role="status">
+          <div className={`${styles.notice} ${notice.tone === 'success' ? styles.noticeSuccess : styles.noticeError}`} role={notice.tone === 'error' ? 'alert' : 'status'}>
             <Icon name={notice.tone === 'success' ? 'info' : 'info'} />
             <span>{notice.message}</span>
             <button type="button" onClick={() => setNotice(null)} aria-label="Dismiss message"><Icon name="close" /></button>
@@ -566,73 +674,47 @@ export default function DocumentsClient() {
         ) : null}
 
         <section className={styles.hero} aria-labelledby="document-vault-title">
-          <div className={styles.heroCopy}>
-            <span>Owner workspace</span>
-            <h1 id="document-vault-title">Document Vault</h1>
-            <p>Keep important business records together—even when they do not belong to one specific asset.</p>
-          </div>
-          <div className={styles.heroIcon} aria-hidden="true"><Icon name="archive" /></div>
+          <h1 id="document-vault-title">Document Vault</h1>
         </section>
 
-        <section className={styles.summaryGrid} aria-label="Document Vault summary">
-          <article className={styles.summaryCard}>
-            <div className={styles.summaryHeading}><span>Total documents</span><Icon name="document" /></div>
-            <strong>{summary.totalDocuments}</strong>
-            <p>{formatBytes(summary.storageBytes)} securely catalogued</p>
-          </article>
-          <article className={`${styles.summaryCard} ${summary.expiringSoon ? styles.summaryAttention : ''}`}>
-            <div className={styles.summaryHeading}><span>Due within 60 days</span><Icon name="calendar" /></div>
-            <strong>{summary.expiringSoon}</strong>
-            <p>{summary.expiringSoon ? 'Review renewals and expired records' : 'No upcoming expiry actions'}</p>
-          </article>
-          <article className={styles.summaryCard}>
-            <div className={styles.summaryHeading}><span>Linked to assets</span><Icon name="link" /></div>
-            <strong>{summary.linkedDocuments}</strong>
-            <p>{summary.totalDocuments - summary.linkedDocuments} kept at account level</p>
-          </article>
-        </section>
-
-        <section className={styles.toolbar} aria-label="Document Vault controls">
-          <label className={styles.searchBox}>
-            <Icon name="search" />
-            <span className={styles.srOnly}>Search documents</span>
-            <input
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder="Search by title, file, category or linked asset"
-            />
-            {search ? <button type="button" onClick={() => setSearch('')} aria-label="Clear search"><Icon name="close" /></button> : null}
-          </label>
-
-          <div className={styles.toolbarActions}>
-            <button
-              type="button"
-              className={`${styles.toolbarButton} ${showFilters ? styles.toolbarButtonActive : ''}`}
-              onClick={() => setShowFilters((current) => !current)}
-              aria-expanded={showFilters}
-            >
-              <Icon name="filter" /> Filters
-              {category !== 'all' ? <span className={styles.buttonCount}>1</span> : null}
-            </button>
-            <button
-              type="button"
-              className={`${styles.toolbarButton} ${view === 'recycle-bin' ? styles.toolbarButtonActive : ''}`}
-              onClick={() => switchView(view === 'recycle-bin' ? 'documents' : 'recycle-bin')}
-            >
-              <Icon name={view === 'recycle-bin' ? 'folder' : 'trash'} />
-              {view === 'recycle-bin' ? 'Back to documents' : 'Recycle Bin'}
-            </button>
-            <button type="button" className={styles.refreshButton} onClick={() => void loadDocuments(view)} disabled={loading} aria-label="Refresh documents">
-              <Icon name="refresh" />
-            </button>
-            <button type="button" className={styles.uploadButton} onClick={openUploadModal} disabled={view === 'recycle-bin'}>
-              <Icon name="upload" /> Upload document
-            </button>
-          </div>
+        <section className={styles.topActions} aria-label="Document Vault actions">
+          <button
+            type="button"
+            className={`${styles.headerButton} ${styles.recycleButton}`}
+            onClick={() => switchView(view === 'recycle-bin' ? 'documents' : 'recycle-bin')}
+            aria-pressed={view === 'recycle-bin'}
+            disabled={busy || loading}
+          >
+            <Icon name={view === 'recycle-bin' ? 'folder' : 'trash'} />
+            {view === 'recycle-bin' ? 'Back to documents' : 'Recycle Bin'}
+          </button>
+          <button
+            type="button"
+            className={`${styles.headerButton} ${styles.summaryButton}`}
+            onClick={() => setShowSummary((current) => !current)}
+            aria-expanded={showSummary}
+            aria-controls="document-vault-summary"
+          >
+            <Icon name="archive" /> Summary
+          </button>
+          <button
+            type="button"
+            className={`${styles.headerButton} ${styles.filtersButton}`}
+            onClick={() => setShowFilters((current) => !current)}
+            aria-expanded={showFilters}
+            aria-controls="document-vault-filters"
+          >
+            <Icon name="filter" /> Filters
+            <Icon name="chevron-down" className={styles.buttonChevron} />
+            {category !== 'all' ? <span className={styles.buttonCount}>1</span> : null}
+          </button>
+          <button type="button" className={`${styles.headerButton} ${styles.primaryHeaderButton}`} onClick={openUploadModal} disabled={view === 'recycle-bin' || busy}>
+            <Icon name="upload" /> Upload document
+          </button>
         </section>
 
         {showFilters ? (
-          <section className={styles.filterPanel} aria-label="Filter by category">
+          <section id="document-vault-filters" className={styles.filterPanel} aria-label="Filter by category">
             <div>
               <strong>Categories</strong>
               <span>Choose one category or view everything.</span>
@@ -658,41 +740,116 @@ export default function DocumentsClient() {
           </section>
         ) : null}
 
+        {showSummary && !loadFailed ? (
+          <div id="document-vault-summary" className={styles.summaryCarousel} aria-label="Document Vault summary">
+            <button
+              type="button"
+              className={`${styles.summaryNav} ${styles.summaryNavPrevious}`}
+              onClick={() => scrollSummary(-1)}
+              aria-label="Previous summary cards"
+              disabled={!summaryNavigation.hasOverflow || summaryNavigation.atStart}
+              hidden={!summaryNavigation.hasOverflow}
+            >
+              <Icon name="chevron-left" />
+            </button>
+            <div ref={summaryViewportRef} className={styles.summaryViewport}>
+              <section className={styles.summaryGrid}>
+                <article className={styles.summaryCard}>
+                  <div className={styles.summaryHeading}><span>Total documents</span><Icon name="document" /></div>
+                  <strong>{summary.totalDocuments}</strong>
+                  <p>{formatBytes(summary.storageBytes)} securely catalogued</p>
+                </article>
+                <article className={`${styles.summaryCard} ${summary.expiringSoon ? styles.summaryAttention : ''}`}>
+                  <div className={styles.summaryHeading}><span>Expiry attention</span><Icon name="calendar" /></div>
+                  <strong>{summary.expiringSoon}</strong>
+                  <p>{summary.expiringSoon ? 'Expired or due within 60 days' : 'No upcoming expiry actions'}</p>
+                </article>
+                <article className={styles.summaryCard}>
+                  <div className={styles.summaryHeading}><span>Linked to assets</span><Icon name="link" /></div>
+                  <strong>{summary.linkedDocuments}</strong>
+                  <p>{summary.totalDocuments - summary.linkedDocuments} kept at account level</p>
+                </article>
+              </section>
+            </div>
+            <button
+              type="button"
+              className={`${styles.summaryNav} ${styles.summaryNavNext}`}
+              onClick={() => scrollSummary(1)}
+              aria-label="Next summary cards"
+              disabled={!summaryNavigation.hasOverflow || summaryNavigation.atEnd}
+              hidden={!summaryNavigation.hasOverflow}
+            >
+              <Icon name="chevron-right" />
+            </button>
+          </div>
+        ) : null}
+
+        <section className={styles.toolbar} aria-label="Search and refresh documents">
+          <label className={styles.searchBox}>
+            <Icon name="search" />
+            <span className={styles.srOnly}>Search documents</span>
+            <input
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Search by title, file, category or linked asset"
+            />
+            {search ? <button type="button" onClick={() => setSearch('')} aria-label="Clear search"><Icon name="close" /></button> : null}
+          </label>
+
+          <div className={styles.toolbarActions}>
+            <button type="button" className={styles.refreshButton} onClick={() => void loadDocuments(view)} disabled={loading || busy}>
+              <Icon name="refresh" className={loading ? styles.refreshIconActive : undefined} /> Refresh
+            </button>
+          </div>
+        </section>
+
         {view === 'recycle-bin' ? (
           <div className={styles.recycleNotice}>
             <Icon name="info" />
             <div>
               <strong>90-day Recycle Bin</strong>
-              <span>Deleted documents remain recoverable for 90 days, then their private file and metadata are removed automatically.</span>
+              <span>Deleted documents remain recoverable for 90 days and are permanently removed when vault cleanup next runs.</span>
             </div>
           </div>
         ) : null}
 
-        <div className={styles.resultsHeading}>
-          <div>
-            <span>{view === 'recycle-bin' ? 'Recycle Bin' : category === 'all' ? 'All documents' : categoryLabel(category)}</span>
-            <strong>{filteredDocuments.length} {filteredDocuments.length === 1 ? 'document' : 'documents'}</strong>
+        {!loadFailed ? (
+          <div className={styles.resultsHeading}>
+            <div>
+              <span>{view === 'recycle-bin' ? 'Recycle Bin' : category === 'all' ? 'All documents' : categoryLabel(category)}</span>
+              <strong>{filteredDocuments.length} {filteredDocuments.length === 1 ? 'document' : 'documents'}</strong>
+            </div>
+            {(search || category !== 'all') ? (
+              <button type="button" onClick={() => { setSearch(''); setCategory('all'); }}>Clear search &amp; filters</button>
+            ) : null}
           </div>
-          {(search || category !== 'all') ? (
-            <button type="button" onClick={() => { setSearch(''); setCategory('all'); }}>Clear search &amp; filters</button>
-          ) : null}
-        </div>
+        ) : null}
 
         {loading ? (
           <section className={styles.loadingCard} aria-live="polite">
             <span className={styles.loadingSpinner} />
             <strong>Loading your documents…</strong>
           </section>
+        ) : loadFailed ? (
+          <section className={styles.emptyCard} role="alert">
+            <div className={styles.emptyIcon}><Icon name="document" /></div>
+            <h2>Documents could not be loaded</h2>
+            <p>Please try again. Your stored documents have not been changed.</p>
+            <button type="button" className={styles.uploadButton} onClick={() => void loadDocuments(view)}><Icon name="refresh" /> Try again</button>
+          </section>
         ) : groupedDocuments.length ? (
           <div className={styles.categoryGroups}>
             {groupedDocuments.map((group) => (
               <section key={group.value} className={styles.categoryGroup} aria-labelledby={`category-${group.value}`}>
                 <header className={styles.categoryHeader}>
-                  <div className={styles.categoryIcon}><Icon name="folder" /></div>
-                  <div>
-                    <h2 id={`category-${group.value}`}>{group.label}</h2>
-                    <p>{group.documents.length} {group.documents.length === 1 ? 'document' : 'documents'}</p>
+                  <div className={styles.categoryHeadingGroup}>
+                    <div className={styles.categoryIcon}><Icon name="folder" /></div>
+                    <div>
+                      <h2 id={`category-${group.value}`}>{group.label}</h2>
+                      <p>Account records and documents</p>
+                    </div>
                   </div>
+                  <strong className={styles.categoryCount}>{group.documents.length} {group.documents.length === 1 ? 'document' : 'documents'}</strong>
                 </header>
                 <div className={styles.documentList}>{group.documents.map(renderDocumentCard)}</div>
               </section>
@@ -714,22 +871,32 @@ export default function DocumentsClient() {
             ) : null}
           </section>
         )}
-      </main>
+          </div>
+        </main>
+      </div>
 
       {modalMode ? (
-        <div className={styles.modalBackdrop} onMouseDown={(event) => { if (event.target === event.currentTarget && !busy) setModalMode(null); }}>
-          <section className={styles.modal} role="dialog" aria-modal="true" aria-labelledby="document-modal-title">
+        <div className={styles.modalBackdrop} onMouseDown={(event) => { if (event.target === event.currentTarget) closeModal(); }}>
+          <section ref={modalRef} className={styles.modal} role="dialog" aria-modal="true" aria-labelledby="document-modal-title">
             <header className={styles.modalHeader}>
               <div>
                 <span>{modalMode === 'upload' ? 'Add to your vault' : 'Document details'}</span>
                 <h2 id="document-modal-title">{modalMode === 'upload' ? 'Upload document' : 'Edit document'}</h2>
                 <p>{modalMode === 'upload' ? 'The document can stay account-level or be linked to several assets.' : `Editing ${editingDocument?.fileName ?? 'document'}`}</p>
               </div>
-              <button type="button" onClick={() => setModalMode(null)} disabled={busy} aria-label="Close dialog"><Icon name="close" /></button>
+              <button type="button" onClick={closeModal} disabled={busy} aria-label="Close dialog" data-modal-initial-focus="true"><Icon name="close" /></button>
             </header>
 
             <form onSubmit={submitDocument} className={styles.modalForm}>
               <div className={styles.modalScroll}>
+                {modalNotice ? (
+                  <div className={styles.modalNotice} role="alert">
+                    <Icon name="info" />
+                    <span>{modalNotice.message}</span>
+                    <button type="button" onClick={() => setModalNotice(null)} aria-label="Dismiss error"><Icon name="close" /></button>
+                  </div>
+                ) : null}
+
                 {modalMode === 'upload' ? (
                   <label className={`${styles.filePicker} ${selectedFile ? styles.filePickerSelected : ''}`}>
                     <input
@@ -809,7 +976,7 @@ export default function DocumentsClient() {
               </div>
 
               <footer className={styles.modalFooter}>
-                <button type="button" className={styles.cancelButton} disabled={busy} onClick={() => setModalMode(null)}>Cancel</button>
+                <button type="button" className={styles.cancelButton} disabled={busy} onClick={closeModal}>Cancel</button>
                 <button type="submit" className={styles.uploadButton} disabled={busy}>
                   {busy ? <span className={styles.buttonSpinner} /> : <Icon name={modalMode === 'upload' ? 'upload' : 'edit'} />}
                   {busy ? 'Saving…' : modalMode === 'upload' ? 'Add to vault' : 'Save changes'}

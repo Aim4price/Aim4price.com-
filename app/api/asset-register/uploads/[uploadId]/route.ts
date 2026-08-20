@@ -6,7 +6,6 @@ import {
   isBucketOnlyAssetRegisterUploadId,
   resolveBucketOnlyAssetRegisterDownload,
 } from '../../../../../lib/asset-register-uploads';
-import { getServerSession } from '../../../../../lib/auth-session';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -29,10 +28,10 @@ export async function GET(_request: Request, context: RouteContext) {
   // owner-scoped /api/documents/[documentId]/download endpoint.
   const documentOwnerUserId = await getAccountDocumentUploadOwner(uploadId);
   if (documentOwnerUserId) {
-    const session = await getServerSession();
-    if (!session?.user?.id || session.user.id !== documentOwnerUserId) {
-      return new NextResponse('Not found', { status: 404 });
-    }
+    return new NextResponse('Not found', {
+      status: 404,
+      headers: { 'Cache-Control': 'private, no-store' },
+    });
   }
 
   if (isBucketOnlyAssetRegisterUploadId(uploadId)) {

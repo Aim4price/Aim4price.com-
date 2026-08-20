@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import { getAccountProfile } from '../../lib/account-profile';
 import { requireActivePageAccess } from '../../lib/account-access';
-import DocumentsComingSoon from './documents-coming-soon';
+import DocumentsClient from './documents-client';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -18,5 +18,5 @@ export default async function DocumentsPage() {
     redirect('/account');
   }
 
-  return <DocumentsComingSoon />;
+  return <DocumentsClient />;
 }
