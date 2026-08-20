@@ -317,6 +317,7 @@ export async function listNotificationInbox(
       where user_id = $1
       order by
         case when action_required and resolved_at is null then 0 else 1 end,
+        case when payload->>'priority' = 'true' then 0 else 1 end,
         source_created_at desc,
         event_key desc
       limit $2
@@ -334,6 +335,7 @@ export async function listNotificationInbox(
         history: 2,
       };
       return stateOrder[left.state] - stateOrder[right.state]
+        || Number(right.priority === true) - Number(left.priority === true)
         || Date.parse(right.createdAtIso) - Date.parse(left.createdAtIso);
     });
 }

@@ -20,7 +20,9 @@ import {
   DEFAULT_ADMIN_NOTIFICATION_TITLE,
   MAX_ADMIN_NOTIFICATION_BODY_LENGTH,
   MAX_ADMIN_NOTIFICATION_TITLE_LENGTH,
+  isAdminNotificationAudience,
   sendAdminAccountNotification,
+  sendAdminGroupNotification,
 } from "../../../../lib/admin-account-notifications";
 import { auth } from "../../../../lib/auth";
 import { getResetPasswordRedirectUrl } from "../../../../lib/email";
@@ -40,6 +42,7 @@ type AdminAction =
   | "suspend"
   | "send_reset"
   | "send_notification"
+  | "send_group_notification"
   | "open_account"
   | "close_account"
   | "delete_user";
@@ -70,6 +73,46 @@ function readActionStatus(action: AdminAction): AccountStatus | null {
   if (action === "pending") return "pending_payment";
   if (action === "suspend") return "suspended";
   return null;
+}
+
+function readNotificationFields(body: Record<string, unknown>) {
+  return {
+    title:
+      typeof body.notificationTitle === "string"
+        ? body.notificationTitle.trim()
+        : DEFAULT_ADMIN_NOTIFICATION_TITLE,
+    message:
+      typeof body.notificationBody === "string"
+        ? body.notificationBody.trim()
+        : "",
+    priority: body.notificationPriority === true,
+  };
+}
+
+function validateNotificationFields(input: {
+  title: string;
+  message: string;
+}): string | null {
+  if (!input.message) {
+    return "A notification message is required.";
+  }
+  if (input.title.length > MAX_ADMIN_NOTIFICATION_TITLE_LENGTH) {
+    return `Notification titles may not exceed ${MAX_ADMIN_NOTIFICATION_TITLE_LENGTH} characters.`;
+  }
+  if (input.message.length > MAX_ADMIN_NOTIFICATION_BODY_LENGTH) {
+    return `Notification messages may not exceed ${MAX_ADMIN_NOTIFICATION_BODY_LENGTH} characters.`;
+  }
+
+  return null;
+}
+
+function audienceLabel(audience: string, count: number): string {
+  const plural = count === 1 ? "account" : "accounts";
+  if (audience === "all") return `${count} ${plural}`;
+  if (audience === "finance") return `${count} finance and accounting ${plural}`;
+  if (audience === "insurance") return `${count} insurance ${plural}`;
+  if (audience === "licensing") return `${count} licensing ${plural}`;
+  return `${count} ${audience} ${plural}`;
 }
 
 function withClearedAdminSupportCookie(response: NextResponse): NextResponse {
@@ -144,48 +187,63 @@ export async function POST(request: Request) {
     );
   }
 
-  const userId = typeof body.userId === "string" ? body.userId.trim() : "";
-
-  if (!userId) {
-    return jsonError("Missing user ID.");
-  }
-
   try {
-    if (action === "send_notification") {
-      const notificationTitle =
-        typeof body.notificationTitle === "string"
-          ? body.notificationTitle.trim()
-          : DEFAULT_ADMIN_NOTIFICATION_TITLE;
-      const notificationBody =
-        typeof body.notificationBody === "string"
-          ? body.notificationBody.trim()
+    if (action === "send_group_notification") {
+      const notification = readNotificationFields(body);
+      const validationError = validateNotificationFields(notification);
+      const audience =
+        typeof body.notificationAudience === "string"
+          ? body.notificationAudience.trim().toLowerCase()
           : "";
 
-      if (!notificationBody) {
-        return jsonError("A notification message is required.");
+      if (validationError) return jsonError(validationError);
+      if (!isAdminNotificationAudience(audience)) {
+        return jsonError("Select a valid account group.");
       }
-      if (notificationTitle.length > MAX_ADMIN_NOTIFICATION_TITLE_LENGTH) {
-        return jsonError(
-          `Notification titles may not exceed ${MAX_ADMIN_NOTIFICATION_TITLE_LENGTH} characters.`,
-        );
+
+      const sent = await sendAdminGroupNotification({
+        audience,
+        senderUserId: session?.user?.id || "",
+        title: notification.title,
+        body: notification.message,
+        priority: notification.priority,
+      });
+      if (!sent.recipientCount) {
+        return jsonError("No recipient accounts were found for that group.");
       }
-      if (notificationBody.length > MAX_ADMIN_NOTIFICATION_BODY_LENGTH) {
-        return jsonError(
-          `Notification messages may not exceed ${MAX_ADMIN_NOTIFICATION_BODY_LENGTH} characters.`,
-        );
-      }
+
+      return NextResponse.json({
+        ok: true,
+        sentCount: sent.recipientCount,
+        message: `${notification.priority ? "Priority notification" : "Notification"} sent to ${audienceLabel(
+          sent.audience,
+          sent.recipientCount,
+        )}.`,
+      });
+    }
+
+    const userId = typeof body.userId === "string" ? body.userId.trim() : "";
+    if (!userId) {
+      return jsonError("Missing user ID.");
+    }
+
+    if (action === "send_notification") {
+      const notification = readNotificationFields(body);
+      const validationError = validateNotificationFields(notification);
+      if (validationError) return jsonError(validationError);
 
       const sent = await sendAdminAccountNotification({
         targetUserId: userId,
         senderUserId: session?.user?.id || "",
-        title: notificationTitle,
-        body: notificationBody,
+        title: notification.title,
+        body: notification.message,
+        priority: notification.priority,
       });
       return NextResponse.json({
         ok: true,
         message: sent.targetEmail
-          ? `Notification sent to ${sent.targetEmail}.`
-          : "Notification sent.",
+          ? `${notification.priority ? "Priority notification" : "Notification"} sent to ${sent.targetEmail}.`
+          : `${notification.priority ? "Priority notification" : "Notification"} sent.`,
       });
     }
 

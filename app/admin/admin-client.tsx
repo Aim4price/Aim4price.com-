@@ -36,6 +36,7 @@ type AdminUserRow = {
 type ApiResponse = {
   ok: boolean;
   users?: AdminUserRow[];
+  sentCount?: number;
   message?: string;
   error?: string;
   redirectUrl?: string;
@@ -148,10 +149,29 @@ type Notice = {
   message: string;
 } | null;
 
+type NotificationPriority = "normal" | "priority";
+type NotificationAudience =
+  | "all"
+  | "owner"
+  | "dealer"
+  | "insurance"
+  | "finance"
+  | "licensing";
+
 type NotificationComposerState = {
   userId: string;
   title: string;
   body: string;
+  priority: NotificationPriority;
+  error: string;
+} | null;
+
+type GroupNotificationComposerState = {
+  audience: NotificationAudience;
+  title: string;
+  body: string;
+  priority: NotificationPriority;
+  confirmed: boolean;
   error: string;
 } | null;
 
@@ -176,6 +196,92 @@ const ADMIN_PAGE_SIZE = 10;
 const DEFAULT_NOTIFICATION_TITLE = "Message from Aim4price";
 const MAX_NOTIFICATION_TITLE_LENGTH = 120;
 const MAX_NOTIFICATION_BODY_LENGTH = 1_200;
+const NOTIFICATION_AUDIENCE_OPTIONS: Array<{
+  value: NotificationAudience;
+  label: string;
+  description: string;
+}> = [
+  {
+    value: "all",
+    label: "All accounts",
+    description: "Every customer account",
+  },
+  { value: "owner", label: "Owners", description: "All owner accounts" },
+  { value: "dealer", label: "Dealers", description: "All dealer accounts" },
+  {
+    value: "insurance",
+    label: "Insurance",
+    description: "All insurance accounts",
+  },
+  {
+    value: "finance",
+    label: "Finance & accounting",
+    description: "Banks, finance houses and accountants",
+  },
+  {
+    value: "licensing",
+    label: "Licensing",
+    description: "All licensing accounts",
+  },
+];
+
+function normalizeNotificationAudience(
+  value: string,
+): Exclude<NotificationAudience, "all"> {
+  const normalized = value.trim().toLowerCase();
+  if (
+    normalized === "dealer" ||
+    normalized === "insurance" ||
+    normalized === "finance" ||
+    normalized === "licensing"
+  ) {
+    return normalized;
+  }
+
+  return "owner";
+}
+
+function NotificationPriorityPicker({
+  value,
+  onChange,
+  disabled,
+}: {
+  value: NotificationPriority;
+  onChange: (value: NotificationPriority) => void;
+  disabled: boolean;
+}) {
+  return (
+    <fieldset className={styles.notificationPriorityPicker} disabled={disabled}>
+      <legend>Priority</legend>
+      <div>
+        <button
+          type="button"
+          className={
+            value === "normal" ? styles.notificationPrioritySelected : ""
+          }
+          onClick={() => onChange("normal")}
+          aria-pressed={value === "normal"}
+        >
+          <strong>Normal</strong>
+          <span>Standard notification</span>
+        </button>
+        <button
+          type="button"
+          className={
+            value === "priority"
+              ? `${styles.notificationPrioritySelected} ${styles.notificationPriorityUrgent}`
+              : ""
+          }
+          onClick={() => onChange("priority")}
+          aria-pressed={value === "priority"}
+        >
+          <strong>Priority</strong>
+          <span>Amber and shown first</span>
+        </button>
+      </div>
+    </fieldset>
+  );
+}
 
 const QR_LAYOUT_OPTIONS: Array<{
   value: QrLabelLayout;
@@ -575,14 +681,23 @@ export default function AdminClient({
     useState<AdminUserRow | null>(null);
   const [notificationComposer, setNotificationComposer] =
     useState<NotificationComposerState>(null);
+  const [groupNotificationComposer, setGroupNotificationComposer] =
+    useState<GroupNotificationComposerState>(null);
+  const [isSendingGroupNotification, setIsSendingGroupNotification] =
+    useState(false);
+  const isSendingGroupNotificationRef = useRef(false);
   const accountModalRef = useRef<HTMLElement | null>(null);
   const accountModalTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const groupNotificationModalRef = useRef<HTMLElement | null>(null);
+  const groupNotificationTriggerRef = useRef<HTMLButtonElement | null>(null);
   const [qrModal, setQrModal] = useState<QrModalState>(null);
   const [assetNameModal, setAssetNameModal] =
     useState<AssetNameModalState>(null);
 
   busyUserActionRef.current = busyUserAction;
+  isSendingGroupNotificationRef.current = isSendingGroupNotification;
   const isAccountActionModalOpen = accountActionModal !== null;
+  const isGroupNotificationModalOpen = groupNotificationComposer !== null;
 
   const visibleUsers = useMemo(
     () =>
@@ -655,6 +770,61 @@ export default function AdminClient({
     };
   }, [isAccountActionModalOpen]);
 
+  useEffect(() => {
+    if (!isGroupNotificationModalOpen || typeof window === "undefined") {
+      return;
+    }
+
+    const modal = groupNotificationModalRef.current;
+    const previousBodyOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    function keepFocusInsideGroupModal(event: KeyboardEvent) {
+      if (
+        event.key === "Escape" &&
+        !isSendingGroupNotificationRef.current
+      ) {
+        event.preventDefault();
+        setGroupNotificationComposer(null);
+        return;
+      }
+
+      if (event.key !== "Tab" || !modal) {
+        return;
+      }
+
+      const focusable = Array.from(
+        modal.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), input:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ),
+      ).filter((element) => !element.hasAttribute("hidden"));
+
+      if (focusable.length === 0) {
+        event.preventDefault();
+        modal.focus();
+        return;
+      }
+
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    }
+
+    window.addEventListener("keydown", keepFocusInsideGroupModal);
+    return () => {
+      window.removeEventListener("keydown", keepFocusInsideGroupModal);
+      document.body.style.overflow = previousBodyOverflow;
+      groupNotificationTriggerRef.current?.focus();
+    };
+  }, [isGroupNotificationModalOpen]);
+
   const pageCount = Math.max(
     1,
     Math.ceil(visibleUsers.length / ADMIN_PAGE_SIZE),
@@ -702,6 +872,32 @@ export default function AdminClient({
     };
   }, [users]);
 
+  const notificationAudienceCounts = useMemo(() => {
+    const counts: Record<NotificationAudience, number> = {
+      all: 0,
+      owner: 0,
+      dealer: 0,
+      insurance: 0,
+      finance: 0,
+      licensing: 0,
+    };
+
+    for (const user of users) {
+      if (user.email.trim().toLowerCase() === "aim4price@gmail.com") {
+        continue;
+      }
+
+      const audience = normalizeNotificationAudience(user.accountType);
+      counts.all += 1;
+      counts[audience] += 1;
+    }
+
+    return counts;
+  }, [users]);
+  const selectedGroupRecipientCount = groupNotificationComposer
+    ? notificationAudienceCounts[groupNotificationComposer.audience]
+    : 0;
+
   function openAccountActionModal(
     user: AdminUserRow,
     trigger: HTMLButtonElement | null,
@@ -709,6 +905,19 @@ export default function AdminClient({
     accountModalTriggerRef.current = trigger;
     setNotificationComposer(null);
     setAccountActionModal(user);
+  }
+
+  function openGroupNotificationComposer(trigger: HTMLButtonElement) {
+    groupNotificationTriggerRef.current = trigger;
+    setNotice(null);
+    setGroupNotificationComposer({
+      audience: "all",
+      title: DEFAULT_NOTIFICATION_TITLE,
+      body: "",
+      priority: "normal",
+      confirmed: false,
+      error: "",
+    });
   }
 
   const filteredQrAssets = useMemo(() => {
@@ -854,6 +1063,7 @@ export default function AdminClient({
           action,
           notificationTitle: title,
           notificationBody: body,
+          notificationPriority: draft.priority === "priority",
         }),
       });
       const data = (await response.json()) as ApiResponse;
@@ -882,6 +1092,83 @@ export default function AdminClient({
       );
     } finally {
       setBusyUserAction(null);
+    }
+  }
+
+  async function sendGroupNotification() {
+    const draft = groupNotificationComposer;
+    if (!draft || isSendingGroupNotification) return;
+
+    const title = draft.title.trim() || DEFAULT_NOTIFICATION_TITLE;
+    const body = draft.body.trim();
+    const recipientCount = notificationAudienceCounts[draft.audience];
+
+    if (!body) {
+      setGroupNotificationComposer({
+        ...draft,
+        error: "Enter a message to send.",
+      });
+      return;
+    }
+    if (!recipientCount) {
+      setGroupNotificationComposer({
+        ...draft,
+        error: "There are no recipient accounts in this group.",
+      });
+      return;
+    }
+    if (!draft.confirmed) {
+      setGroupNotificationComposer({
+        ...draft,
+        error: "Confirm the recipient group before sending.",
+      });
+      return;
+    }
+
+    setNotice(null);
+    setGroupNotificationComposer({ ...draft, title, body, error: "" });
+    setIsSendingGroupNotification(true);
+
+    try {
+      const response = await fetch("/api/admin/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          action: "send_group_notification",
+          notificationAudience: draft.audience,
+          notificationTitle: title,
+          notificationBody: body,
+          notificationPriority: draft.priority === "priority",
+        }),
+      });
+      const data = (await response.json()) as ApiResponse;
+
+      if (!response.ok || !data.ok) {
+        throw new Error(data.error || "Group notification could not be sent.");
+      }
+
+      setNotice({
+        tone: "success",
+        message:
+          data.message ||
+          `Notification sent to ${data.sentCount ?? recipientCount} accounts.`,
+      });
+      setGroupNotificationComposer(null);
+    } catch (error) {
+      setGroupNotificationComposer((current) =>
+        current
+          ? {
+              ...current,
+              error:
+                error instanceof Error
+                  ? error.message
+                  : "Group notification could not be sent.",
+            }
+          : current,
+      );
+    } finally {
+      setIsSendingGroupNotification(false);
     }
   }
 
@@ -1332,6 +1619,16 @@ export default function AdminClient({
           </nav>
           <button
             type="button"
+            className={styles.groupNotificationButton}
+            ref={groupNotificationTriggerRef}
+            onClick={(event) =>
+              openGroupNotificationComposer(event.currentTarget)
+            }
+          >
+            Message account groups
+          </button>
+          <button
+            type="button"
             className={styles.signOutButton}
             onClick={handleSignOut}
             disabled={isSigningOut}
@@ -1599,6 +1896,239 @@ export default function AdminClient({
         </div>
       </section>
 
+      {groupNotificationComposer ? (
+        <div
+          className={styles.modalBackdrop}
+          onMouseDown={(event) => {
+            if (
+              event.target === event.currentTarget &&
+              !isSendingGroupNotification
+            ) {
+              setGroupNotificationComposer(null);
+            }
+          }}
+        >
+          <section
+            className={`${styles.qrModal} ${styles.groupNotificationModal}`}
+            ref={groupNotificationModalRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="admin-group-notification-title"
+            aria-busy={isSendingGroupNotification}
+            tabIndex={-1}
+          >
+            <header className={styles.qrModalHeader}>
+              <div>
+                <p className={styles.qrModalEyebrow}>Admin messages</p>
+                <h2 id="admin-group-notification-title">
+                  Message account groups
+                </h2>
+                <span>
+                  Send one notification to all accounts or a selected group.
+                </span>
+              </div>
+
+              <button
+                type="button"
+                className={styles.modalCloseButton}
+                onClick={() => setGroupNotificationComposer(null)}
+                disabled={isSendingGroupNotification}
+                aria-label="Close group notification"
+              >
+                ×
+              </button>
+            </header>
+
+            <form
+              className={styles.groupNotificationForm}
+              onSubmit={(event) => {
+                event.preventDefault();
+                void sendGroupNotification();
+              }}
+            >
+              <fieldset className={styles.notificationAudienceFieldset}>
+                <legend>Recipient group</legend>
+                <div className={styles.notificationAudienceGrid}>
+                  {NOTIFICATION_AUDIENCE_OPTIONS.map((option, index) => {
+                    const count = notificationAudienceCounts[option.value];
+                    const isSelected =
+                      groupNotificationComposer.audience === option.value;
+
+                    return (
+                      <label
+                        key={option.value}
+                        className={`${styles.notificationAudienceOption} ${
+                          isSelected
+                            ? styles.notificationAudienceOptionSelected
+                            : ""
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="notification-audience"
+                          value={option.value}
+                          checked={isSelected}
+                          onChange={() =>
+                            setGroupNotificationComposer((current) =>
+                              current
+                                ? {
+                                    ...current,
+                                    audience: option.value,
+                                    confirmed: false,
+                                    error: "",
+                                  }
+                                : current,
+                            )
+                          }
+                          disabled={isSendingGroupNotification || count === 0}
+                          autoFocus={index === 0}
+                        />
+                        <span>
+                          <strong>{option.label}</strong>
+                          <small>{option.description}</small>
+                        </span>
+                        <b>{count}</b>
+                      </label>
+                    );
+                  })}
+                </div>
+              </fieldset>
+
+              <label className={styles.notificationField}>
+                <span>Title</span>
+                <input
+                  type="text"
+                  value={groupNotificationComposer.title}
+                  onChange={(event) =>
+                    setGroupNotificationComposer((current) =>
+                      current
+                        ? { ...current, title: event.target.value, error: "" }
+                        : current,
+                    )
+                  }
+                  maxLength={MAX_NOTIFICATION_TITLE_LENGTH}
+                  disabled={isSendingGroupNotification}
+                />
+                <small>
+                  {groupNotificationComposer.title.length}/
+                  {MAX_NOTIFICATION_TITLE_LENGTH}
+                </small>
+              </label>
+
+              <label className={styles.notificationField}>
+                <span>Message</span>
+                <textarea
+                  value={groupNotificationComposer.body}
+                  onChange={(event) =>
+                    setGroupNotificationComposer((current) =>
+                      current
+                        ? { ...current, body: event.target.value, error: "" }
+                        : current,
+                    )
+                  }
+                  maxLength={MAX_NOTIFICATION_BODY_LENGTH}
+                  rows={5}
+                  placeholder="Write the message these accounts should receive"
+                  required
+                  disabled={isSendingGroupNotification}
+                />
+                <small>
+                  {groupNotificationComposer.body.length}/
+                  {MAX_NOTIFICATION_BODY_LENGTH}
+                </small>
+              </label>
+
+              <NotificationPriorityPicker
+                value={groupNotificationComposer.priority}
+                onChange={(priority) =>
+                  setGroupNotificationComposer((current) =>
+                    current ? { ...current, priority, error: "" } : current,
+                  )
+                }
+                disabled={isSendingGroupNotification}
+              />
+
+              <div
+                className={`${styles.groupNotificationSummary} ${
+                  groupNotificationComposer.priority === "priority"
+                    ? styles.groupNotificationSummaryPriority
+                    : ""
+                }`}
+              >
+                <strong>
+                  {selectedGroupRecipientCount.toLocaleString("en-ZA")} {" "}
+                  {selectedGroupRecipientCount === 1 ? "account" : "accounts"}
+                  {" will receive this notification"}
+                </strong>
+                <span>
+                  Recipients are selected securely from their saved account
+                  type when the message is sent.
+                </span>
+              </div>
+
+              <label className={styles.groupNotificationConfirmation}>
+                <input
+                  type="checkbox"
+                  checked={groupNotificationComposer.confirmed}
+                  onChange={(event) =>
+                    setGroupNotificationComposer((current) =>
+                      current
+                        ? {
+                            ...current,
+                            confirmed: event.target.checked,
+                            error: "",
+                          }
+                        : current,
+                    )
+                  }
+                  disabled={
+                    isSendingGroupNotification ||
+                    selectedGroupRecipientCount === 0
+                  }
+                />
+                <span>
+                  I confirm this should be sent to the selected account group.
+                </span>
+              </label>
+
+              {groupNotificationComposer.error ? (
+                <p className={styles.notificationComposerError} role="alert">
+                  {groupNotificationComposer.error}
+                </p>
+              ) : null}
+
+              <div className={styles.notificationComposerActions}>
+                <button
+                  type="button"
+                  onClick={() => setGroupNotificationComposer(null)}
+                  disabled={isSendingGroupNotification}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className={styles.notificationSendButton}
+                  disabled={
+                    isSendingGroupNotification ||
+                    !groupNotificationComposer.body.trim() ||
+                    !groupNotificationComposer.confirmed ||
+                    selectedGroupRecipientCount === 0
+                  }
+                >
+                  {isSendingGroupNotification
+                    ? "Sending..."
+                    : `Send to ${selectedGroupRecipientCount.toLocaleString("en-ZA")} ${
+                        selectedGroupRecipientCount === 1
+                          ? "account"
+                          : "accounts"
+                      }`}
+                </button>
+              </div>
+            </form>
+          </section>
+        </div>
+      ) : null}
+
       {accountActionModal ? (
         <div
           className={styles.modalBackdrop}
@@ -1726,6 +2256,7 @@ export default function AdminClient({
                     userId: accountActionModal.userId,
                     title: DEFAULT_NOTIFICATION_TITLE,
                     body: "",
+                    priority: "normal",
                     error: "",
                   })
                 }
@@ -1905,6 +2436,16 @@ export default function AdminClient({
                     {MAX_NOTIFICATION_BODY_LENGTH}
                   </small>
                 </label>
+
+                <NotificationPriorityPicker
+                  value={notificationComposer.priority}
+                  onChange={(priority) =>
+                    setNotificationComposer((current) =>
+                      current ? { ...current, priority, error: "" } : current,
+                    )
+                  }
+                  disabled={busyUserAction !== null}
+                />
 
                 {notificationComposer.error ? (
                   <p className={styles.notificationComposerError} role="alert">
