@@ -67,6 +67,7 @@ type Notice = { tone: 'success' | 'error'; message: string };
 type IconName =
   | 'archive'
   | 'calendar'
+  | 'chevron-down'
   | 'close'
   | 'document'
   | 'download'
@@ -128,6 +129,9 @@ function Icon({ name, ...props }: { name: IconName } & SVGProps<SVGSVGElement>) 
       break;
     case 'calendar':
       paths = <><rect x="4" y="5.5" width="16" height="14" rx="2" /><path d="M8 3.5v4M16 3.5v4M4 10h16M8 14h2M13.5 14h2" /></>;
+      break;
+    case 'chevron-down':
+      paths = <path d="m7 9.5 5 5 5-5" />;
       break;
     case 'close':
       paths = <path d="m6 6 12 12M18 6 6 18" />;
@@ -236,8 +240,10 @@ export default function DocumentsClient() {
   const [view, setView] = useState<VaultView>('documents');
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState<'all' | DocumentCategory>('all');
+  const [showSummary, setShowSummary] = useState(true);
   const [showFilters, setShowFilters] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<Notice | null>(null);
   const [modalMode, setModalMode] = useState<ModalMode | null>(null);
@@ -258,11 +264,13 @@ export default function DocumentsClient() {
       if (!response.ok || !data.ok) throw new Error(data.error || 'The Document Vault could not be loaded.');
       if (sequence !== requestSequence.current) return;
 
+      setLoadFailed(false);
       setDocuments(data.documents ?? []);
       setSummary(data.summary ?? EMPTY_SUMMARY);
       setAssets(data.assets ?? []);
     } catch (error) {
       if (sequence !== requestSequence.current) return;
+      setLoadFailed(true);
       setNotice({
         tone: 'error',
         message: error instanceof Error ? error.message : 'The Document Vault could not be loaded.',
@@ -487,7 +495,6 @@ export default function DocumentsClient() {
         <div className={styles.documentBody}>
           <div className={styles.documentTitleRow}>
             <div>
-              <span className={styles.categoryPill}>{categoryLabel(document.category)}</span>
               <h3>{document.title}</h3>
             </div>
             {isDeleted ? (
@@ -503,6 +510,7 @@ export default function DocumentsClient() {
           </div>
 
           <div className={styles.fileMeta}>
+            <span className={styles.categoryPill}>{categoryLabel(document.category)}</span>
             <span>{document.fileName}</span>
             <i aria-hidden="true" />
             <span>{formatBytes(document.byteSize)}</span>
@@ -527,10 +535,10 @@ export default function DocumentsClient() {
         </div>
 
         <div className={styles.documentActions}>
-          <a href={downloadUrl} target="_blank" rel="noreferrer" className={styles.actionButton}>
+          <a href={downloadUrl} target="_blank" rel="noreferrer" className={`${styles.actionButton} ${styles.previewButton}`}>
             <Icon name="eye" /> Preview
           </a>
-          <a href={`${downloadUrl}?download=1`} className={styles.actionButton}>
+          <a href={`${downloadUrl}?download=1`} className={`${styles.actionButton} ${styles.downloadButton}`}>
             <Icon name="download" /> Download
           </a>
           {isDeleted ? (
@@ -539,7 +547,7 @@ export default function DocumentsClient() {
             </button>
           ) : (
             <>
-              <button type="button" className={styles.actionButton} disabled={busy} onClick={() => openEditModal(document)}>
+              <button type="button" className={`${styles.actionButton} ${styles.editButton}`} disabled={busy} onClick={() => openEditModal(document)}>
                 <Icon name="edit" /> Edit
               </button>
               <button type="button" className={styles.trashButton} disabled={busy} onClick={() => void moveToRecycleBin(document)} aria-label={`Move ${document.title} to Recycle Bin`}>
@@ -558,7 +566,7 @@ export default function DocumentsClient() {
 
       <main className={styles.shell}>
         {notice ? (
-          <div className={`${styles.notice} ${notice.tone === 'success' ? styles.noticeSuccess : styles.noticeError}`} role="status">
+          <div className={`${styles.notice} ${notice.tone === 'success' ? styles.noticeSuccess : styles.noticeError}`} role={notice.tone === 'error' ? 'alert' : 'status'}>
             <Icon name={notice.tone === 'success' ? 'info' : 'info'} />
             <span>{notice.message}</span>
             <button type="button" onClick={() => setNotice(null)} aria-label="Dismiss message"><Icon name="close" /></button>
@@ -566,73 +574,46 @@ export default function DocumentsClient() {
         ) : null}
 
         <section className={styles.hero} aria-labelledby="document-vault-title">
-          <div className={styles.heroCopy}>
-            <span>Owner workspace</span>
-            <h1 id="document-vault-title">Document Vault</h1>
-            <p>Keep important business records together—even when they do not belong to one specific asset.</p>
-          </div>
-          <div className={styles.heroIcon} aria-hidden="true"><Icon name="archive" /></div>
+          <h1 id="document-vault-title">Document Vault</h1>
         </section>
 
-        <section className={styles.summaryGrid} aria-label="Document Vault summary">
-          <article className={styles.summaryCard}>
-            <div className={styles.summaryHeading}><span>Total documents</span><Icon name="document" /></div>
-            <strong>{summary.totalDocuments}</strong>
-            <p>{formatBytes(summary.storageBytes)} securely catalogued</p>
-          </article>
-          <article className={`${styles.summaryCard} ${summary.expiringSoon ? styles.summaryAttention : ''}`}>
-            <div className={styles.summaryHeading}><span>Due within 60 days</span><Icon name="calendar" /></div>
-            <strong>{summary.expiringSoon}</strong>
-            <p>{summary.expiringSoon ? 'Review renewals and expired records' : 'No upcoming expiry actions'}</p>
-          </article>
-          <article className={styles.summaryCard}>
-            <div className={styles.summaryHeading}><span>Linked to assets</span><Icon name="link" /></div>
-            <strong>{summary.linkedDocuments}</strong>
-            <p>{summary.totalDocuments - summary.linkedDocuments} kept at account level</p>
-          </article>
-        </section>
-
-        <section className={styles.toolbar} aria-label="Document Vault controls">
-          <label className={styles.searchBox}>
-            <Icon name="search" />
-            <span className={styles.srOnly}>Search documents</span>
-            <input
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder="Search by title, file, category or linked asset"
-            />
-            {search ? <button type="button" onClick={() => setSearch('')} aria-label="Clear search"><Icon name="close" /></button> : null}
-          </label>
-
-          <div className={styles.toolbarActions}>
-            <button
-              type="button"
-              className={`${styles.toolbarButton} ${showFilters ? styles.toolbarButtonActive : ''}`}
-              onClick={() => setShowFilters((current) => !current)}
-              aria-expanded={showFilters}
-            >
-              <Icon name="filter" /> Filters
-              {category !== 'all' ? <span className={styles.buttonCount}>1</span> : null}
-            </button>
-            <button
-              type="button"
-              className={`${styles.toolbarButton} ${view === 'recycle-bin' ? styles.toolbarButtonActive : ''}`}
-              onClick={() => switchView(view === 'recycle-bin' ? 'documents' : 'recycle-bin')}
-            >
-              <Icon name={view === 'recycle-bin' ? 'folder' : 'trash'} />
-              {view === 'recycle-bin' ? 'Back to documents' : 'Recycle Bin'}
-            </button>
-            <button type="button" className={styles.refreshButton} onClick={() => void loadDocuments(view)} disabled={loading} aria-label="Refresh documents">
-              <Icon name="refresh" />
-            </button>
-            <button type="button" className={styles.uploadButton} onClick={openUploadModal} disabled={view === 'recycle-bin'}>
-              <Icon name="upload" /> Upload document
-            </button>
-          </div>
+        <section className={styles.topActions} aria-label="Document Vault actions">
+          <button
+            type="button"
+            className={`${styles.headerButton} ${styles.recycleButton}`}
+            onClick={() => switchView(view === 'recycle-bin' ? 'documents' : 'recycle-bin')}
+            aria-pressed={view === 'recycle-bin'}
+          >
+            <Icon name={view === 'recycle-bin' ? 'folder' : 'trash'} />
+            {view === 'recycle-bin' ? 'Back to documents' : 'Recycle Bin'}
+          </button>
+          <button
+            type="button"
+            className={`${styles.headerButton} ${styles.summaryButton}`}
+            onClick={() => setShowSummary((current) => !current)}
+            aria-expanded={showSummary}
+            aria-controls="document-vault-summary"
+          >
+            <Icon name="archive" /> Summary
+          </button>
+          <button
+            type="button"
+            className={`${styles.headerButton} ${styles.filtersButton}`}
+            onClick={() => setShowFilters((current) => !current)}
+            aria-expanded={showFilters}
+            aria-controls="document-vault-filters"
+          >
+            <Icon name="filter" /> Filters
+            <Icon name="chevron-down" className={styles.buttonChevron} />
+            {category !== 'all' ? <span className={styles.buttonCount}>1</span> : null}
+          </button>
+          <button type="button" className={`${styles.headerButton} ${styles.primaryHeaderButton}`} onClick={openUploadModal} disabled={view === 'recycle-bin'}>
+            <Icon name="upload" /> Upload document
+          </button>
         </section>
 
         {showFilters ? (
-          <section className={styles.filterPanel} aria-label="Filter by category">
+          <section id="document-vault-filters" className={styles.filterPanel} aria-label="Filter by category">
             <div>
               <strong>Categories</strong>
               <span>Choose one category or view everything.</span>
@@ -658,12 +639,51 @@ export default function DocumentsClient() {
           </section>
         ) : null}
 
+        {showSummary ? (
+          <section id="document-vault-summary" className={styles.summaryGrid} aria-label="Document Vault summary">
+            <article className={styles.summaryCard}>
+              <div className={styles.summaryHeading}><span>Total documents</span><Icon name="document" /></div>
+              <strong>{summary.totalDocuments}</strong>
+              <p>{formatBytes(summary.storageBytes)} securely catalogued</p>
+            </article>
+            <article className={`${styles.summaryCard} ${summary.expiringSoon ? styles.summaryAttention : ''}`}>
+              <div className={styles.summaryHeading}><span>Expiry attention</span><Icon name="calendar" /></div>
+              <strong>{summary.expiringSoon}</strong>
+              <p>{summary.expiringSoon ? 'Expired or due within 60 days' : 'No upcoming expiry actions'}</p>
+            </article>
+            <article className={styles.summaryCard}>
+              <div className={styles.summaryHeading}><span>Linked to assets</span><Icon name="link" /></div>
+              <strong>{summary.linkedDocuments}</strong>
+              <p>{summary.totalDocuments - summary.linkedDocuments} kept at account level</p>
+            </article>
+          </section>
+        ) : null}
+
+        <section className={styles.toolbar} aria-label="Search and refresh documents">
+          <label className={styles.searchBox}>
+            <Icon name="search" />
+            <span className={styles.srOnly}>Search documents</span>
+            <input
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Search by title, file, category or linked asset"
+            />
+            {search ? <button type="button" onClick={() => setSearch('')} aria-label="Clear search"><Icon name="close" /></button> : null}
+          </label>
+
+          <div className={styles.toolbarActions}>
+            <button type="button" className={styles.refreshButton} onClick={() => void loadDocuments(view)} disabled={loading}>
+              <Icon name="refresh" className={loading ? styles.refreshIconActive : undefined} /> Refresh
+            </button>
+          </div>
+        </section>
+
         {view === 'recycle-bin' ? (
           <div className={styles.recycleNotice}>
             <Icon name="info" />
             <div>
               <strong>90-day Recycle Bin</strong>
-              <span>Deleted documents remain recoverable for 90 days, then their private file and metadata are removed automatically.</span>
+              <span>Deleted documents remain recoverable for 90 days and are permanently removed when vault cleanup next runs.</span>
             </div>
           </div>
         ) : null}
@@ -683,16 +703,26 @@ export default function DocumentsClient() {
             <span className={styles.loadingSpinner} />
             <strong>Loading your documents…</strong>
           </section>
+        ) : loadFailed ? (
+          <section className={styles.emptyCard} role="alert">
+            <div className={styles.emptyIcon}><Icon name="document" /></div>
+            <h2>Documents could not be loaded</h2>
+            <p>Please try again. Your stored documents have not been changed.</p>
+            <button type="button" className={styles.uploadButton} onClick={() => void loadDocuments(view)}><Icon name="refresh" /> Try again</button>
+          </section>
         ) : groupedDocuments.length ? (
           <div className={styles.categoryGroups}>
             {groupedDocuments.map((group) => (
               <section key={group.value} className={styles.categoryGroup} aria-labelledby={`category-${group.value}`}>
                 <header className={styles.categoryHeader}>
-                  <div className={styles.categoryIcon}><Icon name="folder" /></div>
-                  <div>
-                    <h2 id={`category-${group.value}`}>{group.label}</h2>
-                    <p>{group.documents.length} {group.documents.length === 1 ? 'document' : 'documents'}</p>
+                  <div className={styles.categoryHeadingGroup}>
+                    <div className={styles.categoryIcon}><Icon name="folder" /></div>
+                    <div>
+                      <h2 id={`category-${group.value}`}>{group.label}</h2>
+                      <p>Account records and documents</p>
+                    </div>
                   </div>
+                  <strong className={styles.categoryCount}>{group.documents.length} {group.documents.length === 1 ? 'document' : 'documents'}</strong>
                 </header>
                 <div className={styles.documentList}>{group.documents.map(renderDocumentCard)}</div>
               </section>
