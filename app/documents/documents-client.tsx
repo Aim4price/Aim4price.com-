@@ -64,6 +64,7 @@ type VaultResponse = {
 type VaultView = 'documents' | 'recycle-bin';
 type ModalMode = 'upload' | 'edit';
 type Notice = { tone: 'success' | 'error'; message: string };
+type SummaryNavigation = { hasOverflow: boolean; atStart: boolean; atEnd: boolean };
 type IconName =
   | 'archive'
   | 'calendar'
@@ -260,6 +261,11 @@ export default function DocumentsClient() {
   const [draft, setDraft] = useState<DocumentDraft>(createEmptyDraft);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [assetSearch, setAssetSearch] = useState('');
+  const [summaryNavigation, setSummaryNavigation] = useState<SummaryNavigation>({
+    hasOverflow: false,
+    atStart: true,
+    atEnd: true,
+  });
   const requestSequence = useRef(0);
   const summaryViewportRef = useRef<HTMLDivElement | null>(null);
   const modalRef = useRef<HTMLElement | null>(null);
@@ -299,20 +305,37 @@ export default function DocumentsClient() {
   }, [loadDocuments, view]);
 
   useEffect(() => {
-    busyRef.current = busy;
-  }, [busy]);
+    if (!showSummary || loadFailed) return;
+    const viewport = summaryViewportRef.current;
+    if (!viewport) return;
+
+    const updateNavigation = () => {
+      const maxScrollLeft = Math.max(0, viewport.scrollWidth - viewport.clientWidth);
+      setSummaryNavigation({
+        hasOverflow: maxScrollLeft > 2,
+        atStart: viewport.scrollLeft <= 2,
+        atEnd: viewport.scrollLeft >= maxScrollLeft - 2,
+      });
+    };
+
+    const frame = window.requestAnimationFrame(updateNavigation);
+    viewport.addEventListener('scroll', updateNavigation, { passive: true });
+    window.addEventListener('resize', updateNavigation);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      viewport.removeEventListener('scroll', updateNavigation);
+      window.removeEventListener('resize', updateNavigation);
+    };
+  }, [loadFailed, showSummary]);
 
   useEffect(() => {
     if (!modalMode) return;
 
     const dialog = modalRef.current;
     const pageContent = pageContentRef.current;
+    dialog?.querySelector<HTMLElement>('[data-modal-initial-focus]')?.focus();
     pageContent?.setAttribute('inert', '');
     pageContent?.setAttribute('aria-hidden', 'true');
-
-    const focusFrame = window.requestAnimationFrame(() => {
-      dialog?.querySelector<HTMLElement>('[data-modal-initial-focus]')?.focus();
-    });
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape' && !busyRef.current) {
@@ -340,7 +363,6 @@ export default function DocumentsClient() {
     document.addEventListener('keydown', handleKeyDown);
     document.body.style.overflow = 'hidden';
     return () => {
-      window.cancelAnimationFrame(focusFrame);
       document.removeEventListener('keydown', handleKeyDown);
       document.body.style.overflow = '';
       pageContent?.removeAttribute('inert');
@@ -422,6 +444,11 @@ export default function DocumentsClient() {
     setDraft((current) => ({ ...current, [key]: value }));
   }
 
+  function setOperationBusy(nextBusy: boolean) {
+    busyRef.current = nextBusy;
+    setBusy(nextBusy);
+  }
+
   function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0] ?? null;
     setSelectedFile(file);
@@ -456,7 +483,7 @@ export default function DocumentsClient() {
       return;
     }
 
-    setBusy(true);
+    setOperationBusy(true);
     setModalNotice(null);
     setNotice(null);
 
@@ -483,6 +510,7 @@ export default function DocumentsClient() {
       const data = await response.json() as VaultResponse;
       if (!response.ok || !data.ok) throw new Error(data.error || 'The document could not be saved.');
 
+      setOperationBusy(false);
       setModalMode(null);
       setEditingDocument(null);
       setSelectedFile(null);
@@ -497,7 +525,7 @@ export default function DocumentsClient() {
         message: error instanceof Error ? error.message : 'The document could not be saved.',
       });
     } finally {
-      setBusy(false);
+      setOperationBusy(false);
     }
   }
 
@@ -513,7 +541,7 @@ export default function DocumentsClient() {
     );
     if (!confirmed) return;
 
-    setBusy(true);
+    setOperationBusy(true);
     setNotice(null);
     try {
       const response = await fetch(`/api/documents/${encodeURIComponent(document.id)}`, { method: 'DELETE' });
@@ -525,12 +553,12 @@ export default function DocumentsClient() {
     } catch (error) {
       setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'The document could not be moved.' });
     } finally {
-      setBusy(false);
+      setOperationBusy(false);
     }
   }
 
   async function restoreDocument(document: VaultDocument) {
-    setBusy(true);
+    setOperationBusy(true);
     setNotice(null);
     try {
       const response = await fetch(`/api/documents/${encodeURIComponent(document.id)}`, {
@@ -546,7 +574,7 @@ export default function DocumentsClient() {
     } catch (error) {
       setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'The document could not be restored.' });
     } finally {
-      setBusy(false);
+      setOperationBusy(false);
     }
   }
 
@@ -714,7 +742,14 @@ export default function DocumentsClient() {
 
         {showSummary && !loadFailed ? (
           <div id="document-vault-summary" className={styles.summaryCarousel} aria-label="Document Vault summary">
-            <button type="button" className={`${styles.summaryNav} ${styles.summaryNavPrevious}`} onClick={() => scrollSummary(-1)} aria-label="Previous summary cards">
+            <button
+              type="button"
+              className={`${styles.summaryNav} ${styles.summaryNavPrevious}`}
+              onClick={() => scrollSummary(-1)}
+              aria-label="Previous summary cards"
+              disabled={!summaryNavigation.hasOverflow || summaryNavigation.atStart}
+              hidden={!summaryNavigation.hasOverflow}
+            >
               <Icon name="chevron-left" />
             </button>
             <div ref={summaryViewportRef} className={styles.summaryViewport}>
@@ -736,7 +771,14 @@ export default function DocumentsClient() {
                 </article>
               </section>
             </div>
-            <button type="button" className={`${styles.summaryNav} ${styles.summaryNavNext}`} onClick={() => scrollSummary(1)} aria-label="Next summary cards">
+            <button
+              type="button"
+              className={`${styles.summaryNav} ${styles.summaryNavNext}`}
+              onClick={() => scrollSummary(1)}
+              aria-label="Next summary cards"
+              disabled={!summaryNavigation.hasOverflow || summaryNavigation.atEnd}
+              hidden={!summaryNavigation.hasOverflow}
+            >
               <Icon name="chevron-right" />
             </button>
           </div>

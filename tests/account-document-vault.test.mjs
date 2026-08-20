@@ -144,10 +144,15 @@ test('Documents activates the full vault with the Asset Register visual system',
   assert.match(client, /summaryViewportRef/);
   assert.match(client, /scrollSummary\(-1\)/);
   assert.match(client, /scrollSummary\(1\)/);
+  assert.match(client, /hasOverflow:\s*maxScrollLeft > 2/);
+  assert.match(client, /disabled=\{!summaryNavigation\.hasOverflow \|\| summaryNavigation\.atStart\}/);
+  assert.match(client, /disabled=\{!summaryNavigation\.hasOverflow \|\| summaryNavigation\.atEnd\}/);
+  assert.match(client, /hidden=\{!summaryNavigation\.hasOverflow\}/);
   assert.match(styles, /\.summaryViewport\s*\{[\s\S]*?scroll-snap-type:\s*x mandatory/);
   assert.match(styles, /flex:\s*0 0 calc\(\(100% - \(var\(--summary-gap\) \* 2\)\) \/ 3\)/);
   assert.match(styles, /@media \(max-width: 1180px\)[\s\S]*?flex-basis:\s*calc\(\(100% - var\(--summary-gap\)\) \/ 2\)/);
   assert.match(styles, /@media \(max-width: 760px\)[\s\S]*?flex-basis:\s*100%/);
+  assert.match(styles, /@media \(max-width: 760px\)[\s\S]*?\.summaryNav\s*\{[\s\S]*?display:\s*none/);
   assert.match(styles, /\.documentCard\s*\{[\s\S]*?rgba\(198, 216, 223, 0\.98\)/);
   assert.doesNotMatch(styles, /comingSoon/i);
   assert.match(styles, /@media \(prefers-reduced-motion: reduce\)/);
@@ -164,6 +169,7 @@ test('live vault interactions keep errors, focus and view mutations safe', () =>
   assert.match(client, /pageContent\?\.setAttribute\('inert', ''\)/);
   assert.match(client, /event\.key !== 'Tab'/);
   assert.match(client, /returnFocusRef\.current\?\.focus\(\)/);
+  assert.match(client, /setOperationBusy\(false\);\s*setModalMode\(null\);/);
   assert.match(client, /disabled=\{busy \|\| loading\}/);
   assert.match(client, /disabled=\{loading \|\| busy\}/);
   assert.match(client, /className=\{styles\.fileName\}/);

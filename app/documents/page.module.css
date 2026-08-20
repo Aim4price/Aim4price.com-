@@ -2155,24 +2155,31 @@
   position: absolute;
   z-index: 3;
   top: 50%;
-  width: 2.25rem;
-  height: 2.25rem;
+  width: 2rem;
+  height: 2rem;
   display: grid;
   place-items: center;
   padding: 0;
   border: 0;
-  border-radius: 999px;
   color: rgba(28, 92, 73, 0.72);
-  background: rgba(248, 253, 250, 0.68);
+  background: transparent;
   cursor: pointer;
   transform: translateY(-50%);
   transition: color 150ms ease, background 150ms ease, box-shadow 150ms ease;
 }
 
-.summaryNav:hover {
+.summaryNav:hover:not(:disabled) {
   color: #0d5a42;
-  background: rgba(255, 255, 255, 0.96);
-  box-shadow: 0 8px 18px rgba(20, 67, 52, 0.1);
+  background: transparent;
+}
+
+.summaryNav:disabled {
+  opacity: 0.28;
+  cursor: default;
+}
+
+.summaryNav[hidden] {
+  display: none;
 }
 
 .summaryNav:focus-visible {
@@ -2717,6 +2724,10 @@
 
   .summaryGrid {
     --summary-gap: 0.85rem;
+  }
+
+  .summaryNav {
+    display: none;
   }
 
   .summaryCard {
