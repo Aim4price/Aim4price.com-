@@ -378,6 +378,35 @@
   cursor: not-allowed;
 }
 
+.groupNotificationButton {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.9rem;
+  padding: 0 1.1rem;
+  border: 1px solid #235d87;
+  border-radius: 999px;
+  color: #ffffff;
+  background: #235d87;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 880;
+  white-space: nowrap;
+  cursor: pointer;
+  box-shadow: 0 12px 28px rgba(35, 93, 135, 0.16);
+  transition:
+    background 160ms ease,
+    border-color 160ms ease,
+    transform 160ms ease;
+}
+
+.groupNotificationButton:hover {
+  border-color: #194e75;
+  background: #194e75;
+  transform: translateY(-1px);
+}
+
 .notice {
   padding: 0.82rem 1rem;
   border-radius: 0.95rem;
@@ -860,6 +889,22 @@
   backdrop-filter: blur(12px);
 }
 
+.groupNotificationModal {
+  width: min(100%, 50rem);
+  max-height: min(92vh, 58rem);
+  grid-template-rows: auto minmax(0, 1fr);
+  overflow: hidden;
+}
+
+.groupNotificationForm {
+  min-height: 0;
+  display: grid;
+  gap: 0.9rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0.1rem 0.2rem 0.15rem 0;
+}
+
 .accountStorageOverview {
   display: grid;
   grid-template-columns: minmax(0, 1.35fr) repeat(2, minmax(0, 1fr));
@@ -1132,6 +1177,212 @@
   color: #7d8c86;
   font-size: 0.66rem;
   font-weight: 720;
+}
+
+.notificationPriorityPicker,
+.notificationAudienceFieldset {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.notificationPriorityPicker legend,
+.notificationAudienceFieldset legend {
+  margin-bottom: 0.42rem;
+  color: #46625a;
+  font-size: 0.7rem;
+  font-weight: 900;
+  letter-spacing: 0.045em;
+  text-transform: uppercase;
+}
+
+.notificationPriorityPicker > div {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.55rem;
+}
+
+.notificationPriorityPicker button {
+  min-width: 0;
+  min-height: 3.65rem;
+  display: grid;
+  align-content: center;
+  gap: 0.15rem;
+  padding: 0.65rem 0.8rem;
+  border: 1px solid #cbdad3;
+  border-radius: 0.85rem;
+  color: #38574d;
+  background: #ffffff;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.notificationPriorityPicker button strong {
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.notificationPriorityPicker button span {
+  color: #71817b;
+  font-size: 0.67rem;
+  font-weight: 700;
+}
+
+.notificationPriorityPicker .notificationPrioritySelected {
+  border-color: rgba(35, 93, 135, 0.48);
+  color: #235d87;
+  background: #edf6fc;
+  box-shadow: 0 0 0 3px rgba(35, 93, 135, 0.08);
+}
+
+.notificationPriorityPicker .notificationPriorityUrgent {
+  border-color: rgba(188, 119, 19, 0.52);
+  color: #86540d;
+  background: linear-gradient(145deg, #fff9ed 0%, #fff0cf 100%);
+  box-shadow: 0 0 0 3px rgba(188, 119, 19, 0.09);
+}
+
+.notificationPriorityPicker:disabled button {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.notificationAudienceGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.55rem;
+}
+
+.notificationAudienceOption {
+  min-width: 0;
+  min-height: 4.4rem;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.7rem 0.75rem;
+  border: 1px solid #d7e1dc;
+  border-radius: 0.9rem;
+  color: #38574d;
+  background: #ffffff;
+  cursor: pointer;
+  transition:
+    border-color 160ms ease,
+    background 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.notificationAudienceOption input {
+  width: 1rem;
+  height: 1rem;
+  margin: 0;
+  accent-color: #176c50;
+}
+
+.notificationAudienceOption > span {
+  min-width: 0;
+  display: grid;
+  gap: 0.14rem;
+}
+
+.notificationAudienceOption strong {
+  color: #17362c;
+  font-size: 0.76rem;
+  font-weight: 900;
+  line-height: 1.2;
+}
+
+.notificationAudienceOption small {
+  overflow: hidden;
+  color: #788780;
+  font-size: 0.64rem;
+  font-weight: 680;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+}
+
+.notificationAudienceOption b {
+  min-width: 1.8rem;
+  min-height: 1.8rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 0.3rem;
+  border-radius: 999px;
+  color: #476159;
+  background: #edf3f0;
+  font-size: 0.7rem;
+  font-weight: 900;
+}
+
+.notificationAudienceOptionSelected {
+  border-color: rgba(23, 108, 80, 0.44);
+  background: #eef8f3;
+  box-shadow: 0 0 0 3px rgba(23, 108, 80, 0.08);
+}
+
+.notificationAudienceOptionSelected b {
+  color: #ffffff;
+  background: #176c50;
+}
+
+.notificationAudienceOption:has(input:disabled) {
+  opacity: 0.48;
+  cursor: not-allowed;
+}
+
+.groupNotificationSummary {
+  display: grid;
+  gap: 0.18rem;
+  padding: 0.78rem 0.85rem;
+  border: 1px solid rgba(35, 93, 135, 0.2);
+  border-radius: 0.9rem;
+  color: #235d87;
+  background: #f0f7fc;
+}
+
+.groupNotificationSummaryPriority {
+  border-color: rgba(188, 119, 19, 0.28);
+  color: #86540d;
+  background: #fff7e8;
+}
+
+.groupNotificationSummary strong {
+  font-size: 0.8rem;
+  font-weight: 900;
+}
+
+.groupNotificationSummary span {
+  color: #687b74;
+  font-size: 0.68rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.groupNotificationConfirmation {
+  min-width: 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.62rem;
+  padding: 0.78rem 0.85rem;
+  border: 1px solid #d7e1dc;
+  border-radius: 0.9rem;
+  color: #38574d;
+  background: #ffffff;
+  font-size: 0.72rem;
+  font-weight: 780;
+  line-height: 1.4;
+  cursor: pointer;
+}
+
+.groupNotificationConfirmation input {
+  flex: 0 0 auto;
+  width: 1rem;
+  height: 1rem;
+  margin: 0.08rem 0 0;
+  accent-color: #176c50;
 }
 
 .notificationComposerError {
@@ -1856,6 +2107,7 @@
   }
 
   .clearFiltersButton,
+  .headerActions > .groupNotificationButton,
   .headerActions > .signOutButton {
     width: 100%;
   }
@@ -1938,6 +2190,20 @@
 
   .notificationComposerActions button {
     width: 100%;
+  }
+
+  .groupNotificationModal {
+    grid-template-rows: auto;
+    overflow: visible;
+  }
+
+  .groupNotificationForm {
+    overflow: visible;
+  }
+
+  .notificationAudienceGrid,
+  .notificationPriorityPicker > div {
+    grid-template-columns: 1fr;
   }
 
   .qrModalHeader,
