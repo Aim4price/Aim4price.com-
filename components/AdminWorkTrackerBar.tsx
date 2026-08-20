@@ -15,10 +15,12 @@ type TrackerResponse = {
   ok?: boolean;
   activeSession?: AdminWorkSessionView | null;
   pauseReason?: string | null;
+  redirectUrl?: string;
   error?: string;
 };
 
 const TRACKER_CHANGED_EVENT = "aim4price:admin-work-session-changed";
+const TRACKER_REMOTE_CHANGED_EVENT = "aim4price:admin-work-session-remote-changed";
 const TRACKER_TICK_EVENT = "aim4price:admin-work-session-tick";
 
 function formatLiveDuration(secondsInput: number): string {
@@ -128,7 +130,10 @@ export default function AdminWorkTrackerBar() {
       void loadActiveSession();
     };
     if (channel) {
-      channel.onmessage = () => void loadActiveSession();
+      channel.onmessage = () => {
+        void loadActiveSession();
+        window.dispatchEvent(new Event(TRACKER_REMOTE_CHANGED_EVENT));
+      };
     }
     window.addEventListener(TRACKER_CHANGED_EVENT, handleTrackerChanged);
     return () => {
@@ -234,7 +239,7 @@ export default function AdminWorkTrackerBar() {
     const current = activeSessionRef.current;
     if (!current || isStopping) return;
     const confirmed = window.confirm(
-      `Stop work for ${current.clientName}? You can add or change the report note afterwards.`,
+      `Finish work for ${current.clientName} and return to Admin?`,
     );
     if (!confirmed) return;
 
@@ -253,6 +258,7 @@ export default function AdminWorkTrackerBar() {
       setActiveSession(null);
       setPauseReason(null);
       window.dispatchEvent(new Event(TRACKER_CHANGED_EVENT));
+      window.location.replace(data.redirectUrl || "/admin");
     } catch (error) {
       window.alert(error instanceof Error ? error.message : "Failed to stop work.");
     } finally {
@@ -260,7 +266,9 @@ export default function AdminWorkTrackerBar() {
     }
   }
 
-  if (access !== "allowed" || !activeSession) return null;
+  if (access !== "allowed" || !activeSession || pathname === "/admin/work-tracker") {
+    return null;
+  }
 
   return (
     <aside className={`${styles.bar} ${pauseReason ? styles.barPaused : ""}`} aria-label="Admin work timer">
@@ -275,7 +283,7 @@ export default function AdminWorkTrackerBar() {
         Review
       </Link>
       <button type="button" className={styles.stopButton} onClick={stopWork} disabled={isStopping}>
-        {isStopping ? "Stopping…" : "Stop work"}
+        {isStopping ? "Finishing…" : "Done"}
       </button>
     </aside>
   );

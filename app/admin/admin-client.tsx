@@ -1063,6 +1063,7 @@ export default function AdminClient({
         message: data.message || `Work started for ${user.name || user.email}.`,
       });
       window.dispatchEvent(new Event("aim4price:admin-work-session-changed"));
+      window.location.assign(data.redirectUrl || "/account");
     } catch (error) {
       setNotice({
         tone: "error",

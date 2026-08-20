@@ -25,7 +25,9 @@ type TrackerResponse = {
   activeSession?: AdminWorkSessionView | null;
   stoppedSession?: AdminWorkSessionView | null;
   workSession?: AdminWorkSessionView;
+  deletedSessionId?: string;
   history?: AdminWorkHistory;
+  redirectUrl?: string;
   message?: string;
   error?: string;
 };
@@ -33,6 +35,7 @@ type TrackerResponse = {
 type Notice = { tone: "success" | "error"; message: string } | null;
 
 const TRACKER_CHANGED_EVENT = "aim4price:admin-work-session-changed";
+const TRACKER_REMOTE_CHANGED_EVENT = "aim4price:admin-work-session-remote-changed";
 const TRACKER_TICK_EVENT = "aim4price:admin-work-session-tick";
 const REPORT_TIME_ZONE = "Africa/Johannesburg";
 
@@ -96,12 +99,14 @@ export default function WorkTrackerClient({ initialClients }: { initialClients: 
   const [isStarting, setIsStarting] = useState(false);
   const [isStopping, setIsStopping] = useState(false);
   const [savingSessionId, setSavingSessionId] = useState<string | null>(null);
+  const [deletingSessionId, setDeletingSessionId] = useState<string | null>(null);
   const [draftNotes, setDraftNotes] = useState<Record<string, string>>({});
   const [notice, setNotice] = useState<Notice>(null);
   const [nowMs, setNowMs] = useState(() => Date.now());
   const draftNotesRef = useRef(draftNotes);
   const loadGenerationRef = useRef(0);
   const saveInFlightRef = useRef(false);
+  const deleteInFlightRef = useRef(false);
 
   draftNotesRef.current = draftNotes;
 
@@ -171,9 +176,11 @@ export default function WorkTrackerClient({ initialClients }: { initialClients: 
       });
     };
     window.addEventListener(TRACKER_CHANGED_EVENT, handleChanged);
+    window.addEventListener(TRACKER_REMOTE_CHANGED_EVENT, handleChanged);
     window.addEventListener(TRACKER_TICK_EVENT, handleTick);
     return () => {
       window.removeEventListener(TRACKER_CHANGED_EVENT, handleChanged);
+      window.removeEventListener(TRACKER_REMOTE_CHANGED_EVENT, handleChanged);
       window.removeEventListener(TRACKER_TICK_EVENT, handleTick);
     };
   }, [loadTracker]);
@@ -195,10 +202,11 @@ export default function WorkTrackerClient({ initialClients }: { initialClients: 
   }, [activeSession, nowMs]);
 
   async function startWork() {
-    if (!startClientUserId || isStarting) {
+    if (!startClientUserId) {
       setNotice({ tone: "error", message: "Choose an account before starting work." });
       return;
     }
+    if (isStarting || deleteInFlightRef.current) return;
 
     setIsStarting(true);
     setNotice(null);
@@ -221,6 +229,7 @@ export default function WorkTrackerClient({ initialClients }: { initialClients: 
       setClientUserId(data.activeSession.clientUserId);
       setNotice({ tone: "success", message: data.message || "Work timer started." });
       window.dispatchEvent(new Event(TRACKER_CHANGED_EVENT));
+      window.location.assign(data.redirectUrl || "/account");
     } catch (error) {
       setNotice({
         tone: "error",
@@ -236,7 +245,7 @@ export default function WorkTrackerClient({ initialClients }: { initialClients: 
     changes: Partial<Pick<AdminWorkSessionView, "note" | "includeInReport" | "showTimesInReport" | "showNoteInReport">>,
     showSuccess = false,
   ): Promise<AdminWorkSessionView | null> {
-    if (saveInFlightRef.current) return null;
+    if (saveInFlightRef.current || deleteInFlightRef.current) return null;
     saveInFlightRef.current = true;
     setSavingSessionId(sessionId);
     try {
@@ -293,27 +302,31 @@ export default function WorkTrackerClient({ initialClients }: { initialClients: 
   }
 
   async function stopWork() {
-    if (!activeSession || isStopping) return;
+    const currentSession = activeSession;
+    if (!currentSession || isStopping || deleteInFlightRef.current) return;
+    const confirmed = window.confirm(
+      `Finish work for ${currentSession.clientName} and return to Admin?`,
+    );
+    if (!confirmed) return;
     setIsStopping(true);
     setNotice(null);
 
     try {
-      const saved = await patchSession(activeSession.id, { note: activeSession.note });
+      const saved = await patchSession(currentSession.id, { note: currentSession.note });
       if (!saved) return;
       const response = await fetch("/api/admin/work-tracker", {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "stop", sessionId: activeSession.id }),
+        body: JSON.stringify({ action: "stop", sessionId: currentSession.id }),
       });
       const data = (await response.json()) as TrackerResponse;
       if (!response.ok || !data.ok) {
         throw new Error(data.error || "Failed to stop work.");
       }
       setActiveSession(null);
-      setNotice({ tone: "success", message: data.message || "Work timer stopped." });
       window.dispatchEvent(new Event(TRACKER_CHANGED_EVENT));
-      await loadTracker();
+      window.location.replace(data.redirectUrl || "/admin");
     } catch (error) {
       setNotice({
         tone: "error",
@@ -321,6 +334,55 @@ export default function WorkTrackerClient({ initialClients }: { initialClients: 
       });
     } finally {
       setIsStopping(false);
+    }
+  }
+
+  async function deleteSession(session: AdminWorkSessionView) {
+    if (deleteInFlightRef.current || saveInFlightRef.current || isStarting || isStopping) return;
+    const confirmed = window.confirm(
+      `Delete this entire tracked work session for ${session.clientName} on ${formatDate(session.startedAtIso)}? It will be removed from all weekly and monthly reports. This cannot be undone.`,
+    );
+    if (!confirmed) return;
+
+    deleteInFlightRef.current = true;
+    setDeletingSessionId(session.id);
+    setNotice(null);
+    try {
+      const response = await fetch("/api/admin/work-tracker", {
+        method: "DELETE",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sessionId: session.id }),
+      });
+      const data = (await response.json()) as TrackerResponse;
+      if (!response.ok || !data.ok || data.deletedSessionId !== session.id) {
+        throw new Error(data.error || "Failed to delete the tracked work entry.");
+      }
+
+      setHistory((current) =>
+        current
+          ? {
+              ...current,
+              sessions: current.sessions.filter((item) => item.id !== session.id),
+            }
+          : current,
+      );
+      setDraftNotes((current) => {
+        if (!Object.prototype.hasOwnProperty.call(current, session.id)) return current;
+        const next = { ...current };
+        delete next[session.id];
+        return next;
+      });
+      setNotice({ tone: "success", message: data.message || "Tracked work entry deleted." });
+      window.dispatchEvent(new Event(TRACKER_CHANGED_EVENT));
+    } catch (error) {
+      setNotice({
+        tone: "error",
+        message: error instanceof Error ? error.message : "Failed to delete the tracked work entry.",
+      });
+    } finally {
+      deleteInFlightRef.current = false;
+      setDeletingSessionId(null);
     }
   }
 
@@ -350,6 +412,10 @@ export default function WorkTrackerClient({ initialClients }: { initialClients: 
     }
     if (savingSessionId) {
       setNotice({ tone: "error", message: "Wait for the report settings to finish saving." });
+      return;
+    }
+    if (deletingSessionId) {
+      setNotice({ tone: "error", message: "Wait for the tracked work entry to finish deleting." });
       return;
     }
     if (hasDirtyReportNotes) {
@@ -440,11 +506,11 @@ export default function WorkTrackerClient({ initialClients }: { initialClients: 
               <small>Private unless “Include note” is switched on after the session.</small>
             </label>
             <div className={styles.activeActions}>
-              <button type="button" className={styles.secondaryButton} onClick={() => void patchSession(activeSession.id, { note: activeSession.note }, true)} disabled={savingSessionId !== null || isStopping || !Object.prototype.hasOwnProperty.call(draftNotes, activeSession.id)}>
+              <button type="button" className={styles.secondaryButton} onClick={() => void patchSession(activeSession.id, { note: activeSession.note }, true)} disabled={savingSessionId !== null || deletingSessionId !== null || isStopping || !Object.prototype.hasOwnProperty.call(draftNotes, activeSession.id)}>
                 {savingSessionId === activeSession.id ? "Saving…" : "Save note"}
               </button>
-              <button type="button" className={styles.stopButton} onClick={() => void stopWork()} disabled={isStopping || savingSessionId !== null}>
-                {isStopping ? "Stopping…" : "Stop work"}
+              <button type="button" className={styles.stopButton} onClick={() => void stopWork()} disabled={isStopping || savingSessionId !== null || deletingSessionId !== null}>
+                {isStopping ? "Finishing…" : "Done & return to Admin"}
               </button>
             </div>
           </div>
@@ -461,7 +527,7 @@ export default function WorkTrackerClient({ initialClients }: { initialClients: 
                 ))}
               </select>
             </label>
-            <button type="button" className={styles.startButton} onClick={() => void startWork()} disabled={isStarting || !startClientUserId}>
+            <button type="button" className={styles.startButton} onClick={() => void startWork()} disabled={isStarting || deletingSessionId !== null || !startClientUserId}>
               {isStarting ? "Starting…" : "Start work"}
             </button>
           </div>
@@ -500,7 +566,7 @@ export default function WorkTrackerClient({ initialClients }: { initialClients: 
               ))}
             </select>
           </label>
-          <button type="button" className={styles.reportButton} onClick={openReport} disabled={!clientUserId || isLoading || savingSessionId !== null || hasDirtyReportNotes}>
+          <button type="button" className={styles.reportButton} onClick={openReport} disabled={!clientUserId || isLoading || savingSessionId !== null || deletingSessionId !== null || hasDirtyReportNotes}>
             Preview / Print report
           </button>
           <small>
@@ -523,7 +589,7 @@ export default function WorkTrackerClient({ initialClients }: { initialClients: 
           {isLoading ? <p className={styles.emptyState}>Loading work sessions…</p> : null}
           {!isLoading && !history?.sessions.length ? <p className={styles.emptyState}>No completed work sessions were recorded in this period.</p> : null}
           {!isLoading ? history?.sessions.map((session) => (
-            <article key={session.id} className={`${styles.sessionCard} ${!session.includeInReport ? styles.sessionExcluded : ""}`}>
+            <article key={session.id} className={`${styles.sessionCard} ${!session.includeInReport ? styles.sessionExcluded : ""}`} aria-busy={deletingSessionId === session.id}>
               <header className={styles.sessionHeader}>
                 <div>
                   <strong>{session.clientName}</strong>
@@ -545,14 +611,18 @@ export default function WorkTrackerClient({ initialClients }: { initialClients: 
                   maxLength={ADMIN_WORK_NOTE_MAX_LENGTH}
                   onChange={(event) => updateSessionNote(session.id, event.target.value)}
                   placeholder="Optional short summary"
+                  disabled={deletingSessionId === session.id}
                 />
               </label>
 
               <div className={styles.sessionControls}>
-                <label><input type="checkbox" checked={session.includeInReport} disabled={savingSessionId !== null} onChange={(event) => void patchSession(session.id, { includeInReport: event.target.checked })} /> Include in report</label>
-                <label><input type="checkbox" checked={session.showTimesInReport} disabled={savingSessionId !== null} onChange={(event) => void patchSession(session.id, { showTimesInReport: event.target.checked })} /> Show activity times</label>
-                <label><input type="checkbox" checked={session.showNoteInReport} disabled={savingSessionId !== null} onChange={(event) => void patchSession(session.id, { showNoteInReport: event.target.checked })} /> Include note</label>
-                <button type="button" onClick={() => void patchSession(session.id, { note: session.note }, true)} disabled={savingSessionId !== null || !Object.prototype.hasOwnProperty.call(draftNotes, session.id)}>{savingSessionId === session.id ? "Saving…" : "Save note"}</button>
+                <label><input type="checkbox" checked={session.includeInReport} disabled={savingSessionId !== null || deletingSessionId !== null} onChange={(event) => void patchSession(session.id, { includeInReport: event.target.checked })} /> Include in report</label>
+                <label><input type="checkbox" checked={session.showTimesInReport} disabled={savingSessionId !== null || deletingSessionId !== null} onChange={(event) => void patchSession(session.id, { showTimesInReport: event.target.checked })} /> Show activity times</label>
+                <label><input type="checkbox" checked={session.showNoteInReport} disabled={savingSessionId !== null || deletingSessionId !== null} onChange={(event) => void patchSession(session.id, { showNoteInReport: event.target.checked })} /> Include note</label>
+                <button type="button" onClick={() => void patchSession(session.id, { note: session.note }, true)} disabled={savingSessionId !== null || deletingSessionId !== null || !Object.prototype.hasOwnProperty.call(draftNotes, session.id)}>{savingSessionId === session.id ? "Saving…" : "Save note"}</button>
+                <button type="button" className={styles.deleteSessionButton} onClick={() => void deleteSession(session)} disabled={savingSessionId !== null || deletingSessionId !== null}>
+                  {deletingSessionId === session.id ? "Deleting…" : "Delete entry"}
+                </button>
               </div>
             </article>
           )) : null}
