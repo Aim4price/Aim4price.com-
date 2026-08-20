@@ -123,6 +123,143 @@
   transition: transform 150ms ease, background 150ms ease, box-shadow 150ms ease;
 }
 
+.actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.retractButton {
+  min-height: 36px;
+  padding: 0.55rem 0.9rem;
+  border: 1px solid rgba(157, 55, 55, 0.55);
+  border-radius: 999px;
+  background: rgba(255, 251, 251, 0.96);
+  color: #963737;
+  font: inherit;
+  font-size: 0.76rem;
+  font-weight: 850;
+  cursor: pointer;
+  transition: transform 150ms ease, background 150ms ease, box-shadow 150ms ease;
+}
+
+.retractButton:hover {
+  transform: translateY(-1px);
+  background: #fff2f2;
+  box-shadow: 0 7px 16px rgba(118, 33, 33, 0.13);
+}
+
+.modalBackdrop {
+  position: fixed;
+  z-index: 1200;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(11, 31, 24, 0.54);
+  backdrop-filter: blur(5px);
+}
+
+.modal {
+  width: min(100%, 500px);
+  padding: 26px;
+  border: 1px solid rgba(27, 105, 76, 0.18);
+  border-radius: 22px;
+  background: #fff;
+  box-shadow: 0 28px 80px rgba(9, 35, 26, 0.28);
+}
+
+.modalEyebrow {
+  display: block;
+  margin-bottom: 7px;
+  color: #2f795e;
+  font-size: 0.69rem;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.modal h3 {
+  margin: 0;
+  color: #173f31;
+  font-size: 1.28rem;
+}
+
+.modal > p {
+  margin: 10px 0 0;
+  color: #5f746c;
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
+
+.modalReference {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 18px;
+  padding: 13px 15px;
+  border: 1px solid rgba(27, 105, 76, 0.15);
+  border-radius: 14px;
+  background: #f3faf7;
+}
+
+.modalReference strong {
+  color: #173f31;
+  font-size: 0.88rem;
+}
+
+.modalReference span {
+  color: #667d74;
+  font-size: 0.75rem;
+}
+
+.modal .modalError {
+  margin-top: 14px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #fff0f0;
+  color: #8d2f2f;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.keepButton,
+.confirmRetractButton {
+  min-height: 42px;
+  padding: 0.68rem 1rem;
+  border-radius: 999px;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.keepButton {
+  border: 1px solid rgba(27, 105, 76, 0.28);
+  background: #fff;
+  color: #245c47;
+}
+
+.confirmRetractButton {
+  border: 1px solid #993d3d;
+  background: #993d3d;
+  color: #fff;
+}
+
+.keepButton:disabled,
+.confirmRetractButton:disabled {
+  cursor: wait;
+  opacity: 0.62;
+}
+
 .reviewButton:hover {
   transform: translateY(-1px);
   background: #185c43;
@@ -148,14 +285,28 @@
     text-align: left;
   }
 
-  .reviewButton {
+  .actions {
     grid-column: 2;
     justify-self: start;
+  }
+
+  .modal {
+    padding: 22px 18px;
+  }
+
+  .modalActions {
+    flex-direction: column-reverse;
+  }
+
+  .keepButton,
+  .confirmRetractButton {
+    width: 100%;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .reviewButton {
+  .reviewButton,
+  .retractButton {
     transition: none;
   }
 }

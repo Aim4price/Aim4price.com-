@@ -6,6 +6,7 @@ const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf
 const capture = read('lib/capture-requests.ts');
 const migration = read('database/migrations/83-assisted-document-capture.sql');
 const accountDeletion = read('lib/account-deletion.ts');
+const retractionRoute = read('app/api/capture-requests/[requestId]/route.ts');
 
 test('capture workflow has separate constrained request, file, event and drop-code tables', () => {
   assert.match(migration, /create table if not exists public\.document_capture_requests/i);
@@ -80,6 +81,15 @@ test('all admin work is claimed, row-locked and actor-attributed', () => {
   assert.match(capture, /eventType: 'claimed'/);
   assert.match(capture, /eventType: 'draft_saved'/);
   assert.match(capture, /eventType: 'matched'/);
+});
+
+test('owner cancellation is limited to the matching owner-upload request', () => {
+  assert.match(capture, /toStatus === 'cancelled' && actor\.actorType === 'owner'/);
+  assert.match(capture, /row\.submission_channel !== 'owner_upload'/);
+  assert.match(capture, /actor\.userId !== row\.owner_user_id/);
+  assert.match(retractionRoute, /ownerAppCan\(resolved\.access, 'manage_finance'\)/);
+  assert.match(retractionRoute, /capture\.submissionChannel !== 'owner_upload'/);
+  assert.match(retractionRoute, /retractCaptureRequestForOwner/);
 });
 
 test('a completed request has one idempotent canonical output in the same owner scope', () => {

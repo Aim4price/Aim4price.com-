@@ -298,6 +298,7 @@ type FuelCaptureRequestResponse = {
   ok: boolean;
   request?: CaptureRequestStatusItem;
   requests?: CaptureRequestStatusItem[];
+  message?: string;
   error?: string;
 };
 
@@ -1890,6 +1891,23 @@ export default function FuelClient({
     }
   }
 
+  async function retractCaptureRequest(requestId: string): Promise<void> {
+    const response = await fetch(`/api/capture-requests/${encodeURIComponent(requestId)}`, {
+      method: 'DELETE',
+      credentials: 'include',
+    });
+    const data = (await response.json().catch(() => null)) as FuelCaptureRequestResponse | null;
+    if (!response.ok || !data?.ok) {
+      throw new Error(data?.error || 'This submission could not be retracted. Please try again.');
+    }
+
+    setCaptureRequests((current) => current.filter((request) => request.id !== requestId));
+    setNotice({
+      tone: 'success',
+      message: data.message || 'Submission retracted. It was removed from assisted capture.',
+    });
+  }
+
   useEffect(() => {
     void loadLedger();
     void loadCaptureRequests();
@@ -3241,7 +3259,11 @@ export default function FuelClient({
               </div>
             </div>
 
-            <CaptureRequestStatusList requests={captureRequests} title="Fuel slips being captured" />
+            <CaptureRequestStatusList
+              requests={captureRequests}
+              title="Fuel slips being captured"
+              onRetract={!accountantShareId && !accountantRegisterId ? retractCaptureRequest : undefined}
+            />
 
             {!isLoading && !storages.length ? (
               <div className={styles.emptyState}>

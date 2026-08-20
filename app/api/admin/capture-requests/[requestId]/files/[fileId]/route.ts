@@ -4,6 +4,7 @@ import { adminApiError, requireAdminApiAccess } from "../../../../../../../lib/a
 import { resolveAssetRegisterUploadBytes } from "../../../../../../../lib/asset-register-uploads";
 import { readCaptureQuarantineFile } from "../../../../../../../lib/capture-quarantine-storage";
 import {
+  getCaptureRequestDetail,
   getCaptureRequestFile,
   setCaptureRequestFileSecurityStatus,
 } from "../../../../../../../lib/capture-requests";
@@ -12,6 +13,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 type RouteContext = { params: { requestId?: string; fileId?: string } };
+const HIDDEN_TERMINAL_STATUSES = new Set(["cancelled", "declined", "rejected"]);
 
 function cleanText(value: unknown, maxLength = 500): string {
   return typeof value === "string" ? value.trim().slice(0, maxLength) : "";
@@ -41,8 +43,13 @@ export async function GET(_request: NextRequest, context: RouteContext) {
   if (!requestId || !fileId) return adminApiError("Capture file not found.", 404);
 
   try {
-    const file = await getCaptureRequestFile(requestId, fileId);
-    if (!file) return adminApiError("Capture file not found.", 404);
+    const [capture, file] = await Promise.all([
+      getCaptureRequestDetail(requestId),
+      getCaptureRequestFile(requestId, fileId),
+    ]);
+    if (!capture || !file || HIDDEN_TERMINAL_STATUSES.has(capture.status)) {
+      return adminApiError("Capture file not found.", 404);
+    }
     if (file.securityStatus === "rejected") {
       return adminApiError("This file failed its security check and cannot be opened.", 410);
     }
