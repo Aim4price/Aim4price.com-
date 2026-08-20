@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent, type SVGProps } from 'react';
+import { useSearchParams } from 'next/navigation';
 import AppHeader from '../../components/AppHeader';
 import CaptureRequestDecisionModal from '../../components/CaptureRequestDecisionModal';
 import CaptureRequestStatusList, { type CaptureRequestStatusItem } from '../../components/CaptureRequestStatusList';
@@ -93,6 +94,47 @@ type InvoiceSummary = {
   otherSpend: number;
   vatTotal: number;
   invoiceCount: number;
+};
+
+type BudgetPeriod = 'monthly' | 'annual';
+type CostBudgetStatusName = 'on_track' | 'warning' | 'over_budget';
+
+type CostBudgetProgress = {
+  id: string;
+  assetId: string | null;
+  assetTitle: string;
+  period: BudgetPeriod;
+  amount: number;
+  warningPercent: number;
+  warningAmount: number;
+  includeFuelSlipCosts: boolean;
+  revision: number;
+  periodKey: string;
+  periodLabel: string;
+  periodStart: string;
+  periodEnd: string;
+  spent: number;
+  remaining: number;
+  overBy: number;
+  percentUsed: number;
+  status: CostBudgetStatusName;
+  createdAtIso: string;
+  updatedAtIso: string;
+};
+
+type CostBudgetDraft = {
+  assetId: string;
+  period: BudgetPeriod;
+  amount: string;
+  warningPercent: string;
+  includeFuelSlipCosts: boolean;
+};
+
+type CostBudgetsResponse = {
+  ok: boolean;
+  budgets?: CostBudgetProgress[];
+  budget?: CostBudgetProgress;
+  error?: string;
 };
 
 type InvoicesResponse = {
@@ -335,6 +377,16 @@ const DEFAULT_FILTERS: InvoiceFilterState = {
   year: 'all',
   month: 'all',
 };
+
+function buildEmptyCostBudgetDraft(assetId = 'all'): CostBudgetDraft {
+  return {
+    assetId,
+    period: 'monthly',
+    amount: '',
+    warningPercent: '80',
+    includeFuelSlipCosts: true,
+  };
+}
 
 const INVOICE_PAGE_SIZE = 10;
 
@@ -1006,6 +1058,7 @@ export default function MyInvoicesClient({
   initialOpenAdd = false,
   initialDealerDefaults = { supplierName: '', vatNumber: '', address: '' },
 }: MyInvoicesClientProps = {}) {
+  const routeSearchParams = useSearchParams();
   const apiRoot = dealerMode
       ? '/api/dealer/cost'
       : '/api/my-invoices';
@@ -1014,6 +1067,7 @@ export default function MyInvoicesClient({
   const shouldShowAppHeader = showAppHeader ?? !dealerMode;
   const canManageInvoiceDropCodes = !dealerMode && !accountantShareId && !accountantRegisterId;
   const canRetractCaptureRequests = !dealerMode && !accountantShareId && !accountantRegisterId;
+  const canManageBudgets = !dealerMode && !accountantShareId && !accountantRegisterId;
   const [assets, setAssets] = useState<AssetOption[]>([]);
   const [invoices, setInvoices] = useState<InvoiceRecord[]>([]);
   const [availableYears, setAvailableYears] = useState<number[]>([]);
@@ -1079,6 +1133,18 @@ export default function MyInvoicesClient({
   const [isExtracting, setIsExtracting] = useState(false);
   const [deletingInvoiceId, setDeletingInvoiceId] = useState<string | null>(null);
   const [deleteCandidateInvoice, setDeleteCandidateInvoice] = useState<InvoiceRecord | null>(null);
+  const [costBudgets, setCostBudgets] = useState<CostBudgetProgress[]>([]);
+  const [budgetsLoading, setBudgetsLoading] = useState(canManageBudgets);
+  const [budgetLoadError, setBudgetLoadError] = useState('');
+  const [budgetModalOpen, setBudgetModalOpen] = useState(false);
+  const [editingBudgetId, setEditingBudgetId] = useState<string | null>(null);
+  const [budgetDraft, setBudgetDraft] = useState<CostBudgetDraft>(() => buildEmptyCostBudgetDraft());
+  const [budgetSaving, setBudgetSaving] = useState(false);
+  const [budgetFormError, setBudgetFormError] = useState('');
+  const [budgetDeleteCandidate, setBudgetDeleteCandidate] = useState<CostBudgetProgress | null>(null);
+  const [budgetDeletingId, setBudgetDeletingId] = useState<string | null>(null);
+  const [focusedBudgetId, setFocusedBudgetId] = useState<string | null>(null);
+  const [handledBudgetDeepLinkId, setHandledBudgetDeepLinkId] = useState('');
 
   useEffect(() => {
     let cancelled = false;
@@ -1107,6 +1173,73 @@ export default function MyInvoicesClient({
       cancelled = true;
     };
   }, [activeFilters.ownerId, activeFilters.assetId, activeFilters.year, activeFilters.month]);
+
+  useEffect(() => {
+    if (!canManageBudgets) {
+      setCostBudgets([]);
+      setBudgetsLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    setBudgetsLoading(true);
+    setBudgetLoadError('');
+
+    void fetchCostBudgetData()
+      .then((budgets) => {
+        if (!cancelled) setCostBudgets(budgets);
+      })
+      .catch((error) => {
+        if (!cancelled) {
+          setBudgetLoadError(error instanceof Error ? error.message : 'Spending budgets could not be loaded.');
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setBudgetsLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [canManageBudgets]);
+
+  useEffect(() => {
+    if (!canManageBudgets || budgetsLoading || budgetLoadError) return;
+    const budgetId = routeSearchParams.get('budgetId')?.trim() || '';
+    if (!budgetId) {
+      if (handledBudgetDeepLinkId) setHandledBudgetDeepLinkId('');
+      return;
+    }
+    if (handledBudgetDeepLinkId === budgetId) return;
+    setHandledBudgetDeepLinkId(budgetId);
+
+    const budget = costBudgets.find((item) => item.id === budgetId);
+    if (!budget) {
+      setNotice({ tone: 'error', message: 'That spending budget is no longer available.' });
+      return;
+    }
+
+    const filters: InvoiceFilterState = {
+      ownerId: 'all',
+      assetId: budget.assetId || 'all',
+      source: 'all',
+      year: budget.periodKey.slice(0, 4),
+      month: budget.period === 'monthly' ? String(Number(budget.periodKey.slice(5, 7))) : 'all',
+    };
+    setFocusedBudgetId(budget.id);
+    setActiveFilters(filters);
+    setDraftFilters(filters);
+    window.setTimeout(() => {
+      document.getElementById(`cost-budget-${budget.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 80);
+  }, [
+    budgetLoadError,
+    budgetsLoading,
+    canManageBudgets,
+    costBudgets,
+    handledBudgetDeepLinkId,
+    routeSearchParams,
+  ]);
 
   useEffect(() => {
     let cancelled = false;
@@ -1212,15 +1345,21 @@ export default function MyInvoicesClient({
     return assets.filter((asset) => assetSearchText(asset).includes(query));
   }, [assets, recurringAssetSearch]);
 
+  const focusedBudget = useMemo(
+    () => costBudgets.find((budget) => budget.id === focusedBudgetId) ?? null,
+    [costBudgets, focusedBudgetId],
+  );
+
   const visibleInvoices = useMemo(() => {
     const query = invoiceSearch.trim().toLowerCase();
 
     return invoices.filter((invoice) => {
+      if (focusedBudget && !focusedBudget.includeFuelSlipCosts && invoice.source === 'fuel_slip') return false;
       if (activeFilters.source !== 'all' && invoice.source !== activeFilters.source) return false;
       if (query && !invoiceSearchText(invoice).includes(query)) return false;
       return true;
     });
-  }, [activeFilters.source, invoiceSearch, invoices]);
+  }, [activeFilters.source, focusedBudget, invoiceSearch, invoices]);
 
   const totalInvoicePages = useMemo(() => Math.max(1, Math.ceil(visibleInvoices.length / INVOICE_PAGE_SIZE)), [visibleInvoices.length]);
   const safeInvoicePage = Math.min(currentInvoicePage, totalInvoicePages);
@@ -1316,7 +1455,9 @@ export default function MyInvoicesClient({
     || filterOpen
     || downloadOpen
     || accountingSettingsOpen
-    || deleteConfirmOpen;
+    || deleteConfirmOpen
+    || budgetModalOpen
+    || Boolean(budgetDeleteCandidate);
   const selectedUsageMetricOption = USAGE_METRIC_OPTIONS.find((option) => option.value === draft.usageMetric) ?? USAGE_METRIC_OPTIONS[0];
 
   useEffect(() => {
@@ -1432,6 +1573,169 @@ export default function MyInvoicesClient({
   async function reloadData(filters: InvoiceFilterState = activeFilters) {
     const data = await fetchInvoiceData(filters);
     applyInvoiceData(data);
+  }
+
+  async function fetchCostBudgetData(): Promise<CostBudgetProgress[]> {
+    const response = await fetch('/api/my-invoices/budgets', {
+      credentials: 'include',
+      cache: 'no-store',
+    });
+    const data = (await response.json().catch(() => null)) as CostBudgetsResponse | null;
+    if (!response.ok || !data?.ok) {
+      throw new Error(data?.error || 'Spending budgets could not be loaded.');
+    }
+    return data.budgets ?? [];
+  }
+
+  async function reloadBudgets(): Promise<void> {
+    if (!canManageBudgets) return;
+    const budgets = await fetchCostBudgetData();
+    setCostBudgets(budgets);
+    setBudgetLoadError('');
+  }
+
+  function dispatchCostLedgerUpdated() {
+    window.dispatchEvent(new Event('aim4price:cost-ledger-updated'));
+  }
+
+  function openCreateBudget() {
+    const defaultAssetId = activeFilters.assetId !== 'all'
+      && assets.some((asset) => asset.id === activeFilters.assetId)
+      ? activeFilters.assetId
+      : 'all';
+    setEditingBudgetId(null);
+    setBudgetDraft(buildEmptyCostBudgetDraft(defaultAssetId));
+    setBudgetFormError('');
+    setBudgetModalOpen(true);
+  }
+
+  function openEditBudget(budget: CostBudgetProgress) {
+    setEditingBudgetId(budget.id);
+    setBudgetDraft({
+      assetId: budget.assetId || 'all',
+      period: budget.period,
+      amount: formatInvoiceMoneyInput(formatMoneyWithCents(budget.amount)),
+      warningPercent: String(budget.warningPercent),
+      includeFuelSlipCosts: budget.includeFuelSlipCosts,
+    });
+    setBudgetFormError('');
+    setBudgetModalOpen(true);
+  }
+
+  function closeBudgetModal() {
+    if (budgetSaving) return;
+    setBudgetModalOpen(false);
+    setEditingBudgetId(null);
+    setBudgetDraft(buildEmptyCostBudgetDraft());
+    setBudgetFormError('');
+  }
+
+  async function submitCostBudget(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const wasEditing = Boolean(editingBudgetId);
+    setBudgetSaving(true);
+    setBudgetFormError('');
+
+    try {
+      const endpoint = editingBudgetId
+        ? `/api/my-invoices/budgets/${encodeURIComponent(editingBudgetId)}`
+        : '/api/my-invoices/budgets';
+      const response = await fetch(endpoint, {
+        method: editingBudgetId ? 'PATCH' : 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          assetId: budgetDraft.assetId === 'all' ? null : budgetDraft.assetId,
+          period: budgetDraft.period,
+          amount: budgetDraft.amount,
+          warningPercent: Number(budgetDraft.warningPercent),
+          includeFuelSlipCosts: budgetDraft.includeFuelSlipCosts,
+        }),
+      });
+      const data = (await response.json().catch(() => null)) as CostBudgetsResponse | null;
+      if (!response.ok || !data?.ok) {
+        throw new Error(data?.error || 'The spending budget could not be saved.');
+      }
+
+      await reloadBudgets();
+      setBudgetModalOpen(false);
+      setEditingBudgetId(null);
+      setBudgetDraft(buildEmptyCostBudgetDraft());
+      setNotice({
+        tone: 'success',
+        message: wasEditing ? 'Spending budget updated.' : 'Spending budget created.',
+      });
+      dispatchCostLedgerUpdated();
+    } catch (error) {
+      setBudgetFormError(error instanceof Error ? error.message : 'The spending budget could not be saved.');
+    } finally {
+      setBudgetSaving(false);
+    }
+  }
+
+  function askToDeleteBudget() {
+    const budget = editingBudgetId
+      ? costBudgets.find((item) => item.id === editingBudgetId) ?? null
+      : null;
+    if (!budget) return;
+    setBudgetModalOpen(false);
+    setBudgetDeleteCandidate(budget);
+  }
+
+  function closeDeleteBudgetDialog() {
+    if (budgetDeletingId) return;
+    setBudgetDeleteCandidate(null);
+    setEditingBudgetId(null);
+    setBudgetDraft(buildEmptyCostBudgetDraft());
+  }
+
+  async function confirmDeleteBudget() {
+    if (!budgetDeleteCandidate) return;
+    const budgetId = budgetDeleteCandidate.id;
+    setBudgetDeletingId(budgetId);
+
+    try {
+      const response = await fetch(`/api/my-invoices/budgets/${encodeURIComponent(budgetId)}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+      const data = (await response.json().catch(() => null)) as CostBudgetsResponse | null;
+      if (!response.ok || !data?.ok) {
+        throw new Error(data?.error || 'The spending budget could not be deleted.');
+      }
+
+      await reloadBudgets();
+      if (focusedBudgetId === budgetId) clearFocusedBudgetView();
+      setBudgetDeleteCandidate(null);
+      setEditingBudgetId(null);
+      setNotice({ tone: 'success', message: 'Spending budget deleted.' });
+      dispatchCostLedgerUpdated();
+    } catch (error) {
+      setBudgetDeleteCandidate(null);
+      setEditingBudgetId(null);
+      setNotice({
+        tone: 'error',
+        message: error instanceof Error ? error.message : 'The spending budget could not be deleted.',
+      });
+    } finally {
+      setBudgetDeletingId(null);
+    }
+  }
+
+  function removeBudgetQueryParameter() {
+    const url = new URL(window.location.href);
+    if (!url.searchParams.has('budgetId')) return;
+    for (const key of ['budgetId', 'assetId', 'year', 'month']) {
+      url.searchParams.delete(key);
+    }
+    window.history.replaceState(window.history.state, '', `${url.pathname}${url.search}${url.hash}`);
+  }
+
+  function clearFocusedBudgetView() {
+    setFocusedBudgetId(null);
+    setActiveFilters(DEFAULT_FILTERS);
+    setDraftFilters(DEFAULT_FILTERS);
+    removeBudgetQueryParameter();
   }
 
   function defaultUsageMetricForAsset(assetId: string): UsageMetric {
@@ -1712,6 +2016,8 @@ export default function MyInvoicesClient({
 
   function applyFilters() {
     setActiveFilters(draftFilters);
+    setFocusedBudgetId(null);
+    removeBudgetQueryParameter();
     setOpenFilterDropdown(null);
     setFilterAssetSearch('');
     setFilterOwnerSearch('');
@@ -1721,6 +2027,8 @@ export default function MyInvoicesClient({
   function clearFilters() {
     setDraftFilters(DEFAULT_FILTERS);
     setActiveFilters(DEFAULT_FILTERS);
+    setFocusedBudgetId(null);
+    removeBudgetQueryParameter();
     setOpenFilterDropdown(null);
     setFilterAssetSearch('');
     setFilterOwnerSearch('');
@@ -2132,7 +2440,8 @@ export default function MyInvoicesClient({
         throw new Error(data.error || 'The cost record could not be saved.');
       }
 
-      await reloadData();
+      await Promise.all([reloadData(), reloadBudgets()]);
+      if (canManageBudgets) dispatchCostLedgerUpdated();
       const duplicateText = data.duplicateWarnings?.length ? ` ${data.duplicateWarnings.join(' ')}` : '';
       closeModal();
       setNotice({
@@ -2186,7 +2495,8 @@ export default function MyInvoicesClient({
         throw new Error(data.error || 'The cost record could not be deleted.');
       }
 
-      await reloadData();
+      await Promise.all([reloadData(), reloadBudgets()]);
+      if (canManageBudgets) dispatchCostLedgerUpdated();
       setDeleteCandidateInvoice((current) => (current?.id === invoiceId ? null : current));
       setNotice({
         tone: 'success',
@@ -2264,9 +2574,11 @@ export default function MyInvoicesClient({
     const [requests, invoiceData] = await Promise.all([
       fetchCaptureRequests(),
       fetchInvoiceData(activeFilters).catch(() => null),
+      reloadBudgets().catch(() => undefined),
     ]);
     if (requests) setCaptureRequests(requests);
     if (invoiceData) applyInvoiceData(invoiceData);
+    if (canManageBudgets) dispatchCostLedgerUpdated();
   }
 
   return (
@@ -2287,6 +2599,112 @@ export default function MyInvoicesClient({
             </div>
           </section>
         )}
+
+        {canManageBudgets ? (
+          <section className={styles.budgetSection} aria-labelledby="cost-budget-heading">
+            <div className={styles.budgetSectionHeader}>
+              <div>
+                <span className={styles.budgetEyebrow}>Cost control</span>
+                <h2 id="cost-budget-heading">Total spend budgets</h2>
+                <p>Track VAT-inclusive incurred costs across all assets or one asset. Alerts appear at your warning level and when the limit is reached.</p>
+              </div>
+              <button type="button" className={styles.primaryButton} onClick={openCreateBudget}>
+                <span className={styles.plusMark} aria-hidden="true">+</span>
+                Add budget
+              </button>
+            </div>
+
+            {budgetsLoading ? <div className={styles.budgetEmpty}>Loading spending budgets...</div> : null}
+            {!budgetsLoading && budgetLoadError ? (
+              <div className={styles.budgetError} role="alert">
+                <span>{budgetLoadError}</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setBudgetLoadError('');
+                    setBudgetsLoading(true);
+                    void reloadBudgets()
+                      .catch((error) => setBudgetLoadError(error instanceof Error ? error.message : 'Spending budgets could not be loaded.'))
+                      .finally(() => setBudgetsLoading(false));
+                  }}
+                >
+                  Try again
+                </button>
+              </div>
+            ) : null}
+            {!budgetsLoading && !budgetLoadError && !costBudgets.length ? (
+              <div className={styles.budgetEmpty}>
+                <strong>No spending budget yet.</strong>
+                <span>Add a monthly or annual total-spend limit to start tracking cost of ownership.</span>
+              </div>
+            ) : null}
+
+            {!budgetsLoading && costBudgets.length ? (
+              <div className={styles.budgetGrid}>
+                {costBudgets.map((budget) => {
+                  const progress = Math.max(0, Math.min(100, budget.percentUsed));
+                  const statusLabel = budget.status === 'over_budget'
+                    ? 'Over budget'
+                    : budget.status === 'warning'
+                      ? 'Near limit'
+                      : 'On track';
+                  return (
+                    <article
+                      id={`cost-budget-${budget.id}`}
+                      key={budget.id}
+                      className={[
+                        styles.budgetCard,
+                        styles[budget.status === 'over_budget'
+                          ? 'budgetCardOver'
+                          : budget.status === 'warning'
+                            ? 'budgetCardWarning'
+                            : 'budgetCardOnTrack'],
+                        focusedBudgetId === budget.id ? styles.budgetCardFocused : '',
+                      ].join(' ')}
+                    >
+                      <div className={styles.budgetCardTop}>
+                        <div>
+                          <strong>{budget.assetTitle}</strong>
+                          <span>{budget.period === 'monthly' ? 'Monthly' : 'Annual'} · {budget.periodLabel}</span>
+                        </div>
+                        <button
+                          type="button"
+                          className={styles.budgetEditButton}
+                          onClick={() => openEditBudget(budget)}
+                          aria-label={`Edit ${budget.assetTitle} ${budget.period} budget`}
+                        >
+                          <EditIcon />
+                        </button>
+                      </div>
+                      <div className={styles.budgetAmount}>
+                        <strong>{formatMoney(budget.spent)}</strong>
+                        <span>of {formatMoney(budget.amount)} spent</span>
+                      </div>
+                      <div
+                        className={styles.budgetProgressTrack}
+                        role="progressbar"
+                        aria-label={`${budget.assetTitle} budget used`}
+                        aria-valuemin={0}
+                        aria-valuemax={100}
+                        aria-valuenow={Math.round(progress)}
+                      >
+                        <span className={styles.budgetProgressFill} style={{ width: `${progress}%` }} />
+                      </div>
+                      <div className={styles.budgetStatusRow}>
+                        <strong>{statusLabel}</strong>
+                        <span>{budget.percentUsed.toLocaleString('en-ZA', { maximumFractionDigits: 1 })}% used</span>
+                      </div>
+                      <div className={styles.budgetMeta}>
+                        <span>{budget.status === 'over_budget' ? `${formatMoney(budget.overBy)} over budget` : `${formatMoney(budget.remaining)} remaining`}</span>
+                        <span>Alert at {budget.warningPercent}% · Fuel {budget.includeFuelSlipCosts ? 'included' : 'excluded'}</span>
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+            ) : null}
+          </section>
+        ) : null}
 
         {canManageInvoiceDropCodes ? (
           <section className={styles.invoiceDropCodeBanner} aria-label="Invoice Drop contribution codes">
@@ -2311,6 +2729,16 @@ export default function MyInvoicesClient({
           onReview={canManageInvoiceDropCodes ? setCaptureReviewRequestId : undefined}
           onRetract={canRetractCaptureRequests ? retractCaptureRequest : undefined}
         />
+
+        {focusedBudget ? (
+          <div className={styles.budgetFocusBar}>
+            <span>
+              Showing costs counted by the <strong>{focusedBudget.assetTitle}</strong> {focusedBudget.period} budget
+              {!focusedBudget.includeFuelSlipCosts ? ' (Fuel Slip costs excluded)' : ''}.
+            </span>
+            <button type="button" onClick={clearFocusedBudgetView}>Clear budget view</button>
+          </div>
+        ) : null}
 
         <section className={styles.invoiceToolbar} aria-label="Saved cost record controls">
           <label className={styles.searchWrap}>
@@ -2452,6 +2880,155 @@ export default function MyInvoicesClient({
           onClose={closeCaptureReview}
           onResolved={(message) => void handleCaptureReviewResolved(message)}
         />
+      ) : null}
+
+      {budgetModalOpen ? (
+        <div className={styles.modalBackdrop} role="dialog" aria-modal="true" aria-labelledby="budget-modal-title">
+          <form className={`${styles.formModal} ${styles.budgetModal}`} onSubmit={submitCostBudget}>
+            <div className={styles.modalHeader}>
+              <div>
+                <h2 id="budget-modal-title">{editingBudgetId ? 'Edit spending budget' : 'Add spending budget'}</h2>
+                <p>Set a total Cost Ledger spend limit. Category budgets are not included in this version.</p>
+              </div>
+              <button type="button" className={styles.closeButton} onClick={closeBudgetModal} aria-label="Close budget form">
+                <CloseIcon />
+              </button>
+            </div>
+            <div className={styles.modalDivider} />
+
+            <div className={`${styles.formModalScrollBody} ${styles.budgetFormBody}`}>
+              <div className={styles.budgetFormGrid}>
+                <label className={styles.budgetField}>
+                  <span>Asset scope</span>
+                  <select
+                    value={budgetDraft.assetId}
+                    onChange={(event) => setBudgetDraft((current) => ({ ...current, assetId: event.target.value }))}
+                    disabled={budgetSaving}
+                  >
+                    <option value="all">All saved assets</option>
+                    {assets.map((asset) => <option key={asset.id} value={asset.id}>{asset.title}</option>)}
+                  </select>
+                </label>
+
+                <fieldset className={styles.budgetPeriodField}>
+                  <legend>Budget period</legend>
+                  <div className={styles.budgetPeriodControl}>
+                    {(['monthly', 'annual'] as const).map((period) => (
+                      <button
+                        type="button"
+                        key={period}
+                        className={budgetDraft.period === period ? styles.budgetPeriodOptionActive : ''}
+                        onClick={() => setBudgetDraft((current) => ({ ...current, period }))}
+                        aria-pressed={budgetDraft.period === period}
+                        disabled={budgetSaving}
+                      >
+                        {period === 'monthly' ? 'Monthly' : 'Annual'}
+                      </button>
+                    ))}
+                  </div>
+                </fieldset>
+
+                <label className={styles.budgetField}>
+                  <span>Budget amount (incl. VAT)</span>
+                  <div className={styles.budgetMoneyInput}>
+                    <span>R</span>
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      value={budgetDraft.amount}
+                      onChange={(event) => setBudgetDraft((current) => ({
+                        ...current,
+                        amount: formatInvoiceMoneyInput(event.target.value),
+                      }))}
+                      placeholder="50 000.00"
+                      autoComplete="off"
+                      required
+                      disabled={budgetSaving}
+                    />
+                  </div>
+                </label>
+
+                <label className={styles.budgetField}>
+                  <span>Warning level</span>
+                  <div className={styles.budgetPercentInput}>
+                    <input
+                      type="number"
+                      min="1"
+                      max="99"
+                      step="1"
+                      value={budgetDraft.warningPercent}
+                      onChange={(event) => setBudgetDraft((current) => ({ ...current, warningPercent: event.target.value }))}
+                      required
+                      disabled={budgetSaving}
+                    />
+                    <span>%</span>
+                  </div>
+                  <small>We&apos;ll alert you here when total spend reaches this level.</small>
+                </label>
+              </div>
+
+              <label className={styles.budgetFuelToggle}>
+                <input
+                  type="checkbox"
+                  checked={budgetDraft.includeFuelSlipCosts}
+                  onChange={(event) => setBudgetDraft((current) => ({
+                    ...current,
+                    includeFuelSlipCosts: event.target.checked,
+                  }))}
+                  disabled={budgetSaving}
+                />
+                <span aria-hidden="true" />
+                <div>
+                  <strong>Include Fuel Slip costs</strong>
+                  <small>Turn this off if fuel should not count toward this limit.</small>
+                </div>
+              </label>
+
+              <div className={styles.budgetHelper}>
+                Only incurred Cost Ledger costs count. Pending dealer costs, pending captures and recurring commitments are excluded.
+              </div>
+              {budgetFormError ? <div className={styles.budgetFormError} role="alert">{budgetFormError}</div> : null}
+            </div>
+
+            <div className={`${styles.modalFooter} ${styles.budgetModalFooter}`}>
+              <div>
+                {editingBudgetId ? (
+                  <button type="button" className={styles.budgetDeleteButton} onClick={askToDeleteBudget} disabled={budgetSaving}>
+                    Delete budget
+                  </button>
+                ) : null}
+              </div>
+              <div className={styles.budgetModalActions}>
+                <button type="button" className={styles.secondaryButton} onClick={closeBudgetModal} disabled={budgetSaving}>Cancel</button>
+                <button type="submit" className={styles.primaryButton} disabled={budgetSaving}>
+                  {budgetSaving ? 'Saving...' : editingBudgetId ? 'Save changes' : 'Create budget'}
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
+      ) : null}
+
+      {budgetDeleteCandidate ? (
+        <div className={styles.modalBackdrop} role="alertdialog" aria-modal="true" aria-labelledby="delete-budget-title" aria-describedby="delete-budget-description">
+          <div className={styles.budgetDeleteDialog}>
+            <div>
+              <span className={styles.budgetDeleteEyebrow}>Delete budget</span>
+              <h2 id="delete-budget-title">Remove this spending budget?</h2>
+              <p id="delete-budget-description">This removes the limit and its future alerts. Your Cost Ledger records will not be changed.</p>
+            </div>
+            <div className={styles.budgetDeleteSummary}>
+              <strong>{budgetDeleteCandidate.assetTitle}</strong>
+              <span>{budgetDeleteCandidate.period === 'monthly' ? 'Monthly' : 'Annual'} · {formatMoney(budgetDeleteCandidate.amount)}</span>
+            </div>
+            <div className={styles.budgetDeleteActions}>
+              <button type="button" className={styles.secondaryButton} onClick={closeDeleteBudgetDialog} disabled={Boolean(budgetDeletingId)}>Keep budget</button>
+              <button type="button" className={styles.budgetDeleteButton} onClick={() => void confirmDeleteBudget()} disabled={Boolean(budgetDeletingId)}>
+                {budgetDeletingId ? 'Deleting...' : 'Delete budget'}
+              </button>
+            </div>
+          </div>
+        </div>
       ) : null}
 
       {invoiceDropCodeOpen ? (

@@ -8,6 +8,7 @@
     "typecheck": "tsc --noEmit",
     "test:lifecycle-calculator": "node --test tests/admin-lifecycle-calculator.test.mjs tests/admin-lifecycle-calculator.security.test.mjs tests/admin-lifecycle-calculator-report.test.mjs tests/admin-experience.test.mjs",
     "test:notifications": "node --test tests/notification-inbox.test.mjs tests/notification-viewer-scope.test.mjs tests/admin-account-notifications.test.mjs",
+    "test:cost-budgets": "node --test tests/cost-budgets.security.test.mjs",
     "test:dealer-fast-loading": "node --test tests/dealer-fast-loading.test.mjs tests/dealer-maintenance-pagination.test.mjs",
     "test:account-app-access": "node --test tests/account-app-access-modal-flow.test.mjs",
     "test:admin-accounts": "node --test tests/admin-experience.test.mjs tests/insurance-account-deletion.test.mjs",

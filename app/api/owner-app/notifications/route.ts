@@ -4,7 +4,7 @@ import {
   updateNotificationInboxState,
   type NotificationInboxAction,
 } from '../../../../lib/notification-inbox';
-import { getOwnerAppAccess } from '../../../../lib/owner-app-access';
+import { getOwnerAppAccess, ownerAppCan } from '../../../../lib/owner-app-access';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -14,15 +14,19 @@ export async function GET() {
   if (!access) return NextResponse.json({ ok: false, error: 'You must sign in to Aim4price Owner.' }, { status: 401 });
 
   try {
+    const includeCostBudgetNotifications = ownerAppCan(access, 'manage_finance')
+      && access.assetScope === 'all';
     const inbox = await listNotificationInbox({
       userId: access.ownerUserId,
       accountType: 'owner',
       viewerKey: access.viewerKey,
+      includeCostBudgetNotifications,
     });
     const allowedAssetIds = access.assetScope === 'selected' ? new Set(access.accessibleAssetIds) : null;
-    const notifications = allowedAssetIds
-      ? inbox.filter((item) => !item.assetId || allowedAssetIds.has(item.assetId))
-      : inbox;
+    const notifications = inbox.filter((item) => {
+      if (item.category === 'cost_budget' && !includeCostBudgetNotifications) return false;
+      return !allowedAssetIds || !item.assetId || allowedAssetIds.has(item.assetId);
+    });
     return NextResponse.json({
       ok: true,
       notifications,

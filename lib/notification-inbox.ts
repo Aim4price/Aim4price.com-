@@ -39,6 +39,7 @@ type ListNotificationInboxInput = {
   userId: string;
   accountType: AccountRole | string | null | undefined;
   viewerKey?: string | null;
+  includeCostBudgetNotifications?: boolean;
 };
 
 const MAX_INBOX_HISTORY = 500;
@@ -294,6 +295,7 @@ export async function listNotificationInbox(
   const currentNotifications = await listComputedHeaderNotifications({
     userId: input.userId,
     accountType: input.accountType,
+    includeCostBudgetNotifications: input.includeCostBudgetNotifications,
   });
   await syncNotificationSnapshots(stateKey, currentNotifications);
   await resolveStaleCaptureSnapshots(stateKey, input.userId);
@@ -315,6 +317,7 @@ export async function listNotificationInbox(
         resolved_at
       from public.user_notifications
       where user_id = $1
+        and ($3::boolean or category <> 'cost_budget')
       order by
         case when action_required and resolved_at is null then 0 else 1 end,
         case when payload->>'priority' = 'true' then 0 else 1 end,
@@ -322,7 +325,7 @@ export async function listNotificationInbox(
         event_key desc
       limit $2
     `,
-    [stateKey, MAX_INBOX_HISTORY],
+    [stateKey, MAX_INBOX_HISTORY, input.includeCostBudgetNotifications !== false],
   );
 
   const currentKeys = new Set(currentNotifications.map((item) => item.id));
