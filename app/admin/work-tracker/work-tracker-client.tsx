@@ -5,12 +5,14 @@ import AdminNavigation from "../../../components/AdminNavigation";
 import {
   ADMIN_WORK_NOTE_MAX_LENGTH,
   formatAdminWorkDuration,
+  getAdminWorkPeriodRange,
   getJohannesburgDateKey,
   shiftAdminWorkAnchor,
   type AdminWorkHistory,
   type AdminWorkPeriod,
   type AdminWorkSessionView,
 } from "../../../lib/admin-work-tracker-shared";
+import AccountPicker, { type AdminAccountPickerOption } from "./account-picker";
 import styles from "./page.module.css";
 
 type WorkClient = {
@@ -38,6 +40,10 @@ const TRACKER_CHANGED_EVENT = "aim4price:admin-work-session-changed";
 const TRACKER_REMOTE_CHANGED_EVENT = "aim4price:admin-work-session-remote-changed";
 const TRACKER_TICK_EVENT = "aim4price:admin-work-session-tick";
 const REPORT_TIME_ZONE = "Africa/Johannesburg";
+const ALL_ACCOUNTS_OPTION = {
+  label: "All accounts",
+  description: "View every completed session",
+};
 
 function formatAccountType(value: string): string {
   const clean = value.trim().toLowerCase();
@@ -89,6 +95,15 @@ function sortClients(clients: WorkClient[]): WorkClient[] {
 
 export default function WorkTrackerClient({ initialClients }: { initialClients: WorkClient[] }) {
   const clients = useMemo(() => sortClients(initialClients), [initialClients]);
+  const clientOptions = useMemo<AdminAccountPickerOption[]>(
+    () => clients.map((client) => ({
+      value: client.userId,
+      label: client.name,
+      description: `${formatAccountType(client.accountType)}${client.email ? ` · ${client.email}` : ""}`,
+      searchText: `${client.name} ${client.email} ${client.accountType} ${formatAccountType(client.accountType)}`,
+    })),
+    [clients],
+  );
   const [period, setPeriod] = useState<AdminWorkPeriod>("week");
   const [anchor, setAnchor] = useState(() => getJohannesburgDateKey());
   const [clientUserId, setClientUserId] = useState("");
@@ -101,6 +116,7 @@ export default function WorkTrackerClient({ initialClients }: { initialClients: 
   const [savingSessionId, setSavingSessionId] = useState<string | null>(null);
   const [deletingSessionId, setDeletingSessionId] = useState<string | null>(null);
   const [draftNotes, setDraftNotes] = useState<Record<string, string>>({});
+  const [recentClientIds, setRecentClientIds] = useState<string[]>([]);
   const [notice, setNotice] = useState<Notice>(null);
   const [nowMs, setNowMs] = useState(() => Date.now());
   const draftNotesRef = useRef(draftNotes);
@@ -129,9 +145,10 @@ export default function WorkTrackerClient({ initialClients }: { initialClients: 
         throw new Error(data.error || "Failed to load work history.");
       }
       if (generation !== loadGenerationRef.current) return;
+      const nextHistory = data.history;
       setHistory({
-        ...data.history,
-        sessions: data.history.sessions.map((session) => {
+        ...nextHistory,
+        sessions: nextHistory.sessions.map((session) => {
           const draft = draftNotesRef.current[session.id];
           return draft === undefined ? session : { ...session, note: draft };
         }),
@@ -146,6 +163,16 @@ export default function WorkTrackerClient({ initialClients }: { initialClients: 
         return { ...incoming, note: draft === undefined ? incoming.note : draft };
       });
       setStartClientUserId((current) => current || data.activeSession?.clientUserId || "");
+      setRecentClientIds((current) => {
+        const incoming = [
+          data.activeSession?.clientUserId,
+          ...nextHistory.sessions.map((session) => session.clientUserId),
+        ].filter((value): value is string => Boolean(value));
+        const validIds = new Set(clients.map((client) => client.userId));
+        return [...new Set([...incoming, ...current])]
+          .filter((value) => validIds.has(value))
+          .slice(0, 5);
+      });
     } catch (error) {
       if (generation !== loadGenerationRef.current) return;
       setNotice({
@@ -155,7 +182,7 @@ export default function WorkTrackerClient({ initialClients }: { initialClients: 
     } finally {
       if (generation === loadGenerationRef.current) setIsLoading(false);
     }
-  }, [anchor, clientUserId, period]);
+  }, [anchor, clientUserId, clients, period]);
 
   useEffect(() => {
     void loadTracker();
@@ -447,6 +474,11 @@ export default function WorkTrackerClient({ initialClients }: { initialClients: 
       pageCount: pageKeys.size,
     };
   }, [history]);
+  const isCurrentPeriod = useMemo(() => {
+    const currentRange = getAdminWorkPeriodRange(period, getJohannesburgDateKey());
+    const visibleRange = getAdminWorkPeriodRange(period, anchor);
+    return currentRange.startDate === visibleRange.startDate;
+  }, [anchor, period]);
 
   return (
     <section className={styles.shell}>
@@ -455,16 +487,13 @@ export default function WorkTrackerClient({ initialClients }: { initialClients: 
           <p className={styles.eyebrow}>Aim4price admin</p>
           <h1>Work tracker</h1>
           <span>Start and stop work, then prepare a simple owner report.</span>
+          <p className={styles.privacyNote}>
+            <span aria-hidden="true">🔒</span>
+            Admin only. Owners see only reports you choose to print.
+          </p>
         </div>
         <AdminNavigation active="work-tracker" />
       </header>
-
-      <section className={styles.privacyBanner}>
-        <div>
-          <strong>Admin-only by design</strong>
-          <span>Owners never see the live timer or access history. They receive only the report Admin chooses to print or save.</span>
-        </div>
-      </section>
 
       {notice ? (
         <div
@@ -491,20 +520,34 @@ export default function WorkTrackerClient({ initialClients }: { initialClients: 
               <div><span>Started</span><strong>{formatDateTime(activeSession.startedAtIso)}</strong></div>
               <div><span>Status</span><strong>{activeSession.trackingActive ? "Recording active time" : "Open, but paused"}</strong></div>
             </div>
-            <label className={styles.noteField}>
-              <span>Optional work note</span>
-              <textarea
-                value={activeSession.note}
-                maxLength={ADMIN_WORK_NOTE_MAX_LENGTH}
-                onChange={(event) => updateSessionNote(activeSession.id, event.target.value)}
-                placeholder="Short summary for later, for example: Reviewed asset register and updated account settings."
-              />
-              <small>Private unless “Include note” is switched on after the session.</small>
-            </label>
             <div className={styles.activeActions}>
-              <button type="button" className={styles.secondaryButton} onClick={() => void patchSession(activeSession.id, { note: activeSession.note }, true)} disabled={savingSessionId !== null || deletingSessionId !== null || isStopping || !Object.prototype.hasOwnProperty.call(draftNotes, activeSession.id)}>
-                {savingSessionId === activeSession.id ? "Saving…" : "Save note"}
-              </button>
+              <details className={styles.activeNoteDetails}>
+                <summary>
+                  {Object.prototype.hasOwnProperty.call(draftNotes, activeSession.id)
+                    ? "Work note · unsaved changes"
+                    : activeSession.note
+                      ? "View or edit work note"
+                      : "Add an optional work note"}
+                </summary>
+                <div className={styles.activeNotePanel}>
+                  <label className={styles.noteField}>
+                    <span>Optional work note</span>
+                    <textarea
+                      rows={2}
+                      value={activeSession.note}
+                      maxLength={ADMIN_WORK_NOTE_MAX_LENGTH}
+                      onChange={(event) => updateSessionNote(activeSession.id, event.target.value)}
+                      placeholder="Short summary for later"
+                    />
+                    <small>Private unless you include it in the completed session report.</small>
+                  </label>
+                  {Object.prototype.hasOwnProperty.call(draftNotes, activeSession.id) ? (
+                    <button type="button" className={styles.secondaryButton} onClick={() => void patchSession(activeSession.id, { note: activeSession.note }, true)} disabled={savingSessionId !== null || deletingSessionId !== null || isStopping}>
+                      {savingSessionId === activeSession.id ? "Saving…" : "Save note"}
+                    </button>
+                  ) : null}
+                </div>
+              </details>
               <button type="button" className={styles.stopButton} onClick={() => void stopWork()} disabled={isStopping || savingSessionId !== null || deletingSessionId !== null}>
                 {isStopping ? "Finishing…" : "Done & return to Admin"}
               </button>
@@ -512,20 +555,20 @@ export default function WorkTrackerClient({ initialClients }: { initialClients: 
           </div>
         ) : (
           <div className={styles.startRow}>
-            <label>
-              <span>Account</span>
-              <select value={startClientUserId} onChange={(event) => setStartClientUserId(event.target.value)}>
-                <option value="">Choose an account</option>
-                {clients.map((client) => (
-                  <option key={client.userId} value={client.userId}>
-                    {client.name} · {formatAccountType(client.accountType)}{client.email ? ` · ${client.email}` : ""}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <button type="button" className={styles.startButton} onClick={() => void startWork()} disabled={isStarting || deletingSessionId !== null || !startClientUserId}>
-              {isStarting ? "Starting…" : "Start work"}
-            </button>
+            <AccountPicker
+              label="Account"
+              value={startClientUserId}
+              options={clientOptions}
+              recentValues={recentClientIds}
+              onChange={setStartClientUserId}
+              placeholder="Choose an account"
+            />
+            <div className={styles.startAction}>
+              <button type="button" className={styles.startButton} onClick={() => void startWork()} disabled={isStarting || deletingSessionId !== null || !startClientUserId}>
+                {isStarting ? "Starting…" : "Start work & open account"}
+              </button>
+              <small>Starts the timer and opens the selected account.</small>
+            </div>
           </div>
         )}
       </section>
@@ -543,42 +586,42 @@ export default function WorkTrackerClient({ initialClients }: { initialClients: 
               <button type="button" aria-pressed={period === "month"} className={period === "month" ? styles.periodActive : ""} onClick={() => setPeriod("month")}>Monthly</button>
             </div>
             <div className={styles.periodMove}>
-              <button type="button" onClick={() => setAnchor((value) => shiftAdminWorkAnchor(period, value, -1))} aria-label={`Previous ${period}`}>←</button>
-              <button type="button" onClick={() => setAnchor(getJohannesburgDateKey())}>Current</button>
-              <button type="button" onClick={() => setAnchor((value) => shiftAdminWorkAnchor(period, value, 1))} aria-label={`Next ${period}`}>→</button>
+              <button type="button" onClick={() => setAnchor((value) => shiftAdminWorkAnchor(period, value, -1))}>Previous {period}</button>
+              <button type="button" onClick={() => setAnchor(getJohannesburgDateKey())} disabled={isCurrentPeriod}>This {period}</button>
+              <button type="button" onClick={() => setAnchor((value) => shiftAdminWorkAnchor(period, value, 1))} disabled={isCurrentPeriod}>Next {period}</button>
             </div>
           </div>
         </div>
 
         <div className={styles.reportBar}>
-          <label>
-            <span>View account</span>
-            <select value={clientUserId} onChange={(event) => setClientUserId(event.target.value)}>
-              <option value="">All accounts</option>
-              {clients.map((client) => (
-                <option key={client.userId} value={client.userId}>
-                  {client.name} · {formatAccountType(client.accountType)}{client.email ? ` · ${client.email}` : ""}
-                </option>
-              ))}
-            </select>
-          </label>
+          <AccountPicker
+            label="View account"
+            value={clientUserId}
+            options={clientOptions}
+            recentValues={recentClientIds}
+            onChange={setClientUserId}
+            placeholder="All accounts"
+            emptyOption={ALL_ACCOUNTS_OPTION}
+          />
           <button type="button" className={styles.reportButton} onClick={openReport} disabled={!clientUserId || isLoading || savingSessionId !== null || deletingSessionId !== null || hasDirtyReportNotes}>
-            Preview / Print report
+            Preview & print report
           </button>
           <small>
             {hasDirtyReportNotes
               ? "Save edited notes before previewing this report."
               : selectedClient
-                ? `Report for ${selectedClient.name}`
-                : "Choose one account to prepare its owner report."}
+                ? `Ready for ${selectedClient.name}.`
+                : "Select one account to enable its owner report."}
           </small>
         </div>
 
         <section className={styles.summaryGrid} aria-label="Work period summary">
           <article><span>Tracked time</span><strong>{formatAdminWorkDuration(displaySummary.trackedSeconds)}</strong><small>All completed sessions</small></article>
           <article className={styles.reportableSummary}><span>Reportable time</span><strong>{formatAdminWorkDuration(displaySummary.reportableSeconds)}</strong><small>Included by Admin</small></article>
-          <article><span>Sessions</span><strong>{displaySummary.includedSessionCount} / {displaySummary.sessionCount}</strong><small>Included / completed</small></article>
-          <article><span>Platform areas</span><strong>{displaySummary.pageCount}</strong><small>Friendly page groups</small></article>
+          <div className={styles.summaryFacts}>
+            <span><strong>{displaySummary.includedSessionCount} / {displaySummary.sessionCount}</strong> sessions included</span>
+            <span><strong>{displaySummary.pageCount}</strong> platform areas</span>
+          </div>
         </section>
 
         <div className={styles.sessionList} aria-live="polite">
@@ -591,18 +634,33 @@ export default function WorkTrackerClient({ initialClients }: { initialClients: 
                   <strong>{session.clientName}</strong>
                   <span>{formatAccountType(session.clientAccountType)} · {formatDateTime(session.startedAtIso)} – {formatDateTime(session.stoppedAtIso)}</span>
                 </div>
-                <b>{formatAdminWorkDuration(session.durationSeconds)}</b>
+                <div className={styles.sessionMeta}>
+                  <span className={session.includeInReport ? styles.includedBadge : styles.excludedBadge}>
+                    {session.includeInReport ? "Included" : "Not in report"}
+                  </span>
+                  <b>{formatAdminWorkDuration(session.durationSeconds)}</b>
+                </div>
               </header>
 
-              <div className={styles.pagePills}>
-                {session.pages.length ? session.pages.map((page) => (
-                  <span key={page.pageKey}>{page.pageLabel} · {formatAdminWorkDuration(page.durationSeconds)}</span>
-                )) : <small>No page time captured.</small>}
-              </div>
+              <details className={styles.pageDetails}>
+                <summary>
+                  <span>{session.pages.length} {session.pages.length === 1 ? "area" : "areas"} visited</span>
+                  <small>View page breakdown</small>
+                </summary>
+                <div className={styles.pagePills}>
+                  {session.pages.length ? session.pages.map((page) => (
+                    <span key={page.pageKey}>{page.pageLabel} · {formatAdminWorkDuration(page.durationSeconds)}</span>
+                  )) : <small>No page time captured.</small>}
+                </div>
+              </details>
 
               <label className={styles.noteField}>
-                <span>Work note</span>
+                <span>
+                  Work note
+                  {Object.prototype.hasOwnProperty.call(draftNotes, session.id) ? <em>Unsaved</em> : null}
+                </span>
                 <textarea
+                  rows={2}
                   value={session.note}
                   maxLength={ADMIN_WORK_NOTE_MAX_LENGTH}
                   onChange={(event) => updateSessionNote(session.id, event.target.value)}
@@ -611,11 +669,25 @@ export default function WorkTrackerClient({ initialClients }: { initialClients: 
                 />
               </label>
 
-              <div className={styles.sessionControls}>
+              <div className={styles.sessionMainControls}>
                 <label><input type="checkbox" checked={session.includeInReport} disabled={savingSessionId !== null || deletingSessionId !== null} onChange={(event) => void patchSession(session.id, { includeInReport: event.target.checked })} /> Include in report</label>
-                <label><input type="checkbox" checked={session.showTimesInReport} disabled={savingSessionId !== null || deletingSessionId !== null} onChange={(event) => void patchSession(session.id, { showTimesInReport: event.target.checked })} /> Show activity times</label>
-                <label><input type="checkbox" checked={session.showNoteInReport} disabled={savingSessionId !== null || deletingSessionId !== null} onChange={(event) => void patchSession(session.id, { showNoteInReport: event.target.checked })} /> Include note</label>
-                <button type="button" onClick={() => void patchSession(session.id, { note: session.note }, true)} disabled={savingSessionId !== null || deletingSessionId !== null || !Object.prototype.hasOwnProperty.call(draftNotes, session.id)}>{savingSessionId === session.id ? "Saving…" : "Save note"}</button>
+                {Object.prototype.hasOwnProperty.call(draftNotes, session.id) ? (
+                  <button type="button" onClick={() => void patchSession(session.id, { note: session.note }, true)} disabled={savingSessionId !== null || deletingSessionId !== null}>{savingSessionId === session.id ? "Saving…" : "Save note"}</button>
+                ) : null}
+              </div>
+
+              <details className={styles.reportOptions}>
+                <summary>
+                  <span>Report options</span>
+                  <small>{session.showTimesInReport ? "Times shown" : "Times hidden"} · {session.showNoteInReport ? "Note included" : "Note private"}</small>
+                </summary>
+                <div className={styles.reportOptionControls}>
+                  <label><input type="checkbox" checked={session.showTimesInReport} disabled={savingSessionId !== null || deletingSessionId !== null} onChange={(event) => void patchSession(session.id, { showTimesInReport: event.target.checked })} /> Show activity times</label>
+                  <label><input type="checkbox" checked={session.showNoteInReport} disabled={savingSessionId !== null || deletingSessionId !== null} onChange={(event) => void patchSession(session.id, { showNoteInReport: event.target.checked })} /> Include note</label>
+                </div>
+              </details>
+
+              <div className={styles.sessionDanger}>
                 <button type="button" className={styles.deleteSessionButton} onClick={() => void deleteSession(session)} disabled={savingSessionId !== null || deletingSessionId !== null}>
                   {deletingSessionId === session.id ? "Deleting…" : "Delete entry"}
                 </button>

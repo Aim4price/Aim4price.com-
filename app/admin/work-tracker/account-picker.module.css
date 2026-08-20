@@ -1,0 +1,257 @@
+.root {
+  min-width: 0;
+  display: grid;
+  gap: 0.34rem;
+}
+
+.label {
+  color: #52645d;
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.trigger {
+  width: 100%;
+  min-height: 3.15rem;
+  padding: 0.58rem 0.72rem 0.58rem 0.86rem;
+  border: 1px solid #d5e0da;
+  border-radius: 0.82rem;
+  color: #17362c;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.trigger:hover,
+.triggerOpen,
+.trigger:focus-visible {
+  outline: none;
+  border-color: rgba(23, 108, 80, 0.45);
+  box-shadow: 0 0 0 4px rgba(23, 108, 80, 0.08);
+}
+
+.trigger:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.triggerCopy,
+.optionCopy {
+  min-width: 0;
+  display: grid;
+  gap: 0.12rem;
+}
+
+.triggerCopy strong,
+.optionCopy strong {
+  overflow: hidden;
+  color: #17362c;
+  font-size: 0.8rem;
+  font-weight: 850;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.triggerCopy small,
+.optionCopy small {
+  overflow: hidden;
+  color: #71817b;
+  font-size: 0.68rem;
+  font-weight: 650;
+  line-height: 1.3;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chevron {
+  width: 1.05rem;
+  height: 1.05rem;
+  flex: 0 0 auto;
+  fill: none;
+  stroke: #176047;
+  stroke-width: 2.25;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: transform 150ms ease;
+}
+
+.triggerOpen .chevron {
+  transform: rotate(180deg);
+}
+
+.menu {
+  position: fixed;
+  z-index: 100000;
+  overflow: hidden;
+  border: 1px solid rgba(18, 45, 37, 0.15);
+  border-radius: 0.95rem;
+  background: rgba(255, 255, 255, 0.995);
+  box-shadow: 0 24px 54px rgba(17, 49, 39, 0.2), 0 8px 20px rgba(17, 49, 39, 0.08);
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  font-family: var(--font-heading, "Montserrat"), var(--font-body, "Inter"), sans-serif;
+}
+
+.searchRow {
+  padding: 0.55rem;
+  border-bottom: 1px solid #e3eae6;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.searchRow svg {
+  width: 1rem;
+  height: 1rem;
+  flex: 0 0 auto;
+  fill: none;
+  stroke: #60716a;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+.searchRow input {
+  width: 100%;
+  min-width: 0;
+  min-height: 2.35rem;
+  padding: 0 0.65rem;
+  border: 1px solid #d5e0da;
+  border-radius: 0.68rem;
+  color: #17362c;
+  background: #f9fbfa;
+  font: inherit;
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.searchRow input:focus {
+  outline: none;
+  border-color: rgba(23, 108, 80, 0.45);
+  box-shadow: 0 0 0 3px rgba(23, 108, 80, 0.08);
+}
+
+.options {
+  min-height: 0;
+  max-height: min(18rem, 50vh);
+  padding: 0.35rem;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  scrollbar-color: #9bb8ac #edf3f0;
+  scrollbar-width: auto;
+}
+
+.options::-webkit-scrollbar {
+  width: 0.72rem;
+}
+
+.options::-webkit-scrollbar-track {
+  border-radius: 999px;
+  background: #edf3f0;
+}
+
+.options::-webkit-scrollbar-thumb {
+  border: 2px solid #edf3f0;
+  border-radius: 999px;
+  background: #9bb8ac;
+}
+
+.groupLabel {
+  padding: 0.48rem 0.65rem 0.3rem;
+  color: #74837d;
+  font-size: 0.61rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.option {
+  width: 100%;
+  min-height: 3.25rem;
+  padding: 0.6rem 0.66rem;
+  border: 1px solid transparent;
+  border-radius: 0.72rem;
+  color: #17362c;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.7rem;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.option:hover,
+.optionActive {
+  border-color: rgba(23, 108, 80, 0.12);
+  background: #f1f7f4;
+}
+
+.optionSelected {
+  border-color: rgba(23, 108, 80, 0.2);
+  background: #eaf6f0;
+}
+
+.check {
+  width: 1.4rem;
+  height: 1.4rem;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  color: #ffffff;
+  background: #176c50;
+  display: grid;
+  place-items: center;
+  font-size: 0.72rem;
+  font-weight: 950;
+}
+
+.option:not(.optionSelected) .check {
+  visibility: hidden;
+}
+
+.noResults {
+  min-height: 7rem;
+  padding: 1rem;
+  color: #667871;
+  display: grid;
+  place-content: center;
+  gap: 0.2rem;
+  text-align: center;
+}
+
+.noResults strong {
+  color: #31574a;
+  font-size: 0.8rem;
+}
+
+.noResults span {
+  font-size: 0.68rem;
+  font-weight: 650;
+}
+
+.resultStatus {
+  overflow: hidden;
+  width: 1px;
+  height: 1px;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+@media (max-width: 620px) {
+  .triggerCopy small,
+  .optionCopy small {
+    white-space: normal;
+  }
+}
