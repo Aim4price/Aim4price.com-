@@ -3,13 +3,14 @@ import { getAccountProfile } from '../../../lib/account-profile';
 import {
   createAccountDocument,
   getAccountDocumentSummary,
+  isAccountDocumentCategory,
   listAccountDocumentAssetOptions,
   listAccountDocuments,
   removeUnusedAccountDocumentUpload,
   type AccountDocumentInput,
 } from '../../../lib/account-documents';
 import {
-  MAX_ASSET_REGISTER_DOCUMENT_UPLOAD_BYTES,
+  MAX_DOCUMENT_VAULT_UPLOAD_BYTES,
   createAssetRegisterUpload,
   isAllowedAssetRegisterDocument,
 } from '../../../lib/asset-register-uploads';
@@ -67,6 +68,9 @@ function errorResponse(error: unknown, fallback: string) {
   if (message === 'DOCUMENT_EXPIRY_INVALID') {
     return NextResponse.json({ ok: false, error: 'Enter a valid expiry date.' }, { status: 400 });
   }
+  if (message === 'DOCUMENT_CATEGORY_INVALID') {
+    return NextResponse.json({ ok: false, error: 'Choose a valid document category.' }, { status: 400 });
+  }
   if (message === 'DOCUMENT_INPUT_INVALID') {
     return NextResponse.json({ ok: false, error: 'The document details are incomplete.' }, { status: 400 });
   }
@@ -117,19 +121,23 @@ export async function POST(request: NextRequest) {
         { status: 400 },
       );
     }
-    if (fileEntry.size > MAX_ASSET_REGISTER_DOCUMENT_UPLOAD_BYTES) {
+    if (fileEntry.size > MAX_DOCUMENT_VAULT_UPLOAD_BYTES) {
       return NextResponse.json(
         {
           ok: false,
-          error: `Documents must be ${Math.round(MAX_ASSET_REGISTER_DOCUMENT_UPLOAD_BYTES / (1024 * 1024))} MB or smaller.`,
+          error: `Documents must be ${Math.round(MAX_DOCUMENT_VAULT_UPLOAD_BYTES / (1024 * 1024))} MB or smaller.`,
         },
         { status: 400 },
       );
     }
+    const categoryEntry = formData.get('category');
+    if (!isAccountDocumentCategory(categoryEntry)) {
+      return NextResponse.json({ ok: false, error: 'Choose a valid document category.' }, { status: 400 });
+    }
 
     const input: AccountDocumentInput = {
       title: formData.get('title'),
-      category: formData.get('category'),
+      category: categoryEntry,
       notes: formData.get('notes'),
       expiryDate: formData.get('expiryDate'),
       assetIds: parseAssetIds(formData.get('assetIds')),

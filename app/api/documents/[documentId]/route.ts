@@ -54,6 +54,9 @@ function errorResponse(error: unknown) {
   if (message === 'DOCUMENT_EXPIRY_INVALID') {
     return NextResponse.json({ ok: false, error: 'Enter a valid expiry date.' }, { status: 400 });
   }
+  if (message === 'DOCUMENT_CATEGORY_INVALID') {
+    return NextResponse.json({ ok: false, error: 'Choose a valid document category.' }, { status: 400 });
+  }
 
   return NextResponse.json({ ok: false, error: 'The document could not be updated.' }, { status: 500 });
 }

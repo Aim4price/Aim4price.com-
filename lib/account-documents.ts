@@ -16,12 +16,17 @@ export const ACCOUNT_DOCUMENT_CATEGORIES = [
 
 export type AccountDocumentCategory = (typeof ACCOUNT_DOCUMENT_CATEGORIES)[number];
 
+export function isAccountDocumentCategory(value: unknown): value is AccountDocumentCategory {
+  return typeof value === 'string'
+    && ACCOUNT_DOCUMENT_CATEGORIES.includes(value.trim().toLowerCase() as AccountDocumentCategory);
+}
+
 export const ACCOUNT_DOCUMENT_CATEGORY_LABELS: Record<AccountDocumentCategory, string> = {
-  business: 'Business',
+  business: 'Company & legal',
   insurance: 'Insurance',
   finance: 'Finance',
   licence: 'Licences & permits',
-  'tax-accounting': 'Tax & accounting',
+  'tax-accounting': 'Accounting & tax',
   ownership: 'Ownership',
   contract: 'Contracts',
   warranty: 'Warranties',
@@ -177,11 +182,14 @@ function normalizeExpiryDate(value: unknown): string | null {
   return normalized;
 }
 
-function normalizeCategory(value: unknown): AccountDocumentCategory {
+function normalizeCategory(
+  value: unknown,
+  options: { fallbackToOther?: boolean } = {},
+): AccountDocumentCategory {
   const normalized = cleanText(value, 40).toLowerCase();
-  return ACCOUNT_DOCUMENT_CATEGORIES.includes(normalized as AccountDocumentCategory)
-    ? normalized as AccountDocumentCategory
-    : 'other';
+  if (isAccountDocumentCategory(normalized)) return normalized;
+  if (options.fallbackToOther) return 'other';
+  throw new Error('DOCUMENT_CATEGORY_INVALID');
 }
 
 function normalizeAssetIds(value: unknown): string[] {
@@ -218,7 +226,7 @@ function mapDocumentRow(row: AccountDocumentRow, assetLinks: AccountDocumentAsse
   return {
     id: String(row.id ?? ''),
     title: cleanText(row.title, 180) || cleanText(row.file_name, 180) || 'Untitled document',
-    category: normalizeCategory(row.category),
+    category: normalizeCategory(row.category, { fallbackToOther: true }),
     notes: cleanNotes(row.notes),
     expiryDate: dateOnly(row.expiry_date),
     fileName: cleanText(row.file_name, 240) || 'document',

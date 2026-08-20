@@ -1194,7 +1194,7 @@
   font-weight: 650;
 }
 
-.filePicker b {
+.filePicker > button {
   min-height: 2.65rem;
   display: inline-flex;
   align-items: center;
@@ -1203,8 +1203,11 @@
   border-radius: 0.78rem;
   color: #146449;
   background: #ffffff;
+  font: inherit;
   font-size: 0.72rem;
+  font-weight: 800;
   white-space: nowrap;
+  cursor: pointer;
 }
 
 .filePickerSelected {
@@ -1374,7 +1377,7 @@
   line-height: 1.4;
 }
 
-.assetPickerHeading > strong {
+.assetPickerHeading > button {
   flex: 0 0 auto;
   padding: 0.45rem 0.62rem;
   border: 1px solid #badbc9;
@@ -1809,7 +1812,7 @@
     padding: 0.85rem;
   }
 
-  .filePicker b {
+  .filePicker > button {
     grid-column: 1 / -1;
     justify-content: center;
   }
@@ -1826,7 +1829,7 @@
     display: grid;
   }
 
-  .assetPickerHeading > strong {
+  .assetPickerHeading > button {
     width: fit-content;
   }
 
@@ -2638,6 +2641,244 @@
   outline-offset: 2px;
 }
 
+.modalFields {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.emptyCard {
+  min-height: 20rem;
+}
+
+.emptyCategories {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.55rem;
+  margin: 0.25rem 0 0;
+}
+
+.emptyCategories span {
+  min-height: 1.95rem;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 0.72rem;
+  border: 1px solid rgba(152, 201, 179, 0.78);
+  border-radius: 999px;
+  color: #245f4e;
+  background: rgba(239, 250, 244, 0.94);
+  font-size: 0.68rem;
+  font-weight: 780;
+}
+
+.filePicker {
+  cursor: default;
+}
+
+.filePicker > button:hover:not(:disabled) {
+  border-color: #79bb99;
+  background: #f8fdfb;
+}
+
+.filePicker > button:focus-visible,
+.fileQueue button:focus-visible,
+.assetPickerHeading > button:focus-visible {
+  outline: 3px solid rgba(20, 112, 82, 0.2);
+  outline-offset: 2px;
+}
+
+.filePicker > button:disabled {
+  opacity: 0.58;
+  cursor: not-allowed;
+}
+
+.filePickerDragging {
+  border-color: #187553;
+  background: #e8f7ef;
+  box-shadow: 0 0 0 5px rgba(24, 117, 83, 0.09);
+}
+
+.fileQueue {
+  margin-top: 0.85rem;
+  overflow: hidden;
+  border: 1px solid #c8dce4;
+  border-radius: 1.05rem;
+  background: #fbfdfd;
+}
+
+.fileQueue > header {
+  min-height: 3.8rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.72rem 0.9rem;
+  border-bottom: 1px solid #dbe7e2;
+  background: linear-gradient(90deg, #f1faf5, #ffffff);
+}
+
+.fileQueue > header > div {
+  min-width: 0;
+  display: grid;
+  gap: 0.15rem;
+}
+
+.fileQueue > header strong {
+  color: #154f40;
+  font-size: 0.78rem;
+  font-weight: 850;
+}
+
+.fileQueue > header span {
+  color: #71828a;
+  font-size: 0.64rem;
+  font-weight: 680;
+}
+
+.fileQueue > header button {
+  flex: 0 0 auto;
+  padding: 0.45rem 0.62rem;
+  border: 1px solid #d4b9a5;
+  border-radius: 0.65rem;
+  color: #7c451c;
+  background: #fffaf5;
+  font: inherit;
+  font-size: 0.65rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.fileQueueList {
+  max-height: 11rem;
+  display: grid;
+  gap: 0.5rem;
+  overflow-y: auto;
+  padding: 0.68rem;
+  scrollbar-color: #b6ccc2 transparent;
+}
+
+.fileQueueList article {
+  min-width: 0;
+  min-height: 3.45rem;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 0.7rem;
+  align-items: center;
+  padding: 0.55rem 0.62rem;
+  border: 1px solid #d5e2e6;
+  border-radius: 0.82rem;
+  background: #ffffff;
+}
+
+.fileQueueIcon {
+  width: 2.2rem;
+  height: 2.2rem;
+  display: grid;
+  place-items: center;
+  border: 1px solid #b8dbc9;
+  border-radius: 0.7rem;
+  color: #17664b;
+  background: #eff9f4;
+}
+
+.fileQueueIcon svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.fileQueueList article > span:nth-child(2) {
+  min-width: 0;
+  display: grid;
+  gap: 0.16rem;
+}
+
+.fileQueueList article strong {
+  overflow: hidden;
+  color: #294a42;
+  font-size: 0.73rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fileQueueList article small {
+  color: #7b8a91;
+  font-size: 0.61rem;
+  font-weight: 650;
+}
+
+.fileQueueList article > button {
+  width: 2rem;
+  height: 2rem;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid #e2caca;
+  border-radius: 0.62rem;
+  color: #984747;
+  background: #fff7f7;
+  cursor: pointer;
+}
+
+.fileQueueList article > button svg {
+  width: 0.9rem;
+  height: 0.9rem;
+}
+
+.batchHint {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin-top: 0.75rem;
+  padding: 0.68rem 0.78rem;
+  border: 1px solid #c8dbe5;
+  border-radius: 0.82rem;
+  color: #526b76;
+  background: #f5fafd;
+  font-size: 0.68rem;
+  font-weight: 680;
+  line-height: 1.4;
+}
+
+.batchHint svg {
+  width: 1rem;
+  height: 1rem;
+  flex: 0 0 auto;
+  color: #2c7394;
+}
+
+.assetPickerHeading {
+  align-items: center;
+}
+
+.assetPickerHeading > button {
+  min-height: 2.35rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  font: inherit;
+  font-size: 0.68rem;
+  font-weight: 820;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.assetPickerHeading > button svg {
+  width: 0.88rem;
+  height: 0.88rem;
+  transition: transform 150ms ease;
+}
+
+.assetPickerHeading > button[aria-expanded='true'] svg {
+  transform: rotate(180deg);
+}
+
+.assetPickerCollapsed .assetPickerHeading {
+  border-bottom: 0;
+}
+
 @media (max-width: 1180px) {
   .summaryCard {
     flex-basis: calc((100% - var(--summary-gap)) / 2);
@@ -2856,6 +3097,40 @@
 
   .restoreButton {
     grid-column: auto;
+  }
+}
+
+@media (max-width: 760px) {
+  .emptyCard {
+    min-height: 18rem;
+    padding: 1.5rem 1rem;
+  }
+
+  .emptyCategories {
+    gap: 0.4rem;
+  }
+
+  .filePicker small {
+    line-height: 1.45;
+  }
+
+  .assetPickerHeading {
+    display: grid;
+  }
+
+  .assetPickerHeading > button {
+    width: 100%;
+    justify-content: space-between;
+  }
+}
+
+@media (max-width: 460px) {
+  .fileQueue > header {
+    align-items: flex-start;
+  }
+
+  .fileQueueList {
+    max-height: 9.5rem;
   }
 }
 

@@ -7,6 +7,7 @@ import {
   useRef,
   useState,
   type ChangeEvent,
+  type DragEvent,
   type FormEvent,
   type SVGProps,
 } from 'react';
@@ -88,23 +89,47 @@ type IconName =
 
 type DocumentDraft = {
   title: string;
-  category: DocumentCategory;
+  category: DocumentCategory | '';
   notes: string;
   expiryDate: string;
   assetIds: string[];
 };
 
+type UploadProgress = {
+  current: number;
+  total: number;
+};
+
 const CATEGORY_OPTIONS: Array<{ value: DocumentCategory; label: string }> = [
-  { value: 'business', label: 'Business' },
-  { value: 'insurance', label: 'Insurance' },
   { value: 'finance', label: 'Finance' },
+  { value: 'tax-accounting', label: 'Accounting & tax' },
+  { value: 'insurance', label: 'Insurance' },
   { value: 'licence', label: 'Licences & permits' },
-  { value: 'tax-accounting', label: 'Tax & accounting' },
-  { value: 'ownership', label: 'Ownership' },
+  { value: 'business', label: 'Company & legal' },
   { value: 'contract', label: 'Contracts' },
+  { value: 'ownership', label: 'Ownership' },
   { value: 'warranty', label: 'Warranties' },
   { value: 'other', label: 'Other' },
 ];
+
+const CATEGORY_DESCRIPTIONS: Record<DocumentCategory, string> = {
+  finance: 'Statements, funding and banking records',
+  'tax-accounting': 'Invoices, tax records and reports',
+  insurance: 'Policies, schedules and claims',
+  licence: 'Certificates, permits and renewals',
+  business: 'Registrations, resolutions and legal records',
+  contract: 'Agreements and signed documents',
+  ownership: 'Proof of ownership and transfer records',
+  warranty: 'Warranty certificates and support records',
+  other: 'Other important account documents',
+};
+
+const MAX_DOCUMENT_FILES_PER_BATCH = 20;
+const MAX_DOCUMENT_FILE_BYTES = 25 * 1024 * 1024;
+const MAX_DOCUMENT_BATCH_BYTES = 250 * 1024 * 1024;
+const ALLOWED_DOCUMENT_EXTENSIONS = new Set([
+  '.pdf', '.doc', '.docx', '.xls', '.xlsx', '.csv', '.txt', '.jpg', '.jpeg', '.png', '.webp',
+]);
 
 const EMPTY_SUMMARY: VaultSummary = {
   totalDocuments: 0,
@@ -116,7 +141,7 @@ const EMPTY_SUMMARY: VaultSummary = {
 function createEmptyDraft(): DocumentDraft {
   return {
     title: '',
-    category: 'business',
+    category: '',
     notes: '',
     expiryDate: '',
     assetIds: [],
@@ -199,6 +224,10 @@ function categoryLabel(category: DocumentCategory): string {
   return CATEGORY_OPTIONS.find((option) => option.value === category)?.label ?? 'Other';
 }
 
+function categoryDescription(category: DocumentCategory): string {
+  return CATEGORY_DESCRIPTIONS[category] ?? CATEGORY_DESCRIPTIONS.other;
+}
+
 function formatBytes(value: number): string {
   const bytes = Math.max(0, Number(value) || 0);
   if (bytes >= 1024 ** 3) return `${(bytes / 1024 ** 3).toFixed(1)} GB`;
@@ -242,6 +271,29 @@ function titleFromFileName(fileName: string): string {
   return fileName.replace(/\.[^.]+$/, '').replace(/[_-]+/g, ' ').replace(/\s+/g, ' ').trim();
 }
 
+function fileExtension(fileName: string): string {
+  const normalized = fileName.trim().toLowerCase();
+  const dotIndex = normalized.lastIndexOf('.');
+  return dotIndex >= 0 ? normalized.slice(dotIndex) : '';
+}
+
+function fileIdentity(file: File): string {
+  return `${file.name}:${file.size}:${file.lastModified}`;
+}
+
+async function readVaultResponse(response: Response, fallback: string): Promise<VaultResponse> {
+  try {
+    return await response.json() as VaultResponse;
+  } catch {
+    return {
+      ok: false,
+      error: response.status === 413
+        ? 'That file is too large for the upload service. Remove it or choose a smaller file.'
+        : fallback,
+    };
+  }
+}
+
 export default function DocumentsClient() {
   const [documents, setDocuments] = useState<VaultDocument[]>([]);
   const [summary, setSummary] = useState<VaultSummary>(EMPTY_SUMMARY);
@@ -259,7 +311,10 @@ export default function DocumentsClient() {
   const [modalMode, setModalMode] = useState<ModalMode | null>(null);
   const [editingDocument, setEditingDocument] = useState<VaultDocument | null>(null);
   const [draft, setDraft] = useState<DocumentDraft>(createEmptyDraft);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [uploadProgress, setUploadProgress] = useState<UploadProgress | null>(null);
+  const [filePickerDragging, setFilePickerDragging] = useState(false);
+  const [showAssetPicker, setShowAssetPicker] = useState(false);
   const [assetSearch, setAssetSearch] = useState('');
   const [summaryNavigation, setSummaryNavigation] = useState<SummaryNavigation>({
     hasOverflow: false,
@@ -271,6 +326,7 @@ export default function DocumentsClient() {
   const modalRef = useRef<HTMLElement | null>(null);
   const pageContentRef = useRef<HTMLDivElement | null>(null);
   const returnFocusRef = useRef<HTMLElement | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const busyRef = useRef(false);
 
   const loadDocuments = useCallback(async (targetView: VaultView, options: { quiet?: boolean } = {}) => {
@@ -280,21 +336,23 @@ export default function DocumentsClient() {
     try {
       const query = targetView === 'recycle-bin' ? '?view=recycle-bin' : '';
       const response = await fetch(`/api/documents${query}`, { cache: 'no-store' });
-      const data = await response.json() as VaultResponse;
+      const data = await readVaultResponse(response, 'The Document Vault could not be loaded.');
       if (!response.ok || !data.ok) throw new Error(data.error || 'The Document Vault could not be loaded.');
-      if (sequence !== requestSequence.current) return;
+      if (sequence !== requestSequence.current) return false;
 
       setLoadFailed(false);
       setDocuments(data.documents ?? []);
       setSummary(data.summary ?? EMPTY_SUMMARY);
       setAssets(data.assets ?? []);
+      return true;
     } catch (error) {
-      if (sequence !== requestSequence.current) return;
+      if (sequence !== requestSequence.current) return false;
       setLoadFailed(true);
       setNotice({
         tone: 'error',
         message: error instanceof Error ? error.message : 'The Document Vault could not be loaded.',
       });
+      return false;
     } finally {
       if (sequence === requestSequence.current) setLoading(false);
     }
@@ -403,6 +461,17 @@ export default function DocumentsClient() {
     return assets.filter((asset) => `${asset.title} ${asset.meta}`.toLowerCase().includes(needle));
   }, [assetSearch, assets]);
 
+  const selectedFilesBytes = useMemo(
+    () => selectedFiles.reduce((total, file) => total + file.size, 0),
+    [selectedFiles],
+  );
+  const activeCategoryCount = useMemo(
+    () => new Set(documents.map((document) => document.category)).size,
+    [documents],
+  );
+  const accountLevelDocuments = Math.max(0, summary.totalDocuments - summary.linkedDocuments);
+  const hasDocumentsInView = documents.length > 0;
+
   function switchView(nextView: VaultView) {
     if (busyRef.current || loading) return;
     setView(nextView);
@@ -416,7 +485,10 @@ export default function DocumentsClient() {
     returnFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     setEditingDocument(null);
     setDraft(createEmptyDraft());
-    setSelectedFile(null);
+    setSelectedFiles([]);
+    setUploadProgress(null);
+    setFilePickerDragging(false);
+    setShowAssetPicker(false);
     setAssetSearch('');
     setModalNotice(null);
     setModalMode('upload');
@@ -433,7 +505,10 @@ export default function DocumentsClient() {
       expiryDate: document.expiryDate ?? '',
       assetIds: document.assetLinks.map((asset) => asset.id),
     });
-    setSelectedFile(null);
+    setSelectedFiles([]);
+    setUploadProgress(null);
+    setFilePickerDragging(false);
+    setShowAssetPicker(document.assetLinks.length > 0);
     setAssetSearch('');
     setModalNotice(null);
     setModalMode('edit');
@@ -449,13 +524,91 @@ export default function DocumentsClient() {
     setBusy(nextBusy);
   }
 
+  function addSelectedFiles(files: File[]) {
+    if (busy || !files.length) return;
+
+    const unsupported: File[] = [];
+    const empty: File[] = [];
+    const oversized: File[] = [];
+    const validFiles: File[] = [];
+
+    for (const file of files) {
+      if (!file.size) empty.push(file);
+      else if (!ALLOWED_DOCUMENT_EXTENSIONS.has(fileExtension(file.name))) unsupported.push(file);
+      else if (file.size > MAX_DOCUMENT_FILE_BYTES) oversized.push(file);
+      else validFiles.push(file);
+    }
+
+    const existingIds = new Set(selectedFiles.map(fileIdentity));
+    const deduplicated = validFiles.filter((file) => {
+      const identity = fileIdentity(file);
+      if (existingIds.has(identity)) return false;
+      existingIds.add(identity);
+      return true;
+    });
+    const duplicateCount = validFiles.length - deduplicated.length;
+    const availableSlots = Math.max(0, MAX_DOCUMENT_FILES_PER_BATCH - selectedFiles.length);
+    const withinCount = deduplicated.slice(0, availableSlots);
+    const countOverflow = deduplicated.length - withinCount.length;
+    let runningBytes = selectedFilesBytes;
+    const accepted: File[] = [];
+    let batchOverflow = 0;
+
+    for (const file of withinCount) {
+      if (runningBytes + file.size > MAX_DOCUMENT_BATCH_BYTES) {
+        batchOverflow += 1;
+        continue;
+      }
+      accepted.push(file);
+      runningBytes += file.size;
+    }
+
+    const nextFiles = [...selectedFiles, ...accepted];
+    setSelectedFiles(nextFiles);
+    setFilePickerDragging(false);
+    if (nextFiles.length === 1 && !draft.title.trim()) {
+      updateDraft('title', titleFromFileName(nextFiles[0].name));
+    }
+
+    const issues: string[] = [];
+    if (unsupported.length) issues.push(`${unsupported.length} unsupported ${unsupported.length === 1 ? 'file was' : 'files were'} skipped`);
+    if (empty.length) issues.push(`${empty.length} empty ${empty.length === 1 ? 'file was' : 'files were'} skipped`);
+    if (oversized.length) issues.push(`${oversized.length} ${oversized.length === 1 ? 'file exceeds' : 'files exceed'} 25 MB`);
+    if (duplicateCount) issues.push(`${duplicateCount} duplicate ${duplicateCount === 1 ? 'was' : 'files were'} skipped`);
+    if (countOverflow) issues.push(`only ${MAX_DOCUMENT_FILES_PER_BATCH} files can be added per batch`);
+    if (batchOverflow) issues.push(`the batch may not exceed ${formatBytes(MAX_DOCUMENT_BATCH_BYTES)}`);
+    setModalNotice(issues.length ? { tone: 'error', message: `${issues.join('. ')}.` } : null);
+  }
+
   function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0] ?? null;
-    setSelectedFile(file);
-    if (file && !draft.title.trim()) updateDraft('title', titleFromFileName(file.name));
+    if (busy) return;
+    addSelectedFiles(Array.from(event.target.files ?? []));
+    event.target.value = '';
+  }
+
+  function handleFileDrop(event: DragEvent<HTMLDivElement>) {
+    event.preventDefault();
+    if (busy) return;
+    addSelectedFiles(Array.from(event.dataTransfer.files ?? []));
+  }
+
+  function removeSelectedFile(file: File) {
+    const identity = fileIdentity(file);
+    const nextFiles = selectedFiles.filter((candidate) => fileIdentity(candidate) !== identity);
+    setSelectedFiles(nextFiles);
+    setModalNotice(null);
+    if (nextFiles.length === 1) updateDraft('title', titleFromFileName(nextFiles[0].name));
+    if (!nextFiles.length) updateDraft('title', '');
+  }
+
+  function clearSelectedFiles() {
+    setSelectedFiles([]);
+    setModalNotice(null);
+    updateDraft('title', '');
   }
 
   function toggleAsset(assetId: string) {
+    if (busy) return;
     setDraft((current) => ({
       ...current,
       assetIds: current.assetIds.includes(assetId)
@@ -474,12 +627,16 @@ export default function DocumentsClient() {
     event.preventDefault();
     if (!modalMode || busy) return;
 
-    if (!draft.title.trim()) {
+    if (!draft.category) {
+      setModalNotice({ tone: 'error', message: 'Choose the category that best fits these documents.' });
+      return;
+    }
+    if ((modalMode === 'edit' || selectedFiles.length === 1) && !draft.title.trim()) {
       setModalNotice({ tone: 'error', message: 'Add a clear document title.' });
       return;
     }
-    if (modalMode === 'upload' && !selectedFile) {
-      setModalNotice({ tone: 'error', message: 'Select a document to upload.' });
+    if (modalMode === 'upload' && !selectedFiles.length) {
+      setModalNotice({ tone: 'error', message: 'Select at least one document to upload.' });
       return;
     }
 
@@ -488,43 +645,89 @@ export default function DocumentsClient() {
     setNotice(null);
 
     try {
-      let response: Response;
-
       if (modalMode === 'upload') {
-        const formData = new FormData();
-        formData.set('file', selectedFile as File);
-        formData.set('title', draft.title.trim());
-        formData.set('category', draft.category);
-        formData.set('notes', draft.notes.trim());
-        formData.set('expiryDate', draft.expiryDate);
-        formData.set('assetIds', JSON.stringify(draft.assetIds));
-        response = await fetch('/api/documents', { method: 'POST', body: formData });
+        const filesToUpload = [...selectedFiles];
+        const failures: Array<{ file: File; message: string }> = [];
+        let uploadedCount = 0;
+
+        for (let index = 0; index < filesToUpload.length; index += 1) {
+          const file = filesToUpload[index];
+          setUploadProgress({ current: index + 1, total: filesToUpload.length });
+
+          try {
+            const formData = new FormData();
+            formData.set('file', file);
+            formData.set(
+              'title',
+              filesToUpload.length === 1
+                ? draft.title.trim()
+                : titleFromFileName(file.name) || file.name,
+            );
+            formData.set('category', draft.category);
+            formData.set('notes', draft.notes.trim());
+            formData.set('expiryDate', draft.expiryDate);
+            formData.set('assetIds', JSON.stringify(draft.assetIds));
+            const response = await fetch('/api/documents', { method: 'POST', body: formData });
+            const data = await readVaultResponse(response, `${file.name} could not be saved.`);
+            if (!response.ok || !data.ok) throw new Error(data.error || `${file.name} could not be saved.`);
+            uploadedCount += 1;
+          } catch (error) {
+            failures.push({
+              file,
+              message: error instanceof Error ? error.message : `${file.name} could not be saved.`,
+            });
+          }
+        }
+
+        const refreshSucceeded = uploadedCount
+          ? await loadDocuments('documents', { quiet: true })
+          : true;
+
+        if (failures.length) {
+          const failedFiles = failures.map((failure) => failure.file);
+          setSelectedFiles(failedFiles);
+          if (filesToUpload.length > 1 && failedFiles.length === 1) {
+            updateDraft('title', titleFromFileName(failedFiles[0].name));
+          }
+          setModalNotice({
+            tone: 'error',
+            message: `${uploadedCount} of ${filesToUpload.length} uploaded. ${failures.length} ${failures.length === 1 ? 'file remains' : 'files remain'} ready to retry. ${failures[0].message}`,
+          });
+          return;
+        }
+
+        setOperationBusy(false);
+        setModalMode(null);
+        setEditingDocument(null);
+        setSelectedFiles([]);
+        if (refreshSucceeded) {
+          setNotice({
+            tone: 'success',
+            message: `${uploadedCount} ${uploadedCount === 1 ? 'document' : 'documents'} added to your vault.`,
+          });
+        }
       } else {
-        response = await fetch(`/api/documents/${encodeURIComponent(editingDocument?.id ?? '')}`, {
+        const response = await fetch(`/api/documents/${encodeURIComponent(editingDocument?.id ?? '')}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(draft),
         });
+        const data = await readVaultResponse(response, 'The document could not be saved.');
+        if (!response.ok || !data.ok) throw new Error(data.error || 'The document could not be saved.');
+
+        setOperationBusy(false);
+        setModalMode(null);
+        setEditingDocument(null);
+        setNotice({ tone: 'success', message: 'Document details updated.' });
+        await loadDocuments('documents', { quiet: true });
       }
-
-      const data = await response.json() as VaultResponse;
-      if (!response.ok || !data.ok) throw new Error(data.error || 'The document could not be saved.');
-
-      setOperationBusy(false);
-      setModalMode(null);
-      setEditingDocument(null);
-      setSelectedFile(null);
-      setNotice({
-        tone: 'success',
-        message: modalMode === 'upload' ? 'Document added to your vault.' : 'Document details updated.',
-      });
-      await loadDocuments('documents', { quiet: true });
     } catch (error) {
       setModalNotice({
         tone: 'error',
         message: error instanceof Error ? error.message : 'The document could not be saved.',
       });
     } finally {
+      setUploadProgress(null);
       setOperationBusy(false);
     }
   }
@@ -545,7 +748,7 @@ export default function DocumentsClient() {
     setNotice(null);
     try {
       const response = await fetch(`/api/documents/${encodeURIComponent(document.id)}`, { method: 'DELETE' });
-      const data = await response.json() as VaultResponse;
+      const data = await readVaultResponse(response, 'The document could not be moved.');
       if (!response.ok || !data.ok) throw new Error(data.error || 'The document could not be moved.');
 
       setNotice({ tone: 'success', message: 'Document moved to the Recycle Bin.' });
@@ -566,7 +769,7 @@ export default function DocumentsClient() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'restore' }),
       });
-      const data = await response.json() as VaultResponse;
+      const data = await readVaultResponse(response, 'The document could not be restored.');
       if (!response.ok || !data.ok) throw new Error(data.error || 'The document could not be restored.');
 
       setNotice({ tone: 'success', message: 'Document restored to your vault.' });
@@ -694,6 +897,7 @@ export default function DocumentsClient() {
             onClick={() => setShowSummary((current) => !current)}
             aria-expanded={showSummary}
             aria-controls="document-vault-summary"
+            disabled={loading || loadFailed || view === 'recycle-bin' || summary.totalDocuments === 0}
           >
             <Icon name="archive" /> Summary
           </button>
@@ -703,17 +907,18 @@ export default function DocumentsClient() {
             onClick={() => setShowFilters((current) => !current)}
             aria-expanded={showFilters}
             aria-controls="document-vault-filters"
+            disabled={loading || loadFailed || !hasDocumentsInView}
           >
             <Icon name="filter" /> Filters
             <Icon name="chevron-down" className={styles.buttonChevron} />
             {category !== 'all' ? <span className={styles.buttonCount}>1</span> : null}
           </button>
           <button type="button" className={`${styles.headerButton} ${styles.primaryHeaderButton}`} onClick={openUploadModal} disabled={view === 'recycle-bin' || busy}>
-            <Icon name="upload" /> Upload document
+            <Icon name="upload" /> Upload documents
           </button>
         </section>
 
-        {showFilters ? (
+        {showFilters && hasDocumentsInView ? (
           <section id="document-vault-filters" className={styles.filterPanel} aria-label="Filter by category">
             <div>
               <strong>Categories</strong>
@@ -740,7 +945,7 @@ export default function DocumentsClient() {
           </section>
         ) : null}
 
-        {showSummary && !loadFailed ? (
+        {showSummary && view === 'documents' && !loading && !loadFailed && summary.totalDocuments > 0 ? (
           <div id="document-vault-summary" className={styles.summaryCarousel} aria-label="Document Vault summary">
             <button
               type="button"
@@ -757,7 +962,7 @@ export default function DocumentsClient() {
                 <article className={styles.summaryCard}>
                   <div className={styles.summaryHeading}><span>Total documents</span><Icon name="document" /></div>
                   <strong>{summary.totalDocuments}</strong>
-                  <p>{formatBytes(summary.storageBytes)} securely catalogued</p>
+                  <p>{activeCategoryCount} {activeCategoryCount === 1 ? 'category' : 'categories'} in use</p>
                 </article>
                 <article className={`${styles.summaryCard} ${summary.expiringSoon ? styles.summaryAttention : ''}`}>
                   <div className={styles.summaryHeading}><span>Expiry attention</span><Icon name="calendar" /></div>
@@ -765,9 +970,9 @@ export default function DocumentsClient() {
                   <p>{summary.expiringSoon ? 'Expired or due within 60 days' : 'No upcoming expiry actions'}</p>
                 </article>
                 <article className={styles.summaryCard}>
-                  <div className={styles.summaryHeading}><span>Linked to assets</span><Icon name="link" /></div>
-                  <strong>{summary.linkedDocuments}</strong>
-                  <p>{summary.totalDocuments - summary.linkedDocuments} kept at account level</p>
+                  <div className={styles.summaryHeading}><span>Storage used</span><Icon name="archive" /></div>
+                  <strong>{formatBytes(summary.storageBytes)}</strong>
+                  <p>{summary.linkedDocuments} linked · {accountLevelDocuments} account-level</p>
                 </article>
               </section>
             </div>
@@ -784,14 +989,14 @@ export default function DocumentsClient() {
           </div>
         ) : null}
 
-        <section className={styles.toolbar} aria-label="Search and refresh documents">
+        {hasDocumentsInView ? <section className={styles.toolbar} aria-label="Search and refresh documents">
           <label className={styles.searchBox}>
             <Icon name="search" />
             <span className={styles.srOnly}>Search documents</span>
             <input
               value={search}
               onChange={(event) => setSearch(event.target.value)}
-              placeholder="Search by title, file, category or linked asset"
+              placeholder="Search documents, filenames, categories or assets"
             />
             {search ? <button type="button" onClick={() => setSearch('')} aria-label="Clear search"><Icon name="close" /></button> : null}
           </label>
@@ -801,7 +1006,7 @@ export default function DocumentsClient() {
               <Icon name="refresh" className={loading ? styles.refreshIconActive : undefined} /> Refresh
             </button>
           </div>
-        </section>
+        </section> : null}
 
         {view === 'recycle-bin' ? (
           <div className={styles.recycleNotice}>
@@ -813,7 +1018,7 @@ export default function DocumentsClient() {
           </div>
         ) : null}
 
-        {!loadFailed ? (
+        {!loadFailed && hasDocumentsInView ? (
           <div className={styles.resultsHeading}>
             <div>
               <span>{view === 'recycle-bin' ? 'Recycle Bin' : category === 'all' ? 'All documents' : categoryLabel(category)}</span>
@@ -846,7 +1051,7 @@ export default function DocumentsClient() {
                     <div className={styles.categoryIcon}><Icon name="folder" /></div>
                     <div>
                       <h2 id={`category-${group.value}`}>{group.label}</h2>
-                      <p>Account records and documents</p>
+                      <p>{categoryDescription(group.value)}</p>
                     </div>
                   </div>
                   <strong className={styles.categoryCount}>{group.documents.length} {group.documents.length === 1 ? 'document' : 'documents'}</strong>
@@ -858,16 +1063,24 @@ export default function DocumentsClient() {
         ) : (
           <section className={styles.emptyCard}>
             <div className={styles.emptyIcon}><Icon name={view === 'recycle-bin' ? 'trash' : 'archive'} /></div>
-            <h2>{view === 'recycle-bin' ? 'Your Recycle Bin is empty' : documents.length ? 'No documents match' : 'Start your Document Vault'}</h2>
+            <h2>{view === 'recycle-bin' ? 'Your Recycle Bin is empty' : documents.length ? 'No documents match' : 'Keep every important document in one place'}</h2>
             <p>
               {view === 'recycle-bin'
                 ? 'Documents moved here will remain recoverable for 90 days.'
                 : documents.length
                   ? 'Try clearing your search or choosing another category.'
-                  : 'Upload company records, policies, agreements, permits or any other important document that should stay with the account.'}
+                  : 'Upload finance, accounting, insurance and licensing records in bulk. Files stay at account level unless you choose to link them to assets.'}
             </p>
             {view === 'documents' && !documents.length ? (
-              <button type="button" className={styles.uploadButton} onClick={openUploadModal}><Icon name="upload" /> Upload your first document</button>
+              <>
+                <div className={styles.emptyCategories} aria-label="Popular document categories">
+                  <span>Finance</span>
+                  <span>Accounting &amp; tax</span>
+                  <span>Insurance</span>
+                  <span>Licences &amp; permits</span>
+                </div>
+                <button type="button" className={styles.uploadButton} onClick={openUploadModal}><Icon name="upload" /> Upload documents</button>
+              </>
             ) : null}
           </section>
         )}
@@ -881,8 +1094,8 @@ export default function DocumentsClient() {
             <header className={styles.modalHeader}>
               <div>
                 <span>{modalMode === 'upload' ? 'Add to your vault' : 'Document details'}</span>
-                <h2 id="document-modal-title">{modalMode === 'upload' ? 'Upload document' : 'Edit document'}</h2>
-                <p>{modalMode === 'upload' ? 'The document can stay account-level or be linked to several assets.' : `Editing ${editingDocument?.fileName ?? 'document'}`}</p>
+                <h2 id="document-modal-title">{modalMode === 'upload' ? 'Upload documents' : 'Edit document'}</h2>
+                <p>{modalMode === 'upload' ? 'Add up to 20 files at once. The details below apply to every file in this batch.' : `Editing ${editingDocument?.fileName ?? 'document'}`}</p>
               </div>
               <button type="button" onClick={closeModal} disabled={busy} aria-label="Close dialog" data-modal-initial-focus="true"><Icon name="close" /></button>
             </header>
@@ -897,21 +1110,59 @@ export default function DocumentsClient() {
                   </div>
                 ) : null}
 
+                <fieldset className={styles.modalFields} disabled={busy}>
                 {modalMode === 'upload' ? (
-                  <label className={`${styles.filePicker} ${selectedFile ? styles.filePickerSelected : ''}`}>
+                  <>
+                  <div
+                    className={`${styles.filePicker} ${selectedFiles.length ? styles.filePickerSelected : ''} ${filePickerDragging ? styles.filePickerDragging : ''}`}
+                    onDragEnter={(event) => { event.preventDefault(); if (!busy) setFilePickerDragging(true); }}
+                    onDragOver={(event) => { event.preventDefault(); if (!busy) setFilePickerDragging(true); }}
+                    onDragLeave={(event) => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setFilePickerDragging(false); }}
+                    onDrop={handleFileDrop}
+                  >
                     <input
+                      ref={fileInputRef}
                       type="file"
+                      aria-label="Choose documents to upload"
                       accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.jpg,.jpeg,.png,.webp"
                       onChange={handleFileChange}
-                      required
+                      multiple
                     />
-                    <span className={styles.filePickerIcon}><Icon name={selectedFile ? 'document' : 'upload'} /></span>
+                    <span className={styles.filePickerIcon}><Icon name={selectedFiles.length ? 'document' : 'upload'} /></span>
                     <span>
-                      <strong>{selectedFile ? selectedFile.name : 'Choose a document'}</strong>
-                      <small>{selectedFile ? `${formatBytes(selectedFile.size)} selected` : 'PDF, Word, Excel, CSV, TXT or image · up to 12 MB'}</small>
+                      <strong>{selectedFiles.length ? `${selectedFiles.length} ${selectedFiles.length === 1 ? 'document' : 'documents'} ready` : 'Drop documents here or browse'}</strong>
+                      <small>PDF, Word, Excel, CSV, TXT or images · 25 MB each · 20 files / 250 MB per batch</small>
                     </span>
-                    <b>{selectedFile ? 'Change file' : 'Browse'}</b>
-                  </label>
+                    <button type="button" onClick={() => fileInputRef.current?.click()} disabled={busy}>
+                      {selectedFiles.length ? 'Add more' : 'Browse files'}
+                    </button>
+                  </div>
+
+                  {selectedFiles.length ? (
+                    <section className={styles.fileQueue} aria-label="Documents ready to upload">
+                      <header>
+                        <div>
+                          <strong>Ready to upload</strong>
+                          <span>{selectedFiles.length} of {MAX_DOCUMENT_FILES_PER_BATCH} files · {formatBytes(selectedFilesBytes)}</span>
+                        </div>
+                        <button type="button" onClick={clearSelectedFiles} disabled={busy}>Clear all</button>
+                      </header>
+                      <div className={styles.fileQueueList}>
+                        {selectedFiles.map((file) => (
+                          <article key={fileIdentity(file)}>
+                            <span className={styles.fileQueueIcon}><Icon name="document" /></span>
+                            <span><strong title={file.name}>{file.name}</strong><small>{formatBytes(file.size)}</small></span>
+                            <button type="button" onClick={() => removeSelectedFile(file)} disabled={busy} aria-label={`Remove ${file.name}`}><Icon name="close" /></button>
+                          </article>
+                        ))}
+                      </div>
+                    </section>
+                  ) : null}
+
+                  {selectedFiles.length > 1 ? (
+                    <div className={styles.batchHint}><Icon name="info" /><span>File names will become document titles. You can edit individual titles after upload.</span></div>
+                  ) : null}
+                  </>
                 ) : (
                   <div className={styles.currentFile}>
                     <Icon name="document" />
@@ -920,37 +1171,41 @@ export default function DocumentsClient() {
                 )}
 
                 <div className={styles.formGrid}>
-                  <label className={styles.field}>
+                  {modalMode === 'edit' || selectedFiles.length <= 1 ? <label className={styles.field}>
                     <span>Document title <b>*</b></span>
                     <input value={draft.title} onChange={(event) => updateDraft('title', event.target.value)} maxLength={180} placeholder="e.g. Company registration certificate" required />
-                  </label>
+                  </label> : null}
                   <label className={styles.field}>
-                    <span>Category <b>*</b></span>
-                    <select value={draft.category} onChange={(event) => updateDraft('category', event.target.value as DocumentCategory)}>
+                    <span>{selectedFiles.length > 1 ? 'Category for all files' : 'Category'} <b>*</b></span>
+                    <select value={draft.category} onChange={(event) => updateDraft('category', event.target.value as DocumentCategory | '')} required>
+                      <option value="" disabled>Choose a category</option>
                       {CATEGORY_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
                     </select>
                   </label>
                   <label className={styles.field}>
-                    <span>Expiry or renewal date <em>Optional</em></span>
+                    <span>{selectedFiles.length > 1 ? 'Expiry for all files' : 'Expiry or renewal date'} <em>Optional</em></span>
                     <input type="date" value={draft.expiryDate} onChange={(event) => updateDraft('expiryDate', event.target.value)} />
                   </label>
                   <label className={`${styles.field} ${styles.notesField}`}>
-                    <span>Notes <em>Optional</em></span>
-                    <textarea value={draft.notes} onChange={(event) => updateDraft('notes', event.target.value)} maxLength={5000} rows={4} placeholder="Add a short reminder, reference number or context…" />
+                    <span>{selectedFiles.length > 1 ? 'Note for all files' : 'Notes'} <em>Optional</em></span>
+                    <textarea value={draft.notes} onChange={(event) => updateDraft('notes', event.target.value)} maxLength={5000} rows={4} placeholder={selectedFiles.length > 1 ? 'Add a shared reference, reminder or context for this batch…' : 'Add a short reminder, reference number or context…'} />
                   </label>
                 </div>
 
-                <section className={styles.assetPicker} aria-labelledby="linked-assets-heading">
+                <section className={`${styles.assetPicker} ${showAssetPicker ? '' : styles.assetPickerCollapsed}`} aria-labelledby="linked-assets-heading">
                   <div className={styles.assetPickerHeading}>
                     <div>
-                      <span>Optional</span>
+                      <span>Optional · account-level by default</span>
                       <h3 id="linked-assets-heading">Link to assets</h3>
-                      <p>Leave this empty for an account-level document, or choose one or more related assets.</p>
+                      <p>{selectedFiles.length > 1 ? 'Selected assets will be linked to every document in this batch.' : 'Choose one or more related assets, or leave this at account level.'}</p>
                     </div>
-                    <strong>{draft.assetIds.length} selected</strong>
+                    <button type="button" onClick={() => setShowAssetPicker((current) => !current)} aria-expanded={showAssetPicker}>
+                      {draft.assetIds.length ? `${draft.assetIds.length} selected` : showAssetPicker ? 'Done' : 'Choose assets'}
+                      <Icon name="chevron-down" />
+                    </button>
                   </div>
 
-                  {assets.length ? (
+                  {showAssetPicker && assets.length ? (
                     <>
                       <label className={styles.assetSearch}>
                         <Icon name="search" />
@@ -969,17 +1224,27 @@ export default function DocumentsClient() {
                         }) : <p className={styles.noAssetResults}>No assets match that search.</p>}
                       </div>
                     </>
-                  ) : (
+                  ) : showAssetPicker ? (
                     <div className={styles.noAssets}><Icon name="info" /><span>No assets are available yet. This document will stay at account level.</span></div>
-                  )}
+                  ) : null}
                 </section>
+                </fieldset>
               </div>
 
               <footer className={styles.modalFooter}>
+                <span className={styles.srOnly} role="status" aria-live="polite">
+                  {uploadProgress ? `Uploading document ${uploadProgress.current} of ${uploadProgress.total}.` : ''}
+                </span>
                 <button type="button" className={styles.cancelButton} disabled={busy} onClick={closeModal}>Cancel</button>
                 <button type="submit" className={styles.uploadButton} disabled={busy}>
                   {busy ? <span className={styles.buttonSpinner} /> : <Icon name={modalMode === 'upload' ? 'upload' : 'edit'} />}
-                  {busy ? 'Saving…' : modalMode === 'upload' ? 'Add to vault' : 'Save changes'}
+                  {uploadProgress
+                    ? `Uploading ${uploadProgress.current} of ${uploadProgress.total}…`
+                    : busy
+                      ? 'Saving…'
+                      : modalMode === 'upload'
+                        ? selectedFiles.length > 1 ? `Upload ${selectedFiles.length} documents` : 'Upload document'
+                        : 'Save changes'}
                 </button>
               </footer>
             </form>

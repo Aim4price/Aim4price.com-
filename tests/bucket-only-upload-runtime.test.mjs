@@ -108,6 +108,12 @@ test('server-side Bucket byte reads are bounded and verified before use', () => 
   );
 });
 
+test('Bucket-only reads support the Document Vault limit without widening Asset Register attachments', () => {
+  assert.match(uploadSource, /MAX_ASSET_REGISTER_DOCUMENT_UPLOAD_BYTES = 12 \* 1024 \* 1024/);
+  assert.match(uploadSource, /MAX_DOCUMENT_VAULT_UPLOAD_BYTES = 25 \* 1024 \* 1024/);
+  assert.match(objectStorageSource, /MAX_BUCKET_ONLY_OBJECT_READ_BYTES = 25 \* 1024 \* 1024/);
+});
+
 test('all server-side byte consumers use the unified resolver', () => {
   for (const consumer of [invoiceSource, discoverySource, reportLogoSource, marketplaceImageSource]) {
     assert.match(consumer, /resolveAssetRegisterUploadBytes/);
