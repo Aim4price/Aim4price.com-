@@ -58,7 +58,7 @@ const CATEGORY_FILTERS: Array<{ value: NotificationCategoryFilter; label: string
 function destination(item: Notification): string {
   if (item.category === 'admin_message') return '/owner-app/notifications';
   if (item.href.startsWith('/owner-app/')) return item.href;
-  if (item.category === 'capture' && item.href) return item.href;
+  if ((item.category === 'capture' || item.category === 'cost_budget') && item.href) return item.href;
   if (item.assetId) return `/owner-app/assets/${encodeURIComponent(item.assetId)}`;
   if (item.category === 'partner_note' || item.category === 'lead' || item.category === 'asset_discovery') {
     return '/owner-app/marketplace';
@@ -93,7 +93,9 @@ function matchesCategory(item: Notification, filter: NotificationCategoryFilter)
   if (filter === 'all') return true;
   if (filter === 'messages') return item.category === 'admin_message';
   if (filter === 'maintenance') return item.category === 'maintenance' || item.category === 'dealer_schedule';
-  if (filter === 'costs') return item.category === 'dealer_cost' || item.category === 'capture';
+  if (filter === 'costs') {
+    return item.category === 'dealer_cost' || item.category === 'capture' || item.category === 'cost_budget';
+  }
   if (filter === 'leads') return item.category === 'lead';
   if (filter === 'notes') return item.category === 'partner_note';
   if (filter === 'fuel') return item.category === 'fuel';

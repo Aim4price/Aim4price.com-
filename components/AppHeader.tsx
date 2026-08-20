@@ -101,7 +101,7 @@ type AccountProfileLogoState = {
   logoUrl: string | null;
 };
 
-type HeaderNotificationCategory = 'admin_message' | 'partner_note' | 'lead' | 'qr_scan' | 'fuel' | 'maintenance' | 'dealer_schedule' | 'dealer_cost' | 'capture' | 'dealer_correction' | 'asset_discovery';
+type HeaderNotificationCategory = 'admin_message' | 'partner_note' | 'lead' | 'qr_scan' | 'fuel' | 'maintenance' | 'dealer_schedule' | 'dealer_cost' | 'cost_budget' | 'capture' | 'dealer_correction' | 'asset_discovery';
 
 type HeaderNotificationTone = 'neutral' | 'success' | 'warning' | 'info';
 
@@ -938,6 +938,34 @@ export default function AppHeader({
       mounted = false;
     };
   }, [accountantWorkspaceShareId, session?.id, session?.accountType, session?.accountSubtype, pathname]);
+
+  useEffect(() => {
+    function refreshCostLedgerNotifications() {
+      const isSharedAccountantWorkspace = Boolean(
+        accountantWorkspaceShareId
+        && session?.accountType === 'finance'
+        && session.accountSubtype === 'accountant',
+      );
+      if (!session?.id || isSharedAccountantWorkspace) return;
+
+      void fetch('/api/notifications', {
+        credentials: 'include',
+        cache: 'no-store',
+      })
+        .then((response) => response.json())
+        .then((data: NotificationsResponse) => {
+          if (data.ok && Array.isArray(data.notifications)) setNotifications(data.notifications);
+        })
+        .catch((error) => {
+          console.error('Failed to refresh Cost Ledger notifications', error);
+        });
+    }
+
+    window.addEventListener('aim4price:cost-ledger-updated', refreshCostLedgerNotifications);
+    return () => {
+      window.removeEventListener('aim4price:cost-ledger-updated', refreshCostLedgerNotifications);
+    };
+  }, [accountantWorkspaceShareId, session?.id, session?.accountType, session?.accountSubtype]);
 
   useEffect(() => {
     function handleDealerCorrectionResolved(event: Event) {

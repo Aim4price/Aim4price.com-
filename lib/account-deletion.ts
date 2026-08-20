@@ -14,6 +14,9 @@ const USER_ID_TABLES = [
   'fuel_slips',
   'fuel_storage_events',
   'fuel_storage_units',
+  // Budget alerts cascade from budgets; budgets must precede asset deletion
+  // so all-assets rows without an asset foreign key are also removed.
+  'asset_cost_budgets',
   'asset_register_items',
   'valuation_runs',
   'marketplace_listings',

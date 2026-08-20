@@ -26,6 +26,7 @@ import {
   listPendingOwnerDealerCosts,
 } from './dealer-costs';
 import { listCaptureRequests } from './capture-requests';
+import { listCurrentCostBudgetAlertEvents } from './cost-budgets';
 
 export type HeaderNotificationCategory =
   | 'admin_message'
@@ -36,6 +37,7 @@ export type HeaderNotificationCategory =
   | 'maintenance'
   | 'dealer_schedule'
   | 'dealer_cost'
+  | 'cost_budget'
   | 'capture'
   | 'dealer_correction'
   | 'asset_discovery';
@@ -94,6 +96,7 @@ type AssetScanNotificationRow = {
 type ListHeaderNotificationsInput = {
   userId: string;
   accountType: AccountRole | string | null | undefined;
+  includeCostBudgetNotifications?: boolean;
 };
 
 const MAX_COMPUTED_NOTIFICATIONS = 120;
@@ -342,6 +345,40 @@ function formatCostAmount(value: number): string {
     currency: 'ZAR',
     maximumFractionDigits: 2,
   }).format(Math.max(0, value));
+}
+
+async function listOwnerCostBudgetNotifications(userId: string): Promise<HeaderNotificationItem[]> {
+  try {
+    const alerts = await listCurrentCostBudgetAlertEvents(userId);
+    return alerts.map((alert) => {
+      const params = new URLSearchParams({
+        budgetId: alert.budgetId,
+        year: alert.periodKey.slice(0, 4),
+      });
+      if (alert.assetId) params.set('assetId', alert.assetId);
+      if (alert.period === 'monthly') {
+        params.set('month', String(Number(alert.periodKey.slice(5, 7))));
+      }
+
+      const overBy = Math.max(0, alert.spent - alert.amount);
+      return {
+        id: `cost-budget:${alert.budgetId}:r${alert.budgetRevision}:${alert.periodKey}:${alert.alertKind}`,
+        category: 'cost_budget',
+        tone: 'warning',
+        title: alert.alertKind === 'over_budget' ? 'Cost budget exceeded' : 'Cost budget warning',
+        body: alert.alertKind === 'over_budget'
+          ? `${alert.assetTitle} is ${formatCostAmount(overBy)} over its ${alert.period} budget (${formatCostAmount(alert.spent)} spent).`
+          : `${alert.assetTitle} has reached the ${alert.warningPercent}% alert for its ${alert.period} budget (${formatCostAmount(alert.spent)} of ${formatCostAmount(alert.amount)} spent).`,
+        href: `/my-invoices?${params.toString()}`,
+        createdAtIso: alert.triggeredAtIso,
+        assetId: alert.assetId || undefined,
+        priority: alert.alertKind === 'over_budget',
+      } satisfies HeaderNotificationItem;
+    });
+  } catch (error) {
+    console.error('Failed to load Cost Ledger budget notifications', error);
+    return [];
+  }
 }
 
 function correctionActor(correction: DealerAssetCorrectionRequest): string {
@@ -860,6 +897,9 @@ export async function listComputedHeaderNotifications(input: ListHeaderNotificat
         listOwnerDealerMaintenanceScheduleNotifications(input.userId),
         listOwnerDealerCostNotifications(input.userId),
         listOwnerCaptureNotifications(input.userId),
+        input.includeCostBudgetNotifications === false
+          ? Promise.resolve([])
+          : listOwnerCostBudgetNotifications(input.userId),
         listOpenPartnerNoteNotifications(input.userId),
         listOwnerLeadNotifications(input.userId),
         listOwnerAssetDiscoveryNotifications(input.userId),
