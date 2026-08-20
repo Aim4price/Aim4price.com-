@@ -26,6 +26,7 @@ type Notification = {
   dealerMaintenanceScheduleProposalId?: string;
   dealerCostInvoiceId?: string;
   dealerCostAction?: 'store' | 'delete';
+  captureRequestId?: string;
   priority?: boolean;
   state: NotificationState;
   actionRequired: boolean;
@@ -55,6 +56,7 @@ const CATEGORY_FILTERS: Array<{ value: NotificationCategoryFilter; label: string
 
 function destination(item: Notification): string {
   if (item.href.startsWith('/owner-app/')) return item.href;
+  if (item.category === 'capture' && item.href) return item.href;
   if (item.assetId) return `/owner-app/assets/${encodeURIComponent(item.assetId)}`;
   if (item.category === 'partner_note' || item.category === 'lead' || item.category === 'asset_discovery') {
     return '/owner-app/marketplace';
@@ -88,7 +90,7 @@ function formatNotificationTime(value: string): string {
 function matchesCategory(item: Notification, filter: NotificationCategoryFilter): boolean {
   if (filter === 'all') return true;
   if (filter === 'maintenance') return item.category === 'maintenance' || item.category === 'dealer_schedule';
-  if (filter === 'costs') return item.category === 'dealer_cost';
+  if (filter === 'costs') return item.category === 'dealer_cost' || item.category === 'capture';
   if (filter === 'leads') return item.category === 'lead';
   if (filter === 'notes') return item.category === 'partner_note';
   if (filter === 'fuel') return item.category === 'fuel';

@@ -1243,6 +1243,9 @@ export default function AdminClient({
             <Link href="/admin/dashboard" className={styles.adminNavLink}>
               Dashboard
             </Link>
+            <Link href="/admin/capture-queue" className={styles.adminNavLink}>
+              Capture Queue
+            </Link>
             <Link
               href="/admin/lifecycle-calculator"
               className={styles.adminNavLink}

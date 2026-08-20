@@ -207,7 +207,7 @@ function invoiceBlockText(invoice: MyInvoiceRecord, blockType: 'maintenance' | '
 
 function invoiceSourceLabel(invoice: MyInvoiceRecord): string {
   if (invoice.source === 'fuel_slip') return 'Fuel Slip';
-  if (invoice.source === 'automatic') return 'Automatic';
+  if (invoice.source === 'automatic') return 'Aim4price captured';
   return 'Manual';
 }
 

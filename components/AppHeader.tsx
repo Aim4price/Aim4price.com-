@@ -101,7 +101,7 @@ type AccountProfileLogoState = {
   logoUrl: string | null;
 };
 
-type HeaderNotificationCategory = 'partner_note' | 'lead' | 'qr_scan' | 'fuel' | 'maintenance' | 'dealer_schedule' | 'dealer_cost' | 'dealer_correction' | 'asset_discovery';
+type HeaderNotificationCategory = 'partner_note' | 'lead' | 'qr_scan' | 'fuel' | 'maintenance' | 'dealer_schedule' | 'dealer_cost' | 'capture' | 'dealer_correction' | 'asset_discovery';
 
 type HeaderNotificationTone = 'neutral' | 'success' | 'warning' | 'info';
 
@@ -119,6 +119,7 @@ type HeaderNotificationItem = {
   dealerMaintenanceScheduleProposalId?: string;
   dealerCostInvoiceId?: string;
   dealerCostAction?: 'store' | 'delete';
+  captureRequestId?: string;
   priority?: boolean;
   state: 'needs_action' | 'new' | 'history';
   actionRequired: boolean;

@@ -68,6 +68,9 @@ export default async function AdminDashboardPage() {
             <Link href="/admin/dashboard" className={`${styles.adminButton} ${styles.adminButtonActive}`} aria-current="page">
               Dashboard
             </Link>
+            <Link href="/admin/capture-queue" className={styles.adminButton}>
+              Capture Queue
+            </Link>
             <Link
               href="/admin/lifecycle-calculator"
               className={styles.adminButton}

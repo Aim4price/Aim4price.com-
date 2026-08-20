@@ -587,6 +587,15 @@ function normalizeDateOnly(value: unknown): string | null {
   return `${match[1]}-${match[2]}-${match[3]}`;
 }
 
+function normalizeCaptureRequestId(value: unknown): string | null {
+  const normalized = asText(value);
+  if (!normalized) return null;
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(normalized)) {
+    throw new Error('CAPTURE_REQUEST_ID_INVALID');
+  }
+  return normalized;
+}
+
 function normalizeTimeText(value: unknown): string | null {
   const text = asText(value);
   if (!text) return null;
@@ -2124,6 +2133,7 @@ export async function ensureFuelLedgerTables(): Promise<void> {
     create table if not exists public.fuel_slips (
       id uuid primary key default gen_random_uuid(),
       user_id text not null,
+      capture_request_id uuid,
       source_type text not null default 'fuel_slip',
       source_label text not null default 'Fuel Slip',
       target_type text not null,
@@ -2175,6 +2185,7 @@ export async function ensureFuelLedgerTables(): Promise<void> {
     );
 
     alter table if exists public.fuel_slips
+      add column if not exists capture_request_id uuid,
       add column if not exists source_type text not null default 'fuel_slip',
       add column if not exists source_label text not null default 'Fuel Slip',
       add column if not exists target_type text,
@@ -2288,6 +2299,10 @@ export async function ensureFuelLedgerTables(): Promise<void> {
 
     create index if not exists idx_fuel_slips_user_created
       on public.fuel_slips(user_id, created_at desc);
+
+    create unique index if not exists idx_fuel_slips_capture_request
+      on public.fuel_slips(capture_request_id)
+      where capture_request_id is not null;
 
     create index if not exists idx_fuel_slips_asset_created
       on public.fuel_slips(asset_register_item_id, created_at desc)
@@ -4539,6 +4554,7 @@ export async function getFuelLateEntryEvidence(userId: string, eventId: string):
 
 
 type SaveFuelSlipInput = {
+  captureRequestId?: unknown;
   id?: unknown;
   slipId?: unknown;
   fuelSlipId?: unknown;
@@ -4960,6 +4976,31 @@ export async function saveFuelSlipTransaction(userId: string, input: SaveFuelSli
   await ensureFuelLedgerTables();
 
   const db = getDb();
+  const captureRequestId = normalizeCaptureRequestId(input.captureRequestId);
+  if (captureRequestId) {
+    const existingCapture = await db.query<{ id: string }>(
+      `select id::text as id
+         from public.fuel_slips
+        where user_id = $1
+          and capture_request_id = $2::uuid
+          and record_status = 'active'
+        limit 1`,
+      [userId, captureRequestId],
+    );
+    const existingId = existingCapture.rows[0]?.id;
+    if (existingId) {
+      const fuelSlip = await getFuelSlipTransactionById(userId, existingId);
+      if (!fuelSlip) throw new Error('Fuel slip could not be loaded after saving.');
+      return {
+        fuelSlip,
+        storage: fuelSlip.storageId ? await getFuelStorageById(userId, fuelSlip.storageId) : null,
+        event: null,
+        assets: await listFuelAssetsForUser(userId),
+        pendingReview: fuelSlip.reviewRequired,
+        message: 'Fuel Slip was already saved to Fuel Ledger.',
+      };
+    }
+  }
   const client = await db.connect();
   const existingFuelSlipId = normalizedFuelSlipIdFromInput(input);
   const targetType = normalizeFuelSlipTargetType(input.targetType);
@@ -5275,6 +5316,7 @@ export async function saveFuelSlipTransaction(userId: string, input: SaveFuelSli
           `
             insert into public.fuel_slips (
               user_id,
+              capture_request_id,
               source_type,
               source_label,
               target_type,
@@ -5320,10 +5362,10 @@ export async function saveFuelSlipTransaction(userId: string, input: SaveFuelSli
               extraction_warnings,
               work_use_excluded,
               work_use_exclusion_reason
-            ) values ($1, 'fuel_slip', 'Fuel Slip', $2, $3::uuid, $4::uuid, $5, $6, $7, $8, $9::integer, $10, $11, $12, $13, $14::date, $15, $16, $17::numeric, $18::numeric, $19::numeric, $20::numeric, $21::boolean, $22::numeric, $23, $24, $25, $26, $27, $28, $29, $30::numeric, $31::numeric, $32, $33, $34, $35, $36::integer, $37::integer, $38, $39::numeric, $40::boolean, $41, $42::jsonb, $43::boolean, $44)
+            ) values ($1, $45::uuid, 'fuel_slip', 'Fuel Slip', $2, $3::uuid, $4::uuid, $5, $6, $7, $8, $9::integer, $10, $11, $12, $13, $14::date, $15, $16, $17::numeric, $18::numeric, $19::numeric, $20::numeric, $21::boolean, $22::numeric, $23, $24, $25, $26, $27, $28, $29, $30::numeric, $31::numeric, $32, $33, $34, $35, $36::integer, $37::integer, $38, $39::numeric, $40::boolean, $41, $42::jsonb, $43::boolean, $44)
             returning id::text
           `,
-          fuelSlipValues,
+          [...fuelSlipValues, captureRequestId],
         );
 
     const fuelSlipId = savedSlip.rows[0]?.id;

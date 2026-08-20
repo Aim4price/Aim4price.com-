@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent, type ReactNode, type SVGProps } from 'react';
 import AppHeader from '../../components/AppHeader';
+import CaptureRequestStatusList, { type CaptureRequestStatusItem } from '../../components/CaptureRequestStatusList';
 import styles from './page.module.css';
 import { fuelSlipDecimalToInput, parseFuelSlipDecimal } from '../../lib/fuel-slip-number';
 import { ManageFuelStorageChoiceModal, MissingFuelEntryModal, ReconcileFuelBalanceModal, type MissingFuelLedgerPayload } from './missing-fuel-entry-modal';
@@ -291,6 +292,13 @@ type FuelSlipExtractResponse = {
   error?: string;
   pendingReview?: boolean;
   message?: string;
+};
+
+type FuelCaptureRequestResponse = {
+  ok: boolean;
+  request?: CaptureRequestStatusItem;
+  requests?: CaptureRequestStatusItem[];
+  error?: string;
 };
 
 type Notice = {
@@ -966,7 +974,7 @@ function fuelSlipTargetLabel(slip: FuelSlipRecord): string {
 
 function fuelSlipStatusLabel(slip: FuelSlipRecord): string {
   if (slip.reviewRequired || slip.extractionStatus === 'needs_review') return 'Not completed';
-  if (slip.extractionStatus === 'extracted') return 'Extracted';
+  if (slip.extractionStatus === 'extracted') return 'Aim4price captured';
   return 'Manual';
 }
 
@@ -1625,6 +1633,7 @@ export default function FuelClient({
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [notice, setNotice] = useState<Notice | null>(null);
+  const [captureRequests, setCaptureRequests] = useState<CaptureRequestStatusItem[]>([]);
   const [modalMode, setModalMode] = useState<ModalMode>(null);
   const [selectedStorageId, setSelectedStorageId] = useState<string | null>(null);
   const [deleteCandidateStorage, setDeleteCandidateStorage] = useState<FuelLedgerStorage | null>(null);
@@ -1771,7 +1780,7 @@ export default function FuelClient({
   const fuelSlipFormModeLabel = fuelSlipDraft.id
     ? 'Saved slip review'
     : fuelSlipFlow === 'review'
-      ? 'Automatic capture'
+      ? 'Aim4price verified capture'
       : 'Manual entry';
   const fuelSlipFormSubtitle = `${selectedFuelSlipTargetName} · ${fuelSlipFormModeLabel}`;
   const fuelSlipMissingFields = useMemo(
@@ -1868,8 +1877,22 @@ export default function FuelClient({
     }
   }
 
+  async function loadCaptureRequests() {
+    try {
+      const response = await fetch(scopedApiUrl('/api/capture-requests?requestType=fuel_slip&active=1'), {
+        credentials: 'include',
+        cache: 'no-store',
+      });
+      const data = (await response.json()) as FuelCaptureRequestResponse;
+      if (response.ok && data.ok) setCaptureRequests(data.requests ?? []);
+    } catch {
+      // The Fuel Ledger remains available if capture status cannot load.
+    }
+  }
+
   useEffect(() => {
     void loadLedger();
+    void loadCaptureRequests();
   }, [accountantRegisterId, accountantShareId]);
 
   useEffect(() => {
@@ -2348,36 +2371,72 @@ export default function FuelClient({
       return;
     }
 
+    const [targetType, targetId] = fuelSlipDraft.targetKey.split(':');
+    if ((targetType !== 'asset' && targetType !== 'storage_tank') || !targetId) {
+      setNotice({ tone: 'error', message: 'Choose an asset or storage tank first.' });
+      return;
+    }
+
+    const customerFields = new Set<FuelSlipMissingFieldKey>([
+      'odometerReading',
+      'hourMeterReading',
+      'operatorName',
+      'activityText',
+      'workAreaText',
+    ]);
+    const missingCustomerFields = getFuelSlipMissingFields(
+      fuelSlipDraft,
+      selectedFuelSlipTargetType,
+      selectedFuelSlipUsageMetric,
+      selectedFuelSlipAssetResolved,
+    ).filter((field) => customerFields.has(field));
+
+    if (missingCustomerFields.length) {
+      setFuelSlipAttemptedSubmit(true);
+      setFuelSlipValidationNotice('Add the usage and work information Aim4price cannot read from the slip.');
+      return;
+    }
+
     setIsExtractingFuelSlip(true);
     setNotice(null);
 
     try {
       const formData = new FormData();
       formData.append('file', fuelSlipUploadFile);
+      formData.append('targetType', targetType);
+      formData.append('targetId', targetId);
+      formData.append('submittedPayload', JSON.stringify({
+        targetLabel: selectedFuelSlipTargetName,
+        usageMetric: selectedFuelSlipUsageMetric,
+        odometerReading: fuelSlipDraft.odometerReading,
+        hourMeterReading: fuelSlipDraft.hourMeterReading,
+        operatorName: fuelSlipDraft.operatorName,
+        activityText: fuelSlipDraft.activityText,
+        workAreaText: fuelSlipDraft.workAreaText,
+        note: fuelSlipDraft.note,
+        assetFuelPercentBefore: fuelSlipDraft.assetFuelPercentBefore,
+        assetFuelPercentAfter: fuelSlipDraft.assetFuelPercentAfter,
+      }));
 
-      const response = await fetch(scopedApiUrl('/api/fuel/slips/extract'), {
+      const response = await fetch(scopedApiUrl('/api/capture-requests/fuel-slip'), {
         method: 'POST',
         credentials: 'include',
         body: formData,
       });
-      const data = (await response.json()) as FuelSlipExtractResponse;
+      const data = (await response.json()) as FuelCaptureRequestResponse;
 
-      if (!response.ok || !data.ok) {
-        throw new Error(data.error || 'Fuel slip extraction failed.');
+      if (!response.ok || !data.ok || !data.request) {
+        throw new Error(data.error || 'The fuel slip could not be sent for Aim4price capture.');
       }
 
-      resetFuelSlipValidationState();
-      setFuelSlipDraft((current) => applyExtractionToFuelSlipDraft(current, data));
-      setFuelSlipFlow('review');
-      setFuelSlipFormPage('details');
+      setCaptureRequests((current) => [data.request!, ...current.filter((request) => request.id !== data.request!.id)]);
+      closeModal();
       setNotice({
-        tone: data.extraction?.draft.reviewRequired ? 'error' : 'success',
-        message: data.extraction?.draft.reviewRequired
-          ? 'Fuel slip uploaded. Review and correct the fields before saving.'
-          : 'Fuel slip uploaded and fields extracted. Review before saving.',
+        tone: 'success',
+        message: `${data.request.referenceCode} received. Aim4price will capture and verify it within 24 hours.`,
       });
     } catch (error) {
-      setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'Fuel slip extraction failed.' });
+      setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'The fuel slip could not be sent for capture.' });
     } finally {
       setIsExtractingFuelSlip(false);
     }
@@ -3182,6 +3241,8 @@ export default function FuelClient({
               </div>
             </div>
 
+            <CaptureRequestStatusList requests={captureRequests} title="Fuel slips being captured" />
+
             {!isLoading && !storages.length ? (
               <div className={styles.emptyState}>
                 <strong>No fuel storage yet.</strong>
@@ -3949,8 +4010,8 @@ export default function FuelClient({
                   <AutomaticFuelSlipIcon />
                 </span>
                 <span className={styles.choiceTitleBlock}>
-                  <strong>Upload fuel slip/photo</strong>
-                  <small>Upload a PDF or photo, then review the extracted slip details.</small>
+                  <strong>Upload for Aim4price capture</strong>
+                  <small>Send a PDF or photo and Aim4price will capture and verify it within 24 hours.</small>
                 </span>
               </button>
             </div>
@@ -4038,30 +4099,33 @@ export default function FuelClient({
           <div className={`${styles.formModal} ${styles.costUploadModal}`}>
             <div className={styles.modalHeader}>
               <div>
-                <h2>Upload fuel slip/photo</h2>
-                <p>{selectedFuelSlipTargetName} · Automatic capture</p>
+                <h2>Upload for Aim4price capture</h2>
+                <p>{selectedFuelSlipTargetName} · Verified within 24 hours</p>
               </div>
               <button type="button" className={styles.closeButton} onClick={closeModal} aria-label="Close"><CloseIcon /></button>
             </div>
             <div className={styles.modalDivider} />
             <div className={styles.formModalScrollBody}>
+              {renderFuelSlipValidationNotice()}
               <section className={styles.uploadPanel}>
                 <h3>Documents and photos</h3>
                 <div className={`${styles.uploadBox} ${fuelSlipUploadReady ? styles.uploadBoxReady : ''}`}>
                   <label className={styles.uploadButton}>
                     <UploadIcon />
                     Add fuel slip/photo
-                    <input type="file" accept="application/pdf,image/jpeg,image/jpg,image/png,image/webp,text/plain" onChange={handleFuelSlipUploadChange} disabled={isSaving || isExtractingFuelSlip} />
+                    <input type="file" accept="application/pdf,image/jpeg,image/jpg,image/png,image/webp" onChange={handleFuelSlipUploadChange} disabled={isSaving || isExtractingFuelSlip} />
                   </label>
                   <span className={styles.uploadCounter}>{fuelSlipUploadReady ? '1 / 1' : '0 / 1'}</span>
                   {fuelSlipUploadFileName ? <p>{fuelSlipUploadFileName}</p> : null}
                 </div>
               </section>
+              <p className={styles.fuelSlipHelperText}>Add the operational details that are not shown on the fuel slip. Aim4price will capture the supplier, date, litres, VAT and amount.</p>
+              {renderFuelSlipExtraFields()}
             </div>
             <div className={styles.modalFooter}>
               <button type="button" className={styles.secondaryButton} onClick={() => setFuelSlipFlow('target-automatic')}>Back</button>
               <button type="button" className={styles.primaryButton} onClick={handleFuelSlipExtract} disabled={!fuelSlipUploadFile || isExtractingFuelSlip}>
-                {isExtractingFuelSlip ? 'Reading fuel slip/photo...' : 'Review slip details'}
+                {isExtractingFuelSlip ? 'Sending fuel slip/photo...' : 'Send for capture'}
               </button>
             </div>
           </div>

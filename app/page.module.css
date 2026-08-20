@@ -12,7 +12,7 @@
 }
 
 .heroSection {
-  padding-bottom: clamp(3rem, 4vw, 4.25rem);
+  padding-bottom: 0;
 }
 
 .heroMedia {
@@ -277,6 +277,137 @@
 
 .heroVisual:hover .heroLogo {
   transform: scale(1.025);
+}
+
+.invoiceDropSection {
+  position: relative;
+  z-index: 4;
+  margin-top: -2rem;
+  padding-bottom: clamp(3rem, 4vw, 4.25rem);
+}
+
+.invoiceDropCard {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 1.15rem;
+  min-height: 7rem;
+  padding: 1.15rem 1.25rem 1.15rem 1.15rem;
+  border: 1px solid rgba(18, 74, 55, 0.12);
+  border-radius: 1.45rem;
+  background: rgba(255, 255, 255, 0.97);
+  box-shadow:
+    0 24px 48px rgba(12, 48, 37, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(12px);
+}
+
+.invoiceDropIcon {
+  display: grid;
+  place-items: center;
+  width: 4.35rem;
+  height: 4.35rem;
+  border-radius: 1.15rem;
+  color: #ffffff;
+  background: linear-gradient(145deg, #278b67 0%, #155f47 100%);
+  box-shadow:
+    0 12px 24px rgba(20, 99, 73, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.19);
+}
+
+.invoiceDropIcon svg {
+  width: 2rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.75;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.invoiceDropCopy {
+  min-width: 0;
+}
+
+.invoiceDropHeadingRow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+}
+
+.invoiceDropHeadingRow h2,
+.invoiceDropCopy p {
+  margin: 0;
+}
+
+.invoiceDropHeadingRow h2 {
+  color: #173e31;
+  font-size: clamp(1.05rem, 1.5vw, 1.3rem);
+  line-height: 1.2;
+  letter-spacing: -0.025em;
+  font-weight: 820;
+}
+
+.invoiceDropHeadingRow > span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.65rem;
+  padding: 0 0.6rem;
+  border-radius: 999px;
+  color: #17664d;
+  background: #eaf6f0;
+  border: 1px solid rgba(23, 102, 77, 0.1);
+  font-size: 0.64rem;
+  line-height: 1;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.055em;
+}
+
+.invoiceDropCopy p {
+  margin-top: 0.35rem;
+  color: #6a7972;
+  font-size: 0.84rem;
+  line-height: 1.5;
+}
+
+.invoiceDropLink {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 3.25rem;
+  padding: 0 1.25rem;
+  border-radius: 0.9rem;
+  color: #ffffff;
+  background: #176b50;
+  border: 1px solid rgba(16, 81, 60, 0.24);
+  box-shadow: 0 10px 22px rgba(19, 88, 66, 0.15);
+  text-decoration: none;
+  font-size: 0.8rem;
+  font-weight: 820;
+  white-space: nowrap;
+  transition: transform 180ms ease, background 180ms ease, box-shadow 180ms ease;
+}
+
+.invoiceDropLink span {
+  font-size: 1rem;
+  transition: transform 180ms ease;
+}
+
+.invoiceDropLink:hover {
+  transform: translateY(-2px);
+  background: #125d46;
+  box-shadow: 0 14px 27px rgba(19, 88, 66, 0.2);
+}
+
+.invoiceDropLink:hover span {
+  transform: translateX(0.15rem);
+}
+
+.invoiceDropLink:focus-visible {
+  outline: 3px solid rgba(52, 168, 126, 0.28);
+  outline-offset: 4px;
 }
 
 .productSection {
@@ -709,7 +840,9 @@
   .productCard,
   .productAction::after,
   .heroVisual,
-  .heroLogo {
+  .heroLogo,
+  .invoiceDropLink,
+  .invoiceDropLink span {
     transition: none;
   }
 
@@ -720,7 +853,9 @@
   .marketLink:hover,
   .productCard:hover,
   .heroVisual:hover,
-  .heroVisual:hover .heroLogo {
+  .heroVisual:hover .heroLogo,
+  .invoiceDropLink:hover,
+  .invoiceDropLink:hover span {
     transform: none;
   }
 
@@ -756,6 +891,15 @@
 
   .heroText {
     max-width: min(100%, 44rem);
+  }
+
+  .invoiceDropCard {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .invoiceDropLink {
+    grid-column: 2;
+    width: fit-content;
   }
 
   .heroVisual {
@@ -804,7 +948,26 @@
 
 @media (max-width: 760px) {
   .heroSection {
+    padding-bottom: 0;
+  }
+
+  .invoiceDropSection {
+    margin-top: -1.5rem;
     padding-bottom: clamp(2.5rem, 9vw, 3.25rem);
+  }
+
+  .invoiceDropCard {
+    gap: 0.9rem;
+    padding: 1rem;
+  }
+
+  .invoiceDropIcon {
+    width: 3.7rem;
+    height: 3.7rem;
+  }
+
+  .invoiceDropLink {
+    width: 100%;
   }
 
   .heroMedia,
@@ -892,6 +1055,19 @@
 }
 
 @media (max-width: 520px) {
+  .invoiceDropCard {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .invoiceDropIcon {
+    width: 3.4rem;
+    height: 3.4rem;
+  }
+
+  .invoiceDropLink {
+    grid-column: auto;
+  }
+
   .heroVideoPlay {
     right: max(0.7rem, env(safe-area-inset-right));
     bottom: max(0.7rem, env(safe-area-inset-bottom));
@@ -933,5 +1109,3 @@
     white-space: normal;
   }
 }
-
-

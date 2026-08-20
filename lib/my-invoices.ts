@@ -126,6 +126,7 @@ export type MyInvoiceListResult = {
 };
 
 export type MyInvoiceDraftInput = {
+  captureRequestId?: unknown;
   assetId?: unknown;
   invoiceDocumentId?: unknown;
   supplierName?: unknown;
@@ -147,6 +148,7 @@ export type MyInvoiceActorContext = {
   dealerUserId?: string | null;
   dealerStaffId?: string | null;
   displayName?: string | null;
+  ownerApproved?: boolean;
 };
 
 type MyInvoiceDocumentRow = {
@@ -224,8 +226,17 @@ type DuplicateRow = {
 
 let myInvoiceTablesPromise: Promise<void> | null = null;
 
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
 function asText(value: unknown): string {
   return String(value ?? '').replace(/\s+/g, ' ').trim();
+}
+
+function asOptionalCaptureRequestId(value: unknown): string | null {
+  const normalized = asText(value);
+  if (!normalized) return null;
+  if (!UUID_PATTERN.test(normalized)) throw new Error('CAPTURE_REQUEST_ID_INVALID');
+  return normalized;
 }
 
 function asLongText(value: unknown, maxLength = 5000): string {
@@ -597,7 +608,9 @@ function mapDocumentRow(row: MyInvoiceDocumentRow | null | undefined): MyInvoice
     createdByDealerStaffId: asText(row.created_by_dealer_staff_id),
     createdByDisplayName: asText(row.created_by_display_name),
     uploadId,
-    uploadUrl: asText(row.upload_url) || buildAssetRegisterUploadUrl(uploadId),
+    // Financial documents must always be opened through an authorised proxy.
+    // The underlying asset upload URL is intentionally never returned to a client.
+    uploadUrl: buildMyInvoiceDocumentDownloadUrl(String(row.id)),
     fileName: asText(row.file_name),
     contentType: asText(row.content_type) || 'application/octet-stream',
     byteSize: Math.max(0, Math.round(Number(row.byte_size) || 0)),
@@ -607,6 +620,13 @@ function mapDocumentRow(row: MyInvoiceDocumentRow | null | undefined): MyInvoice
     extractionWarnings: normalizeWarnings(row.extraction_warnings),
     createdAtIso: toIsoString(row.created_at),
   };
+}
+
+export function buildMyInvoiceDocumentDownloadUrl(documentId: string): string {
+  const normalizedDocumentId = asText(documentId);
+  return normalizedDocumentId
+    ? `/api/my-invoices/documents/${encodeURIComponent(normalizedDocumentId)}/download`
+    : '';
 }
 
 function mapBlockRow(row: MyInvoiceBlockRow): MyInvoiceBlock {
@@ -688,6 +708,7 @@ async function ensureMyInvoiceTablesOnce(): Promise<void> {
       created_by_dealer_user_id text,
       created_by_dealer_staff_id text,
       created_by_display_name text,
+      capture_request_id uuid,
       upload_id text,
       upload_url text,
       file_name text,
@@ -713,6 +734,7 @@ async function ensureMyInvoiceTablesOnce(): Promise<void> {
       owner_storage_decided_at timestamptz,
       dealer_deletion_status text not null default 'active',
       dealer_deletion_requested_at timestamptz,
+      capture_request_id uuid,
       invoice_document_id uuid references public.asset_invoice_documents(id) on delete set null,
       supplier_name text,
       invoice_number text,
@@ -747,7 +769,8 @@ async function ensureMyInvoiceTablesOnce(): Promise<void> {
     alter table public.asset_invoice_documents
       add column if not exists created_by_dealer_user_id text,
       add column if not exists created_by_dealer_staff_id text,
-      add column if not exists created_by_display_name text
+      add column if not exists created_by_display_name text,
+      add column if not exists capture_request_id uuid
   `);
   await db.query(`
     alter table public.asset_invoices
@@ -757,7 +780,8 @@ async function ensureMyInvoiceTablesOnce(): Promise<void> {
       add column if not exists owner_storage_status text not null default 'owner',
       add column if not exists owner_storage_decided_at timestamptz,
       add column if not exists dealer_deletion_status text not null default 'active',
-      add column if not exists dealer_deletion_requested_at timestamptz
+      add column if not exists dealer_deletion_requested_at timestamptz,
+      add column if not exists capture_request_id uuid
   `);
   await db.query(`
     update public.asset_invoices
@@ -803,9 +827,11 @@ async function ensureMyInvoiceTablesOnce(): Promise<void> {
   await db.query(`create index if not exists asset_invoice_documents_user_id_idx on public.asset_invoice_documents (user_id)`);
   await db.query(`create index if not exists asset_invoice_documents_asset_register_item_id_idx on public.asset_invoice_documents (asset_register_item_id)`);
   await db.query(`create index if not exists asset_invoice_documents_dealer_idx on public.asset_invoice_documents (created_by_dealer_user_id, created_at desc)`);
+  await db.query(`create unique index if not exists asset_invoice_documents_capture_request_uidx on public.asset_invoice_documents (capture_request_id) where capture_request_id is not null`);
   await db.query(`create index if not exists asset_invoices_user_id_idx on public.asset_invoices (user_id)`);
   await db.query(`create index if not exists asset_invoices_asset_register_item_id_idx on public.asset_invoices (asset_register_item_id)`);
   await db.query(`create index if not exists asset_invoices_dealer_idx on public.asset_invoices (created_by_dealer_user_id, created_at desc)`);
+  await db.query(`create unique index if not exists asset_invoices_capture_request_uidx on public.asset_invoices (capture_request_id) where capture_request_id is not null`);
   await db.query(`
     create index if not exists asset_invoices_owner_storage_pending_idx
       on public.asset_invoices (user_id, owner_storage_status, updated_at desc)
@@ -1311,6 +1337,7 @@ export async function findDuplicateInvoiceWarnings(
 export async function createInvoiceDocumentRecord(input: {
   userId: string;
   assetId: string;
+  captureRequestId?: string | null;
   uploadId?: string | null;
   uploadUrl?: string | null;
   fileName?: string | null;
@@ -1322,6 +1349,7 @@ export async function createInvoiceDocumentRecord(input: {
   await ensureMyInvoiceTables();
   await verifyAssetBelongsToUser(input.userId, input.assetId);
 
+  const captureRequestId = asOptionalCaptureRequestId(input.captureRequestId);
   const uploadId = asText(input.uploadId);
   const uploadUrl = asText(input.uploadUrl) || buildAssetRegisterUploadUrl(uploadId);
   const result = await getDb().query<MyInvoiceDocumentRow>(
@@ -1332,13 +1360,15 @@ export async function createInvoiceDocumentRecord(input: {
         created_by_dealer_user_id,
         created_by_dealer_staff_id,
         created_by_display_name,
+        capture_request_id,
         upload_id,
         upload_url,
         file_name,
         content_type,
         byte_size,
         source
-      ) values ($1, $2::uuid, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+      ) values ($1, $2::uuid, $3, $4, $5, $6::uuid, $7, $8, $9, $10, $11, $12)
+      on conflict (capture_request_id) where capture_request_id is not null do nothing
       returning *
     `,
     [
@@ -1347,6 +1377,7 @@ export async function createInvoiceDocumentRecord(input: {
       asText(input.actor?.dealerUserId) || null,
       asText(input.actor?.dealerStaffId) || null,
       asText(input.actor?.displayName) || null,
+      captureRequestId,
       uploadId || null,
       uploadUrl || null,
       asText(input.fileName) || 'invoice-upload',
@@ -1356,7 +1387,17 @@ export async function createInvoiceDocumentRecord(input: {
     ],
   );
 
-  const document = mapDocumentRow(result.rows[0]);
+  const existing = !result.rows[0] && captureRequestId
+    ? await getDb().query<MyInvoiceDocumentRow>(
+        `select * from public.asset_invoice_documents
+          where capture_request_id = $1::uuid
+            and user_id = $2
+            and asset_register_item_id = $3::uuid
+          limit 1`,
+        [captureRequestId, input.userId, input.assetId],
+      )
+    : null;
+  const document = mapDocumentRow(result.rows[0] ?? existing?.rows[0]);
   if (!document) throw new Error('INVOICE_DOCUMENT_CREATE_FAILED');
   return document;
 }
@@ -1413,6 +1454,59 @@ export async function getInvoiceDocumentUpload(input: {
   };
 }
 
+export async function getInvoiceDocumentUploadForActor(input: {
+  actorUserId: string;
+  documentId: string;
+}): Promise<{ document: MyInvoiceDocument; data: Buffer; contentType: string; fileName: string } | null> {
+  await ensureMyInvoiceTables();
+  const result = await getDb().query<MyInvoiceDocumentRow>(
+    `
+      select *
+      from public.asset_invoice_documents
+      where id = $1::uuid
+        and (
+          user_id = $2
+          or created_by_dealer_user_id = $2
+        )
+      limit 1
+    `,
+    [input.documentId, asText(input.actorUserId)],
+  );
+  const document = mapDocumentRow(result.rows[0]);
+  if (!document) return null;
+
+  const uploadResult = await resolveAssetRegisterUploadBytes(document.uploadId);
+  if (uploadResult.status === 'not-found') return null;
+  if (uploadResult.status === 'unavailable') {
+    throw new Error('INVOICE_DOCUMENT_UPLOAD_UNAVAILABLE');
+  }
+
+  return {
+    document,
+    data: uploadResult.upload.data,
+    contentType: uploadResult.upload.mimeType || document.contentType,
+    fileName: uploadResult.upload.fileName || document.fileName,
+  };
+}
+
+export async function isProtectedInvoiceUpload(uploadId: string): Promise<boolean> {
+  const normalizedUploadId = asText(uploadId);
+  if (!normalizedUploadId) return false;
+
+  await ensureMyInvoiceTables();
+  const result = await getDb().query<{ protected: boolean }>(
+    `
+      select exists (
+        select 1
+        from public.asset_invoice_documents
+        where upload_id = $1
+      ) as protected
+    `,
+    [normalizedUploadId],
+  );
+  return Boolean(result.rows[0]?.protected);
+}
+
 export async function updateInvoiceDocumentExtraction(input: {
   userId: string;
   documentId: string;
@@ -1459,6 +1553,10 @@ export async function createMyInvoice(
   await ensureMyInvoiceTables();
 
   const draft = normalizeInvoiceDraft(input);
+  const captureRequestId = asOptionalCaptureRequestId(input.captureRequestId);
+  const ownerStorageStatus = asText(actor.dealerUserId)
+    ? (actor.ownerApproved ? 'approved' : 'pending')
+    : 'owner';
   await verifyAssetBelongsToUser(userId, draft.assetId);
   await verifyInvoiceDocument({ userId, assetId: draft.assetId, invoiceDocumentId: draft.invoiceDocumentId, actor });
   const duplicateWarnings = await findDuplicateInvoiceWarnings(userId, input);
@@ -1476,6 +1574,8 @@ export async function createMyInvoice(
           created_by_dealer_staff_id,
           created_by_display_name,
           owner_storage_status,
+          owner_storage_decided_at,
+          capture_request_id,
           invoice_document_id,
           supplier_name,
           invoice_number,
@@ -1487,7 +1587,8 @@ export async function createMyInvoice(
           usage_metric,
           source,
           notes
-        ) values ($1, $2::uuid, $3, $4, $5, $6, $7::uuid, $8, $9, $10::date, $11, $12, $13, $14, $15, $16, $17)
+        ) values ($1, $2::uuid, $3, $4, $5, $6, case when $6 = 'approved' then now() else null end, $7::uuid, $8::uuid, $9, $10, $11::date, $12, $13, $14, $15, $16, $17, $18)
+        on conflict (capture_request_id) where capture_request_id is not null do nothing
         returning id
       `,
       [
@@ -1496,7 +1597,8 @@ export async function createMyInvoice(
         asText(actor.dealerUserId) || null,
         asText(actor.dealerStaffId) || null,
         asText(actor.displayName) || null,
-        asText(actor.dealerUserId) ? 'pending' : 'owner',
+        ownerStorageStatus,
+        captureRequestId,
         draft.invoiceDocumentId,
         draft.supplierName || null,
         draft.invoiceNumber || null,
@@ -1511,10 +1613,22 @@ export async function createMyInvoice(
       ],
     );
 
-    const invoiceId = result.rows[0]?.id;
+    let invoiceId = result.rows[0]?.id;
+    if (!invoiceId && captureRequestId) {
+      const existing = await client.query<{ id: string }>(
+        `select id::text as id
+           from public.asset_invoices
+          where capture_request_id = $1::uuid
+            and user_id = $2
+            and asset_register_item_id = $3::uuid
+          limit 1`,
+        [captureRequestId, userId, draft.assetId],
+      );
+      invoiceId = existing.rows[0]?.id;
+    }
     if (!invoiceId) throw new Error('INVOICE_CREATE_FAILED');
 
-    await replaceInvoiceBlocks(client, invoiceId, blocks);
+    if (result.rows[0]) await replaceInvoiceBlocks(client, invoiceId, blocks);
     await client.query('commit');
 
     return {

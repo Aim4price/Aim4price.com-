@@ -24,7 +24,10 @@ type FooterWorkspace = {
 
 const publicWorkspace: FooterWorkspace = {
   label: 'Explore',
-  links: [{ href: '/valuation', label: 'Get Estimate' }],
+  links: [
+    { href: '/valuation', label: 'Get Estimate' },
+    { href: '/drop-invoice', label: 'Drop an Invoice' },
+  ],
 };
 
 const ownerWorkspace: FooterWorkspace = {
