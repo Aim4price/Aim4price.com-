@@ -16,9 +16,10 @@ test('admin notification sending stays behind the existing admin session guard',
   assert.match(sendBranch, /sendAdminAccountNotification\(\{/);
   assert.match(sendBranch, /targetUserId: userId/);
   assert.match(sendBranch, /senderUserId: session\?\.user\?\.id \|\| ""/);
-  assert.match(sendBranch, /A notification message is required/);
-  assert.match(sendBranch, /MAX_ADMIN_NOTIFICATION_TITLE_LENGTH/);
-  assert.match(sendBranch, /MAX_ADMIN_NOTIFICATION_BODY_LENGTH/);
+  assert.match(sendBranch, /priority: notification\.priority/);
+  assert.match(route, /A notification message is required/);
+  assert.match(route, /MAX_ADMIN_NOTIFICATION_TITLE_LENGTH/);
+  assert.match(route, /MAX_ADMIN_NOTIFICATION_BODY_LENGTH/);
 });
 
 test('admin messages are durable, account-scoped and audit-attributed', async () => {
@@ -33,6 +34,34 @@ test('admin messages are durable, account-scoped and audit-attributed', async ()
   assert.match(service, /source: "admin_account_message"/);
   assert.match(service, /senderUserId/);
   assert.match(service, /targetUserId: target\.id/);
+  assert.match(service, /deliveryScope: "account"/);
+  assert.match(service, /priority \? "warning" : "info"/);
+  assert.match(service, /priority,/);
+});
+
+test('group messages select recipients on the server by saved account type', async () => {
+  const [route, service] = await Promise.all([
+    read('app/api/admin/users/route.ts'),
+    read('lib/admin-account-notifications.ts'),
+  ]);
+  const groupBranch = route.slice(
+    route.indexOf('if (action === "send_group_notification")'),
+    route.indexOf('const userId = typeof body.userId'),
+  );
+
+  assert.match(groupBranch, /isAdminNotificationAudience\(audience\)/);
+  assert.match(groupBranch, /sendAdminGroupNotification\(\{/);
+  assert.match(groupBranch, /priority: notification\.priority/);
+  assert.match(groupBranch, /sentCount: sent\.recipientCount/);
+  assert.match(service, /ADMIN_NOTIFICATION_AUDIENCES/);
+  assert.match(service, /left join public\.account_profiles ap on ap\.user_id = u\.id/);
+  assert.match(service, /u\.id <> \$1/);
+  assert.match(service, /\$2 = 'all'[\s\S]*?ap\.account_type[\s\S]*?= \$2/);
+  assert.match(service, /insert into public\.user_notifications[\s\S]*?from recipients recipient/);
+  assert.match(service, /'deliveryScope', 'account_group'/);
+  assert.match(service, /'audience', \$2/);
+  assert.match(service, /'targetUserId', recipient\.id/);
+  assert.match(service, /recipientCount: result\.rowCount \?\? 0/);
 });
 
 test('durable admin messages remain new until the recipient checks them', async () => {
@@ -50,6 +79,11 @@ test('durable admin messages remain new until the recipient checks them', async 
     inbox,
     /current && !readAtIso && !archivedAtIso[\s\S]*?: 'new'/,
   );
+  assert.match(inbox, /payload->>'priority' = 'true'/);
+  assert.match(
+    inbox,
+    /Number\(right\.priority === true\) - Number\(left\.priority === true\)/,
+  );
   assert.match(notifications, /\| 'admin_message'/);
   assert.match(header, /type HeaderNotificationCategory = 'admin_message'/);
 });
@@ -65,13 +99,39 @@ test('the account options modal has a validated notification composer', async ()
   assert.match(client, /id="admin-notification-composer"/);
   assert.match(client, /notificationTitle: title/);
   assert.match(client, /notificationBody: body/);
+  assert.match(client, /notificationPriority: draft\.priority === "priority"/);
+  assert.match(client, /NotificationPriorityPicker/);
   assert.match(client, /credentials: "include"/);
   assert.match(client, /maxLength=\{MAX_NOTIFICATION_TITLE_LENGTH\}/);
   assert.match(client, /maxLength=\{MAX_NOTIFICATION_BODY_LENGTH\}/);
   assert.match(client, /role="alert"/);
   assert.match(styles, /\.notificationComposer \{/);
   assert.match(styles, /\.notificationSendButton/);
+  assert.match(styles, /\.notificationPriorityUrgent/);
   assert.match(ownerClient, /\{ value: 'messages', label: 'Messages' \}/);
   assert.match(ownerClient, /item\.category === 'admin_message'/);
   assert.match(ownerClient, /return '\/owner-app\/notifications'/);
+  assert.match(
+    ownerClient,
+    /item\.state === 'needs_action' \|\| item\.priority \? styles\.notificationCardPriority/,
+  );
+});
+
+test('admin has a confirmed account-group composer with live recipient counts', async () => {
+  const [client, styles] = await Promise.all([
+    read('app/admin/admin-client.tsx'),
+    read('app/admin/page.module.css'),
+  ]);
+
+  assert.match(client, /Message account groups/);
+  assert.match(client, /NOTIFICATION_AUDIENCE_OPTIONS/);
+  assert.match(client, /Finance & accounting/);
+  assert.match(client, /notificationAudienceCounts/);
+  assert.match(client, /action: "send_group_notification"/);
+  assert.match(client, /notificationAudience: draft\.audience/);
+  assert.match(client, /Confirm the recipient group before sending/);
+  assert.match(client, /confirmed: event\.target\.checked/);
+  assert.match(styles, /\.groupNotificationModal/);
+  assert.match(styles, /\.notificationAudienceGrid/);
+  assert.match(styles, /\.groupNotificationConfirmation/);
 });
