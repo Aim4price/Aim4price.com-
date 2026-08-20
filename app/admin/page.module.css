@@ -11,7 +11,7 @@
   padding: 1.35rem clamp(1rem, 3vw, 4rem) 3rem;
   box-sizing: border-box;
   display: grid;
-  gap: 1rem;
+  gap: 0.8rem;
 }
 
 .topBar {
@@ -105,7 +105,7 @@
 
 .userSummary article {
   min-width: 0;
-  padding: 0.95rem 1rem;
+  padding: 0.72rem 0.85rem;
   border: 1px solid #dfe8e3;
   border-radius: 1rem;
   background: #ffffff;
@@ -176,13 +176,13 @@
 }
 
 .filterPanel {
-  padding: 0.95rem 1rem 1rem;
+  padding: 0.78rem 0.9rem 0.86rem;
   border: 1px solid #dfe8e3;
   border-radius: 1.05rem;
   background: #ffffff;
   box-shadow: 0 14px 34px rgba(18, 45, 37, 0.045);
   display: grid;
-  gap: 0.8rem;
+  gap: 0.58rem;
 }
 
 .filterHeading {
@@ -267,7 +267,7 @@
 
 .searchField input {
   width: 100%;
-  min-height: 2.9rem;
+  min-height: 2.65rem;
   padding: 0 1.05rem;
   border-radius: 999px;
   border: 1px solid #d8e3dd;
@@ -315,7 +315,7 @@
 
 .signupFilter select {
   width: 100%;
-  min-height: 2.9rem;
+  min-height: 2.65rem;
   padding: 0 1rem;
   border: 1px solid #d7e1dc;
   border-radius: 999px;
@@ -480,7 +480,7 @@
 
 .userTable th,
 .userTable td {
-  padding: 0.98rem 1rem;
+  padding: 0.78rem 1rem;
   border-bottom: 1px solid #e8eeea;
   text-align: left;
   vertical-align: middle;
@@ -882,7 +882,7 @@
 }
 
 .accountActionModal {
-  width: min(100%, 56rem);
+  width: min(100%, 62rem);
   max-height: min(92vh, 56rem);
   grid-template-rows: auto;
   overflow-y: auto;
@@ -920,6 +920,63 @@
   display: grid;
   grid-template-columns: minmax(0, 1.35fr) repeat(2, minmax(0, 1fr));
   gap: 0.65rem;
+}
+
+.accountStorageDetails {
+  padding: 0.78rem 0.9rem;
+  border: 1px solid #dfe8e3;
+  border-radius: 0.95rem;
+  background: #ffffff;
+}
+
+.accountStorageDetails > summary {
+  min-height: 1.75rem;
+  padding-right: 2rem;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  list-style: none;
+  cursor: pointer;
+}
+
+.accountStorageDetails > summary::-webkit-details-marker {
+  display: none;
+}
+
+.accountStorageDetails > summary::after {
+  content: "+";
+  position: absolute;
+  right: 0;
+  color: #176047;
+  font-size: 1.15rem;
+  font-weight: 850;
+}
+
+.accountStorageDetails[open] > summary::after {
+  content: "−";
+}
+
+.accountStorageDetails > summary span {
+  color: #60716a;
+  font-size: 0.72rem;
+  font-weight: 850;
+}
+
+.accountStorageDetails > summary strong {
+  color: #17362c;
+  font-size: 0.8rem;
+  font-weight: 900;
+  text-align: right;
+}
+
+.accountStorageDetails[open] > summary {
+  margin-bottom: 0.75rem;
+}
+
+.accountStorageDetails .accountStorageNote {
+  margin: 0.65rem 0 0;
 }
 
 .accountStorageOverview > div {
@@ -1034,8 +1091,18 @@
 
 .accountActionGrid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.65rem;
+}
+
+.accountPrimaryActions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+
+.accountPrimaryActions .accountActionButton {
+  min-height: 3rem;
 }
 
 .accountActionButton {
@@ -2181,8 +2248,19 @@
 
   .accountActionSummary,
   .accountActionGrid,
+  .accountPrimaryActions,
   .accountStorageOverview {
     grid-template-columns: 1fr;
+  }
+
+  .accountStorageDetails > summary {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.15rem;
+  }
+
+  .accountStorageDetails > summary strong {
+    text-align: left;
   }
 
   .accountActionDanger {

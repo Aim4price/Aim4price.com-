@@ -540,14 +540,18 @@ export default function CaptureQueueClient() {
     { key: "awaitingOwner", label: "Awaiting owner", value: counts.awaitingOwner, filter: "awaiting_owner" },
     { key: "completedToday", label: "Completed today", value: counts.completedToday, filter: "completed_today" },
   ] as const;
+  const hasActiveFilters =
+    search.trim().length > 0 ||
+    statusFilter !== "open" ||
+    typeFilter !== "all" ||
+    channelFilter !== "all";
 
   return (
     <>
-      <section className={styles.introCard}>
+      <section className={styles.queueUtility}>
         <div>
-          <p className={styles.eyebrow}>Human-verified capture</p>
-          <h2>Oldest and overdue documents are shown first</h2>
-          <span>Pending documents stay outside every Cost and Fuel Ledger until their final action is complete.</span>
+          <strong>Oldest and overdue documents appear first</strong>
+          <span>Nothing reaches a ledger until you complete its final action.</span>
         </div>
         <button type="button" className={styles.refreshButton} onClick={() => void loadQueue()} disabled={isLoading}>
           {isLoading ? "Refreshing…" : "Refresh queue"}
@@ -559,8 +563,9 @@ export default function CaptureQueueClient() {
           <button
             key={kpi.key}
             type="button"
-            className={`${styles.kpiCard} ${kpi.key === "overdue" && kpi.value ? styles.kpiOverdue : ""}`}
+            className={`${styles.kpiCard} ${statusFilter === kpi.filter ? styles.kpiSelected : ""} ${kpi.key === "overdue" && kpi.value ? styles.kpiOverdue : ""}`}
             onClick={() => setStatusFilter(kpi.filter)}
+            aria-pressed={statusFilter === kpi.filter}
           >
             <span>{kpi.label}</span>
             <strong>{kpi.value}</strong>
@@ -569,7 +574,7 @@ export default function CaptureQueueClient() {
       </section>
 
       {notice ? (
-        <div className={notice.tone === "success" ? styles.successNotice : styles.errorNotice} role="status">
+        <div className={notice.tone === "success" ? styles.successNotice : styles.errorNotice} role={notice.tone === "error" ? "alert" : "status"}>
           <span>{notice.message}</span>
           <button type="button" onClick={() => setNotice(null)} aria-label="Dismiss message">×</button>
         </div>
@@ -629,18 +634,20 @@ export default function CaptureQueueClient() {
               <option value="public_drop">Public Invoice Drop</option>
             </select>
           </label>
-          <button
-            type="button"
-            className={styles.clearButton}
-            onClick={() => {
-              setSearch("");
-              setStatusFilter("open");
-              setTypeFilter("all");
-              setChannelFilter("all");
-            }}
-          >
-            Clear filters
-          </button>
+          {hasActiveFilters ? (
+            <button
+              type="button"
+              className={styles.clearButton}
+              onClick={() => {
+                setSearch("");
+                setStatusFilter("open");
+                setTypeFilter("all");
+                setChannelFilter("all");
+              }}
+            >
+              Clear filters
+            </button>
+          ) : null}
         </div>
 
         <div className={styles.queueTableWrap}>
@@ -676,7 +683,7 @@ export default function CaptureQueueClient() {
                   </tr>
                 );
               }) : (
-                <tr><td colSpan={6} className={styles.emptyCell}>No capture requests match these filters.</td></tr>
+                <tr><td colSpan={6} className={styles.emptyCell}>{hasActiveFilters ? "No capture requests match these filters." : "All caught up — there are no documents waiting for capture."}</td></tr>
               )}
             </tbody>
           </table>

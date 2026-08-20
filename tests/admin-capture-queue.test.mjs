@@ -17,7 +17,7 @@ const [
   usersPage,
   dashboardPage,
   lifecyclePage,
-  assistancePage,
+  adminNavigation,
   captureStore,
 ] = await Promise.all([
   read("app/admin/capture-queue/page.tsx"),
@@ -32,7 +32,7 @@ const [
   read("app/admin/admin-client.tsx"),
   read("app/admin/dashboard/page.tsx"),
   read("app/admin/lifecycle-calculator/page.tsx"),
-  read("app/admin/assistance-network/page.tsx"),
+  read("components/AdminNavigation.tsx"),
   read("lib/capture-requests.ts"),
 ]);
 
@@ -49,10 +49,13 @@ test("Capture Queue page and every API route require Aim4price admin access", ()
 });
 
 test("all current admin navigation surfaces expose Capture Queue", () => {
-  for (const source of [page, usersPage, dashboardPage, lifecyclePage, assistancePage]) {
-    assert.match(source, /href="\/admin\/capture-queue"/);
-    assert.match(source, />\s*Capture Queue\s*</);
-  }
+  assert.match(adminNavigation, /href: "\/admin\/capture-queue"/);
+  assert.match(adminNavigation, /label: "Capture Queue"/);
+  assert.match(page, /<AdminNavigation active="capture-queue" \/>/);
+  assert.match(usersPage, /<AdminNavigation active="accounts" \/>/);
+  assert.match(dashboardPage, /<AdminNavigation active="dashboard" \/>/);
+  assert.match(lifecyclePage, /<AdminNavigation active="lifecycle" \/>/);
+  assert.doesNotMatch(adminNavigation, /assistance-network/);
 });
 
 test("queue prioritises deadline work and includes useful operational filters", () => {
@@ -65,7 +68,10 @@ test("queue prioritises deadline work and includes useful operational filters", 
   assert.match(client, /Reference, sender, customer or asset/);
   assert.match(client, /Public Invoice Drop/);
   assert.match(styles, /\.kpiGrid/);
+  assert.match(styles, /\.kpiSelected/);
   assert.match(styles, /\.queueTableWrap/);
+  assert.match(client, /aria-pressed=\{statusFilter === kpi\.filter\}/);
+  assert.match(client, /role=\{notice\.tone === "error" \? "alert" : "status"\}/);
 });
 
 test("the 24-hour admin SLA pauses once a verified document is waiting on its owner", () => {

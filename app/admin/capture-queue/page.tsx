@@ -1,4 +1,4 @@
-import Link from "next/link";
+import AdminNavigation from "../../../components/AdminNavigation";
 import { requireAdminPageAccess } from "../../../lib/account-access";
 import CaptureQueueClient from "./capture-queue-client";
 import styles from "./page.module.css";
@@ -19,19 +19,7 @@ export default async function AdminCaptureQueuePage() {
             <span>Verify submitted invoices and fuel slips before they reach a ledger.</span>
           </div>
 
-          <nav className={styles.toolbar} aria-label="Admin navigation">
-            <Link href="/admin" className={styles.adminButton}>Users</Link>
-            <Link href="/admin/dashboard" className={styles.adminButton}>Dashboard</Link>
-            <Link
-              href="/admin/capture-queue"
-              className={`${styles.adminButton} ${styles.adminButtonActive}`}
-              aria-current="page"
-            >
-              Capture Queue
-            </Link>
-            <Link href="/admin/lifecycle-calculator" className={styles.adminButton}>Lifecycle Model</Link>
-            <Link href="/admin/assistance-network" className={styles.adminButton}>Assistance Network</Link>
-          </nav>
+          <AdminNavigation active="capture-queue" />
         </header>
 
         <CaptureQueueClient />
