@@ -132,6 +132,7 @@ test('Documents activates the full vault with the Asset Register visual system',
   assert.match(client, /Filters/);
   assert.match(client, /Upload document/);
   assert.match(styles, /\.shell\s*\{[\s\S]*?1320px/);
+  assert.match(styles, /\.vaultCanvas\s*\{[\s\S]*?padding:\s*clamp\(1\.15rem, 1\.9vw, 1\.7rem\)/);
   assert.match(styles, /\.hero h1\s*\{[\s\S]*?font-size:\s*clamp\(2\.35rem, 4\.15vw, 3\.55rem\)/);
   assert.match(styles, /\.hero h1\s*\{[\s\S]*?font-weight:\s*900/);
   assert.match(styles, /\.topActions\s*\{[\s\S]*?repeat\(4, minmax\(0, 1fr\)\)/);
@@ -140,7 +141,13 @@ test('Documents activates the full vault with the Asset Register visual system',
   assert.match(styles, /--header-action-light-green-bg:\s*#ecf9f1/);
   assert.match(styles, /\.filtersButton\s*\{[\s\S]*?--header-action-light-green-bg/);
   assert.match(styles, /\.primaryHeaderButton\s*\{[\s\S]*?--header-action-dark-green-top/);
-  assert.match(styles, /\.summaryGrid\s*\{[\s\S]*?repeat\(3, minmax\(0, 1fr\)\)/);
+  assert.match(client, /summaryViewportRef/);
+  assert.match(client, /scrollSummary\(-1\)/);
+  assert.match(client, /scrollSummary\(1\)/);
+  assert.match(styles, /\.summaryViewport\s*\{[\s\S]*?scroll-snap-type:\s*x mandatory/);
+  assert.match(styles, /flex:\s*0 0 calc\(\(100% - \(var\(--summary-gap\) \* 2\)\) \/ 3\)/);
+  assert.match(styles, /@media \(max-width: 1180px\)[\s\S]*?flex-basis:\s*calc\(\(100% - var\(--summary-gap\)\) \/ 2\)/);
+  assert.match(styles, /@media \(max-width: 760px\)[\s\S]*?flex-basis:\s*100%/);
   assert.match(styles, /\.documentCard\s*\{[\s\S]*?rgba\(198, 216, 223, 0\.98\)/);
   assert.doesNotMatch(styles, /comingSoon/i);
   assert.match(styles, /@media \(prefers-reduced-motion: reduce\)/);
@@ -149,4 +156,19 @@ test('Documents activates the full vault with the Asset Register visual system',
 test('internal server errors do not leak implementation details to vault clients', () => {
   assert.match(collectionRoute, /\{ ok: false, error: fallback \}/);
   assert.doesNotMatch(collectionRoute, /!message\.includes\('DOCUMENT_'\)/);
+});
+
+test('live vault interactions keep errors, focus and view mutations safe', () => {
+  assert.match(client, /setModalNotice\(\{ tone: 'error'/);
+  assert.match(client, /className=\{styles\.modalNotice\} role="alert"/);
+  assert.match(client, /pageContent\?\.setAttribute\('inert', ''\)/);
+  assert.match(client, /event\.key !== 'Tab'/);
+  assert.match(client, /returnFocusRef\.current\?\.focus\(\)/);
+  assert.match(client, /disabled=\{busy \|\| loading\}/);
+  assert.match(client, /disabled=\{loading \|\| busy\}/);
+  assert.match(client, /className=\{styles\.fileName\}/);
+  assert.match(styles, /\.fileMeta \.fileName\s*\{[\s\S]*?text-overflow:\s*ellipsis/);
+  assert.match(styles, /\.filePicker:focus-within/);
+  assert.match(styles, /\.assetOptions label:focus-within/);
+  assert.match(client, /showSummary && !loadFailed/);
 });
