@@ -23,6 +23,7 @@ export default async function AssistanceNetworkPage() {
           <nav className={styles.toolbar} aria-label="Admin navigation">
             <Link href="/admin" className={styles.adminButton}>Users</Link>
             <Link href="/admin/dashboard" className={styles.adminButton}>Dashboard</Link>
+            <Link href="/admin/capture-queue" className={styles.adminButton}>Capture Queue</Link>
             <Link href="/admin/lifecycle-calculator" className={styles.adminButton}>Lifecycle Model</Link>
             <Link href="/admin/assistance-network" className={`${styles.adminButton} ${styles.adminButtonActive}`} aria-current="page">
               Assistance Network

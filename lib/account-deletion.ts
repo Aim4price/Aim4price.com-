@@ -11,6 +11,7 @@ const USER_ID_TABLES = [
   'account_documents',
   'asset_register_uploads',
   'fuel_late_entry_evidence',
+  'fuel_slips',
   'fuel_storage_events',
   'fuel_storage_units',
   'asset_register_items',
@@ -43,6 +44,18 @@ const PARTNER_ACCESS_TABLES = [
 const USER_COMMUNICATION_TABLES = [
   'account_contact_requests',
   'account_user_messages',
+] as const;
+
+const ASSISTED_CAPTURE_TABLES = [
+  'document_capture_requests',
+  'document_capture_files',
+  'document_capture_events',
+  'capture_quarantine_object_purge_queue',
+  'capture_asset_upload_cleanup_queue',
+  'asset_invoice_drop_codes',
+  'asset_invoice_documents',
+  'asset_invoices',
+  'fuel_slips',
 ] as const;
 
 async function getExistingTableSet(
@@ -115,7 +128,140 @@ async function deleteUserWorkspaceDataInTransaction(
     ...USER_ID_TABLES,
     ...PARTNER_ACCESS_TABLES,
     ...USER_COMMUNICATION_TABLES,
+    ...ASSISTED_CAPTURE_TABLES,
   ]);
+
+  // Capture requests point both to and from canonical ledger records. Unlink
+  // their retry-safety provenance, then remove the owner's private workflow
+  // history before asset/invoice cascades run later in this transaction.
+  if (tableSet.has('document_capture_requests')) {
+    if (tableSet.has('asset_invoice_documents')) {
+      await queryable.query(
+        `update asset_invoice_documents document
+            set capture_request_id = null
+          where document.capture_request_id in (
+            select id from document_capture_requests where owner_user_id = $1
+          )`,
+        [userId],
+      );
+    }
+    if (tableSet.has('asset_invoices')) {
+      await queryable.query(
+        `update asset_invoices invoice
+            set capture_request_id = null
+          where invoice.capture_request_id in (
+            select id from document_capture_requests where owner_user_id = $1
+          )`,
+        [userId],
+      );
+    }
+    if (tableSet.has('fuel_slips')) {
+      await queryable.query(
+        `update fuel_slips slip
+            set capture_request_id = null
+          where slip.capture_request_id in (
+            select id from document_capture_requests where owner_user_id = $1
+          )`,
+        [userId],
+      );
+    }
+    if (tableSet.has('document_capture_events')) {
+      await queryable.query(
+        `delete from document_capture_events event
+          where event.capture_request_id in (
+            select id from document_capture_requests where owner_user_id = $1
+          )`,
+        [userId],
+      );
+    }
+    if (tableSet.has('document_capture_files')) {
+      if (tableSet.has('capture_quarantine_object_purge_queue')) {
+        // Preserve the exact private object key before its only owner-scoped
+        // capture metadata is removed. The queue deliberately has no account
+        // foreign key, so this cleanup intent survives account deletion.
+        await queryable.query(
+          `insert into capture_quarantine_object_purge_queue as queued (
+             storage_key,
+             queued_at,
+             purge_after,
+             reason
+           )
+           select file.storage_key, now(), now(), 'account_deletion'
+           from document_capture_files file
+           join document_capture_requests request
+             on request.id = file.capture_request_id
+           where request.owner_user_id = $1
+             and file.storage_key ~ '^v1/capture-quarantine/[0-9a-f]{2}/20[0-9]{2}/(0[1-9]|1[0-2])/[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$'
+           on conflict (storage_key) do update
+           set queued_at = least(queued.queued_at, excluded.queued_at),
+               purge_after = least(queued.purge_after, excluded.purge_after),
+               reason = excluded.reason,
+               attempt_count = 0,
+               last_error = null,
+               cancelled_at = null,
+               purged_at = null`,
+          [userId],
+        );
+      }
+      await queryable.query(
+        `delete from document_capture_files file
+          where file.capture_request_id in (
+            select id from document_capture_requests where owner_user_id = $1
+          )`,
+        [userId],
+      );
+    }
+    await queryable.query('delete from document_capture_requests where owner_user_id = $1', [userId]);
+
+    // If the deleted account contributed to another owner's request, retain
+    // the financial workflow but remove that account's internal identifiers.
+    await queryable.query(
+      `update document_capture_requests
+          set sender_name = case when submitted_by_user_id = $1 then 'Deleted contributor' else sender_name end,
+              sender_business_name = case when submitted_by_user_id = $1 then null else sender_business_name end,
+              sender_email = case when submitted_by_user_id = $1 then null else sender_email end,
+              sender_phone = case when submitted_by_user_id = $1 then null else sender_phone end,
+              submitted_by_user_id = case when submitted_by_user_id = $1 then null else submitted_by_user_id end,
+              assigned_admin_display_name = case when assigned_admin_user_id = $1 then null else assigned_admin_display_name end,
+              claimed_at = case when assigned_admin_user_id = $1 then null else claimed_at end,
+              assigned_admin_user_id = case when assigned_admin_user_id = $1 then null else assigned_admin_user_id end
+        where submitted_by_user_id = $1 or assigned_admin_user_id = $1`,
+      [userId],
+    );
+  }
+
+  if (tableSet.has('document_capture_events')) {
+    await queryable.query(
+      `update document_capture_events
+          set actor_user_id = null,
+              actor_display_name = 'Deleted account'
+        where actor_user_id = $1`,
+      [userId],
+    );
+  }
+  if (tableSet.has('document_capture_files')) {
+    await queryable.query(
+      `update document_capture_files
+          set created_by_user_id = case when created_by_user_id = $1 then null else created_by_user_id end,
+              security_checked_by_admin_user_id = case
+                when security_checked_by_admin_user_id = $1 then 'deleted-account'
+                else security_checked_by_admin_user_id
+              end
+        where created_by_user_id = $1 or security_checked_by_admin_user_id = $1`,
+      [userId],
+    );
+  }
+  if (tableSet.has('asset_invoice_drop_codes')) {
+    await queryable.query('delete from asset_invoice_drop_codes where owner_user_id = $1', [userId]);
+    await queryable.query(
+      `update asset_invoice_drop_codes
+          set created_by_user_id = case when created_by_user_id = $1 then null else created_by_user_id end,
+              created_by_display_name = case when created_by_user_id = $1 then 'Deleted account' else created_by_display_name end,
+              revoked_by_user_id = case when revoked_by_user_id = $1 then null else revoked_by_user_id end
+        where created_by_user_id = $1 or revoked_by_user_id = $1`,
+      [userId],
+    );
+  }
 
   if (tableSet.has('asset_accountant_documents')) {
     await queryable.query('delete from asset_accountant_documents where owner_user_id = $1 or accountant_user_id = $1', [userId]);
@@ -200,6 +346,16 @@ async function deleteUserWorkspaceDataInTransaction(
       || tableName === 'asset_discovery_enquiries'
     ) continue;
     await deleteByColumn(queryable, tableSet, tableName, 'user_id', userId);
+  }
+
+  // The upload catalogs have now been deleted and their existing migration
+  // 80/81 triggers hold the durable object purge intents. Remove the temporary
+  // attachment guard so it does not retain the deleted account identifier.
+  if (tableSet.has('capture_asset_upload_cleanup_queue')) {
+    await queryable.query(
+      'delete from capture_asset_upload_cleanup_queue where owner_user_id = $1',
+      [userId],
+    );
   }
 }
 

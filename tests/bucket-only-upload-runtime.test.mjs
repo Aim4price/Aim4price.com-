@@ -114,7 +114,7 @@ test('Bucket-only reads support the Document Vault limit without widening Asset 
   assert.match(objectStorageSource, /MAX_BUCKET_ONLY_OBJECT_READ_BYTES = 25 \* 1024 \* 1024/);
 });
 
-test('all server-side byte consumers use the unified resolver', () => {
+test('all active server-side byte consumers use the unified resolver and retired readers stay retired', () => {
   for (const consumer of [invoiceSource, discoverySource, reportLogoSource, marketplaceImageSource]) {
     assert.match(consumer, /resolveAssetRegisterUploadBytes/);
     assert.doesNotMatch(consumer, /getLegacyAssetRegisterUploadResponse/);
@@ -122,11 +122,9 @@ test('all server-side byte consumers use the unified resolver', () => {
 
   assert.match(invoiceSource, /INVOICE_DOCUMENT_UPLOAD_UNAVAILABLE/);
   for (const extractionRoute of [ownerInvoiceExtractionRouteSource, dealerInvoiceExtractionRouteSource]) {
-    assert.match(extractionRoute, /error\.message === 'INVOICE_DOCUMENT_UPLOAD_UNAVAILABLE'/);
-    assert.match(extractionRoute, /status: 503/);
+    assert.match(extractionRoute, /status: 410/);
     assert.match(extractionRoute, /'Cache-Control': 'private, no-store'/);
-    assert.match(extractionRoute, /'Retry-After': '60'/);
-    assert.match(extractionRoute, /status: 500/);
+    assert.doesNotMatch(extractionRoute, /extractInvoiceFromUpload/);
   }
   assert.match(discoverySource, /bkt-\[0-9a-f\]\{8\}/);
   assert.match(discoverySource, /Discovery photo temporarily unavailable/);

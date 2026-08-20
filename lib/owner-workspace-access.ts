@@ -28,6 +28,7 @@ export type OwnerWorkspaceContext = {
 
 type ResolveOptions = {
   ledger?: 'fuel' | 'cost';
+  requireWrite?: boolean;
 };
 
 type OwnerWorkspaceResolution =
@@ -76,6 +77,7 @@ export async function resolveOwnerWorkspaceContext(
       accountantUserId: session.user.id,
       shareId: accountantShareId,
       ledger: options.ledger,
+      requireWrite: options.requireWrite,
     });
     const requestedRegisterId = (() => {
       try {

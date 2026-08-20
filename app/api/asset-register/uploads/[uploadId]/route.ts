@@ -6,6 +6,8 @@ import {
   isBucketOnlyAssetRegisterUploadId,
   resolveBucketOnlyAssetRegisterDownload,
 } from '../../../../../lib/asset-register-uploads';
+import { isProtectedCaptureUpload } from '../../../../../lib/capture-requests';
+import { isProtectedInvoiceUpload } from '../../../../../lib/my-invoices';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -23,11 +25,23 @@ export async function GET(_request: Request, context: RouteContext) {
     return new NextResponse('Not found', { status: 404 });
   }
 
-  // Asset photos and historical attachments use this shared route. Vault
-  // uploads are stricter: even a leaked upload id must not bypass the
-  // owner-scoped /api/documents/[documentId]/download endpoint.
+  // Vault uploads must only be served through the owner-scoped Documents
+  // endpoint, even when somebody learns the shared upload id.
   const documentOwnerUserId = await getAccountDocumentUploadOwner(uploadId);
   if (documentOwnerUserId) {
+    return new NextResponse('Not found', {
+      status: 404,
+      headers: { 'Cache-Control': 'private, no-store' },
+    });
+  }
+
+  // Financial capture files may only be downloaded through an actor-authorised
+  // invoice or capture-file route, never through the shared upload catalogue.
+  const [protectedInvoice, protectedCapture] = await Promise.all([
+    isProtectedInvoiceUpload(uploadId),
+    isProtectedCaptureUpload(uploadId),
+  ]);
+  if (protectedInvoice || protectedCapture) {
     return new NextResponse('Not found', {
       status: 404,
       headers: { 'Cache-Control': 'private, no-store' },

@@ -25,6 +25,7 @@ import {
   listPendingOwnerDealerCostDeletions,
   listPendingOwnerDealerCosts,
 } from './dealer-costs';
+import { listCaptureRequests } from './capture-requests';
 
 export type HeaderNotificationCategory =
   | 'partner_note'
@@ -34,6 +35,7 @@ export type HeaderNotificationCategory =
   | 'maintenance'
   | 'dealer_schedule'
   | 'dealer_cost'
+  | 'capture'
   | 'dealer_correction'
   | 'asset_discovery';
 
@@ -54,6 +56,7 @@ export type HeaderNotificationItem = {
   dealerMaintenanceScheduleProposalId?: string;
   dealerCostInvoiceId?: string;
   dealerCostAction?: 'store' | 'delete';
+  captureRequestId?: string;
   priority?: boolean;
 };
 
@@ -510,6 +513,36 @@ async function listOwnerDealerCostNotifications(userId: string): Promise<HeaderN
   }
 }
 
+async function listOwnerCaptureNotifications(userId: string): Promise<HeaderNotificationItem[]> {
+  try {
+    const requests = await listCaptureRequests({
+      ownerUserId: userId,
+      requestTypes: ['invoice'],
+      statuses: ['awaiting_owner'],
+      limit: 50,
+    });
+
+    return requests.map((request) => {
+      const reference = request.assetReference || request.publicReference;
+      return {
+        id: `capture-owner:${request.id}`,
+        category: 'capture',
+        tone: 'warning',
+        title: 'Captured invoice ready to review',
+        body: `Aim4price captured ${reference || 'an invoice'} and needs your approval before it is saved to your Cost Ledger.`,
+        href: `/my-invoices?captureRequestId=${encodeURIComponent(request.id)}`,
+        createdAtIso: isoFallback(request.updatedAtIso || request.submittedAtIso),
+        assetId: request.assetId || undefined,
+        captureRequestId: request.id,
+        priority: true,
+      } satisfies HeaderNotificationItem;
+    });
+  } catch (error) {
+    console.error('Failed to load assisted capture notifications', error);
+    return [];
+  }
+}
+
 async function listOwnerRecurringMaintenanceNotifications(userId: string): Promise<HeaderNotificationItem[]> {
   try {
     const records = await listAssetMaintenanceRecords(userId, { status: 'upcoming' });
@@ -825,6 +858,7 @@ export async function listComputedHeaderNotifications(input: ListHeaderNotificat
         listOwnerDealerAssetCorrectionNotifications(input.userId),
         listOwnerDealerMaintenanceScheduleNotifications(input.userId),
         listOwnerDealerCostNotifications(input.userId),
+        listOwnerCaptureNotifications(input.userId),
         listOpenPartnerNoteNotifications(input.userId),
         listOwnerLeadNotifications(input.userId),
         listOwnerAssetDiscoveryNotifications(input.userId),

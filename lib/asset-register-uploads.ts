@@ -1059,27 +1059,111 @@ export async function deleteUnreferencedAssetRegisterUploads(input: {
     return;
   }
 
-  await ensureAssetRegisterUploadsTable();
+  const legacyUploadIds = uploadIds.filter((uploadId) => !BUCKET_ONLY_UPLOAD_ID_PATTERN.test(uploadId));
+  const bucketOnlyUploadIds = uploadIds.filter((uploadId) => BUCKET_ONLY_UPLOAD_ID_PATTERN.test(uploadId));
+  const captureCatalog = await getDb().query<{ has_capture_files: boolean }>(`
+    select to_regclass('public.document_capture_files') is not null as has_capture_files
+  `);
+  const captureReferenceGuard = captureCatalog.rows[0]?.has_capture_files
+    ? `and not exists (
+        select 1
+        from public.document_capture_files capture_file
+        where capture_file.promoted_upload_id = upload.id::text
+      )`
+    : '';
 
-  await getDb().query(
-    `
-      delete from public.asset_register_uploads upload
-      where upload.user_id = $1
-        and upload.id::text = any($2::text[])
-        and coalesce(upload.storage_state, 'postgres') = 'postgres'
-        and not exists (
-          select 1
-          from public.asset_register_items item
-          where item.user_id = $1
-            and ($3::text is null or item.id::text <> $3::text)
-            and (
-              coalesce(item.photos::text, '') like '%' || $4::text || upload.id::text || '%'
-              or coalesce(item.documents::text, '') like '%' || $4::text || upload.id::text || '%'
+  if (legacyUploadIds.length) {
+    await ensureAssetRegisterUploadsTable();
+
+    const mirroredCaptureCandidate = await getDb().query<{ exists: boolean }>(
+      `select exists (
+         select 1
+         from public.asset_register_uploads upload
+         where upload.user_id = $1
+           and upload.id::text = any($2::text[])
+           and upload.upload_category = any($3::text[])
+           and coalesce(upload.storage_state, 'postgres') <> 'postgres'
+       ) as exists`,
+      [
+        input.userId,
+        legacyUploadIds,
+        [
+          'assisted-invoice-capture',
+          'assisted-fuel-slip-capture',
+          'dealer-assisted-invoice-capture',
+        ],
+      ],
+    );
+
+    // A verified/copying capture upload may have a private Bucket twin. Only
+    // widen cleanup beyond PostgreSQL-only rows after migration 80's durable
+    // exact-key purge queue and delete trigger have been proven ready.
+    if (mirroredCaptureCandidate.rows[0]?.exists) {
+      await assertObjectStorageSchemaReady();
+    }
+
+    await getDb().query(
+      `
+        delete from public.asset_register_uploads upload
+        where upload.user_id = $1
+          and upload.id::text = any($2::text[])
+          and (
+            coalesce(upload.storage_state, 'postgres') = 'postgres'
+            or (
+              upload.upload_category = any($5::text[])
+              and upload.storage_state in ('copying', 'dual_verified', 'quarantined')
             )
-        )
-    `,
-    [input.userId, uploadIds, input.excludeAssetId ?? null, ASSET_REGISTER_UPLOAD_ROUTE_PREFIX],
-  );
+          )
+          and not exists (
+            select 1
+            from public.asset_register_items item
+            where item.user_id = $1
+              and ($3::text is null or item.id::text <> $3::text)
+              and (
+                coalesce(item.photos::text, '') like '%' || $4::text || upload.id::text || '%'
+                or coalesce(item.documents::text, '') like '%' || $4::text || upload.id::text || '%'
+              )
+          )
+          ${captureReferenceGuard}
+      `,
+      [
+        input.userId,
+        legacyUploadIds,
+        input.excludeAssetId ?? null,
+        ASSET_REGISTER_UPLOAD_ROUTE_PREFIX,
+        [
+          'assisted-invoice-capture',
+          'assisted-fuel-slip-capture',
+          'dealer-assisted-invoice-capture',
+        ],
+      ],
+    );
+  }
+
+  if (bucketOnlyUploadIds.length) {
+    // Deleting the catalog row invokes migration 81's guarded trigger. The
+    // object itself remains recoverable until the delayed purge worker runs.
+    await assertBucketOnlyCatalogReady();
+    await getDb().query(
+      `
+        delete from public.asset_register_bucket_uploads upload
+        where upload.user_id = $1
+          and upload.id = any($2::text[])
+          and not exists (
+            select 1
+            from public.asset_register_items item
+            where item.user_id = $1
+              and ($3::text is null or item.id::text <> $3::text)
+              and (
+                coalesce(item.photos::text, '') like '%' || $4::text || upload.id || '%'
+                or coalesce(item.documents::text, '') like '%' || $4::text || upload.id || '%'
+              )
+          )
+          ${captureReferenceGuard}
+      `,
+      [input.userId, bucketOnlyUploadIds, input.excludeAssetId ?? null, ASSET_REGISTER_UPLOAD_ROUTE_PREFIX],
+    );
+  }
 }
 
 export async function resolveBucketOnlyAssetRegisterDownload(

@@ -75,7 +75,8 @@ function isActionRequired(item: HeaderNotificationItem): boolean {
     item.assetDiscoveryEnquiryId
     || item.dealerAssetCorrectionId
     || item.dealerMaintenanceScheduleProposalId
-    || item.dealerCostInvoiceId,
+    || item.dealerCostInvoiceId
+    || item.captureRequestId,
   );
 }
 
@@ -88,6 +89,7 @@ function payloadFor(item: HeaderNotificationItem): Record<string, unknown> {
     dealerMaintenanceScheduleProposalId: item.dealerMaintenanceScheduleProposalId,
     dealerCostInvoiceId: item.dealerCostInvoiceId,
     dealerCostAction: item.dealerCostAction,
+    captureRequestId: item.captureRequestId,
     priority: Boolean(item.priority),
   };
 }
@@ -212,6 +214,34 @@ async function syncNotificationSnapshots(
   );
 }
 
+async function resolveStaleCaptureSnapshots(
+  stateKey: string,
+  ownerUserId: string,
+): Promise<void> {
+  await getDb().query(
+    `
+      update public.user_notifications notification
+      set
+        read_at = coalesce(read_at, now()),
+        resolved_at = coalesce(resolved_at, now()),
+        updated_at = now()
+      where notification.user_id = $1
+        and notification.category = 'capture'
+        and notification.action_required = true
+        and notification.resolved_at is null
+        and not exists (
+          select 1
+          from public.document_capture_requests request
+          where request.id::text = notification.payload->>'captureRequestId'
+            and request.owner_user_id = $2
+            and request.request_type = 'invoice'
+            and request.status = 'awaiting_owner'
+        )
+    `,
+    [stateKey, ownerUserId],
+  );
+}
+
 function mapInboxItem(row: NotificationInboxRow, currentKeys: Set<string>): NotificationInboxItem {
   const payload = asRecord(row.payload);
   const readAtIso = iso(row.read_at);
@@ -242,6 +272,7 @@ function mapInboxItem(row: NotificationInboxRow, currentKeys: Set<string>): Noti
     dealerMaintenanceScheduleProposalId: asOptionalText(payload.dealerMaintenanceScheduleProposalId),
     dealerCostInvoiceId: asOptionalText(payload.dealerCostInvoiceId),
     dealerCostAction: asOptionalText(payload.dealerCostAction) as NotificationInboxItem['dealerCostAction'],
+    captureRequestId: asOptionalText(payload.captureRequestId),
     priority: payload.priority === true,
     state,
     actionRequired: row.action_required,
@@ -264,6 +295,7 @@ export async function listNotificationInbox(
     accountType: input.accountType,
   });
   await syncNotificationSnapshots(stateKey, currentNotifications);
+  await resolveStaleCaptureSnapshots(stateKey, input.userId);
 
   const result = await getDb().query<NotificationInboxRow>(
     `

@@ -26,6 +26,9 @@ export default async function LifecycleCalculatorPage() {
             <Link href="/admin/dashboard" className={styles.adminButton}>
               Dashboard
             </Link>
+            <Link href="/admin/capture-queue" className={styles.adminButton}>
+              Capture Queue
+            </Link>
             <Link
               href="/admin/lifecycle-calculator"
               className={`${styles.adminButton} ${styles.adminButtonActive}`}

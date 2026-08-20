@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent, type SVGProps } from 'react';
 import AppHeader from '../../components/AppHeader';
+import CaptureRequestDecisionModal from '../../components/CaptureRequestDecisionModal';
+import CaptureRequestStatusList, { type CaptureRequestStatusItem } from '../../components/CaptureRequestStatusList';
 import { WorkspaceTitlePanel } from '../../components/WorkspacePrimitives';
 import styles from './page.module.css';
 
@@ -128,6 +130,26 @@ type MyInvoicesClientProps = {
 type UploadResponse = {
   ok: boolean;
   document?: InvoiceDocument;
+  error?: string;
+};
+
+type CaptureRequestResponse = {
+  ok: boolean;
+  request?: CaptureRequestStatusItem;
+  requests?: CaptureRequestStatusItem[];
+  error?: string;
+};
+
+type InvoiceDropCodeRecord = {
+  id: string;
+  assetId: string;
+  lastFour: string;
+  createdAtIso: string;
+};
+
+type InvoiceDropCodeResponse = {
+  ok: boolean;
+  dropCode?: (InvoiceDropCodeRecord & { code?: string }) | null;
   error?: string;
 };
 
@@ -764,7 +786,7 @@ function buildInvoiceAssetMeta(invoice: InvoiceRecord): string {
 
 function sourceLabel(source: InvoiceSource): string {
   if (source === 'fuel_slip') return 'Fuel Slip';
-  return source === 'automatic' ? 'Automatic' : 'Manual';
+  return source === 'automatic' ? 'Aim4price captured' : 'Manual';
 }
 
 function ownerStorageLabel(status: OwnerStorageStatus): string {
@@ -777,7 +799,7 @@ function ownerStorageLabel(status: OwnerStorageStatus): string {
 
 function captureMethodLabel(source: InvoiceSource): string {
   if (source === 'fuel_slip') return 'Fuel Slip';
-  return source === 'automatic' ? 'Automatic capture' : 'Manual entry';
+  return source === 'automatic' ? 'Aim4price verified capture' : 'Manual entry';
 }
 
 function buildEmptyDraft(source: InvoiceSource, defaultSupplierName = ''): InvoiceDraft {
@@ -986,13 +1008,26 @@ export default function MyInvoicesClient({
   const apiRoot = dealerMode
       ? '/api/dealer/cost'
       : '/api/my-invoices';
+  const captureApiRoot = dealerMode ? '/api/dealer/capture-requests' : '/api/capture-requests';
   const accountScopedUrl = (url: string) => withAccountantShare(url, accountantShareId, accountantRegisterId);
   const shouldShowAppHeader = showAppHeader ?? !dealerMode;
+  const canManageInvoiceDropCodes = !dealerMode && !accountantShareId && !accountantRegisterId;
   const [assets, setAssets] = useState<AssetOption[]>([]);
   const [invoices, setInvoices] = useState<InvoiceRecord[]>([]);
   const [availableYears, setAvailableYears] = useState<number[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [notice, setNotice] = useState<Notice | null>(null);
+  const [captureRequests, setCaptureRequests] = useState<CaptureRequestStatusItem[]>([]);
+  const [captureReviewRequestId, setCaptureReviewRequestId] = useState<string | null>(null);
+  const [invoiceDropCodeOpen, setInvoiceDropCodeOpen] = useState(false);
+  const [invoiceDropAssetId, setInvoiceDropAssetId] = useState('');
+  const [invoiceDropCode, setInvoiceDropCode] = useState<InvoiceDropCodeRecord | null>(null);
+  const [newInvoiceDropCode, setNewInvoiceDropCode] = useState('');
+  const [invoiceDropPublicUrl, setInvoiceDropPublicUrl] = useState('/drop-invoice');
+  const [invoiceDropCodeLoading, setInvoiceDropCodeLoading] = useState(false);
+  const [invoiceDropCodeSaving, setInvoiceDropCodeSaving] = useState(false);
+  const [invoiceDropCodeError, setInvoiceDropCodeError] = useState('');
+  const [invoiceDropCodeMessage, setInvoiceDropCodeMessage] = useState('');
   const [flow, setFlow] = useState<FlowMode>(null);
   const [selectedAssetId, setSelectedAssetId] = useState('');
   const [pickerSearch, setPickerSearch] = useState('');
@@ -1072,6 +1107,68 @@ export default function MyInvoicesClient({
   }, [activeFilters.ownerId, activeFilters.assetId, activeFilters.year, activeFilters.month]);
 
   useEffect(() => {
+    let cancelled = false;
+
+    async function loadCaptureRequests() {
+      const requests = await fetchCaptureRequests();
+      if (!cancelled && requests) setCaptureRequests(requests);
+    }
+
+    void loadCaptureRequests();
+    return () => { cancelled = true; };
+  }, [accountantRegisterId, accountantShareId, captureApiRoot]);
+
+  useEffect(() => {
+    if (!canManageInvoiceDropCodes) return;
+    const requestId = new URLSearchParams(window.location.search).get('captureRequestId')?.trim();
+    if (requestId) setCaptureReviewRequestId(requestId);
+  }, [canManageInvoiceDropCodes]);
+
+  useEffect(() => {
+    setInvoiceDropPublicUrl(`${window.location.origin}/drop-invoice`);
+  }, []);
+
+  useEffect(() => {
+    if (!canManageInvoiceDropCodes || !invoiceDropCodeOpen || !invoiceDropAssetId) return undefined;
+    let cancelled = false;
+
+    setInvoiceDropCodeLoading(true);
+    setInvoiceDropCodeError('');
+    setInvoiceDropCodeMessage('');
+    setNewInvoiceDropCode('');
+    setInvoiceDropCode(null);
+
+    async function loadInvoiceDropCode() {
+      try {
+        const response = await fetch(`/api/invoice-drop-codes/${encodeURIComponent(invoiceDropAssetId)}`, {
+          credentials: 'include',
+          cache: 'no-store',
+        });
+        const data = (await response.json()) as InvoiceDropCodeResponse;
+        if (!response.ok || !data.ok) throw new Error(data.error || 'The Invoice Drop code could not be loaded.');
+        if (!cancelled) {
+          const active = data.dropCode;
+          setInvoiceDropCode(active ? {
+            id: active.id,
+            assetId: active.assetId,
+            lastFour: active.lastFour,
+            createdAtIso: active.createdAtIso,
+          } : null);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setInvoiceDropCodeError(error instanceof Error ? error.message : 'The Invoice Drop code could not be loaded.');
+        }
+      } finally {
+        if (!cancelled) setInvoiceDropCodeLoading(false);
+      }
+    }
+
+    void loadInvoiceDropCode();
+    return () => { cancelled = true; };
+  }, [canManageInvoiceDropCodes, invoiceDropAssetId, invoiceDropCodeOpen]);
+
+  useEffect(() => {
     if (initialLaunchHandled || isLoading) return;
     setInitialLaunchHandled(true);
 
@@ -1089,6 +1186,11 @@ export default function MyInvoicesClient({
   const selectedAsset = useMemo(
     () => assets.find((asset) => asset.id === selectedAssetId) ?? null,
     [assets, selectedAssetId],
+  );
+
+  const invoiceDropAsset = useMemo(
+    () => assets.find((asset) => asset.id === invoiceDropAssetId) ?? null,
+    [assets, invoiceDropAssetId],
   );
 
   const filteredAssets = useMemo(() => {
@@ -1208,6 +1310,7 @@ export default function MyInvoicesClient({
     || flow === 'upload'
     || formOpen
     || recurringOpen
+    || invoiceDropCodeOpen
     || filterOpen
     || downloadOpen
     || accountingSettingsOpen
@@ -1359,6 +1462,129 @@ export default function MyInvoicesClient({
     setRecurringAssetPickerOpen(false);
     setRecurringAssetSearch('');
     setRecurringError('');
+  }
+
+  function openInvoiceDropCodeManager() {
+    const defaultAssetId = selectedAssetId && assets.some((asset) => asset.id === selectedAssetId)
+      ? selectedAssetId
+      : assets[0]?.id ?? '';
+    setNotice(null);
+    setInvoiceDropAssetId(defaultAssetId);
+    setInvoiceDropCode(null);
+    setNewInvoiceDropCode('');
+    setInvoiceDropCodeError('');
+    setInvoiceDropCodeMessage('');
+    setInvoiceDropCodeOpen(true);
+  }
+
+  function closeInvoiceDropCodeManager() {
+    setInvoiceDropCodeOpen(false);
+    setInvoiceDropAssetId('');
+    setInvoiceDropCode(null);
+    // Plaintext exists in browser memory only for this just-issued view.
+    setNewInvoiceDropCode('');
+    setInvoiceDropCodeError('');
+    setInvoiceDropCodeMessage('');
+  }
+
+  async function copyInvoiceDropText(value: string, successMessage: string) {
+    if (!value) return;
+    try {
+      await navigator.clipboard.writeText(value);
+      setInvoiceDropCodeMessage(successMessage);
+      setInvoiceDropCodeError('');
+    } catch {
+      setInvoiceDropCodeError('Copy was blocked by your browser. Select the text and copy it manually.');
+    }
+  }
+
+  async function issueSelectedInvoiceDropCode() {
+    if (!invoiceDropAssetId || invoiceDropCodeSaving) return;
+    if (invoiceDropCode && !window.confirm('Rotate this code? The current code will stop working immediately.')) return;
+
+    setInvoiceDropCodeSaving(true);
+    setInvoiceDropCodeError('');
+    setInvoiceDropCodeMessage('');
+    setNewInvoiceDropCode('');
+
+    try {
+      const response = await fetch(`/api/invoice-drop-codes/${encodeURIComponent(invoiceDropAssetId)}`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { Accept: 'application/json' },
+      });
+      const data = (await response.json()) as InvoiceDropCodeResponse;
+      const issued = data.dropCode;
+      if (!response.ok || !data.ok || !issued?.code) {
+        throw new Error(data.error || 'The Invoice Drop code could not be created.');
+      }
+
+      setInvoiceDropCode({
+        id: issued.id,
+        assetId: issued.assetId,
+        lastFour: issued.lastFour,
+        createdAtIso: issued.createdAtIso,
+      });
+      setNewInvoiceDropCode(issued.code);
+      setInvoiceDropCodeMessage('New contribution code created. Copy it now; Aim4price will not show the full code again.');
+    } catch (error) {
+      setInvoiceDropCodeError(error instanceof Error ? error.message : 'The Invoice Drop code could not be created.');
+    } finally {
+      setInvoiceDropCodeSaving(false);
+    }
+  }
+
+  async function revokeSelectedInvoiceDropCode() {
+    if (!invoiceDropAssetId || !invoiceDropCode || invoiceDropCodeSaving) return;
+    if (!window.confirm('Revoke this code? Anyone holding it will no longer be able to submit an invoice for this asset.')) return;
+
+    setInvoiceDropCodeSaving(true);
+    setInvoiceDropCodeError('');
+    setInvoiceDropCodeMessage('');
+
+    try {
+      const response = await fetch(`/api/invoice-drop-codes/${encodeURIComponent(invoiceDropAssetId)}`, {
+        method: 'DELETE',
+        credentials: 'include',
+        headers: { Accept: 'application/json' },
+      });
+      const data = (await response.json()) as InvoiceDropCodeResponse;
+      if (!response.ok || !data.ok) throw new Error(data.error || 'The Invoice Drop code could not be revoked.');
+      setInvoiceDropCode(null);
+      setNewInvoiceDropCode('');
+      setInvoiceDropCodeMessage('Contribution code revoked.');
+    } catch (error) {
+      setInvoiceDropCodeError(error instanceof Error ? error.message : 'The Invoice Drop code could not be revoked.');
+    } finally {
+      setInvoiceDropCodeSaving(false);
+    }
+  }
+
+  async function shareInvoiceDropLink() {
+    const shareText = newInvoiceDropCode
+      ? `Upload the invoice at Aim4price and use contribution code ${newInvoiceDropCode}. This code permits invoice submission only.`
+      : 'Upload the invoice securely at Aim4price. Ask the asset owner for the contribution code.';
+
+    if (typeof navigator.share === 'function') {
+      try {
+        await navigator.share({ title: 'Aim4price Invoice Drop', text: shareText, url: invoiceDropPublicUrl });
+        setInvoiceDropCodeMessage('Invoice Drop details shared.');
+        setInvoiceDropCodeError('');
+        return;
+      } catch (error) {
+        if (error instanceof DOMException && error.name === 'AbortError') return;
+      }
+    }
+
+    await copyInvoiceDropText(invoiceDropPublicUrl, 'Public Invoice Drop link copied.');
+  }
+
+  async function copyInvoiceDropInstructions() {
+    if (!newInvoiceDropCode) return;
+    await copyInvoiceDropText(
+      `Upload the invoice at ${invoiceDropPublicUrl}\nContribution code: ${newInvoiceDropCode}\nThis code permits invoice submission only and does not reveal asset details.`,
+      'Invoice Drop link and new code copied.',
+    );
   }
 
   function openAddInvoiceModal(assetId = '') {
@@ -1829,36 +2055,26 @@ export default function MyInvoicesClient({
     setNotice(null);
 
     try {
-      const document = await uploadInvoiceFile(selectedAssetId, 'automatic', automaticUploadFile);
-      setUploadedDocument(document);
+      const formData = new FormData();
+      formData.append('assetId', selectedAssetId);
+      formData.append('file', automaticUploadFile);
 
-      const response = await fetch(accountScopedUrl(`${apiRoot}/extract`), {
+      const response = await fetch(accountScopedUrl(`${captureApiRoot}/invoice`), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ documentId: document.id, assetId: selectedAssetId }),
+        credentials: 'include',
+        body: formData,
       });
-      const data = (await response.json()) as ExtractionResponse;
-
-      if (!response.ok || !data.ok || !data.extraction) {
-        setDraft({ ...buildDraftForAsset('automatic', selectedAssetId), invoiceDocumentId: document.id });
-        setExtractionWarnings([data.error || 'Aim4price could not read this invoice/photo automatically. Complete the cost details manually.']);
-        setRawTextPreview('');
-        setFlow('review');
-        return;
+      const data = (await response.json()) as CaptureRequestResponse;
+      if (!response.ok || !data.ok || !data.request) {
+        throw new Error(data.error || 'The invoice/photo could not be sent for Aim4price capture.');
       }
 
-      const nextDocument = data.document ?? document;
-      setUploadedDocument(nextDocument);
-      setDraft(draftFromExtraction(
-        data.extraction.draft,
-        'automatic',
-        nextDocument.id,
-        defaultUsageMetricForAsset(selectedAssetId),
-        dealerMode ? dealerDefaults.supplierName : '',
-      ));
-      setExtractionWarnings(data.extraction.warnings ?? []);
-      setRawTextPreview((data.extraction.rawText ?? '').slice(0, 3000));
-      setFlow('review');
+      setCaptureRequests((current) => [data.request!, ...current.filter((request) => request.id !== data.request!.id)]);
+      closeModal();
+      setNotice({
+        tone: 'success',
+        message: `${data.request.referenceCode} received. Aim4price will capture and verify it within 24 hours.`,
+      });
     } catch (error) {
       setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'The uploaded cost flow could not continue.' });
     } finally {
@@ -2002,6 +2218,38 @@ export default function MyInvoicesClient({
     setAutomaticUploadFile(event.target.files?.[0] ?? null);
   }
 
+  async function fetchCaptureRequests(): Promise<CaptureRequestStatusItem[] | null> {
+    try {
+      const url = accountScopedUrl(`${captureApiRoot}?requestType=invoice&active=1`);
+      const response = await fetch(url, { credentials: 'include', cache: 'no-store' });
+      const data = (await response.json()) as CaptureRequestResponse;
+      return response.ok && data.ok ? data.requests ?? [] : null;
+    } catch {
+      // Ledger records remain usable when capture status is temporarily unavailable.
+      return null;
+    }
+  }
+
+  function closeCaptureReview() {
+    setCaptureReviewRequestId(null);
+    const url = new URL(window.location.href);
+    if (url.searchParams.has('captureRequestId')) {
+      url.searchParams.delete('captureRequestId');
+      window.history.replaceState(window.history.state, '', `${url.pathname}${url.search}${url.hash}`);
+    }
+  }
+
+  async function handleCaptureReviewResolved(message: string) {
+    closeCaptureReview();
+    setNotice({ tone: 'success', message });
+    const [requests, invoiceData] = await Promise.all([
+      fetchCaptureRequests(),
+      fetchInvoiceData(activeFilters).catch(() => null),
+    ]);
+    if (requests) setCaptureRequests(requests);
+    if (invoiceData) applyInvoiceData(invoiceData);
+  }
+
   return (
     <main className={`${styles.page} ${dealerMode ? styles.dealerCostsPage : ''}`}>
       {shouldShowAppHeader ? <AppHeader active={dealerMode ? 'cost' : 'none'} /> : null}
@@ -2020,6 +2268,29 @@ export default function MyInvoicesClient({
             </div>
           </section>
         )}
+
+        {canManageInvoiceDropCodes ? (
+          <section className={styles.invoiceDropCodeBanner} aria-label="Invoice Drop contribution codes">
+            <div className={styles.invoiceDropCodeBannerCopy}>
+              <span className={styles.invoiceDropCodeEyebrow}>Invoice Drop</span>
+              <strong>Let a workshop or supplier contribute an invoice</strong>
+              <p>Create a code for one asset, then share it with the public Invoice Drop link. The code permits submission only and reveals no asset details.</p>
+            </div>
+            <button
+              type="button"
+              className={`${styles.secondaryButton} ${styles.invoiceDropCodeManageButton}`}
+              onClick={openInvoiceDropCodeManager}
+              disabled={isLoading || !assets.length}
+            >
+              {assets.length ? 'Manage contribution code' : 'Add an asset first'}
+            </button>
+          </section>
+        ) : null}
+
+        <CaptureRequestStatusList
+          requests={captureRequests}
+          onReview={canManageInvoiceDropCodes ? setCaptureReviewRequestId : undefined}
+        />
 
         <section className={styles.invoiceToolbar} aria-label="Saved cost record controls">
           <label className={styles.searchWrap}>
@@ -2155,6 +2426,132 @@ export default function MyInvoicesClient({
         </section>
       </section>
 
+      {canManageInvoiceDropCodes ? (
+        <CaptureRequestDecisionModal
+          requestId={captureReviewRequestId}
+          onClose={closeCaptureReview}
+          onResolved={(message) => void handleCaptureReviewResolved(message)}
+        />
+      ) : null}
+
+      {invoiceDropCodeOpen ? (
+        <div className={styles.modalBackdrop} role="dialog" aria-modal="true" aria-label="Manage Invoice Drop contribution code">
+          <div className={`${styles.downloadModal} ${styles.invoiceDropCodeModal}`}>
+            <div className={styles.modalHeader}>
+              <div>
+                <h2>Invoice Drop code</h2>
+                <p>Invite an outside dealer, workshop or supplier to send an invoice for one asset.</p>
+              </div>
+              <button type="button" className={styles.closeButton} onClick={closeInvoiceDropCodeManager} aria-label="Close Invoice Drop code manager"><CloseIcon /></button>
+            </div>
+            <div className={styles.modalDivider} />
+
+            <div className={styles.invoiceDropCodeBody}>
+              <label className={styles.invoiceDropAssetField}>
+                <span>Asset</span>
+                <select
+                  value={invoiceDropAssetId}
+                  onChange={(event) => {
+                    setInvoiceDropAssetId(event.target.value);
+                    setInvoiceDropCode(null);
+                    setNewInvoiceDropCode('');
+                    setInvoiceDropCodeError('');
+                    setInvoiceDropCodeMessage('');
+                  }}
+                  disabled={invoiceDropCodeSaving}
+                >
+                  {assets.map((asset) => (
+                    <option key={asset.id} value={asset.id}>{asset.title}</option>
+                  ))}
+                </select>
+                {invoiceDropAsset ? <small>{invoiceDropAsset.categoryLabel}{invoiceDropAsset.yearModel ? ` · ${invoiceDropAsset.yearModel}` : ''}</small> : null}
+              </label>
+
+              <div className={styles.invoiceDropSafetyNote}>
+                <strong>Contribution-only access</strong>
+                <p>This code can only submit an invoice into Aim4price&apos;s review queue. It cannot open your account, identify the asset, or reveal any asset details.</p>
+              </div>
+
+              {invoiceDropCodeLoading ? <div className={styles.invoiceDropCodeLoading}>Checking this asset&apos;s active code...</div> : null}
+
+              {!invoiceDropCodeLoading ? (
+                <section className={styles.invoiceDropCodeCard} aria-live="polite">
+                  <div className={styles.invoiceDropCodeCardHeader}>
+                    <div>
+                      <span>Active contribution code</span>
+                      <strong>{invoiceDropCode ? 'Ready to receive invoices' : 'No active code'}</strong>
+                    </div>
+                    {invoiceDropCode ? <span className={styles.invoiceDropCodeActiveBadge}>Active</span> : null}
+                  </div>
+
+                  {newInvoiceDropCode ? (
+                    <div className={styles.invoiceDropCodeReveal}>
+                      <code>{newInvoiceDropCode}</code>
+                      <p>Copy this full code now. For security, Aim4price will show only the last four characters after you close this window.</p>
+                      <div className={styles.invoiceDropCodeInlineActions}>
+                        <button type="button" className={styles.primaryButton} onClick={() => void copyInvoiceDropText(newInvoiceDropCode, 'New contribution code copied.')}>
+                          Copy code
+                        </button>
+                        <button type="button" className={styles.secondaryButton} onClick={() => void copyInvoiceDropInstructions()}>
+                          Copy link + code
+                        </button>
+                      </div>
+                    </div>
+                  ) : invoiceDropCode ? (
+                    <div className={styles.invoiceDropCodeMasked}>
+                      <code aria-label={`Active code ending in ${invoiceDropCode.lastFour}`}>A4P-••••-••••-{invoiceDropCode.lastFour}</code>
+                      <small>Created {formatDateTime(invoiceDropCode.createdAtIso)}. The full code is never shown again.</small>
+                    </div>
+                  ) : (
+                    <p className={styles.invoiceDropCodeEmpty}>Create a code when you are ready to invite someone to submit an invoice for this asset.</p>
+                  )}
+
+                  <div className={styles.invoiceDropCodeActions}>
+                    <button
+                      type="button"
+                      className={styles.primaryButton}
+                      onClick={() => void issueSelectedInvoiceDropCode()}
+                      disabled={!invoiceDropAssetId || invoiceDropCodeSaving}
+                    >
+                      {invoiceDropCodeSaving ? 'Updating...' : invoiceDropCode ? 'Rotate code' : 'Create code'}
+                    </button>
+                    {invoiceDropCode ? (
+                      <button
+                        type="button"
+                        className={styles.invoiceDropRevokeButton}
+                        onClick={() => void revokeSelectedInvoiceDropCode()}
+                        disabled={invoiceDropCodeSaving}
+                      >
+                        Revoke code
+                      </button>
+                    ) : null}
+                  </div>
+                </section>
+              ) : null}
+
+              <section className={styles.invoiceDropLinkCard}>
+                <div>
+                  <span>Public upload page</span>
+                  <strong>{invoiceDropPublicUrl}</strong>
+                </div>
+                <div className={styles.invoiceDropCodeInlineActions}>
+                  <a className={styles.secondaryButton} href="/drop-invoice" target="_blank" rel="noreferrer">Open page</a>
+                  <button type="button" className={styles.secondaryButton} onClick={() => void copyInvoiceDropText(invoiceDropPublicUrl, 'Public Invoice Drop link copied.')}>Copy link</button>
+                  <button type="button" className={styles.secondaryButton} onClick={() => void shareInvoiceDropLink()}>Share</button>
+                </div>
+              </section>
+
+              {invoiceDropCodeError ? <div className={styles.invoiceDropCodeError} role="alert">{invoiceDropCodeError}</div> : null}
+              {invoiceDropCodeMessage ? <div className={styles.invoiceDropCodeSuccess} role="status">{invoiceDropCodeMessage}</div> : null}
+            </div>
+
+            <div className={styles.modalFooter}>
+              <button type="button" className={styles.secondaryButton} onClick={closeInvoiceDropCodeManager}>Done</button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       {sourceChoiceOpen ? (
         <div className={styles.modalBackdrop} role="dialog" aria-modal="true" aria-label="Choose cost capture method">
           <div className={`${styles.downloadModal} ${styles.sourceChoiceModal}`}>
@@ -2181,8 +2578,8 @@ export default function MyInvoicesClient({
                   <AutomaticInvoiceIcon />
                 </span>
                 <span className={styles.choiceTitleBlock}>
-                  <strong>Upload invoice/photo</strong>
-                  <small>Upload a PDF or photo, then review the extracted cost details.</small>
+                  <strong>Upload for Aim4price capture</strong>
+                  <small>Send a PDF or photo and Aim4price will capture and verify it within 24 hours.</small>
                 </span>
               </button>
               {!dealerMode ? (
@@ -3017,7 +3414,7 @@ export default function MyInvoicesClient({
             <div className={styles.modalHeader}>
               <div>
                 <h2>Upload invoice/photo</h2>
-                <p>{selectedAsset?.title ?? 'Selected asset'} · Automatic capture</p>
+                <p>{selectedAsset?.title ?? 'Selected asset'} · Aim4price assisted capture</p>
               </div>
               <button type="button" className={styles.closeButton} onClick={closeModal} aria-label="Close"><CloseIcon /></button>
             </div>
@@ -3039,7 +3436,7 @@ export default function MyInvoicesClient({
             <div className={styles.modalFooter}>
               <button type="button" className={styles.secondaryButton} onClick={() => setFlow(assetLockedForFlow ? 'source-choice' : 'asset-automatic')}>Back</button>
               <button type="button" className={styles.primaryButton} onClick={handleAutomaticExtract} disabled={!automaticUploadFile || isExtracting}>
-                {isExtracting ? 'Reading invoice/photo...' : 'Review cost details'}
+                {isExtracting ? 'Sending invoice/photo...' : 'Send for capture'}
               </button>
             </div>
           </div>

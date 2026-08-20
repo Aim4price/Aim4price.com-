@@ -21,6 +21,15 @@ type RolePlayer = {
   text: string;
 };
 
+function InvoiceDropIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M7 2.75h7.2L19.25 7.8V21.25H7z" />
+      <path d="M14 2.75V8h5.25M9.75 12.25h6.5M9.75 15.5h6.5" />
+    </svg>
+  );
+}
+
 const productSteps: ProductStep[] = [
   {
     number: '01',
@@ -130,6 +139,27 @@ export default async function HomePage() {
                 />
               </Link>
             </div>
+          </div>
+        </div>
+      </section>
+
+      <section className={styles.invoiceDropSection} aria-labelledby="invoice-drop-title">
+        <div className={styles.shell}>
+          <div className={styles.invoiceDropCard}>
+            <span className={styles.invoiceDropIcon}>
+              <InvoiceDropIcon />
+            </span>
+            <div className={styles.invoiceDropCopy}>
+              <div className={styles.invoiceDropHeadingRow}>
+                <h2 id="invoice-drop-title">Have an invoice for an Aim4price asset?</h2>
+                <span>No account needed</span>
+              </div>
+              <p>Attach it and Aim4price will verify and route it to the correct record within 24 hours.</p>
+            </div>
+            <Link href="/drop-invoice" className={styles.invoiceDropLink}>
+              Drop an invoice
+              <span aria-hidden="true">→</span>
+            </Link>
           </div>
         </div>
       </section>

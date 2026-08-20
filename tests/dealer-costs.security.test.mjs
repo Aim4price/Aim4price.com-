@@ -10,6 +10,7 @@ const dealerRoute = read('app/api/dealer/cost/route.ts');
 const dealerInvoiceRoute = read('app/api/dealer/cost/[invoiceId]/route.ts');
 const dealerUploadRoute = read('app/api/dealer/cost/upload/route.ts');
 const dealerExtractRoute = read('app/api/dealer/cost/extract/route.ts');
+const dealerCaptureRoute = read('app/api/dealer/capture-requests/invoice/route.ts');
 const ownerDecisionRoute = read('app/api/dealer-cost-proposals/[invoiceId]/route.ts');
 const leads = read('app/leads/leads-client.tsx');
 const costClient = read('app/my-invoices/my-invoices-client.tsx');
@@ -81,16 +82,19 @@ test('dealer cost routes contain concrete handlers and never re-export themselve
   }
 });
 
-test('uploads and automatic extraction recheck the exact shared asset and dealer document', () => {
+test('uploads and assisted capture recheck the exact shared asset while the old reader stays retired', () => {
   assert.match(
     dealerUploadRoute,
     /getDealerCostAssetAccess\(context\.actor\.dealerUserId, assetId\)/,
   );
   assert.match(
-    dealerExtractRoute,
+    dealerCaptureRoute,
     /getDealerCostAssetAccess\(context\.actor\.dealerUserId, assetId\)/,
   );
-  assert.match(dealerExtractRoute, /dealerUserId: context\.actor\.dealerUserId/);
+  assert.match(dealerCaptureRoute, /submissionChannel: 'dealer_upload'/);
+  assert.match(dealerCaptureRoute, /addCaptureRequestFile/);
+  assert.match(dealerExtractRoute, /status: 410/);
+  assert.doesNotMatch(dealerExtractRoute, /extractInvoiceFromUpload/);
   assert.match(invoices, /created_by_dealer_user_id = \$3/);
 });
 
@@ -98,19 +102,19 @@ test('dealer cost creation stays separate from maintenance history', () => {
   assert.doesNotMatch(dealerCosts, /asset_maintenance_records/);
   assert.doesNotMatch(dealerCosts, /createMaintenance|updateMaintenance|deleteMaintenance/);
   assert.match(dealerCosts, /return createMyInvoice/);
-  assert.match(invoices, /asText\(actor\.dealerUserId\) \? 'pending' : 'owner'/);
+  assert.match(invoices, /const ownerStorageStatus = asText\(actor\.dealerUserId\)[\s\S]*?actor\.ownerApproved \? 'approved' : 'pending'[\s\S]*?: 'owner'/);
 });
 
 test('both dealer workspaces show the Manage action and open the correct cost page', () => {
   assert.match(leads, /<strong>Add asset cost<\/strong>/);
   assert.match(leads, /Upload an invoice or enter a cost manually/);
-  assert.match(leads, /const canAddDealerCosts = Boolean\(dealerAppMode \|\| dealerWorkspaceMode\)/);
+  assert.match(leads, /const canAddDealerCosts = isDealerLeadsMode/);
   assert.match(leads, /\{canAddDealerCosts && !isFullRegisterLead\(managedLead\) \? \(/);
   assert.match(leads, /dealerAppMode \? '\/dealer\/cost' : '\/dealer-costs'/);
   assert.match(leads, /assetId=\$\{encodeURIComponent\(lead\.assetRegisterItemId\)\}&add=1/);
 });
 
-test('dealer cost page reuses manual and automatic owner cost entry without owner-only reports', () => {
+test('dealer cost page reuses manual and Aim4price-assisted entry without owner-only reports', () => {
   assert.match(
     costClient,
     /const apiRoot = dealerMode\s*\?\s*'\/api\/dealer\/cost'\s*:\s*'\/api\/my-invoices'/,
@@ -144,7 +148,7 @@ test('dealer costs stay out of the header and remain available from Manage and D
   assert.match(appHeader, /\{ href: '\/dealer-costs', label: 'Client Costs', accountTypes: \['dealer'\] \}/);
   assert.match(standardDealerPage, /getDealerCostRequestContext\(\)/);
   assert.match(standardDealerPage, /dealerMode[\s\S]*showAppHeader/);
-  assert.match(dealerAppHome, /\{ label: 'Costs', href: '\/dealer\/cost' \}/);
+  assert.match(dealerAppHome, /\{ label: 'Client Costs', href: '\/dealer\/cost', capability: 'client_costs' \}/);
   assert.match(dealerAppPage, /dealerMode/);
   assert.doesNotMatch(dealerAppPage, /showAppHeader/);
 });
