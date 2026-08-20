@@ -408,7 +408,7 @@ export default function OwnerNotificationsClient({ viewerId: _viewerId }: { view
   function renderNotificationCard(item: Notification) {
     const className = [
       styles.notificationCard,
-      item.state === 'needs_action' ? styles.notificationCardPriority : '',
+      item.state === 'needs_action' || item.priority ? styles.notificationCardPriority : '',
       item.state === 'new' ? styles.notificationCardNew : '',
       item.state === 'history' ? styles.notificationCardHistory : '',
     ].filter(Boolean).join(' ');
