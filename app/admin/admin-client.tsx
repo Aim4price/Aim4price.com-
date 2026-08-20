@@ -139,12 +139,20 @@ type AdminAction =
   | "pending"
   | "suspend"
   | "send_reset"
+  | "send_notification"
   | "open_account"
   | "delete_user";
 
 type Notice = {
   tone: "success" | "error";
   message: string;
+} | null;
+
+type NotificationComposerState = {
+  userId: string;
+  title: string;
+  body: string;
+  error: string;
 } | null;
 
 const SOUTH_AFRICAN_PROVINCES = [
@@ -165,6 +173,9 @@ type ProvinceName = (typeof SOUTH_AFRICAN_PROVINCES)[number];
 type ProvinceFilter = "all" | "__unknown__" | ProvinceName;
 
 const ADMIN_PAGE_SIZE = 10;
+const DEFAULT_NOTIFICATION_TITLE = "Message from Aim4price";
+const MAX_NOTIFICATION_TITLE_LENGTH = 120;
+const MAX_NOTIFICATION_BODY_LENGTH = 1_200;
 
 const QR_LAYOUT_OPTIONS: Array<{
   value: QrLabelLayout;
@@ -447,6 +458,7 @@ function getActionText(action: AdminAction, user: AdminUserRow): string {
   if (action === "pending") return `${user.email} set back to pending.`;
   if (action === "suspend") return `${user.email} suspended.`;
   if (action === "send_reset") return `Reset email sent to ${user.email}.`;
+  if (action === "send_notification") return `Notification sent to ${user.email}.`;
   if (action === "open_account") return `Opening ${user.email}.`;
   return `${user.email} deleted.`;
 }
@@ -456,6 +468,7 @@ function getBusyText(action: AdminAction): string {
   if (action === "pending") return "Updating...";
   if (action === "suspend") return "Suspending...";
   if (action === "send_reset") return "Sending...";
+  if (action === "send_notification") return "Sending...";
   if (action === "open_account") return "Opening...";
   return "Deleting...";
 }
@@ -560,6 +573,8 @@ export default function AdminClient({
   const [currentPage, setCurrentPage] = useState(1);
   const [accountActionModal, setAccountActionModal] =
     useState<AdminUserRow | null>(null);
+  const [notificationComposer, setNotificationComposer] =
+    useState<NotificationComposerState>(null);
   const accountModalRef = useRef<HTMLElement | null>(null);
   const accountModalTriggerRef = useRef<HTMLButtonElement | null>(null);
   const [qrModal, setQrModal] = useState<QrModalState>(null);
@@ -600,6 +615,7 @@ export default function AdminClient({
       if (event.key === "Escape" && busyUserActionRef.current === null) {
         event.preventDefault();
         setAccountActionModal(null);
+        setNotificationComposer(null);
         return;
       }
 
@@ -691,6 +707,7 @@ export default function AdminClient({
     trigger: HTMLButtonElement | null,
   ) {
     accountModalTriggerRef.current = trigger;
+    setNotificationComposer(null);
     setAccountActionModal(user);
   }
 
@@ -806,6 +823,63 @@ export default function AdminClient({
         message:
           error instanceof Error ? error.message : "Admin action failed.",
       });
+    } finally {
+      setBusyUserAction(null);
+    }
+  }
+
+  async function sendAccountNotification(user: AdminUserRow) {
+    const draft = notificationComposer;
+    if (!draft || draft.userId !== user.userId) return;
+
+    const title = draft.title.trim() || DEFAULT_NOTIFICATION_TITLE;
+    const body = draft.body.trim();
+    if (!body) {
+      setNotificationComposer({ ...draft, error: "Enter a message to send." });
+      return;
+    }
+
+    const action: AdminAction = "send_notification";
+    setNotice(null);
+    setNotificationComposer({ ...draft, title, body, error: "" });
+    setBusyUserAction(`${user.userId}:${action}`);
+
+    try {
+      const response = await fetch("/api/admin/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          userId: user.userId,
+          action,
+          notificationTitle: title,
+          notificationBody: body,
+        }),
+      });
+      const data = (await response.json()) as ApiResponse;
+
+      if (!response.ok || !data.ok) {
+        throw new Error(data.error || "Notification could not be sent.");
+      }
+
+      setNotice({
+        tone: "success",
+        message: data.message || getActionText(action, user),
+      });
+      setNotificationComposer(null);
+      setAccountActionModal(null);
+    } catch (error) {
+      setNotificationComposer((current) =>
+        current?.userId === user.userId
+          ? {
+              ...current,
+              error:
+                error instanceof Error
+                  ? error.message
+                  : "Notification could not be sent.",
+            }
+          : current,
+      );
     } finally {
       setBusyUserAction(null);
     }
@@ -1531,6 +1605,7 @@ export default function AdminClient({
           onMouseDown={(event) => {
             if (event.target === event.currentTarget && busyUserAction === null) {
               setAccountActionModal(null);
+              setNotificationComposer(null);
             }
           }}
         >
@@ -1555,7 +1630,10 @@ export default function AdminClient({
               <button
                 type="button"
                 className={styles.modalCloseButton}
-                onClick={() => setAccountActionModal(null)}
+                onClick={() => {
+                  setAccountActionModal(null);
+                  setNotificationComposer(null);
+                }}
                 disabled={busyUserAction !== null}
                 aria-label="Close account options"
                 autoFocus
@@ -1642,6 +1720,26 @@ export default function AdminClient({
             >
               <button
                 type="button"
+                className={`${styles.accountActionButton} ${styles.notificationButton}`}
+                onClick={() =>
+                  setNotificationComposer({
+                    userId: accountActionModal.userId,
+                    title: DEFAULT_NOTIFICATION_TITLE,
+                    body: "",
+                    error: "",
+                  })
+                }
+                disabled={busyUserAction !== null}
+                aria-expanded={
+                  notificationComposer?.userId === accountActionModal.userId
+                }
+                aria-controls="admin-notification-composer"
+              >
+                Send notification
+              </button>
+
+              <button
+                type="button"
                 className={`${styles.accountActionButton} ${styles.openButton}`}
                 onClick={() => runAction(accountActionModal, "open_account")}
                 disabled={busyUserAction !== null || selectedAccountIsProtected}
@@ -1711,6 +1809,7 @@ export default function AdminClient({
                 onClick={() => {
                   const user = accountActionModal;
                   accountModalTriggerRef.current = null;
+                  setNotificationComposer(null);
                   setAccountActionModal(null);
                   openAssetNameModal(user);
                 }}
@@ -1725,6 +1824,7 @@ export default function AdminClient({
                 onClick={() => {
                   const user = accountActionModal;
                   accountModalTriggerRef.current = null;
+                  setNotificationComposer(null);
                   setAccountActionModal(null);
                   void openQrModal(user);
                 }}
@@ -1733,6 +1833,109 @@ export default function AdminClient({
                 Print QR labels
               </button>
             </div>
+
+            {notificationComposer?.userId === accountActionModal.userId ? (
+              <form
+                id="admin-notification-composer"
+                className={styles.notificationComposer}
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  void sendAccountNotification(accountActionModal);
+                }}
+              >
+                <div className={styles.notificationComposerHeading}>
+                  <div>
+                    <strong>Send notification</strong>
+                    <span>
+                      This will appear as a new Aim4price notification for this
+                      account.
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setNotificationComposer(null)}
+                    disabled={busyUserAction !== null}
+                    aria-label="Close notification composer"
+                  >
+                    ×
+                  </button>
+                </div>
+
+                <label className={styles.notificationField}>
+                  <span>Title</span>
+                  <input
+                    type="text"
+                    value={notificationComposer.title}
+                    onChange={(event) =>
+                      setNotificationComposer((current) =>
+                        current
+                          ? { ...current, title: event.target.value, error: "" }
+                          : current,
+                      )
+                    }
+                    maxLength={MAX_NOTIFICATION_TITLE_LENGTH}
+                    disabled={busyUserAction !== null}
+                    autoFocus
+                  />
+                  <small>
+                    {notificationComposer.title.length}/
+                    {MAX_NOTIFICATION_TITLE_LENGTH}
+                  </small>
+                </label>
+
+                <label className={styles.notificationField}>
+                  <span>Message</span>
+                  <textarea
+                    value={notificationComposer.body}
+                    onChange={(event) =>
+                      setNotificationComposer((current) =>
+                        current
+                          ? { ...current, body: event.target.value, error: "" }
+                          : current,
+                      )
+                    }
+                    maxLength={MAX_NOTIFICATION_BODY_LENGTH}
+                    rows={5}
+                    placeholder="Write the message this account should receive"
+                    required
+                    disabled={busyUserAction !== null}
+                  />
+                  <small>
+                    {notificationComposer.body.length}/
+                    {MAX_NOTIFICATION_BODY_LENGTH}
+                  </small>
+                </label>
+
+                {notificationComposer.error ? (
+                  <p className={styles.notificationComposerError} role="alert">
+                    {notificationComposer.error}
+                  </p>
+                ) : null}
+
+                <div className={styles.notificationComposerActions}>
+                  <button
+                    type="button"
+                    onClick={() => setNotificationComposer(null)}
+                    disabled={busyUserAction !== null}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className={styles.notificationSendButton}
+                    disabled={
+                      busyUserAction !== null ||
+                      !notificationComposer.body.trim()
+                    }
+                  >
+                    {busyUserAction ===
+                    `${accountActionModal.userId}:send_notification`
+                      ? getBusyText("send_notification")
+                      : "Send notification"}
+                  </button>
+                </div>
+              </form>
+            ) : null}
 
             <div className={styles.accountActionDanger}>
               <div>
