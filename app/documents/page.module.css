@@ -1906,9 +1906,11 @@
 
 .comingSoonPreview {
   display: grid;
-  filter: blur(7px);
-  opacity: 0.48;
+  filter: blur(9px);
+  opacity: 0.34;
   pointer-events: none;
+  transform: scale(1.01);
+  transform-origin: top center;
   user-select: none;
 }
 
@@ -1970,59 +1972,66 @@
 .comingSoonCard {
   position: absolute;
   z-index: 2;
-  top: clamp(7rem, 16vw, 12rem);
+  top: clamp(5rem, 9vw, 8rem);
   left: 50%;
-  width: min(36rem, calc(100% - 2rem));
+  width: min(68rem, calc(100% - 2rem));
   display: grid;
-  justify-items: center;
-  padding: clamp(2rem, 4vw, 3.25rem);
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: clamp(1.4rem, 2.6vw, 2.25rem);
+  padding: clamp(1.7rem, 3vw, 2.4rem);
   border: 1px solid rgba(139, 203, 172, 0.86);
-  border-radius: clamp(1.65rem, 3vw, 2.25rem);
+  border-radius: clamp(1.5rem, 2.4vw, 2rem);
   color: var(--ink-soft);
   background:
-    radial-gradient(circle at 50% 0%, rgba(50, 166, 119, 0.13), transparent 52%),
-    rgba(255, 255, 255, 0.96);
-  box-shadow: 0 32px 80px rgba(9, 65, 49, 0.22), inset 0 1px 0 #ffffff;
-  text-align: center;
+    radial-gradient(circle at 0 0, rgba(50, 166, 119, 0.14), transparent 40%),
+    rgba(255, 255, 255, 0.97);
+  box-shadow: 0 28px 70px rgba(9, 65, 49, 0.19), inset 0 1px 0 #ffffff;
   transform: translateX(-50%);
 }
 
-.comingSoonCard > span {
-  margin-top: 1.15rem;
+.comingSoonCopy {
+  min-width: 0;
+  display: grid;
+  align-content: center;
+}
+
+.comingSoonCopy > span {
   color: #27755c;
-  font-size: 0.73rem;
+  font-size: 0.72rem;
   font-weight: 900;
   letter-spacing: 0.15em;
   text-transform: uppercase;
 }
 
-.comingSoonCard h1 {
-  margin: 0.42rem 0 0;
+.comingSoonCopy h1 {
+  margin: 0.3rem 0 0;
   color: var(--brand-dark);
   font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
-  font-size: clamp(2.6rem, 6vw, 4.8rem);
+  font-size: clamp(3rem, 5vw, 4.25rem);
   font-weight: 950;
-  line-height: 0.95;
-  letter-spacing: -0.065em;
+  line-height: 0.92;
+  letter-spacing: -0.058em;
   text-transform: uppercase;
+  white-space: nowrap;
 }
 
-.comingSoonCard p {
-  max-width: 29rem;
-  margin: 1rem 0 0;
+.comingSoonCopy p {
+  margin: 0.72rem 0 0;
   color: var(--muted-dark);
-  font-size: clamp(0.9rem, 1.6vw, 1.03rem);
+  font-size: clamp(0.88rem, 1.15vw, 0.98rem);
   font-weight: 680;
-  line-height: 1.55;
+  line-height: 1.45;
+  white-space: nowrap;
 }
 
 .comingSoonCard a {
-  min-height: 3.2rem;
+  min-width: 13.75rem;
+  min-height: 3.45rem;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  margin-top: 1.45rem;
-  padding: 0 1.4rem;
+  padding: 0 1.35rem;
   border: 1px solid #0a6145;
   border-radius: 1rem;
   color: #ffffff;
@@ -2030,11 +2039,12 @@
   box-shadow: 0 14px 28px rgba(15, 102, 73, 0.22);
   font-weight: 860;
   text-decoration: none;
+  white-space: nowrap;
 }
 
 .comingSoonIcon {
-  width: 4.8rem;
-  height: 4.8rem;
+  width: 5rem;
+  height: 5rem;
   display: grid;
   place-items: center;
   border: 1px solid rgba(80, 165, 132, 0.38);
@@ -2055,12 +2065,59 @@
   stroke-linejoin: round;
 }
 
+@media (max-width: 1050px) {
+  .comingSoonCard {
+    grid-template-columns: auto minmax(0, 1fr);
+    width: min(50rem, calc(100% - 2rem));
+  }
+
+  .comingSoonCard a {
+    grid-column: 2;
+    justify-self: start;
+  }
+
+  .comingSoonCopy p {
+    white-space: normal;
+  }
+}
+
 @media (max-width: 700px) {
   .comingSoonStage {
     min-height: calc(100dvh - 5rem);
   }
 
   .comingSoonCard {
-    top: 4rem;
+    top: 2rem;
+    grid-template-columns: minmax(0, 1fr);
+    justify-items: center;
+    gap: 0.9rem;
+    width: min(34rem, calc(100% - 1rem));
+    padding: 1.5rem;
+    text-align: center;
+  }
+
+  .comingSoonCopy {
+    justify-items: center;
+  }
+
+  .comingSoonCopy h1 {
+    font-size: clamp(2rem, 11vw, 3.4rem);
+  }
+
+  .comingSoonCopy p {
+    max-width: 27rem;
+    margin-top: 0.65rem;
+  }
+
+  .comingSoonCard a {
+    grid-column: 1;
+    justify-self: center;
+    width: min(100%, 18rem);
+    margin-top: 0.35rem;
+  }
+
+  .comingSoonIcon {
+    width: 4.25rem;
+    height: 4.25rem;
   }
 }
