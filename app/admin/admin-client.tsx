@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
+import AdminNavigation from "../../components/AdminNavigation";
 import { clearCachedHeaderSession } from "../../lib/header-session-cache";
 import styles from "./page.module.css";
 
@@ -192,7 +192,7 @@ type AccountSort = "newest" | "storage" | "recent" | "name";
 type ProvinceName = (typeof SOUTH_AFRICAN_PROVINCES)[number];
 type ProvinceFilter = "all" | "__unknown__" | ProvinceName;
 
-const ADMIN_PAGE_SIZE = 10;
+const ADMIN_PAGE_SIZE = 25;
 const DEFAULT_NOTIFICATION_TITLE = "Message from Aim4price";
 const MAX_NOTIFICATION_TITLE_LENGTH = 120;
 const MAX_NOTIFICATION_BODY_LENGTH = 1_200;
@@ -1630,33 +1630,7 @@ export default function AdminClient({
         </div>
 
         <div className={styles.headerActions}>
-          <nav className={styles.adminNav} aria-label="Admin navigation">
-            <Link
-              href="/admin"
-              className={`${styles.adminNavLink} ${styles.adminNavActive}`}
-              aria-current="page"
-            >
-              Users
-            </Link>
-            <Link href="/admin/dashboard" className={styles.adminNavLink}>
-              Dashboard
-            </Link>
-            <Link href="/admin/work-tracker" className={styles.adminNavLink}>
-              Work Tracker
-            </Link>
-            <Link href="/admin/capture-queue" className={styles.adminNavLink}>
-              Capture Queue
-            </Link>
-            <Link
-              href="/admin/lifecycle-calculator"
-              className={styles.adminNavLink}
-            >
-              Lifecycle Model
-            </Link>
-            <Link href="/admin/assistance-network" className={styles.adminNavLink}>
-              Assistance Network
-            </Link>
-          </nav>
+          <AdminNavigation active="accounts" />
           <button
             type="button"
             className={styles.groupNotificationButton}
@@ -1665,7 +1639,7 @@ export default function AdminClient({
               openGroupNotificationComposer(event.currentTarget)
             }
           >
-            Message account groups
+            Message accounts
           </button>
           <button
             type="button"
@@ -2212,33 +2186,53 @@ export default function AdminClient({
               </button>
             </header>
 
-            <section className={styles.accountStorageOverview} aria-label="Account storage usage">
-              <div className={styles.accountStoragePrimary}>
-                <span>Tracked client storage</span>
-                <strong>{accountActionModal.storageLabel}</strong>
-                <small>
-                  {accountActionModal.storageGigabytesLabel} · {" "}
-                  {accountActionModal.storageFileCount.toLocaleString("en-ZA")} {" "}
-                  {accountActionModal.storageFileCount === 1 ? "file" : "files"}
-                </small>
-              </div>
-              <div>
-                <span>Bucket-only uploads</span>
-                <strong>{accountActionModal.bucketStorageLabel}</strong>
-                <small>New low-cost uploads</small>
-              </div>
-              <div>
-                <span>PostgreSQL files</span>
-                <strong>{accountActionModal.postgresStorageLabel}</strong>
-                <small>Uploads, evidence and inline logos</small>
-              </div>
-            </section>
+            <div className={styles.accountActionSectionHeading}>
+              <strong>What would you like to do?</strong>
+              <span>Start tracked work, open the account directly, or send a message.</span>
+            </div>
 
-            <p className={styles.accountStorageNote}>
-              Logical file size for client storage tracking. Internal URL
-              references are counted once; database overhead, mirrors, backups
-              and temporary recovery copies are excluded.
-            </p>
+            <div className={styles.accountPrimaryActions} role="group" aria-label="Primary account actions">
+              <button
+                type="button"
+                className={`${styles.accountActionButton} ${styles.workStartButton}`}
+                onClick={() => void startWork(accountActionModal)}
+                disabled={busyUserAction !== null || selectedAccountIsProtected}
+              >
+                {busyUserAction === `${accountActionModal.userId}:start_work`
+                  ? "Starting work..."
+                  : "Start work & open account"}
+              </button>
+
+              <button
+                type="button"
+                className={`${styles.accountActionButton} ${styles.openButton}`}
+                onClick={() => runAction(accountActionModal, "open_account")}
+                disabled={busyUserAction !== null || selectedAccountIsProtected}
+              >
+                {busyUserAction === `${accountActionModal.userId}:open_account`
+                  ? getBusyText("open_account")
+                  : "Open without tracking"}
+              </button>
+
+              <button
+                type="button"
+                className={`${styles.accountActionButton} ${styles.notificationButton}`}
+                onClick={() =>
+                  setNotificationComposer({
+                    userId: accountActionModal.userId,
+                    title: DEFAULT_NOTIFICATION_TITLE,
+                    body: "",
+                    priority: "normal",
+                    error: "",
+                  })
+                }
+                disabled={busyUserAction !== null}
+                aria-expanded={notificationComposer?.userId === accountActionModal.userId}
+                aria-controls="admin-notification-composer"
+              >
+                Send message
+              </button>
+            </div>
 
             <div className={styles.accountActionSummary}>
               <div>
@@ -2278,9 +2272,43 @@ export default function AdminClient({
               </div>
             </div>
 
+            <details className={styles.accountStorageDetails}>
+              <summary>
+                <span>Storage</span>
+                <strong>
+                  {accountActionModal.storageLabel} · {accountActionModal.storageFileCount.toLocaleString("en-ZA")} {" "}
+                  {accountActionModal.storageFileCount === 1 ? "file" : "files"}
+                </strong>
+              </summary>
+              <section className={styles.accountStorageOverview} aria-label="Account storage usage">
+                <div className={styles.accountStoragePrimary}>
+                  <span>Tracked client storage</span>
+                  <strong>{accountActionModal.storageLabel}</strong>
+                  <small>
+                    {accountActionModal.storageGigabytesLabel} · {" "}
+                    {accountActionModal.storageFileCount.toLocaleString("en-ZA")} {" "}
+                    {accountActionModal.storageFileCount === 1 ? "file" : "files"}
+                  </small>
+                </div>
+                <div>
+                  <span>Bucket-only uploads</span>
+                  <strong>{accountActionModal.bucketStorageLabel}</strong>
+                  <small>New low-cost uploads</small>
+                </div>
+                <div>
+                  <span>PostgreSQL files</span>
+                  <strong>{accountActionModal.postgresStorageLabel}</strong>
+                  <small>Uploads, evidence and inline logos</small>
+                </div>
+              </section>
+              <p className={styles.accountStorageNote}>
+                Logical file size for client storage tracking. Internal URL references are counted once; database overhead, mirrors, backups and temporary recovery copies are excluded.
+              </p>
+            </details>
+
             <div className={styles.accountActionSectionHeading}>
-              <strong>Account actions</strong>
-              <span>Manage access and workspace tools.</span>
+              <strong>Access &amp; account tools</strong>
+              <span>Only use these controls when an account needs maintenance.</span>
             </div>
 
             <div
@@ -2288,91 +2316,44 @@ export default function AdminClient({
               role="group"
               aria-label="Account actions"
             >
-              <button
-                type="button"
-                className={`${styles.accountActionButton} ${styles.notificationButton}`}
-                onClick={() =>
-                  setNotificationComposer({
-                    userId: accountActionModal.userId,
-                    title: DEFAULT_NOTIFICATION_TITLE,
-                    body: "",
-                    priority: "normal",
-                    error: "",
-                  })
-                }
-                disabled={busyUserAction !== null}
-                aria-expanded={
-                  notificationComposer?.userId === accountActionModal.userId
-                }
-                aria-controls="admin-notification-composer"
-              >
-                Send notification
-              </button>
-
-              <button
-                type="button"
-                className={`${styles.accountActionButton} ${styles.workStartButton}`}
-                onClick={() => void startWork(accountActionModal)}
-                disabled={busyUserAction !== null || selectedAccountIsProtected}
-              >
-                {busyUserAction === `${accountActionModal.userId}:start_work`
-                  ? "Starting work..."
-                  : "Start work"}
-              </button>
-
-              <button
-                type="button"
-                className={`${styles.accountActionButton} ${styles.openButton}`}
-                onClick={() => runAction(accountActionModal, "open_account")}
-                disabled={busyUserAction !== null || selectedAccountIsProtected}
-              >
-                {busyUserAction === `${accountActionModal.userId}:open_account`
-                  ? getBusyText("open_account")
-                  : "Open account"}
-              </button>
-
-              <button
+              {accountActionModal.accountStatus !== "active" ? <button
                 type="button"
                 className={`${styles.accountActionButton} ${styles.activateButton}`}
                 onClick={() => runAction(accountActionModal, "activate")}
-                disabled={
-                  busyUserAction !== null || accountActionModal.accountStatus === "active"
-                }
+                disabled={busyUserAction !== null}
               >
                 {busyUserAction === `${accountActionModal.userId}:activate`
                   ? getBusyText("activate")
                   : "Activate account"}
-              </button>
+              </button> : null}
 
-              <button
+              {accountActionModal.accountStatus !== "pending_payment" ? <button
                 type="button"
                 className={styles.accountActionButton}
                 onClick={() => runAction(accountActionModal, "pending")}
                 disabled={
                   busyUserAction !== null ||
-                  selectedAccountIsProtected ||
-                  accountActionModal.accountStatus === "pending_payment"
+                  selectedAccountIsProtected
                 }
               >
                 {busyUserAction === `${accountActionModal.userId}:pending`
                   ? getBusyText("pending")
                   : "Set as pending"}
-              </button>
+              </button> : null}
 
-              <button
+              {accountActionModal.accountStatus !== "suspended" ? <button
                 type="button"
                 className={`${styles.accountActionButton} ${styles.suspendButton}`}
                 onClick={() => runAction(accountActionModal, "suspend")}
                 disabled={
                   busyUserAction !== null ||
-                  selectedAccountIsProtected ||
-                  accountActionModal.accountStatus === "suspended"
+                  selectedAccountIsProtected
                 }
               >
                 {busyUserAction === `${accountActionModal.userId}:suspend`
                   ? getBusyText("suspend")
                   : "Suspend account"}
-              </button>
+              </button> : null}
 
               <button
                 type="button"

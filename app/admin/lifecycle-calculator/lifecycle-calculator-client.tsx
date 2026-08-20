@@ -690,7 +690,7 @@ export default function LifecycleCalculatorClient() {
         <div className={styles.decisionHeading}>
           <div>
             <p className={styles.eyebrow}>Live decision snapshot</p>
-            <h3>Choose the structure to use in the advice summary</h3>
+            <h3>Choose the structure to use in the ownership summary</h3>
           </div>
           <p><span>Currently selected</span><strong>{preferred.label}</strong></p>
         </div>
@@ -1124,7 +1124,7 @@ export default function LifecycleCalculatorClient() {
         <SectionHeading
           eyebrow="Main comparison"
           title="Standard vs Service Plan vs Service + Maintenance"
-          description="All structures remain calculated. Selection only highlights the preferred advice structure."
+          description="All structures remain calculated. Selection only highlights the preferred ownership structure."
         />
         <div className={styles.comparisonWrap}>
           <table className={styles.comparisonTable}>

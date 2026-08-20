@@ -642,8 +642,8 @@ export async function getAdminDashboardStats(): Promise<AdminDashboardStats> {
     },
     {
       id: 'paid-estimates',
-      title: 'Paid estimates done',
-      description: 'Saved valuations in the system. This does not add PayFast/payment logic.',
+      title: 'Full estimates saved',
+      description: 'Saved valuations completed in the full estimate workflow.',
       values: periodValues(paidEstimates),
     },
     {

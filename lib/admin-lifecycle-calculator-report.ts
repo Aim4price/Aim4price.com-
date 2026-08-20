@@ -269,7 +269,7 @@ function executiveSheet(context: LifecycleReportContext, generatedAt: Date): Xls
     [styled("Maintenance is not double counted in Full", "text"), currency(model.scenarios[2].cashFlow.reduce((sum, year) => sum + year.maintenanceCashPayments, 0)), currency(0), styled(model.scenarios[2].cashFlow.every((year) => year.maintenanceCashPayments === 0) ? "OK" : "REVIEW", "statusGood")],
     [],
     [styled("Important", "section"), "", "", ""],
-    [styled("This model is indicative financial advice support, not a lending decision, tax opinion, guaranteed valuation or refinance approval.", "note"), "", "", ""],
+    [styled("This model provides indicative scenario-planning support, not a lending decision, tax opinion, guaranteed valuation or refinance approval.", "note"), "", "", ""],
   ];
   return {
     name: "Executive Comparison",

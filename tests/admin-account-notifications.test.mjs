@@ -95,7 +95,7 @@ test('the account options modal has a validated notification composer', async ()
     read('app/owner-app/notifications/owner-notifications-client.tsx'),
   ]);
 
-  assert.match(client, /Send notification\s*<\/button>/);
+  assert.match(client, /Send message\s*<\/button>/);
   assert.match(client, /id="admin-notification-composer"/);
   assert.match(client, /notificationTitle: title/);
   assert.match(client, /notificationBody: body/);

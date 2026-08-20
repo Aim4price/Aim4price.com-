@@ -17,7 +17,7 @@ const [
   usersPage,
   dashboardPage,
   lifecyclePage,
-  assistancePage,
+  adminNavigation,
   captureStore,
 ] = await Promise.all([
   read("app/admin/capture-queue/page.tsx"),
@@ -32,7 +32,7 @@ const [
   read("app/admin/admin-client.tsx"),
   read("app/admin/dashboard/page.tsx"),
   read("app/admin/lifecycle-calculator/page.tsx"),
-  read("app/admin/assistance-network/page.tsx"),
+  read("components/AdminNavigation.tsx"),
   read("lib/capture-requests.ts"),
 ]);
 
@@ -49,23 +49,29 @@ test("Capture Queue page and every API route require Aim4price admin access", ()
 });
 
 test("all current admin navigation surfaces expose Capture Queue", () => {
-  for (const source of [page, usersPage, dashboardPage, lifecyclePage, assistancePage]) {
-    assert.match(source, /href="\/admin\/capture-queue"/);
-    assert.match(source, />\s*Capture Queue\s*</);
-  }
+  assert.match(adminNavigation, /href: "\/admin\/capture-queue"/);
+  assert.match(adminNavigation, /label: "Capture Queue"/);
+  assert.match(page, /<AdminNavigation active="capture-queue" \/>/);
+  assert.match(usersPage, /<AdminNavigation active="accounts" \/>/);
+  assert.match(dashboardPage, /<AdminNavigation active="dashboard" \/>/);
+  assert.match(lifecyclePage, /<AdminNavigation active="lifecycle" \/>/);
+  assert.doesNotMatch(adminNavigation, /assistance-network/);
 });
 
 test("queue prioritises deadline work and includes useful operational filters", () => {
   assert.match(client, /sortOverdueFirst/);
   assert.match(client, /Overdue/);
-  assert.match(client, /Due today/);
+  assert.match(client, /Due in 24 hours/);
   assert.match(client, /Needs information/);
   assert.match(client, /Awaiting owner/);
   assert.match(client, /Completed today/);
   assert.match(client, /Reference, sender, customer or asset/);
   assert.match(client, /Public Invoice Drop/);
   assert.match(styles, /\.kpiGrid/);
+  assert.match(styles, /\.kpiSelected/);
   assert.match(styles, /\.queueTableWrap/);
+  assert.match(client, /aria-pressed=\{statusFilter === kpi\.filter\}/);
+  assert.match(client, /role=\{notice\.tone === "error" \? "alert" : "status"\}/);
 });
 
 test("the 24-hour admin SLA pauses once a verified document is waiting on its owner", () => {
@@ -84,6 +90,13 @@ test("selected work uses a split private document and verified capture workbench
   assert.match(client, /Internal admin note/);
   assert.match(client, /Audit history/);
   assert.match(client, /\/api\/admin\/capture-requests\/\$\{encodeURIComponent\(requestId\)\}/);
+  assert.match(client, /detailLoadGenerationRef/);
+  assert.match(client, /queueLoadGenerationRef/);
+  assert.match(client, /scrollIntoView\(\{ behavior: "smooth", block: "start" \}\)/);
+  assert.match(client, /Discard the unsaved changes in this capture request/);
+  assert.match(client, /beforeunload/);
+  assert.match(client, /sandbox=""/);
+  assert.match(client, /activeFile\.securityStatus === "clean"/);
   assert.match(styles, /grid-template-columns: minmax\(25rem, 0\.95fr\) minmax\(32rem, 1\.05fr\)/);
   assert.match(styles, /@media \(max-width: 980px\)/);
 });
@@ -135,7 +148,9 @@ test("matching uses an admin-scoped customer and destination search instead of r
 
 test("pending quarantine files use a private sandboxed inspection before an explicit security decision", () => {
   assert.match(client, /Security decision required/);
-  assert.match(client, /private sandboxed preview/);
+  assert.match(client, /private preview/);
+  assert.match(client, /<iframe sandbox="" referrerPolicy="no-referrer"/);
+  assert.match(client, /activeFile\?\.downloadUrl && activeFile\.securityStatus === "clean"/);
   assert.match(client, /Mark check passed/);
   assert.doesNotMatch(fileRoute, /locked until its security check passes\.\", 423/);
   assert.match(fileRoute, /file\.securityStatus === "rejected"/);

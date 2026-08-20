@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import styles from "./page.module.css";
 
 type CaptureRequestType = "invoice" | "fuel_slip";
@@ -319,10 +319,12 @@ export default function CaptureQueueClient() {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedId, setSelectedId] = useState("");
   const [detail, setDetail] = useState<CaptureDetail | null>(null);
+  const [isDetailLoading, setIsDetailLoading] = useState(false);
   const [files, setFiles] = useState<CaptureFile[]>([]);
   const [events, setEvents] = useState<CaptureEvent[]>([]);
   const [activeFileId, setActiveFileId] = useState("");
   const [draft, setDraft] = useState<CaptureDraft>(EMPTY_DRAFT);
+  const [loadedDraft, setLoadedDraft] = useState<CaptureDraft>(EMPTY_DRAFT);
   const [actionNote, setActionNote] = useState("");
   const [notice, setNotice] = useState<Notice>(null);
   const [busyAction, setBusyAction] = useState<BusyAction>(null);
@@ -330,8 +332,19 @@ export default function CaptureQueueClient() {
   const [matchSearch, setMatchSearch] = useState("");
   const [matchTargets, setMatchTargets] = useState<CaptureTarget[]>([]);
   const [isSearchingTargets, setIsSearchingTargets] = useState(false);
+  const queueLoadGenerationRef = useRef(0);
+  const detailLoadGenerationRef = useRef(0);
+  const workbenchRef = useRef<HTMLElement>(null);
+  const isDraftDirty = useMemo(
+    () => Boolean(detail) && JSON.stringify(draft) !== JSON.stringify(loadedDraft),
+    [detail, draft, loadedDraft],
+  );
+  const isDraftDirtyRef = useRef(isDraftDirty);
+
+  isDraftDirtyRef.current = isDraftDirty;
 
   const loadQueue = useCallback(async () => {
+    const generation = ++queueLoadGenerationRef.current;
     setIsLoading(true);
     try {
       const params = new URLSearchParams();
@@ -344,27 +357,41 @@ export default function CaptureQueueClient() {
       });
       const data = (await response.json()) as QueueResponse;
       if (!response.ok || !data.ok) throw new Error(data.error || "Failed to load capture requests.");
+      if (generation !== queueLoadGenerationRef.current) return;
       const nextRows = sortOverdueFirst(data.requests ?? []);
       setRows(nextRows);
       setCounts({ ...EMPTY_COUNTS, ...(data.counts ?? {}) });
-      setSelectedId((current) => current && nextRows.some((row) => row.id === current) ? current : "");
+      setSelectedId((current) =>
+        current && (nextRows.some((row) => row.id === current) || isDraftDirtyRef.current)
+          ? current
+          : "",
+      );
     } catch (error) {
+      if (generation !== queueLoadGenerationRef.current) return;
       setNotice({
         tone: "error",
         message: error instanceof Error ? error.message : "Failed to load capture requests.",
       });
     } finally {
-      setIsLoading(false);
+      if (generation === queueLoadGenerationRef.current) setIsLoading(false);
     }
   }, [channelFilter, search, statusFilter, typeFilter]);
 
   const loadDetail = useCallback(async (requestId: string) => {
+    const generation = ++detailLoadGenerationRef.current;
     if (!requestId) {
       setDetail(null);
+      setIsDetailLoading(false);
       setFiles([]);
       setEvents([]);
+      setDraft(EMPTY_DRAFT);
+      setLoadedDraft(EMPTY_DRAFT);
       return;
     }
+    setIsDetailLoading(true);
+    setDetail(null);
+    setFiles([]);
+    setEvents([]);
     try {
       const response = await fetch(`/api/admin/capture-requests/${encodeURIComponent(requestId)}`, {
         cache: "no-store",
@@ -373,20 +400,29 @@ export default function CaptureQueueClient() {
       if (!response.ok || !data.ok || !data.request) {
         throw new Error(data.error || "Failed to open this capture request.");
       }
+      if (generation !== detailLoadGenerationRef.current) return;
       const nextFiles = [...(data.files ?? [])].sort((left, right) => left.pageOrder - right.pageOrder);
+      const nextDraft = normaliseDraft(data.request);
       setDetail(data.request);
       setFiles(nextFiles);
       setEvents(data.events ?? []);
-      setDraft(normaliseDraft(data.request));
+      setDraft(nextDraft);
+      setLoadedDraft(nextDraft);
       setMatchSearch("");
       setMatchTargets([]);
       setActiveFileId((current) => nextFiles.some((file) => file.id === current) ? current : nextFiles[0]?.id ?? "");
       setActionNote("");
+      window.requestAnimationFrame(() => {
+        workbenchRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
     } catch (error) {
+      if (generation !== detailLoadGenerationRef.current) return;
       setNotice({
         tone: "error",
         message: error instanceof Error ? error.message : "Failed to open this capture request.",
       });
+    } finally {
+      if (generation === detailLoadGenerationRef.current) setIsDetailLoading(false);
     }
   }, []);
 
@@ -398,6 +434,42 @@ export default function CaptureQueueClient() {
   useEffect(() => {
     void loadDetail(selectedId);
   }, [loadDetail, selectedId]);
+
+  useEffect(() => {
+    if (!isDraftDirty) return;
+    const protectDraft = (event: BeforeUnloadEvent) => {
+      if (!isDraftDirtyRef.current) return;
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    const protectLinkNavigation = (event: MouseEvent) => {
+      if (
+        event.defaultPrevented ||
+        event.button !== 0 ||
+        event.metaKey ||
+        event.ctrlKey ||
+        event.shiftKey ||
+        event.altKey ||
+        !(event.target instanceof Element)
+      ) {
+        return;
+      }
+      const link = event.target.closest("a[href]");
+      if (!link || link.getAttribute("target") === "_blank") return;
+      if (window.confirm("Discard the unsaved changes in this capture request?")) {
+        isDraftDirtyRef.current = false;
+        return;
+      }
+      event.preventDefault();
+      event.stopPropagation();
+    };
+    window.addEventListener("beforeunload", protectDraft);
+    document.addEventListener("click", protectLinkNavigation, true);
+    return () => {
+      window.removeEventListener("beforeunload", protectDraft);
+      document.removeEventListener("click", protectLinkNavigation, true);
+    };
+  }, [isDraftDirty]);
 
   useEffect(() => {
     const query = matchSearch.trim();
@@ -442,6 +514,22 @@ export default function CaptureQueueClient() {
 
   function updateDraft<K extends keyof CaptureDraft>(key: K, value: CaptureDraft[K]) {
     setDraft((current) => ({ ...current, [key]: value }));
+  }
+
+  function confirmDiscardDraft(): boolean {
+    return !isDraftDirty || window.confirm(
+      "Discard the unsaved changes in this capture request?",
+    );
+  }
+
+  function openRequest(requestId: string) {
+    if (requestId === selectedId || busyAction || !confirmDiscardDraft()) return;
+    setSelectedId(requestId);
+  }
+
+  function closeRequest() {
+    if (busyAction || !confirmDiscardDraft()) return;
+    setSelectedId("");
   }
 
   function selectMatchTarget(target: CaptureTarget) {
@@ -534,20 +622,24 @@ export default function CaptureQueueClient() {
 
   const kpis = [
     { key: "pending", label: "Pending", value: counts.pending, filter: "open" },
-    { key: "dueToday", label: "Due today", value: counts.dueToday, filter: "due_today" },
+    { key: "dueToday", label: "Due in 24 hours", value: counts.dueToday, filter: "due_today" },
     { key: "overdue", label: "Overdue", value: counts.overdue, filter: "overdue" },
     { key: "needsInformation", label: "Needs information", value: counts.needsInformation, filter: "needs_information" },
     { key: "awaitingOwner", label: "Awaiting owner", value: counts.awaitingOwner, filter: "awaiting_owner" },
     { key: "completedToday", label: "Completed today", value: counts.completedToday, filter: "completed_today" },
   ] as const;
+  const hasActiveFilters =
+    search.trim().length > 0 ||
+    statusFilter !== "open" ||
+    typeFilter !== "all" ||
+    channelFilter !== "all";
 
   return (
     <>
-      <section className={styles.introCard}>
+      <section className={styles.queueUtility}>
         <div>
-          <p className={styles.eyebrow}>Human-verified capture</p>
-          <h2>Oldest and overdue documents are shown first</h2>
-          <span>Pending documents stay outside every Cost and Fuel Ledger until their final action is complete.</span>
+          <strong>Oldest and overdue documents appear first</strong>
+          <span>Nothing reaches a ledger until you complete its final action.</span>
         </div>
         <button type="button" className={styles.refreshButton} onClick={() => void loadQueue()} disabled={isLoading}>
           {isLoading ? "Refreshing…" : "Refresh queue"}
@@ -559,8 +651,9 @@ export default function CaptureQueueClient() {
           <button
             key={kpi.key}
             type="button"
-            className={`${styles.kpiCard} ${kpi.key === "overdue" && kpi.value ? styles.kpiOverdue : ""}`}
+            className={`${styles.kpiCard} ${statusFilter === kpi.filter ? styles.kpiSelected : ""} ${kpi.key === "overdue" && kpi.value ? styles.kpiOverdue : ""}`}
             onClick={() => setStatusFilter(kpi.filter)}
+            aria-pressed={statusFilter === kpi.filter}
           >
             <span>{kpi.label}</span>
             <strong>{kpi.value}</strong>
@@ -569,7 +662,7 @@ export default function CaptureQueueClient() {
       </section>
 
       {notice ? (
-        <div className={notice.tone === "success" ? styles.successNotice : styles.errorNotice} role="status">
+        <div className={notice.tone === "success" ? styles.successNotice : styles.errorNotice} role={notice.tone === "error" ? "alert" : "status"}>
           <span>{notice.message}</span>
           <button type="button" onClick={() => setNotice(null)} aria-label="Dismiss message">×</button>
         </div>
@@ -605,7 +698,7 @@ export default function CaptureQueueClient() {
               <option value="needs_information">Needs information</option>
               <option value="awaiting_owner">Awaiting owner</option>
               <option value="overdue">Overdue</option>
-              <option value="due_today">Due today</option>
+              <option value="due_today">Due in 24 hours</option>
               <option value="completed_today">Completed today</option>
               <option value="completed">Completed</option>
               <option value="rejected">Rejected</option>
@@ -629,18 +722,20 @@ export default function CaptureQueueClient() {
               <option value="public_drop">Public Invoice Drop</option>
             </select>
           </label>
-          <button
-            type="button"
-            className={styles.clearButton}
-            onClick={() => {
-              setSearch("");
-              setStatusFilter("open");
-              setTypeFilter("all");
-              setChannelFilter("all");
-            }}
-          >
-            Clear filters
-          </button>
+          {hasActiveFilters ? (
+            <button
+              type="button"
+              className={styles.clearButton}
+              onClick={() => {
+                setSearch("");
+                setStatusFilter("open");
+                setTypeFilter("all");
+                setChannelFilter("all");
+              }}
+            >
+              Clear filters
+            </button>
+          ) : null}
         </div>
 
         <div className={styles.queueTableWrap}>
@@ -663,7 +758,12 @@ export default function CaptureQueueClient() {
                 return (
                   <tr key={row.id} className={selectedId === row.id ? styles.selectedRow : ""}>
                     <td>
-                      <button type="button" className={styles.requestButton} onClick={() => setSelectedId(row.id)}>
+                      <button
+                        type="button"
+                        className={styles.requestButton}
+                        onClick={() => openRequest(row.id)}
+                        disabled={Boolean(busyAction) || (isDetailLoading && selectedId === row.id)}
+                      >
                         <strong>{row.publicReference || row.id}</strong>
                         <span>{row.requestType === "fuel_slip" ? "Fuel slip" : "Invoice"} · {row.fileCount} {row.fileCount === 1 ? "file" : "files"}</span>
                       </button>
@@ -676,15 +776,26 @@ export default function CaptureQueueClient() {
                   </tr>
                 );
               }) : (
-                <tr><td colSpan={6} className={styles.emptyCell}>No capture requests match these filters.</td></tr>
+                <tr><td colSpan={6} className={styles.emptyCell}>{hasActiveFilters ? "No capture requests match these filters." : "All caught up — there are no documents waiting for capture."}</td></tr>
               )}
             </tbody>
           </table>
         </div>
       </section>
 
+      {selectedId && isDetailLoading ? (
+        <section
+          ref={workbenchRef}
+          className={`${styles.workbench} ${styles.workbenchLoading}`}
+          aria-live="polite"
+          aria-busy="true"
+        >
+          Opening capture request…
+        </section>
+      ) : null}
+
       {detail ? (
-        <section className={styles.workbench} aria-labelledby="capture-workbench-title">
+        <section ref={workbenchRef} className={styles.workbench} aria-labelledby="capture-workbench-title">
           <div className={styles.workbenchHeader}>
             <div>
               <p className={styles.eyebrow}>Capture workbench</p>
@@ -693,7 +804,7 @@ export default function CaptureQueueClient() {
             </div>
             <div className={styles.workbenchHeaderActions}>
               <span className={`${styles.statusPill} ${styles[`status_${detail.status}`]}`}>{STATUS_LABELS[detail.status]}</span>
-              <button type="button" className={styles.closeButton} onClick={() => setSelectedId("")}>Close</button>
+              <button type="button" className={styles.closeButton} onClick={closeRequest} disabled={Boolean(busyAction)}>Close</button>
             </div>
           </div>
 
@@ -701,7 +812,7 @@ export default function CaptureQueueClient() {
             <section className={styles.documentPanel} aria-label="Source document">
               <div className={styles.panelHeading}>
                 <div><strong>Source document</strong><span>Private admin preview</span></div>
-                {activeFile?.downloadUrl ? (
+                {activeFile?.downloadUrl && activeFile.securityStatus === "clean" ? (
                   <a href={activeFile.downloadUrl} target="_blank" rel="noreferrer">Open original</a>
                 ) : null}
               </div>
@@ -718,7 +829,7 @@ export default function CaptureQueueClient() {
                 <div className={styles.securityLock}>
                   <span aria-hidden="true">◈</span>
                   <strong>Security decision required</strong>
-                  <p>Inspect this source only in the private sandboxed preview, then record whether it is safe to use.</p>
+                  <p>Inspect this source only in the private preview, then record whether it is safe to use.</p>
                   <div className={styles.securityActions}>
                     <button type="button" disabled={busyFileSecurity} onClick={() => void runFileSecurity("clean")}>
                       {busyFileSecurity ? "Updating…" : "Mark check passed"}
@@ -740,9 +851,11 @@ export default function CaptureQueueClient() {
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={activeFile.downloadUrl} alt={activeFile.originalFileName || "Uploaded invoice"} />
                 ) : activeFile.mimeType === "application/pdf" ? (
-                  <iframe src={activeFile.downloadUrl} title={activeFile.originalFileName || "Uploaded PDF"} />
-                ) : (
+                  <iframe sandbox="" referrerPolicy="no-referrer" src={activeFile.downloadUrl} title={activeFile.originalFileName || "Uploaded PDF"} />
+                ) : activeFile.securityStatus === "clean" ? (
                   <div className={styles.viewerEmpty}><strong>Preview unavailable</strong><a href={activeFile.downloadUrl}>Download {activeFile.originalFileName}</a></div>
+                ) : (
+                  <div className={styles.viewerEmpty}><strong>Preview unavailable</strong><span>Record the security decision before opening the original file.</span></div>
                 )}
               </div>
               {activeFile ? (

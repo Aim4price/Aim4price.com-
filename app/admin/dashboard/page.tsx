@@ -1,4 +1,4 @@
-import Link from "next/link";
+import AdminNavigation from "../../../components/AdminNavigation";
 import { requireAdminPageAccess } from "../../../lib/account-access";
 import { getAdminDashboardStats } from "../../../lib/admin-dashboard";
 import styles from "./page.module.css";
@@ -14,6 +14,7 @@ function formatGeneratedAt(value: string): string {
   }
 
   return new Intl.DateTimeFormat("en-ZA", {
+    timeZone: "Africa/Johannesburg",
     day: "2-digit",
     month: "short",
     year: "numeric",
@@ -61,40 +62,8 @@ export default async function AdminDashboardPage() {
             <span>Updated {formatGeneratedAt(dashboard.generatedAtIso)}</span>
           </div>
 
-          <nav className={styles.toolbar} aria-label="Admin dashboard navigation">
-            <Link href="/admin" className={styles.adminButton}>
-              Users
-            </Link>
-            <Link href="/admin/dashboard" className={`${styles.adminButton} ${styles.adminButtonActive}`} aria-current="page">
-              Dashboard
-            </Link>
-            <Link href="/admin/capture-queue" className={styles.adminButton}>
-              Capture Queue
-            </Link>
-            <Link
-              href="/admin/lifecycle-calculator"
-              className={styles.adminButton}
-            >
-              Lifecycle Model
-            </Link>
-            <Link href="/admin/assistance-network" className={styles.adminButton}>
-              Assistance Network
-            </Link>
-          </nav>
+          <AdminNavigation active="dashboard" />
         </header>
-
-        <section className={styles.dashboardHero}>
-          <div>
-            <p className={styles.eyebrow}>Live Aim4price activity</p>
-            <h2>See account and product activity at a glance</h2>
-            <span>Start with the headline measures, then open the detailed product activity only when you need it.</span>
-          </div>
-          <div>
-            <span>Last refreshed</span>
-            <strong>{formatGeneratedAt(dashboard.generatedAtIso)}</strong>
-            <small>First-party Aim4price data</small>
-          </div>
-        </section>
 
         <section className={styles.dashboardSection} aria-labelledby="overview-heading">
           <div className={styles.sectionHeading}>

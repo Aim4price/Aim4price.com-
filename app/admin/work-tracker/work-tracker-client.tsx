@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import AdminNavigation from "../../../components/AdminNavigation";
 import {
   ADMIN_WORK_NOTE_MAX_LENGTH,
   formatAdminWorkDuration,
@@ -456,11 +456,7 @@ export default function WorkTrackerClient({ initialClients }: { initialClients: 
           <h1>Work tracker</h1>
           <span>Start and stop work, then prepare a simple owner report.</span>
         </div>
-        <nav className={styles.adminNav} aria-label="Admin work tracker navigation">
-          <Link href="/admin" className={styles.adminNavLink}>Users</Link>
-          <Link href="/admin/dashboard" className={styles.adminNavLink}>Dashboard</Link>
-          <Link href="/admin/work-tracker" className={`${styles.adminNavLink} ${styles.adminNavActive}`} aria-current="page">Work tracker</Link>
-        </nav>
+        <AdminNavigation active="work-tracker" />
       </header>
 
       <section className={styles.privacyBanner}>

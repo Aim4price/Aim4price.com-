@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { existsSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 
@@ -233,19 +234,18 @@ test('notification routing and external-provider approval guard are explicit', a
   assert.match(client, /will not be shared with an external provider without your further approval/i);
 });
 
-test('administrators can disable a whole service or individual location', async () => {
-  const [api, page, client, css] = await Promise.all([
-    read('app/api/admin/assistance-network/route.ts'),
+test('the one-off Admin controls are removed while database-backed locations remain', async () => {
+  const [page, navigation, network] = await Promise.all([
     read('app/admin/assistance-network/page.tsx'),
-    read('app/admin/assistance-network/assistance-network-client.tsx'),
-    read('app/admin/assistance-network/page.module.css'),
+    read('components/AdminNavigation.tsx'),
+    read('lib/assistance-network.ts'),
   ]);
-  assert.match(api, /isAim4priceAdminEmail/);
-  assert.match(api, /export async function PATCH/);
-  assert.match(api, /setAssistanceEnabled/);
   assert.match(page, /requireAdminPageAccess/);
-  assert.match(client, /locationId: location\.id/);
-  assert.match(client, /Service on/);
-  assert.match(client, /Visible/);
-  assert.match(css, /@media \(max-width: 620px\)/);
+  assert.match(page, /redirect\('\/admin'\)/);
+  assert.doesNotMatch(navigation, /assistance-network|Assistance Network/);
+  assert.equal(existsSync(new URL('../app/admin/assistance-network/assistance-network-client.tsx', import.meta.url)), false);
+  assert.equal(existsSync(new URL('../app/admin/assistance-network/page.module.css', import.meta.url)), false);
+  assert.equal(existsSync(new URL('../app/api/admin/assistance-network/route.ts', import.meta.url)), false);
+  assert.match(network, /listAssistanceDirectoryEntries/);
+  assert.match(network, /aim4price_assistance_locations/);
 });

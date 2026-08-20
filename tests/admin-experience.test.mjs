@@ -13,6 +13,8 @@ const adminStorageUsage = read("lib/admin-storage-usage.ts");
 const adminDashboard = read("lib/admin-dashboard.ts");
 const dashboard = read("app/admin/dashboard/page.tsx");
 const dashboardStyles = read("app/admin/dashboard/page.module.css");
+const adminNavigation = read("components/AdminNavigation.tsx");
+const adminNavigationStyles = read("components/AdminNavigation.module.css");
 
 test("the one-page lifecycle flow has clear navigation and selectable structures", () => {
   assert.match(lifecycle, /href="#lifecycle-setup"/);
@@ -21,7 +23,7 @@ test("the one-page lifecycle flow has clear navigation and selectable structures
   assert.match(lifecycle, /href="#lifecycle-results"/);
   assert.match(lifecycle, /href="#lifecycle-planning"/);
   assert.match(lifecycle, /aria-pressed=\{scenario\.id === state\.preferredScenario\}/);
-  assert.match(lifecycle, /Choose the structure to use in the advice summary/);
+  assert.match(lifecycle, /Choose the structure to use in the ownership summary/);
   assert.match(lifecycle, /See the cost and cash-flow trade-off clearly/);
   assert.match(lifecycleStyles, /\.workspaceNav \{[\s\S]*?position: sticky/);
   assert.match(lifecycleStyles, /\.scenarioChoiceActive/);
@@ -49,12 +51,15 @@ test("the users page separates navigation, account health and filtering", () => 
   assert.match(users, /<h1>User accounts<\/h1>/);
   assert.match(users, /aria-label="Account summary"/);
   assert.match(users, /accountSummary\.active/);
-  assert.match(users, /className=\{`\$\{styles\.adminNavLink\} \$\{styles\.adminNavActive\}`\}/);
+  assert.match(users, /<AdminNavigation active="accounts" \/>/);
   assert.match(users, /Clear filters/);
   assert.match(users, /setSignupDateFilter\("all"\)/);
   assert.match(userStyles, /\.userSummary/);
   assert.match(userStyles, /\.filterPanel/);
-  assert.match(userStyles, /\.adminNavActive/);
+  assert.match(adminNavigation, /aria-current=\{isActive \? "page" : undefined\}/);
+  assert.match(adminNavigationStyles, /\.active/);
+  assert.match(adminNavigationStyles, /@media \(max-width: 980px\)/);
+  assert.match(adminNavigationStyles, /@media print[\s\S]*?display: none !important/);
 });
 
 test("selecting an admin account opens an accessible options modal", () => {
@@ -63,13 +68,17 @@ test("selecting an admin account opens an accessible options modal", () => {
   assert.match(users, /aria-labelledby="admin-account-action-modal-title"/);
   assert.match(users, /keepFocusInsideModal/);
   assert.match(users, /accountModalTriggerRef\.current\?\.focus\(\)/);
-  assert.match(users, /Open account/);
+  assert.match(users, /Start work & open account/);
+  assert.match(users, /Open without tracking/);
+  assert.match(users, /Send message/);
   assert.match(users, /Send password reset/);
   assert.match(users, /Manage asset names/);
   assert.match(users, /Print QR labels/);
   assert.match(users, /Delete account/);
   assert.doesNotMatch(users, /<th>Actions<\/th>/);
   assert.match(userStyles, /\.accountActionGrid/);
+  assert.match(userStyles, /\.accountPrimaryActions/);
+  assert.match(userStyles, /\.accountStorageDetails/);
   assert.match(userStyles, /\.accountRow:focus-within/);
   assert.match(userStyles, /min-width: 900px/);
 });
@@ -79,6 +88,9 @@ test("admin users and pricing metrics share one logical storage ledger", () => {
   assert.match(adminUsers, /buildLogicalClientStorageSelect/);
   assert.match(adminDashboard, /buildLogicalClientStorageSelect/);
   assert.match(adminDashboard, /with all_uploads as/);
+  assert.match(adminDashboard, /Full estimates saved/);
+  assert.doesNotMatch(adminDashboard, /PayFast\/payment logic/);
+  assert.match(dashboard, /timeZone: "Africa\/Johannesburg"/);
   assert.doesNotMatch(adminDashboard, /1024 \* 1024/);
   assert.doesNotMatch(
     adminDashboard,
@@ -111,14 +123,27 @@ test("admin users and pricing metrics share one logical storage ledger", () => {
 });
 
 test("the dashboard prioritises headline metrics and collapses optional detail", () => {
-  assert.match(dashboard, /Live Aim4price activity/);
+  assert.doesNotMatch(dashboard, /Live Aim4price activity/);
   assert.match(dashboard, /At a glance/);
   assert.match(dashboard, /Growth and engagement/);
   assert.match(dashboard, /Asset workspace adoption/);
   assert.match(dashboard, /<details className=\{styles\.detailsSection\}>/);
   assert.match(dashboard, /Detailed product activity/);
-  assert.match(dashboard, /styles\.adminButtonActive/);
-  assert.match(dashboardStyles, /\.dashboardHero/);
+  assert.match(dashboard, /<AdminNavigation active="dashboard" \/>/);
+  assert.doesNotMatch(dashboard, /className=\{styles\.dashboardHero\}/);
   assert.match(dashboardStyles, /\.featuredCard/);
   assert.match(dashboardStyles, /\.detailsSection\[open\]/);
+});
+
+test("all Admin pages use one complete navigation without Assistance Network controls", () => {
+  for (const path of [
+    "/admin",
+    "/admin/dashboard",
+    "/admin/work-tracker",
+    "/admin/capture-queue",
+    "/admin/lifecycle-calculator",
+  ]) {
+    assert.match(adminNavigation, new RegExp(`href: "${path.replaceAll("/", "\\/")}"`));
+  }
+  assert.doesNotMatch(adminNavigation, /assistance-network|Assistance Network/);
 });

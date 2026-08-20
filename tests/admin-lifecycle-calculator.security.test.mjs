@@ -15,6 +15,7 @@ const constants = read("lib/account-constants.ts");
 const header = read("components/AppHeader.tsx");
 const adminUsers = read("app/admin/admin-client.tsx");
 const adminDashboard = read("app/admin/dashboard/page.tsx");
+const adminNavigation = read("components/AdminNavigation.tsx");
 
 test("the server page blocks rendering until the existing admin guard succeeds", () => {
   assert.match(page, /await requireAdminPageAccess\(\);/);
@@ -48,9 +49,10 @@ test("the client contains no account email checks or persisted admin bypass", ()
 
 test("normal navigation stays private while all admin navigation links to the model", () => {
   assert.doesNotMatch(header, /\/admin\/lifecycle-calculator/);
-  assert.match(page, /href="\/admin\/lifecycle-calculator"/);
-  assert.match(adminUsers, /href="\/admin\/lifecycle-calculator"/);
-  assert.match(adminDashboard, /href="\/admin\/lifecycle-calculator"/);
+  assert.match(adminNavigation, /href: "\/admin\/lifecycle-calculator"/);
+  assert.match(page, /<AdminNavigation active="lifecycle" \/>/);
+  assert.match(adminUsers, /<AdminNavigation active="accounts" \/>/);
+  assert.match(adminDashboard, /<AdminNavigation active="dashboard" \/>/);
 });
 
 test("the calculator is a live workspace rather than a gated wizard", () => {
@@ -142,6 +144,6 @@ test("workspace comparison tables and panels adapt to smaller screens and print"
   assert.match(styles, /\.workspace \{/);
   assert.match(styles, /\.answerStrip \{[\s\S]*?grid-template-columns: repeat\(5/);
   assert.match(styles, /\.comparisonWrap \{[\s\S]*?overflow-x: auto/);
-  assert.match(styles, /@media \(max-width: 760px\)[\s\S]*?\.answerStrip,[\s\S]*?grid-template-columns: 1fr/);
+  assert.match(styles, /@media \(max-width: 980px\)[\s\S]*?\.answerStrip,[\s\S]*?grid-template-columns: 1fr/);
   assert.match(styles, /@media print[\s\S]*?\.headerActions/);
 });
