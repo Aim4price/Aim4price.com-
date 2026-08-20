@@ -107,3 +107,19 @@ test('Cost Ledger exposes total-spend controls only to the direct owner experien
     assert.match(costStyles, new RegExp(`\\.${styleName}\\b`), `missing .${styleName} CSS module class`);
   }
 });
+
+test('budget setup uses the shared searchable asset-picker experience instead of a native select', () => {
+  const modalStart = costClient.indexOf('{budgetModalOpen ?');
+  const modalEnd = costClient.indexOf('{budgetDeleteCandidate ?', modalStart);
+  const budgetModal = costClient.slice(modalStart, modalEnd);
+
+  assert.ok(modalStart >= 0 && modalEnd > modalStart, 'budget modal source should be present');
+  assert.match(budgetModal, /Choose budget scope/);
+  assert.match(budgetModal, /Search saved assets/);
+  assert.match(budgetModal, /budgetAssetPickerOpen/);
+  assert.match(budgetModal, /budgetScopeTrigger/);
+  assert.match(budgetModal, /filteredBudgetAssets/);
+  assert.doesNotMatch(budgetModal, /<select\b/);
+  assert.match(costStyles, /\.budgetSetupGrid\b/);
+  assert.match(costStyles, /\.budgetScopeRowSelected\b/);
+});

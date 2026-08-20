@@ -3687,14 +3687,14 @@
 
 .budgetSection {
   display: grid;
-  gap: 1rem;
-  padding: clamp(1.1rem, 2.2vw, 1.55rem);
-  border: 1px solid rgba(196, 218, 210, 0.96);
-  border-radius: 1.35rem;
+  gap: 1.15rem;
+  padding: clamp(1.2rem, 2.4vw, 1.7rem);
+  border: 1px solid rgba(210, 224, 232, 0.96);
+  border-radius: 1.55rem;
   background:
-    radial-gradient(circle at top right, rgba(25, 116, 84, 0.09), transparent 36%),
-    linear-gradient(180deg, #ffffff 0%, #f7fbf9 100%);
-  box-shadow: 0 16px 38px rgba(20, 68, 54, 0.065);
+    radial-gradient(circle at top left, rgba(25, 116, 84, 0.055), transparent 32%),
+    linear-gradient(180deg, #ffffff 0%, #f8fbfc 100%);
+  box-shadow: 0 16px 38px rgba(16, 41, 36, 0.055), inset 0 1px 0 #ffffff;
 }
 
 .budgetSectionHeader {
@@ -3704,8 +3704,34 @@
   gap: 1rem;
 }
 
-.budgetSectionHeader > div {
+.budgetSectionHeading {
   min-width: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 1rem;
+}
+
+.budgetSectionHeading > div {
+  min-width: 0;
+}
+
+.budgetSectionIcon {
+  width: 3.65rem;
+  height: 3.65rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(190, 224, 206, 0.98);
+  border-radius: 1.05rem;
+  color: var(--brand-mid);
+  background: linear-gradient(180deg, #ffffff 0%, #edf8f2 100%);
+  box-shadow: 0 10px 22px rgba(18, 72, 55, 0.06), inset 0 1px 0 #ffffff;
+}
+
+.budgetSectionIcon svg {
+  width: 1.8rem;
+  height: 1.8rem;
 }
 
 .budgetEyebrow,
@@ -3739,32 +3765,37 @@
 .budgetGrid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 19rem), 1fr));
-  gap: 0.9rem;
+  gap: 1rem;
 }
 
 .budgetCard {
   --budget-accent: #197454;
+  --budget-accent-soft: #edf8f3;
+  --budget-accent-border: #c1dfd2;
   display: grid;
-  gap: 0.8rem;
+  gap: 0.9rem;
   min-width: 0;
-  padding: 1rem;
-  border: 1px solid rgba(190, 213, 204, 0.96);
-  border-top: 0.25rem solid var(--budget-accent);
-  border-radius: 1.05rem;
-  background: rgba(255, 255, 255, 0.96);
-  box-shadow: 0 10px 24px rgba(20, 54, 46, 0.055);
+  padding: 1.1rem;
+  border: 1px solid var(--budget-accent-border);
+  border-radius: 1.2rem;
+  background:
+    radial-gradient(circle at top right, var(--budget-accent-soft), transparent 42%),
+    linear-gradient(180deg, #ffffff 0%, #fbfdfc 100%);
+  box-shadow: 0 10px 24px rgba(16, 41, 36, 0.045), inset 0 3px 0 var(--budget-accent);
   scroll-margin: 7rem;
   transition: box-shadow 180ms ease, transform 180ms ease, border-color 180ms ease;
 }
 
 .budgetCardWarning {
   --budget-accent: #b6771c;
-  border-color: rgba(221, 187, 126, 0.95);
+  --budget-accent-soft: #fff7e8;
+  --budget-accent-border: #ead4aa;
 }
 
 .budgetCardOver {
   --budget-accent: #b13b35;
-  border-color: rgba(224, 160, 156, 0.96);
+  --budget-accent-soft: #fff1f0;
+  --budget-accent-border: #e7bfbc;
 }
 
 .budgetCardFocused {
@@ -3794,10 +3825,33 @@
   white-space: nowrap;
 }
 
-.budgetCardTop span {
+.budgetCardContext {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.budgetCardContext > span:not(.budgetPeriodBadge) {
+  min-width: 0;
+  overflow: hidden;
   color: var(--text-muted);
   font-size: 0.78rem;
   font-weight: 730;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.budgetPeriodBadge {
+  flex: 0 0 auto;
+  padding: 0.25rem 0.48rem;
+  border: 1px solid var(--budget-accent-border);
+  border-radius: 999px;
+  color: var(--budget-accent);
+  background: var(--budget-accent-soft);
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.025em;
 }
 
 .budgetEditButton {
@@ -3886,6 +3940,16 @@
   font-weight: 930;
 }
 
+.budgetStatusPill {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  padding: 0.28rem 0.52rem;
+  border: 1px solid var(--budget-accent-border);
+  border-radius: 999px;
+  background: var(--budget-accent-soft);
+}
+
 .budgetMeta {
   align-items: flex-end;
   padding-top: 0.72rem;
@@ -3961,18 +4025,269 @@
 }
 
 .budgetModal {
-  width: min(100%, 720px);
+  width: min(100%, 1060px);
+  max-height: min(92vh, calc(100dvh - 1rem));
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 0;
+  padding: clamp(1.35rem, 2.2vw, 1.85rem);
+  border-radius: 2rem;
+}
+
+.budgetModal .modalHeader {
+  align-items: flex-start;
+  gap: 1rem;
+  margin: 0 0 1rem;
+  padding: 0 0 1rem;
+  border-bottom: 1px solid rgba(216, 226, 236, 0.9);
+}
+
+.budgetModal .modalHeader > div {
+  min-width: 0;
+}
+
+.budgetModal .modalHeader h2 {
+  margin: 0;
+  color: #0f3329;
+  font-size: clamp(1.85rem, 2.45vw, 2.35rem);
+  font-weight: 720;
+  line-height: 1.04;
+  letter-spacing: -0.04em;
+  text-transform: none;
+}
+
+.budgetModal .modalHeader p {
+  max-width: 46rem;
+  margin: 0.38rem 0 0;
+  color: #607286;
+  font-size: 1.04rem;
+  font-weight: 590;
+  line-height: 1.4;
+}
+
+.budgetModal .closeButton {
+  width: 3.25rem;
+  min-width: 3.25rem;
+  height: 3.25rem;
+  min-height: 3.25rem;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #f7fbff 0%, #eef5fb 100%);
+  border-color: rgba(210, 222, 237, 0.98);
+}
+
+.budgetModal .modalDivider {
+  display: none;
+}
+
+.budgetAssetPickerModal {
+  width: min(100%, 1060px);
+  max-height: min(92vh, calc(100dvh - 1rem));
+  border-radius: 2rem;
+}
+
+.budgetAssetList {
+  min-height: min(20rem, 42vh);
+}
+
+.budgetScopeRow {
+  transition: border-color 160ms ease, background 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+
+.budgetScopeRow:focus-visible {
+  outline: 3px solid rgba(25, 116, 84, 0.16);
+  outline-offset: 0.12rem;
+}
+
+.budgetScopeRowSelected {
+  border-color: rgba(116, 183, 153, 0.96);
+  background:
+    radial-gradient(circle at top left, rgba(25, 116, 84, 0.07), transparent 40%),
+    linear-gradient(180deg, #ffffff 0%, #edf8f2 100%);
+  box-shadow: 0 12px 26px rgba(18, 83, 61, 0.08), inset 0 1px 0 #ffffff;
+}
+
+.budgetScopeRowAction {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 5rem;
+  min-height: 2.45rem;
+  padding: 0 0.75rem;
+  border: 1px solid rgba(190, 224, 206, 0.98);
+  border-radius: 0.85rem;
+  color: #126044;
+  background: #edf8f2;
+  font-size: 0.8rem;
+  font-weight: 900;
 }
 
 .budgetFormBody {
   display: grid;
+  align-content: start;
   gap: 1rem;
+  min-height: 0;
+  margin-right: -0.2rem;
+  padding: 0 0.68rem 0 0;
 }
 
-.budgetFormGrid {
+.budgetSetupGrid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1rem;
+}
+
+.budgetSetupCard {
+  min-width: 0;
+  display: grid;
+  align-content: start;
+  gap: 1rem;
+  padding: 1.1rem;
+  border: 1px solid rgba(216, 226, 236, 0.96);
+  border-radius: 1.3rem;
+  background:
+    radial-gradient(circle at top left, rgba(22, 83, 64, 0.045), transparent 36%),
+    linear-gradient(180deg, #ffffff 0%, #f8fbfc 100%);
+  box-shadow: 0 10px 22px rgba(16, 31, 28, 0.032), inset 0 1px 0 #ffffff;
+}
+
+.budgetSetupCardHeader {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.budgetSetupCardHeader > div {
+  min-width: 0;
+  display: grid;
+  gap: 0.2rem;
+}
+
+.budgetSetupCardHeader h3 {
+  margin: 0;
+  color: #10352b;
+  font-size: 1.06rem;
+  font-weight: 850;
+  line-height: 1.2;
+  letter-spacing: -0.025em;
+}
+
+.budgetSetupCardHeader p {
+  margin: 0;
+  color: #627386;
+  font-size: 0.82rem;
+  font-weight: 620;
+  line-height: 1.38;
+}
+
+.budgetSetupIcon {
+  width: 3.35rem;
+  height: 3.35rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(207, 224, 234, 0.96);
+  border-radius: 1rem;
+  color: var(--brand-mid);
+  background: #ffffff;
+  box-shadow: 0 8px 18px rgba(16, 31, 28, 0.035), inset 0 1px 0 #ffffff;
+}
+
+.budgetSetupIcon svg {
+  width: 1.6rem;
+  height: 1.6rem;
+}
+
+.budgetScopeTrigger {
+  width: 100%;
+  min-width: 0;
+  min-height: 5rem;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 0.82rem 0.95rem;
+  border: 1px solid rgba(184, 207, 216, 0.98);
+  border-radius: 1.05rem;
+  color: var(--brand-dark);
+  background: #ffffff;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.98);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
+}
+
+.budgetScopeTrigger:hover,
+.budgetScopeTrigger:focus-visible {
+  border-color: rgba(22, 83, 64, 0.42);
+  background: linear-gradient(180deg, #ffffff 0%, #f5fbf8 100%);
+  box-shadow: 0 0 0 4px rgba(22, 83, 64, 0.09), inset 0 1px 0 #ffffff;
+  outline: none;
+}
+
+.budgetScopeTrigger:disabled {
+  color: #7c8794;
+  background: #f4f6f8;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.budgetScopeCopy {
+  min-width: 0;
+  display: grid;
+  gap: 0.16rem;
+}
+
+.budgetScopeCopy > span {
+  color: #5f7184;
+  font-size: 0.72rem;
+  font-weight: 850;
+  letter-spacing: 0.045em;
+  text-transform: uppercase;
+}
+
+.budgetScopeCopy strong {
+  min-width: 0;
+  overflow: hidden;
+  color: #103f32;
+  font-size: 1rem;
+  font-weight: 850;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.budgetScopeCopy small {
+  min-width: 0;
+  overflow: hidden;
+  color: #697a8d;
+  font-size: 0.76rem;
+  font-weight: 650;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.budgetScopeAction {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--brand-mid);
+  font-size: 0.8rem;
+  font-weight: 900;
+}
+
+.budgetScopeAction svg {
+  width: 0.95rem;
+  height: 0.95rem;
+  transform: rotate(-90deg);
+}
+
+.budgetLimitGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.9rem;
 }
 
 .budgetField,
@@ -3989,27 +4304,23 @@
 .budgetField > span,
 .budgetPeriodField legend {
   padding: 0;
-  color: #26473f;
-  font-size: 0.78rem;
-  font-weight: 900;
+  color: #263845;
+  font-size: 0.86rem;
+  font-weight: 760;
 }
 
-.budgetField select,
 .budgetField input,
 .budgetMoneyInput,
 .budgetPercentInput {
   width: 100%;
-  min-height: 3.15rem;
+  min-height: 3.65rem;
   border: 1px solid rgba(184, 207, 216, 0.98);
-  border-radius: 0.9rem;
+  border-radius: 1.05rem;
   color: var(--brand-dark);
   background: #ffffff;
   font: inherit;
-  font-weight: 780;
-}
-
-.budgetField select {
-  padding: 0 2.5rem 0 0.9rem;
+  font-size: 1.05rem;
+  font-weight: 650;
 }
 
 .budgetMoneyInput,
@@ -4021,16 +4332,17 @@
 
 .budgetMoneyInput > span,
 .budgetPercentInput > span {
-  padding: 0 0.8rem;
-  color: #5b716b;
+  padding: 0 0.95rem;
+  color: #124635;
+  font-size: 1.05rem;
   font-weight: 900;
 }
 
 .budgetMoneyInput input,
 .budgetPercentInput input {
   min-width: 0;
-  min-height: 3rem;
-  padding: 0 0.85rem;
+  min-height: 3.55rem;
+  padding: 0 0.95rem;
   border: 0;
   border-radius: 0;
   outline: 0;
@@ -4040,16 +4352,16 @@
   text-align: right;
 }
 
-.budgetField select:focus,
 .budgetMoneyInput:focus-within,
 .budgetPercentInput:focus-within {
-  outline: 3px solid rgba(25, 116, 84, 0.14);
+  outline: 0;
   border-color: rgba(25, 116, 84, 0.52);
+  box-shadow: 0 0 0 4px rgba(22, 83, 64, 0.09), inset 0 1px 0 #ffffff;
 }
 
 .budgetField small {
   color: var(--text-muted);
-  font-size: 0.72rem;
+  font-size: 0.74rem;
   font-weight: 650;
   line-height: 1.4;
 }
@@ -4057,21 +4369,21 @@
 .budgetPeriodControl {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.3rem;
-  min-height: 3.15rem;
-  padding: 0.28rem;
+  gap: 0.35rem;
+  min-height: 3.65rem;
+  padding: 0.32rem;
   border: 1px solid rgba(184, 207, 216, 0.98);
-  border-radius: 0.9rem;
+  border-radius: 1.05rem;
   background: #f0f5f3;
 }
 
 .budgetPeriodControl button {
   border: 0;
-  border-radius: 0.67rem;
+  border-radius: 0.78rem;
   color: #536a64;
   background: transparent;
   font: inherit;
-  font-size: 0.84rem;
+  font-size: 0.92rem;
   font-weight: 880;
   cursor: pointer;
 }
@@ -4086,11 +4398,14 @@
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
-  gap: 0.7rem;
-  padding: 0.85rem 0.95rem;
-  border: 1px solid rgba(194, 214, 207, 0.96);
-  border-radius: 0.95rem;
-  background: #f8fbfa;
+  gap: 0.85rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid rgba(190, 224, 206, 0.98);
+  border-radius: 1.15rem;
+  background:
+    radial-gradient(circle at top left, rgba(22, 83, 64, 0.055), transparent 42%),
+    linear-gradient(180deg, #ffffff 0%, #edf8f2 100%);
+  box-shadow: 0 8px 18px rgba(18, 72, 55, 0.035), inset 0 1px 0 #ffffff;
   cursor: pointer;
 }
 
@@ -4142,29 +4457,29 @@
 
 .budgetFuelToggle strong {
   color: var(--brand-dark);
-  font-size: 0.86rem;
+  font-size: 0.94rem;
   font-weight: 900;
 }
 
 .budgetFuelToggle small {
   color: var(--text-muted);
-  font-size: 0.74rem;
+  font-size: 0.8rem;
   font-weight: 650;
 }
 
 .budgetHelper,
 .budgetFormError {
-  padding: 0.78rem 0.9rem;
-  border-radius: 0.85rem;
-  font-size: 0.78rem;
+  padding: 0.85rem 0.95rem;
+  border-radius: 1rem;
+  font-size: 0.8rem;
   font-weight: 700;
   line-height: 1.45;
 }
 
 .budgetHelper {
-  border: 1px solid #d3e8de;
+  border: 1px solid #d0e5dc;
   color: #3f695d;
-  background: #eff9f4;
+  background: #f2faf6;
 }
 
 .budgetFormError {
@@ -4176,6 +4491,11 @@
 .budgetModalFooter {
   align-items: center;
   justify-content: space-between;
+  gap: 0.8rem;
+  margin: 1rem 0 0;
+  padding: 1rem 0 0;
+  border-top: 1px solid rgba(216, 226, 236, 0.88);
+  background: transparent;
 }
 
 .budgetModalActions,
@@ -4183,6 +4503,15 @@
   display: flex;
   justify-content: flex-end;
   gap: 0.7rem;
+}
+
+.budgetModalActions .primaryButton,
+.budgetModalActions .secondaryButton,
+.budgetDeleteButton {
+  min-height: 3.35rem;
+  border-radius: 1rem;
+  padding-inline: 1.25rem;
+  font-size: 0.96rem;
 }
 
 .budgetDeleteButton {
@@ -4242,6 +4571,12 @@
   font-weight: 700;
 }
 
+@media (max-width: 900px) {
+  .budgetSetupGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 720px) {
   .budgetSectionHeader,
   .budgetStatusRow,
@@ -4261,8 +4596,49 @@
     width: 100%;
   }
 
-  .budgetFormGrid {
+  .budgetLimitGrid {
     grid-template-columns: 1fr;
+  }
+
+  .budgetSectionHeading {
+    align-items: flex-start;
+  }
+
+  .budgetSectionIcon {
+    width: 3.25rem;
+    height: 3.25rem;
+  }
+
+  .budgetModal,
+  .budgetAssetPickerModal {
+    max-height: calc(100dvh - 1rem);
+    padding: 1rem;
+    border-radius: 1.3rem;
+  }
+
+  .budgetAssetPickerModal {
+    padding: 0;
+  }
+
+  .budgetScopeTrigger {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .budgetScopeAction {
+    justify-self: start;
+  }
+
+  .budgetScopeCopy strong,
+  .budgetScopeCopy small {
+    white-space: normal;
+  }
+
+  .budgetScopeRow {
+    grid-template-columns: 1fr;
+  }
+
+  .budgetScopeRowAction {
+    justify-self: start;
   }
 
   .budgetMeta span:last-child {
