@@ -458,6 +458,18 @@ function DownloadIcon(props: SVGProps<SVGSVGElement>) {
   );
 }
 
+function ContributionIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <IconBase {...props}>
+      <circle cx="18" cy="5" r="2.25" />
+      <circle cx="6" cy="12" r="2.25" />
+      <circle cx="18" cy="19" r="2.25" />
+      <path d="m8 11 7.8-4.6" />
+      <path d="m8 13 7.8 4.6" />
+    </IconBase>
+  );
+}
+
 function CsvIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <IconBase {...props}>
@@ -1136,6 +1148,8 @@ export default function MyInvoicesClient({
   const [costBudgets, setCostBudgets] = useState<CostBudgetProgress[]>([]);
   const [budgetsLoading, setBudgetsLoading] = useState(canManageBudgets);
   const [budgetLoadError, setBudgetLoadError] = useState('');
+  const [budgetManagerNotice, setBudgetManagerNotice] = useState<Notice | null>(null);
+  const [budgetManagerOpen, setBudgetManagerOpen] = useState(false);
   const [budgetModalOpen, setBudgetModalOpen] = useState(false);
   const [budgetAssetPickerOpen, setBudgetAssetPickerOpen] = useState(false);
   const [budgetAssetSearch, setBudgetAssetSearch] = useState('');
@@ -1145,9 +1159,17 @@ export default function MyInvoicesClient({
   const [budgetFormError, setBudgetFormError] = useState('');
   const [budgetDeleteCandidate, setBudgetDeleteCandidate] = useState<CostBudgetProgress | null>(null);
   const [budgetDeletingId, setBudgetDeletingId] = useState<string | null>(null);
+  const [budgetDeleteError, setBudgetDeleteError] = useState('');
   const [focusedBudgetId, setFocusedBudgetId] = useState<string | null>(null);
   const [handledBudgetDeepLinkId, setHandledBudgetDeepLinkId] = useState('');
+  const pageShellRef = useRef<HTMLElement>(null);
+  const budgetManagerTriggerRef = useRef<HTMLButtonElement>(null);
+  const budgetManagerDialogRef = useRef<HTMLDivElement>(null);
+  const budgetManagerReturnFocusRef = useRef('');
   const budgetScopeTriggerRef = useRef<HTMLButtonElement>(null);
+  const budgetDeleteButtonRef = useRef<HTMLButtonElement>(null);
+  const budgetDeleteCancelRef = useRef<HTMLButtonElement>(null);
+  const budgetDeleteReturnFocusRef = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -1229,6 +1251,9 @@ export default function MyInvoicesClient({
       year: budget.periodKey.slice(0, 4),
       month: budget.period === 'monthly' ? String(Number(budget.periodKey.slice(5, 7))) : 'all',
     };
+    budgetManagerReturnFocusRef.current = budget.id;
+    setBudgetManagerNotice(null);
+    setBudgetManagerOpen(true);
     setFocusedBudgetId(budget.id);
     setActiveFilters(filters);
     setDraftFilters(filters);
@@ -1447,6 +1472,10 @@ export default function MyInvoicesClient({
       activeFilters.month !== 'all',
     ].filter(Boolean).length;
   }, [activeFilters, dealerMode]);
+  const budgetAttentionCount = useMemo(
+    () => costBudgets.filter((budget) => budget.status !== 'on_track').length,
+    [costBudgets],
+  );
 
   const sourceChoiceOpen = flow === 'source-choice';
   const assetPickerOpen = flow === 'asset-manual' || flow === 'asset-automatic';
@@ -1470,6 +1499,7 @@ export default function MyInvoicesClient({
     || downloadOpen
     || accountingSettingsOpen
     || deleteConfirmOpen
+    || budgetManagerOpen
     || budgetModalOpen
     || Boolean(budgetDeleteCandidate);
   const selectedUsageMetricOption = USAGE_METRIC_OPTIONS.find((option) => option.value === draft.usageMetric) ?? USAGE_METRIC_OPTIONS[0];
@@ -1487,14 +1517,118 @@ export default function MyInvoicesClient({
 
     const previousBodyOverflow = document.body.style.overflow;
     const previousHtmlOverflow = document.documentElement.style.overflow;
+    const pageShell = pageShellRef.current;
     document.body.style.overflow = 'hidden';
     document.documentElement.style.overflow = 'hidden';
+    pageShell?.setAttribute('inert', '');
 
     return () => {
       document.body.style.overflow = previousBodyOverflow;
       document.documentElement.style.overflow = previousHtmlOverflow;
+      pageShell?.removeAttribute('inert');
     };
   }, [modalOpen]);
+
+  useEffect(() => {
+    if (!budgetManagerOpen || budgetModalOpen || budgetDeleteCandidate) return undefined;
+    const dialog = budgetManagerDialogRef.current;
+    if (!dialog) return undefined;
+    const dialogElement: HTMLDivElement = dialog;
+
+    const focusFrame = window.requestAnimationFrame(() => {
+      const returnTarget = budgetManagerReturnFocusRef.current;
+      const returnButton = returnTarget
+        ? Array.from(dialogElement.querySelectorAll<HTMLButtonElement>('[data-budget-trigger]'))
+          .find((button) => button.dataset.budgetTrigger === returnTarget)
+        : null;
+      const fallbackButton = dialogElement.querySelector<HTMLButtonElement>('[data-budget-manager-close]')
+        ?? dialogElement.querySelector<HTMLButtonElement>('[data-budget-trigger="add"]');
+      (returnButton ?? fallbackButton ?? dialogElement).focus();
+      budgetManagerReturnFocusRef.current = '';
+    });
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        setBudgetManagerOpen(false);
+        setBudgetManagerNotice(null);
+        budgetManagerReturnFocusRef.current = '';
+        window.requestAnimationFrame(() => budgetManagerTriggerRef.current?.focus());
+        return;
+      }
+      if (event.key !== 'Tab') return;
+
+      const focusable = Array.from(dialogElement.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      ));
+      if (!focusable.length) {
+        event.preventDefault();
+        dialogElement.focus();
+        return;
+      }
+      const activeIndex = focusable.indexOf(document.activeElement as HTMLElement);
+      if (event.shiftKey && activeIndex <= 0) {
+        event.preventDefault();
+        focusable[focusable.length - 1]?.focus();
+      } else if (!event.shiftKey && (activeIndex === -1 || activeIndex === focusable.length - 1)) {
+        event.preventDefault();
+        focusable[0]?.focus();
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.cancelAnimationFrame(focusFrame);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [budgetDeleteCandidate, budgetManagerOpen, budgetModalOpen]);
+
+  useEffect(() => {
+    if (!budgetModalOpen || budgetAssetPickerOpen) return undefined;
+    const focusFrame = window.requestAnimationFrame(() => {
+      const target = budgetDeleteReturnFocusRef.current
+        ? budgetDeleteButtonRef.current
+        : budgetScopeTriggerRef.current;
+      (target ?? budgetScopeTriggerRef.current)?.focus();
+      budgetDeleteReturnFocusRef.current = false;
+    });
+    return () => window.cancelAnimationFrame(focusFrame);
+  }, [budgetAssetPickerOpen, budgetModalOpen]);
+
+  useEffect(() => {
+    if (!budgetDeleteCandidate) return undefined;
+    const focusFrame = window.requestAnimationFrame(() => budgetDeleteCancelRef.current?.focus());
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape' && !budgetDeletingId) {
+        event.preventDefault();
+        budgetDeleteReturnFocusRef.current = true;
+        setBudgetDeleteCandidate(null);
+        setBudgetDeleteError('');
+        setBudgetModalOpen(true);
+        return;
+      }
+      if (event.key !== 'Tab') return;
+      const dialog = budgetDeleteCancelRef.current?.closest('[role="alertdialog"]');
+      if (!dialog) return;
+      const focusable = Array.from(dialog.querySelectorAll<HTMLButtonElement>('button:not([disabled])'));
+      if (!focusable.length) return;
+      const activeIndex = focusable.indexOf(document.activeElement as HTMLButtonElement);
+      if (event.shiftKey && activeIndex <= 0) {
+        event.preventDefault();
+        focusable[focusable.length - 1]?.focus();
+      } else if (!event.shiftKey && (activeIndex === -1 || activeIndex === focusable.length - 1)) {
+        event.preventDefault();
+        focusable[0]?.focus();
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.cancelAnimationFrame(focusFrame);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [budgetDeleteCandidate, budgetDeletingId]);
 
   useEffect(() => {
     if (!budgetModalOpen || !budgetAssetPickerOpen) return undefined;
@@ -1626,7 +1760,22 @@ export default function MyInvoicesClient({
     window.dispatchEvent(new Event('aim4price:cost-ledger-updated'));
   }
 
+  function openBudgetManager() {
+    budgetManagerReturnFocusRef.current = '';
+    setBudgetManagerNotice(null);
+    setBudgetManagerOpen(true);
+  }
+
+  function closeBudgetManager() {
+    setBudgetManagerOpen(false);
+    setBudgetManagerNotice(null);
+    budgetManagerReturnFocusRef.current = '';
+    window.requestAnimationFrame(() => budgetManagerTriggerRef.current?.focus());
+  }
+
   function openCreateBudget() {
+    budgetManagerReturnFocusRef.current = 'add';
+    setBudgetManagerNotice(null);
     const defaultAssetId = activeFilters.assetId !== 'all'
       && assets.some((asset) => asset.id === activeFilters.assetId)
       ? activeFilters.assetId
@@ -1640,6 +1789,8 @@ export default function MyInvoicesClient({
   }
 
   function openEditBudget(budget: CostBudgetProgress) {
+    budgetManagerReturnFocusRef.current = budget.id;
+    setBudgetManagerNotice(null);
     setEditingBudgetId(budget.id);
     setBudgetDraft({
       assetId: budget.assetId || 'all',
@@ -1708,10 +1859,12 @@ export default function MyInvoicesClient({
       setBudgetAssetSearch('');
       setEditingBudgetId(null);
       setBudgetDraft(buildEmptyCostBudgetDraft());
-      setNotice({
+      const successNotice: Notice = {
         tone: 'success',
         message: wasEditing ? 'Spending budget updated.' : 'Spending budget created.',
-      });
+      };
+      setBudgetManagerNotice(successNotice);
+      setNotice(successNotice);
       dispatchCostLedgerUpdated();
     } catch (error) {
       setBudgetFormError(error instanceof Error ? error.message : 'The spending budget could not be saved.');
@@ -1728,22 +1881,26 @@ export default function MyInvoicesClient({
     setBudgetModalOpen(false);
     setBudgetAssetPickerOpen(false);
     setBudgetAssetSearch('');
+    setBudgetDeleteError('');
+    budgetDeleteReturnFocusRef.current = false;
     setBudgetDeleteCandidate(budget);
   }
 
   function closeDeleteBudgetDialog() {
     if (budgetDeletingId) return;
+    budgetDeleteReturnFocusRef.current = true;
     setBudgetDeleteCandidate(null);
+    setBudgetDeleteError('');
     setBudgetAssetPickerOpen(false);
     setBudgetAssetSearch('');
-    setEditingBudgetId(null);
-    setBudgetDraft(buildEmptyCostBudgetDraft());
+    setBudgetModalOpen(true);
   }
 
   async function confirmDeleteBudget() {
     if (!budgetDeleteCandidate) return;
     const budgetId = budgetDeleteCandidate.id;
     setBudgetDeletingId(budgetId);
+    setBudgetDeleteError('');
 
     try {
       const response = await fetch(`/api/my-invoices/budgets/${encodeURIComponent(budgetId)}`, {
@@ -1759,15 +1916,12 @@ export default function MyInvoicesClient({
       if (focusedBudgetId === budgetId) clearFocusedBudgetView();
       setBudgetDeleteCandidate(null);
       setEditingBudgetId(null);
-      setNotice({ tone: 'success', message: 'Spending budget deleted.' });
+      const successNotice: Notice = { tone: 'success', message: 'Spending budget deleted.' };
+      setBudgetManagerNotice(successNotice);
+      setNotice(successNotice);
       dispatchCostLedgerUpdated();
     } catch (error) {
-      setBudgetDeleteCandidate(null);
-      setEditingBudgetId(null);
-      setNotice({
-        tone: 'error',
-        message: error instanceof Error ? error.message : 'The spending budget could not be deleted.',
-      });
+      setBudgetDeleteError(error instanceof Error ? error.message : 'The spending budget could not be deleted.');
     } finally {
       setBudgetDeletingId(null);
     }
@@ -2635,7 +2789,7 @@ export default function MyInvoicesClient({
   return (
     <main className={`${styles.page} ${dealerMode ? styles.dealerCostsPage : ''}`}>
       {shouldShowAppHeader ? <AppHeader active={dealerMode ? 'cost' : 'none'} /> : null}
-      <section className={styles.shell}>
+      <section ref={pageShellRef} className={styles.shell}>
         {notice ? <div className={`${styles.notice} ${styles[notice.tone === 'success' ? 'noticeSuccess' : 'noticeError']}`}>{notice.message}</div> : null}
 
         {dealerMode ? (
@@ -2646,158 +2800,83 @@ export default function MyInvoicesClient({
         ) : (
           <section className={styles.pageTitleBlock}>
             <div>
-              <h1>ASSET COST TRACKING SYSTEM</h1>
+              <h1>COST LEDGER</h1>
             </div>
           </section>
         )}
 
-        {canManageBudgets ? (
-          <section className={styles.budgetSection} aria-labelledby="cost-budget-heading">
-            <div className={styles.budgetSectionHeader}>
-              <div className={styles.budgetSectionHeading}>
-                <span className={styles.budgetSectionIcon} aria-hidden="true"><LedgerIcon /></span>
-                <div>
-                  <span className={styles.budgetEyebrow}>Cost control</span>
-                  <h2 id="cost-budget-heading">Total spend budgets</h2>
-                  <p>Track VAT-inclusive incurred costs across all assets or one asset. Alerts appear at your warning level and when the limit is reached.</p>
-                </div>
-              </div>
-              <button type="button" className={styles.primaryButton} onClick={openCreateBudget}>
-                <span className={styles.plusMark} aria-hidden="true">+</span>
-                Add budget
-              </button>
-            </div>
-
-            {budgetsLoading ? <div className={styles.budgetEmpty}>Loading spending budgets...</div> : null}
-            {!budgetsLoading && budgetLoadError ? (
-              <div className={styles.budgetError} role="alert">
-                <span>{budgetLoadError}</span>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setBudgetLoadError('');
-                    setBudgetsLoading(true);
-                    void reloadBudgets()
-                      .catch((error) => setBudgetLoadError(error instanceof Error ? error.message : 'Spending budgets could not be loaded.'))
-                      .finally(() => setBudgetsLoading(false));
-                  }}
-                >
-                  Try again
-                </button>
-              </div>
-            ) : null}
-            {!budgetsLoading && !budgetLoadError && !costBudgets.length ? (
-              <div className={styles.budgetEmpty}>
-                <strong>No spending budget yet.</strong>
-                <span>Add a monthly or annual total-spend limit to start tracking cost of ownership.</span>
-              </div>
-            ) : null}
-
-            {!budgetsLoading && costBudgets.length ? (
-              <div className={styles.budgetGrid}>
-                {costBudgets.map((budget) => {
-                  const progress = Math.max(0, Math.min(100, budget.percentUsed));
-                  const statusLabel = budget.status === 'over_budget'
-                    ? 'Over budget'
-                    : budget.status === 'warning'
-                      ? 'Near limit'
-                      : 'On track';
-                  return (
-                    <article
-                      id={`cost-budget-${budget.id}`}
-                      key={budget.id}
-                      className={[
-                        styles.budgetCard,
-                        styles[budget.status === 'over_budget'
-                          ? 'budgetCardOver'
-                          : budget.status === 'warning'
-                            ? 'budgetCardWarning'
-                            : 'budgetCardOnTrack'],
-                        focusedBudgetId === budget.id ? styles.budgetCardFocused : '',
-                      ].join(' ')}
-                    >
-                      <div className={styles.budgetCardTop}>
-                        <div>
-                          <strong>{budget.assetTitle}</strong>
-                          <div className={styles.budgetCardContext}>
-                            <span className={styles.budgetPeriodBadge}>{budget.period === 'monthly' ? 'Monthly' : 'Annual'}</span>
-                            <span>{budget.periodLabel}</span>
-                          </div>
-                        </div>
-                        <button
-                          type="button"
-                          className={styles.budgetEditButton}
-                          onClick={() => openEditBudget(budget)}
-                          aria-label={`Edit ${budget.assetTitle} ${budget.period} budget`}
-                        >
-                          <EditIcon />
-                        </button>
-                      </div>
-                      <div className={styles.budgetAmount}>
-                        <strong>{formatMoney(budget.spent)}</strong>
-                        <span>of {formatMoney(budget.amount)} spent</span>
-                      </div>
-                      <div
-                        className={styles.budgetProgressTrack}
-                        role="progressbar"
-                        aria-label={`${budget.assetTitle} budget used`}
-                        aria-valuemin={0}
-                        aria-valuemax={100}
-                        aria-valuenow={Math.round(progress)}
-                      >
-                        <span className={styles.budgetProgressFill} style={{ width: `${progress}%` }} />
-                      </div>
-                      <div className={styles.budgetStatusRow}>
-                        <strong className={styles.budgetStatusPill}>{statusLabel}</strong>
-                        <span>{budget.percentUsed.toLocaleString('en-ZA', { maximumFractionDigits: 1 })}% used</span>
-                      </div>
-                      <div className={styles.budgetMeta}>
-                        <span>{budget.status === 'over_budget' ? `${formatMoney(budget.overBy)} over budget` : `${formatMoney(budget.remaining)} remaining`}</span>
-                        <span>Alert at {budget.warningPercent}% · Fuel {budget.includeFuelSlipCosts ? 'included' : 'excluded'}</span>
-                      </div>
-                    </article>
-                  );
-                })}
-              </div>
-            ) : null}
-          </section>
-        ) : null}
-
-        {canManageInvoiceDropCodes ? (
-          <section className={styles.invoiceDropCodeBanner} aria-label="Invoice Drop contribution codes">
-            <div className={styles.invoiceDropCodeBannerCopy}>
-              <span className={styles.invoiceDropCodeEyebrow}>Invoice Drop</span>
-              <strong>Let a workshop or supplier contribute an invoice</strong>
-              <p>Create a code for one asset, then share it with the public Invoice Drop link. The code permits submission only and reveals no asset details.</p>
-            </div>
+        {!dealerMode ? (
+          <section
+            className={`${styles.costActionGrid} ${canManageBudgets && canManageInvoiceDropCodes ? '' : styles.costActionGridCompact}`}
+            aria-label="Cost Ledger actions"
+          >
             <button
               type="button"
-              className={`${styles.secondaryButton} ${styles.invoiceDropCodeManageButton}`}
-              onClick={openInvoiceDropCodeManager}
-              disabled={isLoading || !assets.length}
+              className={`${styles.secondaryButton} ${styles.costActionButton} ${styles.costActionAdd}`}
+              onClick={() => openAddInvoiceModal()}
             >
-              {assets.length ? 'Manage contribution code' : 'Add an asset first'}
+              <span className={styles.plusMark} aria-hidden="true">+</span>
+              <span>Add Cost</span>
+            </button>
+
+            {canManageBudgets ? (
+              <button
+                ref={budgetManagerTriggerRef}
+                type="button"
+                className={`${styles.secondaryButton} ${styles.costActionButton} ${styles.costActionBudgets}`}
+                onClick={openBudgetManager}
+                aria-haspopup="dialog"
+                aria-label={budgetAttentionCount
+                  ? `Budgets, ${budgetAttentionCount} ${budgetAttentionCount === 1 ? 'alert' : 'alerts'} need attention`
+                  : 'Budgets'}
+              >
+                <LedgerIcon />
+                <span>Budgets</span>
+                {budgetAttentionCount ? (
+                  <strong className={styles.costActionAlert} aria-hidden="true">{budgetAttentionCount}</strong>
+                ) : null}
+              </button>
+            ) : null}
+
+            {canManageInvoiceDropCodes ? (
+              <button
+                type="button"
+                className={`${styles.secondaryButton} ${styles.costActionButton} ${styles.costActionContribution}`}
+                onClick={() => {
+                  if (!assets.length) {
+                    setNotice({ tone: 'error', message: 'Add a saved asset before creating a contribution code.' });
+                    return;
+                  }
+                  openInvoiceDropCodeManager();
+                }}
+                disabled={isLoading}
+                aria-haspopup="dialog"
+                aria-label={isLoading
+                  ? 'Contribution, loading saved assets'
+                  : assets.length
+                    ? 'Contribution'
+                    : 'Contribution, add a saved asset first'}
+              >
+                <ContributionIcon />
+                <span className={styles.costActionCopy}>
+                  <span>Contribution</span>
+                  {isLoading ? <small>Loading assets...</small> : !assets.length ? <small>Add an asset first</small> : null}
+                </span>
+              </button>
+            ) : null}
+
+            <button
+              type="button"
+              className={`${styles.primaryButton} ${styles.costActionButton} ${styles.costActionDownload}`}
+              onClick={openDownloadModal}
+            >
+              <DownloadIcon />
+              <span>Download</span>
             </button>
           </section>
         ) : null}
 
-        <CaptureRequestStatusList
-          requests={captureRequests}
-          onReview={canManageInvoiceDropCodes ? setCaptureReviewRequestId : undefined}
-          onRetract={canRetractCaptureRequests ? retractCaptureRequest : undefined}
-        />
-
-        {focusedBudget ? (
-          <div className={styles.budgetFocusBar}>
-            <span>
-              Showing costs counted by the <strong>{focusedBudget.assetTitle}</strong> {focusedBudget.period} budget
-              {!focusedBudget.includeFuelSlipCosts ? ' (Fuel Slip costs excluded)' : ''}.
-            </span>
-            <button type="button" onClick={clearFocusedBudgetView}>Clear budget view</button>
-          </div>
-        ) : null}
-
-        <section className={styles.invoiceToolbar} aria-label="Saved cost record controls">
+        <section className={`${styles.invoiceToolbar} ${!dealerMode ? styles.ownerInvoiceToolbar : ''}`} aria-label="Saved cost record controls">
           <label className={styles.searchWrap}>
             <SearchIcon className={styles.searchIcon} />
             <input
@@ -2817,24 +2896,42 @@ export default function MyInvoicesClient({
             ) : null}
           </label>
 
-          <div className={`${styles.toolbarButtons} ${dealerMode ? styles.dealerToolbarButtons : ''}`}>
-            <button type="button" className={`${styles.secondaryButton} ${styles.toolbarButton} ${styles.toolbarAddButton}`} onClick={() => openAddInvoiceModal()}>
-              <span className={styles.plusMark} aria-hidden="true">+</span>
-              <span>Add Cost</span>
-            </button>
-            <button type="button" className={`${styles.secondaryButton} ${styles.toolbarButton} ${styles.toolbarFilterButton}`} onClick={openFilterPanel}>
+          {dealerMode ? (
+            <div className={`${styles.toolbarButtons} ${dealerMode ? styles.dealerToolbarButtons : ''}`}>
+              <button type="button" className={`${styles.secondaryButton} ${styles.toolbarButton} ${styles.toolbarAddButton}`} onClick={() => openAddInvoiceModal()}>
+                <span className={styles.plusMark} aria-hidden="true">+</span>
+                <span>Add Cost</span>
+              </button>
+              <button type="button" className={`${styles.secondaryButton} ${styles.toolbarButton} ${styles.toolbarFilterButton}`} onClick={openFilterPanel}>
+                <FilterIcon className={styles.buttonIcon} />
+                <span>Filter</span>
+                {activeFilterCount ? <strong>{activeFilterCount}</strong> : null}
+              </button>
+            </div>
+          ) : (
+            <button type="button" className={`${styles.secondaryButton} ${styles.toolbarButton} ${styles.toolbarFilterButton} ${styles.searchFilterButton}`} onClick={openFilterPanel}>
               <FilterIcon className={styles.buttonIcon} />
               <span>Filter</span>
               {activeFilterCount ? <strong>{activeFilterCount}</strong> : null}
             </button>
-            {!dealerMode ? (
-              <button type="button" className={`${styles.primaryButton} ${styles.toolbarButton} ${styles.toolbarDownloadButton}`} onClick={openDownloadModal}>
-                <DownloadIcon className={styles.buttonIcon} />
-                <span>Download</span>
-              </button>
-            ) : null}
-          </div>
+          )}
         </section>
+
+        <CaptureRequestStatusList
+          requests={captureRequests}
+          onReview={canManageInvoiceDropCodes ? setCaptureReviewRequestId : undefined}
+          onRetract={canRetractCaptureRequests ? retractCaptureRequest : undefined}
+        />
+
+        {focusedBudget ? (
+          <div className={styles.budgetFocusBar}>
+            <span>
+              Showing costs counted by the <strong>{focusedBudget.assetTitle}</strong> {focusedBudget.period} budget
+              {!focusedBudget.includeFuelSlipCosts ? ' (Fuel Slip costs excluded)' : ''}.
+            </span>
+            <button type="button" onClick={clearFocusedBudgetView}>Clear budget view</button>
+          </div>
+        ) : null}
 
         <section className={styles.invoicePanel} aria-label="Saved cost records">
           <div className={styles.invoiceList}>
@@ -2937,6 +3034,160 @@ export default function MyInvoicesClient({
           onClose={closeCaptureReview}
           onResolved={(message) => void handleCaptureReviewResolved(message)}
         />
+      ) : null}
+
+      {budgetManagerOpen && !budgetModalOpen && !budgetDeleteCandidate ? (
+        <div className={styles.modalBackdrop}>
+          <div
+            ref={budgetManagerDialogRef}
+            className={`${styles.formModal} ${styles.budgetManagerModal}`}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="budget-manager-title"
+            aria-busy={budgetsLoading}
+            tabIndex={-1}
+          >
+            <div className={styles.modalHeader}>
+              <div>
+                <h2 id="budget-manager-title">Total spend budgets</h2>
+                <p>Track incurred Cost Ledger spending across all saved assets or one selected asset.</p>
+              </div>
+              <button type="button" className={styles.closeButton} onClick={closeBudgetManager} aria-label="Close spending budgets" data-budget-manager-close>
+                <CloseIcon />
+              </button>
+            </div>
+            <div className={styles.modalDivider} />
+
+            <div className={`${styles.formModalScrollBody} ${styles.budgetManagerBody}`}>
+              <section className={`${styles.budgetSection} ${styles.budgetManagerSection}`} aria-label="Spending budget overview">
+                <div className={styles.budgetManagerToolbar}>
+                  <div>
+                    <span className={styles.budgetEyebrow}>Cost control</span>
+                    <strong>
+                      {budgetsLoading
+                        ? 'Loading budgets...'
+                        : `${costBudgets.length.toLocaleString('en-ZA')} active ${costBudgets.length === 1 ? 'budget' : 'budgets'}`}
+                    </strong>
+                  </div>
+                  <button type="button" className={styles.primaryButton} onClick={openCreateBudget} disabled={budgetsLoading} data-budget-trigger="add">
+                    <span className={styles.plusMark} aria-hidden="true">+</span>
+                    Add budget
+                  </button>
+                </div>
+
+                {budgetManagerNotice ? (
+                  <div
+                    className={`${styles.budgetManagerNotice} ${styles[budgetManagerNotice.tone === 'success'
+                      ? 'budgetManagerNoticeSuccess'
+                      : 'budgetManagerNoticeError']}`}
+                    role={budgetManagerNotice.tone === 'error' ? 'alert' : 'status'}
+                    aria-live={budgetManagerNotice.tone === 'error' ? 'assertive' : 'polite'}
+                  >
+                    {budgetManagerNotice.message}
+                  </div>
+                ) : null}
+
+                {budgetsLoading ? <div className={styles.budgetEmpty}>Loading spending budgets...</div> : null}
+                {!budgetsLoading && budgetLoadError ? (
+                  <div className={styles.budgetError} role="alert">
+                    <span>{budgetLoadError}</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setBudgetLoadError('');
+                        setBudgetsLoading(true);
+                        void reloadBudgets()
+                          .catch((error) => setBudgetLoadError(error instanceof Error ? error.message : 'Spending budgets could not be loaded.'))
+                          .finally(() => setBudgetsLoading(false));
+                      }}
+                    >
+                      Try again
+                    </button>
+                  </div>
+                ) : null}
+                {!budgetsLoading && !budgetLoadError && !costBudgets.length ? (
+                  <div className={styles.budgetEmpty}>
+                    <strong>No spending budget yet.</strong>
+                    <span>Add a monthly or annual total-spend limit to start tracking cost of ownership.</span>
+                  </div>
+                ) : null}
+
+                {!budgetsLoading && costBudgets.length ? (
+                  <div className={styles.budgetGrid}>
+                    {costBudgets.map((budget) => {
+                      const progress = Math.max(0, Math.min(100, budget.percentUsed));
+                      const statusLabel = budget.status === 'over_budget'
+                        ? 'Over budget'
+                        : budget.status === 'warning'
+                          ? 'Near limit'
+                          : 'On track';
+                      return (
+                        <article
+                          id={`cost-budget-${budget.id}`}
+                          key={budget.id}
+                          className={[
+                            styles.budgetCard,
+                            styles[budget.status === 'over_budget'
+                              ? 'budgetCardOver'
+                              : budget.status === 'warning'
+                                ? 'budgetCardWarning'
+                                : 'budgetCardOnTrack'],
+                            focusedBudgetId === budget.id ? styles.budgetCardFocused : '',
+                          ].join(' ')}
+                        >
+                          <div className={styles.budgetCardTop}>
+                            <div>
+                              <strong>{budget.assetTitle}</strong>
+                              <div className={styles.budgetCardContext}>
+                                <span className={styles.budgetPeriodBadge}>{budget.period === 'monthly' ? 'Monthly' : 'Annual'}</span>
+                                <span>{budget.periodLabel}</span>
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              className={styles.budgetEditButton}
+                              onClick={() => openEditBudget(budget)}
+                              aria-label={`Edit ${budget.assetTitle} ${budget.period} budget`}
+                              data-budget-trigger={budget.id}
+                            >
+                              <EditIcon />
+                            </button>
+                          </div>
+                          <div className={styles.budgetAmount}>
+                            <strong>{formatMoney(budget.spent)}</strong>
+                            <span>of {formatMoney(budget.amount)} spent</span>
+                          </div>
+                          <div
+                            className={styles.budgetProgressTrack}
+                            role="progressbar"
+                            aria-label={`${budget.assetTitle} budget used`}
+                            aria-valuemin={0}
+                            aria-valuemax={100}
+                            aria-valuenow={Math.round(progress)}
+                          >
+                            <span className={styles.budgetProgressFill} style={{ width: `${progress}%` }} />
+                          </div>
+                          <div className={styles.budgetStatusRow}>
+                            <strong className={styles.budgetStatusPill}>{statusLabel}</strong>
+                            <span>{budget.percentUsed.toLocaleString('en-ZA', { maximumFractionDigits: 1 })}% used</span>
+                          </div>
+                          <div className={styles.budgetMeta}>
+                            <span>{budget.status === 'over_budget' ? `${formatMoney(budget.overBy)} over budget` : `${formatMoney(budget.remaining)} remaining`}</span>
+                            <span>Alert at {budget.warningPercent}% · Fuel {budget.includeFuelSlipCosts ? 'included' : 'excluded'}</span>
+                          </div>
+                        </article>
+                      );
+                    })}
+                  </div>
+                ) : null}
+              </section>
+            </div>
+
+            <div className={`${styles.modalFooter} ${styles.budgetManagerFooter}`}>
+              <button type="button" className={styles.secondaryButton} onClick={closeBudgetManager}>Done</button>
+            </div>
+          </div>
+        </div>
       ) : null}
 
       {budgetModalOpen ? (
@@ -3165,7 +3416,7 @@ export default function MyInvoicesClient({
               <div className={`${styles.modalFooter} ${styles.budgetModalFooter}`}>
                 <div>
                   {editingBudgetId ? (
-                    <button type="button" className={styles.budgetDeleteButton} onClick={askToDeleteBudget} disabled={budgetSaving}>
+                    <button ref={budgetDeleteButtonRef} type="button" className={styles.budgetDeleteButton} onClick={askToDeleteBudget} disabled={budgetSaving}>
                       Delete budget
                     </button>
                   ) : null}
@@ -3194,8 +3445,9 @@ export default function MyInvoicesClient({
               <strong>{budgetDeleteCandidate.assetTitle}</strong>
               <span>{budgetDeleteCandidate.period === 'monthly' ? 'Monthly' : 'Annual'} · {formatMoney(budgetDeleteCandidate.amount)}</span>
             </div>
+            {budgetDeleteError ? <div className={styles.budgetFormError} role="alert">{budgetDeleteError}</div> : null}
             <div className={styles.budgetDeleteActions}>
-              <button type="button" className={styles.secondaryButton} onClick={closeDeleteBudgetDialog} disabled={Boolean(budgetDeletingId)}>Keep budget</button>
+              <button ref={budgetDeleteCancelRef} type="button" className={styles.secondaryButton} onClick={closeDeleteBudgetDialog} disabled={Boolean(budgetDeletingId)}>Keep budget</button>
               <button type="button" className={styles.budgetDeleteButton} onClick={() => void confirmDeleteBudget()} disabled={Boolean(budgetDeletingId)}>
                 {budgetDeletingId ? 'Deleting...' : 'Delete budget'}
               </button>
