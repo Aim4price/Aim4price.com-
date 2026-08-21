@@ -15,6 +15,7 @@ const ownerNotificationsClient = read('app/owner-app/notifications/owner-notific
 const appHeader = read('components/AppHeader.tsx');
 const costClient = read('app/my-invoices/my-invoices-client.tsx');
 const costStyles = read('app/my-invoices/page.module.css');
+const assetRegisterStyles = read('app/asset-register/page.module.css');
 const accountDeletion = read('lib/account-deletion.ts');
 
 test('budget API is finance-authorized and always uses the authenticated owner scope', () => {
@@ -154,11 +155,55 @@ test('owner Cost Ledger presents the four primary actions in the intended order'
   assert.match(costStyles, /\.costActionButton\.costActionContribution\s*\{/);
   assert.match(
     costStyles,
-    /@media \(max-width: 1100px\)[\s\S]*?\.costActionGrid\s*\{\s*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\);/,
+    /@media \(max-width: 980px\)[\s\S]*?\.costActionGrid\s*\{\s*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\);/,
   );
   assert.match(
     costStyles,
-    /@media \(max-width: 360px\)[\s\S]*?\.costActionGrid\s*\{\s*grid-template-columns: 1fr;/,
+    /@media \(max-width: 640px\)[\s\S]*?\.costActionGrid\s*\{\s*grid-template-columns: 1fr;/,
+  );
+});
+
+test('Cost Ledger title and actions match the Asset Register sizing contract', () => {
+  assert.match(
+    assetRegisterStyles,
+    /\.businessRegisterTitleCard\s*\{[^}]*min-height:\s*clamp\(5\.1rem,\s*7vw,\s*6\.1rem\)\s*!important;[^}]*padding:\s*clamp\(1\.15rem,\s*2vw,\s*1\.55rem\)\s+clamp\(1\.25rem,\s*2\.6vw,\s*2rem\)\s*!important;/,
+  );
+  assert.match(
+    assetRegisterStyles,
+    /\.businessRegisterTitleBlock \.businessRegisterTitleCard h1\s*\{[^}]*font-size:\s*clamp\(2\.35rem,\s*4\.15vw,\s*3\.55rem\)\s*!important;/,
+  );
+  assert.match(
+    assetRegisterStyles,
+    /\/\* === Filter dropdown sizing refinement === \*\/[\s\S]*?\.registerHeader \.headerActions \.filterTriggerButton\s*\{[^}]*min-height:\s*clamp\(3\.62rem,\s*4\.45vw,\s*4\.08rem\)\s*!important;/,
+  );
+
+  assert.match(
+    costStyles,
+    /--ledger-inline-gutter:\s*clamp\(0\.7rem,\s*2vw,\s*1\.5rem\);[\s\S]*?--ledger-panel-inset:\s*clamp\(1\.15rem,\s*1\.9vw,\s*1\.7rem\);/,
+  );
+  assert.match(
+    costStyles,
+    /\.page:not\(\.dealerCostsPage\) \.shell\s*\{[^}]*width:\s*min\(calc\(100% - \(var\(--ledger-inline-gutter\) \* 2\)\),\s*1320px\);[^}]*padding-inline:\s*var\(--ledger-panel-inset\);/,
+  );
+  assert.match(
+    costStyles,
+    /\.pageTitleBlock > div\s*\{[^}]*min-height:\s*clamp\(5\.1rem,\s*7vw,\s*6\.1rem\);[^}]*padding:\s*clamp\(1\.15rem,\s*2vw,\s*1\.55rem\)\s+clamp\(1\.25rem,\s*2\.6vw,\s*2rem\);[^}]*border-radius:\s*clamp\(1\.25rem,\s*2vw,\s*1\.7rem\);/,
+  );
+  assert.match(
+    costStyles,
+    /\.pageTitleBlock h1\s*\{[^}]*font-size:\s*clamp\(2\.35rem,\s*4\.15vw,\s*3\.55rem\);/,
+  );
+  assert.match(
+    costStyles,
+    /\.costActionGrid\s*\{[^}]*grid-template-columns:\s*repeat\(4,\s*minmax\(0,\s*1fr\)\);[^}]*gap:\s*clamp\(0\.78rem,\s*1\.35vw,\s*1\.25rem\);/,
+  );
+  assert.match(
+    costStyles,
+    /\.costActionGrid \.costActionButton\s*\{[^}]*min-height:\s*clamp\(3\.62rem,\s*4\.45vw,\s*4\.08rem\);[^}]*border-radius:\s*clamp\(1rem,\s*1\.45vw,\s*1\.22rem\);[^}]*font-size:\s*clamp\(0\.98rem,\s*1\.15vw,\s*1\.08rem\);/,
+  );
+  assert.match(
+    costStyles,
+    /@media \(max-width: 640px\)[\s\S]*?\.pageTitleBlock > div\s*\{[^}]*min-height:\s*4\.35rem;[^}]*padding:\s*1rem 1\.05rem;[^}]*border-radius:\s*1\.15rem;[^}]*\}[\s\S]*?\.pageTitleBlock h1\s*\{[^}]*font-size:\s*clamp\(1\.75rem,\s*9vw,\s*2\.2rem\);[^}]*\}[\s\S]*?\.costActionGrid\s*\{[^}]*grid-template-columns:\s*1fr;[^}]*gap:\s*0\.65rem;[^}]*\}[\s\S]*?\.costActionGrid \.costActionButton\s*\{[^}]*min-height:\s*3\.25rem;/,
   );
 });
 
