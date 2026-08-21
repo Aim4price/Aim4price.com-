@@ -40,8 +40,9 @@ test('code lifecycle uses the capture domain and GET never issues plaintext', ()
 test('Cost Ledger exposes code management only in the direct owner workspace', () => {
   assert.match(ledger, /const canManageInvoiceDropCodes = !dealerMode && !accountantShareId && !accountantRegisterId/);
   assert.match(ledger, /\{canManageInvoiceDropCodes \? \(/);
-  assert.match(ledger, /Manage contribution code/);
-  assert.match(ledger, /permits submission only and reveals no asset details/i);
+  assert.match(ledger, /<span>Contribution<\/span>/);
+  assert.match(ledger, /Contribution-only access/);
+  assert.match(ledger, /cannot open your account, identify the asset, or reveal any asset details/i);
   assert.match(ledger, /\/api\/invoice-drop-codes\/\$\{encodeURIComponent\(invoiceDropAssetId\)\}/);
 });
 
