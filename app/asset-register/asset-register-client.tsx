@@ -1745,10 +1745,11 @@ function ChangeRegisterIcon({ className }: IconProps) {
 
 function FilterIcon({ className }: IconProps) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden="true">
-      <path d="M4 6h16" />
-      <path d="M7 12h10" />
-      <path d="M10 18h4" />
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
+      <path d="M4 5h16M7 12h10M10 19h4" />
+      <circle cx="15" cy="5" r="1.5" />
+      <circle cx="9" cy="12" r="1.5" />
+      <circle cx="15" cy="19" r="1.5" />
     </svg>
   );
 }
@@ -14974,7 +14975,6 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                   <FilterIcon className={styles.buttonIcon} />
                   <span>Filters</span>
                   {hasActiveAssetFilter ? <span className={styles.filterActiveBadge}>1</span> : null}
-                  <ChevronDownIcon className={styles.filterChevron} />
                 </button>
               </div>
 
@@ -15377,12 +15377,13 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
           <section className={styles.assetSummaryCarousel} aria-label="Asset register summary">
             <button
               type="button"
-              className={styles.assetSummaryArrow}
+              className={`${styles.assetSummaryArrow} ${styles.controlTooltip}`}
               onClick={() => handleRegisterSummarySlide(-1)}
               disabled={isRegisterSummaryAtStart}
               aria-label="Show previous asset register summary cards"
+              data-tooltip="Previous"
             >
-              <span aria-hidden="true">&lt;</span>
+              <span aria-hidden="true">‹</span>
             </button>
 
             <div
@@ -15595,12 +15596,13 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
 
             <button
               type="button"
-              className={styles.assetSummaryArrow}
+              className={`${styles.assetSummaryArrow} ${styles.controlTooltip}`}
               onClick={() => handleRegisterSummarySlide(1)}
               disabled={isRegisterSummaryAtEnd}
               aria-label="Show next asset register summary cards"
+              data-tooltip="Next"
             >
-              <span aria-hidden="true">&gt;</span>
+              <span aria-hidden="true">›</span>
             </button>
           </section>
 
@@ -20911,7 +20913,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                                 aria-pressed={pdfReportSelection === option.value}
                               >
                                 <span className={styles.pdfReportOptionMain}>
-                                  <strong>{option.label}</strong>
+                                  <span className={styles.pdfReportQuickLabel}>{option.label}</span>
                                 </span>
                               </button>
                             ))}

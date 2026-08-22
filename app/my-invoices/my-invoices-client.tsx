@@ -442,9 +442,10 @@ function SearchIcon(props: SVGProps<SVGSVGElement>) {
 function FilterIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <IconBase {...props}>
-      <path d="M4 5h16" />
-      <path d="M7 12h10" />
-      <path d="M10 19h4" />
+      <path d="M4 5h16M7 12h10M10 19h4" />
+      <circle cx="15" cy="5" r="1.5" />
+      <circle cx="9" cy="12" r="1.5" />
+      <circle cx="15" cy="19" r="1.5" />
     </IconBase>
   );
 }

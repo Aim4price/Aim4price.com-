@@ -2276,21 +2276,6 @@
   box-shadow: 0 14px 28px rgba(13, 90, 66, 0.12), inset 0 1px 0 #fff;
 }
 
-.buttonChevron {
-  width: 1.42rem !important;
-  height: 1.42rem !important;
-  padding: 0.24rem;
-  border: 1px solid rgba(20, 112, 82, 0.18);
-  border-radius: 0.48rem;
-  background: rgba(230, 247, 239, 0.82);
-  stroke-width: 2.5;
-  transition: transform 150ms ease;
-}
-
-.filtersButton[aria-expanded='true'] .buttonChevron {
-  transform: rotate(180deg);
-}
-
 .filtersButton .buttonCount {
   position: absolute;
   top: 0.38rem;
@@ -2403,6 +2388,52 @@
 
 .summaryNavNext {
   right: -1.28rem;
+}
+
+.summaryNav::before,
+.summaryNav::after {
+  position: absolute;
+  z-index: 8;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 120ms ease, transform 120ms ease;
+}
+
+.summaryNav::after {
+  content: attr(data-tooltip);
+  left: 50%;
+  bottom: calc(100% + 0.62rem);
+  padding: 0.38rem 0.56rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 0.5rem;
+  color: #ffffff;
+  background: rgba(4, 55, 44, 0.96);
+  box-shadow: 0 8px 20px rgba(4, 42, 34, 0.18);
+  font-size: 0.7rem;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  transform: translate(-50%, 0.25rem);
+}
+
+.summaryNav::before {
+  content: '';
+  left: 50%;
+  bottom: calc(100% + 0.32rem);
+  border: 0.32rem solid transparent;
+  border-top-color: rgba(4, 55, 44, 0.96);
+  transform: translate(-50%, 0.25rem);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .summaryNav:hover:not(:disabled)::before,
+  .summaryNav:hover:not(:disabled)::after,
+  .summaryNav:focus-visible:not(:disabled)::before,
+  .summaryNav:focus-visible:not(:disabled)::after {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
 }
 
 .summaryCard:first-child {
