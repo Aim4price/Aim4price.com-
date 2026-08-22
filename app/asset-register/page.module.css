@@ -38225,3 +38225,43 @@ button.documentOpenLink {
     font-size: 1.62rem !important;
   }
 }
+
+
+/* === Asset sharing: inside or outside Aim4price === */
+.assetQuoteModal.assetShareDestinationModal:not(.assetQuotePartnerPickerModal),
+.assetQuoteModal.registerShareModal.assetShareDestinationModal {
+  width: min(calc(100vw - 3rem), 1120px) !important;
+}
+
+.assetQuoteModal.externalAssetShareModal:not(.assetQuotePartnerPickerModal),
+.assetQuoteModal.registerShareModal.externalAssetShareModal {
+  width: min(calc(100vw - 3rem), 1320px) !important;
+  max-height: min(92dvh, 940px) !important;
+  overflow: hidden !important;
+}
+
+.externalAssetShareModal .assetQuoteScrollBody,
+.externalAssetShareModal .registerShareModalBody {
+  min-height: 0 !important;
+  overflow-y: auto !important;
+}
+
+.assetShareInsideFlow {
+  width: 100%;
+  display: grid;
+  gap: 1rem;
+}
+
+.assetShareInsideFlow > .assetQuoteBackButton {
+  justify-self: start;
+}
+
+@media (max-width: 700px) {
+  .assetQuoteModal.assetShareDestinationModal:not(.assetQuotePartnerPickerModal),
+  .assetQuoteModal.registerShareModal.assetShareDestinationModal,
+  .assetQuoteModal.externalAssetShareModal:not(.assetQuotePartnerPickerModal),
+  .assetQuoteModal.registerShareModal.externalAssetShareModal {
+    width: min(100%, calc(100vw - 1rem)) !important;
+    max-height: calc(100dvh - 1rem) !important;
+  }
+}
