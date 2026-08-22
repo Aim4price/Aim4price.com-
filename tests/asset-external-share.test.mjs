@@ -18,7 +18,7 @@ const asset = {
   publicUrl: 'https://www.aim4price.com/scan/asset-code',
 };
 
-test('outside share copy contains every requested asset field, direct photos and the asset link', () => {
+test('outside share copy contains every requested asset field and describes real attachments without exposing links', () => {
   const copy = buildExternalAssetShareCopy(asset.title, [asset]);
 
   assert.equal(copy.subject, '2019 John Deere 6155M asset details');
@@ -28,13 +28,12 @@ test('outside share copy contains every requested asset field, direct photos and
   assert.match(copy.body, /Condition: Good/);
   assert.match(copy.body, /Replacement price \(excl\. VAT\): R 2[ ,]850[ ,]000/);
   assert.match(copy.body, /Current value \(excl\. VAT\): R 1[ ,]675[ ,]000/);
-  assert.match(copy.body, /Photos \(2 saved photos\):/);
-  assert.match(copy.body, /Photo 1: https:\/\/images\.example\.com\/front\.jpg/);
-  assert.match(copy.body, /Photo 2: https:\/\/images\.example\.com\/rear\.jpg/);
-  assert.match(copy.body, /Aim4price asset link: https:\/\/www\.aim4price\.com\/scan\/asset-code/);
+  assert.match(copy.body, /Photos: 2 photos attached separately/);
+  assert.doesNotMatch(copy.body, /https:\/\//);
+  assert.doesNotMatch(copy.body, /Aim4price asset link/);
 });
 
-test('multiple assets are numbered and direct photo links remain available as a fallback', () => {
+test('multiple assets are numbered and each attachment count is stated without a private URL', () => {
   const copy = buildExternalAssetShareCopy('Harvest fleet', [
     asset,
     {
@@ -57,7 +56,8 @@ test('multiple assets are numbered and direct photo links remain available as a 
   assert.match(copy.body, /Serial number: Not saved/);
   assert.match(copy.body, /Year: Not saved/);
   assert.match(copy.body, /Usage: Not saved/);
-  assert.match(copy.body, /Photos \(1 saved photo\):\nPhoto 1: https:\/\/images\.example\.com\/trailer\.jpg/);
+  assert.match(copy.body, /Photos: 1 photo attached separately/);
+  assert.doesNotMatch(copy.body, /images\.example\.com/);
 });
 
 test('WhatsApp and email links carry the formatted message safely', () => {

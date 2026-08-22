@@ -57,21 +57,12 @@ function savedText(value: unknown): string {
 
 function buildPhotoLines(asset: ExternalAssetShareItem): string[] {
   const photoUrls = normalizePhotoUrls(asset.photoUrls);
-  const publicUrl = safeHttpUrl(asset.publicUrl);
-  const photoCountLabel = `${photoUrls.length} saved ${photoUrls.length === 1 ? 'photo' : 'photos'}`;
 
   if (!photoUrls.length) {
-    return [
-      'Photos: No photos saved',
-      ...(publicUrl ? [`Aim4price asset link: ${publicUrl}`] : []),
-    ];
+    return ['Photos: No photos saved'];
   }
 
-  return [
-    `Photos (${photoCountLabel}):`,
-    ...photoUrls.map((url, index) => `Photo ${index + 1}: ${url}`),
-    ...(publicUrl ? [`Aim4price asset link: ${publicUrl}`] : []),
-  ];
+  return [`Photos: ${photoUrls.length} ${photoUrls.length === 1 ? 'photo attached' : 'photos attached'} separately`];
 }
 
 function buildAssetBlock(asset: ExternalAssetShareItem, index: number, includeNumber: boolean): string[] {
