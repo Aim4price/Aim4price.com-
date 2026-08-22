@@ -285,6 +285,35 @@ function UsersIcon() {
   );
 }
 
+function LinkIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" aria-hidden="true">
+      <path d="M10.2 13.8a4 4 0 0 0 5.65.05l2.3-2.3a4 4 0 0 0-5.65-5.65l-1.3 1.3" strokeLinecap="round" />
+      <path d="M13.8 10.2a4 4 0 0 0-5.65-.05l-2.3 2.3a4 4 0 0 0 5.65 5.65l1.3-1.3" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function CopyIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" aria-hidden="true">
+      <rect x="8" y="8" width="11" height="11" rx="2" />
+      <path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function ShareIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" aria-hidden="true">
+      <circle cx="18" cy="5" r="2.5" />
+      <circle cx="6" cy="12" r="2.5" />
+      <circle cx="18" cy="19" r="2.5" />
+      <path d="m8.2 10.8 7.6-4.6M8.2 13.2l7.6 4.6" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 function buildAppInstallLink(loginLink: string): string {
   const separator = loginLink.includes('?') ? '&' : '?';
   return `${loginLink}${separator}source=qr&install=1`;
@@ -528,13 +557,25 @@ function AccessLauncher({
 
       <div className={styles.loginStrip}>
         <AppInstallQr config={config} loginLink={loginLink} />
-        <div className={styles.loginCopy}>
-          <span className={styles.loginLabel}>{config.loginLinkLabel}</span>
-          <code>{loginLink}</code>
+        <div className={styles.loginLinkCard}>
+          <span className={styles.loginLinkIcon}><LinkIcon /></span>
+          <div className={styles.loginCopy}>
+            <span className={styles.loginLabel}>{config.loginLinkLabel}</span>
+            <a className={styles.loginUrl} href={loginLink} target="_blank" rel="noreferrer" title={loginLink}>
+              <code>{loginLink}</code>
+              <span className={styles.loginUrlArrow} aria-hidden="true">↗</span>
+            </a>
+          </div>
         </div>
-        <div className={styles.loginActions}>
-          <button type="button" className={styles.linkButton} onClick={onCopy}>Copy link</button>
-          <button type="button" className={`${styles.linkButton} ${styles.linkButtonPrimary}`} onClick={onShare}>Share link</button>
+        <div className={styles.loginActions} aria-label="App login link actions">
+          <button type="button" className={styles.linkButton} onClick={onCopy}>
+            <span className={styles.linkButtonIcon}><CopyIcon /></span>
+            <span className={styles.linkButtonCopy}><strong>Copy link</strong><small>Clipboard</small></span>
+          </button>
+          <button type="button" className={`${styles.linkButton} ${styles.linkButtonPrimary}`} onClick={onShare}>
+            <span className={styles.linkButtonIcon}><ShareIcon /></span>
+            <span className={styles.linkButtonCopy}><strong>Share link</strong><small>Send access</small></span>
+          </button>
         </div>
       </div>
     </section>
