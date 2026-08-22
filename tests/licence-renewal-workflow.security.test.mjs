@@ -136,8 +136,8 @@ test('every document constructor supplies category and document type metadata', 
     assert.match(source, /category: normalizeAssetDocumentCategory/);
     assert.match(source, /documentType: normalizeAssetDocumentType/);
   }
-  assert.match(accountantWorkspace, /category: 'accounting'/);
-  assert.match(accountantWorkspace, /documentType: 'accountant_upload'/);
+  assert.match(accountantWorkspace, /category: documentType\.category/);
+  assert.match(accountantWorkspace, /documentType: documentType\.value/);
 });
 
 test('licensing Discovery exposes only a coarse renewal window before approval', () => {

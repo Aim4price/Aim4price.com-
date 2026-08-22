@@ -6857,7 +6857,7 @@
 }
 
 .assetDetailsGrid {
-  grid-template-columns: minmax(0, 1fr) minmax(0, 0.78fr);
+  grid-template-columns: minmax(0, 1.15fr) minmax(10.5rem, 0.58fr);
   gap: 0.72rem;
   align-items: start;
 }
@@ -6880,7 +6880,7 @@
 }
 
 .assetDetailRow {
-  grid-template-columns: minmax(6.2rem, 0.72fr) minmax(0, 1fr);
+  grid-template-columns: minmax(7.5rem, 0.82fr) minmax(0, 1fr);
 }
 
 .assetStatusRow {
@@ -6889,7 +6889,6 @@
 
 .assetDetailRow span,
 .assetStatusRow span {
-  padding: 0 0.82rem;
   color: #31485a;
   font-size: 0.8rem;
   font-weight: 900;
@@ -6898,9 +6897,17 @@
   border-right: 1px solid rgba(216, 226, 236, 0.96);
 }
 
+.assetDetailRow span {
+  padding: 0 1rem;
+}
+
+.assetStatusRow span {
+  padding: 0 0.82rem;
+}
+
 .assetDetailRow strong,
 .assetStatusRow strong {
-  padding: 0 0.86rem;
+  padding: 0 1rem;
   color: #10352b;
   font-size: 0.94rem;
   font-weight: 840;
@@ -30209,9 +30216,185 @@ button.documentOpenLink {
   line-height: 3.08rem;
 }
 
+.assetDetailRowButton {
+  position: relative;
+  width: 100%;
+  padding: 0;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  appearance: none;
+  transition:
+    border-color 0.16s ease,
+    box-shadow 0.16s ease,
+    transform 0.16s ease;
+}
+
+.assetDetailRowButton > strong {
+  padding-right: 2.85rem;
+}
+
+.assetDetailEditIcon {
+  position: absolute;
+  top: 50%;
+  right: 0.82rem;
+  width: 1rem;
+  height: 1rem;
+  color: #4b7b6c;
+  pointer-events: none;
+  transform: translateY(-50%);
+  transition: color 0.16s ease, transform 0.16s ease;
+}
+
+.assetDetailRowButton:hover,
+.assetDetailRowButton:focus-visible {
+  border-color: rgba(17, 109, 82, 0.36) !important;
+  box-shadow:
+    0 12px 24px rgba(17, 109, 82, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+  outline: none;
+  transform: translateY(-1px);
+}
+
+.assetDetailRowButton:hover > strong,
+.assetDetailRowButton:focus-visible > strong {
+  background: #f7fcfa;
+}
+
+.assetDetailRowButton:hover .assetDetailEditIcon,
+.assetDetailRowButton:focus-visible .assetDetailEditIcon {
+  color: #116d52;
+  transform: translateY(-50%) scale(1.06);
+}
+
 @media (max-width: 620px) {
   .assetDetailRow > strong {
     line-height: 2.65rem;
+  }
+
+  .assetDetailRowButton > strong {
+    padding-right: 2.85rem;
+  }
+
+  .assetDetailEditIcon {
+    top: auto;
+    bottom: 0.82rem;
+    transform: none;
+  }
+
+  .assetDetailRowButton:hover .assetDetailEditIcon,
+  .assetDetailRowButton:focus-visible .assetDetailEditIcon {
+    transform: scale(1.06);
+  }
+}
+
+/* Canonical Documents Vault quick actions and a wider detail column. */
+.assetBody {
+  grid-template-columns: minmax(220px, 300px) minmax(190px, 0.8fr) 1px minmax(440px, 1.75fr);
+}
+
+.assetDocumentsPanel {
+  align-content: start;
+}
+
+.assetDocumentsVaultCard {
+  align-content: center;
+  gap: 0.72rem;
+  min-height: 9.5rem !important;
+  padding-top: 3.7rem;
+}
+
+.assetDocumentsSavedCount {
+  color: #173f35;
+  font-size: 1rem;
+  font-weight: 880;
+}
+
+.assetDocumentsLegacyCount {
+  color: #71847e;
+  font-size: 0.68rem;
+  font-weight: 690;
+  line-height: 1.35;
+  text-align: center;
+}
+
+.assetDocumentsViewAll,
+.assetDocumentMoreLink {
+  color: #17694f;
+  font-size: 0.76rem;
+  font-weight: 850;
+  text-decoration: none;
+}
+
+.assetDocumentsViewAll {
+  display: inline-flex;
+  min-height: 2.4rem;
+  align-items: center;
+  justify-content: center;
+  padding: 0 0.9rem;
+  border: 1px solid #bdd8cc;
+  border-radius: 999px;
+  background: #ffffff;
+}
+
+.assetDocumentsViewAll:hover,
+.assetDocumentsViewAll:focus-visible {
+  border-color: #68b18f;
+  background: #f1faf6;
+  outline: none;
+}
+
+.assetDocumentsOwnerNote {
+  max-width: 13rem;
+  color: #71847e;
+  font-size: 0.68rem;
+  font-weight: 670;
+  line-height: 1.4;
+  text-align: center;
+}
+
+.assetDocumentsLoadError {
+  display: grid;
+  gap: 0.55rem;
+  padding: 0.72rem;
+  border: 1px solid #fecaca;
+  border-radius: 0.85rem;
+  background: #fff5f5;
+  color: #9f1239;
+  font-size: 0.72rem;
+  font-weight: 720;
+  line-height: 1.35;
+}
+
+.assetDocumentsLoadError button {
+  justify-self: start;
+  min-height: 2rem;
+  padding: 0 0.7rem;
+  border: 1px solid #e8b5b5;
+  border-radius: 0.65rem;
+  background: #ffffff;
+  color: #9f1239;
+  font: inherit;
+  font-weight: 820;
+  cursor: pointer;
+}
+
+.assetDocumentMoreLink {
+  color: #17694f;
+  background: #f0faf5;
+  border-color: #c6dfd4;
+}
+
+@media (max-width: 1180px) {
+  .assetBody {
+    grid-template-columns: minmax(220px, 300px) minmax(210px, 1fr);
+  }
+}
+
+@media (max-width: 860px) {
+  .assetBody {
+    grid-template-columns: 1fr;
   }
 }
 

@@ -57,6 +57,18 @@ function errorResponse(error: unknown) {
   if (message === 'DOCUMENT_CATEGORY_INVALID') {
     return NextResponse.json({ ok: false, error: 'Choose a valid document category.' }, { status: 400 });
   }
+  if (message === 'DOCUMENT_TYPE_REQUIRED') {
+    return NextResponse.json({ ok: false, error: 'Choose the document type before linking this document.' }, { status: 400 });
+  }
+  if (message === 'DOCUMENT_TYPE_INVALID') {
+    return NextResponse.json({ ok: false, error: 'Choose a valid document type.' }, { status: 400 });
+  }
+  if (message === 'DOCUMENT_DESCRIPTION_REQUIRED') {
+    return NextResponse.json(
+      { ok: false, error: 'Describe the document in Notes when choosing Other document.' },
+      { status: 400 },
+    );
+  }
 
   return NextResponse.json({ ok: false, error: 'The document could not be updated.' }, { status: 500 });
 }

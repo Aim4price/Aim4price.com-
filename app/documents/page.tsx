@@ -6,7 +6,13 @@ import DocumentsClient from './documents-client';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-export default async function DocumentsPage() {
+type DocumentsPageProps = {
+  searchParams?: {
+    assetId?: string | string[];
+  };
+};
+
+export default async function DocumentsPage({ searchParams }: DocumentsPageProps) {
   const { session } = await requireActivePageAccess();
   const profile = await getAccountProfile({
     id: session.user.id,
@@ -18,5 +24,8 @@ export default async function DocumentsPage() {
     redirect('/account');
   }
 
-  return <DocumentsClient />;
+  const rawAssetId = Array.isArray(searchParams?.assetId) ? searchParams?.assetId[0] : searchParams?.assetId;
+  const initialAssetId = String(rawAssetId ?? '').trim().slice(0, 120);
+
+  return <DocumentsClient initialAssetId={initialAssetId} />;
 }

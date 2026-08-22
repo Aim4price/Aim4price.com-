@@ -10,6 +10,10 @@ import {
   type AccountDocumentInput,
 } from '../../../lib/account-documents';
 import {
+  getAccountDocumentTypeCategory,
+  isAccountDocumentType,
+} from '../../../lib/account-document-taxonomy';
+import {
   MAX_DOCUMENT_VAULT_UPLOAD_BYTES,
   createAssetRegisterUpload,
   isAllowedAssetRegisterDocument,
@@ -71,6 +75,18 @@ function errorResponse(error: unknown, fallback: string) {
   if (message === 'DOCUMENT_CATEGORY_INVALID') {
     return NextResponse.json({ ok: false, error: 'Choose a valid document category.' }, { status: 400 });
   }
+  if (message === 'DOCUMENT_TYPE_REQUIRED') {
+    return NextResponse.json({ ok: false, error: 'Choose the document type before uploading.' }, { status: 400 });
+  }
+  if (message === 'DOCUMENT_TYPE_INVALID') {
+    return NextResponse.json({ ok: false, error: 'Choose a valid document type.' }, { status: 400 });
+  }
+  if (message === 'DOCUMENT_DESCRIPTION_REQUIRED') {
+    return NextResponse.json(
+      { ok: false, error: 'Describe the document in Notes when choosing Other document.' },
+      { status: 400 },
+    );
+  }
   if (message === 'DOCUMENT_INPUT_INVALID') {
     return NextResponse.json({ ok: false, error: 'The document details are incomplete.' }, { status: 400 });
   }
@@ -87,13 +103,15 @@ export async function GET(request: NextRequest) {
 
   try {
     const includeDeleted = request.nextUrl.searchParams.get('view') === 'recycle-bin';
+    const assetId = String(request.nextUrl.searchParams.get('assetId') ?? '').trim().slice(0, 120);
     const [documents, summary, assets] = await Promise.all([
-      listAccountDocuments(owner.userId, { includeDeleted }),
+      listAccountDocuments(owner.userId, { includeDeleted, assetId }),
       getAccountDocumentSummary(owner.userId),
       listAccountDocumentAssetOptions(owner.userId),
     ]);
+    const selectedAsset = assetId ? assets.find((asset) => asset.id === assetId) ?? null : null;
 
-    return NextResponse.json({ ok: true, documents, summary, assets });
+    return NextResponse.json({ ok: true, documents, summary, assets, selectedAsset });
   } catch (error) {
     console.error('Aim4price Document Vault GET failed.', error);
     return errorResponse(error, 'The Document Vault could not be loaded.');
@@ -130,7 +148,24 @@ export async function POST(request: NextRequest) {
         { status: 400 },
       );
     }
-    const categoryEntry = formData.get('category');
+    const assetIds = parseAssetIds(formData.get('assetIds'));
+    const documentTypeEntry = formData.get('documentType');
+    const hasDocumentType = typeof documentTypeEntry === 'string' && Boolean(documentTypeEntry.trim());
+    if (assetIds.length && !hasDocumentType) {
+      return NextResponse.json({ ok: false, error: 'Choose the document type before uploading.' }, { status: 400 });
+    }
+    if (hasDocumentType && !isAccountDocumentType(documentTypeEntry)) {
+      return NextResponse.json({ ok: false, error: 'Choose a valid document type.' }, { status: 400 });
+    }
+    const notesEntry = formData.get('notes');
+    if (documentTypeEntry === 'other' && (typeof notesEntry !== 'string' || !notesEntry.trim())) {
+      return NextResponse.json(
+        { ok: false, error: 'Describe the document in Notes when choosing Other document.' },
+        { status: 400 },
+      );
+    }
+
+    const categoryEntry = getAccountDocumentTypeCategory(documentTypeEntry) ?? formData.get('category');
     if (!isAccountDocumentCategory(categoryEntry)) {
       return NextResponse.json({ ok: false, error: 'Choose a valid document category.' }, { status: 400 });
     }
@@ -138,9 +173,10 @@ export async function POST(request: NextRequest) {
     const input: AccountDocumentInput = {
       title: formData.get('title'),
       category: categoryEntry,
-      notes: formData.get('notes'),
+      documentType: documentTypeEntry,
+      notes: notesEntry,
       expiryDate: formData.get('expiryDate'),
-      assetIds: parseAssetIds(formData.get('assetIds')),
+      assetIds,
     };
     const upload = await createAssetRegisterUpload({
       userId: owner.userId,
@@ -155,7 +191,11 @@ export async function POST(request: NextRequest) {
       contentType: upload.contentType,
       byteSize: upload.byteSize,
     });
-    const summary = await getAccountDocumentSummary(owner.userId);
+    savedUploadId = '';
+    const summary = await getAccountDocumentSummary(owner.userId).catch((summaryError) => {
+      console.error('Aim4price Document Vault summary refresh failed after upload.', summaryError);
+      return undefined;
+    });
 
     return NextResponse.json({ ok: true, document, summary }, { status: 201 });
   } catch (error) {

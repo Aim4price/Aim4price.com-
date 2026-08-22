@@ -11,6 +11,9 @@ import AssetGroupManagerModal, {
 } from '../../components/asset-register/AssetGroupManagerModal';
 import AccountantAssetManageModal from '../../components/AccountantAssetManageModal';
 import AccountantRegisterReportsModal from '../../components/AccountantRegisterReportsModal';
+import AssetDocumentUploadModal, {
+  type UploadedVaultDocument,
+} from '../../components/documents/AssetDocumentUploadModal';
 import DealerAssetShareSelection from '../../components/DealerAssetShareSelection';
 import DealerMaintenanceAccessSettings, {
   DEFAULT_DEALER_MAINTENANCE_PERMISSIONS,
@@ -59,6 +62,10 @@ import styles from './page.module.css';
 import updateStyles from './asset-update-refinements.module.css';
 import { conditionOptions } from '../../lib/tractor-data';
 import { CONDITION_FACTORS } from '../../lib/valuation/shared';
+import {
+  ACCOUNT_DOCUMENT_CATEGORY_LABELS,
+  getAccountDocumentTypeLabel,
+} from '../../lib/account-document-taxonomy';
 import {
   assetDocumentCategoryLabel,
   normalizeAssetDocumentCategory,
@@ -242,6 +249,7 @@ type AssetStatusSection = 'finance' | 'insurance' | 'license';
 type AssetStatusEditView = 'hub' | AssetStatusSection;
 type AssetStatusQuickOrigin = 'detail-card' | null;
 type ManualAssetStep = 1 | 2 | 3 | 4;
+type AssetDetailEditTarget = 'serial' | 'year' | 'usage' | 'condition';
 type ExportFormat = 'pdf' | 'xlsx';
 type ExportStep = 'format' | 'pdf-report' | 'pdf-assets';
 type PdfReportKind =
@@ -438,6 +446,12 @@ type AssetDocument = {
   uploadedAtIso: string;
   category: AssetDocumentCategory;
   documentType: string;
+};
+
+type VaultDocumentsResponse = {
+  ok?: boolean;
+  documents?: UploadedVaultDocument[];
+  error?: string;
 };
 
 type OpenPartnerNoteAttachment = {
@@ -1267,7 +1281,7 @@ const CONDITION_OPTIONS: Array<{ value: AssetConditionValue; label: string }> = 
 
 const EQUIPMENT_USAGE_OPTIONS: Array<{ value: AssetDraftUsageMetric; label: string; description: string }> = [
   { value: 'hours', label: 'Hours', description: 'Use the machine hour meter.' },
-  { value: 'percentage', label: '% worked', description: 'Use the estimated lifetime already worked.' },
+  { value: 'percentage', label: '%', description: 'Use estimated lifetime usage as a percentage.' },
   { value: 'not_applicable', label: 'Not applicable', description: 'This asset does not have a useful usage reading.' },
 ];
 
@@ -2221,15 +2235,8 @@ type ModalSelectProps<T extends string> = {
   autoFocus?: boolean;
   showDescriptions?: boolean;
   usePortal?: boolean;
+  assetDetailEditTarget?: AssetDetailEditTarget;
 };
-
-const ASSET_DOCUMENT_CATEGORY_OPTIONS: Array<ModalSelectOption<AssetDocumentCategory>> = [
-  { value: 'licensing', label: 'Licence / registration' },
-  { value: 'insurance', label: 'Insurance policy' },
-  { value: 'finance', label: 'Finance agreement' },
-  { value: 'accounting', label: 'Invoice / proof of purchase' },
-  { value: 'other', label: 'Service / inspection / other' },
-];
 
 function ModalSelect<T extends string>({
   label,
@@ -2242,6 +2249,7 @@ function ModalSelect<T extends string>({
   autoFocus = false,
   showDescriptions = true,
   usePortal = false,
+  assetDetailEditTarget,
 }: ModalSelectProps<T>) {
   const [isOpen, setIsOpen] = useState(false);
   const [portalMenuStyle, setPortalMenuStyle] = useState<ModalSelectPortalStyle | null>(null);
@@ -2378,7 +2386,11 @@ function ModalSelect<T extends string>({
   );
 
   return (
-    <div className={`${styles.field} ${styles.customSelectField} ${className}`} ref={wrapRef}>
+    <div
+      className={`${styles.field} ${styles.customSelectField} ${className}`}
+      ref={wrapRef}
+      data-asset-detail-edit-target={assetDetailEditTarget}
+    >
       <span>{label}</span>
       <button
         ref={buttonRef}
@@ -2935,6 +2947,20 @@ function usageMetricLabel(value: UsageMetric): string {
 
 function assetYearLabel(asset: Pick<RegisterAsset, 'kind'>): string {
   return asset.kind === 'property' ? PROPERTY_YEAR_LABEL : 'Year Model';
+}
+
+function canQuickEditAssetDetail(asset: RegisterAsset, target: AssetDetailEditTarget): boolean {
+  const isStock = asset.kind === 'stock';
+  const isProperty = asset.kind === 'property';
+  const isLand = isProperty && normalizePropertyAssetSubtype(
+    asset.specsJson.propertyAssetSubtype ?? asset.specsJson.property_asset_subtype,
+  ) === 'land';
+
+  if (target === 'serial' || target === 'usage') {
+    return !isProperty && !isStock;
+  }
+
+  return !isStock && !isLand;
 }
 
 function draftYearLabel(kind: AssetKind): string {
@@ -6268,6 +6294,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
   const [isSavingAccountantNote, setIsSavingAccountantNote] = useState(false);
   const [assetDraft, setAssetDraft] = useState<AssetDraft>(initialAssetDraft);
   const [assetStatusDraft, setAssetStatusDraft] = useState<AssetStatusDraft>(initialAssetStatusDraft);
+  const [assetDetailFocusTarget, setAssetDetailFocusTarget] = useState<AssetDetailEditTarget | null>(null);
   const [assetStatusEditView, setAssetStatusEditView] = useState<AssetStatusEditView>('hub');
   const [assetStatusQuickOrigin, setAssetStatusQuickOrigin] = useState<AssetStatusQuickOrigin>(null);
   const [assetStatusAdvancedOpen, setAssetStatusAdvancedOpen] = useState(false);
@@ -6380,7 +6407,10 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
   const pendingPhotoFilesRef = useRef<PendingPhotoFile[]>([]);
   const [pendingDocumentFiles, setPendingDocumentFiles] = useState<File[]>([]);
   const pendingDocumentCategoriesRef = useRef<WeakMap<File, AssetDocumentCategory>>(new WeakMap());
-  const [detailDocumentCategoryByAssetId, setDetailDocumentCategoryByAssetId] = useState<Record<string, AssetDocumentCategory>>({});
+  const [documentUploadAsset, setDocumentUploadAsset] = useState<RegisterAsset | null>(null);
+  const [vaultDocumentsByAssetId, setVaultDocumentsByAssetId] = useState<Record<string, UploadedVaultDocument[]>>({});
+  const [vaultDocumentsLoadingByAssetId, setVaultDocumentsLoadingByAssetId] = useState<Record<string, boolean>>({});
+  const [vaultDocumentsErrorByAssetId, setVaultDocumentsErrorByAssetId] = useState<Record<string, string>>({});
   const [expandedAssetId, setExpandedAssetId] = useState<string | null>(null);
   const [detailPhotoIndexByAsset, setDetailPhotoIndexByAsset] = useState<Record<string, number>>({});
   const [photoViewer, setPhotoViewer] = useState<PhotoViewerState | null>(null);
@@ -8825,6 +8855,33 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
   const showLifeWorkedPercentField = false;
 
   useEffect(() => {
+    if (!isAssetModalOpen || manualAssetStep !== 2 || !assetDetailFocusTarget) {
+      return undefined;
+    }
+
+    const animationFrame = window.requestAnimationFrame(() => {
+      const field = document.querySelector<HTMLElement>(
+        `[data-asset-detail-edit-target="${assetDetailFocusTarget}"]`,
+      );
+
+      if (!field) {
+        setAssetDetailFocusTarget(null);
+        return;
+      }
+
+      field.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+      const textControl = field.querySelector<HTMLElement>(
+        'input:not(:disabled), textarea:not(:disabled), select:not(:disabled)',
+      );
+      const focusControl = textControl ?? field.querySelector<HTMLElement>('button:not(:disabled)');
+      focusControl?.focus({ preventScroll: true });
+      setAssetDetailFocusTarget(null);
+    });
+
+    return () => window.cancelAnimationFrame(animationFrame);
+  }, [assetDetailFocusTarget, isAssetModalOpen, manualAssetStep]);
+
+  useEffect(() => {
     if (!isAssetModalOpen || !editingAssetId) {
       if (assetAutosaveTimerRef.current) {
         clearTimeout(assetAutosaveTimerRef.current);
@@ -8897,19 +8954,19 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
   const usageFieldLabel = assetFormUsageNotApplicable
     ? 'Usage'
     : showPercentUsageField
-      ? 'Lifetime worked %'
+      ? 'Usage %'
       : assetFormKind === 'vehicle'
         ? 'Odometer reading'
         : showUsageHoursField
           ? 'Machine hours'
           : 'Usage';
   const usageFieldPlaceholder = showPercentUsageField
-    ? 'Enter lifetime worked %'
+    ? 'Enter usage %'
     : assetFormKind === 'vehicle'
       ? 'Enter kilometres'
       : 'Enter machine hours';
   const usageFieldHint = showPercentUsageField
-    ? 'Saved as lifetime worked percentage, not as machine hours.'
+    ? 'Saved as a usage percentage, not as machine hours.'
     : assetFormKind === 'vehicle'
       ? 'Vehicle usage will show as kilometres across the register and marketplace.'
       : 'This can be updated later whenever the machine hours change.';
@@ -9057,6 +9114,16 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
   }, [expandedAssetId, visibleAssets]);
 
   useEffect(() => {
+    if (!expandedAssetId) return;
+    if (isAccountantWorkspace && !accountantAccess) return;
+    if (vaultDocumentsLoadingByAssetId[expandedAssetId]) return;
+    if (vaultDocumentsErrorByAssetId[expandedAssetId]) return;
+    if (Object.prototype.hasOwnProperty.call(vaultDocumentsByAssetId, expandedAssetId)) return;
+
+    void loadVaultDocuments(expandedAssetId);
+  }, [accountantAccess, expandedAssetId, isAccountantWorkspace, vaultDocumentsByAssetId, vaultDocumentsErrorByAssetId, vaultDocumentsLoadingByAssetId]);
+
+  useEffect(() => {
     if (assetFocusActionHandledRef.current || typeof window === 'undefined' || !assets.length) return;
 
     const params = new URLSearchParams(window.location.search);
@@ -9126,6 +9193,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     setEditingAssetId(null);
     setAssetDraft(initialAssetDraft);
     setAssetStatusDraft(initialAssetStatusDraft);
+    setAssetDetailFocusTarget(null);
     setAssetStatusEditView('hub');
     setAssetStatusQuickOrigin(null);
     setAssetStatusAdvancedOpen(false);
@@ -9232,7 +9300,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     resetEditor();
   }
 
-  function openUpdater(asset: RegisterAsset) {
+  function openUpdater(asset: RegisterAsset, focusTarget: AssetDetailEditTarget | null = null) {
     pendingPhotoFilesRef.current.forEach((entry) => revokePhotoPreviewUrl(entry.previewUrl));
     pendingPhotoFilesRef.current = [];
 
@@ -9245,6 +9313,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     setEditingAssetId(asset.id);
     setAssetDraft(nextDraft);
     setAssetStatusDraft(nextStatusDraft);
+    setAssetDetailFocusTarget(focusTarget);
     assetAutosaveBaselineRef.current = buildAssetAutosaveSignature(nextDraft, nextStatusDraft);
     assetAutosaveLatestSignatureRef.current = assetAutosaveBaselineRef.current;
     assetAutosaveAttemptedSignatureRef.current = '';
@@ -9274,6 +9343,13 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     setAssetSettingsMapLocationText('');
     setAssetSettingsView('menu');
     setIsAssetModalOpen(true);
+  }
+
+  function openQuickAssetDetailEditor(asset: RegisterAsset, target: AssetDetailEditTarget) {
+    if (!canUseOwnerOnlyAssetActions || !canQuickEditAssetDetail(asset, target)) return;
+
+    setExpandedAssetId(asset.id);
+    openUpdater(asset, target);
   }
 
   function setAssetSettingsManualLocationInputsFromAsset(asset: RegisterAsset | null) {
@@ -10409,7 +10485,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     }
 
     if (hasLifeWorkedPercent && (!Number.isFinite(lifeWorkedPercent) || Number(lifeWorkedPercent) < 0 || Number(lifeWorkedPercent) > 100)) {
-      if (showFeedback) setNotice({ tone: 'error', message: 'Lifetime worked must be between 0% and 100%.' });
+      if (showFeedback) setNotice({ tone: 'error', message: 'Usage must be between 0% and 100%.' });
       return false;
     }
 
@@ -11487,76 +11563,81 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     }
   }
 
-  async function handleDetailDocumentFilesSelected(asset: RegisterAsset, event: ChangeEvent<HTMLInputElement>) {
-    const selectedFiles = Array.from(event.target.files ?? []);
-    event.target.value = '';
-
-    if (!selectedFiles.length) {
-      return;
+  function assetVaultDocumentsUrl(assetId: string): string {
+    if (accountantShareId) {
+      return `/api/accountant/registers/${encodeURIComponent(accountantShareId)}/assets/${encodeURIComponent(assetId)}/documents`;
     }
 
+    return `/api/documents?assetId=${encodeURIComponent(assetId)}`;
+  }
+
+  function assetVaultDocumentDownloadUrl(assetId: string, documentId: string): string {
+    if (accountantShareId) {
+      return `/api/accountant/registers/${encodeURIComponent(accountantShareId)}/assets/${encodeURIComponent(assetId)}/documents/${encodeURIComponent(documentId)}/download`;
+    }
+
+    return `/api/documents/${encodeURIComponent(documentId)}/download`;
+  }
+
+  async function loadVaultDocuments(assetId: string, options: { quiet?: boolean } = {}): Promise<boolean> {
+    if (!assetId) return false;
+    if (!options.quiet) {
+      setVaultDocumentsLoadingByAssetId((current) => ({ ...current, [assetId]: true }));
+    }
+    setVaultDocumentsErrorByAssetId((current) => ({ ...current, [assetId]: '' }));
+
+    try {
+      const response = await fetch(assetVaultDocumentsUrl(assetId), { cache: 'no-store' });
+      const data = await response.json() as VaultDocumentsResponse;
+      if (!response.ok || !data.ok) {
+        throw new Error(data.error || 'The linked documents could not be loaded.');
+      }
+
+      setVaultDocumentsByAssetId((current) => ({ ...current, [assetId]: data.documents ?? [] }));
+      return true;
+    } catch (error) {
+      setVaultDocumentsErrorByAssetId((current) => ({
+        ...current,
+        [assetId]: error instanceof Error ? error.message : 'The linked documents could not be loaded.',
+      }));
+      return false;
+    } finally {
+      setVaultDocumentsLoadingByAssetId((current) => ({ ...current, [assetId]: false }));
+    }
+  }
+
+  function openAssetDocumentUpload(asset: RegisterAsset) {
     if (isAccountantWorkspace && !canUseAccountantDocumentActions) {
       setNotice({ tone: 'error', message: 'The owner has not enabled Allow direct updates for this register.' });
       return;
     }
 
-    const currentDocuments = assetDocuments(asset);
-    const remainingSlots = MAX_DOCUMENTS - currentDocuments.length;
+    setDocumentUploadAsset(asset);
+  }
 
-    if (remainingSlots <= 0) {
-      setNotice({ tone: 'error', message: `This asset already has the maximum of ${MAX_DOCUMENTS} documents.` });
-      return;
-    }
+  async function handleVaultDocumentsUploaded(
+    asset: RegisterAsset,
+    documents: UploadedVaultDocument[],
+    outcome: { complete: boolean; totalUploaded: number },
+  ) {
+    setVaultDocumentsByAssetId((current) => {
+      const merged = [...documents, ...(current[asset.id] ?? [])];
+      return {
+        ...current,
+        [asset.id]: merged.filter((document, index) => (
+          merged.findIndex((candidate) => candidate.id === document.id) === index
+        )),
+      };
+    });
+    await loadVaultDocuments(asset.id, { quiet: true });
+    setExpandedAssetId(asset.id);
+    if (!outcome.complete) return;
 
-    const filesToUpload = selectedFiles.slice(0, remainingSlots);
-    setDetailMediaUpload({ assetId: asset.id, type: 'document' });
-
-    try {
-      if (accountantShareId) {
-        let updatedAsset = asset;
-        for (const file of filesToUpload) {
-          const form = new FormData();
-          form.append('file', file);
-          const response = await fetch(`/api/accountant/registers/${encodeURIComponent(accountantShareId)}/assets/${encodeURIComponent(asset.id)}/documents`, {
-            method: 'POST',
-            body: form,
-          });
-          const data = (await response.json()) as AssetRegisterApiResponse;
-          if (!response.ok || !data.ok || !data.item) {
-            throw new Error(data.error ?? 'Failed to upload the accountant document.');
-          }
-          updatedAsset = data.item;
-        }
-
-        syncMediaUpdatedAsset(updatedAsset);
-        setExpandedAssetId(updatedAsset.id);
-        setNotice({
-          tone: 'success',
-          message: `${filesToUpload.length} document${filesToUpload.length === 1 ? '' : 's'} added to the owner’s live Asset Register.`,
-        });
-        return;
-      }
-
-      const uploads = await uploadAssetMediaFiles(filesToUpload, 'document');
-      const detailCategory = detailDocumentCategoryByAssetId[asset.id] ?? 'other';
-      const uploadedDocuments = uploadedFilesToDocuments(uploads, filesToUpload, detailCategory);
-      const nextDocuments = normalizeDocuments([...currentDocuments, ...uploadedDocuments]);
-      const updatedAsset = await patchAssetMedia(asset, normalizePhotos(asset.photos), nextDocuments);
-
-      syncMediaUpdatedAsset(updatedAsset);
-      setExpandedAssetId(updatedAsset.id);
-      setNotice({
-        tone: 'success',
-        message: `${uploadedDocuments.length} document${uploadedDocuments.length === 1 ? '' : 's'} uploaded.${selectedFiles.length > filesToUpload.length ? ` Only ${filesToUpload.length} could be added because the asset is limited to ${MAX_DOCUMENTS} documents.` : ''}`,
-      });
-    } catch (error) {
-      setNotice({
-        tone: 'error',
-        message: error instanceof Error ? error.message : 'Failed to upload documents.',
-      });
-    } finally {
-      setDetailMediaUpload(null);
-    }
+    setDocumentUploadAsset(null);
+    setNotice({
+      tone: 'success',
+      message: `${outcome.totalUploaded} document${outcome.totalUploaded === 1 ? '' : 's'} saved to Documents and linked to ${asset.title}.`,
+    });
   }
 
   async function handleAssetSubmit(event?: FormEvent<HTMLFormElement>, options: AssetSubmitOptions = {}): Promise<boolean> {
@@ -11662,7 +11743,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     }
 
     if (hasLifeWorkedPercent && (!Number.isFinite(lifeWorkedPercent) || Number(lifeWorkedPercent) < 0 || Number(lifeWorkedPercent) > 100)) {
-      if (showFeedback) setNotice({ tone: 'error', message: 'Lifetime worked must be between 0% and 100%.' });
+      if (showFeedback) setNotice({ tone: 'error', message: 'Usage must be between 0% and 100%.' });
       return false;
     }
 
@@ -14328,7 +14409,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
 
       if (currentLifeWorkedPercent !== null && targetLifeWorkedPercent < currentLifeWorkedPercent) {
         setShouldScrollToProjectionResult(false);
-        setProjectionError('New Expected % cannot be lower than the current worked percentage.');
+        setProjectionError('New Expected % cannot be lower than the current usage percentage.');
         return;
       }
     } else if (!Number.isFinite(extraUsage) || extraUsage < 0) {
@@ -14586,11 +14667,11 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
       ? 'Type extra kilometres'
       : 'Type extra hours';
   const projectionUsageHelpText = projectionUsageMetric === 'percent'
-    ? 'Enter the expected worked percentage for the target year.'
+    ? 'Enter the expected usage percentage for the target year.'
     : projectionUsageMetric === 'km'
       ? 'Only change what you know. Leave extra kilometres empty if usage stays the same.'
       : 'Only change what you know. Leave extra hours empty if usage stays the same.';
-  const projectionUsageMetaLabel = projectionUsageMetric === 'percent' ? 'Worked %' : projectionUsageMetric === 'km' ? 'Kilometres' : 'Hours';
+  const projectionUsageMetaLabel = projectionUsageMetric === 'percent' ? 'Usage %' : projectionUsageMetric === 'km' ? 'Kilometres' : 'Hours';
   const projectionCurrentWorkedPercent = projectionResult?.current.lifeWorkedPercent ?? (projectionAsset ? getAssetLifeWorkedPercent(projectionAsset) : null);
   const projectionTargetWorkedPercent = projectionResult?.projected.lifeWorkedPercent ?? projectionResult?.targetLifeWorkedPercent ?? null;
   const projectionCurrentCondition = projectionResult?.currentCondition ?? (projectionAsset?.condition || 'good');
@@ -15552,6 +15633,9 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                       ? !isExpanded
                       : Boolean(focusedAssetGroupId && assetGroup?.id !== focusedAssetGroupId);
                     const detailDocuments = assetDocuments(asset);
+                    const vaultDocuments = vaultDocumentsByAssetId[asset.id] ?? [];
+                    const isVaultDocumentsLoading = Boolean(vaultDocumentsLoadingByAssetId[asset.id]);
+                    const vaultDocumentsError = vaultDocumentsErrorByAssetId[asset.id] ?? '';
                     const insuredValueExVat = readAssetInsuredValueExVat(asset);
                     const estimateNeedsUpdate = doesEstimateNeedUpdate(asset) && isValuationUpdateAvailable(asset);
                     const openPartnerNote = asset.openPartnerNote ?? null;
@@ -16013,13 +16097,42 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                               const hasMultiplePhotos = detailPhotos.length > 1;
                               const hasRealPhotos = detailPhotos.length > 0;
                               const isDetailPhotoUploading = detailMediaUpload?.assetId === asset.id && detailMediaUpload.type === 'photo';
-                              const isDetailDocumentUploading = detailMediaUpload?.assetId === asset.id && detailMediaUpload.type === 'document';
                               const canOpenPhotoViewer = hasRealPhotos && Boolean(detailPhoto);
                               const canInteractWithPhotoStage = canOpenPhotoViewer || canUseOwnerOnlyAssetActions;
                               const manualAssetNote = getManualAssetNote(asset.note);
                               const licenseStatus = readLicenseStatusChoice(asset);
                               const registrationNumber = asset.kind !== 'property' && licenseStatus === 'yes' ? readLicenseRegistrationNumber(asset) : '';
                               const mappedStatus: AssetStatusChoice = hasAssetMapCoordinates(asset) ? 'yes' : 'no';
+                              const renderAssetDetailRow = (
+                                target: AssetDetailEditTarget,
+                                label: string,
+                                value: string,
+                                title = value || 'Not provided',
+                              ) => {
+                                const displayedValue = value || '—';
+
+                                if (canUseOwnerOnlyAssetActions && canQuickEditAssetDetail(asset, target)) {
+                                  return (
+                                    <button
+                                      type="button"
+                                      className={`${styles.assetDetailRow} ${styles.assetDetailRowButton}`}
+                                      onClick={() => openQuickAssetDetailEditor(asset, target)}
+                                      aria-label={`Edit ${label.toLowerCase()} for ${asset.title}. Current value: ${displayedValue}`}
+                                    >
+                                      <span>{label}</span>
+                                      <strong title={title}>{displayedValue}</strong>
+                                      <EditIcon className={styles.assetDetailEditIcon} />
+                                    </button>
+                                  );
+                                }
+
+                                return (
+                                  <div className={styles.assetDetailRow}>
+                                    <span>{label}</span>
+                                    <strong title={title}>{displayedValue}</strong>
+                                  </div>
+                                );
+                              };
 
                               return (
                                 <>
@@ -16157,85 +16270,92 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                                   </div>
 
                                   <div className={styles.assetDocumentsPanel}>
-                                    {canUseOwnerOnlyAssetActions || canUseAccountantDocumentActions ? (
-                                      <ModalSelect<AssetDocumentCategory>
-                                        label="Document category"
-                                        value={detailDocumentCategoryByAssetId[asset.id] ?? 'other'}
-                                        options={ASSET_DOCUMENT_CATEGORY_OPTIONS}
-                                        onChange={(value) => setDetailDocumentCategoryByAssetId((current) => ({
-                                          ...current,
-                                          [asset.id]: normalizeAssetDocumentCategory(value),
-                                        }))}
-                                        showDescriptions={false}
-                                        usePortal
-                                      />
-                                    ) : null}
-                                    <input
-                                      id={mediaInputId(asset.id, 'document')}
-                                      type="file"
-                                      accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.jpg,.jpeg,.png,.webp,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv,text/plain,image/jpeg,image/png,image/webp"
-                                      multiple
-                                      className={styles.fileInput}
-                                      onChange={(event) => { void handleDetailDocumentFilesSelected(asset, event); }}
-                                      disabled={isDetailDocumentUploading || (isAccountantWorkspace && !canUseAccountantDocumentActions)}
-                                    />
-
                                     <div className={styles.assetDocumentsCardShell}>
                                       {canUseOwnerOnlyAssetActions || canUseAccountantDocumentActions ? (
                                         <button
                                           type="button"
                                           className={`${styles.previewUploadPill} ${styles.assetDocumentsUploadPill}`}
-                                          disabled={isDetailDocumentUploading}
                                           onClick={(event) => {
                                             event.stopPropagation();
-                                            triggerDetailMediaInput(asset.id, 'document');
+                                            openAssetDocumentUpload(asset);
                                           }}
                                         >
                                           <PlusIcon className={styles.buttonIcon} />
-                                          <span>{isDetailDocumentUploading ? 'Uploading...' : 'Add documents'}</span>
+                                          <span>Add document</span>
                                         </button>
                                       ) : null}
 
-                                      <button
-                                        type="button"
-                                        className={`${styles.assetDocumentsCard} ${styles.assetDocumentsUploadCard} ${isDetailDocumentUploading ? styles.assetMediaBusy : ''}`}
-                                        onClick={() => {
-                                          if (canUseOwnerOnlyAssetActions || canUseAccountantDocumentActions) {
-                                            triggerDetailMediaInput(asset.id, 'document');
-                                          }
-                                        }}
-                                        disabled={isDetailDocumentUploading || (!canUseOwnerOnlyAssetActions && !canUseAccountantDocumentActions)}
-                                      >
+                                      <div className={`${styles.assetDocumentsCard} ${styles.assetDocumentsVaultCard}`}>
                                         <div className={styles.assetDocumentsMainLabel}>
                                           <DocumentIcon className={styles.buttonIcon} />
-                                          <strong>{assetDocumentCategoryLabel(detailDocumentCategoryByAssetId[asset.id] ?? 'other')} documents</strong>
+                                          <strong>Asset documents</strong>
                                         </div>
-                                        <span className={styles.assetMediaHint}>
-                                          {isDetailDocumentUploading
-                                            ? 'Uploading...'
-                                            : detailDocuments.length
-                                              ? `${detailDocuments.length} saved${canUseOwnerOnlyAssetActions || canUseAccountantDocumentActions ? ' · click to add' : ''}`
-                                              : canUseOwnerOnlyAssetActions || canUseAccountantDocumentActions
-                                                ? 'Click to upload documents'
-                                                : 'No documents shared'}
-                                        </span>
-                                      </button>
+                                        <strong className={styles.assetDocumentsSavedCount}>
+                                          {isVaultDocumentsLoading
+                                            ? 'Loading Documents…'
+                                            : `${vaultDocuments.length} in Documents`}
+                                        </strong>
+                                        {detailDocuments.length ? (
+                                          <small className={styles.assetDocumentsLegacyCount}>
+                                            {detailDocuments.length} earlier saved asset {detailDocuments.length === 1 ? 'file' : 'files'}
+                                          </small>
+                                        ) : null}
+                                        {canUseOwnerOnlyAssetActions ? (
+                                          <Link
+                                            href={`/documents?assetId=${encodeURIComponent(asset.id)}`}
+                                            className={styles.assetDocumentsViewAll}
+                                          >
+                                            View documents
+                                          </Link>
+                                        ) : (
+                                          <small className={styles.assetDocumentsOwnerNote}>Saved in the owner’s Documents Vault</small>
+                                        )}
+                                      </div>
                                     </div>
 
-                                    {detailDocuments.length ? (
+                                    {vaultDocumentsError ? (
+                                      <div className={styles.assetDocumentsLoadError} role="status">
+                                        <span>{vaultDocumentsError}</span>
+                                        <button type="button" onClick={() => { void loadVaultDocuments(asset.id); }}>Retry</button>
+                                      </div>
+                                    ) : null}
+
+                                    {vaultDocuments.length || detailDocuments.length ? (
                                       <div className={styles.assetDocumentList}>
-                                        {detailDocuments.map((document, documentIndex) => (
+                                        {vaultDocuments.slice(0, 3).map((document) => (
+                                          <a
+                                            className={styles.assetDocumentLink}
+                                            key={`vault-${document.id}`}
+                                            href={assetVaultDocumentDownloadUrl(asset.id, document.id)}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                            title={`Open ${document.fileName}`}
+                                          >
+                                            <DocumentIcon className={styles.buttonIcon} />
+                                            <span>{getAccountDocumentTypeLabel(document.documentType) ?? ACCOUNT_DOCUMENT_CATEGORY_LABELS[document.category]} · {document.title}</span>
+                                          </a>
+                                        ))}
+                                        {detailDocuments.slice(0, Math.max(0, 3 - vaultDocuments.length)).map((document, documentIndex) => (
                                           <button
                                             type="button"
                                             className={styles.assetDocumentLink}
-                                            key={document.id}
+                                            key={`legacy-${document.id}`}
                                             onClick={() => { void openAssetDocument(document); }}
                                             title={`Open ${document.fileName}`}
                                           >
                                             <DocumentIcon className={styles.buttonIcon} />
-                                            <span>{assetDocumentCategoryLabel(document.category)} · {displayDocumentName(document.fileName, documentIndex)}</span>
+                                            <span>Saved asset file · {displayDocumentName(document.fileName, documentIndex)}</span>
                                           </button>
                                         ))}
+                                        {vaultDocuments.length > 3 && canUseOwnerOnlyAssetActions ? (
+                                          <Link
+                                            href={`/documents?assetId=${encodeURIComponent(asset.id)}`}
+                                            className={`${styles.assetDocumentLink} ${styles.assetDocumentMoreLink}`}
+                                          >
+                                            <DocumentIcon className={styles.buttonIcon} />
+                                            <span>View all {vaultDocuments.length} files in Documents</span>
+                                          </Link>
+                                        ) : null}
                                       </div>
                                     ) : null}
                                   </div>
@@ -16246,30 +16366,28 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                                     <div className={styles.assetDetailsGrid}>
                                       <div className={styles.assetPrimaryDetails}>
                                         {asset.kind !== 'property' ? (
-                                          <div className={styles.assetDetailRow}>
-                                            <span>Serial</span>
-                                            <strong title={asset.serialNumber || 'Not provided'}>{asset.serialNumber || '—'}</strong>
-                                          </div>
+                                          renderAssetDetailRow('serial', 'Serial', asset.serialNumber, asset.serialNumber || 'Not provided')
                                         ) : null}
-                                        <div className={styles.assetDetailRow}>
-                                          <span>{asset.kind === 'property' ? PROPERTY_YEAR_LABEL : 'Year'}</span>
-                                          <strong title={asset.yearModel ? String(asset.yearModel) : 'Not provided'}>{asset.yearModel || '—'}</strong>
-                                        </div>
+                                        {renderAssetDetailRow(
+                                          'year',
+                                          asset.kind === 'property' ? PROPERTY_YEAR_LABEL : 'Year',
+                                          asset.yearModel ? String(asset.yearModel) : '',
+                                          asset.yearModel ? String(asset.yearModel) : 'Not provided',
+                                        )}
                                         {asset.kind === 'property' ? (
                                           <div className={styles.assetDetailRow}>
                                             <span>Size</span>
                                             <strong title={propertySizeDisplay(asset)}>{propertySizeDisplay(asset)}</strong>
                                           </div>
                                         ) : (
-                                          <div className={styles.assetDetailRow}>
-                                            <span>Usage</span>
-                                            <strong title={buildAssetUsageValue(asset)}>{buildAssetUsageValue(asset)}</strong>
-                                          </div>
+                                          renderAssetDetailRow('usage', 'Usage', buildAssetUsageValue(asset))
                                         )}
-                                        <div className={styles.assetDetailRow}>
-                                          <span>Condition</span>
-                                          <strong title={conditionLabel(asset.condition) || 'Not provided'}>{conditionLabel(asset.condition) || '—'}</strong>
-                                        </div>
+                                        {renderAssetDetailRow(
+                                          'condition',
+                                          'Condition',
+                                          conditionLabel(asset.condition),
+                                          conditionLabel(asset.condition) || 'Not provided',
+                                        )}
                                       </div>
 
                                       <div className={styles.assetStatusDetails}>
@@ -17229,7 +17347,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
 
                       {assetFormKind !== 'property' && assetFormKind !== 'stock' ? (
                         <div className={`${styles.assetTripleGrid} ${updateStyles.compactGrid}`}>
-                          <label className={styles.field}>
+                          <label className={styles.field} data-asset-detail-edit-target="serial">
                             <span>Serial / reference</span>
                             <input
                               value={assetDraft.serialNumber}
@@ -17276,7 +17394,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                       {assetFormKind === 'property' ? (
                         <div className={`${styles.assetTripleGrid} ${updateStyles.compactGrid}`}>
                           {!isLandPropertyDraft ? (
-                            <label className={styles.field}>
+                            <label className={styles.field} data-asset-detail-edit-target="year">
                               <span>{yearFieldLabel}</span>
                               <input
                                 type="number"
@@ -17322,12 +17440,13 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                                 }))
                               }
                               className={styles.assetConditionField}
+                              assetDetailEditTarget="condition"
                             />
                           ) : null}
                         </div>
                       ) : assetFormKind !== 'stock' ? (
                         <div className={`${styles.assetTripleGrid} ${updateStyles.compactGrid}`}>
-                          <label className={styles.field}>
+                          <label className={styles.field} data-asset-detail-edit-target="year">
                             <span>{yearFieldLabel}</span>
                             <input
                               type="number"
@@ -17345,7 +17464,10 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                             />
                           </label>
 
-                          <div className={`${styles.field} ${updateStyles.usageEditor}`}>
+                          <div
+                            className={`${styles.field} ${updateStyles.usageEditor}`}
+                            data-asset-detail-edit-target="usage"
+                          >
                             <ModalSelect<AssetDraftUsageMetric>
                               label="Usage type"
                               value={assetDraft.usageMetric}
@@ -17409,6 +17531,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                                 }))
                               }
                               className={styles.assetConditionField}
+                              assetDetailEditTarget="condition"
                             />
                           ) : null}
                         </div>
@@ -17492,7 +17615,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                       {showLifeWorkedPercentField ? (
                         <div className={styles.assetAuxiliaryGrid}>
                           <label className={styles.field}>
-                            <span>Lifetime worked %</span>
+                            <span>Usage %</span>
                             <input
                               type="number"
                               min="0"
@@ -21078,6 +21201,16 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
             </div>
           </div>
         </div>
+      ) : null}
+
+      {documentUploadAsset ? (
+        <AssetDocumentUploadModal
+          assetId={documentUploadAsset.id}
+          assetTitle={documentUploadAsset.title}
+          uploadEndpoint={accountantShareId ? assetVaultDocumentsUrl(documentUploadAsset.id) : '/api/documents'}
+          onClose={() => setDocumentUploadAsset(null)}
+          onUploaded={(documents, outcome) => handleVaultDocumentsUploaded(documentUploadAsset, documents, outcome)}
+        />
       ) : null}
 
       <AssetGroupManagerModal

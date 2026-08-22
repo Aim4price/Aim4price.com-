@@ -13,6 +13,8 @@ const [
   sharedUploadRoute,
   documentStore,
   migration,
+  documentTaxonomy,
+  documentTypeMigration,
   header,
   footer,
   accountDeletion,
@@ -27,6 +29,8 @@ const [
   readFile(new URL('../app/api/asset-register/uploads/[uploadId]/route.ts', import.meta.url), 'utf8'),
   readFile(new URL('../lib/account-documents.ts', import.meta.url), 'utf8'),
   readFile(new URL('../database/migrations/82-account-document-vault.sql', import.meta.url), 'utf8'),
+  readFile(new URL('../lib/account-document-taxonomy.ts', import.meta.url), 'utf8'),
+  readFile(new URL('../database/migrations/86-account-document-types.sql', import.meta.url), 'utf8'),
   readFile(new URL('../components/AppHeader.tsx', import.meta.url), 'utf8'),
   readFile(new URL('../components/AppFooter.tsx', import.meta.url), 'utf8'),
   readFile(new URL('../lib/account-deletion.ts', import.meta.url), 'utf8'),
@@ -78,12 +82,84 @@ test('documents may stay account-level or link to multiple owned assets', () => 
   assert.match(client, /choose one or more related assets/i);
 });
 
+test('specific document types use one shared searchable taxonomy and canonical broad categories', () => {
+  for (const documentType of [
+    'licence-disc',
+    'registration-certificate',
+    'roadworthy-certificate',
+    'insurance-policy',
+    'finance-agreement',
+    'settlement-letter',
+    'invoice-proof-of-purchase',
+    'service-record',
+    'inspection-report',
+    'valuation-report',
+    'warranty-certificate',
+    'other',
+  ]) {
+    assert.match(documentTaxonomy, new RegExp(`value: '${documentType}'`));
+  }
+
+  assert.match(documentTaxonomy, /value: 'service-record'[\s\S]*?category: 'other'/);
+  assert.match(client, /ACCOUNT_DOCUMENT_TYPES/);
+  assert.match(client, /type="search"[\s\S]*?placeholder="Search document types"/);
+  assert.match(client, /role="combobox"/);
+  assert.match(client, /event\.composedPath\(\)\.includes\(documentTypeComboboxRef\.current\)/);
+  assert.doesNotMatch(client, /onBlur=\{\(\) => window\.setTimeout\(\(\) => setShowDocumentTypeOptions/);
+  assert.match(client, /getAccountDocumentTypeLabel\(document\.documentType\)/);
+});
+
+test('asset-linked uploads require and persist a valid document type before file storage', () => {
+  const typeValidation = collectionRoute.indexOf('assetIds.length && !hasDocumentType');
+  const uploadWrite = collectionRoute.indexOf('createAssetRegisterUpload({');
+
+  assert.ok(typeValidation >= 0, 'expected asset-linked document type validation');
+  assert.ok(uploadWrite > typeValidation, 'document type must be validated before file storage');
+  assert.match(collectionRoute, /isAccountDocumentType\(documentTypeEntry\)/);
+  assert.match(collectionRoute, /documentType: documentTypeEntry/);
+  assert.match(documentStore, /required: assetIds\.length > 0/);
+  assert.match(documentStore, /document_type/);
+  assert.match(documentTypeMigration, /add column if not exists document_type text/i);
+  assert.match(documentTypeMigration, /document_type is null/);
+  assert.match(documentTypeMigration, /validate constraint account_documents_document_type_check/i);
+});
+
+test('Other document requires a meaningful description before bytes are stored', () => {
+  const descriptionValidation = collectionRoute.indexOf("documentTypeEntry === 'other'");
+  const uploadWrite = collectionRoute.indexOf('createAssetRegisterUpload({');
+
+  assert.ok(descriptionValidation >= 0, 'expected an Other-document description check');
+  assert.ok(uploadWrite > descriptionValidation, 'description must be validated before file storage');
+  assert.match(collectionRoute, /Describe the document in Notes when choosing Other document/);
+  assert.match(documentStore, /documentType === 'other' && !notes/);
+  assert.match(itemRoute, /DOCUMENT_DESCRIPTION_REQUIRED/);
+  assert.match(client, /draft\.documentType === 'other' && !draft\.notes\.trim\(\)/);
+});
+
+test('asset query links open an owner-scoped filtered vault and preselect uploads', () => {
+  assert.match(page, /searchParams\?:[\s\S]*?assetId\?: string \| string\[\]/);
+  assert.match(page, /<DocumentsClient initialAssetId=\{initialAssetId\}/);
+  assert.match(collectionRoute, /searchParams\.get\('assetId'\)/);
+  assert.match(collectionRoute, /listAccountDocuments\(owner\.userId, \{ includeDeleted, assetId \}\)/);
+  assert.match(documentStore, /filtered_link\.document_id = account_documents\.id/);
+  assert.match(documentStore, /filtered_link\.asset_id = \$2/);
+  assert.match(client, /searchParams\.set\('assetId', initialAssetId\)/);
+  assert.match(client, /className=\{styles\.assetFilterBanner\}/);
+  assert.match(client, /assetIds: initialAssetId \? \[initialAssetId\] : \[\]/);
+  assert.match(client, /modalMode === 'upload' && initialAssetId/);
+  assert.match(client, /className=\{styles\.lockedAssetLink\}/);
+  assert.match(client, /This link is fixed for the asset-card upload/);
+  assert.match(styles, /\.assetFilterBanner\s*\{/);
+  assert.match(styles, /\.lockedAssetLink\s*\{/);
+});
+
 test('upload validation and orphan cleanup protect storage', () => {
   assert.match(collectionRoute, /isAllowedAssetRegisterDocument\(fileEntry\)/);
   assert.match(collectionRoute, /MAX_DOCUMENT_VAULT_UPLOAD_BYTES/);
   assert.match(collectionRoute, /isAccountDocumentCategory\(categoryEntry\)/);
   assert.ok(collectionRoute.indexOf('isAccountDocumentCategory(categoryEntry)') < collectionRoute.indexOf('createAssetRegisterUpload({'));
   assert.match(collectionRoute, /removeUnusedAccountDocumentUpload\(owner\.userId, savedUploadId\)/);
+  assert.match(collectionRoute, /savedUploadId = '';[\s\S]*?getAccountDocumentSummary\(owner\.userId\)\.catch/);
   assert.match(documentStore, /not exists \([\s\S]*?public\.account_documents document/);
   assert.match(documentStore, /throw new Error\('DOCUMENT_CATEGORY_INVALID'\)/);
   assert.match(itemRoute, /message === 'DOCUMENT_CATEGORY_INVALID'/);
@@ -198,6 +274,10 @@ test('live vault interactions keep errors, focus and view mutations safe', () =>
   assert.match(client, /pageContent\?\.setAttribute\('inert', ''\)/);
   assert.match(client, /event\.key !== 'Tab'/);
   assert.match(client, /returnFocusRef\.current\?\.focus\(\)/);
+  assert.match(client, /const previousOverflow = document\.body\.style\.overflow/);
+  assert.match(client, /document\.body\.style\.overflow = previousOverflow/);
+  assert.match(client, /event\.key === 'Escape' && showDocumentTypeOptions/);
+  assert.match(client, /event\.stopPropagation\(\)/);
   assert.match(client, /<fieldset className=\{styles\.modalFields\} disabled=\{busy\}>/);
   assert.match(client, /role="status" aria-live="polite"/);
   assert.match(client, /async function readVaultResponse/);

@@ -1,0 +1,223 @@
+.backdrop {
+  position: fixed;
+  z-index: 1400;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: clamp(1rem, 3vw, 2rem);
+  background: rgba(5, 32, 27, 0.56);
+  backdrop-filter: blur(8px);
+}
+
+.modal {
+  width: min(100%, 780px);
+  max-height: min(92dvh, 900px);
+  overflow: hidden;
+  border: 1px solid rgba(188, 214, 205, 0.98);
+  border-radius: 1.65rem;
+  background: #ffffff;
+  box-shadow: 0 32px 80px rgba(5, 32, 27, 0.28);
+  color: #123e34;
+  font-family: var(--font-body, 'Montserrat'), sans-serif;
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.35rem 1.45rem 1.15rem;
+  border-bottom: 1px solid #dce8e3;
+  background: linear-gradient(180deg, #fbfffd 0%, #f3faf7 100%);
+}
+
+.header > div { display: grid; gap: 0.25rem; }
+.header span { color: #258062; font-size: 0.72rem; font-weight: 850; letter-spacing: 0.08em; text-transform: uppercase; }
+.header h2 { margin: 0; color: #073b30; font-size: clamp(1.5rem, 3vw, 2rem); font-weight: 900; letter-spacing: -0.045em; }
+.header p { margin: 0; color: #60766f; font-size: 0.88rem; font-weight: 650; line-height: 1.45; }
+.header > button,
+.fileList button {
+  width: 2.45rem;
+  height: 2.45rem;
+  flex: 0 0 auto;
+  border: 1px solid #cfddd7;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #46645b;
+  font: inherit;
+  font-size: 1.35rem;
+  cursor: pointer;
+}
+
+.modal form { display: grid; min-height: 0; }
+.content { display: grid; gap: 1rem; max-height: calc(92dvh - 11.5rem); overflow-y: auto; padding: 1.2rem 1.45rem 1.35rem; }
+
+.error {
+  padding: 0.82rem 0.95rem;
+  border: 1px solid #fecaca;
+  border-radius: 0.9rem;
+  background: #fff1f2;
+  color: #9f1239;
+  font-size: 0.84rem;
+  font-weight: 760;
+  line-height: 1.4;
+}
+
+.assetBadge {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.2rem 0.75rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid #c9e2d7;
+  border-radius: 1rem;
+  background: #f1faf6;
+}
+
+.assetBadge span { grid-row: 1 / 3; align-self: center; padding: 0.35rem 0.55rem; border-radius: 999px; background: #dff3e8; color: #176849; font-size: 0.68rem; font-weight: 850; text-transform: uppercase; }
+.assetBadge strong { min-width: 0; overflow: hidden; color: #0b4638; font-size: 0.94rem; font-weight: 860; text-overflow: ellipsis; white-space: nowrap; }
+.assetBadge small { color: #668077; font-size: 0.7rem; font-weight: 650; }
+
+.field { position: relative; display: grid; gap: 0.42rem; min-width: 0; }
+.field > label,
+.field > span { color: #315d50; font-size: 0.76rem; font-weight: 820; }
+.field b { color: #d44b4b; }
+.field em { color: #83958f; font-size: 0.68rem; font-style: normal; font-weight: 650; }
+.field > small { color: #6b8179; font-size: 0.68rem; font-weight: 680; }
+
+.field input,
+.field textarea {
+  width: 100%;
+  min-width: 0;
+  min-height: 3.05rem;
+  padding: 0.72rem 0.82rem;
+  border: 1px solid #c6d9e2;
+  border-radius: 0.88rem;
+  background: #ffffff;
+  color: #173f35;
+  font: inherit;
+  font-size: 0.84rem;
+  font-weight: 670;
+  outline: none;
+}
+
+.field textarea { resize: vertical; }
+.field input:focus,
+.field textarea:focus { border-color: #55ad86; box-shadow: 0 0 0 4px rgba(27, 119, 84, 0.09); }
+
+.combobox {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0 0.75rem;
+  border: 1px solid #c6d9e2;
+  border-radius: 0.9rem;
+  background: #ffffff;
+}
+
+.combobox:focus-within { border-color: #55ad86; box-shadow: 0 0 0 4px rgba(27, 119, 84, 0.09); }
+.combobox > span { color: #6f8580; font-size: 1.15rem; }
+.combobox > input { min-height: 3.15rem; padding: 0; border: 0; border-radius: 0; box-shadow: none; }
+.combobox > input:focus { border: 0; box-shadow: none; }
+.combobox > button { width: 2rem; height: 2rem; display: grid; place-items: center; padding: 0; border: 0; border-radius: 0.55rem; background: #edf5f1; color: #567069; font: inherit; font-size: 1rem; cursor: pointer; }
+
+.options {
+  position: absolute;
+  z-index: 4;
+  top: calc(100% + 0.45rem);
+  right: 0;
+  left: 0;
+  max-height: 17rem;
+  overflow-y: auto;
+  padding: 0.45rem;
+  border: 1px solid #bfd4dc;
+  border-radius: 0.9rem;
+  background: #ffffff;
+  box-shadow: 0 18px 38px rgba(22, 55, 49, 0.18);
+  overscroll-behavior: contain;
+}
+
+.options > button { width: 100%; min-height: 3rem; display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; padding: 0.55rem 0.7rem; border: 0; border-radius: 0.68rem; background: transparent; color: #23463e; text-align: left; cursor: pointer; }
+.options > button:hover,
+.options > button:focus-visible,
+.options > button[data-active='true'],
+.options > button[aria-selected='true'] { outline: none; background: #edf8f2; }
+.options span { font-size: 0.78rem; font-weight: 790; }
+.options small { color: #72857f; font-size: 0.64rem; font-weight: 680; white-space: nowrap; }
+.options p { margin: 0; padding: 0.9rem; color: #6f817c; font-size: 0.75rem; text-align: center; }
+
+.filePicker {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 1rem;
+  min-height: 7rem;
+  padding: 1rem 1.1rem;
+  border: 1.5px dashed #a9c8bb;
+  border-radius: 1.1rem;
+  background: #f8fcfa;
+}
+
+.filePickerSelected { border-style: solid; background: #f3faf7; }
+.filePickerDragging { border-color: #24805f; background: #eaf8f1; }
+.filePicker > input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.filePicker > div { display: grid; gap: 0.25rem; }
+.filePicker strong { color: #154b3c; font-size: 0.9rem; font-weight: 850; }
+.filePicker span { color: #6a8179; font-size: 0.7rem; font-weight: 650; }
+.filePicker > button,
+.footer button { min-height: 2.8rem; padding: 0 1rem; border-radius: 0.85rem; font: inherit; font-size: 0.78rem; font-weight: 830; cursor: pointer; }
+.filePicker > button { border: 1px solid #b9d3c8; background: #ffffff; color: #16684d; }
+
+.fileList { display: grid; gap: 0.42rem; padding: 0.75rem; border: 1px solid #d7e4df; border-radius: 1rem; background: #fbfdfc; }
+.fileList > header,
+.fileList > div { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; }
+.fileList > header { padding: 0.15rem 0.25rem 0.45rem; color: #47685d; font-size: 0.72rem; }
+.fileList > div { min-height: 3rem; padding: 0.45rem 0.55rem 0.45rem 0.75rem; border: 1px solid #e0e9e5; border-radius: 0.8rem; background: #ffffff; }
+.fileList > div > span { display: grid; min-width: 0; gap: 0.15rem; }
+.fileList > div strong { overflow: hidden; color: #244a3f; font-size: 0.77rem; text-overflow: ellipsis; white-space: nowrap; }
+.fileList > div small { color: #7b8f88; font-size: 0.65rem; }
+.fileList button { width: 2rem; height: 2rem; border: 0; background: #f1f5f3; font-size: 1rem; }
+
+.detailsGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.9rem; }
+.notes { grid-column: 1 / -1; }
+
+.footer {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 1rem 1.45rem;
+  border-top: 1px solid #dce8e3;
+  background: #fbfdfc;
+}
+
+.footer > span { color: #667e76; font-size: 0.72rem; font-weight: 680; }
+.cancel { border: 1px solid #cbdad4; background: #ffffff; color: #536e65; }
+.submit { border: 1px solid #126747; background: linear-gradient(180deg, #1b805e 0%, #116447 100%); color: #ffffff; box-shadow: 0 10px 20px rgba(17, 100, 71, 0.16); }
+.header button:disabled,
+.filePicker button:disabled,
+.fileList button:disabled,
+.footer button:disabled { cursor: not-allowed; opacity: 0.55; }
+
+@media (max-width: 620px) {
+  .backdrop { place-items: end center; padding: 0; }
+  .modal { width: 100%; max-height: 96dvh; border-radius: 1.35rem 1.35rem 0 0; }
+  .content { max-height: calc(96dvh - 12rem); padding: 1rem; }
+  .header,
+  .footer { padding-right: 1rem; padding-left: 1rem; }
+  .assetBadge,
+  .detailsGrid,
+  .filePicker { grid-template-columns: 1fr; }
+  .assetBadge span { grid-row: auto; justify-self: start; }
+  .filePicker > button { width: 100%; }
+  .footer { grid-template-columns: 1fr 1fr; }
+  .footer > span { grid-column: 1 / -1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .modal *,
+  .modal *::before,
+  .modal *::after { scroll-behavior: auto !important; transition-duration: 0.01ms !important; }
+}
