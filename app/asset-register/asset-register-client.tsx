@@ -250,7 +250,7 @@ type AssetStatusEditView = 'hub' | AssetStatusSection;
 type AssetStatusQuickOrigin = 'detail-card' | null;
 type ManualAssetStep = 1 | 2 | 3 | 4;
 type AssetDetailEditTarget = 'serial' | 'year' | 'usage' | 'condition';
-type OwnerAssetCommandPanel = 'documents' | 'maintenance' | null;
+type OwnerAssetCommandPanel = 'maintenance' | null;
 type AssetModalReturnOrigin = {
   asset: RegisterAsset;
   assetId: string;
@@ -19817,6 +19817,14 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                     </span>
                   </button>
 
+                  <button type="button" className={`${styles.optionActionButton} ${styles.ownerCommandAction}`} onClick={openAssetReportDialog}>
+                    <DownloadIcon className={styles.buttonIcon} />
+                    <span>
+                      <strong>Reports</strong>
+                      <small>Choose and download asset reports.</small>
+                    </span>
+                  </button>
+
                   <Link
                     href={buildOwnerAssetPageHref('/my-invoices', activeAsset.id, { add: true }, ownerCommandReturnLocation)}
                     className={`${styles.optionActionButton} ${styles.ownerCommandAction}`}
@@ -19824,7 +19832,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                     <MoneyBagIcon className={styles.buttonIcon} />
                     <span>
                       <strong>Add cost</strong>
-                      <small>Record an expense against this asset.</small>
+                      <small>Record an expense for this asset.</small>
                     </span>
                   </Link>
 
@@ -19850,20 +19858,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                     <ManageIcon className={styles.buttonIcon} />
                     <span>
                       <strong>Maintenance</strong>
-                      <small>Add a record or open this asset&apos;s maintenance history.</small>
-                    </span>
-                  </button>
-
-                  <button
-                    type="button"
-                    className={`${styles.optionActionButton} ${styles.ownerCommandAction}`}
-                    data-asset-return-action="manage-documents"
-                    onClick={() => setOwnerAssetCommandPanel('documents')}
-                  >
-                    <DocumentIcon className={styles.buttonIcon} />
-                    <span>
-                      <strong>Documents &amp; photos</strong>
-                      <small>Quick add, view the vault or manage asset photos.</small>
+                      <small>Add or review maintenance records.</small>
                     </span>
                   </button>
 
@@ -19872,25 +19867,17 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                       <TrendIcon className={styles.buttonIcon} />
                       <span>
                         <strong>Manage pricing</strong>
-                        <small>Recalculate, refresh or get a future value.</small>
+                        <small>Refresh values or calculate future value.</small>
                       </span>
                     </button>
                   ) : null}
-
-                  <button type="button" className={`${styles.optionActionButton} ${styles.ownerCommandAction}`} onClick={openAssetReportDialog}>
-                    <DownloadIcon className={styles.buttonIcon} />
-                    <span>
-                      <strong>Reports</strong>
-                      <small>Choose and download a report for this asset.</small>
-                    </span>
-                  </button>
 
                   {canUseOwnerOnlyAssetActions ? (
                     <button type="button" className={`${styles.optionActionButton} ${styles.ownerCommandAction}`} onClick={openQrDialog}>
                       <QrIcon className={styles.buttonIcon} />
                       <span>
                         <strong>QR code</strong>
-                        <small>Copy, download or print the asset QR label.</small>
+                        <small>Copy, download or print the QR label.</small>
                       </span>
                     </button>
                   ) : null}
@@ -19900,7 +19887,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                       <CartIcon className={styles.buttonIcon} />
                       <span>
                         <strong>Marketplace</strong>
-                        <small>{isLiveOnMarketplace(activeAsset) ? 'Update, view or remove the live listing.' : 'Create a marketplace listing from this asset.'}</small>
+                        <small>{isLiveOnMarketplace(activeAsset) ? 'Update or remove the live listing.' : 'Create a listing for this asset.'}</small>
                       </span>
                     </button>
                   ) : null}
@@ -19917,7 +19904,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                       <TrashIcon className={styles.buttonIcon} />
                       <span>
                         <strong>{busyDeleteId === activeAsset.id ? 'Removing...' : 'Dispose or remove asset'}</strong>
-                        <small className={styles.deleteAssetOptionSubtitle}>Archive a sale, trade-in, write-off or safely remove a duplicate.</small>
+                        <small>Archive, sell, write off or remove.</small>
                       </span>
                     </button>
                   </div>
@@ -19940,9 +19927,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
           >
             <div className={`${styles.modalHeader} ${styles.ownerCommandChoiceHeader}`}>
               <div className={styles.modalHeaderText}>
-                <h3 id="owner-command-choice-title">
-                  {ownerAssetCommandPanel === 'documents' ? 'Documents & photos' : 'Maintenance'}
-                </h3>
+                <h3 id="owner-command-choice-title">Maintenance</h3>
                 <p>{activeAsset.title}</p>
               </div>
 
@@ -19950,7 +19935,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                 type="button"
                 className={styles.modalCloseButton}
                 onClick={() => setOwnerAssetCommandPanel(null)}
-                aria-label={`Close ${ownerAssetCommandPanel === 'documents' ? 'documents and photos' : 'maintenance'} choices`}
+                aria-label="Close maintenance choices"
               >
                 <CloseIcon className={styles.buttonIcon} />
               </button>
@@ -19958,97 +19943,45 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
 
             <div className={styles.ownerCommandChoiceBody}>
               <div className={styles.ownerCommandChoiceGrid}>
-                {ownerAssetCommandPanel === 'documents' ? (
-                  <>
-                    <button
-                      type="button"
-                      className={`${styles.optionActionButton} ${styles.ownerCommandChoiceAction} ${styles.optionFeaturedButton}`}
-                      onClick={() => {
-                        const asset = activeAsset;
-                        setOwnerAssetCommandPanel(null);
-                        openAssetDocumentUpload(asset);
-                      }}
-                    >
-                      <PlusIcon className={styles.buttonIcon} />
-                      <span>
-                        <strong>Add documents</strong>
-                        <small>Choose a document type and upload directly to this asset.</small>
-                      </span>
-                    </button>
+                <Link
+                  href={buildOwnerAssetPageHref('/maintenance', activeAsset.id, { add: true }, ownerCommandReturnLocation)}
+                  className={`${styles.optionActionButton} ${styles.ownerCommandChoiceAction} ${styles.optionFeaturedButton}`}
+                >
+                  <PlusIcon className={styles.buttonIcon} />
+                  <span>
+                    <strong>Add maintenance</strong>
+                    <small>Create a maintenance record already linked to this asset.</small>
+                  </span>
+                </Link>
 
-                    <Link
-                      href={buildOwnerAssetPageHref('/documents', activeAsset.id, {}, ownerCommandReturnLocation)}
-                      className={`${styles.optionActionButton} ${styles.ownerCommandChoiceAction}`}
-                    >
-                      <DocumentIcon className={styles.buttonIcon} />
-                      <span>
-                        <strong>Open document vault</strong>
-                        <small>View, filter and manage every document linked to this asset.</small>
-                      </span>
-                    </Link>
+                <Link
+                  href={buildOwnerAssetPageHref('/maintenance', activeAsset.id, {}, ownerCommandReturnLocation)}
+                  className={`${styles.optionActionButton} ${styles.ownerCommandChoiceAction}`}
+                >
+                  <ManageIcon className={styles.buttonIcon} />
+                  <span>
+                    <strong>Manage maintenance</strong>
+                    <small>Open this asset&apos;s service history, schedule and reminders.</small>
+                  </span>
+                </Link>
 
-                    <button
-                      type="button"
-                      className={`${styles.optionActionButton} ${styles.ownerCommandChoiceAction}`}
-                      onClick={(event) => {
-                        const asset = activeAsset;
-                        rememberAssetModalReturn(asset, 'manage', 'manage-documents', event.currentTarget);
-                        setOwnerAssetCommandPanel(null);
-                        closeActionDialog();
-                        openUpdater(asset);
-                        setManualAssetStep(4);
-                      }}
-                    >
-                      <UpdateAssetIcon className={styles.buttonIcon} />
-                      <span>
-                        <strong>Manage photos</strong>
-                        <small>Add, replace, remove or choose the asset&apos;s main photo.</small>
-                      </span>
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <Link
-                      href={buildOwnerAssetPageHref('/maintenance', activeAsset.id, { add: true }, ownerCommandReturnLocation)}
-                      className={`${styles.optionActionButton} ${styles.ownerCommandChoiceAction} ${styles.optionFeaturedButton}`}
-                    >
-                      <PlusIcon className={styles.buttonIcon} />
-                      <span>
-                        <strong>Add maintenance</strong>
-                        <small>Create a maintenance record already linked to this asset.</small>
-                      </span>
-                    </Link>
-
-                    <Link
-                      href={buildOwnerAssetPageHref('/maintenance', activeAsset.id, {}, ownerCommandReturnLocation)}
-                      className={`${styles.optionActionButton} ${styles.ownerCommandChoiceAction}`}
-                    >
-                      <ManageIcon className={styles.buttonIcon} />
-                      <span>
-                        <strong>Manage maintenance</strong>
-                        <small>Open this asset&apos;s service history, schedule and reminders.</small>
-                      </span>
-                    </Link>
-
-                    {activeAsset.kind !== 'property' && activeDealerTrackingByAssetId[activeAsset.id] === true ? (
-                      <button
-                        type="button"
-                        className={`${styles.optionActionButton} ${styles.ownerCommandChoiceAction}`}
-                        onClick={() => {
-                          const asset = activeAsset;
-                          setOwnerAssetCommandPanel(null);
-                          void openDealerTrackingSettings(asset);
-                        }}
-                      >
-                        <ManageIcon className={styles.buttonIcon} />
-                        <span>
-                          <strong>Dealer tracking settings</strong>
-                          <small>Review dealer maintenance access and update permissions.</small>
-                        </span>
-                      </button>
-                    ) : null}
-                  </>
-                )}
+                {activeAsset.kind !== 'property' && activeDealerTrackingByAssetId[activeAsset.id] === true ? (
+                  <button
+                    type="button"
+                    className={`${styles.optionActionButton} ${styles.ownerCommandChoiceAction}`}
+                    onClick={() => {
+                      const asset = activeAsset;
+                      setOwnerAssetCommandPanel(null);
+                      void openDealerTrackingSettings(asset);
+                    }}
+                  >
+                    <ManageIcon className={styles.buttonIcon} />
+                    <span>
+                      <strong>Dealer tracking settings</strong>
+                      <small>Review dealer maintenance access and update permissions.</small>
+                    </span>
+                  </button>
+                ) : null}
               </div>
             </div>
           </div>
