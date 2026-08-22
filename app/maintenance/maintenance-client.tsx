@@ -109,6 +109,12 @@ type MaintenanceFilters = {
   assignedTo: 'all' | 'unassigned' | string;
 };
 
+type MaintenanceClientProps = {
+  initialAssetId?: string;
+  initialOpenAdd?: boolean;
+  initialReturnTo?: string;
+};
+
 type MaintenanceDraft = {
   assetId: string;
   maintenanceType: MaintenanceType;
@@ -153,6 +159,13 @@ const EMPTY_FILTERS: MaintenanceFilters = {
   status: 'all',
   assignedTo: 'all',
 };
+
+function filtersForInitialAsset(assetId: string): MaintenanceFilters {
+  const normalizedAssetId = assetId.trim();
+  return normalizedAssetId
+    ? { ...EMPTY_FILTERS, assetId: normalizedAssetId }
+    : { ...EMPTY_FILTERS };
+}
 
 const PAGE_SIZE = 10;
 
@@ -753,7 +766,12 @@ function recordSearchText(record: MaintenanceRecord): string {
     .toLowerCase();
 }
 
-export default function MaintenanceClient() {
+export default function MaintenanceClient({
+  initialAssetId = '',
+  initialOpenAdd = false,
+  initialReturnTo = '',
+}: MaintenanceClientProps = {}) {
+  const initialFilters = filtersForInitialAsset(initialAssetId);
   const [assets, setAssets] = useState<AssetOption[]>([]);
   const [fieldManagers, setFieldManagers] = useState<FieldManagerOption[]>([]);
   const [records, setRecords] = useState<MaintenanceRecord[]>([]);
@@ -764,9 +782,11 @@ export default function MaintenanceClient() {
   const [modalMode, setModalMode] = useState<ModalMode>(null);
   const [search, setSearch] = useState('');
   const [pickerSearch, setPickerSearch] = useState('');
-  const [activeFilters, setActiveFilters] = useState<MaintenanceFilters>(EMPTY_FILTERS);
-  const [draftFilters, setDraftFilters] = useState<MaintenanceFilters>(EMPTY_FILTERS);
+  const [activeFilters, setActiveFilters] = useState<MaintenanceFilters>(initialFilters);
+  const [draftFilters, setDraftFilters] = useState<MaintenanceFilters>(initialFilters);
   const [draft, setDraft] = useState<MaintenanceDraft | null>(null);
+  const [initialLaunchHandled, setInitialLaunchHandled] = useState(!initialOpenAdd);
+  const [quickLaunchActive, setQuickLaunchActive] = useState(false);
   const [editingRecordId, setEditingRecordId] = useState<string | null>(null);
   const [recordPendingDelete, setRecordPendingDelete] = useState<MaintenanceRecord | null>(null);
   const [recordPendingComplete, setRecordPendingComplete] = useState<MaintenanceRecord | null>(null);
@@ -784,6 +804,11 @@ export default function MaintenanceClient() {
 
   const assetById = useMemo(() => new Map(assets.map((asset) => [asset.id, asset])), [assets]);
   const selectedDraftAsset = draft ? assetById.get(draft.assetId) : undefined;
+  const quickLaunchReturnTo = initialOpenAdd && initialAssetId ? initialReturnTo : '';
+  const assetEntryLocked = quickLaunchActive && Boolean(initialAssetId && assetById.has(initialAssetId));
+  const filteredAssetReturnTo = !initialOpenAdd && initialAssetId && assetById.has(initialAssetId)
+    ? initialReturnTo
+    : '';
 
   const applyPayload = useCallback((payload: MaintenancePayload) => {
     setAssets(Array.isArray(payload.assets) ? payload.assets : []);
@@ -819,6 +844,27 @@ export default function MaintenanceClient() {
   useEffect(() => {
     void loadData(activeFilters);
   }, [activeFilters, loadData]);
+
+  useEffect(() => {
+    if (initialLaunchHandled || isLoading) return;
+    setInitialLaunchHandled(true);
+
+    const requestedAssetId = initialAssetId.trim();
+    const requestedAsset = assets.find((asset) => asset.id === requestedAssetId);
+    if (requestedAsset) {
+      setNotice(null);
+      setEditingRecordId(null);
+      setDraft(emptyDraftForAsset(requestedAsset));
+      setPickerSearch('');
+      setQuickLaunchActive(true);
+      setModalMode('maintenance-type');
+      return;
+    }
+
+    if (requestedAssetId) {
+      setNotice({ type: 'error', text: 'This asset is not available for maintenance.' });
+    }
+  }, [assets, initialAssetId, initialLaunchHandled, isLoading]);
 
   useEffect(() => {
     const refresh = () => {
@@ -894,6 +940,7 @@ export default function MaintenanceClient() {
   );
 
   function closeModal() {
+    const shouldReturn = quickLaunchActive && quickLaunchReturnTo;
     setModalMode(null);
     setPickerSearch('');
     setEditingRecordId(null);
@@ -902,6 +949,11 @@ export default function MaintenanceClient() {
     setRecordPendingQuickClear(null);
     setQuickClearStep('confirm');
     setDraft(null);
+    setQuickLaunchActive(false);
+
+    if (shouldReturn) {
+      window.location.assign(shouldReturn);
+    }
   }
 
   function openAddService() {
@@ -1187,6 +1239,11 @@ export default function MaintenanceClient() {
         <section className={styles.pageTitleBlock}>
           <div>
             <h1>ASSET MAINTENANCE</h1>
+            {filteredAssetReturnTo ? (
+              <p className={styles.helperText}>
+                <a className={styles.secondaryButton} href={filteredAssetReturnTo}>← Back to asset</a>
+              </p>
+            ) : null}
           </div>
         </section>
 
@@ -1434,7 +1491,9 @@ export default function MaintenanceClient() {
               </div>
             </div>
             <footer className={styles.modalFooter}>
-              <button className={styles.secondaryButton} type="button" onClick={returnToAssetPicker}>Back</button>
+              {!assetEntryLocked ? (
+                <button className={styles.secondaryButton} type="button" onClick={returnToAssetPicker}>Back</button>
+              ) : null}
               <button className={styles.secondaryButton} type="button" onClick={closeModal}>Cancel</button>
             </footer>
           </section>

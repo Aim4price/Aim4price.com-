@@ -166,6 +166,7 @@ type MyInvoicesClientProps = {
   showAppHeader?: boolean;
   initialAssetId?: string;
   initialOpenAdd?: boolean;
+  initialReturnTo?: string;
   initialDealerDefaults?: DealerDefaults;
 };
 
@@ -1068,6 +1069,7 @@ export default function MyInvoicesClient({
   showAppHeader,
   initialAssetId = '',
   initialOpenAdd = false,
+  initialReturnTo = '',
   initialDealerDefaults = { supplierName: '', vatNumber: '', address: '' },
 }: MyInvoicesClientProps = {}) {
   const routeSearchParams = useSearchParams();
@@ -1135,6 +1137,7 @@ export default function MyInvoicesClient({
   const [recurringError, setRecurringError] = useState('');
   const [assetLockedForFlow, setAssetLockedForFlow] = useState(false);
   const [initialLaunchHandled, setInitialLaunchHandled] = useState(!initialOpenAdd);
+  const [quickLaunchActive, setQuickLaunchActive] = useState(false);
   const [editingInvoiceId, setEditingInvoiceId] = useState<string | null>(null);
   const [manualUploadFile, setManualUploadFile] = useState<File | null>(null);
   const [automaticUploadFile, setAutomaticUploadFile] = useState<File | null>(null);
@@ -1337,14 +1340,20 @@ export default function MyInvoicesClient({
 
     const requestedAssetId = initialAssetId.trim();
     if (requestedAssetId && assets.some((asset) => asset.id === requestedAssetId)) {
+      setQuickLaunchActive(true);
       openAddInvoiceModal(requestedAssetId);
       return;
     }
 
     if (requestedAssetId) {
-      setNotice({ tone: 'error', message: 'This asset is not currently shared with your dealership.' });
+      setNotice({
+        tone: 'error',
+        message: dealerMode
+          ? 'This asset is not currently shared with your dealership.'
+          : 'This asset is not available in your Cost Ledger.',
+      });
     }
-  }, [assets, initialAssetId, initialLaunchHandled, isLoading]);
+  }, [assets, dealerMode, initialAssetId, initialLaunchHandled, isLoading]);
 
   const selectedAsset = useMemo(
     () => assets.find((asset) => asset.id === selectedAssetId) ?? null,
@@ -1476,6 +1485,7 @@ export default function MyInvoicesClient({
     () => costBudgets.filter((budget) => budget.status !== 'on_track').length,
     [costBudgets],
   );
+  const quickLaunchReturnTo = initialOpenAdd && initialAssetId ? initialReturnTo : '';
 
   const sourceChoiceOpen = flow === 'source-choice';
   const assetPickerOpen = flow === 'asset-manual' || flow === 'asset-automatic';
@@ -1956,6 +1966,7 @@ export default function MyInvoicesClient({
   }
 
   function closeModal() {
+    const shouldReturn = quickLaunchActive && quickLaunchReturnTo;
     setFlow(null);
     setSelectedAssetId('');
     setPickerSearch('');
@@ -1973,6 +1984,11 @@ export default function MyInvoicesClient({
     setRecurringAssetPickerOpen(false);
     setRecurringAssetSearch('');
     setRecurringError('');
+    setQuickLaunchActive(false);
+
+    if (shouldReturn) {
+      window.location.assign(shouldReturn);
+    }
   }
 
   function openInvoiceDropCodeManager() {
@@ -3683,12 +3699,18 @@ export default function MyInvoicesClient({
                   </label>
                   <div className={`${styles.recurringAssetField} ${styles.recurringCommitmentWide}`}>
                     <span className={styles.recurringAssetFieldLabel}>Linked assets</span>
-                    <button type="button" className={styles.recurringAssetTrigger} onClick={() => setRecurringAssetPickerOpen(true)} aria-haspopup="dialog">
+                    <button
+                      type="button"
+                      className={styles.recurringAssetTrigger}
+                      onClick={() => setRecurringAssetPickerOpen(true)}
+                      aria-haspopup="dialog"
+                      disabled={assetLockedForFlow}
+                    >
                       <span>
                         <strong>{recurringAssetIds.length ? `${recurringAssetIds.length} asset${recurringAssetIds.length === 1 ? '' : 's'} selected` : 'Choose linked assets'}</strong>
-                        <small>Select every asset covered by this commitment.</small>
+                        <small>{assetLockedForFlow ? 'This asset is fixed for this quick add.' : 'Select every asset covered by this commitment.'}</small>
                       </span>
-                      <b>{recurringAssetIds.length ? 'Change' : 'Choose'}</b>
+                      <b>{assetLockedForFlow ? 'Locked' : recurringAssetIds.length ? 'Change' : 'Choose'}</b>
                     </button>
                     {recurringSelectedAssets.length ? <div className={styles.recurringAssetChips}>
                       {recurringSelectedAssets.map((asset) => <span key={asset.id}>{asset.title}</span>)}

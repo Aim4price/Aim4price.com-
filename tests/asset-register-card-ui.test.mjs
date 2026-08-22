@@ -203,3 +203,129 @@ test('dropdowns reserve scrollbar space only when content is clipped', () => {
   assert.match(headerStyles, /\.accountPopover\s*\{[\s\S]*?max-height:\s*calc\(100dvh - 7rem\);[\s\S]*?scrollbar-gutter:\s*auto;/);
   assert.doesNotMatch(headerStyles, /max-height:\s*min\(36rem, calc\(100dvh - 7rem\)\)/);
 });
+
+test('owner Manage is a gated nine-action command centre with disposal isolated below it', () => {
+  const ownerManage = client.slice(
+    client.indexOf('styles.ownerCommandOverlay'),
+    client.indexOf('{activeAsset && ownerAssetCommandPanel', client.indexOf('styles.ownerCommandOverlay')),
+  );
+
+  for (const label of [
+    'Update asset',
+    'Add cost',
+    'Add fuel',
+    'Maintenance',
+    'Documents &amp; photos',
+    'Manage pricing',
+    'Reports',
+    'QR code',
+    'Marketplace',
+  ]) {
+    assert.match(ownerManage, new RegExp(label.replace('&amp;', '&amp;')));
+  }
+
+  assert.equal(ownerManage.match(/styles\.ownerCommandAction/g)?.length, 9);
+  assert.match(ownerManage, /canAssetReceiveFuel\(activeAsset\)[\s\S]*?buildOwnerAssetPageHref\('\/fuel'/);
+  assert.match(ownerManage, /canManageAssetPricing\(activeAsset\)/);
+  assert.match(ownerManage, /canUseMarketplaceActions && isMarketplaceEligible\(activeAsset\)/);
+  assert.match(ownerManage, /ownerCommandDangerZone[\s\S]*?Dispose or remove asset/);
+  assert.doesNotMatch(ownerManage, /Dealer tracking settings|Remove from marketplace/);
+  assert.match(client, /<AccountantAssetManageModal/);
+});
+
+test('owner command layout is three columns wide, two medium and one mobile', () => {
+  assert.match(styles, /\.ownerCommandModal \.ownerCommandGrid\s*\{\s*grid-template-columns:\s*repeat\(3, minmax\(0, 1fr\)\) !important;/);
+  assert.match(styles, /@media \(max-width: 1180px\)[\s\S]*?\.ownerCommandModal \.ownerCommandGrid\s*\{\s*grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\) !important;/);
+  assert.match(styles, /@media \(max-width: 700px\)[\s\S]*?\.ownerCommandModal \.ownerCommandGrid,[\s\S]*?grid-template-columns:\s*minmax\(0, 1fr\) !important;/);
+  assert.match(styles, /\.ownerCommandScrollBody\.optionsScrollBody\s*\{[\s\S]*?overflow-y:\s*auto !important;[\s\S]*?scrollbar-gutter:\s*auto !important;/);
+  assert.match(styles, /\.optionsModal\.ownerCommandModal\s*\{[\s\S]*?overflow:\s*hidden !important;/);
+});
+
+test('cross-page asset actions carry add intent and a safe exact-register return path', () => {
+  const hrefBuilder = client.slice(
+    client.indexOf('function buildAssetRegisterManageReturnPath'),
+    client.indexOf('function isValuationUpdateAvailable'),
+  );
+  const mapReturn = client.slice(
+    client.indexOf("const action = params.get('mapAction')"),
+    client.indexOf('}, [assets, isLoading]);', client.indexOf("const action = params.get('mapAction')")),
+  );
+
+  assert.match(hrefBuilder, /new URL\(currentLocation, 'https:\/\/aim4price\.local'\)/);
+  assert.match(hrefBuilder, /new URLSearchParams\(currentUrl\.search\)/);
+  assert.match(hrefBuilder, /params\.set\('assetId', assetId\)/);
+  assert.match(hrefBuilder, /params\.set\('mapAction', 'manage'\)/);
+  assert.match(hrefBuilder, /if \(options\.add\) params\.set\('add', '1'\)/);
+  assert.match(hrefBuilder, /params\.set\('returnTo', buildAssetRegisterManageReturnPath\(assetId, currentLocation\)\)/);
+  assert.match(client, /setOwnerCommandReturnLocation\(`\$\{window\.location\.pathname\}\$\{window\.location\.search\}`\)/);
+  for (const route of ['/my-invoices', '/fuel', '/maintenance', '/documents']) {
+    assert.match(client, new RegExp(`buildOwnerAssetPageHref\\('${route.replace('/', '\\/')}'`));
+  }
+  assert.match(mapReturn, /nextParams\.delete\('assetId'\)/);
+  assert.match(mapReturn, /nextParams\.delete\('mapAction'\)/);
+  assert.match(mapReturn, /nextSearch \? `\?\$\{nextSearch\}` : ''/);
+});
+
+test('fuel action mirrors the server eligibility contract and hides unknown equipment', () => {
+  const fuelGate = client.slice(
+    client.indexOf('function canAssetReceiveFuel'),
+    client.indexOf('function buildAssetRegisterManageReturnPath'),
+  );
+
+  assert.match(fuelGate, /asset\.kind === 'tractor' \|\| asset\.kind === 'vehicle'/);
+  for (const key of ['is_propelled', 'isPropelled', 'self_propelled', 'selfPropelled', 'accepts_fuel', 'acceptsFuel']) {
+    assert.match(fuelGate, new RegExp(`'${key}'`));
+  }
+  assert.match(fuelGate, /return readBooleanFromSpecs/);
+  assert.doesNotMatch(fuelGate, /kind !== 'property'/);
+});
+
+test('nested document and marketplace actions close back to Manage', () => {
+  const marketplaceOpen = client.slice(
+    client.indexOf('async function openMarketplaceModal'),
+    client.indexOf('function closeMarketplaceModal'),
+  );
+  const marketplaceRemove = client.slice(
+    client.indexOf('async function handleRemoveFromMarketplace'),
+    client.indexOf('function clearRevaluePreviewResult'),
+  );
+
+  assert.doesNotMatch(marketplaceOpen, /closeActionDialog\(\)/);
+  assert.match(marketplaceRemove, /closeMarketplaceModal\(\)/);
+  assert.doesNotMatch(marketplaceRemove, /closeActionDialog\(\)/);
+  assert.match(client, /marketplaceAsset && marketplaceDraft[\s\S]*?styles\.subModalOverlay/);
+  assert.match(client, /Remove listing/);
+  assert.match(client, /setOwnerAssetCommandPanel\(null\);[\s\S]*?openAssetDocumentUpload\(asset\)/);
+  assert.match(client, /if \(documentUploadAsset\) return;/);
+  assert.match(client, /data-asset-return-action="manage-documents"/);
+  assert.match(client, /`\[data-asset-return-action="\$\{returnOrigin\.action\}"\]`/);
+});
+
+test('successful asset reports close only the report child and preserve Manage', () => {
+  const reportSuccessFlows = client.slice(
+    client.indexOf('async function handlePrintAssetSheet'),
+    client.indexOf('async function handleDownloadQr'),
+  );
+
+  assert.doesNotMatch(reportSuccessFlows, /closeActionDialog\(\)/);
+  assert.equal(reportSuccessFlows.match(/closeAssetReportDialog\(\)/g)?.length, 7);
+  assert.match(reportSuccessFlows, /if \(!didOpen\)[\s\S]*?return;[\s\S]*?closeAssetReportDialog\(\);[\s\S]*?async function handleCopyScanLink/);
+  assert.match(reportSuccessFlows, /message: `\$\{reportLabel\} Excel downloaded\.` \}\);[\s\S]*?closeAssetReportDialog\(\);/);
+
+  for (const reportKind of ['fuel', 'maintenance', 'depreciation']) {
+    const handlerName = reportKind === 'depreciation'
+      ? 'handleDownloadFilteredDepreciationReport'
+      : `handleDownloadFiltered${reportKind[0].toUpperCase()}${reportKind.slice(1)}Report`;
+    const handlerStart = reportSuccessFlows.indexOf(`async function ${handlerName}`);
+    const handlerEnd = reportSuccessFlows.indexOf('\n  async function ', handlerStart + 1);
+    const handler = reportSuccessFlows.slice(handlerStart, handlerEnd < 0 ? undefined : handlerEnd);
+    assert.match(handler, /if \(didOpen\) \{\s*closeAssetReportDialog\(\);\s*\}/);
+    assert.doesNotMatch(handler, /closeActionDialog\(\)/);
+  }
+
+  const ownershipHandler = reportSuccessFlows.slice(
+    reportSuccessFlows.indexOf('async function handleDownloadFilteredOwnershipReport'),
+  );
+  assert.equal(ownershipHandler.match(/closeAssetReportDialog\(\)/g)?.length, 2);
+  assert.doesNotMatch(ownershipHandler, /closeActionDialog\(\)/);
+});

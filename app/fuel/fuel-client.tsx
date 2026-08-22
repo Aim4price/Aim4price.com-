@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent, type ReactNode, type SVGProps } from 'react';
+import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent, type ReactNode, type SVGProps } from 'react';
 import AppHeader from '../../components/AppHeader';
 import CaptureRequestStatusList, { type CaptureRequestStatusItem } from '../../components/CaptureRequestStatusList';
 import styles from './page.module.css';
@@ -1620,10 +1620,16 @@ export default function FuelClient({
   addedByLabel,
   accountantShareId,
   accountantRegisterId,
+  initialAssetId = '',
+  initialOpenAdd = false,
+  initialReturnTo = '',
 }: {
   addedByLabel: string;
   accountantShareId?: string;
   accountantRegisterId?: string;
+  initialAssetId?: string;
+  initialOpenAdd?: boolean;
+  initialReturnTo?: string;
 }) {
   const isAccountantReadOnly = false;
   const scopedApiUrl = (url: string) => withAccountantShare(url, accountantShareId, accountantRegisterId);
@@ -1632,6 +1638,7 @@ export default function FuelClient({
   const [assets, setAssets] = useState<FuelLedgerAsset[]>([]);
   const [recentFuelSlips, setRecentFuelSlips] = useState<FuelSlipRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [hasLoadedLedger, setHasLoadedLedger] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [notice, setNotice] = useState<Notice | null>(null);
   const [captureRequests, setCaptureRequests] = useState<CaptureRequestStatusItem[]>([]);
@@ -1684,6 +1691,8 @@ export default function FuelClient({
   const [fuelSlipAttemptedSubmit, setFuelSlipAttemptedSubmit] = useState(false);
   const [fuelSlipValidationNotice, setFuelSlipValidationNotice] = useState('');
   const [fuelSlipFocusField, setFuelSlipFocusField] = useState<FuelSlipMissingFieldKey | null>(null);
+  const [quickLaunchAssetId, setQuickLaunchAssetId] = useState<string | null>(null);
+  const initialQuickLaunchHandledRef = useRef(false);
 
   const selectedStorage = useMemo(
     () => storages.find((storage) => storage.id === selectedStorageId) ?? null,
@@ -1698,6 +1707,10 @@ export default function FuelClient({
   const selectedExclusionAsset = useMemo(
     () => assets.find((asset) => asset.id === selectedExclusionAssetId) ?? null,
     [assets, selectedExclusionAssetId],
+  );
+  const quickLaunchAsset = useMemo(
+    () => quickLaunchAssetId ? assets.find((asset) => asset.id === quickLaunchAssetId) ?? null : null,
+    [assets, quickLaunchAssetId],
   );
   const filteredExclusionAssets = useMemo(() => {
     const term = exclusionSearch.trim().toLowerCase();
@@ -1869,7 +1882,9 @@ export default function FuelClient({
       setRecentEvents(data.recentEvents ?? []);
       setAssets(data.assets ?? []);
       setRecentFuelSlips(data.recentFuelSlips ?? []);
+      setHasLoadedLedger(true);
     } catch (error) {
+      setHasLoadedLedger(false);
       setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'Failed to load Fuel Ledger.' });
     } finally {
       if (!options.silent) {
@@ -1912,6 +1927,41 @@ export default function FuelClient({
     void loadLedger();
     void loadCaptureRequests();
   }, [accountantRegisterId, accountantShareId]);
+
+  useEffect(() => {
+    if (!initialOpenAdd || initialQuickLaunchHandledRef.current || isLoading || !hasLoadedLedger) return;
+
+    initialQuickLaunchHandledRef.current = true;
+    const requestedAssetId = initialAssetId.trim();
+
+    if (!requestedAssetId) {
+      setNotice({ tone: 'error', message: 'The Add fuel link does not identify an asset. Open Manage on the asset and try again.' });
+      return;
+    }
+
+    const requestedAsset = assets.find((asset) => asset.id === requestedAssetId);
+    if (!requestedAsset) {
+      setNotice({ tone: 'error', message: 'The selected asset is no longer available in the Fuel Ledger.' });
+      return;
+    }
+
+    if (!requestedAsset.canReceiveFuel) {
+      setNotice({ tone: 'error', message: `${requestedAsset.title} is not configured to receive fuel.` });
+      return;
+    }
+
+    resetFuelSlipValidationState();
+    setQuickLaunchAssetId(requestedAsset.id);
+    setFuelSlipDraft({ ...emptyFuelSlipDraft, targetKey: `asset:${requestedAsset.id}` });
+    setFuelSlipFlow('source-choice');
+    setFuelSlipFormPage('details');
+    setFuelSlipPickerSearch('');
+    setFuelSlipUploadFile(null);
+    setFuelSlipUploadFileName('');
+    setIsStorageFuelSelectOpen(false);
+    setNotice(null);
+    setModalMode('fuel-slip');
+  }, [assets, hasLoadedLedger, initialAssetId, initialOpenAdd, isLoading]);
 
   useEffect(() => {
     if (!openReportSelect) return undefined;
@@ -2059,6 +2109,7 @@ export default function FuelClient({
     setFuelSlipDownloadTargetSearch('');
     setFuelSlipDownloadError('');
     setIsStorageFuelSelectOpen(false);
+    setQuickLaunchAssetId(null);
     setNotice(null);
     setModalMode('fuel-slip-menu');
   }
@@ -2079,6 +2130,7 @@ export default function FuelClient({
     setFuelSlipDownloadTargetSearch('');
     setFuelSlipDownloadError('');
     setIsStorageFuelSelectOpen(false);
+    setQuickLaunchAssetId(null);
     setNotice(null);
     setModalMode('fuel-slip');
   }
@@ -2097,6 +2149,7 @@ export default function FuelClient({
     setFuelSlipFlow(null);
     setFuelSlipFormPage('details');
     setIsStorageFuelSelectOpen(false);
+    setQuickLaunchAssetId(null);
     setNotice(null);
     setModalMode('fuel-slip-manager');
   }
@@ -2118,6 +2171,7 @@ export default function FuelClient({
     setFuelSlipDownloadError('');
     setDeleteCandidateFuelSlip(null);
     setIsStorageFuelSelectOpen(false);
+    setQuickLaunchAssetId(null);
     setNotice(null);
     setModalMode('fuel-slip');
   }
@@ -2215,8 +2269,22 @@ export default function FuelClient({
     }
   }
 
+  function returnFromQuickLaunch(): boolean {
+    if (!quickLaunchAssetId || !initialReturnTo || typeof window === 'undefined') return false;
+
+    try {
+      const target = new URL(initialReturnTo, window.location.origin);
+      if (target.origin !== window.location.origin) return false;
+      window.location.assign(`${target.pathname}${target.search}${target.hash}`);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   function closeModal() {
     if (isSaving || busyExclusionAssetId) return;
+    const shouldReturnToAsset = Boolean(quickLaunchAssetId && initialReturnTo);
     setModalMode(null);
     setSelectedStorageId(null);
     setStorageDraft(emptyStorageDraft);
@@ -2249,7 +2317,9 @@ export default function FuelClient({
     setExclusionSearch('');
     setSelectedExclusionAssetId(null);
     setExclusionReason('');
+    setQuickLaunchAssetId(null);
     closeFuelSlipHistory();
+    if (shouldReturnToAsset) returnFromQuickLaunch();
   }
 
   function resetFuelSlipValidationState() {
@@ -2326,9 +2396,11 @@ export default function FuelClient({
 
   function startFuelSlipFlow(mode: 'manual' | 'automatic') {
     resetFuelSlipValidationState();
+    const lockedTargetKey = quickLaunchAssetId ? `asset:${quickLaunchAssetId}` : '';
     setFuelSlipDraft({
       ...emptyFuelSlipDraft,
       mode,
+      targetKey: lockedTargetKey,
       extractionStatus: mode === 'manual' ? 'manual' : 'needs_review',
       reviewRequired: mode === 'automatic',
     });
@@ -2336,7 +2408,9 @@ export default function FuelClient({
     setFuelSlipUploadFile(null);
     setFuelSlipUploadFileName('');
     setFuelSlipFormPage('details');
-    setFuelSlipFlow(mode === 'manual' ? 'target-manual' : 'target-automatic');
+    setFuelSlipFlow(quickLaunchAssetId
+      ? mode === 'manual' ? 'manual-form' : 'upload'
+      : mode === 'manual' ? 'target-manual' : 'target-automatic');
   }
 
   function handleFuelSlipTargetChange(value: string) {
@@ -2580,6 +2654,8 @@ export default function FuelClient({
       setFuelSlipValidationNotice('');
       setNotice({ tone: 'success', message: data.message || 'Fuel Slip saved to Fuel Ledger.' });
 
+      if (returnFromQuickLaunch()) return;
+
       setFuelSlipDraft(emptyFuelSlipDraft);
       setFuelSlipFlow(null);
       setFuelSlipFormPage('details');
@@ -2597,6 +2673,7 @@ export default function FuelClient({
       setFuelSlipDownloadTargetSearch('');
       setFuelSlipDownloadError('');
       setCurrentFuelSlipManagerPage(1);
+      setQuickLaunchAssetId(null);
       setModalMode('fuel-slip-manager');
     } catch (error) {
       setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'Failed to save fuel slip.' });
@@ -2942,7 +3019,7 @@ export default function FuelClient({
     }
 
     if (fuelSlipFlow === 'manual-form') {
-      setFuelSlipFlow('target-manual');
+      setFuelSlipFlow(quickLaunchAssetId ? 'source-choice' : 'target-manual');
       return;
     }
 
@@ -2952,6 +3029,10 @@ export default function FuelClient({
     }
 
     setFuelSlipFlow('upload');
+  }
+
+  function handleFuelSlipUploadBack() {
+    setFuelSlipFlow(quickLaunchAssetId ? 'source-choice' : 'target-automatic');
   }
 
   function focusFuelSlipFirstEditableField() {
@@ -4012,7 +4093,9 @@ export default function FuelClient({
             <div className={styles.modalHeader}>
               <div>
                 <h2>Add fuel slip</h2>
-                <p>Save a fuel slip against a saved asset or storage tank.</p>
+                <p>{quickLaunchAsset
+                  ? `Save this fuel slip against ${quickLaunchAsset.title}. Choose how you want to capture it.`
+                  : 'Save a fuel slip against a saved asset or storage tank.'}</p>
               </div>
               <button type="button" className={styles.closeButton} onClick={closeModal} aria-label="Close add fuel slip"><CloseIcon /></button>
             </div>
@@ -4145,7 +4228,7 @@ export default function FuelClient({
               {renderFuelSlipExtraFields()}
             </div>
             <div className={styles.modalFooter}>
-              <button type="button" className={styles.secondaryButton} onClick={() => setFuelSlipFlow('target-automatic')}>Back</button>
+              <button type="button" className={styles.secondaryButton} onClick={handleFuelSlipUploadBack}>Back</button>
               <button type="button" className={styles.primaryButton} onClick={handleFuelSlipExtract} disabled={!fuelSlipUploadFile || isExtractingFuelSlip}>
                 {isExtractingFuelSlip ? 'Sending fuel slip/photo...' : 'Send for capture'}
               </button>

@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { getAccountProfile } from '../../lib/account-profile';
 import { requireActivePageAccess } from '../../lib/account-access';
+import { normalizeInternalReturnPath, readSingleSearchParam } from '../../lib/internal-return-path';
 import DocumentsClient from './documents-client';
 
 export const runtime = 'nodejs';
@@ -9,6 +10,7 @@ export const dynamic = 'force-dynamic';
 type DocumentsPageProps = {
   searchParams?: {
     assetId?: string | string[];
+    returnTo?: string | string[];
   };
 };
 
@@ -24,8 +26,8 @@ export default async function DocumentsPage({ searchParams }: DocumentsPageProps
     redirect('/account');
   }
 
-  const rawAssetId = Array.isArray(searchParams?.assetId) ? searchParams?.assetId[0] : searchParams?.assetId;
-  const initialAssetId = String(rawAssetId ?? '').trim().slice(0, 120);
+  const initialAssetId = readSingleSearchParam(searchParams?.assetId).slice(0, 120);
+  const initialReturnTo = normalizeInternalReturnPath(searchParams?.returnTo);
 
-  return <DocumentsClient initialAssetId={initialAssetId} />;
+  return <DocumentsClient initialAssetId={initialAssetId} initialReturnTo={initialReturnTo} />;
 }

@@ -250,6 +250,7 @@ type AssetStatusEditView = 'hub' | AssetStatusSection;
 type AssetStatusQuickOrigin = 'detail-card' | null;
 type ManualAssetStep = 1 | 2 | 3 | 4;
 type AssetDetailEditTarget = 'serial' | 'year' | 'usage' | 'condition';
+type OwnerAssetCommandPanel = 'documents' | 'maintenance' | null;
 type AssetModalReturnOrigin = {
   asset: RegisterAsset;
   assetId: string;
@@ -4138,6 +4139,44 @@ function readBooleanFromSpecs(specs: Record<string, unknown>, keys: string[]): b
   return false;
 }
 
+function canAssetReceiveFuel(asset: Pick<RegisterAsset, 'kind' | 'specsJson'>): boolean {
+  if (asset.kind === 'tractor' || asset.kind === 'vehicle') return true;
+
+  const specs = isPlainRecord(asset.specsJson) ? asset.specsJson : {};
+  return readBooleanFromSpecs(specs, [
+    'is_propelled',
+    'isPropelled',
+    'self_propelled',
+    'selfPropelled',
+    'accepts_fuel',
+    'acceptsFuel',
+  ]);
+}
+
+function buildAssetRegisterManageReturnPath(assetId: string, currentLocation = '/asset-register'): string {
+  const currentUrl = new URL(currentLocation, 'https://aim4price.local');
+  const params = new URLSearchParams(currentUrl.search);
+  params.delete('convertedAssetId');
+  params.delete('focusAssetId');
+  params.delete('action');
+  params.delete('assetAction');
+  params.set('assetId', assetId);
+  params.set('mapAction', 'manage');
+  return `${currentUrl.pathname}?${params.toString()}`;
+}
+
+function buildOwnerAssetPageHref(
+  pathname: '/my-invoices' | '/fuel' | '/maintenance' | '/documents',
+  assetId: string,
+  options: { add?: boolean } = {},
+  currentLocation = '/asset-register',
+): string {
+  const params = new URLSearchParams({ assetId });
+  if (options.add) params.set('add', '1');
+  params.set('returnTo', buildAssetRegisterManageReturnPath(assetId, currentLocation));
+  return `${pathname}?${params.toString()}`;
+}
+
 function isValuationUpdateAvailable(asset: RegisterAsset): boolean {
   return Boolean(asset.valuationRunId !== null && asset.selectedMethod !== 'manual');
 }
@@ -6333,6 +6372,8 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
   const [manualAssetStep, setManualAssetStep] = useState<ManualAssetStep>(1);
   const [hasManualAssetKindSelection, setHasManualAssetKindSelection] = useState(false);
   const [activeAsset, setActiveAsset] = useState<RegisterAsset | null>(null);
+  const [ownerAssetCommandPanel, setOwnerAssetCommandPanel] = useState<OwnerAssetCommandPanel>(null);
+  const [ownerCommandReturnLocation, setOwnerCommandReturnLocation] = useState('/asset-register');
   const [quoteAsset, setQuoteAsset] = useState<RegisterAsset | null>(null);
   const [quoteScope, setQuoteScope] = useState<QuoteScope>('asset');
   const [selectedQuoteLeadType, setSelectedQuoteLeadType] = useState<AssetLeadType | null>(null);
@@ -8011,7 +8052,15 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
       openActionDialog(targetAsset);
     }
 
-    window.history.replaceState(null, '', `${window.location.pathname}#asset-card-${encodeURIComponent(targetAsset.id)}`);
+    const nextParams = new URLSearchParams(window.location.search);
+    nextParams.delete('assetId');
+    nextParams.delete('mapAction');
+    const nextSearch = nextParams.toString();
+    window.history.replaceState(
+      null,
+      '',
+      `${window.location.pathname}${nextSearch ? `?${nextSearch}` : ''}#asset-card-${encodeURIComponent(targetAsset.id)}`,
+    );
   }, [assets, isLoading]);
 
   useEffect(() => {
@@ -8058,6 +8107,8 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     isManualConversionConfirmOpen ||
     Boolean(replacementPriceRevaluePrompt) ||
     Boolean(activeAsset) ||
+    Boolean(ownerAssetCommandPanel) ||
+    Boolean(documentUploadAsset) ||
     isQuoteModalOpen ||
     isQuoteTrackingSettingsOpen ||
     Boolean(deleteCandidateAsset) ||
@@ -8108,6 +8159,15 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
       }
 
       if (event.key !== 'Escape') return;
+
+      // AssetDocumentUploadModal owns its Escape handling. Leaving this layer in
+      // place keeps the parent Manage command centre available when it closes.
+      if (documentUploadAsset) return;
+
+      if (ownerAssetCommandPanel) {
+        setOwnerAssetCommandPanel(null);
+        return;
+      }
 
       if (pendingUsageOverride) {
         cancelAim4priceUsageOverrideConfirmation();
@@ -8272,7 +8332,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
       document.body.style.overflow = previousOverflow;
       document.removeEventListener('keydown', handleEscape);
     };
-  }, [activeAsset, anyModalOpen, assetRegisterMoveAsset, accountantNoteAsset, isSavingAccountantNote, deleteCandidateAsset, disposalCandidateAsset, acquisitionDetailsAsset, isSavingAcquisitionDetails, isAcquisitionChoiceOpen, isAddAssetDestinationModalOpen, isAddChoiceModalOpen, isAssetGroupModalOpen, isAssetFilterOpen, isChangeRegisterModalOpen, isAssetModalOpen, isAssetReportModalOpen, isExportModalOpen, isPricingModalOpen, pricingPreview, isQrModalOpen, isRegisterShareModalOpen, isSummaryModalOpen, isAccountantReportsOpen, marketplaceAsset, projectionAsset, isQuoteMapExpanded, isQuoteModalOpen, isQuoteTrackingSettingsOpen, quoteLeadStep, isAssetSettingsModalOpen, pendingUsageOverride, isManualConversionConfirmOpen, isSavingAssetSettings, replacementPriceRevaluePrompt, photoViewer]);
+  }, [activeAsset, anyModalOpen, assetRegisterMoveAsset, accountantNoteAsset, isSavingAccountantNote, deleteCandidateAsset, disposalCandidateAsset, acquisitionDetailsAsset, isSavingAcquisitionDetails, isAcquisitionChoiceOpen, isAddAssetDestinationModalOpen, isAddChoiceModalOpen, isAssetGroupModalOpen, isAssetFilterOpen, isChangeRegisterModalOpen, isAssetModalOpen, isAssetReportModalOpen, isExportModalOpen, isPricingModalOpen, pricingPreview, isQrModalOpen, isRegisterShareModalOpen, isSummaryModalOpen, isAccountantReportsOpen, marketplaceAsset, ownerAssetCommandPanel, documentUploadAsset, projectionAsset, isQuoteMapExpanded, isQuoteModalOpen, isQuoteTrackingSettingsOpen, quoteLeadStep, isAssetSettingsModalOpen, pendingUsageOverride, isManualConversionConfirmOpen, isSavingAssetSettings, replacementPriceRevaluePrompt, photoViewer]);
 
   useEffect(() => {
     if (!isQuoteModalOpen || !selectedQuoteOption || quoteDirectoryStage !== 'map' || !quoteMapElementRef.current) {
@@ -9350,7 +9410,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
       const latestAsset = assets.find((asset) => asset.id === returnOrigin.assetId) ?? returnOrigin.asset;
       openActionDialog(latestAsset);
       window.requestAnimationFrame(() => {
-        document.querySelector<HTMLElement>('[data-asset-return-action="manage-update"]')
+        document.querySelector<HTMLElement>(`[data-asset-return-action="${returnOrigin.action}"]`)
           ?.focus({ preventScroll: true });
       });
       return true;
@@ -10653,12 +10713,17 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
   }
 
   function openActionDialog(asset: RegisterAsset) {
+    setOwnerAssetCommandPanel(null);
+    if (typeof window !== 'undefined') {
+      setOwnerCommandReturnLocation(`${window.location.pathname}${window.location.search}`);
+    }
     setActiveAsset(asset);
     setActiveDealerTrackingByAssetId((current) => ({ ...current, [asset.id]: false }));
     void loadDealerTrackingStatus(asset.id);
   }
 
   function closeActionDialog() {
+    setOwnerAssetCommandPanel(null);
     setIsAssetReportModalOpen(false);
     setIsPricingModalOpen(false);
     setPricingPreview(null);
@@ -11351,7 +11416,6 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
   }
 
   async function openMarketplaceModal(asset: RegisterAsset) {
-    closeActionDialog();
     const profile = await ensureAccountProfile();
     setMarketplaceAsset(asset);
     setMarketplaceDraft(createMarketplaceDraft(asset, profile));
@@ -12487,7 +12551,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
 
       syncUpdatedAsset(removedAsset);
       setNotice({ tone: 'success', message: `${removedAsset.title} was removed from marketplace.` });
-      closeActionDialog();
+      closeMarketplaceModal();
     } catch (error) {
       setNotice({
         tone: 'error',
@@ -13331,7 +13395,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
       return;
     }
 
-    closeActionDialog();
+    closeAssetReportDialog();
   }
 
   async function handleCopyScanLink(asset: RegisterAsset) {
@@ -13422,7 +13486,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
       const fileName = parseDownloadFileName(response, fallbackName);
       downloadBlob(blob, fileName);
       setNotice({ tone: 'success', message: `${reportLabel} Excel downloaded.` });
-      closeActionDialog();
+      closeAssetReportDialog();
     } catch (error) {
       setNotice({
         tone: 'error',
@@ -13573,7 +13637,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     const didOpen = handleOpenAssetPdfReport(asset, 'fuel', filters);
 
     if (didOpen) {
-      closeActionDialog();
+      closeAssetReportDialog();
     }
   }
 
@@ -13592,7 +13656,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     const didOpen = handleOpenAssetPdfReport(asset, 'maintenance', filters);
 
     if (didOpen) {
-      closeActionDialog();
+      closeAssetReportDialog();
     }
   }
 
@@ -13615,7 +13679,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     const didOpen = handleOpenAssetPdfReport(asset, 'depreciation', filters);
 
     if (didOpen) {
-      closeActionDialog();
+      closeAssetReportDialog();
     }
   }
 
@@ -13650,7 +13714,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
         const fileName = parseDownloadFileName(response, `${assetSlug}-cost-of-ownership.xlsx`);
         downloadBlob(blob, fileName);
         setNotice({ tone: 'success', message: 'Cost of Ownership Excel downloaded.' });
-        closeActionDialog();
+        closeAssetReportDialog();
       } catch (error) {
         setNotice({
           tone: 'error',
@@ -13675,7 +13739,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
       tone: 'success',
       message: 'Cost of Ownership report opened in a new tab. Use Print to save it as a PDF.',
     });
-    closeActionDialog();
+    closeAssetReportDialog();
   }
 
   async function handleDownloadQr(asset: RegisterAsset) {
@@ -19712,10 +19776,10 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
           />
         ) : null
       ) : activeAsset ? (
-        <div className={styles.modalOverlay}>
+        <div className={`${styles.modalOverlay} ${styles.ownerCommandOverlay}`}>
           <div className={styles.modalBackdrop} onClick={closeActionDialog} />
 
-          <div className={styles.optionsModal} role="dialog" aria-modal="true" aria-labelledby="asset-manage-title">
+          <div className={`${styles.optionsModal} ${styles.ownerCommandModal}`} role="dialog" aria-modal="true" aria-labelledby="asset-manage-title">
             <div className={`${styles.modalHeader} ${styles.optionsModalHeader}`}>
               <div className={styles.modalHeaderText}>
                 <h3 id="asset-manage-title">{activeAsset.title}</h3>
@@ -19732,12 +19796,12 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
               </button>
             </div>
 
-            <div className={`${styles.modalScrollBody} ${styles.optionsScrollBody}`}>
+            <div className={`${styles.modalScrollBody} ${styles.optionsScrollBody} ${styles.ownerCommandScrollBody}`}>
               <div className={styles.optionsContent}>
-                <div className={`${styles.optionsGrid} ${styles.assetOptionsGrid}`}>
+                <div className={`${styles.optionsGrid} ${styles.assetOptionsGrid} ${styles.ownerCommandGrid}`}>
                   <button
                     type="button"
-                    className={`${styles.optionActionButton} ${styles.optionFeaturedButton}`}
+                    className={`${styles.optionActionButton} ${styles.optionFeaturedButton} ${styles.ownerCommandAction}`}
                     data-asset-return-action="manage-update"
                     onClick={(event) => {
                       const asset = activeAsset;
@@ -19753,8 +19817,58 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                     </span>
                   </button>
 
+                  <Link
+                    href={buildOwnerAssetPageHref('/my-invoices', activeAsset.id, { add: true }, ownerCommandReturnLocation)}
+                    className={`${styles.optionActionButton} ${styles.ownerCommandAction}`}
+                  >
+                    <MoneyBagIcon className={styles.buttonIcon} />
+                    <span>
+                      <strong>Add cost</strong>
+                      <small>Record an expense against this asset.</small>
+                    </span>
+                  </Link>
+
+                  {canAssetReceiveFuel(activeAsset) ? (
+                    <Link
+                      href={buildOwnerAssetPageHref('/fuel', activeAsset.id, { add: true }, ownerCommandReturnLocation)}
+                      className={`${styles.optionActionButton} ${styles.ownerCommandAction}`}
+                    >
+                      <PlusIcon className={styles.buttonIcon} />
+                      <span>
+                        <strong>Add fuel</strong>
+                        <small>Capture a fuel record for this asset.</small>
+                      </span>
+                    </Link>
+                  ) : null}
+
+                  <button
+                    type="button"
+                    className={`${styles.optionActionButton} ${styles.ownerCommandAction}`}
+                    data-asset-return-action="manage-maintenance"
+                    onClick={() => setOwnerAssetCommandPanel('maintenance')}
+                  >
+                    <ManageIcon className={styles.buttonIcon} />
+                    <span>
+                      <strong>Maintenance</strong>
+                      <small>Add a record or open this asset&apos;s maintenance history.</small>
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    className={`${styles.optionActionButton} ${styles.ownerCommandAction}`}
+                    data-asset-return-action="manage-documents"
+                    onClick={() => setOwnerAssetCommandPanel('documents')}
+                  >
+                    <DocumentIcon className={styles.buttonIcon} />
+                    <span>
+                      <strong>Documents &amp; photos</strong>
+                      <small>Quick add, view the vault or manage asset photos.</small>
+                    </span>
+                  </button>
+
                   {canManageAssetPricing(activeAsset) ? (
-                    <button type="button" className={styles.optionActionButton} onClick={openPricingDialog}>
+                    <button type="button" className={`${styles.optionActionButton} ${styles.ownerCommandAction}`} onClick={openPricingDialog}>
                       <TrendIcon className={styles.buttonIcon} />
                       <span>
                         <strong>Manage pricing</strong>
@@ -19763,8 +19877,16 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                     </button>
                   ) : null}
 
+                  <button type="button" className={`${styles.optionActionButton} ${styles.ownerCommandAction}`} onClick={openAssetReportDialog}>
+                    <DownloadIcon className={styles.buttonIcon} />
+                    <span>
+                      <strong>Reports</strong>
+                      <small>Choose and download a report for this asset.</small>
+                    </span>
+                  </button>
+
                   {canUseOwnerOnlyAssetActions ? (
-                    <button type="button" className={styles.optionActionButton} onClick={openQrDialog}>
+                    <button type="button" className={`${styles.optionActionButton} ${styles.ownerCommandAction}`} onClick={openQrDialog}>
                       <QrIcon className={styles.buttonIcon} />
                       <span>
                         <strong>QR code</strong>
@@ -19773,66 +19895,160 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                     </button>
                   ) : null}
 
-                  <button type="button" className={styles.optionActionButton} onClick={openAssetReportDialog}>
-                    <DownloadIcon className={styles.buttonIcon} />
-                    <span>
-                      <strong>Download reports</strong>
-                      <small>Choose a report for this asset.</small>
-                    </span>
-                  </button>
-
-                  {canUseOwnerOnlyAssetActions
-                    && activeAsset.kind !== 'property'
-                    && activeDealerTrackingByAssetId[activeAsset.id] === true ? (
-                    <button type="button" className={styles.optionActionButton} onClick={() => void openDealerTrackingSettings(activeAsset)}>
-                      <ManageIcon className={styles.buttonIcon} />
-                      <span>
-                        <strong>Dealer tracking settings</strong>
-                        <small className={styles.dealerTrackingOptionSubtitle}>Manage dealer access and permissions.</small>
-                      </span>
-                    </button>
-                  ) : null}
-
                   {canUseMarketplaceActions && isMarketplaceEligible(activeAsset) ? (
-                    <button type="button" className={styles.optionActionButton} onClick={() => handlePublishFromDialog(activeAsset)}>
+                    <button type="button" className={`${styles.optionActionButton} ${styles.ownerCommandAction}`} onClick={() => handlePublishFromDialog(activeAsset)}>
                       <CartIcon className={styles.buttonIcon} />
                       <span>
-                        <strong>{isLiveOnMarketplace(activeAsset) ? 'Update marketplace listing' : 'Send to marketplace'}</strong>
-                        <small>{isLiveOnMarketplace(activeAsset) ? 'Refresh the live marketplace listing.' : 'Create a marketplace listing from this asset.'}</small>
+                        <strong>Marketplace</strong>
+                        <small>{isLiveOnMarketplace(activeAsset) ? 'Update, view or remove the live listing.' : 'Create a marketplace listing from this asset.'}</small>
                       </span>
                     </button>
                   ) : null}
+                </div>
 
-                  {canUseOwnerOnlyAssetActions && isLiveOnMarketplace(activeAsset) ? (
+                {canUseOwnerOnlyAssetActions ? (
+                  <div className={styles.ownerCommandDangerZone}>
                     <button
                       type="button"
-                      className={styles.optionActionButton}
-                      disabled={busyMarketplaceRemoveId === activeAsset.id}
-                      onClick={() => void handleRemoveFromMarketplace(activeAsset)}
-                    >
-                      <CartIcon className={styles.buttonIcon} />
-                      <span>
-                        <strong>{busyMarketplaceRemoveId === activeAsset.id ? 'Removing...' : 'Remove from marketplace'}</strong>
-                        <small>Withdraw the live listing.</small>
-                      </span>
-                    </button>
-                  ) : null}
-
-                  {canUseOwnerOnlyAssetActions ? (
-                    <button
-                      type="button"
-                      className={`${styles.optionActionButton} ${styles.optionDangerButton}`}
+                      className={`${styles.optionActionButton} ${styles.optionDangerButton} ${styles.ownerCommandDangerAction}`}
                       disabled={busyDeleteId === activeAsset.id}
                       onClick={() => handleDeleteFromDialog(activeAsset)}
                     >
                       <TrashIcon className={styles.buttonIcon} />
                       <span>
-                        <strong>{busyDeleteId === activeAsset.id ? 'Removing...' : 'Delete asset'}</strong>
-                        <small className={styles.deleteAssetOptionSubtitle}>Remove or archive this asset safely.</small>
+                        <strong>{busyDeleteId === activeAsset.id ? 'Removing...' : 'Dispose or remove asset'}</strong>
+                        <small className={styles.deleteAssetOptionSubtitle}>Archive a sale, trade-in, write-off or safely remove a duplicate.</small>
                       </span>
                     </button>
-                  ) : null}
-                </div>
+                  </div>
+                ) : null}
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {activeAsset && ownerAssetCommandPanel ? (
+        <div className={`${styles.modalOverlay} ${styles.subModalOverlay} ${styles.ownerCommandChoiceOverlay}`}>
+          <div className={styles.modalBackdrop} onClick={() => setOwnerAssetCommandPanel(null)} />
+
+          <div
+            className={`${styles.modalCard} ${styles.ownerCommandChoiceModal}`}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="owner-command-choice-title"
+          >
+            <div className={`${styles.modalHeader} ${styles.ownerCommandChoiceHeader}`}>
+              <div className={styles.modalHeaderText}>
+                <h3 id="owner-command-choice-title">
+                  {ownerAssetCommandPanel === 'documents' ? 'Documents & photos' : 'Maintenance'}
+                </h3>
+                <p>{activeAsset.title}</p>
+              </div>
+
+              <button
+                type="button"
+                className={styles.modalCloseButton}
+                onClick={() => setOwnerAssetCommandPanel(null)}
+                aria-label={`Close ${ownerAssetCommandPanel === 'documents' ? 'documents and photos' : 'maintenance'} choices`}
+              >
+                <CloseIcon className={styles.buttonIcon} />
+              </button>
+            </div>
+
+            <div className={styles.ownerCommandChoiceBody}>
+              <div className={styles.ownerCommandChoiceGrid}>
+                {ownerAssetCommandPanel === 'documents' ? (
+                  <>
+                    <button
+                      type="button"
+                      className={`${styles.optionActionButton} ${styles.ownerCommandChoiceAction} ${styles.optionFeaturedButton}`}
+                      onClick={() => {
+                        const asset = activeAsset;
+                        setOwnerAssetCommandPanel(null);
+                        openAssetDocumentUpload(asset);
+                      }}
+                    >
+                      <PlusIcon className={styles.buttonIcon} />
+                      <span>
+                        <strong>Add documents</strong>
+                        <small>Choose a document type and upload directly to this asset.</small>
+                      </span>
+                    </button>
+
+                    <Link
+                      href={buildOwnerAssetPageHref('/documents', activeAsset.id, {}, ownerCommandReturnLocation)}
+                      className={`${styles.optionActionButton} ${styles.ownerCommandChoiceAction}`}
+                    >
+                      <DocumentIcon className={styles.buttonIcon} />
+                      <span>
+                        <strong>Open document vault</strong>
+                        <small>View, filter and manage every document linked to this asset.</small>
+                      </span>
+                    </Link>
+
+                    <button
+                      type="button"
+                      className={`${styles.optionActionButton} ${styles.ownerCommandChoiceAction}`}
+                      onClick={(event) => {
+                        const asset = activeAsset;
+                        rememberAssetModalReturn(asset, 'manage', 'manage-documents', event.currentTarget);
+                        setOwnerAssetCommandPanel(null);
+                        closeActionDialog();
+                        openUpdater(asset);
+                        setManualAssetStep(4);
+                      }}
+                    >
+                      <UpdateAssetIcon className={styles.buttonIcon} />
+                      <span>
+                        <strong>Manage photos</strong>
+                        <small>Add, replace, remove or choose the asset&apos;s main photo.</small>
+                      </span>
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <Link
+                      href={buildOwnerAssetPageHref('/maintenance', activeAsset.id, { add: true }, ownerCommandReturnLocation)}
+                      className={`${styles.optionActionButton} ${styles.ownerCommandChoiceAction} ${styles.optionFeaturedButton}`}
+                    >
+                      <PlusIcon className={styles.buttonIcon} />
+                      <span>
+                        <strong>Add maintenance</strong>
+                        <small>Create a maintenance record already linked to this asset.</small>
+                      </span>
+                    </Link>
+
+                    <Link
+                      href={buildOwnerAssetPageHref('/maintenance', activeAsset.id, {}, ownerCommandReturnLocation)}
+                      className={`${styles.optionActionButton} ${styles.ownerCommandChoiceAction}`}
+                    >
+                      <ManageIcon className={styles.buttonIcon} />
+                      <span>
+                        <strong>Manage maintenance</strong>
+                        <small>Open this asset&apos;s service history, schedule and reminders.</small>
+                      </span>
+                    </Link>
+
+                    {activeAsset.kind !== 'property' && activeDealerTrackingByAssetId[activeAsset.id] === true ? (
+                      <button
+                        type="button"
+                        className={`${styles.optionActionButton} ${styles.ownerCommandChoiceAction}`}
+                        onClick={() => {
+                          const asset = activeAsset;
+                          setOwnerAssetCommandPanel(null);
+                          void openDealerTrackingSettings(asset);
+                        }}
+                      >
+                        <ManageIcon className={styles.buttonIcon} />
+                        <span>
+                          <strong>Dealer tracking settings</strong>
+                          <small>Review dealer maintenance access and update permissions.</small>
+                        </span>
+                      </button>
+                    ) : null}
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -20884,7 +21100,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
       ) : null}
 
       {marketplaceAsset && marketplaceDraft ? (
-        <div className={styles.modalOverlay}>
+        <div className={`${styles.modalOverlay} ${styles.subModalOverlay}`}>
           <div className={styles.modalBackdrop} onClick={closeMarketplaceModal} />
 
           <div className={`${styles.modalCard} ${styles.marketplaceModal}`} role="dialog" aria-modal="true" aria-labelledby="marketplace-confirm-title">
@@ -21065,6 +21281,17 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                   <button type="button" className={styles.secondaryButton} onClick={closeMarketplaceModal} disabled={isPublishingMarketplace}>
                     Cancel
                   </button>
+
+                  {isLiveOnMarketplace(marketplaceAsset) ? (
+                    <button
+                      type="button"
+                      className={`${styles.secondaryButton} ${styles.ownerMarketplaceRemoveButton}`}
+                      onClick={() => void handleRemoveFromMarketplace(marketplaceAsset)}
+                      disabled={isPublishingMarketplace || busyMarketplaceRemoveId === marketplaceAsset.id}
+                    >
+                      {busyMarketplaceRemoveId === marketplaceAsset.id ? 'Removing...' : 'Remove listing'}
+                    </button>
+                  ) : null}
 
                   <button
                     type="submit"

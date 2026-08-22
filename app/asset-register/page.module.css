@@ -37945,3 +37945,263 @@ button.documentOpenLink {
     min-height: 4.6rem !important;
   }
 }
+
+/* === Owner asset command centre === */
+.ownerCommandOverlay {
+  overflow: hidden !important;
+  padding: clamp(0.75rem, 2.5vh, 1.5rem) !important;
+}
+
+.optionsModal.ownerCommandModal {
+  width: min(96vw, 75rem) !important;
+  max-height: min(94dvh, 58rem) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+}
+
+.ownerCommandModal .optionsModalHeader {
+  flex: 0 0 auto !important;
+}
+
+.ownerCommandScrollBody,
+.ownerCommandScrollBody.optionsScrollBody {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain !important;
+  scrollbar-gutter: auto !important;
+  padding: 0.08rem 0.45rem 0.4rem 0.08rem !important;
+  margin: 0 -0.2rem 0 0 !important;
+}
+
+.ownerCommandModal .ownerCommandGrid {
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 0.88rem !important;
+}
+
+.ownerCommandModal .ownerCommandGrid .ownerCommandAction {
+  min-height: 5.85rem !important;
+  padding: 1rem 1.05rem !important;
+  text-decoration: none !important;
+}
+
+.ownerCommandModal .ownerCommandGrid .ownerCommandAction strong {
+  font-size: 1.02rem !important;
+}
+
+.ownerCommandModal .ownerCommandGrid .ownerCommandAction small {
+  max-width: 100% !important;
+  font-size: 0.84rem !important;
+  line-height: 1.36 !important;
+}
+
+.ownerCommandDangerZone {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 0.15rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(218, 228, 236, 0.96);
+}
+
+.ownerCommandDangerAction {
+  width: min(100%, 29rem);
+  min-height: 4.75rem;
+  display: grid !important;
+  grid-template-columns: 3rem minmax(0, 1fr) !important;
+  align-items: center !important;
+  gap: 0.9rem !important;
+  padding: 0.9rem 1.05rem !important;
+  border: 1px solid rgba(235, 186, 186, 0.96) !important;
+  border-radius: 1.15rem !important;
+  color: #9b3030 !important;
+  background: linear-gradient(180deg, #fffafa 0%, #fff1f1 100%) !important;
+  text-align: left !important;
+}
+
+.ownerCommandDangerAction > .buttonIcon {
+  grid-column: 1;
+  width: 1.3rem !important;
+  height: 1.3rem !important;
+  justify-self: center;
+}
+
+.ownerCommandDangerAction > span {
+  grid-column: 2;
+  min-width: 0;
+  display: grid;
+  gap: 0.24rem;
+}
+
+.ownerCommandDangerAction strong,
+.ownerCommandDangerAction small {
+  display: block;
+  width: 100%;
+  text-align: left !important;
+}
+
+.ownerCommandDangerAction strong {
+  color: #9b3030 !important;
+  font-size: 0.98rem;
+  font-weight: 850;
+}
+
+.ownerCommandDangerAction small {
+  color: #805858 !important;
+  font-size: 0.8rem;
+  line-height: 1.35;
+}
+
+.ownerCommandChoiceOverlay {
+  overflow: hidden !important;
+}
+
+.ownerCommandChoiceModal {
+  width: min(94vw, 58rem) !important;
+  max-height: min(90dvh, 42rem) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+  padding: clamp(1.15rem, 2vw, 1.5rem) !important;
+}
+
+.ownerCommandChoiceHeader {
+  flex: 0 0 auto;
+  margin-bottom: 1rem !important;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid rgba(216, 226, 236, 0.92);
+}
+
+.ownerCommandChoiceHeader h3 {
+  color: #0d392d;
+  font-size: clamp(1.55rem, 2.7vw, 2rem);
+  font-weight: 850;
+  letter-spacing: -0.045em;
+}
+
+.ownerCommandChoiceBody {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: auto;
+  padding: 0.05rem 0.2rem 0.2rem 0.05rem;
+}
+
+.ownerCommandChoiceGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  gap: 0.85rem;
+}
+
+.ownerCommandChoiceAction {
+  min-height: 8.25rem;
+  display: grid !important;
+  grid-template-columns: 2.8rem minmax(0, 1fr) !important;
+  align-items: center !important;
+  gap: 0.85rem !important;
+  padding: 1rem !important;
+  border: 1px solid rgba(216, 226, 236, 0.98) !important;
+  border-radius: 1.15rem !important;
+  color: #1d3b62 !important;
+  background: linear-gradient(180deg, #ffffff 0%, #f5f8fb 100%) !important;
+  box-shadow: 0 10px 22px rgba(16, 31, 28, 0.04) !important;
+  text-align: left !important;
+  text-decoration: none !important;
+}
+
+.ownerCommandChoiceAction.optionFeaturedButton {
+  background:
+    radial-gradient(circle at top left, rgba(22, 83, 64, 0.1), transparent 42%),
+    linear-gradient(180deg, #ffffff 0%, #edf8f2 100%) !important;
+  border-color: rgba(190, 224, 206, 0.98) !important;
+}
+
+.ownerCommandChoiceAction > .buttonIcon {
+  grid-column: 1;
+  width: 1.3rem !important;
+  height: 1.3rem !important;
+  justify-self: center;
+}
+
+.ownerCommandChoiceAction > span {
+  grid-column: 2;
+  min-width: 0;
+  display: grid;
+  gap: 0.28rem;
+}
+
+.ownerCommandChoiceAction strong,
+.ownerCommandChoiceAction small {
+  display: block;
+  width: 100%;
+  text-align: left !important;
+}
+
+.ownerCommandChoiceAction strong {
+  color: #10352b;
+  font-size: 0.98rem;
+  font-weight: 850;
+  line-height: 1.2;
+}
+
+.ownerCommandChoiceAction small {
+  color: #627386;
+  font-size: 0.8rem;
+  font-weight: 620;
+  line-height: 1.38;
+}
+
+.ownerMarketplaceRemoveButton {
+  margin-right: 0 !important;
+  margin-left: 0 !important;
+  color: #9b3030 !important;
+  border-color: rgba(226, 169, 169, 0.96) !important;
+  background: #fff7f7 !important;
+}
+
+@media (max-width: 1180px) {
+  .optionsModal.ownerCommandModal {
+    width: min(96vw, 62rem) !important;
+  }
+
+  .ownerCommandModal .ownerCommandGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .ownerCommandChoiceGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 700px) {
+  .ownerCommandOverlay,
+  .ownerCommandChoiceOverlay {
+    padding: 0.5rem !important;
+  }
+
+  .optionsModal.ownerCommandModal,
+  .ownerCommandChoiceModal {
+    width: calc(100vw - 1rem) !important;
+    max-height: calc(100dvh - 1rem) !important;
+    border-radius: 1.35rem !important;
+  }
+
+  .ownerCommandModal .ownerCommandGrid,
+  .ownerCommandChoiceGrid {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .ownerCommandModal .ownerCommandGrid .ownerCommandAction {
+    min-height: 5.35rem !important;
+  }
+
+  .ownerCommandChoiceAction {
+    min-height: 5.75rem;
+  }
+
+  .ownerCommandDangerAction {
+    width: 100%;
+  }
+}
