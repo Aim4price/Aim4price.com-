@@ -38282,9 +38282,9 @@ button.documentOpenLink {
   min-height: 0 !important;
   overflow-y: auto !important;
   overscroll-behavior: contain;
-  scrollbar-gutter: stable;
-  scrollbar-width: thin;
-  scrollbar-color: #568676 #e9f0f2;
+  scrollbar-gutter: stable !important;
+  scrollbar-width: thin !important;
+  scrollbar-color: #568676 #e9f0f2 !important;
 }
 
 .externalAssetShareModal .assetQuoteScrollBody,
