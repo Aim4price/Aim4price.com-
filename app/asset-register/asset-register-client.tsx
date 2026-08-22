@@ -5624,7 +5624,10 @@ function buildExternalShareAsset(asset: RegisterAsset): ExternalAssetShareItem {
     condition: conditionLabel(asset.condition),
     replacementPriceExVat: readAssetReplacementPriceExVat(asset),
     valueExVat: asset.value,
-    photoUrls: normalizePhotos(asset.photos),
+    photoUrls: normalizePhotos(asset.photos).flatMap((photoUrl) => {
+      const absoluteUrl = toAbsoluteUrl(photoUrl);
+      return absoluteUrl ? [absoluteUrl] : [];
+    }),
     publicUrl: buildAssetScanUrl(asset),
   };
 }
