@@ -9082,7 +9082,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
   const paginationItems = useMemo(() => buildPaginationItems(safeCurrentPage, pageCount), [safeCurrentPage, pageCount]);
 
   useEffect(() => {
-    if (!focusedAssetGroupId) return undefined;
+    if (!focusedAssetGroupId || anyModalOpen || documentUploadAsset) return undefined;
 
     function handleOutsideUmbrellaPointerDown(event: PointerEvent) {
       if (isViewportScrollbarInteraction(event)) return;
@@ -9098,7 +9098,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
 
     document.addEventListener('pointerdown', handleOutsideUmbrellaPointerDown);
     return () => document.removeEventListener('pointerdown', handleOutsideUmbrellaPointerDown);
-  }, [focusedAssetGroupId]);
+  }, [anyModalOpen, documentUploadAsset, focusedAssetGroupId]);
 
   useEffect(() => {
     if (currentPage > pageCount) {
