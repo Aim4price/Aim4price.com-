@@ -317,10 +317,8 @@
   position: sticky;
   bottom: -0.35rem;
   z-index: 5;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
+  display: grid;
+  gap: 0.8rem;
   margin: 0 -0.15rem;
   padding: 1rem 0.15rem 0.35rem;
   border-top: 1px solid rgba(207, 221, 227, 0.94);
@@ -329,7 +327,6 @@
 }
 
 .externalActionLead {
-  min-width: 13rem;
   display: grid;
   gap: 0.22rem;
 }
@@ -342,40 +339,87 @@
 }
 
 .externalActionButtons {
-  flex: 0 0 auto;
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 0.65rem;
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.72rem;
 }
 
-.externalActions button,
-.externalActions a {
-  min-height: 3.15rem;
-  display: inline-flex;
+.actionButton {
+  min-width: 0;
+  min-height: 5.15rem;
+  display: grid;
+  grid-template-columns: 2.65rem minmax(0, 1fr);
   align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  padding: 0.72rem 1rem;
+  justify-content: stretch;
+  gap: 0.78rem;
+  padding: 0.78rem 0.88rem;
   border: 1px solid;
-  border-radius: 0.82rem;
+  border-radius: 1rem;
   cursor: pointer;
   font: inherit;
-  font-size: 0.9rem;
-  font-weight: 760;
+  text-align: left;
   text-decoration: none;
+  box-shadow: 0 9px 22px rgba(18, 53, 43, 0.07);
+  transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
 }
 
-.externalActions svg {
-  width: 1.15rem;
-  height: 1.15rem;
+.actionButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 28px rgba(18, 53, 43, 0.11);
 }
 
-.backButton,
+.actionButton:focus-visible {
+  outline: 3px solid rgba(37, 99, 235, 0.24);
+  outline-offset: 3px;
+}
+
+.actionIcon {
+  width: 2.65rem;
+  height: 2.65rem;
+  display: grid;
+  place-items: center;
+  border: 1px solid currentColor;
+  border-radius: 0.82rem;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.actionIcon svg {
+  width: 1.35rem;
+  height: 1.35rem;
+}
+
+.actionCopy {
+  min-width: 0;
+  display: grid;
+  gap: 0.18rem;
+}
+
+.actionCopy strong {
+  color: inherit;
+  font-size: 0.91rem;
+  font-weight: 820;
+  line-height: 1.12;
+}
+
+.actionCopy small {
+  color: inherit;
+  font-size: 0.72rem;
+  font-weight: 650;
+  line-height: 1.28;
+  opacity: 0.78;
+}
+
+.reportsButton {
+  color: #60409a;
+  border-color: #d6c5ef;
+  background: linear-gradient(145deg, #ffffff 0%, #f5f0fc 100%);
+}
+
 .copyButton {
   color: #29483f;
-  border-color: #cedce2 !important;
-  background: #ffffff;
+  border-color: #cbdcd6;
+  background: linear-gradient(145deg, #ffffff 0%, #f2f8f5 100%);
 }
 
 .copyStatus {
@@ -388,15 +432,26 @@
 
 .emailButton {
   color: #174c80;
-  border-color: #bcd5e9 !important;
-  background: #eff7fd;
+  border-color: #bcd5e9;
+  background: linear-gradient(145deg, #ffffff 0%, #eef7fd 100%);
 }
 
 .whatsappButton {
   color: #ffffff;
-  border-color: #158b5c !important;
+  border-color: #158b5c;
   background: linear-gradient(180deg, #20ad72, #16875b);
-  box-shadow: 0 10px 22px rgba(22, 135, 91, 0.2);
+  box-shadow: 0 11px 24px rgba(22, 135, 91, 0.22);
+}
+
+.whatsappButton .actionIcon {
+  border-color: rgba(255, 255, 255, 0.48);
+  background: rgba(255, 255, 255, 0.12);
+}
+
+@media (max-width: 1080px) {
+  .externalActionButtons {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 860px) {
@@ -413,30 +468,9 @@
     min-height: 0;
   }
 
-  .externalActions {
-    align-items: stretch;
-    flex-direction: column;
-  }
-
-  .externalActionLead {
-    width: 100%;
-  }
-
-  .externalActionButtons {
-    width: 100%;
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-
   .externalActionButtons button,
   .externalActionButtons a {
     width: 100%;
-  }
-}
-
-@media (max-width: 720px) {
-  .externalActionButtons {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
@@ -472,5 +506,37 @@
 
   .copyStatus {
     min-height: 1rem;
+  }
+
+  .externalActions {
+    position: static;
+    bottom: auto;
+    box-shadow: none;
+  }
+
+  .actionButton {
+    min-height: 4.5rem;
+    grid-template-columns: 2.3rem minmax(0, 1fr);
+    gap: 0.55rem;
+    padding: 0.68rem;
+  }
+
+  .actionIcon {
+    width: 2.3rem;
+    height: 2.3rem;
+  }
+
+  .actionCopy strong {
+    font-size: 0.82rem;
+  }
+
+  .actionCopy small {
+    font-size: 0.66rem;
+  }
+}
+
+@media (max-width: 420px) {
+  .externalActionButtons {
+    grid-template-columns: minmax(0, 1fr);
   }
 }

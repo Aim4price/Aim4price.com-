@@ -319,6 +319,7 @@ type Props = {
   group: AssetGroup | null;
   assets: AssetGroupModalAsset[];
   groups: AssetGroup[];
+  initialView?: 'menu' | 'reports';
   combinedMode?: boolean;
   busy?: boolean;
   reportBusy?: boolean;
@@ -421,6 +422,7 @@ export default function AssetGroupManagerModal({
   group,
   assets,
   groups,
+  initialView = 'menu',
   combinedMode = false,
   busy = false,
   reportBusy = false,
@@ -472,7 +474,7 @@ export default function AssetGroupManagerModal({
     setPrimaryAssetId(initialPrimaryAssetId);
     setCountsTowardTotalByAssetId(initialCountsTowardTotal);
     setSearch('');
-    setView(group ? 'menu' : 'create');
+    setView(group ? initialView : 'create');
     setEditorStep(1);
     setReportFormat('pdf');
     setReportStep('options');
@@ -480,7 +482,7 @@ export default function AssetGroupManagerModal({
     setReportYear('all');
     setReportMonth('all');
     setMaintenanceType('all');
-  }, [anchorAsset, combinedMode, group, open]);
+  }, [anchorAsset, combinedMode, group, initialView, open]);
 
   const visibleAssets = useMemo(() => {
     return assets
@@ -718,8 +720,8 @@ export default function AssetGroupManagerModal({
             : styles.header}>
           <div className={useSharedAssetModalDesign ? registerStyles.modalHeaderText : styles.headerText}>
             {useSharedAssetModalDesign
-              ? <h3 id="asset-group-title">{modalTitle}</h3>
-              : <h2 id="asset-group-title">{modalTitle}</h2>}
+              ? <h3 id="asset-group-title" tabIndex={-1}>{modalTitle}</h3>
+              : <h2 id="asset-group-title" tabIndex={-1}>{modalTitle}</h2>}
             <p>{modalSubtitle}</p>
           </div>
           <button
@@ -796,6 +798,10 @@ export default function AssetGroupManagerModal({
                   <DocumentIcon className={registerStyles.buttonIcon} />
                   <span><strong>Download cost of ownership report</strong><small>Combined expenses, costs and VAT.</small></span>
                 </button>
+                <a href="/documents" target="_blank" rel="noreferrer" className={registerStyles.assetReportOptionButton}>
+                  <DocumentIcon className={registerStyles.buttonIcon} />
+                  <span><strong>Saved documents</strong><small>Open the Documents Vault to preview, download or share files.</small></span>
+                </a>
               </div>
             ) : reportStep === 'format' ? (
               <>

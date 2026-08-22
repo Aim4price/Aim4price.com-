@@ -63,6 +63,16 @@ function CopyIcon({ className }: IconProps) {
   );
 }
 
+function ReportsIcon({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
+      <path d="M6 3h8l4 4v14H6z" />
+      <path d="M14 3v5h5" />
+      <path d="M9 17v-3M12 17v-5M15 17v-7" />
+    </svg>
+  );
+}
+
 export function AssetShareDestinationPicker({
   onInside,
   onOutside,
@@ -87,7 +97,7 @@ export function AssetShareDestinationPicker({
         <span className={styles.destinationIcon}><OutsideIcon /></span>
         <span className={styles.destinationCopy}>
           <strong>Outside Aim4price</strong>
-          <small>Send the saved asset details and photos neatly through WhatsApp or email.</small>
+          <small>Send details through WhatsApp or email, or prepare a PDF, Excel report or saved document.</small>
         </span>
         <span className={styles.destinationArrow} aria-hidden="true">›</span>
       </button>
@@ -98,11 +108,11 @@ export function AssetShareDestinationPicker({
 export default function AssetExternalShare({
   shareName,
   assets,
-  onBack,
+  onOpenReportsAndDocuments,
 }: {
   shareName: string;
   assets: ExternalAssetShareItem[];
-  onBack: () => void;
+  onOpenReportsAndDocuments: () => void;
 }) {
   const [copyStatus, setCopyStatus] = useState('');
   const copy = useMemo(() => buildExternalAssetShareCopy(shareName, assets), [assets, shareName]);
@@ -137,7 +147,7 @@ export default function AssetExternalShare({
         <div>
           <span>Ready to send</span>
           <h4>{assets.length === 1 ? assets[0]?.title : shareName}</h4>
-          <p>The message includes serial, year, usage, condition, replacement price and current value. Every saved photo is included as a direct link, with the Aim4price asset link added separately.</p>
+          <p>The message includes serial, year, usage, condition, replacement price and current value. Every saved photo is included as a direct link. For a polished file, choose Reports &amp; documents below.</p>
         </div>
         <span className={styles.photoCount}>{savedPhotoCount} {savedPhotoCount === 1 ? 'photo' : 'photos'}</span>
       </div>
@@ -160,7 +170,7 @@ export default function AssetExternalShare({
 
           <div className={styles.deliveryNote}>
             <strong>What the recipient gets</strong>
-            <span>A neatly typed message plus access to the saved photos.</span>
+            <span>A neatly typed message and photo links, or a polished report you can download and attach.</span>
           </div>
         </div>
 
@@ -181,25 +191,40 @@ export default function AssetExternalShare({
 
       <div className={styles.externalActions}>
         <div className={styles.externalActionLead}>
-          <strong>Choose how to send</strong>
+          <strong>Choose what to share</strong>
           <span className={styles.copyStatus} role="status" aria-live="polite">
-            {copyStatus || 'Details and photo links are already included.'}
+            {copyStatus || 'Send the ready message, or open a formal report or saved document.'}
           </span>
         </div>
 
         <div className={styles.externalActionButtons}>
-          <button type="button" className={styles.backButton} onClick={onBack}>Back</button>
-          <button type="button" className={styles.copyButton} onClick={() => void copyDetails()}>
-            <CopyIcon />
-            <span>Copy details</span>
+          <button type="button" className={`${styles.actionButton} ${styles.reportsButton}`} onClick={onOpenReportsAndDocuments}>
+            <span className={styles.actionIcon}><ReportsIcon /></span>
+            <span className={styles.actionCopy}>
+              <strong>Reports &amp; documents</strong>
+              <small>PDF, Excel or a saved file</small>
+            </span>
           </button>
-          <a className={styles.emailButton} href={emailHref}>
-            <EmailIcon />
-            <span>Email</span>
+          <button type="button" className={`${styles.actionButton} ${styles.copyButton}`} onClick={() => void copyDetails()}>
+            <span className={styles.actionIcon}><CopyIcon /></span>
+            <span className={styles.actionCopy}>
+              <strong>Copy message</strong>
+              <small>Copy every detail and photo link</small>
+            </span>
+          </button>
+          <a className={`${styles.actionButton} ${styles.emailButton}`} href={emailHref}>
+            <span className={styles.actionIcon}><EmailIcon /></span>
+            <span className={styles.actionCopy}>
+              <strong>Email</strong>
+              <small>Open a ready-to-send email</small>
+            </span>
           </a>
-          <a className={styles.whatsappButton} href={whatsappHref} target="_blank" rel="noreferrer">
-            <WhatsAppIcon />
-            <span>WhatsApp</span>
+          <a className={`${styles.actionButton} ${styles.whatsappButton}`} href={whatsappHref} target="_blank" rel="noreferrer">
+            <span className={styles.actionIcon}><WhatsAppIcon /></span>
+            <span className={styles.actionCopy}>
+              <strong>WhatsApp</strong>
+              <small>Open a ready-to-send chat</small>
+            </span>
           </a>
         </div>
       </div>
