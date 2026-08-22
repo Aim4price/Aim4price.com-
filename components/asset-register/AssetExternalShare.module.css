@@ -448,9 +448,794 @@
   background: rgba(255, 255, 255, 0.12);
 }
 
+.whatsappButton .actionIcon svg {
+  width: 1.58rem;
+  height: 1.58rem;
+}
+
+.filePickerPanel,
+.readyPanel {
+  width: min(100%, 76rem);
+  margin: 0 auto;
+  display: grid;
+  gap: 1rem;
+}
+
+.filePickerHeader,
+.readyHero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 1rem;
+  padding: 1.05rem 1.15rem;
+  border: 1px solid #d5e3ea;
+  border-radius: 1.2rem;
+  background: linear-gradient(145deg, #ffffff 0%, #f3f9f7 100%);
+}
+
+.filePickerHeader > div,
+.readyHero > div {
+  min-width: 0;
+  display: grid;
+  gap: 0.28rem;
+}
+
+.filePickerHeader > div > span,
+.readyHero > div > span {
+  color: #28705a;
+  font-size: 0.72rem;
+  font-weight: 850;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.filePickerHeader h4,
+.readyHero h4 {
+  margin: 0;
+  color: #10352b;
+  font-size: clamp(1.3rem, 2.1vw, 1.72rem);
+  font-weight: 850;
+  line-height: 1.08;
+  letter-spacing: -0.035em;
+}
+
+.filePickerHeader p,
+.readyHero p {
+  max-width: 55rem;
+  margin: 0;
+  color: #607384;
+  font-size: 0.88rem;
+  font-weight: 620;
+  line-height: 1.42;
+}
+
+.doneButton {
+  min-width: 4.5rem;
+  min-height: 2.6rem;
+  padding: 0.55rem 0.9rem;
+  color: #174d3e;
+  border: 1px solid #c4d9d1;
+  border-radius: 0.85rem;
+  background: #ffffff;
+  font: inherit;
+  font-size: 0.84rem;
+  font-weight: 820;
+  cursor: pointer;
+}
+
+.doneButton:hover {
+  border-color: #87b8a7;
+  background: #f1faf6;
+}
+
+.doneButton:focus-visible,
+.fileSection legend button:focus-visible,
+.reportStudioButton:focus-visible,
+.addFilesButton:focus-visible,
+.prepareButton:focus-visible,
+.nativeShareButton:focus-visible,
+.downloadPackageButton:focus-visible,
+.changeSelectionButton:focus-visible,
+.messageOnlyActions a:focus-visible,
+.messageOnlyActions button:focus-visible,
+.localFileList button:focus-visible {
+  outline: 3px solid rgba(37, 99, 235, 0.24);
+  outline-offset: 3px;
+}
+
+.targetHint {
+  display: grid;
+  grid-template-columns: 2.8rem minmax(0, 1fr);
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.82rem 0.95rem;
+  color: #165d47;
+  border: 1px solid #b9ded0;
+  border-radius: 1rem;
+  background: linear-gradient(145deg, #f8fffb 0%, #ecf8f3 100%);
+}
+
+.targetHint > svg {
+  width: 2.8rem;
+  height: 2.8rem;
+  padding: 0.58rem;
+  border: 1px solid rgba(22, 93, 71, 0.28);
+  border-radius: 0.8rem;
+  background: #ffffff;
+}
+
+.targetHint > span {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.targetHint strong {
+  color: #103c30;
+  font-size: 0.92rem;
+  font-weight: 840;
+}
+
+.targetHint small {
+  color: #557267;
+  font-size: 0.8rem;
+  font-weight: 650;
+  line-height: 1.35;
+}
+
+.filePickerSections {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: 0.95rem;
+}
+
+.fileSection,
+.localFileSection {
+  min-width: 0;
+  margin: 0;
+  padding: 1rem;
+  border: 1px solid #d9e5eb;
+  border-radius: 1.15rem;
+  background: #ffffff;
+  box-shadow: 0 10px 28px rgba(16, 53, 43, 0.045);
+}
+
+.fileSection legend {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0 0.25rem 0.58rem;
+}
+
+.fileSection legend > span {
+  min-width: 0;
+  display: grid;
+  gap: 0.12rem;
+}
+
+.fileSection legend strong,
+.localFileSection > div > strong {
+  color: #10352b;
+  font-size: 0.96rem;
+  font-weight: 850;
+}
+
+.fileSection legend small,
+.localFileSection > div > small {
+  color: #6a7d89;
+  font-size: 0.74rem;
+  font-weight: 680;
+  line-height: 1.35;
+}
+
+.fileSection legend button {
+  flex: 0 0 auto;
+  padding: 0.35rem 0.6rem;
+  color: #1b6d54;
+  border: 1px solid #bfdbd0;
+  border-radius: 999px;
+  background: #f4fbf8;
+  font: inherit;
+  font-size: 0.7rem;
+  font-weight: 820;
+  cursor: pointer;
+}
+
+.photoSelectionGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.55rem;
+}
+
+.photoSelection,
+.fileOption {
+  position: relative;
+  min-width: 0;
+  overflow: hidden;
+  border: 1.5px solid #d9e4e9;
+  border-radius: 0.92rem;
+  background: #f8fafb;
+  cursor: pointer;
+  transition: transform 150ms ease, border-color 150ms ease, box-shadow 150ms ease, background 150ms ease;
+}
+
+.photoSelection:hover,
+.fileOption:hover {
+  transform: translateY(-1px);
+  border-color: #9cc7b8;
+  box-shadow: 0 9px 20px rgba(17, 76, 58, 0.08);
+}
+
+.photoSelection input,
+.fileOption input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.photoSelection:focus-within,
+.fileOption:focus-within {
+  outline: 3px solid rgba(37, 99, 235, 0.22);
+  outline-offset: 2px;
+}
+
+.photoSelection img {
+  width: 100%;
+  aspect-ratio: 1.22;
+  display: block;
+  object-fit: cover;
+  background: #edf3f5;
+}
+
+.photoSelection > small {
+  display: block;
+  min-width: 0;
+  padding: 0.45rem 0.5rem 0.52rem;
+  color: #526975;
+  font-size: 0.66rem;
+  font-weight: 720;
+  line-height: 1.25;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.selectionCheck {
+  position: absolute;
+  top: 0.45rem;
+  right: 0.45rem;
+  width: 1.55rem;
+  height: 1.55rem;
+  display: grid;
+  place-items: center;
+  color: transparent;
+  border: 2px solid rgba(255, 255, 255, 0.92);
+  border-radius: 999px;
+  background: rgba(35, 55, 50, 0.58);
+  box-shadow: 0 4px 10px rgba(14, 35, 29, 0.18);
+}
+
+.selectionCheck svg {
+  width: 0.9rem;
+  height: 0.9rem;
+}
+
+.fileSelected {
+  border-color: #3b9a77;
+  background: #effaf5;
+  box-shadow: 0 9px 22px rgba(20, 112, 82, 0.11);
+}
+
+.fileSelected .selectionCheck {
+  color: #ffffff;
+  border-color: #2a8c68;
+  background: #16805d;
+}
+
+.fileOptionList {
+  display: grid;
+  gap: 0.52rem;
+  max-height: 17rem;
+  overflow-y: auto;
+  padding: 0.1rem 0.22rem 0.1rem 0.1rem;
+  scrollbar-width: thin;
+  scrollbar-color: #6c9789 #edf3f4;
+}
+
+.fileOption {
+  min-height: 4.45rem;
+  display: grid;
+  grid-template-columns: 2.45rem minmax(0, 1fr) 1.5rem;
+  align-items: center;
+  gap: 0.72rem;
+  padding: 0.65rem 0.72rem;
+}
+
+.fileOptionIcon,
+.readyFileIcon {
+  width: 2.45rem;
+  height: 2.45rem;
+  display: grid;
+  place-items: center;
+  color: #5d3d94;
+  border: 1px solid #d9caec;
+  border-radius: 0.72rem;
+  background: #f7f2fc;
+}
+
+.fileOptionIcon svg,
+.readyFileIcon svg {
+  width: 1.2rem;
+  height: 1.2rem;
+}
+
+.fileOption > span:nth-child(3),
+.localFileList > span > span,
+.readyFileList > span > span:last-child {
+  min-width: 0;
+  display: grid;
+  gap: 0.15rem;
+}
+
+.fileOption strong,
+.localFileList strong,
+.readyFileList strong {
+  min-width: 0;
+  color: #173d33;
+  font-size: 0.82rem;
+  font-weight: 820;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.fileOption small,
+.localFileList small,
+.readyFileList small {
+  color: #687c87;
+  font-size: 0.7rem;
+  font-weight: 650;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.fileOption .selectionCheck {
+  position: static;
+  width: 1.42rem;
+  height: 1.42rem;
+  border-color: #baccc5;
+  background: #ffffff;
+  box-shadow: none;
+}
+
+.fileOption.fileSelected .selectionCheck {
+  border-color: #2a8c68;
+  background: #16805d;
+}
+
+.emptyFiles,
+.fileInlineError {
+  min-height: 4.4rem;
+  display: grid;
+  place-items: center;
+  padding: 0.8rem;
+  color: #687c87;
+  border: 1px dashed #cbdadf;
+  border-radius: 0.85rem;
+  background: #f8fafb;
+  font-size: 0.8rem;
+  font-weight: 680;
+  text-align: center;
+}
+
+.fileInlineError {
+  grid-template-columns: minmax(0, 1fr) auto;
+  place-items: center stretch;
+  gap: 0.7rem;
+  color: #9b3030;
+  border-color: #efb9b9;
+  background: #fff6f6;
+  text-align: left;
+}
+
+.fileInlineError button {
+  padding: 0.35rem 0.6rem;
+  color: #8b2929;
+  border: 1px solid #e8b0b0;
+  border-radius: 0.65rem;
+  background: #ffffff;
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.reportStudioButton {
+  width: 100%;
+  min-height: 4rem;
+  display: grid;
+  grid-template-columns: 2rem minmax(0, 1fr);
+  align-items: center;
+  gap: 0.72rem;
+  margin-top: 0.62rem;
+  padding: 0.62rem 0.72rem;
+  color: #5e3c91;
+  border: 1px solid #d9c8ed;
+  border-radius: 0.88rem;
+  background: linear-gradient(145deg, #ffffff, #f7f2fc);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.reportStudioButton > svg {
+  width: 1.4rem;
+  height: 1.4rem;
+  justify-self: center;
+}
+
+.reportStudioButton > span {
+  min-width: 0;
+  display: grid;
+  gap: 0.13rem;
+}
+
+.reportStudioButton strong {
+  font-size: 0.82rem;
+  font-weight: 830;
+}
+
+.reportStudioButton small {
+  font-size: 0.69rem;
+  font-weight: 650;
+  line-height: 1.3;
+  opacity: 0.78;
+}
+
+.localFileSection {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 0.72rem;
+}
+
+.localFileSection > div:first-child {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.addFilesButton {
+  min-height: 2.7rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  padding: 0.55rem 0.8rem;
+  color: #195b47;
+  border: 1px solid #bcd8ce;
+  border-radius: 0.8rem;
+  background: #f2faf6;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 820;
+  cursor: pointer;
+}
+
+.addFilesButton svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.localFileList {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.localFileList > span {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 2rem;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid #dae5e9;
+  border-radius: 0.78rem;
+  background: #f8fafb;
+}
+
+.localFileList button {
+  width: 1.8rem;
+  height: 1.8rem;
+  display: grid;
+  place-items: center;
+  color: #8b3d3d;
+  border: 1px solid #eccaca;
+  border-radius: 999px;
+  background: #ffffff;
+  font: inherit;
+  font-size: 1.1rem;
+  cursor: pointer;
+}
+
+.filePickerFooter {
+  position: sticky;
+  bottom: -0.35rem;
+  z-index: 6;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 1rem;
+  margin: 0 -0.15rem;
+  padding: 0.9rem 0.15rem 0.35rem;
+  border-top: 1px solid #d8e4e9;
+  background: linear-gradient(180deg, rgba(255,255,255,0.8), #ffffff 28%);
+  box-shadow: 0 -14px 28px rgba(18, 53, 43, 0.055);
+}
+
+.filePickerCount {
+  min-width: 0;
+  display: grid;
+  gap: 0.12rem;
+}
+
+.filePickerCount strong {
+  color: #10352b;
+  font-size: 0.92rem;
+  font-weight: 850;
+}
+
+.filePickerCount small {
+  color: #687b87;
+  font-size: 0.72rem;
+  font-weight: 680;
+}
+
+.filePickerCount span {
+  color: #a13939;
+  font-size: 0.72rem;
+  font-weight: 760;
+}
+
+.prepareButton,
+.nativeShareButton {
+  min-height: 3.4rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.62rem;
+  padding: 0.72rem 1.05rem;
+  color: #ffffff;
+  border: 1px solid #158359;
+  border-radius: 0.95rem;
+  background: linear-gradient(180deg, #20ad72, #16875b);
+  box-shadow: 0 10px 22px rgba(22, 135, 91, 0.2);
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.prepareButton svg,
+.nativeShareButton > svg,
+.downloadPackageButton > svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.prepareButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+  box-shadow: none;
+}
+
+.readyHero {
+  grid-template-columns: 3.5rem minmax(0, 1fr) auto;
+  align-items: center;
+}
+
+.readyIcon {
+  width: 3.5rem;
+  height: 3.5rem;
+  display: grid;
+  place-items: center;
+  color: #ffffff;
+  border-radius: 1rem;
+  background: linear-gradient(145deg, #23a977, #147353);
+  box-shadow: 0 11px 24px rgba(20, 115, 83, 0.2);
+}
+
+.readyIcon svg {
+  width: 1.8rem;
+  height: 1.8rem;
+}
+
+.readyLayout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(18rem, 0.85fr);
+  gap: 1rem;
+}
+
+.readyFileList,
+.readyActions {
+  min-width: 0;
+  display: grid;
+  align-content: start;
+  gap: 0.58rem;
+  padding: 1rem;
+  border: 1px solid #d9e5ea;
+  border-radius: 1.15rem;
+  background: #ffffff;
+}
+
+.readyFileList {
+  max-height: 29rem;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #6c9789 #edf3f4;
+}
+
+.readyFileList > span {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 2.45rem minmax(0, 1fr);
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.64rem;
+  border: 1px solid #dfe8ec;
+  border-radius: 0.85rem;
+  background: #f8fafb;
+}
+
+.readyFileIcon {
+  color: #176f53;
+  border-color: #bfdbd0;
+  background: #eff9f4;
+}
+
+.nativeShareButton {
+  width: 100%;
+  min-height: 5.1rem;
+  display: grid;
+  grid-template-columns: 2rem minmax(0, 1fr);
+  text-align: left;
+}
+
+.nativeShareButton > span {
+  min-width: 0;
+  display: grid;
+  gap: 0.18rem;
+}
+
+.nativeShareButton strong {
+  font-size: 0.98rem;
+  font-weight: 850;
+}
+
+.nativeShareButton small {
+  font-size: 0.72rem;
+  font-weight: 650;
+  line-height: 1.3;
+  opacity: 0.86;
+}
+
+.unsupportedNotice {
+  display: grid;
+  gap: 0.3rem;
+  padding: 0.85rem;
+  color: #6b521e;
+  border: 1px solid #ead29c;
+  border-radius: 0.9rem;
+  background: #fffaf0;
+}
+
+.unsupportedNotice strong {
+  font-size: 0.84rem;
+  font-weight: 840;
+}
+
+.unsupportedNotice span {
+  font-size: 0.74rem;
+  font-weight: 650;
+  line-height: 1.38;
+}
+
+.downloadPackageButton,
+.changeSelectionButton {
+  width: 100%;
+  min-height: 2.9rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.52rem;
+  padding: 0.62rem 0.82rem;
+  color: #214a3e;
+  border: 1px solid #c5d9d2;
+  border-radius: 0.84rem;
+  background: #f5faf8;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 820;
+  cursor: pointer;
+}
+
+.changeSelectionButton {
+  min-height: 2.45rem;
+  color: #536b62;
+  background: #ffffff;
+}
+
+.messageOnlyActions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.45rem;
+  padding-top: 0.55rem;
+  border-top: 1px solid #e1e9ec;
+}
+
+.messageOnlyActions > span {
+  grid-column: 1 / -1;
+  color: #75858d;
+  font-size: 0.68rem;
+  font-weight: 820;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.messageOnlyActions a,
+.messageOnlyActions button {
+  min-width: 0;
+  min-height: 2.55rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0.45rem;
+  color: #415b52;
+  border: 1px solid #d4e0dc;
+  border-radius: 0.75rem;
+  background: #ffffff;
+  font: inherit;
+  font-size: 0.68rem;
+  font-weight: 780;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.messageOnlyActions svg {
+  flex: 0 0 auto;
+  width: 0.95rem;
+  height: 0.95rem;
+}
+
+.readyStatus {
+  min-height: 2.2rem;
+  padding: 0.58rem 0.65rem;
+  color: #176c51;
+  border-radius: 0.75rem;
+  background: #eff9f4;
+  font-size: 0.74rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.readyStatusError {
+  color: #9b3030;
+  background: #fff1f1;
+}
+
 @media (max-width: 1080px) {
   .externalActionButtons {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .photoSelectionGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
@@ -471,6 +1256,11 @@
   .externalActionButtons button,
   .externalActionButtons a {
     width: 100%;
+  }
+
+  .filePickerSections,
+  .readyLayout {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
@@ -526,6 +1316,11 @@
     height: 2.3rem;
   }
 
+  .whatsappButton .actionIcon svg {
+    width: 1.42rem;
+    height: 1.42rem;
+  }
+
   .actionCopy strong {
     font-size: 0.82rem;
   }
@@ -533,10 +1328,71 @@
   .actionCopy small {
     font-size: 0.66rem;
   }
+
+  .filePickerHeader,
+  .readyHero {
+    grid-template-columns: minmax(0, 1fr) auto;
+    padding: 0.85rem;
+  }
+
+  .readyIcon {
+    display: none;
+  }
+
+  .targetHint {
+    grid-template-columns: 2.45rem minmax(0, 1fr);
+    padding: 0.72rem;
+  }
+
+  .targetHint > svg {
+    width: 2.45rem;
+    height: 2.45rem;
+  }
+
+  .fileSection,
+  .localFileSection,
+  .readyFileList,
+  .readyActions {
+    padding: 0.78rem;
+  }
+
+  .photoSelectionGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .filePickerFooter {
+    position: static;
+    grid-template-columns: minmax(0, 1fr);
+    box-shadow: none;
+  }
+
+  .prepareButton {
+    width: 100%;
+  }
+
+  .messageOnlyActions {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .messageOnlyActions > span {
+    grid-column: 1;
+  }
 }
 
 @media (max-width: 420px) {
   .externalActionButtons {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .photoSelectionGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .localFileSection {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .addFilesButton {
+    width: 100%;
   }
 }

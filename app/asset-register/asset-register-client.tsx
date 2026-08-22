@@ -9,7 +9,10 @@ import AssetGroupManagerModal, {
   type AssetGroupReportFormat,
   type AssetGroupReportKind,
 } from '../../components/asset-register/AssetGroupManagerModal';
-import AssetExternalShare, { AssetShareDestinationPicker } from '../../components/asset-register/AssetExternalShare';
+import AssetExternalShare, {
+  AssetShareDestinationPicker,
+  type ExternalShareFileSource,
+} from '../../components/asset-register/AssetExternalShare';
 import AccountantAssetManageModal from '../../components/AccountantAssetManageModal';
 import AccountantRegisterReportsModal from '../../components/AccountantRegisterReportsModal';
 import AssetDocumentUploadModal, {
@@ -5894,8 +5897,10 @@ function buildAssetRegisterExportUrl(
   accountantShareId?: string,
   availableRegisterIds: string[] = [],
   groupId = '',
+  format: ExportFormat = 'xlsx',
 ): string {
-  const params = new URLSearchParams({ format: 'xlsx' });
+  const params = new URLSearchParams({ format });
+  if (format === 'pdf') params.set('reportKind', 'full');
   const cleanedRegisterId = String(registerId ?? '').trim();
   const cleanedEntityName = entityName.trim();
 
@@ -7451,6 +7456,144 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     () => quoteAsset ? [buildExternalShareAsset(quoteAsset)] : [],
     [quoteAsset],
   );
+  const quoteExternalShareReportFiles = useMemo<ExternalShareFileSource[]>(() => {
+    if (!quoteAsset) return [];
+    const assetSlug = quoteAsset.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'asset';
+    const xlsxType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+    const reports: ExternalShareFileSource[] = [
+      {
+        id: `report:${quoteAsset.id}:maintenance:xlsx`,
+        kind: 'report',
+        label: 'Maintenance report · Excel',
+        description: 'All saved maintenance entries',
+        fileName: `${assetSlug}-maintenance-report.xlsx`,
+        contentType: xlsxType,
+        credentials: 'include',
+        url: buildAssetPdfReportUrl(quoteAsset, 'maintenance', {}, 'xlsx'),
+      },
+      {
+        id: `report:${quoteAsset.id}:ownership:xlsx`,
+        kind: 'report',
+        label: 'Cost of Ownership · Excel',
+        description: 'All saved ownership costs',
+        fileName: `${assetSlug}-cost-of-ownership.xlsx`,
+        contentType: xlsxType,
+        credentials: 'include',
+        url: buildAssetOwnershipReportUrl(quoteAsset, {}, 'xlsx'),
+      },
+    ];
+
+    if (quoteAsset.kind !== 'property') {
+      reports.splice(1, 0,
+        {
+          id: `report:${quoteAsset.id}:fuel:xlsx`,
+          kind: 'report',
+          label: 'Fuel report · Excel',
+          description: 'All saved fuel entries',
+          fileName: `${assetSlug}-fuel-report.xlsx`,
+          contentType: xlsxType,
+          credentials: 'include',
+          url: buildAssetPdfReportUrl(quoteAsset, 'fuel', {}, 'xlsx'),
+        },
+        {
+          id: `report:${quoteAsset.id}:depreciation:xlsx`,
+          kind: 'report',
+          label: 'Depreciation log · Excel',
+          description: 'All saved value changes',
+          fileName: `${assetSlug}-depreciation-log.xlsx`,
+          contentType: xlsxType,
+          credentials: 'include',
+          url: buildAssetPdfReportUrl(quoteAsset, 'depreciation', {}, 'xlsx'),
+        },
+      );
+    }
+
+    return reports;
+  }, [quoteAsset]);
+  const activeExternalShareReportFiles = useMemo<ExternalShareFileSource[]>(() => {
+    const xlsxType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+    const shareSlug = activeShareName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'asset-register';
+    const registerId = activeRegister?.id || activeRegisterId;
+    const registerIds = assetRegisters.map((register) => register.id);
+    const group = assetGroupShareTarget;
+    const groupId = group?.id || '';
+    const entityName = group?.name || activeShareName;
+    const baseExportArgs = [registerId, entityName, accountantShareId, registerIds, groupId] as const;
+    const reports: ExternalShareFileSource[] = [
+      {
+        id: `report:${groupId || registerId || 'register'}:valuation:pdf`,
+        kind: 'report',
+        label: group ? 'Umbrella valuation · PDF' : 'Asset Register · PDF',
+        description: 'Polished Aim4price PDF report',
+        fileName: `${shareSlug}-report.pdf`,
+        contentType: 'application/pdf',
+        credentials: 'include',
+        url: buildAssetRegisterExportUrl(...baseExportArgs, 'pdf'),
+      },
+      {
+        id: `report:${groupId || registerId || 'register'}:valuation:xlsx`,
+        kind: 'report',
+        label: group ? 'Umbrella valuation · Excel' : 'Asset Register · Excel',
+        description: 'Editable asset register workbook',
+        fileName: `${shareSlug}-report.xlsx`,
+        contentType: xlsxType,
+        credentials: 'include',
+        url: buildAssetRegisterExportUrl(...baseExportArgs, 'xlsx'),
+      },
+    ];
+
+    if (!group) return reports;
+
+    reports.push(
+      {
+        id: `report:${group.id}:maintenance:xlsx`,
+        kind: 'report',
+        label: 'Maintenance report · Excel',
+        description: 'All umbrella maintenance entries',
+        fileName: `${shareSlug}-maintenance-report.xlsx`,
+        contentType: xlsxType,
+        credentials: 'include',
+        url: buildAssetGroupTimelineReportUrl(group, 'maintenance', {}, 'xlsx'),
+      },
+      {
+        id: `report:${group.id}:ownership:xlsx`,
+        kind: 'report',
+        label: 'Cost of Ownership · Excel',
+        description: 'All umbrella ownership costs',
+        fileName: `${shareSlug}-cost-of-ownership.xlsx`,
+        contentType: xlsxType,
+        credentials: 'include',
+        url: buildAssetGroupOwnershipReportUrl(group, {}, 'xlsx'),
+      },
+    );
+
+    if (activeShareAssets.some((asset) => asset.kind !== 'property')) {
+      reports.push(
+        {
+          id: `report:${group.id}:fuel:xlsx`,
+          kind: 'report',
+          label: 'Fuel report · Excel',
+          description: 'All eligible umbrella fuel entries',
+          fileName: `${shareSlug}-fuel-report.xlsx`,
+          contentType: xlsxType,
+          credentials: 'include',
+          url: buildAssetGroupTimelineReportUrl(group, 'fuel', {}, 'xlsx'),
+        },
+        {
+          id: `report:${group.id}:depreciation:xlsx`,
+          kind: 'report',
+          label: 'Depreciation log · Excel',
+          description: 'All eligible umbrella value changes',
+          fileName: `${shareSlug}-depreciation-log.xlsx`,
+          contentType: xlsxType,
+          credentials: 'include',
+          url: buildAssetGroupTimelineReportUrl(group, 'depreciation', {}, 'xlsx'),
+        },
+      );
+    }
+
+    return reports;
+  }, [accountantShareId, activeRegister?.id, activeRegisterId, activeShareAssets, activeShareName, assetGroupShareTarget, assetRegisters]);
 
   const selectedQuoteOption = useMemo(() => quoteOptionForLeadType(selectedQuoteLeadType), [selectedQuoteLeadType]);
   const availableAssetQuoteOptions = useMemo(
@@ -14014,6 +14157,67 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     window.requestAnimationFrame(() => document.getElementById('asset-report-title')?.focus({ preventScroll: true }));
   }
 
+  async function loadExternalShareDocumentFiles(
+    scopeAssets: RegisterAsset[],
+    options: { includeUnlinked?: boolean } = {},
+  ): Promise<ExternalShareFileSource[]> {
+    const scopeAssetIds = new Set(scopeAssets.map((asset) => asset.id));
+    const loadedDocuments: Array<{ document: UploadedVaultDocument; assetId: string }> = [];
+
+    if (accountantShareId) {
+      const responses = await Promise.all(scopeAssets.map(async (asset) => {
+        const response = await fetch(assetVaultDocumentsUrl(asset.id), {
+          credentials: 'include',
+          cache: 'no-store',
+        });
+        const data = await response.json() as VaultDocumentsResponse;
+        if (!response.ok || !data.ok) {
+          throw new Error(data.error || `Documents for ${asset.title} could not be loaded.`);
+        }
+        return (data.documents ?? []).map((document) => ({ document, assetId: asset.id }));
+      }));
+      loadedDocuments.push(...responses.flat());
+    } else {
+      const response = await fetch('/api/documents', {
+        credentials: 'include',
+        cache: 'no-store',
+      });
+      const data = await response.json() as VaultDocumentsResponse;
+      if (!response.ok || !data.ok) {
+        throw new Error(data.error || 'Saved documents could not be loaded.');
+      }
+
+      for (const document of data.documents ?? []) {
+        const linkedAsset = document.assetLinks.find((link) => scopeAssetIds.has(link.id));
+        if (!linkedAsset && (document.assetLinks.length || !options.includeUnlinked)) continue;
+        loadedDocuments.push({ document, assetId: linkedAsset?.id || '' });
+      }
+    }
+
+    const seen = new Set<string>();
+    return loadedDocuments.flatMap(({ document, assetId }) => {
+      if (seen.has(document.id)) return [];
+      seen.add(document.id);
+      const extension = document.fileName.split('.').pop()?.trim().toUpperCase() || 'FILE';
+      const size = document.byteSize >= 1024 * 1024
+        ? `${(document.byteSize / (1024 * 1024)).toFixed(document.byteSize >= 10 * 1024 * 1024 ? 0 : 1)} MB`
+        : `${Math.max(1, Math.round(document.byteSize / 1024))} KB`;
+
+      return [{
+        id: `document:${document.id}`,
+        kind: 'document' as const,
+        label: document.title || document.fileName,
+        description: `${extension} · ${size}${document.assetLinks.length ? ` · ${document.assetLinks.map((link) => link.title).join(', ')}` : ' · Account document'}`,
+        fileName: document.fileName,
+        contentType: document.contentType,
+        credentials: 'include' as const,
+        url: accountantShareId && assetId
+          ? assetVaultDocumentDownloadUrl(assetId, document.id)
+          : `/api/documents/${encodeURIComponent(document.id)}/download`,
+      }];
+    });
+  }
+
   function buildFullRegisterLeadAssetSnapshot(asset: RegisterAsset, leadType: AssetLeadType): Record<string, unknown> {
     const financeStatus = readFinanceStatusChoice(asset);
     const insuranceStatus = readInsuranceStatusChoice(asset);
@@ -17077,7 +17281,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                 <p>{assetShareDestination === 'choice'
                   ? 'Choose where to share. Keep it inside Aim4price or send a ready-to-read message outside.'
                   : assetShareDestination === 'outside'
-                    ? `Send ${isAssetGroupShare ? 'these grouped assets' : 'the saved register details'} through WhatsApp or email, or prepare a report or saved document.`
+                    ? `Attach the photos, reports and documents you choose, then share them through WhatsApp, email or another app.`
                     : isAssetGroupShare
                       ? `Share this umbrella and its ${activeShareAssets.length} linked ${activeShareAssets.length === 1 ? 'asset' : 'assets'}. Unrelated assets stay private.`
                       : 'Choose who to share with. Each partner sees only what they need.'}</p>
@@ -17105,6 +17309,8 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                 <AssetExternalShare
                   shareName={activeShareName}
                   assets={activeExternalShareAssets}
+                  reportFiles={activeExternalShareReportFiles}
+                  loadDocumentFiles={() => loadExternalShareDocumentFiles(activeShareAssets, { includeUnlinked: !isAssetGroupShare })}
                   onOpenReportsAndDocuments={openRegisterShareReportsAndDocuments}
                 />
               ) : (
@@ -19255,7 +19461,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                   <p>{assetShareDestination === 'choice'
                     ? 'Choose where to share this asset.'
                     : assetShareDestination === 'outside'
-                      ? 'Send the saved asset details through WhatsApp or email, or prepare a report or saved document.'
+                      ? 'Attach the photos, reports and documents you choose, then share them through WhatsApp, email or another app.'
                       : quoteAsset ? `${buildAssetMeta(quoteAsset)} · ${money(quoteAsset.value)} excl. VAT` : ''}</p>
                 ) : quoteDirectoryStage === 'location' ? (
                   <p>Choose an area first. We will open the map there and show nearby active partners before Aim4price assistance listings.</p>
@@ -19293,6 +19499,8 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                   <AssetExternalShare
                     shareName={quoteAsset?.title || 'Aim4price asset'}
                     assets={quoteExternalShareAssets}
+                    reportFiles={quoteExternalShareReportFiles}
+                    loadDocumentFiles={() => quoteAsset ? loadExternalShareDocumentFiles([quoteAsset]) : Promise.resolve([])}
                     onOpenReportsAndDocuments={openAssetShareReportsAndDocuments}
                   />
                 ) : (
