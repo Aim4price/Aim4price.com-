@@ -16,6 +16,7 @@ import baseStyles from './dealer-app/page.module.css';
 import styles from './app-access-management.module.css';
 
 type DirectoryKind = 'dealer' | 'owner' | 'field';
+type AppQrKind = DirectoryKind;
 type ActiveFlow = 'new' | 'manage' | null;
 type NoticeTone = 'success' | 'error';
 type DealerStaffRole = 'owner' | 'sales' | 'parts' | 'technician';
@@ -52,6 +53,7 @@ type DirectoryConfig = {
   manageDescription: string;
   loginLinkLabel: string;
   loginPath: string;
+  qrApp: AppQrKind;
   shareTitle: string;
   shareText: string;
   listEndpoint: string;
@@ -165,6 +167,7 @@ const DIRECTORY_CONFIGS: Record<DirectoryKind, DirectoryConfig> = {
     manageDescription: 'Edit access.',
     loginLinkLabel: 'Dealer App staff login link',
     loginPath: '/dealer/login',
+    qrApp: 'dealer',
     shareTitle: 'Aim4price Dealer App',
     shareText: 'Open the Aim4price Dealer App here:',
     listEndpoint: '/api/dealer/staff',
@@ -199,6 +202,7 @@ const DIRECTORY_CONFIGS: Record<DirectoryKind, DirectoryConfig> = {
     manageDescription: 'Edit access.',
     loginLinkLabel: 'Owner App login link',
     loginPath: '/owner-app/login',
+    qrApp: 'owner',
     shareTitle: 'Aim4price Owner App',
     shareText: 'Open the Aim4price Owner App here:',
     listEndpoint: '/api/owner-app/users',
@@ -233,6 +237,7 @@ const DIRECTORY_CONFIGS: Record<DirectoryKind, DirectoryConfig> = {
     manageDescription: 'Edit access.',
     loginLinkLabel: 'Field Manager login link',
     loginPath: '/field-manager/login',
+    qrApp: 'field',
     shareTitle: 'Aim4price Field Manager',
     shareText: 'Open Aim4price Field Manager here:',
     listEndpoint: '/api/field-managers',
@@ -277,6 +282,46 @@ function UsersIcon() {
       <path d="M3.5 20v-1.5A4.5 4.5 0 0 1 8 14h2a4.5 4.5 0 0 1 4.5 4.5V20" strokeLinecap="round" />
       <path d="M16 6.5a2.7 2.7 0 0 1 0 5.2M16.5 14.2A4 4 0 0 1 20.5 18v1.5" strokeLinecap="round" />
     </svg>
+  );
+}
+
+function buildAppInstallLink(loginLink: string): string {
+  const separator = loginLink.includes('?') ? '&' : '?';
+  return `${loginLink}${separator}source=qr&install=1`;
+}
+
+function AppInstallQr({ config, loginLink }: { config: DirectoryConfig; loginLink: string }) {
+  const [imageFailed, setImageFailed] = useState(false);
+  const installLink = buildAppInstallLink(loginLink);
+
+  return (
+    <a
+      className={styles.qrHandoff}
+      href={installLink}
+      target="_blank"
+      rel="noreferrer"
+      aria-label={`Open or install ${config.shareTitle}`}
+    >
+      <span className={styles.qrImageFrame}>
+        {imageFailed ? (
+          <span className={styles.qrFallback}>QR unavailable</span>
+        ) : (
+          <img
+            src={`/api/account/app-access-qr?app=${config.qrApp}`}
+            alt={`QR code to open or install ${config.shareTitle}`}
+            width="132"
+            height="132"
+            decoding="async"
+            draggable={false}
+            onError={() => setImageFailed(true)}
+          />
+        )}
+      </span>
+      <span className={styles.qrCopy}>
+        <strong>Scan to open or install app</strong>
+        <small>Use your phone camera. Aim4price will open the correct app and show its install option.</small>
+      </span>
+    </a>
   );
 }
 
@@ -482,6 +527,7 @@ function AccessLauncher({
       </div>
 
       <div className={styles.loginStrip}>
+        <AppInstallQr config={config} loginLink={loginLink} />
         <div className={styles.loginCopy}>
           <span className={styles.loginLabel}>{config.loginLinkLabel}</span>
           <code>{loginLink}</code>

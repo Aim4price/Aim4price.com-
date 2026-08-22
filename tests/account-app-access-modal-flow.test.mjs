@@ -45,6 +45,44 @@ test('shared access flows preserve each app login type and its existing controls
   assert.match(shared, /Share link/);
 });
 
+test('every app access page exposes an allowlisted QR install handoff', async () => {
+  const [shared, route, styles, ownerLogin, dealerLogin] = await Promise.all([
+    read('app/account/app-access-management-client.tsx'),
+    read('app/api/account/app-access-qr/route.ts'),
+    read('app/account/app-access-management.module.css'),
+    read('app/owner-app/login/page.tsx'),
+    read('app/dealer/login/page.tsx'),
+  ]);
+
+  assert.match(shared, /loginPath: '\/dealer\/login',[\s\S]*?qrApp: 'dealer'/);
+  assert.match(shared, /loginPath: '\/owner-app\/login',[\s\S]*?qrApp: 'owner'/);
+  assert.match(shared, /loginPath: '\/field-manager\/login',[\s\S]*?qrApp: 'field'/);
+  assert.match(shared, /src=\{`\/api\/account\/app-access-qr\?app=\$\{config\.qrApp\}`\}/);
+  assert.match(shared, /Scan to open or install app/);
+  assert.match(shared, /source=qr&install=1/);
+  assert.match(shared, /onError=\{\(\) => setImageFailed\(true\)\}/);
+
+  assert.match(route, /dealer: '\/dealer\/login\?source=qr&install=1'/);
+  assert.match(route, /owner: '\/owner-app\/login\?source=qr&install=1'/);
+  assert.match(route, /field: '\/field-manager\/login\?source=qr&install=1'/);
+  assert.match(route, /value === 'dealer' \|\| value === 'owner' \|\| value === 'field'/);
+  assert.match(route, /status: 400/);
+  assert.match(route, /QR_PROVIDER_ORIGIN = 'https:\/\/api\.qrserver\.com'/);
+  assert.match(route, /url\.searchParams\.set\('format', 'png'\)/);
+  assert.match(route, /contentType !== 'image\/png'/);
+  assert.match(route, /MAX_QR_BYTES/);
+  assert.doesNotMatch(route, /searchParams\.get\(['"](?:url|target)['"]\)/);
+
+  for (const loginPage of [ownerLogin, dealerLogin]) {
+    assert.match(loginPage, /forceInstallHandoff = isInstallHandoff\(searchParams\)/);
+    assert.match(loginPage, /!forceInstallHandoff/);
+  }
+
+  assert.match(styles, /\.qrImageFrame \{[\s\S]*?aspect-ratio: 1 \/ 1/);
+  assert.match(styles, /@media \(max-width: 820px\)[\s\S]*?\.loginStrip \{[\s\S]*?grid-template-columns: 1fr/);
+  assert.match(styles, /@media \(max-width: 640px\)[\s\S]*?\.qrHandoff \{[\s\S]*?grid-template-columns: 6\.25rem minmax\(0, 1fr\)/);
+});
+
 test('all Manage directories and access choices stay alphabetical after every update', async () => {
   const shared = await read('app/account/app-access-management-client.tsx');
 
