@@ -6329,6 +6329,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
   const [isAssetGroupModalOpen, setIsAssetGroupModalOpen] = useState(false);
   const [assetGroupModalAsset, setAssetGroupModalAsset] = useState<RegisterAsset | null>(null);
   const [assetGroupModalGroup, setAssetGroupModalGroup] = useState<AssetGroup | null>(null);
+  const [assetGroupModalInitialView, setAssetGroupModalInitialView] = useState<'menu' | 'reports'>('menu');
   const [assetGroupError, setAssetGroupError] = useState('');
   const [isSavingAssetGroup, setIsSavingAssetGroup] = useState(false);
   const [draggingAssetId, setDraggingAssetId] = useState<string | null>(null);
@@ -6437,12 +6438,16 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
   const quotePartnerRequestRef = useRef(0);
   const quoteFitResultsRef = useRef(false);
   const quoteInitialMapLocationRef = useRef<AssetSettingsApproximateMapLocation | null>(null);
+  const suppressShareFocusRestoreRef = useRef(false);
+  const shareReturnFocusRef = useRef<HTMLElement | null>(null);
+  const shareFocusHandoffRef = useRef<'asset-report' | 'export' | 'group-report' | null>(null);
   const selectedQuoteLeadTypeRef = useRef<AssetLeadType | null>(null);
   const quotePartnerSearchRef = useRef('');
   const assetSettingsMapElementRef = useRef<HTMLDivElement | null>(null);
   const assetSettingsLeafletMapRef = useRef<any>(null);
   const assetSettingsMapMarkerRef = useRef<any>(null);
   const [isAssetReportModalOpen, setIsAssetReportModalOpen] = useState(false);
+  const [sharedReportAsset, setSharedReportAsset] = useState<RegisterAsset | null>(null);
   const [assetReportStep, setAssetReportStep] = useState<AssetReportStep>('options');
   const [assetFuelReportYear, setAssetFuelReportYear] = useState('all');
   const [assetFuelReportMonth, setAssetFuelReportMonth] = useState('all');
@@ -6720,6 +6725,18 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     )));
   }
 
+  function restoreShareFocusAfterHandoff(kind: 'asset-report' | 'export' | 'group-report') {
+    if (shareFocusHandoffRef.current !== kind) return;
+
+    const returnFocus = shareReturnFocusRef.current;
+    shareFocusHandoffRef.current = null;
+    shareReturnFocusRef.current = null;
+
+    if (returnFocus?.isConnected) {
+      window.requestAnimationFrame(() => returnFocus.focus({ preventScroll: true }));
+    }
+  }
+
   function openAssetGroupManager(asset: RegisterAsset) {
     if (!canManageAssetGroups) {
       setNotice({
@@ -6734,6 +6751,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
       window.location.assign('/asset-register?scope=combined');
       return;
     }
+    setAssetGroupModalInitialView('menu');
     setIsAssetGroupModalOpen(true);
     setAssetGroupModalAsset(asset);
     setAssetGroupModalGroup(group);
@@ -6749,6 +6767,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
       return;
     }
 
+    setAssetGroupModalInitialView('menu');
     setIsAssetGroupModalOpen(true);
     setAssetGroupModalAsset(null);
     setAssetGroupModalGroup(null);
@@ -6760,7 +6779,21 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     setIsAssetGroupModalOpen(false);
     setAssetGroupModalAsset(null);
     setAssetGroupModalGroup(null);
+    setAssetGroupModalInitialView('menu');
     setAssetGroupError('');
+    restoreShareFocusAfterHandoff('group-report');
+  }
+
+  function openAssetGroupReports(group: AssetGroup) {
+    const anchorAsset = group.members
+      .map((member) => assets.find((asset) => asset.id === member.assetId))
+      .find((asset): asset is RegisterAsset => Boolean(asset)) ?? null;
+
+    setAssetGroupModalInitialView('reports');
+    setAssetGroupModalAsset(anchorAsset);
+    setAssetGroupModalGroup(group);
+    setAssetGroupError('');
+    setIsAssetGroupModalOpen(true);
   }
 
   function toggleAssetGroupCollapsed(groupId: string) {
@@ -7168,6 +7201,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
       setNotice({ tone: 'error', message: 'The saved document could not be opened. Please remove and upload it again.' });
     }
   }
+  const reportAsset = sharedReportAsset ?? activeAsset;
   const projectionRequestRef = useRef(0);
   const projectionResultRef = useRef<HTMLElement | null>(null);
   const [shouldScrollToProjectionResult, setShouldScrollToProjectionResult] = useState(false);
@@ -7182,9 +7216,9 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
   const assetReportYearOptions = useMemo<ReportSelectOption[]>(() => {
     return [
       { value: 'all', label: 'All years' },
-      ...getAssetFuelReportYearValues(activeAsset).map((year) => ({ value: year, label: year })),
+      ...getAssetFuelReportYearValues(reportAsset).map((year) => ({ value: year, label: year })),
     ];
-  }, [activeAsset]);
+  }, [reportAsset]);
   const assetReportMonthOptions = useMemo<ReportSelectOption[]>(() => {
     return [
       { value: 'all', label: 'All months' },
@@ -8170,6 +8204,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     }
 
     const returnFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    shareReturnFocusRef.current = returnFocus;
     const focusableSelector = [
       'a[href]',
       'button:not(:disabled)',
@@ -8201,11 +8236,15 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
       const firstControl = controls[0]!;
       const lastControl = controls[controls.length - 1]!;
       const activeControl = document.activeElement;
+      const activeControlIndex = activeControl instanceof HTMLElement ? controls.indexOf(activeControl) : -1;
 
-      if (event.shiftKey && (activeControl === firstControl || !dialog.contains(activeControl))) {
+      if (activeControlIndex === -1) {
+        event.preventDefault();
+        (event.shiftKey ? lastControl : firstControl).focus();
+      } else if (event.shiftKey && activeControl === firstControl) {
         event.preventDefault();
         lastControl.focus();
-      } else if (!event.shiftKey && (activeControl === lastControl || !dialog.contains(activeControl))) {
+      } else if (!event.shiftKey && activeControl === lastControl) {
         event.preventDefault();
         firstControl.focus();
       }
@@ -8215,14 +8254,25 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
 
     return () => {
       document.removeEventListener('keydown', handleShareModalTab);
-      if (returnFocus?.isConnected) {
-        window.requestAnimationFrame(() => returnFocus.focus({ preventScroll: true }));
+      if (suppressShareFocusRestoreRef.current) {
+        suppressShareFocusRestoreRef.current = false;
+        return;
+      }
+      const savedReturnFocus = shareReturnFocusRef.current ?? returnFocus;
+      shareFocusHandoffRef.current = null;
+      shareReturnFocusRef.current = null;
+      if (savedReturnFocus?.isConnected) {
+        window.requestAnimationFrame(() => savedReturnFocus.focus({ preventScroll: true }));
       }
     };
   }, [isShareModalFocusOpen]);
 
   useEffect(() => {
     if (!isShareModalFocusOpen) {
+      return undefined;
+    }
+
+    if (isQuoteModalOpen && !isQuoteTrackingSettingsOpen && selectedQuoteOption && quoteDirectoryStage === 'location') {
       return undefined;
     }
 
@@ -10841,6 +10891,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     setDeleteCandidateAsset(null);
     setIsDealerTrackingSettingsOpen(false);
     setDealerTrackingAccess([]);
+    setSharedReportAsset(null);
     setActiveAsset(null);
   }
 
@@ -11445,10 +11496,11 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     setDeleteCandidateAsset(null);
   }
 
-  function openAssetReportDialog() {
+  function prepareAssetReportDialog(sharedAsset: RegisterAsset | null) {
     setIsPricingModalOpen(false);
     setIsQrModalOpen(false);
     setCopiedScanLinkAssetId(null);
+    setSharedReportAsset(sharedAsset);
     setAssetReportStep('options');
     setAssetFuelReportYear('all');
     setAssetFuelReportMonth('all');
@@ -11464,8 +11516,17 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     setIsAssetReportModalOpen(true);
   }
 
+  function openAssetReportDialog() {
+    prepareAssetReportDialog(null);
+  }
+
+  function openSharedAssetReportDialog(asset: RegisterAsset) {
+    prepareAssetReportDialog(asset);
+  }
+
   function closeAssetReportDialog() {
     setIsAssetReportModalOpen(false);
+    setSharedReportAsset(null);
     setAssetReportStep('options');
     setAssetFuelReportYear('all');
     setAssetFuelReportMonth('all');
@@ -11478,6 +11539,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     setAssetOwnershipReportMonth('all');
     setAssetReportDownloadFormat('pdf');
     setOpenAssetReportSelect(null);
+    restoreShareFocusAfterHandoff('asset-report');
   }
 
   function resetRevalueReplacementForm(asset: RegisterAsset | null) {
@@ -13925,6 +13987,33 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     setAssetShareDestination('choice');
   }
 
+  function openRegisterShareReportsAndDocuments() {
+    const group = assetGroupShareTarget;
+    shareFocusHandoffRef.current = group ? 'group-report' : 'export';
+    suppressShareFocusRestoreRef.current = true;
+    closeRegisterShareModal();
+
+    if (group) {
+      openAssetGroupReports(group);
+      window.requestAnimationFrame(() => document.getElementById('asset-group-title')?.focus({ preventScroll: true }));
+      return;
+    }
+
+    openExportModal();
+    window.requestAnimationFrame(() => document.getElementById('export-title')?.focus({ preventScroll: true }));
+  }
+
+  function openAssetShareReportsAndDocuments() {
+    const asset = quoteAsset;
+    if (!asset) return;
+
+    shareFocusHandoffRef.current = 'asset-report';
+    suppressShareFocusRestoreRef.current = true;
+    closeAssetQuoteModal();
+    openSharedAssetReportDialog(asset);
+    window.requestAnimationFrame(() => document.getElementById('asset-report-title')?.focus({ preventScroll: true }));
+  }
+
   function buildFullRegisterLeadAssetSnapshot(asset: RegisterAsset, leadType: AssetLeadType): Record<string, unknown> {
     const financeStatus = readFinanceStatusChoice(asset);
     const insuranceStatus = readInsuranceStatusChoice(asset);
@@ -14211,6 +14300,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     setPdfReportSelection('');
     setSelectedPdfAssetIds([]);
     setPdfAssetSearchTerm('');
+    restoreShareFocusAfterHandoff('export');
   }
 
   function selectExportFormat(nextFormat: ExportFormat) {
@@ -16987,7 +17077,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                 <p>{assetShareDestination === 'choice'
                   ? 'Choose where to share. Keep it inside Aim4price or send a ready-to-read message outside.'
                   : assetShareDestination === 'outside'
-                    ? `Send ${isAssetGroupShare ? 'these grouped assets' : 'the saved register details'} through WhatsApp or email.`
+                    ? `Send ${isAssetGroupShare ? 'these grouped assets' : 'the saved register details'} through WhatsApp or email, or prepare a report or saved document.`
                     : isAssetGroupShare
                       ? `Share this umbrella and its ${activeShareAssets.length} linked ${activeShareAssets.length === 1 ? 'asset' : 'assets'}. Unrelated assets stay private.`
                       : 'Choose who to share with. Each partner sees only what they need.'}</p>
@@ -17015,15 +17105,10 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                 <AssetExternalShare
                   shareName={activeShareName}
                   assets={activeExternalShareAssets}
-                  onBack={() => setAssetShareDestination('choice')}
+                  onOpenReportsAndDocuments={openRegisterShareReportsAndDocuments}
                 />
               ) : (
                 <div className={styles.assetShareInsideFlow}>
-                  <button type="button" className={styles.assetQuoteBackButton} onClick={() => setAssetShareDestination('choice')}>
-                    <ChevronLeftIcon className={styles.buttonIcon} />
-                    <span>Back</span>
-                  </button>
-
                   <div className={styles.optionsContent}>
                     <div className={`${styles.optionsGrid} ${styles.assetOptionsGrid} ${styles.assetQuoteChoiceGrid} ${styles.registerShareOptionGrid}`}>
                       <button
@@ -19170,7 +19255,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                   <p>{assetShareDestination === 'choice'
                     ? 'Choose where to share this asset.'
                     : assetShareDestination === 'outside'
-                      ? 'Send the saved asset details and photos through WhatsApp or email.'
+                      ? 'Send the saved asset details through WhatsApp or email, or prepare a report or saved document.'
                       : quoteAsset ? `${buildAssetMeta(quoteAsset)} · ${money(quoteAsset.value)} excl. VAT` : ''}</p>
                 ) : quoteDirectoryStage === 'location' ? (
                   <p>Choose an area first. We will open the map there and show nearby active partners before Aim4price assistance listings.</p>
@@ -19208,14 +19293,10 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                   <AssetExternalShare
                     shareName={quoteAsset?.title || 'Aim4price asset'}
                     assets={quoteExternalShareAssets}
-                    onBack={() => setAssetShareDestination('choice')}
+                    onOpenReportsAndDocuments={openAssetShareReportsAndDocuments}
                   />
                 ) : (
                   <div className={styles.assetShareInsideFlow}>
-                    <button type="button" className={styles.assetQuoteBackButton} onClick={() => setAssetShareDestination('choice')}>
-                      <ChevronLeftIcon className={styles.buttonIcon} />
-                      <span>Back</span>
-                    </button>
                     <div className={styles.optionsContent}>
                       <div className={`${styles.optionsGrid} ${styles.assetOptionsGrid} ${styles.assetQuoteChoiceGrid}`}>
                         {availableAssetQuoteOptions.map((option) => {
@@ -19244,7 +19325,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                         })}
                       </div>
                     </div>
-    
+
                   </div>
                 )
               ) : quoteDirectoryStage === 'location' ? (
@@ -20481,7 +20562,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
         </div>
       ) : null}
 
-      {activeAsset && isAssetReportModalOpen ? (
+      {reportAsset && isAssetReportModalOpen ? (
         <div className={`${styles.modalOverlay} ${styles.subModalOverlay}`}>
           <div className={styles.modalBackdrop} onClick={closeAssetReportDialog} />
 
@@ -20493,8 +20574,8 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
           >
             <div className={`${styles.modalHeader} ${styles.assetReportModalHeader}`}>
               <div className={styles.modalHeaderText}>
-                <h3 id="asset-report-title">{activeAsset.title}</h3>
-                <p>{buildAssetMeta(activeAsset)}</p>
+                <h3 id="asset-report-title" tabIndex={-1}>{reportAsset.title}</h3>
+                <p>{buildAssetMeta(reportAsset)}</p>
               </div>
 
               <button type="button" className={styles.modalCloseButton} onClick={closeAssetReportDialog} aria-label="Close report options">
@@ -20566,7 +20647,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                     <button
                       type="button"
                       className={styles.primaryButton}
-                      onClick={() => void handleDownloadFilteredFuelReport(activeAsset, assetReportDownloadFormat)}
+                      onClick={() => void handleDownloadFilteredFuelReport(reportAsset, assetReportDownloadFormat)}
                     >
                       <DownloadIcon className={styles.buttonIcon} />
                       <span>{assetReportDownloadFormat === 'pdf' ? 'Open PDF report' : 'Download Excel'}</span>
@@ -20622,7 +20703,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                     <button
                       type="button"
                       className={styles.primaryButton}
-                      onClick={() => void handleDownloadFilteredMaintenanceReport(activeAsset, assetReportDownloadFormat)}
+                      onClick={() => void handleDownloadFilteredMaintenanceReport(reportAsset, assetReportDownloadFormat)}
                     >
                       <DownloadIcon className={styles.buttonIcon} />
                       <span>{assetReportDownloadFormat === 'pdf' ? 'Open PDF report' : 'Download Excel'}</span>
@@ -20669,7 +20750,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                     <button
                       type="button"
                       className={styles.primaryButton}
-                      onClick={() => void handleDownloadFilteredDepreciationReport(activeAsset, assetReportDownloadFormat)}
+                      onClick={() => void handleDownloadFilteredDepreciationReport(reportAsset, assetReportDownloadFormat)}
                     >
                       <DownloadIcon className={styles.buttonIcon} />
                       <span>{assetReportDownloadFormat === 'pdf' ? 'Open PDF report' : 'Download Excel'}</span>
@@ -20716,7 +20797,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                     <button
                       type="button"
                       className={styles.primaryButton}
-                      onClick={() => void handleDownloadFilteredOwnershipReport(activeAsset, assetReportDownloadFormat)}
+                      onClick={() => void handleDownloadFilteredOwnershipReport(reportAsset, assetReportDownloadFormat)}
                     >
                       <DownloadIcon className={styles.buttonIcon} />
                       <span>{assetReportDownloadFormat === 'pdf' ? 'Open PDF report' : 'Download Excel'}</span>
@@ -20725,7 +20806,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                 </>
               ) : (
                 <div className={styles.assetReportOptionsGrid}>
-                  <button type="button" className={styles.assetReportOptionButton} onClick={() => handlePrintAssetSheet(activeAsset)}>
+                  <button type="button" className={styles.assetReportOptionButton} onClick={() => handlePrintAssetSheet(reportAsset)}>
                     <PdfIcon className={styles.buttonIcon} />
                     <span>
                       <strong>Download asset valuation</strong>
@@ -20735,6 +20816,19 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
 
                   {canUseOwnerOnlyAssetActions ? (
                     <>
+                      <Link
+                        href={buildOwnerAssetPageHref('/documents', reportAsset.id, {}, ownerCommandReturnLocation)}
+                        className={styles.assetReportOptionButton}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        <DocumentIcon className={styles.buttonIcon} />
+                        <span>
+                          <strong>Saved documents</strong>
+                          <small>Open, download or share any file from the Documents Vault.</small>
+                        </span>
+                      </Link>
+
                       <button type="button" className={styles.assetReportOptionButton} onClick={openAssetMaintenanceReportFilter}>
                         <DocumentIcon className={styles.buttonIcon} />
                         <span>
@@ -20743,7 +20837,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                         </span>
                       </button>
 
-                      {canDownloadAssetFuelReport(activeAsset) ? (
+                      {canDownloadAssetFuelReport(reportAsset) ? (
                         <button type="button" className={styles.assetReportOptionButton} onClick={openAssetFuelReportFilter}>
                           <DocumentIcon className={styles.buttonIcon} />
                           <span>
@@ -20753,7 +20847,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                         </button>
                       ) : null}
 
-                      {canDownloadAssetDepreciationReport(activeAsset) ? (
+                      {canDownloadAssetDepreciationReport(reportAsset) ? (
                         <button type="button" className={styles.assetReportOptionButton} onClick={openAssetDepreciationReportFilter}>
                           <DocumentIcon className={styles.buttonIcon} />
                           <span>
@@ -20967,7 +21061,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
           >
             <div className={`${styles.modalHeader} ${styles.exportModalHeader}`}>
               <div className={styles.modalHeaderText}>
-                <h3 id="export-title">Export asset register</h3>
+                <h3 id="export-title" tabIndex={-1}>Export asset register</h3>
               </div>
 
               <button type="button" className={styles.modalCloseButton} onClick={closeExportModal} aria-label="Close export options">
@@ -21021,6 +21115,22 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                           <small>Download all register rows in an Excel-ready workbook.</small>
                         </span>
                       </button>
+
+                      <Link
+                        href="/documents"
+                        className={`${styles.exportOption} ${styles.exportDocumentsOption}`}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        <span className={styles.exportGraphic}>
+                          <DocumentIcon className={styles.exportOptionIcon} />
+                        </span>
+
+                        <span className={styles.exportOptionTitleBlock}>
+                          <strong>Saved documents</strong>
+                          <small>Open the Documents Vault to preview, download or share any saved file.</small>
+                        </span>
+                      </Link>
                     </div>
 
                     <div className={`${styles.formActions} ${styles.exportActions}`}>
@@ -21656,6 +21766,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
         group={assetGroupModalGroup}
         assets={assetGroupModalAssets}
         groups={assetGroups}
+        initialView={assetGroupModalInitialView}
         combinedMode={isCombinedRegisterView}
         busy={isSavingAssetGroup}
         reportBusy={isExporting}
