@@ -8162,6 +8162,80 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     Boolean(projectionAsset) ||
     Boolean(marketplaceAsset);
 
+  const isShareModalFocusOpen = isRegisterShareModalOpen || isQuoteModalOpen;
+
+  useEffect(() => {
+    if (!isShareModalFocusOpen) {
+      return undefined;
+    }
+
+    const returnFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const focusableSelector = [
+      'a[href]',
+      'button:not(:disabled)',
+      'input:not(:disabled)',
+      'select:not(:disabled)',
+      'textarea:not(:disabled)',
+      '[tabindex]:not([tabindex="-1"])',
+    ].join(',');
+
+    function findShareDialog() {
+      const openDialogs = Array.from(document.querySelectorAll<HTMLElement>('[role="dialog"][aria-modal="true"]')).filter((dialog) => (
+        dialog.offsetWidth > 0 || dialog.offsetHeight > 0
+      ));
+      return openDialogs[openDialogs.length - 1] ?? null;
+    }
+
+    function handleShareModalTab(event: KeyboardEvent) {
+      if (event.key !== 'Tab' || event.defaultPrevented) return;
+
+      const dialog = findShareDialog();
+      if (!dialog) return;
+
+      const controls = Array.from(dialog.querySelectorAll<HTMLElement>(focusableSelector)).filter((control) => (
+        control.getAttribute('aria-hidden') !== 'true'
+        && (control.offsetWidth > 0 || control.offsetHeight > 0)
+      ));
+      if (!controls.length) return;
+
+      const firstControl = controls[0]!;
+      const lastControl = controls[controls.length - 1]!;
+      const activeControl = document.activeElement;
+
+      if (event.shiftKey && (activeControl === firstControl || !dialog.contains(activeControl))) {
+        event.preventDefault();
+        lastControl.focus();
+      } else if (!event.shiftKey && (activeControl === lastControl || !dialog.contains(activeControl))) {
+        event.preventDefault();
+        firstControl.focus();
+      }
+    }
+
+    document.addEventListener('keydown', handleShareModalTab);
+
+    return () => {
+      document.removeEventListener('keydown', handleShareModalTab);
+      if (returnFocus?.isConnected) {
+        window.requestAnimationFrame(() => returnFocus.focus({ preventScroll: true }));
+      }
+    };
+  }, [isShareModalFocusOpen]);
+
+  useEffect(() => {
+    if (!isShareModalFocusOpen) {
+      return undefined;
+    }
+
+    const headingId = isQuoteTrackingSettingsOpen
+      ? 'quote-tracking-settings-title'
+      : isRegisterShareModalOpen ? 'asset-register-share-title' : 'asset-quote-title';
+    const animationFrame = window.requestAnimationFrame(() => {
+      document.getElementById(headingId)?.focus({ preventScroll: true });
+    });
+
+    return () => window.cancelAnimationFrame(animationFrame);
+  }, [assetShareDestination, isQuoteModalOpen, isQuoteTrackingSettingsOpen, isRegisterShareModalOpen, isShareModalFocusOpen, quoteDirectoryStage, quoteLeadStep, selectedQuoteOption]);
+
   useEffect(() => {
     if (!anyModalOpen) {
       return undefined;
@@ -16898,14 +16972,14 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
           <div className={styles.modalBackdrop} onClick={closeRegisterShareModal} />
 
           <div
-            className={`${styles.optionsModal} ${styles.assetQuoteModal} ${styles.registerShareModal} ${assetShareDestination === 'choice' ? styles.assetShareDestinationModal : ''} ${assetShareDestination === 'outside' ? styles.externalAssetShareModal : ''}`}
+            className={`${styles.optionsModal} ${styles.assetQuoteModal} ${styles.registerShareModal} ${assetShareDestination === 'choice' ? styles.assetShareDestinationModal : ''} ${assetShareDestination === 'inside' ? styles.assetShareInsideModal : ''} ${assetShareDestination === 'outside' ? styles.externalAssetShareModal : ''}`}
             role="dialog"
             aria-modal="true"
             aria-labelledby="asset-register-share-title"
           >
             <div className={`${styles.modalHeader} ${styles.optionsModalHeader} ${styles.assetQuoteModalHeader} ${styles.registerShareModalHeader}`}>
               <div className={styles.modalHeaderText}>
-                <h3 id="asset-register-share-title">{assetShareDestination === 'inside'
+                <h3 id="asset-register-share-title" tabIndex={-1}>{assetShareDestination === 'inside'
                   ? 'Share inside Aim4price'
                   : assetShareDestination === 'outside'
                     ? 'Share outside Aim4price'
@@ -19078,14 +19152,14 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
           <div className={styles.modalBackdrop} onClick={closeAssetQuoteModal} />
 
           <div
-            className={`${styles.optionsModal} ${styles.assetQuoteModal} ${!selectedQuoteOption && assetShareDestination === 'choice' ? styles.assetShareDestinationModal : ''} ${!selectedQuoteOption && assetShareDestination === 'outside' ? styles.externalAssetShareModal : ''} ${selectedQuoteOption && quoteDirectoryStage === 'map' ? styles.assetQuotePartnerPickerModal : ''} ${selectedQuoteOption && quoteDirectoryStage === 'location' ? styles.assetQuoteLocationPickerModal : ''} ${isQuoteMapExpanded ? styles.assetQuoteMapExpandedModal : ''}`}
+            className={`${styles.optionsModal} ${styles.assetQuoteModal} ${!selectedQuoteOption && assetShareDestination === 'choice' ? styles.assetShareDestinationModal : ''} ${!selectedQuoteOption && assetShareDestination === 'inside' ? styles.assetShareInsideModal : ''} ${!selectedQuoteOption && assetShareDestination === 'outside' ? styles.externalAssetShareModal : ''} ${selectedQuoteOption && quoteDirectoryStage === 'map' ? styles.assetQuotePartnerPickerModal : ''} ${selectedQuoteOption && quoteDirectoryStage === 'location' ? styles.assetQuoteLocationPickerModal : ''} ${isQuoteMapExpanded ? styles.assetQuoteMapExpandedModal : ''}`}
             role="dialog"
             aria-modal="true"
             aria-labelledby="asset-quote-title"
           >
             <div className={`${styles.modalHeader} ${styles.optionsModalHeader} ${styles.assetQuoteModalHeader}`}>
               <div className={styles.modalHeaderText}>
-                <h3 id="asset-quote-title">{selectedQuoteOption
+                <h3 id="asset-quote-title" tabIndex={-1}>{selectedQuoteOption
                   ? quoteDirectoryStage === 'location' ? 'Where do you need help?' : selectedQuoteOption.mapTitle
                   : assetShareDestination === 'inside'
                     ? 'Share inside Aim4price'
@@ -19706,7 +19780,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
           >
             <div className={`${styles.modalHeader} ${styles.pricingModalHeader} ${styles.dealerTrackingHeader}`}>
               <div className={styles.modalHeaderText}>
-                <h3 id="quote-tracking-settings-title">Dealer tracking settings</h3>
+                <h3 id="quote-tracking-settings-title" tabIndex={-1}>Dealer tracking settings</h3>
                 <p>{quoteAsset.title}</p>
               </div>
 

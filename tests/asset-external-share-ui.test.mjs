@@ -54,3 +54,34 @@ test('the existing internal partner choices remain in the inside Aim4price path'
   assert.match(client, /openFullRegisterQuotePartnerPicker\('replacement_quote'\)/);
   assert.match(client, /openFullRegisterQuotePartnerPicker\('license_renewal'\)/);
 });
+
+test('inside choices use a roomy 2x2 layout and outside sharing keeps polished send controls in reach', async () => {
+  const [client, pageStyles, component, componentStyles] = await Promise.all([
+    readFile(new URL('../app/asset-register/asset-register-client.tsx', import.meta.url), 'utf8'),
+    readFile(new URL('../app/asset-register/page.module.css', import.meta.url), 'utf8'),
+    readFile(new URL('../components/asset-register/AssetExternalShare.tsx', import.meta.url), 'utf8'),
+    readFile(new URL('../components/asset-register/AssetExternalShare.module.css', import.meta.url), 'utf8'),
+  ]);
+
+  assert.equal((client.match(/styles\.assetShareInsideModal/g) ?? []).length, 2);
+  assert.match(client, /function handleShareModalTab\(event: KeyboardEvent\)/);
+  assert.match(client, /returnFocus\.focus\(\{ preventScroll: true \}\)/);
+  assert.match(client, /id="asset-register-share-title" tabIndex=\{-1\}/);
+  assert.match(client, /id="asset-quote-title" tabIndex=\{-1\}/);
+  assert.match(pageStyles, /\.assetShareInsideModal \.assetQuoteChoiceGrid[\s\S]*?grid-template-columns: repeat\(2, minmax\(0, 1fr\)\) !important/);
+  assert.match(pageStyles, /\.assetShareInsideModal \.assetQuoteChoiceGrid \.assetQuoteChoiceCard[\s\S]*?min-height: 13\.5rem !important/);
+  assert.match(pageStyles, /@media \(max-width: 820px\)[\s\S]*?assetShareInsideModal[\s\S]*?grid-template-columns: minmax\(0, 1fr\) !important/);
+
+  const sharedScrollRule = pageStyles.match(/\.assetShareInsideModal \.assetQuoteScrollBody,\n\.assetShareInsideModal \.registerShareModalBody,\n\.externalAssetShareModal \.assetQuoteScrollBody,\n\.externalAssetShareModal \.registerShareModalBody \{\n([\s\S]*?)\n\}/);
+  assert.ok(sharedScrollRule, 'inside and outside share flows should use the same scroll region rule');
+  assert.match(sharedScrollRule[1], /flex: 1 1 auto !important/);
+  assert.match(sharedScrollRule[1], /overflow-y: auto !important/);
+  assert.match(sharedScrollRule[1], /scrollbar-gutter: stable !important/);
+  assert.match(pageStyles, /\.externalAssetShareModal \.assetQuoteScrollBody::\-webkit-scrollbar-thumb/);
+  assert.match(componentStyles, /\.messagePreview::\-webkit-scrollbar-thumb/);
+  assert.match(componentStyles, /\.externalActions \{[\s\S]*?position: sticky;[\s\S]*?bottom: -0\.35rem/);
+  assert.match(componentStyles, /@media \(max-width: 720px\)[\s\S]*?\.externalActionButtons[\s\S]*?grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
+  assert.match(component, /<strong>Choose how to send<\/strong>/);
+  assert.match(component, /className=\{styles\.externalActionButtons\}/);
+  assert.match(component, /tabIndex=\{0\}[\s\S]*?aria-label="External asset details message preview"/);
+});
