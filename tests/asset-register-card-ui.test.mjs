@@ -179,6 +179,25 @@ test('scrollbar drags do not trigger outside-click closing', () => {
   assert.match(headerHandler, /if \(isViewportScrollbarInteraction\(event\)\)/);
 });
 
+test('asset modals preserve the open umbrella and its expanded View details card', () => {
+  const handlerIndex = client.indexOf('function handleOutsideUmbrellaPointerDown');
+  const umbrellaEffect = client.slice(
+    client.lastIndexOf('useEffect(() => {', handlerIndex),
+    client.indexOf('useEffect(() => {', handlerIndex),
+  );
+
+  assert.match(
+    umbrellaEffect,
+    /if \(!focusedAssetGroupId \|\| anyModalOpen \|\| documentUploadAsset\) return undefined;/,
+  );
+  assert.match(
+    umbrellaEffect,
+    /\}, \[anyModalOpen, documentUploadAsset, focusedAssetGroupId\]\);/,
+  );
+  assert.match(client, /Boolean\(activeAsset\)[\s\S]*?isQuoteModalOpen/);
+  assert.match(client, /const \[documentUploadAsset, setDocumentUploadAsset\]/);
+});
+
 test('dropdowns reserve scrollbar space only when content is clipped', () => {
   assert.match(styles, /\.customSelectMenuPortal\s*\{[\s\S]*?scrollbar-gutter:\s*auto !important;/);
   assert.match(headerStyles, /\.accountPopover\s*\{[\s\S]*?max-height:\s*calc\(100dvh - 7rem\);[\s\S]*?scrollbar-gutter:\s*auto;/);
