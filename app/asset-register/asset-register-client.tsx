@@ -16898,7 +16898,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
           <div className={styles.modalBackdrop} onClick={closeRegisterShareModal} />
 
           <div
-            className={`${styles.optionsModal} ${styles.assetQuoteModal} ${styles.registerShareModal} ${assetShareDestination === 'choice' ? styles.assetShareDestinationModal : ''} ${assetShareDestination === 'outside' ? styles.externalAssetShareModal : ''}`}
+            className={`${styles.optionsModal} ${styles.assetQuoteModal} ${styles.registerShareModal} ${assetShareDestination === 'choice' ? styles.assetShareDestinationModal : ''} ${assetShareDestination === 'inside' ? styles.assetShareInsideModal : ''} ${assetShareDestination === 'outside' ? styles.externalAssetShareModal : ''}`}
             role="dialog"
             aria-modal="true"
             aria-labelledby="asset-register-share-title"
@@ -19078,7 +19078,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
           <div className={styles.modalBackdrop} onClick={closeAssetQuoteModal} />
 
           <div
-            className={`${styles.optionsModal} ${styles.assetQuoteModal} ${!selectedQuoteOption && assetShareDestination === 'choice' ? styles.assetShareDestinationModal : ''} ${!selectedQuoteOption && assetShareDestination === 'outside' ? styles.externalAssetShareModal : ''} ${selectedQuoteOption && quoteDirectoryStage === 'map' ? styles.assetQuotePartnerPickerModal : ''} ${selectedQuoteOption && quoteDirectoryStage === 'location' ? styles.assetQuoteLocationPickerModal : ''} ${isQuoteMapExpanded ? styles.assetQuoteMapExpandedModal : ''}`}
+            className={`${styles.optionsModal} ${styles.assetQuoteModal} ${!selectedQuoteOption && assetShareDestination === 'choice' ? styles.assetShareDestinationModal : ''} ${!selectedQuoteOption && assetShareDestination === 'inside' ? styles.assetShareInsideModal : ''} ${!selectedQuoteOption && assetShareDestination === 'outside' ? styles.externalAssetShareModal : ''} ${selectedQuoteOption && quoteDirectoryStage === 'map' ? styles.assetQuotePartnerPickerModal : ''} ${selectedQuoteOption && quoteDirectoryStage === 'location' ? styles.assetQuoteLocationPickerModal : ''} ${isQuoteMapExpanded ? styles.assetQuoteMapExpandedModal : ''}`}
             role="dialog"
             aria-modal="true"
             aria-labelledby="asset-quote-title"
