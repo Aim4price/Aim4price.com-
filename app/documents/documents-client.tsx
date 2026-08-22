@@ -304,9 +304,10 @@ async function readVaultResponse(response: Response, fallback: string): Promise<
 
 type DocumentsClientProps = {
   initialAssetId?: string;
+  initialReturnTo?: string;
 };
 
-export default function DocumentsClient({ initialAssetId = '' }: DocumentsClientProps) {
+export default function DocumentsClient({ initialAssetId = '', initialReturnTo = '' }: DocumentsClientProps) {
   const [documents, setDocuments] = useState<VaultDocument[]>([]);
   const [summary, setSummary] = useState<VaultSummary>(EMPTY_SUMMARY);
   const [assets, setAssets] = useState<AssetLink[]>([]);
@@ -1013,7 +1014,9 @@ export default function DocumentsClient({ initialAssetId = '' }: DocumentsClient
               <strong>{selectedAsset?.title ?? (loading ? 'Loading selected asset…' : 'Selected asset')}</strong>
               {selectedAsset?.meta ? <small>{selectedAsset.meta}</small> : null}
             </div>
-            <a href="/documents">View all documents</a>
+            <a href={initialReturnTo || '/documents'}>
+              {initialReturnTo ? '← Back to asset' : 'View all documents'}
+            </a>
           </section>
         ) : null}
 
