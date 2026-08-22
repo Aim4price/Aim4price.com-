@@ -926,8 +926,12 @@ export default function AssetGroupManagerModal({
                 ) : null}
 
                 {editorStep === 3 ? (
-                <section className={`${styles.stepCard} ${styles.assetSection} ${styles.wizardPanel}`} aria-labelledby="umbrella-step-assets">
-                  <div className={styles.stepHeader}>
+                <section
+                  className={`${styles.stepCard} ${styles.assetSection} ${styles.wizardPanel}`}
+                  aria-labelledby="umbrella-step-assets"
+                  data-asset-choice-surface="true"
+                >
+                  <div className={styles.stepHeader} data-asset-choice-header="true">
                     <span className={styles.stepNumber}>3</span>
                     <div className={styles.stepCopy}>
                       <strong id="umbrella-step-assets">Choose assets</strong>
@@ -938,7 +942,7 @@ export default function AssetGroupManagerModal({
                     <strong className={styles.selectedCount}>{selectedAssetIds.length} selected</strong>
                   </div>
 
-                  <label className={styles.searchField}>
+                  <label className={styles.searchField} data-asset-choice-toolbar="true">
                     <span className={styles.srOnly}>Search assets</span>
                     <input
                       type="search"
@@ -949,19 +953,24 @@ export default function AssetGroupManagerModal({
                     />
                   </label>
 
-                  <div className={styles.assetList}>
+                  <div className={styles.assetList} data-asset-choice-list="true">
                     {visibleAssets.map((asset) => {
                       const existingGroup = membershipByAssetId.get(asset.id);
                       const movingFromAnotherGroup = Boolean(existingGroup && existingGroup.id !== group?.id);
                       const selected = selectedAssetIds.includes(asset.id);
 
                       return (
-                        <div className={selected ? styles.assetRowSelected : styles.assetRow} key={asset.id}>
+                        <div
+                          className={selected ? styles.assetRowSelected : styles.assetRow}
+                          key={asset.id}
+                          data-asset-choice-row="true"
+                          data-asset-choice-selected={selected ? 'true' : undefined}
+                        >
                           <label>
                             <input type="checkbox" checked={selected} disabled={!group && asset.id === anchorAsset?.id} onChange={() => toggleAsset(asset)} />
-                            <span>
+                            <span data-asset-choice-copy="true">
                               <strong>{asset.title}</strong>
-                              <small>{[
+                              <small data-asset-choice-meta="true">{[
                                 movingFromAnotherGroup ? `Currently in ${existingGroup?.name} — select to move` : '',
                                 asset.categoryLabel,
                                 asset.serialNumber ? `Serial: ${asset.serialNumber}` : '',

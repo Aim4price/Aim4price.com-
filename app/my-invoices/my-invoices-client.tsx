@@ -2817,7 +2817,7 @@ export default function MyInvoicesClient({
         ) : (
           <section className={styles.pageTitleBlock}>
             <div>
-              <h1>COST LEDGER</h1>
+              <h1>COST TRACKING SYSTEM</h1>
             </div>
           </section>
         )}
@@ -3215,8 +3215,8 @@ export default function MyInvoicesClient({
           aria-labelledby={budgetAssetPickerOpen ? 'budget-scope-picker-title' : 'budget-modal-title'}
         >
           {budgetAssetPickerOpen ? (
-            <div className={`${styles.assetModal} ${styles.budgetAssetPickerModal}`}>
-              <div className={styles.modalHeader}>
+            <div className={`${styles.assetModal} ${styles.budgetAssetPickerModal}`} data-asset-choice-surface="true" data-asset-choice-modal="true">
+              <div className={styles.modalHeader} data-asset-choice-header="true">
                 <div>
                   <h2 id="budget-scope-picker-title">Choose budget scope</h2>
                   <p>Track all saved assets together or focus this budget on one asset.</p>
@@ -3226,7 +3226,7 @@ export default function MyInvoicesClient({
                 </button>
               </div>
               <div className={styles.modalDivider} />
-              <div className={styles.pickerToolbar}>
+              <div className={styles.pickerToolbar} data-asset-choice-toolbar="true">
                 <input
                   type="search"
                   value={budgetAssetSearch}
@@ -3240,16 +3240,18 @@ export default function MyInvoicesClient({
                   Clear
                 </button>
               </div>
-              <div className={`${styles.assetList} ${styles.budgetAssetList}`}>
+              <div className={`${styles.assetList} ${styles.budgetAssetList}`} data-asset-choice-list="true">
                 <button
                   type="button"
                   className={`${styles.assetRow} ${styles.budgetScopeRow} ${budgetDraft.assetId === 'all' ? styles.budgetScopeRowSelected : ''}`}
+                  data-asset-choice-row="true"
+                  data-asset-choice-selected={budgetDraft.assetId === 'all' ? 'true' : undefined}
                   onClick={() => chooseBudgetAsset('all')}
                   aria-pressed={budgetDraft.assetId === 'all'}
                 >
-                  <span className={styles.assetInfo}>
+                  <span className={styles.assetInfo} data-asset-choice-copy="true">
                     <strong>All saved assets</strong>
-                    <small>Combine incurred Cost Ledger spend across {assets.length.toLocaleString('en-ZA')} saved {assets.length === 1 ? 'asset' : 'assets'}.</small>
+                    <small data-asset-choice-meta="true">Combine incurred Cost Ledger spend across {assets.length.toLocaleString('en-ZA')} saved {assets.length === 1 ? 'asset' : 'assets'}.</small>
                   </span>
                   <span className={styles.budgetScopeRowAction}>{budgetDraft.assetId === 'all' ? 'Selected' : 'Choose'}</span>
                 </button>
@@ -3261,16 +3263,18 @@ export default function MyInvoicesClient({
                       type="button"
                       key={asset.id}
                       className={`${styles.assetRow} ${styles.budgetScopeRow} ${isSelected ? styles.budgetScopeRowSelected : ''}`}
+                      data-asset-choice-row="true"
+                      data-asset-choice-selected={isSelected ? 'true' : undefined}
                       onClick={() => chooseBudgetAsset(asset.id)}
                       aria-pressed={isSelected}
                     >
-                      <span className={styles.assetInfo}>
-                        {asset.ownerName ? <small>{asset.ownerName}</small> : null}
+                      <span className={styles.assetInfo} data-asset-choice-copy="true">
+                        {asset.ownerName ? <small data-asset-choice-meta="true">{asset.ownerName}</small> : null}
                         <strong>{asset.title}</strong>
-                        <small>{asset.meta}</small>
-                        <small>{asset.categoryLabel} · {asset.selectedMethod === 'manual' ? 'Manual' : 'Aim4price'}</small>
+                        <small data-asset-choice-meta="true">{asset.meta}</small>
+                        <small data-asset-choice-secondary="true">{asset.categoryLabel} · {asset.selectedMethod === 'manual' ? 'Manual' : 'Aim4price'}</small>
                       </span>
-                      <span className={styles.assetValue}>
+                      <span className={styles.assetValue} data-asset-choice-value="true">
                         <strong>{formatMoney(asset.value)}</strong>
                         <small>{isSelected ? 'selected scope' : 'current value'}</small>
                       </span>
@@ -3280,7 +3284,7 @@ export default function MyInvoicesClient({
                   <div className={styles.emptyState} role="status">No matching saved assets found.</div>
                 )}
               </div>
-              <div className={styles.modalFooter}>
+              <div className={styles.modalFooter} data-asset-choice-footer="true">
                 <button type="button" className={styles.secondaryButton} onClick={closeBudgetAssetPicker}>Back to budget</button>
               </div>
             </div>
@@ -3734,8 +3738,8 @@ export default function MyInvoicesClient({
 
       {recurringOpen && recurringAssetPickerOpen ? (
         <div className={styles.modalBackdrop} role="dialog" aria-modal="true" aria-label="Choose linked assets">
-          <div className={`${styles.assetModal} ${styles.recurringAssetPickerModal}`}>
-            <div className={styles.modalHeader}>
+          <div className={`${styles.assetModal} ${styles.recurringAssetPickerModal}`} data-asset-choice-surface="true" data-asset-choice-modal="true">
+            <div className={styles.modalHeader} data-asset-choice-header="true">
               <div>
                 <h2>Choose linked assets</h2>
                 <p>Select every asset covered by this commitment.</p>
@@ -3743,7 +3747,7 @@ export default function MyInvoicesClient({
               <button type="button" className={styles.closeButton} onClick={() => setRecurringAssetPickerOpen(false)} aria-label="Close linked asset picker"><CloseIcon /></button>
             </div>
             <div className={styles.modalDivider} />
-            <div className={styles.pickerToolbar}>
+            <div className={styles.pickerToolbar} data-asset-choice-toolbar="true">
               <input
                 type="search"
                 value={recurringAssetSearch}
@@ -3753,7 +3757,7 @@ export default function MyInvoicesClient({
               />
               <button type="button" className={styles.secondaryButton} onClick={() => setRecurringAssetSearch('')} disabled={!recurringAssetSearch}>Clear</button>
             </div>
-            <div className={`${styles.assetList} ${styles.recurringAssetList}`}>
+            <div className={`${styles.assetList} ${styles.recurringAssetList}`} data-asset-choice-list="true">
               {filteredRecurringAssets.length ? filteredRecurringAssets.map((asset) => {
                 const selected = recurringAssetIds.includes(asset.id);
                 return (
@@ -3761,17 +3765,19 @@ export default function MyInvoicesClient({
                     type="button"
                     key={asset.id}
                     className={`${styles.assetRow} ${styles.recurringAssetRow} ${selected ? styles.recurringAssetRowSelected : ''}`}
+                    data-asset-choice-row="true"
+                    data-asset-choice-selected={selected ? 'true' : undefined}
                     onClick={() => toggleRecurringAsset(asset.id)}
                     aria-pressed={selected}
                   >
                     <span className={styles.recurringAssetCheck} aria-hidden="true">{selected ? '✓' : ''}</span>
-                    <span className={styles.assetInfo}>
-                      {asset.ownerName ? <small>{asset.ownerName}</small> : null}
+                    <span className={styles.assetInfo} data-asset-choice-copy="true">
+                      {asset.ownerName ? <small data-asset-choice-meta="true">{asset.ownerName}</small> : null}
                       <strong>{asset.title}</strong>
-                      <small>{asset.meta}</small>
-                      <small>{asset.categoryLabel} · {asset.selectedMethod === 'manual' ? 'Manual' : 'Aim4price'}</small>
+                      <small data-asset-choice-meta="true">{asset.meta}</small>
+                      <small data-asset-choice-secondary="true">{asset.categoryLabel} · {asset.selectedMethod === 'manual' ? 'Manual' : 'Aim4price'}</small>
                     </span>
-                    <span className={styles.assetValue}>
+                    <span className={styles.assetValue} data-asset-choice-value="true">
                       <strong>{formatMoney(asset.value)}</strong>
                       <small>current value</small>
                     </span>
@@ -3779,7 +3785,7 @@ export default function MyInvoicesClient({
                 );
               }) : <div className={styles.emptyState}>No matching assets found.</div>}
             </div>
-            <div className={`${styles.modalFooter} ${styles.recurringAssetPickerFooter}`}>
+            <div className={`${styles.modalFooter} ${styles.recurringAssetPickerFooter}`} data-asset-choice-footer="true">
               <button type="button" className={styles.secondaryButton} onClick={() => setRecurringAssetIds([])} disabled={!recurringAssetIds.length}>Clear selection</button>
               <button type="button" className={styles.primaryButton} onClick={() => setRecurringAssetPickerOpen(false)}>
                 {recurringAssetIds.length ? `Done · ${recurringAssetIds.length} selected` : 'Done'}
@@ -4405,8 +4411,8 @@ export default function MyInvoicesClient({
 
       {assetPickerOpen ? (
         <div className={styles.modalBackdrop} role="dialog" aria-modal="true" aria-label={flowTitle}>
-          <div className={styles.assetModal}>
-            <div className={styles.modalHeader}>
+          <div className={styles.assetModal} data-asset-choice-surface="true" data-asset-choice-modal="true">
+            <div className={styles.modalHeader} data-asset-choice-header="true">
               <div>
                 <h2>{flowTitle}</h2>
                 <p>Select the saved asset this cost belongs to.</p>
@@ -4414,7 +4420,7 @@ export default function MyInvoicesClient({
               <button type="button" className={styles.closeButton} onClick={closeModal} aria-label="Close"><CloseIcon /></button>
             </div>
             <div className={styles.modalDivider} />
-            <div className={styles.pickerToolbar}>
+            <div className={styles.pickerToolbar} data-asset-choice-toolbar="true">
               <input
                 value={pickerSearch}
                 onChange={(event) => setPickerSearch(event.target.value)}
@@ -4423,7 +4429,7 @@ export default function MyInvoicesClient({
               />
               <button type="button" className={styles.secondaryButton} onClick={() => setPickerSearch('')}>Clear</button>
             </div>
-            <div className={styles.assetList}>
+            <div className={styles.assetList} data-asset-choice-list="true">
               {isLoading ? (
                 <div className={styles.emptyState}>Loading assets...</div>
               ) : filteredAssets.length ? filteredAssets.map((asset) => (
@@ -4431,22 +4437,23 @@ export default function MyInvoicesClient({
                   type="button"
                   key={asset.id}
                   className={styles.assetRow}
+                  data-asset-choice-row="true"
                   onClick={() => selectAssetAndContinue(asset.id)}
                 >
-                  <span className={styles.assetInfo}>
-                    {asset.ownerName ? <small>{asset.ownerName}</small> : null}
+                  <span className={styles.assetInfo} data-asset-choice-copy="true">
+                    {asset.ownerName ? <small data-asset-choice-meta="true">{asset.ownerName}</small> : null}
                     <strong>{asset.title}</strong>
-                    <small>{asset.meta}</small>
-                    <small>{asset.categoryLabel} · {asset.selectedMethod === 'manual' ? 'Manual' : 'Aim4price'}</small>
+                    <small data-asset-choice-meta="true">{asset.meta}</small>
+                    <small data-asset-choice-secondary="true">{asset.categoryLabel} · {asset.selectedMethod === 'manual' ? 'Manual' : 'Aim4price'}</small>
                   </span>
-                  <span className={styles.assetValue}>
+                  <span className={styles.assetValue} data-asset-choice-value="true">
                     <strong>{formatMoney(asset.value)}</strong>
                     <small>current value</small>
                   </span>
                 </button>
               )) : <div className={styles.emptyState}>{dealerMode ? 'No matching shared assets found.' : 'No matching assets found.'}</div>}
             </div>
-            <div className={styles.modalFooter}>
+            <div className={styles.modalFooter} data-asset-choice-footer="true">
               <button type="button" className={styles.secondaryButton} onClick={closeModal}>Cancel</button>
             </div>
           </div>

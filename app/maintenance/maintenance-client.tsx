@@ -1416,8 +1416,8 @@ export default function MaintenanceClient({
 
       {modalMode === 'asset-picker' ? (
         <div className={styles.modalBackdrop} role="dialog" aria-modal="true" aria-labelledby="asset-picker-title">
-          <section className={styles.assetModal}>
-            <header className={styles.modalHeader}>
+          <section className={styles.assetModal} data-asset-choice-surface="true" data-asset-choice-modal="true">
+            <header className={styles.modalHeader} data-asset-choice-header="true">
               <div>
                 <h2 id="asset-picker-title">Choose asset for maintenance</h2>
                 <p>Choose a saved asset.</p>
@@ -1427,7 +1427,7 @@ export default function MaintenanceClient({
               </button>
             </header>
             <div className={styles.modalDivider} />
-            <div className={styles.pickerToolbar}>
+            <div className={styles.pickerToolbar} data-asset-choice-toolbar="true">
               <label className={styles.pickerSearchField}>
                 <SearchIcon />
                 <input
@@ -1440,15 +1440,15 @@ export default function MaintenanceClient({
               </label>
               <button className={`${styles.secondaryButton} ${styles.pickerClearButton}`} type="button" onClick={() => setPickerSearch('')} disabled={!pickerSearch}>Clear</button>
             </div>
-            <div className={styles.assetList}>
+            <div className={styles.assetList} data-asset-choice-list="true">
               {filteredAssets.length ? (
                 filteredAssets.map((asset) => (
-                  <button key={asset.id} className={styles.assetRow} type="button" onClick={() => selectAsset(asset)}>
-                    <span className={styles.assetInfo}>
+                  <button key={asset.id} className={styles.assetRow} type="button" onClick={() => selectAsset(asset)} data-asset-choice-row="true">
+                    <span className={styles.assetInfo} data-asset-choice-copy="true">
                       <strong>{asset.title}</strong>
-                      <small>{asset.meta}</small>
+                      <small data-asset-choice-meta="true">{asset.meta}</small>
                     </span>
-                    <span className={styles.assetValue}>
+                    <span className={styles.assetValue} data-asset-choice-value="true">
                       <strong>{money(asset.value)}</strong>
                       <small>current value</small>
                     </span>
@@ -1458,7 +1458,7 @@ export default function MaintenanceClient({
                 <div className={styles.emptyState}>No saved assets found.</div>
               )}
             </div>
-            <footer className={styles.modalFooter}>
+            <footer className={styles.modalFooter} data-asset-choice-footer="true">
               <button className={styles.secondaryButton} type="button" onClick={closeModal}>Cancel</button>
             </footer>
           </section>
@@ -1807,8 +1807,12 @@ export default function MaintenanceClient({
 
       {modalMode === 'download' ? (
         <div className={styles.modalBackdrop} role="dialog" aria-modal="true" aria-labelledby="maintenance-download-title">
-          <section className={`${styles.downloadModal} ${styles.maintenanceExportModal}`}>
-            <header className={styles.modalHeader}>
+          <section
+            className={`${styles.downloadModal} ${styles.maintenanceExportModal}`}
+            data-asset-choice-surface={downloadStep === 'asset' ? 'true' : undefined}
+            data-asset-choice-modal={downloadStep === 'asset' ? 'true' : undefined}
+          >
+            <header className={styles.modalHeader} data-asset-choice-header="true">
               <div>
                 <h2 id="maintenance-download-title">
                   {downloadStep === 'scope'
@@ -1872,7 +1876,7 @@ export default function MaintenanceClient({
             ) : downloadStep === 'asset' ? (
               <>
                 <div className={`${styles.formModalScrollBody} ${styles.maintenanceExportBody}`}>
-                  <div className={styles.pickerToolbar}>
+                  <div className={styles.pickerToolbar} data-asset-choice-toolbar="true">
                     <label className={styles.pickerSearchField}>
                       <SearchIcon />
                       <input
@@ -1892,23 +1896,25 @@ export default function MaintenanceClient({
                       Clear
                     </button>
                   </div>
-                  <div className={styles.assetList}>
+                  <div className={styles.assetList} data-asset-choice-list="true">
                     {filteredDownloadAssets.length ? (
                       filteredDownloadAssets.map((asset) => (
                         <button
                           key={asset.id}
                           className={`${styles.assetRow} ${downloadAssetId === asset.id ? styles.maintenanceScopeOptionActive : ''}`}
+                          data-asset-choice-row="true"
+                          data-asset-choice-selected={downloadAssetId === asset.id ? 'true' : undefined}
                           type="button"
                           onClick={() => {
                             setDownloadAssetId(asset.id);
                             setDownloadStep('format');
                           }}
                         >
-                          <span className={styles.assetInfo}>
+                          <span className={styles.assetInfo} data-asset-choice-copy="true">
                             <strong>{asset.title}</strong>
-                            <small>{asset.meta}</small>
+                            <small data-asset-choice-meta="true">{asset.meta}</small>
                           </span>
-                          <span className={styles.assetValue}>
+                          <span className={styles.assetValue} data-asset-choice-value="true">
                             <strong>{money(asset.value)}</strong>
                             <small>current value</small>
                           </span>
@@ -1919,7 +1925,7 @@ export default function MaintenanceClient({
                     )}
                   </div>
                 </div>
-                <footer className={`${styles.modalFooter} ${styles.maintenanceExportFooter}`}>
+                <footer className={`${styles.modalFooter} ${styles.maintenanceExportFooter}`} data-asset-choice-footer="true">
                   <button className={styles.secondaryButton} type="button" onClick={() => setDownloadStep('scope')}>Back</button>
                   <button className={styles.secondaryButton} type="button" onClick={closeModal}>Cancel</button>
                 </footer>

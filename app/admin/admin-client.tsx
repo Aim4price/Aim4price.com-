@@ -2537,8 +2537,10 @@ export default function AdminClient({
             role="dialog"
             aria-modal="true"
             aria-labelledby="admin-qr-modal-title"
+            data-asset-choice-surface="true"
+            data-asset-choice-modal="true"
           >
-            <header className={styles.qrModalHeader}>
+            <header className={styles.qrModalHeader} data-asset-choice-header="true">
               <div>
                 <p className={styles.qrModalEyebrow}>Admin QR print</p>
                 <h2 id="admin-qr-modal-title">Print QR labels</h2>
@@ -2583,7 +2585,7 @@ export default function AdminClient({
               ))}
             </div>
 
-            <div className={styles.qrAssetControls}>
+            <div className={styles.qrAssetControls} data-asset-choice-toolbar="true">
               <label className={styles.qrAssetSearch}>
                 <span>Choose assets</span>
                 <input
@@ -2623,7 +2625,7 @@ export default function AdminClient({
               </div>
             </div>
 
-            <div className={styles.qrAssetList}>
+            <div className={styles.qrAssetList} data-asset-choice-list="true">
               {qrModal.isLoading ? (
                 <div className={styles.qrAssetEmpty}>
                   Loading asset QR labels...
@@ -2648,6 +2650,8 @@ export default function AdminClient({
                       className={`${styles.qrAssetRow} ${
                         !asset.hasQr ? styles.qrAssetRowDisabled : ""
                       }`}
+                      data-asset-choice-row="true"
+                      data-asset-choice-selected={isSelected ? "true" : undefined}
                     >
                       <input
                         type="checkbox"
@@ -2658,15 +2662,15 @@ export default function AdminClient({
                         disabled={!asset.hasQr || qrModal.isGenerating}
                       />
 
-                      <span className={styles.qrAssetMain}>
+                      <span className={styles.qrAssetMain} data-asset-choice-copy="true">
                         <strong>{asset.title}</strong>
-                        <small>
+                        <small data-asset-choice-meta="true">
                           {asset.registerName}
                           {asset.plateLabel ? ` · ${asset.plateLabel}` : ""}
                         </small>
                       </span>
 
-                      <span className={styles.qrAssetCode}>
+                      <span className={styles.qrAssetCode} data-asset-choice-value="true">
                         {asset.hasQr ? asset.publicAssetCode : "No QR"}
                       </span>
                     </label>
@@ -2681,7 +2685,7 @@ export default function AdminClient({
               </div>
             ) : null}
 
-            <footer className={styles.qrModalFooter}>
+            <footer className={styles.qrModalFooter} data-asset-choice-footer="true">
               <span>
                 {selectedQrAssetCount} selected · {availableQrAssetCount}{" "}
                 QR-ready

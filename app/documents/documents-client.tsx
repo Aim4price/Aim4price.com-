@@ -1420,8 +1420,12 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
                     <strong>Linked</strong>
                   </section>
                 ) : (
-                <section className={`${styles.assetPicker} ${showAssetPicker ? '' : styles.assetPickerCollapsed}`} aria-labelledby="linked-assets-heading">
-                  <div className={styles.assetPickerHeading}>
+                <section
+                  className={`${styles.assetPicker} ${showAssetPicker ? '' : styles.assetPickerCollapsed}`}
+                  aria-labelledby="linked-assets-heading"
+                  data-asset-choice-surface="true"
+                >
+                  <div className={styles.assetPickerHeading} data-asset-choice-header="true">
                     <div>
                       <span>Optional · account-level by default</span>
                       <h3 id="linked-assets-heading">Link to assets</h3>
@@ -1435,18 +1439,26 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
 
                   {showAssetPicker && assets.length ? (
                     <>
-                      <label className={styles.assetSearch}>
+                      <label className={styles.assetSearch} data-asset-choice-toolbar="true">
                         <Icon name="search" />
                         <input value={assetSearch} onChange={(event) => setAssetSearch(event.target.value)} placeholder="Find an asset" />
                       </label>
-                      <div className={styles.assetOptions}>
+                      <div className={styles.assetOptions} data-asset-choice-list="true">
                         {filteredAssets.length ? filteredAssets.map((asset) => {
                           const checked = draft.assetIds.includes(asset.id);
                           return (
-                            <label key={asset.id} className={checked ? styles.assetOptionSelected : ''}>
+                            <label
+                              key={asset.id}
+                              className={checked ? styles.assetOptionSelected : ''}
+                              data-asset-choice-row="true"
+                              data-asset-choice-selected={checked ? 'true' : undefined}
+                            >
                               <input type="checkbox" checked={checked} onChange={() => toggleAsset(asset.id)} />
                               <span className={styles.customCheckbox}>{checked ? '✓' : ''}</span>
-                              <span><strong>{asset.title}</strong><small>{asset.meta || 'Asset Register item'}</small></span>
+                              <span data-asset-choice-copy="true">
+                                <strong>{asset.title}</strong>
+                                <small data-asset-choice-meta="true">{asset.meta || 'Asset Register item'}</small>
+                              </span>
                             </label>
                           );
                         }) : <p className={styles.noAssetResults}>No assets match that search.</p>}
