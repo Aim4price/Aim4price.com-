@@ -60,17 +60,17 @@ function buildPhotoLines(asset: ExternalAssetShareItem): string[] {
   const publicUrl = safeHttpUrl(asset.publicUrl);
   const photoCountLabel = `${photoUrls.length} saved ${photoUrls.length === 1 ? 'photo' : 'photos'}`;
 
-  if (publicUrl) {
-    return [photoUrls.length
-      ? `Photos (${photoCountLabel}): ${publicUrl}`
-      : `Asset and photos: ${publicUrl}`];
+  if (!photoUrls.length) {
+    return [
+      'Photos: No photos saved',
+      ...(publicUrl ? [`Aim4price asset link: ${publicUrl}`] : []),
+    ];
   }
-
-  if (!photoUrls.length) return ['Photos: No photos saved'];
 
   return [
     `Photos (${photoCountLabel}):`,
     ...photoUrls.map((url, index) => `Photo ${index + 1}: ${url}`),
+    ...(publicUrl ? [`Aim4price asset link: ${publicUrl}`] : []),
   ];
 }
 
