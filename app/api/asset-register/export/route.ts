@@ -13,6 +13,7 @@ import { getAssetRegisterForUser, getSelectedAssetRegister, getVisibleAssetRegis
 import { createXlsxWorkbook, type XlsxCellStyle, type XlsxCellValue, type XlsxSheet } from '../../../../lib/simple-xlsx';
 import { resolveReportLogoUrlForHtml } from '../../../../lib/report-logo';
 import { resolveOwnerWorkspaceContext } from '../../../../lib/owner-workspace-access';
+import { getOwnerAppAccess, ownerAppCanAccessAsset } from '../../../../lib/owner-app-access';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -2491,6 +2492,20 @@ type RequestedAssetIds = {
   error: 'invalid' | 'too_many' | null;
 };
 
+type OwnerAppExportAccess = {
+  sessionKind: 'account' | 'owner-app-user';
+};
+
+function validateOwnerAppAssetSelection(
+  access: OwnerAppExportAccess | null,
+  selection: RequestedAssetIds,
+  canAccessAsset: (assetId: string) => boolean,
+): 'allowed' | 'asset_ids_required' | 'not_found' {
+  if (access?.sessionKind !== 'owner-app-user') return 'allowed';
+  if (!selection.requested) return 'asset_ids_required';
+  return selection.ids.every(canAccessAsset) ? 'allowed' : 'not_found';
+}
+
 function parseRequestedAssetIds(params: URLSearchParams): RequestedAssetIds {
   if (!params.has('assetIds')) {
     return { requested: false, ids: [], error: null };
@@ -3057,6 +3072,24 @@ export async function GET(request: NextRequest) {
   }
 
   try {
+    const ownerAppAccess = await getOwnerAppAccess();
+    const ownerAppSelection = validateOwnerAppAssetSelection(
+      ownerAppAccess,
+      assetIdSelection,
+      (assetId) => Boolean(ownerAppAccess && ownerAppCanAccessAsset(ownerAppAccess, assetId)),
+    );
+
+    if (ownerAppSelection === 'asset_ids_required') {
+      return NextResponse.json(
+        { ok: false, error: 'Choose the assets to export.' },
+        { status: 400 },
+      );
+    }
+
+    if (ownerAppSelection === 'not_found') {
+      return requestedAssetsNotFound();
+    }
+
     const profile = await getAccountProfile({
       id: ownerUserId,
       name: workspace.accountantAccess?.ownerName || workspace.actorName,

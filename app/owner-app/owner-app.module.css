@@ -1361,6 +1361,22 @@
 .ownerOptionsIdentity > strong { color: #23483d; font-size: 1rem; font-weight: 800; line-height: 1.35; overflow-wrap: anywhere; }
 .ownerOptionsIdentity p { margin: 0; color: var(--owner-muted); font-size: 0.9rem; font-weight: 700; }
 .ownerOptionsSection { gap: var(--owner-content-gap); }
+.ownerShareDestinationSection {
+  min-width: 0;
+  overflow: visible;
+  border-color: rgba(18, 53, 45, 0.1);
+  background: rgba(255, 255, 255, 0.94);
+}
+.ownerExternalShareSection {
+  min-width: 0;
+  display: grid;
+  box-sizing: border-box;
+  border: 1px solid rgba(18, 53, 45, 0.1);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.94);
+  padding: 16px;
+  box-shadow: 0 14px 34px rgba(18, 53, 45, 0.065);
+}
 .ownerOptionChoiceList,
 .ownerPartnerList { display: grid; gap: 10px; }
 .ownerOptionChoice {
@@ -1692,6 +1708,7 @@
 .reportFilterModalHeader { position: relative; min-height: 40px; display: grid; place-items: center; padding-inline: 46px; text-align: center; }
 .reportFilterModalHeader > div { min-width: 0; }
 .reportFilterModalHeader h2 { margin: 0; color: var(--owner-ink); font-size: 1.16rem; font-weight: 800; letter-spacing: -0.02em; line-height: 1.25; }
+.reportFilterModalHeader p { margin: 5px 0 0; color: var(--owner-muted); font-size: 0.82rem; font-weight: 650; line-height: 1.45; }
 .reportFilterModalHeader > button {
   position: absolute;
   top: 0;
@@ -1727,6 +1744,13 @@
 .reportFilterActions > button { background: #fff; color: var(--owner-green); }
 .reportFilterActions > a { border-color: var(--owner-green); background: var(--owner-green); color: #fff; }
 .reportFilterActions > a:hover { background: var(--owner-green-dark); }
+.ownerShareReportModal { width: min(100%, 600px); gap: 18px; }
+.reportFilterActions > .ownerReportAttachButton {
+  border-color: var(--owner-green);
+  background: var(--owner-green);
+  color: #fff;
+}
+.reportFilterActions > .ownerReportAttachButton:hover { background: var(--owner-green-dark); }
 
 .pricingSummaryGrid > div {
   min-width: 0;
@@ -2479,6 +2503,7 @@
   .detailMediaActions,
   .manageMediaUploadActions,
   .ownerOptionsFooter { grid-template-columns: 1fr; }
+  .ownerExternalShareSection { border-radius: 20px; padding: 10px; }
 
   .notificationIntro {
     align-items: stretch;

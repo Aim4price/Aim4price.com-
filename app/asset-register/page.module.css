@@ -37956,6 +37956,18 @@ button.documentOpenLink {
   flex: 0 0 auto !important;
 }
 
+.ownerCommandModal .optionsModalHeader h3 {
+  font-size: clamp(2.05rem, 3.25vw, 2.8rem) !important;
+  line-height: 1.04 !important;
+  letter-spacing: -0.05em !important;
+}
+
+.ownerCommandModal .optionsModalHeader p {
+  margin-top: 0.5rem !important;
+  font-size: 1rem !important;
+  line-height: 1.45 !important;
+}
+
 .ownerCommandScrollBody,
 .ownerCommandScrollBody.optionsScrollBody {
   flex: 1 1 auto !important;
@@ -37974,24 +37986,25 @@ button.documentOpenLink {
 }
 
 .ownerCommandModal .ownerCommandGrid .ownerCommandAction {
-  min-height: 5.85rem !important;
-  padding: 1rem 1.05rem !important;
+  min-height: 6.25rem !important;
+  padding: 1.08rem 1.12rem !important;
   text-decoration: none !important;
 }
 
 .ownerCommandModal .ownerCommandGrid .ownerCommandAction strong {
-  font-size: 1.02rem !important;
+  font-size: 1.12rem !important;
+  line-height: 1.2 !important;
 }
 
 .ownerCommandModal .ownerCommandGrid .ownerCommandAction small {
   max-width: 100% !important;
-  font-size: 0.84rem !important;
-  line-height: 1.36 !important;
+  font-size: 0.94rem !important;
+  line-height: 1.42 !important;
 }
 
 .ownerCommandDangerAction {
   width: 100%;
-  min-height: 5.85rem;
+  min-height: 6.25rem;
   display: grid !important;
   grid-template-columns: 3.25rem minmax(0, 1fr) !important;
   align-items: center !important;
@@ -38027,14 +38040,15 @@ button.documentOpenLink {
 
 .ownerCommandDangerAction strong {
   color: #9b3030 !important;
-  font-size: 1.02rem;
+  font-size: 1.12rem;
   font-weight: 850;
+  line-height: 1.2;
 }
 
 .ownerCommandDangerAction small {
   color: #805858 !important;
-  font-size: 0.84rem;
-  line-height: 1.35;
+  font-size: 0.94rem;
+  line-height: 1.42;
 }
 
 @media (min-width: 901px) {
@@ -38186,7 +38200,7 @@ button.documentOpenLink {
   }
 
   .ownerCommandModal .ownerCommandGrid .ownerCommandAction {
-    min-height: 5.35rem !important;
+    min-height: 5.8rem !important;
   }
 
   .ownerCommandModal .ownerCommandGrid .ownerCommandAction small,
