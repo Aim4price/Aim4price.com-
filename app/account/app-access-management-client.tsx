@@ -1178,16 +1178,20 @@ function FieldManagerAccessPanel({ managerId }: { managerId: string }) {
             className={refinementStyles.accessSelect}
           />
           {settings.assetScope === 'selected' ? (
-            <div className={styles.assetAccessChoices}>
+            <div className={styles.assetAccessChoices} data-asset-choice-surface="true">
               {groups.length ? (
                 <div className={styles.accessChoiceGroup}>
                   <strong>Umbrellas</strong>
-                  <small>Choosing an umbrella includes its current and future linked assets.</small>
-                  <div className={styles.accessChecklist}>
+                  <small data-asset-choice-secondary="true">Choosing an umbrella includes its current and future linked assets.</small>
+                  <div className={styles.accessChecklist} data-asset-choice-list="true">
                     {groups.map((group) => (
-                      <label key={group.id}>
+                      <label
+                        key={group.id}
+                        data-asset-choice-row="true"
+                        data-asset-choice-selected={settings.groupIds.includes(group.id) ? 'true' : undefined}
+                      >
                         <input type="checkbox" checked={settings.groupIds.includes(group.id)} onChange={() => toggleId('groupIds', group.id)} />
-                        <span><strong>{group.name}</strong><small>{group.memberCount} linked {group.memberCount === 1 ? 'asset' : 'assets'}</small></span>
+                        <span data-asset-choice-copy="true"><strong>{group.name}</strong><small data-asset-choice-meta="true">{group.memberCount} linked {group.memberCount === 1 ? 'asset' : 'assets'}</small></span>
                       </label>
                     ))}
                   </div>
@@ -1195,12 +1199,16 @@ function FieldManagerAccessPanel({ managerId }: { managerId: string }) {
               ) : null}
               <div className={styles.accessChoiceGroup}>
                 <strong>Individual assets</strong>
-                <small>Use these for exceptions or assets outside an umbrella.</small>
-                <div className={styles.accessChecklist}>
+                <small data-asset-choice-secondary="true">Use these for exceptions or assets outside an umbrella.</small>
+                <div className={styles.accessChecklist} data-asset-choice-list="true">
                   {assets.length ? assets.map((asset) => (
-                    <label key={asset.id}>
+                    <label
+                      key={asset.id}
+                      data-asset-choice-row="true"
+                      data-asset-choice-selected={settings.assetIds.includes(asset.id) ? 'true' : undefined}
+                    >
                       <input type="checkbox" checked={settings.assetIds.includes(asset.id)} onChange={() => toggleId('assetIds', asset.id)} />
-                      <span><strong>{asset.title}</strong><small>{asset.kind}</small></span>
+                      <span data-asset-choice-copy="true"><strong>{asset.title}</strong><small data-asset-choice-meta="true">{asset.kind}</small></span>
                     </label>
                   )) : <p className={styles.accessMessage}>No assets available.</p>}
                 </div>
@@ -1313,16 +1321,20 @@ function OwnerAppAssetAccessPanel({ userId }: { userId: string }) {
       />
 
       {settings.assetScope === 'selected' ? (
-        <div className={styles.assetAccessChoices}>
+        <div className={styles.assetAccessChoices} data-asset-choice-surface="true">
           {groups.length ? (
             <div className={styles.accessChoiceGroup}>
               <strong>Umbrellas</strong>
-              <small>Choosing an umbrella includes its current and future linked assets.</small>
-              <div className={styles.accessChecklist}>
+              <small data-asset-choice-secondary="true">Choosing an umbrella includes its current and future linked assets.</small>
+              <div className={styles.accessChecklist} data-asset-choice-list="true">
                 {groups.map((group) => (
-                  <label key={group.id}>
+                  <label
+                    key={group.id}
+                    data-asset-choice-row="true"
+                    data-asset-choice-selected={settings.groupIds.includes(group.id) ? 'true' : undefined}
+                  >
                     <input type="checkbox" checked={settings.groupIds.includes(group.id)} onChange={() => toggleId('groupIds', group.id)} />
-                    <span><strong>{group.name}</strong><small>{group.memberCount} linked {group.memberCount === 1 ? 'asset' : 'assets'}</small></span>
+                    <span data-asset-choice-copy="true"><strong>{group.name}</strong><small data-asset-choice-meta="true">{group.memberCount} linked {group.memberCount === 1 ? 'asset' : 'assets'}</small></span>
                   </label>
                 ))}
               </div>
@@ -1330,12 +1342,16 @@ function OwnerAppAssetAccessPanel({ userId }: { userId: string }) {
           ) : null}
           <div className={styles.accessChoiceGroup}>
             <strong>Individual assets</strong>
-            <small>Use these for exceptions or assets outside an umbrella.</small>
-            <div className={styles.accessChecklist}>
+            <small data-asset-choice-secondary="true">Use these for exceptions or assets outside an umbrella.</small>
+            <div className={styles.accessChecklist} data-asset-choice-list="true">
               {assets.length ? assets.map((asset) => (
-                <label key={asset.id}>
+                <label
+                  key={asset.id}
+                  data-asset-choice-row="true"
+                  data-asset-choice-selected={settings.assetIds.includes(asset.id) ? 'true' : undefined}
+                >
                   <input type="checkbox" checked={settings.assetIds.includes(asset.id)} onChange={() => toggleId('assetIds', asset.id)} />
-                  <span><strong>{asset.title}</strong><small>{asset.kind}</small></span>
+                  <span data-asset-choice-copy="true"><strong>{asset.title}</strong><small data-asset-choice-meta="true">{asset.kind}</small></span>
                 </label>
               )) : <p className={styles.accessMessage}>No assets available.</p>}
             </div>

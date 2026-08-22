@@ -3535,8 +3535,8 @@ export default function FuelClient({
 
       {modalMode === 'exclusions' ? (
         <div className={styles.fuelSlipFlowBackdrop} role="dialog" aria-modal="true" aria-label="Fuel ledger exclusions">
-          <div className={`${styles.assetModal} ${styles.exclusionsModal}`}>
-            <div className={styles.modalHeader}>
+          <div className={`${styles.assetModal} ${styles.exclusionsModal}`} data-asset-choice-surface="true" data-asset-choice-modal="true">
+            <div className={styles.modalHeader} data-asset-choice-header="true">
               <div>
                 <h2>{selectedExclusionAsset ? 'Confirm Fuel Exclusion' : 'Choose Saved Asset'}</h2>
                 <p>{selectedExclusionAsset ? selectedExclusionAsset.title : 'Exclude assets whose fuel is not used for work, such as a generator serving normal houses.'}</p>
@@ -3579,7 +3579,7 @@ export default function FuelClient({
               </div>
             ) : (
               <>
-                <div className={styles.pickerToolbar}>
+                <div className={styles.pickerToolbar} data-asset-choice-toolbar="true">
                   <input
                     value={exclusionSearch}
                     onChange={(event) => setExclusionSearch(event.target.value)}
@@ -3588,15 +3588,15 @@ export default function FuelClient({
                   />
                   <button type="button" className={styles.secondaryButton} onClick={() => setExclusionSearch('')}>Clear</button>
                 </div>
-                <div className={styles.assetList}>
+                <div className={styles.assetList} data-asset-choice-list="true">
                   {isLoading ? <div className={styles.emptyState}>Loading saved assets...</div> : filteredExclusionAssets.length ? filteredExclusionAssets.map((asset) => (
-                    <button type="button" key={asset.id} className={styles.assetRow} onClick={() => selectExclusionAsset(asset)}>
-                      <span className={styles.assetInfo}>
+                    <button type="button" key={asset.id} className={styles.assetRow} onClick={() => selectExclusionAsset(asset)} data-asset-choice-row="true">
+                      <span className={styles.assetInfo} data-asset-choice-copy="true">
                         <strong>{asset.title}</strong>
-                        <small>{fuelSlipAssetMeta(asset) || 'Asset details not set'}</small>
-                        <small>{asset.workUseExcluded ? asset.workUseExclusionReason || 'Not used for work purposes' : 'Fuel entries included as work use'}</small>
+                        <small data-asset-choice-meta="true">{fuelSlipAssetMeta(asset) || 'Asset details not set'}</small>
+                        <small data-asset-choice-secondary="true">{asset.workUseExcluded ? asset.workUseExclusionReason || 'Not used for work purposes' : 'Fuel entries included as work use'}</small>
                       </span>
-                      <span className={styles.assetValue}>
+                      <span className={styles.assetValue} data-asset-choice-value="true">
                         <span className={`${styles.workUseBadge} ${asset.workUseExcluded ? styles.workUseBadgeExcluded : styles.workUseBadgeIncluded}`}>
                           {asset.workUseExcluded ? 'Excluded' : 'Included'}
                         </span>
@@ -3608,7 +3608,7 @@ export default function FuelClient({
               </>
             )}
 
-            <div className={styles.modalFooter}>
+            <div className={styles.modalFooter} data-asset-choice-footer="true">
               {selectedExclusionAsset ? (
                 <>
                   <button type="button" className={styles.secondaryButton} onClick={() => setSelectedExclusionAssetId(null)} disabled={Boolean(busyExclusionAssetId)}>Back</button>
@@ -4130,8 +4130,8 @@ export default function FuelClient({
 
       {modalMode === 'fuel-slip' && (fuelSlipFlow === 'target-manual' || fuelSlipFlow === 'target-automatic') ? (
         <div className={styles.fuelSlipFlowBackdrop} role="dialog" aria-modal="true" aria-label={fuelSlipTargetPickerTitle}>
-          <div className={styles.assetModal}>
-            <div className={styles.modalHeader}>
+          <div className={styles.assetModal} data-asset-choice-surface="true" data-asset-choice-modal="true">
+            <div className={styles.modalHeader} data-asset-choice-header="true">
               <div>
                 <h2>{fuelSlipTargetPickerTitle}</h2>
                 <p>Select the saved asset or storage tank this fuel slip belongs to.</p>
@@ -4139,7 +4139,7 @@ export default function FuelClient({
               <button type="button" className={styles.closeButton} onClick={closeModal} aria-label="Close"><CloseIcon /></button>
             </div>
             <div className={styles.modalDivider} />
-            <div className={styles.pickerToolbar}>
+            <div className={styles.pickerToolbar} data-asset-choice-toolbar="true">
               <input
                 value={fuelSlipPickerSearch}
                 onChange={(event) => setFuelSlipPickerSearch(event.target.value)}
@@ -4148,7 +4148,7 @@ export default function FuelClient({
               />
               <button type="button" className={styles.secondaryButton} onClick={() => setFuelSlipPickerSearch('')}>Clear</button>
             </div>
-            <div className={styles.assetList}>
+            <div className={styles.assetList} data-asset-choice-list="true">
               {isLoading ? (
                 <div className={styles.emptyState}>Loading assets and storage tanks...</div>
               ) : filteredFuelSlipAssets.length || filteredFuelSlipStorages.length ? (
@@ -4158,14 +4158,15 @@ export default function FuelClient({
                       type="button"
                       key={`asset-${asset.id}`}
                       className={styles.assetRow}
+                      data-asset-choice-row="true"
                       onClick={() => selectFuelSlipTarget(`asset:${asset.id}`)}
                     >
-                      <span className={styles.assetInfo}>
+                      <span className={styles.assetInfo} data-asset-choice-copy="true">
                         <strong>{asset.title}</strong>
-                        <small>{fuelSlipAssetMeta(asset) || 'Asset details not set'}</small>
-                        <small>{fuelSlipAssetDetail(asset)}</small>
+                        <small data-asset-choice-meta="true">{fuelSlipAssetMeta(asset) || 'Asset details not set'}</small>
+                        <small data-asset-choice-secondary="true">{fuelSlipAssetDetail(asset)}</small>
                       </span>
-                      <span className={styles.assetValue}>
+                      <span className={styles.assetValue} data-asset-choice-value="true">
                         <strong>{formatCurrency(asset.currentValue)}</strong>
                         <small>current value</small>
                         {asset.workUseExcluded ? <span className={`${styles.workUseBadge} ${styles.workUseBadgeExcluded}`}>Excluded from work use</span> : null}
@@ -4177,14 +4178,15 @@ export default function FuelClient({
                       type="button"
                       key={`storage-${storage.id}`}
                       className={`${styles.assetRow} ${styles.storageTargetRow}`}
+                      data-asset-choice-row="true"
                       onClick={() => selectFuelSlipTarget(`storage_tank:${storage.id}`)}
                     >
-                      <span className={styles.assetInfo}>
+                      <span className={styles.assetInfo} data-asset-choice-copy="true">
                         <strong>{storage.name}</strong>
-                        <small>{fuelSlipStorageMeta(storage)}</small>
-                        <small>Storage tank{storage.locationLabel ? ` · ${storage.locationLabel}` : ''}</small>
+                        <small data-asset-choice-meta="true">{fuelSlipStorageMeta(storage)}</small>
+                        <small data-asset-choice-secondary="true">Storage tank{storage.locationLabel ? ` · ${storage.locationLabel}` : ''}</small>
                       </span>
-                      <span className={styles.assetValue}>
+                      <span className={styles.assetValue} data-asset-choice-value="true">
                         <strong>{formatLitres(storage.currentLitres)}</strong>
                         <small>available</small>
                       </span>
@@ -4193,7 +4195,7 @@ export default function FuelClient({
                 </>
               ) : <div className={styles.emptyState}>No matching assets or storage tanks found.</div>}
             </div>
-            <div className={styles.modalFooter}>
+            <div className={styles.modalFooter} data-asset-choice-footer="true">
               <button type="button" className={styles.secondaryButton} onClick={closeModal}>Cancel</button>
             </div>
           </div>

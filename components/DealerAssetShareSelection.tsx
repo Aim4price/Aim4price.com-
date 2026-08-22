@@ -34,8 +34,8 @@ export default function DealerAssetShareSelection({
   }
 
   return (
-    <section className={styles.panel} aria-labelledby="dealer-share-assets-title">
-      <div className={styles.header}>
+    <section className={styles.panel} aria-labelledby="dealer-share-assets-title" data-asset-choice-surface="true">
+      <div className={styles.header} data-asset-choice-header="true">
         <div>
           <h5 id="dealer-share-assets-title">Assets to share</h5>
           <p>{selectedAssetIds.length} of {assets.length} selected</p>
@@ -50,7 +50,7 @@ export default function DealerAssetShareSelection({
         </button>
       </div>
 
-      <div className={styles.list}>
+      <div className={styles.list} data-asset-choice-list="true">
         {assets.map((asset) => {
           const checked = selectedIds.has(asset.id);
           const details = [
@@ -60,7 +60,12 @@ export default function DealerAssetShareSelection({
           ].filter(Boolean);
 
           return (
-            <label key={asset.id} className={`${styles.assetRow} ${checked ? styles.assetRowSelected : ''}`}>
+            <label
+              key={asset.id}
+              className={`${styles.assetRow} ${checked ? styles.assetRowSelected : ''}`}
+              data-asset-choice-row="true"
+              data-asset-choice-selected={checked ? 'true' : undefined}
+            >
               <input
                 type="checkbox"
                 checked={checked}
@@ -68,9 +73,9 @@ export default function DealerAssetShareSelection({
                 disabled={disabled}
               />
               <span className={styles.checkbox} aria-hidden="true">{checked ? '✓' : ''}</span>
-              <span className={styles.assetCopy}>
+              <span className={styles.assetCopy} data-asset-choice-copy="true">
                 <strong>{asset.title}</strong>
-                {details.length ? <small>{details.join(' · ')}</small> : null}
+                {details.length ? <small data-asset-choice-meta="true">{details.join(' · ')}</small> : null}
               </span>
             </label>
           );
@@ -79,3 +84,4 @@ export default function DealerAssetShareSelection({
     </section>
   );
 }
+

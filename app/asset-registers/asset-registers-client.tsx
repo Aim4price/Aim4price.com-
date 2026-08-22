@@ -3385,8 +3385,12 @@ export default function AssetRegistersClient({ accountantShareId }: { accountant
           aria-modal="true"
           aria-labelledby="qr-labels-title"
         >
-          <section className={`${styles.modalCard} ${styles.qrLabelsModal}`}>
-            <div className={styles.modalHeader}>
+          <section
+            className={`${styles.modalCard} ${styles.qrLabelsModal}`}
+            data-asset-choice-surface="true"
+            data-asset-choice-modal="true"
+          >
+            <div className={styles.modalHeader} data-asset-choice-header="true">
               <div>
                 <h2 id="qr-labels-title">QR Codes</h2>
                 <p className={styles.modalIntro}>
@@ -3437,7 +3441,7 @@ export default function AssetRegistersClient({ accountantShareId }: { accountant
                 </button>
               </div>
 
-              <div className={styles.qrAssetToolbar}>
+              <div className={styles.qrAssetToolbar} data-asset-choice-toolbar="true">
                 <label className={`${styles.searchWrap} ${styles.qrAssetSearchWrap}`}>
                   <SearchIcon className={styles.searchIcon} />
                   <input
@@ -3466,7 +3470,7 @@ export default function AssetRegistersClient({ accountantShareId }: { accountant
                 </button>
               </div>
 
-              <div className={styles.qrAssetList}>
+              <div className={styles.qrAssetList} data-asset-choice-list="true">
                 {isLoadingQrAssets ? (
                   <div className={styles.qrAssetEmpty}>Loading QR Codes...</div>
                 ) : visibleQrAssets.length ? (
@@ -3476,6 +3480,8 @@ export default function AssetRegistersClient({ accountantShareId }: { accountant
                       <label
                         key={asset.id}
                         className={`${styles.qrAssetRow} ${isSelected ? styles.qrAssetRowSelected : ""} ${!asset.hasQr ? styles.qrAssetRowDisabled : ""}`}
+                        data-asset-choice-row="true"
+                        data-asset-choice-selected={isSelected ? "true" : undefined}
                       >
                         <input
                           type="checkbox"
@@ -3483,11 +3489,11 @@ export default function AssetRegistersClient({ accountantShareId }: { accountant
                           onChange={() => toggleQrAsset(asset.id)}
                           disabled={!asset.hasQr || isGeneratingQrPdf}
                         />
-                        <span className={styles.qrAssetCopy}>
+                        <span className={styles.qrAssetCopy} data-asset-choice-copy="true">
                           <strong>{asset.title}</strong>
-                          <small>{asset.registerName} · {asset.plateLabel || "QR code not available"}</small>
+                          <small data-asset-choice-meta="true">{asset.registerName} · {asset.plateLabel || "QR code not available"}</small>
                         </span>
-                        <span className={styles.qrAssetStatus}>
+                        <span className={styles.qrAssetStatus} data-asset-choice-secondary="true">
                           {asset.hasQr ? "Ready" : "Unavailable"}
                         </span>
                       </label>
@@ -3501,7 +3507,7 @@ export default function AssetRegistersClient({ accountantShareId }: { accountant
               {qrError ? <p className={styles.exportValidation}>{qrError}</p> : null}
             </div>
 
-            <div className={`${styles.modalFooter} ${styles.exportModalFooter}`}>
+            <div className={`${styles.modalFooter} ${styles.exportModalFooter}`} data-asset-choice-footer="true">
               <button
                 type="button"
                 className={styles.secondaryButton}
@@ -3835,3 +3841,4 @@ export default function AssetRegistersClient({ accountantShareId }: { accountant
     </>
   );
 }
+
