@@ -69,6 +69,7 @@ test('inside choices use a roomy 2x2 layout and outside sharing keeps polished s
   assert.match(pageStyles, /@media \(max-width: 820px\)[\s\S]*?assetShareInsideModal[\s\S]*?grid-template-columns: minmax\(0, 1fr\) !important/);
 
   assert.match(pageStyles, /\.externalAssetShareModal \.assetQuoteScrollBody[\s\S]*?scrollbar-gutter: stable/);
+  assert.match(pageStyles, /\.externalAssetShareModal \.registerShareModalBody \{[\s\S]*?flex: 1 1 auto !important/);
   assert.match(pageStyles, /\.externalAssetShareModal \.assetQuoteScrollBody::\-webkit-scrollbar-thumb/);
   assert.match(componentStyles, /\.messagePreview::\-webkit-scrollbar-thumb/);
   assert.match(componentStyles, /\.externalActions \{[\s\S]*?position: sticky;[\s\S]*?bottom: -0\.35rem/);
