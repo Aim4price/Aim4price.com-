@@ -31,7 +31,8 @@ test('outside sharing maps saved asset details and exposes WhatsApp, email and c
   assert.match(client, /condition: conditionLabel\(asset\.condition\)/);
   assert.match(client, /replacementPriceExVat: readAssetReplacementPriceExVat\(asset\)/);
   assert.match(client, /valueExVat: asset\.value/);
-  assert.match(client, /photoUrls: normalizePhotos\(asset\.photos\)/);
+  assert.match(client, /normalizePhotos\(asset\.photos\)\.flatMap/);
+  assert.match(client, /toAbsoluteUrl\(photoUrl\)/);
   assert.match(client, /publicUrl: buildAssetScanUrl\(asset\)/);
   assert.match(component, /buildWhatsAppShareUrl/);
   assert.match(component, /buildEmailShareUrl/);
