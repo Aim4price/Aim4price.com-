@@ -6,7 +6,17 @@ import DealerLoginClient from './dealer-login-client';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-export default async function DealerLoginPage() {
+type DealerLoginPageProps = {
+  searchParams?: { install?: string | string[] };
+};
+
+function isInstallHandoff(searchParams?: DealerLoginPageProps['searchParams']): boolean {
+  const install = searchParams?.install;
+  return Array.isArray(install) ? install.includes('1') : install === '1';
+}
+
+export default async function DealerLoginPage({ searchParams }: DealerLoginPageProps) {
+  const forceInstallHandoff = isInstallHandoff(searchParams);
   const accountSession = await getAnyServerSession();
 
   if (accountSession?.user?.id) {
@@ -16,7 +26,7 @@ export default async function DealerLoginPage() {
       email: accountSession.user.email,
     });
 
-    if (profile.accountType === 'dealer' && profile.accountStatus === 'active') {
+    if (profile.accountType === 'dealer' && profile.accountStatus === 'active' && !forceInstallHandoff) {
       redirect('/dealer');
     }
 
@@ -24,7 +34,7 @@ export default async function DealerLoginPage() {
   }
 
   const dealerSession = await getServerSession({ allowDealerApp: true });
-  if (dealerSession?.user?.id) redirect('/dealer');
+  if (dealerSession?.user?.id && !forceInstallHandoff) redirect('/dealer');
 
   return <DealerLoginClient />;
 }
