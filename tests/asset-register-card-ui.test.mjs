@@ -204,7 +204,7 @@ test('dropdowns reserve scrollbar space only when content is clipped', () => {
   assert.doesNotMatch(headerStyles, /max-height:\s*min\(36rem, calc\(100dvh - 7rem\)\)/);
 });
 
-test('owner Manage is a gated nine-action command centre with disposal isolated below it', () => {
+test('owner Manage is a gated eight-action command centre with Reports beside Update', () => {
   const ownerManage = client.slice(
     client.indexOf('styles.ownerCommandOverlay'),
     client.indexOf('{activeAsset && ownerAssetCommandPanel', client.indexOf('styles.ownerCommandOverlay')),
@@ -212,19 +212,21 @@ test('owner Manage is a gated nine-action command centre with disposal isolated 
 
   for (const label of [
     'Update asset',
+    'Reports',
     'Add cost',
     'Add fuel',
     'Maintenance',
-    'Documents &amp; photos',
     'Manage pricing',
-    'Reports',
     'QR code',
     'Marketplace',
   ]) {
     assert.match(ownerManage, new RegExp(label.replace('&amp;', '&amp;')));
   }
 
-  assert.equal(ownerManage.match(/styles\.ownerCommandAction/g)?.length, 9);
+  assert.equal(ownerManage.match(/styles\.ownerCommandAction/g)?.length, 8);
+  assert.ok(ownerManage.indexOf('Update asset') < ownerManage.indexOf('Reports'));
+  assert.ok(ownerManage.indexOf('Reports') < ownerManage.indexOf('Add cost'));
+  assert.doesNotMatch(ownerManage, /Documents &amp; photos|manage-documents/);
   assert.match(ownerManage, /canAssetReceiveFuel\(activeAsset\)[\s\S]*?buildOwnerAssetPageHref\('\/fuel'/);
   assert.match(ownerManage, /canManageAssetPricing\(activeAsset\)/);
   assert.match(ownerManage, /canUseMarketplaceActions && isMarketplaceEligible\(activeAsset\)/);
@@ -234,11 +236,16 @@ test('owner Manage is a gated nine-action command centre with disposal isolated 
 });
 
 test('owner command layout is three columns wide, two medium and one mobile', () => {
+  assert.match(styles, /\.optionsModal\.ownerCommandModal\s*\{[\s\S]*?width:\s*min\(97vw, 84rem\) !important;/);
   assert.match(styles, /\.ownerCommandModal \.ownerCommandGrid\s*\{\s*grid-template-columns:\s*repeat\(3, minmax\(0, 1fr\)\) !important;/);
   assert.match(styles, /@media \(max-width: 1180px\)[\s\S]*?\.ownerCommandModal \.ownerCommandGrid\s*\{\s*grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\) !important;/);
   assert.match(styles, /@media \(max-width: 700px\)[\s\S]*?\.ownerCommandModal \.ownerCommandGrid,[\s\S]*?grid-template-columns:\s*minmax\(0, 1fr\) !important;/);
   assert.match(styles, /\.ownerCommandScrollBody\.optionsScrollBody\s*\{[\s\S]*?overflow-y:\s*auto !important;[\s\S]*?scrollbar-gutter:\s*auto !important;/);
   assert.match(styles, /\.optionsModal\.ownerCommandModal\s*\{[\s\S]*?overflow:\s*hidden !important;/);
+  assert.match(styles, /@media \(min-width: 901px\)[\s\S]*?\.ownerCommandModal \.ownerCommandGrid \.ownerCommandAction small,[\s\S]*?white-space:\s*nowrap !important;/);
+  assert.match(styles, /\.ownerCommandDangerZone\s*\{[\s\S]*?grid-template-columns:\s*repeat\(3, minmax\(0, 1fr\)\)/);
+  assert.match(styles, /\.ownerCommandDangerAction\s*\{[\s\S]*?grid-column:\s*3;[\s\S]*?min-height:\s*5\.85rem;/);
+  assert.match(styles, /@media \(max-width: 700px\)[\s\S]*?\.ownerCommandDangerAction\s*\{[\s\S]*?grid-column:\s*1;[\s\S]*?min-height:\s*5\.35rem;/);
 });
 
 test('cross-page asset actions carry add intent and a safe exact-register return path', () => {
@@ -258,7 +265,7 @@ test('cross-page asset actions carry add intent and a safe exact-register return
   assert.match(hrefBuilder, /if \(options\.add\) params\.set\('add', '1'\)/);
   assert.match(hrefBuilder, /params\.set\('returnTo', buildAssetRegisterManageReturnPath\(assetId, currentLocation\)\)/);
   assert.match(client, /setOwnerCommandReturnLocation\(`\$\{window\.location\.pathname\}\$\{window\.location\.search\}`\)/);
-  for (const route of ['/my-invoices', '/fuel', '/maintenance', '/documents']) {
+  for (const route of ['/my-invoices', '/fuel', '/maintenance']) {
     assert.match(client, new RegExp(`buildOwnerAssetPageHref\\('${route.replace('/', '\\/')}'`));
   }
   assert.match(mapReturn, /nextParams\.delete\('assetId'\)/);
@@ -280,7 +287,7 @@ test('fuel action mirrors the server eligibility contract and hides unknown equi
   assert.doesNotMatch(fuelGate, /kind !== 'property'/);
 });
 
-test('nested document and marketplace actions close back to Manage', () => {
+test('nested marketplace actions close back to Manage', () => {
   const marketplaceOpen = client.slice(
     client.indexOf('async function openMarketplaceModal'),
     client.indexOf('function closeMarketplaceModal'),
@@ -295,9 +302,6 @@ test('nested document and marketplace actions close back to Manage', () => {
   assert.doesNotMatch(marketplaceRemove, /closeActionDialog\(\)/);
   assert.match(client, /marketplaceAsset && marketplaceDraft[\s\S]*?styles\.subModalOverlay/);
   assert.match(client, /Remove listing/);
-  assert.match(client, /setOwnerAssetCommandPanel\(null\);[\s\S]*?openAssetDocumentUpload\(asset\)/);
-  assert.match(client, /if \(documentUploadAsset\) return;/);
-  assert.match(client, /data-asset-return-action="manage-documents"/);
   assert.match(client, /`\[data-asset-return-action="\$\{returnOrigin\.action\}"\]`/);
 });
 

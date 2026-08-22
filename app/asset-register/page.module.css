@@ -35324,12 +35324,6 @@ button.documentOpenLink {
   gap: 0.8rem !important;
 }
 
-.deleteAssetOptionSubtitle {
-  overflow: hidden !important;
-  text-overflow: ellipsis !important;
-  white-space: nowrap !important;
-}
-
 .confirmDeleteOverlay > .modalBackdrop {
   position: fixed !important;
   inset: 0 !important;
@@ -37953,8 +37947,8 @@ button.documentOpenLink {
 }
 
 .optionsModal.ownerCommandModal {
-  width: min(96vw, 75rem) !important;
-  max-height: min(94dvh, 58rem) !important;
+  width: min(97vw, 84rem) !important;
+  max-height: min(95dvh, 60rem) !important;
   display: flex !important;
   flex-direction: column !important;
   overflow: hidden !important;
@@ -37998,23 +37992,25 @@ button.documentOpenLink {
 }
 
 .ownerCommandDangerZone {
-  display: flex;
-  justify-content: flex-end;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.88rem;
   margin-top: 0.15rem;
   padding-top: 1rem;
   border-top: 1px solid rgba(218, 228, 236, 0.96);
 }
 
 .ownerCommandDangerAction {
-  width: min(100%, 29rem);
-  min-height: 4.75rem;
+  grid-column: 3;
+  width: 100%;
+  min-height: 5.85rem;
   display: grid !important;
-  grid-template-columns: 3rem minmax(0, 1fr) !important;
+  grid-template-columns: 3.25rem minmax(0, 1fr) !important;
   align-items: center !important;
-  gap: 0.9rem !important;
-  padding: 0.9rem 1.05rem !important;
+  gap: 0.95rem !important;
+  padding: 1rem 1.05rem !important;
   border: 1px solid rgba(235, 186, 186, 0.96) !important;
-  border-radius: 1.15rem !important;
+  border-radius: 1.18rem !important;
   color: #9b3030 !important;
   background: linear-gradient(180deg, #fffafa 0%, #fff1f1 100%) !important;
   text-align: left !important;
@@ -38043,14 +38039,22 @@ button.documentOpenLink {
 
 .ownerCommandDangerAction strong {
   color: #9b3030 !important;
-  font-size: 0.98rem;
+  font-size: 1.02rem;
   font-weight: 850;
 }
 
 .ownerCommandDangerAction small {
   color: #805858 !important;
-  font-size: 0.8rem;
+  font-size: 0.84rem;
   line-height: 1.35;
+}
+
+@media (min-width: 901px) {
+  .ownerCommandModal .ownerCommandGrid .ownerCommandAction small,
+  .ownerCommandDangerAction strong,
+  .ownerCommandDangerAction small {
+    white-space: nowrap !important;
+  }
 }
 
 .ownerCommandChoiceOverlay {
@@ -38163,7 +38167,7 @@ button.documentOpenLink {
 
 @media (max-width: 1180px) {
   .optionsModal.ownerCommandModal {
-    width: min(96vw, 62rem) !important;
+    width: min(97vw, 68rem) !important;
   }
 
   .ownerCommandModal .ownerCommandGrid {
@@ -38172,6 +38176,14 @@ button.documentOpenLink {
 
   .ownerCommandChoiceGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .ownerCommandDangerZone {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .ownerCommandDangerAction {
+    grid-column: 2;
   }
 }
 
@@ -38197,11 +38209,23 @@ button.documentOpenLink {
     min-height: 5.35rem !important;
   }
 
+  .ownerCommandModal .ownerCommandGrid .ownerCommandAction small,
+  .ownerCommandDangerAction strong,
+  .ownerCommandDangerAction small {
+    white-space: normal !important;
+  }
+
   .ownerCommandChoiceAction {
     min-height: 5.75rem;
   }
 
   .ownerCommandDangerAction {
+    grid-column: 1;
     width: 100%;
+    min-height: 5.35rem;
+  }
+
+  .ownerCommandDangerZone {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
