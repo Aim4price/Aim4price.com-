@@ -1428,17 +1428,13 @@ export default function MaintenanceClient({
             </header>
             <div className={styles.modalDivider} />
             <div className={styles.pickerToolbar} data-asset-choice-toolbar="true">
-              <label className={styles.pickerSearchField}>
-                <SearchIcon />
-                <input
-                  type="search"
-                  value={pickerSearch}
-                  onChange={(event) => setPickerSearch(event.target.value)}
-                  placeholder="Search saved assets..."
-                  aria-label="Search saved assets"
-                />
-              </label>
-              <button className={`${styles.secondaryButton} ${styles.pickerClearButton}`} type="button" onClick={() => setPickerSearch('')} disabled={!pickerSearch}>Clear</button>
+              <input
+                value={pickerSearch}
+                onChange={(event) => setPickerSearch(event.target.value)}
+                placeholder="Search assets..."
+                aria-label="Search saved assets"
+              />
+              <button className={styles.secondaryButton} type="button" onClick={() => setPickerSearch('')}>Clear</button>
             </div>
             <div className={styles.assetList} data-asset-choice-list="true">
               {filteredAssets.length ? (
@@ -1877,21 +1873,16 @@ export default function MaintenanceClient({
               <>
                 <div className={`${styles.formModalScrollBody} ${styles.maintenanceExportBody}`}>
                   <div className={styles.pickerToolbar} data-asset-choice-toolbar="true">
-                    <label className={styles.pickerSearchField}>
-                      <SearchIcon />
-                      <input
-                        type="search"
-                        value={downloadAssetSearch}
-                        onChange={(event) => setDownloadAssetSearch(event.target.value)}
-                        placeholder="Search saved assets..."
-                        aria-label="Search saved assets for maintenance report"
-                      />
-                    </label>
+                    <input
+                      value={downloadAssetSearch}
+                      onChange={(event) => setDownloadAssetSearch(event.target.value)}
+                      placeholder="Search assets..."
+                      aria-label="Search saved assets for maintenance report"
+                    />
                     <button
-                      className={`${styles.secondaryButton} ${styles.pickerClearButton}`}
+                      className={styles.secondaryButton}
                       type="button"
                       onClick={() => setDownloadAssetSearch('')}
-                      disabled={!downloadAssetSearch}
                     >
                       Clear
                     </button>
