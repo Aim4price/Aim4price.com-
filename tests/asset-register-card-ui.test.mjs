@@ -204,7 +204,7 @@ test('dropdowns reserve scrollbar space only when content is clipped', () => {
   assert.doesNotMatch(headerStyles, /max-height:\s*min\(36rem, calc\(100dvh - 7rem\)\)/);
 });
 
-test('owner Manage is a gated eight-action command centre with Reports beside Update', () => {
+test('owner Manage keeps disposal inside the gated nine-action command grid', () => {
   const ownerManage = client.slice(
     client.indexOf('styles.ownerCommandOverlay'),
     client.indexOf('{activeAsset && ownerAssetCommandPanel', client.indexOf('styles.ownerCommandOverlay')),
@@ -219,23 +219,30 @@ test('owner Manage is a gated eight-action command centre with Reports beside Up
     'Manage pricing',
     'QR code',
     'Marketplace',
+    'Dispose or remove asset',
   ]) {
     assert.match(ownerManage, new RegExp(label.replace('&amp;', '&amp;')));
   }
 
-  assert.equal(ownerManage.match(/styles\.ownerCommandAction/g)?.length, 8);
+  assert.equal(ownerManage.match(/styles\.ownerCommandAction/g)?.length, 9);
   assert.ok(ownerManage.indexOf('Update asset') < ownerManage.indexOf('Reports'));
   assert.ok(ownerManage.indexOf('Reports') < ownerManage.indexOf('Add cost'));
   assert.doesNotMatch(ownerManage, /Documents &amp; photos|manage-documents/);
   assert.match(ownerManage, /canAssetReceiveFuel\(activeAsset\)[\s\S]*?buildOwnerAssetPageHref\('\/fuel'/);
   assert.match(ownerManage, /canManageAssetPricing\(activeAsset\)/);
   assert.match(ownerManage, /canUseMarketplaceActions && isMarketplaceEligible\(activeAsset\)/);
-  assert.match(ownerManage, /ownerCommandDangerZone[\s\S]*?Dispose or remove asset/);
+  assert.match(ownerManage, /ownerCommandGrid[\s\S]*?Marketplace[\s\S]*?ownerCommandDangerAction[\s\S]*?Dispose or remove asset/);
+  assert.doesNotMatch(ownerManage, /ownerCommandDangerZone/);
   assert.doesNotMatch(ownerManage, /Dealer tracking settings|Remove from marketplace/);
   assert.match(client, /<AccountantAssetManageModal/);
 });
 
 test('owner command layout is three columns wide, two medium and one mobile', () => {
+  const dangerActionRule = styles.slice(
+    styles.indexOf('.ownerCommandDangerAction {'),
+    styles.indexOf('.ownerCommandDangerAction > .buttonIcon'),
+  );
+
   assert.match(styles, /\.optionsModal\.ownerCommandModal\s*\{[\s\S]*?width:\s*min\(97vw, 84rem\) !important;/);
   assert.match(styles, /\.ownerCommandModal \.ownerCommandGrid\s*\{\s*grid-template-columns:\s*repeat\(3, minmax\(0, 1fr\)\) !important;/);
   assert.match(styles, /@media \(max-width: 1180px\)[\s\S]*?\.ownerCommandModal \.ownerCommandGrid\s*\{\s*grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\) !important;/);
@@ -243,9 +250,9 @@ test('owner command layout is three columns wide, two medium and one mobile', ()
   assert.match(styles, /\.ownerCommandScrollBody\.optionsScrollBody\s*\{[\s\S]*?overflow-y:\s*auto !important;[\s\S]*?scrollbar-gutter:\s*auto !important;/);
   assert.match(styles, /\.optionsModal\.ownerCommandModal\s*\{[\s\S]*?overflow:\s*hidden !important;/);
   assert.match(styles, /@media \(min-width: 901px\)[\s\S]*?\.ownerCommandModal \.ownerCommandGrid \.ownerCommandAction small,[\s\S]*?white-space:\s*nowrap !important;/);
-  assert.match(styles, /\.ownerCommandDangerZone\s*\{[\s\S]*?grid-template-columns:\s*repeat\(3, minmax\(0, 1fr\)\)/);
-  assert.match(styles, /\.ownerCommandDangerAction\s*\{[\s\S]*?grid-column:\s*3;[\s\S]*?min-height:\s*5\.85rem;/);
-  assert.match(styles, /@media \(max-width: 700px\)[\s\S]*?\.ownerCommandDangerAction\s*\{[\s\S]*?grid-column:\s*1;[\s\S]*?min-height:\s*5\.35rem;/);
+  assert.match(dangerActionRule, /width:\s*100%;[\s\S]*?min-height:\s*5\.85rem;/);
+  assert.doesNotMatch(dangerActionRule, /grid-column/);
+  assert.doesNotMatch(styles, /\.ownerCommandDangerZone/);
 });
 
 test('cross-page asset actions carry add intent and a safe exact-register return path', () => {
