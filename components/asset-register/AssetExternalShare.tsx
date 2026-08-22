@@ -169,7 +169,13 @@ export default function AssetExternalShare({
             <span>Message preview</span>
             <small>{assets.length} {assets.length === 1 ? 'asset' : 'assets'}</small>
           </div>
-          <pre className={styles.messagePreview}>{copy.body}</pre>
+          <pre
+            className={styles.messagePreview}
+            tabIndex={0}
+            aria-label="External asset details message preview"
+          >
+            {copy.body}
+          </pre>
         </div>
       </div>
 
