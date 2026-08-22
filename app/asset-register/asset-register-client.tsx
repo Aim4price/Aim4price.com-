@@ -9,6 +9,7 @@ import AssetGroupManagerModal, {
   type AssetGroupReportFormat,
   type AssetGroupReportKind,
 } from '../../components/asset-register/AssetGroupManagerModal';
+import AssetExternalShare, { AssetShareDestinationPicker } from '../../components/asset-register/AssetExternalShare';
 import AccountantAssetManageModal from '../../components/AccountantAssetManageModal';
 import AccountantRegisterReportsModal from '../../components/AccountantRegisterReportsModal';
 import AssetDocumentUploadModal, {
@@ -44,6 +45,7 @@ import type {
   DealerMaintenanceAccessSummary,
   DealerMaintenancePermissions,
 } from '../../lib/dealer-maintenance-tracker';
+import type { ExternalAssetShareItem } from '../../lib/asset-external-share';
 import {
   assetCountsTowardRegisterTotal,
   assetGroupValueModeLabel,
@@ -81,6 +83,7 @@ type AssetLeadType = 'finance' | 'insurance' | 'replacement_quote' | 'license_re
 type QuoteLeadStep = 'message' | 'consent' | null;
 type QuoteScope = 'asset' | 'register';
 type QuoteDirectoryStage = 'location' | 'map';
+type AssetShareDestination = 'choice' | 'inside' | 'outside';
 type DisposalReason = 'sold' | 'traded_in' | 'scrapped' | 'written_off' | 'mistake_duplicate' | 'other';
 type AssetMoveDestination = 'register' | 'umbrella';
 
@@ -5612,6 +5615,20 @@ function buildAssetScanUrl(asset: RegisterAsset): string | null {
   return toAbsoluteUrl(`/scan/${encodeURIComponent(publicAssetCode)}`);
 }
 
+function buildExternalShareAsset(asset: RegisterAsset): ExternalAssetShareItem {
+  return {
+    title: asset.title,
+    serialNumber: asset.serialNumber,
+    yearModel: asset.yearModel,
+    usage: buildAssetUsageValue(asset),
+    condition: conditionLabel(asset.condition),
+    replacementPriceExVat: readAssetReplacementPriceExVat(asset),
+    valueExVat: asset.value,
+    photoUrls: normalizePhotos(asset.photos),
+    publicUrl: buildAssetScanUrl(asset),
+  };
+}
+
 function buildAssetQrSvgUrl(asset: RegisterAsset): string {
   return `/api/asset-register/qr?assetId=${encodeURIComponent(asset.id)}&format=svg`;
 }
@@ -6509,6 +6526,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
   const isRegisterSummaryAtEnd = registerSummaryStartIndex >= registerSummaryMaxIndex;
   const [isSummaryModalOpen, setIsSummaryModalOpen] = useState(false);
   const [isRegisterShareModalOpen, setIsRegisterShareModalOpen] = useState(false);
+  const [assetShareDestination, setAssetShareDestination] = useState<AssetShareDestination>('choice');
   const [isAccountantReportsOpen, setIsAccountantReportsOpen] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [exportFormat, setExportFormat] = useState<ExportFormat>('pdf');
@@ -7388,6 +7406,14 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
   );
   const activeShareName = assetGroupShareTarget?.name || activeRegisterShareName;
   const isAssetGroupShare = Boolean(assetGroupShareTarget);
+  const activeExternalShareAssets = useMemo(
+    () => activeShareAssets.map(buildExternalShareAsset),
+    [activeShareAssets],
+  );
+  const quoteExternalShareAssets = useMemo(
+    () => quoteAsset ? [buildExternalShareAsset(quoteAsset)] : [],
+    [quoteAsset],
+  );
 
   const selectedQuoteOption = useMemo(() => quoteOptionForLeadType(selectedQuoteLeadType), [selectedQuoteLeadType]);
   const availableAssetQuoteOptions = useMemo(
@@ -10851,6 +10877,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     setNotice(null);
     setIsAssetFilterOpen(false);
     setAssetGroupShareTarget(null);
+    setAssetShareDestination('choice');
     resetAssetQuoteState('asset');
     setQuoteAsset(asset);
   }
@@ -10859,6 +10886,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     if (isSendingQuoteLead) return;
     setQuoteAsset(null);
     setAssetGroupShareTarget(null);
+    setAssetShareDestination('choice');
     resetAssetQuoteState('asset');
   }
 
@@ -13798,6 +13826,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     setNotice(null);
     setIsAssetFilterOpen(false);
     setAssetGroupShareTarget(null);
+    setAssetShareDestination('choice');
     setIsRegisterShareModalOpen(true);
   }
 
@@ -13808,6 +13837,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     setNotice(null);
     setIsAssetFilterOpen(false);
     setAssetGroupShareTarget(group);
+    setAssetShareDestination('choice');
     setIsRegisterShareModalOpen(true);
   }
 
@@ -13815,6 +13845,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     if (isExporting || isSendingQuoteLead) return;
     setIsRegisterShareModalOpen(false);
     setAssetGroupShareTarget(null);
+    setAssetShareDestination('choice');
   }
 
   function buildFullRegisterLeadAssetSnapshot(asset: RegisterAsset, leadType: AssetLeadType): Record<string, unknown> {
@@ -14009,6 +14040,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     }
 
     setIsRegisterShareModalOpen(false);
+    setAssetShareDestination('inside');
     resetAssetQuoteState('register');
     setQuoteAsset(anchorAsset);
     setSelectedQuoteLeadType(leadType);
@@ -16863,17 +16895,25 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
           <div className={styles.modalBackdrop} onClick={closeRegisterShareModal} />
 
           <div
-            className={`${styles.optionsModal} ${styles.assetQuoteModal} ${styles.registerShareModal}`}
+            className={`${styles.optionsModal} ${styles.assetQuoteModal} ${styles.registerShareModal} ${assetShareDestination === 'choice' ? styles.assetShareDestinationModal : ''} ${assetShareDestination === 'outside' ? styles.externalAssetShareModal : ''}`}
             role="dialog"
             aria-modal="true"
             aria-labelledby="asset-register-share-title"
           >
             <div className={`${styles.modalHeader} ${styles.optionsModalHeader} ${styles.assetQuoteModalHeader} ${styles.registerShareModalHeader}`}>
               <div className={styles.modalHeaderText}>
-                <h3 id="asset-register-share-title">Share {activeShareName}</h3>
-                <p>{isAssetGroupShare
-                  ? `Share this umbrella and its ${activeShareAssets.length} linked ${activeShareAssets.length === 1 ? 'asset' : 'assets'}. Unrelated assets stay private.`
-                  : 'Choose who to share with. Each partner sees only what they need.'}</p>
+                <h3 id="asset-register-share-title">{assetShareDestination === 'inside'
+                  ? 'Share inside Aim4price'
+                  : assetShareDestination === 'outside'
+                    ? 'Share outside Aim4price'
+                    : `Share ${activeShareName}`}</h3>
+                <p>{assetShareDestination === 'choice'
+                  ? 'Choose where to share. Keep it inside Aim4price or send a ready-to-read message outside.'
+                  : assetShareDestination === 'outside'
+                    ? `Send ${isAssetGroupShare ? 'these grouped assets' : 'the saved register details'} through WhatsApp or email.`
+                    : isAssetGroupShare
+                      ? `Share this umbrella and its ${activeShareAssets.length} linked ${activeShareAssets.length === 1 ? 'asset' : 'assets'}. Unrelated assets stay private.`
+                      : 'Choose who to share with. Each partner sees only what they need.'}</p>
               </div>
 
               <button
@@ -16881,84 +16921,97 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                 className={styles.modalCloseButton}
                 onClick={closeRegisterShareModal}
                 aria-label="Close register share options"
-                disabled={isExporting}
+                disabled={isExporting || isSendingQuoteLead}
               >
                 <CloseIcon className={styles.buttonIcon} />
               </button>
             </div>
 
             <div className={`${styles.modalScrollBody} ${styles.optionsScrollBody} ${styles.assetQuoteScrollBody} ${styles.registerShareModalBody}`}>
-              <div className={styles.optionsContent}>
-                <div className={`${styles.optionsGrid} ${styles.assetOptionsGrid} ${styles.assetQuoteChoiceGrid} ${styles.registerShareOptionGrid}`}>
-                  <button
-                    type="button"
-                    className={`${styles.optionActionButton} ${styles.assetQuoteChoiceCard} ${styles.registerShareOptionCard} ${quoteToneClassForLeadType('finance')}`}
-                    onClick={() => openFullRegisterQuotePartnerPicker('finance')}
-                    disabled={isExporting}
-                  >
-                    <span className={styles.assetQuoteChoiceIconTile}>
-                      {renderQuoteOptionIcon('finance', styles.assetQuoteChoiceIcon)}
-                    </span>
-                    <span className={styles.assetQuoteChoiceText}>
-                      <strong>Finance &amp; accounting</strong>
-                      <small>
-                        <span>Share with an accountant, financier or bank.</span>
-                      </small>
-                    </span>
+              {assetShareDestination === 'choice' ? (
+                <AssetShareDestinationPicker
+                  onInside={() => setAssetShareDestination('inside')}
+                  onOutside={() => setAssetShareDestination('outside')}
+                  disabled={isExporting || isSendingQuoteLead}
+                />
+              ) : assetShareDestination === 'outside' ? (
+                <AssetExternalShare
+                  shareName={activeShareName}
+                  assets={activeExternalShareAssets}
+                  onBack={() => setAssetShareDestination('choice')}
+                />
+              ) : (
+                <div className={styles.assetShareInsideFlow}>
+                  <button type="button" className={styles.assetQuoteBackButton} onClick={() => setAssetShareDestination('choice')}>
+                    <ChevronLeftIcon className={styles.buttonIcon} />
+                    <span>Back</span>
                   </button>
 
-                  <button
-                    type="button"
-                    className={`${styles.optionActionButton} ${styles.assetQuoteChoiceCard} ${styles.registerShareOptionCard} ${quoteToneClassForLeadType('insurance')}`}
-                    onClick={() => openFullRegisterQuotePartnerPicker('insurance')}
-                    disabled={isExporting}
-                  >
-                    <span className={styles.assetQuoteChoiceIconTile}>
-                      {renderQuoteOptionIcon('insurance', styles.assetQuoteChoiceIcon)}
-                    </span>
-                    <span className={styles.assetQuoteChoiceText}>
-                      <strong>Insurance</strong>
-                      <small>
-                        <span>Share with an insurer or broker.</span>
-                      </small>
-                    </span>
-                  </button>
+                  <div className={styles.optionsContent}>
+                    <div className={`${styles.optionsGrid} ${styles.assetOptionsGrid} ${styles.assetQuoteChoiceGrid} ${styles.registerShareOptionGrid}`}>
+                      <button
+                        type="button"
+                        className={`${styles.optionActionButton} ${styles.assetQuoteChoiceCard} ${styles.registerShareOptionCard} ${quoteToneClassForLeadType('finance')}`}
+                        onClick={() => openFullRegisterQuotePartnerPicker('finance')}
+                        disabled={isExporting}
+                      >
+                        <span className={styles.assetQuoteChoiceIconTile}>
+                          {renderQuoteOptionIcon('finance', styles.assetQuoteChoiceIcon)}
+                        </span>
+                        <span className={styles.assetQuoteChoiceText}>
+                          <strong>Finance &amp; accounting</strong>
+                          <small><span>Share with an accountant, financier or bank.</span></small>
+                        </span>
+                      </button>
 
-                  <button
-                    type="button"
-                    className={`${styles.optionActionButton} ${styles.assetQuoteChoiceCard} ${styles.registerShareOptionCard} ${quoteToneClassForLeadType('replacement_quote')}`}
-                    onClick={() => openFullRegisterQuotePartnerPicker('replacement_quote')}
-                    disabled={isExporting}
-                  >
-                    <span className={styles.assetQuoteChoiceIconTile}>
-                      {renderQuoteOptionIcon('replacement_quote', styles.assetQuoteChoiceIcon)}
-                    </span>
-                    <span className={styles.assetQuoteChoiceText}>
-                      <strong>Dealer</strong>
-                      <small>
-                        <span>{isAssetGroupShare ? 'Share every grouped asset with a dealer.' : 'Choose assets to share with a dealer.'}</span>
-                      </small>
-                    </span>
-                  </button>
+                      <button
+                        type="button"
+                        className={`${styles.optionActionButton} ${styles.assetQuoteChoiceCard} ${styles.registerShareOptionCard} ${quoteToneClassForLeadType('insurance')}`}
+                        onClick={() => openFullRegisterQuotePartnerPicker('insurance')}
+                        disabled={isExporting}
+                      >
+                        <span className={styles.assetQuoteChoiceIconTile}>
+                          {renderQuoteOptionIcon('insurance', styles.assetQuoteChoiceIcon)}
+                        </span>
+                        <span className={styles.assetQuoteChoiceText}>
+                          <strong>Insurance</strong>
+                          <small><span>Share with an insurer or broker.</span></small>
+                        </span>
+                      </button>
 
-                  <button
-                    type="button"
-                    className={`${styles.optionActionButton} ${styles.assetQuoteChoiceCard} ${styles.registerShareOptionCard} ${quoteToneClassForLeadType('license_renewal')}`}
-                    onClick={() => openFullRegisterQuotePartnerPicker('license_renewal')}
-                    disabled={isExporting}
-                  >
-                    <span className={styles.assetQuoteChoiceIconTile}>
-                      {renderQuoteOptionIcon('license_renewal', styles.assetQuoteChoiceIcon)}
-                    </span>
-                    <span className={styles.assetQuoteChoiceText}>
-                      <strong>Licence renewal</strong>
-                      <small>
-                        <span>Only assets with a renewal date can be shared.</span>
-                      </small>
-                    </span>
-                  </button>
+                      <button
+                        type="button"
+                        className={`${styles.optionActionButton} ${styles.assetQuoteChoiceCard} ${styles.registerShareOptionCard} ${quoteToneClassForLeadType('replacement_quote')}`}
+                        onClick={() => openFullRegisterQuotePartnerPicker('replacement_quote')}
+                        disabled={isExporting}
+                      >
+                        <span className={styles.assetQuoteChoiceIconTile}>
+                          {renderQuoteOptionIcon('replacement_quote', styles.assetQuoteChoiceIcon)}
+                        </span>
+                        <span className={styles.assetQuoteChoiceText}>
+                          <strong>Dealer</strong>
+                          <small><span>{isAssetGroupShare ? 'Share every grouped asset with a dealer.' : 'Choose assets to share with a dealer.'}</span></small>
+                        </span>
+                      </button>
+
+                      <button
+                        type="button"
+                        className={`${styles.optionActionButton} ${styles.assetQuoteChoiceCard} ${styles.registerShareOptionCard} ${quoteToneClassForLeadType('license_renewal')}`}
+                        onClick={() => openFullRegisterQuotePartnerPicker('license_renewal')}
+                        disabled={isExporting}
+                      >
+                        <span className={styles.assetQuoteChoiceIconTile}>
+                          {renderQuoteOptionIcon('license_renewal', styles.assetQuoteChoiceIcon)}
+                        </span>
+                        <span className={styles.assetQuoteChoiceText}>
+                          <strong>Licence renewal</strong>
+                          <small><span>Only assets with a renewal date can be shared.</span></small>
+                        </span>
+                      </button>
+                    </div>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
         </div>
@@ -19022,7 +19075,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
           <div className={styles.modalBackdrop} onClick={closeAssetQuoteModal} />
 
           <div
-            className={`${styles.optionsModal} ${styles.assetQuoteModal} ${selectedQuoteOption && quoteDirectoryStage === 'map' ? styles.assetQuotePartnerPickerModal : ''} ${selectedQuoteOption && quoteDirectoryStage === 'location' ? styles.assetQuoteLocationPickerModal : ''} ${isQuoteMapExpanded ? styles.assetQuoteMapExpandedModal : ''}`}
+            className={`${styles.optionsModal} ${styles.assetQuoteModal} ${!selectedQuoteOption && assetShareDestination === 'choice' ? styles.assetShareDestinationModal : ''} ${!selectedQuoteOption && assetShareDestination === 'outside' ? styles.externalAssetShareModal : ''} ${selectedQuoteOption && quoteDirectoryStage === 'map' ? styles.assetQuotePartnerPickerModal : ''} ${selectedQuoteOption && quoteDirectoryStage === 'location' ? styles.assetQuoteLocationPickerModal : ''} ${isQuoteMapExpanded ? styles.assetQuoteMapExpandedModal : ''}`}
             role="dialog"
             aria-modal="true"
             aria-labelledby="asset-quote-title"
@@ -19031,9 +19084,17 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
               <div className={styles.modalHeaderText}>
                 <h3 id="asset-quote-title">{selectedQuoteOption
                   ? quoteDirectoryStage === 'location' ? 'Where do you need help?' : selectedQuoteOption.mapTitle
-                  : isFullRegisterQuoteLead ? `Share ${activeShareName}` : quoteAsset?.title}</h3>
+                  : assetShareDestination === 'inside'
+                    ? 'Share inside Aim4price'
+                    : assetShareDestination === 'outside'
+                      ? 'Share outside Aim4price'
+                      : `Share ${quoteAsset?.title || 'asset'}`}</h3>
                 {!selectedQuoteOption ? (
-                  <p>{quoteAsset ? `${buildAssetMeta(quoteAsset)} · ${money(quoteAsset.value)} excl. VAT` : ''}</p>
+                  <p>{assetShareDestination === 'choice'
+                    ? 'Choose where to share this asset.'
+                    : assetShareDestination === 'outside'
+                      ? 'Send the saved asset details and photos through WhatsApp or email.'
+                      : quoteAsset ? `${buildAssetMeta(quoteAsset)} · ${money(quoteAsset.value)} excl. VAT` : ''}</p>
                 ) : quoteDirectoryStage === 'location' ? (
                   <p>Choose an area first. We will open the map there and show nearby active partners before Aim4price assistance listings.</p>
                 ) : isFullRegisterQuoteLead ? (
@@ -19060,34 +19121,55 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
 
             <div className={`${styles.modalScrollBody} ${styles.optionsScrollBody} ${styles.assetQuoteScrollBody}`}>
               {!selectedQuoteOption ? (
-                <div className={styles.optionsContent}>
-                  <div className={`${styles.optionsGrid} ${styles.assetOptionsGrid} ${styles.assetQuoteChoiceGrid}`}>
-                    {availableAssetQuoteOptions.map((option) => {
-                      const needsLicenceRenewalDate = option.leadType === 'license_renewal' && Boolean(quoteAsset) && (
-                        readLicenseStatusChoice(quoteAsset!) !== 'yes'
-                        || !readSpecsText(quoteAsset!, ['licenseRenewalDate', 'license_renewal_date', 'licenceRenewalDate', 'licence_renewal_date'])
-                      );
-                      return (
-                      <button
-                        key={option.leadType}
-                        type="button"
-                        className={`${styles.optionActionButton} ${styles.assetQuoteChoiceCard} ${quoteToneClassForLeadType(option.leadType)}`}
-                        onClick={() => openQuotePartnerPicker(option.leadType)}
-                      >
-                        <span className={styles.assetQuoteChoiceIconTile}>
-                          {renderQuoteOptionIcon(option.leadType, styles.assetQuoteChoiceIcon)}
-                        </span>
-                        <span className={styles.assetQuoteChoiceText}>
-                          <strong>{option.title}</strong>
-                          <small>
-                            <span>{needsLicenceRenewalDate ? 'Add a renewal date before sharing.' : option.description}</span>
-                          </small>
-                        </span>
-                      </button>
-                      );
-                    })}
+                assetShareDestination === 'choice' ? (
+                  <AssetShareDestinationPicker
+                    onInside={() => setAssetShareDestination('inside')}
+                    onOutside={() => setAssetShareDestination('outside')}
+                    disabled={isSendingQuoteLead}
+                  />
+                ) : assetShareDestination === 'outside' ? (
+                  <AssetExternalShare
+                    shareName={quoteAsset?.title || 'Aim4price asset'}
+                    assets={quoteExternalShareAssets}
+                    onBack={() => setAssetShareDestination('choice')}
+                  />
+                ) : (
+                  <div className={styles.assetShareInsideFlow}>
+                    <button type="button" className={styles.assetQuoteBackButton} onClick={() => setAssetShareDestination('choice')}>
+                      <ChevronLeftIcon className={styles.buttonIcon} />
+                      <span>Back</span>
+                    </button>
+                    <div className={styles.optionsContent}>
+                      <div className={`${styles.optionsGrid} ${styles.assetOptionsGrid} ${styles.assetQuoteChoiceGrid}`}>
+                        {availableAssetQuoteOptions.map((option) => {
+                          const needsLicenceRenewalDate = option.leadType === 'license_renewal' && Boolean(quoteAsset) && (
+                            readLicenseStatusChoice(quoteAsset!) !== 'yes'
+                            || !readSpecsText(quoteAsset!, ['licenseRenewalDate', 'license_renewal_date', 'licenceRenewalDate', 'licence_renewal_date'])
+                          );
+                          return (
+                          <button
+                            key={option.leadType}
+                            type="button"
+                            className={`${styles.optionActionButton} ${styles.assetQuoteChoiceCard} ${quoteToneClassForLeadType(option.leadType)}`}
+                            onClick={() => openQuotePartnerPicker(option.leadType)}
+                          >
+                            <span className={styles.assetQuoteChoiceIconTile}>
+                              {renderQuoteOptionIcon(option.leadType, styles.assetQuoteChoiceIcon)}
+                            </span>
+                            <span className={styles.assetQuoteChoiceText}>
+                              <strong>{option.title}</strong>
+                              <small>
+                                <span>{needsLicenceRenewalDate ? 'Add a renewal date before sharing.' : option.description}</span>
+                              </small>
+                            </span>
+                          </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+    
                   </div>
-                </div>
+                )
               ) : quoteDirectoryStage === 'location' ? (
                 <div className={styles.assetQuoteLocationStage}>
                   <section className={styles.assetQuoteLocationCard} aria-labelledby="asset-quote-location-heading">
