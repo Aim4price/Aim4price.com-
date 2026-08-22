@@ -65,6 +65,13 @@ test('Asset Register Filters matches the Summary and Download heading size', () 
   assert.doesNotMatch(sizingRefinement, /filterTriggerButton/);
 });
 
+test('Filter assets and Export asset register use identical heading typography', () => {
+  assert.match(
+    assetRegisterStyles,
+    /\.assetFilterModalHeader h3,\s*\.exportModalHeader h3\s*\{[\s\S]*?font-family:\s*var\(--font-heading, 'Montserrat'\), var\(--font-body, 'Inter'\), sans-serif !important;[\s\S]*?font-size:\s*clamp\(2rem, 3vw, 2\.75rem\) !important;[\s\S]*?font-weight:\s*900 !important;[\s\S]*?line-height:\s*1\.02 !important;[\s\S]*?letter-spacing:\s*-0\.065em !important;/,
+  );
+});
+
 test('summary arrows show concise Previous and Next hover words', () => {
   const registerSummary = assetRegister.slice(
     assetRegister.indexOf('<section className={styles.assetSummaryCarousel}'),
@@ -86,15 +93,21 @@ test('summary arrows show concise Previous and Next hover words', () => {
   assert.match(documentStyles, /\.summaryNav:hover:not\(:disabled\)::after[\s\S]*?opacity:\s*1/);
 });
 
-test('quick export status choices use normal-weight labels', () => {
+test('quick export choices reuse the filter wording and exact option typography', () => {
   const quickChoices = assetRegister.slice(
     assetRegister.indexOf('{quickPdfReportOptions.map((option) => ('),
     assetRegister.indexOf('</div>', assetRegister.indexOf('{quickPdfReportOptions.map((option) => (')),
   );
 
   assert.match(quickChoices, /styles\.pdfReportQuickLabel/);
+  assert.match(quickChoices, /ASSET_FILTER_LABEL_BY_VALUE\.get\(option\.value\) \?\? option\.label/);
+  assert.match(assetRegister, /const ASSET_FILTER_LABEL_BY_VALUE:\s*ReadonlyMap<string, string>/);
   assert.doesNotMatch(quickChoices, /<strong>\{option\.label\}<\/strong>/);
   assert.match(assetRegister, /<strong>\{fullPdfReportOption\.label\}<\/strong>/);
   assert.match(assetRegister, /<strong>Choose Specific Assets<\/strong>/);
-  assert.match(assetRegisterStyles, /\.pdfReportChoices \.pdfReportQuickLabel\s*\{[\s\S]*?font-weight:\s*500 !important;/);
+  assert.match(
+    assetRegisterStyles,
+    /\.assetFilterOptionGrid \.assetFilterOptionText strong,\s*\.exportModal \.pdfReportChoices \.pdfReportQuickLabel\s*\{[\s\S]*?font-family:\s*var\(--font-body, 'Montserrat'\), sans-serif !important;[\s\S]*?font-size:\s*0\.94rem !important;[\s\S]*?font-weight:\s*720 !important;[\s\S]*?line-height:\s*1\.16 !important;[\s\S]*?letter-spacing:\s*-0\.018em !important;/,
+  );
+  assert.match(assetRegisterStyles, /@media \(max-width: 900px\)\s*\{\s*\.assetFilterModalHeader h3,\s*\.exportModalHeader h3\s*\{\s*font-size:\s*1\.62rem !important;/);
 });
