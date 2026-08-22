@@ -38265,3 +38265,142 @@ button.documentOpenLink {
     max-height: calc(100dvh - 1rem) !important;
   }
 }
+
+/* === Asset sharing refinement: roomy 2x2 choices and polished scrolling === */
+.assetQuoteModal.assetShareInsideModal:not(.assetQuotePartnerPickerModal),
+.assetQuoteModal.registerShareModal.assetShareInsideModal {
+  width: min(calc(100vw - 3rem), 1240px) !important;
+  max-height: min(92dvh, 940px) !important;
+  overflow: hidden !important;
+}
+
+.assetShareInsideModal .assetQuoteScrollBody,
+.assetShareInsideModal .registerShareModalBody,
+.externalAssetShareModal .assetQuoteScrollBody,
+.externalAssetShareModal .registerShareModalBody {
+  min-height: 0 !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: #568676 #e9f0f2;
+}
+
+.externalAssetShareModal .assetQuoteScrollBody,
+.externalAssetShareModal .registerShareModalBody {
+  padding-right: clamp(0.65rem, 1vw, 0.9rem) !important;
+}
+
+.assetShareInsideModal .assetQuoteScrollBody::-webkit-scrollbar,
+.assetShareInsideModal .registerShareModalBody::-webkit-scrollbar,
+.externalAssetShareModal .assetQuoteScrollBody::-webkit-scrollbar,
+.externalAssetShareModal .registerShareModalBody::-webkit-scrollbar {
+  width: 0.82rem;
+}
+
+.assetShareInsideModal .assetQuoteScrollBody::-webkit-scrollbar-track,
+.assetShareInsideModal .registerShareModalBody::-webkit-scrollbar-track,
+.externalAssetShareModal .assetQuoteScrollBody::-webkit-scrollbar-track,
+.externalAssetShareModal .registerShareModalBody::-webkit-scrollbar-track {
+  margin-block: 0.35rem;
+  border-radius: 999px;
+  background: #e9f0f2;
+}
+
+.assetShareInsideModal .assetQuoteScrollBody::-webkit-scrollbar-thumb,
+.assetShareInsideModal .registerShareModalBody::-webkit-scrollbar-thumb,
+.externalAssetShareModal .assetQuoteScrollBody::-webkit-scrollbar-thumb,
+.externalAssetShareModal .registerShareModalBody::-webkit-scrollbar-thumb {
+  min-height: 3.25rem;
+  border: 3px solid #e9f0f2;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #78a697 0%, #3f7866 100%);
+}
+
+.assetShareInsideModal .assetQuoteScrollBody::-webkit-scrollbar-thumb:hover,
+.assetShareInsideModal .registerShareModalBody::-webkit-scrollbar-thumb:hover,
+.externalAssetShareModal .assetQuoteScrollBody::-webkit-scrollbar-thumb:hover,
+.externalAssetShareModal .registerShareModalBody::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #5f9583 0%, #2f6756 100%);
+}
+
+.assetShareInsideModal .assetShareInsideFlow {
+  width: min(100%, 68rem);
+  margin-inline: auto;
+  gap: clamp(1rem, 1.4vw, 1.25rem);
+}
+
+.assetShareInsideModal .assetQuoteBackButton {
+  min-height: 3.1rem;
+  padding-inline: 1rem;
+}
+
+.assetShareInsideModal .assetQuoteChoiceGrid,
+.optionsModal.assetShareInsideModal .assetQuoteChoiceGrid.registerShareOptionGrid {
+  width: 100% !important;
+  max-width: 68rem !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: clamp(1rem, 1.5vw, 1.35rem) !important;
+}
+
+.assetShareInsideModal .assetQuoteChoiceGrid .assetQuoteChoiceCard,
+.optionsModal.assetShareInsideModal .assetQuoteChoiceGrid.registerShareOptionGrid .registerShareOptionCard {
+  min-height: 13.5rem !important;
+  padding: clamp(1.5rem, 2vw, 1.85rem) !important;
+  border-radius: 1.55rem !important;
+}
+
+.assetShareInsideModal .assetQuoteChoiceGrid .assetQuoteChoiceCard > .assetQuoteChoiceIconTile,
+.optionsModal.assetShareInsideModal .assetQuoteChoiceGrid.registerShareOptionGrid .registerShareOptionCard > .assetQuoteChoiceIconTile {
+  width: 5.25rem !important;
+  height: 5.25rem !important;
+  border-radius: 1.35rem !important;
+}
+
+.assetShareInsideModal .assetQuoteChoiceGrid .assetQuoteChoiceText,
+.optionsModal.assetShareInsideModal .assetQuoteChoiceGrid.registerShareOptionGrid .registerShareOptionCard > .assetQuoteChoiceText {
+  width: 100% !important;
+  max-width: 25rem !important;
+  gap: 0.55rem !important;
+}
+
+.assetShareInsideModal .assetQuoteChoiceGrid .assetQuoteChoiceText strong,
+.optionsModal.assetShareInsideModal .assetQuoteChoiceGrid.registerShareOptionGrid .registerShareOptionCard strong {
+  font-size: clamp(1.15rem, 1.45vw, 1.35rem) !important;
+  white-space: normal !important;
+  text-wrap: balance;
+}
+
+.assetShareInsideModal .assetQuoteChoiceGrid .assetQuoteChoiceText small,
+.optionsModal.assetShareInsideModal .assetQuoteChoiceGrid.registerShareOptionGrid .registerShareOptionCard small {
+  max-width: 24rem !important;
+  font-size: clamp(0.94rem, 1.08vw, 1.02rem) !important;
+  line-height: 1.45 !important;
+}
+
+@media (max-width: 820px) {
+  .assetShareInsideModal .assetQuoteChoiceGrid,
+  .optionsModal.assetShareInsideModal .assetQuoteChoiceGrid.registerShareOptionGrid {
+    max-width: 34rem !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+}
+
+@media (max-width: 700px) {
+  .assetQuoteModal.assetShareInsideModal:not(.assetQuotePartnerPickerModal),
+  .assetQuoteModal.registerShareModal.assetShareInsideModal {
+    width: min(100%, calc(100vw - 1rem)) !important;
+    max-height: calc(100dvh - 1rem) !important;
+  }
+
+  .externalAssetShareModal .assetQuoteScrollBody,
+  .externalAssetShareModal .registerShareModalBody {
+    padding-right: 0.45rem !important;
+  }
+
+  .assetShareInsideModal .assetQuoteChoiceGrid .assetQuoteChoiceCard,
+  .optionsModal.assetShareInsideModal .assetQuoteChoiceGrid.registerShareOptionGrid .registerShareOptionCard {
+    min-height: 10.75rem !important;
+    padding: 1.2rem !important;
+  }
+}
