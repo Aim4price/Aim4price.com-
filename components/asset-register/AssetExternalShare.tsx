@@ -137,7 +137,7 @@ export default function AssetExternalShare({
         <div>
           <span>Ready to send</span>
           <h4>{assets.length === 1 ? assets[0]?.title : shareName}</h4>
-          <p>The message includes serial, year, usage, condition, replacement price and current value. Recipients can open the saved photos from the included Aim4price asset link.</p>
+          <p>The message includes serial, year, usage, condition, replacement price and current value. Every saved photo is included as a direct link, with the Aim4price asset link added separately.</p>
         </div>
         <span className={styles.photoCount}>{savedPhotoCount} {savedPhotoCount === 1 ? 'photo' : 'photos'}</span>
       </div>
