@@ -1050,7 +1050,6 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
             disabled={loading || loadFailed || !hasDocumentsInView}
           >
             <Icon name="filter" /> Filters
-            <Icon name="chevron-down" className={styles.buttonChevron} />
             {category !== 'all' ? <span className={styles.buttonCount}>1</span> : null}
           </button>
           <button type="button" className={`${styles.headerButton} ${styles.primaryHeaderButton}`} onClick={openUploadModal} disabled={view === 'recycle-bin' || busy}>
@@ -1092,6 +1091,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
               className={`${styles.summaryNav} ${styles.summaryNavPrevious}`}
               onClick={() => scrollSummary(-1)}
               aria-label="Previous summary cards"
+              data-tooltip="Previous"
               disabled={!summaryNavigation.hasOverflow || summaryNavigation.atStart}
               hidden={!summaryNavigation.hasOverflow}
             >
@@ -1121,6 +1121,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
               className={`${styles.summaryNav} ${styles.summaryNavNext}`}
               onClick={() => scrollSummary(1)}
               aria-label="Next summary cards"
+              data-tooltip="Next"
               disabled={!summaryNavigation.hasOverflow || summaryNavigation.atEnd}
               hidden={!summaryNavigation.hasOverflow}
             >

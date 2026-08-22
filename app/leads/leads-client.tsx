@@ -444,10 +444,11 @@ function SearchIcon({ className }: IconProps) {
 
 function FilterIcon({ className }: IconProps) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden="true">
-      <path d="M4 6h16" />
-      <path d="M7 12h10" />
-      <path d="M10 18h4" />
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
+      <path d="M4 5h16M7 12h10M10 19h4" />
+      <circle cx="15" cy="5" r="1.5" />
+      <circle cx="9" cy="12" r="1.5" />
+      <circle cx="15" cy="19" r="1.5" />
     </svg>
   );
 }
@@ -3354,7 +3355,6 @@ export default function LeadsClient({
               >
                 <FilterIcon className={assetStyles.buttonIcon} />
                 <span>{activeLeadFilterLabel}</span>
-                <ChevronDownIcon className={assetStyles.filterChevron} />
               </button>
             </div>
           </div>

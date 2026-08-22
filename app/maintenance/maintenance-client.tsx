@@ -182,8 +182,11 @@ function SearchIcon() {
 
 function FilterIcon() {
   return (
-    <svg className={styles.buttonIcon} viewBox="0 0 24 24" aria-hidden="true">
-      <path fill="currentColor" d="M5 7a1 1 0 0 1 1-1h12a1 1 0 1 1 0 2H6a1 1 0 0 1-1-1Zm3 5a1 1 0 0 1 1-1h6a1 1 0 1 1 0 2H9a1 1 0 0 1-1-1Zm3 5a1 1 0 0 1 1-1h2a1 1 0 1 1 0 2h-2a1 1 0 0 1-1-1Z" />
+    <svg className={styles.buttonIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M4 5h16M7 12h10M10 19h4" />
+      <circle cx="15" cy="5" r="1.5" />
+      <circle cx="9" cy="12" r="1.5" />
+      <circle cx="15" cy="19" r="1.5" />
     </svg>
   );
 }
