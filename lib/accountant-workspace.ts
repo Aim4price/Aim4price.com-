@@ -5,17 +5,25 @@ import {
   getAssetRegisterItemById,
   listAssetRegisterItems,
   updateAssetRegisterItemFlag,
-  updateAssetRegisterItemMedia,
   updateAssetRegisterItemStatusDetails,
-  type AssetRegisterDocument,
   type AssetRegisterItem,
 } from './asset-register-db';
 import {
-  MAX_ASSET_REGISTER_DOCUMENTS,
-  MAX_ASSET_REGISTER_DOCUMENT_UPLOAD_BYTES,
+  MAX_DOCUMENT_VAULT_UPLOAD_BYTES,
   createAssetRegisterUpload,
   isAllowedAssetRegisterDocument,
+  resolveAssetRegisterUploadBytes,
+  type AssetRegisterUploadBytesResult,
 } from './asset-register-uploads';
+import {
+  createAccountDocument,
+  getAccountDocument,
+  getAccountDocumentUploadReference,
+  listAccountDocuments,
+  removeUnusedAccountDocumentUpload,
+  type AccountDocument,
+} from './account-documents';
+import { getAccountDocumentType } from './account-document-taxonomy';
 import { ensureAssetRegisterTables, getAssetRegisterForUser, listAssetRegisters, type AssetRegisterSummary } from './asset-registers';
 import { getDb } from './db';
 import { listFuelLedger, type FuelLedgerData } from './fuel-ledger';
@@ -424,6 +432,19 @@ async function authorisedAsset(accountantUserId: string, shareId: string, assetI
   return { access, asset };
 }
 
+async function authorisedSharedDocumentAsset(
+  accountantUserId: string,
+  shareId: string,
+  assetId: string,
+  requireWrite = false,
+) {
+  const authorised = await authorisedAsset(accountantUserId, shareId, assetId, requireWrite);
+  if (authorised.asset.registerId !== authorised.access.registerId) {
+    throw new Error('ACCOUNTANT_ASSET_NOT_FOUND');
+  }
+  return authorised;
+}
+
 function optionalNumber(value: unknown): number | null {
   if (value === null || typeof value === 'undefined' || text(value) === '') return null;
   const parsed = Number(String(value).replace(/[^0-9.-]+/g, ''));
@@ -561,46 +582,140 @@ export async function saveAccountantCarryingValue(input: {
   return saved;
 }
 
-export async function uploadAccountantDocument(input: {
-  accountantUserId: string; shareId: string; assetId: string; file: File;
-}): Promise<AccountantAsset> {
-  const { access, asset } = await authorisedAsset(input.accountantUserId, input.shareId, input.assetId, true);
-  if (!isAllowedAssetRegisterDocument(input.file)) throw new Error('ACCOUNTANT_DOCUMENT_TYPE_INVALID');
-  if (!input.file.size || input.file.size > MAX_ASSET_REGISTER_DOCUMENT_UPLOAD_BYTES) throw new Error('ACCOUNTANT_DOCUMENT_SIZE_INVALID');
-  if (asset.documents.length >= MAX_ASSET_REGISTER_DOCUMENTS) throw new Error('ACCOUNTANT_DOCUMENT_LIMIT');
-  const actor = await getAccountProfile({ id: input.accountantUserId });
-  const upload = await createAssetRegisterUpload({
-    userId: access.ownerUserId,
-    file: input.file,
-    category: 'accountant-document',
-  });
-  const document: AssetRegisterDocument = {
-    id: upload.id, url: upload.url, fileName: upload.fileName, contentType: upload.contentType,
-    byteSize: upload.byteSize, uploadedAtIso: new Date().toISOString(),
-    category: 'accounting',
-    documentType: 'accountant_upload',
-  };
-  const updated = await updateAssetRegisterItemMedia(access.ownerUserId, {
-    assetId: asset.id,
-    photos: asset.photos,
-    documents: [...asset.documents, document].slice(0, MAX_ASSET_REGISTER_DOCUMENTS),
-  });
-  await getDb().query(
-    `insert into public.asset_accountant_documents
-       (owner_user_id, accountant_user_id, accountant_organisation, asset_register_item_id, access_lead_id,
-        upload_id, upload_url, file_name, content_type, byte_size)
-     values ($1, $2, $3, $4::uuid, $5::uuid, $6, $7, $8, $9, $10)`,
-    [access.ownerUserId, input.accountantUserId, actor.businessName, asset.id, access.shareId,
-      upload.id, upload.url, upload.fileName, upload.contentType, upload.byteSize],
+export async function listAccountantAssetDocuments(input: {
+  accountantUserId: string;
+  shareId: string;
+  assetId: string;
+}): Promise<AccountDocument[]> {
+  const { access, asset } = await authorisedSharedDocumentAsset(
+    input.accountantUserId,
+    input.shareId,
+    input.assetId,
   );
-  await writeAudit(access, input.accountantUserId, 'accountant_document_uploaded', 'asset_register_item', asset.id, {
-    accountantName: actor.displayName || actor.name,
-    accountantOrganisation: actor.businessName,
-    assetTitle: asset.title,
-    changedField: 'documents', previousValue: asset.documents.length, newValue: updated.documents.length,
-    source: upload.fileName,
-  });
-  return { ...updated, accountingValue: await getAccountingValue(access.ownerUserId, asset.id) };
+  const documents = await listAccountDocuments(access.ownerUserId, { assetId: asset.id });
+  return documents.map((document) => ({
+    ...document,
+    assetLinks: document.assetLinks.filter((link) => link.id === asset.id),
+  }));
+}
+
+export async function resolveAccountantAssetDocumentDownload(input: {
+  accountantUserId: string;
+  shareId: string;
+  assetId: string;
+  documentId: string;
+}): Promise<AssetRegisterUploadBytesResult> {
+  const { access, asset } = await authorisedSharedDocumentAsset(
+    input.accountantUserId,
+    input.shareId,
+    input.assetId,
+  );
+  const document = await getAccountDocument(access.ownerUserId, input.documentId);
+  const linkedToSharedAsset = document?.assetLinks.some((link) => link.id === asset.id) ?? false;
+  if (!document || document.deletedAtIso || !linkedToSharedAsset) {
+    throw new Error('ACCOUNTANT_DOCUMENT_NOT_FOUND');
+  }
+
+  const reference = await getAccountDocumentUploadReference(access.ownerUserId, document.id);
+  if (!reference) return { status: 'not-found' };
+  return resolveAssetRegisterUploadBytes(reference.uploadId);
+}
+
+export async function uploadAccountantDocument(input: {
+  accountantUserId: string;
+  shareId: string;
+  assetId: string;
+  file: File;
+  documentType: unknown;
+  title?: unknown;
+  notes?: unknown;
+  expiryDate?: unknown;
+}): Promise<{ item: AccountantAsset; document: AccountDocument }> {
+  const { access, asset } = await authorisedSharedDocumentAsset(
+    input.accountantUserId,
+    input.shareId,
+    input.assetId,
+    true,
+  );
+  const documentType = getAccountDocumentType(input.documentType);
+  if (!documentType) throw new Error('DOCUMENT_TYPE_REQUIRED');
+  if (documentType.value === 'other' && !String(input.notes ?? '').trim()) {
+    throw new Error('DOCUMENT_DESCRIPTION_REQUIRED');
+  }
+  if (!isAllowedAssetRegisterDocument(input.file)) throw new Error('ACCOUNTANT_DOCUMENT_FILE_TYPE_INVALID');
+  if (!input.file.size || input.file.size > MAX_DOCUMENT_VAULT_UPLOAD_BYTES) {
+    throw new Error('ACCOUNTANT_DOCUMENT_SIZE_INVALID');
+  }
+
+  const actor = await getAccountProfile({ id: input.accountantUserId });
+  const existingDocuments = await listAccountDocuments(access.ownerUserId, { assetId: asset.id });
+  const accountingValue = await getAccountingValue(access.ownerUserId, asset.id);
+  let savedUploadId = '';
+
+  try {
+    const upload = await createAssetRegisterUpload({
+      userId: access.ownerUserId,
+      file: input.file,
+      category: 'account-document',
+    });
+    savedUploadId = upload.id;
+
+    const document = await createAccountDocument(access.ownerUserId, {
+      uploadId: upload.id,
+      fileName: upload.fileName,
+      contentType: upload.contentType,
+      byteSize: upload.byteSize,
+      title: input.title,
+      category: documentType.category,
+      documentType: documentType.value,
+      notes: input.notes,
+      expiryDate: input.expiryDate,
+      assetIds: [asset.id],
+    });
+    savedUploadId = '';
+
+    const [trackingResult, auditResult] = await Promise.allSettled([
+      getDb().query(
+        `insert into public.asset_accountant_documents
+           (owner_user_id, accountant_user_id, accountant_organisation, asset_register_item_id, access_lead_id,
+            upload_id, upload_url, file_name, content_type, byte_size)
+         values ($1, $2, $3, $4::uuid, $5::uuid, $6, $7, $8, $9, $10)`,
+        [access.ownerUserId, input.accountantUserId, actor.businessName, asset.id, access.shareId,
+          upload.id, upload.url, upload.fileName, upload.contentType, upload.byteSize],
+      ),
+      writeAudit(access, input.accountantUserId, 'accountant_document_uploaded', 'asset_register_item', asset.id, {
+        accountantName: actor.displayName || actor.name,
+        accountantOrganisation: actor.businessName,
+        assetTitle: asset.title,
+        changedField: 'documents',
+        previousValue: existingDocuments.length,
+        newValue: existingDocuments.length + 1,
+        documentId: document.id,
+        documentType: document.documentType,
+        source: upload.fileName,
+      }),
+    ]);
+    if (trackingResult.status === 'rejected') {
+      console.error('accountant document provenance tracking failed', trackingResult.reason);
+    }
+    if (auditResult.status === 'rejected') {
+      console.error('accountant document audit tracking failed', auditResult.reason);
+    }
+
+    return {
+      item: { ...asset, accountingValue },
+      document,
+    };
+  } catch (error) {
+    if (savedUploadId) {
+      try {
+        await removeUnusedAccountDocumentUpload(access.ownerUserId, savedUploadId);
+      } catch (cleanupError) {
+        console.error('accountant document orphan upload cleanup failed', cleanupError);
+      }
+    }
+    throw error;
+  }
 }
 
 export async function updateAccountantAssetFlag(input: {
@@ -900,7 +1015,20 @@ export function accountantWorkspaceError(error: unknown): { status: number; mess
   if (code === 'ACCOUNTANT_FINANCE_AGREEMENT_NOT_SAVED') return { status: 409, message: 'The Finance Agreement could not be saved.' };
   if (code === 'DISPOSAL_REASON_REQUIRED') return { status: 400, message: 'Choose a valid disposal or incorrect-record reason.' };
   if (code === 'ACCOUNTANT_NOTE_REQUIRED') return { status: 400, message: 'Write a note before saving.' };
-  if (code.includes('DOCUMENT')) return { status: 400, message: 'The document could not be saved. Check its type, size and the asset document limit.' };
+  if (code === 'DOCUMENT_TYPE_REQUIRED' || code === 'DOCUMENT_TYPE_INVALID') {
+    return { status: 400, message: 'Choose a valid document type.' };
+  }
+  if (code === 'DOCUMENT_DESCRIPTION_REQUIRED') {
+    return { status: 400, message: 'Describe the document in Notes when choosing Other document.' };
+  }
+  if (code === 'DOCUMENT_EXPIRY_INVALID') return { status: 400, message: 'Enter a valid expiry date.' };
+  if (code === 'ACCOUNTANT_DOCUMENT_FILE_TYPE_INVALID') {
+    return { status: 400, message: 'Upload a PDF, Word, Excel, CSV, TXT, JPG, PNG or WEBP file.' };
+  }
+  if (code === 'ACCOUNTANT_DOCUMENT_SIZE_INVALID') {
+    return { status: 400, message: `Documents must be ${Math.round(MAX_DOCUMENT_VAULT_UPLOAD_BYTES / (1024 * 1024))} MB or smaller.` };
+  }
+  if (code.includes('DOCUMENT')) return { status: 400, message: 'The document could not be saved. Check its details and try again.' };
   if (code === 'ACCOUNTANT_MOVE_DIFFERENT_OWNER') return { status: 403, message: 'Assets can only be moved between shared registers belonging to the same owner.' };
   if (code === 'ACCOUNTANT_MOVE_SAME_REGISTER') return { status: 400, message: 'Choose a different target Asset Register.' };
   if (code === 'ACCOUNTANT_MOVE_LAST_SHARED_ASSET') return { status: 409, message: 'This is the last asset keeping the shared register connected. Add or retain another asset in the source register before moving it.' };

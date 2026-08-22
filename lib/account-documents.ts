@@ -1,37 +1,22 @@
 import { randomUUID } from 'node:crypto';
 import type { PoolClient, QueryResult, QueryResultRow } from 'pg';
+import {
+  ACCOUNT_DOCUMENT_CATEGORIES,
+  ACCOUNT_DOCUMENT_CATEGORY_LABELS,
+  getAccountDocumentType,
+  getAccountDocumentTypeCategory,
+  isAccountDocumentCategory,
+  type AccountDocumentCategory,
+  type AccountDocumentType,
+} from './account-document-taxonomy';
 import { getDb } from './db';
 
-export const ACCOUNT_DOCUMENT_CATEGORIES = [
-  'business',
-  'insurance',
-  'finance',
-  'licence',
-  'tax-accounting',
-  'ownership',
-  'contract',
-  'warranty',
-  'other',
-] as const;
-
-export type AccountDocumentCategory = (typeof ACCOUNT_DOCUMENT_CATEGORIES)[number];
-
-export function isAccountDocumentCategory(value: unknown): value is AccountDocumentCategory {
-  return typeof value === 'string'
-    && ACCOUNT_DOCUMENT_CATEGORIES.includes(value.trim().toLowerCase() as AccountDocumentCategory);
-}
-
-export const ACCOUNT_DOCUMENT_CATEGORY_LABELS: Record<AccountDocumentCategory, string> = {
-  business: 'Company & legal',
-  insurance: 'Insurance',
-  finance: 'Finance',
-  licence: 'Licences & permits',
-  'tax-accounting': 'Accounting & tax',
-  ownership: 'Ownership',
-  contract: 'Contracts',
-  warranty: 'Warranties',
-  other: 'Other',
+export {
+  ACCOUNT_DOCUMENT_CATEGORIES,
+  ACCOUNT_DOCUMENT_CATEGORY_LABELS,
+  isAccountDocumentCategory,
 };
+export type { AccountDocumentCategory };
 
 export type AccountDocumentAssetLink = {
   id: string;
@@ -45,6 +30,7 @@ export type AccountDocument = {
   id: string;
   title: string;
   category: AccountDocumentCategory;
+  documentType: AccountDocumentType | null;
   notes: string;
   expiryDate: string | null;
   fileName: string;
@@ -66,6 +52,7 @@ export type AccountDocumentSummary = {
 export type AccountDocumentInput = {
   title?: unknown;
   category?: unknown;
+  documentType?: unknown;
   notes?: unknown;
   expiryDate?: unknown;
   assetIds?: unknown;
@@ -87,6 +74,7 @@ type AccountDocumentRow = {
   upload_id: string;
   title: string | null;
   category: string | null;
+  document_type: string | null;
   notes: string | null;
   expiry_date: string | Date | null;
   file_name: string | null;
@@ -192,6 +180,21 @@ function normalizeCategory(
   throw new Error('DOCUMENT_CATEGORY_INVALID');
 }
 
+function normalizeDocumentType(
+  value: unknown,
+  options: { required?: boolean } = {},
+): AccountDocumentType | null {
+  const normalized = cleanText(value, 80).toLowerCase();
+  if (!normalized) {
+    if (options.required) throw new Error('DOCUMENT_TYPE_REQUIRED');
+    return null;
+  }
+
+  const documentType = getAccountDocumentType(normalized)?.value;
+  if (documentType) return documentType;
+  throw new Error('DOCUMENT_TYPE_INVALID');
+}
+
 function normalizeAssetIds(value: unknown): string[] {
   const values = Array.isArray(value) ? value : [];
   const unique = new Set<string>();
@@ -223,10 +226,12 @@ function buildAssetMeta(row: {
 }
 
 function mapDocumentRow(row: AccountDocumentRow, assetLinks: AccountDocumentAssetLink[]): AccountDocument {
+  const documentType = getAccountDocumentType(row.document_type)?.value ?? null;
   return {
     id: String(row.id ?? ''),
     title: cleanText(row.title, 180) || cleanText(row.file_name, 180) || 'Untitled document',
     category: normalizeCategory(row.category, { fallbackToOther: true }),
+    documentType,
     notes: cleanNotes(row.notes),
     expiryDate: dateOnly(row.expiry_date),
     fileName: cleanText(row.file_name, 240) || 'document',
@@ -259,6 +264,7 @@ async function ensureAccountDocumentTablesOnce(): Promise<void> {
       upload_id text not null,
       title text not null,
       category text not null default 'other',
+      document_type text,
       notes text not null default '',
       expiry_date date,
       file_name text not null,
@@ -269,6 +275,9 @@ async function ensureAccountDocumentTablesOnce(): Promise<void> {
       deleted_at timestamptz,
       unique (user_id, upload_id)
     );
+
+    alter table public.account_documents
+      add column if not exists document_type text;
 
     create table if not exists public.account_document_asset_links (
       document_id uuid not null references public.account_documents(id) on delete cascade,
@@ -286,6 +295,9 @@ async function ensureAccountDocumentTablesOnce(): Promise<void> {
     create index if not exists idx_account_documents_user_expiry
       on public.account_documents (user_id, expiry_date)
       where deleted_at is null and expiry_date is not null;
+    create index if not exists idx_account_documents_user_document_type
+      on public.account_documents (user_id, document_type, updated_at desc)
+      where deleted_at is null and document_type is not null;
     create index if not exists idx_account_documents_upload_id
       on public.account_documents (upload_id);
     create index if not exists idx_account_document_asset_links_asset
@@ -521,10 +533,11 @@ export async function removeUnusedAccountDocumentUpload(userId: string, uploadId
 
 export async function listAccountDocuments(
   userId: string,
-  options: { includeDeleted?: boolean } = {},
+  options: { includeDeleted?: boolean; assetId?: string } = {},
 ): Promise<AccountDocument[]> {
   await ensureAccountDocumentTables();
   await purgeExpiredAccountDocuments(userId);
+  const assetId = cleanText(options.assetId, 120);
 
   const result = await getDb().query<AccountDocumentRow>(
     `
@@ -533,6 +546,7 @@ export async function listAccountDocuments(
         upload_id,
         title,
         category,
+        document_type,
         notes,
         expiry_date,
         file_name,
@@ -544,9 +558,18 @@ export async function listAccountDocuments(
       from public.account_documents
       where user_id = $1
         and ${options.includeDeleted ? 'deleted_at is not null' : 'deleted_at is null'}
+        and (
+          $2 = ''
+          or exists (
+            select 1
+            from public.account_document_asset_links filtered_link
+            where filtered_link.document_id = account_documents.id
+              and filtered_link.asset_id = $2
+          )
+        )
       order by ${options.includeDeleted ? 'deleted_at desc' : 'updated_at desc'}, created_at desc, id desc
     `,
-    [userId],
+    [userId, assetId],
   );
   const documentIds = result.rows.map((row) => String(row.id));
   const linksByDocument = await listDocumentLinks(userId, documentIds);
@@ -597,10 +620,12 @@ export async function createAccountDocument(
   const documentId = randomUUID();
   const fileName = cleanText(input.fileName, 240) || 'document';
   const title = cleanText(input.title, 180) || fileName.replace(/\.[^.]+$/, '') || 'Untitled document';
-  const category = normalizeCategory(input.category);
   const notes = cleanNotes(input.notes);
   const expiryDate = normalizeExpiryDate(input.expiryDate);
   const assetIds = normalizeAssetIds(input.assetIds);
+  const documentType = normalizeDocumentType(input.documentType, { required: assetIds.length > 0 });
+  const category = getAccountDocumentTypeCategory(documentType) ?? normalizeCategory(input.category);
+  if (documentType === 'other' && !notes) throw new Error('DOCUMENT_DESCRIPTION_REQUIRED');
   const uploadId = cleanText(input.uploadId, 160);
   const contentType = cleanText(input.contentType, 160) || 'application/octet-stream';
   const byteSize = Math.round(numberValue(input.byteSize));
@@ -619,14 +644,15 @@ export async function createAccountDocument(
           upload_id,
           title,
           category,
+          document_type,
           notes,
           expiry_date,
           file_name,
           content_type,
           byte_size
-        ) values ($1::uuid, $2, $3, $4, $5, $6, $7::date, $8, $9, $10)
+        ) values ($1::uuid, $2, $3, $4, $5, $6, $7, $8::date, $9, $10, $11)
       `,
-      [documentId, userId, uploadId, title, category, notes, expiryDate, fileName, contentType, byteSize],
+      [documentId, userId, uploadId, title, category, documentType, notes, expiryDate, fileName, contentType, byteSize],
     );
     await replaceAssetLinks(client, userId, documentId, assetIds);
     await client.query('commit');
@@ -652,6 +678,7 @@ export async function getAccountDocument(userId: string, documentId: string): Pr
         upload_id,
         title,
         category,
+        document_type,
         notes,
         expiry_date,
         file_name,
@@ -682,8 +709,10 @@ export async function updateAccountDocument(
   await ensureAccountDocumentTables();
   const normalizedId = cleanText(documentId, 80);
   const title = cleanText(input.title, 180);
-  const category = normalizeCategory(input.category);
+  const documentType = normalizeDocumentType(input.documentType);
+  const category = getAccountDocumentTypeCategory(documentType) ?? normalizeCategory(input.category);
   const notes = cleanNotes(input.notes);
+  if (documentType === 'other' && !notes) throw new Error('DOCUMENT_DESCRIPTION_REQUIRED');
   const expiryDate = normalizeExpiryDate(input.expiryDate);
   const assetIds = normalizeAssetIds(input.assetIds);
   if (!title) throw new Error('DOCUMENT_TITLE_REQUIRED');
@@ -697,15 +726,16 @@ export async function updateAccountDocument(
         set
           title = $3,
           category = $4,
-          notes = $5,
-          expiry_date = $6::date,
+          document_type = coalesce($5, document_type),
+          notes = $6,
+          expiry_date = $7::date,
           updated_at = now()
         where user_id = $1
           and id::text = $2
           and deleted_at is null
         returning id
       `,
-      [userId, normalizedId, title, category, notes, expiryDate],
+      [userId, normalizedId, title, category, documentType, notes, expiryDate],
     );
     if (updated.rowCount !== 1) throw new Error('DOCUMENT_NOT_FOUND');
     await replaceAssetLinks(client, userId, normalizedId, assetIds);
