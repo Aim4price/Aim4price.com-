@@ -38278,6 +38278,7 @@ button.documentOpenLink {
 .assetShareInsideModal .registerShareModalBody,
 .externalAssetShareModal .assetQuoteScrollBody,
 .externalAssetShareModal .registerShareModalBody {
+  flex: 1 1 auto !important;
   min-height: 0 !important;
   overflow-y: auto !important;
   overscroll-behavior: contain;
