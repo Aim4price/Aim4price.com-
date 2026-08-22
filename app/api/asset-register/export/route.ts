@@ -2481,6 +2481,72 @@ function parseRegisterIds(params: URLSearchParams): string[] {
   return ids;
 }
 
+const MAX_ASSET_EXPORT_IDS = 200;
+const MAX_ASSET_EXPORT_ID_LENGTH = 128;
+const ASSET_EXPORT_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:-]*$/;
+
+type RequestedAssetIds = {
+  requested: boolean;
+  ids: string[];
+  error: 'invalid' | 'too_many' | null;
+};
+
+function parseRequestedAssetIds(params: URLSearchParams): RequestedAssetIds {
+  if (!params.has('assetIds')) {
+    return { requested: false, ids: [], error: null };
+  }
+
+  const seen = new Set<string>();
+  const ids: string[] = [];
+  const rawIds = params.getAll('assetIds').flatMap((value) => value.split(','));
+
+  for (const rawId of rawIds) {
+    const id = rawId.trim();
+
+    if (!id || id.length > MAX_ASSET_EXPORT_ID_LENGTH || !ASSET_EXPORT_ID_PATTERN.test(id)) {
+      return { requested: true, ids: [], error: 'invalid' };
+    }
+
+    if (seen.has(id)) continue;
+    if (ids.length >= MAX_ASSET_EXPORT_IDS) {
+      return { requested: true, ids: [], error: 'too_many' };
+    }
+
+    seen.add(id);
+    ids.push(id);
+  }
+
+  if (!ids.length) {
+    return { requested: true, ids: [], error: 'invalid' };
+  }
+
+  return { requested: true, ids, error: null };
+}
+
+function selectAuthorizedAssetIds(
+  authorizedItems: Array<{ id: string }>,
+  selection: RequestedAssetIds,
+): Set<string> | null {
+  const authorizedIds = new Set(authorizedItems.map((item) => item.id));
+
+  if (!selection.requested) {
+    return authorizedIds;
+  }
+
+  if (selection.error || selection.ids.some((id) => !authorizedIds.has(id))) {
+    return null;
+  }
+
+  return new Set(selection.ids);
+}
+
+function requestedAssetsNotFound() {
+  return NextResponse.json(
+    { ok: false, error: 'One or more requested assets could not be found.' },
+    { status: 404 },
+  );
+}
+
 function registerContactLine(register: AssetRegisterSummary): string {
   return [register.phone, register.email, register.addressLine1]
     .map((part) => cleanText(part))
@@ -2976,6 +3042,19 @@ export async function GET(request: NextRequest) {
       { status: 400 },
     );
   }
+  const assetIdSelection = parseRequestedAssetIds(params);
+
+  if (assetIdSelection.error) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error: assetIdSelection.error === 'too_many'
+          ? `Choose no more than ${MAX_ASSET_EXPORT_IDS} assets to export.`
+          : 'Choose valid assets to export.',
+      },
+      { status: 400 },
+    );
+  }
 
   try {
     const profile = await getAccountProfile({
@@ -3046,7 +3125,6 @@ export async function GET(request: NextRequest) {
         }))),
         listAssetGroups(ownerUserId),
       ]);
-      const availableAssets = rawBundles.flatMap((bundle) => bundle.items);
       const requestedGroup = requestedGroupId
         ? allGroups.find((group) => group.id === requestedGroupId) ?? null
         : null;
@@ -3069,11 +3147,28 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ ok: false, error: 'No grouped assets from this umbrella are available in the selected Asset Register scope.' }, { status: 404 });
       }
 
-      const combinedAssets = scopedRawBundles.flatMap((bundle) => bundle.items);
+      const selectedAssetIds = selectAuthorizedAssetIds(
+        scopedRawBundles.flatMap((bundle) => bundle.items),
+        assetIdSelection,
+      );
+
+      if (!selectedAssetIds) {
+        return requestedAssetsNotFound();
+      }
+
+      const selectedRawBundles = assetIdSelection.requested
+        ? scopedRawBundles
+            .map((bundle) => ({
+              ...bundle,
+              items: bundle.items.filter((item) => selectedAssetIds.has(item.id)),
+            }))
+            .filter((bundle) => bundle.items.length > 0)
+        : scopedRawBundles;
+      const combinedAssets = selectedRawBundles.flatMap((bundle) => bundle.items);
       const combinedGroups = scope === 'combined'
         ? projectAssetGroupsToAssets(allGroups, combinedAssets)
         : [];
-      const bundles: RegisterExportBundle[] = scopedRawBundles.map((bundle) => ({
+      const bundles: RegisterExportBundle[] = selectedRawBundles.map((bundle) => ({
         register: bundle.register,
         items: decorateAssetsWithGroups(
           bundle.items,
@@ -3184,7 +3279,16 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ ok: false, error: 'No grouped assets from this umbrella are available to export.' }, { status: 404 });
     }
 
-    const items = decorateAssetsWithGroups(scopedRawItems, projectAssetGroupsToAssets(groups, scopedRawItems));
+    const selectedAssetIds = selectAuthorizedAssetIds(scopedRawItems, assetIdSelection);
+
+    if (!selectedAssetIds) {
+      return requestedAssetsNotFound();
+    }
+
+    const selectedRawItems = assetIdSelection.requested
+      ? scopedRawItems.filter((item) => selectedAssetIds.has(item.id))
+      : scopedRawItems;
+    const items = decorateAssetsWithGroups(selectedRawItems, projectAssetGroupsToAssets(groups, selectedRawItems));
     const generatedAt = new Date();
     const filenameDate = generatedAt.toISOString().slice(0, 10);
     if (format === 'pdf') {

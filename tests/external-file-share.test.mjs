@@ -1,7 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
-  createExternalShareArchive,
   fetchExternalShareFile,
   formatExternalShareFileSize,
 } from '../lib/external-file-share.ts';
@@ -46,19 +45,34 @@ test('an authentication HTML response is rejected instead of being shared as a f
   );
 });
 
-test('multi-file fallback builds a valid ZIP and safely de-duplicates filenames', async () => {
-  const archive = await createExternalShareArchive([
-    new File(['first'], 'report.pdf', { type: 'application/pdf', lastModified: Date.UTC(2026, 0, 2) }),
-    new File(['second'], 'report.pdf', { type: 'application/pdf', lastModified: Date.UTC(2026, 0, 2) }),
-  ]);
-  const bytes = new Uint8Array(await archive.arrayBuffer());
-  const text = new TextDecoder().decode(bytes);
+test('a report response with the wrong MIME type is never attached', async () => {
+  await assert.rejects(
+    fetchExternalShareFile(source, async () => new Response('{"ok":false}', {
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+    })),
+    /returned the wrong file type/,
+  );
+});
 
-  assert.equal(archive.type, 'application/zip');
-  assert.deepEqual([...bytes.slice(0, 4)], [0x50, 0x4b, 0x03, 0x04]);
-  assert.match(text, /report\.pdf/);
-  assert.match(text, /report \(2\)\.pdf/);
-  assert.deepEqual([...bytes.slice(-22, -18)], [0x50, 0x4b, 0x05, 0x06]);
+test('named Aim4price reports keep their selected filename when the endpoint uses a generic name', async () => {
+  const file = await fetchExternalShareFile({
+    ...source,
+    fileName: 'harvest-fleet-insurance-report.pdf',
+    preferSourceFileName: true,
+  }, async () => new Response(new Blob(['%PDF-1.7'], { type: 'application/pdf' }), {
+    status: 200,
+    headers: { 'content-disposition': 'attachment; filename="aim4price-full-asset-register.pdf"' },
+  }));
+
+  assert.equal(file.name, 'harvest-fleet-insurance-report.pdf');
+});
+
+test('a failed attachment response is rejected atomically before sharing', async () => {
+  await assert.rejects(
+    fetchExternalShareFile(source, async () => new Response('Missing', { status: 404 })),
+    /Could not prepare “Asset Register · PDF”/,
+  );
 });
 
 test('file sizes are formatted for concise UI labels', () => {

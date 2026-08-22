@@ -18,7 +18,7 @@ const asset = {
   publicUrl: 'https://www.aim4price.com/scan/asset-code',
 };
 
-test('outside share copy contains every requested asset field and describes real attachments without exposing links', () => {
+test('outside share copy contains every requested field without claiming optional attachments', () => {
   const copy = buildExternalAssetShareCopy(asset.title, [asset]);
 
   assert.equal(copy.subject, '2019 John Deere 6155M asset details');
@@ -28,12 +28,13 @@ test('outside share copy contains every requested asset field and describes real
   assert.match(copy.body, /Condition: Good/);
   assert.match(copy.body, /Replacement price \(excl\. VAT\): R 2[ ,]850[ ,]000/);
   assert.match(copy.body, /Current value \(excl\. VAT\): R 1[ ,]675[ ,]000/);
-  assert.match(copy.body, /Photos: 2 photos attached separately/);
+  assert.doesNotMatch(copy.body, /Attachments:/);
+  assert.doesNotMatch(copy.body, /Photos:/);
   assert.doesNotMatch(copy.body, /https:\/\//);
   assert.doesNotMatch(copy.body, /Aim4price asset link/);
 });
 
-test('multiple assets are numbered and each attachment count is stated without a private URL', () => {
+test('multiple assets are numbered without exposing private attachment URLs', () => {
   const copy = buildExternalAssetShareCopy('Harvest fleet', [
     asset,
     {
@@ -56,8 +57,20 @@ test('multiple assets are numbered and each attachment count is stated without a
   assert.match(copy.body, /Serial number: Not saved/);
   assert.match(copy.body, /Year: Not saved/);
   assert.match(copy.body, /Usage: Not saved/);
-  assert.match(copy.body, /Photos: 1 photo attached separately/);
+  assert.doesNotMatch(copy.body, /Attachments:/);
   assert.doesNotMatch(copy.body, /images\.example\.com/);
+});
+
+test('the composed message summarizes only the attachments explicitly selected', () => {
+  const copy = buildExternalAssetShareCopy(asset.title, [asset], {
+    attachedPhotoCount: 2,
+    attachedReportCount: 1,
+  });
+
+  assert.match(copy.body, /Attachments: 2 photos, 1 Aim4price report/);
+  assert.equal((copy.body.match(/Attachments:/g) ?? []).length, 1);
+  assert.doesNotMatch(copy.body, /attached separately/);
+  assert.doesNotMatch(copy.body, /https:\/\//);
 });
 
 test('WhatsApp and email links carry the formatted message safely', () => {
