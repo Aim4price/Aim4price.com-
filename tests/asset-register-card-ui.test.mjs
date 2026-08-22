@@ -5,6 +5,7 @@ import test from 'node:test';
 const client = readFileSync(new URL('../app/asset-register/asset-register-client.tsx', import.meta.url), 'utf8');
 const styles = readFileSync(new URL('../app/asset-register/page.module.css', import.meta.url), 'utf8');
 const uploadModal = readFileSync(new URL('../components/documents/AssetDocumentUploadModal.tsx', import.meta.url), 'utf8');
+const uploadModalStyles = readFileSync(new URL('../components/documents/AssetDocumentUploadModal.module.css', import.meta.url), 'utf8');
 const documentTypes = readFileSync(new URL('../lib/account-document-taxonomy.ts', import.meta.url), 'utf8');
 const header = readFileSync(new URL('../components/AppHeader.tsx', import.meta.url), 'utf8');
 const headerStyles = readFileSync(new URL('../components/AppHeader.module.css', import.meta.url), 'utf8');
@@ -16,11 +17,11 @@ test('quick add uses the searchable typed Documents Vault flow', () => {
   );
 
   assert.match(panel, /openAssetDocumentUpload\(asset\)/);
-  assert.match(panel, /<strong>Asset documents<\/strong>/);
+  assert.doesNotMatch(panel, /Asset documents/i);
   assert.match(panel, /href=\{`\/documents\?assetId=/);
   assert.match(panel, /vaultDocuments\.slice\(0, 3\)/);
   assert.match(panel, /detailDocuments\.slice/);
-  assert.match(panel, /`\$\{vaultDocuments\.length\} in Documents`/);
+  assert.match(panel, /`\$\{vaultDocuments\.length\} Documents`/);
   assert.match(panel, /earlier saved asset/);
   assert.doesNotMatch(panel, /totalAssetDocuments/);
   assert.doesNotMatch(panel, /<ModalSelect/);
@@ -40,7 +41,7 @@ test('quick add uses the searchable typed Documents Vault flow', () => {
   assert.match(uploadModal, /await onUploaded\(uploaded, \{ complete: false, totalUploaded:/);
   assert.match(uploadModal, /busyRef\.current = true;[\s\S]*?setBusy\(true\)/);
   assert.match(client, /setVaultDocumentsByAssetId\(\(current\) =>/);
-  assert.match(client, /if \(!outcome\.complete\) return;[\s\S]*?setDocumentUploadAsset\(null\)/);
+  assert.match(client, /if \(!outcome\.complete\) return;[\s\S]*?closeAssetDocumentUpload\(asset\.id\)/);
 
   for (const label of [
     'Registration certificate / NaTIS',
@@ -102,9 +103,9 @@ test('owner detail rows open the existing update form at the selected field', ()
   assert.match(quickEditor, /setExpandedAssetId\(asset\.id\);/);
   assert.match(quickEditor, /openUpdater\(asset, target\);/);
   assert.match(detailRows, /<button[\s\S]*?styles\.assetDetailRowButton/);
-  assert.match(detailRows, /onClick=\{\(\) => openQuickAssetDetailEditor\(asset, target\)\}/);
+  assert.match(detailRows, /onClick=\{\(event\) => openQuickAssetDetailEditor\(asset, target, event\.currentTarget\)\}/);
   assert.match(detailRows, /aria-label=\{`Edit \$\{label\.toLowerCase\(\)\} for \$\{asset\.title\}/);
-  assert.match(detailRows, /<EditIcon className=\{styles\.assetDetailEditIcon\}/);
+  assert.doesNotMatch(detailRows, /EditIcon|assetDetailEditIcon/);
   assert.match(detailRows, /renderAssetDetailRow\('serial'/);
   assert.match(detailRows, /renderAssetDetailRow\([\s\S]*?'year'/);
   assert.match(detailRows, /renderAssetDetailRow\('usage'/);
@@ -126,11 +127,42 @@ test('quick detail editing scrolls and focuses the matching step-two control', (
   assert.match(client, /LIFETIME_PERCENT_SETTINGS_ERROR/);
 });
 
-test('detail rows provide more room for labels, values and the edit affordance', () => {
+test('detail rows provide more room without pen icons', () => {
   assert.match(styles, /\.assetDetailRow\s*\{\s*grid-template-columns:\s*minmax\(7\.5rem, 0\.82fr\) minmax\(0, 1fr\);/);
   assert.match(styles, /\.assetDetailRow span\s*\{\s*padding:\s*0 1rem;/);
-  assert.match(styles, /\.assetDetailRowButton > strong\s*\{\s*padding-right:\s*2\.85rem;/);
-  assert.match(styles, /\.assetDetailEditIcon\s*\{[\s\S]*?position:\s*absolute;/);
+  assert.doesNotMatch(client, /function EditIcon|<EditIcon/);
+  assert.doesNotMatch(styles, /\.assetDetailEditIcon/);
+});
+
+test('closing asset modals restores the previous card or Manage action', () => {
+  const closeFlow = client.slice(
+    client.indexOf('function rememberAssetModalReturn'),
+    client.indexOf('function openUpdater'),
+  );
+  const syncFlow = client.slice(
+    client.indexOf('function syncUpdatedAsset'),
+    client.indexOf('function syncSettingsUpdatedAsset'),
+  );
+
+  assert.match(closeFlow, /origin: AssetModalReturnOrigin\['origin'\]/);
+  assert.match(closeFlow, /setExpandedAssetId\(returnOrigin\.assetId\)/);
+  assert.match(closeFlow, /scrollIntoView\(\{ block: 'nearest', inline: 'nearest' \}\)/);
+  assert.match(closeFlow, /focus\(\{ preventScroll: true \}\)/);
+  assert.match(closeFlow, /returnOrigin\.origin === 'manage'/);
+  assert.match(closeFlow, /openActionDialog\(latestAsset\)/);
+  assert.match(client, /data-asset-return-action="manage-update"/);
+  assert.match(syncFlow, /setAssets\(\(current\) => current\.map/);
+  assert.doesNotMatch(syncFlow, /setCurrentPage\(1\)/);
+  assert.match(client, /function closeAssetDocumentUpload[\s\S]*?setExpandedAssetId\(assetId\)/);
+  assert.match(uploadModal, /returnFocusRef\.current\?\.focus\(\{ preventScroll: true \}\)/);
+});
+
+test('document upload keeps the footer visible and scrolls only its content', () => {
+  assert.match(uploadModalStyles, /\.modal\s*\{[\s\S]*?grid-template-rows:\s*auto minmax\(0, 1fr\);/);
+  assert.match(uploadModalStyles, /\.modal form\s*\{[\s\S]*?grid-template-rows:\s*minmax\(0, 1fr\) auto;[\s\S]*?overflow:\s*hidden;/);
+  assert.match(uploadModalStyles, /\.content\s*\{[\s\S]*?min-height:\s*0;[\s\S]*?max-height:\s*none;[\s\S]*?overflow-y:\s*auto;/);
+  assert.match(uploadModalStyles, /\.footer\s*\{[\s\S]*?padding:\s*1rem 1\.45rem max\(1\.3rem, env\(safe-area-inset-bottom\)\);/);
+  assert.doesNotMatch(uploadModalStyles, /calc\(92dvh - 11\.5rem\)|calc\(96dvh - 12rem\)/);
 });
 
 test('scrollbar drags do not trigger outside-click closing', () => {

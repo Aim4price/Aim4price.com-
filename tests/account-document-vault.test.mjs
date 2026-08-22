@@ -199,7 +199,7 @@ test('Recycle Bin keeps recoverable documents for 90 days and purges expired upl
   assert.match(accountDeletion, /'account_documents'/);
 });
 
-test('Documents appears only in the owner account dropdown', () => {
+test('Documents follows Cost Ledger in owner navigation and remains in the owner dropdown', () => {
   const ownerNavigation = header.slice(
     header.indexOf('const OWNER_NAV_ITEMS'),
     header.indexOf('const ACCOUNT_MENU_ITEMS'),
@@ -212,7 +212,7 @@ test('Documents appears only in the owner account dropdown', () => {
   assert.match(header, /\| 'documents'/);
   assert.match(header, /case 'documents':/);
   assert.match(header, /href: '\/documents', label: 'Documents', accountTypes: \['owner'\]/);
-  assert.doesNotMatch(ownerNavigation, /href: '\/documents'/);
+  assert.match(ownerNavigation, /href: '\/my-invoices', label: 'Cost Ledger' \},\s*\{ key: 'documents', href: '\/documents', label: 'Documents' \}/);
   assert.doesNotMatch(accountMenus, /href: '\/', label: 'Home'/);
   assert.doesNotMatch(footer, /href: '\/documents', label: 'Documents'/);
   assert.match(header, /navItems\.filter\(\(item\) => item\.href !== '\/'\)/);

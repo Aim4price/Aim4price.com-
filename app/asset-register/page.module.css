@@ -30231,22 +30231,6 @@ button.documentOpenLink {
     transform 0.16s ease;
 }
 
-.assetDetailRowButton > strong {
-  padding-right: 2.85rem;
-}
-
-.assetDetailEditIcon {
-  position: absolute;
-  top: 50%;
-  right: 0.82rem;
-  width: 1rem;
-  height: 1rem;
-  color: #4b7b6c;
-  pointer-events: none;
-  transform: translateY(-50%);
-  transition: color 0.16s ease, transform 0.16s ease;
-}
-
 .assetDetailRowButton:hover,
 .assetDetailRowButton:focus-visible {
   border-color: rgba(17, 109, 82, 0.36) !important;
@@ -30262,30 +30246,9 @@ button.documentOpenLink {
   background: #f7fcfa;
 }
 
-.assetDetailRowButton:hover .assetDetailEditIcon,
-.assetDetailRowButton:focus-visible .assetDetailEditIcon {
-  color: #116d52;
-  transform: translateY(-50%) scale(1.06);
-}
-
 @media (max-width: 620px) {
   .assetDetailRow > strong {
     line-height: 2.65rem;
-  }
-
-  .assetDetailRowButton > strong {
-    padding-right: 2.85rem;
-  }
-
-  .assetDetailEditIcon {
-    top: auto;
-    bottom: 0.82rem;
-    transform: none;
-  }
-
-  .assetDetailRowButton:hover .assetDetailEditIcon,
-  .assetDetailRowButton:focus-visible .assetDetailEditIcon {
-    transform: scale(1.06);
   }
 }
 
