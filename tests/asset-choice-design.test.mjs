@@ -62,6 +62,26 @@ test('primary operational asset pickers opt into the shared design', () => {
   }
 });
 
+test('Maintenance asset search uses the Cost Tracking single-input toolbar', () => {
+  const toolbarMarker = '<div className={styles.pickerToolbar} data-asset-choice-toolbar="true">';
+  const firstToolbarStart = maintenanceClient.indexOf(toolbarMarker);
+  const firstToolbarEnd = maintenanceClient.indexOf('</div>', firstToolbarStart);
+  const secondToolbarStart = maintenanceClient.indexOf(toolbarMarker, firstToolbarEnd);
+  const secondToolbarEnd = maintenanceClient.indexOf('</div>', secondToolbarStart);
+
+  assert.notEqual(firstToolbarStart, -1);
+  assert.notEqual(secondToolbarStart, -1);
+
+  for (const toolbar of [
+    maintenanceClient.slice(firstToolbarStart, firstToolbarEnd),
+    maintenanceClient.slice(secondToolbarStart, secondToolbarEnd),
+  ]) {
+    assert.match(toolbar, /<input[\s\S]*?type="search"[\s\S]*?placeholder="Search assets\.\.\."/);
+    assert.match(toolbar, /className=\{styles\.secondaryButton\}/);
+    assert.doesNotMatch(toolbar, /pickerSearchField|<SearchIcon|pickerClearButton/);
+  }
+});
+
 test('nested document and umbrella asset selectors share row typography without replacing their parent modal', () => {
   for (const source of [documentsClient, umbrellaModal]) {
     assert.match(source, /data-asset-choice-surface="true"/);
