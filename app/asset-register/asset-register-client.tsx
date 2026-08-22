@@ -87,6 +87,7 @@ type QuoteLeadStep = 'message' | 'consent' | null;
 type QuoteScope = 'asset' | 'register';
 type QuoteDirectoryStage = 'location' | 'map';
 type AssetShareDestination = 'choice' | 'inside' | 'outside';
+type ExternalShareReportScope = 'asset' | 'register' | 'group' | null;
 type DisposalReason = 'sold' | 'traded_in' | 'scrapped' | 'written_off' | 'mistake_duplicate' | 'other';
 type AssetMoveDestination = 'register' | 'umbrella';
 
@@ -5843,6 +5844,14 @@ function parseDownloadFileName(response: Response, fallback: string): string {
   return (quotedMatch?.[1] || plainMatch?.[1] || fallback).trim();
 }
 
+function shareFileSlug(value: string, fallback = 'aim4price-report'): string {
+  return String(value || fallback)
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '') || fallback;
+}
+
 function downloadBlob(blob: Blob, fileName: string) {
   const objectUrl = window.URL.createObjectURL(blob);
   const link = document.createElement('a');
@@ -5898,6 +5907,7 @@ function buildAssetRegisterExportUrl(
   availableRegisterIds: string[] = [],
   groupId = '',
   format: ExportFormat = 'xlsx',
+  assetIds: string[] = [],
 ): string {
   const params = new URLSearchParams({ format });
   if (format === 'pdf') params.set('reportKind', 'full');
@@ -5917,6 +5927,8 @@ function buildAssetRegisterExportUrl(
 
   if (accountantShareId) params.set('accountantShareId', accountantShareId);
   if (groupId.trim()) params.set('groupId', groupId.trim());
+  const cleanedAssetIds = Array.from(new Set(assetIds.map((id) => id.trim()).filter(Boolean)));
+  if (cleanedAssetIds.length) params.set('assetIds', cleanedAssetIds.join(','));
 
   return `/api/asset-register/export?${params.toString()}`;
 }
@@ -6446,6 +6458,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
   const suppressShareFocusRestoreRef = useRef(false);
   const shareReturnFocusRef = useRef<HTMLElement | null>(null);
   const shareFocusHandoffRef = useRef<'asset-report' | 'export' | 'group-report' | null>(null);
+  const externalShareReportTriggerRef = useRef<HTMLElement | null>(null);
   const selectedQuoteLeadTypeRef = useRef<AssetLeadType | null>(null);
   const quotePartnerSearchRef = useRef('');
   const assetSettingsMapElementRef = useRef<HTMLDivElement | null>(null);
@@ -6540,6 +6553,8 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
   const [isSummaryModalOpen, setIsSummaryModalOpen] = useState(false);
   const [isRegisterShareModalOpen, setIsRegisterShareModalOpen] = useState(false);
   const [assetShareDestination, setAssetShareDestination] = useState<AssetShareDestination>('choice');
+  const [externalShareReportScope, setExternalShareReportScope] = useState<ExternalShareReportScope>(null);
+  const [externalShareReportFiles, setExternalShareReportFiles] = useState<ExternalShareFileSource[]>([]);
   const [isAccountantReportsOpen, setIsAccountantReportsOpen] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [exportFormat, setExportFormat] = useState<ExportFormat>('pdf');
@@ -6742,6 +6757,65 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     }
   }
 
+  function resetExternalShareDraft() {
+    setExternalShareReportScope(null);
+    setExternalShareReportFiles([]);
+    externalShareReportTriggerRef.current = null;
+  }
+
+  function returnToExternalShareDraft() {
+    if (!externalShareReportScope) return;
+
+    const trigger = externalShareReportTriggerRef.current;
+    setExternalShareReportScope(null);
+    externalShareReportTriggerRef.current = null;
+
+    if (trigger?.isConnected) {
+      window.requestAnimationFrame(() => trigger.focus({ preventScroll: true }));
+    }
+  }
+
+  function addExternalShareReport(source: ExternalShareFileSource) {
+    setExternalShareReportFiles((current) => (
+      current.some((file) => file.id === source.id)
+        ? current
+        : [...current, source]
+    ));
+    setNotice({ tone: 'success', message: `${source.label} added to your share.` });
+  }
+
+  function buildExternalReportSource({
+    label,
+    description,
+    fileName,
+    url,
+    format,
+  }: {
+    label: string;
+    description: string;
+    fileName: string;
+    url: string;
+    format: 'pdf' | 'xlsx';
+  }): ExternalShareFileSource {
+    return {
+      id: `report:${format}:${url}`,
+      kind: 'report',
+      label,
+      description,
+      fileName,
+      url,
+      contentType: format === 'pdf'
+        ? 'application/pdf'
+        : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      credentials: 'include',
+      preferSourceFileName: true,
+    };
+  }
+
+  function removeExternalShareReport(reportId: string) {
+    setExternalShareReportFiles((current) => current.filter((file) => file.id !== reportId));
+  }
+
   function openAssetGroupManager(asset: RegisterAsset) {
     if (!canManageAssetGroups) {
       setNotice({
@@ -6786,6 +6860,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     setAssetGroupModalGroup(null);
     setAssetGroupModalInitialView('menu');
     setAssetGroupError('');
+    returnToExternalShareDraft();
     restoreShareFocusAfterHandoff('group-report');
   }
 
@@ -7207,6 +7282,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     }
   }
   const reportAsset = sharedReportAsset ?? activeAsset;
+  const isAttachingExternalReport = externalShareReportScope !== null;
   const projectionRequestRef = useRef(0);
   const projectionResultRef = useRef<HTMLElement | null>(null);
   const [shouldScrollToProjectionResult, setShouldScrollToProjectionResult] = useState(false);
@@ -8611,13 +8687,13 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
         return;
       }
 
-      if (isRegisterShareModalOpen) {
-        closeRegisterShareModal();
+      if (isExportModalOpen) {
+        closeExportModal();
         return;
       }
 
-      if (isExportModalOpen) {
-        closeExportModal();
+      if (isRegisterShareModalOpen) {
+        closeRegisterShareModal();
         return;
       }
 
@@ -11147,6 +11223,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
   function openAssetQuoteOptions(asset: RegisterAsset) {
     setNotice(null);
     setIsAssetFilterOpen(false);
+    resetExternalShareDraft();
     setAssetGroupShareTarget(null);
     setAssetShareDestination('choice');
     resetAssetQuoteState('asset');
@@ -11155,6 +11232,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
 
   function closeAssetQuoteModal() {
     if (isSendingQuoteLead) return;
+    resetExternalShareDraft();
     setQuoteAsset(null);
     setAssetGroupShareTarget(null);
     setAssetShareDestination('choice');
@@ -11682,6 +11760,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     setAssetOwnershipReportMonth('all');
     setAssetReportDownloadFormat('pdf');
     setOpenAssetReportSelect(null);
+    returnToExternalShareDraft();
     restoreShareFocusAfterHandoff('asset-report');
   }
 
@@ -13598,6 +13677,27 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
   }
 
   async function handlePrintAssetSheet(asset: RegisterAsset) {
+    if (externalShareReportScope === 'asset') {
+      const reportUrl = buildAssetRegisterExportUrl(
+        activeRegister?.id || activeRegisterId,
+        asset.title,
+        accountantShareId,
+        assetRegisters.map((register) => register.id),
+        '',
+        'pdf',
+        [asset.id],
+      );
+      addExternalShareReport(buildExternalReportSource({
+        label: `${asset.title} valuation · PDF`,
+        description: 'Aim4price asset valuation report',
+        fileName: `${shareFileSlug(asset.title, 'asset')}-valuation.pdf`,
+        url: reportUrl,
+        format: 'pdf',
+      }));
+      closeAssetReportDialog();
+      return;
+    }
+
     const [reportLogoUrl, assetPhotoUrls] = await Promise.all([
       preparePrintableImageUrl(getRegisterReportLogoUrl(activeRegister), {
         maxDimension: PRINT_LOGO_MAX_DIMENSION,
@@ -13775,9 +13875,23 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
 
   async function handleDownloadAssetReportXlsx(asset: RegisterAsset, reportKind: AssetPdfReportKind, filters?: AssetPdfReportFilters) {
     const reportLabel = assetReportLabel(reportKind);
+    const reportUrl = buildAssetPdfReportUrl(asset, reportKind, filters, 'xlsx');
+    const fileName = `${shareFileSlug(asset.title, 'asset')}-${reportKind}-report.xlsx`;
+
+    if (externalShareReportScope === 'asset') {
+      addExternalShareReport(buildExternalReportSource({
+        label: `${reportLabel} · Excel`,
+        description: `Aim4price ${reportLabel.toLowerCase()}`,
+        fileName,
+        url: reportUrl,
+        format: 'xlsx',
+      }));
+      closeAssetReportDialog();
+      return;
+    }
 
     try {
-      const response = await fetch(buildAssetPdfReportUrl(asset, reportKind, filters, 'xlsx'), {
+      const response = await fetch(reportUrl, {
         credentials: 'include',
         cache: 'no-store',
       });
@@ -13796,9 +13910,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
       }
 
       const blob = await response.blob();
-      const fallbackName = `${asset.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'asset'}-${reportKind}-report.xlsx`;
-      const fileName = parseDownloadFileName(response, fallbackName);
-      downloadBlob(blob, fileName);
+      downloadBlob(blob, parseDownloadFileName(response, fileName));
       setNotice({ tone: 'success', message: `${reportLabel} Excel downloaded.` });
       closeAssetReportDialog();
     } catch (error) {
@@ -13810,45 +13922,45 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
   }
 
   function openAssetFuelReportFilter() {
-    if (!canDownloadAssetFuelReport(activeAsset)) {
+    if (!canDownloadAssetFuelReport(reportAsset)) {
       setNotice({ tone: 'error', message: 'Fuel reports are not available for property, land or building assets.' });
       return;
     }
 
-    setAssetReportStep('fuel-format');
+    setAssetReportStep(externalShareReportScope === 'asset' ? 'fuel-filter' : 'fuel-format');
     setAssetFuelReportYear('all');
     setAssetFuelReportMonth('all');
-    setAssetReportDownloadFormat('pdf');
+    setAssetReportDownloadFormat(externalShareReportScope === 'asset' ? 'xlsx' : 'pdf');
     setOpenAssetReportSelect(null);
   }
 
   function openAssetMaintenanceReportFilter() {
-    setAssetReportStep('maintenance-format');
+    setAssetReportStep(externalShareReportScope === 'asset' ? 'maintenance-filter' : 'maintenance-format');
     setAssetMaintenanceReportType('all');
     setAssetMaintenanceReportYear('all');
     setAssetMaintenanceReportMonth('all');
-    setAssetReportDownloadFormat('pdf');
+    setAssetReportDownloadFormat(externalShareReportScope === 'asset' ? 'xlsx' : 'pdf');
     setOpenAssetReportSelect(null);
   }
 
   function openAssetDepreciationReportFilter() {
-    if (!canDownloadAssetDepreciationReport(activeAsset)) {
+    if (!canDownloadAssetDepreciationReport(reportAsset)) {
       setNotice({ tone: 'error', message: 'Depreciation logs are not available for property, land or building assets.' });
       return;
     }
 
-    setAssetReportStep('depreciation-format');
+    setAssetReportStep(externalShareReportScope === 'asset' ? 'depreciation-filter' : 'depreciation-format');
     setAssetDepreciationReportYear('all');
     setAssetDepreciationReportMonth('all');
-    setAssetReportDownloadFormat('pdf');
+    setAssetReportDownloadFormat(externalShareReportScope === 'asset' ? 'xlsx' : 'pdf');
     setOpenAssetReportSelect(null);
   }
 
   function openAssetOwnershipReportFilter() {
-    setAssetReportStep('ownership-format');
+    setAssetReportStep(externalShareReportScope === 'asset' ? 'ownership-filter' : 'ownership-format');
     setAssetOwnershipReportYear('all');
     setAssetOwnershipReportMonth('all');
-    setAssetReportDownloadFormat('pdf');
+    setAssetReportDownloadFormat(externalShareReportScope === 'asset' ? 'xlsx' : 'pdf');
     setOpenAssetReportSelect(null);
   }
 
@@ -13869,6 +13981,12 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
   }
 
   function backToAssetReportFormatStep() {
+    if (externalShareReportScope === 'asset') {
+      setAssetReportStep('options');
+      setOpenAssetReportSelect(null);
+      return;
+    }
+
     setAssetReportStep((currentStep) => {
       if (currentStep === 'fuel-filter') return 'fuel-format';
       if (currentStep === 'maintenance-filter') return 'maintenance-format';
@@ -14003,6 +14121,19 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
       month: assetOwnershipReportYear === 'all' ? 'all' : assetOwnershipReportMonth,
     };
 
+    if (externalShareReportScope === 'asset') {
+      const reportUrl = buildAssetOwnershipReportUrl(asset, filters, 'xlsx');
+      addExternalShareReport(buildExternalReportSource({
+        label: 'Cost of Ownership · Excel',
+        description: 'Aim4price ownership costs and VAT report',
+        fileName: `${shareFileSlug(asset.title, 'asset')}-cost-of-ownership.xlsx`,
+        url: reportUrl,
+        format: 'xlsx',
+      }));
+      closeAssetReportDialog();
+      return;
+    }
+
     if (format === 'xlsx') {
       try {
         const response = await fetch(buildAssetOwnershipReportUrl(asset, filters, 'xlsx'), {
@@ -14107,6 +14238,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
 
     setNotice(null);
     setIsAssetFilterOpen(false);
+    resetExternalShareDraft();
     setAssetGroupShareTarget(null);
     setAssetShareDestination('choice');
     setIsRegisterShareModalOpen(true);
@@ -14118,6 +14250,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
 
     setNotice(null);
     setIsAssetFilterOpen(false);
+    resetExternalShareDraft();
     setAssetGroupShareTarget(group);
     setAssetShareDestination('choice');
     setIsRegisterShareModalOpen(true);
@@ -14125,6 +14258,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
 
   function closeRegisterShareModal() {
     if (isExporting || isSendingQuoteLead) return;
+    resetExternalShareDraft();
     setIsRegisterShareModalOpen(false);
     setAssetGroupShareTarget(null);
     setAssetShareDestination('choice');
@@ -14132,9 +14266,8 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
 
   function openRegisterShareReportsAndDocuments() {
     const group = assetGroupShareTarget;
-    shareFocusHandoffRef.current = group ? 'group-report' : 'export';
-    suppressShareFocusRestoreRef.current = true;
-    closeRegisterShareModal();
+    externalShareReportTriggerRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    setExternalShareReportScope(group ? 'group' : 'register');
 
     if (group) {
       openAssetGroupReports(group);
@@ -14150,9 +14283,8 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     const asset = quoteAsset;
     if (!asset) return;
 
-    shareFocusHandoffRef.current = 'asset-report';
-    suppressShareFocusRestoreRef.current = true;
-    closeAssetQuoteModal();
+    externalShareReportTriggerRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    setExternalShareReportScope('asset');
     openSharedAssetReportDialog(asset);
     window.requestAnimationFrame(() => document.getElementById('asset-report-title')?.focus({ preventScroll: true }));
   }
@@ -14504,6 +14636,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     setPdfReportSelection('');
     setSelectedPdfAssetIds([]);
     setPdfAssetSearchTerm('');
+    returnToExternalShareDraft();
     restoreShareFocusAfterHandoff('export');
   }
 
@@ -14578,6 +14711,31 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     const isCustomAssetSelection = Boolean(overrideAssets);
     const reportOption = overrideReportDetails ? { value: reportKind, ...overrideReportDetails } : getPdfReportOption(reportKind);
     const reportAssets = overrideAssets ?? filterAssetsByPdfReportKind(assets, reportKind);
+
+    if (externalShareReportScope === 'register') {
+      if (!reportAssets.length) {
+        throw new Error(`No assets match the ${reportOption.label.toLowerCase()} report.`);
+      }
+      const reportName = overrideEntityName.trim() || exportEntityName.trim() || activeRegister?.businessName || 'Asset Register';
+      const reportUrl = buildAssetRegisterExportUrl(
+        activeRegister?.id || activeRegisterId,
+        reportName,
+        accountantShareId,
+        assetRegisters.map((register) => register.id),
+        '',
+        'pdf',
+        reportAssets.map((asset) => asset.id),
+      );
+      addExternalShareReport(buildExternalReportSource({
+        label: `${reportOption.label} · PDF`,
+        description: `${reportAssets.length} ${reportAssets.length === 1 ? 'asset' : 'assets'} in an Aim4price report`,
+        fileName: `${shareFileSlug(`${reportName}-${reportOption.label}`)}.pdf`,
+        url: reportUrl,
+        format: 'pdf',
+      }));
+      return;
+    }
+
     const reportAssetGroups = projectAssetGroupsToAssets(assetGroups, reportAssets);
     const reportAssetGroupMemberships = buildAssetGroupMembershipMap(reportAssetGroups);
     const orderedReportAssets = orderAssetsByGroups(reportAssets, reportAssetGroups);
@@ -14704,9 +14862,12 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
       setIsExportModalOpen(false);
       setSelectedPdfAssetIds([]);
       setPdfAssetSearchTerm('');
+      returnToExternalShareDraft();
       setNotice({
         tone: 'success',
-        message: `${reportOption.label} PDF opened.`,
+        message: externalShareReportScope === 'register'
+          ? `${reportOption.label} PDF added to your share.`
+          : `${reportOption.label} PDF opened.`,
       });
     } catch (error) {
       setPdfReportSelection('');
@@ -14733,9 +14894,12 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
       setIsExportModalOpen(false);
       setSelectedPdfAssetIds([]);
       setPdfAssetSearchTerm('');
+      returnToExternalShareDraft();
       setNotice({
         tone: 'success',
-        message: `${selectedPdfAssetCount} selected asset${selectedPdfAssetCount === 1 ? '' : 's'} PDF opened.`,
+        message: externalShareReportScope === 'register'
+          ? `${selectedPdfAssetCount} selected asset${selectedPdfAssetCount === 1 ? '' : 's'} PDF added to your share.`
+          : `${selectedPdfAssetCount} selected asset${selectedPdfAssetCount === 1 ? '' : 's'} PDF opened.`,
       });
     } catch (error) {
       setNotice({
@@ -14748,13 +14912,27 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
   }
 
   async function handleExportXlsx(options: { entityName?: string; groupId?: string } = {}) {
-    const response = await fetch(buildAssetRegisterExportUrl(
+    const reportUrl = buildAssetRegisterExportUrl(
       activeRegister?.id || activeRegisterId,
       options.entityName ?? exportEntityName,
       accountantShareId,
       assetRegisters.map((register) => register.id),
       options.groupId,
-    ), {
+    );
+
+    if (externalShareReportScope === 'register') {
+      const reportName = options.entityName?.trim() || exportEntityName.trim() || activeRegister?.businessName || 'Asset Register';
+      addExternalShareReport(buildExternalReportSource({
+        label: `${reportName} · Excel`,
+        description: 'Aim4price asset register workbook',
+        fileName: `${shareFileSlug(reportName, 'asset-register')}.xlsx`,
+        url: reportUrl,
+        format: 'xlsx',
+      }));
+      return;
+    }
+
+    const response = await fetch(reportUrl, {
       credentials: 'include',
       cache: 'no-store',
     });
@@ -14795,6 +14973,26 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
       return;
     }
 
+    if (externalShareReportScope === 'group') {
+      const reportUrl = buildAssetRegisterExportUrl(
+        activeRegister?.id || activeRegisterId,
+        group.name,
+        accountantShareId,
+        assetRegisters.map((register) => register.id),
+        group.id,
+        'pdf',
+      );
+      addExternalShareReport(buildExternalReportSource({
+        label: `${group.name} valuation · PDF`,
+        description: 'Aim4price umbrella valuation report',
+        fileName: `${shareFileSlug(group.name, 'umbrella')}-valuation.pdf`,
+        url: reportUrl,
+        format: 'pdf',
+      }));
+      closeAssetGroupManager();
+      return;
+    }
+
     setExportFormat('pdf');
     setIsExporting(true);
 
@@ -14828,6 +15026,26 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     const groupAssets = assetsForGroup(group);
     if (!groupAssets.length) {
       setNotice({ tone: 'error', message: `${group.name} does not contain any available assets to export.` });
+      return;
+    }
+
+    if (externalShareReportScope === 'group') {
+      const reportUrl = buildAssetRegisterExportUrl(
+        activeRegister?.id || activeRegisterId,
+        group.name,
+        accountantShareId,
+        assetRegisters.map((register) => register.id),
+        group.id,
+        'xlsx',
+      );
+      addExternalShareReport(buildExternalReportSource({
+        label: `${group.name} · Excel`,
+        description: 'Aim4price umbrella workbook',
+        fileName: `${shareFileSlug(group.name, 'umbrella')}.xlsx`,
+        url: reportUrl,
+        format: 'xlsx',
+      }));
+      closeAssetGroupManager();
       return;
     }
 
@@ -14870,6 +15088,23 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     const reportUrl = reportKind === 'ownership'
       ? buildAssetGroupOwnershipReportUrl(group, filters, format)
       : buildAssetGroupTimelineReportUrl(group, reportKind, filters, format);
+
+    if (externalShareReportScope === 'group') {
+      if (format !== 'xlsx') {
+        setNotice({ tone: 'error', message: 'This report can currently be attached as an Excel file.' });
+        return;
+      }
+      const fileName = `${shareFileSlug(group.name, 'umbrella')}-${reportKind}-report.xlsx`;
+      addExternalShareReport(buildExternalReportSource({
+        label: `${reportLabel} · Excel`,
+        description: `Aim4price ${group.name} ${reportLabel.toLowerCase()}`,
+        fileName,
+        url: reportUrl,
+        format: 'xlsx',
+      }));
+      closeAssetGroupManager();
+      return;
+    }
 
     setIsExporting(true);
 
@@ -14939,7 +15174,13 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     try {
       await handleExportXlsx();
       setIsExportModalOpen(false);
-      setNotice({ tone: 'success', message: 'Asset register XLSX downloaded.' });
+      returnToExternalShareDraft();
+      setNotice({
+        tone: 'success',
+        message: externalShareReportScope === 'register'
+          ? 'Asset register Excel added to your share.'
+          : 'Asset register XLSX downloaded.',
+      });
     } catch (error) {
       setNotice({
         tone: 'error',
@@ -17269,6 +17510,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
             className={`${styles.optionsModal} ${styles.assetQuoteModal} ${styles.registerShareModal} ${assetShareDestination === 'choice' ? styles.assetShareDestinationModal : ''} ${assetShareDestination === 'inside' ? styles.assetShareInsideModal : ''} ${assetShareDestination === 'outside' ? styles.externalAssetShareModal : ''}`}
             role="dialog"
             aria-modal="true"
+            aria-hidden={externalShareReportScope === 'register' || externalShareReportScope === 'group' ? true : undefined}
             aria-labelledby="asset-register-share-title"
           >
             <div className={`${styles.modalHeader} ${styles.optionsModalHeader} ${styles.assetQuoteModalHeader} ${styles.registerShareModalHeader}`}>
@@ -17281,7 +17523,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                 <p>{assetShareDestination === 'choice'
                   ? 'Choose where to share. Keep it inside Aim4price or send a ready-to-read message outside.'
                   : assetShareDestination === 'outside'
-                    ? `Attach the photos, reports and documents you choose, then share them through WhatsApp, email or another app.`
+                    ? 'Review the message, choose any attachments, then send it once through WhatsApp or email.'
                     : isAssetGroupShare
                       ? `Share this umbrella and its ${activeShareAssets.length} linked ${activeShareAssets.length === 1 ? 'asset' : 'assets'}. Unrelated assets stay private.`
                       : 'Choose who to share with. Each partner sees only what they need.'}</p>
@@ -17309,9 +17551,9 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                 <AssetExternalShare
                   shareName={activeShareName}
                   assets={activeExternalShareAssets}
-                  reportFiles={activeExternalShareReportFiles}
-                  loadDocumentFiles={() => loadExternalShareDocumentFiles(activeShareAssets, { includeUnlinked: !isAssetGroupShare })}
-                  onOpenReportsAndDocuments={openRegisterShareReportsAndDocuments}
+                  reportFiles={externalShareReportFiles}
+                  onAddAim4priceReport={openRegisterShareReportsAndDocuments}
+                  onRemoveAim4priceReport={removeExternalShareReport}
                 />
               ) : (
                 <div className={styles.assetShareInsideFlow}>
@@ -19446,6 +19688,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
             className={`${styles.optionsModal} ${styles.assetQuoteModal} ${!selectedQuoteOption && assetShareDestination === 'choice' ? styles.assetShareDestinationModal : ''} ${!selectedQuoteOption && assetShareDestination === 'inside' ? styles.assetShareInsideModal : ''} ${!selectedQuoteOption && assetShareDestination === 'outside' ? styles.externalAssetShareModal : ''} ${selectedQuoteOption && quoteDirectoryStage === 'map' ? styles.assetQuotePartnerPickerModal : ''} ${selectedQuoteOption && quoteDirectoryStage === 'location' ? styles.assetQuoteLocationPickerModal : ''} ${isQuoteMapExpanded ? styles.assetQuoteMapExpandedModal : ''}`}
             role="dialog"
             aria-modal="true"
+            aria-hidden={externalShareReportScope === 'asset' ? true : undefined}
             aria-labelledby="asset-quote-title"
           >
             <div className={`${styles.modalHeader} ${styles.optionsModalHeader} ${styles.assetQuoteModalHeader}`}>
@@ -19461,7 +19704,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                   <p>{assetShareDestination === 'choice'
                     ? 'Choose where to share this asset.'
                     : assetShareDestination === 'outside'
-                      ? 'Attach the photos, reports and documents you choose, then share them through WhatsApp, email or another app.'
+                      ? 'Review the message, choose any attachments, then send it once through WhatsApp or email.'
                       : quoteAsset ? `${buildAssetMeta(quoteAsset)} · ${money(quoteAsset.value)} excl. VAT` : ''}</p>
                 ) : quoteDirectoryStage === 'location' ? (
                   <p>Choose an area first. We will open the map there and show nearby active partners before Aim4price assistance listings.</p>
@@ -19499,9 +19742,9 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                   <AssetExternalShare
                     shareName={quoteAsset?.title || 'Aim4price asset'}
                     assets={quoteExternalShareAssets}
-                    reportFiles={quoteExternalShareReportFiles}
-                    loadDocumentFiles={() => quoteAsset ? loadExternalShareDocumentFiles([quoteAsset]) : Promise.resolve([])}
-                    onOpenReportsAndDocuments={openAssetShareReportsAndDocuments}
+                    reportFiles={externalShareReportFiles}
+                    onAddAim4priceReport={openAssetShareReportsAndDocuments}
+                    onRemoveAim4priceReport={removeExternalShareReport}
                   />
                 ) : (
                   <div className={styles.assetShareInsideFlow}>
@@ -20783,7 +21026,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
             <div className={`${styles.modalHeader} ${styles.assetReportModalHeader}`}>
               <div className={styles.modalHeaderText}>
                 <h3 id="asset-report-title" tabIndex={-1}>{reportAsset.title}</h3>
-                <p>{buildAssetMeta(reportAsset)}</p>
+                <p>{isAttachingExternalReport ? 'Choose an Aim4price report to add to your message.' : buildAssetMeta(reportAsset)}</p>
               </div>
 
               <button type="button" className={styles.modalCloseButton} onClick={closeAssetReportDialog} aria-label="Close report options">
@@ -20858,7 +21101,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                       onClick={() => void handleDownloadFilteredFuelReport(reportAsset, assetReportDownloadFormat)}
                     >
                       <DownloadIcon className={styles.buttonIcon} />
-                      <span>{assetReportDownloadFormat === 'pdf' ? 'Open PDF report' : 'Download Excel'}</span>
+                      <span>{isAttachingExternalReport ? 'Add Excel report' : assetReportDownloadFormat === 'pdf' ? 'Open PDF report' : 'Download Excel'}</span>
                     </button>
                   </div>
                 </>
@@ -20914,7 +21157,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                       onClick={() => void handleDownloadFilteredMaintenanceReport(reportAsset, assetReportDownloadFormat)}
                     >
                       <DownloadIcon className={styles.buttonIcon} />
-                      <span>{assetReportDownloadFormat === 'pdf' ? 'Open PDF report' : 'Download Excel'}</span>
+                      <span>{isAttachingExternalReport ? 'Add Excel report' : assetReportDownloadFormat === 'pdf' ? 'Open PDF report' : 'Download Excel'}</span>
                     </button>
                   </div>
                 </>
@@ -20961,7 +21204,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                       onClick={() => void handleDownloadFilteredDepreciationReport(reportAsset, assetReportDownloadFormat)}
                     >
                       <DownloadIcon className={styles.buttonIcon} />
-                      <span>{assetReportDownloadFormat === 'pdf' ? 'Open PDF report' : 'Download Excel'}</span>
+                      <span>{isAttachingExternalReport ? 'Add Excel report' : assetReportDownloadFormat === 'pdf' ? 'Open PDF report' : 'Download Excel'}</span>
                     </button>
                   </div>
                 </>
@@ -21008,7 +21251,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                       onClick={() => void handleDownloadFilteredOwnershipReport(reportAsset, assetReportDownloadFormat)}
                     >
                       <DownloadIcon className={styles.buttonIcon} />
-                      <span>{assetReportDownloadFormat === 'pdf' ? 'Open PDF report' : 'Download Excel'}</span>
+                      <span>{isAttachingExternalReport ? 'Add Excel report' : assetReportDownloadFormat === 'pdf' ? 'Open PDF report' : 'Download Excel'}</span>
                     </button>
                   </div>
                 </>
@@ -21017,31 +21260,33 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                   <button type="button" className={styles.assetReportOptionButton} onClick={() => handlePrintAssetSheet(reportAsset)}>
                     <PdfIcon className={styles.buttonIcon} />
                     <span>
-                      <strong>Download asset valuation</strong>
-                      <small>PDF value summary with notes and documents.</small>
+                      <strong>{isAttachingExternalReport ? 'Add asset valuation' : 'Download asset valuation'}</strong>
+                      <small>{isAttachingExternalReport ? 'Attach a polished Aim4price PDF.' : 'PDF value summary with notes and documents.'}</small>
                     </span>
                   </button>
 
                   {canUseOwnerOnlyAssetActions ? (
                     <>
-                      <Link
-                        href={buildOwnerAssetPageHref('/documents', reportAsset.id, {}, ownerCommandReturnLocation)}
-                        className={styles.assetReportOptionButton}
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        <DocumentIcon className={styles.buttonIcon} />
-                        <span>
-                          <strong>Saved documents</strong>
-                          <small>Open, download or share any file from the Documents Vault.</small>
-                        </span>
-                      </Link>
+                      {!isAttachingExternalReport ? (
+                        <Link
+                          href={buildOwnerAssetPageHref('/documents', reportAsset.id, {}, ownerCommandReturnLocation)}
+                          className={styles.assetReportOptionButton}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          <DocumentIcon className={styles.buttonIcon} />
+                          <span>
+                            <strong>Saved documents</strong>
+                            <small>Open, download or share any file from the Documents Vault.</small>
+                          </span>
+                        </Link>
+                      ) : null}
 
                       <button type="button" className={styles.assetReportOptionButton} onClick={openAssetMaintenanceReportFilter}>
                         <DocumentIcon className={styles.buttonIcon} />
                         <span>
-                          <strong>Download maintenance report</strong>
-                          <small>PDF or Excel service and repair costs.</small>
+                          <strong>{isAttachingExternalReport ? 'Add maintenance report' : 'Download maintenance report'}</strong>
+                          <small>{isAttachingExternalReport ? 'Attach an Excel service and repair report.' : 'PDF or Excel service and repair costs.'}</small>
                         </span>
                       </button>
 
@@ -21049,8 +21294,8 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                         <button type="button" className={styles.assetReportOptionButton} onClick={openAssetFuelReportFilter}>
                           <DocumentIcon className={styles.buttonIcon} />
                           <span>
-                            <strong>Download fuel report</strong>
-                            <small>PDF or Excel fuel costs by month.</small>
+                            <strong>{isAttachingExternalReport ? 'Add fuel report' : 'Download fuel report'}</strong>
+                            <small>{isAttachingExternalReport ? 'Attach an Excel fuel report.' : 'PDF or Excel fuel costs by month.'}</small>
                           </span>
                         </button>
                       ) : null}
@@ -21059,8 +21304,8 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                         <button type="button" className={styles.assetReportOptionButton} onClick={openAssetDepreciationReportFilter}>
                           <DocumentIcon className={styles.buttonIcon} />
                           <span>
-                            <strong>Download depreciation log</strong>
-                            <small>PDF or Excel log of saved value changes.</small>
+                            <strong>{isAttachingExternalReport ? 'Add depreciation log' : 'Download depreciation log'}</strong>
+                            <small>{isAttachingExternalReport ? 'Attach an Excel value-change log.' : 'PDF or Excel log of saved value changes.'}</small>
                           </span>
                         </button>
                       ) : null}
@@ -21068,8 +21313,8 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                       <button type="button" className={styles.assetReportOptionButton} onClick={openAssetOwnershipReportFilter}>
                         <DocumentIcon className={styles.buttonIcon} />
                         <span>
-                          <strong>Download cost of ownership report</strong>
-                          <small>PDF or Excel ownership costs and VAT.</small>
+                          <strong>{isAttachingExternalReport ? 'Add cost of ownership report' : 'Download cost of ownership report'}</strong>
+                          <small>{isAttachingExternalReport ? 'Attach an Excel ownership cost report.' : 'PDF or Excel ownership costs and VAT.'}</small>
                         </span>
                       </button>
                     </>
@@ -21269,7 +21514,8 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
           >
             <div className={`${styles.modalHeader} ${styles.exportModalHeader}`}>
               <div className={styles.modalHeaderText}>
-                <h3 id="export-title" tabIndex={-1}>Export asset register</h3>
+                <h3 id="export-title" tabIndex={-1}>{isAttachingExternalReport ? 'Add Aim4price report' : 'Export asset register'}</h3>
+                {isAttachingExternalReport ? <p>Choose the report you want to attach to your message.</p> : null}
               </div>
 
               <button type="button" className={styles.modalCloseButton} onClick={closeExportModal} aria-label="Close export options">
@@ -21324,7 +21570,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                         </span>
                       </button>
 
-                      <Link
+                      {!isAttachingExternalReport ? <Link
                         href="/documents"
                         className={`${styles.exportOption} ${styles.exportDocumentsOption}`}
                         target="_blank"
@@ -21338,7 +21584,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                           <strong>Saved documents</strong>
                           <small>Open the Documents Vault to preview, download or share any saved file.</small>
                         </span>
-                      </Link>
+                      </Link> : null}
                     </div>
 
                     <div className={`${styles.formActions} ${styles.exportActions}`}>
@@ -21348,7 +21594,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
 
                       <button type="button" className={styles.primaryButton} onClick={handleConfirmExport} disabled={isExporting}>
                         {exportFormat === 'pdf' ? <ChevronRightIcon className={styles.buttonIcon} /> : <DownloadIcon className={styles.buttonIcon} />}
-                        <span>{exportFormat === 'pdf' ? 'Next' : isExporting ? 'Preparing export...' : 'Download XLSX'}</span>
+                        <span>{exportFormat === 'pdf' ? 'Next' : isExporting ? 'Preparing report...' : isAttachingExternalReport ? 'Add Excel report' : 'Download XLSX'}</span>
                       </button>
                     </div>
                   </>
@@ -21499,7 +21745,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                             disabled={isExporting || selectedPdfAssetCount === 0}
                           >
                             <DownloadIcon className={styles.buttonIcon} />
-                            <span>{isExporting ? 'Preparing PDF...' : selectedPdfAssetCount ? `Download ${selectedPdfAssetCount} selected PDF` : 'Download selected PDF'}</span>
+                            <span>{isExporting ? 'Preparing PDF...' : isAttachingExternalReport ? selectedPdfAssetCount ? `Add ${selectedPdfAssetCount} selected PDF` : 'Add selected PDF' : selectedPdfAssetCount ? `Download ${selectedPdfAssetCount} selected PDF` : 'Download selected PDF'}</span>
                           </button>
                         </div>
                       </>
@@ -21978,6 +22224,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
         combinedMode={isCombinedRegisterView}
         busy={isSavingAssetGroup}
         reportBusy={isExporting}
+        reportDeliveryMode={externalShareReportScope === 'group' ? 'attach' : 'download'}
         error={assetGroupError}
         onClose={closeAssetGroupManager}
         onSave={handleSaveAssetGroup}

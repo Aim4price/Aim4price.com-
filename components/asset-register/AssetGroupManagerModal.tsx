@@ -323,6 +323,7 @@ type Props = {
   combinedMode?: boolean;
   busy?: boolean;
   reportBusy?: boolean;
+  reportDeliveryMode?: 'download' | 'attach';
   error?: string | null;
   onClose: () => void;
   onSave: (input: AssetGroupSaveInput) => void | Promise<void>;
@@ -426,6 +427,7 @@ export default function AssetGroupManagerModal({
   combinedMode = false,
   busy = false,
   reportBusy = false,
+  reportDeliveryMode = 'download',
   error,
   onClose,
   onSave,
@@ -476,13 +478,13 @@ export default function AssetGroupManagerModal({
     setSearch('');
     setView(group ? initialView : 'create');
     setEditorStep(1);
-    setReportFormat('pdf');
+    setReportFormat(reportDeliveryMode === 'attach' ? 'xlsx' : 'pdf');
     setReportStep('options');
     setReportKind('valuation');
     setReportYear('all');
     setReportMonth('all');
     setMaintenanceType('all');
-  }, [anchorAsset, combinedMode, group, initialView, open]);
+  }, [anchorAsset, combinedMode, group, initialView, open, reportDeliveryMode]);
 
   const visibleAssets = useMemo(() => {
     return assets
@@ -633,7 +635,7 @@ export default function AssetGroupManagerModal({
 
   function chooseReport(nextReportKind: AssetGroupReportKind) {
     setReportKind(nextReportKind);
-    setReportFormat('pdf');
+    setReportFormat(reportDeliveryMode === 'attach' ? 'xlsx' : 'pdf');
     setReportYear('all');
     setReportMonth('all');
     setMaintenanceType('all');
@@ -649,7 +651,7 @@ export default function AssetGroupManagerModal({
       return;
     }
 
-    setReportStep('format');
+    setReportStep(reportDeliveryMode === 'attach' ? 'filters' : 'format');
   }
 
   const currentYear = new Date().getFullYear();
@@ -693,6 +695,7 @@ export default function AssetGroupManagerModal({
   const useManageModalDesign = Boolean(group && view === 'menu');
   const useReportModalDesign = Boolean(group && view === 'reports');
   const useSharedAssetModalDesign = useManageModalDesign || useReportModalDesign;
+  const isAttachingReport = reportDeliveryMode === 'attach';
 
   return (
     <div className={useSharedAssetModalDesign ? registerStyles.modalOverlay : styles.backdrop} role="presentation" onMouseDown={(event) => {
@@ -722,7 +725,7 @@ export default function AssetGroupManagerModal({
             {useSharedAssetModalDesign
               ? <h3 id="asset-group-title" tabIndex={-1}>{modalTitle}</h3>
               : <h2 id="asset-group-title" tabIndex={-1}>{modalTitle}</h2>}
-            <p>{modalSubtitle}</p>
+            <p>{isAttachingReport && useReportModalDesign ? 'Choose an Aim4price report to add to your message.' : modalSubtitle}</p>
           </div>
           <button
             type="button"
@@ -780,28 +783,28 @@ export default function AssetGroupManagerModal({
               <div className={registerStyles.assetReportOptionsGrid}>
                 <button type="button" className={registerStyles.assetReportOptionButton} onClick={() => chooseReport('valuation')}>
                   <PdfIcon className={registerStyles.buttonIcon} />
-                  <span><strong>Download umbrella valuation</strong><small>PDF values, notes and grouped assets.</small></span>
+                  <span><strong>{isAttachingReport ? 'Add umbrella valuation' : 'Download umbrella valuation'}</strong><small>{isAttachingReport ? 'Attach a polished Aim4price PDF.' : 'PDF values, notes and grouped assets.'}</small></span>
                 </button>
                 <button type="button" className={registerStyles.assetReportOptionButton} onClick={() => chooseReport('maintenance')}>
                   <DocumentIcon className={registerStyles.buttonIcon} />
-                  <span><strong>Download maintenance report</strong><small>Combined service and repair history.</small></span>
+                  <span><strong>{isAttachingReport ? 'Add maintenance report' : 'Download maintenance report'}</strong><small>Combined service and repair history.</small></span>
                 </button>
                 <button type="button" className={registerStyles.assetReportOptionButton} onClick={() => chooseReport('fuel')}>
                   <DocumentIcon className={registerStyles.buttonIcon} />
-                  <span><strong>Download fuel report</strong><small>Combined fuel records by month.</small></span>
+                  <span><strong>{isAttachingReport ? 'Add fuel report' : 'Download fuel report'}</strong><small>Combined fuel records by month.</small></span>
                 </button>
                 <button type="button" className={registerStyles.assetReportOptionButton} onClick={() => chooseReport('depreciation')}>
                   <DocumentIcon className={registerStyles.buttonIcon} />
-                  <span><strong>Download depreciation log</strong><small>Combined saved value changes.</small></span>
+                  <span><strong>{isAttachingReport ? 'Add depreciation log' : 'Download depreciation log'}</strong><small>Combined saved value changes.</small></span>
                 </button>
                 <button type="button" className={registerStyles.assetReportOptionButton} onClick={() => chooseReport('ownership')}>
                   <DocumentIcon className={registerStyles.buttonIcon} />
-                  <span><strong>Download cost of ownership report</strong><small>Combined expenses, costs and VAT.</small></span>
+                  <span><strong>{isAttachingReport ? 'Add cost of ownership report' : 'Download cost of ownership report'}</strong><small>Combined expenses, costs and VAT.</small></span>
                 </button>
-                <a href="/documents" target="_blank" rel="noreferrer" className={registerStyles.assetReportOptionButton}>
+                {!isAttachingReport ? <a href="/documents" target="_blank" rel="noreferrer" className={registerStyles.assetReportOptionButton}>
                   <DocumentIcon className={registerStyles.buttonIcon} />
                   <span><strong>Saved documents</strong><small>Open the Documents Vault to preview, download or share files.</small></span>
-                </a>
+                </a> : null}
               </div>
             ) : reportStep === 'format' ? (
               <>
@@ -845,10 +848,17 @@ export default function AssetGroupManagerModal({
 
             {reportStep === 'options' ? null : (
               <div className={`${registerStyles.formActions} ${registerStyles.exportActions} ${registerStyles.assetFuelReportActions} ${styles.reportActions}`}>
-                <button type="button" className={`${registerStyles.secondaryButton} ${registerStyles.assetTimelineSecondaryButton}`} onClick={() => setReportStep(reportStep === 'filters' ? 'format' : 'options')} disabled={busy || reportBusy}>Back</button>
+                <button
+                  type="button"
+                  className={`${registerStyles.secondaryButton} ${registerStyles.assetTimelineSecondaryButton}`}
+                  onClick={() => setReportStep(reportStep === 'filters' && !isAttachingReport ? 'format' : 'options')}
+                  disabled={busy || reportBusy}
+                >
+                  Back
+                </button>
                 <button type="button" className={`${registerStyles.secondaryButton} ${registerStyles.assetTimelineSecondaryButton}`} onClick={onClose} disabled={busy || reportBusy}>Cancel</button>
                 <button type="button" className={registerStyles.primaryButton} onClick={() => reportStep === 'format' ? setReportStep('filters') : handleDownloadSelectedReport()} disabled={busy || reportBusy}>
-                  <span>{reportStep === 'format' ? 'Next' : reportBusy ? 'Preparing…' : reportFormat === 'pdf' ? 'Open PDF report' : 'Download Excel'}</span>
+                  <span>{reportStep === 'format' ? 'Next' : reportBusy ? 'Preparing…' : isAttachingReport ? 'Add Excel report' : reportFormat === 'pdf' ? 'Open PDF report' : 'Download Excel'}</span>
                 </button>
               </div>
             )}

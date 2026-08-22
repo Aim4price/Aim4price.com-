@@ -15,32 +15,13 @@ export type ExternalAssetShareCopy = {
   body: string;
 };
 
+export type ExternalAssetShareCopyOptions = {
+  attachedPhotoCount?: number;
+  attachedReportCount?: number;
+};
+
 function cleanText(value: unknown): string {
   return String(value ?? '').replace(/\s+/g, ' ').trim();
-}
-
-function safeHttpUrl(value: unknown): string {
-  const candidate = cleanText(value);
-  if (!candidate) return '';
-
-  try {
-    const parsed = new URL(candidate);
-    return parsed.protocol === 'http:' || parsed.protocol === 'https:' ? parsed.href : '';
-  } catch {
-    return '';
-  }
-}
-
-function normalizePhotoUrls(values: unknown): string[] {
-  const source = Array.isArray(values) ? values : [];
-  const seen = new Set<string>();
-
-  return source.flatMap((value) => {
-    const url = safeHttpUrl(value);
-    if (!url || seen.has(url)) return [];
-    seen.add(url);
-    return [url];
-  });
 }
 
 function formatMoney(value: number | null | undefined): string {
@@ -55,16 +36,6 @@ function savedText(value: unknown): string {
   return saved && saved !== '—' ? saved : 'Not saved';
 }
 
-function buildPhotoLines(asset: ExternalAssetShareItem): string[] {
-  const photoUrls = normalizePhotoUrls(asset.photoUrls);
-
-  if (!photoUrls.length) {
-    return ['Photos: No photos saved'];
-  }
-
-  return [`Photos: ${photoUrls.length} ${photoUrls.length === 1 ? 'photo attached' : 'photos attached'} separately`];
-}
-
 function buildAssetBlock(asset: ExternalAssetShareItem, index: number, includeNumber: boolean): string[] {
   const title = savedText(asset.title);
 
@@ -76,19 +47,31 @@ function buildAssetBlock(asset: ExternalAssetShareItem, index: number, includeNu
     `Condition: ${savedText(asset.condition)}`,
     `Replacement price (excl. VAT): ${formatMoney(asset.replacementPriceExVat)}`,
     `Current value (excl. VAT): ${formatMoney(asset.valueExVat)}`,
-    ...buildPhotoLines(asset),
   ];
+}
+
+function buildAttachmentLine(options: ExternalAssetShareCopyOptions): string {
+  const photoCount = Math.max(0, Math.floor(Number(options.attachedPhotoCount) || 0));
+  const reportCount = Math.max(0, Math.floor(Number(options.attachedReportCount) || 0));
+  const attachments = [
+    photoCount ? `${photoCount} ${photoCount === 1 ? 'photo' : 'photos'}` : '',
+    reportCount ? `${reportCount} Aim4price ${reportCount === 1 ? 'report' : 'reports'}` : '',
+  ].filter(Boolean);
+
+  return attachments.length ? `Attachments: ${attachments.join(', ')}` : '';
 }
 
 export function buildExternalAssetShareCopy(
   shareName: string,
   assets: ExternalAssetShareItem[],
+  options: ExternalAssetShareCopyOptions = {},
 ): ExternalAssetShareCopy {
   const safeShareName = cleanText(shareName) || cleanText(assets[0]?.title) || 'Aim4price asset';
   const shareableAssets = assets.filter((asset) => cleanText(asset.title));
   const subject = shareableAssets.length === 1
     ? `${shareableAssets[0].title} asset details`
     : `${safeShareName} asset details`;
+  const attachmentLine = buildAttachmentLine(options);
   const body = [
     'AIM4PRICE ASSET DETAILS',
     ...(shareableAssets.length > 1 ? [safeShareName, `${shareableAssets.length} assets`] : []),
@@ -97,6 +80,7 @@ export function buildExternalAssetShareCopy(
       ...buildAssetBlock(asset, index, shareableAssets.length > 1),
       ...(index < shareableAssets.length - 1 ? ['', '------------------------------', ''] : []),
     ]),
+    ...(attachmentLine ? ['', attachmentLine] : []),
     '',
     'Shared from Aim4price. Values are saved estimates and remain subject to inspection.',
   ].filter((line, index, all) => line !== '' || (index > 0 && all[index - 1] !== ''));
