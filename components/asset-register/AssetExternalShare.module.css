@@ -165,7 +165,7 @@
 }
 
 .externalLayout {
-  min-height: 24rem;
+  min-height: 20rem;
   display: grid;
   grid-template-columns: minmax(17rem, 0.78fr) minmax(24rem, 1.35fr);
   gap: 1rem;
@@ -274,11 +274,15 @@
 }
 
 .messagePreview {
-  min-height: 20rem;
-  max-height: 27rem;
+  min-height: 18rem;
+  max-height: clamp(18rem, 38dvh, 24rem);
   margin: 0;
   padding: 1rem 1.05rem;
   overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: #568676 #e9f0f2;
   color: #243c35;
   border: 1px solid #e0e8ed;
   border-radius: 0.95rem;
@@ -288,17 +292,66 @@
   overflow-wrap: anywhere;
 }
 
+.messagePreview::-webkit-scrollbar {
+  width: 0.78rem;
+  height: 0.78rem;
+}
+
+.messagePreview::-webkit-scrollbar-track {
+  border-radius: 999px;
+  background: #e9f0f2;
+}
+
+.messagePreview::-webkit-scrollbar-thumb {
+  min-height: 2.8rem;
+  border: 3px solid #e9f0f2;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #78a697 0%, #3f7866 100%);
+}
+
+.messagePreview::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #5f9583 0%, #2f6756 100%);
+}
+
 .externalActions {
+  position: sticky;
+  bottom: -0.35rem;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: 0 -0.15rem;
+  padding: 1rem 0.15rem 0.35rem;
+  border-top: 1px solid rgba(207, 221, 227, 0.94);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.72) 0%, #ffffff 30%, #ffffff 100%);
+  box-shadow: 0 -14px 28px rgba(18, 53, 43, 0.055);
+}
+
+.externalActionLead {
+  min-width: 13rem;
+  display: grid;
+  gap: 0.22rem;
+}
+
+.externalActionLead strong {
+  color: #10352b;
+  font-size: 0.98rem;
+  font-weight: 820;
+  line-height: 1.2;
+}
+
+.externalActionButtons {
+  flex: 0 0 auto;
   display: flex;
   align-items: center;
   justify-content: flex-end;
   gap: 0.65rem;
-  padding-top: 0.15rem;
 }
 
 .externalActions button,
 .externalActions a {
-  min-height: 2.9rem;
+  min-height: 3.15rem;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -327,10 +380,10 @@
 
 .copyStatus {
   min-width: 0;
-  margin-right: auto;
   color: #167354;
   font-size: 0.82rem;
   font-weight: 720;
+  line-height: 1.35;
 }
 
 .emailButton {
@@ -358,6 +411,26 @@
 
   .externalLayout {
     min-height: 0;
+  }
+
+  .externalActions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .externalActionLead {
+    width: 100%;
+  }
+
+  .externalActionButtons {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .externalActionButtons button,
+  .externalActionButtons a {
+    width: 100%;
   }
 }
 
@@ -391,24 +464,11 @@
     justify-self: start;
   }
 
-  .externalActions {
-    display: grid;
+  .externalActionButtons {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .copyStatus {
-    grid-column: 1 / -1;
-    grid-row: 1;
     min-height: 1rem;
-    margin: 0;
-  }
-
-  .externalActions button,
-  .externalActions a {
-    width: 100%;
-  }
-
-  .whatsappButton {
-    grid-column: 1 / -1;
   }
 }
