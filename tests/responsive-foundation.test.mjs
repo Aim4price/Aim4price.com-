@@ -30,8 +30,8 @@ test('header keeps desktop navigation at larger widths and uses the account drop
   assert.match(headerClient, /max-device-width: 900px/);
   assert.match(headerClient, /usesCompactHeader \? styles\.innerCompact/);
   assert.match(headerClient, /usesCompactHeader \? styles\.navCompact/);
-  assert.match(headerClient, /\{ href: '\/', label: 'Home' \}/);
-  assert.match(headerClient, /\{ href: '\/valuation', label: 'Get Estimate' \}/);
+  assert.match(headerClient, /\{ key: 'home', href: '\/', label: 'Home' \}/);
+  assert.match(headerClient, /\{ key: 'valuation', href: '\/valuation', label: 'Get Estimate' \}/);
   assert.match(header, /\.innerCompact \{[\s\S]*?grid-template-areas: "brand actions";[\s\S]*?row-gap: 0/);
   assert.match(header, /\.navCompact \{[\s\S]*?display: none/);
   assert.match(header, /@media \(hover: none\) and \(pointer: coarse\) and \(max-device-width: 900px\)[\s\S]*?\.nav \{[\s\S]*?display: none/);

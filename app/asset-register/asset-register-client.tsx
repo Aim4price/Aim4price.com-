@@ -250,6 +250,14 @@ type AssetStatusEditView = 'hub' | AssetStatusSection;
 type AssetStatusQuickOrigin = 'detail-card' | null;
 type ManualAssetStep = 1 | 2 | 3 | 4;
 type AssetDetailEditTarget = 'serial' | 'year' | 'usage' | 'condition';
+type AssetModalReturnOrigin = {
+  asset: RegisterAsset;
+  assetId: string;
+  origin: 'card' | 'manage';
+  action: string;
+  trigger: HTMLElement | null;
+  scrollY: number;
+};
 type ExportFormat = 'pdf' | 'xlsx';
 type ExportStep = 'format' | 'pdf-report' | 'pdf-assets';
 type PdfReportKind =
@@ -2015,15 +2023,6 @@ function TrendIcon({ className }: IconProps) {
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden="true">
       <path d="M3 17 9 11l4 4 8-8" />
       <path d="M14 7h7v7" />
-    </svg>
-  );
-}
-
-function EditIcon({ className }: IconProps) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden="true">
-      <path d="M12 20h9" />
-      <path d="m16.5 3.5 4 4L8 20l-5 1 1-5z" />
     </svg>
   );
 }
@@ -6489,6 +6488,8 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
   const assetAutosaveBaselineRef = useRef('');
   const assetAutosaveLatestSignatureRef = useRef('');
   const assetAutosaveAttemptedSignatureRef = useRef('');
+  const assetModalReturnRef = useRef<AssetModalReturnOrigin | null>(null);
+  const documentUploadReturnAssetIdRef = useRef<string | null>(null);
   const assetDragPointerYRef = useRef<number | null>(null);
   const assetDragAutoScrollFrameRef = useRef<number | null>(null);
 
@@ -9272,6 +9273,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
   }
 
   function openCreateModal() {
+    assetModalReturnRef.current = null;
     resetEditor();
     setManualAssetStep(1);
     setIsAssetModalOpen(true);
@@ -9292,12 +9294,70 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     openCreateModal();
   }
 
+  function rememberAssetModalReturn(
+    asset: RegisterAsset,
+    origin: AssetModalReturnOrigin['origin'],
+    action: string,
+    trigger: HTMLElement | null,
+  ) {
+    assetModalReturnRef.current = {
+      asset,
+      assetId: asset.id,
+      origin,
+      action,
+      trigger,
+      scrollY: window.scrollY,
+    };
+  }
+
+  function restoreAssetCardOrigin(returnOrigin: AssetModalReturnOrigin) {
+    setExpandedAssetId(returnOrigin.assetId);
+
+    window.requestAnimationFrame(() => {
+      const card = document.getElementById(`asset-card-${returnOrigin.assetId}`);
+      const fallbackTrigger = card?.querySelector<HTMLElement>(
+        `[data-asset-return-action="${returnOrigin.action}"]`,
+      ) ?? null;
+      const focusTarget = returnOrigin.trigger?.isConnected
+        ? returnOrigin.trigger
+        : fallbackTrigger;
+
+      if (card) {
+        const bounds = card.getBoundingClientRect();
+        if (bounds.bottom <= 96 || bounds.top >= window.innerHeight) {
+          card.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+        }
+      } else {
+        window.scrollTo({ top: returnOrigin.scrollY });
+      }
+
+      focusTarget?.focus({ preventScroll: true });
+    });
+  }
+
   function closeAssetModal() {
+    const returnOrigin = assetModalReturnRef.current;
+    assetModalReturnRef.current = null;
     setIsAssetModalOpen(false);
     setBulkFinanceAssetPickerOpen(false);
     setBulkFinanceAssetSearch('');
     setBulkFinanceAssetIds([]);
     resetEditor();
+
+    if (!returnOrigin) return false;
+
+    if (returnOrigin.origin === 'manage') {
+      const latestAsset = assets.find((asset) => asset.id === returnOrigin.assetId) ?? returnOrigin.asset;
+      openActionDialog(latestAsset);
+      window.requestAnimationFrame(() => {
+        document.querySelector<HTMLElement>('[data-asset-return-action="manage-update"]')
+          ?.focus({ preventScroll: true });
+      });
+      return true;
+    }
+
+    restoreAssetCardOrigin(returnOrigin);
+    return true;
   }
 
   function openUpdater(asset: RegisterAsset, focusTarget: AssetDetailEditTarget | null = null) {
@@ -9345,9 +9405,14 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     setIsAssetModalOpen(true);
   }
 
-  function openQuickAssetDetailEditor(asset: RegisterAsset, target: AssetDetailEditTarget) {
+  function openQuickAssetDetailEditor(
+    asset: RegisterAsset,
+    target: AssetDetailEditTarget,
+    trigger: HTMLElement | null = null,
+  ) {
     if (!canUseOwnerOnlyAssetActions || !canQuickEditAssetDetail(asset, target)) return;
 
+    rememberAssetModalReturn(asset, 'card', `detail-${target}`, trigger);
     setExpandedAssetId(asset.id);
     openUpdater(asset, target);
   }
@@ -9463,6 +9528,10 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
 
   function closeAssetSettingsModal() {
     if (isAssetSettingsBusy) return;
+    const returnOrigin = !isAssetModalOpen && assetModalReturnRef.current?.action === 'status-mapped'
+      ? assetModalReturnRef.current
+      : null;
+    if (returnOrigin) assetModalReturnRef.current = null;
     setIsAssetSettingsModalOpen(false);
     setBulkFinanceAssetPickerOpen(false);
     setBulkFinanceAssetSearch('');
@@ -9475,6 +9544,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     clearAssetSettingsLocationFeedback();
     clearAssetSettingsManualLocationInputs();
     clearAssetSettingsMapLocationInputs();
+    if (returnOrigin) restoreAssetCardOrigin(returnOrigin);
   }
 
   function openAssetSettingsMenuView() {
@@ -10080,10 +10150,16 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     setAssetStatusError('');
   }
 
-  function openQuickAssetStatusEditor(asset: RegisterAsset, section: AssetStatusSection) {
+  function openQuickAssetStatusEditor(
+    asset: RegisterAsset,
+    section: AssetStatusSection,
+    trigger: HTMLElement | null = null,
+  ) {
     if (!canUseOwnerOnlyAssetActions) return;
     if (section === 'license' && !assetKindSupportsLicensing(asset.kind)) return;
 
+    rememberAssetModalReturn(asset, 'card', `status-${section}`, trigger);
+    setExpandedAssetId(asset.id);
     pendingPhotoFilesRef.current.forEach((entry) => revokePhotoPreviewUrl(entry.previewUrl));
     pendingPhotoFilesRef.current = [];
 
@@ -10140,8 +10216,10 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     }
   }
 
-  function openMappedStatusEditor(asset: RegisterAsset) {
+  function openMappedStatusEditor(asset: RegisterAsset, trigger: HTMLElement | null = null) {
     if (!canUseOwnerOnlyAssetActions) return;
+    rememberAssetModalReturn(asset, 'card', 'status-mapped', trigger);
+    setExpandedAssetId(asset.id);
     openAssetSettingsModalForAsset(asset, 'location');
   }
 
@@ -10359,8 +10437,8 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
         : 'Asset status updated.' });
 
       if (assetStatusQuickOrigin === 'detail-card') {
-        closeAssetModal();
-        scrollToAssetCard(data.item.id);
+        const restoredPreviousAction = closeAssetModal();
+        if (!restoredPreviousAction) scrollToAssetCard(data.item.id);
       } else {
         setAssetStatusEditView('hub');
         setAssetStatusAdvancedOpen(false);
@@ -10609,17 +10687,27 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
   }
 
   function syncUpdatedAsset(nextAsset: RegisterAsset) {
-    setAssets((current) => {
-      const previous = current.find((asset) => asset.id === nextAsset.id);
-      return [preserveLicenseRenewalAlert(previous, nextAsset), ...current.filter((asset) => asset.id !== nextAsset.id)];
-    });
-    setCurrentPage(1);
+    if (assetModalReturnRef.current?.assetId === nextAsset.id) {
+      assetModalReturnRef.current = {
+        ...assetModalReturnRef.current,
+        asset: preserveLicenseRenewalAlert(assetModalReturnRef.current.asset, nextAsset),
+      };
+    }
+    setAssets((current) => current.map((asset) => (
+      asset.id === nextAsset.id ? preserveLicenseRenewalAlert(asset, nextAsset) : asset
+    )));
     setActiveAsset((current) => (current?.id === nextAsset.id ? preserveLicenseRenewalAlert(current, nextAsset) : current));
     setMarketplaceAsset((current) => (current?.id === nextAsset.id ? preserveLicenseRenewalAlert(current, nextAsset) : current));
     setProjectionAsset((current) => (current?.id === nextAsset.id ? preserveLicenseRenewalAlert(current, nextAsset) : current));
   }
 
   function syncSettingsUpdatedAsset(nextAsset: RegisterAsset) {
+    if (assetModalReturnRef.current?.assetId === nextAsset.id) {
+      assetModalReturnRef.current = {
+        ...assetModalReturnRef.current,
+        asset: preserveLicenseRenewalAlert(assetModalReturnRef.current.asset, nextAsset),
+      };
+    }
     setAssets((current) => current.map((asset) => (asset.id === nextAsset.id ? preserveLicenseRenewalAlert(asset, nextAsset) : asset)));
     setActiveAsset((current) => (current?.id === nextAsset.id ? preserveLicenseRenewalAlert(current, nextAsset) : current));
     setMarketplaceAsset((current) => (current?.id === nextAsset.id ? preserveLicenseRenewalAlert(current, nextAsset) : current));
@@ -11612,7 +11700,26 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
       return;
     }
 
+    documentUploadReturnAssetIdRef.current = asset.id;
+    setExpandedAssetId(asset.id);
     setDocumentUploadAsset(asset);
+  }
+
+  function closeAssetDocumentUpload(assetId = documentUploadReturnAssetIdRef.current) {
+    documentUploadReturnAssetIdRef.current = null;
+    setDocumentUploadAsset(null);
+    if (!assetId) return;
+
+    setExpandedAssetId(assetId);
+    window.requestAnimationFrame(() => {
+      const card = document.getElementById(`asset-card-${assetId}`);
+      if (!card) return;
+
+      const bounds = card.getBoundingClientRect();
+      if (bounds.bottom <= 96 || bounds.top >= window.innerHeight) {
+        card.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+      }
+    });
   }
 
   async function handleVaultDocumentsUploaded(
@@ -11633,7 +11740,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     setExpandedAssetId(asset.id);
     if (!outcome.complete) return;
 
-    setDocumentUploadAsset(null);
+    closeAssetDocumentUpload(asset.id);
     setNotice({
       tone: 'success',
       message: `${outcome.totalUploaded} document${outcome.totalUploaded === 1 ? '' : 's'} saved to Documents and linked to ${asset.title}.`,
@@ -11929,6 +12036,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
 
     const pendingPhotosForSave = pendingPhotoFiles;
     const pendingDocumentsForSave = pendingDocumentFiles;
+    let restoredPreviousAction = false;
 
     try {
       const orderedDraftPhotos = buildDraftPhotoItems(assetDraft.photos, pendingPhotosForSave, mainPhotoSelection);
@@ -12108,10 +12216,10 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
           assetAutosaveBaselineRef.current = options.autosaveSignature ?? assetAutosaveBaselineRef.current;
         }
       } else {
-        closeAssetModal();
+        restoredPreviousAction = closeAssetModal();
       }
 
-      if (!options.keepOpen && assetIdToFocus) {
+      if (!options.keepOpen && assetIdToFocus && !restoredPreviousAction) {
         scrollToAssetCard(assetIdToFocus);
       }
 
@@ -16116,12 +16224,12 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                                     <button
                                       type="button"
                                       className={`${styles.assetDetailRow} ${styles.assetDetailRowButton}`}
-                                      onClick={() => openQuickAssetDetailEditor(asset, target)}
+                                      onClick={(event) => openQuickAssetDetailEditor(asset, target, event.currentTarget)}
+                                      data-asset-return-action={`detail-${target}`}
                                       aria-label={`Edit ${label.toLowerCase()} for ${asset.title}. Current value: ${displayedValue}`}
                                     >
                                       <span>{label}</span>
                                       <strong title={title}>{displayedValue}</strong>
-                                      <EditIcon className={styles.assetDetailEditIcon} />
                                     </button>
                                   );
                                 }
@@ -16279,6 +16387,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                                             event.stopPropagation();
                                             openAssetDocumentUpload(asset);
                                           }}
+                                          data-asset-return-action="add-document"
                                         >
                                           <PlusIcon className={styles.buttonIcon} />
                                           <span>Add document</span>
@@ -16286,14 +16395,10 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                                       ) : null}
 
                                       <div className={`${styles.assetDocumentsCard} ${styles.assetDocumentsVaultCard}`}>
-                                        <div className={styles.assetDocumentsMainLabel}>
-                                          <DocumentIcon className={styles.buttonIcon} />
-                                          <strong>Asset documents</strong>
-                                        </div>
                                         <strong className={styles.assetDocumentsSavedCount}>
                                           {isVaultDocumentsLoading
                                             ? 'Loading Documents…'
-                                            : `${vaultDocuments.length} in Documents`}
+                                            : `${vaultDocuments.length} Documents`}
                                         </strong>
                                         {detailDocuments.length ? (
                                           <small className={styles.assetDocumentsLegacyCount}>
@@ -16395,7 +16500,8 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                                           <button
                                             type="button"
                                             className={`${styles.assetStatusRow} ${styles.assetStatusRowButton}`}
-                                            onClick={() => openQuickAssetStatusEditor(asset, 'finance')}
+                                            onClick={(event) => openQuickAssetStatusEditor(asset, 'finance', event.currentTarget)}
+                                            data-asset-return-action="status-finance"
                                             aria-label={`Update finance status for ${asset.title}`}
                                           >
                                             <span>Financed</span>
@@ -16412,7 +16518,8 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                                           <button
                                             type="button"
                                             className={`${styles.assetStatusRow} ${styles.assetStatusRowButton}`}
-                                            onClick={() => openQuickAssetStatusEditor(asset, 'insurance')}
+                                            onClick={(event) => openQuickAssetStatusEditor(asset, 'insurance', event.currentTarget)}
+                                            data-asset-return-action="status-insurance"
                                             aria-label={`Update insurance status for ${asset.title}`}
                                           >
                                             <span>Insured</span>
@@ -16430,7 +16537,8 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                                             <button
                                               type="button"
                                               className={`${styles.assetStatusRow} ${styles.assetStatusRowButton}`}
-                                              onClick={() => openQuickAssetStatusEditor(asset, 'license')}
+                                              onClick={(event) => openQuickAssetStatusEditor(asset, 'license', event.currentTarget)}
+                                              data-asset-return-action="status-license"
                                               aria-label={`Update license status for ${asset.title}`}
                                             >
                                               <span>Licensed</span>
@@ -16448,7 +16556,8 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                                           <button
                                             type="button"
                                             className={`${styles.assetStatusRow} ${styles.assetStatusRowButton}`}
-                                            onClick={() => openMappedStatusEditor(asset)}
+                                            onClick={(event) => openMappedStatusEditor(asset, event.currentTarget)}
+                                            data-asset-return-action="status-mapped"
                                             aria-label={`Update mapped location status for ${asset.title}`}
                                           >
                                             <span>Mapped</span>
@@ -19629,7 +19738,13 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                   <button
                     type="button"
                     className={`${styles.optionActionButton} ${styles.optionFeaturedButton}`}
-                    onClick={() => { closeActionDialog(); openUpdater(activeAsset); }}
+                    data-asset-return-action="manage-update"
+                    onClick={(event) => {
+                      const asset = activeAsset;
+                      rememberAssetModalReturn(asset, 'manage', 'manage-update', event.currentTarget);
+                      closeActionDialog();
+                      openUpdater(asset);
+                    }}
                   >
                     <UpdateAssetIcon className={styles.buttonIcon} />
                     <span>
@@ -21208,7 +21323,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
           assetId={documentUploadAsset.id}
           assetTitle={documentUploadAsset.title}
           uploadEndpoint={accountantShareId ? assetVaultDocumentsUrl(documentUploadAsset.id) : '/api/documents'}
-          onClose={() => setDocumentUploadAsset(null)}
+          onClose={() => closeAssetDocumentUpload(documentUploadAsset.id)}
           onUploaded={(documents, outcome) => handleVaultDocumentsUploaded(documentUploadAsset, documents, outcome)}
         />
       ) : null}

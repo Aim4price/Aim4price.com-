@@ -193,7 +193,7 @@ export default function AssetDocumentUploadModal({
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
       document.body.style.overflow = previousOverflow;
-      returnFocusRef.current?.focus();
+      returnFocusRef.current?.focus({ preventScroll: true });
     };
   }, []);
 
