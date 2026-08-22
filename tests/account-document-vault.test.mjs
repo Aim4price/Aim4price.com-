@@ -143,9 +143,11 @@ test('Documents appears only in the owner account dropdown', () => {
 });
 
 test('the account dropdown scrolls when its actions exceed the viewport', () => {
-  assert.match(headerStyles, /\.accountPopover\s*\{[\s\S]*?max-height:\s*min\(36rem, calc\(100dvh - 7rem\)\)/);
+  assert.match(headerStyles, /\.accountPopover\s*\{[\s\S]*?max-height:\s*calc\(100dvh - 7rem\)/);
   assert.match(headerStyles, /overflow-y:\s*auto/);
   assert.match(headerStyles, /overscroll-behavior:\s*contain/);
+  assert.match(headerStyles, /scrollbar-gutter:\s*auto/);
+  assert.doesNotMatch(headerStyles, /max-height:\s*min\(36rem, calc\(100dvh - 7rem\)\)/);
 });
 
 test('Documents activates the full vault with the Asset Register visual system', () => {

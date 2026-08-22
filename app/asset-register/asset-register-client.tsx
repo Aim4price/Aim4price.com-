@@ -65,6 +65,7 @@ import {
   normalizeAssetDocumentType,
   type AssetDocumentCategory,
 } from '../../lib/asset-document-permissions';
+import { isViewportScrollbarInteraction } from '../../lib/viewport-scrollbar';
 import assistanceServiceLocations from '../../database/seeds/aim4price-assistance-locations.json';
 
 type NoticeTone = 'success' | 'warning' | 'error';
@@ -2222,6 +2223,14 @@ type ModalSelectProps<T extends string> = {
   usePortal?: boolean;
 };
 
+const ASSET_DOCUMENT_CATEGORY_OPTIONS: Array<ModalSelectOption<AssetDocumentCategory>> = [
+  { value: 'licensing', label: 'Licence / registration' },
+  { value: 'insurance', label: 'Insurance policy' },
+  { value: 'finance', label: 'Finance agreement' },
+  { value: 'accounting', label: 'Invoice / proof of purchase' },
+  { value: 'other', label: 'Service / inspection / other' },
+];
+
 function ModalSelect<T extends string>({
   label,
   value,
@@ -2247,6 +2256,10 @@ function ModalSelect<T extends string>({
     }
 
     function handlePointerDown(event: PointerEvent) {
+      if (isViewportScrollbarInteraction(event)) {
+        return;
+      }
+
       const target = event.target;
 
       if (!(target instanceof Node)) {
@@ -4875,7 +4888,7 @@ function resolveLifeWorkedPercentForSave(nextValue: number | null, savedValue: n
 function formatUsagePercent(value: number): string {
   const rounded = Math.round(value * 10) / 10;
   const formatted = Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
-  return `${formatted}% worked`;
+  return `${formatted}%`;
 }
 
 function buildAssetUsageValue(asset: RegisterAsset): string {
@@ -9014,6 +9027,8 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     if (!focusedAssetGroupId) return undefined;
 
     function handleOutsideUmbrellaPointerDown(event: PointerEvent) {
+      if (isViewportScrollbarInteraction(event)) return;
+
       const target = event.target;
       if (!(target instanceof Element)) return;
 
@@ -16143,22 +16158,17 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
 
                                   <div className={styles.assetDocumentsPanel}>
                                     {canUseOwnerOnlyAssetActions || canUseAccountantDocumentActions ? (
-                                      <label className={styles.field}>
-                                        <span>Document category</span>
-                                        <select
-                                          value={detailDocumentCategoryByAssetId[asset.id] ?? 'other'}
-                                          onChange={(event) => setDetailDocumentCategoryByAssetId((current) => ({
-                                            ...current,
-                                            [asset.id]: normalizeAssetDocumentCategory(event.target.value),
-                                          }))}
-                                        >
-                                          <option value="licensing">Licence</option>
-                                          <option value="insurance">Insurance</option>
-                                          <option value="finance">Finance</option>
-                                          <option value="accounting">Accounting</option>
-                                          <option value="other">Other</option>
-                                        </select>
-                                      </label>
+                                      <ModalSelect<AssetDocumentCategory>
+                                        label="Document category"
+                                        value={detailDocumentCategoryByAssetId[asset.id] ?? 'other'}
+                                        options={ASSET_DOCUMENT_CATEGORY_OPTIONS}
+                                        onChange={(value) => setDetailDocumentCategoryByAssetId((current) => ({
+                                          ...current,
+                                          [asset.id]: normalizeAssetDocumentCategory(value),
+                                        }))}
+                                        showDescriptions={false}
+                                        usePortal
+                                      />
                                     ) : null}
                                     <input
                                       id={mediaInputId(asset.id, 'document')}
@@ -16170,45 +16180,47 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                                       disabled={isDetailDocumentUploading || (isAccountantWorkspace && !canUseAccountantDocumentActions)}
                                     />
 
-                                    {canUseOwnerOnlyAssetActions || canUseAccountantDocumentActions ? (
+                                    <div className={styles.assetDocumentsCardShell}>
+                                      {canUseOwnerOnlyAssetActions || canUseAccountantDocumentActions ? (
+                                        <button
+                                          type="button"
+                                          className={`${styles.previewUploadPill} ${styles.assetDocumentsUploadPill}`}
+                                          disabled={isDetailDocumentUploading}
+                                          onClick={(event) => {
+                                            event.stopPropagation();
+                                            triggerDetailMediaInput(asset.id, 'document');
+                                          }}
+                                        >
+                                          <PlusIcon className={styles.buttonIcon} />
+                                          <span>{isDetailDocumentUploading ? 'Uploading...' : 'Add documents'}</span>
+                                        </button>
+                                      ) : null}
+
                                       <button
                                         type="button"
-                                        className={`${styles.previewUploadPill} ${styles.assetDocumentsUploadPill}`}
-                                        disabled={isDetailDocumentUploading}
-                                        onClick={(event) => {
-                                          event.stopPropagation();
-                                          triggerDetailMediaInput(asset.id, 'document');
+                                        className={`${styles.assetDocumentsCard} ${styles.assetDocumentsUploadCard} ${isDetailDocumentUploading ? styles.assetMediaBusy : ''}`}
+                                        onClick={() => {
+                                          if (canUseOwnerOnlyAssetActions || canUseAccountantDocumentActions) {
+                                            triggerDetailMediaInput(asset.id, 'document');
+                                          }
                                         }}
+                                        disabled={isDetailDocumentUploading || (!canUseOwnerOnlyAssetActions && !canUseAccountantDocumentActions)}
                                       >
-                                        <PlusIcon className={styles.buttonIcon} />
-                                        <span>{isDetailDocumentUploading ? 'Uploading...' : 'Add documents'}</span>
+                                        <div className={styles.assetDocumentsMainLabel}>
+                                          <DocumentIcon className={styles.buttonIcon} />
+                                          <strong>{assetDocumentCategoryLabel(detailDocumentCategoryByAssetId[asset.id] ?? 'other')} documents</strong>
+                                        </div>
+                                        <span className={styles.assetMediaHint}>
+                                          {isDetailDocumentUploading
+                                            ? 'Uploading...'
+                                            : detailDocuments.length
+                                              ? `${detailDocuments.length} saved${canUseOwnerOnlyAssetActions || canUseAccountantDocumentActions ? ' · click to add' : ''}`
+                                              : canUseOwnerOnlyAssetActions || canUseAccountantDocumentActions
+                                                ? 'Click to upload documents'
+                                                : 'No documents shared'}
+                                        </span>
                                       </button>
-                                    ) : null}
-
-                                    <button
-                                      type="button"
-                                      className={`${styles.assetDocumentsCard} ${styles.assetDocumentsUploadCard} ${isDetailDocumentUploading ? styles.assetMediaBusy : ''}`}
-                                      onClick={() => {
-                                        if (canUseOwnerOnlyAssetActions || canUseAccountantDocumentActions) {
-                                          triggerDetailMediaInput(asset.id, 'document');
-                                        }
-                                      }}
-                                      disabled={isDetailDocumentUploading || (!canUseOwnerOnlyAssetActions && !canUseAccountantDocumentActions)}
-                                    >
-                                      <div className={styles.assetDocumentsMainLabel}>
-                                        <DocumentIcon className={styles.buttonIcon} />
-                                        <strong>{assetDocumentCategoryLabel(detailDocumentCategoryByAssetId[asset.id] ?? 'other')} documents</strong>
-                                      </div>
-                                      <span className={styles.assetMediaHint}>
-                                        {isDetailDocumentUploading
-                                          ? 'Uploading...'
-                                          : detailDocuments.length
-                                            ? `${detailDocuments.length} saved${canUseOwnerOnlyAssetActions || canUseAccountantDocumentActions ? ' · click to add' : ''}`
-                                            : canUseOwnerOnlyAssetActions || canUseAccountantDocumentActions
-                                              ? 'Click to upload documents'
-                                              : 'No documents shared'}
-                                      </span>
-                                    </button>
+                                    </div>
 
                                     {detailDocuments.length ? (
                                       <div className={styles.assetDocumentList}>
@@ -16236,27 +16248,27 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                                         {asset.kind !== 'property' ? (
                                           <div className={styles.assetDetailRow}>
                                             <span>Serial</span>
-                                            <strong>{asset.serialNumber || '—'}</strong>
+                                            <strong title={asset.serialNumber || 'Not provided'}>{asset.serialNumber || '—'}</strong>
                                           </div>
                                         ) : null}
                                         <div className={styles.assetDetailRow}>
                                           <span>{asset.kind === 'property' ? PROPERTY_YEAR_LABEL : 'Year'}</span>
-                                          <strong>{asset.yearModel || '—'}</strong>
+                                          <strong title={asset.yearModel ? String(asset.yearModel) : 'Not provided'}>{asset.yearModel || '—'}</strong>
                                         </div>
                                         {asset.kind === 'property' ? (
                                           <div className={styles.assetDetailRow}>
                                             <span>Size</span>
-                                            <strong>{propertySizeDisplay(asset)}</strong>
+                                            <strong title={propertySizeDisplay(asset)}>{propertySizeDisplay(asset)}</strong>
                                           </div>
                                         ) : (
                                           <div className={styles.assetDetailRow}>
                                             <span>Usage</span>
-                                            <strong>{buildAssetUsageValue(asset)}</strong>
+                                            <strong title={buildAssetUsageValue(asset)}>{buildAssetUsageValue(asset)}</strong>
                                           </div>
                                         )}
                                         <div className={styles.assetDetailRow}>
                                           <span>Condition</span>
-                                          <strong>{conditionLabel(asset.condition) || '—'}</strong>
+                                          <strong title={conditionLabel(asset.condition) || 'Not provided'}>{conditionLabel(asset.condition) || '—'}</strong>
                                         </div>
                                       </div>
 

@@ -26740,7 +26740,7 @@ button.documentOpenLink {
   overflow-x: hidden !important;
   overflow-y: auto !important;
   overscroll-behavior: contain !important;
-  scrollbar-gutter: stable !important;
+  scrollbar-gutter: auto !important;
   background:
     radial-gradient(circle at top left, rgba(22, 83, 64, 0.035), transparent 42%),
     linear-gradient(180deg, rgba(255, 255, 255, 0.99) 0%, rgba(248, 252, 250, 0.99) 100%) !important;
@@ -30177,6 +30177,42 @@ button.documentOpenLink {
   text-align: right !important;
   text-transform: uppercase !important;
   white-space: nowrap !important;
+}
+
+/* Keep the upload action anchored to the document card instead of the category selector. */
+.assetDocumentsCardShell {
+  position: relative;
+  display: grid;
+  min-width: 0;
+  min-height: 8.5rem;
+  height: 100%;
+}
+
+.assetDocumentsCardShell > .assetDocumentsCard {
+  width: 100%;
+  min-height: 8.5rem;
+  height: 100%;
+}
+
+.assetDocumentsCardShell > .assetDocumentsUploadPill {
+  z-index: 2;
+}
+
+/* Detail values stay on one line; the title attribute exposes the complete value. */
+.assetDetailRow > strong {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  overflow-wrap: normal;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 3.08rem;
+}
+
+@media (max-width: 620px) {
+  .assetDetailRow > strong {
+    line-height: 2.65rem;
+  }
 }
 
 @media (max-width: 760px) {

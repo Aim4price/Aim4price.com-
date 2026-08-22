@@ -4244,11 +4244,11 @@
 
 /* Keep every account action reachable when the menu grows beyond the viewport. */
 .accountPopover {
-  max-height: min(36rem, calc(100dvh - 7rem));
+  max-height: calc(100dvh - 7rem);
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;
-  scrollbar-gutter: stable;
+  scrollbar-gutter: auto;
   scrollbar-width: thin;
   scrollbar-color: rgba(23, 117, 83, 0.46) rgba(235, 243, 239, 0.8);
 }

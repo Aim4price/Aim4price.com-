@@ -13,6 +13,7 @@ import {
   type HeaderSessionUser,
 } from '../lib/header-session-cache';
 import { isMiddlemanAccountSubtype } from '../lib/middleman-account';
+import { isViewportScrollbarInteraction } from '../lib/viewport-scrollbar';
 import DealerCostDecisionModal from './DealerCostDecisionModal';
 import styles from './AppHeader.module.css';
 
@@ -830,6 +831,10 @@ export default function AppHeader({
 
   useEffect(() => {
     function handleDocumentClick(event: MouseEvent) {
+      if (isViewportScrollbarInteraction(event)) {
+        return;
+      }
+
       const target = event.target as Node;
 
       if (accountMenuRef.current && !accountMenuRef.current.contains(target)) {
