@@ -19891,13 +19891,11 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                       </span>
                     </button>
                   ) : null}
-                </div>
 
-                {canUseOwnerOnlyAssetActions ? (
-                  <div className={styles.ownerCommandDangerZone}>
+                  {canUseOwnerOnlyAssetActions ? (
                     <button
                       type="button"
-                      className={`${styles.optionActionButton} ${styles.optionDangerButton} ${styles.ownerCommandDangerAction}`}
+                      className={`${styles.optionActionButton} ${styles.optionDangerButton} ${styles.ownerCommandAction} ${styles.ownerCommandDangerAction}`}
                       disabled={busyDeleteId === activeAsset.id}
                       onClick={() => handleDeleteFromDialog(activeAsset)}
                     >
@@ -19907,8 +19905,8 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                         <small>Archive, sell, write off or remove.</small>
                       </span>
                     </button>
-                  </div>
-                ) : null}
+                  ) : null}
+                </div>
               </div>
             </div>
           </div>
