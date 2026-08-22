@@ -174,20 +174,28 @@ export default function AssetExternalShare({
       </div>
 
       <div className={styles.externalActions}>
-        <button type="button" className={styles.backButton} onClick={onBack}>Back</button>
-        <span className={styles.copyStatus} role="status" aria-live="polite">{copyStatus}</span>
-        <button type="button" className={styles.copyButton} onClick={() => void copyDetails()}>
-          <CopyIcon />
-          <span>Copy details</span>
-        </button>
-        <a className={styles.emailButton} href={emailHref}>
-          <EmailIcon />
-          <span>Email</span>
-        </a>
-        <a className={styles.whatsappButton} href={whatsappHref} target="_blank" rel="noreferrer">
-          <WhatsAppIcon />
-          <span>WhatsApp</span>
-        </a>
+        <div className={styles.externalActionLead}>
+          <strong>Choose how to send</strong>
+          <span className={styles.copyStatus} role="status" aria-live="polite">
+            {copyStatus || 'Details and photo links are already included.'}
+          </span>
+        </div>
+
+        <div className={styles.externalActionButtons}>
+          <button type="button" className={styles.backButton} onClick={onBack}>Back</button>
+          <button type="button" className={styles.copyButton} onClick={() => void copyDetails()}>
+            <CopyIcon />
+            <span>Copy details</span>
+          </button>
+          <a className={styles.emailButton} href={emailHref}>
+            <EmailIcon />
+            <span>Email</span>
+          </a>
+          <a className={styles.whatsappButton} href={whatsappHref} target="_blank" rel="noreferrer">
+            <WhatsAppIcon />
+            <span>WhatsApp</span>
+          </a>
+        </div>
       </div>
     </section>
   );
