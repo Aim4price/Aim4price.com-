@@ -38199,3 +38199,29 @@ button.documentOpenLink {
   }
 
 }
+
+/* === Asset filter and export typography parity === */
+.assetFilterModalHeader h3,
+.exportModalHeader h3 {
+  font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif !important;
+  font-size: clamp(2rem, 3vw, 2.75rem) !important;
+  font-weight: 900 !important;
+  line-height: 1.02 !important;
+  letter-spacing: -0.065em !important;
+}
+
+.assetFilterOptionGrid .assetFilterOptionText strong,
+.exportModal .pdfReportChoices .pdfReportQuickLabel {
+  font-family: var(--font-body, 'Montserrat'), sans-serif !important;
+  font-size: 0.94rem !important;
+  font-weight: 720 !important;
+  line-height: 1.16 !important;
+  letter-spacing: -0.018em !important;
+}
+
+@media (max-width: 900px) {
+  .assetFilterModalHeader h3,
+  .exportModalHeader h3 {
+    font-size: 1.62rem !important;
+  }
+}

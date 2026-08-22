@@ -1323,6 +1323,9 @@ const ASSET_FILTER_OPTIONS: AssetFilterOption[] = [
 
 const PRIMARY_ASSET_FILTER_OPTION = ASSET_FILTER_OPTIONS.find((option) => option.value === 'all') ?? ASSET_FILTER_OPTIONS[0];
 const SECONDARY_ASSET_FILTER_OPTIONS = ASSET_FILTER_OPTIONS.filter((option) => option.value !== 'all');
+const ASSET_FILTER_LABEL_BY_VALUE: ReadonlyMap<string, string> = new Map(
+  ASSET_FILTER_OPTIONS.map((option) => [option.value, option.label]),
+);
 
 const LEAFLET_SCRIPT_ID = 'aim4price-leaflet-script';
 const LEAFLET_CSS_ID = 'aim4price-leaflet-css';
@@ -20913,7 +20916,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                                 aria-pressed={pdfReportSelection === option.value}
                               >
                                 <span className={styles.pdfReportOptionMain}>
-                                  <span className={styles.pdfReportQuickLabel}>{option.label}</span>
+                                  <span className={styles.pdfReportQuickLabel}>{ASSET_FILTER_LABEL_BY_VALUE.get(option.value) ?? option.label}</span>
                                 </span>
                               </button>
                             ))}
