@@ -1429,13 +1429,12 @@ export default function MaintenanceClient({
             <div className={styles.modalDivider} />
             <div className={styles.pickerToolbar} data-asset-choice-toolbar="true">
               <input
-                type="search"
                 value={pickerSearch}
                 onChange={(event) => setPickerSearch(event.target.value)}
                 placeholder="Search assets..."
                 aria-label="Search saved assets"
               />
-              <button className={styles.secondaryButton} type="button" onClick={() => setPickerSearch('')} disabled={!pickerSearch}>Clear</button>
+              <button className={styles.secondaryButton} type="button" onClick={() => setPickerSearch('')}>Clear</button>
             </div>
             <div className={styles.assetList} data-asset-choice-list="true">
               {filteredAssets.length ? (
@@ -1875,7 +1874,6 @@ export default function MaintenanceClient({
                 <div className={`${styles.formModalScrollBody} ${styles.maintenanceExportBody}`}>
                   <div className={styles.pickerToolbar} data-asset-choice-toolbar="true">
                     <input
-                      type="search"
                       value={downloadAssetSearch}
                       onChange={(event) => setDownloadAssetSearch(event.target.value)}
                       placeholder="Search assets..."
@@ -1885,7 +1883,6 @@ export default function MaintenanceClient({
                       className={styles.secondaryButton}
                       type="button"
                       onClick={() => setDownloadAssetSearch('')}
-                      disabled={!downloadAssetSearch}
                     >
                       Clear
                     </button>

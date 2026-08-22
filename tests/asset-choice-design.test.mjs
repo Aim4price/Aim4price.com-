@@ -8,6 +8,7 @@ const globals = read('../app/globals.css');
 const assetRegisterStyles = read('../app/asset-register/page.module.css');
 const costClient = read('../app/my-invoices/my-invoices-client.tsx');
 const maintenanceClient = read('../app/maintenance/maintenance-client.tsx');
+const maintenanceStyles = read('../app/maintenance/page.module.css');
 const fuelClient = read('../app/fuel/fuel-client.tsx');
 const documentsClient = read('../app/documents/documents-client.tsx');
 const umbrellaModal = read('../components/asset-register/AssetGroupManagerModal.tsx');
@@ -34,7 +35,7 @@ test('shared asset-choice typography matches the Export Asset Register contract'
 });
 
 test('asset-choice search, rows, selection and mobile behavior share one contract', () => {
-  assert.match(globals, /\[data-asset-choice-toolbar='true'\] input\[type='search'\][\s\S]*?min-height:\s*3\.2rem !important;[\s\S]*?font-size:\s*1rem !important;[\s\S]*?font-weight:\s*760 !important;/);
+  assert.match(globals, /\[data-asset-choice-toolbar='true'\] input\[type='search'\],\s*\[data-asset-choice-toolbar='true'\] input:not\(\[type\]\)\s*\{[\s\S]*?min-height:\s*3\.2rem !important;[\s\S]*?font-size:\s*1rem !important;[\s\S]*?font-weight:\s*760 !important;/);
   assert.match(globals, /\[data-asset-choice-toolbar='true'\] input::placeholder\s*\{[\s\S]*?font-weight:\s*820 !important;/);
   assert.match(globals, /\[data-asset-choice-row='true'\]\s*\{[\s\S]*?gap:\s*0\.9rem !important;[\s\S]*?padding:\s*0\.95rem 1rem !important;[\s\S]*?border-radius:\s*1\.1rem !important;/);
   assert.match(globals, /\[data-asset-choice-row='true'\]\[data-asset-choice-selected='true'\]\s*\{/);
@@ -64,22 +65,33 @@ test('primary operational asset pickers opt into the shared design', () => {
 
 test('Maintenance asset search uses the Cost Tracking single-input toolbar', () => {
   const toolbarMarker = '<div className={styles.pickerToolbar} data-asset-choice-toolbar="true">';
+  const costToolbarStart = costClient.indexOf(toolbarMarker, costClient.indexOf('{assetPickerOpen ?'));
+  const costToolbarEnd = costClient.indexOf('</div>', costToolbarStart);
   const firstToolbarStart = maintenanceClient.indexOf(toolbarMarker);
   const firstToolbarEnd = maintenanceClient.indexOf('</div>', firstToolbarStart);
   const secondToolbarStart = maintenanceClient.indexOf(toolbarMarker, firstToolbarEnd);
   const secondToolbarEnd = maintenanceClient.indexOf('</div>', secondToolbarStart);
 
+  assert.notEqual(costToolbarStart, -1);
   assert.notEqual(firstToolbarStart, -1);
   assert.notEqual(secondToolbarStart, -1);
 
   for (const toolbar of [
+    costClient.slice(costToolbarStart, costToolbarEnd),
     maintenanceClient.slice(firstToolbarStart, firstToolbarEnd),
     maintenanceClient.slice(secondToolbarStart, secondToolbarEnd),
   ]) {
-    assert.match(toolbar, /<input[\s\S]*?type="search"[\s\S]*?placeholder="Search assets\.\.\."/);
+    assert.match(toolbar, /<input[\s\S]*?placeholder="Search assets\.\.\."/);
     assert.match(toolbar, /className=\{styles\.secondaryButton\}/);
-    assert.doesNotMatch(toolbar, /pickerSearchField|<SearchIcon|pickerClearButton/);
+    assert.doesNotMatch(toolbar, /type="search"|disabled=|pickerSearchField|<SearchIcon|pickerClearButton/);
   }
+
+  const primaryMaintenanceToolbar = maintenanceClient.slice(firstToolbarStart, firstToolbarEnd);
+  const reportMaintenanceToolbar = maintenanceClient.slice(secondToolbarStart, secondToolbarEnd);
+  assert.match(primaryMaintenanceToolbar, /value=\{pickerSearch\}[\s\S]*?setPickerSearch\(event\.target\.value\)[\s\S]*?setPickerSearch\(''\)/);
+  assert.match(reportMaintenanceToolbar, /value=\{downloadAssetSearch\}[\s\S]*?setDownloadAssetSearch\(event\.target\.value\)[\s\S]*?setDownloadAssetSearch\(''\)/);
+  assert.match(maintenanceStyles, /\.assetModal \.pickerToolbar\s*\{[\s\S]*?padding:\s*0 clamp\(1\.25rem, 2\.4vw, 2rem\) 1rem;/);
+  assert.match(maintenanceStyles, /\.maintenanceExportBody \.pickerToolbar\s*\{\s*padding:\s*0 0 1rem;/);
 });
 
 test('nested document and umbrella asset selectors share row typography without replacing their parent modal', () => {
