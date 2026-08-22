@@ -83,6 +83,27 @@ test('every app access page exposes an allowlisted QR install handoff', async ()
   assert.match(styles, /@media \(max-width: 640px\)[\s\S]*?\.qrHandoff \{[\s\S]*?grid-template-columns: 6\.25rem minmax\(0, 1fr\)/);
 });
 
+test('the login URL and link actions match the polished QR handoff', async () => {
+  const [shared, styles] = await Promise.all([
+    read('app/account/app-access-management-client.tsx'),
+    read('app/account/app-access-management.module.css'),
+  ]);
+
+  assert.match(shared, /className=\{styles\.loginLinkCard\}/);
+  assert.match(shared, /className=\{styles\.loginLinkIcon\}><LinkIcon \/>/);
+  assert.match(shared, /className=\{styles\.loginUrl\} href=\{loginLink\}/);
+  assert.match(shared, /className=\{styles\.linkButtonIcon\}><CopyIcon \/>/);
+  assert.match(shared, /className=\{styles\.linkButtonIcon\}><ShareIcon \/>/);
+  assert.match(shared, /<strong>Copy link<\/strong><small>Clipboard<\/small>/);
+  assert.match(shared, /<strong>Share link<\/strong><small>Send access<\/small>/);
+
+  assert.match(styles, /\.loginLinkCard \{[\s\S]*?min-height: 8\.35rem;[\s\S]*?linear-gradient\(145deg, #ffffff 0%, #f1f7fb 100%\)/);
+  assert.match(styles, /\.loginUrl \{[\s\S]*?border-radius: 0\.78rem;[\s\S]*?background: rgba\(255, 255, 255, 0\.88\)/);
+  assert.match(styles, /\.loginActions \{[\s\S]*?grid-template-columns: repeat\(2, minmax\(8rem, 1fr\)\)/);
+  assert.match(styles, /\.linkButton \{[\s\S]*?min-height: 8\.35rem;[\s\S]*?border-radius: 1rem/);
+  assert.match(styles, /\.linkButtonPrimary \{[\s\S]*?linear-gradient\(145deg, #238c68 0%, #12553e 100%\)/);
+});
+
 test('all Manage directories and access choices stay alphabetical after every update', async () => {
   const shared = await read('app/account/app-access-management-client.tsx');
 
