@@ -18,7 +18,7 @@ const asset = {
   publicUrl: 'https://www.aim4price.com/scan/asset-code',
 };
 
-test('outside share copy contains every requested asset field and a durable photo link', () => {
+test('outside share copy contains every requested asset field, direct photos and the asset link', () => {
   const copy = buildExternalAssetShareCopy(asset.title, [asset]);
 
   assert.equal(copy.subject, '2019 John Deere 6155M asset details');
@@ -28,8 +28,10 @@ test('outside share copy contains every requested asset field and a durable phot
   assert.match(copy.body, /Condition: Good/);
   assert.match(copy.body, /Replacement price \(excl\. VAT\): R 2[ ,]850[ ,]000/);
   assert.match(copy.body, /Current value \(excl\. VAT\): R 1[ ,]675[ ,]000/);
-  assert.match(copy.body, /Photos \(2 saved photos\): https:\/\/www\.aim4price\.com\/scan\/asset-code/);
-  assert.doesNotMatch(copy.body, /images\.example\.com/);
+  assert.match(copy.body, /Photos \(2 saved photos\):/);
+  assert.match(copy.body, /Photo 1: https:\/\/images\.example\.com\/front\.jpg/);
+  assert.match(copy.body, /Photo 2: https:\/\/images\.example\.com\/rear\.jpg/);
+  assert.match(copy.body, /Aim4price asset link: https:\/\/www\.aim4price\.com\/scan\/asset-code/);
 });
 
 test('multiple assets are numbered and direct photo links remain available as a fallback', () => {
