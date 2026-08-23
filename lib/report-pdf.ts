@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os';
 import { resolve } from 'node:path';
 import chromium from '@sparticuz/chromium';
 import puppeteer, { type Browser, type HTTPRequest, type Page } from 'puppeteer-core';
+import { buildBrandedReportPdfFromHtml } from './branded-report-pdf';
 
 const DEFAULT_RENDER_TIMEOUT_MS = 45_000;
 const RESOURCE_SETTLE_TIMEOUT_MS = 12_000;
@@ -442,7 +443,7 @@ function reportResourcePolicy(request: HTTPRequest, baseOrigin: string): ReportR
   }
 }
 
-export async function renderReportHtmlToPdf(
+async function renderReportHtmlToPdfWithChromium(
   html: string,
   options: RenderReportPdfOptions = {},
 ): Promise<Buffer> {
@@ -525,6 +526,34 @@ export async function renderReportHtmlToPdf(
 
     if (shouldRecycleBrowser) await recycleReportBrowser(browser);
     releasePermit();
+  }
+}
+
+/**
+ * Chromium preserves the canonical HTML/CSS report byte-for-byte and remains
+ * the primary renderer. Some production containers cannot start the bundled
+ * headless binary (or can temporarily exhaust its queue), so every normal and
+ * shared PDF route also has one common, dependency-free fallback. Keeping the
+ * fallback here is important: share flows receive the exact same artifact as
+ * the normal report endpoint instead of rebuilding a second share-only PDF.
+ */
+export async function renderReportHtmlToPdf(
+  html: string,
+  options: RenderReportPdfOptions = {},
+): Promise<Buffer> {
+  try {
+    return await renderReportHtmlToPdfWithChromium(html, options);
+  } catch (error) {
+    console.warn('Chromium report rendering failed; using the common PDF fallback.', error);
+    const fallback = buildBrandedReportPdfFromHtml(html, {
+      subtitle: 'Prepared from the standard Aim4price report',
+    });
+
+    if (fallback.length < 5 || fallback.subarray(0, 5).toString('ascii') !== '%PDF-') {
+      throw error;
+    }
+
+    return fallback;
   }
 }
 
