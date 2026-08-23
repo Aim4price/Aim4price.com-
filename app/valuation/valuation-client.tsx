@@ -3960,10 +3960,11 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
       clientRows: safeClientRows,
       recordRows,
       saleabilityRows: compactPdfRows([
-        { label: 'General Saleability', value: `${generalSaleability.score} / 100 · Grade ${generalSaleability.grade} (${generalSaleability.gradeLabel})` },
-        { label: 'Natural selling window', value: generalSaleability.naturalSellingWindow },
-        { label: 'Useful life remaining', value: `${generalSaleability.lifeRemainingPercent}%` },
-        { label: 'Saleability confidence', value: generalSaleability.confidence },
+        { label: 'Rating', value: `${generalSaleability.score} / 100` },
+        { label: 'Grade', value: `${generalSaleability.grade} · ${generalSaleability.gradeLabel}` },
+        { label: 'Selling window', value: generalSaleability.naturalSellingWindow },
+        { label: 'Useful life left', value: `${generalSaleability.lifeRemainingPercent}%` },
+        { label: 'Confidence', value: generalSaleability.confidence },
       ]),
     };
   }

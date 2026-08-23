@@ -11546,12 +11546,16 @@
   order: 1;
 }
 
-.replacementAccordion {
+.saleabilitySummary {
   order: 2;
 }
 
-.advancedAccordion {
+.replacementAccordion {
   order: 3;
+}
+
+.advancedAccordion {
+  order: 4;
 }
 
 .resultValueLine {
@@ -12739,10 +12743,10 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 18px;
-  padding: 20px 22px;
+  gap: 16px;
+  padding: 15px 18px;
   border: 1px solid rgba(19, 98, 70, 0.16);
-  border-radius: 20px;
+  border-radius: 17px;
   background: linear-gradient(135deg, #f8fcf9 0%, #eaf7ef 100%);
   box-shadow: 0 14px 32px rgba(14, 66, 48, 0.06);
 }
@@ -12776,8 +12780,8 @@
 
 .saleabilitySummary button {
   flex: 0 0 auto;
-  min-height: 46px;
-  padding: 0 20px;
+  min-height: 42px;
+  padding: 0 18px;
   border: 1px solid #135d45;
   border-radius: 999px;
   background: #135d45;
@@ -12796,7 +12800,7 @@
   .saleabilitySummary {
     align-items: stretch;
     flex-direction: column;
-    padding: 18px;
+    padding: 15px;
   }
 
   .saleabilitySummary button {

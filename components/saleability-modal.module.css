@@ -4,28 +4,31 @@
   z-index: 2500;
   display: grid;
   place-items: center;
-  padding: 20px;
+  padding: 16px;
   background: rgba(12, 28, 23, 0.72);
   backdrop-filter: blur(8px);
 }
 
 .modal {
-  width: min(920px, 100%);
-  max-height: min(92vh, 960px);
+  width: min(1000px, 100%);
+  max-height: min(94dvh, 960px);
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
   border: 1px solid rgba(21, 93, 70, 0.18);
-  border-radius: 28px;
+  border-radius: 26px;
   background: #fbfdfc;
   color: #153c31;
   box-shadow: 0 32px 90px rgba(3, 22, 16, 0.3);
 }
 
 .header {
+  flex: 0 0 auto;
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 20px;
-  padding: 26px 30px 22px;
+  padding: 20px 28px 17px;
   border-bottom: 1px solid rgba(22, 93, 71, 0.12);
   background: linear-gradient(135deg, #f7fcf9, #edf8f2);
 }
@@ -42,7 +45,7 @@
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
-.header h2 { margin: 5px 0 3px; color: #0c3f30; font-size: clamp(1.55rem, 4vw, 2.25rem); line-height: 1.03; letter-spacing: -0.045em; }
+.header h2 { margin: 4px 0 2px; color: #0c3f30; font-size: clamp(1.55rem, 3.2vw, 2.15rem); line-height: 1.04; letter-spacing: -0.045em; }
 .header p { margin: 0; color: #62766f; font-size: 0.92rem; font-weight: 650; }
 .close {
   flex: 0 0 auto;
@@ -58,27 +61,28 @@
 }
 
 .fixedValue {
+  flex: 0 0 auto;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-  padding: 16px 30px;
+  gap: 10px;
+  padding: 11px 28px;
   border-bottom: 1px solid rgba(22, 93, 71, 0.1);
   background: #fff;
 }
-.fixedValue > div { display: grid; gap: 3px; padding: 12px 14px; border-radius: 16px; background: #f3f8f5; }
+.fixedValue > div { display: grid; gap: 2px; padding: 9px 13px; border-radius: 14px; background: #f3f8f5; }
 .fixedValue strong { color: #103f31; font-size: 1.08rem; font-weight: 900; }
 .fixedValue small { color: #6a7d76; font-size: 0.76rem; font-weight: 650; }
 
-.body { max-height: calc(92vh - 245px); overflow-y: auto; padding: 26px 30px 30px; }
-.stepIntro { margin-bottom: 22px; }
+.body { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 20px 28px 24px; }
+.stepIntro { margin-bottom: 18px; }
 .stepIntro h3 { margin: 5px 0 4px; color: #103f31; font-size: 1.3rem; letter-spacing: -0.025em; }
 .stepIntro p { margin: 0; color: #687b74; line-height: 1.5; }
-.question { margin: 0 0 24px; padding: 0; border: 0; }
-.question legend { margin-bottom: 10px; color: #153d32; font-size: 0.98rem; font-weight: 850; }
-.choiceGrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(145px, 1fr)); gap: 9px; }
+.question { margin: 0 0 19px; padding: 0; border: 0; }
+.question legend { margin-bottom: 8px; color: #153d32; font-size: 0.98rem; font-weight: 850; }
+.choiceGrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(145px, 1fr)); gap: 8px; }
 .choice,
 .choiceActive {
-  min-height: 54px;
+  min-height: 50px;
   display: grid;
   place-content: center;
   gap: 2px;
@@ -116,12 +120,12 @@
 .primary:disabled { opacity: 0.42; cursor: not-allowed; }
 .secondary { border: 1px solid rgba(20, 80, 61, 0.22); background: #fff; color: #174f3e; }
 
-.result { display: grid; gap: 18px; }
+.result { display: grid; gap: 15px; }
 .result .stepIntro { margin-bottom: 0; }
 .scoreCard { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
-.scoreCard > div { display: grid; gap: 5px; padding: 16px; border-radius: 17px; background: #eef8f2; }
+.scoreCard > div { display: grid; gap: 4px; padding: 14px 16px; border-radius: 16px; background: #eef8f2; }
 .scoreCard strong { color: #0d4635; font-size: 1.12rem; font-weight: 900; }
-.pricePlan { display: grid; gap: 14px; padding: 20px; border: 1px solid rgba(16, 91, 66, 0.16); border-radius: 20px; background: #fff; }
+.pricePlan { display: grid; gap: 12px; padding: 17px 20px; border: 1px solid rgba(16, 91, 66, 0.16); border-radius: 18px; background: #fff; }
 .askingPrice { display: flex; align-items: baseline; flex-wrap: wrap; gap: 6px 10px; }
 .askingPrice small { flex-basis: 100%; color: #667a72; font-weight: 750; }
 .askingPrice strong { color: #0b4e39; font-size: clamp(1.9rem, 6vw, 2.75rem); line-height: 1; font-weight: 950; letter-spacing: -0.05em; }
@@ -136,9 +140,9 @@
 @media (max-width: 700px) {
   .backdrop { align-items: end; padding: 0; }
   .modal { max-height: 96vh; border-radius: 24px 24px 0 0; }
-  .header { padding: 20px 18px 16px; }
-  .fixedValue { grid-template-columns: 1fr; padding: 12px 18px; }
-  .body { max-height: calc(96vh - 300px); padding: 20px 18px 26px; }
+  .header { padding: 18px 18px 14px; }
+  .fixedValue { grid-template-columns: 1fr; gap: 8px; padding: 10px 18px; }
+  .body { padding: 18px 18px 24px; }
   .choiceGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .scoreCard { grid-template-columns: 1fr; }
   .actions { position: sticky; bottom: -26px; margin: 8px -18px -26px; padding: 14px 18px 18px; background: rgba(251, 253, 252, 0.96); }

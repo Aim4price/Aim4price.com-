@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { createPortal } from 'react-dom';
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type ChangeEvent, type DragEvent as ReactDragEvent, type FormEvent, type KeyboardEvent as ReactKeyboardEvent } from 'react';
 import AppHeader from '../../components/AppHeader';
+import SaleabilityModal from '../../components/SaleabilityModal';
 import AssetGroupManagerModal, {
   type AssetGroupReportFilters,
   type AssetGroupReportFormat,
@@ -81,6 +82,7 @@ import {
   type AssetDocumentCategory,
 } from '../../lib/asset-document-permissions';
 import { isViewportScrollbarInteraction } from '../../lib/viewport-scrollbar';
+import type { GeneralSaleabilityInput } from '../../lib/saleability';
 import assistanceServiceLocations from '../../database/seeds/aim4price-assistance-locations.json';
 
 type NoticeTone = 'success' | 'warning' | 'error';
@@ -2073,6 +2075,16 @@ function TrendIcon({ className }: IconProps) {
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden="true">
       <path d="M3 17 9 11l4 4 8-8" />
       <path d="M14 7h7v7" />
+    </svg>
+  );
+}
+
+function SaleabilityIcon({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden="true">
+      <path d="M4 18a8 8 0 1 1 16 0" />
+      <path d="m12 14 4-4" />
+      <path d="M7 18h10" />
     </svg>
   );
 }
@@ -4972,6 +4984,28 @@ function getAssetLifeWorkedPercent(asset: RegisterAsset): number | null {
   return fromSpecs === null ? null : Math.min(100, Math.max(0, fromSpecs));
 }
 
+function buildRegisterAssetSaleabilityInput(asset: RegisterAsset): GeneralSaleabilityInput {
+  const savedInputs = isPlainRecord(asset.specsJson.aim4priceSaleabilityInputs)
+    ? asset.specsJson.aim4priceSaleabilityInputs
+    : isPlainRecord(asset.specsJson.aim4price_saleability_inputs)
+      ? asset.specsJson.aim4price_saleability_inputs
+      : null;
+
+  return {
+    lifeRemainingPercent: asset.lifeRemainingPercent,
+    usageAmount: asset.hours,
+    maxLifetimeUsage: readAssetMaxLifetimeUsage(asset),
+    lifeWorkedPercent: getAssetLifeWorkedPercent(asset),
+    condition: asset.condition,
+    conditionFactorPercent: savedInputs
+      ? readNumberFromSpecs(savedInputs, ['conditionFactorPercent', 'condition_factor_percent'])
+      : null,
+    popularityStars: savedInputs
+      ? readNumberFromSpecs(savedInputs, ['popularityStars', 'popularity_stars'])
+      : null,
+  };
+}
+
 const LIFE_WORKED_PERCENT_DECREASE_TOLERANCE = 0.05;
 
 function getAssetSavedUsageReading(asset: RegisterAsset | null | undefined): number | null {
@@ -6515,6 +6549,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
   const [assetReportDownloadFormat, setAssetReportDownloadFormat] = useState<AssetReportFormat>('pdf');
   const [openAssetReportSelect, setOpenAssetReportSelect] = useState<AssetReportSelectKey | null>(null);
   const [isPricingModalOpen, setIsPricingModalOpen] = useState(false);
+  const [saleabilityAsset, setSaleabilityAsset] = useState<RegisterAsset | null>(null);
   const [isQrModalOpen, setIsQrModalOpen] = useState(false);
   const [copiedScanLinkAssetId, setCopiedScanLinkAssetId] = useState<string | null>(null);
   const [notice, setNotice] = useState<{ tone: NoticeTone; message: string } | null>(null);
@@ -8338,6 +8373,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     Boolean(assetRegisterMoveAsset) ||
     Boolean(accountantNoteAsset) ||
     isPricingModalOpen ||
+    Boolean(saleabilityAsset) ||
     Boolean(pricingPreview) ||
     isQrModalOpen ||
     isSummaryModalOpen ||
@@ -8539,6 +8575,11 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
         return;
       }
 
+      if (saleabilityAsset) {
+        setSaleabilityAsset(null);
+        return;
+      }
+
       if (pricingPreview) {
         closePricingPreviewDialog();
         return;
@@ -8640,7 +8681,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
       document.body.style.overflow = previousOverflow;
       document.removeEventListener('keydown', handleEscape);
     };
-  }, [activeAsset, anyModalOpen, assetRegisterMoveAsset, accountantNoteAsset, isSavingAccountantNote, deleteCandidateAsset, disposalCandidateAsset, acquisitionDetailsAsset, isSavingAcquisitionDetails, isAcquisitionChoiceOpen, isAddAssetDestinationModalOpen, isAddChoiceModalOpen, isAssetGroupModalOpen, isAssetFilterOpen, isChangeRegisterModalOpen, isAssetModalOpen, isAssetReportModalOpen, isExportModalOpen, isPricingModalOpen, pricingPreview, isQrModalOpen, isRegisterShareModalOpen, isSummaryModalOpen, isAccountantReportsOpen, marketplaceAsset, ownerAssetCommandPanel, documentUploadAsset, projectionAsset, isQuoteMapExpanded, isQuoteModalOpen, isQuoteTrackingSettingsOpen, quoteLeadStep, isAssetSettingsModalOpen, pendingUsageOverride, isManualConversionConfirmOpen, isSavingAssetSettings, replacementPriceRevaluePrompt, photoViewer]);
+  }, [activeAsset, anyModalOpen, assetRegisterMoveAsset, accountantNoteAsset, isSavingAccountantNote, deleteCandidateAsset, disposalCandidateAsset, acquisitionDetailsAsset, isSavingAcquisitionDetails, isAcquisitionChoiceOpen, isAddAssetDestinationModalOpen, isAddChoiceModalOpen, isAssetGroupModalOpen, isAssetFilterOpen, isChangeRegisterModalOpen, isAssetModalOpen, isAssetReportModalOpen, isExportModalOpen, isPricingModalOpen, saleabilityAsset, pricingPreview, isQrModalOpen, isRegisterShareModalOpen, isSummaryModalOpen, isAccountantReportsOpen, marketplaceAsset, ownerAssetCommandPanel, documentUploadAsset, projectionAsset, isQuoteMapExpanded, isQuoteModalOpen, isQuoteTrackingSettingsOpen, quoteLeadStep, isAssetSettingsModalOpen, pendingUsageOverride, isManualConversionConfirmOpen, isSavingAssetSettings, replacementPriceRevaluePrompt, photoViewer]);
 
   useEffect(() => {
     if (!isQuoteModalOpen || !selectedQuoteOption || quoteDirectoryStage !== 'map' || !quoteMapElementRef.current) {
@@ -11034,6 +11075,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     setOwnerAssetCommandPanel(null);
     setIsAssetReportModalOpen(false);
     setIsPricingModalOpen(false);
+    setSaleabilityAsset(null);
     setPricingPreview(null);
     setIsLoadingPricingPreview(false);
     setIsSavingPricingPreview(false);
@@ -20669,6 +20711,18 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                     <strong>Calculate future price</strong>
                   </span>
                 </button>
+
+                <button
+                  type="button"
+                  className={styles.pricingOptionButton}
+                  disabled={isLoadingPricingPreview || isSavingPricingPreview}
+                  onClick={() => setSaleabilityAsset(activeAsset)}
+                >
+                  <SaleabilityIcon className={styles.buttonIcon} />
+                  <span>
+                    <strong>Saleability</strong>
+                  </span>
+                </button>
               </div>
 
               {!canRefreshAssetEstimate(activeAsset) ? (
@@ -20677,6 +20731,17 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
             </div>
           </div>
         </div>
+      ) : null}
+
+      {saleabilityAsset ? (
+        <SaleabilityModal
+          open
+          onClose={() => setSaleabilityAsset(null)}
+          assetTitle={saleabilityAsset.title}
+          valuationExVat={saleabilityAsset.value}
+          input={buildRegisterAssetSaleabilityInput(saleabilityAsset)}
+          storageKey={`aim4price-saleability:asset:${saleabilityAsset.id}`}
+        />
       ) : null}
 
       {pricingPreview ? (
