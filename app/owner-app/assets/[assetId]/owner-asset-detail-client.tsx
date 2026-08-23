@@ -4,10 +4,12 @@ import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState, type ChangeEvent, type Dispatch, type FormEvent, type SetStateAction } from 'react';
 import DealerMaintenanceAccessSettings from '../../../../components/DealerMaintenanceAccessSettings';
 import GroupedCurrencyInput, { parseCurrencyInput } from '../../../../components/GroupedCurrencyInput';
+import SaleabilityModal from '../../../../components/SaleabilityModal';
 import { formatResolvedAssetUsage, resolveAssetUsage, type AssetUsageMetric } from '../../../../lib/asset-usage';
 import type { DealerMaintenanceAccessSummary } from '../../../../lib/dealer-maintenance-tracker';
 import type { DealerAssetCorrectionRequest } from '../../../../lib/dealer-asset-corrections';
 import { buildAssetSheetReportHtml, type AssetSheetPayload } from '../../../../lib/report-print';
+import type { GeneralSaleabilityInput } from '../../../../lib/saleability';
 import BalancedHeadingText from '../../balanced-heading';
 import OwnerAppNav from '../../owner-app-nav';
 import styles from '../../owner-app.module.css';
@@ -24,6 +26,7 @@ type Asset = {
   valuationRunId: number | null; selectedMethod: string;
   brandName: string; modelName: string; typedModelName: string; yearModel: number | null; hours: number | null;
   lifeWorkedPercent: number | null; maxLifetimeHours: number | null; condition: string; note: string; serialNumber: string; isFinanced: boolean;
+  lifeRemainingPercent?: number | null;
   financeNote: string; isInsured: boolean; insuredValueExVat: number | null; isLicensed: boolean;
   licenseRegistrationNumber: string; specsJson: Record<string, unknown>; photos: string[]; documents: Document[];
   marketplaceStatus: string; marketplacePriceExVat: number | null; marketplaceNotes: string; sellerPhone: string;
@@ -57,7 +60,7 @@ type DisposalDraft = { reason: DisposalReason | ''; disposalDate: string; dispos
 
 export type OwnerAssetView = 'summary' | 'details' | 'options' | 'manage' | 'section';
 export type OwnerAssetManageSection = 'details' | 'activity' | 'reports' | 'pricing' | 'finance' | 'insurance' | 'licence' | 'location' | 'media' | 'marketplace' | 'maintenance' | 'dealer-tracking' | 'delete';
-export type OwnerAssetPricingMode = 'landing' | 'recalculate' | 'future';
+export type OwnerAssetPricingMode = 'landing' | 'recalculate' | 'future' | 'saleability';
 type OwnerAssetManageGroup = 'asset' | 'records' | 'selling' | 'removal';
 
 const STATUS_OPTIONS = [
@@ -254,6 +257,31 @@ function parseWholeNumberInput(value: string): number | null {
 function moneyDifference(value: number): string {
   if (!Number.isFinite(value) || value === 0) return 'R 0';
   return `${value > 0 ? '+' : '−'}R ${Math.abs(Math.round(value)).toLocaleString('en-ZA')}`;
+}
+
+function asOptionalRecord(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : null;
+}
+
+function asOptionalNumber(value: unknown): number | null {
+  if (value === null || typeof value === 'undefined' || value === '') return null;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function buildAssetSaleabilityInput(asset: Asset): GeneralSaleabilityInput {
+  const saved = asOptionalRecord(asset.specsJson.aim4priceSaleabilityInputs)
+    ?? asOptionalRecord(asset.specsJson.aim4price_saleability_inputs);
+
+  return {
+    lifeRemainingPercent: asset.lifeRemainingPercent ?? null,
+    usageAmount: asset.hours,
+    maxLifetimeUsage: asset.maxLifetimeHours,
+    lifeWorkedPercent: asset.lifeWorkedPercent,
+    condition: asset.condition,
+    conditionFactorPercent: asOptionalNumber(saved?.conditionFactorPercent ?? saved?.condition_factor_percent),
+    popularityStars: asOptionalNumber(saved?.popularityStars ?? saved?.popularity_stars),
+  };
 }
 
 export default function OwnerAssetDetailClient({ assetId, view = 'summary', section, pricingMode = 'landing' }: {
@@ -1139,6 +1167,8 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
           ? 'Recalculate Value'
           : section === 'pricing' && pricingMode === 'future'
             ? 'Future Price'
+            : section === 'pricing' && pricingMode === 'saleability'
+              ? 'Saleability'
             : MANAGE_SECTIONS.find((item) => item.id === section)?.title || 'Manage asset'} /></h1>
         <strong><BalancedHeadingText text={draft.title} /></strong>
         <p>{draft.serialNumber ? `Serial: ${draft.serialNumber}` : registerName}</p>
@@ -1325,6 +1355,7 @@ function PricingSection({ assetId, mode, draft, reload, setNotice }: {
   const [extraUsage, setExtraUsage] = useState('0');
   const [targetPercent, setTargetPercent] = useState(String(draft.lifeWorkedPercent ?? ''));
   const [projection, setProjection] = useState<ProjectionResponse['projection'] | null>(null);
+  const [saleabilityOpen, setSaleabilityOpen] = useState(mode === 'saleability');
 
   if (mode === 'landing') {
     const pricingBase = `/owner-app/assets/${encodeURIComponent(assetId)}/manage/pricing`;
@@ -1335,6 +1366,9 @@ function PricingSection({ assetId, mode, draft, reload, setNotice }: {
         </Link>
         <Link className={`${styles.addChoiceCard} ${styles.addChoiceCardManual}`} href={`${pricingBase}/future`} prefetch={false}>
           <strong>Future Price</strong>
+        </Link>
+        <Link className={`${styles.addChoiceCard} ${styles.addChoiceCardValue}`} href={`${pricingBase}/saleability`} prefetch={false}>
+          <strong>Saleability</strong>
         </Link>
       </section>
     );
@@ -1452,6 +1486,31 @@ function PricingSection({ assetId, mode, draft, reload, setNotice }: {
         </> : <p className={styles.infoNotice}>Automatic recalculation is available for assets saved from an Aim4price valuation.</p>}
       </div>
       {pricingError ? <div className={styles.errorNotice}>{pricingError}</div> : null}
+    </section>
+  );
+
+  if (mode === 'saleability') return (
+    <section className={`${styles.section} ${styles.editorSection}`}>
+      <p className={styles.editorIntro}>See how easily this asset may sell, then build a separate selling-price plan.</p>
+      <div className={styles.pricingSummaryGrid}>
+        <div><span>Aim4price value</span><strong>{money(draft.value)}</strong><small>Excl. VAT · remains unchanged</small></div>
+        <div><span>Current usage</span><strong>{formatResolvedAssetUsage(usage, 'Not saved')}</strong><small>Used for remaining useful life</small></div>
+      </div>
+      <div className={styles.pricingPanel}>
+        <div className={styles.pricingPanelHeader}>
+          <strong>Refine Saleability</strong>
+          <small>Answer seven plain questions about buyers, demand and your selling goal. Your Aim4price value is never changed.</small>
+        </div>
+        <button type="button" className={styles.primaryButton} onClick={() => setSaleabilityOpen(true)}>Open Saleability</button>
+      </div>
+      <SaleabilityModal
+        open={saleabilityOpen}
+        onClose={() => setSaleabilityOpen(false)}
+        assetTitle={draft.title}
+        valuationExVat={draft.value}
+        input={buildAssetSaleabilityInput(draft)}
+        storageKey={`aim4price-saleability:asset:${draft.id}`}
+      />
     </section>
   );
 

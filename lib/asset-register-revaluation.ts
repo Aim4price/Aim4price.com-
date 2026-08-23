@@ -259,6 +259,19 @@ function readSavedAdvancedAssumptions(
   );
 }
 
+function resolveAdvancedAssumptionsForRevaluation(
+  saved: Record<string, unknown> | null,
+  requested: AdvancedAssumptionsInput | undefined,
+): AdvancedAssumptionsInput {
+  if (typeof requested === 'undefined') return saved;
+  if (requested === null) return null;
+
+  return {
+    ...(saved ?? {}),
+    ...requested,
+  };
+}
+
 function normalizeCondition(value: unknown): ConditionKey | null {
   const normalized = asText(value).toLowerCase();
 
@@ -663,9 +676,10 @@ async function revalueTractorAsset(input: {
   const payload = asRecord(input.row.valuation_payload);
   const payloadInput = readNestedRecord(payload, 'input');
   const payloadOutput = readNestedRecord(payload, 'output');
-  const advancedAssumptions = typeof input.advancedAssumptions === 'undefined'
-    ? readSavedAdvancedAssumptions(payloadInput, payloadOutput)
-    : input.advancedAssumptions;
+  const advancedAssumptions = resolveAdvancedAssumptionsForRevaluation(
+    readSavedAdvancedAssumptions(payloadInput, payloadOutput),
+    input.advancedAssumptions,
+  );
   const modelId = requireText(
     payloadInput.modelId ?? input.row.equipment_model_id ?? input.row.model_id ?? input.asset.equipmentModelId,
     'This tractor is missing its original model link, so Aim4price cannot re-run the estimate yet.',
@@ -824,9 +838,10 @@ async function revalueGenericAsset(input: {
   const payload = asRecord(input.row.valuation_payload);
   const payloadInput = readNestedRecord(payload, 'input');
   const payloadOutput = readNestedRecord(payload, 'output');
-  const advancedAssumptions = typeof input.advancedAssumptions === 'undefined'
-    ? readSavedAdvancedAssumptions(payloadInput, payloadOutput)
-    : input.advancedAssumptions;
+  const advancedAssumptions = resolveAdvancedAssumptionsForRevaluation(
+    readSavedAdvancedAssumptions(payloadInput, payloadOutput),
+    input.advancedAssumptions,
+  );
   const sectorKeyRaw = payloadInput.sectorKey ?? input.row.sector_key;
 
   if (!isSectorKey(sectorKeyRaw)) {

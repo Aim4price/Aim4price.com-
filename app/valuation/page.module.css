@@ -12735,3 +12735,71 @@
     border-top: 1px solid rgba(17, 56, 45, 0.08);
   }
 }
+.saleabilitySummary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 20px 22px;
+  border: 1px solid rgba(19, 98, 70, 0.16);
+  border-radius: 20px;
+  background: linear-gradient(135deg, #f8fcf9 0%, #eaf7ef 100%);
+  box-shadow: 0 14px 32px rgba(14, 66, 48, 0.06);
+}
+
+.saleabilitySummary > div {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.saleabilitySummary span {
+  color: #247057;
+  font-size: 0.76rem;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.saleabilitySummary strong {
+  color: #104734;
+  font-size: 1.16rem;
+  font-weight: 900;
+}
+
+.saleabilitySummary p {
+  margin: 0;
+  color: #61756e;
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
+
+.saleabilitySummary button {
+  flex: 0 0 auto;
+  min-height: 46px;
+  padding: 0 20px;
+  border: 1px solid #135d45;
+  border-radius: 999px;
+  background: #135d45;
+  color: #fff;
+  font: inherit;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.saleabilitySummary button:focus-visible {
+  outline: 3px solid rgba(19, 93, 69, 0.22);
+  outline-offset: 2px;
+}
+
+@media (max-width: 640px) {
+  .saleabilitySummary {
+    align-items: stretch;
+    flex-direction: column;
+    padding: 18px;
+  }
+
+  .saleabilitySummary button {
+    width: 100%;
+  }
+}
