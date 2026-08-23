@@ -32,38 +32,58 @@ test('Owner App Share reuses the Inside or Outside chooser and the simplified ex
   assert.match(detail, /photoUrls: draft\.photos/);
   assert.match(detail, /reportAsset=\{draft\}/);
 
-  assert.match(detail, /section === 'reports' \? <OwnerAssetReportPicker/);
+  assert.match(detail, /buildOwnerValuationReportPayload/);
+  assert.match(detail, /buildAssetSheetReportHtml\(buildOwnerValuationReportPayload\(draft, ownerContext\)\)/);
+  assert.doesNotMatch(detail, /openAssetSheetPrint|openValuationReport/);
+  assert.match(detail, /valuationReportHtml=\{buildAssetSheetReportHtml/);
   assert.match(options, /<OwnerAssetReportPicker[\s\S]*?mode="attach"/);
+  assert.match(options, /valuationReportHtml=\{valuationReportHtml\}/);
   assert.match(reportPicker, /mode\?: 'open' \| 'attach'/);
   assert.doesNotMatch(reportPicker, /Documents|Add any file|type="file"/i);
 });
 
-test('Owner App report attachments are real PDFs, support repeated additions, and retain the selected asset scope', async () => {
+test('Owner App opens and attaches each canonical report artifact without redrawing it', async () => {
   const [options, picker] = await Promise.all([
     readFile(ownerOptionsUrl, 'utf8'),
     readFile(ownerReportsUrl, 'utf8'),
   ]);
 
   assert.match(options, /setReportFiles\(\(current\) => current\.some\(\(report\) => report\.id === source\.id\)/);
-  assert.match(picker, /source: report === 'valuation' \? 'valuation' : report === 'ownership' \? 'ownership' : 'scan'/);
-  assert.match(picker, /params\.set\('registerId', asset\.registerId\)/);
-  assert.match(picker, /params\.set\('report', report\)/);
-  assert.match(picker, /contentType: 'application\/pdf'/);
-  assert.match(picker, /fileName,[\s\S]*?url,[\s\S]*?credentials: 'include'/);
-  assert.match(picker, />Add PDF<\/button>/);
-  assert.doesNotMatch(picker, /\.xlsx|Add Excel|format.*xlsx/i);
+  assert.match(picker, /function normalReportUrl\([\s\S]*?return buildOwnerAssetReportUrl\(asset, report, reportFormat, year, month, maintenanceType\)/);
+  assert.match(picker, /function shareReportSource\([\s\S]*?const url = normalReportUrl\(report, reportFormat\)/);
+  assert.match(picker, /function buildOwnerValuationReportSource[\s\S]*?url: '\/api\/reports\/render-pdf'/);
+  assert.match(picker, /id: `owner-report:pdf:valuation:\$\{asset\.id\}:\$\{\(htmlHash >>> 0\)\.toString\(36\)\}`/);
+  assert.match(picker, /report === 'valuation' && reportFormat === 'pdf'[\s\S]*?return buildOwnerValuationReportSource\(asset, valuationReportHtml\)/);
+  assert.match(picker, /body: JSON\.stringify\(\{ html: valuationReportHtml, fileName \}\)/);
+  assert.match(picker, /request: \{[\s\S]*?method: 'POST'[\s\S]*?headers: \{ 'Content-Type': 'application\/json' \}/);
+  assert.match(picker, /fetchExternalShareFile\(buildOwnerValuationReportSource\(asset, valuationReportHtml\)\)/);
+  assert.match(picker, /window\.open\('about:blank', '_blank'\)/);
+  assert.match(picker, /reportWindow\.location\.replace\(objectUrl\)/);
+  assert.match(picker, /source: 'owner-app'/);
+  assert.match(picker, /params\.set\('registerIds', asset\.registerId\)/);
+  assert.match(picker, /if \(report !== 'ownership'\) params\.set\('report', report\)/);
+  assert.match(picker, /contentType: reportFormat === 'pdf'[\s\S]*?'application\/pdf'[\s\S]*?'application\/vnd\.openxmlformats-officedocument\.spreadsheetml\.sheet'/);
+  assert.match(picker, /const fileName = reportFileName\([\s\S]*?url,[\s\S]*?credentials: 'include'/);
+  assert.match(picker, /<option value="pdf">PDF<\/option>/);
+  assert.match(picker, /<option value="xlsx">Excel<\/option>/);
+  assert.match(picker, /format === 'pdf' \? 'Add PDF' : 'Add Excel'/);
+  assert.match(picker, /selectedReport === 'valuation' && format === 'pdf'[\s\S]*?openSelectedValuationPdf/);
+  assert.match(picker, /href=\{normalReportUrl\(selectedReport, format\)\}/);
+  assert.doesNotMatch(picker, /\/api\/reports\/share-pdf/);
 });
 
-test('Owner App report attachments name each selected period and maintenance type while retaining URL-derived identity', async () => {
+test('Owner App report attachments retain format, filters, canonical identity and response filename preference', async () => {
   const picker = await readFile(ownerReportsUrl, 'utf8');
 
   assert.match(picker, /function reportFilterMeta\([\s\S]*?report === 'valuation'[\s\S]*?labelSuffix: ''/);
   assert.match(picker, /REPORT_MONTHS\[monthIndex\]/);
   assert.match(picker, /report === 'maintenance' && maintenanceType !== 'all'/);
-  assert.match(picker, /reportFileName\(asset\.title, report, year, month, maintenanceType\)/);
-  assert.match(picker, /label: `\$\{REPORT_TITLES\[report\]\}\$\{filterMeta\.labelSuffix\} · PDF`/);
-  assert.match(picker, /return `\$\{slugFileName\(assetTitle\)\}-\$\{report\}\$\{filterMeta\.fileSuffix\}\.pdf`/);
-  assert.match(picker, /id: `owner-report:\$\{report\}:\$\{asset\.id\}:\$\{params\.toString\(\) \|\| 'all'\}`/);
+  assert.match(picker, /reportFileName\(asset\.title, report, year, month, maintenanceType, reportFormat\)/);
+  assert.match(picker, /label: `\$\{REPORT_TITLES\[report\]\}\$\{filterMeta\.labelSuffix\} · \$\{reportFormat === 'pdf' \? 'PDF' : 'Excel'\}`/);
+  assert.match(picker, /return `\$\{slugFileName\(assetTitle\)\}-\$\{report\}\$\{filterMeta\.fileSuffix\}\.\$\{format\}`/);
+  assert.match(picker, /id: `owner-report:pdf:valuation:\$\{asset\.id\}:\$\{\(htmlHash >>> 0\)\.toString\(36\)\}`/);
+  assert.match(picker, /id: `owner-report:\$\{reportFormat\}:\$\{url\}`/);
+  assert.match(picker, /preferSourceFileName:\s*true/);
 });
 
 test('direct report routes hide missing or cross-scope Owner App assets', async () => {
@@ -81,6 +101,10 @@ test('direct report routes hide missing or cross-scope Owner App assets', async 
     assert.match(route, /The requested asset report could not be found\./);
     assert.match(route, /status: 404/);
   }
+
+  assert.match(ownershipReport, /const requestedFormat = parseFormat\(request\.nextUrl\.searchParams\.get\('format'\)\)/);
+  assert.match(ownershipReport, /ownerAppMode && requestedFormat !== 'xlsx' \? 'pdf' : requestedFormat/);
+  assert.doesNotMatch(ownershipReport, /ownerAppMode \? 'pdf' : parseFormat/);
 
   assert.match(valuationExport, /validateOwnerAppAssetSelection/);
   assert.match(valuationExport, /ownerAppCanAccessAsset\(ownerAppAccess, assetId\)/);

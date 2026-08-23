@@ -43,7 +43,8 @@ test('outside sharing stays in one simple modal with optional photos, controlled
   assert.match(component, /reportFiles\.map\(\(report\) =>/);
   assert.match(component, /onRemoveAim4priceReport\(reportId\)/);
 
-  assert.match(component, /Promise\.all\(selectedSources\.map\(\(source\) => fetchExternalShareFile\(source\)\)\)/);
+  assert.match(component, /createExternalShareFileCache\(\)/);
+  assert.match(component, /prepareExternalShareFiles\(selectedSources, attachmentFileCache\)/);
   assert.doesNotMatch(component, /MAX_SHARE_FILES|Choose no more than .* attachments/, 'all selected photos and reports should be prepared together');
   assert.match(component, /file\.size > MAX_SHARE_FILE_BYTES/);
   assert.match(component, /totalBytes > MAX_SHARE_TOTAL_BYTES/);
@@ -53,7 +54,7 @@ test('outside sharing stays in one simple modal with optional photos, controlled
 
   const sendHandler = component.match(/async function sendShare\(target: ShareTarget\) \{([\s\S]*?)\n  \}\n\n  const attachmentStatus/);
   assert.ok(sendHandler, 'the component should expose one send handler');
-  assert.doesNotMatch(sendHandler[1], /fetchExternalShareFile/, 'network preparation should finish before the user presses Send');
+  assert.doesNotMatch(sendHandler[1], /fetchExternalShareFile|prepareExternalShareFiles/, 'network preparation should finish before the user presses Send');
 
   assert.match(component, /'Send by email'/);
   assert.match(component, /'Send with WhatsApp'/);

@@ -8,7 +8,8 @@ import {
   type ExternalAssetShareItem,
 } from '../../lib/asset-external-share';
 import {
-  fetchExternalShareFile,
+  createExternalShareFileCache,
+  prepareExternalShareFiles,
   type ExternalShareFileSource,
 } from '../../lib/external-file-share';
 import styles from './AssetExternalShare.module.css';
@@ -200,6 +201,7 @@ export default function AssetExternalShare({
     files: [],
     error: '',
   });
+  const [attachmentFileCache] = useState(() => createExternalShareFileCache());
 
   const photoFiles = useMemo<ExternalShareFileSource[]>(() => assets.flatMap((asset, assetIndex) => (
     asset.photoUrls.map((url, photoIndex) => {
@@ -250,7 +252,7 @@ export default function AssetExternalShare({
 
     setPreparation({ status: 'preparing', files: [], error: '' });
 
-    void Promise.all(selectedSources.map((source) => fetchExternalShareFile(source)))
+    void prepareExternalShareFiles(selectedSources, attachmentFileCache)
       .then((files) => {
         if (cancelled) return;
         const oversized = files.find((file) => file.size > MAX_SHARE_FILE_BYTES);
@@ -277,7 +279,7 @@ export default function AssetExternalShare({
     };
   // The signature deliberately keeps controlled arrays with identical files from refetching.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [preparationAttempt, selectedSourceSignature]);
+  }, [attachmentFileCache, preparationAttempt, selectedSourceSignature]);
 
   function togglePhotos() {
     setIncludePhotos((current) => !current);

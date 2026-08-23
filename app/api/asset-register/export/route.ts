@@ -12,6 +12,7 @@ import { listAssetRegisterItems, type AssetRegisterItem } from '../../../../lib/
 import { getAssetRegisterForUser, getSelectedAssetRegister, getVisibleAssetRegisterLogoUrl, listAssetRegisters, type AssetRegisterSummary } from '../../../../lib/asset-registers';
 import { createXlsxWorkbook, type XlsxCellStyle, type XlsxCellValue, type XlsxSheet } from '../../../../lib/simple-xlsx';
 import { resolveReportLogoUrlForHtml } from '../../../../lib/report-logo';
+import { renderReportHtmlToPdf } from '../../../../lib/report-pdf';
 import { resolveOwnerWorkspaceContext } from '../../../../lib/owner-workspace-access';
 import { getOwnerAppAccess, ownerAppCanAccessAsset } from '../../../../lib/owner-app-access';
 
@@ -3216,13 +3217,18 @@ export async function GET(request: NextRequest) {
         if (reportKind === 'summary') {
           const summaryItems = bundles.flatMap((bundle) => registerSummaryAssets(bundle.register, bundle.items));
           const html = await renderRegisterSummaryReportHtml(summaryItems, exportProfile, generatedAt, request.url);
-          const fileName = `aim4price-register-summary-${ownerSlug}-${filenameDate}.html`;
+          const pdf = await renderReportHtmlToPdf(html, {
+            baseUrl: request.url,
+            cookie: request.headers.get('cookie') ?? '',
+          });
+          const fileName = `aim4price-register-summary-${ownerSlug}-${filenameDate}.pdf`;
 
-          return new NextResponse(html, {
+          return new NextResponse(pdf, {
             status: 200,
             headers: {
-              'Content-Type': 'text/html; charset=utf-8',
+              'Content-Type': 'application/pdf',
               'Content-Disposition': `inline; filename="${fileName}"`,
+              'Content-Length': String(pdf.length),
               'Cache-Control': 'no-store',
             },
           });
@@ -3235,7 +3241,7 @@ export async function GET(request: NextRequest) {
           status: 200,
           headers: {
             'Content-Type': 'application/pdf',
-            'Content-Disposition': `attachment; filename="${fileName}"`,
+            'Content-Disposition': `inline; filename="${fileName}"`,
             'Content-Length': String(pdf.length),
             'Cache-Control': 'no-store',
           },
@@ -3329,13 +3335,18 @@ export async function GET(request: NextRequest) {
 
       if (reportKind === 'summary') {
         const html = await renderRegisterSummaryReportHtml(items, exportProfile, generatedAt, request.url);
-        const fileName = `aim4price-register-summary-${ownerSlug}-${filenameDate}.html`;
+        const pdf = await renderReportHtmlToPdf(html, {
+          baseUrl: request.url,
+          cookie: request.headers.get('cookie') ?? '',
+        });
+        const fileName = `aim4price-register-summary-${ownerSlug}-${filenameDate}.pdf`;
 
-        return new NextResponse(html, {
+        return new NextResponse(pdf, {
           status: 200,
           headers: {
-            'Content-Type': 'text/html; charset=utf-8',
+            'Content-Type': 'application/pdf',
             'Content-Disposition': `inline; filename="${fileName}"`,
+            'Content-Length': String(pdf.length),
             'Cache-Control': 'no-store',
           },
         });
@@ -3348,7 +3359,7 @@ export async function GET(request: NextRequest) {
         status: 200,
         headers: {
           'Content-Type': 'application/pdf',
-          'Content-Disposition': `attachment; filename="${fileName}"`,
+          'Content-Disposition': `inline; filename="${fileName}"`,
           'Content-Length': String(pdf.length),
           'Cache-Control': 'no-store',
         },

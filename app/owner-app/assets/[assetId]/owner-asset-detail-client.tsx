@@ -7,7 +7,7 @@ import GroupedCurrencyInput, { parseCurrencyInput } from '../../../../components
 import { formatResolvedAssetUsage, resolveAssetUsage, type AssetUsageMetric } from '../../../../lib/asset-usage';
 import type { DealerMaintenanceAccessSummary } from '../../../../lib/dealer-maintenance-tracker';
 import type { DealerAssetCorrectionRequest } from '../../../../lib/dealer-asset-corrections';
-import { openAssetSheetPrint } from '../../../../lib/report-print';
+import { buildAssetSheetReportHtml, type AssetSheetPayload } from '../../../../lib/report-print';
 import BalancedHeadingText from '../../balanced-heading';
 import OwnerAppNav from '../../owner-app-nav';
 import styles from '../../owner-app.module.css';
@@ -152,6 +152,58 @@ function statusVisual(value: string) {
 function conditionLabel(value: string) {
   const normalized = text(value).replace(/[_-]+/g, ' ');
   return normalized ? normalized.charAt(0).toUpperCase() + normalized.slice(1) : 'Not saved';
+}
+
+function buildOwnerValuationReportPayload(asset: Asset, ownerContext: OwnerContext | null): AssetSheetPayload {
+  const usage = formatResolvedAssetUsage(resolveAssetUsage({
+    kind: asset.kind,
+    hours: asset.hours,
+    lifeWorkedPercent: asset.lifeWorkedPercent,
+    specsJson: asset.specsJson,
+  }), 'Not saved');
+  const methodLabel = asset.selectedMethod === 'manual' ? 'Manual value' : 'Aim4price value';
+
+  return {
+    logoUrl: ownerContext?.reportLogoUrl || '/brand/aim4price-mark-black.png',
+    generatedAt: dateOnly(new Date().toISOString()),
+    assetBadge: asset.kind === 'property' ? 'Property / Buildings' : asset.kind.charAt(0).toUpperCase() + asset.kind.slice(1),
+    heroTitle: asset.title,
+    heroMeta: [asset.yearModel, asset.brandName, asset.modelName].filter(Boolean).join(' · '),
+    valueLabel: 'Estimated Value',
+    value: money(asset.value),
+    valueNote: methodLabel,
+    statusLabel: dateOnly(asset.updatedAtIso),
+    issuerName: 'Aim4price',
+    issuerAddress: 'Saved asset register data',
+    issuerEmail: 'aim4price@gmail.com',
+    clientRows: [
+      { label: 'Business Name', value: ownerContext?.businessName || 'Aim4price client' },
+      { label: 'Contact Details', value: ownerContext?.phone || '—' },
+      { label: 'Business Email', value: ownerContext?.email || '—' },
+      { label: 'Location / Address', value: ownerContext?.address || ownerContext?.area || '—' },
+    ],
+    photoUrl: asset.photos[0] || null,
+    photoUrls: asset.photos,
+    facts: [
+      { label: 'Category', value: asset.kind === 'property' ? 'Property / Buildings' : asset.kind },
+      { label: 'Brand', value: asset.brandName || '—' },
+      { label: 'Model', value: asset.modelName || asset.typedModelName || '—' },
+      { label: 'Year', value: asset.yearModel ? String(asset.yearModel) : '—' },
+      { label: 'Usage', value: usage },
+      { label: 'Condition', value: conditionLabel(asset.condition) },
+      { label: 'Replacement Price', value: asset.replacementPriceExVat ? `${money(asset.replacementPriceExVat)} excl. VAT` : 'Not saved' },
+      { label: 'Serial Number', value: asset.serialNumber || '—' },
+      { label: 'Insured', value: statusVisual(statusValue(asset, 'insurance')).title },
+      { label: 'Insured Value', value: asset.insuredValueExVat ? `${money(asset.insuredValueExVat)} excl. VAT` : 'Not saved' },
+      { label: 'Financed', value: statusVisual(statusValue(asset, 'finance')).title },
+      { label: 'Licensed', value: statusVisual(statusValue(asset, 'license')).title },
+      { label: 'Documents', value: asset.documents.length ? `${asset.documents.length} saved` : 'None' },
+      { label: 'Last Updated', value: dateOnly(asset.updatedAtIso) },
+    ],
+    notes: [],
+    methodCards: [{ label: methodLabel, value: money(asset.value), note: 'Saved value excluding VAT', selected: true }],
+    footerNote: 'Values are indicative estimates based on saved asset-register information and available pricing inputs. This is not a certified valuation, inspection report or guarantee of selling price.',
+  };
 }
 function manualMarketplaceNote(value: string) {
   const note = text(value).replace(/\r\n/g, '\n');
@@ -613,60 +665,6 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
     }
   }
 
-  function openValuationReport() {
-    if (!draft) return;
-    const usage = formatResolvedAssetUsage(resolveAssetUsage({
-      kind: draft.kind,
-      hours: draft.hours,
-      lifeWorkedPercent: draft.lifeWorkedPercent,
-      specsJson: draft.specsJson,
-    }), 'Not saved');
-    const methodLabel = draft.selectedMethod === 'manual' ? 'Manual value' : 'Aim4price value';
-    const didOpen = openAssetSheetPrint({
-      logoUrl: ownerContext?.reportLogoUrl || '/brand/aim4price-mark-black.png',
-      generatedAt: dateOnly(new Date().toISOString()),
-      assetBadge: draft.kind === 'property' ? 'Property / Buildings' : draft.kind.charAt(0).toUpperCase() + draft.kind.slice(1),
-      heroTitle: draft.title,
-      heroMeta: [draft.yearModel, draft.brandName, draft.modelName].filter(Boolean).join(' · '),
-      valueLabel: 'Estimated Value',
-      value: money(draft.value),
-      valueNote: methodLabel,
-      statusLabel: dateOnly(draft.updatedAtIso),
-      issuerName: 'Aim4price',
-      issuerAddress: 'Saved asset register data',
-      issuerEmail: 'aim4price@gmail.com',
-      clientRows: [
-        { label: 'Business Name', value: ownerContext?.businessName || 'Aim4price client' },
-        { label: 'Contact Details', value: ownerContext?.phone || '—' },
-        { label: 'Business Email', value: ownerContext?.email || '—' },
-        { label: 'Location / Address', value: ownerContext?.address || ownerContext?.area || '—' },
-      ],
-      photoUrl: draft.photos[0] || null,
-      photoUrls: draft.photos,
-      facts: [
-        { label: 'Category', value: draft.kind === 'property' ? 'Property / Buildings' : draft.kind },
-        { label: 'Brand', value: draft.brandName || '—' },
-        { label: 'Model', value: draft.modelName || draft.typedModelName || '—' },
-        { label: 'Year', value: draft.yearModel ? String(draft.yearModel) : '—' },
-        { label: 'Usage', value: usage },
-        { label: 'Condition', value: conditionLabel(draft.condition) },
-        { label: 'Replacement Price', value: draft.replacementPriceExVat ? `${money(draft.replacementPriceExVat)} excl. VAT` : 'Not saved' },
-        { label: 'Serial Number', value: draft.serialNumber || '—' },
-        { label: 'Insured', value: statusVisual(statusValue(draft, 'insurance')).title },
-        { label: 'Insured Value', value: draft.insuredValueExVat ? `${money(draft.insuredValueExVat)} excl. VAT` : 'Not saved' },
-        { label: 'Financed', value: statusVisual(statusValue(draft, 'finance')).title },
-        { label: 'Licensed', value: statusVisual(statusValue(draft, 'license')).title },
-        { label: 'Documents', value: draft.documents.length ? `${draft.documents.length} saved` : 'None' },
-        { label: 'Last Updated', value: dateOnly(draft.updatedAtIso) },
-      ],
-      notes: [],
-      methodCards: [{ label: methodLabel, value: money(draft.value), note: 'Saved value excluding VAT', selected: true }],
-      footerNote: 'Values are indicative estimates based on saved asset-register information and available pricing inputs. This is not a certified valuation, inspection report or guarantee of selling price.',
-    });
-
-    if (!didOpen) setNotice({ tone: 'error', message: 'Unable to open the valuation report. Please allow pop-ups and try again.' });
-  }
-
   if (loading) return (
     <>
       {view === 'options' ? <OwnerAppNav backHref={`/owner-app/assets/${encodeURIComponent(assetId)}`} backLabel="Asset" /> : null}
@@ -1066,6 +1064,7 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
           publicUrl: null,
         }}
         reportAsset={draft}
+        valuationReportHtml={buildAssetSheetReportHtml(buildOwnerValuationReportPayload(draft, ownerContext))}
         assetKind={draft.kind}
         assetIsLicensed={licenseStatus === 'yes'}
         licenceRenewalDate={extra('licenseRenewalDate', 'license_renewal_date', 'licenceRenewalDate', 'licence_renewal_date')}
@@ -1167,7 +1166,12 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
         <div className={styles.actions}><button type="button" className={styles.primaryButton} onClick={() => void saveAsset()} disabled={saving || Boolean(actionBusy)}>{saving ? 'Saving…' : 'Save changes'}</button></div>
       </section> : null}
 
-      {section === 'reports' ? <OwnerAssetReportPicker asset={draft} openValuationReport={openValuationReport} /> : null}
+      {section === 'reports' ? (
+        <OwnerAssetReportPicker
+          asset={draft}
+          valuationReportHtml={buildAssetSheetReportHtml(buildOwnerValuationReportPayload(draft, ownerContext))}
+        />
+      ) : null}
 
       {section === 'activity' ? <ActivitySection assetId={assetId} /> : null}
 

@@ -1,5 +1,11 @@
 export type ExternalShareFileKind = 'photo' | 'report' | 'document';
 
+export type ExternalShareFileRequest = {
+  method?: 'GET' | 'POST';
+  headers?: Record<string, string>;
+  body?: string;
+};
+
 export type ExternalShareFileSource = {
   id: string;
   kind: ExternalShareFileKind;
@@ -10,6 +16,12 @@ export type ExternalShareFileSource = {
   contentType?: string;
   credentials?: RequestCredentials;
   preferSourceFileName?: boolean;
+  request?: ExternalShareFileRequest;
+};
+
+export type ExternalShareFileCache = {
+  prepare: (source: ExternalShareFileSource) => Promise<File>;
+  clear: () => void;
 };
 
 const CONTENT_TYPE_EXTENSIONS: Record<string, string> = {
@@ -63,7 +75,11 @@ export async function fetchExternalShareFile(
   source: ExternalShareFileSource,
   fetcher: typeof fetch = fetch,
 ): Promise<File> {
+  const request = source.request;
   const response = await fetcher(source.url, {
+    ...(request?.method ? { method: request.method } : {}),
+    ...(request?.headers ? { headers: request.headers } : {}),
+    ...(typeof request?.body === 'string' ? { body: request.body } : {}),
     credentials: source.credentials ?? 'include',
     cache: 'no-store',
   });
@@ -73,7 +89,10 @@ export async function fetchExternalShareFile(
   }
 
   const blob = await response.blob();
-  const responseType = blob.type.split(';')[0]?.trim().toLowerCase() ?? '';
+  const responseType = (
+    response.headers.get('content-type')
+    || blob.type
+  ).split(';')[0]?.trim().toLowerCase() ?? '';
   const expectedType = source.contentType?.split(';')[0]?.trim().toLowerCase() ?? '';
   if (!blob.size) {
     throw new Error(`“${source.label}” is empty.`);
@@ -90,12 +109,12 @@ export async function fetchExternalShareFile(
   ) {
     throw new Error(`“${source.label}” returned the wrong file type.`);
   }
-  const contentType = responseType && responseType !== 'application/octet-stream'
-    ? responseType
-    : expectedType || 'application/octet-stream';
+  // The endpoint owns the file. Keep its MIME type and Content-Disposition
+  // filename so the attachment is the same artifact as a normal report export.
+  const contentType = responseType || expectedType || 'application/octet-stream';
   const responseFileName = fileNameFromDisposition(response.headers.get('content-disposition'));
   const fileName = ensureFileExtension(
-    source.preferSourceFileName ? source.fileName : responseFileName || source.fileName,
+    responseFileName || source.fileName,
     contentType,
   );
 
@@ -103,6 +122,62 @@ export async function fetchExternalShareFile(
     type: contentType,
     lastModified: Date.now(),
   });
+}
+
+function externalShareFileCacheKey(source: ExternalShareFileSource): string {
+  const requestHeaders = Object.entries(source.request?.headers ?? {})
+    .map(([name, value]) => [name.toLowerCase(), value] as const)
+    .sort(([left], [right]) => left.localeCompare(right));
+
+  return JSON.stringify([
+    source.kind,
+    source.url,
+    source.fileName,
+    source.contentType ?? '',
+    source.credentials ?? 'include',
+    source.request?.method ?? 'GET',
+    requestHeaders,
+    source.request?.body ?? '',
+  ]);
+}
+
+/**
+ * Keeps the exact File produced for a source for the lifetime of one share
+ * modal. Selection changes can therefore add or remove other attachments
+ * without refetching, renaming or rebuilding reports that are already ready.
+ * Failed entries are evicted so the existing retry action can try them again.
+ */
+export function createExternalShareFileCache(
+  fetcher: typeof fetch = fetch,
+): ExternalShareFileCache {
+  const preparedFiles = new Map<string, Promise<File>>();
+
+  return {
+    prepare(source) {
+      const cacheKey = externalShareFileCacheKey(source);
+      const existing = preparedFiles.get(cacheKey);
+      if (existing) return existing;
+
+      const pending = fetchExternalShareFile(source, fetcher);
+      preparedFiles.set(cacheKey, pending);
+      void pending.catch(() => {
+        if (preparedFiles.get(cacheKey) === pending) {
+          preparedFiles.delete(cacheKey);
+        }
+      });
+      return pending;
+    },
+    clear() {
+      preparedFiles.clear();
+    },
+  };
+}
+
+export function prepareExternalShareFiles(
+  sources: ExternalShareFileSource[],
+  cache: ExternalShareFileCache,
+): Promise<File[]> {
+  return Promise.all(sources.map((source) => cache.prepare(source)));
 }
 
 export function formatExternalShareFileSize(bytes: number): string {

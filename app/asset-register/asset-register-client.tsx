@@ -13,6 +13,7 @@ import AssetExternalShare, {
   AssetShareDestinationPicker,
   type ExternalShareFileSource,
 } from '../../components/asset-register/AssetExternalShare';
+import { fetchExternalShareFile } from '../../lib/external-file-share';
 import AccountantAssetManageModal from '../../components/AccountantAssetManageModal';
 import AccountantRegisterReportsModal from '../../components/AccountantRegisterReportsModal';
 import AssetDocumentUploadModal, {
@@ -24,8 +25,10 @@ import DealerMaintenanceAccessSettings, {
   DealerMaintenancePermissionPicker,
 } from '../../components/DealerMaintenanceAccessSettings';
 import {
-  openAssetRegisterSummaryPrint,
-  openAssetSheetPrint,
+  buildAssetRegisterSummaryReportHtml,
+  buildAssetSheetReportHtml,
+  type AssetRegisterSummaryPayload,
+  type AssetSheetPayload,
   type ReportKeyValue,
   type ReportMethodCard,
 } from '../../lib/report-print';
@@ -5685,11 +5688,8 @@ function buildAssetPdfReportUrl(
   const searchParams = new URLSearchParams({
     assetId: asset.id,
     report: reportKind,
+    format,
   });
-
-  if (format === 'xlsx') {
-    searchParams.set('format', 'xlsx');
-  }
 
   if (filters?.year && filters.year !== 'all') {
     searchParams.set('year', filters.year);
@@ -5725,17 +5725,6 @@ function buildAssetOwnershipReportUrl(
   }
 
   return `/api/my-invoices/report?${searchParams.toString()}`;
-}
-
-function buildExternalSharePdfUrl(
-  source: 'scan' | 'maintenance' | 'ownership',
-  reportUrl: string,
-): string {
-  const [, query = ''] = reportUrl.split('?', 2);
-  const searchParams = new URLSearchParams(query);
-  searchParams.delete('format');
-  searchParams.set('source', source);
-  return `/api/reports/share-pdf?${searchParams.toString()}`;
 }
 
 function buildAssetGroupTimelineReportUrl(
@@ -6831,21 +6820,32 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     setNotice({ tone: 'success', message: `${source.label} added to your share.` });
   }
 
+  function reportHtmlFingerprint(value: string): string {
+    let hash = 2166136261;
+    for (let index = 0; index < value.length; index += 1) {
+      hash ^= value.charCodeAt(index);
+      hash = Math.imul(hash, 16777619);
+    }
+    return (hash >>> 0).toString(36);
+  }
+
   function buildExternalReportSource({
     label,
     description,
     fileName,
     url,
     format,
+    html,
   }: {
     label: string;
     description: string;
     fileName: string;
     url: string;
     format: 'pdf' | 'xlsx';
+    html?: string;
   }): ExternalShareFileSource {
     return {
-      id: `report:${format}:${url}`,
+      id: `report:${format}:${url}${html ? `:${reportHtmlFingerprint(html)}` : ''}`,
       kind: 'report',
       label,
       description,
@@ -6855,8 +6855,32 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
         ? 'application/pdf'
         : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       credentials: 'include',
-      preferSourceFileName: true,
+      ...(html
+        ? {
+            request: {
+              method: 'POST' as const,
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ html, fileName }),
+            },
+          }
+        : {}),
     };
+  }
+
+  async function openPreparedExternalReport(source: ExternalShareFileSource): Promise<boolean> {
+    const reportWindow = window.open('', '_blank');
+    if (!reportWindow) return false;
+
+    try {
+      const file = await fetchExternalShareFile(source);
+      const objectUrl = window.URL.createObjectURL(file);
+      reportWindow.location.replace(objectUrl);
+      window.setTimeout(() => window.URL.revokeObjectURL(objectUrl), 60_000);
+      return true;
+    } catch (error) {
+      reportWindow.close();
+      throw error;
+    }
   }
 
   function removeExternalShareReport(reportId: string) {
@@ -13585,27 +13609,6 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
   }
 
   async function handlePrintAssetSheet(asset: RegisterAsset) {
-    if (externalShareReportScope === 'asset') {
-      const reportUrl = buildAssetRegisterExportUrl(
-        activeRegister?.id || activeRegisterId,
-        asset.title,
-        accountantShareId,
-        assetRegisters.map((register) => register.id),
-        '',
-        'pdf',
-        [asset.id],
-      );
-      addExternalShareReport(buildExternalReportSource({
-        label: `${asset.title} valuation · PDF`,
-        description: 'Aim4price asset valuation report',
-        fileName: `${shareFileSlug(asset.title, 'asset')}-valuation.pdf`,
-        url: reportUrl,
-        format: 'pdf',
-      }));
-      closeAssetReportDialog();
-      return;
-    }
-
     const [reportLogoUrl, assetPhotoUrls] = await Promise.all([
       preparePrintableImageUrl(getRegisterReportLogoUrl(activeRegister), {
         maxDimension: PRINT_LOGO_MAX_DIMENSION,
@@ -13679,7 +13682,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
           { label: 'Last Updated', value: assetStatusDateLabel(asset) },
         ];
 
-    const didOpen = openAssetSheetPrint({
+    const reportPayload: AssetSheetPayload = {
       logoUrl: reportLogoUrl ?? getRegisterReportLogoUrl(activeRegister),
       generatedAt: formatDate(new Date().toISOString()),
       assetBadge: familyLabel,
@@ -13707,7 +13710,24 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
       methodCards,
       footerNote:
         'Values are indicative estimates based on saved asset-register information and available pricing inputs. This is not a certified valuation, inspection report or guarantee of selling price. Final value remains subject to physical inspection, documentation, attachments, condition, location and live market demand.',
+    };
+    const fileName = `${shareFileSlug(asset.title, 'asset')}-valuation.pdf`;
+    const reportSource = buildExternalReportSource({
+      label: `${asset.title} valuation · PDF`,
+      description: 'Aim4price asset valuation report',
+      fileName,
+      url: '/api/reports/render-pdf',
+      format: 'pdf',
+      html: buildAssetSheetReportHtml(reportPayload),
     });
+
+    if (externalShareReportScope === 'asset') {
+      addExternalShareReport(reportSource);
+      closeAssetReportDialog();
+      return;
+    }
+
+    const didOpen = await openPreparedExternalReport(reportSource);
 
     if (!didOpen) {
       setNotice({
@@ -13776,7 +13796,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
 
     setNotice({
       tone: 'success',
-      message: `${reportLabel} opened in a new tab. Use Print to save it as a PDF.`,
+      message: `${reportLabel} PDF opened in a new tab.`,
     });
     return true;
   }
@@ -13966,7 +13986,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
 
     if (externalShareReportScope === 'asset' && format === 'pdf') {
       const reportLabel = assetReportLabel('fuel');
-      const reportUrl = buildExternalSharePdfUrl('scan', buildAssetPdfReportUrl(asset, 'fuel', filters, 'pdf'));
+      const reportUrl = buildAssetPdfReportUrl(asset, 'fuel', filters, 'pdf');
       const filterMeta = buildReportAttachmentFilterMeta(filters);
       addExternalShareReport(buildExternalReportSource({
         label: `${reportLabel}${filterMeta.labelSuffix} · PDF`,
@@ -14000,7 +14020,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
 
     if (externalShareReportScope === 'asset' && format === 'pdf') {
       const reportLabel = assetReportLabel('maintenance');
-      const reportUrl = buildExternalSharePdfUrl('scan', buildAssetPdfReportUrl(asset, 'maintenance', filters, 'pdf'));
+      const reportUrl = buildAssetPdfReportUrl(asset, 'maintenance', filters, 'pdf');
       const filterMeta = buildReportAttachmentFilterMeta(filters);
       addExternalShareReport(buildExternalReportSource({
         label: `${reportLabel}${filterMeta.labelSuffix} · PDF`,
@@ -14038,7 +14058,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
 
     if (externalShareReportScope === 'asset' && format === 'pdf') {
       const reportLabel = assetReportLabel('depreciation');
-      const reportUrl = buildExternalSharePdfUrl('scan', buildAssetPdfReportUrl(asset, 'depreciation', filters, 'pdf'));
+      const reportUrl = buildAssetPdfReportUrl(asset, 'depreciation', filters, 'pdf');
       const filterMeta = buildReportAttachmentFilterMeta(filters);
       addExternalShareReport(buildExternalReportSource({
         label: `${reportLabel}${filterMeta.labelSuffix} · PDF`,
@@ -14072,9 +14092,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     if (externalShareReportScope === 'asset') {
       const isPdf = format === 'pdf';
       const filterMeta = buildReportAttachmentFilterMeta(filters);
-      const reportUrl = isPdf
-        ? buildExternalSharePdfUrl('ownership', buildAssetOwnershipReportUrl(asset, filters, 'pdf'))
-        : buildAssetOwnershipReportUrl(asset, filters, 'xlsx');
+      const reportUrl = buildAssetOwnershipReportUrl(asset, filters, format);
       addExternalShareReport(buildExternalReportSource({
         label: `Cost of Ownership${filterMeta.labelSuffix} · ${isPdf ? 'PDF' : 'Excel'}`,
         description: 'Aim4price ownership costs and VAT report',
@@ -14603,29 +14621,11 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     const reportOption = overrideReportDetails ? { value: reportKind, ...overrideReportDetails } : getPdfReportOption(reportKind);
     const reportAssets = overrideAssets ?? filterAssetsByPdfReportKind(assets, reportKind);
 
-    if (externalShareReportScope === 'register') {
-      if (!reportAssets.length) {
-        throw new Error(`No assets match the ${reportOption.label.toLowerCase()} report.`);
-      }
-      const reportName = overrideEntityName.trim() || exportEntityName.trim() || activeRegister?.businessName || 'Asset Register';
-      const reportUrl = buildAssetRegisterExportUrl(
-        activeRegister?.id || activeRegisterId,
-        reportName,
-        accountantShareId,
-        assetRegisters.map((register) => register.id),
-        '',
-        'pdf',
-        reportAssets.map((asset) => asset.id),
-      );
-      addExternalShareReport(buildExternalReportSource({
-        label: `${reportOption.label} · PDF`,
-        description: `${reportAssets.length} ${reportAssets.length === 1 ? 'asset' : 'assets'} in an Aim4price report`,
-        fileName: `${shareFileSlug(`${reportName}-${reportOption.label}`)}.pdf`,
-        url: reportUrl,
-        format: 'pdf',
-      }));
-      return;
+    if (!reportAssets.length) {
+      throw new Error(`No assets match the ${reportOption.label.toLowerCase()} report.`);
     }
+
+    const reportName = overrideEntityName.trim() || exportEntityName.trim() || activeRegister?.businessName || 'Asset Register';
 
     const reportAssetGroups = projectAssetGroupsToAssets(assetGroups, reportAssets);
     const reportAssetGroupMemberships = buildAssetGroupMembershipMap(reportAssetGroups);
@@ -14657,10 +14657,10 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
       buildPrintableAssetThumbnailMap(orderedReportAssets),
     ]);
 
-    const didOpen = openAssetRegisterSummaryPrint({
+    const reportPayload: AssetRegisterSummaryPayload = {
       logoUrl: reportLogoUrl ?? savedReportLogoUrl,
       generatedAt: formatDate(new Date().toISOString()),
-      reportTitle: `${overrideEntityName.trim() || exportEntityName.trim() || activeRegister?.businessName || 'Asset Register'} - ${reportOption.label} Report`,
+      reportTitle: `${reportName} - ${reportOption.label} Report`,
       reportSubtitle: 'Aim4price asset register',
       valueLabel: isCustomAssetSelection ? 'Selected Register Value' : reportKind === 'full' ? 'Register Value' : 'Filtered Register Value',
       assetSectionTitle: reportOption.sectionTitle,
@@ -14730,7 +14730,23 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
       }),
       footerNote:
         'Values are indicative estimates based on saved Aim4price asset-register information and available pricing inputs. Values exclude VAT unless stated otherwise. This is not a certified valuation, inspection report or guarantee of selling price. Final values remain subject to physical inspection, documents, attachments, condition, location and live market demand.',
+    };
+    const fileName = `${shareFileSlug(`${reportName}-${reportOption.label}`)}.pdf`;
+    const reportSource = buildExternalReportSource({
+      label: `${reportName} · ${reportOption.label} · PDF`,
+      description: `${reportAssets.length} ${reportAssets.length === 1 ? 'asset' : 'assets'} in an Aim4price report`,
+      fileName,
+      url: '/api/reports/render-pdf',
+      format: 'pdf',
+      html: buildAssetRegisterSummaryReportHtml(reportPayload),
     });
+
+    if (externalShareReportScope === 'register' || externalShareReportScope === 'group') {
+      addExternalShareReport(reportSource);
+      return;
+    }
+
+    const didOpen = await openPreparedExternalReport(reportSource);
 
     if (!didOpen) {
       throw new Error(`Unable to open the ${reportOption.label.toLowerCase()} PDF. Please allow pop-ups and try again.`);
@@ -14864,26 +14880,6 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
       return;
     }
 
-    if (externalShareReportScope === 'group') {
-      const reportUrl = buildAssetRegisterExportUrl(
-        activeRegister?.id || activeRegisterId,
-        group.name,
-        accountantShareId,
-        assetRegisters.map((register) => register.id),
-        group.id,
-        'pdf',
-      );
-      addExternalShareReport(buildExternalReportSource({
-        label: `${group.name} valuation · PDF`,
-        description: 'Aim4price umbrella valuation report',
-        fileName: `${shareFileSlug(group.name, 'umbrella')}-valuation.pdf`,
-        url: reportUrl,
-        format: 'pdf',
-      }));
-      closeAssetGroupManager();
-      return;
-    }
-
     setExportFormat('pdf');
     setIsExporting(true);
 
@@ -14900,6 +14896,10 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
         },
         group.name,
       );
+      if (externalShareReportScope === 'group') {
+        closeAssetGroupManager();
+        return;
+      }
       setNotice({ tone: 'success', message: `${group.name} PDF opened.` });
     } catch (error) {
       setNotice({
@@ -14920,19 +14920,22 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
       return;
     }
 
+    const reportUrl = buildAssetRegisterExportUrl(
+      activeRegister?.id || activeRegisterId,
+      group.name,
+      accountantShareId,
+      assetRegisters.map((register) => register.id),
+      group.id,
+      'xlsx',
+      groupAssets.map((asset) => asset.id),
+    );
+    const fileName = `${shareFileSlug(group.name, 'umbrella')}.xlsx`;
+
     if (externalShareReportScope === 'group') {
-      const reportUrl = buildAssetRegisterExportUrl(
-        activeRegister?.id || activeRegisterId,
-        group.name,
-        accountantShareId,
-        assetRegisters.map((register) => register.id),
-        group.id,
-        'xlsx',
-      );
       addExternalShareReport(buildExternalReportSource({
         label: `${group.name} · Excel`,
         description: 'Aim4price umbrella workbook',
-        fileName: `${shareFileSlug(group.name, 'umbrella')}.xlsx`,
+        fileName,
         url: reportUrl,
         format: 'xlsx',
       }));
@@ -14944,7 +14947,17 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     setIsExporting(true);
 
     try {
-      await handleExportXlsx({ entityName: group.name, groupId: group.id });
+      const response = await fetch(reportUrl, {
+        credentials: 'include',
+        cache: 'no-store',
+      });
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({})) as { error?: string };
+        throw new Error(data.error ?? `Failed to export ${group.name} as an Excel file.`);
+      }
+
+      const blob = await response.blob();
+      downloadBlob(blob, parseDownloadFileName(response, fileName));
       setNotice({ tone: 'success', message: `${group.name} Excel downloaded.` });
     } catch (error) {
       setNotice({
@@ -14983,18 +14996,12 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     if (externalShareReportScope === 'group') {
       const isPdf = format === 'pdf';
       const filterMeta = buildReportAttachmentFilterMeta(filters);
-      const externalReportUrl = isPdf
-        ? buildExternalSharePdfUrl(
-            reportKind === 'ownership' ? 'ownership' : reportKind === 'maintenance' ? 'maintenance' : 'scan',
-            reportUrl,
-          )
-        : reportUrl;
       const fileName = `${shareFileSlug(group.name, 'umbrella')}-${reportKind}-report${filterMeta.fileSuffix}.${isPdf ? 'pdf' : 'xlsx'}`;
       addExternalShareReport(buildExternalReportSource({
         label: `${reportLabel}${filterMeta.labelSuffix} · ${isPdf ? 'PDF' : 'Excel'}`,
         description: `Aim4price ${group.name} ${reportLabel.toLowerCase()}`,
         fileName,
-        url: externalReportUrl,
+        url: reportUrl,
         format: isPdf ? 'pdf' : 'xlsx',
       }));
       closeAssetGroupManager();
@@ -21155,7 +21162,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                   <button type="button" className={styles.assetReportOptionButton} onClick={() => handlePrintAssetSheet(reportAsset)}>
                     <PdfIcon className={styles.buttonIcon} />
                     <span>
-                      <strong>{isAttachingExternalReport ? 'Add asset valuation' : 'Download asset valuation'}</strong>
+                      <strong>{isAttachingExternalReport ? 'Add asset valuation' : 'Open asset valuation'}</strong>
                       <small>{isAttachingExternalReport ? 'Attach a polished Aim4price PDF.' : 'PDF value summary with notes and documents.'}</small>
                     </span>
                   </button>

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import type { ExternalShareFileSource } from '../../../../components/asset-register/AssetExternalShare';
+import { fetchExternalShareFile, type ExternalShareFileSource } from '../../../../lib/external-file-share';
 import styles from '../../owner-app.module.css';
 
 export type OwnerAssetReportPickerAsset = {
@@ -14,13 +14,13 @@ export type OwnerAssetReportPickerAsset = {
   lastScannedAtIso: string | null;
 };
 
-type FilterableReport = 'maintenance' | 'fuel' | 'depreciation' | 'ownership';
-type ShareableReport = 'valuation' | FilterableReport;
+type ShareableReport = 'valuation' | 'maintenance' | 'fuel' | 'depreciation' | 'ownership';
+type OwnerAssetReportFormat = 'pdf' | 'xlsx';
 
 type OwnerAssetReportPickerProps = {
   asset: OwnerAssetReportPickerAsset;
   mode?: 'open' | 'attach';
-  openValuationReport?: () => void;
+  valuationReportHtml?: string | null;
   onAttach?: (source: ExternalShareFileSource) => void;
   onDismiss?: () => void;
 };
@@ -87,15 +87,86 @@ function reportFileName(
   year: string,
   month: string,
   maintenanceType: string,
+  format: OwnerAssetReportFormat,
 ): string {
   const filterMeta = reportFilterMeta(report, year, month, maintenanceType);
-  return `${slugFileName(assetTitle)}-${report}${filterMeta.fileSuffix}.pdf`;
+  return `${slugFileName(assetTitle)}-${report}${filterMeta.fileSuffix}.${format}`;
+}
+
+export function buildOwnerAssetReportUrl(
+  asset: OwnerAssetReportPickerAsset,
+  report: ShareableReport,
+  format: OwnerAssetReportFormat,
+  year = 'all',
+  month = 'all',
+  maintenanceType = 'all',
+): string {
+  if (report === 'valuation') {
+    const params = new URLSearchParams({
+      format,
+      reportKind: 'full',
+      assetIds: asset.id,
+      entityName: `${asset.title} - Asset Valuation Report`,
+      source: 'owner-app',
+    });
+    if (asset.registerId) {
+      params.set('scope', 'single');
+      params.set('registerIds', asset.registerId);
+    }
+    return `/api/asset-register/export?${params.toString()}`;
+  }
+
+  const params = new URLSearchParams({
+    assetId: asset.id,
+    format,
+    source: 'owner-app',
+  });
+  if (report !== 'ownership') params.set('report', report);
+  if (year !== 'all') {
+    params.set('year', year);
+    if (month !== 'all') params.set('month', month);
+  }
+  if (report === 'maintenance' && maintenanceType !== 'all') {
+    params.set('maintenanceType', maintenanceType);
+  }
+
+  return report === 'ownership'
+    ? `/api/my-invoices/report?${params.toString()}`
+    : `/api/asset-register/scan-report?${params.toString()}`;
+}
+
+export function buildOwnerValuationReportSource(
+  asset: OwnerAssetReportPickerAsset,
+  valuationReportHtml: string,
+): ExternalShareFileSource {
+  const fileName = reportFileName(asset.title, 'valuation', 'all', 'all', 'all', 'pdf');
+  let htmlHash = 2166136261;
+  for (let index = 0; index < valuationReportHtml.length; index += 1) {
+    htmlHash ^= valuationReportHtml.charCodeAt(index);
+    htmlHash = Math.imul(htmlHash, 16777619);
+  }
+  return {
+    id: `owner-report:pdf:valuation:${asset.id}:${(htmlHash >>> 0).toString(36)}`,
+    kind: 'report',
+    label: `${REPORT_TITLES.valuation} · PDF`,
+    description: 'Aim4price asset valuation',
+    fileName,
+    url: '/api/reports/render-pdf',
+    contentType: 'application/pdf',
+    credentials: 'include',
+    request: {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ html: valuationReportHtml, fileName }),
+    },
+    preferSourceFileName: true,
+  };
 }
 
 export default function OwnerAssetReportPicker({
   asset,
   mode = 'open',
-  openValuationReport,
+  valuationReportHtml,
   onAttach,
   onDismiss,
 }: OwnerAssetReportPickerProps) {
@@ -110,7 +181,8 @@ export default function OwnerAssetReportPicker({
   const lastYear = Math.max(...reportYears, currentYear);
   const years = Array.from({ length: lastYear - firstYear + 1 }, (_, index) => String(lastYear - index));
   const months = REPORT_MONTHS;
-  const filterableReports: Array<{ id: FilterableReport; title: string }> = [
+  const reports: Array<{ id: ShareableReport; title: string }> = [
+    { id: 'valuation', title: REPORT_TITLES.valuation },
     { id: 'maintenance', title: REPORT_TITLES.maintenance },
     ...(asset.kind !== 'property' ? [
       { id: 'fuel' as const, title: REPORT_TITLES.fuel },
@@ -121,8 +193,11 @@ export default function OwnerAssetReportPicker({
   const [year, setYear] = useState('all');
   const [month, setMonth] = useState('all');
   const [maintenanceType, setMaintenanceType] = useState('all');
-  const [selectedReport, setSelectedReport] = useState<FilterableReport | null>(null);
-  const selectedReportDetails = filterableReports.find((report) => report.id === selectedReport) ?? null;
+  const [format, setFormat] = useState<OwnerAssetReportFormat>('pdf');
+  const [selectedReport, setSelectedReport] = useState<ShareableReport | null>(null);
+  const [openingReport, setOpeningReport] = useState(false);
+  const [reportError, setReportError] = useState('');
+  const selectedReportDetails = reports.find((report) => report.id === selectedReport) ?? null;
 
   useEffect(() => {
     if (mode !== 'attach' && !selectedReport) return undefined;
@@ -140,83 +215,79 @@ export default function OwnerAssetReportPicker({
     };
   }, [mode, onDismiss, selectedReport]);
 
-  function normalReportUrl(report: FilterableReport): string {
-    const params = new URLSearchParams({ assetId: asset.id });
-    if (report === 'ownership') {
-      params.set('format', 'pdf');
-      params.set('source', 'owner-app');
-    } else {
-      params.set('report', report);
-    }
-    if (year !== 'all') {
-      params.set('year', year);
-      if (month !== 'all') params.set('month', month);
-    }
-    if (report === 'maintenance' && maintenanceType !== 'all') {
-      params.set('maintenanceType', maintenanceType);
-    }
-    return report === 'ownership'
-      ? `/api/my-invoices/report?${params.toString()}`
-      : `/api/asset-register/scan-report?${params.toString()}`;
+  function normalReportUrl(report: ShareableReport, reportFormat: OwnerAssetReportFormat): string {
+    return buildOwnerAssetReportUrl(asset, report, reportFormat, year, month, maintenanceType);
   }
 
-  function shareReportSource(report: ShareableReport): ExternalShareFileSource {
-    const params = new URLSearchParams({
-      source: report === 'valuation' ? 'valuation' : report === 'ownership' ? 'ownership' : 'scan',
-      assetId: asset.id,
-    });
-    if (report === 'valuation' && asset.registerId) params.set('registerId', asset.registerId);
-    if (report !== 'valuation' && report !== 'ownership') params.set('report', report);
-    if (year !== 'all') {
-      params.set('year', year);
-      if (month !== 'all') params.set('month', month);
-    }
-    if (report === 'maintenance' && maintenanceType !== 'all') {
-      params.set('maintenanceType', maintenanceType);
-    }
-    const url = `/api/reports/share-pdf?${params.toString()}`;
+  function shareReportSource(report: ShareableReport, reportFormat: OwnerAssetReportFormat): ExternalShareFileSource | null {
+    const url = normalReportUrl(report, reportFormat);
     const filterMeta = reportFilterMeta(report, year, month, maintenanceType);
-    const fileName = reportFileName(asset.title, report, year, month, maintenanceType);
+    const fileName = reportFileName(asset.title, report, year, month, maintenanceType, reportFormat);
+
+    if (report === 'valuation' && reportFormat === 'pdf') {
+      if (!valuationReportHtml) return null;
+      return buildOwnerValuationReportSource(asset, valuationReportHtml);
+    }
 
     return {
-      id: `owner-report:${report}:${asset.id}:${params.toString() || 'all'}`,
+      id: `owner-report:${reportFormat}:${url}`,
       kind: 'report',
-      label: `${REPORT_TITLES[report]}${filterMeta.labelSuffix} · PDF`,
+      label: `${REPORT_TITLES[report]}${filterMeta.labelSuffix} · ${reportFormat === 'pdf' ? 'PDF' : 'Excel'}`,
       description: `Aim4price ${REPORT_TITLES[report].toLowerCase()}`,
       fileName,
       url,
-      contentType: 'application/pdf',
+      contentType: reportFormat === 'pdf'
+        ? 'application/pdf'
+        : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       credentials: 'include',
-      preferSourceFileName: true,
     };
   }
 
-  function chooseReport(report: FilterableReport) {
+  function chooseReport(report: ShareableReport) {
     setYear('all');
     setMonth('all');
     setMaintenanceType('all');
+    setFormat('pdf');
+    setReportError('');
     setSelectedReport(report);
-  }
-
-  function chooseValuation() {
-    if (mode === 'attach') {
-      onAttach?.(shareReportSource('valuation'));
-      return;
-    }
-    openValuationReport?.();
   }
 
   function attachSelectedReport() {
     if (!selectedReport) return;
-    onAttach?.(shareReportSource(selectedReport));
+    const source = shareReportSource(selectedReport, format);
+    if (source) onAttach?.(source);
+  }
+
+  async function openSelectedValuationPdf() {
+    if (!valuationReportHtml || openingReport) return;
+    const reportWindow = window.open('about:blank', '_blank');
+    if (!reportWindow) {
+      setReportError('Please allow pop-ups to open this report.');
+      return;
+    }
+
+    setOpeningReport(true);
+    setReportError('');
+    try {
+      reportWindow.opener = null;
+      reportWindow.document.title = 'Preparing Aim4price report';
+      reportWindow.document.body.textContent = 'Preparing your Aim4price report…';
+      const file = await fetchExternalShareFile(buildOwnerValuationReportSource(asset, valuationReportHtml));
+      const objectUrl = URL.createObjectURL(file);
+      reportWindow.location.replace(objectUrl);
+      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000);
+      setSelectedReport(null);
+    } catch (cause) {
+      reportWindow.close();
+      setReportError(cause instanceof Error ? cause.message : 'Unable to open the valuation report.');
+    } finally {
+      setOpeningReport(false);
+    }
   }
 
   const reportList = (
     <div className={styles.reportList}>
-      <button type="button" className={styles.reportCard} onClick={chooseValuation}>
-        <span>{REPORT_TITLES.valuation}</span>
-      </button>
-      {filterableReports.map((report) => (
+      {reports.map((report) => (
         <button type="button" className={styles.reportCard} key={report.id} onClick={() => chooseReport(report.id)}>
           <span>{report.title}</span>
         </button>
@@ -228,19 +299,30 @@ export default function OwnerAssetReportPicker({
     <>
       <div className={styles.reportFilterGrid}>
         <label className={styles.field}>
-          <span>Year</span>
-          <select value={year} onChange={(event) => { setYear(event.target.value); setMonth('all'); }}>
-            <option value="all">All years</option>
-            {years.map((value) => <option key={value} value={value}>{value}</option>)}
+          <span>Format</span>
+          <select value={format} onChange={(event) => setFormat(event.target.value as OwnerAssetReportFormat)}>
+            <option value="pdf">PDF</option>
+            <option value="xlsx">Excel</option>
           </select>
         </label>
-        <label className={styles.field}>
-          <span>Month</span>
-          <select value={month} disabled={year === 'all'} onChange={(event) => setMonth(event.target.value)}>
-            <option value="all">All months</option>
-            {months.map((label, index) => <option key={label} value={String(index + 1)}>{label}</option>)}
-          </select>
-        </label>
+        {selectedReport !== 'valuation' ? (
+          <>
+            <label className={styles.field}>
+              <span>Year</span>
+              <select value={year} onChange={(event) => { setYear(event.target.value); setMonth('all'); }}>
+                <option value="all">All years</option>
+                {years.map((value) => <option key={value} value={value}>{value}</option>)}
+              </select>
+            </label>
+            <label className={styles.field}>
+              <span>Month</span>
+              <select value={month} disabled={year === 'all'} onChange={(event) => setMonth(event.target.value)}>
+                <option value="all">All months</option>
+                {months.map((label, index) => <option key={label} value={String(index + 1)}>{label}</option>)}
+              </select>
+            </label>
+          </>
+        ) : null}
         {selectedReport === 'maintenance' ? (
           <label className={`${styles.field} ${styles.fieldFull}`}>
             <span>Maintenance type</span>
@@ -256,11 +338,25 @@ export default function OwnerAssetReportPicker({
       <div className={styles.reportFilterActions}>
         <button type="button" onClick={() => setSelectedReport(null)}>{mode === 'attach' ? 'Back' : 'Cancel'}</button>
         {mode === 'attach' ? (
-          <button type="button" className={styles.ownerReportAttachButton} onClick={attachSelectedReport}>Add PDF</button>
+          <button
+            type="button"
+            className={styles.ownerReportAttachButton}
+            onClick={attachSelectedReport}
+            disabled={selectedReport === 'valuation' && format === 'pdf' && !valuationReportHtml}
+          >
+            {format === 'pdf' ? 'Add PDF' : 'Add Excel'}
+          </button>
+        ) : selectedReport === 'valuation' && format === 'pdf' ? (
+          <button type="button" className={styles.ownerReportAttachButton} onClick={() => void openSelectedValuationPdf()} disabled={!valuationReportHtml || openingReport}>
+            {openingReport ? 'Preparing PDF…' : 'Open PDF'}
+          </button>
         ) : (
-          <a href={normalReportUrl(selectedReport)} target="_blank" rel="noreferrer" onClick={() => setSelectedReport(null)}>Open report</a>
+          <a href={normalReportUrl(selectedReport, format)} target="_blank" rel="noreferrer" onClick={() => setSelectedReport(null)}>
+            {format === 'pdf' ? 'Open PDF' : 'Download Excel'}
+          </a>
         )}
       </div>
+      {reportError ? <p role="alert" className={styles.errorNotice}>{reportError}</p> : null}
     </>
   ) : null;
 
@@ -272,7 +368,7 @@ export default function OwnerAssetReportPicker({
           <div className={styles.reportFilterModalHeader}>
             <div>
               <h2 id="owner-share-report-title">{selectedReportDetails?.title || 'Add Aim4price report'}</h2>
-              {!selectedReport ? <p>Choose a polished Aim4price PDF to attach to this message.</p> : null}
+              {!selectedReport ? <p>Choose the exact Aim4price PDF or Excel report to attach to this message.</p> : null}
             </div>
             <button type="button" onClick={onDismiss} aria-label="Close Aim4price reports">×</button>
           </div>

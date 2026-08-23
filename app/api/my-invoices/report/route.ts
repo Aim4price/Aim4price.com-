@@ -17,11 +17,12 @@ import { getDealerTrackedAsset } from '../../../../lib/dealer-maintenance-tracke
 import { getAssetGroupById } from '../../../../lib/asset-groups';
 import { filterCostLedgerForWorkspace, resolveOwnerWorkspaceContext } from '../../../../lib/owner-workspace-access';
 import { getOwnerAppAccess, ownerAppCanAccessAsset } from '../../../../lib/owner-app-access';
+import { renderReportHtmlToPdf } from '../../../../lib/report-pdf';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-type ReportFormat = 'pdf' | 'xlsx' | 'csv';
+type ReportFormat = 'pdf' | 'xlsx' | 'csv' | 'html';
 
 const MONTH_LABELS = [
   'January',
@@ -56,7 +57,7 @@ function parseMonth(value: string | null): number | null {
 
 function parseFormat(value: string | null): ReportFormat {
   const format = String(value ?? '').toLowerCase();
-  if (format === 'xlsx' || format === 'csv') return format;
+  if (format === 'xlsx' || format === 'csv' || format === 'html') return format;
   return 'pdf';
 }
 
@@ -178,7 +179,10 @@ export async function GET(request: NextRequest) {
     if (group) filters.assetId = null;
 
     const ownerAppMode = request.nextUrl.searchParams.get('source') === 'owner-app';
-    const format = ownerAppMode ? 'pdf' : parseFormat(request.nextUrl.searchParams.get('format'));
+    const requestedFormat = parseFormat(request.nextUrl.searchParams.get('format'));
+    // Owner App users may receive the same canonical PDF or workbook as the
+    // normal report picker. Keep CSV/HTML private to the full workspace.
+    const format = ownerAppMode && requestedFormat !== 'xlsx' ? 'pdf' : requestedFormat;
     const [unfilteredData, profile, rawLogoUrl] = await Promise.all([
       listMyInvoicesData(reportOwnerUserId, filters),
       getAccountProfile({
@@ -222,7 +226,7 @@ export async function GET(request: NextRequest) {
       hideXlsx: ownerAppMode,
     };
 
-    const extension = format === 'xlsx' ? 'xlsx' : format === 'csv' ? 'csv' : 'html';
+    const extension = format;
     const filename = group
       ? `${slugify(group.name)}-cost-of-ownership.${extension}`
       : ownerAppMode
@@ -279,12 +283,30 @@ export async function GET(request: NextRequest) {
 
     const html = buildMyInvoicesReportHtml(options);
 
-    return new NextResponse(html, {
+    if (format === 'html') {
+      return new NextResponse(html, {
+        status: 200,
+        headers: {
+          'Content-Type': 'text/html; charset=utf-8',
+          'Content-Disposition': `inline; filename="${formatForHeader(filename)}"`,
+          'Cache-Control': 'no-store',
+        },
+      });
+    }
+
+    const pdf = await renderReportHtmlToPdf(html, {
+      baseUrl: request.url,
+      cookie: request.headers.get('cookie') ?? '',
+    });
+
+    return new NextResponse(pdf, {
       status: 200,
       headers: {
-        'Content-Type': 'text/html; charset=utf-8',
+        'Content-Type': 'application/pdf',
+        'Content-Length': String(pdf.length),
         'Content-Disposition': `inline; filename="${formatForHeader(filename)}"`,
         'Cache-Control': 'no-store',
+        'X-Content-Type-Options': 'nosniff',
       },
     });
   } catch (error) {

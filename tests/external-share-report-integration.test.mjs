@@ -28,18 +28,22 @@ test('the normal Aim4price report modals attach back into the same outside-share
   assert.match(client, /window\.requestAnimationFrame\(\(\) => trigger\.focus\(\{ preventScroll: true \}\)\)/);
 });
 
-test('share-mode report completion produces real scoped files instead of opening or downloading them', async () => {
+test('normal and share report completion use the same canonical source artifact', async () => {
   const client = await readFile(new URL('../app/asset-register/asset-register-client.tsx', import.meta.url), 'utf8');
 
   assert.match(client, /assetIds: string\[] = \[]/);
   assert.match(client, /params\.set\('assetIds', cleanedAssetIds\.join\(','\)\)/);
-  assert.match(client, /externalShareReportScope === 'asset'[\s\S]*?buildAssetRegisterExportUrl\([\s\S]*?'pdf',[\s\S]*?\[asset\.id\]/);
-  assert.match(client, /externalShareReportScope === 'register'[\s\S]*?reportAssets\.map\(\(asset\) => asset\.id\)/);
+  assert.match(client, /async function handlePrintAssetSheet[\s\S]*?html: buildAssetSheetReportHtml\(reportPayload\)[\s\S]*?addExternalShareReport\(reportSource\)[\s\S]*?openPreparedExternalReport\(reportSource\)/);
+  assert.match(client, /async function handleExportPdf[\s\S]*?html: buildAssetRegisterSummaryReportHtml\(reportPayload\)[\s\S]*?addExternalShareReport\(reportSource\)[\s\S]*?openPreparedExternalReport\(reportSource\)/);
   assert.match(client, /if \(!reportAssets\.length\) \{[\s\S]*?No assets match the/);
-  assert.match(client, /externalShareReportScope === 'group'[\s\S]*?group\.id,[\s\S]*?'pdf'/);
-  assert.match(client, /externalShareReportScope === 'asset'[\s\S]*?buildExternalSharePdfUrl\('scan'/);
-  assert.match(client, /externalShareReportScope === 'asset'[\s\S]*?buildExternalSharePdfUrl\('ownership'/);
-  assert.match(client, /externalShareReportScope === 'group'[\s\S]*?buildExternalSharePdfUrl/);
+  assert.match(client, /async function handleDownloadAssetGroupPdf[\s\S]*?await handleExportPdf\([\s\S]*?groupAssets[\s\S]*?group\.name/);
+  assert.match(client, /async function handleDownloadAssetGroupXlsx[\s\S]*?group\.id,[\s\S]*?'xlsx',[\s\S]*?groupAssets\.map\(\(asset\) => asset\.id\)[\s\S]*?url: reportUrl,[\s\S]*?fetch\(reportUrl/);
+  assert.match(client, /const reportUrl = buildAssetPdfReportUrl\(asset, 'fuel', filters, 'pdf'\)[\s\S]*?url: reportUrl/);
+  assert.match(client, /const reportUrl = buildAssetOwnershipReportUrl\(asset, filters, format\)[\s\S]*?url: reportUrl/);
+  assert.match(client, /async function handleDownloadAssetGroupReport[\s\S]*?const reportUrl =[\s\S]*?url: reportUrl,[\s\S]*?window\.open\(reportUrl/);
+  assert.match(client, /request: \{[\s\S]*?method: 'POST' as const,[\s\S]*?body: JSON\.stringify\(\{ html, fileName \}\)/);
+  assert.doesNotMatch(client, /buildExternalSharePdfUrl|\/api\/reports\/share-pdf/);
+  assert.doesNotMatch(client, /preferSourceFileName:\s*true/);
   assert.doesNotMatch(client, /This report can currently be attached as an Excel file/);
   assert.match(client, /contentType: format === 'pdf'[\s\S]*?'application\/pdf'/);
 });
@@ -53,7 +57,7 @@ test('filtered share attachments identify their period and maintenance type with
   assert.match(client, /label: `\$\{reportLabel\}\$\{filterMeta\.labelSuffix\} · PDF`/);
   assert.match(client, /fileName: `\$\{shareFileSlug\(asset\.title, 'asset'\)\}-maintenance-report\$\{filterMeta\.fileSuffix\}\.pdf`/);
   assert.match(client, /fileName = `\$\{shareFileSlug\(group\.name, 'umbrella'\)\}-\$\{reportKind\}-report\$\{filterMeta\.fileSuffix\}/);
-  assert.match(client, /id: `report:\$\{format\}:\$\{url\}`/);
+  assert.match(client, /id: `report:\$\{format\}:\$\{url\}\$\{html \?/);
 });
 
 test('report pickers retain normal download wording and never mix in document-vault detours', async () => {
@@ -62,7 +66,7 @@ test('report pickers retain normal download wording and never mix in document-va
     readFile(new URL('../components/asset-register/AssetGroupManagerModal.tsx', import.meta.url), 'utf8'),
   ]);
 
-  assert.match(client, /isAttachingExternalReport \? 'Add asset valuation' : 'Download asset valuation'/);
+  assert.match(client, /isAttachingExternalReport \? 'Add asset valuation' : 'Open asset valuation'/);
   const individualReportModal = client.match(/\{reportAsset && isAssetReportModalOpen \? \(([\s\S]*?)\n      \) : null\}/);
   const registerReportModal = client.match(/\{isExportModalOpen \? \(([\s\S]*?)\n      \) : null\}/);
   assert.ok(individualReportModal, 'individual report modal should exist');
