@@ -64,11 +64,19 @@ function fileNameFromDisposition(value: string | null): string {
 
 function ensureFileExtension(fileName: string, contentType: string): string {
   const safeName = sanitizeFileName(fileName);
-  if (/\.[a-z0-9]{1,8}$/i.test(safeName)) return safeName;
-
   const normalizedType = contentType.split(';')[0]?.trim().toLowerCase() ?? '';
   const extension = CONTENT_TYPE_EXTENSIONS[normalizedType];
-  return extension ? `${safeName}.${extension}` : safeName;
+  if (!extension) return safeName;
+
+  const currentExtension = /\.([a-z0-9]{1,8})$/i.exec(safeName);
+  if (!currentExtension) return `${safeName}.${extension}`;
+
+  const current = currentExtension[1].toLowerCase();
+  const matchesType = current === extension
+    || (normalizedType === 'image/jpeg' && current === 'jpeg');
+  if (matchesType) return safeName;
+
+  return `${safeName.slice(0, -currentExtension[0].length)}.${extension}`;
 }
 
 async function externalShareResponseError(
@@ -130,9 +138,13 @@ export async function fetchExternalShareFile(
   ) {
     throw new Error(`“${source.label}” returned the wrong file type.`);
   }
-  // The endpoint owns the file. Keep its MIME type and Content-Disposition
-  // filename so the attachment is the same artifact as a normal report export.
-  const contentType = responseType || expectedType || 'application/octet-stream';
+  // Object storage and download proxies commonly label otherwise valid files as
+  // generic binary data. Mobile share targets filter attachments by MIME type,
+  // so retain a specific server type but replace the generic label with the
+  // source's known type. The response bytes remain untouched.
+  const contentType = responseType && responseType !== 'application/octet-stream'
+    ? responseType
+    : expectedType || responseType || 'application/octet-stream';
   const responseFileName = fileNameFromDisposition(response.headers.get('content-disposition'));
   const fileName = ensureFileExtension(
     responseFileName || source.fileName,

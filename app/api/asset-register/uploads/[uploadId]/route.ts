@@ -4,6 +4,7 @@ import {
   createAssetRegisterSignedGetUrl,
   getLegacyAssetRegisterUploadResponse,
   isBucketOnlyAssetRegisterUploadId,
+  resolveAssetRegisterUploadBytes,
   resolveBucketOnlyAssetRegisterDownload,
 } from '../../../../../lib/asset-register-uploads';
 import { isProtectedCaptureUpload } from '../../../../../lib/capture-requests';
@@ -18,7 +19,7 @@ type RouteContext = {
   };
 };
 
-export async function GET(_request: Request, context: RouteContext) {
+export async function GET(request: Request, context: RouteContext) {
   const uploadId = String(context.params?.uploadId ?? '').trim();
 
   if (!uploadId) {
@@ -46,6 +47,43 @@ export async function GET(_request: Request, context: RouteContext) {
       status: 404,
       headers: { 'Cache-Control': 'private, no-store' },
     });
+  }
+
+  const shareBytesRequested = (() => {
+    try {
+      return new URL(request.url).searchParams.get('share') === '1';
+    } catch {
+      return false;
+    }
+  })();
+
+  if (shareBytesRequested) {
+    const resolved = await resolveAssetRegisterUploadBytes(uploadId);
+
+    if (resolved.status === 'ready') {
+      return new NextResponse(resolved.upload.data, {
+        status: 200,
+        headers: {
+          'Content-Type': resolved.upload.mimeType || 'application/octet-stream',
+          'Content-Length': String(resolved.upload.sizeBytes),
+          'Content-Disposition': `${resolved.upload.disposition}; filename="${encodeURIComponent(resolved.upload.fileName)}"`,
+          'Cache-Control': 'private, no-store',
+          'X-Content-Type-Options': 'nosniff',
+        },
+      });
+    }
+
+    if (resolved.status === 'unavailable') {
+      return new NextResponse('Upload temporarily unavailable', {
+        status: 503,
+        headers: {
+          'Cache-Control': 'private, no-store',
+          'Retry-After': '60',
+        },
+      });
+    }
+
+    return new NextResponse('Not found', { status: 404 });
   }
 
   if (isBucketOnlyAssetRegisterUploadId(uploadId)) {
