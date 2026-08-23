@@ -196,33 +196,36 @@ export default function SaleabilityModal({
       <section className={styles.modal} role="dialog" aria-modal="true" aria-labelledby="saleability-title">
         <header className={styles.header}>
           <div>
-            <span>Saleability</span>
-            <h2 id="saleability-title">How easily could this asset sell?</h2>
-            <p>{assetTitle}</p>
+            <h2 id="saleability-title">{assetTitle}</h2>
+            <p>Refine Saleability using simple buyer, demand and timing choices. Your Aim4price valuation stays unchanged.</p>
           </div>
           <button type="button" className={styles.close} onClick={onClose} aria-label="Close Saleability">×</button>
         </header>
 
-        <div className={styles.fixedValue}>
-          <div>
-            <span>Aim4price valuation</span>
-            <strong>{formatMoney(valuationExVat)}</strong>
-            <small>Excl. VAT · this value does not change here</small>
-          </div>
-          <div>
-            <span>General Saleability</span>
-            <strong>{general.score} / 100 · Grade {general.grade}</strong>
-            <small>{general.gradeLabel} · usually {general.naturalSellingWindow}</small>
-          </div>
-        </div>
-
         <div className={styles.body}>
+          <div className={styles.baselineStrip}>
+            <div>
+              <span>Current saved value</span>
+              <strong>{formatMoney(valuationExVat)}</strong>
+              <small>Excl. VAT · this value does not change here</small>
+            </div>
+            <div>
+              <span>General Saleability</span>
+              <strong>{general.score} / 100 · Grade {general.grade}</strong>
+              <small>{general.gradeLabel}</small>
+            </div>
+            <div>
+              <span>Natural selling window</span>
+              <strong>{general.naturalSellingWindow}</strong>
+              <small>{general.confidence} confidence</small>
+            </div>
+          </div>
+
           {step === 1 ? (
-            <>
+            <section className={styles.settingsCard}>
               <div className={styles.stepIntro}>
-                <span>Step 1 of 2</span>
-                <h3>Tell us about the buyers</h3>
-                <p>Choose the closest answer. “I’m not sure” is completely fine.</p>
+                <h3>Buyer settings</h3>
+                <p>Step 1 of 2 · Choose the closest answer. “I’m not sure” is completely fine.</p>
               </div>
               <ChoiceQuestion
                 label="Where are you willing to sell it?"
@@ -245,15 +248,14 @@ export default function SaleabilityModal({
               <div className={styles.actions}>
                 <button type="button" className={styles.primary} disabled={!firstStepComplete} onClick={() => setStep(2)}>Continue</button>
               </div>
-            </>
+            </section>
           ) : null}
 
           {step === 2 ? (
-            <>
+            <section className={styles.settingsCard}>
               <div className={styles.stepIntro}>
-                <span>Step 2 of 2</span>
-                <h3>Tell us what you need</h3>
-                <p>This creates a selling plan. It never changes the Aim4price valuation.</p>
+                <h3>Market and selling settings</h3>
+                <p>Step 2 of 2 · These choices create a selling plan. They never change the Aim4price valuation.</p>
               </div>
               <ChoiceQuestion
                 label="What is demand like right now?"
@@ -283,32 +285,41 @@ export default function SaleabilityModal({
                 <button type="button" className={styles.secondary} onClick={() => setStep(1)}>Back</button>
                 <button type="button" className={styles.primary} disabled={!secondStepComplete} onClick={calculate}>Calculate Saleability</button>
               </div>
-            </>
+            </section>
           ) : null}
 
           {step === 'result' && plan ? (
             <div className={styles.result}>
-              <div className={styles.stepIntro}>
-                <span>Your result</span>
-                <h3>Refined Saleability</h3>
-                <p>Asset quality and current market information are combined below.</p>
-              </div>
-              <div className={styles.scoreCard}>
-                <div>
-                  <span>Saleability rating</span>
-                  <strong>{plan.refinedScore} / 100</strong>
+              <section className={styles.resultHero} aria-live="polite">
+                <span>Refined Saleability</span>
+                <strong>{plan.refinedScore} / 100</strong>
+                <p>Grade {plan.grade} · {plan.gradeLabel}. Asset quality and current market information are combined below.</p>
+
+                <div className={styles.resultMeta}>
+                  <div>
+                    <span>General rating</span>
+                    <strong>{general.score} / 100</strong>
+                  </div>
+                  <div>
+                    <span>Market score</span>
+                    <strong>{plan.marketScore} / 100</strong>
+                  </div>
+                  <div>
+                    <span>Grade</span>
+                    <strong>{plan.grade} · {plan.gradeLabel}</strong>
+                  </div>
+                  <div>
+                    <span>Natural selling window</span>
+                    <strong>{plan.naturalSellingWindow}</strong>
+                  </div>
                 </div>
-                <div>
-                  <span>Grade</span>
-                  <strong>{plan.grade} · {plan.gradeLabel}</strong>
-                </div>
-                <div>
-                  <span>Natural selling window</span>
-                  <strong>{plan.naturalSellingWindow}</strong>
-                </div>
-              </div>
+              </section>
+
               <section className={styles.pricePlan}>
-                <span>Selling plan for your goal</span>
+                <div className={styles.planHeader}>
+                  <h3>Selling plan for your goal</h3>
+                  <p>Pricing guidance based on the answers above.</p>
+                </div>
                 <div className={styles.askingPrice}>
                   <small>Recommended asking price</small>
                   <strong>{formatMoney(plan.recommendedAskingPriceExVat)}</strong>
@@ -319,6 +330,7 @@ export default function SaleabilityModal({
                   <div><span>Likely timing with this plan</span><strong>{plan.expectedTimelineWithPlan}</strong></div>
                 </div>
               </section>
+
               <p className={styles.valuationReminder}>
                 The Aim4price valuation remains <strong>{formatMoney(valuationExVat)} excl. VAT</strong>. The figures above are selling-price guidance only.
               </p>
