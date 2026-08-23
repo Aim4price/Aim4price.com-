@@ -278,6 +278,29 @@ test('a failed cache entry can be retried without refetching successful attachme
   assert.equal(retried.name, 'ready.pdf');
 });
 
+test('a report endpoint error is shown instead of the generic preparation message', async () => {
+  await assert.rejects(
+    fetchExternalShareFile(source, async () => new Response(JSON.stringify({
+      ok: false,
+      error: 'The report renderer is warming up. Please retry.',
+    }), {
+      status: 503,
+      headers: { 'content-type': 'application/json' },
+    })),
+    /renderer is warming up/,
+  );
+});
+
+test('expired report sessions receive a useful mobile recovery message', async () => {
+  await assert.rejects(
+    fetchExternalShareFile(source, async () => new Response('{}', {
+      status: 401,
+      headers: { 'content-type': 'application/json' },
+    })),
+    /session expired.*Sign in again/i,
+  );
+});
+
 test('a failed attachment response is rejected atomically before sharing', async () => {
   await assert.rejects(
     fetchExternalShareFile(source, async () => new Response('Missing', { status: 404 })),
