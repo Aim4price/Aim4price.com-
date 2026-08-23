@@ -57,6 +57,14 @@ test('Saleability layouts preserve the estimate hierarchy and use the available 
   assert.match(valuationStyles, /\.resultHero\s*\{\s*order:\s*1;\s*\}[\s\S]*?\.saleabilitySummary\s*\{\s*order:\s*2;/);
   assert.match(modalStyles, /\.modal\s*\{[\s\S]*?display:\s*flex;[\s\S]*?flex-direction:\s*column;/);
   assert.match(modalStyles, /\.body\s*\{[\s\S]*?min-height:\s*0;[\s\S]*?overflow-y:\s*auto;/);
+  assert.match(modal, /<h2 id="saleability-title">\{assetTitle\}<\/h2>/);
+  assert.doesNotMatch(modal, /<span>Saleability<\/span>/);
+  assert.match(modal, /styles\.baselineStrip/);
+  assert.match(modal, /styles\.settingsCard/);
+  assert.match(modal, /styles\.resultHero/);
+  assert.match(modalStyles, /\.baselineStrip\s*\{[\s\S]*?repeat\(3, minmax\(0, 1fr\)\)/);
+  assert.match(modalStyles, /\.choiceActive,[\s\S]*?linear-gradient\(180deg, #1d7255 0%, #10533e 100%\)/);
+  assert.match(modalStyles, /\.resultHero\s*\{[\s\S]*?linear-gradient\(180deg, #f7fcf9 0%, #e7f5ee 100%\)/);
   assert.match(assetRegisterStyles, /Saleability completes the main Asset Register Manage pricing choices[\s\S]*?\.pricingOptionsGrid\s*\{[\s\S]*?repeat\(3, minmax\(0, 1fr\)\)/);
 });
 
