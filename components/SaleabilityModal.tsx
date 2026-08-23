@@ -27,10 +27,10 @@ const SALE_AREA_OPTIONS: Choice<SaleabilityRefinementAnswers['saleArea']>[] = [
   { value: 'south_africa', label: 'Anywhere in South Africa' },
 ];
 const AVAILABLE_OPTIONS: Choice<SaleabilityRefinementAnswers['similarAssetsAvailable']>[] = [
-  { value: 'none', label: 'None' },
-  { value: 'one_to_three', label: '1–3' },
-  { value: 'four_to_ten', label: '4–10' },
-  { value: 'more_than_ten', label: 'More than 10' },
+  { value: 'none', label: 'Very few' },
+  { value: 'one_to_three', label: 'Fewer than usual' },
+  { value: 'four_to_ten', label: 'About usual' },
+  { value: 'more_than_ten', label: 'More than usual' },
   { value: 'unknown', label: 'I’m not sure' },
 ];
 const BUYER_OPTIONS: Choice<SaleabilityRefinementAnswers['realisticBuyerPool']>[] = [
@@ -234,7 +234,7 @@ export default function SaleabilityModal({
                 onChange={(value) => update('saleArea', value)}
               />
               <ChoiceQuestion
-                label="How many similar assets are currently for sale?"
+                label="Compared with usual, how many similar assets are for sale in that area?"
                 value={answers.similarAssetsAvailable}
                 options={AVAILABLE_OPTIONS}
                 onChange={(value) => update('similarAssetsAvailable', value)}
