@@ -38482,3 +38482,183 @@ button.documentOpenLink {
     min-height: 6.25rem !important;
   }
 }
+
+/* Focused Map Asset flow opened from the Manage modal. */
+.assetSettingsMapEntryModal {
+  width: min(94vw, 54rem) !important;
+  max-height: min(90dvh, 46rem) !important;
+  border: 1px solid rgba(185, 211, 200, 0.98) !important;
+  background: linear-gradient(180deg, #ffffff 0%, #fbfdfc 100%) !important;
+  box-shadow:
+    0 30px 80px rgba(10, 37, 30, 0.25),
+    0 8px 28px rgba(10, 37, 30, 0.1) !important;
+}
+
+.assetSettingsMapEntryModal .assetSettingsHeader {
+  margin-bottom: 0 !important;
+  padding: 0.08rem 0.08rem 1rem !important;
+  border-bottom-color: rgba(199, 219, 210, 0.92) !important;
+}
+
+.assetSettingsMapEntryModal .assetSettingsHeader h3 {
+  color: #0d3a2d !important;
+  letter-spacing: -0.045em !important;
+}
+
+.assetSettingsMapEntryModal .assetSettingsHeader p {
+  color: #647487 !important;
+}
+
+.assetSettingsMapEntryModal .assetSettingsBody {
+  gap: 0.9rem !important;
+  padding: 1.05rem 1.2rem 1.2rem !important;
+}
+
+.assetSettingsMapEntryModal.assetSettingsLocationModal .assetSettingsLocationSection {
+  gap: 0.88rem !important;
+  padding: 0.08rem !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.assetSettingsMapEntryModal.assetSettingsLocationModal .assetSettingsSectionCopy {
+  grid-template-columns: 3.55rem minmax(0, 1fr) !important;
+  column-gap: 0.9rem !important;
+  row-gap: 0.26rem !important;
+  align-items: center !important;
+  padding: 0.15rem 0.15rem 0.22rem !important;
+}
+
+.assetSettingsMapEntryModal.assetSettingsLocationModal .assetSettingsMapHeroIcon {
+  grid-row: 1 / 4 !important;
+  display: grid !important;
+  place-items: center !important;
+  width: 3.55rem !important;
+  height: 3.55rem !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(13, 92, 66, 0.9) !important;
+  border-radius: 1.08rem !important;
+  background: linear-gradient(145deg, #258467 0%, #0f5b43 100%) !important;
+  box-shadow: 0 12px 24px rgba(19, 96, 70, 0.2) !important;
+}
+
+.assetSettingsMapEntryModal.assetSettingsLocationModal .assetSettingsMapHeroIcon .buttonIcon {
+  width: 1.45rem !important;
+  height: 1.45rem !important;
+}
+
+.assetSettingsMapEntryModal.assetSettingsLocationModal .assetSettingsSectionCopy > span:not(.assetSettingsMapHeroIcon),
+.assetSettingsMapEntryModal.assetSettingsLocationModal .assetSettingsSectionCopy > h4,
+.assetSettingsMapEntryModal.assetSettingsLocationModal .assetSettingsSectionCopy > p {
+  grid-column: 2 !important;
+}
+
+.assetSettingsMapEntryModal.assetSettingsLocationModal .assetSettingsSectionCopy > h4 {
+  color: #103a2e !important;
+  font-size: clamp(1.06rem, 1.7vw, 1.28rem) !important;
+}
+
+.assetSettingsMapEntryModal.assetSettingsLocationModal .assetSettingsSectionCopy > p {
+  max-width: 38rem !important;
+  font-size: 0.88rem !important;
+  line-height: 1.42 !important;
+}
+
+.assetSettingsMapEntryModal .assetSettingsLocationCurrent {
+  border-color: rgba(171, 205, 190, 0.98) !important;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(45, 139, 103, 0.09), transparent 42%),
+    #ffffff !important;
+  box-shadow: 0 10px 24px rgba(18, 68, 52, 0.06) !important;
+}
+
+.assetSettingsMapEntryModal .assetSettingsLocationCurrentMain {
+  min-height: 5.15rem !important;
+  padding: 0.82rem 0.9rem !important;
+}
+
+.assetSettingsMapEntryModal .assetSettingsLocationCurrentCopy small {
+  overflow: visible !important;
+  max-width: 34rem !important;
+  color: #65768a !important;
+  font-size: 0.78rem !important;
+  font-weight: 650 !important;
+  line-height: 1.35 !important;
+  text-overflow: clip !important;
+  white-space: normal !important;
+}
+
+.assetSettingsMapEntryModal .assetSettingsMapAssetButton {
+  appearance: none !important;
+  min-height: 2.7rem !important;
+  color: #ffffff !important;
+  border-color: #17694f !important;
+  background: linear-gradient(135deg, #1e785a 0%, #12563f 100%) !important;
+  cursor: pointer !important;
+  font: inherit !important;
+  font-weight: 820 !important;
+  box-shadow: 0 8px 18px rgba(20, 95, 70, 0.16) !important;
+}
+
+.assetSettingsMapEntryModal .assetSettingsMapAssetButton:hover:not(:disabled) {
+  border-color: #0f523c !important;
+  background: linear-gradient(135deg, #196b50 0%, #0e4936 100%) !important;
+}
+
+.assetSettingsMapEntryModal.assetSettingsLocationModal .assetSettingsLocationChoiceGrid {
+  gap: 0.72rem !important;
+}
+
+.assetSettingsMapEntryModal.assetSettingsLocationModal .assetSettingsLocationChoiceGrid .assetSettingsOptionButton {
+  min-height: 5.65rem !important;
+  border-color: rgba(195, 216, 207, 0.98) !important;
+  background:
+    radial-gradient(circle at top left, rgba(33, 123, 91, 0.06), transparent 48%),
+    linear-gradient(180deg, #ffffff 0%, #f8fbf9 100%) !important;
+}
+
+.assetSettingsMapEntryModal.assetSettingsLocationModal .assetSettingsLocationChoiceGrid .assetSettingsOptionButton:hover:not(:disabled) {
+  transform: translateY(-2px) !important;
+  border-color: rgba(42, 130, 99, 0.52) !important;
+  box-shadow: 0 12px 24px rgba(19, 76, 58, 0.09) !important;
+}
+
+.assetSettingsMapEntryModal.assetSettingsLocationModal .assetSettingsLocationChoiceGrid .assetSettingsLocationPrimaryChoice {
+  min-height: 5.8rem !important;
+  border-color: #176b50 !important;
+  background:
+    radial-gradient(circle at 8% 0%, rgba(255, 255, 255, 0.14), transparent 34%),
+    linear-gradient(135deg, #217b5d 0%, #11553f 100%) !important;
+  box-shadow: 0 14px 28px rgba(20, 95, 70, 0.18) !important;
+}
+
+@media (max-width: 720px) {
+  .assetSettingsMapEntryModal {
+    width: min(100%, calc(100vw - 1rem)) !important;
+    max-height: calc(100dvh - 1rem) !important;
+  }
+
+  .assetSettingsMapEntryModal .assetSettingsBody {
+    padding: 0.85rem 0.8rem 1rem !important;
+  }
+
+  .assetSettingsMapEntryModal.assetSettingsLocationModal .assetSettingsSectionCopy {
+    grid-template-columns: 3rem minmax(0, 1fr) !important;
+    column-gap: 0.72rem !important;
+  }
+
+  .assetSettingsMapEntryModal.assetSettingsLocationModal .assetSettingsMapHeroIcon {
+    width: 3rem !important;
+    height: 3rem !important;
+  }
+
+  .assetSettingsMapEntryModal .assetSettingsLocationCurrentCopy strong {
+    white-space: normal !important;
+  }
+
+  .assetSettingsMapEntryModal .assetSettingsMapAssetButton {
+    grid-column: 1 / -1 !important;
+    width: 100% !important;
+  }
+}

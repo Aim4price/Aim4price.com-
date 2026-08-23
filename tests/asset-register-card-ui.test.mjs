@@ -242,6 +242,26 @@ test('owner Manage keeps disposal and mapping inside the gated ten-action comman
   assert.match(client, /<AccountantAssetManageModal/);
 });
 
+test('Manage uses concise update copy and a dedicated recalculate icon', () => {
+  const ownerManage = client.slice(
+    client.indexOf('styles.ownerCommandOverlay'),
+    client.indexOf('{activeAsset && ownerAssetCommandPanel', client.indexOf('styles.ownerCommandOverlay')),
+  );
+  const pricingOptions = client.slice(
+    client.indexOf('<div className={styles.pricingOptionsGrid}>'),
+    client.indexOf('</div>', client.indexOf('<div className={styles.pricingOptionsGrid}>') + 1),
+  );
+  const recalculateOption = pricingOptions.slice(
+    pricingOptions.indexOf('openRevalueGuidedDialog'),
+    pricingOptions.indexOf('openProjectionModal'),
+  );
+
+  assert.match(ownerManage, /Edit details, documents and photos\./);
+  assert.doesNotMatch(ownerManage, /Edit details, documents, photos and status\./);
+  assert.match(recalculateOption, /<RecalculateIcon className=\{styles\.buttonIcon\}/);
+  assert.match(client, /function RecalculateIcon[\s\S]*?<path d="M4 9V4h5" \/>/);
+});
+
 test('Manage routes mapped assets to a focused map and unmapped assets to location setup', () => {
   const coordinateGuard = client.slice(
     client.indexOf('function hasAssetGpsCoordinates'),
@@ -266,6 +286,28 @@ test('Manage routes mapped assets to a focused map and unmapped assets to locati
   assert.match(settingsCloseFlow, /\['status-mapped', 'manage-map-location'\]\.includes/);
   assert.match(settingsCloseFlow, /returnOrigin\?\.origin === 'manage'/);
   assert.match(settingsCloseFlow, /openActionDialog\(latestAsset\)/);
+});
+
+test('Manage map setup is a focused workflow without the Settings back button', () => {
+  const settingsModal = client.slice(
+    client.indexOf('{isAssetSettingsModalOpen && editingAsset ?'),
+    client.indexOf('{activeAsset && isAccountantWorkspace', client.indexOf('{isAssetSettingsModalOpen && editingAsset ?')),
+  );
+  const directMapStyles = styles.slice(styles.indexOf('/* Focused Map Asset flow opened from the Manage modal. */'));
+
+  assert.match(client, /const isManageMapLocationFlow = assetModalReturnRef\.current\?\.origin === 'manage'[\s\S]*?assetModalReturnRef\.current\.action === 'manage-map-location'/);
+  assert.match(settingsModal, /styles\.assetSettingsMapEntryModal/);
+  assert.match(settingsModal, /\{isManageMapLocationFlow \? 'Map asset' : 'Settings'\}/);
+  assert.match(settingsModal, /assetSettingsView !== 'menu' && !\(isManageMapLocationFlow && assetSettingsView === 'location'\)/);
+  assert.match(settingsModal, /Choose how to map this asset/);
+  assert.match(settingsModal, /Use current location/);
+  assert.match(settingsModal, /Choose on map/);
+  assert.match(settingsModal, /Enter coordinates/);
+  assert.match(settingsModal, /View on Asset Map/);
+  assert.match(settingsModal, /window\.location\.assign\(buildFocusedAssetMapHref\(editingAsset\)\)/);
+  assert.match(directMapStyles, /\.assetSettingsMapEntryModal\.assetSettingsLocationModal \.assetSettingsLocationSection\s*\{[\s\S]*?border:\s*0 !important;[\s\S]*?background:\s*transparent !important;/);
+  assert.match(directMapStyles, /\.assetSettingsMapEntryModal\.assetSettingsLocationModal \.assetSettingsMapHeroIcon\s*\{/);
+  assert.match(directMapStyles, /\.assetSettingsMapEntryModal \.assetSettingsMapAssetButton\s*\{/);
 });
 
 test('Asset Map selects the asset requested by the Manage action', () => {
