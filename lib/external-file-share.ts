@@ -71,6 +71,27 @@ function ensureFileExtension(fileName: string, contentType: string): string {
   return extension ? `${safeName}.${extension}` : safeName;
 }
 
+async function externalShareResponseError(
+  response: Response,
+  source: ExternalShareFileSource,
+): Promise<string> {
+  const fallback = `Could not prepare “${source.label}”.`;
+  if (source.kind !== 'report') return fallback;
+  if (response.status === 401 || response.status === 403) {
+    return 'Your Aim4price session expired. Sign in again, then retry the report.';
+  }
+
+  const responseType = String(response.headers.get('content-type') ?? '').toLowerCase();
+  if (responseType.includes('application/json')) {
+    const payload = await response.clone().json().catch(() => null) as { error?: unknown } | null;
+    const detail = typeof payload?.error === 'string' ? payload.error.trim() : '';
+    if (detail) return detail;
+  }
+
+  if (response.status === 413) return 'This report is too large to prepare on this device.';
+  return fallback;
+}
+
 export async function fetchExternalShareFile(
   source: ExternalShareFileSource,
   fetcher: typeof fetch = fetch,
@@ -85,7 +106,7 @@ export async function fetchExternalShareFile(
   });
 
   if (!response.ok) {
-    throw new Error(`Could not prepare “${source.label}”.`);
+    throw new Error(await externalShareResponseError(response, source));
   }
 
   const blob = await response.blob();
