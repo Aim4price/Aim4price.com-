@@ -6155,6 +6155,22 @@ function quoteToneClassForPartnerType(partnerType: PartnerType | null | undefine
   return '';
 }
 
+function assetPartnerNotes(asset: RegisterAsset): OpenPartnerNote[] {
+  const savedNotes = Array.isArray(asset.partnerNotes)
+    ? asset.partnerNotes.filter((note) => String(note.noteText ?? '').trim() || note.attachment)
+    : [];
+
+  if (savedNotes.length) {
+    return savedNotes;
+  }
+
+  return asset.openPartnerNote ? [asset.openPartnerNote] : [];
+}
+
+function partnerNoteAuthor(note: OpenPartnerNote): string {
+  return note.partnerBusinessName || note.partnerName || 'Aim4price partner';
+}
+
 function partnerNoteReportLabel(note: OpenPartnerNote, index: number, assetTitle?: string): string {
   const partnerType = note.partnerType ? formatQuotePartnerType(note.partnerType) : 'Partner';
   const assetSuffix = assetTitle ? ` · ${assetTitle}` : '';
