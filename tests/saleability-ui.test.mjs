@@ -37,7 +37,7 @@ test('Manage Pricing opens the same Saleability calculator', () => {
 test('the questions use plain selectable answers and preserve the valuation boundary', () => {
   for (const wording of [
     'Where are you willing to sell it?',
-    'Compared with usual, how many similar assets are for sale in that area?',
+    'How many similar assets can buyers choose from?',
     'How many people would realistically buy it?',
     'What is demand like right now?',
     'How easy is this make or model for buyers to recognise?',
@@ -47,10 +47,11 @@ test('the questions use plain selectable answers and preserve the valuation boun
     assert.match(modal, new RegExp(wording.replace(/[?]/g, '\\?')));
   }
   assert.match(modal, /I’m not sure/);
-  assert.match(modal, /Very few/);
-  assert.match(modal, /Fewer than usual/);
-  assert.match(modal, /About usual/);
-  assert.match(modal, /More than usual/);
+  assert.match(modal, /Almost none/);
+  assert.match(modal, /A few/);
+  assert.match(modal, /Several/);
+  assert.match(modal, /Many/);
+  assert.doesNotMatch(modal, /Compared with usual/);
   assert.doesNotMatch(modal, />More than 10</);
   assert.doesNotMatch(modal, /<select/);
   assert.match(modal, /this value does not change here/);
@@ -62,6 +63,8 @@ test('Saleability layouts preserve the estimate hierarchy and use the available 
   assert.match(valuationStyles, /\.resultHero\s*\{\s*order:\s*1;\s*\}[\s\S]*?\.saleabilitySummary\s*\{\s*order:\s*2;/);
   assert.match(modalStyles, /\.modal\s*\{[\s\S]*?display:\s*flex;[\s\S]*?flex-direction:\s*column;/);
   assert.match(modalStyles, /\.body\s*\{[\s\S]*?min-height:\s*0;[\s\S]*?overflow-y:\s*auto;/);
+  assert.match(modalStyles, /\.header p\s*\{[\s\S]*?white-space:\s*nowrap;/);
+  assert.match(modalStyles, /@media \(max-width: 900px\)[\s\S]*?\.header p\s*\{\s*white-space:\s*normal;/);
   assert.match(modal, /<h2 id="saleability-title">\{assetTitle\}<\/h2>/);
   assert.doesNotMatch(modal, /<span>Saleability<\/span>/);
   assert.match(modal, /styles\.baselineStrip/);

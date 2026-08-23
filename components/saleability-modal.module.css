@@ -43,6 +43,7 @@
 }
 
 .header > div {
+  flex: 1 1 auto;
   min-width: 0;
   display: grid;
   gap: 0.42rem;
@@ -59,12 +60,13 @@
 }
 
 .header p {
-  max-width: 48rem;
+  max-width: none;
   margin: 0;
   color: #617286;
   font-size: 1rem;
   font-weight: 620;
   line-height: 1.52;
+  white-space: nowrap;
 }
 
 .close {
@@ -497,6 +499,10 @@
 }
 
 @media (max-width: 900px) {
+  .header p {
+    white-space: normal;
+  }
+
   .resultMeta {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
