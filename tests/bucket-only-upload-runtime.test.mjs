@@ -82,6 +82,16 @@ test('Bucket-only reads never fall through to the PostgreSQL bytea path', () => 
   assert.match(uploadSource, /storage_state !== 'ready'/);
 });
 
+test('native-share photo preparation stays same-origin and returns verified bytes', () => {
+  assert.match(downloadRouteSource, /searchParams\.get\('share'\) === '1'/);
+  assert.match(downloadRouteSource, /resolveAssetRegisterUploadBytes\(uploadId\)/);
+  assert.match(downloadRouteSource, /'Content-Type': resolved\.upload\.mimeType/);
+  assert.match(downloadRouteSource, /'Content-Disposition': `\$\{resolved\.upload\.disposition\}/);
+  assert.match(downloadRouteSource, /filename\*=UTF-8''\$\{encodedFileName\}/);
+  assert.match(downloadRouteSource, /'Cache-Control': 'private, no-store'/);
+  assert.match(downloadRouteSource, /'Retry-After': '60'/);
+});
+
 test('server-side Bucket byte reads are bounded and verified before use', () => {
   const verifiedReader = objectStorageSource.slice(
     objectStorageSource.indexOf('export async function readVerifiedBucketUploadObjectBytes'),

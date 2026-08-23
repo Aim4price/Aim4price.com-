@@ -130,6 +130,20 @@ function photoContentType(extension: string): string {
   return 'image/jpeg';
 }
 
+function photoShareUrl(url: string): string {
+  try {
+    const parsed = new URL(url, 'https://www.aim4price.com');
+    if (!parsed.pathname.startsWith('/api/asset-register/uploads/')) return url;
+    parsed.searchParams.set('share', '1');
+    // Always fetch internal uploads from the current app origin. Normal image
+    // requests may redirect to object storage, whose CORS policy is not part of
+    // the native file-sharing contract.
+    return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+  } catch {
+    return url;
+  }
+}
+
 function credentialsForUrl(url: string): RequestCredentials {
   if (typeof window === 'undefined') return 'include';
   try {
@@ -206,6 +220,7 @@ export default function AssetExternalShare({
   const photoFiles = useMemo<ExternalShareFileSource[]>(() => assets.flatMap((asset, assetIndex) => (
     asset.photoUrls.map((url, photoIndex) => {
       const extension = photoExtension(url);
+      const preparedUrl = photoShareUrl(url);
       return {
         id: `photo:${assetIndex}:${photoIndex}:${url}`,
         kind: 'photo',
@@ -213,8 +228,8 @@ export default function AssetExternalShare({
         description: 'Saved asset photo',
         fileName: `${slugFileName(asset.title)}-photo-${photoIndex + 1}.${extension}`,
         contentType: photoContentType(extension),
-        credentials: credentialsForUrl(url),
-        url,
+        credentials: credentialsForUrl(preparedUrl),
+        url: preparedUrl,
       };
     })
   )), [assets]);
@@ -319,25 +334,28 @@ export default function AssetExternalShare({
       return;
     }
 
-    let canShareFiles = false;
+    const shareData: ShareData = {
+      files: preparation.files,
+      title: copy.subject,
+      text: copy.body,
+    };
+    let canSharePayload = false;
     try {
-      canShareFiles = navigator.canShare({ files: preparation.files });
+      // Validate the exact payload that will be sent. Some mobile browsers can
+      // share files alone but cannot share a files-plus-message combination.
+      canSharePayload = navigator.canShare(shareData);
     } catch {
-      canShareFiles = false;
+      canSharePayload = false;
     }
-    if (!canShareFiles) {
-      setShareStatus('This device cannot share the selected attachments. Turn off attachments to send the message only.');
+    if (!canSharePayload) {
+      setShareStatus('This device cannot send the message and selected attachments together. Nothing was sent.');
       return;
     }
 
     setSendingTarget(target);
     try {
-      await navigator.share({
-        title: copy.subject,
-        text: copy.body,
-        files: preparation.files,
-      });
-      setShareStatus('Your message and attachments were handed to the selected app together.');
+      await navigator.share(shareData);
+      setShareStatus(`${preparation.files.length} ${preparation.files.length === 1 ? 'attachment was' : 'attachments were'} handed to your phone together with the message.`);
     } catch (error) {
       if (error instanceof DOMException && error.name === 'AbortError') {
         setShareStatus('Sharing cancelled. Your message and attachments are still ready.');
@@ -422,18 +440,18 @@ export default function AssetExternalShare({
         <div className={styles.sendLead}>
           <strong>Send message</strong>
           <span>{selectedAttachmentCount
-            ? 'Your device share menu will attach everything in one action.'
+            ? 'Your phone will open its share menu with every selected attachment.'
             : 'Photos and reports stay private unless you add them above.'}</span>
           {shareStatus ? <small role="status" aria-live="polite">{shareStatus}</small> : null}
         </div>
         <div className={styles.sendButtons}>
           <button type="button" className={`${styles.sendButton} ${styles.emailButton}`} onClick={() => void sendShare('email')} disabled={isPreparing || isSending}>
             <span className={styles.sendIcon}><EmailIcon /></span>
-            <span><strong>{sendingTarget === 'email' ? 'Opening…' : 'Send by email'}</strong><small>{selectedAttachmentCount ? 'Message with attachments' : 'Open a ready email'}</small></span>
+            <span><strong>{sendingTarget === 'email' ? 'Opening…' : 'Send by email'}</strong><small>{selectedAttachmentCount ? 'Choose Email in the share menu' : 'Open a ready email'}</small></span>
           </button>
           <button type="button" className={`${styles.sendButton} ${styles.whatsappButton}`} onClick={() => void sendShare('whatsapp')} disabled={isPreparing || isSending}>
             <span className={styles.sendIcon}><WhatsAppIcon /></span>
-            <span><strong>{sendingTarget === 'whatsapp' ? 'Opening…' : 'Send with WhatsApp'}</strong><small>{selectedAttachmentCount ? 'Message with attachments' : 'Open a ready chat'}</small></span>
+            <span><strong>{sendingTarget === 'whatsapp' ? 'Opening…' : 'Send with WhatsApp'}</strong><small>{selectedAttachmentCount ? 'Choose WhatsApp in the share menu' : 'Open a ready chat'}</small></span>
           </button>
         </div>
       </footer>

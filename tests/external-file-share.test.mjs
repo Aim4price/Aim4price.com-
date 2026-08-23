@@ -148,7 +148,7 @@ test('the canonical endpoint filename wins even when a share-only filename was r
   assert.equal(file.name, 'aim4price-full-asset-register.pdf');
 });
 
-test('the canonical endpoint MIME type is preserved without rebuilding the File', async () => {
+test('generic binary downloads receive the known MIME type required by mobile share targets', async () => {
   const file = await fetchExternalShareFile(source, async () => new Response('%PDF-1.7', {
     status: 200,
     headers: {
@@ -158,7 +158,26 @@ test('the canonical endpoint MIME type is preserved without rebuilding the File'
   }));
 
   assert.equal(file.name, 'canonical-register.pdf');
-  assert.equal(file.type, 'application/octet-stream');
+  assert.equal(file.type, 'application/pdf');
+  assert.equal(await file.text(), '%PDF-1.7');
+});
+
+test('a redirected photo filename is reconciled with its final MIME type', async () => {
+  const file = await fetchExternalShareFile({
+    ...source,
+    id: 'photo:png',
+    kind: 'photo',
+    label: 'Asset photo',
+    fileName: 'tractor-photo.jpg',
+    url: '/api/asset-register/uploads/photo-id?share=1',
+    contentType: 'image/jpeg',
+  }, async () => new Response(new Blob(['png bytes'], { type: 'image/png' }), {
+    status: 200,
+  }));
+
+  assert.equal(file.name, 'tractor-photo.png');
+  assert.equal(file.type, 'image/png');
+  assert.equal(await file.text(), 'png bytes');
 });
 
 test('prepared report Files are immutable cache entries across attachment selection changes', async () => {

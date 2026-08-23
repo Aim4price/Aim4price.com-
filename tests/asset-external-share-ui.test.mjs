@@ -45,11 +45,16 @@ test('outside sharing stays in one simple modal with optional photos, controlled
 
   assert.match(component, /createExternalShareFileCache\(\)/);
   assert.match(component, /prepareExternalShareFiles\(selectedSources, attachmentFileCache\)/);
+  assert.match(component, /function photoShareUrl\(url: string\)/);
+  assert.match(component, /parsed\.searchParams\.set\('share', '1'\)/);
+  assert.match(component, /const preparedUrl = photoShareUrl\(url\)/);
+  assert.match(component, /credentials: credentialsForUrl\(preparedUrl\),[\s\S]*?url: preparedUrl/);
   assert.doesNotMatch(component, /MAX_SHARE_FILES|Choose no more than .* attachments/, 'all selected photos and reports should be prepared together');
   assert.match(component, /file\.size > MAX_SHARE_FILE_BYTES/);
   assert.match(component, /totalBytes > MAX_SHARE_TOTAL_BYTES/);
-  assert.match(component, /navigator\.canShare\(\{ files: preparation\.files \}\)/);
-  assert.match(component, /navigator\.share\(\{[\s\S]*?title: copy\.subject,[\s\S]*?text: copy\.body,[\s\S]*?files: preparation\.files/);
+  assert.match(component, /const shareData: ShareData = \{[\s\S]*?files: preparation\.files,[\s\S]*?title: copy\.subject,[\s\S]*?text: copy\.body/);
+  assert.match(component, /navigator\.canShare\(shareData\)/);
+  assert.match(component, /navigator\.share\(shareData\)/);
   assert.equal((component.match(/navigator\.share\(/g) ?? []).length, 1, 'all selected files should be handed over in one share call');
 
   const sendHandler = component.match(/async function sendShare\(target: ShareTarget\) \{([\s\S]*?)\n  \}\n\n  const attachmentStatus/);
