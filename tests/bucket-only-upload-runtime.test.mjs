@@ -87,6 +87,7 @@ test('native-share photo preparation stays same-origin and returns verified byte
   assert.match(downloadRouteSource, /resolveAssetRegisterUploadBytes\(uploadId\)/);
   assert.match(downloadRouteSource, /'Content-Type': resolved\.upload\.mimeType/);
   assert.match(downloadRouteSource, /'Content-Disposition': `\$\{resolved\.upload\.disposition\}/);
+  assert.match(downloadRouteSource, /filename\*=UTF-8''\$\{encodedFileName\}/);
   assert.match(downloadRouteSource, /'Cache-Control': 'private, no-store'/);
   assert.match(downloadRouteSource, /'Retry-After': '60'/);
 });

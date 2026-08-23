@@ -61,12 +61,13 @@ export async function GET(request: Request, context: RouteContext) {
     const resolved = await resolveAssetRegisterUploadBytes(uploadId);
 
     if (resolved.status === 'ready') {
+      const encodedFileName = encodeURIComponent(resolved.upload.fileName);
       return new NextResponse(resolved.upload.data, {
         status: 200,
         headers: {
           'Content-Type': resolved.upload.mimeType || 'application/octet-stream',
           'Content-Length': String(resolved.upload.sizeBytes),
-          'Content-Disposition': `${resolved.upload.disposition}; filename="${encodeURIComponent(resolved.upload.fileName)}"`,
+          'Content-Disposition': `${resolved.upload.disposition}; filename="${encodedFileName}"; filename*=UTF-8''${encodedFileName}`,
           'Cache-Control': 'private, no-store',
           'X-Content-Type-Options': 'nosniff',
         },
