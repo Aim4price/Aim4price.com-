@@ -1163,9 +1163,13 @@ function buildCurrentValuationSpecs(
     context.yearModel ?? null,
     Boolean(context.yearModelUnknown),
   );
+  const latestSaleabilityInputs = isRecord(valuationSpecs.aim4priceSaleabilityInputs)
+    ? valuationSpecs.aim4priceSaleabilityInputs
+    : null;
 
   return {
     ...merged,
+    ...(latestSaleabilityInputs ? { aim4priceSaleabilityInputs: latestSaleabilityInputs } : {}),
     valuationNeedsUpdate: false,
     valuation_needs_update: false,
     valuationLastUpdatedAt: context.now.toISOString(),
@@ -1182,6 +1186,27 @@ function buildCurrentValuationSpecs(
     valuation_last_condition: context.condition ?? null,
     yearModelUnknown: Boolean(context.yearModelUnknown),
     year_model_unknown: Boolean(context.yearModelUnknown),
+  };
+}
+
+function withSaleabilityValuationInputs(
+  specs: Record<string, unknown>,
+  advancedAssumptions: Result['advancedAssumptions'] | GenericValuationResult['advancedAssumptions'],
+): Record<string, unknown> {
+  if (!advancedAssumptions) return specs;
+
+  const conditionFactorPercent = advancedAssumptions.dealerAssessment?.conditionFactorPercent
+    ?? advancedAssumptions.conditionFactorPercent
+    ?? null;
+
+  return {
+    ...specs,
+    aim4priceSaleabilityInputs: {
+      version: 1,
+      conditionFactorPercent,
+      popularityStars: advancedAssumptions.popularityStars ?? null,
+      detailedCondition: Boolean(advancedAssumptions.dealerAssessment),
+    },
   };
 }
 
@@ -3319,7 +3344,7 @@ export async function updateAssetRegisterItemFromValuation(input: {
     ['specs_json'],
     stripMarketValuationSpecs(
       withPersistedAssetIdentitySpecs(
-        buildCurrentValuationSpecs(existing.specsJson, valuationSpecsJson, {
+        buildCurrentValuationSpecs(existing.specsJson, withSaleabilityValuationInputs(valuationSpecsJson, input.result.advancedAssumptions), {
           valuationRunId: input.valuationRunId,
           selectedValueExVat,
           hours: input.hours,
@@ -3476,7 +3501,7 @@ export async function updateAssetRegisterItemFromGenericValuation(input: {
     stripMarketValuationSpecs(
       withPersistedAssetIdentitySpecs(
         withGenericUsageMetadata(
-          buildCurrentValuationSpecs(existing.specsJson, valuationResult.specsJson ?? {}, {
+          buildCurrentValuationSpecs(existing.specsJson, withSaleabilityValuationInputs(valuationResult.specsJson ?? {}, valuationResult.advancedAssumptions), {
             valuationRunId: input.valuationRunId,
             selectedValueExVat,
             hours: valuationResult.usageAmount ?? null,
@@ -3651,7 +3676,7 @@ export async function createAssetRegisterItemFromValuation(input: {
     ['specs_json'],
     stripMarketValuationSpecs(
       withPersistedAssetIdentitySpecs(
-        buildCurrentValuationSpecs({}, isRecord(valuationRow.specs_json) ? valuationRow.specs_json : {}, {
+        buildCurrentValuationSpecs({}, withSaleabilityValuationInputs(isRecord(valuationRow.specs_json) ? valuationRow.specs_json : {}, valuationResult.advancedAssumptions), {
           valuationRunId: input.valuationRunId,
           selectedValueExVat,
           hours: input.hours,
@@ -3792,7 +3817,7 @@ export async function createAssetRegisterItemFromGenericValuation(input: {
     stripMarketValuationSpecs(
       withPersistedAssetIdentitySpecs(
         withGenericUsageMetadata(
-          buildCurrentValuationSpecs({}, valuationResult.specsJson ?? {}, {
+          buildCurrentValuationSpecs({}, withSaleabilityValuationInputs(valuationResult.specsJson ?? {}, valuationResult.advancedAssumptions), {
             valuationRunId: input.valuationRunId,
             selectedValueExVat,
             hours: valuationResult.usageAmount ?? null,

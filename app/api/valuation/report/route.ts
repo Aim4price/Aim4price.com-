@@ -32,6 +32,7 @@ type ValuationReportPayload = {
   assetDetailRows: ValuationReportKeyValue[];
   clientRows: ValuationReportKeyValue[];
   recordRows: ValuationReportKeyValue[];
+  saleabilityRows: ValuationReportKeyValue[];
 };
 
 type NormalizedValuationReport = {
@@ -47,6 +48,7 @@ type NormalizedValuationReport = {
   assetDetailRows: ValuationReportKeyValue[];
   clientRows: ValuationReportKeyValue[];
   recordRows: ValuationReportKeyValue[];
+  saleabilityRows: ValuationReportKeyValue[];
 };
 
 const AIM4PRICE_EMAIL = 'aim4price@gmail.com';
@@ -297,6 +299,7 @@ function normalizePayload(value: unknown, logoUrl: string): NormalizedValuationR
   const assetDetailRows = normalizeReportRows(value.assetDetailRows);
   const clientRows = normalizeReportRows(value.clientRows);
   const recordRows = normalizeReportRows(value.recordRows);
+  const saleabilityRows = normalizeReportRows(value.saleabilityRows);
 
   return {
     generatedAt,
@@ -311,6 +314,7 @@ function normalizePayload(value: unknown, logoUrl: string): NormalizedValuationR
     assetDetailRows: assetDetailRows.length ? assetDetailRows : fallbackAssetRows,
     clientRows: clientRows.length ? clientRows : fallbackClientRows,
     recordRows: recordRows.length ? recordRows : fallbackRecordRows,
+    saleabilityRows,
   };
 }
 
@@ -960,6 +964,12 @@ function renderValuationReportHtml(payload: NormalizedValuationReport): string {
           </div>
 
           <aside class="assetReportSide">
+            ${payload.saleabilityRows.length ? `
+              <section class="assetReportSideCard assetReportRecordRows">
+                <h2>Saleability</h2>
+                ${renderReportRows(payload.saleabilityRows, 'No Saleability details available.')}
+              </section>
+            ` : ''}
             <section class="assetReportSideCard assetReportRecordRows">
               <h2>Record Summary</h2>
               ${renderReportRows(payload.recordRows, 'No record details available.')}

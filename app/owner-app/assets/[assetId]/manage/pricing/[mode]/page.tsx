@@ -7,7 +7,7 @@ import OwnerAssetDetailClient, { type OwnerAssetPricingMode } from '../../../own
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-const PRICING_MODES = new Set<OwnerAssetPricingMode>(['recalculate', 'future']);
+const PRICING_MODES = new Set<OwnerAssetPricingMode>(['recalculate', 'future', 'saleability']);
 
 export default async function OwnerAssetPricingModePage({ params }: {
   params: { assetId: string; mode: string };

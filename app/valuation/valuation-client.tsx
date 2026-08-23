@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState, type ChangeEvent, type CSSProperties, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import AppHeader from '../../components/AppHeader';
+import SaleabilityModal from '../../components/SaleabilityModal';
 import styles from './page.module.css';
 import dealerStyles from '../dealer/dealer.module.css';
 import {
@@ -52,6 +53,10 @@ import {
   downloadMarketplaceAd,
   marketplaceAdFilename,
 } from '../../lib/marketplace-ad-renderer';
+import {
+  calculateGeneralSaleability,
+  type GeneralSaleabilityInput,
+} from '../../lib/saleability';
 
 type Step = 1 | 2 | 3 | 4 | 5;
 type MethodKey = 'aim4price';
@@ -449,6 +454,7 @@ type ValuationPdfPayload = {
   assetDetailRows: ValuationPdfKeyValue[];
   clientRows: ValuationPdfKeyValue[];
   recordRows: ValuationPdfKeyValue[];
+  saleabilityRows: ValuationPdfKeyValue[];
 };
 
 const CURRENT_YEAR = new Date().getFullYear();
@@ -1678,6 +1684,39 @@ function getResultSectorKey(state: ValuationResultState | null): SectorKey {
   return state?.kind === 'generic' ? state.result.sector.key : 'agricultural';
 }
 
+function getSaleabilityInputFromResult(
+  state: ValuationResultState,
+  fallbackCondition: ConditionKey,
+  usageAmount: number | null,
+  lifeWorkedPercent: number | null,
+): GeneralSaleabilityInput {
+  const advancedAssumptions = state.result.advancedAssumptions ?? null;
+  const detailedConditionPercent = advancedAssumptions?.dealerAssessment?.conditionFactorPercent
+    ?? advancedAssumptions?.conditionFactorPercent
+    ?? null;
+
+  if (state.kind === 'generic') {
+    return {
+      lifeRemainingPercent: state.result.lifeRemainingPercent,
+      usageAmount: state.result.usageAmount ?? usageAmount,
+      maxLifetimeUsage: state.result.maxLifetimeHours,
+      lifeWorkedPercent: state.result.lifeWorkedPercent ?? lifeWorkedPercent,
+      condition: state.result.condition,
+      conditionFactorPercent: detailedConditionPercent,
+      popularityStars: advancedAssumptions?.popularityStars ?? null,
+    };
+  }
+
+  return {
+    usageAmount,
+    maxLifetimeUsage: state.result.maxLifetimeHours,
+    lifeWorkedPercent,
+    condition: fallbackCondition,
+    conditionFactorPercent: detailedConditionPercent,
+    popularityStars: advancedAssumptions?.popularityStars ?? null,
+  };
+}
+
 function getLifetimeUnitLabel(metric: UsageMetricType): string {
   return metric === 'km' ? 'kilometres' : 'hours';
 }
@@ -1789,6 +1828,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
   const [saveLoading, setSaveLoading] = useState(false);
   const [pdfLoading, setPdfLoading] = useState(false);
   const [pdfError, setPdfError] = useState('');
+  const [saleabilityOpen, setSaleabilityOpen] = useState(false);
   const [finalSaveIntent, setFinalSaveIntent] = useState<FinalSaveIntent | null>(null);
   const [finalSaveError, setFinalSaveError] = useState('');
   const [savedMarketplaceAssetId, setSavedMarketplaceAssetId] = useState<string | null>(null);
@@ -3755,6 +3795,12 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     const replacementPriceExVat = tractorResult?.totalReplacementPriceUsedExVat ?? getCurrentResultReplacementPriceExVat();
     const appliedAdvancedAssumptions = getAppliedAdvancedAssumptionsFromState(resultState);
     const appliedDealerAssessment = appliedAdvancedAssumptions?.dealerAssessment ?? null;
+    const generalSaleability = calculateGeneralSaleability(getSaleabilityInputFromResult(
+      resultState,
+      resultCondition,
+      isGeneric ? genericResult?.usageAmount ?? usageNumber : usageNumber,
+      isGeneric ? genericResult?.lifeWorkedPercent ?? lifeWorkedPercentNumber : lifeWorkedPercentNumber,
+    ));
     const advancedAssumptionsApplied = hasAppliedAdvancedAssumptions(appliedAdvancedAssumptions);
     const advancedUsageMetricType = getResultUsageMetricType(resultState);
     const advancedUsageShortUnit = getUsageShortUnit(getResultSectorKey(resultState), advancedUsageMetricType);
@@ -3913,6 +3959,12 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
       assetDetailRows,
       clientRows: safeClientRows,
       recordRows,
+      saleabilityRows: compactPdfRows([
+        { label: 'General Saleability', value: `${generalSaleability.score} / 100 · Grade ${generalSaleability.grade} (${generalSaleability.gradeLabel})` },
+        { label: 'Natural selling window', value: generalSaleability.naturalSellingWindow },
+        { label: 'Useful life remaining', value: `${generalSaleability.lifeRemainingPercent}%` },
+        { label: 'Saleability confidence', value: generalSaleability.confidence },
+      ]),
     };
   }
 
@@ -6929,6 +6981,12 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     const advancedLifetimeInputLabel = resultUsageMetricType === 'km' ? 'Expected lifetime in km' : 'Expected lifetime in hours';
     const appliedAdvancedAssumptions = getAppliedAdvancedAssumptionsFromState(resultState);
     const customAdvancedAssumptionsApplied = hasAppliedAdvancedAssumptions(appliedAdvancedAssumptions);
+    const generalSaleability = calculateGeneralSaleability(getSaleabilityInputFromResult(
+      resultState,
+      resultCondition,
+      isGeneric ? genericResult?.usageAmount ?? usageNumber : usageNumber,
+      isGeneric ? genericResult?.lifeWorkedPercent ?? lifeWorkedPercentNumber : lifeWorkedPercentNumber,
+    ));
     const advancedShowLifetimeInput = shouldShowAdvancedLifetimeInput(resultState, usageNumber, lifeWorkedPercentNumber);
     const advancedConditionQuestionLabel = `What is ${getAdvancedConditionQuestionLabel(resultCondition)} out of 100%?`;
     const advancedControlsDisabled = !canUseAdvancedAssumptions || advancedRecalculateLoading || replacementRecalculateLoading || saveLoading;
@@ -6994,6 +7052,15 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                 <strong>{appliedAdvancedAssumptions?.popularityStars ?? 3} / 5 stars</strong>
               </div>
             </div>
+          </section>
+
+          <section className={styles.saleabilitySummary} aria-label="General Saleability">
+            <div>
+              <span>General Saleability</span>
+              <strong>{generalSaleability.score} / 100 · Grade {generalSaleability.grade}</strong>
+              <p>{generalSaleability.gradeLabel} · Natural selling window {generalSaleability.naturalSellingWindow}</p>
+            </div>
+            <button type="button" onClick={() => setSaleabilityOpen(true)}>Refine Saleability</button>
           </section>
 
           <section className={`${styles.resultAccordion} ${styles.advancedAccordion} ${!canUseAdvancedAssumptions ? styles.advancedAssumptionsLocked : ''}`}>
@@ -7309,6 +7376,20 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
             {!conversionAssetId && pdfError ? <p className={styles.resultActionError}>{pdfError}</p> : null}
           </section>
         </aside>
+
+        <SaleabilityModal
+          open={saleabilityOpen}
+          onClose={() => setSaleabilityOpen(false)}
+          assetTitle={machineTitle}
+          valuationExVat={headlineValue ?? 0}
+          input={getSaleabilityInputFromResult(
+            resultState,
+            resultCondition,
+            isGeneric ? genericResult?.usageAmount ?? usageNumber : usageNumber,
+            isGeneric ? genericResult?.lifeWorkedPercent ?? lifeWorkedPercentNumber : lifeWorkedPercentNumber,
+          )}
+          storageKey={`aim4price-saleability:estimate:${machineTitle.toLowerCase()}:${resultYear}`}
+        />
       </div>
     );
   }
