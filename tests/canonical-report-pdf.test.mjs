@@ -71,7 +71,10 @@ test('Chromium renderer strips and blocks scripts, waits for resources, and prin
   assert.match(renderer, /details\.size === 0/);
   assert.match(renderer, /resolve\(executablePath\) === defaultCachedExecutablePath/);
   assert.match(renderer, /await unlink\(defaultCachedExecutablePath\)/);
-  assert.doesNotMatch(renderer, /buildBrandedReportPdfFromHtml/);
+  assert.match(renderer, /import \{ buildBrandedReportPdfFromHtml \} from '\.\/branded-report-pdf'/);
+  assert.match(renderer, /async function renderReportHtmlToPdfWithChromium/);
+  assert.match(renderer, /export async function renderReportHtmlToPdf\([\s\S]*?renderReportHtmlToPdfWithChromium\(html, options\)[\s\S]*?buildBrandedReportPdfFromHtml\(html/);
+  assert.match(renderer, /Prepared from the standard Aim4price report/);
 });
 
 test('normal report routes return their own HTML builders as canonical PDFs and retain exact XLSX paths', async () => {
