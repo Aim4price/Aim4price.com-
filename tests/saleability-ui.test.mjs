@@ -37,7 +37,7 @@ test('Manage Pricing opens the same Saleability calculator', () => {
 test('the questions use plain selectable answers and preserve the valuation boundary', () => {
   for (const wording of [
     'Where are you willing to sell it?',
-    'How many similar assets are currently for sale?',
+    'Compared with usual, how many similar assets are for sale in that area?',
     'How many people would realistically buy it?',
     'What is demand like right now?',
     'How easy is this make or model for buyers to recognise?',
@@ -47,6 +47,11 @@ test('the questions use plain selectable answers and preserve the valuation boun
     assert.match(modal, new RegExp(wording.replace(/[?]/g, '\\?')));
   }
   assert.match(modal, /I’m not sure/);
+  assert.match(modal, /Very few/);
+  assert.match(modal, /Fewer than usual/);
+  assert.match(modal, /About usual/);
+  assert.match(modal, /More than usual/);
+  assert.doesNotMatch(modal, />More than 10</);
   assert.doesNotMatch(modal, /<select/);
   assert.match(modal, /this value does not change here/);
   assert.match(modal, /selling-price guidance only/);
