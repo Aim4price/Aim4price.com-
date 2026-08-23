@@ -17,12 +17,13 @@ import { resolveReportLogoUrlForHtml } from '../../../../lib/report-logo';
 import { getDealerTrackedAsset } from '../../../../lib/dealer-maintenance-tracker';
 import { getAssetGroupById } from '../../../../lib/asset-groups';
 import { getOwnerAppAccess, ownerAppCanAccessAsset } from '../../../../lib/owner-app-access';
+import { renderReportHtmlToPdf } from '../../../../lib/report-pdf';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 type PdfReportKind = 'fuel' | 'maintenance' | 'depreciation';
-type ReportFormat = 'pdf' | 'xlsx';
+type ReportFormat = 'pdf' | 'xlsx' | 'html';
 type ScopedScanEventRecord = ScanEventRecord & { reportAsset?: AssetRegisterItem };
 
 type AssetStatusChoice = 'yes' | 'no' | 'unknown' | 'not_applicable';
@@ -286,7 +287,9 @@ function normalizeMaintenanceReportType(value: unknown): MaintenanceReportType {
 }
 
 function parseReportFormat(value: unknown): ReportFormat {
-  return String(value ?? '').trim().toLowerCase() === 'xlsx' ? 'xlsx' : 'pdf';
+  const format = String(value ?? '').trim().toLowerCase();
+  if (format === 'xlsx' || format === 'html') return format;
+  return 'pdf';
 }
 
 function isPropertyLikeAsset(asset: Pick<AssetRegisterItem, 'kind'> | null | undefined): boolean {
@@ -3492,6 +3495,41 @@ function buildDepreciationReportWorkbook(
   ];
 }
 
+async function buildReportDocumentResponse(
+  html: string,
+  request: NextRequest,
+  baseFileName: string,
+  format: Extract<ReportFormat, 'pdf' | 'html'>,
+): Promise<NextResponse> {
+  if (format === 'html') {
+    return new NextResponse(html, {
+      status: 200,
+      headers: {
+        'Content-Type': 'text/html; charset=utf-8',
+        'Cache-Control': 'private, no-store',
+        'Content-Disposition': `inline; filename="${baseFileName}.html"`,
+        'X-Content-Type-Options': 'nosniff',
+      },
+    });
+  }
+
+  const pdf = await renderReportHtmlToPdf(html, {
+    baseUrl: request.url,
+    cookie: request.headers.get('cookie') ?? '',
+  });
+
+  return new NextResponse(pdf, {
+    status: 200,
+    headers: {
+      'Content-Type': 'application/pdf',
+      'Content-Length': String(pdf.length),
+      'Cache-Control': 'private, no-store',
+      'Content-Disposition': `inline; filename="${baseFileName}.pdf"`,
+      'X-Content-Type-Options': 'nosniff',
+    },
+  });
+}
+
 
 export async function GET(request: NextRequest) {
   const session = await getServerSession({ allowOwnerApp: true, allowDealerApp: true });
@@ -3734,15 +3772,7 @@ export async function GET(request: NextRequest) {
 
     const html = buildDepreciationReport(asset, logEntries, ownerDetails, generatedAt, logoUrl, reportDateRange.label, reportAssets);
 
-    return new NextResponse(html, {
-      status: 200,
-      headers: {
-        'Content-Type': 'text/html; charset=utf-8',
-        'Cache-Control': 'private, no-store',
-        'Content-Disposition': `inline; filename="${baseFileName}.html"`,
-        'X-Content-Type-Options': 'nosniff',
-      },
-    });
+    return buildReportDocumentResponse(html, request, baseFileName, reportFormat);
   }
 
   const eventGroups = await Promise.all(
@@ -3788,13 +3818,5 @@ export async function GET(request: NextRequest) {
     ? buildFuelReport(asset, events, ownerDetails, generatedAt, logoUrl, reportDateRange.label, reportAssets)
     : buildMaintenanceReport(asset, events, ownerDetails, generatedAt, logoUrl, reportDateRange.label, maintenanceReportType);
 
-  return new NextResponse(html, {
-    status: 200,
-    headers: {
-      'Content-Type': 'text/html; charset=utf-8',
-      'Cache-Control': 'private, no-store',
-      'Content-Disposition': `inline; filename="${baseFileName}.html"`,
-      'X-Content-Type-Options': 'nosniff',
-    },
-  });
+  return buildReportDocumentResponse(html, request, baseFileName, reportFormat);
 }

@@ -448,7 +448,8 @@ test('umbrella sharing and downloads are limited to grouped assets', async () =>
   assert.match(client, /onDownloadReport=\{handleDownloadAssetGroupReport\}/);
   assert.match(client, /new URLSearchParams\(\{ groupId: group\.id, report: reportKind, format \}\)/);
   assert.match(client, /new URLSearchParams\(\{ groupId: group\.id, format \}\)/);
-  assert.match(client, /const savedReportLogoUrl = getRegisterReportLogoUrl\(activeRegister\) \|\| accountLogoUrl/);
+  assert.match(client, /async function handleDownloadAssetGroupPdf[\s\S]*?await handleExportPdf\([\s\S]*?'full',[\s\S]*?groupAssets,[\s\S]*?group\.name/);
+  assert.match(client, /async function handleExportPdf[\s\S]*?buildAssetRegisterSummaryReportHtml\(reportPayload\)[\s\S]*?externalShareReportScope === 'register' \|\| externalShareReportScope === 'group'/);
   assert.match(client, /params\.set\('groupId', groupId\.trim\(\)\)/);
   assert.match(exportRoute, /const requestedGroupId = cleanText\(params\.get\('groupId'\)\)/);
   assert.match(exportRoute, /requestedGroupAssetIds\.has\(item\.id\)/);

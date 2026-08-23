@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 
-test('outside sharing offers PDF and Excel for every timeline report', async () => {
+test('outside sharing offers the canonical PDF and Excel route for every timeline report', async () => {
   const [client, groupModal] = await Promise.all([
     readFile(new URL('../app/asset-register/asset-register-client.tsx', import.meta.url), 'utf8'),
     readFile(new URL('../components/asset-register/AssetGroupManagerModal.tsx', import.meta.url), 'utf8'),
@@ -14,9 +14,10 @@ test('outside sharing offers PDF and Excel for every timeline report', async () 
   assert.match(client, /setAssetReportStep\('ownership-format'\)/);
   assert.match(client, /assetReportDownloadFormat === 'pdf' \? 'Add PDF report' : 'Add Excel report'/);
   assert.match(client, /deliveryMode=\{isAttachingExternalReport \? 'attach' : 'download'\}/);
-  assert.match(client, /buildExternalSharePdfUrl\('scan'/);
-  assert.match(client, /buildExternalSharePdfUrl\('ownership'/);
-  assert.match(client, /reportKind === 'ownership' \? 'ownership' : reportKind === 'maintenance' \? 'maintenance' : 'scan'/);
+  assert.match(client, /assetId: asset\.id,[\s\S]*?report: reportKind,[\s\S]*?format,/);
+  assert.match(client, /const reportUrl = buildAssetPdfReportUrl\(asset, 'maintenance', filters, 'pdf'\)/);
+  assert.match(client, /const reportUrl = buildAssetOwnershipReportUrl\(asset, filters, format\)/);
+  assert.doesNotMatch(client, /buildExternalSharePdfUrl|\/api\/reports\/share-pdf/);
   assert.doesNotMatch(client, /This report can currently be attached as an Excel file/);
 
   assert.match(groupModal, /setReportStep\('format'\)/);
@@ -24,17 +25,13 @@ test('outside sharing offers PDF and Excel for every timeline report', async () 
   assert.doesNotMatch(groupModal, /setReportStep\(reportDeliveryMode === 'attach' \? 'filters'/);
 });
 
-test('the share PDF adapter reuses normal report routes and emits binary PDFs', async () => {
-  const route = await readFile(new URL('../app/api/reports/share-pdf/route.ts', import.meta.url), 'utf8');
+test('polished valuation PDFs are opened and shared from one canonical source and renderer', async () => {
+  const client = await readFile(new URL('../app/asset-register/asset-register-client.tsx', import.meta.url), 'utf8');
 
-  assert.match(route, /getScanReport/);
-  assert.match(route, /getMaintenanceReport/);
-  assert.match(route, /getOwnershipReport/);
-  assert.match(route, /getRegisterExport/);
-  assert.match(route, /buildBrandedReportPdfFromHtml/);
-  assert.match(route, /'Content-Type': 'application\/pdf'/);
-  assert.match(route, /'Content-Disposition': `attachment;/);
-  assert.match(route, /ownerAppCanAccessAsset\(access, assetId\)/);
-  assert.match(route, /groupId \|\| !assetId/);
-  assert.match(route, /error: 'Report not found\.'/);
+  assert.match(client, /async function handlePrintAssetSheet[\s\S]*?const reportPayload: AssetSheetPayload[\s\S]*?html: buildAssetSheetReportHtml\(reportPayload\)[\s\S]*?addExternalShareReport\(reportSource\)[\s\S]*?openPreparedExternalReport\(reportSource\)/);
+  assert.match(client, /async function handleExportPdf\([\s\S]*?const reportPayload: AssetRegisterSummaryPayload[\s\S]*?html: buildAssetRegisterSummaryReportHtml\(reportPayload\)[\s\S]*?addExternalShareReport\(reportSource\)[\s\S]*?openPreparedExternalReport\(reportSource\)/);
+  assert.match(client, /async function handleDownloadAssetGroupPdf[\s\S]*?await handleExportPdf\([\s\S]*?'full',[\s\S]*?groupAssets,[\s\S]*?group\.name/);
+  assert.match(client, /url: '\/api\/reports\/render-pdf'/);
+  assert.match(client, /request: \{[\s\S]*?method: 'POST' as const/);
+  assert.doesNotMatch(client, /preferSourceFileName:\s*true/);
 });

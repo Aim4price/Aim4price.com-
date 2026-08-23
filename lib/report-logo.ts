@@ -2,6 +2,7 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import { resolveAssetRegisterUploadBytes } from './asset-register-uploads';
+import { isAllowedReportResourceUrl } from './report-resource-policy';
 
 const FALLBACK_REPORT_LOGO_PUBLIC_PATH = '/brand/aim4price-mark-black.png';
 const ASSET_REGISTER_UPLOAD_ROUTE_PREFIX = '/api/asset-register/uploads/';
@@ -196,16 +197,19 @@ export async function resolveReportLogoUrlForHtml(rawLogoUrl: unknown, requestUr
   }
 
   if (cleanedLogoUrl.startsWith('/') && requestUrl) {
-    return new URL(cleanedLogoUrl, requestUrl).toString();
+    const candidateUrl = new URL(cleanedLogoUrl, requestUrl).toString();
+    return isAllowedReportResourceUrl(candidateUrl, requestUrl) ? candidateUrl : fallbackLogoUrl;
   }
 
   if (cleanedLogoUrl.startsWith('//')) {
-    return new URL(cleanedLogoUrl, requestUrl || 'https://aim4price.local/').toString();
+    const candidateUrl = new URL(cleanedLogoUrl, requestUrl || 'https://aim4price.local/').toString();
+    return isAllowedReportResourceUrl(candidateUrl, requestUrl) ? candidateUrl : fallbackLogoUrl;
   }
 
   if (cleanedLogoUrl.startsWith('https://') || cleanedLogoUrl.startsWith('http://')) {
-    return cleanedLogoUrl;
+    return isAllowedReportResourceUrl(cleanedLogoUrl, requestUrl) ? cleanedLogoUrl : fallbackLogoUrl;
   }
 
   return fallbackLogoUrl;
 }
+

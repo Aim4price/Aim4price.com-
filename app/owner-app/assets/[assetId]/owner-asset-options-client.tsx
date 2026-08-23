@@ -203,10 +203,11 @@ function renderOptionIcon(type: AssetLeadType) {
   return <DealershipHelpIcon className={styles.ownerOptionChoiceIcon} />;
 }
 
-export default function OwnerAssetOptionsClient({ assetId, asset, reportAsset, assetKind, assetIsLicensed, licenceRenewalDate }: {
+export default function OwnerAssetOptionsClient({ assetId, asset, reportAsset, valuationReportHtml, assetKind, assetIsLicensed, licenceRenewalDate }: {
   assetId: string;
   asset: ExternalAssetShareItem;
   reportAsset: OwnerAssetReportPickerAsset;
+  valuationReportHtml: string;
   assetKind: string;
   assetIsLicensed: boolean;
   licenceRenewalDate: string;
@@ -632,6 +633,7 @@ export default function OwnerAssetOptionsClient({ assetId, asset, reportAsset, a
         <OwnerAssetReportPicker
           asset={reportAsset}
           mode="attach"
+          valuationReportHtml={valuationReportHtml}
           onAttach={addReport}
           onDismiss={() => setReportPickerOpen(false)}
         />

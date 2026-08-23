@@ -1604,7 +1604,7 @@ function renderAssetReportBreakdown(payload: AssetSheetPayload): string {
   `;
 }
 
-function renderAssetSheetDocument(payload: AssetSheetPayload): string {
+export function buildAssetSheetReportHtml(payload: AssetSheetPayload): string {
   const rawPhotoUrls = payload.photoUrls?.length ? payload.photoUrls : payload.photoUrl ? [payload.photoUrl] : [];
   const photoUrls = rawPhotoUrls.map(normalizeReportPhotoUrl).filter(Boolean);
   const safeTitle = escapeHtml(payload.heroTitle);
@@ -2445,7 +2445,7 @@ function renderAssetSheetDocument(payload: AssetSheetPayload): string {
 export function openAssetSheetPrint(payload: AssetSheetPayload): boolean {
   return openPrintWindow(
     `${payload.heroTitle} - Aim4price asset report`,
-    renderAssetSheetDocument(payload),
+    buildAssetSheetReportHtml(payload),
   );
 }
 
@@ -2621,7 +2621,7 @@ function renderFullRegisterAssetRows(rows: AssetRegisterSummaryRow[], emptyMessa
   `;
 }
 
-export function openAssetRegisterSummaryPrint(payload: AssetRegisterSummaryPayload): boolean {
+export function buildAssetRegisterSummaryReportHtml(payload: AssetRegisterSummaryPayload): string {
   const reportTitle = payload.reportTitle || 'Asset Register Report';
   const reportSubtitle = payload.reportSubtitle || 'Aim4price asset register';
   const valueLabel = payload.valueLabel || 'Register Value';
@@ -3480,8 +3480,13 @@ export function openAssetRegisterSummaryPrint(payload: AssetRegisterSummaryPaylo
   </body>
 </html>`;
 
+  return html;
+}
+
+export function openAssetRegisterSummaryPrint(payload: AssetRegisterSummaryPayload): boolean {
   return openPrintWindow(
     `${payload.ownerName} - Aim4price asset register report`,
-    html,
+    buildAssetRegisterSummaryReportHtml(payload),
   );
 }
+

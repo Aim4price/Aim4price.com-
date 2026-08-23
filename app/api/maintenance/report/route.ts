@@ -18,15 +18,18 @@ import {
 import { createXlsxWorkbook } from '../../../../lib/simple-xlsx';
 import { resolveReportLogoUrlForHtml } from '../../../../lib/report-logo';
 import { getAssetGroupById } from '../../../../lib/asset-groups';
+import { renderReportHtmlToPdf } from '../../../../lib/report-pdf';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-type ReportFormat = 'pdf' | 'xlsx';
+type ReportFormat = 'pdf' | 'xlsx' | 'html';
 type ReportScope = 'total' | 'asset' | 'upcoming' | 'done';
 
 function parseFormat(value: string | null): ReportFormat {
-  return String(value ?? '').toLowerCase() === 'xlsx' ? 'xlsx' : 'pdf';
+  const format = String(value ?? '').trim().toLowerCase();
+  if (format === 'xlsx' || format === 'html') return format;
+  return 'pdf';
 }
 
 function parseScope(value: string | null): ReportScope {
@@ -202,7 +205,7 @@ export async function GET(request: NextRequest) {
       xlsxUrl: buildFormatUrl(request, 'xlsx'),
     };
 
-    const filename = `${slugify(`${scopeLabel}-${assetLabel}`)}.${format === 'xlsx' ? 'xlsx' : 'html'}`;
+    const filename = `${slugify(`${scopeLabel}-${assetLabel}`)}.${format}`;
 
     if (format === 'xlsx') {
       const workbook = buildAssetMaintenanceWorkbook(options);
@@ -220,12 +223,30 @@ export async function GET(request: NextRequest) {
 
     const html = buildAssetMaintenanceReportHtml(options);
 
-    return new NextResponse(html, {
+    if (format === 'html') {
+      return new NextResponse(html, {
+        status: 200,
+        headers: {
+          'Content-Type': 'text/html; charset=utf-8',
+          'Content-Disposition': `inline; filename="${formatForHeader(filename)}"`,
+          'Cache-Control': 'no-store',
+        },
+      });
+    }
+
+    const pdf = await renderReportHtmlToPdf(html, {
+      baseUrl: request.url,
+      cookie: request.headers.get('cookie') ?? '',
+    });
+
+    return new NextResponse(pdf, {
       status: 200,
       headers: {
-        'Content-Type': 'text/html; charset=utf-8',
+        'Content-Type': 'application/pdf',
+        'Content-Length': String(pdf.length),
         'Content-Disposition': `inline; filename="${formatForHeader(filename)}"`,
         'Cache-Control': 'no-store',
+        'X-Content-Type-Options': 'nosniff',
       },
     });
   } catch (error) {
