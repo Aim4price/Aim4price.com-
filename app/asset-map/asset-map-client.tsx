@@ -658,6 +658,12 @@ export default function AssetMapClient() {
         const nextRegisterFilters = normalizeRegisterFilters(
           data.registerFilters,
         );
+        const requestedAssetId = initialLoad && typeof window !== "undefined"
+          ? new URLSearchParams(window.location.search).get("assetId")?.trim() || null
+          : null;
+        const requestedAsset = requestedAssetId
+          ? data.assets.find((asset) => asset.id === requestedAssetId && hasCoordinates(asset)) ?? null
+          : null;
         setAssets(data.assets);
         setRegisterFilters(nextRegisterFilters);
         setSelectedRegisterId((currentRegisterId) =>
@@ -670,6 +676,11 @@ export default function AssetMapClient() {
             ? currentRegisterId
             : ALL_REGISTER_FILTER_ID,
         );
+        if (requestedAsset) {
+          setSearch("");
+          setSelectedRegisterId(ALL_REGISTER_FILTER_ID);
+          setSelectedCode(requestedAsset.publicAssetCode);
+        }
       } catch (error) {
         setNotice({
           tone: "error",

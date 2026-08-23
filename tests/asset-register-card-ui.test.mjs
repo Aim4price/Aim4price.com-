@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
 const client = readFileSync(new URL('../app/asset-register/asset-register-client.tsx', import.meta.url), 'utf8');
+const assetMapClient = readFileSync(new URL('../app/asset-map/asset-map-client.tsx', import.meta.url), 'utf8');
 const styles = readFileSync(new URL('../app/asset-register/page.module.css', import.meta.url), 'utf8');
 const uploadModal = readFileSync(new URL('../components/documents/AssetDocumentUploadModal.tsx', import.meta.url), 'utf8');
 const uploadModalStyles = readFileSync(new URL('../components/documents/AssetDocumentUploadModal.module.css', import.meta.url), 'utf8');
@@ -204,7 +205,7 @@ test('dropdowns reserve scrollbar space only when content is clipped', () => {
   assert.doesNotMatch(headerStyles, /max-height:\s*min\(36rem, calc\(100dvh - 7rem\)\)/);
 });
 
-test('owner Manage keeps disposal inside the gated nine-action command grid', () => {
+test('owner Manage keeps disposal and mapping inside the gated ten-action command grid', () => {
   const ownerManage = client.slice(
     client.indexOf('styles.ownerCommandOverlay'),
     client.indexOf('{activeAsset && ownerAssetCommandPanel', client.indexOf('styles.ownerCommandOverlay')),
@@ -217,6 +218,8 @@ test('owner Manage keeps disposal inside the gated nine-action command grid', ()
     'Add fuel',
     'Maintenance',
     'Manage pricing',
+    'Asset map',
+    'Map asset',
     'QR code',
     'Marketplace',
     'Dispose or remove asset',
@@ -224,9 +227,11 @@ test('owner Manage keeps disposal inside the gated nine-action command grid', ()
     assert.match(ownerManage, new RegExp(label.replace('&amp;', '&amp;')));
   }
 
-  assert.equal(ownerManage.match(/styles\.ownerCommandAction/g)?.length, 9);
+  assert.equal(ownerManage.match(/styles\.ownerCommandAction/g)?.length, 10);
   assert.ok(ownerManage.indexOf('Update asset') < ownerManage.indexOf('Reports'));
   assert.ok(ownerManage.indexOf('Reports') < ownerManage.indexOf('Add cost'));
+  assert.ok(ownerManage.indexOf('Manage pricing') < ownerManage.indexOf('Asset map'));
+  assert.ok(ownerManage.indexOf('Asset map') < ownerManage.indexOf('QR code'));
   assert.doesNotMatch(ownerManage, /Documents &amp; photos|manage-documents/);
   assert.match(ownerManage, /canAssetReceiveFuel\(activeAsset\)[\s\S]*?buildOwnerAssetPageHref\('\/fuel'/);
   assert.match(ownerManage, /canManageAssetPricing\(activeAsset\)/);
@@ -235,6 +240,44 @@ test('owner Manage keeps disposal inside the gated nine-action command grid', ()
   assert.doesNotMatch(ownerManage, /ownerCommandDangerZone/);
   assert.doesNotMatch(ownerManage, /Dealer tracking settings|Remove from marketplace/);
   assert.match(client, /<AccountantAssetManageModal/);
+});
+
+test('Manage routes mapped assets to a focused map and unmapped assets to location setup', () => {
+  const coordinateGuard = client.slice(
+    client.indexOf('function hasAssetGpsCoordinates'),
+    client.indexOf('function formatAssetSettingsLastScanned'),
+  );
+  const settingsCloseFlow = client.slice(
+    client.indexOf('function closeAssetSettingsModal'),
+    client.indexOf('function openAssetSettingsMenuView'),
+  );
+  const ownerManage = client.slice(
+    client.indexOf('styles.ownerCommandOverlay'),
+    client.indexOf('{activeAsset && ownerAssetCommandPanel', client.indexOf('styles.ownerCommandOverlay')),
+  );
+
+  assert.match(coordinateGuard, /Math\.abs\(latitude\) > 90 \|\| Math\.abs\(longitude\) > 180/);
+  assert.match(coordinateGuard, /return latitude !== 0 \|\| longitude !== 0/);
+  assert.match(coordinateGuard, /`\/asset-map\?assetId=\$\{encodeURIComponent\(asset\.id\)\}`/);
+  assert.match(ownerManage, /window\.location\.assign\(buildFocusedAssetMapHref\(asset\)\)/);
+  assert.match(ownerManage, /rememberAssetModalReturn\(asset, 'manage', 'manage-map-location', event\.currentTarget\)/);
+  assert.match(ownerManage, /openAssetSettingsModalForAsset\(asset, 'location'\)/);
+  assert.match(ownerManage, /Add a GPS location to place it on the map\./);
+  assert.match(settingsCloseFlow, /\['status-mapped', 'manage-map-location'\]\.includes/);
+  assert.match(settingsCloseFlow, /returnOrigin\?\.origin === 'manage'/);
+  assert.match(settingsCloseFlow, /openActionDialog\(latestAsset\)/);
+});
+
+test('Asset Map selects the asset requested by the Manage action', () => {
+  const initialLoad = assetMapClient.slice(
+    assetMapClient.indexOf('const requestedAssetId'),
+    assetMapClient.indexOf('} catch (error)', assetMapClient.indexOf('const requestedAssetId')),
+  );
+
+  assert.match(initialLoad, /new URLSearchParams\(window\.location\.search\)\.get\("assetId"\)/);
+  assert.match(initialLoad, /data\.assets\.find\(\(asset\) => asset\.id === requestedAssetId && hasCoordinates\(asset\)\)/);
+  assert.match(initialLoad, /setSelectedRegisterId\(ALL_REGISTER_FILTER_ID\)/);
+  assert.match(initialLoad, /setSelectedCode\(requestedAsset\.publicAssetCode\)/);
 });
 
 test('owner command layout is three columns wide, two medium and one mobile', () => {
