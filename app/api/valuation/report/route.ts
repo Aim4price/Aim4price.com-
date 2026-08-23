@@ -773,6 +773,11 @@ function renderValuationReportHtml(payload: NormalizedValuationReport): string {
         border-bottom: 0;
       }
 
+      .assetReportSaleabilityRows .assetReportRow {
+        min-height: 18.5px;
+        padding: 1.5px 0;
+      }
+
       .assetReportFooter {
         position: absolute;
         right: 0;
@@ -965,7 +970,7 @@ function renderValuationReportHtml(payload: NormalizedValuationReport): string {
 
           <aside class="assetReportSide">
             ${payload.saleabilityRows.length ? `
-              <section class="assetReportSideCard assetReportRecordRows">
+              <section class="assetReportSideCard assetReportRecordRows assetReportSaleabilityRows">
                 <h2>Saleability</h2>
                 ${renderReportRows(payload.saleabilityRows, 'No Saleability details available.')}
               </section>

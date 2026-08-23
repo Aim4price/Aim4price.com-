@@ -7,8 +7,12 @@ const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf
 const valuationClient = read('app/valuation/valuation-client.tsx');
 const reportRoute = read('app/api/valuation/report/route.ts');
 const ownerAsset = read('app/owner-app/assets/[assetId]/owner-asset-detail-client.tsx');
+const assetRegister = read('app/asset-register/asset-register-client.tsx');
+const assetRegisterStyles = read('app/asset-register/page.module.css');
+const valuationStyles = read('app/valuation/page.module.css');
 const pricingRoute = read('app/owner-app/assets/[assetId]/manage/pricing/[mode]/page.tsx');
 const modal = read('components/SaleabilityModal.tsx');
+const modalStyles = read('components/saleability-modal.module.css');
 const assetDb = read('lib/asset-register-db.ts');
 const revaluation = read('lib/asset-register-revaluation.ts');
 
@@ -25,6 +29,9 @@ test('Manage Pricing opens the same Saleability calculator', () => {
   assert.match(ownerAsset, /pricingBase}\/saleability/);
   assert.match(ownerAsset, /<SaleabilityModal/);
   assert.match(pricingRoute, /\['recalculate', 'future', 'saleability'\]/);
+  assert.match(assetRegister, /<strong>Saleability<\/strong>/);
+  assert.match(assetRegister, /setSaleabilityAsset\(activeAsset\)/);
+  assert.match(assetRegister, /buildRegisterAssetSaleabilityInput/);
 });
 
 test('the questions use plain selectable answers and preserve the valuation boundary', () => {
@@ -44,6 +51,13 @@ test('the questions use plain selectable answers and preserve the valuation boun
   assert.match(modal, /this value does not change here/);
   assert.match(modal, /selling-price guidance only/);
   assert.doesNotMatch(modal, /Outlook/i);
+});
+
+test('Saleability layouts preserve the estimate hierarchy and use the available modal height', () => {
+  assert.match(valuationStyles, /\.resultHero\s*\{\s*order:\s*1;\s*\}[\s\S]*?\.saleabilitySummary\s*\{\s*order:\s*2;/);
+  assert.match(modalStyles, /\.modal\s*\{[\s\S]*?display:\s*flex;[\s\S]*?flex-direction:\s*column;/);
+  assert.match(modalStyles, /\.body\s*\{[\s\S]*?min-height:\s*0;[\s\S]*?overflow-y:\s*auto;/);
+  assert.match(assetRegisterStyles, /Saleability completes the main Asset Register Manage pricing choices[\s\S]*?\.pricingOptionsGrid\s*\{[\s\S]*?repeat\(3, minmax\(0, 1fr\)\)/);
 });
 
 test('valuation inputs needed by saved assets are retained without a database migration', () => {

@@ -38444,3 +38444,41 @@ button.documentOpenLink {
   border-color: rgba(172, 146, 210, 0.35) !important;
   background: rgba(246, 241, 252, 0.96) !important;
 }
+
+/* Saleability completes the main Asset Register Manage pricing choices. */
+.pricingModal {
+  width: min(100%, 980px) !important;
+  padding: clamp(1.2rem, 1.8vw, 1.55rem) !important;
+}
+
+.pricingModalHeader {
+  margin-bottom: 0.85rem !important;
+  padding-bottom: 0.85rem !important;
+}
+
+.pricingOptionsGrid {
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: clamp(0.75rem, 1.15vw, 0.95rem) !important;
+}
+
+.pricingOptionButton {
+  min-height: 7.35rem !important;
+  gap: 0.68rem !important;
+  padding: 0.95rem !important;
+}
+
+.pricingOptionButton > .buttonIcon {
+  width: 3rem !important;
+  height: 3rem !important;
+  padding: 0.74rem !important;
+}
+
+@media (max-width: 900px) {
+  .pricingOptionsGrid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .pricingOptionButton {
+    min-height: 6.25rem !important;
+  }
+}
