@@ -1822,6 +1822,24 @@ function FlagIcon({ className }: IconProps) {
   );
 }
 
+function MapPinIcon({ className }: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z" />
+      <circle cx="12" cy="10" r="2.5" />
+    </svg>
+  );
+}
+
 function UmbrellaIcon({ className }: IconProps) {
   return (
     <svg
@@ -2651,13 +2669,16 @@ function formatDateTime(value?: string | null, fallback = '—'): string {
 type RegisterAssetWithGps = RegisterAsset & { lastKnownLat: number; lastKnownLng: number };
 
 function hasAssetGpsCoordinates(asset: RegisterAsset | null | undefined): asset is RegisterAssetWithGps {
-  return Boolean(
-    asset &&
-      typeof asset.lastKnownLat === 'number' &&
-      Number.isFinite(asset.lastKnownLat) &&
-      typeof asset.lastKnownLng === 'number' &&
-      Number.isFinite(asset.lastKnownLng),
-  );
+  if (!asset) return false;
+  const { lastKnownLat: latitude, lastKnownLng: longitude } = asset;
+  if (typeof latitude !== 'number' || !Number.isFinite(latitude)) return false;
+  if (typeof longitude !== 'number' || !Number.isFinite(longitude)) return false;
+  if (Math.abs(latitude) > 90 || Math.abs(longitude) > 180) return false;
+  return latitude !== 0 || longitude !== 0;
+}
+
+function buildFocusedAssetMapHref(asset: Pick<RegisterAsset, 'id'>): string {
+  return `/asset-map?assetId=${encodeURIComponent(asset.id)}`;
 }
 
 function formatAssetSettingsLastScanned(asset: RegisterAsset): string {
@@ -9937,7 +9958,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
 
   function closeAssetSettingsModal() {
     if (isAssetSettingsBusy) return;
-    const returnOrigin = !isAssetModalOpen && assetModalReturnRef.current?.action === 'status-mapped'
+    const returnOrigin = !isAssetModalOpen && ['status-mapped', 'manage-map-location'].includes(assetModalReturnRef.current?.action ?? '')
       ? assetModalReturnRef.current
       : null;
     if (returnOrigin) assetModalReturnRef.current = null;
@@ -9953,7 +9974,16 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     clearAssetSettingsLocationFeedback();
     clearAssetSettingsManualLocationInputs();
     clearAssetSettingsMapLocationInputs();
-    if (returnOrigin) restoreAssetCardOrigin(returnOrigin);
+    if (returnOrigin?.origin === 'manage') {
+      const latestAsset = assets.find((asset) => asset.id === returnOrigin.assetId) ?? returnOrigin.asset;
+      openActionDialog(latestAsset);
+      window.requestAnimationFrame(() => {
+        document.querySelector<HTMLElement>(`[data-asset-return-action="${returnOrigin.action}"]`)
+          ?.focus({ preventScroll: true });
+      });
+    } else if (returnOrigin) {
+      restoreAssetCardOrigin(returnOrigin);
+    }
   }
 
   function openAssetSettingsMenuView() {
@@ -20508,6 +20538,33 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                       <span>
                         <strong>Manage pricing</strong>
                         <small>Refresh values or calculate future value.</small>
+                      </span>
+                    </button>
+                  ) : null}
+
+                  {canUseOwnerOnlyAssetActions ? (
+                    <button
+                      type="button"
+                      className={`${styles.optionActionButton} ${styles.ownerCommandAction}`}
+                      data-asset-return-action="manage-map-location"
+                      onClick={(event) => {
+                        const asset = activeAsset;
+                        if (hasAssetGpsCoordinates(asset)) {
+                          window.location.assign(buildFocusedAssetMapHref(asset));
+                          return;
+                        }
+
+                        rememberAssetModalReturn(asset, 'manage', 'manage-map-location', event.currentTarget);
+                        closeActionDialog();
+                        openAssetSettingsModalForAsset(asset, 'location');
+                      }}
+                    >
+                      <MapPinIcon className={styles.buttonIcon} />
+                      <span>
+                        <strong>{hasAssetGpsCoordinates(activeAsset) ? 'Asset map' : 'Map asset'}</strong>
+                        <small>{hasAssetGpsCoordinates(activeAsset)
+                          ? 'View this asset selected on the map.'
+                          : 'Add a GPS location to place it on the map.'}</small>
                       </span>
                     </button>
                   ) : null}
