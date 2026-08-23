@@ -478,7 +478,7 @@ export default function AssetGroupManagerModal({
     setSearch('');
     setView(group ? initialView : 'create');
     setEditorStep(1);
-    setReportFormat(reportDeliveryMode === 'attach' ? 'xlsx' : 'pdf');
+    setReportFormat('pdf');
     setReportStep('options');
     setReportKind('valuation');
     setReportYear('all');
@@ -635,7 +635,7 @@ export default function AssetGroupManagerModal({
 
   function chooseReport(nextReportKind: AssetGroupReportKind) {
     setReportKind(nextReportKind);
-    setReportFormat(reportDeliveryMode === 'attach' ? 'xlsx' : 'pdf');
+    setReportFormat('pdf');
     setReportYear('all');
     setReportMonth('all');
     setMaintenanceType('all');
@@ -651,7 +651,7 @@ export default function AssetGroupManagerModal({
       return;
     }
 
-    setReportStep(reportDeliveryMode === 'attach' ? 'filters' : 'format');
+    setReportStep('format');
   }
 
   const currentYear = new Date().getFullYear();
@@ -801,10 +801,6 @@ export default function AssetGroupManagerModal({
                   <DocumentIcon className={registerStyles.buttonIcon} />
                   <span><strong>{isAttachingReport ? 'Add cost of ownership report' : 'Download cost of ownership report'}</strong><small>Combined expenses, costs and VAT.</small></span>
                 </button>
-                {!isAttachingReport ? <a href="/documents" target="_blank" rel="noreferrer" className={registerStyles.assetReportOptionButton}>
-                  <DocumentIcon className={registerStyles.buttonIcon} />
-                  <span><strong>Saved documents</strong><small>Open the Documents Vault to preview, download or share files.</small></span>
-                </a> : null}
               </div>
             ) : reportStep === 'format' ? (
               <>
@@ -818,13 +814,13 @@ export default function AssetGroupManagerModal({
                     <span className={registerStyles.assetTimelineFormatGraphic}>
                       <ReportGraphic src="/brand/pdf.png" alt="PDF report" icon={<PdfIcon className={registerStyles.assetTimelineFormatFallbackIcon} />} />
                     </span>
-                    <span className={registerStyles.assetTimelineFormatCopy}><strong>PDF report</strong><small>Open a clear combined umbrella report.</small></span>
+                    <span className={registerStyles.assetTimelineFormatCopy}><strong>PDF report</strong><small>{isAttachingReport ? 'Attach a clear combined umbrella report.' : 'Open a clear combined umbrella report.'}</small></span>
                   </button>
                   <button type="button" className={`${registerStyles.assetTimelineFormatOption} ${reportFormat === 'xlsx' ? registerStyles.assetTimelineFormatOptionActive : ''}`} onClick={() => setReportFormat('xlsx')} aria-pressed={reportFormat === 'xlsx'}>
                     <span className={registerStyles.assetTimelineFormatGraphic}>
                       <ReportGraphic src="/brand/sheet.png" alt="Excel workbook" icon={<SpreadsheetIcon className={registerStyles.assetTimelineFormatFallbackIcon} />} />
                     </span>
-                    <span className={registerStyles.assetTimelineFormatCopy}><strong>XLSX workbook</strong><small>Download combined records in Excel.</small></span>
+                    <span className={registerStyles.assetTimelineFormatCopy}><strong>XLSX workbook</strong><small>{isAttachingReport ? 'Attach combined records in Excel.' : 'Download combined records in Excel.'}</small></span>
                   </button>
                 </div>
               </>
@@ -851,14 +847,14 @@ export default function AssetGroupManagerModal({
                 <button
                   type="button"
                   className={`${registerStyles.secondaryButton} ${registerStyles.assetTimelineSecondaryButton}`}
-                  onClick={() => setReportStep(reportStep === 'filters' && !isAttachingReport ? 'format' : 'options')}
+                  onClick={() => setReportStep(reportStep === 'filters' ? 'format' : 'options')}
                   disabled={busy || reportBusy}
                 >
                   Back
                 </button>
                 <button type="button" className={`${registerStyles.secondaryButton} ${registerStyles.assetTimelineSecondaryButton}`} onClick={onClose} disabled={busy || reportBusy}>Cancel</button>
                 <button type="button" className={registerStyles.primaryButton} onClick={() => reportStep === 'format' ? setReportStep('filters') : handleDownloadSelectedReport()} disabled={busy || reportBusy}>
-                  <span>{reportStep === 'format' ? 'Next' : reportBusy ? 'Preparing…' : isAttachingReport ? 'Add Excel report' : reportFormat === 'pdf' ? 'Open PDF report' : 'Download Excel'}</span>
+                  <span>{reportStep === 'format' ? 'Next' : reportBusy ? 'Preparing…' : isAttachingReport ? reportFormat === 'pdf' ? 'Add PDF report' : 'Add Excel report' : reportFormat === 'pdf' ? 'Open PDF report' : 'Download Excel'}</span>
                 </button>
               </div>
             )}

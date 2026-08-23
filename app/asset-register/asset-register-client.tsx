@@ -316,6 +316,7 @@ type ReportSelectProps = {
 
 type AssetReportFormatPickerProps = {
   value: AssetReportFormat;
+  deliveryMode?: 'download' | 'attach';
   onChange: (value: AssetReportFormat) => void;
 };
 
@@ -344,6 +345,40 @@ const MONTH_LABELS = [
   'November',
   'December',
 ] as const;
+
+const MAINTENANCE_REPORT_TYPE_LABELS: Record<string, string> = {
+  checked: 'Checked',
+  serviced: 'Service',
+  repaired: 'Repair',
+  upcoming: 'Upcoming maintenance',
+  done: 'Completed maintenance',
+  service: 'Services only',
+  checkup: 'Check-ups only',
+};
+
+function buildReportAttachmentFilterMeta(filters?: AssetPdfReportFilters): {
+  labelSuffix: string;
+  fileSuffix: string;
+} {
+  const year = filters?.year && filters.year !== 'all' ? filters.year : '';
+  const month = filters?.month && filters.month !== 'all' ? filters.month.padStart(2, '0') : '';
+  const monthIndex = month ? Number(month) - 1 : -1;
+  const monthLabel = monthIndex >= 0 && monthIndex < MONTH_LABELS.length ? MONTH_LABELS[monthIndex] : '';
+  const maintenanceType = filters?.maintenanceType && filters.maintenanceType !== 'all'
+    ? filters.maintenanceType
+    : '';
+  const maintenanceLabel = maintenanceType
+    ? MAINTENANCE_REPORT_TYPE_LABELS[maintenanceType] ?? maintenanceType.replace(/[-_]+/g, ' ')
+    : '';
+  const periodLabel = year && monthLabel ? `${monthLabel} ${year}` : year || monthLabel;
+  const labelParts = [maintenanceLabel, periodLabel].filter(Boolean);
+  const fileParts = [maintenanceType, year, month].filter(Boolean);
+
+  return {
+    labelSuffix: labelParts.length ? ` · ${labelParts.join(' · ')}` : '',
+    fileSuffix: fileParts.length ? `-${fileParts.join('-')}` : '',
+  };
+}
 
 const PDF_REPORT_OPTIONS: PdfReportOption[] = [
   {
@@ -2186,7 +2221,8 @@ function ReportSelect({ label, value, options, isOpen, disabled = false, onToggl
   );
 }
 
-function AssetReportFormatPicker({ value, onChange }: AssetReportFormatPickerProps) {
+function AssetReportFormatPicker({ value, deliveryMode = 'download', onChange }: AssetReportFormatPickerProps) {
+  const isAttaching = deliveryMode === 'attach';
   return (
     <div className={styles.assetTimelineFormatGrid} aria-label="Report format">
       <button
@@ -2200,7 +2236,7 @@ function AssetReportFormatPicker({ value, onChange }: AssetReportFormatPickerPro
         </span>
         <span className={styles.assetTimelineFormatCopy}>
           <strong>PDF report</strong>
-          <small>Open a clear report for clients, banks or insurance partners.</small>
+          <small>{isAttaching ? 'Attach a clear report for clients, banks or insurance partners.' : 'Open a clear report for clients, banks or insurance partners.'}</small>
         </span>
       </button>
 
@@ -2215,7 +2251,7 @@ function AssetReportFormatPicker({ value, onChange }: AssetReportFormatPickerPro
         </span>
         <span className={styles.assetTimelineFormatCopy}>
           <strong>XLSX workbook</strong>
-          <small>Download the selected timeline records in an Excel-ready workbook.</small>
+          <small>{isAttaching ? 'Attach the selected timeline records as an Excel-ready workbook.' : 'Download the selected timeline records in an Excel-ready workbook.'}</small>
         </span>
       </button>
     </div>
@@ -5691,6 +5727,17 @@ function buildAssetOwnershipReportUrl(
   return `/api/my-invoices/report?${searchParams.toString()}`;
 }
 
+function buildExternalSharePdfUrl(
+  source: 'scan' | 'maintenance' | 'ownership',
+  reportUrl: string,
+): string {
+  const [, query = ''] = reportUrl.split('?', 2);
+  const searchParams = new URLSearchParams(query);
+  searchParams.delete('format');
+  searchParams.set('source', source);
+  return `/api/reports/share-pdf?${searchParams.toString()}`;
+}
+
 function buildAssetGroupTimelineReportUrl(
   group: AssetGroup,
   reportKind: Exclude<AssetGroupReportKind, 'valuation' | 'ownership'>,
@@ -7532,145 +7579,6 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     () => quoteAsset ? [buildExternalShareAsset(quoteAsset)] : [],
     [quoteAsset],
   );
-  const quoteExternalShareReportFiles = useMemo<ExternalShareFileSource[]>(() => {
-    if (!quoteAsset) return [];
-    const assetSlug = quoteAsset.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'asset';
-    const xlsxType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
-    const reports: ExternalShareFileSource[] = [
-      {
-        id: `report:${quoteAsset.id}:maintenance:xlsx`,
-        kind: 'report',
-        label: 'Maintenance report · Excel',
-        description: 'All saved maintenance entries',
-        fileName: `${assetSlug}-maintenance-report.xlsx`,
-        contentType: xlsxType,
-        credentials: 'include',
-        url: buildAssetPdfReportUrl(quoteAsset, 'maintenance', {}, 'xlsx'),
-      },
-      {
-        id: `report:${quoteAsset.id}:ownership:xlsx`,
-        kind: 'report',
-        label: 'Cost of Ownership · Excel',
-        description: 'All saved ownership costs',
-        fileName: `${assetSlug}-cost-of-ownership.xlsx`,
-        contentType: xlsxType,
-        credentials: 'include',
-        url: buildAssetOwnershipReportUrl(quoteAsset, {}, 'xlsx'),
-      },
-    ];
-
-    if (quoteAsset.kind !== 'property') {
-      reports.splice(1, 0,
-        {
-          id: `report:${quoteAsset.id}:fuel:xlsx`,
-          kind: 'report',
-          label: 'Fuel report · Excel',
-          description: 'All saved fuel entries',
-          fileName: `${assetSlug}-fuel-report.xlsx`,
-          contentType: xlsxType,
-          credentials: 'include',
-          url: buildAssetPdfReportUrl(quoteAsset, 'fuel', {}, 'xlsx'),
-        },
-        {
-          id: `report:${quoteAsset.id}:depreciation:xlsx`,
-          kind: 'report',
-          label: 'Depreciation log · Excel',
-          description: 'All saved value changes',
-          fileName: `${assetSlug}-depreciation-log.xlsx`,
-          contentType: xlsxType,
-          credentials: 'include',
-          url: buildAssetPdfReportUrl(quoteAsset, 'depreciation', {}, 'xlsx'),
-        },
-      );
-    }
-
-    return reports;
-  }, [quoteAsset]);
-  const activeExternalShareReportFiles = useMemo<ExternalShareFileSource[]>(() => {
-    const xlsxType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
-    const shareSlug = activeShareName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'asset-register';
-    const registerId = activeRegister?.id || activeRegisterId;
-    const registerIds = assetRegisters.map((register) => register.id);
-    const group = assetGroupShareTarget;
-    const groupId = group?.id || '';
-    const entityName = group?.name || activeShareName;
-    const baseExportArgs = [registerId, entityName, accountantShareId, registerIds, groupId] as const;
-    const reports: ExternalShareFileSource[] = [
-      {
-        id: `report:${groupId || registerId || 'register'}:valuation:pdf`,
-        kind: 'report',
-        label: group ? 'Umbrella valuation · PDF' : 'Asset Register · PDF',
-        description: 'Polished Aim4price PDF report',
-        fileName: `${shareSlug}-report.pdf`,
-        contentType: 'application/pdf',
-        credentials: 'include',
-        url: buildAssetRegisterExportUrl(...baseExportArgs, 'pdf'),
-      },
-      {
-        id: `report:${groupId || registerId || 'register'}:valuation:xlsx`,
-        kind: 'report',
-        label: group ? 'Umbrella valuation · Excel' : 'Asset Register · Excel',
-        description: 'Editable asset register workbook',
-        fileName: `${shareSlug}-report.xlsx`,
-        contentType: xlsxType,
-        credentials: 'include',
-        url: buildAssetRegisterExportUrl(...baseExportArgs, 'xlsx'),
-      },
-    ];
-
-    if (!group) return reports;
-
-    reports.push(
-      {
-        id: `report:${group.id}:maintenance:xlsx`,
-        kind: 'report',
-        label: 'Maintenance report · Excel',
-        description: 'All umbrella maintenance entries',
-        fileName: `${shareSlug}-maintenance-report.xlsx`,
-        contentType: xlsxType,
-        credentials: 'include',
-        url: buildAssetGroupTimelineReportUrl(group, 'maintenance', {}, 'xlsx'),
-      },
-      {
-        id: `report:${group.id}:ownership:xlsx`,
-        kind: 'report',
-        label: 'Cost of Ownership · Excel',
-        description: 'All umbrella ownership costs',
-        fileName: `${shareSlug}-cost-of-ownership.xlsx`,
-        contentType: xlsxType,
-        credentials: 'include',
-        url: buildAssetGroupOwnershipReportUrl(group, {}, 'xlsx'),
-      },
-    );
-
-    if (activeShareAssets.some((asset) => asset.kind !== 'property')) {
-      reports.push(
-        {
-          id: `report:${group.id}:fuel:xlsx`,
-          kind: 'report',
-          label: 'Fuel report · Excel',
-          description: 'All eligible umbrella fuel entries',
-          fileName: `${shareSlug}-fuel-report.xlsx`,
-          contentType: xlsxType,
-          credentials: 'include',
-          url: buildAssetGroupTimelineReportUrl(group, 'fuel', {}, 'xlsx'),
-        },
-        {
-          id: `report:${group.id}:depreciation:xlsx`,
-          kind: 'report',
-          label: 'Depreciation log · Excel',
-          description: 'All eligible umbrella value changes',
-          fileName: `${shareSlug}-depreciation-log.xlsx`,
-          contentType: xlsxType,
-          credentials: 'include',
-          url: buildAssetGroupTimelineReportUrl(group, 'depreciation', {}, 'xlsx'),
-        },
-      );
-    }
-
-    return reports;
-  }, [accountantShareId, activeRegister?.id, activeRegisterId, activeShareAssets, activeShareName, assetGroupShareTarget, assetRegisters]);
-
   const selectedQuoteOption = useMemo(() => quoteOptionForLeadType(selectedQuoteLeadType), [selectedQuoteLeadType]);
   const availableAssetQuoteOptions = useMemo(
     () => (
@@ -13876,11 +13784,12 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
   async function handleDownloadAssetReportXlsx(asset: RegisterAsset, reportKind: AssetPdfReportKind, filters?: AssetPdfReportFilters) {
     const reportLabel = assetReportLabel(reportKind);
     const reportUrl = buildAssetPdfReportUrl(asset, reportKind, filters, 'xlsx');
-    const fileName = `${shareFileSlug(asset.title, 'asset')}-${reportKind}-report.xlsx`;
+    const filterMeta = buildReportAttachmentFilterMeta(filters);
+    const fileName = `${shareFileSlug(asset.title, 'asset')}-${reportKind}-report${filterMeta.fileSuffix}.xlsx`;
 
     if (externalShareReportScope === 'asset') {
       addExternalShareReport(buildExternalReportSource({
-        label: `${reportLabel} · Excel`,
+        label: `${reportLabel}${filterMeta.labelSuffix} · Excel`,
         description: `Aim4price ${reportLabel.toLowerCase()}`,
         fileName,
         url: reportUrl,
@@ -13927,19 +13836,19 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
       return;
     }
 
-    setAssetReportStep(externalShareReportScope === 'asset' ? 'fuel-filter' : 'fuel-format');
+    setAssetReportStep('fuel-format');
     setAssetFuelReportYear('all');
     setAssetFuelReportMonth('all');
-    setAssetReportDownloadFormat(externalShareReportScope === 'asset' ? 'xlsx' : 'pdf');
+    setAssetReportDownloadFormat('pdf');
     setOpenAssetReportSelect(null);
   }
 
   function openAssetMaintenanceReportFilter() {
-    setAssetReportStep(externalShareReportScope === 'asset' ? 'maintenance-filter' : 'maintenance-format');
+    setAssetReportStep('maintenance-format');
     setAssetMaintenanceReportType('all');
     setAssetMaintenanceReportYear('all');
     setAssetMaintenanceReportMonth('all');
-    setAssetReportDownloadFormat(externalShareReportScope === 'asset' ? 'xlsx' : 'pdf');
+    setAssetReportDownloadFormat('pdf');
     setOpenAssetReportSelect(null);
   }
 
@@ -13949,18 +13858,18 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
       return;
     }
 
-    setAssetReportStep(externalShareReportScope === 'asset' ? 'depreciation-filter' : 'depreciation-format');
+    setAssetReportStep('depreciation-format');
     setAssetDepreciationReportYear('all');
     setAssetDepreciationReportMonth('all');
-    setAssetReportDownloadFormat(externalShareReportScope === 'asset' ? 'xlsx' : 'pdf');
+    setAssetReportDownloadFormat('pdf');
     setOpenAssetReportSelect(null);
   }
 
   function openAssetOwnershipReportFilter() {
-    setAssetReportStep(externalShareReportScope === 'asset' ? 'ownership-filter' : 'ownership-format');
+    setAssetReportStep('ownership-format');
     setAssetOwnershipReportYear('all');
     setAssetOwnershipReportMonth('all');
-    setAssetReportDownloadFormat(externalShareReportScope === 'asset' ? 'xlsx' : 'pdf');
+    setAssetReportDownloadFormat('pdf');
     setOpenAssetReportSelect(null);
   }
 
@@ -13981,12 +13890,6 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
   }
 
   function backToAssetReportFormatStep() {
-    if (externalShareReportScope === 'asset') {
-      setAssetReportStep('options');
-      setOpenAssetReportSelect(null);
-      return;
-    }
-
     setAssetReportStep((currentStep) => {
       if (currentStep === 'fuel-filter') return 'fuel-format';
       if (currentStep === 'maintenance-filter') return 'maintenance-format';
@@ -14061,6 +13964,21 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
       month: assetFuelReportYear === 'all' ? 'all' : assetFuelReportMonth,
     };
 
+    if (externalShareReportScope === 'asset' && format === 'pdf') {
+      const reportLabel = assetReportLabel('fuel');
+      const reportUrl = buildExternalSharePdfUrl('scan', buildAssetPdfReportUrl(asset, 'fuel', filters, 'pdf'));
+      const filterMeta = buildReportAttachmentFilterMeta(filters);
+      addExternalShareReport(buildExternalReportSource({
+        label: `${reportLabel}${filterMeta.labelSuffix} · PDF`,
+        description: `Aim4price ${reportLabel.toLowerCase()}`,
+        fileName: `${shareFileSlug(asset.title, 'asset')}-fuel-report${filterMeta.fileSuffix}.pdf`,
+        url: reportUrl,
+        format: 'pdf',
+      }));
+      closeAssetReportDialog();
+      return;
+    }
+
     if (format === 'xlsx') {
       await handleDownloadAssetReportXlsx(asset, 'fuel', filters);
       return;
@@ -14079,6 +13997,21 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
       year: assetMaintenanceReportYear,
       month: assetMaintenanceReportYear === 'all' ? 'all' : assetMaintenanceReportMonth,
     };
+
+    if (externalShareReportScope === 'asset' && format === 'pdf') {
+      const reportLabel = assetReportLabel('maintenance');
+      const reportUrl = buildExternalSharePdfUrl('scan', buildAssetPdfReportUrl(asset, 'maintenance', filters, 'pdf'));
+      const filterMeta = buildReportAttachmentFilterMeta(filters);
+      addExternalShareReport(buildExternalReportSource({
+        label: `${reportLabel}${filterMeta.labelSuffix} · PDF`,
+        description: `Aim4price ${reportLabel.toLowerCase()}`,
+        fileName: `${shareFileSlug(asset.title, 'asset')}-maintenance-report${filterMeta.fileSuffix}.pdf`,
+        url: reportUrl,
+        format: 'pdf',
+      }));
+      closeAssetReportDialog();
+      return;
+    }
 
     if (format === 'xlsx') {
       await handleDownloadAssetReportXlsx(asset, 'maintenance', filters);
@@ -14103,6 +14036,21 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
       month: assetDepreciationReportYear === 'all' ? 'all' : assetDepreciationReportMonth,
     };
 
+    if (externalShareReportScope === 'asset' && format === 'pdf') {
+      const reportLabel = assetReportLabel('depreciation');
+      const reportUrl = buildExternalSharePdfUrl('scan', buildAssetPdfReportUrl(asset, 'depreciation', filters, 'pdf'));
+      const filterMeta = buildReportAttachmentFilterMeta(filters);
+      addExternalShareReport(buildExternalReportSource({
+        label: `${reportLabel}${filterMeta.labelSuffix} · PDF`,
+        description: `Aim4price ${reportLabel.toLowerCase()}`,
+        fileName: `${shareFileSlug(asset.title, 'asset')}-depreciation-report${filterMeta.fileSuffix}.pdf`,
+        url: reportUrl,
+        format: 'pdf',
+      }));
+      closeAssetReportDialog();
+      return;
+    }
+
     if (format === 'xlsx') {
       await handleDownloadAssetReportXlsx(asset, 'depreciation', filters);
       return;
@@ -14122,13 +14070,17 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     };
 
     if (externalShareReportScope === 'asset') {
-      const reportUrl = buildAssetOwnershipReportUrl(asset, filters, 'xlsx');
+      const isPdf = format === 'pdf';
+      const filterMeta = buildReportAttachmentFilterMeta(filters);
+      const reportUrl = isPdf
+        ? buildExternalSharePdfUrl('ownership', buildAssetOwnershipReportUrl(asset, filters, 'pdf'))
+        : buildAssetOwnershipReportUrl(asset, filters, 'xlsx');
       addExternalShareReport(buildExternalReportSource({
-        label: 'Cost of Ownership · Excel',
+        label: `Cost of Ownership${filterMeta.labelSuffix} · ${isPdf ? 'PDF' : 'Excel'}`,
         description: 'Aim4price ownership costs and VAT report',
-        fileName: `${shareFileSlug(asset.title, 'asset')}-cost-of-ownership.xlsx`,
+        fileName: `${shareFileSlug(asset.title, 'asset')}-cost-of-ownership${filterMeta.fileSuffix}.${isPdf ? 'pdf' : 'xlsx'}`,
         url: reportUrl,
-        format: 'xlsx',
+        format: isPdf ? 'pdf' : 'xlsx',
       }));
       closeAssetReportDialog();
       return;
@@ -14264,7 +14216,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     setAssetShareDestination('choice');
   }
 
-  function openRegisterShareReportsAndDocuments() {
+  function openRegisterShareReports() {
     const group = assetGroupShareTarget;
     externalShareReportTriggerRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     setExternalShareReportScope(group ? 'group' : 'register');
@@ -14279,7 +14231,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     window.requestAnimationFrame(() => document.getElementById('export-title')?.focus({ preventScroll: true }));
   }
 
-  function openAssetShareReportsAndDocuments() {
+  function openAssetShareReports() {
     const asset = quoteAsset;
     if (!asset) return;
 
@@ -14287,67 +14239,6 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     setExternalShareReportScope('asset');
     openSharedAssetReportDialog(asset);
     window.requestAnimationFrame(() => document.getElementById('asset-report-title')?.focus({ preventScroll: true }));
-  }
-
-  async function loadExternalShareDocumentFiles(
-    scopeAssets: RegisterAsset[],
-    options: { includeUnlinked?: boolean } = {},
-  ): Promise<ExternalShareFileSource[]> {
-    const scopeAssetIds = new Set(scopeAssets.map((asset) => asset.id));
-    const loadedDocuments: Array<{ document: UploadedVaultDocument; assetId: string }> = [];
-
-    if (accountantShareId) {
-      const responses = await Promise.all(scopeAssets.map(async (asset) => {
-        const response = await fetch(assetVaultDocumentsUrl(asset.id), {
-          credentials: 'include',
-          cache: 'no-store',
-        });
-        const data = await response.json() as VaultDocumentsResponse;
-        if (!response.ok || !data.ok) {
-          throw new Error(data.error || `Documents for ${asset.title} could not be loaded.`);
-        }
-        return (data.documents ?? []).map((document) => ({ document, assetId: asset.id }));
-      }));
-      loadedDocuments.push(...responses.flat());
-    } else {
-      const response = await fetch('/api/documents', {
-        credentials: 'include',
-        cache: 'no-store',
-      });
-      const data = await response.json() as VaultDocumentsResponse;
-      if (!response.ok || !data.ok) {
-        throw new Error(data.error || 'Saved documents could not be loaded.');
-      }
-
-      for (const document of data.documents ?? []) {
-        const linkedAsset = document.assetLinks.find((link) => scopeAssetIds.has(link.id));
-        if (!linkedAsset && (document.assetLinks.length || !options.includeUnlinked)) continue;
-        loadedDocuments.push({ document, assetId: linkedAsset?.id || '' });
-      }
-    }
-
-    const seen = new Set<string>();
-    return loadedDocuments.flatMap(({ document, assetId }) => {
-      if (seen.has(document.id)) return [];
-      seen.add(document.id);
-      const extension = document.fileName.split('.').pop()?.trim().toUpperCase() || 'FILE';
-      const size = document.byteSize >= 1024 * 1024
-        ? `${(document.byteSize / (1024 * 1024)).toFixed(document.byteSize >= 10 * 1024 * 1024 ? 0 : 1)} MB`
-        : `${Math.max(1, Math.round(document.byteSize / 1024))} KB`;
-
-      return [{
-        id: `document:${document.id}`,
-        kind: 'document' as const,
-        label: document.title || document.fileName,
-        description: `${extension} · ${size}${document.assetLinks.length ? ` · ${document.assetLinks.map((link) => link.title).join(', ')}` : ' · Account document'}`,
-        fileName: document.fileName,
-        contentType: document.contentType,
-        credentials: 'include' as const,
-        url: accountantShareId && assetId
-          ? assetVaultDocumentDownloadUrl(assetId, document.id)
-          : `/api/documents/${encodeURIComponent(document.id)}/download`,
-      }];
-    });
   }
 
   function buildFullRegisterLeadAssetSnapshot(asset: RegisterAsset, leadType: AssetLeadType): Record<string, unknown> {
@@ -15090,17 +14981,21 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
       : buildAssetGroupTimelineReportUrl(group, reportKind, filters, format);
 
     if (externalShareReportScope === 'group') {
-      if (format !== 'xlsx') {
-        setNotice({ tone: 'error', message: 'This report can currently be attached as an Excel file.' });
-        return;
-      }
-      const fileName = `${shareFileSlug(group.name, 'umbrella')}-${reportKind}-report.xlsx`;
+      const isPdf = format === 'pdf';
+      const filterMeta = buildReportAttachmentFilterMeta(filters);
+      const externalReportUrl = isPdf
+        ? buildExternalSharePdfUrl(
+            reportKind === 'ownership' ? 'ownership' : reportKind === 'maintenance' ? 'maintenance' : 'scan',
+            reportUrl,
+          )
+        : reportUrl;
+      const fileName = `${shareFileSlug(group.name, 'umbrella')}-${reportKind}-report${filterMeta.fileSuffix}.${isPdf ? 'pdf' : 'xlsx'}`;
       addExternalShareReport(buildExternalReportSource({
-        label: `${reportLabel} · Excel`,
+        label: `${reportLabel}${filterMeta.labelSuffix} · ${isPdf ? 'PDF' : 'Excel'}`,
         description: `Aim4price ${group.name} ${reportLabel.toLowerCase()}`,
         fileName,
-        url: reportUrl,
-        format: 'xlsx',
+        url: externalReportUrl,
+        format: isPdf ? 'pdf' : 'xlsx',
       }));
       closeAssetGroupManager();
       return;
@@ -17552,7 +17447,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                   shareName={activeShareName}
                   assets={activeExternalShareAssets}
                   reportFiles={externalShareReportFiles}
-                  onAddAim4priceReport={openRegisterShareReportsAndDocuments}
+                  onAddAim4priceReport={openRegisterShareReports}
                   onRemoveAim4priceReport={removeExternalShareReport}
                 />
               ) : (
@@ -19743,7 +19638,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                     shareName={quoteAsset?.title || 'Aim4price asset'}
                     assets={quoteExternalShareAssets}
                     reportFiles={externalShareReportFiles}
-                    onAddAim4priceReport={openAssetShareReportsAndDocuments}
+                    onAddAim4priceReport={openAssetShareReports}
                     onRemoveAim4priceReport={removeExternalShareReport}
                   />
                 ) : (
@@ -21042,7 +20937,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                     <span>Select PDF or Excel, then continue to the report timeline.</span>
                   </div>
 
-                  <AssetReportFormatPicker value={assetReportDownloadFormat} onChange={setAssetReportDownloadFormat} />
+                  <AssetReportFormatPicker value={assetReportDownloadFormat} deliveryMode={isAttachingExternalReport ? 'attach' : 'download'} onChange={setAssetReportDownloadFormat} />
 
                   <div className={`${styles.formActions} ${styles.exportActions} ${styles.assetFuelReportActions}`}>
                     <button type="button" className={`${styles.secondaryButton} ${styles.assetTimelineSecondaryButton}`} onClick={backToAssetReportOptions}>Back</button>
@@ -21101,7 +20996,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                       onClick={() => void handleDownloadFilteredFuelReport(reportAsset, assetReportDownloadFormat)}
                     >
                       <DownloadIcon className={styles.buttonIcon} />
-                      <span>{isAttachingExternalReport ? 'Add Excel report' : assetReportDownloadFormat === 'pdf' ? 'Open PDF report' : 'Download Excel'}</span>
+                      <span>{isAttachingExternalReport ? assetReportDownloadFormat === 'pdf' ? 'Add PDF report' : 'Add Excel report' : assetReportDownloadFormat === 'pdf' ? 'Open PDF report' : 'Download Excel'}</span>
                     </button>
                   </div>
                 </>
@@ -21157,7 +21052,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                       onClick={() => void handleDownloadFilteredMaintenanceReport(reportAsset, assetReportDownloadFormat)}
                     >
                       <DownloadIcon className={styles.buttonIcon} />
-                      <span>{isAttachingExternalReport ? 'Add Excel report' : assetReportDownloadFormat === 'pdf' ? 'Open PDF report' : 'Download Excel'}</span>
+                      <span>{isAttachingExternalReport ? assetReportDownloadFormat === 'pdf' ? 'Add PDF report' : 'Add Excel report' : assetReportDownloadFormat === 'pdf' ? 'Open PDF report' : 'Download Excel'}</span>
                     </button>
                   </div>
                 </>
@@ -21204,7 +21099,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                       onClick={() => void handleDownloadFilteredDepreciationReport(reportAsset, assetReportDownloadFormat)}
                     >
                       <DownloadIcon className={styles.buttonIcon} />
-                      <span>{isAttachingExternalReport ? 'Add Excel report' : assetReportDownloadFormat === 'pdf' ? 'Open PDF report' : 'Download Excel'}</span>
+                      <span>{isAttachingExternalReport ? assetReportDownloadFormat === 'pdf' ? 'Add PDF report' : 'Add Excel report' : assetReportDownloadFormat === 'pdf' ? 'Open PDF report' : 'Download Excel'}</span>
                     </button>
                   </div>
                 </>
@@ -21251,7 +21146,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                       onClick={() => void handleDownloadFilteredOwnershipReport(reportAsset, assetReportDownloadFormat)}
                     >
                       <DownloadIcon className={styles.buttonIcon} />
-                      <span>{isAttachingExternalReport ? 'Add Excel report' : assetReportDownloadFormat === 'pdf' ? 'Open PDF report' : 'Download Excel'}</span>
+                      <span>{isAttachingExternalReport ? assetReportDownloadFormat === 'pdf' ? 'Add PDF report' : 'Add Excel report' : assetReportDownloadFormat === 'pdf' ? 'Open PDF report' : 'Download Excel'}</span>
                     </button>
                   </div>
                 </>
@@ -21267,26 +21162,11 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
 
                   {canUseOwnerOnlyAssetActions ? (
                     <>
-                      {!isAttachingExternalReport ? (
-                        <Link
-                          href={buildOwnerAssetPageHref('/documents', reportAsset.id, {}, ownerCommandReturnLocation)}
-                          className={styles.assetReportOptionButton}
-                          target="_blank"
-                          rel="noreferrer"
-                        >
-                          <DocumentIcon className={styles.buttonIcon} />
-                          <span>
-                            <strong>Saved documents</strong>
-                            <small>Open, download or share any file from the Documents Vault.</small>
-                          </span>
-                        </Link>
-                      ) : null}
-
                       <button type="button" className={styles.assetReportOptionButton} onClick={openAssetMaintenanceReportFilter}>
                         <DocumentIcon className={styles.buttonIcon} />
                         <span>
                           <strong>{isAttachingExternalReport ? 'Add maintenance report' : 'Download maintenance report'}</strong>
-                          <small>{isAttachingExternalReport ? 'Attach an Excel service and repair report.' : 'PDF or Excel service and repair costs.'}</small>
+                          <small>PDF or Excel service and repair costs.</small>
                         </span>
                       </button>
 
@@ -21295,7 +21175,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                           <DocumentIcon className={styles.buttonIcon} />
                           <span>
                             <strong>{isAttachingExternalReport ? 'Add fuel report' : 'Download fuel report'}</strong>
-                            <small>{isAttachingExternalReport ? 'Attach an Excel fuel report.' : 'PDF or Excel fuel costs by month.'}</small>
+                            <small>PDF or Excel fuel costs by month.</small>
                           </span>
                         </button>
                       ) : null}
@@ -21305,7 +21185,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                           <DocumentIcon className={styles.buttonIcon} />
                           <span>
                             <strong>{isAttachingExternalReport ? 'Add depreciation log' : 'Download depreciation log'}</strong>
-                            <small>{isAttachingExternalReport ? 'Attach an Excel value-change log.' : 'PDF or Excel log of saved value changes.'}</small>
+                            <small>PDF or Excel log of saved value changes.</small>
                           </span>
                         </button>
                       ) : null}
@@ -21314,7 +21194,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                         <DocumentIcon className={styles.buttonIcon} />
                         <span>
                           <strong>{isAttachingExternalReport ? 'Add cost of ownership report' : 'Download cost of ownership report'}</strong>
-                          <small>{isAttachingExternalReport ? 'Attach an Excel ownership cost report.' : 'PDF or Excel ownership costs and VAT.'}</small>
+                          <small>PDF or Excel ownership costs and VAT.</small>
                         </span>
                       </button>
                     </>
@@ -21570,21 +21450,6 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                         </span>
                       </button>
 
-                      {!isAttachingExternalReport ? <Link
-                        href="/documents"
-                        className={`${styles.exportOption} ${styles.exportDocumentsOption}`}
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        <span className={styles.exportGraphic}>
-                          <DocumentIcon className={styles.exportOptionIcon} />
-                        </span>
-
-                        <span className={styles.exportOptionTitleBlock}>
-                          <strong>Saved documents</strong>
-                          <small>Open the Documents Vault to preview, download or share any saved file.</small>
-                        </span>
-                      </Link> : null}
                     </div>
 
                     <div className={`${styles.formActions} ${styles.exportActions}`}>

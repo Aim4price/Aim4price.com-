@@ -12,6 +12,7 @@ import BalancedHeadingText from '../../balanced-heading';
 import OwnerAppNav from '../../owner-app-nav';
 import styles from '../../owner-app.module.css';
 import OwnerAssetOptionsClient from './owner-asset-options-client';
+import OwnerAssetReportPicker from './owner-asset-report-picker';
 
 declare global {
   interface Window { L?: any }
@@ -1053,9 +1054,19 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
     return (
       <OwnerAssetOptionsClient
         assetId={assetId}
-        assetTitle={draft.title}
+        asset={{
+          title: draft.title,
+          serialNumber: draft.serialNumber,
+          yearModel: draft.yearModel,
+          usage: usageText,
+          condition: conditionLabel(draft.condition),
+          replacementPriceExVat: draft.replacementPriceExVat,
+          valueExVat: draft.value,
+          photoUrls: draft.photos,
+          publicUrl: null,
+        }}
+        reportAsset={draft}
         assetKind={draft.kind}
-        assetValue={draft.value}
         assetIsLicensed={licenseStatus === 'yes'}
         licenceRenewalDate={extra('licenseRenewalDate', 'license_renewal_date', 'licenceRenewalDate', 'licence_renewal_date')}
       />
@@ -1156,7 +1167,7 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
         <div className={styles.actions}><button type="button" className={styles.primaryButton} onClick={() => void saveAsset()} disabled={saving || Boolean(actionBusy)}>{saving ? 'Saving…' : 'Save changes'}</button></div>
       </section> : null}
 
-      {section === 'reports' ? <ReportsSection draft={draft} openValuationReport={openValuationReport} /> : null}
+      {section === 'reports' ? <OwnerAssetReportPicker asset={draft} openValuationReport={openValuationReport} /> : null}
 
       {section === 'activity' ? <ActivitySection assetId={assetId} /> : null}
 
@@ -1271,121 +1282,6 @@ function ActivitySection({ assetId }: { assetId: string }) {
           {item.actorName ? <p>By {item.actorName}</p> : null}
         </article>) : <p className={styles.maintenanceEmpty}>No activity recorded yet.</p>}
       </div> : null}
-    </section>
-  );
-}
-
-function ReportsSection({ draft, openValuationReport }: { draft: Asset; openValuationReport: () => void }) {
-  type FilterableReport = 'maintenance' | 'fuel' | 'depreciation' | 'ownership';
-  const currentYear = new Date().getFullYear();
-  const reportYear = (value: string | null | undefined) => {
-    if (!value) return null;
-    const year = new Date(value).getFullYear();
-    return Number.isFinite(year) && year >= 2000 && year <= 2100 ? year : null;
-  };
-  const reportYears = [
-    currentYear,
-    reportYear(draft.lastScannedAtIso),
-    reportYear(draft.updatedAtIso),
-    reportYear(draft.createdAtIso),
-  ].filter((value): value is number => value !== null);
-  const firstYear = Math.min(...reportYears, currentYear);
-  const lastYear = Math.max(...reportYears, currentYear);
-  const years = Array.from({ length: lastYear - firstYear + 1 }, (_, index) => String(lastYear - index));
-  const [year, setYear] = useState('all');
-  const [month, setMonth] = useState('all');
-  const [maintenanceType, setMaintenanceType] = useState('all');
-  const [selectedReport, setSelectedReport] = useState<FilterableReport | null>(null);
-
-  function reportUrl(report: Exclude<FilterableReport, 'ownership'>) {
-    const params = new URLSearchParams({ assetId: draft.id, report });
-    if (year !== 'all') {
-      params.set('year', year);
-      if (month !== 'all') params.set('month', month);
-    }
-    if (report === 'maintenance' && maintenanceType !== 'all') params.set('maintenanceType', maintenanceType);
-    return `/api/asset-register/scan-report?${params.toString()}`;
-  }
-
-  function ownershipUrl() {
-    const params = new URLSearchParams({ assetId: draft.id, format: 'pdf', source: 'owner-app' });
-    if (year !== 'all') {
-      params.set('year', year);
-      if (month !== 'all') params.set('month', month);
-    }
-    return `/api/my-invoices/report?${params.toString()}`;
-  }
-
-  const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-  const filterableReports: Array<{ id: FilterableReport; title: string }> = [
-    { id: 'maintenance', title: 'Maintenance report' },
-    ...(draft.kind !== 'property' ? [
-      { id: 'fuel' as const, title: 'Fuel report' },
-      { id: 'depreciation' as const, title: 'Depreciation log' },
-    ] : []),
-    { id: 'ownership', title: 'Cost of ownership' },
-  ];
-  const selectedReportDetails = filterableReports.find((report) => report.id === selectedReport) ?? null;
-  const selectedReportHref = selectedReport
-    ? selectedReport === 'ownership' ? ownershipUrl() : reportUrl(selectedReport)
-    : '';
-
-  useEffect(() => {
-    if (!selectedReport) return undefined;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setSelectedReport(null);
-    };
-    window.addEventListener('keydown', closeOnEscape);
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      window.removeEventListener('keydown', closeOnEscape);
-    };
-  }, [selectedReport]);
-
-  function chooseReport(report: FilterableReport) {
-    setYear('all');
-    setMonth('all');
-    setMaintenanceType('all');
-    setSelectedReport(report);
-  }
-
-  const reportCard = (key: string, title: string, onClick: () => void) => (
-    <button type="button" className={styles.reportCard} key={key} onClick={onClick}>
-      <span>{title}</span>
-    </button>
-  );
-
-  return (
-    <section className={`${styles.section} ${styles.editorSection}`}>
-      <div className={styles.reportList}>
-        {reportCard('valuation', 'Asset valuation', openValuationReport)}
-        {filterableReports.map((report) => reportCard(report.id, report.title, () => chooseReport(report.id)))}
-      </div>
-
-      {selectedReport && selectedReportDetails ? (
-        <div className={styles.reportFilterDialog} role="dialog" aria-modal="true" aria-labelledby="owner-report-filter-title">
-          <button type="button" className={styles.reportFilterBackdrop} onClick={() => setSelectedReport(null)} aria-label="Close report filters" />
-          <section className={styles.reportFilterModal}>
-            <div className={styles.reportFilterModalHeader}>
-              <div>
-                <h2 id="owner-report-filter-title">{selectedReportDetails.title}</h2>
-              </div>
-              <button type="button" onClick={() => setSelectedReport(null)} aria-label="Close report filters">×</button>
-            </div>
-            <div className={styles.reportFilterGrid}>
-              <label className={styles.field}><span>Year</span><select value={year} onChange={(event) => { setYear(event.target.value); setMonth('all'); }}><option value="all">All years</option>{years.map((value) => <option key={value} value={value}>{value}</option>)}</select></label>
-              <label className={styles.field}><span>Month</span><select value={month} disabled={year === 'all'} onChange={(event) => setMonth(event.target.value)}><option value="all">All months</option>{months.map((label, index) => <option key={label} value={String(index + 1)}>{label}</option>)}</select></label>
-              {selectedReport === 'maintenance' ? <label className={`${styles.field} ${styles.fieldFull}`}><span>Maintenance type</span><select value={maintenanceType} onChange={(event) => setMaintenanceType(event.target.value)}><option value="all">All maintenance</option><option value="checked">Checked</option><option value="serviced">Service</option><option value="repaired">Repair</option></select></label> : null}
-            </div>
-            <div className={styles.reportFilterActions}>
-              <button type="button" onClick={() => setSelectedReport(null)}>Cancel</button>
-              <a href={selectedReportHref} target="_blank" rel="noreferrer" onClick={() => setSelectedReport(null)}>Open report</a>
-            </div>
-          </section>
-        </div>
-      ) : null}
     </section>
   );
 }

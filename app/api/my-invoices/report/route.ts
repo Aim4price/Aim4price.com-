@@ -16,6 +16,7 @@ import { resolveReportLogoUrlForHtml } from '../../../../lib/report-logo';
 import { getDealerTrackedAsset } from '../../../../lib/dealer-maintenance-tracker';
 import { getAssetGroupById } from '../../../../lib/asset-groups';
 import { filterCostLedgerForWorkspace, resolveOwnerWorkspaceContext } from '../../../../lib/owner-workspace-access';
+import { getOwnerAppAccess, ownerAppCanAccessAsset } from '../../../../lib/owner-app-access';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -128,6 +129,18 @@ export async function GET(request: NextRequest) {
     const filters = parseFilters(request);
     const groupId = String(request.nextUrl.searchParams.get('groupId') ?? '').trim();
     const dealerAccessId = String(request.nextUrl.searchParams.get('accessId') ?? '').trim();
+    const ownerAppAccess = await getOwnerAppAccess();
+
+    if (
+      ownerAppAccess?.sessionKind === 'owner-app-user'
+      && (!filters.assetId || Boolean(groupId) || !ownerAppCanAccessAsset(ownerAppAccess, filters.assetId))
+    ) {
+      return NextResponse.json(
+        { ok: false, error: 'The requested asset report could not be found.' },
+        { status: 404 },
+      );
+    }
+
     let reportOwnerUserId = workspace.ownerUserId;
     let ownerFallbackUser: { name?: unknown; email?: unknown } = workspace.accountantAccess
       ? { name: workspace.accountantAccess.ownerName, email: '' }

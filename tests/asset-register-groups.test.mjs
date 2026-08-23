@@ -359,10 +359,11 @@ test('umbrella cards expose aligned actions and the Manage modal uses a clear op
   assert.match(modal, /XLSX workbook/);
 });
 
-test('the umbrella Manage modal reuses the asset Manage and report-format patterns', async () => {
-  const [modal, modalStyles] = await Promise.all([
+test('the umbrella Manage modal reuses the readable asset Manage and report-format patterns', async () => {
+  const [modal, modalStyles, registerStyles] = await Promise.all([
     readFile(new URL('../components/asset-register/AssetGroupManagerModal.tsx', import.meta.url), 'utf8'),
     readFile(new URL('../components/asset-register/AssetGroupManagerModal.module.css', import.meta.url), 'utf8'),
+    readFile(new URL('../app/asset-register/page.module.css', import.meta.url), 'utf8'),
   ]);
 
   assert.match(modal, /view === 'menu'/);
@@ -377,6 +378,7 @@ test('the umbrella Manage modal reuses the asset Manage and report-format patter
   assert.match(modal, /Download fuel report/);
   assert.match(modal, /Download depreciation log/);
   assert.match(modal, /Download cost of ownership report/);
+  assert.doesNotMatch(modal, /Saved documents|href="\/documents"/);
   assert.match(modal, /registerStyles\.modalCloseButton/);
   assert.match(modal, /registerStyles\.assetTimelineFormatGrid/);
   assert.match(modal, /registerStyles\.modalCard/);
@@ -406,7 +408,13 @@ test('the umbrella Manage modal reuses the asset Manage and report-format patter
   assert.match(modalStyles, /\.wizardFooter/);
   assert.match(modalStyles, /\.stepNumber \{[\s\S]*?width: 46px;[\s\S]*?height: 46px;/);
   assert.match(modalStyles, /\.stepCopy strong \{[\s\S]*?font-size: 19px/);
+  assert.match(modalStyles, /\.manageHeader h3 \{[\s\S]*?font-size: clamp\(2rem, 3\.1vw, 2\.65rem\)/);
+  assert.match(modalStyles, /\.manageMenuGrid \.manageMenuAction strong \{[\s\S]*?font-size: 1\.12rem/);
+  assert.match(modalStyles, /\.manageMenuGrid \.manageMenuAction \.menuOptionSubtitle \{[\s\S]*?font-size: 0\.94rem/);
   assert.match(modalStyles, /\.backdrop \{/);
+  assert.match(registerStyles, /\.ownerCommandModal \.optionsModalHeader h3 \{[\s\S]*?font-size: clamp\(2\.05rem, 3\.25vw, 2\.8rem\)/);
+  assert.match(registerStyles, /\.ownerCommandModal \.ownerCommandGrid \.ownerCommandAction strong \{[\s\S]*?font-size: 1\.12rem/);
+  assert.match(registerStyles, /\.ownerCommandModal \.ownerCommandGrid \.ownerCommandAction small \{[\s\S]*?font-size: 0\.94rem/);
 });
 
 test('umbrella report downloads use custom selectors, clear spacing, and the shared maintenance exporter', async () => {

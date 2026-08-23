@@ -16,6 +16,7 @@ import { createXlsxWorkbook, type XlsxCellStyle, type XlsxCellValue, type XlsxPr
 import { resolveReportLogoUrlForHtml } from '../../../../lib/report-logo';
 import { getDealerTrackedAsset } from '../../../../lib/dealer-maintenance-tracker';
 import { getAssetGroupById } from '../../../../lib/asset-groups';
+import { getOwnerAppAccess, ownerAppCanAccessAsset } from '../../../../lib/owner-app-access';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -3514,6 +3515,17 @@ export async function GET(request: NextRequest) {
   const reportYear = parseReportYear(asText(request.nextUrl.searchParams.get('year')));
   const reportMonth = reportYear ? parseReportMonth(asText(request.nextUrl.searchParams.get('month'))) : null;
   const reportDateRange = buildReportDateRange(reportYear, reportMonth);
+  const ownerAppAccess = await getOwnerAppAccess();
+
+  if (
+    ownerAppAccess?.sessionKind === 'owner-app-user'
+    && (!assetId || Boolean(groupId) || !ownerAppCanAccessAsset(ownerAppAccess, assetId))
+  ) {
+    return NextResponse.json(
+      { ok: false, error: 'The requested asset report could not be found.' },
+      { status: 404 },
+    );
+  }
 
   if (!assetId && !groupId) {
     return NextResponse.json({ ok: false, error: 'Asset or umbrella ID is required.' }, { status: 400 });

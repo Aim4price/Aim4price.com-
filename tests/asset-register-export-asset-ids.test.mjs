@@ -18,6 +18,7 @@ module.exports = {
   MAX_ASSET_EXPORT_IDS,
   parseRequestedAssetIds,
   selectAuthorizedAssetIds,
+  validateOwnerAppAssetSelection,
 };`;
   const output = ts.transpileModule(helperSource, {
     compilerOptions: {
@@ -87,6 +88,25 @@ test('requested IDs can only narrow the authorized asset set', async () => {
   assert.equal(selectAuthorizedAssetIds(authorized, mixedSelection), null);
 });
 
+test('managed Owner App exports require an explicit accessible asset selection', async () => {
+  const { parseRequestedAssetIds, validateOwnerAppAssetSelection } = await loadAssetIdSelectionHelpers();
+  const accountAccess = { sessionKind: 'account' };
+  const ownerAppAccess = { sessionKind: 'owner-app-user' };
+  const absentSelection = parseRequestedAssetIds(new URLSearchParams());
+  const selectedAssets = parseRequestedAssetIds(new URLSearchParams({ assetIds: 'asset-1,asset-2' }));
+
+  assert.equal(validateOwnerAppAssetSelection(accountAccess, absentSelection, () => false), 'allowed');
+  assert.equal(validateOwnerAppAssetSelection(ownerAppAccess, absentSelection, () => true), 'asset_ids_required');
+  assert.equal(
+    validateOwnerAppAssetSelection(ownerAppAccess, selectedAssets, (assetId) => ['asset-1', 'asset-2'].includes(assetId)),
+    'allowed',
+  );
+  assert.equal(
+    validateOwnerAppAssetSelection(ownerAppAccess, selectedAssets, (assetId) => assetId === 'asset-1'),
+    'not_found',
+  );
+});
+
 test('the route applies assetIds only after register and umbrella authorization scopes', async () => {
   const source = await readFile(
     new URL('../app/api/asset-register/export/route.ts', import.meta.url),
@@ -105,4 +125,7 @@ test('the route applies assetIds only after register and umbrella authorization 
   assert.match(source, /if \(!selectedAssetIds\) \{\s*return requestedAssetsNotFound\(\);\s*\}/);
   assert.match(source, /\{ ok: false, error: 'One or more requested assets could not be found\.' \}/);
   assert.doesNotMatch(source, /requestedAssetsNotFound\([^)]/);
+  assert.match(source, /ownerAppSelection === 'asset_ids_required'/);
+  assert.match(source, /ownerAppCanAccessAsset\(ownerAppAccess, assetId\)/);
+  assert.match(source, /ownerAppSelection === 'not_found'[\s\S]*?requestedAssetsNotFound\(\)/);
 });

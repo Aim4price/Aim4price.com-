@@ -2,6 +2,10 @@
 
 import Link from 'next/link';
 import { useMemo, useState, type FormEvent } from 'react';
+import AssetExternalShare, {
+  AssetShareDestinationPicker,
+  type ExternalShareFileSource,
+} from '../../../../components/asset-register/AssetExternalShare';
 import {
   DEFAULT_DEALER_MAINTENANCE_PERMISSIONS,
   DealerMaintenancePermissionPicker,
@@ -9,11 +13,13 @@ import {
 import BalancedHeadingText from '../../balanced-heading';
 import OwnerAppNav from '../../owner-app-nav';
 import type { DealerMaintenancePermissions } from '../../../../lib/dealer-maintenance-tracker';
+import type { ExternalAssetShareItem } from '../../../../lib/asset-external-share';
 import styles from '../../owner-app.module.css';
+import OwnerAssetReportPicker, { type OwnerAssetReportPickerAsset } from './owner-asset-report-picker';
 
 type PartnerType = 'dealer' | 'finance' | 'insurance' | 'licensing';
 type AssetLeadType = 'finance' | 'insurance' | 'replacement_quote' | 'license_renewal';
-type OptionsStage = 'choices' | 'partners' | 'message' | 'consent' | 'sent';
+type OptionsStage = 'destination' | 'inside' | 'outside' | 'partners' | 'message' | 'consent' | 'sent';
 type IconProps = { className?: string };
 
 type Partner = {
@@ -197,15 +203,15 @@ function renderOptionIcon(type: AssetLeadType) {
   return <DealershipHelpIcon className={styles.ownerOptionChoiceIcon} />;
 }
 
-export default function OwnerAssetOptionsClient({ assetId, assetTitle, assetKind, assetValue, assetIsLicensed, licenceRenewalDate }: {
+export default function OwnerAssetOptionsClient({ assetId, asset, reportAsset, assetKind, assetIsLicensed, licenceRenewalDate }: {
   assetId: string;
-  assetTitle: string;
+  asset: ExternalAssetShareItem;
+  reportAsset: OwnerAssetReportPickerAsset;
   assetKind: string;
-  assetValue: number;
   assetIsLicensed: boolean;
   licenceRenewalDate: string;
 }) {
-  const [stage, setStage] = useState<OptionsStage>('choices');
+  const [stage, setStage] = useState<OptionsStage>('destination');
   const [selectedLeadType, setSelectedLeadType] = useState<AssetLeadType | null>(null);
   const [partners, setPartners] = useState<Partner[]>([]);
   const [selectedPartnerId, setSelectedPartnerId] = useState('');
@@ -220,6 +226,8 @@ export default function OwnerAssetOptionsClient({ assetId, assetTitle, assetKind
   const [loadingPartners, setLoadingPartners] = useState(false);
   const [sending, setSending] = useState(false);
   const [notice, setNotice] = useState<{ tone: 'success' | 'error'; message: string } | null>(null);
+  const [reportFiles, setReportFiles] = useState<ExternalShareFileSource[]>([]);
+  const [reportPickerOpen, setReportPickerOpen] = useState(false);
 
   const availableOptions = useMemo(
     () => assetKind === 'property' ? QUOTE_OPTIONS.filter((option) => option.leadType !== 'replacement_quote') : QUOTE_OPTIONS,
@@ -234,21 +242,26 @@ export default function OwnerAssetOptionsClient({ assetId, assetTitle, assetKind
     [partners, selectedPartnerId],
   );
   const assetHref = `/owner-app/assets/${encodeURIComponent(assetId)}`;
+  const assetTitle = asset.title;
 
   function returnToStage(nextStage: OptionsStage) {
     setNotice(null);
     setStage(nextStage);
   }
 
-  const topBackLabel = stage === 'partners'
+  const topBackLabel = stage === 'inside' || stage === 'outside'
     ? 'Share'
+    : stage === 'partners'
+      ? 'Inside Aim4price'
     : stage === 'message'
       ? 'Companies'
       : stage === 'consent'
         ? 'Message'
         : 'Asset';
-  const topBackAction = stage === 'partners'
-    ? () => returnToStage('choices')
+  const topBackAction = stage === 'inside' || stage === 'outside'
+    ? () => returnToStage('destination')
+    : stage === 'partners'
+      ? () => returnToStage('inside')
     : stage === 'message'
       ? () => returnToStage('partners')
       : stage === 'consent'
@@ -291,6 +304,14 @@ export default function OwnerAssetOptionsClient({ assetId, assetTitle, assetKind
     setIsTrackingPermissionsOpen(false);
     setStage('partners');
     await loadPartners(option);
+  }
+
+  function addReport(source: ExternalShareFileSource) {
+    setReportFiles((current) => current.some((report) => report.id === source.id)
+      ? current
+      : [...current, source]);
+    setReportPickerOpen(false);
+    setNotice({ tone: 'success', message: `${source.label} added to your share.` });
   }
 
   function submitSearch(event: FormEvent<HTMLFormElement>) {
@@ -382,14 +403,27 @@ export default function OwnerAssetOptionsClient({ assetId, assetTitle, assetKind
       <OwnerAppNav backHref={assetHref} backLabel={topBackLabel} backAction={topBackAction} />
       <div className={styles.wideContent}>
         <section className={styles.ownerOptionsIdentity}>
-          <h1>Share</h1>
+          <h1>{stage === 'inside'
+            ? 'Share inside Aim4price'
+            : stage === 'outside'
+              ? 'Share outside Aim4price'
+              : 'Share'}</h1>
           <strong><BalancedHeadingText text={assetTitle} /></strong>
-          <p>{money(assetValue)} excl. VAT</p>
+          <p>{money(asset.valueExVat ?? 0)} excl. VAT</p>
         </section>
 
       {notice ? <div className={notice.tone === 'success' ? styles.successNotice : styles.errorNotice}>{notice.message}</div> : null}
 
-      {stage === 'choices' ? (
+      {stage === 'destination' ? (
+        <section className={`${styles.section} ${styles.ownerOptionsSection} ${styles.ownerShareDestinationSection}`}>
+          <AssetShareDestinationPicker
+            onInside={() => returnToStage('inside')}
+            onOutside={() => returnToStage('outside')}
+          />
+        </section>
+      ) : null}
+
+      {stage === 'inside' ? (
         <section className={`${styles.section} ${styles.ownerOptionsSection}`}>
           <div className={styles.ownerOptionChoiceList}>
             {availableOptions.map((option) => {
@@ -402,6 +436,18 @@ export default function OwnerAssetOptionsClient({ assetId, assetTitle, assetKind
               );
             })}
           </div>
+        </section>
+      ) : null}
+
+      {stage === 'outside' ? (
+        <section className={styles.ownerExternalShareSection} aria-hidden={reportPickerOpen || undefined}>
+          <AssetExternalShare
+            shareName={assetTitle}
+            assets={[asset]}
+            reportFiles={reportFiles}
+            onAddAim4priceReport={() => { setNotice(null); setReportPickerOpen(true); }}
+            onRemoveAim4priceReport={(reportId) => setReportFiles((current) => current.filter((report) => report.id !== reportId))}
+          />
         </section>
       ) : null}
 
@@ -580,6 +626,15 @@ export default function OwnerAssetOptionsClient({ assetId, assetTitle, assetKind
             </footer>
           </section>
         </div>
+      ) : null}
+
+      {stage === 'outside' && reportPickerOpen ? (
+        <OwnerAssetReportPicker
+          asset={reportAsset}
+          mode="attach"
+          onAttach={addReport}
+          onDismiss={() => setReportPickerOpen(false)}
+        />
       ) : null}
     </>
   );

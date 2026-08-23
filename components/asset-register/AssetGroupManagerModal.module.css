@@ -317,6 +317,18 @@
   border-bottom: 1px solid rgba(210, 225, 219, 0.94);
 }
 
+.manageHeader h3 {
+  font-size: clamp(2rem, 3.1vw, 2.65rem) !important;
+  line-height: 1.04 !important;
+  letter-spacing: -0.05em !important;
+}
+
+.manageHeader p {
+  margin-top: 0.5rem !important;
+  font-size: 1rem !important;
+  line-height: 1.45 !important;
+}
+
 .manageCloseButton {
   width: 52px !important;
   min-width: 52px !important;
@@ -352,6 +364,16 @@
   gap: 18px !important;
   padding: 22px 24px !important;
   border-radius: 20px !important;
+}
+
+.manageMenuGrid .manageMenuAction strong {
+  font-size: 1.12rem !important;
+  line-height: 1.2 !important;
+}
+
+.manageMenuGrid .manageMenuAction .menuOptionSubtitle {
+  font-size: 0.94rem !important;
+  line-height: 1.42 !important;
 }
 
 .manageMenuGrid .manageMenuIcon {

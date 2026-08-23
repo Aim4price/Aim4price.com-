@@ -44,6 +44,9 @@ test('outside sharing stays in one simple modal with optional photos, controlled
   assert.match(component, /onRemoveAim4priceReport\(reportId\)/);
 
   assert.match(component, /Promise\.all\(selectedSources\.map\(\(source\) => fetchExternalShareFile\(source\)\)\)/);
+  assert.doesNotMatch(component, /MAX_SHARE_FILES|Choose no more than .* attachments/, 'all selected photos and reports should be prepared together');
+  assert.match(component, /file\.size > MAX_SHARE_FILE_BYTES/);
+  assert.match(component, /totalBytes > MAX_SHARE_TOTAL_BYTES/);
   assert.match(component, /navigator\.canShare\(\{ files: preparation\.files \}\)/);
   assert.match(component, /navigator\.share\(\{[\s\S]*?title: copy\.subject,[\s\S]*?text: copy\.body,[\s\S]*?files: preparation\.files/);
   assert.equal((component.match(/navigator\.share\(/g) ?? []).length, 1, 'all selected files should be handed over in one share call');

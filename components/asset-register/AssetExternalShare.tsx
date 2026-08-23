@@ -24,7 +24,6 @@ type AttachmentPreparation = {
 };
 
 const EMPTY_REPORT_FILES: ExternalShareFileSource[] = [];
-const MAX_SHARE_FILES = 12;
 const MAX_SHARE_FILE_BYTES = 25 * 1024 * 1024;
 const MAX_SHARE_TOTAL_BYTES = 75 * 1024 * 1024;
 
@@ -244,17 +243,6 @@ export default function AssetExternalShare({
 
     if (!selectedSources.length) {
       setPreparation({ status: 'idle', files: [], error: '' });
-      return () => {
-        cancelled = true;
-      };
-    }
-
-    if (selectedSources.length > MAX_SHARE_FILES) {
-      setPreparation({
-        status: 'error',
-        files: [],
-        error: `Choose no more than ${MAX_SHARE_FILES} attachments.`,
-      });
       return () => {
         cancelled = true;
       };
