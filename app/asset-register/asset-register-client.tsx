@@ -1773,6 +1773,24 @@ function RefreshIcon({ className }: IconProps) {
   );
 }
 
+function RecalculateIcon({ className }: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <path d="M4 9V4h5" />
+      <path d="M4.8 4.8A8.5 8.5 0 1 1 3.6 14" />
+    </svg>
+  );
+}
+
 function ChangeRegisterIcon({ className }: IconProps) {
   return (
     <svg
@@ -15378,6 +15396,8 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
   const settingsUsageCurrentValue = editingAsset ? getAssetSettingsUsageCurrentValue(editingAsset, settingsUsageMode) : null;
   const assetSettingsMapsUrl = editingAsset ? buildAssetSettingsGoogleMapsUrl(editingAsset) : null;
   const assetSettingsLocationText = editingAsset ? formatAssetSettingsLocationText(editingAsset) : '';
+  const isManageMapLocationFlow = assetModalReturnRef.current?.origin === 'manage'
+    && assetModalReturnRef.current.action === 'manage-map-location';
   const assetSettingsManualGpsButtonLabel = isAssetSettingsManualLocationSaving
     ? 'Saving GPS...'
     : 'Save manual GPS position';
@@ -15389,7 +15409,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
       ? 'Finding location...'
       : assetSettingsLocationState === 'savingDevice'
         ? 'Saving location...'
-        : 'Use this device';
+        : 'Use current location';
   const marketplacePhotoUrls = marketplaceAsset ? normalizePhotos(marketplaceAsset.photos) : [];
   const marketplaceListingTitle = marketplaceAsset ? buildMarketplaceListingTitle(marketplaceAsset, true) : '';
   const marketplaceModalTitle = marketplaceAsset
@@ -19131,14 +19151,14 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
           <div className={styles.modalBackdrop} onClick={closeAssetSettingsModal} />
 
           <div
-            className={`${styles.modalCard} ${styles.assetSettingsModal} ${assetSettingsView !== 'menu' ? styles.assetSettingsSubModal : ''} ${assetSettingsView === 'location' ? styles.assetSettingsLocationModal : ''} ${assetSettingsView === 'locationMap' ? styles.assetSettingsMapModal : ''}`}
+            className={`${styles.modalCard} ${styles.assetSettingsModal} ${assetSettingsView !== 'menu' ? styles.assetSettingsSubModal : ''} ${assetSettingsView === 'location' ? styles.assetSettingsLocationModal : ''} ${assetSettingsView === 'locationMap' ? styles.assetSettingsMapModal : ''} ${isManageMapLocationFlow ? styles.assetSettingsMapEntryModal : ''}`}
             role="dialog"
             aria-modal="true"
             aria-labelledby="asset-settings-title"
           >
             <div className={`${styles.modalHeader} ${styles.assetSettingsHeader}`}>
               <div className={styles.modalHeaderText}>
-                <h3 id="asset-settings-title">Settings</h3>
+                <h3 id="asset-settings-title">{isManageMapLocationFlow ? 'Map asset' : 'Settings'}</h3>
                 <p>{editingAsset.title}</p>
               </div>
 
@@ -19146,7 +19166,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                 type="button"
                 className={styles.modalCloseButton}
                 onClick={closeAssetSettingsModal}
-                aria-label="Close settings"
+                aria-label={isManageMapLocationFlow ? 'Close map asset' : 'Close settings'}
                 disabled={isAssetSettingsBusy}
               >
                 <CloseIcon className={styles.buttonIcon} />
@@ -19154,7 +19174,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
             </div>
 
             <div className={`${styles.modalScrollBody} ${styles.assetSettingsBody}`}>
-              {assetSettingsView !== 'menu' ? (
+              {assetSettingsView !== 'menu' && !(isManageMapLocationFlow && assetSettingsView === 'location') ? (
                 <button
                   type="button"
                   className={styles.assetSettingsBackButton}
@@ -19162,7 +19182,11 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                   disabled={isAssetSettingsBusy}
                 >
                   <span aria-hidden="true">←</span>
-                  <span>{assetSettingsView === 'locationManual' || assetSettingsView === 'locationMap' ? 'Back to Location' : 'Back to Settings'}</span>
+                  <span>{isManageMapLocationFlow
+                    ? 'Back to map options'
+                    : assetSettingsView === 'locationManual' || assetSettingsView === 'locationMap'
+                      ? 'Back to Location'
+                      : 'Back to Settings'}</span>
                 </button>
               ) : null}
 
@@ -19231,41 +19255,67 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
               {assetSettingsView === 'location' ? (
                 <section className={`${styles.assetSettingsSection} ${styles.assetSettingsLocationSection}`}>
                   <div className={styles.assetSettingsSectionCopy}>
-                    <span>Location</span>
-                    <h4>Update asset location</h4>
-                    <p>Choose the easiest way to save where this asset is kept.</p>
+                    {isManageMapLocationFlow ? (
+                      <span className={styles.assetSettingsMapHeroIcon} aria-hidden="true">
+                        <MapPinIcon className={styles.buttonIcon} />
+                      </span>
+                    ) : null}
+                    <span>{isManageMapLocationFlow ? 'Asset map' : 'Location'}</span>
+                    <h4>{isManageMapLocationFlow ? 'Choose how to map this asset' : 'Update asset location'}</h4>
+                    <p>{isManageMapLocationFlow
+                      ? 'Pick one simple method below. You can change the saved location at any time.'
+                      : 'Choose the easiest way to save where this asset is kept.'}</p>
                   </div>
 
                   <div className={styles.assetSettingsLocationCurrent}>
                     <div className={styles.assetSettingsLocationCurrentMain}>
                       <span className={styles.assetSettingsLocationCurrentIcon} aria-hidden="true">
-                        <FlagIcon className={styles.buttonIcon} />
+                        {isManageMapLocationFlow
+                          ? <MapPinIcon className={styles.buttonIcon} />
+                          : <FlagIcon className={styles.buttonIcon} />}
                       </span>
 
                       <div className={styles.assetSettingsLocationCurrentCopy}>
-                        <span>Current location</span>
+                        <span>{isManageMapLocationFlow ? 'Map status' : 'Current location'}</span>
                         <strong>
-                          {assetSettingsLocationText || (hasAssetGpsCoordinates(editingAsset) ? formatAssetSettingsGpsPosition(editingAsset) : 'No location saved')}
+                          {assetSettingsLocationText || (hasAssetGpsCoordinates(editingAsset)
+                            ? formatAssetSettingsGpsPosition(editingAsset)
+                            : isManageMapLocationFlow ? 'Not mapped yet' : 'No location saved')}
                         </strong>
+                        {isManageMapLocationFlow ? (
+                          <small>{hasAssetGpsCoordinates(editingAsset)
+                            ? 'Location saved. Open the Asset Map to see this asset selected.'
+                            : 'Choose an option below to place it on your Asset Map.'}</small>
+                        ) : null}
                       </div>
 
-                      {assetSettingsMapsUrl ? (
+                      {isManageMapLocationFlow && hasAssetGpsCoordinates(editingAsset) ? (
+                        <button
+                          type="button"
+                          className={`${styles.assetSettingsMapLink} ${styles.assetSettingsMapAssetButton}`}
+                          onClick={() => window.location.assign(buildFocusedAssetMapHref(editingAsset))}
+                        >
+                          View on Asset Map
+                        </button>
+                      ) : assetSettingsMapsUrl ? (
                         <a className={styles.assetSettingsMapLink} href={assetSettingsMapsUrl} target="_blank" rel="noreferrer">
                           View map
                         </a>
                       ) : null}
                     </div>
 
-                    <div className={styles.assetSettingsLocationCurrentMeta}>
-                      <div>
-                        <span>Last updated</span>
-                        <strong>{formatAssetSettingsLastScanned(editingAsset)}</strong>
+                    {!isManageMapLocationFlow ? (
+                      <div className={styles.assetSettingsLocationCurrentMeta}>
+                        <div>
+                          <span>Last updated</span>
+                          <strong>{formatAssetSettingsLastScanned(editingAsset)}</strong>
+                        </div>
+                        <div>
+                          <span>GPS position</span>
+                          <strong>{formatAssetSettingsGpsPosition(editingAsset)}</strong>
+                        </div>
                       </div>
-                      <div>
-                        <span>GPS position</span>
-                        <strong>{formatAssetSettingsGpsPosition(editingAsset)}</strong>
-                      </div>
-                    </div>
+                    ) : null}
                   </div>
 
                   <div className={styles.assetSettingsLocationChoiceGrid}>
@@ -19279,7 +19329,24 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                       <span>
                         <span className={styles.assetSettingsRecommendedBadge}>Recommended</span>
                         <strong>{assetSettingsDeviceGpsButtonLabel}</strong>
-                        <small>Save this device’s current GPS position.</small>
+                        <small>{isManageMapLocationFlow
+                          ? 'Best when you are standing near the asset.'
+                          : 'Save this device’s current GPS position.'}</small>
+                      </span>
+                    </button>
+
+                    <button
+                      type="button"
+                      className={styles.assetSettingsOptionButton}
+                      onClick={openAssetSettingsMapLocationView}
+                      disabled={isAssetSettingsBusy}
+                    >
+                      <MapPinIcon className={styles.assetSettingsOptionIcon} />
+                      <span>
+                        <strong>Choose on map</strong>
+                        <small>{isManageMapLocationFlow
+                          ? 'Find the place visually and drop a pin.'
+                          : 'Drop and adjust a map pin.'}</small>
                       </span>
                     </button>
 
@@ -19292,20 +19359,9 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                       <DocumentIcon className={styles.assetSettingsOptionIcon} />
                       <span>
                         <strong>Enter coordinates</strong>
-                        <small>Paste a saved GPS position.</small>
-                      </span>
-                    </button>
-
-                    <button
-                      type="button"
-                      className={styles.assetSettingsOptionButton}
-                      onClick={openAssetSettingsMapLocationView}
-                      disabled={isAssetSettingsBusy}
-                    >
-                      <FlagIcon className={styles.assetSettingsOptionIcon} />
-                      <span>
-                        <strong>Choose on map</strong>
-                        <small>Drop and adjust a map pin.</small>
+                        <small>{isManageMapLocationFlow
+                          ? 'Paste a latitude and longitude from another source.'
+                          : 'Paste a saved GPS position.'}</small>
                       </span>
                     </button>
                   </div>
@@ -20483,7 +20539,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                     <UpdateAssetIcon className={styles.buttonIcon} />
                     <span>
                       <strong>Update asset</strong>
-                      <small>Edit details, documents, photos and status.</small>
+                      <small>Edit details, documents and photos.</small>
                     </span>
                   </button>
 
@@ -20751,7 +20807,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                   disabled={!canRefreshAssetEstimate(activeAsset) || busyRevalueAssetId === activeAsset.id || isLoadingPricingPreview || isSavingPricingPreview}
                   onClick={() => openRevalueGuidedDialog(activeAsset)}
                 >
-                  <TrendIcon className={styles.buttonIcon} />
+                  <RecalculateIcon className={styles.buttonIcon} />
                   <span>
                     <strong>Recalculate value</strong>
                   </span>
