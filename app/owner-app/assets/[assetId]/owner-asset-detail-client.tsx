@@ -56,7 +56,25 @@ type DetailResponse = {
 };
 type UploadResponse = { ok: boolean; uploads?: Array<{ uploadId: string; url: string; fileName: string; contentType: string; byteSize: number }>; error?: string };
 type DisposalReason = 'sold' | 'traded_in' | 'scrapped' | 'written_off' | 'mistake_duplicate' | 'other';
-type DisposalDraft = { reason: DisposalReason | ''; disposalDate: string; disposalAmountExVat: string; note: string };
+type SaleInfluence = 'yes' | 'no' | 'unsure';
+type TransferAction = 'archive' | 'claim_code';
+type DisposalDraft = {
+  reason: DisposalReason | '';
+  disposalDate: string;
+  disposalAmountExVat: string;
+  note: string;
+  aim4priceSaleInfluence: SaleInfluence | '';
+  transferAction: TransferAction | '';
+};
+type TransferReceipt = {
+  id: string;
+  assetId: string;
+  assetTitle: string;
+  assetIdentifier: string;
+  assetIdentifierLabel: 'Serial / VIN' | 'Asset ID';
+  transferCode: string;
+  expiresAtIso: string;
+};
 
 export type OwnerAssetView = 'summary' | 'details' | 'options' | 'manage' | 'section';
 export type OwnerAssetManageSection = 'details' | 'activity' | 'reports' | 'pricing' | 'finance' | 'insurance' | 'licence' | 'location' | 'media' | 'marketplace' | 'maintenance' | 'dealer-tracking' | 'delete';
@@ -78,7 +96,14 @@ const DISPOSAL_REASONS: Array<{ value: DisposalReason; label: string }> = [
 ];
 
 function createDisposalDraft(): DisposalDraft {
-  return { reason: '', disposalDate: new Date().toISOString().slice(0, 10), disposalAmountExVat: '', note: '' };
+  return {
+    reason: '',
+    disposalDate: new Date().toISOString().slice(0, 10),
+    disposalAmountExVat: '',
+    note: '',
+    aim4priceSaleInfluence: '',
+    transferAction: '',
+  };
 }
 
 const MANAGE_SECTIONS: Array<{ id: OwnerAssetManageSection; group: OwnerAssetManageGroup; title: string; tone?: 'danger' }> = [
@@ -306,6 +331,7 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
   const [photoIndex, setPhotoIndex] = useState(0);
   const [photoViewerOpen, setPhotoViewerOpen] = useState(false);
   const [disposalDraft, setDisposalDraft] = useState<DisposalDraft>(createDisposalDraft);
+  const [transferReceipt, setTransferReceipt] = useState<TransferReceipt | null>(null);
   const [permissions, setPermissions] = useState<string[]>([]);
 
   const photoCount = draft?.photos.length ?? 0;
@@ -675,6 +701,14 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
       setNotice({ tone: 'error', message: 'Choose what happened to the asset before continuing.' });
       return;
     }
+    if (disposalDraft.reason === 'sold' && !disposalDraft.aim4priceSaleInfluence) {
+      setNotice({ tone: 'error', message: 'Tell us whether Aim4price helped with this sale.' });
+      return;
+    }
+    if (disposalDraft.reason === 'sold' && !disposalDraft.transferAction) {
+      setNotice({ tone: 'error', message: 'Choose whether to archive the asset or send it to another Aim4price account.' });
+      return;
+    }
     setActionBusy('delete');
     setNotice(null);
     try {
@@ -684,12 +718,39 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(disposalDraft),
       });
-      const payload = await response.json().catch(() => null) as { ok?: boolean; mode?: 'disposed' | 'deleted'; redirectTo?: string; error?: string } | null;
+      const payload = await response.json().catch(() => null) as {
+        ok?: boolean;
+        mode?: 'disposed' | 'deleted' | 'transfer_pending';
+        transfer?: TransferReceipt;
+        redirectTo?: string;
+        error?: string;
+      } | null;
       if (!response.ok || !payload?.ok) throw new Error(payload?.error || 'Failed to delete this asset.');
+      if (payload.mode === 'transfer_pending' && payload.transfer) {
+        setTransferReceipt(payload.transfer);
+        setActionBusy('');
+        return;
+      }
       window.location.assign(payload.redirectTo || '/owner-app/assets');
     } catch (cause) {
       setNotice({ tone: 'error', message: cause instanceof Error ? cause.message : 'Failed to delete this asset.' });
       setActionBusy('');
+    }
+  }
+
+  async function copyTransferDetails() {
+    if (!transferReceipt) return;
+    const message = [
+      `Aim4price asset transfer: ${transferReceipt.assetTitle}`,
+      `${transferReceipt.assetIdentifierLabel}: ${transferReceipt.assetIdentifier}`,
+      `Transfer code: ${transferReceipt.transferCode}`,
+      'Open Account → Asset transfers in Aim4price and choose Claim an asset.',
+    ].join('\n');
+    try {
+      await navigator.clipboard.writeText(message);
+      setNotice({ tone: 'success', message: 'Transfer details copied.' });
+    } catch {
+      setNotice({ tone: 'error', message: 'Copy failed. Select the identifier and code manually.' });
     }
   }
 
@@ -1263,18 +1324,75 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
         )}
       </section> : null}
       {section === 'delete' ? <section className={`${styles.section} ${styles.deleteSection}`}>
-        {editorHeader('Remove asset', 'Tell Aim4price what happened. Genuine disposals stay safely in reports and history; only a record added by mistake is removed from the active register.')}
+        {editorHeader('Sell or remove asset', 'Tell Aim4price what happened. Sales and genuine disposals stay safely in reports and history; only a record added by mistake is removed from the active register.')}
         <div className={styles.choiceRow} role="group" aria-label="What happened to this asset?">
-          {DISPOSAL_REASONS.map((reason) => <button key={reason.value} type="button" className={disposalDraft.reason === reason.value ? styles.choiceActive : ''} aria-pressed={disposalDraft.reason === reason.value} onClick={() => setDisposalDraft((current) => ({ ...current, reason: reason.value }))} disabled={Boolean(actionBusy)}>{reason.label}</button>)}
+          {DISPOSAL_REASONS.map((reason) => <button key={reason.value} type="button" className={disposalDraft.reason === reason.value ? styles.choiceActive : ''} aria-pressed={disposalDraft.reason === reason.value} onClick={() => setDisposalDraft((current) => ({
+            ...current,
+            reason: reason.value,
+            aim4priceSaleInfluence: reason.value === 'sold' ? current.aim4priceSaleInfluence : '',
+            transferAction: reason.value === 'sold' ? current.transferAction : '',
+          }))} disabled={Boolean(actionBusy)}>{reason.label}</button>)}
         </div>
+        {disposalDraft.reason === 'sold' ? <div className={styles.saleFlow}>
+          <section className={styles.saleQuestion} aria-labelledby="aim4price-sale-impact-title">
+            <div className={styles.saleQuestionHeader}>
+              <strong id="aim4price-sale-impact-title">Did Aim4price help with this sale?</strong>
+              <span>This helps us measure whether pricing, reports, Marketplace or another Aim4price feature influenced the result.</span>
+            </div>
+            <div className={styles.choiceRow} role="group" aria-label="Did Aim4price help with this sale?">
+              {([
+                { value: 'yes', label: 'Yes' },
+                { value: 'no', label: 'No' },
+                { value: 'unsure', label: 'Not sure' },
+              ] as const).map((choice) => <button key={choice.value} type="button" className={disposalDraft.aim4priceSaleInfluence === choice.value ? styles.choiceActive : ''} aria-pressed={disposalDraft.aim4priceSaleInfluence === choice.value} onClick={() => setDisposalDraft((current) => ({ ...current, aim4priceSaleInfluence: choice.value }))} disabled={Boolean(actionBusy)}>{choice.label}</button>)}
+            </div>
+          </section>
+          <section className={styles.saleQuestion} aria-labelledby="asset-transfer-choice-title">
+            <div className={styles.saleQuestionHeader}>
+              <strong id="asset-transfer-choice-title">Is the buyer moving it to another Aim4price account?</strong>
+              <span>A secure claim code can move the asset record without sharing either account’s login details.</span>
+            </div>
+            <div className={styles.transferChoiceGrid} role="group" aria-label="Choose what happens to the sold asset record">
+              <button type="button" className={disposalDraft.transferAction === 'archive' ? styles.transferChoiceActive : ''} aria-pressed={disposalDraft.transferAction === 'archive'} onClick={() => setDisposalDraft((current) => ({ ...current, transferAction: 'archive' }))} disabled={Boolean(actionBusy)}><strong>Archive after sale</strong><span>The buyer does not use Aim4price, or no transfer is needed.</span></button>
+              <button type="button" className={disposalDraft.transferAction === 'claim_code' ? styles.transferChoiceActive : ''} aria-pressed={disposalDraft.transferAction === 'claim_code'} onClick={() => setDisposalDraft((current) => ({ ...current, transferAction: 'claim_code' }))} disabled={Boolean(actionBusy)}><strong>Send to buyer</strong><span>Create a one-time code so the buyer can claim the asset.</span></button>
+            </div>
+            {disposalDraft.transferAction === 'claim_code' ? <div className={styles.transferExplainer}>
+              <strong>What moves with the asset</strong>
+              <p>Asset details, valuation and maintenance history, scan history, photos and saved asset documents move to the buyer. Your private invoices, finance, insurance and dealer access stay on your account.</p>
+              {!draft.serialNumber ? <p><strong>Tip:</strong> this asset has no saved serial number, so its Aim4price Asset ID will be used with the code.</p> : null}
+            </div> : null}
+          </section>
+        </div> : null}
         <div className={styles.formGrid}>
           <label className={styles.field}><span>Date</span><input type="date" value={disposalDraft.disposalDate} onChange={(event) => setDisposalDraft((current) => ({ ...current, disposalDate: event.target.value }))} disabled={Boolean(actionBusy)} /></label>
           <label className={styles.field}><span>Amount excl. VAT (optional)</span><span className={styles.currencyInput}><span aria-hidden="true">R</span><GroupedCurrencyInput value={disposalDraft.disposalAmountExVat} onValueChange={(value) => setDisposalDraft((current) => ({ ...current, disposalAmountExVat: value }))} /></span></label>
           <label className={`${styles.field} ${styles.fieldFull}`}><span>Note (optional)</span><textarea value={disposalDraft.note} onChange={(event) => setDisposalDraft((current) => ({ ...current, note: event.target.value }))} placeholder="Buyer, trade-in, write-off or other reference" disabled={Boolean(actionBusy)} /></label>
         </div>
         {disposalDraft.reason === 'mistake_duplicate' ? <p>This removes the record from the active register. Aim4price keeps a final snapshot and deletion audit.</p> : null}
-        <div className={styles.actions}><button type="button" className={styles.dangerButton} onClick={() => void deleteAsset()} disabled={Boolean(actionBusy) || !disposalDraft.reason}>{actionBusy === 'delete' ? 'Saving…' : disposalDraft.reason === 'mistake_duplicate' ? 'Delete duplicate' : 'Save disposal'}</button></div>
+        <div className={styles.actions}><button type="button" className={styles.dangerButton} onClick={() => void deleteAsset()} disabled={Boolean(actionBusy) || !disposalDraft.reason || (disposalDraft.reason === 'sold' && (!disposalDraft.aim4priceSaleInfluence || !disposalDraft.transferAction))}>{actionBusy === 'delete' ? 'Saving…' : disposalDraft.reason === 'mistake_duplicate' ? 'Delete duplicate' : disposalDraft.reason === 'sold' && disposalDraft.transferAction === 'claim_code' ? 'Save sale & create code' : disposalDraft.reason === 'sold' ? 'Save sale' : 'Save disposal'}</button></div>
       </section> : null}
+
+      {transferReceipt ? <div className={styles.reportFilterDialog} role="dialog" aria-modal="true" aria-labelledby="asset-transfer-ready-title">
+        <button type="button" className={styles.reportFilterBackdrop} onClick={() => window.location.assign('/owner-app/assets')} aria-label="Close transfer details" />
+        <section className={`${styles.reportFilterModal} ${styles.transferReceiptModal}`}>
+          <header className={styles.reportFilterModalHeader}>
+            <div><h2 id="asset-transfer-ready-title">Asset ready to send</h2><p>Share both details below with the buyer. The code works once and expires in 30 days.</p></div>
+            <button type="button" onClick={() => window.location.assign('/owner-app/assets')} aria-label="Close transfer details">×</button>
+          </header>
+          <div className={styles.transferReceiptDetails}>
+            <div><span>{transferReceipt.assetIdentifierLabel}</span><strong>{transferReceipt.assetIdentifier}</strong></div>
+            <div><span>Transfer code</span><strong className={styles.transferReceiptCode}>{transferReceipt.transferCode}</strong></div>
+          </div>
+          <div className={styles.transferExplainer}>
+            <strong>Buyer instructions</strong>
+            <p>Sign in to Aim4price, open Account → Asset transfers, and enter the identifier with this code.</p>
+          </div>
+          <div className={styles.transferReceiptActions}>
+            <button type="button" className={styles.secondaryButton} onClick={() => void copyTransferDetails()}>Copy details</button>
+            <Link className={styles.primaryButton} href="/account/asset-transfers">Manage transfers</Link>
+          </div>
+        </section>
+      </div> : null}
     </div>
   );
 }

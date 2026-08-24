@@ -3,6 +3,11 @@ import { getAssetRegisterItemById, type AssetRegisterItem } from './asset-regist
 import { ensureAssetRegisterTables } from './asset-registers';
 import { getDb } from './db';
 import { ensurePartnerAccessTables } from './partner-access';
+import {
+  createAssetTransferOffer,
+  type Aim4priceSaleInfluence,
+  type AssetTransferReceipt,
+} from './asset-transfers';
 
 export type AssetAcquisitionDetails = {
   eventId: string;
@@ -100,6 +105,13 @@ async function ensureLifecycleSchemaOnce(): Promise<void> {
     )
   `);
   await db.query(`create index if not exists idx_asset_lifecycle_owner_register_date on public.asset_lifecycle_events(owner_user_id, register_id, effective_date desc, created_at desc)`);
+  await db.query(`
+    alter table public.asset_lifecycle_events
+      add column if not exists aim4price_sale_influence text,
+      add column if not exists transfer_status text,
+      add column if not exists transfer_offer_id uuid,
+      add column if not exists transferred_to_user_id text
+  `);
 }
 
 export async function ensureAssetLifecycleSchema(): Promise<void> {
@@ -235,7 +247,13 @@ export async function disposeOrDeleteAsset(input: {
   actorUserId?: string | null;
   actorName?: string | null;
   actorOrganisation?: string | null;
-}): Promise<{ mode: 'disposed' | 'deleted'; asset: AssetRegisterItem }> {
+  aim4priceSaleInfluence?: Aim4priceSaleInfluence | null;
+  transferRequested?: boolean;
+}): Promise<{
+  mode: 'disposed' | 'deleted' | 'transfer_pending';
+  asset: AssetRegisterItem;
+  transfer?: AssetTransferReceipt;
+}> {
   await ensureAssetLifecycleSchema();
   const asset = await getAssetRegisterItemById(input.ownerUserId, input.assetId);
   if (!asset) throw new Error('ASSET_NOT_FOUND');
@@ -248,6 +266,26 @@ export async function disposeOrDeleteAsset(input: {
   const actor = input.actorOrganisation
     ? { name: text(input.actorName) || 'Aim4price user', organisation: text(input.actorOrganisation) }
     : await actorDetails(actorUserId, input.actorName);
+  const allowedSaleInfluence = new Set<Aim4priceSaleInfluence>(['yes', 'no', 'unsure']);
+  if (input.reason === 'sold' && !allowedSaleInfluence.has(input.aim4priceSaleInfluence as Aim4priceSaleInfluence)) {
+    throw new Error('AIM4PRICE_SALE_INFLUENCE_REQUIRED');
+  }
+  if (input.transferRequested && input.reason !== 'sold') throw new Error('ASSET_TRANSFER_REQUIRES_SALE');
+
+  if (input.reason === 'sold' && input.transferRequested) {
+    const transfer = await createAssetTransferOffer({
+      sellerUserId: input.ownerUserId,
+      asset,
+      disposalDate: dateOnly(input.disposalDate),
+      disposalAmountExVat: optionalAmount(input.disposalAmountExVat),
+      note: text(input.note),
+      aim4priceSaleInfluence: input.aim4priceSaleInfluence as Aim4priceSaleInfluence,
+      actorUserId,
+      actorName: actor.name,
+      actorOrganisation: actor.organisation,
+    });
+    return { mode: 'transfer_pending', asset, transfer };
+  }
   const deleteRecord = ['mistake_duplicate', 'created_in_error', 'import_error', 'test_record'].includes(input.reason);
   const eventType = deleteRecord ? 'deleted_duplicate' : 'disposed';
 
@@ -270,11 +308,12 @@ export async function disposeOrDeleteAsset(input: {
   await getDb().query(
     `insert into public.asset_lifecycle_events
        (owner_user_id, register_id, asset_register_item_id, event_type, reason, effective_date,
-        amount_ex_vat, note, actor_user_id, actor_name, actor_organisation, asset_snapshot_json, created_at)
-     values ($1, $2::uuid, $3::uuid, $4, $5, $6::date, $7, $8, $9, $10, $11, $12::jsonb, now())`,
+        amount_ex_vat, note, actor_user_id, actor_name, actor_organisation, asset_snapshot_json,
+        aim4price_sale_influence, created_at)
+     values ($1, $2::uuid, $3::uuid, $4, $5, $6::date, $7, $8, $9, $10, $11, $12::jsonb, $13, now())`,
     [input.ownerUserId, asset.registerId, asset.id, eventType, input.reason, dateOnly(input.disposalDate),
       optionalAmount(input.disposalAmountExVat), text(input.note) || null, actorUserId, actor.name, actor.organisation,
-      JSON.stringify(assetSnapshot(asset))],
+      JSON.stringify(assetSnapshot(asset)), input.reason === 'sold' ? input.aim4priceSaleInfluence : null],
   );
 
   if (deleteRecord) {
@@ -307,6 +346,7 @@ export async function disposeOrDeleteAsset(input: {
     reason: input.reason,
     disposalDate: dateOnly(input.disposalDate),
     disposalAmountExVat: optionalAmount(input.disposalAmountExVat),
+    aim4priceSaleInfluence: input.reason === 'sold' ? input.aim4priceSaleInfluence : null,
     retainedForReporting: true,
   });
   return { mode: deleteRecord ? 'deleted' : 'disposed', asset };
