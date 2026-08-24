@@ -36,6 +36,7 @@ test('Invoice Drop uses the homepage typography, photo hero and a gated three-st
   assert.match(client, /Private and owner-controlled\.<\/strong> Sending a document never grants access to an asset record\./);
   assert.match(client, /aria-modal="true"/);
   assert.match(client, /const WIZARD_STEPS:[\s\S]*?Identify asset[\s\S]*?Add invoice[\s\S]*?Your details/);
+  assert.doesNotMatch(client, /STEP [123] OF 3/);
   assert.match(client, /const stepOneComplete = identifier\.trim\(\)\.length >= identifierMinimumLength/);
   assert.match(client, /const stepTwoComplete = files\.length === 1/);
   assert.match(client, /disabled=\{currentStep === 1 \? !stepOneComplete : !stepTwoComplete\}/);
@@ -49,7 +50,7 @@ test('Invoice Drop uses the homepage typography, photo hero and a gated three-st
   assert.match(client, /name="website"[\s\S]*?tabIndex=\{-1\}/);
   assert.match(styles, /background-image: url\('\/brand\/invoice-drop-hero\.webp'\)/);
   assert.doesNotMatch(styles, /\.heroEyebrow|\.heroPrimaryButton|\.modalEyebrow/);
-  assert.match(styles, /\.heroGrid \{[\s\S]*?grid-template-columns: minmax\(0, 1fr\) minmax\(18rem, 22rem\)/);
+  assert.match(styles, /\.heroGrid \{[\s\S]*?grid-template-columns: minmax\(0, 1fr\) minmax\(16rem, 19rem\)/);
   assert.match(styles, /\.heroTitle \{[\s\S]*?max-width: 56rem;[\s\S]*?font-size: clamp\(3\.8rem, 4\.9vw, 5\.25rem\);[\s\S]*?line-height: 0\.96;[\s\S]*?letter-spacing: -0\.055em;[\s\S]*?font-weight: 800;/);
   assert.match(styles, /\.heroText \{[\s\S]*?max-width: 53rem;[\s\S]*?font-size: clamp\(1\.12rem, 1\.3vw, 1\.28rem\);[\s\S]*?line-height: 1\.55;[\s\S]*?letter-spacing: -0\.005em;/);
   assert.match(styles, /\.modalDialog \{[\s\S]*?--modal-gutter: clamp\(1\.25rem, 2\.5vw, 1\.75rem\);[\s\S]*?max-height: min\(92dvh, 56rem\)/);
