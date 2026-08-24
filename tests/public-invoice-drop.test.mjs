@@ -32,6 +32,8 @@ test('Invoice Drop uses the homepage typography, photo hero and a gated three-st
   assert.doesNotMatch(client, /HomeHeroVideo|heroEyebrow/);
   assert.match(client, /className=\{styles\.heroUploadAction\}/);
   assert.match(client, /Add invoice/);
+  assert.match(client, /Aim4price will verify it and route it to the correct asset\./);
+  assert.doesNotMatch(client, /route it to the correct record\./);
   assert.doesNotMatch(client, /AIM4PRICE INVOICES|styles\.modalEyebrow/);
   assert.match(client, /Private and owner-controlled\.<\/strong> Sending a document never grants access to an asset record\./);
   assert.match(client, /aria-modal="true"/);
