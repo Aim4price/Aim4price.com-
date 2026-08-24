@@ -20,7 +20,7 @@ test('public Invoice Drop is discoverable in the signed-out header without a dup
   assert.match(footer, /label: 'Explore'[\s\S]*?\/drop-invoice[\s\S]*?Drop an Invoice/);
 });
 
-test('Invoice Drop uses the homepage hero and a gated three-step modal', async () => {
+test('Invoice Drop uses the homepage typography, photo hero and a gated three-step modal', async () => {
   const [page, client, styles] = await Promise.all([
     read('app/drop-invoice/page.tsx'),
     read('app/drop-invoice/invoice-drop-client.tsx'),
@@ -29,8 +29,10 @@ test('Invoice Drop uses the homepage hero and a gated three-step modal', async (
 
   assert.match(page, /title: 'Invoice Drop'/);
   assert.match(page, /<AppHeader active="invoices" \/>/);
-  assert.match(client, /<HomeHeroVideo \/>/);
+  assert.doesNotMatch(client, /HomeHeroVideo|heroEyebrow/);
+  assert.match(client, /className=\{styles\.heroUploadAction\}/);
   assert.match(client, /Add invoice/);
+  assert.match(client, /Private and owner-controlled\.<\/strong> Sending a document never grants access to an asset record\./);
   assert.match(client, /aria-modal="true"/);
   assert.match(client, /const WIZARD_STEPS:[\s\S]*?Identify asset[\s\S]*?Add invoice[\s\S]*?Your details/);
   assert.match(client, /const stepOneComplete = identifier\.trim\(\)\.length >= identifierMinimumLength/);
@@ -44,7 +46,10 @@ test('Invoice Drop uses the homepage hero and a gated three-step modal', async (
   assert.match(client, /Your submission reference/);
   assert.match(client, /Create a free dealer profile/);
   assert.match(client, /name="website"[\s\S]*?tabIndex=\{-1\}/);
-  assert.match(styles, /\.heroTitle \{[\s\S]*?font-family: var\(--font-heading, 'Montserrat'\)/);
+  assert.match(styles, /background-image: url\('\/brand\/invoice-drop-hero\.webp'\)/);
+  assert.doesNotMatch(styles, /\.heroEyebrow|\.heroPrimaryButton/);
+  assert.match(styles, /\.heroTitle \{[\s\S]*?max-width: 56rem;[\s\S]*?font-size: clamp\(3\.8rem, 4\.9vw, 5\.25rem\);[\s\S]*?line-height: 0\.96;[\s\S]*?letter-spacing: -0\.055em;[\s\S]*?font-weight: 800;/);
+  assert.match(styles, /\.heroText \{[\s\S]*?max-width: 53rem;[\s\S]*?font-size: clamp\(1\.12rem, 1\.3vw, 1\.28rem\);[\s\S]*?line-height: 1\.55;[\s\S]*?letter-spacing: -0\.005em;/);
   assert.match(styles, /\.modalDialog \{[\s\S]*?max-height: min\(92dvh, 56rem\)/);
   assert.match(styles, /\.wizardProgress \{[\s\S]*?grid-template-columns: repeat\(3, minmax\(0, 1fr\)\)/);
   assert.match(styles, /@media \(max-width: 720px\)/);
