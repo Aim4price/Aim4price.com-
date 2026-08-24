@@ -46,6 +46,12 @@ test('Invoice Drop uses the homepage typography, photo hero and a gated three-st
   assert.match(client, /Invoice Drop Code/);
   assert.match(client, /A4P-X7KD-29MQ-P6TW/);
   assert.match(client, /Serial or VIN/);
+  assert.doesNotMatch(client, /<select name="senderType"/);
+  assert.match(client, /name="senderType" value=\{senderType\}/);
+  assert.match(client, /aria-haspopup="listbox"/);
+  assert.match(client, /role="option"/);
+  assert.match(client, /Equipment or vehicle dealer/);
+  assert.match(styles, /\.senderSelectMenu \{[\s\S]*?background: #ffffff;[\s\S]*?box-shadow:/);
   assert.match(client, /PDF, JPG, PNG or WEBP/);
   assert.match(client, /Your submission reference/);
   assert.match(client, /Create a free dealer profile/);
