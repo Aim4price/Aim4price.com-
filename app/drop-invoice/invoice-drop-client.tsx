@@ -31,6 +31,13 @@ type InvoiceDropReceipt = {
   message: string;
 };
 
+type ContributionCodeScope = 'unknown' | 'asset' | 'all' | 'invalid';
+type AssetSearchStatus = 'idle' | 'checking' | 'enter_details' | 'matched' | 'needs_detail' | 'error';
+type AssetSearchMatch = {
+  title: string;
+  meta: string;
+};
+
 const WIZARD_STEPS: Array<{ step: WizardStep; label: string }> = [
   { step: 1, label: 'Identify asset' },
   { step: 2, label: 'Add invoice' },
@@ -150,10 +157,22 @@ export default function InvoiceDropClient() {
   const [senderType, setSenderType] = useState<SenderType>('dealer');
   const [isSenderMenuOpen, setIsSenderMenuOpen] = useState(false);
   const [senderHighlightIndex, setSenderHighlightIndex] = useState(0);
+  const [contributionCodeScope, setContributionCodeScope] = useState<ContributionCodeScope>('unknown');
+  const [assetSearchQuery, setAssetSearchQuery] = useState('');
+  const [assetSearchStatus, setAssetSearchStatus] = useState<AssetSearchStatus>('idle');
+  const [assetSearchMatch, setAssetSearchMatch] = useState<AssetSearchMatch | null>(null);
+  const [assetSearchAccepted, setAssetSearchAccepted] = useState<'matched' | 'review' | null>(null);
+  const [assetSearchError, setAssetSearchError] = useState('');
 
   const identifierMinimumLength = lookupMode === 'code' ? 6 : 3;
-  const stepOneComplete = identifier.trim().length >= identifierMinimumLength
-    && (lookupMode === 'code' || assetDescription.trim().length >= 3);
+  const completeContributionCode = /^A4P(?:-[23456789A-HJ-NP-Z]{4}){3}$/i.test(identifier.trim());
+  const codeStepComplete = contributionCodeScope === 'asset'
+    || (contributionCodeScope === 'all'
+      && assetSearchQuery.trim().length >= 3
+      && assetSearchAccepted !== null);
+  const stepOneComplete = lookupMode === 'code'
+    ? completeContributionCode && codeStepComplete
+    : identifier.trim().length >= identifierMinimumLength && assetDescription.trim().length >= 3;
   const stepTwoComplete = files.length === 1;
   const selectedSenderType = SENDER_TYPE_OPTIONS.find((option) => option.value === senderType) ?? SENDER_TYPE_OPTIONS[0];
 
@@ -204,6 +223,76 @@ export default function InvoiceDropClient() {
     return () => document.removeEventListener('pointerdown', handleOutsidePointer);
   }, [isSenderMenuOpen]);
 
+  useEffect(() => {
+    if (!isModalOpen || lookupMode !== 'code' || !completeContributionCode) {
+      setContributionCodeScope('unknown');
+      setAssetSearchStatus('idle');
+      setAssetSearchMatch(null);
+      setAssetSearchError('');
+      return undefined;
+    }
+
+    const controller = new AbortController();
+    const timer = window.setTimeout(async () => {
+      setAssetSearchStatus('checking');
+      setAssetSearchMatch(null);
+      setAssetSearchError('');
+
+      try {
+        const response = await fetch('/api/public/invoice-drop/asset-search', {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: {
+            Accept: 'application/json',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            invoiceDropCode: identifier.trim(),
+            query: assetSearchQuery.trim(),
+          }),
+          signal: controller.signal,
+        });
+        const payload = (await response.json().catch(() => null)) as {
+          ok?: boolean;
+          scope?: 'all' | 'asset';
+          status?: AssetSearchStatus | 'asset_specific';
+          asset?: AssetSearchMatch;
+          error?: string;
+        } | null;
+
+        if (!response.ok || !payload?.ok || !payload.scope) {
+          throw new Error(payload?.error || 'The contribution code could not be checked.');
+        }
+        if (payload.scope === 'asset') {
+          setContributionCodeScope('asset');
+          setAssetSearchStatus('idle');
+          setAssetSearchAccepted(null);
+          return;
+        }
+
+        setContributionCodeScope('all');
+        setAssetSearchStatus(payload.status === 'matched'
+          || payload.status === 'needs_detail'
+          || payload.status === 'enter_details'
+          ? payload.status
+          : 'enter_details');
+        setAssetSearchMatch(payload.status === 'matched' && payload.asset ? payload.asset : null);
+      } catch (error) {
+        if (controller.signal.aborted) return;
+        setContributionCodeScope('invalid');
+        setAssetSearchStatus('error');
+        setAssetSearchMatch(null);
+        setAssetSearchAccepted(null);
+        setAssetSearchError(error instanceof Error ? error.message : 'The contribution code could not be checked.');
+      }
+    }, assetSearchQuery.trim().length >= 3 ? 360 : 180);
+
+    return () => {
+      window.clearTimeout(timer);
+      controller.abort();
+    };
+  }, [assetSearchQuery, completeContributionCode, identifier, isModalOpen, lookupMode]);
+
   function openModal() {
     setNotice(null);
     setIsModalOpen(true);
@@ -251,6 +340,12 @@ export default function InvoiceDropClient() {
     setLookupMode(mode);
     setIdentifier('');
     setAssetDescription('');
+    setContributionCodeScope('unknown');
+    setAssetSearchQuery('');
+    setAssetSearchStatus('idle');
+    setAssetSearchMatch(null);
+    setAssetSearchAccepted(null);
+    setAssetSearchError('');
     setNotice(null);
   }
 
@@ -259,8 +354,18 @@ export default function InvoiceDropClient() {
 
     if (currentStep === 1) {
       if (!stepOneComplete) {
-        if (identifier.trim().length < identifierMinimumLength) identifierInputRef.current?.reportValidity();
-        else assetDescriptionInputRef.current?.reportValidity();
+        if (lookupMode === 'code') {
+          if (!completeContributionCode) identifierInputRef.current?.reportValidity();
+          else if (contributionCodeScope === 'all') {
+            setNotice({ tone: 'error', message: 'Search for the asset and confirm the match or send the typed details for review.' });
+          } else {
+            setNotice({ tone: 'error', message: assetSearchError || 'Wait for Aim4price to check the contribution code.' });
+          }
+        } else if (identifier.trim().length < identifierMinimumLength) {
+          identifierInputRef.current?.reportValidity();
+        } else {
+          assetDescriptionInputRef.current?.reportValidity();
+        }
         return;
       }
       setCurrentStep(2);
@@ -298,6 +403,12 @@ export default function InvoiceDropClient() {
     setLookupMode('code');
     setIdentifier('');
     setAssetDescription('');
+    setContributionCodeScope('unknown');
+    setAssetSearchQuery('');
+    setAssetSearchStatus('idle');
+    setAssetSearchMatch(null);
+    setAssetSearchAccepted(null);
+    setAssetSearchError('');
     setFiles([]);
     setNotice(null);
     setReceipt(null);
@@ -322,6 +433,7 @@ export default function InvoiceDropClient() {
     const formData = new FormData(event.currentTarget);
     formData.set('lookupMode', lookupMode);
     formData.set('startedAt', startedAt);
+    formData.set('assetSearchQuery', lookupMode === 'code' ? assetSearchQuery.trim() : '');
     formData.delete('files');
     files.forEach((file) => formData.append('files', file, file.name));
 
@@ -488,13 +600,25 @@ export default function InvoiceDropClient() {
                         ref={identifierInputRef}
                         name={lookupMode === 'code' ? 'invoiceDropCode' : 'assetReference'}
                         value={identifier}
-                        onChange={(event) => setIdentifier(event.currentTarget.value)}
+                        onChange={(event) => {
+                          const nextValue = lookupMode === 'code'
+                            ? event.currentTarget.value.toUpperCase()
+                            : event.currentTarget.value;
+                          setIdentifier(nextValue);
+                          setContributionCodeScope('unknown');
+                          if (lookupMode === 'code') setAssetSearchQuery('');
+                          setAssetSearchStatus('idle');
+                          setAssetSearchMatch(null);
+                          setAssetSearchAccepted(null);
+                          setAssetSearchError('');
+                        }}
                         autoComplete="off"
                         autoCapitalize={lookupMode === 'code' ? 'characters' : 'none'}
                         spellCheck={false}
                         placeholder={lookupMode === 'code' ? 'For example A4P-X7KD-29MQ-P6TW' : 'Enter the complete serial number or VIN'}
-                        minLength={identifierMinimumLength}
+                        minLength={lookupMode === 'code' ? 18 : identifierMinimumLength}
                         maxLength={lookupMode === 'code' ? 80 : 120}
+                        pattern={lookupMode === 'code' ? 'A4P(?:-[23456789A-HJ-NP-Z]{4}){3}' : undefined}
                         required
                       />
                       <small>
@@ -503,6 +627,82 @@ export default function InvoiceDropClient() {
                           : 'Aim4price will privately link an exact, unique match. No asset information is shown here.'}
                       </small>
                     </label>
+                    {lookupMode === 'code' && completeContributionCode ? (
+                      <div className={styles.contributionCodeResult} aria-live="polite">
+                        {assetSearchStatus === 'checking' ? (
+                          <div className={styles.assetSearchChecking}>Checking the contribution code…</div>
+                        ) : null}
+
+                        {contributionCodeScope === 'asset' ? (
+                          <div className={styles.assetSpecificConfirmation}>
+                            <span className={styles.assetSpecificIcon}><CheckIcon /></span>
+                            <span><strong>Asset-specific code</strong><small>The invoice will route to its linked asset. No asset information is revealed.</small></span>
+                          </div>
+                        ) : null}
+
+                        {contributionCodeScope === 'all' ? (
+                          <section className={styles.ownerAssetSearch}>
+                            <div className={styles.ownerAssetSearchHeading}>
+                              <strong>Find the asset</strong>
+                              <span>This broad code does not show an asset list. Start typing what you know.</span>
+                            </div>
+                            <label className={styles.fieldWide}>
+                              <span>Asset make, model or reference</span>
+                              <input
+                                value={assetSearchQuery}
+                                onChange={(event) => {
+                                  setAssetSearchQuery(event.currentTarget.value);
+                                  setAssetSearchAccepted(null);
+                                  setAssetSearchMatch(null);
+                                  setAssetSearchError('');
+                                }}
+                                autoComplete="off"
+                                spellCheck={false}
+                                minLength={3}
+                                maxLength={160}
+                                placeholder="For example Massey 290, Tractor 3 or CA 123-456"
+                                required
+                              />
+                              <small>Use a make, model, fleet number, registration or serial. Aim4price returns at most one specific match.</small>
+                            </label>
+
+                            {assetSearchStatus === 'matched' && assetSearchMatch ? (
+                              <article className={`${styles.assetSearchMatch} ${assetSearchAccepted === 'matched' ? styles.assetSearchMatchSelected : ''}`}>
+                                <span className={styles.assetSearchMatchIcon}><CheckIcon /></span>
+                                <span><strong>{assetSearchMatch.title}</strong>{assetSearchMatch.meta ? <small>{assetSearchMatch.meta}</small> : null}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setAssetSearchAccepted('matched');
+                                    setNotice(null);
+                                  }}
+                                >
+                                  {assetSearchAccepted === 'matched' ? 'Selected' : 'Use this asset'}
+                                </button>
+                              </article>
+                            ) : null}
+
+                            {assetSearchStatus === 'needs_detail' ? (
+                              <div className={styles.assetSearchGuidance}>
+                                <strong>No unique asset yet</strong>
+                                <p>Add the model, fleet number, registration or serial if you know it. Aim4price will not show alternative assets.</p>
+                                <button type="button" onClick={() => { setAssetSearchAccepted('review'); setNotice(null); }}>
+                                  {assetSearchAccepted === 'review' ? 'Details saved for review' : 'Use these details for admin review'}
+                                </button>
+                              </div>
+                            ) : null}
+
+                            {assetSearchStatus === 'enter_details' && assetSearchQuery.trim().length < 3 ? (
+                              <p className={styles.assetSearchPrompt}>Enter at least three characters to search.</p>
+                            ) : null}
+                          </section>
+                        ) : null}
+
+                        {contributionCodeScope === 'invalid' && assetSearchError ? (
+                          <div className={styles.assetSearchError} role="alert">{assetSearchError}</div>
+                        ) : null}
+                      </div>
+                    ) : null}
                     {lookupMode === 'reference' ? (
                       <label className={styles.fieldWide}>
                         <span>Asset make and model</span>

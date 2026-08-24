@@ -5,13 +5,13 @@ This change replaces the automatic invoice and fuel-slip readers with a 24-hour,
 ## Deployment order
 
 1. Back up the production database.
-2. Confirm migrations 80–82 are already applied, then apply `database/migrations/83-assisted-document-capture.sql` followed by `database/migrations/84-assisted-capture-file-lifecycle.sql`.
+2. Apply the database migrations in numeric order through `database/migrations/87-owner-wide-invoice-drop-codes.sql`. The capture-specific sequence is `83-assisted-document-capture.sql`, `84-assisted-capture-file-lifecycle.sql`, then `87-owner-wide-invoice-drop-codes.sql` after migrations 85–86.
 3. Configure the environment values below.
 4. Deploy the application.
 5. Run the capture purge worker once in dry-run mode, then schedule its approved apply mode.
 6. Complete each phase's smoke test before moving to the next phase.
 
-Do not deploy the application before migrations 83 and 84. Notification, intake and lifecycle routes deliberately fail closed when their tables or cleanup functions are unavailable.
+Do not deploy the application before migrations 83, 84 and 87. Notification, intake and lifecycle routes deliberately fail closed when their tables, cleanup functions or owner-wide code constraints are unavailable.
 
 ## Required configuration
 
@@ -130,17 +130,25 @@ What this enables:
 
 - a homepage **Drop an invoice** entry point and public `/drop-invoice` page;
 - one PDF or JPG/PNG/WEBP image, with content-signature and size validation (use one multi-page PDF when needed);
-- routing by an owner-issued contribution code, or admin matching from a serial/VIN/reference;
+- routing by an owner-issued one-asset contribution code, an owner-wide code with private typed asset matching, or admin matching from a serial/VIN/reference;
+- owner-wide search that starts empty and returns at most one unique asset—never an Asset Register list;
 - generic receipts that do not reveal whether a code or asset matched;
 - a private quarantine and durable per-connection rate limit.
 
-Test the code path:
+Test the one-asset code path:
 
 1. In the owner Cost Ledger, select **Manage contribution code**, choose an asset and create a code.
 2. In a signed-out/private browser, open `/drop-invoice` from the homepage.
 3. Submit a real test PDF/image with the code and sender contact details.
 4. Confirm the public page returns only an `A4P-INV-…` receipt and 24-hour message—never an owner or asset name.
 5. Confirm the request appears in the admin queue already matched to the correct asset.
+
+Test the owner-wide code path:
+
+1. In the contribution-code modal, choose **All assets** and create the owner-wide code.
+2. Enter that code in a signed-out browser. Confirm no asset list is shown.
+3. Type a make/model, registration, fleet number or serial. A unique result may show one confirmation card; an ambiguous result must ask for more detail without showing alternatives.
+4. Submit a uniquely matched test and confirm it links to that asset. Submit an ambiguous test using the admin-review option and confirm it stays inside that owner's matching queue.
 
 Test the reference path:
 
@@ -217,3 +225,4 @@ Pending requests are workflow records only. Financial reporting continues to rea
 - Do not delete migration tables during a rollback. Retain requests and audit events, then redeploy the previous application version.
 - A rejected or declined request is retained for audit but never linked to a canonical ledger output.
 - Generic upload URLs return `404` for invoice and assisted-capture files. Owner/admin access goes through actor-authorised, private, no-store routes.
+

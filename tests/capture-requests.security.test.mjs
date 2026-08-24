@@ -5,6 +5,7 @@ import test from 'node:test';
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
 const capture = read('lib/capture-requests.ts');
 const migration = read('database/migrations/83-assisted-document-capture.sql');
+const ownerWideDropCodeMigration = read('database/migrations/87-owner-wide-invoice-drop-codes.sql');
 const accountDeletion = read('lib/account-deletion.ts');
 const retractionRoute = read('app/api/capture-requests/[requestId]/route.ts');
 
@@ -65,9 +66,27 @@ test('drop codes are revocable keyed hashes and plaintext is returned only on is
   assert.match(capture, /resolveInvoiceDropCode[\s\S]*?where code_hash = \$1[\s\S]*?is_active = true/);
   const resolveBody = capture.slice(
     capture.indexOf('export async function resolveInvoiceDropCode'),
-    capture.indexOf('function normalizeAssetSerialOrVin'),
+    capture.indexOf('function normalizeInvoiceDropAssetSearch'),
   );
   assert.doesNotMatch(resolveBody, /sender_|business_name|asset_title|owner_name/);
+});
+
+test('owner-wide drop codes stay owner-scoped without exposing a browseable asset list', () => {
+  assert.match(ownerWideDropCodeMigration, /alter column asset_register_item_id drop not null/i);
+  assert.match(ownerWideDropCodeMigration, /idx_asset_invoice_drop_codes_one_active_asset[\s\S]*?asset_register_item_id is not null/i);
+  assert.match(ownerWideDropCodeMigration, /idx_asset_invoice_drop_codes_one_active_owner[\s\S]*?owner_user_id[\s\S]*?asset_register_item_id is null/i);
+  assert.match(capture, /asset_register_item_id is not distinct from \$2::uuid/);
+
+  const ownerSearch = capture.slice(
+    capture.indexOf('export async function resolveUniqueOwnerInvoiceDropAsset'),
+    capture.indexOf('export async function searchInvoiceDropAssetByCode'),
+  );
+  assert.match(ownerSearch, /where asset\.user_id = \$1/);
+  assert.match(ownerSearch, /from unnest\(\$2::text\[\]\) as token/);
+  assert.match(ownerSearch, /public_asset_code[\s\S]*?license_registration_number[\s\S]*?fleet_number/);
+  assert.match(ownerSearch, /limit 2/);
+  assert.match(ownerSearch, /result\.rows\.length !== 1/);
+  assert.doesNotMatch(ownerSearch, /return result\.rows\.map|matches:/);
 });
 
 test('public serial and VIN matching is exact, unique and private', () => {

@@ -186,7 +186,8 @@ type CaptureRequestResponse = {
 
 type InvoiceDropCodeRecord = {
   id: string;
-  assetId: string;
+  assetId: string | null;
+  scope: 'all' | 'asset';
   lastFour: string;
   createdAtIso: string;
 };
@@ -1091,6 +1092,7 @@ export default function MyInvoicesClient({
   const [captureRequests, setCaptureRequests] = useState<CaptureRequestStatusItem[]>([]);
   const [captureReviewRequestId, setCaptureReviewRequestId] = useState<string | null>(null);
   const [invoiceDropCodeOpen, setInvoiceDropCodeOpen] = useState(false);
+  const [invoiceDropScope, setInvoiceDropScope] = useState<'all' | 'asset'>('all');
   const [invoiceDropAssetId, setInvoiceDropAssetId] = useState('');
   const [invoiceDropCode, setInvoiceDropCode] = useState<InvoiceDropCodeRecord | null>(null);
   const [newInvoiceDropCode, setNewInvoiceDropCode] = useState('');
@@ -1099,6 +1101,7 @@ export default function MyInvoicesClient({
   const [invoiceDropCodeSaving, setInvoiceDropCodeSaving] = useState(false);
   const [invoiceDropCodeError, setInvoiceDropCodeError] = useState('');
   const [invoiceDropCodeMessage, setInvoiceDropCodeMessage] = useState('');
+  const invoiceDropTargetKey = invoiceDropScope === 'all' ? 'all' : invoiceDropAssetId;
   const [flow, setFlow] = useState<FlowMode>(null);
   const [selectedAssetId, setSelectedAssetId] = useState('');
   const [pickerSearch, setPickerSearch] = useState('');
@@ -1296,7 +1299,7 @@ export default function MyInvoicesClient({
   }, []);
 
   useEffect(() => {
-    if (!canManageInvoiceDropCodes || !invoiceDropCodeOpen || !invoiceDropAssetId) return undefined;
+    if (!canManageInvoiceDropCodes || !invoiceDropCodeOpen || !invoiceDropTargetKey) return undefined;
     let cancelled = false;
 
     setInvoiceDropCodeLoading(true);
@@ -1307,7 +1310,7 @@ export default function MyInvoicesClient({
 
     async function loadInvoiceDropCode() {
       try {
-        const response = await fetch(`/api/invoice-drop-codes/${encodeURIComponent(invoiceDropAssetId)}`, {
+        const response = await fetch(`/api/invoice-drop-codes/${encodeURIComponent(invoiceDropTargetKey)}`, {
           credentials: 'include',
           cache: 'no-store',
         });
@@ -1318,6 +1321,7 @@ export default function MyInvoicesClient({
           setInvoiceDropCode(active ? {
             id: active.id,
             assetId: active.assetId,
+            scope: active.scope,
             lastFour: active.lastFour,
             createdAtIso: active.createdAtIso,
           } : null);
@@ -1333,7 +1337,7 @@ export default function MyInvoicesClient({
 
     void loadInvoiceDropCode();
     return () => { cancelled = true; };
-  }, [canManageInvoiceDropCodes, invoiceDropAssetId, invoiceDropCodeOpen]);
+  }, [canManageInvoiceDropCodes, invoiceDropCodeOpen, invoiceDropTargetKey]);
 
   useEffect(() => {
     if (initialLaunchHandled || isLoading) return;
@@ -1997,6 +2001,7 @@ export default function MyInvoicesClient({
       ? selectedAssetId
       : assets[0]?.id ?? '';
     setNotice(null);
+    setInvoiceDropScope('all');
     setInvoiceDropAssetId(defaultAssetId);
     setInvoiceDropCode(null);
     setNewInvoiceDropCode('');
@@ -2007,6 +2012,7 @@ export default function MyInvoicesClient({
 
   function closeInvoiceDropCodeManager() {
     setInvoiceDropCodeOpen(false);
+    setInvoiceDropScope('all');
     setInvoiceDropAssetId('');
     setInvoiceDropCode(null);
     // Plaintext exists in browser memory only for this just-issued view.
@@ -2027,7 +2033,7 @@ export default function MyInvoicesClient({
   }
 
   async function issueSelectedInvoiceDropCode() {
-    if (!invoiceDropAssetId || invoiceDropCodeSaving) return;
+    if (!invoiceDropTargetKey || invoiceDropCodeSaving) return;
     if (invoiceDropCode && !window.confirm('Rotate this code? The current code will stop working immediately.')) return;
 
     setInvoiceDropCodeSaving(true);
@@ -2036,7 +2042,7 @@ export default function MyInvoicesClient({
     setNewInvoiceDropCode('');
 
     try {
-      const response = await fetch(`/api/invoice-drop-codes/${encodeURIComponent(invoiceDropAssetId)}`, {
+      const response = await fetch(`/api/invoice-drop-codes/${encodeURIComponent(invoiceDropTargetKey)}`, {
         method: 'POST',
         credentials: 'include',
         headers: { Accept: 'application/json' },
@@ -2050,6 +2056,7 @@ export default function MyInvoicesClient({
       setInvoiceDropCode({
         id: issued.id,
         assetId: issued.assetId,
+        scope: issued.scope,
         lastFour: issued.lastFour,
         createdAtIso: issued.createdAtIso,
       });
@@ -2063,15 +2070,16 @@ export default function MyInvoicesClient({
   }
 
   async function revokeSelectedInvoiceDropCode() {
-    if (!invoiceDropAssetId || !invoiceDropCode || invoiceDropCodeSaving) return;
-    if (!window.confirm('Revoke this code? Anyone holding it will no longer be able to submit an invoice for this asset.')) return;
+    if (!invoiceDropTargetKey || !invoiceDropCode || invoiceDropCodeSaving) return;
+    const revokeTarget = invoiceDropScope === 'all' ? 'your Asset Register' : 'this asset';
+    if (!window.confirm(`Revoke this code? Anyone holding it will no longer be able to submit an invoice for ${revokeTarget}.`)) return;
 
     setInvoiceDropCodeSaving(true);
     setInvoiceDropCodeError('');
     setInvoiceDropCodeMessage('');
 
     try {
-      const response = await fetch(`/api/invoice-drop-codes/${encodeURIComponent(invoiceDropAssetId)}`, {
+      const response = await fetch(`/api/invoice-drop-codes/${encodeURIComponent(invoiceDropTargetKey)}`, {
         method: 'DELETE',
         credentials: 'include',
         headers: { Accept: 'application/json' },
@@ -2090,7 +2098,9 @@ export default function MyInvoicesClient({
 
   async function shareInvoiceDropLink() {
     const shareText = newInvoiceDropCode
-      ? `Upload the invoice at Aim4price and use contribution code ${newInvoiceDropCode}. This code permits invoice submission only.`
+      ? invoiceDropScope === 'all'
+        ? `Upload the invoice at Aim4price and use contribution code ${newInvoiceDropCode}. Start typing the asset make, model, fleet number, registration or serial to identify it.`
+        : `Upload the invoice at Aim4price and use contribution code ${newInvoiceDropCode}. This code routes the invoice to ${invoiceDropAsset?.title ?? 'the selected asset'}.`
       : 'Upload the invoice securely at Aim4price. Ask the asset owner for the contribution code.';
 
     if (typeof navigator.share === 'function') {
@@ -2109,8 +2119,11 @@ export default function MyInvoicesClient({
 
   async function copyInvoiceDropInstructions() {
     if (!newInvoiceDropCode) return;
+    const scopeInstruction = invoiceDropScope === 'all'
+      ? 'Start typing the asset make, model, fleet number, registration or serial. Aim4price will never show the full Asset Register.'
+      : `This code routes invoices only to ${invoiceDropAsset?.title ?? 'the selected asset'}.`;
     await copyInvoiceDropText(
-      `Upload the invoice at ${invoiceDropPublicUrl}\nContribution code: ${newInvoiceDropCode}\nThis code permits invoice submission only and does not reveal asset details.`,
+      `Upload the invoice at ${invoiceDropPublicUrl}\nContribution code: ${newInvoiceDropCode}\n${scopeInstruction}\nThis code permits invoice submission only and does not grant access to an asset record.`,
       'Invoice Drop link and new code copied.',
     );
   }
@@ -3483,39 +3496,91 @@ export default function MyInvoicesClient({
             <div className={styles.modalHeader}>
               <div>
                 <h2>Invoice Drop code</h2>
-                <p>Invite an outside dealer, workshop or supplier to send an invoice for one asset.</p>
+                <p>Create one broad code for your Asset Register or a direct code for one asset.</p>
               </div>
               <button type="button" className={styles.closeButton} onClick={closeInvoiceDropCodeManager} aria-label="Close Invoice Drop code manager"><CloseIcon /></button>
             </div>
             <div className={styles.modalDivider} />
 
             <div className={styles.invoiceDropCodeBody}>
-              <label className={styles.invoiceDropAssetField}>
-                <span>Asset</span>
-                <select
-                  value={invoiceDropAssetId}
-                  onChange={(event) => {
-                    setInvoiceDropAssetId(event.target.value);
-                    setInvoiceDropCode(null);
-                    setNewInvoiceDropCode('');
-                    setInvoiceDropCodeError('');
-                    setInvoiceDropCodeMessage('');
-                  }}
-                  disabled={invoiceDropCodeSaving}
-                >
-                  {assets.map((asset) => (
-                    <option key={asset.id} value={asset.id}>{asset.title}</option>
-                  ))}
-                </select>
-                {invoiceDropAsset ? <small>{invoiceDropAsset.categoryLabel}{invoiceDropAsset.yearModel ? ` · ${invoiceDropAsset.yearModel}` : ''}</small> : null}
-              </label>
+              <section className={styles.invoiceDropScopeSection} aria-labelledby="invoice-drop-scope-title">
+                <div className={styles.invoiceDropScopeHeading}>
+                  <span id="invoice-drop-scope-title">Code access</span>
+                  <small>Choose how precisely invoices should be routed.</small>
+                </div>
+                <div className={styles.invoiceDropScopeGrid} role="radiogroup" aria-label="Contribution code access">
+                  <button
+                    type="button"
+                    role="radio"
+                    aria-checked={invoiceDropScope === 'all'}
+                    className={`${styles.invoiceDropScopeOption} ${invoiceDropScope === 'all' ? styles.invoiceDropScopeOptionActive : ''}`}
+                    onClick={() => {
+                      setInvoiceDropScope('all');
+                      setInvoiceDropCode(null);
+                      setNewInvoiceDropCode('');
+                      setInvoiceDropCodeError('');
+                      setInvoiceDropCodeMessage('');
+                    }}
+                    disabled={invoiceDropCodeSaving}
+                  >
+                    <span className={styles.invoiceDropScopeCheck} aria-hidden="true">{invoiceDropScope === 'all' ? '✓' : ''}</span>
+                    <span><strong>All assets</strong><small>The sender searches for one asset without seeing your Asset Register.</small></span>
+                  </button>
+                  <button
+                    type="button"
+                    role="radio"
+                    aria-checked={invoiceDropScope === 'asset'}
+                    className={`${styles.invoiceDropScopeOption} ${invoiceDropScope === 'asset' ? styles.invoiceDropScopeOptionActive : ''}`}
+                    onClick={() => {
+                      setInvoiceDropScope('asset');
+                      setInvoiceDropCode(null);
+                      setNewInvoiceDropCode('');
+                      setInvoiceDropCodeError('');
+                      setInvoiceDropCodeMessage('');
+                    }}
+                    disabled={invoiceDropCodeSaving}
+                  >
+                    <span className={styles.invoiceDropScopeCheck} aria-hidden="true">{invoiceDropScope === 'asset' ? '✓' : ''}</span>
+                    <span><strong>One asset</strong><small>Every invoice using this code routes directly to the selected asset.</small></span>
+                  </button>
+                </div>
+              </section>
+
+              {invoiceDropScope === 'asset' ? (
+                <label className={styles.invoiceDropAssetField}>
+                  <span>Choose the asset</span>
+                  <select
+                    value={invoiceDropAssetId}
+                    onChange={(event) => {
+                      setInvoiceDropAssetId(event.target.value);
+                      setInvoiceDropCode(null);
+                      setNewInvoiceDropCode('');
+                      setInvoiceDropCodeError('');
+                      setInvoiceDropCodeMessage('');
+                    }}
+                    disabled={invoiceDropCodeSaving}
+                  >
+                    {assets.map((asset) => (
+                      <option key={asset.id} value={asset.id}>{asset.title}</option>
+                    ))}
+                  </select>
+                  {invoiceDropAsset ? <small>{invoiceDropAsset.categoryLabel}{invoiceDropAsset.yearModel ? ` · ${invoiceDropAsset.yearModel}` : ''}</small> : null}
+                </label>
+              ) : (
+                <div className={styles.invoiceDropAllAssetsSummary}>
+                  <strong>Owner inbox routing</strong>
+                  <p>The broad code identifies your account only. The sender must type an asset make, model, registration, fleet number or serial before continuing.</p>
+                </div>
+              )}
 
               <div className={styles.invoiceDropSafetyNote}>
                 <strong>Contribution-only access</strong>
-                <p>This code can only submit an invoice into Aim4price&apos;s review queue. It cannot open your account, identify the asset, or reveal any asset details.</p>
+                <p>{invoiceDropScope === 'all'
+                  ? 'The public search starts empty and returns at most one sufficiently specific match. It never exposes a list of your assets.'
+                  : 'This code can submit an invoice for the selected asset only. It cannot open your account or reveal the asset record.'}</p>
               </div>
 
-              {invoiceDropCodeLoading ? <div className={styles.invoiceDropCodeLoading}>Checking this asset&apos;s active code...</div> : null}
+              {invoiceDropCodeLoading ? <div className={styles.invoiceDropCodeLoading}>Checking this contribution scope&apos;s active code...</div> : null}
 
               {!invoiceDropCodeLoading ? (
                 <section className={styles.invoiceDropCodeCard} aria-live="polite">
@@ -3546,7 +3611,7 @@ export default function MyInvoicesClient({
                       <small>Created {formatDateTime(invoiceDropCode.createdAtIso)}. The full code is never shown again.</small>
                     </div>
                   ) : (
-                    <p className={styles.invoiceDropCodeEmpty}>Create a code when you are ready to invite someone to submit an invoice for this asset.</p>
+                    <p className={styles.invoiceDropCodeEmpty}>Create a code when you are ready to invite someone to submit {invoiceDropScope === 'all' ? 'invoices across your Asset Register' : 'an invoice for this asset'}.</p>
                   )}
 
                   <div className={styles.invoiceDropCodeActions}>
@@ -3554,7 +3619,7 @@ export default function MyInvoicesClient({
                       type="button"
                       className={styles.primaryButton}
                       onClick={() => void issueSelectedInvoiceDropCode()}
-                      disabled={!invoiceDropAssetId || invoiceDropCodeSaving}
+                      disabled={!invoiceDropTargetKey || invoiceDropCodeSaving}
                     >
                       {invoiceDropCodeSaving ? 'Updating...' : invoiceDropCode ? 'Rotate code' : 'Create code'}
                     </button>

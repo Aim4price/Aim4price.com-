@@ -233,7 +233,8 @@ export type CaptureQueueCounts = {
 export type IssuedInvoiceDropCode = {
   id: string;
   ownerUserId: string;
-  assetId: string;
+  assetId: string | null;
+  scope: 'all' | 'asset';
   code: string;
   lastFour: string;
   createdAtIso: string;
@@ -242,7 +243,8 @@ export type IssuedInvoiceDropCode = {
 export type ResolvedInvoiceDropCode = {
   dropCodeId: string;
   ownerUserId: string;
-  assetId: string;
+  assetId: string | null;
+  scope: 'all' | 'asset';
 };
 
 export type ResolvedAssetSerialOrVin = {
@@ -251,6 +253,18 @@ export type ResolvedAssetSerialOrVin = {
   assetId: string;
   assetDisplayName: string;
   serialOrVin: string;
+};
+
+export type InvoiceDropAssetSearchMatch = ResolvedAssetSerialOrVin & {
+  categoryLabel: string;
+  yearModel: string;
+  serialSuffix: string;
+};
+
+export type InvoiceDropAssetSearchResult = {
+  scope: 'all' | 'asset';
+  match: InvoiceDropAssetSearchMatch | null;
+  ambiguous: boolean;
 };
 
 export type ActiveInvoiceDropCode = Omit<IssuedInvoiceDropCode, 'code'>;
@@ -354,9 +368,19 @@ type CaptureQueueCountRow = QueryResultRow & {
 type DropCodeRow = QueryResultRow & {
   id: string;
   owner_user_id: string;
-  asset_register_item_id: string;
+  asset_register_item_id: string | null;
   code_last_four: string;
   created_at: Date | string;
+};
+
+type OwnerAssetSearchRow = QueryResultRow & {
+  owner_user_id: string;
+  owner_display_name: string | null;
+  asset_id: string;
+  asset_display_name: string | null;
+  category_label: string | null;
+  year_model: string | number | null;
+  serial_or_vin: string | null;
 };
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -803,12 +827,16 @@ export async function createCaptureRequest(
       );
       const matchedCode = dropCode.rows[0];
       if (!matchedCode) throw new Error('CAPTURE_DROP_CODE_INVALID');
-      if (
-        !ownerUserId
-        || !assetId
-        || matchedCode.owner_user_id !== ownerUserId
-        || String(matchedCode.asset_register_item_id) !== assetId
-      ) {
+      const codeAssetId = matchedCode.asset_register_item_id
+        ? String(matchedCode.asset_register_item_id)
+        : null;
+      if (!ownerUserId || matchedCode.owner_user_id !== ownerUserId) {
+        throw new Error('CAPTURE_DROP_CODE_MISMATCH');
+      }
+      // An asset-scoped code must resolve to its one bound asset. An owner-wide
+      // code may resolve to any verified asset belonging to that owner, or stay
+      // unallocated for admin matching.
+      if (codeAssetId && (!assetId || codeAssetId !== assetId)) {
         throw new Error('CAPTURE_DROP_CODE_MISMATCH');
       }
     }
@@ -1716,35 +1744,47 @@ function assertDropCodeActor(
 }
 
 export async function issueInvoiceDropCode(
-  input: { ownerUserId: string; assetId: string },
+  input: { ownerUserId: string; assetId?: string | null },
   actorInput: CaptureEventActor,
 ): Promise<IssuedInvoiceDropCode> {
   const ownerUserId = cleanText(input.ownerUserId, 200);
   if (!ownerUserId) throw new Error('CAPTURE_OWNER_REQUIRED');
-  const assetId = asUuid(input.assetId, 'CAPTURE_ASSET_INVALID');
+  const assetIdInput = cleanText(input.assetId, 80);
+  const assetId = assetIdInput ? asUuid(assetIdInput, 'CAPTURE_ASSET_INVALID') : null;
   const actor = assertDropCodeActor(actorInput, ownerUserId);
   const code = generateInvoiceDropCode();
   const codeHash = invoiceDropCodeHash(code);
   const lastFour = code.slice(-4);
 
   return withTransaction(async (client) => {
-    const asset = await client.query(
-      `select id from public.asset_register_items
-        where id = $1::uuid and user_id = $2
-        for update`,
-      [assetId, ownerUserId],
-    );
-    if (!asset.rows[0]) throw new Error('CAPTURE_ASSET_NOT_FOUND');
+    if (assetId) {
+      const asset = await client.query(
+        `select id from public.asset_register_items
+          where id = $1::uuid and user_id = $2
+          for update`,
+        [assetId, ownerUserId],
+      );
+      if (!asset.rows[0]) throw new Error('CAPTURE_ASSET_NOT_FOUND');
+    } else {
+      // Serialise owner-wide code rotation against the owner's profile row.
+      const owner = await client.query(
+        `select user_id from public.account_profiles
+          where user_id = $1
+          for update`,
+        [ownerUserId],
+      );
+      if (!owner.rows[0]) throw new Error('CAPTURE_OWNER_REQUIRED');
+    }
 
     await client.query(
       `update public.asset_invoice_drop_codes
           set is_active = false,
               revoked_at = now(),
               revoked_by_user_id = nullif($3, '')
-        where asset_register_item_id = $1::uuid
-          and owner_user_id = $2
+        where owner_user_id = $1
+          and asset_register_item_id is not distinct from $2::uuid
           and is_active = true`,
-      [assetId, ownerUserId, actor.userId],
+      [ownerUserId, assetId, actor.userId],
     );
 
     const result = await client.query<DropCodeRow>(
@@ -1765,7 +1805,8 @@ export async function issueInvoiceDropCode(
     return {
       id: String(row.id),
       ownerUserId: String(row.owner_user_id),
-      assetId: String(row.asset_register_item_id),
+      assetId: row.asset_register_item_id ? String(row.asset_register_item_id) : null,
+      scope: row.asset_register_item_id ? 'asset' : 'all',
       code,
       lastFour: String(row.code_last_four),
       createdAtIso: asIso(row.created_at),
@@ -1797,9 +1838,173 @@ export async function resolveInvoiceDropCode(
     ? {
         dropCodeId: String(row.id),
         ownerUserId: String(row.owner_user_id),
-        assetId: String(row.asset_register_item_id),
+        assetId: row.asset_register_item_id ? String(row.asset_register_item_id) : null,
+        scope: row.asset_register_item_id ? 'asset' : 'all',
       }
     : null;
+}
+
+function normalizeInvoiceDropAssetSearch(value: unknown): string[] {
+  const normalized = cleanText(value, 160)
+    .normalize('NFKC')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+  if (normalized.length < 3) return [];
+  return normalized
+    .split(/\s+/)
+    .filter((token) => token.length >= 2)
+    .slice(0, 8);
+}
+
+function serialSuffix(value: unknown): string {
+  const normalized = normalizeAssetSerialOrVin(value);
+  return normalized.length >= 4 ? normalized.slice(-4) : '';
+}
+
+/**
+ * Resolves an owner-scoped, typed asset description to at most one asset.
+ * The query is token based, stays inside the known owner's register and never
+ * returns a browseable list. Ambiguous matches deliberately return no asset.
+ */
+export async function resolveUniqueOwnerInvoiceDropAsset(
+  ownerUserIdInput: string,
+  searchInput: string,
+): Promise<{ match: InvoiceDropAssetSearchMatch | null; ambiguous: boolean }> {
+  const ownerUserId = cleanText(ownerUserIdInput, 200);
+  const searchTokens = normalizeInvoiceDropAssetSearch(searchInput);
+  if (!ownerUserId || !searchTokens.length) return { match: null, ambiguous: false };
+
+  const result = await getDb().query<OwnerAssetSearchRow>(
+    `with candidates as (
+       select
+         asset.user_id as owner_user_id,
+         coalesce(
+           nullif(profile.business_name, ''),
+           nullif(profile.display_name, ''),
+           nullif(to_jsonb(profile)->>'email', ''),
+           'Asset owner'
+         ) as owner_display_name,
+         asset.id::text as asset_id,
+         coalesce(
+           nullif(asset.title, ''),
+           nullif(concat_ws(' ', nullif(asset.brand_name, ''), nullif(asset.model_name, '')), ''),
+           'Saved asset'
+         ) as asset_display_name,
+         coalesce(
+           nullif(to_jsonb(asset)->>'category_label', ''),
+           nullif(to_jsonb(asset)->>'category', ''),
+           ''
+         ) as category_label,
+         coalesce(
+           nullif(to_jsonb(asset)->>'year_model', ''),
+           nullif(to_jsonb(asset)->>'year', ''),
+           ''
+         ) as year_model,
+         coalesce(
+           nullif(to_jsonb(asset)->>'serial_number', ''),
+           nullif(to_jsonb(asset)->>'serial', ''),
+           nullif(to_jsonb(asset)->>'vin', ''),
+           ''
+         ) as serial_or_vin,
+         lower(regexp_replace(
+           concat_ws(' ',
+             nullif(asset.title, ''),
+             nullif(asset.brand_name, ''),
+             nullif(asset.model_name, ''),
+             nullif(to_jsonb(asset)->>'serial_number', ''),
+             nullif(to_jsonb(asset)->>'serial', ''),
+             nullif(to_jsonb(asset)->>'vin', ''),
+             nullif(to_jsonb(asset)->>'public_asset_code', ''),
+             nullif(to_jsonb(asset)->>'license_registration_number', ''),
+             nullif(to_jsonb(asset)->>'licence_registration_number', ''),
+             nullif(to_jsonb(asset)->>'registration_number', ''),
+             nullif(to_jsonb(asset)->>'registration', ''),
+             nullif(to_jsonb(asset)->>'number_plate', ''),
+             nullif(to_jsonb(asset)->>'numberplate', ''),
+             nullif(to_jsonb(asset)->>'plate_label', ''),
+             nullif(to_jsonb(asset)->>'license_plate', ''),
+             nullif(to_jsonb(asset)->>'fleet_number', ''),
+             nullif(to_jsonb(asset)->>'asset_number', ''),
+             nullif(to_jsonb(asset)->>'stock_number', ''),
+             nullif(to_jsonb(asset)->'specs_json'->>'fleet_number', ''),
+             nullif(to_jsonb(asset)->'specs_json'->>'asset_number', ''),
+             nullif(to_jsonb(asset)->'specs_json'->>'stock_number', '')
+           ),
+           '[^A-Za-z0-9]+',
+           ' ',
+           'g'
+         )) as search_text
+       from public.asset_register_items asset
+       left join public.account_profiles profile on profile.user_id = asset.user_id
+       where asset.user_id = $1
+     )
+     select
+       owner_user_id,
+       owner_display_name,
+       asset_id,
+       asset_display_name,
+       category_label,
+       year_model,
+       serial_or_vin
+     from candidates
+     where not exists (
+       select 1
+       from unnest($2::text[]) as token
+       where candidates.search_text not like ('%' || token || '%')
+     )
+     order by asset_display_name, asset_id
+     limit 2`,
+    [ownerUserId, searchTokens],
+  );
+
+  if (result.rows.length !== 1) {
+    return { match: null, ambiguous: result.rows.length > 1 };
+  }
+  const row = result.rows[0];
+  const serialOrVin = cleanText(row.serial_or_vin, 180);
+  return {
+    ambiguous: false,
+    match: {
+      ownerUserId: String(row.owner_user_id),
+      ownerDisplayName: cleanText(row.owner_display_name, 180) || 'Asset owner',
+      assetId: String(row.asset_id),
+      assetDisplayName: cleanText(row.asset_display_name, 180) || 'Saved asset',
+      serialOrVin,
+      categoryLabel: cleanText(row.category_label, 120),
+      yearModel: cleanText(row.year_model, 20),
+      serialSuffix: serialSuffix(serialOrVin),
+    },
+  };
+}
+
+export async function searchInvoiceDropAssetByCode(
+  inputCode: string,
+  searchInput: string,
+): Promise<InvoiceDropAssetSearchResult | null> {
+  let code: string;
+  try {
+    code = normalizeInvoiceDropCode(inputCode);
+  } catch {
+    return null;
+  }
+  const codeHash = invoiceDropCodeHash(code);
+  const codeResult = await getDb().query<DropCodeRow>(
+    `select id, owner_user_id, asset_register_item_id, code_last_four, created_at
+       from public.asset_invoice_drop_codes
+      where code_hash = $1
+        and is_active = true
+      limit 1`,
+    [codeHash],
+  );
+  const row = codeResult.rows[0];
+  if (!row) return null;
+  if (row.asset_register_item_id) {
+    return { scope: 'asset', match: null, ambiguous: false };
+  }
+
+  const search = await resolveUniqueOwnerInvoiceDropAsset(row.owner_user_id, searchInput);
+  return { scope: 'all', ...search };
 }
 
 function normalizeAssetSerialOrVin(value: unknown): string {
@@ -1872,16 +2077,17 @@ export async function resolveUniqueAssetSerialOrVin(
 
 export async function getActiveInvoiceDropCode(
   ownerUserIdInput: string,
-  assetIdInput: string,
+  assetIdInput?: string | null,
 ): Promise<ActiveInvoiceDropCode | null> {
   const ownerUserId = cleanText(ownerUserIdInput, 200);
-  const assetId = asUuid(assetIdInput, 'CAPTURE_ASSET_INVALID');
+  const assetIdText = cleanText(assetIdInput, 80);
+  const assetId = assetIdText ? asUuid(assetIdText, 'CAPTURE_ASSET_INVALID') : null;
   if (!ownerUserId) return null;
   const result = await getDb().query<DropCodeRow>(
     `select id, owner_user_id, asset_register_item_id, code_last_four, created_at
        from public.asset_invoice_drop_codes
       where owner_user_id = $1
-        and asset_register_item_id = $2::uuid
+        and asset_register_item_id is not distinct from $2::uuid
         and is_active = true
       limit 1`,
     [ownerUserId, assetId],
@@ -1889,10 +2095,11 @@ export async function getActiveInvoiceDropCode(
   const row = result.rows[0];
   return row
     ? {
-        id: String(row.id),
-        ownerUserId: String(row.owner_user_id),
-        assetId: String(row.asset_register_item_id),
-        lastFour: String(row.code_last_four),
+      id: String(row.id),
+      ownerUserId: String(row.owner_user_id),
+      assetId: row.asset_register_item_id ? String(row.asset_register_item_id) : null,
+      scope: row.asset_register_item_id ? 'asset' : 'all',
+      lastFour: String(row.code_last_four),
         createdAtIso: asIso(row.created_at),
       }
     : null;

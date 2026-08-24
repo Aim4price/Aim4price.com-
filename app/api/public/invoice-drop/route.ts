@@ -4,6 +4,7 @@ import {
   addCaptureRequestFile,
   createCaptureRequest,
   resolveInvoiceDropCode,
+  resolveUniqueOwnerInvoiceDropAsset,
   resolveUniqueAssetSerialOrVin,
   transitionCaptureRequest,
   type CaptureEventActor,
@@ -174,6 +175,7 @@ export async function POST(request: NextRequest) {
   const invoiceDropCode = readText(formData, 'invoiceDropCode', 80).toUpperCase();
   const assetReference = readText(formData, 'assetReference', 120);
   const assetDescription = readText(formData, 'assetDescription', 160);
+  const assetSearchQuery = readText(formData, 'assetSearchQuery', 160);
   const senderName = readText(formData, 'senderName', 120);
   const businessName = readText(formData, 'businessName', 160);
   const senderType = readText(formData, 'senderType', 30) as CaptureSenderType;
@@ -222,6 +224,16 @@ export async function POST(request: NextRequest) {
     resolvedAsset = lookupMode === 'reference'
       ? await resolveUniqueAssetSerialOrVin(assetReference)
       : null;
+    if (lookupMode === 'code' && resolvedCode?.scope === 'all') {
+      if (assetSearchQuery.length < 3) {
+        return errorResponse('Describe the asset before continuing.', 400);
+      }
+      const ownerSearch = await resolveUniqueOwnerInvoiceDropAsset(
+        resolvedCode.ownerUserId,
+        assetSearchQuery,
+      );
+      resolvedAsset = ownerSearch.match;
+    }
   } catch (error) {
     console.error('public invoice drop asset resolution failed', error);
     return errorResponse('Invoice Drop is temporarily unavailable. Please try again shortly.', 503);
@@ -264,7 +276,13 @@ export async function POST(request: NextRequest) {
           email,
           phone: mobile,
         },
-        assetReference: lookupMode === 'reference' ? assetReference : resolvedCode ? null : invoiceDropCode,
+        assetReference: lookupMode === 'reference'
+          ? assetReference
+          : resolvedCode?.scope === 'all'
+            ? assetSearchQuery
+            : resolvedCode
+              ? null
+              : invoiceDropCode,
         requesterNote: note,
         candidatePayload: {
           lookupMode,
@@ -272,13 +290,19 @@ export async function POST(request: NextRequest) {
           publicInvoiceDrop: true,
           submittedSerialOrVin: lookupMode === 'reference' ? assetReference : '',
           submittedAssetDescription: lookupMode === 'reference' ? assetDescription : '',
+          submittedAssetSearch: lookupMode === 'code' ? assetSearchQuery : '',
+          contributionCodeScope: resolvedCode?.scope ?? '',
           assetDisplayName: resolvedAsset?.assetDisplayName ?? assetDescription,
           ownerDisplayName: resolvedAsset?.ownerDisplayName ?? '',
-          matchMethod: resolvedCode
-            ? 'invoice_drop_code'
-            : resolvedAsset
-              ? 'exact_unique_serial_or_vin'
-              : 'admin_review_required',
+          matchMethod: resolvedCode?.scope === 'asset'
+            ? 'invoice_drop_code_asset'
+            : resolvedCode?.scope === 'all' && resolvedAsset
+              ? 'invoice_drop_code_owner_search'
+              : resolvedCode?.scope === 'all'
+                ? 'invoice_drop_code_owner_review'
+                : resolvedAsset
+                  ? 'exact_unique_serial_or_vin'
+                  : 'admin_review_required',
         },
       },
       PUBLIC_ACTOR,

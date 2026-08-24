@@ -714,6 +714,191 @@
   line-height: 1.45;
 }
 
+.contributionCodeResult {
+  display: grid;
+  max-width: 44rem;
+  margin-top: 0.8rem;
+}
+
+.assetSearchChecking,
+.assetSearchPrompt,
+.assetSearchError {
+  margin: 0;
+  padding: 0.75rem 0.85rem;
+  border: 1px solid rgba(190, 210, 201, 0.82);
+  border-radius: 0.82rem;
+  color: #65776f;
+  background: #f7faf8;
+  font-size: 0.75rem;
+  font-weight: 650;
+}
+
+.assetSearchError {
+  border-color: #efc9c9;
+  color: #8f3535;
+  background: #fff3f3;
+}
+
+.assetSpecificConfirmation {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.82rem 0.9rem;
+  border: 1px solid rgba(175, 214, 197, 0.9);
+  border-radius: 0.9rem;
+  background: #edf8f2;
+}
+
+.assetSpecificIcon,
+.assetSearchMatchIcon {
+  display: grid;
+  width: 2rem;
+  height: 2rem;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 999px;
+  color: #ffffff;
+  background: #1f805e;
+}
+
+.assetSpecificIcon svg,
+.assetSearchMatchIcon svg {
+  width: 1rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.2;
+}
+
+.assetSpecificConfirmation > span:last-child {
+  display: grid;
+  gap: 0.12rem;
+}
+
+.assetSpecificConfirmation strong {
+  color: #174b3b;
+  font-size: 0.82rem;
+  font-weight: 780;
+}
+
+.assetSpecificConfirmation small {
+  color: #65776f;
+  font-size: 0.7rem;
+  font-weight: 560;
+}
+
+.ownerAssetSearch {
+  display: grid;
+  gap: 0.8rem;
+  padding: 1rem;
+  border: 1px solid rgba(187, 210, 200, 0.86);
+  border-radius: 1rem;
+  background: #f7fbf9;
+}
+
+.ownerAssetSearchHeading {
+  display: grid;
+  gap: 0.18rem;
+}
+
+.ownerAssetSearchHeading strong {
+  color: #173f32;
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
+.ownerAssetSearchHeading span {
+  color: #6b7c74;
+  font-size: 0.73rem;
+  font-weight: 560;
+  line-height: 1.42;
+}
+
+.ownerAssetSearch .fieldWide {
+  margin: 0;
+}
+
+.assetSearchMatch {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.72rem;
+  padding: 0.78rem;
+  border: 1px solid rgba(177, 209, 195, 0.9);
+  border-radius: 0.9rem;
+  background: #ffffff;
+  box-shadow: 0 8px 20px rgba(16, 75, 55, 0.06);
+}
+
+.assetSearchMatchSelected {
+  border-color: rgba(28, 125, 91, 0.66);
+  background: #eff9f4;
+}
+
+.assetSearchMatch > span:nth-child(2) {
+  display: grid;
+  gap: 0.14rem;
+  min-width: 0;
+}
+
+.assetSearchMatch strong {
+  overflow: hidden;
+  color: #173f32;
+  font-size: 0.82rem;
+  font-weight: 780;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.assetSearchMatch small {
+  color: #728079;
+  font-size: 0.68rem;
+  font-weight: 560;
+}
+
+.assetSearchMatch button,
+.assetSearchGuidance button {
+  min-height: 2.35rem;
+  padding: 0 0.78rem;
+  border: 0;
+  border-radius: 0.72rem;
+  color: #ffffff;
+  background: #1d7859;
+  font: inherit;
+  font-size: 0.7rem;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.assetSearchGuidance {
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.82rem;
+  border: 1px solid rgba(220, 199, 151, 0.88);
+  border-radius: 0.88rem;
+  background: #fffaf0;
+}
+
+.assetSearchGuidance strong {
+  color: #684f1d;
+  font-size: 0.8rem;
+  font-weight: 780;
+}
+
+.assetSearchGuidance p {
+  margin: 0;
+  color: #76694f;
+  font-size: 0.71rem;
+  font-weight: 560;
+  line-height: 1.45;
+}
+
+.assetSearchGuidance button {
+  width: fit-content;
+  margin-top: 0.2rem;
+}
+
 .dropZone {
   position: relative;
   display: grid;
@@ -1271,6 +1456,15 @@
 
   .fieldGrid .fieldWide {
     grid-column: auto;
+  }
+
+  .assetSearchMatch {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .assetSearchMatch button {
+    grid-column: 1 / -1;
+    width: 100%;
   }
 
   .dropZone {

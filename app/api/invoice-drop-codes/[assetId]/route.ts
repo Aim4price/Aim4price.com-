@@ -37,6 +37,11 @@ type OwnerAccess = {
   ownerAppAccess: OwnerAppAccess;
 };
 
+type InvoiceDropCodeTarget = {
+  scope: 'all' | 'asset';
+  assetId: string | null;
+};
+
 function json(body: Record<string, unknown>, status = 200) {
   return NextResponse.json(body, {
     status,
@@ -105,13 +110,16 @@ async function requireOwnerAccess(
   };
 }
 
-async function requireOwnedAsset(
+async function requireCodeTarget(
   access: OwnerAccess,
   assetIdInput: string,
-): Promise<{ ok: true; assetId: string } | { ok: false; response: NextResponse }> {
+): Promise<{ ok: true; target: InvoiceDropCodeTarget } | { ok: false; response: NextResponse }> {
   const assetId = String(assetIdInput ?? '').trim();
+  if (assetId === 'all') {
+    return { ok: true, target: { scope: 'all', assetId: null } };
+  }
   if (!UUID_PATTERN.test(assetId)) {
-    return { ok: false, response: json({ ok: false, error: 'Choose a valid saved asset.' }, 400) };
+    return { ok: false, response: json({ ok: false, error: 'Choose all assets or one valid saved asset.' }, 400) };
   }
 
   try {
@@ -126,7 +134,7 @@ async function requireOwnedAsset(
     if (!asset) {
       return { ok: false, response: json({ ok: false, error: 'That asset could not be found in your Asset Register.' }, 404) };
     }
-    return { ok: true, assetId };
+    return { ok: true, target: { scope: 'asset', assetId } };
   } catch {
     return { ok: false, response: json({ ok: false, error: 'That asset could not be found in your Asset Register.' }, 404) };
   }
@@ -150,11 +158,11 @@ function dropCodeError(error: unknown): NextResponse {
 export async function GET(request: NextRequest, routeContext: RouteContext) {
   const owner = await requireOwnerAccess(request);
   if (!owner.ok) return owner.response;
-  const asset = await requireOwnedAsset(owner.access, routeContext.params.assetId);
-  if (!asset.ok) return asset.response;
+  const target = await requireCodeTarget(owner.access, routeContext.params.assetId);
+  if (!target.ok) return target.response;
 
   try {
-    const dropCode = await getActiveInvoiceDropCode(owner.access.context.ownerUserId, asset.assetId);
+    const dropCode = await getActiveInvoiceDropCode(owner.access.context.ownerUserId, target.target.assetId);
     // ActiveInvoiceDropCode deliberately contains the last four characters only.
     return json({ ok: true, dropCode });
   } catch (error) {
@@ -165,12 +173,12 @@ export async function GET(request: NextRequest, routeContext: RouteContext) {
 export async function POST(request: NextRequest, routeContext: RouteContext) {
   const owner = await requireOwnerAccess(request, { requireFinanceMutation: true });
   if (!owner.ok) return owner.response;
-  const asset = await requireOwnedAsset(owner.access, routeContext.params.assetId);
-  if (!asset.ok) return asset.response;
+  const target = await requireCodeTarget(owner.access, routeContext.params.assetId);
+  if (!target.ok) return target.response;
 
   try {
     const dropCode = await issueInvoiceDropCode(
-      { ownerUserId: owner.access.context.ownerUserId, assetId: asset.assetId },
+      { ownerUserId: owner.access.context.ownerUserId, assetId: target.target.assetId },
       owner.access.actor,
     );
     // This is the only response that includes the plaintext code. It is never
@@ -184,11 +192,11 @@ export async function POST(request: NextRequest, routeContext: RouteContext) {
 export async function DELETE(request: NextRequest, routeContext: RouteContext) {
   const owner = await requireOwnerAccess(request, { requireFinanceMutation: true });
   if (!owner.ok) return owner.response;
-  const asset = await requireOwnedAsset(owner.access, routeContext.params.assetId);
-  if (!asset.ok) return asset.response;
+  const target = await requireCodeTarget(owner.access, routeContext.params.assetId);
+  if (!target.ok) return target.response;
 
   try {
-    const active = await getActiveInvoiceDropCode(owner.access.context.ownerUserId, asset.assetId);
+    const active = await getActiveInvoiceDropCode(owner.access.context.ownerUserId, target.target.assetId);
     if (!active) return json({ ok: true, dropCode: null });
 
     const revoked = await revokeInvoiceDropCode(active.id, owner.access.actor);
@@ -200,3 +208,4 @@ export async function DELETE(request: NextRequest, routeContext: RouteContext) {
     return dropCodeError(error);
   }
 }
+

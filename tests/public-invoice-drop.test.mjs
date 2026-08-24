@@ -39,7 +39,9 @@ test('Invoice Drop uses the homepage typography, photo hero and a gated three-st
   assert.match(client, /aria-modal="true"/);
   assert.match(client, /const WIZARD_STEPS:[\s\S]*?Identify asset[\s\S]*?Add invoice[\s\S]*?Your details/);
   assert.doesNotMatch(client, /STEP [123] OF 3/);
-  assert.match(client, /const stepOneComplete = identifier\.trim\(\)\.length >= identifierMinimumLength[\s\S]*?assetDescription\.trim\(\)\.length >= 3/);
+  assert.match(client, /const completeContributionCode = \/\^A4P/);
+  assert.match(client, /const codeStepComplete = contributionCodeScope === 'asset'[\s\S]*?contributionCodeScope === 'all'[\s\S]*?assetSearchAccepted !== null/);
+  assert.match(client, /const stepOneComplete = lookupMode === 'code'[\s\S]*?completeContributionCode && codeStepComplete[\s\S]*?assetDescription\.trim\(\)\.length >= 3/);
   assert.match(client, /const stepTwoComplete = files\.length === 1/);
   assert.match(client, /disabled=\{currentStep === 1 \? !stepOneComplete : !stepTwoComplete\}/);
   assert.doesNotMatch(client, /styles\.formSection/);
@@ -49,6 +51,10 @@ test('Invoice Drop uses the homepage typography, photo hero and a gated three-st
   assert.match(client, /Asset make and model/);
   assert.match(client, /For example Massey Ferguson 290/);
   assert.match(client, /privately link an exact, unique match/);
+  assert.match(client, /This broad code does not show an asset list/);
+  assert.match(client, /Aim4price returns at most one specific match/);
+  assert.match(client, /Use these details for admin review/);
+  assert.match(client, /\/api\/public\/invoice-drop\/asset-search/);
   assert.doesNotMatch(client, /<select name="senderType"/);
   assert.match(client, /name="senderType" value=\{senderType\}/);
   assert.match(client, /aria-haspopup="listbox"/);
@@ -209,11 +215,13 @@ test('public multipart parsing enforces the actual streamed byte count without C
   );
 });
 
-test('public route privately auto-links only unique serial or VIN matches', async () => {
-  const [route, storage, migration, durableRateLimit, captureStore] = await Promise.all([
+test('public route privately auto-links unique serial, VIN or owner-scoped broad-code matches', async () => {
+  const [route, searchRoute, storage, migration, ownerWideMigration, durableRateLimit, captureStore] = await Promise.all([
     read('app/api/public/invoice-drop/route.ts'),
+    read('app/api/public/invoice-drop/asset-search/route.ts'),
     read('lib/capture-quarantine-storage.ts'),
     read('database/migrations/83-assisted-document-capture.sql'),
+    read('database/migrations/87-owner-wide-invoice-drop-codes.sql'),
     read('lib/public-invoice-drop-rate-limit.ts'),
     read('lib/capture-requests.ts'),
   ]);
@@ -221,11 +229,14 @@ test('public route privately auto-links only unique serial or VIN matches', asyn
   assert.match(route, /status: 202/);
   assert.match(route, /resolveInvoiceDropCode\(invoiceDropCode\)/);
   assert.match(route, /resolveUniqueAssetSerialOrVin\(assetReference\)/);
+  assert.match(route, /resolveUniqueOwnerInvoiceDropAsset\([\s\S]*?resolvedCode\.ownerUserId,[\s\S]*?assetSearchQuery/);
   assert.match(route, /resolvedAsset\?\.ownerUserId/);
   assert.match(route, /resolvedAsset\?\.assetId/);
   assert.match(route, /submittedAssetDescription/);
+  assert.match(route, /submittedAssetSearch/);
   assert.match(route, /exact_unique_serial_or_vin/);
-  assert.match(route, /resolvedCode \? null : invoiceDropCode/);
+  assert.match(route, /invoice_drop_code_owner_search/);
+  assert.match(route, /invoice_drop_code_owner_review/);
   assert.match(route, /return accepted\(captureRequest\.publicReference\)/);
   assert.doesNotMatch(route, /assetTitle|ownerName|ownerEmail/);
   assert.match(route, /validatePublicInvoiceFiles\(formFiles\(formData\)\)/);
@@ -243,10 +254,21 @@ test('public route privately auto-links only unique serial or VIN matches', asyn
   assert.match(storage, /aim4price-security-status': 'pending'/);
   assert.match(migration, /security_status text not null default 'pending'/);
   assert.match(migration, /public_invoice_drop_rate_limits/);
+  assert.match(ownerWideMigration, /idx_asset_invoice_drop_codes_one_active_owner/);
   assert.match(durableRateLimit, /on conflict \(rate_key\) do update/);
   assert.doesNotMatch(durableRateLimit, /ipAddress|userAgent/);
   assert.match(captureStore, /resolveUniqueAssetSerialOrVin/);
   assert.match(captureStore, /regexp_replace\([\s\S]*?serial_number[\s\S]*?serial[\s\S]*?vin/);
   assert.match(captureStore, /limit 2/);
   assert.match(captureStore, /result\.rows\.length !== 1/);
+
+  assert.match(searchRoute, /isTrustedPublicInvoiceOrigin/);
+  assert.match(searchRoute, /MAXIMUM_BODY_BYTES = 4_096/);
+  assert.match(searchRoute, /consumePublicInvoiceDropRateLimit\(searchRateKey/);
+  assert.match(searchRoute, /status: 'asset_specific'/);
+  assert.match(searchRoute, /status: 'matched'/);
+  assert.match(searchRoute, /cannot be used to infer the size of an owner/);
+  assert.match(searchRoute, /status: 'needs_detail'/);
+  assert.match(searchRoute, /asset: \{[\s\S]*?title:[\s\S]*?meta,/);
+  assert.doesNotMatch(searchRoute, /ownerUserId|assetId|assets:/);
 });

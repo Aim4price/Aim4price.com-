@@ -11,11 +11,13 @@ const ledger = readFileSync(
   'utf8',
 );
 
-test('Invoice Drop code API is owner-only and asset-scoped', () => {
+test('Invoice Drop code API is owner-only and supports owner-wide or one-asset targets', () => {
   assert.match(api, /resolveOwnerWorkspaceContext\(request, \{ ledger: 'cost' \}\)/);
   assert.match(api, /context\.accountantAccess \|\| context\.ownerUserId !== context\.actorUserId/);
   assert.match(api, /profile\.accountType !== 'owner'/);
   assert.match(api, /isOwnerAppSession\(session\)/);
+  assert.match(api, /if \(assetId === 'all'\)/);
+  assert.match(api, /scope: 'all', assetId: null/);
   assert.match(api, /assertWorkspaceAssetAccess\(access\.context, assetId\)/);
   assert.match(api, /getAssetRegisterItemById\(access\.context\.ownerUserId, assetId\)/);
 });
@@ -42,8 +44,11 @@ test('Cost Ledger exposes code management only in the direct owner workspace', (
   assert.match(ledger, /\{canManageInvoiceDropCodes \? \(/);
   assert.match(ledger, /<span>Contribution<\/span>/);
   assert.match(ledger, /Contribution-only access/);
-  assert.match(ledger, /cannot open your account, identify the asset, or reveal any asset details/i);
-  assert.match(ledger, /\/api\/invoice-drop-codes\/\$\{encodeURIComponent\(invoiceDropAssetId\)\}/);
+  assert.match(ledger, /<strong>All assets<\/strong>/);
+  assert.match(ledger, /<strong>One asset<\/strong>/);
+  assert.match(ledger, /never exposes a list of your assets/i);
+  assert.match(ledger, /const invoiceDropTargetKey = invoiceDropScope === 'all' \? 'all' : invoiceDropAssetId/);
+  assert.match(ledger, /\/api\/invoice-drop-codes\/\$\{encodeURIComponent\(invoiceDropTargetKey\)\}/);
 });
 
 test('full code is an issuance-only UI state and later views show last four', () => {
@@ -55,3 +60,4 @@ test('full code is an issuance-only UI state and later views show last four', ()
   assert.match(ledger, /Copy link/);
   assert.match(ledger, /Share/);
 });
+
