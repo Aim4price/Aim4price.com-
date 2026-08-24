@@ -1107,6 +1107,8 @@ export default function MyInvoicesClient({
   const [invoiceDropScope, setInvoiceDropScope] = useState<InvoiceDropScope>('');
   const [invoiceDropWizardStep, setInvoiceDropWizardStep] = useState<InvoiceDropWizardStep>(1);
   const [invoiceDropAssetId, setInvoiceDropAssetId] = useState('');
+  const [invoiceDropAssetPickerOpen, setInvoiceDropAssetPickerOpen] = useState(false);
+  const [invoiceDropAssetSearch, setInvoiceDropAssetSearch] = useState('');
   const [invoiceDropCode, setInvoiceDropCode] = useState<InvoiceDropCodeRecord | null>(null);
   const [newInvoiceDropCode, setNewInvoiceDropCode] = useState('');
   const [invoiceDropPublicUrl, setInvoiceDropPublicUrl] = useState('/drop-invoice');
@@ -1391,6 +1393,12 @@ export default function MyInvoicesClient({
     () => assets.find((asset) => asset.id === invoiceDropAssetId) ?? null,
     [assets, invoiceDropAssetId],
   );
+
+  const filteredInvoiceDropAssets = useMemo(() => {
+    const query = invoiceDropAssetSearch.trim().toLowerCase();
+    if (!query) return assets;
+    return assets.filter((asset) => assetSearchText(asset).includes(query));
+  }, [assets, invoiceDropAssetSearch]);
 
   const filteredAssets = useMemo(() => {
     const query = pickerSearch.trim().toLowerCase();
@@ -2021,11 +2029,13 @@ export default function MyInvoicesClient({
   function openInvoiceDropCodeManager() {
     const defaultAssetId = selectedAssetId && assets.some((asset) => asset.id === selectedAssetId)
       ? selectedAssetId
-      : assets[0]?.id ?? '';
+      : '';
     setNotice(null);
     setInvoiceDropScope('');
     setInvoiceDropWizardStep(1);
     setInvoiceDropAssetId(defaultAssetId);
+    setInvoiceDropAssetPickerOpen(false);
+    setInvoiceDropAssetSearch('');
     setInvoiceDropCode(null);
     setNewInvoiceDropCode('');
     setInvoiceDropCodeError('');
@@ -2039,6 +2049,8 @@ export default function MyInvoicesClient({
     setInvoiceDropScope('');
     setInvoiceDropWizardStep(1);
     setInvoiceDropAssetId('');
+    setInvoiceDropAssetPickerOpen(false);
+    setInvoiceDropAssetSearch('');
     setInvoiceDropCode(null);
     // Plaintext exists in browser memory only for this just-issued view.
     setNewInvoiceDropCode('');
@@ -2049,6 +2061,9 @@ export default function MyInvoicesClient({
 
   function selectInvoiceDropScope(scope: Exclude<InvoiceDropScope, ''>) {
     setInvoiceDropScope(scope);
+    setInvoiceDropAssetPickerOpen(false);
+    setInvoiceDropAssetSearch('');
+    if (scope === 'all') setInvoiceDropAssetId('');
     setInvoiceDropCode(null);
     setNewInvoiceDropCode('');
     setInvoiceDropCodeError('');
@@ -2073,6 +2088,26 @@ export default function MyInvoicesClient({
     setInvoiceDropWizardStep((current) => current === 3 ? 2 : 1);
   }
 
+  function openInvoiceDropAssetPicker() {
+    setInvoiceDropAssetSearch('');
+    setInvoiceDropAssetPickerOpen(true);
+  }
+
+  function closeInvoiceDropAssetPicker() {
+    setInvoiceDropAssetPickerOpen(false);
+    setInvoiceDropAssetSearch('');
+  }
+
+  function chooseInvoiceDropAsset(assetId: string) {
+    setInvoiceDropAssetId(assetId);
+    setInvoiceDropAssetPickerOpen(false);
+    setInvoiceDropAssetSearch('');
+    setInvoiceDropCode(null);
+    setNewInvoiceDropCode('');
+    setInvoiceDropCodeError('');
+    setInvoiceDropCodeMessage('');
+  }
+
   async function copyInvoiceDropText(value: string, successMessage: string) {
     if (!value) return;
     try {
@@ -2086,7 +2121,7 @@ export default function MyInvoicesClient({
 
   async function issueSelectedInvoiceDropCode() {
     if (!invoiceDropTargetKey || invoiceDropCodeSaving) return;
-    if (invoiceDropCode && !window.confirm('Rotate this code? The current code will stop working immediately.')) return;
+    if (invoiceDropCode && !window.confirm('Change this code? The current code will stop working immediately.')) return;
 
     setInvoiceDropCodeSaving(true);
     setInvoiceDropCodeError('');
@@ -3542,7 +3577,7 @@ export default function MyInvoicesClient({
         </div>
       ) : null}
 
-      {invoiceDropCodeOpen ? (
+      {invoiceDropCodeOpen && !invoiceDropAssetPickerOpen ? (
         <div className={styles.modalBackdrop} role="dialog" aria-modal="true" aria-labelledby="invoice-drop-code-title">
           <div className={`${styles.downloadModal} ${styles.invoiceDropCodeModal}`}>
             <div className={`${styles.modalHeader} ${styles.invoiceDropCodeHeader}`}>
@@ -3632,32 +3667,26 @@ export default function MyInvoicesClient({
                         <p>Every invoice using this code routes directly here.</p>
                       </div>
                       {assets.length ? (
-                        <label className={styles.invoiceDropAssetField}>
+                        <div className={styles.invoiceDropAssetField}>
                           <span>Saved asset</span>
-                          <div className={styles.invoiceDropAssetSelectWrap}>
-                            <select
-                              value={invoiceDropAssetId}
-                              onChange={(event) => {
-                                setInvoiceDropAssetId(event.target.value);
-                                setInvoiceDropCode(null);
-                                setNewInvoiceDropCode('');
-                                setInvoiceDropCodeError('');
-                                setInvoiceDropCodeMessage('');
-                              }}
-                            >
-                              {assets.map((asset) => (
-                                <option key={asset.id} value={asset.id}>{asset.title}</option>
-                              ))}
-                            </select>
-                            <ChevronDownIcon aria-hidden="true" />
-                          </div>
-                          {invoiceDropAsset ? (
-                            <span className={styles.invoiceDropSelectedAsset}>
-                              <strong>{invoiceDropAsset.title}</strong>
-                              <small>{[invoiceDropAsset.categoryLabel, invoiceDropAsset.yearModel].filter(Boolean).join(' · ')}</small>
+                          <button
+                            type="button"
+                            className={styles.invoiceDropAssetPickerTrigger}
+                            onClick={openInvoiceDropAssetPicker}
+                            aria-haspopup="dialog"
+                          >
+                            <span className={styles.invoiceDropAssetPickerCopy}>
+                              <strong>{invoiceDropAsset?.title ?? 'Search your Asset Register'}</strong>
+                              <small>{invoiceDropAsset
+                                ? [invoiceDropAsset.categoryLabel, invoiceDropAsset.yearModel].filter(Boolean).join(' · ')
+                                : 'Choose one saved asset'}</small>
                             </span>
-                          ) : null}
-                        </label>
+                            <span className={styles.invoiceDropAssetPickerAction}>
+                              <SearchIcon aria-hidden="true" />
+                              {invoiceDropAsset ? 'Change' : 'Choose asset'}
+                            </span>
+                          </button>
+                        </div>
                       ) : (
                         <div className={styles.invoiceDropCodeError} role="alert">Add an asset to your Asset Register before creating a direct code.</div>
                       )}
@@ -3690,9 +3719,9 @@ export default function MyInvoicesClient({
                       <div className={styles.invoiceDropCodeCardHeader}>
                         <div>
                           <span>Contribution code</span>
-                          <strong>{invoiceDropCode ? 'Active' : 'No active code'}</strong>
+                          <strong>{invoiceDropCode ? 'Ready to share' : 'Create your code'}</strong>
                         </div>
-                        {invoiceDropCode ? <span className={styles.invoiceDropCodeActiveBadge}>Ready</span> : null}
+                        {invoiceDropCode ? <span className={styles.invoiceDropCodeActiveBadge}>Active</span> : null}
                       </div>
 
                       {newInvoiceDropCode ? (
@@ -3712,11 +3741,11 @@ export default function MyInvoicesClient({
                         <>
                           <div className={styles.invoiceDropCodeMasked}>
                             <code aria-label={`Active code ending in ${invoiceDropCode.lastFour}`}>A4P-••••-••••-{invoiceDropCode.lastFour}</code>
-                            <small>Created {formatDateTime(invoiceDropCode.createdAtIso)}. The full code is not stored.</small>
+                            <small>Created {formatDateTime(invoiceDropCode.createdAtIso)}. Keep using it until you choose to change or revoke it.</small>
                           </div>
                           <div className={styles.invoiceDropCodeActions}>
                             <button type="button" className={styles.secondaryButton} onClick={() => void issueSelectedInvoiceDropCode()} disabled={invoiceDropCodeSaving}>
-                              {invoiceDropCodeSaving ? 'Updating...' : 'Rotate code'}
+                              {invoiceDropCodeSaving ? 'Changing...' : 'Change code'}
                             </button>
                             <button type="button" className={styles.invoiceDropRevokeButton} onClick={() => void revokeSelectedInvoiceDropCode()} disabled={invoiceDropCodeSaving}>
                               Revoke code
@@ -3724,7 +3753,21 @@ export default function MyInvoicesClient({
                           </div>
                         </>
                       ) : (
-                        <p className={styles.invoiceDropCodeEmpty}>Create the code, then send it with the upload link.</p>
+                        <div className={styles.invoiceDropCodeCreateState}>
+                          <code aria-hidden="true">A4P-••••-••••-••••</code>
+                          <div>
+                            <strong>Generate a secure code</strong>
+                            <p>Aim4price creates it for this route. You do not need to type one.</p>
+                          </div>
+                          <button
+                            type="button"
+                            className={styles.primaryButton}
+                            onClick={() => void issueSelectedInvoiceDropCode()}
+                            disabled={!invoiceDropTargetKey || invoiceDropCodeSaving}
+                          >
+                            {invoiceDropCodeSaving ? 'Creating...' : 'Create code'}
+                          </button>
+                        </div>
                       )}
                     </div>
                   ) : null}
@@ -3763,18 +3806,72 @@ export default function MyInvoicesClient({
                 >
                   Next
                 </button>
-              ) : invoiceDropCode ? (
-                <button type="button" className={styles.primaryButton} onClick={closeInvoiceDropCodeManager} disabled={invoiceDropCodeSaving}>Done</button>
               ) : (
-                <button
-                  type="button"
-                  className={styles.primaryButton}
-                  onClick={() => void issueSelectedInvoiceDropCode()}
-                  disabled={!invoiceDropTargetKey || invoiceDropCodeLoading || invoiceDropCodeSaving}
-                >
-                  {invoiceDropCodeLoading ? 'Checking...' : invoiceDropCodeSaving ? 'Creating...' : 'Create code'}
-                </button>
+                <button type="button" className={styles.primaryButton} onClick={closeInvoiceDropCodeManager} disabled={invoiceDropCodeSaving}>Done</button>
               )}
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {invoiceDropCodeOpen && invoiceDropAssetPickerOpen ? (
+        <div className={`${styles.modalBackdrop} ${styles.invoiceDropAssetPickerBackdrop}`} role="dialog" aria-modal="true" aria-labelledby="invoice-drop-asset-picker-title">
+          <div className={`${styles.assetModal} ${styles.invoiceDropAssetPickerModal}`} data-asset-choice-surface="true" data-asset-choice-modal="true">
+            <div className={`${styles.modalHeader} ${styles.invoiceDropAssetPickerHeader}`} data-asset-choice-header="true">
+              <div>
+                <h2 id="invoice-drop-asset-picker-title">Choose one asset</h2>
+                <p>Search by name, model, serial or fleet details.</p>
+              </div>
+              <button type="button" className={styles.closeButton} onClick={closeInvoiceDropAssetPicker} aria-label="Close asset search"><CloseIcon /></button>
+            </div>
+            <div className={styles.modalDivider} />
+            <div className={styles.invoiceDropAssetPickerToolbar} data-asset-choice-toolbar="true">
+              <label>
+                <SearchIcon aria-hidden="true" />
+                <input
+                  autoFocus
+                  value={invoiceDropAssetSearch}
+                  onChange={(event) => setInvoiceDropAssetSearch(event.target.value)}
+                  placeholder="Search assets..."
+                  aria-label="Search assets"
+                />
+              </label>
+              {invoiceDropAssetSearch ? (
+                <button type="button" className={styles.secondaryButton} onClick={() => setInvoiceDropAssetSearch('')}>Clear</button>
+              ) : null}
+            </div>
+            <div className={`${styles.assetList} ${styles.invoiceDropAssetPickerList}`} data-asset-choice-list="true">
+              {filteredInvoiceDropAssets.length ? filteredInvoiceDropAssets.map((asset) => {
+                const selected = asset.id === invoiceDropAssetId;
+                return (
+                  <button
+                    type="button"
+                    key={asset.id}
+                    className={`${styles.assetRow} ${styles.invoiceDropAssetPickerRow} ${selected ? styles.invoiceDropAssetPickerRowSelected : ''}`}
+                    data-asset-choice-row="true"
+                    aria-pressed={selected}
+                    onClick={() => chooseInvoiceDropAsset(asset.id)}
+                  >
+                    <span className={styles.assetInfo} data-asset-choice-copy="true">
+                      {asset.ownerName ? <small data-asset-choice-meta="true">{asset.ownerName}</small> : null}
+                      <strong>{asset.title}</strong>
+                      {asset.meta ? <small data-asset-choice-meta="true">{asset.meta}</small> : null}
+                      <small data-asset-choice-secondary="true">{[asset.categoryLabel, asset.yearModel].filter(Boolean).join(' · ')}</small>
+                    </span>
+                    <span className={styles.invoiceDropAssetPickerRowAside}>
+                      <span className={styles.assetValue} data-asset-choice-value="true">
+                        <strong>{formatMoney(asset.value)}</strong>
+                        <small>current value</small>
+                      </span>
+                      <span className={styles.invoiceDropAssetPickerSelection} aria-hidden="true">{selected ? '✓' : 'Choose'}</span>
+                    </span>
+                  </button>
+                );
+              }) : <div className={styles.emptyState}>No matching assets found.</div>}
+            </div>
+            <div className={`${styles.modalFooter} ${styles.invoiceDropAssetPickerFooter}`} data-asset-choice-footer="true">
+              <span>{filteredInvoiceDropAssets.length} {filteredInvoiceDropAssets.length === 1 ? 'asset' : 'assets'}</span>
+              <button type="button" className={styles.secondaryButton} onClick={closeInvoiceDropAssetPicker}>Cancel</button>
             </div>
           </div>
         </div>

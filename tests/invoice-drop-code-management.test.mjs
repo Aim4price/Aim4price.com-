@@ -14,6 +14,10 @@ const ledgerStyles = readFileSync(
   new URL('../app/my-invoices/page.module.css', import.meta.url),
   'utf8',
 );
+const invoiceDropWizard = ledger.slice(
+  ledger.indexOf('{invoiceDropCodeOpen && !invoiceDropAssetPickerOpen ? ('),
+  ledger.indexOf('{sourceChoiceOpen ? ('),
+);
 
 test('Invoice Drop code API is owner-only and supports owner-wide or one-asset targets', () => {
   assert.match(api, /resolveOwnerWorkspaceContext\(request, \{ ledger: 'cost' \}\)/);
@@ -72,6 +76,26 @@ test('Invoice Drop code wizard stays compact and responsive', () => {
   assert.match(ledgerStyles, /\.invoiceDropWizardProgress \{[\s\S]*?grid-template-columns: repeat\(3, minmax\(0, 1fr\)\)/);
   assert.match(ledgerStyles, /\.invoiceDropScopeGrid \{[\s\S]*?grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
   assert.match(ledgerStyles, /@media \(max-width: 720px\)[\s\S]*?\.invoiceDropScopeGrid \{[\s\S]*?grid-template-columns: 1fr/);
+  assert.match(ledgerStyles, /\.invoiceDropCodeHeader \.closeButton,[\s\S]*?border-radius: 999px/);
+});
+
+test('one-asset routing uses a searchable app-styled picker instead of a native select', () => {
+  assert.match(invoiceDropWizard, /invoiceDropAssetPickerOpen/);
+  assert.match(invoiceDropWizard, /Search your Asset Register/);
+  assert.match(invoiceDropWizard, /placeholder="Search assets\.\.\."/);
+  assert.match(invoiceDropWizard, /filteredInvoiceDropAssets\.map/);
+  assert.match(invoiceDropWizard, /chooseInvoiceDropAsset\(asset\.id\)/);
+  assert.doesNotMatch(invoiceDropWizard, /<select/);
+  assert.match(ledgerStyles, /\.invoiceDropAssetPickerModal \{[\s\S]*?width: min\(100%, 880px\)/);
+});
+
+test('code stage makes secure creation and deliberate replacement explicit', () => {
+  assert.match(invoiceDropWizard, /Generate a secure code/);
+  assert.match(invoiceDropWizard, /You do not need to type one/);
+  assert.match(invoiceDropWizard, /Create code/);
+  assert.match(invoiceDropWizard, /Change code/);
+  assert.match(invoiceDropWizard, /Keep using it until you choose to change or revoke it/);
+  assert.match(ledger, /Change this code\? The current code will stop working immediately\./);
 });
 
 test('full code is an issuance-only UI state and later views show last four', () => {
