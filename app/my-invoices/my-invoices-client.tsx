@@ -1111,9 +1111,11 @@ export default function MyInvoicesClient({
   const [invoiceDropAssetSearch, setInvoiceDropAssetSearch] = useState('');
   const [invoiceDropCode, setInvoiceDropCode] = useState<InvoiceDropCodeRecord | null>(null);
   const [newInvoiceDropCode, setNewInvoiceDropCode] = useState('');
+  const [revealedInvoiceDropCode, setRevealedInvoiceDropCode] = useState('');
   const [invoiceDropPublicUrl, setInvoiceDropPublicUrl] = useState('/drop-invoice');
   const [invoiceDropCodeLoading, setInvoiceDropCodeLoading] = useState(false);
   const [invoiceDropCodeSaving, setInvoiceDropCodeSaving] = useState(false);
+  const [invoiceDropCodeRevealing, setInvoiceDropCodeRevealing] = useState(false);
   const [invoiceDropCodeError, setInvoiceDropCodeError] = useState('');
   const [invoiceDropCodeMessage, setInvoiceDropCodeMessage] = useState('');
   const invoiceDropTargetKey = invoiceDropScope === 'all'
@@ -1121,6 +1123,7 @@ export default function MyInvoicesClient({
     : invoiceDropScope === 'asset'
       ? invoiceDropAssetId
       : '';
+  const visibleInvoiceDropCode = newInvoiceDropCode || revealedInvoiceDropCode;
   const [flow, setFlow] = useState<FlowMode>(null);
   const [selectedAssetId, setSelectedAssetId] = useState('');
   const [pickerSearch, setPickerSearch] = useState('');
@@ -1330,6 +1333,7 @@ export default function MyInvoicesClient({
     setInvoiceDropCodeError('');
     setInvoiceDropCodeMessage('');
     setNewInvoiceDropCode('');
+    setRevealedInvoiceDropCode('');
     setInvoiceDropCode(null);
 
     async function loadInvoiceDropCode() {
@@ -1393,6 +1397,20 @@ export default function MyInvoicesClient({
     () => assets.find((asset) => asset.id === invoiceDropAssetId) ?? null,
     [assets, invoiceDropAssetId],
   );
+
+  const invoiceDropAssetDetails = useMemo(() => {
+    if (!invoiceDropAsset) return '';
+    const details: string[] = [];
+    const meta = invoiceDropAsset.meta.trim();
+    if (meta) details.push(meta);
+
+    const year = invoiceDropAsset.yearModel ? `Year Model ${invoiceDropAsset.yearModel}` : '';
+    if (year && !meta.toLowerCase().includes(String(invoiceDropAsset.yearModel))) details.push(year);
+
+    const usage = formatAssetUsageReading(invoiceDropAsset.usageReading, invoiceDropAsset.usageMetric);
+    if (usage && !meta.toLowerCase().includes(usage.toLowerCase())) details.push(usage);
+    return details.join(' · ');
+  }, [invoiceDropAsset]);
 
   const filteredInvoiceDropAssets = useMemo(() => {
     const query = invoiceDropAssetSearch.trim().toLowerCase();
@@ -2038,9 +2056,11 @@ export default function MyInvoicesClient({
     setInvoiceDropAssetSearch('');
     setInvoiceDropCode(null);
     setNewInvoiceDropCode('');
+    setRevealedInvoiceDropCode('');
     setInvoiceDropCodeError('');
     setInvoiceDropCodeMessage('');
     setInvoiceDropCodeLoading(false);
+    setInvoiceDropCodeRevealing(false);
     setInvoiceDropCodeOpen(true);
   }
 
@@ -2052,11 +2072,13 @@ export default function MyInvoicesClient({
     setInvoiceDropAssetPickerOpen(false);
     setInvoiceDropAssetSearch('');
     setInvoiceDropCode(null);
-    // Plaintext exists in browser memory only for this just-issued view.
+    // Plaintext exists in browser memory only while the owner is viewing it.
     setNewInvoiceDropCode('');
+    setRevealedInvoiceDropCode('');
     setInvoiceDropCodeError('');
     setInvoiceDropCodeMessage('');
     setInvoiceDropCodeLoading(false);
+    setInvoiceDropCodeRevealing(false);
   }
 
   function selectInvoiceDropScope(scope: Exclude<InvoiceDropScope, ''>) {
@@ -2066,6 +2088,7 @@ export default function MyInvoicesClient({
     if (scope === 'all') setInvoiceDropAssetId('');
     setInvoiceDropCode(null);
     setNewInvoiceDropCode('');
+    setRevealedInvoiceDropCode('');
     setInvoiceDropCodeError('');
     setInvoiceDropCodeMessage('');
   }
@@ -2083,6 +2106,7 @@ export default function MyInvoicesClient({
 
   function goBackInvoiceDropWizard() {
     if (newInvoiceDropCode) return;
+    setRevealedInvoiceDropCode('');
     setInvoiceDropCodeError('');
     setInvoiceDropCodeMessage('');
     setInvoiceDropWizardStep((current) => current === 3 ? 2 : 1);
@@ -2104,6 +2128,7 @@ export default function MyInvoicesClient({
     setInvoiceDropAssetSearch('');
     setInvoiceDropCode(null);
     setNewInvoiceDropCode('');
+    setRevealedInvoiceDropCode('');
     setInvoiceDropCodeError('');
     setInvoiceDropCodeMessage('');
   }
@@ -2120,13 +2145,14 @@ export default function MyInvoicesClient({
   }
 
   async function issueSelectedInvoiceDropCode() {
-    if (!invoiceDropTargetKey || invoiceDropCodeSaving) return;
+    if (!invoiceDropTargetKey || invoiceDropCodeSaving || invoiceDropCodeRevealing) return;
     if (invoiceDropCode && !window.confirm('Change this code? The current code will stop working immediately.')) return;
 
     setInvoiceDropCodeSaving(true);
     setInvoiceDropCodeError('');
     setInvoiceDropCodeMessage('');
     setNewInvoiceDropCode('');
+    setRevealedInvoiceDropCode('');
 
     try {
       const response = await fetch(`/api/invoice-drop-codes/${encodeURIComponent(invoiceDropTargetKey)}`, {
@@ -2148,7 +2174,7 @@ export default function MyInvoicesClient({
         createdAtIso: issued.createdAtIso,
       });
       setNewInvoiceDropCode(issued.code);
-      setInvoiceDropCodeMessage('New contribution code created. Copy it now; Aim4price will not show the full code again.');
+      setInvoiceDropCodeMessage('New contribution code created. You can view it again from this owner-only screen.');
     } catch (error) {
       setInvoiceDropCodeError(error instanceof Error ? error.message : 'The Invoice Drop code could not be created.');
     } finally {
@@ -2157,7 +2183,7 @@ export default function MyInvoicesClient({
   }
 
   async function revokeSelectedInvoiceDropCode() {
-    if (!invoiceDropTargetKey || !invoiceDropCode || invoiceDropCodeSaving) return;
+    if (!invoiceDropTargetKey || !invoiceDropCode || invoiceDropCodeSaving || invoiceDropCodeRevealing) return;
     const revokeTarget = invoiceDropScope === 'all' ? 'your Asset Register' : 'this asset';
     if (!window.confirm(`Revoke this code? Anyone holding it will no longer be able to submit an invoice for ${revokeTarget}.`)) return;
 
@@ -2175,6 +2201,7 @@ export default function MyInvoicesClient({
       if (!response.ok || !data.ok) throw new Error(data.error || 'The Invoice Drop code could not be revoked.');
       setInvoiceDropCode(null);
       setNewInvoiceDropCode('');
+      setRevealedInvoiceDropCode('');
       setInvoiceDropCodeMessage('Contribution code revoked.');
     } catch (error) {
       setInvoiceDropCodeError(error instanceof Error ? error.message : 'The Invoice Drop code could not be revoked.');
@@ -2183,11 +2210,42 @@ export default function MyInvoicesClient({
     }
   }
 
+  async function revealSelectedInvoiceDropCode() {
+    if (!invoiceDropTargetKey || !invoiceDropCode || invoiceDropCodeRevealing) return;
+
+    setInvoiceDropCodeRevealing(true);
+    setInvoiceDropCodeError('');
+    setInvoiceDropCodeMessage('');
+
+    try {
+      const response = await fetch(
+        `/api/invoice-drop-codes/${encodeURIComponent(invoiceDropTargetKey)}?reveal=1`,
+        { credentials: 'include', cache: 'no-store' },
+      );
+      const data = (await response.json()) as InvoiceDropCodeResponse;
+      const active = data.dropCode;
+      if (!response.ok || !data.ok || !active?.code) {
+        throw new Error(data.error || 'The Invoice Drop code could not be viewed.');
+      }
+      setRevealedInvoiceDropCode(active.code);
+      setInvoiceDropCodeMessage('Code visible only in this owner-only window.');
+    } catch (error) {
+      setInvoiceDropCodeError(error instanceof Error ? error.message : 'The Invoice Drop code could not be viewed.');
+    } finally {
+      setInvoiceDropCodeRevealing(false);
+    }
+  }
+
+  function hideRevealedInvoiceDropCode() {
+    setRevealedInvoiceDropCode('');
+    setInvoiceDropCodeMessage('Code hidden.');
+  }
+
   async function shareInvoiceDropLink() {
-    const shareText = newInvoiceDropCode
+    const shareText = visibleInvoiceDropCode
       ? invoiceDropScope === 'all'
-        ? `Upload the invoice at Aim4price and use contribution code ${newInvoiceDropCode}. Start typing the asset make, model, fleet number, registration or serial to identify it.`
-        : `Upload the invoice at Aim4price and use contribution code ${newInvoiceDropCode}. This code routes the invoice to ${invoiceDropAsset?.title ?? 'the selected asset'}.`
+        ? `Upload the invoice at Aim4price and use contribution code ${visibleInvoiceDropCode}. Start typing the asset make, model, fleet number, registration or serial to identify it.`
+        : `Upload the invoice at Aim4price and use contribution code ${visibleInvoiceDropCode}. This code routes the invoice to ${invoiceDropAsset?.title ?? 'the selected asset'}.`
       : 'Upload the invoice securely at Aim4price. Ask the asset owner for the contribution code.';
 
     if (typeof navigator.share === 'function') {
@@ -2205,13 +2263,13 @@ export default function MyInvoicesClient({
   }
 
   async function copyInvoiceDropInstructions() {
-    if (!newInvoiceDropCode) return;
+    if (!visibleInvoiceDropCode) return;
     const scopeInstruction = invoiceDropScope === 'all'
       ? 'Start typing the asset make, model, fleet number, registration or serial. Aim4price will never show the full Asset Register.'
       : `This code routes invoices only to ${invoiceDropAsset?.title ?? 'the selected asset'}.`;
     await copyInvoiceDropText(
-      `Upload the invoice at ${invoiceDropPublicUrl}\nContribution code: ${newInvoiceDropCode}\n${scopeInstruction}\nThis code permits invoice submission only and does not grant access to an asset record.`,
-      'Invoice Drop link and new code copied.',
+      `Upload the invoice at ${invoiceDropPublicUrl}\nContribution code: ${visibleInvoiceDropCode}\n${scopeInstruction}\nThis code permits invoice submission only and does not grant access to an asset record.`,
+      'Invoice Drop link and code copied.',
     );
   }
 
@@ -3678,7 +3736,7 @@ export default function MyInvoicesClient({
                             <span className={styles.invoiceDropAssetPickerCopy}>
                               <strong>{invoiceDropAsset?.title ?? 'Search your Asset Register'}</strong>
                               <small>{invoiceDropAsset
-                                ? [invoiceDropAsset.categoryLabel, invoiceDropAsset.yearModel].filter(Boolean).join(' · ')
+                                ? invoiceDropAssetDetails || [invoiceDropAsset.categoryLabel, invoiceDropAsset.yearModel].filter(Boolean).join(' · ')
                                 : 'Choose one saved asset'}</small>
                             </span>
                             <span className={styles.invoiceDropAssetPickerAction}>
@@ -3708,7 +3766,9 @@ export default function MyInvoicesClient({
                     <div>
                       <span>Routing</span>
                       <strong id="invoice-drop-code-step-title">{invoiceDropScope === 'all' ? 'All assets' : invoiceDropAsset?.title ?? 'One asset'}</strong>
-                      <small>{invoiceDropScope === 'all' ? 'The sender identifies the asset.' : 'Invoices route directly to this asset.'}</small>
+                      <small>{invoiceDropScope === 'all'
+                        ? 'The sender identifies the asset.'
+                        : invoiceDropAssetDetails || 'Invoices route directly to this asset.'}</small>
                     </div>
                   </div>
 
@@ -3724,17 +3784,24 @@ export default function MyInvoicesClient({
                         {invoiceDropCode ? <span className={styles.invoiceDropCodeActiveBadge}>Active</span> : null}
                       </div>
 
-                      {newInvoiceDropCode ? (
+                      {visibleInvoiceDropCode ? (
                         <div className={styles.invoiceDropCodeReveal}>
-                          <code>{newInvoiceDropCode}</code>
-                          <p>Copy it now. Only the last four characters remain visible after closing.</p>
+                          <code>{visibleInvoiceDropCode}</code>
+                          <p>{newInvoiceDropCode
+                            ? 'Copy or share it now. You can securely view it again from this owner-only screen.'
+                            : 'Visible only in this owner-only window. Hide it when finished.'}</p>
                           <div className={styles.invoiceDropCodeInlineActions}>
-                            <button type="button" className={styles.primaryButton} onClick={() => void copyInvoiceDropText(newInvoiceDropCode, 'New contribution code copied.')}>
+                            <button type="button" className={styles.primaryButton} onClick={() => void copyInvoiceDropText(visibleInvoiceDropCode, 'Contribution code copied.')}>
                               Copy code
                             </button>
                             <button type="button" className={styles.secondaryButton} onClick={() => void copyInvoiceDropInstructions()}>
                               Copy link + code
                             </button>
+                            {revealedInvoiceDropCode ? (
+                              <button type="button" className={styles.secondaryButton} onClick={hideRevealedInvoiceDropCode}>
+                                Hide code
+                              </button>
+                            ) : null}
                           </div>
                         </div>
                       ) : invoiceDropCode ? (
@@ -3744,10 +3811,13 @@ export default function MyInvoicesClient({
                             <small>Created {formatDateTime(invoiceDropCode.createdAtIso)}. Keep using it until you choose to change or revoke it.</small>
                           </div>
                           <div className={styles.invoiceDropCodeActions}>
-                            <button type="button" className={styles.secondaryButton} onClick={() => void issueSelectedInvoiceDropCode()} disabled={invoiceDropCodeSaving}>
+                            <button type="button" className={styles.secondaryButton} onClick={() => void revealSelectedInvoiceDropCode()} disabled={invoiceDropCodeRevealing || invoiceDropCodeSaving}>
+                              {invoiceDropCodeRevealing ? 'Viewing...' : 'View code'}
+                            </button>
+                            <button type="button" className={styles.secondaryButton} onClick={() => void issueSelectedInvoiceDropCode()} disabled={invoiceDropCodeSaving || invoiceDropCodeRevealing}>
                               {invoiceDropCodeSaving ? 'Changing...' : 'Change code'}
                             </button>
-                            <button type="button" className={styles.invoiceDropRevokeButton} onClick={() => void revokeSelectedInvoiceDropCode()} disabled={invoiceDropCodeSaving}>
+                            <button type="button" className={styles.invoiceDropRevokeButton} onClick={() => void revokeSelectedInvoiceDropCode()} disabled={invoiceDropCodeSaving || invoiceDropCodeRevealing}>
                               Revoke code
                             </button>
                           </div>
