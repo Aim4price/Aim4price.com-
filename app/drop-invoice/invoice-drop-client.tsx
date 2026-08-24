@@ -23,6 +23,7 @@ const ALLOWED_FILE_TYPES = new Set([
 
 type LookupMode = 'code' | 'reference';
 type WizardStep = 1 | 2 | 3;
+type SenderType = 'dealer' | 'workshop' | 'supplier' | 'owner' | 'other';
 type Notice = { tone: 'error' | 'info'; message: string } | null;
 
 type InvoiceDropReceipt = {
@@ -34,6 +35,14 @@ const WIZARD_STEPS: Array<{ step: WizardStep; label: string }> = [
   { step: 1, label: 'Identify asset' },
   { step: 2, label: 'Add invoice' },
   { step: 3, label: 'Your details' },
+];
+
+const SENDER_TYPE_OPTIONS: Array<{ value: SenderType; label: string; description: string }> = [
+  { value: 'dealer', label: 'Dealer', description: 'Equipment or vehicle dealer' },
+  { value: 'workshop', label: 'Workshop', description: 'Service or repair provider' },
+  { value: 'supplier', label: 'Supplier', description: 'Parts or goods supplier' },
+  { value: 'owner', label: 'Asset owner', description: 'Owner or authorised representative' },
+  { value: 'other', label: 'Other', description: 'Another authorised sender' },
 ];
 
 function DocumentIcon() {
@@ -87,6 +96,14 @@ function ArrowIcon() {
   );
 }
 
+function ChevronIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="m7 9.5 5 5 5-5" />
+    </svg>
+  );
+}
+
 function formatFileSize(bytes: number): string {
   if (bytes >= 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   return `${Math.max(1, Math.round(bytes / 1024))} KB`;
@@ -116,6 +133,7 @@ export default function InvoiceDropClient() {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const formRef = useRef<HTMLFormElement | null>(null);
   const modalBodyRef = useRef<HTMLDivElement | null>(null);
+  const senderSelectRef = useRef<HTMLDivElement | null>(null);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentStep, setCurrentStep] = useState<WizardStep>(1);
@@ -127,10 +145,14 @@ export default function InvoiceDropClient() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [receipt, setReceipt] = useState<InvoiceDropReceipt | null>(null);
   const [startedAt, setStartedAt] = useState(() => Date.now().toString());
+  const [senderType, setSenderType] = useState<SenderType>('dealer');
+  const [isSenderMenuOpen, setIsSenderMenuOpen] = useState(false);
+  const [senderHighlightIndex, setSenderHighlightIndex] = useState(0);
 
   const identifierMinimumLength = lookupMode === 'code' ? 6 : 3;
   const stepOneComplete = identifier.trim().length >= identifierMinimumLength;
   const stepTwoComplete = files.length === 1;
+  const selectedSenderType = SENDER_TYPE_OPTIONS.find((option) => option.value === senderType) ?? SENDER_TYPE_OPTIONS[0];
 
   const fileSummary = useMemo(() => {
     const totalBytes = files.reduce((sum, file) => sum + file.size, 0);
@@ -168,6 +190,17 @@ export default function InvoiceDropClient() {
     return () => window.cancelAnimationFrame(frame);
   }, [currentStep, isModalOpen, receipt]);
 
+  useEffect(() => {
+    if (!isSenderMenuOpen) return;
+
+    function handleOutsidePointer(event: PointerEvent) {
+      if (!senderSelectRef.current?.contains(event.target as Node)) setIsSenderMenuOpen(false);
+    }
+
+    document.addEventListener('pointerdown', handleOutsidePointer);
+    return () => document.removeEventListener('pointerdown', handleOutsidePointer);
+  }, [isSenderMenuOpen]);
+
   function openModal() {
     setNotice(null);
     setIsModalOpen(true);
@@ -177,6 +210,7 @@ export default function InvoiceDropClient() {
     if (isSubmitting) return;
     setIsModalOpen(false);
     setNotice(null);
+    setIsSenderMenuOpen(false);
     window.requestAnimationFrame(() => heroButtonRef.current?.focus());
   }
 
@@ -262,6 +296,9 @@ export default function InvoiceDropClient() {
     setNotice(null);
     setReceipt(null);
     setCurrentStep(1);
+    setSenderType('dealer');
+    setIsSenderMenuOpen(false);
+    setSenderHighlightIndex(0);
     setStartedAt(Date.now().toString());
   }
 
@@ -522,16 +559,68 @@ export default function InvoiceDropClient() {
                         <span>Business name <em>Optional</em></span>
                         <input name="businessName" autoComplete="organization" maxLength={160} placeholder="Workshop or dealership" />
                       </label>
-                      <label>
-                        <span>You are a</span>
-                        <select name="senderType" defaultValue="dealer" required>
-                          <option value="dealer">Dealer</option>
-                          <option value="workshop">Workshop</option>
-                          <option value="supplier">Supplier</option>
-                          <option value="owner">Asset owner</option>
-                          <option value="other">Other</option>
-                        </select>
-                      </label>
+                      <div className={styles.senderTypeField} ref={senderSelectRef}>
+                        <span id="sender-type-label">You are a</span>
+                        <input type="hidden" name="senderType" value={senderType} />
+                        <button
+                          type="button"
+                          className={styles.senderSelectTrigger}
+                          aria-labelledby="sender-type-label sender-type-value"
+                          aria-haspopup="listbox"
+                          aria-expanded={isSenderMenuOpen}
+                          aria-controls="sender-type-options"
+                          onClick={() => {
+                            setSenderHighlightIndex(SENDER_TYPE_OPTIONS.findIndex((option) => option.value === senderType));
+                            setIsSenderMenuOpen((open) => !open);
+                          }}
+                          onKeyDown={(event) => {
+                            if (event.key === 'Escape') {
+                              setIsSenderMenuOpen(false);
+                              return;
+                            }
+                            if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+                              event.preventDefault();
+                              const direction = event.key === 'ArrowDown' ? 1 : -1;
+                              setIsSenderMenuOpen(true);
+                              setSenderHighlightIndex((index) => (index + direction + SENDER_TYPE_OPTIONS.length) % SENDER_TYPE_OPTIONS.length);
+                              return;
+                            }
+                            if ((event.key === 'Enter' || event.key === ' ') && isSenderMenuOpen) {
+                              event.preventDefault();
+                              setSenderType(SENDER_TYPE_OPTIONS[senderHighlightIndex].value);
+                              setIsSenderMenuOpen(false);
+                            }
+                          }}
+                        >
+                          <span className={styles.senderSelectValue} id="sender-type-value">
+                            <strong>{selectedSenderType.label}</strong>
+                            <small>{selectedSenderType.description}</small>
+                          </span>
+                          <span className={`${styles.senderSelectChevron} ${isSenderMenuOpen ? styles.senderSelectChevronOpen : ''}`}><ChevronIcon /></span>
+                        </button>
+                        {isSenderMenuOpen ? (
+                          <div className={styles.senderSelectMenu} id="sender-type-options" role="listbox" aria-labelledby="sender-type-label">
+                            {SENDER_TYPE_OPTIONS.map((option, index) => (
+                              <button
+                                key={option.value}
+                                type="button"
+                                role="option"
+                                aria-selected={option.value === senderType}
+                                className={`${styles.senderSelectOption} ${index === senderHighlightIndex ? styles.senderSelectOptionActive : ''}`}
+                                onMouseEnter={() => setSenderHighlightIndex(index)}
+                                onClick={() => {
+                                  setSenderType(option.value);
+                                  setSenderHighlightIndex(index);
+                                  setIsSenderMenuOpen(false);
+                                }}
+                              >
+                                <span><strong>{option.label}</strong><small>{option.description}</small></span>
+                                {option.value === senderType ? <span className={styles.senderSelectOptionCheck}><CheckIcon /></span> : null}
+                              </button>
+                            ))}
+                          </div>
+                        ) : null}
+                      </div>
                       <label>
                         <span>Mobile number</span>
                         <input name="mobile" type="tel" autoComplete="tel" maxLength={40} placeholder="For example 082 123 4567" required />
