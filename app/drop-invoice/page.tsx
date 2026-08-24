@@ -15,7 +15,7 @@ export const metadata: Metadata = {
 export default function DropInvoicePage() {
   return (
     <main className={styles.page}>
-      <AppHeader active="none" />
+      <AppHeader active="invoices" />
       <InvoiceDropClient />
     </main>
   );

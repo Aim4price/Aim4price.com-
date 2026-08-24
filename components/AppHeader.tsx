@@ -22,6 +22,7 @@ const useBrowserLayoutEffect = typeof window === 'undefined' ? useEffect : useLa
 type ActivePage =
   | 'home'
   | 'valuation'
+  | 'invoices'
   | 'asset-register'
   | 'documents'
   | 'asset-map'
@@ -196,6 +197,12 @@ const BASE_NAV_ITEMS: NavItem[] = [
   { key: 'valuation', href: '/valuation', label: 'Get Estimate' },
 ];
 
+const PUBLIC_NAV_ITEMS: NavItem[] = [
+  ...BASE_NAV_ITEMS,
+  { key: 'invoices', href: '/drop-invoice', label: 'Invoices' },
+  { key: 'marketplace', href: '/marketplace', label: 'Marketplace' },
+];
+
 const DEFAULT_NAV_ITEMS: NavItem[] = [
   ...BASE_NAV_ITEMS,
   { key: 'asset-register', href: '/asset-register', label: 'Asset Register' },
@@ -280,6 +287,10 @@ function buildNavItems(
 ): NavItem[] {
   if (accountType === null) {
     return BASE_NAV_ITEMS;
+  }
+
+  if (accountType === 'public') {
+    return PUBLIC_NAV_ITEMS;
   }
 
   if (accountType === 'finance' && accountSubtype === 'accountant' && accountantWorkspaceShareId) {
@@ -582,6 +593,7 @@ function MobileNavIcon({ page }: { page: ActivePage }) {
         </>
       );
       break;
+    case 'invoices':
     case 'documents':
       icon = (
         <>
