@@ -4,7 +4,7 @@ import test from 'node:test';
 
 const read = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
 
-test('public Invoice Drop is discoverable without crowding the header', async () => {
+test('public Invoice Drop is discoverable in the signed-out header without a duplicate homepage banner', async () => {
   const [home, homeStyles, footer, header] = await Promise.all([
     read('app/page.tsx'),
     read('app/page.module.css'),
@@ -12,14 +12,12 @@ test('public Invoice Drop is discoverable without crowding the header', async ()
     read('components/AppHeader.tsx'),
   ]);
 
-  assert.match(home, /Have an invoice for an Aim4price asset\?/);
-  assert.match(home, /href="\/drop-invoice"/);
-  assert.ok(home.indexOf('invoiceDropSection') > home.indexOf('heroSection'));
-  assert.ok(home.indexOf('invoiceDropSection') < home.indexOf('productSection'));
-  assert.match(homeStyles, /\.invoiceDropCard \{[\s\S]*?grid-template-columns: auto minmax\(0, 1fr\) auto/);
-  assert.match(homeStyles, /@media \(max-width: 520px\)[\s\S]*?\.invoiceDropCard \{[\s\S]*?grid-template-columns: minmax\(0, 1fr\)/);
+  assert.match(header, /const PUBLIC_NAV_ITEMS:[\s\S]*?key: 'invoices', href: '\/drop-invoice', label: 'Invoices'/);
+  assert.match(header, /accountType === 'public'[\s\S]*?return PUBLIC_NAV_ITEMS/);
+  assert.match(header, /const DEFAULT_NAV_ITEMS:[\s\S]*?key: 'asset-register', href: '\/asset-register', label: 'Asset Register'/);
+  assert.doesNotMatch(home, /Have an invoice for an Aim4price asset\?|invoiceDropSection|InvoiceDropIcon/);
+  assert.doesNotMatch(homeStyles, /\.invoiceDrop/);
   assert.match(footer, /label: 'Explore'[\s\S]*?\/drop-invoice[\s\S]*?Drop an Invoice/);
-  assert.doesNotMatch(header, /href: '\/drop-invoice'/);
 });
 
 test('Invoice Drop page supports private code and serial fallbacks with a clear receipt', async () => {
@@ -30,6 +28,7 @@ test('Invoice Drop page supports private code and serial fallbacks with a clear 
   ]);
 
   assert.match(page, /title: 'Invoice Drop'/);
+  assert.match(page, /<AppHeader active="invoices" \/>/);
   assert.match(client, /No Aim4price account is needed/);
   assert.match(client, /Invoice Drop Code/);
   assert.match(client, /A4P-X7KD-29MQ-P6TW/);
