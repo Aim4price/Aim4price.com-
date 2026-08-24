@@ -429,7 +429,6 @@ export default function InvoiceDropClient() {
                     <div className={styles.wizardHeading}>
                       <span className={styles.wizardHeadingNumber}>1</span>
                       <div className={styles.wizardHeadingText}>
-                        <p>STEP 1 OF 3</p>
                         <h3>Identify the asset</h3>
                         <span>Use the Invoice Drop Code from the owner where possible.</span>
                       </div>
@@ -467,7 +466,6 @@ export default function InvoiceDropClient() {
                     <div className={styles.wizardHeading}>
                       <span className={styles.wizardHeadingNumber}>2</span>
                       <div className={styles.wizardHeadingText}>
-                        <p>STEP 2 OF 3</p>
                         <h3>Attach the invoice</h3>
                         <span>Upload one PDF or clear image. Use a multi-page PDF where needed.</span>
                       </div>
@@ -510,7 +508,6 @@ export default function InvoiceDropClient() {
                     <div className={styles.wizardHeading}>
                       <span className={styles.wizardHeadingNumber}>3</span>
                       <div className={styles.wizardHeadingText}>
-                        <p>STEP 3 OF 3</p>
                         <h3>Tell us who sent it</h3>
                         <span>We only use these details to verify and follow up on this submission.</span>
                       </div>
