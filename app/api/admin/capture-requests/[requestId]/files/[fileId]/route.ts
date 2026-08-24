@@ -27,6 +27,34 @@ function safeFileName(value: string): string {
     .slice(0, 150) || "capture-document";
 }
 
+function capturePreviewHeaders(input: {
+  contentType: string;
+  byteLength: number;
+  fileName: string;
+  securityStatus: string;
+}): Record<string, string> {
+  const headers: Record<string, string> = {
+    "Content-Type": input.contentType,
+    "Content-Length": String(input.byteLength),
+    "Content-Disposition": `inline; filename="${safeFileName(input.fileName)}"`,
+    "Cache-Control": "private, no-store, max-age=0",
+    "X-Content-Type-Options": "nosniff",
+    "X-Aim4price-File-Security-Status": input.securityStatus,
+    "Referrer-Policy": "no-referrer",
+  };
+
+  if (input.contentType === "application/pdf") {
+    // Chrome implements its PDF viewer as a plugin and blocks it inside a
+    // sandboxed frame. Keep the document admin-only and same-origin framed,
+    // while allowing Chrome's isolated PDF viewer to render it.
+    headers["X-Frame-Options"] = "SAMEORIGIN";
+  } else {
+    headers["Content-Security-Policy"] = "sandbox; default-src 'none'";
+  }
+
+  return headers;
+}
+
 function captureFileError(error: unknown): NextResponse {
   const code = error instanceof Error ? error.message : "";
   if (code.includes("NOT_FOUND")) return adminApiError("Capture file not found.", 404);
@@ -77,16 +105,12 @@ export async function GET(_request: NextRequest, context: RouteContext) {
     }
     return new NextResponse(bytes, {
       status: 200,
-      headers: {
-        "Content-Type": file.contentType,
-        "Content-Length": String(bytes.length),
-        "Content-Disposition": `inline; filename="${safeFileName(file.originalFileName)}"`,
-        "Cache-Control": "private, no-store, max-age=0",
-        "Content-Security-Policy": "sandbox; default-src 'none'",
-        "X-Content-Type-Options": "nosniff",
-        "X-Aim4price-File-Security-Status": file.securityStatus,
-        "Referrer-Policy": "no-referrer",
-      },
+      headers: capturePreviewHeaders({
+        contentType: file.contentType,
+        byteLength: bytes.length,
+        fileName: file.originalFileName,
+        securityStatus: file.securityStatus,
+      }),
     });
   } catch (error) {
     return captureFileError(error);

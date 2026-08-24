@@ -65,9 +65,22 @@ test('drop codes are revocable keyed hashes and plaintext is returned only on is
   assert.match(capture, /resolveInvoiceDropCode[\s\S]*?where code_hash = \$1[\s\S]*?is_active = true/);
   const resolveBody = capture.slice(
     capture.indexOf('export async function resolveInvoiceDropCode'),
-    capture.indexOf('export async function getActiveInvoiceDropCode'),
+    capture.indexOf('function normalizeAssetSerialOrVin'),
   );
   assert.doesNotMatch(resolveBody, /sender_|business_name|asset_title|owner_name/);
+});
+
+test('public serial and VIN matching is exact, unique and private', () => {
+  const resolver = capture.slice(
+    capture.indexOf('export async function resolveUniqueAssetSerialOrVin'),
+    capture.indexOf('export async function getActiveInvoiceDropCode'),
+  );
+  assert.match(resolver, /from public\.asset_register_items asset/);
+  assert.match(resolver, /serial_number[\s\S]*?serial[\s\S]*?vin/);
+  assert.match(resolver, /regexp_replace/);
+  assert.match(resolver, /limit 2/);
+  assert.match(resolver, /result\.rows\.length !== 1/);
+  assert.doesNotMatch(resolver, /ilike|brand_name\s*=|model_name\s*=/i);
 });
 
 test('all admin work is claimed, row-locked and actor-attributed', () => {

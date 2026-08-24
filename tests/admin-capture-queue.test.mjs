@@ -87,6 +87,9 @@ test("selected work uses a split private document and verified capture workbench
   assert.match(client, /Private admin preview/);
   assert.match(client, /Verified details/);
   assert.match(client, /Customer and record destination/);
+  assert.match(client, /Submitted serial or VIN/);
+  assert.match(client, /submittedAssetDescription/);
+  assert.match(client, /exact_unique_serial_or_vin[\s\S]*?Auto-matched/);
   assert.match(client, /Internal admin note/);
   assert.match(client, /Audit history/);
   assert.match(client, /\/api\/admin\/capture-requests\/\$\{encodeURIComponent\(requestId\)\}/);
@@ -95,9 +98,11 @@ test("selected work uses a split private document and verified capture workbench
   assert.match(client, /scrollIntoView\(\{ behavior: "smooth", block: "start" \}\)/);
   assert.match(client, /Discard the unsaved changes in this capture request/);
   assert.match(client, /beforeunload/);
-  assert.match(client, /sandbox=""/);
+  assert.doesNotMatch(client, /<iframe sandbox=""/);
+  assert.match(client, /<iframe referrerPolicy="no-referrer"/);
   assert.match(client, /activeFile\.securityStatus === "clean"/);
   assert.match(styles, /grid-template-columns: minmax\(25rem, 0\.95fr\) minmax\(32rem, 1\.05fr\)/);
+  assert.match(styles, /\.submittedAssetReference/);
   assert.match(styles, /@media \(max-width: 980px\)/);
 });
 
@@ -146,10 +151,10 @@ test("matching uses an admin-scoped customer and destination search instead of r
   assert.match(targetStore, /left join public\.account_profiles profile/);
 });
 
-test("pending quarantine files use a private sandboxed inspection before an explicit security decision", () => {
+test("pending quarantine files use a private Chrome-compatible inspection before an explicit security decision", () => {
   assert.match(client, /Security decision required/);
   assert.match(client, /private preview/);
-  assert.match(client, /<iframe sandbox="" referrerPolicy="no-referrer"/);
+  assert.match(client, /<iframe referrerPolicy="no-referrer"/);
   assert.match(client, /activeFile\?\.downloadUrl && activeFile\.securityStatus === "clean"/);
   assert.match(client, /Mark check passed/);
   assert.doesNotMatch(fileRoute, /locked until its security check passes\.\", 423/);
@@ -158,7 +163,9 @@ test("pending quarantine files use a private sandboxed inspection before an expl
   assert.match(fileRoute, /readCaptureQuarantineFile/);
   assert.match(fileRoute, /resolveAssetRegisterUploadBytes/);
   assert.match(fileRoute, /Cache-Control": "private, no-store/);
-  assert.match(fileRoute, /Content-Security-Policy": "sandbox/);
+  assert.match(fileRoute, /input\.contentType === "application\/pdf"/);
+  assert.match(fileRoute, /headers\["X-Frame-Options"\] = "SAMEORIGIN"/);
+  assert.match(fileRoute, /headers\["Content-Security-Policy"\] = "sandbox; default-src 'none'"/);
   assert.match(fileRoute, /X-Aim4price-File-Security-Status/);
   assert.match(fileRoute, /HIDDEN_TERMINAL_STATUSES\.has\(capture\.status\)/);
 });

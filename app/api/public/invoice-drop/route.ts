@@ -4,6 +4,7 @@ import {
   addCaptureRequestFile,
   createCaptureRequest,
   resolveInvoiceDropCode,
+  resolveUniqueAssetSerialOrVin,
   transitionCaptureRequest,
   type CaptureEventActor,
   type CaptureSenderType,
@@ -172,6 +173,7 @@ export async function POST(request: NextRequest) {
   const lookupMode = readText(formData, 'lookupMode', 20);
   const invoiceDropCode = readText(formData, 'invoiceDropCode', 80).toUpperCase();
   const assetReference = readText(formData, 'assetReference', 120);
+  const assetDescription = readText(formData, 'assetDescription', 160);
   const senderName = readText(formData, 'senderName', 120);
   const businessName = readText(formData, 'businessName', 160);
   const senderType = readText(formData, 'senderType', 30) as CaptureSenderType;
@@ -188,7 +190,10 @@ export async function POST(request: NextRequest) {
     return errorResponse('Enter the Invoice Drop Code provided by the asset owner.', 400);
   }
   if (lookupMode === 'reference' && assetReference.length < 3) {
-    return errorResponse('Enter the serial number, VIN or asset reference.', 400);
+    return errorResponse('Enter the complete serial number or VIN.', 400);
+  }
+  if (lookupMode === 'reference' && assetDescription.length < 3) {
+    return errorResponse('Enter the asset make and model.', 400);
   }
   if (!senderName) return errorResponse('Enter your name.', 400);
   if (!SENDER_TYPES.has(senderType)) return errorResponse('Choose who is sending the invoice.', 400);
@@ -206,15 +211,19 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // Code resolution is intentionally private. A missing match still creates a
-  // needs-matching request and receives the identical 202 response.
+  // Asset resolution is intentionally private. A missing or non-unique match
+  // still creates a needs-matching request and receives the identical 202 response.
   let resolvedCode: Awaited<ReturnType<typeof resolveInvoiceDropCode>> = null;
+  let resolvedAsset: Awaited<ReturnType<typeof resolveUniqueAssetSerialOrVin>> = null;
   try {
     resolvedCode = lookupMode === 'code'
       ? await resolveInvoiceDropCode(invoiceDropCode)
       : null;
+    resolvedAsset = lookupMode === 'reference'
+      ? await resolveUniqueAssetSerialOrVin(assetReference)
+      : null;
   } catch (error) {
-    console.error('public invoice drop code resolution failed', error);
+    console.error('public invoice drop asset resolution failed', error);
     return errorResponse('Invoice Drop is temporarily unavailable. Please try again shortly.', 503);
   }
   const storedFiles: Array<{
@@ -245,8 +254,8 @@ export async function POST(request: NextRequest) {
       {
         requestType: 'invoice',
         submissionChannel: 'public_drop',
-        ownerUserId: resolvedCode?.ownerUserId ?? null,
-        assetId: resolvedCode?.assetId ?? null,
+        ownerUserId: resolvedCode?.ownerUserId ?? resolvedAsset?.ownerUserId ?? null,
+        assetId: resolvedCode?.assetId ?? resolvedAsset?.assetId ?? null,
         invoiceDropCodeId: resolvedCode?.dropCodeId ?? null,
         sender: {
           type: senderType,
@@ -261,6 +270,15 @@ export async function POST(request: NextRequest) {
           lookupMode,
           jobReference,
           publicInvoiceDrop: true,
+          submittedSerialOrVin: lookupMode === 'reference' ? assetReference : '',
+          submittedAssetDescription: lookupMode === 'reference' ? assetDescription : '',
+          assetDisplayName: resolvedAsset?.assetDisplayName ?? assetDescription,
+          ownerDisplayName: resolvedAsset?.ownerDisplayName ?? '',
+          matchMethod: resolvedCode
+            ? 'invoice_drop_code'
+            : resolvedAsset
+              ? 'exact_unique_serial_or_vin'
+              : 'admin_review_required',
         },
       },
       PUBLIC_ACTOR,
