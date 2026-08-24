@@ -331,7 +331,7 @@ export default function InvoiceDropClient() {
               </h1>
 
               <p className={styles.heroText}>
-                Identify the asset, attach one invoice and send it securely. Aim4price will verify it and route it to the correct record.
+                Identify the asset, attach one invoice and send it securely. Aim4price will verify it and route it to the correct asset.
               </p>
 
               <div className={styles.heroTrust}>
