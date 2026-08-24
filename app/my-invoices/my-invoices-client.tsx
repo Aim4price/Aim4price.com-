@@ -192,6 +192,9 @@ type InvoiceDropCodeRecord = {
   createdAtIso: string;
 };
 
+type InvoiceDropScope = '' | 'all' | 'asset';
+type InvoiceDropWizardStep = 1 | 2 | 3;
+
 type InvoiceDropCodeResponse = {
   ok: boolean;
   dropCode?: (InvoiceDropCodeRecord & { code?: string }) | null;
@@ -469,6 +472,15 @@ function ContributionIcon(props: SVGProps<SVGSVGElement>) {
       <circle cx="18" cy="19" r="2.25" />
       <path d="m8 11 7.8-4.6" />
       <path d="m8 13 7.8 4.6" />
+    </IconBase>
+  );
+}
+
+function ShieldCheckIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <IconBase {...props}>
+      <path d="M12 3 5 6v5c0 4.6 2.8 8.2 7 10 4.2-1.8 7-5.4 7-10V6z" />
+      <path d="m9 12 2 2 4-4" />
     </IconBase>
   );
 }
@@ -1092,7 +1104,8 @@ export default function MyInvoicesClient({
   const [captureRequests, setCaptureRequests] = useState<CaptureRequestStatusItem[]>([]);
   const [captureReviewRequestId, setCaptureReviewRequestId] = useState<string | null>(null);
   const [invoiceDropCodeOpen, setInvoiceDropCodeOpen] = useState(false);
-  const [invoiceDropScope, setInvoiceDropScope] = useState<'all' | 'asset'>('all');
+  const [invoiceDropScope, setInvoiceDropScope] = useState<InvoiceDropScope>('');
+  const [invoiceDropWizardStep, setInvoiceDropWizardStep] = useState<InvoiceDropWizardStep>(1);
   const [invoiceDropAssetId, setInvoiceDropAssetId] = useState('');
   const [invoiceDropCode, setInvoiceDropCode] = useState<InvoiceDropCodeRecord | null>(null);
   const [newInvoiceDropCode, setNewInvoiceDropCode] = useState('');
@@ -1101,7 +1114,11 @@ export default function MyInvoicesClient({
   const [invoiceDropCodeSaving, setInvoiceDropCodeSaving] = useState(false);
   const [invoiceDropCodeError, setInvoiceDropCodeError] = useState('');
   const [invoiceDropCodeMessage, setInvoiceDropCodeMessage] = useState('');
-  const invoiceDropTargetKey = invoiceDropScope === 'all' ? 'all' : invoiceDropAssetId;
+  const invoiceDropTargetKey = invoiceDropScope === 'all'
+    ? 'all'
+    : invoiceDropScope === 'asset'
+      ? invoiceDropAssetId
+      : '';
   const [flow, setFlow] = useState<FlowMode>(null);
   const [selectedAssetId, setSelectedAssetId] = useState('');
   const [pickerSearch, setPickerSearch] = useState('');
@@ -1299,7 +1316,12 @@ export default function MyInvoicesClient({
   }, []);
 
   useEffect(() => {
-    if (!canManageInvoiceDropCodes || !invoiceDropCodeOpen || !invoiceDropTargetKey) return undefined;
+    if (
+      !canManageInvoiceDropCodes
+      || !invoiceDropCodeOpen
+      || invoiceDropWizardStep !== 3
+      || !invoiceDropTargetKey
+    ) return undefined;
     let cancelled = false;
 
     setInvoiceDropCodeLoading(true);
@@ -1337,7 +1359,7 @@ export default function MyInvoicesClient({
 
     void loadInvoiceDropCode();
     return () => { cancelled = true; };
-  }, [canManageInvoiceDropCodes, invoiceDropCodeOpen, invoiceDropTargetKey]);
+  }, [canManageInvoiceDropCodes, invoiceDropCodeOpen, invoiceDropTargetKey, invoiceDropWizardStep]);
 
   useEffect(() => {
     if (initialLaunchHandled || isLoading) return;
@@ -2001,24 +2023,54 @@ export default function MyInvoicesClient({
       ? selectedAssetId
       : assets[0]?.id ?? '';
     setNotice(null);
-    setInvoiceDropScope('all');
+    setInvoiceDropScope('');
+    setInvoiceDropWizardStep(1);
     setInvoiceDropAssetId(defaultAssetId);
     setInvoiceDropCode(null);
     setNewInvoiceDropCode('');
     setInvoiceDropCodeError('');
     setInvoiceDropCodeMessage('');
+    setInvoiceDropCodeLoading(false);
     setInvoiceDropCodeOpen(true);
   }
 
   function closeInvoiceDropCodeManager() {
     setInvoiceDropCodeOpen(false);
-    setInvoiceDropScope('all');
+    setInvoiceDropScope('');
+    setInvoiceDropWizardStep(1);
     setInvoiceDropAssetId('');
     setInvoiceDropCode(null);
     // Plaintext exists in browser memory only for this just-issued view.
     setNewInvoiceDropCode('');
     setInvoiceDropCodeError('');
     setInvoiceDropCodeMessage('');
+    setInvoiceDropCodeLoading(false);
+  }
+
+  function selectInvoiceDropScope(scope: Exclude<InvoiceDropScope, ''>) {
+    setInvoiceDropScope(scope);
+    setInvoiceDropCode(null);
+    setNewInvoiceDropCode('');
+    setInvoiceDropCodeError('');
+    setInvoiceDropCodeMessage('');
+  }
+
+  function continueInvoiceDropWizard() {
+    if (invoiceDropWizardStep === 1 && invoiceDropScope) {
+      setInvoiceDropWizardStep(2);
+      return;
+    }
+    if (invoiceDropWizardStep === 2 && (invoiceDropScope === 'all' || invoiceDropAssetId)) {
+      setInvoiceDropCodeLoading(true);
+      setInvoiceDropWizardStep(3);
+    }
+  }
+
+  function goBackInvoiceDropWizard() {
+    if (newInvoiceDropCode) return;
+    setInvoiceDropCodeError('');
+    setInvoiceDropCodeMessage('');
+    setInvoiceDropWizardStep((current) => current === 3 ? 2 : 1);
   }
 
   async function copyInvoiceDropText(value: string, successMessage: string) {
@@ -3491,170 +3543,238 @@ export default function MyInvoicesClient({
       ) : null}
 
       {invoiceDropCodeOpen ? (
-        <div className={styles.modalBackdrop} role="dialog" aria-modal="true" aria-label="Manage Invoice Drop contribution code">
+        <div className={styles.modalBackdrop} role="dialog" aria-modal="true" aria-labelledby="invoice-drop-code-title">
           <div className={`${styles.downloadModal} ${styles.invoiceDropCodeModal}`}>
-            <div className={styles.modalHeader}>
+            <div className={`${styles.modalHeader} ${styles.invoiceDropCodeHeader}`}>
               <div>
-                <h2>Invoice Drop code</h2>
-                <p>Create one broad code for your Asset Register or a direct code for one asset.</p>
+                <h2 id="invoice-drop-code-title">Invoice Drop code</h2>
+                <p>{invoiceDropWizardStep === 1
+                  ? 'Choose where invoices should go.'
+                  : invoiceDropWizardStep === 2
+                    ? invoiceDropScope === 'all' ? 'Confirm broad routing.' : 'Choose one saved asset.'
+                    : 'Create, copy and share the code.'}</p>
               </div>
               <button type="button" className={styles.closeButton} onClick={closeInvoiceDropCodeManager} aria-label="Close Invoice Drop code manager"><CloseIcon /></button>
             </div>
-            <div className={styles.modalDivider} />
 
             <div className={styles.invoiceDropCodeBody}>
-              <section className={styles.invoiceDropScopeSection} aria-labelledby="invoice-drop-scope-title">
-                <div className={styles.invoiceDropScopeHeading}>
-                  <span id="invoice-drop-scope-title">Code access</span>
-                  <small>Choose how precisely invoices should be routed.</small>
-                </div>
-                <div className={styles.invoiceDropScopeGrid} role="radiogroup" aria-label="Contribution code access">
-                  <button
-                    type="button"
-                    role="radio"
-                    aria-checked={invoiceDropScope === 'all'}
-                    className={`${styles.invoiceDropScopeOption} ${invoiceDropScope === 'all' ? styles.invoiceDropScopeOptionActive : ''}`}
-                    onClick={() => {
-                      setInvoiceDropScope('all');
-                      setInvoiceDropCode(null);
-                      setNewInvoiceDropCode('');
-                      setInvoiceDropCodeError('');
-                      setInvoiceDropCodeMessage('');
-                    }}
-                    disabled={invoiceDropCodeSaving}
+              <ol className={styles.invoiceDropWizardProgress} aria-label={`Step ${invoiceDropWizardStep} of 3`}>
+                {([['Access', 1], ['Routing', 2], ['Code', 3]] as const).map(([label, step]) => (
+                  <li
+                    key={label}
+                    className={`${styles.invoiceDropWizardProgressItem} ${invoiceDropWizardStep === step ? styles.invoiceDropWizardProgressItemActive : ''} ${invoiceDropWizardStep > step ? styles.invoiceDropWizardProgressItemComplete : ''}`}
+                    aria-current={invoiceDropWizardStep === step ? 'step' : undefined}
                   >
-                    <span className={styles.invoiceDropScopeCheck} aria-hidden="true">{invoiceDropScope === 'all' ? '✓' : ''}</span>
-                    <span><strong>All assets</strong><small>The sender searches for one asset without seeing your Asset Register.</small></span>
-                  </button>
-                  <button
-                    type="button"
-                    role="radio"
-                    aria-checked={invoiceDropScope === 'asset'}
-                    className={`${styles.invoiceDropScopeOption} ${invoiceDropScope === 'asset' ? styles.invoiceDropScopeOptionActive : ''}`}
-                    onClick={() => {
-                      setInvoiceDropScope('asset');
-                      setInvoiceDropCode(null);
-                      setNewInvoiceDropCode('');
-                      setInvoiceDropCodeError('');
-                      setInvoiceDropCodeMessage('');
-                    }}
-                    disabled={invoiceDropCodeSaving}
-                  >
-                    <span className={styles.invoiceDropScopeCheck} aria-hidden="true">{invoiceDropScope === 'asset' ? '✓' : ''}</span>
-                    <span><strong>One asset</strong><small>Every invoice using this code routes directly to the selected asset.</small></span>
-                  </button>
-                </div>
-              </section>
+                    <span aria-hidden="true">{invoiceDropWizardStep > step ? '✓' : step}</span>
+                    <strong>{label}</strong>
+                  </li>
+                ))}
+              </ol>
 
-              {invoiceDropScope === 'asset' ? (
-                <label className={styles.invoiceDropAssetField}>
-                  <span>Choose the asset</span>
-                  <select
-                    value={invoiceDropAssetId}
-                    onChange={(event) => {
-                      setInvoiceDropAssetId(event.target.value);
-                      setInvoiceDropCode(null);
-                      setNewInvoiceDropCode('');
-                      setInvoiceDropCodeError('');
-                      setInvoiceDropCodeMessage('');
-                    }}
-                    disabled={invoiceDropCodeSaving}
-                  >
-                    {assets.map((asset) => (
-                      <option key={asset.id} value={asset.id}>{asset.title}</option>
-                    ))}
-                  </select>
-                  {invoiceDropAsset ? <small>{invoiceDropAsset.categoryLabel}{invoiceDropAsset.yearModel ? ` · ${invoiceDropAsset.yearModel}` : ''}</small> : null}
-                </label>
-              ) : (
-                <div className={styles.invoiceDropAllAssetsSummary}>
-                  <strong>Owner inbox routing</strong>
-                  <p>The broad code identifies your account only. The sender must type an asset make, model, registration, fleet number or serial before continuing.</p>
-                </div>
-              )}
-
-              <div className={styles.invoiceDropSafetyNote}>
-                <strong>Contribution-only access</strong>
-                <p>{invoiceDropScope === 'all'
-                  ? 'The public search starts empty and returns at most one sufficiently specific match. It never exposes a list of your assets.'
-                  : 'This code can submit an invoice for the selected asset only. It cannot open your account or reveal the asset record.'}</p>
-              </div>
-
-              {invoiceDropCodeLoading ? <div className={styles.invoiceDropCodeLoading}>Checking this contribution scope&apos;s active code...</div> : null}
-
-              {!invoiceDropCodeLoading ? (
-                <section className={styles.invoiceDropCodeCard} aria-live="polite">
-                  <div className={styles.invoiceDropCodeCardHeader}>
-                    <div>
-                      <span>Active contribution code</span>
-                      <strong>{invoiceDropCode ? 'Ready to receive invoices' : 'No active code'}</strong>
-                    </div>
-                    {invoiceDropCode ? <span className={styles.invoiceDropCodeActiveBadge}>Active</span> : null}
+              {invoiceDropWizardStep === 1 ? (
+                <section className={styles.invoiceDropWizardPanel} aria-labelledby="invoice-drop-scope-title">
+                  <div className={styles.invoiceDropWizardHeading}>
+                    <h3 id="invoice-drop-scope-title">Where should invoices go?</h3>
+                    <p>Choose one option.</p>
                   </div>
-
-                  {newInvoiceDropCode ? (
-                    <div className={styles.invoiceDropCodeReveal}>
-                      <code>{newInvoiceDropCode}</code>
-                      <p>Copy this full code now. For security, Aim4price will show only the last four characters after you close this window.</p>
-                      <div className={styles.invoiceDropCodeInlineActions}>
-                        <button type="button" className={styles.primaryButton} onClick={() => void copyInvoiceDropText(newInvoiceDropCode, 'New contribution code copied.')}>
-                          Copy code
-                        </button>
-                        <button type="button" className={styles.secondaryButton} onClick={() => void copyInvoiceDropInstructions()}>
-                          Copy link + code
-                        </button>
-                      </div>
-                    </div>
-                  ) : invoiceDropCode ? (
-                    <div className={styles.invoiceDropCodeMasked}>
-                      <code aria-label={`Active code ending in ${invoiceDropCode.lastFour}`}>A4P-••••-••••-{invoiceDropCode.lastFour}</code>
-                      <small>Created {formatDateTime(invoiceDropCode.createdAtIso)}. The full code is never shown again.</small>
-                    </div>
-                  ) : (
-                    <p className={styles.invoiceDropCodeEmpty}>Create a code when you are ready to invite someone to submit {invoiceDropScope === 'all' ? 'invoices across your Asset Register' : 'an invoice for this asset'}.</p>
-                  )}
-
-                  <div className={styles.invoiceDropCodeActions}>
+                  <div className={styles.invoiceDropScopeGrid} role="radiogroup" aria-label="Contribution code access">
                     <button
                       type="button"
-                      className={styles.primaryButton}
-                      onClick={() => void issueSelectedInvoiceDropCode()}
-                      disabled={!invoiceDropTargetKey || invoiceDropCodeSaving}
+                      role="radio"
+                      aria-checked={invoiceDropScope === 'all'}
+                      className={`${styles.invoiceDropScopeOption} ${invoiceDropScope === 'all' ? styles.invoiceDropScopeOptionActive : ''}`}
+                      onClick={() => selectInvoiceDropScope('all')}
                     >
-                      {invoiceDropCodeSaving ? 'Updating...' : invoiceDropCode ? 'Rotate code' : 'Create code'}
+                      <span className={styles.invoiceDropScopeIcon} aria-hidden="true"><ContributionIcon /></span>
+                      <span className={styles.invoiceDropScopeCopy}>
+                        <strong>All assets</strong>
+                        <small>Sender identifies each asset.</small>
+                      </span>
+                      <span className={styles.invoiceDropScopeCheck} aria-hidden="true">{invoiceDropScope === 'all' ? '✓' : ''}</span>
                     </button>
-                    {invoiceDropCode ? (
-                      <button
-                        type="button"
-                        className={styles.invoiceDropRevokeButton}
-                        onClick={() => void revokeSelectedInvoiceDropCode()}
-                        disabled={invoiceDropCodeSaving}
-                      >
-                        Revoke code
-                      </button>
-                    ) : null}
+                    <button
+                      type="button"
+                      role="radio"
+                      aria-checked={invoiceDropScope === 'asset'}
+                      className={`${styles.invoiceDropScopeOption} ${invoiceDropScope === 'asset' ? styles.invoiceDropScopeOptionActive : ''}`}
+                      onClick={() => selectInvoiceDropScope('asset')}
+                    >
+                      <span className={styles.invoiceDropScopeIcon} aria-hidden="true"><LedgerIcon /></span>
+                      <span className={styles.invoiceDropScopeCopy}>
+                        <strong>One asset</strong>
+                        <small>Locked to one saved asset.</small>
+                      </span>
+                      <span className={styles.invoiceDropScopeCheck} aria-hidden="true">{invoiceDropScope === 'asset' ? '✓' : ''}</span>
+                    </button>
+                  </div>
+                  <div className={styles.invoiceDropPrivacyRow}>
+                    <ShieldCheckIcon />
+                    <span><strong>Contribution-only access.</strong> A code never opens or lists your assets.</span>
                   </div>
                 </section>
               ) : null}
 
-              <section className={styles.invoiceDropLinkCard}>
-                <div>
-                  <span>Public upload page</span>
-                  <strong>{invoiceDropPublicUrl}</strong>
-                </div>
-                <div className={styles.invoiceDropCodeInlineActions}>
-                  <a className={styles.secondaryButton} href="/drop-invoice" target="_blank" rel="noreferrer">Open page</a>
-                  <button type="button" className={styles.secondaryButton} onClick={() => void copyInvoiceDropText(invoiceDropPublicUrl, 'Public Invoice Drop link copied.')}>Copy link</button>
-                  <button type="button" className={styles.secondaryButton} onClick={() => void shareInvoiceDropLink()}>Share</button>
-                </div>
-              </section>
+              {invoiceDropWizardStep === 2 ? (
+                <section className={styles.invoiceDropWizardPanel} aria-labelledby="invoice-drop-routing-title">
+                  {invoiceDropScope === 'all' ? (
+                    <div className={styles.invoiceDropRouteReview}>
+                      <span className={styles.invoiceDropRouteIcon} aria-hidden="true"><ContributionIcon /></span>
+                      <div>
+                        <span className={styles.invoiceDropCodeEyebrow}>All assets</span>
+                        <h3 id="invoice-drop-routing-title">One private routing code</h3>
+                        <p>The sender enters a make, model, registration, fleet number or serial. Aim4price returns at most one match.</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <div className={styles.invoiceDropWizardHeading}>
+                        <h3 id="invoice-drop-routing-title">Choose the asset</h3>
+                        <p>Every invoice using this code routes directly here.</p>
+                      </div>
+                      {assets.length ? (
+                        <label className={styles.invoiceDropAssetField}>
+                          <span>Saved asset</span>
+                          <div className={styles.invoiceDropAssetSelectWrap}>
+                            <select
+                              value={invoiceDropAssetId}
+                              onChange={(event) => {
+                                setInvoiceDropAssetId(event.target.value);
+                                setInvoiceDropCode(null);
+                                setNewInvoiceDropCode('');
+                                setInvoiceDropCodeError('');
+                                setInvoiceDropCodeMessage('');
+                              }}
+                            >
+                              {assets.map((asset) => (
+                                <option key={asset.id} value={asset.id}>{asset.title}</option>
+                              ))}
+                            </select>
+                            <ChevronDownIcon aria-hidden="true" />
+                          </div>
+                          {invoiceDropAsset ? (
+                            <span className={styles.invoiceDropSelectedAsset}>
+                              <strong>{invoiceDropAsset.title}</strong>
+                              <small>{[invoiceDropAsset.categoryLabel, invoiceDropAsset.yearModel].filter(Boolean).join(' · ')}</small>
+                            </span>
+                          ) : null}
+                        </label>
+                      ) : (
+                        <div className={styles.invoiceDropCodeError} role="alert">Add an asset to your Asset Register before creating a direct code.</div>
+                      )}
+                    </>
+                  )}
+                  <div className={styles.invoiceDropPrivacyRow}>
+                    <ShieldCheckIcon />
+                    <span>{invoiceDropScope === 'all'
+                      ? 'Your Asset Register stays private and no asset list is shown.'
+                      : 'The code can submit an invoice only; it cannot open the asset record.'}</span>
+                  </div>
+                </section>
+              ) : null}
 
-              {invoiceDropCodeError ? <div className={styles.invoiceDropCodeError} role="alert">{invoiceDropCodeError}</div> : null}
-              {invoiceDropCodeMessage ? <div className={styles.invoiceDropCodeSuccess} role="status">{invoiceDropCodeMessage}</div> : null}
+              {invoiceDropWizardStep === 3 ? (
+                <section className={styles.invoiceDropWizardPanel} aria-labelledby="invoice-drop-code-step-title">
+                  <div className={styles.invoiceDropSelectionSummary}>
+                    <span className={styles.invoiceDropSelectionIcon} aria-hidden="true">{invoiceDropScope === 'all' ? <ContributionIcon /> : <LedgerIcon />}</span>
+                    <div>
+                      <span>Routing</span>
+                      <strong id="invoice-drop-code-step-title">{invoiceDropScope === 'all' ? 'All assets' : invoiceDropAsset?.title ?? 'One asset'}</strong>
+                      <small>{invoiceDropScope === 'all' ? 'The sender identifies the asset.' : 'Invoices route directly to this asset.'}</small>
+                    </div>
+                  </div>
+
+                  {invoiceDropCodeLoading ? <div className={styles.invoiceDropCodeLoading}>Checking the active code...</div> : null}
+
+                  {!invoiceDropCodeLoading ? (
+                    <div className={styles.invoiceDropCodeCard} aria-live="polite">
+                      <div className={styles.invoiceDropCodeCardHeader}>
+                        <div>
+                          <span>Contribution code</span>
+                          <strong>{invoiceDropCode ? 'Active' : 'No active code'}</strong>
+                        </div>
+                        {invoiceDropCode ? <span className={styles.invoiceDropCodeActiveBadge}>Ready</span> : null}
+                      </div>
+
+                      {newInvoiceDropCode ? (
+                        <div className={styles.invoiceDropCodeReveal}>
+                          <code>{newInvoiceDropCode}</code>
+                          <p>Copy it now. Only the last four characters remain visible after closing.</p>
+                          <div className={styles.invoiceDropCodeInlineActions}>
+                            <button type="button" className={styles.primaryButton} onClick={() => void copyInvoiceDropText(newInvoiceDropCode, 'New contribution code copied.')}>
+                              Copy code
+                            </button>
+                            <button type="button" className={styles.secondaryButton} onClick={() => void copyInvoiceDropInstructions()}>
+                              Copy link + code
+                            </button>
+                          </div>
+                        </div>
+                      ) : invoiceDropCode ? (
+                        <>
+                          <div className={styles.invoiceDropCodeMasked}>
+                            <code aria-label={`Active code ending in ${invoiceDropCode.lastFour}`}>A4P-••••-••••-{invoiceDropCode.lastFour}</code>
+                            <small>Created {formatDateTime(invoiceDropCode.createdAtIso)}. The full code is not stored.</small>
+                          </div>
+                          <div className={styles.invoiceDropCodeActions}>
+                            <button type="button" className={styles.secondaryButton} onClick={() => void issueSelectedInvoiceDropCode()} disabled={invoiceDropCodeSaving}>
+                              {invoiceDropCodeSaving ? 'Updating...' : 'Rotate code'}
+                            </button>
+                            <button type="button" className={styles.invoiceDropRevokeButton} onClick={() => void revokeSelectedInvoiceDropCode()} disabled={invoiceDropCodeSaving}>
+                              Revoke code
+                            </button>
+                          </div>
+                        </>
+                      ) : (
+                        <p className={styles.invoiceDropCodeEmpty}>Create the code, then send it with the upload link.</p>
+                      )}
+                    </div>
+                  ) : null}
+
+                  <div className={styles.invoiceDropLinkCard}>
+                    <div>
+                      <span>Upload page</span>
+                      <strong>{invoiceDropPublicUrl}</strong>
+                    </div>
+                    <div className={styles.invoiceDropCodeInlineActions}>
+                      <a className={styles.secondaryButton} href="/drop-invoice" target="_blank" rel="noreferrer">Open</a>
+                      <button type="button" className={styles.secondaryButton} onClick={() => void copyInvoiceDropText(invoiceDropPublicUrl, 'Public Invoice Drop link copied.')}>Copy</button>
+                      <button type="button" className={styles.secondaryButton} onClick={() => void shareInvoiceDropLink()}>Share</button>
+                    </div>
+                  </div>
+
+                  {invoiceDropCodeError ? <div className={styles.invoiceDropCodeError} role="alert">{invoiceDropCodeError}</div> : null}
+                  {invoiceDropCodeMessage ? <div className={styles.invoiceDropCodeSuccess} role="status">{invoiceDropCodeMessage}</div> : null}
+                </section>
+              ) : null}
             </div>
 
-            <div className={styles.modalFooter}>
-              <button type="button" className={styles.secondaryButton} onClick={closeInvoiceDropCodeManager}>Done</button>
+            <div className={`${styles.modalFooter} ${styles.invoiceDropWizardFooter}`}>
+              {invoiceDropWizardStep === 1 ? (
+                <button type="button" className={styles.secondaryButton} onClick={closeInvoiceDropCodeManager}>Cancel</button>
+              ) : !newInvoiceDropCode ? (
+                <button type="button" className={styles.secondaryButton} onClick={goBackInvoiceDropWizard} disabled={invoiceDropCodeSaving}>Back</button>
+              ) : <span />}
+
+              {invoiceDropWizardStep < 3 ? (
+                <button
+                  type="button"
+                  className={styles.primaryButton}
+                  onClick={continueInvoiceDropWizard}
+                  disabled={invoiceDropWizardStep === 1 ? !invoiceDropScope : invoiceDropScope === 'asset' && !invoiceDropAssetId}
+                >
+                  Next
+                </button>
+              ) : invoiceDropCode ? (
+                <button type="button" className={styles.primaryButton} onClick={closeInvoiceDropCodeManager} disabled={invoiceDropCodeSaving}>Done</button>
+              ) : (
+                <button
+                  type="button"
+                  className={styles.primaryButton}
+                  onClick={() => void issueSelectedInvoiceDropCode()}
+                  disabled={!invoiceDropTargetKey || invoiceDropCodeLoading || invoiceDropCodeSaving}
+                >
+                  {invoiceDropCodeLoading ? 'Checking...' : invoiceDropCodeSaving ? 'Creating...' : 'Create code'}
+                </button>
+              )}
             </div>
           </div>
         </div>
