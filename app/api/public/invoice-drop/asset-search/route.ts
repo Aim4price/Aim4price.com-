@@ -31,6 +31,11 @@ function cleanText(value: unknown, maximumLength: number): string {
     .slice(0, maximumLength);
 }
 
+function formatUsageReading(value: number | null, metric: 'hours' | 'km'): string {
+  if (!value || !Number.isFinite(value) || value <= 0) return '';
+  return `${Math.round(value).toLocaleString('en-ZA')} ${metric}`;
+}
+
 async function readBoundedJson(request: Request): Promise<Record<string, unknown>> {
   const contentType = String(request.headers.get('content-type') ?? '').toLowerCase();
   if (!contentType.startsWith('application/json')) throw new Error('ASSET_SEARCH_CONTENT_TYPE_INVALID');
@@ -127,9 +132,13 @@ export async function POST(request: NextRequest) {
       return response({ ok: true, scope: 'all', status: 'enter_details' });
     }
     if (result.match) {
+      const assetTitle = result.match.assetDisplayName;
+      const modelName = result.match.modelName;
       const meta = [
+        modelName && !assetTitle.toLowerCase().includes(modelName.toLowerCase()) ? modelName : '',
+        result.match.yearModel ? `Year Model ${result.match.yearModel}` : '',
+        formatUsageReading(result.match.usageReading, result.match.usageMetric),
         result.match.categoryLabel,
-        result.match.yearModel,
         result.match.serialSuffix ? `Serial ending ${result.match.serialSuffix}` : '',
       ].filter(Boolean).join(' · ');
       return response({
@@ -137,7 +146,7 @@ export async function POST(request: NextRequest) {
         scope: 'all',
         status: 'matched',
         asset: {
-          title: result.match.assetDisplayName,
+          title: assetTitle,
           meta,
         },
       });
