@@ -38,6 +38,7 @@ type CaptureRow = {
   senderDisplayName: string;
   ownerDisplayName: string;
   assetDisplayName: string;
+  assetReference: string;
   fuelStorageDisplayName: string;
   assignedAdminDisplayName: string;
   submittedAtIso: string;
@@ -851,7 +852,7 @@ export default function CaptureQueueClient() {
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={activeFile.downloadUrl} alt={activeFile.originalFileName || "Uploaded invoice"} />
                 ) : activeFile.mimeType === "application/pdf" ? (
-                  <iframe sandbox="" referrerPolicy="no-referrer" src={activeFile.downloadUrl} title={activeFile.originalFileName || "Uploaded PDF"} />
+                  <iframe referrerPolicy="no-referrer" src={activeFile.downloadUrl} title={activeFile.originalFileName || "Uploaded PDF"} />
                 ) : activeFile.securityStatus === "clean" ? (
                   <div className={styles.viewerEmpty}><strong>Preview unavailable</strong><a href={activeFile.downloadUrl}>Download {activeFile.originalFileName}</a></div>
                 ) : (
@@ -883,6 +884,16 @@ export default function CaptureQueueClient() {
 
               <div className={styles.matchCard}>
                 <div><p className={styles.eyebrow}>Match</p><strong>Customer and record destination</strong></div>
+                {cleanText(detail.candidatePayload.submittedSerialOrVin) ? (
+                  <div className={styles.submittedAssetReference}>
+                    <div>
+                      <span>Submitted serial or VIN</span>
+                      <strong>{cleanText(detail.candidatePayload.submittedSerialOrVin)}</strong>
+                      <small>{cleanText(detail.candidatePayload.submittedAssetDescription) || "No make or model supplied"}</small>
+                    </div>
+                    <em>{cleanText(detail.candidatePayload.matchMethod) === "exact_unique_serial_or_vin" ? "Auto-matched" : "Check match"}</em>
+                  </div>
+                ) : null}
                 {draft.ownerUserId && (draft.assetId || draft.fuelStorageId) ? (
                   <div className={styles.selectedMatch}>
                     <div>

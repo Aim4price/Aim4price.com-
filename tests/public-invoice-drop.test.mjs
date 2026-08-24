@@ -39,13 +39,16 @@ test('Invoice Drop uses the homepage typography, photo hero and a gated three-st
   assert.match(client, /aria-modal="true"/);
   assert.match(client, /const WIZARD_STEPS:[\s\S]*?Identify asset[\s\S]*?Add invoice[\s\S]*?Your details/);
   assert.doesNotMatch(client, /STEP [123] OF 3/);
-  assert.match(client, /const stepOneComplete = identifier\.trim\(\)\.length >= identifierMinimumLength/);
+  assert.match(client, /const stepOneComplete = identifier\.trim\(\)\.length >= identifierMinimumLength[\s\S]*?assetDescription\.trim\(\)\.length >= 3/);
   assert.match(client, /const stepTwoComplete = files\.length === 1/);
   assert.match(client, /disabled=\{currentStep === 1 \? !stepOneComplete : !stepTwoComplete\}/);
   assert.doesNotMatch(client, /styles\.formSection/);
   assert.match(client, /Invoice Drop Code/);
   assert.match(client, /A4P-X7KD-29MQ-P6TW/);
   assert.match(client, /Serial or VIN/);
+  assert.match(client, /Asset make and model/);
+  assert.match(client, /For example Massey Ferguson 290/);
+  assert.match(client, /privately link an exact, unique match/);
   assert.doesNotMatch(client, /<select name="senderType"/);
   assert.match(client, /name="senderType" value=\{senderType\}/);
   assert.match(client, /aria-haspopup="listbox"/);
@@ -206,16 +209,22 @@ test('public multipart parsing enforces the actual streamed byte count without C
   );
 });
 
-test('public route always uses the generic accepted shape for matched and unmatched codes', async () => {
-  const [route, storage, migration, durableRateLimit] = await Promise.all([
+test('public route privately auto-links only unique serial or VIN matches', async () => {
+  const [route, storage, migration, durableRateLimit, captureStore] = await Promise.all([
     read('app/api/public/invoice-drop/route.ts'),
     read('lib/capture-quarantine-storage.ts'),
     read('database/migrations/83-assisted-document-capture.sql'),
     read('lib/public-invoice-drop-rate-limit.ts'),
+    read('lib/capture-requests.ts'),
   ]);
 
   assert.match(route, /status: 202/);
   assert.match(route, /resolveInvoiceDropCode\(invoiceDropCode\)/);
+  assert.match(route, /resolveUniqueAssetSerialOrVin\(assetReference\)/);
+  assert.match(route, /resolvedAsset\?\.ownerUserId/);
+  assert.match(route, /resolvedAsset\?\.assetId/);
+  assert.match(route, /submittedAssetDescription/);
+  assert.match(route, /exact_unique_serial_or_vin/);
   assert.match(route, /resolvedCode \? null : invoiceDropCode/);
   assert.match(route, /return accepted\(captureRequest\.publicReference\)/);
   assert.doesNotMatch(route, /assetTitle|ownerName|ownerEmail/);
@@ -236,4 +245,8 @@ test('public route always uses the generic accepted shape for matched and unmatc
   assert.match(migration, /public_invoice_drop_rate_limits/);
   assert.match(durableRateLimit, /on conflict \(rate_key\) do update/);
   assert.doesNotMatch(durableRateLimit, /ipAddress|userAgent/);
+  assert.match(captureStore, /resolveUniqueAssetSerialOrVin/);
+  assert.match(captureStore, /regexp_replace\([\s\S]*?serial_number[\s\S]*?serial[\s\S]*?vin/);
+  assert.match(captureStore, /limit 2/);
+  assert.match(captureStore, /result\.rows\.length !== 1/);
 });

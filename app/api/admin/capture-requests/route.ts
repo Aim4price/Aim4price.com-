@@ -42,13 +42,16 @@ function compactIdentifier(value: string | null): string {
 
 function mapCaptureRequestForAdmin(request: CaptureRequest) {
   const payload = request.capturedPayload ?? {};
+  const candidate = request.candidatePayload ?? {};
   const senderDisplayName =
     request.sender.businessName || request.sender.name || request.sender.email || request.sender.phone;
   const ownerDisplayName =
     payloadText(payload, "ownerDisplayName", "ownerName", "customerName") ||
+    payloadText(candidate, "ownerDisplayName", "ownerName", "customerName") ||
     compactIdentifier(request.ownerUserId);
   const assetDisplayName =
     payloadText(payload, "assetDisplayName", "assetTitle", "assetName") ||
+    payloadText(candidate, "assetDisplayName", "submittedAssetDescription") ||
     request.assetReference ||
     compactIdentifier(request.assetId);
   const fuelStorageDisplayName =

@@ -859,6 +859,53 @@
   gap: 1rem;
 }
 
+.submittedAssetReference {
+  margin-bottom: 0.7rem;
+  padding: 0.72rem 0.78rem;
+  border: 1px solid #d7e4de;
+  border-radius: 0.75rem;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.submittedAssetReference > div {
+  min-width: 0;
+  display: grid;
+  gap: 0.12rem;
+}
+
+.submittedAssetReference span,
+.submittedAssetReference small {
+  overflow: hidden;
+  color: #65786f;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.submittedAssetReference strong {
+  overflow: hidden;
+  color: #23493d;
+  font-size: 0.8rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.submittedAssetReference em {
+  flex: 0 0 auto;
+  padding: 0.34rem 0.55rem;
+  border-radius: 999px;
+  color: #1c694d;
+  background: #e7f5ee;
+  font-size: 0.62rem;
+  font-style: normal;
+  font-weight: 850;
+}
+
 .selectedMatch > div {
   min-width: 0;
   display: grid;

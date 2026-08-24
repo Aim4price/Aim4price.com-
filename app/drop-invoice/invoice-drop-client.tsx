@@ -128,6 +128,7 @@ export default function InvoiceDropClient() {
   const heroButtonRef = useRef<HTMLButtonElement | null>(null);
   const closeButtonRef = useRef<HTMLButtonElement | null>(null);
   const identifierInputRef = useRef<HTMLInputElement | null>(null);
+  const assetDescriptionInputRef = useRef<HTMLInputElement | null>(null);
   const chooseFileButtonRef = useRef<HTMLButtonElement | null>(null);
   const senderNameInputRef = useRef<HTMLInputElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -139,6 +140,7 @@ export default function InvoiceDropClient() {
   const [currentStep, setCurrentStep] = useState<WizardStep>(1);
   const [lookupMode, setLookupMode] = useState<LookupMode>('code');
   const [identifier, setIdentifier] = useState('');
+  const [assetDescription, setAssetDescription] = useState('');
   const [files, setFiles] = useState<File[]>([]);
   const [notice, setNotice] = useState<Notice>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -150,7 +152,8 @@ export default function InvoiceDropClient() {
   const [senderHighlightIndex, setSenderHighlightIndex] = useState(0);
 
   const identifierMinimumLength = lookupMode === 'code' ? 6 : 3;
-  const stepOneComplete = identifier.trim().length >= identifierMinimumLength;
+  const stepOneComplete = identifier.trim().length >= identifierMinimumLength
+    && (lookupMode === 'code' || assetDescription.trim().length >= 3);
   const stepTwoComplete = files.length === 1;
   const selectedSenderType = SENDER_TYPE_OPTIONS.find((option) => option.value === senderType) ?? SENDER_TYPE_OPTIONS[0];
 
@@ -247,6 +250,7 @@ export default function InvoiceDropClient() {
   function selectLookupMode(mode: LookupMode) {
     setLookupMode(mode);
     setIdentifier('');
+    setAssetDescription('');
     setNotice(null);
   }
 
@@ -255,7 +259,8 @@ export default function InvoiceDropClient() {
 
     if (currentStep === 1) {
       if (!stepOneComplete) {
-        identifierInputRef.current?.reportValidity();
+        if (identifier.trim().length < identifierMinimumLength) identifierInputRef.current?.reportValidity();
+        else assetDescriptionInputRef.current?.reportValidity();
         return;
       }
       setCurrentStep(2);
@@ -292,6 +297,7 @@ export default function InvoiceDropClient() {
     if (fileInputRef.current) fileInputRef.current.value = '';
     setLookupMode('code');
     setIdentifier('');
+    setAssetDescription('');
     setFiles([]);
     setNotice(null);
     setReceipt(null);
@@ -477,7 +483,7 @@ export default function InvoiceDropClient() {
                     </div>
 
                     <label className={styles.fieldWide}>
-                      <span>{lookupMode === 'code' ? 'Invoice Drop Code' : 'Serial number, VIN or asset reference'}</span>
+                      <span>{lookupMode === 'code' ? 'Invoice Drop Code' : 'Serial number or VIN'}</span>
                       <input
                         ref={identifierInputRef}
                         name={lookupMode === 'code' ? 'invoiceDropCode' : 'assetReference'}
@@ -486,7 +492,7 @@ export default function InvoiceDropClient() {
                         autoComplete="off"
                         autoCapitalize={lookupMode === 'code' ? 'characters' : 'none'}
                         spellCheck={false}
-                        placeholder={lookupMode === 'code' ? 'For example A4P-X7KD-29MQ-P6TW' : 'Enter the reference exactly as shown'}
+                        placeholder={lookupMode === 'code' ? 'For example A4P-X7KD-29MQ-P6TW' : 'Enter the complete serial number or VIN'}
                         minLength={identifierMinimumLength}
                         maxLength={lookupMode === 'code' ? 80 : 120}
                         required
@@ -494,9 +500,26 @@ export default function InvoiceDropClient() {
                       <small>
                         {lookupMode === 'code'
                           ? 'This code only lets you send a document. It does not reveal the asset or its owner.'
-                          : 'We will match it privately. No asset information is shown here.'}
+                          : 'Aim4price will privately link an exact, unique match. No asset information is shown here.'}
                       </small>
                     </label>
+                    {lookupMode === 'reference' ? (
+                      <label className={styles.fieldWide}>
+                        <span>Asset make and model</span>
+                        <input
+                          ref={assetDescriptionInputRef}
+                          name="assetDescription"
+                          value={assetDescription}
+                          onChange={(event) => setAssetDescription(event.currentTarget.value)}
+                          autoComplete="off"
+                          placeholder="For example Massey Ferguson 290"
+                          minLength={3}
+                          maxLength={160}
+                          required
+                        />
+                        <small>This helps the admin identify the correct asset only when the serial or VIN has no unique match.</small>
+                      </label>
+                    ) : null}
                   </section>
 
                   <section className={styles.wizardPanel} hidden={currentStep !== 2}>

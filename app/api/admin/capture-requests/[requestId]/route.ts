@@ -52,6 +52,7 @@ function compactIdentifier(value: string | null): string {
 
 function mapRequest(request: CaptureRequest) {
   const payload = request.capturedPayload ?? {};
+  const candidate = request.candidatePayload ?? {};
   return {
     ...request,
     senderDisplayName:
@@ -62,9 +63,11 @@ function mapRequest(request: CaptureRequest) {
     senderNote: request.requesterNote,
     ownerDisplayName:
       payloadText(payload, "ownerDisplayName", "ownerName", "customerName") ||
+      payloadText(candidate, "ownerDisplayName", "ownerName", "customerName") ||
       compactIdentifier(request.ownerUserId),
     assetDisplayName:
       payloadText(payload, "assetDisplayName", "assetTitle", "assetName") ||
+      payloadText(candidate, "assetDisplayName", "submittedAssetDescription") ||
       request.assetReference ||
       compactIdentifier(request.assetId),
     fuelStorageDisplayName:

@@ -245,6 +245,14 @@ export type ResolvedInvoiceDropCode = {
   assetId: string;
 };
 
+export type ResolvedAssetSerialOrVin = {
+  ownerUserId: string;
+  ownerDisplayName: string;
+  assetId: string;
+  assetDisplayName: string;
+  serialOrVin: string;
+};
+
 export type ActiveInvoiceDropCode = Omit<IssuedInvoiceDropCode, 'code'>;
 
 type Queryable = {
@@ -308,6 +316,14 @@ type CaptureFileRow = QueryResultRow & {
   created_at: Date | string;
   security_checked_at: Date | string | null;
   security_checked_by_admin_user_id: string | null;
+};
+
+type AssetSerialMatchRow = QueryResultRow & {
+  owner_user_id: string;
+  owner_display_name: string | null;
+  asset_id: string;
+  asset_display_name: string | null;
+  serial_or_vin: string | null;
 };
 
 type CaptureEventRow = QueryResultRow & {
@@ -1784,6 +1800,74 @@ export async function resolveInvoiceDropCode(
         assetId: String(row.asset_register_item_id),
       }
     : null;
+}
+
+function normalizeAssetSerialOrVin(value: unknown): string {
+  return cleanText(value, 180)
+    .normalize('NFKC')
+    .toUpperCase()
+    .replace(/[^A-Z0-9]+/g, '');
+}
+
+/**
+ * Privately resolves a public serial/VIN submission only when one saved asset
+ * has the exact normalized identifier. An absent or duplicate identifier is
+ * deliberately left for admin matching rather than guessing a destination.
+ */
+export async function resolveUniqueAssetSerialOrVin(
+  inputReference: string,
+): Promise<ResolvedAssetSerialOrVin | null> {
+  const serialOrVin = normalizeAssetSerialOrVin(inputReference);
+  if (serialOrVin.length < 3) return null;
+
+  const result = await getDb().query<AssetSerialMatchRow>(
+    `select
+       asset.user_id as owner_user_id,
+       coalesce(
+         nullif(profile.business_name, ''),
+         nullif(profile.display_name, ''),
+         nullif(to_jsonb(profile)->>'email', ''),
+         'Asset owner'
+       ) as owner_display_name,
+       asset.id::text as asset_id,
+       coalesce(
+         nullif(asset.title, ''),
+         nullif(concat_ws(' ', nullif(asset.brand_name, ''), nullif(asset.model_name, '')), ''),
+         'Saved asset'
+       ) as asset_display_name,
+       coalesce(
+         nullif(to_jsonb(asset)->>'serial_number', ''),
+         nullif(to_jsonb(asset)->>'serial', ''),
+         nullif(to_jsonb(asset)->>'vin', ''),
+         ''
+       ) as serial_or_vin
+     from public.asset_register_items asset
+     left join public.account_profiles profile on profile.user_id = asset.user_id
+     where upper(regexp_replace(
+       coalesce(
+         nullif(to_jsonb(asset)->>'serial_number', ''),
+         nullif(to_jsonb(asset)->>'serial', ''),
+         nullif(to_jsonb(asset)->>'vin', ''),
+         ''
+       ),
+       '[^A-Za-z0-9]+',
+       '',
+       'g'
+     )) = $1
+     order by asset.id
+     limit 2`,
+    [serialOrVin],
+  );
+
+  if (result.rows.length !== 1) return null;
+  const row = result.rows[0];
+  return {
+    ownerUserId: String(row.owner_user_id),
+    ownerDisplayName: cleanText(row.owner_display_name, 180) || 'Asset owner',
+    assetId: String(row.asset_id),
+    assetDisplayName: cleanText(row.asset_display_name, 180) || 'Saved asset',
+    serialOrVin: cleanText(row.serial_or_vin, 180) || inputReference,
+  };
 }
 
 export async function getActiveInvoiceDropCode(
