@@ -20,7 +20,7 @@ test('public Invoice Drop is discoverable in the signed-out header without a dup
   assert.match(footer, /label: 'Explore'[\s\S]*?\/drop-invoice[\s\S]*?Drop an Invoice/);
 });
 
-test('Invoice Drop page supports private code and serial fallbacks with a clear receipt', async () => {
+test('Invoice Drop uses the homepage hero and a gated three-step modal', async () => {
   const [page, client, styles] = await Promise.all([
     read('app/drop-invoice/page.tsx'),
     read('app/drop-invoice/invoice-drop-client.tsx'),
@@ -29,7 +29,14 @@ test('Invoice Drop page supports private code and serial fallbacks with a clear 
 
   assert.match(page, /title: 'Invoice Drop'/);
   assert.match(page, /<AppHeader active="invoices" \/>/);
-  assert.match(client, /No Aim4price account is needed/);
+  assert.match(client, /<HomeHeroVideo \/>/);
+  assert.match(client, /Add invoice/);
+  assert.match(client, /aria-modal="true"/);
+  assert.match(client, /const WIZARD_STEPS:[\s\S]*?Identify asset[\s\S]*?Add invoice[\s\S]*?Your details/);
+  assert.match(client, /const stepOneComplete = identifier\.trim\(\)\.length >= identifierMinimumLength/);
+  assert.match(client, /const stepTwoComplete = files\.length === 1/);
+  assert.match(client, /disabled=\{currentStep === 1 \? !stepOneComplete : !stepTwoComplete\}/);
+  assert.doesNotMatch(client, /styles\.formSection/);
   assert.match(client, /Invoice Drop Code/);
   assert.match(client, /A4P-X7KD-29MQ-P6TW/);
   assert.match(client, /Serial or VIN/);
@@ -37,6 +44,9 @@ test('Invoice Drop page supports private code and serial fallbacks with a clear 
   assert.match(client, /Your submission reference/);
   assert.match(client, /Create a free dealer profile/);
   assert.match(client, /name="website"[\s\S]*?tabIndex=\{-1\}/);
+  assert.match(styles, /\.heroTitle \{[\s\S]*?font-family: var\(--font-heading, 'Montserrat'\)/);
+  assert.match(styles, /\.modalDialog \{[\s\S]*?max-height: min\(92dvh, 56rem\)/);
+  assert.match(styles, /\.wizardProgress \{[\s\S]*?grid-template-columns: repeat\(3, minmax\(0, 1fr\)\)/);
   assert.match(styles, /@media \(max-width: 720px\)/);
   assert.match(styles, /@media \(prefers-reduced-motion: reduce\)/);
 });

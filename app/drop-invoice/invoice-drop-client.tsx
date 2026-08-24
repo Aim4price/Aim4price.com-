@@ -1,7 +1,17 @@
 'use client';
 
+import Image from 'next/image';
 import Link from 'next/link';
-import { ChangeEvent, DragEvent, FormEvent, useMemo, useRef, useState } from 'react';
+import {
+  ChangeEvent,
+  DragEvent,
+  FormEvent,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
+import HomeHeroVideo from '../home-hero-video';
 import styles from './page.module.css';
 
 const MAX_FILE_BYTES = 12 * 1024 * 1024;
@@ -14,12 +24,19 @@ const ALLOWED_FILE_TYPES = new Set([
 ]);
 
 type LookupMode = 'code' | 'reference';
+type WizardStep = 1 | 2 | 3;
 type Notice = { tone: 'error' | 'info'; message: string } | null;
 
 type InvoiceDropReceipt = {
   reference: string;
   message: string;
 };
+
+const WIZARD_STEPS: Array<{ step: WizardStep; label: string }> = [
+  { step: 1, label: 'Identify asset' },
+  { step: 2, label: 'Add invoice' },
+  { step: 3, label: 'Your details' },
+];
 
 function DocumentIcon() {
   return (
@@ -56,30 +73,64 @@ function ShieldIcon() {
   );
 }
 
+function CloseIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="m6 6 12 12M18 6 6 18" />
+    </svg>
+  );
+}
+
+function PlusIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M12 5v14M5 12h14" />
+    </svg>
+  );
+}
+
+function ArrowIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M5 12h13M13 7l5 5-5 5" />
+    </svg>
+  );
+}
+
 function formatFileSize(bytes: number): string {
   if (bytes >= 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   return `${Math.max(1, Math.round(bytes / 1024))} KB`;
 }
 
 function validateSelectedFiles(files: File[]): string | null {
-  if (!files.length) return 'Attach the invoice before submitting.';
+  if (!files.length) return 'Choose an invoice before continuing.';
   if (files.length > MAX_FILES) return 'Upload one invoice file at a time. Use one multi-page PDF when needed.';
 
   for (const file of files) {
     if (!ALLOWED_FILE_TYPES.has(file.type.toLowerCase())) {
       return 'Only PDF, JPG, PNG and WEBP files are accepted.';
     }
-    if (!file.size) return 'One of the selected files is empty.';
-    if (file.size > MAX_FILE_BYTES) return 'Each file must be 12 MB or smaller.';
+    if (!file.size) return 'The selected file is empty.';
+    if (file.size > MAX_FILE_BYTES) return 'The invoice must be 12 MB or smaller.';
   }
 
   return null;
 }
 
 export default function InvoiceDropClient() {
+  const heroButtonRef = useRef<HTMLButtonElement | null>(null);
+  const closeButtonRef = useRef<HTMLButtonElement | null>(null);
+  const identifierInputRef = useRef<HTMLInputElement | null>(null);
+  const chooseFileButtonRef = useRef<HTMLButtonElement | null>(null);
+  const senderNameInputRef = useRef<HTMLInputElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const formRef = useRef<HTMLFormElement | null>(null);
+  const modalBodyRef = useRef<HTMLDivElement | null>(null);
+
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [currentStep, setCurrentStep] = useState<WizardStep>(1);
   const [lookupMode, setLookupMode] = useState<LookupMode>('code');
+  const [identifier, setIdentifier] = useState('');
   const [files, setFiles] = useState<File[]>([]);
   const [notice, setNotice] = useState<Notice>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -87,10 +138,57 @@ export default function InvoiceDropClient() {
   const [receipt, setReceipt] = useState<InvoiceDropReceipt | null>(null);
   const [startedAt, setStartedAt] = useState(() => Date.now().toString());
 
+  const identifierMinimumLength = lookupMode === 'code' ? 6 : 3;
+  const stepOneComplete = identifier.trim().length >= identifierMinimumLength;
+  const stepTwoComplete = files.length === 1;
+
   const fileSummary = useMemo(() => {
     const totalBytes = files.reduce((sum, file) => sum + file.size, 0);
     return files.length ? `${files.length} ${files.length === 1 ? 'file' : 'files'} · ${formatFileSize(totalBytes)}` : '';
   }, [files]);
+
+  useEffect(() => {
+    if (!isModalOpen) return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key !== 'Escape' || isSubmitting) return;
+      setIsModalOpen(false);
+      window.requestAnimationFrame(() => heroButtonRef.current?.focus());
+    }
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isModalOpen, isSubmitting]);
+
+  useEffect(() => {
+    if (!isModalOpen || receipt) return;
+
+    const frame = window.requestAnimationFrame(() => {
+      if (currentStep === 1) identifierInputRef.current?.focus();
+      if (currentStep === 2) chooseFileButtonRef.current?.focus();
+      if (currentStep === 3) senderNameInputRef.current?.focus();
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [currentStep, isModalOpen, receipt]);
+
+  function openModal() {
+    setNotice(null);
+    setIsModalOpen(true);
+  }
+
+  function closeModal() {
+    if (isSubmitting) return;
+    setIsModalOpen(false);
+    setNotice(null);
+    window.requestAnimationFrame(() => heroButtonRef.current?.focus());
+  }
 
   function acceptFiles(nextFiles: File[]) {
     const error = validateSelectedFiles(nextFiles);
@@ -122,15 +220,59 @@ export default function InvoiceDropClient() {
     if (!nextFiles.length && fileInputRef.current) fileInputRef.current.value = '';
   }
 
+  function selectLookupMode(mode: LookupMode) {
+    setLookupMode(mode);
+    setIdentifier('');
+    setNotice(null);
+  }
+
+  function goToNextStep() {
+    setNotice(null);
+
+    if (currentStep === 1) {
+      if (!stepOneComplete) {
+        identifierInputRef.current?.reportValidity();
+        return;
+      }
+      setCurrentStep(2);
+      modalBodyRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
+    if (currentStep === 2) {
+      const fileError = validateSelectedFiles(files);
+      if (fileError) {
+        setNotice({ tone: 'error', message: fileError });
+        return;
+      }
+      setCurrentStep(3);
+      modalBodyRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }
+
+  function goToPreviousStep() {
+    setNotice(null);
+    setCurrentStep((step) => (step === 3 ? 2 : 1));
+    modalBodyRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function returnToCompletedStep(step: WizardStep) {
+    if (step >= currentStep) return;
+    setNotice(null);
+    setCurrentStep(step);
+    modalBodyRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
   function resetSubmission() {
     formRef.current?.reset();
     if (fileInputRef.current) fileInputRef.current.value = '';
     setLookupMode('code');
+    setIdentifier('');
     setFiles([]);
     setNotice(null);
     setReceipt(null);
+    setCurrentStep(1);
     setStartedAt(Date.now().toString());
-    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -139,6 +281,7 @@ export default function InvoiceDropClient() {
 
     const fileError = validateSelectedFiles(files);
     if (fileError) {
+      setCurrentStep(2);
       setNotice({ tone: 'error', message: fileError });
       return;
     }
@@ -172,12 +315,13 @@ export default function InvoiceDropClient() {
         reference: payload.reference,
         message: payload.message || 'Aim4price will verify and route the invoice within 24 hours.',
       });
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      modalBodyRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (error) {
       setNotice({
         tone: 'error',
         message: error instanceof Error ? error.message : 'The invoice could not be sent. Please try again.',
       });
+      modalBodyRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
     } finally {
       setIsSubmitting(false);
     }
@@ -185,183 +329,302 @@ export default function InvoiceDropClient() {
 
   return (
     <>
-      <section className={styles.introSection}>
+      <section className={styles.heroSection}>
+        <HomeHeroVideo />
+        <div className={styles.heroOverlay} />
+
         <div className={styles.shell}>
-          <div className={styles.introGrid}>
-            <div className={styles.introCopy}>
-              <p className={styles.eyebrow}>AIM4PRICE INVOICE DROP</p>
-              <h1>Send the invoice.<span>We&apos;ll take it from here.</span></h1>
-              <p className={styles.introText}>
-                No Aim4price account is needed. Attach one invoice, identify the asset and we&apos;ll verify and route it to the correct record.
+          <div className={styles.heroGrid}>
+            <div className={styles.heroCopy}>
+              <p className={styles.heroEyebrow}>
+                <span>AIM4PRICE INVOICES</span>
+                <span className={styles.heroEyebrowDivider} aria-hidden="true">|</span>
+                <span>No account needed</span>
               </p>
-              <div className={styles.promiseRow}>
-                <span className={styles.promiseIcon}><CheckIcon /></span>
-                <span><strong>Verified by Aim4price</strong> before it reaches an asset&apos;s Cost Ledger.</span>
+
+              <h1 className={styles.heroTitle}>
+                <span>Send the invoice.</span>
+                <span>We&apos;ll take it from here.</span>
+              </h1>
+
+              <p className={styles.heroText}>
+                Identify the asset, attach one invoice and send it securely. Aim4price will verify it and route it to the correct record.
+              </p>
+
+              <div className={styles.heroActions}>
+                <button ref={heroButtonRef} type="button" className={styles.heroPrimaryButton} onClick={openModal}>
+                  <span className={styles.heroButtonIcon}><PlusIcon /></span>
+                  Add invoice
+                  <span className={styles.heroButtonArrow}><ArrowIcon /></span>
+                </button>
+              </div>
+
+              <div className={styles.heroTrust}>
+                <span className={styles.heroTrustIcon}><ShieldIcon /></span>
+                <span><strong>Private and owner-controlled.</strong> Sending a document never grants access to an asset record.</span>
               </div>
             </div>
 
-            <div className={styles.processCard} aria-label="What happens next">
-              <p className={styles.processLabel}>What happens next</p>
-              <ol>
-                <li><span>1</span><div><strong>We receive it</strong><small>You get a private submission reference.</small></div></li>
-                <li><span>2</span><div><strong>We verify it</strong><small>Aim4price checks the document and asset match.</small></div></li>
-                <li><span>3</span><div><strong>We route it</strong><small>The asset owner reviews it where approval is needed.</small></div></li>
-              </ol>
+            <div className={styles.heroVisual} aria-hidden="true">
+              <Image
+                src="/brand/aim4price-mark-white.png"
+                alt=""
+                width={640}
+                height={640}
+                priority
+                className={styles.heroLogo}
+              />
             </div>
           </div>
         </div>
       </section>
 
-      <section className={styles.formSection}>
-        <div className={styles.formShell}>
-          {receipt ? (
-            <article className={styles.receiptCard} role="status" aria-live="polite">
-              <span className={styles.receiptIcon}><CheckIcon /></span>
-              <p className={styles.receiptEyebrow}>INVOICE RECEIVED</p>
-              <h2>Thank you. It&apos;s safely with Aim4price.</h2>
-              <p className={styles.receiptText}>{receipt.message}</p>
-              <div className={styles.referenceBlock}>
-                <small>Your submission reference</small>
-                <strong>{receipt.reference}</strong>
-                <span>Keep this reference if you need to contact us.</span>
+      {isModalOpen ? (
+        <div
+          className={styles.modalBackdrop}
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) closeModal();
+          }}
+        >
+          <section
+            className={styles.modalDialog}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="invoice-modal-title"
+          >
+            <header className={styles.modalHeader}>
+              <div className={styles.modalHeaderCopy}>
+                <p className={styles.modalEyebrow}>{receipt ? 'INVOICE RECEIVED' : 'AIM4PRICE INVOICES'}</p>
+                <h2 id="invoice-modal-title">{receipt ? 'Safely sent.' : 'Add an invoice'}</h2>
               </div>
-              <div className={styles.receiptActions}>
-                <button type="button" className={styles.primaryButton} onClick={resetSubmission}>Send another invoice</button>
-                <Link href="/auth#signup" className={styles.secondaryButton}>Create a free dealer profile</Link>
-              </div>
-              <Link href="/" className={styles.homeLink}>Return to Aim4price</Link>
-            </article>
-          ) : (
-            <form ref={formRef} className={styles.formCard} onSubmit={handleSubmit} noValidate={false}>
-              <div className={styles.formHeading}>
-                <div>
-                  <p className={styles.formEyebrow}>SEND ONE INVOICE</p>
-                  <h2>Invoice details</h2>
-                </div>
-                <span className={styles.secureLabel}><ShieldIcon /> Private upload</span>
-              </div>
+              <button
+                ref={closeButtonRef}
+                type="button"
+                className={styles.modalCloseButton}
+                onClick={closeModal}
+                disabled={isSubmitting}
+                aria-label="Close invoice modal"
+              >
+                <CloseIcon />
+              </button>
+            </header>
 
-              <fieldset className={styles.formSectionBlock}>
-                <legend><span>1</span><div><strong>Identify the asset</strong><small>Use the code provided by the asset owner where possible.</small></div></legend>
-                <div className={styles.lookupToggle} role="group" aria-label="Asset identification method">
-                  <button type="button" className={lookupMode === 'code' ? styles.lookupActive : ''} onClick={() => setLookupMode('code')} aria-pressed={lookupMode === 'code'}>Invoice Drop Code</button>
-                  <button type="button" className={lookupMode === 'reference' ? styles.lookupActive : ''} onClick={() => setLookupMode('reference')} aria-pressed={lookupMode === 'reference'}>Serial or VIN</button>
-                </div>
-
-                {lookupMode === 'code' ? (
-                  <label className={styles.fieldWide}>
-                    <span>Invoice Drop Code</span>
-                    <input name="invoiceDropCode" autoComplete="off" autoCapitalize="characters" spellCheck={false} placeholder="For example A4P-X7KD-29MQ-P6TW" minLength={6} maxLength={80} required />
-                    <small>This code only lets you send a document. It does not reveal the asset or its owner.</small>
-                  </label>
-                ) : (
-                  <label className={styles.fieldWide}>
-                    <span>Serial number, VIN or asset reference</span>
-                    <input name="assetReference" autoComplete="off" placeholder="Enter the reference exactly as shown" minLength={3} maxLength={120} required />
-                    <small>We&apos;ll match it privately. No asset information is shown on this page.</small>
-                  </label>
-                )}
-              </fieldset>
-
-              <fieldset className={styles.formSectionBlock}>
-                <legend><span>2</span><div><strong>Attach the invoice</strong><small>Upload one PDF or clear image. Use a multi-page PDF where needed.</small></div></legend>
-                <div
-                  className={`${styles.dropZone} ${isDragging ? styles.dropZoneActive : ''}`}
-                  onDragEnter={(event) => { event.preventDefault(); setIsDragging(true); }}
-                  onDragOver={(event) => event.preventDefault()}
-                  onDragLeave={(event) => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setIsDragging(false); }}
-                  onDrop={handleDrop}
-                >
-                  <input ref={fileInputRef} id="invoice-files" name="files" type="file" accept="application/pdf,image/jpeg,image/png,image/webp" onChange={handleFileChange} />
-                  <span className={styles.uploadIcon}><UploadIcon /></span>
-                  <div>
-                    <strong>Drop the invoice here</strong>
-                    <span>or choose it from your device</span>
+            {receipt ? (
+              <div ref={modalBodyRef} className={styles.modalBody}>
+                <article className={styles.receiptContent} role="status" aria-live="polite">
+                  <span className={styles.receiptIcon}><CheckIcon /></span>
+                  <p className={styles.receiptEyebrow}>INVOICE RECEIVED</p>
+                  <h3>Thank you. It&apos;s safely with Aim4price.</h3>
+                  <p className={styles.receiptText}>{receipt.message}</p>
+                  <div className={styles.referenceBlock}>
+                    <small>Your submission reference</small>
+                    <strong>{receipt.reference}</strong>
+                    <span>Keep this reference if you need to contact us.</span>
                   </div>
-                  <label htmlFor="invoice-files" className={styles.chooseFileButton}>Choose invoice</label>
-                  <small>PDF, JPG, PNG or WEBP · one file · up to 12 MB</small>
-                </div>
+                  <div className={styles.receiptActions}>
+                    <button type="button" className={styles.submitButton} onClick={resetSubmission}>Send another invoice</button>
+                    <Link href="/auth#signup" className={styles.secondaryButton}>Create a free dealer profile</Link>
+                  </div>
+                </article>
+              </div>
+            ) : (
+              <form ref={formRef} className={styles.modalForm} onSubmit={handleSubmit}>
+                <nav className={styles.wizardProgress} aria-label="Invoice submission steps">
+                  {WIZARD_STEPS.map(({ step, label }) => {
+                    const isActive = currentStep === step;
+                    const isComplete = currentStep > step;
+                    return (
+                      <button
+                        key={step}
+                        type="button"
+                        className={`${styles.wizardStep} ${isActive ? styles.wizardStepActive : ''} ${isComplete ? styles.wizardStepComplete : ''}`}
+                        onClick={() => returnToCompletedStep(step)}
+                        disabled={!isComplete}
+                        aria-current={isActive ? 'step' : undefined}
+                      >
+                        <span className={styles.wizardStepNumber}>{isComplete ? <CheckIcon /> : step}</span>
+                        <span className={styles.wizardStepLabel}><small>Step {step}</small><strong>{label}</strong></span>
+                      </button>
+                    );
+                  })}
+                </nav>
 
-                {files.length > 0 && (
-                  <div className={styles.fileList} aria-label={fileSummary}>
-                    <div className={styles.fileListHeading}><strong>Ready to send</strong><span>{fileSummary}</span></div>
-                    {files.map((file, index) => (
-                      <div key={`${file.name}-${file.lastModified}-${index}`} className={styles.fileRow}>
-                        <span className={styles.fileIcon}><DocumentIcon /></span>
-                        <span className={styles.fileName}><strong>{file.name}</strong><small>{formatFileSize(file.size)}</small></span>
-                        <button type="button" onClick={() => removeFile(index)} aria-label={`Remove ${file.name}`}>Remove</button>
+                <div ref={modalBodyRef} className={styles.modalBody} aria-live="polite">
+                  <section className={styles.wizardPanel} hidden={currentStep !== 1}>
+                    <div className={styles.wizardHeading}>
+                      <span className={styles.wizardHeadingNumber}>1</span>
+                      <div className={styles.wizardHeadingText}>
+                        <p>STEP 1 OF 3</p>
+                        <h3>Identify the asset</h3>
+                        <span>Use the Invoice Drop Code from the owner where possible.</span>
                       </div>
-                    ))}
+                    </div>
+
+                    <div className={styles.lookupToggle} role="group" aria-label="Asset identification method">
+                      <button type="button" className={lookupMode === 'code' ? styles.lookupActive : ''} onClick={() => selectLookupMode('code')} aria-pressed={lookupMode === 'code'}>Invoice Drop Code</button>
+                      <button type="button" className={lookupMode === 'reference' ? styles.lookupActive : ''} onClick={() => selectLookupMode('reference')} aria-pressed={lookupMode === 'reference'}>Serial or VIN</button>
+                    </div>
+
+                    <label className={styles.fieldWide}>
+                      <span>{lookupMode === 'code' ? 'Invoice Drop Code' : 'Serial number, VIN or asset reference'}</span>
+                      <input
+                        ref={identifierInputRef}
+                        name={lookupMode === 'code' ? 'invoiceDropCode' : 'assetReference'}
+                        value={identifier}
+                        onChange={(event) => setIdentifier(event.currentTarget.value)}
+                        autoComplete="off"
+                        autoCapitalize={lookupMode === 'code' ? 'characters' : 'none'}
+                        spellCheck={false}
+                        placeholder={lookupMode === 'code' ? 'For example A4P-X7KD-29MQ-P6TW' : 'Enter the reference exactly as shown'}
+                        minLength={identifierMinimumLength}
+                        maxLength={lookupMode === 'code' ? 80 : 120}
+                        required
+                      />
+                      <small>
+                        {lookupMode === 'code'
+                          ? 'This code only lets you send a document. It does not reveal the asset or its owner.'
+                          : 'We will match it privately. No asset information is shown here.'}
+                      </small>
+                    </label>
+                  </section>
+
+                  <section className={styles.wizardPanel} hidden={currentStep !== 2}>
+                    <div className={styles.wizardHeading}>
+                      <span className={styles.wizardHeadingNumber}>2</span>
+                      <div className={styles.wizardHeadingText}>
+                        <p>STEP 2 OF 3</p>
+                        <h3>Attach the invoice</h3>
+                        <span>Upload one PDF or clear image. Use a multi-page PDF where needed.</span>
+                      </div>
+                    </div>
+
+                    <div
+                      className={`${styles.dropZone} ${isDragging ? styles.dropZoneActive : ''}`}
+                      onDragEnter={(event) => { event.preventDefault(); setIsDragging(true); }}
+                      onDragOver={(event) => event.preventDefault()}
+                      onDragLeave={(event) => {
+                        if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setIsDragging(false);
+                      }}
+                      onDrop={handleDrop}
+                    >
+                      <input ref={fileInputRef} id="invoice-files" name="files" type="file" accept="application/pdf,image/jpeg,image/png,image/webp" onChange={handleFileChange} />
+                      <span className={styles.uploadIcon}><UploadIcon /></span>
+                      <div>
+                        <strong>Drop the invoice here</strong>
+                        <span>or choose it from your device</span>
+                      </div>
+                      <button ref={chooseFileButtonRef} type="button" className={styles.chooseFileButton} onClick={() => fileInputRef.current?.click()}>Choose invoice</button>
+                      <small>PDF, JPG, PNG or WEBP · one file · up to 12 MB</small>
+                    </div>
+
+                    {files.length > 0 ? (
+                      <div className={styles.fileList} aria-label={fileSummary}>
+                        <div className={styles.fileListHeading}><strong>Ready to send</strong><span>{fileSummary}</span></div>
+                        {files.map((file, index) => (
+                          <div key={`${file.name}-${file.lastModified}-${index}`} className={styles.fileRow}>
+                            <span className={styles.fileIcon}><DocumentIcon /></span>
+                            <span className={styles.fileName}><strong>{file.name}</strong><small>{formatFileSize(file.size)}</small></span>
+                            <button type="button" onClick={() => removeFile(index)} aria-label={`Remove ${file.name}`}>Remove</button>
+                          </div>
+                        ))}
+                      </div>
+                    ) : null}
+                  </section>
+
+                  <section className={styles.wizardPanel} hidden={currentStep !== 3}>
+                    <div className={styles.wizardHeading}>
+                      <span className={styles.wizardHeadingNumber}>3</span>
+                      <div className={styles.wizardHeadingText}>
+                        <p>STEP 3 OF 3</p>
+                        <h3>Tell us who sent it</h3>
+                        <span>We only use these details to verify and follow up on this submission.</span>
+                      </div>
+                    </div>
+
+                    <div className={styles.fieldGrid}>
+                      <label>
+                        <span>Your name</span>
+                        <input ref={senderNameInputRef} name="senderName" autoComplete="name" maxLength={120} placeholder="Full name" required />
+                      </label>
+                      <label>
+                        <span>Business name <em>Optional</em></span>
+                        <input name="businessName" autoComplete="organization" maxLength={160} placeholder="Workshop or dealership" />
+                      </label>
+                      <label>
+                        <span>You are a</span>
+                        <select name="senderType" defaultValue="dealer" required>
+                          <option value="dealer">Dealer</option>
+                          <option value="workshop">Workshop</option>
+                          <option value="supplier">Supplier</option>
+                          <option value="owner">Asset owner</option>
+                          <option value="other">Other</option>
+                        </select>
+                      </label>
+                      <label>
+                        <span>Mobile number</span>
+                        <input name="mobile" type="tel" autoComplete="tel" maxLength={40} placeholder="For example 082 123 4567" required />
+                      </label>
+                      <label>
+                        <span>Email address</span>
+                        <input name="email" type="email" autoComplete="email" maxLength={160} placeholder="name@business.co.za" required />
+                      </label>
+                      <label>
+                        <span>Job card or PO <em>Optional</em></span>
+                        <input name="jobReference" autoComplete="off" maxLength={100} placeholder="Your internal reference" />
+                      </label>
+                      <label className={styles.fieldWide}>
+                        <span>Note <em>Optional</em></span>
+                        <textarea name="note" rows={3} maxLength={600} placeholder="Add anything that will help us verify or match the invoice." />
+                      </label>
+                    </div>
+
+                    <label className={styles.consentRow}>
+                      <input name="privacyAccepted" type="checkbox" value="yes" required />
+                      <span>
+                        I confirm that I may send this invoice to Aim4price for verification and delivery to the relevant asset owner. See our <Link href="/privacy-policy">Privacy Policy</Link>.
+                      </span>
+                    </label>
+                  </section>
+
+                  <div className={styles.honeypot} aria-hidden="true">
+                    <label>Website<input name="website" type="text" tabIndex={-1} autoComplete="off" /></label>
                   </div>
-                )}
-              </fieldset>
+                  <input type="hidden" name="startedAt" value={startedAt} />
 
-              <fieldset className={styles.formSectionBlock}>
-                <legend><span>3</span><div><strong>Tell us who sent it</strong><small>We use these details only to verify and follow up on this submission.</small></div></legend>
-                <div className={styles.fieldGrid}>
-                  <label>
-                    <span>Your name</span>
-                    <input name="senderName" autoComplete="name" maxLength={120} placeholder="Full name" required />
-                  </label>
-                  <label>
-                    <span>Business name <em>Optional</em></span>
-                    <input name="businessName" autoComplete="organization" maxLength={160} placeholder="Workshop or dealership" />
-                  </label>
-                  <label>
-                    <span>You are a</span>
-                    <select name="senderType" defaultValue="dealer" required>
-                      <option value="dealer">Dealer</option>
-                      <option value="workshop">Workshop</option>
-                      <option value="supplier">Supplier</option>
-                      <option value="owner">Asset owner</option>
-                      <option value="other">Other</option>
-                    </select>
-                  </label>
-                  <label>
-                    <span>Mobile number</span>
-                    <input name="mobile" type="tel" autoComplete="tel" maxLength={40} placeholder="For example 082 123 4567" required />
-                  </label>
-                  <label>
-                    <span>Email address</span>
-                    <input name="email" type="email" autoComplete="email" maxLength={160} placeholder="name@business.co.za" required />
-                  </label>
-                  <label>
-                    <span>Job card or PO <em>Optional</em></span>
-                    <input name="jobReference" autoComplete="off" maxLength={100} placeholder="Your internal reference" />
-                  </label>
-                  <label className={styles.fieldWide}>
-                    <span>Note <em>Optional</em></span>
-                    <textarea name="note" rows={3} maxLength={600} placeholder="Add anything that will help us verify or match the invoice." />
-                  </label>
+                  {notice ? (
+                    <p className={`${styles.notice} ${notice.tone === 'error' ? styles.noticeError : ''}`} role="alert">{notice.message}</p>
+                  ) : null}
                 </div>
-              </fieldset>
 
-              <div className={styles.honeypot} aria-hidden="true">
-                <label>Website<input name="website" type="text" tabIndex={-1} autoComplete="off" /></label>
-              </div>
-              <input type="hidden" name="startedAt" value={startedAt} />
-
-              <label className={styles.consentRow}>
-                <input name="privacyAccepted" type="checkbox" value="yes" required />
-                <span>
-                  I confirm that I may send this invoice to Aim4price for verification and delivery to the relevant asset owner. See our <Link href="/privacy-policy">Privacy Policy</Link>.
-                </span>
-              </label>
-
-              {notice && (
-                <p className={`${styles.notice} ${notice.tone === 'error' ? styles.noticeError : ''}`} role="alert">{notice.message}</p>
-              )}
-
-              <div className={styles.submitRow}>
-                <div><ShieldIcon /><span><strong>Private and owner-controlled</strong><small>Sending a document never grants access to an asset record.</small></span></div>
-                <button type="submit" className={styles.primaryButton} disabled={isSubmitting}>
-                  {isSubmitting ? 'Sending invoice…' : 'Send invoice to Aim4price'}
-                </button>
-              </div>
-            </form>
-          )}
+                <footer className={styles.modalFooter}>
+                  <div className={styles.modalSecurity}>
+                    <ShieldIcon />
+                    <span><strong>Private upload</strong><small>Verified by Aim4price before delivery.</small></span>
+                  </div>
+                  <div className={styles.modalActions}>
+                    {currentStep > 1 ? <button type="button" className={styles.backButton} onClick={goToPreviousStep}>Back</button> : null}
+                    {currentStep < 3 ? (
+                      <button
+                        type="button"
+                        className={styles.nextButton}
+                        onClick={goToNextStep}
+                        disabled={currentStep === 1 ? !stepOneComplete : !stepTwoComplete}
+                      >
+                        Next
+                        <ArrowIcon />
+                      </button>
+                    ) : (
+                      <button type="submit" className={styles.submitButton} disabled={isSubmitting}>
+                        {isSubmitting ? 'Sending invoice…' : 'Send invoice to Aim4price'}
+                      </button>
+                    )}
+                  </div>
+                </footer>
+              </form>
+            )}
+          </section>
         </div>
-      </section>
+      ) : null}
     </>
   );
 }
