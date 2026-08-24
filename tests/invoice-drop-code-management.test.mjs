@@ -30,7 +30,7 @@ test('Invoice Drop code API is owner-only and supports owner-wide or one-asset t
   assert.match(api, /getAssetRegisterItemById\(access\.context\.ownerUserId, assetId\)/);
 });
 
-test('code lifecycle uses the capture domain and GET never issues plaintext', () => {
+test('code lifecycle uses the capture domain and full-code viewing is an explicit owner action', () => {
   const getHandler = api.slice(
     api.indexOf('export async function GET'),
     api.indexOf('export async function POST'),
@@ -41,6 +41,10 @@ test('code lifecycle uses the capture domain and GET never issues plaintext', ()
   );
 
   assert.match(getHandler, /getActiveInvoiceDropCode/);
+  assert.match(getHandler, /request\.nextUrl\.searchParams\.get\('reveal'\) === '1'/);
+  assert.match(getHandler, /revealActiveInvoiceDropCode/);
+  assert.match(getHandler, /requireOwnerAccess\(request, \{ requireFinanceMutation: reveal \}\)/);
+  assert.match(getHandler, /created before secure viewing was enabled/);
   assert.doesNotMatch(getHandler, /issueInvoiceDropCode/);
   assert.match(postHandler, /issueInvoiceDropCode/);
   assert.match(api, /revokeInvoiceDropCode\(active\.id, owner\.access\.actor\)/);
@@ -85,6 +89,9 @@ test('one-asset routing uses a searchable app-styled picker instead of a native 
   assert.match(invoiceDropWizard, /placeholder="Search assets\.\.\."/);
   assert.match(invoiceDropWizard, /filteredInvoiceDropAssets\.map/);
   assert.match(invoiceDropWizard, /chooseInvoiceDropAsset\(asset\.id\)/);
+  assert.match(ledger, /const invoiceDropAssetDetails = useMemo/);
+  assert.match(ledger, /formatAssetUsageReading\(invoiceDropAsset\.usageReading, invoiceDropAsset\.usageMetric\)/);
+  assert.match(invoiceDropWizard, /invoiceDropAssetDetails \|\| 'Invoices route directly to this asset\.'/);
   assert.doesNotMatch(invoiceDropWizard, /<select/);
   assert.match(ledgerStyles, /\.invoiceDropAssetPickerModal \{[\s\S]*?width: min\(100%, 880px\)/);
 });
@@ -98,11 +105,16 @@ test('code stage makes secure creation and deliberate replacement explicit', () 
   assert.match(ledger, /Change this code\? The current code will stop working immediately\./);
 });
 
-test('full code is an issuance-only UI state and later views show last four', () => {
+test('current code can be explicitly viewed, hidden and copied without storing plaintext in the UI by default', () => {
   assert.match(ledger, /setNewInvoiceDropCode\(issued\.code\)/);
+  assert.match(ledger, /const \[revealedInvoiceDropCode, setRevealedInvoiceDropCode\] = useState\(''\)/);
+  assert.match(ledger, /\?reveal=1/);
+  assert.match(invoiceDropWizard, /View code/);
+  assert.match(invoiceDropWizard, /Hide code/);
+  assert.match(invoiceDropWizard, /visibleInvoiceDropCode/);
   assert.match(ledger, /setNewInvoiceDropCode\(''\)/);
   assert.match(ledger, /A4P-••••-••••-\{invoiceDropCode\.lastFour\}/);
-  assert.match(ledger, /will not show the full code again/i);
+  assert.match(ledger, /owner-only screen/i);
   assert.match(ledger, /href="\/drop-invoice"/);
   assert.match(ledger, /Copy link/);
   assert.match(ledger, /Share/);

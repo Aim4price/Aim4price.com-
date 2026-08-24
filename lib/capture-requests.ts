@@ -1,4 +1,4 @@
-import { createHmac, randomBytes } from 'node:crypto';
+import { createHmac, randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
 import type { PoolClient, QueryResult, QueryResultRow } from 'pg';
 import { getDb } from './db';
 
@@ -256,8 +256,11 @@ export type ResolvedAssetSerialOrVin = {
 };
 
 export type InvoiceDropAssetSearchMatch = ResolvedAssetSerialOrVin & {
+  modelName: string;
   categoryLabel: string;
   yearModel: string;
+  usageReading: number | null;
+  usageMetric: 'hours' | 'km';
   serialSuffix: string;
 };
 
@@ -268,6 +271,10 @@ export type InvoiceDropAssetSearchResult = {
 };
 
 export type ActiveInvoiceDropCode = Omit<IssuedInvoiceDropCode, 'code'>;
+
+export type RevealedInvoiceDropCode = ActiveInvoiceDropCode & {
+  code: string | null;
+};
 
 type Queryable = {
   query<T extends QueryResultRow = QueryResultRow>(
@@ -369,6 +376,7 @@ type DropCodeRow = QueryResultRow & {
   id: string;
   owner_user_id: string;
   asset_register_item_id: string | null;
+  code_hash?: string | null;
   code_last_four: string;
   created_at: Date | string;
 };
@@ -378,8 +386,11 @@ type OwnerAssetSearchRow = QueryResultRow & {
   owner_display_name: string | null;
   asset_id: string;
   asset_display_name: string | null;
+  model_name: string | null;
   category_label: string | null;
   year_model: string | number | null;
+  usage_reading: string | number | null;
+  usage_metric: string | null;
   serial_or_vin: string | null;
 };
 
@@ -1725,10 +1736,21 @@ function invoiceDropCodeHash(code: string): string {
   return createHmac('sha256', readInvoiceDropCodeSecret()).update(canonical).digest('hex');
 }
 
-function generateInvoiceDropCode(): string {
-  const bytes = randomBytes(12);
+function deriveInvoiceDropCode(dropCodeIdInput: string): string {
+  const dropCodeId = asUuid(dropCodeIdInput, 'INVOICE_DROP_CODE_INVALID').toLowerCase();
+  const bytes = createHmac('sha256', readInvoiceDropCodeSecret())
+    .update(`invoice-drop-code:v2:${dropCodeId}`)
+    .digest()
+    .subarray(0, 12);
   const characters = Array.from(bytes, (byte) => DROP_CODE_ALPHABET[byte & 31]).join('');
   return `A4P-${characters.slice(0, 4)}-${characters.slice(4, 8)}-${characters.slice(8, 12)}`;
+}
+
+function invoiceDropCodeHashMatches(candidateCode: string, storedHash: unknown): boolean {
+  const actual = cleanText(storedHash, 64).toLowerCase();
+  if (!SHA256_PATTERN.test(actual)) return false;
+  const expected = invoiceDropCodeHash(candidateCode);
+  return timingSafeEqual(Buffer.from(actual, 'hex'), Buffer.from(expected, 'hex'));
 }
 
 function assertDropCodeActor(
@@ -1752,7 +1774,8 @@ export async function issueInvoiceDropCode(
   const assetIdInput = cleanText(input.assetId, 80);
   const assetId = assetIdInput ? asUuid(assetIdInput, 'CAPTURE_ASSET_INVALID') : null;
   const actor = assertDropCodeActor(actorInput, ownerUserId);
-  const code = generateInvoiceDropCode();
+  const dropCodeId = randomUUID();
+  const code = deriveInvoiceDropCode(dropCodeId);
   const codeHash = invoiceDropCodeHash(code);
   const lastFour = code.slice(-4);
 
@@ -1789,6 +1812,7 @@ export async function issueInvoiceDropCode(
 
     const result = await client.query<DropCodeRow>(
       `insert into public.asset_invoice_drop_codes (
+         id,
          owner_user_id,
          asset_register_item_id,
          code_hash,
@@ -1796,9 +1820,9 @@ export async function issueInvoiceDropCode(
          created_by_actor_type,
          created_by_user_id,
          created_by_display_name
-       ) values ($1, $2::uuid, $3, $4, $5, nullif($6, ''), $7)
+       ) values ($1::uuid, $2, $3::uuid, $4, $5, $6, nullif($7, ''), $8)
        returning id, owner_user_id, asset_register_item_id, code_last_four, created_at`,
-      [ownerUserId, assetId, codeHash, lastFour, actor.actorType, actor.userId, actor.displayName],
+      [dropCodeId, ownerUserId, assetId, codeHash, lastFour, actor.actorType, actor.userId, actor.displayName],
     );
     const row = result.rows[0];
     if (!row) throw new Error('INVOICE_DROP_CODE_CREATE_FAILED');
@@ -1892,6 +1916,11 @@ export async function resolveUniqueOwnerInvoiceDropAsset(
            'Saved asset'
          ) as asset_display_name,
          coalesce(
+           nullif(asset.model_name, ''),
+           nullif(to_jsonb(asset)->>'typed_model_name', ''),
+           ''
+         ) as model_name,
+         coalesce(
            nullif(to_jsonb(asset)->>'category_label', ''),
            nullif(to_jsonb(asset)->>'category', ''),
            ''
@@ -1901,6 +1930,13 @@ export async function resolveUniqueOwnerInvoiceDropAsset(
            nullif(to_jsonb(asset)->>'year', ''),
            ''
          ) as year_model,
+         nullif(to_jsonb(asset)->>'hours', '') as usage_reading,
+         case
+           when lower(coalesce(to_jsonb(asset)->>'usage_metric', '')) = 'km' then 'km'
+           when lower(coalesce(to_jsonb(asset)->>'usage_metric', '')) = 'hours' then 'hours'
+           when lower(coalesce(to_jsonb(asset)->>'kind', '')) = 'vehicle' then 'km'
+           else 'hours'
+         end as usage_metric,
          coalesce(
            nullif(to_jsonb(asset)->>'serial_number', ''),
            nullif(to_jsonb(asset)->>'serial', ''),
@@ -1912,6 +1948,7 @@ export async function resolveUniqueOwnerInvoiceDropAsset(
              nullif(asset.title, ''),
              nullif(asset.brand_name, ''),
              nullif(asset.model_name, ''),
+             nullif(to_jsonb(asset)->>'typed_model_name', ''),
              nullif(to_jsonb(asset)->>'serial_number', ''),
              nullif(to_jsonb(asset)->>'serial', ''),
              nullif(to_jsonb(asset)->>'vin', ''),
@@ -1944,8 +1981,11 @@ export async function resolveUniqueOwnerInvoiceDropAsset(
        owner_display_name,
        asset_id,
        asset_display_name,
+       model_name,
        category_label,
        year_model,
+       usage_reading,
+       usage_metric,
        serial_or_vin
      from candidates
      where not exists (
@@ -1963,6 +2003,10 @@ export async function resolveUniqueOwnerInvoiceDropAsset(
   }
   const row = result.rows[0];
   const serialOrVin = cleanText(row.serial_or_vin, 180);
+  const numericUsageReading = Number(row.usage_reading);
+  const usageReading = Number.isFinite(numericUsageReading) && numericUsageReading > 0
+    ? numericUsageReading
+    : null;
   return {
     ambiguous: false,
     match: {
@@ -1970,9 +2014,12 @@ export async function resolveUniqueOwnerInvoiceDropAsset(
       ownerDisplayName: cleanText(row.owner_display_name, 180) || 'Asset owner',
       assetId: String(row.asset_id),
       assetDisplayName: cleanText(row.asset_display_name, 180) || 'Saved asset',
+      modelName: cleanText(row.model_name, 180),
       serialOrVin,
       categoryLabel: cleanText(row.category_label, 120),
       yearModel: cleanText(row.year_model, 20),
+      usageReading,
+      usageMetric: cleanText(row.usage_metric, 20) === 'km' ? 'km' : 'hours',
       serialSuffix: serialSuffix(serialOrVin),
     },
   };
@@ -2103,6 +2150,44 @@ export async function getActiveInvoiceDropCode(
         createdAtIso: asIso(row.created_at),
       }
     : null;
+}
+
+/**
+ * Reveals a current code only when it was issued with the recoverable v2
+ * derivation. Legacy random codes remain valid but cannot be reconstructed
+ * from their one-way hash and must be rotated once before they can be viewed.
+ */
+export async function revealActiveInvoiceDropCode(
+  ownerUserIdInput: string,
+  assetIdInput?: string | null,
+): Promise<RevealedInvoiceDropCode | null> {
+  const ownerUserId = cleanText(ownerUserIdInput, 200);
+  const assetIdText = cleanText(assetIdInput, 80);
+  const assetId = assetIdText ? asUuid(assetIdText, 'CAPTURE_ASSET_INVALID') : null;
+  if (!ownerUserId) return null;
+
+  const result = await getDb().query<DropCodeRow>(
+    `select id, owner_user_id, asset_register_item_id, code_hash, code_last_four, created_at
+       from public.asset_invoice_drop_codes
+      where owner_user_id = $1
+        and asset_register_item_id is not distinct from $2::uuid
+        and is_active = true
+      limit 1`,
+    [ownerUserId, assetId],
+  );
+  const row = result.rows[0];
+  if (!row) return null;
+
+  const candidate = deriveInvoiceDropCode(String(row.id));
+  return {
+    id: String(row.id),
+    ownerUserId: String(row.owner_user_id),
+    assetId: row.asset_register_item_id ? String(row.asset_register_item_id) : null,
+    scope: row.asset_register_item_id ? 'asset' : 'all',
+    lastFour: String(row.code_last_four),
+    createdAtIso: asIso(row.created_at),
+    code: invoiceDropCodeHashMatches(candidate, row.code_hash) ? candidate : null,
+  };
 }
 
 export async function revokeInvoiceDropCode(

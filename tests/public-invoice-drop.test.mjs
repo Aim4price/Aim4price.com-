@@ -270,5 +270,13 @@ test('public route privately auto-links unique serial, VIN or owner-scoped broad
   assert.match(searchRoute, /cannot be used to infer the size of an owner/);
   assert.match(searchRoute, /status: 'needs_detail'/);
   assert.match(searchRoute, /asset: \{[\s\S]*?title:[\s\S]*?meta,/);
+  assert.match(searchRoute, /result\.match\.modelName/);
+  assert.match(searchRoute, /Year Model \$\{result\.match\.yearModel\}/);
+  assert.match(searchRoute, /formatUsageReading\(result\.match\.usageReading, result\.match\.usageMetric\)/);
+  assert.match(captureStore, /as model_name/);
+  assert.match(captureStore, /as usage_reading/);
+  assert.match(captureStore, /as usage_metric/);
+  assert.match(captureStore, /usageReading,/);
+  assert.match(captureStore, /usageMetric:/);
   assert.doesNotMatch(searchRoute, /ownerUserId|assetId|assets:/);
 });

@@ -51,7 +51,7 @@ test('public submissions require identity but never get a public request-detail 
   assert.doesNotMatch(capture, /getCaptureRequestByPublicReference|publicReference:\s*string\)[\s\S]*?select/);
 });
 
-test('drop codes are revocable keyed hashes and plaintext is returned only on issue', () => {
+test('drop codes remain revocable keyed hashes while owner viewing uses a verified server derivation', () => {
   const dropCodeTable = migration.slice(
     migration.indexOf('create table if not exists public.asset_invoice_drop_codes'),
     migration.indexOf('create table if not exists public.document_capture_requests'),
@@ -61,6 +61,12 @@ test('drop codes are revocable keyed hashes and plaintext is returned only on is
   assert.doesNotMatch(dropCodeTable, /\bcode\s+text\b/i);
   assert.match(migration, /idx_asset_invoice_drop_codes_one_active_asset[\s\S]*?where is_active = true/i);
   assert.match(capture, /createHmac\('sha256', readInvoiceDropCodeSecret\(\)\)/);
+  assert.match(capture, /randomUUID\(\)/);
+  assert.match(capture, /invoice-drop-code:v2:\$\{dropCodeId\}/);
+  assert.match(capture, /timingSafeEqual/);
+  assert.match(capture, /export async function revealActiveInvoiceDropCode/);
+  assert.match(capture, /invoiceDropCodeHashMatches\(candidate, row\.code_hash\)/);
+  assert.match(capture, /insert into public\.asset_invoice_drop_codes \([\s\S]*?id,[\s\S]*?code_hash/);
   assert.match(capture, /configuredSecret\.length < 32 && process\.env\.NODE_ENV === 'production'/);
   assert.match(capture, /secret\.length < 32/);
   assert.match(capture, /resolveInvoiceDropCode[\s\S]*?where code_hash = \$1[\s\S]*?is_active = true/);
