@@ -5,6 +5,7 @@ import { getServerSession, isOwnerAppSession } from '../../../../lib/auth-sessio
 import {
   getActiveInvoiceDropCode,
   issueInvoiceDropCode,
+  revealActiveInvoiceDropCode,
   revokeInvoiceDropCode,
   type CaptureEventActor,
 } from '../../../../lib/capture-requests';
@@ -51,7 +52,6 @@ function json(body: Record<string, unknown>, status = 200) {
     },
   });
 }
-
 function forbidden() {
   return json(
     { ok: false, error: 'Only the signed-in asset owner can manage Invoice Drop codes.' },
@@ -156,14 +156,30 @@ function dropCodeError(error: unknown): NextResponse {
 }
 
 export async function GET(request: NextRequest, routeContext: RouteContext) {
-  const owner = await requireOwnerAccess(request);
+  const reveal = request.nextUrl.searchParams.get('reveal') === '1';
+  const owner = await requireOwnerAccess(request, { requireFinanceMutation: reveal });
   if (!owner.ok) return owner.response;
   const target = await requireCodeTarget(owner.access, routeContext.params.assetId);
   if (!target.ok) return target.response;
 
   try {
+    if (reveal) {
+      const dropCode = await revealActiveInvoiceDropCode(
+        owner.access.context.ownerUserId,
+        target.target.assetId,
+      );
+      if (dropCode && !dropCode.code) {
+        return json({
+          ok: false,
+          error: 'This existing code was created before secure viewing was enabled. Change the code once, then it can be viewed here.',
+        }, 409);
+      }
+      return json({ ok: true, dropCode });
+    }
+
     const dropCode = await getActiveInvoiceDropCode(owner.access.context.ownerUserId, target.target.assetId);
-    // ActiveInvoiceDropCode deliberately contains the last four characters only.
+    // The normal management view deliberately returns the last four characters
+    // only. Full-code access is an explicit, owner-authorized reveal action.
     return json({ ok: true, dropCode });
   } catch (error) {
     return dropCodeError(error);
@@ -181,8 +197,8 @@ export async function POST(request: NextRequest, routeContext: RouteContext) {
       { ownerUserId: owner.access.context.ownerUserId, assetId: target.target.assetId },
       owner.access.actor,
     );
-    // This is the only response that includes the plaintext code. It is never
-    // returned by GET and the database stores only its keyed hash + last four.
+    // The database stores only a keyed hash + last four. A newly issued code is
+    // returned here and can later be reconstructed by the owner-only reveal action.
     return json({ ok: true, dropCode }, 201);
   } catch (error) {
     return dropCodeError(error);
@@ -208,4 +224,3 @@ export async function DELETE(request: NextRequest, routeContext: RouteContext) {
     return dropCodeError(error);
   }
 }
-
