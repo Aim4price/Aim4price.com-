@@ -1,6 +1,5 @@
 'use client';
 
-import Image from 'next/image';
 import Link from 'next/link';
 import {
   ChangeEvent,
@@ -11,7 +10,6 @@ import {
   useRef,
   useState,
 } from 'react';
-import HomeHeroVideo from '../home-hero-video';
 import styles from './page.module.css';
 
 const MAX_FILE_BYTES = 12 * 1024 * 1024;
@@ -77,14 +75,6 @@ function CloseIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">
       <path d="m6 6 12 12M18 6 6 18" />
-    </svg>
-  );
-}
-
-function PlusIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M12 5v14M5 12h14" />
     </svg>
   );
 }
@@ -330,18 +320,11 @@ export default function InvoiceDropClient() {
   return (
     <>
       <section className={styles.heroSection}>
-        <HomeHeroVideo />
         <div className={styles.heroOverlay} />
 
         <div className={styles.shell}>
           <div className={styles.heroGrid}>
             <div className={styles.heroCopy}>
-              <p className={styles.heroEyebrow}>
-                <span>AIM4PRICE INVOICES</span>
-                <span className={styles.heroEyebrowDivider} aria-hidden="true">|</span>
-                <span>No account needed</span>
-              </p>
-
               <h1 className={styles.heroTitle}>
                 <span>Send the invoice.</span>
                 <span>We&apos;ll take it from here.</span>
@@ -351,30 +334,23 @@ export default function InvoiceDropClient() {
                 Identify the asset, attach one invoice and send it securely. Aim4price will verify it and route it to the correct record.
               </p>
 
-              <div className={styles.heroActions}>
-                <button ref={heroButtonRef} type="button" className={styles.heroPrimaryButton} onClick={openModal}>
-                  <span className={styles.heroButtonIcon}><PlusIcon /></span>
-                  Add invoice
-                  <span className={styles.heroButtonArrow}><ArrowIcon /></span>
-                </button>
-              </div>
-
               <div className={styles.heroTrust}>
                 <span className={styles.heroTrustIcon}><ShieldIcon /></span>
                 <span><strong>Private and owner-controlled.</strong> Sending a document never grants access to an asset record.</span>
               </div>
             </div>
 
-            <div className={styles.heroVisual} aria-hidden="true">
-              <Image
-                src="/brand/aim4price-mark-white.png"
-                alt=""
-                width={640}
-                height={640}
-                priority
-                className={styles.heroLogo}
-              />
-            </div>
+            <button
+              ref={heroButtonRef}
+              type="button"
+              className={styles.heroUploadAction}
+              onClick={openModal}
+              aria-label="Add an invoice"
+            >
+              <span className={styles.heroUploadIcon}><UploadIcon /></span>
+              <span className={styles.heroUploadLabel}>Add invoice</span>
+              <span className={styles.heroUploadHint}>Open the secure 3-step form</span>
+            </button>
           </div>
         </div>
       </section>
