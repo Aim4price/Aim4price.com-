@@ -24,6 +24,7 @@
   background: linear-gradient(180deg, #f7faf9 0%, #edf4f5 100%);
   color: var(--text);
 }
+
 .shell {
   width: min(calc(100% - 2rem), 1320px);
   box-sizing: border-box;
