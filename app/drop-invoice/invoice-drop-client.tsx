@@ -370,7 +370,6 @@ export default function InvoiceDropClient() {
           >
             <header className={styles.modalHeader}>
               <div className={styles.modalHeaderCopy}>
-                <p className={styles.modalEyebrow}>{receipt ? 'INVOICE RECEIVED' : 'AIM4PRICE INVOICES'}</p>
                 <h2 id="invoice-modal-title">{receipt ? 'Safely sent.' : 'Add an invoice'}</h2>
               </div>
               <button
