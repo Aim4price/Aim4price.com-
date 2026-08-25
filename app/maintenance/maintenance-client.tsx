@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import AppHeader from '../../components/AppHeader';
+import { openCanonicalReportUrl } from '../../lib/report-open';
 import DesktopServiceModal, { type DesktopServiceCompletion } from '../../components/DesktopServiceModal';
 import styles from './page.module.css';
 
@@ -138,6 +139,7 @@ type QuickClearStep = 'confirm' | 'completion';
 
 type DownloadScope = 'total' | 'asset' | 'upcoming' | 'done';
 type DownloadFormat = 'pdf' | 'xlsx';
+type MaintenanceReportRouteFormat = DownloadFormat | 'html';
 
 type DropdownOption = {
   value: string;
@@ -544,7 +546,7 @@ function buildCompletionUrl(recordId: string, filters: MaintenanceFilters): stri
   return `/api/maintenance/${recordId}/complete${query}`;
 }
 
-function buildReportUrl(scope: DownloadScope, format: 'pdf' | 'xlsx', filters: MaintenanceFilters, assetId?: string): string {
+function buildReportUrl(scope: DownloadScope, format: MaintenanceReportRouteFormat, filters: MaintenanceFilters, assetId?: string): string {
   const params = new URLSearchParams();
   params.set('scope', scope);
   params.set('format', format);
@@ -1206,14 +1208,15 @@ export default function MaintenanceClient({
 
   function downloadReport(scope: DownloadScope, format: DownloadFormat) {
     const assetId = scope === 'asset' ? downloadAssetId : undefined;
-    const url = buildReportUrl(scope, format, activeFilters, assetId);
+    const routeFormat: MaintenanceReportRouteFormat = format === 'pdf' ? 'html' : format;
+    const url = buildReportUrl(scope, routeFormat, activeFilters, assetId);
 
     if (format === 'xlsx') {
       window.location.href = url;
       return;
     }
 
-    window.open(url, '_blank', 'noopener,noreferrer');
+    openCanonicalReportUrl(url);
   }
 
   function submitDownload() {

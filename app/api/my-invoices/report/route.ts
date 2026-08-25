@@ -180,9 +180,11 @@ export async function GET(request: NextRequest) {
 
     const ownerAppMode = request.nextUrl.searchParams.get('source') === 'owner-app';
     const requestedFormat = parseFormat(request.nextUrl.searchParams.get('format'));
-    // Owner App users may receive the same canonical PDF or workbook as the
-    // normal report picker. Keep CSV/HTML private to the full workspace.
-    const format = ownerAppMode && requestedFormat !== 'xlsx' ? 'pdf' : requestedFormat;
+    // Owner App users may open the canonical HTML print document or download
+    // the workbook. CSV remains private to the full workspace.
+    const format = ownerAppMode && requestedFormat !== 'xlsx' && requestedFormat !== 'html'
+      ? 'pdf'
+      : requestedFormat;
     const [unfilteredData, profile, rawLogoUrl] = await Promise.all([
       listMyInvoicesData(reportOwnerUserId, filters),
       getAccountProfile({

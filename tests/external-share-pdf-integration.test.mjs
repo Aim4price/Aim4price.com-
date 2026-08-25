@@ -25,11 +25,11 @@ test('outside sharing offers the canonical PDF and Excel route for every timelin
   assert.doesNotMatch(groupModal, /setReportStep\(reportDeliveryMode === 'attach' \? 'filters'/);
 });
 
-test('polished valuation PDFs are opened and shared from one canonical source and renderer', async () => {
+test('polished valuations open in-browser and share from the same canonical HTML', async () => {
   const client = await readFile(new URL('../app/asset-register/asset-register-client.tsx', import.meta.url), 'utf8');
 
-  assert.match(client, /async function handlePrintAssetSheet[\s\S]*?const reportPayload: AssetSheetPayload[\s\S]*?html: buildAssetSheetReportHtml\(reportPayload\)[\s\S]*?addExternalShareReport\(reportSource\)[\s\S]*?openPreparedExternalReport\(reportSource\)/);
-  assert.match(client, /async function handleExportPdf\([\s\S]*?const reportPayload: AssetRegisterSummaryPayload[\s\S]*?html: buildAssetRegisterSummaryReportHtml\(reportPayload\)[\s\S]*?addExternalShareReport\(reportSource\)[\s\S]*?openPreparedExternalReport\(reportSource\)/);
+  assert.match(client, /async function handlePrintAssetSheet[\s\S]*?const reportPayload: AssetSheetPayload[\s\S]*?const reportHtml = buildAssetSheetReportHtml\(reportPayload\)[\s\S]*?html: reportHtml[\s\S]*?addExternalShareReport\(reportSource\)[\s\S]*?writeCanonicalReportHtml\(reportWindow,[\s\S]*?reportHtml\)/);
+  assert.match(client, /async function handleExportPdf\([\s\S]*?const reportPayload: AssetRegisterSummaryPayload[\s\S]*?const reportHtml = buildAssetRegisterSummaryReportHtml\(reportPayload\)[\s\S]*?html: reportHtml[\s\S]*?addExternalShareReport\(reportSource\)[\s\S]*?writeCanonicalReportHtml\(reportWindow,[\s\S]*?reportHtml\)/);
   assert.match(client, /async function handleDownloadAssetGroupPdf[\s\S]*?await handleExportPdf\([\s\S]*?'full',[\s\S]*?groupAssets,[\s\S]*?group\.name/);
   assert.match(client, /url: '\/api\/reports\/render-pdf'/);
   assert.match(client, /request: \{[\s\S]*?method: 'POST' as const/);

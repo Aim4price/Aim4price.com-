@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { fetchExternalShareFile, type ExternalShareFileSource } from '../../../../lib/external-file-share';
+import type { ExternalShareFileSource } from '../../../../lib/external-file-share';
+import { openCanonicalReportHtml } from '../../../../lib/report-print';
 import styles from '../../owner-app.module.css';
 
 export type OwnerAssetReportPickerAsset = {
@@ -16,6 +17,7 @@ export type OwnerAssetReportPickerAsset = {
 
 type ShareableReport = 'valuation' | 'maintenance' | 'fuel' | 'depreciation' | 'ownership';
 type OwnerAssetReportFormat = 'pdf' | 'xlsx';
+type OwnerAssetReportRouteFormat = OwnerAssetReportFormat | 'html';
 
 type OwnerAssetReportPickerProps = {
   asset: OwnerAssetReportPickerAsset;
@@ -96,7 +98,7 @@ function reportFileName(
 export function buildOwnerAssetReportUrl(
   asset: OwnerAssetReportPickerAsset,
   report: ShareableReport,
-  format: OwnerAssetReportFormat,
+  format: OwnerAssetReportRouteFormat,
   year = 'all',
   month = 'all',
   maintenanceType = 'all',
@@ -195,7 +197,6 @@ export default function OwnerAssetReportPicker({
   const [maintenanceType, setMaintenanceType] = useState('all');
   const [format, setFormat] = useState<OwnerAssetReportFormat>('pdf');
   const [selectedReport, setSelectedReport] = useState<ShareableReport | null>(null);
-  const [openingReport, setOpeningReport] = useState(false);
   const [reportError, setReportError] = useState('');
   const selectedReportDetails = reports.find((report) => report.id === selectedReport) ?? null;
 
@@ -216,11 +217,12 @@ export default function OwnerAssetReportPicker({
   }, [mode, onDismiss, selectedReport]);
 
   function normalReportUrl(report: ShareableReport, reportFormat: OwnerAssetReportFormat): string {
-    return buildOwnerAssetReportUrl(asset, report, reportFormat, year, month, maintenanceType);
+    const routeFormat: OwnerAssetReportRouteFormat = reportFormat === 'pdf' ? 'html' : reportFormat;
+    return buildOwnerAssetReportUrl(asset, report, routeFormat, year, month, maintenanceType);
   }
 
   function shareReportSource(report: ShareableReport, reportFormat: OwnerAssetReportFormat): ExternalShareFileSource | null {
-    const url = normalReportUrl(report, reportFormat);
+    const url = buildOwnerAssetReportUrl(asset, report, reportFormat, year, month, maintenanceType);
     const filterMeta = reportFilterMeta(report, year, month, maintenanceType);
     const fileName = reportFileName(asset.title, report, year, month, maintenanceType, reportFormat);
 
@@ -258,31 +260,16 @@ export default function OwnerAssetReportPicker({
     if (source) onAttach?.(source);
   }
 
-  async function openSelectedValuationPdf() {
-    if (!valuationReportHtml || openingReport) return;
-    const reportWindow = window.open('about:blank', '_blank');
-    if (!reportWindow) {
+  function openSelectedValuationPdf() {
+    if (!valuationReportHtml) return;
+    setReportError('');
+
+    if (!openCanonicalReportHtml('Aim4price asset valuation', valuationReportHtml)) {
       setReportError('Please allow pop-ups to open this report.');
       return;
     }
 
-    setOpeningReport(true);
-    setReportError('');
-    try {
-      reportWindow.opener = null;
-      reportWindow.document.title = 'Preparing Aim4price report';
-      reportWindow.document.body.textContent = 'Preparing your Aim4price report…';
-      const file = await fetchExternalShareFile(buildOwnerValuationReportSource(asset, valuationReportHtml));
-      const objectUrl = URL.createObjectURL(file);
-      reportWindow.location.replace(objectUrl);
-      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000);
-      setSelectedReport(null);
-    } catch (cause) {
-      reportWindow.close();
-      setReportError(cause instanceof Error ? cause.message : 'Unable to open the valuation report.');
-    } finally {
-      setOpeningReport(false);
-    }
+    setSelectedReport(null);
   }
 
   const reportList = (
@@ -347,8 +334,8 @@ export default function OwnerAssetReportPicker({
             {format === 'pdf' ? 'Add PDF' : 'Add Excel'}
           </button>
         ) : selectedReport === 'valuation' && format === 'pdf' ? (
-          <button type="button" className={styles.ownerReportAttachButton} onClick={() => void openSelectedValuationPdf()} disabled={!valuationReportHtml || openingReport}>
-            {openingReport ? 'Preparing PDF…' : 'Open PDF'}
+          <button type="button" className={styles.ownerReportAttachButton} onClick={openSelectedValuationPdf} disabled={!valuationReportHtml}>
+            Open PDF
           </button>
         ) : (
           <a href={normalReportUrl(selectedReport, format)} target="_blank" rel="noreferrer" onClick={() => setSelectedReport(null)}>

@@ -14,7 +14,6 @@ import AssetExternalShare, {
   AssetShareDestinationPicker,
   type ExternalShareFileSource,
 } from '../../components/asset-register/AssetExternalShare';
-import { fetchExternalShareFile } from '../../lib/external-file-share';
 import AccountantAssetManageModal from '../../components/AccountantAssetManageModal';
 import AccountantRegisterReportsModal from '../../components/AccountantRegisterReportsModal';
 import AssetDocumentUploadModal, {
@@ -28,11 +27,13 @@ import DealerMaintenanceAccessSettings, {
 import {
   buildAssetRegisterSummaryReportHtml,
   buildAssetSheetReportHtml,
+  writeCanonicalReportHtml,
   type AssetRegisterSummaryPayload,
   type AssetSheetPayload,
   type ReportKeyValue,
   type ReportMethodCard,
 } from '../../lib/report-print';
+import { openCanonicalReportUrl } from '../../lib/report-open';
 import {
   GENERAL_ASSET_CATEGORIES,
   PROPERTY_ASSET_SUBTYPES,
@@ -344,6 +345,8 @@ type PdfReportKind =
   | 'not-mapped';
 type AssetPdfReportKind = 'fuel' | 'maintenance' | 'depreciation';
 type AssetReportFormat = 'pdf' | 'xlsx';
+type AssetReportRouteFormat = AssetReportFormat | 'html';
+type AssetGroupReportRouteFormat = AssetGroupReportFormat | 'html';
 type AssetReportSelectKey = 'type' | 'year' | 'month';
 type AssetReportStep =
   | 'options'
@@ -5815,7 +5818,7 @@ function buildAssetPdfReportUrl(
   asset: RegisterAsset,
   reportKind: AssetPdfReportKind,
   filters?: AssetPdfReportFilters,
-  format: AssetReportFormat = 'pdf',
+  format: AssetReportRouteFormat = 'pdf',
 ): string {
   const searchParams = new URLSearchParams({
     assetId: asset.id,
@@ -5841,7 +5844,7 @@ function buildAssetPdfReportUrl(
 function buildAssetOwnershipReportUrl(
   asset: RegisterAsset,
   filters?: AssetPdfReportFilters,
-  format: AssetReportFormat = 'pdf',
+  format: AssetReportRouteFormat = 'pdf',
 ): string {
   const searchParams = new URLSearchParams({
     assetId: asset.id,
@@ -5863,7 +5866,7 @@ function buildAssetGroupTimelineReportUrl(
   group: AssetGroup,
   reportKind: Exclude<AssetGroupReportKind, 'valuation' | 'ownership'>,
   filters: AssetGroupReportFilters,
-  format: AssetGroupReportFormat,
+  format: AssetGroupReportRouteFormat,
 ): string {
   if (reportKind === 'maintenance') {
     const maintenanceSelection = filters.maintenanceType ?? 'all';
@@ -5901,7 +5904,7 @@ function buildAssetGroupTimelineReportUrl(
 function buildAssetGroupOwnershipReportUrl(
   group: AssetGroup,
   filters: AssetGroupReportFilters,
-  format: AssetGroupReportFormat,
+  format: AssetGroupReportRouteFormat,
 ): string {
   const searchParams = new URLSearchParams({ groupId: group.id, format });
 
@@ -7008,22 +7011,6 @@ export default function AssetRegisterClient({
           }
         : {}),
     };
-  }
-
-  async function openPreparedExternalReport(source: ExternalShareFileSource): Promise<boolean> {
-    const reportWindow = window.open('', '_blank');
-    if (!reportWindow) return false;
-
-    try {
-      const file = await fetchExternalShareFile(source);
-      const objectUrl = window.URL.createObjectURL(file);
-      reportWindow.location.replace(objectUrl);
-      window.setTimeout(() => window.URL.revokeObjectURL(objectUrl), 60_000);
-      return true;
-    } catch (error) {
-      reportWindow.close();
-      throw error;
-    }
   }
 
   function removeExternalShareReport(reportId: string) {
@@ -13834,6 +13821,22 @@ export default function AssetRegisterClient({
   }
 
   async function handlePrintAssetSheet(asset: RegisterAsset) {
+    const reportWindow = externalShareReportScope === 'asset' ? null : window.open('', '_blank');
+
+    if (externalShareReportScope !== 'asset' && !reportWindow) {
+      setNotice({
+        tone: 'error',
+        message: 'Unable to open the asset valuation report. Please allow pop-ups and try again.',
+      });
+      return;
+    }
+
+    if (reportWindow) {
+      reportWindow.opener = null;
+      reportWindow.document.title = 'Preparing Aim4price valuation report';
+      reportWindow.document.body.textContent = 'Preparing your Aim4price report…';
+    }
+
     const [reportLogoUrl, assetPhotoUrls] = await Promise.all([
       preparePrintableImageUrl(getRegisterReportLogoUrl(activeRegister), {
         maxDimension: PRINT_LOGO_MAX_DIMENSION,
@@ -13936,6 +13939,7 @@ export default function AssetRegisterClient({
       footerNote:
         'Values are indicative estimates based on saved asset-register information and available pricing inputs. This is not a certified valuation, inspection report or guarantee of selling price. Final value remains subject to physical inspection, documentation, attachments, condition, location and live market demand.',
     };
+    const reportHtml = buildAssetSheetReportHtml(reportPayload);
     const fileName = `${shareFileSlug(asset.title, 'asset')}-valuation.pdf`;
     const reportSource = buildExternalReportSource({
       label: `${asset.title} valuation · PDF`,
@@ -13943,7 +13947,7 @@ export default function AssetRegisterClient({
       fileName,
       url: '/api/reports/render-pdf',
       format: 'pdf',
-      html: buildAssetSheetReportHtml(reportPayload),
+      html: reportHtml,
     });
 
     if (externalShareReportScope === 'asset') {
@@ -13952,7 +13956,7 @@ export default function AssetRegisterClient({
       return;
     }
 
-    const didOpen = await openPreparedExternalReport(reportSource);
+    const didOpen = writeCanonicalReportHtml(reportWindow, `${asset.title} valuation`, reportHtml);
 
     if (!didOpen) {
       setNotice({
@@ -14007,8 +14011,8 @@ export default function AssetRegisterClient({
   }
 
   function handleOpenAssetPdfReport(asset: RegisterAsset, reportKind: AssetPdfReportKind, filters?: AssetPdfReportFilters): boolean {
-    const reportUrl = buildAssetPdfReportUrl(asset, reportKind, filters, 'pdf');
-    const opened = window.open(reportUrl, '_blank', 'noopener,noreferrer');
+    const reportUrl = buildAssetPdfReportUrl(asset, reportKind, filters, 'html');
+    const opened = openCanonicalReportUrl(reportUrl);
     const reportLabel = assetReportLabel(reportKind);
 
     if (!opened) {
@@ -14021,7 +14025,7 @@ export default function AssetRegisterClient({
 
     setNotice({
       tone: 'success',
-      message: `${reportLabel} PDF opened in a new tab.`,
+      message: `${reportLabel} opened in a new tab. Use Print to save it as a PDF.`,
     });
     return true;
   }
@@ -14365,7 +14369,7 @@ export default function AssetRegisterClient({
       return;
     }
 
-    const opened = window.open(buildAssetOwnershipReportUrl(asset, filters, 'pdf'), '_blank', 'noopener,noreferrer');
+    const opened = openCanonicalReportUrl(buildAssetOwnershipReportUrl(asset, filters, 'html'));
 
     if (!opened) {
       setNotice({
@@ -14850,6 +14854,20 @@ export default function AssetRegisterClient({
       throw new Error(`No assets match the ${reportOption.label.toLowerCase()} report.`);
     }
 
+    const reportWindow = externalShareReportScope === 'register' || externalShareReportScope === 'group'
+      ? null
+      : window.open('', '_blank');
+
+    if (externalShareReportScope !== 'register' && externalShareReportScope !== 'group' && !reportWindow) {
+      throw new Error(`Unable to open the ${reportOption.label.toLowerCase()} report. Please allow pop-ups and try again.`);
+    }
+
+    if (reportWindow) {
+      reportWindow.opener = null;
+      reportWindow.document.title = 'Preparing Aim4price asset report';
+      reportWindow.document.body.textContent = 'Preparing your Aim4price report…';
+    }
+
     const reportName = overrideEntityName.trim() || exportEntityName.trim() || activeRegister?.businessName || 'Asset Register';
 
     const reportAssetGroups = projectAssetGroupsToAssets(assetGroups, reportAssets);
@@ -14956,6 +14974,7 @@ export default function AssetRegisterClient({
       footerNote:
         'Values are indicative estimates based on saved Aim4price asset-register information and available pricing inputs. Values exclude VAT unless stated otherwise. This is not a certified valuation, inspection report or guarantee of selling price. Final values remain subject to physical inspection, documents, attachments, condition, location and live market demand.',
     };
+    const reportHtml = buildAssetRegisterSummaryReportHtml(reportPayload);
     const fileName = `${shareFileSlug(`${reportName}-${reportOption.label}`)}.pdf`;
     const reportSource = buildExternalReportSource({
       label: `${reportName} · ${reportOption.label} · PDF`,
@@ -14963,7 +14982,7 @@ export default function AssetRegisterClient({
       fileName,
       url: '/api/reports/render-pdf',
       format: 'pdf',
-      html: buildAssetRegisterSummaryReportHtml(reportPayload),
+      html: reportHtml,
     });
 
     if (externalShareReportScope === 'register' || externalShareReportScope === 'group') {
@@ -14971,7 +14990,7 @@ export default function AssetRegisterClient({
       return;
     }
 
-    const didOpen = await openPreparedExternalReport(reportSource);
+    const didOpen = writeCanonicalReportHtml(reportWindow, `${reportName} - ${reportOption.label} Report`, reportHtml);
 
     if (!didOpen) {
       throw new Error(`Unable to open the ${reportOption.label.toLowerCase()} PDF. Please allow pop-ups and try again.`);
@@ -15237,7 +15256,10 @@ export default function AssetRegisterClient({
 
     try {
       if (format === 'pdf') {
-        const opened = window.open(reportUrl, '_blank', 'noopener,noreferrer');
+        const printableReportUrl = reportKind === 'ownership'
+          ? buildAssetGroupOwnershipReportUrl(group, filters, 'html')
+          : buildAssetGroupTimelineReportUrl(group, reportKind, filters, 'html');
+        const opened = openCanonicalReportUrl(printableReportUrl);
         if (!opened) {
           throw new Error(`Unable to open the ${reportLabel.toLowerCase()}. Please allow pop-ups and try again.`);
         }

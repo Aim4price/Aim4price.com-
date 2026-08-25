@@ -2,9 +2,11 @@
 
 import { useMemo, useState } from 'react';
 import assetStyles from '../app/asset-register/page.module.css';
+import { openCanonicalReportUrl } from '../lib/report-open';
 import trackerStyles from './DealerMaintenanceTrackerClient.module.css';
 
 type DownloadFormat = 'pdf' | 'xlsx';
+type ReportRouteFormat = DownloadFormat | 'html';
 type ReportStep = 'format' | 'timeline';
 type ReportSelectKey = 'year' | 'month';
 type ReportOption = { value: string; label: string };
@@ -182,10 +184,10 @@ export default function DealerCostOfOwnershipReportModal({
     [createdAtIso, updatedAtIso],
   );
 
-  function buildReportUrl(): string {
+  function buildReportUrl(routeFormat: ReportRouteFormat = format): string {
     const params = new URLSearchParams({
       accessId,
-      format,
+      format: routeFormat,
     });
     if (reportYear !== 'all') {
       params.set('year', reportYear);
@@ -196,11 +198,16 @@ export default function DealerCostOfOwnershipReportModal({
 
   async function downloadReport() {
     if (downloading) return;
-    const popup = format === 'pdf' ? window.open('', '_blank') : null;
-    if (format === 'pdf' && !popup) {
-      const message = 'Enable pop-ups to open the Cost of Ownership report.';
-      setError(message);
-      onError?.(message);
+
+    if (format === 'pdf') {
+      const opened = openCanonicalReportUrl(buildReportUrl('html'));
+      if (!opened) {
+        const message = 'Enable pop-ups to open the Cost of Ownership report.';
+        setError(message);
+        onError?.(message);
+        return;
+      }
+      onClose();
       return;
     }
 
@@ -213,7 +220,6 @@ export default function DealerCostOfOwnershipReportModal({
       });
       if (!response.ok) {
         const payload = await response.json().catch(() => null) as { error?: string } | null;
-        popup?.close();
         throw new Error(
           response.status === 403
             ? 'Cost of Ownership access is no longer active for this asset.'
@@ -222,20 +228,15 @@ export default function DealerCostOfOwnershipReportModal({
       }
 
       const blobUrl = URL.createObjectURL(await response.blob());
-      if (format === 'pdf') {
-        popup!.location.replace(blobUrl);
-      } else {
-        const link = document.createElement('a');
-        link.href = blobUrl;
-        link.download = parseDownloadFileName(response, `${assetTitle}-cost-of-ownership.xlsx`);
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
-      }
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = parseDownloadFileName(response, `${assetTitle}-cost-of-ownership.xlsx`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
       window.setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
       onClose();
     } catch (cause) {
-      popup?.close();
       const message = cause instanceof Error ? cause.message : 'The Cost of Ownership report could not be generated.';
       setError(message);
       onError?.(message);
