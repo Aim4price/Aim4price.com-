@@ -443,7 +443,7 @@ type FuelStorageSessionClaims = {
   expiresAtMs: number;
 };
 
-let fuelLedgerTablesEnsured = false;
+let fuelLedgerTablesPromise: Promise<void> | null = null;
 
 function asText(value: unknown): string {
   return typeof value === 'string' ? value.trim() : '';
@@ -1813,11 +1813,7 @@ function fuelSlipSelectSql(): string {
   `;
 }
 
-export async function ensureFuelLedgerTables(): Promise<void> {
-  if (fuelLedgerTablesEnsured) {
-    return;
-  }
-
+async function ensureFuelLedgerTablesOnce(): Promise<void> {
   const db = getDb();
 
   await db.query(`
@@ -2475,8 +2471,17 @@ export async function ensureFuelLedgerTables(): Promise<void> {
     create index if not exists idx_fuel_ledger_audit_record
       on public.fuel_ledger_audit_events(user_id, record_type, record_id, created_at desc);
   `);
+}
 
-  fuelLedgerTablesEnsured = true;
+export async function ensureFuelLedgerTables(): Promise<void> {
+  if (!fuelLedgerTablesPromise) {
+    fuelLedgerTablesPromise = ensureFuelLedgerTablesOnce().catch((error) => {
+      fuelLedgerTablesPromise = null;
+      throw error;
+    });
+  }
+
+  return fuelLedgerTablesPromise;
 }
 
 export async function getFuelStorageById(userId: string, storageId: string): Promise<FuelLedgerStorage | null> {
