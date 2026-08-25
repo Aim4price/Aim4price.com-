@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { recordAdminUsageEventSafely } from '../../../lib/admin-usage-events';
+import { recordTractorValuationForAdminSafely } from '../../../lib/admin-valuation-events';
 import { getAccountProfile } from '../../../lib/account-profile';
 import { getAnyServerSession } from '../../../lib/auth-session';
 import { runServerValuation } from '../../../lib/server-valuation';
@@ -193,11 +193,10 @@ async function handleValuation(input: RunValuationInput | null) {
   try {
     const result = await runServerValuation(input);
 
-    await recordAdminUsageEventSafely({
+    await recordTractorValuationForAdminSafely({
       userId: await getUsageUserId(),
-      eventType: 'free_estimate_completed',
-      eventSource: 'tractor-valuations',
-      metadata: { modelId: input.modelId },
+      valuationInput: input,
+      result,
     });
 
     return NextResponse.json<TractorValuationApiResponse>({

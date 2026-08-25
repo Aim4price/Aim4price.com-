@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { recordAdminUsageEventSafely } from '../../../lib/admin-usage-events';
+import { recordGenericValuationForAdminSafely } from '../../../lib/admin-valuation-events';
 import { getAccountProfile } from '../../../lib/account-profile';
 import { getAnyServerSession } from '../../../lib/auth-session';
 import { isSectorKey, type SectorKey } from '../../../lib/equipment-types';
@@ -143,11 +143,9 @@ export async function POST(request: NextRequest) {
       advancedAssumptions: body.advancedAssumptions ?? null,
     });
 
-    await recordAdminUsageEventSafely({
+    await recordGenericValuationForAdminSafely({
       userId: await getUsageUserId(),
-      eventType: 'free_estimate_completed',
-      eventSource: 'generic-valuations',
-      metadata: { sectorKey, familyKey, brandSlug },
+      result,
     });
 
     return NextResponse.json({ ok: true, result });

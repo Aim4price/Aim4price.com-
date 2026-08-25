@@ -86,6 +86,11 @@ export default async function AdminDashboardPage() {
                     </div>
                   ))}
                 </dl>
+                {card.href ? (
+                  <Link href={card.href} className={styles.cardLink}>
+                    {card.linkLabel ?? "Open details"}
+                  </Link>
+                ) : null}
               </article>
             ))}
           </div>
