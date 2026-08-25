@@ -40,7 +40,7 @@ test('report resource allowlist keeps session assets and trusted storage while r
   assert.equal(isAllowedReportResourceUrl('http://[::ffff:127.0.0.1]/private', baseUrl), false);
 });
 
-test('Chromium renderer strips and blocks scripts, waits for resources, and prints canonical CSS', async () => {
+test('Chromium renderer preserves canonical CSS and never substitutes a second layout', async () => {
   const [renderer, resourcePolicy, reportLogo] = await Promise.all([
     readFile(new URL('../lib/report-pdf.ts', import.meta.url), 'utf8'),
     readFile(new URL('../lib/report-resource-policy.ts', import.meta.url), 'utf8'),
@@ -71,10 +71,11 @@ test('Chromium renderer strips and blocks scripts, waits for resources, and prin
   assert.match(renderer, /details\.size === 0/);
   assert.match(renderer, /resolve\(executablePath\) === defaultCachedExecutablePath/);
   assert.match(renderer, /await unlink\(defaultCachedExecutablePath\)/);
-  assert.match(renderer, /import \{ buildBrandedReportPdfFromHtml \} from '\.\/branded-report-pdf'/);
-  assert.match(renderer, /async function renderReportHtmlToPdfWithChromium/);
-  assert.match(renderer, /export async function renderReportHtmlToPdf\([\s\S]*?renderReportHtmlToPdfWithChromium\(html, options\)[\s\S]*?buildBrandedReportPdfFromHtml\(html/);
-  assert.match(renderer, /Prepared from the standard Aim4price report/);
+  assert.match(renderer, /REPORT DESIGN CONTRACT/);
+  assert.match(renderer, /export async function renderReportHtmlToPdf\(/);
+  assert.doesNotMatch(renderer, /buildBrandedReportPdfFromHtml/);
+  assert.doesNotMatch(renderer, /renderReportHtmlToPdfWithChromium/);
+  assert.doesNotMatch(renderer, /common PDF fallback|using .*fallback|Prepared from the standard Aim4price report/i);
 });
 
 test('normal report routes return their own HTML builders as canonical PDFs and retain exact XLSX paths', async () => {
