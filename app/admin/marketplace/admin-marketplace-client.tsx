@@ -1,10 +1,11 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   filterAndSortAdminMarketplaceAssets,
   formatAdminMarketplaceMoney,
   summarizeAdminMarketplaceAssets,
+  type AdminMarketplaceAssetRow,
   type AdminMarketplaceFilters,
   type AdminMarketplaceListingStatus,
   type AdminMarketplaceReport,
@@ -47,37 +48,47 @@ export default function AdminMarketplaceClient({
 }: {
   report: AdminMarketplaceReport;
 }) {
+  const [assets, setAssets] = useState(() => report.assets);
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState<AdminMarketplaceFilters['status']>('all');
   const [sector, setSector] = useState('all');
   const [advertised, setAdvertised] = useState('all');
   const [sort, setSort] = useState<AdminMarketplaceSort>('latest');
   const [page, setPage] = useState(1);
+  const [deleteTarget, setDeleteTarget] = useState<AdminMarketplaceAssetRow | null>(null);
+  const [deleteBusy, setDeleteBusy] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
+  const deleteModalRef = useRef<HTMLElement | null>(null);
+  const deleteTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const deleteBusyRef = useRef(false);
+
+  deleteBusyRef.current = deleteBusy;
 
   const sectorOptions = useMemo(() => {
     const labels = new Map<string, string>();
-    for (const asset of report.assets) labels.set(asset.sectorKey, asset.sectorLabel);
+    for (const asset of assets) labels.set(asset.sectorKey, asset.sectorLabel);
     return Array.from(labels, ([key, label]) => ({ key, label })).sort((left, right) =>
       left.label.localeCompare(right.label, 'en-ZA', { sensitivity: 'base' }),
     );
-  }, [report.assets]);
+  }, [assets]);
 
   const advertisedYears = useMemo(() => {
     const years = new Set<number>();
-    for (const asset of report.assets) {
+    for (const asset of assets) {
       const year = new Date(asset.lastAdvertisedAtIso).getFullYear();
       if (Number.isInteger(year)) years.add(year);
     }
     return Array.from(years).sort((left, right) => right - left);
-  }, [report.assets]);
+  }, [assets]);
 
   const filters = useMemo<AdminMarketplaceFilters>(
     () => ({ search, status, sector, advertised, sort }),
     [advertised, search, sector, sort, status],
   );
+  const allMetrics = useMemo(() => summarizeAdminMarketplaceAssets(assets), [assets]);
   const filteredAssets = useMemo(
-    () => filterAndSortAdminMarketplaceAssets(report.assets, filters),
-    [filters, report.assets],
+    () => filterAndSortAdminMarketplaceAssets(assets, filters),
+    [assets, filters],
   );
   const filteredMetrics = useMemo(
     () => summarizeAdminMarketplaceAssets(filteredAssets),
@@ -91,6 +102,56 @@ export default function AdminMarketplaceClient({
   const filtersActive =
     Boolean(search.trim()) || status !== 'all' || sector !== 'all' || advertised !== 'all';
 
+  useEffect(() => {
+    if (!deleteTarget || typeof window === 'undefined') return;
+
+    const modal = deleteModalRef.current;
+    const previousBodyOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const focusFrame = window.requestAnimationFrame(() => {
+      modal?.querySelector<HTMLElement>('button:not([disabled])')?.focus();
+    });
+
+    function keepFocusInsideDeleteModal(event: KeyboardEvent) {
+      if (event.key === 'Escape' && !deleteBusyRef.current) {
+        event.preventDefault();
+        setDeleteTarget(null);
+        setDeleteError('');
+        return;
+      }
+      if (event.key !== 'Tab' || !modal) return;
+
+      const focusable = Array.from(
+        modal.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ),
+      );
+      if (!focusable.length) {
+        event.preventDefault();
+        modal.focus();
+        return;
+      }
+
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    }
+
+    window.addEventListener('keydown', keepFocusInsideDeleteModal);
+    return () => {
+      window.cancelAnimationFrame(focusFrame);
+      window.removeEventListener('keydown', keepFocusInsideDeleteModal);
+      document.body.style.overflow = previousBodyOverflow;
+      deleteTriggerRef.current?.focus();
+    };
+  }, [deleteTarget]);
+
   function clearFilters() {
     setSearch('');
     setStatus('all');
@@ -100,33 +161,88 @@ export default function AdminMarketplaceClient({
     setPage(1);
   }
 
+  function openDeleteModal(
+    asset: AdminMarketplaceAssetRow,
+    trigger: HTMLButtonElement,
+  ) {
+    deleteTriggerRef.current = trigger;
+    setDeleteError('');
+    setDeleteTarget(asset);
+  }
+
+  function closeDeleteModal() {
+    if (deleteBusyRef.current) return;
+    setDeleteError('');
+    setDeleteTarget(null);
+  }
+
+  async function confirmDelete() {
+    if (!deleteTarget || deleteBusy) return;
+
+    setDeleteBusy(true);
+    setDeleteError('');
+    try {
+      const response = await fetch('/api/admin/marketplace', {
+        method: 'DELETE',
+        credentials: 'include',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          accountUserId: deleteTarget.accountUserId,
+          sourceAssetId: deleteTarget.sourceAssetId,
+          latestListingId: deleteTarget.latestListingId,
+        }),
+      });
+      const payload = (await response.json().catch(() => null)) as {
+        error?: string;
+      } | null;
+      if (!response.ok) {
+        throw new Error(payload?.error || 'The marketplace record could not be deleted.');
+      }
+
+      const deletedAssetKey = deleteTarget.assetKey;
+      setAssets((current) =>
+        current.filter((asset) => asset.assetKey !== deletedAssetKey),
+      );
+      setDeleteTarget(null);
+    } catch (error) {
+      setDeleteError(
+        error instanceof Error ? error.message : 'The marketplace record could not be deleted.',
+      );
+    } finally {
+      setDeleteBusy(false);
+    }
+  }
+
   return (
     <>
       <section className={styles.metrics} aria-label="Marketplace summary">
         <article className={styles.featuredMetric}>
           <span>All-time advertised value</span>
-          <strong>{formatAdminMarketplaceMoney(report.metrics.allTimeAdvertisedValueExVat)}</strong>
+          <strong>{formatAdminMarketplaceMoney(allMetrics.allTimeAdvertisedValueExVat)}</strong>
           <small>
-            Excl. VAT · {report.metrics.totalUniqueAssets.toLocaleString('en-ZA')} unique marketplace assets
+            Excl. VAT · {allMetrics.totalUniqueAssets.toLocaleString('en-ZA')}{' '}
+            unique marketplace assets
           </small>
         </article>
         <article>
           <span>Live advertised value</span>
-          <strong>{formatAdminMarketplaceMoney(report.metrics.liveAdvertisedValueExVat)}</strong>
-          <small>{report.metrics.liveAssets.toLocaleString('en-ZA')} assets currently live</small>
+          <strong>{formatAdminMarketplaceMoney(allMetrics.liveAdvertisedValueExVat)}</strong>
+          <small>{allMetrics.liveAssets.toLocaleString('en-ZA')} assets currently live</small>
         </article>
         <article>
           <span>Filtered advertised value</span>
           <strong>{formatAdminMarketplaceMoney(filteredMetrics.allTimeAdvertisedValueExVat)}</strong>
           <small>
-            {filteredAssets.length.toLocaleString('en-ZA')} of {report.metrics.totalUniqueAssets.toLocaleString('en-ZA')} assets shown
+            {filteredAssets.length.toLocaleString('en-ZA')} of{' '}
+            {allMetrics.totalUniqueAssets.toLocaleString('en-ZA')} assets shown
           </small>
         </article>
         <article>
           <span>Advertisement history</span>
-          <strong>{report.metrics.totalListingEvents.toLocaleString('en-ZA')}</strong>
+          <strong>{allMetrics.totalListingEvents.toLocaleString('en-ZA')}</strong>
           <small>
-            Listing events · {report.metrics.relistedAssets.toLocaleString('en-ZA')} assets advertised more than once
+            Listing events · {allMetrics.relistedAssets.toLocaleString('en-ZA')}{' '}
+            assets advertised more than once
           </small>
         </article>
       </section>
@@ -246,6 +362,7 @@ export default function AdminMarketplaceClient({
                 <th>Location</th>
                 <th>Latest asking excl. VAT</th>
                 <th>History</th>
+                <th>Action</th>
               </tr>
             </thead>
             <tbody>
@@ -289,6 +406,16 @@ export default function AdminMarketplaceClient({
                       <strong>{asset.listingEvents.toLocaleString('en-ZA')}</strong>
                       <span>{asset.listingEvents === 1 ? 'listing event' : 'listing events'}</span>
                     </td>
+                    <td>
+                      <button
+                        type="button"
+                        className={styles.deleteButton}
+                        aria-label={`Delete ${asset.title} marketplace record`}
+                        onClick={(event) => openDeleteModal(asset, event.currentTarget)}
+                      >
+                        Delete listing
+                      </button>
+                    </td>
                   </tr>
                 );
               })}
@@ -304,7 +431,7 @@ export default function AdminMarketplaceClient({
 
         <footer className={styles.pagination}>
           <span>
-            {filteredAssets.length.toLocaleString('en-ZA')} matching · {report.metrics.totalUniqueAssets.toLocaleString('en-ZA')} all time
+            {filteredAssets.length.toLocaleString('en-ZA')} matching · {allMetrics.totalUniqueAssets.toLocaleString('en-ZA')} all time
           </span>
           <div>
             <button
@@ -325,6 +452,74 @@ export default function AdminMarketplaceClient({
           </div>
         </footer>
       </section>
+
+      {deleteTarget ? (
+        <div className={styles.deleteModalLayer}>
+          <button
+            type="button"
+            className={styles.deleteBackdrop}
+            tabIndex={-1}
+            aria-label="Close delete confirmation"
+            disabled={deleteBusy}
+            onClick={closeDeleteModal}
+          />
+          <section
+            ref={deleteModalRef}
+            className={styles.deleteModal}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="delete-marketplace-listing-title"
+            aria-describedby="delete-marketplace-listing-description"
+            tabIndex={-1}
+          >
+            <header className={styles.deleteModalHeader}>
+              <div>
+                <p>Marketplace record</p>
+                <h2 id="delete-marketplace-listing-title">Delete this listing?</h2>
+              </div>
+              <button
+                type="button"
+                className={styles.deleteCloseButton}
+                aria-label="Close delete confirmation"
+                disabled={deleteBusy}
+                onClick={closeDeleteModal}
+              >
+                <span aria-hidden="true">×</span>
+              </button>
+            </header>
+
+            <div className={styles.deleteSummary}>
+              <strong>{deleteTarget.title}</strong>
+              <span>{deleteTarget.sellerLabel} · {formatAdminMarketplaceMoney(deleteTarget.askingPriceExVat)}</span>
+            </div>
+            <p id="delete-marketplace-listing-description" className={styles.deleteDescription}>
+              This permanently removes{' '}
+              {deleteTarget.listingEvents === 1
+                ? 'this listing event'
+                : `all ${deleteTarget.listingEvents.toLocaleString('en-ZA')} listing events for this asset`}{' '}
+              from the Admin Marketplace history and advertised-value totals.
+            </p>
+            <p className={styles.assetSafetyNote}>
+              If it is live, it will also be removed from the public Marketplace. The owner&apos;s underlying asset and Asset Register record will remain intact.
+            </p>
+            {deleteError ? <p className={styles.deleteError} role="alert">{deleteError}</p> : null}
+
+            <footer className={styles.deleteActions}>
+              <button type="button" disabled={deleteBusy} onClick={closeDeleteModal}>
+                Keep listing
+              </button>
+              <button
+                type="button"
+                className={styles.confirmDeleteButton}
+                disabled={deleteBusy}
+                onClick={confirmDelete}
+              >
+                {deleteBusy ? 'Deleting…' : 'Delete permanently'}
+              </button>
+            </footer>
+          </section>
+        </div>
+      ) : null}
     </>
   );
 }

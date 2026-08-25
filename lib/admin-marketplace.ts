@@ -148,6 +148,21 @@ const EMPTY_METRICS: AdminMarketplaceMetrics = {
   firstAdvertisedAtIso: null,
 };
 
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+export type AdminDeleteMarketplaceAssetInput = {
+  accountUserId: string;
+  sourceAssetId: string | null;
+  latestListingId: string;
+  adminUserId: string;
+  adminName: string;
+};
+
+export type AdminDeleteMarketplaceAssetResult = {
+  deletedListingEvents: number;
+  removedFromLiveMarketplace: boolean;
+};
+
 function text(value: DatabaseValue): string {
   return String(value ?? '').replace(/\s+/g, ' ').trim();
 }
@@ -332,4 +347,138 @@ export async function getAdminMarketplaceReport(): Promise<AdminMarketplaceRepor
     metrics: summarizeAdminMarketplaceAssets(assets),
     assets,
   };
+}
+
+export async function adminDeleteMarketplaceAsset(
+  input: AdminDeleteMarketplaceAssetInput,
+): Promise<AdminDeleteMarketplaceAssetResult> {
+  const accountUserId = text(input.accountUserId);
+  const sourceAssetId = text(input.sourceAssetId) || null;
+  const latestListingId = text(input.latestListingId);
+  const adminUserId = text(input.adminUserId);
+
+  if (!accountUserId || !latestListingId || !adminUserId) {
+    throw new Error('ADMIN_MARKETPLACE_REFERENCE_REQUIRED');
+  }
+  if (sourceAssetId && !UUID_PATTERN.test(sourceAssetId)) {
+    throw new Error('ADMIN_MARKETPLACE_REFERENCE_INVALID');
+  }
+  if (!sourceAssetId && !UUID_PATTERN.test(latestListingId)) {
+    throw new Error('ADMIN_MARKETPLACE_REFERENCE_INVALID');
+  }
+  if (!(await marketplaceHistoryExists())) {
+    throw new Error('ADMIN_MARKETPLACE_LISTING_NOT_FOUND');
+  }
+
+  const client = await getDb().connect();
+  try {
+    await client.query('begin');
+
+    let listingTitle = '';
+    let deletedListingEvents = 0;
+    let removedFromLiveMarketplace = false;
+
+    if (sourceAssetId) {
+      const assetResult = await client.query<{
+        title: string | null;
+        marketplace_status: string | null;
+      }>(
+        `select title, marketplace_status
+         from public.asset_register_items
+         where id = $1::uuid and user_id = $2
+         for update`,
+        [sourceAssetId, accountUserId],
+      );
+      const historyResult = await client.query<{ id: string; title: string | null }>(
+        `select id::text, title
+         from public.marketplace_listings
+         where asset_register_item_id = $1::uuid and user_id = $2
+         for update`,
+        [sourceAssetId, accountUserId],
+      );
+      const assetWasLive =
+        text(assetResult.rows[0]?.marketplace_status).toLowerCase() === 'live';
+
+      if (!assetWasLive && historyResult.rows.length === 0) {
+        throw new Error('ADMIN_MARKETPLACE_LISTING_NOT_FOUND');
+      }
+
+      listingTitle =
+        text(historyResult.rows[0]?.title) ||
+        text(assetResult.rows[0]?.title) ||
+        'Aim4price listing';
+
+      const assetUpdate = await client.query(
+        `update public.asset_register_items
+         set marketplace_status = 'draft', updated_at = now()
+         where id = $1::uuid and user_id = $2
+           and lower(coalesce(marketplace_status, 'draft')) = 'live'`,
+        [sourceAssetId, accountUserId],
+      );
+      removedFromLiveMarketplace = (assetUpdate.rowCount ?? 0) > 0;
+
+      const historyDelete = await client.query<{ id: string }>(
+        `delete from public.marketplace_listings
+         where asset_register_item_id = $1::uuid and user_id = $2
+         returning id::text`,
+        [sourceAssetId, accountUserId],
+      );
+      deletedListingEvents = historyDelete.rows.length;
+    } else {
+      const historyResult = await client.query<{ id: string; title: string | null }>(
+        `select id::text, title
+         from public.marketplace_listings
+         where id = $1::uuid and user_id = $2
+           and asset_register_item_id is null
+         for update`,
+        [latestListingId, accountUserId],
+      );
+      if (!historyResult.rows[0]) {
+        throw new Error('ADMIN_MARKETPLACE_LISTING_NOT_FOUND');
+      }
+
+      listingTitle = text(historyResult.rows[0].title) || 'Aim4price listing';
+      const historyDelete = await client.query<{ id: string }>(
+        `delete from public.marketplace_listings
+         where id = $1::uuid and user_id = $2
+           and asset_register_item_id is null
+         returning id::text`,
+        [latestListingId, accountUserId],
+      );
+      deletedListingEvents = historyDelete.rows.length;
+    }
+
+    const auditTable = await client.query<{ exists: boolean }>(
+      `select to_regclass('public.access_audit_events') is not null as exists`,
+    );
+    if (auditTable.rows[0]?.exists) {
+      await client.query(
+        `insert into public.access_audit_events
+           (owner_user_id, actor_user_id, event_type, entity_type, entity_id, metadata_json, created_at)
+         values ($1, $2, 'admin_marketplace_listing_deleted', 'marketplace_listing', $3, $4::jsonb, now())`,
+        [
+          accountUserId,
+          adminUserId,
+          sourceAssetId ?? latestListingId,
+          JSON.stringify({
+            title: listingTitle,
+            sourceAssetId,
+            latestListingId,
+            deletedListingEvents,
+            removedFromLiveMarketplace,
+            adminName: text(input.adminName) || 'Aim4price admin',
+            underlyingAssetRetained: true,
+          }),
+        ],
+      );
+    }
+
+    await client.query('commit');
+    return { deletedListingEvents, removedFromLiveMarketplace };
+  } catch (error) {
+    await client.query('rollback').catch(() => undefined);
+    throw error;
+  } finally {
+    client.release();
+  }
 }

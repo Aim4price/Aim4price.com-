@@ -148,3 +148,17 @@ test("all Admin pages use one complete navigation without Assistance Network con
   }
   assert.doesNotMatch(adminNavigation, /assistance-network|Assistance Network/);
 });
+
+test("Admin navigation uses one Manage button and an accessible destination modal", () => {
+  assert.match(adminNavigation, /<strong>Manage<\/strong>/);
+  assert.match(adminNavigation, /aria-haspopup="dialog"/);
+  assert.match(adminNavigation, /role="dialog"/);
+  assert.match(adminNavigation, /aria-labelledby="admin-manage-modal-title"/);
+  assert.match(adminNavigation, /keepFocusInsideManageModal/);
+  assert.match(adminNavigation, /manageButtonRef\.current\?\.focus\(\)/);
+  assert.match(adminNavigation, /Choose an Admin workspace/);
+  assert.match(adminNavigation, /Review advertised value and listing history/);
+  assert.match(adminNavigationStyles, /\.manageButton/);
+  assert.match(adminNavigationStyles, /\.optionGrid/);
+  assert.match(adminNavigationStyles, /\.closeButton/);
+});

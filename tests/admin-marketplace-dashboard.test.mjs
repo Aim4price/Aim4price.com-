@@ -12,6 +12,7 @@ const adminMarketplace = read('lib/admin-marketplace.ts');
 const adminMarketplacePage = read('app/admin/marketplace/page.tsx');
 const adminMarketplaceClient = read('app/admin/marketplace/admin-marketplace-client.tsx');
 const adminMarketplaceStyles = read('app/admin/marketplace/page.module.css');
+const adminMarketplaceApi = read('app/api/admin/marketplace/route.ts');
 const adminDashboard = read('lib/admin-dashboard.ts');
 const dashboardPage = read('app/admin/dashboard/page.tsx');
 const adminNavigation = read('components/AdminNavigation.tsx');
@@ -155,8 +156,27 @@ test('the Admin Marketplace page is admin-only and exposes the complete filterab
   assert.match(adminMarketplaceStyles, /@media \(max-width: 540px\)/);
 });
 
+test('Admins can permanently remove a Marketplace record without deleting its source asset', () => {
+  assert.match(adminMarketplaceApi, /export async function DELETE\(request: NextRequest\)/);
+  assert.match(adminMarketplaceApi, /await requireAdminApiAccess\(\)/);
+  assert.match(adminMarketplaceApi, /adminDeleteMarketplaceAsset\(/);
+  assert.match(adminMarketplace, /await client\.query\('begin'\)/);
+  assert.match(adminMarketplace, /set marketplace_status = 'draft', updated_at = now\(\)/);
+  assert.match(adminMarketplace, /delete from public\.marketplace_listings/);
+  assert.match(adminMarketplace, /admin_marketplace_listing_deleted/);
+  assert.match(adminMarketplace, /underlyingAssetRetained: true/);
+  assert.match(adminMarketplace, /await client\.query\('rollback'\)/);
+  assert.match(adminMarketplaceClient, /Delete listing/);
+  assert.match(adminMarketplaceClient, /role="dialog"/);
+  assert.match(adminMarketplaceClient, /method: 'DELETE'/);
+  assert.match(adminMarketplaceClient, /fetch\('\/api\/admin\/marketplace'/);
+  assert.match(adminMarketplaceClient, /owner&apos;s underlying asset and Asset Register record will remain intact/);
+  assert.match(adminMarketplaceClient, /current\.filter\(\(asset\) => asset\.assetKey !== deletedAssetKey\)/);
+  assert.match(adminMarketplaceStyles, /\.confirmDeleteButton/);
+});
+
 test('Marketplace is visible in Admin navigation and on the main Dashboard', () => {
-  assert.match(adminNavigation, /href: "\/admin\/marketplace", label: "Marketplace"/);
+  assert.match(adminNavigation, /href: "\/admin\/marketplace"[\s\S]*?label: "Marketplace"/);
   assert.match(adminDashboard, /id: 'marketplace-advertised'/);
   assert.match(adminDashboard, /getAdminMarketplaceSummary\(\)/);
   assert.match(adminDashboard, /View every marketplace asset/);
