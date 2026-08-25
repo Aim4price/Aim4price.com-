@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 import {
+  formatAdminAssetValue,
   hasAdminAssetCoordinates,
 } from "../lib/admin-global-assets-shared.ts";
 
@@ -68,6 +69,21 @@ test("Admin Discovery is paginated, filterable and owner contact is already unlo
   assert.match(discoveryClient, /View on global map/);
   assert.match(discoveryClient, /role="dialog"/);
   assert.match(discoveryClient, /keepFocusInsideDetails/);
+});
+
+test("Admin assets resolve current values from manual, legacy and valuation sources", () => {
+  assert.match(dataLayer, /to_jsonb\(asset\)->>'selected_value_ex_vat'/);
+  assert.match(dataLayer, /to_jsonb\(asset\)->>'manual_value'/);
+  assert.match(dataLayer, /to_jsonb\(asset\)->>'opening_value'/);
+  assert.match(dataLayer, /to_jsonb\(asset\)->'specs_json'->>'currentValueExVat'/);
+  assert.match(dataLayer, /to_jsonb\(valuation\)->>'selected_value_ex_vat'/);
+  assert.match(dataLayer, /nullif\(greatest\(/);
+  assert.match(dataLayer, /saved_asset_value is not null/);
+  assert.match(dataLayer, /count\(\*\) filter \(where has_saved_value\)/);
+  assert.match(mapClient, /formatAdminAssetValue\(selectedAsset\)/);
+  assert.match(discoveryClient, /formatAdminAssetValue\(asset\)/);
+  assert.equal(formatAdminAssetValue({ value: 0, hasSavedValue: false }), "Not saved");
+  assert.notEqual(formatAdminAssetValue({ value: 850000, hasSavedValue: true }), "Not saved");
 });
 
 test("province options aggregate by the shared normalized province expression", () => {

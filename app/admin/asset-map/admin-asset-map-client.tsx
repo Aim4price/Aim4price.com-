@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   formatAdminAssetMoney,
+  formatAdminAssetValue,
   hasAdminAssetCoordinates,
   type AdminAssetLocationFilter,
   type AdminAssetMapReport,
@@ -513,7 +514,9 @@ export default function AdminAssetMapClient({
         <article>
           <span>Registered value</span>
           <strong>{formatAdminAssetMoney(report.summary.totalValueExVat)}</strong>
-          <small>Current saved asset value · Excl. VAT</small>
+          <small>
+            Current saved value · Excl. VAT · {report.summary.missingValueAssets.toLocaleString("en-ZA")} missing
+          </small>
         </article>
       </section>
 
@@ -693,7 +696,7 @@ export default function AdminAssetMapClient({
                   </button>
                 </header>
                 <div className={styles.assetDetailGrid}>
-                  <span><small>Value</small><strong>{formatAdminAssetMoney(selectedAsset.value)}</strong></span>
+                  <span><small>Value</small><strong>{formatAdminAssetValue(selectedAsset)}</strong></span>
                   <span><small>Serial</small><strong>{selectedAsset.serialNumber || "Not saved"}</strong></span>
                   <span><small>Registration</small><strong>{selectedAsset.registrationNumber || "Not saved"}</strong></span>
                   <span><small>Usage</small><strong>{formatUsage(selectedAsset)}</strong></span>

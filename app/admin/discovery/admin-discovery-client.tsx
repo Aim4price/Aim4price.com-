@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ADMIN_DISCOVERY_PAGE_SIZES,
   formatAdminAssetMoney,
+  formatAdminAssetValue,
   hasAdminAssetCoordinates,
   type AdminAssetLocationFilter,
   type AdminAssetParticipationFilter,
@@ -302,7 +303,9 @@ export default function AdminDiscoveryClient({
         <article>
           <span>Matching value</span>
           <strong>{formatAdminAssetMoney(report.summary.totalValueExVat)}</strong>
-          <small>Current saved value · Excl. VAT</small>
+          <small>
+            Current saved value · Excl. VAT · {report.summary.missingValueAssets.toLocaleString("en-ZA")} missing
+          </small>
         </article>
         <article>
           <span>Owner accounts</span>
@@ -532,7 +535,7 @@ export default function AdminDiscoveryClient({
                       <strong>{asset.owner.townCity || "Town not saved"}</strong>
                       <span>{asset.owner.province || "Province not saved"}</span>
                     </td>
-                    <td className={styles.moneyCell}>{formatAdminAssetMoney(asset.value)}</td>
+                    <td className={styles.moneyCell}>{formatAdminAssetValue(asset)}</td>
                     <td>
                       <strong>{asset.serialNumber || "No serial"}</strong>
                       <span>{asset.registrationNumber || asset.publicAssetCode || "No registration"}</span>
@@ -701,7 +704,13 @@ export default function AdminDiscoveryClient({
               <section>
                 <h3>Asset record</h3>
                 <dl>
-                  <div><dt>Value</dt><dd>{formatAdminAssetMoney(selectedAsset.value)} excl. VAT</dd></div>
+                  <div>
+                    <dt>Value</dt>
+                    <dd>
+                      {formatAdminAssetValue(selectedAsset)}
+                      {selectedAsset.hasSavedValue ? " excl. VAT" : ""}
+                    </dd>
+                  </div>
                   <div><dt>Register</dt><dd>{selectedAsset.registerLabel}</dd></div>
                   <div><dt>Serial</dt><dd>{selectedAsset.serialNumber || "Not saved"}</dd></div>
                   <div><dt>Registration</dt><dd>{selectedAsset.registrationNumber || "Not saved"}</dd></div>
