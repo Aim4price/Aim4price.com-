@@ -541,7 +541,7 @@ async function getAdminGlobalAssetOptions(): Promise<AdminGlobalAssetOptions> {
       coalesce(nullif(trim(owner_province), ''), 'Province not saved') as label,
       count(*)::bigint as count
     from admin_assets
-    group by coalesce(nullif(trim(owner_province), ''), '__not_saved__')
+    group by nullif(trim(owner_province), '')
     union all
     select 'sector', sector_key, max(sector_label), count(*)::bigint
     from admin_assets

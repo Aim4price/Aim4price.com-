@@ -70,6 +70,17 @@ test("Admin Discovery is paginated, filterable and owner contact is already unlo
   assert.match(discoveryClient, /keepFocusInsideDetails/);
 });
 
+test("province options aggregate by the shared normalized province expression", () => {
+  assert.match(
+    dataLayer,
+    /from admin_assets\s+group by nullif\(trim\(owner_province\), ''\)/,
+  );
+  assert.doesNotMatch(
+    dataLayer,
+    /group by coalesce\(nullif\(trim\(owner_province\), ''\), '__not_saved__'\)/,
+  );
+});
+
 test("the Admin Manage menu exposes the two global asset workspaces", () => {
   assert.match(navigation, /href: "\/admin\/asset-map"/);
   assert.match(navigation, /label: "Global Asset Map"/);
