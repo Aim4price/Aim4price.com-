@@ -29,6 +29,7 @@ type AdminGlobalAssetRow = {
   sector_key: DatabaseValue;
   sector_label: DatabaseValue;
   asset_value: DatabaseValue;
+  has_saved_value: DatabaseValue;
   selected_method: DatabaseValue;
   brand_name: DatabaseValue;
   model_name: DatabaseValue;
@@ -70,6 +71,7 @@ type SummaryRow = {
   mapped_assets: DatabaseValue;
   owner_accounts: DatabaseValue;
   total_value_ex_vat: DatabaseValue;
+  valued_assets: DatabaseValue;
   discovery_enabled_assets: DatabaseValue;
 };
 
@@ -91,6 +93,57 @@ const SAFE_LONGITUDE_SQL = `(case
   else null
 end)`;
 
+const ADMIN_ASSET_CURRENT_VALUE_SOURCES = [
+  "to_jsonb(asset)->>'selected_value_ex_vat'",
+  "to_jsonb(asset)->>'value'",
+  "to_jsonb(asset)->>'selected_value'",
+  "to_jsonb(asset)->>'saved_value_ex_vat'",
+  "to_jsonb(asset)->>'saved_value'",
+  "to_jsonb(asset)->>'current_value'",
+  "to_jsonb(asset)->>'currentValue'",
+  "to_jsonb(asset)->>'value_ex_vat'",
+  "to_jsonb(asset)->>'opening_value'",
+  "to_jsonb(asset)->>'valuation_amount'",
+  "to_jsonb(asset)->>'manual_value'",
+  "to_jsonb(asset)->>'manual_value_ex_vat'",
+  "to_jsonb(asset)->>'aim4price_value_ex_vat'",
+  "to_jsonb(asset)->>'aim4price_value'",
+  "to_jsonb(asset)->'specs_json'->>'selectedValueExVat'",
+  "to_jsonb(asset)->'specs_json'->>'selected_value_ex_vat'",
+  "to_jsonb(asset)->'specs_json'->>'currentValueExVat'",
+  "to_jsonb(asset)->'specs_json'->>'current_value_ex_vat'",
+  "to_jsonb(asset)->'specs_json'->>'currentValue'",
+  "to_jsonb(asset)->'specs_json'->>'current_value'",
+  "to_jsonb(asset)->'specs_json'->>'valueExVat'",
+  "to_jsonb(asset)->'specs_json'->>'value_ex_vat'",
+  "to_jsonb(asset)->'specs_json'->>'value'",
+  "to_jsonb(asset)->'specs_json'->>'manualValueExVat'",
+  "to_jsonb(asset)->'specs_json'->>'manual_value_ex_vat'",
+  "to_jsonb(asset)->'specs_json'->>'manualValue'",
+  "to_jsonb(asset)->'specs_json'->>'manual_value'",
+  "to_jsonb(asset)->'specs_json'->>'valuationValueExVat'",
+  "to_jsonb(asset)->'specs_json'->>'valuation_value_ex_vat'",
+  "to_jsonb(asset)->'specs_json'->>'valuationValue'",
+  "to_jsonb(asset)->'specs_json'->>'valuation_value'",
+  "to_jsonb(valuation)->>'selected_value_ex_vat'",
+  "to_jsonb(valuation)->>'valuation_mid_ex_vat'",
+  "to_jsonb(valuation)->>'aim4price_value_ex_vat'",
+  "to_jsonb(valuation)->>'aim4price_value'",
+] as const;
+
+function safePositiveMoneySql(source: string): string {
+  const normalized = `nullif(regexp_replace(coalesce(${source}, ''), '[^0-9.-]', '', 'g'), '')`;
+  return `(case
+    when ${normalized} ~ '^[0-9]+([.][0-9]+)?$'
+      then nullif(greatest((${normalized})::numeric, 0), 0)
+    else null
+  end)`;
+}
+
+const ADMIN_ASSET_CURRENT_VALUE_SQL = `coalesce(
+  ${ADMIN_ASSET_CURRENT_VALUE_SOURCES.map(safePositiveMoneySql).join(",\n  ")}
+)`;
+
 const ADMIN_GLOBAL_ASSET_CTE = `
   with admin_asset_rows as (
     select
@@ -111,7 +164,7 @@ const ADMIN_GLOBAL_ASSET_CTE = `
         as asset_type_label,
       coalesce(nullif(trim(sector.sector_key), ''), 'uncategorised') as sector_key,
       coalesce(nullif(trim(sector.sector_label), ''), 'Uncategorised') as sector_label,
-      greatest(coalesce(asset.value, 0), 0)::numeric as asset_value,
+      ${ADMIN_ASSET_CURRENT_VALUE_SQL} as saved_asset_value,
       coalesce(nullif(trim(asset.selected_method), ''), 'manual') as selected_method,
       coalesce(
         nullif(trim(asset.brand_name), ''),
@@ -175,6 +228,8 @@ const ADMIN_GLOBAL_ASSET_CTE = `
         as discovery_participation_enabled
     from public.asset_register_items asset
     left join public.asset_registers asset_register on asset_register.id = asset.register_id
+    left join public.valuation_runs valuation
+      on valuation.id::text = nullif(to_jsonb(asset)->>'valuation_run_id', '')
     left join public.account_profiles profile on profile.user_id = asset.user_id
     left join public."user" auth_user on auth_user.id = asset.user_id
     left join public.equipment_families family on family.id = asset.equipment_family_id
@@ -184,6 +239,8 @@ const ADMIN_GLOBAL_ASSET_CTE = `
   ), admin_assets as (
     select
       admin_asset_rows.*,
+      greatest(coalesce(saved_asset_value, 0), 0)::numeric as asset_value,
+      (saved_asset_value is not null) as has_saved_value,
       (
         last_known_lat between -90 and 90
         and last_known_lng between -180 and 180
@@ -248,6 +305,7 @@ function mapAsset(row: AdminGlobalAssetRow): AdminGlobalAsset {
     sectorKey: text(row.sector_key) || "uncategorised",
     sectorLabel: text(row.sector_label) || "Uncategorised",
     value: Math.max(0, number(row.asset_value)),
+    hasSavedValue: boolean(row.has_saved_value),
     selectedMethod: text(row.selected_method) || "manual",
     brandName: text(row.brand_name),
     modelName: text(row.model_name),
@@ -290,12 +348,15 @@ function mapAsset(row: AdminGlobalAssetRow): AdminGlobalAsset {
 
 function summarizeAssets(assets: AdminGlobalAsset[]): AdminGlobalAssetSummary {
   const mappedAssets = assets.filter(hasAdminAssetCoordinates).length;
+  const valuedAssets = assets.filter((asset) => asset.hasSavedValue).length;
   return {
     totalAssets: assets.length,
     mappedAssets,
     missingLocationAssets: Math.max(0, assets.length - mappedAssets),
     ownerAccounts: new Set(assets.map((asset) => asset.ownerUserId)).size,
     totalValueExVat: assets.reduce((total, asset) => total + Math.max(0, asset.value), 0),
+    valuedAssets,
+    missingValueAssets: Math.max(0, assets.length - valuedAssets),
     discoveryEnabledAssets: assets.filter(
       (asset) => asset.owner.discoveryParticipationEnabled,
     ).length,
@@ -360,6 +421,7 @@ function optionsFromAssets(assets: AdminGlobalAsset[]): AdminGlobalAssetOptions 
 function mapSummary(row: SummaryRow | undefined): AdminGlobalAssetSummary {
   const totalAssets = Math.max(0, number(row?.total_assets));
   const mappedAssets = Math.max(0, number(row?.mapped_assets));
+  const valuedAssets = Math.max(0, number(row?.valued_assets));
   const discoveryEnabledAssets = Math.max(0, number(row?.discovery_enabled_assets));
   return {
     totalAssets,
@@ -367,6 +429,8 @@ function mapSummary(row: SummaryRow | undefined): AdminGlobalAssetSummary {
     missingLocationAssets: Math.max(0, totalAssets - mappedAssets),
     ownerAccounts: Math.max(0, number(row?.owner_accounts)),
     totalValueExVat: Math.max(0, number(row?.total_value_ex_vat)),
+    valuedAssets,
+    missingValueAssets: Math.max(0, totalAssets - valuedAssets),
     discoveryEnabledAssets,
     discoveryDisabledAssets: Math.max(0, totalAssets - discoveryEnabledAssets),
   };
@@ -571,6 +635,7 @@ export async function getAdminDiscoveryReport(
           count(*) filter (where has_location)::bigint as mapped_assets,
           count(distinct owner_user_id)::bigint as owner_accounts,
           coalesce(sum(asset_value), 0)::numeric as total_value_ex_vat,
+          count(*) filter (where has_saved_value)::bigint as valued_assets,
           count(*) filter (where discovery_participation_enabled)::bigint
             as discovery_enabled_assets
         from admin_assets

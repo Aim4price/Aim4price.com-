@@ -30,6 +30,7 @@ export type AdminGlobalAsset = {
   sectorKey: string;
   sectorLabel: string;
   value: number;
+  hasSavedValue: boolean;
   selectedMethod: string;
   brandName: string;
   modelName: string;
@@ -60,6 +61,8 @@ export type AdminGlobalAssetSummary = {
   missingLocationAssets: number;
   ownerAccounts: number;
   totalValueExVat: number;
+  valuedAssets: number;
+  missingValueAssets: number;
   discoveryEnabledAssets: number;
   discoveryDisabledAssets: number;
 };
@@ -122,6 +125,12 @@ export function formatAdminAssetMoney(value: number): string {
     currency: "ZAR",
     maximumFractionDigits: 0,
   }).format(Number.isFinite(value) ? value : 0);
+}
+
+export function formatAdminAssetValue(
+  asset: Pick<AdminGlobalAsset, "value" | "hasSavedValue">,
+): string {
+  return asset.hasSavedValue ? formatAdminAssetMoney(asset.value) : "Not saved";
 }
 
 export function hasAdminAssetCoordinates(asset: Pick<AdminGlobalAsset, "lastKnownLat" | "lastKnownLng">): boolean {
