@@ -8,6 +8,8 @@ export type AdminSection =
   | "accounts"
   | "dashboard"
   | "marketplace"
+  | "asset-map"
+  | "discovery"
   | "sold-assets"
   | "work-tracker"
   | "capture-queue"
@@ -36,6 +38,18 @@ const ADMIN_LINKS: Array<{
     label: "Marketplace",
     key: "marketplace",
     description: "Review advertised value and listing history",
+  },
+  {
+    href: "/admin/asset-map",
+    label: "Global Asset Map",
+    key: "asset-map",
+    description: "Map every saved asset across all accounts",
+  },
+  {
+    href: "/admin/discovery",
+    label: "Admin Discovery",
+    key: "discovery",
+    description: "Search all assets with owner details unlocked",
   },
   {
     href: "/admin/sold-assets",

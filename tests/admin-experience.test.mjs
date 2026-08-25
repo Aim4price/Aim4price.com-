@@ -140,6 +140,8 @@ test("all Admin pages use one complete navigation without Assistance Network con
     "/admin",
     "/admin/dashboard",
     "/admin/marketplace",
+    "/admin/asset-map",
+    "/admin/discovery",
     "/admin/work-tracker",
     "/admin/capture-queue",
     "/admin/lifecycle-calculator",
@@ -158,6 +160,8 @@ test("Admin navigation uses one Manage button and an accessible destination moda
   assert.match(adminNavigation, /manageButtonRef\.current\?\.focus\(\)/);
   assert.match(adminNavigation, /Choose an Admin workspace/);
   assert.match(adminNavigation, /Review advertised value and listing history/);
+  assert.match(adminNavigation, /Map every saved asset across all accounts/);
+  assert.match(adminNavigation, /Search all assets with owner details unlocked/);
   assert.match(adminNavigationStyles, /\.manageButton/);
   assert.match(adminNavigationStyles, /\.optionGrid/);
   assert.match(adminNavigationStyles, /\.closeButton/);
