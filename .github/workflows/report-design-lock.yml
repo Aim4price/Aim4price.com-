@@ -1,0 +1,51 @@
+name: Report design lock
+
+on:
+  pull_request:
+    paths:
+      - 'app/api/**/report/**'
+      - 'app/api/asset-register/export/**'
+      - 'lib/*report*.ts'
+      - 'tests/canonical-report-pdf.test.mjs'
+      - 'tests/report-design-lock.test.mjs'
+      - 'docs/report-design-contract.md'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/report-design-lock.yml'
+  push:
+    branches:
+      - main
+    paths:
+      - 'app/api/**/report/**'
+      - 'app/api/asset-register/export/**'
+      - 'lib/*report*.ts'
+      - 'tests/canonical-report-pdf.test.mjs'
+      - 'tests/report-design-lock.test.mjs'
+      - 'docs/report-design-contract.md'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/report-design-lock.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  approved-report-design:
+    name: Approved report design
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install exact dependencies
+        run: npm ci
+
+      - name: Verify locked report design
+        run: npm run test:report-design
