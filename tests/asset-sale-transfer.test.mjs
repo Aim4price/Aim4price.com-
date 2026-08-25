@@ -111,13 +111,26 @@ test('portable asset history moves while seller-private financial data is reset'
   assert.match(transferPage, /private invoices, finance, insurance and account access do not transfer/i);
 });
 
-test('Account exposes claim and outgoing-transfer management', () => {
+test('Account exposes modal-based incoming and outgoing transfer management', () => {
   assert.match(accountClient, /Claim or send an asset/);
   assert.match(accountClient, /\/account\/asset-transfers/);
+  assert.match(transferPage, /type ActiveFlow = 'incoming' \| 'outgoing' \| null/);
+  assert.match(transferPage, /function TransferModal/);
+  assert.match(transferPage, /launcherStyles\.actionGrid/);
+  assert.match(transferPage, /launcherStyles\.actionButtonNew/);
+  assert.match(transferPage, /launcherStyles\.actionButtonManage/);
+  assert.match(transferPage, /openFlow\('incoming'\)/);
+  assert.match(transferPage, /openFlow\('outgoing'\)/);
+  assert.match(transferPage, /activeFlow === 'incoming'/);
+  assert.match(transferPage, /activeFlow === 'outgoing'/);
+  assert.match(transferPage, />Incoming</);
+  assert.match(transferPage, />Outgoing</);
   assert.match(transferPage, /Claim an asset/);
   assert.match(transferPage, /Replace code/);
   assert.match(transferPage, /Cancel & archive/);
   assert.match(transferPage, /autoComplete="one-time-code"/);
+  assert.doesNotMatch(transferPage, /<p>Incoming<\/p>/);
+  assert.doesNotMatch(transferPage, /<p>Outgoing<\/p>/);
 });
 
 test('Admin tracks and can correct sold, traded-in and scrapped outcomes', () => {
