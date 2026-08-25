@@ -4,6 +4,15 @@ import test from 'node:test';
 
 const read = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
 
+test('fuel schema setup shares one cold-start promise across notification loaders', async () => {
+  const fuelLedger = await read('lib/fuel-ledger.ts');
+
+  assert.match(fuelLedger, /let fuelLedgerTablesPromise: Promise<void> \| null = null/);
+  assert.match(fuelLedger, /fuelLedgerTablesPromise = ensureFuelLedgerTablesOnce\(\)\.catch/);
+  assert.match(fuelLedger, /fuelLedgerTablesPromise = null/);
+  assert.doesNotMatch(fuelLedger, /let fuelLedgerTablesEnsured = false/);
+});
+
 test('notification inbox persists user state and history', async () => {
   const [inbox, migration] = await Promise.all([
     read('lib/notification-inbox.ts'),

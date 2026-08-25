@@ -19,6 +19,7 @@ const [
   adminPage,
   adminNavigation,
   migration,
+  pendingStateMigration,
 ] = await Promise.all([
   read('lib/asset-transfers.ts'),
   read('app/api/asset-transfers/route.ts'),
@@ -34,6 +35,7 @@ const [
   read('app/admin/sold-assets/page.tsx'),
   read('components/AdminNavigation.tsx'),
   read('database/migrations/88-sold-asset-transfers.sql'),
+  read('database/migrations/89-asset-transfer-pending-state.sql'),
 ]);
 
 test('sold removal records Aim4price impact and makes transfer a deliberate choice', () => {
@@ -122,4 +124,8 @@ test('migration supports repeatable sold and transfer deployment', () => {
   assert.match(migration, /add column if not exists aim4price_sale_influence/);
   assert.match(migration, /where status = 'pending'/);
   assert.match(migration, /asset_transfer_claim_attempts/);
+  assert.match(migration, /'transfer_pending'/);
+  assert.match(pendingStateMigration, /drop constraint if exists asset_register_items_lifecycle_state_check/);
+  assert.match(pendingStateMigration, /'active', 'disposed', 'archived', 'transfer_pending'/);
+  assert.match(transferSource, /position\('transfer_pending' in lifecycle_constraint_definition\)/);
 });

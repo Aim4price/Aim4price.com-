@@ -153,6 +153,28 @@ function chooseAssetIdentifier(asset: AssetRegisterItem) {
 async function ensureAssetTransferSchemaOnce(): Promise<void> {
   await Promise.all([ensureAssetRegisterTables(), ensurePartnerAccessTables()]);
   const db = getDb();
+  await db.query(`
+    do $$
+    declare
+      lifecycle_constraint_definition text;
+    begin
+      select pg_get_constraintdef(oid)
+      into lifecycle_constraint_definition
+      from pg_constraint
+      where conrelid = 'public.asset_register_items'::regclass
+        and conname = 'asset_register_items_lifecycle_state_check';
+
+      if lifecycle_constraint_definition is null
+         or position('transfer_pending' in lifecycle_constraint_definition) = 0 then
+        alter table public.asset_register_items
+          drop constraint if exists asset_register_items_lifecycle_state_check;
+        alter table public.asset_register_items
+          add constraint asset_register_items_lifecycle_state_check
+          check (lifecycle_state in ('active', 'disposed', 'archived', 'transfer_pending'));
+      end if;
+    end
+    $$
+  `);
   await db.query(`create extension if not exists pgcrypto`);
   await db.query(`
     create table if not exists public.asset_transfer_offers (

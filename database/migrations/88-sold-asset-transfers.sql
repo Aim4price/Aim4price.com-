@@ -6,6 +6,13 @@ create extension if not exists pgcrypto;
 alter table public.asset_register_items
   add column if not exists lifecycle_state text not null default 'active';
 
+alter table if exists public.asset_register_items
+  drop constraint if exists asset_register_items_lifecycle_state_check;
+
+alter table if exists public.asset_register_items
+  add constraint asset_register_items_lifecycle_state_check
+    check (lifecycle_state in ('active', 'disposed', 'archived', 'transfer_pending'));
+
 alter table public.asset_lifecycle_events
   add column if not exists aim4price_sale_influence text,
   add column if not exists transfer_status text,
