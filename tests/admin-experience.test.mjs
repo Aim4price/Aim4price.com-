@@ -139,6 +139,7 @@ test("all Admin pages use one complete navigation without Assistance Network con
   for (const path of [
     "/admin",
     "/admin/dashboard",
+    "/admin/marketplace",
     "/admin/work-tracker",
     "/admin/capture-queue",
     "/admin/lifecycle-calculator",

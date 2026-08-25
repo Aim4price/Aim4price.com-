@@ -4,6 +4,7 @@ import styles from "./AdminNavigation.module.css";
 export type AdminSection =
   | "accounts"
   | "dashboard"
+  | "marketplace"
   | "sold-assets"
   | "work-tracker"
   | "capture-queue"
@@ -16,6 +17,7 @@ const ADMIN_LINKS: Array<{
 }> = [
   { key: "accounts", href: "/admin", label: "Accounts" },
   { key: "dashboard", href: "/admin/dashboard", label: "Dashboard" },
+  { key: "marketplace", href: "/admin/marketplace", label: "Marketplace" },
   { key: "sold-assets", href: "/admin/sold-assets", label: "Asset Outcomes" },
   { key: "work-tracker", href: "/admin/work-tracker", label: "Work Tracker" },
   { key: "capture-queue", href: "/admin/capture-queue", label: "Capture Queue" },

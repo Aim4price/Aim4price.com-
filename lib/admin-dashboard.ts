@@ -4,6 +4,8 @@ import {
   buildLogicalClientStorageSelect,
   formatAdminStorageBytes as formatBytes,
 } from './admin-storage-usage';
+import { getAdminMarketplaceSummary } from './admin-marketplace';
+import { formatAdminMarketplaceMoney } from './admin-marketplace-shared';
 import { getDb } from './db';
 
 type CountValue = string | number | null | undefined;
@@ -25,6 +27,8 @@ export type DashboardStatCard = {
   title: string;
   description?: string;
   values: DashboardMetricValue[];
+  href?: string;
+  linkLabel?: string;
 };
 
 export type AdminDashboardStats = {
@@ -604,6 +608,7 @@ export async function getAdminDashboardStats(): Promise<AdminDashboardStats> {
     qrAssetUpdates,
     assetUpdates,
     maintenanceNotes,
+    marketplaceSummary,
     storage,
   ] = await Promise.all([
     countUsageEvents('free_estimate_completed'),
@@ -625,6 +630,7 @@ export async function getAdminDashboardStats(): Promise<AdminDashboardStats> {
     countUsageEvents('qr_asset_updated'),
     countUsageEvents('asset_updated'),
     countUsageEvents('maintenance_note_left'),
+    getAdminMarketplaceSummary(),
     getStorageStats(),
   ]);
 
@@ -655,6 +661,29 @@ export async function getAdminDashboardStats(): Promise<AdminDashboardStats> {
       id: 'aim4price-assets-saved',
       title: 'Aim4price-valued assets saved',
       values: monthYearValues(aim4priceAssets),
+    },
+    {
+      id: 'marketplace-advertised',
+      title: 'Marketplace value advertised',
+      description: 'All-time asking value excl. VAT. Each unique asset is counted once at its latest recorded asking price.',
+      values: [
+        {
+          label: 'All time',
+          value: formatAdminMarketplaceMoney(marketplaceSummary.allTimeAdvertisedValueExVat),
+        },
+        {
+          label: 'Unique assets',
+          value: formatCount(marketplaceSummary.totalUniqueAssets),
+          detail: `${formatCount(marketplaceSummary.totalListingEvents)} listing events`,
+        },
+        {
+          label: 'Live now',
+          value: formatAdminMarketplaceMoney(marketplaceSummary.liveAdvertisedValueExVat),
+          detail: `${formatCount(marketplaceSummary.liveAssets)} live assets`,
+        },
+      ],
+      href: '/admin/marketplace',
+      linkLabel: 'View every marketplace asset',
     },
     {
       id: 'asset-registers-created',

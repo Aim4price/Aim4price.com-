@@ -1,3 +1,4 @@
+import Link from "next/link";
 import AdminNavigation from "../../../components/AdminNavigation";
 import { requireAdminPageAccess } from "../../../lib/account-access";
 import { getAdminDashboardStats } from "../../../lib/admin-dashboard";
@@ -42,6 +43,7 @@ export default async function AdminDashboardPage() {
   ]);
   const productIds = new Set([
     "aim4price-assets-saved",
+    "marketplace-advertised",
     "asset-registers-created",
     "storage",
   ]);
@@ -112,7 +114,7 @@ export default async function AdminDashboardPage() {
           <section className={styles.dashboardSection} aria-labelledby="product-heading">
             <div className={styles.sectionHeading}>
               <div><p className={styles.eyebrow}>Product</p><h2 id="product-heading">Asset workspace adoption</h2></div>
-              <span>Saved Aim4price values, asset registers and storage use.</span>
+              <span>Saved values, marketplace advertising, asset registers and storage use.</span>
             </div>
             <div className={styles.grid}>
               {productCards.map((card) => (
@@ -121,6 +123,11 @@ export default async function AdminDashboardPage() {
                   <dl className={styles.values}>{card.values.map((item) => (
                     <div key={`${card.id}-${item.label}`} className={styles.valueRow}><dt>{item.label}</dt><dd><strong>{item.value}</strong>{item.detail ? <span>{item.detail}</span> : null}</dd></div>
                   ))}</dl>
+                  {card.href ? (
+                    <Link href={card.href} className={styles.cardLink}>
+                      {card.linkLabel ?? "Open details"}
+                    </Link>
+                  ) : null}
                 </article>
               ))}
             </div>
