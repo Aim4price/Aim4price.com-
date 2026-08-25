@@ -16,6 +16,16 @@ function errorResponse(error: unknown) {
   if (code === 'ADMIN_ASSET_ALLOCATION_NOT_FOUND' || code === 'ADMIN_SOLD_ASSET_NOT_FOUND') return NextResponse.json({ ok: false, error: 'This sold asset record could not be found.' }, { status: 404 });
   if (code === 'ADMIN_ASSET_ALLOCATION_NOT_AVAILABLE') return NextResponse.json({ ok: false, error: 'This asset has already moved or is no longer available to allocate.' }, { status: 409 });
   if (code === 'ADMIN_SOLD_ASSET_DELETE_NOT_AVAILABLE') return NextResponse.json({ ok: false, error: 'A claimed or already moved asset cannot be deleted from the seller account.' }, { status: 409 });
+  const postgresCode = error && typeof error === 'object' && 'code' in error
+    ? String((error as { code?: unknown }).code ?? '')
+    : '';
+  if (postgresCode === '40P01' || postgresCode === '40001') {
+    console.error('admin sold asset action exhausted database retries', error);
+    return NextResponse.json({
+      ok: false,
+      error: 'The database was briefly busy. No asset data was changed. Please try once more.',
+    }, { status: 503 });
+  }
   console.error('admin sold asset action failed', error);
   return NextResponse.json({ ok: false, error: 'The sold asset action could not be completed.' }, { status: 500 });
 }

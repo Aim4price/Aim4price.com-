@@ -144,7 +144,11 @@ test('migration supports repeatable sold and transfer deployment', () => {
   assert.match(migration, /'transfer_pending'/);
   assert.match(pendingStateMigration, /drop constraint if exists asset_register_items_lifecycle_state_check/);
   assert.match(pendingStateMigration, /'active', 'disposed', 'archived', 'transfer_pending'/);
-  assert.match(transferSource, /position\('transfer_pending' in lifecycle_constraint_definition\)/);
+  assert.doesNotMatch(transferSource, /lifecycle_constraint_definition/);
+  assert.match(transferSource, /set lifecycle_state = 'disposed'/);
+  assert.match(transferSource, /\['disposed', 'transfer_pending'\]\.includes/);
+  assert.match(transferSource, /isDatabaseSchemaReady/);
+  assert.match(transferSource, /'40P01', '40001'/);
   assert.match(outcomeInfluenceMigration, /add column if not exists aim4price_outcome_influence/);
   assert.match(outcomeInfluenceMigration, /add column if not exists original_owner_user_id/);
 });
