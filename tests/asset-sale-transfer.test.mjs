@@ -17,9 +17,12 @@ const [
   transferPage,
   adminSales,
   adminPage,
+  adminClient,
+  adminActionRoute,
   adminNavigation,
   migration,
   pendingStateMigration,
+  outcomeInfluenceMigration,
 ] = await Promise.all([
   read('lib/asset-transfers.ts'),
   read('app/api/asset-transfers/route.ts'),
@@ -33,38 +36,45 @@ const [
   read('app/account/asset-transfers/asset-transfers-client.tsx'),
   read('lib/admin-asset-sales.ts'),
   read('app/admin/sold-assets/page.tsx'),
+  read('app/admin/sold-assets/sold-assets-client.tsx'),
+  read('app/api/admin/sold-assets/route.ts'),
   read('components/AdminNavigation.tsx'),
   read('database/migrations/88-sold-asset-transfers.sql'),
   read('database/migrations/89-asset-transfer-pending-state.sql'),
+  read('database/migrations/90-disposal-outcome-influence.sql'),
 ]);
 
-test('sold removal records Aim4price impact and makes transfer a deliberate choice', () => {
-  assert.match(ownerClient, /Did Aim4price help with this sale\?/);
+test('owner removal is a four-step flow with a deliberate sold transfer choice', () => {
+  assert.match(ownerClient, /DISPOSAL_WIZARD_STEPS/);
+  assert.match(ownerClient, /Did Aim4price help with this outcome in any way\?/);
+  assert.match(ownerClient, /reason === 'sold'[\s\S]*reason === 'traded_in'[\s\S]*reason === 'scrapped'/);
   assert.match(ownerClient, /Archive after sale/);
   assert.match(ownerClient, /Send to buyer/);
-  assert.match(ownerClient, /aim4priceSaleInfluence/);
+  assert.match(ownerClient, /aim4priceOutcomeInfluence/);
   assert.match(ownerClient, /transferAction/);
-  assert.match(ownerRoute, /Tell us whether Aim4price helped with this sale/);
+  assert.match(ownerRoute, /Tell us whether Aim4price helped with this outcome/);
   assert.match(ownerRoute, /transferRequested/);
 });
 
-test('desktop Asset Register collects the sold contract before calling the shared lifecycle service', () => {
-  assert.match(desktopClient, /Did Aim4price help with this sale\?/);
+test('desktop Asset Register collects outcome, details, impact and information in sequence', () => {
+  assert.match(desktopClient, /type DisposalWizardStep = 1 \| 2 \| 3 \| 4/);
+  assert.match(desktopClient, /Did Aim4price help with this outcome in any way\?/);
+  assert.match(desktopClient, /Trade-in allowance/);
   assert.match(desktopClient, /Archive after sale/);
   assert.match(desktopClient, /Send to buyer/);
   assert.match(desktopClient, /Save sale & create code/);
   assert.match(desktopClient, /assetTransferReceipt/);
-  assert.match(desktopRoute, /Tell us whether Aim4price helped with this sale/);
-  assert.match(desktopRoute, /aim4priceSaleInfluence/);
+  assert.match(desktopRoute, /Tell us whether Aim4price helped with this outcome/);
+  assert.match(desktopRoute, /aim4priceOutcomeInfluence/);
   assert.match(desktopRoute, /transferRequested/);
   assert.match(desktopRoute, /transfer: outcome\.transfer/);
 });
 
-test('accountant disposal cannot submit a sold event without the Aim4price impact answer', () => {
-  assert.match(accountantClient, /Did Aim4price help with this sale\?/);
-  assert.match(accountantClient, /aim4priceSaleInfluence: lifecycleReason === 'sold'/);
-  assert.match(accountantRoute, /Tell us whether Aim4price helped with this sale/);
-  assert.match(accountantRoute, /aim4priceSaleInfluence/);
+test('accountant disposal requires outcome impact for sold, traded and scrapped assets', () => {
+  assert.match(accountantClient, /Did Aim4price help with this outcome in any way\?/);
+  assert.match(accountantClient, /aim4priceOutcomeInfluence: impactQuestionRequired/);
+  assert.match(accountantRoute, /Tell us whether Aim4price helped with this outcome/);
+  assert.match(accountantRoute, /'sold', 'traded_in', 'scrapped'/);
 });
 
 test('transfer codes are one-time credentials and are never stored as plaintext', () => {
@@ -117,6 +127,11 @@ test('Admin has a dedicated sold-assets page with influence and transfer metrics
   assert.match(adminSales, /helpRatePercent/);
   assert.match(adminSales, /transferredAccounts/);
   assert.match(adminSales, /event\.reason = 'sold'/);
+  assert.match(adminClient, />Allocate</);
+  assert.match(adminClient, />Delete</);
+  assert.match(adminActionRoute, /requireAdminApiAccess/);
+  assert.match(adminActionRoute, /adminAllocateDisposedAsset/);
+  assert.match(adminActionRoute, /adminDeleteSoldAsset/);
 });
 
 test('migration supports repeatable sold and transfer deployment', () => {
@@ -128,4 +143,6 @@ test('migration supports repeatable sold and transfer deployment', () => {
   assert.match(pendingStateMigration, /drop constraint if exists asset_register_items_lifecycle_state_check/);
   assert.match(pendingStateMigration, /'active', 'disposed', 'archived', 'transfer_pending'/);
   assert.match(transferSource, /position\('transfer_pending' in lifecycle_constraint_definition\)/);
+  assert.match(outcomeInfluenceMigration, /add column if not exists aim4price_outcome_influence/);
+  assert.match(outcomeInfluenceMigration, /add column if not exists original_owner_user_id/);
 });

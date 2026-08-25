@@ -278,7 +278,7 @@ export default function AccountantAssetManageModal({
   const [sourceAccountingSystem, setSourceAccountingSystem] = useState(asset.accountingValue?.sourceAccountingSystem || '');
   const [accountantNote, setAccountantNote] = useState(asset.accountingValue?.accountantNote || '');
   const [lifecycleReason, setLifecycleReason] = useState('sold');
-  const [lifecycleSaleInfluence, setLifecycleSaleInfluence] = useState<'' | 'yes' | 'no' | 'unsure'>('');
+  const [lifecycleOutcomeInfluence, setLifecycleOutcomeInfluence] = useState<'' | 'yes' | 'no' | 'unsure'>('');
   const [lifecycleDate, setLifecycleDate] = useState(new Date().toISOString().slice(0, 10));
   const [lifecycleAmount, setLifecycleAmount] = useState('');
   const [lifecycleNote, setLifecycleNote] = useState('');
@@ -425,8 +425,9 @@ export default function AccountantAssetManageModal({
   async function saveLifecycle(event: FormEvent) {
     event.preventDefault();
     if (!allowDirectUpdates || busy) return;
-    if (lifecycleReason === 'sold' && !lifecycleSaleInfluence) {
-      setError('Tell us whether Aim4price helped with this sale.');
+    const impactQuestionRequired = ['sold', 'traded_in', 'scrapped'].includes(lifecycleReason);
+    if (impactQuestionRequired && !lifecycleOutcomeInfluence) {
+      setError('Tell us whether Aim4price helped with this outcome.');
       return;
     }
     setBusy(true);
@@ -440,7 +441,7 @@ export default function AccountantAssetManageModal({
           effectiveDate: lifecycleDate,
           amount: lifecycleAmount,
           note: lifecycleNote,
-          aim4priceSaleInfluence: lifecycleReason === 'sold' ? lifecycleSaleInfluence : null,
+          aim4priceOutcomeInfluence: impactQuestionRequired ? lifecycleOutcomeInfluence : null,
         }),
       });
       const data = await response.json() as { ok?: boolean; mode?: 'disposed' | 'deleted'; error?: string };
@@ -509,7 +510,7 @@ export default function AccountantAssetManageModal({
                 <button type="button" className={styles.optionActionButton} onClick={() => setView('reports')}>
                   <ActionIcon type="report"/><span><strong>Download reports</strong><small>Download reports for this asset.</small></span>
                 </button>
-                <button type="button" className={styles.optionActionButton} onClick={() => { setLifecycleReason('sold'); setLifecycleSaleInfluence(''); setView('dispose'); }}>
+                <button type="button" className={styles.optionActionButton} onClick={() => { setLifecycleReason('sold'); setLifecycleOutcomeInfluence(''); setView('dispose'); }}>
                   <ActionIcon type="dispose"/><span><strong>Dispose asset</strong><small>Record a sale, trade, loss or transfer.</small></span>
                 </button>
               </div>
@@ -649,14 +650,14 @@ export default function AccountantAssetManageModal({
             <form className={styles.accountantManageForm} onSubmit={saveLifecycle}>
               <div className={styles.accountantReadOnlyNotice}>Disposed assets leave active totals but remain available in historical records. Finance Agreements are not closed automatically.</div>
               <div className={styles.accountantManageGrid}>
-                <label className={styles.assetSettingsField}><span>Reason</span><select value={lifecycleReason} onChange={(event) => { const nextReason = event.target.value; setLifecycleReason(nextReason); if (nextReason !== 'sold') setLifecycleSaleInfluence(''); }} disabled={!allowDirectUpdates}><option value="sold">Sold</option><option value="traded_in">Traded in</option><option value="scrapped">Scrapped</option><option value="written_off">Written off</option><option value="stolen">Stolen</option><option value="donated">Donated</option><option value="returned_to_financier">Returned to financier</option><option value="transferred">Transferred out</option><option value="other">Other</option></select></label>
+                <label className={styles.assetSettingsField}><span>Reason</span><select value={lifecycleReason} onChange={(event) => { const nextReason = event.target.value; setLifecycleReason(nextReason); if (!['sold', 'traded_in', 'scrapped'].includes(nextReason)) setLifecycleOutcomeInfluence(''); }} disabled={!allowDirectUpdates}><option value="sold">Sold</option><option value="traded_in">Traded in</option><option value="scrapped">Scrapped</option><option value="written_off">Written off</option><option value="stolen">Stolen</option><option value="donated">Donated</option><option value="returned_to_financier">Returned to financier</option><option value="transferred">Transferred out</option><option value="other">Other</option></select></label>
                 <label className={styles.assetSettingsField}><span>Effective date</span><input type="date" value={lifecycleDate} onChange={(event) => setLifecycleDate(event.target.value)} disabled={!allowDirectUpdates} required/></label>
-                {lifecycleReason === 'sold' ? <label className={styles.assetSettingsField}><span>Did Aim4price help with this sale?</span><select value={lifecycleSaleInfluence} onChange={(event) => setLifecycleSaleInfluence(event.target.value as '' | 'yes' | 'no' | 'unsure')} disabled={!allowDirectUpdates} required><option value="">Choose an answer</option><option value="yes">Yes</option><option value="no">No</option><option value="unsure">Not sure</option></select></label> : null}
+                {['sold', 'traded_in', 'scrapped'].includes(lifecycleReason) ? <label className={styles.assetSettingsField}><span>Did Aim4price help with this outcome in any way?</span><select value={lifecycleOutcomeInfluence} onChange={(event) => setLifecycleOutcomeInfluence(event.target.value as '' | 'yes' | 'no' | 'unsure')} disabled={!allowDirectUpdates} required><option value="">Choose an answer</option><option value="yes">Yes</option><option value="no">No</option><option value="unsure">Not sure</option></select></label> : null}
                 <label className={styles.assetSettingsField}><span>Disposal proceeds <small>(optional)</small></span><span className={styles.accountantCurrencyField}><b>R</b><input type="text" inputMode="decimal" value={lifecycleAmount} onChange={(event) => setLifecycleAmount(event.target.value)} disabled={!allowDirectUpdates}/></span></label>
                 <label className={`${styles.assetSettingsField} ${styles.accountantFullField}`}><span>Note <small>(optional)</small></span><textarea value={lifecycleNote} onChange={(event) => setLifecycleNote(event.target.value)} disabled={!allowDirectUpdates}/></label>
               </div>
               {error ? <p className={styles.assetSettingsError}>{error}</p> : null}
-              <div className={styles.assetSettingsActions}><button type="button" className={styles.secondaryButton} onClick={() => setView('menu')}>Back</button>{allowDirectUpdates ? <button type="submit" className={styles.primaryButton} disabled={busy || (lifecycleReason === 'sold' && !lifecycleSaleInfluence)}>{busy ? 'Saving…' : 'Dispose asset'}</button> : null}</div>
+              <div className={styles.assetSettingsActions}><button type="button" className={styles.secondaryButton} onClick={() => setView('menu')}>Back</button>{allowDirectUpdates ? <button type="submit" className={styles.primaryButton} disabled={busy || (['sold', 'traded_in', 'scrapped'].includes(lifecycleReason) && !lifecycleOutcomeInfluence)}>{busy ? 'Saving…' : 'Dispose asset'}</button> : null}</div>
             </form>
           ) : null}
 

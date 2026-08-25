@@ -22,9 +22,10 @@ export async function POST(request: NextRequest, context: Context) {
     if (!asset) throw new Error('ACCOUNTANT_ASSET_NOT_FOUND');
     const body = await request.json() as Record<string, unknown>;
     const reason = String(body.reason ?? '') as AssetDisposalReason;
-    const aim4priceSaleInfluence = String(body.aim4priceSaleInfluence ?? '').trim().toLowerCase();
-    if (reason === 'sold' && !['yes', 'no', 'unsure'].includes(aim4priceSaleInfluence)) {
-      return NextResponse.json({ ok: false, error: 'Tell us whether Aim4price helped with this sale.' }, { status: 400 });
+    const aim4priceOutcomeInfluence = String(body.aim4priceOutcomeInfluence ?? body.aim4priceSaleInfluence ?? '').trim().toLowerCase();
+    const impactQuestionRequired = ['sold', 'traded_in', 'scrapped'].includes(reason);
+    if (impactQuestionRequired && !['yes', 'no', 'unsure'].includes(aim4priceOutcomeInfluence)) {
+      return NextResponse.json({ ok: false, error: 'Tell us whether Aim4price helped with this outcome.' }, { status: 400 });
     }
     const result = await disposeOrDeleteAsset({
       ownerUserId: access.ownerUserId,
@@ -33,8 +34,8 @@ export async function POST(request: NextRequest, context: Context) {
       disposalDate: body.effectiveDate,
       disposalAmountExVat: body.amount,
       note: body.note,
-      aim4priceSaleInfluence: reason === 'sold'
-        ? aim4priceSaleInfluence as 'yes' | 'no' | 'unsure'
+      aim4priceOutcomeInfluence: impactQuestionRequired
+        ? aim4priceOutcomeInfluence as 'yes' | 'no' | 'unsure'
         : null,
       actorUserId: session.user.id,
       actorName: access.accountantName,
