@@ -1156,9 +1156,10 @@ export async function DELETE(request: NextRequest) {
   if (!reason) {
     return NextResponse.json({ ok: false, error: 'Choose what happened to the asset before continuing.' }, { status: 400 });
   }
-  const aim4priceSaleInfluence = String(body.aim4priceSaleInfluence ?? '').trim().toLowerCase();
-  if (reason === 'sold' && !['yes', 'no', 'unsure'].includes(aim4priceSaleInfluence)) {
-    return NextResponse.json({ ok: false, error: 'Tell us whether Aim4price helped with this sale.' }, { status: 400 });
+  const aim4priceOutcomeInfluence = String(body.aim4priceOutcomeInfluence ?? body.aim4priceSaleInfluence ?? '').trim().toLowerCase();
+  const impactQuestionRequired = ['sold', 'traded_in', 'scrapped'].includes(reason);
+  if (impactQuestionRequired && !['yes', 'no', 'unsure'].includes(aim4priceOutcomeInfluence)) {
+    return NextResponse.json({ ok: false, error: 'Tell us whether Aim4price helped with this outcome.' }, { status: 400 });
   }
   const transferRequested = String(body.transferAction ?? '').trim().toLowerCase() === 'claim_code';
 
@@ -1171,8 +1172,8 @@ export async function DELETE(request: NextRequest) {
       disposalDate: body.disposalDate,
       disposalAmountExVat: body.disposalAmountExVat,
       note: body.note,
-      aim4priceSaleInfluence: reason === 'sold'
-        ? aim4priceSaleInfluence as 'yes' | 'no' | 'unsure'
+      aim4priceOutcomeInfluence: impactQuestionRequired
+        ? aim4priceOutcomeInfluence as 'yes' | 'no' | 'unsure'
         : null,
       transferRequested,
       actorUserId: session.user.id,

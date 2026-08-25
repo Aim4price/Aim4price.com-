@@ -3,11 +3,12 @@ import type { PoolClient } from 'pg';
 import { getAccountProfile } from './account-profile';
 import { listInternalAssetRegisterUploadIds } from './asset-register-uploads';
 import { ensureAssetRegisterTables, getSelectedAssetRegister } from './asset-registers';
-import type { AssetRegisterItem } from './asset-register-db';
+import { getAssetRegisterItemById, type AssetRegisterItem } from './asset-register-db';
 import { getDb } from './db';
 import { ensurePartnerAccessTables } from './partner-access';
 
-export type Aim4priceSaleInfluence = 'yes' | 'no' | 'unsure';
+export type Aim4priceOutcomeInfluence = 'yes' | 'no' | 'unsure';
+export type Aim4priceSaleInfluence = Aim4priceOutcomeInfluence;
 export type AssetTransferStatus = 'pending' | 'claimed' | 'cancelled' | 'expired';
 
 export type AssetTransferReceipt = {
@@ -38,6 +39,13 @@ export type ClaimedAssetTransfer = {
   assetTitle: string;
   registerId: string;
   redirectTo: string;
+};
+
+export type AdminAssetAllocationResult = {
+  assetId: string;
+  assetTitle: string;
+  buyerUserId: string;
+  buyerRegisterId: string;
 };
 
 type TransferOfferRow = {
@@ -219,6 +227,8 @@ async function ensureAssetTransferSchemaOnce(): Promise<void> {
   await db.query(`
     alter table public.asset_lifecycle_events
       add column if not exists aim4price_sale_influence text,
+      add column if not exists aim4price_outcome_influence text,
+      add column if not exists original_owner_user_id text,
       add column if not exists transfer_status text,
       add column if not exists transfer_offer_id uuid,
       add column if not exists transferred_to_user_id text
@@ -284,9 +294,10 @@ export async function createAssetTransferOffer(input: {
       `insert into public.asset_lifecycle_events
          (owner_user_id, register_id, asset_register_item_id, event_type, reason, effective_date,
           amount_ex_vat, note, actor_user_id, actor_name, actor_organisation, asset_snapshot_json,
-          aim4price_sale_influence, transfer_status, transfer_offer_id, created_at)
+          aim4price_sale_influence, aim4price_outcome_influence, original_owner_user_id,
+          transfer_status, transfer_offer_id, created_at)
        values ($1, $2::uuid, $3::uuid, 'disposed', 'sold', $4::date, $5, $6, $7, $8, $9,
-               $10::jsonb, $11, 'pending', $12::uuid, now())
+               $10::jsonb, $11, $11, $1, 'pending', $12::uuid, now())
        returning id::text`,
       [input.sellerUserId, input.asset.registerId, input.asset.id, input.disposalDate,
         input.disposalAmountExVat, input.note || null, input.actorUserId, input.actorName,
@@ -455,6 +466,188 @@ async function clearSellerOnlyRelationships(client: PoolClient, sellerUserId: st
        where asset_register_item_id = $1::uuid`,
       [assetId],
     );
+  }
+}
+
+export async function adminAllocateDisposedAsset(input: {
+  lifecycleEventId: string;
+  assetId: string;
+  sellerUserId: string;
+  buyerUserId: string;
+  adminUserId: string;
+  adminName: string;
+}): Promise<AdminAssetAllocationResult> {
+  await ensureAssetTransferSchema();
+  if (input.sellerUserId === input.buyerUserId) throw new Error('ADMIN_ASSET_ALLOCATION_SAME_ACCOUNT');
+  const [assetRecord, buyerProfile] = await Promise.all([
+    getAssetRegisterItemById(input.sellerUserId, input.assetId),
+    getAccountProfile({ id: input.buyerUserId }),
+  ]);
+  if (!assetRecord) throw new Error('ADMIN_ASSET_ALLOCATION_NOT_FOUND');
+  if (buyerProfile.accountType !== 'owner' || buyerProfile.accountStatus !== 'active') {
+    throw new Error('ADMIN_ASSET_ALLOCATION_OWNER_REQUIRED');
+  }
+  const buyerRegister = await getSelectedAssetRegister(input.buyerUserId);
+  const uploadIds = listInternalAssetRegisterUploadIds([
+    ...assetRecord.photos,
+    ...assetRecord.documents.map((document) => document.url),
+  ]);
+  const client = await getDb().connect();
+
+  try {
+    await client.query('begin');
+    const lifecycle = await client.query<{ id: string; transfer_offer_id: string | null }>(
+      `select id::text, transfer_offer_id::text
+       from public.asset_lifecycle_events
+       where id = $1::uuid and asset_register_item_id = $2::uuid
+         and event_type = 'disposed' and reason = 'sold'
+         and coalesce(original_owner_user_id, owner_user_id) = $3
+       for update`,
+      [input.lifecycleEventId, input.assetId, input.sellerUserId],
+    );
+    if (!lifecycle.rows[0]) throw new Error('ADMIN_ASSET_ALLOCATION_NOT_FOUND');
+
+    const assetResult = await client.query<LockedAssetRow>(
+      `select id::text, user_id, register_id::text, valuation_run_id, lifecycle_state
+       from public.asset_register_items where id = $1::uuid for update`,
+      [input.assetId],
+    );
+    const asset = assetResult.rows[0];
+    if (!asset || asset.user_id !== input.sellerUserId || !['disposed', 'transfer_pending'].includes(cleanText(asset.lifecycle_state))) {
+      throw new Error('ADMIN_ASSET_ALLOCATION_NOT_AVAILABLE');
+    }
+
+    await client.query(
+      `update public.asset_lifecycle_events
+       set original_owner_user_id = owner_user_id
+       where owner_user_id = $1 and asset_register_item_id = $2::uuid
+         and original_owner_user_id is null`,
+      [input.sellerUserId, input.assetId],
+    );
+    await transferPortableHistory({
+      client,
+      sellerUserId: input.sellerUserId,
+      buyerUserId: input.buyerUserId,
+      buyerRegisterId: buyerRegister.id,
+      assetId: input.assetId,
+      valuationRunId: asset.valuation_run_id,
+      uploadIds,
+    });
+    await clearSellerOnlyRelationships(client, input.sellerUserId, input.assetId);
+    await client.query(
+      `update public.asset_register_items
+       set user_id = $1, register_id = $2::uuid, lifecycle_state = 'active', qr_status = 'transferred',
+           is_financed = false, finance_note = '', is_insured = false, insured_value_ex_vat = null,
+           seller_phone = '', marketplace_status = case when marketplace_status is null then null else 'withdrawn' end,
+           marketplace_seller_name = '', marketplace_seller_company = '', marketplace_seller_email = '',
+           updated_at = now()
+       where id = $3::uuid and user_id = $4`,
+      [input.buyerUserId, buyerRegister.id, input.assetId, input.sellerUserId],
+    );
+    if (lifecycle.rows[0].transfer_offer_id) {
+      await client.query(
+        `update public.asset_transfer_offers
+         set status = 'claimed', buyer_user_id = $2, claimed_at = now(), cancelled_at = null, updated_at = now()
+         where id = $1::uuid`,
+        [lifecycle.rows[0].transfer_offer_id, input.buyerUserId],
+      );
+    }
+    await client.query(
+      `update public.asset_lifecycle_events
+       set transfer_status = 'claimed', transferred_to_user_id = $2
+       where id = $1::uuid`,
+      [input.lifecycleEventId, input.buyerUserId],
+    );
+    await client.query(
+      `insert into public.access_audit_events
+         (owner_user_id, actor_user_id, event_type, entity_type, entity_id, metadata_json, created_at)
+       values
+         ($1, $3, 'asset_admin_allocated_out', 'asset_register_item', $4, $5::jsonb, now()),
+         ($2, $3, 'asset_admin_allocated_in', 'asset_register_item', $4, $6::jsonb, now())`,
+      [input.sellerUserId, input.buyerUserId, input.adminUserId, input.assetId,
+        JSON.stringify({ lifecycleEventId: input.lifecycleEventId, buyerUserId: input.buyerUserId, adminName: input.adminName }),
+        JSON.stringify({ lifecycleEventId: input.lifecycleEventId, sellerUserId: input.sellerUserId, adminName: input.adminName })],
+    );
+    if (asset.register_id) {
+      await client.query(`update public.asset_registers set updated_at = now() where id = $1::uuid and user_id = $2`, [asset.register_id, input.sellerUserId]);
+    }
+    await client.query(`update public.asset_registers set updated_at = now() where id = $1::uuid and user_id = $2`, [buyerRegister.id, input.buyerUserId]);
+    await client.query('commit');
+    return { assetId: input.assetId, assetTitle: assetRecord.title, buyerUserId: input.buyerUserId, buyerRegisterId: buyerRegister.id };
+  } catch (error) {
+    await client.query('rollback').catch(() => undefined);
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+export async function adminDeleteSoldAsset(input: {
+  lifecycleEventId: string;
+  assetId: string;
+  sellerUserId: string;
+  adminUserId: string;
+  adminName: string;
+}): Promise<void> {
+  await ensureAssetTransferSchema();
+  const client = await getDb().connect();
+  try {
+    await client.query('begin');
+    const lifecycle = await client.query<{ id: string; transfer_offer_id: string | null }>(
+      `select id::text, transfer_offer_id::text
+       from public.asset_lifecycle_events
+       where id = $1::uuid and asset_register_item_id = $2::uuid
+         and event_type = 'disposed' and reason = 'sold'
+         and coalesce(original_owner_user_id, owner_user_id) = $3
+       for update`,
+      [input.lifecycleEventId, input.assetId, input.sellerUserId],
+    );
+    if (!lifecycle.rows[0]) throw new Error('ADMIN_SOLD_ASSET_NOT_FOUND');
+    const asset = await client.query<LockedAssetRow>(
+      `select id::text, user_id, register_id::text, valuation_run_id, lifecycle_state
+       from public.asset_register_items where id = $1::uuid for update`,
+      [input.assetId],
+    );
+    const lockedAsset = asset.rows[0];
+    if (!lockedAsset || lockedAsset.user_id !== input.sellerUserId || !['disposed', 'transfer_pending'].includes(cleanText(lockedAsset.lifecycle_state))) {
+      throw new Error('ADMIN_SOLD_ASSET_DELETE_NOT_AVAILABLE');
+    }
+    await client.query(
+      `update public.asset_transfer_offers
+       set status = 'cancelled', cancelled_at = now(), updated_at = now()
+       where asset_register_item_id = $1::uuid and status = 'pending'`,
+      [input.assetId],
+    );
+    await client.query(
+      `update public.asset_lifecycle_events
+       set event_type = 'deleted_duplicate', reason = 'admin_deleted_sold_record',
+           transfer_status = case when transfer_status is null then null else 'cancelled' end
+       where id = $1::uuid`,
+      [input.lifecycleEventId],
+    );
+    await client.query(
+      `update public.asset_register_items
+       set lifecycle_state = 'archived', qr_status = 'deleted', updated_at = now(),
+           marketplace_status = case when marketplace_status is null then null else 'withdrawn' end
+       where id = $1::uuid and user_id = $2`,
+      [input.assetId, input.sellerUserId],
+    );
+    await client.query(
+      `insert into public.access_audit_events
+         (owner_user_id, actor_user_id, event_type, entity_type, entity_id, metadata_json, created_at)
+       values ($1, $2, 'admin_sold_asset_deleted', 'asset_register_item', $3, $4::jsonb, now())`,
+      [input.sellerUserId, input.adminUserId, input.assetId,
+        JSON.stringify({ lifecycleEventId: input.lifecycleEventId, adminName: input.adminName, retainedForAudit: true })],
+    );
+    if (lockedAsset.register_id) {
+      await client.query(`update public.asset_registers set updated_at = now() where id = $1::uuid and user_id = $2`, [lockedAsset.register_id, input.sellerUserId]);
+    }
+    await client.query('commit');
+  } catch (error) {
+    await client.query('rollback').catch(() => undefined);
+    throw error;
+  } finally {
+    client.release();
   }
 }
 

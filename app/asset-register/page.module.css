@@ -35356,6 +35356,160 @@ button.documentOpenLink {
   padding: 1.15rem 1.5rem 1.4rem !important;
 }
 
+.assetDisposalProgress {
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 0.45rem !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  list-style: none !important;
+}
+
+.assetDisposalProgress li {
+  position: relative !important;
+  display: grid !important;
+  justify-items: center !important;
+  gap: 0.3rem !important;
+  color: #81908b !important;
+  text-align: center !important;
+}
+
+.assetDisposalProgress li::before {
+  content: '' !important;
+  position: absolute !important;
+  z-index: 0 !important;
+  top: 0.82rem !important;
+  left: calc(-50% - 0.22rem) !important;
+  width: calc(100% + 0.44rem) !important;
+  height: 2px !important;
+  background: #dce6e1 !important;
+}
+
+.assetDisposalProgress li:first-child::before {
+  display: none !important;
+}
+
+.assetDisposalProgress li > span {
+  position: relative !important;
+  z-index: 1 !important;
+  width: 1.65rem !important;
+  height: 1.65rem !important;
+  display: grid !important;
+  place-items: center !important;
+  border: 2px solid #d1ddd7 !important;
+  border-radius: 999px !important;
+  color: #71827b !important;
+  background: #ffffff !important;
+  font-size: 0.7rem !important;
+  font-weight: 900 !important;
+}
+
+.assetDisposalProgress li > small {
+  font-size: 0.66rem !important;
+  font-weight: 760 !important;
+  line-height: 1.2 !important;
+}
+
+.assetDisposalProgress .assetDisposalProgressCurrent,
+.assetDisposalProgress .assetDisposalProgressComplete {
+  color: #176247 !important;
+}
+
+.assetDisposalProgress .assetDisposalProgressCurrent > span,
+.assetDisposalProgress .assetDisposalProgressComplete > span {
+  border-color: #1d7657 !important;
+  color: #ffffff !important;
+  background: #1d7657 !important;
+}
+
+.assetDisposalProgress .assetDisposalProgressComplete::before,
+.assetDisposalProgress .assetDisposalProgressCurrent::before {
+  background: #66a58d !important;
+}
+
+.assetDisposalStep {
+  min-height: 19rem !important;
+  display: grid !important;
+  align-content: start !important;
+  gap: 1rem !important;
+}
+
+.assetDisposalStepHeader {
+  display: grid !important;
+  gap: 0.28rem !important;
+}
+
+.assetDisposalStepHeader strong {
+  color: #133c33 !important;
+  font-size: 1.08rem !important;
+  font-weight: 880 !important;
+  line-height: 1.25 !important;
+}
+
+.assetDisposalStepHeader small {
+  max-width: 42rem !important;
+  color: #68798a !important;
+  font-size: 0.8rem !important;
+  font-weight: 640 !important;
+  line-height: 1.45 !important;
+}
+
+.assetDisposalInformationCard {
+  display: grid !important;
+  gap: 0.35rem !important;
+  padding: 1rem !important;
+  border: 1px solid #d5e5dd !important;
+  border-radius: 1rem !important;
+  background: linear-gradient(145deg, #f3faf6 0%, #ffffff 76%) !important;
+}
+
+.assetDisposalInformationCard strong {
+  color: #154b3b !important;
+  font-size: 0.92rem !important;
+  font-weight: 850 !important;
+}
+
+.assetDisposalInformationCard p {
+  margin: 0 !important;
+  color: #62766d !important;
+  font-size: 0.78rem !important;
+  font-weight: 640 !important;
+  line-height: 1.5 !important;
+}
+
+.assetDisposalSummary {
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 0.6rem !important;
+  margin: 0 !important;
+}
+
+.assetDisposalSummary > div {
+  min-width: 0 !important;
+  display: grid !important;
+  gap: 0.22rem !important;
+  padding: 0.72rem 0.78rem !important;
+  border: 1px solid #e0e7e3 !important;
+  border-radius: 0.8rem !important;
+  background: #f8faf9 !important;
+}
+
+.assetDisposalSummary dt {
+  color: #7a8983 !important;
+  font-size: 0.62rem !important;
+  font-weight: 850 !important;
+  letter-spacing: 0.04em !important;
+  text-transform: uppercase !important;
+}
+
+.assetDisposalSummary dd {
+  margin: 0 !important;
+  color: #193b31 !important;
+  font-size: 0.78rem !important;
+  font-weight: 790 !important;
+  overflow-wrap: anywhere !important;
+}
+
 .assetDisposalIntro {
   display: flex !important;
   align-items: baseline !important;
@@ -35620,6 +35774,7 @@ button.documentOpenLink {
   .assetStatusAcquisitionGrid,
   .assetDisposalFields,
   .assetSaleTransferGrid,
+  .assetDisposalSummary,
   .assetTransferReceiptGrid {
     grid-template-columns: 1fr !important;
   }
@@ -35636,6 +35791,14 @@ button.documentOpenLink {
   .assetDisposalBody {
     padding-left: 1rem !important;
     padding-right: 1rem !important;
+  }
+
+  .assetDisposalStep {
+    min-height: 22rem !important;
+  }
+
+  .assetDisposalProgress li > small {
+    font-size: 0.58rem !important;
   }
 }
 

@@ -1,5 +1,13 @@
 import { ensureAssetTransferSchema, type Aim4priceSaleInfluence, type AssetTransferStatus } from './asset-transfers';
+import { isAim4priceAdminEmail } from './account-constants';
 import { getDb } from './db';
+
+export type AdminAssetAllocationAccount = {
+  userId: string;
+  name: string;
+  email: string;
+  accountSubtype: string;
+};
 
 export type AdminAssetSaleRow = {
   id: string;
@@ -35,6 +43,7 @@ type SaleRow = {
   id: string;
   asset_register_item_id: string;
   owner_user_id: string;
+  original_owner_user_id: string | null;
   seller_user_id: string | null;
   buyer_user_id: string | null;
   effective_date: string;
@@ -44,6 +53,7 @@ type SaleRow = {
   actor_organisation: string | null;
   asset_snapshot_json: unknown;
   aim4price_sale_influence: string | null;
+  aim4price_outcome_influence: string | null;
   transfer_status: string | null;
   offer_status: string | null;
   offer_expires_at: string | null;
@@ -96,6 +106,7 @@ export async function getAdminAssetSalesReport(): Promise<AdminAssetSalesReport>
        event.id::text,
        event.asset_register_item_id::text,
        event.owner_user_id,
+       event.original_owner_user_id,
        offer.seller_user_id,
        offer.buyer_user_id,
        event.effective_date::text,
@@ -105,6 +116,7 @@ export async function getAdminAssetSalesReport(): Promise<AdminAssetSalesReport>
        event.actor_organisation,
        event.asset_snapshot_json,
        event.aim4price_sale_influence,
+       event.aim4price_outcome_influence,
        event.transfer_status,
        offer.status as offer_status,
        offer.expires_at::text as offer_expires_at,
@@ -114,7 +126,7 @@ export async function getAdminAssetSalesReport(): Promise<AdminAssetSalesReport>
      from public.asset_lifecycle_events event
      left join public.asset_transfer_offers offer on offer.id = event.transfer_offer_id
      left join public.account_profiles profile
-       on profile.user_id = coalesce(offer.seller_user_id, event.owner_user_id)
+       on profile.user_id = coalesce(offer.seller_user_id, event.original_owner_user_id, event.owner_user_id)
      where event.event_type = 'disposed' and event.reason = 'sold'
      order by event.effective_date desc, event.created_at desc
      limit 5000`,
@@ -129,11 +141,11 @@ export async function getAdminAssetSalesReport(): Promise<AdminAssetSalesReport>
       assetId: row.asset_register_item_id,
       assetTitle: text(snapshot.title) || 'Asset',
       assetDescription: [brandModel, year].filter(Boolean).join(' · '),
-      sellerUserId: text(row.seller_user_id || row.owner_user_id),
+      sellerUserId: text(row.seller_user_id || row.original_owner_user_id || row.owner_user_id),
       sellerName: text(row.profile_business_name || row.profile_display_name || row.actor_organisation || row.actor_name) || 'Unknown account',
       soldDate: row.effective_date,
       amountExVat: money(row.amount_ex_vat),
-      aim4priceInfluence: influence(row.aim4price_sale_influence),
+      aim4priceInfluence: influence(row.aim4price_outcome_influence || row.aim4price_sale_influence),
       transferStatus: transferStatus(row),
       buyerUserId: text(row.buyer_user_id) || null,
       note: text(row.note),
@@ -158,4 +170,32 @@ export async function getAdminAssetSalesReport(): Promise<AdminAssetSalesReport>
     },
     sales,
   };
+}
+
+export async function listAdminAssetAllocationAccounts(): Promise<AdminAssetAllocationAccount[]> {
+  await ensureAssetTransferSchema();
+  const result = await getDb().query<{
+    user_id: string;
+    auth_name: string | null;
+    email: string | null;
+    display_name: string | null;
+    business_name: string | null;
+    account_subtype: string | null;
+  }>(
+    `select u.id as user_id, u.name as auth_name, u.email,
+            profile.display_name, profile.business_name, profile.account_subtype
+     from public."user" u
+     left join public.account_profiles profile on profile.user_id = u.id
+     where coalesce(profile.account_type, 'owner') = 'owner'
+       and coalesce(profile.account_status, 'pending_payment') = 'active'
+     order by lower(coalesce(profile.business_name, profile.display_name, u.name, u.email)) asc`,
+  );
+  return result.rows
+    .filter((row) => !isAim4priceAdminEmail(row.email))
+    .map((row) => ({
+      userId: text(row.user_id),
+      name: text(row.business_name || row.display_name || row.auth_name || row.email) || 'Owner account',
+      email: text(row.email),
+      accountSubtype: text(row.account_subtype) || 'owner',
+    }));
 }

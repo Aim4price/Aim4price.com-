@@ -265,9 +265,10 @@ export async function DELETE(request: NextRequest, { params }: { params: { asset
     if (!reason) {
       return NextResponse.json({ ok: false, error: 'Choose what happened to the asset before continuing.' }, { status: 400 });
     }
-    const aim4priceSaleInfluence = text(body.aim4priceSaleInfluence).toLowerCase();
-    if (reason === 'sold' && !['yes', 'no', 'unsure'].includes(aim4priceSaleInfluence)) {
-      return NextResponse.json({ ok: false, error: 'Tell us whether Aim4price helped with this sale.' }, { status: 400 });
+    const aim4priceOutcomeInfluence = text(body.aim4priceOutcomeInfluence ?? body.aim4priceSaleInfluence).toLowerCase();
+    const impactQuestionRequired = ['sold', 'traded_in', 'scrapped'].includes(reason);
+    if (impactQuestionRequired && !['yes', 'no', 'unsure'].includes(aim4priceOutcomeInfluence)) {
+      return NextResponse.json({ ok: false, error: 'Tell us whether Aim4price helped with this outcome.' }, { status: 400 });
     }
     const transferRequested = text(body.transferAction).toLowerCase() === 'claim_code';
 
@@ -280,8 +281,8 @@ export async function DELETE(request: NextRequest, { params }: { params: { asset
       note: body.note,
       actorUserId: access.ownerAppUserId || access.ownerUserId,
       actorName: access.displayName,
-      aim4priceSaleInfluence: reason === 'sold'
-        ? aim4priceSaleInfluence as 'yes' | 'no' | 'unsure'
+      aim4priceOutcomeInfluence: impactQuestionRequired
+        ? aim4priceOutcomeInfluence as 'yes' | 'no' | 'unsure'
         : null,
       transferRequested,
     });
