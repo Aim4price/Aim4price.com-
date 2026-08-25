@@ -1156,6 +1156,11 @@ export async function DELETE(request: NextRequest) {
   if (!reason) {
     return NextResponse.json({ ok: false, error: 'Choose what happened to the asset before continuing.' }, { status: 400 });
   }
+  const aim4priceSaleInfluence = String(body.aim4priceSaleInfluence ?? '').trim().toLowerCase();
+  if (reason === 'sold' && !['yes', 'no', 'unsure'].includes(aim4priceSaleInfluence)) {
+    return NextResponse.json({ ok: false, error: 'Tell us whether Aim4price helped with this sale.' }, { status: 400 });
+  }
+  const transferRequested = String(body.transferAction ?? '').trim().toLowerCase() === 'claim_code';
 
   let outcome: Awaited<ReturnType<typeof disposeOrDeleteAsset>>;
   try {
@@ -1166,6 +1171,11 @@ export async function DELETE(request: NextRequest) {
       disposalDate: body.disposalDate,
       disposalAmountExVat: body.disposalAmountExVat,
       note: body.note,
+      aim4priceSaleInfluence: reason === 'sold'
+        ? aim4priceSaleInfluence as 'yes' | 'no' | 'unsure'
+        : null,
+      transferRequested,
+      actorUserId: session.user.id,
       actorName: session.user.name,
     });
   } catch (error) {
@@ -1174,6 +1184,18 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json(
         { ok: false, error: 'This record has linked financial information or files. Resolve those links, or dispose the genuine asset instead.' },
         { status: 409 },
+      );
+    }
+    if (error instanceof Error && error.message === 'ASSET_TRANSFER_ALREADY_PENDING') {
+      return NextResponse.json(
+        { ok: false, error: 'A transfer is already waiting for this asset. Open Account → Claim or send an asset to manage it.' },
+        { status: 409 },
+      );
+    }
+    if (error instanceof Error && error.message === 'ASSET_TRANSFER_IDENTIFIER_REQUIRED') {
+      return NextResponse.json(
+        { ok: false, error: 'Add a serial number to this asset before creating a transfer.' },
+        { status: 400 },
       );
     }
     return NextResponse.json(
@@ -1194,5 +1216,5 @@ export async function DELETE(request: NextRequest) {
     }
   }
 
-  return NextResponse.json({ ok: true, mode: outcome.mode });
+  return NextResponse.json({ ok: true, mode: outcome.mode, transfer: outcome.transfer });
 }

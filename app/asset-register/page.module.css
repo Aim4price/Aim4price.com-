@@ -35423,6 +35423,164 @@ button.documentOpenLink {
   border: 0.28rem solid #167455 !important;
 }
 
+.assetSaleFlow {
+  display: grid !important;
+  gap: 0.8rem !important;
+}
+
+.assetSaleQuestion {
+  display: grid !important;
+  gap: 0.75rem !important;
+  padding: 0.95rem !important;
+  border: 1px solid rgba(193, 215, 205, 0.94) !important;
+  border-radius: 1rem !important;
+  background: linear-gradient(145deg, #f6fbf8 0%, #ffffff 74%) !important;
+}
+
+.assetSaleQuestionHeader {
+  display: grid !important;
+  gap: 0.2rem !important;
+}
+
+.assetSaleQuestionHeader strong,
+.assetSaleTransferNote strong {
+  color: #143e34 !important;
+  font-size: 0.88rem !important;
+  font-weight: 860 !important;
+}
+
+.assetSaleQuestionHeader small,
+.assetSaleTransferNote small {
+  color: #64776f !important;
+  font-size: 0.75rem !important;
+  font-weight: 650 !important;
+  line-height: 1.42 !important;
+}
+
+.assetSaleAnswerGrid {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 0.55rem !important;
+}
+
+.assetSaleAnswerButton,
+.assetSaleTransferButton {
+  border: 1px solid #cfddd7 !important;
+  border-radius: 0.8rem !important;
+  color: #29453c !important;
+  background: #ffffff !important;
+  cursor: pointer !important;
+  font: inherit !important;
+}
+
+.assetSaleAnswerButton {
+  min-height: 2.7rem !important;
+  padding: 0.55rem 0.7rem !important;
+  font-size: 0.78rem !important;
+  font-weight: 820 !important;
+}
+
+.assetSaleAnswerButtonActive,
+.assetSaleTransferButtonActive {
+  border-color: #258361 !important;
+  color: #0f6147 !important;
+  background: #eaf7f0 !important;
+  box-shadow: 0 0 0 3px rgba(37, 131, 97, 0.08) !important;
+}
+
+.assetSaleTransferGrid {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 0.6rem !important;
+}
+
+.assetSaleTransferButton {
+  min-height: 4.7rem !important;
+  display: grid !important;
+  align-content: center !important;
+  gap: 0.22rem !important;
+  padding: 0.75rem 0.85rem !important;
+  text-align: left !important;
+}
+
+.assetSaleTransferButton strong {
+  font-size: 0.8rem !important;
+  font-weight: 850 !important;
+}
+
+.assetSaleTransferButton small {
+  color: #6a7b74 !important;
+  font-size: 0.7rem !important;
+  font-weight: 640 !important;
+  line-height: 1.35 !important;
+}
+
+.assetSaleTransferNote {
+  display: grid !important;
+  gap: 0.18rem !important;
+  padding: 0.75rem 0.8rem !important;
+  border-radius: 0.8rem !important;
+  color: #245276 !important;
+  background: #edf6fc !important;
+}
+
+.assetTransferReceiptModal {
+  width: min(42rem, calc(100vw - 2rem)) !important;
+  overflow: hidden !important;
+  padding: 0 !important;
+}
+
+.assetTransferReceiptHeader {
+  margin: 0 !important;
+  padding: 1.25rem 1.35rem 1rem !important;
+  background: linear-gradient(135deg, #eef8f3 0%, #ffffff 72%) !important;
+}
+
+.assetTransferReceiptBody {
+  display: grid !important;
+  gap: 0.9rem !important;
+  padding: 1.1rem 1.35rem 1.3rem !important;
+}
+
+.assetTransferReceiptGrid {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 0.7rem !important;
+}
+
+.assetTransferReceiptGrid > div {
+  min-width: 0 !important;
+  display: grid !important;
+  gap: 0.3rem !important;
+  padding: 0.9rem !important;
+  border: 1px solid #d9e7e0 !important;
+  border-radius: 0.9rem !important;
+  background: #f8fbf9 !important;
+  text-align: center !important;
+}
+
+.assetTransferReceiptGrid span {
+  color: #74847d !important;
+  font-size: 0.65rem !important;
+  font-weight: 850 !important;
+  letter-spacing: 0.05em !important;
+  text-transform: uppercase !important;
+}
+
+.assetTransferReceiptGrid strong {
+  color: #166247 !important;
+  font-size: 1rem !important;
+  font-weight: 900 !important;
+  overflow-wrap: anywhere !important;
+}
+
+.assetTransferReceiptActions .primaryButton {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-decoration: none !important;
+}
+
 .assetDisposalFields {
   grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   gap: 0.85rem !important;
@@ -35460,7 +35618,9 @@ button.documentOpenLink {
   }
 
   .assetStatusAcquisitionGrid,
-  .assetDisposalFields {
+  .assetDisposalFields,
+  .assetSaleTransferGrid,
+  .assetTransferReceiptGrid {
     grid-template-columns: 1fr !important;
   }
 
