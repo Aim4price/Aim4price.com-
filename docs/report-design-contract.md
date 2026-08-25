@@ -29,6 +29,12 @@ Large coloured banners, rounded application-style cards, generic `AIM4PRICE` mas
 
 The canonical HTML and CSS are the report. Chromium may render that source to PDF, but the PDF layer must never reinterpret the content or silently substitute a second template. If canonical rendering fails, return an actionable error and keep the approved design intact.
 
+## Opening rule
+
+Normal **Open PDF** actions must open the canonical HTML document directly and invoke the browser's native Print / Save PDF flow. They must not depend on server-side Chromium being available. A blank report tab must be created synchronously from the user's click before any asynchronous preparation so browser popup blocking cannot swallow the report.
+
+Server-side PDF rendering is reserved for an explicit binary attachment or share operation. Both paths must receive the same canonical HTML; neither may introduce another visual template. `tests/report-opening-lock.test.mjs` protects this separation across register, owner, maintenance, fuel, depreciation, cost-of-ownership, umbrella and dealer report entry points.
+
 ## Deliberate redesign process
 
 Changing locked report CSS requires all of the following in the same pull request:

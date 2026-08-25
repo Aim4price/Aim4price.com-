@@ -28,19 +28,19 @@ test('the normal Aim4price report modals attach back into the same outside-share
   assert.match(client, /window\.requestAnimationFrame\(\(\) => trigger\.focus\(\{ preventScroll: true \}\)\)/);
 });
 
-test('normal and share report completion use the same canonical source artifact', async () => {
+test('normal and share report completion use the same canonical HTML artifact', async () => {
   const client = await readFile(new URL('../app/asset-register/asset-register-client.tsx', import.meta.url), 'utf8');
 
   assert.match(client, /assetIds: string\[] = \[]/);
   assert.match(client, /params\.set\('assetIds', cleanedAssetIds\.join\(','\)\)/);
-  assert.match(client, /async function handlePrintAssetSheet[\s\S]*?html: buildAssetSheetReportHtml\(reportPayload\)[\s\S]*?addExternalShareReport\(reportSource\)[\s\S]*?openPreparedExternalReport\(reportSource\)/);
-  assert.match(client, /async function handleExportPdf[\s\S]*?html: buildAssetRegisterSummaryReportHtml\(reportPayload\)[\s\S]*?addExternalShareReport\(reportSource\)[\s\S]*?openPreparedExternalReport\(reportSource\)/);
+  assert.match(client, /async function handlePrintAssetSheet[\s\S]*?const reportHtml = buildAssetSheetReportHtml\(reportPayload\)[\s\S]*?html: reportHtml[\s\S]*?addExternalShareReport\(reportSource\)[\s\S]*?writeCanonicalReportHtml\(reportWindow,[\s\S]*?reportHtml\)/);
+  assert.match(client, /async function handleExportPdf[\s\S]*?const reportHtml = buildAssetRegisterSummaryReportHtml\(reportPayload\)[\s\S]*?html: reportHtml[\s\S]*?addExternalShareReport\(reportSource\)[\s\S]*?writeCanonicalReportHtml\(reportWindow,[\s\S]*?reportHtml\)/);
   assert.match(client, /if \(!reportAssets\.length\) \{[\s\S]*?No assets match the/);
   assert.match(client, /async function handleDownloadAssetGroupPdf[\s\S]*?await handleExportPdf\([\s\S]*?groupAssets[\s\S]*?group\.name/);
   assert.match(client, /async function handleDownloadAssetGroupXlsx[\s\S]*?group\.id,[\s\S]*?'xlsx',[\s\S]*?groupAssets\.map\(\(asset\) => asset\.id\)[\s\S]*?url: reportUrl,[\s\S]*?fetch\(reportUrl/);
   assert.match(client, /const reportUrl = buildAssetPdfReportUrl\(asset, 'fuel', filters, 'pdf'\)[\s\S]*?url: reportUrl/);
   assert.match(client, /const reportUrl = buildAssetOwnershipReportUrl\(asset, filters, format\)[\s\S]*?url: reportUrl/);
-  assert.match(client, /async function handleDownloadAssetGroupReport[\s\S]*?const reportUrl =[\s\S]*?url: reportUrl,[\s\S]*?window\.open\(reportUrl/);
+  assert.match(client, /async function handleDownloadAssetGroupReport[\s\S]*?const reportUrl =[\s\S]*?url: reportUrl,[\s\S]*?const printableReportUrl =[\s\S]*?'html'[\s\S]*?openCanonicalReportUrl\(printableReportUrl/);
   assert.match(client, /request: \{[\s\S]*?method: 'POST' as const,[\s\S]*?body: JSON\.stringify\(\{ html, fileName \}\)/);
   assert.doesNotMatch(client, /buildExternalSharePdfUrl|\/api\/reports\/share-pdf/);
   assert.doesNotMatch(client, /preferSourceFileName:\s*true/);

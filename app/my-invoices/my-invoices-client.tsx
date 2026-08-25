@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent, type SVGProps } from 'react';
 import { useSearchParams } from 'next/navigation';
 import AppHeader from '../../components/AppHeader';
+import { openCanonicalReportUrl } from '../../lib/report-open';
 import CaptureRequestDecisionModal from '../../components/CaptureRequestDecisionModal';
 import CaptureRequestStatusList, { type CaptureRequestStatusItem } from '../../components/CaptureRequestStatusList';
 import { WorkspaceTitlePanel } from '../../components/WorkspacePrimitives';
@@ -329,6 +330,7 @@ type AccountingExportErrorResponse = {
 };
 
 type ReportFormat = 'pdf' | 'xlsx' | 'csv';
+type ReportRouteFormat = ReportFormat | 'html';
 type DownloadExportFormat = ReportFormat;
 type DownloadStep = 'format' | 'accounting' | 'timeline' | 'fuel';
 
@@ -1005,7 +1007,7 @@ function buildInvoiceListUrl(filters: InvoiceFilterState, apiRoot: string): stri
 
 function buildReportUrl(
   filters: InvoiceFilterState,
-  format: ReportFormat,
+  format: ReportRouteFormat,
   includeFuelSlipCosts: boolean,
   accountingSoftware?: AccountingSoftware,
   accountantShareId?: string,
@@ -2649,9 +2651,10 @@ export default function MyInvoicesClient({
   }
 
   async function handleDownloadReport(format: ReportFormat) {
+    const routeFormat: ReportRouteFormat = format === 'pdf' ? 'html' : format;
     const url = buildReportUrl(
       downloadFilters,
-      format,
+      routeFormat,
       includeFuelSlipCosts,
       selectedAccountingSoftware,
       accountantShareId,
@@ -2714,7 +2717,7 @@ export default function MyInvoicesClient({
       return;
     }
 
-    const opened = window.open(url, '_blank', 'noopener,noreferrer');
+    const opened = openCanonicalReportUrl(url);
     if (!opened) window.location.href = url;
     closeDownloadModal();
   }

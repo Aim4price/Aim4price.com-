@@ -49,16 +49,15 @@ test('Owner App opens and attaches each canonical report artifact without redraw
   ]);
 
   assert.match(options, /setReportFiles\(\(current\) => current\.some\(\(report\) => report\.id === source\.id\)/);
-  assert.match(picker, /function normalReportUrl\([\s\S]*?return buildOwnerAssetReportUrl\(asset, report, reportFormat, year, month, maintenanceType\)/);
-  assert.match(picker, /function shareReportSource\([\s\S]*?const url = normalReportUrl\(report, reportFormat\)/);
+  assert.match(picker, /function normalReportUrl\([\s\S]*?reportFormat === 'pdf' \? 'html' : reportFormat[\s\S]*?return buildOwnerAssetReportUrl\(asset, report, routeFormat, year, month, maintenanceType\)/);
+  assert.match(picker, /function shareReportSource\([\s\S]*?const url = buildOwnerAssetReportUrl\(asset, report, reportFormat, year, month, maintenanceType\)/);
   assert.match(picker, /function buildOwnerValuationReportSource[\s\S]*?url: '\/api\/reports\/render-pdf'/);
   assert.match(picker, /id: `owner-report:pdf:valuation:\$\{asset\.id\}:\$\{\(htmlHash >>> 0\)\.toString\(36\)\}`/);
   assert.match(picker, /report === 'valuation' && reportFormat === 'pdf'[\s\S]*?return buildOwnerValuationReportSource\(asset, valuationReportHtml\)/);
   assert.match(picker, /body: JSON\.stringify\(\{ html: valuationReportHtml, fileName \}\)/);
   assert.match(picker, /request: \{[\s\S]*?method: 'POST'[\s\S]*?headers: \{ 'Content-Type': 'application\/json' \}/);
-  assert.match(picker, /fetchExternalShareFile\(buildOwnerValuationReportSource\(asset, valuationReportHtml\)\)/);
-  assert.match(picker, /window\.open\('about:blank', '_blank'\)/);
-  assert.match(picker, /reportWindow\.location\.replace\(objectUrl\)/);
+  assert.match(picker, /openCanonicalReportHtml\('Aim4price asset valuation', valuationReportHtml\)/);
+  assert.doesNotMatch(picker, /fetchExternalShareFile|reportWindow\.location\.replace\(objectUrl\)/);
   assert.match(picker, /source: 'owner-app'/);
   assert.match(picker, /params\.set\('registerIds', asset\.registerId\)/);
   assert.match(picker, /if \(report !== 'ownership'\) params\.set\('report', report\)/);
@@ -103,7 +102,7 @@ test('direct report routes hide missing or cross-scope Owner App assets', async 
   }
 
   assert.match(ownershipReport, /const requestedFormat = parseFormat\(request\.nextUrl\.searchParams\.get\('format'\)\)/);
-  assert.match(ownershipReport, /ownerAppMode && requestedFormat !== 'xlsx' \? 'pdf' : requestedFormat/);
+  assert.match(ownershipReport, /ownerAppMode && requestedFormat !== 'xlsx' && requestedFormat !== 'html'[\s\S]*?\? 'pdf'[\s\S]*?: requestedFormat/);
   assert.doesNotMatch(ownershipReport, /ownerAppMode \? 'pdf' : parseFormat/);
 
   assert.match(valuationExport, /validateOwnerAppAssetSelection/);

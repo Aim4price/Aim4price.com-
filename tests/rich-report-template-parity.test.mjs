@@ -103,13 +103,15 @@ test('normal register and umbrella valuation use exactly the exported canonical 
   assert.match(canonicalHtml, /RPS601S1/);
 });
 
-test('asset register normal open and external attachment reuse one rich report source object', async () => {
+test('asset register normal open and external attachment reuse one canonical HTML artifact', async () => {
   const client = await readFile(new URL('../app/asset-register/asset-register-client.tsx', import.meta.url), 'utf8');
 
-  assert.match(client, /html: buildAssetSheetReportHtml\(reportPayload\)/);
-  assert.match(client, /html: buildAssetRegisterSummaryReportHtml\(reportPayload\)/);
+  assert.match(client, /const reportHtml = buildAssetSheetReportHtml\(reportPayload\)/);
+  assert.match(client, /const reportHtml = buildAssetRegisterSummaryReportHtml\(reportPayload\)/);
+  assert.match(client, /html: reportHtml/);
   assert.match(client, /request: \{[\s\S]*?method: 'POST' as const,[\s\S]*?body: JSON\.stringify\(\{ html, fileName \}\)/);
-  assert.match(client, /const reportSource = buildExternalReportSource\([\s\S]*?if \(externalShareReportScope === 'asset'\) \{[\s\S]*?addExternalShareReport\(reportSource\)[\s\S]*?openPreparedExternalReport\(reportSource\)/);
-  assert.match(client, /const reportSource = buildExternalReportSource\([\s\S]*?externalShareReportScope === 'register' \|\| externalShareReportScope === 'group'[\s\S]*?addExternalShareReport\(reportSource\)[\s\S]*?openPreparedExternalReport\(reportSource\)/);
+  assert.match(client, /const reportSource = buildExternalReportSource\([\s\S]*?if \(externalShareReportScope === 'asset'\) \{[\s\S]*?addExternalShareReport\(reportSource\)[\s\S]*?writeCanonicalReportHtml\(reportWindow,[\s\S]*?reportHtml\)/);
+  assert.match(client, /const reportSource = buildExternalReportSource\([\s\S]*?externalShareReportScope === 'register' \|\| externalShareReportScope === 'group'[\s\S]*?addExternalShareReport\(reportSource\)[\s\S]*?writeCanonicalReportHtml\(reportWindow,[\s\S]*?reportHtml\)/);
+  assert.doesNotMatch(client, /openPreparedExternalReport/);
   assert.doesNotMatch(client, /\/api\/reports\/share-pdf/);
 });

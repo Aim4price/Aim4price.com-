@@ -2,10 +2,12 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import type { DealerMaintenanceTrackedAsset } from '../lib/dealer-maintenance-tracker';
+import { openCanonicalReportUrl } from '../lib/report-open';
 import assetStyles from '../app/asset-register/page.module.css';
 import trackerStyles from './DealerMaintenanceTrackerClient.module.css';
 
 type DownloadFormat = 'pdf' | 'xlsx';
+type ReportRouteFormat = DownloadFormat | 'html';
 type ReportStep = 'format' | 'timeline';
 type ReportSelectKey = 'type' | 'year' | 'month';
 type ReportOption = { value: string; label: string };
@@ -248,7 +250,7 @@ export default function DealerMaintenanceReportModal({
     ? [asset.brandName, asset.modelName, asset.yearModel].filter(Boolean).join(' · ') || asset.assetKind
     : 'Checking current maintenance tracking access';
 
-  function buildReportUrl(format: DownloadFormat): string {
+  function buildReportUrl(format: ReportRouteFormat): string {
     if (!asset) return '';
     const params = new URLSearchParams({
       assetId: asset.assetId,
@@ -256,7 +258,7 @@ export default function DealerMaintenanceReportModal({
       report: 'maintenance',
       maintenanceType: reportType,
     });
-    if (format === 'xlsx') params.set('format', 'xlsx');
+    if (format !== 'pdf') params.set('format', format);
     if (reportYear !== 'all') {
       params.set('year', reportYear);
       if (reportMonth !== 'all') params.set('month', reportMonth);
@@ -266,11 +268,14 @@ export default function DealerMaintenanceReportModal({
 
   async function downloadReport() {
     if (!asset || downloading) return;
-    const popup = format === 'pdf' ? window.open('', '_blank') : null;
-    if (format === 'pdf' && !popup) {
-      const message = 'Enable pop-ups to open the maintenance report.';
-      setError(message);
-      onError?.(message);
+
+    if (format === 'pdf') {
+      const opened = openCanonicalReportUrl(buildReportUrl('html'));
+      if (!opened) {
+        const message = 'Enable pop-ups to open the maintenance report.';
+        setError(message);
+        onError?.(message);
+      }
       return;
     }
 
@@ -283,7 +288,6 @@ export default function DealerMaintenanceReportModal({
       });
       if (!response.ok) {
         const payload = await response.json().catch(() => null) as { error?: string } | null;
-        popup?.close();
         throw new Error(
           response.status === 403
             ? 'Maintenance report access is no longer active for this asset.'
@@ -292,19 +296,14 @@ export default function DealerMaintenanceReportModal({
       }
 
       const blobUrl = URL.createObjectURL(await response.blob());
-      if (format === 'pdf') {
-        popup!.location.replace(blobUrl);
-      } else {
-        const link = document.createElement('a');
-        link.href = blobUrl;
-        link.download = parseDownloadFileName(response, `${asset.assetTitle}-maintenance-report.xlsx`);
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
-      }
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = parseDownloadFileName(response, `${asset.assetTitle}-maintenance-report.xlsx`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
       window.setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
     } catch (cause) {
-      popup?.close();
       const message = cause instanceof Error ? cause.message : 'The maintenance report could not be generated.';
       setError(message);
       onError?.(message);

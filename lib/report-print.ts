@@ -766,22 +766,37 @@ function renderDocumentShell(options: {
 </html>`;
 }
 
-function openPrintWindow(title: string, html: string): boolean {
+export function writeCanonicalReportHtml(
+  reportWindow: Window | null,
+  title: string,
+  html: string,
+): boolean {
   if (typeof window === 'undefined') {
     return false;
   }
 
-  const printWindow = window.open('', '_blank');
-
-  if (!printWindow) {
+  if (!reportWindow) {
     return false;
   }
 
-  printWindow.document.open();
-  printWindow.document.write(html);
-  printWindow.document.close();
-  printWindow.document.title = title;
+  reportWindow.opener = null;
+  reportWindow.document.open();
+  reportWindow.document.write(html);
+  reportWindow.document.close();
+  reportWindow.document.title = title;
   return true;
+}
+
+export function openCanonicalReportHtml(title: string, html: string): boolean {
+  if (typeof window === 'undefined') {
+    return false;
+  }
+
+  return writeCanonicalReportHtml(window.open('', '_blank'), title, html);
+}
+
+function openPrintWindow(title: string, html: string): boolean {
+  return openCanonicalReportHtml(title, html);
 }
 
 function renderLogoBlock(logoUrl: string, documentLabel: string): string {
