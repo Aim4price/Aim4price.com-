@@ -236,6 +236,10 @@ const ADMIN_GLOBAL_ASSET_CTE = `
     left join public.equipment_models model on model.id = asset.equipment_model_id
     left join public.brands brand on brand.id = model.brand_id
     left join public.sectors sector on sector.id = coalesce(asset.sector_id, family.sector_id)
+    where coalesce(
+      nullif(trim(to_jsonb(asset)->>'lifecycle_state'), ''),
+      'active'
+    ) in ('active', 'transfer_pending')
   ), admin_assets as (
     select
       admin_asset_rows.*,
