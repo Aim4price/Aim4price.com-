@@ -48,6 +48,16 @@ test("friendly page mapping removes query strings and dynamic record details", (
     label: "Admin - Marketplace",
     isAdminArea: true,
   });
+  assert.deepEqual(resolveAdminWorkPage("/admin/asset-map?assetId=private"), {
+    key: "admin-asset-map",
+    label: "Admin - Global Asset Map",
+    isAdminArea: true,
+  });
+  assert.deepEqual(resolveAdminWorkPage("/admin/discovery?owner=private"), {
+    key: "admin-discovery",
+    label: "Admin - Discovery",
+    isAdminArea: true,
+  });
   assert.deepEqual(resolveAdminWorkPage("/some-private-record/abc-123"), {
     key: "account-other",
     label: "Other account page",
