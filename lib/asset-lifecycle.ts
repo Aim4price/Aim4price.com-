@@ -1,6 +1,7 @@
 import { getAccountProfile } from './account-profile';
 import { getAssetRegisterItemById, type AssetRegisterItem } from './asset-register-db';
 import { ensureAssetRegisterTables } from './asset-registers';
+import { isDatabaseSchemaReady } from './database-schema-readiness';
 import { getDb } from './db';
 import { ensurePartnerAccessTables } from './partner-access';
 import {
@@ -91,8 +92,22 @@ function assetSnapshot(asset: AssetRegisterItem): Record<string, unknown> {
 }
 
 async function ensureLifecycleSchemaOnce(): Promise<void> {
-  await Promise.all([ensureAssetRegisterTables(), ensurePartnerAccessTables()]);
+  await ensureAssetRegisterTables();
+  await ensurePartnerAccessTables();
   const db = getDb();
+  const schemaReady = await isDatabaseSchemaReady(() => db.query(`
+    select
+      id, owner_user_id, register_id, asset_register_item_id, event_type,
+      reason, effective_date, amount_ex_vat, note, source_document_reference,
+      actor_user_id, actor_name, actor_organisation, asset_snapshot_json,
+      aim4price_sale_influence, aim4price_outcome_influence,
+      original_owner_user_id, transfer_status, transfer_offer_id,
+      transferred_to_user_id, created_at
+    from public.asset_lifecycle_events
+    where false
+  `));
+  if (schemaReady) return;
+
   await db.query(`alter table public.asset_register_items add column if not exists lifecycle_state text not null default 'active'`);
   await db.query(`
     create table if not exists public.asset_lifecycle_events (

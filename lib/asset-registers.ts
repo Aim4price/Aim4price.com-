@@ -1,4 +1,5 @@
 import { getDb } from './db';
+import { isDatabaseSchemaReady } from './database-schema-readiness';
 
 export type AssetRegisterSummary = {
   id: string;
@@ -511,6 +512,40 @@ async function attachAssetRegisterOpenAlertCounts(
 
 async function ensureAssetRegisterTablesOnce(): Promise<void> {
   const db = getDb();
+
+  const schemaReady = await isDatabaseSchemaReady(() => db.query(`
+    with register_schema as (
+      select id, user_id, business_name, email, phone, address_line_1,
+             logo_urls, show_logos_on_register, is_primary, is_selected,
+             created_at, updated_at
+      from public.asset_registers
+      where false
+    ), item_schema as (
+      select id, user_id, register_id, lifecycle_state,
+             license_renewal_alert_noted_for_date,
+             license_renewal_alert_noted_at
+      from public.asset_register_items
+      where false
+    ), group_schema as (
+      select id, user_id, register_id, name, value_mode, created_at, updated_at
+      from public.asset_groups
+      where false
+    ), member_schema as (
+      select group_id, asset_id, role, relationship, counts_toward_total,
+             sort_order, created_at
+      from public.asset_group_members
+      where false
+    )
+    select 1
+    from register_schema
+    cross join item_schema
+    cross join group_schema
+    cross join member_schema
+  `));
+
+  if (schemaReady) {
+    return;
+  }
 
   await db.query(`create extension if not exists pgcrypto`);
 
