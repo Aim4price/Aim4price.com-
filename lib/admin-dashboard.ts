@@ -639,6 +639,8 @@ export async function getAdminDashboardStats(): Promise<AdminDashboardStats> {
       id: 'free-estimates',
       title: 'Free estimates done',
       values: periodValues(freeEstimates),
+      href: '/admin/valuations?type=estimate',
+      linkLabel: 'View estimate history',
     },
     {
       id: 'free-estimate-users',
@@ -651,6 +653,8 @@ export async function getAdminDashboardStats(): Promise<AdminDashboardStats> {
       title: 'Full estimates saved',
       description: 'Saved valuations completed in the full estimate workflow.',
       values: periodValues(paidEstimates),
+      href: '/admin/valuations?type=saved',
+      linkLabel: 'View saved valuations',
     },
     {
       id: 'total-assets-saved',

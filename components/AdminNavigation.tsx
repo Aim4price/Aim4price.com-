@@ -7,6 +7,7 @@ import styles from "./AdminNavigation.module.css";
 export type AdminSection =
   | "accounts"
   | "dashboard"
+  | "valuations"
   | "marketplace"
   | "asset-map"
   | "discovery"
@@ -32,6 +33,12 @@ const ADMIN_LINKS: Array<{
     label: "Dashboard",
     key: "dashboard",
     description: "Review Aim4price activity and platform totals",
+  },
+  {
+    href: "/admin/valuations",
+    label: "Valuations",
+    key: "valuations",
+    description: "Review every estimate, input, result and account",
   },
   {
     href: "/admin/marketplace",
