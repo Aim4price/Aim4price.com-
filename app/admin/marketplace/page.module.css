@@ -216,7 +216,7 @@
 
 .tableScroller table {
   width: 100%;
-  min-width: 1320px;
+  min-width: 1440px;
   border-collapse: collapse;
 }
 
@@ -322,6 +322,32 @@
   white-space: nowrap;
 }
 
+.deleteButton {
+  min-height: 2.1rem;
+  padding: 0 0.62rem;
+  border: 1px solid #edc8c4;
+  border-radius: 0.62rem;
+  color: #a52b21;
+  background: #fff8f7;
+  font: inherit;
+  font-size: 0.66rem;
+  font-weight: 850;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.deleteButton:hover {
+  border-color: #d99d96;
+  background: #fff0ee;
+}
+
+.deleteButton:focus-visible,
+.deleteCloseButton:focus-visible,
+.deleteActions button:focus-visible {
+  outline: 3px solid rgba(66, 139, 177, 0.24);
+  outline-offset: 2px;
+}
+
 .empty {
   min-height: 10rem;
   padding: 1rem;
@@ -382,6 +408,171 @@
 .pagination button:disabled {
   cursor: not-allowed;
   opacity: 0.42;
+}
+
+.deleteModalLayer {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  padding: 1rem;
+  display: grid;
+  place-items: center;
+}
+
+.deleteBackdrop {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: rgba(18, 31, 27, 0.58);
+  backdrop-filter: blur(3px);
+}
+
+.deleteModal {
+  position: relative;
+  width: min(32rem, 100%);
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
+  box-sizing: border-box;
+  padding: 1.1rem;
+  border: 1px solid #e1e7e4;
+  border-radius: 1.25rem;
+  color: #203c33;
+  background: #ffffff;
+  box-shadow: 0 30px 90px rgba(11, 31, 25, 0.3);
+}
+
+.deleteModalHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.deleteModalHeader p {
+  margin: 0 0 0.18rem;
+  color: #a44239;
+  font-size: 0.65rem;
+  font-weight: 900;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.deleteModalHeader h2 {
+  margin: 0;
+  color: #233c34;
+  font-size: 1.4rem;
+  letter-spacing: -0.035em;
+}
+
+.deleteCloseButton {
+  width: 2.35rem;
+  height: 2.35rem;
+  flex: 0 0 auto;
+  border: 1px solid #cce0ec;
+  border-radius: 999px;
+  color: #2d6380;
+  background: #eaf5fb;
+  display: grid;
+  place-items: center;
+  font: inherit;
+  cursor: pointer;
+}
+
+.deleteCloseButton span {
+  font-size: 1.35rem;
+  line-height: 1;
+  transform: translateY(-0.05rem);
+}
+
+.deleteCloseButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.52;
+}
+
+.deleteSummary {
+  margin-top: 1rem;
+  padding: 0.82rem;
+  border: 1px solid #e0e8e4;
+  border-radius: 0.85rem;
+  background: #f8faf9;
+  display: grid;
+  gap: 0.2rem;
+}
+
+.deleteSummary strong {
+  color: #173a30;
+  font-size: 0.86rem;
+  font-weight: 900;
+}
+
+.deleteSummary span {
+  color: #6a7974;
+  font-size: 0.7rem;
+  font-weight: 720;
+}
+
+.deleteDescription,
+.assetSafetyNote,
+.deleteError {
+  margin: 0.85rem 0 0;
+  font-size: 0.76rem;
+  font-weight: 690;
+  line-height: 1.55;
+}
+
+.deleteDescription {
+  color: #485e56;
+}
+
+.assetSafetyNote {
+  padding: 0.72rem 0.78rem;
+  border: 1px solid #cfe3d9;
+  border-radius: 0.8rem;
+  color: #35604f;
+  background: #f0f8f4;
+}
+
+.deleteError {
+  padding: 0.68rem 0.75rem;
+  border: 1px solid #efc6c1;
+  border-radius: 0.78rem;
+  color: #9b2d24;
+  background: #fff4f2;
+}
+
+.deleteActions {
+  margin-top: 1rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid #e5ebe8;
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.55rem;
+}
+
+.deleteActions button {
+  min-height: 2.55rem;
+  padding: 0 0.85rem;
+  border: 1px solid #d4dfda;
+  border-radius: 0.72rem;
+  color: #365148;
+  background: #ffffff;
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.deleteActions .confirmDeleteButton {
+  border-color: #a72d24;
+  color: #ffffff;
+  background: #b6372d;
+}
+
+.deleteActions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
 }
 
 @media (max-width: 1350px) {
@@ -447,5 +638,21 @@
 
   .searchField {
     grid-column: auto;
+  }
+
+  .deleteModalLayer {
+    padding: 0.55rem;
+    place-items: end center;
+  }
+
+  .deleteModal {
+    max-height: calc(100vh - 1.1rem);
+    padding: 0.9rem;
+    border-radius: 1.1rem;
+  }
+
+  .deleteActions {
+    display: grid;
+    grid-template-columns: 1fr;
   }
 }

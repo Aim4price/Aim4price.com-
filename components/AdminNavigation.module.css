@@ -1,60 +1,265 @@
 .nav {
   min-width: 0;
-  padding: 0.25rem;
-  border: 1px solid #d7e1dc;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.96);
-  box-shadow: 0 12px 28px rgba(18, 45, 37, 0.045);
   display: flex;
+  justify-content: flex-end;
+}
+
+.manageButton {
+  min-width: 10.8rem;
+  min-height: 3.15rem;
+  box-sizing: border-box;
+  padding: 0.5rem 0.68rem;
+  border: 1px solid #145f47;
+  border-radius: 0.9rem;
+  color: #ffffff;
+  background: #176c50;
+  box-shadow: 0 12px 28px rgba(23, 108, 80, 0.18);
+  display: grid;
+  grid-template-columns: auto 1fr auto;
   align-items: center;
-  gap: 0.18rem;
+  gap: 0.65rem;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: transform 160ms ease, background 160ms ease, box-shadow 160ms ease;
+}
+
+.manageButton:hover {
+  background: #125f46;
+  box-shadow: 0 14px 32px rgba(23, 108, 80, 0.24);
+  transform: translateY(-1px);
+}
+
+.manageButton:focus-visible,
+.closeButton:focus-visible,
+.link:focus-visible {
+  outline: 3px solid rgba(55, 145, 111, 0.3);
+  outline-offset: 2px;
+}
+
+.manageIcon {
+  width: 1.55rem;
+  height: 1.55rem;
+  border-radius: 0.48rem;
+  background: rgba(255, 255, 255, 0.13);
+  display: grid;
+  grid-template-columns: repeat(2, 0.3rem);
+  place-content: center;
+  gap: 0.2rem;
+}
+
+.manageIcon i {
+  width: 0.3rem;
+  height: 0.3rem;
+  border-radius: 0.1rem;
+  background: #ffffff;
+}
+
+.manageCopy {
+  display: grid;
+  gap: 0.05rem;
+}
+
+.manageCopy strong {
+  font-size: 0.84rem;
+  font-weight: 900;
+  line-height: 1.1;
+}
+
+.manageCopy small {
+  color: rgba(255, 255, 255, 0.74);
+  font-size: 0.62rem;
+  font-weight: 730;
+}
+
+.manageChevron {
+  font-size: 1rem;
+  line-height: 1;
+  transform: translateY(-0.12rem);
+}
+
+.modalLayer {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  padding: 1rem;
+  display: grid;
+  place-items: center;
+}
+
+.backdrop {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: rgba(11, 31, 25, 0.56);
+  backdrop-filter: blur(3px);
+  cursor: default;
+}
+
+.modal {
+  position: relative;
+  width: min(44rem, 100%);
+  max-height: min(43rem, calc(100vh - 2rem));
+  overflow-y: auto;
+  box-sizing: border-box;
+  padding: 1.15rem;
+  border: 1px solid #d8e3dd;
+  border-radius: 1.35rem;
+  color: #18372e;
+  background: #ffffff;
+  box-shadow: 0 30px 90px rgba(10, 35, 27, 0.28);
+}
+
+.modalHeader {
+  padding: 0.1rem 0.15rem 1rem;
+  border-bottom: 1px solid #e6ece9;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.modalHeader p {
+  margin: 0 0 0.18rem;
+  color: #287158;
+  font-size: 0.66rem;
+  font-weight: 900;
+  letter-spacing: 0.075em;
+  text-transform: uppercase;
+}
+
+.modalHeader h2 {
+  margin: 0;
+  color: #10362c;
+  font-size: 1.55rem;
+  letter-spacing: -0.04em;
+}
+
+.modalHeader div > span {
+  display: inline-block;
+  margin-top: 0.2rem;
+  color: #6d7d77;
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.closeButton {
+  width: 2.35rem;
+  height: 2.35rem;
+  flex: 0 0 auto;
+  border: 1px solid #cce0ec;
+  border-radius: 999px;
+  color: #2d6380;
+  background: #eaf5fb;
+  display: grid;
+  place-items: center;
+  font: inherit;
+  cursor: pointer;
+}
+
+.closeButton span {
+  font-size: 1.35rem;
+  line-height: 1;
+  transform: translateY(-0.05rem);
+}
+
+.optionGrid {
+  padding-top: 0.9rem;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.62rem;
 }
 
 .link {
-  min-height: 2.4rem;
-  padding: 0 0.95rem;
-  border-radius: 999px;
-  color: #52645d;
-  display: inline-flex;
+  min-height: 5rem;
+  box-sizing: border-box;
+  padding: 0.78rem 0.82rem;
+  border: 1px solid #dfe7e3;
+  border-radius: 0.9rem;
+  color: #28473d;
+  background: #fbfcfc;
+  display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: space-between;
+  gap: 0.8rem;
   text-decoration: none;
-  font-size: 0.78rem;
-  font-weight: 850;
-  white-space: nowrap;
-  transition:
-    color 160ms ease,
-    background 160ms ease,
-    box-shadow 160ms ease;
+  transition: border-color 160ms ease, background 160ms ease, transform 160ms ease;
 }
 
 .link:hover {
-  color: #145840;
-  background: #eef7f2;
+  border-color: #9fc7b6;
+  background: #f3f9f6;
+  transform: translateY(-1px);
+}
+
+.link > span {
+  min-width: 0;
+  display: grid;
+  gap: 0.22rem;
+}
+
+.link strong {
+  color: #173e32;
+  font-size: 0.83rem;
+  font-weight: 900;
+}
+
+.link small {
+  color: #74827d;
+  font-size: 0.67rem;
+  font-weight: 680;
+  line-height: 1.4;
+}
+
+.link em {
+  flex: 0 0 auto;
+  color: #287158;
+  font-size: 0.61rem;
+  font-style: normal;
+  font-weight: 900;
+  text-transform: uppercase;
 }
 
 .active,
 .active:hover {
+  border-color: #82b79f;
+  background: #eaf6f0;
+}
+
+.active em {
+  padding: 0.28rem 0.42rem;
+  border-radius: 999px;
   color: #ffffff;
   background: #176c50;
-  box-shadow: 0 5px 12px rgba(23, 108, 80, 0.18);
 }
 
 @media (max-width: 980px) {
   .nav {
     width: 100%;
-    box-sizing: border-box;
-    overflow-x: auto;
-    border-radius: 0.95rem;
-    scrollbar-width: none;
   }
 
-  .nav::-webkit-scrollbar {
-    display: none;
+  .manageButton {
+    width: 100%;
+  }
+}
+
+@media (max-width: 560px) {
+  .modalLayer {
+    padding: 0.55rem;
+    place-items: end center;
   }
 
-  .link {
-    flex: 1 0 auto;
+  .modal {
+    width: 100%;
+    max-height: calc(100vh - 1.1rem);
+    padding: 0.9rem;
+    border-radius: 1.2rem;
+  }
+
+  .optionGrid {
+    grid-template-columns: 1fr;
   }
 }
 
