@@ -23,8 +23,17 @@ export default function DealerNav({
   const isMaintenancePage = pathname.startsWith('/dealer/maintenance');
   const resolvedShowBack = showBack ?? pathname !== '/dealer';
   const isMaintenanceDetail = pathname.startsWith('/dealer/maintenance/');
-  const resolvedBackHref = backHref === '/dealer' && isMaintenanceDetail ? '/dealer/maintenance' : backHref;
-  const resolvedBackLabel = backLabel === 'Home' && isMaintenanceDetail ? 'Maintenance' : backLabel;
+  const isInventoryDetail = pathname.startsWith('/dealer/inventory/');
+  const resolvedBackHref = backHref === '/dealer' && isMaintenanceDetail
+    ? '/dealer/maintenance'
+    : backHref === '/dealer' && isInventoryDetail
+      ? '/dealer/inventory'
+      : backHref;
+  const resolvedBackLabel = backLabel === 'Home' && isMaintenanceDetail
+    ? 'Maintenance'
+    : backLabel === 'Home' && isInventoryDetail
+      ? 'My Inventory'
+      : backLabel;
   const backIsHome = resolvedShowBack && resolvedBackHref === '/dealer' && resolvedBackLabel === 'Home';
   const navLayoutClass = backIsHome
     ? styles.navSingle

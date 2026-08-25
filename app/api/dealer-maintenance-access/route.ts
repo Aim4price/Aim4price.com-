@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getAssetRegisterAccountAccess } from '../../../lib/asset-register-account-access';
 import { getAssetRegisterItemById } from '../../../lib/asset-register-db';
+import { getServerSession } from '../../../lib/auth-session';
 import {
   listOwnerDealerMaintenanceAccess,
   revokeDealerMaintenanceTracking,
@@ -33,9 +35,23 @@ function readPermissions(value: unknown): DealerMaintenancePermissions | null {
   };
 }
 
+async function getRegisterMaintenanceAccess() {
+  const ownerAccess = await getOwnerAppAccess();
+  if (ownerAccess) {
+    return {
+      ownerUserId: ownerAccess.ownerUserId,
+      canManageAccess: ownerAppCan(ownerAccess, 'manage_access'),
+    };
+  }
+
+  const session = await getServerSession({ allowDealerApp: true });
+  if (!session?.user?.id || !await getAssetRegisterAccountAccess(session)) return null;
+  return { ownerUserId: session.user.id, canManageAccess: true };
+}
+
 export async function GET(request: NextRequest) {
-  const access = await getOwnerAppAccess();
-  if (!access) return NextResponse.json({ ok: false, error: 'Owner App login is required.' }, { status: 401 });
+  const access = await getRegisterMaintenanceAccess();
+  if (!access) return NextResponse.json({ ok: false, error: 'Asset Register access is required.' }, { status: 401 });
   const assetId = String(request.nextUrl.searchParams.get('assetId') ?? '').trim();
   if (!assetId || !(await getAssetRegisterItemById(access.ownerUserId, assetId))) {
     return NextResponse.json({ ok: false, error: 'Asset not found.' }, { status: 404 });
@@ -50,9 +66,9 @@ export async function GET(request: NextRequest) {
 }
 
 export async function PATCH(request: NextRequest) {
-  const access = await getOwnerAppAccess();
-  if (!access) return NextResponse.json({ ok: false, error: 'Owner sign-in is required.' }, { status: 401 });
-  if (!ownerAppCan(access, 'manage_access')) return NextResponse.json({ ok: false, error: 'Only an Owner / Admin login can change dealer access.' }, { status: 403 });
+  const access = await getRegisterMaintenanceAccess();
+  if (!access) return NextResponse.json({ ok: false, error: 'Asset Register access is required.' }, { status: 401 });
+  if (!access.canManageAccess) return NextResponse.json({ ok: false, error: 'Only an authorised register manager can change dealer access.' }, { status: 403 });
   const body = await request.json().catch(() => null) as {
     assetId?: unknown;
     accessId?: unknown;
@@ -82,9 +98,9 @@ export async function PATCH(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
-  const access = await getOwnerAppAccess();
-  if (!access) return NextResponse.json({ ok: false, error: 'Owner App login is required.' }, { status: 401 });
-  if (!ownerAppCan(access, 'manage_access')) return NextResponse.json({ ok: false, error: 'Only an Owner / Admin login can change dealer access.' }, { status: 403 });
+  const access = await getRegisterMaintenanceAccess();
+  if (!access) return NextResponse.json({ ok: false, error: 'Asset Register access is required.' }, { status: 401 });
+  if (!access.canManageAccess) return NextResponse.json({ ok: false, error: 'Only an authorised register manager can change dealer access.' }, { status: 403 });
   const body = await request.json().catch(() => null) as {
     assetId?: unknown;
     dealerUserId?: unknown;

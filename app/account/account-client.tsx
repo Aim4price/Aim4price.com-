@@ -1219,6 +1219,7 @@ export default function AccountClient({
     .trim()
     .toLowerCase();
   const isOwnerAccount = normalizedAccountType === "owner";
+  const isAssetRegisterAccount = isOwnerAccount || normalizedAccountType === "dealer";
   const isDealerAccount = normalizedAccountType === "dealer";
   const isMiddlemanAccount =
     isDealerAccount && isMiddlemanAccountSubtype(profile?.accountSubtype);
@@ -2128,7 +2129,7 @@ export default function AccountClient({
                 <span className={styles.quickActionChevron}>›</span>
               </button>
 
-              {isOwnerAccount ? (
+              {isAssetRegisterAccount ? (
                 <button
                   type="button"
                   className={styles.quickActionButton}
@@ -2140,7 +2141,7 @@ export default function AccountClient({
                 </button>
               ) : null}
 
-              {isOwnerAccount ? (
+              {isAssetRegisterAccount ? (
                 <button
                   type="button"
                   className={styles.quickActionButton}

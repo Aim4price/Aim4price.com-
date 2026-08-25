@@ -1,15 +1,18 @@
 import { createHash, randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
 import type { PoolClient } from 'pg';
 import { getAccountProfile } from './account-profile';
+import { isAssetRegisterAccountType } from './asset-register-account-access';
 import { listInternalAssetRegisterUploadIds } from './asset-register-uploads';
 import { ensureAssetRegisterTables, getSelectedAssetRegister } from './asset-registers';
-import { getAssetRegisterItemById, type AssetRegisterItem } from './asset-register-db';
+import { getAssetRegisterItemById, type AssetRegisterDocument, type AssetRegisterItem } from './asset-register-db';
 import { getDb } from './db';
 import { ensurePartnerAccessTables } from './partner-access';
 
 export type Aim4priceOutcomeInfluence = 'yes' | 'no' | 'unsure';
 export type Aim4priceSaleInfluence = Aim4priceOutcomeInfluence;
 export type AssetTransferStatus = 'pending' | 'claimed' | 'cancelled' | 'expired';
+export type AssetTransferReason = 'sold' | 'traded_in';
+export type AssetTransferRecipient = 'owner_or_dealer' | 'dealer';
 
 export type AssetTransferReceipt = {
   id: string;
@@ -19,6 +22,8 @@ export type AssetTransferReceipt = {
   assetIdentifierLabel: 'Serial / VIN' | 'Asset ID';
   transferCode: string;
   expiresAtIso: string;
+  transferReason: AssetTransferReason;
+  recipientAccountType: AssetTransferRecipient;
 };
 
 export type OutgoingAssetTransfer = {
@@ -32,6 +37,8 @@ export type OutgoingAssetTransfer = {
   expiresAtIso: string;
   createdAtIso: string;
   claimedAtIso: string | null;
+  transferReason: AssetTransferReason;
+  recipientAccountType: AssetTransferRecipient;
 };
 
 export type ClaimedAssetTransfer = {
@@ -60,6 +67,8 @@ type TransferOfferRow = {
   asset_identifier_normalized: string;
   code_hash: string;
   code_hint: string;
+  transfer_reason: string;
+  recipient_account_type: string;
   transferable_upload_ids: unknown;
   status: string;
   expires_at: string;
@@ -73,6 +82,7 @@ type LockedAssetRow = {
   register_id: string | null;
   valuation_run_id: string | number | null;
   lifecycle_state: string | null;
+  documents: unknown;
 };
 
 const TRANSFER_VALID_DAYS = 30;
@@ -121,10 +131,37 @@ function stringArray(value: unknown): string[] {
   }
 }
 
+function portableDocuments(value: unknown): AssetRegisterDocument[] {
+  const source = (() => {
+    if (Array.isArray(value)) return value;
+    if (typeof value !== 'string' || !value.trim()) return [];
+    try {
+      const parsed = JSON.parse(value) as unknown;
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  })();
+
+  return source.filter((entry): entry is AssetRegisterDocument => {
+    if (!entry || typeof entry !== 'object' || Array.isArray(entry)) return false;
+    const category = cleanText((entry as { category?: unknown }).category).toLowerCase();
+    return category === 'licensing' || category === 'other' || category === '';
+  });
+}
+
 function statusFromRow(row: TransferOfferRow): AssetTransferStatus {
   const saved = cleanText(row.status).toLowerCase();
   if (saved === 'claimed' || saved === 'cancelled') return saved;
   return new Date(row.expires_at).getTime() <= Date.now() ? 'expired' : 'pending';
+}
+
+function transferReasonFromRow(row: Pick<TransferOfferRow, 'transfer_reason'>): AssetTransferReason {
+  return cleanText(row.transfer_reason).toLowerCase() === 'traded_in' ? 'traded_in' : 'sold';
+}
+
+function recipientFromRow(row: Pick<TransferOfferRow, 'recipient_account_type'>): AssetTransferRecipient {
+  return cleanText(row.recipient_account_type).toLowerCase() === 'dealer' ? 'dealer' : 'owner_or_dealer';
 }
 
 function snapshotForTransfer(asset: AssetRegisterItem): Record<string, unknown> {
@@ -140,7 +177,7 @@ function snapshotForTransfer(asset: AssetRegisterItem): Record<string, unknown> 
     yearModel: asset.yearModel,
     serialNumber: asset.serialNumber,
     isFinanced: asset.isFinanced,
-    documents: asset.documents,
+    documents: portableDocuments(asset.documents),
     createdAtIso: asset.createdAtIso,
     updatedAtIso: asset.updatedAtIso,
   };
@@ -197,6 +234,8 @@ async function ensureAssetTransferSchemaOnce(): Promise<void> {
       asset_identifier_normalized text not null,
       code_hash text not null,
       code_hint text not null,
+      transfer_reason text not null default 'sold',
+      recipient_account_type text not null default 'owner_or_dealer',
       transferable_upload_ids jsonb not null default '[]'::jsonb,
       status text not null default 'pending',
       expires_at timestamptz not null,
@@ -206,6 +245,11 @@ async function ensureAssetTransferSchemaOnce(): Promise<void> {
       cancelled_at timestamptz,
       check (status in ('pending', 'claimed', 'cancelled'))
     )
+  `);
+  await db.query(`
+    alter table public.asset_transfer_offers
+      add column if not exists transfer_reason text not null default 'sold',
+      add column if not exists recipient_account_type text not null default 'owner_or_dealer'
   `);
   await db.query(`
     create unique index if not exists idx_asset_transfer_one_pending_per_asset
@@ -252,6 +296,7 @@ export async function createAssetTransferOffer(input: {
   disposalAmountExVat: number | null;
   note: string;
   aim4priceSaleInfluence: Aim4priceSaleInfluence;
+  transferReason: AssetTransferReason;
   actorUserId: string;
   actorName: string;
   actorOrganisation: string;
@@ -264,8 +309,11 @@ export async function createAssetTransferOffer(input: {
   const codeHint = normalizeTransferCode(transferCode).slice(-4);
   const uploadIds = listInternalAssetRegisterUploadIds([
     ...input.asset.photos,
-    ...input.asset.documents.map((document) => document.url),
+    ...portableDocuments(input.asset.documents).map((document) => document.url),
   ]);
+  const recipientAccountType: AssetTransferRecipient = input.transferReason === 'traded_in'
+    ? 'dealer'
+    : 'owner_or_dealer';
   const client = await getDb().connect();
 
   try {
@@ -281,13 +329,13 @@ export async function createAssetTransferOffer(input: {
       `insert into public.asset_transfer_offers
          (id, asset_register_item_id, seller_user_id, asset_title, asset_identifier,
           asset_identifier_label, asset_identifier_normalized, code_hash, code_hint,
-          transferable_upload_ids, status, expires_at, created_at, updated_at)
-       values ($1::uuid, $2::uuid, $3, $4, $5, $6, $7, $8, $9, $10::jsonb,
-               'pending', now() + ($11::text || ' days')::interval, now(), now())
+          transfer_reason, recipient_account_type, transferable_upload_ids, status, expires_at, created_at, updated_at)
+       values ($1::uuid, $2::uuid, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12::jsonb,
+               'pending', now() + ($13::text || ' days')::interval, now(), now())
        returning expires_at::text`,
       [offerId, input.asset.id, input.sellerUserId, input.asset.title, identifier.assetIdentifier,
         identifier.assetIdentifierLabel, identifier.assetIdentifierNormalized, codeHash, codeHint,
-        JSON.stringify(uploadIds), String(TRANSFER_VALID_DAYS)],
+        input.transferReason, recipientAccountType, JSON.stringify(uploadIds), String(TRANSFER_VALID_DAYS)],
     );
 
     const lifecycle = await client.query<{ id: string }>(
@@ -296,10 +344,10 @@ export async function createAssetTransferOffer(input: {
           amount_ex_vat, note, actor_user_id, actor_name, actor_organisation, asset_snapshot_json,
           aim4price_sale_influence, aim4price_outcome_influence, original_owner_user_id,
           transfer_status, transfer_offer_id, created_at)
-       values ($1, $2::uuid, $3::uuid, 'disposed', 'sold', $4::date, $5, $6, $7, $8, $9,
-               $10::jsonb, $11, $11, $1, 'pending', $12::uuid, now())
+       values ($1, $2::uuid, $3::uuid, 'disposed', $4, $5::date, $6, $7, $8, $9, $10,
+               $11::jsonb, $12, $12, $1, 'pending', $13::uuid, now())
        returning id::text`,
-      [input.sellerUserId, input.asset.registerId, input.asset.id, input.disposalDate,
+      [input.sellerUserId, input.asset.registerId, input.asset.id, input.transferReason, input.disposalDate,
         input.disposalAmountExVat, input.note || null, input.actorUserId, input.actorName,
         input.actorOrganisation, JSON.stringify(snapshotForTransfer(input.asset)),
         input.aim4priceSaleInfluence, offerId],
@@ -326,6 +374,8 @@ export async function createAssetTransferOffer(input: {
         transferOfferId: offerId,
         assetTitle: input.asset.title,
         aim4priceSaleInfluence: input.aim4priceSaleInfluence,
+        transferReason: input.transferReason,
+        recipientAccountType,
         expiresAtIso: offer.rows[0]?.expires_at,
       })],
     );
@@ -342,6 +392,8 @@ export async function createAssetTransferOffer(input: {
       assetIdentifierLabel: identifier.assetIdentifierLabel,
       transferCode,
       expiresAtIso: offer.rows[0]?.expires_at || new Date(Date.now() + TRANSFER_VALID_DAYS * 86_400_000).toISOString(),
+      transferReason: input.transferReason,
+      recipientAccountType,
     };
   } catch (error) {
     await client.query('rollback').catch(() => undefined);
@@ -363,6 +415,8 @@ function mapOutgoingTransfer(row: TransferOfferRow): OutgoingAssetTransfer {
     expiresAtIso: row.expires_at,
     createdAtIso: row.created_at,
     claimedAtIso: row.claimed_at,
+    transferReason: transferReasonFromRow(row),
+    recipientAccountType: recipientFromRow(row),
   };
 }
 
@@ -371,7 +425,7 @@ export async function listOutgoingAssetTransfers(sellerUserId: string): Promise<
   const result = await getDb().query<TransferOfferRow>(
     `select id::text, asset_register_item_id::text, seller_user_id, buyer_user_id,
             sale_event_id::text, asset_title, asset_identifier, asset_identifier_label,
-            asset_identifier_normalized, code_hash, code_hint, transferable_upload_ids,
+            asset_identifier_normalized, code_hash, code_hint, transfer_reason, recipient_account_type, transferable_upload_ids,
             status, expires_at::text, created_at::text, claimed_at::text
      from public.asset_transfer_offers
      where seller_user_id = $1
@@ -447,7 +501,11 @@ async function transferPortableHistory(input: {
     await client.query(`update public.asset_register_bucket_uploads set user_id = $1 where user_id = $2 and id = any($3::text[])`, [buyerUserId, sellerUserId, uploadIds]);
   }
   await client.query(
-    `update public.asset_lifecycle_events set owner_user_id = $1, register_id = $2::uuid
+    `update public.asset_lifecycle_events
+     set owner_user_id = $1,
+         register_id = $2::uuid,
+         asset_snapshot_json = (coalesce(asset_snapshot_json, '{}'::jsonb) - 'documents' - 'isFinanced' - 'isInsured')
+           || jsonb_build_object('documents', '[]'::jsonb, 'isFinanced', false, 'isInsured', false)
      where owner_user_id = $3 and asset_register_item_id = $4::uuid`,
     [buyerUserId, buyerRegisterId, sellerUserId, assetId],
   );
@@ -484,13 +542,13 @@ export async function adminAllocateDisposedAsset(input: {
     getAccountProfile({ id: input.buyerUserId }),
   ]);
   if (!assetRecord) throw new Error('ADMIN_ASSET_ALLOCATION_NOT_FOUND');
-  if (buyerProfile.accountType !== 'owner' || buyerProfile.accountStatus !== 'active') {
-    throw new Error('ADMIN_ASSET_ALLOCATION_OWNER_REQUIRED');
+  if (!isAssetRegisterAccountType(buyerProfile.accountType) || buyerProfile.accountStatus !== 'active') {
+    throw new Error('ADMIN_ASSET_ALLOCATION_ACCOUNT_REQUIRED');
   }
   const buyerRegister = await getSelectedAssetRegister(input.buyerUserId);
   const uploadIds = listInternalAssetRegisterUploadIds([
     ...assetRecord.photos,
-    ...assetRecord.documents.map((document) => document.url),
+    ...portableDocuments(assetRecord.documents).map((document) => document.url),
   ]);
   const client = await getDb().connect();
 
@@ -508,7 +566,7 @@ export async function adminAllocateDisposedAsset(input: {
     if (!lifecycle.rows[0]) throw new Error('ADMIN_ASSET_ALLOCATION_NOT_FOUND');
 
     const assetResult = await client.query<LockedAssetRow>(
-      `select id::text, user_id, register_id::text, valuation_run_id, lifecycle_state
+      `select id::text, user_id, register_id::text, valuation_run_id, lifecycle_state, documents
        from public.asset_register_items where id = $1::uuid for update`,
       [input.assetId],
     );
@@ -537,12 +595,13 @@ export async function adminAllocateDisposedAsset(input: {
     await client.query(
       `update public.asset_register_items
        set user_id = $1, register_id = $2::uuid, lifecycle_state = 'active', qr_status = 'transferred',
+           documents = $5::jsonb,
            is_financed = false, finance_note = '', is_insured = false, insured_value_ex_vat = null,
            seller_phone = '', marketplace_status = case when marketplace_status is null then null else 'withdrawn' end,
            marketplace_seller_name = '', marketplace_seller_company = '', marketplace_seller_email = '',
            updated_at = now()
        where id = $3::uuid and user_id = $4`,
-      [input.buyerUserId, buyerRegister.id, input.assetId, input.sellerUserId],
+      [input.buyerUserId, buyerRegister.id, input.assetId, input.sellerUserId, JSON.stringify(portableDocuments(assetRecord.documents))],
     );
     if (lifecycle.rows[0].transfer_offer_id) {
       await client.query(
@@ -604,7 +663,7 @@ export async function adminDeleteSoldAsset(input: {
     );
     if (!lifecycle.rows[0]) throw new Error('ADMIN_SOLD_ASSET_NOT_FOUND');
     const asset = await client.query<LockedAssetRow>(
-      `select id::text, user_id, register_id::text, valuation_run_id, lifecycle_state
+      `select id::text, user_id, register_id::text, valuation_run_id, lifecycle_state, documents
        from public.asset_register_items where id = $1::uuid for update`,
       [input.assetId],
     );
@@ -668,7 +727,9 @@ export async function claimAssetTransfer(input: {
   }
 
   const buyerProfile = await getAccountProfile({ id: input.buyerUserId, name: input.buyerName, email: input.buyerEmail });
-  if (buyerProfile.accountType !== 'owner') throw new Error('ASSET_TRANSFER_OWNER_ACCOUNT_REQUIRED');
+  if (!isAssetRegisterAccountType(buyerProfile.accountType) || buyerProfile.accountStatus !== 'active') {
+    throw new Error('ASSET_TRANSFER_ACCOUNT_REQUIRED');
+  }
   const buyerRegister = await getSelectedAssetRegister(input.buyerUserId);
   const client = await getDb().connect();
 
@@ -677,7 +738,7 @@ export async function claimAssetTransfer(input: {
     const offers = await client.query<TransferOfferRow>(
       `select id::text, asset_register_item_id::text, seller_user_id, buyer_user_id,
               sale_event_id::text, asset_title, asset_identifier, asset_identifier_label,
-              asset_identifier_normalized, code_hash, code_hint, transferable_upload_ids,
+              asset_identifier_normalized, code_hash, code_hint, transfer_reason, recipient_account_type, transferable_upload_ids,
               status, expires_at::text, created_at::text, claimed_at::text
        from public.asset_transfer_offers
        where asset_identifier_normalized = $1 and status = 'pending'
@@ -687,9 +748,12 @@ export async function claimAssetTransfer(input: {
     const offer = offers.rows.find((row) => transferCodeMatches(row.id, normalizedCode, row.code_hash));
     if (!offer || new Date(offer.expires_at).getTime() <= Date.now()) throw new Error('ASSET_TRANSFER_INVALID_CREDENTIALS');
     if (offer.seller_user_id === input.buyerUserId) throw new Error('ASSET_TRANSFER_SELF_CLAIM');
+    if (recipientFromRow(offer) === 'dealer' && buyerProfile.accountType !== 'dealer') {
+      throw new Error('ASSET_TRANSFER_DEALER_ACCOUNT_REQUIRED');
+    }
 
     const assetResult = await client.query<LockedAssetRow>(
-      `select id::text, user_id, register_id::text, valuation_run_id, lifecycle_state
+      `select id::text, user_id, register_id::text, valuation_run_id, lifecycle_state, documents
        from public.asset_register_items where id = $1::uuid for update`,
       [offer.asset_register_item_id],
     );
@@ -712,12 +776,13 @@ export async function claimAssetTransfer(input: {
     await client.query(
       `update public.asset_register_items
        set user_id = $1, register_id = $2::uuid, lifecycle_state = 'active', qr_status = 'transferred',
+           documents = $5::jsonb,
            is_financed = false, finance_note = '', is_insured = false, insured_value_ex_vat = null,
            seller_phone = '', marketplace_status = case when marketplace_status is null then null else 'withdrawn' end,
            marketplace_seller_name = '', marketplace_seller_company = '', marketplace_seller_email = '',
            updated_at = now()
        where id = $3::uuid and user_id = $4`,
-      [input.buyerUserId, buyerRegister.id, asset.id, offer.seller_user_id],
+      [input.buyerUserId, buyerRegister.id, asset.id, offer.seller_user_id, JSON.stringify(portableDocuments(asset.documents))],
     );
     await client.query(
       `update public.asset_transfer_offers
@@ -752,7 +817,9 @@ export async function claimAssetTransfer(input: {
       assetId: asset.id,
       assetTitle: cleanText(offer.asset_title) || 'Asset',
       registerId: buyerRegister.id,
-      redirectTo: `/asset-register?assetId=${encodeURIComponent(asset.id)}`,
+      redirectTo: buyerProfile.accountType === 'dealer'
+        ? `/dealer/inventory?assetId=${encodeURIComponent(asset.id)}`
+        : `/asset-register?assetId=${encodeURIComponent(asset.id)}`,
     };
   } catch (error) {
     await client.query('rollback').catch(() => undefined);
@@ -775,7 +842,7 @@ export async function regenerateAssetTransferCode(input: { sellerUserId: string;
      where id = $1::uuid and seller_user_id = $2 and status = 'pending'
      returning id::text, asset_register_item_id::text, seller_user_id, buyer_user_id,
                sale_event_id::text, asset_title, asset_identifier, asset_identifier_label,
-               asset_identifier_normalized, code_hash, code_hint, transferable_upload_ids,
+               asset_identifier_normalized, code_hash, code_hint, transfer_reason, recipient_account_type, transferable_upload_ids,
                status, expires_at::text, created_at::text, claimed_at::text`,
     [input.transferId, input.sellerUserId, codeHash, codeHint, String(TRANSFER_VALID_DAYS)],
   );
@@ -789,6 +856,8 @@ export async function regenerateAssetTransferCode(input: { sellerUserId: string;
     assetIdentifierLabel: row.asset_identifier_label === 'Serial / VIN' ? 'Serial / VIN' : 'Asset ID',
     transferCode,
     expiresAtIso: row.expires_at,
+    transferReason: transferReasonFromRow(row),
+    recipientAccountType: recipientFromRow(row),
   };
 }
 

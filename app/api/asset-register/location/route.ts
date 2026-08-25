@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAccountProfile } from '../../../../lib/account-profile';
+import { getAssetRegisterAccountAccess } from '../../../../lib/asset-register-account-access';
 import { recordAdminUsageEventSafely } from '../../../../lib/admin-usage-events';
 import { getServerSession, isAdminSupportSession } from '../../../../lib/auth-session';
 import { attachOpenPartnerNotesToAssets } from '../../../../lib/partner-access';
@@ -13,14 +13,12 @@ function unauthorized() {
   return NextResponse.json({ ok: false, error: 'You must be signed in.' }, { status: 401 });
 }
 
-async function requireOwnerAccount(user: { id: string; name?: string | null; email?: string | null }) {
-  const profile = await getAccountProfile(user);
-
-  if (profile.accountType !== 'owner') {
+async function requireAssetRegisterAccount(session: Awaited<ReturnType<typeof getServerSession>>) {
+  if (!await getAssetRegisterAccountAccess(session)) {
     return NextResponse.json(
       {
         ok: false,
-        error: 'Asset Register is only available to owner accounts. Dealer, finance and insurance accounts cannot update asset register locations.',
+        error: 'Asset Register locations are available to active Owner accounts and authorised Dealer inventory staff.',
       },
       { status: 403 },
     );
@@ -75,13 +73,13 @@ function normalizeLocationSource(value: unknown): 'manual' | 'device' {
 }
 
 export async function POST(request: NextRequest) {
-  const session = await getServerSession();
+  const session = await getServerSession({ allowDealerApp: true });
 
   if (!session?.user?.id) {
     return unauthorized();
   }
 
-  const ownerError = await requireOwnerAccount(session.user);
+  const ownerError = await requireAssetRegisterAccount(session);
   if (ownerError) return ownerError;
 
   const body = (await request.json().catch(() => null)) as {

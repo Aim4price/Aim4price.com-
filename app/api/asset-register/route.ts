@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { recordAdminUsageEventSafely } from '../../../lib/admin-usage-events';
 import { getServerSession, isAdminSupportSession } from '../../../lib/auth-session';
-import { getAccountProfile } from '../../../lib/account-profile';
+import { getAssetRegisterAccountAccess } from '../../../lib/asset-register-account-access';
 import { listAssetGroups } from '../../../lib/asset-groups';
 import { projectAssetGroupsToAssets, registerValueForAssets } from '../../../lib/asset-groups-shared';
 import { disposeOrDeleteAsset, recordManualAssetLifecycle, type AssetDisposalReason } from '../../../lib/asset-lifecycle';
@@ -102,14 +102,14 @@ async function attachOpenAssetAlerts<T extends { id: string }>(
   }));
 }
 
-async function requireOwnerAccount(user: { id: string; name?: string | null; email?: string | null }) {
-  const profile = await getAccountProfile(user);
+async function requireAssetRegisterAccount(session: Awaited<ReturnType<typeof getServerSession>>) {
+  const access = await getAssetRegisterAccountAccess(session);
 
-  if (profile.accountType !== 'owner') {
+  if (!access) {
     return NextResponse.json(
       {
         ok: false,
-        error: 'Asset Register is only available to owner accounts. Dealer, finance and insurance accounts cannot create, update or delete asset register items.',
+        error: 'Asset Register is available to active Owner accounts and authorised Dealer inventory staff.',
       },
       { status: 403 },
     );
@@ -547,14 +547,14 @@ function formatUnknownError(error: unknown, fallback: string): string {
 }
 
 export async function GET(request: NextRequest) {
-  const session = await getServerSession();
+  const session = await getServerSession({ allowDealerApp: true });
 
   if (!session?.user?.id) {
     return unauthorized();
   }
 
   try {
-    const ownerError = await requireOwnerAccount(session.user);
+    const ownerError = await requireAssetRegisterAccount(session);
     if (ownerError) return ownerError;
 
     const { searchParams } = new URL(request.url);
@@ -648,7 +648,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const session = await getServerSession();
+  const session = await getServerSession({ allowDealerApp: true });
 
   if (!session?.user?.id) {
     return unauthorized();
@@ -657,7 +657,7 @@ export async function POST(request: NextRequest) {
   const workspace = await resolveOwnerWorkspaceContext(request);
   if (!workspace.ok) return workspace.response;
   if (!workspace.context.accountantAccess) {
-    const ownerError = await requireOwnerAccount(session.user);
+    const ownerError = await requireAssetRegisterAccount(session);
     if (ownerError) return ownerError;
   }
   const ownerUserId = workspace.context.ownerUserId;
@@ -786,13 +786,13 @@ export async function POST(request: NextRequest) {
 }
 
 export async function PUT(request: NextRequest) {
-  const session = await getServerSession();
+  const session = await getServerSession({ allowDealerApp: true });
 
   if (!session?.user?.id) {
     return unauthorized();
   }
 
-  const ownerError = await requireOwnerAccount(session.user);
+  const ownerError = await requireAssetRegisterAccount(session);
   if (ownerError) return ownerError;
 
   const body = (await request.json()) as Partial<UpdateAssetRegisterItemInput>;
@@ -947,13 +947,13 @@ export async function PUT(request: NextRequest) {
 
 
 export async function PATCH(request: NextRequest) {
-  const session = await getServerSession();
+  const session = await getServerSession({ allowDealerApp: true });
 
   if (!session?.user?.id) {
     return unauthorized();
   }
 
-  const ownerError = await requireOwnerAccount(session.user);
+  const ownerError = await requireAssetRegisterAccount(session);
   if (ownerError) return ownerError;
 
   const body = (await request.json()) as {
@@ -1122,13 +1122,13 @@ export async function PATCH(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
-  const session = await getServerSession();
+  const session = await getServerSession({ allowDealerApp: true });
 
   if (!session?.user?.id) {
     return unauthorized();
   }
 
-  const ownerError = await requireOwnerAccount(session.user);
+  const ownerError = await requireAssetRegisterAccount(session);
   if (ownerError) return ownerError;
 
   const { searchParams } = new URL(request.url);

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAccountProfile } from '../../../lib/account-profile';
 import { getServerSession, isAdminSupportSession } from '../../../lib/auth-session';
+import { getAssetRegisterAccountAccess } from '../../../lib/asset-register-account-access';
 import {
   cancelAssetTransfer,
   claimAssetTransfer,
@@ -15,8 +15,8 @@ function unauthorized() {
   return NextResponse.json({ ok: false, error: 'You must be signed in.' }, { status: 401 });
 }
 
-async function requireOwnerSession() {
-  const session = await getServerSession();
+async function requireTransferSession() {
+  const session = await getServerSession({ allowDealerApp: true });
   if (!session?.user?.id) return { response: unauthorized() } as const;
   if (isAdminSupportSession(session)) {
     return {
@@ -26,11 +26,10 @@ async function requireOwnerSession() {
       ),
     } as const;
   }
-  const profile = await getAccountProfile({ id: session.user.id, name: session.user.name, email: session.user.email });
-  if (profile.accountType !== 'owner') {
+  if (!await getAssetRegisterAccountAccess(session)) {
     return {
       response: NextResponse.json(
-        { ok: false, error: 'Asset transfers are only available to owner accounts.' },
+        { ok: false, error: 'Asset transfers are available to Owner accounts and authorised Dealer inventory staff.' },
         { status: 403 },
       ),
     } as const;
@@ -58,6 +57,18 @@ function errorResponse(error: unknown) {
       { status: 400 },
     );
   }
+  if (code === 'ASSET_TRANSFER_DEALER_ACCOUNT_REQUIRED') {
+    return NextResponse.json(
+      { ok: false, error: 'This trade-in code can only be claimed by an active Dealer account.' },
+      { status: 400 },
+    );
+  }
+  if (code === 'ASSET_TRANSFER_ACCOUNT_REQUIRED') {
+    return NextResponse.json(
+      { ok: false, error: 'Use an active Owner or Dealer account to claim this asset.' },
+      { status: 403 },
+    );
+  }
   if (code === 'ASSET_TRANSFER_NOT_FOUND') {
     return NextResponse.json({ ok: false, error: 'This pending transfer was not found.' }, { status: 404 });
   }
@@ -66,7 +77,7 @@ function errorResponse(error: unknown) {
 }
 
 export async function GET() {
-  const access = await requireOwnerSession();
+  const access = await requireTransferSession();
   if ('response' in access) return access.response;
   try {
     const outgoing = await listOutgoingAssetTransfers(access.session.user.id);
@@ -77,7 +88,7 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
-  const access = await requireOwnerSession();
+  const access = await requireTransferSession();
   if ('response' in access) return access.response;
   const body = await request.json().catch(() => null) as Record<string, unknown> | null;
   if (!body) return NextResponse.json({ ok: false, error: 'Send valid transfer details.' }, { status: 400 });

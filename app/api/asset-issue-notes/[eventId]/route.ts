@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getAssetRegisterAccountAccess } from '../../../../lib/asset-register-account-access';
 import { markAssetIssueNoteStatusNoted } from '../../../../lib/asset-issue-notes';
 import { getServerSession } from '../../../../lib/auth-session';
 
@@ -43,10 +44,13 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     return NextResponse.json({ ok: false, error: 'Only noted status is supported.' }, { status: 400 });
   }
 
-  const session = await getServerSession();
+  const session = await getServerSession({ allowDealerApp: true });
 
   if (!session?.user?.id) {
     return NextResponse.json({ ok: false, error: 'You must be signed in.' }, { status: 401 });
+  }
+  if (!await getAssetRegisterAccountAccess(session)) {
+    return NextResponse.json({ ok: false, error: 'You do not have permission to update this Asset Register.' }, { status: 403 });
   }
 
   try {

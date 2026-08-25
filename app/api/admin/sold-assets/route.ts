@@ -11,8 +11,8 @@ function value(body: Record<string, unknown>, key: string): string {
 
 function errorResponse(error: unknown) {
   const code = error instanceof Error ? error.message : '';
-  if (code === 'ADMIN_ASSET_ALLOCATION_SAME_ACCOUNT') return NextResponse.json({ ok: false, error: 'Choose a different owner account.' }, { status: 400 });
-  if (code === 'ADMIN_ASSET_ALLOCATION_OWNER_REQUIRED') return NextResponse.json({ ok: false, error: 'Assets can only be allocated to an active owner account.' }, { status: 400 });
+  if (code === 'ADMIN_ASSET_ALLOCATION_SAME_ACCOUNT') return NextResponse.json({ ok: false, error: 'Choose a different destination account.' }, { status: 400 });
+  if (code === 'ADMIN_ASSET_ALLOCATION_ACCOUNT_REQUIRED') return NextResponse.json({ ok: false, error: 'Assets can only be allocated to an active Owner or Dealer account.' }, { status: 400 });
   if (code === 'ADMIN_ASSET_ALLOCATION_NOT_FOUND' || code === 'ADMIN_SOLD_ASSET_NOT_FOUND') return NextResponse.json({ ok: false, error: 'This sold asset record could not be found.' }, { status: 404 });
   if (code === 'ADMIN_ASSET_ALLOCATION_NOT_AVAILABLE') return NextResponse.json({ ok: false, error: 'This asset has already moved or is no longer available to allocate.' }, { status: 409 });
   if (code === 'ADMIN_SOLD_ASSET_DELETE_NOT_AVAILABLE') return NextResponse.json({ ok: false, error: 'A claimed or already moved asset cannot be deleted from the seller account.' }, { status: 409 });
@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
     }
     if (action === 'allocate') {
       const buyerUserId = value(body, 'buyerUserId');
-      if (!buyerUserId) return NextResponse.json({ ok: false, error: 'Choose an owner account.' }, { status: 400 });
+      if (!buyerUserId) return NextResponse.json({ ok: false, error: 'Choose a destination account.' }, { status: 400 });
       const allocation = await adminAllocateDisposedAsset({
         lifecycleEventId,
         assetId,

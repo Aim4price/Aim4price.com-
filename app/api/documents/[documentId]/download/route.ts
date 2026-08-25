@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAccountProfile } from '../../../../../lib/account-profile';
+import { getAssetRegisterAccountAccess } from '../../../../../lib/asset-register-account-access';
 import { getAccountDocumentUploadReference } from '../../../../../lib/account-documents';
 import { resolveAssetRegisterUploadBytes } from '../../../../../lib/asset-register-uploads';
 import { getServerSession } from '../../../../../lib/auth-session';
@@ -18,11 +18,10 @@ function safeFileName(value: string): string {
 }
 
 export async function GET(request: NextRequest, context: RouteContext) {
-  const session = await getServerSession();
+  const session = await getServerSession({ allowDealerApp: true });
   if (!session?.user?.id) return new NextResponse('You must be signed in.', { status: 401 });
 
-  const profile = await getAccountProfile(session.user);
-  if (profile.accountType !== 'owner') return new NextResponse('Forbidden', { status: 403 });
+  if (!await getAssetRegisterAccountAccess(session)) return new NextResponse('Forbidden', { status: 403 });
 
   const documentId = String(context.params?.documentId ?? '').trim();
   if (!documentId) return new NextResponse('Not found', { status: 404 });

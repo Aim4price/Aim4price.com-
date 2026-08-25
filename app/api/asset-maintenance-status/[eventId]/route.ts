@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getAssetRegisterAccountAccess } from '../../../../lib/asset-register-account-access';
 import { getServerSession } from '../../../../lib/auth-session';
 import { markAssetMaintenanceStatusNoted } from '../../../../lib/scan-assets';
 
@@ -20,10 +21,13 @@ function unauthorized() {
 }
 
 export async function PATCH(request: NextRequest, context: RouteContext) {
-  const session = await getServerSession();
+  const session = await getServerSession({ allowDealerApp: true });
 
   if (!session?.user?.id) {
     return unauthorized();
+  }
+  if (!await getAssetRegisterAccountAccess(session)) {
+    return NextResponse.json({ ok: false, error: 'You do not have permission to update this Asset Register.' }, { status: 403 });
   }
 
   let body: UpdateMaintenanceStatusBody = {};

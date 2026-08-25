@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '../../../../lib/auth-session';
+import { getAssetRegisterAccountAccess } from '../../../../lib/asset-register-account-access';
 import {
   markAssetLicenseRenewalAlertNoted,
   parseAssetLicenseDateKey,
@@ -15,13 +16,17 @@ type LicenseAlertRequestBody = {
 };
 
 export async function PATCH(request: NextRequest) {
-  const session = await getServerSession({ requireActive: true });
+  const session = await getServerSession({ requireActive: true, allowDealerApp: true });
 
   if (!session?.user?.id) {
     return NextResponse.json(
       { ok: false, error: 'You must be signed in to note license renewal alerts.' },
       { status: 401 },
     );
+  }
+
+  if (!await getAssetRegisterAccountAccess(session)) {
+    return NextResponse.json({ ok: false, error: 'You do not have permission to update this Asset Register.' }, { status: 403 });
   }
 
   const rawBody = (await request.json().catch(() => null)) as unknown;

@@ -36,14 +36,13 @@ const [
   readFile(new URL('../lib/account-deletion.ts', import.meta.url), 'utf8'),
 ]);
 
-test('Document Vault page and every API entry point require an owner account', () => {
+test('Document Vault page stays owner-only while asset document APIs support authorised Dealer inventory staff', () => {
   assert.match(page, /requireActivePageAccess\(\)/);
   assert.match(page, /profile\.accountType !== 'owner'/);
 
   for (const route of [collectionRoute, itemRoute, downloadRoute]) {
-    assert.match(route, /getServerSession\(\)/);
-    assert.match(route, /getAccountProfile\(session\.user\)/);
-    assert.match(route, /profile\.accountType !== 'owner'/);
+    assert.match(route, /getServerSession\(\{ allowDealerApp: true \}\)/);
+    assert.match(route, /getAssetRegisterAccountAccess\(session\)/);
   }
 });
 

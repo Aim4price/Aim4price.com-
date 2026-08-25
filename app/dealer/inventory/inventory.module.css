@@ -1,0 +1,74 @@
+.page {
+  min-height: 100vh;
+  padding-top: calc(68px + env(safe-area-inset-top));
+  background: #f3f6f8;
+}
+
+.contextBar {
+  width: min(calc(100% - 2rem), 1320px);
+  margin: 1.25rem auto 0;
+  padding: 1rem 1.15rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  border: 1px solid #d8e8df;
+  border-radius: 1.25rem;
+  background: #edf6f1;
+  color: #17362c;
+}
+
+.contextBar > div {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.contextBar span {
+  color: #497064;
+  font-size: 0.72rem;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.contextBar strong {
+  font-size: 1.2rem;
+}
+
+.contextBar p {
+  margin: 0;
+  color: #5f746d;
+  font-size: 0.86rem;
+}
+
+.contextBar a {
+  flex: 0 0 auto;
+  padding: 0.75rem 1rem;
+  border-radius: 0.9rem;
+  background: #165340;
+  color: #ffffff;
+  font-size: 0.86rem;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.transferPage > main {
+  min-height: calc(100vh - 68px);
+}
+
+.registersPage > main {
+  min-height: calc(100vh - 68px);
+}
+
+@media (max-width: 720px) {
+  .contextBar {
+    width: calc(100% - 1rem);
+    margin-top: 0.65rem;
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .contextBar a {
+    text-align: center;
+  }
+}

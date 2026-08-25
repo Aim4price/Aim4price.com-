@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAccountProfile } from '../../../../lib/account-profile';
+import { getAssetRegisterAccountAccess } from '../../../../lib/asset-register-account-access';
 import {
   moveAccountDocumentToRecycleBin,
   restoreAccountDocument,
@@ -17,8 +17,8 @@ type RouteContext = {
   };
 };
 
-async function requireOwnerUser() {
-  const session = await getServerSession();
+async function requireAssetRegisterUser() {
+  const session = await getServerSession({ allowDealerApp: true });
   if (!session?.user?.id) {
     return {
       ok: false as const,
@@ -26,12 +26,11 @@ async function requireOwnerUser() {
     };
   }
 
-  const profile = await getAccountProfile(session.user);
-  if (profile.accountType !== 'owner') {
+  if (!await getAssetRegisterAccountAccess(session)) {
     return {
       ok: false as const,
       response: NextResponse.json(
-        { ok: false, error: 'The Document Vault is only available to owner accounts.' },
+        { ok: false, error: 'The Document Vault is available to Owner accounts and authorised Dealer inventory staff.' },
         { status: 403 },
       ),
     };
@@ -74,7 +73,7 @@ function errorResponse(error: unknown) {
 }
 
 export async function PATCH(request: NextRequest, context: RouteContext) {
-  const owner = await requireOwnerUser();
+  const owner = await requireAssetRegisterUser();
   if (!owner.ok) return owner.response;
 
   const documentId = String(context.params?.documentId ?? '').trim();
@@ -95,7 +94,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
 }
 
 export async function DELETE(_request: NextRequest, context: RouteContext) {
-  const owner = await requireOwnerUser();
+  const owner = await requireAssetRegisterUser();
   if (!owner.ok) return owner.response;
 
   const documentId = String(context.params?.documentId ?? '').trim();
