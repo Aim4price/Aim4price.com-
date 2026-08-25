@@ -9,6 +9,10 @@ const [
   transferRoute,
   ownerRoute,
   ownerClient,
+  desktopRoute,
+  desktopClient,
+  accountantRoute,
+  accountantClient,
   accountClient,
   transferPage,
   adminSales,
@@ -20,6 +24,10 @@ const [
   read('app/api/asset-transfers/route.ts'),
   read('app/api/owner-app/assets/[assetId]/route.ts'),
   read('app/owner-app/assets/[assetId]/owner-asset-detail-client.tsx'),
+  read('app/api/asset-register/route.ts'),
+  read('app/asset-register/asset-register-client.tsx'),
+  read('app/api/accountant/registers/[shareId]/assets/[assetId]/lifecycle/route.ts'),
+  read('components/AccountantAssetManageModal.tsx'),
   read('app/account/account-client.tsx'),
   read('app/account/asset-transfers/asset-transfers-client.tsx'),
   read('lib/admin-asset-sales.ts'),
@@ -36,6 +44,25 @@ test('sold removal records Aim4price impact and makes transfer a deliberate choi
   assert.match(ownerClient, /transferAction/);
   assert.match(ownerRoute, /Tell us whether Aim4price helped with this sale/);
   assert.match(ownerRoute, /transferRequested/);
+});
+
+test('desktop Asset Register collects the sold contract before calling the shared lifecycle service', () => {
+  assert.match(desktopClient, /Did Aim4price help with this sale\?/);
+  assert.match(desktopClient, /Archive after sale/);
+  assert.match(desktopClient, /Send to buyer/);
+  assert.match(desktopClient, /Save sale & create code/);
+  assert.match(desktopClient, /assetTransferReceipt/);
+  assert.match(desktopRoute, /Tell us whether Aim4price helped with this sale/);
+  assert.match(desktopRoute, /aim4priceSaleInfluence/);
+  assert.match(desktopRoute, /transferRequested/);
+  assert.match(desktopRoute, /transfer: outcome\.transfer/);
+});
+
+test('accountant disposal cannot submit a sold event without the Aim4price impact answer', () => {
+  assert.match(accountantClient, /Did Aim4price help with this sale\?/);
+  assert.match(accountantClient, /aim4priceSaleInfluence: lifecycleReason === 'sold'/);
+  assert.match(accountantRoute, /Tell us whether Aim4price helped with this sale/);
+  assert.match(accountantRoute, /aim4priceSaleInfluence/);
 });
 
 test('transfer codes are one-time credentials and are never stored as plaintext', () => {
