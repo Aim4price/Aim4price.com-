@@ -17,20 +17,23 @@
 .tableHeader p { color: #247056; }
 .tableHeader h2 { margin: 0; color: #12362d; font-size: 1.15rem; letter-spacing: -.025em; }
 .tableHeader > div:first-child > span { color: #74827d; font-size: .71rem; font-weight: 720; }
-.filters { display: grid; grid-template-columns: minmax(190px,1.35fr) repeat(2,minmax(145px,1fr)); gap: .55rem; }
+.filters { display: grid; grid-template-columns: minmax(190px,1.35fr) repeat(3,minmax(130px,1fr)); gap: .55rem; }
 .filters label { display: grid; gap: .3rem; }
 .filters label span { color: #66766f; font-size: .64rem; font-weight: 850; letter-spacing: .04em; text-transform: uppercase; }
 .filters input, .filters select { min-height: 2.5rem; box-sizing: border-box; border: 1px solid #d7e1dc; border-radius: .72rem; color: #17362c; background: #fafcfb; padding: 0 .7rem; font: inherit; font-size: .75rem; font-weight: 750; }
 .filters input:focus, .filters select:focus { outline: none; border-color: #2b8062; box-shadow: 0 0 0 3px rgba(43,128,98,.09); }
 .tableScroller { overflow-x: auto; }
-.tableScroller table { width: 100%; min-width: 1050px; border-collapse: collapse; }
+.tableScroller table { width: 100%; min-width: 1180px; border-collapse: collapse; }
 .tableScroller th { color: #6c7a75; background: #f7faf8; padding: .72rem .8rem; font-size: .65rem; font-weight: 900; letter-spacing: .045em; text-align: left; text-transform: uppercase; }
 .tableScroller td { border-top: 1px solid #edf1ef; color: #344b42; padding: .78rem .8rem; font-size: .75rem; font-weight: 700; vertical-align: top; }
-.tableScroller td:nth-child(2) { min-width: 15rem; display: grid; gap: .15rem; }
-.tableScroller td:nth-child(2) strong { color: #17362c; font-size: .8rem; }
-.tableScroller td:nth-child(2) span { color: #64766e; font-size: .69rem; }
-.tableScroller td:nth-child(2) small { max-width: 30rem; color: #82908b; font-size: .64rem; font-weight: 650; line-height: 1.4; }
+.tableScroller td:nth-child(3) { min-width: 15rem; display: grid; gap: .15rem; }
+.tableScroller td:nth-child(3) strong { color: #17362c; font-size: .8rem; }
+.tableScroller td:nth-child(3) span { color: #64766e; font-size: .69rem; }
+.tableScroller td:nth-child(3) small { max-width: 30rem; color: #82908b; font-size: .64rem; font-weight: 650; line-height: 1.4; }
 .badge { display: inline-flex; align-items: center; border-radius: 999px; padding: .35rem .55rem; font-size: .64rem; font-weight: 900; white-space: nowrap; }
+.outcome_sold { color: #176047; background: #e7f6ee; }
+.outcome_traded_in { color: #315f82; background: #e9f3fa; }
+.outcome_scrapped { color: #7a5353; background: #f3ecec; }
 .impact_yes, .transfer_claimed { color: #176047; background: #e7f6ee; }
 .impact_no { color: #8b4545; background: #faeaea; }
 .impact_unsure, .transfer_pending, .transfer_expired { color: #8a571d; background: #fff1dc; }

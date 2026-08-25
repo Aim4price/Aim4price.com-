@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdminApiAccess } from '../../../../lib/admin-api-access';
-import { adminAllocateDisposedAsset, adminDeleteSoldAsset } from '../../../../lib/asset-transfers';
+import { adminAllocateDisposedAsset, adminDeleteDisposedAsset } from '../../../../lib/asset-transfers';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -11,23 +11,22 @@ function value(body: Record<string, unknown>, key: string): string {
 
 function errorResponse(error: unknown) {
   const code = error instanceof Error ? error.message : '';
-  if (code === 'ADMIN_ASSET_ALLOCATION_SAME_ACCOUNT') return NextResponse.json({ ok: false, error: 'Choose a different destination account.' }, { status: 400 });
   if (code === 'ADMIN_ASSET_ALLOCATION_ACCOUNT_REQUIRED') return NextResponse.json({ ok: false, error: 'Assets can only be allocated to an active Owner or Dealer account.' }, { status: 400 });
-  if (code === 'ADMIN_ASSET_ALLOCATION_NOT_FOUND' || code === 'ADMIN_SOLD_ASSET_NOT_FOUND') return NextResponse.json({ ok: false, error: 'This sold asset record could not be found.' }, { status: 404 });
+  if (code === 'ADMIN_ASSET_ALLOCATION_NOT_FOUND' || code === 'ADMIN_DISPOSED_ASSET_NOT_FOUND') return NextResponse.json({ ok: false, error: 'This asset outcome record could not be found.' }, { status: 404 });
   if (code === 'ADMIN_ASSET_ALLOCATION_NOT_AVAILABLE') return NextResponse.json({ ok: false, error: 'This asset has already moved or is no longer available to allocate.' }, { status: 409 });
-  if (code === 'ADMIN_SOLD_ASSET_DELETE_NOT_AVAILABLE') return NextResponse.json({ ok: false, error: 'A claimed or already moved asset cannot be deleted from the seller account.' }, { status: 409 });
+  if (code === 'ADMIN_DISPOSED_ASSET_DELETE_NOT_AVAILABLE') return NextResponse.json({ ok: false, error: 'An allocated or already moved asset cannot be deleted from its source account.' }, { status: 409 });
   const postgresCode = error && typeof error === 'object' && 'code' in error
     ? String((error as { code?: unknown }).code ?? '')
     : '';
   if (postgresCode === '40P01' || postgresCode === '40001') {
-    console.error('admin sold asset action exhausted database retries', error);
+    console.error('admin asset outcome action exhausted database retries', error);
     return NextResponse.json({
       ok: false,
       error: 'The database was briefly busy. No asset data was changed. Please try once more.',
     }, { status: 503 });
   }
-  console.error('admin sold asset action failed', error);
-  return NextResponse.json({ ok: false, error: 'The sold asset action could not be completed.' }, { status: 500 });
+  console.error('admin asset outcome action failed', error);
+  return NextResponse.json({ ok: false, error: 'The asset outcome action could not be completed.' }, { status: 500 });
 }
 
 export async function POST(request: NextRequest) {
@@ -40,7 +39,7 @@ export async function POST(request: NextRequest) {
     const assetId = value(body, 'assetId');
     const sellerUserId = value(body, 'sellerUserId');
     if (!lifecycleEventId || !assetId || !sellerUserId) {
-      return NextResponse.json({ ok: false, error: 'The sold asset reference is incomplete.' }, { status: 400 });
+      return NextResponse.json({ ok: false, error: 'The asset outcome reference is incomplete.' }, { status: 400 });
     }
     if (action === 'allocate') {
       const buyerUserId = value(body, 'buyerUserId');
@@ -56,7 +55,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ ok: true, allocation });
     }
     if (action === 'delete') {
-      await adminDeleteSoldAsset({
+      await adminDeleteDisposedAsset({
         lifecycleEventId,
         assetId,
         sellerUserId,
@@ -65,7 +64,7 @@ export async function POST(request: NextRequest) {
       });
       return NextResponse.json({ ok: true });
     }
-    return NextResponse.json({ ok: false, error: 'Unsupported sold asset action.' }, { status: 400 });
+    return NextResponse.json({ ok: false, error: 'Unsupported asset outcome action.' }, { status: 400 });
   } catch (error) {
     return errorResponse(error);
   }
