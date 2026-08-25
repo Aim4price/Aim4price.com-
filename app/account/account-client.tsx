@@ -171,6 +171,7 @@ const ACCOUNT_TYPE_LABELS: Record<string, string> = {
 type QuickActionIconName =
   | "business"
   | "registers"
+  | "claim"
   | "pin"
   | "fieldManager"
   | "ownerApp"
@@ -229,6 +230,15 @@ function QuickActionIcon({ name }: { name: QuickActionIconName }) {
           <path {...strokeProps} d="M8.6 12.25h6.8" />
           <path {...strokeProps} d="M8.6 15.5h4.5" />
           <path {...strokeProps} d="M16.75 5.25V3.75" />
+        </svg>
+      ) : null}
+
+      {name === "claim" ? (
+        <svg {...svgProps}>
+          <path d="M4.75 8.25 12 4l7.25 4.25v8.1L12 20.5l-7.25-4.15v-8.1Z" fill="currentColor" opacity="0.14" />
+          <path {...strokeProps} d="M4.75 8.25 12 4l7.25 4.25v8.1L12 20.5l-7.25-4.15v-8.1Z" />
+          <path {...strokeProps} d="m4.95 8.4 7.05 4.05 7.05-4.05M12 12.45v8" />
+          <path {...strokeProps} d="M8.6 9.75 12 11.7l3.4-1.95" />
         </svg>
       ) : null}
 
@@ -1795,6 +1805,10 @@ export default function AccountClient({
     window.location.assign("/asset-registers");
   }
 
+  function openAssetTransfersPage() {
+    window.location.assign("/account/asset-transfers");
+  }
+
   function openMarketplaceEditor() {
     openActionModal("marketplace");
   }
@@ -2122,6 +2136,18 @@ export default function AccountClient({
                 >
                   <QuickActionIcon name="registers" />
                   <strong>Manage multiple asset registers</strong>
+                  <span className={styles.quickActionChevron}>›</span>
+                </button>
+              ) : null}
+
+              {isOwnerAccount ? (
+                <button
+                  type="button"
+                  className={styles.quickActionButton}
+                  onClick={openAssetTransfersPage}
+                >
+                  <QuickActionIcon name="claim" />
+                  <strong>Claim or send an asset</strong>
                   <span className={styles.quickActionChevron}>›</span>
                 </button>
               ) : null}

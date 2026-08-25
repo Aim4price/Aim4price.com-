@@ -265,6 +265,11 @@ export async function DELETE(request: NextRequest, { params }: { params: { asset
     if (!reason) {
       return NextResponse.json({ ok: false, error: 'Choose what happened to the asset before continuing.' }, { status: 400 });
     }
+    const aim4priceSaleInfluence = text(body.aim4priceSaleInfluence).toLowerCase();
+    if (reason === 'sold' && !['yes', 'no', 'unsure'].includes(aim4priceSaleInfluence)) {
+      return NextResponse.json({ ok: false, error: 'Tell us whether Aim4price helped with this sale.' }, { status: 400 });
+    }
+    const transferRequested = text(body.transferAction).toLowerCase() === 'claim_code';
 
     const outcome = await disposeOrDeleteAsset({
       ownerUserId: access.ownerUserId,
@@ -275,15 +280,30 @@ export async function DELETE(request: NextRequest, { params }: { params: { asset
       note: body.note,
       actorUserId: access.ownerAppUserId || access.ownerUserId,
       actorName: access.displayName,
+      aim4priceSaleInfluence: reason === 'sold'
+        ? aim4priceSaleInfluence as 'yes' | 'no' | 'unsure'
+        : null,
+      transferRequested,
     });
     if (outcome.mode === 'deleted') {
       await deleteUnreferencedAssetRegisterUploads({ userId: access.ownerUserId, uploadIds, excludeAssetId: params.assetId }).catch(() => undefined);
     }
-    return NextResponse.json({ ok: true, mode: outcome.mode, redirectTo: '/owner-app/assets' });
+    return NextResponse.json({
+      ok: true,
+      mode: outcome.mode,
+      transfer: outcome.transfer,
+      redirectTo: outcome.mode === 'transfer_pending' ? undefined : '/owner-app/assets',
+    });
   } catch (error) {
     console.error('Owner App asset detail DELETE failed.', error);
     if (error instanceof Error && error.message === 'ASSET_DELETE_HAS_DEPENDENCIES') {
       return NextResponse.json({ ok: false, error: 'This record has linked history or files. Choose the genuine disposal reason so it can be archived safely.' }, { status: 409 });
+    }
+    if (error instanceof Error && error.message === 'ASSET_TRANSFER_ALREADY_PENDING') {
+      return NextResponse.json({ ok: false, error: 'A transfer is already waiting for this asset. Open Asset transfers in Account to manage it.' }, { status: 409 });
+    }
+    if (error instanceof Error && error.message === 'ASSET_TRANSFER_IDENTIFIER_REQUIRED') {
+      return NextResponse.json({ ok: false, error: 'Add a serial number to this asset before creating a transfer.' }, { status: 400 });
     }
     return NextResponse.json({ ok: false, error: 'Failed to delete this asset.' }, { status: 500 });
   }

@@ -1,0 +1,72 @@
+.page { min-height: 100vh; color: #142f28; background: radial-gradient(circle at 12% 7%, rgba(31, 108, 83, 0.08), transparent 28rem), radial-gradient(circle at 88% 12%, rgba(62, 110, 213, 0.1), transparent 30rem), linear-gradient(180deg, #f7f9f8 0%, #eef3f6 48%, #fbfcfb 100%); }
+.shell { width: min(1120px, calc(100% - 2rem)); margin: 0 auto; padding: 1.35rem 0 4rem; display: grid; gap: 1rem; }
+.hero { min-height: 8.5rem; display: flex; align-items: center; justify-content: space-between; gap: 1.25rem; overflow: hidden; border: 1px solid rgba(255,255,255,.14); border-radius: 1.2rem; color: #fff; background: radial-gradient(circle at 12% 0%, rgba(49,197,142,.25), transparent 22rem), linear-gradient(135deg, #102a23 0%, #15392f 50%, #17385d 100%); padding: 1.5rem; box-shadow: 0 22px 50px rgba(18,45,37,.12); }
+.hero div { display: grid; gap: .3rem; }
+.hero p, .cardHeader p, .sectionHeading p { margin: 0; font-size: .7rem; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
+.hero p { color: #a8d7c3; }
+.hero h1 { margin: 0; font-size: clamp(1.8rem, 4vw, 2.6rem); letter-spacing: -.045em; }
+.hero span { max-width: 44rem; color: rgba(255,255,255,.72); font-size: .88rem; font-weight: 650; line-height: 1.45; }
+.hero > a { flex: 0 0 auto; border: 1px solid rgba(255,255,255,.24); border-radius: 999px; color: #fff; background: rgba(255,255,255,.09); padding: .75rem 1rem; font-size: .8rem; font-weight: 850; text-decoration: none; }
+.claimCard, .outgoingSection { border: 1px solid rgba(18,45,37,.09); border-radius: 1.25rem; background: rgba(255,255,255,.97); padding: clamp(1rem, 2vw, 1.35rem); box-shadow: 0 18px 42px rgba(18,45,37,.06); }
+.claimCard { display: grid; gap: 1rem; }
+.cardHeader { display: grid; gap: .25rem; }
+.cardHeader p, .sectionHeading p { color: #227055; }
+.cardHeader h2, .sectionHeading h2 { margin: 0; color: #12362d; font-size: 1.22rem; letter-spacing: -.025em; }
+.cardHeader span { color: #65766f; font-size: .82rem; font-weight: 650; line-height: 1.45; }
+.claimForm { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr) auto; align-items: end; gap: .75rem; }
+.claimForm label { min-width: 0; display: grid; gap: .42rem; }
+.claimForm label span { color: #40564e; font-size: .74rem; font-weight: 850; }
+.claimForm input { width: 100%; min-height: 3rem; box-sizing: border-box; border: 1px solid #d7e2dd; border-radius: .85rem; background: #fbfcfb; color: #17362c; padding: 0 .85rem; font: inherit; font-size: .88rem; font-weight: 750; }
+.claimForm input:focus { outline: none; border-color: #2b8062; box-shadow: 0 0 0 4px rgba(43,128,98,.1); }
+.claimForm button, .cardActions button, .modalActions button { min-height: 3rem; border: 1px solid #236c52; border-radius: .85rem; background: #236c52; color: #fff; padding: 0 1rem; font: inherit; font-size: .82rem; font-weight: 850; cursor: pointer; }
+.claimForm button:disabled, .cardActions button:disabled { cursor: not-allowed; opacity: .55; }
+.privacyNote { display: grid; gap: .2rem; border-radius: .85rem; background: #eef6fc; color: #244f76; padding: .8rem .9rem; }
+.privacyNote strong { font-size: .76rem; font-weight: 900; }
+.privacyNote span { font-size: .75rem; font-weight: 650; line-height: 1.45; }
+.claimedCard { display: flex; align-items: center; justify-content: space-between; gap: 1rem; border: 1px solid #a8d9c1; border-radius: .9rem; background: #f0faf5; padding: .85rem .95rem; }
+.claimedCard div { display: grid; gap: .15rem; }
+.claimedCard strong { color: #176047; }
+.claimedCard span { color: #5c776c; font-size: .74rem; font-weight: 750; }
+.claimedCard a { border-radius: 999px; color: #fff; background: #236c52; padding: .65rem .9rem; font-size: .76rem; font-weight: 850; text-decoration: none; }
+.outgoingSection { display: grid; gap: .85rem; }
+.sectionHeading { display: flex; align-items: flex-end; justify-content: space-between; gap: 1rem; }
+.sectionHeading > div { display: grid; gap: .2rem; }
+.sectionHeading > span { border-radius: 999px; color: #236c52; background: #eef6f2; padding: .45rem .7rem; font-size: .72rem; font-weight: 850; }
+.transferList { display: grid; gap: .7rem; }
+.transferCard { display: grid; gap: .75rem; border: 1px solid #dfe8e3; border-radius: 1rem; background: #fbfcfb; padding: .95rem; }
+.transferTitle { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
+.transferTitle > div { min-width: 0; display: grid; gap: .2rem; }
+.transferTitle strong { color: #17362c; font-size: .93rem; }
+.transferTitle span { color: #687a73; font-size: .73rem; font-weight: 700; overflow-wrap: anywhere; }
+.statusBadge { flex: 0 0 auto; border-radius: 999px; padding: .42rem .65rem; font-size: .67rem !important; font-weight: 900 !important; }
+.status_pending { color: #176047 !important; background: #e7f6ee; }
+.status_claimed { color: #245e9a !important; background: #eaf3fc; }
+.status_cancelled { color: #6b7370 !important; background: #ecefed; }
+.status_expired { color: #8a571d !important; background: #fff1dc; }
+.transferCard dl { margin: 0; display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: .55rem; }
+.transferCard dl > div { display: grid; gap: .18rem; border-radius: .75rem; background: #f1f5f3; padding: .65rem .7rem; }
+.transferCard dt { color: #77867f; font-size: .63rem; font-weight: 850; letter-spacing: .04em; text-transform: uppercase; }
+.transferCard dd { margin: 0; color: #2d473e; font-size: .75rem; font-weight: 800; overflow-wrap: anywhere; }
+.cardActions { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: .55rem; }
+.cardActions button { min-height: 2.65rem; background: #fff; color: #236c52; }
+.cardActions .archiveButton { border-color: #d8b5b5; color: #914f4f; }
+.emptyState { min-height: 7rem; display: grid; place-content: center; justify-items: center; gap: .3rem; border: 1px dashed #cfdad5; border-radius: 1rem; color: #73827c; background: #fafcfb; text-align: center; font-size: .8rem; font-weight: 700; }
+.emptyState strong { color: #334c43; }
+.successNotice, .errorNotice { border-radius: .9rem; padding: .85rem 1rem; font-size: .8rem; font-weight: 800; line-height: 1.45; }
+.successNotice { border: 1px solid #a8d9c1; color: #176047; background: #f0faf5; }
+.errorNotice { border: 1px solid #e2b4b4; color: #8a3f3f; background: #fff4f4; }
+.modalBackdrop { position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center; padding: 1rem; background: rgba(8,24,18,.54); backdrop-filter: blur(5px); }
+.modalCard { width: min(100%, 560px); display: grid; gap: 1rem; border: 1px solid rgba(37,71,51,.15); border-radius: 1.2rem; background: #fff; padding: 1.1rem; box-shadow: 0 28px 80px rgba(8,24,18,.28); }
+.modalCard header { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
+.modalCard header h2 { margin: 0; color: #17362c; font-size: 1.15rem; }
+.modalCard header p { margin: .3rem 0 0; color: #687a73; font-size: .78rem; font-weight: 650; line-height: 1.45; }
+.modalCard header > button { width: 2.5rem; height: 2.5rem; flex: 0 0 auto; border: 1px solid #d9e3de; border-radius: 50%; background: #eef6fc; color: #295271; font-size: 1.35rem; cursor: pointer; }
+.receiptGrid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: .65rem; }
+.receiptGrid > div { min-width: 0; display: grid; gap: .35rem; border: 1px solid #dfe8e3; border-radius: .9rem; background: #f7faf8; padding: .9rem; text-align: center; }
+.receiptGrid span { color: #77867f; font-size: .65rem; font-weight: 850; letter-spacing: .05em; text-transform: uppercase; }
+.receiptGrid strong { color: #176047; font-size: 1rem; font-weight: 900; letter-spacing: .04em; overflow-wrap: anywhere; }
+.modalActions { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: .6rem; }
+.modalActions button { background: #fff; color: #236c52; }
+.modalActions .primaryAction { color: #fff; background: #236c52; }
+@media (max-width: 760px) { .hero { align-items: flex-start; flex-direction: column; } .claimForm { grid-template-columns: 1fr; } .claimForm button { width: 100%; } }
+@media (max-width: 560px) { .shell { width: min(100% - 1rem,1120px); } .hero { border-radius: 1rem; padding: 1.15rem; } .transferCard dl, .cardActions, .receiptGrid, .modalActions { grid-template-columns: 1fr; } .transferTitle { align-items: flex-start; flex-direction: column; } }
