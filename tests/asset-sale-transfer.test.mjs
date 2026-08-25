@@ -120,20 +120,30 @@ test('Account exposes claim and outgoing-transfer management', () => {
   assert.match(transferPage, /autoComplete="one-time-code"/);
 });
 
-test('Admin has a dedicated sold-assets page with influence and transfer metrics', () => {
+test('Admin tracks and can correct sold, traded-in and scrapped outcomes', () => {
   assert.match(adminNavigation, /href: "\/admin\/sold-assets"/);
-  assert.match(adminNavigation, /label: "Sold Assets"/);
+  assert.match(adminNavigation, /label: "Asset Outcomes"/);
   assert.match(adminPage, /<AdminNavigation active="sold-assets"/);
+  assert.match(adminPage, /Asset outcomes/);
+  assert.match(adminSales, /totalOutcomes/);
   assert.match(adminSales, /totalSold/);
+  assert.match(adminSales, /totalTradedIn/);
+  assert.match(adminSales, /totalScrapped/);
   assert.match(adminSales, /helpedByAim4price/);
   assert.match(adminSales, /helpRatePercent/);
   assert.match(adminSales, /transferredAccounts/);
-  assert.match(adminSales, /event\.reason = 'sold'/);
+  assert.match(adminSales, /event\.reason in \('sold', 'traded_in', 'scrapped'\)/);
+  assert.match(adminClient, /All outcomes/);
+  assert.match(adminClient, /Original account/);
+  assert.match(adminClient, /Restore asset/);
   assert.match(adminClient, />Allocate</);
   assert.match(adminClient, />Delete</);
+  assert.match(transferSource, /reason in \('sold', 'traded_in', 'scrapped'\)/);
+  assert.match(transferSource, /asset_admin_outcome_restored/);
+  assert.match(transferSource, /admin_disposed_asset_deleted/);
   assert.match(adminActionRoute, /requireAdminApiAccess/);
   assert.match(adminActionRoute, /adminAllocateDisposedAsset/);
-  assert.match(adminActionRoute, /adminDeleteSoldAsset/);
+  assert.match(adminActionRoute, /adminDeleteDisposedAsset/);
 });
 
 test('migration supports repeatable sold and transfer deployment', () => {

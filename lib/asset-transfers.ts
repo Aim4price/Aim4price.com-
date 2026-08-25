@@ -14,6 +14,7 @@ export type Aim4priceSaleInfluence = Aim4priceOutcomeInfluence;
 export type AssetTransferStatus = 'pending' | 'claimed' | 'cancelled' | 'expired';
 export type AssetTransferReason = 'sold' | 'traded_in';
 export type AssetTransferRecipient = 'owner_or_dealer' | 'dealer';
+export type AdminDisposedOutcome = AssetTransferReason | 'scrapped';
 
 export type AssetTransferReceipt = {
   id: string;
@@ -54,6 +55,8 @@ export type AdminAssetAllocationResult = {
   assetTitle: string;
   buyerUserId: string;
   buyerRegisterId: string;
+  outcome: AdminDisposedOutcome;
+  restored: boolean;
 };
 
 type TransferOfferRow = {
@@ -575,7 +578,6 @@ export async function adminAllocateDisposedAsset(input: {
   adminName: string;
 }): Promise<AdminAssetAllocationResult> {
   await ensureAssetTransferSchema();
-  if (input.sellerUserId === input.buyerUserId) throw new Error('ADMIN_ASSET_ALLOCATION_SAME_ACCOUNT');
   const assetRecord = await getAssetRegisterItemById(input.sellerUserId, input.assetId);
   const buyerProfile = await getAccountProfile({ id: input.buyerUserId });
   if (!assetRecord) throw new Error('ADMIN_ASSET_ALLOCATION_NOT_FOUND');
@@ -594,11 +596,11 @@ export async function adminAllocateDisposedAsset(input: {
 
     try {
       await client.query('begin');
-      const lifecycle = await client.query<{ id: string; transfer_offer_id: string | null }>(
-        `select id::text, transfer_offer_id::text
+      const lifecycle = await client.query<{ id: string; transfer_offer_id: string | null; reason: AdminDisposedOutcome }>(
+        `select id::text, transfer_offer_id::text, reason
          from public.asset_lifecycle_events
          where id = $1::uuid and asset_register_item_id = $2::uuid
-           and event_type = 'disposed' and reason = 'sold'
+           and event_type = 'disposed' and reason in ('sold', 'traded_in', 'scrapped')
            and coalesce(original_owner_user_id, owner_user_id) = $3
          for update`,
         [input.lifecycleEventId, input.assetId, input.sellerUserId],
@@ -613,6 +615,58 @@ export async function adminAllocateDisposedAsset(input: {
       const asset = assetResult.rows[0];
       if (!asset || asset.user_id !== input.sellerUserId || !['disposed', 'transfer_pending'].includes(cleanText(asset.lifecycle_state))) {
         throw new Error('ADMIN_ASSET_ALLOCATION_NOT_AVAILABLE');
+      }
+      const disposedOutcome = lifecycle.rows[0].reason;
+
+      if (input.sellerUserId === input.buyerUserId) {
+        await client.query(
+          `update public.asset_transfer_offers
+           set status = 'cancelled', cancelled_at = now(), updated_at = now()
+           where asset_register_item_id = $1::uuid and status = 'pending'`,
+          [input.assetId],
+        );
+        await client.query(
+          `update public.asset_lifecycle_events
+           set event_type = 'deleted_duplicate',
+               reason = $2,
+               original_owner_user_id = coalesce(original_owner_user_id, owner_user_id),
+               transfer_status = case when transfer_status is null then null else 'cancelled' end,
+               transferred_to_user_id = null
+           where id = $1::uuid`,
+          [input.lifecycleEventId, `admin_reversed_${disposedOutcome}`],
+        );
+        await client.query(
+          `update public.asset_register_items
+           set register_id = coalesce(register_id, $2::uuid), lifecycle_state = 'active',
+               qr_status = 'active', updated_at = now()
+           where id = $1::uuid and user_id = $3`,
+          [input.assetId, buyerRegister.id, input.sellerUserId],
+        );
+        await client.query(
+          `insert into public.access_audit_events
+             (owner_user_id, actor_user_id, event_type, entity_type, entity_id, metadata_json, created_at)
+           values ($1, $2, 'asset_admin_outcome_restored', 'asset_register_item', $3, $4::jsonb, now())`,
+          [input.sellerUserId, input.adminUserId, input.assetId, JSON.stringify({
+            lifecycleEventId: input.lifecycleEventId,
+            outcome: disposedOutcome,
+            adminName: input.adminName,
+          })],
+        );
+        const restoredRegisterId = asset.register_id || buyerRegister.id;
+        await client.query(
+          `update public.asset_registers set updated_at = now()
+           where id = $1::uuid and user_id = $2`,
+          [restoredRegisterId, input.sellerUserId],
+        );
+        await client.query('commit');
+        return {
+          assetId: input.assetId,
+          assetTitle: assetRecord.title,
+          buyerUserId: input.buyerUserId,
+          buyerRegisterId: restoredRegisterId,
+          outcome: disposedOutcome,
+          restored: true,
+        };
       }
 
       await client.query(
@@ -664,15 +718,22 @@ export async function adminAllocateDisposedAsset(input: {
            ($1, $3, 'asset_admin_allocated_out', 'asset_register_item', $4, $5::jsonb, now()),
            ($2, $3, 'asset_admin_allocated_in', 'asset_register_item', $4, $6::jsonb, now())`,
         [input.sellerUserId, input.buyerUserId, input.adminUserId, input.assetId,
-          JSON.stringify({ lifecycleEventId: input.lifecycleEventId, buyerUserId: input.buyerUserId, adminName: input.adminName }),
-          JSON.stringify({ lifecycleEventId: input.lifecycleEventId, sellerUserId: input.sellerUserId, adminName: input.adminName })],
+          JSON.stringify({ lifecycleEventId: input.lifecycleEventId, buyerUserId: input.buyerUserId, outcome: disposedOutcome, adminName: input.adminName }),
+          JSON.stringify({ lifecycleEventId: input.lifecycleEventId, sellerUserId: input.sellerUserId, outcome: disposedOutcome, adminName: input.adminName })],
       );
       if (asset.register_id) {
         await client.query(`update public.asset_registers set updated_at = now() where id = $1::uuid and user_id = $2`, [asset.register_id, input.sellerUserId]);
       }
       await client.query(`update public.asset_registers set updated_at = now() where id = $1::uuid and user_id = $2`, [buyerRegister.id, input.buyerUserId]);
       await client.query('commit');
-      return { assetId: input.assetId, assetTitle: assetRecord.title, buyerUserId: input.buyerUserId, buyerRegisterId: buyerRegister.id };
+      return {
+        assetId: input.assetId,
+        assetTitle: assetRecord.title,
+        buyerUserId: input.buyerUserId,
+        buyerRegisterId: buyerRegister.id,
+        outcome: disposedOutcome,
+        restored: false,
+      };
     } catch (error) {
       await client.query('rollback').catch(() => undefined);
       lastError = error;
@@ -689,7 +750,7 @@ export async function adminAllocateDisposedAsset(input: {
   throw lastError;
 }
 
-export async function adminDeleteSoldAsset(input: {
+export async function adminDeleteDisposedAsset(input: {
   lifecycleEventId: string;
   assetId: string;
   sellerUserId: string;
@@ -700,16 +761,16 @@ export async function adminDeleteSoldAsset(input: {
   const client = await getDb().connect();
   try {
     await client.query('begin');
-    const lifecycle = await client.query<{ id: string; transfer_offer_id: string | null }>(
-      `select id::text, transfer_offer_id::text
+    const lifecycle = await client.query<{ id: string; transfer_offer_id: string | null; reason: AdminDisposedOutcome }>(
+      `select id::text, transfer_offer_id::text, reason
        from public.asset_lifecycle_events
        where id = $1::uuid and asset_register_item_id = $2::uuid
-         and event_type = 'disposed' and reason = 'sold'
+         and event_type = 'disposed' and reason in ('sold', 'traded_in', 'scrapped')
          and coalesce(original_owner_user_id, owner_user_id) = $3
        for update`,
       [input.lifecycleEventId, input.assetId, input.sellerUserId],
     );
-    if (!lifecycle.rows[0]) throw new Error('ADMIN_SOLD_ASSET_NOT_FOUND');
+    if (!lifecycle.rows[0]) throw new Error('ADMIN_DISPOSED_ASSET_NOT_FOUND');
     const asset = await client.query<LockedAssetRow>(
       `select id::text, user_id, register_id::text, valuation_run_id, lifecycle_state, documents
        from public.asset_register_items where id = $1::uuid for update`,
@@ -717,7 +778,7 @@ export async function adminDeleteSoldAsset(input: {
     );
     const lockedAsset = asset.rows[0];
     if (!lockedAsset || lockedAsset.user_id !== input.sellerUserId || !['disposed', 'transfer_pending'].includes(cleanText(lockedAsset.lifecycle_state))) {
-      throw new Error('ADMIN_SOLD_ASSET_DELETE_NOT_AVAILABLE');
+      throw new Error('ADMIN_DISPOSED_ASSET_DELETE_NOT_AVAILABLE');
     }
     await client.query(
       `update public.asset_transfer_offers
@@ -727,10 +788,10 @@ export async function adminDeleteSoldAsset(input: {
     );
     await client.query(
       `update public.asset_lifecycle_events
-       set event_type = 'deleted_duplicate', reason = 'admin_deleted_sold_record',
+       set event_type = 'deleted_duplicate', reason = $2,
            transfer_status = case when transfer_status is null then null else 'cancelled' end
        where id = $1::uuid`,
-      [input.lifecycleEventId],
+      [input.lifecycleEventId, `admin_deleted_${lifecycle.rows[0].reason}_record`],
     );
     await client.query(
       `update public.asset_register_items
@@ -742,9 +803,9 @@ export async function adminDeleteSoldAsset(input: {
     await client.query(
       `insert into public.access_audit_events
          (owner_user_id, actor_user_id, event_type, entity_type, entity_id, metadata_json, created_at)
-       values ($1, $2, 'admin_sold_asset_deleted', 'asset_register_item', $3, $4::jsonb, now())`,
+       values ($1, $2, 'admin_disposed_asset_deleted', 'asset_register_item', $3, $4::jsonb, now())`,
       [input.sellerUserId, input.adminUserId, input.assetId,
-        JSON.stringify({ lifecycleEventId: input.lifecycleEventId, adminName: input.adminName, retainedForAudit: true })],
+        JSON.stringify({ lifecycleEventId: input.lifecycleEventId, outcome: lifecycle.rows[0].reason, adminName: input.adminName, retainedForAudit: true })],
     );
     if (lockedAsset.register_id) {
       await client.query(`update public.asset_registers set updated_at = now() where id = $1::uuid and user_id = $2`, [lockedAsset.register_id, input.sellerUserId]);
