@@ -4,7 +4,7 @@ import { getAccountProfile } from '../../../lib/account-profile';
 import { getAnyServerSession } from '../../../lib/auth-session';
 import { runServerValuation } from '../../../lib/server-valuation';
 import type { ConditionKey } from '../../../lib/tractor-data';
-import type { GpsType, RunValuationInput } from '../../../lib/tractor-logic';
+import type { GpsType, RunValuationInput, TractorUsageMode } from '../../../lib/tractor-logic';
 import {
   advancedAssumptionsRequireActiveAccess,
   advancedAssumptionsWereRequested,
@@ -50,6 +50,16 @@ function normalizeGpsType(value: string | null | undefined): GpsType | null {
   return null;
 }
 
+function normalizeUsageMode(value: unknown): TractorUsageMode {
+  return String(value ?? '').trim().toLowerCase() === 'percent' ? 'percent' : 'hours';
+}
+
+function normalizeLifeWorkedPercent(value: unknown): number | null {
+  if (value === null || typeof value === 'undefined' || String(value).trim() === '') return null;
+  const numeric = Number(value);
+  return Number.isFinite(numeric) && numeric >= 0 && numeric <= 100 ? numeric : null;
+}
+
 function normalizePositiveMoney(value: unknown): number | null {
   if (value === null || typeof value === 'undefined') return null;
   const numeric = Number(String(value).replace(/[^0-9.-]/g, ''));
@@ -80,7 +90,10 @@ function buildInputFromSearchParams(request: NextRequest): RunValuationInput | n
   return {
     modelId,
     year,
+    yearModelUnknown: parseBoolean(searchParams.get('yearModelUnknown')),
+    usageMode: normalizeUsageMode(searchParams.get('usageMode')),
     hours,
+    lifeWorkedPercent: normalizeLifeWorkedPercent(searchParams.get('lifeWorkedPercent')),
     condition,
     frontPto: parseBoolean(searchParams.get('frontPto')),
     frontLoader: parseBoolean(searchParams.get('frontLoader')),
@@ -115,7 +128,10 @@ function buildInputFromBody(body: Partial<RunValuationInput> | null | undefined)
   return {
     modelId,
     year,
+    yearModelUnknown: Boolean(body.yearModelUnknown),
+    usageMode: normalizeUsageMode(body.usageMode),
     hours,
+    lifeWorkedPercent: normalizeLifeWorkedPercent(body.lifeWorkedPercent),
     condition,
     frontPto: Boolean(body.frontPto),
     frontLoader: Boolean(body.frontLoader),

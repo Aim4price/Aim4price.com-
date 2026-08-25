@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ADMIN_VALUATION_PAGE_SIZES,
+  buildAdminValuationInputSections,
+  buildAdminValuationOutputSections,
   formatAdminValuationDateTime,
   formatAdminValuationMoney,
   type AdminValuationFilters,
@@ -12,11 +14,6 @@ import {
 import styles from './page.module.css';
 
 type ValuationFilterState = AdminValuationFilters;
-
-type DetailRow = {
-  label: string;
-  value: string;
-};
 
 const RECORD_LABELS = {
   estimate: 'Estimate result',
@@ -72,54 +69,6 @@ function formatRange(valuation: AdminValuationRecord): string {
   return 'Not recorded';
 }
 
-function humanizePath(path: string[]): string {
-  return path.map(titleCase).join(' / ');
-}
-
-function looksLikeMoney(path: string[]): boolean {
-  const key = path[path.length - 1] ?? '';
-  return /(price|value|valuation|amount|cost).*?(vat)?$/i.test(key) || /ExVat$/i.test(key);
-}
-
-function formatDetailValue(value: unknown, path: string[]): string {
-  if (typeof value === 'boolean') return value ? 'Yes' : 'No';
-  if (typeof value === 'number') {
-    if (looksLikeMoney(path)) return formatAdminValuationMoney(value);
-    if (/percent/i.test(path[path.length - 1] ?? '')) {
-      return `${new Intl.NumberFormat('en-ZA', { maximumFractionDigits: 2 }).format(value)}%`;
-    }
-    return new Intl.NumberFormat('en-ZA', { maximumFractionDigits: 2 }).format(value);
-  }
-  if (Array.isArray(value)) {
-    if (!value.length) return 'None';
-    if (value.every((item) => ['string', 'number', 'boolean'].includes(typeof item))) {
-      return value.slice(0, 12).map(String).join(', ') + (value.length > 12 ? ` +${value.length - 12} more` : '');
-    }
-    return `${value.length.toLocaleString('en-ZA')} records`;
-  }
-  return String(value ?? '').trim();
-}
-
-function flattenDetails(source: Record<string, unknown>): DetailRow[] {
-  const rows: DetailRow[] = [];
-
-  function visit(value: unknown, path: string[], depth: number) {
-    if (rows.length >= 120 || value === null || typeof value === 'undefined' || value === '') return;
-    if (Array.isArray(value) || typeof value !== 'object' || depth >= 5) {
-      const formatted = formatDetailValue(value, path);
-      if (formatted) rows.push({ label: humanizePath(path), value: formatted });
-      return;
-    }
-
-    const entries = Object.entries(value as Record<string, unknown>);
-    if (!entries.length) return;
-    for (const [key, nested] of entries) visit(nested, [...path, key], depth + 1);
-  }
-
-  for (const [key, value] of Object.entries(source)) visit(value, [key], 0);
-  return rows;
-}
-
 function buildQuery(filters: ValuationFilterState): string {
   const params = new URLSearchParams();
   if (filters.search) params.set('search', filters.search);
@@ -162,12 +111,12 @@ export default function AdminValuationsClient({
     [filters],
   );
 
-  const inputRows = useMemo(
-    () => selectedValuation ? flattenDetails(selectedValuation.input) : [],
+  const inputSections = useMemo(
+    () => selectedValuation ? buildAdminValuationInputSections(selectedValuation) : [],
     [selectedValuation],
   );
-  const outputRows = useMemo(
-    () => selectedValuation ? flattenDetails(selectedValuation.output) : [],
+  const outputSections = useMemo(
+    () => selectedValuation ? buildAdminValuationOutputSections(selectedValuation) : [],
     [selectedValuation],
   );
 
@@ -355,8 +304,9 @@ export default function AdminValuationsClient({
       <aside className={styles.historyNote}>
         <strong>Complete available history.</strong>
         <span>
-          Saved valuations retain their detailed payload. New estimate results now retain the normalized input and output too;
-          older free-estimate events show only the fields that were recorded at the time.
+          Saved valuations retain their detailed payload. New estimate results retain the complete normalized flow,
+          including specifications, condition answers, usage, pricing, extras, assumptions and calculation output.
+          Older free-estimate events show only the fields that were recorded at the time.
         </span>
       </aside>
 
@@ -498,7 +448,7 @@ export default function AdminValuationsClient({
                   <td>{formatRange(valuation)}</td>
                   <td>
                     <button type="button" className={styles.viewButton} onClick={(event) => openDetails(valuation, event.currentTarget)}>
-                      View input &amp; result
+                      View complete flow
                     </button>
                   </td>
                 </tr>
@@ -574,16 +524,71 @@ export default function AdminValuationsClient({
               </section>
             </div>
 
-            <div className={styles.payloadColumns}>
-              <section>
-                <h3>Inputs recorded</h3>
-                {inputRows.length ? <dl>{inputRows.map((row, index) => <div key={`${row.label}-${index}`}><dt>{row.label}</dt><dd>{row.value}</dd></div>)}</dl> : <p>No detailed input was recorded for this historical event.</p>}
-              </section>
-              <section>
-                <h3>Estimate output</h3>
-                {outputRows.length ? <dl>{outputRows.map((row, index) => <div key={`${row.label}-${index}`}><dt>{row.label}</dt><dd>{row.value}</dd></div>)}</dl> : <p>No detailed output was recorded for this historical event.</p>}
-              </section>
-            </div>
+            <section className={styles.flowRecord} aria-labelledby="admin-valuation-flow-title">
+              <header className={styles.flowRecordHeader}>
+                <div>
+                  <p>Estimate flow record</p>
+                  <h3 id="admin-valuation-flow-title">Everything entered in the estimate path</h3>
+                  <span>Shown in the same order as asset selection, specifications, usage, condition and pricing.</span>
+                </div>
+                <strong>{inputSections.reduce((total, section) => total + section.rows.length, 0)} recorded fields</strong>
+              </header>
+              {inputSections.length ? (
+                <div className={styles.flowSectionGrid}>
+                  {inputSections.map((section) => (
+                    <article key={section.id} className={styles.flowSection}>
+                      <header>
+                        <h4>{section.title}</h4>
+                        <p>{section.description}</p>
+                      </header>
+                      <dl>
+                        {section.rows.map((row, index) => (
+                          <div key={`${section.id}-${row.label}-${index}`}>
+                            <dt>{row.label}</dt>
+                            <dd>{row.value}</dd>
+                          </div>
+                        ))}
+                      </dl>
+                    </article>
+                  ))}
+                </div>
+              ) : (
+                <p className={styles.noRecordedDetails}>No detailed input was retained for this historical event.</p>
+              )}
+            </section>
+
+            <section className={styles.flowRecord} aria-labelledby="admin-valuation-output-title">
+              <header className={styles.flowRecordHeader}>
+                <div>
+                  <p>Calculation record</p>
+                  <h3 id="admin-valuation-output-title">Complete estimated result</h3>
+                  <span>Every retained calculation, catalog snapshot, market source and result field is included.</span>
+                </div>
+                <strong>{outputSections.reduce((total, section) => total + section.rows.length, 0)} recorded fields</strong>
+              </header>
+              {outputSections.length ? (
+                <div className={styles.flowSectionGrid}>
+                  {outputSections.map((section) => (
+                    <article key={section.id} className={styles.flowSection}>
+                      <header>
+                        <h4>{section.title}</h4>
+                        <p>{section.description}</p>
+                      </header>
+                      <dl>
+                        {section.rows.map((row, index) => (
+                          <div key={`${section.id}-${row.label}-${index}`}>
+                            <dt>{row.label}</dt>
+                            <dd>{row.value}</dd>
+                          </div>
+                        ))}
+                      </dl>
+                    </article>
+                  ))}
+                </div>
+              ) : (
+                <p className={styles.noRecordedDetails}>No detailed calculation output was retained for this historical event.</p>
+              )}
+            </section>
 
             {error ? <p className={styles.modalError} role="alert">{error}</p> : null}
             <footer className={styles.modalActions}>
@@ -596,4 +601,3 @@ export default function AdminValuationsClient({
     </>
   );
 }
-

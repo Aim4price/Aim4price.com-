@@ -1,5 +1,5 @@
 import { recordAdminUsageEventSafely } from './admin-usage-events';
-import type { GenericValuationResult } from './generic-valuation';
+import type { GenericValuationInput, GenericValuationResult } from './generic-valuation';
 import type { Result, RunValuationInput } from './tractor-logic';
 
 type RecordCompletedValuationInput = {
@@ -18,6 +18,8 @@ async function recordCompletedValuationSafely(
     eventType: 'free_estimate_completed',
     eventSource: event.eventSource,
     metadata: {
+      captureVersion: 2,
+      captureScope: 'complete-estimate-flow',
       valuationMode: event.valuationMode,
       input: event.input,
       output: event.output,
@@ -38,10 +40,24 @@ export async function recordTractorValuationForAdminSafely(input: {
     eventSource: 'tractor-valuations',
     valuationMode: 'tractor',
     input: {
+      ...valuation,
       modelId: valuation.modelId,
+      brandName: result.model.brandName,
+      modelName: result.model.modelName,
+      tractorType: result.model.tractorType,
+      driveType: result.model.drive,
+      cabType: result.model.cab,
+      powerKw: result.model.powerKw,
       year: valuation.year,
-      usageMode: 'hours',
+      displayYearModel: valuation.yearModelUnknown ? null : valuation.year,
+      yearModelUnknown: Boolean(valuation.yearModelUnknown),
+      usageMode:
+        valuation.usageMode ??
+        (valuation.lifeWorkedPercent !== null && typeof valuation.lifeWorkedPercent !== 'undefined'
+          ? 'percent'
+          : 'hours'),
       hours: valuation.hours,
+      lifeWorkedPercent: valuation.lifeWorkedPercent ?? null,
       condition: valuation.condition,
       frontPto: valuation.frontPto,
       frontLoader: valuation.frontLoader,
@@ -59,12 +75,14 @@ export async function recordTractorValuationForAdminSafely(input: {
       advancedAssumptions: result.advancedAssumptions,
     },
     output: {
+      ...result,
       sectorKey: 'agricultural',
       sectorLabel: 'Agricultural',
       familyKey: 'tractors',
       familyLabel: 'Tractors',
       brandName: result.model.brandName,
       modelName: result.model.modelName,
+      selectedMethod: 'aim4price',
       selectedValueExVat: result.aim4priceValueExVat,
       aim4priceValueExVat: result.aim4priceValueExVat,
       valuationLowExVat: result.marketLow,
@@ -89,9 +107,15 @@ export async function recordTractorValuationForAdminSafely(input: {
 
 export async function recordGenericValuationForAdminSafely(input: {
   userId: string | null;
+  valuationInput: GenericValuationInput;
   result: GenericValuationResult;
 }): Promise<void> {
+  const valuation = input.valuationInput;
   const result = input.result;
+  const specs = valuation.specsJson ?? result.specsJson;
+  const enteredBrandName = String(
+    specs.unlisted_brand_name ?? specs.typed_brand_name ?? result.brand.name,
+  ).trim() || result.brand.name;
   const usageMode =
     result.depreciationMethodUsed === 'percentage_depreciation' ||
     (result.usageAmount === null && result.lifeWorkedPercent !== null)
@@ -105,12 +129,19 @@ export async function recordGenericValuationForAdminSafely(input: {
     eventSource: 'generic-valuations',
     valuationMode: 'generic',
     input: {
-      sectorKey: result.sector.key,
-      familyKey: result.family.key,
-      brandSlug: result.brand.slug,
-      typedModelName: result.typedModelName,
-      specsJson: result.specsJson,
-      year: result.year,
+      ...valuation,
+      sectorKey: valuation.sectorKey,
+      familyKey: valuation.familyKey,
+      brandSlug: valuation.brandSlug,
+      brandName: enteredBrandName,
+      equipmentModelId: valuation.equipmentModelId ?? null,
+      typedModelName: valuation.typedModelName ?? null,
+      modelName: result.typedModelName,
+      catalogModeUsed: result.catalogModeUsed,
+      saveModelCandidate: Boolean(valuation.saveModelCandidate),
+      specsJson: specs,
+      year: valuation.year,
+      displayYearModel: valuation.yearModelUnknown ? null : valuation.year,
       yearModelUnknown: Boolean(result.yearModelUnknown),
       usageMode,
       usageAmount: result.usageAmount,
@@ -121,13 +152,15 @@ export async function recordGenericValuationForAdminSafely(input: {
       advancedAssumptions: result.advancedAssumptions,
     },
     output: {
+      ...result,
       sectorKey: result.sector.key,
       sectorLabel: result.sector.label,
       familyKey: result.family.key,
       familyLabel: result.family.label,
       usageMetricType: result.family.usageMetricType,
-      brandName: result.brand.name,
+      brandName: enteredBrandName,
       modelName: result.typedModelName,
+      selectedMethod: 'aim4price',
       selectedValueExVat: result.aim4priceValueExVat,
       aim4priceValueExVat: result.aim4priceValueExVat,
       genericEstimateExVat: result.genericEstimateExVat,

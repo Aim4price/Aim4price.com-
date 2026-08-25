@@ -119,6 +119,7 @@ const ADMIN_VALUATION_CTE = `
         nullif(trim(event_document.metadata #>> '{output,sector,key}'), ''),
         nullif(trim(event_document.metadata #>> '{input,sectorKey}'), ''),
         nullif(trim(event_document.metadata->>'sectorKey'), ''),
+        nullif(trim(event_sector.sector_key), ''),
         case when lower(coalesce(event.event_source, '')) = 'tractor-valuations'
           then 'agricultural' else null end,
         'uncategorised'
@@ -126,6 +127,7 @@ const ADMIN_VALUATION_CTE = `
       coalesce(
         nullif(trim(event_document.metadata #>> '{output,sectorLabel}'), ''),
         nullif(trim(event_document.metadata #>> '{output,sector,label}'), ''),
+        nullif(trim(event_sector.sector_label), ''),
         case coalesce(
           nullif(trim(event_document.metadata #>> '{input,sectorKey}'), ''),
           nullif(trim(event_document.metadata->>'sectorKey'), '')
@@ -145,6 +147,7 @@ const ADMIN_VALUATION_CTE = `
         nullif(trim(event_document.metadata #>> '{output,family,key}'), ''),
         nullif(trim(event_document.metadata #>> '{input,familyKey}'), ''),
         nullif(trim(event_document.metadata->>'familyKey'), ''),
+        nullif(trim(event_family.family_key), ''),
         case when lower(coalesce(event.event_source, '')) = 'tractor-valuations'
           then 'tractors' else null end,
         'uncategorised'
@@ -152,6 +155,7 @@ const ADMIN_VALUATION_CTE = `
       coalesce(
         nullif(trim(event_document.metadata #>> '{output,familyLabel}'), ''),
         nullif(trim(event_document.metadata #>> '{output,family,label}'), ''),
+        nullif(trim(event_family.family_label), ''),
         case when lower(coalesce(event.event_source, '')) = 'tractor-valuations'
           then 'Tractors' else null end,
         initcap(replace(coalesce(
@@ -163,15 +167,19 @@ const ADMIN_VALUATION_CTE = `
       coalesce(
         nullif(trim(event_document.metadata #>> '{output,brandName}'), ''),
         nullif(trim(event_document.metadata #>> '{output,brand,name}'), ''),
+        nullif(trim(event_document.metadata #>> '{output,model,brandName}'), ''),
         nullif(trim(event_document.metadata #>> '{input,brandName}'), ''),
         nullif(trim(event_document.metadata #>> '{input,brandSlug}'), ''),
         nullif(trim(event_document.metadata->>'brandSlug'), ''),
+        nullif(trim(event_brand.name), ''),
         ''
       ) as brand_name,
       coalesce(
         nullif(trim(event_document.metadata #>> '{output,modelName}'), ''),
         nullif(trim(event_document.metadata #>> '{output,typedModelName}'), ''),
+        nullif(trim(event_document.metadata #>> '{output,model,modelName}'), ''),
         nullif(trim(event_document.metadata #>> '{input,typedModelName}'), ''),
+        nullif(trim(event_model.model_name), ''),
         nullif(trim(event_document.metadata->>'modelId'), ''),
         'Model not recorded'
       ) as model_name,
@@ -188,13 +196,26 @@ const ADMIN_VALUATION_CTE = `
         )
       end as year_model,
       coalesce(nullif(trim(event_document.metadata #>> '{input,condition}'), ''), '') as condition,
-      coalesce(
-        ${safeNumericSql("event_document.metadata #>> '{input,usageAmount}'")},
-        ${safeNumericSql("event_document.metadata #>> '{input,hours}'")},
-        ${safeNumericSql("event_document.metadata #>> '{input,lifeWorkedPercent}'")}
-      ) as usage_amount,
+      case
+        when lower(coalesce(
+          event_document.metadata #>> '{input,usageMode}',
+          event_document.metadata #>> '{input,usage_mode}',
+          ''
+        )) = 'percent' then coalesce(
+          ${safeNumericSql("event_document.metadata #>> '{input,lifeWorkedPercent}'")},
+          ${safeNumericSql("event_document.metadata #>> '{input,life_worked_percent}'")}
+        )
+        else coalesce(
+          ${safeNumericSql("event_document.metadata #>> '{input,usageAmount}'")},
+          ${safeNumericSql("event_document.metadata #>> '{input,usage_amount}'")},
+          ${safeNumericSql("event_document.metadata #>> '{input,hours}'")},
+          ${safeNumericSql("event_document.metadata #>> '{input,lifeWorkedPercent}'")},
+          ${safeNumericSql("event_document.metadata #>> '{input,life_worked_percent}'")}
+        )
+      end as usage_amount,
       coalesce(
         nullif(trim(event_document.metadata #>> '{input,usageMode}'), ''),
+        nullif(trim(event_document.metadata #>> '{input,usage_mode}'), ''),
         nullif(trim(event_document.metadata #>> '{output,usageMetricType}'), ''),
         case
           when event_document.metadata #>> '{input,lifeWorkedPercent}' is not null then 'percent'
@@ -239,6 +260,26 @@ const ADMIN_VALUATION_CTE = `
     cross join lateral (
       select coalesce(event.metadata, '{}'::jsonb) as metadata
     ) event_document
+    left join public.equipment_models event_model
+      on event_model.id::text = coalesce(
+        nullif(trim(event_document.metadata #>> '{input,modelId}'), ''),
+        nullif(trim(event_document.metadata #>> '{input,equipmentModelId}'), ''),
+        nullif(trim(event_document.metadata->>'modelId'), '')
+      )
+    left join public.equipment_families event_family
+      on event_family.id = event_model.equipment_family_id
+    left join public.sectors event_sector
+      on event_sector.id = event_family.sector_id
+    left join public.brands event_brand
+      on event_brand.id = event_model.brand_id
+      or (
+        event_model.id is null
+        and lower(event_brand.slug) = lower(coalesce(
+          nullif(trim(event_document.metadata #>> '{input,brandSlug}'), ''),
+          nullif(trim(event_document.metadata->>'brandSlug'), ''),
+          ''
+        ))
+      )
     where event.event_type = 'free_estimate_completed'
   ),
   saved_valuation_rows as (
@@ -289,6 +330,8 @@ const ADMIN_VALUATION_CTE = `
         'Uncategorised'
       ) as family_label,
       coalesce(
+        nullif(trim(payload_document.payload #>> '{input,specsJson,unlisted_brand_name}'), ''),
+        nullif(trim(payload_document.payload #>> '{input,specsJson,typed_brand_name}'), ''),
         nullif(trim(valuation_document.row_json->>'brand_name'), ''),
         nullif(trim(brand.name), ''),
         nullif(trim(payload_document.payload #>> '{output,brand,name}'), ''),
@@ -304,16 +347,33 @@ const ADMIN_VALUATION_CTE = `
       ) as model_name,
       ${safeNumericSql("valuation_document.row_json->>'year_model'")} as year_model,
       coalesce(nullif(trim(valuation_document.row_json->>'condition'), ''), '') as condition,
-      coalesce(
-        ${safeNumericSql("valuation_document.row_json->>'hours'")},
-        ${safeNumericSql("valuation_document.row_json->>'estimated_hours'")},
-        ${safeNumericSql("valuation_document.row_json->>'life_worked_percent'")},
-        ${safeNumericSql("payload_document.payload #>> '{input,usageAmount}'")},
-        ${safeNumericSql("payload_document.payload #>> '{input,lifeWorkedPercent}'")}
-      ) as usage_amount,
+      case
+        when lower(coalesce(
+          payload_document.payload #>> '{input,usageMode}',
+          payload_document.payload #>> '{input,usage_mode}',
+          payload_document.payload #>> '{selectedUsageMode}',
+          payload_document.payload #>> '{selected_usage_mode}',
+          ''
+        )) = 'percent' then coalesce(
+          ${safeNumericSql("payload_document.payload #>> '{input,lifeWorkedPercent}'")},
+          ${safeNumericSql("payload_document.payload #>> '{input,life_worked_percent}'")},
+          ${safeNumericSql("valuation_document.row_json->>'life_worked_percent'")}
+        )
+        else coalesce(
+          ${safeNumericSql("payload_document.payload #>> '{input,usageAmount}'")},
+          ${safeNumericSql("payload_document.payload #>> '{input,usage_amount}'")},
+          ${safeNumericSql("valuation_document.row_json->>'hours'")},
+          ${safeNumericSql("valuation_document.row_json->>'estimated_hours'")},
+          ${safeNumericSql("valuation_document.row_json->>'life_worked_percent'")},
+          ${safeNumericSql("payload_document.payload #>> '{input,lifeWorkedPercent}'")},
+          ${safeNumericSql("payload_document.payload #>> '{input,life_worked_percent}'")}
+        )
+      end as usage_amount,
       coalesce(
         nullif(trim(payload_document.payload #>> '{input,usageMode}'), ''),
+        nullif(trim(payload_document.payload #>> '{input,usage_mode}'), ''),
         nullif(trim(payload_document.payload #>> '{selectedUsageMode}'), ''),
+        nullif(trim(payload_document.payload #>> '{selected_usage_mode}'), ''),
         case
           when valuation_document.row_json->>'life_worked_percent' is not null then 'percent'
           when lower(coalesce(sector.sector_key, '')) = 'motor' then 'km'
@@ -346,18 +406,29 @@ const ADMIN_VALUATION_CTE = `
       jsonb_strip_nulls(jsonb_build_object(
         'sectorKey', sector.sector_key,
         'familyKey', family.family_key,
+        'equipmentModelId', valuation_document.row_json->'equipment_model_id',
+        'equipmentType', valuation_document.row_json->>'equipment_type',
         'brandName', coalesce(valuation_document.row_json->>'brand_name', brand.name),
         'modelName', coalesce(
           valuation_document.row_json->>'typed_model_name',
           valuation_document.row_json->>'model_name'
         ),
-        'year', valuation_document.row_json->>'year_model',
+        'tractorType', valuation_document.row_json->>'tractor_type',
+        'driveType', valuation_document.row_json->>'drive_type',
+        'cabType', valuation_document.row_json->>'cab_type',
+        'powerKw', valuation_document.row_json->'power_kw',
+        'year', valuation_document.row_json->'year_model',
         'usageAmount', coalesce(
-          valuation_document.row_json->>'hours',
-          valuation_document.row_json->>'estimated_hours',
-          valuation_document.row_json->>'life_worked_percent'
+          valuation_document.row_json->'hours',
+          valuation_document.row_json->'estimated_hours',
+          valuation_document.row_json->'life_worked_percent'
         ),
-        'condition', valuation_document.row_json->>'condition'
+        'condition', valuation_document.row_json->>'condition',
+        'frontPto', valuation_document.row_json->'front_pto',
+        'frontLoader', valuation_document.row_json->'front_loader',
+        'gpsEnabled', valuation_document.row_json->'gps_enabled',
+        'gpsType', valuation_document.row_json->>'gps_type',
+        'gpsYear', valuation_document.row_json->'gps_year'
       )) || case
         when jsonb_typeof(payload_document.payload->'input') = 'object'
           then payload_document.payload->'input'
@@ -365,11 +436,12 @@ const ADMIN_VALUATION_CTE = `
       end as input_json,
       jsonb_strip_nulls(jsonb_build_object(
         'selectedValueExVat', ${SAVED_SELECTED_VALUE_SQL},
-        'valuationLowExVat', valuation_document.row_json->>'valuation_low_ex_vat',
-        'valuationMidExVat', valuation_document.row_json->>'valuation_mid_ex_vat',
-        'valuationHighExVat', valuation_document.row_json->>'valuation_high_ex_vat',
-        'replacementPriceUsedExVat', valuation_document.row_json->>'replacement_price_used_ex_vat',
-        'confidenceLabel', valuation_document.row_json->>'confidence_label'
+        'valuationLowExVat', ${safeNumericSql("valuation_document.row_json->>'valuation_low_ex_vat'")},
+        'valuationMidExVat', ${safeNumericSql("valuation_document.row_json->>'valuation_mid_ex_vat'")},
+        'valuationHighExVat', ${safeNumericSql("valuation_document.row_json->>'valuation_high_ex_vat'")},
+        'replacementPriceUsedExVat', ${safeNumericSql("valuation_document.row_json->>'replacement_price_used_ex_vat'")},
+        'confidenceLabel', valuation_document.row_json->>'confidence_label',
+        'savedValuationRecord', jsonb_strip_nulls(valuation_document.row_json - 'valuation_payload')
       )) || case
         when jsonb_typeof(payload_document.payload->'output') = 'object'
           then payload_document.payload->'output'

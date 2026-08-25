@@ -134,11 +134,26 @@ function normalizeGpsType(value: unknown): GpsType | null {
   return null;
 }
 
+function normalizeTractorUsageMode(value: unknown): 'hours' | 'percent' {
+  return String(value ?? '').trim().toLowerCase() === 'percent' ? 'percent' : 'hours';
+}
+
+function normalizeLifeWorkedPercent(value: unknown): number | null {
+  if (value === null || typeof value === 'undefined' || String(value).trim() === '') return null;
+  const numeric = Number(value);
+  return Number.isFinite(numeric) && numeric >= 0 && numeric <= 100 ? numeric : null;
+}
+
 function normalizeReplacementPrice(value: unknown): number | null {
   if (value === null || typeof value === 'undefined') return null;
 
   const numeric = Number(String(value).replace(/[^0-9.-]/g, ''));
   return Number.isFinite(numeric) && numeric > 0 ? Math.round(numeric) : null;
+}
+
+function normalizePositiveInteger(value: unknown): number | null {
+  const numeric = Number(value);
+  return Number.isInteger(numeric) && numeric > 0 ? numeric : null;
 }
 
 function normalizeConversionAssetId(value: unknown): string {
@@ -177,7 +192,9 @@ function buildInput(
     modelId,
     year,
     yearModelUnknown: parseBoolean(body.yearModelUnknown),
+    usageMode: normalizeTractorUsageMode(body.usageMode),
     hours,
+    lifeWorkedPercent: normalizeLifeWorkedPercent(body.lifeWorkedPercent),
     condition,
     frontPto: parseBoolean(body.frontPto),
     frontLoader: parseBoolean(body.frontLoader),
@@ -394,6 +411,7 @@ export async function POST(request: NextRequest) {
       sectorKey?: unknown;
       familyKey?: unknown;
       brandSlug?: unknown;
+      equipmentModelId?: unknown;
       typedModelName?: unknown;
       specsJson?: unknown;
       yearModelUnknown?: unknown;
@@ -492,6 +510,7 @@ export async function POST(request: NextRequest) {
         sectorKey: sectorKey as SectorKey,
         familyKey,
         brandSlug,
+        equipmentModelId: normalizePositiveInteger(body.equipmentModelId),
         typedModelName: String(body.typedModelName ?? '').trim() || null,
         specsJson: body.specsJson && typeof body.specsJson === 'object' ? (body.specsJson as Record<string, unknown>) : {},
         year,

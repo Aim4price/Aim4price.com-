@@ -466,7 +466,7 @@
 
 .detailsModal {
   position: relative;
-  width: min(72rem, 100%);
+  width: min(88rem, 100%);
   max-height: min(54rem, calc(100vh - 2rem));
   overflow-y: auto;
   box-sizing: border-box;
@@ -634,6 +634,144 @@
   font-weight: 720;
 }
 
+.flowRecord {
+  margin-top: 0.78rem;
+  padding: 0.82rem;
+  border: 1px solid #dce7e2;
+  border-radius: 0.94rem;
+  background: #f8fbf9;
+}
+
+.flowRecordHeader {
+  padding: 0 0.1rem 0.72rem;
+  border-bottom: 1px solid #e1e9e5;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.flowRecordHeader p {
+  margin: 0 0 0.16rem;
+  color: #277459;
+  font-size: 0.58rem;
+  font-weight: 900;
+  letter-spacing: 0.055em;
+  text-transform: uppercase;
+}
+
+.flowRecordHeader h3 {
+  margin: 0;
+  color: #153e32;
+  font-size: 0.92rem;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+
+.flowRecordHeader span {
+  display: block;
+  margin-top: 0.16rem;
+  color: #72817b;
+  font-size: 0.64rem;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.flowRecordHeader > strong {
+  flex: 0 0 auto;
+  padding: 0.35rem 0.5rem;
+  border-radius: 999px;
+  color: #1d634b;
+  background: #e6f4ed;
+  font-size: 0.61rem;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.flowSectionGrid {
+  margin-top: 0.72rem;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: 0.65rem;
+}
+
+.flowSection {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid #e0e8e4;
+  border-radius: 0.78rem;
+  background: #ffffff;
+}
+
+.flowSection > header {
+  min-height: 3.6rem;
+  box-sizing: border-box;
+  padding: 0.66rem 0.72rem;
+  border-bottom: 1px solid #e8eeeb;
+  background: #f4f9f6;
+}
+
+.flowSection h4 {
+  margin: 0;
+  color: #1c5943;
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
+.flowSection header p {
+  margin: 0.13rem 0 0;
+  color: #76847f;
+  font-size: 0.59rem;
+  font-weight: 680;
+  line-height: 1.38;
+}
+
+.flowSection dl {
+  margin: 0;
+  padding: 0 0.72rem;
+  display: grid;
+}
+
+.flowSection dl > div {
+  min-width: 0;
+  padding: 0.45rem 0;
+  border-top: 1px solid #edf1ef;
+  display: grid;
+  grid-template-columns: minmax(9.5rem, 0.46fr) minmax(0, 1fr);
+  gap: 0.72rem;
+}
+
+.flowSection dl > div:first-child {
+  border-top: 0;
+}
+
+.flowSection dt {
+  color: #74837d;
+  font-size: 0.61rem;
+  font-weight: 820;
+}
+
+.flowSection dd {
+  min-width: 0;
+  margin: 0;
+  color: #28483d;
+  font-size: 0.64rem;
+  font-weight: 760;
+  overflow-wrap: anywhere;
+}
+
+.noRecordedDetails {
+  margin: 0.72rem 0 0;
+  padding: 0.75rem;
+  border: 1px dashed #d7e3dd;
+  border-radius: 0.7rem;
+  color: #76857f;
+  background: #ffffff;
+  font-size: 0.66rem;
+  font-weight: 720;
+}
+
 .modalError {
   margin-top: 0.72rem;
   border-width: 1px;
@@ -722,8 +860,14 @@
   }
 
   .detailColumns,
-  .payloadColumns {
+  .payloadColumns,
+  .flowSectionGrid {
     grid-template-columns: 1fr;
+  }
+
+  .flowRecordHeader {
+    align-items: flex-start;
+    flex-direction: column;
   }
 
   .payloadColumns > section {
@@ -775,7 +919,8 @@
   }
 
   .detailColumns dl > div,
-  .payloadColumns dl > div {
+  .payloadColumns dl > div,
+  .flowSection dl > div {
     grid-template-columns: 1fr;
     gap: 0.12rem;
   }
