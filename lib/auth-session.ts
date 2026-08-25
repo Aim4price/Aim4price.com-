@@ -5,6 +5,7 @@ import { recordAdminUsageEventSafely } from "./admin-usage-events";
 import { auth } from "./auth";
 import { getDb } from "./db";
 import { getDealerAppSession } from "./dealer-app-session";
+import type { DealerStaffRole } from "./dealer-app";
 import { getOwnerAppSession } from "./owner-app-session";
 
 export const ADMIN_SUPPORT_COOKIE_NAME = "aim4price_admin_support_user_id";
@@ -35,7 +36,7 @@ export type AdminSupportSession = NonNullServerSession & {
 };
 
 export type DealerAppSupportSession = NonNullServerSession & {
-  dealerApp: { kind: "dealer-staff"; staffId: string; parentDealerUserId: string; displayName: string; username: string };
+  dealerApp: { kind: "dealer-staff"; staffId: string; parentDealerUserId: string; displayName: string; username: string; role: DealerStaffRole };
 };
 
 export type OwnerAppSupportSession = NonNullServerSession & {
@@ -197,6 +198,7 @@ async function readDealerAppSupportSession(): Promise<DealerAppSupportSession | 
       parentDealerUserId: dealer.dealerUserId,
       displayName: dealer.displayName,
       username: dealer.username,
+      role: dealer.role,
     },
   } as DealerAppSupportSession;
 }

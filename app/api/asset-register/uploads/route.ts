@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession, isDealerAppSession } from '../../../../lib/auth-session';
+import { dealerRoleCan } from '../../../../lib/dealer-app-access';
 import {
   ALLOWED_ASSET_REGISTER_IMAGE_TYPES,
   MAX_ASSET_REGISTER_DOCUMENTS,
@@ -63,9 +64,10 @@ export async function POST(request: NextRequest) {
     const files = formData.getAll('files').filter(isFile);
     const registerId = String(formData.get('registerId') ?? '').trim();
 
-    // Dealer App staff need photo uploads only for the valuation-to-Marketplace
-    // workflow. Account documents and register branding remain private.
-    if (isDealerAppSession(session) && uploadType !== 'photo') {
+    // Technicians and parts staff retain photo-only access for the valuation and
+    // maintenance workflows. Inventory managers can also manage their own
+    // register documents and branding.
+    if (isDealerAppSession(session) && uploadType !== 'photo' && !dealerRoleCan(session.dealerApp.role, 'inventory')) {
       return NextResponse.json(
         { ok: false, error: 'Dealer App staff can only upload Marketplace photos.' },
         { status: 403 },

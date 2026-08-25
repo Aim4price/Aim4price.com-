@@ -151,6 +151,8 @@ type AssetTransferReceipt = {
   assetIdentifierLabel: 'Serial / VIN' | 'Asset ID';
   transferCode: string;
   expiresAtIso: string;
+  transferReason: 'sold' | 'traded_in';
+  recipientAccountType: 'owner_or_dealer' | 'dealer';
 };
 
 function lifecycleToday(): string {
@@ -181,6 +183,10 @@ const DISPOSAL_WIZARD_STEPS = [
 
 function disposalImpactRequired(reason: DisposalDraft['reason']): boolean {
   return reason === 'sold' || reason === 'traded_in' || reason === 'scrapped';
+}
+
+function disposalTransferAvailable(reason: DisposalDraft['reason']): boolean {
+  return reason === 'sold' || reason === 'traded_in';
 }
 
 function disposalReasonLabel(reason: DisposalDraft['reason']): string {
@@ -6499,7 +6505,15 @@ function renderManualAssetTypeIcon(assetKind: AssetKind, className?: string) {
   return <UpdateAssetIcon className={className} />;
 }
 
-export default function AssetRegisterClient({ accountantShareId }: { accountantShareId?: string } = {}) {
+export default function AssetRegisterClient({
+  accountantShareId,
+  showAppHeader = true,
+  registerManagementHref = '/asset-registers',
+}: {
+  accountantShareId?: string;
+  showAppHeader?: boolean;
+  registerManagementHref?: string;
+} = {}) {
   const isAccountantWorkspace = Boolean(accountantShareId);
   const [assets, setAssets] = useState<RegisterAsset[]>([]);
   const [assetGroups, setAssetGroups] = useState<AssetGroup[]>([]);
@@ -8053,7 +8067,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
     if (!canOpenRegisterSwitcher) {
       window.location.href = isAccountantWorkspace && accountantShareId
         ? `/accountant/registers/${encodeURIComponent(accountantShareId)}/manage`
-        : '/asset-registers';
+        : registerManagementHref;
       return;
     }
 
@@ -12785,7 +12799,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
             aim4priceOutcomeInfluence: ['sold', 'traded_in', 'scrapped'].includes(draft.reason)
               ? draft.aim4priceOutcomeInfluence
               : undefined,
-            transferAction: draft.reason === 'sold' ? draft.transferAction : undefined,
+            transferAction: disposalTransferAvailable(draft.reason) ? draft.transferAction : undefined,
           };
       const response = await fetch(`/api/asset-register?id=${assetId}`, {
         method: 'DELETE',
@@ -12819,7 +12833,12 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
 
       if (data.mode === 'transfer_pending' && data.transfer) {
         setAssetTransferReceipt(data.transfer);
-        setNotice({ tone: 'success', message: 'Sale saved and a one-time transfer code was created.' });
+        setNotice({
+          tone: 'success',
+          message: data.transfer.transferReason === 'traded_in'
+            ? 'Trade-in saved and a dealer intake code was created.'
+            : 'Sale saved and a one-time transfer code was created.',
+        });
       } else {
         setNotice({
           tone: 'success',
@@ -12863,8 +12882,13 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
       setNotice({ tone: 'error', message: 'Tell us whether Aim4price helped with this outcome.' });
       return;
     }
-    if (disposalDraft.reason === 'sold' && !disposalDraft.transferAction) {
-      setNotice({ tone: 'error', message: 'Choose whether to archive the sold asset or send it to another Aim4price account.' });
+    if (disposalTransferAvailable(disposalDraft.reason) && !disposalDraft.transferAction) {
+      setNotice({
+        tone: 'error',
+        message: disposalDraft.reason === 'traded_in'
+          ? 'Choose whether to archive the trade-in or send it to the dealer inventory.'
+          : 'Choose whether to archive the sold asset or send it to another Aim4price account.',
+      });
       return;
     }
 
@@ -12899,7 +12923,9 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
       `Aim4price asset transfer: ${assetTransferReceipt.assetTitle}`,
       `${assetTransferReceipt.assetIdentifierLabel}: ${assetTransferReceipt.assetIdentifier}`,
       `Transfer code: ${assetTransferReceipt.transferCode}`,
-      'Open Account → Claim or send an asset in Aim4price and choose Claim an asset.',
+      assetTransferReceipt.transferReason === 'traded_in'
+        ? 'Open Dealer → My Inventory → Claim asset in Aim4price.'
+        : 'Open Account → Claim or send an asset in Aim4price and choose Claim an asset.',
     ].join('\n');
     try {
       await navigator.clipboard.writeText(message);
@@ -15646,7 +15672,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
 
   return (
     <main className={styles.page}>
-      <AppHeader active="asset-register" />
+      {showAppHeader ? <AppHeader active="asset-register" /> : null}
 
       <section className={styles.shell}>
         {notice ? (
@@ -21652,7 +21678,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                     ...current,
                     reason: value,
                     aim4priceOutcomeInfluence: disposalImpactRequired(value) ? current.aim4priceOutcomeInfluence : '',
-                    transferAction: value === 'sold' ? current.transferAction : '',
+                    transferAction: disposalTransferAvailable(value) ? current.transferAction : '',
                   }))}>
                     <span className={styles.assetDisposalReasonMarker} aria-hidden="true" />
                     <strong>{label}</strong>
@@ -21681,21 +21707,21 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
               {disposalWizardStep === 4 ? <section className={styles.assetDisposalStep} aria-labelledby="asset-disposal-information-title">
                 <div className={styles.assetDisposalStepHeader}><strong id="asset-disposal-information-title">What should happen to the asset information?</strong><small>Review the outcome before saving. Private account information is never sent with an asset.</small></div>
                 <dl className={styles.assetDisposalSummary}><div><dt>Outcome</dt><dd>{disposalReasonLabel(disposalDraft.reason)}</dd></div>{disposalDraft.reason !== 'mistake_duplicate' ? <><div><dt>Date</dt><dd>{disposalDraft.disposalDate}</dd></div><div><dt>Amount</dt><dd>{disposalDraft.disposalAmountExVat ? `R ${disposalDraft.disposalAmountExVat}` : 'Not recorded'}</dd></div></> : null}{disposalImpactRequired(disposalDraft.reason) ? <div><dt>Aim4price helped</dt><dd>{disposalDraft.aim4priceOutcomeInfluence === 'yes' ? 'Yes' : disposalDraft.aim4priceOutcomeInfluence === 'no' ? 'No' : 'Not sure'}</dd></div> : null}</dl>
-                {disposalDraft.reason === 'sold' ? <div className={styles.assetSaleFlow}>
+                {disposalTransferAvailable(disposalDraft.reason) ? <div className={styles.assetSaleFlow}>
                   <section className={styles.assetSaleQuestion} aria-labelledby="asset-register-transfer-title">
-                    <div className={styles.assetSaleQuestionHeader}><strong id="asset-register-transfer-title">Where should the portable asset record go?</strong><small>Archive it on this account, or create a secure one-time code for the buyer.</small></div>
-                    <div className={styles.assetSaleTransferGrid} role="group" aria-label="Choose what happens to the sold asset record">
-                      <button type="button" className={`${styles.assetSaleTransferButton} ${disposalDraft.transferAction === 'archive' ? styles.assetSaleTransferButtonActive : ''}`} aria-pressed={disposalDraft.transferAction === 'archive'} onClick={() => setDisposalDraft((current) => ({ ...current, transferAction: 'archive' }))}><strong>Archive after sale</strong><small>The buyer does not use Aim4price, or no transfer is needed.</small></button>
-                      <button type="button" className={`${styles.assetSaleTransferButton} ${disposalDraft.transferAction === 'claim_code' ? styles.assetSaleTransferButtonActive : ''}`} aria-pressed={disposalDraft.transferAction === 'claim_code'} onClick={() => setDisposalDraft((current) => ({ ...current, transferAction: 'claim_code' }))}><strong>Send to buyer</strong><small>Create a one-time code so the buyer can claim the asset.</small></button>
+                    <div className={styles.assetSaleQuestionHeader}><strong id="asset-register-transfer-title">Where should the portable asset record go?</strong><small>{disposalDraft.reason === 'traded_in' ? 'Archive it on this account, or create a secure intake code for the dealer.' : 'Archive it on this account, or create a secure one-time code for the buyer.'}</small></div>
+                    <div className={styles.assetSaleTransferGrid} role="group" aria-label={disposalDraft.reason === 'traded_in' ? 'Choose what happens to the traded-in asset record' : 'Choose what happens to the sold asset record'}>
+                      <button type="button" className={`${styles.assetSaleTransferButton} ${disposalDraft.transferAction === 'archive' ? styles.assetSaleTransferButtonActive : ''}`} aria-pressed={disposalDraft.transferAction === 'archive'} onClick={() => setDisposalDraft((current) => ({ ...current, transferAction: 'archive' }))}><strong>{disposalDraft.reason === 'traded_in' ? 'Archive after trade-in' : 'Archive after sale'}</strong><small>{disposalDraft.reason === 'traded_in' ? 'Use this when the dealer does not use Aim4price or no digital hand-over is needed.' : 'The buyer does not use Aim4price, or no transfer is needed.'}</small></button>
+                      <button type="button" className={`${styles.assetSaleTransferButton} ${disposalDraft.transferAction === 'claim_code' ? styles.assetSaleTransferButtonActive : ''}`} aria-pressed={disposalDraft.transferAction === 'claim_code'} onClick={() => setDisposalDraft((current) => ({ ...current, transferAction: 'claim_code' }))}><strong>{disposalDraft.reason === 'traded_in' ? 'Send to dealer inventory' : 'Send to buyer'}</strong><small>{disposalDraft.reason === 'traded_in' ? 'Create a one-time code that only an active Dealer account can claim.' : 'Create a one-time code so an Owner or Dealer account can claim the asset.'}</small></button>
                     </div>
-                    {disposalDraft.transferAction === 'claim_code' ? <div className={styles.assetSaleTransferNote}><strong>What moves with the asset</strong><small>Asset details, valuation and maintenance history, scan history, photos and saved asset documents move to the buyer. Private invoices, finance, insurance and account access stay with the seller.</small></div> : null}
+                    {disposalDraft.transferAction === 'claim_code' ? <div className={styles.assetSaleTransferNote}><strong>What moves with the asset</strong><small>Asset details, valuation and maintenance history, scan history, photos and portable asset documents move to the receiving account. Private invoices, finance, insurance and account access stay with the current account.</small></div> : null}
                   </section>
-                </div> : disposalDraft.reason === 'traded_in' ? <div className={styles.assetDisposalInformationCard}><strong>Archive after trade-in</strong><p>The asset leaves the active register and its history stays available. Temporary dealer custody should use controlled dealer access—not an ownership transfer—so seller-private data remains protected.</p></div> : disposalDraft.reason === 'mistake_duplicate' ? <p className={`${styles.assetLifecycleNotice} ${styles.assetDisposalDeleteNotice}`}>This removes the duplicate from the active register and retains its final snapshot and deletion audit.</p> : <div className={styles.assetDisposalInformationCard}><strong>Archive and retain history</strong><p>The asset leaves active totals while its lifecycle event, final snapshot and reporting history remain available.</p></div>}
+                </div> : disposalDraft.reason === 'mistake_duplicate' ? <p className={`${styles.assetLifecycleNotice} ${styles.assetDisposalDeleteNotice}`}>This removes the duplicate from the active register and retains its final snapshot and deletion audit.</p> : <div className={styles.assetDisposalInformationCard}><strong>Archive and retain history</strong><p>The asset leaves active totals while its lifecycle event, final snapshot and reporting history remain available.</p></div>}
               </section> : null}
 
               <div className={`${styles.assetSettingsActions} ${styles.assetDisposalActions}`}>
                 <button type="button" className={styles.secondaryButton} onClick={() => disposalWizardStep === 1 ? setDisposalCandidateAsset(null) : setDisposalWizardStep((current) => Math.max(1, current - 1) as DisposalWizardStep)} disabled={busyDeleteId === disposalCandidateAsset.id}>{disposalWizardStep === 1 ? 'Cancel' : 'Back'}</button>
-                {disposalWizardStep < 4 ? <button type="submit" className={styles.primaryButton} disabled={busyDeleteId === disposalCandidateAsset.id || (disposalWizardStep === 1 && !disposalDraft.reason) || (disposalWizardStep === 3 && disposalImpactRequired(disposalDraft.reason) && !disposalDraft.aim4priceOutcomeInfluence)}>Next</button> : <button type="submit" className={`${styles.primaryButton} ${styles.deleteConfirmButton}`} disabled={busyDeleteId === disposalCandidateAsset.id || (disposalDraft.reason === 'sold' && !disposalDraft.transferAction)}>{busyDeleteId === disposalCandidateAsset.id ? 'Saving…' : disposalDraft.reason === 'mistake_duplicate' ? 'Delete duplicate' : disposalDraft.reason === 'sold' && disposalDraft.transferAction === 'claim_code' ? 'Save sale & create code' : disposalDraft.reason === 'sold' ? 'Save sale' : 'Save disposal'}</button>}
+                {disposalWizardStep < 4 ? <button type="submit" className={styles.primaryButton} disabled={busyDeleteId === disposalCandidateAsset.id || (disposalWizardStep === 1 && !disposalDraft.reason) || (disposalWizardStep === 3 && disposalImpactRequired(disposalDraft.reason) && !disposalDraft.aim4priceOutcomeInfluence)}>Next</button> : <button type="submit" className={`${styles.primaryButton} ${styles.deleteConfirmButton}`} disabled={busyDeleteId === disposalCandidateAsset.id || (disposalTransferAvailable(disposalDraft.reason) && !disposalDraft.transferAction)}>{busyDeleteId === disposalCandidateAsset.id ? 'Saving…' : disposalDraft.reason === 'mistake_duplicate' ? 'Delete duplicate' : disposalDraft.reason === 'traded_in' && disposalDraft.transferAction === 'claim_code' ? 'Save trade-in & create code' : disposalDraft.reason === 'traded_in' ? 'Save trade-in' : disposalDraft.reason === 'sold' && disposalDraft.transferAction === 'claim_code' ? 'Save sale & create code' : disposalDraft.reason === 'sold' ? 'Save sale' : 'Save disposal'}</button>}
               </div>
             </div>
           </form>
@@ -21709,7 +21735,7 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
             <div className={`${styles.modalHeader} ${styles.assetTransferReceiptHeader}`}>
               <div className={styles.modalHeaderText}>
                 <h3 id="asset-transfer-receipt-title">Asset ready to send</h3>
-                <p>Share both details with the buyer. The code works once and expires in 30 days.</p>
+                <p>Share both details with the {assetTransferReceipt.transferReason === 'traded_in' ? 'dealer' : 'buyer'}. The code works once and expires in 30 days.</p>
               </div>
               <button type="button" className={styles.modalCloseButton} onClick={() => setAssetTransferReceipt(null)} aria-label="Close transfer details">
                 <CloseIcon className={styles.buttonIcon} />
@@ -21721,12 +21747,12 @@ export default function AssetRegisterClient({ accountantShareId }: { accountantS
                 <div><span>Transfer code</span><strong>{assetTransferReceipt.transferCode}</strong></div>
               </div>
               <div className={styles.assetSaleTransferNote}>
-                <strong>Buyer instructions</strong>
-                <small>Sign in to Aim4price, open Account → Claim or send an asset, and enter the identifier with this code.</small>
+                <strong>{assetTransferReceipt.transferReason === 'traded_in' ? 'Dealer instructions' : 'Buyer instructions'}</strong>
+                <small>{assetTransferReceipt.transferReason === 'traded_in' ? 'Sign in to the Aim4price Dealer App, open My Inventory → Claim asset, and enter the identifier with this code.' : 'Sign in to Aim4price, open Account → Claim or send an asset, and enter the identifier with this code.'}</small>
               </div>
               <div className={`${styles.assetSettingsActions} ${styles.assetTransferReceiptActions}`}>
                 <button type="button" className={styles.secondaryButton} onClick={() => void copyAssetTransferDetails()}>Copy details</button>
-                <Link className={styles.primaryButton} href="/account/asset-transfers">Manage transfers</Link>
+                <Link className={styles.primaryButton} href={accountProfile?.accountType === 'dealer' ? '/dealer/inventory/transfers' : '/account/asset-transfers'}>Manage transfers</Link>
               </div>
             </div>
           </section>

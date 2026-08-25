@@ -276,9 +276,11 @@ export async function disposeOrDeleteAsset(input: {
   if (impactQuestionRequired && !allowedOutcomeInfluence.has(outcomeInfluence as Aim4priceOutcomeInfluence)) {
     throw new Error('AIM4PRICE_OUTCOME_INFLUENCE_REQUIRED');
   }
-  if (input.transferRequested && input.reason !== 'sold') throw new Error('ASSET_TRANSFER_REQUIRES_SALE');
+  if (input.transferRequested && !['sold', 'traded_in'].includes(input.reason)) {
+    throw new Error('ASSET_TRANSFER_REQUIRES_SALE_OR_TRADE_IN');
+  }
 
-  if (input.reason === 'sold' && input.transferRequested) {
+  if ((input.reason === 'sold' || input.reason === 'traded_in') && input.transferRequested) {
     const transfer = await createAssetTransferOffer({
       sellerUserId: input.ownerUserId,
       asset,
@@ -286,6 +288,7 @@ export async function disposeOrDeleteAsset(input: {
       disposalAmountExVat: optionalAmount(input.disposalAmountExVat),
       note: text(input.note),
       aim4priceSaleInfluence: outcomeInfluence as Aim4priceOutcomeInfluence,
+      transferReason: input.reason,
       actorUserId,
       actorName: actor.name,
       actorOrganisation: actor.organisation,

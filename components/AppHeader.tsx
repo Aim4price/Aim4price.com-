@@ -223,7 +223,7 @@ const ACCOUNT_MENU_ITEMS: AccountMenuItem[] = [
   { href: '/valuation', label: 'Get Estimate' },
   { href: '/account', label: 'Account' },
   { href: '/asset-map', label: 'Asset Map', accountTypes: ['owner'] },
-  { href: '/asset-register', label: 'Asset Register', accountTypes: ['owner'] },
+  { href: '/asset-register', label: 'Asset Register', accountTypes: ['owner', 'dealer'] },
   { href: '/documents', label: 'Documents', accountTypes: ['owner'] },
   { href: '/my-invoices', label: 'Cost Ledger', accountTypes: ['owner'] },
   { href: '/tracking', label: 'Maintenance', accountTypes: ['dealer'] },
@@ -333,6 +333,7 @@ function buildNavItems(
   if (accountType === 'dealer') {
     if (isMiddlemanAccountSubtype(accountSubtype)) {
       return [
+        { key: 'asset-register', href: '/asset-register', label: 'My Inventory' },
         { key: 'valuation', href: '/valuation', label: 'Get Estimate' },
         { key: 'ad-studio', href: '/ad-studio', label: 'Ad Studio' },
         { key: 'showroom', href: '/my-showroom', label: 'My Showroom' },
@@ -341,6 +342,7 @@ function buildNavItems(
     }
     return [
       ...BASE_NAV_ITEMS,
+      { key: 'asset-register', href: '/asset-register', label: 'My Inventory' },
       { key: 'leads', href: '/leads', label: 'Leads' },
       { key: 'tracking', href: '/tracking', label: 'Maintenance' },
       { key: 'marketplace', href: '/marketplace', label: 'Marketplace' },

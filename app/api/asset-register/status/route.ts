@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { recordAdminUsageEventSafely } from '../../../../lib/admin-usage-events';
 import { getServerSession, isAdminSupportSession } from '../../../../lib/auth-session';
-import { getAccountProfile } from '../../../../lib/account-profile';
+import { getAssetRegisterAccountAccess } from '../../../../lib/asset-register-account-access';
 import { attachOpenPartnerNotesToAssets } from '../../../../lib/partner-access';
 import { attachOpenIssueNoteStatusToAssets } from '../../../../lib/asset-issue-notes';
 import { attachUpcomingMaintenanceAlertsToAssets } from '../../../../lib/asset-maintenance';
@@ -60,14 +60,12 @@ function getUsageUserId(session: Awaited<ReturnType<typeof getServerSession>>): 
   return session.user.id;
 }
 
-async function requireOwnerAccount(user: { id: string; name?: string | null; email?: string | null }) {
-  const profile = await getAccountProfile(user);
-
-  if (profile.accountType !== 'owner') {
+async function requireAssetRegisterAccount(session: Awaited<ReturnType<typeof getServerSession>>) {
+  if (!await getAssetRegisterAccountAccess(session)) {
     return NextResponse.json(
       {
         ok: false,
-        error: 'Asset Register is only available to owner accounts. Dealer, finance and insurance accounts cannot create, update or delete asset register items.',
+        error: 'Asset Register is available to active Owner accounts and authorised Dealer inventory staff.',
       },
       { status: 403 },
     );
@@ -308,13 +306,13 @@ function formatUnknownError(error: unknown, fallback: string): string {
 }
 
 export async function PATCH(request: NextRequest) {
-  const session = await getServerSession();
+  const session = await getServerSession({ allowDealerApp: true });
 
   if (!session?.user?.id) {
     return unauthorized();
   }
 
-  const ownerError = await requireOwnerAccount(session.user);
+  const ownerError = await requireAssetRegisterAccount(session);
   if (ownerError) return ownerError;
 
   const rawBody = (await request.json().catch(() => null)) as unknown;
@@ -424,4 +422,3 @@ export async function PATCH(request: NextRequest) {
     );
   }
 }
-

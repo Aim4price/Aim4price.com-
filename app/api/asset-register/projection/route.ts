@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '../../../../lib/auth-session';
+import { getAssetRegisterAccountAccess } from '../../../../lib/asset-register-account-access';
 import { calculateFuturePriceForAsset } from '../../../../lib/asset-register-projection';
 import type { ConditionKey } from '../../../../lib/tractor-data';
 
@@ -21,10 +22,14 @@ function badRequest(message: string) {
 }
 
 export async function POST(request: NextRequest) {
-  const session = await getServerSession({ allowOwnerApp: true });
+  const session = await getServerSession({ allowDealerApp: true, allowOwnerApp: true });
 
   if (!session?.user?.id) {
     return unauthorized();
+  }
+
+  if (!await getAssetRegisterAccountAccess(session)) {
+    return NextResponse.json({ ok: false, error: 'You do not have permission to use this Asset Register.' }, { status: 403 });
   }
 
   const body = (await request.json()) as Partial<{

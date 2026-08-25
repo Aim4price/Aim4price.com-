@@ -88,9 +88,10 @@ test('transfer codes are one-time credentials and are never stored as plaintext'
   assert.match(migration, /code_hash text not null/);
 });
 
-test('claiming is owner-scoped, rate limited and does not reveal account existence', () => {
+test('claiming is Asset Register scoped, rate limited and does not reveal account existence', () => {
   assert.match(transferRoute, /isAdminSupportSession/);
-  assert.match(transferRoute, /profile\.accountType !== 'owner'/);
+  assert.match(transferRoute, /getAssetRegisterAccountAccess/);
+  assert.match(transferRoute, /allowDealerApp: true/);
   assert.match(transferSource, /MAX_FAILED_CLAIM_ATTEMPTS/);
   assert.match(transferSource, /ASSET_TRANSFER_INVALID_CREDENTIALS/);
   assert.match(transferRoute, /identifier and transfer code could not be verified/);
@@ -100,11 +101,12 @@ test('claiming is owner-scoped, rate limited and does not reveal account existen
 test('portable asset history moves while seller-private financial data is reset', () => {
   assert.match(transferSource, /asset_maintenance_records/);
   assert.match(transferSource, /asset_depreciation_snapshots/);
-  assert.match(transferSource, /asset_lifecycle_events set owner_user_id/);
+  assert.match(transferSource, /update public\.asset_lifecycle_events[\s\S]*set owner_user_id/);
   assert.match(transferSource, /asset_register_uploads/);
   assert.match(transferSource, /asset_register_bucket_uploads/);
   assert.match(transferSource, /is_financed = false/);
   assert.match(transferSource, /is_insured = false/);
+  assert.match(transferSource, /portableDocuments/);
   assert.doesNotMatch(transferSource, /update public\.asset_invoices set user_id/);
   assert.match(transferPage, /private invoices, finance, insurance and account access do not transfer/i);
 });

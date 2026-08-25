@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAccountProfile } from '../../../lib/account-profile';
+import { isAssetRegisterAccountType } from '../../../lib/asset-register-account-access';
 import {
   deleteAssetGroup,
   listAssetGroups,
@@ -51,9 +52,9 @@ async function requireGroupWriteAccess(
     email: context.actorEmail,
   });
 
-  if (profile.accountType !== 'owner') {
+  if (!isAssetRegisterAccountType(profile.accountType)) {
     return NextResponse.json(
-      { ok: false, error: 'Only Asset Register owners can create or change asset groups.' },
+      { ok: false, error: 'Only Owner and Dealer inventory accounts can create or change asset groups.' },
       { status: 403 },
     );
   }

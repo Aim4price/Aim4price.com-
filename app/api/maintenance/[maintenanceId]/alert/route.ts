@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getAssetRegisterAccountAccess } from '../../../../../lib/asset-register-account-access';
 import { getServerSession } from '../../../../../lib/auth-session';
 import { markAssetMaintenanceAlertNoted } from '../../../../../lib/asset-maintenance';
 
@@ -25,8 +26,9 @@ function errorMessage(error: unknown): string {
 }
 
 async function currentUserId() {
-  const session = await getServerSession({ requireActive: true });
-  return session?.user?.id ?? '';
+  const session = await getServerSession({ requireActive: true, allowDealerApp: true });
+  if (!session?.user?.id || !await getAssetRegisterAccountAccess(session)) return '';
+  return session.user.id;
 }
 
 export async function PATCH(_request: NextRequest, context: RouteContext) {

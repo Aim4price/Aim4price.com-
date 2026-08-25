@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAccountProfile } from '../../../lib/account-profile';
+import { getAssetRegisterAccountAccess } from '../../../lib/asset-register-account-access';
 import { getAssetAcquisitionDetails, saveAssetAcquisitionDetails } from '../../../lib/asset-lifecycle';
 import { getAssetRegisterItemById } from '../../../lib/asset-register-db';
 import { getServerSession } from '../../../lib/auth-session';
@@ -7,16 +7,15 @@ import { getServerSession } from '../../../lib/auth-session';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-async function ownerSession() {
-  const session = await getServerSession();
+async function assetRegisterSession() {
+  const session = await getServerSession({ allowDealerApp: true });
   if (!session?.user?.id) return { session: null, response: NextResponse.json({ ok: false, error: 'You must be signed in.' }, { status: 401 }) };
-  const profile = await getAccountProfile(session.user);
-  if (profile.accountType !== 'owner') return { session: null, response: NextResponse.json({ ok: false, error: 'Only the asset owner can change acquisition details.' }, { status: 403 }) };
+  if (!await getAssetRegisterAccountAccess(session)) return { session: null, response: NextResponse.json({ ok: false, error: 'Only an authorised Owner or Dealer inventory user can change acquisition details.' }, { status: 403 }) };
   return { session, response: null };
 }
 
 export async function GET(request: NextRequest) {
-  const auth = await ownerSession();
+  const auth = await assetRegisterSession();
   if (!auth.session) return auth.response;
   const assetId = new URL(request.url).searchParams.get('assetId') || '';
   const asset = await getAssetRegisterItemById(auth.session.user.id, assetId);
@@ -25,7 +24,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function PUT(request: NextRequest) {
-  const auth = await ownerSession();
+  const auth = await assetRegisterSession();
   if (!auth.session) return auth.response;
   try {
     const body = await request.json() as Record<string, unknown>;

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from './auth-session';
+import { getAssetRegisterAccountAccess } from './asset-register-account-access';
 import {
   accountantWorkspaceError,
   getAccountantRegisterAccess,
@@ -47,7 +48,7 @@ export async function resolveOwnerWorkspaceContext(
   request: Request,
   options: ResolveOptions = {},
 ): Promise<OwnerWorkspaceResolution> {
-  const session = await getServerSession({ requireActive: true, allowOwnerApp: true });
+  const session = await getServerSession({ requireActive: true, allowDealerApp: true, allowOwnerApp: true });
 
   if (!session?.user?.id) {
     return {
@@ -58,6 +59,16 @@ export async function resolveOwnerWorkspaceContext(
 
   const accountantShareId = requestShareId(request);
   if (!accountantShareId) {
+    if (!await getAssetRegisterAccountAccess(session)) {
+      return {
+        ok: false,
+        response: NextResponse.json(
+          { ok: false, error: 'This Asset Register is not available to this account.' },
+          { status: 403 },
+        ),
+      };
+    }
+
     return {
       ok: true,
       context: {

@@ -80,6 +80,11 @@ export default async function DealerHome() {
 
   const allTools: DealerHomeTool[] = [
     {
+      label: 'My Inventory',
+      href: '/dealer/inventory',
+      capability: 'inventory',
+    },
+    {
       label: 'Overview',
       href: '/dealer/overview',
       capability: 'overview',
@@ -110,7 +115,7 @@ export default async function DealerHome() {
     { label: 'Client Costs', href: '/dealer/cost', capability: 'client_costs' },
     { label: 'Marketplace', href: '/dealer/marketplace', capability: 'marketplace' },
   ];
-  const middlemanCapabilities = new Set<DealerAppCapability>(['valuation', 'ad_studio', 'showroom', 'marketplace']);
+  const middlemanCapabilities = new Set<DealerAppCapability>(['inventory', 'valuation', 'ad_studio', 'showroom', 'marketplace']);
   const tools = allTools.filter((tool) =>
     dealerRoleCan(role, tool.capability)
     && (!middlemanMode || middlemanCapabilities.has(tool.capability)),

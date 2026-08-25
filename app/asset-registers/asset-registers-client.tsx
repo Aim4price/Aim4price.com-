@@ -286,16 +286,16 @@ function ChevronDownIcon(props: SVGProps<SVGSVGElement>) {
   );
 }
 
-function buildOpenHref(registerId: string, accountantShareId?: string): string {
+function buildOpenHref(registerId: string, accountantShareId?: string, registerBaseHref = '/asset-register'): string {
   return accountantShareId
     ? `/accountant/registers/${encodeURIComponent(accountantShareId)}?registerId=${encodeURIComponent(registerId)}`
-    : `/asset-register?registerId=${encodeURIComponent(registerId)}`;
+    : `${registerBaseHref}?registerId=${encodeURIComponent(registerId)}`;
 }
 
-function buildCombinedOpenHref(accountantShareId?: string): string {
+function buildCombinedOpenHref(accountantShareId?: string, registerBaseHref = '/asset-register'): string {
   return accountantShareId
     ? `/accountant/registers/${encodeURIComponent(accountantShareId)}?scope=combined`
-    : "/asset-register?scope=combined";
+    : `${registerBaseHref}?scope=combined`;
 }
 
 function normalizeLogoUrls(value: unknown): string[] {
@@ -1219,7 +1219,15 @@ function RegisterTargetDropdown({
   );
 }
 
-export default function AssetRegistersClient({ accountantShareId }: { accountantShareId?: string } = {}) {
+export default function AssetRegistersClient({
+  accountantShareId,
+  showAppHeader = true,
+  registerBaseHref = '/asset-register',
+}: {
+  accountantShareId?: string;
+  showAppHeader?: boolean;
+  registerBaseHref?: string;
+} = {}) {
   const router = useRouter();
   const registersApiUrl = accountantShareId
     ? `/api/accountant/registers/${encodeURIComponent(accountantShareId)}/owner-registers`
@@ -1632,7 +1640,7 @@ export default function AssetRegistersClient({ accountantShareId }: { accountant
   }
 
   function openCombinedRegister() {
-    router.push(buildCombinedOpenHref(accountantShareId));
+    router.push(buildCombinedOpenHref(accountantShareId, registerBaseHref));
   }
 
   function closeManagePanel() {
@@ -1668,7 +1676,7 @@ export default function AssetRegistersClient({ accountantShareId }: { accountant
 
   function openRegister(register: AssetRegisterSummary) {
     if (register.isSelected) {
-      router.push(buildOpenHref(register.id, accountantShareId));
+      router.push(buildOpenHref(register.id, accountantShareId, registerBaseHref));
       return;
     }
 
@@ -2372,7 +2380,7 @@ export default function AssetRegistersClient({ accountantShareId }: { accountant
       });
 
       if (openAfterSelect) {
-        router.push(buildOpenHref(data.register.id, accountantShareId));
+        router.push(buildOpenHref(data.register.id, accountantShareId, registerBaseHref));
       }
     } catch (error) {
       setNotice({
@@ -2585,7 +2593,7 @@ export default function AssetRegistersClient({ accountantShareId }: { accountant
       ) : null}
 
       <main className={styles.page}>
-        <AppHeader active="none" />
+        {showAppHeader ? <AppHeader active="none" /> : null}
 
         <section className={styles.shell}>
           <section className={styles.managementPanel}>
@@ -2893,7 +2901,7 @@ export default function AssetRegistersClient({ accountantShareId }: { accountant
                       </span>
                       <span className={styles.exportChoiceTitleBlock}>
                         <strong>{isSummaryFlow ? "Summary of all Asset Registers" : "Download all Asset Registers"}</strong>
-                        <small>{isSummaryFlow ? "Open one PDF summary for every asset register saved on this owner account." : "Export every asset register saved on this owner account."}</small>
+                        <small>{isSummaryFlow ? "Open one PDF summary for every asset register saved on this account." : "Export every asset register saved on this account."}</small>
                       </span>
                     </button>
 
@@ -3841,4 +3849,3 @@ export default function AssetRegistersClient({ accountantShareId }: { accountant
     </>
   );
 }
-

@@ -7,6 +7,7 @@ export type AdminAssetAllocationAccount = {
   name: string;
   email: string;
   accountSubtype: string;
+  accountType: 'owner' | 'dealer';
 };
 
 export type AdminAssetSaleRow = {
@@ -181,21 +182,27 @@ export async function listAdminAssetAllocationAccounts(): Promise<AdminAssetAllo
     display_name: string | null;
     business_name: string | null;
     account_subtype: string | null;
+    account_type: string | null;
   }>(
     `select u.id as user_id, u.name as auth_name, u.email,
-            profile.display_name, profile.business_name, profile.account_subtype
+            profile.display_name, profile.business_name, profile.account_type, profile.account_subtype
      from public."user" u
      left join public.account_profiles profile on profile.user_id = u.id
-     where coalesce(profile.account_type, 'owner') = 'owner'
+     where coalesce(profile.account_type, 'owner') in ('owner', 'dealer')
        and coalesce(profile.account_status, 'pending_payment') = 'active'
      order by lower(coalesce(profile.business_name, profile.display_name, u.name, u.email)) asc`,
   );
   return result.rows
     .filter((row) => !isAim4priceAdminEmail(row.email))
-    .map((row) => ({
-      userId: text(row.user_id),
-      name: text(row.business_name || row.display_name || row.auth_name || row.email) || 'Owner account',
-      email: text(row.email),
-      accountSubtype: text(row.account_subtype) || 'owner',
-    }));
+    .map((row) => {
+      const accountType = text(row.account_type) === 'dealer' ? 'dealer' as const : 'owner' as const;
+      return {
+        userId: text(row.user_id),
+        name: text(row.business_name || row.display_name || row.auth_name || row.email)
+          || `${accountType === 'dealer' ? 'Dealer' : 'Owner'} account`,
+        email: text(row.email),
+        accountSubtype: text(row.account_subtype) || accountType,
+        accountType,
+      };
+    });
 }

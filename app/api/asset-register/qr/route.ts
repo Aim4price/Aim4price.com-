@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAccountProfile } from '../../../../lib/account-profile';
+import { getAssetRegisterAccountAccess } from '../../../../lib/asset-register-account-access';
 import { getServerSession } from '../../../../lib/auth-session';
 import { getAssetRegisterItemById } from '../../../../lib/asset-register-db';
 import { getAssetLeadForPartner } from '../../../../lib/partner-access';
@@ -547,6 +548,10 @@ export async function GET(request: NextRequest) {
   }
 
   let assetOwnerUserId = session.user.id;
+
+  if (!leadId && !await getAssetRegisterAccountAccess(session)) {
+    return NextResponse.json({ ok: false, error: 'You do not have permission to use this Asset Register.' }, { status: 403 });
+  }
 
   if (leadId) {
     const profile = await getAccountProfile({ id: session.user.id });

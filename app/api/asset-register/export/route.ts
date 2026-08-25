@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAccountProfile } from '../../../../lib/account-profile';
+import { isAssetRegisterAccountType } from '../../../../lib/asset-register-account-access';
 import { listAssetGroups } from '../../../../lib/asset-groups';
 import {
   assetCountsTowardRegisterTotalFromMeta,
@@ -3097,8 +3098,8 @@ export async function GET(request: NextRequest) {
       email: workspace.accountantAccess ? '' : workspace.actorEmail,
     });
 
-    if (!workspace.accountantAccess && profile.accountType !== 'owner') {
-      return NextResponse.json({ ok: false, error: 'Asset Register export is only available to owner accounts.' }, { status: 403 });
+    if (!workspace.accountantAccess && !isAssetRegisterAccountType(profile.accountType)) {
+      return NextResponse.json({ ok: false, error: 'Asset Register export is only available to Owner and Dealer inventory accounts.' }, { status: 403 });
     }
 
     const scopeParam = cleanText(params.get('scope')).toLowerCase();

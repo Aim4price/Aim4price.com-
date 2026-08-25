@@ -2,6 +2,7 @@ import type { DealerStaffRole } from './dealer-app';
 
 export type DealerAppCapability =
   | 'overview'
+  | 'inventory'
   | 'notifications'
   | 'leads'
   | 'maintenance'
@@ -15,6 +16,7 @@ export type DealerAppCapability =
 const ROLE_CAPABILITIES: Record<DealerStaffRole, ReadonlySet<DealerAppCapability>> = {
   owner: new Set([
     'overview',
+    'inventory',
     'notifications',
     'leads',
     'maintenance',
@@ -27,6 +29,7 @@ const ROLE_CAPABILITIES: Record<DealerStaffRole, ReadonlySet<DealerAppCapability
   ]),
   sales: new Set([
     'overview',
+    'inventory',
     'notifications',
     'leads',
     'maintenance',
