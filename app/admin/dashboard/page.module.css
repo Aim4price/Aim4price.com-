@@ -247,6 +247,19 @@
   font-weight: 650;
 }
 
+.cardLink {
+  width: fit-content;
+  color: #176047;
+  font-size: 0.74rem;
+  font-weight: 900;
+  text-decoration: none;
+}
+
+.cardLink:hover {
+  text-decoration: underline;
+  text-underline-offset: 0.2rem;
+}
+
 .values {
   margin: 0;
   display: grid;

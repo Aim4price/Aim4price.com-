@@ -65,6 +65,7 @@ const ROUTE_LABELS: Array<{
 }> = [
   { prefix: "/admin/work-tracker", key: "admin-work-tracker", label: "Admin - Work tracker", isAdminArea: true },
   { prefix: "/admin/dashboard", key: "admin-dashboard", label: "Admin - Dashboard", isAdminArea: true },
+  { prefix: "/admin/marketplace", key: "admin-marketplace", label: "Admin - Marketplace", isAdminArea: true },
   { prefix: "/admin/capture-queue", key: "admin-capture-queue", label: "Admin - Capture Queue", isAdminArea: true },
   { prefix: "/admin/lifecycle-calculator", key: "admin-lifecycle", label: "Admin - Lifecycle Model", isAdminArea: true },
   { prefix: "/admin", key: "admin-users", label: "Admin - User Accounts", isAdminArea: true },
