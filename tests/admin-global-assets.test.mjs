@@ -86,6 +86,14 @@ test("Admin assets resolve current values from manual, legacy and valuation sour
   assert.notEqual(formatAdminAssetValue({ value: 850000, hasSavedValue: true }), "Not saved");
 });
 
+test("Admin global workspaces exclude disposed assets but retain transfers in progress", () => {
+  assert.match(
+    dataLayer,
+    /coalesce\(\s*nullif\(trim\(to_jsonb\(asset\)->>'lifecycle_state'\), ''\),\s*'active'\s*\) in \('active', 'transfer_pending'\)/,
+  );
+  assert.doesNotMatch(dataLayer, /lifecycle_state\s*<>\s*'disposed'/);
+});
+
 test("province options aggregate by the shared normalized province expression", () => {
   assert.match(
     dataLayer,
