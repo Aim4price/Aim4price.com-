@@ -3,7 +3,11 @@ import { recordGenericValuationForAdminSafely } from '../../../lib/admin-valuati
 import { getAccountProfile } from '../../../lib/account-profile';
 import { getAnyServerSession } from '../../../lib/auth-session';
 import { isSectorKey, type SectorKey } from '../../../lib/equipment-types';
-import { runGenericValuation, type GenericCondition } from '../../../lib/generic-valuation';
+import {
+  runGenericValuation,
+  type GenericCondition,
+  type GenericValuationInput,
+} from '../../../lib/generic-valuation';
 import {
   advancedAssumptionsRequireActiveAccess,
 } from '../../../lib/valuation/shared';
@@ -122,7 +126,7 @@ export async function POST(request: NextRequest) {
       if (profile?.accountStatus !== 'active') return advancedAccessDenied();
     }
 
-    const result = await runGenericValuation({
+    const valuationInput: GenericValuationInput = {
       sectorKey: sectorKey as SectorKey,
       familyKey,
       brandSlug,
@@ -141,10 +145,12 @@ export async function POST(request: NextRequest) {
       userReplacementPriceExVat,
       userReplacementPriceYear: resolvedReplacementPriceYear,
       advancedAssumptions: body.advancedAssumptions ?? null,
-    });
+    };
+    const result = await runGenericValuation(valuationInput);
 
     await recordGenericValuationForAdminSafely({
       userId: await getUsageUserId(),
+      valuationInput,
       result,
     });
 

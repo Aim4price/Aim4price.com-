@@ -2,6 +2,9 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import {
+  buildAdminValuationInputSections,
+  buildAdminValuationOutputSections,
+  formatAdminValuationDetailValue,
   formatAdminValuationDateTime,
   formatAdminValuationMoney,
 } from '../lib/admin-valuations-shared.ts';
@@ -15,6 +18,9 @@ const data = read('lib/admin-valuations.ts');
 const eventLogger = read('lib/admin-valuation-events.ts');
 const genericRoute = read('app/api/generic-valuations/route.ts');
 const tractorRoute = read('app/api/tractor-valuations/route.ts');
+const valuationRunsRoute = read('app/api/valuation-runs/route.ts');
+const valuationRuns = read('lib/valuation-runs.ts');
+const valuationFlow = read('app/valuation/valuation-client.tsx');
 const navigation = read('components/AdminNavigation.tsx');
 const dashboard = read('lib/admin-dashboard.ts');
 const dashboardPage = read('app/admin/dashboard/page.tsx');
@@ -32,6 +38,8 @@ test('the valuation history combines every estimate event and saved valuation ru
   assert.match(data, /from public\.valuation_runs valuation/);
   assert.match(data, /select \* from free_estimate_rows\s+union all\s+select \* from saved_valuation_rows/);
   assert.match(data, /valuation_payload/);
+  assert.match(data, /left join public\.equipment_models event_model/);
+  assert.match(data, /event_document\.metadata #>> '\{output,model,modelName\}'/);
 });
 
 test('account details resolve when available and remain explicitly unknown for guests', () => {
@@ -56,23 +64,135 @@ test('Admin Valuations supports server search, filters, sorting and pagination',
 });
 
 test('new free estimates retain normalized inputs and calculated outputs', () => {
-  assert.match(eventLogger, /metadata: \{\s*valuationMode: event\.valuationMode,\s*input: event\.input,\s*output: event\.output/);
+  assert.match(eventLogger, /captureVersion: 2/);
+  assert.match(eventLogger, /captureScope: 'complete-estimate-flow'/);
+  assert.match(eventLogger, /metadata: \{[\s\S]*valuationMode: event\.valuationMode,[\s\S]*input: event\.input,[\s\S]*output: event\.output/);
   assert.match(eventLogger, /recordTractorValuationForAdminSafely/);
   assert.match(eventLogger, /recordGenericValuationForAdminSafely/);
+  assert.match(eventLogger, /output: \{\s*\.\.\.result/);
   assert.match(eventLogger, /selectedValueExVat: result\.aim4priceValueExVat/);
-  assert.match(eventLogger, /specsJson: result\.specsJson/);
-  assert.match(genericRoute, /recordGenericValuationForAdminSafely\(\{\s*userId: await getUsageUserId\(\),\s*result/);
+  assert.match(eventLogger, /const specs = valuation\.specsJson \?\? result\.specsJson/);
+  assert.match(genericRoute, /const valuationInput: GenericValuationInput/);
+  assert.match(genericRoute, /recordGenericValuationForAdminSafely\(\{\s*userId: await getUsageUserId\(\),\s*valuationInput,\s*result/);
   assert.match(tractorRoute, /recordTractorValuationForAdminSafely\(\{\s*userId: await getUsageUserId\(\),\s*valuationInput: input,\s*result/);
 });
 
-test('the detail modal exposes who, when, inputs and estimate output', () => {
+test('tractor estimates retain the usage path and percentage originally entered', () => {
+  assert.match(valuationFlow, /function getTractorUsageRequestFields\(\)/);
+  assert.match(valuationFlow, /usageMode: usageNumber !== null \? 'hours' : 'percent'/);
+  assert.match(valuationFlow, /lifeWorkedPercent: usageNumber === null \? lifeWorkedPercentNumber : null/);
+  assert.match(tractorRoute, /lifeWorkedPercent: normalizeLifeWorkedPercent/);
+  assert.match(valuationRunsRoute, /usageMode: normalizeTractorUsageMode/);
+  assert.match(valuationRuns, /lifeWorkedPercent: input\.lifeWorkedPercent \?\? null/);
+  assert.match(data, /\) = 'percent' then coalesce\([\s\S]*lifeWorkedPercent/);
+});
+
+test('the detail modal exposes who, when and every estimate-flow section', () => {
   assert.match(client, /role="dialog"/);
   assert.match(client, /Who and when/);
   assert.match(client, /What was estimated/);
-  assert.match(client, /Inputs recorded/);
-  assert.match(client, /Estimate output/);
+  assert.match(client, /Everything entered in the estimate path/);
+  assert.match(client, /Complete estimated result/);
+  assert.match(client, /buildAdminValuationInputSections/);
+  assert.match(client, /buildAdminValuationOutputSections/);
+  assert.match(client, /recorded fields/);
   assert.match(client, /keepFocusInsideDetails/);
-  assert.match(client, /older free-estimate events show only the fields that were recorded/);
+  assert.match(client, /Older free-estimate events show only the fields that were recorded/);
+});
+
+test('flow detail helpers show entered fields in order and format usage correctly', () => {
+  const valuation = {
+    id: 'estimate:42',
+    sourceId: '42',
+    recordType: 'estimate',
+    valuationMode: 'tractor',
+    source: 'tractor-valuations',
+    createdAtIso: '2026-08-26T12:00:00.000Z',
+    account: {
+      userId: null,
+      known: false,
+      label: 'Unknown / guest',
+      name: '',
+      businessName: '',
+      email: '',
+      accountType: '',
+      accountStatus: '',
+    },
+    asset: {
+      sectorKey: 'agricultural',
+      sectorLabel: 'Agricultural',
+      familyKey: 'tractors',
+      familyLabel: 'Tractors',
+      brandName: 'John Deere',
+      modelName: '6155M',
+      yearModel: 2020,
+      condition: 'good',
+      usageAmount: 42,
+      usageUnit: 'percent',
+    },
+    estimate: {
+      selectedValueExVat: 850000,
+      lowValueExVat: 800000,
+      midValueExVat: 850000,
+      highValueExVat: 900000,
+      replacementPriceExVat: 1900000,
+      confidenceLabel: 'Medium',
+    },
+    input: {
+      modelId: '123',
+      year: 2020,
+      usageMode: 'percent',
+      hours: 5880,
+      lifeWorkedPercent: 42,
+      condition: 'good',
+      frontPto: false,
+      frontLoader: true,
+      frontLoaderYear: 2021,
+      frontLoaderReplacementPriceExVat: 180000,
+      specsJson: { power_kw: 115, cab_type: 'cab' },
+      advancedAssumptions: {
+        maxLifetimeUsage: 14000,
+        popularityStars: 4,
+        dealerAssessment: {
+          mechanicalCondition: 'good',
+          bodyCondition: 'average',
+          tyreCondition: '50_75',
+          serviceHistory: 'complete_verified',
+          requiredWork: 'minor',
+          conditionFactorPercent: 82.5,
+        },
+      },
+    },
+    output: {
+      selectedValueExVat: 850000,
+      replacementPriceUsedExVat: 1900000,
+      lifeWorkedPercent: 42,
+      marketSources: [{ title: 'Comparable one', advertisedPriceExVat: 875000 }],
+      notes: ['Detailed assessment applied'],
+    },
+  };
+
+  const inputSections = buildAdminValuationInputSections(valuation);
+  const allInputRows = inputSections.flatMap((section) => section.rows);
+  assert.deepEqual(inputSections.slice(0, 4).map((section) => section.title), [
+    '1. Asset selection',
+    '2. Asset specifications',
+    '3. Usage and condition',
+    '4. Replacement pricing and extras',
+  ]);
+  assert.equal(allInputRows.find((row) => row.label === 'Usage entered')?.value, '42% worked');
+  assert.equal(allInputRows.find((row) => row.label === 'Mechanical condition')?.value, 'Good');
+  assert.equal(allInputRows.find((row) => row.label === 'Tyres / wear components')?.value, '50-75%');
+  assert.equal(allInputRows.find((row) => row.label === 'Front PTO selected')?.value, 'No');
+  assert.match(allInputRows.find((row) => row.label === 'Front Loader replacement price excl. VAT')?.value ?? '', /180/);
+
+  const outputSections = buildAdminValuationOutputSections(valuation);
+  const outputRows = outputSections.flatMap((section) => section.rows);
+  assert.ok(outputRows.some((row) => row.value === 'Comparable one'));
+  assert.ok(outputRows.some((row) => row.value === 'Detailed assessment applied'));
+  assert.equal(formatAdminValuationDetailValue(5880, ['usageAmount']).startsWith('R'), false);
+  assert.equal(formatAdminValuationDetailValue(850000, ['selectedValueExVat']).startsWith('R'), true);
+  assert.match(formatAdminValuationDetailValue(42, ['lifeWorkedPercent']), /42.*%/);
 });
 
 test('Valuations is available in the consolidated Admin Manage menu', () => {

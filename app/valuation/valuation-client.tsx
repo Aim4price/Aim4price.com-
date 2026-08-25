@@ -3019,6 +3019,14 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     };
   }
 
+  function getTractorUsageRequestFields() {
+    return {
+      yearModelUnknown,
+      usageMode: usageNumber !== null ? 'hours' : 'percent',
+      lifeWorkedPercent: usageNumber === null ? lifeWorkedPercentNumber : null,
+    };
+  }
+
   function clearDetailedAssessment(resetPopularity = true) {
     setDetailedAssessmentOpen(false);
     setActiveDetailedAssessmentSection('');
@@ -3389,6 +3397,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
             modelId: currentResult.model.id,
             year: calculationYear,
             hours: usageNumber ?? estimateHoursFromWorkedPercent(currentResult.model, lifeWorkedPercentNumber) ?? 0,
+            ...getTractorUsageRequestFields(),
             condition,
             ...getTractorExtrasRequestFields(),
             userReplacementPriceExVat: replacementPriceBasis === 'user' ? currentResult.userReplacementPriceExVat ?? null : null,
@@ -3490,6 +3499,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
           modelId: selectedModel.id,
           year: calculationYear,
           hours: usageNumber ?? estimateHoursFromWorkedPercent(selectedModel, lifeWorkedPercentNumber) ?? 0,
+          ...getTractorUsageRequestFields(),
           condition,
           ...getTractorExtrasRequestFields(),
           userReplacementPriceExVat: priceExVat,
@@ -3548,6 +3558,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
             modelId: selectedModel.id,
             year: calculationYear,
             hours: usageNumber ?? estimateHoursFromWorkedPercent(selectedModel, lifeWorkedPercentNumber) ?? 0,
+            ...getTractorUsageRequestFields(),
             condition,
             ...getTractorExtrasRequestFields(),
             userReplacementPriceExVat: null,
@@ -3627,8 +3638,8 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
       return {
         modelId: resultState.result.model.id,
         year: calculationYear,
-        yearModelUnknown,
         hours: usageNumber ?? estimateHoursFromWorkedPercent(selectedModel, lifeWorkedPercentNumber) ?? 0,
+        ...getTractorUsageRequestFields(),
         condition,
         ...getTractorExtrasRequestFields(),
         userReplacementPriceExVat: replacementPriceForSave,
@@ -3648,6 +3659,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
       sectorKey: resultState.result.sector.key,
       familyKey: resultState.result.family.key,
       brandSlug: resultState.result.brand.slug,
+      equipmentModelId: toNumberOrNull(resultState.result.specsJson.catalog_model_id),
       typedModelName: resultState.result.typedModelName,
       specsJson: resultState.result.specsJson,
       year: resultState.result.year,

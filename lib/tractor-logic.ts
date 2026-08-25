@@ -2,11 +2,15 @@ import type { ConditionKey, MarketplaceListing, TractorCatalogRow } from './trac
 import type { AdvancedAssumptionsInput, NormalizedAdvancedAssumptions } from './valuation/shared';
 
 export type GpsType = 'full-autosteer' | 'guidance-only';
+export type TractorUsageMode = 'hours' | 'percent';
 
 export type RunValuationInput = {
   modelId: string;
   year: number;
+  yearModelUnknown?: boolean | null;
+  usageMode?: TractorUsageMode | null;
   hours: number;
+  lifeWorkedPercent?: number | null;
   condition: ConditionKey;
   frontPto?: boolean;
   frontLoader?: boolean;
