@@ -24,10 +24,19 @@ test('asset exclusion is additive and propagated to existing and future ledger r
 });
 
 test('fuel exclusions stay manageable on desktop but are hidden from operational app pickers', () => {
-  assert.match(fuelClient, /Choose Saved Asset/);
+  assert.match(fuelClient, /Choose Saved Assets/);
   assert.match(petrolStationClient, /asset\.canReceiveFuel && !asset\.workUseExcluded/);
   assert.match(fuelScanClient, /isAuthenticatedAppMode \? assets\.filter\(\(asset\) => !asset\.workUseExcluded\) : assets/);
   assert.match(fuelScanClient, /if \(!query\) return appVisibleAssets/);
+});
+
+test('fuel exclusions support multi-select review without an included status pill', () => {
+  assert.match(fuelClient, /selectedExclusionAssetIds/);
+  assert.match(fuelClient, /toggleExclusionAsset/);
+  assert.match(fuelClient, /for \(const asset of selectedExclusionAssets\)/);
+  assert.match(fuelClient, /data-asset-choice-selected=\{isSelected \? 'true' : undefined\}/);
+  assert.match(fuelClient, /Review exclusions \(\$\{selectedExclusionAssets\.length\}\)/);
+  assert.doesNotMatch(fuelClient, /asset\.workUseExcluded \? 'Excluded' : 'Included'/);
 });
 
 test('exclusions never alter physical tank movement', () => {
