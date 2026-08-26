@@ -67,6 +67,7 @@ type VaultResponse = {
 
 type VaultView = 'documents' | 'recycle-bin';
 type ModalMode = 'upload' | 'edit';
+type UploadStep = 1 | 2 | 3;
 type Notice = { tone: 'success' | 'error'; message: string };
 type SummaryNavigation = { hasOverflow: boolean; atStart: boolean; atEnd: boolean };
 type IconName =
@@ -134,6 +135,11 @@ const CATEGORY_DESCRIPTIONS: Record<DocumentCategory, string> = {
 const MAX_DOCUMENT_FILES_PER_BATCH = 20;
 const MAX_DOCUMENT_FILE_BYTES = 25 * 1024 * 1024;
 const MAX_DOCUMENT_BATCH_BYTES = 250 * 1024 * 1024;
+const UPLOAD_STEPS: Array<{ step: UploadStep; label: string; description: string }> = [
+  { step: 1, label: 'Upload document', description: 'Choose the files you want to keep in your vault.' },
+  { step: 2, label: 'Document details', description: 'Add the type, title and any useful dates or notes.' },
+  { step: 3, label: 'Linked to?', description: 'Choose related assets, or keep the documents at account level.' },
+];
 const ALLOWED_DOCUMENT_EXTENSIONS = new Set([
   '.pdf', '.doc', '.docx', '.xls', '.xlsx', '.csv', '.txt', '.jpg', '.jpeg', '.png', '.webp',
 ]);
@@ -323,7 +329,9 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
   const [notice, setNotice] = useState<Notice | null>(null);
   const [modalNotice, setModalNotice] = useState<Notice | null>(null);
   const [modalMode, setModalMode] = useState<ModalMode | null>(null);
+  const [uploadStep, setUploadStep] = useState<UploadStep>(1);
   const [editingDocument, setEditingDocument] = useState<VaultDocument | null>(null);
+  const [documentPendingDelete, setDocumentPendingDelete] = useState<VaultDocument | null>(null);
   const [draft, setDraft] = useState<DocumentDraft>(createEmptyDraft);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [uploadProgress, setUploadProgress] = useState<UploadProgress | null>(null);
@@ -341,6 +349,8 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
   const requestSequence = useRef(0);
   const summaryViewportRef = useRef<HTMLDivElement | null>(null);
   const modalRef = useRef<HTMLElement | null>(null);
+  const filterModalRef = useRef<HTMLElement | null>(null);
+  const deleteModalRef = useRef<HTMLElement | null>(null);
   const documentTypeComboboxRef = useRef<HTMLDivElement | null>(null);
   const pageContentRef = useRef<HTMLDivElement | null>(null);
   const returnFocusRef = useRef<HTMLElement | null>(null);
@@ -428,9 +438,13 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
   }, [showDocumentTypeOptions]);
 
   useEffect(() => {
-    if (!modalMode) return;
+    if (!modalMode && !showFilters && !documentPendingDelete) return;
 
-    const dialog = modalRef.current;
+    const dialog = modalMode
+      ? modalRef.current
+      : showFilters
+        ? filterModalRef.current
+        : deleteModalRef.current;
     const pageContent = pageContentRef.current;
     const previousOverflow = document.body.style.overflow;
     dialog?.querySelector<HTMLElement>('[data-modal-initial-focus]')?.focus();
@@ -439,14 +453,16 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape' && !busyRef.current) {
-        if (showDocumentTypeOptionsRef.current) {
+        if (modalMode && showDocumentTypeOptionsRef.current) {
           event.preventDefault();
           showDocumentTypeOptionsRef.current = false;
           setShowDocumentTypeOptions(false);
           return;
         }
         setModalNotice(null);
-        setModalMode(null);
+        if (modalMode) setModalMode(null);
+        else if (showFilters) setShowFilters(false);
+        else setDocumentPendingDelete(null);
         return;
       }
       if (event.key !== 'Tab' || !dialog) return;
@@ -475,7 +491,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
       pageContent?.removeAttribute('aria-hidden');
       returnFocusRef.current?.focus();
     };
-  }, [modalMode]);
+  }, [documentPendingDelete, modalMode, showFilters]);
 
   const filteredDocuments = useMemo(() => {
     const needle = search.trim().toLowerCase();
@@ -531,6 +547,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
   );
   const accountLevelDocuments = Math.max(0, summary.totalDocuments - summary.linkedDocuments);
   const hasDocumentsInView = documents.length > 0;
+  const activeUploadStep = UPLOAD_STEPS[uploadStep - 1];
 
   function switchView(nextView: VaultView) {
     if (busyRef.current || loading) return;
@@ -556,6 +573,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
     setDocumentTypeSearch('');
     setShowDocumentTypeOptions(false);
     setModalNotice(null);
+    setUploadStep(1);
     setModalMode('upload');
     setNotice(null);
   }
@@ -579,8 +597,22 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
     setDocumentTypeSearch(getAccountDocumentTypeLabel(document.documentType) ?? '');
     setShowDocumentTypeOptions(false);
     setModalNotice(null);
+    setUploadStep(2);
     setModalMode('edit');
     setNotice(null);
+  }
+
+  function openFiltersModal() {
+    if (busyRef.current || loading || loadFailed || !hasDocumentsInView) return;
+    returnFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    setShowFilters(true);
+  }
+
+  function requestDocumentDelete(document: VaultDocument) {
+    if (busyRef.current) return;
+    returnFocusRef.current = window.document.activeElement instanceof HTMLElement ? window.document.activeElement : null;
+    setModalNotice(null);
+    setDocumentPendingDelete(document);
   }
 
   function updateDraft<K extends keyof DocumentDraft>(key: K, value: DocumentDraft[K]) {
@@ -737,20 +769,57 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
     viewport.scrollBy({ left: direction * Math.max(320, viewport.clientWidth * 0.88), behavior: 'smooth' });
   }
 
+  function validateDocumentDetails(): boolean {
+    if (!draft.documentType) {
+      setModalNotice({ tone: 'error', message: 'Choose the document type before continuing.' });
+      documentTypeInputRef.current?.focus();
+      return false;
+    }
+    if (!draft.category) {
+      setModalNotice({ tone: 'error', message: 'Choose the document type that best fits these documents.' });
+      return false;
+    }
+    if (draft.documentType === 'other' && !draft.notes.trim()) {
+      setModalNotice({ tone: 'error', message: 'Describe the document in Notes when choosing Other document.' });
+      return false;
+    }
+    return true;
+  }
+
+  function continueUploadFlow() {
+    setModalNotice(null);
+    if (uploadStep === 1) {
+      if (!selectedFiles.length) {
+        setModalNotice({ tone: 'error', message: 'Select at least one document before continuing.' });
+        return;
+      }
+      setUploadStep(2);
+      return;
+    }
+    if (uploadStep === 2 && validateDocumentDetails()) setUploadStep(3);
+  }
+
+  function returnToPreviousUploadStep() {
+    setModalNotice(null);
+    setShowDocumentTypeOptions(false);
+    setUploadStep((current) => Math.max(1, current - 1) as UploadStep);
+  }
+
   async function submitDocument(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!modalMode || busy) return;
 
-    if (modalMode === 'upload' && !draft.documentType) {
-      setModalNotice({ tone: 'error', message: 'Choose the document type before uploading.' });
-      documentTypeInputRef.current?.focus();
+    if (modalMode === 'upload' && uploadStep < 3) {
+      continueUploadFlow();
       return;
     }
-    if (!draft.category) {
-      setModalNotice({ tone: 'error', message: 'Choose the document type that best fits these documents.' });
+
+    if (modalMode === 'upload' && !validateDocumentDetails()) return;
+    if (modalMode === 'edit' && !draft.category) {
+      setModalNotice({ tone: 'error', message: 'Choose the document type that best fits this document.' });
       return;
     }
-    if (draft.documentType === 'other' && !draft.notes.trim()) {
+    if (modalMode === 'edit' && draft.documentType === 'other' && !draft.notes.trim()) {
       setModalNotice({ tone: 'error', message: 'Describe the document in Notes when choosing Other document.' });
       return;
     }
@@ -859,26 +928,27 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
   function closeModal() {
     if (busyRef.current) return;
     setModalNotice(null);
+    setShowDocumentTypeOptions(false);
     setModalMode(null);
   }
 
-  async function moveToRecycleBin(document: VaultDocument) {
-    const confirmed = window.confirm(
-      `Move “${document.title}” to the Recycle Bin? It can be restored for 90 days.`,
-    );
-    if (!confirmed) return;
+  async function moveToRecycleBin() {
+    const document = documentPendingDelete;
+    if (!document || busyRef.current) return;
 
     setOperationBusy(true);
     setNotice(null);
+    setModalNotice(null);
     try {
       const response = await fetch(`/api/documents/${encodeURIComponent(document.id)}`, { method: 'DELETE' });
       const data = await readVaultResponse(response, 'The document could not be moved.');
       if (!response.ok || !data.ok) throw new Error(data.error || 'The document could not be moved.');
 
+      setDocumentPendingDelete(null);
       setNotice({ tone: 'success', message: 'Document moved to the Recycle Bin.' });
       await loadDocuments('documents', { quiet: true });
     } catch (error) {
-      setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'The document could not be moved.' });
+      setModalNotice({ tone: 'error', message: error instanceof Error ? error.message : 'The document could not be moved.' });
     } finally {
       setOperationBusy(false);
     }
@@ -919,49 +989,45 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
 
         <div className={styles.documentBody}>
           <div className={styles.documentTitleRow}>
-            <div>
-              <h3>{document.title}</h3>
+            <h3>{document.title}</h3>
+            <div className={styles.documentStatus} data-tone={isDeleted ? 'warning' : expiry.tone}>
+              <Icon name={isDeleted ? 'trash' : 'calendar'} />
+              <span>{isDeleted ? `${recycleDaysLeft(document.deletedAtIso)} days left in Recycle Bin` : expiry.label}</span>
             </div>
-            {isDeleted ? (
-              <span className={`${styles.statusPill} ${styles.statusWarning}`}>
-                {recycleDaysLeft(document.deletedAtIso)} days left
-              </span>
-            ) : (
-              <span className={`${styles.statusPill} ${styles[`status${expiry.tone[0].toUpperCase()}${expiry.tone.slice(1)}`]}`}>
-                <Icon name="calendar" />
-                {expiry.label}
-              </span>
-            )}
           </div>
 
-          <div className={styles.fileMeta}>
-            <span className={styles.categoryPill} title={categoryLabel(document.category)}>
-              {getAccountDocumentTypeLabel(document.documentType) ?? categoryLabel(document.category)}
-            </span>
-            <span className={styles.fileName} title={document.fileName}>{document.fileName}</span>
-            <i aria-hidden="true" />
-            <span>{formatBytes(document.byteSize)}</span>
-            <i aria-hidden="true" />
-            <span>Added {formatDate(document.createdAtIso)}</span>
+          <div className={styles.documentFacts}>
+            <div>
+              <span>Type</span>
+              <strong>{getAccountDocumentTypeLabel(document.documentType) ?? categoryLabel(document.category)}</strong>
+            </div>
+            <div>
+              <span>File</span>
+              <strong className={styles.fileName} title={document.fileName}>{document.fileName}</strong>
+            </div>
+            <div>
+              <span>Size</span>
+              <strong>{formatBytes(document.byteSize)}</strong>
+            </div>
+            <div>
+              <span>Added</span>
+              <strong>{formatDate(document.createdAtIso)}</strong>
+            </div>
           </div>
 
           {document.notes ? <p className={styles.documentNotes}>{document.notes}</p> : null}
 
           <div className={styles.assetLinkRow}>
             <span className={styles.assetLinkLabel}><Icon name="link" /> Linked assets</span>
-            {document.assetLinks.length ? (
-              <div className={styles.assetChips}>
-                {document.assetLinks.map((asset) => (
-                  <span key={asset.id} title={asset.meta || asset.title}>{asset.title}</span>
-                ))}
-              </div>
-            ) : (
-              <span className={styles.accountLevelLabel}>Account-level document</span>
-            )}
+            <span className={styles.linkedAssetNames}>
+              {document.assetLinks.length
+                ? document.assetLinks.map((asset) => asset.title).join(' · ')
+                : 'Account-level document'}
+            </span>
           </div>
         </div>
 
-        <div className={styles.documentActions}>
+        <div className={styles.documentActions} data-recycle-actions={isDeleted ? 'true' : undefined}>
           <a href={downloadUrl} target="_blank" rel="noreferrer" className={`${styles.actionButton} ${styles.previewButton}`}>
             <Icon name="eye" /> Preview
           </a>
@@ -977,8 +1043,8 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
               <button type="button" className={`${styles.actionButton} ${styles.editButton}`} disabled={busy} onClick={() => openEditModal(document)}>
                 <Icon name="edit" /> Edit
               </button>
-              <button type="button" className={styles.trashButton} disabled={busy} onClick={() => void moveToRecycleBin(document)} aria-label={`Move ${document.title} to Recycle Bin`}>
-                <Icon name="trash" />
+              <button type="button" className={styles.trashButton} disabled={busy} onClick={() => requestDocumentDelete(document)} aria-label={`Delete ${document.title}`}>
+                <Icon name="trash" /> Delete
               </button>
             </>
           )}
@@ -1044,45 +1110,18 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
           <button
             type="button"
             className={`${styles.headerButton} ${styles.filtersButton}`}
-            onClick={() => setShowFilters((current) => !current)}
+            onClick={openFiltersModal}
             aria-expanded={showFilters}
-            aria-controls="document-vault-filters"
+            aria-haspopup="dialog"
             disabled={loading || loadFailed || !hasDocumentsInView}
           >
             <Icon name="filter" /> Filters
-            {category !== 'all' ? <span className={styles.buttonCount}>1</span> : null}
+            {category !== 'all' ? <span className={styles.activeFilterText}>1 active</span> : null}
           </button>
           <button type="button" className={`${styles.headerButton} ${styles.primaryHeaderButton}`} onClick={openUploadModal} disabled={view === 'recycle-bin' || busy}>
             <Icon name="upload" /> Upload documents
           </button>
         </section>
-
-        {showFilters && hasDocumentsInView ? (
-          <section id="document-vault-filters" className={styles.filterPanel} aria-label="Filter by category">
-            <div>
-              <strong>Categories</strong>
-              <span>Choose one category or view everything.</span>
-            </div>
-            <div className={styles.filterChips}>
-              <button type="button" className={category === 'all' ? styles.filterChipActive : ''} onClick={() => setCategory('all')}>
-                All <span>{documents.length}</span>
-              </button>
-              {CATEGORY_OPTIONS.map((option) => {
-                const count = documents.filter((document) => document.category === option.value).length;
-                return (
-                  <button
-                    type="button"
-                    key={option.value}
-                    className={category === option.value ? styles.filterChipActive : ''}
-                    onClick={() => setCategory(option.value)}
-                  >
-                    {option.label} <span>{count}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </section>
-        ) : null}
 
         {showSummary && view === 'documents' && !loading && !loadFailed && summary.totalDocuments > 0 ? (
           <div id="document-vault-summary" className={styles.summaryCarousel} aria-label="Document Vault summary">
@@ -1236,11 +1275,24 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
           <section ref={modalRef} className={styles.modal} role="dialog" aria-modal="true" aria-labelledby="document-modal-title">
             <header className={styles.modalHeader}>
               <div>
-                <span>{modalMode === 'upload' ? 'Add to your vault' : 'Document details'}</span>
-                <h2 id="document-modal-title">{modalMode === 'upload' ? 'Upload documents' : 'Edit document'}</h2>
-                <p>{modalMode === 'upload' ? 'Add up to 20 files at once. The details below apply to every file in this batch.' : `Editing ${editingDocument?.fileName ?? 'document'}`}</p>
+                <h2 id="document-modal-title">{modalMode === 'upload' ? activeUploadStep.label : 'Edit document'}</h2>
+                <p>{modalMode === 'upload' ? activeUploadStep.description : `Update the details and links for ${editingDocument?.fileName ?? 'this document'}.`}</p>
               </div>
               <button type="button" onClick={closeModal} disabled={busy} aria-label="Close dialog" data-modal-initial-focus="true"><Icon name="close" /></button>
+              {modalMode === 'upload' ? (
+                <ol className={styles.uploadSteps} aria-label="Upload progress">
+                  {UPLOAD_STEPS.map((item) => (
+                    <li
+                      key={item.step}
+                      className={item.step === uploadStep ? styles.uploadStepCurrent : item.step < uploadStep ? styles.uploadStepComplete : ''}
+                      aria-current={item.step === uploadStep ? 'step' : undefined}
+                    >
+                      <span>{item.step < uploadStep ? '✓' : item.step}</span>
+                      <strong>{item.label}</strong>
+                    </li>
+                  ))}
+                </ol>
+              ) : null}
             </header>
 
             <form onSubmit={submitDocument} className={styles.modalForm}>
@@ -1254,7 +1306,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
                 ) : null}
 
                 <fieldset className={styles.modalFields} disabled={busy}>
-                {modalMode === 'upload' ? (
+                {modalMode === 'upload' && uploadStep === 1 ? (
                   <>
                   <div
                     className={`${styles.filePicker} ${selectedFiles.length ? styles.filePickerSelected : ''} ${filePickerDragging ? styles.filePickerDragging : ''}`}
@@ -1306,14 +1358,14 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
                     <div className={styles.batchHint}><Icon name="info" /><span>File names will become document titles. You can edit individual titles after upload.</span></div>
                   ) : null}
                   </>
-                ) : (
+                ) : modalMode === 'edit' ? (
                   <div className={styles.currentFile}>
                     <Icon name="document" />
                     <div><strong>{editingDocument?.fileName}</strong><span>{formatBytes(editingDocument?.byteSize ?? 0)} · Original file stays unchanged</span></div>
                   </div>
-                )}
+                ) : null}
 
-                <div className={styles.formGrid}>
+                {modalMode === 'edit' || uploadStep === 2 ? <div className={styles.formGrid}>
                   {modalMode === 'edit' || selectedFiles.length <= 1 ? <label className={styles.field}>
                     <span>
                       Document title
@@ -1407,9 +1459,9 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
                           : 'Add a short reminder, reference number or context…'}
                     />
                   </label>
-                </div>
+                </div> : null}
 
-                {modalMode === 'upload' && initialAssetId ? (
+                {modalMode === 'edit' || uploadStep === 3 ? (modalMode === 'upload' && initialAssetId ? (
                   <section className={styles.lockedAssetLink} aria-labelledby="linked-asset-heading">
                     <span className={styles.lockedAssetIcon}><Icon name="link" /></span>
                     <div>
@@ -1468,7 +1520,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
                     <div className={styles.noAssets}><Icon name="info" /><span>No assets are available yet. This document will stay at account level.</span></div>
                   ) : null}
                 </section>
-                )}
+                )) : null}
                 </fieldset>
               </div>
 
@@ -1476,19 +1528,122 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
                 <span className={styles.srOnly} role="status" aria-live="polite">
                   {uploadProgress ? `Uploading document ${uploadProgress.current} of ${uploadProgress.total}.` : ''}
                 </span>
-                <button type="button" className={styles.cancelButton} disabled={busy} onClick={closeModal}>Cancel</button>
+                <button
+                  type="button"
+                  className={styles.cancelButton}
+                  disabled={busy}
+                  onClick={modalMode === 'upload' && uploadStep > 1 ? returnToPreviousUploadStep : closeModal}
+                >
+                  {modalMode === 'upload' && uploadStep > 1 ? <><Icon name="chevron-left" /> Back</> : 'Cancel'}
+                </button>
                 <button type="submit" className={styles.uploadButton} disabled={busy}>
-                  {busy ? <span className={styles.buttonSpinner} /> : <Icon name={modalMode === 'upload' ? 'upload' : 'edit'} />}
+                  {busy
+                    ? <span className={styles.buttonSpinner} />
+                    : <Icon name={modalMode === 'upload' && uploadStep < 3 ? 'chevron-right' : modalMode === 'upload' ? 'upload' : 'edit'} />}
                   {uploadProgress
                     ? `Uploading ${uploadProgress.current} of ${uploadProgress.total}…`
                     : busy
                       ? 'Saving…'
                       : modalMode === 'upload'
-                        ? selectedFiles.length > 1 ? `Upload ${selectedFiles.length} documents` : 'Upload document'
+                        ? uploadStep < 3
+                          ? 'Continue'
+                          : selectedFiles.length > 1 ? `Upload ${selectedFiles.length} documents` : 'Upload document'
                         : 'Save changes'}
                 </button>
               </footer>
             </form>
+          </section>
+        </div>
+      ) : null}
+
+      {showFilters ? (
+        <div className={styles.modalBackdrop} onMouseDown={(event) => { if (event.target === event.currentTarget) setShowFilters(false); }}>
+          <section ref={filterModalRef} className={styles.filterModal} role="dialog" aria-modal="true" aria-labelledby="document-filter-title">
+            <header className={`${styles.modalHeader} ${styles.compactModalHeader}`}>
+              <div>
+                <h2 id="document-filter-title">Filter documents</h2>
+                <p>Choose one category to narrow down your Document Vault.</p>
+              </div>
+              <button type="button" onClick={() => setShowFilters(false)} aria-label="Close filters" data-modal-initial-focus="true"><Icon name="close" /></button>
+            </header>
+
+            <div className={styles.filterModalBody}>
+              <button
+                type="button"
+                className={`${styles.filterOption} ${styles.filterOptionAll} ${category === 'all' ? styles.filterOptionActive : ''}`}
+                aria-pressed={category === 'all'}
+                onClick={() => setCategory('all')}
+              >
+                <span>All documents</span>
+                <strong>{documents.length}</strong>
+              </button>
+              <div className={styles.filterOptionGrid}>
+                {CATEGORY_OPTIONS.map((option) => {
+                  const count = documents.filter((document) => document.category === option.value).length;
+                  return (
+                    <button
+                      type="button"
+                      key={option.value}
+                      className={`${styles.filterOption} ${category === option.value ? styles.filterOptionActive : ''}`}
+                      aria-pressed={category === option.value}
+                      onClick={() => setCategory(option.value)}
+                    >
+                      <span>{option.label}</span>
+                      <strong>{count}</strong>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <footer className={styles.modalFooter}>
+              <button type="button" className={styles.cancelButton} disabled={category === 'all'} onClick={() => setCategory('all')}>Clear filter</button>
+              <button type="button" className={styles.uploadButton} onClick={() => setShowFilters(false)}>Done</button>
+            </footer>
+          </section>
+        </div>
+      ) : null}
+
+      {documentPendingDelete ? (
+        <div className={styles.modalBackdrop} onMouseDown={(event) => { if (event.target === event.currentTarget && !busyRef.current) setDocumentPendingDelete(null); }}>
+          <section ref={deleteModalRef} className={styles.confirmationModal} role="dialog" aria-modal="true" aria-labelledby="document-delete-title">
+            <header className={`${styles.modalHeader} ${styles.compactModalHeader}`}>
+              <div>
+                <h2 id="document-delete-title">Are you sure you want to delete this document?</h2>
+              </div>
+              <button type="button" onClick={() => setDocumentPendingDelete(null)} disabled={busy} aria-label="Close delete confirmation" data-modal-initial-focus="true"><Icon name="close" /></button>
+            </header>
+
+            <div className={styles.confirmationBody}>
+              {modalNotice ? (
+                <div className={styles.modalNotice} role="alert">
+                  <Icon name="info" />
+                  <span>{modalNotice.message}</span>
+                  <button type="button" onClick={() => setModalNotice(null)} aria-label="Dismiss error"><Icon name="close" /></button>
+                </div>
+              ) : null}
+              <p>The document will move to the Recycle Bin and can be restored for 90 days.</p>
+              <div className={styles.selectedDocumentCard}>
+                <span>Selected document</span>
+                <strong>{documentPendingDelete.title}</strong>
+                <p>
+                  {documentPendingDelete.fileName} · {getAccountDocumentTypeLabel(documentPendingDelete.documentType) ?? categoryLabel(documentPendingDelete.category)} · {formatBytes(documentPendingDelete.byteSize)}
+                </p>
+                <small>
+                  {documentPendingDelete.assetLinks.length
+                    ? `Linked to ${documentPendingDelete.assetLinks.map((asset) => asset.title).join(', ')}`
+                    : 'Account-level document'}
+                </small>
+              </div>
+            </div>
+
+            <footer className={styles.modalFooter}>
+              <button type="button" className={styles.cancelButton} disabled={busy} onClick={() => setDocumentPendingDelete(null)}>Cancel</button>
+              <button type="button" className={styles.dangerButton} disabled={busy} onClick={() => void moveToRecycleBin()}>
+                {busy ? <span className={styles.buttonSpinner} /> : <Icon name="trash" />}
+                {busy ? 'Deleting…' : 'Yes, delete document'}
+              </button>
+            </footer>
           </section>
         </div>
       ) : null}
