@@ -54,3 +54,22 @@ test('Desktop completion uses the servicing form and server acknowledgement', ()
   assert.match(completionRoute, /requestedStatus === 'done' && body\.confirmedComplete !== true/);
   assert.match(completionRoute, /Confirm that the maintenance has physically been completed/);
 });
+
+test('QR, Field Manager and Owner App maintenance require the current meter reading', () => {
+  const scanClient = source('app/scan/[publicAssetCode]/scan-client.tsx');
+  const scanRoute = source('app/api/scan/assets/[publicAssetCode]/event/route.ts');
+
+  assert.match(scanClient, /Current hour-meter reading/);
+  assert.match(scanClient, /Hours at completion/);
+  assert.match(scanClient, /Current kilometre reading/);
+  assert.match(scanClient, /Kilometres at completion/);
+  assert.match(scanClient, /Enter the meter reading shown after the work was completed/);
+  assert.match(scanClient, /hours: sessionUsage\.hasUsage \? sessionUsage\.hours : ""/);
+  assert.match(scanClient, /const maintenanceHours = pendingUpdate\.hasUsage/);
+  assert.match(scanClient, /activeEditor === "usage" \|\| activeEditor === "service"/);
+  assert.match(scanClient, /hours: stagedHours/);
+  assert.match(scanClient, /hasUsage: true/);
+  assert.match(scanRoute, /procedureKind[\s\S]*access\.asset\.usageMode === "hours"[\s\S]*payload\.hours === null/);
+  assert.match(scanRoute, /Enter the current hour-meter reading before saving maintenance/);
+  assert.match(scanRoute, /Enter the current kilometre reading before saving maintenance/);
+});
