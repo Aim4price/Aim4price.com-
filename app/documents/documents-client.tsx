@@ -30,6 +30,10 @@ type AssetLink = {
   id: string;
   title: string;
   meta: string;
+  detail?: string;
+  categoryLabel?: string;
+  methodLabel?: string;
+  currentValue?: number;
 };
 
 type VaultDocument = {
@@ -248,6 +252,14 @@ function formatBytes(value: number): string {
   if (bytes >= 1024 ** 2) return `${(bytes / 1024 ** 2).toFixed(1)} MB`;
   if (bytes >= 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   return `${Math.round(bytes)} B`;
+}
+
+function formatAssetValue(value: number | null | undefined): string {
+  return new Intl.NumberFormat('en-ZA', {
+    style: 'currency',
+    currency: 'ZAR',
+    maximumFractionDigits: 0,
+  }).format(Number(value) || 0);
 }
 
 function formatDate(value: string | null, includeYear = true): string {
@@ -533,7 +545,14 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
   const filteredAssets = useMemo(() => {
     const needle = assetSearch.trim().toLowerCase();
     if (!needle) return assets;
-    return assets.filter((asset) => `${asset.title} ${asset.meta}`.toLowerCase().includes(needle));
+    return assets.filter((asset) => [
+      asset.title,
+      asset.meta,
+      asset.detail,
+      asset.categoryLabel,
+      asset.methodLabel,
+      asset.currentValue,
+    ].join(' ').toLowerCase().includes(needle));
   }, [assetSearch, assets]);
 
   const selectedDraftAssets = useMemo(
@@ -1639,7 +1658,12 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
                         <span className={styles.assetSelectionCheckbox} aria-hidden="true" />
                         <span className={styles.assetSelectionCopy} data-asset-choice-copy="true">
                           <strong>{asset.title}</strong>
-                          <small data-asset-choice-meta="true">{asset.meta || 'Asset Register item'}</small>
+                          <span data-asset-choice-meta="true">{asset.detail || asset.meta || 'No key details saved yet'}</span>
+                          <small>{[asset.categoryLabel, asset.methodLabel].filter(Boolean).join(' · ') || 'Asset Register item'}</small>
+                        </span>
+                        <span className={styles.assetSelectionValue} data-asset-choice-value="true">
+                          <strong>{formatAssetValue(asset.currentValue)}</strong>
+                          <small>current value</small>
                         </span>
                       </label>
                     );

@@ -4443,15 +4443,15 @@
   position: relative;
   min-width: 0;
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-columns: auto minmax(0, 1fr) auto;
   gap: 0.9rem;
   align-items: center;
   min-height: 6.15rem;
-  padding: 0.95rem 1.05rem;
+  padding: 0.95rem 1rem;
   border: 1px solid rgba(199, 222, 237, 0.96);
-  border-radius: 1.05rem;
+  border-radius: 1.1rem;
   background: #ffffff;
-  box-shadow: 0 9px 20px rgba(16, 31, 28, 0.032), inset 0 1px 0 #ffffff;
+  box-shadow: 0 10px 22px rgba(16, 31, 28, 0.035), inset 0 1px 0 rgba(255, 255, 255, 0.96);
   cursor: pointer;
   transition: transform 160ms ease, border-color 160ms ease, background 160ms ease, box-shadow 160ms ease;
 }
@@ -4460,7 +4460,7 @@
   transform: translateY(-1px);
   border-color: rgba(160, 195, 176, 0.98);
   background: linear-gradient(180deg, #ffffff 0%, #f7fbf9 100%);
-  box-shadow: 0 13px 26px rgba(16, 31, 28, 0.055), inset 0 1px 0 #ffffff;
+  box-shadow: 0 14px 28px rgba(16, 31, 28, 0.055), inset 0 1px 0 rgba(255, 255, 255, 0.98);
 }
 
 .assetSelectionRow:focus-within {
@@ -4473,7 +4473,7 @@
   background:
     radial-gradient(circle at top left, rgba(22, 83, 64, 0.08), transparent 45%),
     linear-gradient(180deg, #ffffff 0%, #f0faf5 100%);
-  box-shadow: 0 14px 28px rgba(22, 83, 64, 0.09), inset 0 0 0 2px rgba(22, 83, 64, 0.07);
+  box-shadow: 0 16px 32px rgba(22, 83, 64, 0.095), inset 0 0 0 2px rgba(22, 83, 64, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.98);
 }
 
 .assetSelectionRow input {
@@ -4487,42 +4487,37 @@
 
 .assetSelectionCheckbox {
   position: relative;
-  width: 2.2rem;
-  height: 2.2rem;
+  width: 2.28rem;
+  height: 2.28rem;
   border: 1.5px solid rgba(183, 202, 216, 0.98);
-  border-radius: 0.72rem;
+  border-radius: 0.78rem;
   background: linear-gradient(180deg, #ffffff 0%, #f4f8fb 100%);
-  box-shadow: 0 7px 15px rgba(16, 31, 28, 0.035), inset 0 1px 0 #ffffff;
+  box-shadow: 0 8px 16px rgba(16, 31, 28, 0.035), inset 0 1px 0 rgba(255, 255, 255, 0.96);
 }
 
 .assetSelectionRowSelected .assetSelectionCheckbox {
   border-color: rgba(18, 70, 53, 0.86);
   background: linear-gradient(180deg, #1d6048 0%, #124635 100%);
-  box-shadow: 0 9px 18px rgba(18, 70, 53, 0.18);
+  box-shadow: 0 10px 20px rgba(18, 70, 53, 0.18);
 }
 
 .assetSelectionRowSelected .assetSelectionCheckbox::after {
   content: '✓';
   position: absolute;
   inset: 0;
-  display: grid;
-  place-items: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   color: #ffffff;
-  font-size: 1.15rem;
+  font-size: 1.28rem;
   font-weight: 950;
+  line-height: 1;
 }
 
 .assetSelectionCopy {
   min-width: 0;
   display: grid;
-  gap: 0.3rem;
-}
-
-.assetSelectionCopy strong,
-.assetSelectionCopy small {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  gap: 0.22rem;
 }
 
 .assetSelectionCopy strong {
@@ -4530,13 +4525,41 @@
   font-size: clamp(1rem, 1.08vw, 1.12rem);
   font-weight: 900;
   line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.assetSelectionCopy span,
+.assetSelectionCopy small {
+  color: #647587;
+  font-size: 0.93rem;
+  font-weight: 660;
+  line-height: 1.35;
 }
 
 .assetSelectionCopy small {
+  font-size: 0.86rem;
+}
+
+.assetSelectionValue {
+  display: grid;
+  justify-items: end;
+  gap: 0.16rem;
+  min-width: 9.5rem;
+  color: #10352b;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.assetSelectionValue strong {
+  font-size: 1rem;
+  font-weight: 880;
+  line-height: 1.2;
+}
+
+.assetSelectionValue small {
   color: #647587;
-  font-size: 0.9rem;
-  font-weight: 660;
-  line-height: 1.35;
+  font-size: 0.8rem;
+  font-weight: 780;
 }
 
 .assetSelectionEmpty {
@@ -4675,6 +4698,17 @@
 
   .assetSelectionToolbarActions .cancelButton {
     flex: 1 1 0;
+  }
+
+  .assetSelectionRow {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .assetSelectionValue {
+    grid-column: 2 / -1;
+    justify-items: start;
+    min-width: 0;
+    text-align: left;
   }
 
   .documentStatus {
