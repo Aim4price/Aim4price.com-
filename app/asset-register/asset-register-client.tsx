@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { createPortal } from 'react-dom';
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type ChangeEvent, type DragEvent as ReactDragEvent, type FormEvent, type KeyboardEvent as ReactKeyboardEvent } from 'react';
+import DropdownOverlay from '../../components/DropdownOverlay';
 import AppHeader from '../../components/AppHeader';
 import SaleabilityModal from '../../components/SaleabilityModal';
 import AssetGroupManagerModal, {
@@ -2315,7 +2316,7 @@ function ReportSelect({ label, value, options, isOpen, disabled = false, onToggl
       </button>
 
       {isOpen && !disabled ? (
-        <div className={styles.reportSelectMenu} role="listbox" aria-label={label}>
+        <DropdownOverlay className={styles.reportSelectMenu} role="listbox" aria-label={label}>
           {options.map((option) => (
             <button
               key={option.value}
@@ -2328,7 +2329,7 @@ function ReportSelect({ label, value, options, isOpen, disabled = false, onToggl
               {option.label}
             </button>
           ))}
-        </div>
+        </DropdownOverlay>
       ) : null}
     </div>
   );
@@ -2408,7 +2409,7 @@ function ModalSelect<T extends string>({
   menuClassName = '',
   autoFocus = false,
   showDescriptions = true,
-  usePortal = false,
+  usePortal = true,
   assetDetailEditTarget,
 }: ModalSelectProps<T>) {
   const [isOpen, setIsOpen] = useState(false);
@@ -2512,6 +2513,7 @@ function ModalSelect<T extends string>({
       ref={menuRef}
       className={`${styles.customSelectMenu} ${usePortal ? styles.customSelectMenuPortal : ''} ${!showDescriptions ? styles.customSelectMenuSingleLine : ''} ${menuClassName}`}
       style={usePortal ? portalMenuStyle ?? undefined : undefined}
+      data-dropdown-overlay-portal="true"
       role="listbox"
       aria-label={label}
     >
@@ -22514,3 +22516,4 @@ export default function AssetRegisterClient({
     </main>
   );
 }
+

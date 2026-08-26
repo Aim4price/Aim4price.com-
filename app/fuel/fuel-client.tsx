@@ -1,5 +1,6 @@
 'use client';
 
+import DropdownOverlay from '../../components/DropdownOverlay';
 import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent, type ReactNode, type SVGProps } from 'react';
 import AppHeader from '../../components/AppHeader';
 import CaptureRequestStatusList, { type CaptureRequestStatusItem } from '../../components/CaptureRequestStatusList';
@@ -751,7 +752,7 @@ function ReportSelect({ label, value, options, isOpen, disabled = false, onToggl
       </button>
 
       {isOpen && !disabled ? (
-        <div className={styles.reportSelectMenu} role="listbox" aria-label={label}>
+        <DropdownOverlay className={styles.reportSelectMenu} role="listbox" aria-label={label}>
           {options.map((option) => (
             <button
               key={option.value}
@@ -764,7 +765,7 @@ function ReportSelect({ label, value, options, isOpen, disabled = false, onToggl
               {option.label}
             </button>
           ))}
-        </div>
+        </DropdownOverlay>
       ) : null}
     </div>
   );
@@ -817,7 +818,7 @@ function FuelSlipFilterDropdown({
         </button>
 
         {isOpen ? (
-          <div className={styles.customFilterSelectMenu} role="listbox" aria-label={label}>
+          <DropdownOverlay className={styles.customFilterSelectMenu} role="listbox" aria-label={label}>
             {searchable ? (
               <div className={styles.customFilterSearchRow}>
                 <input
@@ -857,7 +858,7 @@ function FuelSlipFilterDropdown({
                 <span className={styles.customFilterSelectOptionLabel}>{noMatchesLabel}</span>
               </div>
             ) : null}
-          </div>
+          </DropdownOverlay>
         ) : null}
       </div>
     </div>
@@ -875,7 +876,7 @@ function StorageFuelTypeSelect({ value, isOpen, onToggle, onChange }: StorageFue
       </button>
 
       {isOpen ? (
-        <div className={styles.storageFuelTypeMenu} role="listbox" aria-label="Fuel type">
+        <DropdownOverlay className={styles.storageFuelTypeMenu} role="listbox" aria-label="Fuel type">
           {FUEL_TYPE_OPTIONS.map((option) => (
             <button
               key={option.value}
@@ -888,7 +889,7 @@ function StorageFuelTypeSelect({ value, isOpen, onToggle, onChange }: StorageFue
               {option.label}
             </button>
           ))}
-        </div>
+        </DropdownOverlay>
       ) : null}
     </div>
   );
@@ -4605,3 +4606,4 @@ export default function FuelClient({
     </>
   );
 }
+

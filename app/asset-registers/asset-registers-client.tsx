@@ -1,5 +1,6 @@
 "use client";
 
+import DropdownOverlay from '../../components/DropdownOverlay';
 import { useRouter } from "next/navigation";
 import {
   useEffect,
@@ -1168,7 +1169,7 @@ function RegisterTargetDropdown({
       </button>
 
       {isOpen ? (
-        <div className={styles.targetSelectMenu} role="listbox">
+        <DropdownOverlay className={styles.targetSelectMenu} role="listbox">
           <button
             type="button"
             className={`${styles.targetSelectOption} ${
@@ -1213,7 +1214,7 @@ function RegisterTargetDropdown({
               </button>
             );
           })}
-        </div>
+        </DropdownOverlay>
       ) : null}
     </div>
   );
@@ -3849,3 +3850,4 @@ export default function AssetRegistersClient({
     </>
   );
 }
+

@@ -1,5 +1,6 @@
 'use client';
 
+import DropdownOverlay from './DropdownOverlay';
 import { useMemo, useState } from 'react';
 import assetStyles from '../app/asset-register/page.module.css';
 import { openCanonicalReportUrl } from '../lib/report-open';
@@ -139,7 +140,7 @@ function ReportSelect({
       </button>
 
       {isOpen && !disabled ? (
-        <div className={assetStyles.reportSelectMenu} role="listbox" aria-label={label}>
+        <DropdownOverlay className={assetStyles.reportSelectMenu} role="listbox" aria-label={label}>
           {options.map((option) => (
             <button
               key={option.value}
@@ -155,7 +156,7 @@ function ReportSelect({
               {option.label}
             </button>
           ))}
-        </div>
+        </DropdownOverlay>
       ) : null}
     </div>
   );
@@ -397,3 +398,4 @@ export default function DealerCostOfOwnershipReportModal({
     </div>
   );
 }
+

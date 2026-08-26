@@ -280,7 +280,7 @@ export default function AccountPicker({
   }, [listboxId, open, safeActiveIndex, visibleOptions.length]);
 
   const menu = (
-    <div ref={menuRef} className={styles.menu} style={menuStyle ?? undefined}>
+    <div ref={menuRef} className={styles.menu} style={menuStyle ?? undefined} data-dropdown-overlay-portal="true">
       <div className={styles.searchRow}>
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m21 21-4.4-4.4m2.4-5.1a7.5 7.5 0 1 1-15 0 7.5 7.5 0 0 1 15 0Z" /></svg>
         <input
@@ -301,7 +301,7 @@ export default function AccountPicker({
           aria-activedescendant={visibleOptions.length ? `${listboxId}-option-${safeActiveIndex}` : undefined}
         />
       </div>
-      <div id={listboxId} className={styles.options} role="listbox" aria-labelledby={labelId}>
+      <div id={listboxId} className={styles.options} role="listbox" aria-labelledby={labelId} data-dropdown-overlay-contained="true">
         {visibleOptions.length ? visibleOptions.map(({ option, group }, index) => {
           const previousGroup = visibleOptions[index - 1]?.group;
           const showHeading = group && group !== previousGroup;
@@ -372,3 +372,4 @@ export default function AccountPicker({
     </div>
   );
 }
+

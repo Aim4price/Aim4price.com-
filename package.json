@@ -28,6 +28,7 @@
     "test:fuel-ledger": "node --test tests/fuel-report.test.mjs tests/fuel-ledger-integrity.test.mjs",
     "test:asset-groups": "node --test tests/asset-register-groups.test.mjs",
     "test:asset-card-ui": "node --experimental-strip-types --test tests/asset-register-card-ui.test.mjs tests/viewport-scrollbar.test.mjs",
+    "test:dropdown-overlays": "node --experimental-strip-types --test tests/dropdown-overlay.test.mjs",
     "test:documents": "node --test tests/account-document-vault.test.mjs",
     "test:assistance-network": "node --test tests/assistance-network.test.mjs",
     "test:app-umbrella-access": "node --test tests/app-umbrella-directory-access.test.mjs",
@@ -61,3 +62,4 @@
     "typescript": "5.6.2"
   }
 }
+

@@ -1,5 +1,6 @@
 'use client';
 
+import DropdownOverlay from '../../components/DropdownOverlay';
 import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent, type SVGProps } from 'react';
 import { useSearchParams } from 'next/navigation';
 import AppHeader from '../../components/AppHeader';
@@ -694,7 +695,7 @@ function FilterDropdown({
         </button>
 
         {isOpen ? (
-          <div className={styles.customFilterSelectMenu} role="listbox" aria-label={label}>
+          <DropdownOverlay className={styles.customFilterSelectMenu} role="listbox" aria-label={label}>
             {searchable ? (
               <div className={styles.customFilterSearchRow}>
                 <input
@@ -734,7 +735,7 @@ function FilterDropdown({
                 <span className={styles.customFilterSelectOptionLabel}>{noMatchesLabel}</span>
               </div>
             ) : null}
-          </div>
+          </DropdownOverlay>
         ) : null}
       </div>
     </div>
@@ -4910,7 +4911,7 @@ export default function MyInvoicesClient({
                       </button>
 
                       {usageMetricDropdownOpen ? (
-                        <div className={styles.customFilterSelectMenu} role="listbox" aria-label="Usage metric">
+                        <DropdownOverlay className={styles.customFilterSelectMenu} role="listbox" aria-label="Usage metric">
                           {USAGE_METRIC_OPTIONS.map((option) => {
                             const isSelected = option.value === draft.usageMetric;
 
@@ -4927,7 +4928,7 @@ export default function MyInvoicesClient({
                               </button>
                             );
                           })}
-                        </div>
+                        </DropdownOverlay>
                       ) : null}
                     </div>
                   </div>
@@ -5111,3 +5112,4 @@ export default function MyInvoicesClient({
     </main>
   );
 }
+

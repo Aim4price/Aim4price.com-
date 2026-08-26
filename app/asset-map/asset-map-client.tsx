@@ -1,5 +1,6 @@
 "use client";
 
+import DropdownOverlay from '../../components/DropdownOverlay';
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import AppHeader from "../../components/AppHeader";
@@ -1237,8 +1238,10 @@ export default function AssetMapClient() {
                     <span className={styles.filterControlLabel}>Filter</span>
                   </button>
                   {isFilterMenuOpen ? (
-                    <div
+                    <DropdownOverlay
                       className={styles.filterMenu}
+                      matchAnchorWidth={false}
+                      minimumWidth={352}
                       role="listbox"
                       aria-label="Filter mapped assets by asset register"
                     >
@@ -1259,7 +1262,7 @@ export default function AssetMapClient() {
                           </button>
                         );
                       })}
-                    </div>
+                    </DropdownOverlay>
                   ) : null}
                 </div>
                 <button
@@ -1711,7 +1714,7 @@ export default function AssetMapClient() {
                       <ChevronDownIcon className={styles.filterChevron} />
                     </button>
                     {isExportScopeMenuOpen ? (
-                      <div
+                      <DropdownOverlay
                         className={`${styles.filterMenu} ${styles.exportScopeMenu}`}
                         role="listbox"
                         aria-label="Choose asset register export scope"
@@ -1735,7 +1738,7 @@ export default function AssetMapClient() {
                             </button>
                           );
                         })}
-                      </div>
+                      </DropdownOverlay>
                     ) : null}
                   </div>
                 </div>
@@ -1794,3 +1797,4 @@ export default function AssetMapClient() {
     </main>
   );
 }
+
