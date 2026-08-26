@@ -206,6 +206,9 @@ test('QR, fuel and maintenance data survives intact into complete report exports
   assert.match(scanReport, /buildUmbrellaFuelAverageSection/);
   assert.match(scanReport, /buildUmbrellaFuelAveragesWorkbookSheet/);
   assert.match(scanReport, /Each average is calculated only from that asset's own valid fill intervals/);
+  assert.match(scanReport, /isUmbrellaReportScope\(asset, scopeAssets\)/);
+  assert.match(scanReport, /const summary = isUmbrellaReport[\s\S]*?buildDepreciationUmbrellaLogSummary\(entries, scopeAssets\)/);
+  assert.match(scanReport, /const annualSummaries = isUmbrellaReport[\s\S]*?buildDepreciationUmbrellaAnnualSummary\(entries\)/);
   assert.match(scanReport, /buildDepreciationUmbrellaLogSummary\(logEntries, reportAssets\)/);
   assert.match(scanReport, /buildDepreciationUmbrellaAnnualSummary\(logEntries\)/);
   assert.match(scanData, /fs\.document_date/);

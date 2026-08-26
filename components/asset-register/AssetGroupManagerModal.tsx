@@ -751,9 +751,9 @@ export default function AssetGroupManagerModal({
                   setEditorStep(1);
                   setView('members');
                 }}>
-                  <span className={`${styles.manageMenuIconTile} ${styles.manageMenuEditIcon}`} aria-hidden="true">
+                  <i className={`${styles.manageMenuIconTile} ${styles.manageMenuEditIcon}`} aria-hidden="true">
                     <MembersIcon className={styles.manageMenuIconGlyph} />
-                  </span>
+                  </i>
                   <span>
                     <strong>Manage umbrella</strong>
                     <small className={styles.menuOptionSubtitle}>Name, structure and assets.</small>
@@ -763,18 +763,18 @@ export default function AssetGroupManagerModal({
                   setReportStep('options');
                   setView('reports');
                 }} disabled={!onDownloadReport && !onDownloadPdf && !onDownloadXlsx}>
-                  <span className={`${styles.manageMenuIconTile} ${styles.manageMenuReportIcon}`} aria-hidden="true">
+                  <i className={`${styles.manageMenuIconTile} ${styles.manageMenuReportIcon}`} aria-hidden="true">
                     <DownloadIcon className={styles.manageMenuIconGlyph} />
-                  </span>
+                  </i>
                   <span>
                     <strong>Download reports</strong>
                     <small className={styles.menuOptionSubtitle}>Reports for grouped assets.</small>
                   </span>
                 </button>
                 <button type="button" className={`${registerStyles.optionActionButton} ${registerStyles.optionDangerButton} ${styles.manageMenuAction} ${styles.manageMenuDanger}`} onClick={() => setView('delete')}>
-                  <span className={`${styles.manageMenuIconTile} ${styles.manageMenuRemoveIcon}`} aria-hidden="true">
+                  <i className={`${styles.manageMenuIconTile} ${styles.manageMenuRemoveIcon}`} aria-hidden="true">
                     <TrashIcon className={styles.manageMenuIconGlyph} />
-                  </span>
+                  </i>
                   <span>
                     <strong>Remove umbrella</strong>
                     <small className={styles.menuOptionSubtitle}>Ungroup without deleting assets.</small>
