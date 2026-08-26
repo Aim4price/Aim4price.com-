@@ -671,8 +671,9 @@ export default function AssetGroupManagerModal({
     { value: 'all', label: 'All maintenance' },
     { value: 'upcoming', label: 'Upcoming maintenance' },
     { value: 'done', label: 'Completed maintenance' },
-    { value: 'service', label: 'Services only' },
-    { value: 'checkup', label: 'Check-ups only' },
+    { value: 'checked', label: 'Checked only' },
+    { value: 'serviced', label: 'Services only' },
+    { value: 'repaired', label: 'Repairs only' },
   ];
 
   const groupSummary = group
@@ -750,7 +751,9 @@ export default function AssetGroupManagerModal({
                   setEditorStep(1);
                   setView('members');
                 }}>
-                  <MembersIcon className={`${registerStyles.buttonIcon} ${styles.manageMenuIcon}`} />
+                  <span className={`${styles.manageMenuIconTile} ${styles.manageMenuEditIcon}`} aria-hidden="true">
+                    <MembersIcon className={styles.manageMenuIconGlyph} />
+                  </span>
                   <span>
                     <strong>Manage umbrella</strong>
                     <small className={styles.menuOptionSubtitle}>Name, structure and assets.</small>
@@ -760,14 +763,18 @@ export default function AssetGroupManagerModal({
                   setReportStep('options');
                   setView('reports');
                 }} disabled={!onDownloadReport && !onDownloadPdf && !onDownloadXlsx}>
-                  <DownloadIcon className={`${registerStyles.buttonIcon} ${styles.manageMenuIcon}`} />
+                  <span className={`${styles.manageMenuIconTile} ${styles.manageMenuReportIcon}`} aria-hidden="true">
+                    <DownloadIcon className={styles.manageMenuIconGlyph} />
+                  </span>
                   <span>
                     <strong>Download reports</strong>
                     <small className={styles.menuOptionSubtitle}>Reports for grouped assets.</small>
                   </span>
                 </button>
                 <button type="button" className={`${registerStyles.optionActionButton} ${registerStyles.optionDangerButton} ${styles.manageMenuAction} ${styles.manageMenuDanger}`} onClick={() => setView('delete')}>
-                  <TrashIcon className={`${registerStyles.buttonIcon} ${styles.manageMenuIcon}`} />
+                  <span className={`${styles.manageMenuIconTile} ${styles.manageMenuRemoveIcon}`} aria-hidden="true">
+                    <TrashIcon className={styles.manageMenuIconGlyph} />
+                  </span>
                   <span>
                     <strong>Remove umbrella</strong>
                     <small className={styles.menuOptionSubtitle}>Ungroup without deleting assets.</small>
