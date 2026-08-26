@@ -17,6 +17,7 @@ type FuelIssueRequest = {
   assetFuelPercentBefore?: unknown;
   assetFuelPercentAfter?: unknown;
   assetUsageReading?: unknown;
+  assetUsageMetric?: unknown;
   operatorName?: unknown;
   activityText?: unknown;
   workAreaText?: unknown;
@@ -103,6 +104,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
       assetFuelPercentBefore: body.assetFuelPercentBefore,
       assetFuelPercentAfter: body.assetFuelPercentAfter,
       assetUsageReading: body.assetUsageReading,
+      assetUsageMetric: body.assetUsageMetric,
       operatorName,
       activityText: body.activityText,
       workAreaText: body.workAreaText,

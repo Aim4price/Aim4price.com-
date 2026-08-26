@@ -344,10 +344,10 @@ function toIsoString(value: unknown): string {
 
   if (typeof value === 'string' && value.trim()) {
     const parsed = new Date(value);
-    return Number.isNaN(parsed.getTime()) ? value : parsed.toISOString();
+    return Number.isNaN(parsed.getTime()) ? '' : parsed.toISOString();
   }
 
-  return new Date().toISOString();
+  return '';
 }
 
 function toDateOnly(value: unknown): string | null {

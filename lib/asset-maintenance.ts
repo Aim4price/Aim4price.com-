@@ -79,6 +79,10 @@ export type AssetMaintenanceRecord = {
   completedUsage: number | null;
   completedNotes: string;
   completedBy: string;
+  sourcePhotoUrls: string[];
+  sourceLatitude: number | null;
+  sourceLongitude: number | null;
+  sourceLocationText: string;
   alertNotedAtIso: string | null;
   createdAtIso: string;
   updatedAtIso: string;
@@ -201,6 +205,11 @@ type MaintenanceRow = {
   completed_usage: string | number | null;
   completed_notes: string | null;
   completed_by: string | null;
+  source_captured_at?: string | Date | null;
+  source_photo_urls?: unknown;
+  source_latitude?: string | number | null;
+  source_longitude?: string | number | null;
+  source_location_text?: string | null;
   alert_noted_at: string | Date | null;
   created_at: string | Date | null;
   updated_at: string | Date | null;
@@ -336,18 +345,29 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
+function asStringArray(value: unknown): string[] {
+  if (Array.isArray(value)) return value.map(asText).filter(Boolean);
+  if (typeof value !== 'string' || !value.trim()) return [];
+  try {
+    const parsed = JSON.parse(value) as unknown;
+    return Array.isArray(parsed) ? parsed.map(asText).filter(Boolean) : [];
+  } catch {
+    return [];
+  }
+}
+
 function toIsoString(value: unknown): string {
   if (value instanceof Date && Number.isFinite(value.getTime())) return value.toISOString();
   if (typeof value === 'string' && value.trim()) {
     const parsed = new Date(value);
-    return Number.isNaN(parsed.getTime()) ? value : parsed.toISOString();
+    return Number.isNaN(parsed.getTime()) ? '' : parsed.toISOString();
   }
-  return new Date().toISOString();
+  return '';
 }
 
 function toNullableIsoString(value: unknown): string | null {
   if (value === null || typeof value === 'undefined' || value === '') return null;
-  return toIsoString(value);
+  return toIsoString(value) || null;
 }
 
 function toDateOnly(value: unknown): string | null {
@@ -365,9 +385,22 @@ function toDateOnly(value: unknown): string | null {
 
 function completionDateOnly(value: unknown): string | null {
   const text = asText(value);
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(text)) return null;
-  const parsed = new Date(`${text}T00:00:00Z`);
-  return Number.isNaN(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== text ? null : text;
+  if (!text) return null;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(text)) {
+    const parsedDateOnly = new Date(`${text}T00:00:00Z`);
+    return Number.isNaN(parsedDateOnly.getTime()) || parsedDateOnly.toISOString().slice(0, 10) !== text ? null : text;
+  }
+
+  const parsed = new Date(text);
+  if (Number.isNaN(parsed.getTime())) return null;
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Africa/Johannesburg',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(parsed);
+  const valueByType = new Map(parts.map((part) => [part.type, part.value]));
+  return `${valueByType.get('year')}-${valueByType.get('month')}-${valueByType.get('day')}`;
 }
 
 function normalizeMaintenanceType(value: unknown): AssetMaintenanceType {
@@ -736,10 +769,14 @@ function mapMaintenanceRow(row: MaintenanceRow): AssetMaintenanceRecord {
     recurringIntervalUnit: row.recurring_interval_unit ? normalizeIntervalUnit(row.recurring_interval_unit, triggerType === 'date' ? 'months' : usageMetric ?? 'hours') : null,
     generatedFromMaintenanceId: asText(row.generated_from_maintenance_id) || null,
     sourceScanEventId: asText(row.source_scan_event_id) || null,
-    completedAtIso: toNullableIsoString(row.completed_at),
+    completedAtIso: toNullableIsoString(row.source_captured_at) ?? toNullableIsoString(row.completed_at),
     completedUsage: asNumber(row.completed_usage),
     completedNotes: asLongText(row.completed_notes),
     completedBy: asText(row.completed_by),
+    sourcePhotoUrls: asStringArray(row.source_photo_urls),
+    sourceLatitude: asNumber(row.source_latitude),
+    sourceLongitude: asNumber(row.source_longitude),
+    sourceLocationText: asText(row.source_location_text),
     alertNotedAtIso: toNullableIsoString(row.alert_noted_at),
     createdAtIso: toIsoString(row.created_at),
     updatedAtIso: toIsoString(row.updated_at ?? row.created_at),
@@ -1028,6 +1065,11 @@ function maintenanceSelectSql(whereClause: string): string {
       nullif(coalesce(to_jsonb(ai)->>'selected_method', to_jsonb(ai)->>'method', to_jsonb(ai)->>'valuation_method'), '') as asset_selected_method,
       coalesce(to_jsonb(ai)->'specs_json', '{}'::jsonb) as asset_specs_json,
       fm.display_name as field_manager_display_name,
+      coalesce(to_jsonb(se)->'photo_urls', '[]'::jsonb) as source_photo_urls,
+      nullif(to_jsonb(se)->>'latitude', '')::double precision as source_latitude,
+      nullif(to_jsonb(se)->>'longitude', '')::double precision as source_longitude,
+      coalesce(to_jsonb(se)->>'location_text', '') as source_location_text,
+      se.created_at as source_captured_at,
       ai.user_id::text as asset_owner_user_id
     from public.asset_maintenance_records m
     join public.asset_register_items ai
@@ -1045,6 +1087,8 @@ function maintenanceSelectSql(whereClause: string): string {
       )
     left join public.field_managers fm
       on fm.id = m.assigned_field_manager_id
+    left join public.asset_scan_events se
+      on se.id = m.source_scan_event_id
     ${whereClause}
   `;
 }
@@ -1160,6 +1204,10 @@ function completedScanHistoryRecord(
     completedUsage: event.usageReading,
     completedNotes: event.sourceNote || event.summary || event.note,
     completedBy: event.operatorName,
+    sourcePhotoUrls: event.photoUrls,
+    sourceLatitude: event.latitude,
+    sourceLongitude: event.longitude,
+    sourceLocationText: event.locationText,
     alertNotedAtIso: event.notedAtIso,
     createdAtIso: event.createdAtIso,
     updatedAtIso: event.createdAtIso,
@@ -1385,9 +1433,7 @@ export async function recordStandaloneAssetMaintenanceCompletion(
   }
   const completedAtIso = parsedCompletedAt.toISOString();
   const usageMetric = assetUsageMetric(asset);
-  const completedUsage =
-    nonNegativeNumber(input.completedUsage)
-    ?? assetUsageReading(asset, usageMetric);
+  const completedUsage = nonNegativeNumber(input.completedUsage);
   const triggerType: AssetMaintenanceTriggerType =
     completedUsage === null ? 'date' : 'usage';
   const title = procedureKind === 'repaired'
@@ -1915,8 +1961,9 @@ export async function completeAssetMaintenanceRecord(
     if (existing.status !== 'done') {
       // Completion is intentionally independent of whether the saved reading has
       // reached the due target. Owners may service an asset early.
+      const sourceScanEventId = asText(input.sourceScanEventId);
       const completedUsage = existing.triggerType === 'usage'
-        ? nonNegativeNumber(input.completedUsage) ?? existing.currentUsage
+        ? nonNegativeNumber(input.completedUsage) ?? (sourceScanEventId ? null : existing.currentUsage)
         : nonNegativeNumber(input.completedUsage);
       if (
         completedUsage !== null
@@ -1928,7 +1975,6 @@ export async function completeAssetMaintenanceRecord(
 
       const completedNotes = asLongText(input.completedNotes);
       const completedBy = asText(input.completedBy);
-      const sourceScanEventId = asText(input.sourceScanEventId);
       if (sourceScanEventId && !isAssetMaintenanceRecordId(sourceScanEventId)) {
         throw new Error('MAINTENANCE_SOURCE_EVENT_REQUIRED');
       }
@@ -1955,7 +2001,9 @@ export async function completeAssetMaintenanceRecord(
         throw new Error('COMPLETION_DATE_IN_FUTURE');
       }
       const completedAtIso = completedDate
-        ? `${completedDate}T12:00:00+02:00`
+        ? /^\d{4}-\d{2}-\d{2}$/.test(requestedCompletedAt)
+          ? `${completedDate}T12:00:00+02:00`
+          : new Date(requestedCompletedAt).toISOString()
         : new Date().toISOString();
 
       await client.query(

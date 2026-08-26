@@ -77,6 +77,20 @@ function formatDateOnly(value?: unknown): string {
   }).format(date);
 }
 
+function formatDateTime(value?: unknown): string {
+  const date = parseReportTimestamp(value);
+  if (!date) return '-';
+  return new Intl.DateTimeFormat('en-ZA', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+    timeZone: 'Africa/Johannesburg',
+  }).format(date);
+}
+
 function formatNumber(value: number | null | undefined): string {
   if (typeof value !== 'number' || !Number.isFinite(value)) return '-';
   return value.toLocaleString('en-ZA', { maximumFractionDigits: 2 });
@@ -112,6 +126,38 @@ function formatStatus(value: AssetMaintenanceComputedStatus | string | null | un
 function formatUsage(value: number | null | undefined, metric?: string | null): string {
   if (typeof value !== 'number' || !Number.isFinite(value)) return '-';
   return `${formatNumber(value)} ${asText(metric) || 'usage'}`;
+}
+
+function maintenanceSourceLabel(record: AssetMaintenanceRecord): string {
+  return record.sourceScanEventId ? 'QR Scanner' : record.status === 'done' ? 'Maintenance' : 'Scheduled Maintenance';
+}
+
+function maintenanceLocation(record: AssetMaintenanceRecord): string {
+  if (record.sourceLocationText) return record.sourceLocationText;
+  if (
+    typeof record.sourceLatitude === 'number'
+    && Number.isFinite(record.sourceLatitude)
+    && typeof record.sourceLongitude === 'number'
+    && Number.isFinite(record.sourceLongitude)
+  ) {
+    return `${record.sourceLatitude.toFixed(6)}, ${record.sourceLongitude.toFixed(6)}`;
+  }
+  return '-';
+}
+
+function maintenanceMapUrl(record: AssetMaintenanceRecord): string {
+  if (
+    typeof record.sourceLatitude !== 'number'
+    || !Number.isFinite(record.sourceLatitude)
+    || typeof record.sourceLongitude !== 'number'
+    || !Number.isFinite(record.sourceLongitude)
+  ) return '';
+  return `https://www.google.com/maps?q=${record.sourceLatitude},${record.sourceLongitude}`;
+}
+
+function maintenancePhotoLabel(record: AssetMaintenanceRecord): string {
+  const count = record.sourcePhotoUrls.length;
+  return count === 1 ? '1 photo captured' : count > 1 ? `${count} photos captured` : '-';
 }
 
 function formatAlert(record: AssetMaintenanceRecord): string {
@@ -267,9 +313,12 @@ function renderRecord(record: AssetMaintenanceRecord): string {
   const completed = record.status === 'done';
   const details: KeyValueRow[] = completed
     ? [
-        { label: 'Completed', value: formatDateOnly(record.completedAtIso) },
+        { label: 'Completed (SAST)', value: formatDateTime(record.completedAtIso) },
         { label: 'Completed Usage', value: formatUsage(record.completedUsage, record.usageMetric ?? record.assetUsageMetric) },
         { label: 'Completed By', value: record.completedBy || record.assignedName || '-' },
+        { label: 'Record Source', value: maintenanceSourceLabel(record) },
+        { label: 'Recorded Location', value: maintenanceLocation(record) },
+        { label: 'Photo Evidence', value: maintenancePhotoLabel(record) },
         { label: 'Work Notes', value: record.completedNotes || record.notes || '-' },
       ]
     : [
@@ -477,6 +526,14 @@ function cell(value: unknown, style: XlsxCellStyle = 'default'): XlsxCellValue {
   return { value: value as string | number | boolean | Date | null | undefined, style };
 }
 
+function linkedCell(value: unknown, hyperlink: string, style: XlsxCellStyle = 'text'): XlsxCellValue {
+  return {
+    value: value as string | number | boolean | Date | null | undefined,
+    style,
+    hyperlink: /^https?:\/\//i.test(hyperlink) ? hyperlink : undefined,
+  };
+}
+
 function recordRow(record: AssetMaintenanceRecord): XlsxCellValue[] {
   return [
     cell(record.assetTitle, 'text'),
@@ -491,10 +548,16 @@ function recordRow(record: AssetMaintenanceRecord): XlsxCellValue[] {
     cell(formatRecurring(record), 'text'),
     cell(record.assignedName || 'Unassigned', 'text'),
     cell(record.notes || '-', 'note'),
-    cell(formatDateOnly(record.completedAtIso), 'date'),
+    cell(parseReportTimestamp(record.completedAtIso), 'dateTime'),
     cell(formatUsage(record.completedUsage, record.usageMetric ?? record.assetUsageMetric), 'text'),
     cell(record.completedBy || '-', 'text'),
     cell(record.completedNotes || '-', 'note'),
+    cell(maintenanceSourceLabel(record), 'text'),
+    linkedCell(maintenanceLocation(record), maintenanceMapUrl(record)),
+    cell(record.sourceLatitude, 'decimal'),
+    cell(record.sourceLongitude, 'decimal'),
+    cell(record.sourcePhotoUrls.length || null, 'integer'),
+    cell(record.sourcePhotoUrls.join('\n') || '-', 'note'),
     cell(formatDateOnly(record.updatedAtIso), 'date'),
   ];
 }
@@ -526,7 +589,9 @@ export function buildAssetMaintenanceWorkbook(options: AssetMaintenanceReportOpt
       cell('Asset', 'tableHeader'), cell('Maintenance Item', 'tableHeader'), cell('Type', 'tableHeader'), cell('Status', 'tableHeader'),
       cell('Trigger', 'tableHeader'), cell('Due', 'tableHeader'), cell('Time / Usage Remaining', 'tableHeader'), cell('Current Usage', 'tableHeader'),
       cell('Reminder', 'tableHeader'), cell('Recurring', 'tableHeader'), cell('Assigned To', 'tableHeader'), cell('Planning Notes', 'tableHeader'),
-      cell('Completed Date', 'tableHeader'), cell('Completed Usage', 'tableHeader'), cell('Completed By', 'tableHeader'), cell('Completion Notes', 'tableHeader'), cell('Updated', 'tableHeader'),
+      cell('Completed On (SAST)', 'tableHeader'), cell('Completed Usage', 'tableHeader'), cell('Completed By', 'tableHeader'), cell('Completion Notes', 'tableHeader'),
+      cell('Record Source', 'tableHeader'), cell('Recorded Location', 'tableHeader'), cell('Latitude', 'tableHeader'), cell('Longitude', 'tableHeader'),
+      cell('Photo Count', 'tableHeader'), cell('Photo Evidence URLs', 'tableHeader'), cell('Updated', 'tableHeader'),
     ],
     ...options.records.map(recordRow),
   ];
@@ -534,8 +599,8 @@ export function buildAssetMaintenanceWorkbook(options: AssetMaintenanceReportOpt
   return [{
     name: 'Maintenance Report',
     rows,
-    columns: [26, 30, 15, 15, 16, 20, 24, 20, 20, 24, 22, 38, 18, 20, 22, 38, 18],
+    columns: [26, 30, 15, 15, 16, 20, 24, 20, 20, 24, 22, 38, 18, 20, 22, 38, 20, 34, 14, 14, 14, 48, 18],
     freezeRow: 22,
-    autoFilter: options.records.length ? { fromRow: 22, fromColumn: 1, toRow: 22 + options.records.length, toColumn: 17 } : undefined,
+    autoFilter: options.records.length ? { fromRow: 22, fromColumn: 1, toRow: 22 + options.records.length, toColumn: 23 } : undefined,
   }];
 }

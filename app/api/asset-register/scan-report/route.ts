@@ -638,7 +638,11 @@ function isFuelReportEvent(event: ScanEventRecord): boolean {
   const hasFuelPercent = typeof event.fuelPercent === 'number' && Number.isFinite(event.fuelPercent);
   const hasFuelLitres = typeof event.fuelLitres === 'number' && Number.isFinite(event.fuelLitres) && event.fuelLitres > 0;
 
-  return hasFuelPercent || hasFuelLitres || Boolean(asText(event.fuelStorageEventId));
+  return hasFuelPercent || hasFuelLitres || Boolean(asText(event.fuelStorageEventId)) || Boolean(asText(event.fuelSlipId));
+}
+
+function fuelEventTimestamp(event: ScanEventRecord): string {
+  return asText(event.reportOccurredAtIso) || asText(event.createdAtIso);
 }
 
 function filterFuelReportEvents(events: ScanEventRecord[]): ScanEventRecord[] {
@@ -650,8 +654,8 @@ function isPositiveLitres(value: unknown): value is number {
 }
 
 function compareFuelFillEntries(left: FuelFillEntry, right: FuelFillEntry): number {
-  const leftTime = new Date(left.event.createdAtIso).getTime();
-  const rightTime = new Date(right.event.createdAtIso).getTime();
+  const leftTime = new Date(fuelEventTimestamp(left.event)).getTime();
+  const rightTime = new Date(fuelEventTimestamp(right.event)).getTime();
 
   if (Number.isFinite(leftTime) && Number.isFinite(rightTime) && leftTime !== rightTime) {
     return leftTime - rightTime;
@@ -871,6 +875,7 @@ function calculateAssetDieselBeforeFill(event: ScanEventRecord): number | null {
 
 function fuelLedgerActivityLabel(event: ScanEventRecord): string {
   if (event.isLateEntry) return 'Late Entry · Asset filled';
+  if (event.sourceType === 'fuel_slip' || event.fuelSlipId) return 'Fuel Slip · Asset filled';
   const normalized = asText(event.fuelLedgerEventType).toLowerCase();
 
   if (normalized === 'asset_issue') return 'Asset filled';
@@ -883,7 +888,9 @@ function fuelLedgerActivityLabel(event: ScanEventRecord): string {
 }
 
 function fuelStorageLabel(event: ScanEventRecord): string {
-  return asText(event.fuelStorageName) || (event.fuelStorageId ? 'Fuel storage' : '-');
+  return asText(event.fuelStorageName)
+    || asText(event.fuelSlipSupplierName)
+    || (event.fuelStorageId ? 'Fuel storage' : event.fuelSlipId ? 'External fuel purchase' : '-');
 }
 
 function formatPercent(value: number | null | undefined): string {
@@ -938,13 +945,13 @@ function formatEventWorkArea(event: ScanEventRecord): string {
 }
 
 function fuelIssueDateTimeLabel(event: ScanEventRecord): string {
-  if (!event.isLateEntry) return formatDateTime(event.createdAtIso);
-  const date = asText(event.issueDate) || formatDate(event.createdAtIso);
+  if (!event.isLateEntry) return formatDateTime(fuelEventTimestamp(event));
+  const date = asText(event.issueDate) || formatDate(fuelEventTimestamp(event));
   return event.issueTimeRecorded && asText(event.issueTime) ? `${date} ${asText(event.issueTime).slice(0, 5)}` : `${date} · Time not recorded`;
 }
 
 function fuelIssueDateTimeForExcel(event: ScanEventRecord): XlsxPrimitiveCellValue {
-  if (!event.isLateEntry) return formatExcelDateTime(event.createdAtIso);
+  if (!event.isLateEntry) return formatExcelDateTime(fuelEventTimestamp(event));
 
   const dateMatch = asText(event.issueDate).match(/^(\d{4})-(\d{2})-(\d{2})$/);
   const timeMatch = event.issueTimeRecorded ? asText(event.issueTime).match(/^(\d{2}):(\d{2})/) : null;
@@ -960,11 +967,27 @@ function fuelIssueDateTimeForExcel(event: ScanEventRecord): XlsxPrimitiveCellVal
 }
 
 function fuelEntryAddedLabel(event: ScanEventRecord): string {
-  return event.isLateEntry ? formatDateTime(event.entryAddedAtIso) : '-';
+  return event.isLateEntry || event.sourceType === 'fuel_slip'
+    ? formatDateTime(event.entryAddedAtIso)
+    : '-';
 }
 
 function fuelAddedByLabel(event: ScanEventRecord): string {
   return event.isLateEntry ? asText(event.addedByName) || asText(event.addedByEmail) || '-' : '-';
+}
+
+function fuelEvidenceLabel(event: ScanEventRecord): string {
+  if (event.sourceType === 'fuel_slip' || event.fuelSlipId) {
+    return event.fuelSlipDocumentFileUrl ? 'Fuel slip document captured' : 'Fuel slip recorded without document';
+  }
+  return event.isLateEntry ? fuelEvidenceStatusLabel(event) : 'Captured live';
+}
+
+function fuelWorkUseLabel(event: ScanEventRecord): string {
+  if (!event.workUseExcluded) return 'Included in work use';
+  return event.workUseExclusionReason
+    ? `Excluded · ${event.workUseExclusionReason}`
+    : 'Excluded from work use';
 }
 
 function fuelEvidenceStatusLabel(event: ScanEventRecord): string {
@@ -1405,8 +1428,8 @@ function buildFuelRecordRows(asset: AssetRegisterItem, fuelEvents: ScanEventReco
     { label: 'Fuel Entries', value: String(fuelEvents.length) },
     { label: 'Total Litres Filled', value: formatLitres(totalLitres) },
     { label: 'Latest fuel source / storage', value: latestFuelEvent ? recordedText(fuelStorageLabel(latestFuelEvent)) : NOT_RECORDED },
-    { label: 'Latest fuel entry', value: recordedText(latestFuelEvent ? formatDateTime(latestFuelEvent.createdAtIso) : formatDateTime(asset.lastScannedAtIso)) },
-    { label: 'Updated', value: recordedText(formatDate(latestFuelEvent?.createdAtIso || asset.lastScannedAtIso || asset.updatedAtIso)) },
+    { label: 'Latest fuel entry', value: recordedText(latestFuelEvent ? formatDateTime(fuelEventTimestamp(latestFuelEvent)) : formatDateTime(asset.lastScannedAtIso)) },
+    { label: 'Updated', value: recordedText(formatDate(latestFuelEvent ? fuelEventTimestamp(latestFuelEvent) : asset.lastScannedAtIso || asset.updatedAtIso)) },
   ];
 }
 
@@ -1453,7 +1476,7 @@ function buildFuelReportSummary(asset: AssetRegisterItem, fuelEvents: ScanEventR
     value: formatNumber(fuelEvents.length),
     subtext: fuelEvents.length === 1 ? 'recorded fuel entry' : 'recorded fuel entries',
     basis: 'QR Fuel Ledger',
-    updated: formatDate(fuelEvents[0]?.createdAtIso || asset.lastScannedAtIso || asset.updatedAtIso),
+    updated: formatDate(fuelEvents[0] ? fuelEventTimestamp(fuelEvents[0]) : asset.lastScannedAtIso || asset.updatedAtIso),
   };
 }
 
@@ -1485,8 +1508,11 @@ function buildFuelBody(asset: AssetRegisterItem, events: ScanEventRecord[]): str
     const eventAsset = reportAssetForEvent(event, asset);
     const noteParts = [
       normalizeSpaces(event.note),
-      event.isLateEntry && event.evidenceFileName ? `Evidence: ${event.evidenceFileName}` : '',
-      event.isLateEntry && event.evidenceReference ? `Reference: ${event.evidenceReference}` : '',
+      event.fuelSlipSupplierName ? `Supplier: ${event.fuelSlipSupplierName}` : '',
+      typeof event.fuelSlipTotalAmount === 'number' ? `Total incl. VAT: ${formatMoney(event.fuelSlipTotalAmount)}` : '',
+      event.evidenceFileName ? `Evidence: ${event.evidenceFileName}` : '',
+      event.evidenceReference ? `Reference: ${event.evidenceReference}` : '',
+      fuelWorkUseLabel(event),
     ].filter(Boolean);
     const note = noteParts.join(' · ') || '-';
 
@@ -3250,14 +3276,16 @@ function buildFuelReportWorkbook(
   ];
   const recordHeaders = [
     'Asset', 'Fuel issued on (SAST)', 'Entry type', 'Fuel source / storage', 'Litres issued', 'Before fill litres',
-    'Meter reading', 'Operator', 'Activity', 'Work area', 'Recorded location', 'Entry added on (late entries, SAST)', 'Evidence / review', 'Notes',
+    'Meter reading', 'Operator', 'Activity', 'Work area', 'Supplier', 'Total incl. VAT', 'Work use', 'Recorded location',
+    'Entry added on (late entry / slip, SAST)', 'Evidence / review', 'Document', 'Notes',
   ];
   const auditHeaders = [
     'Asset', 'Fuel issued on (SAST)', 'Source / Activity', 'Storage Unit', 'Litres Issued', 'Before Fill Litres', 'Usage Reading', 'Usage Metric', 'Usage Display',
     'Historical Storage Before', 'Historical Storage After', 'Fuel % Before', 'Fuel % After', 'Operator',
     'Activity', 'Work Area', 'GPS', 'Latitude', 'Longitude', 'Entry Added On (SAST)', 'Added By',
     'Evidence / Review Status', 'Evidence Type', 'Evidence Reference', 'Evidence File', 'Tank Balance Treatment',
-    'Late-entry Reason', 'Notes',
+    'Late-entry Reason', 'Notes', 'Record Source', 'Source Label', 'Fuel Slip ID', 'Supplier', 'Total incl. VAT',
+    'Work Use Status', 'Work Use Exclusion Reason', 'Fuel Slip Document',
   ];
   const headerRow = 7;
   const recordSheetRows: XlsxCellValue[][] = [
@@ -3275,9 +3303,9 @@ function buildFuelReportWorkbook(
     ...fuelEvents.map((event) => {
       const eventAsset = reportAssetForEvent(event, asset);
       const issuedOn = fuelIssueDateTimeForExcel(event);
-      const addedOn = event.isLateEntry ? formatExcelDateTime(event.entryAddedAtIso) : null;
+      const addedOn = event.isLateEntry || event.sourceType === 'fuel_slip' ? formatExcelDateTime(event.entryAddedAtIso) : null;
       const mapUrl = event.isLateEntry ? null : buildGoogleMapsUrl(event.latitude, event.longitude);
-      const evidence = event.isLateEntry ? fuelEvidenceStatusLabel(event) : 'Captured live';
+      const evidence = fuelEvidenceLabel(event);
       const notes = [event.isLateEntry ? event.lateEntryReason : '', event.note].map(normalizeSpaces).filter(Boolean).join(' · ');
 
       return [
@@ -3291,9 +3319,13 @@ function buildFuelReportWorkbook(
         styled(excelRecordedText(formatOperatorLabel(event)), 'text'),
         styled(excelRecordedText(formatEventActivity(event)), 'text'),
         styled(excelRecordedText(formatEventWorkArea(event)), 'text'),
+        styled(event.fuelSlipSupplierName || NOT_RECORDED, 'text'),
+        styled(numberForExcel(event.fuelSlipTotalAmount), 'currency'),
+        styled(fuelWorkUseLabel(event), event.workUseExcluded ? 'statusInfo' : 'statusGood'),
         linked(excelRecordedText(fuelGpsLabel(event)), mapUrl),
         styled(addedOn, 'dateTime'),
-        styled(excelRecordedText(evidence), event.isLateEntry ? 'statusInfo' : 'statusGood'),
+        styled(excelRecordedText(evidence), event.isLateEntry || event.sourceType === 'fuel_slip' ? 'statusInfo' : 'statusGood'),
+        linked(event.fuelSlipDocumentFileUrl ? 'Open fuel slip' : NOT_RECORDED, event.fuelSlipDocumentFileUrl),
         styled(notes || NOT_RECORDED, 'note'),
       ];
     }),
@@ -3334,15 +3366,23 @@ function buildFuelReportWorkbook(
         linked(excelRecordedText(fuelGpsLabel(event)), mapUrl),
         styled(event.isLateEntry ? null : numberForExcel(event.latitude, 6), 'decimal'),
         styled(event.isLateEntry ? null : numberForExcel(event.longitude, 6), 'decimal'),
-        styled(event.isLateEntry ? formatExcelDateTime(event.entryAddedAtIso) : null, 'dateTime'),
+        styled(event.isLateEntry || event.sourceType === 'fuel_slip' ? formatExcelDateTime(event.entryAddedAtIso) : null, 'dateTime'),
         styled(excelRecordedText(fuelAddedByLabel(event)), 'text'),
-        styled(excelRecordedText(fuelEvidenceStatusLabel(event)), 'text'),
+        styled(excelRecordedText(fuelEvidenceLabel(event)), 'text'),
         styled(event.evidenceType || NOT_RECORDED, 'text'),
         styled(event.evidenceReference || NOT_RECORDED, 'text'),
         linked(event.evidenceFileName || NOT_RECORDED, event.evidenceFileUrl),
         styled(excelRecordedText(fuelBalanceTreatmentLabel(event)), 'text'),
         styled(event.isLateEntry ? event.lateEntryReason || NOT_RECORDED : 'Not applicable', 'note'),
         styled(normalizeSpaces(event.note) || NOT_RECORDED, 'note'),
+        styled(event.sourceType || NOT_RECORDED, 'text'),
+        styled(event.sourceLabel || NOT_RECORDED, 'text'),
+        styled(event.fuelSlipId || NOT_RECORDED, 'text'),
+        styled(event.fuelSlipSupplierName || NOT_RECORDED, 'text'),
+        styled(numberForExcel(event.fuelSlipTotalAmount), 'currency'),
+        styled(fuelWorkUseLabel(event), event.workUseExcluded ? 'statusInfo' : 'statusGood'),
+        styled(event.workUseExclusionReason || NOT_RECORDED, 'note'),
+        linked(event.fuelSlipDocumentFileUrl ? 'Open fuel slip' : NOT_RECORDED, event.fuelSlipDocumentFileUrl),
       ];
     }),
   ];
@@ -3359,7 +3399,7 @@ function buildFuelReportWorkbook(
     {
       name: 'Fuel Records',
       rows: recordSheetRows,
-      columns: [28, 22, 24, 24, 16, 18, 20, 22, 24, 24, 34, 22, 36, 42],
+      columns: [28, 22, 24, 24, 16, 18, 20, 22, 24, 24, 28, 18, 30, 34, 24, 36, 24, 42],
       merges: [
         { fromRow: 1, fromColumn: 1, toRow: 1, toColumn: recordHeaders.length },
         { fromRow: 2, fromColumn: 1, toRow: 2, toColumn: recordHeaders.length },
@@ -3377,7 +3417,7 @@ function buildFuelReportWorkbook(
     {
       name: 'Fuel Audit',
       rows: auditSheetRows,
-      columns: [30, 22, 24, 24, 16, 18, 18, 16, 22, 23, 23, 14, 14, 22, 24, 24, 36, 14, 14, 22, 24, 36, 24, 26, 26, 36, 42, 42],
+      columns: [30, 22, 24, 24, 16, 18, 18, 16, 22, 23, 23, 14, 14, 22, 24, 24, 36, 14, 14, 22, 24, 36, 24, 26, 26, 36, 42, 42, 24, 24, 38, 28, 18, 30, 34, 36],
       merges: [
         { fromRow: 1, fromColumn: 1, toRow: 1, toColumn: auditHeaders.length },
         { fromRow: 2, fromColumn: 1, toRow: 2, toColumn: auditHeaders.length },
@@ -3955,7 +3995,7 @@ export async function GET(request: NextRequest) {
 
   const eventGroups = await Promise.all(
     reportAssets.map(async (entry) => {
-      const sourceEvents = await listScanEventsForAsset(entry.id, 500, {
+      const sourceEvents = await listScanEventsForAsset(entry.id, null, {
         fromIso: reportDateRange.fromIso,
         toIso: reportDateRange.toIso,
         onlyFuel: reportKind === 'fuel',
@@ -3971,7 +4011,11 @@ export async function GET(request: NextRequest) {
   );
   const events = eventGroups
     .flat()
-    .sort((left, right) => String(right.createdAtIso).localeCompare(String(left.createdAtIso)));
+    .sort((left, right) => String(
+      reportKind === 'fuel' ? fuelEventTimestamp(right) : right.createdAtIso,
+    ).localeCompare(String(
+      reportKind === 'fuel' ? fuelEventTimestamp(left) : left.createdAtIso,
+    )));
 
   if (reportFormat === 'xlsx') {
     const workbook = createXlsxWorkbook(

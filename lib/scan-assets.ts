@@ -79,6 +79,10 @@ export type ScanEventRecord = {
   fuelStorageName: string;
   fuelStoragePublicCode: string;
   fuelLedgerEventType: string;
+  fuelSlipId: string;
+  fuelSlipSupplierName: string;
+  fuelSlipTotalAmount: number | null;
+  fuelSlipDocumentFileUrl: string;
   fuelStorageLevelBefore: number | null;
   fuelStorageLevelAfter: number | null;
   assetFuelPercentBefore: number | null;
@@ -102,6 +106,8 @@ export type ScanEventRecord = {
   evidenceFileUrl: string;
   tankBalanceTreatment: string;
   gpsCaptureStatus: string;
+  workUseExcluded: boolean;
+  workUseExclusionReason: string;
   condition: string;
   note: string;
   photoUrls: string[];
@@ -109,6 +115,7 @@ export type ScanEventRecord = {
   longitude: number | null;
   locationText: string;
   createdAtIso: string;
+  reportOccurredAtIso: string;
 };
 
 export type AssetMaintenanceStatusKind = "checked" | "serviced" | "repaired";
@@ -124,6 +131,9 @@ export type AssetMaintenanceStatus = {
   usageReading: number | null;
   photoUrls: string[];
   photoCount: number;
+  latitude: number | null;
+  longitude: number | null;
+  locationText: string;
   createdAtIso: string;
   notedAtIso: string | null;
 };
@@ -219,6 +229,10 @@ type ScanEventRow = {
   fuel_storage_name: string | null;
   fuel_storage_public_code: string | null;
   fuel_ledger_event_type: string | null;
+  fuel_slip_id?: string | number | null;
+  fuel_slip_supplier_name?: string | null;
+  fuel_slip_total_amount?: string | number | null;
+  fuel_slip_document_file_url?: string | null;
   fuel_storage_level_before_litres: string | number | null;
   fuel_storage_level_after_litres: string | number | null;
   asset_fuel_percent_before: string | number | null;
@@ -241,6 +255,8 @@ type ScanEventRow = {
   evidence_file_name?: string | null;
   tank_balance_treatment?: string | null;
   gps_capture_status?: string | null;
+  work_use_excluded?: boolean | string | number | null;
+  work_use_exclusion_reason?: string | null;
   condition: string | null;
   note: string | null;
   photo_urls: unknown;
@@ -249,6 +265,7 @@ type ScanEventRow = {
   location_text: string | null;
   maintenance_noted_at?: string | Date | null;
   created_at: string | Date | null;
+  report_occurred_at?: string | Date | null;
 };
 
 function asText(value: unknown): string {
@@ -1001,6 +1018,11 @@ function mapScanEventRow(row: ScanEventRow): ScanEventRecord {
     asNumber(row.asset_fuel_percent_after) ?? asNumber(row.fuel_percent);
   const assetUsageReading =
     asNumber(row.asset_usage_reading) ?? asNumber(row.hours);
+  const createdAtIso = asIsoTimestamp(row.created_at) ?? "";
+  const reportOccurredAtIso =
+    asIsoTimestamp(row.report_occurred_at) ?? createdAtIso;
+  const fuelStorageEventId = asId(row.fuel_storage_event_id);
+  const fuelSlipId = asId(row.fuel_slip_id);
 
   return {
     id: asId(row.id),
@@ -1013,10 +1035,14 @@ function mapScanEventRow(row: ScanEventRow): ScanEventRecord {
     fuelLitres: asNumber(row.fuel_litres) ?? fuelLedgerLitres,
     fuelStorageId:
       asId(row.fuel_storage_id) || asId(row.fuel_ledger_storage_id),
-    fuelStorageEventId: asId(row.fuel_storage_event_id),
+    fuelStorageEventId,
     fuelStorageName: asText(row.fuel_storage_name),
     fuelStoragePublicCode: asText(row.fuel_storage_public_code),
     fuelLedgerEventType: asText(row.fuel_ledger_event_type),
+    fuelSlipId,
+    fuelSlipSupplierName: asText(row.fuel_slip_supplier_name),
+    fuelSlipTotalAmount: asNumber(row.fuel_slip_total_amount),
+    fuelSlipDocumentFileUrl: asText(row.fuel_slip_document_file_url),
     fuelStorageLevelBefore: asNumber(row.fuel_storage_level_before_litres),
     fuelStorageLevelAfter: asNumber(row.fuel_storage_level_after_litres),
     assetFuelPercentBefore: asNumber(row.asset_fuel_percent_before),
@@ -1036,17 +1062,23 @@ function mapScanEventRow(row: ScanEventRow): ScanEventRecord {
     evidenceType: asText(row.evidence_type),
     evidenceReference: asText(row.evidence_reference),
     evidenceStatus: asText(row.evidence_status),
-    evidenceFileName: asText(row.evidence_file_name),
-    evidenceFileUrl: Boolean(asText(row.evidence_file_name)) && asId(row.fuel_storage_event_id) ? `/api/fuel/missing-entry-evidence/${encodeURIComponent(asId(row.fuel_storage_event_id))}` : "",
+    evidenceFileName: asText(row.evidence_file_name)
+      || (asText(row.fuel_slip_document_file_url) ? "Fuel slip document" : ""),
+    evidenceFileUrl: Boolean(asText(row.evidence_file_name)) && fuelStorageEventId
+      ? `/api/fuel/missing-entry-evidence/${encodeURIComponent(fuelStorageEventId)}`
+      : asText(row.fuel_slip_document_file_url),
     tankBalanceTreatment: asText(row.tank_balance_treatment),
     gpsCaptureStatus: asText(row.gps_capture_status),
+    workUseExcluded: Boolean(asBoolean(row.work_use_excluded)),
+    workUseExclusionReason: asText(row.work_use_exclusion_reason),
     condition: normalizeCondition(row.condition),
     note: asText(row.note),
     photoUrls: normalizePhotos(row.photo_urls),
     latitude: asNumber(row.latitude),
     longitude: asNumber(row.longitude),
     locationText: asText(row.location_text),
-    createdAtIso: asIsoTimestamp(row.created_at) ?? new Date().toISOString(),
+    createdAtIso,
+    reportOccurredAtIso,
   };
 }
 
@@ -1178,7 +1210,10 @@ function mapMaintenanceStatusFromScanEvent(
     usageReading: asNumber(row.asset_usage_reading) ?? asNumber(row.hours),
     photoUrls,
     photoCount: photoUrls.length,
-    createdAtIso: asIsoTimestamp(row.created_at) ?? new Date().toISOString(),
+    latitude: asNumber(row.latitude),
+    longitude: asNumber(row.longitude),
+    locationText: asText(row.location_text),
+    createdAtIso: asIsoTimestamp(row.created_at) ?? "",
     notedAtIso: asIsoTimestamp(row.maintenance_noted_at),
   };
 }
@@ -1336,31 +1371,54 @@ export type ScanEventListFilters = {
 
 export async function listScanEventsForAsset(
   assetId: string,
-  limit = 250,
+  limit: number | null = 250,
   filters?: ScanEventListFilters,
 ): Promise<ScanEventRecord[]> {
   await ensureFuelLedgerTables();
 
   const db = getDb();
-  const safeLimit = Math.max(1, Math.min(500, Math.round(limit || 250)));
+  const safeLimit = limit === null
+    ? null
+    : Math.max(1, Math.min(500, Math.round(limit || 250)));
+  const limitClause = safeLimit === null ? "" : `limit ${safeLimit}`;
+  const fuelSlipDateExpression = `
+    case
+      when fs.document_date is not null then
+        (
+          fs.document_date::text || ' ' ||
+          case
+            when coalesce(fs.document_time, '') ~ '^([01][0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?$'
+              then fs.document_time
+            else '00:00:00'
+          end
+        )::timestamp at time zone 'Africa/Johannesburg'
+      else null
+    end
+  `;
+  const reportDateExpression = filters?.onlyFuel
+    ? `coalesce(fse.issue_at, ${fuelSlipDateExpression}, e.created_at)`
+    : "e.created_at";
   const queryParams: unknown[] = [assetId];
   const whereClauses = ["e.asset_id = $1"];
 
   if (filters?.fromIso) {
     queryParams.push(filters.fromIso);
-    whereClauses.push(`e.created_at >= $${queryParams.length}`);
+    whereClauses.push(`${reportDateExpression} >= $${queryParams.length}::timestamptz`);
   }
 
   if (filters?.toIso) {
     queryParams.push(filters.toIso);
-    whereClauses.push(`e.created_at < $${queryParams.length}`);
+    whereClauses.push(`${reportDateExpression} < $${queryParams.length}::timestamptz`);
   }
 
   if (filters?.onlyFuel) {
     whereClauses.push(`(
           e.fuel_percent is not null
+          or nullif(to_jsonb(e)->>'fuel_litres', '')::numeric > 0
           or nullif(to_jsonb(e)->>'fuel_storage_event_id', '') is not null
+          or nullif(to_jsonb(e)->>'fuel_slip_id', '') is not null
           or fse.id is not null
+          or fs.id is not null
         )`);
   }
 
@@ -1379,22 +1437,41 @@ export async function listScanEventsForAsset(
         to_jsonb(e)->>'fuel_storage_event_id' as fuel_storage_event_id,
         fse.storage_id::text as fuel_ledger_storage_id,
         fse.litres as fuel_ledger_litres,
-        coalesce(fsu.name, '') as fuel_storage_name,
+        coalesce(fsu.name, case when fs.id is not null then 'External fuel purchase' end, '') as fuel_storage_name,
         coalesce(fsu.public_fuel_storage_code, '') as fuel_storage_public_code,
-        coalesce(fse.event_type, '') as fuel_ledger_event_type,
+        coalesce(fse.event_type, case when fs.target_type = 'asset' then 'asset_issue' else '' end, '') as fuel_ledger_event_type,
+        coalesce(nullif(to_jsonb(e)->>'fuel_slip_id', ''), fs.id::text, '') as fuel_slip_id,
+        coalesce(fs.supplier_name, '') as fuel_slip_supplier_name,
+        fs.total_amount as fuel_slip_total_amount,
+        coalesce(fs.document_file_url, '') as fuel_slip_document_file_url,
         fse.storage_level_before_litres as fuel_storage_level_before_litres,
         fse.storage_level_after_litres as fuel_storage_level_after_litres,
-        fse.asset_fuel_percent_before as asset_fuel_percent_before,
-        fse.asset_fuel_percent_after as asset_fuel_percent_after,
-        coalesce(fse.asset_usage_reading, nullif(to_jsonb(e)->>'asset_usage_reading', '')::numeric) as asset_usage_reading,
-        coalesce(fse.asset_usage_metric, to_jsonb(e)->>'asset_usage_metric', '') as asset_usage_metric,
+        coalesce(fse.asset_fuel_percent_before, fs.asset_fuel_percent_before) as asset_fuel_percent_before,
+        coalesce(fse.asset_fuel_percent_after, fs.asset_fuel_percent_after) as asset_fuel_percent_after,
+        coalesce(
+          fse.asset_usage_reading,
+          nullif(to_jsonb(e)->>'asset_usage_reading', '')::numeric,
+          fs.odometer_reading,
+          fs.hour_meter_reading,
+          e.hours
+        ) as asset_usage_reading,
+        coalesce(
+          nullif(fse.asset_usage_metric, ''),
+          nullif(to_jsonb(e)->>'asset_usage_metric', ''),
+          case when fs.odometer_reading is not null then 'km' when fs.hour_meter_reading is not null then 'hours' end,
+          ''
+        ) as asset_usage_metric,
         coalesce(fse.is_late_entry, false) as is_late_entry,
-        coalesce(fse.source_type, to_jsonb(e)->>'source_type', '') as source_type,
-        coalesce(fse.source_label, to_jsonb(e)->>'source_label', '') as source_label,
-        fse.issue_date::text as issue_date,
-        fse.issue_time::text as issue_time,
-        fse.issue_time_recorded as issue_time_recorded,
-        fse.entry_added_at::text as entry_added_at,
+        coalesce(nullif(fse.source_type, ''), case when fs.id is not null then 'fuel_slip' end, to_jsonb(e)->>'source_type', '') as source_type,
+        coalesce(nullif(fse.source_label, ''), case when fs.id is not null then 'Fuel Slip' end, to_jsonb(e)->>'source_label', '') as source_label,
+        coalesce(fse.issue_date::text, fs.document_date::text, to_jsonb(e)->>'issue_date', '') as issue_date,
+        coalesce(fse.issue_time::text, fs.document_time, to_jsonb(e)->>'issue_time', '') as issue_time,
+        case
+          when fse.id is not null then coalesce(fse.issue_time_recorded, true)
+          when fs.id is not null then nullif(fs.document_time, '') is not null
+          else coalesce(nullif(to_jsonb(e)->>'issue_time_recorded', '')::boolean, true)
+        end as issue_time_recorded,
+        coalesce(fse.entry_added_at, fs.created_at, nullif(to_jsonb(e)->>'entry_added_at', '')::timestamptz, e.created_at)::text as entry_added_at,
         coalesce(fse.added_by_name, '') as added_by_name,
         coalesce(fse.added_by_email, '') as added_by_email,
         coalesce(fse.late_entry_reason, '') as late_entry_reason,
@@ -1404,6 +1481,8 @@ export async function listScanEventsForAsset(
         coalesce(evidence.file_name, '') as evidence_file_name,
         coalesce(fse.tank_balance_treatment, '') as tank_balance_treatment,
         coalesce(fse.gps_capture_status, '') as gps_capture_status,
+        coalesce(fse.work_use_excluded, fs.work_use_excluded, false) as work_use_excluded,
+        coalesce(fse.work_use_exclusion_reason, fs.work_use_exclusion_reason, '') as work_use_exclusion_reason,
         e.condition,
         e.note,
         e.photo_urls,
@@ -1411,17 +1490,20 @@ export async function listScanEventsForAsset(
         e.longitude,
         e.location_text,
         e.maintenance_noted_at::text as maintenance_noted_at,
-        e.created_at
+        e.created_at,
+        ${reportDateExpression} as report_occurred_at
       from public.asset_scan_events e
       left join public.fuel_storage_events fse
         on fse.id::text = nullif(to_jsonb(e)->>'fuel_storage_event_id', '')
+      left join public.fuel_slips fs
+        on fs.id::text = nullif(to_jsonb(e)->>'fuel_slip_id', '')
       left join public.fuel_storage_units fsu
-        on fsu.id = fse.storage_id
+        on fsu.id = coalesce(fse.storage_id, fs.storage_id)
       left join public.fuel_late_entry_evidence evidence
         on evidence.fuel_storage_event_id = fse.id and evidence.user_id = fse.user_id
       where ${whereClauses.join("\n        and ")}
-      order by e.created_at desc, e.id desc
-      limit ${safeLimit}
+      order by ${reportDateExpression} desc, e.id desc
+      ${limitClause}
     `,
     queryParams,
   );
@@ -1484,7 +1566,8 @@ export async function attachLatestMaintenanceStatusToAssets<
         null::numeric as fuel_storage_level_after_litres,
         null::numeric as asset_fuel_percent_before,
         null::numeric as asset_fuel_percent_after,
-        null::numeric as asset_usage_reading,
+        nullif(to_jsonb(e)->>'asset_usage_reading', '')::numeric as asset_usage_reading,
+        coalesce(to_jsonb(e)->>'asset_usage_metric', '') as asset_usage_metric,
         e.condition,
         e.note,
         e.photo_urls,
@@ -1563,7 +1646,8 @@ function assetMaintenanceStatusSelectSql(whereClause: string): string {
       null::numeric as fuel_storage_level_after_litres,
       null::numeric as asset_fuel_percent_before,
       null::numeric as asset_fuel_percent_after,
-      null::numeric as asset_usage_reading,
+      nullif(to_jsonb(e)->>'asset_usage_reading', '')::numeric as asset_usage_reading,
+      coalesce(to_jsonb(e)->>'asset_usage_metric', '') as asset_usage_metric,
       e.condition,
       e.note,
       e.photo_urls,
@@ -1595,9 +1679,13 @@ export async function listCompletedMaintenanceScanEventsForAssets(
         e.asset_id,
         coalesce(to_jsonb(e)->>'operator_name', '') as operator_name,
         nullif(to_jsonb(e)->>'hours', '') as hours,
-        null::numeric as asset_usage_reading,
+        nullif(to_jsonb(e)->>'asset_usage_reading', '')::numeric as asset_usage_reading,
+        coalesce(to_jsonb(e)->>'asset_usage_metric', '') as asset_usage_metric,
         coalesce(to_jsonb(e)->>'note', '') as note,
         coalesce(to_jsonb(e)->'photo_urls', '[]'::jsonb) as photo_urls,
+        nullif(to_jsonb(e)->>'latitude', '')::double precision as latitude,
+        nullif(to_jsonb(e)->>'longitude', '')::double precision as longitude,
+        coalesce(to_jsonb(e)->>'location_text', '') as location_text,
         null::text as maintenance_noted_at,
         e.created_at
       from public.asset_scan_events e
@@ -1839,6 +1927,10 @@ export async function saveScanAssetEvent(
     const fieldManagerDisplayName =
       asText(input.fieldManagerDisplayName) || null;
     const fieldManagerSessionId = asText(input.fieldManagerSessionId) || null;
+    const eventUsageReading = nextLifeWorkedPercent ?? nextHours;
+    const eventUsageMetric = currentUsageMode === "percent"
+      ? "percentage"
+      : currentUsageMode;
 
     if (clientEventId) {
       const existingEvent = await client.query<ScanEventRow>(
@@ -1871,7 +1963,11 @@ export async function saveScanAssetEvent(
             null::numeric as fuel_storage_level_after_litres,
             null::integer as asset_fuel_percent_before,
             null::integer as asset_fuel_percent_after,
-            null::numeric as asset_usage_reading
+            nullif(to_jsonb(e)->>'asset_usage_reading', '')::numeric as asset_usage_reading,
+            coalesce(to_jsonb(e)->>'asset_usage_metric', '') as asset_usage_metric,
+            coalesce(to_jsonb(e)->>'source_type', '') as source_type,
+            coalesce(to_jsonb(e)->>'source_label', '') as source_label,
+            e.created_at as report_occurred_at
           from public.asset_scan_events e
           where e.asset_id::text = $1 and e.client_event_id = $2
           order by e.created_at desc, e.id desc
@@ -1975,6 +2071,10 @@ export async function saveScanAssetEvent(
           field_manager_id,
           field_manager_display_name,
           field_manager_session_id,
+          asset_usage_reading,
+          asset_usage_metric,
+          source_type,
+          source_label,
           created_at
         )
         values (
@@ -1996,6 +2096,10 @@ export async function saveScanAssetEvent(
           $15::uuid,
           $16::text,
           $17::text,
+          $18::numeric,
+          $19::text,
+          $20::text,
+          $21::text,
           coalesce($13::timestamptz, now())
         )
         returning
@@ -2010,6 +2114,11 @@ export async function saveScanAssetEvent(
           latitude,
           longitude,
           location_text,
+          asset_usage_reading,
+          asset_usage_metric,
+          source_type,
+          source_label,
+          created_at as report_occurred_at,
           created_at
       `,
       [
@@ -2030,6 +2139,10 @@ export async function saveScanAssetEvent(
         fieldManagerId,
         fieldManagerDisplayName,
         fieldManagerSessionId,
+        eventUsageReading,
+        eventUsageMetric,
+        "asset_qr_scan",
+        "QR Scan",
       ],
     );
 

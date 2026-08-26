@@ -4,6 +4,7 @@ import test from 'node:test';
 
 import { reportYearInTimeZone, sortReportEntriesChronologically } from '../lib/report-chronology.ts';
 import { createXlsxWorkbook } from '../lib/simple-xlsx.ts';
+import { buildAssetMaintenanceWorkbook } from '../lib/asset-maintenance-report.ts';
 import { resolveMaintenanceMeterReading, toFiniteNumberOrNull } from '../lib/usage-readings.ts';
 
 function depreciationEntry(overrides = {}) {
@@ -117,4 +118,84 @@ test('canonical reports use real PDF page totals and clear maintenance language'
   assert.match(scanReport, /Photo evidence/);
   assert.match(scanReport, /Fuel Audit/);
   assert.match(ownershipReport, /Fuel Costs/);
+});
+
+test('QR, fuel and maintenance data survives intact into complete report exports', async () => {
+  const [scanData, scanReport, fuelLedger, fuelIssueRoute, fuelScanClient, scanEventRoute, maintenanceData, maintenanceReport] = await Promise.all([
+    readFile(new URL('../lib/scan-assets.ts', import.meta.url), 'utf8'),
+    readFile(new URL('../app/api/asset-register/scan-report/route.ts', import.meta.url), 'utf8'),
+    readFile(new URL('../lib/fuel-ledger.ts', import.meta.url), 'utf8'),
+    readFile(new URL('../app/api/fuel-scan/storage/[publicFuelStorageCode]/issue/route.ts', import.meta.url), 'utf8'),
+    readFile(new URL('../app/fuel-scan/[publicFuelStorageCode]/fuel-scan-client.tsx', import.meta.url), 'utf8'),
+    readFile(new URL('../app/api/scan/assets/[publicAssetCode]/event/route.ts', import.meta.url), 'utf8'),
+    readFile(new URL('../lib/asset-maintenance.ts', import.meta.url), 'utf8'),
+    readFile(new URL('../lib/asset-maintenance-report.ts', import.meta.url), 'utf8'),
+  ]);
+
+  assert.match(scanReport, /listScanEventsForAsset\(entry\.id, null,/);
+  assert.match(scanReport, /fuelEventTimestamp\(event\)/);
+  assert.match(scanReport, /Fuel Slip Document/);
+  assert.match(scanReport, /Work Use Exclusion Reason/);
+  assert.match(scanData, /fs\.document_date/);
+  assert.match(scanData, /reportOccurredAtIso/);
+  assert.match(scanData, /left join public\.fuel_slips fs/);
+  assert.match(scanData, /asset_usage_reading/);
+  assert.match(scanData, /asset_usage_metric/);
+
+  assert.match(fuelScanClient, /assetUsageMetric: usageNotApplicable \? 'none' : assetMeterMetric\(selectedAsset\)/);
+  assert.match(fuelIssueRoute, /assetUsageMetric: body\.assetUsageMetric/);
+  assert.match(fuelLedger, /assetUsageMetric: requestedUsageMetric/);
+  assert.match(fuelLedger, /'fuel_storage_issue', 'Fuel Storage QR'/);
+  assert.match(fuelLedger, /'fuel_slip', 'Fuel Slip'/);
+  assert.match(fuelLedger, /where se\.fuel_slip_id = fs\.id/);
+  assert.match(fuelLedger, /latitude: slip\.latitude/);
+  assert.match(fuelLedger, /locationText: slip\.locationText/);
+  assert.match(fuelLedger, /slip\.latitude !== null && slip\.longitude !== null/);
+
+  assert.match(scanEventRoute, /completedAt: saved\.event\.createdAtIso/);
+  assert.match(scanEventRoute, /saved\.event\.assetUsageReading \?\? saved\.event\.hours/);
+  assert.match(maintenanceData, /left join public\.asset_scan_events se/);
+  assert.match(maintenanceData, /sourcePhotoUrls: event\.photoUrls/);
+  assert.match(maintenanceData, /sourceLatitude: event\.latitude/);
+  assert.match(maintenanceReport, /Photo Evidence URLs/);
+  assert.match(maintenanceReport, /Recorded Location/);
+});
+
+test('maintenance workbook exposes QR location and every captured photo URL', () => {
+  const workbook = buildAssetMaintenanceWorkbook({
+    title: 'Asset Maintenance Report',
+    subtitle: 'Complete maintenance history',
+    generatedAt: '26 Aug 2026',
+    ownerEmail: 'owner@example.com',
+    ownerDetails: { businessName: 'Example Farm', contactDetails: '', businessEmail: 'owner@example.com', locationAddress: '' },
+    logoUrl: '',
+    reportScopeLabel: 'All maintenance records',
+    assetLabel: '2013 Landini 5-100H',
+    selectedAsset: null,
+    summary: { totalCount: 1, openCount: 0, doneCount: 1, dueSoonCount: 0, dueCount: 0, overdueCount: 0 },
+    records: [{
+      id: 'maintenance-1', userId: 'user-1', assetId: 'asset-1', assetTitle: '2013 Landini 5-100H', assetKind: 'tractor',
+      assetCategoryLabel: 'Tractor', assetYearModel: 2013, assetUsageReading: 14056, assetUsageMetric: 'hours', assetCondition: 'good',
+      assetValue: 367000, assetMeta: '2013 · 14,056 hours', maintenanceType: 'service', triggerType: 'usage', status: 'done',
+      computedStatus: 'done', computedStatusLabel: 'Done', title: 'Service', notes: '', assignedFieldManagerId: null, assignedName: '',
+      dueDate: null, dueUsage: 14000, usageMetric: 'hours', currentUsage: null, remainingUsage: null, daysUntilDue: null,
+      alertBeforeValue: null, alertBeforeUnit: null, recurringEnabled: false, recurringIntervalValue: null, recurringIntervalUnit: null,
+      generatedFromMaintenanceId: null, sourceScanEventId: 'scan-1', completedAtIso: '2026-08-25T08:00:00.000Z', completedUsage: 14056,
+      completedNotes: 'Serviced\nCompany: Example Service\nMechanic: Alex', completedBy: 'Gerald',
+      sourcePhotoUrls: ['https://example.com/photo-1.jpg', 'https://example.com/photo-2.jpg'], sourceLatitude: -34.024051,
+      sourceLongitude: 22.383678, sourceLocationText: 'Workshop', alertNotedAtIso: null,
+      createdAtIso: '2026-08-25T08:00:00.000Z', updatedAtIso: '2026-08-25T08:00:00.000Z',
+    }],
+    xlsxUrl: '',
+  });
+
+  const sheet = workbook[0];
+  const headers = sheet.rows[21].map((cell) => String(cell.value ?? ''));
+  const values = sheet.rows[22].map((cell) => cell.value);
+  assert.equal(headers.length, 23);
+  assert.ok(headers.includes('Recorded Location'));
+  assert.ok(headers.includes('Photo Evidence URLs'));
+  assert.ok(values.includes('Workshop'));
+  assert.ok(values.includes(2));
+  assert.ok(values.includes('https://example.com/photo-1.jpg\nhttps://example.com/photo-2.jpg'));
 });

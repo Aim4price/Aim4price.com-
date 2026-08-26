@@ -214,6 +214,13 @@ function assetMeterLabel(asset: FuelLedgerAsset | null): string {
   return 'Current hour reading';
 }
 
+function assetMeterMetric(asset: FuelLedgerAsset | null): 'hours' | 'km' | 'none' {
+  if (!asset || !assetHasMeter(asset)) return 'none';
+  return asset.usageMetric === 'km' || (asset.usageMetric === 'both' && asset.kind === 'vehicle')
+    ? 'km'
+    : 'hours';
+}
+
 function assetSearchText(asset: FuelLedgerAsset): string {
   return [
     asset.title,
@@ -788,6 +795,7 @@ export default function FuelScanClient({
         assetFuelPercentBefore: Number(fuelPercentText(assetFuelPercentBefore)),
         assetFuelPercentAfter: Number(fuelPercentText(assetFuelPercentAfter)),
         assetUsageReading: !assetHasMeter(selectedAsset) || usageNotApplicable ? null : Number(assetUsageReading),
+        assetUsageMetric: usageNotApplicable ? 'none' : assetMeterMetric(selectedAsset),
         operatorName: operatorNameForSave,
         activityText,
         workAreaText,

@@ -160,6 +160,11 @@ export type FuelSlipTransaction = {
   activityText: string;
   workAreaText: string;
   note: string;
+  latitude: number | null;
+  longitude: number | null;
+  locationText: string;
+  clientCapturedAtIso: string | null;
+  gpsAccuracyMeters: number | null;
   assetFuelPercentBefore: number | null;
   assetFuelPercentAfter: number | null;
   extractionStatus: FuelSlipExtractionStatus;
@@ -417,6 +422,11 @@ type FuelSlipRow = {
   activity_text: string | null;
   work_area_text: string | null;
   note: string | null;
+  scan_latitude: string | number | null;
+  scan_longitude: string | number | null;
+  scan_location_text: string | null;
+  scan_client_captured_at: string | null;
+  scan_gps_accuracy_meters: string | number | null;
   asset_fuel_percent_before: string | number | null;
   asset_fuel_percent_after: string | number | null;
   extraction_status: string | null;
@@ -1010,8 +1020,8 @@ function mapStorageRow(row: FuelStorageRow): FuelLedgerStorage {
     pinEnabled: Boolean(row.pin_enabled) && Boolean(pinHash),
     hasPin: Boolean(pinHash),
     pinUpdatedAtIso: row.pin_updated_at ?? null,
-    createdAtIso: row.created_at ?? new Date().toISOString(),
-    updatedAtIso: row.updated_at ?? row.created_at ?? new Date().toISOString(),
+    createdAtIso: row.created_at ?? '',
+    updatedAtIso: row.updated_at ?? row.created_at ?? '',
   };
 }
 
@@ -1037,7 +1047,7 @@ function mapFuelEventRow(row: FuelEventRow): FuelLedgerEvent {
   const card = normalizeMaskedCard(isFuelSlip ? row.fs_card_number_masked ?? row.card_number_masked : row.card_number_masked, isFuelSlip ? row.fs_card_last4 : null);
   const fuelSlipDocumentDate = isFuelSlip ? toDateOnly(row.fs_document_date) ?? '' : '';
   const fuelSlipDocumentTime = isFuelSlip ? asText(row.fs_document_time) : '';
-  const recordedAtIso = row.issue_at ?? row.created_at ?? new Date().toISOString();
+  const recordedAtIso = row.issue_at ?? row.created_at ?? '';
   const reportDateIso = isFuelSlip
     ? fuelSlipDocumentDateIso(fuelSlipDocumentDate, fuelSlipDocumentTime, recordedAtIso)
     : recordedAtIso;
@@ -1059,7 +1069,7 @@ function mapFuelEventRow(row: FuelEventRow): FuelLedgerEvent {
     fuelSlipExtractionStatus: extractionStatus,
     fuelSlipReviewRequired: reviewRequired,
     fuelSlipReviewStatus: isFuelSlip ? fuelSlipReviewStatusLabel(extractionStatus, reviewRequired) : '',
-    totalAmount: isFuelSlip ? null : normalizeMoneyValue(row.total_amount),
+    totalAmount: normalizeMoneyValue(row.total_amount),
     documentFileUrl: isFuelSlip ? asText(row.fs_document_file_url) || asText(row.document_file_url) : asText(row.document_file_url),
     paymentMethod: maskStoredFuelSlipRawText(isFuelSlip ? asText(row.fs_payment_method) || asText(row.payment_method) : asText(row.payment_method)),
     cardNumberMasked: card.masked,
@@ -1083,8 +1093,8 @@ function mapFuelEventRow(row: FuelEventRow): FuelLedgerEvent {
     issueDate: toDateOnly(row.issue_date) || toDateOnly(row.created_at),
     issueTime: asText(row.issue_time),
     issueTimeRecorded: row.issue_time_recorded !== false,
-    issueAtIso: row.issue_at ?? row.created_at ?? new Date().toISOString(),
-    entryAddedAtIso: row.entry_added_at ?? row.created_at ?? new Date().toISOString(),
+    issueAtIso: row.issue_at ?? row.created_at ?? '',
+    entryAddedAtIso: row.entry_added_at ?? row.created_at ?? '',
     addedByUserId: asText(row.added_by_user_id),
     addedByName: asText(row.added_by_name),
     addedByEmail: asText(row.added_by_email),
@@ -1176,6 +1186,11 @@ function mapFuelSlipRow(row: FuelSlipRow): FuelSlipTransaction {
     activityText: maskStoredFuelSlipRawText(asText(row.activity_text)),
     workAreaText: maskStoredFuelSlipRawText(asText(row.work_area_text)),
     note: maskStoredFuelSlipRawText(asText(row.note)),
+    latitude: normalizeCoordinate(row.scan_latitude, 90),
+    longitude: normalizeCoordinate(row.scan_longitude, 180),
+    locationText: asText(row.scan_location_text),
+    clientCapturedAtIso: row.scan_client_captured_at ?? null,
+    gpsAccuracyMeters: asNumber(row.scan_gps_accuracy_meters),
     assetFuelPercentBefore: normalizeFuelPercent(row.asset_fuel_percent_before),
     assetFuelPercentAfter: normalizeFuelPercent(row.asset_fuel_percent_after),
     extractionStatus: normalizeFuelSlipExtractionStatus(row.extraction_status),
@@ -1189,8 +1204,8 @@ function mapFuelSlipRow(row: FuelSlipRow): FuelSlipTransaction {
     voidedAtIso: row.voided_at ?? null,
     voidedByName: asText(row.voided_by_name),
     voidReason: asText(row.void_reason),
-    createdAtIso: row.created_at ?? new Date().toISOString(),
-    updatedAtIso: row.updated_at ?? row.created_at ?? new Date().toISOString(),
+    createdAtIso: row.created_at ?? '',
+    updatedAtIso: row.updated_at ?? row.created_at ?? '',
   };
 }
 
@@ -1649,7 +1664,7 @@ export async function listFuelLedgerAuditEvents(
     reason: asText(row.reason),
     beforeSnapshot: row.before_snapshot ? asRecord(row.before_snapshot) : null,
     afterSnapshot: row.after_snapshot ? asRecord(row.after_snapshot) : null,
-    createdAtIso: row.created_at ?? new Date().toISOString(),
+    createdAtIso: row.created_at ?? '',
   }));
 }
 
@@ -1795,6 +1810,41 @@ function fuelSlipSelectSql(): string {
     fs.activity_text,
     fs.work_area_text,
     fs.note,
+    (
+      select se.latitude
+      from public.asset_scan_events se
+      where se.fuel_slip_id = fs.id
+      order by se.created_at desc, se.id desc
+      limit 1
+    ) as scan_latitude,
+    (
+      select se.longitude
+      from public.asset_scan_events se
+      where se.fuel_slip_id = fs.id
+      order by se.created_at desc, se.id desc
+      limit 1
+    ) as scan_longitude,
+    (
+      select se.location_text
+      from public.asset_scan_events se
+      where se.fuel_slip_id = fs.id
+      order by se.created_at desc, se.id desc
+      limit 1
+    ) as scan_location_text,
+    (
+      select se.client_captured_at
+      from public.asset_scan_events se
+      where se.fuel_slip_id = fs.id
+      order by se.created_at desc, se.id desc
+      limit 1
+    ) as scan_client_captured_at,
+    (
+      select se.gps_accuracy_meters
+      from public.asset_scan_events se
+      where se.fuel_slip_id = fs.id
+      order by se.created_at desc, se.id desc
+      limit 1
+    ) as scan_gps_accuracy_meters,
     fs.asset_fuel_percent_before,
     fs.asset_fuel_percent_after,
     fs.extraction_status,
@@ -2689,7 +2739,7 @@ function mapFuelSlipToReportEvent(slip: FuelSlipTransaction): FuelLedgerEvent {
     fuelSlipExtractionStatus: slip.extractionStatus,
     fuelSlipReviewRequired: slip.reviewRequired,
     fuelSlipReviewStatus: reviewStatus,
-    totalAmount: null,
+    totalAmount: slip.totalAmount,
     documentFileUrl: slip.documentFileUrl,
     paymentMethod: slip.paymentMethod,
     cardNumberMasked: slip.cardNumberMasked,
@@ -2706,9 +2756,9 @@ function mapFuelSlipToReportEvent(slip: FuelSlipTransaction): FuelLedgerEvent {
     activityText: slip.activityText || 'Fuel Slip',
     workAreaText: slip.workAreaText || (isStorageTarget ? 'Storage tank' : 'External fuel purchase'),
     note: fuelSlipReportNote(slip),
-    latitude: null,
-    longitude: null,
-    locationText: '',
+    latitude: slip.latitude,
+    longitude: slip.longitude,
+    locationText: slip.locationText,
     isLateEntry: false,
     issueDate: slip.documentDate,
     issueTime: slip.documentTime,
@@ -2730,7 +2780,12 @@ function mapFuelSlipToReportEvent(slip: FuelSlipTransaction): FuelLedgerEvent {
     linkedMissingEntryEventId: '',
     adjustmentKind: '',
     idempotencyKey: '',
-    gpsCaptureStatus: '',
+    gpsCaptureStatus:
+      slip.latitude !== null && slip.longitude !== null
+        ? 'captured'
+        : slip.locationText
+          ? 'location_only'
+          : 'not_captured',
     workUseExcluded: slip.workUseExcluded,
     workUseExclusionReason: slip.workUseExclusionReason,
     createdAtIso: fuelSlipReportDateIso(slip),
@@ -3472,6 +3527,7 @@ async function insertFuelStorageEvent(
     assetFuelPercentBefore: number | null;
     assetFuelPercentAfter: number | null;
     assetUsageReading: number | null;
+    assetUsageMetric?: FuelUsageMetric | null;
     operatorName: string;
     activityText: string | null;
     workAreaText: string | null;
@@ -3534,9 +3590,10 @@ async function insertFuelStorageEvent(
         field_manager_session_id,
         work_use_excluded,
         work_use_exclusion_reason,
+        asset_usage_metric,
         created_at
       )
-      values ($1::uuid, $2, $3, $4, $5, $6::uuid, $7::numeric, $8, $9, $10, $11, $12::numeric, $13::numeric, $14::numeric, $15::integer, $16::integer, $17::numeric, $18, $19, $20, $21, $22::double precision, $23::double precision, $24, $25::text, $26::timestamptz, now(), $27::double precision, $28::uuid, $29::text, $30::text, $31::boolean, $32, coalesce($26::timestamptz, now()))
+      values ($1::uuid, $2, $3, $4, $5, $6::uuid, $7::numeric, $8, $9, $10, $11, $12::numeric, $13::numeric, $14::numeric, $15::integer, $16::integer, $17::numeric, $18, $19, $20, $21, $22::double precision, $23::double precision, $24, $25::text, $26::timestamptz, now(), $27::double precision, $28::uuid, $29::text, $30::text, $31::boolean, $32, $33, coalesce($26::timestamptz, now()))
       returning id::text
     `,
     [
@@ -3572,6 +3629,7 @@ async function insertFuelStorageEvent(
       input.fieldManagerSessionId ?? null,
       Boolean(input.workUseExcluded),
       input.workUseExclusionReason ?? null,
+      input.assetUsageMetric ?? null,
     ],
   );
 
@@ -3610,6 +3668,7 @@ export async function recordFuelAssetIssue(
     assetFuelPercentBefore?: unknown;
     assetFuelPercentAfter?: unknown;
     assetUsageReading?: unknown;
+    assetUsageMetric?: unknown;
     operatorName?: unknown;
     activityText?: unknown;
     workAreaText?: unknown;
@@ -3723,56 +3782,80 @@ export async function recordFuelAssetIssue(
       throw new Error('Not enough fuel is available in this storage unit. Add stock or correct the storage level first.');
     }
 
-    const assetResult = await client.query<{
-      id: string;
-      title: string | null;
-      plate_label: string | null;
-      public_asset_code: string | null;
-      hours: string | number | null;
-      fuel_percent: string | number | null;
+    const assetResult = await client.query<FuelAssetRow & {
       valuation_run_id: string | number | null;
-      selected_method: string | null;
-      specs_json: unknown;
     }>(
       `
         select
           a.id::text,
           a.title,
+          a.kind,
+          a.brand_name,
+          a.model_name,
+          a.typed_model_name,
+          coalesce(ef.family_label, '') as equipment_family_label,
+          coalesce(to_jsonb(a)->>'serial_number', to_jsonb(a)->>'serialNumber', '') as serial_number,
           to_jsonb(a)->>'plate_label' as plate_label,
           to_jsonb(a)->>'public_asset_code' as public_asset_code,
           coalesce(nullif(lower(to_jsonb(a)->>'qr_status'), ''), 'active') as qr_status,
           a.hours,
+          coalesce(to_jsonb(a)->>'life_worked_percent', to_jsonb(a)->'specs_json'->>'life_worked_percent', to_jsonb(a)->'specs_json'->>'lifeWorkedPercent') as life_worked_percent,
           to_jsonb(a)->>'fuel_percent' as fuel_percent,
+          coalesce(to_jsonb(a)->>'year_model', to_jsonb(a)->>'yearModel', to_jsonb(a)->>'year') as year_model,
+          coalesce(to_jsonb(a)->>'condition', '') as condition,
+          coalesce(to_jsonb(a)->>'selected_method', to_jsonb(a)->>'selectedMethod', to_jsonb(a)->>'method', '') as selected_method,
+          coalesce(to_jsonb(a)->>'current_value', to_jsonb(a)->>'currentValue', to_jsonb(a)->>'selected_value_ex_vat', to_jsonb(a)->>'selectedValueExVat', to_jsonb(a)->>'selected_value', to_jsonb(a)->>'value', to_jsonb(a)->>'opening_value') as current_value,
+          ef.is_propelled as family_is_propelled,
           a.valuation_run_id,
-          a.selected_method,
           coalesce(a.specs_json, '{}'::jsonb) as specs_json
         from public.asset_register_items a
+        left join public.valuation_runs vr on vr.id = a.valuation_run_id
+        left join public.equipment_families ef on ef.id = coalesce(a.equipment_family_id, vr.equipment_family_id)
         where a.user_id = $1 and a.id::text = $2
-        for update
+        for update of a
       `,
       [input.userId, input.assetId],
     );
 
-    const asset = assetResult.rows[0];
-    if (!asset) {
+    const assetRow = assetResult.rows[0];
+    if (!assetRow) {
       throw new Error('Asset not found.');
     }
+    const asset = mapFuelAssetRow(assetRow);
     const assetWorkUse = await getFuelAssetWorkUseExclusion(client, input.userId, input.assetId);
 
-    const currentUsageReading = normalizeUsageReading(asset.hours);
+    const requestedUsageMetric = asText(input.assetUsageMetric)
+      ? normalizeFuelUsageMetric(input.assetUsageMetric)
+      : assetUsageReading === null
+        ? 'none'
+        : canonicalFuelIssueUsageMetric(asset);
+    if (!usageMetricAllowedForAsset(asset.usageMetric, requestedUsageMetric)) {
+      throw new Error(`The selected usage metric does not match this asset's saved usage metric (${asset.usageMetric}).`);
+    }
+    if (requestedUsageMetric === 'percentage') {
+      throw new Error('Fuel scans only accept hour or kilometre meter readings. Update lifetime percentage from the asset QR scan.');
+    }
+    if (requestedUsageMetric === 'none' && assetUsageReading !== null) {
+      throw new Error('Choose a usage metric for the meter reading, or remove the reading.');
+    }
+    if (requestedUsageMetric !== 'none' && assetUsageReading === null) {
+      throw new Error(`Enter the current ${requestedUsageMetric === 'km' ? 'kilometre' : requestedUsageMetric === 'hours' ? 'hour' : 'percentage'} reading, or choose no meter reading.`);
+    }
+
+    const currentUsageReading = normalizeUsageReading(assetRow.hours);
     if (assetUsageReading !== null && currentUsageReading !== null && assetUsageReading < currentUsageReading) {
       throw new Error('The usage reading cannot be lower than the reading already saved on this asset.');
     }
 
     const usageReadingChanged = assetUsageReading !== null && assetUsageReading !== currentUsageReading;
-    const shouldMarkValuationNeedsUpdate = usageReadingChanged && hasSavedFuelAssetValuation(asset);
+    const shouldMarkValuationNeedsUpdate = usageReadingChanged && hasSavedFuelAssetValuation(assetRow);
     const nextSpecsJson = shouldMarkValuationNeedsUpdate
-      ? markFuelAssetValuationNeedsUpdate(asRecord(asset.specs_json), ['usage changed'])
-      : asRecord(asset.specs_json);
+      ? markFuelAssetValuationNeedsUpdate(asRecord(assetRow.specs_json), ['usage changed'])
+      : asRecord(assetRow.specs_json);
 
     const storageBefore = storage.currentLitres;
     const storageAfter = roundLitres(storageBefore - litres);
-    const assetFuelPercentBefore = assetFuelPercentBeforeInput ?? normalizeFuelPercent(asset.fuel_percent);
+    const assetFuelPercentBefore = assetFuelPercentBeforeInput ?? normalizeFuelPercent(assetRow.fuel_percent);
     const noteText = asText(input.note);
     const storageNote = `Fuel issued from ${storage.name}: ${litres.toLocaleString('en-ZA', { maximumFractionDigits: 3 })} litres.`;
     const eventNote = [storageNote, noteText].filter(Boolean).join('\n\n');
@@ -3797,6 +3880,7 @@ export async function recordFuelAssetIssue(
       assetFuelPercentBefore,
       assetFuelPercentAfter,
       assetUsageReading,
+      assetUsageMetric: requestedUsageMetric,
       operatorName,
       activityText: activityText || null,
       workAreaText: workAreaText || null,
@@ -3857,9 +3941,14 @@ export async function recordFuelAssetIssue(
           field_manager_id,
           field_manager_display_name,
           field_manager_session_id,
+          asset_usage_reading,
+          asset_usage_metric,
+          source_type,
+          source_label,
+          entry_added_at,
           created_at
         )
-        values ($1::uuid, $2, $3, $4, $5, $6::numeric, $7::integer, $8::numeric, $9::uuid, $10::uuid, null, $11, '[]'::jsonb, $12::double precision, $13::double precision, $14, $15::text, $16::timestamptz, now(), $17::double precision, $18::uuid, $19::text, $20::text, coalesce($16::timestamptz, now()))
+        values ($1::uuid, $2, $3, $4, $5, $6::numeric, $7::integer, $8::numeric, $9::uuid, $10::uuid, null, $11, '[]'::jsonb, $12::double precision, $13::double precision, $14, $15::text, $16::timestamptz, now(), $17::double precision, $18::uuid, $19::text, $20::text, $6::numeric, $21, 'fuel_storage_issue', 'Fuel Storage QR', now(), coalesce($16::timestamptz, now()))
       `,
       [
         input.assetId,
@@ -3882,6 +3971,7 @@ export async function recordFuelAssetIssue(
         fieldManagerId,
         fieldManagerDisplayName,
         fieldManagerSessionId,
+        requestedUsageMetric,
       ],
     );
 
@@ -4028,6 +4118,11 @@ function usageMetricAllowedForAsset(assetMetric: FuelLedgerAsset['usageMetric'],
   if (selectedMetric === 'none') return true;
   if (assetMetric === 'both') return selectedMetric === 'hours' || selectedMetric === 'km';
   return assetMetric === selectedMetric;
+}
+
+function canonicalFuelIssueUsageMetric(asset: FuelLedgerAsset): FuelUsageMetric {
+  if (asset.usageMetric === 'both') return asset.kind === 'vehicle' ? 'km' : 'hours';
+  return asset.usageMetric;
 }
 
 function normalizeLateEntryUsageReading(metric: FuelUsageMetric, value: unknown): number | null {
@@ -5600,8 +5695,16 @@ export async function saveFuelSlipTransaction(userId: string, input: SaveFuelSli
             location_text,
             client_captured_at,
             gps_accuracy_meters,
+            asset_usage_reading,
+            asset_usage_metric,
+            source_type,
+            source_label,
+            issue_date,
+            issue_time,
+            issue_time_recorded,
+            entry_added_at,
             created_at
-          ) values ($1::uuid, 'owner_session', $2, $3, $4, $5::numeric, $6::integer, $7::numeric, null, null, $10::uuid, $8, $9::jsonb, $11, $12, $13, $14::timestamptz, $15, now())
+          ) values ($1::uuid, 'owner_session', $2, $3, $4, $5::numeric, $6::integer, $7::numeric, null, null, $10::uuid, $8, $9::jsonb, $11, $12, $13, $14::timestamptz, $15, $5::numeric, $16, 'fuel_slip', 'Fuel Slip', $17::date, $18, $19::boolean, now(), now())
         `,
         [
           assetId,
@@ -5619,6 +5722,10 @@ export async function saveFuelSlipTransaction(userId: string, input: SaveFuelSli
           locationText,
           clientCapturedAt,
           gpsAccuracyMeters,
+          usageMetric,
+          documentDate,
+          documentTime || null,
+          Boolean(documentTime),
         ],
       );
 
