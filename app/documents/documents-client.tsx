@@ -1027,6 +1027,31 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
     }
   }
 
+  async function permanentlyDeleteDocument() {
+    const document = documentPendingDelete;
+    if (!document || view !== 'recycle-bin' || busyRef.current) return;
+
+    setOperationBusy(true);
+    setNotice(null);
+    setModalNotice(null);
+    try {
+      const response = await fetch(`/api/documents/${encodeURIComponent(document.id)}?permanent=1`, { method: 'DELETE' });
+      const data = await readVaultResponse(response, 'The document could not be permanently deleted.');
+      if (!response.ok || !data.ok) throw new Error(data.error || 'The document could not be permanently deleted.');
+
+      setDocumentPendingDelete(null);
+      setNotice({ tone: 'success', message: 'Document permanently deleted.' });
+      await loadDocuments('recycle-bin', { quiet: true });
+    } catch (error) {
+      setModalNotice({
+        tone: 'error',
+        message: error instanceof Error ? error.message : 'The document could not be permanently deleted.',
+      });
+    } finally {
+      setOperationBusy(false);
+    }
+  }
+
   async function restoreDocument(document: VaultDocument) {
     setOperationBusy(true);
     setNotice(null);
@@ -1108,9 +1133,14 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
             <Icon name="download" /> Download
           </a>
           {isDeleted ? (
-            <button type="button" className={styles.restoreButton} disabled={busy} onClick={() => void restoreDocument(document)}>
-              <Icon name="restore" /> Restore
-            </button>
+            <>
+              <button type="button" className={styles.restoreButton} disabled={busy} onClick={() => void restoreDocument(document)}>
+                <Icon name="restore" /> Restore
+              </button>
+              <button type="button" className={styles.trashButton} disabled={busy} onClick={() => requestDocumentDelete(document)} aria-label={`Permanently delete ${document.title}`}>
+                <Icon name="trash" /> Delete
+              </button>
+            </>
           ) : (
             <>
               <button type="button" className={`${styles.actionButton} ${styles.editButton}`} disabled={busy} onClick={() => openEditModal(document)}>
@@ -1744,7 +1774,11 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
           <section ref={deleteModalRef} className={styles.confirmationModal} role="dialog" aria-modal="true" aria-labelledby="document-delete-title">
             <header className={`${styles.modalHeader} ${styles.compactModalHeader}`}>
               <div>
-                <h2 id="document-delete-title">Are you sure you want to delete this document?</h2>
+                <h2 id="document-delete-title">
+                  {view === 'recycle-bin'
+                    ? 'Are you sure you want to permanently delete this document?'
+                    : 'Are you sure you want to delete this document?'}
+                </h2>
               </div>
               <button type="button" onClick={() => setDocumentPendingDelete(null)} disabled={busy} aria-label="Close delete confirmation" data-modal-initial-focus="true"><Icon name="close" /></button>
             </header>
@@ -1757,7 +1791,11 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
                   <button type="button" onClick={() => setModalNotice(null)} aria-label="Dismiss error"><Icon name="close" /></button>
                 </div>
               ) : null}
-              <p>The document will move to the Recycle Bin and can be restored for 90 days.</p>
+              <p>
+                {view === 'recycle-bin'
+                  ? 'This cannot be undone. The document file, details and asset links will be permanently removed.'
+                  : 'The document will move to the Recycle Bin and can be restored for 90 days.'}
+              </p>
               <div className={styles.selectedDocumentCard}>
                 <span>Selected document</span>
                 <strong>{documentPendingDelete.title}</strong>
@@ -1774,9 +1812,16 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
 
             <footer className={styles.modalFooter}>
               <button type="button" className={styles.cancelButton} disabled={busy} onClick={() => setDocumentPendingDelete(null)}>Cancel</button>
-              <button type="button" className={styles.dangerButton} disabled={busy} onClick={() => void moveToRecycleBin()}>
+              <button
+                type="button"
+                className={styles.dangerButton}
+                disabled={busy}
+                onClick={() => void (view === 'recycle-bin' ? permanentlyDeleteDocument() : moveToRecycleBin())}
+              >
                 {busy ? <span className={styles.buttonSpinner} /> : <Icon name="trash" />}
-                {busy ? 'Deleting…' : 'Yes, delete document'}
+                {busy
+                  ? view === 'recycle-bin' ? 'Permanently deleting…' : 'Deleting…'
+                  : view === 'recycle-bin' ? 'Yes, permanently delete' : 'Yes, delete document'}
               </button>
             </footer>
           </section>

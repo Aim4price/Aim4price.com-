@@ -851,6 +851,57 @@ export async function moveAccountDocumentToRecycleBin(userId: string, documentId
   if (result.rowCount !== 1) throw new Error('DOCUMENT_NOT_FOUND');
 }
 
+export async function permanentlyDeleteAccountDocument(userId: string, documentId: string): Promise<void> {
+  await ensureAccountDocumentTables();
+  const normalizedId = cleanText(documentId, 80);
+  const client = await getDb().connect();
+  let deletedUploadId = '';
+
+  try {
+    await client.query('begin');
+    const deleted = await client.query<UploadReferenceRow>(
+      `
+        delete from public.account_documents
+        where user_id = $1
+          and id::text = $2
+          and deleted_at is not null
+        returning upload_id
+      `,
+      [userId, normalizedId],
+    );
+    deletedUploadId = cleanText(deleted.rows[0]?.upload_id, 160);
+    if (deleted.rowCount !== 1 || !deletedUploadId) throw new Error('DOCUMENT_NOT_FOUND');
+
+    const catalogs = await client.query<{ legacy_exists: boolean; bucket_exists: boolean }>(`
+      select
+        to_regclass('public.asset_register_uploads') is not null as legacy_exists,
+        to_regclass('public.asset_register_bucket_uploads') is not null as bucket_exists
+    `);
+
+    if (catalogs.rows[0]?.legacy_exists) {
+      await client.query(
+        'delete from public.asset_register_uploads where user_id = $1 and id::text = $2',
+        [userId, deletedUploadId],
+      );
+    }
+
+    if (catalogs.rows[0]?.bucket_exists) {
+      await client.query(
+        'delete from public.asset_register_bucket_uploads where user_id = $1 and id = $2',
+        [userId, deletedUploadId],
+      );
+    }
+
+    await client.query('commit');
+    cacheAccountDocumentUploadOwner(deletedUploadId, null);
+  } catch (error) {
+    await client.query('rollback');
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
 export async function restoreAccountDocument(userId: string, documentId: string): Promise<AccountDocument> {
   await ensureAccountDocumentTables();
   const normalizedId = cleanText(documentId, 80);

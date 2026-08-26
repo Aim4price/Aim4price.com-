@@ -4668,6 +4668,17 @@
   height: 3.4rem;
 }
 
+.documentActions[data-recycle-actions='true'] {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.documentActions[data-recycle-actions='true'] .restoreButton,
+.documentActions[data-recycle-actions='true'] .trashButton {
+  grid-column: auto;
+  width: 100%;
+  padding-inline: 0.82rem;
+}
+
 @media (max-width: 1180px) {
   .documentCard {
     grid-template-columns: 3.65rem minmax(0, 1fr);
