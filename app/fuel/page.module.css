@@ -4154,16 +4154,47 @@
   text-align: center;
 }
 
-.workUseBadgeIncluded {
-  color: #15563e;
-  border-color: #b9ddcb;
-  background: #edf9f3;
-}
-
 .workUseBadgeExcluded {
   color: #8a3e08;
   border-color: #efc993;
   background: #fff5df;
+}
+
+.exclusionChoice {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.58rem;
+  color: #536b63;
+  font-size: 0.86rem;
+  font-weight: 880;
+  line-height: 1.2;
+}
+
+.exclusionChoiceBox {
+  width: 1.7rem;
+  height: 1.7rem;
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 auto;
+  border: 2px solid #b7c9c2;
+  border-radius: 0.52rem;
+  color: #ffffff;
+  background: #ffffff;
+  font-size: 0.98rem;
+  font-weight: 950;
+  line-height: 1;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.92);
+}
+
+.exclusionChoiceSelected {
+  color: #0d4b39;
+}
+
+.exclusionChoiceSelected .exclusionChoiceBox {
+  border-color: #176448;
+  background: linear-gradient(180deg, #1f7858 0%, #14553f 100%);
+  box-shadow: 0 7px 16px rgba(18, 89, 64, 0.2);
 }
 
 .exclusionNotice {
@@ -4207,6 +4238,44 @@
   font-size: 0.9rem;
   font-weight: 700;
   line-height: 1.5;
+}
+
+.exclusionSelectedAssets {
+  display: grid;
+  gap: 0.55rem;
+  max-height: min(28vh, 14rem);
+  padding: 0.7rem;
+  border: 1px solid #dce7e2;
+  border-radius: 1rem;
+  background: #f7fbf9;
+  overflow-y: auto;
+}
+
+.exclusionSelectedAssets > div {
+  display: grid;
+  gap: 0.18rem;
+  padding: 0.72rem 0.8rem;
+  border: 1px solid rgba(198, 219, 210, 0.9);
+  border-radius: 0.78rem;
+  background: #ffffff;
+}
+
+.exclusionSelectedAssets strong {
+  color: #123d32;
+  font-size: 0.9rem;
+}
+
+.exclusionSelectedAssets small {
+  color: #687b74;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.exclusionSelectionCount {
+  margin-right: auto;
+  color: #5f706a;
+  font-size: 0.88rem;
+  font-weight: 820;
 }
 
 .exclusionReasonField,
@@ -4303,6 +4372,12 @@
 @media (max-width: 960px) {
   .topActionButtons {
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .exclusionSelectionCount {
+    width: 100%;
+    margin-right: 0;
+    text-align: center;
   }
 }
 

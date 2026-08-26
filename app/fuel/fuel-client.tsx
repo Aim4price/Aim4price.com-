@@ -1683,7 +1683,8 @@ export default function FuelClient({
   const [deleteCandidateFuelSlip, setDeleteCandidateFuelSlip] = useState<FuelSlipRecord | null>(null);
   const [busyFuelSlipDeleteId, setBusyFuelSlipDeleteId] = useState<string | null>(null);
   const [exclusionSearch, setExclusionSearch] = useState('');
-  const [selectedExclusionAssetId, setSelectedExclusionAssetId] = useState<string | null>(null);
+  const [selectedExclusionAssetIds, setSelectedExclusionAssetIds] = useState<string[]>([]);
+  const [isExclusionEditorOpen, setIsExclusionEditorOpen] = useState(false);
   const [exclusionReason, setExclusionReason] = useState('');
   const [busyExclusionAssetId, setBusyExclusionAssetId] = useState<string | null>(null);
   const [historyFuelSlip, setHistoryFuelSlip] = useState<FuelSlipRecord | null>(null);
@@ -1706,10 +1707,15 @@ export default function FuelClient({
     [searchText, storages],
   );
 
-  const selectedExclusionAsset = useMemo(
-    () => assets.find((asset) => asset.id === selectedExclusionAssetId) ?? null,
-    [assets, selectedExclusionAssetId],
+  const selectedExclusionAssets = useMemo(() => {
+    const selectedIds = new Set(selectedExclusionAssetIds);
+    return assets.filter((asset) => selectedIds.has(asset.id));
+  }, [assets, selectedExclusionAssetIds]);
+  const selectedExclusionAssetIdSet = useMemo(
+    () => new Set(selectedExclusionAssetIds),
+    [selectedExclusionAssetIds],
   );
+  const exclusionSelectionAction = selectedExclusionAssets[0]?.workUseExcluded ? 'include' : 'exclude';
   const quickLaunchAsset = useMemo(
     () => quickLaunchAssetId ? assets.find((asset) => asset.id === quickLaunchAssetId) ?? null : null,
     [assets, quickLaunchAssetId],
@@ -2231,41 +2237,76 @@ export default function FuelClient({
 
   function openExclusionsModal() {
     setExclusionSearch('');
-    setSelectedExclusionAssetId(null);
+    setSelectedExclusionAssetIds([]);
+    setIsExclusionEditorOpen(false);
     setExclusionReason('');
     setNotice(null);
     setModalMode('exclusions');
   }
 
-  function selectExclusionAsset(asset: FuelLedgerAsset) {
-    setSelectedExclusionAssetId(asset.id);
-    setExclusionReason(asset.workUseExclusionReason || '');
+  function toggleExclusionAsset(asset: FuelLedgerAsset) {
+    const alreadySelected = selectedExclusionAssetIdSet.has(asset.id);
+    const currentStatus = selectedExclusionAssets[0]?.workUseExcluded;
+    if (!alreadySelected && typeof currentStatus === 'boolean' && currentStatus !== asset.workUseExcluded) {
+      setNotice({
+        tone: 'error',
+        message: `Clear the current selection before choosing assets to ${asset.workUseExcluded ? 'include again' : 'exclude'}.`,
+      });
+      return;
+    }
+
+    setSelectedExclusionAssetIds((currentIds) => {
+      if (currentIds.includes(asset.id)) return currentIds.filter((assetId) => assetId !== asset.id);
+      return [...currentIds, asset.id];
+    });
+    setIsExclusionEditorOpen(false);
+    setExclusionReason('');
     setNotice(null);
   }
 
-  async function updateAssetWorkUseExclusion(asset: FuelLedgerAsset) {
-    if (busyExclusionAssetId) return;
-    const excluded = !asset.workUseExcluded;
+  function openExclusionEditor() {
+    if (!selectedExclusionAssets.length) return;
+    setExclusionReason('');
+    setNotice(null);
+    setIsExclusionEditorOpen(true);
+  }
+
+  async function updateSelectedAssetWorkUseExclusions() {
+    if (busyExclusionAssetId || !selectedExclusionAssets.length) return;
+    const excluded = exclusionSelectionAction === 'exclude';
     if (excluded && exclusionReason.trim().length < 2) {
       setNotice({ tone: 'error', message: 'Add a short reason, for example “Generator serving normal houses”.' });
       return;
     }
 
-    setBusyExclusionAssetId(asset.id);
     setNotice(null);
+    const savedAssetIds = new Set<string>();
     try {
-      const response = await fetch(scopedApiUrl(`/api/fuel/exclusions/${encodeURIComponent(asset.id)}`), {
-        method: 'PUT',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ excluded, reason: excluded ? exclusionReason.trim() : '' }),
+      for (const asset of selectedExclusionAssets) {
+        setBusyExclusionAssetId(asset.id);
+        const response = await fetch(scopedApiUrl(`/api/fuel/exclusions/${encodeURIComponent(asset.id)}`), {
+          method: 'PUT',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ excluded, reason: excluded ? exclusionReason.trim() : '' }),
+        });
+        await applyLedgerResponse(response);
+        savedAssetIds.add(asset.id);
+      }
+
+      const assetLabel = selectedExclusionAssets.length === 1 ? 'asset' : 'assets';
+      setNotice({
+        tone: 'success',
+        message: `${selectedExclusionAssets.length} ${assetLabel} ${excluded ? 'excluded from' : 'included in'} work-use totals.`,
       });
-      const data = await applyLedgerResponse(response);
-      setNotice({ tone: 'success', message: data.message || (excluded ? 'Asset excluded from work-use totals.' : 'Asset included in work-use totals.') });
-      setSelectedExclusionAssetId(null);
+      setSelectedExclusionAssetIds([]);
+      setIsExclusionEditorOpen(false);
       setExclusionReason('');
     } catch (error) {
-      setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'The exclusion could not be updated.' });
+      setSelectedExclusionAssetIds((currentIds) => currentIds.filter((assetId) => !savedAssetIds.has(assetId)));
+      setIsExclusionEditorOpen(false);
+      const savedPrefix = savedAssetIds.size ? `${savedAssetIds.size} saved. ` : '';
+      setNotice({ tone: 'error', message: `${savedPrefix}${error instanceof Error ? error.message : 'The exclusions could not be updated.'}` });
     } finally {
       setBusyExclusionAssetId(null);
     }
@@ -2317,7 +2358,8 @@ export default function FuelClient({
     setFuelSlipValidationNotice('');
     setFuelSlipFocusField(null);
     setExclusionSearch('');
-    setSelectedExclusionAssetId(null);
+    setSelectedExclusionAssetIds([]);
+    setIsExclusionEditorOpen(false);
     setExclusionReason('');
     setQuickLaunchAssetId(null);
     closeFuelSlipHistory();
@@ -3539,8 +3581,16 @@ export default function FuelClient({
           <div className={`${styles.assetModal} ${styles.exclusionsModal}`} data-asset-choice-surface="true" data-asset-choice-modal="true">
             <div className={styles.modalHeader} data-asset-choice-header="true">
               <div>
-                <h2>{selectedExclusionAsset ? 'Confirm Fuel Exclusion' : 'Choose Saved Asset'}</h2>
-                <p>{selectedExclusionAsset ? selectedExclusionAsset.title : 'Exclude assets whose fuel is not used for work, such as a generator serving normal houses.'}</p>
+                <h2>
+                  {isExclusionEditorOpen
+                    ? exclusionSelectionAction === 'exclude' ? 'Confirm Fuel Exclusions' : 'Confirm Work-use Inclusion'
+                    : 'Choose Saved Assets'}
+                </h2>
+                <p>
+                  {isExclusionEditorOpen
+                    ? `${selectedExclusionAssets.length} ${selectedExclusionAssets.length === 1 ? 'asset' : 'assets'} selected.`
+                    : 'Select one or more assets whose fuel is not used for work, such as generators serving normal houses.'}
+                </p>
               </div>
               <button type="button" className={styles.closeButton} onClick={closeModal} aria-label="Close exclusions"><CloseIcon /></button>
             </div>
@@ -3548,20 +3598,25 @@ export default function FuelClient({
 
             {notice ? <div className={`${styles.exclusionNotice} ${notice.tone === 'error' ? styles.noticeError : styles.noticeSuccess}`}>{notice.message}</div> : null}
 
-            {selectedExclusionAsset ? (
+            {isExclusionEditorOpen ? (
               <div className={styles.exclusionEditor}>
                 <div className={styles.exclusionEditorHeading}>
-                  <span className={`${styles.workUseBadge} ${selectedExclusionAsset.workUseExcluded ? styles.workUseBadgeExcluded : styles.workUseBadgeIncluded}`}>
-                    {selectedExclusionAsset.workUseExcluded ? 'Excluded from work use' : 'Currently included'}
-                  </span>
-                  <h3>{selectedExclusionAsset.workUseExcluded ? 'Include this asset again?' : 'Exclude this asset from work-use totals?'}</h3>
+                  <h3>{exclusionSelectionAction === 'exclude' ? 'Exclude these assets from work-use totals?' : 'Include these assets in work-use totals again?'}</h3>
                   <p>
                     Fuel movement and tank balances will stay unchanged. Only the work-use classification changes, and the change is kept in history.
                   </p>
                 </div>
-                {!selectedExclusionAsset.workUseExcluded ? (
+                <div className={styles.exclusionSelectedAssets}>
+                  {selectedExclusionAssets.map((asset) => (
+                    <div key={asset.id}>
+                      <strong>{asset.title}</strong>
+                      <small>{fuelSlipAssetMeta(asset) || 'Asset details not set'}</small>
+                    </div>
+                  ))}
+                </div>
+                {exclusionSelectionAction === 'exclude' ? (
                   <label className={styles.exclusionReasonField}>
-                    <span>Reason</span>
+                    <span>Reason for all selected assets</span>
                     <input
                       value={exclusionReason}
                       onChange={(event) => setExclusionReason(event.target.value)}
@@ -3573,8 +3628,8 @@ export default function FuelClient({
                   </label>
                 ) : (
                   <div className={styles.exclusionReasonSummary}>
-                    <span>Saved reason</span>
-                    <strong>{selectedExclusionAsset.workUseExclusionReason || 'Not used for work purposes'}</strong>
+                    <span>What will happen</span>
+                    <strong>The selected assets will count as work use again. Their previous exclusion reasons remain available in change history.</strong>
                   </div>
                 )}
               </div>
@@ -3590,40 +3645,72 @@ export default function FuelClient({
                   <button type="button" className={styles.secondaryButton} onClick={() => setExclusionSearch('')}>Clear</button>
                 </div>
                 <div className={styles.assetList} data-asset-choice-list="true">
-                  {isLoading ? <div className={styles.emptyState}>Loading saved assets...</div> : filteredExclusionAssets.length ? filteredExclusionAssets.map((asset) => (
-                    <button type="button" key={asset.id} className={styles.assetRow} onClick={() => selectExclusionAsset(asset)} data-asset-choice-row="true">
-                      <span className={styles.assetInfo} data-asset-choice-copy="true">
-                        <strong>{asset.title}</strong>
-                        <small data-asset-choice-meta="true">{fuelSlipAssetMeta(asset) || 'Asset details not set'}</small>
-                        <small data-asset-choice-secondary="true">{asset.workUseExcluded ? asset.workUseExclusionReason || 'Not used for work purposes' : 'Fuel entries included as work use'}</small>
-                      </span>
-                      <span className={styles.assetValue} data-asset-choice-value="true">
-                        <span className={`${styles.workUseBadge} ${asset.workUseExcluded ? styles.workUseBadgeExcluded : styles.workUseBadgeIncluded}`}>
-                          {asset.workUseExcluded ? 'Excluded' : 'Included'}
+                  {isLoading ? <div className={styles.emptyState}>Loading saved assets...</div> : filteredExclusionAssets.length ? filteredExclusionAssets.map((asset) => {
+                    const isSelected = selectedExclusionAssetIdSet.has(asset.id);
+                    return (
+                      <button
+                        type="button"
+                        key={asset.id}
+                        className={styles.assetRow}
+                        onClick={() => toggleExclusionAsset(asset)}
+                        aria-pressed={isSelected}
+                        data-asset-choice-row="true"
+                        data-asset-choice-selected={isSelected ? 'true' : undefined}
+                      >
+                        <span className={styles.assetInfo} data-asset-choice-copy="true">
+                          <strong>{asset.title}</strong>
+                          <small data-asset-choice-meta="true">{fuelSlipAssetMeta(asset) || 'Asset details not set'}</small>
+                          <small data-asset-choice-secondary="true">{asset.workUseExcluded ? asset.workUseExclusionReason || 'Not used for work purposes' : 'Fuel entries currently count as work use'}</small>
                         </span>
-                        <small>{asset.workUseExcluded ? 'Select to include' : 'Select to exclude'}</small>
-                      </span>
-                    </button>
-                  )) : <div className={styles.emptyState}>No matching saved assets found.</div>}
+                        <span className={styles.assetValue} data-asset-choice-value="true">
+                          <span className={`${styles.exclusionChoice} ${isSelected ? styles.exclusionChoiceSelected : ''}`}>
+                            <span className={styles.exclusionChoiceBox} aria-hidden="true">{isSelected ? '✓' : ''}</span>
+                            <strong>{isSelected ? 'Selected' : asset.workUseExcluded ? 'Include again' : 'Exclude'}</strong>
+                          </span>
+                        </span>
+                      </button>
+                    );
+                  }) : <div className={styles.emptyState}>No matching saved assets found.</div>}
                 </div>
               </>
             )}
 
             <div className={styles.modalFooter} data-asset-choice-footer="true">
-              {selectedExclusionAsset ? (
+              {isExclusionEditorOpen ? (
                 <>
-                  <button type="button" className={styles.secondaryButton} onClick={() => setSelectedExclusionAssetId(null)} disabled={Boolean(busyExclusionAssetId)}>Back</button>
+                  <button type="button" className={styles.secondaryButton} onClick={() => setIsExclusionEditorOpen(false)} disabled={Boolean(busyExclusionAssetId)}>Back</button>
                   <button
                     type="button"
-                    className={`${styles.primaryButton} ${!selectedExclusionAsset.workUseExcluded ? styles.exclusionDangerButton : ''}`}
-                    onClick={() => void updateAssetWorkUseExclusion(selectedExclusionAsset)}
+                    className={`${styles.primaryButton} ${exclusionSelectionAction === 'exclude' ? styles.exclusionDangerButton : ''}`}
+                    onClick={() => void updateSelectedAssetWorkUseExclusions()}
                     disabled={Boolean(busyExclusionAssetId)}
                   >
-                    {busyExclusionAssetId ? 'Saving...' : selectedExclusionAsset.workUseExcluded ? 'Include in work use' : 'Exclude from work use'}
+                    {busyExclusionAssetId
+                      ? 'Saving...'
+                      : exclusionSelectionAction === 'exclude'
+                        ? `Exclude ${selectedExclusionAssets.length} ${selectedExclusionAssets.length === 1 ? 'asset' : 'assets'}`
+                        : `Include ${selectedExclusionAssets.length} ${selectedExclusionAssets.length === 1 ? 'asset' : 'assets'}`}
                   </button>
                 </>
               ) : (
-                <button type="button" className={styles.secondaryButton} onClick={closeModal}>Close</button>
+                <>
+                  <span className={styles.exclusionSelectionCount} aria-live="polite">
+                    {selectedExclusionAssets.length
+                      ? `${selectedExclusionAssets.length} selected to ${exclusionSelectionAction}`
+                      : 'Select one or more assets'}
+                  </span>
+                  {selectedExclusionAssets.length ? (
+                    <button type="button" className={styles.secondaryButton} onClick={() => setSelectedExclusionAssetIds([])}>Clear selection</button>
+                  ) : null}
+                  <button type="button" className={styles.secondaryButton} onClick={closeModal}>Close</button>
+                  <button type="button" className={styles.primaryButton} onClick={openExclusionEditor} disabled={!selectedExclusionAssets.length}>
+                    {selectedExclusionAssets.length
+                      ? exclusionSelectionAction === 'exclude'
+                        ? `Review exclusions (${selectedExclusionAssets.length})`
+                        : `Review inclusions (${selectedExclusionAssets.length})`
+                      : 'Review selection'}
+                  </button>
+                </>
               )}
             </div>
           </div>
@@ -4606,4 +4693,3 @@ export default function FuelClient({
     </>
   );
 }
-
