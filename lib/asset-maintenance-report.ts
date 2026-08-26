@@ -334,7 +334,7 @@ function renderRecord(record: AssetMaintenanceRecord): string {
   return `<article class="maintenanceCard ${completed ? 'maintenanceCardDone' : ''}">
     <div class="maintenanceCardHead">
       <div>
-        <span class="statusPill status-${escapeHtml(record.computedStatus)}">${escapeHtml(formatStatus(record.computedStatus))}</span>
+        <div class="maintenanceStatus status-${escapeHtml(record.computedStatus)}"><span>Status</span><strong>${escapeHtml(formatStatus(record.computedStatus))}</strong></div>
         <h3>${escapeHtml(recordTitle(record))}</h3>
         <p>${escapeHtml(record.assetTitle)}${record.assetMeta ? ` - ${escapeHtml(record.assetMeta)}` : ''}</p>
       </div>
@@ -442,10 +442,12 @@ export function buildAssetMaintenanceReportHtml(options: AssetMaintenanceReportO
   .maintenanceCardHead > div + div { border-left:1px solid var(--line); }
   .maintenanceCardHead h3 { margin:5px 0 3px; font-size:9.4px; }
   .maintenanceCardHead p { margin:0; color:#505d67; font-size:8px; font-weight:600; }
-  .statusPill { display:inline-block; padding:2px 6px; border:1px solid #aeb9bf; border-radius:999px; background:#fff; color:#39444d; font-size:6.8px; font-weight:800; text-transform:uppercase; letter-spacing:.05em; }
-  .status-overdue { color:var(--red); border-color:#e4baba; background:var(--red-soft); }
-  .status-due,.status-due_soon { color:var(--amber); border-color:#ead69e; background:var(--amber-soft); }
-  .status-done { color:var(--green); border-color:#b9d9cd; background:var(--green-soft); }
+  .maintenanceStatus { display:flex; align-items:baseline; gap:6px; width:fit-content; margin:0 0 5px; padding-left:7px; border-left:3px solid #7b8794; color:#39444d; }
+  .maintenanceStatus span { color:var(--muted); font-size:6.8px; font-weight:800; text-transform:uppercase; letter-spacing:.06em; }
+  .maintenanceStatus strong { color:inherit; font-size:7.5px; font-weight:800; text-transform:uppercase; letter-spacing:.04em; }
+  .status-overdue { color:var(--red); border-left-color:#b84a4a; }
+  .status-due,.status-due_soon { color:var(--amber); border-left-color:#b68a2c; }
+  .status-done { color:var(--green); border-left-color:#2f7a65; }
   .maintenanceType { text-align:left; }
   .maintenanceType span,.maintenanceType small { display:block; color:var(--muted); font-size:7.3px; font-weight:800; text-transform:uppercase; }
   .maintenanceType strong { display:block; margin:4px 0; }
