@@ -16,6 +16,11 @@ type PeriodCountRow = {
   year?: CountValue;
 };
 
+type PublicSchemaColumnRow = {
+  table_name: string;
+  column_name: string;
+};
+
 export type DashboardMetricValue = {
   label: string;
   value: string;
@@ -75,6 +80,7 @@ type MonthYearCounts = {
 const ZERO_PERIOD_COUNTS: PeriodCounts = { today: 0, month: 0, year: 0 };
 const ZERO_MONTH_YEAR_COUNTS: MonthYearCounts = { month: 0, year: 0 };
 const ACTIVITY_PING_MINUTES = 5;
+let publicSchemaPromise: Promise<Map<string, Set<string>>> | null = null;
 
 function asNumber(value: CountValue): number {
   const numeric = typeof value === 'number' ? value : Number(value ?? 0);
@@ -157,30 +163,42 @@ function mapMonthYearCounts(row: PeriodCountRow | undefined): MonthYearCounts {
   };
 }
 
-async function tableExists(regclassName: string): Promise<boolean> {
-  const result = await getDb().query<{ exists: boolean }>(
-    'select to_regclass($1) is not null as exists',
-    [regclassName],
-  );
+function publicTableName(value: string): string {
+  return value.split('.').at(-1)?.replace(/^"|"$/g, '') ?? '';
+}
 
-  return Boolean(result.rows[0]?.exists);
+async function loadPublicSchema(): Promise<Map<string, Set<string>>> {
+  if (!publicSchemaPromise) {
+    publicSchemaPromise = getDb()
+      .query<PublicSchemaColumnRow>(`
+        select table_name, column_name
+        from information_schema.columns
+        where table_schema = 'public'
+      `)
+      .then((result) => {
+        const schema = new Map<string, Set<string>>();
+        for (const row of result.rows) {
+          const columns = schema.get(row.table_name) ?? new Set<string>();
+          columns.add(row.column_name);
+          schema.set(row.table_name, columns);
+        }
+        return schema;
+      })
+      .catch((error) => {
+        publicSchemaPromise = null;
+        throw error;
+      });
+  }
+
+  return publicSchemaPromise;
+}
+
+async function tableExists(regclassName: string): Promise<boolean> {
+  return (await loadPublicSchema()).has(publicTableName(regclassName));
 }
 
 async function columnExists(tableName: string, columnName: string): Promise<boolean> {
-  const result = await getDb().query<{ exists: boolean }>(
-    `
-      select exists (
-        select 1
-        from information_schema.columns
-        where table_schema = 'public'
-          and table_name = $1
-          and column_name = $2
-      ) as exists
-    `,
-    [tableName, columnName],
-  );
-
-  return Boolean(result.rows[0]?.exists);
+  return (await loadPublicSchema()).get(publicTableName(tableName))?.has(columnName) ?? false;
 }
 
 async function countUsageEvents(eventType: AdminUsageEventType): Promise<PeriodCounts> {
@@ -684,6 +702,11 @@ export async function getAdminDashboardStats(): Promise<AdminDashboardStats> {
           label: 'Live now',
           value: formatAdminMarketplaceMoney(marketplaceSummary.liveAdvertisedValueExVat),
           detail: `${formatCount(marketplaceSummary.liveAssets)} live assets`,
+        },
+        {
+          label: 'Detail views',
+          value: formatCount(marketplaceSummary.totalViews),
+          detail: `${formatCount(marketplaceSummary.repeatInterestAssets)} repeat-interest flags`,
         },
       ],
       href: '/admin/marketplace',

@@ -23,6 +23,16 @@ export type AdminMarketplaceAssetRow = {
   firstAdvertisedAtIso: string;
   lastAdvertisedAtIso: string;
   listingEvents: number;
+  totalViews: number;
+  accountViews: number;
+  unknownViews: number;
+  uniqueViewers: number;
+  lastViewedAtIso: string | null;
+  repeatViewerViews: number;
+  repeatViewerLabel: string;
+  repeatViewerAccountType: string;
+  repeatViewerLastViewedAtIso: string | null;
+  hasRepeatInterest: boolean;
 };
 
 export type AdminMarketplaceMetrics = {
@@ -35,6 +45,11 @@ export type AdminMarketplaceMetrics = {
   withdrawnAssets: number;
   accountsAdvertising: number;
   firstAdvertisedAtIso: string | null;
+  totalViews: number;
+  accountViews: number;
+  unknownViews: number;
+  viewedAssets: number;
+  repeatInterestAssets: number;
 };
 
 export type AdminMarketplaceReport = {
@@ -43,18 +58,66 @@ export type AdminMarketplaceReport = {
   assets: AdminMarketplaceAssetRow[];
 };
 
+export type AdminMarketplaceViewerKind = 'account' | 'unknown';
+
+export type AdminMarketplaceViewerGroup = {
+  viewerKey: string;
+  viewerKind: AdminMarketplaceViewerKind;
+  viewerLabel: string;
+  viewerEmail: string;
+  viewerAccountType: string;
+  viewCount: number;
+  firstViewedAtIso: string;
+  lastViewedAtIso: string;
+  hasRepeatInterest: boolean;
+};
+
+export type AdminMarketplaceViewEvent = {
+  id: string;
+  viewerKey: string;
+  viewerKind: AdminMarketplaceViewerKind;
+  viewerLabel: string;
+  viewerEmail: string;
+  viewerAccountType: string;
+  viewedAtIso: string;
+};
+
+export type AdminMarketplaceViewDetails = {
+  assetId: string;
+  totalViews: number;
+  accountViews: number;
+  unknownViews: number;
+  uniqueViewers: number;
+  repeatViewers: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+  viewerGroups: AdminMarketplaceViewerGroup[];
+  events: AdminMarketplaceViewEvent[];
+};
+
 export type AdminMarketplaceSort =
   | 'latest'
   | 'oldest'
+  | 'popular'
+  | 'repeat-interest'
+  | 'recent-view'
   | 'value-high'
   | 'value-low'
   | 'asset-az';
+
+export type AdminMarketplaceInterestFilter =
+  | 'all'
+  | 'viewed'
+  | 'repeat'
+  | 'unviewed';
 
 export type AdminMarketplaceFilters = {
   search: string;
   status: 'all' | AdminMarketplaceListingStatus;
   sector: string;
   advertised: string;
+  interest?: AdminMarketplaceInterestFilter;
   sort: AdminMarketplaceSort;
 };
 
@@ -114,6 +177,11 @@ export function summarizeAdminMarketplaceAssets(
   let withdrawnAssets = 0;
   let totalListingEvents = 0;
   let relistedAssets = 0;
+  let totalViews = 0;
+  let accountViews = 0;
+  let unknownViews = 0;
+  let viewedAssets = 0;
+  let repeatInterestAssets = 0;
   let firstAdvertisedAtIso: string | null = null;
   let firstAdvertisedAt = Number.POSITIVE_INFINITY;
   const accountUserIds = new Set<string>();
@@ -124,6 +192,11 @@ export function summarizeAdminMarketplaceAssets(
     totalListingEvents += Math.max(1, Math.round(asset.listingEvents || 0));
 
     if (asset.listingEvents > 1) relistedAssets += 1;
+    totalViews += Math.max(0, Math.round(asset.totalViews || 0));
+    accountViews += Math.max(0, Math.round(asset.accountViews || 0));
+    unknownViews += Math.max(0, Math.round(asset.unknownViews || 0));
+    if (asset.totalViews > 0) viewedAssets += 1;
+    if (asset.hasRepeatInterest || asset.repeatViewerViews >= 3) repeatInterestAssets += 1;
     if (asset.status === 'live') {
       liveAssets += 1;
       liveAdvertisedValueExVat += askingPrice;
@@ -148,6 +221,11 @@ export function summarizeAdminMarketplaceAssets(
     withdrawnAssets,
     accountsAdvertising: accountUserIds.size,
     firstAdvertisedAtIso,
+    totalViews,
+    accountViews,
+    unknownViews,
+    viewedAssets,
+    repeatInterestAssets,
   };
 }
 
@@ -162,6 +240,9 @@ export function filterAndSortAdminMarketplaceAssets(
     if (filters.status !== 'all' && asset.status !== filters.status) return false;
     if (filters.sector !== 'all' && asset.sectorKey !== filters.sector) return false;
     if (!matchesAdvertisedFilter(asset, filters.advertised, now)) return false;
+    if (filters.interest === 'viewed' && asset.totalViews <= 0) return false;
+    if (filters.interest === 'repeat' && !asset.hasRepeatInterest) return false;
+    if (filters.interest === 'unviewed' && asset.totalViews > 0) return false;
 
     if (!search) return true;
 
@@ -180,10 +261,21 @@ export function filterAndSortAdminMarketplaceAssets(
       asset.area,
       asset.sourceAssetId ?? '',
       asset.latestListingId,
+      asset.repeatViewerLabel,
+      asset.repeatViewerAccountType,
     ].join(' ')).includes(search);
   });
 
   return filtered.sort((left, right) => {
+    if (filters.sort === 'popular') {
+      return right.totalViews - left.totalViews || dateTime(right.lastViewedAtIso || '') - dateTime(left.lastViewedAtIso || '');
+    }
+    if (filters.sort === 'repeat-interest') {
+      return right.repeatViewerViews - left.repeatViewerViews || right.totalViews - left.totalViews;
+    }
+    if (filters.sort === 'recent-view') {
+      return dateTime(right.lastViewedAtIso || '') - dateTime(left.lastViewedAtIso || '');
+    }
     if (filters.sort === 'oldest') {
       return dateTime(left.firstAdvertisedAtIso) - dateTime(right.firstAdvertisedAtIso);
     }

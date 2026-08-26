@@ -6,6 +6,12 @@ import {
   type AdminMarketplaceMetrics,
   type AdminMarketplaceReport,
 } from './admin-marketplace-shared';
+import {
+  ensureMarketplaceViewTracking,
+  getAdminMarketplaceViewDetails,
+} from './marketplace-views';
+
+export { getAdminMarketplaceViewDetails };
 
 type DatabaseValue = string | number | Date | null | undefined;
 
@@ -32,6 +38,15 @@ type MarketplaceReportRow = {
   first_advertised_at: DatabaseValue;
   last_advertised_at: DatabaseValue;
   listing_events: DatabaseValue;
+  total_views: DatabaseValue;
+  account_views: DatabaseValue;
+  unknown_views: DatabaseValue;
+  unique_viewers: DatabaseValue;
+  last_viewed_at: DatabaseValue;
+  repeat_viewer_views: DatabaseValue;
+  repeat_viewer_label: DatabaseValue;
+  repeat_viewer_account_type: DatabaseValue;
+  repeat_viewer_last_viewed_at: DatabaseValue;
 };
 
 type MarketplaceSummaryRow = {
@@ -44,6 +59,11 @@ type MarketplaceSummaryRow = {
   withdrawn_assets: DatabaseValue;
   accounts_advertising: DatabaseValue;
   first_advertised_at: DatabaseValue;
+  total_views: DatabaseValue;
+  account_views: DatabaseValue;
+  unknown_views: DatabaseValue;
+  viewed_assets: DatabaseValue;
+  repeat_interest_assets: DatabaseValue;
 };
 
 const LATEST_MARKETPLACE_ROWS_CTE = `
@@ -133,6 +153,41 @@ const LATEST_MARKETPLACE_ROWS_CTE = `
       min(history.advertised_at) over (partition by history.asset_key) as first_advertised_at,
       max(history.advertised_at) over (partition by history.asset_key) as last_advertised_at
     from marketplace_history history
+  ),
+  marketplace_viewer_counts as (
+    select
+      view.asset_register_item_id::text as asset_id,
+      view.viewer_user_id,
+      view.anonymous_viewer_hash,
+      count(*)::bigint as view_count,
+      max(view.viewed_at) as last_viewed_at
+    from public.marketplace_listing_views view
+    group by
+      view.asset_register_item_id,
+      view.viewer_user_id,
+      view.anonymous_viewer_hash
+  ),
+  marketplace_view_rollup as (
+    select
+      viewer.asset_id,
+      sum(viewer.view_count)::bigint as total_views,
+      coalesce(sum(viewer.view_count) filter (where viewer.viewer_user_id is not null), 0)::bigint
+        as account_views,
+      coalesce(sum(viewer.view_count) filter (where viewer.viewer_user_id is null), 0)::bigint
+        as unknown_views,
+      count(*)::bigint as unique_viewers,
+      max(viewer.last_viewed_at) as last_viewed_at
+    from marketplace_viewer_counts viewer
+    group by viewer.asset_id
+  ),
+  ranked_marketplace_viewers as (
+    select
+      viewer.*,
+      row_number() over (
+        partition by viewer.asset_id
+        order by viewer.view_count desc, viewer.last_viewed_at desc
+      ) as viewer_rank
+    from marketplace_viewer_counts viewer
   )
 `;
 
@@ -146,9 +201,15 @@ const EMPTY_METRICS: AdminMarketplaceMetrics = {
   withdrawnAssets: 0,
   accountsAdvertising: 0,
   firstAdvertisedAtIso: null,
+  totalViews: 0,
+  accountViews: 0,
+  unknownViews: 0,
+  viewedAssets: 0,
+  repeatInterestAssets: 0,
 };
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+let marketplaceHistoryExistsPromise: Promise<boolean> | null = null;
 
 export type AdminDeleteMarketplaceAssetInput = {
   accountUserId: string;
@@ -191,12 +252,21 @@ function sectorKey(value: DatabaseValue): string {
 }
 
 async function marketplaceHistoryExists(): Promise<boolean> {
-  const result = await getDb().query<{ exists: boolean }>(
-    `select
-       to_regclass('public.marketplace_listings') is not null
-       and to_regclass('public.asset_register_items') is not null as exists`,
-  );
-  return Boolean(result.rows[0]?.exists);
+  if (!marketplaceHistoryExistsPromise) {
+    marketplaceHistoryExistsPromise = getDb()
+      .query<{ exists: boolean }>(
+        `select
+           to_regclass('public.marketplace_listings') is not null
+           and to_regclass('public.asset_register_items') is not null as exists`,
+      )
+      .then((result) => Boolean(result.rows[0]?.exists))
+      .catch((error) => {
+        marketplaceHistoryExistsPromise = null;
+        throw error;
+      });
+  }
+
+  return marketplaceHistoryExistsPromise;
 }
 
 function mapSummary(row: MarketplaceSummaryRow | undefined): AdminMarketplaceMetrics {
@@ -212,27 +282,42 @@ function mapSummary(row: MarketplaceSummaryRow | undefined): AdminMarketplaceMet
     withdrawnAssets: number(row.withdrawn_assets),
     accountsAdvertising: number(row.accounts_advertising),
     firstAdvertisedAtIso: iso(row.first_advertised_at) || null,
+    totalViews: number(row.total_views),
+    accountViews: number(row.account_views),
+    unknownViews: number(row.unknown_views),
+    viewedAssets: number(row.viewed_assets),
+    repeatInterestAssets: number(row.repeat_interest_assets),
   };
 }
 
 export async function getAdminMarketplaceSummary(): Promise<AdminMarketplaceMetrics> {
   if (!(await marketplaceHistoryExists())) return { ...EMPTY_METRICS };
+  await ensureMarketplaceViewTracking();
 
   const result = await getDb().query<MarketplaceSummaryRow>(`
     ${LATEST_MARKETPLACE_ROWS_CTE}
     select
       count(*)::bigint as total_unique_assets,
-      coalesce(sum(listing_events), 0)::bigint as total_listing_events,
-      count(*) filter (where listing_events > 1)::bigint as relisted_assets,
-      coalesce(sum(asking_price_ex_vat), 0)::numeric as all_time_advertised_value_ex_vat,
-      count(*) filter (where status = 'live')::bigint as live_assets,
-      coalesce(sum(asking_price_ex_vat) filter (where status = 'live'), 0)::numeric
+      coalesce(sum(history.listing_events), 0)::bigint as total_listing_events,
+      count(*) filter (where history.listing_events > 1)::bigint as relisted_assets,
+      coalesce(sum(history.asking_price_ex_vat), 0)::numeric as all_time_advertised_value_ex_vat,
+      count(*) filter (where history.status = 'live')::bigint as live_assets,
+      coalesce(sum(history.asking_price_ex_vat) filter (where history.status = 'live'), 0)::numeric
         as live_advertised_value_ex_vat,
-      count(*) filter (where status = 'withdrawn')::bigint as withdrawn_assets,
-      count(distinct user_id)::bigint as accounts_advertising,
-      min(first_advertised_at) as first_advertised_at
-    from ranked_marketplace_history
-    where latest_rank = 1
+      count(*) filter (where history.status = 'withdrawn')::bigint as withdrawn_assets,
+      count(distinct history.user_id)::bigint as accounts_advertising,
+      min(history.first_advertised_at) as first_advertised_at,
+      coalesce(sum(view_summary.total_views), 0)::bigint as total_views,
+      coalesce(sum(view_summary.account_views), 0)::bigint as account_views,
+      coalesce(sum(view_summary.unknown_views), 0)::bigint as unknown_views,
+      count(*) filter (where coalesce(view_summary.total_views, 0) > 0)::bigint as viewed_assets,
+      count(*) filter (where coalesce(top_viewer.view_count, 0) >= 3)::bigint
+        as repeat_interest_assets
+    from ranked_marketplace_history history
+    left join marketplace_view_rollup view_summary on view_summary.asset_id = history.asset_id
+    left join ranked_marketplace_viewers top_viewer
+      on top_viewer.asset_id = history.asset_id and top_viewer.viewer_rank = 1
+    where history.latest_rank = 1
   `);
 
   return mapSummary(result.rows[0]);
@@ -246,6 +331,7 @@ export async function getAdminMarketplaceReport(): Promise<AdminMarketplaceRepor
       assets: [],
     };
   }
+  await ensureMarketplaceViewTracking();
 
   const result = await getDb().query<MarketplaceReportRow>(`
     ${LATEST_MARKETPLACE_ROWS_CTE}
@@ -307,12 +393,39 @@ export async function getAdminMarketplaceReport(): Promise<AdminMarketplaceRepor
       ) as model_name,
       history.first_advertised_at,
       history.last_advertised_at,
-      history.listing_events
+      history.listing_events,
+      coalesce(view_summary.total_views, 0)::bigint as total_views,
+      coalesce(view_summary.account_views, 0)::bigint as account_views,
+      coalesce(view_summary.unknown_views, 0)::bigint as unknown_views,
+      coalesce(view_summary.unique_viewers, 0)::bigint as unique_viewers,
+      view_summary.last_viewed_at,
+      coalesce(top_viewer.view_count, 0)::bigint as repeat_viewer_views,
+      case
+        when top_viewer.viewer_user_id is not null then coalesce(
+          nullif(viewer_profile.business_name, ''),
+          nullif(viewer_profile.display_name, ''),
+          nullif(viewer_auth_user.name, ''),
+          nullif(viewer_auth_user.email, ''),
+          'Aim4price account'
+        )
+        when top_viewer.anonymous_viewer_hash is not null then
+          'Unknown viewer ' || upper(substr(top_viewer.anonymous_viewer_hash, 1, 6))
+        else ''
+      end as repeat_viewer_label,
+      coalesce(nullif(viewer_profile.account_type, ''), '') as repeat_viewer_account_type,
+      top_viewer.last_viewed_at as repeat_viewer_last_viewed_at
     from ranked_marketplace_history history
     left join public.equipment_families family on family.id = history.equipment_family_id
     left join public.sectors sector on sector.id = coalesce(history.sector_id, family.sector_id)
     left join public.account_profiles profile on profile.user_id = history.user_id
     left join public."user" auth_user on auth_user.id = history.user_id
+    left join marketplace_view_rollup view_summary on view_summary.asset_id = history.asset_id
+    left join ranked_marketplace_viewers top_viewer
+      on top_viewer.asset_id = history.asset_id and top_viewer.viewer_rank = 1
+    left join public.account_profiles viewer_profile
+      on viewer_profile.user_id = top_viewer.viewer_user_id
+    left join public."user" viewer_auth_user
+      on viewer_auth_user.id = top_viewer.viewer_user_id
     where history.latest_rank = 1
     order by history.last_advertised_at desc nulls last, history.listing_id desc
   `);
@@ -340,6 +453,16 @@ export async function getAdminMarketplaceReport(): Promise<AdminMarketplaceRepor
     firstAdvertisedAtIso: iso(row.first_advertised_at),
     lastAdvertisedAtIso: iso(row.last_advertised_at),
     listingEvents: Math.max(1, Math.round(number(row.listing_events))),
+    totalViews: Math.max(0, Math.round(number(row.total_views))),
+    accountViews: Math.max(0, Math.round(number(row.account_views))),
+    unknownViews: Math.max(0, Math.round(number(row.unknown_views))),
+    uniqueViewers: Math.max(0, Math.round(number(row.unique_viewers))),
+    lastViewedAtIso: iso(row.last_viewed_at) || null,
+    repeatViewerViews: Math.max(0, Math.round(number(row.repeat_viewer_views))),
+    repeatViewerLabel: text(row.repeat_viewer_label),
+    repeatViewerAccountType: text(row.repeat_viewer_account_type),
+    repeatViewerLastViewedAtIso: iso(row.repeat_viewer_last_viewed_at) || null,
+    hasRepeatInterest: number(row.repeat_viewer_views) >= 3,
   }));
 
   return {
@@ -369,6 +492,7 @@ export async function adminDeleteMarketplaceAsset(
   if (!(await marketplaceHistoryExists())) {
     throw new Error('ADMIN_MARKETPLACE_LISTING_NOT_FOUND');
   }
+  await ensureMarketplaceViewTracking();
 
   const client = await getDb().connect();
   try {
@@ -416,6 +540,12 @@ export async function adminDeleteMarketplaceAsset(
         [sourceAssetId, accountUserId],
       );
       removedFromLiveMarketplace = (assetUpdate.rowCount ?? 0) > 0;
+
+      await client.query(
+        `delete from public.marketplace_listing_views
+         where asset_register_item_id = $1::uuid`,
+        [sourceAssetId],
+      );
 
       const historyDelete = await client.query<{ id: string }>(
         `delete from public.marketplace_listings

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import styles from "./AdminNavigation.module.css";
 
@@ -44,7 +45,7 @@ const ADMIN_LINKS: Array<{
     href: "/admin/marketplace",
     label: "Marketplace",
     key: "marketplace",
-    description: "Review advertised value and listing history",
+    description: "Review advertised value and listing history, views and repeat interest",
   },
   {
     href: "/admin/asset-map",
@@ -89,6 +90,7 @@ export default function AdminNavigation({
 }: {
   active: AdminSection;
 }) {
+  const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const manageButtonRef = useRef<HTMLButtonElement | null>(null);
   const modalRef = useRef<HTMLElement | null>(null);
@@ -190,8 +192,8 @@ export default function AdminNavigation({
           >
             <header className={styles.modalHeader}>
               <div>
-                <p>Aim4price admin</p>
-                <h2 id="admin-manage-modal-title">Manage</h2>
+                <p>Aim4price control centre</p>
+                <h2 id="admin-manage-modal-title">Choose a workspace</h2>
                 <span>Choose an Admin workspace.</span>
               </div>
               <button
@@ -211,8 +213,11 @@ export default function AdminNavigation({
                   <Link
                     key={item.key}
                     href={item.href}
+                    prefetch={false}
                     className={`${styles.link} ${isActive ? styles.active : ""}`}
                     aria-current={isActive ? "page" : undefined}
+                    onMouseEnter={() => router.prefetch(item.href)}
+                    onFocus={() => router.prefetch(item.href)}
                     onClick={() => setIsOpen(false)}
                   >
                     <span>

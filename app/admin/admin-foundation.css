@@ -1,0 +1,54 @@
+.adminWorkspaceRoot {
+  min-height: 100vh;
+  color-scheme: light;
+  scrollbar-color: #9bbcaf #eff5f2;
+}
+
+.adminWorkspaceRoot :where(button, a, input, select, textarea) {
+  font: inherit;
+}
+
+.adminWorkspaceRoot :where(button, a, input, select, textarea):focus-visible {
+  outline: 3px solid rgba(38, 126, 94, 0.24);
+  outline-offset: 2px;
+}
+
+/* Keep the shared Admin hierarchy conversational instead of tiny all-caps labels. */
+.adminWorkspaceRoot :where(
+  [class*="titleBlock"] > p,
+  [class*="eyebrow"],
+  [class*="sectionLabel"],
+  [class*="sectionKicker"],
+  [class*="tableEyebrow"],
+  [class*="tableTitle"] > p,
+  [class*="panelTitle"] > p,
+  th,
+  dt,
+  legend,
+  label > span:first-child
+) {
+  font-size: max(0.76rem, 12px) !important;
+  font-weight: 750 !important;
+  letter-spacing: normal !important;
+  line-height: 1.35 !important;
+  text-transform: none !important;
+}
+
+.adminWorkspaceRoot :where(h1, h2, h3) {
+  text-wrap: balance;
+}
+
+.adminWorkspaceRoot :where(button, a) {
+  -webkit-tap-highlight-color: transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .adminWorkspaceRoot *,
+  .adminWorkspaceRoot *::before,
+  .adminWorkspaceRoot *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}

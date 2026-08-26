@@ -113,6 +113,9 @@ const DEFAULT_MARKETPLACE_CONTACT_NAME = 'Kuyler';
 const DEFAULT_MARKETPLACE_CONTACT_PHONE = '062 572 1650';
 const DEFAULT_MARKETPLACE_CONTACT_TEL = '0625721650';
 const DEFAULT_MARKETPLACE_CONTACT_DISPLAY = `${DEFAULT_MARKETPLACE_CONTACT_NAME} - ${DEFAULT_MARKETPLACE_CONTACT_PHONE}`;
+const ANONYMOUS_MARKETPLACE_VIEWER_KEY = 'aim4price.marketplace.viewer.v1';
+const MARKETPLACE_VIEW_UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 const SECTOR_OPTIONS: SectorOption[] = [
   { key: 'agricultural', label: 'Agriculture', shortLabel: 'Agri' },
@@ -909,6 +912,40 @@ function listingMatchesReference(listing: MarketplaceListing, value: string): bo
   const normalizedValue = String(value).trim();
 
   return normalizedValue === listing.id || normalizedValue === String(listing.sourceAssetId ?? '').trim();
+}
+
+function createMarketplaceViewEventId(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+
+  const bytes = new Uint8Array(16);
+  if (typeof crypto !== 'undefined' && typeof crypto.getRandomValues === 'function') {
+    crypto.getRandomValues(bytes);
+  } else {
+    for (let index = 0; index < bytes.length; index += 1) {
+      bytes[index] = Math.floor(Math.random() * 256);
+    }
+  }
+  bytes[6] = (bytes[6] & 0x0f) | 0x40;
+  bytes[8] = (bytes[8] & 0x3f) | 0x80;
+  const hex = Array.from(bytes, (value) => value.toString(16).padStart(2, '0')).join('');
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+}
+
+function getStoredAnonymousMarketplaceViewerId(): string {
+  const nextId = createMarketplaceViewEventId();
+  if (typeof window === 'undefined') return nextId;
+
+  try {
+    const saved = String(window.localStorage.getItem(ANONYMOUS_MARKETPLACE_VIEWER_KEY) ?? '').trim();
+    if (MARKETPLACE_VIEW_UUID_PATTERN.test(saved)) return saved;
+    window.localStorage.setItem(ANONYMOUS_MARKETPLACE_VIEWER_KEY, nextId);
+  } catch {
+    // Storage can be disabled; the component-level ref still keeps this browser visit stable.
+  }
+
+  return nextId;
 }
 
 function buildListingShareUrl(listing: MarketplaceListing): string {
@@ -2128,8 +2165,32 @@ export default function MarketplaceClient({
   const [dealerFiltersOpen, setDealerFiltersOpen] = useState(false);
   const modalDetailsRef = useRef<HTMLElement | null>(null);
   const createdAdOpenedRef = useRef('');
+  const deepLinkViewRef = useRef('');
+  const anonymousViewerIdRef = useRef('');
   const resultsAreaRef = useRef<HTMLElement | null>(null);
   const [modalScrollState, setModalScrollState] = useState({ visible: false, top: 0, height: 100 });
+
+  const trackListingOpen = useCallback((listing: MarketplaceListing) => {
+    const sourceAssetId = String(listing.sourceAssetId ?? '').trim();
+    if (showroomMode || !sourceAssetId || listing.id.startsWith('seed-')) return;
+
+    if (!anonymousViewerIdRef.current) {
+      anonymousViewerIdRef.current = getStoredAnonymousMarketplaceViewerId();
+    }
+
+    void fetch('/api/marketplace/views', {
+      method: 'POST',
+      credentials: 'include',
+      keepalive: true,
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        viewEventId: createMarketplaceViewEventId(),
+        listingReference: listing.id,
+        sourceAssetId,
+        anonymousViewerId: anonymousViewerIdRef.current,
+      }),
+    }).catch(() => undefined);
+  }, [showroomMode]);
 
   useEffect(() => {
     if (showroomMode) {
@@ -2472,6 +2533,7 @@ export default function MarketplaceClient({
 
   useEffect(() => {
     if (!listingQueryId) {
+      deepLinkViewRef.current = '';
       return;
     }
 
@@ -2485,12 +2547,16 @@ export default function MarketplaceClient({
 
     setActiveListing(nextListing);
     setActiveImageIndex(0);
+    if (deepLinkViewRef.current !== matchedListing.id) {
+      deepLinkViewRef.current = matchedListing.id;
+      trackListingOpen(matchedListing);
+    }
     if (openCreatedAdFromUrl && createdAdOpenedRef.current !== listingQueryId) {
       createdAdOpenedRef.current = listingQueryId;
       setShareListing(nextListing);
       setShareFeedback('Your advert is live on Marketplace. Download the JPEG or share the listing below.');
     }
-  }, [canExposeSellerContact, items, listingQueryId, openCreatedAdFromUrl]);
+  }, [canExposeSellerContact, items, listingQueryId, openCreatedAdFromUrl, trackListingOpen]);
 
   useEffect(() => {
     if (!activeListing) {
@@ -2671,6 +2737,8 @@ export default function MarketplaceClient({
   }
 
   function openListing(listing: MarketplaceListing) {
+    deepLinkViewRef.current = listing.id;
+    trackListingOpen(listing);
     setActiveListing(getListingForCurrentViewer(listing, canExposeSellerContact));
     setActiveImageIndex(0);
     setPhotoViewerOpen(false);
