@@ -2,11 +2,14 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import {
+  ADMIN_VALUATION_DELETE_LIMIT,
+  ADMIN_VALUATION_HISTORY_START_ISO,
   buildAdminValuationInputSections,
   buildAdminValuationOutputSections,
   formatAdminValuationDetailValue,
   formatAdminValuationDateTime,
   formatAdminValuationMoney,
+  normalizeAdminValuationDeleteIds,
 } from '../lib/admin-valuations-shared.ts';
 
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
@@ -24,6 +27,7 @@ const valuationFlow = read('app/valuation/valuation-client.tsx');
 const navigation = read('components/AdminNavigation.tsx');
 const dashboard = read('lib/admin-dashboard.ts');
 const dashboardPage = read('app/admin/dashboard/page.tsx');
+const resetMigration = read('database/migrations/92-reset-admin-valuation-history.sql');
 
 test('Admin Valuations page and API independently require Admin access', () => {
   assert.match(page, /await requireAdminPageAccess\(\)/);
@@ -97,7 +101,51 @@ test('the detail modal exposes who, when and every estimate-flow section', () =>
   assert.match(client, /buildAdminValuationOutputSections/);
   assert.match(client, /recorded fields/);
   assert.match(client, /keepFocusInsideDetails/);
-  assert.match(client, /Older free-estimate events show only the fields that were recorded/);
+  assert.match(client, /Fresh valuation history from 26 August 2026/);
+});
+
+test('the valuation ledger restarts at a fixed cutoff without hiding future records', () => {
+  assert.equal(ADMIN_VALUATION_HISTORY_START_ISO, '2026-08-26T00:00:00.000Z');
+  assert.match(data, /event\.created_at >= \$\{ADMIN_VALUATION_HISTORY_START_SQL\}/);
+  assert.match(data, /valuation\.created_at >= \$\{ADMIN_VALUATION_HISTORY_START_SQL\}/);
+  assert.match(resetMigration, /reset_cutoff constant timestamptz := timestamptz '2026-08-26 02:00:00\+02'/);
+  assert.match(resetMigration, /delete from public\.admin_usage_events[\s\S]*event_type = 'free_estimate_completed'[\s\S]*created_at < reset_cutoff/);
+  assert.match(resetMigration, /delete from public\.valuation_runs[\s\S]*created_at < reset_cutoff/);
+  assert.match(resetMigration, /set valuation_run_id = null/);
+  assert.match(resetMigration, /'admin_valuation_history_reset'/);
+});
+
+test('single and bulk valuation deletion use validated prefixed record IDs', () => {
+  assert.deepEqual(
+    normalizeAdminValuationDeleteIds(['estimate:12', 'saved:7', 'estimate:12']),
+    ['estimate:12', 'saved:7'],
+  );
+  assert.throws(
+    () => normalizeAdminValuationDeleteIds([]),
+    /ADMIN_VALUATION_DELETE_IDS_REQUIRED/,
+  );
+  assert.throws(
+    () => normalizeAdminValuationDeleteIds(['free_estimate_completed:1']),
+    /ADMIN_VALUATION_DELETE_ID_INVALID/,
+  );
+  assert.throws(
+    () => normalizeAdminValuationDeleteIds(
+      Array.from({ length: ADMIN_VALUATION_DELETE_LIMIT + 1 }, (_, index) => `estimate:${index + 1}`),
+    ),
+    /ADMIN_VALUATION_DELETE_LIMIT_EXCEEDED/,
+  );
+
+  assert.match(api, /export async function DELETE\(request: NextRequest\)/);
+  assert.match(api, /valuationIds: body\.valuationIds/);
+  assert.match(data, /delete from public\.admin_usage_events[\s\S]*event_type = 'free_estimate_completed'/);
+  assert.match(data, /delete from public\.valuation_runs/);
+  assert.match(data, /clearValuationRunReferences/);
+  assert.match(data, /'admin_valuation_records_deleted'/);
+  assert.match(client, /Bulk delete/);
+  assert.match(client, />\s*Delete\s*</);
+  assert.match(client, /Type DELETE to confirm/);
+  assert.match(client, /Delete permanently/);
+  assert.match(client, /Select all valuations on this page/);
 });
 
 test('flow detail helpers show entered fields in order and format usage correctly', () => {

@@ -109,6 +109,43 @@ export type AdminValuationReport = {
 
 export const ADMIN_VALUATION_PAGE_SIZES = [25, 50, 100] as const;
 
+// The Admin valuation ledger was deliberately restarted at 02:00 SAST on
+// 26 August 2026. Earlier rows are permanently removed by migration 92 and
+// excluded here as a deployment-safe guard until that migration is applied.
+export const ADMIN_VALUATION_HISTORY_START_ISO = '2026-08-26T00:00:00.000Z';
+export const ADMIN_VALUATION_DELETE_LIMIT = 500;
+
+export type AdminValuationDeletionResult = {
+  requestedCount: number;
+  deletedCount: number;
+  deletedEstimateEvents: number;
+  deletedSavedValuations: number;
+  notFoundCount: number;
+};
+
+export function normalizeAdminValuationDeleteIds(input: unknown): string[] {
+  if (!Array.isArray(input) || input.length === 0) {
+    throw new Error('ADMIN_VALUATION_DELETE_IDS_REQUIRED');
+  }
+  if (input.length > ADMIN_VALUATION_DELETE_LIMIT) {
+    throw new Error('ADMIN_VALUATION_DELETE_LIMIT_EXCEEDED');
+  }
+
+  const ids: string[] = [];
+  const seen = new Set<string>();
+  for (const rawId of input) {
+    const id = String(rawId ?? '').trim();
+    if (!/^(estimate|saved):[1-9][0-9]*$/.test(id)) {
+      throw new Error('ADMIN_VALUATION_DELETE_ID_INVALID');
+    }
+    if (!seen.has(id)) {
+      seen.add(id);
+      ids.push(id);
+    }
+  }
+  return ids;
+}
+
 export type AdminValuationDetailRow = {
   label: string;
   value: string;
