@@ -4202,6 +4202,29 @@
   box-shadow: 0 7px 16px rgba(18, 89, 64, 0.2);
 }
 
+.fuelSlipFlowBackdrop .exclusionPickerToolbar {
+  grid-template-columns: minmax(0, 1fr) auto auto;
+}
+
+.exclusionSelectAllButton {
+  color: #0a543d;
+  border-color: #6fc596;
+  background: linear-gradient(180deg, #f7fdf9 0%, #e6f8ef 100%);
+  box-shadow:
+    0 10px 22px rgba(18, 89, 64, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+}
+
+.exclusionSelectAllButton:hover:not(:disabled),
+.exclusionSelectAllButton[aria-pressed='true'] {
+  color: #073f30;
+  border-color: #43ad73;
+  background: linear-gradient(180deg, #f1fbf5 0%, #d9f1e5 100%);
+  box-shadow:
+    0 12px 24px rgba(18, 89, 64, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+}
+
 .exclusionNotice {
   margin: 0 clamp(1.25rem, 2.4vw, 2rem) 1rem;
   padding: 0.85rem 1rem;
@@ -4402,6 +4425,10 @@
 
   .exclusionEditor {
     margin-inline: 1rem;
+  }
+
+  .fuelSlipFlowBackdrop .exclusionPickerToolbar {
+    grid-template-columns: 1fr;
   }
 
   .fuelHistoryRow > div {
