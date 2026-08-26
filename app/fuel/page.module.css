@@ -137,8 +137,8 @@
 .topActions {
   width: 100%;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: stretch;
   justify-content: stretch;
   gap: clamp(0.7rem, 1vw, 0.95rem);
   margin: 0;
@@ -4127,9 +4127,35 @@
 }
 
 /* Fuel Ledger work-use exclusions and preserved history */
+.topActions {
+  gap: clamp(1.05rem, 1.45vw, 1.35rem);
+}
+
 .topActionButtons {
-  width: min(100%, 56rem);
+  width: 100%;
   grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: clamp(0.78rem, 1.35vw, 1.25rem);
+}
+
+.topActions .topActionButton {
+  position: relative;
+  min-width: 0;
+  min-height: clamp(3.62rem, 4.45vw, 4.08rem);
+  padding: 0 clamp(1rem, 1.8vw, 1.45rem);
+  border-radius: clamp(1rem, 1.45vw, 1.22rem);
+  font-size: clamp(0.98rem, 1.15vw, 1.08rem);
+  font-weight: 860;
+  letter-spacing: -0.015em;
+}
+
+.topActions .searchWrap {
+  min-height: 3.75rem;
+  border-radius: 1.18rem;
+}
+
+.topActions .searchInput {
+  min-height: 3.45rem;
+  font-weight: 650;
 }
 
 .topExclusionsButton {

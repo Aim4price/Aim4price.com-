@@ -1521,6 +1521,17 @@ async function getFuelAssetWorkUseExclusion(
   };
 }
 
+function assertFuelAssetAvailableForEntry(
+  asset: FuelLedgerAsset,
+  workUse: { excluded: boolean; reason: string },
+): void {
+  if (!asset.isActive) throw new Error('This asset is no longer active. Choose another included asset.');
+  if (!asset.canReceiveFuel) throw new Error('This asset is not eligible to receive fuel.');
+  if (workUse.excluded) {
+    throw new Error(`${asset.title} is excluded from fuel entry. Include it again under Fuel Ledger exclusions before recording fuel.`);
+  }
+}
+
 export async function setFuelAssetWorkUseExclusion(
   userId: string,
   assetId: string,
@@ -3823,6 +3834,7 @@ export async function recordFuelAssetIssue(
     }
     const asset = mapFuelAssetRow(assetRow);
     const assetWorkUse = await getFuelAssetWorkUseExclusion(client, input.userId, input.assetId);
+    assertFuelAssetAvailableForEntry(asset, assetWorkUse);
 
     const requestedUsageMetric = asText(input.assetUsageMetric)
       ? normalizeFuelUsageMetric(input.assetUsageMetric)
@@ -4335,7 +4347,7 @@ export async function recordMissingFuelAssetIssue(
     const asset = assetResult.rows[0] ? mapFuelAssetRow(assetResult.rows[0]) : null;
     if (!asset) throw new Error('Asset not found or is no longer active.');
     const assetWorkUse = await getFuelAssetWorkUseExclusion(client, userId, assetId);
-    if (!asset.canReceiveFuel) throw new Error('This asset is not eligible to receive fuel.');
+    assertFuelAssetAvailableForEntry(asset, assetWorkUse);
     if (!usageMetricAllowedForAsset(asset.usageMetric, usageMetric)) {
       throw new Error(`The selected usage metric does not match this asset's saved usage metric (${asset.usageMetric}).`);
     }
@@ -5205,6 +5217,7 @@ export async function saveFuelSlipTransaction(userId: string, input: SaveFuelSli
             coalesce(to_jsonb(a)->>'serial_number', to_jsonb(a)->>'serialNumber', '') as serial_number,
             to_jsonb(a)->>'plate_label' as plate_label,
             to_jsonb(a)->>'public_asset_code' as public_asset_code,
+            coalesce(nullif(lower(to_jsonb(a)->>'qr_status'), ''), 'active') as qr_status,
             a.hours,
             coalesce(to_jsonb(a)->>'life_worked_percent', to_jsonb(a)->'specs_json'->>'life_worked_percent', to_jsonb(a)->'specs_json'->>'lifeWorkedPercent') as life_worked_percent,
             to_jsonb(a)->>'fuel_percent' as fuel_percent,
@@ -5241,6 +5254,9 @@ export async function saveFuelSlipTransaction(userId: string, input: SaveFuelSli
       const assetWorkUse = await getFuelAssetWorkUseExclusion(client, userId, assetId);
       workUseExcluded = assetWorkUse.excluded;
       workUseExclusionReason = assetWorkUse.reason;
+      const preservesExistingAsset = Boolean(existingSlip?.asset_register_item_id)
+        && asText(existingSlip?.asset_register_item_id) === assetId;
+      if (!preservesExistingAsset) assertFuelAssetAvailableForEntry(asset, assetWorkUse);
       assetFuelPercentBefore = asset.fuelPercent ?? inputAssetFuelPercentBefore;
 
       if (asset.usageMetric === 'km') {
