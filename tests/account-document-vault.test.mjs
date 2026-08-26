@@ -320,7 +320,10 @@ test('Document Vault refinements use guided modal flows instead of pills and bro
 
   assert.match(client, /className=\{styles\.assetLinkSummary\}/);
   assert.match(client, /className=\{styles\.assetSelectionModal\}/);
-  assert.match(client, /placeholder="Search assets"/);
+  assert.match(client, /className=\{styles\.assetSelectionHeader\}/);
+  assert.match(client, /<input\s+className=\{styles\.assetSelectionSearch\}\s+type="search"/);
+  assert.match(client, /placeholder="Search\.\.\."/);
+  assert.match(client, /id="asset-picker-description" className=\{styles\.srOnly\}/);
   assert.match(client, />\s*Select all\s*</);
   assert.match(client, />\s*Clear\s*</);
   assert.match(client, /assetSelectionSnapshotRef\.current = \[\.\.\.draft\.assetIds\]/);
@@ -328,7 +331,10 @@ test('Document Vault refinements use guided modal flows instead of pills and bro
   assert.match(client, /closeAssetPickerModal\(true\)/);
   assert.doesNotMatch(client, /className=\{`\$\{styles\.assetPicker\}/);
   assert.match(styles, /\.assetSelectionModal\s*\{[\s\S]*?grid-template-rows:\s*auto minmax\(0, 1fr\) auto/);
+  assert.match(styles, /\.assetSelectionModal\s*\{[\s\S]*?width:\s*min\(100%, 1320px\)[\s\S]*?padding:\s*clamp\(1\.65rem, 2\.5vw, 2\.25rem\)/);
+  assert.match(styles, /\.assetSelectionHeader\s*\{[\s\S]*?border-bottom:/);
   assert.match(styles, /\.assetSelectionRow\s*\{[\s\S]*?grid-template-columns:\s*auto minmax\(0, 1fr\)/);
+  assert.match(styles, /\.assetSelectionFooter\s*\{[\s\S]*?justify-content:\s*flex-end/);
   assert.match(styles, /\.documentCard\s*\{[\s\S]*?align-items:\s*stretch/);
   assert.match(styles, /\.fileMark\s*\{[\s\S]*?align-self:\s*stretch/);
 });

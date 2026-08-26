@@ -1595,28 +1595,25 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
             role="dialog"
             aria-modal="true"
             aria-labelledby="asset-picker-title"
+            aria-describedby="asset-picker-description"
           >
-            <header className={`${styles.modalHeader} ${styles.compactModalHeader} ${styles.assetSelectionHeader}`}>
-              <div>
-                <h2 id="asset-picker-title">Choose assets</h2>
-                <p>Select the assets these documents belong to, or leave the selection empty to keep them at account level.</p>
-              </div>
+            <header className={styles.assetSelectionHeader}>
+              <h2 id="asset-picker-title">Choose assets</h2>
+              <p id="asset-picker-description" className={styles.srOnly}>Select the assets these documents belong to, or leave the selection empty to keep them at account level.</p>
               <button type="button" onClick={() => closeAssetPickerModal(false)} aria-label="Close asset chooser"><Icon name="close" /></button>
             </header>
 
             <div className={styles.assetSelectionBody} data-asset-choice-surface="true">
               <div className={styles.assetSelectionToolbar} data-asset-choice-toolbar="true">
-                <label className={styles.assetSelectionSearch}>
-                  <Icon name="search" />
-                  <input
-                    type="search"
-                    value={assetSearch}
-                    onChange={(event) => setAssetSearch(event.target.value)}
-                    placeholder="Search assets"
-                    aria-label="Search assets"
-                    data-modal-initial-focus="true"
-                  />
-                </label>
+                <input
+                  className={styles.assetSelectionSearch}
+                  type="search"
+                  value={assetSearch}
+                  onChange={(event) => setAssetSearch(event.target.value)}
+                  placeholder="Search..."
+                  aria-label="Search assets"
+                  data-modal-initial-focus="true"
+                />
                 <div className={styles.assetSelectionToolbarActions}>
                   <button type="button" className={styles.cancelButton} onClick={selectAllFilteredAssets} disabled={!filteredAssets.length || allFilteredAssetsSelected}>
                     Select all
@@ -1653,14 +1650,18 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
               )}
             </div>
 
-            <footer className={`${styles.modalFooter} ${styles.assetSelectionFooter}`}>
-              <span role="status" aria-live="polite">
+            <footer className={styles.assetSelectionFooter}>
+              <span className={styles.srOnly} role="status" aria-live="polite">
                 {draft.assetIds.length
                   ? `${draft.assetIds.length} ${draft.assetIds.length === 1 ? 'asset selected' : 'assets selected'}`
                   : 'Account-level document'}
               </span>
               <button type="button" className={styles.cancelButton} onClick={() => closeAssetPickerModal(false)}>Cancel</button>
-              <button type="button" className={styles.uploadButton} onClick={() => closeAssetPickerModal(true)}>Done</button>
+              <button type="button" className={styles.uploadButton} onClick={() => closeAssetPickerModal(true)}>
+                {draft.assetIds.length
+                  ? `Done · ${draft.assetIds.length} selected`
+                  : 'Done · Account level'}
+              </button>
             </footer>
           </section>
         </div>
