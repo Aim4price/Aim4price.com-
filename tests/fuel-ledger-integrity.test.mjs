@@ -22,16 +22,21 @@ test('asset exclusion is additive and propagated to existing and future ledger r
   assert.match(ledger, /update public\.fuel_slips\s+set work_use_excluded/);
   assert.match(ledger, /getFuelAssetWorkUseExclusion\(client, input\.userId, input\.assetId\)/);
   assert.match(ledger, /workUseExcluded: assetWorkUse\.excluded/);
+  assert.match(ledger, /left join public\.fuel_asset_exclusions fae/);
+  assert.match(ledger, /coalesce\(fae\.is_excluded, false\) as work_use_excluded/);
   assert.match(exclusionRoute, /assertWorkspaceAssetAccess\(workspace, assetId\)/);
 });
 
 test('fuel exclusions stay manageable on desktop but are hidden from operational app pickers', () => {
   assert.match(fuelClient, /Choose Saved Assets/);
   assert.match(fuelClient, /const includedFuelAssets = useMemo/);
-  assert.match(fuelClient, /\(\) => assets\.filter\(\(asset\) => !asset\.workUseExcluded\)/);
+  assert.match(fuelClient, /function isIncludedFuelEntryAsset/);
+  assert.match(fuelClient, /asset\.canReceiveFuel && asset\.isActive !== false && !asset\.workUseExcluded/);
+  assert.match(fuelClient, /\(\) => assets\.filter\(isIncludedFuelEntryAsset\)/);
   assert.match(fuelClient, /\(\) => includedFuelAssets\.filter\(\(asset\) => matchesFuelSlipAsset/);
   assert.match(fuelClient, /assets=\{includedFuelAssets\}/);
   assert.match(fuelClient, /if \(requestedAsset\.workUseExcluded\)/);
+  assert.match(fuelClient, /loadLedger\(\{ discardAssetsOnError: true \}\)/);
   assert.doesNotMatch(fuelClient, /styles\.workUseBadgeExcluded/);
   assert.match(missingFuelEntryModal, /asset\.canReceiveFuel && asset\.isActive !== false && !asset\.workUseExcluded/);
   assert.match(petrolStationClient, /asset\.canReceiveFuel && !asset\.workUseExcluded/);
@@ -40,6 +45,33 @@ test('fuel exclusions stay manageable on desktop but are hidden from operational
   assert.doesNotMatch(fuelScanClient, /styles\.workUseNotice/);
   assert.doesNotMatch(fuelScanClient, /selectedAsset\?\.workUseExcluded/);
   assert.match(fuelScanClient, /if \(!query\) return appVisibleAssets/);
+});
+
+test('new fuel entries are rejected server-side when an asset is inactive, ineligible, or excluded', () => {
+  assert.match(ledger, /function assertFuelAssetAvailableForEntry/);
+  assert.match(ledger, /if \(!asset\.isActive\)/);
+  assert.match(ledger, /if \(!asset\.canReceiveFuel\)/);
+  assert.match(ledger, /if \(workUse\.excluded\)/);
+  assert.equal((ledger.match(/assertFuelAssetAvailableForEntry\(/g) ?? []).length, 4);
+  assert.match(ledger, /const preservesExistingAsset = Boolean\(existingSlip\?\.asset_register_item_id\)/);
+  assert.match(ledger, /if \(!preservesExistingAsset\) assertFuelAssetAvailableForEntry\(asset, assetWorkUse\)/);
+  assert.match(fuelClient, /if \(!fuelSlipDraft\.id && targetType === 'asset'\)/);
+});
+
+test('Fuel Ledger actions match Cost Ledger sizing and keep search below the buttons', () => {
+  const actionsStart = fuelClient.indexOf('<div className={styles.topActions}>');
+  const actionsEnd = fuelClient.indexOf('</div>\n            </div>', actionsStart);
+  const actionsMarkup = fuelClient.slice(actionsStart, actionsEnd);
+  assert.ok(actionsMarkup.indexOf('styles.topActionButtons') < actionsMarkup.indexOf('styles.searchWrap'));
+
+  const parityStyles = fuelStyles.slice(
+    fuelStyles.indexOf('/* Fuel Ledger work-use exclusions and preserved history */'),
+    fuelStyles.indexOf('.topExclusionsButton'),
+  );
+  assert.match(parityStyles, /width: 100%/);
+  assert.match(parityStyles, /grid-template-columns: repeat\(4, minmax\(0, 1fr\)\)/);
+  assert.match(parityStyles, /min-height: clamp\(3\.62rem, 4\.45vw, 4\.08rem\)/);
+  assert.match(parityStyles, /min-height: 3\.75rem/);
 });
 
 test('fuel exclusions support multi-select review without an included status pill', () => {
