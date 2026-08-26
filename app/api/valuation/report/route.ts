@@ -175,7 +175,10 @@ function normalizeReportRows(value: unknown): ValuationReportKeyValue[] {
   return value
     .filter(isPlainRecord)
     .map((row) => {
-      const label = normalizeSpaces(row.label).replace(/Marketplace\s+Value/gi, 'Aim4price Value');
+      const label = normalizeSpaces(row.label)
+        .replace(/Marketplace\s+Value/gi, 'Aim4price Value')
+        .replace(/^Year(?:\s+Model)?$/i, 'Model year')
+        .replace(/^Replacement\s+Price$/i, 'Replacement price (excl. VAT)');
       const value = normalizeSpaces(row.value).replace(/Marketplace\s+Value/gi, 'Aim4price Value');
 
       return {
@@ -275,11 +278,11 @@ function normalizePayload(value: unknown, logoUrl: string): NormalizedValuationR
   pushRow(fallbackAssetRows, 'Category', familyLabel);
   pushRow(fallbackAssetRows, 'Brand', brandName);
   pushRow(fallbackAssetRows, 'Model', modelFromTitle(machineTitle, brandName));
-  pushRow(fallbackAssetRows, 'Year', yearSummary);
+  pushRow(fallbackAssetRows, 'Model year', yearSummary);
   pushRow(fallbackAssetRows, 'Usage', usageSummary);
   pushRow(fallbackAssetRows, 'Condition', conditionSummary);
   if (replacementPriceExVat !== null) {
-    pushRow(fallbackAssetRows, 'Replacement Price', `${formatReportMoney(replacementPriceExVat)} excl. VAT`);
+    pushRow(fallbackAssetRows, 'Replacement price (excl. VAT)', formatReportMoney(replacementPriceExVat));
   }
   pushRow(fallbackAssetRows, 'Estimate Path', valuationPath);
 
@@ -308,7 +311,7 @@ function normalizePayload(value: unknown, logoUrl: string): NormalizedValuationR
     logoUrl,
     assetBadge: familyLabel.toUpperCase(),
     heroTitle: machineTitle,
-    heroMeta: `Year Model: ${yearSummary} • Usage: ${usageSummary} • Condition: ${conditionSummary}`,
+    heroMeta: `Model year: ${yearSummary} • Usage: ${usageSummary} • Condition: ${conditionSummary}`,
     selectedMethodLabel,
     selectedValue: formatReportMoney(selectedValueExVat),
     assetDetailRows: assetDetailRows.length ? assetDetailRows : fallbackAssetRows,

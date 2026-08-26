@@ -19,12 +19,16 @@ export type XlsxCellStyle =
   | 'statusWarn'
   | 'statusBad'
   | 'statusInfo'
-  | 'note';
+  | 'note'
+  | 'year'
+  | 'link'
+  | 'dateTime';
 
 export type XlsxStyledCell = {
   value?: XlsxPrimitiveCellValue;
   formula?: string;
   style?: XlsxCellStyle;
+  hyperlink?: string;
 };
 
 export type XlsxCellValue = XlsxPrimitiveCellValue | XlsxStyledCell;
@@ -51,6 +55,7 @@ export type XlsxSheet = {
   freezeRow?: number;
   autoFilter?: XlsxAutoFilterRange;
   tabColor?: string;
+  orientation?: 'portrait' | 'landscape';
 };
 
 type ZipEntry = {
@@ -80,6 +85,9 @@ const CELL_STYLE_IDS: Record<XlsxCellStyle, number> = {
   statusBad: 16,
   note: 17,
   statusInfo: 18,
+  year: 19,
+  link: 20,
+  dateTime: 21,
 };
 
 function escapeXml(value: unknown): string {
@@ -144,7 +152,7 @@ function isStyledCell(value: XlsxCellValue): value is XlsxStyledCell {
     value !== null &&
     !(value instanceof Date) &&
     !Array.isArray(value) &&
-    ('value' in value || 'formula' in value || 'style' in value)
+    ('value' in value || 'formula' in value || 'style' in value || 'hyperlink' in value)
   );
 }
 
@@ -158,8 +166,7 @@ function styleAttribute(style?: XlsxCellStyle): string {
 }
 
 function excelSerialDate(value: Date): number {
-  const utc = Date.UTC(value.getUTCFullYear(), value.getUTCMonth(), value.getUTCDate());
-  return Math.floor((utc - Date.UTC(1899, 11, 30)) / 86_400_000);
+  return (value.getTime() - Date.UTC(1899, 11, 30)) / 86_400_000;
 }
 
 function valueToCellValueXml(value: XlsxPrimitiveCellValue): string {
@@ -204,14 +211,14 @@ function toCellXml(input: XlsxCellValue, reference: string): string {
   const formula = String(cell.formula ?? '').trim();
   const hasFormula = Boolean(formula);
   const hasValue = !(value === null || typeof value === 'undefined');
-  const hasStyle = Boolean(cell.style && cell.style !== 'default');
+  const hasStyle = Boolean((cell.style && cell.style !== 'default') || normalizeHyperlink(cell.hyperlink));
 
   if (!hasFormula && !hasValue && !hasStyle) {
     return '';
   }
 
   const typeAttribute = cellTypeAttribute(value, hasFormula);
-  const style = styleAttribute(cell.style);
+  const style = styleAttribute(cell.style ?? (normalizeHyperlink(cell.hyperlink) ? 'link' : undefined));
 
   if (hasFormula) {
     const cachedValueXml = hasValue ? valueToCellValueXml(value) : '';
@@ -232,7 +239,7 @@ function estimateColumnWidth(value: XlsxCellValue): number {
   if (rawValue === null || typeof rawValue === 'undefined') return 0;
   if (typeof rawValue === 'number') return String(Math.round(rawValue)).length + 3;
   if (typeof rawValue === 'boolean') return 8;
-  if (rawValue instanceof Date) return 14;
+  if (rawValue instanceof Date) return cell.style === 'dateTime' ? 22 : 14;
 
   const longestLine = String(rawValue)
     .split(/\r\n|\r|\n/)
@@ -317,7 +324,59 @@ function buildAutoFilterXml(autoFilter: XlsxSheet['autoFilter']): string {
   return `<autoFilter ref="${rangeReference(autoFilter)}"/>`;
 }
 
-function buildWorksheetXml(sheet: XlsxSheet): string {
+type XlsxHyperlink = {
+  reference: string;
+  target: string;
+};
+
+function normalizeHyperlink(value: unknown): string {
+  const candidate = String(value ?? '').trim();
+  if (!candidate) return '';
+
+  try {
+    const url = new URL(candidate);
+    return ['https:', 'http:', 'mailto:'].includes(url.protocol) ? url.toString() : '';
+  } catch {
+    return '';
+  }
+}
+
+function collectHyperlinks(rows: XlsxCellValue[][]): XlsxHyperlink[] {
+  const hyperlinks: XlsxHyperlink[] = [];
+
+  rows.forEach((row, rowIndex) => {
+    row.forEach((input, columnIndex) => {
+      const target = normalizeHyperlink(normalizeCell(input).hyperlink);
+      if (!target) return;
+
+      hyperlinks.push({
+        reference: cellReference(rowIndex + 1, columnIndex + 1),
+        target,
+      });
+    });
+  });
+
+  return hyperlinks;
+}
+
+function buildHyperlinksXml(hyperlinks: XlsxHyperlink[]): string {
+  if (!hyperlinks.length) return '';
+
+  return `<hyperlinks>${hyperlinks
+    .map((hyperlink, index) => `<hyperlink ref="${hyperlink.reference}" r:id="rId${index + 1}"/>`)
+    .join('')}</hyperlinks>`;
+}
+
+function buildWorksheetRelationshipsXml(hyperlinks: XlsxHyperlink[]): string {
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  ${hyperlinks
+    .map((hyperlink, index) => `<Relationship Id="rId${index + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink" Target="${escapeXml(hyperlink.target)}" TargetMode="External"/>`)
+    .join('')}
+</Relationships>`;
+}
+
+function buildWorksheetXml(sheet: XlsxSheet, hyperlinks: XlsxHyperlink[]): string {
   const rows = sheet.rows ?? [];
   const maxColumnCount = Math.max(1, ...rows.map((row) => row.length), sheet.columns?.length ?? 0);
   const maxRowCount = Math.max(1, rows.length);
@@ -326,6 +385,8 @@ function buildWorksheetXml(sheet: XlsxSheet): string {
   const sheetViewsXml = buildSheetViewsXml(sheet);
   const mergesXml = buildMergeCellsXml(sheet.merges);
   const autoFilterXml = buildAutoFilterXml(sheet.autoFilter);
+  const hyperlinksXml = buildHyperlinksXml(hyperlinks);
+  const orientation = sheet.orientation === 'portrait' ? 'portrait' : 'landscape';
 
   const rowsXml = rows
     .map((row, rowIndex) => {
@@ -341,7 +402,8 @@ function buildWorksheetXml(sheet: XlsxSheet): string {
     .join('');
 
   return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+  <sheetPr><pageSetUpPr fitToPage="1" autoPageBreaks="0"/></sheetPr>
   <dimension ref="${dimension}"/>
   ${sheetViewsXml}
   <sheetFormatPr defaultRowHeight="17"/>
@@ -349,8 +411,9 @@ function buildWorksheetXml(sheet: XlsxSheet): string {
   <sheetData>${rowsXml}</sheetData>
   ${autoFilterXml}
   ${mergesXml}
+  ${hyperlinksXml}
   <pageMargins left="0.35" right="0.35" top="0.5" bottom="0.5" header="0.3" footer="0.3"/>
-  <pageSetup orientation="landscape" paperSize="9" fitToWidth="1" fitToHeight="0"/>
+  <pageSetup orientation="${orientation}" paperSize="9" fitToWidth="1" fitToHeight="0"/>
 </worksheet>`;
 }
 
@@ -415,13 +478,14 @@ function buildStylesXml(): string {
 
   return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
-  <numFmts count="4">
+  <numFmts count="5">
     <numFmt numFmtId="164" formatCode="${escapeXml(accountingRandFormat)}"/>
-    <numFmt numFmtId="165" formatCode="#,##0.00"/>
+    <numFmt numFmtId="165" formatCode="#,##0.##"/>
     <numFmt numFmtId="166" formatCode="dd mmm yyyy"/>
     <numFmt numFmtId="167" formatCode="0%"/>
+    <numFmt numFmtId="168" formatCode="dd mmm yyyy hh:mm"/>
   </numFmts>
-  <fonts count="9">
+  <fonts count="10">
     <font><sz val="11"/><color rgb="FF111827"/><name val="Calibri"/><family val="2"/></font>
     <font><b/><sz val="11"/><color rgb="FF111827"/><name val="Calibri"/><family val="2"/></font>
     <font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Calibri"/><family val="2"/></font>
@@ -431,6 +495,7 @@ function buildStylesXml(): string {
     <font><b/><sz val="11"/><color rgb="FF8A6500"/><name val="Calibri"/><family val="2"/></font>
     <font><b/><sz val="11"/><color rgb="FFA3271B"/><name val="Calibri"/><family val="2"/></font>
     <font><b/><sz val="11"/><color rgb="FF0369A1"/><name val="Calibri"/><family val="2"/></font>
+    <font><u/><sz val="11"/><color rgb="FF0563C1"/><name val="Calibri"/><family val="2"/></font>
   </fonts>
   <fills count="9">
     <fill><patternFill patternType="none"/></fill>
@@ -456,7 +521,7 @@ function buildStylesXml(): string {
   <cellStyleXfs count="1">
     <xf numFmtId="0" fontId="0" fillId="0" borderId="0"/>
   </cellStyleXfs>
-  <cellXfs count="19">
+  <cellXfs count="22">
     <xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>
     <xf numFmtId="0" fontId="3" fillId="0" borderId="0" xfId="0" applyFont="1"><alignment vertical="center"/></xf>
     <xf numFmtId="0" fontId="4" fillId="0" borderId="0" xfId="0" applyFont="1"><alignment wrapText="1" vertical="center"/></xf>
@@ -476,6 +541,9 @@ function buildStylesXml(): string {
     <xf numFmtId="0" fontId="7" fillId="6" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1"><alignment horizontal="center" vertical="center"/></xf>
     <xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1"><alignment wrapText="1" vertical="top"/></xf>
     <xf numFmtId="0" fontId="8" fillId="8" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1"><alignment horizontal="center" vertical="center"/></xf>
+    <xf numFmtId="1" fontId="0" fillId="0" borderId="1" xfId="0" applyNumberFormat="1" applyBorder="1"><alignment horizontal="right" vertical="center"/></xf>
+    <xf numFmtId="0" fontId="9" fillId="0" borderId="1" xfId="0" applyFont="1" applyBorder="1"><alignment wrapText="1" vertical="top"/></xf>
+    <xf numFmtId="168" fontId="0" fillId="0" borderId="1" xfId="0" applyNumberFormat="1" applyBorder="1"><alignment horizontal="left" vertical="center"/></xf>
   </cellXfs>
   <cellStyles count="1">
     <cellStyle name="Normal" xfId="0" builtinId="0"/>
@@ -635,10 +703,18 @@ export function createXlsxWorkbook(sheets: XlsxSheet[]): Buffer {
   ];
 
   safeSheets.forEach((sheet, index) => {
+    const hyperlinks = collectHyperlinks(sheet.rows ?? []);
     entries.push({
       name: `xl/worksheets/sheet${index + 1}.xml`,
-      data: buildWorksheetXml(sheet),
+      data: buildWorksheetXml(sheet, hyperlinks),
     });
+
+    if (hyperlinks.length) {
+      entries.push({
+        name: `xl/worksheets/_rels/sheet${index + 1}.xml.rels`,
+        data: buildWorksheetRelationshipsXml(hyperlinks),
+      });
+    }
   });
 
   return createZip(entries);

@@ -32,6 +32,7 @@ type KeyValueRow = {
   label: string;
   value: string;
   valueHtml?: string;
+  hyperlink?: string;
 };
 
 type OwnerReportDetails = {
@@ -91,6 +92,8 @@ type FuelFillInterval = {
 };
 
 const MIN_FUEL_AVERAGE_INTERVALS = 5;
+const REPORT_TIME_ZONE = 'Africa/Johannesburg';
+const NOT_RECORDED = 'Not recorded';
 
 const REPORT_LABELS: Record<PdfReportKind, string> = {
   fuel: 'Fuel Report',
@@ -131,6 +134,11 @@ function escapeRegExp(value: string): string {
 function displayValue(value: unknown, fallback = '-'): string {
   const text = normalizeSpaces(value);
   return text || fallback;
+}
+
+function recordedText(value: unknown): string {
+  const text = normalizeSpaces(value);
+  return !text || text === '-' ? NOT_RECORDED : text;
 }
 
 function isPlainRecord(value: unknown): value is Record<string, unknown> {
@@ -365,6 +373,7 @@ function formatDate(value?: string | null): string {
     day: 'numeric',
     month: 'short',
     year: 'numeric',
+    timeZone: REPORT_TIME_ZONE,
   }).format(parsed);
 }
 
@@ -380,14 +389,16 @@ function formatDateTime(value?: string | null): string {
     year: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
+    hour12: false,
+    timeZone: REPORT_TIME_ZONE,
   }).format(parsed);
 }
 
-function formatExcelDateTime(value?: string | null): string {
-  if (!value) return '';
+function formatExcelDateTime(value?: string | null): Date | null {
+  if (!value) return null;
 
   const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) return '';
+  if (Number.isNaN(parsed.getTime())) return null;
 
   const parts = new Intl.DateTimeFormat('en-ZA', {
     year: 'numeric',
@@ -395,12 +406,24 @@ function formatExcelDateTime(value?: string | null): string {
     day: '2-digit',
     hour: '2-digit',
     minute: '2-digit',
+    second: '2-digit',
     hour12: false,
-    timeZone: 'Africa/Johannesburg',
+    hourCycle: 'h23',
+    timeZone: REPORT_TIME_ZONE,
   }).formatToParts(parsed);
 
   const valueFor = (type: Intl.DateTimeFormatPartTypes) => parts.find((part) => part.type === type)?.value ?? '';
-  return `${valueFor('year')}-${valueFor('month')}-${valueFor('day')} ${valueFor('hour')}:${valueFor('minute')}`;
+  const components = ['year', 'month', 'day', 'hour', 'minute', 'second'].map((type) => Number(valueFor(type as Intl.DateTimeFormatPartTypes)));
+  if (components.some((component) => !Number.isFinite(component))) return null;
+
+  return new Date(Date.UTC(
+    components[0],
+    components[1] - 1,
+    components[2],
+    components[3],
+    components[4],
+    components[5],
+  ));
 }
 
 function formatInteger(value: number | null | undefined): string {
@@ -602,7 +625,7 @@ function formatFuelAverageNumber(value: number): string {
 
 function formatFuelAverageValue(value: number | null | undefined, metric: FuelAverageUsageMetric | null): string {
   if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0 || !metric) {
-    return 'Pending';
+    return 'Not enough data';
   }
 
   return metric === 'km'
@@ -714,7 +737,7 @@ function calculateFuelAverage(asset: AssetRegisterItem, fuelEvents: ScanEventRec
       metric,
       available: false,
       value: null,
-      valueLabel: 'Pending',
+      valueLabel: 'Not enough data',
       basisLabel: 'Fuel average is only calculated for hours or kilometre usage.',
       statusText: 'Fuel average is only calculated for hours or kilometre usage.',
       intervalsUsed,
@@ -729,7 +752,7 @@ function calculateFuelAverage(asset: AssetRegisterItem, fuelEvents: ScanEventRec
       metric,
       available: false,
       value: null,
-      valueLabel: 'Pending',
+      valueLabel: 'Not enough data',
       basisLabel,
       statusText: `Available after ${MIN_FUEL_AVERAGE_INTERVALS} valid fuel-fill intervals.`,
       intervalsUsed,
@@ -744,7 +767,7 @@ function calculateFuelAverage(asset: AssetRegisterItem, fuelEvents: ScanEventRec
       metric,
       available: false,
       value: null,
-      valueLabel: 'Pending',
+      valueLabel: 'Not enough data',
       basisLabel,
       statusText: 'Needs positive usage movement across the latest valid fuel-fill intervals.',
       intervalsUsed,
@@ -811,6 +834,10 @@ function percentForExcel(value: number | null | undefined): number | null {
 function excelText(value: unknown): string {
   const text = normalizeSpaces(value);
   return text === '-' ? '' : text;
+}
+
+function excelRecordedText(value: unknown): string {
+  return recordedText(value);
 }
 
 function calculateAssetDieselBeforeFill(event: ScanEventRecord): number | null {
@@ -915,6 +942,22 @@ function fuelIssueDateTimeLabel(event: ScanEventRecord): string {
   return event.issueTimeRecorded && asText(event.issueTime) ? `${date} ${asText(event.issueTime).slice(0, 5)}` : `${date} · Time not recorded`;
 }
 
+function fuelIssueDateTimeForExcel(event: ScanEventRecord): XlsxPrimitiveCellValue {
+  if (!event.isLateEntry) return formatExcelDateTime(event.createdAtIso);
+
+  const dateMatch = asText(event.issueDate).match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  const timeMatch = event.issueTimeRecorded ? asText(event.issueTime).match(/^(\d{2}):(\d{2})/) : null;
+  if (!dateMatch || !timeMatch) return fuelIssueDateTimeLabel(event);
+
+  return new Date(Date.UTC(
+    Number(dateMatch[1]),
+    Number(dateMatch[2]) - 1,
+    Number(dateMatch[3]),
+    Number(timeMatch[1]),
+    Number(timeMatch[2]),
+  ));
+}
+
 function fuelEntryAddedLabel(event: ScanEventRecord): string {
   return event.isLateEntry ? formatDateTime(event.entryAddedAtIso) : '-';
 }
@@ -1006,14 +1049,18 @@ function formatLocationText(locationText: string, latitude: number | null, longi
   const coordinates = formatCoordinates(latitude, longitude);
 
   if (normalized && coordinates) {
-    return `${normalized} - ${coordinates}`;
+    if (/-?\d{1,3}\.\d{3,}\s*,\s*-?\d{1,3}\.\d{3,}/.test(normalized)) {
+      return normalized;
+    }
+
+    return /^gps$/i.test(normalized) ? `GPS ${coordinates}` : `${normalized} (${coordinates})`;
   }
 
   if (normalized) {
     return normalized;
   }
 
-  return coordinates || '-';
+  return coordinates ? `GPS ${coordinates}` : NOT_RECORDED;
 }
 
 function buildGoogleMapsUrl(latitude: number | null, longitude: number | null): string | null {
@@ -1114,7 +1161,7 @@ function formatAssetHeroMeta(asset: AssetRegisterItem): string {
   const parts: string[] = [];
 
   if (typeof asset.yearModel === 'number' && Number.isFinite(asset.yearModel)) {
-    parts.push(`Year Model: ${asset.yearModel}`);
+    parts.push(`Model year: ${asset.yearModel}`);
   }
 
   const usage = formatLatestUsage(asset);
@@ -1261,13 +1308,13 @@ function renderTable(options: { className?: string; headers: string[]; rows: str
 function buildAssetDetailRows(asset: AssetRegisterItem): KeyValueRow[] {
   return [
     { label: 'Category', value: formatAssetKind(asset) },
-    { label: 'Brand', value: asset.brandName || asset.title || '-' },
-    { label: 'Model', value: asset.modelName || asset.typedModelName || '-' },
-    { label: 'Year', value: typeof asset.yearModel === 'number' ? String(asset.yearModel) : '-' },
-    { label: 'Usage', value: formatLatestUsage(asset) },
-    { label: 'Condition', value: formatCondition(asset.condition) },
-    { label: 'Replacement Price', value: formatMoney(readAssetReplacementPriceExVat(asset)) },
-    { label: 'Serial Number', value: asset.serialNumber || '-' },
+    { label: 'Brand', value: asset.brandName || asset.title || NOT_RECORDED },
+    { label: 'Model', value: asset.modelName || asset.typedModelName || NOT_RECORDED },
+    { label: 'Model year', value: typeof asset.yearModel === 'number' ? String(asset.yearModel) : NOT_RECORDED },
+    { label: 'Usage', value: formatLatestUsage(asset) === '-' ? NOT_RECORDED : formatLatestUsage(asset) },
+    { label: 'Condition', value: formatCondition(asset.condition) === '-' ? NOT_RECORDED : formatCondition(asset.condition) },
+    { label: 'Replacement price (excl. VAT)', value: recordedText(formatMoneyExVat(readAssetReplacementPriceExVat(asset))) },
+    { label: 'Serial number', value: asset.serialNumber || NOT_RECORDED },
     { label: 'Financed', value: statusChoiceReportLabel(readFinanceStatusChoice(asset)) },
     { label: 'Insured', value: statusChoiceReportLabel(readInsuranceStatusChoice(asset)) },
     { label: 'Licensed', value: statusChoiceReportLabel(readLicenseStatusChoice(asset)) },
@@ -1314,10 +1361,10 @@ function buildOwnerReportDetails(
 
 function buildClientRows(ownerDetails: OwnerReportDetails): KeyValueRow[] {
   return [
-    { label: 'Business Name', value: ownerDetails.businessName || '-' },
-    { label: 'Contact Details', value: ownerDetails.contactDetails || '-' },
-    { label: 'Business Email', value: ownerDetails.businessEmail || '-' },
-    { label: 'Location / Address', value: ownerDetails.locationAddress || '-' },
+    { label: 'Business name', value: ownerDetails.businessName || NOT_RECORDED },
+    { label: 'Contact details', value: ownerDetails.contactDetails || NOT_RECORDED },
+    { label: 'Business email', value: ownerDetails.businessEmail || NOT_RECORDED },
+    { label: 'Location / address', value: ownerDetails.locationAddress || NOT_RECORDED },
   ];
 }
 
@@ -1325,12 +1372,13 @@ function buildLocationRows(asset: AssetRegisterItem): KeyValueRow[] {
   const mapsUrl = buildGoogleMapsUrl(asset.lastKnownLat, asset.lastKnownLng);
 
   return [
-    { label: 'Last Scanned', value: formatDateTime(asset.lastScannedAtIso) },
+    { label: 'Last Scanned', value: recordedText(formatDateTime(asset.lastScannedAtIso)) },
     { label: 'Last Location', value: formatLocationText(asset.lastKnownLocationText, asset.lastKnownLat, asset.lastKnownLng) },
     {
-      label: 'Map Link',
-      value: mapsUrl ? 'Open latest position' : '-',
+      label: 'Map link',
+      value: mapsUrl ? 'Open latest position' : NOT_RECORDED,
       valueHtml: mapsUrl ? `<a href="${escapeHtml(mapsUrl)}" target="_blank" rel="noreferrer">Open latest position</a>` : undefined,
+      hyperlink: mapsUrl ?? undefined,
     },
   ];
 }
@@ -1345,9 +1393,9 @@ function buildFuelRecordRows(asset: AssetRegisterItem, fuelEvents: ScanEventReco
     { label: 'Report Period', value: dateRangeLabel },
     { label: 'Fuel Entries', value: String(fuelEvents.length) },
     { label: 'Total Litres Filled', value: formatLitres(totalLitres) },
-    { label: 'Latest Storage', value: latestFuelEvent ? fuelStorageLabel(latestFuelEvent) : '-' },
-    { label: 'Last Scanned', value: latestFuelEvent ? formatDateTime(latestFuelEvent.createdAtIso) : formatDateTime(asset.lastScannedAtIso) },
-    { label: 'Updated', value: formatDate(latestFuelEvent?.createdAtIso || asset.lastScannedAtIso || asset.updatedAtIso) },
+    { label: 'Latest fuel source / storage', value: latestFuelEvent ? recordedText(fuelStorageLabel(latestFuelEvent)) : NOT_RECORDED },
+    { label: 'Latest fuel entry', value: recordedText(latestFuelEvent ? formatDateTime(latestFuelEvent.createdAtIso) : formatDateTime(asset.lastScannedAtIso)) },
+    { label: 'Updated', value: recordedText(formatDate(latestFuelEvent?.createdAtIso || asset.lastScannedAtIso || asset.updatedAtIso)) },
   ];
 }
 
@@ -1368,19 +1416,22 @@ function buildMaintenanceRecordRows(
       Number.isFinite(entry.event.longitude),
   ).length;
   const photoCount = entries.filter((entry) => entry.event.photoUrls.length > 0).length;
+  const latestEntry = entries[0] ?? null;
+  const latestMeter = latestEntry
+    ? formatEventUsage(asset, latestEntry.event)
+    : NOT_RECORDED;
 
   return [
     { label: 'Report Type', value: maintenanceTypeLabel },
     { label: 'Report Period', value: dateRangeLabel },
-    { label: 'Serial Number', value: asset.serialNumber || '-' },
-    { label: 'Licensed', value: statusChoiceReportLabel(readLicenseStatusChoice(asset)) },
-    ...licenseRegistrationRows(asset),
-    { label: 'Records', value: String(entries.length) },
-    { label: 'Checked', value: String(checkedCount) },
-    { label: 'Serviced', value: String(servicedCount) },
-    { label: 'Repaired', value: String(repairedCount) },
-    { label: 'GPS Locations', value: String(gpsCount) },
-    { label: 'Photo Records', value: String(photoCount) },
+    { label: 'Total records', value: String(entries.length) },
+    { label: 'Checks', value: String(checkedCount) },
+    { label: 'Services', value: String(servicedCount) },
+    { label: 'Repairs', value: String(repairedCount) },
+    { label: 'Latest record', value: latestEntry ? formatDateTime(latestEntry.event.createdAtIso) : NOT_RECORDED },
+    { label: getUsageUnit(asset) === 'km' ? 'Latest kilometre reading' : 'Latest hour meter', value: latestMeter === '-' ? NOT_RECORDED : latestMeter },
+    { label: 'Records with GPS', value: String(gpsCount) },
+    { label: 'Records with photos', value: String(photoCount) },
     { label: 'Updated', value: formatDate(entries[0]?.event.createdAtIso || asset.lastScannedAtIso || asset.updatedAtIso) },
   ];
 }
@@ -1389,7 +1440,7 @@ function buildFuelReportSummary(asset: AssetRegisterItem, fuelEvents: ScanEventR
   return {
     label: 'Fuel Entries',
     value: formatNumber(fuelEvents.length),
-    subtext: fuelEvents.length === 1 ? 'QR / Fuel Ledger entry' : 'QR / Fuel Ledger entries',
+    subtext: fuelEvents.length === 1 ? 'recorded fuel entry' : 'recorded fuel entries',
     basis: 'QR Fuel Ledger',
     updated: formatDate(fuelEvents[0]?.createdAtIso || asset.lastScannedAtIso || asset.updatedAtIso),
   };
@@ -1399,7 +1450,7 @@ function buildMaintenanceReportSummary(asset: AssetRegisterItem, entries: Mainte
   return {
     label: 'Maintenance',
     value: formatNumber(entries.length),
-    subtext: entries.length === 1 ? 'check / service / repair record' : 'check / service / repair records',
+    subtext: entries.length === 1 ? 'check, service or repair record' : 'checks, services and repairs',
     basis: 'QR Maintenance',
     updated: formatDate(entries[0]?.event.createdAtIso || asset.lastScannedAtIso || asset.updatedAtIso),
   };
@@ -1476,27 +1527,32 @@ function renderMaintenanceCards(asset: AssetRegisterItem, entries: MaintenanceEn
       ${entries
         .map((entry) => {
           const detailLabel = entry.kind === 'checked' ? 'Checked Items' : entry.kind === 'repaired' ? 'Repair Details' : 'Work Completed';
-          const detailText = entry.items.length ? entry.items.join(', ') : '-';
+          const detailText = entry.items.length ? entry.items.join(', ') : NOT_RECORDED;
           const location = formatLocationText(entry.event.locationText, entry.event.latitude, entry.event.longitude);
-          const notes = entry.notes || '-';
+          const notes = entry.notes || 'No problems or notes recorded';
           const photos = formatPhotoCount(entry.event);
+          const meterLabel = getUsageUnit(asset) === 'km' ? 'Kilometre reading' : 'Hour meter';
           const providerDetailsHtml = entry.kind === 'checked'
             ? ''
             : `
                 <div class="assetReportMaintenanceDetail">
-                  <span>Company / Dealer</span>
-                  <strong>${escapeHtml(entry.company || '-')}</strong>
+                  <span>Service provider</span>
+                  <strong>${escapeHtml(entry.company || NOT_RECORDED)}</strong>
                 </div>
                 <div class="assetReportMaintenanceDetail">
-                  <span>Mechanic / Technician</span>
-                  <strong>${escapeHtml(entry.mechanic || '-')}</strong>
+                  <span>Technician</span>
+                  <strong>${escapeHtml(entry.mechanic || NOT_RECORDED)}</strong>
                 </div>
               `;
           const photoGridHtml = entry.event.photoUrls.length
             ? `
+                <div class="assetReportMaintenanceDetail">
+                  <span>Photos</span>
+                  <strong>${escapeHtml(photos)} attached</strong>
+                </div>
                 <div class="assetReportMaintenancePhotos">
                   <div class="assetReportMaintenancePhotosHeader">
-                    <span>Photos</span>
+                    <span>Photo evidence</span>
                     <strong>${escapeHtml(photos)}</strong>
                   </div>
                   <div class="assetReportMaintenancePhotoGrid">
@@ -1512,9 +1568,9 @@ function renderMaintenanceCards(asset: AssetRegisterItem, entries: MaintenanceEn
                 </div>
               `
             : `
-                <div class="assetReportMaintenanceDetail assetReportMaintenanceDetailWide">
+                <div class="assetReportMaintenanceDetail">
                   <span>Photos</span>
-                  <strong>-</strong>
+                  <strong>No photos attached</strong>
                 </div>
               `;
 
@@ -1526,16 +1582,16 @@ function renderMaintenanceCards(asset: AssetRegisterItem, entries: MaintenanceEn
                   <strong>${escapeHtml(entry.label)}</strong>
                 </div>
                 <div>
-                  <span>Date / Time</span>
+                  <span>Recorded on (SAST)</span>
                   <strong>${escapeHtml(formatDateTime(entry.event.createdAtIso))}</strong>
                 </div>
                 <div>
-                  <span>Updated By</span>
+                  <span>Captured by</span>
                   <strong>${escapeHtml(formatOperatorLabel(entry.event))}</strong>
                 </div>
                 <div>
-                  <span>Odometer</span>
-                  <strong>${escapeHtml(formatEventUsage(asset, entry.event, { fallbackToLatest: true }))}</strong>
+                  <span>${escapeHtml(meterLabel)}</span>
+                  <strong>${escapeHtml(recordedText(formatEventUsage(asset, entry.event)))}</strong>
                 </div>
               </div>
 
@@ -1546,11 +1602,11 @@ function renderMaintenanceCards(asset: AssetRegisterItem, entries: MaintenanceEn
                 </div>
                 ${providerDetailsHtml}
                 <div class="assetReportMaintenanceDetail assetReportMaintenanceDetailWide">
-                  <span>Notes/Problems</span>
+                  <span>Notes / problems</span>
                   <strong>${escapeHtml(notes)}</strong>
                 </div>
-                <div class="assetReportMaintenanceDetail assetReportMaintenanceDetailWide">
-                  <span>Scan Location</span>
+                <div class="assetReportMaintenanceDetail">
+                  <span>Recorded location</span>
                   <strong>${escapeHtml(location)}</strong>
                 </div>
                 ${photoGridHtml}
@@ -1570,7 +1626,7 @@ function buildMaintenanceBody(asset: AssetRegisterItem, entries: MaintenanceEntr
       <div class="assetReportSectionHeading">
         <div>
           <h2>Maintenance Records</h2>
-          <p>Readable check, service and repair trail captured from QR updates. Each record shows the work, person/company, notes and scan location.</p>
+          <p>Newest first. The header identifies what happened, when it was recorded in South African time, who captured it and the meter reading. Work, provider, notes, location and photo evidence follow below.</p>
         </div>
         <strong>${escapeHtml(formatNumber(entries.length))} ${entries.length === 1 ? 'record' : 'records'}</strong>
       </div>
@@ -1652,12 +1708,35 @@ function readLogReasonMetadata(entry: AssetDepreciationLogEntry): string[] {
 
 function formatDepreciationLogSource(entry: AssetDepreciationLogEntry): string {
   const event = formatDepreciationEventLabel(entry.eventType);
-  const source = displayValue(entry.eventSource, '');
+  const normalizedSource = asText(entry.eventSource).toLowerCase().replace(/[\s_]+/g, '-');
+  const source = ({
+    'asset-register-qr-scan': 'Asset Register QR scan',
+    'asset-register': 'Asset Register',
+    'valuation': 'Valuation',
+    'automatic-revaluation': 'Automatic revaluation',
+    'opening-backfill': 'Opening record',
+  } as Record<string, string>)[normalizedSource] ?? displayValue(entry.eventSource, '');
   return source && source !== '-' ? `${event} · ${source}` : event;
 }
 
 function formatDepreciationLogReason(entry: AssetDepreciationLogEntry): string {
-  return readLogReasonMetadata(entry).join('; ') || '-';
+  const reasons = readLogReasonMetadata(entry).map((reason) => {
+    const normalized = normalizeSpaces(reason).toLowerCase();
+    const knownReason = ({
+      'usage changed; life worked changed': 'Usage and lifetime worked updated',
+      'usage changed': 'Usage reading updated',
+      'life worked changed': 'Lifetime worked updated',
+      'condition changed': 'Condition updated',
+      'replacement price changed': 'Replacement price updated',
+      'selected value changed': 'Saved value updated',
+    } as Record<string, string>)[normalized];
+
+    if (knownReason) return knownReason;
+    const readable = normalizeSpaces(reason).replace(/[_-]+/g, ' ');
+    return readable ? `${readable.charAt(0).toUpperCase()}${readable.slice(1)}` : '';
+  }).filter(Boolean);
+
+  return Array.from(new Set(reasons)).join('; ') || 'No reason recorded';
 }
 
 function buildDepreciationLogBodyRows(entries: AssetDepreciationLogEntry[]): string[][] {
@@ -1797,7 +1876,7 @@ function buildDepreciationReport(
       ? [
           { label: 'Umbrella', value: asset.title },
           { label: 'Linked Assets', value: formatNumber(scopeAssets.length) },
-          { label: 'Value-change Entries', value: formatNumber(entries.length) },
+          { label: 'Value history entries', value: formatNumber(entries.length) },
           { label: 'Report Period', value: dateRangeLabel },
         ]
       : undefined,
@@ -1852,7 +1931,7 @@ function buildReportHtml(options: {
   const pagePadding = isWideReport ? '7mm 6mm 7mm' : '11mm 11mm 9mm';
   const innerMinHeight = isWideReport ? 'calc(210mm - 14mm)' : 'calc(297mm - 20mm)';
   const printPageMinHeight = isWideReport ? '197mm' : '281mm';
-  const printInnerMinHeight = printPageMinHeight;
+  const printInnerMinHeight = '0';
 
   return `<!doctype html>
 <html lang="en">
@@ -2727,7 +2806,7 @@ function buildReportHtml(options: {
 
       .assetReportFooter {
         display: grid;
-        grid-template-columns: minmax(0, 1fr) auto;
+        grid-template-columns: minmax(0, 1fr);
         gap: 10px;
         align-items: end;
         margin-top: auto;
@@ -2748,13 +2827,6 @@ function buildReportHtml(options: {
         font-size: 7.35px;
         line-height: 1.35;
         font-style: italic;
-      }
-
-      .assetReportPageNumber {
-        color: var(--strong);
-        font-size: 8px;
-        font-weight: 700;
-        white-space: nowrap;
       }
 
       @media screen and (max-width: 760px) {
@@ -2852,6 +2924,10 @@ function buildReportHtml(options: {
           min-height: ${printInnerMinHeight};
         }
 
+        .assetReportFooter {
+          margin-top: 12px;
+        }
+
         .assetReportHeader {
           grid-template-columns: 22mm minmax(0, 1fr) 62mm;
         }
@@ -2940,7 +3016,6 @@ function buildReportHtml(options: {
             <p class="assetReportPowered">Powered by Aim4price.com</p>
             <div class="assetReportDisclaimer">${escapeHtml(disclaimer)}</div>
           </div>
-          <div class="assetReportPageNumber">Page 1 of 1</div>
         </footer>
       </div>
     </main>
@@ -3068,12 +3143,34 @@ function styled(value: XlsxPrimitiveCellValue, style: XlsxCellStyle): XlsxCellVa
   return { value, style };
 }
 
+function linked(value: XlsxPrimitiveCellValue, hyperlink: string | null | undefined, style: XlsxCellStyle = 'link'): XlsxCellValue {
+  return hyperlink ? { value, style, hyperlink } : styled(value, style === 'link' ? 'text' : style);
+}
+
 function fullWidthRow(value: XlsxPrimitiveCellValue, style: XlsxCellStyle, columnCount: number): XlsxCellValue[] {
   return [styled(value, style), ...Array.from({ length: Math.max(0, columnCount - 1) }, () => '')];
 }
 
 function keyValueWorkbookRows(rows: KeyValueRow[]): XlsxCellValue[][] {
-  return rows.map((row) => [styled(row.label, 'metaLabel'), styled(excelText(row.value), 'metaValue')]);
+  return rows.map((row) => [
+    styled(row.label, 'metaLabel'),
+    row.hyperlink
+      ? linked(excelText(row.value), row.hyperlink)
+      : styled(excelText(row.value), 'metaValue'),
+  ]);
+}
+
+function pairedKeyValueWorkbookRows(leftRows: KeyValueRow[], rightRows: KeyValueRow[]): XlsxCellValue[][] {
+  const left = keyValueWorkbookRows(leftRows);
+  const right = keyValueWorkbookRows(rightRows);
+  const rowCount = Math.max(left.length, right.length);
+
+  return Array.from({ length: rowCount }, (_, index) => [
+    left[index]?.[0] ?? '',
+    left[index]?.[1] ?? '',
+    right[index]?.[0] ?? '',
+    right[index]?.[1] ?? '',
+  ]);
 }
 
 function buildReportSummaryWorkbookSheet(options: {
@@ -3086,37 +3183,42 @@ function buildReportSummaryWorkbookSheet(options: {
 }): XlsxSheet {
   const title = `${options.asset.title || 'Asset'} - ${REPORT_LABELS[options.reportKind]}`;
   const subtitle = `${formatAssetHeroMeta(options.asset)} • ${options.dateRangeLabel}`;
+  const clientRows = buildClientRows(options.ownerDetails);
+  const assetRows = buildAssetDetailRows(options.asset);
+  const locationRows = buildLocationRows(options.asset);
+  const firstPanelRows = pairedKeyValueWorkbookRows(clientRows, options.recordRows);
+  const secondPanelHeadingRow = 9 + firstPanelRows.length;
+  const secondPanelRows = pairedKeyValueWorkbookRows(assetRows, locationRows);
   const rows: XlsxCellValue[][] = [
     [styled(title, 'title'), '', '', ''],
     [styled(subtitle, 'subtitle'), '', '', ''],
     [],
-    [styled('Generated', 'metaLabel'), styled(options.generatedAt, 'metaValue')],
-    [styled('Report period', 'metaLabel'), styled(options.dateRangeLabel, 'metaValue')],
-    [styled('Report type', 'metaLabel'), styled(REPORT_LABELS[options.reportKind], 'metaValue')],
+    [
+      styled('Generated', 'metaLabel'), styled(options.generatedAt, 'metaValue'),
+      styled('Report period', 'metaLabel'), styled(options.dateRangeLabel, 'metaValue'),
+    ],
+    [styled('Report type', 'metaLabel'), styled(REPORT_LABELS[options.reportKind], 'metaValue'), '', ''],
     [],
-    [styled('Client', 'section'), '', '', ''],
-    ...keyValueWorkbookRows(buildClientRows(options.ownerDetails)),
+    [styled('Client', 'section'), '', styled('Report summary', 'section'), ''],
+    ...firstPanelRows,
     [],
-    [styled('Asset', 'section'), '', '', ''],
-    ...keyValueWorkbookRows(buildAssetDetailRows(options.asset)),
-    [],
-    [styled('Report summary', 'section'), '', '', ''],
-    ...keyValueWorkbookRows(options.recordRows),
-    [],
-    [styled('Latest location', 'section'), '', '', ''],
-    ...keyValueWorkbookRows(buildLocationRows(options.asset)),
+    [styled('Asset', 'section'), '', styled('Latest location', 'section'), ''],
+    ...secondPanelRows,
   ];
 
   return {
     name: 'Summary',
     rows,
-    columns: [24, 36, 24, 36],
+    columns: [24, 34, 24, 34],
     merges: [
       { fromRow: 1, fromColumn: 1, toRow: 1, toColumn: 4 },
       { fromRow: 2, fromColumn: 1, toRow: 2, toColumn: 4 },
-      { fromRow: 8, fromColumn: 1, toRow: 8, toColumn: 4 },
-      { fromRow: 8 + buildClientRows(options.ownerDetails).length + 2, fromColumn: 1, toRow: 8 + buildClientRows(options.ownerDetails).length + 2, toColumn: 4 },
+      { fromRow: 7, fromColumn: 1, toRow: 7, toColumn: 2 },
+      { fromRow: 7, fromColumn: 3, toRow: 7, toColumn: 4 },
+      { fromRow: secondPanelHeadingRow, fromColumn: 1, toRow: secondPanelHeadingRow, toColumn: 2 },
+      { fromRow: secondPanelHeadingRow, fromColumn: 3, toRow: secondPanelHeadingRow, toColumn: 4 },
     ],
+    orientation: 'portrait',
     tabColor: options.reportKind === 'fuel' ? '176B4F' : '10382F',
   };
 }
@@ -3135,57 +3237,101 @@ function buildFuelReportWorkbook(
     { label: 'Fuel Average', value: fuelAverage.valueLabel },
     ...buildFuelAverageRows(fuelAverage),
   ];
-  const headers = [
-    'Asset', 'Fuel Issued On', 'Source / Activity', 'Storage Unit', 'Litres Issued', 'Before Fill Litres', 'Usage Reading', 'Usage Metric', 'Usage Display',
+  const recordHeaders = [
+    'Asset', 'Fuel issued on (SAST)', 'Entry type', 'Fuel source / storage', 'Litres issued', 'Before fill litres',
+    'Meter reading', 'Operator', 'Activity', 'Work area', 'Recorded location', 'Entry added on (late entries, SAST)', 'Evidence / review', 'Notes',
+  ];
+  const auditHeaders = [
+    'Asset', 'Fuel issued on (SAST)', 'Source / Activity', 'Storage Unit', 'Litres Issued', 'Before Fill Litres', 'Usage Reading', 'Usage Metric', 'Usage Display',
     'Historical Storage Before', 'Historical Storage After', 'Fuel % Before', 'Fuel % After', 'Operator',
-    'Activity', 'Work Area', 'GPS', 'Latitude', 'Longitude', 'Entry Added On', 'Added By',
+    'Activity', 'Work Area', 'GPS', 'Latitude', 'Longitude', 'Entry Added On (SAST)', 'Added By',
     'Evidence / Review Status', 'Evidence Type', 'Evidence Reference', 'Evidence File', 'Tank Balance Treatment',
     'Late-entry Reason', 'Notes',
   ];
   const headerRow = 7;
   const recordSheetRows: XlsxCellValue[][] = [
-    fullWidthRow(`${asset.title || 'Asset'} - Fuel Report`, 'title', headers.length),
-    fullWidthRow(`Filtered report: ${dateRangeLabel}`, 'subtitle', headers.length),
-    fullWidthRow('Late entries preserve the historical issue date, the real date added, evidence status and tank-balance treatment. Historical tank levels are never inferred from today’s stock.', 'note', headers.length),
+    fullWidthRow(`${asset.title || 'Asset'} - Fuel Report`, 'title', recordHeaders.length),
+    fullWidthRow(`Filtered report: ${dateRangeLabel}`, 'subtitle', recordHeaders.length),
+    fullWidthRow('Use this sheet for day-to-day review. The Fuel Audit sheet retains every source, evidence and tank-balance field.', 'note', recordHeaders.length),
     [],
     [
-      styled('Asset', 'metaLabel'), styled(asset.title || '', 'metaValue'),
-      styled('Serial number', 'metaLabel'), styled(asset.serialNumber || '', 'metaValue'),
-      styled('Plate / QR', 'metaLabel'), styled(asset.plateLabel || asset.publicAssetCode || '', 'metaValue'),
+      styled('Asset', 'metaLabel'), styled(asset.title || NOT_RECORDED, 'metaValue'),
+      styled('Serial number', 'metaLabel'), styled(asset.serialNumber || NOT_RECORDED, 'metaValue'),
+      styled('Plate / QR', 'metaLabel'), styled(asset.plateLabel || asset.publicAssetCode || NOT_RECORDED, 'metaValue'),
     ],
     [],
-    headers.map((header) => styled(header, 'tableHeader')),
+    recordHeaders.map((header) => styled(header, 'tableHeader')),
     ...fuelEvents.map((event) => {
       const eventAsset = reportAssetForEvent(event, asset);
+      const issuedOn = fuelIssueDateTimeForExcel(event);
+      const addedOn = event.isLateEntry ? formatExcelDateTime(event.entryAddedAtIso) : null;
+      const mapUrl = event.isLateEntry ? null : buildGoogleMapsUrl(event.latitude, event.longitude);
+      const evidence = event.isLateEntry ? fuelEvidenceStatusLabel(event) : 'Captured live';
+      const notes = [event.isLateEntry ? event.lateEntryReason : '', event.note].map(normalizeSpaces).filter(Boolean).join(' · ');
+
       return [
-      styled(reportAssetTitleForEvent(event, asset), 'text'),
-      styled(fuelIssueDateTimeLabel(event), 'text'),
-      styled(fuelLedgerActivityLabel(event), event.isLateEntry ? 'statusInfo' : 'text'),
-      styled(excelText(fuelStorageLabel(event)), 'text'),
-      styled(numberForExcel(event.fuelLitres), 'decimal'),
-      styled(numberForExcel(calculateAssetDieselBeforeFill(event)), 'decimal'),
-      styled(numberForExcel(event.assetUsageReading ?? event.hours), 'decimal'),
-      styled(fuelUsageMetricLabel(eventAsset, event), 'text'),
-      styled(formatEventUsage(eventAsset, event), 'text'),
-      styled(event.isLateEntry ? 'Not recorded' : numberForExcel(event.fuelStorageLevelBefore), event.isLateEntry ? 'text' : 'decimal'),
-      styled(event.isLateEntry ? 'Not recorded' : numberForExcel(event.fuelStorageLevelAfter), event.isLateEntry ? 'text' : 'decimal'),
-      styled(percentForExcel(event.assetFuelPercentBefore), 'percent'),
-      styled(percentForExcel(event.assetFuelPercentAfter ?? event.fuelPercent), 'percent'),
-      styled(formatOperatorLabel(event), 'text'),
-      styled(excelText(formatEventActivity(event)), 'text'),
-      styled(excelText(formatEventWorkArea(event)), 'text'),
-      styled(excelText(fuelGpsLabel(event)), 'text'),
-      styled(event.isLateEntry ? null : numberForExcel(event.latitude, 6), 'decimal'),
-      styled(event.isLateEntry ? null : numberForExcel(event.longitude, 6), 'decimal'),
-      styled(event.isLateEntry ? formatExcelDateTime(event.entryAddedAtIso) : '', 'text'),
-      styled(fuelAddedByLabel(event), 'text'),
-      styled(fuelEvidenceStatusLabel(event), 'text'),
-      styled(event.evidenceType || '', 'text'),
-      styled(event.evidenceReference || '', 'text'),
-      styled(event.evidenceFileName || '', 'text'),
-      styled(fuelBalanceTreatmentLabel(event), 'text'),
-      styled(event.isLateEntry ? event.lateEntryReason || '' : '', 'note'),
-      styled(normalizeSpaces(event.note), 'note'),
+        styled(reportAssetTitleForEvent(event, asset), 'text'),
+        styled(issuedOn, issuedOn instanceof Date ? 'dateTime' : 'text'),
+        styled(fuelLedgerActivityLabel(event), event.isLateEntry ? 'statusInfo' : 'text'),
+        styled(excelRecordedText(fuelStorageLabel(event)), 'text'),
+        styled(numberForExcel(event.fuelLitres), 'decimal'),
+        styled(numberForExcel(calculateAssetDieselBeforeFill(event)), 'decimal'),
+        styled(excelRecordedText(formatEventUsage(eventAsset, event)), 'text'),
+        styled(excelRecordedText(formatOperatorLabel(event)), 'text'),
+        styled(excelRecordedText(formatEventActivity(event)), 'text'),
+        styled(excelRecordedText(formatEventWorkArea(event)), 'text'),
+        linked(excelRecordedText(fuelGpsLabel(event)), mapUrl),
+        styled(addedOn, 'dateTime'),
+        styled(excelRecordedText(evidence), event.isLateEntry ? 'statusInfo' : 'statusGood'),
+        styled(notes || NOT_RECORDED, 'note'),
+      ];
+    }),
+  ];
+  const auditSheetRows: XlsxCellValue[][] = [
+    fullWidthRow(`${asset.title || 'Asset'} - Fuel Audit`, 'title', auditHeaders.length),
+    fullWidthRow(`Filtered report: ${dateRangeLabel}`, 'subtitle', auditHeaders.length),
+    fullWidthRow('Complete export for audit and reconciliation. Late entries keep their historical issue date separate from the actual date added; historical tank levels are never inferred from current stock.', 'note', auditHeaders.length),
+    [],
+    [
+      styled('Asset', 'metaLabel'), styled(asset.title || NOT_RECORDED, 'metaValue'),
+      styled('Serial number', 'metaLabel'), styled(asset.serialNumber || NOT_RECORDED, 'metaValue'),
+      styled('Plate / QR', 'metaLabel'), styled(asset.plateLabel || asset.publicAssetCode || NOT_RECORDED, 'metaValue'),
+    ],
+    [],
+    auditHeaders.map((header) => styled(header, 'tableHeader')),
+    ...fuelEvents.map((event) => {
+      const eventAsset = reportAssetForEvent(event, asset);
+      const issuedOn = fuelIssueDateTimeForExcel(event);
+      const mapUrl = event.isLateEntry ? null : buildGoogleMapsUrl(event.latitude, event.longitude);
+      return [
+        styled(reportAssetTitleForEvent(event, asset), 'text'),
+        styled(issuedOn, issuedOn instanceof Date ? 'dateTime' : 'text'),
+        styled(fuelLedgerActivityLabel(event), event.isLateEntry ? 'statusInfo' : 'text'),
+        styled(excelRecordedText(fuelStorageLabel(event)), 'text'),
+        styled(numberForExcel(event.fuelLitres), 'decimal'),
+        styled(numberForExcel(calculateAssetDieselBeforeFill(event)), 'decimal'),
+        styled(numberForExcel(event.assetUsageReading ?? event.hours), 'decimal'),
+        styled(fuelUsageMetricLabel(eventAsset, event), 'text'),
+        styled(excelRecordedText(formatEventUsage(eventAsset, event)), 'text'),
+        styled(event.isLateEntry ? NOT_RECORDED : numberForExcel(event.fuelStorageLevelBefore), event.isLateEntry ? 'text' : 'decimal'),
+        styled(event.isLateEntry ? NOT_RECORDED : numberForExcel(event.fuelStorageLevelAfter), event.isLateEntry ? 'text' : 'decimal'),
+        styled(percentForExcel(event.assetFuelPercentBefore), 'percent'),
+        styled(percentForExcel(event.assetFuelPercentAfter ?? event.fuelPercent), 'percent'),
+        styled(excelRecordedText(formatOperatorLabel(event)), 'text'),
+        styled(excelRecordedText(formatEventActivity(event)), 'text'),
+        styled(excelRecordedText(formatEventWorkArea(event)), 'text'),
+        linked(excelRecordedText(fuelGpsLabel(event)), mapUrl),
+        styled(event.isLateEntry ? null : numberForExcel(event.latitude, 6), 'decimal'),
+        styled(event.isLateEntry ? null : numberForExcel(event.longitude, 6), 'decimal'),
+        styled(event.isLateEntry ? formatExcelDateTime(event.entryAddedAtIso) : null, 'dateTime'),
+        styled(excelRecordedText(fuelAddedByLabel(event)), 'text'),
+        styled(excelRecordedText(fuelEvidenceStatusLabel(event)), 'text'),
+        styled(event.evidenceType || NOT_RECORDED, 'text'),
+        styled(event.evidenceReference || NOT_RECORDED, 'text'),
+        linked(event.evidenceFileName || NOT_RECORDED, event.evidenceFileUrl),
+        styled(excelRecordedText(fuelBalanceTreatmentLabel(event)), 'text'),
+        styled(event.isLateEntry ? event.lateEntryReason || NOT_RECORDED : 'Not applicable', 'note'),
+        styled(normalizeSpaces(event.note) || NOT_RECORDED, 'note'),
       ];
     }),
   ];
@@ -3202,20 +3348,38 @@ function buildFuelReportWorkbook(
     {
       name: 'Fuel Records',
       rows: recordSheetRows,
-      columns: [30, 22, 24, 24, 16, 18, 18, 16, 22, 23, 23, 14, 14, 22, 24, 24, 36, 14, 14, 22, 24, 36, 24, 26, 26, 36, 42, 42],
+      columns: [28, 22, 24, 24, 16, 18, 20, 22, 24, 24, 34, 22, 36, 42],
       merges: [
-        { fromRow: 1, fromColumn: 1, toRow: 1, toColumn: headers.length },
-        { fromRow: 2, fromColumn: 1, toRow: 2, toColumn: headers.length },
-        { fromRow: 3, fromColumn: 1, toRow: 3, toColumn: headers.length },
+        { fromRow: 1, fromColumn: 1, toRow: 1, toColumn: recordHeaders.length },
+        { fromRow: 2, fromColumn: 1, toRow: 2, toColumn: recordHeaders.length },
+        { fromRow: 3, fromColumn: 1, toRow: 3, toColumn: recordHeaders.length },
       ],
       freezeRow: headerRow,
       autoFilter: {
         fromRow: headerRow,
         fromColumn: 1,
         toRow: Math.max(headerRow, headerRow + fuelEvents.length),
-        toColumn: headers.length,
+        toColumn: recordHeaders.length,
       },
       tabColor: '176B4F',
+    },
+    {
+      name: 'Fuel Audit',
+      rows: auditSheetRows,
+      columns: [30, 22, 24, 24, 16, 18, 18, 16, 22, 23, 23, 14, 14, 22, 24, 24, 36, 14, 14, 22, 24, 36, 24, 26, 26, 36, 42, 42],
+      merges: [
+        { fromRow: 1, fromColumn: 1, toRow: 1, toColumn: auditHeaders.length },
+        { fromRow: 2, fromColumn: 1, toRow: 2, toColumn: auditHeaders.length },
+        { fromRow: 3, fromColumn: 1, toRow: 3, toColumn: auditHeaders.length },
+      ],
+      freezeRow: headerRow,
+      autoFilter: {
+        fromRow: headerRow,
+        fromColumn: 1,
+        toRow: Math.max(headerRow, headerRow + fuelEvents.length),
+        toColumn: auditHeaders.length,
+      },
+      tabColor: '5D7F6B',
     },
   ];
 }
@@ -3235,65 +3399,68 @@ function buildMaintenanceReportWorkbook(
   const maintenanceTypeLabel = MAINTENANCE_TYPE_LABELS[maintenanceReportType];
   const recordRows = buildMaintenanceRecordRows(asset, maintenanceEntries, dateRangeLabel, maintenanceTypeLabel);
   const isCheckedOnlyReport = maintenanceReportType === 'checked';
+  const meterHeading = getUsageUnit(asset) === 'km' ? 'Kilometre reading' : 'Hour meter';
   const headers = isCheckedOnlyReport
     ? [
-        'Date / Time',
-        'Record Type',
-        'Work / Items',
-        'Usage Display',
-        'Operator',
-        'GPS Location',
-        'Notes/Problems',
+        'Recorded on (SAST)',
+        'Record type',
+        'Checked items',
+        meterHeading,
+        'Captured by',
+        'Recorded location',
+        'Photo evidence',
+        'Notes / problems',
       ]
     : [
-        'Date / Time',
-        'Record Type',
-        'Detail Label',
-        'Work / Items',
-        'Company / Dealer',
-        'Mechanic / Technician',
-        'Usage Display',
-        'Operator',
-        'GPS Location',
-        'Notes/Problems',
+        'Recorded on (SAST)',
+        'Record type',
+        'Work / items',
+        'Service provider',
+        'Technician',
+        meterHeading,
+        'Captured by',
+        'Recorded location',
+        'Photo evidence',
+        'Notes / problems',
       ];
   const columns = isCheckedOnlyReport
-    ? [20, 16, 38, 20, 22, 34, 42]
-    : [20, 16, 20, 36, 24, 24, 20, 22, 34, 42];
+    ? [22, 16, 38, 20, 22, 34, 22, 42]
+    : [22, 16, 38, 24, 24, 20, 22, 34, 22, 42];
   const headerRow = 7;
   const maintenanceRecordRows = maintenanceEntries.map((entry) => {
-    const detailLabel = entry.kind === 'checked' ? 'Checked Items' : entry.kind === 'repaired' ? 'Repair Details' : 'Work Completed';
     const recordStyle: XlsxCellStyle = entry.kind === 'repaired' ? 'statusWarn' : entry.kind === 'serviced' ? 'statusGood' : 'statusInfo';
+    const mapUrl = buildGoogleMapsUrl(entry.event.latitude, entry.event.longitude);
+    const photoCount = entry.event.photoUrls.length;
+    const photoLabel = photoCount ? `Open ${photoCount === 1 ? '1 photo' : `first of ${photoCount} photos`}` : 'No photos';
+    const photoUrl = entry.event.photoUrls[0] ?? null;
+    const commonStart = [
+      styled(formatExcelDateTime(entry.event.createdAtIso), 'dateTime'),
+      styled(entry.label, recordStyle),
+      styled(entry.items.join(', ') || NOT_RECORDED, 'text'),
+    ];
+    const commonEnd = [
+      styled(excelRecordedText(formatEventUsage(asset, entry.event)), 'text'),
+      styled(excelRecordedText(formatOperatorLabel(entry.event)), 'text'),
+      linked(excelRecordedText(formatLocationText(entry.event.locationText, entry.event.latitude, entry.event.longitude)), mapUrl),
+      linked(photoLabel, photoUrl),
+      styled(entry.notes || 'No problems or notes recorded', 'note'),
+    ];
 
     if (isCheckedOnlyReport) {
-      return [
-        styled(formatExcelDateTime(entry.event.createdAtIso), 'text'),
-        styled(entry.label, recordStyle),
-        styled(entry.items.join(', '), 'text'),
-        styled(formatEventUsage(asset, entry.event, { fallbackToLatest: true }), 'text'),
-        styled(formatOperatorLabel(entry.event), 'text'),
-        styled(excelText(formatLocationText(entry.event.locationText, entry.event.latitude, entry.event.longitude)), 'text'),
-        styled(entry.notes, 'note'),
-      ];
+      return [...commonStart, ...commonEnd];
     }
 
     return [
-      styled(formatExcelDateTime(entry.event.createdAtIso), 'text'),
-      styled(entry.label, recordStyle),
-      styled(detailLabel, 'text'),
-      styled(entry.items.join(', '), 'text'),
-      styled(entry.kind === 'checked' ? '' : entry.company, 'text'),
-      styled(entry.kind === 'checked' ? '' : entry.mechanic, 'text'),
-      styled(formatEventUsage(asset, entry.event, { fallbackToLatest: true }), 'text'),
-      styled(formatOperatorLabel(entry.event), 'text'),
-      styled(excelText(formatLocationText(entry.event.locationText, entry.event.latitude, entry.event.longitude)), 'text'),
-      styled(entry.notes, 'note'),
+      ...commonStart,
+      styled(entry.kind === 'checked' ? 'Not applicable' : entry.company || NOT_RECORDED, 'text'),
+      styled(entry.kind === 'checked' ? 'Not applicable' : entry.mechanic || NOT_RECORDED, 'text'),
+      ...commonEnd,
     ];
   });
   const recordSheetRows: XlsxCellValue[][] = [
     fullWidthRow(`${asset.title || 'Asset'} - Maintenance Report`, 'title', headers.length),
     fullWidthRow(`Filtered report: ${dateRangeLabel} • Type: ${maintenanceTypeLabel}`, 'subtitle', headers.length),
-    fullWidthRow('Editable maintenance records exported from the asset QR maintenance report.', 'note', headers.length),
+    fullWidthRow('Newest first. Dates are South African time; blue underlined locations and photo evidence are clickable.', 'note', headers.length),
     [],
     [
       styled('Asset', 'metaLabel'),
@@ -3384,12 +3551,12 @@ function buildDepreciationReportWorkbook(
     [],
     logHeaders.map((header) => styled(header, 'tableHeader')),
     ...entries.map((entry) => [
-      styled(formatExcelDateTime(entry.capturedAtIso), 'text'),
+      styled(formatExcelDateTime(entry.capturedAtIso), 'dateTime'),
       styled(formatDepreciationLogSource(entry), 'text'),
       styled(entry.assetTitle, 'text'),
       styled(entry.brandName, 'text'),
       styled(entry.modelName, 'text'),
-      styled(numberForExcel(entry.yearModel, 0), 'integer'),
+      styled(numberForExcel(entry.yearModel, 0), 'year'),
       styled(numberForExcel(entry.previousValueExVat), 'currency'),
       styled(numberForExcel(entry.newValueExVat), 'currency'),
       styled(numberForExcel(entry.differenceValueExVat), 'currency'),
@@ -3436,7 +3603,7 @@ function buildDepreciationReportWorkbook(
       ].filter((value) => value && value !== '-').join(' / ');
 
       return [
-        styled(item.year, 'integer'),
+        styled(item.year, 'year'),
         styled(numberForExcel(item.openingValueExVat), 'currency'),
         styled(numberForExcel(item.closingValueExVat), 'currency'),
         styled(numberForExcel(item.yearlyDifferenceExVat), 'currency'),

@@ -8,6 +8,11 @@ import puppeteer, { type Browser, type HTTPRequest, type Page } from 'puppeteer-
 const DEFAULT_RENDER_TIMEOUT_MS = 45_000;
 const RESOURCE_SETTLE_TIMEOUT_MS = 12_000;
 const CLEANUP_TIMEOUT_MS = 5_000;
+const REPORT_PDF_FOOTER_TEMPLATE = `
+  <div style="box-sizing:border-box;width:100%;padding:0 8mm;color:#111827;font-family:Arial,sans-serif;font-size:8px;text-align:right;">
+    Page <span class="pageNumber"></span> of <span class="totalPages"></span>
+  </div>
+`;
 
 function boundedInteger(value: string | undefined, fallback: number, maximum: number): number {
   const parsed = Number.parseInt(String(value ?? ''), 10);
@@ -506,7 +511,9 @@ export async function renderReportHtmlToPdf(
         format: 'A4',
         printBackground: true,
         preferCSSPageSize: true,
-        displayHeaderFooter: false,
+        displayHeaderFooter: true,
+        headerTemplate: '<span></span>',
+        footerTemplate: REPORT_PDF_FOOTER_TEMPLATE,
         waitForFonts: false,
       }),
       timeoutMs,

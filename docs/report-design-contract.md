@@ -9,6 +9,8 @@ The report styling is locked to the user-approved PDFs reviewed on 25 August 202
 
 The reference PDFs contain live client information and are intentionally not committed to the repository.
 
+The report-set review on 26 August 2026 also covered representative Fuel, Maintenance, Depreciation Log, Cost of Ownership and Landini valuation exports. That review approved a deliberate clarity pass without replacing the established visual language.
+
 ## Required visual language
 
 Canonical Aim4price reports must retain:
@@ -47,3 +49,14 @@ Changing locked report CSS requires all of the following in the same pull reques
 6. Keep `npm run test:report-design` passing.
 
 Do not update a fingerprint merely to make an incidental feature pull request pass.
+
+## 26 August 2026 clarity refinement
+
+The corresponding draft pull request intentionally updates the locked Maintenance and Cost of Ownership/scan-report CSS to:
+
+- prevent minimum-height footer flow from creating misleading near-empty pages;
+- leave page numbering to the canonical PDF renderer, which has the real current and total page counts;
+- make maintenance records easier to scan with explicit South African time, meter-aware labels, evidence wording and more compact detail grouping; and
+- preserve the existing monochrome Montserrat layout, borders, spacing system, logo placement and disclaimer treatment.
+
+The updated fingerprints record this deliberate change and remain subject to visual approval before merge.

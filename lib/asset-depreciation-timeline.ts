@@ -1,4 +1,5 @@
 import { getDb } from './db';
+import { reportYearInTimeZone, sortReportEntriesChronologically } from './report-chronology';
 
 export type AssetDepreciationLogEntry = {
   id: string;
@@ -818,8 +819,9 @@ export function buildDepreciationLogSummary(
   entries: AssetDepreciationLogEntry[],
   fallbackAsset?: Pick<DepreciationLogAssetInput, 'value' | 'selectedValueExVat' | 'hours' | 'usageMetric' | 'lifeWorkedPercent' | 'condition' | 'replacementPriceExVat' | 'specsJson'>,
 ): DepreciationLogSummary {
-  const first = entries[0] ?? null;
-  const latest = entries[entries.length - 1] ?? null;
+  const orderedEntries = sortReportEntriesChronologically(entries);
+  const first = orderedEntries[0] ?? null;
+  const latest = orderedEntries[orderedEntries.length - 1] ?? null;
   const fallbackSpecs = asRecord(fallbackAsset?.specsJson);
   const fallbackValue = normalizeSavedValue(fallbackAsset?.selectedValueExVat) ?? normalizeSavedValue(fallbackAsset?.value);
   const openingValue = first?.previousValueExVat ?? first?.newValueExVat ?? fallbackValue;
@@ -841,8 +843,8 @@ export function buildDepreciationLogSummary(
     firstSnapshotDateIso: first?.capturedAtIso ?? null,
     latestLogEntryDateIso: latest?.capturedAtIso ?? null,
     latestSnapshotDateIso: latest?.capturedAtIso ?? null,
-    logEntryCount: entries.length,
-    snapshotCount: entries.length,
+    logEntryCount: orderedEntries.length,
+    snapshotCount: orderedEntries.length,
     latestUsageAmount: latest?.usageAmount ?? asNumber(fallbackAsset?.hours),
     latestUsageMetric: latest?.usageMetric || fallbackUsageMetric,
     latestCondition: latest?.condition || asText(fallbackAsset?.condition),
@@ -854,9 +856,8 @@ export function buildDepreciationAnnualSummary(entries: AssetDepreciationLogEntr
   const grouped = new Map<number, AssetDepreciationLogEntry[]>();
 
   entries.forEach((entry) => {
-    const parsed = new Date(entry.capturedAtIso);
-    if (Number.isNaN(parsed.getTime())) return;
-    const year = parsed.getFullYear();
+    const year = reportYearInTimeZone(entry.capturedAtIso);
+    if (year === null) return;
     const group = grouped.get(year) ?? [];
     group.push(entry);
     grouped.set(year, group);
@@ -865,7 +866,7 @@ export function buildDepreciationAnnualSummary(entries: AssetDepreciationLogEntr
   return Array.from(grouped.entries())
     .sort(([leftYear], [rightYear]) => leftYear - rightYear)
     .map(([year, yearEntries]) => {
-      const ordered = yearEntries.slice().sort((left, right) => new Date(left.capturedAtIso).getTime() - new Date(right.capturedAtIso).getTime());
+      const ordered = sortReportEntriesChronologically(yearEntries);
       const first = ordered[0] ?? null;
       const latest = ordered[ordered.length - 1] ?? null;
       const openingValue = first?.previousValueExVat ?? first?.newValueExVat ?? null;

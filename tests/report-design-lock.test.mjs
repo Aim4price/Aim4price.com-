@@ -23,7 +23,7 @@ const APPROVED_REPORT_STYLES = [
   {
     path: '../lib/my-invoices-report.ts',
     styleIndexes: [0],
-    fingerprints: ['10462:6c3e7638fe498a95'],
+    fingerprints: ['10396:fe0d74cad229764b'],
   },
   {
     path: '../app/api/fuel/report/route.ts',
@@ -38,7 +38,7 @@ const APPROVED_REPORT_STYLES = [
   {
     path: '../app/api/asset-register/scan-report/route.ts',
     styleIndexes: [0],
-    fingerprints: ['17342:1e8489f357da3afe'],
+    fingerprints: ['17280:97e404108494abdb'],
   },
 ];
 
