@@ -411,6 +411,13 @@ test('the umbrella Manage modal reuses the readable asset Manage and report-form
   assert.match(modalStyles, /\.manageHeader h3 \{[\s\S]*?font-size: clamp\(2rem, 3\.1vw, 2\.65rem\)/);
   assert.match(modalStyles, /\.manageMenuGrid \.manageMenuAction strong \{[\s\S]*?font-size: 1\.12rem/);
   assert.match(modalStyles, /\.manageMenuGrid \.manageMenuAction \.menuOptionSubtitle \{[\s\S]*?font-size: 0\.94rem/);
+  assert.match(modal, /styles\.manageMenuIconTile/);
+  assert.match(modal, /styles\.manageMenuEditIcon/);
+  assert.match(modal, /styles\.manageMenuReportIcon/);
+  assert.match(modal, /styles\.manageMenuRemoveIcon/);
+  assert.match(modalStyles, /\.manageMenuIconTile \{[\s\S]*?width: 46px;[\s\S]*?height: 46px;/);
+  assert.match(modalStyles, /\.manageMenuIconGlyph \{[\s\S]*?width: 24px;[\s\S]*?height: 24px;/);
+  assert.doesNotMatch(modal, /MembersIcon className=\{`\$\{registerStyles\.buttonIcon\}/);
   assert.match(modalStyles, /\.backdrop \{/);
   assert.match(registerStyles, /\.ownerCommandModal \.optionsModalHeader h3 \{[\s\S]*?font-size: clamp\(2\.05rem, 3\.25vw, 2\.8rem\)/);
   assert.match(registerStyles, /\.ownerCommandModal \.ownerCommandGrid \.ownerCommandAction strong \{[\s\S]*?font-size: 1\.12rem/);
@@ -418,16 +425,23 @@ test('the umbrella Manage modal reuses the readable asset Manage and report-form
 });
 
 test('umbrella report downloads use custom selectors, clear spacing, and the shared maintenance exporter', async () => {
-  const [client, modal, modalStyles] = await Promise.all([
+  const [client, modal, modalStyles, maintenanceRoute] = await Promise.all([
     readFile(new URL('../app/asset-register/asset-register-client.tsx', import.meta.url), 'utf8'),
     readFile(new URL('../components/asset-register/AssetGroupManagerModal.tsx', import.meta.url), 'utf8'),
     readFile(new URL('../components/asset-register/AssetGroupManagerModal.module.css', import.meta.url), 'utf8'),
+    readFile(new URL('../app/api/maintenance/report/route.ts', import.meta.url), 'utf8'),
   ]);
 
   assert.match(client, /return `\/api\/maintenance\/report\?\$\{maintenanceParams\.toString\(\)\}`/);
   assert.match(client, /maintenanceSelection === 'upcoming' \|\| maintenanceSelection === 'done'/);
+  assert.match(client, /maintenanceParams\.set\('procedureKind', maintenanceSelection\)/);
   assert.match(modal, /function ReportSelect/);
   assert.match(modal, /Completed maintenance/);
+  assert.match(modal, /Checked only/);
+  assert.match(modal, /Services only/);
+  assert.match(modal, /Repairs only/);
+  assert.match(maintenanceRoute, /parseProcedureKind/);
+  assert.match(maintenanceRoute, /maintenanceRecordProcedureKind\(record\) === procedureKind/);
   assert.match(modal, /registerStyles\.reportSelectMenu/);
   assert.doesNotMatch(modal, /<select value=\{maintenanceType\}/);
   assert.match(modalStyles, /\.reportActions \{[\s\S]*?margin-top: 1\.75rem !important;[\s\S]*?border-top:/);
@@ -718,14 +732,14 @@ test('umbrella and Maintenance page exports preserve completed maintenance histo
   assert.match(maintenance, /completedNotes: event\.sourceNote \|\| event\.summary \|\| event\.note/);
   assert.match(scanHistory, /export async function listCompletedMaintenanceScanEventsForAssets/);
   assert.match(scanHistory, /sourceNote: note/);
-  assert.match(scanHistory, /createdAtIso: asIsoTimestamp\(row\.created_at\)/);
+  assert.match(scanHistory, /const createdAtIso = asIsoTimestamp\(row\.created_at\) \?\? ""/);
   assert.match(scanHistory, /notedAtIso: asIsoTimestamp\(row\.maintenance_noted_at\)/);
   const scanEventMapper = scanHistory.slice(
     scanHistory.indexOf('function mapScanEventRow'),
     scanHistory.indexOf('function splitMaintenanceNoteLines'),
   );
   assert.match(scanEventMapper, /entryAddedAtIso: asIsoTimestamp\(row\.entry_added_at\)/);
-  assert.match(scanEventMapper, /createdAtIso: asIsoTimestamp\(row\.created_at\)/);
+  assert.match(scanEventMapper, /createdAtIso,/);
   assert.doesNotMatch(scanEventMapper, /createdAtIso: row\.created_at/);
   assert.match(scanHistory, /coalesce\(to_jsonb\(e\)->>'note', ''\) as note/);
   assert.match(scanHistory, /null::text as maintenance_noted_at/);
