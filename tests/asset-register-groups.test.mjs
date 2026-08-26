@@ -415,7 +415,9 @@ test('the umbrella Manage modal reuses the readable asset Manage and report-form
   assert.match(modal, /styles\.manageMenuEditIcon/);
   assert.match(modal, /styles\.manageMenuReportIcon/);
   assert.match(modal, /styles\.manageMenuRemoveIcon/);
-  assert.match(modalStyles, /\.manageMenuIconTile \{[\s\S]*?width: 46px;[\s\S]*?height: 46px;/);
+  assert.match(modal, /<i className=\{`\$\{styles\.manageMenuIconTile\}/);
+  assert.doesNotMatch(modal, /<span className=\{`\$\{styles\.manageMenuIconTile\}/);
+  assert.match(modalStyles, /\.manageMenuIconTile \{[\s\S]*?grid-column: 1;[\s\S]*?justify-self: center;[\s\S]*?width: 46px;[\s\S]*?height: 46px;[\s\S]*?font-style: normal;/);
   assert.match(modalStyles, /\.manageMenuIconGlyph \{[\s\S]*?width: 24px;[\s\S]*?height: 24px;/);
   assert.doesNotMatch(modal, /MembersIcon className=\{`\$\{registerStyles\.buttonIcon\}/);
   assert.match(modalStyles, /\.backdrop \{/);
