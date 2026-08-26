@@ -1725,6 +1725,12 @@ export default function FuelClient({
     if (!term) return assets;
     return assets.filter((asset) => matchesFuelSlipAsset(asset, term));
   }, [assets, exclusionSearch]);
+  const bulkSelectableExclusionAssets = useMemo(() => {
+    const targetStatus = selectedExclusionAssets[0]?.workUseExcluded ?? false;
+    return filteredExclusionAssets.filter((asset) => asset.workUseExcluded === targetStatus);
+  }, [filteredExclusionAssets, selectedExclusionAssets]);
+  const areAllBulkSelectableExclusionAssetsSelected = Boolean(bulkSelectableExclusionAssets.length)
+    && bulkSelectableExclusionAssets.every((asset) => selectedExclusionAssetIdSet.has(asset.id));
 
   const reportDateEntries = useMemo(
     () => [...recentEvents, ...recentFuelSlips.map((slip) => ({ createdAtIso: slip.createdAtIso, documentDate: slip.documentDate }))],
@@ -2258,6 +2264,22 @@ export default function FuelClient({
     setSelectedExclusionAssetIds((currentIds) => {
       if (currentIds.includes(asset.id)) return currentIds.filter((assetId) => assetId !== asset.id);
       return [...currentIds, asset.id];
+    });
+    setIsExclusionEditorOpen(false);
+    setExclusionReason('');
+    setNotice(null);
+  }
+
+  function toggleAllVisibleExclusionAssets() {
+    const selectableAssetIds = bulkSelectableExclusionAssets.map((asset) => asset.id);
+    if (!selectableAssetIds.length) return;
+
+    const selectableAssetIdSet = new Set(selectableAssetIds);
+    setSelectedExclusionAssetIds((currentIds) => {
+      const currentIdSet = new Set(currentIds);
+      const allSelected = selectableAssetIds.every((assetId) => currentIdSet.has(assetId));
+      if (allSelected) return currentIds.filter((assetId) => !selectableAssetIdSet.has(assetId));
+      return [...currentIds, ...selectableAssetIds.filter((assetId) => !currentIdSet.has(assetId))];
     });
     setIsExclusionEditorOpen(false);
     setExclusionReason('');
@@ -3589,7 +3611,7 @@ export default function FuelClient({
                 <p>
                   {isExclusionEditorOpen
                     ? `${selectedExclusionAssets.length} ${selectedExclusionAssets.length === 1 ? 'asset' : 'assets'} selected.`
-                    : 'Select one or more assets whose fuel is not used for work, such as generators serving normal houses.'}
+                    : 'Select assets to exclude from work-use totals, or choose an excluded asset to include it again.'}
                 </p>
               </div>
               <button type="button" className={styles.closeButton} onClick={closeModal} aria-label="Close exclusions"><CloseIcon /></button>
@@ -3635,14 +3657,32 @@ export default function FuelClient({
               </div>
             ) : (
               <>
-                <div className={styles.pickerToolbar} data-asset-choice-toolbar="true">
+                <div className={`${styles.pickerToolbar} ${styles.exclusionPickerToolbar}`} data-asset-choice-toolbar="true">
                   <input
                     value={exclusionSearch}
                     onChange={(event) => setExclusionSearch(event.target.value)}
                     placeholder="Search saved assets..."
                     aria-label="Search saved assets for fuel exclusions"
                   />
-                  <button type="button" className={styles.secondaryButton} onClick={() => setExclusionSearch('')}>Clear</button>
+                  <button
+                    type="button"
+                    className={`${styles.secondaryButton} ${styles.exclusionSelectAllButton}`}
+                    onClick={toggleAllVisibleExclusionAssets}
+                    disabled={!bulkSelectableExclusionAssets.length}
+                    aria-pressed={areAllBulkSelectableExclusionAssetsSelected}
+                    aria-label={areAllBulkSelectableExclusionAssetsSelected
+                      ? 'Unselect all shown assets'
+                      : exclusionSelectionAction === 'include'
+                        ? 'Select all shown excluded assets to include again'
+                        : 'Select all shown assets to exclude'}
+                  >
+                    {areAllBulkSelectableExclusionAssetsSelected
+                      ? `Unselect shown (${bulkSelectableExclusionAssets.length})`
+                      : exclusionSelectionAction === 'include'
+                        ? `Select all excluded (${bulkSelectableExclusionAssets.length})`
+                        : `Select all shown (${bulkSelectableExclusionAssets.length})`}
+                  </button>
+                  <button type="button" className={styles.secondaryButton} onClick={() => setExclusionSearch('')} disabled={!exclusionSearch}>Clear search</button>
                 </div>
                 <div className={styles.assetList} data-asset-choice-list="true">
                   {isLoading ? <div className={styles.emptyState}>Loading saved assets...</div> : filteredExclusionAssets.length ? filteredExclusionAssets.map((asset) => {
@@ -3696,7 +3736,7 @@ export default function FuelClient({
                 <>
                   <span className={styles.exclusionSelectionCount} aria-live="polite">
                     {selectedExclusionAssets.length
-                      ? `${selectedExclusionAssets.length} selected to ${exclusionSelectionAction}`
+                      ? `${selectedExclusionAssets.length} selected to ${exclusionSelectionAction === 'include' ? 'include again' : 'exclude'}`
                       : 'Select one or more assets'}
                   </span>
                   {selectedExclusionAssets.length ? (
