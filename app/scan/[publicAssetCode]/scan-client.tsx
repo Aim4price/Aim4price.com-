@@ -1643,6 +1643,7 @@ export default function ScanClient({
       const nextDraft = shouldOpenScheduledMaintenance
         ? {
             ...nextDraftWithUsage,
+            hours: sessionUsage.hasUsage ? sessionUsage.hours : "",
             serviceMode: scheduledMaintenanceServiceMode,
           }
         : nextDraftWithUsage;
@@ -1935,10 +1936,12 @@ export default function ScanClient({
       setNotice({ tone: "error", message: requiredUsageCopy(asset) });
     }
 
+    const storedSession = readQrScanSession(normalizedCode);
+
     setDraft((current) => {
       const nextDraft = keepCurrentLocation(
         current,
-        readQrScanSession(normalizedCode),
+        storedSession,
       );
 
       if (!asset) return nextDraft;
@@ -1958,8 +1961,16 @@ export default function ScanClient({
       }
 
       if (enforcedEditor === "service") {
+        const storedUsage = sessionUsageForAsset(asset, storedSession);
+        const maintenanceHours = pendingUpdate.hasUsage && pendingUpdate.hours
+          ? pendingUpdate.hours
+          : storedUsage.hasUsage
+            ? storedUsage.hours
+            : "";
+
         return {
           ...nextDraft,
+          hours: isMeterUsageMode(asset) ? maintenanceHours : nextDraft.hours,
           photoUrls: pendingUpdate.photoUrls,
           serviceMode:
             normalizedScheduledMaintenanceId && scheduledMaintenanceServiceMode
@@ -2425,6 +2436,33 @@ export default function ScanClient({
     if (activeEditor === "service") {
       if (!draft.serviceMode) return { ok: false, message: "Choose a type." };
 
+      if (isMeterUsageMode(asset)) {
+        if (!draft.hours.trim()) {
+          return {
+            ok: false,
+            message: asset.usageMode === "km"
+              ? "Enter the current kilometre reading for this maintenance record."
+              : "Enter the current hour-meter reading for this maintenance record.",
+          };
+        }
+
+        const completedReading = Number(draft.hours);
+        if (!Number.isFinite(completedReading) || completedReading < 0) {
+          return { ok: false, message: "Enter a valid current meter reading." };
+        }
+        if (
+          persistedAsset.hours !== null
+          && completedReading < persistedAsset.hours
+        ) {
+          return {
+            ok: false,
+            message: asset.usageMode === "km"
+              ? "The maintenance kilometre reading cannot be lower than the saved reading."
+              : "The maintenance hour reading cannot be lower than the saved reading.",
+          };
+        }
+      }
+
       const validationServiceCopy = serviceCopyForProfile(
         resolveAssetServiceProfile(asset),
       );
@@ -2562,8 +2600,8 @@ export default function ScanClient({
     }
 
     if (
-      activeEditor === "usage" &&
-      (asset.usageMode === "hours" || asset.usageMode === "km")
+      (activeEditor === "usage" || activeEditor === "service")
+      && (asset.usageMode === "hours" || asset.usageMode === "km")
     ) {
       const stagedHours = draft.hours.trim();
       const parsedHours = Number(stagedHours);
@@ -2998,6 +3036,10 @@ export default function ScanClient({
     (draft.serviceMode === "serviced" || draft.serviceMode === "repaired") &&
     showServiceDetailsStep &&
     (!draft.serviceCompany.trim() || !draft.mechanicName.trim());
+  const maintenanceUsageMissing =
+    activeEditor === "service"
+    && isMeterUsageMode(asset)
+    && !draft.hours.trim();
   const isServicePhotoStep = activeEditor === "service" && showServicePhotoStep;
   const saveBlockedByEmptyDraft =
     activeEditor === "photos"
@@ -3005,7 +3047,7 @@ export default function ScanClient({
       : activeEditor === "notes"
         ? !draft.note.trim()
         : activeEditor === "service"
-          ? !draft.serviceMode || !hasServiceSelection || serviceDetailsMissing
+          ? !draft.serviceMode || !hasServiceSelection || maintenanceUsageMissing || serviceDetailsMissing
           : false;
   const canPressSave = isServicePhotoStep
     ? !isSaving && !isUploading
@@ -3026,6 +3068,10 @@ export default function ScanClient({
                 : draft.serviceMode === "repaired"
                   ? "Explain repair"
                   : "Select items"
+              : maintenanceUsageMissing
+                ? asset?.usageMode === "km"
+                  ? "Enter kilometres"
+                  : "Enter hours"
               : serviceDetailsMissing
                 ? "Complete details"
                 : activeEditor === "service" &&
@@ -4145,6 +4191,35 @@ export default function ScanClient({
                   </div>
                 ) : (
                   <div className={styles.modalStack}>
+                    {isMeterUsageMode(asset) ? (
+                      <div className={styles.servicePanel}>
+                        <div className={styles.serviceSectionHeader}>
+                          <strong>{usageModalLabel(asset)}</strong>
+                          <small>Required. Enter the meter reading shown after the work was completed.</small>
+                        </div>
+                        <label className={styles.field}>
+                          <span>{asset.usageMode === "km" ? "Kilometres at completion" : "Hours at completion"}</span>
+                          <input
+                            className={styles.largeInput}
+                            inputMode="numeric"
+                            placeholder={asset.usageMode === "km" ? "Enter current kilometres" : "Enter current hours"}
+                            value={draft.hours}
+                            onChange={(event) =>
+                              setDraft((current) => ({
+                                ...current,
+                                hours: normalizeIntegerInput(event.target.value),
+                              }))
+                            }
+                            disabled={isSaving}
+                            required
+                          />
+                        </label>
+                        <p className={styles.helperText}>
+                          Last saved reading: {formatUsage(savedAsset ?? asset)}
+                        </p>
+                      </div>
+                    ) : null}
+
                     <div
                       className={`${styles.serviceModeGrid} ${draft.serviceMode ? styles.serviceModeGridLocked : ""}`}
                     >
