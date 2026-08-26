@@ -11,6 +11,7 @@ import {
   type RefObject,
 } from 'react';
 import {
+  applyDropdownOverlayGeometry,
   calculateDropdownOverlayPosition,
   type DropdownOverlayPosition,
 } from '../lib/dropdown-overlay-position';
@@ -87,6 +88,18 @@ export default function DropdownOverlay({
   const animationFrameRef = useRef<number | null>(null);
   const [position, setPosition] = useState<DropdownOverlayPosition | null>(null);
 
+  const attachMenuRef = useCallback((menu: HTMLDivElement | null) => {
+    menuRef.current = menu;
+    if (!menu) return;
+
+    applyDropdownOverlayGeometry(menu.style, {
+      position: null,
+      fallbackMaxHeight: maxHeight,
+      viewportGutter: VIEWPORT_GUTTER,
+      visible: false,
+    });
+  }, [maxHeight]);
+
   const updatePosition = useCallback(() => {
     const menu = menuRef.current;
     const anchor = anchorRef?.current ?? fallbackAnchorRef.current;
@@ -98,17 +111,42 @@ export default function DropdownOverlay({
     const viewportTop = visualViewport?.offsetTop ?? 0;
     const viewportWidth = visualViewport?.width ?? window.innerWidth;
     const viewportHeight = visualViewport?.height ?? window.innerHeight;
+    const maximumWidth = Math.max(1, viewportWidth - (VIEWPORT_GUTTER * 2));
+    const measurementWidth = Math.min(
+      maximumWidth,
+      Math.max(1, anchorRect.width, minimumWidth),
+    );
+    applyDropdownOverlayGeometry(menu.style, {
+      position: {
+        left: viewportLeft + VIEWPORT_GUTTER,
+        top: viewportTop + VIEWPORT_GUTTER,
+        width: measurementWidth,
+        maxHeight,
+      },
+      fallbackMaxHeight: maxHeight,
+      viewportGutter: VIEWPORT_GUTTER,
+      visible: false,
+    });
     const initialContentWidth = menu.scrollWidth;
     const provisionalWidth = Math.min(
-      Math.max(1, viewportWidth - (VIEWPORT_GUTTER * 2)),
+      maximumWidth,
       Math.max(
         anchorRect.width,
         minimumWidth,
         matchAnchorWidth ? 0 : initialContentWidth,
       ),
     );
-    menu.style.setProperty('--dropdown-overlay-width', `${provisionalWidth}px`);
-    menu.style.setProperty('--dropdown-overlay-max-height', `${maxHeight}px`);
+    applyDropdownOverlayGeometry(menu.style, {
+      position: {
+        left: viewportLeft + VIEWPORT_GUTTER,
+        top: viewportTop + VIEWPORT_GUTTER,
+        width: provisionalWidth,
+        maxHeight,
+      },
+      fallbackMaxHeight: maxHeight,
+      viewportGutter: VIEWPORT_GUTTER,
+      visible: false,
+    });
     const next = calculateDropdownOverlayPosition({
       anchor: anchorRect,
       viewport: {
@@ -126,6 +164,11 @@ export default function DropdownOverlay({
       minimumWidth,
     });
 
+    applyDropdownOverlayGeometry(menu.style, {
+      position: next,
+      fallbackMaxHeight: maxHeight,
+      viewportGutter: VIEWPORT_GUTTER,
+    });
     setPosition((current) => (samePosition(current, next) ? current : next));
   }, [anchorRef, gap, matchAnchorWidth, maxHeight, minimumWidth]);
 
@@ -179,7 +222,7 @@ export default function DropdownOverlay({
     <div
       {...attributes}
       id={id}
-      ref={menuRef}
+      ref={attachMenuRef}
       data-dropdown-overlay="true"
       style={overlayStyle}
       onMouseDown={(event) => {
