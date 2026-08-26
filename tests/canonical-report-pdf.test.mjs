@@ -63,7 +63,9 @@ test('Chromium renderer preserves canonical CSS and never substitutes a second l
   assert.match(renderer, /waitUntil: 'domcontentloaded'/);
   assert.match(renderer, /printBackground: true/);
   assert.match(renderer, /preferCSSPageSize: true/);
-  assert.match(renderer, /displayHeaderFooter: false/);
+  assert.match(renderer, /displayHeaderFooter: true/);
+  assert.match(renderer, /class="pageNumber"/);
+  assert.match(renderer, /class="totalPages"/);
   assert.match(renderer, /waitForFonts: false/);
   assert.match(renderer, /MAX_CONCURRENT_RENDERS/);
   assert.match(renderer, /MAX_QUEUED_RENDERS/);

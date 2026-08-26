@@ -31,6 +31,7 @@ type KeyValueRow = {
   value: string;
 };
 
+const NOT_RECORDED = 'Not recorded';
 
 function asText(value: unknown): string {
   return String(value ?? '').replace(/\s+/g, ' ').trim();
@@ -117,6 +118,19 @@ function formatUsage(asset: MyInvoiceAssetOption | null): string {
   return `${asset.usageReading.toLocaleString('en-ZA')} ${asset.usageMetric}`;
 }
 
+function formatCondition(value: string): string {
+  const normalized = asText(value).toLowerCase();
+  if (!normalized) return NOT_RECORDED;
+
+  return ({
+    excellent: 'Excellent',
+    good: 'Good',
+    fair: 'Fair',
+    used: 'Used',
+    serious: 'Requires attention',
+  } as Record<string, string>)[normalized] ?? `${normalized.charAt(0).toUpperCase()}${normalized.slice(1)}`;
+}
+
 function buildOwnerLocationAddress(profile: AccountProfile | null): string {
   if (!profile) return '';
 
@@ -164,7 +178,7 @@ function renderRows(rows: KeyValueRow[], emptyText = 'No details available.'): s
           (row) => `
             <div class="assetReportRow">
               <span>${escapeHtml(row.label)}</span>
-              <strong>${escapeHtml(row.value || '-')}</strong>
+              <strong>${escapeHtml(row.value || NOT_RECORDED)}</strong>
             </div>
           `,
         )
@@ -175,10 +189,10 @@ function renderRows(rows: KeyValueRow[], emptyText = 'No details available.'): s
 
 function buildOwnerRows(ownerDetails: MyInvoicesOwnerDetails): KeyValueRow[] {
   return [
-    { label: 'Business Name', value: ownerDetails.businessName || '-' },
-    { label: 'Contact Details', value: ownerDetails.contactDetails || '-' },
-    { label: 'Business Email', value: ownerDetails.businessEmail || '-' },
-    { label: 'Location / Address', value: ownerDetails.locationAddress || '-' },
+    { label: 'Business name', value: ownerDetails.businessName || NOT_RECORDED },
+    { label: 'Contact details', value: ownerDetails.contactDetails || NOT_RECORDED },
+    { label: 'Business email', value: ownerDetails.businessEmail || NOT_RECORDED },
+    { label: 'Location / address', value: ownerDetails.locationAddress || NOT_RECORDED },
   ];
 }
 
@@ -192,23 +206,33 @@ function buildAssetRows(asset: MyInvoiceAssetOption | null): KeyValueRow[] {
 
   return [
     { label: 'Category', value: formatAssetKind(asset) },
-    { label: 'Asset', value: asset.title || '-' },
-    { label: 'Year Model', value: asset.yearModel ? String(asset.yearModel) : '-' },
-    { label: 'Usage', value: formatUsage(asset) },
-    { label: 'Condition', value: asset.condition || '-' },
-    { label: 'Current Value', value: formatMoney(asset.value) },
+    { label: 'Asset', value: asset.title || NOT_RECORDED },
+    { label: 'Model year', value: asset.yearModel ? String(asset.yearModel) : NOT_RECORDED },
+    { label: 'Usage', value: formatUsage(asset) === '-' ? NOT_RECORDED : formatUsage(asset) },
+    { label: 'Condition', value: formatCondition(asset.condition) },
+    { label: 'Current value (excl. VAT)', value: formatMoney(asset.value) },
   ];
 }
 
 function invoiceBlockText(invoice: MyInvoiceRecord, blockType: 'maintenance' | 'parts' | 'repair'): string {
   const block = invoice.blocks.find((entry) => entry.blockType === blockType);
-  return normalizeSpaces(block?.description) || '-';
+  return normalizeSpaces(block?.description) || NOT_RECORDED;
 }
 
 function invoiceSourceLabel(invoice: MyInvoiceRecord): string {
   if (invoice.source === 'fuel_slip') return 'Fuel Slip';
   if (invoice.source === 'automatic') return 'Aim4price captured';
   return 'Manual';
+}
+
+function fuelSlipInvoices(options: MyInvoicesReportOptions): MyInvoiceRecord[] {
+  return options.includeFuelSlipCosts
+    ? options.invoices.filter((invoice) => invoice.source === 'fuel_slip')
+    : [];
+}
+
+function fuelSlipSpend(options: MyInvoicesReportOptions): number {
+  return fuelSlipInvoices(options).reduce((sum, invoice) => sum + invoice.totalIncVat, 0);
 }
 
 const ACCOUNTING_HEADERS = [
@@ -299,34 +323,15 @@ function renderInvoiceRecords(invoices: MyInvoiceRecord[]): string {
     <div class="assetReportMaintenanceList">
       ${invoices
         .map((invoice) => {
-          const attachmentLabel = invoice.document ? `${invoice.document.fileName || 'Attached document'} (${invoice.document.contentType || 'file'})` : '-';
-
-          return `
-            <article class="assetReportMaintenanceCard">
-              <div class="assetReportMaintenanceHeader assetReportInvoiceHeader">
-                <div>
-                  <span>Invoice Date</span>
-                  <strong>${escapeHtml(formatDateOnly(invoice.invoiceDate))}</strong>
+          const attachmentLabel = invoice.document ? `${invoice.document.fileName || 'Attached document'} (${invoice.document.contentType || 'file'})` : 'No attachment';
+          const costDetailsHtml = invoice.source === 'fuel_slip'
+            ? `
+                <div class="assetReportMaintenanceDetail assetReportMaintenanceDetailWide">
+                  <span>Fuel purchase / notes</span>
+                  <strong>${escapeHtml(invoice.notes || 'Fuel slip cost')}</strong>
                 </div>
-                <div>
-                  <span>Supplier</span>
-                  <strong>${escapeHtml(invoice.supplierName || '-')}</strong>
-                </div>
-                <div>
-                  <span>Invoice Number</span>
-                  <strong>${escapeHtml(invoice.invoiceNumber || '-')}</strong>
-                </div>
-                <div>
-                  <span>Asset</span>
-                  <strong>${escapeHtml(invoice.assetTitle || '-')}</strong>
-                </div>
-                <div>
-                  <span>Total</span>
-                  <strong>${escapeHtml(formatMoneyWithCents(invoice.totalIncVat))}</strong>
-                </div>
-              </div>
-
-              <div class="assetReportMaintenanceDetails assetReportInvoiceDetails">
+              `
+            : `
                 <div class="assetReportMaintenanceDetail assetReportMaintenanceDetailWide">
                   <span>Maintenance Work Done</span>
                   <strong>${escapeHtml(invoiceBlockText(invoice, 'maintenance'))}</strong>
@@ -341,8 +346,37 @@ function renderInvoiceRecords(invoices: MyInvoiceRecord[]): string {
                 </div>
                 <div class="assetReportMaintenanceDetail assetReportMaintenanceDetailWide">
                   <span>Notes</span>
-                  <strong>${escapeHtml(invoice.notes || '-')}</strong>
+                  <strong>${escapeHtml(invoice.notes || 'No notes recorded')}</strong>
                 </div>
+              `;
+
+          return `
+            <article class="assetReportMaintenanceCard">
+              <div class="assetReportMaintenanceHeader assetReportInvoiceHeader">
+                <div>
+                  <span>Invoice Date</span>
+                  <strong>${escapeHtml(formatDateOnly(invoice.invoiceDate))}</strong>
+                </div>
+                <div>
+                  <span>Supplier</span>
+                  <strong>${escapeHtml(invoice.supplierName || NOT_RECORDED)}</strong>
+                </div>
+                <div>
+                  <span>Invoice Number</span>
+                  <strong>${escapeHtml(invoice.invoiceNumber || NOT_RECORDED)}</strong>
+                </div>
+                <div>
+                  <span>Asset</span>
+                  <strong>${escapeHtml(invoice.assetTitle || NOT_RECORDED)}</strong>
+                </div>
+                <div>
+                  <span>Total</span>
+                  <strong>${escapeHtml(formatMoneyWithCents(invoice.totalIncVat))}</strong>
+                </div>
+              </div>
+
+              <div class="assetReportMaintenanceDetails assetReportInvoiceDetails">
+                ${costDetailsHtml}
                 <div class="assetReportMaintenanceDetail assetReportMaintenanceDetailWide">
                   <span>Attached Document / Photo</span>
                   <strong>${escapeHtml(attachmentLabel)}</strong>
@@ -361,6 +395,8 @@ function renderInvoiceRecords(invoices: MyInvoiceRecord[]): string {
 }
 
 function buildSummaryRows(options: MyInvoicesReportOptions): KeyValueRow[] {
+  const fuelInvoices = fuelSlipInvoices(options);
+
   return [
     { label: 'Report Period', value: options.dateRangeLabel },
     { label: 'Asset Filter', value: options.assetLabel },
@@ -370,6 +406,8 @@ function buildSummaryRows(options: MyInvoicesReportOptions): KeyValueRow[] {
     { label: 'Maintenance Spend', value: formatMoneyWithCents(options.summary.maintenanceSpend) },
     { label: 'Parts Spend', value: formatMoneyWithCents(options.summary.partsSpend) },
     { label: 'Repair Spend', value: formatMoneyWithCents(options.summary.repairSpend) },
+    { label: 'Fuel Slip Records', value: options.includeFuelSlipCosts ? formatCount(fuelInvoices.length) : 'Excluded' },
+    { label: 'Fuel Slip Spend', value: options.includeFuelSlipCosts ? formatMoneyWithCents(fuelSlipSpend(options)) : 'Excluded' },
     { label: 'VAT Total', value: formatMoneyWithCents(options.summary.vatTotal) },
     { label: 'Updated', value: latestInvoiceDateLabel(options) },
   ];
@@ -952,7 +990,7 @@ export function buildMyInvoicesReportHtml(options: MyInvoicesReportOptions): str
 
       .assetReportFooter {
         display: grid;
-        grid-template-columns: minmax(0, 1fr) auto;
+        grid-template-columns: minmax(0, 1fr);
         gap: 10px;
         align-items: end;
         margin-top: auto;
@@ -973,13 +1011,6 @@ export function buildMyInvoicesReportHtml(options: MyInvoicesReportOptions): str
         font-size: 7.35px;
         line-height: 1.35;
         font-style: italic;
-      }
-
-      .assetReportPageNumber {
-        color: var(--strong);
-        font-size: 8px;
-        font-weight: 700;
-        white-space: nowrap;
       }
 
       @media screen and (max-width: 760px) {
@@ -1070,7 +1101,11 @@ export function buildMyInvoicesReportHtml(options: MyInvoicesReportOptions): str
         }
 
         .assetReportInner {
-          min-height: 281mm;
+          min-height: 0;
+        }
+
+        .assetReportFooter {
+          margin-top: 12px;
         }
 
         .assetReportHeader {
@@ -1168,7 +1203,6 @@ export function buildMyInvoicesReportHtml(options: MyInvoicesReportOptions): str
             <p class="assetReportPowered">Powered by Aim4price.com</p>
             <div class="assetReportDisclaimer">${escapeHtml(disclaimer)}</div>
           </div>
-          <div class="assetReportPageNumber">Page 1 of 1</div>
         </footer>
       </div>
     </main>
@@ -1201,8 +1235,15 @@ function styled(value: XlsxPrimitiveCellValue, style: XlsxCellStyle): XlsxCellVa
   return { value, style };
 }
 
-function invoiceDateForExcel(value: string | null): string {
-  return value ?? '';
+function linked(value: XlsxPrimitiveCellValue, hyperlink: string | null | undefined): XlsxCellValue {
+  return hyperlink ? { value, style: 'link', hyperlink } : styled(value, 'text');
+}
+
+function invoiceDateForExcel(value: string | null): Date | null {
+  const match = String(value ?? '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) return null;
+
+  return new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3])));
 }
 
 function blockRows(invoices: MyInvoiceRecord[], blockType: 'maintenance' | 'parts' | 'repair'): XlsxCellValue[][] {
@@ -1256,24 +1297,45 @@ function buildSupplierSpendRows(invoices: MyInvoiceRecord[]): XlsxCellValue[][] 
 }
 
 export function buildMyInvoicesWorkbook(options: MyInvoicesReportOptions): XlsxSheet[] {
+  const fuelInvoices = fuelSlipInvoices(options);
+  const assetSummaryRows: XlsxCellValue[][] = options.selectedAsset
+    ? [
+        [styled('Category', 'metaLabel'), styled(formatAssetKind(options.selectedAsset), 'metaValue')],
+        [styled('Asset', 'metaLabel'), styled(options.selectedAsset.title || NOT_RECORDED, 'metaValue')],
+        [styled('Model year', 'metaLabel'), styled(options.selectedAsset.yearModel, 'year')],
+        [styled('Usage', 'metaLabel'), styled(formatUsage(options.selectedAsset) === '-' ? NOT_RECORDED : formatUsage(options.selectedAsset), 'metaValue')],
+        [styled('Condition', 'metaLabel'), styled(formatCondition(options.selectedAsset.condition), 'metaValue')],
+        [styled('Current value (excl. VAT)', 'metaLabel'), styled(options.selectedAsset.value, 'currency')],
+      ]
+    : [
+        [styled('Report scope', 'metaLabel'), styled('All selected assets', 'metaValue')],
+        [styled('Asset filter', 'metaLabel'), styled(options.assetLabel, 'metaValue')],
+      ];
+  const assetSectionRow = 15;
   const summaryRows: XlsxCellValue[][] = [
-    [styled(options.title, 'title'), '', '', '', '', ''],
-    [styled(options.subtitle, 'subtitle'), '', '', '', '', ''],
+    [styled(options.title, 'title'), '', '', '', '', '', ''],
+    [styled(options.subtitle, 'subtitle'), '', '', '', '', '', ''],
     [],
     [styled('Generated', 'metaLabel'), styled(options.generatedAt, 'metaValue')],
     [styled('Period', 'metaLabel'), styled(options.dateRangeLabel, 'metaValue')],
     [styled('Asset Filter', 'metaLabel'), styled(options.assetLabel, 'metaValue')],
     [styled('External fuel costs', 'metaLabel'), styled(options.includeFuelSlipCosts ? 'Included' : 'Excluded', 'metaValue')],
+    [styled('Fuel slip records', 'metaLabel'), styled(options.includeFuelSlipCosts ? fuelInvoices.length : 'Excluded', options.includeFuelSlipCosts ? 'integer' : 'metaValue')],
+    [styled('Fuel slip spend', 'metaLabel'), styled(options.includeFuelSlipCosts ? fuelSlipSpend(options) : 'Excluded', options.includeFuelSlipCosts ? 'currency' : 'metaValue')],
     [styled('Business name', 'metaLabel'), styled(options.ownerDetails.businessName, 'metaValue')],
     [styled('Contact details', 'metaLabel'), styled(options.ownerDetails.contactDetails, 'metaValue')],
     [styled('Business email', 'metaLabel'), styled(options.ownerDetails.businessEmail, 'metaValue')],
     [styled('Location / address', 'metaLabel'), styled(options.ownerDetails.locationAddress, 'metaValue')],
+    [],
+    [styled('Asset details', 'section'), '', '', '', '', '', ''],
+    ...assetSummaryRows,
     [],
     [
       styled('Total spent', 'tableHeader'),
       styled('Maintenance', 'tableHeader'),
       styled('Parts', 'tableHeader'),
       styled('Repairs', 'tableHeader'),
+      styled('Fuel slips', 'tableHeader'),
       styled('VAT', 'tableHeader'),
       styled('Invoice Count', 'tableHeader'),
     ],
@@ -1282,6 +1344,7 @@ export function buildMyInvoicesWorkbook(options: MyInvoicesReportOptions): XlsxS
       styled(options.summary.maintenanceSpend, 'currency'),
       styled(options.summary.partsSpend, 'currency'),
       styled(options.summary.repairSpend, 'currency'),
+      styled(fuelSlipSpend(options), 'currency'),
       styled(options.summary.vatTotal, 'currency'),
       styled(options.summary.invoiceCount, 'integer'),
     ],
@@ -1325,7 +1388,30 @@ export function buildMyInvoicesWorkbook(options: MyInvoicesReportOptions): XlsxS
       styled(invoice.partsSupplied, 'note'),
       styled(invoice.repairWorkDone, 'note'),
       styled(invoice.notes, 'note'),
-      styled(invoice.document?.fileName ?? '', 'text'),
+      linked(invoice.document?.fileName || 'No attachment', invoice.document?.uploadUrl),
+    ]),
+  ];
+
+  const fuelHeaders = ['Invoice Date', 'Asset', 'Supplier', 'Invoice Number', 'Total Incl. VAT', 'Usage', 'Notes', 'Attached Document'];
+  const fuelRows: XlsxCellValue[][] = [
+    [styled('Fuel Slip Costs', 'title'), '', '', '', '', '', '', ''],
+    [styled(
+      options.includeFuelSlipCosts
+        ? `Filtered report: ${options.dateRangeLabel} • ${options.assetLabel}`
+        : 'External fuel costs were excluded from this report.',
+      'subtitle',
+    ), '', '', '', '', '', '', ''],
+    [],
+    fuelHeaders.map((header) => styled(header, 'tableHeader')),
+    ...fuelInvoices.map((invoice) => [
+      styled(invoiceDateForExcel(invoice.invoiceDate), 'date'),
+      styled(invoice.assetTitle || NOT_RECORDED, 'text'),
+      styled(invoice.supplierName || NOT_RECORDED, 'text'),
+      styled(invoice.invoiceNumber || NOT_RECORDED, 'text'),
+      styled(invoice.totalIncVat, 'currency'),
+      styled(invoice.usageReading === null ? NOT_RECORDED : `${invoice.usageReading.toLocaleString('en-ZA')} ${invoice.usageMetric === 'none' ? '' : invoice.usageMetric}`.trim(), 'text'),
+      styled(invoice.notes || NOT_RECORDED, 'note'),
+      linked(invoice.document?.fileName || 'No attachment', invoice.document?.uploadUrl),
     ]),
   ];
 
@@ -1333,7 +1419,7 @@ export function buildMyInvoicesWorkbook(options: MyInvoicesReportOptions): XlsxS
   const accountingRows: XlsxCellValue[][] = [
     ACCOUNTING_HEADERS.map((header) => styled(header, 'tableHeader')),
     ...options.invoices.map((invoice) => accountingValues(invoice).map((value, index) => {
-      if (index === 0) return styled(value, 'date');
+      if (index === 0) return styled(invoiceDateForExcel(String(value)), 'date');
       if (index >= 6 && index <= 8) return styled(value, 'currency');
       if (index === 4) return styled(value, 'note');
       return styled(value, 'text');
@@ -1344,11 +1430,13 @@ export function buildMyInvoicesWorkbook(options: MyInvoicesReportOptions): XlsxS
     {
       name: 'Summary',
       rows: summaryRows,
-      columns: [24, 28, 22, 22, 22, 18],
+      columns: [28, 30, 22, 22, 20, 20, 18],
       merges: [
-        { fromRow: 1, fromColumn: 1, toRow: 1, toColumn: 6 },
-        { fromRow: 2, fromColumn: 1, toRow: 2, toColumn: 6 },
+        { fromRow: 1, fromColumn: 1, toRow: 1, toColumn: 7 },
+        { fromRow: 2, fromColumn: 1, toRow: 2, toColumn: 7 },
+        { fromRow: assetSectionRow, fromColumn: 1, toRow: assetSectionRow, toColumn: 7 },
       ],
+      orientation: 'portrait',
       tabColor: '10382F',
     },
     {
@@ -1380,6 +1468,23 @@ export function buildMyInvoicesWorkbook(options: MyInvoicesReportOptions): XlsxS
         toColumn: invoiceHeader.length,
       },
       tabColor: '176B4F',
+    },
+    {
+      name: 'Fuel Costs',
+      rows: fuelRows,
+      columns: [16, 28, 26, 22, 18, 20, 42, 30],
+      merges: [
+        { fromRow: 1, fromColumn: 1, toRow: 1, toColumn: fuelHeaders.length },
+        { fromRow: 2, fromColumn: 1, toRow: 2, toColumn: fuelHeaders.length },
+      ],
+      freezeRow: 4,
+      autoFilter: {
+        fromRow: 4,
+        fromColumn: 1,
+        toRow: Math.max(4, 4 + fuelInvoices.length),
+        toColumn: fuelHeaders.length,
+      },
+      tabColor: 'C68A1B',
     },
     {
       name: 'Maintenance',
