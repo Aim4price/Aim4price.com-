@@ -35,6 +35,8 @@ export type MissingFuelAsset = {
   isActive?: boolean;
   usageMetric: 'hours' | 'km' | 'both' | 'percentage' | 'none';
   lifeWorkedPercent: number | null;
+  workUseExcluded: boolean;
+  workUseExclusionReason: string;
 };
 
 export type MissingFuelLedgerPayload = {
@@ -309,7 +311,10 @@ export function MissingFuelEntryModal({ storage, assets, addedByLabel, accountan
   onLedgerUpdated: (payload: MissingFuelLedgerPayload) => void;
   onReconcile: () => void;
 }) {
-  const eligibleAssets = useMemo(() => assets.filter((asset) => asset.canReceiveFuel && asset.isActive !== false), [assets]);
+  const eligibleAssets = useMemo(
+    () => assets.filter((asset) => asset.canReceiveFuel && asset.isActive !== false && !asset.workUseExcluded),
+    [assets],
+  );
   const [step, setStep] = useState<MissingEntryStep>('asset');
   const [assetId, setAssetId] = useState('');
   const [search, setSearch] = useState('');
@@ -536,7 +541,7 @@ export function MissingFuelEntryModal({ storage, assets, addedByLabel, accountan
                         </span>
                       </button>
                     ))}
-                    {!filteredAssets.length ? <div className={styles.emptyState}>No matching assets found.</div> : null}
+                    {!filteredAssets.length ? <div className={styles.emptyState}>No matching included assets found.</div> : null}
                   </div>
                 </section>
               ) : null}
@@ -691,4 +696,3 @@ export function ReconcileFuelBalanceModal({ storage, accountantShareId, accounta
     </div>
   );
 }
-
