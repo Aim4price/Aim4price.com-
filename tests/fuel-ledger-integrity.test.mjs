@@ -40,6 +40,16 @@ test('fuel exclusions support multi-select review without an included status pil
   assert.doesNotMatch(fuelClient, /asset\.workUseExcluded \? 'Excluded' : 'Included'/);
 });
 
+test('bulk exclusion selection stays status-safe and excluded assets can be included again', () => {
+  assert.match(fuelClient, /function toggleAllVisibleExclusionAssets\(\)/);
+  assert.match(fuelClient, /asset\.workUseExcluded === targetStatus/);
+  assert.match(fuelClient, /Select all shown/);
+  assert.match(fuelClient, /Review inclusions/);
+  assert.match(fuelClient, /const excluded = exclusionSelectionAction === 'exclude'/);
+  assert.match(fuelClient, /body: JSON\.stringify\(\{ excluded, reason:/);
+  assert.match(fuelClient, /Include these assets in work-use totals again/);
+});
+
 test('fuel exclusion modal keeps its primary review action green', () => {
   const modalTheme = fuelStyles.slice(
     fuelStyles.indexOf('.fuelSlipFlowBackdrop {'),
