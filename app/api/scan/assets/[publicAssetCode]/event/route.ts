@@ -257,6 +257,22 @@ export async function POST(request: NextRequest, context: RouteContext) {
   const procedureKind = assetMaintenanceProcedureKindFromNote(payload.note);
   let scheduledMaintenance: AssetMaintenanceRecord | null = null;
 
+  if (
+    procedureKind
+    && (access.asset.usageMode === "hours" || access.asset.usageMode === "km")
+    && payload.hours === null
+  ) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error: access.asset.usageMode === "km"
+          ? "Enter the current kilometre reading before saving maintenance."
+          : "Enter the current hour-meter reading before saving maintenance.",
+      },
+      { status: 400 },
+    );
+  }
+
   if (maintenanceDecision === "scheduled" && !scheduledMaintenanceId) {
     return NextResponse.json(
       { ok: false, error: "Choose the scheduled maintenance item to complete." },
