@@ -289,3 +289,32 @@ test('live vault interactions keep errors, focus and view mutations safe', () =>
   assert.match(styles, /\.assetOptions label:focus-within/);
   assert.match(client, /showSummary && view === 'documents' && !loading && !loadFailed/);
 });
+
+test('Document Vault refinements use guided modal flows instead of pills and browser prompts', () => {
+  assert.match(client, /type UploadStep = 1 \| 2 \| 3/);
+  assert.match(client, /label: 'Upload document'/);
+  assert.match(client, /label: 'Document details'/);
+  assert.match(client, /label: 'Linked to\?'/);
+  assert.match(client, /className=\{styles\.uploadSteps\} aria-label="Upload progress"/);
+  assert.match(client, /modalMode === 'upload' && uploadStep < 3/);
+  assert.match(client, /uploadStep === 1[\s\S]*?setUploadStep\(2\)/);
+  assert.match(client, /uploadStep === 2 && validateDocumentDetails\(\)/);
+
+  assert.match(client, /className=\{styles\.filterModal\} role="dialog"/);
+  assert.match(client, /id="document-filter-title">Filter documents/);
+  assert.match(client, /className=\{styles\.filterOptionGrid\}/);
+  assert.doesNotMatch(client, /id="document-vault-filters" className=\{styles\.filterPanel\}/);
+
+  assert.match(client, /Are you sure you want to delete this document\?/);
+  assert.match(client, /Yes, delete document/);
+  assert.match(client, /can be restored for 90 days/);
+  assert.doesNotMatch(client, /window\.confirm/);
+
+  assert.match(styles, /\.documentActions\s*\{[\s\S]*?grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\)/);
+  assert.match(styles, /\.documentActions \.restoreButton\s*\{[\s\S]*?grid-column:\s*1 \/ -1/);
+  assert.doesNotMatch(client, /styles\.categoryPill/);
+  assert.doesNotMatch(client, /styles\.statusPill/);
+  assert.doesNotMatch(client, /styles\.assetChips/);
+  assert.match(client, /className=\{styles\.documentFacts\}/);
+  assert.match(client, /className=\{styles\.linkedAssetNames\}/);
+});
