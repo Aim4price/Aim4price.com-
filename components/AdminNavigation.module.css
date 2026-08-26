@@ -5,12 +5,12 @@
 }
 
 .manageButton {
-  min-width: 10.8rem;
-  min-height: 3.15rem;
+  min-width: 12.2rem;
+  min-height: 3.5rem;
   box-sizing: border-box;
   padding: 0.5rem 0.68rem;
   border: 1px solid #145f47;
-  border-radius: 0.9rem;
+  border-radius: 1rem;
   color: #ffffff;
   background: #176c50;
   box-shadow: 0 12px 28px rgba(23, 108, 80, 0.18);
@@ -61,14 +61,14 @@
 }
 
 .manageCopy strong {
-  font-size: 0.84rem;
+  font-size: 0.9rem;
   font-weight: 900;
   line-height: 1.1;
 }
 
 .manageCopy small {
   color: rgba(255, 255, 255, 0.74);
-  font-size: 0.62rem;
+  font-size: 0.68rem;
   font-weight: 730;
 }
 
@@ -93,27 +93,27 @@
   width: 100%;
   height: 100%;
   border: 0;
-  background: rgba(11, 31, 25, 0.56);
-  backdrop-filter: blur(3px);
+  background: rgba(8, 30, 23, 0.64);
+  backdrop-filter: blur(7px);
   cursor: default;
 }
 
 .modal {
   position: relative;
-  width: min(44rem, 100%);
+  width: min(54rem, 100%);
   max-height: min(43rem, calc(100vh - 2rem));
   overflow-y: auto;
   box-sizing: border-box;
-  padding: 1.15rem;
+  padding: 1.4rem;
   border: 1px solid #d8e3dd;
-  border-radius: 1.35rem;
+  border-radius: 1.65rem;
   color: #18372e;
   background: #ffffff;
-  box-shadow: 0 30px 90px rgba(10, 35, 27, 0.28);
+  box-shadow: 0 36px 110px rgba(8, 32, 24, 0.34);
 }
 
 .modalHeader {
-  padding: 0.1rem 0.15rem 1rem;
+  padding: 0.15rem 0.2rem 1.2rem;
   border-bottom: 1px solid #e6ece9;
   display: flex;
   align-items: flex-start;
@@ -122,18 +122,21 @@
 }
 
 .modalHeader p {
-  margin: 0 0 0.18rem;
+  width: fit-content;
+  margin: 0 0 0.5rem;
+  padding: 0.36rem 0.58rem;
+  border: 1px solid #cce4d9;
+  border-radius: 999px;
   color: #287158;
-  font-size: 0.66rem;
-  font-weight: 900;
-  letter-spacing: 0.075em;
-  text-transform: uppercase;
+  background: #eff8f4;
+  font-size: 0.72rem;
+  font-weight: 800;
 }
 
 .modalHeader h2 {
   margin: 0;
   color: #10362c;
-  font-size: 1.55rem;
+  font-size: clamp(1.7rem, 4vw, 2.25rem);
   letter-spacing: -0.04em;
 }
 
@@ -141,7 +144,7 @@
   display: inline-block;
   margin-top: 0.2rem;
   color: #6d7d77;
-  font-size: 0.76rem;
+  font-size: 0.82rem;
   font-weight: 700;
 }
 
@@ -166,32 +169,34 @@
 }
 
 .optionGrid {
-  padding-top: 0.9rem;
+  padding-top: 1.1rem;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.62rem;
+  gap: 0.75rem;
 }
 
 .link {
-  min-height: 5rem;
+  min-height: 5.6rem;
   box-sizing: border-box;
-  padding: 0.78rem 0.82rem;
+  padding: 0.95rem 1rem;
   border: 1px solid #dfe7e3;
-  border-radius: 0.9rem;
+  border-radius: 1.05rem;
   color: #28473d;
-  background: #fbfcfc;
+  background: linear-gradient(145deg, #ffffff, #f8fbf9);
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 0.8rem;
   text-decoration: none;
-  transition: border-color 160ms ease, background 160ms ease, transform 160ms ease;
+  box-shadow: 0 8px 24px rgba(24, 67, 52, 0.045);
+  transition: border-color 160ms ease, background 160ms ease, transform 160ms ease, box-shadow 160ms ease;
 }
 
 .link:hover {
   border-color: #9fc7b6;
   background: #f3f9f6;
   transform: translateY(-1px);
+  box-shadow: 0 12px 28px rgba(24, 67, 52, 0.09);
 }
 
 .link > span {
@@ -202,13 +207,13 @@
 
 .link strong {
   color: #173e32;
-  font-size: 0.83rem;
+  font-size: 0.9rem;
   font-weight: 900;
 }
 
 .link small {
   color: #74827d;
-  font-size: 0.67rem;
+  font-size: 0.72rem;
   font-weight: 680;
   line-height: 1.4;
 }
@@ -216,16 +221,18 @@
 .link em {
   flex: 0 0 auto;
   color: #287158;
-  font-size: 0.61rem;
+  padding: 0.3rem 0.48rem;
+  border-radius: 999px;
+  background: #edf6f2;
+  font-size: 0.66rem;
   font-style: normal;
-  font-weight: 900;
-  text-transform: uppercase;
+  font-weight: 800;
 }
 
 .active,
 .active:hover {
   border-color: #82b79f;
-  background: #eaf6f0;
+  background: linear-gradient(145deg, #eef9f3, #e5f4ed);
 }
 
 .active em {

@@ -30,10 +30,10 @@ export default async function AdminMarketplacePage() {
       <section className={styles.shell}>
         <header className={styles.topBar}>
           <div className={styles.titleBlock}>
-            <p>Aim4price admin</p>
+            <p>Marketplace intelligence</p>
             <h1>Marketplace</h1>
             <span>
-              Every asset ever advertised through Aim4price · Updated {formatGeneratedAt(report.generatedAtIso)}
+              See every listing, every real detail view and every repeat-interest signal · Updated {formatGeneratedAt(report.generatedAtIso)}
             </span>
           </div>
           <AdminNavigation active="marketplace" />

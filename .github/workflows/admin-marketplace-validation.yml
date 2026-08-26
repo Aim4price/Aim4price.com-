@@ -1,0 +1,55 @@
+name: Admin Marketplace validation
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/admin-marketplace-validation.yml'
+      - 'app/admin/admin-foundation.css'
+      - 'app/admin/layout.tsx'
+      - 'app/admin/loading*'
+      - 'app/admin/marketplace/**'
+      - 'app/api/admin/marketplace/**'
+      - 'app/api/marketplace/views/**'
+      - 'app/marketplace/marketplace-client.tsx'
+      - 'components/AdminNavigation*'
+      - 'database/migrations/93-marketplace-view-discovery-tracking.sql'
+      - 'lib/admin-dashboard.ts'
+      - 'lib/admin-marketplace*'
+      - 'lib/marketplace-views.ts'
+      - 'tests/admin-marketplace-dashboard.test.mjs'
+      - 'tests/marketplace-view-tracking.test.mjs'
+      - 'package.json'
+      - 'package-lock.json'
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Use Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type check
+        run: npm run typecheck
+
+      - name: Test Admin Marketplace
+        run: npm run test:admin-marketplace
+
+      - name: Test Admin navigation
+        run: npm run test:admin-accounts
+
+      - name: Test page loading safeguards
+        run: node --test tests/page-loading-performance.test.mjs

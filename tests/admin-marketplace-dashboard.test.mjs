@@ -40,6 +40,16 @@ const baseAsset = {
   firstAdvertisedAtIso: '2026-01-10T08:00:00.000Z',
   lastAdvertisedAtIso: '2026-08-20T08:00:00.000Z',
   listingEvents: 2,
+  totalViews: 8,
+  accountViews: 5,
+  unknownViews: 3,
+  uniqueViewers: 3,
+  lastViewedAtIso: '2026-08-25T10:00:00.000Z',
+  repeatViewerViews: 4,
+  repeatViewerLabel: 'Example Buyer',
+  repeatViewerAccountType: 'owner',
+  repeatViewerLastViewedAtIso: '2026-08-25T10:00:00.000Z',
+  hasRepeatInterest: true,
 };
 
 const sampleAssets = [
@@ -133,7 +143,7 @@ test('the database report de-duplicates re-listings without dropping historical 
   assert.match(adminMarketplace, /from public\.marketplace_listings listing/);
   assert.match(adminMarketplace, /partition by history\.asset_key/);
   assert.match(adminMarketplace, /where history\.latest_rank = 1/);
-  assert.match(adminMarketplace, /coalesce\(sum\(asking_price_ex_vat\), 0\)/);
+  assert.match(adminMarketplace, /coalesce\(sum\(history\.asking_price_ex_vat\), 0\)/);
   assert.match(adminMarketplace, /coalesce\(asset\.marketplace_status, 'draft'\) = 'live'/);
   assert.match(adminMarketplace, /not exists \([\s\S]*?saved_listing\.asset_register_item_id = asset\.id/);
   assert.doesNotMatch(adminMarketplace, /limit\s+\d+/i);
@@ -151,6 +161,10 @@ test('the Admin Marketplace page is admin-only and exposes the complete filterab
   assert.match(adminMarketplaceClient, /Last advertised/);
   assert.match(adminMarketplaceClient, /Highest value/);
   assert.match(adminMarketplaceClient, /Clear filters/);
+  assert.match(adminMarketplaceClient, /Marketplace discovery/);
+  assert.match(adminMarketplaceClient, /Most viewed/);
+  assert.match(adminMarketplaceClient, /Repeat interest/);
+  assert.match(adminMarketplaceClient, /Who viewed this asset\?/);
   assert.match(adminMarketplaceClient, /PAGE_SIZE = 25/);
   assert.match(adminMarketplaceStyles, /\.tableScroller/);
   assert.match(adminMarketplaceStyles, /@media \(max-width: 540px\)/);
@@ -180,6 +194,8 @@ test('Marketplace is visible in Admin navigation and on the main Dashboard', () 
   assert.match(adminDashboard, /id: 'marketplace-advertised'/);
   assert.match(adminDashboard, /getAdminMarketplaceSummary\(\)/);
   assert.match(adminDashboard, /View every marketplace asset/);
+  assert.match(adminDashboard, /Detail views/);
+  assert.match(adminDashboard, /repeat-interest flags/);
   assert.match(dashboardPage, /"marketplace-advertised"/);
   assert.match(dashboardPage, /card\.href/);
 });
