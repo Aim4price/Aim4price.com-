@@ -13,6 +13,7 @@ import {
   captureAssetDepreciationLogEntryForAssetId,
   type DepreciationLogAssetInput,
 } from "./asset-depreciation-timeline";
+import { toFiniteNumberOrNull } from "./usage-readings";
 
 export { normalizePublicAssetCode } from "./asset-owner-resolver";
 
@@ -269,8 +270,7 @@ function asId(value: unknown): string {
 }
 
 function asNumber(value: unknown): number | null {
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : null;
+  return toFiniteNumberOrNull(value);
 }
 
 function asIsoTimestamp(value: unknown): string | null {
