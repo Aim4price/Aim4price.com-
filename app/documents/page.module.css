@@ -4199,3 +4199,491 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
+/* Export-style asset chooser and final document-card alignment. */
+.assetLinkSummary {
+  min-width: 0;
+  min-height: 7.25rem;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 1rem;
+  align-items: center;
+  padding: 1.05rem 1.15rem;
+  border: 1px solid rgba(193, 216, 225, 0.98);
+  border-radius: 1.2rem;
+  background:
+    radial-gradient(circle at 0 0, rgba(29, 125, 91, 0.08), transparent 42%),
+    linear-gradient(180deg, #ffffff 0%, #f7fbfa 100%);
+  box-shadow: 0 12px 26px rgba(20, 43, 43, 0.045), inset 0 1px 0 #ffffff;
+}
+
+.assetLinkSummaryIcon {
+  width: 3.35rem;
+  height: 3.35rem;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(104, 183, 148, 0.55);
+  border-radius: 1rem;
+  color: #146749;
+  background: rgba(235, 249, 242, 0.96);
+}
+
+.assetLinkSummaryIcon svg {
+  width: 1.35rem;
+  height: 1.35rem;
+}
+
+.assetLinkSummary > div {
+  min-width: 0;
+  display: grid;
+  gap: 0.22rem;
+}
+
+.assetLinkSummary > div > span {
+  color: #617b72;
+  font-size: 0.67rem;
+  font-weight: 720;
+}
+
+.assetLinkSummary h3 {
+  margin: 0;
+  color: #0b493b;
+  font-size: 1.16rem;
+  font-weight: 850;
+  line-height: 1.2;
+  letter-spacing: -0.025em;
+}
+
+.assetLinkSummary p {
+  margin: 0;
+  overflow: hidden;
+  color: #667889;
+  font-size: 0.76rem;
+  font-weight: 640;
+  line-height: 1.45;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.assetLinkSummary > button {
+  min-height: 3rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0 1rem;
+  border: 1px solid #82bd9f;
+  border-radius: 0.9rem;
+  color: #0f6247;
+  background: linear-gradient(180deg, #ffffff 0%, #eef9f3 100%);
+  box-shadow: 0 9px 20px rgba(18, 91, 65, 0.07), inset 0 1px 0 #ffffff;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 820;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.assetLinkSummary > button:hover:not(:disabled),
+.assetLinkSummary > button:focus-visible {
+  border-color: #559f7d;
+  background: #e9f7f0;
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(22, 117, 83, 0.1), 0 10px 22px rgba(18, 91, 65, 0.09);
+}
+
+.assetLinkSummary > button svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.assetPickerBackdrop {
+  z-index: 10020;
+}
+
+.assetSelectionModal {
+  width: min(100%, 1180px);
+  height: min(90dvh, 780px);
+  max-height: calc(100dvh - 2rem);
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  overflow: hidden;
+  border: 1px solid rgba(199, 217, 224, 0.98);
+  border-radius: 1.65rem;
+  background: #ffffff;
+  box-shadow: 0 38px 110px rgba(4, 23, 18, 0.38), inset 0 1px 0 #ffffff;
+  animation: modalIn 180ms ease both;
+}
+
+.assetSelectionHeader h2 {
+  font-size: clamp(1.85rem, 3vw, 2.55rem);
+  font-weight: 880;
+  letter-spacing: -0.045em;
+  text-transform: none;
+}
+
+.assetSelectionBody {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  overflow: hidden;
+  padding: 1.15rem clamp(1.2rem, 2.4vw, 1.7rem);
+}
+
+.assetSelectionToolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.85rem;
+  align-items: center;
+}
+
+.assetSelectionSearch {
+  min-width: 0;
+  min-height: 3.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0 1rem;
+  border: 1px solid rgba(199, 218, 232, 0.98);
+  border-radius: 1rem;
+  background: #ffffff;
+  box-shadow: 0 10px 22px rgba(16, 31, 28, 0.035), inset 0 1px 0 #ffffff;
+}
+
+.assetSelectionSearch:focus-within {
+  border-color: rgba(22, 83, 64, 0.48);
+  box-shadow: 0 0 0 4px rgba(22, 83, 64, 0.08), 0 12px 24px rgba(16, 31, 28, 0.045);
+}
+
+.assetSelectionSearch svg {
+  width: 1.05rem;
+  height: 1.05rem;
+  flex: 0 0 auto;
+  color: #667b88;
+}
+
+.assetSelectionSearch input {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  color: #10352b;
+  background: transparent;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 730;
+}
+
+.assetSelectionSearch input::placeholder {
+  color: #718394;
+  opacity: 1;
+}
+
+.assetSelectionToolbarActions {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.assetSelectionToolbarActions .cancelButton {
+  min-height: 3.25rem;
+  padding-inline: 1rem;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.assetSelectionList {
+  min-height: 0;
+  display: grid;
+  align-content: start;
+  flex: 1 1 auto;
+  gap: 0.7rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  padding: 0.05rem 0.45rem 0.1rem 0;
+  scrollbar-color: #567f6f #eff4f1;
+}
+
+.assetSelectionRow {
+  position: relative;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.9rem;
+  align-items: center;
+  padding: 0.9rem 1rem;
+  border: 1px solid rgba(199, 222, 237, 0.96);
+  border-radius: 1.05rem;
+  background: #ffffff;
+  box-shadow: 0 9px 20px rgba(16, 31, 28, 0.032), inset 0 1px 0 #ffffff;
+  cursor: pointer;
+  transition: transform 160ms ease, border-color 160ms ease, background 160ms ease, box-shadow 160ms ease;
+}
+
+.assetSelectionRow:hover {
+  transform: translateY(-1px);
+  border-color: rgba(160, 195, 176, 0.98);
+  background: linear-gradient(180deg, #ffffff 0%, #f7fbf9 100%);
+  box-shadow: 0 13px 26px rgba(16, 31, 28, 0.055), inset 0 1px 0 #ffffff;
+}
+
+.assetSelectionRow:focus-within {
+  outline: 3px solid rgba(20, 112, 82, 0.16);
+  outline-offset: 2px;
+}
+
+.assetSelectionRowSelected {
+  border-color: rgba(98, 166, 131, 0.98);
+  background:
+    radial-gradient(circle at top left, rgba(22, 83, 64, 0.08), transparent 45%),
+    linear-gradient(180deg, #ffffff 0%, #f0faf5 100%);
+  box-shadow: 0 14px 28px rgba(22, 83, 64, 0.09), inset 0 0 0 2px rgba(22, 83, 64, 0.07);
+}
+
+.assetSelectionRow input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.assetSelectionCheckbox {
+  position: relative;
+  width: 2.2rem;
+  height: 2.2rem;
+  border: 1.5px solid rgba(183, 202, 216, 0.98);
+  border-radius: 0.72rem;
+  background: linear-gradient(180deg, #ffffff 0%, #f4f8fb 100%);
+  box-shadow: 0 7px 15px rgba(16, 31, 28, 0.035), inset 0 1px 0 #ffffff;
+}
+
+.assetSelectionRowSelected .assetSelectionCheckbox {
+  border-color: rgba(18, 70, 53, 0.86);
+  background: linear-gradient(180deg, #1d6048 0%, #124635 100%);
+  box-shadow: 0 9px 18px rgba(18, 70, 53, 0.18);
+}
+
+.assetSelectionRowSelected .assetSelectionCheckbox::after {
+  content: '✓';
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: #ffffff;
+  font-size: 1.15rem;
+  font-weight: 950;
+}
+
+.assetSelectionCopy {
+  min-width: 0;
+  display: grid;
+  gap: 0.2rem;
+}
+
+.assetSelectionCopy strong,
+.assetSelectionCopy small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.assetSelectionCopy strong {
+  color: #073b30;
+  font-size: 0.96rem;
+  font-weight: 850;
+  line-height: 1.25;
+}
+
+.assetSelectionCopy small {
+  color: #647587;
+  font-size: 0.78rem;
+  font-weight: 640;
+  line-height: 1.35;
+}
+
+.assetSelectionEmpty {
+  min-height: 8rem;
+  display: grid;
+  place-items: center;
+  padding: 1.25rem;
+  border: 1px dashed rgba(180, 202, 217, 0.98);
+  border-radius: 1.05rem;
+  color: #627589;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbfc 100%);
+  font-size: 0.86rem;
+  font-weight: 720;
+  text-align: center;
+}
+
+.assetSelectionFooter {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+}
+
+.assetSelectionFooter > span {
+  color: #5f756d;
+  font-size: 0.76rem;
+  font-weight: 760;
+}
+
+.documentCard {
+  grid-template-columns: 3.65rem minmax(0, 1fr) minmax(21rem, 26rem);
+  gap: 1.15rem;
+  align-items: stretch;
+  padding: 1.15rem 1.2rem;
+}
+
+.fileMark {
+  width: 3.65rem;
+  min-height: 0;
+  height: auto;
+  align-self: stretch;
+  justify-content: center;
+}
+
+.documentBody {
+  min-width: 0;
+  display: grid;
+  align-content: center;
+  gap: 0.62rem;
+}
+
+.documentTitleRow {
+  min-height: 2.25rem;
+  align-items: center;
+}
+
+.documentStatus {
+  max-width: 16.5rem;
+  min-height: 2.15rem;
+  justify-self: end;
+  padding: 0.25rem 0 0.25rem 0.75rem;
+  text-align: left;
+}
+
+.documentFacts {
+  grid-template-columns: minmax(8.5rem, 1.15fr) minmax(11rem, 1.75fr) minmax(4.5rem, 0.58fr) minmax(6rem, 0.72fr);
+  gap: 0;
+  padding: 0.68rem 0;
+}
+
+.documentFacts > div {
+  padding-right: 0.75rem;
+}
+
+.documentFacts > div + div {
+  padding-left: 0.75rem;
+}
+
+.assetLinkRow {
+  min-height: 1.35rem;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.documentActions {
+  align-self: center;
+  gap: 0.72rem;
+}
+
+.documentActions .actionButton,
+.documentActions .restoreButton,
+.documentActions .trashButton {
+  min-height: 3.4rem;
+  height: 3.4rem;
+}
+
+@media (max-width: 1180px) {
+  .documentCard {
+    grid-template-columns: 3.65rem minmax(0, 1fr);
+  }
+
+  .documentActions {
+    grid-column: 2;
+    width: min(100%, 26rem);
+    justify-self: end;
+  }
+}
+
+@media (max-width: 820px) {
+  .assetSelectionToolbar {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .assetSelectionToolbarActions {
+    justify-content: stretch;
+  }
+
+  .assetSelectionToolbarActions .cancelButton {
+    flex: 1 1 0;
+  }
+
+  .documentStatus {
+    justify-self: start;
+  }
+
+  .documentFacts > div:nth-child(3) {
+    padding-right: 0.75rem;
+  }
+}
+
+@media (max-width: 760px) {
+  .assetLinkSummary {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .assetLinkSummary > button {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+
+  .documentCard {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .fileMark {
+    width: 3.65rem;
+    min-height: 4rem;
+    height: 4rem;
+    align-self: start;
+  }
+
+  .documentActions {
+    grid-column: auto;
+    width: 100%;
+  }
+}
+
+@media (max-width: 560px) {
+  .assetSelectionModal {
+    height: calc(100dvh - 1.1rem);
+    max-height: calc(100dvh - 1.1rem);
+    border-radius: 1.15rem;
+  }
+
+  .assetSelectionBody {
+    padding: 0.9rem 1rem;
+  }
+
+  .assetSelectionFooter {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .assetSelectionFooter > span {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .assetSelectionModal,
+  .assetSelectionRow {
+    animation: none;
+    transition: none;
+  }
+}

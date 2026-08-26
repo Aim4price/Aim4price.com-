@@ -349,11 +349,14 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
   const requestSequence = useRef(0);
   const summaryViewportRef = useRef<HTMLDivElement | null>(null);
   const modalRef = useRef<HTMLElement | null>(null);
+  const assetPickerModalRef = useRef<HTMLElement | null>(null);
   const filterModalRef = useRef<HTMLElement | null>(null);
   const deleteModalRef = useRef<HTMLElement | null>(null);
   const documentTypeComboboxRef = useRef<HTMLDivElement | null>(null);
   const pageContentRef = useRef<HTMLDivElement | null>(null);
   const returnFocusRef = useRef<HTMLElement | null>(null);
+  const assetPickerReturnFocusRef = useRef<HTMLElement | null>(null);
+  const assetSelectionSnapshotRef = useRef<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const documentTypeInputRef = useRef<HTMLInputElement | null>(null);
   const busyRef = useRef(false);
@@ -438,13 +441,15 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
   }, [showDocumentTypeOptions]);
 
   useEffect(() => {
-    if (!modalMode && !showFilters && !documentPendingDelete) return;
+    if (!modalMode && !showFilters && !documentPendingDelete && !showAssetPicker) return;
 
-    const dialog = modalMode
-      ? modalRef.current
-      : showFilters
-        ? filterModalRef.current
-        : deleteModalRef.current;
+    const dialog = showAssetPicker
+      ? assetPickerModalRef.current
+      : modalMode
+        ? modalRef.current
+        : showFilters
+          ? filterModalRef.current
+          : deleteModalRef.current;
     const pageContent = pageContentRef.current;
     const previousOverflow = document.body.style.overflow;
     dialog?.querySelector<HTMLElement>('[data-modal-initial-focus]')?.focus();
@@ -453,6 +458,11 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape' && !busyRef.current) {
+        if (showAssetPicker) {
+          event.preventDefault();
+          closeAssetPickerModal(false);
+          return;
+        }
         if (modalMode && showDocumentTypeOptionsRef.current) {
           event.preventDefault();
           showDocumentTypeOptionsRef.current = false;
@@ -491,7 +501,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
       pageContent?.removeAttribute('aria-hidden');
       returnFocusRef.current?.focus();
     };
-  }, [documentPendingDelete, modalMode, showFilters]);
+  }, [documentPendingDelete, modalMode, showAssetPicker, showFilters]);
 
   const filteredDocuments = useMemo(() => {
     const needle = search.trim().toLowerCase();
@@ -525,6 +535,13 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
     if (!needle) return assets;
     return assets.filter((asset) => `${asset.title} ${asset.meta}`.toLowerCase().includes(needle));
   }, [assetSearch, assets]);
+
+  const selectedDraftAssets = useMemo(
+    () => assets.filter((asset) => draft.assetIds.includes(asset.id)),
+    [assets, draft.assetIds],
+  );
+  const allFilteredAssetsSelected = filteredAssets.length > 0
+    && filteredAssets.every((asset) => draft.assetIds.includes(asset.id));
 
   const filteredDocumentTypes = useMemo(() => {
     const needle = documentTypeSearch.trim().toLowerCase();
@@ -568,7 +585,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
     setSelectedFiles([]);
     setUploadProgress(null);
     setFilePickerDragging(false);
-    setShowAssetPicker(Boolean(initialAssetId));
+    setShowAssetPicker(false);
     setAssetSearch('');
     setDocumentTypeSearch('');
     setShowDocumentTypeOptions(false);
@@ -592,7 +609,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
     setSelectedFiles([]);
     setUploadProgress(null);
     setFilePickerDragging(false);
-    setShowAssetPicker(document.assetLinks.length > 0);
+    setShowAssetPicker(false);
     setAssetSearch('');
     setDocumentTypeSearch(getAccountDocumentTypeLabel(document.documentType) ?? '');
     setShowDocumentTypeOptions(false);
@@ -763,6 +780,39 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
     }));
   }
 
+  function openAssetPickerModal() {
+    if (busyRef.current) return;
+    assetPickerReturnFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    assetSelectionSnapshotRef.current = [...draft.assetIds];
+    setAssetSearch('');
+    setShowAssetPicker(true);
+  }
+
+  function closeAssetPickerModal(keepSelection: boolean) {
+    if (busyRef.current) return;
+    if (!keepSelection) {
+      const previousAssetIds = [...assetSelectionSnapshotRef.current];
+      setDraft((current) => ({ ...current, assetIds: previousAssetIds }));
+    }
+    setAssetSearch('');
+    setShowAssetPicker(false);
+    window.requestAnimationFrame(() => assetPickerReturnFocusRef.current?.focus());
+  }
+
+  function selectAllFilteredAssets() {
+    if (busyRef.current || !filteredAssets.length) return;
+    const visibleAssetIds = filteredAssets.map((asset) => asset.id);
+    setDraft((current) => ({
+      ...current,
+      assetIds: Array.from(new Set([...current.assetIds, ...visibleAssetIds])),
+    }));
+  }
+
+  function clearSelectedAssets() {
+    if (busyRef.current) return;
+    setDraft((current) => ({ ...current, assetIds: [] }));
+  }
+
   function scrollSummary(direction: -1 | 1) {
     const viewport = summaryViewportRef.current;
     if (!viewport) return;
@@ -927,6 +977,10 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
 
   function closeModal() {
     if (busyRef.current) return;
+    if (showAssetPicker) {
+      closeAssetPickerModal(false);
+      return;
+    }
     setModalNotice(null);
     setShowDocumentTypeOptions(false);
     setModalMode(null);
@@ -1270,7 +1324,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
         </main>
       </div>
 
-      {modalMode ? (
+      {modalMode && !showAssetPicker ? (
         <div className={styles.modalBackdrop} onMouseDown={(event) => { if (event.target === event.currentTarget) closeModal(); }}>
           <section ref={modalRef} className={styles.modal} role="dialog" aria-modal="true" aria-labelledby="document-modal-title">
             <header className={styles.modalHeader}>
@@ -1472,54 +1526,28 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
                     <strong>Linked</strong>
                   </section>
                 ) : (
-                <section
-                  className={`${styles.assetPicker} ${showAssetPicker ? '' : styles.assetPickerCollapsed}`}
-                  aria-labelledby="linked-assets-heading"
-                  data-asset-choice-surface="true"
-                >
-                  <div className={styles.assetPickerHeading} data-asset-choice-header="true">
+                  <section className={styles.assetLinkSummary} aria-labelledby="linked-assets-heading">
+                    <span className={styles.assetLinkSummaryIcon} aria-hidden="true"><Icon name="link" /></span>
                     <div>
                       <span>Optional · account-level by default</span>
-                      <h3 id="linked-assets-heading">Link to assets</h3>
-                      <p>{selectedFiles.length > 1 ? 'Selected assets will be linked to every document in this batch.' : 'Choose one or more related assets, or leave this at account level.'}</p>
+                      <h3 id="linked-assets-heading">
+                        {draft.assetIds.length
+                          ? `${draft.assetIds.length} ${draft.assetIds.length === 1 ? 'asset' : 'assets'} selected`
+                          : 'Keep at account level'}
+                      </h3>
+                      <p>
+                        {draft.assetIds.length
+                          ? selectedDraftAssets.map((asset) => asset.title).join(' · ') || 'Selected assets'
+                          : selectedFiles.length > 1
+                            ? 'You can link every document in this batch to the same assets.'
+                            : 'Choose related assets only when this document belongs with them.'}
+                      </p>
                     </div>
-                    <button type="button" onClick={() => setShowAssetPicker((current) => !current)} aria-expanded={showAssetPicker}>
-                      {draft.assetIds.length ? `${draft.assetIds.length} selected` : showAssetPicker ? 'Done' : 'Choose assets'}
-                      <Icon name="chevron-down" />
+                    <button type="button" onClick={openAssetPickerModal} disabled={busy}>
+                      {draft.assetIds.length ? 'Change assets' : 'Choose assets'}
+                      <Icon name="chevron-right" />
                     </button>
-                  </div>
-
-                  {showAssetPicker && assets.length ? (
-                    <>
-                      <label className={styles.assetSearch} data-asset-choice-toolbar="true">
-                        <Icon name="search" />
-                        <input value={assetSearch} onChange={(event) => setAssetSearch(event.target.value)} placeholder="Find an asset" />
-                      </label>
-                      <div className={styles.assetOptions} data-asset-choice-list="true">
-                        {filteredAssets.length ? filteredAssets.map((asset) => {
-                          const checked = draft.assetIds.includes(asset.id);
-                          return (
-                            <label
-                              key={asset.id}
-                              className={checked ? styles.assetOptionSelected : ''}
-                              data-asset-choice-row="true"
-                              data-asset-choice-selected={checked ? 'true' : undefined}
-                            >
-                              <input type="checkbox" checked={checked} onChange={() => toggleAsset(asset.id)} />
-                              <span className={styles.customCheckbox}>{checked ? '✓' : ''}</span>
-                              <span data-asset-choice-copy="true">
-                                <strong>{asset.title}</strong>
-                                <small data-asset-choice-meta="true">{asset.meta || 'Asset Register item'}</small>
-                              </span>
-                            </label>
-                          );
-                        }) : <p className={styles.noAssetResults}>No assets match that search.</p>}
-                      </div>
-                    </>
-                  ) : showAssetPicker ? (
-                    <div className={styles.noAssets}><Icon name="info" /><span>No assets are available yet. This document will stay at account level.</span></div>
-                  ) : null}
-                </section>
+                  </section>
                 )) : null}
                 </fieldset>
               </div>
@@ -1552,6 +1580,88 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
                 </button>
               </footer>
             </form>
+          </section>
+        </div>
+      ) : null}
+
+      {showAssetPicker ? (
+        <div
+          className={`${styles.modalBackdrop} ${styles.assetPickerBackdrop}`}
+          onMouseDown={(event) => { if (event.target === event.currentTarget) closeAssetPickerModal(false); }}
+        >
+          <section
+            ref={assetPickerModalRef}
+            className={styles.assetSelectionModal}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="asset-picker-title"
+          >
+            <header className={`${styles.modalHeader} ${styles.compactModalHeader} ${styles.assetSelectionHeader}`}>
+              <div>
+                <h2 id="asset-picker-title">Choose assets</h2>
+                <p>Select the assets these documents belong to, or leave the selection empty to keep them at account level.</p>
+              </div>
+              <button type="button" onClick={() => closeAssetPickerModal(false)} aria-label="Close asset chooser"><Icon name="close" /></button>
+            </header>
+
+            <div className={styles.assetSelectionBody} data-asset-choice-surface="true">
+              <div className={styles.assetSelectionToolbar} data-asset-choice-toolbar="true">
+                <label className={styles.assetSelectionSearch}>
+                  <Icon name="search" />
+                  <input
+                    type="search"
+                    value={assetSearch}
+                    onChange={(event) => setAssetSearch(event.target.value)}
+                    placeholder="Search assets"
+                    aria-label="Search assets"
+                    data-modal-initial-focus="true"
+                  />
+                </label>
+                <div className={styles.assetSelectionToolbarActions}>
+                  <button type="button" className={styles.cancelButton} onClick={selectAllFilteredAssets} disabled={!filteredAssets.length || allFilteredAssetsSelected}>
+                    Select all
+                  </button>
+                  <button type="button" className={styles.cancelButton} onClick={clearSelectedAssets} disabled={!draft.assetIds.length}>
+                    Clear
+                  </button>
+                </div>
+              </div>
+
+              {showAssetPicker && assets.length ? (
+                <div className={styles.assetSelectionList} data-asset-choice-list="true">
+                  {filteredAssets.length ? filteredAssets.map((asset) => {
+                    const checked = draft.assetIds.includes(asset.id);
+                    return (
+                      <label
+                        key={asset.id}
+                        className={`${styles.assetSelectionRow} ${checked ? styles.assetSelectionRowSelected : ''}`}
+                        data-asset-choice-row="true"
+                        data-asset-choice-selected={checked ? 'true' : undefined}
+                      >
+                        <input type="checkbox" checked={checked} onChange={() => toggleAsset(asset.id)} />
+                        <span className={styles.assetSelectionCheckbox} aria-hidden="true" />
+                        <span className={styles.assetSelectionCopy} data-asset-choice-copy="true">
+                          <strong>{asset.title}</strong>
+                          <small data-asset-choice-meta="true">{asset.meta || 'Asset Register item'}</small>
+                        </span>
+                      </label>
+                    );
+                  }) : <div className={styles.assetSelectionEmpty}>No assets match your search.</div>}
+                </div>
+              ) : (
+                <div className={styles.assetSelectionEmpty}>No assets are available yet. These documents will stay at account level.</div>
+              )}
+            </div>
+
+            <footer className={`${styles.modalFooter} ${styles.assetSelectionFooter}`}>
+              <span role="status" aria-live="polite">
+                {draft.assetIds.length
+                  ? `${draft.assetIds.length} ${draft.assetIds.length === 1 ? 'asset selected' : 'assets selected'}`
+                  : 'Account-level document'}
+              </span>
+              <button type="button" className={styles.cancelButton} onClick={() => closeAssetPickerModal(false)}>Cancel</button>
+              <button type="button" className={styles.uploadButton} onClick={() => closeAssetPickerModal(true)}>Done</button>
+            </footer>
           </section>
         </div>
       ) : null}

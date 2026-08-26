@@ -77,8 +77,8 @@ test('documents may stay account-level or link to multiple owned assets', () => 
   assert.match(documentStore, /assertOwnedAssetIds/);
   assert.match(documentStore, /id::text = any\(\$2::text\[\]\)/);
   assert.match(client, /Account-level document/);
-  assert.match(client, /Link to assets/);
-  assert.match(client, /choose one or more related assets/i);
+  assert.match(client, /Choose assets/);
+  assert.match(client, /Select the assets these documents belong to/i);
 });
 
 test('specific document types use one shared searchable taxonomy and canonical broad categories', () => {
@@ -286,7 +286,7 @@ test('live vault interactions keep errors, focus and view mutations safe', () =>
   assert.match(client, /className=\{styles\.fileName\}/);
   assert.match(styles, /\.fileMeta \.fileName\s*\{[\s\S]*?text-overflow:\s*ellipsis/);
   assert.match(styles, /\.filePicker:focus-within/);
-  assert.match(styles, /\.assetOptions label:focus-within/);
+  assert.match(styles, /\.assetSelectionRow:focus-within/);
   assert.match(client, /showSummary && view === 'documents' && !loading && !loadFailed/);
 });
 
@@ -317,4 +317,18 @@ test('Document Vault refinements use guided modal flows instead of pills and bro
   assert.doesNotMatch(client, /styles\.assetChips/);
   assert.match(client, /className=\{styles\.documentFacts\}/);
   assert.match(client, /className=\{styles\.linkedAssetNames\}/);
+
+  assert.match(client, /className=\{styles\.assetLinkSummary\}/);
+  assert.match(client, /className=\{styles\.assetSelectionModal\}/);
+  assert.match(client, /placeholder="Search assets"/);
+  assert.match(client, />\s*Select all\s*</);
+  assert.match(client, />\s*Clear\s*</);
+  assert.match(client, /assetSelectionSnapshotRef\.current = \[\.\.\.draft\.assetIds\]/);
+  assert.match(client, /closeAssetPickerModal\(false\)/);
+  assert.match(client, /closeAssetPickerModal\(true\)/);
+  assert.doesNotMatch(client, /className=\{`\$\{styles\.assetPicker\}/);
+  assert.match(styles, /\.assetSelectionModal\s*\{[\s\S]*?grid-template-rows:\s*auto minmax\(0, 1fr\) auto/);
+  assert.match(styles, /\.assetSelectionRow\s*\{[\s\S]*?grid-template-columns:\s*auto minmax\(0, 1fr\)/);
+  assert.match(styles, /\.documentCard\s*\{[\s\S]*?align-items:\s*stretch/);
+  assert.match(styles, /\.fileMark\s*\{[\s\S]*?align-self:\s*stretch/);
 });
