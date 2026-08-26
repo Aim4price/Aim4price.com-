@@ -4,6 +4,7 @@ import {
   ADMIN_DISCOVERY_PAGE_SIZES,
   hasAdminAssetCoordinates,
   type AdminAssetFilterOption,
+  type AdminAssetInterestFilter,
   type AdminAssetLocationFilter,
   type AdminAssetMapReport,
   type AdminAssetParticipationFilter,
@@ -15,6 +16,7 @@ import {
   type AdminGlobalAssetSummary,
 } from "./admin-global-assets-shared";
 import { getDb } from "./db";
+import { ensureAssetDiscoveryViewTracking } from "./discovery-views";
 
 type DatabaseValue = string | number | boolean | Date | null | undefined;
 
@@ -64,6 +66,16 @@ type AdminGlobalAssetRow = {
   owner_address_line_1: DatabaseValue;
   owner_address_line_2: DatabaseValue;
   discovery_participation_enabled: DatabaseValue;
+  total_views: DatabaseValue;
+  account_views: DatabaseValue;
+  unknown_views: DatabaseValue;
+  unique_viewers: DatabaseValue;
+  last_viewed_at: DatabaseValue;
+  repeat_viewer_views: DatabaseValue;
+  repeat_viewer_label: DatabaseValue;
+  repeat_viewer_account_type: DatabaseValue;
+  repeat_viewer_last_viewed_at: DatabaseValue;
+  has_repeat_interest: DatabaseValue;
 };
 
 type SummaryRow = {
@@ -73,6 +85,11 @@ type SummaryRow = {
   total_value_ex_vat: DatabaseValue;
   valued_assets: DatabaseValue;
   discovery_enabled_assets: DatabaseValue;
+  total_views: DatabaseValue;
+  account_views: DatabaseValue;
+  unknown_views: DatabaseValue;
+  viewed_assets: DatabaseValue;
+  repeat_interest_assets: DatabaseValue;
 };
 
 type OptionRow = {
@@ -254,6 +271,79 @@ const ADMIN_GLOBAL_ASSET_CTE = `
   )
 `;
 
+const ADMIN_DISCOVERY_ASSET_CTE = `
+  ${ADMIN_GLOBAL_ASSET_CTE},
+  discovery_viewer_counts as (
+    select
+      view.asset_register_item_id::text as asset_id,
+      view.viewer_user_id,
+      view.anonymous_viewer_hash,
+      coalesce(
+        nullif(profile.business_name, ''),
+        nullif(profile.display_name, ''),
+        nullif(auth_user.name, ''),
+        nullif(auth_user.email, ''),
+        case
+          when view.viewer_user_id is null then
+            'Unknown viewer ' || upper(left(coalesce(view.anonymous_viewer_hash, ''), 6))
+          else 'Aim4price account'
+        end
+      ) as viewer_label,
+      coalesce(nullif(profile.account_type, ''), '') as viewer_account_type,
+      count(*)::bigint as view_count,
+      min(view.viewed_at) as first_viewed_at,
+      max(view.viewed_at) as last_viewed_at
+    from public.asset_discovery_views view
+    left join public.account_profiles profile on profile.user_id = view.viewer_user_id
+    left join public."user" auth_user on auth_user.id = view.viewer_user_id
+    group by
+      view.asset_register_item_id,
+      view.viewer_user_id,
+      view.anonymous_viewer_hash,
+      profile.business_name,
+      profile.display_name,
+      profile.account_type,
+      auth_user.name,
+      auth_user.email
+  ), discovery_view_metrics as (
+    select
+      asset_id,
+      coalesce(sum(view_count), 0)::bigint as total_views,
+      coalesce(sum(view_count) filter (where viewer_user_id is not null), 0)::bigint
+        as account_views,
+      coalesce(sum(view_count) filter (where viewer_user_id is null), 0)::bigint
+        as unknown_views,
+      count(*)::bigint as unique_viewers,
+      max(last_viewed_at) as last_viewed_at,
+      coalesce(max(view_count), 0)::bigint as repeat_viewer_views,
+      (array_agg(viewer_label order by view_count desc, last_viewed_at desc))[1]
+        as repeat_viewer_label,
+      (array_agg(viewer_account_type order by view_count desc, last_viewed_at desc))[1]
+        as repeat_viewer_account_type,
+      (array_agg(last_viewed_at order by view_count desc, last_viewed_at desc))[1]
+        as repeat_viewer_last_viewed_at,
+      bool_or(view_count >= 3) as has_repeat_interest
+    from discovery_viewer_counts
+    group by asset_id
+  ), discovery_assets as (
+    select
+      admin_assets.*,
+      coalesce(view_metrics.total_views, 0)::bigint as total_views,
+      coalesce(view_metrics.account_views, 0)::bigint as account_views,
+      coalesce(view_metrics.unknown_views, 0)::bigint as unknown_views,
+      coalesce(view_metrics.unique_viewers, 0)::bigint as unique_viewers,
+      view_metrics.last_viewed_at,
+      coalesce(view_metrics.repeat_viewer_views, 0)::bigint as repeat_viewer_views,
+      coalesce(view_metrics.repeat_viewer_label, '') as repeat_viewer_label,
+      coalesce(view_metrics.repeat_viewer_account_type, '') as repeat_viewer_account_type,
+      view_metrics.repeat_viewer_last_viewed_at,
+      coalesce(view_metrics.has_repeat_interest, false) as has_repeat_interest
+    from admin_assets
+    left join discovery_view_metrics view_metrics
+      on view_metrics.asset_id = admin_assets.asset_id
+  )
+`;
+
 const EMPTY_OPTIONS: AdminGlobalAssetOptions = {
   owners: [],
   provinces: [],
@@ -331,6 +421,16 @@ function mapAsset(row: AdminGlobalAssetRow): AdminGlobalAsset {
     lastKnownLocationText: text(row.last_known_location_text),
     createdAtIso: iso(row.created_at),
     updatedAtIso: iso(row.updated_at),
+    totalViews: Math.max(0, Math.round(number(row.total_views))),
+    accountViews: Math.max(0, Math.round(number(row.account_views))),
+    unknownViews: Math.max(0, Math.round(number(row.unknown_views))),
+    uniqueViewers: Math.max(0, Math.round(number(row.unique_viewers))),
+    lastViewedAtIso: iso(row.last_viewed_at),
+    repeatViewerViews: Math.max(0, Math.round(number(row.repeat_viewer_views))),
+    repeatViewerLabel: text(row.repeat_viewer_label),
+    repeatViewerAccountType: text(row.repeat_viewer_account_type),
+    repeatViewerLastViewedAtIso: iso(row.repeat_viewer_last_viewed_at),
+    hasRepeatInterest: boolean(row.has_repeat_interest),
     owner: {
       userId: ownerUserId,
       label: text(row.owner_label) || "Unknown account",
@@ -367,6 +467,11 @@ function summarizeAssets(assets: AdminGlobalAsset[]): AdminGlobalAssetSummary {
     discoveryDisabledAssets: assets.filter(
       (asset) => !asset.owner.discoveryParticipationEnabled,
     ).length,
+    totalViews: assets.reduce((total, asset) => total + asset.totalViews, 0),
+    accountViews: assets.reduce((total, asset) => total + asset.accountViews, 0),
+    unknownViews: assets.reduce((total, asset) => total + asset.unknownViews, 0),
+    viewedAssets: assets.filter((asset) => asset.totalViews > 0).length,
+    repeatInterestAssets: assets.filter((asset) => asset.hasRepeatInterest).length,
   };
 }
 
@@ -437,6 +542,11 @@ function mapSummary(row: SummaryRow | undefined): AdminGlobalAssetSummary {
     missingValueAssets: Math.max(0, totalAssets - valuedAssets),
     discoveryEnabledAssets,
     discoveryDisabledAssets: Math.max(0, totalAssets - discoveryEnabledAssets),
+    totalViews: Math.max(0, number(row?.total_views)),
+    accountViews: Math.max(0, number(row?.account_views)),
+    unknownViews: Math.max(0, number(row?.unknown_views)),
+    viewedAssets: Math.max(0, number(row?.viewed_assets)),
+    repeatInterestAssets: Math.max(0, number(row?.repeat_interest_assets)),
   };
 }
 
@@ -482,10 +592,23 @@ function normalizeLocation(value: unknown): AdminAssetLocationFilter {
   return value === "mapped" || value === "missing" ? value : "all";
 }
 
+function normalizeInterest(value: unknown): AdminAssetInterestFilter {
+  return value === "viewed" || value === "repeat" || value === "unviewed"
+    ? value
+    : "all";
+}
+
 function normalizeSort(value: unknown): AdminAssetSort {
-  return ["updated", "value-high", "value-low", "owner", "asset"].includes(
-    text(value),
-  )
+  return [
+    "updated",
+    "popular",
+    "repeat-interest",
+    "recent-view",
+    "value-high",
+    "value-low",
+    "owner",
+    "asset",
+  ].includes(text(value))
     ? (text(value) as AdminAssetSort)
     : "updated";
 }
@@ -507,6 +630,7 @@ export function normalizeAdminDiscoveryFilters(
     sector: text(input.sector).slice(0, 100),
     participation: normalizeParticipation(input.participation),
     location: normalizeLocation(input.location),
+    interest: normalizeInterest(input.interest),
     lifecycleState: text(input.lifecycleState).slice(0, 100),
     sort: normalizeSort(input.sort),
     page: focusAssetId ? 1 : clampPositiveInteger(input.page, 1),
@@ -550,7 +674,8 @@ function buildDiscoveryWhere(filters: AdminDiscoveryFilters): {
       title, asset_type_label, sector_label, brand_name, model_name, typed_model_name,
       year_model::text, serial_number, registration_number, public_asset_code,
       plate_label, register_label, last_known_location_text, owner_label, owner_name,
-      owner_business_name, owner_email, owner_phone, owner_province, owner_town_city
+      owner_business_name, owner_email, owner_phone, owner_province, owner_town_city,
+      repeat_viewer_label, repeat_viewer_account_type
     ) ilike ${parameter} escape '\\'`);
   }
   if (filters.ownerUserId) {
@@ -577,6 +702,13 @@ function buildDiscoveryWhere(filters: AdminDiscoveryFilters): {
   } else if (filters.location === "missing") {
     where.push("coalesce(has_location, false) = false");
   }
+  if (filters.interest === "viewed") {
+    where.push("total_views > 0");
+  } else if (filters.interest === "repeat") {
+    where.push("has_repeat_interest = true");
+  } else if (filters.interest === "unviewed") {
+    where.push("total_views = 0");
+  }
   if (filters.lifecycleState) {
     params.push(filters.lifecycleState.toLowerCase());
     where.push(`lower(lifecycle_state) = $${params.length}`);
@@ -589,6 +721,11 @@ function buildDiscoveryWhere(filters: AdminDiscoveryFilters): {
 }
 
 function discoverySortSql(sort: AdminAssetSort): string {
+  if (sort === "popular") return "total_views desc, last_viewed_at desc nulls last";
+  if (sort === "repeat-interest") {
+    return "repeat_viewer_views desc, total_views desc, last_viewed_at desc nulls last";
+  }
+  if (sort === "recent-view") return "last_viewed_at desc nulls last, total_views desc";
   if (sort === "value-high") return "asset_value desc, updated_at desc nulls last";
   if (sort === "value-low") return "asset_value asc, updated_at desc nulls last";
   if (sort === "owner") return "lower(owner_label) asc, lower(title) asc";
@@ -628,12 +765,13 @@ export async function getAdminDiscoveryReport(
   input: Partial<AdminDiscoveryFilters> = {},
 ): Promise<AdminDiscoveryReport> {
   await ensureAdminGlobalAssetSources();
+  await ensureAssetDiscoveryViewTracking();
   const filters = normalizeAdminDiscoveryFilters(input);
   const { whereSql, params } = buildDiscoveryWhere(filters);
   const [summaryResult, options] = await Promise.all([
     getDb().query<SummaryRow>(
       `
-        ${ADMIN_GLOBAL_ASSET_CTE}
+        ${ADMIN_DISCOVERY_ASSET_CTE}
         select
           count(*)::bigint as total_assets,
           count(*) filter (where has_location)::bigint as mapped_assets,
@@ -641,8 +779,13 @@ export async function getAdminDiscoveryReport(
           coalesce(sum(asset_value), 0)::numeric as total_value_ex_vat,
           count(*) filter (where has_saved_value)::bigint as valued_assets,
           count(*) filter (where discovery_participation_enabled)::bigint
-            as discovery_enabled_assets
-        from admin_assets
+            as discovery_enabled_assets,
+          coalesce(sum(total_views), 0)::bigint as total_views,
+          coalesce(sum(account_views), 0)::bigint as account_views,
+          coalesce(sum(unknown_views), 0)::bigint as unknown_views,
+          count(*) filter (where total_views > 0)::bigint as viewed_assets,
+          count(*) filter (where has_repeat_interest)::bigint as repeat_interest_assets
+        from discovery_assets
         ${whereSql}
       `,
       params,
@@ -666,9 +809,9 @@ export async function getAdminDiscoveryReport(
   const offsetParameter = `$${listParams.length}`;
   const listResult = await getDb().query<AdminGlobalAssetRow>(
     `
-      ${ADMIN_GLOBAL_ASSET_CTE}
+      ${ADMIN_DISCOVERY_ASSET_CTE}
       select *
-      from admin_assets
+      from discovery_assets
       ${whereSql}
       order by ${focusOrder} ${discoverySortSql(filters.sort)}
       limit ${limitParameter}

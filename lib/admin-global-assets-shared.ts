@@ -1,6 +1,15 @@
 export type AdminAssetLocationFilter = "all" | "mapped" | "missing";
 export type AdminAssetParticipationFilter = "all" | "enabled" | "disabled";
-export type AdminAssetSort = "updated" | "value-high" | "value-low" | "owner" | "asset";
+export type AdminAssetInterestFilter = "all" | "viewed" | "repeat" | "unviewed";
+export type AdminAssetSort =
+  | "updated"
+  | "popular"
+  | "repeat-interest"
+  | "recent-view"
+  | "value-high"
+  | "value-low"
+  | "owner"
+  | "asset";
 
 export type AdminGlobalAssetOwner = {
   userId: string;
@@ -52,6 +61,16 @@ export type AdminGlobalAsset = {
   lastKnownLocationText: string;
   createdAtIso: string | null;
   updatedAtIso: string | null;
+  totalViews: number;
+  accountViews: number;
+  unknownViews: number;
+  uniqueViewers: number;
+  lastViewedAtIso: string | null;
+  repeatViewerViews: number;
+  repeatViewerLabel: string;
+  repeatViewerAccountType: string;
+  repeatViewerLastViewedAtIso: string | null;
+  hasRepeatInterest: boolean;
   owner: AdminGlobalAssetOwner;
 };
 
@@ -65,6 +84,49 @@ export type AdminGlobalAssetSummary = {
   missingValueAssets: number;
   discoveryEnabledAssets: number;
   discoveryDisabledAssets: number;
+  totalViews: number;
+  accountViews: number;
+  unknownViews: number;
+  viewedAssets: number;
+  repeatInterestAssets: number;
+};
+
+export type AdminDiscoveryViewerKind = "account" | "unknown";
+
+export type AdminDiscoveryViewerGroup = {
+  viewerKey: string;
+  viewerKind: AdminDiscoveryViewerKind;
+  viewerLabel: string;
+  viewerEmail: string;
+  viewerAccountType: string;
+  viewCount: number;
+  firstViewedAtIso: string;
+  lastViewedAtIso: string;
+  hasRepeatInterest: boolean;
+};
+
+export type AdminDiscoveryViewEvent = {
+  id: string;
+  viewerKey: string;
+  viewerKind: AdminDiscoveryViewerKind;
+  viewerLabel: string;
+  viewerEmail: string;
+  viewerAccountType: string;
+  viewedAtIso: string;
+};
+
+export type AdminDiscoveryViewDetails = {
+  assetId: string;
+  totalViews: number;
+  accountViews: number;
+  unknownViews: number;
+  uniqueViewers: number;
+  repeatViewers: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+  viewerGroups: AdminDiscoveryViewerGroup[];
+  events: AdminDiscoveryViewEvent[];
 };
 
 export type AdminAssetFilterOption = {
@@ -94,6 +156,7 @@ export type AdminDiscoveryFilters = {
   sector: string;
   participation: AdminAssetParticipationFilter;
   location: AdminAssetLocationFilter;
+  interest: AdminAssetInterestFilter;
   lifecycleState: string;
   sort: AdminAssetSort;
   page: number;
