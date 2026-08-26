@@ -9,6 +9,10 @@ import {
   type AccountDocumentCategory,
   type AccountDocumentType,
 } from './account-document-taxonomy';
+import {
+  listAssetRegisterItems,
+  type AssetRegisterItem,
+} from './asset-register-db';
 import { getDb } from './db';
 
 export {
@@ -98,23 +102,6 @@ type AccountDocumentLinkRow = {
   brand_name: string | null;
   model_name: string | null;
   year_model: string | number | null;
-};
-
-type AccountDocumentAssetRow = {
-  id: string;
-  title: string | null;
-  kind: string | null;
-  brand_name: string | null;
-  model_name: string | null;
-  year_model: string | number | null;
-  hours: string | number | null;
-  condition: string | null;
-  equipment_family_label: string | null;
-  selected_method: string | null;
-  selected_value_ex_vat: string | number | null;
-  value: string | number | null;
-  life_worked_percent: string | number | null;
-  depreciation_method_used: string | null;
 };
 
 type AccountDocumentSummaryRow = {
@@ -231,14 +218,17 @@ function buildAssetMeta(row: {
   kind?: string | null;
   asset_kind?: string | null;
   brand_name?: string | null;
+  brandName?: string | null;
   model_name?: string | null;
+  modelName?: string | null;
   year_model?: string | number | null;
+  yearModel?: string | number | null;
 }): string {
   const parts = [
     cleanText(row.kind ?? row.asset_kind, 80),
-    cleanText(row.brand_name, 100),
-    cleanText(row.model_name, 120),
-    cleanText(row.year_model, 8),
+    cleanText(row.brand_name ?? row.brandName, 100),
+    cleanText(row.model_name ?? row.modelName, 120),
+    cleanText(row.year_model ?? row.yearModel, 8),
   ].filter(Boolean);
 
   return parts.join(' · ');
@@ -255,8 +245,8 @@ function assetConditionLabel(value: unknown): string {
   } as Record<string, string>)[normalized] ?? '';
 }
 
-function assetFamilyLabel(row: AccountDocumentAssetRow): string {
-  const savedLabel = cleanText(row.equipment_family_label, 120);
+function assetFamilyLabel(asset: AssetRegisterItem): string {
+  const savedLabel = cleanText(asset.equipmentFamilyLabel, 120);
   if (savedLabel) return savedLabel;
 
   return ({
@@ -267,16 +257,16 @@ function assetFamilyLabel(row: AccountDocumentAssetRow): string {
     vehicle: 'Vehicle',
     tools: 'Tools',
     stock: 'Stock',
-  } as Record<string, string>)[cleanText(row.kind, 40).toLowerCase()] ?? 'Other';
+  } as Record<string, string>)[cleanText(asset.kind, 40).toLowerCase()] ?? 'Other';
 }
 
-function assetUsageLabel(row: AccountDocumentAssetRow): string {
-  const kind = cleanText(row.kind, 40).toLowerCase();
+function assetUsageLabel(asset: AssetRegisterItem): string {
+  const kind = cleanText(asset.kind, 40).toLowerCase();
   if (kind === 'property') return '';
 
-  const hours = nullableNumberValue(row.hours);
-  const lifeWorkedPercent = nullableNumberValue(row.life_worked_percent);
-  const depreciationMethod = cleanText(row.depreciation_method_used, 80).toLowerCase();
+  const hours = nullableNumberValue(asset.hours);
+  const lifeWorkedPercent = nullableNumberValue(asset.lifeWorkedPercent);
+  const depreciationMethod = cleanText(asset.depreciationMethodUsed, 80).toLowerCase();
   const usesPercentage = depreciationMethod === 'semi_depreciation' || depreciationMethod === 'percentage_depreciation';
 
   if (kind === 'vehicle' && hours !== null && hours > 0) {
@@ -304,12 +294,12 @@ function assetUsageLabel(row: AccountDocumentAssetRow): string {
   return '';
 }
 
-function buildAssetPickerDetail(row: AccountDocumentAssetRow): string {
-  const yearModel = nullableNumberValue(row.year_model);
-  const usage = assetUsageLabel(row);
-  const condition = assetConditionLabel(row.condition);
+function buildAssetPickerDetail(asset: AssetRegisterItem): string {
+  const yearModel = nullableNumberValue(asset.yearModel);
+  const usage = assetUsageLabel(asset);
+  const condition = assetConditionLabel(asset.condition);
   const parts = [
-    yearModel !== null ? `${cleanText(row.kind, 40).toLowerCase() === 'property' ? 'Year built' : 'Year Model'}: ${Math.round(yearModel)}` : '',
+    yearModel !== null ? `${cleanText(asset.kind, 40).toLowerCase() === 'property' ? 'Year built' : 'Year Model'}: ${Math.round(yearModel)}` : '',
     usage ? `Usage: ${usage}` : '',
     condition ? `Condition: ${condition}` : '',
   ].filter(Boolean);
@@ -451,38 +441,27 @@ async function replaceAssetLinks(
 }
 
 export async function listAccountDocumentAssetOptions(userId: string): Promise<AccountDocumentAssetOption[]> {
-  const result = await getDb().query<AccountDocumentAssetRow>(
-    `
-      select
-        id::text as id,
-        title,
-        kind,
-        brand_name,
-        model_name,
-        year_model,
-        hours,
-        condition,
-        equipment_family_label,
-        selected_method,
-        selected_value_ex_vat,
-        value,
-        life_worked_percent,
-        depreciation_method_used
-      from public.asset_register_items
-      where user_id = $1
-      order by lower(coalesce(nullif(btrim(title), ''), 'Untitled asset')), id
-    `,
-    [userId],
-  );
+  let assets: AssetRegisterItem[];
 
-  return result.rows.map((row) => ({
-    id: String(row.id),
-    title: cleanText(row.title, 180) || 'Untitled asset',
-    meta: buildAssetMeta(row),
-    detail: buildAssetPickerDetail(row),
-    categoryLabel: assetFamilyLabel(row),
-    methodLabel: cleanText(row.selected_method, 80).toLowerCase() === 'manual' ? 'Manual' : 'Aim4price',
-    currentValue: Math.round(nullableNumberValue(row.selected_value_ex_vat) ?? nullableNumberValue(row.value) ?? 0),
+  try {
+    assets = await listAssetRegisterItems(userId);
+  } catch (error) {
+    if (error instanceof Error && error.message === 'ASSET_REGISTER_NOT_FOUND') return [];
+    throw error;
+  }
+
+  return assets.map((asset) => ({
+    id: asset.id,
+    title: cleanText(asset.title, 180) || 'Untitled asset',
+    meta: buildAssetMeta(asset),
+    detail: buildAssetPickerDetail(asset),
+    categoryLabel: assetFamilyLabel(asset),
+    methodLabel: asset.selectedMethod === 'manual' ? 'Manual' : 'Aim4price',
+    currentValue: Math.round(
+      nullableNumberValue(asset.value)
+      ?? nullableNumberValue(asset.selectedValueExVat)
+      ?? 0,
+    ),
   }));
 }
 
