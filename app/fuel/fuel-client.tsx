@@ -1706,6 +1706,10 @@ export default function FuelClient({
     () => storages.filter((storage) => matchesSearch(storage, searchText)),
     [searchText, storages],
   );
+  const includedFuelAssets = useMemo(
+    () => assets.filter((asset) => !asset.workUseExcluded),
+    [assets],
+  );
 
   const selectedExclusionAssets = useMemo(() => {
     const selectedIds = new Set(selectedExclusionAssetIds);
@@ -1763,7 +1767,7 @@ export default function FuelClient({
 
   const fuelSlipTargetOptions = useMemo<ReportSelectOption[]>(
     () => [
-      ...assets.map((asset) => ({
+      ...includedFuelAssets.map((asset) => ({
         value: `asset:${asset.id}`,
         label: `${asset.title}${asset.assetTypeLabel ? ` · ${asset.assetTypeLabel}` : ''}`,
       })),
@@ -1772,7 +1776,7 @@ export default function FuelClient({
         label: `${storage.name} · Storage tank`,
       })),
     ],
-    [assets, storages],
+    [includedFuelAssets, storages],
   );
 
   const selectedFuelSlipTarget = useMemo(() => {
@@ -1793,8 +1797,8 @@ export default function FuelClient({
   const showFuelSlipHours = selectedFuelSlipTargetType === 'asset' && (!selectedFuelSlipAssetResolved || selectedFuelSlipUsageMetric === 'hours' || selectedFuelSlipUsageMetric === 'both');
   const fuelSlipSearchTerm = fuelSlipPickerSearch.trim().toLowerCase();
   const filteredFuelSlipAssets = useMemo(
-    () => assets.filter((asset) => matchesFuelSlipAsset(asset, fuelSlipSearchTerm)),
-    [assets, fuelSlipSearchTerm],
+    () => includedFuelAssets.filter((asset) => matchesFuelSlipAsset(asset, fuelSlipSearchTerm)),
+    [fuelSlipSearchTerm, includedFuelAssets],
   );
   const filteredFuelSlipStorages = useMemo(
     () => storages.filter((storage) => matchesFuelSlipStorage(storage, fuelSlipSearchTerm)),
@@ -1961,6 +1965,11 @@ export default function FuelClient({
 
     if (!requestedAsset.canReceiveFuel) {
       setNotice({ tone: 'error', message: `${requestedAsset.title} is not configured to receive fuel.` });
+      return;
+    }
+
+    if (requestedAsset.workUseExcluded) {
+      setNotice({ tone: 'error', message: `${requestedAsset.title} is excluded from work-use fuel. Include it again under Fuel Ledger exclusions before adding a fuel slip.` });
       return;
     }
 
@@ -3575,7 +3584,7 @@ export default function FuelClient({
       {modalMode === 'missing-entry' && selectedStorage ? (
         <MissingFuelEntryModal
           storage={selectedStorage}
-          assets={assets}
+          assets={includedFuelAssets}
           addedByLabel={addedByLabel}
           accountantShareId={accountantShareId}
           accountantRegisterId={accountantRegisterId}
@@ -4262,7 +4271,7 @@ export default function FuelClient({
             <div className={styles.modalHeader} data-asset-choice-header="true">
               <div>
                 <h2>{fuelSlipTargetPickerTitle}</h2>
-                <p>Select the saved asset or storage tank this fuel slip belongs to.</p>
+                <p>Select an included asset or the storage tank this fuel slip belongs to.</p>
               </div>
               <button type="button" className={styles.closeButton} onClick={closeModal} aria-label="Close"><CloseIcon /></button>
             </div>
@@ -4297,7 +4306,6 @@ export default function FuelClient({
                       <span className={styles.assetValue} data-asset-choice-value="true">
                         <strong>{formatCurrency(asset.currentValue)}</strong>
                         <small>current value</small>
-                        {asset.workUseExcluded ? <span className={`${styles.workUseBadge} ${styles.workUseBadgeExcluded}`}>Excluded from work use</span> : null}
                       </span>
                     </button>
                   ))}

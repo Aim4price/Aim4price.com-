@@ -4144,27 +4144,6 @@
   background: linear-gradient(180deg, #ffffff 0%, #ffedc9 100%);
 }
 
-.workUseBadge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: fit-content;
-  max-width: 100%;
-  padding: 0.34rem 0.62rem;
-  border: 1px solid transparent;
-  border-radius: 999px;
-  font-size: 0.76rem;
-  font-weight: 900;
-  line-height: 1.15;
-  text-align: center;
-}
-
-.workUseBadgeExcluded {
-  color: #8a3e08;
-  border-color: #efc993;
-  background: #fff5df;
-}
-
 .exclusionChoice {
   display: inline-flex;
   align-items: center;

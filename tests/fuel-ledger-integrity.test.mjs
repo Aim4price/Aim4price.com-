@@ -6,6 +6,7 @@ const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf
 const ledger = read('lib/fuel-ledger.ts');
 const migration = read('database/migrations/76-fuel-ledger-exclusions-and-audit.sql');
 const fuelClient = read('app/fuel/fuel-client.tsx');
+const missingFuelEntryModal = read('app/fuel/missing-fuel-entry-modal.tsx');
 const fuelStyles = read('app/fuel/page.module.css');
 const report = read('app/api/fuel/report/route.ts');
 const exclusionRoute = read('app/api/fuel/exclusions/[assetId]/route.ts');
@@ -26,8 +27,18 @@ test('asset exclusion is additive and propagated to existing and future ledger r
 
 test('fuel exclusions stay manageable on desktop but are hidden from operational app pickers', () => {
   assert.match(fuelClient, /Choose Saved Assets/);
+  assert.match(fuelClient, /const includedFuelAssets = useMemo/);
+  assert.match(fuelClient, /\(\) => assets\.filter\(\(asset\) => !asset\.workUseExcluded\)/);
+  assert.match(fuelClient, /\(\) => includedFuelAssets\.filter\(\(asset\) => matchesFuelSlipAsset/);
+  assert.match(fuelClient, /assets=\{includedFuelAssets\}/);
+  assert.match(fuelClient, /if \(requestedAsset\.workUseExcluded\)/);
+  assert.doesNotMatch(fuelClient, /styles\.workUseBadgeExcluded/);
+  assert.match(missingFuelEntryModal, /asset\.canReceiveFuel && asset\.isActive !== false && !asset\.workUseExcluded/);
   assert.match(petrolStationClient, /asset\.canReceiveFuel && !asset\.workUseExcluded/);
-  assert.match(fuelScanClient, /isAuthenticatedAppMode \? assets\.filter\(\(asset\) => !asset\.workUseExcluded\) : assets/);
+  assert.match(fuelScanClient, /assets\.filter\(\(asset\) => asset\.canReceiveFuel && !asset\.workUseExcluded\)/);
+  assert.doesNotMatch(fuelScanClient, /isAuthenticatedAppMode \? assets\.filter/);
+  assert.doesNotMatch(fuelScanClient, /styles\.workUseNotice/);
+  assert.doesNotMatch(fuelScanClient, /selectedAsset\?\.workUseExcluded/);
   assert.match(fuelScanClient, /if \(!query\) return appVisibleAssets/);
 });
 
