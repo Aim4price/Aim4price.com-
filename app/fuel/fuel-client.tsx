@@ -1447,6 +1447,10 @@ function fuelSlipAssetDetail(asset: FuelLedgerAsset): string {
   ].filter(Boolean).join(' • ');
 }
 
+function isIncludedFuelEntryAsset(asset: FuelLedgerAsset): boolean {
+  return asset.canReceiveFuel && asset.isActive !== false && !asset.workUseExcluded;
+}
+
 function fuelSlipStorageMeta(storage: FuelLedgerStorage): string {
   return [
     `Fuel type: ${formatFuelType(storage.fuelType)}`,
@@ -1707,7 +1711,7 @@ export default function FuelClient({
     [searchText, storages],
   );
   const includedFuelAssets = useMemo(
-    () => assets.filter((asset) => !asset.workUseExcluded),
+    () => assets.filter(isIncludedFuelEntryAsset),
     [assets],
   );
 
@@ -1879,7 +1883,7 @@ export default function FuelClient({
   ].filter(Boolean).length, [fuelSlipManagerFilters]);
 
 
-  async function loadLedger(options: { silent?: boolean } = {}) {
+  async function loadLedger(options: { silent?: boolean; discardAssetsOnError?: boolean } = {}) {
     if (!options.silent) {
       setIsLoading(true);
     }
@@ -1903,6 +1907,7 @@ export default function FuelClient({
       setHasLoadedLedger(true);
     } catch (error) {
       setHasLoadedLedger(false);
+      if (options.discardAssetsOnError) setAssets([]);
       setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'Failed to load Fuel Ledger.' });
     } finally {
       if (!options.silent) {
@@ -2156,6 +2161,7 @@ export default function FuelClient({
     setQuickLaunchAssetId(null);
     setNotice(null);
     setModalMode('fuel-slip');
+    void loadLedger({ discardAssetsOnError: true });
   }
 
   function openFuelSlipManager() {
@@ -2620,6 +2626,21 @@ export default function FuelClient({
     if (targetType !== 'asset' && targetType !== 'storage_tank') {
       setNotice({ tone: 'error', message: 'Choose asset or storage tank.' });
       return;
+    }
+
+    if (!fuelSlipDraft.id && targetType === 'asset') {
+      const targetAsset = assets.find((asset) => asset.id === targetId);
+      if (!targetAsset || !isIncludedFuelEntryAsset(targetAsset)) {
+        setFuelSlipDraft((current) => ({ ...current, targetKey: '' }));
+        setFuelSlipFlow(fuelSlipDraft.mode === 'manual' ? 'target-manual' : 'target-automatic');
+        setNotice({
+          tone: 'error',
+          message: targetAsset?.workUseExcluded
+            ? `${targetAsset.title} is excluded from fuel entry. Include it again under Fuel Ledger exclusions before adding a fuel slip.`
+            : 'That asset is no longer available for fuel entry. Choose another included asset.',
+        });
+        return;
+      }
     }
 
     const missingFields = getFuelSlipMissingFields(
@@ -3360,23 +3381,6 @@ export default function FuelClient({
               </div>
 
               <div className={styles.topActions}>
-                <label className={styles.searchWrap}>
-                  <SearchIcon className={styles.searchIcon} />
-                  <input
-                    type="search"
-                    className={styles.searchInput}
-                    value={searchText}
-                    onChange={(event) => setSearchText(event.target.value)}
-                    placeholder="Search by storage name, type or serial"
-                    aria-label="Search by storage name, type or serial"
-                  />
-                  {hasActiveSearch ? (
-                    <button type="button" className={styles.clearSearchButton} onClick={clearSearch} aria-label="Clear search">
-                      ×
-                    </button>
-                  ) : null}
-                </label>
-
                 <div className={styles.topActionButtons}>
                   {!isAccountantReadOnly ? (
                     <button
@@ -3412,6 +3416,23 @@ export default function FuelClient({
                     <span>Download</span>
                   </button>
                 </div>
+
+                <label className={styles.searchWrap}>
+                  <SearchIcon className={styles.searchIcon} />
+                  <input
+                    type="search"
+                    className={styles.searchInput}
+                    value={searchText}
+                    onChange={(event) => setSearchText(event.target.value)}
+                    placeholder="Search by storage name, type or serial"
+                    aria-label="Search by storage name, type or serial"
+                  />
+                  {hasActiveSearch ? (
+                    <button type="button" className={styles.clearSearchButton} onClick={clearSearch} aria-label="Clear search">
+                      ×
+                    </button>
+                  ) : null}
+                </label>
               </div>
             </div>
 
