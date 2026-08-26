@@ -1,5 +1,6 @@
 'use client';
 
+import DropdownOverlay from '../../components/DropdownOverlay';
 import { useCallback, useEffect, useMemo, useState, type ChangeEvent, type DragEvent } from 'react';
 import { createPortal } from 'react-dom';
 import dynamic from 'next/dynamic';
@@ -569,7 +570,7 @@ function LeadFilterDropdown({
         </button>
 
         {isOpen ? (
-          <div className={styles.leadFilterSelectMenu} role="listbox" aria-label={label}>
+          <DropdownOverlay className={styles.leadFilterSelectMenu} role="listbox" aria-label={label}>
             {options.map((option) => {
               const isSelected = option.value === value;
 
@@ -589,7 +590,7 @@ function LeadFilterDropdown({
                 </button>
               );
             })}
-          </div>
+          </DropdownOverlay>
         ) : null}
       </div>
     </label>
@@ -4553,3 +4554,4 @@ export default function LeadsClient({
     </main>
   );
 }
+

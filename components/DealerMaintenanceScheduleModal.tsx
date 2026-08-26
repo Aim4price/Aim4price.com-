@@ -1,5 +1,6 @@
 'use client';
 
+import DropdownOverlay from './DropdownOverlay';
 import { useEffect, useRef, useState } from 'react';
 import type {
   DealerMaintenanceRecordSummary,
@@ -247,7 +248,7 @@ function ProposalDropdown({
           <ChevronDownIcon className={styles.customFilterSelectChevron} />
         </button>
         {isOpen ? (
-          <div className={styles.customFilterSelectMenu} role="listbox" aria-label={label}>
+          <DropdownOverlay className={styles.customFilterSelectMenu} role="listbox" aria-label={label}>
             {options.map((option) => (
               <button
                 key={`${label}-${option.value}`}
@@ -263,7 +264,7 @@ function ProposalDropdown({
                 <span className={styles.customFilterSelectOptionLabel}>{option.label}</span>
               </button>
             ))}
-          </div>
+          </DropdownOverlay>
         ) : null}
       </div>
     </div>
@@ -701,3 +702,4 @@ export default function DealerMaintenanceScheduleModal({
     </div>
   );
 }
+

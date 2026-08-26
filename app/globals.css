@@ -421,3 +421,32 @@ textarea {
     --shell-gutter: 0.68rem;
   }
 }
+
+/* Custom selects and autocomplete menus always live above modal scroll containers. */
+[data-dropdown-overlay='true'] {
+  position: fixed !important;
+  inset: auto !important;
+  left: var(--dropdown-overlay-left) !important;
+  top: var(--dropdown-overlay-top) !important;
+  right: auto !important;
+  bottom: auto !important;
+  width: var(--dropdown-overlay-width) !important;
+  min-width: var(--dropdown-overlay-width) !important;
+  max-width: calc(100dvw - 24px) !important;
+  max-height: var(--dropdown-overlay-max-height) !important;
+  margin: 0 !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain;
+  transform: none !important;
+  visibility: var(--dropdown-overlay-visibility) !important;
+  z-index: 2147483000 !important;
+  isolation: isolate;
+  pointer-events: auto;
+  scrollbar-gutter: stable;
+}
+
+/* Existing body portals use their own geometry but share the same topmost layer. */
+[data-dropdown-overlay-portal='true'] {
+  z-index: 2147483000 !important;
+}

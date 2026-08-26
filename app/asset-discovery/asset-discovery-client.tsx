@@ -1,5 +1,6 @@
 "use client";
 
+import DropdownOverlay from '../../components/DropdownOverlay';
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   WorkspaceTitlePanel,
@@ -392,7 +393,7 @@ function DiscoveryFilterDropdown({
         </button>
 
         {isOpen ? (
-          <div
+          <DropdownOverlay
             className={leadStyles.leadFilterSelectMenu}
             role="listbox"
             aria-label={label}
@@ -416,7 +417,7 @@ function DiscoveryFilterDropdown({
                 </button>
               );
             })}
-          </div>
+          </DropdownOverlay>
         ) : null}
       </div>
     </label>
@@ -1106,7 +1107,7 @@ export default function AssetDiscoveryClient({
         </button>
 
         {isOpen ? (
-          <div className={styles.customFilterMenu} role="listbox" aria-label={ariaLabel}>
+          <DropdownOverlay className={styles.customFilterMenu} role="listbox" aria-label={ariaLabel}>
             <button
               type="button"
               className={`${styles.customFilterOption} ${value === "all" ? styles.customFilterOptionSelected : ""}`}
@@ -1140,7 +1141,7 @@ export default function AssetDiscoveryClient({
                 </button>
               );
             })}
-          </div>
+          </DropdownOverlay>
         ) : null}
       </div>
     );
@@ -1789,8 +1790,10 @@ export default function AssetDiscoveryClient({
                 </button>
 
                 {openFilter === "pageSize" ? (
-                  <div
+                  <DropdownOverlay
                     className={styles.discoveryPageSizeMenu}
+                    matchAnchorWidth={false}
+                    minimumWidth={160}
                     role="listbox"
                     aria-label="Assets per page"
                   >
@@ -1810,7 +1813,7 @@ export default function AssetDiscoveryClient({
                         {option === pageSize ? <strong>✓</strong> : null}
                       </button>
                     ))}
-                  </div>
+                  </DropdownOverlay>
                 ) : null}
               </div>
               <span>per page</span>
@@ -2646,3 +2649,4 @@ export default function AssetDiscoveryClient({
     </section>
   );
 }
+

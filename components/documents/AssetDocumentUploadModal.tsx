@@ -1,5 +1,6 @@
 'use client';
 
+import DropdownOverlay from '../DropdownOverlay';
 import {
   useEffect,
   useMemo,
@@ -437,7 +438,7 @@ export default function AssetDocumentUploadModal({
                   <button type="button" onClick={() => changeTypeSearch('')} aria-label="Clear document type">×</button>
                 ) : null}
                 {showDocumentTypes ? (
-                  <div id="asset-document-type-options" className={styles.options} role="listbox">
+                  <DropdownOverlay id="asset-document-type-options" className={styles.options} role="listbox">
                     {filteredTypes.length ? filteredTypes.map((option, index) => (
                       <button
                         key={option.value}
@@ -454,7 +455,7 @@ export default function AssetDocumentUploadModal({
                         <small>{ACCOUNT_DOCUMENT_CATEGORY_LABELS[option.category]}</small>
                       </button>
                     )) : <p>No document types match that search.</p>}
-                  </div>
+                  </DropdownOverlay>
                 ) : null}
               </div>
               {selectedType ? <small>Saved under {ACCOUNT_DOCUMENT_CATEGORY_LABELS[selectedType.category]}</small> : null}
@@ -539,3 +540,4 @@ export default function AssetDocumentUploadModal({
     </div>
   );
 }
+
