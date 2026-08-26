@@ -2,6 +2,7 @@ import AdminNavigation from "../../../components/AdminNavigation";
 import { requireAdminPageAccess } from "../../../lib/account-access";
 import { getAdminDiscoveryReport } from "../../../lib/admin-global-assets";
 import type {
+  AdminAssetInterestFilter,
   AdminAssetLocationFilter,
   AdminAssetParticipationFilter,
   AdminAssetSort,
@@ -44,6 +45,7 @@ export default async function AdminDiscoveryPage({
     sector: first(searchParams.sector),
     participation: first(searchParams.participation) as AdminAssetParticipationFilter,
     location: first(searchParams.location) as AdminAssetLocationFilter,
+    interest: first(searchParams.interest) as AdminAssetInterestFilter,
     lifecycleState: first(searchParams.lifecycle),
     sort: first(searchParams.sort) as AdminAssetSort,
     page: Number(first(searchParams.page) || 1),

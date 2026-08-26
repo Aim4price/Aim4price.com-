@@ -7,11 +7,13 @@ import {
   formatAdminAssetMoney,
   formatAdminAssetValue,
   hasAdminAssetCoordinates,
+  type AdminAssetInterestFilter,
   type AdminAssetLocationFilter,
   type AdminAssetParticipationFilter,
   type AdminAssetSort,
   type AdminDiscoveryFilters,
   type AdminDiscoveryReport,
+  type AdminDiscoveryViewDetails,
   type AdminGlobalAsset,
 } from "../../../lib/admin-global-assets-shared";
 import styles from "./page.module.css";
@@ -24,6 +26,7 @@ type DiscoveryFilterState = Pick<
   | "sector"
   | "participation"
   | "location"
+  | "interest"
   | "lifecycleState"
   | "sort"
   | "page"
@@ -49,6 +52,31 @@ function formatDate(value: string | null): string {
     month: "short",
     year: "numeric",
   }).format(parsed);
+}
+
+function formatDateTime(value: string | null): string {
+  if (!value) return "Not recorded";
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return "Not recorded";
+  return new Intl.DateTimeFormat("en-ZA", {
+    timeZone: "Africa/Johannesburg",
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(parsed);
+}
+
+function formatAccountType(value: string): string {
+  return titleCase(value || "Aim4price");
+}
+
+function interestButtonLabel(value: AdminAssetInterestFilter): string {
+  if (value === "viewed") return "Viewed";
+  if (value === "repeat") return "Repeat interest";
+  if (value === "unviewed") return "Not viewed";
+  return "All assets";
 }
 
 function assetIdentity(asset: AdminGlobalAsset): string {
@@ -81,6 +109,7 @@ function buildQuery(filters: DiscoveryFilterState): string {
   if (filters.sector) params.set("sector", filters.sector);
   if (filters.participation !== "all") params.set("participation", filters.participation);
   if (filters.location !== "all") params.set("location", filters.location);
+  if (filters.interest !== "all") params.set("interest", filters.interest);
   if (filters.lifecycleState) params.set("lifecycle", filters.lifecycleState);
   if (filters.sort !== "updated") params.set("sort", filters.sort);
   if (filters.page > 1) params.set("page", String(filters.page));
@@ -103,9 +132,16 @@ export default function AdminDiscoveryClient({
   const [error, setError] = useState("");
   const [selectedAsset, setSelectedAsset] = useState<AdminGlobalAsset | null>(null);
   const [openingOwnerId, setOpeningOwnerId] = useState<string | null>(null);
+  const [activityTarget, setActivityTarget] = useState<AdminGlobalAsset | null>(null);
+  const [activityDetails, setActivityDetails] = useState<AdminDiscoveryViewDetails | null>(null);
+  const [activityBusy, setActivityBusy] = useState(false);
+  const [activityError, setActivityError] = useState("");
   const requestSequenceRef = useRef(0);
   const detailsRef = useRef<HTMLElement | null>(null);
   const detailTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const activityModalRef = useRef<HTMLElement | null>(null);
+  const activityTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const activityRequestRef = useRef(0);
   const initialFocusHandledRef = useRef(false);
 
   const activeFilterCount = useMemo(
@@ -117,6 +153,7 @@ export default function AdminDiscoveryClient({
         filters.sector,
         filters.participation !== "all" ? filters.participation : "",
         filters.location !== "all" ? filters.location : "",
+        filters.interest !== "all" ? filters.interest : "",
         filters.lifecycleState,
       ].filter(Boolean).length,
     [filters],
@@ -176,6 +213,52 @@ export default function AdminDiscoveryClient({
       detailTriggerRef.current?.focus();
     };
   }, [openingOwnerId, selectedAsset]);
+
+  useEffect(() => {
+    if (!activityTarget) return;
+    const modal = activityModalRef.current;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const frame = window.requestAnimationFrame(() => {
+      modal?.querySelector<HTMLElement>("button:not([disabled])")?.focus();
+    });
+
+    function keepFocusInsideActivity(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        closeActivityModal();
+        return;
+      }
+      if (event.key !== "Tab" || !modal) return;
+      const focusable = Array.from(
+        modal.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ),
+      );
+      if (!focusable.length) {
+        event.preventDefault();
+        modal.focus();
+        return;
+      }
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    }
+
+    window.addEventListener("keydown", keepFocusInsideActivity);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.removeEventListener("keydown", keepFocusInsideActivity);
+      document.body.style.overflow = previousOverflow;
+      activityTriggerRef.current?.focus();
+    };
+  }, [activityTarget]);
 
   async function loadReport(nextFilters: DiscoveryFilterState) {
     const sequence = requestSequenceRef.current + 1;
@@ -249,6 +332,7 @@ export default function AdminDiscoveryClient({
       sector: "",
       participation: "all",
       location: "all",
+      interest: "all",
       lifecycleState: "",
       sort: "updated",
       page: 1,
@@ -263,6 +347,88 @@ export default function AdminDiscoveryClient({
     detailTriggerRef.current = trigger;
     setError("");
     setSelectedAsset(asset);
+  }
+
+  function selectInterest(interest: AdminAssetInterestFilter) {
+    const sort: AdminAssetSort =
+      interest === "viewed"
+        ? "popular"
+        : interest === "repeat"
+          ? "repeat-interest"
+          : "updated";
+    const next: DiscoveryFilterState = {
+      ...filters,
+      interest,
+      sort,
+      page: 1,
+      focusAssetId: "",
+    };
+    void loadReport(next);
+  }
+
+  async function loadActivity(
+    asset: AdminGlobalAsset,
+    requestedPage: number,
+    append = false,
+  ) {
+    const requestId = activityRequestRef.current + 1;
+    activityRequestRef.current = requestId;
+    setActivityBusy(true);
+    setActivityError("");
+
+    try {
+      const params = new URLSearchParams({
+        viewAssetId: asset.id,
+        viewPage: String(requestedPage),
+        viewPageSize: "100",
+      });
+      const response = await fetch(`/api/admin/discovery?${params.toString()}`, {
+        credentials: "include",
+        cache: "no-store",
+      });
+      const payload = (await response.json().catch(() => null)) as {
+        details?: AdminDiscoveryViewDetails;
+        error?: string;
+      } | null;
+      if (!response.ok || !payload?.details) {
+        throw new Error(payload?.error || "Discovery viewer activity could not be loaded.");
+      }
+      if (requestId !== activityRequestRef.current) return;
+      const nextDetails = payload.details;
+      setActivityDetails((current) => {
+        if (!append || !current) return nextDetails;
+        return {
+          ...nextDetails,
+          events: [...current.events, ...nextDetails.events],
+        };
+      });
+    } catch (loadError) {
+      if (requestId === activityRequestRef.current) {
+        setActivityError(
+          loadError instanceof Error
+            ? loadError.message
+            : "Discovery viewer activity could not be loaded.",
+        );
+      }
+    } finally {
+      if (requestId === activityRequestRef.current) setActivityBusy(false);
+    }
+  }
+
+  function openActivityModal(asset: AdminGlobalAsset, trigger: HTMLButtonElement) {
+    activityTriggerRef.current = trigger;
+    setActivityTarget(asset);
+    setActivityDetails(null);
+    setActivityError("");
+    void loadActivity(asset, 1);
+  }
+
+  function closeActivityModal() {
+    activityRequestRef.current += 1;
+    setActivityTarget(null);
+    setActivityDetails(null);
+    setActivityError("");
+    setActivityBusy(false);
   }
 
   async function openOwnerAccount(asset: AdminGlobalAsset) {
@@ -301,26 +467,33 @@ export default function AdminDiscoveryClient({
           <small>{activeFilterCount ? `${activeFilterCount} active filters` : "All asset records"}</small>
         </article>
         <article>
+          <span>Total Discovery views</span>
+          <strong>{report.summary.totalViews.toLocaleString("en-ZA")}</strong>
+          <small>
+            {report.summary.accountViews.toLocaleString("en-ZA")} account · {report.summary.unknownViews.toLocaleString("en-ZA")} unknown
+          </small>
+        </article>
+        <article>
+          <span>Assets viewed</span>
+          <strong>{report.summary.viewedAssets.toLocaleString("en-ZA")}</strong>
+          <small>Assets opened in protected Discovery</small>
+        </article>
+        <article className={report.summary.repeatInterestAssets ? styles.signalMetric : undefined}>
+          <span>Repeat interest</span>
+          <strong>{report.summary.repeatInterestAssets.toLocaleString("en-ZA")}</strong>
+          <small>Flagged after 3 views by one viewer</small>
+        </article>
+        <article>
           <span>Matching value</span>
           <strong>{formatAdminAssetMoney(report.summary.totalValueExVat)}</strong>
           <small>
-            Current saved value · Excl. VAT · {report.summary.missingValueAssets.toLocaleString("en-ZA")} missing
+            Excl. VAT · {report.summary.missingValueAssets.toLocaleString("en-ZA")} missing
           </small>
         </article>
         <article>
           <span>Owner accounts</span>
           <strong>{report.summary.ownerAccounts.toLocaleString("en-ZA")}</strong>
-          <small>Distinct accounts in this result</small>
-        </article>
-        <article>
-          <span>Discovery enabled</span>
-          <strong>{report.summary.discoveryEnabledAssets.toLocaleString("en-ZA")}</strong>
-          <small>Owner participation currently enabled</small>
-        </article>
-        <article>
-          <span>Admin-only records</span>
-          <strong>{report.summary.discoveryDisabledAssets.toLocaleString("en-ZA")}</strong>
-          <small>Participation off; still visible to Admin</small>
+          <small>{report.summary.discoveryEnabledAssets.toLocaleString("en-ZA")} enabled · {report.summary.discoveryDisabledAssets.toLocaleString("en-ZA")} admin only</small>
         </article>
       </section>
 
@@ -328,11 +501,33 @@ export default function AdminDiscoveryClient({
         <strong>Admin-unlocked directory.</strong>
         <span>
           Owner contact details are available here without an enquiry. This does not change what customers can see
-          in regular Discovery or override their public participation setting.
+          in regular Discovery or override their public participation setting. Viewer identities and timestamps
+          remain visible only to Admin; Discovery itself still requires an Aim4price account.
         </span>
       </aside>
 
       <section className={styles.discoveryCard}>
+        <div className={styles.interestBar}>
+          <div>
+            <strong>Viewer interest</strong>
+            <span>Find popular assets or isolate repeat attention from one account.</span>
+          </div>
+          <div className={styles.interestTabs} role="group" aria-label="Discovery popularity filter">
+            {(["all", "viewed", "repeat", "unviewed"] as AdminAssetInterestFilter[]).map((option) => (
+              <button
+                key={option}
+                type="button"
+                className={filters.interest === option ? styles.interestTabActive : undefined}
+                aria-pressed={filters.interest === option}
+                disabled={loading}
+                onClick={() => selectInterest(option)}
+              >
+                {interestButtonLabel(option)}
+                {option === "repeat" ? <span>{report.summary.repeatInterestAssets}</span> : null}
+              </button>
+            ))}
+          </div>
+        </div>
         <header className={styles.filterHeader}>
           <div className={styles.filterTitle}>
             <p>Complete directory</p>
@@ -465,6 +660,9 @@ export default function AdminDiscoveryClient({
                 disabled={loading}
               >
                 <option value="updated">Recently updated</option>
+                <option value="popular">Most viewed</option>
+                <option value="repeat-interest">Strongest repeat interest</option>
+                <option value="recent-view">Most recently viewed</option>
                 <option value="value-high">Highest value</option>
                 <option value="value-low">Lowest value</option>
                 <option value="owner">Owner A-Z</option>
@@ -496,6 +694,7 @@ export default function AdminDiscoveryClient({
                 <th>Location</th>
                 <th>Value</th>
                 <th>Identifiers</th>
+                <th>Viewer interest</th>
                 <th>Discovery</th>
                 <th>GPS</th>
                 <th>Updated</th>
@@ -539,6 +738,33 @@ export default function AdminDiscoveryClient({
                     <td>
                       <strong>{asset.serialNumber || "No serial"}</strong>
                       <span>{asset.registrationNumber || asset.publicAssetCode || "No registration"}</span>
+                    </td>
+                    <td className={styles.interestCell}>
+                      {asset.totalViews > 0 ? (
+                        <>
+                          <strong>{asset.totalViews.toLocaleString("en-ZA")} {asset.totalViews === 1 ? "view" : "views"}</strong>
+                          <span>{asset.accountViews.toLocaleString("en-ZA")} account · {asset.unknownViews.toLocaleString("en-ZA")} unknown</span>
+                          <small>Last opened {formatDateTime(asset.lastViewedAtIso)}</small>
+                          {asset.hasRepeatInterest ? (
+                            <em className={styles.repeatFlag}>
+                              <span aria-hidden="true">⚑</span>
+                              {asset.repeatViewerLabel || "One viewer"} · {asset.repeatViewerViews} views
+                            </em>
+                          ) : null}
+                        </>
+                      ) : (
+                        <>
+                          <strong>No views yet</strong>
+                          <span>Tracking starts with protected detail opens</span>
+                        </>
+                      )}
+                      <button
+                        type="button"
+                        className={styles.activityButton}
+                        onClick={(event) => openActivityModal(asset, event.currentTarget)}
+                      >
+                        Viewer summary
+                      </button>
                     </td>
                     <td>
                       <span
@@ -628,6 +854,151 @@ export default function AdminDiscoveryClient({
           </div>
         </footer>
       </section>
+
+      {activityTarget ? (
+        <div className={styles.modalLayer}>
+          <button
+            type="button"
+            className={styles.backdrop}
+            tabIndex={-1}
+            aria-label="Close Discovery viewer summary"
+            onClick={closeActivityModal}
+          />
+          <section
+            ref={activityModalRef}
+            className={styles.activityModal}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="admin-discovery-viewer-summary-title"
+            tabIndex={-1}
+          >
+            <header className={styles.activityModalHeader}>
+              <div>
+                <h2 id="admin-discovery-viewer-summary-title">Viewer summary</h2>
+                <p>Who viewed {activityTarget.title}, and when?</p>
+              </div>
+              <button
+                type="button"
+                className={styles.modalCloseButton}
+                aria-label="Close Discovery viewer summary"
+                onClick={closeActivityModal}
+              >
+                <span aria-hidden="true">×</span>
+              </button>
+            </header>
+
+            {activityBusy && !activityDetails ? (
+              <div className={styles.activityLoading} aria-busy="true">
+                <i /><i /><i /><strong>Loading viewer activity…</strong>
+              </div>
+            ) : null}
+            {activityError ? (
+              <div className={styles.activityError} role="alert">
+                <strong>Viewer activity could not be loaded</strong>
+                <span>{activityError}</span>
+                <button type="button" onClick={() => void loadActivity(activityTarget, 1)}>
+                  Try again
+                </button>
+              </div>
+            ) : null}
+
+            {activityDetails ? (
+              <div className={styles.activityBody}>
+                <section className={styles.activitySummary} aria-label="Discovery viewer activity summary">
+                  <article><strong>{activityDetails.totalViews}</strong><span>Total views</span></article>
+                  <article><strong>{activityDetails.accountViews}</strong><span>Account views</span></article>
+                  <article><strong>{activityDetails.unknownViews}</strong><span>Unknown views</span></article>
+                  <article><strong>{activityDetails.uniqueViewers}</strong><span>Different viewers</span></article>
+                </section>
+
+                {activityDetails.repeatViewers > 0 ? (
+                  <aside className={styles.repeatBanner}>
+                    <span aria-hidden="true">⚑</span>
+                    <div>
+                      <strong>Repeat interest detected</strong>
+                      <p>
+                        {activityDetails.repeatViewers} {activityDetails.repeatViewers === 1 ? "viewer has" : "viewers have"} opened this asset at least 3 times.
+                      </p>
+                    </div>
+                  </aside>
+                ) : null}
+
+                <section className={styles.viewerSection}>
+                  <div className={styles.activityHeading}>
+                    <h3>Viewer summary</h3>
+                    <span>Grouped by Aim4price account or unknown viewer</span>
+                  </div>
+                  {activityDetails.viewerGroups.length ? (
+                    <div className={styles.viewerList}>
+                      {activityDetails.viewerGroups.map((viewer) => (
+                        <article key={viewer.viewerKey} className={viewer.hasRepeatInterest ? styles.viewerFlagged : undefined}>
+                          <span className={styles.viewerAvatar} aria-hidden="true">
+                            {viewer.viewerKind === "account" ? "A" : "?"}
+                          </span>
+                          <div>
+                            <strong>{viewer.viewerLabel}</strong>
+                            <span>
+                              {viewer.viewerKind === "account"
+                                ? `${formatAccountType(viewer.viewerAccountType)}${viewer.viewerEmail ? ` · ${viewer.viewerEmail}` : ""}`
+                                : "Unknown viewer"}
+                            </span>
+                            <small>Last viewed {formatDateTime(viewer.lastViewedAtIso)}</small>
+                          </div>
+                          <div className={styles.viewerCount}>
+                            {viewer.hasRepeatInterest ? <em><span aria-hidden="true">⚑</span> Flagged</em> : null}
+                            <strong>{viewer.viewCount}</strong>
+                            <span>{viewer.viewCount === 1 ? "view" : "views"}</span>
+                          </div>
+                        </article>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className={styles.activityEmpty}>
+                      <strong>No recorded views yet</strong>
+                      <span>This asset has not been opened since Discovery view tracking started.</span>
+                    </div>
+                  )}
+                </section>
+
+                <section className={styles.timelineSection}>
+                  <div className={styles.activityHeading}>
+                    <h3>View timeline</h3>
+                    <span>Successful protected detail opens, newest first</span>
+                  </div>
+                  {activityDetails.events.length ? (
+                    <div className={styles.timeline}>
+                      {activityDetails.events.map((viewEvent) => (
+                        <article key={viewEvent.id}>
+                          <span className={styles.timelineDot} aria-hidden="true" />
+                          <div>
+                            <strong>{viewEvent.viewerLabel}</strong>
+                            <span>
+                              {viewEvent.viewerKind === "account"
+                                ? `Aim4price ${formatAccountType(viewEvent.viewerAccountType)} account viewed this asset`
+                                : "Unknown viewer viewed this asset"}
+                            </span>
+                          </div>
+                          <time dateTime={viewEvent.viewedAtIso}>{formatDateTime(viewEvent.viewedAtIso)}</time>
+                        </article>
+                      ))}
+                    </div>
+                  ) : null}
+                  {activityDetails.page < activityDetails.totalPages ? (
+                    <button
+                      type="button"
+                      className={styles.loadMoreButton}
+                      disabled={activityBusy}
+                      onClick={() => void loadActivity(activityTarget, activityDetails.page + 1, true)}
+                    >
+                      {activityBusy ? "Loading older views…" : "Load older views"}
+                    </button>
+                  ) : null}
+                </section>
+              </div>
+            ) : null}
+          </section>
+        </div>
+      ) : null}
 
       {selectedAsset ? (
         <div className={styles.modalLayer}>

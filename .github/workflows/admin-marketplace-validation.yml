@@ -1,4 +1,4 @@
-name: Admin Marketplace validation
+name: Admin Marketplace and Discovery validation
 
 on:
   pull_request:
@@ -8,16 +8,24 @@ on:
       - 'app/admin/layout.tsx'
       - 'app/admin/loading*'
       - 'app/admin/marketplace/**'
+      - 'app/admin/discovery/**'
       - 'app/api/admin/marketplace/**'
+      - 'app/api/admin/discovery/**'
+      - 'app/api/asset-discovery/assets/**'
       - 'app/api/marketplace/views/**'
       - 'app/marketplace/marketplace-client.tsx'
       - 'components/AdminNavigation*'
       - 'database/migrations/93-marketplace-view-discovery-tracking.sql'
+      - 'database/migrations/94-asset-discovery-view-tracking.sql'
       - 'lib/admin-dashboard.ts'
+      - 'lib/admin-global-assets*'
       - 'lib/admin-marketplace*'
+      - 'lib/discovery-views.ts'
       - 'lib/marketplace-views.ts'
       - 'tests/admin-marketplace-dashboard.test.mjs'
       - 'tests/marketplace-view-tracking.test.mjs'
+      - 'tests/admin-global-assets.test.mjs'
+      - 'tests/discovery-view-tracking.test.mjs'
       - 'package.json'
       - 'package-lock.json'
 
@@ -47,6 +55,9 @@ jobs:
 
       - name: Test Admin Marketplace
         run: npm run test:admin-marketplace
+
+      - name: Test Admin Discovery
+        run: npm run test:admin-discovery
 
       - name: Test Admin navigation
         run: npm run test:admin-accounts

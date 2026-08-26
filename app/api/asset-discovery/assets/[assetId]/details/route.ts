@@ -1,7 +1,13 @@
+import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
+import { isAim4priceAdminEmail } from "../../../../../../lib/account-constants";
 import { getAccountProfile } from "../../../../../../lib/account-profile";
 import { getAssetDiscoveryAssetDetails } from "../../../../../../lib/asset-discovery";
-import { getServerSession } from "../../../../../../lib/auth-session";
+import {
+  getServerSession,
+  isAdminSupportSession,
+} from "../../../../../../lib/auth-session";
+import { recordAssetDiscoveryView } from "../../../../../../lib/discovery-views";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -29,6 +35,24 @@ export async function GET(_request: Request, context: RouteContext) {
       viewerUserId: session.user.id,
       viewerAccountType: profile.accountType as "owner" | "dealer" | "licensing",
     });
+
+    // Count only successful protected opens. Admin/support and owner self-views
+    // are excluded before the event can become a Discovery demand signal.
+    if (
+      !isAim4priceAdminEmail(session.user.email) &&
+      !isAdminSupportSession(session)
+    ) {
+      try {
+        await recordAssetDiscoveryView({
+          viewEventId: randomUUID(),
+          assetId: context.params.assetId,
+          viewerUserId: session.user.id,
+        });
+      } catch (viewError) {
+        console.error("asset Discovery view tracking failed", viewError);
+      }
+    }
+
     return NextResponse.json({ ok: true, details }, {
       headers: { "Cache-Control": "private, no-store" },
     });
