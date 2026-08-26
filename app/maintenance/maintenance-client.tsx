@@ -1,5 +1,6 @@
 'use client';
 
+import DropdownOverlay from '../../components/DropdownOverlay';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import AppHeader from '../../components/AppHeader';
 import { openCanonicalReportUrl } from '../../lib/report-open';
@@ -680,7 +681,7 @@ function MaintenanceDropdown({
         </button>
 
         {isOpen ? (
-          <div className={styles.customFilterSelectMenu} role="listbox" aria-label={label}>
+          <DropdownOverlay className={styles.customFilterSelectMenu} role="listbox" aria-label={label}>
             {searchable ? (
               <div className={styles.customFilterSearchRow}>
                 <input
@@ -719,7 +720,7 @@ function MaintenanceDropdown({
                 <span className={styles.customFilterSelectOptionLabel}>{noMatchesLabel}</span>
               </div>
             )}
-          </div>
+          </DropdownOverlay>
         ) : null}
       </div>
     </div>

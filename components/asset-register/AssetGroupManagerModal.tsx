@@ -2,6 +2,7 @@
 
 import { createPortal } from 'react-dom';
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type FormEvent } from 'react';
+import DropdownOverlay from '../DropdownOverlay';
 import {
   assetGroupMemberCountsTowardTotal,
   type AssetGroup,
@@ -111,7 +112,7 @@ function ReportSelect({
         <ChevronDownIcon className={registerStyles.reportSelectChevron} />
       </button>
       {open ? (
-        <div className={registerStyles.reportSelectMenu} role="listbox" aria-label={label}>
+        <DropdownOverlay className={registerStyles.reportSelectMenu} role="listbox" aria-label={label}>
           {options.map((option) => (
             <button
               key={option.value}
@@ -127,7 +128,7 @@ function ReportSelect({
               {option.label}
             </button>
           ))}
-        </div>
+        </DropdownOverlay>
       ) : null}
     </div>
   );
@@ -202,7 +203,7 @@ function AssetGroupMemberSelect({
 
   const menu = open && typeof document !== 'undefined'
     ? createPortal(
-        <div ref={menuRef} className={styles.memberSelectMenu} role="listbox" aria-label={label} style={menuStyle}>
+        <div ref={menuRef} className={styles.memberSelectMenu} role="listbox" aria-label={label} style={menuStyle} data-dropdown-overlay-portal="true">
           {options.map((option) => (
             <button
               key={option.value}

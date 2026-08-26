@@ -1,5 +1,6 @@
 'use client';
 
+import DropdownOverlay from './DropdownOverlay';
 import { useEffect, useMemo, useState } from 'react';
 import DealerCostOfOwnershipReportModal from './DealerCostOfOwnershipReportModal';
 import DealerMaintenanceReportModal from './DealerMaintenanceReportModal';
@@ -574,13 +575,14 @@ function Dropdown({
           type="button"
           className={`${leadStyles.leadFilterSelectButton} ${isOpen ? leadStyles.leadFilterSelectButtonOpen : ''}`}
           onClick={() => onOpenChange(isOpen ? null : dropdownKey)}
+          aria-haspopup="listbox"
           aria-expanded={isOpen}
         >
           <span>{selected?.label || 'Choose'}</span>
           <ChevronDownIcon className={leadStyles.leadFilterSelectIcon} />
         </button>
         {isOpen ? (
-          <div className={leadStyles.leadFilterSelectMenu} role="listbox" aria-label={label}>
+          <DropdownOverlay className={leadStyles.leadFilterSelectMenu} role="listbox" aria-label={label}>
             {options.map((option) => (
               <button
                 type="button"
@@ -594,7 +596,7 @@ function Dropdown({
                 {option.label}
               </button>
             ))}
-          </div>
+          </DropdownOverlay>
         ) : null}
       </div>
     </label>

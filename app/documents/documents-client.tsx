@@ -1,5 +1,6 @@
 'use client';
 
+import DropdownOverlay from '../../components/DropdownOverlay';
 import {
   useCallback,
   useEffect,
@@ -1513,7 +1514,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
                         </button>
                       ) : null}
                       {showDocumentTypeOptions ? (
-                        <div id="document-type-options" className={styles.documentTypeOptions} role="listbox">
+                        <DropdownOverlay id="document-type-options" className={styles.documentTypeOptions} role="listbox">
                           {filteredDocumentTypes.length ? filteredDocumentTypes.map((option, index) => (
                             <button
                               key={option.value}
@@ -1532,7 +1533,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
                           )) : (
                             <p>No document types match that search.</p>
                           )}
-                        </div>
+                        </DropdownOverlay>
                       ) : null}
                     </div>
                     {draft.documentType ? (

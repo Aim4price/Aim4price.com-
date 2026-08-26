@@ -1,5 +1,6 @@
 "use client";
 
+import DropdownOverlay from '../../components/DropdownOverlay';
 import Link from "next/link";
 import {
   useEffect,
@@ -330,7 +331,7 @@ function CustomSelect<T extends string>({
       </button>
 
       {isOpen ? (
-        <div
+        <DropdownOverlay
           id={listboxId}
           className={styles.customSelectMenu}
           role="listbox"
@@ -368,7 +369,7 @@ function CustomSelect<T extends string>({
               </button>
             );
           })}
-        </div>
+        </DropdownOverlay>
       ) : null}
     </div>
   );

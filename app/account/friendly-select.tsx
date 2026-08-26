@@ -107,6 +107,7 @@ export default function FriendlySelect<T extends string>({
       ref={menuRef}
       id={menuId}
       className={styles.menu}
+      data-dropdown-overlay-portal="true"
       role="listbox"
       aria-labelledby={labelId}
       style={menuStyle ?? undefined}

@@ -1,5 +1,6 @@
 "use client";
 
+import DropdownOverlay from '../../../components/DropdownOverlay';
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import styles from "./page.module.css";
 
@@ -928,7 +929,7 @@ export default function CaptureQueueClient() {
                   />
                 </label>
                 {matchSearch.trim().length >= 2 ? (
-                  <div className={styles.targetResults} role="listbox" aria-label="Customer and asset matches">
+                  <DropdownOverlay className={styles.targetResults} role="listbox" aria-label="Customer and asset matches">
                     {isSearchingTargets ? <span className={styles.targetEmpty}>Searching…</span> : matchTargets.length ? matchTargets.map((target) => (
                       <button key={`${target.targetType}-${target.targetId}`} type="button" role="option" aria-selected="false" onClick={() => selectMatchTarget(target)}>
                         <strong>{target.targetDisplayName}</strong>
@@ -936,7 +937,7 @@ export default function CaptureQueueClient() {
                         <small>{[target.targetType === "fuel_storage" ? "Fuel storage" : "Asset", target.reference, target.meta].filter(Boolean).join(" · ")}</small>
                       </button>
                     )) : <span className={styles.targetEmpty}>No matching customer, asset or tank found.</span>}
-                  </div>
+                  </DropdownOverlay>
                 ) : null}
               </div>
 

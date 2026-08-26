@@ -1,5 +1,6 @@
 'use client';
 
+import DropdownOverlay from '../../components/DropdownOverlay';
 import Link from 'next/link';
 import {
   ChangeEvent,
@@ -822,7 +823,7 @@ export default function InvoiceDropClient() {
                           <span className={`${styles.senderSelectChevron} ${isSenderMenuOpen ? styles.senderSelectChevronOpen : ''}`}><ChevronIcon /></span>
                         </button>
                         {isSenderMenuOpen ? (
-                          <div className={styles.senderSelectMenu} id="sender-type-options" role="listbox" aria-labelledby="sender-type-label">
+                          <DropdownOverlay className={styles.senderSelectMenu} id="sender-type-options" role="listbox" aria-labelledby="sender-type-label">
                             {SENDER_TYPE_OPTIONS.map((option, index) => (
                               <button
                                 key={option.value}
@@ -841,7 +842,7 @@ export default function InvoiceDropClient() {
                                 {option.value === senderType ? <span className={styles.senderSelectOptionCheck}><CheckIcon /></span> : null}
                               </button>
                             ))}
-                          </div>
+                          </DropdownOverlay>
                         ) : null}
                       </div>
                       <label>

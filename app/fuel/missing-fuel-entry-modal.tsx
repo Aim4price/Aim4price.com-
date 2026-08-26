@@ -1,5 +1,6 @@
 'use client';
 
+import DropdownOverlay from '../../components/DropdownOverlay';
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type SVGProps } from 'react';
 import styles from './page.module.css';
 
@@ -578,7 +579,7 @@ export function MissingFuelEntryModal({ storage, assets, addedByLabel, accountan
                           <ChevronDownIcon />
                         </button>
                         {usageMenuOpen ? (
-                          <div className={styles.backtrackUsageSelectMenu} role="listbox" aria-label="Usage for this fuel issue">
+                          <DropdownOverlay className={styles.backtrackUsageSelectMenu} role="listbox" aria-label="Usage for this fuel issue">
                             {usageOptions.map((option, index) => {
                               const isSelected = option.value === draft.usageMetric;
                               return (
@@ -597,7 +598,7 @@ export function MissingFuelEntryModal({ storage, assets, addedByLabel, accountan
                                 </button>
                               );
                             })}
-                          </div>
+                          </DropdownOverlay>
                         ) : null}
                       </div>
                       <small>{selectedUsageOption?.description}</small>
