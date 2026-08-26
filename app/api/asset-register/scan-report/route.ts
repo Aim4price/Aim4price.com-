@@ -7,6 +7,8 @@ import { listScanEventsForAsset, type ScanEventRecord } from '../../../../lib/sc
 import {
   buildDepreciationAnnualSummary,
   buildDepreciationLogSummary,
+  buildDepreciationUmbrellaAnnualSummary,
+  buildDepreciationUmbrellaLogSummary,
   listAssetDepreciationLogEntriesForAsset,
   type AssetDepreciationLogEntry,
   type DepreciationAnnualSummary,
@@ -819,6 +821,52 @@ function renderFuelAverageCard(asset: AssetRegisterItem, fuelEvents: ScanEventRe
         <strong>${escapeHtml(average.valueLabel)}</strong>
       </div>
       ${renderRows(buildFuelAverageRows(average), 'No fuel average details available.', 'assetReportFuelAverageRows')}
+    </section>
+  `;
+}
+
+function buildUmbrellaFuelAverageSection(
+  scopeAssets: AssetRegisterItem[],
+  fuelEvents: ScanEventRecord[],
+  fallbackAsset: AssetRegisterItem,
+): string {
+  const rows = scopeAssets.map((scopeAsset) => {
+    const assetEvents = fuelEvents.filter(
+      (event) => reportAssetForEvent(event, fallbackAsset).id === scopeAsset.id,
+    );
+    const average = calculateFuelAverage(scopeAsset, assetEvents);
+    const metricLabel = average.metric === 'km'
+      ? 'km per litre'
+      : average.metric === 'hours'
+        ? 'litres per hour'
+        : 'Not available';
+
+    return [
+      `<strong>${escapeHtml(scopeAsset.title || 'Asset')}</strong>`,
+      escapeHtml(metricLabel),
+      `<strong>${escapeHtml(average.valueLabel)}</strong>`,
+      escapeHtml(`${formatNumber(average.intervalsUsed)} / ${formatNumber(average.minimumIntervals)}`),
+      escapeHtml(formatLitres(average.totalLitres)),
+      escapeHtml(formatFuelAverageUsageDelta(average.usageDelta, average.metric)),
+      escapeHtml(average.statusText),
+    ];
+  });
+
+  return `
+    <section class="assetReportSection assetReportWideSection">
+      <div class="assetReportSectionHeading">
+        <div>
+          <h2>Fuel Average by Asset</h2>
+          <p>Each average is calculated only from that asset's own valid fill intervals. Different hour and kilometre meters are never combined.</p>
+        </div>
+        <strong>${escapeHtml(formatNumber(scopeAssets.length))} ${scopeAssets.length === 1 ? 'asset' : 'assets'}</strong>
+      </div>
+      ${renderTable({
+        className: 'assetReportFuelAverageTable',
+        headers: ['Asset', 'Metric', 'Average', 'Intervals', 'Litres', 'Usage Change', 'Status'],
+        rows,
+        emptyText: 'No grouped assets are available for fuel-average calculations.',
+      })}
     </section>
   `;
 }
@@ -3120,6 +3168,9 @@ function buildFuelReport(
   const fuelEvents = filterFuelReportEvents(events);
   const isUmbrellaReport = scopeAssets.length > 1 || fuelEvents.some((event) => Boolean((event as ScopedScanEventRecord).reportAsset));
   const assetsWithFuel = new Set(fuelEvents.map((event) => reportAssetForEvent(event, asset).id)).size;
+  const bodyHtml = isUmbrellaReport
+    ? `${buildUmbrellaFuelAverageSection(scopeAssets, fuelEvents, asset)}${buildFuelBody(asset, fuelEvents)}`
+    : buildFuelBody(asset, fuelEvents);
 
   return buildReportHtml({
     reportKind: 'fuel',
@@ -3129,7 +3180,7 @@ function buildFuelReport(
     logoUrl,
     summary: buildFuelReportSummary(asset, fuelEvents),
     recordRows: buildFuelRecordRows(asset, fuelEvents, dateRangeLabel),
-    bodyHtml: buildFuelBody(asset, fuelEvents),
+    bodyHtml,
     sideExtraHtml: isUmbrellaReport ? undefined : renderFuelAverageCard(asset, fuelEvents),
     identityKicker: isUmbrellaReport ? 'Asset umbrella' : undefined,
     heroMeta: isUmbrellaReport ? `${scopeAssets.length} linked assets · each fuel entry is attributed to its actual asset` : undefined,
@@ -3260,20 +3311,95 @@ function buildReportSummaryWorkbookSheet(options: {
   };
 }
 
+function buildUmbrellaFuelAveragesWorkbookSheet(
+  umbrellaAsset: AssetRegisterItem,
+  fuelEvents: ScanEventRecord[],
+  scopeAssets: AssetRegisterItem[],
+  dateRangeLabel: string,
+): XlsxSheet {
+  const headers = [
+    'Asset',
+    'Metric',
+    'Fuel Average',
+    'Valid Intervals',
+    'Required Intervals',
+    'Litres Filled',
+    'Usage Change',
+    'Status',
+  ];
+  const headerRow = 5;
+  const rows: XlsxCellValue[][] = [
+    fullWidthRow(`${umbrellaAsset.title || 'Umbrella'} - Fuel Average by Asset`, 'title', headers.length),
+    fullWidthRow(`Filtered report: ${dateRangeLabel}`, 'subtitle', headers.length),
+    fullWidthRow('Every average is calculated from that asset only. Hour-based and kilometre-based readings are never combined.', 'note', headers.length),
+    [],
+    headers.map((header) => styled(header, 'tableHeader')),
+    ...scopeAssets.map((scopeAsset) => {
+      const assetEvents = fuelEvents.filter(
+        (event) => reportAssetForEvent(event, umbrellaAsset).id === scopeAsset.id,
+      );
+      const average = calculateFuelAverage(scopeAsset, assetEvents);
+      const metricLabel = average.metric === 'km'
+        ? 'km per litre'
+        : average.metric === 'hours'
+          ? 'litres per hour'
+          : NOT_RECORDED;
+
+      return [
+        styled(scopeAsset.title || NOT_RECORDED, 'text'),
+        styled(metricLabel, 'text'),
+        styled(average.valueLabel, average.available ? 'statusGood' : 'statusInfo'),
+        styled(average.intervalsUsed, 'integer'),
+        styled(average.minimumIntervals, 'integer'),
+        styled(numberForExcel(average.totalLitres), 'decimal'),
+        styled(excelRecordedText(formatFuelAverageUsageDelta(average.usageDelta, average.metric)), 'text'),
+        styled(average.statusText, average.available ? 'statusGood' : 'statusInfo'),
+      ];
+    }),
+  ];
+
+  return {
+    name: 'Fuel Averages by Asset',
+    rows,
+    columns: [34, 20, 22, 18, 20, 18, 22, 48],
+    merges: [
+      { fromRow: 1, fromColumn: 1, toRow: 1, toColumn: headers.length },
+      { fromRow: 2, fromColumn: 1, toRow: 2, toColumn: headers.length },
+      { fromRow: 3, fromColumn: 1, toRow: 3, toColumn: headers.length },
+    ],
+    freezeRow: headerRow,
+    autoFilter: {
+      fromRow: headerRow,
+      fromColumn: 1,
+      toRow: Math.max(headerRow, headerRow + scopeAssets.length),
+      toColumn: headers.length,
+    },
+    tabColor: '3E7E68',
+  };
+}
+
 function buildFuelReportWorkbook(
   asset: AssetRegisterItem,
   events: ScanEventRecord[],
   ownerDetails: OwnerReportDetails,
   generatedAt: string,
   dateRangeLabel = 'All available entries',
+  scopeAssets: AssetRegisterItem[] = [asset],
 ): XlsxSheet[] {
   const fuelEvents = filterFuelReportEvents(events);
   const fuelAverage = calculateFuelAverage(asset, fuelEvents);
-  const recordRows = [
-    ...buildFuelRecordRows(asset, fuelEvents, dateRangeLabel),
-    { label: 'Fuel Average', value: fuelAverage.valueLabel },
-    ...buildFuelAverageRows(fuelAverage),
-  ];
+  const isUmbrellaReport = scopeAssets.length > 1
+    || fuelEvents.some((event) => Boolean((event as ScopedScanEventRecord).reportAsset));
+  const recordRows = isUmbrellaReport
+    ? [
+        ...buildFuelRecordRows(asset, fuelEvents, dateRangeLabel),
+        { label: 'Fuel Averages', value: 'See Fuel Averages by Asset sheet' },
+      ]
+    : [
+        ...buildFuelRecordRows(asset, fuelEvents, dateRangeLabel),
+        { label: 'Fuel Average', value: fuelAverage.valueLabel },
+        ...buildFuelAverageRows(fuelAverage),
+      ];
   const recordHeaders = [
     'Asset', 'Fuel issued on (SAST)', 'Entry type', 'Fuel source / storage', 'Litres issued', 'Before fill litres',
     'Meter reading', 'Operator', 'Activity', 'Work area', 'Supplier', 'Total incl. VAT', 'Work use', 'Recorded location',
@@ -3396,6 +3522,9 @@ function buildFuelReportWorkbook(
       dateRangeLabel,
       recordRows,
     }),
+    ...(isUmbrellaReport
+      ? [buildUmbrellaFuelAveragesWorkbookSheet(asset, fuelEvents, scopeAssets, dateRangeLabel)]
+      : []),
     {
       name: 'Fuel Records',
       rows: recordSheetRows,
@@ -3968,8 +4097,12 @@ export async function GET(request: NextRequest) {
         })),
       )
     ).flat().sort((left, right) => String(right.capturedAtIso).localeCompare(String(left.capturedAtIso)));
-    const logSummary = buildDepreciationLogSummary(logEntries, asset);
-    const annualSummary = buildDepreciationAnnualSummary(logEntries);
+    const logSummary = groupId
+      ? buildDepreciationUmbrellaLogSummary(logEntries, reportAssets)
+      : buildDepreciationLogSummary(logEntries, asset);
+    const annualSummary = groupId
+      ? buildDepreciationUmbrellaAnnualSummary(logEntries)
+      : buildDepreciationAnnualSummary(logEntries);
 
     if (reportFormat === 'xlsx') {
       const workbook = createXlsxWorkbook(
@@ -4020,7 +4153,7 @@ export async function GET(request: NextRequest) {
   if (reportFormat === 'xlsx') {
     const workbook = createXlsxWorkbook(
       reportKind === 'fuel'
-        ? buildFuelReportWorkbook(asset, events, ownerDetails, generatedAt, reportDateRange.label)
+        ? buildFuelReportWorkbook(asset, events, ownerDetails, generatedAt, reportDateRange.label, reportAssets)
         : buildMaintenanceReportWorkbook(asset, events, ownerDetails, generatedAt, reportDateRange.label, maintenanceReportType),
     );
 
