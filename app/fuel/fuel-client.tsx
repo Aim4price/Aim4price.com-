@@ -3789,30 +3789,41 @@ export default function FuelClient({
 
       {modalMode === 'fuel-slip-menu' ? (
         <div className={styles.fuelSlipFlowBackdrop} role="dialog" aria-modal="true" aria-label="Fuel slips">
-          <div className={`${styles.downloadModal} ${styles.sourceChoiceModal} ${styles.fuelSlipMenuModal}`}>
+          <div
+            className={`${styles.downloadModal} ${styles.sourceChoiceModal} ${styles.fuelSlipChoiceModal} ${styles.fuelSlipMenuModal}`}
+            data-fuel-slip-choice-modal="menu"
+          >
             <div className={styles.modalHeader}>
               <div>
                 <h2>Fuel slips</h2>
-                <p>Manage saved fuel slips, or add a new slip to a saved asset or storage tank.</p>
+                <p>Review saved fuel slips or add one to an included asset or storage tank.</p>
               </div>
               <button type="button" className={styles.closeButton} onClick={closeModal} aria-label="Close fuel slips"><CloseIcon /></button>
             </div>
             <div className={styles.modalDivider} />
             <div className={styles.sourceChoiceGrid}>
-              <button type="button" className={styles.sourceChoiceOption} onClick={openFuelSlipManager}>
+              <button type="button" className={`${styles.sourceChoiceOption} ${styles.fuelSlipChoiceOption}`} onClick={openFuelSlipManager}>
                 <span className={styles.choiceGraphic}>
                   <FuelSlipsIcon />
                 </span>
                 <span className={styles.choiceTitleBlock}>
-                  <strong>Manage Fuel Slips</strong>
+                  <strong>Manage fuel slips</strong>
+                  <small>Review, download or void saved slips.</small>
+                </span>
+                <span className={styles.fuelSlipChoiceArrow} aria-hidden="true">
+                  <ChevronRightIcon />
                 </span>
               </button>
-              <button type="button" className={styles.sourceChoiceOption} onClick={openFuelSlipModal}>
+              <button type="button" className={`${styles.sourceChoiceOption} ${styles.fuelSlipChoiceOption}`} onClick={openFuelSlipModal}>
                 <span className={styles.choiceGraphic}>
                   <PlusIcon />
                 </span>
                 <span className={styles.choiceTitleBlock}>
-                  <strong>Add Fuel Slip</strong>
+                  <strong>Add fuel slip</strong>
+                  <small>Capture a new slip manually or from a file.</small>
+                </span>
+                <span className={styles.fuelSlipChoiceArrow} aria-hidden="true">
+                  <ChevronRightIcon />
                 </span>
               </button>
             </div>
@@ -4248,34 +4259,43 @@ export default function FuelClient({
 
       {modalMode === 'fuel-slip' && fuelSlipFlow === 'source-choice' ? (
         <div className={styles.fuelSlipFlowBackdrop} role="dialog" aria-modal="true" aria-label="Add fuel slip">
-          <div className={`${styles.downloadModal} ${styles.sourceChoiceModal}`}>
+          <div
+            className={`${styles.downloadModal} ${styles.sourceChoiceModal} ${styles.fuelSlipChoiceModal} ${styles.fuelSlipAddModal}`}
+            data-fuel-slip-choice-modal="add"
+          >
             <div className={styles.modalHeader}>
               <div>
                 <h2>Add fuel slip</h2>
                 <p>{quickLaunchAsset
                   ? `Save this fuel slip against ${quickLaunchAsset.title}. Choose how you want to capture it.`
-                  : 'Save a fuel slip against a saved asset or storage tank.'}</p>
+                  : 'Choose how to capture a fuel slip for an included asset or storage tank.'}</p>
               </div>
               <button type="button" className={styles.closeButton} onClick={closeModal} aria-label="Close add fuel slip"><CloseIcon /></button>
             </div>
             <div className={styles.modalDivider} />
             <div className={styles.sourceChoiceGrid}>
-              <button type="button" className={styles.sourceChoiceOption} onClick={() => startFuelSlipFlow('manual')}>
+              <button type="button" className={`${styles.sourceChoiceOption} ${styles.fuelSlipChoiceOption}`} onClick={() => startFuelSlipFlow('manual')}>
                 <span className={styles.choiceGraphic}>
                   <ManualFuelSlipIcon />
                 </span>
                 <span className={styles.choiceTitleBlock}>
                   <strong>Enter slip manually</strong>
-                  <small>Type the supplier, slip date, litres, amount and optional garage details yourself.</small>
+                  <small>Enter supplier, date, litres and amount yourself.</small>
+                </span>
+                <span className={styles.fuelSlipChoiceArrow} aria-hidden="true">
+                  <ChevronRightIcon />
                 </span>
               </button>
-              <button type="button" className={styles.sourceChoiceOption} onClick={() => startFuelSlipFlow('automatic')}>
+              <button type="button" className={`${styles.sourceChoiceOption} ${styles.fuelSlipChoiceOption}`} onClick={() => startFuelSlipFlow('automatic')}>
                 <span className={styles.choiceGraphic}>
                   <AutomaticFuelSlipIcon />
                 </span>
                 <span className={styles.choiceTitleBlock}>
                   <strong>Upload for Aim4price capture</strong>
-                  <small>Send a PDF or photo and Aim4price will capture and verify it within 24 hours.</small>
+                  <small>Upload a photo or PDF for capture within 24 hours.</small>
+                </span>
+                <span className={styles.fuelSlipChoiceArrow} aria-hidden="true">
+                  <ChevronRightIcon />
                 </span>
               </button>
             </div>
