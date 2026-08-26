@@ -24,7 +24,12 @@ export type AccountDocumentAssetLink = {
   meta: string;
 };
 
-export type AccountDocumentAssetOption = AccountDocumentAssetLink;
+export type AccountDocumentAssetOption = AccountDocumentAssetLink & {
+  detail: string;
+  categoryLabel: string;
+  methodLabel: string;
+  currentValue: number;
+};
 
 export type AccountDocument = {
   id: string;
@@ -102,6 +107,14 @@ type AccountDocumentAssetRow = {
   brand_name: string | null;
   model_name: string | null;
   year_model: string | number | null;
+  hours: string | number | null;
+  condition: string | null;
+  equipment_family_label: string | null;
+  selected_method: string | null;
+  selected_value_ex_vat: string | number | null;
+  value: string | number | null;
+  life_worked_percent: string | number | null;
+  depreciation_method_used: string | null;
 };
 
 type AccountDocumentSummaryRow = {
@@ -135,6 +148,12 @@ function cleanNotes(value: unknown): string {
 function numberValue(value: unknown): number {
   const numeric = Number(value);
   return Number.isFinite(numeric) ? numeric : 0;
+}
+
+function nullableNumberValue(value: unknown): number | null {
+  if (value === null || value === undefined || value === '') return null;
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? numeric : null;
 }
 
 function isoDate(value: unknown): string {
@@ -223,6 +242,79 @@ function buildAssetMeta(row: {
   ].filter(Boolean);
 
   return parts.join(' · ');
+}
+
+function assetConditionLabel(value: unknown): string {
+  const normalized = cleanText(value, 40).toLowerCase();
+  return ({
+    excellent: 'Excellent',
+    good: 'Good',
+    fair: 'Fair',
+    used: 'Used',
+    serious: 'Requires attention',
+  } as Record<string, string>)[normalized] ?? '';
+}
+
+function assetFamilyLabel(row: AccountDocumentAssetRow): string {
+  const savedLabel = cleanText(row.equipment_family_label, 120);
+  if (savedLabel) return savedLabel;
+
+  return ({
+    tractor: 'Tractor',
+    equipment: 'Equipment',
+    manual: 'Everyday asset',
+    property: 'Property, land & buildings',
+    vehicle: 'Vehicle',
+    tools: 'Tools',
+    stock: 'Stock',
+  } as Record<string, string>)[cleanText(row.kind, 40).toLowerCase()] ?? 'Other';
+}
+
+function assetUsageLabel(row: AccountDocumentAssetRow): string {
+  const kind = cleanText(row.kind, 40).toLowerCase();
+  if (kind === 'property') return '';
+
+  const hours = nullableNumberValue(row.hours);
+  const lifeWorkedPercent = nullableNumberValue(row.life_worked_percent);
+  const depreciationMethod = cleanText(row.depreciation_method_used, 80).toLowerCase();
+  const usesPercentage = depreciationMethod === 'semi_depreciation' || depreciationMethod === 'percentage_depreciation';
+
+  if (kind === 'vehicle' && hours !== null && hours > 0) {
+    return `${Math.round(hours).toLocaleString('en-ZA')} km`;
+  }
+
+  if (lifeWorkedPercent !== null && (usesPercentage || hours === null || hours <= 0)) {
+    const formatted = Number.isInteger(lifeWorkedPercent)
+      ? String(lifeWorkedPercent)
+      : lifeWorkedPercent.toFixed(1).replace(/\.0$/, '');
+    return `${formatted}%`;
+  }
+
+  if (hours !== null && hours > 0) {
+    return `${Math.round(hours).toLocaleString('en-ZA')} hours`;
+  }
+
+  if (lifeWorkedPercent !== null) {
+    const formatted = Number.isInteger(lifeWorkedPercent)
+      ? String(lifeWorkedPercent)
+      : lifeWorkedPercent.toFixed(1).replace(/\.0$/, '');
+    return `${formatted}%`;
+  }
+
+  return '';
+}
+
+function buildAssetPickerDetail(row: AccountDocumentAssetRow): string {
+  const yearModel = nullableNumberValue(row.year_model);
+  const usage = assetUsageLabel(row);
+  const condition = assetConditionLabel(row.condition);
+  const parts = [
+    yearModel !== null ? `${cleanText(row.kind, 40).toLowerCase() === 'property' ? 'Year built' : 'Year Model'}: ${Math.round(yearModel)}` : '',
+    usage ? `Usage: ${usage}` : '',
+    condition ? `Condition: ${condition}` : '',
+  ].filter(Boolean);
+
+  return parts.join(' • ') || 'No key details saved yet';
 }
 
 function mapDocumentRow(row: AccountDocumentRow, assetLinks: AccountDocumentAssetLink[]): AccountDocument {
@@ -367,7 +459,15 @@ export async function listAccountDocumentAssetOptions(userId: string): Promise<A
         kind,
         brand_name,
         model_name,
-        year_model
+        year_model,
+        hours,
+        condition,
+        equipment_family_label,
+        selected_method,
+        selected_value_ex_vat,
+        value,
+        life_worked_percent,
+        depreciation_method_used
       from public.asset_register_items
       where user_id = $1
       order by lower(coalesce(nullif(btrim(title), ''), 'Untitled asset')), id
@@ -379,6 +479,10 @@ export async function listAccountDocumentAssetOptions(userId: string): Promise<A
     id: String(row.id),
     title: cleanText(row.title, 180) || 'Untitled asset',
     meta: buildAssetMeta(row),
+    detail: buildAssetPickerDetail(row),
+    categoryLabel: assetFamilyLabel(row),
+    methodLabel: cleanText(row.selected_method, 80).toLowerCase() === 'manual' ? 'Manual' : 'Aim4price',
+    currentValue: Math.round(nullableNumberValue(row.selected_value_ex_vat) ?? nullableNumberValue(row.value) ?? 0),
   }));
 }
 
