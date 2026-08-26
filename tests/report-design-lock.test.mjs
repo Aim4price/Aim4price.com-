@@ -18,7 +18,7 @@ const APPROVED_REPORT_STYLES = [
   {
     path: '../lib/asset-maintenance-report.ts',
     styleIndexes: [0],
-    fingerprints: ['7436:a78a45af9af43474'],
+    fingerprints: ['7560:ddbb70d6162e83fa'],
   },
   {
     path: '../lib/my-invoices-report.ts',
@@ -110,6 +110,8 @@ test('valuation and maintenance reports retain the approved reference structure'
   assert.match(maintenance, /class="topbar"/);
   assert.match(maintenance, /class="hero"/);
   assert.match(maintenance, /class="detailsGrid"/);
+  assert.match(maintenance, /class="maintenanceStatus status-/);
+  assert.doesNotMatch(maintenance, /statusPill/);
   assert.match(maintenance, /class="footer"/);
 
   assert.match(sharedReports, /Asset Valuation Report/);
