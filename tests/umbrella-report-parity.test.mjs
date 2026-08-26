@@ -12,7 +12,9 @@ test('umbrella manager uses dedicated icon tiles that shared modal CSS cannot co
   assert.match(modal, /styles\.manageMenuEditIcon/);
   assert.match(modal, /styles\.manageMenuReportIcon/);
   assert.match(modal, /styles\.manageMenuRemoveIcon/);
-  assert.match(styles, /\.manageMenuIconTile \{[\s\S]*?width: 46px;[\s\S]*?height: 46px;/);
+  assert.match(modal, /<i className=\{`\$\{styles\.manageMenuIconTile\}/);
+  assert.doesNotMatch(modal, /<span className=\{`\$\{styles\.manageMenuIconTile\}/);
+  assert.match(styles, /\.manageMenuIconTile \{[\s\S]*?grid-column: 1;[\s\S]*?justify-self: center;[\s\S]*?width: 46px;[\s\S]*?height: 46px;[\s\S]*?font-style: normal;/);
   assert.match(styles, /\.manageMenuIconGlyph \{[\s\S]*?width: 24px;[\s\S]*?height: 24px;/);
   assert.doesNotMatch(modal, /MembersIcon className=\{`\$\{registerStyles\.buttonIcon\}/);
 });
@@ -35,10 +37,14 @@ test('umbrella maintenance offers the same completed-work types as an individual
 test('umbrella fuel and depreciation reports calculate each asset independently', async () => {
   const report = await readFile(new URL('../app/api/asset-register/scan-report/route.ts', import.meta.url), 'utf8');
 
+  assert.match(report, /function isUmbrellaReportScope\(asset: AssetRegisterItem, scopeAssets: AssetRegisterItem\[\]\): boolean/);
+  assert.equal((report.match(/isUmbrellaReportScope\(asset, scopeAssets\)/g) ?? []).length, 3);
   assert.match(report, /Fuel Average by Asset/);
   assert.match(report, /reportAssetForEvent\(event, fallbackAsset\)\.id === scopeAsset\.id/);
   assert.match(report, /buildUmbrellaFuelAveragesWorkbookSheet/);
   assert.match(report, /Different hour and kilometre meters are never combined/);
+  assert.match(report, /const summary = isUmbrellaReport[\s\S]*?buildDepreciationUmbrellaLogSummary\(entries, scopeAssets\)[\s\S]*?: buildDepreciationLogSummary\(entries, asset\)/);
+  assert.match(report, /const annualSummaries = isUmbrellaReport[\s\S]*?buildDepreciationUmbrellaAnnualSummary\(entries\)[\s\S]*?: buildDepreciationAnnualSummary\(entries\)/);
   assert.match(report, /buildDepreciationUmbrellaLogSummary\(logEntries, reportAssets\)/);
   assert.match(report, /buildDepreciationUmbrellaAnnualSummary\(logEntries\)/);
 });
