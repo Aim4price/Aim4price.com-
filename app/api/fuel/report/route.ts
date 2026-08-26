@@ -281,6 +281,16 @@ function eventNoteLabel(event: FuelLedgerEvent): string {
   return safeReportText(parts.join(' · ') || 'Fuel Slip');
 }
 
+function formatCurrency(value: number | null | undefined): string {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return '-';
+  return new Intl.NumberFormat('en-ZA', {
+    style: 'currency',
+    currency: 'ZAR',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(value);
+}
+
 function eventIssuedDateTime(event: FuelLedgerEvent): string {
   if (event.sourceType === 'fuel_slip' && /^\d{4}-\d{2}-\d{2}$/.test(event.fuelSlipDocumentDate)) {
     const recordedTime = asText(event.fuelSlipDocumentTime);
@@ -491,6 +501,11 @@ function renderFuelEventTable(events: FuelLedgerEvent[]): string {
       { label: 'GPS', value: formatLocation(event), wide: true },
       { label: 'Entry Added On', value: event.isLateEntry || event.sourceType === 'fuel_slip' ? formatDateTime(event.entryAddedAtIso) : '' },
       { label: 'Added By', value: eventAddedBy(event) },
+      { label: 'Fuel Slip Supplier', value: event.sourceType === 'fuel_slip' ? event.fuelSlipSupplierName || '-' : '' },
+      { label: 'Fuel Slip Total incl. VAT', value: event.sourceType === 'fuel_slip' ? formatCurrency(event.totalAmount) : '' },
+      { label: 'Payment', value: event.sourceType === 'fuel_slip' ? event.paymentMethod || '-' : '' },
+      { label: 'Fuel Slip Document', value: event.sourceType === 'fuel_slip' ? event.documentFileUrl || '-' : '', wide: true },
+      { label: 'Fuel Slip Review', value: event.sourceType === 'fuel_slip' ? event.fuelSlipReviewStatus || '-' : '', wide: true },
       { label: 'Evidence / Review', value: eventEvidenceStatus(event), wide: true },
       { label: 'Work-use Status', value: event.eventType === 'asset_issue' ? (event.workUseExcluded ? 'Excluded from work use' : 'Included as work use') : '', wide: true },
       { label: 'Exclusion Reason', value: event.workUseExcluded ? event.workUseExclusionReason || 'Not used for work purposes' : '', wide: true },
@@ -1430,13 +1445,13 @@ function buildFuelWorkbook(options: FuelReportOptions): XlsxSheet[] {
     'Litres Before Fill', 'Usage Reading', 'Usage Metric', 'Historical Storage Before', 'Historical Storage After', '% Before', '% After',
     'Operator', 'Activity', 'Work Area', 'GPS', 'Entry Added On', 'Added By', 'Evidence / Review Status',
     'Evidence Type', 'Evidence Reference', 'Tank Balance Treatment', 'Late-entry Reason', 'Notes',
-    'Work-use Status', 'Exclusion Reason',
+    'Work-use Status', 'Exclusion Reason', 'Fuel Slip Supplier', 'Total incl. VAT', 'Payment Method', 'Fuel Slip Document', 'Fuel Slip Review Status',
   ];
   const movementHeaderRow = 7;
   const movementRows: XlsxCellValue[][] = [
-    [styled('Fuel Movement Records', 'title'), ...Array(26).fill('')],
-    [styled(`Filtered report: ${options.dateRangeLabel}`, 'subtitle'), ...Array(26).fill('')],
-    [styled('Late entries show their historical issue date separately from the real date added. Work-use status is a classification, not a tax determination.', 'note'), ...Array(26).fill('')],
+    [styled('Fuel Movement Records', 'title'), ...Array(movementHeader.length - 1).fill('')],
+    [styled(`Filtered report: ${options.dateRangeLabel}`, 'subtitle'), ...Array(movementHeader.length - 1).fill('')],
+    [styled('Late entries show their historical issue date separately from the real date added. Work-use status is a classification, not a tax determination.', 'note'), ...Array(movementHeader.length - 1).fill('')],
     [],
     [styled('Storage', 'metaLabel'), styled(options.storageName, 'metaValue'), styled('Fuel type', 'metaLabel'), styled(options.storageFuelType, 'metaValue')],
     [],
@@ -1466,7 +1481,7 @@ function buildFuelWorkbook(options: FuelReportOptions): XlsxSheet[] {
         styled(eventWorkActivityLabel(event), 'text'),
         styled(eventWorkAreaLabel(event), 'text'),
         styled(formatLocation(event), 'text'),
-        styled(event.isLateEntry ? formatExcelDateTime(event.entryAddedAtIso) : '', 'text'),
+        styled(event.isLateEntry || event.sourceType === 'fuel_slip' ? formatExcelDateTime(event.entryAddedAtIso) : '', 'text'),
         styled(eventAddedBy(event), 'text'),
         styled(eventEvidenceStatus(event), 'text'),
         styled(event.evidenceType || '', 'text'),
@@ -1476,6 +1491,11 @@ function buildFuelWorkbook(options: FuelReportOptions): XlsxSheet[] {
         styled(eventNoteLabel(event), 'note'),
         styled(event.eventType === 'asset_issue' ? (event.workUseExcluded ? 'Excluded from work use' : 'Included as work use') : '', event.workUseExcluded ? 'statusWarn' : 'statusGood'),
         styled(event.workUseExcluded ? event.workUseExclusionReason || 'Not used for work purposes' : '', 'note'),
+        styled(event.sourceType === 'fuel_slip' ? event.fuelSlipSupplierName || '' : '', 'text'),
+        styled(event.sourceType === 'fuel_slip' ? event.totalAmount : null, 'currency'),
+        styled(event.sourceType === 'fuel_slip' ? event.paymentMethod || '' : '', 'text'),
+        styled(event.sourceType === 'fuel_slip' ? event.documentFileUrl || '' : '', 'text'),
+        styled(event.sourceType === 'fuel_slip' ? event.fuelSlipReviewStatus || '' : '', 'text'),
       ];
     }),
   ];
@@ -1494,11 +1514,11 @@ function buildFuelWorkbook(options: FuelReportOptions): XlsxSheet[] {
     {
       name: 'Fuel Movement Records',
       rows: movementRows,
-      columns: [22, 22, 14, 22, 28, 16, 18, 18, 14, 22, 22, 13, 13, 20, 24, 24, 34, 22, 24, 34, 24, 26, 34, 42, 42, 24, 38],
+      columns: [22, 22, 14, 22, 28, 16, 18, 18, 14, 22, 22, 13, 13, 20, 24, 24, 34, 22, 24, 34, 24, 26, 34, 42, 42, 24, 38, 28, 18, 22, 48, 28],
       merges: [
-        { fromRow: 1, fromColumn: 1, toRow: 1, toColumn: 27 },
-        { fromRow: 2, fromColumn: 1, toRow: 2, toColumn: 27 },
-        { fromRow: 3, fromColumn: 1, toRow: 3, toColumn: 27 },
+        { fromRow: 1, fromColumn: 1, toRow: 1, toColumn: movementHeader.length },
+        { fromRow: 2, fromColumn: 1, toRow: 2, toColumn: movementHeader.length },
+        { fromRow: 3, fromColumn: 1, toRow: 3, toColumn: movementHeader.length },
       ],
       freezeRow: movementHeaderRow,
       autoFilter: {

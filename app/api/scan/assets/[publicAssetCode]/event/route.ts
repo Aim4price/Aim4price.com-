@@ -461,16 +461,14 @@ export async function POST(request: NextRequest, context: RouteContext) {
           throw new Error("SCHEDULED_MAINTENANCE_NO_LONGER_AVAILABLE");
         }
 
-        const completedUsage =
-          currentScheduledMaintenance.triggerType === "usage"
-            ? currentScheduledMaintenance.usageMetric === "percentage"
-              ? saved.asset.lifeWorkedPercent
-              : saved.asset.hours
-            : null;
+        const completedUsage = currentScheduledMaintenance.triggerType === "usage"
+          ? saved.event.assetUsageReading ?? saved.event.hours
+          : null;
         const completion = await completeAssetMaintenanceRecord(
           access.ownerUserId,
           currentScheduledMaintenance.id,
           {
+            completedAt: saved.event.createdAtIso,
             completedUsage,
             completedNotes: saved.event.note || payload.note,
             completedBy,
@@ -490,13 +488,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
       } else if (procedureKind) {
         const maintenanceType =
           procedureKind === "checked" ? "checkup" : "service";
-        const completedUsage =
-          saved.asset.usageMode === "percent"
-            ? saved.asset.lifeWorkedPercent
-            : saved.asset.usageMode === "hours"
-                || saved.asset.usageMode === "km"
-              ? saved.asset.hours
-              : null;
+        const completedUsage = saved.event.assetUsageReading ?? saved.event.hours;
         const completion = await recordStandaloneAssetMaintenanceCompletion(
           access.ownerUserId,
           {

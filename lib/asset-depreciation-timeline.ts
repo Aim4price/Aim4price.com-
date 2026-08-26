@@ -221,17 +221,17 @@ function asRecord(value: unknown): Record<string, unknown> {
 }
 
 function toIsoString(value: unknown): string {
-  if (value instanceof Date) return value.toISOString();
+  if (value instanceof Date) return Number.isNaN(value.getTime()) ? '' : value.toISOString();
   if (typeof value === 'string' && value.trim()) {
     const parsed = new Date(value);
-    return Number.isNaN(parsed.getTime()) ? value.trim() : parsed.toISOString();
+    return Number.isNaN(parsed.getTime()) ? '' : parsed.toISOString();
   }
-  return new Date().toISOString();
+  return '';
 }
 
 function nullableIsoString(value: unknown): string | null {
   if (!value) return null;
-  return toIsoString(value);
+  return toIsoString(value) || null;
 }
 
 function roundMoney(value: number): number {
