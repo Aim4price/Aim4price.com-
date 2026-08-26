@@ -74,6 +74,27 @@ test('Fuel Ledger actions match Cost Ledger sizing and keep search below the but
   assert.match(parityStyles, /min-height: 3\.75rem/);
 });
 
+test('fuel slip choice modals use compact action cards without forced desktop wrapping', () => {
+  const choicesStart = fuelClient.indexOf("modalMode === 'fuel-slip-menu'");
+  const choicesEnd = fuelClient.indexOf("modalMode === 'fuel-slip' && (fuelSlipFlow === 'target-manual'", choicesStart);
+  const choicesMarkup = fuelClient.slice(choicesStart, choicesEnd);
+  const choicesStyles = fuelStyles.slice(
+    fuelStyles.indexOf('/* Fuel slip choices share one compact, readable modal pattern. */'),
+    fuelStyles.indexOf('/* Fuel Slip Manager final button styling overrides.'),
+  );
+
+  assert.match(choicesMarkup, /data-fuel-slip-choice-modal="menu"/);
+  assert.match(choicesMarkup, /data-fuel-slip-choice-modal="add"/);
+  assert.equal((choicesMarkup.match(/styles\.fuelSlipChoiceArrow/g) ?? []).length, 4);
+  assert.doesNotMatch(choicesMarkup, /<br\s*\/?\s*>/);
+  assert.match(choicesStyles, /width: min\(100%, 1120px\)/);
+  assert.match(choicesStyles, /grid-template-columns: 4\.1rem minmax\(0, 1fr\) 1\.75rem/);
+  assert.match(choicesStyles, /@media \(min-width: 1180px\)/);
+  assert.match(choicesStyles, /white-space: nowrap/);
+  assert.match(choicesStyles, /@media \(max-width: 900px\)/);
+  assert.match(choicesStyles, /grid-template-columns: 1fr/);
+});
+
 test('fuel exclusions support multi-select review without an included status pill', () => {
   assert.match(fuelClient, /selectedExclusionAssetIds/);
   assert.match(fuelClient, /toggleExclusionAsset/);
