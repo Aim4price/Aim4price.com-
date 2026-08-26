@@ -1542,6 +1542,10 @@ function reportAssetForEvent(event: ScanEventRecord, fallbackAsset: AssetRegiste
   return (event as ScopedScanEventRecord).reportAsset ?? fallbackAsset;
 }
 
+function isUmbrellaReportScope(asset: AssetRegisterItem, scopeAssets: AssetRegisterItem[]): boolean {
+  return scopeAssets.length !== 1 || scopeAssets[0]?.id !== asset.id;
+}
+
 function reportAssetTitleForEvent(event: ScanEventRecord, fallbackAsset: AssetRegisterItem): string {
   return reportAssetForEvent(event, fallbackAsset).title || fallbackAsset.title || 'Asset';
 }
@@ -1941,9 +1945,13 @@ function buildDepreciationReport(
   dateRangeLabel = 'All available entries',
   scopeAssets: AssetRegisterItem[] = [asset],
 ): string {
-  const summary = buildDepreciationLogSummary(entries, asset);
-  const annualSummaries = buildDepreciationAnnualSummary(entries);
-  const isUmbrellaReport = scopeAssets.length > 1 || entries.some((entry) => entry.assetTitle !== asset.title);
+  const isUmbrellaReport = isUmbrellaReportScope(asset, scopeAssets);
+  const summary = isUmbrellaReport
+    ? buildDepreciationUmbrellaLogSummary(entries, scopeAssets)
+    : buildDepreciationLogSummary(entries, asset);
+  const annualSummaries = isUmbrellaReport
+    ? buildDepreciationUmbrellaAnnualSummary(entries)
+    : buildDepreciationAnnualSummary(entries);
 
   return buildReportHtml({
     reportKind: 'depreciation',
@@ -3166,7 +3174,8 @@ function buildFuelReport(
   scopeAssets: AssetRegisterItem[] = [asset],
 ): string {
   const fuelEvents = filterFuelReportEvents(events);
-  const isUmbrellaReport = scopeAssets.length > 1 || fuelEvents.some((event) => Boolean((event as ScopedScanEventRecord).reportAsset));
+  const isUmbrellaReport = isUmbrellaReportScope(asset, scopeAssets)
+    || fuelEvents.some((event) => Boolean((event as ScopedScanEventRecord).reportAsset));
   const assetsWithFuel = new Set(fuelEvents.map((event) => reportAssetForEvent(event, asset).id)).size;
   const bodyHtml = isUmbrellaReport
     ? `${buildUmbrellaFuelAverageSection(scopeAssets, fuelEvents, asset)}${buildFuelBody(asset, fuelEvents)}`
@@ -3388,7 +3397,7 @@ function buildFuelReportWorkbook(
 ): XlsxSheet[] {
   const fuelEvents = filterFuelReportEvents(events);
   const fuelAverage = calculateFuelAverage(asset, fuelEvents);
-  const isUmbrellaReport = scopeAssets.length > 1
+  const isUmbrellaReport = isUmbrellaReportScope(asset, scopeAssets)
     || fuelEvents.some((event) => Boolean((event as ScopedScanEventRecord).reportAsset));
   const recordRows = isUmbrellaReport
     ? [
