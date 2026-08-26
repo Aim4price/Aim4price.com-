@@ -333,10 +333,14 @@ test('Document Vault refinements use guided modal flows instead of pills and bro
   assert.match(client, /\[asset\.categoryLabel, asset\.methodLabel\]\.filter\(Boolean\)\.join\(' · '\)/);
   assert.match(client, /formatAssetValue\(asset\.currentValue\)/);
   assert.match(client, />current value<\/small>/);
-  assert.match(documentStore, /equipment_family_label/);
-  assert.match(documentStore, /selected_value_ex_vat/);
-  assert.match(documentStore, /life_worked_percent/);
-  assert.match(documentStore, /buildAssetPickerDetail\(row\)/);
+  assert.match(documentStore, /listAssetRegisterItems/);
+  assert.match(documentStore, /assets = await listAssetRegisterItems\(userId\)/);
+  assert.match(documentStore, /error\.message === 'ASSET_REGISTER_NOT_FOUND'/);
+  assert.match(documentStore, /buildAssetPickerDetail\(asset\)/);
+  assert.match(documentStore, /asset\.equipmentFamilyLabel/);
+  assert.match(documentStore, /asset\.lifeWorkedPercent/);
+  assert.match(documentStore, /nullableNumberValue\(asset\.value\)/);
+  assert.doesNotMatch(documentStore, /\bequipment_family_label\b/);
   assert.doesNotMatch(client, /className=\{`\$\{styles\.assetPicker\}/);
   assert.match(styles, /\.assetSelectionModal\s*\{[\s\S]*?grid-template-rows:\s*auto minmax\(0, 1fr\) auto/);
   assert.match(styles, /\.assetSelectionModal\s*\{[\s\S]*?width:\s*min\(100%, 1320px\)[\s\S]*?padding:\s*clamp\(1\.65rem, 2\.5vw, 2\.25rem\)/);
