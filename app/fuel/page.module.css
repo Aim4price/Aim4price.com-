@@ -3138,6 +3138,11 @@
   --text-muted: #677586;
   --brand-dark: #10382f;
   --brand-mid: #165340;
+  --action-primary: #197454;
+  --action-primary-deep: #0f5840;
+  --action-primary-hover: #0b4b37;
+  --action-primary-border: #0f6248;
+  --action-primary-shadow: rgba(25, 116, 84, 0.2);
   font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
   position: fixed;
   inset: 0;

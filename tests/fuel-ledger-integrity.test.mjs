@@ -6,6 +6,7 @@ const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf
 const ledger = read('lib/fuel-ledger.ts');
 const migration = read('database/migrations/76-fuel-ledger-exclusions-and-audit.sql');
 const fuelClient = read('app/fuel/fuel-client.tsx');
+const fuelStyles = read('app/fuel/page.module.css');
 const report = read('app/api/fuel/report/route.ts');
 const exclusionRoute = read('app/api/fuel/exclusions/[assetId]/route.ts');
 const slipRoute = read('app/api/fuel/slips/[slipId]/route.ts');
@@ -37,6 +38,17 @@ test('fuel exclusions support multi-select review without an included status pil
   assert.match(fuelClient, /data-asset-choice-selected=\{isSelected \? 'true' : undefined\}/);
   assert.match(fuelClient, /Review exclusions \(\$\{selectedExclusionAssets\.length\}\)/);
   assert.doesNotMatch(fuelClient, /asset\.workUseExcluded \? 'Excluded' : 'Included'/);
+});
+
+test('fuel exclusion modal keeps its primary review action green', () => {
+  const modalTheme = fuelStyles.slice(
+    fuelStyles.indexOf('.fuelSlipFlowBackdrop {'),
+    fuelStyles.indexOf('.fuelSlipFlowBackdrop .assetModal'),
+  );
+  assert.match(modalTheme, /--action-primary: #197454/);
+  assert.match(modalTheme, /--action-primary-deep: #0f5840/);
+  assert.match(modalTheme, /--action-primary-hover: #0b4b37/);
+  assert.match(modalTheme, /--action-primary-border: #0f6248/);
 });
 
 test('exclusions never alter physical tank movement', () => {
