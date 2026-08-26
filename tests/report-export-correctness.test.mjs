@@ -5,11 +5,16 @@ import test from 'node:test';
 import { reportYearInTimeZone, sortReportEntriesChronologically } from '../lib/report-chronology.ts';
 import { createXlsxWorkbook } from '../lib/simple-xlsx.ts';
 import { buildAssetMaintenanceWorkbook } from '../lib/asset-maintenance-report.ts';
+import {
+  combineDepreciationUmbrellaAnnualSummaries,
+  combineDepreciationUmbrellaLogSummaries,
+} from '../lib/depreciation-umbrella-summary.ts';
 import { resolveMaintenanceMeterReading, toFiniteNumberOrNull } from '../lib/usage-readings.ts';
 
 function depreciationEntry(overrides = {}) {
   return {
     id: 'entry-1',
+    assetRegisterItemId: 'asset-1',
     capturedAtIso: '2026-06-23T07:29:00.000Z',
     createdAtIso: '2026-06-23T07:29:00.000Z',
     previousValueExVat: 370_000,
@@ -47,6 +52,68 @@ test('depreciation report entries are chronological even when display rows are n
 
 test('annual depreciation grouping uses South African calendar years', () => {
   assert.equal(reportYearInTimeZone('2026-12-31T22:30:00.000Z'), 2027);
+});
+
+test('umbrella depreciation totals each asset independently instead of mixing separate timelines', () => {
+  const entries = [
+    depreciationEntry({
+      id: 'asset-1-opening',
+      assetRegisterItemId: 'asset-1',
+      capturedAtIso: '2026-01-10T08:00:00.000Z',
+      previousValueExVat: 100_000,
+      newValueExVat: 90_000,
+    }),
+    depreciationEntry({
+      id: 'asset-2-opening',
+      assetRegisterItemId: 'asset-2',
+      capturedAtIso: '2026-02-10T08:00:00.000Z',
+      previousValueExVat: 200_000,
+      newValueExVat: 180_000,
+    }),
+  ];
+  const summaries = [
+    {
+      openingLogValueExVat: 100_000, openingTimelineValueExVat: 100_000, currentValueExVat: 90_000,
+      totalDifferenceExVat: -10_000, totalMarketDepreciationExVat: -10_000, totalMovementPercent: -10,
+      firstLogEntryDateIso: '2026-01-10T08:00:00.000Z', firstSnapshotDateIso: '2026-01-10T08:00:00.000Z',
+      latestLogEntryDateIso: '2026-01-10T08:00:00.000Z', latestSnapshotDateIso: '2026-01-10T08:00:00.000Z',
+      logEntryCount: 1, snapshotCount: 1, latestUsageAmount: 14_029, latestUsageMetric: 'hours',
+      latestCondition: 'good', replacementPriceUsedExVat: 250_000,
+    },
+    {
+      openingLogValueExVat: 200_000, openingTimelineValueExVat: 200_000, currentValueExVat: 180_000,
+      totalDifferenceExVat: -20_000, totalMarketDepreciationExVat: -20_000, totalMovementPercent: -10,
+      firstLogEntryDateIso: '2026-02-10T08:00:00.000Z', firstSnapshotDateIso: '2026-02-10T08:00:00.000Z',
+      latestLogEntryDateIso: '2026-02-10T08:00:00.000Z', latestSnapshotDateIso: '2026-02-10T08:00:00.000Z',
+      logEntryCount: 1, snapshotCount: 1, latestUsageAmount: 3_000, latestUsageMetric: 'hours',
+      latestCondition: 'good', replacementPriceUsedExVat: 400_000,
+    },
+  ];
+  const annualSummaries = summaries.map((summary) => ({
+    year: 2026,
+    openingValueExVat: summary.openingLogValueExVat,
+    closingValueExVat: summary.currentValueExVat,
+    yearlyDifferenceExVat: summary.totalDifferenceExVat,
+    yearlyDepreciationExVat: summary.totalDifferenceExVat,
+    yearlyMovementPercent: summary.totalMovementPercent,
+    logEntryCount: summary.logEntryCount,
+    snapshotCount: summary.snapshotCount,
+    latestUsageAmount: summary.latestUsageAmount,
+    latestUsageMetric: summary.latestUsageMetric,
+    latestCondition: summary.latestCondition,
+  }));
+
+  const summary = combineDepreciationUmbrellaLogSummaries(summaries, entries);
+  const annual = combineDepreciationUmbrellaAnnualSummaries(annualSummaries, entries);
+
+  assert.equal(summary.openingLogValueExVat, 300_000);
+  assert.equal(summary.currentValueExVat, 270_000);
+  assert.equal(summary.totalDifferenceExVat, -30_000);
+  assert.equal(summary.totalMovementPercent, -10);
+  assert.equal(annual.length, 1);
+  assert.equal(annual[0].openingValueExVat, 300_000);
+  assert.equal(annual[0].closingValueExVat, 270_000);
+  assert.equal(annual[0].yearlyDifferenceExVat, -30_000);
 });
 
 test('maintenance reports preserve the hour meter entered on the scan event', () => {
@@ -136,6 +203,11 @@ test('QR, fuel and maintenance data survives intact into complete report exports
   assert.match(scanReport, /fuelEventTimestamp\(event\)/);
   assert.match(scanReport, /Fuel Slip Document/);
   assert.match(scanReport, /Work Use Exclusion Reason/);
+  assert.match(scanReport, /buildUmbrellaFuelAverageSection/);
+  assert.match(scanReport, /buildUmbrellaFuelAveragesWorkbookSheet/);
+  assert.match(scanReport, /Each average is calculated only from that asset's own valid fill intervals/);
+  assert.match(scanReport, /buildDepreciationUmbrellaLogSummary\(logEntries, reportAssets\)/);
+  assert.match(scanReport, /buildDepreciationUmbrellaAnnualSummary\(logEntries\)/);
   assert.match(scanData, /fs\.document_date/);
   assert.match(scanData, /reportOccurredAtIso/);
   assert.match(scanData, /left join public\.fuel_slips fs/);

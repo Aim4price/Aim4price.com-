@@ -1,4 +1,8 @@
 import { getDb } from './db';
+import {
+  combineDepreciationUmbrellaAnnualSummaries,
+  combineDepreciationUmbrellaLogSummaries,
+} from './depreciation-umbrella-summary';
 import { reportYearInTimeZone, sortReportEntriesChronologically } from './report-chronology';
 
 export type AssetDepreciationLogEntry = {
@@ -852,6 +856,20 @@ export function buildDepreciationLogSummary(
   };
 }
 
+export function buildDepreciationUmbrellaLogSummary(
+  entries: AssetDepreciationLogEntry[],
+  fallbackAssets: DepreciationLogAssetInput[],
+): DepreciationLogSummary {
+  const summaries = fallbackAssets.map((asset) => {
+    const assetId = asIdText(asset.id);
+    return buildDepreciationLogSummary(
+      entries.filter((entry) => entry.assetRegisterItemId === assetId),
+      asset,
+    );
+  });
+  return combineDepreciationUmbrellaLogSummaries(summaries, entries);
+}
+
 export function buildDepreciationAnnualSummary(entries: AssetDepreciationLogEntry[]): DepreciationAnnualSummary[] {
   const grouped = new Map<number, AssetDepreciationLogEntry[]>();
 
@@ -890,6 +908,22 @@ export function buildDepreciationAnnualSummary(entries: AssetDepreciationLogEntr
         latestCondition: latest?.condition ?? '',
       };
     });
+}
+
+export function buildDepreciationUmbrellaAnnualSummary(
+  entries: AssetDepreciationLogEntry[],
+): DepreciationAnnualSummary[] {
+  const entriesByAsset = new Map<string, AssetDepreciationLogEntry[]>();
+  entries.forEach((entry) => {
+    const assetEntries = entriesByAsset.get(entry.assetRegisterItemId) ?? [];
+    assetEntries.push(entry);
+    entriesByAsset.set(entry.assetRegisterItemId, assetEntries);
+  });
+
+  const annualSummaries = Array.from(entriesByAsset.values())
+    .flatMap((assetEntries) => buildDepreciationAnnualSummary(assetEntries));
+
+  return combineDepreciationUmbrellaAnnualSummaries(annualSummaries, entries);
 }
 
 // Compatibility exports for existing imports. The table name remains unchanged for production safety.

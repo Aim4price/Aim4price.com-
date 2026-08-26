@@ -376,19 +376,35 @@
   line-height: 1.42 !important;
 }
 
-.manageMenuGrid .manageMenuIcon {
-  width: 44px !important;
-  height: 44px !important;
-  flex: 0 0 44px;
-  box-sizing: border-box;
-  padding: 11px;
-  border-radius: 14px;
-  background: rgba(18, 70, 53, 0.08);
+.manageMenuIconTile {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  min-width: 46px;
+  height: 46px;
+  flex: 0 0 46px;
+  border: 1px solid transparent;
+  border-radius: 15px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.82);
 }
 
-.manageMenuGrid .manageMenuReport .manageMenuIcon {
+.manageMenuIconGlyph {
+  display: block;
+  width: 24px;
+  height: 24px;
+}
+
+.manageMenuEditIcon {
+  color: #124635;
+  border-color: rgba(174, 216, 195, 0.9);
+  background: linear-gradient(180deg, #f2faf6 0%, #e2f2e9 100%);
+}
+
+.manageMenuReportIcon {
   color: #1d4d78;
-  background: #edf4fb;
+  border-color: rgba(192, 215, 239, 0.95);
+  background: linear-gradient(180deg, #f5f9fe 0%, #e5f0fb 100%);
 }
 
 .manageMenuGrid .manageMenuDanger {
@@ -396,9 +412,10 @@
   min-height: 88px !important;
 }
 
-.manageMenuGrid .manageMenuDanger .manageMenuIcon {
+.manageMenuRemoveIcon {
   color: #9b3030;
-  background: #fde9e9;
+  border-color: rgba(239, 195, 195, 0.95);
+  background: linear-gradient(180deg, #fff5f5 0%, #fde5e5 100%);
 }
 
 .reportFilters {

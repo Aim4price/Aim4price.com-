@@ -5879,8 +5879,12 @@ function buildAssetGroupTimelineReportUrl(
       format,
     });
 
-    if (maintenanceSelection === 'service' || maintenanceSelection === 'checkup') {
-      maintenanceParams.set('type', maintenanceSelection);
+    if (
+      maintenanceSelection === 'checked'
+      || maintenanceSelection === 'serviced'
+      || maintenanceSelection === 'repaired'
+    ) {
+      maintenanceParams.set('procedureKind', maintenanceSelection);
     }
 
     if (filters.year && filters.year !== 'all') {
