@@ -1,8 +1,12 @@
+import type { PoolClient } from 'pg';
 import { ensureAccountProfileColumns } from './account-profile';
 import { ensureAdminUsageTrackingSchema } from './admin-usage-events';
 import {
+  ADMIN_VALUATION_HISTORY_START_ISO,
   ADMIN_VALUATION_PAGE_SIZES,
+  normalizeAdminValuationDeleteIds,
   type AdminValuationAccountFilter,
+  type AdminValuationDeletionResult,
   type AdminValuationFilterOption,
   type AdminValuationFilters,
   type AdminValuationMode,
@@ -71,6 +75,7 @@ type OptionRow = {
 };
 
 const EMPTY_OPTIONS: AdminValuationOptions = { sectors: [], years: [] };
+const ADMIN_VALUATION_HISTORY_START_SQL = `timestamptz '${ADMIN_VALUATION_HISTORY_START_ISO}'`;
 
 function safeNumericSql(source: string): string {
   const normalized = `nullif(regexp_replace(coalesce(${source}, ''), '[^0-9.-]', '', 'g'), '')`;
@@ -281,6 +286,7 @@ const ADMIN_VALUATION_CTE = `
         ))
       )
     where event.event_type = 'free_estimate_completed'
+      and event.created_at >= ${ADMIN_VALUATION_HISTORY_START_SQL}
   ),
   saved_valuation_rows as (
     select
@@ -464,6 +470,7 @@ const ADMIN_VALUATION_CTE = `
       on family.id::text = nullif(valuation_document.row_json->>'equipment_family_id', '')
     left join public.brands brand
       on brand.id::text = nullif(valuation_document.row_json->>'brand_id', '')
+    where valuation.created_at >= ${ADMIN_VALUATION_HISTORY_START_SQL}
   ),
   valuation_history as (
     select * from free_estimate_rows
@@ -755,6 +762,164 @@ async function getOptions(): Promise<AdminValuationOptions> {
     order by option_group, label desc
   `);
   return mapOptions(result.rows);
+}
+
+type ValuationRunReference = {
+  tableName: string;
+  columnName: string;
+  clearSql: string;
+};
+
+const VALUATION_RUN_REFERENCES: ValuationRunReference[] = [
+  {
+    tableName: 'asset_register_items',
+    columnName: 'valuation_run_id',
+    clearSql: `update public.asset_register_items
+      set valuation_run_id = null
+      where valuation_run_id = any($1::bigint[])`,
+  },
+  {
+    tableName: 'asset_depreciation_snapshots',
+    columnName: 'valuation_run_id',
+    clearSql: `update public.asset_depreciation_snapshots
+      set valuation_run_id = null
+      where valuation_run_id = any($1::bigint[])`,
+  },
+  {
+    tableName: 'dealer_asset_correction_requests',
+    columnName: 'revaluation_run_id',
+    clearSql: `update public.dealer_asset_correction_requests
+      set revaluation_run_id = null
+      where revaluation_run_id = any($1::bigint[])`,
+  },
+  {
+    tableName: 'dealer_asset_correction_requests',
+    columnName: 'revaluation_previous_run_id',
+    clearSql: `update public.dealer_asset_correction_requests
+      set revaluation_previous_run_id = null
+      where revaluation_previous_run_id = any($1::bigint[])`,
+  },
+];
+
+async function adminValuationColumnExists(
+  client: PoolClient,
+  tableName: string,
+  columnName: string,
+): Promise<boolean> {
+  const result = await client.query<{ exists: boolean }>(
+    `select exists (
+       select 1
+       from information_schema.columns
+       where table_schema = 'public'
+         and table_name = $1
+         and column_name = $2
+     ) as exists`,
+    [tableName, columnName],
+  );
+  return result.rows[0]?.exists === true;
+}
+
+async function clearValuationRunReferences(
+  client: PoolClient,
+  savedSourceIds: string[],
+): Promise<void> {
+  if (!savedSourceIds.length) return;
+  for (const reference of VALUATION_RUN_REFERENCES) {
+    if (await adminValuationColumnExists(client, reference.tableName, reference.columnName)) {
+      await client.query(reference.clearSql, [savedSourceIds]);
+    }
+  }
+}
+
+export type AdminDeleteValuationsInput = {
+  valuationIds: unknown;
+  adminUserId: string;
+  adminName?: string | null;
+};
+
+export async function adminDeleteValuations(
+  input: AdminDeleteValuationsInput,
+): Promise<AdminValuationDeletionResult> {
+  await ensureAdminUsageTrackingSchema();
+  const valuationIds = normalizeAdminValuationDeleteIds(input.valuationIds);
+  const estimateSourceIds = valuationIds
+    .filter((id) => id.startsWith('estimate:'))
+    .map((id) => id.slice('estimate:'.length));
+  const savedSourceIds = valuationIds
+    .filter((id) => id.startsWith('saved:'))
+    .map((id) => id.slice('saved:'.length));
+  const client = await getDb().connect();
+
+  try {
+    await client.query('begin');
+
+    let deletedEstimateEvents = 0;
+    if (estimateSourceIds.length) {
+      const deleted = await client.query<{ id: string }>(
+        `delete from public.admin_usage_events
+         where event_type = 'free_estimate_completed'
+           and id = any($1::bigint[])
+         returning id::text as id`,
+        [estimateSourceIds],
+      );
+      deletedEstimateEvents = deleted.rowCount ?? deleted.rows.length;
+    }
+
+    let deletedSavedValuations = 0;
+    if (savedSourceIds.length) {
+      const existing = await client.query<{ id: string }>(
+        `select id::text as id
+         from public.valuation_runs
+         where id = any($1::bigint[])
+         for update`,
+        [savedSourceIds],
+      );
+      const existingSourceIds = existing.rows.map((row) => row.id);
+      await clearValuationRunReferences(client, existingSourceIds);
+      if (existingSourceIds.length) {
+        const deleted = await client.query<{ id: string }>(
+          `delete from public.valuation_runs
+           where id = any($1::bigint[])
+           returning id::text as id`,
+          [existingSourceIds],
+        );
+        deletedSavedValuations = deleted.rowCount ?? deleted.rows.length;
+      }
+    }
+
+    const deletedCount = deletedEstimateEvents + deletedSavedValuations;
+    if (deletedCount > 0) {
+      await client.query(
+        `insert into public.admin_usage_events
+          (user_id, event_type, event_source, metadata, created_at)
+         values ($1, 'admin_valuation_records_deleted', 'admin-valuations', $2::jsonb, now())`,
+        [
+          input.adminUserId,
+          JSON.stringify({
+            deletionMode: valuationIds.length === 1 ? 'single' : 'bulk',
+            deletedCount,
+            deletedEstimateEvents,
+            deletedSavedValuations,
+            adminName: text(input.adminName),
+          }),
+        ],
+      );
+    }
+
+    await client.query('commit');
+    return {
+      requestedCount: valuationIds.length,
+      deletedCount,
+      deletedEstimateEvents,
+      deletedSavedValuations,
+      notFoundCount: Math.max(0, valuationIds.length - deletedCount),
+    };
+  } catch (error) {
+    await client.query('rollback');
+    throw error;
+  } finally {
+    client.release();
+  }
 }
 
 export async function getAdminValuationReport(

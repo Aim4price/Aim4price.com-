@@ -7,6 +7,7 @@ import {
   buildAdminValuationOutputSections,
   formatAdminValuationDateTime,
   formatAdminValuationMoney,
+  type AdminValuationDeletionResult,
   type AdminValuationFilters,
   type AdminValuationRecord,
   type AdminValuationReport,
@@ -14,6 +15,10 @@ import {
 import styles from './page.module.css';
 
 type ValuationFilterState = AdminValuationFilters;
+type DeleteTargets = {
+  mode: 'single' | 'bulk';
+  valuations: AdminValuationRecord[];
+};
 
 const RECORD_LABELS = {
   estimate: 'Estimate result',
@@ -94,10 +99,21 @@ export default function AdminValuationsClient({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [selectedValuation, setSelectedValuation] = useState<AdminValuationRecord | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
+  const [deleteTargets, setDeleteTargets] = useState<DeleteTargets | null>(null);
+  const [deleteConfirmation, setDeleteConfirmation] = useState('');
+  const [deleteBusy, setDeleteBusy] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
   const [openingAccount, setOpeningAccount] = useState(false);
   const requestSequenceRef = useRef(0);
   const detailsRef = useRef<HTMLElement | null>(null);
   const detailTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const selectAllRef = useRef<HTMLInputElement | null>(null);
+  const deleteModalRef = useRef<HTMLElement | null>(null);
+  const deleteTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const deleteBusyRef = useRef(false);
+
+  deleteBusyRef.current = deleteBusy;
 
   const activeFilterCount = useMemo(
     () => [
@@ -119,6 +135,13 @@ export default function AdminValuationsClient({
     () => selectedValuation ? buildAdminValuationOutputSections(selectedValuation) : [],
     [selectedValuation],
   );
+  const selectedValuations = useMemo(
+    () => report.valuations.filter((valuation) => selectedIds.has(valuation.id)),
+    [report.valuations, selectedIds],
+  );
+  const selectedOnPageCount = selectedValuations.length;
+  const allPageSelected = report.valuations.length > 0
+    && selectedOnPageCount === report.valuations.length;
 
   useEffect(() => {
     if (!selectedValuation) return;
@@ -166,6 +189,60 @@ export default function AdminValuationsClient({
     };
   }, [openingAccount, selectedValuation]);
 
+  useEffect(() => {
+    if (selectAllRef.current) {
+      selectAllRef.current.indeterminate = selectedOnPageCount > 0 && !allPageSelected;
+    }
+  }, [allPageSelected, selectedOnPageCount]);
+
+  useEffect(() => {
+    if (!deleteTargets) return;
+    const modal = deleteModalRef.current;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const frame = window.requestAnimationFrame(() => {
+      modal?.querySelector<HTMLElement>('input, button:not([disabled])')?.focus();
+    });
+
+    function keepFocusInsideDeleteModal(event: KeyboardEvent) {
+      if (event.key === 'Escape' && !deleteBusyRef.current) {
+        event.preventDefault();
+        setDeleteTargets(null);
+        setDeleteConfirmation('');
+        setDeleteError('');
+        return;
+      }
+      if (event.key !== 'Tab' || !modal) return;
+      const focusable = Array.from(
+        modal.querySelectorAll<HTMLElement>(
+          'input:not([disabled]), button:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ),
+      );
+      if (!focusable.length) {
+        event.preventDefault();
+        modal.focus();
+        return;
+      }
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    }
+
+    window.addEventListener('keydown', keepFocusInsideDeleteModal);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.removeEventListener('keydown', keepFocusInsideDeleteModal);
+      document.body.style.overflow = previousOverflow;
+      deleteTriggerRef.current?.focus();
+    };
+  }, [deleteTargets]);
+
   async function loadReport(nextFilters: ValuationFilterState) {
     const sequence = requestSequenceRef.current + 1;
     requestSequenceRef.current = sequence;
@@ -173,6 +250,7 @@ export default function AdminValuationsClient({
     setLoading(true);
     setError('');
     setSelectedValuation(null);
+    setSelectedIds(new Set());
     try {
       const query = buildQuery(nextFilters);
       const response = await fetch(`/api/admin/valuations${query ? `?${query}` : ''}`, {
@@ -235,6 +313,91 @@ export default function AdminValuationsClient({
     detailTriggerRef.current = trigger;
     setError('');
     setSelectedValuation(valuation);
+  }
+
+  function toggleValuationSelection(valuationId: string, checked: boolean) {
+    setSelectedIds((current) => {
+      const next = new Set(current);
+      if (checked) next.add(valuationId);
+      else next.delete(valuationId);
+      return next;
+    });
+  }
+
+  function toggleCurrentPage(checked: boolean) {
+    setSelectedIds((current) => {
+      const next = new Set(current);
+      for (const valuation of report.valuations) {
+        if (checked) next.add(valuation.id);
+        else next.delete(valuation.id);
+      }
+      return next;
+    });
+  }
+
+  function openDeleteModal(
+    valuations: AdminValuationRecord[],
+    mode: DeleteTargets['mode'],
+    trigger: HTMLButtonElement,
+  ) {
+    if (!valuations.length) return;
+    deleteTriggerRef.current = trigger;
+    setSelectedValuation(null);
+    setDeleteConfirmation('');
+    setDeleteError('');
+    setDeleteTargets({ mode, valuations });
+  }
+
+  function closeDeleteModal() {
+    if (deleteBusyRef.current) return;
+    setDeleteTargets(null);
+    setDeleteConfirmation('');
+    setDeleteError('');
+  }
+
+  async function confirmDelete() {
+    if (!deleteTargets || deleteBusy) return;
+    if (deleteTargets.mode === 'bulk' && deleteConfirmation.trim().toUpperCase() !== 'DELETE') {
+      setDeleteError('Type DELETE to confirm the bulk permanent deletion.');
+      return;
+    }
+
+    setDeleteBusy(true);
+    setDeleteError('');
+    try {
+      const valuationIds = deleteTargets.valuations.map((valuation) => valuation.id);
+      const response = await fetch('/api/admin/valuations', {
+        method: 'DELETE',
+        credentials: 'include',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ valuationIds }),
+      });
+      const payload = (await response.json().catch(() => null)) as {
+        ok?: boolean;
+        deletion?: AdminValuationDeletionResult;
+        error?: string;
+      } | null;
+      if (!response.ok || !payload?.ok || !payload.deletion) {
+        throw new Error(payload?.error || 'The selected valuation data could not be deleted.');
+      }
+
+      const deletedIds = new Set(valuationIds);
+      const nextPage = report.valuations.every((valuation) => deletedIds.has(valuation.id))
+        ? Math.max(1, filters.page - 1)
+        : filters.page;
+      setDeleteTargets(null);
+      setDeleteConfirmation('');
+      setSelectedIds(new Set());
+      await loadReport({ ...filters, page: nextPage });
+    } catch (deleteFailure) {
+      setDeleteError(
+        deleteFailure instanceof Error
+          ? deleteFailure.message
+          : 'The selected valuation data could not be deleted.',
+      );
+    } finally {
+      setDeleteBusy(false);
+    }
   }
 
   async function openAccount(valuation: AdminValuationRecord) {
@@ -302,11 +465,11 @@ export default function AdminValuationsClient({
       </section>
 
       <aside className={styles.historyNote}>
-        <strong>Complete available history.</strong>
+        <strong>Fresh valuation history from 26 August 2026.</strong>
         <span>
-          Saved valuations retain their detailed payload. New estimate results retain the complete normalized flow,
-          including specifications, condition answers, usage, pricing, extras, assumptions and calculation output.
-          Older free-estimate events show only the fields that were recorded at the time.
+          Earlier valuation records were cleared for a clean restart. Every new estimate now retains the complete
+          normalized flow, including specifications, condition answers, usage, pricing, extras, assumptions and
+          calculation output.
         </span>
       </aside>
 
@@ -404,10 +567,36 @@ export default function AdminValuationsClient({
         {error ? <p className={styles.errorNotice} role="alert">{error}</p> : null}
         {loading ? <div className={styles.loadingBar} aria-label="Loading valuations" /> : null}
 
+        <div className={styles.bulkToolbar}>
+          <span>
+            {selectedOnPageCount
+              ? `${selectedOnPageCount.toLocaleString('en-ZA')} valuation${selectedOnPageCount === 1 ? '' : 's'} selected`
+              : 'Select records below to permanently remove more than one valuation.'}
+          </span>
+          <button
+            type="button"
+            className={styles.bulkDeleteButton}
+            disabled={!selectedOnPageCount || loading || deleteBusy}
+            onClick={(event) => openDeleteModal(selectedValuations, 'bulk', event.currentTarget)}
+          >
+            Bulk delete{selectedOnPageCount ? ` (${selectedOnPageCount})` : ''}
+          </button>
+        </div>
+
         <div className={styles.tableScroller} aria-busy={loading}>
           <table>
             <thead>
               <tr>
+                <th className={styles.selectCell}>
+                  <input
+                    ref={selectAllRef}
+                    type="checkbox"
+                    checked={allPageSelected}
+                    disabled={!report.valuations.length || loading || deleteBusy}
+                    aria-label="Select all valuations on this page"
+                    onChange={(event) => toggleCurrentPage(event.target.checked)}
+                  />
+                </th>
                 <th>When</th>
                 <th>Record</th>
                 <th>Account</th>
@@ -415,12 +604,21 @@ export default function AdminValuationsClient({
                 <th>Inputs</th>
                 <th>Estimate excl. VAT</th>
                 <th>Estimated range</th>
-                <th>Details</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
               {report.valuations.map((valuation) => (
                 <tr key={valuation.id}>
+                  <td className={styles.selectCell}>
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.has(valuation.id)}
+                      disabled={loading || deleteBusy}
+                      aria-label={`Select ${assetTitle(valuation)} valuation`}
+                      onChange={(event) => toggleValuationSelection(valuation.id, event.target.checked)}
+                    />
+                  </td>
                   <td>
                     <strong>{formatAdminValuationDateTime(valuation.createdAtIso)}</strong>
                     <span>Reference {valuation.sourceId}</span>
@@ -447,9 +645,19 @@ export default function AdminValuationsClient({
                   <td className={styles.moneyCell}>{formatAdminValuationMoney(valuation.estimate.selectedValueExVat)}</td>
                   <td>{formatRange(valuation)}</td>
                   <td>
-                    <button type="button" className={styles.viewButton} onClick={(event) => openDetails(valuation, event.currentTarget)}>
-                      View complete flow
-                    </button>
+                    <div className={styles.rowActions}>
+                      <button type="button" className={styles.viewButton} onClick={(event) => openDetails(valuation, event.currentTarget)}>
+                        View complete flow
+                      </button>
+                      <button
+                        type="button"
+                        className={styles.deleteButton}
+                        disabled={loading || deleteBusy}
+                        onClick={(event) => openDeleteModal([valuation], 'single', event.currentTarget)}
+                      >
+                        Delete
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -458,7 +666,7 @@ export default function AdminValuationsClient({
           {!report.valuations.length ? (
             <div className={styles.emptyState}>
               <strong>No valuations found</strong>
-              <span>Clear the filters to return to the complete available history.</span>
+              <span>{activeFilterCount ? 'Clear the filters to return to the new valuation history.' : 'New completed estimates will appear here automatically.'}</span>
             </div>
           ) : null}
         </div>
@@ -594,6 +802,84 @@ export default function AdminValuationsClient({
             <footer className={styles.modalActions}>
               {selectedValuation.account.userId ? <button type="button" className={styles.primaryAction} disabled={openingAccount} onClick={() => void openAccount(selectedValuation)}>{openingAccount ? 'Opening…' : 'Open account'}</button> : null}
               <button type="button" onClick={() => setSelectedValuation(null)} disabled={openingAccount}>Close</button>
+            </footer>
+          </section>
+        </div>
+      ) : null}
+
+      {deleteTargets ? (
+        <div className={styles.modalLayer}>
+          <button
+            type="button"
+            className={styles.backdrop}
+            tabIndex={-1}
+            aria-label="Close valuation deletion confirmation"
+            disabled={deleteBusy}
+            onClick={closeDeleteModal}
+          />
+          <section
+            ref={deleteModalRef}
+            className={styles.deleteModal}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="admin-valuation-delete-title"
+            aria-describedby="admin-valuation-delete-description"
+            tabIndex={-1}
+          >
+            <header className={styles.deleteModalHeader}>
+              <div>
+                <p>Permanent removal</p>
+                <h2 id="admin-valuation-delete-title">
+                  {deleteTargets.mode === 'single'
+                    ? 'Delete this valuation?'
+                    : `Delete ${deleteTargets.valuations.length.toLocaleString('en-ZA')} valuations?`}
+                </h2>
+              </div>
+              <button type="button" aria-label="Close deletion confirmation" disabled={deleteBusy} onClick={closeDeleteModal}>×</button>
+            </header>
+
+            <div className={styles.deleteSummary}>
+              {deleteTargets.valuations.slice(0, 3).map((valuation) => (
+                <div key={valuation.id}>
+                  <strong>{assetTitle(valuation)}</strong>
+                  <span>{RECORD_LABELS[valuation.recordType]} · {formatAdminValuationDateTime(valuation.createdAtIso)}</span>
+                </div>
+              ))}
+              {deleteTargets.valuations.length > 3 ? (
+                <small>And {(deleteTargets.valuations.length - 3).toLocaleString('en-ZA')} more selected valuations</small>
+              ) : null}
+            </div>
+
+            <p id="admin-valuation-delete-description" className={styles.deleteDescription}>
+              This permanently removes the recorded estimate inputs, calculation output and saved valuation run.
+              Existing assets and accounts remain in their registers, but this valuation history cannot be recovered.
+            </p>
+
+            {deleteTargets.mode === 'bulk' ? (
+              <label className={styles.deleteConfirmationField}>
+                <span>Type DELETE to confirm</span>
+                <input
+                  type="text"
+                  value={deleteConfirmation}
+                  disabled={deleteBusy}
+                  autoComplete="off"
+                  onChange={(event) => setDeleteConfirmation(event.target.value)}
+                />
+              </label>
+            ) : null}
+
+            {deleteError ? <p className={styles.deleteError} role="alert">{deleteError}</p> : null}
+
+            <footer className={styles.deleteActions}>
+              <button type="button" disabled={deleteBusy} onClick={closeDeleteModal}>Cancel</button>
+              <button
+                type="button"
+                className={styles.confirmDeleteButton}
+                disabled={deleteBusy || (deleteTargets.mode === 'bulk' && deleteConfirmation.trim().toUpperCase() !== 'DELETE')}
+                onClick={() => void confirmDelete()}
+              >
+                {deleteBusy ? 'Deleting permanently…' : 'Delete permanently'}
+              </button>
             </footer>
           </section>
         </div>

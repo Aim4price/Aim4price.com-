@@ -261,6 +261,46 @@
   to { background-position: 180% 0; }
 }
 
+.bulkToolbar {
+  min-height: 3.35rem;
+  box-sizing: border-box;
+  padding: 0.62rem 0.9rem;
+  border-bottom: 1px solid #e5ebe8;
+  background: #fbfcfc;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.bulkToolbar span {
+  color: #66766f;
+  font-size: 0.68rem;
+  font-weight: 760;
+}
+
+.bulkDeleteButton,
+.deleteButton {
+  min-height: 2.12rem;
+  box-sizing: border-box;
+  padding: 0 0.68rem;
+  border: 1px solid #e0a7a1;
+  border-radius: 0.58rem;
+  color: #9d3029;
+  background: #fff1ef;
+  font: inherit;
+  font-size: 0.63rem;
+  font-weight: 900;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.bulkDeleteButton:disabled,
+.deleteButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
 .tableScroller {
   min-height: 10rem;
   overflow-x: auto;
@@ -269,7 +309,7 @@
 
 .tableScroller table {
   width: 100%;
-  min-width: 1540px;
+  min-width: 1640px;
   border-collapse: collapse;
 }
 
@@ -324,14 +364,33 @@
   line-height: 1.35;
 }
 
-.tableScroller td:nth-child(1) {
+.tableScroller td:nth-child(2) {
   min-width: 10.5rem;
 }
 
-.tableScroller td:nth-child(3),
-.tableScroller td:nth-child(4) {
+.tableScroller td:nth-child(4),
+.tableScroller td:nth-child(5) {
   min-width: 13rem;
   max-width: 18rem;
+}
+
+.selectCell {
+  width: 2.4rem;
+  min-width: 2.4rem !important;
+  padding-right: 0.25rem !important;
+  text-align: center !important;
+}
+
+.selectCell input {
+  width: 1rem;
+  height: 1rem;
+  margin: 0;
+  accent-color: #176c50;
+  cursor: pointer;
+}
+
+.selectCell input:disabled {
+  cursor: not-allowed;
 }
 
 .badge {
@@ -377,6 +436,12 @@
   font-weight: 900;
   white-space: nowrap;
   cursor: pointer;
+}
+
+.rowActions {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
 }
 
 .emptyState {
@@ -476,6 +541,189 @@
   color: #17372e;
   background: #ffffff;
   box-shadow: 0 30px 90px rgba(7, 32, 24, 0.34);
+}
+
+.deleteModal {
+  position: relative;
+  width: min(34rem, 100%);
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
+  box-sizing: border-box;
+  padding: 1rem;
+  border: 1px solid #efb8b3;
+  border-radius: 1.2rem;
+  color: #54201c;
+  background: #fff5f3;
+  box-shadow: 0 30px 90px rgba(69, 17, 13, 0.34);
+}
+
+.deleteModalHeader {
+  padding-bottom: 0.78rem;
+  border-bottom: 1px solid #efd5d2;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.deleteModalHeader p {
+  margin: 0 0 0.14rem;
+  color: #b1443b;
+  font-size: 0.61rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.deleteModalHeader h2 {
+  margin: 0;
+  color: #732a24;
+  font-size: 1.3rem;
+  letter-spacing: -0.03em;
+}
+
+.deleteModalHeader > button {
+  width: 2.25rem;
+  height: 2.25rem;
+  flex: 0 0 auto;
+  border: 1px solid #cce0ec;
+  border-radius: 999px;
+  color: #2d6380;
+  background: #eaf5fb;
+  display: grid;
+  place-items: center;
+  font: inherit;
+  font-size: 1.25rem;
+  cursor: pointer;
+}
+
+.deleteSummary {
+  margin-top: 0.76rem;
+  overflow: hidden;
+  border: 1px solid #efd5d2;
+  border-radius: 0.78rem;
+  background: rgba(255, 255, 255, 0.76);
+}
+
+.deleteSummary > div {
+  padding: 0.62rem 0.7rem;
+  border-top: 1px solid #f2dfdc;
+}
+
+.deleteSummary > div:first-child {
+  border-top: 0;
+}
+
+.deleteSummary strong,
+.deleteSummary span {
+  display: block;
+}
+
+.deleteSummary strong {
+  color: #6f2b25;
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
+.deleteSummary span,
+.deleteSummary small {
+  margin-top: 0.12rem;
+  color: #8a5d58;
+  font-size: 0.63rem;
+  font-weight: 720;
+}
+
+.deleteSummary > small {
+  display: block;
+  padding: 0.58rem 0.7rem;
+  border-top: 1px solid #f2dfdc;
+}
+
+.deleteDescription {
+  margin: 0.76rem 0 0;
+  color: #7b4944;
+  font-size: 0.7rem;
+  font-weight: 720;
+  line-height: 1.55;
+}
+
+.deleteConfirmationField {
+  margin-top: 0.72rem;
+  display: grid;
+  gap: 0.3rem;
+}
+
+.deleteConfirmationField span {
+  color: #833b34;
+  font-size: 0.62rem;
+  font-weight: 900;
+  letter-spacing: 0.035em;
+  text-transform: uppercase;
+}
+
+.deleteConfirmationField input {
+  min-height: 2.55rem;
+  box-sizing: border-box;
+  padding: 0 0.7rem;
+  border: 1px solid #e3b5b0;
+  border-radius: 0.65rem;
+  color: #61251f;
+  background: #ffffff;
+  font: inherit;
+  font-size: 0.74rem;
+  font-weight: 850;
+}
+
+.deleteConfirmationField input:focus {
+  outline: none;
+  border-color: #b94b42;
+  box-shadow: 0 0 0 3px rgba(185, 75, 66, 0.12);
+}
+
+.deleteError {
+  margin: 0.7rem 0 0;
+  padding: 0.62rem 0.7rem;
+  border: 1px solid #e9b0aa;
+  border-radius: 0.65rem;
+  color: #9b3129;
+  background: #ffffff;
+  font-size: 0.68rem;
+  font-weight: 820;
+}
+
+.deleteActions {
+  margin-top: 0.82rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid #efd5d2;
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.45rem;
+}
+
+.deleteActions button {
+  min-height: 2.45rem;
+  box-sizing: border-box;
+  padding: 0 0.82rem;
+  border: 1px solid #dec4c0;
+  border-radius: 0.65rem;
+  color: #69433f;
+  background: #ffffff;
+  font: inherit;
+  font-size: 0.68rem;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.deleteActions .confirmDeleteButton {
+  color: #ffffff;
+  border-color: #a9362e;
+  background: #a9362e;
+}
+
+.deleteActions button:disabled,
+.deleteModalHeader > button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
 }
 
 .modalHeader {
@@ -813,10 +1061,15 @@
 }
 
 .viewButton:focus-visible,
+.deleteButton:focus-visible,
+.bulkDeleteButton:focus-visible,
+.selectCell input:focus-visible,
 .filters button:focus-visible,
 .pagination button:focus-visible,
 .modalHeader button:focus-visible,
-.modalActions button:focus-visible {
+.modalActions button:focus-visible,
+.deleteModalHeader button:focus-visible,
+.deleteActions button:focus-visible {
   outline: 3px solid rgba(55, 145, 111, 0.25);
   outline-offset: 2px;
 }
@@ -854,7 +1107,8 @@
   }
 
   .historyNote,
-  .estimateHero {
+  .estimateHero,
+  .bulkToolbar {
     align-items: flex-start;
     flex-direction: column;
   }
@@ -928,12 +1182,30 @@
   .modalActions button {
     width: 100%;
   }
+
+  .deleteModal {
+    max-height: calc(100vh - 1.1rem);
+    padding: 0.86rem;
+    border-radius: 1.05rem;
+  }
+
+  .deleteActions {
+    flex-direction: column-reverse;
+  }
+
+  .deleteActions button,
+  .bulkDeleteButton {
+    width: 100%;
+  }
 }
 
 @media print {
   .filters,
+  .bulkToolbar,
   .pagination,
   .viewButton,
+  .deleteButton,
+  .selectCell,
   .modalLayer {
     display: none !important;
   }

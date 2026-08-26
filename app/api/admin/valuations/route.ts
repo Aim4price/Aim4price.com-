@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdminApiAccess } from '../../../../lib/admin-api-access';
-import { getAdminValuationReport } from '../../../../lib/admin-valuations';
+import { adminDeleteValuations, getAdminValuationReport } from '../../../../lib/admin-valuations';
 import type {
   AdminValuationAccountFilter,
   AdminValuationModeFilter,
@@ -38,3 +38,54 @@ export async function GET(request: NextRequest) {
   }
 }
 
+function deleteErrorResponse(error: unknown) {
+  const code = error instanceof Error ? error.message : '';
+  if (code === 'ADMIN_VALUATION_DELETE_IDS_REQUIRED') {
+    return NextResponse.json(
+      { ok: false, error: 'Select at least one valuation to delete.' },
+      { status: 400 },
+    );
+  }
+  if (code === 'ADMIN_VALUATION_DELETE_LIMIT_EXCEEDED') {
+    return NextResponse.json(
+      { ok: false, error: 'A maximum of 500 valuations can be deleted at once.' },
+      { status: 400 },
+    );
+  }
+  if (code === 'ADMIN_VALUATION_DELETE_ID_INVALID') {
+    return NextResponse.json(
+      { ok: false, error: 'One or more valuation references are invalid.' },
+      { status: 400 },
+    );
+  }
+
+  console.error('admin valuations DELETE failed', error);
+  return NextResponse.json(
+    { ok: false, error: 'The selected valuation data could not be permanently deleted.' },
+    { status: 500 },
+  );
+}
+
+export async function DELETE(request: NextRequest) {
+  const access = await requireAdminApiAccess();
+  if (!access.ok) return access.response;
+
+  try {
+    const body = await request.json().catch(() => null) as Record<string, unknown> | null;
+    if (!body || typeof body !== 'object' || Array.isArray(body)) {
+      return NextResponse.json(
+        { ok: false, error: 'Select at least one valuation to delete.' },
+        { status: 400 },
+      );
+    }
+
+    const deletion = await adminDeleteValuations({
+      valuationIds: body.valuationIds,
+      adminUserId: access.actor.userId,
+      adminName: access.actor.displayName,
+    });
+    return NextResponse.json({ ok: true, deletion });
+  } catch (error) {
+    return deleteErrorResponse(error);
+  }
+}
