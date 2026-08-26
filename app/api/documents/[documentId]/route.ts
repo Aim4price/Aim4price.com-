@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAssetRegisterAccountAccess } from '../../../../lib/asset-register-account-access';
 import {
   moveAccountDocumentToRecycleBin,
+  permanentlyDeleteAccountDocument,
   restoreAccountDocument,
   updateAccountDocument,
   type AccountDocumentInput,
@@ -39,7 +40,7 @@ async function requireAssetRegisterUser() {
   return { ok: true as const, userId: session.user.id };
 }
 
-function errorResponse(error: unknown) {
+function errorResponse(error: unknown, fallback = 'The document could not be updated.') {
   const message = error instanceof Error ? error.message : '';
   if (message === 'DOCUMENT_NOT_FOUND') {
     return NextResponse.json({ ok: false, error: 'Document not found.' }, { status: 404 });
@@ -69,7 +70,7 @@ function errorResponse(error: unknown) {
     );
   }
 
-  return NextResponse.json({ ok: false, error: 'The document could not be updated.' }, { status: 500 });
+  return NextResponse.json({ ok: false, error: fallback }, { status: 500 });
 }
 
 export async function PATCH(request: NextRequest, context: RouteContext) {
@@ -93,18 +94,23 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
   }
 }
 
-export async function DELETE(_request: NextRequest, context: RouteContext) {
+export async function DELETE(request: NextRequest, context: RouteContext) {
   const owner = await requireAssetRegisterUser();
   if (!owner.ok) return owner.response;
 
   const documentId = String(context.params?.documentId ?? '').trim();
   if (!documentId) return NextResponse.json({ ok: false, error: 'Document not found.' }, { status: 404 });
+  const permanent = request.nextUrl.searchParams.get('permanent') === '1';
 
   try {
-    await moveAccountDocumentToRecycleBin(owner.userId, documentId);
+    if (permanent) await permanentlyDeleteAccountDocument(owner.userId, documentId);
+    else await moveAccountDocumentToRecycleBin(owner.userId, documentId);
     return NextResponse.json({ ok: true });
   } catch (error) {
     console.error('Aim4price Document Vault DELETE failed.', error);
-    return errorResponse(error);
+    return errorResponse(
+      error,
+      permanent ? 'The document could not be permanently deleted.' : 'The document could not be moved to the Recycle Bin.',
+    );
   }
 }

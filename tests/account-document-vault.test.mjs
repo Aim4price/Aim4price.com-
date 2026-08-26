@@ -195,6 +195,16 @@ test('Recycle Bin keeps recoverable documents for 90 days and purges expired upl
   assert.match(documentStore, /delete from public\.asset_register_bucket_uploads/);
   assert.match(client, /90-day Recycle Bin/);
   assert.match(client, /action: 'restore'/);
+  assert.match(client, /\?permanent=1/);
+  assert.match(client, /Are you sure you want to permanently delete this document\?/);
+  assert.match(client, /This cannot be undone\. The document file, details and asset links will be permanently removed\./);
+  assert.match(client, /Yes, permanently delete/);
+  assert.match(itemRoute, /permanentlyDeleteAccountDocument/);
+  assert.match(itemRoute, /searchParams\.get\('permanent'\) === '1'/);
+  assert.match(documentStore, /export async function permanentlyDeleteAccountDocument/);
+  assert.match(documentStore, /and deleted_at is not null[\s\S]*?returning upload_id/);
+  assert.match(documentStore, /cacheAccountDocumentUploadOwner\(deletedUploadId, null\)/);
+  assert.match(styles, /\.documentActions\[data-recycle-actions='true'\]\s*\{[\s\S]*?repeat\(2, minmax\(0, 1fr\)\)/);
   assert.match(accountDeletion, /'account_documents'/);
 });
 
