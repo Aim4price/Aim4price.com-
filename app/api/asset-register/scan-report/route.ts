@@ -18,6 +18,7 @@ import { getDealerTrackedAsset } from '../../../../lib/dealer-maintenance-tracke
 import { getAssetGroupById } from '../../../../lib/asset-groups';
 import { getOwnerAppAccess, ownerAppCanAccessAsset } from '../../../../lib/owner-app-access';
 import { renderReportHtmlToPdf } from '../../../../lib/report-pdf';
+import { resolveMaintenanceMeterReading } from '../../../../lib/usage-readings';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -1145,6 +1146,16 @@ function formatEventUsage(
   return '-';
 }
 
+function formatMaintenanceEventUsage(asset: AssetRegisterItem, event: ScanEventRecord): string {
+  const reading = resolveMaintenanceMeterReading(event, getUsageUnit(asset));
+
+  if (reading) {
+    return `${formatNumber(reading.value)} ${reading.unit}`;
+  }
+
+  return formatEventUsage(asset, event);
+}
+
 function formatLatestUsage(asset: AssetRegisterItem): string {
   if (typeof asset.hours === 'number' && Number.isFinite(asset.hours)) {
     return `${formatInteger(asset.hours)} ${getUsageUnit(asset)}`;
@@ -1418,7 +1429,7 @@ function buildMaintenanceRecordRows(
   const photoCount = entries.filter((entry) => entry.event.photoUrls.length > 0).length;
   const latestEntry = entries[0] ?? null;
   const latestMeter = latestEntry
-    ? formatEventUsage(asset, latestEntry.event)
+    ? formatMaintenanceEventUsage(asset, latestEntry.event)
     : NOT_RECORDED;
 
   return [
@@ -1591,7 +1602,7 @@ function renderMaintenanceCards(asset: AssetRegisterItem, entries: MaintenanceEn
                 </div>
                 <div>
                   <span>${escapeHtml(meterLabel)}</span>
-                  <strong>${escapeHtml(recordedText(formatEventUsage(asset, entry.event)))}</strong>
+                  <strong>${escapeHtml(recordedText(formatMaintenanceEventUsage(asset, entry.event)))}</strong>
                 </div>
               </div>
 
@@ -3439,7 +3450,7 @@ function buildMaintenanceReportWorkbook(
       styled(entry.items.join(', ') || NOT_RECORDED, 'text'),
     ];
     const commonEnd = [
-      styled(excelRecordedText(formatEventUsage(asset, entry.event)), 'text'),
+      styled(excelRecordedText(formatMaintenanceEventUsage(asset, entry.event)), 'text'),
       styled(excelRecordedText(formatOperatorLabel(entry.event)), 'text'),
       linked(excelRecordedText(formatLocationText(entry.event.locationText, entry.event.latitude, entry.event.longitude)), mapUrl),
       linked(photoLabel, photoUrl),

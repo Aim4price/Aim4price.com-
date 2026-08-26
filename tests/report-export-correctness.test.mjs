@@ -4,6 +4,7 @@ import test from 'node:test';
 
 import { reportYearInTimeZone, sortReportEntriesChronologically } from '../lib/report-chronology.ts';
 import { createXlsxWorkbook } from '../lib/simple-xlsx.ts';
+import { resolveMaintenanceMeterReading, toFiniteNumberOrNull } from '../lib/usage-readings.ts';
 
 function depreciationEntry(overrides = {}) {
   return {
@@ -45,6 +46,27 @@ test('depreciation report entries are chronological even when display rows are n
 
 test('annual depreciation grouping uses South African calendar years', () => {
   assert.equal(reportYearInTimeZone('2026-12-31T22:30:00.000Z'), 2027);
+});
+
+test('maintenance reports preserve the hour meter entered on the scan event', () => {
+  assert.equal(toFiniteNumberOrNull(null), null);
+  assert.equal(toFiniteNumberOrNull(''), null);
+  assert.deepEqual(
+    resolveMaintenanceMeterReading({
+      hours: 14_056,
+      assetUsageReading: 0,
+      assetUsageMetric: 'hours',
+    }, 'hours'),
+    { value: 14_056, unit: 'hours' },
+  );
+  assert.deepEqual(
+    resolveMaintenanceMeterReading({
+      hours: null,
+      assetUsageReading: 14_056,
+      assetUsageMetric: 'hours',
+    }, 'hours'),
+    { value: 14_056, unit: 'hours' },
+  );
 });
 
 test('XLSX exports preserve dates, model years, quantities and clickable links as native cells', () => {
@@ -91,6 +113,7 @@ test('canonical reports use real PDF page totals and clear maintenance language'
   assert.doesNotMatch(ownershipReport, /Page 1 of 1/);
   assert.match(scanReport, /Recorded on \(SAST\)/);
   assert.match(scanReport, /Hour meter/);
+  assert.match(scanReport, /formatMaintenanceEventUsage\(asset, entry\.event\)/);
   assert.match(scanReport, /Photo evidence/);
   assert.match(scanReport, /Fuel Audit/);
   assert.match(ownershipReport, /Fuel Costs/);
