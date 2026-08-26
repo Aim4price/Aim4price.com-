@@ -422,8 +422,12 @@ textarea {
   }
 }
 
-/* Custom selects and autocomplete menus always live above modal scroll containers. */
-[data-dropdown-overlay='true'] {
+/*
+ * Custom selects and autocomplete menus always live above modal scroll containers.
+ * The body-child selector outranks single CSS-module menu classes that also use !important.
+ */
+[data-dropdown-overlay='true'],
+body > [data-dropdown-overlay='true'] {
   position: fixed !important;
   inset: auto !important;
   left: var(--dropdown-overlay-left) !important;
@@ -440,13 +444,14 @@ textarea {
   overscroll-behavior: contain;
   transform: none !important;
   visibility: var(--dropdown-overlay-visibility) !important;
-  z-index: 2147483000 !important;
+  z-index: 2147483647 !important;
   isolation: isolate;
   pointer-events: auto;
   scrollbar-gutter: stable;
 }
 
 /* Existing body portals use their own geometry but share the same topmost layer. */
-[data-dropdown-overlay-portal='true'] {
-  z-index: 2147483000 !important;
+[data-dropdown-overlay-portal='true'],
+body > [data-dropdown-overlay-portal='true'] {
+  z-index: 2147483647 !important;
 }

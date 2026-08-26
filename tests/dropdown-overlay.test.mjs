@@ -3,7 +3,11 @@ import { readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { calculateDropdownOverlayPosition } from '../lib/dropdown-overlay-position.ts';
+import {
+  applyDropdownOverlayGeometry,
+  calculateDropdownOverlayPosition,
+  DROPDOWN_OVERLAY_Z_INDEX,
+} from '../lib/dropdown-overlay-position.ts';
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -155,6 +159,37 @@ test('dropdown geometry opens in available space and never leaves the viewport',
   assert.ok(constrained.top + constrained.maxHeight <= 188);
 });
 
+test('dropdown geometry cannot be overridden by modal CSS modules', () => {
+  const declarations = new Map();
+  const style = {
+    setProperty(property, value, priority) {
+      declarations.set(property, { value, priority });
+    },
+  };
+
+  applyDropdownOverlayGeometry(style, {
+    position: { left: 420, top: 680, width: 510, maxHeight: 240 },
+    fallbackMaxHeight: 360,
+  });
+
+  assert.deepEqual(declarations.get('position'), { value: 'fixed', priority: 'important' });
+  assert.deepEqual(declarations.get('left'), { value: '420px', priority: 'important' });
+  assert.deepEqual(declarations.get('top'), { value: '680px', priority: 'important' });
+  assert.deepEqual(declarations.get('width'), { value: '510px', priority: 'important' });
+  assert.deepEqual(declarations.get('visibility'), { value: 'visible', priority: 'important' });
+  assert.deepEqual(declarations.get('z-index'), {
+    value: String(DROPDOWN_OVERLAY_Z_INDEX),
+    priority: 'important',
+  });
+
+  applyDropdownOverlayGeometry(style, {
+    position: null,
+    fallbackMaxHeight: 360,
+  });
+  assert.deepEqual(declarations.get('visibility'), { value: 'hidden', priority: 'important' });
+  assert.deepEqual(declarations.get('pointer-events'), { value: 'none', priority: 'important' });
+});
+
 test('shared overlay is body-portalled, viewport-aware, and always above modal layers', async () => {
   const [component, styles] = await Promise.all([
     read('components/DropdownOverlay.tsx'),
@@ -167,10 +202,12 @@ test('shared overlay is body-portalled, viewport-aware, and always above modal l
   assert.match(component, /window\.visualViewport\?\.addEventListener\('resize'/);
   assert.match(component, /resolveFallbackAnchor/);
   assert.match(component, /\[role="combobox"\]\[aria-expanded="true"\]/);
+  assert.match(component, /applyDropdownOverlayGeometry\(menu\.style/);
+  assert.match(component, /ref=\{attachMenuRef\}/);
   assert.match(component, /event\.stopPropagation\(\)/);
-  assert.match(styles, /\[data-dropdown-overlay='true'\][\s\S]*position: fixed !important;/);
-  assert.match(styles, /\[data-dropdown-overlay='true'\][\s\S]*z-index: 2147483000 !important;/);
-  assert.match(styles, /\[data-dropdown-overlay-portal='true'\][\s\S]*z-index: 2147483000 !important;/);
+  assert.match(styles, /body > \[data-dropdown-overlay='true'\][\s\S]*position: fixed !important;/);
+  assert.match(styles, /body > \[data-dropdown-overlay='true'\][\s\S]*z-index: 2147483647 !important;/);
+  assert.match(styles, /body > \[data-dropdown-overlay-portal='true'\][\s\S]*z-index: 2147483647 !important;/);
 });
 
 test('every custom listbox uses the shared overlay or a verified body portal', async () => {

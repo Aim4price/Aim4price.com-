@@ -22,6 +22,56 @@ export type DropdownOverlayPosition = {
   placement: 'top' | 'bottom';
 };
 
+export const DROPDOWN_OVERLAY_Z_INDEX = 2147483647;
+
+type DropdownOverlayGeometryStyle = Pick<CSSStyleDeclaration, 'setProperty'>;
+
+type DropdownOverlayGeometryOptions = {
+  position: Pick<DropdownOverlayPosition, 'left' | 'top' | 'width' | 'maxHeight'> | null;
+  fallbackMaxHeight: number;
+  viewportGutter?: number;
+  visible?: boolean;
+};
+
+export function applyDropdownOverlayGeometry(
+  style: DropdownOverlayGeometryStyle,
+  {
+    position,
+    fallbackMaxHeight,
+    viewportGutter = 12,
+    visible = position !== null,
+  }: DropdownOverlayGeometryOptions,
+): void {
+  const left = position?.left ?? 0;
+  const top = position?.top ?? 0;
+  const width = Math.max(1, position?.width ?? 1);
+  const maxHeight = Math.max(1, position?.maxHeight ?? fallbackMaxHeight);
+  const declarations = [
+    ['position', 'fixed'],
+    ['inset', 'auto'],
+    ['left', `${left}px`],
+    ['top', `${top}px`],
+    ['right', 'auto'],
+    ['bottom', 'auto'],
+    ['width', `${width}px`],
+    ['min-width', `${width}px`],
+    ['max-width', `calc(100dvw - ${viewportGutter * 2}px)`],
+    ['max-height', `${maxHeight}px`],
+    ['margin', '0'],
+    ['overflow-x', 'hidden'],
+    ['overflow-y', 'auto'],
+    ['transform', 'none'],
+    ['visibility', visible ? 'visible' : 'hidden'],
+    ['z-index', String(DROPDOWN_OVERLAY_Z_INDEX)],
+    ['isolation', 'isolate'],
+    ['pointer-events', visible ? 'auto' : 'none'],
+  ] as const;
+
+  for (const [property, value] of declarations) {
+    style.setProperty(property, value, 'important');
+  }
+}
+
 export function calculateDropdownOverlayPosition({
   anchor,
   viewport,
