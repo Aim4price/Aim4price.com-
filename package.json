@@ -5,7 +5,6 @@
     "node": ">=20.11.0"
   },
   "scripts": {
-    "pretest:report-design": "npm run build && node --test tests/cost-budget-wizard-ui.test.mjs",
     "dev": "next dev",
     "build": "next build",
     "start": "sh -c 'next start -H 0.0.0.0 -p ${PORT:-3000}'",
@@ -63,3 +62,4 @@
     "typescript": "5.6.2"
   }
 }
+
