@@ -8,6 +8,8 @@ const client = read('app/my-invoices/my-invoices-client.tsx');
 const styles = read('app/my-invoices/page.module.css');
 const assetRegisterClient = read('app/asset-register/asset-register-client.tsx');
 const assetRegisterStyles = read('app/asset-register/page.module.css');
+const fuelClient = read('app/fuel/fuel-client.tsx');
+const fuelStyles = read('app/fuel/page.module.css');
 const notifications = read('lib/notifications.ts');
 
 const modalStart = client.indexOf('{budgetModalOpen ?');
@@ -30,18 +32,37 @@ test('spending budget uses the same compact three-step pattern as Contribution',
   assert.doesNotMatch(budgetModal, /Asset scope|Limit &amp; alert|Budget coverage|Choose budget scope/);
 });
 
-test('coverage uses a searchable multi-asset picker with select all', () => {
+test('coverage uses the Fuel Ledger saved-asset picker design with multi-select', () => {
   assert.match(budgetModal, /<strong>Choose assets<\/strong>/);
-  assert.match(budgetModal, /<h2 id="budget-scope-picker-title">Choose assets<\/h2>/);
+  assert.match(fuelClient, /<h2>[\s\S]*?: 'Choose Saved Assets'/);
+  assert.match(budgetModal, /<h2 id="budget-scope-picker-title">Choose Saved Assets<\/h2>/);
+  assert.match(budgetModal, /styles\.pickerToolbar/);
+  assert.match(budgetModal, /styles\.budgetAssetPickerToolbar/);
   assert.match(budgetModal, /filteredBudgetAssets/);
   assert.match(budgetModal, /budgetPickerAssetIds\.includes\(asset\.id\)/);
   assert.match(budgetModal, /toggleBudgetPickerAsset\(asset\.id\)/);
-  assert.match(budgetModal, /Select all shown/);
+  assert.match(budgetModal, /`Select all shown \(\$\{selectableFilteredBudgetAssets\.length\}\)`/);
   assert.match(budgetModal, /toggleAllFilteredBudgetAssets/);
+  assert.match(budgetModal, /styles\.budgetSelectAllButton/);
+  assert.match(budgetModal, /styles\.budgetAssetChoiceSelected/);
+  assert.match(budgetModal, /data-asset-choice-selected=\{isSelected \? 'true' : undefined\}/);
   assert.match(budgetModal, /confirmBudgetAssetPicker/);
+  assert.match(styles, /\.budgetAssetPickerToolbar\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\) auto auto;/);
+  assert.match(styles, /\.budgetAssetChoice\s*\{[^}]*justify-content:\s*flex-end;/);
+  assert.match(styles, /\.budgetAssetPickerFooter\s*\{[^}]*margin:\s*0 clamp\(1\.25rem, 2\.4vw, 2rem\);/);
+  assert.match(fuelStyles, /\.fuelSlipFlowBackdrop \.exclusionPickerToolbar\s*\{\s*grid-template-columns:\s*minmax\(0, 1fr\) auto auto;/);
   assert.doesNotMatch(budgetModal, /role="radiogroup" aria-label="Budget scope"/);
   assert.doesNotMatch(budgetModal, /<strong>All assets<\/strong>|<strong>One asset<\/strong>/);
+  assert.doesNotMatch(budgetModal, /budgetAssetSearchField|<SearchIcon aria-hidden="true" \/>/);
   assert.doesNotMatch(budgetModal, /<select\b/);
+});
+
+test('coverage reset controls have clean label spacing without a fieldset border collision', () => {
+  assert.match(budgetModal, /<span className=\{styles\.budgetPeriodLabel\}>When should it reset\?<\/span>/);
+  assert.match(budgetModal, /role="group" aria-label="Budget reset period"/);
+  assert.doesNotMatch(budgetModal, /<fieldset className=\{\[styles\.budgetPeriodField, styles\.budgetWizardPeriodField/);
+  assert.match(styles, /\.budgetWizardPeriodField\s*\{[^}]*gap:\s*0\.5rem;[^}]*border:\s*0;[^}]*background:\s*transparent;/);
+  assert.match(styles, /\.budgetPeriodLabel\s*\{[^}]*display:\s*block;[^}]*line-height:\s*1\.25;/);
 });
 
 test('limit validation happens before review and the review preserves every choice', () => {
