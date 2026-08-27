@@ -15,6 +15,7 @@ const ownerNotificationsClient = read('app/owner-app/notifications/owner-notific
 const appHeader = read('components/AppHeader.tsx');
 const costClient = read('app/my-invoices/my-invoices-client.tsx');
 const costStyles = read('app/my-invoices/page.module.css');
+const assetRegisterClient = read('app/asset-register/asset-register-client.tsx');
 const assetRegisterStyles = read('app/asset-register/page.module.css');
 const accountDeletion = read('lib/account-deletion.ts');
 
@@ -72,6 +73,11 @@ test('threshold alerts are stable, revision-aware and permission scoped', () => 
     /cost-budget:\$\{alert\.budgetId\}:r\$\{alert\.budgetRevision\}:\$\{alert\.periodKey\}:\$\{alert\.alertKind\}/,
   );
   assert.match(notifications, /alert\.alertKind === 'over_budget'/);
+  const budgetNotificationBuilder = notifications.slice(
+    notifications.indexOf('async function listOwnerCostBudgetNotifications'),
+    notifications.indexOf('function correctionActor'),
+  );
+  assert.match(budgetNotificationBuilder, /priority: true/);
   assert.match(inbox, /includeCostBudgetNotifications/);
   assert.match(inbox, /category <> 'cost_budget'/);
   const actionRequired = inbox.slice(
@@ -89,9 +95,9 @@ test('threshold alerts are stable, revision-aware and permission scoped', () => 
 
 test('Cost Ledger exposes total-spend controls only to the direct owner experience', () => {
   assert.match(costClient, /const canManageBudgets = !dealerMode && !accountantShareId && !accountantRegisterId/);
-  assert.match(costClient, /Total spend budgets/);
-  assert.match(costClient, /Budget amount \(incl\. VAT\)/);
-  assert.match(costClient, /Include Fuel Slip costs/);
+  assert.match(costClient, /Spending budgets/);
+  assert.match(costClient, /Budget amount/);
+  assert.match(costClient, /Count fuel slip costs/);
   assert.match(costClient, /warningPercent/);
   assert.match(costClient, /budgetId/);
   assert.match(costClient, /focusedBudgetId/);
@@ -116,7 +122,7 @@ test('owner Cost Ledger presents the four primary actions in the intended order'
   const actionGrid = costClient.slice(actionGridStart, toolbarStart);
 
   assert.ok(actionGridStart >= 0 && toolbarStart > actionGridStart, 'owner action grid should precede the search toolbar');
-  assert.match(costClient, /<h1>COST LEDGER<\/h1>/);
+  assert.match(costClient, /<h1>COST TRACKING SYSTEM<\/h1>/);
   assert.match(costClient, /\{!dealerMode \? \(\s*<section[\s\S]*?styles\.costActionGrid/);
   assert.match(actionGrid, /aria-label="Cost Ledger actions"/);
 
@@ -174,7 +180,7 @@ test('Cost Ledger title and actions match the Asset Register sizing contract', (
   );
   assert.match(
     assetRegisterStyles,
-    /\/\* === Filter dropdown sizing refinement === \*\/[\s\S]*?\.registerHeader \.headerActions \.filterTriggerButton\s*\{[^}]*min-height:\s*clamp\(3\.62rem,\s*4\.45vw,\s*4\.08rem\)\s*!important;/,
+    /\.registerHeader \.headerActions \.filterTriggerButton\s*\{[^}]*min-height:\s*clamp\(3\.45rem,\s*4\.2vw,\s*3\.9rem\)\s*!important;/,
   );
 
   assert.match(
@@ -240,7 +246,7 @@ test('budget overview opens in a focused manager dialog and deep links reveal it
   assert.ok(managerStart >= 0 && formStart > managerStart, 'budget manager should wrap the existing budget form');
   assert.match(manager, /aria-labelledby="budget-manager-title"/);
   assert.match(manager, /styles\.budgetManagerModal/);
-  assert.match(manager, /<h2 id="budget-manager-title">Total spend budgets<\/h2>/);
+  assert.match(manager, /<h2 id="budget-manager-title">Spending budgets<\/h2>/);
   assert.match(manager, /onClick=\{openCreateBudget\}/);
   assert.match(manager, /costBudgets\.map\(\(budget\) =>/);
   assert.match(manager, /onClick=\{\(\) => openEditBudget\(budget\)\}/);
@@ -276,18 +282,43 @@ test('budget overview opens in a focused manager dialog and deep links reveal it
   }
 });
 
-test('budget setup uses the shared searchable asset-picker experience instead of a native select', () => {
+test('budget setup uses a compact three-step wizard and shared searchable asset picker', () => {
   const modalStart = costClient.indexOf('{budgetModalOpen ?');
   const modalEnd = costClient.indexOf('{budgetDeleteCandidate ?', modalStart);
   const budgetModal = costClient.slice(modalStart, modalEnd);
 
   assert.ok(modalStart >= 0 && modalEnd > modalStart, 'budget modal source should be present');
-  assert.match(budgetModal, /Choose budget scope/);
+  assert.match(budgetModal, /\[\['Coverage', 1\], \['Limit', 2\], \['Review', 3\]\]/);
+  assert.match(budgetModal, /budgetWizardStep === 1/);
+  assert.match(budgetModal, /budgetWizardStep === 2/);
+  assert.match(budgetModal, /budgetWizardStep === 3/);
+  assert.match(budgetModal, /Choose an asset/);
   assert.match(budgetModal, /Search saved assets/);
   assert.match(budgetModal, /budgetAssetPickerOpen/);
-  assert.match(budgetModal, /budgetScopeTrigger/);
+  assert.match(budgetModal, /budgetScopeTriggerRef/);
   assert.match(budgetModal, /filteredBudgetAssets/);
   assert.doesNotMatch(budgetModal, /<select\b/);
-  assert.match(costStyles, /\.budgetSetupGrid\b/);
+  assert.doesNotMatch(budgetModal, /Asset scope|Limit &amp; alert|Cost control/);
+  assert.match(costStyles, /\.budgetWizardModal\b/);
+  assert.match(costStyles, /\.budgetReviewGrid\b/);
   assert.match(costStyles, /\.budgetScopeRowSelected\b/);
+});
+
+test('warning-level budget cards and notifications use the red priority treatment', () => {
+  assert.match(costClient, /data-budget-status=\{budget\.status\}/);
+  assert.match(costClient, /budget\.status === 'warning'[\s\S]*?'budgetCardWarning'/);
+  assert.match(costStyles, /\.budgetCardWarning\s*\{[^}]*--budget-accent:\s*#b42318;[^}]*--budget-accent-soft:\s*#fff0ef;/);
+  assert.match(costStyles, /\.budgetCardWarning\.budgetCardFocused/);
+  assert.match(assetRegisterClient, /fetch\('\/api\/my-invoices\/budgets'/);
+  assert.match(assetRegisterClient, /styles\.assetCardBudgetWarning/);
+  assert.match(assetRegisterClient, /data-cost-budget-status=\{costBudgetStatus \|\| undefined\}/);
+  assert.match(assetRegisterStyles, /\.page \.assetCardBudgetWarning\s*\{[^}]*#b42318/);
+  assert.match(assetRegisterStyles, /\.badgeBudgetWarning\s*\{/);
+
+  const budgetNotificationBuilder = notifications.slice(
+    notifications.indexOf('async function listOwnerCostBudgetNotifications'),
+    notifications.indexOf('function correctionActor'),
+  );
+  assert.match(budgetNotificationBuilder, /tone: 'warning'/);
+  assert.match(budgetNotificationBuilder, /priority: true/);
 });
