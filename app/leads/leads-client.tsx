@@ -1,7 +1,7 @@
 'use client';
 
 import DropdownOverlay from '../../components/DropdownOverlay';
-import { useCallback, useEffect, useMemo, useState, type ChangeEvent, type DragEvent } from 'react';
+import { Fragment, useCallback, useEffect, useMemo, useState, type ChangeEvent, type DragEvent } from 'react';
 import { createPortal } from 'react-dom';
 import dynamic from 'next/dynamic';
 import AppHeader from '../../components/AppHeader';
@@ -155,6 +155,14 @@ type PhotoModalState = {
   urls: string[];
   index: number;
   title: string;
+};
+
+type AssetGroupShareInfo = {
+  batchId: string;
+  groupId: string;
+  name: string;
+  assetCount: number;
+  childIndex: number | null;
 };
 
 type LeadAssetMedia = {
@@ -871,22 +879,104 @@ function registerLeadSnapshot(lead: AssetLead): Record<string, unknown> | null {
   return asRecord(lead.includedSections.registerSnapshot) ?? asRecord(lead.assetSnapshot.registerSnapshot);
 }
 
-function isAssetGroupLead(lead: AssetLead): boolean {
+function assetGroupShareInfo(lead: AssetLead): AssetGroupShareInfo | null {
+  const explicitShare = asRecord(lead.includedSections.assetGroupShare);
   const snapshot = registerLeadSnapshot(lead);
-  return (
-    asText(lead.includedSections.source) === 'asset_group'
-    || asText(snapshot?.snapshotType) === 'asset_group'
-    || Boolean(asText(snapshot?.groupId))
+  const source = asText(lead.includedSections.source).toLowerCase();
+  const isAssetGroup = Boolean(
+    explicitShare
+    || source === 'asset_group'
+    || source === 'asset_group_child'
+    || asText(snapshot?.snapshotType).toLowerCase() === 'asset_group'
+    || asText(snapshot?.groupId),
   );
+
+  if (!isAssetGroup) return null;
+
+  const groupId = asText(explicitShare?.groupId) || asText(snapshot?.groupId);
+  const sharedAt = asText(snapshot?.generatedAtIso) || lead.createdAtIso.slice(0, 16);
+  const fallbackBatchId = [
+    lead.ownerUserId,
+    lead.partnerUserId,
+    lead.leadType,
+    groupId || asText(snapshot?.title) || 'asset-group',
+    sharedAt,
+  ].join(':');
+  const assetCount = Math.max(
+    1,
+    Math.round(
+      asNumber(explicitShare?.assetCount)
+      ?? asNumber(snapshot?.assetCount ?? snapshot?.totalAssets)
+      ?? registerLeadAssets(lead).length,
+    ),
+  );
+  const childIndex = asNumber(explicitShare?.childIndex);
+
+  return {
+    batchId: asText(explicitShare?.batchId) || fallbackBatchId,
+    groupId,
+    name: asText(explicitShare?.name) || asText(snapshot?.groupName) || asText(snapshot?.title) || 'Asset umbrella',
+    assetCount,
+    childIndex: childIndex === null ? null : Math.max(1, Math.round(childIndex)),
+  };
+}
+
+function isAssetGroupLead(lead: AssetLead): boolean {
+  return Boolean(assetGroupShareInfo(lead));
 }
 
 function isFullRegisterLead(lead: AssetLead): boolean {
+  if (isAssetGroupLead(lead)) return false;
+
   return (
     asBoolean(lead.includedSections.registerLead) ||
     asText(lead.includedSections.source) === 'full_asset_register' ||
     asText(lead.assetSnapshot.snapshotType) === 'full_asset_register' ||
     Boolean(registerLeadSnapshot(lead))
   );
+}
+
+function leadNotificationKey(lead: AssetLead): string {
+  return assetGroupShareInfo(lead)?.batchId || lead.id;
+}
+
+function orderAssetGroupLeadChildren(leads: AssetLead[]): AssetLead[] {
+  const grouped = new Map<string, AssetLead[]>();
+
+  leads.forEach((lead) => {
+    const group = assetGroupShareInfo(lead);
+    if (!group) return;
+    const current = grouped.get(group.batchId) ?? [];
+    current.push(lead);
+    grouped.set(group.batchId, current);
+  });
+
+  grouped.forEach((children) => {
+    children.sort((left, right) => {
+      const leftIndex = assetGroupShareInfo(left)?.childIndex;
+      const rightIndex = assetGroupShareInfo(right)?.childIndex;
+      if (leftIndex !== null && leftIndex !== undefined && rightIndex !== null && rightIndex !== undefined) {
+        return leftIndex - rightIndex;
+      }
+      return left.createdAtIso.localeCompare(right.createdAtIso);
+    });
+  });
+
+  const emittedGroups = new Set<string>();
+  const ordered: AssetLead[] = [];
+
+  leads.forEach((lead) => {
+    const group = assetGroupShareInfo(lead);
+    if (!group) {
+      ordered.push(lead);
+      return;
+    }
+    if (emittedGroups.has(group.batchId)) return;
+    emittedGroups.add(group.batchId);
+    ordered.push(...(grouped.get(group.batchId) ?? [lead]));
+  });
+
+  return ordered;
 }
 
 function registerLeadAssets(lead: AssetLead): Record<string, unknown>[] {
@@ -1796,28 +1886,50 @@ export default function LeadsClient({
   const filteredLeads = useMemo(() => {
     const query = searchTerm.trim().toLowerCase();
 
-    return periodLeads.filter((lead) => {
+    return orderAssetGroupLeadChildren(periodLeads.filter((lead) => {
       if (statusFilter === 'new' && !isNewLead(lead)) return false;
       if (statusFilter === 'open' && (isNewLead(lead) || isCompletedLead(lead))) return false;
       if (statusFilter === 'completed' && !isCompletedLead(lead)) return false;
       if (statusFilter === 'tracking' && !isTrackingLead(lead)) return false;
 
       return leadMatchesSearch(lead, query);
-    });
+    }));
   }, [periodLeads, searchTerm, statusFilter]);
 
   const summaryLeads = useMemo(() => {
     const query = searchTerm.trim().toLowerCase();
     return query ? periodLeads.filter((lead) => leadMatchesSearch(lead, query)) : periodLeads;
   }, [periodLeads, searchTerm]);
-  const newLeadCount = useMemo(() => summaryLeads.filter((lead) => isNewLead(lead)).length, [summaryLeads]);
+  const summaryLeadGroups = useMemo(() => {
+    const groups = new Map<string, AssetLead[]>();
+    summaryLeads.forEach((lead) => {
+      const key = leadNotificationKey(lead);
+      groups.set(key, [...(groups.get(key) ?? []), lead]);
+    });
+    return Array.from(groups.values());
+  }, [summaryLeads]);
+  const newLeadCount = useMemo(
+    () => summaryLeadGroups.filter((group) => group.some((lead) => isNewLead(lead))).length,
+    [summaryLeadGroups],
+  );
   const activeLeadCount = useMemo(
-    () => summaryLeads.filter((lead) => !isNewLead(lead) && !isCompletedLead(lead)).length,
-    [summaryLeads],
+    () => summaryLeadGroups.filter((group) => (
+      !group.some((lead) => isNewLead(lead))
+      && group.some((lead) => !isCompletedLead(lead))
+    )).length,
+    [summaryLeadGroups],
   );
   const completedLeadCount = useMemo(
-    () => summaryLeads.filter((lead) => isCompletedLead(lead)).length,
-    [summaryLeads],
+    () => summaryLeadGroups.filter((group) => group.every((lead) => isCompletedLead(lead))).length,
+    [summaryLeadGroups],
+  );
+  const filteredRequestCount = useMemo(
+    () => new Set(filteredLeads.map((lead) => leadNotificationKey(lead))).size,
+    [filteredLeads],
+  );
+  const periodRequestCount = useMemo(
+    () => new Set(periodLeads.map((lead) => leadNotificationKey(lead))).size,
+    [periodLeads],
   );
   const totalLeadPages = Math.max(1, Math.ceil(filteredLeads.length / LEADS_PER_PAGE));
   const visibleLeadPage = Math.min(Math.max(currentPage, 1), totalLeadPages);
@@ -3680,8 +3792,8 @@ export default function LeadsClient({
           {!isLoading ? (
             <div className={`${styles.leadResultSummary} ${useDealerWorkspaceStyles ? styles.leadResultSummaryDealer : ''}`}>
               <span>Showing</span>
-              <strong>{filteredLeads.length}</strong>
-              <span>of {periodLeads.length} leads for the selected period</span>
+              <strong>{filteredRequestCount}</strong>
+              <span>of {periodRequestCount} requests for the selected period</span>
             </div>
           ) : null}
 
@@ -3692,16 +3804,36 @@ export default function LeadsClient({
 
           {!isLoading && filteredLeads.length ? (
             <div className={styles.leadStack}>
-              {paginatedLeads.map((lead) => {
+              {paginatedLeads.map((lead, leadIndex) => {
                 const isLeadOpen = openLeadId === lead.id;
                 const isLeadNew = isNewLead(lead);
                 const isLeadDone = isCompletedLead(lead);
                 const isLeadActive = !isLeadNew && !isLeadDone;
                 const isTrackingRequest = isTrackingLead(lead);
                 const isMarkingThisLeadDone = markingLeadDoneId === lead.id;
+                const assetGroupShare = assetGroupShareInfo(lead);
+                const previousAssetGroupShare = leadIndex > 0
+                  ? assetGroupShareInfo(paginatedLeads[leadIndex - 1])
+                  : null;
+                const showAssetGroupHeader = Boolean(
+                  assetGroupShare
+                  && assetGroupShare.batchId !== previousAssetGroupShare?.batchId,
+                );
 
                 return (
-                  <article key={lead.id} className={`${useDealerWorkspaceStyles ? workspaceStyles.card : ''} ${styles.leadThread} ${licensingWorkspaceMode ? styles.licensingLeadThread : ''} ${isLeadNew ? styles.leadThreadNew : ''} ${isLeadActive ? styles.leadThreadActive : ''} ${isLeadDone ? styles.leadThreadDone : ''} ${isTrackingRequest ? styles.leadThreadTracking : ''} ${isLeadOpen ? styles.leadThreadOpen : ''} ${openLeadId && !isLeadOpen ? styles.leadThreadMuted : ''}`}>
+                  <Fragment key={lead.id}>
+                    {showAssetGroupHeader && assetGroupShare ? (
+                      <section className={styles.umbrellaLeadBatchHeader} aria-label={`${assetGroupShare.name} shared umbrella`}>
+                        <div>
+                          <span>Shared umbrella</span>
+                          <h2>{assetGroupShare.name}</h2>
+                          <p>Each asset opens independently with its own photos, information and actions.</p>
+                        </div>
+                        <strong>{assetGroupShare.assetCount} {assetGroupShare.assetCount === 1 ? 'asset' : 'assets'}</strong>
+                      </section>
+                    ) : null}
+
+                    <article className={`${useDealerWorkspaceStyles ? workspaceStyles.card : ''} ${styles.leadThread} ${assetGroupShare ? styles.umbrellaLeadChildThread : ''} ${licensingWorkspaceMode ? styles.licensingLeadThread : ''} ${isLeadNew ? styles.leadThreadNew : ''} ${isLeadActive ? styles.leadThreadActive : ''} ${isLeadDone ? styles.leadThreadDone : ''} ${isTrackingRequest ? styles.leadThreadTracking : ''} ${isLeadOpen ? styles.leadThreadOpen : ''} ${openLeadId && !isLeadOpen ? styles.leadThreadMuted : ''}`}>
                     <div className={styles.clientPanel}>
                       <div className={`${styles.clientPanelHeader} ${licensingWorkspaceMode ? styles.licensingLeadHeader : ''}`}>
                         <div className={`${styles.clientIdentity} ${licensingWorkspaceMode ? styles.licensingLeadIdentity : ''} ${isTrackingRequest ? styles.trackingLeadIdentity : ''}`}>
@@ -3911,7 +4043,8 @@ export default function LeadsClient({
                         {renderLeadDetails(lead)}
                       </div>
                     ) : null}
-                  </article>
+                    </article>
+                  </Fragment>
                 );
               })}
             </div>

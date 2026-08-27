@@ -6,7 +6,7 @@ import { getAccountProfile } from '../../lib/account-profile';
 import { dealerRoleCan, type DealerAppCapability } from '../../lib/dealer-app-access';
 import { listDealerMaintenanceNotificationsForViewer } from '../../lib/dealer-maintenance-notification-inbox';
 import { listDealerTrackedAssets } from '../../lib/dealer-maintenance-tracker';
-import { listAssetLeadsForUser } from '../../lib/partner-access';
+import { listAssetLeadsForUser, type AssetLead } from '../../lib/partner-access';
 import { isMiddlemanAccountSubtype } from '../../lib/middleman-account';
 import styles from './dealer.module.css';
 
@@ -34,6 +34,32 @@ function ToolCard({ tool }: { tool: DealerHomeTool }) {
       {tool.count ? <span className={styles.homeLaunchBadge}>{tool.count > 99 ? '99+' : tool.count}</span> : null}
     </Link>
   );
+}
+
+function leadNotificationKey(lead: AssetLead): string {
+  const sections = lead.includedSections ?? {};
+  const explicitShare = sections.assetGroupShare && typeof sections.assetGroupShare === 'object' && !Array.isArray(sections.assetGroupShare)
+    ? sections.assetGroupShare as Record<string, unknown>
+    : null;
+  const registerSnapshot = sections.registerSnapshot && typeof sections.registerSnapshot === 'object' && !Array.isArray(sections.registerSnapshot)
+    ? sections.registerSnapshot as Record<string, unknown>
+    : null;
+  const source = String(sections.source ?? '').trim().toLowerCase();
+  const isAssetGroup = Boolean(
+    explicitShare
+    || source === 'asset_group'
+    || source === 'asset_group_child'
+    || String(registerSnapshot?.snapshotType ?? '').trim().toLowerCase() === 'asset_group',
+  );
+  if (!isAssetGroup) return lead.id;
+
+  return String(explicitShare?.batchId ?? '').trim() || [
+    lead.ownerUserId,
+    lead.partnerUserId,
+    lead.leadType,
+    String(explicitShare?.groupId ?? registerSnapshot?.groupId ?? registerSnapshot?.title ?? 'asset-group'),
+    String(registerSnapshot?.generatedAtIso ?? lead.createdAtIso.slice(0, 16)),
+  ].join(':');
 }
 
 export default async function DealerHome() {
@@ -67,9 +93,11 @@ export default async function DealerHome() {
   ]);
 
   const unreadMaintenanceCount = maintenanceNotifications.filter((notification) => !notification.isRead).length;
-  const newLeadCount = leads.filter(
-    (lead) => lead.partnerUserId === session.user.id && lead.status === 'sent' && !lead.viewedAtIso,
-  ).length;
+  const newLeadCount = new Set(
+    leads
+      .filter((lead) => lead.partnerUserId === session.user.id && lead.status === 'sent' && !lead.viewedAtIso)
+      .map(leadNotificationKey),
+  ).size;
   const attentionCount = trackedAssets.filter((asset) => ATTENTION_STATUSES.has(asset.status)).length;
   const openProblemCount = trackedAssets.reduce(
     (total, asset) => total + asset.loggedProblems.filter((problem) => !problem.notedAtIso).length,

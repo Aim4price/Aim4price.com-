@@ -1674,17 +1674,52 @@ export async function getAssetLeadSummaryCountsForPartner(
     total_count: number | string;
   }>(
     `
+      with lead_rows as (
+        select
+          coalesce(
+            nullif(included_sections_json #>> '{assetGroupShare,batchId}', ''),
+            case
+              when lower(coalesce(included_sections_json ->> 'source', '')) in ('asset_group', 'asset_group_child')
+                or lower(coalesce(included_sections_json #>> '{registerSnapshot,snapshotType}', '')) = 'asset_group'
+              then concat_ws(
+                ':',
+                'legacy-asset-group',
+                owner_user_id,
+                partner_user_id,
+                lead_type,
+                coalesce(
+                  nullif(included_sections_json #>> '{registerSnapshot,groupId}', ''),
+                  nullif(included_sections_json #>> '{registerSnapshot,title}', ''),
+                  'asset-group'
+                ),
+                coalesce(
+                  nullif(included_sections_json #>> '{registerSnapshot,generatedAtIso}', ''),
+                  to_char(created_at, 'YYYY-MM-DD"T"HH24:MI')
+                )
+              )
+              else id::text
+            end
+          ) as notification_key,
+          status = 'sent' and viewed_at is null as is_new,
+          status in ('quoted', 'closed') as is_completed
+        from public.asset_leads
+        where partner_user_id = $1
+          ${leadTypeSql}
+      ), lead_groups as (
+        select
+          notification_key,
+          bool_or(is_new) as has_new,
+          bool_or(not is_new and not is_completed) as has_in_progress,
+          bool_and(is_completed) as is_completed
+        from lead_rows
+        group by notification_key
+      )
       select
-        count(*) filter (where status = 'sent' and viewed_at is null)::int as new_count,
-        count(*) filter (
-          where not (status = 'sent' and viewed_at is null)
-            and status not in ('quoted', 'closed')
-        )::int as in_progress_count,
-        count(*) filter (where status in ('quoted', 'closed'))::int as completed_count,
+        count(*) filter (where has_new)::int as new_count,
+        count(*) filter (where not has_new and has_in_progress)::int as in_progress_count,
+        count(*) filter (where is_completed)::int as completed_count,
         count(*)::int as total_count
-      from public.asset_leads
-      where partner_user_id = $1
-        ${leadTypeSql}
+      from lead_groups
     `,
     params,
   );

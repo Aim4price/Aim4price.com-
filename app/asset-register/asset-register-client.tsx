@@ -11808,9 +11808,11 @@ export default function AssetRegisterClient({
             trackingPermissions: selectedQuoteOption.leadType === 'replacement_quote' && quoteTrackMaintenance
               ? quoteTrackingPermissions
               : undefined,
-            assetIds: partner.isAim4priceManaged
-              ? managedAssetIds.length > 1 ? managedAssetIds : undefined
-              : isSelectedRegisterAssetShare ? selectedDealerShareAssetIds : undefined,
+            assetIds: isAssetGroupShare
+              ? managedAssetIds
+              : partner.isAim4priceManaged
+                ? managedAssetIds.length > 1 ? managedAssetIds : undefined
+                : isSelectedRegisterAssetShare ? selectedDealerShareAssetIds : undefined,
             assistanceLocationId: partner.assistanceLocationId,
             assetGroupId: assetGroupShareTarget?.id,
             assetGroupName: assetGroupShareTarget?.name,
