@@ -248,8 +248,13 @@ test('budget overview opens in a focused manager dialog and deep links reveal it
   assert.match(manager, /styles\.budgetManagerModal/);
   assert.match(manager, /<h2 id="budget-manager-title">Spending budgets<\/h2>/);
   assert.match(manager, /onClick=\{openCreateBudget\}/);
-  assert.match(manager, /costBudgets\.map\(\(budget\) =>/);
+  assert.match(manager, /filteredCostBudgets\.map\(\(budget\) =>/);
   assert.match(manager, /onClick=\{\(\) => openEditBudget\(budget\)\}/);
+  assert.match(manager, /type="search"/);
+  assert.match(manager, /placeholder="Search budgets\.\.\."/);
+  assert.match(manager, /onClick=\{\(\) => askToDeleteBudget\(budget\)\}/);
+  assert.match(manager, /<TrashIcon \/>/);
+  assert.doesNotMatch(manager, /budgetPeriodBadge|budgetStatusPill/);
   assert.match(manager, /onClick=\{closeBudgetManager\}>Done<\/button>/);
   assert.match(manager, /ref=\{budgetManagerDialogRef\}/);
   assert.match(manager, /tabIndex=\{-1\}/);
@@ -292,8 +297,11 @@ test('budget setup uses a compact three-step wizard and shared searchable asset 
   assert.match(budgetModal, /budgetWizardStep === 1/);
   assert.match(budgetModal, /budgetWizardStep === 2/);
   assert.match(budgetModal, /budgetWizardStep === 3/);
-  assert.match(budgetModal, /Choose an asset/);
+  assert.match(budgetModal, /Choose assets/);
   assert.match(budgetModal, /Search saved assets/);
+  assert.match(budgetModal, /Select all shown/);
+  assert.match(budgetModal, /toggleAllFilteredBudgetAssets/);
+  assert.match(budgetModal, /budgetPickerAssetIds/);
   assert.match(budgetModal, /budgetAssetPickerOpen/);
   assert.match(budgetModal, /budgetScopeTriggerRef/);
   assert.match(budgetModal, /filteredBudgetAssets/);
@@ -302,6 +310,7 @@ test('budget setup uses a compact three-step wizard and shared searchable asset 
   assert.match(costStyles, /\.budgetWizardModal\b/);
   assert.match(costStyles, /\.budgetReviewGrid\b/);
   assert.match(costStyles, /\.budgetScopeRowSelected\b/);
+  assert.match(costStyles, /\.budgetAssetCheck\b/);
 });
 
 test('warning-level budget cards and notifications use the red priority treatment', () => {
