@@ -3625,7 +3625,7 @@ export default function MyInvoicesClient({
 
       {budgetModalOpen ? (
         <div
-          className={styles.modalBackdrop}
+          className={`${styles.modalBackdrop} ${budgetAssetPickerOpen ? styles.budgetAssetPickerBackdrop : ''}`}
           role="dialog"
           aria-modal="true"
           aria-labelledby={budgetAssetPickerOpen ? 'budget-scope-picker-title' : 'budget-modal-title'}
@@ -3634,7 +3634,7 @@ export default function MyInvoicesClient({
             <div className={[styles.assetModal, styles.budgetAssetPickerModal].join(' ')} data-asset-choice-surface="true" data-asset-choice-modal="true">
               <div className={styles.modalHeader} data-asset-choice-header="true">
                 <div>
-                  <h2 id="budget-scope-picker-title">Choose assets</h2>
+                  <h2 id="budget-scope-picker-title">Choose Saved Assets</h2>
                   <p>{editingBudgetId ? 'Choose the asset for this budget.' : 'Select one or more saved assets.'}</p>
                 </div>
                 <button type="button" className={styles.closeButton} onClick={closeBudgetAssetPicker} aria-label="Back to budget">
@@ -3642,34 +3642,36 @@ export default function MyInvoicesClient({
                 </button>
               </div>
               <div className={styles.modalDivider} />
-              <div className={styles.budgetAssetPickerToolbar} data-asset-choice-toolbar="true">
-                <label className={styles.budgetAssetSearchField}>
-                  <SearchIcon aria-hidden="true" />
-                  <input
-                    type="search"
-                    value={budgetAssetSearch}
-                    onChange={(event) => setBudgetAssetSearch(event.target.value)}
-                    placeholder="Search saved assets..."
-                    aria-label="Search saved assets"
-                    autoComplete="off"
-                    autoFocus
-                  />
-                </label>
-                <div className={styles.budgetAssetPickerTools}>
-                  {!editingBudgetId ? (
-                    <button
-                      type="button"
-                      className={styles.secondaryButton}
-                      onClick={toggleAllFilteredBudgetAssets}
-                      disabled={!selectableFilteredBudgetAssets.length}
-                    >
-                      {allFilteredBudgetAssetsSelected ? 'Clear shown' : 'Select all shown'}
-                    </button>
-                  ) : null}
-                  <button type="button" className={styles.secondaryButton} onClick={() => setBudgetAssetSearch('')} disabled={!budgetAssetSearch}>
-                    Clear search
+              <div
+                className={`${styles.pickerToolbar} ${!editingBudgetId ? styles.budgetAssetPickerToolbar : ''}`}
+                data-asset-choice-toolbar="true"
+              >
+                <input
+                  type="search"
+                  value={budgetAssetSearch}
+                  onChange={(event) => setBudgetAssetSearch(event.target.value)}
+                  placeholder="Search saved assets..."
+                  aria-label="Search saved assets"
+                  autoComplete="off"
+                  autoFocus
+                />
+                {!editingBudgetId ? (
+                  <button
+                    type="button"
+                    className={`${styles.secondaryButton} ${styles.budgetSelectAllButton}`}
+                    onClick={toggleAllFilteredBudgetAssets}
+                    disabled={!selectableFilteredBudgetAssets.length}
+                    aria-pressed={allFilteredBudgetAssetsSelected}
+                    aria-label={allFilteredBudgetAssetsSelected ? 'Unselect all shown assets' : 'Select all shown assets'}
+                  >
+                    {allFilteredBudgetAssetsSelected
+                      ? `Unselect shown (${selectableFilteredBudgetAssets.length})`
+                      : `Select all shown (${selectableFilteredBudgetAssets.length})`}
                   </button>
-                </div>
+                ) : null}
+                <button type="button" className={styles.secondaryButton} onClick={() => setBudgetAssetSearch('')} disabled={!budgetAssetSearch}>
+                  Clear search
+                </button>
               </div>
               <div className={[styles.assetList, styles.budgetAssetList].join(' ')} data-asset-choice-list="true">
                 {filteredBudgetAssets.length ? filteredBudgetAssets.map((asset) => {
@@ -3682,7 +3684,6 @@ export default function MyInvoicesClient({
                       className={[
                         styles.assetRow,
                         styles.budgetScopeRow,
-                        isSelected ? styles.budgetScopeRowSelected : '',
                         isUnavailable && !isSelected ? styles.budgetScopeRowUnavailable : '',
                       ].join(' ')}
                       data-asset-choice-row="true"
@@ -3690,17 +3691,18 @@ export default function MyInvoicesClient({
                       onClick={() => toggleBudgetPickerAsset(asset.id)}
                       aria-pressed={isSelected}
                       disabled={isUnavailable && !isSelected}
+                      data-asset-choice-selected={isSelected ? 'true' : undefined}
                     >
-                      <span className={styles.budgetAssetCheck} aria-hidden="true">{isSelected ? '✓' : ''}</span>
                       <span className={styles.assetInfo} data-asset-choice-copy="true">
-                        {asset.ownerName ? <small data-asset-choice-meta="true">{asset.ownerName}</small> : null}
                         <strong>{asset.title}</strong>
                         <small data-asset-choice-meta="true">{asset.meta}</small>
                         <small data-asset-choice-secondary="true">{asset.categoryLabel} · {asset.selectedMethod === 'manual' ? 'Manual' : 'Aim4price'}</small>
                       </span>
                       <span className={styles.assetValue} data-asset-choice-value="true">
-                        <strong>{formatMoney(asset.value)}</strong>
-                        <small>{isUnavailable ? `${budgetDraft.period === 'monthly' ? 'Monthly' : 'Annual'} budget exists` : isSelected ? 'Selected' : 'Current value'}</small>
+                        <span className={`${styles.budgetAssetChoice} ${isSelected ? styles.budgetAssetChoiceSelected : ''}`}>
+                          <span className={styles.budgetAssetCheck} aria-hidden="true">{isSelected ? '✓' : ''}</span>
+                          <strong>{isUnavailable ? 'Budget exists' : isSelected ? 'Selected' : 'Select'}</strong>
+                        </span>
                       </span>
                     </button>
                   );
@@ -3710,12 +3712,22 @@ export default function MyInvoicesClient({
               </div>
               <div className={[styles.modalFooter, styles.budgetAssetPickerFooter].join(' ')} data-asset-choice-footer="true">
                 <span className={styles.budgetAssetSelectionCount} aria-live="polite">
-                  {budgetPickerAssetIds.length.toLocaleString('en-ZA')} {budgetPickerAssetIds.length === 1 ? 'asset' : 'assets'} selected
+                  {budgetPickerAssetIds.length
+                    ? `${budgetPickerAssetIds.length.toLocaleString('en-ZA')} ${budgetPickerAssetIds.length === 1 ? 'asset' : 'assets'} selected`
+                    : 'Select one or more assets'}
                 </span>
-                <div>
-                  <button type="button" className={styles.secondaryButton} onClick={closeBudgetAssetPicker}>Cancel</button>
-                  <button type="button" className={styles.primaryButton} onClick={confirmBudgetAssetPicker}>Done</button>
-                </div>
+                {budgetPickerAssetIds.length ? (
+                  <button type="button" className={styles.secondaryButton} onClick={() => setBudgetPickerAssetIds([])}>Clear selection</button>
+                ) : null}
+                <button type="button" className={styles.secondaryButton} onClick={closeBudgetAssetPicker}>Cancel</button>
+                <button
+                  type="button"
+                  className={styles.primaryButton}
+                  onClick={confirmBudgetAssetPicker}
+                  disabled={!budgetPickerAssetIds.length && budgetDraft.assetId !== 'all'}
+                >
+                  Done
+                </button>
               </div>
             </div>
           ) : (
@@ -3785,9 +3797,9 @@ export default function MyInvoicesClient({
                       <span className={styles.budgetScopeAction}>{selectedBudgetAssets.length ? 'Change' : 'Choose'} <ChevronRightIcon /></span>
                     </button>
 
-                    <fieldset className={[styles.budgetPeriodField, styles.budgetWizardPeriodField].join(' ')}>
-                      <legend>When should it reset?</legend>
-                      <div className={styles.budgetPeriodControl}>
+                    <div className={[styles.budgetPeriodField, styles.budgetWizardPeriodField].join(' ')}>
+                      <span className={styles.budgetPeriodLabel}>When should it reset?</span>
+                      <div className={styles.budgetPeriodControl} role="group" aria-label="Budget reset period">
                         {(['monthly', 'annual'] as const).map((period) => (
                           <button
                             type="button"
@@ -3804,7 +3816,7 @@ export default function MyInvoicesClient({
                           </button>
                         ))}
                       </div>
-                    </fieldset>
+                    </div>
                   </section>
                 ) : null}
 
