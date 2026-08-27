@@ -4404,121 +4404,117 @@
   background: #fff4f3;
 }
 
+.budgetAssetPickerBackdrop {
+  z-index: 190;
+}
+
 .budgetAssetPickerModal {
-  width: min(100%, 860px);
-  max-height: min(88vh, calc(100dvh - 1rem));
-  border-radius: 1.55rem;
+  width: min(100%, 1120px);
+  max-height: min(90vh, calc(100dvh - 2.5rem));
+  border-radius: clamp(1.45rem, 2.2vw, 2rem);
 }
 
 .budgetAssetPickerModal .modalHeader {
-  align-items: flex-start;
-  padding: 1.15rem 1.25rem 0;
+  align-items: center;
+  padding: clamp(1.25rem, 2.2vw, 1.75rem) clamp(1.25rem, 2.4vw, 2rem) 0;
+}
+
+.budgetAssetPickerModal .modalHeader > div {
+  min-width: 0;
+  display: grid;
+  gap: 0.38rem;
 }
 
 .budgetAssetPickerModal .modalHeader h2 {
   margin: 0;
-  font-size: clamp(1.7rem, 2.2vw, 2.1rem);
+  color: var(--brand-dark);
+  font-size: clamp(1.8rem, 3vw, 2.55rem);
   font-weight: 760;
-  letter-spacing: -0.035em;
+  line-height: 1.02;
+  letter-spacing: -0.052em;
   text-transform: none;
 }
 
 .budgetAssetPickerModal .modalHeader p {
-  margin: 0.28rem 0 0;
+  margin: 0;
   color: #607286;
-  font-size: 0.9rem;
-  font-weight: 620;
+  font-size: 1.04rem;
+  font-weight: 650;
+  line-height: 1.4;
 }
 
 .budgetAssetPickerModal .closeButton {
-  width: 2.8rem;
-  min-width: 2.8rem;
-  height: 2.8rem;
-  min-height: 2.8rem;
+  width: 3.6rem;
+  min-width: 3.6rem;
+  height: 3.6rem;
+  min-height: 3.6rem;
+  border-radius: 999px;
 }
 
 .budgetAssetPickerModal .modalDivider {
-  margin: 0.75rem 1.25rem;
+  margin: 1.15rem clamp(1.25rem, 2.4vw, 2rem);
 }
 
 .budgetAssetPickerToolbar {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 0.7rem;
-  padding: 0 1.25rem 0.8rem;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 0.8rem;
+  padding: 0 clamp(1.25rem, 2.4vw, 2rem) 1rem;
 }
 
-.budgetAssetSearchField {
-  min-width: 0;
-  min-height: 3.15rem;
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  align-items: center;
-  gap: 0.62rem;
-  padding: 0 0.85rem;
-  border: 1px solid var(--line-strong);
-  border-radius: 0.9rem;
-  background: #ffffff;
+.budgetSelectAllButton {
+  color: #0a543d;
+  border-color: #6fc596;
+  background: linear-gradient(180deg, #f7fdf9 0%, #e6f8ef 100%);
+  box-shadow: 0 10px 22px rgba(18, 89, 64, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.98);
 }
 
-.budgetAssetSearchField:focus-within {
-  border-color: rgba(25, 116, 84, 0.54);
-  box-shadow: 0 0 0 4px rgba(25, 116, 84, 0.08);
-}
-
-.budgetAssetSearchField svg {
-  width: 1.05rem;
-  height: 1.05rem;
-  color: #6a7e78;
-}
-
-.budgetAssetSearchField input {
-  width: 100%;
-  min-width: 0;
-  min-height: 3rem;
-  padding: 0;
-  border: 0;
-  outline: 0;
-  color: var(--brand-dark);
-  background: transparent;
-  font: inherit;
-  font-size: 0.9rem;
-  font-weight: 650;
-}
-
-.budgetAssetPickerTools,
-.budgetAssetPickerFooter > div {
-  display: flex;
-  align-items: center;
-  gap: 0.55rem;
+.budgetSelectAllButton:hover:not(:disabled),
+.budgetSelectAllButton[aria-pressed='true'] {
+  color: #073f30;
+  border-color: #43ad73;
+  background: linear-gradient(180deg, #f1fbf5 0%, #d9f1e5 100%);
+  box-shadow: 0 12px 24px rgba(18, 89, 64, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.98);
 }
 
 .budgetAssetList {
-  min-height: min(19rem, 40vh);
-  gap: 0.58rem;
-  margin: 0 1.25rem;
+  flex: 1 1 20rem;
+  min-height: 0;
+  gap: 0.75rem;
+  margin: 0 clamp(1.25rem, 2.4vw, 2rem);
+  padding: 0 0.6rem 0 0;
 }
 
 .budgetScopeRow {
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  gap: 0.8rem;
-  padding: 0.78rem 0.85rem;
-  border-radius: 0.9rem;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 1rem;
+  padding: 0.95rem 1rem;
+  border-radius: 1rem;
+  font: inherit;
   transition: border-color 160ms ease, background 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+
+.budgetScopeRow:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.budgetAssetPickerModal .assetInfo strong,
+.budgetAssetPickerModal .assetValue strong {
+  font-size: 1.04rem;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+
+.budgetAssetPickerModal .assetInfo small,
+.budgetAssetPickerModal .assetValue small {
+  font-size: 0.87rem;
+  font-weight: 800;
+  line-height: 1.28;
 }
 
 .budgetScopeRow:focus-visible {
   outline: 3px solid rgba(25, 116, 84, 0.16);
   outline-offset: 0.12rem;
-}
-
-.budgetScopeRowSelected {
-  border-color: rgba(116, 183, 153, 0.96);
-  background:
-    radial-gradient(circle at top left, rgba(25, 116, 84, 0.07), transparent 40%),
-    linear-gradient(180deg, #ffffff 0%, #edf8f2 100%);
-  box-shadow: 0 12px 26px rgba(18, 83, 61, 0.08), inset 0 1px 0 #ffffff;
 }
 
 .budgetScopeRowUnavailable {
@@ -4532,51 +4528,67 @@
   box-shadow: none;
 }
 
-.budgetAssetCheck {
-  width: 1.35rem;
-  height: 1.35rem;
+.budgetAssetChoice {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  border: 1.5px solid #9cb6ad;
-  border-radius: 0.38rem;
-  color: #ffffff;
-  background: #ffffff;
-  font-size: 0.78rem;
-  font-weight: 950;
+  justify-content: flex-end;
+  gap: 0.58rem;
+  color: #536b63;
+  font-size: 0.86rem;
+  font-weight: 880;
+  line-height: 1.2;
 }
 
-.budgetScopeRowSelected .budgetAssetCheck {
-  border-color: var(--brand-mid);
-  background: var(--brand-mid);
+.budgetAssetCheck {
+  width: 1.7rem;
+  height: 1.7rem;
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 auto;
+  border: 2px solid #b7c9c2;
+  border-radius: 0.52rem;
+  color: #ffffff;
+  background: #ffffff;
+  font-size: 0.98rem;
+  font-weight: 950;
+  line-height: 1;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.92);
+}
+
+.budgetAssetChoiceSelected {
+  color: #0d4b39;
+}
+
+.budgetAssetChoiceSelected .budgetAssetCheck {
+  border-color: #176448;
+  background: linear-gradient(180deg, #1f7858 0%, #14553f 100%);
+  box-shadow: 0 7px 16px rgba(18, 89, 64, 0.2);
 }
 
 .budgetAssetPickerFooter {
   align-items: center;
-  justify-content: space-between;
-  margin-top: 0.75rem;
-  padding: 0.8rem 1.25rem 1.1rem;
+  justify-content: flex-end;
+  gap: 0.72rem;
+  margin: 0 clamp(1.25rem, 2.4vw, 2rem);
+  padding: 1rem 0 clamp(1.25rem, 2.2vw, 1.75rem);
+  border-top: 1px solid rgba(216, 226, 236, 0.88);
+  background: transparent;
+}
+
+.budgetAssetPickerFooter .primaryButton,
+.budgetAssetPickerFooter .secondaryButton {
+  min-height: 3.35rem;
+  border-radius: 1rem;
+  padding-inline: 1.3rem;
+  font-size: 1.02rem;
+  font-weight: 760;
 }
 
 .budgetAssetSelectionCount {
-  color: #526b64;
-  font-size: 0.82rem;
-  font-weight: 800;
-}
-
-.budgetScopeRowAction {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 5rem;
-  min-height: 2.45rem;
-  padding: 0 0.75rem;
-  border: 1px solid rgba(190, 224, 206, 0.98);
-  border-radius: 0.85rem;
-  color: #126044;
-  background: #edf8f2;
-  font-size: 0.8rem;
-  font-weight: 900;
+  margin-right: auto;
+  color: #5f706a;
+  font-size: 0.88rem;
+  font-weight: 820;
 }
 
 .budgetFormBody {
@@ -4761,7 +4773,8 @@
 }
 
 .budgetField > span,
-.budgetPeriodField legend {
+.budgetPeriodField legend,
+.budgetPeriodLabel {
   padding: 0;
   color: #263845;
   font-size: 0.86rem;
@@ -5039,6 +5052,53 @@
   .budgetSetupGrid {
     grid-template-columns: 1fr;
   }
+
+  .budgetAssetPickerBackdrop {
+    padding: 0.5rem;
+  }
+
+  .budgetAssetPickerModal {
+    width: min(100%, calc(100vw - 1rem));
+    max-height: min(92vh, calc(100dvh - 1rem));
+    padding: 0;
+    border-radius: 1.35rem;
+  }
+
+  .budgetAssetPickerModal .budgetScopeRow {
+    grid-template-columns: 1fr;
+  }
+
+  .budgetAssetPickerModal .assetValue {
+    grid-column: auto;
+    justify-items: start;
+    text-align: left;
+  }
+
+  .budgetAssetPickerFooter {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+
+  .budgetAssetPickerFooter .primaryButton,
+  .budgetAssetPickerFooter .secondaryButton {
+    width: 100%;
+    min-width: 0;
+  }
+
+}
+
+@media (max-width: 960px) {
+  .budgetAssetSelectionCount {
+    width: 100%;
+    margin-right: 0;
+    text-align: center;
+  }
+}
+
+@media (max-width: 760px) {
+  .budgetAssetPickerToolbar {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 720px) {
@@ -5101,31 +5161,17 @@
   }
 
   .budgetScopeRow {
-    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-columns: 1fr;
   }
 
   .budgetScopeRow .assetValue {
-    grid-column: 2;
+    grid-column: auto;
     justify-items: start;
     text-align: left;
   }
 
   .budgetAssetPickerToolbar {
     grid-template-columns: 1fr;
-  }
-
-  .budgetAssetPickerTools,
-  .budgetAssetPickerFooter > div {
-    width: 100%;
-  }
-
-  .budgetAssetPickerTools > *,
-  .budgetAssetPickerFooter > div > * {
-    flex: 1 1 0;
-  }
-
-  .budgetScopeRowAction {
-    justify-self: start;
   }
 
   .budgetMeta span:last-child {
@@ -6107,8 +6153,8 @@
 }
 
 .budgetWizardModal .invoiceDropWizardPanel {
-  gap: 0.72rem;
-  padding: 0.88rem;
+  gap: 0.85rem;
+  padding: 1rem;
   border-radius: 1.05rem;
   box-shadow: 0 10px 24px rgba(20, 54, 46, 0.045);
 }
@@ -6117,6 +6163,7 @@
   min-height: 4.15rem;
   padding: 0.7rem 0.82rem;
   border-radius: 0.92rem;
+  margin-bottom: 0.1rem;
 }
 
 .budgetWizardBody h3:focus {
@@ -6124,11 +6171,16 @@
 }
 
 .budgetWizardPeriodField {
-  gap: 0.45rem;
-  padding: 0.66rem;
-  border: 1px solid rgba(194, 216, 206, 0.94);
-  border-radius: 1rem;
-  background: #f5faf7;
+  gap: 0.5rem;
+  padding: 0.08rem 0 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.budgetPeriodLabel {
+  display: block;
+  line-height: 1.25;
 }
 
 .budgetFuelToggleCompact {
