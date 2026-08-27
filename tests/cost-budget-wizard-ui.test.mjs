@@ -46,6 +46,11 @@ test('coverage uses the Fuel Ledger saved-asset picker design with multi-select'
   assert.match(budgetModal, /styles\.budgetSelectAllButton/);
   assert.match(budgetModal, /styles\.budgetAssetChoiceSelected/);
   assert.match(budgetModal, /data-asset-choice-selected=\{isSelected \? 'true' : undefined\}/);
+  assert.equal(
+    (budgetModal.match(/data-asset-choice-selected=/g) ?? []).length,
+    1,
+    'budget asset rows should declare their selected-state attribute once',
+  );
   assert.match(budgetModal, /confirmBudgetAssetPicker/);
   assert.match(styles, /\.budgetAssetPickerToolbar\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\) auto auto;/);
   assert.match(styles, /\.budgetAssetChoice\s*\{[^}]*justify-content:\s*flex-end;/);
