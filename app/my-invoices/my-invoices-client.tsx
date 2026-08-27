@@ -1192,6 +1192,7 @@ export default function MyInvoicesClient({
   const [recurringAssetPickerOpen, setRecurringAssetPickerOpen] = useState(false);
   const [recurringAssetSearch, setRecurringAssetSearch] = useState('');
   const [recurringWizardStep, setRecurringWizardStep] = useState<RecurringWizardStep>(1);
+  const [recurringCategoryDropdownOpen, setRecurringCategoryDropdownOpen] = useState(false);
   const [recurringError, setRecurringError] = useState('');
   const [assetLockedForFlow, setAssetLockedForFlow] = useState(false);
   const [initialLaunchHandled, setInitialLaunchHandled] = useState(!initialOpenAdd);
@@ -1234,6 +1235,7 @@ export default function MyInvoicesClient({
   const budgetManagerReturnFocusRef = useRef('');
   const budgetScopeTriggerRef = useRef<HTMLButtonElement>(null);
   const recurringScopeTriggerRef = useRef<HTMLButtonElement>(null);
+  const recurringCategoryTriggerRef = useRef<HTMLButtonElement>(null);
   const recurringWizardStepHeadingRef = useRef<HTMLHeadingElement>(null);
   const budgetDeleteButtonRef = useRef<HTMLButtonElement>(null);
   const budgetDeleteCancelRef = useRef<HTMLButtonElement>(null);
@@ -1883,6 +1885,33 @@ export default function MyInvoicesClient({
   }, [isSaving, recurringAssetPickerOpen, recurringOpen, recurringWizardStep]);
 
   useEffect(() => {
+    if (!recurringCategoryDropdownOpen) return undefined;
+
+    function handlePointerDown(event: MouseEvent) {
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+      if (!target.closest('[data-recurring-category-dropdown="true"]')) {
+        setRecurringCategoryDropdownOpen(false);
+      }
+    }
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key !== 'Escape') return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      setRecurringCategoryDropdownOpen(false);
+      window.requestAnimationFrame(() => recurringCategoryTriggerRef.current?.focus());
+    }
+
+    document.addEventListener('mousedown', handlePointerDown);
+    document.addEventListener('keydown', handleKeyDown, true);
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown);
+      document.removeEventListener('keydown', handleKeyDown, true);
+    };
+  }, [recurringCategoryDropdownOpen]);
+
+  useEffect(() => {
     if (!recurringOpen || !recurringAssetPickerOpen) return undefined;
 
     function handleKeyDown(event: KeyboardEvent) {
@@ -2354,6 +2383,7 @@ export default function MyInvoicesClient({
     setRecurringAssetPickerOpen(false);
     setRecurringAssetSearch('');
     setRecurringWizardStep(1);
+    setRecurringCategoryDropdownOpen(false);
     setRecurringError('');
     setQuickLaunchActive(false);
 
@@ -2642,6 +2672,7 @@ export default function MyInvoicesClient({
     setRecurringAssetPickerOpen(false);
     setRecurringAssetSearch('');
     setRecurringWizardStep(1);
+    setRecurringCategoryDropdownOpen(false);
     setRecurringError('');
     setFlow('recurring');
   }
@@ -2710,12 +2741,14 @@ export default function MyInvoicesClient({
         setRecurringError(validationError);
         return;
       }
+      setRecurringCategoryDropdownOpen(false);
       setRecurringWizardStep(3);
     }
   }
 
   function goBackRecurringWizard() {
     setRecurringError('');
+    setRecurringCategoryDropdownOpen(false);
     setRecurringWizardStep((current) => (current === 3 ? 2 : 1));
   }
 
@@ -4694,7 +4727,7 @@ export default function MyInvoicesClient({
                 ) : null}
 
                 {recurringWizardStep === 2 ? (
-                  <section className={styles.invoiceDropWizardPanel} aria-labelledby="recurring-details-title">
+                  <section className={`${styles.invoiceDropWizardPanel} ${styles.recurringDetailsPanel}`} aria-labelledby="recurring-details-title">
                     <div className={styles.invoiceDropWizardHeading}>
                       <h3 ref={recurringWizardStepHeadingRef} id="recurring-details-title" tabIndex={-1}>Set the recurring cost</h3>
                       <p>Add the amount, timing and useful reference details.</p>
@@ -4713,12 +4746,67 @@ export default function MyInvoicesClient({
                           disabled={isSaving}
                         />
                       </label>
-                      <label className={`${styles.budgetField} ${styles.recurringWizardField}`}>
-                        <span>Category</span>
-                        <select value={recurringDraft.category} onChange={(event) => setRecurringField('category', event.target.value)} disabled={isSaving}>
-                          {RECURRING_CATEGORY_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-                        </select>
-                      </label>
+                      <div className={`${styles.budgetField} ${styles.recurringCategoryField}`}>
+                        <span id="recurring-category-label">Category</span>
+                        <div
+                          className={`${styles.customFilterSelect} ${styles.recurringCategorySelect} ${recurringCategoryDropdownOpen ? styles.customFilterSelectOpen : ''}`}
+                          data-recurring-category-dropdown="true"
+                        >
+                          <button
+                            ref={recurringCategoryTriggerRef}
+                            type="button"
+                            className={`${styles.customFilterSelectButton} ${styles.recurringCategoryButton} ${recurringCategoryDropdownOpen ? styles.customFilterSelectButtonOpen : ''}`}
+                            onClick={() => setRecurringCategoryDropdownOpen((current) => !current)}
+                            disabled={isSaving}
+                            aria-haspopup="listbox"
+                            aria-expanded={recurringCategoryDropdownOpen}
+                            aria-labelledby="recurring-category-label recurring-category-value"
+                            aria-controls="recurring-category-options"
+                          >
+                            <span id="recurring-category-value" className={`${styles.customFilterSelectButtonText} ${styles.recurringCategoryButtonText}`}>
+                              {recurringCategoryLabel}
+                            </span>
+                            <span className={styles.recurringCategoryChevron} aria-hidden="true">
+                              <ChevronDownIcon className={styles.customFilterSelectChevron} />
+                            </span>
+                          </button>
+
+                          {recurringCategoryDropdownOpen ? (
+                            <DropdownOverlay
+                              id="recurring-category-options"
+                              className={`${styles.customFilterSelectMenu} ${styles.recurringCategoryMenu}`}
+                              role="listbox"
+                              aria-label="Category"
+                              gap={8}
+                              maxHeight={320}
+                            >
+                              {RECURRING_CATEGORY_OPTIONS.map((option) => {
+                                const isSelected = recurringDraft.category === option.value;
+
+                                return (
+                                  <button
+                                    type="button"
+                                    key={`recurring-category-${option.value}`}
+                                    className={`${styles.customFilterSelectOption} ${styles.recurringCategoryOption} ${isSelected ? styles.customFilterSelectOptionActive : ''}`}
+                                    onClick={() => {
+                                      setRecurringField('category', option.value);
+                                      setRecurringCategoryDropdownOpen(false);
+                                      window.requestAnimationFrame(() => recurringCategoryTriggerRef.current?.focus());
+                                    }}
+                                    role="option"
+                                    aria-selected={isSelected}
+                                  >
+                                    <span className={`${styles.customFilterSelectOptionLabel} ${styles.recurringCategoryOptionLabel}`}>{option.label}</span>
+                                    <span className={`${styles.recurringCategoryOptionMark} ${isSelected ? styles.recurringCategoryOptionMarkSelected : ''}`} aria-hidden="true">
+                                      {isSelected ? '✓' : ''}
+                                    </span>
+                                  </button>
+                                );
+                              })}
+                            </DropdownOverlay>
+                          ) : null}
+                        </div>
+                      </div>
                       <label className={styles.budgetField}>
                         <span>Amount</span>
                         <div className={styles.budgetMoneyInput}>
