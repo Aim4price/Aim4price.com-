@@ -784,6 +784,32 @@ async function ensureMyInvoiceTablesOnce(): Promise<void> {
       add column if not exists capture_request_id uuid
   `);
   await db.query(`
+    do $$
+    declare
+      usage_metric_constraint text;
+    begin
+      select lower(pg_get_constraintdef(oid))
+      into usage_metric_constraint
+      from pg_constraint
+      where conname = 'asset_invoices_usage_metric_check'
+        and conrelid = 'public.asset_invoices'::regclass;
+
+      if usage_metric_constraint is null
+        or position('none' in usage_metric_constraint) = 0
+        or position('hours' in usage_metric_constraint) = 0
+        or position('km' in usage_metric_constraint) = 0
+        or position('percentage' in usage_metric_constraint) = 0
+      then
+        alter table public.asset_invoices
+          drop constraint if exists asset_invoices_usage_metric_check;
+        alter table public.asset_invoices
+          add constraint asset_invoices_usage_metric_check
+          check (usage_metric is null or usage_metric in ('none', 'hours', 'km', 'percentage'));
+      end if;
+    end
+    $$
+  `);
+  await db.query(`
     update public.asset_invoices
     set
       owner_storage_status = 'approved',
@@ -1182,7 +1208,7 @@ function normalizeInvoiceDraft(input: MyInvoiceDraftInput, requireAsset = true) 
     vatAmount,
     totalIncVat,
     usageReading,
-    usageMetric,
+    usageMetric: usageMetric === 'none' ? null : usageMetric,
     source,
     notes: asLongText(input.notes),
     maintenanceWorkDone: asLongText(input.maintenanceWorkDone),
