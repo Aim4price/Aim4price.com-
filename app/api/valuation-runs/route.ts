@@ -464,14 +464,14 @@ export async function POST(request: NextRequest) {
     if (accountantAccess && (saveForMarketplace || requestedConversionAssetId)) {
       return NextResponse.json<SaveValuationRunApiResponse>({ ok: false, error: 'Client workspace estimates can only be saved as new client assets.' }, { status: 400 });
     }
-    const canSaveAssetRegister = accountType === 'owner' || Boolean(accountantAccess);
+    const canSaveAssetRegister = accountType === 'owner' || accountType === 'dealer' || Boolean(accountantAccess);
     const canSaveMarketplaceAsset = !requestedConversionAssetId && saveForMarketplace && (accountType === 'owner' || accountType === 'dealer');
 
     if (!canSaveAssetRegister && !canSaveMarketplaceAsset) {
       return NextResponse.json<SaveValuationRunApiResponse>(
         {
           ok: false,
-          error: 'Only owner accounts can save to the Asset Register. Dealer and auctioneer accounts can create marketplace listings by saving directly from Get Estimate.',
+          error: 'Only active Owner and Dealer accounts can save to an Asset Register.',
         },
         { status: 403 },
       );

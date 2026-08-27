@@ -382,6 +382,21 @@ type AccountProfileApiResponse = {
   error?: string;
 };
 
+type DealerAssetRegisterSummary = {
+  id: string;
+  businessName: string;
+  addressLine1?: string;
+  assetCount: number;
+  totalValue: number;
+  isPrimary: boolean;
+};
+
+type DealerAssetRegistersApiResponse = {
+  ok: boolean;
+  registers?: DealerAssetRegisterSummary[];
+  error?: string;
+};
+
 type MarketplacePendingPhoto = {
   id: string;
   file: File;
@@ -1842,6 +1857,12 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
   const [accountantShareId, setAccountantShareId] = useState('');
   const [accountantRegisterId, setAccountantRegisterId] = useState('');
   const [accountProfile, setAccountProfile] = useState<AccountProfile | null>(null);
+  const [dealerAssetRegisters, setDealerAssetRegisters] = useState<DealerAssetRegisterSummary[]>([]);
+  const [dealerSaveTargetRegisterId, setDealerSaveTargetRegisterId] = useState('');
+  const [dealerSaveTargetRegisterName, setDealerSaveTargetRegisterName] = useState('');
+  const [dealerSaveTargetMode, setDealerSaveTargetMode] = useState<'dealer' | 'client' | null>(null);
+  const [isDealerClientRegisterPickerOpen, setIsDealerClientRegisterPickerOpen] = useState(false);
+  const [dealerClientRegisterSearch, setDealerClientRegisterSearch] = useState('');
   const [adBrandKits, setAdBrandKits] = useState<AdBrandKit[]>([]);
   const [marketplaceDraft, setMarketplaceDraft] = useState<MarketplacePublishDraft | null>(null);
   const [marketplaceIntroOpen, setMarketplaceIntroOpen] = useState(false);
@@ -2195,6 +2216,23 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
   const canUseAdvancedAssumptions = isSignedIn && accountProfile?.accountStatus === 'active';
   const normalizedSignedInAccountType = normalizeAccountType(accountType);
   const isDealerAccount = normalizedSignedInAccountType === 'dealer';
+  const dealerOwnedRegister = useMemo(
+    () => dealerAssetRegisters.find((register) => register.isPrimary) ?? dealerAssetRegisters[0] ?? null,
+    [dealerAssetRegisters],
+  );
+  const dealerClientRegisters = useMemo(
+    () => dealerAssetRegisters.filter((register) => register.id !== dealerOwnedRegister?.id),
+    [dealerAssetRegisters, dealerOwnedRegister?.id],
+  );
+  const visibleDealerClientRegisters = useMemo(() => {
+    const query = dealerClientRegisterSearch.trim().toLowerCase();
+    if (!query) return dealerClientRegisters;
+    return dealerClientRegisters.filter((register) => [
+      register.businessName,
+      register.addressLine1,
+      String(register.assetCount),
+    ].some((value) => String(value ?? '').toLowerCase().includes(query)));
+  }, [dealerClientRegisterSearch, dealerClientRegisters]);
   const detailedAssessmentComplete = Boolean(
     dealerMechanicalCondition
       && dealerBodyCondition
@@ -2205,7 +2243,11 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
   const popularityStepComplete = popularityStars >= 1 && popularityStars <= 5;
   const canUseMarketplacePublishFlow = isSignedIn && (normalizedSignedInAccountType === 'owner' || normalizedSignedInAccountType === 'dealer');
   const isAccountantClientWorkspace = normalizedSignedInAccountType === 'finance' && Boolean(accountantShareId);
-  const canSaveToAssetRegister = isSignedIn && (normalizedSignedInAccountType === 'owner' || isAccountantClientWorkspace);
+  const canSaveToAssetRegister = isSignedIn && (
+    normalizedSignedInAccountType === 'owner'
+    || normalizedSignedInAccountType === 'dealer'
+    || isAccountantClientWorkspace
+  );
   const requiredSpecQuestionsCompleted = Boolean(
     conditionStepComplete &&
       popularityStepComplete &&
@@ -2213,6 +2255,33 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
       effectiveSpecQuestions.length > 0 &&
       effectiveSpecQuestions.every((question) => !question.isRequired || isSpecQuestionAnswered(question, specAnswers[question.specKey])),
   );
+
+  useEffect(() => {
+    if (!isDealerAccount || !isSignedIn) {
+      setDealerAssetRegisters([]);
+      return undefined;
+    }
+
+    let cancelled = false;
+
+    void (async () => {
+      try {
+        const response = await fetch('/api/asset-registers', {
+          credentials: 'include',
+          cache: 'no-store',
+        });
+        const data = (await response.json()) as DealerAssetRegistersApiResponse;
+        if (!response.ok || !data.ok) throw new Error(data.error ?? 'Failed to load dealer Asset Registers.');
+        if (!cancelled) setDealerAssetRegisters(data.registers ?? []);
+      } catch {
+        if (!cancelled) setDealerAssetRegisters([]);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isDealerAccount, isSignedIn]);
 
   useEffect(() => {
     const target = document.getElementById('valuation-wizard-card');
@@ -2332,7 +2401,11 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
 
     const searchParams = new URLSearchParams(window.location.search);
     setAccountantShareId(normalizeText(searchParams.get('accountantShareId')));
-    setAccountantRegisterId(normalizeText(searchParams.get('registerId')));
+    const requestedRegisterId = normalizeText(searchParams.get('registerId'));
+    const requestedDealerMode = normalizeText(searchParams.get('dealerRegisterMode'));
+    setAccountantRegisterId(requestedRegisterId);
+    setDealerSaveTargetRegisterId(requestedRegisterId);
+    setDealerSaveTargetMode(requestedDealerMode === 'dealer' || requestedDealerMode === 'client' ? requestedDealerMode : null);
     const nextConversionAssetId = normalizeText(searchParams.get('convertAssetId') ?? searchParams.get('conversionAssetId'));
     const nextConversionMode = searchParams.get('conversion') === 'manual-to-aim4price' || Boolean(nextConversionAssetId);
     const nextMarketplaceMode = !nextConversionMode && (searchParams.get('marketplace') === '1' || searchParams.get('marketplaceListing') === '1');
@@ -2447,6 +2520,14 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    if (!dealerSaveTargetRegisterId || !dealerAssetRegisters.length) return;
+    const target = dealerAssetRegisters.find((register) => register.id === dealerSaveTargetRegisterId);
+    if (!target) return;
+    setDealerSaveTargetRegisterName(target.businessName || (target.isPrimary ? 'Dealer Asset Register' : 'Client Asset Register'));
+    setDealerSaveTargetMode(target.id === dealerOwnedRegister?.id ? 'dealer' : 'client');
+  }, [dealerAssetRegisters, dealerOwnedRegister?.id, dealerSaveTargetRegisterId]);
 
   useEffect(() => {
     let mounted = true;
@@ -4091,6 +4172,35 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     return false;
   }
 
+  function chooseDealerRegisterForSave(register: DealerAssetRegisterSummary, mode: 'dealer' | 'client') {
+    setDealerSaveTargetRegisterId(register.id);
+    setDealerSaveTargetRegisterName(register.businessName || (mode === 'dealer' ? 'Dealer Asset Register' : 'Client Asset Register'));
+    setDealerSaveTargetMode(mode);
+    setIsDealerClientRegisterPickerOpen(false);
+    setDealerClientRegisterSearch('');
+    openFinalSaveModal('asset-register');
+  }
+
+  function saveToDealerAssetRegister() {
+    if (!dealerOwnedRegister) {
+      setMessage('Create the Dealer Asset Register before saving this estimate.');
+      return;
+    }
+    chooseDealerRegisterForSave(dealerOwnedRegister, 'dealer');
+  }
+
+  function openDealerClientRegisterPicker() {
+    setMessage('');
+    setDealerClientRegisterSearch('');
+    setIsDealerClientRegisterPickerOpen(true);
+  }
+
+  function closeDealerClientRegisterPicker() {
+    if (saveLoading) return;
+    setIsDealerClientRegisterPickerOpen(false);
+    setDealerClientRegisterSearch('');
+  }
+
   function openFinalSaveModal(intent: FinalSaveIntent) {
     if (!resultState) {
       setMessage('Run an estimate before saving.');
@@ -4103,7 +4213,12 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     }
 
     if (intent === 'asset-register' && !canSaveToAssetRegister) {
-      setMessage('Only owner accounts can save estimates to the Asset Register.');
+      setMessage('Only Owner and Dealer accounts can save estimates to an Asset Register.');
+      return;
+    }
+
+    if (intent === 'asset-register' && isDealerAccount && !dealerSaveTargetRegisterId) {
+      setMessage('Choose the Dealer or Client Asset Register that should receive this estimate.');
       return;
     }
 
@@ -4181,7 +4296,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
         return null;
       }
     } else if (!canSaveToAssetRegister) {
-      setError('Only owner accounts can save estimates to the Asset Register.');
+      setError('Only Owner and Dealer accounts can save estimates to an Asset Register.');
       return null;
     }
 
@@ -4209,8 +4324,13 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
         saveForMarketplace: options.saveForMarketplace,
         photos: options.photos,
       });
-      if (accountantRegisterId) {
-        savePayload.registerId = accountantRegisterId;
+      const resolvedTargetRegisterId = isDealerAccount
+        ? options.saveForMarketplace
+          ? dealerOwnedRegister?.id || ''
+          : dealerSaveTargetRegisterId || accountantRegisterId
+        : accountantRegisterId;
+      if (resolvedTargetRegisterId) {
+        savePayload.registerId = resolvedTargetRegisterId;
       }
       if (isAccountantClientWorkspace) {
         savePayload.accountantShareId = accountantShareId;
@@ -4231,16 +4351,23 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
         const focusAssetId = data.assetId ?? conversionAssetId;
         if (isAccountantClientWorkspace) {
           const workspaceQuery = new URLSearchParams();
-          if (accountantRegisterId) workspaceQuery.set('registerId', accountantRegisterId);
+          if (resolvedTargetRegisterId) workspaceQuery.set('registerId', resolvedTargetRegisterId);
           if (focusAssetId) workspaceQuery.set('convertedAssetId', focusAssetId);
           const query = workspaceQuery.toString();
           router.push(`/accountant/registers/${encodeURIComponent(accountantShareId)}${query ? `?${query}` : ''}`);
         } else {
           if (ownerAppMode) {
             router.push(focusAssetId ? `/owner-app/assets/${encodeURIComponent(focusAssetId)}` : '/owner-app/assets');
+          } else if (isDealerAccount && resolvedTargetRegisterId) {
+            const registerQuery = new URLSearchParams({
+              dealerView: dealerSaveTargetMode || (resolvedTargetRegisterId === dealerOwnedRegister?.id ? 'dealer' : 'client'),
+              registerId: resolvedTargetRegisterId,
+            });
+            if (focusAssetId) registerQuery.set('convertedAssetId', focusAssetId);
+            router.push(`/asset-register?${registerQuery.toString()}`);
           } else {
             const registerQuery = new URLSearchParams();
-            if (accountantRegisterId) registerQuery.set('registerId', accountantRegisterId);
+            if (resolvedTargetRegisterId) registerQuery.set('registerId', resolvedTargetRegisterId);
             if (focusAssetId) registerQuery.set('convertedAssetId', focusAssetId);
             const query = registerQuery.toString();
             router.push(`/asset-register${query ? `?${query}` : ''}`);
@@ -7354,11 +7481,34 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                         type="button"
                         className={styles.resultAlternateActionButton}
                         onClick={createAdFromEstimate}
-                        disabled={saveLoading || isPublishingMarketplace || replacementRecalculateLoading || advancedRecalculateLoading || !canUseMarketplacePublishFlow || headlineValue === null}
+                        disabled={saveLoading || isPublishingMarketplace || replacementRecalculateLoading || advancedRecalculateLoading || !canUseMarketplacePublishFlow || (isDealerAccount && !dealerOwnedRegister) || headlineValue === null}
                       >
                         {saveLoading && finalSaveIntent === 'marketplace' ? 'Saving...' : isPublishingMarketplace ? 'Creating ad...' : 'Create Ad'}
                       </button>
-                      {!compactAppMode ? (
+                      {isDealerAccount ? (
+                        <>
+                          <button
+                            type="button"
+                            className={styles.resultPrimaryActionButton}
+                            onClick={saveToDealerAssetRegister}
+                            disabled={saveLoading || isPublishingMarketplace || replacementRecalculateLoading || advancedRecalculateLoading || !canSaveToAssetRegister || !dealerOwnedRegister || headlineValue === null}
+                          >
+                            {saveLoading && finalSaveIntent === 'asset-register' && dealerSaveTargetMode === 'dealer'
+                              ? 'Saving...'
+                              : 'Add to Dealer Asset Register'}
+                          </button>
+                          <button
+                            type="button"
+                            className={styles.resultClientRegisterActionButton}
+                            onClick={openDealerClientRegisterPicker}
+                            disabled={saveLoading || isPublishingMarketplace || replacementRecalculateLoading || advancedRecalculateLoading || !canSaveToAssetRegister || headlineValue === null}
+                          >
+                            {saveLoading && finalSaveIntent === 'asset-register' && dealerSaveTargetMode === 'client'
+                              ? 'Saving...'
+                              : 'Add to Client Asset Register'}
+                          </button>
+                        </>
+                      ) : !compactAppMode ? (
                         <button
                           type="button"
                           className={styles.resultPrimaryActionButton}
@@ -7430,7 +7580,11 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     !finalSaveHasPendingReplacementPrice;
   const finalSaveTitle = finalSaveIntent === 'marketplace'
     ? 'Create advert'
-    : ownerAppMode ? 'Save to My Assets' : 'Save to Asset Register';
+    : ownerAppMode
+      ? 'Save to My Assets'
+      : isDealerAccount
+        ? `Add to ${dealerSaveTargetRegisterName || (dealerSaveTargetMode === 'client' ? 'Client Asset Register' : 'Dealer Asset Register')}`
+        : 'Save to Asset Register';
   const finalSaveCta = finalSaveIntent === 'marketplace' ? 'Save and continue to advert details' : 'Confirm and save';
   const isSectorIntroStep = step === 1 && !selectedSector;
   const compactPathChoicePage = compactAppMode && step === 3 && !flowMode;
@@ -7574,6 +7728,73 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
             <small id="replacement-notice-disclaimer" className={styles.replacementNoticeDisclaimer}>
               Aim4price provides an indicative estimate only. It is not a certified valuation, inspection, or guaranteed price.
             </small>
+          </section>
+        </div>
+      ) : null}
+
+      {isDealerClientRegisterPickerOpen ? (
+        <div className={styles.finalSaveOverlay} onClick={closeDealerClientRegisterPicker}>
+          <section
+            className={`${styles.finalSaveModal} ${styles.dealerClientRegisterPicker}`}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="dealer-client-register-picker-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <button
+              type="button"
+              className={styles.finalSaveClose}
+              onClick={closeDealerClientRegisterPicker}
+              aria-label="Close client Asset Register picker"
+            >
+              ×
+            </button>
+
+            <div className={styles.finalSaveHeader}>
+              <span>Client destination</span>
+              <h2 id="dealer-client-register-picker-title">Choose a Client Asset Register</h2>
+              <p>The estimate will be added to the selected client&apos;s complete Asset Register.</p>
+            </div>
+
+            <label className={styles.dealerClientRegisterSearch}>
+              <span>Search client registers</span>
+              <input
+                type="search"
+                value={dealerClientRegisterSearch}
+                onChange={(event) => setDealerClientRegisterSearch(event.target.value)}
+                placeholder="Search by client, address or asset count"
+                autoFocus
+              />
+            </label>
+
+            <div className={styles.dealerClientRegisterPickerList}>
+              {visibleDealerClientRegisters.map((register) => (
+                <button
+                  key={register.id}
+                  type="button"
+                  className={styles.dealerClientRegisterPickerRow}
+                  onClick={() => chooseDealerRegisterForSave(register, 'client')}
+                >
+                  <span>
+                    <strong>{register.businessName || 'Client Asset Register'}</strong>
+                    <small>{register.addressLine1 || 'No address saved'}</small>
+                  </span>
+                  <span>
+                    <strong>{register.assetCount} {register.assetCount === 1 ? 'asset' : 'assets'}</strong>
+                    <small>{money(register.totalValue)} current value</small>
+                  </span>
+                  <b>Choose</b>
+                </button>
+              ))}
+
+              {!visibleDealerClientRegisters.length ? (
+                <div className={styles.dealerClientRegisterPickerEmpty}>
+                  <strong>{dealerClientRegisters.length ? 'No client registers match your search.' : 'No Client Asset Registers yet.'}</strong>
+                  <p>{dealerClientRegisters.length ? 'Clear the search to see every available client.' : 'Create a separate Asset Register for the client, then return to this estimate.'}</p>
+                  {!dealerClientRegisters.length ? <a href="/asset-registers">Create Client Asset Register</a> : null}
+                </div>
+              ) : null}
+            </div>
           </section>
         </div>
       ) : null}

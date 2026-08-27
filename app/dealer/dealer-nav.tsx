@@ -32,7 +32,7 @@ export default function DealerNav({
   const resolvedBackLabel = backLabel === 'Home' && isMaintenanceDetail
     ? 'Maintenance'
     : backLabel === 'Home' && isInventoryDetail
-      ? 'My Inventory'
+      ? 'Asset Register'
       : backLabel;
   const backIsHome = resolvedShowBack && resolvedBackHref === '/dealer' && resolvedBackLabel === 'Home';
   const navLayoutClass = backIsHome

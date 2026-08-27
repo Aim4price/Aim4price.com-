@@ -80,7 +80,7 @@ export default async function DealerHome() {
 
   const allTools: DealerHomeTool[] = [
     {
-      label: 'My Inventory',
+      label: 'Asset Register',
       href: '/dealer/inventory',
       capability: 'inventory',
     },

@@ -793,7 +793,7 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
       `${transferReceipt.assetIdentifierLabel}: ${transferReceipt.assetIdentifier}`,
       `Transfer code: ${transferReceipt.transferCode}`,
       transferReceipt.transferReason === 'traded_in'
-        ? 'Open Dealer → My Inventory → Claim asset in Aim4price.'
+        ? 'Open Dealer → Asset Register → Claim asset in Aim4price.'
         : 'Open Account → Asset transfers in Aim4price and choose Claim an asset.',
     ].join('\n');
     try {
@@ -1424,7 +1424,7 @@ export default function OwnerAssetDetailClient({ assetId, view = 'summary', sect
           </div>
           <div className={styles.transferExplainer}>
             <strong>{transferReceipt.transferReason === 'traded_in' ? 'Dealer instructions' : 'Buyer instructions'}</strong>
-            <p>{transferReceipt.transferReason === 'traded_in' ? 'Sign in to the Aim4price Dealer App, open My Inventory → Claim asset, and enter the identifier with this code.' : 'Sign in to Aim4price, open Account → Asset transfers, and enter the identifier with this code.'}</p>
+            <p>{transferReceipt.transferReason === 'traded_in' ? 'Sign in to the Aim4price Dealer App, open Asset Register → Claim asset, and enter the identifier with this code.' : 'Sign in to Aim4price, open Account → Asset transfers, and enter the identifier with this code.'}</p>
           </div>
           <div className={styles.transferReceiptActions}>
             <button type="button" className={styles.secondaryButton} onClick={() => void copyTransferDetails()}>Copy details</button>

@@ -1843,6 +1843,81 @@
   }
 }
 
+.dealerRegisterContextPill {
+  display: inline-flex;
+  width: max-content;
+  margin-top: 6px;
+  padding: 6px 10px;
+  border: 1px solid #b9dacf;
+  border-radius: 999px;
+  background: #edf9f4;
+  color: #0b6e5b;
+  font-size: 0.7rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.dealerAddDestinationGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.dealerAddDestinationCard {
+  display: grid;
+  gap: 8px;
+  min-height: 132px;
+  padding: 20px;
+  border: 1px solid #c9ddd7;
+  border-radius: 17px;
+  background: #fbfdfc;
+  color: #153f3a;
+  text-align: left;
+  cursor: pointer;
+}
+
+.dealerAddDestinationCard:hover:not(:disabled),
+.dealerAddDestinationCard:focus-visible,
+.dealerAddDestinationCardActive {
+  border-color: #279477;
+  background: #eaf8f2;
+  box-shadow: 0 0 0 3px rgba(39, 148, 119, 0.11);
+  outline: none;
+}
+
+.dealerAddDestinationCard strong {
+  font-size: 1.02rem;
+  line-height: 1.3;
+}
+
+.dealerAddDestinationCard small {
+  color: #627773;
+  line-height: 1.45;
+}
+
+.dealerAddDestinationCard:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+
+.dealerAddDestinationEmpty {
+  margin: 14px 0 0;
+  color: #647874;
+  font-size: 0.86rem;
+}
+
+.dealerAddDestinationEmpty a {
+  color: #0b6e5b;
+  font-weight: 850;
+}
+
+@media (max-width: 640px) {
+  .dealerAddDestinationGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* === Asset register final VAT tile polish === */
 .registerHeader {
   justify-content: flex-end;
@@ -39018,4 +39093,283 @@ button.documentOpenLink {
   color: #8f1f18 !important;
   border-color: #efb3ae !important;
   background: #ffe4e1 !important;
+}
+/* Dealer accounts deliberately keep their own assets separate from registers
+   they maintain for clients. Both destinations still reuse this full register. */
+.dealerRegisterGateway {
+  min-height: 560px;
+  padding: clamp(28px, 4vw, 54px);
+  background:
+    radial-gradient(circle at 12% 8%, rgba(18, 139, 112, 0.12), transparent 34%),
+    linear-gradient(145deg, #ffffff 0%, #f5fbf8 100%);
+}
+
+.dealerRegisterGatewayHeader {
+  max-width: 760px;
+  margin: 0 auto 34px;
+  text-align: center;
+}
+
+.dealerRegisterGatewayHeader > span,
+.dealerRegisterChoiceKicker,
+.dealerClientPickerHeader span {
+  display: block;
+  color: #127d69;
+  font-size: 0.75rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.dealerRegisterGatewayHeader h1 {
+  margin: 8px 0 10px;
+  color: #073e3b;
+  font-size: clamp(2rem, 4vw, 3.25rem);
+}
+
+.dealerRegisterGatewayHeader p {
+  margin: 0;
+  color: #536b69;
+  font-size: 1rem;
+  line-height: 1.65;
+}
+
+.dealerRegisterChoiceGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 22px;
+  max-width: 1040px;
+  margin: 0 auto;
+}
+
+.dealerRegisterChoiceCard {
+  display: flex;
+  min-height: 290px;
+  padding: 30px;
+  border: 1px solid #c8ded8;
+  border-radius: 24px;
+  background: #ffffff;
+  box-shadow: 0 18px 42px rgba(7, 62, 59, 0.1);
+  color: #073e3b;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+  flex-direction: column;
+  align-items: flex-start;
+  transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.dealerRegisterChoiceCard:hover,
+.dealerRegisterChoiceCard:focus-visible {
+  border-color: #50b99d;
+  box-shadow: 0 22px 52px rgba(7, 62, 59, 0.16);
+  outline: none;
+  transform: translateY(-3px);
+}
+
+.dealerRegisterChoiceClient {
+  background: linear-gradient(145deg, #effaf5, #ffffff 68%);
+}
+
+.dealerRegisterChoiceCard > strong {
+  margin-top: 18px;
+  font-size: clamp(1.55rem, 2.6vw, 2.15rem);
+  line-height: 1.12;
+}
+
+.dealerRegisterChoiceCard p {
+  margin: 14px 0;
+  color: #526a67;
+  line-height: 1.55;
+}
+
+.dealerRegisterChoiceCard small {
+  color: #647977;
+  font-weight: 700;
+}
+
+.dealerRegisterChoiceCard b {
+  margin-top: auto;
+  padding: 11px 17px;
+  border-radius: 12px;
+  background: #0b6e5b;
+  color: #ffffff;
+  font-size: 0.88rem;
+}
+
+.dealerClientPickerModal {
+  position: relative;
+  z-index: 2;
+  width: min(880px, calc(100vw - 32px));
+  max-height: min(780px, calc(100vh - 40px));
+  overflow: hidden;
+  border: 1px solid #bcd8d1;
+  border-radius: 24px;
+  background: #ffffff;
+  box-shadow: 0 30px 90px rgba(3, 43, 40, 0.28);
+}
+
+.dealerClientPickerHeader {
+  display: flex;
+  gap: 24px;
+  padding: 26px 28px 20px;
+  border-bottom: 1px solid #dfece8;
+  justify-content: space-between;
+}
+
+.dealerClientPickerHeader h2 {
+  margin: 6px 0 7px;
+  color: #073e3b;
+  font-size: 1.65rem;
+}
+
+.dealerClientPickerHeader p {
+  margin: 0;
+  color: #607572;
+}
+
+.dealerClientPickerHeader > button {
+  width: 42px;
+  height: 42px;
+  border: 1px solid #cbded9;
+  border-radius: 12px;
+  background: #ffffff;
+  color: #234d49;
+  font-size: 1.55rem;
+  cursor: pointer;
+}
+
+.dealerClientPickerSearch {
+  display: grid;
+  gap: 7px;
+  padding: 20px 28px 12px;
+  color: #365b57;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.dealerClientPickerSearch input {
+  min-height: 48px;
+  padding: 0 15px;
+  border: 1px solid #c9ddd8;
+  border-radius: 13px;
+  background: #f9fcfb;
+  color: #123f3b;
+  font: inherit;
+  font-size: 0.95rem;
+}
+
+.dealerClientRegisterList {
+  display: grid;
+  gap: 10px;
+  max-height: 430px;
+  padding: 10px 28px 24px;
+  overflow-y: auto;
+}
+
+.dealerClientRegisterRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(180px, 0.75fr) auto;
+  gap: 18px;
+  padding: 17px 18px;
+  border: 1px solid #d5e5e1;
+  border-radius: 16px;
+  background: #fbfdfc;
+  color: #123f3b;
+  text-decoration: none;
+  align-items: center;
+}
+
+.dealerClientRegisterRow:hover,
+.dealerClientRegisterRow:focus-visible {
+  border-color: #43ac90;
+  background: #f0faf6;
+  outline: none;
+}
+
+.dealerClientRegisterRow span {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.dealerClientRegisterRow small {
+  color: #697d7a;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dealerClientRegisterRow > b {
+  padding: 9px 13px;
+  border-radius: 10px;
+  background: #0b6e5b;
+  color: #ffffff;
+  font-size: 0.82rem;
+}
+
+.dealerClientRegisterEmpty {
+  padding: 36px 20px;
+  border: 1px dashed #bad4cd;
+  border-radius: 16px;
+  background: #f7fbfa;
+  color: #315854;
+  text-align: center;
+}
+
+.dealerClientRegisterEmpty p {
+  margin: 8px 0 0;
+  color: #6a7d7a;
+}
+
+.dealerClientPickerFooter {
+  display: flex;
+  gap: 12px;
+  padding: 18px 28px;
+  border-top: 1px solid #dfece8;
+  background: #f8fbfa;
+  justify-content: flex-end;
+}
+
+.dealerClientPickerFooter button,
+.dealerClientPickerFooter a {
+  min-height: 44px;
+  padding: 0 17px;
+  border: 1px solid #bcd4ce;
+  border-radius: 11px;
+  background: #ffffff;
+  color: #174d46;
+  font-weight: 850;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.dealerClientPickerFooter a {
+  display: inline-flex;
+  background: #0b6e5b;
+  color: #ffffff;
+  align-items: center;
+}
+
+@media (max-width: 760px) {
+  .dealerRegisterChoiceGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .dealerRegisterChoiceCard {
+    min-height: 245px;
+  }
+
+  .dealerClientRegisterRow {
+    grid-template-columns: 1fr auto;
+  }
+
+  .dealerClientRegisterRow > span:nth-child(2) {
+    grid-column: 1;
+  }
+
+  .dealerClientRegisterRow > b {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+  }
 }
