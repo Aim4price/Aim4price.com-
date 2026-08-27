@@ -276,7 +276,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const savedSections = {
+    const savedSections: Record<string, unknown> = {
       ...(includedSections ?? {}),
       maintenanceTrackingEnabled: trackMaintenance,
     };
