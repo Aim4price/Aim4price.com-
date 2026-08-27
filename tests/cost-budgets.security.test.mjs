@@ -38,6 +38,14 @@ test('budget API is finance-authorized and always uses the authenticated owner s
   assert.match(budgets, /getAssetRegisterItemById\(userId, assetId\)/);
 });
 
+test('budget asset choices include every accessible saved asset regardless of fuel exclusion', () => {
+  assert.match(collectionRoute, /listMyInvoiceAssets/);
+  assert.match(collectionRoute, /Promise\.all\(\[[\s\S]*?listCostBudgetsWithProgress\(access\.ownerUserId\)[\s\S]*?listMyInvoiceAssets\(access\.ownerUserId\)/);
+  assert.match(collectionRoute, /allAssets\.filter\(\(asset\) => ownerAppCanAccessAsset\(access, asset\.id\)\)/);
+  assert.match(collectionRoute, /NextResponse\.json\(\{ ok: true, budgets, assets \}/);
+  assert.doesNotMatch(collectionRoute, /workUseExcluded|work_use_excluded|fuel_asset_exclusions/);
+});
+
 test('progress uses the same incurred, owner-visible VAT-inclusive totals as Cost Ledger', () => {
   assert.match(budgets, /timeZone: 'Africa\/Johannesburg'/);
   assert.match(budgets, /sum\(invoice\.total_inc_vat\)/);

@@ -62,6 +62,26 @@ test('coverage uses the Fuel Ledger saved-asset picker design with multi-select'
   assert.doesNotMatch(budgetModal, /<select\b/);
 });
 
+test('budget coverage uses its own complete asset list, independent of fuel exclusions', () => {
+  const budgetAssetSelectors = client.slice(
+    client.indexOf('const selectedBudgetAsset = useMemo'),
+    client.indexOf('const filteredCostBudgets = useMemo'),
+  );
+  const createBudget = client.slice(
+    client.indexOf('function openCreateBudget()'),
+    client.indexOf('function openEditBudget('),
+  );
+
+  assert.match(client, /const \[budgetAssets, setBudgetAssets\] = useState<AssetOption\[]>\(\[\]\)/);
+  assert.match(client, /assets\?: AssetOption\[]/);
+  assert.match(budgetAssetSelectors, /budgetAssets\.find/);
+  assert.match(budgetAssetSelectors, /budgetAssets\.filter/);
+  assert.match(budgetAssetSelectors, /if \(!query\) return budgetAssets/);
+  assert.match(createBudget, /budgetAssets\.some/);
+  assert.match(budgetModal, /!budgetAssets\.length/);
+  assert.doesNotMatch(budgetAssetSelectors, /workUseExcluded|fuel_asset_exclusions/);
+});
+
 test('coverage reset controls have clean label spacing without a fieldset border collision', () => {
   assert.match(budgetModal, /<span className=\{styles\.budgetPeriodLabel\}>When should it reset\?<\/span>/);
   assert.match(budgetModal, /role="group" aria-label="Budget reset period"/);

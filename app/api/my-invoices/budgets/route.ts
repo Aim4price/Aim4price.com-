@@ -5,6 +5,7 @@ import {
   type CostBudgetInput,
   type CostBudgetProgress,
 } from '../../../../lib/cost-budgets';
+import { listMyInvoiceAssets } from '../../../../lib/my-invoices';
 import {
   getOwnerAppAccess,
   ownerAppCan,
@@ -97,9 +98,13 @@ export async function GET() {
   if (access instanceof NextResponse) return access;
 
   try {
-    const budgets = (await listCostBudgetsWithProgress(access.ownerUserId))
-      .filter((budget) => visibleBudget(access, budget));
-    return NextResponse.json({ ok: true, budgets }, { headers: responseHeaders() });
+    const [allBudgets, allAssets] = await Promise.all([
+      listCostBudgetsWithProgress(access.ownerUserId),
+      listMyInvoiceAssets(access.ownerUserId),
+    ]);
+    const budgets = allBudgets.filter((budget) => visibleBudget(access, budget));
+    const assets = allAssets.filter((asset) => ownerAppCanAccessAsset(access, asset.id));
+    return NextResponse.json({ ok: true, budgets, assets }, { headers: responseHeaders() });
   } catch (error) {
     return budgetError(error);
   }
@@ -125,3 +130,4 @@ export async function POST(request: Request) {
     return budgetError(error);
   }
 }
+
