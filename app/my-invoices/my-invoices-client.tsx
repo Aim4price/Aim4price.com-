@@ -3691,7 +3691,6 @@ export default function MyInvoicesClient({
                       onClick={() => toggleBudgetPickerAsset(asset.id)}
                       aria-pressed={isSelected}
                       disabled={isUnavailable && !isSelected}
-                      data-asset-choice-selected={isSelected ? 'true' : undefined}
                     >
                       <span className={styles.assetInfo} data-asset-choice-copy="true">
                         <strong>{asset.title}</strong>
