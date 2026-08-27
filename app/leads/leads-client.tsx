@@ -3740,12 +3740,6 @@ export default function LeadsClient({
                 const isTrackingRequest = isTrackingLead(lead);
                 const isMarkingThisLeadDone = markingLeadDoneId === lead.id;
                 const assetIdentifier = leadAssetIdentifier(lead);
-                const leadStatusLabel = isLeadNew ? 'New' : isLeadDone ? 'Handled' : 'Open';
-                const leadStatusClass = isLeadNew
-                  ? styles.leadStatusBadgeNew
-                  : isLeadDone
-                    ? styles.leadStatusBadgeDone
-                    : styles.leadStatusBadgeOpen;
 
                 return (
                   <article key={lead.id} className={`${useDealerWorkspaceStyles ? workspaceStyles.card : ''} ${styles.leadThread} ${licensingWorkspaceMode ? styles.licensingLeadThread : ''} ${isLeadNew ? styles.leadThreadNew : ''} ${isLeadActive ? styles.leadThreadActive : ''} ${isLeadDone ? styles.leadThreadDone : ''} ${isTrackingRequest ? styles.leadThreadTracking : ''} ${isLeadOpen ? styles.leadThreadOpen : ''} ${openLeadId && !isLeadOpen ? styles.leadThreadMuted : ''}`}>
@@ -3754,11 +3748,10 @@ export default function LeadsClient({
                         <div className={`${styles.clientIdentity} ${licensingWorkspaceMode ? styles.licensingLeadIdentity : ''} ${isTrackingRequest ? styles.trackingLeadIdentity : ''}`}>
                           <div className={styles.leadCardTitleRow}>
                             <h3>{assetTitle(lead)}</h3>
-                            <span className={`${styles.leadStatusBadge} ${leadStatusClass}`}>{leadStatusLabel}</span>
                           </div>
                           <div className={styles.leadAssetContext}>
                             <strong className={styles.leadAssetName}>{lead.ownerBusinessName || ownerDisplayName(lead)}</strong>
-                            {assetIdentifier ? <span>{assetIdentifier}</span> : null}
+                            {assetIdentifier ? <span className={styles.leadAssetIdentifier}>{assetIdentifier}</span> : null}
                           </div>
                           <span className={styles.clientKicker}>{formatLeadDisplayType(lead)} · Received {formatDate(lead.createdAtIso)}</span>
                           {licensingWorkspaceMode ? (

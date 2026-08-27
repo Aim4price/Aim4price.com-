@@ -1766,32 +1766,6 @@
   font-weight: 650 !important;
 }
 
-.leadStatusBadge {
-  min-height: 1.65rem;
-  padding: 0 0.55rem;
-  border-radius: 8px;
-  font-size: 0.66rem;
-  font-weight: 800;
-}
-
-.leadStatusBadgeNew {
-  color: #74460b;
-  background: #fff5e7;
-  border-color: rgba(196, 130, 32, 0.42);
-}
-
-.leadStatusBadgeOpen {
-  color: #315b7e;
-  background: #f1f6fb;
-  border-color: rgba(72, 112, 149, 0.3);
-}
-
-.leadStatusBadgeDone {
-  color: #176047;
-  background: #edf8f2;
-  border-color: rgba(44, 139, 99, 0.32);
-}
-
 .openLeadButton,
 .markDoneLeadButton,
 .doneLeadPill,
@@ -3054,34 +3028,6 @@
   min-width: 0;
 }
 
-.leadStatusBadge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 1.72rem;
-  padding: 0 0.62rem;
-  border: 1px solid currentColor;
-  border-radius: 999px;
-  font-size: 0.72rem;
-  font-weight: 900;
-  letter-spacing: 0.055em;
-  line-height: 1;
-  text-transform: uppercase;
-  white-space: nowrap;
-}
-
-.leadStatusBadgeNew {
-  color: #9f2f2f;
-  background: #fff4f4;
-  border-color: rgba(239, 148, 148, 0.82);
-}
-
-.leadStatusBadgeDone {
-  color: #0d5a42;
-  background: #edf9f3;
-  border-color: rgba(117, 198, 154, 0.84);
-}
-
 .leadThreadNew:not(.leadThreadOpen) {
   border-color: var(--lead-new-red-line) !important;
   background:
@@ -3618,32 +3564,6 @@
   color: #64746a !important;
   font-size: 0.78rem !important;
   font-weight: 650 !important;
-}
-
-.leadsPage .leadStatusBadge {
-  min-height: 1.65rem !important;
-  padding: 0 0.55rem !important;
-  border-radius: 8px !important;
-  font-size: 0.66rem !important;
-  font-weight: 800 !important;
-}
-
-.leadsPage .leadStatusBadgeNew {
-  color: #74460b !important;
-  background: #fff5e7 !important;
-  border-color: rgba(196, 130, 32, 0.42) !important;
-}
-
-.leadsPage .leadStatusBadgeOpen {
-  color: #315b7e !important;
-  background: #f1f6fb !important;
-  border-color: rgba(72, 112, 149, 0.3) !important;
-}
-
-.leadsPage .leadStatusBadgeDone {
-  color: #176047 !important;
-  background: #edf8f2 !important;
-  border-color: rgba(44, 139, 99, 0.32) !important;
 }
 
 .leadsPage .clientActionRow .openLeadButton {
@@ -5518,18 +5438,18 @@
   min-width: 0;
 }
 
-.leadAssetContext > span {
+.leadAssetIdentifier {
   display: inline-flex;
   align-items: center;
-  min-height: 1.55rem;
-  padding: 0 0.55rem;
-  border: 1px solid rgba(55, 96, 82, 0.18);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.72);
   color: #526c64;
-  font-size: 0.73rem;
+  font-size: 0.78rem;
   font-weight: 760;
-  white-space: nowrap;
+}
+
+.leadAssetIdentifier::before {
+  margin-right: 0.7rem;
+  color: rgba(49, 83, 72, 0.52);
+  content: '·';
 }
 
 .leadOwnerMessagePreview .trackingLeadPurposeCopy small {

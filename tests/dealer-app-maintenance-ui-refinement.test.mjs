@@ -10,9 +10,9 @@ const styles = read("components/DealerMaintenanceTrackerClient.module.css");
 
 test("Dealer App summary cards omit supporting copy while Dealer Desktop keeps it", () => {
   for (const copy of [
-    "Overdue, due soon, or waiting for a usage reading.",
+    "Due, overdue, or awaiting usage.",
     "Show all equipment shared with you.",
-    "No current maintenance requires attention.",
+    "Maintenance completed and saved.",
   ]) {
     const escaped = copy.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     assert.match(

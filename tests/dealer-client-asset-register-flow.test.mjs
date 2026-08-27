@@ -38,6 +38,9 @@ test('dealer Asset Register opens a deliberate dealer-or-client gateway', () => 
   assert.match(registerGateway, /Dealer Asset Register/);
   assert.match(registerGateway, /Client Asset Registers/);
   assert.match(registerGateway, /Choose a client register/);
+  assert.match(registerGateway, /valuationStyles\.sectorBigCard/);
+  assert.match(registerGateway, /entryStyles\.entryChoiceCard/);
+  assert.doesNotMatch(registerGateway, /<video/);
   assert.match(registerGateway, /register\.id !== dealerRegister\?\.id/);
   assert.match(dealerInventoryPage, /<DealerRegisterGateway/);
   assert.match(dealerInventoryPage, /workspacePath="\/dealer\/inventory"/);
@@ -74,6 +77,9 @@ test('shared umbrella assets appear as ordinary independent leads', () => {
   assert.match(leadsClient, /if \(isAssetGroupLead\(lead\)\) return false/);
   assert.match(leadsClient, /renderLeadDetails\(lead\)/);
   assert.match(leadsClient, /Replacement Price/);
+  assert.match(leadsClient, /styles\.leadAssetIdentifier/);
+  assert.doesNotMatch(leadsClient, /styles\.leadStatusBadge|leadStatusLabel|leadStatusClass/);
+  assert.doesNotMatch(leadsStyles, /\.leadStatusBadge/);
   assert.doesNotMatch(leadsClient, /Shared umbrella|umbrellaLeadBatchHeader|umbrellaLeadChildThread/i);
   assert.doesNotMatch(leadsStyles, /umbrellaLeadBatchHeader|umbrellaLeadChildThread/i);
 });
