@@ -270,6 +270,7 @@ type Notice = {
 };
 
 type CommitmentFrequency = 'monthly' | 'quarterly' | 'six_monthly' | 'annual';
+type ManualCostWizardStep = 1 | 2 | 3;
 type RecurringWizardStep = 1 | 2 | 3;
 
 type RecurringCommitmentDraft = {
@@ -779,6 +780,11 @@ function formatMoneyWithCents(value: number | null | undefined): string {
   return value.toFixed(2);
 }
 
+function formatReviewMoney(value: number | null | undefined): string {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return 'R 0.00';
+  return `R ${value.toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
 function formatGroupedInteger(value: unknown): string {
   const digits = String(value ?? '').replace(/[^0-9]/g, '').replace(/^0+(?=\d)/, '');
   if (!digits) return '';
@@ -1186,6 +1192,8 @@ export default function MyInvoicesClient({
   const [accountingExportDownloading, setAccountingExportDownloading] = useState(false);
   const [dealerDefaults, setDealerDefaults] = useState<DealerDefaults>(initialDealerDefaults);
   const [draft, setDraft] = useState<InvoiceDraft>(buildEmptyDraft('manual', initialDealerDefaults.supplierName));
+  const [manualCostWizardStep, setManualCostWizardStep] = useState<ManualCostWizardStep>(1);
+  const [manualCostWizardError, setManualCostWizardError] = useState('');
   const [recurringDraft, setRecurringDraft] = useState<RecurringCommitmentDraft>(buildRecurringCommitmentDraft);
   const [recurringAssetIds, setRecurringAssetIds] = useState<string[]>([]);
   const [recurringPickerAssetIds, setRecurringPickerAssetIds] = useState<string[]>([]);
@@ -1237,6 +1245,7 @@ export default function MyInvoicesClient({
   const recurringScopeTriggerRef = useRef<HTMLButtonElement>(null);
   const recurringCategoryTriggerRef = useRef<HTMLButtonElement>(null);
   const recurringWizardStepHeadingRef = useRef<HTMLHeadingElement>(null);
+  const manualCostWizardStepHeadingRef = useRef<HTMLHeadingElement>(null);
   const budgetDeleteButtonRef = useRef<HTMLButtonElement>(null);
   const budgetDeleteCancelRef = useRef<HTMLButtonElement>(null);
   const budgetDeleteReturnFocusRef = useRef(false);
@@ -1491,6 +1500,9 @@ export default function MyInvoicesClient({
   const recurringFrequencyLabel = RECURRING_FREQUENCY_OPTIONS.find(
     (option) => option.value === recurringDraft.frequency,
   )?.label ?? 'Monthly';
+  const manualCostSubtotalValue = Number(draft.subtotalExVat.replace(/\s/g, '').replace(',', '.'));
+  const manualCostVatValue = Number(draft.vatAmount.replace(/\s/g, '').replace(',', '.'));
+  const manualCostTotalValue = Number(draft.totalIncVat.replace(/\s/g, '').replace(',', '.'));
 
   const selectedBudgetAsset = useMemo(
     () => budgetAssets.find((asset) => asset.id === budgetSelectedAssetIds[0]) ?? null,
@@ -1644,6 +1656,7 @@ export default function MyInvoicesClient({
   const sourceChoiceOpen = flow === 'source-choice';
   const assetPickerOpen = flow === 'asset-manual' || flow === 'asset-automatic';
   const formOpen = flow === 'manual-form' || flow === 'review';
+  const manualCostWizardOpen = flow === 'manual-form';
   const recurringOpen = flow === 'recurring';
   const flowTitle = flow === 'asset-automatic' ? 'Choose asset for uploaded cost' : 'Choose asset for manual cost';
   const formTitle = flow === 'review' ? 'Review cost details' : 'Enter cost manually';
@@ -1883,6 +1896,41 @@ export default function MyInvoicesClient({
       document.removeEventListener('keydown', handleKeyDown);
     };
   }, [isSaving, recurringAssetPickerOpen, recurringOpen, recurringWizardStep]);
+
+  useEffect(() => {
+    if (!manualCostWizardOpen || usageMetricDropdownOpen) return undefined;
+    const focusFrame = window.requestAnimationFrame(() => manualCostWizardStepHeadingRef.current?.focus());
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape' && !isSaving) {
+        event.preventDefault();
+        closeModal();
+        return;
+      }
+      if (event.key !== 'Tab') return;
+
+      const dialog = manualCostWizardStepHeadingRef.current?.closest('[role="dialog"]');
+      if (!dialog) return;
+      const focusable = Array.from(dialog.querySelectorAll<HTMLElement>(
+        'button:not([disabled]), input:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      ));
+      if (!focusable.length) return;
+      const activeIndex = focusable.indexOf(document.activeElement as HTMLElement);
+      if (event.shiftKey && activeIndex <= 0) {
+        event.preventDefault();
+        focusable[focusable.length - 1]?.focus();
+      } else if (!event.shiftKey && (activeIndex === -1 || activeIndex === focusable.length - 1)) {
+        event.preventDefault();
+        focusable[0]?.focus();
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.cancelAnimationFrame(focusFrame);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isSaving, manualCostWizardOpen, manualCostWizardStep, usageMetricDropdownOpen]);
 
   useEffect(() => {
     if (!recurringCategoryDropdownOpen) return undefined;
@@ -2375,6 +2423,8 @@ export default function MyInvoicesClient({
     setRawTextPreview('');
     setExtractionWarnings([]);
     setUsageMetricDropdownOpen(false);
+    setManualCostWizardStep(1);
+    setManualCostWizardError('');
     setAssetLockedForFlow(false);
     setDraft(buildEmptyDraft('manual', dealerMode ? dealerDefaults.supplierName : ''));
     setRecurringDraft(buildRecurringCommitmentDraft());
@@ -2633,6 +2683,8 @@ export default function MyInvoicesClient({
     setRawTextPreview('');
     setExtractionWarnings([]);
     setUsageMetricDropdownOpen(false);
+    setManualCostWizardStep(1);
+    setManualCostWizardError('');
     setAssetLockedForFlow(Boolean(normalizedAssetId));
     setDraft(buildEmptyDraft('manual', dealerMode ? dealerDefaults.supplierName : ''));
     setFlow('source-choice');
@@ -2652,6 +2704,8 @@ export default function MyInvoicesClient({
     setRawTextPreview('');
     setExtractionWarnings([]);
     setUsageMetricDropdownOpen(false);
+    setManualCostWizardStep(1);
+    setManualCostWizardError('');
     setDraft(presetAssetId
       ? buildDraftForAsset(source, presetAssetId)
       : buildEmptyDraft(source, dealerMode ? dealerDefaults.supplierName : ''));
@@ -2793,10 +2847,52 @@ export default function MyInvoicesClient({
     }
   }
 
+  function manualCostInvoiceError(): string {
+    if (!Number.isFinite(manualCostTotalValue) || manualCostTotalValue <= 0) {
+      return 'Enter the total amount including VAT before continuing.';
+    }
+    return '';
+  }
+
+  function continueManualCostWizard() {
+    setManualCostWizardError('');
+    if (manualCostWizardStep === 1) {
+      const validationError = manualCostInvoiceError();
+      if (validationError) {
+        setManualCostWizardError(validationError);
+        return;
+      }
+      setManualCostWizardStep(2);
+      return;
+    }
+    if (manualCostWizardStep === 2) {
+      setUsageMetricDropdownOpen(false);
+      setManualCostWizardStep(3);
+    }
+  }
+
+  function goBackManualCostWizard() {
+    setManualCostWizardError('');
+    setUsageMetricDropdownOpen(false);
+    setManualCostWizardStep((current) => (current === 3 ? 2 : 1));
+  }
+
+  function leaveManualCostWizard() {
+    setManualCostWizardError('');
+    setUsageMetricDropdownOpen(false);
+    if (editingInvoiceId) {
+      closeModal();
+      return;
+    }
+    setFlow(assetLockedForFlow ? 'source-choice' : 'asset-manual');
+  }
+
   function selectAssetAndContinue(assetId: string) {
     setSelectedAssetId(assetId);
     setPickerSearch('');
     setAssetLockedForFlow(false);
+    setManualCostWizardStep(1);
+    setManualCostWizardError('');
 
     if (flow === 'asset-automatic') {
       setDraft(buildDraftForAsset('automatic', assetId));
@@ -3211,6 +3307,21 @@ export default function MyInvoicesClient({
       return;
     }
 
+    if (flow === 'manual-form' && manualCostWizardStep !== 3) {
+      continueManualCostWizard();
+      return;
+    }
+
+    if (flow === 'manual-form') {
+      const validationError = manualCostInvoiceError();
+      if (validationError) {
+        setManualCostWizardStep(1);
+        setManualCostWizardError(validationError);
+        return;
+      }
+      setManualCostWizardError('');
+    }
+
     setIsSaving(true);
     setNotice(null);
 
@@ -3262,7 +3373,9 @@ export default function MyInvoicesClient({
           : `Cost record saved.${duplicateText}`,
       });
     } catch (error) {
-      setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'The cost record could not be saved.' });
+      const message = error instanceof Error ? error.message : 'The cost record could not be saved.';
+      if (flow === 'manual-form') setManualCostWizardError(message);
+      else setNotice({ tone: 'error', message });
     } finally {
       setIsSaving(false);
     }
@@ -3277,6 +3390,8 @@ export default function MyInvoicesClient({
     setUploadedDocument(invoice.document);
     setRawTextPreview((invoice.document?.rawExtractedText ?? '').slice(0, 3000));
     setExtractionWarnings(invoice.document?.extractionWarnings ?? []);
+    setManualCostWizardStep(1);
+    setManualCostWizardError('');
     setDraft(draftFromInvoice(invoice));
     setFlow(invoice.source === 'automatic' ? 'review' : 'manual-form');
   }
@@ -3321,6 +3436,7 @@ export default function MyInvoicesClient({
   }
 
   function setUsageMetric(value: UsageMetric) {
+    setManualCostWizardError('');
     setDraft((current) => ({
       ...current,
       usageMetric: value,
@@ -3330,6 +3446,7 @@ export default function MyInvoicesClient({
   }
 
   function setDraftField<K extends keyof InvoiceDraft>(key: K, value: InvoiceDraft[K]) {
+    setManualCostWizardError('');
     setDraft((current) => ({ ...current, [key]: value }));
   }
 
@@ -5653,11 +5770,22 @@ export default function MyInvoicesClient({
 
       {formOpen ? (
         <div className={styles.modalBackdrop} role="dialog" aria-modal="true" aria-label={formTitle}>
-          <form className={`${styles.formModal} ${styles.costFormModal}`} onSubmit={submitInvoiceDraft}>
+          <form
+            className={`${styles.formModal} ${styles.costFormModal} ${manualCostWizardOpen ? styles.manualCostWizardModal : ''}`}
+            onSubmit={submitInvoiceDraft}
+          >
             <div className={styles.modalHeader}>
               <div>
                 <h2>{formTitle}</h2>
-                <p>{selectedAsset?.title ?? 'Selected asset'} · {captureMethodLabel(draft.source)}</p>
+                <p>
+                  {selectedAsset?.title ?? 'Selected asset'} · {manualCostWizardOpen
+                    ? manualCostWizardStep === 1
+                      ? 'Invoice details'
+                      : manualCostWizardStep === 2
+                        ? 'Work details'
+                        : 'Review and save'
+                    : captureMethodLabel(draft.source)}
+                </p>
               </div>
               <button type="button" className={styles.closeButton} onClick={closeModal} aria-label="Close"><CloseIcon /></button>
             </div>
@@ -5670,16 +5798,54 @@ export default function MyInvoicesClient({
                 </div>
               ) : null}
 
-              <section className={styles.invoiceFormCard}>
-                {dealerMode && dealerDefaults.supplierName ? (
-                  <div className={styles.dealerDetailsCard}>
-                    <span>Dealer details pulled from your account</span>
-                    <strong>{dealerDefaults.supplierName}</strong>
-                    {dealerDefaults.vatNumber ? <small>VAT: {dealerDefaults.vatNumber}</small> : null}
-                    {dealerDefaults.address ? <small>{dealerDefaults.address}</small> : null}
+              {manualCostWizardOpen ? (
+                <ol className={styles.invoiceDropWizardProgress} aria-label={'Step ' + manualCostWizardStep + ' of 3'}>
+                  {([['Invoice', 1], ['Work', 2], ['Review', 3]] as const).map(([label, step]) => (
+                    <li
+                      key={label}
+                      className={[
+                        styles.invoiceDropWizardProgressItem,
+                        manualCostWizardStep === step ? styles.invoiceDropWizardProgressItemActive : '',
+                        manualCostWizardStep > step ? styles.invoiceDropWizardProgressItemComplete : '',
+                      ].join(' ')}
+                      aria-current={manualCostWizardStep === step ? 'step' : undefined}
+                    >
+                      <span aria-hidden="true">{manualCostWizardStep > step ? '✓' : step}</span>
+                      <strong>{label}</strong>
+                    </li>
+                  ))}
+                </ol>
+              ) : null}
+
+              <section className={`${styles.invoiceFormCard} ${manualCostWizardOpen ? `${styles.invoiceDropWizardPanel} ${styles.manualCostWizardPanel}` : ''}`}>
+                {manualCostWizardOpen ? (
+                  <div className={styles.invoiceDropWizardHeading}>
+                    <h3 ref={manualCostWizardStepHeadingRef} tabIndex={-1}>
+                      {manualCostWizardStep === 1
+                        ? 'Add the invoice details'
+                        : manualCostWizardStep === 2
+                          ? 'Describe the work'
+                          : 'Review your cost'}
+                    </h3>
+                    <p>{manualCostWizardStep === 1
+                      ? 'Capture the supplier, date, usage and totals.'
+                      : manualCostWizardStep === 2
+                        ? 'Add the work completed and an optional supporting file.'
+                        : 'Check the complete record before saving.'}</p>
                   </div>
                 ) : null}
-                <div className={styles.formGrid}>
+
+                {!manualCostWizardOpen || manualCostWizardStep === 1 ? (
+                  <>
+                    {dealerMode && dealerDefaults.supplierName ? (
+                      <div className={styles.dealerDetailsCard}>
+                        <span>Dealer details pulled from your account</span>
+                        <strong>{dealerDefaults.supplierName}</strong>
+                        {dealerDefaults.vatNumber ? <small>VAT: {dealerDefaults.vatNumber}</small> : null}
+                        {dealerDefaults.address ? <small>{dealerDefaults.address}</small> : null}
+                      </div>
+                    ) : null}
+                    <div className={`${styles.formGrid} ${manualCostWizardOpen ? styles.manualCostInvoiceGrid : ''}`}>
                   <label>
                     <span>Supplier name</span>
                     <input value={draft.supplierName} onChange={(event) => setDraftField('supplierName', event.target.value)} />
@@ -5782,9 +5948,13 @@ export default function MyInvoicesClient({
                       />
                     </div>
                   </label>
-                </div>
+                    </div>
+                  </>
+                ) : null}
 
-                <div className={styles.textAreaGrid}>
+                {!manualCostWizardOpen || manualCostWizardStep === 2 ? (
+                  <>
+                    <div className={styles.textAreaGrid}>
                   <label>
                     <span>Maintenance work done</span>
                     <textarea value={draft.maintenanceWorkDone} onChange={(event) => setDraftField('maintenanceWorkDone', event.target.value)} rows={4} />
@@ -5825,17 +5995,99 @@ export default function MyInvoicesClient({
                     <pre>{rawTextPreview}</pre>
                   </details>
                 ) : null}
+                  </>
+                ) : null}
+
+                {manualCostWizardOpen && manualCostWizardStep === 3 ? (
+                  <dl className={`${styles.budgetReviewGrid} ${styles.manualCostReviewGrid}`}>
+                    <div className={styles.manualCostReviewWide}>
+                      <dt>Asset</dt>
+                      <dd>{selectedAsset?.title ?? 'Selected asset'}</dd>
+                    </div>
+                    <div>
+                      <dt>Supplier</dt>
+                      <dd>{draft.supplierName.trim() || 'Not entered'}</dd>
+                    </div>
+                    <div>
+                      <dt>Invoice number</dt>
+                      <dd>{draft.invoiceNumber.trim() || 'Not entered'}</dd>
+                    </div>
+                    <div>
+                      <dt>Invoice date</dt>
+                      <dd>{formatDate(draft.invoiceDate)}</dd>
+                    </div>
+                    <div>
+                      <dt>Usage</dt>
+                      <dd>{draft.usageMetric === 'none'
+                        ? 'Not recorded'
+                        : `${selectedUsageMetricOption.label}${draft.usageReading ? ` · ${draft.usageReading}` : ' · No reading'}`}</dd>
+                    </div>
+                    <div>
+                      <dt>Subtotal excl. VAT</dt>
+                      <dd>{formatReviewMoney(manualCostSubtotalValue)}</dd>
+                    </div>
+                    <div>
+                      <dt>VAT amount</dt>
+                      <dd>{formatReviewMoney(manualCostVatValue)}</dd>
+                    </div>
+                    <div className={styles.manualCostReviewTotal}>
+                      <dt>Total incl. VAT</dt>
+                      <dd>{formatReviewMoney(manualCostTotalValue)}</dd>
+                    </div>
+                    <div className={styles.manualCostReviewWide}>
+                      <dt>Maintenance work</dt>
+                      <dd>{draft.maintenanceWorkDone.trim() || 'None'}</dd>
+                    </div>
+                    <div className={styles.manualCostReviewWide}>
+                      <dt>Parts supplied</dt>
+                      <dd>{draft.partsSupplied.trim() || 'None'}</dd>
+                    </div>
+                    <div className={styles.manualCostReviewWide}>
+                      <dt>Repair work</dt>
+                      <dd>{draft.repairWorkDone.trim() || 'None'}</dd>
+                    </div>
+                    <div className={styles.manualCostReviewWide}>
+                      <dt>Notes</dt>
+                      <dd>{draft.notes.trim() || 'None'}</dd>
+                    </div>
+                    <div className={styles.manualCostReviewWide}>
+                      <dt>Attachment</dt>
+                      <dd>{manualUploadFile?.name || uploadedDocument?.fileName || 'None'}</dd>
+                    </div>
+                  </dl>
+                ) : null}
+
+                {manualCostWizardOpen && manualCostWizardError ? (
+                  <div className={styles.budgetFormError} role="alert">{manualCostWizardError}</div>
+                ) : null}
               </section>
             </div>
 
-            <div className={styles.modalFooter}>
-              <button type="button" className={styles.secondaryButton} onClick={() => {
-                if (editingInvoiceId) closeModal();
-                else if (flow === 'manual-form') setFlow(assetLockedForFlow ? 'source-choice' : 'asset-manual');
-                else if (flow === 'review') setFlow('upload');
-                else closeModal();
-              }}>Back</button>
-              <button type="submit" className={styles.primaryButton} disabled={isSaving}>{isSaving ? 'Saving...' : 'Save cost record'}</button>
+            <div className={`${styles.modalFooter} ${manualCostWizardOpen ? styles.manualCostWizardFooter : ''}`}>
+              <button
+                type="button"
+                className={styles.secondaryButton}
+                onClick={() => {
+                  if (manualCostWizardOpen) {
+                    if (manualCostWizardStep === 1) leaveManualCostWizard();
+                    else goBackManualCostWizard();
+                  } else if (editingInvoiceId) closeModal();
+                  else if (flow === 'review') setFlow('upload');
+                  else closeModal();
+                }}
+                disabled={isSaving}
+              >
+                Back
+              </button>
+              {manualCostWizardOpen && manualCostWizardStep < 3 ? (
+                <button type="button" className={styles.primaryButton} onClick={continueManualCostWizard} disabled={isSaving}>
+                  Next
+                </button>
+              ) : (
+                <button type="submit" className={styles.primaryButton} disabled={isSaving}>
+                  {isSaving ? 'Saving...' : 'Save cost record'}
+                </button>
+              )}
             </div>
           </form>
         </div>

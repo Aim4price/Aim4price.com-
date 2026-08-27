@@ -6343,6 +6343,88 @@
   }
 }
 
+/* Manual costs use the same guided, review-before-save pattern as recurring costs. */
+.manualCostWizardModal {
+  width: min(100%, 940px);
+  max-height: min(94dvh, 880px);
+}
+
+.manualCostWizardModal .formModalScrollBody {
+  gap: 0.95rem;
+  padding-right: 0.45rem;
+}
+
+.manualCostWizardModal .invoiceDropWizardProgressItem {
+  min-height: 2.5rem;
+  padding: 0.36rem 0.52rem;
+}
+
+.manualCostWizardModal .manualCostWizardPanel {
+  gap: 1.1rem;
+  padding: 1.3rem 1.4rem 1.4rem;
+  border: 1px solid rgba(203, 219, 225, 0.98);
+  border-radius: 1.25rem;
+  background:
+    radial-gradient(circle at top left, rgba(25, 116, 84, 0.055), transparent 34%),
+    #ffffff;
+  box-shadow: 0 14px 32px rgba(20, 54, 46, 0.055);
+}
+
+.manualCostWizardModal .invoiceDropWizardHeading h3:focus {
+  outline: none;
+}
+
+.manualCostWizardModal .manualCostInvoiceGrid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.manualCostReviewGrid > div:last-child,
+.manualCostReviewWide {
+  grid-column: 1 / -1;
+}
+
+.manualCostReviewWide dd {
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.manualCostReviewGrid .manualCostReviewTotal {
+  border-color: rgba(164, 207, 188, 0.98);
+  background: #ebf8f1;
+}
+
+.manualCostReviewTotal dd {
+  color: #0f6848;
+  font-size: 1.04rem;
+}
+
+.manualCostWizardModal .manualCostWizardFooter {
+  justify-content: space-between;
+}
+
+@media (max-width: 900px) {
+  .manualCostWizardModal .manualCostInvoiceGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .manualCostWizardModal .manualCostWizardPanel {
+    padding: 1rem;
+  }
+}
+
+@media (max-width: 520px) {
+  .manualCostReviewGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .manualCostReviewGrid > div:last-child,
+  .manualCostReviewWide {
+    grid-column: auto;
+  }
+}
+
 /* Add Cost uses the same compact choice pattern as Fuel Slips. */
 .costChoiceModal {
   width: min(100%, 1120px);
