@@ -37,7 +37,6 @@
     "test:invoice-drop": "node --experimental-strip-types --test tests/public-invoice-drop.test.mjs",
     "capture:purge": "node scripts/purge-assisted-capture-files.mjs",
     "test:ad-studio": "node --test tests/ad-studio.test.mjs",
-    "pretest:report-design": "npm run typecheck && npm run test:cost-budgets && node --test tests/cost-budget-wizard-ui.test.mjs",
     "test:report-design": "node --experimental-strip-types --test tests/report-design-lock.test.mjs tests/report-opening-lock.test.mjs tests/canonical-report-pdf.test.mjs tests/report-export-correctness.test.mjs",
     "test:valuation-rules": "node --experimental-strip-types --test tests/valuation-rules.test.mjs",
     "verify:insurance": "node scripts/verify-insurance-workspace.cjs"
