@@ -372,7 +372,7 @@ async function listOwnerCostBudgetNotifications(userId: string): Promise<HeaderN
         href: `/my-invoices?${params.toString()}`,
         createdAtIso: alert.triggeredAtIso,
         assetId: alert.assetId || undefined,
-        priority: alert.alertKind === 'over_budget',
+        priority: true,
       } satisfies HeaderNotificationItem;
     });
   } catch (error) {
