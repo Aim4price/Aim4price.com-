@@ -100,6 +100,15 @@ type OutcomeInfluence = 'yes' | 'no' | 'unsure';
 type AssetTransferAction = 'archive' | 'claim_code';
 type DisposalWizardStep = 1 | 2 | 3 | 4;
 type AssetMoveDestination = 'register' | 'umbrella';
+type AssetCostBudgetStatus = 'warning' | 'over_budget';
+
+type AssetCostBudgetResponse = {
+  ok?: boolean;
+  budgets?: Array<{
+    assetId?: string | null;
+    status?: 'on_track' | AssetCostBudgetStatus;
+  }>;
+};
 
 const ASSET_GROUP_DRAG_DATA_TYPE = 'application/x-aim4price-asset-id';
 const ASSET_GROUP_AUTO_SCROLL_EDGE_PX = 140;
@@ -6525,6 +6534,7 @@ export default function AssetRegisterClient({
 } = {}) {
   const isAccountantWorkspace = Boolean(accountantShareId);
   const [assets, setAssets] = useState<RegisterAsset[]>([]);
+  const [costBudgetStatusByAssetId, setCostBudgetStatusByAssetId] = useState<Record<string, AssetCostBudgetStatus>>({});
   const [assetGroups, setAssetGroups] = useState<AssetGroup[]>([]);
   const [expandedAssetGroupIds, setExpandedAssetGroupIds] = useState<Set<string>>(() => new Set());
   const [assetGroupShareTarget, setAssetGroupShareTarget] = useState<AssetGroup | null>(null);
@@ -6784,6 +6794,46 @@ export default function AssetRegisterClient({
       documentObjectUrlsRef.current.clear();
     };
   }, []);
+
+  useEffect(() => {
+    if (isAccountantWorkspace) {
+      setCostBudgetStatusByAssetId({});
+      return undefined;
+    }
+
+    let cancelled = false;
+
+    async function loadCostBudgetStatuses() {
+      try {
+        const response = await fetch('/api/my-invoices/budgets', {
+          cache: 'no-store',
+          credentials: 'include',
+        });
+        const data = (await response.json().catch(() => null)) as AssetCostBudgetResponse | null;
+        if (!response.ok || !data?.ok || cancelled) return;
+
+        const next: Record<string, AssetCostBudgetStatus> = {};
+        for (const budget of data.budgets ?? []) {
+          const assetId = String(budget.assetId ?? '').trim();
+          const status = budget.status;
+          if (!assetId || (status !== 'warning' && status !== 'over_budget')) continue;
+          if (status === 'over_budget' || !next[assetId]) next[assetId] = status;
+        }
+        setCostBudgetStatusByAssetId(next);
+      } catch {
+        // Budget highlighting is supplemental; the Asset Register remains usable if it cannot load.
+      }
+    }
+
+    const handleCostLedgerUpdated = () => void loadCostBudgetStatuses();
+    void loadCostBudgetStatuses();
+    window.addEventListener('aim4price:cost-ledger-updated', handleCostLedgerUpdated);
+
+    return () => {
+      cancelled = true;
+      window.removeEventListener('aim4price:cost-ledger-updated', handleCostLedgerUpdated);
+    };
+  }, [isAccountantWorkspace]);
 
   useEffect(() => {
     function handleRegisterSummaryViewportChange() {
@@ -16606,6 +16656,7 @@ export default function AssetRegisterClient({
                     const isLive = isLiveOnMarketplace(asset);
                     const isFlagged = isAssetFlagged(asset);
                     const isFlagBusy = busyFlagAssetId === asset.id;
+                    const costBudgetStatus = costBudgetStatusByAssetId[asset.id] ?? null;
                     const isExpanded = expandedAssetId === asset.id;
                     const isAssetRowMuted = expandedAssetId
                       ? !isExpanded
@@ -16704,7 +16755,8 @@ export default function AssetRegisterClient({
                       >
                         <article
                           id={`asset-card-${asset.id}`}
-                          className={`${styles.assetCard} ${isExpanded ? styles.assetCardExpanded : ''} ${isFlagged ? styles.assetCardFlagged : ''} ${estimateNeedsUpdate ? styles.assetCardEstimateStale : ''} ${openPartnerNote ? `${styles.assetCardPartnerNote} ${partnerNoteToneClass}` : ''} ${maintenanceAlert || licenseRenewalAlert ? styles.assetCardMaintenanceUpcoming : ''} ${latestMaintenanceStatus ? styles.assetCardMaintenanceDone : ''} ${latestIssueNoteStatus ? styles.assetCardIssueNote : ''} ${dealerAssetCorrection ? styles.assetCardDealerCorrection : ''} ${dealerCorrectionRevaluationAlert ? styles.assetCardDealerCorrectionWarning : ''}`}
+                          className={`${styles.assetCard} ${isExpanded ? styles.assetCardExpanded : ''} ${isFlagged ? styles.assetCardFlagged : ''} ${costBudgetStatus ? styles.assetCardBudgetWarning : ''} ${estimateNeedsUpdate ? styles.assetCardEstimateStale : ''} ${openPartnerNote ? `${styles.assetCardPartnerNote} ${partnerNoteToneClass}` : ''} ${maintenanceAlert || licenseRenewalAlert ? styles.assetCardMaintenanceUpcoming : ''} ${latestMaintenanceStatus ? styles.assetCardMaintenanceDone : ''} ${latestIssueNoteStatus ? styles.assetCardIssueNote : ''} ${dealerAssetCorrection ? styles.assetCardDealerCorrection : ''} ${dealerCorrectionRevaluationAlert ? styles.assetCardDealerCorrectionWarning : ''}`}
+                          data-cost-budget-status={costBudgetStatus || undefined}
                         >
                         {(canUseOwnerOnlyAssetActions || isAccountantWorkspace) ? (
                           <div className={`${styles.assetSideActions} ${styles.assetGroupMemberActions}`} aria-label={`Actions for ${asset.title}`}>
@@ -16754,10 +16806,15 @@ export default function AssetRegisterClient({
                         ) : null}
                         <div className={styles.assetHeader}>
                           <div className={styles.assetTitleBlock}>
-                            {isFlagged || isLive || estimateNeedsUpdate || openPartnerNote || maintenanceAlert || licenseRenewalAlert || latestMaintenanceStatus || latestIssueNoteStatus || dealerAssetCorrection ? (
+                            {isFlagged || isLive || costBudgetStatus || estimateNeedsUpdate || openPartnerNote || maintenanceAlert || licenseRenewalAlert || latestMaintenanceStatus || latestIssueNoteStatus || dealerAssetCorrection ? (
                               <div className={styles.badgeRow}>
                                 {isFlagged ? <span className={`${styles.badge} ${styles.badgeDanger}`}>Flagged</span> : null}
                                 {isLive ? <span className={`${styles.badge} ${styles.badgeSuccess}`}>Live on marketplace</span> : null}
+                                {costBudgetStatus ? (
+                                  <span className={`${styles.badge} ${styles.badgeDanger} ${styles.badgeBudgetWarning}`}>
+                                    {costBudgetStatus === 'over_budget' ? 'Over budget' : 'Budget warning'}
+                                  </span>
+                                ) : null}
                                 {estimateNeedsUpdate ? (
                                   <span className={`${styles.badge} ${styles.badgeWarning}`}>Estimate needs update</span>
                                 ) : null}
@@ -22516,4 +22573,3 @@ export default function AssetRegisterClient({
     </main>
   );
 }
-
