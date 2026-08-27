@@ -3714,180 +3714,9 @@
   white-space: nowrap;
 }
 
-.recurringCommitmentModal {
-  width: min(100%, 920px);
-  max-height: min(90dvh, 800px);
-}
-
-.recurringCommitmentModal .modalHeader p {
-  white-space: nowrap;
-}
-
-.recurringCommitmentCard {
-  gap: 1.1rem;
-  padding: clamp(1rem, 2vw, 1.35rem);
-  border-color: rgba(200, 219, 211, 0.96);
-  background:
-    radial-gradient(circle at top left, rgba(24, 123, 88, 0.07), transparent 34%),
-    linear-gradient(180deg, #ffffff 0%, #f7fbf9 100%);
-}
-
-.recurringCommitmentGrid {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-.recurringCommitmentWide {
-  grid-column: 1 / -1;
-}
-
-.recurringCommitmentNote {
-  padding-top: 0.15rem;
-  border-top: 1px solid rgba(211, 225, 219, 0.9);
-}
-
-.recurringAssetField {
-  display: grid;
-  gap: 0.55rem;
-}
-
-.recurringAssetFieldLabel {
-  color: var(--text-muted);
-  font-size: 0.82rem;
-  font-weight: 900;
-  letter-spacing: 0.035em;
-  text-transform: uppercase;
-}
-
-.recurringAssetTrigger {
-  width: 100%;
-  min-height: 4.5rem;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 0.85rem 1rem;
-  border: 1px solid rgba(182, 211, 198, 0.98);
-  border-radius: 1rem;
-  background: linear-gradient(180deg, #ffffff 0%, #edf8f2 100%);
-  color: var(--brand-dark);
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-  box-shadow: 0 10px 22px rgba(18, 83, 61, 0.06), inset 0 1px 0 #ffffff;
-}
-
-.recurringAssetTrigger > span {
-  min-width: 0;
-  display: grid;
-  gap: 0.2rem;
-}
-
-.recurringAssetTrigger strong {
-  font-size: 1rem;
-  font-weight: 900;
-}
-
-.recurringAssetTrigger small {
-  color: var(--text-muted);
-  font-size: 0.82rem;
-  font-weight: 750;
-}
-
-.recurringAssetTrigger b {
-  flex: 0 0 auto;
-  color: var(--brand-mid);
-  font-size: 0.88rem;
-  font-weight: 900;
-}
-
-.recurringAssetChips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.45rem;
-}
-
-.recurringAssetChips span {
-  max-width: 100%;
-  overflow: hidden;
-  padding: 0.38rem 0.65rem;
-  border: 1px solid rgba(185, 213, 201, 0.95);
-  border-radius: 999px;
-  background: #f2faf6;
-  color: #185942;
-  font-size: 0.76rem;
-  font-weight: 850;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.recurringAssetPickerModal {
-  width: min(100%, 980px);
-}
-
-.recurringAssetList {
-  min-height: 16rem;
-}
-
-.recurringAssetRow {
-  grid-template-columns: auto minmax(0, 1fr) auto;
-}
-
-.recurringAssetRowSelected {
-  border-color: rgba(20, 117, 82, 0.58);
-  background: linear-gradient(180deg, #f8fdfa 0%, #edf8f2 100%);
-  box-shadow: 0 12px 26px rgba(18, 96, 69, 0.08);
-}
-
-.recurringAssetCheck {
-  width: 1.35rem;
-  height: 1.35rem;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: 2px solid #b8ccd2;
-  border-radius: 0.4rem;
-  background: #ffffff;
-  color: #ffffff;
-  font-size: 0.78rem;
-  font-weight: 950;
-}
-
-.recurringAssetRowSelected .recurringAssetCheck {
-  border-color: #167455;
-  background: #167455;
-}
-
-.recurringAssetPickerFooter {
-  justify-content: space-between;
-}
-
 @media (max-width: 720px) {
-  .recurringCommitmentGrid {
-    grid-template-columns: 1fr;
-  }
-
-  .recurringCommitmentWide {
-    grid-column: auto;
-  }
-
-  .recurringCommitmentModal .modalHeader p,
   .recurringChoiceOption .choiceTitleBlock small {
     white-space: normal;
-  }
-
-  .recurringAssetRow {
-    grid-template-columns: auto minmax(0, 1fr);
-  }
-
-  .recurringAssetRow .assetValue {
-    grid-column: 2;
-    justify-items: start;
-    text-align: left;
-  }
-
-  .recurringAssetPickerFooter {
-    display: grid;
-    grid-template-columns: 1fr;
   }
 }
 
@@ -6248,6 +6077,136 @@
 
   .budgetWizardModal .budgetDeleteButton {
     width: 100%;
+  }
+}
+
+/* Recurring costs use the same compact, guided pattern as Spending budgets. */
+.recurringWizardModal {
+  width: min(100%, 720px);
+  max-height: min(88dvh, 790px);
+}
+
+.recurringWizardBody {
+  gap: 0.7rem;
+}
+
+.recurringDetailsGrid,
+.recurringOptionalGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.8rem;
+}
+
+.recurringDescriptionField {
+  grid-column: 1 / -1;
+}
+
+.recurringWizardField select,
+.recurringWizardField textarea {
+  width: 100%;
+  min-height: 3.65rem;
+  padding: 0.78rem 0.95rem;
+  border: 1px solid rgba(184, 207, 216, 0.98);
+  border-radius: 1.05rem;
+  outline: 0;
+  color: var(--brand-dark);
+  background: #ffffff;
+  font: inherit;
+  font-size: 0.96rem;
+  font-weight: 650;
+}
+
+.recurringWizardField textarea {
+  min-height: 4.35rem;
+  line-height: 1.38;
+  resize: vertical;
+}
+
+.recurringWizardField select:focus,
+.recurringWizardField textarea:focus {
+  border-color: rgba(25, 116, 84, 0.52);
+  box-shadow: 0 0 0 4px rgba(22, 83, 64, 0.09), inset 0 1px 0 #ffffff;
+}
+
+.recurringWizardField small,
+.recurringDateGrid small {
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 680;
+}
+
+.recurringFrequencyControl {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  min-height: 3.65rem;
+}
+
+.recurringFrequencyControl button {
+  min-height: 2.95rem;
+  padding: 0.42rem 0.5rem;
+  line-height: 1.18;
+}
+
+.recurringDateGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.8rem;
+}
+
+.recurringReviewGrid > div:last-child,
+.recurringReviewWide {
+  grid-column: 1 / -1;
+}
+
+.recurringReviewWide dd {
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.recurringReviewNotice {
+  margin: 0;
+  padding: 0.72rem 0.82rem;
+  border: 1px solid rgba(185, 213, 201, 0.95);
+  border-radius: 0.9rem;
+  color: #185942;
+  background: #f2faf6;
+  font-size: 0.78rem;
+  font-weight: 760;
+  line-height: 1.38;
+}
+
+@media (max-width: 620px) {
+  .recurringDetailsGrid,
+  .recurringOptionalGrid,
+  .recurringDateGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .recurringDescriptionField,
+  .recurringReviewGrid > div:last-child,
+  .recurringReviewWide {
+    grid-column: auto;
+  }
+
+  .recurringFrequencyControl {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 420px) {
+  .recurringWizardModal .invoiceDropWizardProgressItem {
+    gap: 0.34rem;
+    padding-inline: 0.38rem;
+  }
+
+  .recurringWizardModal .invoiceDropWizardProgressItem > span {
+    width: 1.55rem;
+    height: 1.55rem;
+  }
+
+  .recurringWizardModal .invoiceDropWizardProgressItem strong {
+    font-size: 0.66rem;
   }
 }
 
