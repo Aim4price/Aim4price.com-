@@ -38,26 +38,35 @@ test('each umbrella member is saved as a normal child lead with shared batch met
 });
 
 test('umbrella children reuse the exact single-asset lead rendering and actions', () => {
-  assert.match(leadsClient, /function assetGroupShareInfo/);
+  assert.match(leadsClient, /function isAssetGroupLead/);
   assert.match(leadsClient, /if \(isAssetGroupLead\(lead\)\) return false/);
-  assert.match(leadsClient, /className=\{styles\.umbrellaLeadBatchHeader\}/);
-  assert.match(leadsClient, /Each asset opens independently with its own photos, information and actions/);
   assert.match(leadsClient, /renderLeadDetails\(lead\)/);
   assert.match(leadsClient, /openLeadQrModal\(managedLead\)/);
   assert.match(leadsClient, /openLeadPhotoUploadModal\(managedLead\)/);
-  assert.match(leadsStyles, /\.umbrellaLeadBatchHeader/);
-  assert.match(leadsStyles, /\.umbrellaLeadChildThread/);
+  assert.doesNotMatch(leadsClient, /Shared umbrella|umbrellaLeadBatchHeader|umbrellaLeadChildThread/i);
+  assert.doesNotMatch(leadsStyles, /umbrellaLeadBatchHeader|umbrellaLeadChildThread/i);
 });
 
-test('legacy umbrella shares are recognised and grouped without a data migration', () => {
-  assert.match(leadsClient, /snapshot\?\.generatedAtIso/);
-  assert.match(leadsClient, /groupId \|\| asText\(snapshot\?\.title\) \|\| 'asset-group'/);
-  assert.match(leadsClient, /function orderAssetGroupLeadChildren/);
+test('legacy umbrella shares are recognised as independent asset leads without a data migration', () => {
+  assert.match(leadsClient, /asText\(snapshot\?\.snapshotType\)\.toLowerCase\(\) === 'asset_group'/);
+  assert.match(leadsClient, /if \(isAssetGroupLead\(lead\)\) return false/);
+  assert.doesNotMatch(leadsClient, /assetGroupShareInfo|orderAssetGroupLeadChildren/);
 });
 
-test('umbrella batches count as one request in lead summaries and dealer badges', () => {
-  assert.match(leadsClient, /new Set\(filteredLeads\.map\(\(lead\) => leadNotificationKey\(lead\)\)\)\.size/);
-  assert.match(dealerHome, /\.map\(leadNotificationKey\)/);
-  assert.match(partnerAccess, /included_sections_json #>> '\{assetGroupShare,batchId\}'/);
-  assert.match(partnerAccess, /group by notification_key/);
+test('every shared asset counts independently in lead summaries and dealer badges', () => {
+  assert.match(leadsClient, /summaryLeads\.filter\(\(lead\) => isNewLead\(lead\)\)\.length/);
+  assert.match(leadsClient, /of \{periodLeads\.length\} leads for the selected period/);
+  assert.match(dealerHome, /const newLeadCount = leads\.filter\([\s\S]*?\)\.length/);
+  assert.match(partnerAccess, /from public\.asset_leads[\s\S]*where partner_user_id = \$1/);
+  assert.doesNotMatch(partnerAccess, /notification_key|group by notification_key/);
+});
+
+test('collapsed leads prioritise the asset, searchable identifiers and owner context', () => {
+  assert.match(leadsClient, /function leadAssetIdentifier/);
+  assert.match(leadsClient, /<h3>\{assetTitle\(lead\)\}<\/h3>/);
+  assert.match(leadsClient, /lead\.ownerBusinessName \|\| ownerDisplayName\(lead\)/);
+  assert.match(leadsClient, /Owner message/);
+  assert.match(leadsClient, /lead\.ownerMessage/);
+  assert.match(leadsClient, /lead\.partnerNotes/);
+  assert.match(leadsStyles, /\.leadAssetContext/);
 });

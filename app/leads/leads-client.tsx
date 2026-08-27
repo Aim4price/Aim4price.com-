@@ -1,7 +1,7 @@
 'use client';
 
 import DropdownOverlay from '../../components/DropdownOverlay';
-import { Fragment, useCallback, useEffect, useMemo, useState, type ChangeEvent, type DragEvent } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ChangeEvent, type DragEvent } from 'react';
 import { createPortal } from 'react-dom';
 import dynamic from 'next/dynamic';
 import AppHeader from '../../components/AppHeader';
@@ -155,14 +155,6 @@ type PhotoModalState = {
   urls: string[];
   index: number;
   title: string;
-};
-
-type AssetGroupShareInfo = {
-  batchId: string;
-  groupId: string;
-  name: string;
-  assetCount: number;
-  childIndex: number | null;
 };
 
 type LeadAssetMedia = {
@@ -879,50 +871,17 @@ function registerLeadSnapshot(lead: AssetLead): Record<string, unknown> | null {
   return asRecord(lead.includedSections.registerSnapshot) ?? asRecord(lead.assetSnapshot.registerSnapshot);
 }
 
-function assetGroupShareInfo(lead: AssetLead): AssetGroupShareInfo | null {
+function isAssetGroupLead(lead: AssetLead): boolean {
   const explicitShare = asRecord(lead.includedSections.assetGroupShare);
   const snapshot = registerLeadSnapshot(lead);
   const source = asText(lead.includedSections.source).toLowerCase();
-  const isAssetGroup = Boolean(
+  return Boolean(
     explicitShare
     || source === 'asset_group'
     || source === 'asset_group_child'
     || asText(snapshot?.snapshotType).toLowerCase() === 'asset_group'
     || asText(snapshot?.groupId),
   );
-
-  if (!isAssetGroup) return null;
-
-  const groupId = asText(explicitShare?.groupId) || asText(snapshot?.groupId);
-  const sharedAt = asText(snapshot?.generatedAtIso) || lead.createdAtIso.slice(0, 16);
-  const fallbackBatchId = [
-    lead.ownerUserId,
-    lead.partnerUserId,
-    lead.leadType,
-    groupId || asText(snapshot?.title) || 'asset-group',
-    sharedAt,
-  ].join(':');
-  const assetCount = Math.max(
-    1,
-    Math.round(
-      asNumber(explicitShare?.assetCount)
-      ?? asNumber(snapshot?.assetCount ?? snapshot?.totalAssets)
-      ?? registerLeadAssets(lead).length,
-    ),
-  );
-  const childIndex = asNumber(explicitShare?.childIndex);
-
-  return {
-    batchId: asText(explicitShare?.batchId) || fallbackBatchId,
-    groupId,
-    name: asText(explicitShare?.name) || asText(snapshot?.groupName) || asText(snapshot?.title) || 'Asset umbrella',
-    assetCount,
-    childIndex: childIndex === null ? null : Math.max(1, Math.round(childIndex)),
-  };
-}
-
-function isAssetGroupLead(lead: AssetLead): boolean {
-  return Boolean(assetGroupShareInfo(lead));
 }
 
 function isFullRegisterLead(lead: AssetLead): boolean {
@@ -934,49 +893,6 @@ function isFullRegisterLead(lead: AssetLead): boolean {
     asText(lead.assetSnapshot.snapshotType) === 'full_asset_register' ||
     Boolean(registerLeadSnapshot(lead))
   );
-}
-
-function leadNotificationKey(lead: AssetLead): string {
-  return assetGroupShareInfo(lead)?.batchId || lead.id;
-}
-
-function orderAssetGroupLeadChildren(leads: AssetLead[]): AssetLead[] {
-  const grouped = new Map<string, AssetLead[]>();
-
-  leads.forEach((lead) => {
-    const group = assetGroupShareInfo(lead);
-    if (!group) return;
-    const current = grouped.get(group.batchId) ?? [];
-    current.push(lead);
-    grouped.set(group.batchId, current);
-  });
-
-  grouped.forEach((children) => {
-    children.sort((left, right) => {
-      const leftIndex = assetGroupShareInfo(left)?.childIndex;
-      const rightIndex = assetGroupShareInfo(right)?.childIndex;
-      if (leftIndex !== null && leftIndex !== undefined && rightIndex !== null && rightIndex !== undefined) {
-        return leftIndex - rightIndex;
-      }
-      return left.createdAtIso.localeCompare(right.createdAtIso);
-    });
-  });
-
-  const emittedGroups = new Set<string>();
-  const ordered: AssetLead[] = [];
-
-  leads.forEach((lead) => {
-    const group = assetGroupShareInfo(lead);
-    if (!group) {
-      ordered.push(lead);
-      return;
-    }
-    if (emittedGroups.has(group.batchId)) return;
-    emittedGroups.add(group.batchId);
-    ordered.push(...(grouped.get(group.batchId) ?? [lead]));
-  });
-
-  return ordered;
 }
 
 function registerLeadAssets(lead: AssetLead): Record<string, unknown>[] {
@@ -1122,6 +1038,43 @@ function assetDescription(lead: AssetLead): string {
   ]
     .filter(Boolean)
     .join(' ') || asText(lead.assetSnapshot.equipmentFamilyLabel) || asText(lead.assetSnapshot.kind) || 'Asset';
+}
+
+function leadAssetIdentifier(lead: AssetLead): string {
+  if (isFullRegisterLead(lead)) return '';
+
+  const snapshot = lead.assetSnapshot;
+  const specs = assetSpecs(lead) ?? {};
+  const registrationNumber =
+    firstTextFromRecord(snapshot, [
+      'licenseRegistrationNumber',
+      'license_registration_number',
+      'licenceRegistrationNumber',
+      'licence_registration_number',
+      'registrationNumber',
+      'registration_number',
+      'numberPlate',
+      'number_plate',
+    ])
+    || firstTextFromRecord(specs, [
+      'licenseRegistrationNumber',
+      'license_registration_number',
+      'licenceRegistrationNumber',
+      'licence_registration_number',
+      'registrationNumber',
+      'registration_number',
+      'numberPlate',
+      'number_plate',
+    ]);
+  const serialNumber =
+    firstTextFromRecord(snapshot, ['serialNumber', 'serial_number'])
+    || firstTextFromRecord(specs, ['serialNumber', 'serial_number']);
+
+  if (registrationNumber) return `Registration ${registrationNumber.toUpperCase()}`;
+  if (serialNumber) return `Serial ${serialNumber}`;
+
+  const publicAssetCode = asText(snapshot.publicAssetCode);
+  return publicAssetCode ? `Asset ${publicAssetCode}` : '';
 }
 
 function assetValue(lead: AssetLead): number {
@@ -1771,6 +1724,8 @@ function searchTextForLead(lead: AssetLead): string {
     ownerPhone(lead),
     ownerEmail(lead),
     lead.ownerBusinessName,
+    lead.ownerMessage,
+    ...(lead.partnerNotes ?? []).map((note) => note.noteText),
   ]
     .filter(Boolean)
     .join(' ')
@@ -1886,50 +1841,31 @@ export default function LeadsClient({
   const filteredLeads = useMemo(() => {
     const query = searchTerm.trim().toLowerCase();
 
-    return orderAssetGroupLeadChildren(periodLeads.filter((lead) => {
+    return periodLeads.filter((lead) => {
       if (statusFilter === 'new' && !isNewLead(lead)) return false;
       if (statusFilter === 'open' && (isNewLead(lead) || isCompletedLead(lead))) return false;
       if (statusFilter === 'completed' && !isCompletedLead(lead)) return false;
       if (statusFilter === 'tracking' && !isTrackingLead(lead)) return false;
 
       return leadMatchesSearch(lead, query);
-    }));
+    });
   }, [periodLeads, searchTerm, statusFilter]);
 
   const summaryLeads = useMemo(() => {
     const query = searchTerm.trim().toLowerCase();
     return query ? periodLeads.filter((lead) => leadMatchesSearch(lead, query)) : periodLeads;
   }, [periodLeads, searchTerm]);
-  const summaryLeadGroups = useMemo(() => {
-    const groups = new Map<string, AssetLead[]>();
-    summaryLeads.forEach((lead) => {
-      const key = leadNotificationKey(lead);
-      groups.set(key, [...(groups.get(key) ?? []), lead]);
-    });
-    return Array.from(groups.values());
-  }, [summaryLeads]);
   const newLeadCount = useMemo(
-    () => summaryLeadGroups.filter((group) => group.some((lead) => isNewLead(lead))).length,
-    [summaryLeadGroups],
+    () => summaryLeads.filter((lead) => isNewLead(lead)).length,
+    [summaryLeads],
   );
   const activeLeadCount = useMemo(
-    () => summaryLeadGroups.filter((group) => (
-      !group.some((lead) => isNewLead(lead))
-      && group.some((lead) => !isCompletedLead(lead))
-    )).length,
-    [summaryLeadGroups],
+    () => summaryLeads.filter((lead) => !isNewLead(lead) && !isCompletedLead(lead)).length,
+    [summaryLeads],
   );
   const completedLeadCount = useMemo(
-    () => summaryLeadGroups.filter((group) => group.every((lead) => isCompletedLead(lead))).length,
-    [summaryLeadGroups],
-  );
-  const filteredRequestCount = useMemo(
-    () => new Set(filteredLeads.map((lead) => leadNotificationKey(lead))).size,
-    [filteredLeads],
-  );
-  const periodRequestCount = useMemo(
-    () => new Set(periodLeads.map((lead) => leadNotificationKey(lead))).size,
-    [periodLeads],
+    () => summaryLeads.filter((lead) => isCompletedLead(lead)).length,
+    [summaryLeads],
   );
   const totalLeadPages = Math.max(1, Math.ceil(filteredLeads.length / LEADS_PER_PAGE));
   const visibleLeadPage = Math.min(Math.max(currentPage, 1), totalLeadPages);
@@ -3242,7 +3178,6 @@ export default function LeadsClient({
     const licenseStatus = snapshotLicenseStatusChoice(asset);
     const familyLabel = asText(asset.equipmentFamilyLabel) || asText(asset.kind) || 'Asset';
     const replacementPrice = snapshotReplacementPrice(asset);
-    const assetGroup = asRecord(asset.assetGroup);
     const documents = Array.isArray(asset.documents)
       ? asset.documents.map((document) => asRecord(document)).filter((document): document is Record<string, unknown> => Boolean(document))
       : [];
@@ -3258,12 +3193,6 @@ export default function LeadsClient({
                 .filter(Boolean)
                 .join(' · ') || 'Saved Asset Register item'}
             </small>
-            {assetGroup ? (
-              <em>
-                {asText(assetGroup.name) || 'Asset umbrella'}
-                {asText(assetGroup.role) ? ` · ${asText(assetGroup.role)}` : ''}
-              </em>
-            ) : null}
           </div>
           <div>
             <strong>{formatCurrency(snapshotAssetValue(asset))}</strong>
@@ -3417,8 +3346,7 @@ export default function LeadsClient({
     const licensedCount = asNumber(snapshot?.licensedAssetCount) ?? registerAssets.filter((asset) => asBoolean(asset.isLicensed)).length;
     const replacementValue = asNumber(snapshot?.totalReplacementValue ?? snapshot?.replacementValue) ?? sumSnapshotReplacementValues(registerAssets);
 
-    const isUmbrella = isAssetGroupLead(lead);
-    const registerTitle = asText(snapshot?.title) || (isUmbrella ? 'Asset Umbrella' : 'Full Asset Register');
+    const registerTitle = asText(snapshot?.title) || 'Full Asset Register';
 
     return (
       <div className={`${assetStyles.assetBody} ${styles.fullRegisterLeadBody}`} id={`lead-panel-${lead.id}`}>
@@ -3427,8 +3355,8 @@ export default function LeadsClient({
             <DownloadIcon className={assetStyles.buttonIcon} />
           </span>
           <span>
-            <strong>{isUmbrella ? 'Asset Umbrella' : 'Full Asset Register'}</strong>
-            <small>Download the shared {isUmbrella ? 'umbrella' : 'register'} snapshot PDF.</small>
+            <strong>Full Asset Register</strong>
+            <small>Download the shared register snapshot PDF.</small>
           </span>
         </button>
 
@@ -3447,7 +3375,7 @@ export default function LeadsClient({
         <section className={styles.fullRegisterAssetsSection} aria-label={`Assets in ${registerTitle}`}>
           <div className={styles.fullRegisterAssetsHeading}>
             <div>
-              <span>{isUmbrella ? 'Shared umbrella' : 'Shared Asset Register'}</span>
+              <span>Shared Asset Register</span>
               <h4>{registerTitle}</h4>
             </div>
             <strong>{registerAssets.length} {registerAssets.length === 1 ? 'asset' : 'assets'}</strong>
@@ -3792,8 +3720,8 @@ export default function LeadsClient({
           {!isLoading ? (
             <div className={`${styles.leadResultSummary} ${useDealerWorkspaceStyles ? styles.leadResultSummaryDealer : ''}`}>
               <span>Showing</span>
-              <strong>{filteredRequestCount}</strong>
-              <span>of {periodRequestCount} requests for the selected period</span>
+              <strong>{filteredLeads.length}</strong>
+              <span>of {periodLeads.length} leads for the selected period</span>
             </div>
           ) : null}
 
@@ -3804,43 +3732,34 @@ export default function LeadsClient({
 
           {!isLoading && filteredLeads.length ? (
             <div className={styles.leadStack}>
-              {paginatedLeads.map((lead, leadIndex) => {
+              {paginatedLeads.map((lead) => {
                 const isLeadOpen = openLeadId === lead.id;
                 const isLeadNew = isNewLead(lead);
                 const isLeadDone = isCompletedLead(lead);
                 const isLeadActive = !isLeadNew && !isLeadDone;
                 const isTrackingRequest = isTrackingLead(lead);
                 const isMarkingThisLeadDone = markingLeadDoneId === lead.id;
-                const assetGroupShare = assetGroupShareInfo(lead);
-                const previousAssetGroupShare = leadIndex > 0
-                  ? assetGroupShareInfo(paginatedLeads[leadIndex - 1])
-                  : null;
-                const showAssetGroupHeader = Boolean(
-                  assetGroupShare
-                  && assetGroupShare.batchId !== previousAssetGroupShare?.batchId,
-                );
+                const assetIdentifier = leadAssetIdentifier(lead);
+                const leadStatusLabel = isLeadNew ? 'New' : isLeadDone ? 'Handled' : 'Open';
+                const leadStatusClass = isLeadNew
+                  ? styles.leadStatusBadgeNew
+                  : isLeadDone
+                    ? styles.leadStatusBadgeDone
+                    : styles.leadStatusBadgeOpen;
 
                 return (
-                  <Fragment key={lead.id}>
-                    {showAssetGroupHeader && assetGroupShare ? (
-                      <section className={styles.umbrellaLeadBatchHeader} aria-label={`${assetGroupShare.name} shared umbrella`}>
-                        <div>
-                          <span>Shared umbrella</span>
-                          <h2>{assetGroupShare.name}</h2>
-                          <p>Each asset opens independently with its own photos, information and actions.</p>
-                        </div>
-                        <strong>{assetGroupShare.assetCount} {assetGroupShare.assetCount === 1 ? 'asset' : 'assets'}</strong>
-                      </section>
-                    ) : null}
-
-                    <article className={`${useDealerWorkspaceStyles ? workspaceStyles.card : ''} ${styles.leadThread} ${assetGroupShare ? styles.umbrellaLeadChildThread : ''} ${licensingWorkspaceMode ? styles.licensingLeadThread : ''} ${isLeadNew ? styles.leadThreadNew : ''} ${isLeadActive ? styles.leadThreadActive : ''} ${isLeadDone ? styles.leadThreadDone : ''} ${isTrackingRequest ? styles.leadThreadTracking : ''} ${isLeadOpen ? styles.leadThreadOpen : ''} ${openLeadId && !isLeadOpen ? styles.leadThreadMuted : ''}`}>
+                  <article key={lead.id} className={`${useDealerWorkspaceStyles ? workspaceStyles.card : ''} ${styles.leadThread} ${licensingWorkspaceMode ? styles.licensingLeadThread : ''} ${isLeadNew ? styles.leadThreadNew : ''} ${isLeadActive ? styles.leadThreadActive : ''} ${isLeadDone ? styles.leadThreadDone : ''} ${isTrackingRequest ? styles.leadThreadTracking : ''} ${isLeadOpen ? styles.leadThreadOpen : ''} ${openLeadId && !isLeadOpen ? styles.leadThreadMuted : ''}`}>
                     <div className={styles.clientPanel}>
                       <div className={`${styles.clientPanelHeader} ${licensingWorkspaceMode ? styles.licensingLeadHeader : ''}`}>
                         <div className={`${styles.clientIdentity} ${licensingWorkspaceMode ? styles.licensingLeadIdentity : ''} ${isTrackingRequest ? styles.trackingLeadIdentity : ''}`}>
                           <div className={styles.leadCardTitleRow}>
-                            <h3>{lead.ownerBusinessName || ownerDisplayName(lead)}</h3>
+                            <h3>{assetTitle(lead)}</h3>
+                            <span className={`${styles.leadStatusBadge} ${leadStatusClass}`}>{leadStatusLabel}</span>
                           </div>
-                          <strong className={styles.leadAssetName}>{assetTitle(lead)}</strong>
+                          <div className={styles.leadAssetContext}>
+                            <strong className={styles.leadAssetName}>{lead.ownerBusinessName || ownerDisplayName(lead)}</strong>
+                            {assetIdentifier ? <span>{assetIdentifier}</span> : null}
+                          </div>
                           <span className={styles.clientKicker}>{formatLeadDisplayType(lead)} · Received {formatDate(lead.createdAtIso)}</span>
                           {licensingWorkspaceMode ? (
                             <span className={styles.licenceRenewalMeta}>
@@ -3853,7 +3772,17 @@ export default function LeadsClient({
                               </span>
                             </span>
                           ) : null}
-                          {isTrackingRequest ? (
+                          {lead.ownerMessage ? (
+                            <span className={`${styles.trackingLeadPurpose} ${styles.leadOwnerMessagePreview}`}>
+                              <span className={styles.trackingLeadPurposeIcon} aria-hidden="true">
+                                <NoteIcon className={styles.trackingLeadPurposeIconGraphic} />
+                              </span>
+                              <span className={styles.trackingLeadPurposeCopy}>
+                                <strong>Owner message</strong>
+                                <small>{lead.ownerMessage}</small>
+                              </span>
+                            </span>
+                          ) : isTrackingRequest ? (
                             <span className={styles.trackingLeadPurpose}>
                               <span className={styles.trackingLeadPurposeIcon} aria-hidden="true">
                                 <MaintenanceTrackingIcon className={styles.trackingLeadPurposeIconGraphic} />
@@ -4043,8 +3972,7 @@ export default function LeadsClient({
                         {renderLeadDetails(lead)}
                       </div>
                     ) : null}
-                    </article>
-                  </Fragment>
+                  </article>
                 );
               })}
             </div>
