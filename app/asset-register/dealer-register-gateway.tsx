@@ -3,6 +3,8 @@
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import AppHeader from '../../components/AppHeader';
+import valuationStyles from '../valuation/page.module.css';
+import entryStyles from '../marketplace/marketplace-entry.module.css';
 import styles from './page.module.css';
 
 type DealerRegisterOption = {
@@ -70,52 +72,75 @@ export default function DealerRegisterGateway({
   }
 
   return (
-    <main className={styles.page}>
+    <main className={valuationStyles.page}>
       {showAppHeader ? <AppHeader active="asset-register" /> : null}
 
-      <section className={styles.shell}>
-        <section className={`${styles.registerPanel} ${styles.dealerRegisterGateway}`}>
-          <div className={styles.dealerRegisterGatewayHeader}>
-            <span>Dealer workspace</span>
-            <h1>ASSET REGISTER</h1>
-            <p>Choose whether you are working with the dealership&apos;s own assets or an Asset Register managed for a client.</p>
-          </div>
+      <div className={`${valuationStyles.container} ${entryStyles.entryContainer}`}>
+        <section className={`${valuationStyles.wizardShell} ${valuationStyles.sectorWizardShell} ${entryStyles.entryShell}`}>
+          <div className={`${valuationStyles.wizardCard} ${valuationStyles.sectorWizardCard} ${entryStyles.entryCard}`}>
+            <div className={`${valuationStyles.stepContent} ${valuationStyles.sectorStepContent} ${entryStyles.entryContent}`}>
+              <div className={`${valuationStyles.sectorStart} ${entryStyles.entryStart}`}>
+                <div className={`${valuationStyles.sectorIntro} ${entryStyles.entryIntro}`}>
+                  <h1 className={`${valuationStyles.stepTitle} ${entryStyles.entryTitle}`}>Choose an Asset Register</h1>
+                  <p className={`${valuationStyles.stepText} ${entryStyles.entryText}`}>
+                    Work with the dealership&apos;s own assets or open an Asset Register managed for a client.
+                  </p>
+                </div>
 
-          <div className={styles.dealerRegisterChoiceGrid}>
-            {dealerRegister ? (
-              <Link
-                className={`${styles.dealerRegisterChoiceCard} ${styles.dealerRegisterChoiceDealer}`}
-                href={registerHref(dealerRegister, 'dealer', workspacePath)}
-              >
-                <span className={styles.dealerRegisterChoiceKicker}>Dealership assets</span>
-                <strong>Dealer Asset Register</strong>
-                <p>Open your own stock, trade-ins and dealer-owned assets.</p>
-                <small>{dealerRegister.assetCount} {dealerRegister.assetCount === 1 ? 'asset' : 'assets'} · {money(dealerRegister.totalValue)}</small>
-                <b>Open register</b>
-              </Link>
-            ) : (
-              <Link className={styles.dealerRegisterChoiceCard} href={registerManagementHref}>
-                <span className={styles.dealerRegisterChoiceKicker}>Dealership assets</span>
-                <strong>Create Dealer Asset Register</strong>
-                <p>Create the dealership&apos;s own register before adding stock or trade-ins.</p>
-                <b>Create register</b>
-              </Link>
-            )}
+                <nav className={`${valuationStyles.sectorLargeGrid} ${entryStyles.entryGrid}`} aria-label="Asset Register choices">
+                  {dealerRegister ? (
+                    <Link
+                      href={registerHref(dealerRegister, 'dealer', workspacePath)}
+                      className={`${valuationStyles.sectorBigCard} ${valuationStyles.sectorBigCardLive} ${entryStyles.entryChoiceCard}`}
+                      style={{ textDecoration: 'none' }}
+                      aria-label="Open Dealer Asset Register"
+                    >
+                      <span className={valuationStyles.sectorVideoOverlay} />
+                      <span className={`${valuationStyles.sectorBigCardContent} ${entryStyles.entryChoiceContent}`}>
+                        <span className={valuationStyles.sectorLabelWrap}>
+                          <strong className={valuationStyles.sectorLabel}>Dealer Asset Register</strong>
+                          <span className={valuationStyles.sectorCardHint}>Manage dealership assets</span>
+                        </span>
+                      </span>
+                    </Link>
+                  ) : (
+                    <Link
+                      href={registerManagementHref}
+                      className={`${valuationStyles.sectorBigCard} ${valuationStyles.sectorBigCardLive} ${entryStyles.entryChoiceCard}`}
+                      style={{ textDecoration: 'none' }}
+                      aria-label="Create Dealer Asset Register"
+                    >
+                      <span className={valuationStyles.sectorVideoOverlay} />
+                      <span className={`${valuationStyles.sectorBigCardContent} ${entryStyles.entryChoiceContent}`}>
+                        <span className={valuationStyles.sectorLabelWrap}>
+                          <strong className={valuationStyles.sectorLabel}>Create Dealer Asset Register</strong>
+                          <span className={valuationStyles.sectorCardHint}>Create the dealership register</span>
+                        </span>
+                      </span>
+                    </Link>
+                  )}
 
-            <button
-              type="button"
-              className={`${styles.dealerRegisterChoiceCard} ${styles.dealerRegisterChoiceClient}`}
-              onClick={() => setIsClientPickerOpen(true)}
-            >
-              <span className={styles.dealerRegisterChoiceKicker}>Managed accounts</span>
-              <strong>Client Asset Registers</strong>
-              <p>Open and manage a client&apos;s complete Asset Register with the same tools and asset cards.</p>
-              <small>{clientRegisters.length} {clientRegisters.length === 1 ? 'client register' : 'client registers'}</small>
-              <b>Choose client</b>
-            </button>
+                  <button
+                    type="button"
+                    className={`${valuationStyles.sectorBigCard} ${valuationStyles.sectorBigCardLive} ${entryStyles.entryChoiceCard}`}
+                    style={{ width: '100%', appearance: 'none', color: 'inherit', font: 'inherit', textAlign: 'left', cursor: 'pointer' }}
+                    onClick={() => setIsClientPickerOpen(true)}
+                    aria-label="Choose a Client Asset Register"
+                  >
+                    <span className={valuationStyles.sectorVideoOverlay} />
+                    <span className={`${valuationStyles.sectorBigCardContent} ${entryStyles.entryChoiceContent}`}>
+                      <span className={valuationStyles.sectorLabelWrap}>
+                        <strong className={valuationStyles.sectorLabel}>Client Asset Registers</strong>
+                        <span className={valuationStyles.sectorCardHint}>Manage client assets</span>
+                      </span>
+                    </span>
+                  </button>
+                </nav>
+              </div>
+            </div>
           </div>
         </section>
-      </section>
+      </div>
 
       {isClientPickerOpen ? (
         <div className={styles.modalOverlay}>
