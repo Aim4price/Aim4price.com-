@@ -30,12 +30,17 @@ test('spending budget uses the same compact three-step pattern as Contribution',
   assert.doesNotMatch(budgetModal, /Asset scope|Limit &amp; alert|Budget coverage|Choose budget scope/);
 });
 
-test('scope choice keeps all-assets and searchable one-asset selection explicit', () => {
-  assert.match(budgetModal, /role="radiogroup" aria-label="Budget scope"/);
-  assert.match(budgetModal, /<strong>All assets<\/strong>/);
-  assert.match(budgetModal, /<strong>One asset<\/strong>/);
-  assert.match(budgetModal, /<h2 id="budget-scope-picker-title">Choose an asset<\/h2>/);
+test('coverage uses a searchable multi-asset picker with select all', () => {
+  assert.match(budgetModal, /<strong>Choose assets<\/strong>/);
+  assert.match(budgetModal, /<h2 id="budget-scope-picker-title">Choose assets<\/h2>/);
   assert.match(budgetModal, /filteredBudgetAssets/);
+  assert.match(budgetModal, /budgetPickerAssetIds\.includes\(asset\.id\)/);
+  assert.match(budgetModal, /toggleBudgetPickerAsset\(asset\.id\)/);
+  assert.match(budgetModal, /Select all shown/);
+  assert.match(budgetModal, /toggleAllFilteredBudgetAssets/);
+  assert.match(budgetModal, /confirmBudgetAssetPicker/);
+  assert.doesNotMatch(budgetModal, /role="radiogroup" aria-label="Budget scope"/);
+  assert.doesNotMatch(budgetModal, /<strong>All assets<\/strong>|<strong>One asset<\/strong>/);
   assert.doesNotMatch(budgetModal, /<select\b/);
 });
 
@@ -44,11 +49,19 @@ test('limit validation happens before review and the review preserves every choi
   assert.match(client, /budgetWarningValue >= 1/);
   assert.match(client, /budgetWarningValue <= 99/);
   assert.match(client, /if \(!budgetLimitIsValid\)[\s\S]*?setBudgetFormError/);
-  assert.match(budgetModal, /<dt>Scope<\/dt>/);
+  assert.match(budgetModal, /<dt>Assets<\/dt>/);
   assert.match(budgetModal, /<dt>Period<\/dt>/);
   assert.match(budgetModal, /<dt>Budget<\/dt>/);
   assert.match(budgetModal, /<dt>Warning level<\/dt>/);
   assert.match(budgetModal, /<dt>Fuel slips<\/dt>/);
+});
+
+test('multi-asset creation saves one independently editable budget per selected asset', () => {
+  assert.match(client, /const assetIdsToSave: Array<string \| null>/);
+  assert.match(client, /Promise\.all\(assetIdsToSave\.map\(async \(assetId\) =>/);
+  assert.match(client, /method: editingBudgetId \? 'PATCH' : 'POST'/);
+  assert.match(client, /setBudgetSelectedAssetIds\(remainingAssetIds\)/);
+  assert.match(client, /spending budgets created/);
 });
 
 test('warning-level asset budget cards and notifications are red priority alerts', () => {
