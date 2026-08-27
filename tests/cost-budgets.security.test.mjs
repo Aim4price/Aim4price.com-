@@ -297,7 +297,7 @@ test('budget setup uses a compact three-step wizard and shared searchable asset 
   assert.match(budgetModal, /budgetWizardStep === 1/);
   assert.match(budgetModal, /budgetWizardStep === 2/);
   assert.match(budgetModal, /budgetWizardStep === 3/);
-  assert.match(budgetModal, /Choose assets/);
+  assert.match(budgetModal, /Choose Saved Assets/);
   assert.match(budgetModal, /Search saved assets/);
   assert.match(budgetModal, /Select all shown/);
   assert.match(budgetModal, /toggleAllFilteredBudgetAssets/);
@@ -309,7 +309,7 @@ test('budget setup uses a compact three-step wizard and shared searchable asset 
   assert.doesNotMatch(budgetModal, /Asset scope|Limit &amp; alert|Cost control/);
   assert.match(costStyles, /\.budgetWizardModal\b/);
   assert.match(costStyles, /\.budgetReviewGrid\b/);
-  assert.match(costStyles, /\.budgetScopeRowSelected\b/);
+  assert.match(costStyles, /\.budgetAssetChoiceSelected\b/);
   assert.match(costStyles, /\.budgetAssetCheck\b/);
 });
 
