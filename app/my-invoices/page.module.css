@@ -3993,20 +3993,27 @@
 }
 
 .budgetCardWarning {
-  --budget-accent: #b6771c;
-  --budget-accent-soft: #fff7e8;
-  --budget-accent-border: #ead4aa;
+  --budget-accent: #b42318;
+  --budget-accent-soft: #fff0ef;
+  --budget-accent-border: #e8aaa6;
+  box-shadow: 0 14px 30px rgba(180, 35, 24, 0.14), inset 0 3px 0 var(--budget-accent);
 }
 
 .budgetCardOver {
-  --budget-accent: #b13b35;
-  --budget-accent-soft: #fff1f0;
-  --budget-accent-border: #e7bfbc;
+  --budget-accent: #941f1b;
+  --budget-accent-soft: #ffeceb;
+  --budget-accent-border: #df918c;
+  box-shadow: 0 16px 34px rgba(148, 31, 27, 0.17), inset 0 3px 0 var(--budget-accent);
 }
 
 .budgetCardFocused {
   box-shadow: 0 0 0 4px rgba(25, 116, 84, 0.16), 0 18px 38px rgba(20, 73, 56, 0.14);
   transform: translateY(-1px);
+}
+
+.budgetCardWarning.budgetCardFocused,
+.budgetCardOver.budgetCardFocused {
+  box-shadow: 0 0 0 4px rgba(180, 35, 24, 0.2), 0 18px 38px rgba(148, 31, 27, 0.2);
 }
 
 .budgetCardTop {
@@ -4345,7 +4352,7 @@
 }
 
 .budgetAssetPickerModal {
-  width: min(100%, 1060px);
+  width: min(100%, 880px);
   max-height: min(92vh, calc(100dvh - 1rem));
   border-radius: 2rem;
 }
@@ -5862,6 +5869,94 @@
   .invoiceDropWizardFooter > button {
     flex: 1 1 0;
     min-width: 0;
+  }
+}
+
+/* Spending budget follows the compact Contribution wizard. */
+.budgetWizardModal {
+  width: min(100%, 720px);
+}
+
+.budgetWizardBody {
+  gap: 0.9rem;
+}
+
+.budgetWizardBody h3:focus {
+  outline: none;
+}
+
+.budgetWizardPeriodField {
+  gap: 0.55rem;
+  padding: 0.8rem;
+  border: 1px solid rgba(194, 216, 206, 0.94);
+  border-radius: 1rem;
+  background: #f5faf7;
+}
+
+.budgetFuelToggleCompact {
+  min-height: 4rem;
+  padding: 0.8rem 0.9rem;
+  border-radius: 1rem;
+  box-shadow: none;
+}
+
+.budgetReviewGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem;
+  margin: 0;
+}
+
+.budgetReviewGrid > div {
+  min-width: 0;
+  display: grid;
+  gap: 0.18rem;
+  padding: 0.78rem 0.85rem;
+  border: 1px solid rgba(200, 218, 209, 0.96);
+  border-radius: 0.95rem;
+  background: #f6fbf8;
+}
+
+.budgetReviewGrid > div:last-child {
+  grid-column: 1 / -1;
+}
+
+.budgetReviewGrid dt {
+  color: var(--text-muted);
+  font-size: 0.76rem;
+  font-weight: 730;
+}
+
+.budgetReviewGrid dd {
+  min-width: 0;
+  overflow: hidden;
+  margin: 0;
+  color: var(--brand-dark);
+  font-size: 0.94rem;
+  font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.budgetWizardModal .budgetDeleteButton {
+  justify-self: start;
+}
+
+.budgetWizardFooter {
+  gap: 0.8rem;
+}
+
+@media (max-width: 520px) {
+  .budgetReviewGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .budgetReviewGrid > div:last-child {
+    grid-column: auto;
+  }
+
+  .budgetWizardModal .budgetDeleteButton {
+    width: 100%;
   }
 }
 
