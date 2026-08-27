@@ -28,11 +28,13 @@ test('manual wizard validates the total and saves only from review', () => {
   assert.match(client, /function manualCostInvoiceError\(\)/);
   assert.match(client, /manualCostTotalValue <= 0/);
   assert.match(client, /Enter the total amount including VAT before continuing/);
-  assert.match(client, /if \(flow === 'manual-form' && manualCostWizardStep !== 3\)[\s\S]*?continueManualCostWizard\(\)/);
+  assert.match(client, /function handleInvoiceFormSubmit\(event: FormEvent<HTMLFormElement>\)[\s\S]*?if \(manualCostWizardOpen\)[\s\S]*?if \(manualCostWizardStep < 3\) continueManualCostWizard\(\);[\s\S]*?return;[\s\S]*?void saveInvoiceDraft\(\);/);
+  assert.match(client, /async function saveInvoiceDraft\(\)[\s\S]*?if \(flow === 'manual-form' && manualCostWizardStep !== 3\)[\s\S]*?Review the cost record before saving/);
   assert.match(client, /setManualCostWizardStep\(2\)/);
   assert.match(client, /setManualCostWizardStep\(3\)/);
+  assert.match(costFormModal, /onSubmit=\{handleInvoiceFormSubmit\}/);
   assert.match(costFormModal, /manualCostWizardStep < 3[\s\S]*?>\s*Next\s*</);
-  assert.match(costFormModal, /Save cost record/);
+  assert.match(costFormModal, /manualCostWizardOpen \? \([\s\S]*?<button type="button"[^>]*onClick=\{\(\) => void saveInvoiceDraft\(\)\}[^>]*>[\s\S]*?Save cost record/);
 });
 
 test('review preserves every manual cost field and attachment before save', () => {

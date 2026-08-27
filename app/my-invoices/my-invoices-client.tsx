@@ -3299,16 +3299,25 @@ export default function MyInvoicesClient({
     }
   }
 
-  async function submitInvoiceDraft(event: FormEvent<HTMLFormElement>) {
+  function handleInvoiceFormSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    if (!selectedAssetId) {
-      setNotice({ tone: 'error', message: 'Choose an asset before saving the cost record.' });
+    if (manualCostWizardOpen) {
+      if (manualCostWizardStep < 3) continueManualCostWizard();
       return;
     }
 
+    void saveInvoiceDraft();
+  }
+
+  async function saveInvoiceDraft() {
     if (flow === 'manual-form' && manualCostWizardStep !== 3) {
-      continueManualCostWizard();
+      setManualCostWizardError('Review the cost record before saving.');
+      return;
+    }
+
+    if (!selectedAssetId) {
+      setNotice({ tone: 'error', message: 'Choose an asset before saving the cost record.' });
       return;
     }
 
@@ -5772,7 +5781,7 @@ export default function MyInvoicesClient({
         <div className={styles.modalBackdrop} role="dialog" aria-modal="true" aria-label={formTitle}>
           <form
             className={`${styles.formModal} ${styles.costFormModal} ${manualCostWizardOpen ? styles.manualCostWizardModal : ''}`}
-            onSubmit={submitInvoiceDraft}
+            onSubmit={handleInvoiceFormSubmit}
           >
             <div className={styles.modalHeader}>
               <div>
@@ -6082,6 +6091,10 @@ export default function MyInvoicesClient({
               {manualCostWizardOpen && manualCostWizardStep < 3 ? (
                 <button type="button" className={styles.primaryButton} onClick={continueManualCostWizard} disabled={isSaving}>
                   Next
+                </button>
+              ) : manualCostWizardOpen ? (
+                <button type="button" className={styles.primaryButton} onClick={() => void saveInvoiceDraft()} disabled={isSaving}>
+                  {isSaving ? 'Saving...' : 'Save cost record'}
                 </button>
               ) : (
                 <button type="submit" className={styles.primaryButton} disabled={isSaving}>
