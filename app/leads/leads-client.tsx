@@ -871,6 +871,15 @@ function registerLeadSnapshot(lead: AssetLead): Record<string, unknown> | null {
   return asRecord(lead.includedSections.registerSnapshot) ?? asRecord(lead.assetSnapshot.registerSnapshot);
 }
 
+function isAssetGroupLead(lead: AssetLead): boolean {
+  const snapshot = registerLeadSnapshot(lead);
+  return (
+    asText(lead.includedSections.source) === 'asset_group'
+    || asText(snapshot?.snapshotType) === 'asset_group'
+    || Boolean(asText(snapshot?.groupId))
+  );
+}
+
 function isFullRegisterLead(lead: AssetLead): boolean {
   return (
     asBoolean(lead.includedSections.registerLead) ||
@@ -910,14 +919,11 @@ function registerLeadLabel(lead: AssetLead): string {
 }
 
 function formatLeadDisplayType(lead: AssetLead): string {
-  if (isTrackingLead(lead)) return 'Asset tracking request';
-
   if (isFullRegisterLead(lead)) {
-    if (lead.leadType === 'finance') return 'Full finance lead';
-    if (lead.leadType === 'insurance') return 'Full insurance lead';
-    return 'Full register lead';
+    return registerLeadLabel(lead);
   }
 
+  if (isTrackingLead(lead)) return 'Asset tracking request';
   return formatLeadType(lead.leadType);
 }
 
@@ -1284,6 +1290,66 @@ function snapshotInsuranceStatusLabel(asset: Record<string, unknown>): string {
     unknown: 'Not sure',
     not_applicable: 'N/A',
   }[snapshotInsuranceStatusChoice(asset)];
+}
+
+function snapshotFinanceStatusChoice(asset: Record<string, unknown>): AssetStatusChoice {
+  const specs = asRecord(asset.specsJson) ?? asRecord(asset.specs) ?? asRecord(asset.specAnswers);
+  const explicitStatus =
+    specs?.financeStatus
+    ?? specs?.finance_status
+    ?? asset.financeStatus
+    ?? asset.finance_status;
+
+  if (explicitStatus !== undefined && explicitStatus !== null && String(explicitStatus).trim()) {
+    return normalizeAssetStatusChoice(explicitStatus);
+  }
+
+  return typeof asset.isFinanced === 'boolean' ? (asset.isFinanced ? 'yes' : 'no') : 'unknown';
+}
+
+function snapshotLicenseStatusChoice(asset: Record<string, unknown>): AssetStatusChoice {
+  const specs = asRecord(asset.specsJson) ?? asRecord(asset.specs) ?? asRecord(asset.specAnswers);
+  const explicitStatus =
+    specs?.licenseStatus
+    ?? specs?.license_status
+    ?? specs?.licenceStatus
+    ?? specs?.licence_status
+    ?? asset.licenseStatus
+    ?? asset.license_status
+    ?? asset.licenceStatus
+    ?? asset.licence_status;
+
+  if (explicitStatus !== undefined && explicitStatus !== null && String(explicitStatus).trim()) {
+    return normalizeAssetStatusChoice(explicitStatus);
+  }
+
+  return typeof asset.isLicensed === 'boolean' ? (asset.isLicensed ? 'yes' : 'no') : 'unknown';
+}
+
+function snapshotAssetPhotos(asset: Record<string, unknown>): string[] {
+  return mergeLeadPhotoUrls([
+    leadPhotoUrlsFromArray(asset.photos),
+    leadPhotoUrlsFromArray([asset.photoUrl, asset.photo_url, asset.mainPhotoUrl, asset.main_photo_url]),
+  ], MAX_LEAD_ASSET_PHOTOS);
+}
+
+function snapshotRegistrationNumber(asset: Record<string, unknown>): string {
+  const specs = asRecord(asset.specsJson) ?? asRecord(asset.specs) ?? asRecord(asset.specAnswers);
+  return firstTextFromRecord(asset, [
+    'licenseRegistrationNumber',
+    'license_registration_number',
+    'licenceRegistrationNumber',
+    'licence_registration_number',
+    'registrationNumber',
+    'registration_number',
+  ]) || firstTextFromRecord(specs, [
+    'licenseRegistrationNumber',
+    'license_registration_number',
+    'licenceRegistrationNumber',
+    'licence_registration_number',
+    'registrationNumber',
+    'registration_number',
+  ]);
 }
 
 function filterRegisterLeadAssetsByPdfReportKind(assets: Record<string, unknown>[], reportKind: PdfReportKind): Record<string, unknown>[] {
@@ -2886,6 +2952,51 @@ export default function LeadsClient({
     });
   }
 
+  function registerLeadAssetPhotoKey(lead: AssetLead, asset: Record<string, unknown>, index: number): string {
+    return `${lead.id}:register-asset:${asText(asset.id) || index}`;
+  }
+
+  function getRegisterLeadAssetPhotoIndex(lead: AssetLead, asset: Record<string, unknown>, index: number): number {
+    const photos = snapshotAssetPhotos(asset);
+    const storedIndex = leadPhotoIndexes[registerLeadAssetPhotoKey(lead, asset, index)] ?? 0;
+    if (!photos.length) return 0;
+    return Math.min(Math.max(storedIndex, 0), photos.length - 1);
+  }
+
+  function setRegisterLeadAssetPhotoIndex(lead: AssetLead, asset: Record<string, unknown>, assetIndex: number, photoIndex: number) {
+    setLeadPhotoIndex(registerLeadAssetPhotoKey(lead, asset, assetIndex), photoIndex);
+  }
+
+  function cycleRegisterLeadAssetPhoto(
+    lead: AssetLead,
+    asset: Record<string, unknown>,
+    assetIndex: number,
+    direction: -1 | 1,
+  ) {
+    const photos = snapshotAssetPhotos(asset);
+    if (photos.length <= 1) return;
+    const currentIndex = getRegisterLeadAssetPhotoIndex(lead, asset, assetIndex);
+    const nextIndex = (currentIndex + direction + photos.length) % photos.length;
+    setRegisterLeadAssetPhotoIndex(lead, asset, assetIndex, nextIndex);
+  }
+
+  function openRegisterLeadAssetPhotoModal(
+    lead: AssetLead,
+    asset: Record<string, unknown>,
+    assetIndex: number,
+    photoIndex: number,
+  ) {
+    const urls = snapshotAssetPhotos(asset);
+    if (!urls.length) return;
+    setSentPhotoModal(null);
+    setAssetPhotoModal({
+      leadId: registerLeadAssetPhotoKey(lead, asset, assetIndex),
+      urls,
+      index: Math.min(Math.max(photoIndex, 0), urls.length - 1),
+      title: snapshotTitle(asset),
+    });
+  }
+
   function closeAssetPhotoModal() {
     setAssetPhotoModal(null);
   }
@@ -3001,6 +3112,188 @@ export default function LeadsClient({
     );
   }
 
+  function renderRegisterLeadAssetCard(
+    lead: AssetLead,
+    asset: Record<string, unknown>,
+    assetIndex: number,
+  ) {
+    const assetKey = asText(asset.id) || String(assetIndex);
+    const photos = snapshotAssetPhotos(asset);
+    const photoIndex = getRegisterLeadAssetPhotoIndex(lead, asset, assetIndex);
+    const photo = photos[photoIndex] ?? '';
+    const hasMultiplePhotos = photos.length > 1;
+    const specs = asRecord(asset.specsJson) ?? asRecord(asset.specs) ?? asRecord(asset.specAnswers);
+    const serialNumber =
+      firstTextFromRecord(asset, ['serialNumber', 'serial_number'])
+      || firstTextFromRecord(specs, ['serialNumber', 'serial_number']);
+    const registrationNumber = snapshotRegistrationNumber(asset);
+    const licenseStatus = snapshotLicenseStatusChoice(asset);
+    const familyLabel = asText(asset.equipmentFamilyLabel) || asText(asset.kind) || 'Asset';
+    const replacementPrice = snapshotReplacementPrice(asset);
+    const assetGroup = asRecord(asset.assetGroup);
+    const documents = Array.isArray(asset.documents)
+      ? asset.documents.map((document) => asRecord(document)).filter((document): document is Record<string, unknown> => Boolean(document))
+      : [];
+
+    return (
+      <article key={assetKey} className={styles.fullRegisterAssetCard}>
+        <header className={styles.fullRegisterAssetHeader}>
+          <div>
+            <span>{familyLabel}</span>
+            <h4>{snapshotTitle(asset)}</h4>
+            <small>
+              {[asset.yearModel ? String(asset.yearModel) : '', asText(asset.brandName), asText(asset.modelName) || asText(asset.typedModelName)]
+                .filter(Boolean)
+                .join(' · ') || 'Saved Asset Register item'}
+            </small>
+            {assetGroup ? (
+              <em>
+                {asText(assetGroup.name) || 'Asset umbrella'}
+                {asText(assetGroup.role) ? ` · ${asText(assetGroup.role)}` : ''}
+              </em>
+            ) : null}
+          </div>
+          <div>
+            <strong>{formatCurrency(snapshotAssetValue(asset))}</strong>
+            <small>Current value · excl. VAT</small>
+          </div>
+        </header>
+
+        <div className={styles.fullRegisterAssetBody}>
+          <div className={`${assetStyles.previewWrap} ${styles.leadPreviewWrap} ${styles.fullRegisterAssetPreview}`}>
+            <div className={`${assetStyles.previewStage} ${styles.leadPreviewStage}`}>
+              {photo ? (
+                <>
+                  <button
+                    type="button"
+                    className={styles.leadPreviewOpenButton}
+                    onClick={() => openRegisterLeadAssetPhotoModal(lead, asset, assetIndex, photoIndex)}
+                    aria-label={`Open ${snapshotTitle(asset)} photo ${photoIndex + 1}`}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={photo} alt={`${snapshotTitle(asset)} photo ${photoIndex + 1}`} className={`${assetStyles.previewImage} ${styles.leadPreviewImage}`} />
+                    <span className={styles.leadPreviewOpenLabel}>Open photo</span>
+                  </button>
+
+                  {hasMultiplePhotos ? (
+                    <>
+                      <button
+                        type="button"
+                        className={`${assetStyles.previewNavButton} ${assetStyles.previewNavPrev}`}
+                        onClick={() => cycleRegisterLeadAssetPhoto(lead, asset, assetIndex, -1)}
+                        aria-label="Show previous photo"
+                      >
+                        <ChevronLeftIcon className={assetStyles.buttonIcon} />
+                      </button>
+                      <button
+                        type="button"
+                        className={`${assetStyles.previewNavButton} ${assetStyles.previewNavNext}`}
+                        onClick={() => cycleRegisterLeadAssetPhoto(lead, asset, assetIndex, 1)}
+                        aria-label="Show next photo"
+                      >
+                        <ChevronRightIcon className={assetStyles.buttonIcon} />
+                      </button>
+                      <div className={assetStyles.previewCounter}>{photoIndex + 1} / {photos.length}</div>
+                    </>
+                  ) : null}
+                </>
+              ) : (
+                <div className={`${assetStyles.previewPlaceholder} ${styles.leadPreviewPlaceholder}`}>
+                  <div className={assetStyles.previewPlaceholderBadges}>
+                    <span className={`${assetStyles.badge} ${assetStyles.badgeNeutral} ${assetStyles.previewPlaceholderBadge}`}>{familyLabel}</span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {hasMultiplePhotos ? (
+              <div className={`${assetStyles.previewThumbRow} ${styles.leadPreviewThumbRow}`}>
+                {photos.map((thumbnail, index) => (
+                  <button
+                    type="button"
+                    key={`${assetKey}-register-photo-${index}`}
+                    className={`${assetStyles.previewThumbButton} ${styles.leadPreviewThumbButton} ${index === photoIndex ? assetStyles.previewThumbButtonActive : ''}`}
+                    onClick={() => {
+                      setRegisterLeadAssetPhotoIndex(lead, asset, assetIndex, index);
+                      openRegisterLeadAssetPhotoModal(lead, asset, assetIndex, index);
+                    }}
+                    aria-label={`Open ${snapshotTitle(asset)} photo ${index + 1}`}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={thumbnail} alt={`${snapshotTitle(asset)} thumbnail ${index + 1}`} className={`${assetStyles.previewThumbImage} ${styles.leadPreviewThumbImage}`} />
+                  </button>
+                ))}
+              </div>
+            ) : null}
+          </div>
+
+          <div className={styles.fullRegisterAssetInformation}>
+            <div className={assetStyles.assetDetailsGrid}>
+              <div className={assetStyles.assetPrimaryDetails}>
+                <div className={assetStyles.assetDetailRow}>
+                  <span>Serial</span>
+                  <strong>{serialNumber || '—'}</strong>
+                </div>
+                <div className={assetStyles.assetDetailRow}>
+                  <span>{asText(asset.kind).toLowerCase() === 'property' ? 'Year Built' : 'Year'}</span>
+                  <strong>{asset.yearModel ? String(asset.yearModel) : '—'}</strong>
+                </div>
+                <div className={assetStyles.assetDetailRow}>
+                  <span>Usage</span>
+                  <strong>{snapshotUsageValue(asset)}</strong>
+                </div>
+                <div className={assetStyles.assetDetailRow}>
+                  <span>Condition</span>
+                  <strong>{conditionLabel(asset.condition)}</strong>
+                </div>
+              </div>
+
+              <div className={assetStyles.assetStatusDetails}>
+                <div className={assetStyles.assetStatusRow}>
+                  <span>Financed</span>
+                  {renderLeadAssetStatusMark(snapshotFinanceStatusChoice(asset))}
+                </div>
+                <div className={assetStyles.assetStatusRow}>
+                  <span>Insured</span>
+                  {renderLeadAssetStatusMark(snapshotInsuranceStatusChoice(asset))}
+                </div>
+                <div className={assetStyles.assetStatusRow}>
+                  <span>Licensed</span>
+                  {renderLeadAssetStatusMark(licenseStatus)}
+                </div>
+                {licenseStatus === 'yes' && registrationNumber ? (
+                  <div className={`${assetStyles.assetStatusRow} ${assetStyles.assetRegistrationRow}`}>
+                    <strong>{registrationNumber}</strong>
+                  </div>
+                ) : null}
+              </div>
+            </div>
+
+            <div className={assetStyles.assetReplacementPriceBubble}>
+              <span>Replacement Price</span>
+              <strong>{replacementPrice === null ? 'Not set' : formatCurrency(replacementPrice)}</strong>
+              <small>Excl. VAT</small>
+            </div>
+
+            {documents.length ? (
+              <div className={styles.fullRegisterAssetDocuments}>
+                <strong>{documents.length} shared {documents.length === 1 ? 'document' : 'documents'}</strong>
+                {documents.map((document, index) => {
+                  const url = normalizeLeadPhotoUrl(document.url ?? document.href);
+                  return url ? (
+                    <a key={`${assetKey}-document-${index}`} href={url} target="_blank" rel="noreferrer">
+                      {asText(document.fileName) || asText(document.name) || `Document ${index + 1}`}
+                    </a>
+                  ) : null;
+                })}
+              </div>
+            ) : null}
+          </div>
+        </div>
+      </article>
+    );
+  }
+
   function renderFullRegisterLeadDetails(lead: AssetLead) {
     const snapshot = registerLeadSnapshot(lead);
     const registerAssets = registerLeadAssets(lead);
@@ -3012,6 +3305,9 @@ export default function LeadsClient({
     const licensedCount = asNumber(snapshot?.licensedAssetCount) ?? registerAssets.filter((asset) => asBoolean(asset.isLicensed)).length;
     const replacementValue = asNumber(snapshot?.totalReplacementValue ?? snapshot?.replacementValue) ?? sumSnapshotReplacementValues(registerAssets);
 
+    const isUmbrella = isAssetGroupLead(lead);
+    const registerTitle = asText(snapshot?.title) || (isUmbrella ? 'Asset Umbrella' : 'Full Asset Register');
+
     return (
       <div className={`${assetStyles.assetBody} ${styles.fullRegisterLeadBody}`} id={`lead-panel-${lead.id}`}>
         <button type="button" className={styles.fullRegisterPdfPanel} onClick={() => openLeadReportModal(lead)}>
@@ -3019,8 +3315,8 @@ export default function LeadsClient({
             <DownloadIcon className={assetStyles.buttonIcon} />
           </span>
           <span>
-            <strong>Full Asset Register</strong>
-            <small>Download the register snapshot PDF.</small>
+            <strong>{isUmbrella ? 'Asset Umbrella' : 'Full Asset Register'}</strong>
+            <small>Download the shared {isUmbrella ? 'umbrella' : 'register'} snapshot PDF.</small>
           </span>
         </button>
 
@@ -3035,6 +3331,27 @@ export default function LeadsClient({
             {renderRegisterStatRow('Manual assets', manualAssetCount)}
           </div>
         </div>
+
+        <section className={styles.fullRegisterAssetsSection} aria-label={`Assets in ${registerTitle}`}>
+          <div className={styles.fullRegisterAssetsHeading}>
+            <div>
+              <span>{isUmbrella ? 'Shared umbrella' : 'Shared Asset Register'}</span>
+              <h4>{registerTitle}</h4>
+            </div>
+            <strong>{registerAssets.length} {registerAssets.length === 1 ? 'asset' : 'assets'}</strong>
+          </div>
+
+          {registerAssets.length ? (
+            <div className={styles.fullRegisterAssetList}>
+              {registerAssets.map((asset, index) => renderRegisterLeadAssetCard(lead, asset, index))}
+            </div>
+          ) : (
+            <div className={styles.fullRegisterAssetsEmpty}>
+              <strong>No asset cards were included in this older snapshot.</strong>
+              <p>Download the saved register PDF for the information that was shared.</p>
+            </div>
+          )}
+        </section>
 
         {renderOwnerMessageBlock(lead)}
       </div>
@@ -4554,4 +4871,3 @@ export default function LeadsClient({
     </main>
   );
 }
-

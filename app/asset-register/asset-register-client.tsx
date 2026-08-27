@@ -6527,10 +6527,14 @@ export default function AssetRegisterClient({
   accountantShareId,
   showAppHeader = true,
   registerManagementHref = '/asset-registers',
+  dealerRegisterMode,
+  dealerRegisterBaseHref = '/asset-register',
 }: {
   accountantShareId?: string;
   showAppHeader?: boolean;
   registerManagementHref?: string;
+  dealerRegisterMode?: 'dealer' | 'client';
+  dealerRegisterBaseHref?: string;
 } = {}) {
   const isAccountantWorkspace = Boolean(accountantShareId);
   const [assets, setAssets] = useState<RegisterAsset[]>([]);
@@ -6603,6 +6607,7 @@ export default function AssetRegisterClient({
   const [isManualConversionConfirmOpen, setIsManualConversionConfirmOpen] = useState(false);
   const [isAddAssetDestinationModalOpen, setIsAddAssetDestinationModalOpen] = useState(false);
   const [addAssetTargetRegisterId, setAddAssetTargetRegisterId] = useState('');
+  const [dealerAddDestination, setDealerAddDestination] = useState<'dealer' | 'client' | null>(null);
   const [isAddChoiceModalOpen, setIsAddChoiceModalOpen] = useState(false);
   const [isAcquisitionChoiceOpen, setIsAcquisitionChoiceOpen] = useState(false);
   const [newAssetAcquisitionDraft, setNewAssetAcquisitionDraft] = useState<AcquisitionDraft>(createAcquisitionDraft);
@@ -7610,14 +7615,21 @@ export default function AssetRegisterClient({
     const registersById = new Map<string, AssetRegisterSummary>();
 
     assetRegisters.forEach((register) => {
+      if (dealerRegisterMode === 'dealer' && !register.isPrimary) return;
+      if (dealerRegisterMode === 'client' && register.isPrimary) return;
       if (register.id) registersById.set(register.id, register);
     });
 
-    if (activeRegister?.id && !registersById.has(activeRegister.id)) {
+    const activeRegisterMatchesDealerMode =
+      !dealerRegisterMode
+      || (dealerRegisterMode === 'dealer' && Boolean(activeRegister?.isPrimary))
+      || (dealerRegisterMode === 'client' && !activeRegister?.isPrimary);
+
+    if (activeRegister?.id && activeRegisterMatchesDealerMode && !registersById.has(activeRegister.id)) {
       registersById.set(activeRegister.id, activeRegister);
     }
 
-    if (combinedRegisterSwitcherOption) {
+    if (combinedRegisterSwitcherOption && !dealerRegisterMode) {
       registersById.set(COMBINED_REGISTER_ID, combinedRegisterSwitcherOption);
     }
 
@@ -7630,7 +7642,7 @@ export default function AssetRegisterClient({
       if (!left.isSelected && right.isSelected) return 1;
       return left.businessName.localeCompare(right.businessName);
     });
-  }, [activeRegister, assetRegisters, combinedRegisterSwitcherOption]);
+  }, [activeRegister, assetRegisters, combinedRegisterSwitcherOption, dealerRegisterMode]);
   const visibleRegisterSwitcherOptions = useMemo(() => {
     const query = registerSwitcherSearchTerm.trim().toLowerCase();
 
@@ -7646,9 +7658,11 @@ export default function AssetRegisterClient({
       String(register.assetCount),
     ].some((value) => String(value ?? '').toLowerCase().includes(query)));
   }, [registerSwitcherOptions, registerSwitcherSearchTerm]);
-  const canOpenRegisterSwitcher = isAccountantWorkspace
+  const canOpenRegisterSwitcher = dealerRegisterMode === 'client'
     ? registerSwitcherOptions.length > 0
-    : registerSwitcherOptions.length > 1;
+    : isAccountantWorkspace
+      ? registerSwitcherOptions.length > 0
+      : registerSwitcherOptions.length > 1;
   const isCombinedRegisterView = activeRegister?.id === COMBINED_REGISTER_ID || activeRegisterId === COMBINED_REGISTER_ID;
   const canUseOwnerOnlyAssetActions = !isAccountantWorkspace;
   const canManageRegisterStructure = canUseOwnerOnlyAssetActions || isAccountantWorkspace;
@@ -7740,6 +7754,21 @@ export default function AssetRegisterClient({
       })),
     [assetRegisters],
   );
+  const dealerOwnedRegister = useMemo(
+    () => assetRegisters.find((register) => register.isPrimary) ?? assetRegisters[0] ?? null,
+    [assetRegisters],
+  );
+  const dealerClientRegisterOptions = useMemo<Array<ModalSelectOption<string>>>(
+    () => assetRegisters
+      .filter((register) => register.id && register.id !== dealerOwnedRegister?.id)
+      .map((register) => ({
+        value: register.id,
+        label: register.businessName || 'Client Asset Register',
+        description: `${Math.max(0, Math.round(Number(register.assetCount) || 0)).toLocaleString('en-ZA')} ${Number(register.assetCount) === 1 ? 'asset' : 'assets'} · ${money(Number(register.totalValue) || 0)} current value`,
+      })),
+    [assetRegisters, dealerOwnedRegister?.id],
+  );
+  const isDealerAccountRegister = accountProfile?.accountType === 'dealer';
   const canUseMarketplaceActions = !isAccountantWorkspace;
   const isQuoteModalOpen = Boolean(quoteAsset);
   const isFullRegisterQuoteLead = quoteScope === 'register';
@@ -7754,6 +7783,12 @@ export default function AssetRegisterClient({
     ).trim();
     if (targetRegisterId && targetRegisterId !== COMBINED_REGISTER_ID) {
       params.set('registerId', targetRegisterId);
+    }
+    if (isDealerAccountRegister) {
+      params.set(
+        'dealerRegisterMode',
+        dealerAddDestination || dealerRegisterMode || (targetRegisterId === dealerOwnedRegister?.id ? 'dealer' : 'client'),
+      );
     }
 
     const query = params.toString();
@@ -8135,6 +8170,11 @@ export default function AssetRegisterClient({
     }
 
     setChangingRegisterId(nextRegisterId);
+
+    if (dealerRegisterMode) {
+      window.location.assign(`${dealerRegisterBaseHref}?dealerView=${dealerRegisterMode}&registerId=${encodeURIComponent(nextRegisterId)}`);
+      return;
+    }
 
     if (isAccountantWorkspace) {
       const workspaceRoot = `/accountant/registers/${encodeURIComponent(accountantShareId ?? '')}`;
@@ -9795,6 +9835,13 @@ export default function AssetRegisterClient({
     setNotice(null);
     setIsAssetFilterOpen(false);
 
+    if (isDealerAccountRegister) {
+      setDealerAddDestination(null);
+      setAddAssetTargetRegisterId('');
+      setIsAddAssetDestinationModalOpen(true);
+      return;
+    }
+
     if (isCombinedRegisterView) {
       if (!addAssetRegisterOptions.length) {
         setNotice({
@@ -9816,6 +9863,7 @@ export default function AssetRegisterClient({
   function closeAddAssetDestinationModal() {
     setIsAddAssetDestinationModalOpen(false);
     setAddAssetTargetRegisterId('');
+    setDealerAddDestination(null);
   }
 
   function continueAddAssetForRegister() {
@@ -12762,6 +12810,22 @@ export default function AssetRegisterClient({
         }
 
         const savedAsset = data.item as RegisterAsset;
+        const currentRegisterId = String(activeRegister?.id || activeRegisterId || '').trim();
+        const savedRegisterId = String(savedAsset.registerId || destinationRegisterId || '').trim();
+        if (
+          isDealerAccountRegister
+          && savedRegisterId
+          && currentRegisterId
+          && savedRegisterId !== currentRegisterId
+        ) {
+          closeAssetModal();
+          const targetMode = savedRegisterId === dealerOwnedRegister?.id ? 'dealer' : 'client';
+          window.location.assign(
+            `${dealerRegisterBaseHref}?dealerView=${targetMode}&registerId=${encodeURIComponent(savedRegisterId)}&convertedAssetId=${encodeURIComponent(savedAsset.id)}`,
+          );
+          return true;
+        }
+
         savedAssetForEditor = savedAsset;
         setAssets((current) => [savedAsset, ...current]);
         setSearchTerm('');
@@ -12967,7 +13031,7 @@ export default function AssetRegisterClient({
       `${assetTransferReceipt.assetIdentifierLabel}: ${assetTransferReceipt.assetIdentifier}`,
       `Transfer code: ${assetTransferReceipt.transferCode}`,
       assetTransferReceipt.transferReason === 'traded_in'
-        ? 'Open Dealer → My Inventory → Claim asset in Aim4price.'
+        ? 'Open Dealer → Asset Register → Claim asset in Aim4price.'
         : 'Open Account → Claim or send an asset in Aim4price and choose Claim an asset.',
     ].join('\n');
     try {
@@ -15770,6 +15834,11 @@ export default function AssetRegisterClient({
             <div className={`${styles.registerTitleBlock} ${styles.businessRegisterTitleBlock}`}>
               <div className={styles.businessRegisterTitleCard}>
                 <h1>{isLoading ? 'Loading...' : activeRegister?.businessName || buildOwnerName(reportProfile)}</h1>
+                {dealerRegisterMode ? (
+                  <span className={styles.dealerRegisterContextPill}>
+                    {dealerRegisterMode === 'dealer' ? 'Dealer Asset Register' : 'Client Asset Register'}
+                  </span>
+                ) : null}
                 {canOpenRegisterSwitcher ? (
                   <button
                     type="button"
@@ -15932,8 +16001,8 @@ export default function AssetRegisterClient({
               >
                 <div className={`${styles.modalHeader} ${styles.changeRegisterModalHeader}`}>
                   <div className={styles.modalHeaderText}>
-                    <h3 id="asset-register-change-title">Change Asset Register</h3>
-                    <p>Choose a saved asset register to open, or manage your registers.</p>
+                    <h3 id="asset-register-change-title">{dealerRegisterMode === 'client' ? 'Change Client Asset Register' : 'Change Asset Register'}</h3>
+                    <p>{dealerRegisterMode === 'client' ? 'Choose another client register to open, or manage the available client registers.' : 'Choose a saved asset register to open, or manage your registers.'}</p>
                   </div>
 
                   <button
@@ -15963,7 +16032,7 @@ export default function AssetRegisterClient({
                   <Link
                     href={isAccountantWorkspace && accountantShareId
                       ? `/accountant/registers/${encodeURIComponent(accountantShareId)}/manage`
-                      : '/asset-registers'}
+                      : registerManagementHref}
                     className={`${styles.secondaryButton} ${styles.changeRegisterManageButton}`}
                     onClick={closeChangeRegisterModal}
                   >
@@ -16148,7 +16217,7 @@ export default function AssetRegisterClient({
                               <Link
                                 href={isAccountantWorkspace && accountantShareId
                                   ? `/accountant/registers/${encodeURIComponent(accountantShareId)}/manage`
-                                  : '/asset-registers'}
+                                  : registerManagementHref}
                                 className={`${styles.primaryButton} ${styles.assetRegisterMoveCreateButton}`}
                                 onClick={closeAssetRegisterMoveManager}
                               >
@@ -17921,8 +17990,8 @@ export default function AssetRegisterClient({
           >
             <div className={`${styles.modalHeader} ${styles.addAssetDestinationHeader}`}>
               <div className={styles.modalHeaderText}>
-                <h3 id="add-asset-destination-title">Choose an Asset Register</h3>
-                <p>The combined register is a view. Choose which Asset Register should own the new asset.</p>
+                <h3 id="add-asset-destination-title">{isDealerAccountRegister ? 'Where should this asset be added?' : 'Choose an Asset Register'}</h3>
+                <p>{isDealerAccountRegister ? 'Keep dealership assets separate from the Asset Registers you manage for clients.' : 'The combined register is a view. Choose which Asset Register should own the new asset.'}</p>
               </div>
 
               <button
@@ -17936,19 +18005,78 @@ export default function AssetRegisterClient({
             </div>
 
             <div className={styles.addAssetDestinationBody}>
-              <ModalSelect<string>
-                label="Asset Register"
-                value={addAssetTargetRegisterId}
-                options={addAssetRegisterOptions}
-                onChange={(value) => {
-                  setAddAssetTargetRegisterId(value);
-                  setNotice(null);
-                }}
-                placeholder="Choose the owning Asset Register"
-                className={styles.addAssetDestinationField}
-                autoFocus
-                usePortal
-              />
+              {isDealerAccountRegister ? (
+                <>
+                  <div className={styles.dealerAddDestinationGrid}>
+                    <button
+                      type="button"
+                      className={`${styles.dealerAddDestinationCard} ${dealerAddDestination === 'dealer' ? styles.dealerAddDestinationCardActive : ''}`}
+                      onClick={() => {
+                        setDealerAddDestination('dealer');
+                        setAddAssetTargetRegisterId(dealerOwnedRegister?.id ?? '');
+                        setNotice(null);
+                      }}
+                      disabled={!dealerOwnedRegister}
+                    >
+                      <strong>Add to Dealer Asset Register</strong>
+                      <small>Dealer-owned stock, trade-ins and dealership assets.</small>
+                    </button>
+                    <button
+                      type="button"
+                      className={`${styles.dealerAddDestinationCard} ${dealerAddDestination === 'client' ? styles.dealerAddDestinationCardActive : ''}`}
+                      onClick={() => {
+                        setDealerAddDestination('client');
+                        setAddAssetTargetRegisterId(
+                          dealerRegisterMode === 'client' && activeRegister?.id !== dealerOwnedRegister?.id
+                            ? activeRegister?.id ?? ''
+                            : '',
+                        );
+                        setNotice(null);
+                      }}
+                      disabled={!dealerClientRegisterOptions.length}
+                    >
+                      <strong>Add to Client Asset Register</strong>
+                      <small>Choose one of the client registers managed by this dealer.</small>
+                    </button>
+                  </div>
+
+                  {dealerAddDestination === 'client' ? (
+                    <ModalSelect<string>
+                      label="Client Asset Register"
+                      value={addAssetTargetRegisterId}
+                      options={dealerClientRegisterOptions}
+                      onChange={(value) => {
+                        setAddAssetTargetRegisterId(value);
+                        setNotice(null);
+                      }}
+                      placeholder="Choose a client register"
+                      className={styles.addAssetDestinationField}
+                      autoFocus
+                      usePortal
+                    />
+                  ) : null}
+
+                  {!dealerClientRegisterOptions.length ? (
+                    <p className={styles.dealerAddDestinationEmpty}>
+                      No client Asset Registers are available yet. <Link href={registerManagementHref}>Create a client register</Link>.
+                    </p>
+                  ) : null}
+                </>
+              ) : (
+                <ModalSelect<string>
+                  label="Asset Register"
+                  value={addAssetTargetRegisterId}
+                  options={addAssetRegisterOptions}
+                  onChange={(value) => {
+                    setAddAssetTargetRegisterId(value);
+                    setNotice(null);
+                  }}
+                  placeholder="Choose the owning Asset Register"
+                  className={styles.addAssetDestinationField}
+                  autoFocus
+                  usePortal
+                />
+              )}
             </div>
 
             <div className={styles.addAssetDestinationFooter}>
@@ -21833,7 +21961,7 @@ export default function AssetRegisterClient({
               </div>
               <div className={styles.assetSaleTransferNote}>
                 <strong>{assetTransferReceipt.transferReason === 'traded_in' ? 'Dealer instructions' : 'Buyer instructions'}</strong>
-                <small>{assetTransferReceipt.transferReason === 'traded_in' ? 'Sign in to the Aim4price Dealer App, open My Inventory → Claim asset, and enter the identifier with this code.' : 'Sign in to Aim4price, open Account → Claim or send an asset, and enter the identifier with this code.'}</small>
+                <small>{assetTransferReceipt.transferReason === 'traded_in' ? 'Sign in to the Aim4price Dealer App, open Asset Register → Claim asset, and enter the identifier with this code.' : 'Sign in to Aim4price, open Account → Claim or send an asset, and enter the identifier with this code.'}</small>
               </div>
               <div className={`${styles.assetSettingsActions} ${styles.assetTransferReceiptActions}`}>
                 <button type="button" className={styles.secondaryButton} onClick={() => void copyAssetTransferDetails()}>Copy details</button>

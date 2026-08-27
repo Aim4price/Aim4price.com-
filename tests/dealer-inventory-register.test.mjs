@@ -43,11 +43,11 @@ const [
 ]);
 
 test('dealer inventory reuses the complete Asset Register instead of a second implementation', () => {
-  assert.match(dealerHome, /label: 'My Inventory'/);
+  assert.match(dealerHome, /label: 'Asset Register'/);
   assert.match(dealerHome, /href: '\/dealer\/inventory'/);
   assert.match(inventoryPage, /AssetRegisterClient/);
   assert.match(inventoryPage, /showAppHeader=\{false\}/);
-  assert.match(inventoryPage, /Trade-ins and dealer-owned assets stay separate from managed client registers/);
+  assert.match(inventoryPage, /Your own stock and trade-ins stay separate from the Asset Registers you manage for clients/);
   assert.match(desktopRegisterPage, /profile\.accountType !== "owner" && profile\.accountType !== "dealer"/);
 });
 
