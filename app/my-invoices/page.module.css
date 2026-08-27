@@ -5864,3 +5864,280 @@
     min-width: 0;
   }
 }
+
+/* Add Cost uses the same compact choice pattern as Fuel Slips. */
+.costChoiceModal {
+  width: min(100%, 1120px);
+  max-height: min(90vh, calc(100dvh - 2rem));
+  grid-template-rows: auto auto auto;
+  gap: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: 0;
+  border: 1px solid rgba(193, 211, 220, 0.96);
+  border-radius: 1.65rem;
+  background: #ffffff;
+  box-shadow: 0 30px 80px rgba(10, 31, 35, 0.24);
+}
+
+.costChoiceModal .modalHeader {
+  position: relative;
+  align-items: center;
+  gap: 1.25rem;
+  margin: 0;
+  padding: 1.45rem 1.7rem 1.2rem;
+  text-align: left;
+  border-bottom: 1px solid rgba(216, 226, 236, 0.88);
+  background:
+    radial-gradient(circle at 6% 0%, rgba(29, 130, 91, 0.085), transparent 34%),
+    #ffffff;
+}
+
+.costChoiceModal .modalHeader > div {
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+  display: grid;
+  justify-items: start;
+  gap: 0.34rem;
+  text-align: left;
+}
+
+.costChoiceModal .modalHeader h2 {
+  max-width: none;
+  margin: 0;
+  text-align: left;
+  line-height: 1.04;
+}
+
+.costChoiceModal .modalHeader p {
+  max-width: none;
+  margin: 0;
+  color: #5f7186;
+  font-size: clamp(0.96rem, 1.3vw, 1.02rem);
+  font-weight: 620;
+  line-height: 1.42;
+  text-align: left;
+  text-wrap: pretty;
+}
+
+.costChoiceModal .closeButton {
+  width: 2.65rem;
+  min-width: 2.65rem;
+  height: 2.65rem;
+  min-height: 2.65rem;
+}
+
+.costChoiceModal .closeButton svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.costChoiceModal .sourceChoiceGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.9rem;
+  padding: 1.35rem 1.7rem 1.55rem;
+  background:
+    radial-gradient(circle at 100% 0%, rgba(25, 116, 84, 0.05), transparent 34%),
+    linear-gradient(180deg, #fbfdfc 0%, #f7faf9 100%);
+}
+
+.costChoiceModal .costChoiceOption {
+  position: relative;
+  min-height: 6.35rem;
+  display: grid;
+  grid-template-columns: 4.1rem minmax(0, 1fr) 1.75rem;
+  align-items: center;
+  gap: 0.95rem;
+  overflow: hidden;
+  padding: 0.95rem 1.08rem;
+  border-color: rgba(194, 211, 220, 0.96);
+  border-radius: 1.16rem;
+  background: #ffffff;
+  color: #0e4637;
+  box-shadow: 0 9px 20px rgba(18, 55, 45, 0.035), inset 0 1px 0 rgba(255, 255, 255, 0.98);
+  text-align: left;
+}
+
+.costChoiceModal .costChoiceOption::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  background: transparent;
+  transition: background 160ms ease;
+}
+
+.costChoiceModal .costChoiceOption:hover,
+.costChoiceModal .costChoiceOption:focus-visible {
+  border-color: rgba(75, 166, 124, 0.62);
+  background: linear-gradient(180deg, #ffffff 0%, #f2faf6 100%);
+  box-shadow: 0 13px 26px rgba(18, 55, 45, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.98);
+}
+
+.costChoiceModal .costChoiceOption:hover::before,
+.costChoiceModal .costChoiceOption:focus-visible::before {
+  background: #197454;
+}
+
+.costChoiceModal .choiceGraphic {
+  grid-column: auto;
+  grid-row: auto;
+  justify-self: stretch;
+  width: 4.1rem;
+  min-width: 4.1rem;
+  height: 4.1rem;
+  padding: 0;
+  border-color: rgba(178, 210, 195, 0.96);
+  border-radius: 1rem;
+  background: linear-gradient(180deg, #f3fbf6 0%, #e8f6ee 100%);
+  color: #126c4e;
+}
+
+.costChoiceModal .choiceGraphic svg {
+  width: 1.95rem;
+  height: 1.95rem;
+}
+
+.costChoiceModal .choiceTitleBlock {
+  grid-column: auto;
+  grid-row: auto;
+  width: auto;
+  display: grid;
+  justify-items: start;
+  gap: 0.24rem;
+  text-align: left;
+}
+
+.costChoiceModal .choiceTitleBlock strong {
+  max-width: none;
+  color: #0d4537;
+  font-size: 1.08rem;
+  font-weight: 850;
+  line-height: 1.18;
+  text-align: left;
+  text-wrap: pretty;
+}
+
+.costChoiceModal .choiceTitleBlock small {
+  display: block;
+  color: #607286;
+  font-size: 0.92rem;
+  font-weight: 620;
+  line-height: 1.36;
+  text-align: left;
+}
+
+.costChoiceArrow {
+  width: 1.75rem;
+  min-width: 1.75rem;
+  height: 1.75rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #cfdae0;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #197454;
+  transition: transform 160ms ease, border-color 160ms ease, background 160ms ease, color 160ms ease;
+}
+
+.costChoiceArrow svg {
+  width: 0.95rem;
+  height: 0.95rem;
+}
+
+.costChoiceModal .costChoiceOption:hover .costChoiceArrow,
+.costChoiceModal .costChoiceOption:focus-visible .costChoiceArrow {
+  transform: translateX(2px);
+  border-color: #197454;
+  background: #197454;
+  color: #ffffff;
+}
+
+.costChoiceModal .modalFooter {
+  margin: 0;
+  padding: 1rem 1.7rem;
+  border-top: 1px solid rgba(205, 218, 224, 0.92);
+  background: #ffffff;
+}
+
+@media (min-width: 1180px) {
+  .costChoiceModal .choiceTitleBlock strong,
+  .costChoiceModal .choiceTitleBlock small {
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: 900px) {
+  .costChoiceModal {
+    width: min(100%, calc(100vw - 1rem));
+    max-height: min(92vh, calc(100dvh - 1rem));
+    padding: 0;
+    border-radius: 1.35rem;
+  }
+
+  .costChoiceModal .modalHeader {
+    padding: 1.2rem 1.25rem 1rem;
+  }
+
+  .costChoiceModal .modalHeader h2 {
+    font-size: clamp(1.34rem, 6.8vw, 1.68rem);
+  }
+
+  .costChoiceModal .modalHeader p {
+    max-width: 100%;
+    font-size: 0.95rem;
+    line-height: 1.42;
+  }
+
+  .costChoiceModal .sourceChoiceGrid {
+    grid-template-columns: 1fr;
+    padding: 1rem 1.25rem 1.2rem;
+  }
+
+  .costChoiceModal .modalFooter {
+    padding: 0.9rem 1.25rem;
+  }
+}
+
+@media (max-width: 560px) {
+  .costChoiceModal .modalHeader {
+    align-items: flex-start;
+    gap: 0.85rem;
+  }
+
+  .costChoiceModal .costChoiceOption {
+    min-height: 5.6rem;
+    grid-template-columns: 3.35rem minmax(0, 1fr) 1.6rem;
+    gap: 0.72rem;
+    padding: 0.78rem 0.82rem;
+  }
+
+  .costChoiceModal .choiceGraphic {
+    width: 3.35rem;
+    min-width: 3.35rem;
+    height: 3.35rem;
+  }
+
+  .costChoiceModal .choiceGraphic svg {
+    width: 1.62rem;
+    height: 1.62rem;
+  }
+
+  .costChoiceModal .choiceTitleBlock strong {
+    font-size: 1rem;
+  }
+
+  .costChoiceModal .choiceTitleBlock small {
+    font-size: 0.85rem;
+    line-height: 1.32;
+  }
+
+  .costChoiceArrow {
+    width: 1.6rem;
+    min-width: 1.6rem;
+    height: 1.6rem;
+  }
+}

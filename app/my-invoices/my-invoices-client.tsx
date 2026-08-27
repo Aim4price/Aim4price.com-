@@ -623,6 +623,14 @@ function ChevronDownIcon(props: SVGProps<SVGSVGElement>) {
   );
 }
 
+function ChevronRightIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <IconBase {...props}>
+      <path d="m9 18 6-6-6-6" />
+    </IconBase>
+  );
+}
+
 function CloseIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <IconBase {...props}>
@@ -3953,42 +3961,54 @@ export default function MyInvoicesClient({
 
       {sourceChoiceOpen ? (
         <div className={styles.modalBackdrop} role="dialog" aria-modal="true" aria-label="Choose cost capture method">
-          <div className={`${styles.downloadModal} ${styles.sourceChoiceModal}`}>
+          <div
+            className={`${styles.downloadModal} ${styles.sourceChoiceModal} ${styles.costChoiceModal}`}
+            data-cost-choice-modal="true"
+          >
             <div className={styles.modalHeader}>
               <div>
                 <h2>Add asset cost</h2>
-                <p>Save an invoice, repair, parts or maintenance cost against {dealerMode ? 'a shared client asset' : 'a saved asset'}.</p>
+                <p>Choose how to capture a cost for {dealerMode ? 'a shared client asset' : 'a saved asset'}.</p>
               </div>
               <button type="button" className={styles.closeButton} onClick={closeModal} aria-label="Close add asset cost"><CloseIcon /></button>
             </div>
             <div className={styles.modalDivider} />
             <div className={styles.sourceChoiceGrid}>
-              <button type="button" className={styles.sourceChoiceOption} onClick={() => startFlow('manual')}>
+              <button type="button" className={`${styles.sourceChoiceOption} ${styles.costChoiceOption}`} onClick={() => startFlow('manual')}>
                 <span className={styles.choiceGraphic}>
                   <ManualInvoiceIcon />
                 </span>
                 <span className={styles.choiceTitleBlock}>
                   <strong>Enter cost manually</strong>
-                  <small>Type the supplier, invoice date, VAT, usage and work details yourself.</small>
+                  <small>Enter supplier, date, VAT and work details yourself.</small>
+                </span>
+                <span className={styles.costChoiceArrow} aria-hidden="true">
+                  <ChevronRightIcon />
                 </span>
               </button>
-              <button type="button" className={styles.sourceChoiceOption} onClick={() => startFlow('automatic')}>
+              <button type="button" className={`${styles.sourceChoiceOption} ${styles.costChoiceOption}`} onClick={() => startFlow('automatic')}>
                 <span className={styles.choiceGraphic}>
                   <AutomaticInvoiceIcon />
                 </span>
                 <span className={styles.choiceTitleBlock}>
                   <strong>Upload for Aim4price capture</strong>
-                  <small>Send a PDF or photo and Aim4price will capture and verify it within 24 hours.</small>
+                  <small>Upload a photo or PDF for capture within 24 hours.</small>
+                </span>
+                <span className={styles.costChoiceArrow} aria-hidden="true">
+                  <ChevronRightIcon />
                 </span>
               </button>
               {!dealerMode ? (
-                <button type="button" className={`${styles.sourceChoiceOption} ${styles.recurringChoiceOption}`} onClick={startRecurringCommitment}>
+                <button type="button" className={`${styles.sourceChoiceOption} ${styles.costChoiceOption} ${styles.recurringChoiceOption}`} onClick={startRecurringCommitment}>
                   <span className={styles.choiceGraphic}>
                     <ManualInvoiceIcon />
                   </span>
                   <span className={styles.choiceTitleBlock}>
                     <strong>Add recurring commitment</strong>
                     <small>Track future recurring asset costs.</small>
+                  </span>
+                  <span className={styles.costChoiceArrow} aria-hidden="true">
+                    <ChevronRightIcon />
                   </span>
                 </button>
               ) : null}
@@ -5112,4 +5132,3 @@ export default function MyInvoicesClient({
     </main>
   );
 }
-
