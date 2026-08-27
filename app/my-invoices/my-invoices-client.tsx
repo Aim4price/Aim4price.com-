@@ -136,6 +136,7 @@ type CostBudgetDraft = {
 type CostBudgetsResponse = {
   ok: boolean;
   budgets?: CostBudgetProgress[];
+  assets?: AssetOption[];
   budget?: CostBudgetProgress;
   error?: string;
 };
@@ -1187,6 +1188,7 @@ export default function MyInvoicesClient({
   const [deletingInvoiceId, setDeletingInvoiceId] = useState<string | null>(null);
   const [deleteCandidateInvoice, setDeleteCandidateInvoice] = useState<InvoiceRecord | null>(null);
   const [costBudgets, setCostBudgets] = useState<CostBudgetProgress[]>([]);
+  const [budgetAssets, setBudgetAssets] = useState<AssetOption[]>([]);
   const [budgetsLoading, setBudgetsLoading] = useState(canManageBudgets);
   const [budgetLoadError, setBudgetLoadError] = useState('');
   const [budgetManagerNotice, setBudgetManagerNotice] = useState<Notice | null>(null);
@@ -1249,6 +1251,7 @@ export default function MyInvoicesClient({
   useEffect(() => {
     if (!canManageBudgets) {
       setCostBudgets([]);
+      setBudgetAssets([]);
       setBudgetsLoading(false);
       return;
     }
@@ -1258,8 +1261,11 @@ export default function MyInvoicesClient({
     setBudgetLoadError('');
 
     void fetchCostBudgetData()
-      .then((budgets) => {
-        if (!cancelled) setCostBudgets(budgets);
+      .then((data) => {
+        if (!cancelled) {
+          setCostBudgets(data.budgets);
+          setBudgetAssets(data.assets);
+        }
       })
       .catch((error) => {
         if (!cancelled) {
@@ -1455,12 +1461,12 @@ export default function MyInvoicesClient({
   }, [assets, recurringAssetSearch]);
 
   const selectedBudgetAsset = useMemo(
-    () => assets.find((asset) => asset.id === budgetSelectedAssetIds[0]) ?? null,
-    [assets, budgetSelectedAssetIds],
+    () => budgetAssets.find((asset) => asset.id === budgetSelectedAssetIds[0]) ?? null,
+    [budgetAssets, budgetSelectedAssetIds],
   );
   const selectedBudgetAssets = useMemo(
-    () => assets.filter((asset) => budgetSelectedAssetIds.includes(asset.id)),
-    [assets, budgetSelectedAssetIds],
+    () => budgetAssets.filter((asset) => budgetSelectedAssetIds.includes(asset.id)),
+    [budgetAssets, budgetSelectedAssetIds],
   );
   const budgetAmountValue = Number(budgetDraft.amount.replace(/\s/g, '').replace(',', '.'));
   const budgetWarningValue = Number(budgetDraft.warningPercent);
@@ -1472,9 +1478,9 @@ export default function MyInvoicesClient({
 
   const filteredBudgetAssets = useMemo(() => {
     const query = budgetAssetSearch.trim().toLowerCase();
-    if (!query) return assets;
-    return assets.filter((asset) => assetSearchText(asset).includes(query));
-  }, [assets, budgetAssetSearch]);
+    if (!query) return budgetAssets;
+    return budgetAssets.filter((asset) => assetSearchText(asset).includes(query));
+  }, [budgetAssetSearch, budgetAssets]);
 
   const budgetUnavailableAssetIds = useMemo(() => new Set(
     costBudgets
@@ -1898,7 +1904,7 @@ export default function MyInvoicesClient({
     applyInvoiceData(data);
   }
 
-  async function fetchCostBudgetData(): Promise<CostBudgetProgress[]> {
+  async function fetchCostBudgetData(): Promise<{ budgets: CostBudgetProgress[]; assets: AssetOption[] }> {
     const response = await fetch('/api/my-invoices/budgets', {
       credentials: 'include',
       cache: 'no-store',
@@ -1907,13 +1913,17 @@ export default function MyInvoicesClient({
     if (!response.ok || !data?.ok) {
       throw new Error(data?.error || 'Spending budgets could not be loaded.');
     }
-    return data.budgets ?? [];
+    return {
+      budgets: data.budgets ?? [],
+      assets: data.assets ?? [],
+    };
   }
 
   async function reloadBudgets(): Promise<void> {
     if (!canManageBudgets) return;
-    const budgets = await fetchCostBudgetData();
-    setCostBudgets(budgets);
+    const data = await fetchCostBudgetData();
+    setCostBudgets(data.budgets);
+    setBudgetAssets(data.assets);
     setBudgetLoadError('');
   }
 
@@ -1940,7 +1950,7 @@ export default function MyInvoicesClient({
     budgetManagerReturnFocusRef.current = 'add';
     setBudgetManagerNotice(null);
     const defaultAssetId = activeFilters.assetId !== 'all'
-      && assets.some((asset) => asset.id === activeFilters.assetId)
+      && budgetAssets.some((asset) => asset.id === activeFilters.assetId)
       ? activeFilters.assetId
       : '';
     setEditingBudgetId(null);
@@ -3778,7 +3788,7 @@ export default function MyInvoicesClient({
                       type="button"
                       className={styles.budgetScopeTrigger}
                       onClick={openBudgetAssetPicker}
-                      disabled={budgetSaving || !assets.length}
+                      disabled={budgetSaving || !budgetAssets.length}
                       aria-haspopup="dialog"
                     >
                       <span className={styles.budgetScopeCopy}>
@@ -3789,7 +3799,7 @@ export default function MyInvoicesClient({
                             : `${selectedBudgetAssets.length} assets selected`
                           : budgetDraft.assetId === 'all'
                             ? 'All saved assets in this existing budget.'
-                            : assets.length
+                            : budgetAssets.length
                               ? 'Select one or more saved assets.'
                               : 'Add an asset first.'}</small>
                       </span>
