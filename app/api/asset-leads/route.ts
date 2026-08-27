@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { randomUUID } from 'node:crypto';
 import { getAccountProfile } from '../../../lib/account-profile';
 import { getAssetRegisterItemById } from '../../../lib/asset-register-db';
 import { getServerSession, isOwnerAppSession } from '../../../lib/auth-session';
@@ -90,6 +91,56 @@ function hasLicenceRenewalDate(asset: Awaited<ReturnType<typeof getAssetRegister
   ].some((value) => String(value ?? '').trim());
 }
 
+function isAssetGroupShareRequest(sections: Record<string, unknown> | null): boolean {
+  if (!sections) return false;
+  const registerSnapshot = asRecord(sections.registerSnapshot);
+  return (
+    String(sections.source ?? '').trim().toLowerCase() === 'asset_group'
+    || String(registerSnapshot?.snapshotType ?? '').trim().toLowerCase() === 'asset_group'
+    || Boolean(String(registerSnapshot?.groupId ?? '').trim())
+  );
+}
+
+function buildAssetGroupChildSections(input: {
+  sections: Record<string, unknown>;
+  batchId: string;
+  groupId: string;
+  groupName: string;
+  assetCount: number;
+  childIndex: number;
+  assetId: string;
+}): Record<string, unknown> {
+  const {
+    registerSnapshot: _registerSnapshot,
+    registerLead: _registerLead,
+    registerLeadType: _registerLeadType,
+    pdfReport: _pdfReport,
+    registerId: _registerId,
+    groupId: _groupId,
+    liveAccess: _liveAccess,
+    allowDirectUpdates: _allowDirectUpdates,
+    includeFuelLedger: _includeFuelLedger,
+    includeCostLedger: _includeCostLedger,
+    ...assetSections
+  } = input.sections;
+
+  return {
+    ...assetSections,
+    assetDetails: true,
+    valuationSummary: true,
+    mainPhoto: true,
+    source: 'asset_group_child',
+    assetGroupShare: {
+      batchId: input.batchId,
+      groupId: input.groupId || null,
+      name: input.groupName || 'Asset umbrella',
+      assetCount: input.assetCount,
+      childIndex: input.childIndex,
+      assetId: input.assetId,
+    },
+  };
+}
+
 export async function GET() {
   const session = await getServerSession({ allowDealerApp: true, allowOwnerApp: true });
 
@@ -136,6 +187,7 @@ export async function POST(request: NextRequest) {
   const partnerUserId = String(body.partnerUserId ?? '').trim();
   const leadType = normalizeLeadType(body.leadType);
   const includedSections = asRecord(body.includedSections);
+  const assetGroupShare = isAssetGroupShareRequest(includedSections);
   const trackMaintenance = body.trackMaintenance === true;
   const trackingPermissions = readTrackingPermissions(body.trackingPermissions);
   const dealerShareAssetIds = readDealerShareAssetIds(body.assetIds);
@@ -173,15 +225,18 @@ export async function POST(request: NextRequest) {
     if (
       dealerShareAssetIds.length
       && !assistanceSelection
+      && !assetGroupShare
       && leadType !== 'replacement_quote'
       && leadType !== 'license_renewal'
     ) {
       return NextResponse.json({ ok: false, error: 'Bulk asset sharing is only available for dealers and licence renewal experts.' }, { status: 400 });
     }
 
-    const leadAssetIds = assistanceSelection && dealerShareAssetIds.length
-      ? dealerShareAssetIds
-      : leadType === 'license_renewal' && dealerShareAssetIds.length
+    const leadAssetIds = dealerShareAssetIds.length && (
+      assistanceSelection
+      || assetGroupShare
+      || leadType === 'license_renewal'
+    )
       ? dealerShareAssetIds
       : [assetId];
 
@@ -225,8 +280,28 @@ export async function POST(request: NextRequest) {
       ...(includedSections ?? {}),
       maintenanceTrackingEnabled: trackMaintenance,
     };
+    const registerSnapshot = asRecord(savedSections.registerSnapshot);
+    const assetGroupBatchId = assetGroupShare ? randomUUID() : '';
+    const assetGroupId = String(body.assetGroupId ?? registerSnapshot?.groupId ?? '').trim();
+    const assetGroupName = String(
+      body.assetGroupName
+      ?? registerSnapshot?.groupName
+      ?? registerSnapshot?.title
+      ?? 'Asset umbrella',
+    ).trim();
     const leads = [];
-    for (const selectedAssetId of leadAssetIds) {
+    for (const [selectedAssetIndex, selectedAssetId] of leadAssetIds.entries()) {
+      const leadSections = assetGroupShare
+        ? buildAssetGroupChildSections({
+            sections: savedSections,
+            batchId: assetGroupBatchId,
+            groupId: assetGroupId,
+            groupName: assetGroupName,
+            assetCount: leadAssetIds.length,
+            childIndex: selectedAssetIndex + 1,
+            assetId: selectedAssetId,
+          })
+        : savedSections;
       leads.push(await createAssetLead({
         ownerUserId: session.user.id,
         ownerName: session.user.name,
@@ -235,14 +310,17 @@ export async function POST(request: NextRequest) {
         partnerUserId: effectivePartnerUserId,
         leadType,
         ownerMessage: typeof body.ownerMessage === 'string' ? body.ownerMessage : null,
-        includedSections: savedSections,
+        includedSections: leadSections,
         allowAim4priceAssistance: Boolean(assistanceSelection),
       }));
     }
     const lead = leads[0];
 
     if (leadType === 'finance') {
-      await syncAccountantShareSettingsFromLead(lead.id, savedSections);
+      await Promise.all(leads.map((savedLead) => syncAccountantShareSettingsFromLead(
+        savedLead.id,
+        savedLead.includedSections,
+      )));
     }
 
     const trackingAssetIds = dealerShareAssetIds.length ? dealerShareAssetIds : [assetId];

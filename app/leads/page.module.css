@@ -5509,3 +5509,71 @@
     text-align: left;
   }
 }
+
+/* Umbrella shares group normal full lead cards instead of introducing a second card design. */
+.umbrellaLeadBatchHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.25rem;
+  width: 100%;
+  padding: 1.15rem 1.35rem;
+  border: 1px solid rgba(33, 128, 93, 0.24);
+  border-left: 5px solid #278463;
+  border-radius: 1.35rem;
+  background:
+    radial-gradient(circle at 10% 20%, rgba(70, 176, 132, 0.13), transparent 34%),
+    linear-gradient(135deg, #f1faf6 0%, #fbfefd 100%);
+  box-shadow: 0 14px 32px rgba(25, 76, 58, 0.08);
+}
+
+.umbrellaLeadBatchHeader > div {
+  min-width: 0;
+}
+
+.umbrellaLeadBatchHeader span {
+  display: block;
+  margin-bottom: 0.25rem;
+  color: #23775b;
+  font-size: 0.75rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.umbrellaLeadBatchHeader h2 {
+  margin: 0;
+  color: #082f2c;
+  font-size: clamp(1.35rem, 2vw, 1.8rem);
+  line-height: 1.1;
+}
+
+.umbrellaLeadBatchHeader p {
+  margin: 0.4rem 0 0;
+  color: #526c64;
+  font-size: 0.94rem;
+  font-weight: 650;
+}
+
+.umbrellaLeadBatchHeader > strong {
+  flex: 0 0 auto;
+  padding: 0.62rem 0.9rem;
+  border: 1px solid rgba(38, 132, 98, 0.16);
+  border-radius: 999px;
+  background: #e4f6ee;
+  color: #0c654a;
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+.umbrellaLeadChildThread {
+  border-left-color: #278463 !important;
+}
+
+@media (max-width: 680px) {
+  .umbrellaLeadBatchHeader {
+    align-items: flex-start;
+    flex-direction: column;
+    padding: 1rem;
+  }
+}

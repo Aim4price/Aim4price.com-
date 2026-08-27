@@ -69,13 +69,13 @@ test('dealer estimates can save to either selected register without changing the
   assert.match(valuationRoute, /accountType === 'owner' \|\| accountType === 'dealer' \|\| Boolean\(accountantAccess\)/);
 });
 
-test('shared Asset Registers and umbrellas render every included asset as a full card', () => {
+test('shared umbrellas group independent assets while retaining the normal lead card', () => {
   assert.match(leadsClient, /function isAssetGroupLead/);
-  assert.match(leadsClient, /function renderRegisterLeadAssetCard/);
-  assert.match(leadsClient, /registerAssets\.map\(\(asset, index\) => renderRegisterLeadAssetCard/);
-  assert.match(leadsClient, /snapshotAssetPhotos/);
-  assert.match(leadsClient, /Replacement Price/);
+  assert.match(leadsClient, /if \(isAssetGroupLead\(lead\)\) return false/);
+  assert.match(leadsClient, /assetGroupShareInfo/);
   assert.match(leadsClient, /Shared umbrella/);
-  assert.match(leadsStyles, /\.fullRegisterAssetCard/);
-  assert.match(leadsStyles, /\.fullRegisterAssetBody/);
+  assert.match(leadsClient, /renderLeadDetails\(lead\)/);
+  assert.match(leadsClient, /Replacement Price/);
+  assert.match(leadsStyles, /\.umbrellaLeadBatchHeader/);
+  assert.match(leadsStyles, /\.umbrellaLeadChildThread/);
 });
