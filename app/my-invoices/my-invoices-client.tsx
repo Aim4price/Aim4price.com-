@@ -270,6 +270,7 @@ type Notice = {
 };
 
 type CommitmentFrequency = 'monthly' | 'quarterly' | 'six_monthly' | 'annual';
+type RecurringWizardStep = 1 | 2 | 3;
 
 type RecurringCommitmentDraft = {
   description: string;
@@ -287,6 +288,22 @@ type RecurringCommitmentResponse = {
   ok: boolean;
   error?: string;
 };
+
+const RECURRING_CATEGORY_OPTIONS = [
+  { value: 'insurance', label: 'Insurance' },
+  { value: 'service_plan', label: 'Service plan' },
+  { value: 'licence', label: 'Licence' },
+  { value: 'subscription', label: 'Subscription' },
+  { value: 'lease', label: 'Lease' },
+  { value: 'other', label: 'Other' },
+] as const;
+
+const RECURRING_FREQUENCY_OPTIONS: Array<{ value: CommitmentFrequency; label: string }> = [
+  { value: 'monthly', label: 'Monthly' },
+  { value: 'quarterly', label: 'Quarterly' },
+  { value: 'six_monthly', label: 'Every six months' },
+  { value: 'annual', label: 'Annual' },
+];
 
 type AccountingSoftware = 'sage_business_cloud' | 'generic_csv';
 type AccountingEffect = 'Increase' | 'Decrease';
@@ -1171,8 +1188,10 @@ export default function MyInvoicesClient({
   const [draft, setDraft] = useState<InvoiceDraft>(buildEmptyDraft('manual', initialDealerDefaults.supplierName));
   const [recurringDraft, setRecurringDraft] = useState<RecurringCommitmentDraft>(buildRecurringCommitmentDraft);
   const [recurringAssetIds, setRecurringAssetIds] = useState<string[]>([]);
+  const [recurringPickerAssetIds, setRecurringPickerAssetIds] = useState<string[]>([]);
   const [recurringAssetPickerOpen, setRecurringAssetPickerOpen] = useState(false);
   const [recurringAssetSearch, setRecurringAssetSearch] = useState('');
+  const [recurringWizardStep, setRecurringWizardStep] = useState<RecurringWizardStep>(1);
   const [recurringError, setRecurringError] = useState('');
   const [assetLockedForFlow, setAssetLockedForFlow] = useState(false);
   const [initialLaunchHandled, setInitialLaunchHandled] = useState(!initialOpenAdd);
@@ -1214,6 +1233,8 @@ export default function MyInvoicesClient({
   const budgetManagerDialogRef = useRef<HTMLDivElement>(null);
   const budgetManagerReturnFocusRef = useRef('');
   const budgetScopeTriggerRef = useRef<HTMLButtonElement>(null);
+  const recurringScopeTriggerRef = useRef<HTMLButtonElement>(null);
+  const recurringWizardStepHeadingRef = useRef<HTMLHeadingElement>(null);
   const budgetDeleteButtonRef = useRef<HTMLButtonElement>(null);
   const budgetDeleteCancelRef = useRef<HTMLButtonElement>(null);
   const budgetDeleteReturnFocusRef = useRef(false);
@@ -1459,6 +1480,15 @@ export default function MyInvoicesClient({
     if (!query) return assets;
     return assets.filter((asset) => assetSearchText(asset).includes(query));
   }, [assets, recurringAssetSearch]);
+  const allFilteredRecurringAssetsSelected = filteredRecurringAssets.length > 0
+    && filteredRecurringAssets.every((asset) => recurringPickerAssetIds.includes(asset.id));
+  const recurringAmountValue = Number(recurringDraft.amount.replace(/\s/g, '').replace(',', '.'));
+  const recurringCategoryLabel = RECURRING_CATEGORY_OPTIONS.find(
+    (option) => option.value === recurringDraft.category,
+  )?.label ?? 'Other';
+  const recurringFrequencyLabel = RECURRING_FREQUENCY_OPTIONS.find(
+    (option) => option.value === recurringDraft.frequency,
+  )?.label ?? 'Monthly';
 
   const selectedBudgetAsset = useMemo(
     () => budgetAssets.find((asset) => asset.id === budgetSelectedAssetIds[0]) ?? null,
@@ -1810,6 +1840,60 @@ export default function MyInvoicesClient({
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [budgetAssetPickerOpen, budgetModalOpen]);
+
+  useEffect(() => {
+    if (!recurringOpen || recurringAssetPickerOpen) return undefined;
+    const focusFrame = window.requestAnimationFrame(() => {
+      const scopeTarget = recurringScopeTriggerRef.current;
+      const target = recurringWizardStep === 1
+        ? scopeTarget && !scopeTarget.disabled ? scopeTarget : recurringWizardStepHeadingRef.current
+        : recurringWizardStepHeadingRef.current;
+      target?.focus();
+    });
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape' && !isSaving) {
+        event.preventDefault();
+        closeModal();
+        return;
+      }
+      if (event.key !== 'Tab') return;
+
+      const dialog = recurringWizardStepHeadingRef.current?.closest('[role="dialog"]');
+      if (!dialog) return;
+      const focusable = Array.from(dialog.querySelectorAll<HTMLElement>(
+        'button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      ));
+      if (!focusable.length) return;
+      const activeIndex = focusable.indexOf(document.activeElement as HTMLElement);
+      if (event.shiftKey && activeIndex <= 0) {
+        event.preventDefault();
+        focusable[focusable.length - 1]?.focus();
+      } else if (!event.shiftKey && (activeIndex === -1 || activeIndex === focusable.length - 1)) {
+        event.preventDefault();
+        focusable[0]?.focus();
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.cancelAnimationFrame(focusFrame);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isSaving, recurringAssetPickerOpen, recurringOpen, recurringWizardStep]);
+
+  useEffect(() => {
+    if (!recurringOpen || !recurringAssetPickerOpen) return undefined;
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key !== 'Escape') return;
+      event.preventDefault();
+      closeRecurringAssetPicker();
+    }
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [recurringAssetPickerOpen, recurringOpen]);
 
   useEffect(() => {
     if ((!filterOpen && !downloadOpen) || !openFilterDropdown) return undefined;
@@ -2266,8 +2350,10 @@ export default function MyInvoicesClient({
     setDraft(buildEmptyDraft('manual', dealerMode ? dealerDefaults.supplierName : ''));
     setRecurringDraft(buildRecurringCommitmentDraft());
     setRecurringAssetIds([]);
+    setRecurringPickerAssetIds([]);
     setRecurringAssetPickerOpen(false);
     setRecurringAssetSearch('');
+    setRecurringWizardStep(1);
     setRecurringError('');
     setQuickLaunchActive(false);
 
@@ -2546,30 +2632,109 @@ export default function MyInvoicesClient({
   }
 
   function startRecurringCommitment() {
+    const presetAssetIds = selectedAssetId && assets.some((asset) => asset.id === selectedAssetId)
+      ? [selectedAssetId]
+      : [];
     setNotice(null);
     setRecurringDraft(buildRecurringCommitmentDraft());
-    setRecurringAssetIds(selectedAssetId && assets.some((asset) => asset.id === selectedAssetId) ? [selectedAssetId] : []);
+    setRecurringAssetIds(presetAssetIds);
+    setRecurringPickerAssetIds(presetAssetIds);
     setRecurringAssetPickerOpen(false);
     setRecurringAssetSearch('');
+    setRecurringWizardStep(1);
     setRecurringError('');
     setFlow('recurring');
   }
 
+  function openRecurringAssetPicker() {
+    if (assetLockedForFlow) return;
+    setRecurringPickerAssetIds(recurringAssetIds);
+    setRecurringAssetSearch('');
+    setRecurringAssetPickerOpen(true);
+  }
+
+  function closeRecurringAssetPicker() {
+    setRecurringAssetPickerOpen(false);
+    setRecurringAssetSearch('');
+    window.requestAnimationFrame(() => recurringScopeTriggerRef.current?.focus());
+  }
+
+  function confirmRecurringAssetPicker() {
+    setRecurringAssetIds(recurringPickerAssetIds);
+    setRecurringError('');
+    closeRecurringAssetPicker();
+  }
+
   function toggleRecurringAsset(assetId: string) {
-    setRecurringAssetIds((current) => current.includes(assetId)
+    setRecurringPickerAssetIds((current) => current.includes(assetId)
       ? current.filter((id) => id !== assetId)
       : [...current, assetId]);
   }
 
+  function toggleAllFilteredRecurringAssets() {
+    if (!filteredRecurringAssets.length) return;
+    const visibleIds = new Set(filteredRecurringAssets.map((asset) => asset.id));
+    setRecurringPickerAssetIds((current) => allFilteredRecurringAssetsSelected
+      ? current.filter((id) => !visibleIds.has(id))
+      : Array.from(new Set([...current, ...visibleIds])));
+  }
+
   function setRecurringField<K extends keyof RecurringCommitmentDraft>(key: K, value: RecurringCommitmentDraft[K]) {
+    setRecurringError('');
     setRecurringDraft((current) => ({ ...current, [key]: value }));
+  }
+
+  function recurringDetailsError(): string {
+    if (!recurringDraft.description.trim()) return 'Add a short description for this recurring cost.';
+    if (!Number.isFinite(recurringAmountValue) || recurringAmountValue <= 0) return 'Enter an amount greater than R 0.';
+    if (!recurringDraft.startDate) return 'Choose a start date.';
+    if (recurringDraft.endDate && recurringDraft.endDate < recurringDraft.startDate) {
+      return 'The end date cannot be before the start date.';
+    }
+    return '';
+  }
+
+  function continueRecurringWizard() {
+    setRecurringError('');
+    if (recurringWizardStep === 1) {
+      if (!recurringAssetIds.length) {
+        setRecurringError(assets.length ? 'Choose at least one saved asset.' : 'Add an asset before creating a recurring cost.');
+        return;
+      }
+      setRecurringWizardStep(2);
+      return;
+    }
+    if (recurringWizardStep === 2) {
+      const validationError = recurringDetailsError();
+      if (validationError) {
+        setRecurringError(validationError);
+        return;
+      }
+      setRecurringWizardStep(3);
+    }
+  }
+
+  function goBackRecurringWizard() {
+    setRecurringError('');
+    setRecurringWizardStep((current) => (current === 3 ? 2 : 1));
   }
 
   async function submitRecurringCommitment(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setRecurringError('');
+    if (recurringWizardStep !== 3) {
+      continueRecurringWizard();
+      return;
+    }
     if (!recurringAssetIds.length) {
-      setRecurringError('Choose at least one linked asset.');
+      setRecurringWizardStep(1);
+      setRecurringError('Choose at least one saved asset.');
+      return;
+    }
+    const validationError = recurringDetailsError();
+    if (validationError) {
+      setRecurringWizardStep(2);
+      setRecurringError(validationError);
       return;
     }
     setIsSaving(true);
@@ -4368,154 +4533,333 @@ export default function MyInvoicesClient({
         </div>
       ) : null}
 
-      {recurringOpen && !recurringAssetPickerOpen ? (
-        <div className={styles.modalBackdrop} role="dialog" aria-modal="true" aria-label="Add recurring commitment">
-          <form className={`${styles.formModal} ${styles.costFormModal} ${styles.recurringCommitmentModal}`} onSubmit={submitRecurringCommitment}>
-            <div className={styles.modalHeader}>
-              <div>
-                <h2>Add recurring commitment</h2>
-                <p>Track a future cost and every asset it covers.</p>
+      {recurringOpen ? (
+        <div
+          className={`${styles.modalBackdrop} ${recurringAssetPickerOpen ? styles.budgetAssetPickerBackdrop : ''}`}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby={recurringAssetPickerOpen ? 'recurring-asset-picker-title' : 'recurring-modal-title'}
+        >
+          {recurringAssetPickerOpen ? (
+            <div className={[styles.assetModal, styles.budgetAssetPickerModal].join(' ')} data-asset-choice-surface="true" data-asset-choice-modal="true">
+              <div className={styles.modalHeader} data-asset-choice-header="true">
+                <div>
+                  <h2 id="recurring-asset-picker-title">Choose Saved Assets</h2>
+                  <p>Select every asset covered by this recurring cost.</p>
+                </div>
+                <button type="button" className={styles.closeButton} onClick={closeRecurringAssetPicker} aria-label="Back to recurring cost">
+                  <CloseIcon />
+                </button>
               </div>
-              <button type="button" className={styles.closeButton} onClick={closeModal} aria-label="Close"><CloseIcon /></button>
-            </div>
-            <div className={styles.modalDivider} />
-            <div className={styles.formModalScrollBody}>
-              <section className={`${styles.invoiceFormCard} ${styles.recurringCommitmentCard}`}>
-                <div className={`${styles.formGrid} ${styles.recurringCommitmentGrid}`}>
-                  <label>
-                    <span>Description</span>
-                    <input value={recurringDraft.description} onChange={(event) => setRecurringField('description', event.target.value)} placeholder="Insurance policy or service plan" required />
-                  </label>
-                  <label>
-                    <span>Category</span>
-                    <select value={recurringDraft.category} onChange={(event) => setRecurringField('category', event.target.value)}>
-                      <option value="insurance">Insurance</option>
-                      <option value="service_plan">Service plan</option>
-                      <option value="licence">Licence</option>
-                      <option value="subscription">Subscription</option>
-                      <option value="lease">Lease</option>
-                      <option value="other">Other</option>
-                    </select>
-                  </label>
-                  <label>
-                    <span>Amount</span>
-                    <input inputMode="decimal" value={recurringDraft.amount} onChange={(event) => setRecurringField('amount', formatInvoiceMoneyInput(event.target.value))} placeholder="R 0" required />
-                  </label>
-                  <label>
-                    <span>Frequency</span>
-                    <select value={recurringDraft.frequency} onChange={(event) => setRecurringField('frequency', event.target.value as CommitmentFrequency)}>
-                      <option value="monthly">Monthly</option>
-                      <option value="quarterly">Quarterly</option>
-                      <option value="six_monthly">Every six months</option>
-                      <option value="annual">Annual</option>
-                    </select>
-                  </label>
-                  <label>
-                    <span>Start date</span>
-                    <input type="date" value={recurringDraft.startDate} onChange={(event) => setRecurringField('startDate', event.target.value)} required />
-                  </label>
-                  <label>
-                    <span>End date <small>(optional)</small></span>
-                    <input type="date" value={recurringDraft.endDate} onChange={(event) => setRecurringField('endDate', event.target.value)} />
-                  </label>
-                  <label>
-                    <span>Renewal date <small>(optional)</small></span>
-                    <input type="date" value={recurringDraft.renewalDate} onChange={(event) => setRecurringField('renewalDate', event.target.value)} />
-                  </label>
-                  <label>
-                    <span>Source / reference <small>(optional)</small></span>
-                    <input value={recurringDraft.sourceReference} onChange={(event) => setRecurringField('sourceReference', event.target.value)} />
-                  </label>
-                  <div className={`${styles.recurringAssetField} ${styles.recurringCommitmentWide}`}>
-                    <span className={styles.recurringAssetFieldLabel}>Linked assets</span>
+              <div className={styles.modalDivider} />
+              <div className={[styles.pickerToolbar, styles.budgetAssetPickerToolbar].join(' ')} data-asset-choice-toolbar="true">
+                <input
+                  type="search"
+                  value={recurringAssetSearch}
+                  onChange={(event) => setRecurringAssetSearch(event.target.value)}
+                  placeholder="Search saved assets..."
+                  aria-label="Search saved assets"
+                  autoComplete="off"
+                  autoFocus
+                />
+                <button
+                  type="button"
+                  className={`${styles.secondaryButton} ${styles.budgetSelectAllButton}`}
+                  onClick={toggleAllFilteredRecurringAssets}
+                  disabled={!filteredRecurringAssets.length}
+                  aria-pressed={allFilteredRecurringAssetsSelected}
+                >
+                  {allFilteredRecurringAssetsSelected
+                    ? `Unselect shown (${filteredRecurringAssets.length})`
+                    : `Select all shown (${filteredRecurringAssets.length})`}
+                </button>
+                <button type="button" className={styles.secondaryButton} onClick={() => setRecurringAssetSearch('')} disabled={!recurringAssetSearch}>
+                  Clear search
+                </button>
+              </div>
+              <div className={[styles.assetList, styles.budgetAssetList].join(' ')} data-asset-choice-list="true">
+                {filteredRecurringAssets.length ? filteredRecurringAssets.map((asset) => {
+                  const isSelected = recurringPickerAssetIds.includes(asset.id);
+                  return (
                     <button
                       type="button"
-                      className={styles.recurringAssetTrigger}
-                      onClick={() => setRecurringAssetPickerOpen(true)}
-                      aria-haspopup="dialog"
-                      disabled={assetLockedForFlow}
+                      key={asset.id}
+                      className={[styles.assetRow, styles.budgetScopeRow].join(' ')}
+                      data-asset-choice-row="true"
+                      data-asset-choice-selected={isSelected ? 'true' : undefined}
+                      onClick={() => toggleRecurringAsset(asset.id)}
+                      aria-pressed={isSelected}
                     >
-                      <span>
-                        <strong>{recurringAssetIds.length ? `${recurringAssetIds.length} asset${recurringAssetIds.length === 1 ? '' : 's'} selected` : 'Choose linked assets'}</strong>
-                        <small>{assetLockedForFlow ? 'This asset is fixed for this quick add.' : 'Select every asset covered by this commitment.'}</small>
+                      <span className={styles.assetInfo} data-asset-choice-copy="true">
+                        {asset.ownerName ? <small data-asset-choice-meta="true">{asset.ownerName}</small> : null}
+                        <strong>{asset.title}</strong>
+                        <small data-asset-choice-meta="true">{asset.meta}</small>
+                        <small data-asset-choice-secondary="true">{asset.categoryLabel} · {asset.selectedMethod === 'manual' ? 'Manual' : 'Aim4price'}</small>
                       </span>
-                      <b>{assetLockedForFlow ? 'Locked' : recurringAssetIds.length ? 'Change' : 'Choose'}</b>
+                      <span className={styles.assetValue} data-asset-choice-value="true">
+                        <span className={`${styles.budgetAssetChoice} ${isSelected ? styles.budgetAssetChoiceSelected : ''}`}>
+                          <span className={styles.budgetAssetCheck} aria-hidden="true">{isSelected ? '✓' : ''}</span>
+                          <strong>{isSelected ? 'Selected' : 'Select'}</strong>
+                        </span>
+                      </span>
                     </button>
-                    {recurringSelectedAssets.length ? <div className={styles.recurringAssetChips}>
-                      {recurringSelectedAssets.map((asset) => <span key={asset.id}>{asset.title}</span>)}
-                    </div> : null}
-                  </div>
-                </div>
-                <div className={`${styles.textAreaGrid} ${styles.recurringCommitmentNote}`}>
-                  <label><span>Note <small>(optional)</small></span><textarea value={recurringDraft.note} onChange={(event) => setRecurringField('note', event.target.value)} rows={3} /></label>
-                </div>
-                {recurringError ? <div className={styles.warningBox} role="alert"><p>{recurringError}</p></div> : null}
-              </section>
-            </div>
-            <div className={styles.modalFooter}>
-              <button type="button" className={styles.secondaryButton} onClick={() => setFlow('source-choice')} disabled={isSaving}>Back</button>
-              <button type="submit" className={styles.primaryButton} disabled={isSaving}>{isSaving ? 'Saving...' : 'Save commitment'}</button>
-            </div>
-          </form>
-        </div>
-      ) : null}
-
-      {recurringOpen && recurringAssetPickerOpen ? (
-        <div className={styles.modalBackdrop} role="dialog" aria-modal="true" aria-label="Choose linked assets">
-          <div className={`${styles.assetModal} ${styles.recurringAssetPickerModal}`} data-asset-choice-surface="true" data-asset-choice-modal="true">
-            <div className={styles.modalHeader} data-asset-choice-header="true">
-              <div>
-                <h2>Choose linked assets</h2>
-                <p>Select every asset covered by this commitment.</p>
+                  );
+                }) : <div className={styles.emptyState} role="status">No matching assets.</div>}
               </div>
-              <button type="button" className={styles.closeButton} onClick={() => setRecurringAssetPickerOpen(false)} aria-label="Close linked asset picker"><CloseIcon /></button>
+              <div className={[styles.modalFooter, styles.budgetAssetPickerFooter].join(' ')} data-asset-choice-footer="true">
+                <span className={styles.budgetAssetSelectionCount} aria-live="polite">
+                  {recurringPickerAssetIds.length
+                    ? `${recurringPickerAssetIds.length.toLocaleString('en-ZA')} ${recurringPickerAssetIds.length === 1 ? 'asset' : 'assets'} selected`
+                    : 'Select one or more assets'}
+                </span>
+                {recurringPickerAssetIds.length ? (
+                  <button type="button" className={styles.secondaryButton} onClick={() => setRecurringPickerAssetIds([])}>Clear selection</button>
+                ) : null}
+                <button type="button" className={styles.secondaryButton} onClick={closeRecurringAssetPicker}>Cancel</button>
+                <button type="button" className={styles.primaryButton} onClick={confirmRecurringAssetPicker} disabled={!recurringPickerAssetIds.length}>
+                  Done
+                </button>
+              </div>
             </div>
-            <div className={styles.modalDivider} />
-            <div className={styles.pickerToolbar} data-asset-choice-toolbar="true">
-              <input
-                type="search"
-                value={recurringAssetSearch}
-                onChange={(event) => setRecurringAssetSearch(event.target.value)}
-                placeholder="Search assets..."
-                aria-label="Search linked assets"
-              />
-              <button type="button" className={styles.secondaryButton} onClick={() => setRecurringAssetSearch('')} disabled={!recurringAssetSearch}>Clear</button>
-            </div>
-            <div className={`${styles.assetList} ${styles.recurringAssetList}`} data-asset-choice-list="true">
-              {filteredRecurringAssets.length ? filteredRecurringAssets.map((asset) => {
-                const selected = recurringAssetIds.includes(asset.id);
-                return (
-                  <button
-                    type="button"
-                    key={asset.id}
-                    className={`${styles.assetRow} ${styles.recurringAssetRow} ${selected ? styles.recurringAssetRowSelected : ''}`}
-                    data-asset-choice-row="true"
-                    data-asset-choice-selected={selected ? 'true' : undefined}
-                    onClick={() => toggleRecurringAsset(asset.id)}
-                    aria-pressed={selected}
-                  >
-                    <span className={styles.recurringAssetCheck} aria-hidden="true">{selected ? '✓' : ''}</span>
-                    <span className={styles.assetInfo} data-asset-choice-copy="true">
-                      {asset.ownerName ? <small data-asset-choice-meta="true">{asset.ownerName}</small> : null}
-                      <strong>{asset.title}</strong>
-                      <small data-asset-choice-meta="true">{asset.meta}</small>
-                      <small data-asset-choice-secondary="true">{asset.categoryLabel} · {asset.selectedMethod === 'manual' ? 'Manual' : 'Aim4price'}</small>
-                    </span>
-                    <span className={styles.assetValue} data-asset-choice-value="true">
-                      <strong>{formatMoney(asset.value)}</strong>
-                      <small>current value</small>
-                    </span>
+          ) : (
+            <form
+              className={[styles.downloadModal, styles.invoiceDropCodeModal, styles.budgetWizardModal, styles.recurringWizardModal].join(' ')}
+              onSubmit={submitRecurringCommitment}
+            >
+              <div className={[styles.modalHeader, styles.invoiceDropCodeHeader].join(' ')}>
+                <div>
+                  <h2 id="recurring-modal-title">Add recurring commitment</h2>
+                  <p>{recurringWizardStep === 1
+                    ? 'Choose which assets this cost covers.'
+                    : recurringWizardStep === 2
+                      ? 'Add the cost and schedule.'
+                      : 'Review and save.'}</p>
+                </div>
+                <button type="button" className={styles.closeButton} onClick={closeModal} aria-label="Close recurring cost">
+                  <CloseIcon />
+                </button>
+              </div>
+
+              <div className={[styles.invoiceDropCodeBody, styles.budgetWizardBody, styles.recurringWizardBody].join(' ')}>
+                <ol className={styles.invoiceDropWizardProgress} aria-label={'Step ' + recurringWizardStep + ' of 3'}>
+                  {([['Coverage', 1], ['Details', 2], ['Review', 3]] as const).map(([label, step]) => (
+                    <li
+                      key={label}
+                      className={[
+                        styles.invoiceDropWizardProgressItem,
+                        recurringWizardStep === step ? styles.invoiceDropWizardProgressItemActive : '',
+                        recurringWizardStep > step ? styles.invoiceDropWizardProgressItemComplete : '',
+                      ].join(' ')}
+                      aria-current={recurringWizardStep === step ? 'step' : undefined}
+                    >
+                      <span aria-hidden="true">{recurringWizardStep > step ? '✓' : step}</span>
+                      <strong>{label}</strong>
+                    </li>
+                  ))}
+                </ol>
+
+                {recurringWizardStep === 1 ? (
+                  <section className={styles.invoiceDropWizardPanel} aria-labelledby="recurring-coverage-title">
+                    <div className={styles.invoiceDropWizardHeading}>
+                      <h3 ref={recurringWizardStepHeadingRef} id="recurring-coverage-title" tabIndex={-1}>What should this cost cover?</h3>
+                      <p>Choose one or more saved assets.</p>
+                    </div>
+
+                    <button
+                      ref={recurringScopeTriggerRef}
+                      type="button"
+                      className={styles.budgetScopeTrigger}
+                      onClick={openRecurringAssetPicker}
+                      disabled={isSaving || assetLockedForFlow || !assets.length}
+                      aria-haspopup="dialog"
+                    >
+                      <span className={styles.budgetScopeCopy}>
+                        <strong>Choose assets</strong>
+                        <small>{assetLockedForFlow
+                          ? recurringSelectedAssets[0]?.title || 'This asset is fixed for this quick add.'
+                          : recurringSelectedAssets.length === 1
+                            ? recurringSelectedAssets[0]?.title
+                            : recurringSelectedAssets.length > 1
+                              ? `${recurringSelectedAssets.length} assets selected`
+                              : assets.length
+                                ? 'Select every asset covered by this recurring cost.'
+                                : 'Add an asset first.'}</small>
+                      </span>
+                      <span className={styles.budgetScopeAction}>
+                        {assetLockedForFlow ? 'Locked' : recurringSelectedAssets.length ? 'Change' : 'Choose'}
+                        {!assetLockedForFlow ? <ChevronRightIcon /> : null}
+                      </span>
+                    </button>
+                  </section>
+                ) : null}
+
+                {recurringWizardStep === 2 ? (
+                  <section className={styles.invoiceDropWizardPanel} aria-labelledby="recurring-details-title">
+                    <div className={styles.invoiceDropWizardHeading}>
+                      <h3 ref={recurringWizardStepHeadingRef} id="recurring-details-title" tabIndex={-1}>Set the recurring cost</h3>
+                      <p>Add the amount, timing and useful reference details.</p>
+                    </div>
+
+                    <div className={styles.recurringDetailsGrid}>
+                      <label className={`${styles.budgetField} ${styles.recurringDescriptionField}`}>
+                        <span>Description</span>
+                        <input
+                          type="text"
+                          value={recurringDraft.description}
+                          onChange={(event) => setRecurringField('description', event.target.value)}
+                          placeholder="Insurance policy or service plan"
+                          autoComplete="off"
+                          required
+                          disabled={isSaving}
+                        />
+                      </label>
+                      <label className={`${styles.budgetField} ${styles.recurringWizardField}`}>
+                        <span>Category</span>
+                        <select value={recurringDraft.category} onChange={(event) => setRecurringField('category', event.target.value)} disabled={isSaving}>
+                          {RECURRING_CATEGORY_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                        </select>
+                      </label>
+                      <label className={styles.budgetField}>
+                        <span>Amount</span>
+                        <div className={styles.budgetMoneyInput}>
+                          <span>R</span>
+                          <input
+                            type="text"
+                            inputMode="decimal"
+                            value={recurringDraft.amount}
+                            onChange={(event) => setRecurringField('amount', formatInvoiceMoneyInput(event.target.value))}
+                            placeholder="1 500.00"
+                            autoComplete="off"
+                            required
+                            disabled={isSaving}
+                          />
+                        </div>
+                      </label>
+                    </div>
+
+                    <div className={`${styles.budgetPeriodField} ${styles.budgetWizardPeriodField}`}>
+                      <span className={styles.budgetPeriodLabel}>How often?</span>
+                      <div className={`${styles.budgetPeriodControl} ${styles.recurringFrequencyControl}`} role="group" aria-label="Recurring cost frequency">
+                        {RECURRING_FREQUENCY_OPTIONS.map((option) => (
+                          <button
+                            type="button"
+                            key={option.value}
+                            className={recurringDraft.frequency === option.value ? styles.budgetPeriodOptionActive : ''}
+                            onClick={() => setRecurringField('frequency', option.value)}
+                            aria-pressed={recurringDraft.frequency === option.value}
+                            disabled={isSaving}
+                          >
+                            {option.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className={styles.recurringDateGrid}>
+                      <label className={styles.budgetField}>
+                        <span>Start date</span>
+                        <input type="date" value={recurringDraft.startDate} onChange={(event) => setRecurringField('startDate', event.target.value)} required disabled={isSaving} />
+                      </label>
+                      <label className={styles.budgetField}>
+                        <span>End date <small>(optional)</small></span>
+                        <input type="date" min={recurringDraft.startDate || undefined} value={recurringDraft.endDate} onChange={(event) => setRecurringField('endDate', event.target.value)} disabled={isSaving} />
+                      </label>
+                      <label className={styles.budgetField}>
+                        <span>Renewal date <small>(optional)</small></span>
+                        <input type="date" value={recurringDraft.renewalDate} onChange={(event) => setRecurringField('renewalDate', event.target.value)} disabled={isSaving} />
+                      </label>
+                    </div>
+
+                    <div className={styles.recurringOptionalGrid}>
+                      <label className={`${styles.budgetField} ${styles.recurringWizardField}`}>
+                        <span>Source / reference <small>(optional)</small></span>
+                        <input value={recurringDraft.sourceReference} onChange={(event) => setRecurringField('sourceReference', event.target.value)} placeholder="Policy or agreement number" autoComplete="off" disabled={isSaving} />
+                      </label>
+                      <label className={`${styles.budgetField} ${styles.recurringWizardField}`}>
+                        <span>Note <small>(optional)</small></span>
+                        <textarea value={recurringDraft.note} onChange={(event) => setRecurringField('note', event.target.value)} rows={2} placeholder="Anything useful to remember" disabled={isSaving} />
+                      </label>
+                    </div>
+                  </section>
+                ) : null}
+
+                {recurringWizardStep === 3 ? (
+                  <section className={styles.invoiceDropWizardPanel} aria-labelledby="recurring-review-title">
+                    <div className={styles.invoiceDropWizardHeading}>
+                      <h3 ref={recurringWizardStepHeadingRef} id="recurring-review-title" tabIndex={-1}>Review your commitment</h3>
+                      <p>Check the details before saving.</p>
+                    </div>
+
+                    <dl className={`${styles.budgetReviewGrid} ${styles.recurringReviewGrid}`}>
+                      <div className={styles.recurringReviewWide}>
+                        <dt>Assets</dt>
+                        <dd title={recurringSelectedAssets.map((asset) => asset.title).join(', ')}>{recurringSelectedAssets.map((asset) => asset.title).join(', ')}</dd>
+                      </div>
+                      <div className={styles.recurringReviewWide}>
+                        <dt>Description</dt>
+                        <dd>{recurringDraft.description.trim()}</dd>
+                      </div>
+                      <div>
+                        <dt>Category</dt>
+                        <dd>{recurringCategoryLabel}</dd>
+                      </div>
+                      <div>
+                        <dt>Amount</dt>
+                        <dd>{formatMoney(recurringAmountValue)}</dd>
+                      </div>
+                      <div>
+                        <dt>Frequency</dt>
+                        <dd>{recurringFrequencyLabel}</dd>
+                      </div>
+                      <div>
+                        <dt>Starts</dt>
+                        <dd>{formatDate(recurringDraft.startDate)}</dd>
+                      </div>
+                      <div>
+                        <dt>Ends</dt>
+                        <dd>{recurringDraft.endDate ? formatDate(recurringDraft.endDate) : 'No end date'}</dd>
+                      </div>
+                      <div>
+                        <dt>Renewal</dt>
+                        <dd>{recurringDraft.renewalDate ? formatDate(recurringDraft.renewalDate) : 'Not set'}</dd>
+                      </div>
+                      <div>
+                        <dt>Reference</dt>
+                        <dd>{recurringDraft.sourceReference.trim() || 'Not set'}</dd>
+                      </div>
+                      <div className={styles.recurringReviewWide}>
+                        <dt>Note</dt>
+                        <dd>{recurringDraft.note.trim() || 'None'}</dd>
+                      </div>
+                    </dl>
+                    <p className={styles.recurringReviewNotice}>Actual paid invoices remain separate in the Cost Ledger.</p>
+                  </section>
+                ) : null}
+
+                {recurringError ? <div className={styles.budgetFormError} role="alert">{recurringError}</div> : null}
+              </div>
+
+              <div className={[styles.modalFooter, styles.invoiceDropWizardFooter, styles.budgetWizardFooter].join(' ')}>
+                <button
+                  type="button"
+                  className={styles.secondaryButton}
+                  onClick={recurringWizardStep === 1 ? () => setFlow('source-choice') : goBackRecurringWizard}
+                  disabled={isSaving}
+                >
+                  Back
+                </button>
+                {recurringWizardStep < 3 ? (
+                  <button type="button" className={styles.primaryButton} onClick={continueRecurringWizard} disabled={isSaving}>
+                    Next
                   </button>
-                );
-              }) : <div className={styles.emptyState}>No matching assets found.</div>}
-            </div>
-            <div className={`${styles.modalFooter} ${styles.recurringAssetPickerFooter}`} data-asset-choice-footer="true">
-              <button type="button" className={styles.secondaryButton} onClick={() => setRecurringAssetIds([])} disabled={!recurringAssetIds.length}>Clear selection</button>
-              <button type="button" className={styles.primaryButton} onClick={() => setRecurringAssetPickerOpen(false)}>
-                {recurringAssetIds.length ? `Done · ${recurringAssetIds.length} selected` : 'Done'}
-              </button>
-            </div>
-          </div>
+                ) : (
+                  <button type="submit" className={styles.primaryButton} disabled={isSaving}>
+                    {isSaving ? 'Saving...' : 'Save commitment'}
+                  </button>
+                )}
+              </div>
+            </form>
+          )}
         </div>
       ) : null}
 

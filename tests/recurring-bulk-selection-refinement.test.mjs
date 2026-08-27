@@ -16,13 +16,14 @@ test('disposal keeps the duplicate warning but removes the normal orange disclai
   assert.match(ownerRegister, /disposalDraft\.reason === 'mistake_duplicate'/);
 });
 
-test('recurring commitment uses concise copy and a designed multi-asset picker', () => {
+test('recurring commitment uses concise copy and the shared saved-asset picker', () => {
   assert.match(costs, /Track future recurring asset costs\./);
   assert.match(costStyles, /\.recurringChoiceOption \.choiceTitleBlock small[\s\S]*?white-space: nowrap/);
   assert.doesNotMatch(costs, /This does not create an expense\. Add each actual invoice or payment/);
   assert.match(costs, /recurringAssetPickerOpen/);
-  assert.match(costs, /Choose linked assets/);
-  assert.match(costs, /aria-pressed=\{selected\}/);
+  assert.match(costs, /Choose Saved Assets/);
+  assert.match(costs, /recurringPickerAssetIds/);
+  assert.match(costs, /aria-pressed=\{isSelected\}/);
   assert.match(costs, /assetIds: recurringAssetIds/);
   assert.doesNotMatch(costs, /<select[^>]*multiple/);
 });
