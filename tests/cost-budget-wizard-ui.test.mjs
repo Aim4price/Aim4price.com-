@@ -1,0 +1,74 @@
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import test from 'node:test';
+
+const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
+
+const client = read('app/my-invoices/my-invoices-client.tsx');
+const styles = read('app/my-invoices/page.module.css');
+const assetRegisterClient = read('app/asset-register/asset-register-client.tsx');
+const assetRegisterStyles = read('app/asset-register/page.module.css');
+const notifications = read('lib/notifications.ts');
+
+const modalStart = client.indexOf('{budgetModalOpen ?');
+const modalEnd = client.indexOf('{budgetDeleteCandidate ?', modalStart);
+const budgetModal = client.slice(modalStart, modalEnd);
+
+test('spending budget uses the same compact three-step pattern as Contribution', () => {
+  assert.ok(modalStart >= 0 && modalEnd > modalStart, 'budget modal should be present');
+  assert.match(client, /type BudgetWizardStep = 1 \| 2 \| 3/);
+  assert.match(client, /const \[budgetWizardStep, setBudgetWizardStep\]/);
+  assert.match(budgetModal, /\[\['Coverage', 1\], \['Limit', 2\], \['Review', 3\]\]/);
+  assert.match(budgetModal, /styles\.invoiceDropCodeModal/);
+  assert.match(budgetModal, /styles\.invoiceDropWizardProgress/);
+  assert.match(budgetModal, /styles\.invoiceDropWizardPanel/);
+  assert.match(budgetModal, /What should this budget cover\?/);
+  assert.match(budgetModal, /Set the spending limit/);
+  assert.match(budgetModal, /Review your budget/);
+  assert.match(budgetModal, /onClick=\{continueBudgetWizard\}/);
+  assert.match(budgetModal, /goBackBudgetWizard/);
+  assert.doesNotMatch(budgetModal, /Asset scope|Limit &amp; alert|Budget coverage|Choose budget scope/);
+});
+
+test('scope choice keeps all-assets and searchable one-asset selection explicit', () => {
+  assert.match(budgetModal, /role="radiogroup" aria-label="Budget scope"/);
+  assert.match(budgetModal, /<strong>All assets<\/strong>/);
+  assert.match(budgetModal, /<strong>One asset<\/strong>/);
+  assert.match(budgetModal, /<h2 id="budget-scope-picker-title">Choose an asset<\/h2>/);
+  assert.match(budgetModal, /filteredBudgetAssets/);
+  assert.doesNotMatch(budgetModal, /<select\b/);
+});
+
+test('limit validation happens before review and the review preserves every choice', () => {
+  assert.match(client, /const budgetLimitIsValid = Number\.isFinite\(budgetAmountValue\)/);
+  assert.match(client, /budgetWarningValue >= 1/);
+  assert.match(client, /budgetWarningValue <= 99/);
+  assert.match(client, /if \(!budgetLimitIsValid\)[\s\S]*?setBudgetFormError/);
+  assert.match(budgetModal, /<dt>Scope<\/dt>/);
+  assert.match(budgetModal, /<dt>Period<\/dt>/);
+  assert.match(budgetModal, /<dt>Budget<\/dt>/);
+  assert.match(budgetModal, /<dt>Warning level<\/dt>/);
+  assert.match(budgetModal, /<dt>Fuel slips<\/dt>/);
+});
+
+test('warning-level asset budget cards and notifications are red priority alerts', () => {
+  assert.match(client, /data-budget-status=\{budget\.status\}/);
+  assert.match(client, /budget\.status === 'warning'[\s\S]*?'budgetCardWarning'/);
+  assert.match(styles, /\.budgetCardWarning\s*\{[^}]*--budget-accent:\s*#b42318;[^}]*--budget-accent-soft:\s*#fff0ef;/);
+  assert.match(styles, /\.budgetCardWarning\.budgetCardFocused/);
+
+  assert.match(assetRegisterClient, /fetch\('\/api\/my-invoices\/budgets'/);
+  assert.match(assetRegisterClient, /costBudgetStatusByAssetId\[asset\.id\]/);
+  assert.match(assetRegisterClient, /styles\.assetCardBudgetWarning/);
+  assert.match(assetRegisterClient, /data-cost-budget-status=\{costBudgetStatus \|\| undefined\}/);
+  assert.match(assetRegisterClient, /Budget warning/);
+  assert.match(assetRegisterStyles, /\.page \.assetCardBudgetWarning\s*\{[^}]*#b42318/);
+  assert.match(assetRegisterStyles, /\.badgeBudgetWarning\s*\{/);
+
+  const budgetNotifications = notifications.slice(
+    notifications.indexOf('async function listOwnerCostBudgetNotifications'),
+    notifications.indexOf('function correctionActor'),
+  );
+  assert.match(budgetNotifications, /tone: 'warning'/);
+  assert.match(budgetNotifications, /priority: true/);
+});
