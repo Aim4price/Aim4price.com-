@@ -27,6 +27,7 @@ export type AssetGroupReportFilters = {
 type ReportSelectOption = {
   value: string;
   label: string;
+  tone?: 'default' | 'danger';
 };
 
 function MembersIcon({ className }: IconProps) {
@@ -210,7 +211,7 @@ function AssetGroupMemberSelect({
               type="button"
               role="option"
               aria-selected={option.value === value}
-              className={`${styles.memberSelectOption} ${option.value === value ? styles.memberSelectOptionActive : ''}`}
+              className={`${styles.memberSelectOption} ${option.value === value ? styles.memberSelectOptionActive : ''} ${option.tone === 'danger' ? styles.memberSelectOptionDanger : ''}`}
               onClick={() => {
                 onChange(option.value);
                 setOpen(false);
@@ -353,6 +354,12 @@ const GROUPED_MEMBER_VALUE_OPTIONS: ReportSelectOption[] = [
   { value: 'included', label: 'Add to umbrella total' },
   { value: 'excluded', label: 'Do not add to umbrella total' },
 ];
+
+const REMOVE_MEMBER_OPTION: ReportSelectOption = {
+  value: 'remove',
+  label: 'Remove from umbrella',
+  tone: 'danger',
+};
 
 const ASSET_GROUP_EDITOR_STEP_LABELS = ['Umbrella name', 'Structure', 'Choose assets'] as const;
 
@@ -548,6 +555,18 @@ export default function AssetGroupManagerModal({
     return sum + Math.round(Number(asset.value) || 0);
   }, 0);
   const countedAssetCount = selectedAssetIds.filter((assetId) => countsTowardTotalByAssetId[assetId] !== false).length;
+  const memberValueOptions = group
+    ? [...(hasPrimaryAsset ? PRIMARY_MEMBER_VALUE_OPTIONS : GROUPED_MEMBER_VALUE_OPTIONS), REMOVE_MEMBER_OPTION]
+    : hasPrimaryAsset
+      ? PRIMARY_MEMBER_VALUE_OPTIONS
+      : GROUPED_MEMBER_VALUE_OPTIONS;
+
+  function memberValueOptionsFor(assetId: string): ReportSelectOption[] {
+    if (group && hasPrimaryAsset && selectedAssetIds.length === 1 && assetId === primaryAssetId) {
+      return memberValueOptions.filter((option) => option.value === 'primary' || option.value === REMOVE_MEMBER_OPTION.value);
+    }
+    return memberValueOptions;
+  }
 
   if (!open) return null;
 
@@ -627,6 +646,12 @@ export default function AssetGroupManagerModal({
   }
 
   function handleMemberValueChange(assetId: string, nextValue: string) {
+    if (nextValue === REMOVE_MEMBER_OPTION.value) {
+      const asset = assets.find((entry) => entry.id === assetId);
+      if (asset && selectedAssetIds.includes(assetId)) toggleAsset(asset);
+      return;
+    }
+
     if (nextValue === 'primary') {
       setPrimaryAssetId(assetId);
       setCountsTowardTotalByAssetId((current) => ({ ...current, [assetId]: true }));
@@ -1028,7 +1053,9 @@ export default function AssetGroupManagerModal({
                       <strong id="umbrella-step-assets">Choose assets</strong>
                       <small>{combinedMode
                         ? 'Choose one or more assets from any of your Asset Registers.'
-                        : 'Choose one or more assets from this Asset Register.'}</small>
+                        : group
+                          ? 'Select assets to add, or clear a selected asset to remove it from this umbrella.'
+                          : 'Choose one or more assets from this Asset Register.'}</small>
                     </div>
                     <strong className={styles.selectedCount}>{selectedAssetIds.length} selected</strong>
                   </div>
@@ -1083,6 +1110,9 @@ export default function AssetGroupManagerModal({
                               type="checkbox"
                               checked={selected}
                               disabled={lockedAnchor}
+                              aria-label={selected
+                                ? `Remove ${asset.title} from umbrella`
+                                : `Add ${asset.title} to umbrella`}
                               onChange={() => toggleAsset(asset)}
                             />
                             <span className={styles.assetCheckbox} aria-hidden="true" />
@@ -1113,8 +1143,8 @@ export default function AssetGroupManagerModal({
                                   : countsTowardTotalByAssetId[asset.id] === false
                                     ? 'excluded'
                                     : 'included'}
-                                options={hasPrimaryAsset ? PRIMARY_MEMBER_VALUE_OPTIONS : GROUPED_MEMBER_VALUE_OPTIONS}
-                                disabled={hasPrimaryAsset && selectedAssetIds.length === 1}
+                                options={memberValueOptionsFor(asset.id)}
+                                disabled={!group && hasPrimaryAsset && selectedAssetIds.length === 1}
                                 onChange={(nextValue) => handleMemberValueChange(asset.id, nextValue)}
                               />
                             </div>

@@ -236,7 +236,8 @@ test("Create umbrella reuses the export asset picker hierarchy with one modal sc
   assert.match(umbrella, /assetDetailLine\(asset\)/);
   assert.match(umbrella, /assetSourceLine\(asset, combinedMode\)/);
   assert.match(umbrella, /<small>current value<\/small>/);
-  assert.match(umbrella, /<AssetGroupMemberSelect[\s\S]*?PRIMARY_MEMBER_VALUE_OPTIONS[\s\S]*?GROUPED_MEMBER_VALUE_OPTIONS/);
+  assert.match(umbrella, /const memberValueOptions = group[\s\S]*?PRIMARY_MEMBER_VALUE_OPTIONS[\s\S]*?GROUPED_MEMBER_VALUE_OPTIONS/);
+  assert.match(umbrella, /<AssetGroupMemberSelect[\s\S]*?options=\{memberValueOptionsFor\(asset\.id\)\}/);
 
   assert.match(umbrella, /editorBodyRef\.current\?\.scrollTo\(\{ top: 0, left: 0 \}\)/);
   const stepThree = slice(umbrella, '{editorStep === 3 ? (', '</section>');
@@ -264,5 +265,44 @@ test("Create umbrella reuses the export asset picker hierarchy with one modal sc
   assert.match(
     umbrellaStyles,
     /@media \(max-width: 900px\)[\s\S]*?\.assetRowMain\s*\{[^}]*grid-template-columns:\s*auto minmax\(0, 1fr\)[\s\S]*?\.assetValue\s*\{[^}]*grid-column:\s*2/,
+  );
+});
+
+test("Manage umbrella explicitly removes deselected assets before save", () => {
+  assert.match(
+    umbrella,
+    /const REMOVE_MEMBER_OPTION:[\s\S]*?value:\s*'remove'[\s\S]*?label:\s*'Remove from umbrella'[\s\S]*?tone:\s*'danger'/,
+  );
+  assert.match(
+    umbrella,
+    /const memberValueOptions = group[\s\S]*?REMOVE_MEMBER_OPTION[\s\S]*?: GROUPED_MEMBER_VALUE_OPTIONS/,
+  );
+  assert.match(
+    umbrella,
+    /if \(nextValue === REMOVE_MEMBER_OPTION\.value\)[\s\S]*?selectedAssetIds\.includes\(assetId\)\) toggleAsset\(asset\)/,
+  );
+  assert.match(
+    umbrella,
+    /function memberValueOptionsFor\(assetId: string\)[\s\S]*?option\.value === 'primary' \|\| option\.value === REMOVE_MEMBER_OPTION\.value/,
+  );
+  assert.match(
+    umbrella,
+    /disabled=\{!group && hasPrimaryAsset && selectedAssetIds\.length === 1\}/,
+  );
+  assert.match(
+    umbrella,
+    /aria-label=\{selected[\s\S]*?Remove \$\{asset\.title\} from umbrella[\s\S]*?Add \$\{asset\.title\} to umbrella/,
+  );
+  assert.match(
+    umbrella,
+    /memberIds:\s*selectedAssetIds/,
+  );
+  assert.match(
+    umbrella,
+    /Select assets to add, or clear a selected asset to remove it from this umbrella\./,
+  );
+  assert.match(
+    umbrellaStyles,
+    /\.memberSelectOptionDanger\s*\{[^}]*border-color:\s*#edcbc6;[^}]*background:\s*#fff7f5;[^}]*color:\s*#963b34/,
   );
 });
