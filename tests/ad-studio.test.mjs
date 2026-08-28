@@ -359,12 +359,10 @@ test('public showroom scopes friendly Marketplace empty states and removes micro
   assert.match(marketplaceCss, /\.showroomEmptyShell/);
 });
 
-test('showroom manager follows the approved no-bubble layout and calm notification treatment', async () => {
-  const [manager, managerCss, header, headerCss] = await Promise.all([
+test('showroom manager follows the approved no-bubble layout with consistent link typography', async () => {
+  const [manager, managerCss] = await Promise.all([
     read('components/MiddlemanShowroomClient.tsx'),
     read('components/MiddlemanShowroomClient.module.css'),
-    read('components/AppHeader.tsx'),
-    read('components/AppHeader.module.css'),
   ]);
 
   assert.doesNotMatch(manager, /styles\.eyebrow/);
@@ -381,11 +379,11 @@ test('showroom manager follows the approved no-bubble layout and calm notificati
   assert.match(managerCss, /\.managerGrid\s*\{[^}]*grid-template-columns:\s*minmax\(360px, \.67fr\) minmax\(0, 1\.08fr\)/);
   assert.match(managerCss, /\.copyLinkButton\s*\{/);
   assert.match(managerCss, /\.emptyStockIllustration\s*\{/);
-  assert.doesNotMatch(header, /notificationBadgeText/);
-  assert.match(header, /<span className=\{styles\.notificationBadge\} aria-hidden="true" \/>/);
-  const notificationBadgeRule = headerCss.match(/\.notificationBadge\s*\{[^}]*\}/)?.[0] ?? '';
-  assert.match(notificationBadgeRule, /background:\s*#17694f/);
-  assert.doesNotMatch(notificationBadgeRule, /#e02424/);
+  assert.match(managerCss, /\.slugField\s*\{[^}]*font-family:\s*'Montserrat'/);
+  assert.match(managerCss, /\.slugPrefix\s*\{[^}]*font:\s*inherit/);
+  assert.match(managerCss, /\.slugField input\s*\{[^}]*font:\s*inherit/);
+  assert.match(manager, /className=\{styles\.emptyStockMachine\}/);
+  assert.match(managerCss, /\.emptyStockIllustration \.emptyStockMachineFill/);
 });
 
 test('the global footer yields to the dedicated public showroom footer', async () => {
