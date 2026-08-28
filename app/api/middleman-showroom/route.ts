@@ -32,7 +32,7 @@ export async function DELETE() {
     return NextResponse.json({ ok: true, deletedAdvertCount });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to delete your showroom.';
-    const status = message === 'DEALER_SHOWROOM_FORBIDDEN' ? 403 : 500;
+    const status = message === 'SHOWROOM_FORBIDDEN' ? 403 : 500;
     return NextResponse.json({ ok: false, error: message }, { status });
   }
 }
@@ -50,7 +50,7 @@ export async function GET() {
     return NextResponse.json({ ok: true, showroom, listings });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to load your showroom.';
-    const status = message === 'DEALER_SHOWROOM_FORBIDDEN' ? 403 : 500;
+    const status = message === 'SHOWROOM_FORBIDDEN' ? 403 : 500;
     return NextResponse.json({ ok: false, error: message }, { status });
   }
 }
@@ -70,7 +70,7 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ ok: true, showroom });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to save your showroom.';
-    const status = message === 'DEALER_SHOWROOM_FORBIDDEN' ? 403 : 400;
+    const status = message === 'SHOWROOM_FORBIDDEN' ? 403 : 400;
     return NextResponse.json({ ok: false, error: message }, { status });
   }
 }
