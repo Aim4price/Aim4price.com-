@@ -6607,7 +6607,6 @@ export default function AssetRegisterClient({
   const [isManualConversionConfirmOpen, setIsManualConversionConfirmOpen] = useState(false);
   const [isAddAssetDestinationModalOpen, setIsAddAssetDestinationModalOpen] = useState(false);
   const [addAssetTargetRegisterId, setAddAssetTargetRegisterId] = useState('');
-  const [dealerAddDestination, setDealerAddDestination] = useState<'dealer' | 'client' | null>(null);
   const [isAddChoiceModalOpen, setIsAddChoiceModalOpen] = useState(false);
   const [isAcquisitionChoiceOpen, setIsAcquisitionChoiceOpen] = useState(false);
   const [newAssetAcquisitionDraft, setNewAssetAcquisitionDraft] = useState<AcquisitionDraft>(createAcquisitionDraft);
@@ -7765,17 +7764,15 @@ export default function AssetRegisterClient({
     () => assetRegisters.find((register) => register.isPrimary) ?? assetRegisters[0] ?? null,
     [assetRegisters],
   );
-  const dealerClientRegisterOptions = useMemo<Array<ModalSelectOption<string>>>(
-    () => assetRegisters
-      .filter((register) => register.id && register.id !== dealerOwnedRegister?.id)
-      .map((register) => ({
-        value: register.id,
-        label: register.businessName || 'Client Asset Register',
-        description: `${Math.max(0, Math.round(Number(register.assetCount) || 0)).toLocaleString('en-ZA')} ${Number(register.assetCount) === 1 ? 'asset' : 'assets'} · ${money(Number(register.totalValue) || 0)} current value`,
-      })),
-    [assetRegisters, dealerOwnedRegister?.id],
-  );
   const isDealerAccountRegister = accountProfile?.accountType === 'dealer';
+  const addAssetTargetRegister = assetRegisters.find((register) => register.id === addAssetTargetRegisterId)
+    ?? (!isCombinedRegisterView ? activeRegister : null);
+  const addAssetTargetRegisterName = addAssetTargetRegister?.businessName
+    || (dealerRegisterMode === 'client'
+      ? 'Client Asset Register'
+      : dealerRegisterMode === 'dealer'
+        ? 'Dealer Asset Register'
+        : 'Asset Register');
   const canUseMarketplaceActions = !isAccountantWorkspace;
   const isQuoteModalOpen = Boolean(quoteAsset);
   const isFullRegisterQuoteLead = quoteScope === 'register';
@@ -7794,7 +7791,7 @@ export default function AssetRegisterClient({
     if (isDealerAccountRegister) {
       params.set(
         'dealerRegisterMode',
-        dealerAddDestination || dealerRegisterMode || (targetRegisterId === dealerOwnedRegister?.id ? 'dealer' : 'client'),
+        dealerRegisterMode || (targetRegisterId === dealerOwnedRegister?.id ? 'dealer' : 'client'),
       );
     }
 
@@ -9846,13 +9843,6 @@ export default function AssetRegisterClient({
     setNotice(null);
     setIsAssetFilterOpen(false);
 
-    if (isDealerAccountRegister) {
-      setDealerAddDestination(null);
-      setAddAssetTargetRegisterId('');
-      setIsAddAssetDestinationModalOpen(true);
-      return;
-    }
-
     if (isCombinedRegisterView) {
       if (!addAssetRegisterOptions.length) {
         setNotice({
@@ -9867,14 +9857,22 @@ export default function AssetRegisterClient({
       return;
     }
 
-    setAddAssetTargetRegisterId(String(activeRegister?.id || activeRegisterId || '').trim());
+    const currentRegisterId = String(activeRegister?.id || activeRegisterId || '').trim();
+    if (!currentRegisterId || currentRegisterId === COMBINED_REGISTER_ID) {
+      setNotice({
+        tone: 'error',
+        message: 'Open a specific Asset Register before adding an asset.',
+      });
+      return;
+    }
+
+    setAddAssetTargetRegisterId(currentRegisterId);
     setIsAddChoiceModalOpen(true);
   }
 
   function closeAddAssetDestinationModal() {
     setIsAddAssetDestinationModalOpen(false);
     setAddAssetTargetRegisterId('');
-    setDealerAddDestination(null);
   }
 
   function continueAddAssetForRegister() {
@@ -18020,8 +18018,8 @@ export default function AssetRegisterClient({
           >
             <div className={`${styles.modalHeader} ${styles.addAssetDestinationHeader}`}>
               <div className={styles.modalHeaderText}>
-                <h3 id="add-asset-destination-title">{isDealerAccountRegister ? 'Where should this asset be added?' : 'Choose an Asset Register'}</h3>
-                <p>{isDealerAccountRegister ? 'Keep dealership assets separate from the Asset Registers you manage for clients.' : 'The combined register is a view. Choose which Asset Register should own the new asset.'}</p>
+                <h3 id="add-asset-destination-title">Choose an Asset Register</h3>
+                <p>The combined register is a view. Choose which Asset Register should own the new asset.</p>
               </div>
 
               <button
@@ -18035,78 +18033,19 @@ export default function AssetRegisterClient({
             </div>
 
             <div className={styles.addAssetDestinationBody}>
-              {isDealerAccountRegister ? (
-                <>
-                  <div className={styles.dealerAddDestinationGrid}>
-                    <button
-                      type="button"
-                      className={`${styles.dealerAddDestinationCard} ${dealerAddDestination === 'dealer' ? styles.dealerAddDestinationCardActive : ''}`}
-                      onClick={() => {
-                        setDealerAddDestination('dealer');
-                        setAddAssetTargetRegisterId(dealerOwnedRegister?.id ?? '');
-                        setNotice(null);
-                      }}
-                      disabled={!dealerOwnedRegister}
-                    >
-                      <strong>Add to Dealer Asset Register</strong>
-                      <small>Dealer-owned stock, trade-ins and dealership assets.</small>
-                    </button>
-                    <button
-                      type="button"
-                      className={`${styles.dealerAddDestinationCard} ${dealerAddDestination === 'client' ? styles.dealerAddDestinationCardActive : ''}`}
-                      onClick={() => {
-                        setDealerAddDestination('client');
-                        setAddAssetTargetRegisterId(
-                          dealerRegisterMode === 'client' && activeRegister?.id !== dealerOwnedRegister?.id
-                            ? activeRegister?.id ?? ''
-                            : '',
-                        );
-                        setNotice(null);
-                      }}
-                      disabled={!dealerClientRegisterOptions.length}
-                    >
-                      <strong>Add to Client Asset Register</strong>
-                      <small>Choose one of the client registers managed by this dealer.</small>
-                    </button>
-                  </div>
-
-                  {dealerAddDestination === 'client' ? (
-                    <ModalSelect<string>
-                      label="Client Asset Register"
-                      value={addAssetTargetRegisterId}
-                      options={dealerClientRegisterOptions}
-                      onChange={(value) => {
-                        setAddAssetTargetRegisterId(value);
-                        setNotice(null);
-                      }}
-                      placeholder="Choose a client register"
-                      className={styles.addAssetDestinationField}
-                      autoFocus
-                      usePortal
-                    />
-                  ) : null}
-
-                  {!dealerClientRegisterOptions.length ? (
-                    <p className={styles.dealerAddDestinationEmpty}>
-                      No client Asset Registers are available yet. <Link href={registerManagementHref}>Create a client register</Link>.
-                    </p>
-                  ) : null}
-                </>
-              ) : (
-                <ModalSelect<string>
-                  label="Asset Register"
-                  value={addAssetTargetRegisterId}
-                  options={addAssetRegisterOptions}
-                  onChange={(value) => {
-                    setAddAssetTargetRegisterId(value);
-                    setNotice(null);
-                  }}
-                  placeholder="Choose the owning Asset Register"
-                  className={styles.addAssetDestinationField}
-                  autoFocus
-                  usePortal
-                />
-              )}
+              <ModalSelect<string>
+                label="Asset Register"
+                value={addAssetTargetRegisterId}
+                options={addAssetRegisterOptions}
+                onChange={(value) => {
+                  setAddAssetTargetRegisterId(value);
+                  setNotice(null);
+                }}
+                placeholder="Choose the owning Asset Register"
+                className={styles.addAssetDestinationField}
+                autoFocus
+                usePortal
+              />
             </div>
 
             <div className={styles.addAssetDestinationFooter}>
@@ -18132,7 +18071,7 @@ export default function AssetRegisterClient({
             <div className={`${styles.modalHeader} ${styles.addAssetChoiceHeader}`}>
               <div className={styles.modalHeaderText}>
                 <h3 id="add-asset-choice-title">Choose how to add an asset</h3>
-                <p>Start with an Aim4price valuation, or add a manually priced asset.</p>
+                <p>Adding to <strong>{addAssetTargetRegisterName}</strong>. Start with an Aim4price valuation, or add a manually priced asset.</p>
               </div>
 
               <button
@@ -18171,7 +18110,7 @@ export default function AssetRegisterClient({
             <div className={`${styles.modalHeader} ${styles.newAcquisitionChoiceHeader}`}>
               <div className={styles.modalHeaderText}>
                 <h3 id="new-acquisition-title">Newly acquired asset?</h3>
-                <p>Choose how this asset entered the register.</p>
+                <p>Adding to <strong>{addAssetTargetRegisterName}</strong>. Choose how this asset entered the register.</p>
               </div>
               <button type="button" className={styles.modalCloseButton} onClick={() => setIsAcquisitionChoiceOpen(false)} aria-label="Close acquisition question">
                 <CloseIcon className={styles.buttonIcon} />
@@ -18238,7 +18177,9 @@ export default function AssetRegisterClient({
               {manualAssetStep === 1 ? (
                 <div className={styles.modalHeaderText}>
                   <h3>{editingAsset ? 'Update asset' : 'Add an asset'}</h3>
-                  <p>Choose the asset type that best matches what you are adding.</p>
+                  <p>
+                    {editingAsset ? 'Choose the asset type that best matches this asset.' : <>Adding to <strong>{addAssetTargetRegisterName}</strong>. Choose the asset type that best matches what you are adding.</>}
+                  </p>
                 </div>
               ) : (
                 <div className={styles.assetUpdateHeaderContent}>
@@ -18247,6 +18188,7 @@ export default function AssetRegisterClient({
                       {assetDraft.title.trim() ||
                         (editingAsset ? editingAsset.title : `Add ${selectedManualAssetType.label.toLowerCase()}`)}
                     </h3>
+                    {!editingAsset ? <p>Adding to <strong>{addAssetTargetRegisterName}</strong></p> : null}
                   </div>
                 </div>
               )}
