@@ -1,7 +1,16 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useMemo, useRef, useState, type ChangeEvent, type CSSProperties, type FormEvent } from 'react';
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type CSSProperties,
+  type DragEvent,
+  type FormEvent,
+} from 'react';
 import {
   AD_TEMPLATE_OPTIONS,
   DEFAULT_AD_BRAND_COLORS,
@@ -47,6 +56,16 @@ type EditableBrandKit = AdBrandSnapshot & {
 };
 
 type StudioStep = 1 | 2 | 3 | 4;
+
+type PreviewPhoto = {
+  id: string;
+  name: string;
+  previewUrl: string;
+};
+
+const MAX_PREVIEW_PHOTOS = 4;
+const MAX_PREVIEW_PHOTO_BYTES = 10_000_000;
+const SUPPORTED_PREVIEW_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 
 type StudioIconName =
   | 'styles'
@@ -241,6 +260,10 @@ function vatPreview(language: AdLanguage, label: AdVatLabel): string {
   return language === 'af' ? '+ BTW' : '+ VAT';
 }
 
+function createPreviewPhotoId(): string {
+  return `studio-preview-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+}
+
 export default function AdStudioClient({ dealerAppMode = false, middlemanMode = false }: AdStudioClientProps) {
   const [kits, setKits] = useState<AdBrandKit[]>([]);
   const [draft, setDraft] = useState<EditableBrandKit>(EMPTY_KIT);
@@ -251,8 +274,15 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
   const [feedback, setFeedback] = useState('');
   const [error, setError] = useState('');
   const [activeStep, setActiveStep] = useState<StudioStep>(1);
+  const [previewPhotos, setPreviewPhotos] = useState<PreviewPhoto[]>([]);
+  const [logoDragActive, setLogoDragActive] = useState(false);
+  const [previewDropActive, setPreviewDropActive] = useState(false);
+  const [draggedPreviewPhotoId, setDraggedPreviewPhotoId] = useState('');
   const editorRef = useRef<HTMLFormElement | null>(null);
   const previewCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const logoInputRef = useRef<HTMLInputElement | null>(null);
+  const previewPhotoInputRef = useRef<HTMLInputElement | null>(null);
+  const previewPhotosRef = useRef<PreviewPhoto[]>([]);
 
   const previewName = draft.businessName || draft.contactName || 'Your business';
   const selectedTemplate = useMemo(
@@ -271,7 +301,7 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
     sellerName: draft.contactName || 'Sales contact',
     sellerPhone: draft.phone || '082 000 0000',
     sellerCompany: previewName,
-    imageUrls: [],
+    imageUrls: previewPhotos.map((photo) => photo.previewUrl),
     brand: {
       name: draft.name,
       templateId: draft.templateId,
@@ -287,17 +317,45 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
       language: draft.language,
       vatLabel: draft.vatLabel,
     },
-  }), [draft, previewName]);
+  }), [draft, previewName, previewPhotos]);
   const previewRating = getMarketplaceAdRating(previewContent);
 
   useEffect(() => {
     const canvas = previewCanvasRef.current;
     if (!canvas) return;
-    void renderMarketplaceAdCanvas(canvas, previewContent, {
+
+    let active = true;
+    const renderCanvas = document.createElement('canvas');
+    renderCanvas.width = canvas.width;
+    renderCanvas.height = canvas.height;
+
+    void renderMarketplaceAdCanvas(renderCanvas, previewContent, {
       includeImages: true,
       useBestPhotoFit: false,
-    });
+    })
+      .then(() => {
+        if (!active) return;
+        const context = canvas.getContext('2d');
+        if (!context) return;
+        context.clearRect(0, 0, canvas.width, canvas.height);
+        context.drawImage(renderCanvas, 0, 0, canvas.width, canvas.height);
+      })
+      .catch(() => {
+        // A newer render will replace a photo that was removed while loading.
+      });
+
+    return () => {
+      active = false;
+    };
   }, [previewContent]);
+
+  useEffect(() => {
+    previewPhotosRef.current = previewPhotos;
+  }, [previewPhotos]);
+
+  useEffect(() => () => {
+    previewPhotosRef.current.forEach((photo) => URL.revokeObjectURL(photo.previewUrl));
+  }, []);
 
   async function loadBrandKits(preferredId?: string, showLoading = true) {
     if (showLoading) setLoading(true);
@@ -369,10 +427,9 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
     setFeedback('');
   }
 
-  function handleLogo(event: ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    if (!file.type.startsWith('image/')) {
+  function applyLogoFile(file?: File) {
+    if (!file || !canManage || saving) return;
+    if (!SUPPORTED_PREVIEW_IMAGE_TYPES.has(file.type)) {
       setError('Choose a PNG, JPEG or WebP logo.');
       return;
     }
@@ -382,9 +439,107 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
     }
 
     const reader = new FileReader();
-    reader.onload = () => update('logoUrl', typeof reader.result === 'string' ? reader.result : '');
+    reader.onload = () => {
+      update('logoUrl', typeof reader.result === 'string' ? reader.result : '');
+      setFeedback('Logo ready. It will be saved with this brand kit.');
+    };
     reader.onerror = () => setError('The logo could not be read.');
     reader.readAsDataURL(file);
+  }
+
+  function handleLogo(event: ChangeEvent<HTMLInputElement>) {
+    applyLogoFile(event.target.files?.[0]);
+    event.target.value = '';
+  }
+
+  function handleLogoDrop(event: DragEvent<HTMLDivElement>) {
+    event.preventDefault();
+    setLogoDragActive(false);
+    applyLogoFile(Array.from(event.dataTransfer.files)[0]);
+  }
+
+  function addPreviewPhotos(files: File[]) {
+    const imageFiles = files.filter((file) => SUPPORTED_PREVIEW_IMAGE_TYPES.has(file.type));
+    if (!imageFiles.length) {
+      setError('Drop PNG, JPEG or WebP photos into the preview.');
+      return;
+    }
+
+    const oversized = imageFiles.find((file) => file.size > MAX_PREVIEW_PHOTO_BYTES);
+    if (oversized) {
+      setError(`Keep each sample photo below 10 MB. “${oversized.name}” is too large.`);
+      return;
+    }
+
+    const available = Math.max(0, MAX_PREVIEW_PHOTOS - previewPhotos.length);
+    if (!available) {
+      setError(`The preview can show up to ${MAX_PREVIEW_PHOTOS} sample photos.`);
+      return;
+    }
+
+    const accepted = imageFiles.slice(0, available);
+    setPreviewPhotos((current) => [
+      ...current,
+      ...accepted.map((file) => ({
+        id: createPreviewPhotoId(),
+        name: file.name,
+        previewUrl: URL.createObjectURL(file),
+      })),
+    ]);
+    setError('');
+    setFeedback(imageFiles.length > available
+      ? `Added ${accepted.length} sample photos. The preview uses a maximum of ${MAX_PREVIEW_PHOTOS}.`
+      : 'Sample photos added to the live preview.');
+  }
+
+  function handlePreviewPhotoChange(event: ChangeEvent<HTMLInputElement>) {
+    addPreviewPhotos(Array.from(event.target.files ?? []));
+    event.target.value = '';
+  }
+
+  function handlePreviewPhotoDrop(event: DragEvent<HTMLElement>) {
+    event.preventDefault();
+    setPreviewDropActive(false);
+    if (event.dataTransfer.files.length) addPreviewPhotos(Array.from(event.dataTransfer.files));
+  }
+
+  function removePreviewPhoto(photoId: string) {
+    setPreviewPhotos((current) => {
+      const removed = current.find((photo) => photo.id === photoId);
+      if (removed) URL.revokeObjectURL(removed.previewUrl);
+      return current.filter((photo) => photo.id !== photoId);
+    });
+  }
+
+  function clearPreviewPhotos() {
+    previewPhotos.forEach((photo) => URL.revokeObjectURL(photo.previewUrl));
+    setPreviewPhotos([]);
+    setFeedback('Sample photos cleared.');
+  }
+
+  function movePreviewPhoto(photoId: string, direction: -1 | 1) {
+    setPreviewPhotos((current) => {
+      const index = current.findIndex((photo) => photo.id === photoId);
+      const nextIndex = index + direction;
+      if (index < 0 || nextIndex < 0 || nextIndex >= current.length) return current;
+      const next = [...current];
+      [next[index], next[nextIndex]] = [next[nextIndex], next[index]];
+      return next;
+    });
+  }
+
+  function reorderPreviewPhoto(targetPhotoId: string) {
+    if (!draggedPreviewPhotoId || draggedPreviewPhotoId === targetPhotoId) return;
+    setPreviewPhotos((current) => {
+      const sourceIndex = current.findIndex((photo) => photo.id === draggedPreviewPhotoId);
+      const targetIndex = current.findIndex((photo) => photo.id === targetPhotoId);
+      if (sourceIndex < 0 || targetIndex < 0) return current;
+      const next = [...current];
+      const [moved] = next.splice(sourceIndex, 1);
+      next.splice(targetIndex, 0, moved);
+      return next;
+    });
+    setDraggedPreviewPhotoId('');
   }
 
   async function saveKit(event: FormEvent<HTMLFormElement>) {
@@ -471,8 +626,8 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
         <div className={styles.heroMetric}>
           <span className={styles.heroMetricIcon} aria-hidden="true"><StudioIcon name="styles" /></span>
           <div>
-            <strong>{kits.length}</strong>
-            <span>brand kit{kits.length === 1 ? '' : 's'} saved</span>
+            <strong>{kits.length || 'Ready'}</strong>
+            <span>{kits.length ? `${kits.length === 1 ? 'Brand kit' : 'Brand kits'} saved` : 'Create your first brand kit'}</span>
           </div>
         </div>
       </header>
@@ -492,7 +647,7 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
                 <h2 id="brand-kit-library-title">Brand kits</h2>
                 <p>Select a kit to edit, set as the default or delete.</p>
               </div>
-              {canManage ? <button className={styles.primaryButton} type="button" onClick={startNewKit}><StudioIcon name="plus" />New brand kit</button> : null}
+              {canManage && kits.length ? <button className={styles.primaryButton} type="button" onClick={startNewKit}><StudioIcon name="plus" />New brand kit</button> : null}
             </div>
 
             {kits.length ? (
@@ -614,20 +769,52 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
                         <span className={styles.logoFieldIcon} aria-hidden="true"><StudioIcon name="image" /></span>
                         <div>
                           <strong>Business logo</strong>
-                          <span>PNG, JPEG or WebP, up to 2 MB. A transparent logo works best.</span>
+                          <span>Choose a file or drop it onto the logo tile. PNG, JPEG or WebP up to 2 MB. A transparent logo works best.</span>
                         </div>
                       </div>
                       <div className={styles.logoControls}>
-                        <div className={`${styles.logoPreviewCard} ${draft.logoUrl ? styles.logoPreviewReady : ''}`}>
+                        <div
+                          className={`${styles.logoPreviewCard} ${draft.logoUrl ? styles.logoPreviewReady : ''} ${logoDragActive ? styles.logoPreviewDragging : ''}`}
+                          onClick={() => {
+                            if (canManage && !saving) logoInputRef.current?.click();
+                          }}
+                          onKeyDown={(event) => {
+                            if (canManage && !saving && (event.key === 'Enter' || event.key === ' ')) {
+                              event.preventDefault();
+                              logoInputRef.current?.click();
+                            }
+                          }}
+                          onDragEnter={(event) => {
+                            if (!canManage || saving) return;
+                            event.preventDefault();
+                            setLogoDragActive(true);
+                          }}
+                          onDragOver={(event) => {
+                            if (!canManage || saving) return;
+                            event.preventDefault();
+                            event.dataTransfer.dropEffect = 'copy';
+                            setLogoDragActive(true);
+                          }}
+                          onDragLeave={(event) => {
+                            if (!canManage || saving) return;
+                            if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setLogoDragActive(false);
+                          }}
+                          onDrop={handleLogoDrop}
+                          role="button"
+                          tabIndex={canManage && !saving ? 0 : -1}
+                          aria-disabled={!canManage || saving}
+                          aria-label={draft.logoUrl ? 'Replace logo by choosing or dropping an image' : 'Choose or drop a logo image'}
+                        >
                           {draft.logoUrl ? (
                             <>
                               {/* eslint-disable-next-line @next/next/no-img-element */}
                               <img src={draft.logoUrl} alt="Uploaded business logo" />
+                              <small className={styles.logoDropHint}>Drop to replace</small>
                             </>
                           ) : (
                             <span className={styles.logoPreviewEmpty}>
                               <StudioIcon name="image" />
-                              <small>Logo preview</small>
+                              <small>Drop logo here</small>
                             </span>
                           )}
                         </div>
@@ -635,7 +822,7 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
                           <label className={styles.logoUpload}>
                             <StudioIcon name="image" />
                             <span>{draft.logoUrl ? 'Replace logo' : 'Choose logo'}</span>
-                            <input type="file" accept="image/png,image/jpeg,image/webp" onChange={handleLogo} />
+                            <input ref={logoInputRef} type="file" accept="image/png,image/jpeg,image/webp" onChange={handleLogo} />
                           </label>
                           {draft.logoUrl ? (
                             <button className={styles.logoRemove} type="button" onClick={() => update('logoUrl', '')}>
@@ -810,6 +997,89 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
                 <span className={styles.previewPill}>{draft.language === 'af' ? 'Afrikaans' : 'English'}</span>
               </div>
             </div>
+            <div
+              className={`${styles.previewPhotoLab} ${previewDropActive ? styles.previewPhotoLabActive : ''}`}
+              onDragEnter={(event) => {
+                event.preventDefault();
+                if (event.dataTransfer.types.includes('Files')) setPreviewDropActive(true);
+              }}
+              onDragOver={(event) => {
+                event.preventDefault();
+                if (event.dataTransfer.types.includes('Files')) {
+                  event.dataTransfer.dropEffect = 'copy';
+                  setPreviewDropActive(true);
+                }
+              }}
+              onDragLeave={(event) => {
+                if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setPreviewDropActive(false);
+              }}
+              onDrop={handlePreviewPhotoDrop}
+            >
+              <input
+                ref={previewPhotoInputRef}
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                multiple
+                hidden
+                onChange={handlePreviewPhotoChange}
+              />
+              <div className={styles.previewPhotoHeader}>
+                <div>
+                  <strong>Try it with your own photos</strong>
+                  <span>Drop up to four sample photos, then drag them into order. This layout uses the first {selectedTemplate.photoCount}. These samples are not saved.</span>
+                </div>
+                <div>
+                  <button type="button" onClick={() => previewPhotoInputRef.current?.click()}>
+                    <StudioIcon name="plus" />{previewPhotos.length ? 'Add photos' : 'Choose photos'}
+                  </button>
+                  {previewPhotos.length ? <button type="button" onClick={clearPreviewPhotos}>Clear</button> : null}
+                </div>
+              </div>
+
+              {previewPhotos.length ? (
+                <div className={styles.previewPhotoTray} aria-label="Sample advert photo order">
+                  {previewPhotos.map((photo, index) => (
+                    <article
+                      key={photo.id}
+                      className={`${styles.previewPhotoThumb} ${draggedPreviewPhotoId === photo.id ? styles.previewPhotoDragging : ''}`}
+                      draggable
+                      onDragStart={(event) => {
+                        setDraggedPreviewPhotoId(photo.id);
+                        event.dataTransfer.effectAllowed = 'move';
+                        event.dataTransfer.setData('text/plain', photo.id);
+                      }}
+                      onDragEnd={() => setDraggedPreviewPhotoId('')}
+                      onDragOver={(event) => {
+                        if (!event.dataTransfer.files.length) {
+                          event.preventDefault();
+                          event.dataTransfer.dropEffect = 'move';
+                        }
+                      }}
+                      onDrop={(event) => {
+                        if (event.dataTransfer.files.length) return;
+                        event.preventDefault();
+                        event.stopPropagation();
+                        reorderPreviewPhoto(photo.id);
+                      }}
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={photo.previewUrl} alt={`Sample advert photo ${index + 1}: ${photo.name}`} />
+                      <span>{index === 0 ? 'Main photo' : `Photo ${index + 1}`}</span>
+                      <div className={styles.previewPhotoActions}>
+                        <button type="button" onClick={() => movePreviewPhoto(photo.id, -1)} disabled={index === 0} aria-label={`Move ${photo.name} earlier`}>←</button>
+                        <button type="button" onClick={() => movePreviewPhoto(photo.id, 1)} disabled={index === previewPhotos.length - 1} aria-label={`Move ${photo.name} later`}>→</button>
+                        <button type="button" onClick={() => removePreviewPhoto(photo.id)} aria-label={`Remove ${photo.name}`}>×</button>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              ) : (
+                <button className={styles.previewPhotoEmpty} type="button" onClick={() => previewPhotoInputRef.current?.click()}>
+                  <StudioIcon name="image" />
+                  <span><strong>Drop sample photos here</strong><small>Or choose photos to see this exact layout come to life.</small></span>
+                </button>
+              )}
+            </div>
             <canvas
               ref={previewCanvasRef}
               className={styles.adCanvasPreview}
@@ -819,7 +1089,7 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
             />
             <div className={styles.previewNote}>
               <span aria-hidden="true"><StudioIcon name="check" /></span>
-              <p><strong>Your downloaded JPEG will match this preview</strong>Camera placeholders show where the first {selectedTemplate.photoCount} listing photo{selectedTemplate.photoCount === 1 ? ' will' : 's will'} appear, together with the valuation details, asking price and {previewRating.label.toLowerCase()} rating.</p>
+              <p><strong>Your downloaded JPEG will match this preview</strong>{previewPhotos.length ? 'The sample photos show the real layout and order. They stay in this preview only and are never saved with the brand kit.' : `Camera placeholders show where the first ${selectedTemplate.photoCount} listing photo${selectedTemplate.photoCount === 1 ? ' will' : 's will'} appear, together with the valuation details, asking price and ${previewRating.label.toLowerCase()} rating.`}</p>
             </div>
           </aside>
           </div>

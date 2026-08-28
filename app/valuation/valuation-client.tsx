@@ -1,6 +1,15 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState, type ChangeEvent, type CSSProperties, type FormEvent } from 'react';
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type CSSProperties,
+  type DragEvent,
+  type FormEvent,
+} from 'react';
 import { useRouter } from 'next/navigation';
 import AppHeader from '../../components/AppHeader';
 import SaleabilityModal from '../../components/SaleabilityModal';
@@ -480,6 +489,7 @@ const UNLISTED_BRAND_NAME_SPEC_KEY = 'unlisted_brand_name';
 const TYPED_BRAND_NAME_SPEC_KEY = 'typed_brand_name';
 const UNKNOWN_BRAND_OPTION: BrandRow = { name: UNKNOWN_BRAND_NAME, slug: UNKNOWN_BRAND_SLUG };
 const MAX_MARKETPLACE_PHOTOS = 12;
+const SUPPORTED_MARKETPLACE_PHOTO_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 const MARKETPLACE_INTRO_DISMISSED_KEY = 'aim4price-marketplace-intro-dismissed';
 
 const WIZARD_STEPS: Array<{ step: Step; label: string }> = [
@@ -1868,6 +1878,8 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
   const [marketplaceDraft, setMarketplaceDraft] = useState<MarketplacePublishDraft | null>(null);
   const [marketplaceIntroOpen, setMarketplaceIntroOpen] = useState(false);
   const [marketplacePhotoFiles, setMarketplacePhotoFiles] = useState<MarketplacePendingPhoto[]>([]);
+  const [marketplacePhotoDropActive, setMarketplacePhotoDropActive] = useState(false);
+  const [draggedMarketplacePhotoId, setDraggedMarketplacePhotoId] = useState('');
   const [marketplacePublishError, setMarketplacePublishError] = useState('');
   const [isPublishingMarketplace, setIsPublishingMarketplace] = useState(false);
   const [publishedAdvertDownload, setPublishedAdvertDownload] = useState<PublishedAdvertDownload | null>(null);
@@ -1875,6 +1887,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
   const [replacementPanelOpen, setReplacementPanelOpen] = useState(false);
   const [completionToastVisible, setCompletionToastVisible] = useState(false);
   const marketplacePhotoInputRef = useRef<HTMLInputElement | null>(null);
+  const marketplacePhotoFilesRef = useRef<MarketplacePendingPhoto[]>([]);
   const replacementNoticeDialogRef = useRef<HTMLElement | null>(null);
   const replacementNoticeGoBackRef = useRef<HTMLButtonElement | null>(null);
   const replacementNoticeReturnFocusRef = useRef<HTMLElement | null>(null);
@@ -2439,6 +2452,14 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     if (completionToastTimerRef.current) {
       window.clearTimeout(completionToastTimerRef.current);
     }
+  }, []);
+
+  useEffect(() => {
+    marketplacePhotoFilesRef.current = marketplacePhotoFiles;
+  }, [marketplacePhotoFiles]);
+
+  useEffect(() => () => {
+    marketplacePhotoFilesRef.current.forEach((photo) => URL.revokeObjectURL(photo.previewUrl));
   }, []);
 
   useEffect(() => {
@@ -4508,6 +4529,8 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
       URL.revokeObjectURL(photo.previewUrl);
     }
     setMarketplacePhotoFiles([]);
+    setMarketplacePhotoDropActive(false);
+    setDraggedMarketplacePhotoId('');
     if (marketplacePhotoInputRef.current) marketplacePhotoInputRef.current.value = '';
   }
 
@@ -4548,14 +4571,17 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     setMarketplaceDraft((current) => (current ? { ...current, showDealRating } : current));
   }
 
-  function handleMarketplacePhotoChange(event: ChangeEvent<HTMLInputElement>) {
-    const files = Array.from(event.target.files ?? []).filter((file) => file.type.startsWith('image/'));
-    if (!files.length) return;
+  function addMarketplacePhotos(inputFiles: File[]) {
+    if (isPublishingMarketplace) return;
+    const files = inputFiles.filter((file) => SUPPORTED_MARKETPLACE_PHOTO_TYPES.has(file.type));
+    if (!files.length) {
+      setMarketplacePublishError('Choose PNG, JPEG or WebP photos.');
+      return;
+    }
 
     const availableSlots = Math.max(0, MAX_MARKETPLACE_PHOTOS - marketplacePhotoFiles.length);
     if (!availableSlots) {
       setMarketplacePublishError(`You can upload a maximum of ${MAX_MARKETPLACE_PHOTOS} photos.`);
-      if (marketplacePhotoInputRef.current) marketplacePhotoInputRef.current.value = '';
       return;
     }
 
@@ -4575,7 +4601,18 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
       })),
     ]);
 
-    if (marketplacePhotoInputRef.current) marketplacePhotoInputRef.current.value = '';
+  }
+
+  function handleMarketplacePhotoChange(event: ChangeEvent<HTMLInputElement>) {
+    addMarketplacePhotos(Array.from(event.target.files ?? []));
+    event.target.value = '';
+  }
+
+  function handleMarketplacePhotoDrop(event: DragEvent<HTMLDivElement>) {
+    event.preventDefault();
+    setMarketplacePhotoDropActive(false);
+    if (isPublishingMarketplace) return;
+    if (event.dataTransfer.files.length) addMarketplacePhotos(Array.from(event.dataTransfer.files));
   }
 
   function removeMarketplacePhoto(photoId: string) {
@@ -4595,6 +4632,20 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
       [next[index], next[nextIndex]] = [next[nextIndex], next[index]];
       return next;
     });
+  }
+
+  function reorderMarketplacePhoto(sourcePhotoId: string, targetPhotoId: string) {
+    if (!sourcePhotoId || sourcePhotoId === targetPhotoId) return;
+    setMarketplacePhotoFiles((current) => {
+      const sourceIndex = current.findIndex((photo) => photo.id === sourcePhotoId);
+      const targetIndex = current.findIndex((photo) => photo.id === targetPhotoId);
+      if (sourceIndex < 0 || targetIndex < 0) return current;
+      const next = [...current];
+      const [moved] = next.splice(sourceIndex, 1);
+      next.splice(targetIndex, 0, moved);
+      return next;
+    });
+    setDraggedMarketplacePhotoId('');
   }
 
   async function downloadPublishedAdvert(listing: MarketplaceListing): Promise<'downloaded' | 'failed'> {
@@ -8174,10 +8225,31 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                   </span>
                 </label>
 
-                <div className={styles.marketplacePhotoPanel}>
+                <div
+                  className={`${styles.marketplacePhotoPanel} ${marketplacePhotoDropActive ? styles.marketplacePhotoPanelDropActive : ''}`}
+                  onDragEnter={(event) => {
+                    if (isPublishingMarketplace) return;
+                    if (!event.dataTransfer.types.includes('Files')) return;
+                    event.preventDefault();
+                    setMarketplacePhotoDropActive(true);
+                  }}
+                  onDragOver={(event) => {
+                    if (isPublishingMarketplace) return;
+                    if (!event.dataTransfer.types.includes('Files')) return;
+                    event.preventDefault();
+                    event.dataTransfer.dropEffect = 'copy';
+                  }}
+                  onDragLeave={(event) => {
+                    if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+                      setMarketplacePhotoDropActive(false);
+                    }
+                  }}
+                  onDrop={handleMarketplacePhotoDrop}
+                  aria-busy={isPublishingMarketplace}
+                >
                   <div>
                     <span>Photos</span>
-                    <p>The first photo is the main image. Use the arrows to change the order. If there are fewer photos than the saved style needs, Aim4price selects the best-fitting layout automatically.</p>
+                    <p>Drop up to {MAX_MARKETPLACE_PHOTOS} photos here. Drag them into order, or use the arrows. The first photo becomes the main image.</p>
                   </div>
                   <input
                     ref={marketplacePhotoInputRef}
@@ -8185,22 +8257,49 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                     accept="image/jpeg,image/png,image/webp"
                     multiple
                     hidden
+                    disabled={isPublishingMarketplace}
                     onChange={handleMarketplacePhotoChange}
                   />
-                  <button type="button" className={styles.marketplacePhotoButton} onClick={() => marketplacePhotoInputRef.current?.click()}>
+                  <button type="button" className={styles.marketplacePhotoButton} onClick={() => marketplacePhotoInputRef.current?.click()} disabled={isPublishingMarketplace}>
                     Upload photos
                   </button>
 
                   {marketplacePhotoFiles.length ? (
                     <div className={styles.marketplacePhotoGrid}>
                       {marketplacePhotoFiles.map((photo, index) => (
-                        <div key={photo.id} className={styles.marketplacePhotoThumb}>
+                        <div
+                          key={photo.id}
+                          className={`${styles.marketplacePhotoThumb} ${draggedMarketplacePhotoId === photo.id ? styles.marketplacePhotoThumbDragging : ''}`}
+                          draggable={!isPublishingMarketplace}
+                          onDragStart={(event) => {
+                            if (isPublishingMarketplace) {
+                              event.preventDefault();
+                              return;
+                            }
+                            setDraggedMarketplacePhotoId(photo.id);
+                            event.dataTransfer.effectAllowed = 'move';
+                            event.dataTransfer.setData('text/plain', photo.id);
+                          }}
+                          onDragEnd={() => setDraggedMarketplacePhotoId('')}
+                          onDragOver={(event) => {
+                            if (isPublishingMarketplace || !draggedMarketplacePhotoId) return;
+                            event.preventDefault();
+                            event.stopPropagation();
+                            event.dataTransfer.dropEffect = 'move';
+                          }}
+                          onDrop={(event) => {
+                            if (isPublishingMarketplace || !draggedMarketplacePhotoId) return;
+                            event.preventDefault();
+                            event.stopPropagation();
+                            reorderMarketplacePhoto(draggedMarketplacePhotoId, photo.id);
+                          }}
+                        >
                           <img src={photo.previewUrl} alt="Marketplace upload preview" />
                           {index === 0 ? <strong className={styles.marketplacePhotoCoverBadge}>Main photo</strong> : null}
                           <div className={styles.marketplacePhotoControls}>
-                            <button type="button" onClick={() => moveMarketplacePhoto(photo.id, -1)} disabled={index === 0} aria-label="Move photo earlier">←</button>
-                            <button type="button" onClick={() => moveMarketplacePhoto(photo.id, 1)} disabled={index === marketplacePhotoFiles.length - 1} aria-label="Move photo later">→</button>
-                            <button type="button" onClick={() => removeMarketplacePhoto(photo.id)} aria-label="Remove photo">×</button>
+                            <button type="button" onClick={() => moveMarketplacePhoto(photo.id, -1)} disabled={isPublishingMarketplace || index === 0} aria-label="Move photo earlier">←</button>
+                            <button type="button" onClick={() => moveMarketplacePhoto(photo.id, 1)} disabled={isPublishingMarketplace || index === marketplacePhotoFiles.length - 1} aria-label="Move photo later">→</button>
+                            <button type="button" onClick={() => removeMarketplacePhoto(photo.id)} disabled={isPublishingMarketplace} aria-label="Remove photo">×</button>
                           </div>
                         </div>
                       ))}

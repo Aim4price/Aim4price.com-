@@ -173,11 +173,11 @@ const DEAL_RATING_OPTIONS: Array<{
   label: string;
   shortLabel: string;
 }> = [
-  { value: 'low', label: 'Low Price', shortLabel: 'Low' },
-  { value: 'great', label: 'Great Price', shortLabel: 'Great' },
-  { value: 'fair', label: 'Fair Price', shortLabel: 'Fair' },
-  { value: 'high', label: 'High Price', shortLabel: 'High' },
-  { value: 'none', label: 'No Rating', shortLabel: 'No Rating' },
+  { value: 'low', label: 'Low price', shortLabel: 'Low' },
+  { value: 'great', label: 'Great price', shortLabel: 'Great' },
+  { value: 'fair', label: 'Fair price', shortLabel: 'Fair' },
+  { value: 'high', label: 'High price', shortLabel: 'High' },
+  { value: 'none', label: 'No rating', shortLabel: 'No rating' },
 ];
 
 const PROVINCES = [
@@ -359,7 +359,7 @@ function getListingImages(listing: MarketplaceListing): string[] {
 }
 
 function formatPlaceholderLabel(listing: MarketplaceListing): string {
-  return getListingFamilyLabel(listing).toUpperCase();
+  return getListingFamilyLabel(listing);
 }
 
 function ListingPlaceholder({
@@ -731,7 +731,7 @@ function getListingDealRating(listing: MarketplaceListing): MarketplaceDealRatin
 function getDealRatingOption(value: MarketplaceDealRating) {
   return (
     DEAL_RATING_OPTIONS.find((option) => option.value === value) ??
-    ({ value: 'none', label: 'No Rating', shortLabel: 'No Rating' } satisfies (typeof DEAL_RATING_OPTIONS)[number])
+    ({ value: 'none', label: 'No rating', shortLabel: 'No rating' } satisfies (typeof DEAL_RATING_OPTIONS)[number])
   );
 }
 
@@ -1281,8 +1281,8 @@ function getAdSellerPhone(listing: MarketplaceListing): string {
 
 function getAdVatLabel(listing: MarketplaceListing): string {
   const language = listing.adBrand?.language === 'af' ? 'af' : 'en';
-  if (listing.adBrand?.vatLabel === 'vat-included') return language === 'af' ? 'BTW INGESLUIT' : 'VAT INCLUDED';
-  if (listing.adBrand?.vatLabel === 'no-vat') return language === 'af' ? 'GEEN BTW' : 'NO VAT';
+  if (listing.adBrand?.vatLabel === 'vat-included') return language === 'af' ? 'BTW ingesluit' : 'VAT included';
+  if (listing.adBrand?.vatLabel === 'no-vat') return language === 'af' ? 'Geen BTW' : 'No VAT';
   return language === 'af' ? '+ BTW' : '+ VAT';
 }
 
@@ -2396,6 +2396,7 @@ export default function MarketplaceClient({
   const firstVisibleListingNumber = visible.length ? firstVisibleListingIndex + 1 : 0;
   const lastVisibleListingNumber = Math.min(firstVisibleListingIndex + LISTINGS_PER_PAGE, visible.length);
   const visibleListings = visible.slice(firstVisibleListingIndex, lastVisibleListingNumber);
+  const showroomHasNoInventory = showroomMode && !isLoadingListings && items.length === 0;
   const paginationItems = useMemo(
     () => buildPaginationItems(normalizedCurrentPage, totalPages),
     [normalizedCurrentPage, totalPages],
@@ -3026,7 +3027,9 @@ export default function MarketplaceClient({
 
 
   return (
-    <main className={`${styles.page} ${compactAppMode ? dealerStyles.dealerMarketplaceSurface : ''}`}>
+    <main
+      className={`${styles.page} ${showroomMode ? styles.showroomPage : ''} ${compactAppMode ? dealerStyles.dealerMarketplaceSurface : ''}`}
+    >
       {!compactAppMode && !embeddedMode ? (
         <div className={styles.topBand}>
           <AppHeader active="marketplace" />
@@ -3093,12 +3096,15 @@ export default function MarketplaceClient({
         </div>
       ) : null}
 
-      <div className={styles.marketplaceShell}>
-        <aside
-          id={compactAppMode ? 'mobile-marketplace-filters' : undefined}
-          className={`${styles.sidebar} ${compactAppMode ? dealerStyles.dealerMarketplaceSidebar : ''} ${dealerFiltersOpen ? dealerStyles.dealerMarketplaceSidebarOpen : ''}`}
-          aria-label="Marketplace filters"
-        >
+      <div
+        className={`${styles.marketplaceShell} ${showroomMode ? styles.showroomShell : ''} ${showroomHasNoInventory ? styles.showroomEmptyShell : ''}`}
+      >
+        {!showroomHasNoInventory ? (
+          <aside
+            id={compactAppMode ? 'mobile-marketplace-filters' : undefined}
+            className={`${styles.sidebar} ${showroomMode ? styles.showroomSidebar : ''} ${compactAppMode ? dealerStyles.dealerMarketplaceSidebar : ''} ${dealerFiltersOpen ? dealerStyles.dealerMarketplaceSidebarOpen : ''}`}
+            aria-label={showroomMode ? 'Showroom filters' : 'Marketplace filters'}
+          >
           {compactAppMode ? (
             <button type="button" className={dealerStyles.marketplaceCloseFilters} onClick={() => setDealerFiltersOpen(false)}>
               Close filters
@@ -3113,8 +3119,8 @@ export default function MarketplaceClient({
                 <input
                   value={query}
                   onChange={(event: ChangeEvent<HTMLInputElement>) => setQuery(event.target.value)}
-                  placeholder="Search Marketplace"
-                  aria-label="Search Marketplace"
+                  placeholder={showroomMode ? 'Search this showroom' : 'Search Marketplace'}
+                  aria-label={showroomMode ? 'Search this showroom' : 'Search Marketplace'}
                 />
                 {query ? (
                   <button
@@ -3244,14 +3250,14 @@ export default function MarketplaceClient({
 
           <section className={styles.sidebarSection}>
             <div className={styles.sidebarSectionHead}>
-              <h2>Sort by</h2>
+              <h2>{showroomMode ? 'Condition' : 'Sort by'}</h2>
             </div>
 
             <label className={styles.selectField}>
               <select
                 value={conditionFilter}
                 onChange={(event) => setConditionFilter(event.target.value as ConditionFilterValue)}
-                aria-label="Sort by Aim4price condition"
+                aria-label={showroomMode ? 'Filter by condition' : 'Sort by Aim4price condition'}
               >
                 {CONDITION_OPTIONS.map((option) => (
                   <option key={option.value || 'all'} value={option.value}>
@@ -3264,7 +3270,7 @@ export default function MarketplaceClient({
 
           <section className={styles.sidebarSection}>
             <div className={styles.sidebarSectionHead}>
-              <h2>Distance</h2>
+              <h2>{showroomMode ? 'Location' : 'Distance'}</h2>
             </div>
 
             <label className={styles.selectField}>
@@ -3310,10 +3316,14 @@ export default function MarketplaceClient({
               Clear all filters
             </button>
           ) : null}
-        </aside>
+          </aside>
+        ) : null}
 
-        <section ref={resultsAreaRef} className={styles.resultsArea}>
-          {activeFilterChips.length ? (
+        <section
+          ref={resultsAreaRef}
+          className={`${styles.resultsArea} ${showroomMode ? styles.showroomResults : ''}`}
+        >
+          {!showroomHasNoInventory && activeFilterChips.length ? (
             <div className={styles.activeFilters}>
               {activeFilterChips.map((chip) => (
                 <button key={chip.id} type="button" className={styles.filterChip} onClick={chip.onRemove}>
@@ -3376,16 +3386,36 @@ export default function MarketplaceClient({
               })}
             </div>
           ) : (
-            <article className={styles.emptyState}>
-              <h2>{compactAppMode && dealerListingView === 'mine' ? 'No live listings yet' : 'No listings found'}</h2>
-              <p>
-                {compactAppMode && dealerListingView === 'mine'
-                  ? 'Create a listing from Valuation.'
-                  : 'Try another search, category, condition or location.'}
-              </p>
-              <button type="button" onClick={clearFilters}>
-                Reset marketplace
-              </button>
+            <article className={`${styles.emptyState} ${showroomMode ? styles.showroomEmptyState : ''}`}>
+              {showroomHasNoInventory ? (
+                <>
+                  <span className={styles.showroomEmptyIcon} aria-hidden="true">
+                    <IconPhoto />
+                  </span>
+                  <h2>This showroom is getting ready</h2>
+                  <p>There are no live adverts here just yet. Please check back soon.</p>
+                </>
+              ) : (
+                <>
+                  <h2>
+                    {showroomMode
+                      ? 'Nothing matches those filters'
+                      : compactAppMode && dealerListingView === 'mine'
+                        ? 'No live listings yet'
+                        : 'No listings found'}
+                  </h2>
+                  <p>
+                    {showroomMode
+                      ? 'Try a broader search or clear the filters to see all available machinery.'
+                      : compactAppMode && dealerListingView === 'mine'
+                        ? 'Create a listing from Valuation.'
+                        : 'Try another search, category, condition or location.'}
+                  </p>
+                  <button type="button" onClick={clearFilters}>
+                    {showroomMode ? 'Clear filters' : 'Reset marketplace'}
+                  </button>
+                </>
+              )}
             </article>
           )}
 

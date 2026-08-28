@@ -6,7 +6,14 @@
     radial-gradient(circle at 88% 12%, rgba(35, 94, 142, 0.1), transparent 30rem),
     linear-gradient(145deg, #f7f9f8 0%, #eef3f6 52%, #fbfcfb 100%);
   color: #12382e;
-  font-family: var(--font-body, "Inter", sans-serif);
+  font-family: var(--font-body, "Montserrat"), "Montserrat", ui-sans-serif, system-ui, sans-serif;
+}
+
+.page button,
+.page input,
+.page select,
+.page textarea {
+  font-family: inherit;
 }
 
 .dealerPage { padding-top: 32px; }
@@ -202,7 +209,7 @@
 .kitColourStrip { position: absolute; right: 14px; bottom: 13px; display: flex; overflow: hidden; border: 2px solid #fff; border-radius: 999px; box-shadow: 0 4px 12px rgba(18,45,37,.16); }
 .kitColourStrip i { width: 22px; height: 10px; }
 .kitCardBody { padding: 14px; }
-.kitCardTitle { display: flex; align-items: start; justify-content: space-between; gap: 10px; }
+.kitCardTitle { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
 .kitCardTitle > div { display: grid; gap: 4px; min-width: 0; }
 .kitCardTitle strong { overflow: hidden; font-family: var(--font-heading, "Montserrat", sans-serif); font-size: .95rem; font-weight: 850; text-overflow: ellipsis; white-space: nowrap; }
 .kitCardTitle span { color: #71857e; font-size: .74rem; }
@@ -218,7 +225,7 @@
 .emptyLibrary strong { font: 850 1rem var(--font-heading, "Montserrat", sans-serif); }
 .emptyLibrary p { margin: 4px 0 0; color: #71857e; }
 
-.workspace { display: grid; grid-template-columns: minmax(0, .94fr) minmax(520px, 1.06fr); gap: 20px; align-items: start; scroll-margin-top: 110px; }
+.workspace { display: grid; grid-template-columns: minmax(0, .94fr) minmax(520px, 1.06fr); gap: 20px; align-items: flex-start; scroll-margin-top: 110px; }
 .formPanel { overflow: hidden; }
 .editorHeader { padding: 19px 23px; border-bottom: 1px solid #e1e9e6; }
 
@@ -245,7 +252,7 @@
 .styleGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 17px; }
 .formPanel label { display: grid; gap: 8px; min-width: 0; color: #294f44; font: 800 .79rem var(--font-heading, "Montserrat", sans-serif); }
 .formPanel input:not([type="color"]):not([type="checkbox"]):not([type="file"]),
-.formPanel select { width: 100%; min-height: 48px; border: 1px solid #c9d9d2; border-radius: 12px; padding: 11px 14px; color: #143b31; background: #fff; font: 650 .88rem var(--font-body, "Inter", sans-serif); }
+  .formPanel select { width: 100%; min-height: 48px; border: 1px solid #c9d9d2; border-radius: 12px; padding: 11px 14px; color: #143b31; background: #fff; font: 650 .88rem var(--font-body, "Montserrat"), "Montserrat", sans-serif; }
 .formPanel input:focus,
 .formPanel select:focus { outline: 3px solid rgba(45,111,85,.16); border-color: #32765c; }
 
@@ -257,9 +264,13 @@
 .logoFieldIcon { display: inline-grid; flex: 0 0 auto; place-items: center; width: 42px; height: 42px; border: 1px solid rgba(31,138,102,.13); border-radius: 12px; color: #176247; background: linear-gradient(135deg, rgba(31,138,102,.13), rgba(62,110,213,.07)), #fff; }
 .logoFieldIcon .studioIcon { width: 19px; height: 19px; }
 .logoControls { display: flex; align-items: center; justify-content: flex-end; gap: 12px; }
-.logoPreviewCard { position: relative; overflow: hidden; display: grid; place-items: center; width: 136px; height: 86px; border: 1px dashed #b8cbc3; border-radius: 13px; background-color: #fff; background-image: linear-gradient(45deg, #f2f6f4 25%, transparent 25%), linear-gradient(-45deg, #f2f6f4 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #f2f6f4 75%), linear-gradient(-45deg, transparent 75%, #f2f6f4 75%); background-position: 0 0, 0 7px, 7px -7px, -7px 0; background-size: 14px 14px; box-shadow: inset 0 1px 0 rgba(255,255,255,.9), 0 8px 20px rgba(18,45,37,.06); }
+.logoPreviewCard { position: relative; overflow: hidden; display: grid; place-items: center; width: 136px; height: 86px; border: 1px dashed #9ebdaf; border-radius: 13px; background-color: #fff; background-image: linear-gradient(45deg, #f2f6f4 25%, transparent 25%), linear-gradient(-45deg, #f2f6f4 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #f2f6f4 75%), linear-gradient(-45deg, transparent 75%, #f2f6f4 75%); background-position: 0 0, 0 7px, 7px -7px, -7px 0; background-size: 14px 14px; box-shadow: inset 0 1px 0 rgba(255,255,255,.9), 0 8px 20px rgba(18,45,37,.06); cursor: pointer; transition: border-color 150ms ease, box-shadow 150ms ease, transform 150ms ease; }
 .logoPreviewReady { border-style: solid; border-color: rgba(31,138,102,.2); }
 .logoPreviewCard img { display: block; width: 100%; height: 100%; padding: 10px; object-fit: contain; background: rgba(255,255,255,.88); }
+.logoPreviewCard:focus-visible { outline: 3px solid rgba(31,138,102,.2); outline-offset: 3px; }
+.logoPreviewCard[aria-disabled='true'] { cursor: not-allowed; }
+.logoPreviewDragging { transform: translateY(-2px) scale(1.02); border-style: solid; border-color: #1f8a66; box-shadow: 0 0 0 5px rgba(31,138,102,.13), 0 15px 28px rgba(18,45,37,.12); }
+.logoDropHint { position: absolute; right: 6px; bottom: 6px; border-radius: 999px; padding: 4px 7px; color: #fff; background: rgba(13,51,41,.82); font-size: .55rem; font-weight: 800; }
 .logoPreviewEmpty { display: grid; place-items: center; gap: 5px; color: #718981; }
 .logoPreviewEmpty .studioIcon { width: 22px; height: 22px; }
 .logoPreviewEmpty small { font: 750 .64rem var(--font-heading, "Montserrat", sans-serif); }
@@ -268,7 +279,7 @@
 .logoUpload input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
 .logoRemove { min-width: 142px; min-height: 41px; }
 
-.templateGrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.templateGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 13px; }
 .templateChoice { position: relative; display: grid; align-content: start; gap: 8px; min-width: 0; border: 1px solid #d5e1dc; border-radius: 15px; padding: 11px; color: #21493d; background: #fff; text-align: left; cursor: pointer; transition: transform 150ms ease, border-color 150ms ease, box-shadow 150ms ease; }
 .templateChoice:hover { transform: translateY(-2px); border-color: #99b8ac; }
 .templateChoiceActive { border-color: #d08a10; box-shadow: 0 0 0 3px rgba(242,184,75,.18); }
@@ -344,7 +355,7 @@
 .checkField { grid-template-columns: auto 1fr; align-items: center; }
 .checkField input { width: 20px; height: 20px; accent-color: #176247; }
 .checkField span { display: grid; gap: 3px; }
-.checkField small { color: #748981; font: 500 .68rem var(--font-body, "Inter", sans-serif); }
+.checkField small { color: #748981; font: 500 .68rem var(--font-body, "Montserrat"), "Montserrat", sans-serif; }
 
 .reviewGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 .reviewGrid article { display: grid; align-content: start; gap: 6px; min-height: 126px; padding: 17px; border: 1px solid #d9e4df; border-radius: 14px; background: #fbfdfc; }
@@ -368,8 +379,78 @@
 .previewIcon .studioIcon { width: 19px; height: 19px; }
 .previewLabel { color: #73877f; }
 .previewHeading strong { overflow: hidden; font: 850 1rem var(--font-heading, "Montserrat", sans-serif); text-overflow: ellipsis; white-space: nowrap; }
-.previewPills { display: flex; flex-wrap: wrap; justify-content: end; gap: 6px; }
+.previewPills { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
 .previewPill { border-radius: 7px; padding: 6px 8px; color: #527066; background: #edf3f1; font: 800 .6rem var(--font-heading, "Montserrat", sans-serif); }
+
+.previewPhotoLab {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 14px;
+  padding: 12px;
+  border: 1px dashed #b8cec5;
+  border-radius: 15px;
+  background: linear-gradient(135deg, #fbfdfc, #f3f8f6);
+  transition: border-color 150ms ease, background 150ms ease, box-shadow 150ms ease;
+}
+
+.previewPhotoLabActive {
+  border-style: solid;
+  border-color: #1f8a66;
+  background: #edf9f3;
+  box-shadow: 0 0 0 4px rgba(31,138,102,.1);
+}
+
+.previewPhotoHeader { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.previewPhotoHeader > div:first-child { display: grid; gap: 3px; min-width: 0; }
+.previewPhotoHeader strong { color: #214b3f; font: 850 .75rem var(--font-heading, "Montserrat", sans-serif); }
+.previewPhotoHeader span { max-width: 34rem; color: #748881; font-size: .65rem; line-height: 1.4; }
+.previewPhotoHeader > div:last-child { display: flex; flex: 0 0 auto; gap: 6px; }
+.previewPhotoHeader button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-height: 34px;
+  border: 1px solid #c7d9d2;
+  border-radius: 10px;
+  padding: 6px 9px;
+  color: #1b5946;
+  background: #fff;
+  font-size: .62rem;
+  font-weight: 850;
+  cursor: pointer;
+}
+.previewPhotoHeader button:first-child { color: #fff; border-color: #176247; background: #176247; }
+.previewPhotoHeader .studioIcon { width: 13px; height: 13px; }
+
+.previewPhotoEmpty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 72px;
+  border: 1px solid rgba(31,138,102,.1);
+  border-radius: 12px;
+  color: #2a5d4e;
+  background: rgba(255,255,255,.82);
+  text-align: left;
+  cursor: pointer;
+}
+.previewPhotoEmpty > .studioIcon { width: 23px; height: 23px; }
+.previewPhotoEmpty > span { display: grid; gap: 2px; }
+.previewPhotoEmpty strong { font: 850 .72rem var(--font-heading, "Montserrat", sans-serif); }
+.previewPhotoEmpty small { color: #748881; font-size: .62rem; }
+
+.previewPhotoTray { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 7px; }
+.previewPhotoThumb { position: relative; overflow: hidden; min-width: 0; aspect-ratio: 4 / 3; border: 2px solid #fff; border-radius: 11px; background: #e6efeb; box-shadow: 0 5px 13px rgba(18,45,37,.09); cursor: grab; transition: opacity 150ms ease, transform 150ms ease, border-color 150ms ease; }
+.previewPhotoThumb:active { cursor: grabbing; }
+.previewPhotoThumb:first-child { border-color: #1f8a66; }
+.previewPhotoThumb img { display: block; width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
+.previewPhotoThumb > span { position: absolute; top: 5px; left: 5px; border-radius: 7px; padding: 4px 6px; color: #fff; background: rgba(13,51,41,.86); font: 800 .52rem var(--font-heading, "Montserrat", sans-serif); }
+.previewPhotoDragging { transform: scale(.96); opacity: .48; }
+.previewPhotoActions { position: absolute; right: 5px; bottom: 5px; display: flex; gap: 3px; }
+.previewPhotoActions button { display: grid; place-items: center; width: 25px; height: 25px; border: 0; border-radius: 7px; color: #fff; background: rgba(8,35,28,.84); font-size: .67rem; font-weight: 900; cursor: pointer; }
+.previewPhotoActions button:disabled { opacity: .35; cursor: default; }
 
 .adCanvasPreview {
   display: block;
@@ -446,7 +527,7 @@
 .adPreview.templateGalleryThree .adInfo,
 .adPreview.templateCatalogueGrid .adInfo { grid-column: 2; grid-row: 2; }
 
-.previewNote { display: flex; align-items: start; gap: 10px; margin-top: 15px; }
+.previewNote { display: flex; align-items: flex-start; gap: 10px; margin-top: 15px; }
 .previewNote > span { display: grid; flex: 0 0 auto; place-items: center; width: 30px; height: 30px; border-radius: 50%; color: #fff; background: #227152; font-weight: 900; }
 .previewNote > span .studioIcon { width: 16px; height: 16px; }
 .previewNote p { display: grid; gap: 3px; margin: 0; color: #7a8e87; font-size: .75rem; line-height: 1.45; }
@@ -463,7 +544,7 @@
   .page { padding-inline: 12px; padding-bottom: 42px; }
   .dealerPage { padding-top: 18px; }
   .middlemanPage { padding-top: 10px; }
-  .hero { align-items: start; flex-direction: column; min-height: 0; padding: 21px 19px; }
+  .hero { align-items: flex-start; flex-direction: column; min-height: 0; padding: 21px 19px; }
   .heroMetric { min-width: 0; width: 100%; padding: 11px 13px; }
   .heroMetricIcon { width: 36px; height: 36px; }
   .sectionHeader,
@@ -504,6 +585,8 @@
   .actions > div:last-child { display: grid; grid-template-columns: 1fr; }
   .actions > div:last-child > * { width: 100%; min-height: 48px; }
   .previewPanel { padding: 16px; }
+  .previewPhotoHeader { align-items: stretch; flex-direction: column; }
+  .previewPhotoHeader > div:last-child { justify-content: flex-start; }
   .adCanvasPreview { border-radius: 12px; }
   .adPreview { grid-template-columns: 56% 44%; }
   .adInfo { gap: 6px; padding: 11px; }
@@ -511,8 +594,9 @@
 }
 
 @media (max-width: 470px) {
-  .previewHeading { align-items: start; flex-direction: column; }
-  .previewPills { justify-content: start; }
+  .previewHeading { align-items: flex-start; flex-direction: column; }
+  .previewPills { justify-content: flex-start; }
+  .previewPhotoTray { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .kitGrid { grid-auto-columns: minmax(260px, 88vw); }
   .kitCardActions { display: grid; grid-template-columns: 1fr 1fr; }
   .kitCardActions button { width: 100%; min-height: 44px; }

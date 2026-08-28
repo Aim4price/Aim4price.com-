@@ -2919,3 +2919,443 @@
     height: calc(100dvh - 1rem - env(safe-area-inset-top) - env(safe-area-inset-bottom));
   }
 }
+
+/* Public showroom presentation. Kept deliberately scoped so the Marketplace
+   and the owner/dealer app surfaces retain their established layouts. */
+.showroomPage {
+  --marketplace-sidebar-width: 300px;
+
+  min-height: 0;
+  background:
+    radial-gradient(circle at 8% 4%, rgba(31, 122, 91, 0.08), transparent 28rem),
+    radial-gradient(circle at 96% 88%, rgba(237, 180, 56, 0.07), transparent 32rem),
+    #f5f8f7;
+  font-family: var(--font-body, 'Montserrat'), 'Montserrat', ui-sans-serif, system-ui, sans-serif;
+}
+
+.showroomPage,
+.showroomPage button,
+.showroomPage input,
+.showroomPage select,
+.showroomPage textarea {
+  font-family: var(--font-body, 'Montserrat'), 'Montserrat', ui-sans-serif, system-ui, sans-serif;
+}
+
+.showroomPage * {
+  font-variant-caps: normal;
+}
+
+.showroomPage .placeholderPill,
+.showroomPage .detailItem span,
+.showroomPage .contactRow span,
+.showroomPage .shareLinkField span,
+.showroomPage .marketplaceManageSummary span,
+.showroomPage .marketplaceDeleteSelected span {
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.showroomShell {
+  grid-template-columns: var(--marketplace-sidebar-width) minmax(0, 1fr);
+  align-items: flex-start;
+  gap: clamp(1rem, 1.6vw, 1.6rem);
+  width: min(100%, 1560px);
+  min-height: 0;
+  margin: 0 auto;
+  padding: clamp(1rem, 2vw, 2rem);
+  background: transparent;
+}
+
+.showroomEmptyShell {
+  grid-template-columns: minmax(0, 1fr);
+  width: min(100%, 1100px);
+  padding-block: clamp(1.2rem, 3vw, 2.6rem);
+}
+
+.showroomSidebar {
+  position: sticky;
+  top: 1rem;
+  min-height: 0;
+  max-height: calc(100dvh - 2rem);
+  overflow-y: auto;
+  padding: 1.15rem;
+  border: 1px solid rgba(200, 218, 210, 0.92);
+  border-radius: 1.35rem;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 18px 50px rgba(14, 55, 43, 0.07);
+  scrollbar-color: rgba(22, 83, 64, 0.24) transparent;
+  scrollbar-width: thin;
+}
+
+.showroomSidebar .searchBox {
+  min-height: 3.15rem;
+  border-color: #dbe7e1;
+  border-radius: 0.95rem;
+  background: #f5f8f7;
+}
+
+.showroomSidebar .searchBox:focus-within {
+  border-color: #1b6b51;
+  background: #ffffff;
+  box-shadow: 0 0 0 4px rgba(27, 107, 81, 0.1);
+}
+
+.showroomSidebar .sidebarDivider {
+  margin: 1rem 0 0.55rem;
+  background: #e3ebe7;
+}
+
+.showroomSidebar .sidebarSection {
+  padding: 0.72rem 0 0.82rem;
+}
+
+.showroomSidebar .sidebarSection + .sidebarSection {
+  border-color: #e9efec;
+}
+
+.showroomSidebar .sidebarSectionHead {
+  margin-bottom: 0.65rem;
+}
+
+.showroomSidebar .sidebarSectionHead h2 {
+  color: #123d31;
+  font-size: 0.98rem;
+  font-weight: 800;
+  letter-spacing: -0.015em;
+}
+
+.showroomSidebar .categoryButton {
+  min-height: 3.15rem;
+  padding: 0.42rem 0.55rem;
+  border: 1px solid transparent;
+  border-radius: 0.95rem;
+}
+
+.showroomSidebar .categoryButton:hover,
+.showroomSidebar .categoryButtonActive,
+.showroomSidebar .familyButton:hover,
+.showroomSidebar .familyButtonActive {
+  border-color: #dceae3;
+  background: #edf6f1;
+}
+
+.showroomSidebar .categoryIcon {
+  background: #e8efec;
+  color: #285548;
+}
+
+.showroomSidebar .categoryButtonActive .categoryIcon,
+.showroomSidebar .categoryButton:hover .categoryIcon {
+  background: #17694f;
+  color: #ffffff;
+}
+
+.showroomSidebar .categoryText strong {
+  color: #143c32;
+  font-weight: 750;
+}
+
+.showroomSidebar .categoryText small {
+  color: #71817b;
+}
+
+.showroomSidebar .familyButton {
+  border: 1px solid transparent;
+  color: #294e43;
+}
+
+.showroomSidebar .ratingFilterButton {
+  min-height: 2.45rem;
+  padding: 0.24rem 0.38rem;
+}
+
+.showroomSidebar .ratingFilterButton:hover,
+.showroomSidebar .ratingFilterButtonActive {
+  background: #f5f8f7;
+}
+
+.showroomSidebar .ratingFilterCheck {
+  border-color: #9eb2aa;
+  border-radius: 0.38rem;
+}
+
+.showroomSidebar .ratingFilterButtonActive .ratingFilterCheck {
+  border-color: #17694f;
+  background: #17694f;
+}
+
+.showroomSidebar .ratingFilterPill,
+.showroomPage .dealRatingBadge {
+  border-radius: 0.55rem;
+}
+
+.showroomSidebar .ratingFilterCount {
+  background: #edf3f0;
+  color: #2d6454;
+}
+
+.showroomSidebar .selectField select {
+  min-height: 3rem;
+  border-color: #d2dfd9;
+  border-radius: 0.85rem;
+  color: #173d32;
+  font-weight: 650;
+}
+
+.showroomSidebar .selectField select:focus-visible {
+  border-color: #1b6b51;
+  outline: 3px solid rgba(27, 107, 81, 0.1);
+}
+
+.showroomSidebar .resetButton {
+  min-height: 2.75rem;
+  margin-top: 0.65rem;
+  border: 1px solid #d8e6df;
+  border-radius: 999px;
+  background: #edf6f1;
+  color: #17694f;
+}
+
+.showroomResults {
+  min-height: 0;
+  padding: 0;
+}
+
+.showroomResults .activeFilters {
+  margin-bottom: 0.9rem;
+}
+
+.showroomResults .filterChip {
+  min-height: 2.35rem;
+  border: 1px solid #d8e7df;
+  background: #ffffff;
+  box-shadow: 0 6px 18px rgba(14, 55, 43, 0.04);
+}
+
+.showroomResults .listingGrid {
+  gap: clamp(1rem, 1.5vw, 1.45rem);
+}
+
+.showroomResults .listingCard {
+  padding: 0.6rem;
+  border-color: rgba(198, 215, 207, 0.9);
+  border-radius: 1.35rem;
+  box-shadow: 0 14px 38px rgba(14, 55, 43, 0.065);
+}
+
+.showroomResults .listingCard:hover {
+  transform: translateY(-3px);
+  border-color: rgba(23, 105, 79, 0.34);
+  box-shadow: 0 20px 46px rgba(14, 55, 43, 0.11);
+}
+
+.showroomResults .cardImageFrame {
+  border-radius: 1.05rem;
+  background: #e9f0ed;
+}
+
+.showroomResults .cardBody {
+  padding: 0.95rem 0.55rem 0.55rem;
+}
+
+.showroomResults .cardPrice,
+.showroomResults .cardBody h3 {
+  color: #103d31;
+}
+
+.showroomResults .cardBody h3 {
+  margin-top: 0.32rem;
+  font-weight: 780;
+  letter-spacing: -0.02em;
+}
+
+.showroomResults .cardLocation,
+.showroomResults .cardMeta {
+  color: #687a74;
+}
+
+.showroomResults .cardShareButton {
+  color: #165e48;
+  border: 1px solid rgba(218, 231, 225, 0.95);
+}
+
+.showroomResults .paginationWrap {
+  margin-top: 1.75rem;
+}
+
+.showroomEmptyState {
+  width: min(100%, 760px);
+  min-height: clamp(14rem, 26vw, 18rem);
+  margin: 0 auto;
+  padding: clamp(2rem, 4vw, 3.25rem);
+  border-color: rgba(197, 216, 207, 0.92);
+  border-radius: 1.5rem;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(30, 122, 90, 0.08), transparent 15rem),
+    #ffffff;
+  box-shadow: 0 18px 54px rgba(14, 55, 43, 0.075);
+}
+
+.showroomEmptyState h2 {
+  margin-top: 0.85rem;
+  color: #103d31;
+  font-size: clamp(1.35rem, 2.5vw, 1.85rem);
+  font-weight: 850;
+  letter-spacing: -0.035em;
+}
+
+.showroomEmptyState p {
+  max-width: 34rem;
+  margin-top: 0.65rem;
+  color: #687a74;
+  font-size: 0.98rem;
+  line-height: 1.6;
+}
+
+.showroomEmptyState button {
+  min-height: 2.85rem;
+  padding-inline: 1.2rem;
+  border-radius: 999px;
+  background: #17694f;
+}
+
+.showroomEmptyIcon {
+  display: inline-grid;
+  place-items: center;
+  width: 3.7rem;
+  height: 3.7rem;
+  border-radius: 1.05rem;
+  color: #ffffff;
+  background: linear-gradient(145deg, #123f33, #1d7a5a);
+  box-shadow: 0 12px 28px rgba(23, 105, 79, 0.2);
+}
+
+.showroomEmptyIcon svg {
+  width: 1.65rem;
+  height: 1.65rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.showroomPage .listingModal,
+.showroomPage .listingModalNoMedia,
+.showroomPage .shareDialog {
+  border: 1px solid rgba(208, 223, 216, 0.9);
+  border-radius: 1.45rem;
+}
+
+.showroomPage .modalActionRow button,
+.showroomPage .modalActionRow a {
+  border-radius: 999px;
+}
+
+@media (max-width: 1180px) {
+  .showroomShell {
+    --marketplace-sidebar-width: 278px;
+
+    gap: 1rem;
+    padding: 1.25rem;
+  }
+
+  .showroomResults .listingGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 900px) {
+  .showroomShell,
+  .showroomEmptyShell {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1rem;
+    padding: 1rem;
+  }
+
+  .showroomSidebar {
+    position: static;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+    max-height: none;
+    overflow: visible;
+    padding: 1rem;
+    border-right: 1px solid rgba(200, 218, 210, 0.92);
+    border-bottom: 1px solid rgba(200, 218, 210, 0.92);
+  }
+
+  .showroomSidebar > .searchBox,
+  .showroomSidebar > .sidebarDivider,
+  .showroomSidebar > .resetButton {
+    grid-column: 1 / -1;
+  }
+
+  .showroomSidebar .sidebarDivider {
+    margin: 0;
+  }
+
+  .showroomSidebar .sidebarSection,
+  .showroomSidebar .sidebarSection + .sidebarSection {
+    padding: 0.8rem;
+    border: 1px solid #e3ebe7;
+    border-radius: 1rem;
+  }
+
+  .showroomSidebar .ratingFilterList {
+    display: flex;
+    gap: 0.45rem;
+    overflow-x: auto;
+    padding-bottom: 0.15rem;
+    scrollbar-width: none;
+  }
+
+  .showroomSidebar .ratingFilterList::-webkit-scrollbar {
+    display: none;
+  }
+
+  .showroomSidebar .ratingFilterButton {
+    flex: 0 0 auto;
+    width: auto;
+  }
+}
+
+@media (max-width: 640px) {
+  .showroomShell,
+  .showroomEmptyShell {
+    padding: 0.75rem;
+  }
+
+  .showroomSidebar {
+    display: block;
+    border-radius: 1.15rem;
+  }
+
+  .showroomSidebar .sidebarDivider {
+    margin: 0.8rem 0 0.4rem;
+  }
+
+  .showroomSidebar .sidebarSection,
+  .showroomSidebar .sidebarSection + .sidebarSection {
+    margin-top: 0.65rem;
+  }
+
+  .showroomResults .listingGrid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.9rem;
+  }
+
+  .showroomResults .listingCard {
+    border-radius: 1.15rem;
+  }
+
+  .showroomResults .cardImageFrame {
+    border-radius: 0.9rem;
+  }
+
+  .showroomEmptyState {
+    min-height: 13rem;
+    padding: 2rem 1.25rem;
+    border-radius: 1.2rem;
+  }
+}
