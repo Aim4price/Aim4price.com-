@@ -145,7 +145,7 @@ test('Studio and Marketplace use the same rated WYSIWYG JPEG renderer', async ()
 
   assert.match(marketplace, /createSharedMarketplaceAdJpeg\(shareListing\)/);
   assert.match(studio, /renderMarketplaceAdCanvas\(renderCanvas, previewContent/);
-  assert.match(studio, /Your downloaded JPEG will match this preview/);
+  assert.match(studio, /(?:downloaded JPEG[^<}`]*match(?:es)? this preview|downloaded advert will look)/i);
   assert.match(renderer, /id === templateId/);
   assert.match(renderer, /return 'gallery-three'/);
   assert.match(renderer, /return 'duo-split'/);
@@ -201,7 +201,7 @@ test('Ad Studio supports logo drop and local-only sample photo ordering', async 
   assert.match(client, /role="button"/);
   assert.match(client, /tabIndex=\{canManage && !saving \? 0 : -1\}/);
   assert.match(client, /aria-disabled=\{!canManage \|\| saving\}/);
-  assert.match(client, /Choose a file or drop it onto the logo tile/);
+  assert.match(client, /aria-label=\{draft\.logoUrl \?/);
   assert.match(client, /const MAX_PREVIEW_PHOTOS = 4/);
   assert.match(client, /const MAX_PREVIEW_PHOTO_BYTES = 10_000_000/);
   assert.match(client, /const imageFiles = files\.filter\(\(file\) => SUPPORTED_PREVIEW_IMAGE_TYPES\.has\(file\.type\)\)/);
@@ -212,9 +212,8 @@ test('Ad Studio supports logo drop and local-only sample photo ordering', async 
   assert.match(client, /function movePreviewPhoto/);
   assert.match(client, /event\.dataTransfer\.setData\('text\/plain', photo\.id\)/);
   assert.match(client, /aria-label="Sample advert photo order"/);
-  assert.match(client, /Drop up to four sample photos, then drag them into order\./);
-  assert.match(client, /These samples are not saved\./);
-  assert.match(client, /They stay in this preview only and are never saved with the brand kit\./);
+  assert.match(client, /(?:Add|Drop) up to four (?:sample )?photos[^<}`]*(?:drag|reorder)/i);
+  assert.match(client, /(?:not saved|preview only|never saved)/i);
   assert.match(client, /URL\.revokeObjectURL\(photo\.previewUrl\)/);
   assert.match(client, /body: JSON\.stringify\(draft\)/);
   assert.match(client, /useBestPhotoFit: false/);
@@ -239,32 +238,83 @@ test('Ad Studio is limited to dealer accounts and uses a four-step guided setup'
   assert.match(desktopPage, /<AdStudioClient/);
   assert.match(dealerPage, /dealerAppMode/);
   assert.match(dealerPage, /middlemanMode=\{isMiddlemanAccountSubtype\(profile\.accountSubtype\)\}/);
-  assert.match(client, /Save brand kit/);
+  assert.match(client, /Save (?:brand kit|advert style)/);
   assert.match(client, /type StudioStep = 1 \| 2 \| 3 \| 4/);
   assert.match(client, /Details.*Layout.*Style.*Review/s);
   assert.match(client, /activeStep === 1/);
   assert.match(client, /activeStep === 4/);
-  assert.match(client, /Brand kits/);
-  assert.match(client, /function StudioIcon/);
-  assert.match(client, /Create professional adverts/);
+  assert.match(client, /(?:Brand kits|advert styles)/i);
+  assert.match(client, /Create (?:professional )?adverts(?: that look like your business)?/i);
   assert.match(client, /setDefaultKit/);
   assert.match(client, /deleteKit\(kit\)/);
   assert.match(client, /selectedTemplate\.photoCount/);
-  assert.doesNotMatch(client, /Saved advert styles|Middleman workspace|styles\.sectionEyebrow/);
-  assert.doesNotMatch(client, /step\.helper|Business and contact details.*Choose an advert layout.*Colours and wording.*Check and save/s);
-  assert.match(client, /logoPreviewCard/);
-  assert.match(client, /A transparent logo works best/);
+  assert.doesNotMatch(client, /Middleman workspace|styles\.sectionEyebrow/);
+  assert.doesNotMatch(client, /step\.helper/);
+  assert.match(client, /logoInputRef\.current\?\.click\(\)/);
+  assert.match(client, /aria-label=\{draft\.logoUrl \?/);
   assert.match(client, /selectControl/);
-  assert.match(client, /StudioIcon name="language"/);
-  assert.match(client, /StudioIcon name="price"/);
-  assert.match(css, /\.logoPreviewCard/);
+  assert.match(client, /<select value=\{draft\.language\}/);
+  assert.match(client, /<select value=\{draft\.vatLabel\}/);
+  assert.match(css, /\.logo(?:PreviewCard|Field|DropZone)/);
   assert.match(css, /\.selectControl select/);
   assert.match(css, /appearance: none/);
-  assert.match(css, /font-family: var\(--font-body, "Montserrat"\)/);
+  assert.match(css, /font-family:[^;\n]*Montserrat/);
   assert.doesNotMatch(css, /\.stepButton small/);
   assert.doesNotMatch(css, /\.stepButton > span:last-child \{ display: none; \}/);
   assert.match(header, /href: '\/ad-studio', label: 'Ad Studio', accountTypes: \['dealer'\]/);
   assert.doesNotMatch(header, /href: '\/ad-studio', label: 'Ad Studio', accountTypes: \['owner'/);
+});
+
+test('Ad Studio follows the white, minimal Showroom visual system', async () => {
+  const [client, css] = await Promise.all([
+    read('components/AdStudioClient.tsx'),
+    read('components/AdStudioClient.module.css'),
+  ]);
+
+  const block = (selector) => {
+    const escapedSelector = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return css.match(new RegExp(`${escapedSelector}\\s*\\{([^}]*)\\}`))?.[1] ?? '';
+  };
+  const minimumHeight = (declarations) => Number(declarations.match(/min-height:\s*([\d.]+)px/)?.[1] ?? 0);
+
+  const heroRule = block('.hero');
+  const cardRule = css.match(/\.libraryPanel\s*,\s*\.formPanel\s*,\s*\.previewPanel\s*\{([^}]*)\}/)?.[1] ?? '';
+  const sharedControlRule = css.match(/\.primaryButton\s*,[\s\S]*?\.logoRemove\s*\{([^}]*)\}/)?.[1] ?? '';
+  const primaryButtonRule = block('.primaryButton');
+  const stepperRule = block('.stepper');
+  const stepButtonRule = block('.stepButton');
+  const activeStepRule = block('.stepButtonActive');
+  const workspaceRule = block('.workspace');
+  const heroMarkup = client.match(/<header className=\{styles\.hero\}>[\s\S]*?<\/header>/)?.[0] ?? '';
+
+  assert.match(heroRule, /background:\s*#fff(?:fff)?\b/i);
+  assert.match(heroRule, /border:\s*1px solid var\(--studio-line\)/);
+  assert.doesNotMatch(heroRule, /(?:linear|radial)-gradient|#102a23|#15392f|#17385d/i);
+  assert.match(cardRule, /background:\s*#fff(?:fff)?\b/i);
+  assert.match(cardRule, /border:\s*1px solid var\(--studio-line\)/);
+
+  assert.match(block('.page'), /font-family:[^;]*Montserrat/i);
+  assert.match(css, /\.page button\s*,[\s\S]*?font-family:\s*inherit/);
+  assert.doesNotMatch(css, /text-transform:\s*uppercase/i);
+
+  assert.doesNotMatch(client, /styles\.(?:heroMetric|heroMetricIcon|previewIcon|previewPills|previewPill)\b/);
+  assert.doesNotMatch(client, /(?:Details|Layout|Style|Review)\s*·\s*Step [1-4] of 4/);
+  assert.doesNotMatch(heroMarkup, /(?:Ready|Brand kits? saved|Create your first brand kit)/i);
+
+  assert.ok(minimumHeight(sharedControlRule) >= 44, 'Primary and secondary actions must remain at least 44px high');
+  assert.ok(minimumHeight(stepButtonRule) >= 44, 'Each setup step must remain at least 44px high');
+  assert.match(primaryButtonRule, /background:\s*var\(--studio-green\)/);
+  assert.doesNotMatch(primaryButtonRule, /gradient/i);
+
+  assert.match(stepperRule, /background:\s*#fff(?:fff)?\b/i);
+  assert.match(stepButtonRule, /border-bottom:\s*[\d.]+px solid transparent/);
+  assert.match(activeStepRule, /border-bottom-color:\s*var\(--studio-green\)/);
+  assert.doesNotMatch(activeStepRule, /gradient/i);
+  assert.match(client, /aria-current=\{activeStep === step\.id \? 'step' : undefined\}/);
+
+  assert.match(workspaceRule, /grid-template-columns:[^;]*minmax\([^;]*minmax\(/);
+  assert.match(css, /@media\s*\(max-width:\s*[\d.]+px\)[\s\S]*?\.workspace\s*\{[^}]*grid-template-columns:\s*1fr/);
+  assert.match(css, /@media\s*\(max-width:\s*[\d.]+px\)[\s\S]*?\.previewPanel\s*\{[^}]*grid-row:\s*auto/);
 });
 
 test('middlemen have a focused phone-first workspace and a supported account subtype', async () => {
