@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import {
   useEffect,
   useMemo,
@@ -177,6 +178,7 @@ type QuickActionIconName =
   | "ownerApp"
   | "dealer"
   | "marketplace"
+  | "showroom"
   | "discovery"
   | "directory"
   | "delete";
@@ -342,6 +344,19 @@ function QuickActionIcon({ name }: { name: QuickActionIconName }) {
           <path {...strokeProps} d="M9 8.7a3 3 0 0 1 6 0" />
           <path {...strokeProps} d="M9.6 13.1h4.8" />
           <path {...strokeProps} d="M10.7 15.55h2.6" />
+        </svg>
+      ) : null}
+
+      {name === "showroom" ? (
+        <svg {...svgProps}>
+          <path
+            d="M4.25 9.4h15.5v10.35H4.25V9.4Z"
+            fill="currentColor"
+            opacity="0.14"
+          />
+          <path {...strokeProps} d="M4.25 9.4h15.5v10.35H4.25V9.4Z" />
+          <path {...strokeProps} d="m3.5 9.4 1.7-4.15h13.6l1.7 4.15" />
+          <path {...strokeProps} d="M8.1 19.75v-5.5h7.8v5.5M3.5 9.4h17" />
         </svg>
       ) : null}
 
@@ -2211,6 +2226,14 @@ export default function AccountClient({
                   <strong>Marketplace contact</strong>
                   <span className={styles.quickActionChevron}>›</span>
                 </button>
+              ) : null}
+
+              {isOwnerAccount ? (
+                <Link href="/my-showroom" className={styles.quickActionButton}>
+                  <QuickActionIcon name="showroom" />
+                  <strong>Manage my showroom</strong>
+                  <span className={styles.quickActionChevron}>›</span>
+                </Link>
               ) : null}
 
               {isOwnerAccount ? (
