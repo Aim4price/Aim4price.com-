@@ -63,7 +63,7 @@ const ADMIN_LINKS: Array<{
     href: "/admin/sold-assets",
     label: "Asset Outcomes",
     key: "sold-assets",
-    description: "Manage sold, traded-in and scrapped assets",
+    description: "Review closed adverts and whether Aim4price helped",
   },
   {
     href: "/admin/work-tracker",
