@@ -420,10 +420,19 @@ test('public showroom presents clear business details in a white seller-scoped M
   assert.match(publicPage, /sellerUserId: showroom\.userId/);
   assert.match(publicPage, /exposeContact: true/);
   assert.match(publicShowroom, /showroom\.logoUrl \? <img src=\{showroom\.logoUrl\} alt=\{`\$\{showroom\.name\} logo`\}/);
+  assert.match(publicShowroom, /<span aria-hidden="true">\{showroom\.name\.slice\(0, 2\)\.toUpperCase\(\)\}<\/span>/);
   assert.match(publicShowroom, /<h1>\{showroom\.name\}<\/h1>/);
   assert.match(publicShowroom, /className=\{styles\.publicAdvertSummary\}>\{listings\.length\} live/);
   assert.match(publicShowroom, /showroom\.bio \? <p className=\{styles\.publicBio\}>\{showroom\.bio\}<\/p>/);
+  assert.match(publicShowroom, /className=\{styles\.publicAdvertSummary\}[\s\S]*?className=\{styles\.publicTrustLine\}[\s\S]*?className=\{styles\.publicContactActions\}/);
+  assert.match(publicShowroom, /className=\{styles\.publicContactActions\} role="group" aria-label=\{`\$\{showroom\.name\} contact options`\}/);
   assert.match(publicShowroom, /className=\{styles\.publicBusinessDetails\}/);
+  for (const icon of ['location', 'phone', 'email', 'website']) {
+    assert.match(publicShowroom, new RegExp(`ShowroomDetailIcon name="${icon}"`));
+  }
+  assert.match(manager, /function ShowroomDetailIcon/);
+  assert.match(manager, /<svg viewBox="0 0 24 24" aria-hidden="true">/);
+  assert.match(publicShowroom, /className=\{styles\.publicBusinessDetailCopy\}/);
   assert.match(publicShowroom, /showroom\.location/);
   assert.match(publicShowroom, /href=\{whatsappHref\(showroom\.phone\)\}/);
   assert.match(publicShowroom, /href=\{`tel:\$\{showroom\.phone\}`\}/);
@@ -442,7 +451,13 @@ test('public showroom presents clear business details in a white seller-scoped M
   assert.doesNotMatch(managerCss, /\.(?:publicHeroSummary|trustStrip|inventoryIcon|inventoryCount)\s*\{/);
   assert.doesNotMatch(managerCss, /\.publicHero\s*\{[^}]*linear-gradient/);
   assert.match(managerCss, /\.publicPage\s*\{[^}]*background:\s*#fff/);
-  assert.match(managerCss, /\.publicHeroInner\s*\{[^}]*background:\s*#fff/);
+  assert.match(managerCss, /\.publicHeroInner\s*\{[^}]*width:\s*min\(1540px,100%\)[^}]*background:\s*#fff/);
+  assert.match(managerCss, /\.publicHeroMain\s*\{[^}]*grid-template-columns:\s*minmax\(0,1fr\) minmax\(30rem,\.72fr\)/);
+  assert.match(managerCss, /\.profileIdentity h1\s*\{[^}]*font-size:\s*clamp\(2rem,3\.15vw,3\.2rem\)/);
+  assert.match(managerCss, /\.publicContactActions\s*\{[^}]*display:\s*grid;[^}]*repeat\(auto-fit,minmax\(9\.6rem,1fr\)\)/);
+  assert.match(managerCss, /\.publicBusinessDetails > \*\s*\{[^}]*grid-template-columns:\s*2\.1rem minmax\(0,1fr\)/);
+  assert.match(managerCss, /\.publicBusinessDetails svg\s*\{[^}]*stroke:\s*#285d4d/);
+  assert.match(managerCss, /@media \(max-width: 560px\)[\s\S]*?\.publicContactActions\s*\{[^}]*grid-template-columns:\s*minmax\(0,1fr\)/);
   assert.match(managerCss, /\.publicFooter\s*\{[^}]*background:\s*#fff/);
   assert.match(managerCss, /font-family: 'Montserrat'/);
   assert.doesNotMatch(managerCss, /text-transform:\s*uppercase/);
