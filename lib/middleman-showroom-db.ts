@@ -63,6 +63,7 @@ function showroomName(profile: AccountProfile): string {
 }
 
 function mapShowroomDetails(row: ShowroomRow, profile: AccountProfile): MiddlemanShowroomDetails {
+  const ownerContactOnly = profile.accountType === 'owner';
   return {
     userId: row.user_id,
     slug: row.slug,
@@ -70,8 +71,8 @@ function mapShowroomDetails(row: ShowroomRow, profile: AccountProfile): Middlema
     isPublic: row.is_public !== false,
     name: showroomName(profile),
     websiteUrl: profile.websiteUrl,
-    phone: profile.marketplacePhone || profile.phone,
-    email: profile.marketplaceEmail || profile.email,
+    phone: profile.marketplacePhone || (ownerContactOnly ? '' : profile.phone),
+    email: profile.marketplaceEmail || (ownerContactOnly ? '' : profile.email),
     location: profile.marketplaceLocation || [profile.townCity, profile.province].filter(Boolean).join(', '),
   };
 }
@@ -133,17 +134,23 @@ export async function ensureMiddlemanShowroomSchema(): Promise<void> {
   showroomSchemaEnsured = true;
 }
 
-function assertDealerProfile(profile: AccountProfile) {
+function isShowroomProfile(profile: AccountProfile): boolean {
+  return (
+    (profile.accountType === 'owner' || profile.accountType === 'dealer')
+    && profile.accountStatus === 'active'
+  );
+}
+
+function assertShowroomProfile(profile: AccountProfile) {
   if (
-    profile.accountType !== 'dealer'
-    || profile.accountStatus !== 'active'
+    !isShowroomProfile(profile)
   ) {
-    throw new Error('DEALER_SHOWROOM_FORBIDDEN');
+    throw new Error('SHOWROOM_FORBIDDEN');
   }
 }
 
 export async function getOrCreateMiddlemanShowroom(profile: AccountProfile): Promise<MiddlemanShowroom> {
-  assertDealerProfile(profile);
+  assertShowroomProfile(profile);
   await ensureMiddlemanShowroomSchema();
   const db = getDb();
   const existing = await db.query<ShowroomRow>(
@@ -164,11 +171,11 @@ export async function getOrCreateMiddlemanShowroom(profile: AccountProfile): Pro
 
   await db.query(
     `
-      insert into middleman_showrooms (user_id, slug)
-      values ($1, $2)
+      insert into middleman_showrooms (user_id, slug, is_public)
+      values ($1, $2, $3)
       on conflict (user_id) do nothing
     `,
-    [profile.userId, slug],
+    [profile.userId, slug, profile.accountType !== 'owner'],
   );
   const created = await db.query<ShowroomRow>(
     `select user_id, slug, bio, is_public, logo_url from middleman_showrooms where user_id = $1 limit 1`,
@@ -195,10 +202,7 @@ export async function getPublicMiddlemanShowroomBySlug(slugValue: string): Promi
   const row = result.rows[0];
   if (!row) return null;
   const profile = await getAccountProfile({ id: row.user_id });
-  if (
-    profile.accountType !== 'dealer'
-    || profile.accountStatus !== 'active'
-  ) return null;
+  if (!isShowroomProfile(profile)) return null;
   return mapPublicShowroom(row, profile);
 }
 
@@ -243,7 +247,7 @@ export async function updateMiddlemanShowroom(input: {
 }
 
 export async function deleteMiddlemanShowroomAndAdverts(profile: AccountProfile): Promise<number> {
-  assertDealerProfile(profile);
+  assertShowroomProfile(profile);
   await ensureMiddlemanShowroomSchema();
   const db = getDb();
   const client = await db.connect();
