@@ -4,7 +4,6 @@ import { getAccountProfile } from '../../../lib/account-profile';
 import {
   listPublishedMarketplaceAssetListings,
   publishAssetRegisterItemToMarketplace,
-  removeAssetRegisterItemFromMarketplace,
 } from '../../../lib/marketplace-db';
 import { MAX_ASSET_REGISTER_PHOTOS } from '../../../lib/asset-register-uploads';
 import { isMiddlemanAccountSubtype } from '../../../lib/middleman-account';
@@ -208,36 +207,15 @@ export async function POST(request: NextRequest) {
   }
 }
 
-export async function DELETE(request: NextRequest) {
-  const session = await getServerSession({ allowDealerApp: true, allowOwnerApp: true });
-
-  if (!session?.user?.id) {
-    return unauthorized();
-  }
-
-  const { searchParams } = new URL(request.url);
-  const assetId = String(searchParams.get('assetId') ?? '').trim();
-
-  if (!assetId) {
-    return NextResponse.json({ ok: false, error: 'Valid asset id is required.' }, { status: 400 });
-  }
-
-  try {
-    await removeAssetRegisterItemFromMarketplace({
-      userId: session.user.id,
-      assetId,
-    });
-
-    return NextResponse.json({
-      ok: true,
-      assetId,
-      marketplaceStatus: 'draft',
-    });
-  } catch (error) {
-    const message = formatUnknownError(error, 'Failed to remove marketplace listing.');
-    const status = message.includes('ASSET_NOT_FOUND') ? 404 : 400;
-
-    console.error('marketplace DELETE failed', error);
-    return NextResponse.json({ ok: false, error: message }, { status });
-  }
+export async function DELETE() {
+  return NextResponse.json(
+    {
+      ok: false,
+      error: 'Use the guided Remove advert flow so the equipment outcome can be saved.',
+    },
+    {
+      status: 405,
+      headers: { Allow: 'GET, POST' },
+    },
+  );
 }
