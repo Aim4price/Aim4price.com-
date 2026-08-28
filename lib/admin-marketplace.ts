@@ -1,19 +1,24 @@
 import { getDb } from './db';
 import {
   summarizeAdminMarketplaceAssets,
+  summarizeAdminMarketplaceOutcomes,
   type AdminMarketplaceAssetRow,
   type AdminMarketplaceListingStatus,
   type AdminMarketplaceMetrics,
+  type AdminMarketplaceOutcomeReason,
+  type AdminMarketplaceOutcomeReport,
+  type AdminMarketplaceOutcomeRow,
   type AdminMarketplaceReport,
 } from './admin-marketplace-shared';
 import {
   ensureMarketplaceViewTracking,
   getAdminMarketplaceViewDetails,
 } from './marketplace-views';
+import { ensureMarketplaceOutcomeSchema } from './marketplace-outcomes';
 
 export { getAdminMarketplaceViewDetails };
 
-type DatabaseValue = string | number | Date | null | undefined;
+type DatabaseValue = string | number | boolean | Date | null | undefined;
 
 type MarketplaceReportRow = {
   listing_id: DatabaseValue;
@@ -64,6 +69,32 @@ type MarketplaceSummaryRow = {
   unknown_views: DatabaseValue;
   viewed_assets: DatabaseValue;
   repeat_interest_assets: DatabaseValue;
+};
+
+type MarketplaceOutcomeReportRow = {
+  outcome_id: DatabaseValue;
+  listing_id: DatabaseValue;
+  asset_id: DatabaseValue;
+  seller_user_id: DatabaseValue;
+  seller_label: DatabaseValue;
+  seller_email: DatabaseValue;
+  title: DatabaseValue;
+  sector_key: DatabaseValue;
+  sector_label: DatabaseValue;
+  outcome_reason: DatabaseValue;
+  outcome_note: DatabaseValue;
+  aim4price_helped: DatabaseValue;
+  final_sale_price_ex_vat: DatabaseValue;
+  asking_price_ex_vat: DatabaseValue;
+  aim4price_value_ex_vat: DatabaseValue;
+  total_views_at_close: DatabaseValue;
+  account_views_at_close: DatabaseValue;
+  unknown_views_at_close: DatabaseValue;
+  unique_viewers_at_close: DatabaseValue;
+  source_surface: DatabaseValue;
+  published_at: DatabaseValue;
+  closed_at: DatabaseValue;
+  actor_type: DatabaseValue;
 };
 
 const LATEST_MARKETPLACE_ROWS_CTE = `
@@ -233,6 +264,12 @@ function number(value: DatabaseValue): number {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
+function nullableNumber(value: DatabaseValue): number | null {
+  if (value === null || typeof value === 'undefined' || value === '') return null;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
 function iso(value: DatabaseValue): string {
   if (!value) return '';
   const parsed = value instanceof Date ? value : new Date(String(value));
@@ -249,6 +286,20 @@ function status(value: DatabaseValue): AdminMarketplaceListingStatus {
 
 function sectorKey(value: DatabaseValue): string {
   return text(value).toLowerCase().replace(/[^a-z0-9]+/g, '-') || 'uncategorised';
+}
+
+function outcomeReason(value: DatabaseValue): AdminMarketplaceOutcomeReason {
+  const normalized = text(value).toLowerCase();
+  if (
+    normalized === 'sold'
+    || normalized === 'traded'
+    || normalized === 'no_longer_available'
+    || normalized === 'decided_not_to_sell'
+    || normalized === 'created_by_mistake'
+  ) {
+    return normalized;
+  }
+  return 'other';
 }
 
 async function marketplaceHistoryExists(): Promise<boolean> {
@@ -469,6 +520,87 @@ export async function getAdminMarketplaceReport(): Promise<AdminMarketplaceRepor
     generatedAtIso: new Date().toISOString(),
     metrics: summarizeAdminMarketplaceAssets(assets),
     assets,
+  };
+}
+
+export async function getAdminMarketplaceOutcomeReport(): Promise<AdminMarketplaceOutcomeReport> {
+  await ensureMarketplaceOutcomeSchema();
+
+  const result = await getDb().query<MarketplaceOutcomeReportRow>(`
+    select
+      outcome.id::text as outcome_id,
+      outcome.marketplace_listing_id::text as listing_id,
+      outcome.asset_register_item_id::text as asset_id,
+      outcome.seller_user_id,
+      coalesce(
+        nullif(profile.business_name, ''),
+        nullif(profile.display_name, ''),
+        nullif(auth_user.name, ''),
+        nullif(auth_user.email, ''),
+        'Unknown account'
+      ) as seller_label,
+      coalesce(nullif(auth_user.email, ''), '') as seller_email,
+      coalesce(nullif(outcome.title_snapshot, ''), nullif(asset.title, ''), 'Aim4price advert') as title,
+      coalesce(nullif(sector.sector_key, ''), 'uncategorised') as sector_key,
+      coalesce(nullif(sector.sector_label, ''), 'Uncategorised') as sector_label,
+      outcome.outcome_reason,
+      outcome.outcome_note,
+      outcome.aim4price_helped,
+      outcome.final_sale_price_ex_vat,
+      outcome.asking_price_ex_vat_snapshot as asking_price_ex_vat,
+      coalesce(outcome.aim4price_value_ex_vat_snapshot, 0) as aim4price_value_ex_vat,
+      outcome.total_views_at_close,
+      outcome.account_views_at_close,
+      outcome.unknown_views_at_close,
+      outcome.unique_viewers_at_close,
+      outcome.source_surface,
+      outcome.published_at,
+      outcome.closed_at,
+      outcome.actor_type
+    from public.marketplace_listing_outcomes outcome
+    left join public.asset_register_items asset
+      on asset.id = outcome.asset_register_item_id
+    left join public.equipment_families family
+      on family.id = asset.equipment_family_id
+    left join public.sectors sector
+      on sector.id = coalesce(asset.sector_id, family.sector_id)
+    left join public.account_profiles profile
+      on profile.user_id = outcome.seller_user_id
+    left join public."user" auth_user
+      on auth_user.id = outcome.seller_user_id
+    order by outcome.closed_at desc, outcome.id desc
+  `);
+
+  const outcomes = result.rows.map<AdminMarketplaceOutcomeRow>((row) => ({
+    outcomeId: text(row.outcome_id),
+    listingId: text(row.listing_id) || null,
+    sourceAssetId: text(row.asset_id) || null,
+    accountUserId: text(row.seller_user_id),
+    sellerLabel: text(row.seller_label) || 'Unknown account',
+    sellerEmail: text(row.seller_email),
+    title: text(row.title) || 'Aim4price advert',
+    sectorKey: sectorKey(row.sector_key),
+    sectorLabel: text(row.sector_label) || 'Uncategorised',
+    reason: outcomeReason(row.outcome_reason),
+    outcomeNote: text(row.outcome_note),
+    aim4priceHelped: row.aim4price_helped === true || text(row.aim4price_helped) === 'true',
+    finalSalePriceExVat: nullableNumber(row.final_sale_price_ex_vat),
+    askingPriceExVat: Math.max(0, number(row.asking_price_ex_vat)),
+    aim4priceValueExVat: Math.max(0, number(row.aim4price_value_ex_vat)),
+    totalViewsAtClose: Math.max(0, Math.round(number(row.total_views_at_close))),
+    accountViewsAtClose: Math.max(0, Math.round(number(row.account_views_at_close))),
+    unknownViewsAtClose: Math.max(0, Math.round(number(row.unknown_views_at_close))),
+    uniqueViewersAtClose: Math.max(0, Math.round(number(row.unique_viewers_at_close))),
+    sourceSurface: text(row.source_surface) === 'showroom' ? 'showroom' : 'marketplace',
+    publishedAtIso: iso(row.published_at) || null,
+    closedAtIso: iso(row.closed_at),
+    actorType: text(row.actor_type) || 'account',
+  }));
+
+  return {
+    generatedAtIso: new Date().toISOString(),
+    metrics: summarizeAdminMarketplaceOutcomes(outcomes),
+    outcomes,
   };
 }
 
