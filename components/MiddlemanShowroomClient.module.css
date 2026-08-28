@@ -92,7 +92,8 @@
 .primaryButton:disabled, .secondaryButton:disabled { opacity: .5; transform: none; cursor: not-allowed; }
 .primaryButton:focus-visible, .secondaryButton:focus-visible, .whatsappButton:focus-visible,
 .listingActions button:focus-visible, .dangerZone button:focus-visible, .deleteConfirmButton:focus-visible,
-.showroomLogoButton:focus-visible, .showroomLogoReset:focus-visible { outline: 3px solid rgba(243,182,64,.55); outline-offset: 2px; }
+.showroomLogoButton:focus-visible, .showroomLogoReset:focus-visible,
+.advertDesignButton:focus-visible { outline: 3px solid rgba(243,182,64,.55); outline-offset: 2px; }
 
 .managerGrid { display: grid; grid-template-columns: minmax(360px, .67fr) minmax(0, 1.08fr); gap: 1.5rem; margin-top: 1.5rem; }
 .settingsCard, .stockCard {
@@ -130,6 +131,13 @@
 .showroomLogoReset:hover:not(:disabled) { color: var(--green); }
 .showroomLogoButton:disabled, .showroomLogoReset:disabled { cursor: wait; opacity: .55; }
 .showroomLogoInput { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }
+
+.advertDesignField { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin: 1rem 0; border: 1px solid #dce8e3; border-radius: 14px; padding: 1rem; background: #fff; }
+.advertDesignField > div { display: grid; gap: .3rem; min-width: 0; }
+.advertDesignField strong { color: #264d42; font-size: .82rem; font-weight: 800; }
+.advertDesignField span { color: #5e746c; font-size: .76rem; line-height: 1.5; }
+.advertDesignButton { display: inline-flex; flex: 0 0 auto; align-items: center; justify-content: center; min-height: 2.65rem; border: 1px solid #c7d9d2; border-radius: 9px; padding: 0 .9rem; color: var(--green); background: #fff; font-size: .72rem; font-weight: 800; text-decoration: none; white-space: nowrap; transition: border-color .16s ease, background .16s ease; }
+.advertDesignButton:hover { border-color: #a9c7bb; background: #f1f8f5; }
 
 .settingsCard > label, .publicLinkField { display: grid; gap: .5rem; margin-top: 1rem; }
 .publicLinkField > label,
@@ -305,6 +313,8 @@
   .settingsCard, .stockCard { border-radius: 18px; padding: 1rem; }
   .sectionHeading { align-items: flex-start; }
   .sectionHeading p { display: none; }
+  .advertDesignField { align-items: stretch; flex-direction: column; }
+  .advertDesignButton { width: 100%; }
   .slugField { grid-template-columns: minmax(0,1fr) auto; }
   .slugPrefix { grid-column: 1/-1; padding: .72rem .85rem 0; }
   .slugField input { padding: 0 .85rem; }
