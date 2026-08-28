@@ -16,7 +16,7 @@ import {
   reopenAssetMaintenanceRecord,
   updateAssetMaintenanceRecord,
 } from '../../../../../../lib/asset-maintenance';
-import { publishAssetRegisterItemToMarketplace, removeAssetRegisterItemFromMarketplace } from '../../../../../../lib/marketplace-db';
+import { publishAssetRegisterItemToMarketplace } from '../../../../../../lib/marketplace-db';
 import { getOwnerAppAccess, ownerAppCan, ownerAppCanAccessAsset } from '../../../../../../lib/owner-app-access';
 
 export const runtime = 'nodejs';
@@ -125,7 +125,10 @@ export async function POST(request: NextRequest, { params }: { params: { assetId
         photos: asset.photos,
       });
     } else if (action === 'marketplace-remove') {
-      await removeAssetRegisterItemFromMarketplace({ userId: access.ownerUserId, assetId: params.assetId });
+      return NextResponse.json({
+        ok: false,
+        error: 'Open Manage advert in Marketplace to record the listing outcome before removing it.',
+      }, { status: 409 });
     } else {
       return NextResponse.json({ ok: false, error: 'Unsupported Owner App action.' }, { status: 400 });
     }
