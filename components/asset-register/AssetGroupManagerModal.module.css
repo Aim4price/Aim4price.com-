@@ -606,24 +606,7 @@
 }
 
 .assetSection {
-  display: flex;
-  min-height: 0;
-  flex: 1 1 auto;
-  flex-direction: column;
   margin-top: 0;
-}
-
-.assetPickerBody {
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-.assetPickerBody .wizardBody {
-  display: flex;
-  min-height: 0;
-  flex: 1 1 auto;
-  flex-direction: column;
 }
 
 .sectionHeading {
@@ -709,42 +692,20 @@
 
 .assetList {
   display: grid;
-  min-height: 9rem;
-  flex: 1 1 auto;
+  grid-auto-rows: max-content;
   align-content: start;
   gap: 12px;
   margin-top: 14px;
-  margin-right: -4px;
-  padding: 1px 10px 2px 1px;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  scrollbar-gutter: stable;
-}
-
-.assetList::-webkit-scrollbar {
-  width: 13px;
-}
-
-.assetList::-webkit-scrollbar-track {
-  margin: 2px 0 5px;
-  border-right: 3px solid transparent;
-  border-left: 3px solid transparent;
-  border-radius: 999px;
-  background: rgba(239, 244, 247, 0.98);
-  background-clip: padding-box;
-}
-
-.assetList::-webkit-scrollbar-thumb {
-  border: 3px solid transparent;
-  border-radius: 999px;
-  background: linear-gradient(180deg, rgba(26, 90, 69, 0.66) 0%, rgba(18, 66, 51, 0.84) 100%);
-  background-clip: padding-box;
 }
 
 .assetRow,
 .assetRowSelected {
   position: relative;
-  overflow: hidden;
+  display: grid;
+  grid-auto-rows: max-content;
+  min-height: 6.1rem;
+  align-content: start;
+  overflow: visible;
   border: 1px solid #c7deed;
   border-radius: 18px;
   background: #fff;
@@ -779,6 +740,7 @@
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   gap: 14px;
+  min-height: 4.15rem;
   align-items: center;
   padding: 0;
   cursor: pointer;
@@ -1024,6 +986,7 @@
 
 .summary {
   display: grid;
+  flex: 0 0 auto;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 4px 20px;
   align-items: center;
@@ -1291,6 +1254,19 @@
   white-space: nowrap;
 }
 
+@media (max-width: 900px) {
+  .assetRowMain {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .assetValue {
+    grid-column: 2;
+    min-width: 0;
+    justify-items: start;
+    text-align: left;
+  }
+}
+
 @media (max-width: 720px) {
   .reportFilters,
   .reportFiltersMaintenance {
@@ -1351,15 +1327,6 @@
     padding-right: 18px;
   }
 
-  .assetPickerBody {
-    display: block;
-    overflow-y: auto;
-  }
-
-  .assetPickerBody .wizardBody {
-    display: grid;
-  }
-
   .assetPickerToolbar {
     grid-template-columns: 1fr;
     align-items: stretch;
@@ -1374,21 +1341,7 @@
   }
 
   .assetList {
-    min-height: 11rem;
-    max-height: min(42dvh, 390px);
-    flex: none;
-    padding-right: 6px;
-  }
-
-  .assetRowMain {
-    grid-template-columns: auto minmax(0, 1fr);
-  }
-
-  .assetValue {
-    grid-column: 2;
-    min-width: 0;
-    justify-items: start;
-    text-align: left;
+    grid-auto-rows: max-content;
   }
 
   .stepCard {
@@ -1480,23 +1433,6 @@
   .saveButton,
   .deleteButton {
     width: 100%;
-  }
-}
-
-@media (min-width: 721px) and (max-height: 720px) {
-  .assetPickerBody {
-    display: block;
-    overflow-y: auto;
-  }
-
-  .assetPickerBody .wizardBody {
-    display: grid;
-  }
-
-  .assetList {
-    min-height: 11rem;
-    max-height: 300px;
-    flex: none;
   }
 }
 
