@@ -153,7 +153,6 @@ export default function DealerRegisterGateway({
           >
             <div className={styles.dealerClientPickerHeader}>
               <div>
-                <span>Client Asset Registers</span>
                 <h2 id="dealer-client-register-title">Choose a client register</h2>
                 <p>Open a complete client Asset Register, then switch between clients from inside the register.</p>
               </div>
@@ -182,7 +181,7 @@ export default function DealerRegisterGateway({
                     <strong>{register.assetCount} {register.assetCount === 1 ? 'asset' : 'assets'}</strong>
                     <small>{money(register.totalValue)} current value</small>
                   </span>
-                  <b>Open</b>
+                  <b style={{ padding: 0, borderRadius: 0, background: 'transparent', color: '#0b6e5b', fontSize: '0.86rem', whiteSpace: 'nowrap' }}>Open register →</b>
                 </Link>
               ))}
 

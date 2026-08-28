@@ -7581,6 +7581,10 @@ export default function AssetRegisterClient({
     [accountProfile, activeRegister],
   );
   const combinedRegisterSwitcherOption = useMemo<AssetRegisterSummary | null>(() => {
+    if (dealerRegisterMode) {
+      return null;
+    }
+
     const savedRegisters = assetRegisters.filter((register) => register.id !== COMBINED_REGISTER_ID);
 
     if (!savedRegisters.length) {
@@ -7610,7 +7614,7 @@ export default function AssetRegisterClient({
       createdAtIso: savedRegisters[0]?.createdAtIso ?? newestUpdatedAt,
       updatedAtIso: newestUpdatedAt,
     };
-  }, [activeRegister, assetRegisters]);
+  }, [activeRegister, assetRegisters, dealerRegisterMode]);
   const registerSwitcherOptions = useMemo(() => {
     const registersById = new Map<string, AssetRegisterSummary>();
 
@@ -7667,8 +7671,11 @@ export default function AssetRegisterClient({
   const canUseOwnerOnlyAssetActions = !isAccountantWorkspace;
   const canManageRegisterStructure = canUseOwnerOnlyAssetActions || isAccountantWorkspace;
   const canManageAssetGroups =
-    canUseOwnerOnlyAssetActions
-    || (!isCombinedRegisterView && Boolean(accountantAccess?.allowDirectUpdates));
+    !dealerRegisterMode
+    && (
+      canUseOwnerOnlyAssetActions
+      || (!isCombinedRegisterView && Boolean(accountantAccess?.allowDirectUpdates))
+    );
   const activeRegisterUnnotedAlertCount = useMemo(() => assetListUnnotedAlertCount(assets), [assets]);
   const registerUnnotedAlertCounts = useMemo(() => {
     const countsByRegisterId = new Map<string, number>();
@@ -15788,6 +15795,16 @@ export default function AssetRegisterClient({
     !isSavingPricingPreview &&
     !pricingPreviewHasUnpreviewedReplacementInput,
   );
+  const savedRegisterTitle = activeRegister?.businessName || buildOwnerName(reportProfile);
+  const registerPageTitle = isLoading
+    ? 'Loading...'
+    : dealerRegisterMode === 'dealer'
+      ? 'Dealer Asset Register'
+      : dealerRegisterMode === 'client'
+        ? /asset register$/i.test(savedRegisterTitle.trim())
+          ? savedRegisterTitle
+          : `${savedRegisterTitle} Asset Register`
+        : savedRegisterTitle;
 
   function renderRevalueLifetimeField(asset: RegisterAsset) {
     if (!shouldShowRevalueLifetimeInput(asset)) {
@@ -15835,12 +15852,7 @@ export default function AssetRegisterClient({
           <div className={styles.registerHeader}>
             <div className={`${styles.registerTitleBlock} ${styles.businessRegisterTitleBlock}`}>
               <div className={styles.businessRegisterTitleCard}>
-                <h1>{isLoading ? 'Loading...' : activeRegister?.businessName || buildOwnerName(reportProfile)}</h1>
-                {dealerRegisterMode ? (
-                  <span className={styles.dealerRegisterContextPill}>
-                    {dealerRegisterMode === 'dealer' ? 'Dealer Asset Register' : 'Client Asset Register'}
-                  </span>
-                ) : null}
+                <h1>{registerPageTitle}</h1>
                 {canOpenRegisterSwitcher ? (
                   <button
                     type="button"
@@ -16853,26 +16865,25 @@ export default function AssetRegisterClient({
                               <ChangeRegisterIcon className={styles.assetRegisterMoveIcon} />
                             </button>
 
-                            <button
-                              type="button"
-                              className={`${styles.assetGroupButton} ${styles.controlTooltip} ${assetGroup || isResolvedCombinedGroup ? styles.assetGroupButtonActive : ''}`}
-                              onClick={() => openAssetGroupManager(asset)}
-                              disabled={!canManageAssetGroups}
-                              aria-label={assetGroup
-                                ? `Manage the umbrella containing ${asset.title}`
-                                : isResolvedCombinedGroup
-                                  ? `Open the combined umbrella containing ${asset.title}`
-                                  : `Create an umbrella with ${asset.title}`}
-                              data-tooltip={canManageAssetGroups
-                                ? assetGroup
+                            {canManageAssetGroups ? (
+                              <button
+                                type="button"
+                                className={`${styles.assetGroupButton} ${styles.controlTooltip} ${assetGroup || isResolvedCombinedGroup ? styles.assetGroupButtonActive : ''}`}
+                                onClick={() => openAssetGroupManager(asset)}
+                                aria-label={assetGroup
+                                  ? `Manage the umbrella containing ${asset.title}`
+                                  : isResolvedCombinedGroup
+                                    ? `Open the combined umbrella containing ${asset.title}`
+                                    : `Create an umbrella with ${asset.title}`}
+                                data-tooltip={assetGroup
                                   ? 'Manage umbrella'
                                   : isResolvedCombinedGroup
                                     ? 'Open combined umbrella'
-                                    : 'Create umbrella'
-                                : 'Umbrella unavailable'}
-                            >
-                              <UmbrellaIcon className={styles.assetGroupButtonIcon} />
-                            </button>
+                                    : 'Create umbrella'}
+                              >
+                                <UmbrellaIcon className={styles.assetGroupButtonIcon} />
+                              </button>
+                            ) : null}
                           </div>
                         ) : null}
                         <div className={styles.assetHeader}>
