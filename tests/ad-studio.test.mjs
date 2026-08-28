@@ -371,19 +371,18 @@ test('showroom manager follows the approved no-bubble layout with consistent lin
   assert.match(manager, /className=\{styles\.copyLinkButton\}/);
   assert.match(manager, /Showroom visible to the public/);
   assert.match(manager, /Save changes/);
-  assert.match(manager, /className=\{styles\.emptyStockIllustration\}/);
   assert.match(manager, /Your showroom is ready/);
   assert.match(manager, /Create your first advert and it will appear here automatically\./);
   assert.doesNotMatch(managerCss, /\.eyebrow\s*\{/);
   assert.doesNotMatch(managerCss, /\.sectionIcon(?:\s|,|\{)/);
   assert.match(managerCss, /\.managerGrid\s*\{[^}]*grid-template-columns:\s*minmax\(360px, \.67fr\) minmax\(0, 1\.08fr\)/);
   assert.match(managerCss, /\.copyLinkButton\s*\{/);
-  assert.match(managerCss, /\.emptyStockIllustration\s*\{/);
   assert.match(managerCss, /\.slugField\s*\{[^}]*font-family:\s*'Montserrat'/);
   assert.match(managerCss, /\.slugPrefix\s*\{[^}]*font:\s*inherit/);
   assert.match(managerCss, /\.slugField input\s*\{[^}]*font:\s*inherit/);
-  assert.match(manager, /className=\{styles\.emptyStockMachine\}/);
-  assert.match(managerCss, /\.emptyStockIllustration \.emptyStockMachineFill/);
+  assert.doesNotMatch(manager, /emptyStockIllustration|emptyStockMachine/);
+  assert.doesNotMatch(managerCss, /\.emptyStockIllustration|\.emptyStockMachine/);
+  assert.match(managerCss, /\.emptyStock\s*\{[^}]*align-content:\s*center/);
 });
 
 test('the global footer yields to the dedicated public showroom footer', async () => {

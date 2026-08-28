@@ -274,21 +274,6 @@ export function MiddlemanShowroomManager({
             </div>
           ) : (
             <div className={styles.emptyStock}>
-              <svg className={styles.emptyStockIllustration} viewBox="0 0 320 170" aria-hidden="true">
-                <path className={styles.emptyStockGround} d="M35 145h250" />
-                <g className={styles.emptyStockMachine}>
-                  <circle cx="106" cy="119" r="31" />
-                  <circle cx="106" cy="119" r="12" />
-                  <circle cx="239" cy="126" r="22" />
-                  <circle cx="239" cy="126" r="8" />
-                  <path className={styles.emptyStockMachineFill} d="M128 89h65l21 34h-79c-1-13-6-24-15-32l8-2Z" />
-                  <path className={styles.emptyStockMachineFill} d="M137 82l13-45h43l20 52h-76Z" />
-                  <path d="M151 37h42l17 45h-73l14-45ZM172 38v44M142 59h59" />
-                  <path className={styles.emptyStockMachineFill} d="M195 89h47l31 27v10h-12c0-12-10-22-22-22s-22 10-22 22h-4c0-15-6-29-18-37Z" />
-                  <path d="M203 98h42l27 20M218 89V67h15M214 67h23" />
-                  <path d="M137 82h-25l-10 7M134 123h83M221 139h-89" />
-                </g>
-              </svg>
               <h3>Your showroom is ready</h3>
               <p>Create your first advert and it will appear here automatically.</p>
               <Link className={styles.primaryButton} href={valuationHref}><span aria-hidden="true">+</span> Create an advert</Link>
