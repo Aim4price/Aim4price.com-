@@ -32,7 +32,13 @@ export default async function DealerShowroomPage() {
   });
   return (
     <div className={styles.module}>
-      <MiddlemanShowroomManager initialShowroom={showroom} initialListings={listings} dealerAppMode />
+      <MiddlemanShowroomManager
+        initialShowroom={showroom}
+        initialListings={listings}
+        dealerAppMode
+        advertDesign="saved-brand"
+        advertDesignHref={!dealerAppSession || dealerAppSession.role === 'owner' ? '/dealer/ad-studio' : null}
+      />
     </div>
   );
 }
