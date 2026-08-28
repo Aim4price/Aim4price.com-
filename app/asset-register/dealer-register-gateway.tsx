@@ -24,6 +24,15 @@ function money(value: number): string {
   }).format(Number(value) || 0);
 }
 
+function CloseIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden="true">
+      <path d="m6 6 12 12" />
+      <path d="m18 6-12 12" />
+    </svg>
+  );
+}
+
 function registerHref(register: DealerRegisterOption, view: 'dealer' | 'client', workspacePath: string): string {
   const params = new URLSearchParams({
     dealerView: view,
@@ -151,12 +160,19 @@ export default function DealerRegisterGateway({
             aria-modal="true"
             aria-labelledby="dealer-client-register-title"
           >
-            <div className={styles.dealerClientPickerHeader}>
-              <div>
-                <h2 id="dealer-client-register-title">Choose a client register</h2>
+            <div className={`${styles.modalHeader} ${styles.dealerClientPickerHeader}`}>
+              <div className={styles.modalHeaderText}>
+                <h3 id="dealer-client-register-title">Choose a client register</h3>
                 <p>Open a complete client Asset Register, then switch between clients from inside the register.</p>
               </div>
-              <button type="button" onClick={closeClientPicker} aria-label="Close client Asset Register picker">×</button>
+              <button
+                type="button"
+                className={styles.modalCloseButton}
+                onClick={closeClientPicker}
+                aria-label="Close client register picker"
+              >
+                <CloseIcon className={styles.buttonIcon} />
+              </button>
             </div>
 
             <label className={styles.dealerClientPickerSearch}>
@@ -181,7 +197,7 @@ export default function DealerRegisterGateway({
                     <strong>{register.assetCount} {register.assetCount === 1 ? 'asset' : 'assets'}</strong>
                     <small>{money(register.totalValue)} current value</small>
                   </span>
-                  <b style={{ padding: 0, borderRadius: 0, background: 'transparent', color: '#0b6e5b', fontSize: '0.86rem', whiteSpace: 'nowrap' }}>Open register →</b>
+                  <b>Open register <span aria-hidden="true">→</span></b>
                 </Link>
               ))}
 
@@ -194,8 +210,8 @@ export default function DealerRegisterGateway({
             </div>
 
             <div className={styles.dealerClientPickerFooter}>
-              <button type="button" onClick={closeClientPicker}>Cancel</button>
-              <Link href={registerManagementHref}>Manage or create registers</Link>
+              <button type="button" className={styles.secondaryButton} onClick={closeClientPicker}>Cancel</button>
+              <Link href={registerManagementHref} className={styles.primaryButton}>Manage or create registers</Link>
             </div>
           </section>
         </div>

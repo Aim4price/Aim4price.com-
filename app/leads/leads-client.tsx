@@ -3060,14 +3060,6 @@ export default function LeadsClient({
     });
   }
 
-  function selectAssetPhoto(index: number) {
-    setAssetPhotoModal((current) => (
-      current
-        ? { ...current, index: Math.min(Math.max(index, 0), current.urls.length - 1) }
-        : current
-    ));
-  }
-
   function openSentPhotoModal(lead: AssetLead, urls: string[], index: number) {
     if (!urls.length) return;
 
@@ -3093,14 +3085,6 @@ export default function LeadsClient({
         index: (current.index + direction + current.urls.length) % current.urls.length,
       };
     });
-  }
-
-  function selectSentPhoto(index: number) {
-    setSentPhotoModal((current) => (
-      current
-        ? { ...current, index: Math.min(Math.max(index, 0), current.urls.length - 1) }
-        : current
-    ));
   }
 
   function renderLeadAssetStatusMark(value: AssetStatusChoice) {
@@ -4710,66 +4694,59 @@ export default function LeadsClient({
 
       {typeof document !== 'undefined' && assetPhotoModal && assetPhotoModalUrl
         ? createPortal(
-          <div className={`${assetStyles.modalOverlay} ${dealerWorkspaceClass(workspaceStyles.modalOverlay)} ${styles.leadPhotoModalOverlay} ${styles.assetPhotoModalOverlay}`}>
-          <div className={assetStyles.modalBackdrop} onClick={closeAssetPhotoModal} />
+          <div className={`${assetStyles.modalOverlay} ${assetStyles.photoViewerOverlay}`}>
+            <div className={assetStyles.modalBackdrop} onClick={closeAssetPhotoModal} />
 
-          <div className={`${styles.leadPhotoModal} ${styles.assetPhotoModal}`} role="dialog" aria-modal="true" aria-labelledby="asset-photo-modal-title">
-            <div className={styles.leadPhotoModalHeader}>
-              <div>
-                <strong id="asset-photo-modal-title">Asset photos</strong>
-                <span>{assetPhotoModal.title} · {assetPhotoModalIndex + 1} of {assetPhotoModal.urls.length}</span>
-              </div>
-
-              <button type="button" className={styles.leadPhotoModalCloseButton} onClick={closeAssetPhotoModal} aria-label="Close asset photos">
+            <div
+              className={assetStyles.photoViewerModal}
+              role="dialog"
+              aria-modal="true"
+              aria-label={`${assetPhotoModal.title} photo viewer`}
+              onClick={(event) => event.stopPropagation()}
+            >
+              <button
+                type="button"
+                className={assetStyles.photoViewerCloseButton}
+                onClick={closeAssetPhotoModal}
+                aria-label="Close photo viewer"
+              >
                 <CloseIcon className={assetStyles.buttonIcon} />
               </button>
-            </div>
 
-            <div className={styles.leadPhotoModalBody}>
-              <div className={styles.leadPhotoModalFrame}>
-                <img src={assetPhotoModalUrl} alt={`${assetPhotoModal.title} asset photo ${assetPhotoModalIndex + 1}`} />
+              <div className={assetStyles.photoViewerStage}>
+                <img
+                  src={assetPhotoModalUrl}
+                  alt={`${assetPhotoModal.title} photo ${assetPhotoModalIndex + 1}`}
+                  className={assetStyles.photoViewerImage}
+                />
 
                 {hasMultipleAssetPhotos ? (
                   <>
                     <button
                       type="button"
-                      className={`${styles.leadPhotoModalNavButton} ${styles.leadPhotoModalNavPrevious}`}
+                      className={`${assetStyles.photoViewerNavButton} ${assetStyles.photoViewerNavPrev}`}
                       onClick={() => cycleAssetPhotoModal(-1)}
-                      aria-label="Show previous asset photo"
+                      aria-label="Show previous photo"
                     >
                       <ChevronLeftIcon className={assetStyles.buttonIcon} />
                     </button>
 
                     <button
                       type="button"
-                      className={`${styles.leadPhotoModalNavButton} ${styles.leadPhotoModalNavNext}`}
+                      className={`${assetStyles.photoViewerNavButton} ${assetStyles.photoViewerNavNext}`}
                       onClick={() => cycleAssetPhotoModal(1)}
-                      aria-label="Show next asset photo"
+                      aria-label="Show next photo"
                     >
                       <ChevronRightIcon className={assetStyles.buttonIcon} />
                     </button>
+
+                    <div className={assetStyles.photoViewerCounter}>
+                      {assetPhotoModalIndex + 1} / {assetPhotoModal.urls.length}
+                    </div>
                   </>
                 ) : null}
               </div>
-
-              {hasMultipleAssetPhotos ? (
-                <div className={styles.leadPhotoModalThumbRow} aria-label="Asset photo thumbnails">
-                  {assetPhotoModal.urls.map((url, index) => (
-                    <button
-                      type="button"
-                      key={`${assetPhotoModal.leadId}-asset-photo-${index}`}
-                      className={`${styles.leadPhotoModalThumbButton} ${index === assetPhotoModalIndex ? styles.leadPhotoModalThumbButtonActive : ''}`}
-                      onClick={() => selectAssetPhoto(index)}
-                      aria-label={`Show asset photo ${index + 1}`}
-                      aria-current={index === assetPhotoModalIndex ? 'true' : undefined}
-                    >
-                      <img src={url} alt="" />
-                    </button>
-                  ))}
-                </div>
-              ) : null}
             </div>
-          </div>
           </div>,
           document.body,
         )
@@ -4777,66 +4754,59 @@ export default function LeadsClient({
 
       {typeof document !== 'undefined' && sentPhotoModal && sentPhotoModalUrl
         ? createPortal(
-          <div className={`${assetStyles.modalOverlay} ${dealerWorkspaceClass(workspaceStyles.modalOverlay)} ${styles.leadPhotoModalOverlay} ${styles.sentPhotoModalOverlay}`}>
-          <div className={assetStyles.modalBackdrop} onClick={closeSentPhotoModal} />
+          <div className={`${assetStyles.modalOverlay} ${assetStyles.photoViewerOverlay}`}>
+            <div className={assetStyles.modalBackdrop} onClick={closeSentPhotoModal} />
 
-          <div className={`${styles.leadPhotoModal} ${styles.sentPhotoModal}`} role="dialog" aria-modal="true" aria-labelledby="sent-photo-modal-title">
-            <div className={styles.leadPhotoModalHeader}>
-              <div>
-                <strong id="sent-photo-modal-title">Sent photos</strong>
-                <span>{sentPhotoModal.title} · {sentPhotoModalIndex + 1} of {sentPhotoModal.urls.length}</span>
-              </div>
-
-              <button type="button" className={styles.leadPhotoModalCloseButton} onClick={closeSentPhotoModal} aria-label="Close sent photos">
+            <div
+              className={assetStyles.photoViewerModal}
+              role="dialog"
+              aria-modal="true"
+              aria-label={`${sentPhotoModal.title} photo viewer`}
+              onClick={(event) => event.stopPropagation()}
+            >
+              <button
+                type="button"
+                className={assetStyles.photoViewerCloseButton}
+                onClick={closeSentPhotoModal}
+                aria-label="Close photo viewer"
+              >
                 <CloseIcon className={assetStyles.buttonIcon} />
               </button>
-            </div>
 
-            <div className={styles.leadPhotoModalBody}>
-              <div className={`${styles.leadPhotoModalFrame} ${styles.sentPhotoModalFrame}`}>
-                <img src={sentPhotoModalUrl} alt={`${sentPhotoModal.title} sent photo ${sentPhotoModalIndex + 1}`} />
+              <div className={assetStyles.photoViewerStage}>
+                <img
+                  src={sentPhotoModalUrl}
+                  alt={`${sentPhotoModal.title} photo ${sentPhotoModalIndex + 1}`}
+                  className={assetStyles.photoViewerImage}
+                />
 
                 {hasMultipleSentPhotos ? (
                   <>
                     <button
                       type="button"
-                      className={`${styles.leadPhotoModalNavButton} ${styles.leadPhotoModalNavPrevious}`}
+                      className={`${assetStyles.photoViewerNavButton} ${assetStyles.photoViewerNavPrev}`}
                       onClick={() => cycleSentPhotoModal(-1)}
-                      aria-label="Show previous sent photo"
+                      aria-label="Show previous photo"
                     >
                       <ChevronLeftIcon className={assetStyles.buttonIcon} />
                     </button>
 
                     <button
                       type="button"
-                      className={`${styles.leadPhotoModalNavButton} ${styles.leadPhotoModalNavNext}`}
+                      className={`${assetStyles.photoViewerNavButton} ${assetStyles.photoViewerNavNext}`}
                       onClick={() => cycleSentPhotoModal(1)}
-                      aria-label="Show next sent photo"
+                      aria-label="Show next photo"
                     >
                       <ChevronRightIcon className={assetStyles.buttonIcon} />
                     </button>
+
+                    <div className={assetStyles.photoViewerCounter}>
+                      {sentPhotoModalIndex + 1} / {sentPhotoModal.urls.length}
+                    </div>
                   </>
                 ) : null}
               </div>
-
-              {hasMultipleSentPhotos ? (
-                <div className={styles.leadPhotoModalThumbRow} aria-label="Sent photo thumbnails">
-                  {sentPhotoModal.urls.map((url, index) => (
-                    <button
-                      type="button"
-                      key={`${sentPhotoModal.leadId}-sent-photo-${index}`}
-                      className={`${styles.leadPhotoModalThumbButton} ${index === sentPhotoModalIndex ? styles.leadPhotoModalThumbButtonActive : ''}`}
-                      onClick={() => selectSentPhoto(index)}
-                      aria-label={`Show sent photo ${index + 1}`}
-                      aria-current={index === sentPhotoModalIndex ? 'true' : undefined}
-                    >
-                      <img src={url} alt="" />
-                    </button>
-                  ))}
-                </div>
-              ) : null}
             </div>
-          </div>
           </div>,
           document.body,
         )

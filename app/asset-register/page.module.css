@@ -39212,13 +39212,14 @@ button.documentOpenLink {
 .dealerClientPickerHeader {
   display: flex;
   gap: 24px;
-  padding: 26px 28px 20px;
+  padding: 0 0 1rem;
   border-bottom: 1px solid #dfece8;
   justify-content: space-between;
+  margin-bottom: 0;
 }
 
-.dealerClientPickerHeader h2 {
-  margin: 6px 0 7px;
+.dealerClientPickerHeader h3 {
+  margin: 0 0 7px;
   color: #073e3b;
   font-size: 1.65rem;
 }
@@ -39228,21 +39229,14 @@ button.documentOpenLink {
   color: #607572;
 }
 
-.dealerClientPickerHeader > button {
-  width: 42px;
-  height: 42px;
-  border: 1px solid #cbded9;
-  border-radius: 12px;
-  background: #ffffff;
-  color: #234d49;
-  font-size: 1.55rem;
-  cursor: pointer;
+.dealerClientPickerHeader > .modalCloseButton {
+  flex: 0 0 auto;
 }
 
 .dealerClientPickerSearch {
   display: grid;
   gap: 7px;
-  padding: 20px 28px 12px;
+  padding: 1rem 0 0.75rem;
   color: #365b57;
   font-size: 0.78rem;
   font-weight: 800;
@@ -39259,11 +39253,17 @@ button.documentOpenLink {
   font-size: 0.95rem;
 }
 
+.dealerClientPickerSearch input:focus {
+  outline: none;
+  border-color: #8dbddd;
+  box-shadow: 0 0 0 4px rgba(71, 145, 195, 0.14);
+}
+
 .dealerClientRegisterList {
   display: grid;
   gap: 10px;
   max-height: 430px;
-  padding: 10px 28px 24px;
+  padding: 0.5rem 0 1rem;
   overflow-y: auto;
 }
 
@@ -39301,11 +39301,14 @@ button.documentOpenLink {
 }
 
 .dealerClientRegisterRow > b {
-  padding: 9px 13px;
-  border-radius: 10px;
-  background: #0b6e5b;
-  color: #ffffff;
-  font-size: 0.82rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0;
+  color: #0b6e5b;
+  background: transparent;
+  font-size: 0.86rem;
+  white-space: nowrap;
 }
 
 .dealerClientRegisterEmpty {
@@ -39325,30 +39328,11 @@ button.documentOpenLink {
 .dealerClientPickerFooter {
   display: flex;
   gap: 12px;
-  padding: 18px 28px;
+  margin: 0 -1.2rem -1.2rem;
+  padding: 1rem 1.2rem;
   border-top: 1px solid #dfece8;
   background: #f8fbfa;
   justify-content: flex-end;
-}
-
-.dealerClientPickerFooter button,
-.dealerClientPickerFooter a {
-  min-height: 44px;
-  padding: 0 17px;
-  border: 1px solid #bcd4ce;
-  border-radius: 11px;
-  background: #ffffff;
-  color: #174d46;
-  font-weight: 850;
-  text-decoration: none;
-  cursor: pointer;
-}
-
-.dealerClientPickerFooter a {
-  display: inline-flex;
-  background: #0b6e5b;
-  color: #ffffff;
-  align-items: center;
 }
 
 @media (max-width: 760px) {
