@@ -637,6 +637,19 @@ test('Owner showroom JPEGs stay standard while Dealer and Middleman Brand Kits r
   const branded = marketplaceListingToAdContent(listing);
   const standard = marketplaceListingToAdContent(listing, { design: 'aim4price-marketplace' });
   const ownerStandard = marketplaceListingToAdContent({ ...listing, adBrand: undefined });
+  const unavailableYearStandard = marketplaceListingToAdContent(
+    { ...listing, yearModel: 0, adBrand: undefined },
+    { design: 'aim4price-marketplace' },
+  );
+  const knownYearStandard = marketplaceListingToAdContent(
+    { ...listing, yearModel: 2020, adBrand: undefined },
+    { design: 'aim4price-marketplace' },
+  );
+  const longTitle = '6-8 Ton Bulk Hopper Bin Trailer With Hydraulic Door';
+  const longTitleStandard = marketplaceListingToAdContent(
+    { ...listing, title: longTitle, yearModel: 0, adBrand: undefined },
+    { design: 'aim4price-marketplace' },
+  );
 
   assert.match(manager, /advertDesign = 'aim4price-marketplace'/);
   assert.match(manager, /const usesSavedBrandDesign = advertDesign === 'saved-brand'/);
@@ -649,6 +662,9 @@ test('Owner showroom JPEGs stay standard while Dealer and Middleman Brand Kits r
   assert.match(rendererSource, /content\.design === 'aim4price-marketplace'[\s\S]*?renderAim4priceStandardCanvas/);
   assert.match(rendererSource, /drawAim4priceStandardDetail\(context, 'Year'/);
   assert.match(rendererSource, /drawAim4priceStandardDetail\(context, 'Condition'/);
+  assert.match(rendererSource, /const thumbGap = 14/);
+  assert.match(rendererSource, /const photoRowGap = 16/);
+  assert.match(rendererSource, /const detailGap = 12/);
   assert.equal(branded.brand.templateId, 'minimal');
   assert.equal(branded.brand.primaryColor, customBrand.primaryColor);
   assert.equal(branded.design, 'saved-brand');
@@ -667,13 +683,19 @@ test('Owner showroom JPEGs stay standard while Dealer and Middleman Brand Kits r
   assert.equal(ownerStandard.design, 'aim4price-marketplace');
   assert.equal(ownerStandard.brand.name, 'Aim4price standard');
   assert.equal(ownerStandard.brand.templateId, 'showcase');
+  assert.equal(unavailableYearStandard.year, 'N/A');
+  assert.equal(knownYearStandard.year, '2020');
 
   const drawnText = [];
+  const drawnCalls = [];
   const gradient = { addColorStop() {} };
   const drawingContext = new Proxy({
     createLinearGradient: () => gradient,
-    measureText: (value) => ({ width: String(value).length * 10 }),
-    fillText: (value) => drawnText.push(String(value)),
+    measureText: (value) => ({ width: String(value).length * 18 }),
+    fillText: (value, x, y) => {
+      drawnText.push(String(value));
+      drawnCalls.push({ value: String(value), x, y });
+    },
   }, {
     get(target, property) {
       if (property in target) return target[property];
@@ -685,13 +707,21 @@ test('Owner showroom JPEGs stay standard while Dealer and Middleman Brand Kits r
     },
   });
   const canvas = { width: 0, height: 0, getContext: () => drawingContext };
-  const renderedTemplate = await renderMarketplaceAdCanvas(canvas, ownerStandard, { includeImages: false });
+  const renderedTemplate = await renderMarketplaceAdCanvas(canvas, longTitleStandard, { includeImages: false });
   assert.equal(renderedTemplate, 'showcase');
   assert.equal(canvas.width, 1600);
   assert.equal(canvas.height, 900);
   assert.ok(drawnText.includes('Aim4price'));
   assert.ok(drawnText.includes('Year'));
   assert.ok(drawnText.includes('Condition'));
+  assert.ok(drawnText.includes('N/A'));
+  assert.ok(!drawnText.includes('0'));
+  const titleLines = drawnCalls
+    .filter((call) => call.x === 1010 && (call.y === 252 || call.y === 296))
+    .map((call) => call.value);
+  assert.ok(titleLines.length >= 2);
+  assert.equal(titleLines.join(' '), longTitle);
+  assert.ok(titleLines.every((line) => drawingContext.measureText(line).width <= 526));
 });
 
 test('showroom logos inherit Ad Studio branding and allow a compact showroom-only override', async () => {
