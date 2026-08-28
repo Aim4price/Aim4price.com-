@@ -363,6 +363,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
   const requestSequence = useRef(0);
   const summaryViewportRef = useRef<HTMLDivElement | null>(null);
   const modalRef = useRef<HTMLElement | null>(null);
+  const uploadWizardBodyRef = useRef<HTMLDivElement | null>(null);
   const assetPickerModalRef = useRef<HTMLElement | null>(null);
   const filterModalRef = useRef<HTMLElement | null>(null);
   const deleteModalRef = useRef<HTMLElement | null>(null);
@@ -516,6 +517,14 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
       returnFocusRef.current?.focus();
     };
   }, [documentPendingDelete, modalMode, showAssetPicker, showFilters]);
+
+  useEffect(() => {
+    if (modalMode !== 'upload' || showAssetPicker) return undefined;
+    const scrollFrame = window.requestAnimationFrame(() => {
+      uploadWizardBodyRef.current?.scrollTo({ top: 0, left: 0 });
+    });
+    return () => window.cancelAnimationFrame(scrollFrame);
+  }, [modalMode, showAssetPicker, uploadStep]);
 
   const filteredDocuments = useMemo(() => {
     const needle = search.trim().toLowerCase();
@@ -1387,7 +1396,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
             </header>
 
             <form onSubmit={submitDocument} className={styles.modalForm}>
-              <div className={`${styles.modalScroll} ${modalMode === 'upload' ? wizardStyles.body : ''}`}>
+              <div ref={modalMode === 'upload' ? uploadWizardBodyRef : undefined} className={`${styles.modalScroll} ${modalMode === 'upload' ? wizardStyles.body : ''}`}>
                 {modalNotice ? (
                   <div className={styles.modalNotice} role="alert">
                     <Icon name="info" />

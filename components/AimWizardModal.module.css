@@ -15,6 +15,8 @@
   flex-direction: column;
   width: min(1120px, 100%) !important;
   max-height: min(880px, calc(100dvh - 48px)) !important;
+  margin: 0 !important;
+  padding: 0 !important;
   overflow: hidden;
   border: 1px solid rgba(42, 93, 82, 0.18) !important;
   border-radius: 30px !important;
@@ -31,10 +33,13 @@
 }
 
 .dialog .header {
+  box-sizing: border-box;
   display: flex !important;
   flex: 0 0 auto;
+  width: 100%;
   gap: 18px;
   align-items: center !important;
+  margin: 0 !important;
   padding: 28px 36px 24px !important;
   border-bottom: 1px solid #d9e8e2 !important;
   background: #ffffff !important;
@@ -107,11 +112,14 @@
 }
 
 .dialog .body {
+  box-sizing: border-box;
   display: grid;
   flex: 1 1 auto;
+  width: 100%;
   min-height: 0;
   align-content: start;
   gap: 0 !important;
+  margin: 0 !important;
   overflow-y: auto;
   overscroll-behavior: contain;
   padding: 26px 36px 30px !important;
@@ -305,9 +313,11 @@
 }
 
 .dialog .footer {
+  box-sizing: border-box;
   min-height: 84px;
   display: flex;
   flex: 0 0 auto;
+  width: 100%;
   align-items: center;
   justify-content: flex-end !important;
   gap: 14px !important;
@@ -369,6 +379,86 @@
 .dialog .closeButton:disabled {
   cursor: not-allowed;
   opacity: 0.55;
+}
+
+/* Keep the umbrella rhythm while reserving enough room for form content on
+   common laptop-height viewports. */
+@media (min-width: 721px) and (max-height: 900px) {
+  .overlay {
+    padding: 16px;
+  }
+
+  .dialog {
+    max-height: calc(100dvh - 32px) !important;
+  }
+
+  .dialog .header {
+    padding-top: 22px !important;
+    padding-bottom: 18px !important;
+  }
+
+  .dialog .header h2 {
+    font-size: clamp(27px, 3.4vw, 35px) !important;
+  }
+
+  .dialog .closeButton {
+    width: 50px !important;
+    min-width: 50px;
+    height: 50px !important;
+    flex-basis: 50px;
+  }
+
+  .dialog .body {
+    padding-top: 20px !important;
+    padding-bottom: 22px !important;
+  }
+
+  .intro {
+    font-size: 15px;
+    line-height: 1.48;
+  }
+
+  .progress {
+    margin-top: 18px !important;
+  }
+
+  .progressItem > span {
+    width: 40px !important;
+    height: 40px !important;
+    flex-basis: 40px;
+  }
+
+  .progressItem > strong {
+    font-size: 13px !important;
+  }
+
+  .dialog .panel {
+    gap: 16px !important;
+    margin-top: 18px;
+    padding: 20px 24px !important;
+  }
+
+  .panelNumber {
+    width: 42px;
+    height: 42px;
+    border-radius: 14px;
+    font-size: 16px;
+  }
+
+  .panelHeading h3 {
+    font-size: 18px !important;
+  }
+
+  .dialog .footer {
+    min-height: 72px;
+    padding-top: 12px !important;
+    padding-bottom: max(16px, env(safe-area-inset-bottom)) !important;
+  }
+
+  .dialog .secondaryAction,
+  .dialog .primaryAction {
+    min-height: 46px !important;
+  }
 }
 
 @media (max-width: 720px) {
