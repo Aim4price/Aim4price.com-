@@ -1,8 +1,19 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
+import ts from 'typescript';
 
 const read = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
+
+async function loadTypeScriptModule(path) {
+  const source = await read(path);
+  const output = ts.transpileModule(source, {
+    compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
+  }).outputText;
+  const module = { exports: {} };
+  new Function('exports', 'module', 'Buffer', output)(module.exports, module, Buffer);
+  return module.exports;
+}
 
 const AD_TEMPLATE_IDS = [
   'showcase',
@@ -318,6 +329,8 @@ test('dealer showrooms are standard, valuation-backed and reuse the Marketplace 
   assert.match(showroomDb, /function assertDealerProfile/);
   assert.doesNotMatch(showroomDb, /isMiddlemanAccountSubtype/);
   assert.match(publicPage, /sellerUserId: showroom\.userId/);
+  assert.match(publicPage, /cache\(getPublicMiddlemanShowroomBySlug\)/);
+  assert.equal(publicPage.match(/getCachedPublicShowroom\(slug\)/g)?.length, 2);
   assert.match(manager, /Value and create advert/);
   assert.match(manager, /<MarketplaceClient/);
   assert.match(manager, /initialListings=\{listings\}/);
@@ -386,32 +399,39 @@ test('showroom manager follows the approved no-bubble layout with consistent lin
 });
 
 test('showroom logos inherit Ad Studio branding and allow a compact showroom-only override', async () => {
-  const [showroomDb, route, manager, managerCss, migration] = await Promise.all([
+  const [showroomDb, studioDb, validation, route, manager, managerCss, migration] = await Promise.all([
     read('lib/middleman-showroom-db.ts'),
+    read('lib/ad-studio-db.ts'),
+    read('lib/showroom-logo-validation.ts'),
     read('app/api/middleman-showroom/route.ts'),
     read('components/MiddlemanShowroomClient.tsx'),
     read('components/MiddlemanShowroomClient.module.css'),
     read('database/migrations/97-middleman-showroom-logo.sql'),
   ]);
 
-  assert.match(showroomDb, /getAdBrandKitForUser\(profile\.userId\)/);
+  assert.match(studioDb, /export async function getAdBrandLogoForUser/);
+  assert.match(studioDb, /select logo_url[\s\S]*order by is_default desc, updated_at desc/);
+  assert.match(showroomDb, /getAdBrandLogoForUser\(profile\.userId\)/);
   assert.match(showroomDb, /showroomLogoUrl: normalizeAdLogoUrl\(row\.logo_url\)/);
-  assert.match(showroomDb, /inheritedLogoUrl: normalizeAdLogoUrl\(brandKit\?\.logoUrl\) \|\| normalizeAdLogoUrl\(profile\.logoUrl\)/);
-  assert.match(showroomDb, /logoUrl: showroomLogoUrl \|\| inheritedLogoUrl/);
+  assert.match(showroomDb, /inheritedLogoUrl: await getAdBrandLogoForUser\(profile\.userId\) \|\| normalizeAdLogoUrl\(profile\.logoUrl\)/);
+  assert.match(showroomDb, /const logoUrl = showroomLogoUrl\s*\|\| await getAdBrandLogoForUser/);
   assert.match(showroomDb, /export type PublicMiddlemanShowroomData = MiddlemanShowroomDetails/);
   assert.match(showroomDb, /function mapPublicShowroom/);
   assert.doesNotMatch(showroomDb.match(/export type MiddlemanShowroom =[^;]+;/s)?.[0] ?? '', /logoUrl:/);
   assert.match(showroomDb, /logo_url = \$5/);
   assert.match(showroomDb, /current\.showroomLogoUrl/);
-  assert.match(showroomDb, /function pngDimensions/);
-  assert.match(showroomDb, /function jpegDimensions/);
-  assert.match(showroomDb, /function webpDimensions/);
-  assert.match(showroomDb, /function validateShowroomLogoUrl/);
-  assert.match(showroomDb, /bytes\.length > MAX_SHOWROOM_LOGO_BYTES/);
-  assert.match(showroomDb, /dimensions\.width > MAX_SHOWROOM_LOGO_DIMENSION/);
+  assert.match(showroomDb, /validateShowroomLogoDataUrl\(requestedLogoUrl\)/);
+  assert.match(validation, /function pngDimensions/);
+  assert.match(validation, /function jpegDimensions/);
+  assert.match(validation, /function webpDimensions/);
+  assert.match(validation, /export function validateShowroomLogoDataUrl/);
+  assert.match(validation, /bytes\.length > MAX_SHOWROOM_LOGO_BYTES/);
+  assert.match(validation, /dimensions\.width > MAX_SHOWROOM_LOGO_DIMENSION/);
+  assert.match(validation, /return `data:image\/\$\{mediaType\};base64,\$\{canonicalBase64\}`/);
   assert.match(migration, /add column if not exists logo_url text/);
   assert.match(route, /logoUrl\?: unknown/);
   assert.match(route, /body\.logoUrl === null \? null : undefined/);
+  assert.match(route, /isDealerAppSession\(session\) && !dealerRoleCan\(session\.dealerApp\.role, 'showroom'\)/);
 
   assert.match(manager, /const SHOWROOM_LOGO_TYPES = new Set\(\['image\/jpeg', 'image\/png', 'image\/webp'\]\)/);
   assert.match(manager, /const MAX_SHOWROOM_LOGO_BYTES = 2_000_000/);
@@ -431,6 +451,24 @@ test('showroom logos inherit Ad Studio branding and allow a compact showroom-onl
   assert.match(managerCss, /\.showroomLogoButton[^}]*min-height:\s*2\.45rem/);
   assert.match(managerCss, /\.showroomLogoReset\s*\{[^}]*min-height:\s*2rem/);
   assert.doesNotMatch(managerCss, /\.showroomLogoPreview\s*\{[^}]*width:\s*100%/);
+});
+
+test('showroom logo validation accepts real images and rejects malformed, oversized and oversized-dimension files', async () => {
+  const { validateShowroomLogoDataUrl } = await loadTypeScriptModule('lib/showroom-logo-validation.ts');
+  const png = 'iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAAFElEQVR4nGMUiXL7z8DAwMDEAAUAGTYBtxz8IUMAAAAASUVORK5CYII=';
+  const jpeg = '/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/2wBDAQkJCQwLDBgNDRgyIRwhMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjL/wAARCAACAAIDASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwDgqKKKo8I//9k=';
+  const webp = 'UklGRjAAAABXRUJQVlA4ICQAAABwAQCdASoCAAIAAUAmJaACdAFAAAD+9g/pb/8Wh/bz/g1tKAA=';
+  const widePng = 'iVBORw0KGgoAAAANSUhEUgAAEAEAAAABCAYAAACx4wBCAAAALUlEQVR4nO3BMQEAAAQAMDrIJIT+PYjh2ZY1vQEAAAAAAAAAAAAAAAAAAAC8O0lWAbVFnxcHAAAAAElFTkSuQmCC';
+
+  assert.equal(validateShowroomLogoDataUrl(''), '');
+  assert.equal(validateShowroomLogoDataUrl(`data:image/png;base64,${png}====`), `data:image/png;base64,${png}`);
+  assert.equal(validateShowroomLogoDataUrl(`data:image/jpeg;base64,${jpeg}`), `data:image/jpeg;base64,${jpeg}`);
+  assert.equal(validateShowroomLogoDataUrl(`data:image/webp;base64,${webp}`), `data:image/webp;base64,${webp}`);
+  assert.throws(() => validateShowroomLogoDataUrl(`data:image/png;base64,${jpeg}`), /valid PNG, JPEG or WebP/);
+  assert.throws(() => validateShowroomLogoDataUrl(`data:image/png;base64,${Buffer.from('not an image').toString('base64')}`), /valid PNG, JPEG or WebP/);
+  assert.throws(() => validateShowroomLogoDataUrl(`data:image/png;base64,${Buffer.from(png, 'base64').subarray(0, -12).toString('base64')}`), /valid PNG, JPEG or WebP/);
+  assert.throws(() => validateShowroomLogoDataUrl(`data:image/png;base64,${Buffer.alloc(2_000_001).toString('base64')}`), /below 2 MB/);
+  assert.throws(() => validateShowroomLogoDataUrl(`data:image/png;base64,${widePng}`), /dimensions below 4096/);
 });
 
 test('the global footer yields to the dedicated public showroom footer', async () => {

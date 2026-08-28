@@ -1,5 +1,6 @@
 import { getDb } from './db';
 import {
+  normalizeAdLogoUrl,
   sanitizeAdBrandKitInput,
   type AdBrandKit,
   type SaveAdBrandKitInput,
@@ -121,6 +122,21 @@ export async function getAdBrandKitForUser(
     requestedId ? [userId, requestedId] : [userId],
   );
   return result.rows[0] ? mapAdBrandKit(result.rows[0]) : null;
+}
+
+export async function getAdBrandLogoForUser(userId: string): Promise<string> {
+  await ensureAdStudioSchema();
+  const result = await getDb().query<{ logo_url: string | null }>(
+    `
+      select logo_url
+      from ad_brand_kits
+      where user_id = $1
+      order by is_default desc, updated_at desc
+      limit 1
+    `,
+    [userId],
+  );
+  return normalizeAdLogoUrl(result.rows[0]?.logo_url);
 }
 
 export async function saveAdBrandKit(

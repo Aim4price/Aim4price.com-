@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAccountProfile } from '../../../lib/account-profile';
-import { getServerSession } from '../../../lib/auth-session';
+import { getServerSession, isDealerAppSession } from '../../../lib/auth-session';
+import { dealerRoleCan } from '../../../lib/dealer-app-access';
 import { listPublishedMarketplaceAssetListings } from '../../../lib/marketplace-db';
 import {
   deleteMiddlemanShowroomAndAdverts,
@@ -14,6 +15,7 @@ export const dynamic = 'force-dynamic';
 async function getMiddlemanContext() {
   const session = await getServerSession({ allowDealerApp: true });
   if (!session?.user?.id) return null;
+  if (isDealerAppSession(session) && !dealerRoleCan(session.dealerApp.role, 'showroom')) return null;
   const profile = await getAccountProfile({
     id: session.user.id,
     name: session.user.name,

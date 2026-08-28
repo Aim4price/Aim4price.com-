@@ -1,7 +1,8 @@
 import { ensureAccountProfileColumns, getAccountProfile, type AccountProfile } from './account-profile';
 import { normalizeAdLogoUrl } from './ad-studio';
-import { getAdBrandKitForUser } from './ad-studio-db';
+import { getAdBrandLogoForUser } from './ad-studio-db';
 import { getDb } from './db';
+import { validateShowroomLogoDataUrl } from './showroom-logo-validation';
 
 type MiddlemanShowroomDetails = {
   userId: string;
@@ -43,135 +44,9 @@ const RESERVED_SLUGS = new Set([
 ]);
 
 let showroomSchemaEnsured = false;
-const MAX_SHOWROOM_LOGO_BYTES = 2_000_000;
-const MAX_SHOWROOM_LOGO_DIMENSION = 4_096;
-const SHOWROOM_LOGO_DATA_PATTERN = /^data:image\/(png|jpe?g|webp);base64,([a-z0-9+/=]+)$/i;
-const JPEG_START_OF_FRAME_MARKERS = new Set([
-  0xc0, 0xc1, 0xc2, 0xc3, 0xc5, 0xc6, 0xc7,
-  0xc9, 0xca, 0xcb, 0xcd, 0xce, 0xcf,
-]);
 
 function asText(value: unknown): string {
   return typeof value === 'string' ? value.trim() : '';
-}
-
-function pngDimensions(bytes: Buffer): { width: number; height: number } | null {
-  const signature = '89504e470d0a1a0a';
-  if (bytes.length < 24 || bytes.subarray(0, 8).toString('hex') !== signature) return null;
-  return { width: bytes.readUInt32BE(16), height: bytes.readUInt32BE(20) };
-}
-
-function jpegDimensions(bytes: Buffer): { width: number; height: number } | null {
-  if (bytes.length < 4 || bytes[0] !== 0xff || bytes[1] !== 0xd8) return null;
-  let offset = 2;
-
-  while (offset + 3 < bytes.length) {
-    if (bytes[offset] !== 0xff) {
-      offset += 1;
-      continue;
-    }
-    while (bytes[offset] === 0xff) offset += 1;
-    const marker = bytes[offset];
-    offset += 1;
-    if (marker === 0xd9 || marker === 0xda) break;
-    if (marker === 0x01 || (marker >= 0xd0 && marker <= 0xd7)) continue;
-    if (offset + 1 >= bytes.length) return null;
-    const segmentLength = bytes.readUInt16BE(offset);
-    if (segmentLength < 2 || offset + segmentLength > bytes.length) return null;
-    if (JPEG_START_OF_FRAME_MARKERS.has(marker)) {
-      if (segmentLength < 7) return null;
-      return {
-        height: bytes.readUInt16BE(offset + 3),
-        width: bytes.readUInt16BE(offset + 5),
-      };
-    }
-    offset += segmentLength;
-  }
-
-  return null;
-}
-
-function webpDimensions(bytes: Buffer): { width: number; height: number } | null {
-  if (
-    bytes.length < 30
-    || bytes.toString('ascii', 0, 4) !== 'RIFF'
-    || bytes.toString('ascii', 8, 12) !== 'WEBP'
-  ) return null;
-
-  let offset = 12;
-  while (offset + 8 <= bytes.length) {
-    const chunkType = bytes.toString('ascii', offset, offset + 4);
-    const chunkSize = bytes.readUInt32LE(offset + 4);
-    const dataOffset = offset + 8;
-    if (dataOffset + chunkSize > bytes.length) return null;
-
-    if (chunkType === 'VP8X' && chunkSize >= 10) {
-      return {
-        width: bytes.readUIntLE(dataOffset + 4, 3) + 1,
-        height: bytes.readUIntLE(dataOffset + 7, 3) + 1,
-      };
-    }
-    if (
-      chunkType === 'VP8 '
-      && chunkSize >= 10
-      && bytes[dataOffset + 3] === 0x9d
-      && bytes[dataOffset + 4] === 0x01
-      && bytes[dataOffset + 5] === 0x2a
-    ) {
-      return {
-        width: bytes.readUInt16LE(dataOffset + 6) & 0x3fff,
-        height: bytes.readUInt16LE(dataOffset + 8) & 0x3fff,
-      };
-    }
-    if (chunkType === 'VP8L' && chunkSize >= 5 && bytes[dataOffset] === 0x2f) {
-      const packed = bytes.readUInt32LE(dataOffset + 1);
-      return {
-        width: (packed & 0x3fff) + 1,
-        height: ((packed >>> 14) & 0x3fff) + 1,
-      };
-    }
-
-    offset = dataOffset + chunkSize + (chunkSize % 2);
-  }
-
-  return null;
-}
-
-function validateShowroomLogoUrl(value: string): string {
-  if (!value) return '';
-  if (value.length > 3_000_000) throw new Error('Keep the showroom logo below 2 MB.');
-  const logoUrl = normalizeAdLogoUrl(value);
-  const match = SHOWROOM_LOGO_DATA_PATTERN.exec(logoUrl);
-  if (!match) throw new Error('Choose a valid PNG, JPEG or WebP logo.');
-
-  const payload = match[2];
-  const bytes = Buffer.from(payload, 'base64');
-  const canonicalPayload = bytes.toString('base64').replace(/=+$/, '');
-  if (!bytes.length || canonicalPayload !== payload.replace(/=+$/, '')) {
-    throw new Error('Choose a valid PNG, JPEG or WebP logo.');
-  }
-  if (bytes.length > MAX_SHOWROOM_LOGO_BYTES) {
-    throw new Error('Keep the showroom logo below 2 MB.');
-  }
-
-  const mediaType = match[1].toLowerCase();
-  const dimensions = mediaType === 'png'
-    ? pngDimensions(bytes)
-    : mediaType === 'webp'
-      ? webpDimensions(bytes)
-      : jpegDimensions(bytes);
-  if (!dimensions || dimensions.width < 1 || dimensions.height < 1) {
-    throw new Error('Choose a valid PNG, JPEG or WebP logo.');
-  }
-  if (
-    dimensions.width > MAX_SHOWROOM_LOGO_DIMENSION
-    || dimensions.height > MAX_SHOWROOM_LOGO_DIMENSION
-    || dimensions.width * dimensions.height > MAX_SHOWROOM_LOGO_DIMENSION ** 2
-  ) {
-    throw new Error('Keep the showroom logo dimensions below 4096 × 4096 pixels.');
-  }
-
-  return logoUrl;
 }
 
 function slugify(value: unknown): string {
@@ -205,10 +80,9 @@ async function resolveShowroomLogos(row: ShowroomRow, profile: AccountProfile): 
   showroomLogoUrl: string;
   inheritedLogoUrl: string;
 }> {
-  const brandKit = await getAdBrandKitForUser(profile.userId);
   return {
     showroomLogoUrl: normalizeAdLogoUrl(row.logo_url),
-    inheritedLogoUrl: normalizeAdLogoUrl(brandKit?.logoUrl) || normalizeAdLogoUrl(profile.logoUrl),
+    inheritedLogoUrl: await getAdBrandLogoForUser(profile.userId) || normalizeAdLogoUrl(profile.logoUrl),
   };
 }
 
@@ -223,10 +97,13 @@ async function mapPublicShowroom(
   row: ShowroomRow,
   profile: AccountProfile,
 ): Promise<PublicMiddlemanShowroomData> {
-  const { showroomLogoUrl, inheritedLogoUrl } = await resolveShowroomLogos(row, profile);
+  const showroomLogoUrl = normalizeAdLogoUrl(row.logo_url);
+  const logoUrl = showroomLogoUrl
+    || await getAdBrandLogoForUser(profile.userId)
+    || normalizeAdLogoUrl(profile.logoUrl);
   return {
     ...mapShowroomDetails(row, profile),
-    logoUrl: showroomLogoUrl || inheritedLogoUrl,
+    logoUrl,
   };
 }
 
@@ -343,7 +220,7 @@ export async function updateMiddlemanShowroom(input: {
     : input.logoUrl === null
       ? ''
       : current.showroomLogoUrl;
-  const logoUrl = validateShowroomLogoUrl(requestedLogoUrl);
+  const logoUrl = validateShowroomLogoDataUrl(requestedLogoUrl);
   const db = getDb();
   try {
     const updated = await db.query<ShowroomRow>(
