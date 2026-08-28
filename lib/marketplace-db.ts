@@ -257,7 +257,7 @@ function deriveBrandAndModel(row: Record<string, unknown>): { brandName: string;
   };
 }
 
-async function ensureMarketplaceColumns(): Promise<void> {
+export async function ensureMarketplaceColumns(): Promise<void> {
   if (marketplaceColumnsEnsured) {
     return;
   }
@@ -1090,41 +1090,4 @@ export async function publishAssetRegisterItemToMarketplace(input: {
     viewerUserId: input.userId,
     exposeContact: true,
   });
-}
-
-export async function removeAssetRegisterItemFromMarketplace(input: {
-  userId: string;
-  assetId: string;
-}): Promise<void> {
-  await ensureMarketplaceColumns();
-
-  const db = getDb();
-  const result = await db.query(
-    `
-      update asset_register_items
-      set
-        marketplace_status = 'draft',
-        updated_at = now()
-      where user_id = $1 and id = $2
-    `,
-    [input.userId, input.assetId],
-  );
-
-  if ((result.rowCount ?? 0) === 0) {
-    throw new Error('ASSET_NOT_FOUND');
-  }
-
-  await db.query(
-    `
-      update marketplace_listings
-      set
-        status = 'withdrawn',
-        withdrawn_at = coalesce(withdrawn_at, now()),
-        updated_at = now()
-      where user_id = $1
-        and asset_register_item_id = $2::uuid
-        and status = 'live'
-    `,
-    [input.userId, input.assetId],
-  );
 }
