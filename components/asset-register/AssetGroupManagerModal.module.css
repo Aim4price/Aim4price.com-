@@ -984,6 +984,20 @@
   font-weight: 850;
 }
 
+.memberSelectOptionDanger {
+  margin-top: 4px;
+  border-color: #edcbc6;
+  background: #fff7f5;
+  color: #963b34;
+}
+
+.memberSelectOptionDanger:hover,
+.memberSelectOptionDanger:focus-visible {
+  border-color: #d99b92;
+  background: #ffefec;
+  color: #782922;
+}
+
 .summary {
   display: grid;
   flex: 0 0 auto;
