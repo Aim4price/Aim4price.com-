@@ -1861,6 +1861,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
   const [dealerSaveTargetRegisterId, setDealerSaveTargetRegisterId] = useState('');
   const [dealerSaveTargetRegisterName, setDealerSaveTargetRegisterName] = useState('');
   const [dealerSaveTargetMode, setDealerSaveTargetMode] = useState<'dealer' | 'client' | null>(null);
+  const [isDealerRegisterDestinationOpen, setIsDealerRegisterDestinationOpen] = useState(false);
   const [isDealerClientRegisterPickerOpen, setIsDealerClientRegisterPickerOpen] = useState(false);
   const [dealerClientRegisterSearch, setDealerClientRegisterSearch] = useState('');
   const [adBrandKits, setAdBrandKits] = useState<AdBrandKit[]>([]);
@@ -4176,13 +4177,31 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     setDealerSaveTargetRegisterId(register.id);
     setDealerSaveTargetRegisterName(register.businessName || (mode === 'dealer' ? 'Dealer Asset Register' : 'Client Asset Register'));
     setDealerSaveTargetMode(mode);
+    setIsDealerRegisterDestinationOpen(false);
     setIsDealerClientRegisterPickerOpen(false);
     setDealerClientRegisterSearch('');
     openFinalSaveModal('asset-register', register.id);
   }
 
+  function openDealerRegisterDestination() {
+    setMessage('');
+    setFinalSaveError('');
+    setDealerSaveTargetRegisterId('');
+    setDealerSaveTargetRegisterName('');
+    setDealerSaveTargetMode(null);
+    setDealerClientRegisterSearch('');
+    setIsDealerClientRegisterPickerOpen(false);
+    setIsDealerRegisterDestinationOpen(true);
+  }
+
+  function closeDealerRegisterDestination() {
+    if (saveLoading) return;
+    setIsDealerRegisterDestinationOpen(false);
+  }
+
   function saveToDealerAssetRegister() {
     if (!dealerOwnedRegister) {
+      setIsDealerRegisterDestinationOpen(false);
       setMessage('Create the Dealer Asset Register before saving this estimate.');
       return;
     }
@@ -4192,6 +4211,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
   function openDealerClientRegisterPicker() {
     setMessage('');
     setDealerClientRegisterSearch('');
+    setIsDealerRegisterDestinationOpen(false);
     setIsDealerClientRegisterPickerOpen(true);
   }
 
@@ -7445,7 +7465,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                   : ownerAppMode
                     ? 'Save the asset to My Assets, create a Marketplace listing or download the estimate PDF.'
                   : isDealerAccount
-                    ? 'Create an advert, add the asset to a dealer or client register, or download the estimate PDF.'
+                    ? 'Create an advert, save this asset to an Asset Register, or download the estimate PDF.'
                   : compactAppMode
                     ? 'Download the PDF or create a listing.'
                     : 'Download the estimate PDF, send the asset to Marketplace, or save it to your Asset Register.'}
@@ -7492,30 +7512,14 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                         {saveLoading && finalSaveIntent === 'marketplace' ? 'Saving...' : isPublishingMarketplace ? 'Creating ad...' : 'Create Ad'}
                       </button>
                       {isDealerAccount ? (
-                        <>
-                          <button
-                            type="button"
-                            className={styles.resultPrimaryActionButton}
-                            data-result-action="dealer-register"
-                            onClick={saveToDealerAssetRegister}
-                            disabled={saveLoading || isPublishingMarketplace || replacementRecalculateLoading || advancedRecalculateLoading || !canSaveToAssetRegister || !dealerOwnedRegister || headlineValue === null}
-                          >
-                            {saveLoading && finalSaveIntent === 'asset-register' && dealerSaveTargetMode === 'dealer'
-                              ? 'Saving...'
-                              : 'Add to Dealer Asset Register'}
-                          </button>
-                          <button
-                            type="button"
-                            className={styles.resultClientRegisterActionButton}
-                            data-result-action="client-register"
-                            onClick={openDealerClientRegisterPicker}
-                            disabled={saveLoading || isPublishingMarketplace || replacementRecalculateLoading || advancedRecalculateLoading || !canSaveToAssetRegister || headlineValue === null}
-                          >
-                            {saveLoading && finalSaveIntent === 'asset-register' && dealerSaveTargetMode === 'client'
-                              ? 'Saving...'
-                              : 'Add to Client Asset Register'}
-                          </button>
-                        </>
+                        <button
+                          type="button"
+                          className={styles.resultPrimaryActionButton}
+                          onClick={openDealerRegisterDestination}
+                          disabled={saveLoading || isPublishingMarketplace || replacementRecalculateLoading || advancedRecalculateLoading || !canSaveToAssetRegister || headlineValue === null}
+                        >
+                          {saveLoading && finalSaveIntent === 'asset-register' ? 'Saving...' : 'Save to Asset Register'}
+                        </button>
                       ) : !compactAppMode ? (
                         <button
                           type="button"
@@ -7592,22 +7596,18 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     : ownerAppMode
       ? 'Save to My Assets'
       : isDealerAccount
-        ? `Add to ${dealerSaveTargetRegisterName || (dealerSaveTargetMode === 'client' ? 'Client Asset Register' : 'Dealer Asset Register')}`
+        ? `Save to ${dealerSaveTargetRegisterName || (dealerSaveTargetMode === 'client' ? 'Client Asset Register' : 'Dealer Asset Register')}`
         : 'Save to Asset Register';
   const finalSaveDescription = finalSaveIntent === 'marketplace'
     ? 'Review the estimate and replacement price before continuing to the advert details.'
     : isDealerAccount && dealerSaveTargetMode === 'client'
-      ? `Review the estimate and replacement price before adding it to ${dealerSaveTargetRegisterName || 'the selected client register'}.`
+      ? `Review the estimate and replacement price before saving it to ${dealerSaveTargetRegisterName || 'the selected client register'}.`
       : isDealerAccount && dealerSaveTargetMode === 'dealer'
-        ? `Review the estimate and replacement price before adding it to ${dealerSaveTargetRegisterName || 'the Dealer Asset Register'}.`
+        ? `Review the estimate and replacement price before saving it to ${dealerSaveTargetRegisterName || 'the Dealer Asset Register'}.`
         : 'Review the estimate and replacement price before saving this asset.';
   const finalSaveCta = finalSaveIntent === 'marketplace'
     ? 'Save and continue to advert details'
-    : isDealerAccount && dealerSaveTargetMode === 'client'
-      ? 'Add to client register'
-      : isDealerAccount && dealerSaveTargetMode === 'dealer'
-        ? 'Add to dealer register'
-        : 'Confirm and save';
+    : 'Confirm and save';
   const isSectorIntroStep = step === 1 && !selectedSector;
   const compactPathChoicePage = compactAppMode && step === 3 && !flowMode;
 
@@ -7750,6 +7750,66 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
             <small id="replacement-notice-disclaimer" className={styles.replacementNoticeDisclaimer}>
               Aim4price provides an indicative estimate only. It is not a certified valuation, inspection, or guaranteed price.
             </small>
+          </section>
+        </div>
+      ) : null}
+
+      {isDealerRegisterDestinationOpen ? (
+        <div className={styles.finalSaveOverlay} onClick={closeDealerRegisterDestination}>
+          <section
+            className={`${styles.finalSaveModal} ${styles.dealerRegisterDestinationModal}`}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="dealer-register-destination-title"
+            aria-describedby="dealer-register-destination-description"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <button
+              type="button"
+              className={styles.finalSaveClose}
+              onClick={closeDealerRegisterDestination}
+              aria-label="Close Asset Register destination chooser"
+            >
+              ×
+            </button>
+
+            <div className={styles.finalSaveHeader}>
+              <h2 id="dealer-register-destination-title">Where should this asset be saved?</h2>
+              <p id="dealer-register-destination-description">Choose the Asset Register that should receive this estimate.</p>
+            </div>
+
+            <div className={styles.dealerRegisterDestinationGrid}>
+              <button
+                type="button"
+                className={styles.dealerRegisterDestinationOption}
+                onClick={saveToDealerAssetRegister}
+                disabled={!dealerOwnedRegister}
+                autoFocus={Boolean(dealerOwnedRegister)}
+              >
+                <span className={styles.dealerRegisterDestinationOptionCopy}>
+                  <strong>Dealer Asset Register</strong>
+                  <small>
+                    {dealerOwnedRegister
+                      ? `Save to ${dealerOwnedRegister.businessName || "your dealership's own Asset Register"}.`
+                      : 'Create a Dealer Asset Register before saving here.'}
+                  </small>
+                </span>
+                <span className={styles.dealerRegisterDestinationArrow} aria-hidden="true">→</span>
+              </button>
+
+              <button
+                type="button"
+                className={styles.dealerRegisterDestinationOption}
+                onClick={openDealerClientRegisterPicker}
+                autoFocus={!dealerOwnedRegister}
+              >
+                <span className={styles.dealerRegisterDestinationOptionCopy}>
+                  <strong>Client Asset Register</strong>
+                  <small>Choose a client register managed by this dealership.</small>
+                </span>
+                <span className={styles.dealerRegisterDestinationArrow} aria-hidden="true">→</span>
+              </button>
+            </div>
           </section>
         </div>
       ) : null}

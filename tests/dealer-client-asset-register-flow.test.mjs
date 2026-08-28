@@ -72,29 +72,36 @@ test('manual add stays scoped to the specific dealer or client register already 
   assert.match(registerStyles, /Add asset destination context[\s\S]*\.assetUpdateIdentity p strong/);
 });
 
-test('dealer estimate actions and client-save dialogs are consistent and use the fresh register selection', () => {
+test('dealer estimates use one owner-style register action and route through a destination chooser', () => {
   assert.match(valuationClient, /normalizedSignedInAccountType === 'dealer'[\s\S]*isAccountantClientWorkspace/);
-  assert.match(valuationClient, /Add to Dealer Asset Register/);
-  assert.match(valuationClient, /Add to Client Asset Register/);
+  assert.match(valuationClient, /onClick=\{openDealerRegisterDestination\}[\s\S]*Save to Asset Register/);
+  assert.match(valuationClient, /Where should this asset be saved\?/);
+  assert.match(valuationClient, /onClick=\{saveToDealerAssetRegister\}[\s\S]*Dealer Asset Register/);
+  assert.match(valuationClient, /onClick=\{openDealerClientRegisterPicker\}[\s\S]*Client Asset Register/);
+  assert.match(valuationClient, /setIsDealerRegisterDestinationOpen\(false\);[\s\S]*setIsDealerClientRegisterPickerOpen\(true\)/);
   assert.match(valuationClient, /Choose a client Asset Register/);
   assert.match(valuationClient, /openFinalSaveModal\('asset-register', register\.id\)/);
   assert.match(valuationClient, /targetRegisterId = dealerSaveTargetRegisterId/);
+  assert.match(valuationClient, /aria-describedby="dealer-register-destination-description"/);
   assert.match(valuationClient, /aria-describedby="dealer-client-register-picker-description"/);
   assert.match(valuationClient, /aria-describedby="final-save-description"/);
   assert.match(valuationClient, /styles\.dealerClientRegisterPickerAction/);
   assert.match(valuationClient, /styles\.finalSaveDestination/);
-  assert.doesNotMatch(valuationClient, /Client destination|Final save step/);
+  assert.doesNotMatch(valuationClient, /Add to Dealer Asset Register|Add to Client Asset Register|Client destination|Final save step/);
+  assert.doesNotMatch(valuationClient, /data-result-action="(?:dealer-register|client-register)"|styles\.resultClientRegisterActionButton/);
 
-  for (const action of ['create-ad', 'dealer-register', 'client-register', 'download-pdf']) {
+  for (const action of ['create-ad', 'download-pdf']) {
     assert.match(valuationClient, new RegExp(`data-result-action="${action}"`));
   }
 
   assert.match(valuationStyles, /\.resultFinalActionsCopy span \{[\s\S]*text-transform: none/);
   assert.match(valuationStyles, /\.resultFinalActionsButtons > button \{[\s\S]*min-height: 3\.75rem/);
-  assert.match(valuationStyles, /> \.resultClientRegisterActionButton \{[\s\S]*background: #f0f7f3/);
+  assert.match(valuationStyles, /\.dealerRegisterDestinationGrid \{[\s\S]*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
+  assert.match(valuationStyles, /@media \(max-width: 680px\) \{[\s\S]*\.dealerRegisterDestinationGrid \{[\s\S]*grid-template-columns: 1fr/);
+  assert.match(valuationStyles, /\.dealerRegisterDestinationOption:focus-visible/);
   assert.match(valuationStyles, /\.dealerClientRegisterPickerAction/);
   assert.match(valuationStyles, /\.finalSaveDestination/);
-  assert.doesNotMatch(valuationStyles, /\.finalSaveHeader span \{/);
+  assert.doesNotMatch(valuationStyles, /resultClientRegisterActionButton|data-result-action='(?:dealer-register|client-register)'|\.finalSaveHeader span \{/);
   assert.match(valuationClient, /savePayload\.registerId = resolvedTargetRegisterId/);
   assert.match(valuationRoute, /accountType === 'owner' \|\| accountType === 'dealer' \|\| Boolean\(accountantAccess\)/);
 });
