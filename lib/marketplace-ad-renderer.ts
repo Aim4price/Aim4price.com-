@@ -39,6 +39,12 @@ export type MarketplaceAdRatingPresentation = {
   foreground: string;
 };
 
+export type MarketplaceAdDesign = 'saved-brand' | 'aim4price-marketplace';
+
+export type MarketplaceAdJpegOptions = {
+  design?: MarketplaceAdDesign;
+};
+
 type Rect = { x: number; y: number; width: number; height: number };
 
 const RATING_PRESENTATION: Record<MarketplaceDealRating, MarketplaceAdRatingPresentation> = {
@@ -137,9 +143,8 @@ function equipmentMeta(content: MarketplaceAdContent): string {
   return values.join(' · ') || clean(content.familyLabel);
 }
 
-export function marketplaceListingToAdContent(listing: MarketplaceListing): MarketplaceAdContent {
-  const familyLabel = clean(listing.familyLabel) || clean(listing.assetKind) || 'Equipment';
-  const brand = listing.adBrand ?? {
+function fallbackMarketplaceBrand(listing: MarketplaceListing): AdBrandSnapshot {
+  return {
     name: 'Aim4price standard',
     templateId: 'showcase',
     logoUrl: '',
@@ -153,7 +158,31 @@ export function marketplaceListingToAdContent(listing: MarketplaceListing): Mark
     website: '',
     language: 'en',
     vatLabel: 'plus-vat',
-  } satisfies AdBrandSnapshot;
+  };
+}
+
+function resolveMarketplaceBrand(
+  listing: MarketplaceListing,
+  design: MarketplaceAdDesign,
+): AdBrandSnapshot {
+  const savedBrand = listing.adBrand ?? fallbackMarketplaceBrand(listing);
+  if (design !== 'aim4price-marketplace') return savedBrand;
+  return {
+    ...savedBrand,
+    name: 'Aim4price standard',
+    templateId: 'showcase',
+    primaryColor: DEFAULT_AD_BRAND_COLORS.primary,
+    secondaryColor: DEFAULT_AD_BRAND_COLORS.secondary,
+    accentColor: DEFAULT_AD_BRAND_COLORS.accent,
+  };
+}
+
+export function marketplaceListingToAdContent(
+  listing: MarketplaceListing,
+  options: MarketplaceAdJpegOptions = {},
+): MarketplaceAdContent {
+  const familyLabel = clean(listing.familyLabel) || clean(listing.assetKind) || 'Equipment';
+  const brand = resolveMarketplaceBrand(listing, options.design ?? 'saved-brand');
   const calculatedRating = calculateMarketplaceDealRating({
     askingPriceExVat: listing.askingPriceExVat,
     aim4priceValueExVat: listing.aim4priceValueExVat,
@@ -749,9 +778,12 @@ function canvasBlob(canvas: HTMLCanvasElement): Promise<Blob> {
   });
 }
 
-export async function createMarketplaceAdJpeg(listing: MarketplaceListing): Promise<{ blob: Blob; templateId: AdTemplateId }> {
+export async function createMarketplaceAdJpeg(
+  listing: MarketplaceListing,
+  options: MarketplaceAdJpegOptions = {},
+): Promise<{ blob: Blob; templateId: AdTemplateId }> {
   if (typeof document === 'undefined') throw new Error('JPEG export is only available in the browser.');
-  const content = marketplaceListingToAdContent(listing);
+  const content = marketplaceListingToAdContent(listing, options);
   for (const includeImages of [true, false]) {
     const canvas = document.createElement('canvas');
     try {

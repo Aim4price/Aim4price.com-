@@ -188,7 +188,9 @@ export function MiddlemanShowroomManager({
     setBusyListingId(listing.id);
     setMessage('');
     try {
-      const { blob } = await createMarketplaceAdJpeg(listing);
+      const { blob } = await createMarketplaceAdJpeg(listing, {
+        design: 'aim4price-marketplace',
+      });
       downloadMarketplaceAd(blob, marketplaceAdFilename(listing.title));
       setMessage('JPEG advert downloaded.');
     } catch {
