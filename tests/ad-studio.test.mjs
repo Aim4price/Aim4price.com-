@@ -340,35 +340,75 @@ test('dealer showrooms are standard, valuation-backed and reuse the Marketplace 
   assert.match(marketplaceUi, /if \(showroomMode\)/);
   assert.match(marketplaceUi, /!showroomMode \? \(/);
   assert.match(manager, /Download JPEG/);
-  assert.match(manager, /Powered by Aim4price\.com/);
+  assert.match(manager, /Hosted on Aim4price\.com/);
   assert.doesNotMatch(manager, /Created with Aim4price/);
   assert.match(marketplaceDb, /requireValuationSource && !pick\(row, \['valuation_run_id'\]\)/);
   assert.match(dealerHome, /new Set<DealerAppCapability>\(\['inventory', 'valuation', 'ad_studio', 'showroom', 'marketplace'\]\)/);
   assert.match(header, /href: '\/my-showroom', label: 'My Showroom', accountTypes: \['dealer'\]/);
 });
 
-test('public showroom scopes friendly Marketplace empty states and removes microcaps', async () => {
-  const [manager, managerCss, marketplace, marketplaceCss] = await Promise.all([
+test('public showroom presents clear business details in a white seller-scoped Marketplace', async () => {
+  const [publicPage, manager, managerCss, marketplace, marketplaceCss] = await Promise.all([
+    read('app/showroom/[slug]/page.tsx'),
     read('components/MiddlemanShowroomClient.tsx'),
     read('components/MiddlemanShowroomClient.module.css'),
     read('app/marketplace/marketplace-client.tsx'),
     read('app/marketplace/page.module.css'),
   ]);
 
-  assert.match(manager, /Professional machinery showroom/);
-  assert.match(manager, /Browse available machinery/);
+  const publicShowroom = manager.slice(manager.indexOf('export function PublicMiddlemanShowroom'));
+  const publicAdvertSummaryRule = managerCss.match(/\.publicAdvertSummary\s*\{[^}]*\}/)?.[0] ?? '';
+  const inventorySummaryRule = managerCss.match(/\.inventorySummary\s*\{[^}]*\}/)?.[0] ?? '';
+
+  assert.match(publicPage, /sellerUserId: showroom\.userId/);
+  assert.match(publicPage, /exposeContact: true/);
+  assert.match(publicShowroom, /showroom\.logoUrl \? <img src=\{showroom\.logoUrl\} alt=\{`\$\{showroom\.name\} logo`\}/);
+  assert.match(publicShowroom, /<h1>\{showroom\.name\}<\/h1>/);
+  assert.match(publicShowroom, /className=\{styles\.publicAdvertSummary\}>\{listings\.length\} live/);
+  assert.match(publicShowroom, /showroom\.bio \? <p className=\{styles\.publicBio\}>\{showroom\.bio\}<\/p>/);
+  assert.match(publicShowroom, /className=\{styles\.publicBusinessDetails\}/);
+  assert.match(publicShowroom, /showroom\.location/);
+  assert.match(publicShowroom, /href=\{whatsappHref\(showroom\.phone\)\}/);
+  assert.match(publicShowroom, /href=\{`tel:\$\{showroom\.phone\}`\}/);
+  assert.match(publicShowroom, /href=\{`mailto:\$\{showroom\.email\}`\}/);
+  assert.match(publicShowroom, /href=\{showroom\.websiteUrl\} target="_blank" rel="noreferrer"/);
+  assert.match(publicShowroom, /websiteLabel\(showroom\.websiteUrl\)/);
+  assert.match(publicShowroom, /className=\{styles\.inventorySummary\}>\{listings\.length\} live/);
+  assert.doesNotMatch(publicAdvertSummaryRule, /border(?:-radius)?:|background:/);
+  assert.doesNotMatch(inventorySummaryRule, /border(?:-radius)?:|background:/);
+
+  assert.doesNotMatch(publicShowroom, /styles\.(?:publicHeroSummary|trustStrip|inventoryIcon|inventoryCount)/);
+  assert.doesNotMatch(managerCss, /\.(?:publicHeroSummary|trustStrip|inventoryIcon|inventoryCount)\s*\{/);
+  assert.doesNotMatch(managerCss, /\.publicHero\s*\{[^}]*linear-gradient/);
+  assert.match(managerCss, /\.publicPage\s*\{[^}]*background:\s*#fff/);
+  assert.match(managerCss, /\.publicHeroInner\s*\{[^}]*background:\s*#fff/);
+  assert.match(managerCss, /\.publicFooter\s*\{[^}]*background:\s*#fff/);
   assert.match(managerCss, /font-family: 'Montserrat'/);
   assert.doesNotMatch(managerCss, /text-transform:\s*uppercase/);
+
+  assert.match(publicShowroom, /<MarketplaceClient[\s\S]*?initialListings=\{listings\}[\s\S]*?embeddedMode[\s\S]*?showroomMode[\s\S]*?exposeSellerContact/);
+  assert.match(marketplace, /if \(showroomMode\) \{[\s\S]*?setItems\(initialListings \?\? \[\]\)[\s\S]*?return undefined/);
+  assert.match(marketplace, /!showroomMode \? \([\s\S]*?Create new listing/);
+  assert.match(marketplace, /placeholder=\{showroomMode \? 'Search this showroom' : 'Search Marketplace'\}/);
+  assert.match(marketplace, /const canExposeSellerContact = isSignedIn \|\| exposeSellerContact/);
+  assert.match(marketplace, /canExposeSellerContact \? \([\s\S]*?href=\{`tel:\$\{activeListing\.sellerPhone/);
+  assert.match(marketplace, /href=\{`mailto:\$\{activeListing\.sellerEmail\}`\}/);
+
   assert.match(marketplace, /const showroomHasNoInventory = showroomMode && !isLoadingListings && items\.length === 0/);
   assert.match(marketplace, /showroomHasNoInventory \? \(/);
-  assert.match(marketplace, /This showroom is getting ready/);
-  assert.match(marketplace, /There are no live adverts here just yet\. Please check back soon\./);
+  assert.match(marketplace, /No equipment listed yet/);
+  assert.match(marketplace, /This showroom has no live adverts at the moment\. Please check back soon\./);
+  assert.doesNotMatch(marketplace, /styles\.showroomEmptyIcon/);
+  assert.doesNotMatch(marketplaceCss, /\.showroomEmptyIcon\s*\{/);
   assert.match(marketplace, /Nothing matches those filters/);
   assert.match(marketplace, /showroomMode \? 'Clear filters' : 'Reset marketplace'/);
   assert.match(marketplace, /className=\{`\$\{styles\.page\} \$\{showroomMode \? styles\.showroomPage : ''\}/);
-  assert.match(marketplaceCss, /\.showroomPage\s*\{[\s\S]*?font-family: var\(--font-body, 'Montserrat'\)/);
+  assert.match(marketplaceCss, /\.showroomPage\s*\{[^}]*background:\s*#fff;[^}]*font-family: var\(--font-body, 'Montserrat'\)/);
   assert.match(marketplaceCss, /\.showroomPage \*\s*\{[\s\S]*?font-variant-caps:\s*normal/);
   assert.match(marketplaceCss, /\.showroomPage \.placeholderPill,[\s\S]*?text-transform:\s*none/);
+  assert.match(marketplaceCss, /\.showroomSidebar\s*\{[^}]*background:\s*#fff/);
+  assert.match(marketplaceCss, /\.showroomResults \.listingCard\s*\{/);
+  assert.match(marketplaceCss, /\.showroomEmptyState\s*\{[^}]*background:\s*#fff/);
   assert.match(marketplaceCss, /\.showroomEmptyShell/);
 });
 
