@@ -15800,11 +15800,7 @@ export default function AssetRegisterClient({
     ? 'Loading...'
     : dealerRegisterMode === 'dealer'
       ? 'Dealer Asset Register'
-      : dealerRegisterMode === 'client'
-        ? /asset register$/i.test(savedRegisterTitle.trim())
-          ? savedRegisterTitle
-          : `${savedRegisterTitle} Asset Register`
-        : savedRegisterTitle;
+      : savedRegisterTitle;
 
   function renderRevalueLifetimeField(asset: RegisterAsset) {
     if (!shouldShowRevalueLifetimeInput(asset)) {

@@ -18,5 +18,9 @@ export default async function AssetRegistersPage() {
     redirect("/leads");
   }
 
-  return <AssetRegistersClient />;
+  return (
+    <AssetRegistersClient
+      showCombinedRegister={profile.accountType !== "dealer"}
+    />
+  );
 }

@@ -1224,10 +1224,12 @@ export default function AssetRegistersClient({
   accountantShareId,
   showAppHeader = true,
   registerBaseHref = '/asset-register',
+  showCombinedRegister = true,
 }: {
   accountantShareId?: string;
   showAppHeader?: boolean;
   registerBaseHref?: string;
+  showCombinedRegister?: boolean;
 } = {}) {
   const router = useRouter();
   const registersApiUrl = accountantShareId
@@ -1292,7 +1294,7 @@ export default function AssetRegistersClient({
   const manageIntentHandledRef = useRef(false);
 
   const combinedRegister = useMemo<AssetRegisterSummary | null>(() => {
-    if (!registers.length) return null;
+    if (!showCombinedRegister || !registers.length) return null;
 
     const newestUpdatedAt = registers.reduce(
       (latest, register) => register.updatedAtIso > latest ? register.updatedAtIso : latest,
@@ -1316,7 +1318,7 @@ export default function AssetRegistersClient({
       createdAtIso: registers[0]?.createdAtIso ?? newestUpdatedAt,
       updatedAtIso: newestUpdatedAt,
     };
-  }, [registers]);
+  }, [registers, showCombinedRegister]);
 
   const managedRegister = useMemo(
     () => managedRegisterId === COMBINED_REGISTER_ID
@@ -2674,71 +2676,73 @@ export default function AssetRegistersClient({
                   <span>Add Asset Register</span>
                 </button>
               </div>
-            ) : combinedRegister ? (
+            ) : (
               <div className={styles.registerList}>
-                <article className={`${styles.registerCard} ${styles.combinedRegisterCard}`}>
-                  <div className={styles.combinedRegisterGraphic} aria-hidden="true">
-                    <SummaryIcon />
-                  </div>
-
-                  <div className={styles.registerInfo}>
-                    <div className={styles.registerTitleBlock}>
-                      <h2>{combinedRegister.businessName}</h2>
-                      <div className={styles.registerDetails}>
-                        <span>One live book containing every asset register on this account.</span>
-                      </div>
+                {combinedRegister ? (
+                  <article className={`${styles.registerCard} ${styles.combinedRegisterCard}`}>
+                    <div className={styles.combinedRegisterGraphic} aria-hidden="true">
+                      <SummaryIcon />
                     </div>
 
-                    <div className={styles.statGrid}>
-                      <div>
-                        <span>Assets</span>
-                        <strong>{combinedRegister.assetCount}</strong>
+                    <div className={styles.registerInfo}>
+                      <div className={styles.registerTitleBlock}>
+                        <h2>{combinedRegister.businessName}</h2>
+                        <div className={styles.registerDetails}>
+                          <span>One live book containing every asset register on this account.</span>
+                        </div>
                       </div>
-                      <div>
-                        <span>Register value</span>
-                        <strong>{money(combinedRegister.totalValue)}</strong>
-                      </div>
-                      <div>
-                        <span>Replacement value</span>
-                        <strong>{money(combinedRegister.totalReplacementPrice)}</strong>
-                      </div>
-                    </div>
-                  </div>
 
-                  <div className={styles.registerAside}>
-                    <div className={styles.badgeStack}>
-                      <span className={styles.combinedBadge}>All registers</span>
+                      <div className={styles.statGrid}>
+                        <div>
+                          <span>Assets</span>
+                          <strong>{combinedRegister.assetCount}</strong>
+                        </div>
+                        <div>
+                          <span>Register value</span>
+                          <strong>{money(combinedRegister.totalValue)}</strong>
+                        </div>
+                        <div>
+                          <span>Replacement value</span>
+                          <strong>{money(combinedRegister.totalReplacementPrice)}</strong>
+                        </div>
+                      </div>
                     </div>
-                    <div className={styles.unitActions}>
-                      <button
-                        type="button"
-                        className={`${styles.unitButton} ${styles.openRegisterButton}`}
-                        onClick={openCombinedRegister}
-                      >
-                        <OpenIcon className={styles.buttonIcon} />
-                        <span>Open</span>
-                      </button>
-                      <button
-                        type="button"
-                        className={`${styles.unitButton} ${styles.manageUnitButton}`}
-                        onClick={() => openManagePanel(combinedRegister)}
-                        disabled={isLoadingManagedAssets}
-                      >
-                        <GearIcon className={styles.buttonIcon} />
-                        <span>Manage</span>
-                      </button>
-                      <button
-                        type="button"
-                        className={`${styles.unitButton} ${styles.combinedDownloadButton}`}
-                        onClick={openCombinedDownload}
-                        disabled={isExporting}
-                      >
-                        <DownloadIcon className={styles.buttonIcon} />
-                        <span>Download</span>
-                      </button>
+
+                    <div className={styles.registerAside}>
+                      <div className={styles.badgeStack}>
+                        <span className={styles.combinedBadge}>All registers</span>
+                      </div>
+                      <div className={styles.unitActions}>
+                        <button
+                          type="button"
+                          className={`${styles.unitButton} ${styles.openRegisterButton}`}
+                          onClick={openCombinedRegister}
+                        >
+                          <OpenIcon className={styles.buttonIcon} />
+                          <span>Open</span>
+                        </button>
+                        <button
+                          type="button"
+                          className={`${styles.unitButton} ${styles.manageUnitButton}`}
+                          onClick={() => openManagePanel(combinedRegister)}
+                          disabled={isLoadingManagedAssets}
+                        >
+                          <GearIcon className={styles.buttonIcon} />
+                          <span>Manage</span>
+                        </button>
+                        <button
+                          type="button"
+                          className={`${styles.unitButton} ${styles.combinedDownloadButton}`}
+                          onClick={openCombinedDownload}
+                          disabled={isExporting}
+                        >
+                          <DownloadIcon className={styles.buttonIcon} />
+                          <span>Download</span>
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                </article>
+                  </article>
+                ) : null}
 
                 {visibleRegisters.map((register) => {
                   const isBusySelecting = selectingRegisterId === register.id;
@@ -2848,7 +2852,7 @@ export default function AssetRegistersClient({
                   </div>
                 ) : null}
               </div>
-            ) : null}
+            )}
           </section>
         </section>
       </main>
@@ -2921,20 +2925,22 @@ export default function AssetRegistersClient({
                       </span>
                     </button>
 
-                    <button
-                      type="button"
-                      className={styles.exportChoiceOption}
-                      onClick={openCombinedRegisterPicker}
-                      disabled={isExporting || registers.length < 2}
-                    >
-                      <span className={styles.exportChoiceGraphic}>
-                        <PlusIcon className={styles.exportChoiceIcon} />
-                      </span>
-                      <span className={styles.exportChoiceTitleBlock}>
-                        <strong>Merge specific Asset Registers</strong>
-                        <small>{isSummaryFlow ? "Select two or more registers and merge them into one PDF summary." : "Select two or more registers and merge them into one export."}</small>
-                      </span>
-                    </button>
+                    {showCombinedRegister ? (
+                      <button
+                        type="button"
+                        className={styles.exportChoiceOption}
+                        onClick={openCombinedRegisterPicker}
+                        disabled={isExporting || registers.length < 2}
+                      >
+                        <span className={styles.exportChoiceGraphic}>
+                          <PlusIcon className={styles.exportChoiceIcon} />
+                        </span>
+                        <span className={styles.exportChoiceTitleBlock}>
+                          <strong>Merge specific Asset Registers</strong>
+                          <small>{isSummaryFlow ? "Select two or more registers and merge them into one PDF summary." : "Select two or more registers and merge them into one export."}</small>
+                        </span>
+                      </button>
+                    ) : null}
                   </div>
                 </div>
 
