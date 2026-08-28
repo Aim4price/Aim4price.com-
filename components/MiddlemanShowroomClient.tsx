@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { type DragEvent, useRef, useState } from 'react';
 import MarketplaceClient from '../app/marketplace/marketplace-client';
 import type { MarketplaceDealRating, MarketplaceListing } from '../lib/marketplace';
 import {
@@ -9,7 +9,7 @@ import {
   downloadMarketplaceAd,
   marketplaceAdFilename,
 } from '../lib/marketplace-ad-renderer';
-import type { MiddlemanShowroom } from '../lib/middleman-showroom-db';
+import type { MiddlemanShowroom, PublicMiddlemanShowroomData } from '../lib/middleman-showroom-db';
 import styles from './MiddlemanShowroomClient.module.css';
 
 type ManagerProps = {
@@ -17,6 +17,10 @@ type ManagerProps = {
   initialListings: MarketplaceListing[];
   dealerAppMode?: boolean;
 };
+
+const SHOWROOM_LOGO_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
+const MAX_SHOWROOM_LOGO_BYTES = 2_000_000;
+const MAX_SHOWROOM_LOGO_DIMENSION = 4_096;
 
 function money(value: number): string {
   return new Intl.NumberFormat('en-ZA', {
@@ -68,16 +72,78 @@ export function MiddlemanShowroomManager({
   const [slug, setSlug] = useState(initialShowroom.slug);
   const [bio, setBio] = useState(initialShowroom.bio);
   const [isPublic, setIsPublic] = useState(initialShowroom.isPublic);
+  const [showroomLogoUrl, setShowroomLogoUrl] = useState(initialShowroom.showroomLogoUrl);
+  const [logoDragActive, setLogoDragActive] = useState(false);
+  const [readingLogo, setReadingLogo] = useState(false);
   const [saving, setSaving] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteConfirmation, setDeleteConfirmation] = useState('');
   const [deletingShowroom, setDeletingShowroom] = useState(false);
   const [busyListingId, setBusyListingId] = useState('');
   const [message, setMessage] = useState('');
+  const logoInputRef = useRef<HTMLInputElement | null>(null);
   const valuationHref = dealerAppMode ? '/dealer/valuation' : '/valuation';
-  const hasUnsavedShowroomChanges = slug !== showroom.slug || bio !== showroom.bio || isPublic !== showroom.isPublic;
+  const logoPreviewUrl = showroomLogoUrl || showroom.inheritedLogoUrl;
+  const hasUnsavedShowroomChanges = slug !== showroom.slug
+    || bio !== showroom.bio
+    || isPublic !== showroom.isPublic
+    || showroomLogoUrl !== showroom.showroomLogoUrl;
+
+  function applyShowroomLogoFile(file?: File) {
+    if (!file || saving || readingLogo) return;
+    setMessage('');
+    if (!SHOWROOM_LOGO_TYPES.has(file.type)) {
+      setMessage('Choose a PNG, JPEG or WebP logo.');
+      return;
+    }
+    if (file.size > MAX_SHOWROOM_LOGO_BYTES) {
+      setMessage('Keep the showroom logo below 2 MB.');
+      return;
+    }
+
+    setReadingLogo(true);
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result !== 'string') {
+        setMessage('The showroom logo could not be read.');
+        setReadingLogo(false);
+        return;
+      }
+      const logoDataUrl = reader.result;
+      const image = new Image();
+      image.onload = () => {
+        if (
+          image.naturalWidth > MAX_SHOWROOM_LOGO_DIMENSION
+          || image.naturalHeight > MAX_SHOWROOM_LOGO_DIMENSION
+        ) {
+          setMessage('Keep the showroom logo dimensions below 4096 × 4096 pixels.');
+        } else {
+          setShowroomLogoUrl(logoDataUrl);
+          setMessage('Logo ready. Save your changes to update the public showroom.');
+        }
+        setReadingLogo(false);
+      };
+      image.onerror = () => {
+        setMessage('Choose a valid PNG, JPEG or WebP logo.');
+        setReadingLogo(false);
+      };
+      image.src = logoDataUrl;
+    };
+    reader.onerror = () => {
+      setMessage('The showroom logo could not be read.');
+      setReadingLogo(false);
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function handleShowroomLogoDrop(event: DragEvent<HTMLButtonElement>) {
+    event.preventDefault();
+    setLogoDragActive(false);
+    applyShowroomLogoFile(event.dataTransfer.files?.[0]);
+  }
 
   async function saveShowroom() {
+    if (readingLogo) return;
     setSaving(true);
     setMessage('');
     try {
@@ -85,7 +151,7 @@ export function MiddlemanShowroomManager({
         method: 'PUT',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ slug, bio, isPublic }),
+        body: JSON.stringify({ slug, bio, isPublic, logoUrl: showroomLogoUrl }),
       });
       const data = await response.json() as { ok?: boolean; showroom?: MiddlemanShowroom; error?: string };
       if (!response.ok || !data.ok || !data.showroom) throw new Error(data.error || 'Failed to save your showroom.');
@@ -93,6 +159,7 @@ export function MiddlemanShowroomManager({
       setSlug(data.showroom.slug);
       setBio(data.showroom.bio);
       setIsPublic(data.showroom.isPublic);
+      setShowroomLogoUrl(data.showroom.showroomLogoUrl);
       setMessage('Showroom saved. Your public page is up to date.');
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Failed to save your showroom.');
@@ -183,6 +250,71 @@ export function MiddlemanShowroomManager({
             </div>
             <span className={`${styles.statusPill} ${isPublic ? styles.statusLive : ''}`}>{isPublic ? 'Live' : 'Hidden'}</span>
           </div>
+          <div className={styles.showroomLogoField}>
+            <div className={styles.showroomLogoCopy}>
+              <strong>Showroom logo</strong>
+              <span>Your default Ad Studio logo appears automatically. Upload a different logo only for this showroom.</span>
+            </div>
+            <div className={styles.showroomLogoEditor}>
+              <button
+                className={`${styles.showroomLogoPreview} ${logoDragActive ? styles.showroomLogoDragging : ''}`}
+                type="button"
+                onClick={() => logoInputRef.current?.click()}
+                onDragEnter={(event) => {
+                  event.preventDefault();
+                  if (!saving && !readingLogo) setLogoDragActive(true);
+                }}
+                onDragOver={(event) => event.preventDefault()}
+                onDragLeave={() => setLogoDragActive(false)}
+                onDrop={handleShowroomLogoDrop}
+                disabled={saving || readingLogo}
+                aria-label={logoPreviewUrl ? 'Replace showroom logo' : 'Upload showroom logo'}
+              >
+                {logoPreviewUrl ? (
+                  <img src={logoPreviewUrl} alt="Showroom logo preview" />
+                ) : (
+                  <span>No logo</span>
+                )}
+                {logoDragActive ? <small>Drop logo</small> : null}
+              </button>
+              <div className={styles.showroomLogoActions}>
+                <button
+                  className={styles.showroomLogoButton}
+                  type="button"
+                  onClick={() => logoInputRef.current?.click()}
+                  disabled={saving || readingLogo}
+                >
+                  {readingLogo ? 'Reading logo...' : logoPreviewUrl ? 'Replace logo' : 'Upload logo'}
+                </button>
+                {showroomLogoUrl ? (
+                  <button
+                    className={styles.showroomLogoReset}
+                    type="button"
+                    onClick={() => {
+                      setShowroomLogoUrl('');
+                      setMessage('The Ad Studio logo will be used after you save your changes.');
+                    }}
+                    disabled={saving || readingLogo}
+                  >
+                    Use Ad Studio logo
+                  </button>
+                ) : (
+                  <small>{showroom.inheritedLogoUrl ? 'Using your saved brand logo' : 'No brand logo saved yet'}</small>
+                )}
+                <input
+                  ref={logoInputRef}
+                  className={styles.showroomLogoInput}
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp"
+                  onChange={(event) => {
+                    applyShowroomLogoFile(event.currentTarget.files?.[0]);
+                    event.currentTarget.value = '';
+                  }}
+                  tabIndex={-1}
+                />
+              </div>
+            </div>
+          </div>
           <div className={styles.publicLinkField}>
             <label htmlFor="showroom-public-link">Public link</label>
             <div className={styles.slugField}>
@@ -229,7 +361,7 @@ export function MiddlemanShowroomManager({
             </span>
           </label>
           <div className={styles.settingsActions}>
-            <button className={styles.primaryButton} type="button" onClick={saveShowroom} disabled={saving}>{saving ? 'Saving...' : 'Save changes'}</button>
+            <button className={styles.primaryButton} type="button" onClick={saveShowroom} disabled={saving || readingLogo}>{saving ? 'Saving...' : readingLogo ? 'Reading logo...' : 'Save changes'}</button>
           </div>
           {message ? <p className={styles.feedback} role="status">{message}</p> : null}
           <div className={styles.dangerZone}>
@@ -304,7 +436,7 @@ export function MiddlemanShowroomManager({
 }
 
 export function PublicMiddlemanShowroom({ showroom, listings }: {
-  showroom: MiddlemanShowroom;
+  showroom: PublicMiddlemanShowroomData;
   listings: MarketplaceListing[];
 }) {
   return (
