@@ -179,12 +179,8 @@
 .rating { flex: 0 0 auto; border-radius: 999px; padding: .34rem .52rem; color: #fff; font-family: 'Montserrat', sans-serif; font-size: .59rem; font-weight: 800; line-height: 1; letter-spacing: 0; }
 .rating_low { background: #f0782c; } .rating_great { background: #239b50; } .rating_fair { background: #208aa0; } .rating_high { background: #df4c44; } .rating_none { background: #74847e; }
 
-.emptyStock { display: grid; justify-items: center; min-height: 410px; padding: clamp(2.4rem,5vw,4.25rem) 1.2rem; border: 1px dashed #cbded6; border-radius: 18px; background: #fcfefd; text-align: center; }
-.emptyStockIllustration { width: min(250px,70%); height: auto; color: #759d8d; }
-.emptyStockIllustration path, .emptyStockIllustration circle { fill: none; stroke: currentColor; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
-.emptyStockIllustration .emptyStockMachineFill { fill: #f0f7f4; }
-.emptyStockIllustration .emptyStockGround { color: #bdd0c8; stroke-width: 2; }
-.emptyStock h3 { max-width: 520px; margin: .9rem 0 .4rem; font-family: 'Montserrat', sans-serif; font-size: clamp(1.2rem,2vw,1.45rem); font-weight: 850; letter-spacing: -.025em; }
+.emptyStock { display: grid; align-content: center; justify-items: center; min-height: 410px; padding: clamp(2.4rem,5vw,4.25rem) 1.2rem; border: 1px dashed #cbded6; border-radius: 18px; background: #fcfefd; text-align: center; }
+.emptyStock h3 { max-width: 520px; margin: 0 0 .4rem; font-family: 'Montserrat', sans-serif; font-size: clamp(1.2rem,2vw,1.45rem); font-weight: 850; letter-spacing: -.025em; }
 .emptyStock p { max-width: 520px; margin: 0 0 1.25rem; color: #6d8079; font-size: .82rem; line-height: 1.6; }
 
 .deleteBackdrop { position: fixed; inset: 0; z-index: 120; display: grid; place-items: center; padding: 1rem; background: rgba(7,25,20,.7); backdrop-filter: blur(8px); }
