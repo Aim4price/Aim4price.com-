@@ -15638,13 +15638,23 @@ export default function AssetRegisterClient({
 
   const hasActiveAssetFilter = assetFilter !== 'all';
   const hasGroupedPaginationEntries = registerPaginationEntries.some((entry) => entry.kind === 'group');
-  const registerRangeDescription = filteredAssets.length
+  const registerRangeItems = filteredAssets.length
     ? hasGroupedPaginationEntries
-      ? `${umbrellaPaginationEntryCount} ${umbrellaPaginationEntryCount === 1 ? 'umbrella' : 'umbrellas'} always shown${standalonePaginationEntryCount ? ` · Standalone assets ${pageStart + 1}-${pageEnd} of ${standalonePaginationEntryCount}` : ' · No standalone assets'} · ${filteredAssets.length} ${filteredAssets.length === 1 ? 'asset' : 'assets'}${hasActiveAssetFilter ? ` · ${activeAssetFilterLabel}` : ''}`
-      : `Showing ${pageStart + 1}-${pageEnd} of ${filteredAssets.length} ${filteredAssets.length === 1 ? 'asset' : 'assets'}${hasActiveAssetFilter ? ` · ${activeAssetFilterLabel}` : ''}`
+      ? [
+        `${umbrellaPaginationEntryCount} ${umbrellaPaginationEntryCount === 1 ? 'umbrella' : 'umbrellas'} always shown`,
+        standalonePaginationEntryCount
+          ? `Standalone assets ${pageStart + 1}–${pageEnd} of ${standalonePaginationEntryCount}`
+          : 'No standalone assets',
+        ...(hasActiveAssetFilter ? [activeAssetFilterLabel] : []),
+      ]
+      : [
+        `Showing ${pageStart + 1}–${pageEnd} of ${filteredAssets.length} ${filteredAssets.length === 1 ? 'asset' : 'assets'}`,
+        ...(hasActiveAssetFilter ? [activeAssetFilterLabel] : []),
+      ]
     : searchTerm.trim() || hasActiveAssetFilter
-      ? 'No assets match the current search or filter.'
-      : 'No saved assets yet.';
+      ? ['No assets match the current search or filter.']
+      : ['No saved assets yet.'];
+  const registerRangeDescription = registerRangeItems.join(' · ');
   const selectedManualAssetType = getManualAssetOption(assetFormKind);
   const isLandPropertyDraft = assetFormKind === 'property' && assetDraft.propertyAssetSubtype === 'land';
   const replacementPriceRequiredForDraft = assetFormKind !== 'stock' && !isLandPropertyDraft;
@@ -16388,7 +16398,11 @@ export default function AssetRegisterClient({
                   </div>
 
                   <div className={`${styles.heroSummaryFooter} ${styles.heroTotalFooter}`}>
-                    <small>{registerRangeDescription}</small>
+                    <small className={styles.registerRangeSummary} aria-label={registerRangeDescription}>
+                      {registerRangeItems.map((item, index) => (
+                        <span key={`${item}-${index}`} className={styles.registerRangeItem}>{item}</span>
+                      ))}
+                    </small>
                   </div>
                 </div>
 

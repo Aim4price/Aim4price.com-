@@ -56,6 +56,10 @@ export default async function AssetRegisterPage({
       );
     }
 
+    if (requestedView === "client") {
+      redirect("/asset-registers");
+    }
+
     if (requestedRegister) {
       const dealerRegisterMode = requestedRegister.id === primaryRegister?.id ? "dealer" : "client";
       return (
@@ -69,7 +73,6 @@ export default async function AssetRegisterPage({
     return (
       <DealerRegisterGateway
         registers={registers}
-        openClientPicker={requestedView === "client"}
       />
     );
   }
