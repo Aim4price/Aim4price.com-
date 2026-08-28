@@ -1924,8 +1924,7 @@
   color: #68798b;
   font-size: 0.76rem;
   font-weight: 820;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  letter-spacing: 0;
 }
 
 .marketplaceManageSummary strong {
@@ -1944,28 +1943,27 @@
 
 .marketplaceManageChoiceGrid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 1.1rem;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.68rem;
   margin-top: 1.35rem;
 }
 
 .marketplaceManageChoiceCard {
   position: relative;
   display: flex;
-  min-height: 10.25rem;
-  flex-direction: column;
+  min-height: 5.25rem;
   align-items: center;
-  justify-content: center;
-  gap: 1rem;
-  padding: 1.35rem;
+  justify-content: space-between;
+  gap: 1.25rem;
+  padding: 1rem 1.15rem;
   border: 1px solid rgba(190, 211, 224, 0.92);
-  border-radius: 1.32rem;
+  border-radius: 1rem;
   background: linear-gradient(180deg, #ffffff 0%, #f7fbf9 100%);
   color: #143d34;
   font: inherit;
-  text-align: center;
+  text-align: left;
   cursor: pointer;
-  box-shadow: 0 16px 30px rgba(16, 45, 57, 0.04);
+  box-shadow: 0 10px 24px rgba(16, 45, 57, 0.035);
   transition: transform 170ms ease, border-color 170ms ease, box-shadow 170ms ease, background 170ms ease;
 }
 
@@ -1978,36 +1976,51 @@
   outline: none;
 }
 
-.marketplaceManageChoiceIcon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 3.35rem;
-  height: 3.35rem;
-  border: 1px solid rgba(181, 220, 203, 0.98);
-  border-radius: 1.05rem;
-  background: #eef8f3;
-  color: #165340;
+.marketplaceManageChoiceCopy {
+  display: grid;
+  gap: 0.25rem;
+  min-width: 0;
 }
 
-.marketplaceManageChoiceIcon svg {
-  width: 1.35rem;
-  height: 1.35rem;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 2.1;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
-.marketplaceManageChoiceCard strong {
+.marketplaceManageChoiceCopy strong {
   color: #0c3f33;
-  font-size: clamp(1.38rem, 2.3vw, 1.72rem);
-  font-weight: 850;
-  letter-spacing: -0.025em;
-  line-height: 1.08;
+  font-size: 1rem;
+  font-weight: 820;
+  letter-spacing: -0.015em;
+  line-height: 1.2;
 }
 
+.marketplaceManageChoiceCopy small {
+  color: #63776f;
+  font-size: 0.76rem;
+  font-weight: 580;
+  line-height: 1.45;
+}
+
+.marketplaceManageChoiceArrow {
+  flex: 0 0 auto;
+  color: #23634f;
+  font-size: 1.1rem;
+  font-weight: 800;
+}
+
+.marketplaceManageChoiceCard:disabled {
+  cursor: wait;
+  opacity: 0.58;
+  transform: none;
+}
+
+.marketplaceManageFeedback {
+  margin: 0.85rem 0 0;
+  border: 1px solid #d4e6de;
+  border-radius: 0.85rem;
+  padding: 0.72rem 0.8rem;
+  color: #315e4f;
+  background: #f3f9f6;
+  font-size: 0.74rem;
+  font-weight: 650;
+  line-height: 1.45;
+}
 
 .marketplaceManageDeleteChoice {
   background: linear-gradient(180deg, #ffffff 0%, #fff8f7 100%);
@@ -2020,11 +2033,8 @@
   box-shadow: 0 20px 42px rgba(150, 25, 20, 0.1);
 }
 
-.marketplaceManageDeleteChoice .marketplaceManageChoiceIcon {
-  border-color: #efcaca;
-  background: #fff5f4;
-  color: #b3261e;
-}
+.marketplaceManageDeleteChoice .marketplaceManageChoiceCopy strong,
+.marketplaceManageDeleteChoice .marketplaceManageChoiceArrow { color: #9d3027; }
 
 /* === Standard white delete confirmation modal === */
 .marketplaceDeleteBackdrop {
