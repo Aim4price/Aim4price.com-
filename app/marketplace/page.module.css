@@ -2926,10 +2926,7 @@
   --marketplace-sidebar-width: 300px;
 
   min-height: 0;
-  background:
-    radial-gradient(circle at 8% 4%, rgba(31, 122, 91, 0.08), transparent 28rem),
-    radial-gradient(circle at 96% 88%, rgba(237, 180, 56, 0.07), transparent 32rem),
-    #f5f8f7;
+  background: #fff;
   font-family: var(--font-body, 'Montserrat'), 'Montserrat', ui-sans-serif, system-ui, sans-serif;
 }
 
@@ -2980,9 +2977,9 @@
   overflow-y: auto;
   padding: 1.15rem;
   border: 1px solid rgba(200, 218, 210, 0.92);
-  border-radius: 1.35rem;
-  background: rgba(255, 255, 255, 0.96);
-  box-shadow: 0 18px 50px rgba(14, 55, 43, 0.07);
+  border-radius: 1rem;
+  background: #fff;
+  box-shadow: 0 10px 30px rgba(14, 55, 43, 0.055);
   scrollbar-color: rgba(22, 83, 64, 0.24) transparent;
   scrollbar-width: thin;
 }
@@ -3111,7 +3108,7 @@
   min-height: 2.75rem;
   margin-top: 0.65rem;
   border: 1px solid #d8e6df;
-  border-radius: 999px;
+  border-radius: 0.75rem;
   background: #edf6f1;
   color: #17694f;
 }
@@ -3128,6 +3125,7 @@
 .showroomResults .filterChip {
   min-height: 2.35rem;
   border: 1px solid #d8e7df;
+  border-radius: 0.7rem;
   background: #ffffff;
   box-shadow: 0 6px 18px rgba(14, 55, 43, 0.04);
 }
@@ -3139,7 +3137,7 @@
 .showroomResults .listingCard {
   padding: 0.6rem;
   border-color: rgba(198, 215, 207, 0.9);
-  border-radius: 1.35rem;
+  border-radius: 1rem;
   box-shadow: 0 14px 38px rgba(14, 55, 43, 0.065);
 }
 
@@ -3150,7 +3148,7 @@
 }
 
 .showroomResults .cardImageFrame {
-  border-radius: 1.05rem;
+  border-radius: 0.75rem;
   background: #e9f0ed;
 }
 
@@ -3177,6 +3175,7 @@
 .showroomResults .cardShareButton {
   color: #165e48;
   border: 1px solid rgba(218, 231, 225, 0.95);
+  border-radius: 0.65rem;
 }
 
 .showroomResults .paginationWrap {
@@ -3185,19 +3184,17 @@
 
 .showroomEmptyState {
   width: min(100%, 760px);
-  min-height: clamp(14rem, 26vw, 18rem);
+  min-height: clamp(12rem, 22vw, 15rem);
   margin: 0 auto;
-  padding: clamp(2rem, 4vw, 3.25rem);
+  padding: clamp(1.75rem, 3vw, 2.5rem);
   border-color: rgba(197, 216, 207, 0.92);
-  border-radius: 1.5rem;
-  background:
-    radial-gradient(circle at 50% 0%, rgba(30, 122, 90, 0.08), transparent 15rem),
-    #ffffff;
-  box-shadow: 0 18px 54px rgba(14, 55, 43, 0.075);
+  border-radius: 1rem;
+  background: #fff;
+  box-shadow: none;
 }
 
 .showroomEmptyState h2 {
-  margin-top: 0.85rem;
+  margin-top: 0;
   color: #103d31;
   font-size: clamp(1.35rem, 2.5vw, 1.85rem);
   font-weight: 850;
@@ -3215,41 +3212,20 @@
 .showroomEmptyState button {
   min-height: 2.85rem;
   padding-inline: 1.2rem;
-  border-radius: 999px;
+  border-radius: 0.75rem;
   background: #17694f;
-}
-
-.showroomEmptyIcon {
-  display: inline-grid;
-  place-items: center;
-  width: 3.7rem;
-  height: 3.7rem;
-  border-radius: 1.05rem;
-  color: #ffffff;
-  background: linear-gradient(145deg, #123f33, #1d7a5a);
-  box-shadow: 0 12px 28px rgba(23, 105, 79, 0.2);
-}
-
-.showroomEmptyIcon svg {
-  width: 1.65rem;
-  height: 1.65rem;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.9;
-  stroke-linecap: round;
-  stroke-linejoin: round;
 }
 
 .showroomPage .listingModal,
 .showroomPage .listingModalNoMedia,
 .showroomPage .shareDialog {
   border: 1px solid rgba(208, 223, 216, 0.9);
-  border-radius: 1.45rem;
+  border-radius: 1.1rem;
 }
 
 .showroomPage .modalActionRow button,
 .showroomPage .modalActionRow a {
-  border-radius: 999px;
+  border-radius: 0.75rem;
 }
 
 @media (max-width: 1180px) {
@@ -3346,16 +3322,16 @@
   }
 
   .showroomResults .listingCard {
-    border-radius: 1.15rem;
+    border-radius: 1rem;
   }
 
   .showroomResults .cardImageFrame {
-    border-radius: 0.9rem;
+    border-radius: 0.75rem;
   }
 
   .showroomEmptyState {
     min-height: 13rem;
     padding: 2rem 1.25rem;
-    border-radius: 1.2rem;
+    border-radius: 1rem;
   }
 }
