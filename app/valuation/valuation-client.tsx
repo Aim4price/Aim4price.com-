@@ -1878,6 +1878,9 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
   const replacementNoticeDialogRef = useRef<HTMLElement | null>(null);
   const replacementNoticeGoBackRef = useRef<HTMLButtonElement | null>(null);
   const replacementNoticeReturnFocusRef = useRef<HTMLElement | null>(null);
+  const dealerRegisterDestinationDialogRef = useRef<HTMLElement | null>(null);
+  const dealerRegisterDestinationReturnFocusRef = useRef<HTMLElement | null>(null);
+  const dealerRegisterDestinationRestoreFocusRef = useRef(true);
   const genericModelPrefilledSpecKeysRef = useRef<Set<string>>(new Set());
   const requiredQuestionsCompletedRef = useRef(false);
   const completionToastTimerRef = useRef<number | null>(null);
@@ -2329,6 +2332,47 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
       returnFocusTarget?.focus();
     };
   }, [replacementNoticeOpen]);
+
+  useEffect(() => {
+    if (!isDealerRegisterDestinationOpen) return undefined;
+
+    const dialog = dealerRegisterDestinationDialogRef.current;
+    const returnFocusTarget = dealerRegisterDestinationReturnFocusRef.current;
+    const focusableSelector =
+      'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+    const focusTimer = window.requestAnimationFrame(() => {
+      dialog?.querySelector<HTMLElement>(focusableSelector)?.focus();
+    });
+
+    function handleDealerRegisterDestinationKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        setIsDealerRegisterDestinationOpen(false);
+        return;
+      }
+
+      if (event.key !== 'Tab' || !dialog) return;
+      const focusableElements = Array.from(dialog.querySelectorAll<HTMLElement>(focusableSelector));
+      if (focusableElements.length === 0) return;
+
+      const firstFocusable = focusableElements[0];
+      const lastFocusable = focusableElements[focusableElements.length - 1];
+      if (event.shiftKey && (document.activeElement === firstFocusable || !dialog.contains(document.activeElement))) {
+        event.preventDefault();
+        lastFocusable.focus();
+      } else if (!event.shiftKey && document.activeElement === lastFocusable) {
+        event.preventDefault();
+        firstFocusable.focus();
+      }
+    }
+
+    document.addEventListener('keydown', handleDealerRegisterDestinationKeyDown);
+    return () => {
+      window.cancelAnimationFrame(focusTimer);
+      document.removeEventListener('keydown', handleDealerRegisterDestinationKeyDown);
+      if (dealerRegisterDestinationRestoreFocusRef.current) returnFocusTarget?.focus();
+    };
+  }, [isDealerRegisterDestinationOpen]);
 
   useEffect(() => {
     if (!resultState) {
@@ -4177,6 +4221,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     setDealerSaveTargetRegisterId(register.id);
     setDealerSaveTargetRegisterName(register.businessName || (mode === 'dealer' ? 'Dealer Asset Register' : 'Client Asset Register'));
     setDealerSaveTargetMode(mode);
+    dealerRegisterDestinationRestoreFocusRef.current = false;
     setIsDealerRegisterDestinationOpen(false);
     setIsDealerClientRegisterPickerOpen(false);
     setDealerClientRegisterSearch('');
@@ -4184,6 +4229,9 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
   }
 
   function openDealerRegisterDestination() {
+    dealerRegisterDestinationReturnFocusRef.current =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    dealerRegisterDestinationRestoreFocusRef.current = true;
     setMessage('');
     setFinalSaveError('');
     setDealerSaveTargetRegisterId('');
@@ -4209,6 +4257,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
   }
 
   function openDealerClientRegisterPicker() {
+    dealerRegisterDestinationRestoreFocusRef.current = false;
     setMessage('');
     setDealerClientRegisterSearch('');
     setIsDealerRegisterDestinationOpen(false);
@@ -7757,6 +7806,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
       {isDealerRegisterDestinationOpen ? (
         <div className={styles.finalSaveOverlay} onClick={closeDealerRegisterDestination}>
           <section
+            ref={dealerRegisterDestinationDialogRef}
             className={`${styles.finalSaveModal} ${styles.dealerRegisterDestinationModal}`}
             role="dialog"
             aria-modal="true"
@@ -7784,7 +7834,6 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                 className={styles.dealerRegisterDestinationOption}
                 onClick={saveToDealerAssetRegister}
                 disabled={!dealerOwnedRegister}
-                autoFocus={Boolean(dealerOwnedRegister)}
               >
                 <span className={styles.dealerRegisterDestinationOptionCopy}>
                   <strong>Dealer Asset Register</strong>
@@ -7801,7 +7850,6 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                 type="button"
                 className={styles.dealerRegisterDestinationOption}
                 onClick={openDealerClientRegisterPicker}
-                autoFocus={!dealerOwnedRegister}
               >
                 <span className={styles.dealerRegisterDestinationOptionCopy}>
                   <strong>Client Asset Register</strong>

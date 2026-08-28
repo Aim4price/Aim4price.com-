@@ -83,6 +83,10 @@ test('dealer estimates use one owner-style register action and route through a d
   assert.match(valuationClient, /openFinalSaveModal\('asset-register', register\.id\)/);
   assert.match(valuationClient, /targetRegisterId = dealerSaveTargetRegisterId/);
   assert.match(valuationClient, /aria-describedby="dealer-register-destination-description"/);
+  assert.match(valuationClient, /ref=\{dealerRegisterDestinationDialogRef\}/);
+  assert.match(valuationClient, /if \(!isDealerRegisterDestinationOpen\) return undefined;[\s\S]*event\.key === 'Escape'[\s\S]*querySelectorAll<HTMLElement>\(focusableSelector\)[\s\S]*returnFocusTarget\?\.focus\(\)/);
+  assert.match(valuationClient, /dealerRegisterDestinationReturnFocusRef\.current =[\s\S]*document\.activeElement instanceof HTMLElement/);
+  assert.match(valuationClient, /dealerRegisterDestinationRestoreFocusRef\.current = false;[\s\S]*setIsDealerClientRegisterPickerOpen\(true\)/);
   assert.match(valuationClient, /aria-describedby="dealer-client-register-picker-description"/);
   assert.match(valuationClient, /aria-describedby="final-save-description"/);
   assert.match(valuationClient, /styles\.dealerClientRegisterPickerAction/);
