@@ -16,7 +16,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { slug } = params;
   const showroom = await getCachedPublicShowroom(slug);
   return showroom
-    ? { title: `${showroom.name} machinery showroom | Aim4price`, description: showroom.bio || `Valuation-backed machinery advertised by ${showroom.name}.` }
+    ? { title: `${showroom.name} machinery showroom | Aim4price`, description: showroom.bio || `Machinery advertised by ${showroom.name} on Aim4price.` }
     : { title: 'Showroom not found | Aim4price' };
 }
 
