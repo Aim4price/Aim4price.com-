@@ -314,7 +314,7 @@ test('signup presents Middleman as a separate free account choice', async () => 
   assert.match(accountClient, /isDealerAccount && !isMiddlemanAccount/);
 });
 
-test('dealer showrooms are standard, valuation-backed and reuse the Marketplace experience', async () => {
+test('owner and dealer showrooms reuse the seller-scoped Marketplace experience', async () => {
   const [showroomDb, publicPage, manager, marketplaceUi, marketplaceDb, dealerHome, header] = await Promise.all([
     read('lib/middleman-showroom-db.ts'),
     read('app/showroom/[slug]/page.tsx'),
@@ -326,7 +326,12 @@ test('dealer showrooms are standard, valuation-backed and reuse the Marketplace 
   ]);
 
   assert.match(showroomDb, /middleman_showrooms/);
-  assert.match(showroomDb, /function assertDealerProfile/);
+  assert.match(showroomDb, /function isShowroomProfile/);
+  assert.match(showroomDb, /profile\.accountType === 'owner' \|\| profile\.accountType === 'dealer'/);
+  assert.match(showroomDb, /profile\.accountStatus === 'active'/);
+  assert.match(showroomDb, /function assertShowroomProfile/);
+  assert.match(showroomDb, /throw new Error\('SHOWROOM_FORBIDDEN'\)/);
+  assert.match(showroomDb, /if \(!isShowroomProfile\(profile\)\) return null/);
   assert.doesNotMatch(showroomDb, /isMiddlemanAccountSubtype/);
   assert.match(publicPage, /sellerUserId: showroom\.userId/);
   assert.match(publicPage, /cache\(getPublicMiddlemanShowroomBySlug\)/);
@@ -345,6 +350,54 @@ test('dealer showrooms are standard, valuation-backed and reuse the Marketplace 
   assert.match(marketplaceDb, /requireValuationSource && !pick\(row, \['valuation_run_id'\]\)/);
   assert.match(dealerHome, /new Set<DealerAppCapability>\(\['inventory', 'valuation', 'ad_studio', 'showroom', 'marketplace'\]\)/);
   assert.match(header, /href: '\/my-showroom', label: 'My Showroom', accountTypes: \['dealer'\]/);
+});
+
+test('owners manage a private-by-default showroom from Account without owner navigation shortcuts', async () => {
+  const [showroomDb, myShowroomPage, route, accountClient, accountCss, header, publicPage, marketplaceDb] = await Promise.all([
+    read('lib/middleman-showroom-db.ts'),
+    read('app/my-showroom/page.tsx'),
+    read('app/api/middleman-showroom/route.ts'),
+    read('app/account/account-client.tsx'),
+    read('app/account/page.module.css'),
+    read('components/AppHeader.tsx'),
+    read('app/showroom/[slug]/page.tsx'),
+    read('lib/marketplace-db.ts'),
+  ]);
+
+  const ownerNav = header.match(/const OWNER_NAV_ITEMS: NavItem\[\] = \[[\s\S]*?\n\];/)?.[0] ?? '';
+
+  assert.match(accountClient, /const isOwnerAccount = normalizedAccountType === "owner"/);
+  assert.match(accountClient, /\{isOwnerAccount \? \([\s\S]*?<Link href="\/my-showroom" className=\{styles\.quickActionButton\}>[\s\S]*?<strong>Manage my showroom<\/strong>/);
+  assert.match(accountClient, /QuickActionIcon name="showroom"/);
+  assert.match(accountCss, /\.quickActionButton:focus-visible\s*\{/);
+  assert.doesNotMatch(ownerNav, /showroom|my-showroom/i);
+  assert.match(header, /href: '\/my-showroom', label: 'My Showroom', accountTypes: \['dealer'\]/);
+
+  assert.match(myShowroomPage, /getServerSession\(\{ allowDealerApp: true \}\)/);
+  assert.doesNotMatch(myShowroomPage, /allowOwnerApp/);
+  assert.match(myShowroomPage, /active=\{profile\.accountType === 'owner' \? 'account' : 'showroom'\}/);
+  assert.match(myShowroomPage, /viewerUserId: session\.user\.id/);
+  assert.match(myShowroomPage, /sellerUserId: session\.user\.id/);
+  assert.match(myShowroomPage, /exposeContact: true/);
+
+  assert.match(route, /getServerSession\(\{ allowDealerApp: true \}\)/);
+  assert.doesNotMatch(route, /allowOwnerApp/);
+  assert.match(route, /isDealerAppSession\(session\) && !dealerRoleCan\(session\.dealerApp\.role, 'showroom'\)/);
+  assert.equal(route.match(/message === 'SHOWROOM_FORBIDDEN' \? 403/g)?.length, 3);
+  assert.match(route, /if \(!context\) return NextResponse\.json\(\{ ok: false, error: 'You must be signed in\.' \}, \{ status: 401 \}\)/);
+  assert.match(route, /viewerUserId: context\.session\.user\.id/);
+  assert.match(route, /sellerUserId: context\.session\.user\.id/);
+  assert.match(route, /exposeContact: true/);
+
+  assert.match(showroomDb, /insert into middleman_showrooms \(user_id, slug, is_public\)/);
+  assert.match(showroomDb, /\[profile\.userId, slug, profile\.accountType !== 'owner'\]/);
+  assert.match(showroomDb, /const ownerContactOnly = profile\.accountType === 'owner'/);
+  assert.match(showroomDb, /phone: profile\.marketplacePhone \|\| \(ownerContactOnly \? '' : profile\.phone\)/);
+  assert.match(showroomDb, /email: profile\.marketplaceEmail \|\| \(ownerContactOnly \? '' : profile\.email\)/);
+  assert.match(publicPage, /sellerUserId: showroom\.userId/);
+  assert.doesNotMatch(publicPage, /Valuation-backed machinery/);
+  assert.match(marketplaceDb, /options\.sellerUserId/);
+  assert.match(marketplaceDb, /a\.user_id = \$1/);
 });
 
 test('public showroom presents clear business details in a white seller-scoped Marketplace', async () => {
@@ -374,6 +427,10 @@ test('public showroom presents clear business details in a white seller-scoped M
   assert.match(publicShowroom, /href=\{showroom\.websiteUrl\} target="_blank" rel="noreferrer"/);
   assert.match(publicShowroom, /websiteLabel\(showroom\.websiteUrl\)/);
   assert.match(publicShowroom, /className=\{styles\.inventorySummary\}>\{listings\.length\} live/);
+  assert.match(publicShowroom, /Clear equipment details and direct seller contact\./);
+  assert.match(publicShowroom, /Browse equipment listed by \{showroom\.name\} and contact the seller directly\./);
+  assert.match(publicShowroom, /Professional machinery advertising and direct seller contact\./);
+  assert.doesNotMatch(publicShowroom, /valuation-backed equipment|Every advert is backed by an Aim4price valuation|advertising backed by valuations/i);
   assert.doesNotMatch(publicAdvertSummaryRule, /border(?:-radius)?:|background:/);
   assert.doesNotMatch(inventorySummaryRule, /border(?:-radius)?:|background:/);
 
