@@ -127,8 +127,10 @@
 .showroomLogoField { display: grid; grid-template-columns: 4.25rem minmax(0,1fr) auto; align-items: center; gap: .9rem; margin-bottom: 1rem; border: 1px solid #dce8e3; border-radius: 14px; padding: 1rem; background: #f8fbfa; transition: border-color .16s ease, box-shadow .16s ease, background .16s ease; }
 .showroomLogoCopy { display: grid; gap: .28rem; min-width: 0; }
 .showroomLogoCopy strong { color: #264d42; font-size: .79rem; font-weight: 800; }
-.showroomLogoCopy span { max-width: 19rem; color: #6f837b; font-size: .74rem; line-height: 1.45; }
-.showroomLogoCopy > small { color: #84938e; font-size: .63rem; font-weight: 650; line-height: 1.35; }
+.showroomLogoCopy span { max-width: 19rem; color: #50675f; font-size: .74rem; line-height: 1.45; }
+.showroomLogoCopy > small { color: #5b7068; font-size: .67rem; font-weight: 650; line-height: 1.4; }
+.showroomLogoCopy .showroomLogoFeedback { color: #25634f; font-weight: 750; }
+.showroomLogoCopy .showroomLogoFeedbackError { color: #9b3b28; }
 .showroomLogoPreview { position: relative; overflow: hidden; display: grid; place-items: center; width: 4.25rem; height: 3.5rem; border: 1px dashed #a8c3b8; border-radius: 11px; padding: 0; color: #587269; background: #fff; font-size: .7rem; font-weight: 800; }
 .showroomLogoPreview img { display: block; width: 100%; height: 100%; padding: .38rem; object-fit: contain; background: #fff; }
 .showroomLogoPreview small { position: absolute; inset: auto .22rem .22rem; border-radius: 6px; padding: .2rem .3rem; color: #fff; background: rgba(16,71,55,.9); font-size: .52rem; font-weight: 800; line-height: 1.15; }
@@ -137,7 +139,7 @@
 .showroomLogoButton, .showroomLogoReset { border-radius: 9px; font-weight: 800; cursor: pointer; transition: border-color .16s ease, background .16s ease; }
 .showroomLogoButton { min-height: 2.65rem; border: 1px solid #c7d9d2; padding: 0 .85rem; color: var(--green); background: #fff; font-size: .69rem; white-space: nowrap; }
 .showroomLogoButton:hover:not(:disabled) { border-color: #a9c7bb; background: #f1f8f5; }
-.showroomLogoReset { justify-self: start; min-height: 1.3rem; border: 0; padding: 0; color: #477267; background: transparent; font-size: .65rem; text-align: left; text-decoration: underline; text-decoration-color: #aec7bd; text-underline-offset: 2px; }
+.showroomLogoReset { display: inline-flex; align-items: center; justify-self: start; min-height: 2rem; border: 0; padding: .2rem 0; color: #477267; background: transparent; font-size: .67rem; text-align: left; text-decoration: underline; text-decoration-color: #aec7bd; text-underline-offset: 2px; }
 .showroomLogoReset:hover:not(:disabled) { color: var(--green); }
 .showroomLogoButton:disabled, .showroomLogoReset:disabled { cursor: wait; opacity: .55; }
 .showroomLogoInput { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }
@@ -261,6 +263,16 @@
 @media (max-width: 1060px) {
   .managerHero { align-items: flex-start; flex-direction: column; }
   .managerGrid { grid-template-columns: 1fr; }
+}
+
+@media (min-width: 1061px) and (max-width: 1280px) {
+  .showroomLogoField { grid-template-columns: 4.25rem minmax(0,1fr); }
+  .showroomLogoActions { grid-column: 2; justify-content: flex-start; }
+}
+
+@media (max-width: 620px) {
+  .showroomLogoField { grid-template-columns: 4.25rem minmax(0,1fr); }
+  .showroomLogoActions { grid-column: 2; justify-content: flex-start; }
 }
 
 @media (max-width: 760px) {
