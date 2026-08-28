@@ -31,7 +31,7 @@ export default async function MyShowroomPage() {
   });
   return (
     <main>
-      <AppHeader active="showroom" />
+      <AppHeader active={profile.accountType === 'owner' ? 'account' : 'showroom'} />
       <MiddlemanShowroomManager initialShowroom={showroom} initialListings={listings} />
     </main>
   );
