@@ -11,6 +11,7 @@ import {
 } from 'react';
 import AppHeader from '../../components/AppHeader';
 import GroupedCurrencyInput from '../../components/GroupedCurrencyInput';
+import MarketplaceOutcomeModal from '../../components/MarketplaceOutcomeModal';
 import styles from './page.module.css';
 import dealerStyles from '../dealer/dealer.module.css';
 import {
@@ -271,26 +272,6 @@ function IconClose() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">
       <path d="M6 6l12 12M18 6 6 18" />
-    </svg>
-  );
-}
-
-function IconPencil() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M4 20h4l10.5-10.5a2.12 2.12 0 0 0-3-3L5 17v3Z" />
-      <path d="m14 7 3 3" />
-    </svg>
-  );
-}
-
-function IconTrash() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M4 7h16" />
-      <path d="M10 11v6M14 11v6" />
-      <path d="M6 7l1 13h10l1-13" />
-      <path d="M9 7V4h6v3" />
     </svg>
   );
 }
@@ -2143,9 +2124,8 @@ export default function MarketplaceClient({
   const [editListingDraft, setEditListingDraft] = useState<MarketplaceEditDraft | null>(null);
   const [isSavingListingEdit, setIsSavingListingEdit] = useState(false);
   const [listingEditError, setListingEditError] = useState('');
-  const [deleteListingTarget, setDeleteListingTarget] = useState<MarketplaceListing | null>(null);
-  const [isDeletingListing, setIsDeletingListing] = useState(false);
-  const [deleteListingError, setDeleteListingError] = useState('');
+  const [outcomeListingTarget, setOutcomeListingTarget] = useState<MarketplaceListing | null>(null);
+  const [manageListingFeedback, setManageListingFeedback] = useState('');
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [photoViewerOpen, setPhotoViewerOpen] = useState(false);
   const [shareListing, setShareListing] = useState<MarketplaceListing | null>(null);
@@ -2154,6 +2134,7 @@ export default function MarketplaceClient({
   const [createListingModalOpen, setCreateListingModalOpen] = useState(false);
   const [listingQueryId, setListingQueryId] = useState('');
   const [openCreatedAdFromUrl, setOpenCreatedAdFromUrl] = useState(false);
+  const [openManageFromUrl, setOpenManageFromUrl] = useState(false);
   const [sectorFilter, setSectorFilter] = useState<SectorKey | ''>('');
   const [familyFilter, setFamilyFilter] = useState('');
   const [dealRatingFilter, setDealRatingFilter] = useState<DealRatingFilterValue>('any');
@@ -2165,6 +2146,7 @@ export default function MarketplaceClient({
   const [dealerFiltersOpen, setDealerFiltersOpen] = useState(false);
   const modalDetailsRef = useRef<HTMLElement | null>(null);
   const createdAdOpenedRef = useRef('');
+  const manageDeepLinkOpenedRef = useRef('');
   const deepLinkViewRef = useRef('');
   const anonymousViewerIdRef = useRef('');
   const resultsAreaRef = useRef<HTMLElement | null>(null);
@@ -2301,6 +2283,7 @@ export default function MarketplaceClient({
       const searchParams = new URLSearchParams(window.location.search);
       setListingQueryId(String(searchParams.get('listing') ?? '').trim());
       setOpenCreatedAdFromUrl(searchParams.get('createAd') === '1');
+      setOpenManageFromUrl(searchParams.get('manage') === '1');
     };
 
     syncListingFromUrl();
@@ -2557,7 +2540,16 @@ export default function MarketplaceClient({
       setShareListing(nextListing);
       setShareFeedback('Your advert is live on Marketplace. Download the JPEG or share the listing below.');
     }
-  }, [canExposeSellerContact, items, listingQueryId, openCreatedAdFromUrl, trackListingOpen]);
+    if (
+      openManageFromUrl
+      && nextListing.canManage
+      && manageDeepLinkOpenedRef.current !== listingQueryId
+    ) {
+      manageDeepLinkOpenedRef.current = listingQueryId;
+      setManageListingTarget(nextListing);
+      setManageListingFeedback('');
+    }
+  }, [canExposeSellerContact, items, listingQueryId, openCreatedAdFromUrl, openManageFromUrl, trackListingOpen]);
 
   useEffect(() => {
     if (!activeListing) {
@@ -2568,7 +2560,7 @@ export default function MarketplaceClient({
     document.body.style.overflow = 'hidden';
 
     const onKeyDown = (event: KeyboardEvent) => {
-      if (shareListing || manageListingTarget || editListingTarget || deleteListingTarget) {
+      if (shareListing || manageListingTarget || editListingTarget || outcomeListingTarget) {
         return;
       }
 
@@ -2600,7 +2592,7 @@ export default function MarketplaceClient({
       document.body.style.overflow = previousOverflow;
       window.removeEventListener('keydown', onKeyDown);
     };
-  }, [activeImages.length, activeListing, deleteListingTarget, editListingTarget, manageListingTarget, photoViewerOpen, shareListing]);
+  }, [activeImages.length, activeListing, editListingTarget, manageListingTarget, outcomeListingTarget, photoViewerOpen, shareListing]);
 
   useEffect(() => {
     if (!shareListing) {
@@ -2657,6 +2649,8 @@ export default function MarketplaceClient({
       url.searchParams.set('listing', nextListingId);
     } else {
       url.searchParams.delete('listing');
+      url.searchParams.delete('manage');
+      setOpenManageFromUrl(false);
     }
 
     window.history.replaceState(window.history.state, '', `${url.pathname}${url.search}${url.hash}`);
@@ -2752,8 +2746,8 @@ export default function MarketplaceClient({
     setEditListingTarget(null);
     setEditListingDraft(null);
     setListingEditError('');
-    setDeleteListingTarget(null);
-    setDeleteListingError('');
+    setOutcomeListingTarget(null);
+    setManageListingFeedback('');
     setActiveImageIndex(0);
     setPhotoViewerOpen(false);
     updateListingUrl(null);
@@ -2849,15 +2843,19 @@ export default function MarketplaceClient({
     }
 
     setManageListingTarget(activeListing);
-    setDeleteListingError('');
+    setManageListingFeedback('');
   }
 
   function closeManageListingModal() {
-    if (isDeletingListing) {
-      return;
-    }
-
     setManageListingTarget(null);
+    setManageListingFeedback('');
+
+    if (openManageFromUrl && typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      url.searchParams.delete('manage');
+      window.history.replaceState(window.history.state, '', `${url.pathname}${url.search}${url.hash}`);
+      setOpenManageFromUrl(false);
+    }
   }
 
   function handleEditManagedListing() {
@@ -2965,63 +2963,43 @@ export default function MarketplaceClient({
     }
   }
 
-  function openDeleteListingModal() {
+  async function downloadManagedListing() {
+    const listing = manageListingTarget;
+    if (!listing || isCreatingJpegAd) return;
+
+    setIsCreatingJpegAd(true);
+    setManageListingFeedback('Creating your JPEG advert…');
+    try {
+      const { blob } = await createSharedMarketplaceAdJpeg(listing, {
+        design: 'aim4price-marketplace',
+      });
+      downloadMarketplaceAd(blob, marketplaceAdFilename(listingDisplayTitle(listing)));
+      setManageListingFeedback('JPEG advert downloaded.');
+    } catch {
+      setManageListingFeedback('The JPEG advert could not be created. Please try again.');
+    } finally {
+      setIsCreatingJpegAd(false);
+    }
+  }
+
+  function openOutcomeListingModal() {
     const target = manageListingTarget ?? activeListing;
 
     if (!target?.sourceAssetId || !target.canManage) {
       return;
     }
 
-    setDeleteListingTarget(target);
+    setOutcomeListingTarget(target);
     setManageListingTarget(null);
-    setDeleteListingError('');
   }
 
-  function closeDeleteListingModal() {
-    if (isDeletingListing) {
-      return;
-    }
+  function handleListingOutcomeRemoved(listing: MarketplaceListing) {
+    const assetId = listing.sourceAssetId;
+    setItems((current) => current.filter((item) => item.sourceAssetId !== assetId));
+    setOutcomeListingTarget(null);
 
-    setDeleteListingTarget(null);
-    setDeleteListingError('');
-  }
-
-  async function handleDeleteActiveListing() {
-    if (!deleteListingTarget?.sourceAssetId || !deleteListingTarget.canManage) {
-      return;
-    }
-
-    const assetId = deleteListingTarget.sourceAssetId;
-
-    try {
-      setIsDeletingListing(true);
-      setDeleteListingError('');
-
-      const response = await fetch(
-        `/api/marketplace?assetId=${encodeURIComponent(assetId)}`,
-        {
-          method: 'DELETE',
-          credentials: 'include',
-        },
-      );
-
-      const data = (await response.json()) as { ok: boolean; error?: string };
-
-      if (!response.ok || !data.ok) {
-        throw new Error(data.error ?? 'Failed to delete listing.');
-      }
-
-      setItems((current) => current.filter((listing) => listing.sourceAssetId !== assetId));
-      setDeleteListingTarget(null);
-      setDeleteListingError('');
-
-      if (activeListing?.sourceAssetId === assetId) {
-        closeListing();
-      }
-    } catch (error) {
-      setDeleteListingError(error instanceof Error ? error.message : 'Failed to delete listing.');
-    } finally {
-      setIsDeletingListing(false);
+    if (activeListing?.sourceAssetId === assetId) {
+      closeListing();
     }
   }
 
@@ -3814,7 +3792,7 @@ export default function MarketplaceClient({
             </button>
 
             <div className={styles.marketplaceManageHeader}>
-              <h3 id="marketplace-manage-title">Manage marketplace listing</h3>
+              <h3 id="marketplace-manage-title">Manage advert</h3>
             </div>
 
             <div className={styles.marketplaceManageSummary}>
@@ -3825,23 +3803,42 @@ export default function MarketplaceClient({
 
             <div className={styles.marketplaceManageChoiceGrid}>
               <button type="button" className={styles.marketplaceManageChoiceCard} onClick={handleEditManagedListing}>
-                <span className={styles.marketplaceManageChoiceIcon} aria-hidden="true">
-                  <IconPencil />
+                <span className={styles.marketplaceManageChoiceCopy}>
+                  <strong>Edit advert</strong>
+                  <small>Update the price, description and seller details.</small>
                 </span>
-                <strong>Edit</strong>
+                <span className={styles.marketplaceManageChoiceArrow} aria-hidden="true">→</span>
+              </button>
+
+              <button
+                type="button"
+                className={styles.marketplaceManageChoiceCard}
+                onClick={() => void downloadManagedListing()}
+                disabled={isCreatingJpegAd}
+              >
+                <span className={styles.marketplaceManageChoiceCopy}>
+                  <strong>Download JPEG</strong>
+                  <small>Save an advert using the standard Aim4price Marketplace design.</small>
+                </span>
+                <span className={styles.marketplaceManageChoiceArrow} aria-hidden="true">↓</span>
               </button>
 
               <button
                 type="button"
                 className={`${styles.marketplaceManageChoiceCard} ${styles.marketplaceManageDeleteChoice}`}
-                onClick={openDeleteListingModal}
+                onClick={openOutcomeListingModal}
               >
-                <span className={styles.marketplaceManageChoiceIcon} aria-hidden="true">
-                  <IconTrash />
+                <span className={styles.marketplaceManageChoiceCopy}>
+                  <strong>Remove advert</strong>
+                  <small>Tell us what happened, then withdraw it from Marketplace and your showroom.</small>
                 </span>
-                <strong>Delete</strong>
+                <span className={styles.marketplaceManageChoiceArrow} aria-hidden="true">→</span>
               </button>
             </div>
+
+            {manageListingFeedback ? (
+              <p className={styles.marketplaceManageFeedback} role="status">{manageListingFeedback}</p>
+            ) : null}
           </div>
         </div>
       ) : null}
@@ -3911,54 +3908,12 @@ export default function MarketplaceClient({
         </div>
       ) : null}
 
-      {deleteListingTarget ? (
-        <div className={styles.marketplaceDeleteBackdrop}>
-          <div
-            className={styles.marketplaceDeleteModal}
-            role="alertdialog"
-            aria-modal="true"
-            aria-labelledby="marketplace-delete-title"
-            aria-describedby="marketplace-delete-copy"
-          >
-            <div className={styles.marketplaceDeleteHeader}>
-              <div>
-                <h3 id="marketplace-delete-title">Delete marketplace listing?</h3>
-                <p id="marketplace-delete-copy">
-                  {compactAppMode
-                    ? 'This removes the listing from the Marketplace.'
-                    : 'This removes the listing from the marketplace. The asset stays saved in your Asset Register.'}
-                </p>
-              </div>
-              <button
-                type="button"
-                className={styles.marketplaceDeleteCloseButton}
-                onClick={closeDeleteListingModal}
-                aria-label="Close delete confirmation"
-                disabled={isDeletingListing}
-              >
-                ×
-              </button>
-            </div>
-
-            <div className={styles.marketplaceDeleteSelected}>
-              <span>Selected listing</span>
-              <strong>{listingDisplayTitle(deleteListingTarget)}</strong>
-              <p>{money(deleteListingTarget.askingPriceExVat)} excl. VAT · {formatLocation(deleteListingTarget)}</p>
-            </div>
-
-            {deleteListingError ? <p className={styles.marketplaceDeleteError}>{deleteListingError}</p> : null}
-
-            <div className={styles.marketplaceDeleteActions}>
-              <button type="button" className={styles.marketplaceDeleteSecondaryButton} onClick={closeDeleteListingModal} disabled={isDeletingListing}>
-                Close
-              </button>
-              <button type="button" className={styles.marketplaceDeleteDangerButton} onClick={() => void handleDeleteActiveListing()} disabled={isDeletingListing}>
-                {isDeletingListing ? 'Deleting...' : 'Yes, delete listing'}
-              </button>
-            </div>
-          </div>
-        </div>
-      ) : null}
+      <MarketplaceOutcomeModal
+        listing={outcomeListingTarget}
+        source="marketplace"
+        onClose={() => setOutcomeListingTarget(null)}
+        onRemoved={handleListingOutcomeRemoved}
+      />
 
       {shareListing ? (
         <div className={styles.shareOverlay} onClick={closeShareSheet}>
