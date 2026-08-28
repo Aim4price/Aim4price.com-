@@ -113,6 +113,46 @@ test("the shared shell carries the umbrella proportions, spacing and surfaces", 
   );
 });
 
+test("legacy modal spacing is neutralised and laptop-height screens use a compact rhythm", () => {
+  assert.match(
+    wizardStyles,
+    /\.dialog\s*\{[\s\S]*?margin: 0 !important;[\s\S]*?padding: 0 !important;/,
+  );
+  assert.match(
+    wizardStyles,
+    /\.dialog \.header\s*\{[\s\S]*?width: 100%;[\s\S]*?margin: 0 !important;/,
+  );
+  assert.match(
+    wizardStyles,
+    /\.dialog \.body\s*\{[\s\S]*?width: 100%;[\s\S]*?margin: 0 !important;/,
+  );
+  assert.match(
+    wizardStyles,
+    /@media \(min-width: 721px\) and \(max-height: 900px\)[\s\S]*?\.dialog \.header\s*\{[\s\S]*?padding-top: 22px !important;[\s\S]*?padding-bottom: 18px !important;/,
+  );
+  assert.match(
+    wizardStyles,
+    /@media \(min-width: 721px\) and \(max-height: 900px\)[\s\S]*?\.dialog \.body\s*\{[\s\S]*?padding-top: 20px !important;[\s\S]*?padding-bottom: 22px !important;/,
+  );
+  assert.match(
+    wizardStyles,
+    /@media \(min-width: 721px\) and \(max-height: 900px\)[\s\S]*?\.dialog \.panel\s*\{[\s\S]*?margin-top: 18px;[\s\S]*?padding: 20px 24px !important;/,
+  );
+});
+
+test("every wizard restores the top spacing when its step changes", () => {
+  for (const bodyRef of [
+    "budgetWizardBodyRef",
+    "recurringWizardBodyRef",
+    "manualCostWizardBodyRef",
+    "invoiceDropWizardBodyRef",
+  ]) {
+    assert.match(invoices, new RegExp(`${bodyRef}\\.current\\?\\.scrollTo`));
+  }
+  assert.match(documents, /uploadWizardBodyRef\.current\?\.scrollTo\(\{ top: 0, left: 0 \}\)/);
+  assert.match(documents, /\[modalMode, showAssetPicker, uploadStep\]/);
+});
+
 test("wizard progress uses umbrella circles and connecting rules instead of segmented pills", () => {
   assert.match(
     wizardStyles,

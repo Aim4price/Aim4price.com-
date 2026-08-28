@@ -1246,12 +1246,16 @@ export default function MyInvoicesClient({
   const recurringScopeTriggerRef = useRef<HTMLButtonElement>(null);
   const recurringCategoryTriggerRef = useRef<HTMLButtonElement>(null);
   const recurringWizardStepHeadingRef = useRef<HTMLHeadingElement>(null);
+  const recurringWizardBodyRef = useRef<HTMLDivElement>(null);
   const manualCostWizardStepHeadingRef = useRef<HTMLHeadingElement>(null);
+  const manualCostWizardBodyRef = useRef<HTMLDivElement>(null);
+  const invoiceDropWizardBodyRef = useRef<HTMLDivElement>(null);
   const budgetDeleteButtonRef = useRef<HTMLButtonElement>(null);
   const budgetDeleteCancelRef = useRef<HTMLButtonElement>(null);
   const budgetDeleteReturnFocusRef = useRef(false);
   const budgetDeleteOriginRef = useRef<'manager' | 'form'>('form');
   const budgetWizardStepHeadingRef = useRef<HTMLHeadingElement>(null);
+  const budgetWizardBodyRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -1424,6 +1428,14 @@ export default function MyInvoicesClient({
     void loadInvoiceDropCode();
     return () => { cancelled = true; };
   }, [canManageInvoiceDropCodes, invoiceDropCodeOpen, invoiceDropTargetKey, invoiceDropWizardStep]);
+
+  useEffect(() => {
+    if (!invoiceDropCodeOpen || invoiceDropAssetPickerOpen) return undefined;
+    const scrollFrame = window.requestAnimationFrame(() => {
+      invoiceDropWizardBodyRef.current?.scrollTo({ top: 0, left: 0 });
+    });
+    return () => window.cancelAnimationFrame(scrollFrame);
+  }, [invoiceDropAssetPickerOpen, invoiceDropCodeOpen, invoiceDropWizardStep]);
 
   useEffect(() => {
     if (initialLaunchHandled || isLoading) return;
@@ -1764,13 +1776,14 @@ export default function MyInvoicesClient({
   useEffect(() => {
     if (!budgetModalOpen || budgetAssetPickerOpen) return undefined;
     const focusFrame = window.requestAnimationFrame(() => {
+      budgetWizardBodyRef.current?.scrollTo({ top: 0, left: 0 });
       const scopeTarget = budgetScopeTriggerRef.current;
       const target = budgetDeleteReturnFocusRef.current
         ? budgetDeleteButtonRef.current
         : budgetWizardStep === 1
           ? scopeTarget && !scopeTarget.disabled ? scopeTarget : budgetWizardStepHeadingRef.current
           : budgetWizardStepHeadingRef.current;
-      (target ?? budgetWizardStepHeadingRef.current)?.focus();
+      (target ?? budgetWizardStepHeadingRef.current)?.focus({ preventScroll: true });
       budgetDeleteReturnFocusRef.current = false;
     });
     return () => window.cancelAnimationFrame(focusFrame);
@@ -1860,11 +1873,12 @@ export default function MyInvoicesClient({
   useEffect(() => {
     if (!recurringOpen || recurringAssetPickerOpen) return undefined;
     const focusFrame = window.requestAnimationFrame(() => {
+      recurringWizardBodyRef.current?.scrollTo({ top: 0, left: 0 });
       const scopeTarget = recurringScopeTriggerRef.current;
       const target = recurringWizardStep === 1
         ? scopeTarget && !scopeTarget.disabled ? scopeTarget : recurringWizardStepHeadingRef.current
         : recurringWizardStepHeadingRef.current;
-      target?.focus();
+      target?.focus({ preventScroll: true });
     });
 
     function handleKeyDown(event: KeyboardEvent) {
@@ -1900,7 +1914,10 @@ export default function MyInvoicesClient({
 
   useEffect(() => {
     if (!manualCostWizardOpen || usageMetricDropdownOpen) return undefined;
-    const focusFrame = window.requestAnimationFrame(() => manualCostWizardStepHeadingRef.current?.focus());
+    const focusFrame = window.requestAnimationFrame(() => {
+      manualCostWizardBodyRef.current?.scrollTo({ top: 0, left: 0 });
+      manualCostWizardStepHeadingRef.current?.focus({ preventScroll: true });
+    });
 
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === 'Escape' && !isSaving) {
@@ -2229,12 +2246,8 @@ export default function MyInvoicesClient({
     setBudgetWizardStep((current) => (current === 3 ? 2 : 1));
   }
 
-  async function submitCostBudget(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (budgetWizardStep !== 3) {
-      continueBudgetWizard();
-      return;
-    }
+  async function saveCostBudget() {
+    if (budgetWizardStep !== 3 || budgetSaving) return;
     if (!budgetLimitIsValid) {
       setBudgetWizardStep(2);
       setBudgetFormError('Enter a budget amount and a warning level from 1% to 99%.');
@@ -4067,7 +4080,7 @@ export default function MyInvoicesClient({
           ) : (
             <form
               className={[styles.downloadModal, styles.invoiceDropCodeModal, styles.budgetWizardModal, wizardStyles.dialog].join(' ')}
-              onSubmit={submitCostBudget}
+              onSubmit={(event) => event.preventDefault()}
             >
               <div className={[styles.modalHeader, styles.invoiceDropCodeHeader, wizardStyles.header].join(' ')}>
                 <div className={wizardStyles.headerText}>
@@ -4083,7 +4096,7 @@ export default function MyInvoicesClient({
                 </button>
               </div>
 
-              <div className={[styles.invoiceDropCodeBody, styles.budgetWizardBody, wizardStyles.body].join(' ')}>
+              <div ref={budgetWizardBodyRef} className={[styles.invoiceDropCodeBody, styles.budgetWizardBody, wizardStyles.body].join(' ')}>
                 <p className={wizardStyles.intro}>Complete one short step at a time. Your spending budget is saved on the final step.</p>
                 <ol className={`${styles.invoiceDropWizardProgress} ${wizardStyles.progress}`} aria-label={'Step ' + budgetWizardStep + ' of 3'}>
                   {([['Coverage', 1], ['Limit', 2], ['Review', 3]] as const).map(([label, step]) => (
@@ -4292,12 +4305,12 @@ export default function MyInvoicesClient({
                   {budgetWizardStep === 1 ? 'Cancel' : 'Back'}
                 </button>
                 {budgetWizardStep < 3 ? (
-                  <button type="button" className={`${styles.primaryButton} ${wizardStyles.primaryAction}`} onClick={continueBudgetWizard} disabled={budgetSaving}>
+                  <button key="budget-next" type="button" className={`${styles.primaryButton} ${wizardStyles.primaryAction}`} onClick={continueBudgetWizard} disabled={budgetSaving}>
                     Next
                   </button>
                 ) : (
-                  <button type="submit" className={`${styles.primaryButton} ${wizardStyles.primaryAction}`} disabled={budgetSaving}>
-                    {budgetSaving ? 'Saving...' : editingBudgetId ? 'Save changes' : 'Create budget'}
+                  <button key="budget-save" type="button" className={`${styles.primaryButton} ${wizardStyles.primaryAction}`} onClick={() => void saveCostBudget()} disabled={budgetSaving}>
+                    {budgetSaving ? 'Saving...' : editingBudgetId ? 'Save changes' : 'Save budget'}
                   </button>
                 )}
               </div>
@@ -4342,7 +4355,7 @@ export default function MyInvoicesClient({
               <button type="button" className={`${styles.closeButton} ${wizardStyles.closeButton}`} onClick={closeInvoiceDropCodeManager} aria-label="Close Invoice Drop code manager"><CloseIcon /></button>
             </div>
 
-            <div className={`${styles.invoiceDropCodeBody} ${wizardStyles.body}`}>
+            <div ref={invoiceDropWizardBodyRef} className={`${styles.invoiceDropCodeBody} ${wizardStyles.body}`}>
               <p className={wizardStyles.intro}>Complete one short step at a time. Your contribution route stays private throughout.</p>
               <ol className={`${styles.invoiceDropWizardProgress} ${wizardStyles.progress}`} aria-label={`Step ${invoiceDropWizardStep} of 3`}>
                 {([['Access', 1], ['Routing', 2], ['Code', 3]] as const).map(([label, step]) => (
@@ -4819,7 +4832,7 @@ export default function MyInvoicesClient({
                 </button>
               </div>
 
-              <div className={[styles.invoiceDropCodeBody, styles.budgetWizardBody, styles.recurringWizardBody, wizardStyles.body].join(' ')}>
+              <div ref={recurringWizardBodyRef} className={[styles.invoiceDropCodeBody, styles.budgetWizardBody, styles.recurringWizardBody, wizardStyles.body].join(' ')}>
                 <p className={wizardStyles.intro}>Complete one short step at a time. Your recurring commitment is saved on the final step.</p>
                 <ol className={`${styles.invoiceDropWizardProgress} ${wizardStyles.progress}`} aria-label={'Step ' + recurringWizardStep + ' of 3'}>
                   {([['Coverage', 1], ['Details', 2], ['Review', 3]] as const).map(([label, step]) => (
@@ -5090,11 +5103,11 @@ export default function MyInvoicesClient({
                   Back
                 </button>
                 {recurringWizardStep < 3 ? (
-                  <button type="button" className={`${styles.primaryButton} ${wizardStyles.primaryAction}`} onClick={continueRecurringWizard} disabled={isSaving}>
+                  <button key="recurring-next" type="button" className={`${styles.primaryButton} ${wizardStyles.primaryAction}`} onClick={continueRecurringWizard} disabled={isSaving}>
                     Next
                   </button>
                 ) : (
-                  <button type="submit" className={`${styles.primaryButton} ${wizardStyles.primaryAction}`} disabled={isSaving}>
+                  <button key="recurring-save" type="submit" className={`${styles.primaryButton} ${wizardStyles.primaryAction}`} disabled={isSaving}>
                     {isSaving ? 'Saving...' : 'Save commitment'}
                   </button>
                 )}
@@ -5827,7 +5840,7 @@ export default function MyInvoicesClient({
             </div>
             <div className={`${styles.modalDivider} ${manualCostWizardOpen ? wizardStyles.divider : ''}`} />
 
-            <div className={`${styles.formModalScrollBody} ${manualCostWizardOpen ? wizardStyles.body : ''}`}>
+            <div ref={manualCostWizardOpen ? manualCostWizardBodyRef : undefined} className={`${styles.formModalScrollBody} ${manualCostWizardOpen ? wizardStyles.body : ''}`}>
               {extractionWarnings.length ? (
                 <div className={styles.warningBox}>
                   {extractionWarnings.map((warning) => <p key={warning}>{warning}</p>)}

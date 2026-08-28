@@ -64,7 +64,7 @@ test('review preserves every manual cost field and attachment before save', () =
 test('manual wizard manages focus, keyboard escape and visible errors', () => {
   assert.match(client, /manualCostWizardStepHeadingRef/);
   assert.match(client, /if \(!manualCostWizardOpen \|\| usageMetricDropdownOpen\) return undefined/);
-  assert.match(client, /manualCostWizardStepHeadingRef\.current\?\.focus\(\)/);
+  assert.match(client, /manualCostWizardStepHeadingRef\.current\?\.focus\(\{ preventScroll: true \}\)/);
   assert.match(client, /event\.key === 'Escape' && !isSaving/);
   assert.match(costFormModal, /role="alert">\{manualCostWizardError\}/);
   assert.match(costFormModal, /aria-current=\{manualCostWizardStep === step \? 'step' : undefined\}/);
