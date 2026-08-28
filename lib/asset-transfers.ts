@@ -470,7 +470,7 @@ export async function listOutgoingAssetTransfers(sellerUserId: string): Promise<
             asset_identifier_normalized, code_hash, code_hint, transfer_reason, recipient_account_type, transferable_upload_ids,
             status, expires_at::text, created_at::text, claimed_at::text
      from public.asset_transfer_offers
-     where seller_user_id = $1
+     where seller_user_id = $1 and status = 'pending'
      order by created_at desc limit 100`,
     [sellerUserId],
   );
@@ -554,6 +554,23 @@ async function transferPortableHistory(input: {
 }
 
 async function clearSellerOnlyRelationships(client: PoolClient, sellerUserId: string, assetId: string) {
+  // These records are seller-private and use the asset/owner pair as a foreign key.
+  // Detach capture history and invalidate contribution codes before ownership changes.
+  if (await tableExists(client, 'document_capture_requests')) {
+    await client.query(
+      `update public.document_capture_requests
+       set asset_register_item_id = null, updated_at = now()
+       where owner_user_id = $1 and asset_register_item_id = $2::uuid`,
+      [sellerUserId, assetId],
+    );
+  }
+  if (await tableExists(client, 'asset_invoice_drop_codes')) {
+    await client.query(
+      `delete from public.asset_invoice_drop_codes
+       where owner_user_id = $1 and asset_register_item_id = $2::uuid`,
+      [sellerUserId, assetId],
+    );
+  }
   if (await tableExists(client, 'asset_group_members')) {
     await client.query(`delete from public.asset_group_members where asset_id = $1::uuid`, [assetId]);
   }
@@ -840,104 +857,126 @@ export async function claimAssetTransfer(input: {
     throw new Error('ASSET_TRANSFER_ACCOUNT_REQUIRED');
   }
   const buyerRegister = await getSelectedAssetRegister(input.buyerUserId);
-  const client = await getDb().connect();
+  let lastError: unknown = new Error('ASSET_TRANSFER_CLAIM_FAILED');
 
-  try {
-    await client.query('begin');
-    const offers = await client.query<TransferOfferRow>(
-      `select id::text, asset_register_item_id::text, seller_user_id, buyer_user_id,
-              sale_event_id::text, asset_title, asset_identifier, asset_identifier_label,
-              asset_identifier_normalized, code_hash, code_hint, transfer_reason, recipient_account_type, transferable_upload_ids,
-              status, expires_at::text, created_at::text, claimed_at::text
-       from public.asset_transfer_offers
-       where asset_identifier_normalized = $1 and status = 'pending'
-       order by created_at desc limit 20 for update`,
-      [normalizedIdentifier],
-    );
-    const offer = offers.rows.find((row) => transferCodeMatches(row.id, normalizedCode, row.code_hash));
-    if (!offer || new Date(offer.expires_at).getTime() <= Date.now()) throw new Error('ASSET_TRANSFER_INVALID_CREDENTIALS');
-    if (offer.seller_user_id === input.buyerUserId) throw new Error('ASSET_TRANSFER_SELF_CLAIM');
-    if (recipientFromRow(offer) === 'dealer' && buyerProfile.accountType !== 'dealer') {
-      throw new Error('ASSET_TRANSFER_DEALER_ACCOUNT_REQUIRED');
+  for (let attempt = 0; attempt < DATABASE_RETRY_ATTEMPTS; attempt += 1) {
+    const client = await getDb().connect();
+
+    try {
+      await client.query('begin');
+      const offers = await client.query<TransferOfferRow>(
+        `select id::text, asset_register_item_id::text, seller_user_id, buyer_user_id,
+                sale_event_id::text, asset_title, asset_identifier, asset_identifier_label,
+                asset_identifier_normalized, code_hash, code_hint, transfer_reason, recipient_account_type, transferable_upload_ids,
+                status, expires_at::text, created_at::text, claimed_at::text
+         from public.asset_transfer_offers
+         where asset_identifier_normalized = $1 and status = 'pending'
+         order by created_at desc limit 20 for update`,
+        [normalizedIdentifier],
+      );
+      const offer = offers.rows.find((row) => transferCodeMatches(row.id, normalizedCode, row.code_hash));
+      if (!offer || new Date(offer.expires_at).getTime() <= Date.now()) throw new Error('ASSET_TRANSFER_INVALID_CREDENTIALS');
+      if (offer.seller_user_id === input.buyerUserId) throw new Error('ASSET_TRANSFER_SELF_CLAIM');
+      if (recipientFromRow(offer) === 'dealer' && buyerProfile.accountType !== 'dealer') {
+        throw new Error('ASSET_TRANSFER_DEALER_ACCOUNT_REQUIRED');
+      }
+
+      const assetResult = await client.query<LockedAssetRow>(
+        `select id::text, user_id, register_id::text, valuation_run_id, lifecycle_state, documents
+         from public.asset_register_items where id = $1::uuid for update`,
+        [offer.asset_register_item_id],
+      );
+      const asset = assetResult.rows[0];
+      if (!asset || asset.user_id !== offer.seller_user_id
+          || !['disposed', 'transfer_pending'].includes(cleanText(asset.lifecycle_state))) {
+        throw new Error('ASSET_TRANSFER_INVALID_CREDENTIALS');
+      }
+
+      const uploadIds = stringArray(offer.transferable_upload_ids);
+      await client.query(
+        `update public.asset_lifecycle_events
+         set original_owner_user_id = owner_user_id
+         where owner_user_id = $1 and asset_register_item_id = $2::uuid
+           and original_owner_user_id is null`,
+        [offer.seller_user_id, asset.id],
+      );
+      await transferPortableHistory({
+        client,
+        sellerUserId: offer.seller_user_id,
+        buyerUserId: input.buyerUserId,
+        buyerRegisterId: buyerRegister.id,
+        assetId: asset.id,
+        valuationRunId: asset.valuation_run_id,
+        uploadIds,
+      });
+      await clearSellerOnlyRelationships(client, offer.seller_user_id, asset.id);
+      const assetUpdate = await client.query(
+        `update public.asset_register_items
+         set user_id = $1, register_id = $2::uuid, lifecycle_state = 'active', qr_status = 'transferred',
+             documents = $5::jsonb,
+             is_financed = false, finance_note = '', is_insured = false, insured_value_ex_vat = null,
+             seller_phone = '', marketplace_status = case when marketplace_status is null then null else 'withdrawn' end,
+             marketplace_seller_name = '', marketplace_seller_company = '', marketplace_seller_email = '',
+             updated_at = now()
+         where id = $3::uuid and user_id = $4`,
+        [input.buyerUserId, buyerRegister.id, asset.id, offer.seller_user_id, JSON.stringify(portableDocuments(asset.documents))],
+      );
+      if (assetUpdate.rowCount !== 1) throw new Error('ASSET_TRANSFER_INVALID_CREDENTIALS');
+
+      const offerUpdate = await client.query(
+        `update public.asset_transfer_offers
+         set status = 'claimed', buyer_user_id = $2, claimed_at = now(), updated_at = now()
+         where id = $1::uuid and status = 'pending'`,
+        [offer.id, input.buyerUserId],
+      );
+      if (offerUpdate.rowCount !== 1) throw new Error('ASSET_TRANSFER_INVALID_CREDENTIALS');
+
+      await client.query(
+        `update public.asset_lifecycle_events
+         set transfer_status = 'claimed', transferred_to_user_id = $2
+         where transfer_offer_id = $1::uuid`,
+        [offer.id, input.buyerUserId],
+      );
+      await client.query(
+        `insert into public.access_audit_events
+           (owner_user_id, actor_user_id, event_type, entity_type, entity_id, metadata_json, created_at)
+         values
+           ($1, $2, 'asset_transferred_out', 'asset_register_item', $3, $4::jsonb, now()),
+           ($2, $2, 'asset_transferred_in', 'asset_register_item', $3, $5::jsonb, now())`,
+        [offer.seller_user_id, input.buyerUserId, asset.id,
+          JSON.stringify({ transferOfferId: offer.id, assetTitle: offer.asset_title, buyerUserId: input.buyerUserId }),
+          JSON.stringify({ transferOfferId: offer.id, assetTitle: offer.asset_title, sellerUserId: offer.seller_user_id })],
+      );
+      if (asset.register_id) {
+        await client.query(`update public.asset_registers set updated_at = now() where id = $1::uuid and user_id = $2`, [asset.register_id, offer.seller_user_id]);
+      }
+      await client.query(`update public.asset_registers set updated_at = now() where id = $1::uuid and user_id = $2`, [buyerRegister.id, input.buyerUserId]);
+      await client.query('commit');
+      await recordClaimAttempt(input.buyerUserId, normalizedIdentifier, true);
+
+      return {
+        assetId: asset.id,
+        assetTitle: cleanText(offer.asset_title) || 'Asset',
+        registerId: buyerRegister.id,
+        redirectTo: buyerProfile.accountType === 'dealer'
+          ? `/dealer/inventory?assetId=${encodeURIComponent(asset.id)}`
+          : `/asset-register?assetId=${encodeURIComponent(asset.id)}`,
+      };
+    } catch (error) {
+      await client.query('rollback').catch(() => undefined);
+      lastError = error;
+      if (!isTransientDatabaseError(error) || attempt === DATABASE_RETRY_ATTEMPTS - 1) {
+        await recordClaimAttempt(input.buyerUserId, normalizedIdentifier, false);
+        throw error;
+      }
+    } finally {
+      client.release();
     }
 
-    const assetResult = await client.query<LockedAssetRow>(
-      `select id::text, user_id, register_id::text, valuation_run_id, lifecycle_state, documents
-       from public.asset_register_items where id = $1::uuid for update`,
-      [offer.asset_register_item_id],
-    );
-    const asset = assetResult.rows[0];
-    if (!asset || asset.user_id !== offer.seller_user_id
-        || !['disposed', 'transfer_pending'].includes(cleanText(asset.lifecycle_state))) {
-      throw new Error('ASSET_TRANSFER_INVALID_CREDENTIALS');
-    }
-
-    const uploadIds = stringArray(offer.transferable_upload_ids);
-    await transferPortableHistory({
-      client,
-      sellerUserId: offer.seller_user_id,
-      buyerUserId: input.buyerUserId,
-      buyerRegisterId: buyerRegister.id,
-      assetId: asset.id,
-      valuationRunId: asset.valuation_run_id,
-      uploadIds,
-    });
-    await clearSellerOnlyRelationships(client, offer.seller_user_id, asset.id);
-    await client.query(
-      `update public.asset_register_items
-       set user_id = $1, register_id = $2::uuid, lifecycle_state = 'active', qr_status = 'transferred',
-           documents = $5::jsonb,
-           is_financed = false, finance_note = '', is_insured = false, insured_value_ex_vat = null,
-           seller_phone = '', marketplace_status = case when marketplace_status is null then null else 'withdrawn' end,
-           marketplace_seller_name = '', marketplace_seller_company = '', marketplace_seller_email = '',
-           updated_at = now()
-       where id = $3::uuid and user_id = $4`,
-      [input.buyerUserId, buyerRegister.id, asset.id, offer.seller_user_id, JSON.stringify(portableDocuments(asset.documents))],
-    );
-    await client.query(
-      `update public.asset_transfer_offers
-       set status = 'claimed', buyer_user_id = $2, claimed_at = now(), updated_at = now()
-       where id = $1::uuid and status = 'pending'`,
-      [offer.id, input.buyerUserId],
-    );
-    await client.query(
-      `update public.asset_lifecycle_events
-       set transfer_status = 'claimed', transferred_to_user_id = $2
-       where transfer_offer_id = $1::uuid`,
-      [offer.id, input.buyerUserId],
-    );
-    await client.query(
-      `insert into public.access_audit_events
-         (owner_user_id, actor_user_id, event_type, entity_type, entity_id, metadata_json, created_at)
-       values
-         ($1, $2, 'asset_transferred_out', 'asset_register_item', $3, $4::jsonb, now()),
-         ($2, $2, 'asset_transferred_in', 'asset_register_item', $3, $5::jsonb, now())`,
-      [offer.seller_user_id, input.buyerUserId, asset.id,
-        JSON.stringify({ transferOfferId: offer.id, assetTitle: offer.asset_title, buyerUserId: input.buyerUserId }),
-        JSON.stringify({ transferOfferId: offer.id, assetTitle: offer.asset_title, sellerUserId: offer.seller_user_id })],
-    );
-    if (asset.register_id) {
-      await client.query(`update public.asset_registers set updated_at = now() where id = $1::uuid and user_id = $2`, [asset.register_id, offer.seller_user_id]);
-    }
-    await client.query(`update public.asset_registers set updated_at = now() where id = $1::uuid and user_id = $2`, [buyerRegister.id, input.buyerUserId]);
-    await client.query('commit');
-    await recordClaimAttempt(input.buyerUserId, normalizedIdentifier, true);
-
-    return {
-      assetId: asset.id,
-      assetTitle: cleanText(offer.asset_title) || 'Asset',
-      registerId: buyerRegister.id,
-      redirectTo: buyerProfile.accountType === 'dealer'
-        ? `/dealer/inventory?assetId=${encodeURIComponent(asset.id)}`
-        : `/asset-register?assetId=${encodeURIComponent(asset.id)}`,
-    };
-  } catch (error) {
-    await client.query('rollback').catch(() => undefined);
-    await recordClaimAttempt(input.buyerUserId, normalizedIdentifier, false);
-    throw error;
-  } finally {
-    client.release();
+    await waitBeforeDatabaseRetry(attempt);
   }
+
+  throw lastError;
 }
 
 export async function regenerateAssetTransferCode(input: { sellerUserId: string; transferId: string }): Promise<AssetTransferReceipt> {

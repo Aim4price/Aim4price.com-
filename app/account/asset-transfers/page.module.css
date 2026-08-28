@@ -96,12 +96,17 @@
 
 .successNotice,
 .errorNotice {
+  margin-top: 1rem;
   margin-bottom: 0.9rem;
   border-radius: 0.95rem;
   padding: 0.85rem 1rem;
   font-size: 0.85rem;
   font-weight: 800;
   line-height: 1.45;
+}
+
+.transferProgress {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .successNotice {
@@ -116,21 +121,8 @@
   background: #fff4f4;
 }
 
-.modalSurface {
-  min-width: 0;
-  display: grid;
-  gap: 1rem;
-}
-
-.surfaceHeading {
-  padding-bottom: 0.9rem;
-  border-bottom: 1px solid rgba(18, 72, 54, 0.09);
-}
-
-.surfaceHeading h3,
 .outgoingHeading h3,
-.claimResult h3,
-.cancelSurface h3 {
+.claimResult h3 {
   margin: 0;
   color: #123b30;
   font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
@@ -140,10 +132,8 @@
   letter-spacing: -0.035em;
 }
 
-.surfaceHeading p,
 .outgoingHeading p,
-.claimResult p,
-.cancelSurface p {
+.claimResult p {
   margin: 0.28rem 0 0;
   color: #667970;
   font-size: 0.9rem;
@@ -189,11 +179,8 @@
   box-shadow: 0 0 0 4px rgba(43, 128, 98, 0.1);
 }
 
-.primaryButton,
 .secondaryButton,
-.dangerButton,
-.archiveButton,
-.primaryLink {
+.archiveButton {
   min-height: 3rem;
   display: inline-flex;
   align-items: center;
@@ -210,35 +197,21 @@
   cursor: pointer;
 }
 
-.primaryButton,
-.primaryLink {
-  color: #ffffff;
-  background: linear-gradient(180deg, #218a67 0%, #155b43 100%);
-  box-shadow: 0 10px 22px rgba(21, 91, 67, 0.13);
-}
-
 .secondaryButton {
   color: #236c52;
   background: #ffffff;
 }
 
-.dangerButton,
 .archiveButton {
   border-color: #d8b5b5;
   color: #914f4f;
   background: #fffafa;
 }
 
-.primaryButton:disabled,
 .secondaryButton:disabled,
-.dangerButton:disabled,
 .archiveButton:disabled {
   cursor: not-allowed;
   opacity: 0.52;
-}
-
-.claimForm > .primaryButton {
-  grid-column: 1 / -1;
 }
 
 .privacyNote {
@@ -262,20 +235,20 @@
   line-height: 1.48;
 }
 
-.claimResult,
-.cancelSurface {
+.claimResult {
   display: grid;
-  justify-items: center;
+  grid-template-columns: auto minmax(0, 1fr);
+  justify-items: stretch;
+  align-items: center;
   gap: 1rem;
   padding: 1.1rem;
   border: 1px solid #cde4d8;
   border-radius: 1.15rem;
   background: linear-gradient(180deg, #f7fcf9 0%, #eef8f3 100%);
-  text-align: center;
+  text-align: left;
 }
 
-.resultIcon,
-.cancelIcon {
+.resultIcon {
   width: 4rem;
   height: 4rem;
   display: grid;
@@ -288,17 +261,8 @@
   font-weight: 900;
 }
 
-.claimResult > div,
-.cancelSurface > div {
+.claimResult > div {
   max-width: 35rem;
-}
-
-.modalActions {
-  width: 100%;
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.65rem;
-  padding-top: 0.2rem;
 }
 
 .outgoingHeading {
@@ -395,16 +359,71 @@
   background: #fff1dc;
 }
 
-.transferCard dl,
-.cancelSurface dl {
+.transferCard dl {
   margin: 0;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.58rem;
 }
 
-.transferCard dl > div,
-.cancelSurface dl > div {
+.cancelPanel.cancelPanel {
+  border-color: #ead0d0 !important;
+  background: linear-gradient(180deg, #ffffff 0%, #fffafa 100%) !important;
+}
+
+.cancelPanelNumber {
+  border-color: #ddb5b5 !important;
+  color: #914f4f !important;
+  background: linear-gradient(180deg, #fff8f8 0%, #fceeee 100%) !important;
+}
+
+.cancelDetails {
+  width: 100%;
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.58rem;
+}
+
+.cancelDetails > div {
+  min-width: 0;
+  display: grid;
+  gap: 0.2rem;
+  border-radius: 0.78rem;
+  background: #f7eeee;
+  padding: 0.7rem 0.75rem;
+}
+
+.cancelDetails dt {
+  color: #8a6a6a;
+  font-size: 0.72rem;
+  font-weight: 780;
+}
+
+.cancelDetails dd {
+  margin: 0;
+  color: #684242;
+  font-size: 0.8rem;
+  font-weight: 850;
+  overflow-wrap: anywhere;
+}
+
+.footerDangerAction.footerDangerAction {
+  border-color: #914f4f !important;
+  background: #914f4f !important;
+  box-shadow: 0 10px 24px rgba(145, 79, 79, 0.2) !important;
+}
+
+.footerDangerAction.footerDangerAction:hover:not(:disabled) {
+  border-color: #7d3f3f !important;
+  background: #7d3f3f !important;
+}
+
+.footerLink {
+  text-decoration: none;
+}
+
+.transferCard dl > div {
   min-width: 0;
   display: grid;
   gap: 0.2rem;
@@ -414,15 +433,13 @@
   text-align: left;
 }
 
-.transferCard dt,
-.cancelSurface dt {
+.transferCard dt {
   color: #77867f;
   font-size: 0.72rem;
   font-weight: 780;
 }
 
-.transferCard dd,
-.cancelSurface dd {
+.transferCard dd {
   margin: 0;
   color: #2d473e;
   font-size: 0.8rem;
@@ -496,22 +513,6 @@
   overflow-wrap: anywhere;
 }
 
-.cancelSurface {
-  border-color: #e4caca;
-  background: linear-gradient(180deg, #fffafa 0%, #fff4f4 100%);
-}
-
-.cancelIcon {
-  background: #a64b4b;
-  box-shadow: 0 12px 26px rgba(166, 75, 75, 0.2);
-}
-
-.cancelSurface dl {
-  width: 100%;
-  max-width: 38rem;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
 @media (max-width: 760px) {
   .shell {
     width: min(100% - 1rem, 1220px);
@@ -521,16 +522,22 @@
     grid-template-columns: 1fr;
   }
 
-  .claimForm > .primaryButton {
-    grid-column: auto;
-  }
-
   .transferGuide {
     align-items: flex-start;
   }
 
   .transferCard dl {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .transferProgress.transferProgress {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .footerOnlyAction {
+    grid-column: 1 / -1;
   }
 }
 
@@ -554,15 +561,13 @@
     flex-direction: column;
   }
 
-  .modalActions,
   .cardActions,
   .receiptGrid,
-  .cancelSurface dl {
+  .cancelDetails {
     grid-template-columns: 1fr;
   }
 
-  .claimResult,
-  .cancelSurface {
+  .claimResult {
     padding: 0.95rem;
   }
 }
