@@ -186,11 +186,11 @@ function StudioIcon({ name }: { name: StudioIconName }) {
   );
 }
 
-const STUDIO_STEPS: Array<{ id: StudioStep; label: string; icon: StudioIconName }> = [
-  { id: 1, label: 'Details', icon: 'details' },
-  { id: 2, label: 'Layout', icon: 'layout' },
-  { id: 3, label: 'Style', icon: 'palette' },
-  { id: 4, label: 'Review', icon: 'review' },
+const STUDIO_STEPS: Array<{ id: StudioStep; label: string }> = [
+  { id: 1, label: 'Details' },
+  { id: 2, label: 'Layout' },
+  { id: 3, label: 'Style' },
+  { id: 4, label: 'Review' },
 ];
 
 const TEMPLATE_CLASS_NAMES: Record<AdTemplateId, string> = {
@@ -620,16 +620,14 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
     <div className={`${styles.page} ${dealerAppMode ? styles.dealerPage : ''} ${middlemanMode ? styles.middlemanPage : ''}`}>
       <header className={styles.hero}>
         <div className={styles.heroCopy}>
-          <h1>Create professional adverts</h1>
-          <p>Save your business details and style once, then reuse them on every valuation-backed advert.</p>
+          <h1>Create adverts that look like your business</h1>
+          <p>Add your details, logo and colours once. Aim4price will use them on every advert.</p>
         </div>
-        <div className={styles.heroMetric}>
-          <span className={styles.heroMetricIcon} aria-hidden="true"><StudioIcon name="styles" /></span>
-          <div>
-            <strong>{kits.length || 'Ready'}</strong>
-            <span>{kits.length ? `${kits.length === 1 ? 'Brand kit' : 'Brand kits'} saved` : 'Create your first brand kit'}</span>
-          </div>
-        </div>
+        {canManage && !loading ? (
+          <button className={styles.primaryButton} type="button" onClick={startNewKit}>
+            {kits.length ? 'Create another advert style' : 'Create my advert style'}
+          </button>
+        ) : null}
       </header>
 
       {loading ? <div className={styles.notice}>Loading your brand kits…</div> : null}
@@ -641,16 +639,16 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
 
       {!loading ? (
         <>
-          <section className={styles.libraryPanel} aria-labelledby="brand-kit-library-title">
-            <div className={styles.sectionHeader}>
-              <div>
-                <h2 id="brand-kit-library-title">Brand kits</h2>
-                <p>Select a kit to edit, set as the default or delete.</p>
+          {kits.length ? (
+            <section className={styles.libraryPanel} aria-labelledby="brand-kit-library-title">
+              <div className={styles.sectionHeader}>
+                <div>
+                  <h2 id="brand-kit-library-title">Saved brand kits</h2>
+                  <p>Choose a style to edit or make your default.</p>
+                </div>
+                {canManage ? <button className={styles.primaryButton} type="button" onClick={startNewKit}>New advert style</button> : null}
               </div>
-              {canManage && kits.length ? <button className={styles.primaryButton} type="button" onClick={startNewKit}><StudioIcon name="plus" />New brand kit</button> : null}
-            </div>
 
-            {kits.length ? (
               <div className={styles.kitGrid}>
                 {kits.map((kit) => {
                   const template = AD_TEMPLATE_OPTIONS.find((option) => option.id === kit.templateId) ?? AD_TEMPLATE_OPTIONS[0];
@@ -691,23 +689,17 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
                   );
                 })}
               </div>
-            ) : (
-              <div className={styles.emptyLibrary}>
-                <span aria-hidden="true"><StudioIcon name="palette" /></span>
-                <div><strong>No brand kits yet</strong><p>Create your first reusable advert style. It will appear here for quick editing.</p></div>
-                {canManage ? <button type="button" className={styles.secondaryButton} onClick={startNewKit}><StudioIcon name="plus" />Create brand kit</button> : null}
-              </div>
-            )}
-          </section>
+            </section>
+          ) : null}
 
           <div className={styles.workspace} id="ad-studio-workspace">
           <form className={styles.formPanel} onSubmit={saveKit} ref={editorRef}>
             <div className={styles.editorHeader}>
               <div>
-                <h2>{draft.id ? draft.name : 'Create a brand kit'}</h2>
-                <p>Four quick steps. Your preview updates while you work.</p>
+                <h2>{draft.id ? draft.name : 'Set up your advert style'}</h2>
+                <p>{draft.id ? 'Update the details, layout or colours below.' : 'Add your details, choose a layout and save.'}</p>
               </div>
-              {draft.id && canManage ? <button className={styles.ghostButton} type="button" onClick={startNewKit}><StudioIcon name="plus" />New kit</button> : null}
+              {draft.id && canManage ? <button className={styles.ghostButton} type="button" onClick={startNewKit}>New advert style</button> : null}
             </div>
 
             <nav className={styles.stepper} aria-label="Brand kit setup steps">
@@ -719,11 +711,9 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
                   onClick={() => moveToStep(step.id)}
                   aria-current={activeStep === step.id ? 'step' : undefined}
                 >
-                  <span>
-                    <StudioIcon name={activeStep > step.id ? 'check' : step.icon} />
-                    <span className={styles.srOnly}>{activeStep > step.id ? 'Complete' : `Step ${step.id}`}</span>
-                  </span>
-                  <span><strong>{step.label}</strong></span>
+                  <span aria-hidden="true">{activeStep > step.id ? <StudioIcon name="check" /> : step.id}</span>
+                  <strong>{step.label}</strong>
+                  <span className={styles.srOnly}>{activeStep > step.id ? 'Complete' : `Step ${step.id} of 4`}</span>
                 </button>
               ))}
             </nav>
@@ -732,9 +722,8 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
               {activeStep === 1 ? (
                 <section aria-labelledby="studio-details-title">
                   <div className={styles.stepIntro}>
-                    <span>Details · Step 1 of 4</span>
-                    <h2 id="studio-details-title">Business details</h2>
-                    <p>These details are saved and reused on future adverts.</p>
+                    <h2 id="studio-details-title">Your business details</h2>
+                    <p>These details will appear on your adverts.</p>
                   </div>
                   <fieldset className={styles.stepFieldset} disabled={!canManage || saving}>
                     <legend className={styles.srOnly}>Business and contact details</legend>
@@ -766,10 +755,9 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
                     </div>
                     <div className={styles.logoField}>
                       <div className={styles.logoCopy}>
-                        <span className={styles.logoFieldIcon} aria-hidden="true"><StudioIcon name="image" /></span>
                         <div>
-                          <strong>Business logo</strong>
-                          <span>Choose a file or drop it onto the logo tile. PNG, JPEG or WebP up to 2 MB. A transparent logo works best.</span>
+                          <strong>Your logo</strong>
+                          <span>Drop it here or choose a PNG, JPEG or WebP file up to 2 MB.</span>
                         </div>
                       </div>
                       <div className={styles.logoControls}>
@@ -839,9 +827,8 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
               {activeStep === 2 ? (
                 <section aria-labelledby="studio-layout-title">
                   <div className={styles.stepIntro}>
-                    <span>Layout · Step 2 of 4</span>
-                    <h2 id="studio-layout-title">Choose an advert layout</h2>
-                    <p>Choose how many listing photos should appear. Missing photo spaces are filled automatically.</p>
+                    <h2 id="studio-layout-title">Choose your advert layout</h2>
+                    <p>Pick the design and number of photos you prefer.</p>
                   </div>
                   <fieldset className={styles.stepFieldset} disabled={!canManage || saving}>
                     <legend className={styles.srOnly}>Advert layout</legend>
@@ -873,9 +860,8 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
               {activeStep === 3 ? (
                 <section aria-labelledby="studio-style-title">
                   <div className={styles.stepIntro}>
-                    <span>Style · Step 3 of 4</span>
-                    <h2 id="studio-style-title">Colours and wording</h2>
-                    <p>Choose colours and wording. The live preview updates immediately.</p>
+                    <h2 id="studio-style-title">Choose your colours and wording</h2>
+                    <p>Make each advert feel like your business.</p>
                   </div>
                   <fieldset className={styles.stepFieldset} disabled={!canManage || saving}>
                     <legend className={styles.srOnly}>Advert colours and wording</legend>
@@ -927,9 +913,8 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
               {activeStep === 4 ? (
                 <section aria-labelledby="studio-review-title">
                   <div className={styles.stepIntro}>
-                    <span>Review · Step 4 of 4</span>
-                    <h2 id="studio-review-title">Review your brand kit</h2>
-                    <p>Check the essentials below. You can return to any step to make a change.</p>
+                    <h2 id="studio-review-title">Check and save</h2>
+                    <p>Make sure everything looks right before saving.</p>
                   </div>
                   <div className={styles.reviewGrid}>
                     <article>
@@ -958,8 +943,8 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
                     </article>
                   </div>
                   <div className={styles.reviewCallout}>
-                    <strong>Ready for your next valuation</strong>
-                    <p>After a valuation, choose <b>Create advert</b>. Aim4price applies this brand kit, publishes the listing in the background and downloads the matching JPEG to your device.</p>
+                    <strong>Ready to create adverts</strong>
+                    <p>Save this style, then choose it after any valuation. Aim4price will create and download the matching advert.</p>
                   </div>
                 </section>
               ) : null}
@@ -986,15 +971,7 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
           <aside className={styles.previewPanel}>
             <div className={styles.previewHeading}>
               <div className={styles.previewTitle}>
-                <span className={styles.previewIcon} aria-hidden="true"><StudioIcon name="preview" /></span>
-                <div>
-                  <span className={styles.previewLabel}>Advert preview</span>
-                  <strong>{selectedTemplate.name}</strong>
-                </div>
-              </div>
-              <div className={styles.previewPills}>
-                <span className={styles.previewPill}>{selectedTemplate.photoCount} photo{selectedTemplate.photoCount === 1 ? '' : 's'}</span>
-                <span className={styles.previewPill}>{draft.language === 'af' ? 'Afrikaans' : 'English'}</span>
+                <strong>Advert preview</strong>
               </div>
             </div>
             <div
@@ -1025,8 +1002,8 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
               />
               <div className={styles.previewPhotoHeader}>
                 <div>
-                  <strong>Try it with your own photos</strong>
-                  <span>Drop up to four sample photos, then drag them into order. This layout uses the first {selectedTemplate.photoCount}. These samples are not saved.</span>
+                  <strong>Preview with your photos</strong>
+                  <span>Add up to four photos. Drag them to change the order. Preview photos are not saved.</span>
                 </div>
                 <div>
                   <button type="button" onClick={() => previewPhotoInputRef.current?.click()}>
@@ -1076,7 +1053,7 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
               ) : (
                 <button className={styles.previewPhotoEmpty} type="button" onClick={() => previewPhotoInputRef.current?.click()}>
                   <StudioIcon name="image" />
-                  <span><strong>Drop sample photos here</strong><small>Or choose photos to see this exact layout come to life.</small></span>
+                  <span><strong>Drop photos here</strong><small>Or choose photos from your device.</small></span>
                 </button>
               )}
             </div>
@@ -1088,8 +1065,7 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
               aria-label={`${selectedTemplate.name} advert preview with ${previewRating.label.toLowerCase()} rating`}
             />
             <div className={styles.previewNote}>
-              <span aria-hidden="true"><StudioIcon name="check" /></span>
-              <p><strong>Your downloaded JPEG will match this preview</strong>{previewPhotos.length ? 'The sample photos show the real layout and order. They stay in this preview only and are never saved with the brand kit.' : `Camera placeholders show where the first ${selectedTemplate.photoCount} listing photo${selectedTemplate.photoCount === 1 ? ' will' : 's will'} appear, together with the valuation details, asking price and ${previewRating.label.toLowerCase()} rating.`}</p>
+              <p><strong>This is how your downloaded advert will look.</strong>{previewPhotos.length ? ' Preview photos are not saved.' : ' Listing photos and valuation details will be added automatically.'}</p>
             </div>
           </aside>
           </div>
