@@ -1051,10 +1051,10 @@ export default function AssetGroupManagerModal({
                     <span className={styles.stepNumber}>3</span>
                     <div className={styles.stepCopy}>
                       <strong id="umbrella-step-assets">Choose assets</strong>
-                      <small>{combinedMode
-                        ? 'Choose one or more assets from any of your Asset Registers.'
-                        : group
-                          ? 'Select assets to add, or clear a selected asset to remove it from this umbrella.'
+                      <small>{group
+                        ? 'Select assets to add, or clear a selected asset to remove it from this umbrella.'
+                        : combinedMode
+                          ? 'Choose one or more assets from any of your Asset Registers.'
                           : 'Choose one or more assets from this Asset Register.'}</small>
                     </div>
                     <strong className={styles.selectedCount}>{selectedAssetIds.length} selected</strong>
