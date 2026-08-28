@@ -111,6 +111,40 @@ test('portable asset history moves while seller-private financial data is reset'
   assert.match(transferPage, /private invoices, finance, insurance and account access do not transfer/i);
 });
 
+test('claim detaches seller-private capture links before changing asset ownership', () => {
+  assert.match(transferSource, /update public\.document_capture_requests[\s\S]*set asset_register_item_id = null/);
+  assert.match(transferSource, /delete from public\.asset_invoice_drop_codes[\s\S]*owner_user_id = \$1 and asset_register_item_id = \$2::uuid/);
+
+  const claimStart = transferSource.indexOf('export async function claimAssetTransfer');
+  const claimEnd = transferSource.indexOf('export async function regenerateAssetTransferCode');
+  const claimSource = transferSource.slice(claimStart, claimEnd);
+  const cleanupIndex = claimSource.indexOf('await clearSellerOnlyRelationships');
+  const ownershipUpdateIndex = claimSource.indexOf('update public.asset_register_items');
+  assert.ok(cleanupIndex >= 0, 'claim must clear seller-only relationships');
+  assert.ok(ownershipUpdateIndex > cleanupIndex, 'seller-only links must be cleared before changing asset ownership');
+  assert.match(claimSource, /set original_owner_user_id = owner_user_id/);
+});
+
+test('claim retries transient database contention and returns an actionable busy response', () => {
+  const claimStart = transferSource.indexOf('export async function claimAssetTransfer');
+  const claimEnd = transferSource.indexOf('export async function regenerateAssetTransferCode');
+  const claimSource = transferSource.slice(claimStart, claimEnd);
+  assert.match(claimSource, /for \(let attempt = 0; attempt < DATABASE_RETRY_ATTEMPTS/);
+  assert.match(claimSource, /isTransientDatabaseError\(error\)/);
+  assert.match(transferRoute, /databaseCode === '40P01' \|\| databaseCode === '40001'/);
+  assert.match(transferRoute, /status: 503/);
+});
+
+test('outgoing management contains only pending or expired transfers', () => {
+  const listStart = transferSource.indexOf('export async function listOutgoingAssetTransfers');
+  const listEnd = transferSource.indexOf('async function recordClaimAttempt');
+  const listSource = transferSource.slice(listStart, listEnd);
+  assert.match(listSource, /where seller_user_id = \$1 and status = 'pending'/);
+  assert.match(transferPage, /function manageableOutgoing/);
+  assert.match(transferPage, /item\.status === 'pending' \|\| item\.status === 'expired'/);
+  assert.match(transferPage, /filter\(\(item\) => item\.id !== transferId\)/);
+});
+
 test('Account exposes modal-based incoming and outgoing transfer management', () => {
   assert.match(accountClient, /Claim or send an asset/);
   assert.match(accountClient, /\/account\/asset-transfers/);
@@ -129,6 +163,12 @@ test('Account exposes modal-based incoming and outgoing transfer management', ()
   assert.match(transferPage, /Replace code/);
   assert.match(transferPage, /Cancel & archive/);
   assert.match(transferPage, /autoComplete="one-time-code"/);
+  assert.match(transferPage, /AimWizardModal\.module\.css/);
+  assert.match(transferPage, /wizardStyles\.overlay/);
+  assert.match(transferPage, /wizardStyles\.dialog/);
+  assert.match(transferPage, /wizardStyles\.progress/);
+  assert.match(transferPage, /wizardStyles\.panel/);
+  assert.match(transferPage, /wizardStyles\.footer/);
   assert.doesNotMatch(transferPage, /<p>Incoming<\/p>/);
   assert.doesNotMatch(transferPage, /<p>Outgoing<\/p>/);
 });

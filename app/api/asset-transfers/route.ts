@@ -39,6 +39,9 @@ async function requireTransferSession() {
 
 function errorResponse(error: unknown) {
   const code = error instanceof Error ? error.message : '';
+  const databaseCode = error && typeof error === 'object' && 'code' in error
+    ? String((error as { code?: unknown }).code ?? '')
+    : '';
   if (code === 'ASSET_TRANSFER_RATE_LIMITED') {
     return NextResponse.json(
       { ok: false, error: 'Too many unsuccessful attempts. Wait 15 minutes and try again.' },
@@ -71,6 +74,13 @@ function errorResponse(error: unknown) {
   }
   if (code === 'ASSET_TRANSFER_NOT_FOUND') {
     return NextResponse.json({ ok: false, error: 'This pending transfer was not found.' }, { status: 404 });
+  }
+  if (databaseCode === '40P01' || databaseCode === '40001') {
+    console.error('Asset transfer request hit transient database contention.', error);
+    return NextResponse.json(
+      { ok: false, error: 'The asset database is briefly busy. No changes were made; please try the transfer again.' },
+      { status: 503 },
+    );
   }
   console.error('Asset transfer request failed.', error);
   return NextResponse.json({ ok: false, error: 'The asset transfer could not be completed.' }, { status: 500 });
