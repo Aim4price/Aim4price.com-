@@ -368,11 +368,18 @@
   color: #17362c;
   background: #ffffff;
   text-align: left;
+  text-decoration: none;
+  cursor: pointer;
   transition:
     transform 160ms ease,
     border-color 160ms ease,
     box-shadow 160ms ease,
     background 160ms ease;
+}
+
+.quickActionButton:focus-visible {
+  outline: 3px solid rgba(31, 138, 102, 0.3);
+  outline-offset: 2px;
 }
 
 .quickActionButton:hover {
