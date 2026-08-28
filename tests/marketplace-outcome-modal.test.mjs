@@ -70,7 +70,7 @@ test('Marketplace and My Showroom use one managed outcome flow', async () => {
   assert.match(showroom, /source="showroom"/);
   assert.match(showroom, /Manage advert/);
   assert.match(showroom, /Open in Marketplace/);
-  assert.match(showroom, /design: 'aim4price-marketplace'/);
+  assert.match(showroom, /design: usesSavedBrandDesign && listing\.adBrand \? 'saved-brand' : 'aim4price-marketplace'/);
   assert.doesNotMatch(showroom, /window\.confirm/);
   assert.doesNotMatch(showroom, /fetch\(`\/api\/marketplace\?assetId=[\s\S]*?method: 'DELETE'/);
 
