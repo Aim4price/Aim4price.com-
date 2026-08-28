@@ -31,19 +31,21 @@ test('dealer navigation is consistently named Asset Register', () => {
   assert.doesNotMatch(header, /label: 'My Inventory'/);
 });
 
-test('dealer Asset Register opens a deliberate dealer-or-client gateway', () => {
+test('dealer Asset Register sends client management directly to the registers page', () => {
   assert.match(registerPage, /DealerRegisterGateway/);
   assert.match(registerPage, /requestedView === "dealer"/);
   assert.match(registerPage, /requestedView === "client"/);
+  assert.match(registerPage, /requestedView === "client"\)[\s\S]*?redirect\("\/asset-registers"\)/);
   assert.match(registerGateway, /Dealer Asset Register/);
   assert.match(registerGateway, /Client Asset Registers/);
-  assert.match(registerGateway, /Choose a client register/);
+  assert.match(registerGateway, /href=\{registerManagementHref\}[\s\S]*?aria-label="Manage Client Asset Registers"/);
+  assert.doesNotMatch(registerGateway, /Choose a client register|openClientPicker|isClientPickerOpen/);
   assert.match(registerGateway, /valuationStyles\.sectorBigCard/);
   assert.match(registerGateway, /entryStyles\.entryChoiceCard/);
   assert.doesNotMatch(registerGateway, /<video/);
-  assert.match(registerGateway, /register\.id !== dealerRegister\?\.id/);
   assert.match(dealerInventoryPage, /<DealerRegisterGateway/);
   assert.match(dealerInventoryPage, /workspacePath="\/dealer\/inventory"/);
+  assert.match(dealerInventoryPage, /redirect\('\/dealer\/inventory\/registers'\)/);
   assert.match(dealerInventoryPage, /dealerRegisterMode=\{registerMode\}/);
 });
 

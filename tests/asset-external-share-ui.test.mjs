@@ -109,9 +109,9 @@ test('inside choices remain compact while the simplified outside layout has bala
   ]);
 
   assert.equal((client.match(/styles\.assetShareInsideModal/g) ?? []).length, 2);
-  assert.match(pageStyles, /\.assetShareInsideModal \.assetQuoteChoiceGrid[\s\S]*?grid-template-columns: repeat\(2, minmax\(0, 1fr\)\) !important/);
+  assert.match(pageStyles, /\.assetQuoteModal\.assetShareInsideModal:not\(\.assetQuotePartnerPickerModal\) \.assetQuoteChoiceGrid,[\s\S]*?grid-template-columns: repeat\(2, minmax\(0, 1fr\)\) !important/);
   assert.match(pageStyles, /\.assetShareInsideModal \.assetQuoteChoiceGrid \.assetQuoteChoiceCard[\s\S]*?min-height: clamp\(7\.8rem, 14dvh, 8\.8rem\) !important/);
-  assert.match(pageStyles, /@media \(max-width: 820px\)[\s\S]*?assetShareInsideModal[\s\S]*?grid-template-columns: minmax\(0, 1fr\) !important/);
+  assert.match(pageStyles, /@media \(max-width: 820px\)[\s\S]*?\.assetQuoteModal\.assetShareInsideModal:not\(\.assetQuotePartnerPickerModal\) \.assetQuoteChoiceGrid,[\s\S]*?grid-template-columns: minmax\(0, 1fr\) !important/);
 
   const insideScrollRule = pageStyles.match(/\.assetShareInsideModal \.assetQuoteScrollBody,\n\.assetShareInsideModal \.registerShareModalBody \{\n([\s\S]*?)\n\}/);
   assert.ok(insideScrollRule, 'inside sharing should size naturally without a permanent scrollbar gutter');

@@ -1,11 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
 import AppHeader from '../../components/AppHeader';
 import valuationStyles from '../valuation/page.module.css';
 import entryStyles from '../marketplace/marketplace-entry.module.css';
-import styles from './page.module.css';
 
 type DealerRegisterOption = {
   id: string;
@@ -15,23 +13,6 @@ type DealerRegisterOption = {
   totalValue: number;
   isPrimary: boolean;
 };
-
-function money(value: number): string {
-  return new Intl.NumberFormat('en-ZA', {
-    style: 'currency',
-    currency: 'ZAR',
-    maximumFractionDigits: 0,
-  }).format(Number(value) || 0);
-}
-
-function CloseIcon({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className} aria-hidden="true">
-      <path d="m6 6 12 12" />
-      <path d="m18 6-12 12" />
-    </svg>
-  );
-}
 
 function registerHref(register: DealerRegisterOption, view: 'dealer' | 'client', workspacePath: string): string {
   const params = new URLSearchParams({
@@ -43,42 +24,16 @@ function registerHref(register: DealerRegisterOption, view: 'dealer' | 'client',
 
 export default function DealerRegisterGateway({
   registers,
-  openClientPicker = false,
   showAppHeader = true,
   workspacePath = '/asset-register',
   registerManagementHref = '/asset-registers',
 }: {
   registers: DealerRegisterOption[];
-  openClientPicker?: boolean;
   showAppHeader?: boolean;
   workspacePath?: string;
   registerManagementHref?: string;
 }) {
-  const [isClientPickerOpen, setIsClientPickerOpen] = useState(openClientPicker);
-  const [search, setSearch] = useState('');
   const dealerRegister = registers.find((register) => register.isPrimary) ?? registers[0] ?? null;
-  const clientRegisters = useMemo(
-    () => registers.filter((register) => register.id !== dealerRegister?.id),
-    [dealerRegister?.id, registers],
-  );
-  const visibleClientRegisters = useMemo(() => {
-    const query = search.trim().toLowerCase();
-    if (!query) return clientRegisters;
-    return clientRegisters.filter((register) => [
-      register.businessName,
-      register.addressLine1,
-      String(register.assetCount),
-    ].some((value) => String(value ?? '').toLowerCase().includes(query)));
-  }, [clientRegisters, search]);
-
-  useEffect(() => {
-    if (openClientPicker) setIsClientPickerOpen(true);
-  }, [openClientPicker]);
-
-  function closeClientPicker() {
-    setIsClientPickerOpen(false);
-    setSearch('');
-  }
 
   return (
     <main className={valuationStyles.page}>
@@ -129,12 +84,11 @@ export default function DealerRegisterGateway({
                     </Link>
                   )}
 
-                  <button
-                    type="button"
+                  <Link
+                    href={registerManagementHref}
                     className={`${valuationStyles.sectorBigCard} ${valuationStyles.sectorBigCardLive} ${entryStyles.entryChoiceCard}`}
-                    style={{ width: '100%', appearance: 'none', color: 'inherit', font: 'inherit', textAlign: 'left', cursor: 'pointer' }}
-                    onClick={() => setIsClientPickerOpen(true)}
-                    aria-label="Choose a Client Asset Register"
+                    style={{ textDecoration: 'none' }}
+                    aria-label="Manage Client Asset Registers"
                   >
                     <span className={valuationStyles.sectorVideoOverlay} />
                     <span className={`${valuationStyles.sectorBigCardContent} ${entryStyles.entryChoiceContent}`}>
@@ -143,7 +97,7 @@ export default function DealerRegisterGateway({
                         <span className={valuationStyles.sectorCardHint}>Manage client assets</span>
                       </span>
                     </span>
-                  </button>
+                  </Link>
                 </nav>
               </div>
             </div>
@@ -151,71 +105,6 @@ export default function DealerRegisterGateway({
         </section>
       </div>
 
-      {isClientPickerOpen ? (
-        <div className={styles.modalOverlay}>
-          <div className={styles.modalBackdrop} onClick={closeClientPicker} />
-          <section
-            className={`${styles.modalCard} ${styles.dealerClientPickerModal}`}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="dealer-client-register-title"
-          >
-            <div className={`${styles.modalHeader} ${styles.dealerClientPickerHeader}`}>
-              <div className={styles.modalHeaderText}>
-                <h3 id="dealer-client-register-title">Choose a client register</h3>
-                <p>Open a complete client Asset Register, then switch between clients from inside the register.</p>
-              </div>
-              <button
-                type="button"
-                className={styles.modalCloseButton}
-                onClick={closeClientPicker}
-                aria-label="Close client register picker"
-              >
-                <CloseIcon className={styles.buttonIcon} />
-              </button>
-            </div>
-
-            <label className={styles.dealerClientPickerSearch}>
-              <span>Search client registers</span>
-              <input
-                type="search"
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                placeholder="Search by client, address or asset count"
-                autoFocus
-              />
-            </label>
-
-            <div className={styles.dealerClientRegisterList}>
-              {visibleClientRegisters.map((register) => (
-                <Link key={register.id} href={registerHref(register, 'client', workspacePath)} className={styles.dealerClientRegisterRow}>
-                  <span>
-                    <strong>{register.businessName || 'Client Asset Register'}</strong>
-                    <small>{register.addressLine1 || 'No address saved'}</small>
-                  </span>
-                  <span>
-                    <strong>{register.assetCount} {register.assetCount === 1 ? 'asset' : 'assets'}</strong>
-                    <small>{money(register.totalValue)} current value</small>
-                  </span>
-                  <b>Open register <span aria-hidden="true">→</span></b>
-                </Link>
-              ))}
-
-              {!visibleClientRegisters.length ? (
-                <div className={styles.dealerClientRegisterEmpty}>
-                  <strong>{clientRegisters.length ? 'No client registers match your search.' : 'No client Asset Registers yet.'}</strong>
-                  <p>{clientRegisters.length ? 'Clear the search to see every available client.' : 'Create a separate Asset Register for the first client.'}</p>
-                </div>
-              ) : null}
-            </div>
-
-            <div className={styles.dealerClientPickerFooter}>
-              <button type="button" className={styles.secondaryButton} onClick={closeClientPicker}>Cancel</button>
-              <Link href={registerManagementHref} className={styles.primaryButton}>Manage or create registers</Link>
-            </div>
-          </section>
-        </div>
-      ) : null}
     </main>
   );
 }

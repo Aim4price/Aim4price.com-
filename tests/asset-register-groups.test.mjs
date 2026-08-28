@@ -482,6 +482,13 @@ test('umbrella-aware pagination keeps every umbrella visible and the full header
   assert.match(client, /paginateAssetGroupPageEntries\(registerPaginationEntries, numericPageSize, expandedAssetGroupIds\)/);
   assert.match(client, /umbrellaPaginationEntryCount/);
   assert.match(client, /Standalone assets per page/);
+  assert.match(client, /const registerRangeItems = filteredAssets\.length/);
+  assert.match(client, /Standalone assets \$\{pageStart \+ 1\}–\$\{pageEnd\} of \$\{standalonePaginationEntryCount\}/);
+  assert.match(client, /className=\{styles\.registerRangeSummary\} aria-label=\{registerRangeDescription\}/);
+  assert.match(client, /className=\{styles\.registerRangeItem\}/);
+  assert.doesNotMatch(client, / · \$\{filteredAssets\.length\} \$\{filteredAssets\.length === 1 \? 'asset' : 'assets'\}/);
+  assert.match(styles, /\.heroTotalFooter \.registerRangeSummary \{[\s\S]*?flex-wrap: wrap !important;[\s\S]*?overflow: visible !important;/);
+  assert.match(styles, /\.registerRangeSummary \.registerRangeItem \{[\s\S]*?white-space: nowrap;/);
   assert.doesNotMatch(client, /pageSizeForVisibleCardCount/);
   assert.match(client, /visiblePaginationEntries\.flatMap\(\(entry\) => entry\.assets\)/);
   assert.match(client, /target\.closest\('button, a, input, select, textarea, \[role="button"\]'\)/);

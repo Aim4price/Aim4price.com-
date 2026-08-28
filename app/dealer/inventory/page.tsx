@@ -35,11 +35,14 @@ export default async function DealerInventoryPage({
     ? requestedRegister.id === dealerRegister?.id ? 'dealer' : 'client'
     : null;
 
-  if (!registerMode || (requestedView === 'client' && registerMode !== 'client')) {
+  if (requestedView === 'client' && registerMode !== 'client') {
+    redirect('/dealer/inventory/registers');
+  }
+
+  if (!registerMode) {
     return (
       <DealerRegisterGateway
         registers={registers}
-        openClientPicker={requestedView === 'client'}
         showAppHeader={false}
         workspacePath="/dealer/inventory"
         registerManagementHref="/dealer/inventory/registers"

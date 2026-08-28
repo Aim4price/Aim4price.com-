@@ -38733,7 +38733,7 @@ button.documentOpenLink {
   gap: 0;
 }
 
-.assetShareInsideModal .assetQuoteChoiceGrid,
+.assetQuoteModal.assetShareInsideModal:not(.assetQuotePartnerPickerModal) .assetQuoteChoiceGrid,
 .optionsModal.assetShareInsideModal .assetQuoteChoiceGrid.registerShareOptionGrid {
   width: 100% !important;
   max-width: 64rem !important;
@@ -38784,7 +38784,7 @@ button.documentOpenLink {
     scrollbar-gutter: stable !important;
   }
 
-  .assetShareInsideModal .assetQuoteChoiceGrid,
+  .assetQuoteModal.assetShareInsideModal:not(.assetQuotePartnerPickerModal) .assetQuoteChoiceGrid,
   .optionsModal.assetShareInsideModal .assetQuoteChoiceGrid.registerShareOptionGrid {
     max-width: 34rem !important;
     grid-template-columns: minmax(0, 1fr) !important;
@@ -39355,5 +39355,28 @@ button.documentOpenLink {
   .dealerClientRegisterRow > b {
     grid-column: 2;
     grid-row: 1 / span 2;
+  }
+}
+
+/* === Asset Register range facts: wrap only between complete details === */
+.heroTotalFooter .registerRangeSummary {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-items: center;
+  justify-content: flex-end;
+  max-width: 100%;
+  gap: 0.18rem 0.68rem;
+  overflow: visible !important;
+  text-overflow: clip !important;
+}
+
+.registerRangeSummary .registerRangeItem {
+  display: inline-block;
+  white-space: nowrap;
+}
+
+@media (max-width: 760px) {
+  .heroTotalFooter .registerRangeSummary {
+    justify-content: flex-start;
   }
 }
