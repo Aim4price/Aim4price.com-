@@ -287,7 +287,8 @@ test('live vault interactions keep errors, focus and view mutations safe', () =>
   assert.match(client, /document\.body\.style\.overflow = previousOverflow/);
   assert.match(client, /event\.key === 'Escape' && showDocumentTypeOptions/);
   assert.match(client, /event\.stopPropagation\(\)/);
-  assert.match(client, /<fieldset className=\{`\$\{styles\.modalFields\} \$\{modalMode === 'upload' \? wizardStyles\.panel : ''\}`\} disabled=\{busy\}>/);
+  assert.match(client, /<div className=\{modalMode === 'upload' \? `\$\{styles\.uploadWizardPanel\} \$\{wizardStyles\.panel\}` : undefined\}>/);
+  assert.match(client, /<fieldset className=\{`\$\{styles\.modalFields\} \$\{modalMode === 'upload' \? styles\.uploadWizardFields : ''\}`\} disabled=\{busy\}>/);
   assert.match(client, /role="status" aria-live="polite"/);
   assert.match(client, /async function readVaultResponse/);
   assert.match(client, /setOperationBusy\(false\);\s*setModalMode\(null\);/);
@@ -360,4 +361,23 @@ test('Document Vault refinements use guided modal flows instead of pills and bro
   assert.match(styles, /\.assetSelectionFooter\s*\{[\s\S]*?justify-content:\s*flex-end/);
   assert.match(styles, /\.documentCard\s*\{[\s\S]*?align-items:\s*stretch/);
   assert.match(styles, /\.fileMark\s*\{[\s\S]*?align-self:\s*stretch/);
+});
+
+test('upload document notes stay contained inside the details panel', () => {
+  const panelStart = client.indexOf('styles.uploadWizardPanel');
+  const headingStart = client.indexOf('wizardStyles.panelHeading', panelStart);
+  const fieldsStart = client.indexOf('<fieldset', headingStart);
+  const fieldsEnd = client.indexOf('</fieldset>', fieldsStart);
+  const panelEnd = client.indexOf('</div>', fieldsEnd);
+
+  assert.ok(panelStart >= 0 && panelStart < headingStart, 'the upload panel should own its heading');
+  assert.ok(headingStart < fieldsStart && fieldsStart < fieldsEnd, 'the fieldset should follow the panel heading');
+  assert.ok(fieldsEnd < panelEnd, 'the panel should contain the complete fieldset');
+  assert.doesNotMatch(client, /<fieldset[^>]*wizardStyles\.panel/);
+  assert.match(client, /className=\{`\$\{styles\.field\} \$\{styles\.notesField\}`\}/);
+  assert.match(client, /<textarea[\s\S]*?value=\{draft\.notes\}[\s\S]*?rows=\{4\}/);
+  assert.match(styles, /\.uploadWizardPanel\s*\{[^}]*height:\s*auto;[^}]*grid-auto-rows:\s*max-content;[^}]*overflow:\s*visible/);
+  assert.match(styles, /\.uploadWizardFields\s*\{[^}]*min-height:\s*0;[^}]*height:\s*auto;[^}]*display:\s*block;[^}]*overflow:\s*visible/);
+  assert.match(styles, /\.uploadWizardFields \.formGrid\s*\{[^}]*min-height:\s*0;[^}]*margin:\s*0/);
+  assert.match(styles, /\.uploadWizardFields \.notesField textarea\s*\{[^}]*box-sizing:\s*border-box;[^}]*display:\s*block;[^}]*min-height:\s*6\.5rem/);
 });

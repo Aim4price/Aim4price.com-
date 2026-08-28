@@ -71,7 +71,7 @@ test('manual wizard manages focus, keyboard escape and visible errors', () => {
 });
 
 test('manual wizard has responsive purpose-built styling', () => {
-  assert.match(styles, /\.manualCostWizardModal\s*\{[^}]*width:\s*min\(100%, 940px\)/);
+  assert.match(styles, /\.manualCostWizardModal\s*\{[^}]*width:\s*min\(1120px, 100%\) !important/);
   assert.match(styles, /\.manualCostWizardModal\s*\{[^}]*max-height:\s*min\(94dvh, 880px\)/);
   assert.match(styles, /\.manualCostWizardModal \.manualCostInvoiceGrid\s*\{[^}]*repeat\(3, minmax\(0, 1fr\)\)/);
   assert.match(styles, /\.manualCostReviewWide dd\s*\{[^}]*white-space:\s*normal/);

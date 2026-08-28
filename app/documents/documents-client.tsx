@@ -1423,7 +1423,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
                   </>
                 ) : null}
 
-                <fieldset className={`${styles.modalFields} ${modalMode === 'upload' ? wizardStyles.panel : ''}`} disabled={busy}>
+                <div className={modalMode === 'upload' ? `${styles.uploadWizardPanel} ${wizardStyles.panel}` : undefined}>
                 {modalMode === 'upload' ? (
                   <div className={wizardStyles.panelHeading}>
                     <span className={wizardStyles.panelNumber} aria-hidden="true">{uploadStep}</span>
@@ -1431,6 +1431,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
                     <p>{activeUploadStep.description}</p>
                   </div>
                 ) : null}
+                <fieldset className={`${styles.modalFields} ${modalMode === 'upload' ? styles.uploadWizardFields : ''}`} disabled={busy}>
                 {modalMode === 'upload' && uploadStep === 1 ? (
                   <>
                   <div
@@ -1621,6 +1622,7 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
                   </section>
                 )) : null}
                 </fieldset>
+                </div>
               </div>
 
               <footer className={`${styles.modalFooter} ${modalMode === 'upload' ? wizardStyles.footer : ''}`}>
