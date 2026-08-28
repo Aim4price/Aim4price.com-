@@ -53,6 +53,9 @@ test('dealer registers use meaningful titles without decorative pills or combine
   assert.match(registerClient, /if \(dealerRegisterMode\) \{[\s\S]*?return null;/);
   assert.match(registerClient, /const canManageAssetGroups =[\s\S]*?!dealerRegisterMode/);
   assert.match(registerClient, /\{canManageAssetGroups \? \([\s\S]*?<UmbrellaIcon/);
+  assert.match(registerClient, /\{canShareActiveRegister && !dealerRegisterMode \? \(/);
+  assert.doesNotMatch(registerClient, /disabled=\{!canManageAssetGroups \|\| isMovingAssetRegister\}/);
+  assert.doesNotMatch(registerClient, /disabled=\{!groupAnchorAsset \|\| !canManageAssetGroups\}/);
   assert.doesNotMatch(registerGateway, /<span>Client Asset Registers<\/span>|<b>Open<\/b>/);
   assert.match(registerGateway, /Open register →/);
 });

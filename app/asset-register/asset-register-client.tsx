@@ -16194,21 +16194,22 @@ export default function AssetRegisterClient({
                             <ChangeRegisterIcon className={styles.buttonIcon} />
                             <span>Asset Register</span>
                           </button>
-                          <button
-                            type="button"
-                            className={`${styles.assetRegisterMoveDestinationTab} ${assetRegisterMoveDestination === 'umbrella' ? styles.assetRegisterMoveDestinationTabActive : ''}`}
-                            onClick={() => {
-                              setAssetRegisterMoveDestination('umbrella');
-                              setAssetRegisterMoveTargetId('');
-                              setAssetRegisterMoveError('');
-                            }}
-                            aria-pressed={assetRegisterMoveDestination === 'umbrella'}
-                            disabled={!canManageAssetGroups || isMovingAssetRegister}
-                            title={canManageAssetGroups ? 'Move to an umbrella' : 'Umbrella changes are unavailable'}
-                          >
-                            <UmbrellaIcon className={styles.buttonIcon} />
-                            <span>Umbrella</span>
-                          </button>
+                          {canManageAssetGroups ? (
+                            <button
+                              type="button"
+                              className={`${styles.assetRegisterMoveDestinationTab} ${assetRegisterMoveDestination === 'umbrella' ? styles.assetRegisterMoveDestinationTabActive : ''}`}
+                              onClick={() => {
+                                setAssetRegisterMoveDestination('umbrella');
+                                setAssetRegisterMoveTargetId('');
+                                setAssetRegisterMoveError('');
+                              }}
+                              aria-pressed={assetRegisterMoveDestination === 'umbrella'}
+                              disabled={isMovingAssetRegister}
+                            >
+                              <UmbrellaIcon className={styles.buttonIcon} />
+                              <span>Umbrella</span>
+                            </button>
+                          ) : null}
                         </div>
 
                         {assetRegisterMoveDestination === 'register' ? (
@@ -16687,7 +16688,7 @@ export default function AssetRegisterClient({
                               </div>
 
                               <div className={`${styles.assetHeaderActions} ${styles.assetGroupHeaderActions}`}>
-                                {canShareActiveRegister ? (
+                                {canShareActiveRegister && !dealerRegisterMode ? (
                                   <button
                                     type="button"
                                     className={`${styles.optionsButton} ${styles.cardOptionsButton}`}
@@ -16712,16 +16713,18 @@ export default function AssetRegisterClient({
                                   <span>{isCollapsed ? 'View details' : 'Hide details'}</span>
                                 </button>
 
-                                <button
-                                  type="button"
-                                  className={`${styles.optionsButton} ${styles.cardManageButton}`}
-                                  onClick={() => groupAnchorAsset && openAssetGroupManager(groupAnchorAsset)}
-                                  disabled={!groupAnchorAsset || !canManageAssetGroups}
-                                  aria-label={`Manage ${group.name}`}
-                                >
-                                  <ManageIcon className={styles.buttonIcon} />
-                                  <span>Manage</span>
-                                </button>
+                                {canManageAssetGroups ? (
+                                  <button
+                                    type="button"
+                                    className={`${styles.optionsButton} ${styles.cardManageButton}`}
+                                    onClick={() => groupAnchorAsset && openAssetGroupManager(groupAnchorAsset)}
+                                    disabled={!groupAnchorAsset}
+                                    aria-label={`Manage ${group.name}`}
+                                  >
+                                    <ManageIcon className={styles.buttonIcon} />
+                                    <span>Manage</span>
+                                  </button>
+                                ) : null}
                               </div>
                             </div>
                           </section>
