@@ -7536,11 +7536,11 @@
 }
 
 .resultFinalActionsCopy span {
-  color: #165340;
-  font-size: 0.76rem;
-  font-weight: 900;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+  color: #65756f;
+  font-size: 0.82rem;
+  font-weight: 750;
+  letter-spacing: 0;
+  text-transform: none;
 }
 
 .resultFinalActionsCopy h3 {
@@ -7709,14 +7709,6 @@
   display: grid;
   gap: 0.45rem;
   padding-right: 3.4rem;
-}
-
-.finalSaveHeader span {
-  color: #165340;
-  font-size: 0.78rem;
-  font-weight: 900;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
 }
 
 .finalSaveHeader h2 {
@@ -12947,5 +12939,224 @@
   .dealerClientRegisterPickerRow b {
     grid-column: 2;
     grid-row: 1 / span 2;
+  }
+}
+
+
+/* === Dealer estimate actions and register-save dialogs === */
+.resultFinalActionsButtons > button {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+  min-height: 3.75rem;
+  padding: 0.8rem 1.1rem;
+  border-radius: 1rem;
+  font: inherit;
+  font-weight: 800;
+  line-height: 1.25;
+  text-align: center;
+  box-shadow: none;
+}
+
+.resultFinalActionsButtons > button[data-result-action] {
+  padding-right: 3.5rem;
+}
+
+.resultFinalActionsButtons > .resultPrimaryActionButton {
+  border: 1px solid #174f3e;
+  background: linear-gradient(180deg, #1a5b47 0%, #123f34 100%);
+  color: #ffffff;
+  box-shadow: 0 12px 24px rgba(18, 63, 52, 0.18);
+}
+
+.resultFinalActionsButtons > .resultClientRegisterActionButton {
+  border: 1px solid rgba(23, 79, 62, 0.28);
+  background: #f0f7f3;
+  color: #174f3e;
+}
+
+.resultFinalActionsButtons > .resultAlternateActionButton,
+.resultFinalActionsButtons > .resultPdfActionButton {
+  border: 1px solid rgba(31, 67, 85, 0.18);
+  background: #ffffff;
+  color: #173f36;
+}
+
+.resultFinalActionsButtons > button[data-result-action]::after {
+  position: absolute;
+  right: 0.85rem;
+  display: inline-flex;
+  width: 2rem;
+  height: 2rem;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(31, 67, 85, 0.12);
+  border-radius: 999px;
+  background: #f1f5f7;
+  color: #24485a;
+  font-size: 1rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.resultFinalActionsButtons > .resultPrimaryActionButton[data-result-action]::after {
+  border-color: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+}
+
+.resultFinalActionsButtons > button[data-result-action='create-ad']::after {
+  content: '↗';
+}
+
+.resultFinalActionsButtons > button[data-result-action='dealer-register']::after,
+.resultFinalActionsButtons > button[data-result-action='client-register']::after {
+  content: '+';
+}
+
+.resultFinalActionsButtons > button[data-result-action='download-pdf']::after {
+  content: '↓';
+}
+
+.resultFinalActionsButtons > .resultPrimaryActionButton:hover:not(:disabled) {
+  background: #123f34;
+  box-shadow: 0 15px 28px rgba(18, 63, 52, 0.22);
+}
+
+.resultFinalActionsButtons > :is(.resultClientRegisterActionButton, .resultAlternateActionButton, .resultPdfActionButton):hover:not(:disabled) {
+  border-color: rgba(23, 79, 62, 0.4);
+  background: #f7faf8;
+  box-shadow: 0 12px 24px rgba(16, 42, 34, 0.08);
+}
+
+.resultFinalActionsButtons > button:focus-visible {
+  outline: 3px solid rgba(37, 113, 87, 0.2);
+  outline-offset: 2px;
+}
+
+.resultFinalActionsButtons > button:disabled {
+  cursor: not-allowed;
+  opacity: 0.52;
+  transform: none;
+  box-shadow: none;
+}
+
+.finalSaveModal {
+  gap: 1.15rem;
+}
+
+.finalSaveHeader {
+  gap: 0.55rem;
+}
+
+.finalSaveHeader h2 {
+  color: #18364b;
+  font-size: clamp(1.7rem, 3.4vw, 2.4rem);
+  line-height: 1.05;
+  letter-spacing: -0.05em;
+}
+
+.finalSaveHeader p {
+  max-width: 42rem;
+  color: #617483;
+}
+
+.dealerClientRegisterPicker {
+  width: min(820px, calc(100vw - 32px));
+  gap: 1rem;
+}
+
+.dealerClientRegisterSearch {
+  margin: 0.2rem 0 0;
+  color: #3d5564;
+  font-size: 0.82rem;
+  font-weight: 750;
+}
+
+.dealerClientRegisterSearch input {
+  border-color: #d5e0e6;
+  background: #ffffff;
+  color: #18364b;
+  box-shadow: inset 0 1px 2px rgba(22, 52, 69, 0.04);
+}
+
+.dealerClientRegisterSearch input:focus {
+  border-color: #7ea99d;
+  outline: 0;
+  box-shadow: 0 0 0 4px rgba(37, 113, 87, 0.11);
+}
+
+.dealerClientRegisterPickerList {
+  gap: 0.75rem;
+  padding: 0.1rem 0.1rem 0.2rem;
+  scrollbar-gutter: stable;
+}
+
+.dealerClientRegisterPickerRow {
+  border-color: #dbe5ea;
+  background: #ffffff;
+  color: #18364b;
+  box-shadow: 0 8px 20px rgba(22, 52, 69, 0.045);
+  transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
+}
+
+.dealerClientRegisterPickerRow:hover,
+.dealerClientRegisterPickerRow:focus-visible {
+  border-color: #8db9ad;
+  background: #f9fcfb;
+  box-shadow: 0 12px 26px rgba(22, 52, 69, 0.08);
+  transform: translateY(-1px);
+}
+
+.dealerClientRegisterPickerRow .dealerClientRegisterPickerAction {
+  display: inline-flex;
+  min-height: 2.35rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0.45rem 0.75rem;
+  border: 1px solid #d7e2e8;
+  border-radius: 0.7rem;
+  background: #eef3f6;
+  color: #24485a;
+  font-size: 0.8rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.finalSaveDestination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.8rem 0.95rem;
+  border: 1px solid #dbe5ea;
+  border-radius: 0.95rem;
+  background: #f5f8fa;
+}
+
+.finalSaveDestination span {
+  color: #667986;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.finalSaveDestination strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: #18364b;
+  font-weight: 800;
+  text-align: right;
+}
+
+@media (max-width: 680px) {
+  .finalSaveDestination {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .finalSaveDestination strong {
+    text-align: left;
   }
 }

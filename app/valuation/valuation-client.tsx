@@ -4178,7 +4178,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     setDealerSaveTargetMode(mode);
     setIsDealerClientRegisterPickerOpen(false);
     setDealerClientRegisterSearch('');
-    openFinalSaveModal('asset-register');
+    openFinalSaveModal('asset-register', register.id);
   }
 
   function saveToDealerAssetRegister() {
@@ -4201,7 +4201,10 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     setDealerClientRegisterSearch('');
   }
 
-  function openFinalSaveModal(intent: FinalSaveIntent) {
+  function openFinalSaveModal(
+    intent: FinalSaveIntent,
+    targetRegisterId = dealerSaveTargetRegisterId,
+  ) {
     if (!resultState) {
       setMessage('Run an estimate before saving.');
       return;
@@ -4217,7 +4220,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
       return;
     }
 
-    if (intent === 'asset-register' && isDealerAccount && !dealerSaveTargetRegisterId) {
+    if (intent === 'asset-register' && isDealerAccount && !targetRegisterId) {
       setMessage('Choose the Dealer or Client Asset Register that should receive this estimate.');
       return;
     }
@@ -7441,6 +7444,8 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                   ? 'Save this estimate to update the existing manual asset. Marketplace, PDF and duplicate asset-register saves are hidden in conversion mode.'
                   : ownerAppMode
                     ? 'Save the asset to My Assets, create a Marketplace listing or download the estimate PDF.'
+                  : isDealerAccount
+                    ? 'Create an advert, add the asset to a dealer or client register, or download the estimate PDF.'
                   : compactAppMode
                     ? 'Download the PDF or create a listing.'
                     : 'Download the estimate PDF, send the asset to Marketplace, or save it to your Asset Register.'}
@@ -7480,6 +7485,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                       <button
                         type="button"
                         className={styles.resultAlternateActionButton}
+                        data-result-action="create-ad"
                         onClick={createAdFromEstimate}
                         disabled={saveLoading || isPublishingMarketplace || replacementRecalculateLoading || advancedRecalculateLoading || !canUseMarketplacePublishFlow || (isDealerAccount && !dealerOwnedRegister) || headlineValue === null}
                       >
@@ -7490,6 +7496,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                           <button
                             type="button"
                             className={styles.resultPrimaryActionButton}
+                            data-result-action="dealer-register"
                             onClick={saveToDealerAssetRegister}
                             disabled={saveLoading || isPublishingMarketplace || replacementRecalculateLoading || advancedRecalculateLoading || !canSaveToAssetRegister || !dealerOwnedRegister || headlineValue === null}
                           >
@@ -7500,6 +7507,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                           <button
                             type="button"
                             className={styles.resultClientRegisterActionButton}
+                            data-result-action="client-register"
                             onClick={openDealerClientRegisterPicker}
                             disabled={saveLoading || isPublishingMarketplace || replacementRecalculateLoading || advancedRecalculateLoading || !canSaveToAssetRegister || headlineValue === null}
                           >
@@ -7527,6 +7535,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                   <button
                     type="button"
                     className={styles.resultPdfActionButton}
+                    data-result-action="download-pdf"
                     onClick={downloadValuationPdf}
                     disabled={pdfLoading || advancedRecalculateLoading || !resultState || headlineValue === null}
                   >
@@ -7585,7 +7594,20 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
       : isDealerAccount
         ? `Add to ${dealerSaveTargetRegisterName || (dealerSaveTargetMode === 'client' ? 'Client Asset Register' : 'Dealer Asset Register')}`
         : 'Save to Asset Register';
-  const finalSaveCta = finalSaveIntent === 'marketplace' ? 'Save and continue to advert details' : 'Confirm and save';
+  const finalSaveDescription = finalSaveIntent === 'marketplace'
+    ? 'Review the estimate and replacement price before continuing to the advert details.'
+    : isDealerAccount && dealerSaveTargetMode === 'client'
+      ? `Review the estimate and replacement price before adding it to ${dealerSaveTargetRegisterName || 'the selected client register'}.`
+      : isDealerAccount && dealerSaveTargetMode === 'dealer'
+        ? `Review the estimate and replacement price before adding it to ${dealerSaveTargetRegisterName || 'the Dealer Asset Register'}.`
+        : 'Review the estimate and replacement price before saving this asset.';
+  const finalSaveCta = finalSaveIntent === 'marketplace'
+    ? 'Save and continue to advert details'
+    : isDealerAccount && dealerSaveTargetMode === 'client'
+      ? 'Add to client register'
+      : isDealerAccount && dealerSaveTargetMode === 'dealer'
+        ? 'Add to dealer register'
+        : 'Confirm and save';
   const isSectorIntroStep = step === 1 && !selectedSector;
   const compactPathChoicePage = compactAppMode && step === 3 && !flowMode;
 
@@ -7739,6 +7761,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
             role="dialog"
             aria-modal="true"
             aria-labelledby="dealer-client-register-picker-title"
+            aria-describedby="dealer-client-register-picker-description"
             onClick={(event) => event.stopPropagation()}
           >
             <button
@@ -7751,9 +7774,8 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
             </button>
 
             <div className={styles.finalSaveHeader}>
-              <span>Client destination</span>
-              <h2 id="dealer-client-register-picker-title">Choose a Client Asset Register</h2>
-              <p>The estimate will be added to the selected client&apos;s complete Asset Register.</p>
+              <h2 id="dealer-client-register-picker-title">Choose a client Asset Register</h2>
+              <p id="dealer-client-register-picker-description">Select the client register where this estimate should be saved.</p>
             </div>
 
             <label className={styles.dealerClientRegisterSearch}>
@@ -7783,7 +7805,9 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                     <strong>{register.assetCount} {register.assetCount === 1 ? 'asset' : 'assets'}</strong>
                     <small>{money(register.totalValue)} current value</small>
                   </span>
-                  <b>Choose</b>
+                  <b className={styles.dealerClientRegisterPickerAction}>
+                    Select <span aria-hidden="true">→</span>
+                  </b>
                 </button>
               ))}
 
@@ -7806,6 +7830,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
             role="dialog"
             aria-modal="true"
             aria-labelledby="final-save-title"
+            aria-describedby="final-save-description"
             onClick={(event) => event.stopPropagation()}
           >
             <button
@@ -7819,12 +7844,18 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
             </button>
 
             <div className={styles.finalSaveHeader}>
-              <span>Final save step</span>
               <h2 id="final-save-title">{finalSaveTitle}</h2>
-              <p>
-                The saved/model replacement price is used by default. Change it only if it needs to become the official saved replacement price.
-              </p>
+              <p id="final-save-description">{finalSaveDescription}</p>
             </div>
+
+            {finalSaveIntent === 'asset-register' && isDealerAccount ? (
+              <div className={styles.finalSaveDestination}>
+                <span>Destination</span>
+                <strong>
+                  {dealerSaveTargetRegisterName || (dealerSaveTargetMode === 'client' ? 'Client Asset Register' : 'Dealer Asset Register')}
+                </strong>
+              </div>
+            ) : null}
 
             <div className={styles.finalSaveSummaryGrid}>
               <div className={styles.finalSaveSummaryCard}>

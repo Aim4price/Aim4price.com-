@@ -11,6 +11,8 @@ const [
   dealerInventoryPage,
   registerClient,
   valuationClient,
+  valuationStyles,
+  registerStyles,
   valuationRoute,
   leadsClient,
   leadsStyles,
@@ -21,6 +23,8 @@ const [
   read('app/dealer/inventory/page.tsx'),
   read('app/asset-register/asset-register-client.tsx'),
   read('app/valuation/valuation-client.tsx'),
+  read('app/valuation/page.module.css'),
+  read('app/asset-register/page.module.css'),
   read('app/api/valuation-runs/route.ts'),
   read('app/leads/leads-client.tsx'),
   read('app/leads/page.module.css'),
@@ -57,19 +61,40 @@ test('client registers reuse the complete owner Asset Register and keep client s
   assert.match(registerClient, /dealerView=\$\{dealerRegisterMode\}/);
 });
 
-test('manual add flow gives dealers explicit dealer and client destinations', () => {
-  assert.match(registerClient, /Where should this asset be added\?/);
-  assert.match(registerClient, /Add to Dealer Asset Register/);
-  assert.match(registerClient, /Add to Client Asset Register/);
-  assert.match(registerClient, /dealerClientRegisterOptions/);
+test('manual add stays scoped to the specific dealer or client register already open', () => {
+  assert.doesNotMatch(registerClient, /Where should this asset be added\?|dealerAddDestination|dealerClientRegisterOptions/);
+  assert.match(registerClient, /if \(isCombinedRegisterView\)[\s\S]*setIsAddAssetDestinationModalOpen\(true\)/);
+  assert.match(registerClient, /const currentRegisterId = String\(activeRegister\?\.id \|\| activeRegisterId \|\| ''\)\.trim\(\)/);
+  assert.match(registerClient, /setAddAssetTargetRegisterId\(currentRegisterId\);[\s\S]*setIsAddChoiceModalOpen\(true\)/);
+  assert.match(registerClient, /Adding to <strong>\{addAssetTargetRegisterName\}<\/strong>/);
   assert.match(registerClient, /params\.set\([\s\S]*'dealerRegisterMode'/);
+  assert.match(registerClient, /registerId: destinationRegisterId \|\| null/);
+  assert.match(registerStyles, /Add asset destination context[\s\S]*\.assetUpdateIdentity p strong/);
 });
 
-test('dealer estimates can save to either selected register without changing the owner flow', () => {
+test('dealer estimate actions and client-save dialogs are consistent and use the fresh register selection', () => {
   assert.match(valuationClient, /normalizedSignedInAccountType === 'dealer'[\s\S]*isAccountantClientWorkspace/);
   assert.match(valuationClient, /Add to Dealer Asset Register/);
   assert.match(valuationClient, /Add to Client Asset Register/);
-  assert.match(valuationClient, /Choose a Client Asset Register/);
+  assert.match(valuationClient, /Choose a client Asset Register/);
+  assert.match(valuationClient, /openFinalSaveModal\('asset-register', register\.id\)/);
+  assert.match(valuationClient, /targetRegisterId = dealerSaveTargetRegisterId/);
+  assert.match(valuationClient, /aria-describedby="dealer-client-register-picker-description"/);
+  assert.match(valuationClient, /aria-describedby="final-save-description"/);
+  assert.match(valuationClient, /styles\.dealerClientRegisterPickerAction/);
+  assert.match(valuationClient, /styles\.finalSaveDestination/);
+  assert.doesNotMatch(valuationClient, /Client destination|Final save step/);
+
+  for (const action of ['create-ad', 'dealer-register', 'client-register', 'download-pdf']) {
+    assert.match(valuationClient, new RegExp(`data-result-action="${action}"`));
+  }
+
+  assert.match(valuationStyles, /\.resultFinalActionsCopy span \{[\s\S]*text-transform: none/);
+  assert.match(valuationStyles, /\.resultFinalActionsButtons > button \{[\s\S]*min-height: 3\.75rem/);
+  assert.match(valuationStyles, /> \.resultClientRegisterActionButton \{[\s\S]*background: #f0f7f3/);
+  assert.match(valuationStyles, /\.dealerClientRegisterPickerAction/);
+  assert.match(valuationStyles, /\.finalSaveDestination/);
+  assert.doesNotMatch(valuationStyles, /\.finalSaveHeader span \{/);
   assert.match(valuationClient, /savePayload\.registerId = resolvedTargetRegisterId/);
   assert.match(valuationRoute, /accountType === 'owner' \|\| accountType === 'dealer' \|\| Boolean\(accountantAccess\)/);
 });

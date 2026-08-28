@@ -39380,3 +39380,13 @@ button.documentOpenLink {
     justify-content: flex-start;
   }
 }
+
+
+/* === Add asset destination context === */
+.addAssetChoiceHeader p strong,
+.newAcquisitionChoiceHeader p strong,
+.assetFormModalHeader p strong,
+.assetUpdateIdentity p strong {
+  color: #173f36;
+  font-weight: 800;
+}
