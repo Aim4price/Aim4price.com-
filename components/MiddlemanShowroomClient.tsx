@@ -75,6 +75,7 @@ export function MiddlemanShowroomManager({
   const [showroomLogoUrl, setShowroomLogoUrl] = useState(initialShowroom.showroomLogoUrl);
   const [logoDragActive, setLogoDragActive] = useState(false);
   const [readingLogo, setReadingLogo] = useState(false);
+  const [logoFeedback, setLogoFeedback] = useState<{ text: string; error: boolean } | null>(null);
   const [saving, setSaving] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteConfirmation, setDeleteConfirmation] = useState('');
@@ -91,13 +92,13 @@ export function MiddlemanShowroomManager({
 
   function applyShowroomLogoFile(file?: File) {
     if (!file || saving || readingLogo) return;
-    setMessage('');
+    setLogoFeedback(null);
     if (!SHOWROOM_LOGO_TYPES.has(file.type)) {
-      setMessage('Choose a PNG, JPEG or WebP logo.');
+      setLogoFeedback({ text: 'Choose a PNG, JPEG or WebP logo.', error: true });
       return;
     }
     if (file.size > MAX_SHOWROOM_LOGO_BYTES) {
-      setMessage('Keep the showroom logo below 2 MB.');
+      setLogoFeedback({ text: 'Keep the showroom logo below 2 MB.', error: true });
       return;
     }
 
@@ -105,7 +106,7 @@ export function MiddlemanShowroomManager({
     const reader = new FileReader();
     reader.onload = () => {
       if (typeof reader.result !== 'string') {
-        setMessage('The showroom logo could not be read.');
+        setLogoFeedback({ text: 'The showroom logo could not be read.', error: true });
         setReadingLogo(false);
         return;
       }
@@ -116,27 +117,27 @@ export function MiddlemanShowroomManager({
           image.naturalWidth > MAX_SHOWROOM_LOGO_DIMENSION
           || image.naturalHeight > MAX_SHOWROOM_LOGO_DIMENSION
         ) {
-          setMessage('Keep the showroom logo dimensions below 4096 × 4096 pixels.');
+          setLogoFeedback({ text: 'Keep the showroom logo dimensions below 4096 × 4096 pixels.', error: true });
         } else {
           setShowroomLogoUrl(logoDataUrl);
-          setMessage('Logo ready. Save your changes to update the public showroom.');
+          setLogoFeedback({ text: 'Logo ready. Save your changes to update the public showroom.', error: false });
         }
         setReadingLogo(false);
       };
       image.onerror = () => {
-        setMessage('Choose a valid PNG, JPEG or WebP logo.');
+        setLogoFeedback({ text: 'Choose a valid PNG, JPEG or WebP logo.', error: true });
         setReadingLogo(false);
       };
       image.src = logoDataUrl;
     };
     reader.onerror = () => {
-      setMessage('The showroom logo could not be read.');
+      setLogoFeedback({ text: 'The showroom logo could not be read.', error: true });
       setReadingLogo(false);
     };
     reader.readAsDataURL(file);
   }
 
-  function handleShowroomLogoDrop(event: DragEvent<HTMLButtonElement>) {
+  function handleShowroomLogoDrop(event: DragEvent<HTMLDivElement>) {
     event.preventDefault();
     setLogoDragActive(false);
     applyShowroomLogoFile(event.dataTransfer.files?.[0]);
@@ -146,6 +147,7 @@ export function MiddlemanShowroomManager({
     if (readingLogo) return;
     setSaving(true);
     setMessage('');
+    setLogoFeedback(null);
     try {
       const response = await fetch('/api/middleman-showroom', {
         method: 'PUT',
@@ -250,69 +252,90 @@ export function MiddlemanShowroomManager({
             </div>
             <span className={`${styles.statusPill} ${isPublic ? styles.statusLive : ''}`}>{isPublic ? 'Live' : 'Hidden'}</span>
           </div>
-          <div className={styles.showroomLogoField}>
+          <div
+            className={`${styles.showroomLogoField} ${logoDragActive ? styles.showroomLogoDragging : ''}`}
+            onDragEnter={(event) => {
+              if (!event.dataTransfer.types.includes('Files')) return;
+              event.preventDefault();
+              if (!saving && !readingLogo) setLogoDragActive(true);
+            }}
+            onDragOver={(event) => {
+              if (!event.dataTransfer.types.includes('Files')) return;
+              event.preventDefault();
+              event.dataTransfer.dropEffect = 'copy';
+            }}
+            onDragLeave={(event) => {
+              if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setLogoDragActive(false);
+            }}
+            onDrop={handleShowroomLogoDrop}
+          >
+            <div className={styles.showroomLogoPreview}>
+              {logoPreviewUrl ? (
+                <img src={logoPreviewUrl} alt="Showroom logo preview" />
+              ) : (
+                <span>Logo</span>
+              )}
+              {logoDragActive ? <small>Drop logo</small> : null}
+            </div>
             <div className={styles.showroomLogoCopy}>
               <strong>Showroom logo</strong>
-              <span>Your default Ad Studio logo appears automatically. Upload a different logo only for this showroom.</span>
-            </div>
-            <div className={styles.showroomLogoEditor}>
-              <button
-                className={`${styles.showroomLogoPreview} ${logoDragActive ? styles.showroomLogoDragging : ''}`}
-                type="button"
-                onClick={() => logoInputRef.current?.click()}
-                onDragEnter={(event) => {
-                  event.preventDefault();
-                  if (!saving && !readingLogo) setLogoDragActive(true);
-                }}
-                onDragOver={(event) => event.preventDefault()}
-                onDragLeave={() => setLogoDragActive(false)}
-                onDrop={handleShowroomLogoDrop}
-                disabled={saving || readingLogo}
-                aria-label={logoPreviewUrl ? 'Replace showroom logo' : 'Upload showroom logo'}
-              >
-                {logoPreviewUrl ? (
-                  <img src={logoPreviewUrl} alt="Showroom logo preview" />
-                ) : (
-                  <span>No logo</span>
-                )}
-                {logoDragActive ? <small>Drop logo</small> : null}
-              </button>
-              <div className={styles.showroomLogoActions}>
+              <span>
+                {showroomLogoUrl
+                  ? 'This custom logo appears only on your public showroom.'
+                  : showroom.inheritedLogoUrl
+                    ? 'Using your saved brand logo. Drop a different logo here if needed.'
+                    : 'Add a logo to personalise your public showroom.'}
+              </span>
+              <small id="showroom-logo-help">PNG, JPEG or WebP · Maximum 2 MB</small>
+              {showroomLogoUrl ? (
                 <button
-                  className={styles.showroomLogoButton}
+                  className={styles.showroomLogoReset}
                   type="button"
-                  onClick={() => logoInputRef.current?.click()}
+                  onClick={() => {
+                    setShowroomLogoUrl('');
+                    setLogoFeedback({
+                      text: showroom.inheritedLogoUrl
+                        ? 'Your saved brand logo will be used after you save your changes.'
+                        : 'The showroom logo will be removed after you save your changes.',
+                      error: false,
+                    });
+                  }}
                   disabled={saving || readingLogo}
                 >
-                  {readingLogo ? 'Reading logo...' : logoPreviewUrl ? 'Replace logo' : 'Upload logo'}
+                  {showroom.inheritedLogoUrl ? 'Use saved brand logo' : 'Remove logo'}
                 </button>
-                {showroomLogoUrl ? (
-                  <button
-                    className={styles.showroomLogoReset}
-                    type="button"
-                    onClick={() => {
-                      setShowroomLogoUrl('');
-                      setMessage('The Ad Studio logo will be used after you save your changes.');
-                    }}
-                    disabled={saving || readingLogo}
-                  >
-                    Use Ad Studio logo
-                  </button>
-                ) : (
-                  <small>{showroom.inheritedLogoUrl ? 'Using your saved brand logo' : 'No brand logo saved yet'}</small>
-                )}
-                <input
-                  ref={logoInputRef}
-                  className={styles.showroomLogoInput}
-                  type="file"
-                  accept="image/png,image/jpeg,image/webp"
-                  onChange={(event) => {
-                    applyShowroomLogoFile(event.currentTarget.files?.[0]);
-                    event.currentTarget.value = '';
-                  }}
-                  tabIndex={-1}
-                />
-              </div>
+              ) : null}
+              {logoFeedback ? (
+                <small
+                  id="showroom-logo-feedback"
+                  className={`${styles.showroomLogoFeedback} ${logoFeedback.error ? styles.showroomLogoFeedbackError : ''}`}
+                  role="status"
+                >
+                  {logoFeedback.text}
+                </small>
+              ) : null}
+            </div>
+            <div className={styles.showroomLogoActions}>
+              <button
+                className={styles.showroomLogoButton}
+                type="button"
+                onClick={() => logoInputRef.current?.click()}
+                disabled={saving || readingLogo}
+                aria-describedby={logoFeedback ? 'showroom-logo-help showroom-logo-feedback' : 'showroom-logo-help'}
+              >
+                {readingLogo ? 'Reading logo...' : logoPreviewUrl ? 'Replace logo' : 'Upload logo'}
+              </button>
+              <input
+                ref={logoInputRef}
+                className={styles.showroomLogoInput}
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                onChange={(event) => {
+                  applyShowroomLogoFile(event.currentTarget.files?.[0]);
+                  event.currentTarget.value = '';
+                }}
+                tabIndex={-1}
+              />
             </div>
           </div>
           <div className={styles.publicLinkField}>
