@@ -6,7 +6,12 @@ const read = (path) =>
   readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
 
 const invoices = read("app/my-invoices/my-invoices-client.tsx");
+const invoiceStyles = read("app/my-invoices/page.module.css");
 const documents = read("app/documents/documents-client.tsx");
+const assetRegister = read("app/asset-register/asset-register-client.tsx");
+const umbrella = read(
+  "components/asset-register/AssetGroupManagerModal.tsx",
+);
 const wizardStyles = read("components/AimWizardModal.module.css");
 const umbrellaStyles = read(
   "components/asset-register/AssetGroupManagerModal.module.css",
@@ -192,5 +197,59 @@ test("the shared wizard remains usable as a mobile bottom sheet", () => {
   assert.match(
     wizardStyles,
     /@media \(max-width: 720px\)[\s\S]*?\.dialog \.secondaryAction,[\s\S]*?width: 100%;/,
+  );
+});
+
+test("Aim4price capture is the full-width final choice in Add asset cost", () => {
+  const costChoices = slice(
+    invoices,
+    '<div className={styles.sourceChoiceGrid}>',
+    '<div className={styles.modalFooter}>',
+  );
+  const manualIndex = costChoices.indexOf("Enter cost manually");
+  const recurringIndex = costChoices.indexOf("Add recurring commitment");
+  const captureIndex = costChoices.indexOf("Upload for Aim4price capture");
+
+  assert.ok(
+    manualIndex >= 0 && manualIndex < recurringIndex && recurringIndex < captureIndex,
+    "manual and recurring choices should appear before Aim4price capture",
+  );
+  assert.match(
+    costChoices,
+    /styles\.aim4priceCaptureChoiceOption[\s\S]*?Upload for Aim4price capture/,
+  );
+  assert.match(
+    invoiceStyles,
+    /\.costChoiceModal \.aim4priceCaptureChoiceOption\s*\{[^}]*grid-column:\s*1 \/ -1/,
+  );
+});
+
+test("Create umbrella reuses the export asset picker hierarchy and contained scrolling", () => {
+  assert.match(assetRegister, /yearModel:\s*asset\.yearModel/);
+  assert.match(assetRegister, /usageLabel:\s*buildAssetUsageValue\(asset\)/);
+  assert.match(assetRegister, /conditionLabel:\s*asset\.condition \? conditionLabel\(asset\.condition\) : ''/);
+  assert.match(assetRegister, /sourceLabel:\s*methodLabel\(asset\.selectedMethod\)/);
+
+  assert.match(umbrella, /placeholder="Search\.\.\."/);
+  assert.match(umbrella, />\s*Select all\s*</);
+  assert.match(umbrella, />\s*Clear\s*</);
+  assert.match(umbrella, /assetDetailLine\(asset\)/);
+  assert.match(umbrella, /assetSourceLine\(asset, combinedMode\)/);
+  assert.match(umbrella, /<small>current value<\/small>/);
+  assert.match(umbrella, /<AssetGroupMemberSelect[\s\S]*?PRIMARY_MEMBER_VALUE_OPTIONS[\s\S]*?GROUPED_MEMBER_VALUE_OPTIONS/);
+
+  assert.match(umbrella, /editorBodyRef\.current\?\.scrollTo\(\{ top: 0, left: 0 \}\)/);
+  assert.match(umbrella, /assetListRef\.current\?\.scrollTo\(\{ top: 0, left: 0 \}\)/);
+  assert.match(
+    umbrellaStyles,
+    /\.assetPickerBody\s*\{[^}]*display:\s*flex;[^}]*overflow:\s*hidden/,
+  );
+  assert.match(
+    umbrellaStyles,
+    /\.assetList\s*\{[^}]*flex:\s*1 1 auto;[^}]*overflow-y:\s*auto;[^}]*overscroll-behavior:\s*contain;[^}]*scrollbar-gutter:\s*stable/,
+  );
+  assert.match(
+    umbrellaStyles,
+    /@media \(max-width: 720px\)[\s\S]*?\.assetPickerBody\s*\{[^}]*overflow-y:\s*auto/,
   );
 });
