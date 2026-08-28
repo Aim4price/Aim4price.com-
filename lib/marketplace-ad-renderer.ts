@@ -42,11 +42,11 @@ export type MarketplaceAdRatingPresentation = {
 type Rect = { x: number; y: number; width: number; height: number };
 
 const RATING_PRESENTATION: Record<MarketplaceDealRating, MarketplaceAdRatingPresentation> = {
-  low: { value: 'low', label: 'LOW PRICE', background: '#f97316', foreground: '#ffffff' },
-  great: { value: 'great', label: 'GREAT PRICE', background: '#22b24b', foreground: '#ffffff' },
-  fair: { value: 'fair', label: 'FAIR PRICE', background: '#1e9bb3', foreground: '#ffffff' },
-  high: { value: 'high', label: 'HIGH PRICE', background: '#ef4444', foreground: '#ffffff' },
-  none: { value: 'none', label: 'NO RATING', background: '#69788a', foreground: '#ffffff' },
+  low: { value: 'low', label: 'Low price', background: '#f97316', foreground: '#ffffff' },
+  great: { value: 'great', label: 'Great price', background: '#22b24b', foreground: '#ffffff' },
+  fair: { value: 'fair', label: 'Fair price', background: '#1e9bb3', foreground: '#ffffff' },
+  high: { value: 'high', label: 'High price', background: '#ef4444', foreground: '#ffffff' },
+  none: { value: 'none', label: 'No rating', background: '#69788a', foreground: '#ffffff' },
 };
 
 function clean(value: unknown): string {
@@ -100,8 +100,8 @@ export function getMarketplaceAdRating(content: Pick<MarketplaceAdContent, 'deal
 }
 
 function vatLabel(brand: AdBrandSnapshot): string {
-  if (brand.vatLabel === 'vat-included') return brand.language === 'af' ? 'BTW INGESLUIT' : 'VAT INCLUDED';
-  if (brand.vatLabel === 'no-vat') return brand.language === 'af' ? 'GEEN BTW' : 'NO VAT';
+  if (brand.vatLabel === 'vat-included') return brand.language === 'af' ? 'BTW ingesluit' : 'VAT included';
+  if (brand.vatLabel === 'no-vat') return brand.language === 'af' ? 'Geen BTW' : 'No VAT';
   return brand.language === 'af' ? '+ BTW' : '+ VAT';
 }
 

@@ -4,18 +4,20 @@ import test from 'node:test';
 
 const read = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
 
+const AD_TEMPLATE_IDS = [
+  'showcase',
+  'price-focus',
+  'photo-first',
+  'classic',
+  'minimal',
+  'duo-split',
+  'gallery-three',
+  'catalogue-grid',
+];
+
 test('Ad Studio exposes eight reusable one-to-four-photo layouts and safe Brand Kit fields', async () => {
   const source = await read('lib/ad-studio.ts');
-  for (const template of [
-    'showcase',
-    'price-focus',
-    'photo-first',
-    'classic',
-    'minimal',
-    'duo-split',
-    'gallery-three',
-    'catalogue-grid',
-  ]) {
+  for (const template of AD_TEMPLATE_IDS) {
     assert.match(source, new RegExp(`id: '${template}'`));
   }
   assert.match(source, /photoCount: 1/);
@@ -27,6 +29,16 @@ test('Ad Studio exposes eight reusable one-to-four-photo layouts and safe Brand 
   assert.match(source, /contactName: string/);
   assert.match(source, /vatLabel: AdVatLabel/);
   assert.match(source, /normalizeAdBrandSnapshot/);
+});
+
+test('schema accepts every supported Ad Studio template', async () => {
+  const migration = await read('database/migrations/96-ad-studio-template-options.sql');
+
+  assert.match(migration, /drop constraint if exists ad_brand_kits_template_check/);
+  assert.match(migration, /add constraint ad_brand_kits_template_check check/);
+  for (const template of AD_TEMPLATE_IDS) {
+    assert.match(migration, new RegExp(`'${template}'`));
+  }
 });
 
 test('Brand Kits are dealer-only and only dealer owners may edit company kits', async () => {
@@ -77,6 +89,38 @@ test('valuation Create Advert publishes in the background and downloads the matc
   assert.doesNotMatch(valuation, /saveAndSendToMarketplace/);
 });
 
+test('valuation advert photos support file drop, drag reorder and accessible order controls', async () => {
+  const [valuation, css] = await Promise.all([
+    read('app/valuation/valuation-client.tsx'),
+    read('app/valuation/page.module.css'),
+  ]);
+
+  assert.match(valuation, /const MAX_MARKETPLACE_PHOTOS = 12/);
+  assert.match(valuation, /const SUPPORTED_MARKETPLACE_PHOTO_TYPES = new Set\(\['image\/jpeg', 'image\/png', 'image\/webp'\]\)/);
+  assert.match(valuation, /const files = inputFiles\.filter\(\(file\) => SUPPORTED_MARKETPLACE_PHOTO_TYPES\.has\(file\.type\)\)/);
+  assert.match(valuation, /accept="image\/jpeg,image\/png,image\/webp"/);
+  assert.match(valuation, /function handleMarketplacePhotoDrop/);
+  assert.match(valuation, /onDrop=\{handleMarketplacePhotoDrop\}/);
+  assert.match(valuation, /if \(isPublishingMarketplace\) return;\s*if \(event\.dataTransfer\.files\.length\) addMarketplacePhotos/);
+  assert.match(valuation, /function reorderMarketplacePhoto\(sourcePhotoId: string, targetPhotoId: string\)/);
+  assert.match(valuation, /setDraggedMarketplacePhotoId\(photo\.id\)/);
+  assert.match(valuation, /event\.dataTransfer\.setData\('text\/plain', photo\.id\)/);
+  assert.match(valuation, /draggable=\{!isPublishingMarketplace\}/);
+  assert.match(valuation, /disabled=\{isPublishingMarketplace\}>\s*Upload photos/);
+  assert.match(valuation, /disabled=\{isPublishingMarketplace \|\| index === 0\} aria-label="Move photo earlier"/);
+  assert.match(valuation, /disabled=\{isPublishingMarketplace \|\| index === marketplacePhotoFiles\.length - 1\} aria-label="Move photo later"/);
+  assert.match(valuation, /disabled=\{isPublishingMarketplace\} aria-label="Remove photo"/);
+  assert.match(valuation, /Drag them into order, or use the arrows\. The first photo becomes the main image\./);
+  assert.match(valuation, /aria-label="Move photo earlier"/);
+  assert.match(valuation, /aria-label="Move photo later"/);
+  assert.match(valuation, /for \(const photo of marketplacePhotoFiles\)[\s\S]*?formData\.append\('files', photo\.file\)/);
+  assert.match(valuation, /const marketplacePhotoFilesRef = useRef<MarketplacePendingPhoto\[]>\(\[\]\)/);
+  assert.match(valuation, /useEffect\(\(\) => \{\s*marketplacePhotoFilesRef\.current = marketplacePhotoFiles;\s*}, \[marketplacePhotoFiles\]\)/);
+  assert.match(valuation, /useEffect\(\(\) => \(\) => \{\s*marketplacePhotoFilesRef\.current\.forEach\(\(photo\) => URL\.revokeObjectURL\(photo\.previewUrl\)\);\s*}, \[\]\)/);
+  assert.match(css, /\.marketplacePhotoPanelDropActive/);
+  assert.match(css, /\.marketplacePhotoThumbDragging/);
+});
+
 test('Studio and Marketplace use the same rated WYSIWYG JPEG renderer', async () => {
   const [marketplace, studio, renderer] = await Promise.all([
     read('app/marketplace/marketplace-client.tsx'),
@@ -85,15 +129,20 @@ test('Studio and Marketplace use the same rated WYSIWYG JPEG renderer', async ()
   ]);
 
   assert.match(marketplace, /createSharedMarketplaceAdJpeg\(shareListing\)/);
-  assert.match(studio, /renderMarketplaceAdCanvas\(canvas, previewContent/);
+  assert.match(studio, /renderMarketplaceAdCanvas\(renderCanvas, previewContent/);
   assert.match(studio, /Your downloaded JPEG will match this preview/);
   assert.match(renderer, /id === templateId/);
   assert.match(renderer, /return 'gallery-three'/);
   assert.match(renderer, /return 'duo-split'/);
   assert.match(renderer, /return 'photo-first'/);
-  assert.match(renderer, /GREAT PRICE/);
-  assert.match(renderer, /FAIR PRICE/);
-  assert.match(renderer, /HIGH PRICE/);
+  for (const label of ['Low price', 'Great price', 'Fair price', 'High price', 'No rating']) {
+    assert.match(renderer, new RegExp(`label: '${label}'`));
+    assert.match(marketplace, new RegExp(`label: '${label}'`));
+  }
+  assert.doesNotMatch(renderer, /LOW PRICE|GREAT PRICE|FAIR PRICE|HIGH PRICE|NO RATING/);
+  assert.match(marketplace, /function formatPlaceholderLabel\(listing: MarketplaceListing\): string \{\s*return getListingFamilyLabel\(listing\);\s*\}/);
+  assert.match(renderer, /'BTW ingesluit' : 'VAT included'/);
+  assert.match(renderer, /'Geen BTW' : 'No VAT'/);
   assert.match(renderer, /#22b24b/);
   assert.match(renderer, /#1e9bb3/);
   assert.match(renderer, /Powered by Aim4price\.com/);
@@ -111,9 +160,55 @@ test('Studio and Marketplace use the same rated WYSIWYG JPEG renderer', async ()
   assert.match(renderer, /function drawPriceCard/);
   assert.match(renderer, /isGenericEquipmentPlaceholder/);
   assert.match(renderer, /naturalTitle\(content\.title\)/);
-  assert.match(studio, /imageUrls: \[\]/);
+  assert.match(studio, /imageUrls: previewPhotos\.map\(\(photo\) => photo\.previewUrl\)/);
+  assert.match(studio, /'BTW ingesluit' : 'VAT included'/);
+  assert.match(studio, /'Geen BTW' : 'No VAT'/);
+  assert.match(marketplace, /'BTW ingesluit' : 'VAT included'/);
+  assert.match(marketplace, /'Geen BTW' : 'No VAT'/);
+  assert.doesNotMatch([renderer, studio, marketplace].join('\n'), /VAT INCLUDED|NO VAT|BTW INGESLUIT|GEEN BTW/);
   assert.doesNotMatch(studio, /\/brand\/Tractor\.png/);
   assert.doesNotMatch(marketplace, /JPEG_AD_LOGO_SRC|JPEG_AD_WATERMARK_SRC|CREATED WITH/);
+});
+
+test('Ad Studio supports logo drop and local-only sample photo ordering', async () => {
+  const [client, css] = await Promise.all([
+    read('components/AdStudioClient.tsx'),
+    read('components/AdStudioClient.module.css'),
+  ]);
+
+  assert.match(client, /type DragEvent/);
+  assert.match(client, /const SUPPORTED_PREVIEW_IMAGE_TYPES = new Set\(\['image\/jpeg', 'image\/png', 'image\/webp'\]\)/);
+  assert.match(client, /function applyLogoFile/);
+  assert.match(client, /if \(!file \|\| !canManage \|\| saving\) return/);
+  assert.match(client, /if \(!SUPPORTED_PREVIEW_IMAGE_TYPES\.has\(file\.type\)\)/);
+  assert.match(client, /function handleLogoDrop/);
+  assert.match(client, /onDrop=\{handleLogoDrop\}/);
+  assert.match(client, /role="button"/);
+  assert.match(client, /tabIndex=\{canManage && !saving \? 0 : -1\}/);
+  assert.match(client, /aria-disabled=\{!canManage \|\| saving\}/);
+  assert.match(client, /Choose a file or drop it onto the logo tile/);
+  assert.match(client, /const MAX_PREVIEW_PHOTOS = 4/);
+  assert.match(client, /const MAX_PREVIEW_PHOTO_BYTES = 10_000_000/);
+  assert.match(client, /const imageFiles = files\.filter\(\(file\) => SUPPORTED_PREVIEW_IMAGE_TYPES\.has\(file\.type\)\)/);
+  assert.equal(client.match(/accept="image\/png,image\/jpeg,image\/webp"/g)?.length, 2);
+  assert.match(client, /function handlePreviewPhotoDrop/);
+  assert.match(client, /onDrop=\{handlePreviewPhotoDrop\}/);
+  assert.match(client, /function reorderPreviewPhoto/);
+  assert.match(client, /function movePreviewPhoto/);
+  assert.match(client, /event\.dataTransfer\.setData\('text\/plain', photo\.id\)/);
+  assert.match(client, /aria-label="Sample advert photo order"/);
+  assert.match(client, /Drop up to four sample photos, then drag them into order\./);
+  assert.match(client, /These samples are not saved\./);
+  assert.match(client, /They stay in this preview only and are never saved with the brand kit\./);
+  assert.match(client, /URL\.revokeObjectURL\(photo\.previewUrl\)/);
+  assert.match(client, /body: JSON\.stringify\(draft\)/);
+  assert.match(client, /useBestPhotoFit: false/);
+  assert.match(client, /let active = true;\s*const renderCanvas = document\.createElement\('canvas'\)/);
+  assert.match(client, /renderMarketplaceAdCanvas\(renderCanvas, previewContent,[\s\S]*?\.then\(\(\) => \{\s*if \(!active\) return;[\s\S]*?context\.drawImage\(renderCanvas/);
+  assert.match(client, /return \(\) => \{\s*active = false;\s*};/);
+  assert.match(css, /\.logoPreviewDragging/);
+  assert.match(css, /\.previewPhotoLabActive/);
+  assert.match(css, /\.previewPhotoDragging/);
 });
 
 test('Ad Studio is limited to dealer accounts and uses a four-step guided setup', async () => {
@@ -150,6 +245,7 @@ test('Ad Studio is limited to dealer accounts and uses a four-step guided setup'
   assert.match(css, /\.logoPreviewCard/);
   assert.match(css, /\.selectControl select/);
   assert.match(css, /appearance: none/);
+  assert.match(css, /font-family: var\(--font-body, "Montserrat"\)/);
   assert.doesNotMatch(css, /\.stepButton small/);
   assert.doesNotMatch(css, /\.stepButton > span:last-child \{ display: none; \}/);
   assert.match(header, /href: '\/ad-studio', label: 'Ad Studio', accountTypes: \['dealer'\]/);
@@ -222,7 +318,7 @@ test('dealer showrooms are standard, valuation-backed and reuse the Marketplace 
   assert.match(showroomDb, /function assertDealerProfile/);
   assert.doesNotMatch(showroomDb, /isMiddlemanAccountSubtype/);
   assert.match(publicPage, /sellerUserId: showroom\.userId/);
-  assert.match(manager, /Value & create advert/);
+  assert.match(manager, /Value and create advert/);
   assert.match(manager, /<MarketplaceClient/);
   assert.match(manager, /initialListings=\{listings\}/);
   assert.match(manager, /embeddedMode/);
@@ -234,8 +330,46 @@ test('dealer showrooms are standard, valuation-backed and reuse the Marketplace 
   assert.match(manager, /Powered by Aim4price\.com/);
   assert.doesNotMatch(manager, /Created with Aim4price/);
   assert.match(marketplaceDb, /requireValuationSource && !pick\(row, \['valuation_run_id'\]\)/);
-  assert.match(dealerHome, /new Set<DealerAppCapability>\(\['valuation', 'ad_studio', 'showroom', 'marketplace'\]\)/);
+  assert.match(dealerHome, /new Set<DealerAppCapability>\(\['inventory', 'valuation', 'ad_studio', 'showroom', 'marketplace'\]\)/);
   assert.match(header, /href: '\/my-showroom', label: 'My Showroom', accountTypes: \['dealer'\]/);
+});
+
+test('public showroom scopes friendly Marketplace empty states and removes microcaps', async () => {
+  const [manager, managerCss, marketplace, marketplaceCss] = await Promise.all([
+    read('components/MiddlemanShowroomClient.tsx'),
+    read('components/MiddlemanShowroomClient.module.css'),
+    read('app/marketplace/marketplace-client.tsx'),
+    read('app/marketplace/page.module.css'),
+  ]);
+
+  assert.match(manager, /Professional machinery showroom/);
+  assert.match(manager, /Browse available machinery/);
+  assert.match(managerCss, /font-family: 'Montserrat'/);
+  assert.doesNotMatch(managerCss, /text-transform:\s*uppercase/);
+  assert.match(marketplace, /const showroomHasNoInventory = showroomMode && !isLoadingListings && items\.length === 0/);
+  assert.match(marketplace, /showroomHasNoInventory \? \(/);
+  assert.match(marketplace, /This showroom is getting ready/);
+  assert.match(marketplace, /There are no live adverts here just yet\. Please check back soon\./);
+  assert.match(marketplace, /Nothing matches those filters/);
+  assert.match(marketplace, /showroomMode \? 'Clear filters' : 'Reset marketplace'/);
+  assert.match(marketplace, /className=\{`\$\{styles\.page\} \$\{showroomMode \? styles\.showroomPage : ''\}/);
+  assert.match(marketplaceCss, /\.showroomPage\s*\{[\s\S]*?font-family: var\(--font-body, 'Montserrat'\)/);
+  assert.match(marketplaceCss, /\.showroomPage \*\s*\{[\s\S]*?font-variant-caps:\s*normal/);
+  assert.match(marketplaceCss, /\.showroomPage \.placeholderPill,[\s\S]*?text-transform:\s*none/);
+  assert.match(marketplaceCss, /\.showroomEmptyShell/);
+});
+
+test('the global footer yields to the dedicated public showroom footer', async () => {
+  const [layout, footer] = await Promise.all([
+    read('app/layout.tsx'),
+    read('components/AppFooter.tsx'),
+  ]);
+
+  assert.match(layout, /import AppFooter/);
+  assert.match(layout, /<AppFooter \/>/);
+  assert.match(footer, /usePathname/);
+  assert.match(footer, /pathname\?\.startsWith\('\/showroom\/'\)/);
+  assert.match(footer, /return null/);
 });
 
 test('Middleman navigation, app access and Marketplace stay focused without paid Dealer tools', async () => {

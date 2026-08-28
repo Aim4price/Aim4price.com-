@@ -75,6 +75,7 @@ export function MiddlemanShowroomManager({
   const [busyListingId, setBusyListingId] = useState('');
   const [message, setMessage] = useState('');
   const valuationHref = dealerAppMode ? '/dealer/valuation' : '/valuation';
+  const hasUnsavedShowroomChanges = slug !== showroom.slug || bio !== showroom.bio || isPublic !== showroom.isPublic;
 
   async function saveShowroom() {
     setSaving(true);
@@ -163,23 +164,26 @@ export function MiddlemanShowroomManager({
   return (
     <div className={`${styles.managerPage} ${dealerAppMode ? styles.managerPageMobile : ''}`}>
       <section className={styles.managerHero}>
-        <div>
-          <span className={styles.eyebrow}>My showroom</span>
-          <h1>Your professional machinery window.</h1>
-          <p>Every advert shown here comes from an Aim4price valuation. Share one link instead of rebuilding a stock list for every customer.</p>
+        <div className={styles.managerHeroCopy}>
+          <span className={styles.eyebrow}>Your showroom</span>
+          <h1>A professional home for your machinery adverts</h1>
+          <p>Keep your live stock together, share one simple link and give every customer a polished view backed by Aim4price valuations.</p>
         </div>
         <div className={styles.heroActions}>
-          <Link className={styles.primaryButton} href={valuationHref}>+ Value & create advert</Link>
-          {showroom.isPublic ? <Link className={styles.secondaryButton} href={publicHref(showroom.slug)} target="_blank">View public showroom</Link> : null}
+          <Link className={styles.primaryButton} href={valuationHref}><span aria-hidden="true">+</span> Value and create advert</Link>
+          {showroom.isPublic ? <Link className={styles.secondaryButton} href={publicHref(showroom.slug)} target="_blank">Open public showroom <span aria-hidden="true">↗</span></Link> : null}
         </div>
       </section>
 
       <div className={styles.managerGrid}>
         <section className={styles.settingsCard}>
           <div className={styles.sectionHeading}>
-            <div>
-              <span>Public profile</span>
-              <h2>Showroom details</h2>
+            <div className={styles.sectionHeadingCopy}>
+              <span className={styles.sectionIcon} aria-hidden="true">S</span>
+              <div>
+                <h2>Showroom details</h2>
+                <p>Choose how customers see and find your showroom.</p>
+              </div>
             </div>
             <span className={`${styles.statusPill} ${isPublic ? styles.statusLive : ''}`}>{isPublic ? 'Live' : 'Hidden'}</span>
           </div>
@@ -199,15 +203,26 @@ export function MiddlemanShowroomManager({
               rows={4}
               placeholder="Tell customers which machinery, regions or services you specialise in."
             />
-            <small>{bio.length}/500</small>
+            <small>{bio.length} of 500 characters</small>
           </label>
           <label className={styles.switchRow}>
-            <input type="checkbox" checked={isPublic} onChange={(event) => setIsPublic(event.target.checked)} />
-            <span><strong>Public showroom</strong><small>Anyone with your link can see your live adverts and contact details. Hiding this page does not remove adverts from Marketplace.</small></span>
+            <span className={styles.switchControl}>
+              <input type="checkbox" checked={isPublic} onChange={(event) => setIsPublic(event.target.checked)} />
+              <span aria-hidden="true" />
+            </span>
+            <span><strong>Make my showroom public</strong><small>Anyone with your link can see your live adverts and contact details. Hiding this page does not remove adverts from Marketplace.</small></span>
           </label>
           <div className={styles.settingsActions}>
             <button className={styles.primaryButton} type="button" onClick={saveShowroom} disabled={saving}>{saving ? 'Saving...' : 'Save showroom'}</button>
-            <button className={styles.secondaryButton} type="button" onClick={copyPublicLink} disabled={!showroom.isPublic}>Copy link</button>
+            <button
+              className={styles.secondaryButton}
+              type="button"
+              onClick={copyPublicLink}
+              disabled={!showroom.isPublic || hasUnsavedShowroomChanges || saving}
+              title={hasUnsavedShowroomChanges ? 'Save your changes before copying the public link.' : undefined}
+            >
+              {hasUnsavedShowroomChanges ? 'Save to copy link' : 'Copy public link'}
+            </button>
           </div>
           {message ? <p className={styles.feedback} role="status">{message}</p> : null}
           <div className={styles.dangerZone}>
@@ -221,10 +236,14 @@ export function MiddlemanShowroomManager({
 
         <section className={styles.stockCard}>
           <div className={styles.sectionHeading}>
-            <div>
-              <span>Valuation-backed stock</span>
-              <h2>{listings.length} live {listings.length === 1 ? 'advert' : 'adverts'}</h2>
+            <div className={styles.sectionHeadingCopy}>
+              <span className={styles.sectionIcon} aria-hidden="true">A</span>
+              <div>
+                <h2>Your live adverts</h2>
+                <p>Manage the machinery currently shown to customers.</p>
+              </div>
             </div>
+            <span className={styles.stockCount}>{listings.length} {listings.length === 1 ? 'advert' : 'adverts'}</span>
           </div>
           {listings.length ? (
             <div className={styles.managerListings}>
@@ -251,10 +270,10 @@ export function MiddlemanShowroomManager({
             </div>
           ) : (
             <div className={styles.emptyStock}>
-              <span>A4P</span>
-              <h3>No live adverts yet</h3>
-              <p>Start a valuation, confirm the asking price and choose Create advert. It will appear here automatically.</p>
-              <Link className={styles.primaryButton} href={valuationHref}>Start first valuation</Link>
+              <span aria-hidden="true">A4P</span>
+              <h3>Your showroom is ready for its first advert</h3>
+              <p>Start a valuation, confirm the asking price and choose Create advert. Your machinery will appear here automatically.</p>
+              <Link className={styles.primaryButton} href={valuationHref}>Create your first advert</Link>
             </div>
           )}
         </section>
@@ -288,30 +307,56 @@ export function PublicMiddlemanShowroom({ showroom, listings }: {
   return (
     <div className={styles.publicPage}>
       <header className={styles.publicTopbar}>
-        <Link href="/" className={styles.aim4priceMark}>AIM4PRICE</Link>
-        <span>Valuation-backed machinery</span>
+        <div className={styles.publicTopbarInner}>
+          <Link href="/" className={styles.aim4priceMark} aria-label="Aim4price home">
+            <img src="/brand/Aim4price_Home_Logo.png" alt="Aim4price" />
+          </Link>
+          <span>Trusted machinery, backed by valuations</span>
+        </div>
       </header>
       <section className={styles.publicHero}>
-        <div className={styles.profileIdentity}>
-          {showroom.logoUrl ? <img src={showroom.logoUrl} alt={`${showroom.name} logo`} /> : <span>{showroom.name.slice(0, 2).toUpperCase()}</span>}
-          <div>
-            <small>Professional machinery showroom</small>
-            <h1>{showroom.name}</h1>
-            {showroom.location ? <p>{showroom.location}</p> : null}
+        <div className={styles.publicHeroInner}>
+          <div className={styles.publicHeroMain}>
+            <div className={styles.profileIdentity}>
+              {showroom.logoUrl ? <img src={showroom.logoUrl} alt={`${showroom.name} logo`} /> : <span>{showroom.name.slice(0, 2).toUpperCase()}</span>}
+              <div>
+                <small>Professional machinery showroom</small>
+                <h1>{showroom.name}</h1>
+                {showroom.location ? <p>{showroom.location}</p> : null}
+              </div>
+            </div>
+            <div className={styles.publicHeroSummary}>
+              <strong>{listings.length}</strong>
+              <span>Live {listings.length === 1 ? 'advert' : 'adverts'}</span>
+            </div>
           </div>
-        </div>
-        <div className={styles.publicContactActions}>
-          {showroom.phone ? <a className={styles.whatsappButton} href={whatsappHref(showroom.phone)} target="_blank" rel="noreferrer">WhatsApp</a> : null}
-          {showroom.phone ? <a className={styles.secondaryButton} href={`tel:${showroom.phone}`}>Call {showroom.phone}</a> : null}
-        </div>
-        {showroom.bio ? <p className={styles.publicBio}>{showroom.bio}</p> : null}
-        <div className={styles.trustStrip}>
-          <strong>Every advert starts with an Aim4price valuation</strong>
-          <span>Clear equipment details · Consistent pricing context · Direct seller contact</span>
+          <div className={styles.publicContactActions}>
+            {showroom.phone ? <a className={styles.whatsappButton} href={whatsappHref(showroom.phone)} target="_blank" rel="noreferrer">Chat on WhatsApp</a> : null}
+            {showroom.phone ? <a className={styles.secondaryButton} href={`tel:${showroom.phone}`}>Call {showroom.phone}</a> : null}
+          </div>
+          {showroom.bio ? <p className={styles.publicBio}>{showroom.bio}</p> : null}
+          <div className={styles.trustStrip}>
+            <strong>Every advert starts with an Aim4price valuation</strong>
+            <div>
+              <span>Clear equipment details</span>
+              <span>Consistent pricing context</span>
+              <span>Direct seller contact</span>
+            </div>
+          </div>
         </div>
       </section>
 
       <section className={styles.marketplaceInventory} aria-label={`${showroom.name} showroom inventory`}>
+        <div className={styles.inventoryIntro}>
+          <div>
+            <span className={styles.inventoryIcon} aria-hidden="true">M</span>
+            <div>
+              <h2>Browse available machinery</h2>
+              <p>Explore current adverts, compare key details and contact the seller directly when something fits.</p>
+            </div>
+          </div>
+          <span className={styles.inventoryCount}>{listings.length} available</span>
+        </div>
         <MarketplaceClient
           initialFilters={{ brand: '', model: '', drive: '', type: '' }}
           initialListings={listings}
@@ -324,8 +369,10 @@ export function PublicMiddlemanShowroom({ showroom, listings }: {
       </section>
 
       <footer className={styles.publicFooter}>
-        <div><strong>Powered by Aim4price.com</strong><span>Machinery valuation and professional advertising in one flow.</span></div>
-        <Link href="/valuation">Value your machinery</Link>
+        <div className={styles.publicFooterInner}>
+          <div><strong>Powered by Aim4price.com</strong><span>Machinery valuation and professional advertising in one flow.</span></div>
+          <Link href="/valuation">Value your machinery</Link>
+        </div>
       </footer>
     </div>
   );
