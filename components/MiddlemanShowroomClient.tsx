@@ -1,8 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { type DragEvent, useRef, useState } from 'react';
+import { type DragEvent, useEffect, useRef, useState } from 'react';
 import MarketplaceClient from '../app/marketplace/marketplace-client';
+import MarketplaceOutcomeModal from './MarketplaceOutcomeModal';
 import type { MarketplaceDealRating, MarketplaceListing } from '../lib/marketplace';
 import {
   createMarketplaceAdJpeg,
@@ -119,14 +120,63 @@ export function MiddlemanShowroomManager({
   const [deleteConfirmation, setDeleteConfirmation] = useState('');
   const [deletingShowroom, setDeletingShowroom] = useState(false);
   const [busyListingId, setBusyListingId] = useState('');
+  const [manageListingTarget, setManageListingTarget] = useState<MarketplaceListing | null>(null);
+  const [outcomeListingTarget, setOutcomeListingTarget] = useState<MarketplaceListing | null>(null);
   const [message, setMessage] = useState('');
   const logoInputRef = useRef<HTMLInputElement | null>(null);
+  const manageDialogRef = useRef<HTMLElement | null>(null);
+  const manageTriggerRef = useRef<HTMLButtonElement | null>(null);
   const valuationHref = dealerAppMode ? '/dealer/valuation' : '/valuation';
   const logoPreviewUrl = showroomLogoUrl || showroom.inheritedLogoUrl;
   const hasUnsavedShowroomChanges = slug !== showroom.slug
     || bio !== showroom.bio
     || isPublic !== showroom.isPublic
     || showroomLogoUrl !== showroom.showroomLogoUrl;
+
+  useEffect(() => {
+    if (!manageListingTarget || typeof window === 'undefined') return undefined;
+
+    const dialog = manageDialogRef.current;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const focusFrame = window.requestAnimationFrame(() => {
+      dialog?.querySelector<HTMLElement>('button:not([disabled]), a[href]')?.focus();
+    });
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        setManageListingTarget(null);
+        return;
+      }
+      if (event.key !== 'Tab' || !dialog) return;
+      const focusable = Array.from(
+        dialog.querySelectorAll<HTMLElement>('button:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])'),
+      );
+      if (!focusable.length) {
+        event.preventDefault();
+        dialog.focus();
+        return;
+      }
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.cancelAnimationFrame(focusFrame);
+      window.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = previousOverflow;
+      manageTriggerRef.current?.focus();
+    };
+  }, [manageListingTarget]);
 
   function applyShowroomLogoFile(file?: File) {
     if (!file || saving || readingLogo) return;
@@ -230,24 +280,10 @@ export function MiddlemanShowroomManager({
     }
   }
 
-  async function hideListing(listing: MarketplaceListing) {
-    if (!listing.sourceAssetId || !window.confirm('Remove this advert from Marketplace and your showroom?')) return;
-    setBusyListingId(listing.id);
-    setMessage('');
-    try {
-      const response = await fetch(`/api/marketplace?assetId=${encodeURIComponent(listing.sourceAssetId)}`, {
-        method: 'DELETE',
-        credentials: 'include',
-      });
-      const data = await response.json() as { ok?: boolean; error?: string };
-      if (!response.ok || !data.ok) throw new Error(data.error || 'Failed to hide the advert.');
-      setListings((current) => current.filter((item) => item.id !== listing.id));
-      setMessage('Advert removed from Marketplace and your showroom.');
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Failed to hide the advert.');
-    } finally {
-      setBusyListingId('');
-    }
+  function handleListingOutcomeRemoved(listing: MarketplaceListing) {
+    setListings((current) => current.filter((item) => item.sourceAssetId !== listing.sourceAssetId));
+    setOutcomeListingTarget(null);
+    setMessage('Outcome saved. The advert was removed from Marketplace and your showroom.');
   }
 
   async function deleteShowroom() {
@@ -460,8 +496,16 @@ export function MiddlemanShowroomManager({
                       <b>{money(listing.askingPriceExVat)} excl. VAT</b>
                     </div>
                     <div className={styles.listingActions}>
-                      <button type="button" onClick={() => downloadAdvert(listing)} disabled={busyListingId === listing.id}>Download JPEG</button>
-                      <button className={styles.dangerButton} type="button" onClick={() => hideListing(listing)} disabled={busyListingId === listing.id}>Remove</button>
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          manageTriggerRef.current = event.currentTarget;
+                          setManageListingTarget(listing);
+                        }}
+                        disabled={busyListingId === listing.id}
+                      >
+                        Manage advert
+                      </button>
                     </div>
                   </article>
                 );
@@ -476,6 +520,83 @@ export function MiddlemanShowroomManager({
           )}
         </section>
       </div>
+
+      {manageListingTarget ? (
+        <div
+          className={styles.listingManagerBackdrop}
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setManageListingTarget(null);
+          }}
+        >
+          <section
+            ref={manageDialogRef}
+            className={styles.listingManagerDialog}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="showroom-listing-manager-title"
+            tabIndex={-1}
+          >
+            <header className={styles.listingManagerHeader}>
+              <div>
+                <h2 id="showroom-listing-manager-title">Manage advert</h2>
+                <p>Update, share or remove this advert from one place.</p>
+              </div>
+              <button type="button" onClick={() => setManageListingTarget(null)} aria-label="Close advert manager">×</button>
+            </header>
+
+            <div className={styles.listingManagerSummary}>
+              <img src={manageListingTarget.imageSrc || '/brand/Tractor.png'} alt="" />
+              <div>
+                <strong>{manageListingTarget.title}</strong>
+                <span>{money(manageListingTarget.askingPriceExVat)} excl. VAT · {listingDetails(manageListingTarget)}</span>
+              </div>
+            </div>
+
+            <div className={styles.listingManagerActions}>
+              <Link
+                href={dealerAppMode
+                  ? `/dealer/marketplace?listing=${encodeURIComponent(manageListingTarget.id)}&manage=1`
+                  : `/asset-register?assetId=${encodeURIComponent(manageListingTarget.sourceAssetId || '')}&action=marketplace-edit`}
+              >
+                <span><strong>Edit advert</strong><small>Update the price, description and seller details.</small></span>
+                <b aria-hidden="true">→</b>
+              </Link>
+              <button
+                type="button"
+                onClick={() => void downloadAdvert(manageListingTarget)}
+                disabled={busyListingId === manageListingTarget.id}
+              >
+                <span><strong>Download JPEG</strong><small>Use the standard Aim4price Marketplace advert design.</small></span>
+                <b aria-hidden="true">↓</b>
+              </button>
+              <Link
+                href={`${dealerAppMode ? '/dealer/marketplace' : '/marketplace'}?listing=${encodeURIComponent(manageListingTarget.id)}&manage=1`}
+              >
+                <span><strong>Open in Marketplace</strong><small>View the advert and continue managing it in Marketplace.</small></span>
+                <b aria-hidden="true">→</b>
+              </Link>
+              <button
+                type="button"
+                className={styles.listingManagerRemove}
+                onClick={() => {
+                  setOutcomeListingTarget(manageListingTarget);
+                  setManageListingTarget(null);
+                }}
+              >
+                <span><strong>Remove advert</strong><small>Record the outcome and withdraw it everywhere.</small></span>
+                <b aria-hidden="true">→</b>
+              </button>
+            </div>
+          </section>
+        </div>
+      ) : null}
+
+      <MarketplaceOutcomeModal
+        listing={outcomeListingTarget}
+        source="showroom"
+        onClose={() => setOutcomeListingTarget(null)}
+        onRemoved={handleListingOutcomeRemoved}
+      />
 
       {deleteDialogOpen ? (
         <div className={styles.deleteBackdrop} onClick={() => !deletingShowroom && setDeleteDialogOpen(false)}>
