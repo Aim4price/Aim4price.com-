@@ -10,7 +10,7 @@ const modalStart = client.indexOf('{formOpen ? (');
 const modalEnd = client.indexOf('{deleteCandidateInvoice ?', modalStart);
 const costFormModal = client.slice(modalStart, modalEnd);
 
-test('manual costs use a compact three-step wizard', () => {
+test('manual costs use a guided three-step wizard', () => {
   assert.ok(modalStart >= 0 && modalEnd > modalStart, 'cost form modal should be present');
   assert.match(client, /type ManualCostWizardStep = 1 \| 2 \| 3/);
   assert.match(client, /const \[manualCostWizardStep, setManualCostWizardStep\]/);

@@ -16,7 +16,7 @@ const modalStart = client.indexOf('{budgetModalOpen ?');
 const modalEnd = client.indexOf('{budgetDeleteCandidate ?', modalStart);
 const budgetModal = client.slice(modalStart, modalEnd);
 
-test('spending budget uses the same compact three-step pattern as Contribution', () => {
+test('spending budget uses the same guided three-step pattern as Contribution', () => {
   assert.ok(modalStart >= 0 && modalEnd > modalStart, 'budget modal should be present');
   assert.match(client, /type BudgetWizardStep = 1 \| 2 \| 3/);
   assert.match(client, /const \[budgetWizardStep, setBudgetWizardStep\]/);

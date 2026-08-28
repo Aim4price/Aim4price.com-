@@ -1,0 +1,479 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(18, 37, 43, 0.48);
+  backdrop-filter: blur(10px);
+}
+
+.dialog {
+  box-sizing: border-box;
+  display: flex !important;
+  flex-direction: column;
+  width: min(1120px, 100%) !important;
+  max-height: min(880px, calc(100dvh - 48px)) !important;
+  overflow: hidden;
+  border: 1px solid rgba(42, 93, 82, 0.18) !important;
+  border-radius: 30px !important;
+  background: #ffffff !important;
+  box-shadow: 0 34px 90px rgba(7, 31, 38, 0.32) !important;
+}
+
+.dialog > form {
+  display: flex !important;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.dialog .header {
+  display: flex !important;
+  flex: 0 0 auto;
+  gap: 18px;
+  align-items: center !important;
+  padding: 28px 36px 24px !important;
+  border-bottom: 1px solid #d9e8e2 !important;
+  background: #ffffff !important;
+}
+
+.headerText {
+  min-width: 0;
+  flex: 1;
+}
+
+.dialog .header h2 {
+  margin: 0;
+  color: #063f33;
+  font-family:
+    var(--font-heading, "Montserrat"), var(--font-body, "Inter"), sans-serif;
+  font-size: clamp(28px, 4vw, 38px) !important;
+  font-weight: 900;
+  line-height: 1.04 !important;
+  letter-spacing: -0.035em !important;
+  text-transform: none !important;
+}
+
+.dialog .header p {
+  max-width: none;
+  margin: 8px 0 0 !important;
+  color: #62758b;
+  font-size: 15px !important;
+  font-weight: 700;
+  line-height: 1.4 !important;
+}
+
+.dialog .closeButton {
+  display: grid;
+  width: 54px !important;
+  min-width: 54px;
+  height: 54px !important;
+  flex: 0 0 54px;
+  place-items: center;
+  padding: 0 !important;
+  border: 1px solid #d5e3de !important;
+  border-radius: 999px !important;
+  color: #173f63 !important;
+  background: #f8fbfd !important;
+  box-shadow: none !important;
+  cursor: pointer;
+  transition:
+    border-color 150ms ease,
+    background 150ms ease,
+    transform 150ms ease;
+}
+
+.dialog .closeButton:hover:not(:disabled) {
+  border-color: #a9c9bd !important;
+  background: #eef8f4 !important;
+  transform: translateY(-1px);
+}
+
+.dialog .closeButton:focus-visible {
+  outline: 3px solid rgba(22, 134, 96, 0.2);
+  outline-offset: 3px;
+}
+
+.dialog .closeButton svg {
+  width: 20px;
+  height: 20px;
+}
+
+.divider {
+  display: none !important;
+}
+
+.dialog .body {
+  display: grid;
+  flex: 1 1 auto;
+  min-height: 0;
+  align-content: start;
+  gap: 0 !important;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 26px 36px 30px !important;
+  scrollbar-gutter: stable;
+}
+
+.intro {
+  max-width: none;
+  margin: 0;
+  color: #526a63;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.55;
+}
+
+.progress {
+  display: flex !important;
+  width: 100%;
+  max-width: none;
+  align-items: center;
+  gap: 0 !important;
+  margin: 24px 0 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  list-style: none;
+}
+
+.progressItem {
+  position: relative;
+  min-width: 0;
+  min-height: 0 !important;
+  display: flex !important;
+  flex: 1 1 0;
+  align-items: center;
+  gap: 11px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  color: #7a8b84 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.progressItem:last-child {
+  flex: 0 0 auto;
+}
+
+.progressItem:not(:last-child)::after {
+  content: "";
+  position: static;
+  z-index: 0;
+  min-width: 32px;
+  height: 2px;
+  flex: 1 1 auto;
+  margin: 0 18px;
+  background: #dce8e3;
+}
+
+.progressItem > span {
+  position: relative;
+  z-index: 1;
+  width: 44px !important;
+  height: 44px !important;
+  flex: 0 0 44px;
+  display: grid;
+  place-items: center;
+  border: 1px solid #c8dbd4 !important;
+  border-radius: 999px;
+  color: #597068 !important;
+  background: #f7faf8 !important;
+  box-shadow: none !important;
+  font-size: 14px !important;
+  font-weight: 900;
+}
+
+.progressItem > strong {
+  position: relative;
+  z-index: 1;
+  min-width: max-content;
+  overflow: visible !important;
+  padding-right: 12px;
+  color: inherit;
+  background: #ffffff;
+  font-size: 14px !important;
+  font-weight: 850;
+  line-height: 1.25;
+  text-overflow: clip !important;
+  white-space: nowrap;
+}
+
+.progressItemCurrent,
+.progressItemComplete {
+  color: #087553 !important;
+}
+
+.progressItemCurrent > span {
+  border-color: #168660 !important;
+  color: #ffffff !important;
+  background: #168660 !important;
+  box-shadow: 0 0 0 5px rgba(22, 134, 96, 0.11) !important;
+}
+
+.progressItemComplete > span {
+  border-color: #92cdb7 !important;
+  color: #087553 !important;
+  background: #e5f6ef !important;
+}
+
+.progressItemComplete:not(:last-child)::after {
+  background: #83c8ae;
+}
+
+.dialog .panel {
+  min-width: 0;
+  display: grid;
+  align-content: start;
+  gap: 18px !important;
+  margin: 24px 0 0;
+  padding: 24px 26px !important;
+  border: 1px solid #d6e5df !important;
+  border-radius: 22px !important;
+  background:
+    radial-gradient(
+      circle at 100% 0%,
+      rgba(32, 139, 100, 0.045),
+      transparent 15rem
+    ),
+    linear-gradient(180deg, #ffffff 0%, #fbfdfc 100%) !important;
+  box-shadow:
+    0 12px 28px rgba(12, 62, 47, 0.045),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95) !important;
+  animation: aimWizardStepIn 180ms ease both;
+}
+
+@keyframes aimWizardStepIn {
+  from {
+    opacity: 0;
+    transform: translateX(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.panelHeading {
+  min-width: 0;
+  display: grid !important;
+  grid-template-columns: auto minmax(0, 1fr);
+  column-gap: 14px !important;
+  row-gap: 4px !important;
+  align-items: center;
+}
+
+.panelNumber {
+  grid-column: 1;
+  grid-row: 1 / span 2;
+  width: 46px;
+  height: 46px;
+  display: grid;
+  place-items: center;
+  border: 1px solid #9fd1be;
+  border-radius: 15px;
+  color: #087553;
+  background: linear-gradient(180deg, #eff9f5 0%, #e5f5ed 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.92);
+  font-size: 17px;
+  font-weight: 900;
+}
+
+.panelHeading h3 {
+  grid-column: 2;
+  margin: 0;
+  color: #0b4437 !important;
+  font-family:
+    var(--font-heading, "Montserrat"), var(--font-body, "Inter"), sans-serif;
+  font-size: 19px !important;
+  font-weight: 900;
+  line-height: 1.18 !important;
+  letter-spacing: -0.025em !important;
+}
+
+.panelHeading p {
+  grid-column: 2;
+  margin: 0 !important;
+  color: #667b73 !important;
+  font-size: 13px !important;
+  font-weight: 650;
+  line-height: 1.45 !important;
+}
+
+.dialog .footer {
+  min-height: 84px;
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: flex-end !important;
+  gap: 14px !important;
+  margin: 0 !important;
+  padding: 18px 36px max(24px, env(safe-area-inset-bottom)) !important;
+  border-top: 1px solid #d9e8e2 !important;
+  background: #fbfdfc !important;
+}
+
+.dialog .secondaryAction,
+.dialog .primaryAction {
+  min-width: 0;
+  min-height: 48px !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 18px !important;
+  border-radius: 14px !important;
+  font: inherit;
+  font-size: 13px !important;
+  font-weight: 850 !important;
+  cursor: pointer;
+}
+
+.dialog .secondaryAction {
+  border: 1px solid #cbdcd6 !important;
+  color: #18463a !important;
+  background: #ffffff !important;
+  box-shadow: none !important;
+}
+
+.dialog .primaryAction {
+  min-width: 142px;
+  border: 1px solid #087553 !important;
+  color: #ffffff !important;
+  background: #087553 !important;
+  box-shadow: 0 10px 24px rgba(8, 117, 83, 0.2) !important;
+}
+
+.dialog .secondaryAction:hover:not(:disabled) {
+  border-color: #9fc5b7 !important;
+  background: #f7fbf9 !important;
+}
+
+.dialog .primaryAction:hover:not(:disabled) {
+  border-color: #066445 !important;
+  background: #066f4d !important;
+}
+
+.dialog .secondaryAction:focus-visible,
+.dialog .primaryAction:focus-visible {
+  outline: 3px solid rgba(22, 134, 96, 0.18);
+  outline-offset: 3px;
+}
+
+.dialog .secondaryAction:disabled,
+.dialog .primaryAction:disabled,
+.dialog .closeButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+@media (max-width: 720px) {
+  .overlay {
+    align-items: end;
+    padding: 0;
+  }
+
+  .dialog {
+    width: 100% !important;
+    max-height: 94dvh !important;
+    border-radius: 24px 24px 0 0 !important;
+  }
+
+  .dialog .header,
+  .dialog .body,
+  .dialog .footer {
+    padding-left: 18px !important;
+    padding-right: 18px !important;
+  }
+
+  .progress {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .progressItem {
+    display: grid !important;
+    flex: initial;
+    justify-items: center;
+    gap: 7px !important;
+    text-align: center;
+  }
+
+  .progressItem:not(:last-child)::after {
+    position: absolute;
+    top: 21px;
+    right: -50%;
+    left: 50%;
+    min-width: 0;
+    margin: 0;
+  }
+
+  .progressItem:last-child {
+    flex: initial;
+  }
+
+  .progressItem > strong {
+    min-width: 0;
+    padding: 0 4px;
+    background: transparent;
+    font-size: 11px !important;
+    white-space: normal;
+  }
+
+  .dialog .panel {
+    padding: 18px !important;
+    border-radius: 18px !important;
+  }
+
+  .dialog .footer {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .dialog .secondaryAction,
+  .dialog .primaryAction {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .dialog .header {
+    gap: 12px;
+  }
+
+  .dialog .closeButton {
+    width: 46px !important;
+    min-width: 46px;
+    height: 46px !important;
+    flex-basis: 46px;
+  }
+
+  .panelHeading {
+    align-items: start;
+  }
+
+  .panelNumber {
+    width: 40px;
+    height: 40px;
+    border-radius: 13px;
+    font-size: 15px;
+  }
+
+  .panelHeading h3 {
+    font-size: 17px !important;
+  }
+
+  .dialog .panel {
+    padding: 16px !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dialog .panel {
+    animation: none;
+  }
+}

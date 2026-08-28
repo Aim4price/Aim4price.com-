@@ -75,7 +75,7 @@ test('Cost Ledger exposes a gated three-step code wizard only in the direct owne
   assert.match(ledger, /\/api\/invoice-drop-codes\/\$\{encodeURIComponent\(invoiceDropTargetKey\)\}/);
 });
 
-test('Invoice Drop code wizard stays compact and responsive', () => {
+test('Invoice Drop code wizard stays focused and responsive', () => {
   assert.match(ledgerStyles, /\.invoiceDropCodeModal \{[\s\S]*?width: min\(100%, 720px\)/);
   assert.match(ledgerStyles, /\.invoiceDropWizardProgress \{[\s\S]*?grid-template-columns: repeat\(3, minmax\(0, 1fr\)\)/);
   assert.match(ledgerStyles, /\.invoiceDropScopeGrid \{[\s\S]*?grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
