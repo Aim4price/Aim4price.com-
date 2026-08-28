@@ -1068,6 +1068,7 @@ export default function AppHeader({
     [activeNotifications],
   );
   const activeNotificationCount = activeNotifications.length;
+  const notificationBadgeText = activeNotificationCount > 9 ? '9+' : String(activeNotificationCount);
   const filteredHeaderNotifications = useMemo(() => {
     const source = notificationView === 'active' ? activeNotifications : historyNotifications;
     const query = notificationSearchQuery.trim().toLowerCase();
@@ -2477,7 +2478,7 @@ export default function AppHeader({
                         />
                       </svg>
                       {activeNotificationCount ? (
-                        <span className={styles.notificationBadge} aria-hidden="true" />
+                        <span className={styles.notificationBadge}>{notificationBadgeText}</span>
                       ) : null}
                     </button>
                   </div> : null}
