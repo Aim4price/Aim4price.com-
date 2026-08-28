@@ -136,7 +136,7 @@ export function MiddlemanShowroomManager({
     reader.readAsDataURL(file);
   }
 
-  function handleShowroomLogoDrop(event: DragEvent<HTMLButtonElement>) {
+  function handleShowroomLogoDrop(event: DragEvent<HTMLDivElement>) {
     event.preventDefault();
     setLogoDragActive(false);
     applyShowroomLogoFile(event.dataTransfer.files?.[0]);
@@ -250,69 +250,77 @@ export function MiddlemanShowroomManager({
             </div>
             <span className={`${styles.statusPill} ${isPublic ? styles.statusLive : ''}`}>{isPublic ? 'Live' : 'Hidden'}</span>
           </div>
-          <div className={styles.showroomLogoField}>
+          <div
+            className={`${styles.showroomLogoField} ${logoDragActive ? styles.showroomLogoDragging : ''}`}
+            onDragEnter={(event) => {
+              if (!event.dataTransfer.types.includes('Files')) return;
+              event.preventDefault();
+              if (!saving && !readingLogo) setLogoDragActive(true);
+            }}
+            onDragOver={(event) => {
+              if (!event.dataTransfer.types.includes('Files')) return;
+              event.preventDefault();
+              event.dataTransfer.dropEffect = 'copy';
+            }}
+            onDragLeave={(event) => {
+              if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setLogoDragActive(false);
+            }}
+            onDrop={handleShowroomLogoDrop}
+          >
+            <div className={styles.showroomLogoPreview}>
+              {logoPreviewUrl ? (
+                <img src={logoPreviewUrl} alt="Showroom logo preview" />
+              ) : (
+                <span>Logo</span>
+              )}
+              {logoDragActive ? <small>Drop logo</small> : null}
+            </div>
             <div className={styles.showroomLogoCopy}>
               <strong>Showroom logo</strong>
-              <span>Your default Ad Studio logo appears automatically. Upload a different logo only for this showroom.</span>
-            </div>
-            <div className={styles.showroomLogoEditor}>
-              <button
-                className={`${styles.showroomLogoPreview} ${logoDragActive ? styles.showroomLogoDragging : ''}`}
-                type="button"
-                onClick={() => logoInputRef.current?.click()}
-                onDragEnter={(event) => {
-                  event.preventDefault();
-                  if (!saving && !readingLogo) setLogoDragActive(true);
-                }}
-                onDragOver={(event) => event.preventDefault()}
-                onDragLeave={() => setLogoDragActive(false)}
-                onDrop={handleShowroomLogoDrop}
-                disabled={saving || readingLogo}
-                aria-label={logoPreviewUrl ? 'Replace showroom logo' : 'Upload showroom logo'}
-              >
-                {logoPreviewUrl ? (
-                  <img src={logoPreviewUrl} alt="Showroom logo preview" />
-                ) : (
-                  <span>No logo</span>
-                )}
-                {logoDragActive ? <small>Drop logo</small> : null}
-              </button>
-              <div className={styles.showroomLogoActions}>
+              <span>
+                {showroomLogoUrl
+                  ? 'This custom logo appears only on your public showroom.'
+                  : showroom.inheritedLogoUrl
+                    ? 'Using your Ad Studio logo. Drop a different logo here if needed.'
+                    : 'Add a logo to personalise your public showroom.'}
+              </span>
+              <small>PNG, JPEG or WebP · Maximum 2 MB</small>
+              {showroomLogoUrl ? (
                 <button
-                  className={styles.showroomLogoButton}
+                  className={styles.showroomLogoReset}
                   type="button"
-                  onClick={() => logoInputRef.current?.click()}
+                  onClick={() => {
+                    setShowroomLogoUrl('');
+                    setMessage(showroom.inheritedLogoUrl
+                      ? 'The Ad Studio logo will be used after you save your changes.'
+                      : 'The showroom logo will be removed after you save your changes.');
+                  }}
                   disabled={saving || readingLogo}
                 >
-                  {readingLogo ? 'Reading logo...' : logoPreviewUrl ? 'Replace logo' : 'Upload logo'}
+                  {showroom.inheritedLogoUrl ? 'Use Ad Studio logo' : 'Remove logo'}
                 </button>
-                {showroomLogoUrl ? (
-                  <button
-                    className={styles.showroomLogoReset}
-                    type="button"
-                    onClick={() => {
-                      setShowroomLogoUrl('');
-                      setMessage('The Ad Studio logo will be used after you save your changes.');
-                    }}
-                    disabled={saving || readingLogo}
-                  >
-                    Use Ad Studio logo
-                  </button>
-                ) : (
-                  <small>{showroom.inheritedLogoUrl ? 'Using your saved brand logo' : 'No brand logo saved yet'}</small>
-                )}
-                <input
-                  ref={logoInputRef}
-                  className={styles.showroomLogoInput}
-                  type="file"
-                  accept="image/png,image/jpeg,image/webp"
-                  onChange={(event) => {
-                    applyShowroomLogoFile(event.currentTarget.files?.[0]);
-                    event.currentTarget.value = '';
-                  }}
-                  tabIndex={-1}
-                />
-              </div>
+              ) : null}
+            </div>
+            <div className={styles.showroomLogoActions}>
+              <button
+                className={styles.showroomLogoButton}
+                type="button"
+                onClick={() => logoInputRef.current?.click()}
+                disabled={saving || readingLogo}
+              >
+                {readingLogo ? 'Reading logo...' : logoPreviewUrl ? 'Replace logo' : 'Upload logo'}
+              </button>
+              <input
+                ref={logoInputRef}
+                className={styles.showroomLogoInput}
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                onChange={(event) => {
+                  applyShowroomLogoFile(event.currentTarget.files?.[0]);
+                  event.currentTarget.value = '';
+                }}
+                tabIndex={-1}
+              />
             </div>
           </div>
           <div className={styles.publicLinkField}>
