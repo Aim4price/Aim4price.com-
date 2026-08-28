@@ -75,6 +75,7 @@ export function MiddlemanShowroomManager({
   const [showroomLogoUrl, setShowroomLogoUrl] = useState(initialShowroom.showroomLogoUrl);
   const [logoDragActive, setLogoDragActive] = useState(false);
   const [readingLogo, setReadingLogo] = useState(false);
+  const [logoFeedback, setLogoFeedback] = useState<{ text: string; error: boolean } | null>(null);
   const [saving, setSaving] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteConfirmation, setDeleteConfirmation] = useState('');
@@ -91,13 +92,13 @@ export function MiddlemanShowroomManager({
 
   function applyShowroomLogoFile(file?: File) {
     if (!file || saving || readingLogo) return;
-    setMessage('');
+    setLogoFeedback(null);
     if (!SHOWROOM_LOGO_TYPES.has(file.type)) {
-      setMessage('Choose a PNG, JPEG or WebP logo.');
+      setLogoFeedback({ text: 'Choose a PNG, JPEG or WebP logo.', error: true });
       return;
     }
     if (file.size > MAX_SHOWROOM_LOGO_BYTES) {
-      setMessage('Keep the showroom logo below 2 MB.');
+      setLogoFeedback({ text: 'Keep the showroom logo below 2 MB.', error: true });
       return;
     }
 
@@ -105,7 +106,7 @@ export function MiddlemanShowroomManager({
     const reader = new FileReader();
     reader.onload = () => {
       if (typeof reader.result !== 'string') {
-        setMessage('The showroom logo could not be read.');
+        setLogoFeedback({ text: 'The showroom logo could not be read.', error: true });
         setReadingLogo(false);
         return;
       }
@@ -116,21 +117,21 @@ export function MiddlemanShowroomManager({
           image.naturalWidth > MAX_SHOWROOM_LOGO_DIMENSION
           || image.naturalHeight > MAX_SHOWROOM_LOGO_DIMENSION
         ) {
-          setMessage('Keep the showroom logo dimensions below 4096 × 4096 pixels.');
+          setLogoFeedback({ text: 'Keep the showroom logo dimensions below 4096 × 4096 pixels.', error: true });
         } else {
           setShowroomLogoUrl(logoDataUrl);
-          setMessage('Logo ready. Save your changes to update the public showroom.');
+          setLogoFeedback({ text: 'Logo ready. Save your changes to update the public showroom.', error: false });
         }
         setReadingLogo(false);
       };
       image.onerror = () => {
-        setMessage('Choose a valid PNG, JPEG or WebP logo.');
+        setLogoFeedback({ text: 'Choose a valid PNG, JPEG or WebP logo.', error: true });
         setReadingLogo(false);
       };
       image.src = logoDataUrl;
     };
     reader.onerror = () => {
-      setMessage('The showroom logo could not be read.');
+      setLogoFeedback({ text: 'The showroom logo could not be read.', error: true });
       setReadingLogo(false);
     };
     reader.readAsDataURL(file);
@@ -146,6 +147,7 @@ export function MiddlemanShowroomManager({
     if (readingLogo) return;
     setSaving(true);
     setMessage('');
+    setLogoFeedback(null);
     try {
       const response = await fetch('/api/middleman-showroom', {
         method: 'PUT',
@@ -281,24 +283,36 @@ export function MiddlemanShowroomManager({
                 {showroomLogoUrl
                   ? 'This custom logo appears only on your public showroom.'
                   : showroom.inheritedLogoUrl
-                    ? 'Using your Ad Studio logo. Drop a different logo here if needed.'
+                    ? 'Using your saved brand logo. Drop a different logo here if needed.'
                     : 'Add a logo to personalise your public showroom.'}
               </span>
-              <small>PNG, JPEG or WebP · Maximum 2 MB</small>
+              <small id="showroom-logo-help">PNG, JPEG or WebP · Maximum 2 MB</small>
               {showroomLogoUrl ? (
                 <button
                   className={styles.showroomLogoReset}
                   type="button"
                   onClick={() => {
                     setShowroomLogoUrl('');
-                    setMessage(showroom.inheritedLogoUrl
-                      ? 'The Ad Studio logo will be used after you save your changes.'
-                      : 'The showroom logo will be removed after you save your changes.');
+                    setLogoFeedback({
+                      text: showroom.inheritedLogoUrl
+                        ? 'Your saved brand logo will be used after you save your changes.'
+                        : 'The showroom logo will be removed after you save your changes.',
+                      error: false,
+                    });
                   }}
                   disabled={saving || readingLogo}
                 >
-                  {showroom.inheritedLogoUrl ? 'Use Ad Studio logo' : 'Remove logo'}
+                  {showroom.inheritedLogoUrl ? 'Use saved brand logo' : 'Remove logo'}
                 </button>
+              ) : null}
+              {logoFeedback ? (
+                <small
+                  id="showroom-logo-feedback"
+                  className={`${styles.showroomLogoFeedback} ${logoFeedback.error ? styles.showroomLogoFeedbackError : ''}`}
+                  role="status"
+                >
+                  {logoFeedback.text}
+                </small>
               ) : null}
             </div>
             <div className={styles.showroomLogoActions}>
@@ -307,6 +321,7 @@ export function MiddlemanShowroomManager({
                 type="button"
                 onClick={() => logoInputRef.current?.click()}
                 disabled={saving || readingLogo}
+                aria-describedby={logoFeedback ? 'showroom-logo-help showroom-logo-feedback' : 'showroom-logo-help'}
               >
                 {readingLogo ? 'Reading logo...' : logoPreviewUrl ? 'Replace logo' : 'Upload logo'}
               </button>
