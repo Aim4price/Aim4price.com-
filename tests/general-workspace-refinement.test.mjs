@@ -4,11 +4,12 @@ import test from 'node:test';
 
 const read = async (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
 
-const [leadsClient, leadsStyles, maintenanceClient, registerGateway] = await Promise.all([
+const [leadsClient, leadsStyles, maintenanceClient, registerGateway, registerClient] = await Promise.all([
   read('app/leads/leads-client.tsx'),
   read('app/leads/page.module.css'),
   read('components/DealerMaintenanceTrackerClient.tsx'),
   read('app/asset-register/dealer-register-gateway.tsx'),
+  read('app/asset-register/asset-register-client.tsx'),
 ]);
 
 test('lead cards present status and identifiers without pills', () => {
@@ -43,4 +44,18 @@ test('dealer Asset Register gateway reuses the Marketplace entry design without 
   assert.match(registerGateway, /Dealer Asset Register/);
   assert.match(registerGateway, /Client Asset Registers/);
   assert.doesNotMatch(registerGateway, /<video/);
+});
+
+test('dealer registers use meaningful titles without decorative pills or combined-register controls', () => {
+  assert.match(registerClient, /dealerRegisterMode === 'dealer'[\s\S]*?\? 'Dealer Asset Register'/);
+  assert.match(registerClient, /dealerRegisterMode === 'client'[\s\S]*?`\$\{savedRegisterTitle\} Asset Register`/);
+  assert.doesNotMatch(registerClient, /styles\.dealerRegisterContextPill/);
+  assert.match(registerClient, /if \(dealerRegisterMode\) \{[\s\S]*?return null;/);
+  assert.match(registerClient, /const canManageAssetGroups =[\s\S]*?!dealerRegisterMode/);
+  assert.match(registerClient, /\{canManageAssetGroups \? \([\s\S]*?<UmbrellaIcon/);
+  assert.match(registerClient, /\{canShareActiveRegister && !dealerRegisterMode \? \(/);
+  assert.doesNotMatch(registerClient, /disabled=\{!canManageAssetGroups \|\| isMovingAssetRegister\}/);
+  assert.doesNotMatch(registerClient, /disabled=\{!groupAnchorAsset \|\| !canManageAssetGroups\}/);
+  assert.doesNotMatch(registerGateway, /<span>Client Asset Registers<\/span>|<b>Open<\/b>/);
+  assert.match(registerGateway, /Open register →/);
 });
