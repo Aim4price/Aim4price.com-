@@ -12799,30 +12799,6 @@
     width: 100%;
   }
 }
-.resultClientRegisterActionButton {
-  min-height: 48px;
-  padding: 0 18px;
-  border: 1px solid #39a688;
-  border-radius: 13px;
-  background: #edf9f4;
-  color: #0b604f;
-  font: inherit;
-  font-weight: 900;
-  cursor: pointer;
-}
-
-.resultClientRegisterActionButton:hover:not(:disabled),
-.resultClientRegisterActionButton:focus-visible {
-  border-color: #13755f;
-  background: #dff3eb;
-  outline: none;
-}
-
-.resultClientRegisterActionButton:disabled {
-  cursor: not-allowed;
-  opacity: 0.55;
-}
-
 .dealerClientRegisterPicker {
   width: min(820px, calc(100vw - 32px));
   max-height: min(780px, calc(100vh - 40px));
@@ -12969,12 +12945,6 @@
   box-shadow: 0 12px 24px rgba(18, 63, 52, 0.18);
 }
 
-.resultFinalActionsButtons > .resultClientRegisterActionButton {
-  border: 1px solid rgba(23, 79, 62, 0.28);
-  background: #f0f7f3;
-  color: #174f3e;
-}
-
 .resultFinalActionsButtons > .resultAlternateActionButton,
 .resultFinalActionsButtons > .resultPdfActionButton {
   border: 1px solid rgba(31, 67, 85, 0.18);
@@ -12999,19 +12969,8 @@
   line-height: 1;
 }
 
-.resultFinalActionsButtons > .resultPrimaryActionButton[data-result-action]::after {
-  border-color: rgba(255, 255, 255, 0.2);
-  background: rgba(255, 255, 255, 0.12);
-  color: #ffffff;
-}
-
 .resultFinalActionsButtons > button[data-result-action='create-ad']::after {
   content: '↗';
-}
-
-.resultFinalActionsButtons > button[data-result-action='dealer-register']::after,
-.resultFinalActionsButtons > button[data-result-action='client-register']::after {
-  content: '+';
 }
 
 .resultFinalActionsButtons > button[data-result-action='download-pdf']::after {
@@ -13023,7 +12982,7 @@
   box-shadow: 0 15px 28px rgba(18, 63, 52, 0.22);
 }
 
-.resultFinalActionsButtons > :is(.resultClientRegisterActionButton, .resultAlternateActionButton, .resultPdfActionButton):hover:not(:disabled) {
+.resultFinalActionsButtons > :is(.resultAlternateActionButton, .resultPdfActionButton):hover:not(:disabled) {
   border-color: rgba(23, 79, 62, 0.4);
   background: #f7faf8;
   box-shadow: 0 12px 24px rgba(16, 42, 34, 0.08);
@@ -13124,6 +13083,88 @@
   white-space: nowrap;
 }
 
+.dealerRegisterDestinationModal {
+  width: min(45rem, calc(100vw - 2rem));
+}
+
+.dealerRegisterDestinationGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.dealerRegisterDestinationOption {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 1rem;
+  min-height: 8.5rem;
+  padding: 1.2rem;
+  border: 1px solid #dbe5ea;
+  border-radius: 1.1rem;
+  background: #ffffff;
+  color: #18364b;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  box-shadow: 0 8px 20px rgba(22, 52, 69, 0.045);
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    background 160ms ease,
+    opacity 160ms ease;
+}
+
+.dealerRegisterDestinationOption:hover:not(:disabled),
+.dealerRegisterDestinationOption:focus-visible {
+  border-color: #8ba8b6;
+  background: #f8fafb;
+  box-shadow: 0 12px 26px rgba(22, 52, 69, 0.08);
+  outline: none;
+  transform: translateY(-1px);
+}
+
+.dealerRegisterDestinationOption:disabled {
+  cursor: not-allowed;
+  opacity: 0.52;
+  transform: none;
+  box-shadow: none;
+}
+
+.dealerRegisterDestinationOptionCopy {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.dealerRegisterDestinationOptionCopy strong {
+  color: #18364b;
+  font-size: 1.05rem;
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+.dealerRegisterDestinationOptionCopy small {
+  color: #617483;
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+.dealerRegisterDestinationArrow {
+  display: inline-flex;
+  width: 2.2rem;
+  height: 2.2rem;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #d7e2e8;
+  border-radius: 999px;
+  background: #eef3f6;
+  color: #24485a;
+  font-size: 1rem;
+  font-weight: 800;
+}
+
 .finalSaveDestination {
   display: flex;
   align-items: center;
@@ -13150,6 +13191,14 @@
 }
 
 @media (max-width: 680px) {
+  .dealerRegisterDestinationGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .dealerRegisterDestinationOption {
+    min-height: 0;
+  }
+
   .finalSaveDestination {
     align-items: flex-start;
     flex-direction: column;
