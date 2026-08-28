@@ -38,6 +38,8 @@ function MembersIcon({ className }: IconProps) {
   );
 }
 
+
+
 function DownloadIcon({ className }: IconProps) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -308,6 +310,10 @@ export type AssetGroupModalAsset = {
   registerName?: string | null;
   value: number;
   categoryLabel?: string | null;
+  yearModel?: number | null;
+  usageLabel?: string | null;
+  conditionLabel?: string | null;
+  sourceLabel?: string | null;
   serialNumber?: string | null;
   registrationNumber?: string | null;
   notes?: string | null;
@@ -388,6 +394,25 @@ function money(value: number): string {
   }).format(Math.round(Number(value) || 0)).replace('ZAR', 'R');
 }
 
+function assetDetailLine(asset: AssetGroupModalAsset): string {
+  const usageLabel = String(asset.usageLabel ?? '').trim();
+  const parts = [
+    asset.yearModel ? `Year Model: ${asset.yearModel}` : '',
+    usageLabel && usageLabel !== '—' ? `Usage: ${usageLabel}` : '',
+    asset.conditionLabel ? `Condition: ${asset.conditionLabel}` : '',
+  ].filter(Boolean);
+
+  return parts.join(' · ') || 'No key details saved yet';
+}
+
+function assetSourceLine(asset: AssetGroupModalAsset, combinedMode: boolean): string {
+  return [
+    asset.categoryLabel,
+    asset.sourceLabel,
+    combinedMode ? asset.registerName : '',
+  ].filter(Boolean).join(' · ');
+}
+
 function normalizeAssetSearch(value: unknown): string {
   return String(value ?? '')
     .toLowerCase()
@@ -405,6 +430,10 @@ function assetMatchesSearch(asset: AssetGroupModalAsset, search: string): boolea
   const searchableText = normalizeAssetSearch([
     asset.title,
     asset.categoryLabel,
+    asset.yearModel,
+    asset.usageLabel,
+    asset.conditionLabel,
+    asset.sourceLabel,
     asset.serialNumber,
     asset.registrationNumber,
     asset.notes,
@@ -451,6 +480,8 @@ export default function AssetGroupManagerModal({
   const [reportYear, setReportYear] = useState('all');
   const [reportMonth, setReportMonth] = useState('all');
   const [maintenanceType, setMaintenanceType] = useState('all');
+  const editorBodyRef = useRef<HTMLDivElement | null>(null);
+  const assetListRef = useRef<HTMLDivElement | null>(null);
 
   const membershipByAssetId = useMemo(() => {
     const result = new Map<string, AssetGroup>();
@@ -487,6 +518,20 @@ export default function AssetGroupManagerModal({
     setMaintenanceType('all');
   }, [anchorAsset, combinedMode, group, initialView, open, reportDeliveryMode]);
 
+  useEffect(() => {
+    if (!open || (view !== 'create' && view !== 'members')) return;
+
+    const frame = window.requestAnimationFrame(() => {
+      editorBodyRef.current?.scrollTo({ top: 0, left: 0 });
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [editorStep, open, view]);
+
+  useEffect(() => {
+    assetListRef.current?.scrollTo({ top: 0, left: 0 });
+  }, [search]);
+
   const visibleAssets = useMemo(() => {
     return assets
       .filter((asset) => assetMatchesSearch(asset, search))
@@ -500,6 +545,10 @@ export default function AssetGroupManagerModal({
     () => selectedAssetIds.map((assetId) => assets.find((asset) => asset.id === assetId)).filter(Boolean) as AssetGroupModalAsset[],
     [assets, selectedAssetIds],
   );
+  const selectedAssetIdSet = useMemo(() => new Set(selectedAssetIds), [selectedAssetIds]);
+  const allVisibleAssetsSelected = visibleAssets.length > 0
+    && visibleAssets.every((asset) => selectedAssetIdSet.has(asset.id));
+  const clearableSelectedAssetCount = selectedAssetIds.filter((assetId) => group || assetId !== anchorAsset?.id).length;
 
   const countedValue = selectedAssets.reduce((sum, asset) => {
     if (countsTowardTotalByAssetId[asset.id] === false) return sum;
@@ -540,6 +589,32 @@ export default function AssetGroupManagerModal({
 
       return [...current, asset.id];
     });
+  }
+
+  function selectAllVisibleAssets() {
+    const visibleAssetIds = visibleAssets.map((asset) => asset.id);
+    if (!visibleAssetIds.length) return;
+
+    setSelectedAssetIds((current) => Array.from(new Set([...current, ...visibleAssetIds])));
+    setCountsTowardTotalByAssetId((current) => ({
+      ...Object.fromEntries(visibleAssetIds.map((assetId) => [assetId, true])),
+      ...current,
+    }));
+
+    if (hasPrimaryAsset && !primaryAssetId) {
+      const nextPrimaryAssetId = selectedAssetIds[0] ?? visibleAssetIds[0] ?? '';
+      setPrimaryAssetId(nextPrimaryAssetId);
+      if (nextPrimaryAssetId) {
+        setCountsTowardTotalByAssetId((current) => ({ ...current, [nextPrimaryAssetId]: true }));
+      }
+    }
+  }
+
+  function clearSelectedAssets() {
+    const retainedAssetIds = !group && anchorAsset ? [anchorAsset.id] : [];
+    setSelectedAssetIds(retainedAssetIds);
+    setCountsTowardTotalByAssetId(Object.fromEntries(retainedAssetIds.map((assetId) => [assetId, true])));
+    setPrimaryAssetId(hasPrimaryAsset ? retainedAssetIds[0] ?? '' : '');
   }
 
   function handlePrimaryModeChange(nextHasPrimaryAsset: boolean) {
@@ -888,7 +963,10 @@ export default function AssetGroupManagerModal({
           </>
         ) : (
           <form onSubmit={handleEditorSubmit}>
-            <div className={styles.body}>
+            <div
+              ref={editorBodyRef}
+              className={`${styles.body} ${editorStep === 3 ? styles.assetPickerBody : ''}`}
+            >
               <p className={styles.intro}>Complete one short step at a time. Your umbrella is saved on the final step.</p>
               <AssetGroupEditorProgress currentStep={editorStep} />
 
@@ -962,42 +1040,71 @@ export default function AssetGroupManagerModal({
                     <strong className={styles.selectedCount}>{selectedAssetIds.length} selected</strong>
                   </div>
 
-                  <label className={styles.searchField} data-asset-choice-toolbar="true">
-                    <span className={styles.srOnly}>Search assets</span>
-                    <input
-                      type="search"
-                      value={search}
-                      onChange={(event) => setSearch(event.target.value)}
-                      placeholder="Search name, category, serial, registration or notes"
-                      autoFocus
-                    />
-                  </label>
+                  <div className={styles.assetPickerToolbar} data-asset-choice-toolbar="true">
+                    <label className={styles.searchField}>
+                      <span className={styles.srOnly}>Search assets</span>
+                      <input
+                        type="search"
+                        value={search}
+                        onChange={(event) => setSearch(event.target.value)}
+                        placeholder="Search..."
+                        autoFocus
+                      />
+                    </label>
+                    <div className={styles.assetPickerToolbarActions}>
+                      <button
+                        type="button"
+                        className={styles.assetPickerToolbarButton}
+                        onClick={selectAllVisibleAssets}
+                        disabled={busy || visibleAssets.length === 0 || allVisibleAssetsSelected}
+                      >
+                        Select all
+                      </button>
+                      <button
+                        type="button"
+                        className={styles.assetPickerToolbarButton}
+                        onClick={clearSelectedAssets}
+                        disabled={busy || clearableSelectedAssetCount === 0}
+                      >
+                        Clear
+                      </button>
+                    </div>
+                  </div>
 
-                  <div className={styles.assetList} data-asset-choice-list="true">
-                    {visibleAssets.map((asset) => {
+                  <div ref={assetListRef} className={styles.assetList} data-asset-choice-list="true">
+                    {visibleAssets.length ? visibleAssets.map((asset) => {
                       const existingGroup = membershipByAssetId.get(asset.id);
                       const movingFromAnotherGroup = Boolean(existingGroup && existingGroup.id !== group?.id);
                       const selected = selectedAssetIds.includes(asset.id);
+                      const lockedAnchor = !group && asset.id === anchorAsset?.id;
 
                       return (
                         <div
-                          className={selected ? styles.assetRowSelected : styles.assetRow}
+                          className={`${selected ? styles.assetRowSelected : styles.assetRow} ${lockedAnchor ? styles.assetRowLocked : ''}`}
                           key={asset.id}
                           data-asset-choice-row="true"
                           data-asset-choice-selected={selected ? 'true' : undefined}
                         >
-                          <label>
-                            <input type="checkbox" checked={selected} disabled={!group && asset.id === anchorAsset?.id} onChange={() => toggleAsset(asset)} />
-                            <span data-asset-choice-copy="true">
+                          <label className={styles.assetRowMain}>
+                            <input
+                              className={styles.assetCheckboxInput}
+                              type="checkbox"
+                              checked={selected}
+                              disabled={lockedAnchor}
+                              onChange={() => toggleAsset(asset)}
+                            />
+                            <span className={styles.assetCheckbox} aria-hidden="true" />
+                            <span className={styles.assetCopy} data-asset-choice-copy="true">
                               <strong>{asset.title}</strong>
-                              <small data-asset-choice-meta="true">{[
-                                movingFromAnotherGroup ? `Currently in ${existingGroup?.name} — select to move` : '',
-                                asset.categoryLabel,
-                                asset.serialNumber ? `Serial: ${asset.serialNumber}` : '',
-                                asset.registrationNumber ? `Reg: ${asset.registrationNumber}` : '',
-                                combinedMode ? asset.registerName : '',
-                                money(asset.value),
-                              ].filter(Boolean).join(' · ')}</small>
+                              <span className={styles.assetDetailLine} data-asset-choice-meta="true">{assetDetailLine(asset)}</span>
+                              <small data-asset-choice-secondary="true">{assetSourceLine(asset, combinedMode)}</small>
+                              {movingFromAnotherGroup ? (
+                                <small className={styles.assetMoveNotice}>Currently in {existingGroup?.name} — select to move</small>
+                              ) : null}
+                            </span>
+                            <span className={styles.assetValue} data-asset-choice-value="true">
+                              <strong>{money(asset.value)}</strong>
+                              <small>current value</small>
                             </span>
                           </label>
 
@@ -1022,7 +1129,9 @@ export default function AssetGroupManagerModal({
                           ) : null}
                         </div>
                       );
-                    })}
+                    }) : (
+                      <div className={styles.assetListEmpty}>No assets match your search.</div>
+                    )}
                   </div>
 
                   <aside className={styles.summary}>
@@ -1060,4 +1169,3 @@ export default function AssetGroupManagerModal({
     </div>
   );
 }
-

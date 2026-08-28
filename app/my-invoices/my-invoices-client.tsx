@@ -4691,18 +4691,6 @@ export default function MyInvoicesClient({
                   <ChevronRightIcon />
                 </span>
               </button>
-              <button type="button" className={`${styles.sourceChoiceOption} ${styles.costChoiceOption}`} onClick={() => startFlow('automatic')}>
-                <span className={styles.choiceGraphic}>
-                  <AutomaticInvoiceIcon />
-                </span>
-                <span className={styles.choiceTitleBlock}>
-                  <strong>Upload for Aim4price capture</strong>
-                  <small>Upload a photo or PDF for capture within 24 hours.</small>
-                </span>
-                <span className={styles.costChoiceArrow} aria-hidden="true">
-                  <ChevronRightIcon />
-                </span>
-              </button>
               {!dealerMode ? (
                 <button type="button" className={`${styles.sourceChoiceOption} ${styles.costChoiceOption} ${styles.recurringChoiceOption}`} onClick={startRecurringCommitment}>
                   <span className={styles.choiceGraphic}>
@@ -4717,6 +4705,18 @@ export default function MyInvoicesClient({
                   </span>
                 </button>
               ) : null}
+              <button type="button" className={`${styles.sourceChoiceOption} ${styles.costChoiceOption} ${styles.aim4priceCaptureChoiceOption}`} onClick={() => startFlow('automatic')}>
+                <span className={styles.choiceGraphic}>
+                  <AutomaticInvoiceIcon />
+                </span>
+                <span className={styles.choiceTitleBlock}>
+                  <strong>Upload for Aim4price capture</strong>
+                  <small>Upload a photo or PDF for capture within 24 hours.</small>
+                </span>
+                <span className={styles.costChoiceArrow} aria-hidden="true">
+                  <ChevronRightIcon />
+                </span>
+              </button>
             </div>
             <div className={styles.modalFooter}>
               <button type="button" className={styles.secondaryButton} onClick={closeModal}>Cancel</button>

@@ -6503,6 +6503,10 @@
     linear-gradient(180deg, #fbfdfc 0%, #f7faf9 100%);
 }
 
+.costChoiceModal .aim4priceCaptureChoiceOption {
+  grid-column: 1 / -1;
+}
+
 .costChoiceModal .costChoiceOption {
   position: relative;
   min-height: 6.35rem;
