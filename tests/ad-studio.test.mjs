@@ -5,13 +5,17 @@ import ts from 'typescript';
 
 const read = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
 
-async function loadTypeScriptModule(path) {
+async function loadTypeScriptModule(path, dependencies = {}) {
   const source = await read(path);
   const output = ts.transpileModule(source, {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
   }).outputText;
   const module = { exports: {} };
-  new Function('exports', 'module', 'Buffer', output)(module.exports, module, Buffer);
+  const loadDependency = (specifier) => {
+    if (Object.prototype.hasOwnProperty.call(dependencies, specifier)) return dependencies[specifier];
+    throw new Error(`Unexpected test dependency: ${specifier}`);
+  };
+  new Function('exports', 'module', 'Buffer', 'require', output)(module.exports, module, Buffer, loadDependency);
   return module.exports;
 }
 
@@ -493,6 +497,70 @@ test('showroom manager follows the approved no-bubble layout with consistent lin
   assert.doesNotMatch(manager, /emptyStockIllustration|emptyStockMachine/);
   assert.doesNotMatch(managerCss, /\.emptyStockIllustration|\.emptyStockMachine/);
   assert.match(managerCss, /\.emptyStock\s*\{[^}]*align-content:\s*center/);
+});
+
+test('showroom JPEG downloads use the standard Aim4price Marketplace design', async () => {
+  const [manager, rendererSource] = await Promise.all([
+    read('components/MiddlemanShowroomClient.tsx'),
+    read('lib/marketplace-ad-renderer.ts'),
+  ]);
+
+  const defaultColors = {
+    primary: '#165340',
+    secondary: '#0d3329',
+    accent: '#f2b84b',
+  };
+  const { marketplaceListingToAdContent } = await loadTypeScriptModule(
+    'lib/marketplace-ad-renderer.ts',
+    {
+      './ad-studio': { AD_TEMPLATE_OPTIONS: [], DEFAULT_AD_BRAND_COLORS: defaultColors },
+      './marketplace': { calculateMarketplaceDealRating: () => ({ rating: 'fair' }) },
+    },
+  );
+  const customBrand = {
+    name: 'Dealer premium',
+    templateId: 'minimal',
+    logoUrl: 'https://example.com/dealer-logo.png',
+    primaryColor: '#AA1122',
+    secondaryColor: '#223344',
+    accentColor: '#BBCCDD',
+    businessName: 'Dealer Equipment',
+    contactName: 'Sam Seller',
+    phone: '0821234567',
+    email: 'sales@example.com',
+    website: 'https://example.com',
+    language: 'af',
+    vatLabel: 'vat-included',
+  };
+  const listing = {
+    id: 'listing-1',
+    title: '2020 Example Tractor',
+    askingPriceExVat: 500000,
+    sellerName: 'Fallback Seller',
+    sellerPhone: '0110000000',
+    sellerCompany: 'Fallback Company',
+    sellerEmail: 'fallback@example.com',
+    adBrand: customBrand,
+  };
+
+  const branded = marketplaceListingToAdContent(listing);
+  const standard = marketplaceListingToAdContent(listing, { design: 'aim4price-marketplace' });
+
+  assert.match(manager, /createMarketplaceAdJpeg\(listing, \{\s*design: 'aim4price-marketplace',\s*\}\)/);
+  assert.match(rendererSource, /export type MarketplaceAdDesign = 'saved-brand' \| 'aim4price-marketplace'/);
+  assert.equal(branded.brand.templateId, 'minimal');
+  assert.equal(branded.brand.primaryColor, customBrand.primaryColor);
+  assert.equal(standard.brand.name, 'Aim4price standard');
+  assert.equal(standard.brand.templateId, 'showcase');
+  assert.equal(standard.brand.primaryColor, defaultColors.primary);
+  assert.equal(standard.brand.secondaryColor, defaultColors.secondary);
+  assert.equal(standard.brand.accentColor, defaultColors.accent);
+  for (const field of ['logoUrl', 'businessName', 'contactName', 'phone', 'email', 'website', 'language', 'vatLabel']) {
+    assert.equal(standard.brand[field], customBrand[field]);
+  }
+  assert.equal(standard.sellerCompany, customBrand.businessName);
+  assert.equal(standard.sellerName, customBrand.contactName);
+  assert.equal(standard.sellerPhone, customBrand.phone);
 });
 
 test('showroom logos inherit Ad Studio branding and allow a compact showroom-only override', async () => {
