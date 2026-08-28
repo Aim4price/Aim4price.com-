@@ -58,6 +58,56 @@ export type AdminMarketplaceReport = {
   assets: AdminMarketplaceAssetRow[];
 };
 
+export type AdminMarketplaceOutcomeReason =
+  | 'sold'
+  | 'traded'
+  | 'no_longer_available'
+  | 'decided_not_to_sell'
+  | 'created_by_mistake'
+  | 'other';
+
+export type AdminMarketplaceOutcomeRow = {
+  outcomeId: string;
+  listingId: string | null;
+  sourceAssetId: string | null;
+  accountUserId: string;
+  sellerLabel: string;
+  sellerEmail: string;
+  title: string;
+  sectorKey: string;
+  sectorLabel: string;
+  reason: AdminMarketplaceOutcomeReason;
+  outcomeNote: string;
+  aim4priceHelped: boolean;
+  finalSalePriceExVat: number | null;
+  askingPriceExVat: number;
+  aim4priceValueExVat: number;
+  totalViewsAtClose: number;
+  accountViewsAtClose: number;
+  unknownViewsAtClose: number;
+  uniqueViewersAtClose: number;
+  sourceSurface: 'marketplace' | 'showroom';
+  publishedAtIso: string | null;
+  closedAtIso: string;
+  actorType: string;
+};
+
+export type AdminMarketplaceOutcomeMetrics = {
+  totalOutcomes: number;
+  soldOrTraded: number;
+  aim4priceHelpedCount: number;
+  notHelpedCount: number;
+  helpRatePercent: number;
+  recordedSaleValueExVat: number;
+  avgDaysToOutcome: number;
+};
+
+export type AdminMarketplaceOutcomeReport = {
+  generatedAtIso: string;
+  metrics: AdminMarketplaceOutcomeMetrics;
+  outcomes: AdminMarketplaceOutcomeRow[];
+};
+
 export type AdminMarketplaceViewerKind = 'account' | 'unknown';
 
 export type AdminMarketplaceViewerGroup = {
@@ -291,4 +341,56 @@ export function filterAndSortAdminMarketplaceAssets(
 
     return dateTime(right.lastAdvertisedAtIso) - dateTime(left.lastAdvertisedAtIso);
   });
+}
+
+export function formatAdminMarketplaceOutcomeReason(
+  reason: AdminMarketplaceOutcomeReason,
+): string {
+  if (reason === 'sold') return 'Sold';
+  if (reason === 'traded') return 'Traded in';
+  if (reason === 'no_longer_available') return 'No longer available';
+  if (reason === 'decided_not_to_sell') return 'Decided not to sell';
+  if (reason === 'created_by_mistake') return 'Advert created by mistake';
+  return 'Other';
+}
+
+export function summarizeAdminMarketplaceOutcomes(
+  outcomes: AdminMarketplaceOutcomeRow[],
+): AdminMarketplaceOutcomeMetrics {
+  let soldOrTraded = 0;
+  let aim4priceHelpedCount = 0;
+  let recordedSaleValueExVat = 0;
+  let totalDaysToOutcome = 0;
+  let timedOutcomeCount = 0;
+
+  for (const outcome of outcomes) {
+    const isSaleOutcome = outcome.reason === 'sold' || outcome.reason === 'traded';
+    if (isSaleOutcome) {
+      soldOrTraded += 1;
+      recordedSaleValueExVat += finiteMoney(outcome.finalSalePriceExVat ?? 0);
+    }
+    if (outcome.aim4priceHelped) aim4priceHelpedCount += 1;
+
+    const publishedAt = dateTime(outcome.publishedAtIso ?? '');
+    const closedAt = dateTime(outcome.closedAtIso);
+    if (publishedAt && closedAt >= publishedAt) {
+      totalDaysToOutcome += (closedAt - publishedAt) / 86_400_000;
+      timedOutcomeCount += 1;
+    }
+  }
+
+  const totalOutcomes = outcomes.length;
+  return {
+    totalOutcomes,
+    soldOrTraded,
+    aim4priceHelpedCount,
+    notHelpedCount: Math.max(0, totalOutcomes - aim4priceHelpedCount),
+    helpRatePercent: totalOutcomes
+      ? Math.round((aim4priceHelpedCount / totalOutcomes) * 1_000) / 10
+      : 0,
+    recordedSaleValueExVat: finiteMoney(recordedSaleValueExVat),
+    avgDaysToOutcome: timedOutcomeCount
+      ? Math.round((totalDaysToOutcome / timedOutcomeCount) * 10) / 10
+      : 0,
+  };
 }
