@@ -130,6 +130,11 @@ function listingTitle(listing: MarketplaceListing): string {
   return raw.split(/\s*[·•]\s*/)[0] || 'Marketplace listing';
 }
 
+function listingYear(listing: MarketplaceListing): string {
+  const year = Number(listing.yearModel);
+  return Number.isFinite(year) && year > 0 ? String(Math.round(year)) : 'N/A';
+}
+
 function listingUsage(listing: MarketplaceListing): string {
   const hours = Number(listing.hours);
   if (listing.usageUnit === 'percent') {
@@ -196,7 +201,7 @@ export function marketplaceListingToAdContent(
 
   return {
     title: listingTitle(listing),
-    year: clean(listing.yearModel) || 'Year not set',
+    year: listingYear(listing),
     usage: listingUsage(listing),
     condition: titleCase(clean(listing.conditionLabel || listing.conditionKey) || 'Condition not set'),
     familyLabel: titleCase(familyLabel),
@@ -285,19 +290,26 @@ function setFittedFont(
 function wrapText(context: CanvasRenderingContext2D, text: string, x: number, y: number, maxWidth: number, lineHeight: number, lines = 2): number {
   const words = text.split(/\s+/).filter(Boolean);
   const output: string[] = [];
-  let line = '';
-  for (const word of words) {
-    const candidate = line ? `${line} ${word}` : word;
-    if (line && context.measureText(candidate).width > maxWidth) {
-      output.push(line);
-      line = word;
-      if (output.length === lines - 1) break;
-    } else {
+  let wordIndex = 0;
+
+  while (wordIndex < words.length && output.length < lines) {
+    let line = '';
+    while (wordIndex < words.length) {
+      const candidate = line ? `${line} ${words[wordIndex]}` : words[wordIndex];
+      if (line && context.measureText(candidate).width > maxWidth) break;
       line = candidate;
+      wordIndex += 1;
+      if (context.measureText(line).width > maxWidth) break;
     }
+
+    if (output.length === lines - 1 && wordIndex < words.length) {
+      line = `${line} ${words.slice(wordIndex).join(' ')}`.trim();
+      wordIndex = words.length;
+    }
+
+    if (line) output.push(fitText(context, line, maxWidth));
   }
-  if (line && output.length < lines) output.push(line);
-  if (output.join(' ').length < text.length && output.length) output[output.length - 1] = fitText(context, `${output[output.length - 1]}…`, maxWidth);
+
   output.forEach((value, index) => context.fillText(value, x, y + index * lineHeight));
   return y + output.length * lineHeight;
 }
@@ -759,9 +771,10 @@ async function renderAim4priceStandardCanvas(
   const photoArea: Rect = { x: 64, y: 72, width: 904, height: 764 };
   const contentX = 1010;
   const contentWidth = 526;
-  const thumbGap = 18;
+  const thumbGap = 14;
   const thumbHeight = 158;
-  const mainHeight = photoArea.height - thumbHeight - 20;
+  const photoRowGap = 16;
+  const mainHeight = photoArea.height - thumbHeight - photoRowGap;
   const thumbWidth = (photoArea.width - thumbGap * 2) / 3;
 
   context.clearRect(0, 0, width, height);
@@ -790,7 +803,7 @@ async function renderAim4priceStandardCanvas(
   for (let index = 0; index < 3; index += 1) {
     drawAim4priceStandardPhoto(context, content, images[index + 1] ?? null, {
       x: photoArea.x + index * (thumbWidth + thumbGap),
-      y: photoArea.y + mainHeight + 20,
+      y: photoArea.y + mainHeight + photoRowGap,
       width: thumbWidth,
       height: thumbHeight,
     }, false);
@@ -811,13 +824,13 @@ async function renderAim4priceStandardCanvas(
   context.stroke();
   context.restore();
 
-  drawRating(context, content, contentX, 76);
+  drawRating(context, content, contentX, 72);
   if (content.location) {
     context.save();
     context.fillStyle = '#61756e';
     context.font = '750 17px Montserrat, Inter, Arial, sans-serif';
     context.textAlign = 'right';
-    context.fillText(fitText(context, content.location, 280), contentX + contentWidth, 108);
+    context.fillText(fitText(context, content.location, 280), contentX + contentWidth, 104);
     context.restore();
   }
 
@@ -826,27 +839,31 @@ async function renderAim4priceStandardCanvas(
   context.save();
   context.fillStyle = '#102f26';
   setFittedFont(context, price, contentWidth - 128, 950, 68, 48);
-  context.fillText(price, contentX, 202);
+  context.fillText(price, contentX, 196);
   const priceWidth = context.measureText(price).width;
   context.font = '850 21px Montserrat, Inter, Arial, sans-serif';
-  context.fillText(vat, contentX + Math.min(contentWidth - 110, priceWidth + 20), 195);
+  context.fillText(vat, contentX + Math.min(contentWidth - 110, priceWidth + 20), 190);
   context.fillStyle = '#17362c';
   context.font = '850 40px Montserrat, Inter, Arial, sans-serif';
-  const titleBottom = wrapText(context, naturalTitle(content.title), contentX, 270, contentWidth, 47, 2);
+  const titleBottom = wrapText(context, naturalTitle(content.title), contentX, 252, contentWidth, 44, 2);
   context.fillStyle = '#63776f';
   context.font = '700 18px Montserrat, Inter, Arial, sans-serif';
-  context.fillText(fitText(context, equipmentMeta(content), contentWidth), contentX, titleBottom + 12);
+  const metaY = titleBottom - 15;
+  context.fillText(fitText(context, equipmentMeta(content), contentWidth), contentX, metaY);
   context.restore();
 
-  const detailGap = 14;
+  const detailGap = 12;
   const detailWidth = (contentWidth - detailGap) / 2;
-  const detailHeight = 78;
-  drawAim4priceStandardDetail(context, 'Year', content.year || 'Not set', { x: contentX, y: 418, width: detailWidth, height: detailHeight });
-  drawAim4priceStandardDetail(context, 'Usage', content.usage || 'Not set', { x: contentX + detailWidth + detailGap, y: 418, width: detailWidth, height: detailHeight });
-  drawAim4priceStandardDetail(context, 'Condition', content.condition || 'Not set', { x: contentX, y: 510, width: detailWidth, height: detailHeight });
-  drawAim4priceStandardDetail(context, 'Equipment', content.familyLabel || 'Equipment', { x: contentX + detailWidth + detailGap, y: 510, width: detailWidth, height: detailHeight });
-  drawAim4priceStandardContact(context, content, { x: contentX, y: 622, width: contentWidth, height: 174 });
-  drawAim4priceCredit(context, contentX + contentWidth, 836, '#17362c');
+  const detailHeight = 72;
+  const detailTop = Math.max(376, metaY + 28);
+  const secondDetailTop = detailTop + detailHeight + detailGap;
+  const contactTop = secondDetailTop + detailHeight + 18;
+  drawAim4priceStandardDetail(context, 'Year', content.year || 'N/A', { x: contentX, y: detailTop, width: detailWidth, height: detailHeight });
+  drawAim4priceStandardDetail(context, 'Usage', content.usage || 'Not set', { x: contentX + detailWidth + detailGap, y: detailTop, width: detailWidth, height: detailHeight });
+  drawAim4priceStandardDetail(context, 'Condition', content.condition || 'Not set', { x: contentX, y: secondDetailTop, width: detailWidth, height: detailHeight });
+  drawAim4priceStandardDetail(context, 'Equipment', content.familyLabel || 'Equipment', { x: contentX + detailWidth + detailGap, y: secondDetailTop, width: detailWidth, height: detailHeight });
+  drawAim4priceStandardContact(context, content, { x: contentX, y: contactTop, width: contentWidth, height: 168 });
+  drawAim4priceCredit(context, contentX + contentWidth, 816, '#17362c');
 }
 
 function drawInformationPanel(
