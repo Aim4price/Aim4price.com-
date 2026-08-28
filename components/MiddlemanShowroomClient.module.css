@@ -105,19 +105,6 @@
 }
 .sectionHeading { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 1.3rem; padding-bottom: 1.15rem; border-bottom: 1px solid #e6eeea; }
 .sectionHeading > div { min-width: 0; }
-.inventoryIcon {
-  display: grid;
-  flex: 0 0 auto;
-  place-items: center;
-  width: 2.7rem;
-  height: 2.7rem;
-  border: 1px solid #cde0d8;
-  border-radius: 12px;
-  color: var(--green);
-  background: var(--pale);
-  font-size: .86rem;
-  font-weight: 850;
-}
 .sectionHeading h2 { margin: 0; font-family: 'Montserrat', sans-serif; font-size: clamp(1.2rem, 1.7vw, 1.48rem); font-weight: 850; line-height: 1.15; letter-spacing: -.032em; }
 .sectionHeading p { margin: .38rem 0 0; color: #6d817a; font-size: .76rem; line-height: 1.45; }
 .statusPill, .stockCount { flex: 0 0 auto; border: 1px solid #dfe6e3; border-radius: 999px; padding: .48rem .7rem; color: #687a74; background: #f1f4f3; font-size: .7rem; font-weight: 800; line-height: 1; letter-spacing: 0; }
@@ -217,48 +204,49 @@
 .deleteConfirmButton { min-height: 3rem; border: 0; border-radius: 11px; padding: 0 .95rem; color: #fff; background: #a8322a; font-family: 'Montserrat', sans-serif; font-size: .7rem; font-weight: 800; cursor: pointer; }
 .deleteConfirmButton:disabled { opacity: .45; cursor: not-allowed; }
 
-.publicPage { min-height: 100vh; background: #f3f6f5; }
-.publicTopbar { border-bottom: 1px solid var(--line); background: rgba(255,255,255,.98); }
+.publicPage { min-height: 100vh; background: #fff; }
+.publicTopbar { border-bottom: 1px solid var(--line); background: #fff; }
 .publicTopbarInner { display: flex; align-items: center; justify-content: space-between; gap: 1rem; width: min(1720px,100%); min-height: 4.8rem; margin-inline: auto; padding: 0 clamp(1.2rem,4.5vw,4.5rem); }
 .aim4priceMark { display: inline-flex; align-items: center; text-decoration: none; }
-.aim4priceMark img { display: block; width: auto; height: 2rem; object-fit: contain; }
-.publicTopbarInner > span { color: #687d75; font-size: .75rem; font-weight: 700; }
+.aim4priceMark img { display: block; width: auto; height: 2.15rem; object-fit: contain; }
+.publicTopbarAction { display: inline-flex; align-items: center; justify-content: center; min-height: 2.65rem; border: 1px solid #cddbd5; border-radius: 10px; padding: 0 1rem; color: var(--green); background: #fff; font-size: .72rem; font-weight: 800; text-decoration: none; transition: border-color .16s ease, background .16s ease; }
+.publicTopbarAction:hover { border-color: #a9c7bb; background: #f4f9f7; }
+.publicTopbarAction:focus-visible { outline: 3px solid rgba(243,182,64,.55); outline-offset: 2px; }
 
-.publicHero { position: relative; overflow: hidden; color: #fff; background: radial-gradient(circle at 88% 12%,rgba(243,182,64,.21),transparent 31rem), linear-gradient(135deg,#103b30,#155a46 62%,#226648); }
-.publicHero::after { position: absolute; right: -8rem; bottom: -14rem; width: 30rem; height: 30rem; border: 1px solid rgba(255,255,255,.09); border-radius: 50%; box-shadow: 0 0 0 4rem rgba(255,255,255,.025),0 0 0 8rem rgba(255,255,255,.018); content: ''; pointer-events: none; }
-.publicHeroInner { position: relative; z-index: 1; width: min(1720px,100%); margin-inline: auto; padding: clamp(2rem,4vw,4rem) clamp(1.2rem,4.5vw,4.5rem) clamp(1.8rem,3.7vw,3.4rem); }
-.publicHeroMain { display: flex; align-items: center; justify-content: space-between; gap: 2rem; }
-.profileIdentity { display: flex; align-items: center; gap: clamp(1rem,2vw,1.4rem); min-width: 0; }
-.profileIdentity > img, .profileIdentity > span { display: grid; flex: 0 0 auto; place-items: center; width: clamp(76px,8vw,104px); height: clamp(76px,8vw,104px); border: 1px solid rgba(255,255,255,.75); border-radius: 20px; object-fit: contain; color: var(--ink); background: #fff; box-shadow: 0 15px 34px rgba(4,27,21,.18); font-family: 'Montserrat', sans-serif; font-size: 1.25rem; font-weight: 850; }
+.publicHero { padding: clamp(1.4rem,3vw,3rem); background: #f4f8f6; }
+.publicHeroInner { width: min(1460px,100%); margin-inline: auto; border: 1px solid #d6e4de; border-radius: 24px; padding: clamp(1.5rem,3vw,3rem); background: #fff; box-shadow: 0 18px 50px rgba(23,54,44,.065); }
+.publicHeroMain { display: grid; grid-template-columns: minmax(0,1fr) auto; align-items: center; gap: clamp(1.5rem,4vw,4rem); }
+.profileIdentity { display: grid; grid-template-columns: auto minmax(0,1fr); align-items: center; gap: clamp(1rem,2vw,1.5rem); min-width: 0; }
+.profileIdentity > img, .profileIdentity > span { display: grid; place-items: center; width: clamp(88px,8vw,112px); height: clamp(88px,8vw,112px); border: 1px solid #d8e5df; border-radius: 18px; padding: .6rem; object-fit: contain; color: var(--green); background: #fff; font-family: 'Montserrat', sans-serif; font-size: 1.2rem; font-weight: 850; }
 .profileIdentity > div { min-width: 0; }
-.profileIdentity small { display: block; color: #f6ca73; font-size: .8rem; font-weight: 750; letter-spacing: 0; line-height: 1.4; }
-.profileIdentity h1 { max-width: 1100px; margin: .38rem 0 .25rem; font-family: 'Montserrat', sans-serif; font-size: clamp(2rem,4.2vw,4rem); font-weight: 850; line-height: 1.02; letter-spacing: -.055em; overflow-wrap: anywhere; }
-.profileIdentity p { margin: 0; color: rgba(255,255,255,.76); font-size: .88rem; }
-.publicHeroSummary { display: grid; flex: 0 0 auto; justify-items: center; min-width: 128px; border: 1px solid rgba(255,255,255,.16); border-radius: 16px; padding: 1rem 1.25rem; background: rgba(255,255,255,.08); backdrop-filter: blur(8px); }
-.publicHeroSummary strong { font-family: 'Montserrat', sans-serif; font-size: 1.8rem; font-weight: 850; line-height: 1; }
-.publicHeroSummary span { margin-top: .28rem; color: rgba(255,255,255,.72); font-size: .68rem; font-weight: 700; }
-.publicContactActions { margin-top: 1.55rem; }
-.publicHero .secondaryButton { border-color: rgba(255,255,255,.5); color: #153e33; }
-.publicBio { max-width: 840px; margin: 1.25rem 0 0; color: rgba(255,255,255,.82); font-size: .87rem; line-height: 1.7; }
-.trustStrip { display: flex; align-items: center; justify-content: space-between; gap: 1.25rem; margin-top: 1.7rem; border: 1px solid rgba(255,255,255,.16); border-radius: 14px; padding: .9rem 1rem; background: rgba(255,255,255,.075); }
-.trustStrip strong { font-family: 'Montserrat', sans-serif; font-size: .79rem; font-weight: 800; }
-.trustStrip > div { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: .5rem; }
-.trustStrip span { border-radius: 999px; padding: .4rem .62rem; color: rgba(255,255,255,.75); background: rgba(255,255,255,.07); font-size: .63rem; font-weight: 650; }
+.profileIdentity h1 { max-width: 920px; margin: 0; font-family: 'Montserrat', sans-serif; font-size: clamp(2rem,3.7vw,3.6rem); font-weight: 850; line-height: 1.04; letter-spacing: -.05em; overflow-wrap: anywhere; }
+.publicAdvertSummary { margin: .55rem 0 0; color: var(--green); font-size: .78rem; font-weight: 800; }
+.publicBio { max-width: 780px; margin: .85rem 0 0; color: #5f746c; font-size: .88rem; line-height: 1.7; }
+.publicContactActions { justify-content: flex-end; max-width: 34rem; }
+.publicContactActions a { min-height: 3rem; }
+.publicBusinessDetails { display: grid; grid-template-columns: repeat(auto-fit,minmax(12rem,1fr)); gap: 1.2rem; margin-top: clamp(1.35rem,2.5vw,2rem); border-top: 1px solid #e2ebe7; padding-top: 1.2rem; }
+.publicBusinessDetails > * { display: grid; gap: .28rem; min-width: 0; color: inherit; text-decoration: none; }
+.publicBusinessDetails span { color: #6d8079; font-size: .67rem; font-weight: 700; }
+.publicBusinessDetails strong { overflow-wrap: anywhere; color: #244c40; font-size: .76rem; font-weight: 800; line-height: 1.45; }
+.publicBusinessDetails a:hover strong { color: var(--green); text-decoration: underline; text-underline-offset: 3px; }
+.publicBusinessDetails a:focus-visible { border-radius: 4px; outline: 3px solid rgba(243,182,64,.55); outline-offset: 3px; }
+.publicTrustLine { margin: 1.2rem 0 0; color: #50675f; font-size: .74rem; font-weight: 750; line-height: 1.5; }
 
-.marketplaceInventory { border-top: 1px solid #dce4e1; background: #f3f6f8; }
-.inventoryIntro { display: flex; align-items: center; justify-content: space-between; gap: 1.25rem; width: min(1620px,calc(100% - clamp(2rem,7vw,7rem))); margin-inline: auto; padding: clamp(1.5rem,3vw,2.3rem) 0; }
-.inventoryIntro > div { display: flex; align-items: center; gap: .9rem; min-width: 0; }
-.inventoryIntro h2 { margin: 0; font-family: 'Montserrat', sans-serif; font-size: clamp(1.35rem,2.4vw,2rem); font-weight: 850; line-height: 1.1; letter-spacing: -.04em; }
-.inventoryIntro p { max-width: 760px; margin: .4rem 0 0; color: #657970; font-size: .76rem; line-height: 1.55; }
-.inventoryCount { flex: 0 0 auto; border: 1px solid #d0e2da; border-radius: 999px; padding: .55rem .75rem; color: var(--green); background: #eaf5f1; font-size: .7rem; font-weight: 800; }
+.marketplaceInventory { border-top: 1px solid #e0e9e5; background: #fff; }
+.inventoryIntro { display: flex; align-items: flex-end; justify-content: space-between; gap: 1.25rem; width: min(1560px,calc(100% - clamp(2rem,7vw,7rem))); margin-inline: auto; padding: clamp(1.7rem,3vw,2.5rem) 0 clamp(1.3rem,2vw,1.8rem); border-bottom: 1px solid #e5ece9; }
+.inventoryIntro > div { min-width: 0; }
+.inventoryIntro h2 { margin: 0; font-family: 'Montserrat', sans-serif; font-size: clamp(1.4rem,2.5vw,2.15rem); font-weight: 850; line-height: 1.1; letter-spacing: -.04em; }
+.inventoryIntro p { max-width: 800px; margin: .5rem 0 0; color: #657970; font-size: .78rem; line-height: 1.55; }
+.inventorySummary { flex: 0 0 auto; color: #4e685f; font-size: .72rem; font-weight: 800; }
 
-.publicFooter { color: #fff; background: #102f27; }
+.publicFooter { border-top: 1px solid #dce6e2; color: var(--ink); background: #fff; }
 .publicFooterInner { display: flex; align-items: center; justify-content: space-between; gap: 1rem; width: min(1720px,100%); margin-inline: auto; padding: 1.6rem clamp(1.2rem,4.5vw,4.5rem); }
 .publicFooterInner > div { display: grid; gap: .3rem; }
 .publicFooter strong { font-family: 'Montserrat', sans-serif; font-size: .78rem; font-weight: 800; }
-.publicFooter span { color: rgba(255,255,255,.62); font-size: .68rem; }
-.publicFooter a { flex: 0 0 auto; border-radius: 11px; padding: .8rem 1rem; color: #102f27; background: var(--gold); font-family: 'Montserrat', sans-serif; font-size: .7rem; font-weight: 800; text-decoration: none; transition: transform .16s ease, box-shadow .16s ease; }
-.publicFooter a:hover { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(243,182,64,.2); }
+.publicFooter span { color: #687c74; font-size: .68rem; }
+.publicFooter a { flex: 0 0 auto; border: 1px solid var(--green); border-radius: 10px; padding: .8rem 1rem; color: #fff; background: var(--green); font-family: 'Montserrat', sans-serif; font-size: .7rem; font-weight: 800; text-decoration: none; transition: transform .16s ease, box-shadow .16s ease, background .16s ease; }
+.publicFooter a:hover { transform: translateY(-1px); background: var(--green-dark); box-shadow: 0 8px 20px rgba(22,95,73,.18); }
+.publicFooter a:focus-visible { outline: 3px solid rgba(243,182,64,.55); outline-offset: 2px; }
 
 @media (max-width: 1060px) {
   .managerHero { align-items: flex-start; flex-direction: column; }
@@ -273,6 +261,11 @@
 @media (max-width: 620px) {
   .showroomLogoField { grid-template-columns: 4.25rem minmax(0,1fr); }
   .showroomLogoActions { grid-column: 2; justify-content: flex-start; }
+}
+
+@media (max-width: 900px) {
+  .publicHeroMain { grid-template-columns: minmax(0,1fr); align-items: flex-start; }
+  .publicContactActions { justify-content: flex-start; max-width: none; }
 }
 
 @media (max-width: 760px) {
@@ -296,20 +289,18 @@
   .listingTitleRow > strong { width: 100%; white-space: normal; }
   .dangerZone { align-items: stretch; flex-direction: column; }
   .dangerZone button { width: 100%; }
-  .publicTopbarInner { min-height: 4.2rem; }
-  .publicTopbarInner > span { display: none; }
-  .publicHeroInner { padding-top: 1.6rem; }
-  .publicHeroMain { align-items: flex-start; }
+  .publicTopbarInner { min-height: 4.2rem; padding-inline: 1rem; }
+  .aim4priceMark img { height: 1.85rem; }
+  .publicTopbarAction { min-height: 2.45rem; padding-inline: .8rem; font-size: .67rem; }
+  .publicHero { padding: .8rem; }
+  .publicHeroInner { border-radius: 18px; padding: 1.25rem; }
   .profileIdentity { align-items: flex-start; }
-  .profileIdentity > img, .profileIdentity > span { width: 66px; height: 66px; border-radius: 15px; }
+  .profileIdentity > img, .profileIdentity > span { width: 72px; height: 72px; border-radius: 14px; }
   .profileIdentity h1 { font-size: clamp(1.65rem,8vw,2.25rem); }
-  .publicHeroSummary { min-width: 84px; padding: .75rem; }
-  .publicHeroSummary strong { font-size: 1.35rem; }
-  .publicContactActions a { flex: 1; }
-  .trustStrip { align-items: flex-start; flex-direction: column; }
-  .trustStrip > div { justify-content: flex-start; }
+  .publicContactActions { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); width: 100%; }
+  .publicContactActions a { width: 100%; min-width: 0; padding-inline: .8rem; text-align: center; }
+  .publicBusinessDetails { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 1rem; }
   .inventoryIntro { align-items: flex-start; flex-direction: column; width: calc(100% - 2rem); }
-  .inventoryCount { margin-left: 3.6rem; }
   .publicFooterInner { align-items: stretch; flex-direction: column; }
   .publicFooter a { text-align: center; }
 }
@@ -319,12 +310,9 @@
   .showroomLogoActions { grid-column: 1/-1; width: 100%; }
   .showroomLogoButton { width: 100%; min-height: 2.75rem; }
   .settingsActions { display: grid; grid-template-columns: 1fr; }
-  .publicHeroMain { align-items: flex-start; flex-direction: column; gap: 1rem; }
-  .publicHeroSummary { display: flex; align-items: center; gap: .45rem; min-width: 0; margin-left: 5.1rem; padding: .58rem .75rem; }
-  .publicHeroSummary span { margin-top: 0; }
+  .profileIdentity { grid-template-columns: minmax(0,1fr); }
   .publicContactActions { display: grid; grid-template-columns: 1fr; }
-  .trustStrip span { width: 100%; }
-  .inventoryIntro > div { align-items: flex-start; }
+  .publicBusinessDetails { grid-template-columns: minmax(0,1fr); }
   .deleteDialog > div:last-child { grid-template-columns: 1fr; }
 }
 

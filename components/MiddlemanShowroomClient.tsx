@@ -62,6 +62,14 @@ function whatsappHref(phone: string, listing?: MarketplaceListing): string {
   return `https://wa.me/${digits}?text=${encodeURIComponent(message)}`;
 }
 
+function websiteLabel(value: string): string {
+  try {
+    return new URL(value).hostname.replace(/^www\./i, '');
+  } catch {
+    return value;
+  }
+}
+
 export function MiddlemanShowroomManager({
   initialShowroom,
   initialListings,
@@ -469,7 +477,7 @@ export function PublicMiddlemanShowroom({ showroom, listings }: {
           <Link href="/" className={styles.aim4priceMark} aria-label="Aim4price home">
             <img src="/brand/Aim4price_Home_Logo.png" alt="Aim4price" />
           </Link>
-          <span>Trusted machinery, backed by valuations</span>
+          <Link className={styles.publicTopbarAction} href="/valuation">Value your machinery</Link>
         </div>
       </header>
       <section className={styles.publicHero}>
@@ -478,42 +486,44 @@ export function PublicMiddlemanShowroom({ showroom, listings }: {
             <div className={styles.profileIdentity}>
               {showroom.logoUrl ? <img src={showroom.logoUrl} alt={`${showroom.name} logo`} /> : <span>{showroom.name.slice(0, 2).toUpperCase()}</span>}
               <div>
-                <small>Professional machinery showroom</small>
                 <h1>{showroom.name}</h1>
-                {showroom.location ? <p>{showroom.location}</p> : null}
+                <p className={styles.publicAdvertSummary}>{listings.length} live {listings.length === 1 ? 'advert' : 'adverts'}</p>
+                {showroom.bio ? <p className={styles.publicBio}>{showroom.bio}</p> : null}
               </div>
             </div>
-            <div className={styles.publicHeroSummary}>
-              <strong>{listings.length}</strong>
-              <span>Live {listings.length === 1 ? 'advert' : 'adverts'}</span>
+            <div className={styles.publicContactActions}>
+              {showroom.phone ? <a className={styles.whatsappButton} href={whatsappHref(showroom.phone)} target="_blank" rel="noreferrer">Chat on WhatsApp</a> : null}
+              {showroom.phone ? <a className={styles.secondaryButton} href={`tel:${showroom.phone}`}>Call business</a> : null}
+              {showroom.email ? <a className={styles.secondaryButton} href={`mailto:${showroom.email}`}>Email business</a> : null}
             </div>
           </div>
-          <div className={styles.publicContactActions}>
-            {showroom.phone ? <a className={styles.whatsappButton} href={whatsappHref(showroom.phone)} target="_blank" rel="noreferrer">Chat on WhatsApp</a> : null}
-            {showroom.phone ? <a className={styles.secondaryButton} href={`tel:${showroom.phone}`}>Call {showroom.phone}</a> : null}
-          </div>
-          {showroom.bio ? <p className={styles.publicBio}>{showroom.bio}</p> : null}
-          <div className={styles.trustStrip}>
-            <strong>Every advert starts with an Aim4price valuation</strong>
-            <div>
-              <span>Clear equipment details</span>
-              <span>Consistent pricing context</span>
-              <span>Direct seller contact</span>
+          {showroom.location || showroom.phone || showroom.email || showroom.websiteUrl ? (
+            <div className={styles.publicBusinessDetails}>
+              {showroom.location ? (
+                <div><span>Location</span><strong>{showroom.location}</strong></div>
+              ) : null}
+              {showroom.phone ? (
+                <a href={`tel:${showroom.phone}`}><span>Phone</span><strong>{showroom.phone}</strong></a>
+              ) : null}
+              {showroom.email ? (
+                <a href={`mailto:${showroom.email}`}><span>Email</span><strong>{showroom.email}</strong></a>
+              ) : null}
+              {showroom.websiteUrl ? (
+                <a href={showroom.websiteUrl} target="_blank" rel="noreferrer"><span>Website</span><strong>{websiteLabel(showroom.websiteUrl)}</strong></a>
+              ) : null}
             </div>
-          </div>
+          ) : null}
+          <p className={styles.publicTrustLine}>Every advert is backed by an Aim4price valuation.</p>
         </div>
       </section>
 
       <section className={styles.marketplaceInventory} aria-label={`${showroom.name} showroom inventory`}>
         <div className={styles.inventoryIntro}>
           <div>
-            <span className={styles.inventoryIcon} aria-hidden="true">M</span>
-            <div>
-              <h2>Browse available machinery</h2>
-              <p>Explore current adverts, compare key details and contact the seller directly when something fits.</p>
-            </div>
+            <h2>Available equipment</h2>
+            <p>Browse valuation-backed equipment from {showroom.name} and contact the business directly.</p>
           </div>
-          <span className={styles.inventoryCount}>{listings.length} available</span>
+          <span className={styles.inventorySummary}>{listings.length} live {listings.length === 1 ? 'advert' : 'adverts'}</span>
         </div>
         <MarketplaceClient
           initialFilters={{ brand: '', model: '', drive: '', type: '' }}
@@ -528,7 +538,7 @@ export function PublicMiddlemanShowroom({ showroom, listings }: {
 
       <footer className={styles.publicFooter}>
         <div className={styles.publicFooterInner}>
-          <div><strong>Powered by Aim4price.com</strong><span>Machinery valuation and professional advertising in one flow.</span></div>
+          <div><strong>Hosted on Aim4price.com</strong><span>Professional machinery advertising backed by valuations.</span></div>
           <Link href="/valuation">Value your machinery</Link>
         </div>
       </footer>

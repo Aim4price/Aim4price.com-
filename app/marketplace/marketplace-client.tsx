@@ -3389,11 +3389,8 @@ export default function MarketplaceClient({
             <article className={`${styles.emptyState} ${showroomMode ? styles.showroomEmptyState : ''}`}>
               {showroomHasNoInventory ? (
                 <>
-                  <span className={styles.showroomEmptyIcon} aria-hidden="true">
-                    <IconPhoto />
-                  </span>
-                  <h2>This showroom is getting ready</h2>
-                  <p>There are no live adverts here just yet. Please check back soon.</p>
+                  <h2>No equipment listed yet</h2>
+                  <p>This showroom has no live adverts at the moment. Please check back soon.</p>
                 </>
               ) : (
                 <>
