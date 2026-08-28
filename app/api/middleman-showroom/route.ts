@@ -57,12 +57,13 @@ export async function PUT(request: NextRequest) {
   try {
     const context = await getMiddlemanContext();
     if (!context) return NextResponse.json({ ok: false, error: 'You must be signed in.' }, { status: 401 });
-    const body = (await request.json()) as { slug?: unknown; bio?: unknown; isPublic?: unknown };
+    const body = (await request.json()) as { slug?: unknown; bio?: unknown; isPublic?: unknown; logoUrl?: unknown };
     const showroom = await updateMiddlemanShowroom({
       profile: context.profile,
       slug: String(body.slug ?? ''),
       bio: String(body.bio ?? ''),
       isPublic: body.isPublic !== false,
+      logoUrl: typeof body.logoUrl === 'string' ? body.logoUrl : body.logoUrl === null ? null : undefined,
     });
     return NextResponse.json({ ok: true, showroom });
   } catch (error) {

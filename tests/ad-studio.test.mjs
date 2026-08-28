@@ -385,6 +385,54 @@ test('showroom manager follows the approved no-bubble layout with consistent lin
   assert.match(managerCss, /\.emptyStock\s*\{[^}]*align-content:\s*center/);
 });
 
+test('showroom logos inherit Ad Studio branding and allow a compact showroom-only override', async () => {
+  const [showroomDb, route, manager, managerCss, migration] = await Promise.all([
+    read('lib/middleman-showroom-db.ts'),
+    read('app/api/middleman-showroom/route.ts'),
+    read('components/MiddlemanShowroomClient.tsx'),
+    read('components/MiddlemanShowroomClient.module.css'),
+    read('database/migrations/97-middleman-showroom-logo.sql'),
+  ]);
+
+  assert.match(showroomDb, /getAdBrandKitForUser\(profile\.userId\)/);
+  assert.match(showroomDb, /showroomLogoUrl: normalizeAdLogoUrl\(row\.logo_url\)/);
+  assert.match(showroomDb, /inheritedLogoUrl: normalizeAdLogoUrl\(brandKit\?\.logoUrl\) \|\| normalizeAdLogoUrl\(profile\.logoUrl\)/);
+  assert.match(showroomDb, /logoUrl: showroomLogoUrl \|\| inheritedLogoUrl/);
+  assert.match(showroomDb, /export type PublicMiddlemanShowroomData = MiddlemanShowroomDetails/);
+  assert.match(showroomDb, /function mapPublicShowroom/);
+  assert.doesNotMatch(showroomDb.match(/export type MiddlemanShowroom =[^;]+;/s)?.[0] ?? '', /logoUrl:/);
+  assert.match(showroomDb, /logo_url = \$5/);
+  assert.match(showroomDb, /current\.showroomLogoUrl/);
+  assert.match(showroomDb, /function pngDimensions/);
+  assert.match(showroomDb, /function jpegDimensions/);
+  assert.match(showroomDb, /function webpDimensions/);
+  assert.match(showroomDb, /function validateShowroomLogoUrl/);
+  assert.match(showroomDb, /bytes\.length > MAX_SHOWROOM_LOGO_BYTES/);
+  assert.match(showroomDb, /dimensions\.width > MAX_SHOWROOM_LOGO_DIMENSION/);
+  assert.match(migration, /add column if not exists logo_url text/);
+  assert.match(route, /logoUrl\?: unknown/);
+  assert.match(route, /body\.logoUrl === null \? null : undefined/);
+
+  assert.match(manager, /const SHOWROOM_LOGO_TYPES = new Set\(\['image\/jpeg', 'image\/png', 'image\/webp'\]\)/);
+  assert.match(manager, /const MAX_SHOWROOM_LOGO_BYTES = 2_000_000/);
+  assert.match(manager, /const MAX_SHOWROOM_LOGO_DIMENSION = 4_096/);
+  assert.match(manager, /function applyShowroomLogoFile/);
+  assert.match(manager, /const image = new Image\(\)/);
+  assert.match(manager, /image\.naturalWidth > MAX_SHOWROOM_LOGO_DIMENSION/);
+  assert.match(manager, /function handleShowroomLogoDrop/);
+  assert.match(manager, /if \(readingLogo\) return/);
+  assert.match(manager, /Your default Ad Studio logo appears automatically/);
+  assert.match(manager, /Upload a different logo only for this showroom/);
+  assert.match(manager, /Use Ad Studio logo/);
+  assert.match(manager, /body: JSON\.stringify\(\{ slug, bio, isPublic, logoUrl: showroomLogoUrl \}\)/);
+  assert.match(manager, /showroom\.logoUrl \? <img src=\{showroom\.logoUrl\}/);
+  assert.match(managerCss, /\.showroomLogoField\s*\{[^}]*grid-template-columns:\s*minmax\(0,1fr\) auto/);
+  assert.match(managerCss, /\.showroomLogoPreview\s*\{[^}]*width:\s*4\.25rem;[^}]*height:\s*3\.4rem/);
+  assert.match(managerCss, /\.showroomLogoButton[^}]*min-height:\s*2\.45rem/);
+  assert.match(managerCss, /\.showroomLogoReset\s*\{[^}]*min-height:\s*2rem/);
+  assert.doesNotMatch(managerCss, /\.showroomLogoPreview\s*\{[^}]*width:\s*100%/);
+});
+
 test('the global footer yields to the dedicated public showroom footer', async () => {
   const [layout, footer] = await Promise.all([
     read('app/layout.tsx'),

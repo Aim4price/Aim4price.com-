@@ -91,7 +91,8 @@
 .whatsappButton:hover { background: #188d4d; }
 .primaryButton:disabled, .secondaryButton:disabled { opacity: .5; transform: none; cursor: not-allowed; }
 .primaryButton:focus-visible, .secondaryButton:focus-visible, .whatsappButton:focus-visible,
-.listingActions button:focus-visible, .dangerZone button:focus-visible, .deleteConfirmButton:focus-visible { outline: 3px solid rgba(243,182,64,.55); outline-offset: 2px; }
+.listingActions button:focus-visible, .dangerZone button:focus-visible, .deleteConfirmButton:focus-visible,
+.showroomLogoPreview:focus-visible, .showroomLogoButton:focus-visible, .showroomLogoReset:focus-visible { outline: 3px solid rgba(243,182,64,.55); outline-offset: 2px; }
 
 .managerGrid { display: grid; grid-template-columns: minmax(360px, .67fr) minmax(0, 1.08fr); gap: 1.5rem; margin-top: 1.5rem; }
 .settingsCard, .stockCard {
@@ -122,6 +123,27 @@
 .statusPill, .stockCount { flex: 0 0 auto; border: 1px solid #dfe6e3; border-radius: 999px; padding: .48rem .7rem; color: #687a74; background: #f1f4f3; font-size: .7rem; font-weight: 800; line-height: 1; letter-spacing: 0; }
 .statusLive { border-color: #cce7d6; color: #147047; background: #e8f6ed; }
 .stockCount { border-color: #d5e6df; color: var(--green); background: #f0f7f4; }
+
+.showroomLogoField { display: grid; grid-template-columns: minmax(0,1fr) auto; align-items: center; gap: 1rem; margin-bottom: 1rem; border: 1px solid #dce8e3; border-radius: 14px; padding: .85rem; background: linear-gradient(135deg,#fbfdfc,#f4f9f7); }
+.showroomLogoCopy { display: grid; gap: .28rem; min-width: 0; }
+.showroomLogoCopy strong { color: #264d42; font-size: .77rem; font-weight: 800; }
+.showroomLogoCopy span { max-width: 25rem; color: #6f837b; font-size: .73rem; line-height: 1.5; }
+.showroomLogoEditor { display: flex; align-items: center; gap: .65rem; }
+.showroomLogoPreview { position: relative; overflow: hidden; display: grid; flex: 0 0 auto; place-items: center; width: 4.25rem; height: 3.4rem; border: 1px dashed #a8c3b8; border-radius: 11px; padding: 0; color: var(--green); background: #fff; font-size: .74rem; font-weight: 850; cursor: pointer; transition: border-color .16s ease, box-shadow .16s ease, transform .16s ease; }
+.showroomLogoPreview:hover:not(:disabled) { border-color: var(--green); box-shadow: 0 7px 16px rgba(23,54,44,.08); transform: translateY(-1px); }
+.showroomLogoPreview:disabled { cursor: wait; opacity: .65; }
+.showroomLogoPreview img { display: block; width: 100%; height: 100%; padding: .38rem; object-fit: contain; background: #fff; }
+.showroomLogoPreview small { position: absolute; inset: auto .22rem .22rem; border-radius: 6px; padding: .2rem .3rem; color: #fff; background: rgba(16,71,55,.9); font-size: .52rem; font-weight: 800; line-height: 1.15; }
+.showroomLogoDragging { border-style: solid; border-color: var(--green); box-shadow: 0 0 0 4px rgba(22,95,73,.11); transform: translateY(-1px); }
+.showroomLogoActions { position: relative; display: grid; justify-items: start; gap: .3rem; }
+.showroomLogoButton, .showroomLogoReset { min-height: 2.45rem; border-radius: 9px; padding: 0 .75rem; font-size: .66rem; font-weight: 800; white-space: nowrap; cursor: pointer; transition: border-color .16s ease, background .16s ease; }
+.showroomLogoButton { border: 1px solid #c7d9d2; color: var(--green); background: #fff; }
+.showroomLogoButton:hover:not(:disabled) { border-color: #a9c7bb; background: #f1f8f5; }
+.showroomLogoReset { min-height: 2rem; border: 0; padding: 0 .15rem; color: #647b72; background: transparent; font-size: .68rem; text-align: left; }
+.showroomLogoReset:hover:not(:disabled) { color: var(--green); }
+.showroomLogoButton:disabled, .showroomLogoReset:disabled { cursor: wait; opacity: .55; }
+.showroomLogoActions > small { max-width: 9rem; color: #7c8e87; font-size: .68rem; line-height: 1.4; }
+.showroomLogoInput { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }
 
 .settingsCard > label, .publicLinkField { display: grid; gap: .5rem; margin-top: 1rem; }
 .publicLinkField > label,
@@ -255,6 +277,8 @@
   .settingsCard, .stockCard { border-radius: 18px; padding: 1rem; }
   .sectionHeading { align-items: flex-start; }
   .sectionHeading p { display: none; }
+  .showroomLogoField { grid-template-columns: 1fr; }
+  .showroomLogoEditor { justify-content: flex-start; }
   .slugField { grid-template-columns: minmax(0,1fr) auto; }
   .slugPrefix { grid-column: 1/-1; padding: .72rem .85rem 0; }
   .slugField input { padding: 0 .85rem; }
@@ -284,6 +308,10 @@
 }
 
 @media (max-width: 480px) {
+  .showroomLogoEditor { display: grid; grid-template-columns: auto minmax(0,1fr); }
+  .showroomLogoActions { width: 100%; }
+  .showroomLogoButton { width: 100%; min-height: 2.75rem; }
+  .showroomLogoActions > small { max-width: none; }
   .settingsActions { display: grid; grid-template-columns: 1fr; }
   .publicHeroMain { align-items: flex-start; flex-direction: column; gap: 1rem; }
   .publicHeroSummary { display: flex; align-items: center; gap: .45rem; min-width: 0; margin-left: 5.1rem; padding: .58rem .75rem; }
