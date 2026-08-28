@@ -6345,7 +6345,7 @@
 
 /* Manual costs use the same guided, review-before-save pattern as recurring costs. */
 .manualCostWizardModal {
-  width: min(100%, 940px);
+  width: min(1120px, 100%) !important;
   max-height: min(94dvh, 880px);
 }
 
