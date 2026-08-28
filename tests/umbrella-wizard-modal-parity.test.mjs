@@ -224,7 +224,7 @@ test("Aim4price capture is the full-width final choice in Add asset cost", () =>
   );
 });
 
-test("Create umbrella reuses the export asset picker hierarchy and contained scrolling", () => {
+test("Create umbrella reuses the export asset picker hierarchy with one modal scroll", () => {
   assert.match(assetRegister, /yearModel:\s*asset\.yearModel/);
   assert.match(assetRegister, /usageLabel:\s*buildAssetUsageValue\(asset\)/);
   assert.match(assetRegister, /conditionLabel:\s*asset\.condition \? conditionLabel\(asset\.condition\) : ''/);
@@ -239,17 +239,30 @@ test("Create umbrella reuses the export asset picker hierarchy and contained scr
   assert.match(umbrella, /<AssetGroupMemberSelect[\s\S]*?PRIMARY_MEMBER_VALUE_OPTIONS[\s\S]*?GROUPED_MEMBER_VALUE_OPTIONS/);
 
   assert.match(umbrella, /editorBodyRef\.current\?\.scrollTo\(\{ top: 0, left: 0 \}\)/);
-  assert.match(umbrella, /assetListRef\.current\?\.scrollTo\(\{ top: 0, left: 0 \}\)/);
+  const stepThree = slice(umbrella, '{editorStep === 3 ? (', '</section>');
+  assert.doesNotMatch(stepThree, /autoFocus/);
+  assert.doesNotMatch(umbrellaStyles, /\.assetPickerBody\s*\{/);
+  assert.match(umbrellaStyles, /\.body\s*\{[^}]*overflow-y:\s*auto/);
+  const assetListStyles = slice(umbrellaStyles, '.assetList {', '}');
+  assert.doesNotMatch(assetListStyles, /max-height|overflow-y|flex:/);
   assert.match(
     umbrellaStyles,
-    /\.assetPickerBody\s*\{[^}]*display:\s*flex;[^}]*overflow:\s*hidden/,
+    /\.assetList\s*\{[^}]*grid-auto-rows:\s*max-content/,
   );
   assert.match(
     umbrellaStyles,
-    /\.assetList\s*\{[^}]*flex:\s*1 1 auto;[^}]*overflow-y:\s*auto;[^}]*overscroll-behavior:\s*contain;[^}]*scrollbar-gutter:\s*stable/,
+    /\.assetRow,[\s\S]*?\.assetRowSelected\s*\{[^}]*display:\s*grid;[^}]*grid-auto-rows:\s*max-content;[^}]*min-height:\s*6\.1rem;[^}]*overflow:\s*visible/,
   );
   assert.match(
     umbrellaStyles,
-    /@media \(max-width: 720px\)[\s\S]*?\.assetPickerBody\s*\{[^}]*overflow-y:\s*auto/,
+    /\.assetRowMain\s*\{[^}]*min-height:\s*4\.15rem/,
+  );
+  assert.match(
+    umbrellaStyles,
+    /\.summary\s*\{[^}]*flex:\s*0 0 auto/,
+  );
+  assert.match(
+    umbrellaStyles,
+    /@media \(max-width: 900px\)[\s\S]*?\.assetRowMain\s*\{[^}]*grid-template-columns:\s*auto minmax\(0, 1fr\)[\s\S]*?\.assetValue\s*\{[^}]*grid-column:\s*2/,
   );
 });

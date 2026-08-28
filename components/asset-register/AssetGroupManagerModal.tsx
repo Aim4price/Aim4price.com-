@@ -38,8 +38,6 @@ function MembersIcon({ className }: IconProps) {
   );
 }
 
-
-
 function DownloadIcon({ className }: IconProps) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -481,7 +479,6 @@ export default function AssetGroupManagerModal({
   const [reportMonth, setReportMonth] = useState('all');
   const [maintenanceType, setMaintenanceType] = useState('all');
   const editorBodyRef = useRef<HTMLDivElement | null>(null);
-  const assetListRef = useRef<HTMLDivElement | null>(null);
 
   const membershipByAssetId = useMemo(() => {
     const result = new Map<string, AssetGroup>();
@@ -527,10 +524,6 @@ export default function AssetGroupManagerModal({
 
     return () => window.cancelAnimationFrame(frame);
   }, [editorStep, open, view]);
-
-  useEffect(() => {
-    assetListRef.current?.scrollTo({ top: 0, left: 0 });
-  }, [search]);
 
   const visibleAssets = useMemo(() => {
     return assets
@@ -965,7 +958,7 @@ export default function AssetGroupManagerModal({
           <form onSubmit={handleEditorSubmit}>
             <div
               ref={editorBodyRef}
-              className={`${styles.body} ${editorStep === 3 ? styles.assetPickerBody : ''}`}
+              className={styles.body}
             >
               <p className={styles.intro}>Complete one short step at a time. Your umbrella is saved on the final step.</p>
               <AssetGroupEditorProgress currentStep={editorStep} />
@@ -1048,7 +1041,6 @@ export default function AssetGroupManagerModal({
                         value={search}
                         onChange={(event) => setSearch(event.target.value)}
                         placeholder="Search..."
-                        autoFocus
                       />
                     </label>
                     <div className={styles.assetPickerToolbarActions}>
@@ -1071,7 +1063,7 @@ export default function AssetGroupManagerModal({
                     </div>
                   </div>
 
-                  <div ref={assetListRef} className={styles.assetList} data-asset-choice-list="true">
+                  <div className={styles.assetList} data-asset-choice-list="true">
                     {visibleAssets.length ? visibleAssets.map((asset) => {
                       const existingGroup = membershipByAssetId.get(asset.id);
                       const movingFromAnotherGroup = Boolean(existingGroup && existingGroup.id !== group?.id);
