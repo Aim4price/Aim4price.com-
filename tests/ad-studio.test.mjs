@@ -359,6 +359,35 @@ test('public showroom scopes friendly Marketplace empty states and removes micro
   assert.match(marketplaceCss, /\.showroomEmptyShell/);
 });
 
+test('showroom manager follows the approved no-bubble layout and calm notification treatment', async () => {
+  const [manager, managerCss, header, headerCss] = await Promise.all([
+    read('components/MiddlemanShowroomClient.tsx'),
+    read('components/MiddlemanShowroomClient.module.css'),
+    read('components/AppHeader.tsx'),
+    read('components/AppHeader.module.css'),
+  ]);
+
+  assert.doesNotMatch(manager, /styles\.eyebrow/);
+  assert.doesNotMatch(manager, /styles\.sectionIcon/);
+  assert.match(manager, /className=\{styles\.publicLinkField\}/);
+  assert.match(manager, /className=\{styles\.copyLinkButton\}/);
+  assert.match(manager, /Showroom visible to the public/);
+  assert.match(manager, /Save changes/);
+  assert.match(manager, /className=\{styles\.emptyStockIllustration\}/);
+  assert.match(manager, /Your showroom is ready/);
+  assert.match(manager, /Create your first advert and it will appear here automatically\./);
+  assert.doesNotMatch(managerCss, /\.eyebrow\s*\{/);
+  assert.doesNotMatch(managerCss, /\.sectionIcon(?:\s|,|\{)/);
+  assert.match(managerCss, /\.managerGrid\s*\{[^}]*grid-template-columns:\s*minmax\(360px, \.67fr\) minmax\(0, 1\.08fr\)/);
+  assert.match(managerCss, /\.copyLinkButton\s*\{/);
+  assert.match(managerCss, /\.emptyStockIllustration\s*\{/);
+  assert.doesNotMatch(header, /notificationBadgeText/);
+  assert.match(header, /<span className=\{styles\.notificationBadge\} aria-hidden="true" \/>/);
+  const notificationBadgeRule = headerCss.match(/\.notificationBadge\s*\{[^}]*\}/)?.[0] ?? '';
+  assert.match(notificationBadgeRule, /background:\s*#17694f/);
+  assert.doesNotMatch(notificationBadgeRule, /#e02424/);
+});
+
 test('the global footer yields to the dedicated public showroom footer', async () => {
   const [layout, footer] = await Promise.all([
     read('app/layout.tsx'),

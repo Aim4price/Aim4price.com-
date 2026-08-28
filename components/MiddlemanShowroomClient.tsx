@@ -165,7 +165,6 @@ export function MiddlemanShowroomManager({
     <div className={`${styles.managerPage} ${dealerAppMode ? styles.managerPageMobile : ''}`}>
       <section className={styles.managerHero}>
         <div className={styles.managerHeroCopy}>
-          <span className={styles.eyebrow}>Your showroom</span>
           <h1>A professional home for your machinery adverts</h1>
           <p>Keep your live stock together, share one simple link and give every customer a polished view backed by Aim4price valuations.</p>
         </div>
@@ -178,22 +177,39 @@ export function MiddlemanShowroomManager({
       <div className={styles.managerGrid}>
         <section className={styles.settingsCard}>
           <div className={styles.sectionHeading}>
-            <div className={styles.sectionHeadingCopy}>
-              <span className={styles.sectionIcon} aria-hidden="true">S</span>
-              <div>
-                <h2>Showroom details</h2>
-                <p>Choose how customers see and find your showroom.</p>
-              </div>
+            <div>
+              <h2>Showroom details</h2>
+              <p>Choose how customers see and find your showroom.</p>
             </div>
             <span className={`${styles.statusPill} ${isPublic ? styles.statusLive : ''}`}>{isPublic ? 'Live' : 'Hidden'}</span>
           </div>
-          <label>
-            <span>Public showroom link</span>
+          <div className={styles.publicLinkField}>
+            <label htmlFor="showroom-public-link">Public link</label>
             <div className={styles.slugField}>
-              <b>aim4price.com/showroom/</b>
-              <input value={slug} onChange={(event) => setSlug(event.target.value)} maxLength={60} autoCapitalize="none" />
+              <span className={styles.slugPrefix}>aim4price.com/showroom/</span>
+              <input
+                id="showroom-public-link"
+                value={slug}
+                onChange={(event) => setSlug(event.target.value)}
+                maxLength={60}
+                autoCapitalize="none"
+                aria-label="Public showroom address"
+              />
+              <button
+                className={styles.copyLinkButton}
+                type="button"
+                onClick={copyPublicLink}
+                disabled={!showroom.isPublic || hasUnsavedShowroomChanges || saving}
+                title={hasUnsavedShowroomChanges ? 'Save your changes before copying the public link.' : undefined}
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <rect x="8" y="8" width="11" height="11" rx="2" />
+                  <path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2" />
+                </svg>
+                Copy link
+              </button>
             </div>
-          </label>
+          </div>
           <label>
             <span>Short introduction</span>
             <textarea
@@ -206,23 +222,14 @@ export function MiddlemanShowroomManager({
             <small>{bio.length} of 500 characters</small>
           </label>
           <label className={styles.switchRow}>
+            <span><strong>Showroom visible to the public</strong><small>Anyone with the link can view your live adverts and contact details.</small></span>
             <span className={styles.switchControl}>
               <input type="checkbox" checked={isPublic} onChange={(event) => setIsPublic(event.target.checked)} />
               <span aria-hidden="true" />
             </span>
-            <span><strong>Make my showroom public</strong><small>Anyone with your link can see your live adverts and contact details. Hiding this page does not remove adverts from Marketplace.</small></span>
           </label>
           <div className={styles.settingsActions}>
-            <button className={styles.primaryButton} type="button" onClick={saveShowroom} disabled={saving}>{saving ? 'Saving...' : 'Save showroom'}</button>
-            <button
-              className={styles.secondaryButton}
-              type="button"
-              onClick={copyPublicLink}
-              disabled={!showroom.isPublic || hasUnsavedShowroomChanges || saving}
-              title={hasUnsavedShowroomChanges ? 'Save your changes before copying the public link.' : undefined}
-            >
-              {hasUnsavedShowroomChanges ? 'Save to copy link' : 'Copy public link'}
-            </button>
+            <button className={styles.primaryButton} type="button" onClick={saveShowroom} disabled={saving}>{saving ? 'Saving...' : 'Save changes'}</button>
           </div>
           {message ? <p className={styles.feedback} role="status">{message}</p> : null}
           <div className={styles.dangerZone}>
@@ -236,12 +243,9 @@ export function MiddlemanShowroomManager({
 
         <section className={styles.stockCard}>
           <div className={styles.sectionHeading}>
-            <div className={styles.sectionHeadingCopy}>
-              <span className={styles.sectionIcon} aria-hidden="true">A</span>
-              <div>
-                <h2>Your live adverts</h2>
-                <p>Manage the machinery currently shown to customers.</p>
-              </div>
+            <div>
+              <h2>Your live adverts</h2>
+              <p>Manage the machinery currently shown to customers.</p>
             </div>
             <span className={styles.stockCount}>{listings.length} {listings.length === 1 ? 'advert' : 'adverts'}</span>
           </div>
@@ -270,10 +274,15 @@ export function MiddlemanShowroomManager({
             </div>
           ) : (
             <div className={styles.emptyStock}>
-              <span aria-hidden="true">A4P</span>
-              <h3>Your showroom is ready for its first advert</h3>
-              <p>Start a valuation, confirm the asking price and choose Create advert. Your machinery will appear here automatically.</p>
-              <Link className={styles.primaryButton} href={valuationHref}>Create your first advert</Link>
+              <svg className={styles.emptyStockIllustration} viewBox="0 0 320 170" aria-hidden="true">
+                <path d="M18 139h284M34 139c28-35 56-44 86-22 28-30 61-30 91-2 23-18 46-15 72 24" />
+                <path d="M45 48c6-13 27-13 33 0 12-5 25 3 25 15H32c0-9 6-15 13-15ZM246 44c5-11 22-11 28 0 10-4 21 3 21 13h-59c0-8 5-13 10-13Z" />
+                <path d="M134 117h79l-8-29h-39l-15 19-17 10ZM168 88l14-23h30l13 52h-12M151 107l-48-47-13 7 36 58M103 60l-24-12-28 38M51 86l26 7 13-26" />
+                <path d="M164 117h67c13 0 23 10 23 22H143c0-12 9-22 21-22ZM156 139h83M174 126h47M191 65v23M184 74h31" />
+              </svg>
+              <h3>Your showroom is ready</h3>
+              <p>Create your first advert and it will appear here automatically.</p>
+              <Link className={styles.primaryButton} href={valuationHref}><span aria-hidden="true">+</span> Create an advert</Link>
             </div>
           )}
         </section>
