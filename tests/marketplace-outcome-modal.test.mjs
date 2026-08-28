@@ -77,3 +77,17 @@ test('Marketplace and My Showroom use one managed outcome flow', async () => {
   assert.match(legacyRoute, /status: 405/);
   assert.match(legacyRoute, /guided Remove advert flow/);
 });
+
+test('Owner App sends listing removal through the guided Marketplace manager', async () => {
+  const [ownerAssetActions, ownerAssetDetail] = await Promise.all([
+    read('app/api/owner-app/assets/[assetId]/actions/route.ts'),
+    read('app/owner-app/assets/[assetId]/owner-asset-detail-client.tsx'),
+  ]);
+
+  assert.doesNotMatch(ownerAssetActions, /removeAssetRegisterItemFromMarketplace/);
+  assert.match(ownerAssetActions, /record the listing outcome before removing it/);
+  assert.match(ownerAssetActions, /status: 409/);
+  assert.doesNotMatch(ownerAssetDetail, /action: 'marketplace-remove'/);
+  assert.match(ownerAssetDetail, /href=\{`\/marketplace\?listing=\$\{encodeURIComponent\(draft\.id\)\}&manage=1`\}/);
+  assert.match(ownerAssetDetail, />Manage or remove advert<\/Link>/);
+});
