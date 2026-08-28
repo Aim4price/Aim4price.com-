@@ -564,10 +564,36 @@ test('showroom manager follows the approved no-bubble layout with consistent lin
   assert.match(managerCss, /\.emptyStock\s*\{[^}]*align-content:\s*center/);
 });
 
-test('showroom JPEG downloads use the standard Aim4price Marketplace design', async () => {
-  const [manager, rendererSource] = await Promise.all([
+test('private showroom exposes advert design only when the server grants Brand Kit editing', async () => {
+  const [manager, myShowroomPage, dealerShowroomPage, desktopAdStudioPage, brandKitRoute, header] = await Promise.all([
+    read('components/MiddlemanShowroomClient.tsx'),
+    read('app/my-showroom/page.tsx'),
+    read('app/dealer/showroom/page.tsx'),
+    read('app/ad-studio/page.tsx'),
+    read('app/api/ad-studio/brand-kits/route.ts'),
+    read('components/AppHeader.tsx'),
+  ]);
+
+  const ownerNav = header.match(/const OWNER_NAV_ITEMS: NavItem\[\] = \[[\s\S]*?\n\];/)?.[0] ?? '';
+
+  assert.match(manager, /advertDesignHref\?: string \| null/);
+  assert.match(manager, /\{advertDesignHref \? \([\s\S]*?<Link className=\{styles\.advertDesignButton\} href=\{advertDesignHref\}>Edit advert design<\/Link>[\s\S]*?\) : null\}/);
+  assert.doesNotMatch(manager, /dealerAppMode\s*\?[^:]*Edit advert design/);
+  assert.match(myShowroomPage, /advertDesign=\{profile\.accountType === 'dealer' \? 'saved-brand' : 'aim4price-marketplace'\}/);
+  assert.match(myShowroomPage, /advertDesignHref=\{profile\.accountType === 'dealer' \? '\/ad-studio' : null\}/);
+  assert.match(dealerShowroomPage, /advertDesign="saved-brand"/);
+  assert.match(dealerShowroomPage, /advertDesignHref=\{!dealerAppSession \|\| dealerAppSession\.role === 'owner' \? '\/dealer\/ad-studio' : null\}/);
+  assert.match(desktopAdStudioPage, /profile\.accountType !== 'dealer'/);
+  assert.match(brandKitRoute, /profile\.accountType !== 'dealer'/);
+  assert.match(brandKitRoute, /canManage: !dealerSession \|\| dealerSession\.role === 'owner'/);
+  assert.doesNotMatch(ownerNav, /ad-studio/i);
+});
+
+test('Owner showroom JPEGs stay standard while Dealer and Middleman Brand Kits remain available', async () => {
+  const [manager, rendererSource, marketplace] = await Promise.all([
     read('components/MiddlemanShowroomClient.tsx'),
     read('lib/marketplace-ad-renderer.ts'),
+    read('app/marketplace/marketplace-client.tsx'),
   ]);
 
   const defaultColors = {
@@ -575,7 +601,7 @@ test('showroom JPEG downloads use the standard Aim4price Marketplace design', as
     secondary: '#0d3329',
     accent: '#f2b84b',
   };
-  const { marketplaceListingToAdContent } = await loadTypeScriptModule(
+  const { marketplaceListingToAdContent, renderMarketplaceAdCanvas } = await loadTypeScriptModule(
     'lib/marketplace-ad-renderer.ts',
     {
       './ad-studio': { AD_TEMPLATE_OPTIONS: [], DEFAULT_AD_BRAND_COLORS: defaultColors },
@@ -610,13 +636,25 @@ test('showroom JPEG downloads use the standard Aim4price Marketplace design', as
 
   const branded = marketplaceListingToAdContent(listing);
   const standard = marketplaceListingToAdContent(listing, { design: 'aim4price-marketplace' });
+  const ownerStandard = marketplaceListingToAdContent({ ...listing, adBrand: undefined });
 
-  assert.match(manager, /createMarketplaceAdJpeg\(listing, \{\s*design: 'aim4price-marketplace',\s*\}\)/);
+  assert.match(manager, /advertDesign = 'aim4price-marketplace'/);
+  assert.match(manager, /const usesSavedBrandDesign = advertDesign === 'saved-brand'/);
+  assert.match(manager, /design: usesSavedBrandDesign && listing\.adBrand \? 'saved-brand' : 'aim4price-marketplace'/);
+  assert.match(marketplace, /design: isDealerAccount && listing\.adBrand \? 'saved-brand' : 'aim4price-marketplace'/);
   assert.match(rendererSource, /export type MarketplaceAdDesign = 'saved-brand' \| 'aim4price-marketplace'/);
+  assert.match(rendererSource, /options\.design \?\? \(listing\.adBrand \? 'saved-brand' : 'aim4price-marketplace'\)/);
+  assert.match(rendererSource, /AIM4PRICE_STANDARD_LOGO_SRC = '\/brand\/Aim4price_Home_Logo\.png'/);
+  assert.match(rendererSource, /AIM4PRICE_STANDARD_WATERMARK_SRC = '\/brand\/aim4price-mark-black\.png'/);
+  assert.match(rendererSource, /content\.design === 'aim4price-marketplace'[\s\S]*?renderAim4priceStandardCanvas/);
+  assert.match(rendererSource, /drawAim4priceStandardDetail\(context, 'Year'/);
+  assert.match(rendererSource, /drawAim4priceStandardDetail\(context, 'Condition'/);
   assert.equal(branded.brand.templateId, 'minimal');
   assert.equal(branded.brand.primaryColor, customBrand.primaryColor);
+  assert.equal(branded.design, 'saved-brand');
   assert.equal(standard.brand.name, 'Aim4price standard');
   assert.equal(standard.brand.templateId, 'showcase');
+  assert.equal(standard.design, 'aim4price-marketplace');
   assert.equal(standard.brand.primaryColor, defaultColors.primary);
   assert.equal(standard.brand.secondaryColor, defaultColors.secondary);
   assert.equal(standard.brand.accentColor, defaultColors.accent);
@@ -626,6 +664,34 @@ test('showroom JPEG downloads use the standard Aim4price Marketplace design', as
   assert.equal(standard.sellerCompany, customBrand.businessName);
   assert.equal(standard.sellerName, customBrand.contactName);
   assert.equal(standard.sellerPhone, customBrand.phone);
+  assert.equal(ownerStandard.design, 'aim4price-marketplace');
+  assert.equal(ownerStandard.brand.name, 'Aim4price standard');
+  assert.equal(ownerStandard.brand.templateId, 'showcase');
+
+  const drawnText = [];
+  const gradient = { addColorStop() {} };
+  const drawingContext = new Proxy({
+    createLinearGradient: () => gradient,
+    measureText: (value) => ({ width: String(value).length * 10 }),
+    fillText: (value) => drawnText.push(String(value)),
+  }, {
+    get(target, property) {
+      if (property in target) return target[property];
+      return () => undefined;
+    },
+    set(target, property, value) {
+      target[property] = value;
+      return true;
+    },
+  });
+  const canvas = { width: 0, height: 0, getContext: () => drawingContext };
+  const renderedTemplate = await renderMarketplaceAdCanvas(canvas, ownerStandard, { includeImages: false });
+  assert.equal(renderedTemplate, 'showcase');
+  assert.equal(canvas.width, 1600);
+  assert.equal(canvas.height, 900);
+  assert.ok(drawnText.includes('Aim4price'));
+  assert.ok(drawnText.includes('Year'));
+  assert.ok(drawnText.includes('Condition'));
 });
 
 test('showroom logos inherit Ad Studio branding and allow a compact showroom-only override', async () => {
@@ -789,8 +855,15 @@ test('rating visibility follows the advert through Marketplace, showroom and JPE
 });
 
 test('Marketplace only applies Brand Kits to dealer listings', async () => {
-  const route = await read('app/api/marketplace/route.ts');
+  const [route, database] = await Promise.all([
+    read('app/api/marketplace/route.ts'),
+    read('lib/marketplace-db.ts'),
+  ]);
 
-  assert.match(route, /brandKitId: accountType === 'dealer'/);
+  assert.match(route, /brandKitId: accountType === 'dealer' \? brandKitId \|\| null : null/);
   assert.match(route, /allowBrandKit: accountType === 'dealer'/);
+  assert.match(database, /const brandKit = input\.allowBrandKit[\s\S]*?getAdBrandKitForUser\(input\.userId, requestedBrandKitId \|\| null\)/);
+  assert.match(database, /if \(input\.allowBrandKit && requestedBrandKitId && !brandKit\)/);
+  assert.match(database, /updateValues\.push\(brandKit \? JSON\.stringify\(toAdBrandSnapshot\(brandKit\)\) : null\)/);
+  assert.match(database, /marketplace_ad_brand = \$\$\{updateValues\.length\}::jsonb/);
 });

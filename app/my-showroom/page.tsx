@@ -32,7 +32,12 @@ export default async function MyShowroomPage() {
   return (
     <main>
       <AppHeader active={profile.accountType === 'owner' ? 'account' : 'showroom'} />
-      <MiddlemanShowroomManager initialShowroom={showroom} initialListings={listings} />
+      <MiddlemanShowroomManager
+        initialShowroom={showroom}
+        initialListings={listings}
+        advertDesign={profile.accountType === 'dealer' ? 'saved-brand' : 'aim4price-marketplace'}
+        advertDesignHref={profile.accountType === 'dealer' ? '/ad-studio' : null}
+      />
     </main>
   );
 }

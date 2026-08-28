@@ -9,6 +9,7 @@ import {
   createMarketplaceAdJpeg,
   downloadMarketplaceAd,
   marketplaceAdFilename,
+  type MarketplaceAdDesign,
 } from '../lib/marketplace-ad-renderer';
 import type { MiddlemanShowroom, PublicMiddlemanShowroomData } from '../lib/middleman-showroom-db';
 import styles from './MiddlemanShowroomClient.module.css';
@@ -17,6 +18,8 @@ type ManagerProps = {
   initialShowroom: MiddlemanShowroom;
   initialListings: MarketplaceListing[];
   dealerAppMode?: boolean;
+  advertDesign?: MarketplaceAdDesign;
+  advertDesignHref?: string | null;
 };
 
 const SHOWROOM_LOGO_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
@@ -105,6 +108,8 @@ export function MiddlemanShowroomManager({
   initialShowroom,
   initialListings,
   dealerAppMode = false,
+  advertDesign = 'aim4price-marketplace',
+  advertDesignHref = null,
 }: ManagerProps) {
   const [showroom, setShowroom] = useState(initialShowroom);
   const [listings, setListings] = useState(initialListings);
@@ -127,6 +132,7 @@ export function MiddlemanShowroomManager({
   const manageDialogRef = useRef<HTMLElement | null>(null);
   const manageTriggerRef = useRef<HTMLButtonElement | null>(null);
   const valuationHref = dealerAppMode ? '/dealer/valuation' : '/valuation';
+  const usesSavedBrandDesign = advertDesign === 'saved-brand';
   const logoPreviewUrl = showroomLogoUrl || showroom.inheritedLogoUrl;
   const hasUnsavedShowroomChanges = slug !== showroom.slug
     || bio !== showroom.bio
@@ -269,7 +275,7 @@ export function MiddlemanShowroomManager({
     setMessage('');
     try {
       const { blob } = await createMarketplaceAdJpeg(listing, {
-        design: 'aim4price-marketplace',
+        design: usesSavedBrandDesign && listing.adBrand ? 'saved-brand' : 'aim4price-marketplace',
       });
       downloadMarketplaceAd(blob, marketplaceAdFilename(listing.title));
       setMessage('JPEG advert downloaded.');
@@ -413,6 +419,19 @@ export function MiddlemanShowroomManager({
                 tabIndex={-1}
               />
             </div>
+          </div>
+          <div className={styles.advertDesignField}>
+            <div>
+              <strong>Advert design</strong>
+              <span>
+                {usesSavedBrandDesign
+                  ? 'Adverts with a saved Brand Kit use it. Other downloads use Aim4price standard.'
+                  : 'Downloads use the standard Aim4price Marketplace design.'}
+              </span>
+            </div>
+            {advertDesignHref ? (
+              <Link className={styles.advertDesignButton} href={advertDesignHref}>Edit advert design</Link>
+            ) : null}
           </div>
           <div className={styles.publicLinkField}>
             <label htmlFor="showroom-public-link">Public link</label>
@@ -566,7 +585,10 @@ export function MiddlemanShowroomManager({
                 onClick={() => void downloadAdvert(manageListingTarget)}
                 disabled={busyListingId === manageListingTarget.id}
               >
-                <span><strong>Download JPEG</strong><small>Use the standard Aim4price Marketplace advert design.</small></span>
+                <span>
+                  <strong>Download JPEG</strong>
+                  <small>{usesSavedBrandDesign && manageListingTarget.adBrand ? 'Use the Brand Kit saved with this advert.' : 'Use the standard Aim4price Marketplace advert design.'}</small>
+                </span>
                 <b aria-hidden="true">↓</b>
               </button>
               <Link
