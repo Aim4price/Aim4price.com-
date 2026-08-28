@@ -87,6 +87,7 @@ type LockedAssetRow = {
   valuation_run_id: string | number | null;
   lifecycle_state: string | null;
   documents: unknown;
+  specs_json: unknown;
 };
 
 const TRANSFER_VALID_DAYS = 30;
@@ -94,6 +95,32 @@ const MAX_FAILED_CLAIM_ATTEMPTS = 10;
 const CLAIM_ATTEMPT_WINDOW_MINUTES = 15;
 const DATABASE_RETRY_ATTEMPTS = 3;
 const TRANSIENT_DATABASE_ERROR_CODES = new Set(['40P01', '40001']);
+const SELLER_PRIVATE_ASSET_SPEC_KEYS = [
+  'isFinanced', 'is_financed', 'financed',
+  'financeStatus', 'finance_status', 'financedStatus', 'financed_status',
+  'financeType', 'finance_type',
+  'financeCurrentOutstandingExVat', 'finance_current_outstanding_ex_vat',
+  'financierName', 'financier_name',
+  'financeNote', 'finance_note',
+  'financeBoughtWhen', 'finance_bought_when',
+  'financeBoughtForExVat', 'finance_bought_for_ex_vat',
+  'financeOriginalAmountExVat', 'finance_original_amount_ex_vat',
+  'financeMonthlyPaymentExVat', 'finance_monthly_payment_ex_vat',
+  'financeInterestRatePercent', 'finance_interest_rate_percent',
+  'financeTermMonths', 'finance_term_months',
+  'financeBalloonPaymentExVat', 'finance_balloon_payment_ex_vat',
+  'financeSettlementDate', 'finance_settlement_date',
+  'financeReferenceNumber', 'finance_reference_number',
+  'isInsured', 'is_insured', 'insured',
+  'insuranceStatus', 'insurance_status', 'insuredStatus', 'insured_status',
+  'insuredValueExVat', 'insured_value_ex_vat',
+  'insuranceValueExVat', 'insurance_value_ex_vat',
+  'insuredValue', 'insured_value', 'insuranceValue', 'insurance_value',
+  'insuranceInsurerName', 'insurance_insurer_name',
+  'insurancePolicyNumber', 'insurance_policy_number',
+  'insuranceRenewalDate', 'insurance_renewal_date',
+  'insuranceNote', 'insurance_note', 'insuredNote', 'insured_note',
+] as const;
 
 let transferSchemaPromise: Promise<void> | null = null;
 
@@ -167,6 +194,26 @@ function portableDocuments(value: unknown): AssetRegisterDocument[] {
     const category = cleanText((entry as { category?: unknown }).category).toLowerCase();
     return category === 'licensing' || category === 'other' || category === '';
   });
+}
+
+function portableAssetSpecs(value: unknown): Record<string, unknown> {
+  const source = (() => {
+    if (value && typeof value === 'object' && !Array.isArray(value)) {
+      return value as Record<string, unknown>;
+    }
+    if (typeof value !== 'string' || !value.trim()) return {};
+    try {
+      const parsed = JSON.parse(value) as unknown;
+      return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
+        ? parsed as Record<string, unknown>
+        : {};
+    } catch {
+      return {};
+    }
+  })();
+  const portable = { ...source };
+  for (const key of SELLER_PRIVATE_ASSET_SPEC_KEYS) delete portable[key];
+  return portable;
 }
 
 function statusFromRow(row: TransferOfferRow): AssetTransferStatus {
@@ -625,7 +672,7 @@ export async function adminAllocateDisposedAsset(input: {
       if (!lifecycle.rows[0]) throw new Error('ADMIN_ASSET_ALLOCATION_NOT_FOUND');
 
       const assetResult = await client.query<LockedAssetRow>(
-        `select id::text, user_id, register_id::text, valuation_run_id, lifecycle_state, documents
+        `select id::text, user_id, register_id::text, valuation_run_id, lifecycle_state, documents, specs_json
          from public.asset_register_items where id = $1::uuid for update`,
         [input.assetId],
       );
@@ -706,13 +753,14 @@ export async function adminAllocateDisposedAsset(input: {
       await client.query(
         `update public.asset_register_items
          set user_id = $1, register_id = $2::uuid, lifecycle_state = 'active', qr_status = 'transferred',
-             documents = $5::jsonb,
-             is_financed = false, finance_note = '', is_insured = false, insured_value_ex_vat = null,
+             documents = $5::jsonb, specs_json = $6::jsonb,
+             is_financed = false, finance_note = '', is_insured = false,
              seller_phone = '', marketplace_status = case when marketplace_status is null then null else 'withdrawn' end,
              marketplace_seller_name = '', marketplace_seller_company = '', marketplace_seller_email = '',
              updated_at = now()
          where id = $3::uuid and user_id = $4`,
-        [input.buyerUserId, buyerRegister.id, input.assetId, input.sellerUserId, JSON.stringify(portableDocuments(assetRecord.documents))],
+        [input.buyerUserId, buyerRegister.id, input.assetId, input.sellerUserId,
+          JSON.stringify(portableDocuments(asset.documents)), JSON.stringify(portableAssetSpecs(asset.specs_json))],
       );
       if (lifecycle.rows[0].transfer_offer_id) {
         await client.query(
@@ -882,7 +930,7 @@ export async function claimAssetTransfer(input: {
       }
 
       const assetResult = await client.query<LockedAssetRow>(
-        `select id::text, user_id, register_id::text, valuation_run_id, lifecycle_state, documents
+        `select id::text, user_id, register_id::text, valuation_run_id, lifecycle_state, documents, specs_json
          from public.asset_register_items where id = $1::uuid for update`,
         [offer.asset_register_item_id],
       );
@@ -913,13 +961,14 @@ export async function claimAssetTransfer(input: {
       const assetUpdate = await client.query(
         `update public.asset_register_items
          set user_id = $1, register_id = $2::uuid, lifecycle_state = 'active', qr_status = 'transferred',
-             documents = $5::jsonb,
-             is_financed = false, finance_note = '', is_insured = false, insured_value_ex_vat = null,
+             documents = $5::jsonb, specs_json = $6::jsonb,
+             is_financed = false, finance_note = '', is_insured = false,
              seller_phone = '', marketplace_status = case when marketplace_status is null then null else 'withdrawn' end,
              marketplace_seller_name = '', marketplace_seller_company = '', marketplace_seller_email = '',
              updated_at = now()
          where id = $3::uuid and user_id = $4`,
-        [input.buyerUserId, buyerRegister.id, asset.id, offer.seller_user_id, JSON.stringify(portableDocuments(asset.documents))],
+        [input.buyerUserId, buyerRegister.id, asset.id, offer.seller_user_id,
+          JSON.stringify(portableDocuments(asset.documents)), JSON.stringify(portableAssetSpecs(asset.specs_json))],
       );
       if (assetUpdate.rowCount !== 1) throw new Error('ASSET_TRANSFER_INVALID_CREDENTIALS');
 

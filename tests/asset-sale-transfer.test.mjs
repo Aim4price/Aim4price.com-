@@ -111,6 +111,14 @@ test('portable asset history moves while seller-private financial data is reset'
   assert.match(transferPage, /private invoices, finance, insurance and account access do not transfer/i);
 });
 
+test('ownership updates use canonical specs JSON instead of a missing insurance column', () => {
+  assert.match(transferSource, /SELLER_PRIVATE_ASSET_SPEC_KEYS/);
+  assert.match(transferSource, /function portableAssetSpecs/);
+  assert.match(transferSource, /documents = \$5::jsonb, specs_json = \$6::jsonb/);
+  assert.match(transferSource, /portableAssetSpecs\(asset\.specs_json\)/);
+  assert.doesNotMatch(transferSource, /insured_value_ex_vat\s*=\s*null/);
+});
+
 test('claim detaches seller-private capture links before changing asset ownership', () => {
   assert.match(transferSource, /update public\.document_capture_requests[\s\S]*set asset_register_item_id = null/);
   assert.match(transferSource, /delete from public\.asset_invoice_drop_codes[\s\S]*owner_user_id = \$1 and asset_register_item_id = \$2::uuid/);
