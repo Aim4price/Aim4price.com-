@@ -1,26 +1,46 @@
 import AdminNavigation from '../../../components/AdminNavigation';
 import { requireAdminPageAccess } from '../../../lib/account-access';
-import { getAdminAssetOutcomesReport, listAdminAssetAllocationAccounts } from '../../../lib/admin-asset-sales';
-import SoldAssetsClient from './sold-assets-client';
+import { getAdminMarketplaceOutcomeReport } from '../../../lib/admin-marketplace';
+import AdminMarketplaceOutcomesClient from './admin-marketplace-outcomes-client';
 import styles from './page.module.css';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-export default async function AdminSoldAssetsPage() {
+function formatGeneratedAt(value: string): string {
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return 'Unknown';
+
+  return new Intl.DateTimeFormat('en-ZA', {
+    timeZone: 'Africa/Johannesburg',
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(parsed);
+}
+
+export default async function AdminMarketplaceOutcomesPage() {
   await requireAdminPageAccess();
-  const [report, allocationAccounts] = await Promise.all([
-    getAdminAssetOutcomesReport(),
-    listAdminAssetAllocationAccounts(),
-  ]);
+  const report = await getAdminMarketplaceOutcomeReport();
+
   return (
     <main className={styles.page}>
       <section className={styles.shell}>
         <header className={styles.topBar}>
-          <div className={styles.titleBlock}><p>Aim4price admin</p><h1>Asset outcomes</h1><span>Sold, traded-in and scrapped assets reported by Owner and Dealer accounts</span></div>
+          <div className={styles.titleBlock}>
+            <p>Marketplace outcomes</p>
+            <h1>Asset outcomes</h1>
+            <span>
+              Understand why adverts were closed and whether Aim4price helped · Updated{' '}
+              {formatGeneratedAt(report.generatedAtIso)}
+            </span>
+          </div>
           <AdminNavigation active="sold-assets" />
         </header>
-        <SoldAssetsClient report={report} allocationAccounts={allocationAccounts} />
+
+        <AdminMarketplaceOutcomesClient report={report} />
       </section>
     </main>
   );
