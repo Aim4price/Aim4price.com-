@@ -1860,7 +1860,7 @@ function MarketplaceSection({ draft, ownerContext, action, busy }: { draft: Asse
         </div>
       </section>
       {formError ? <div className={styles.errorNotice}>{formError}</div> : null}
-      <div className={styles.actions}><button type="button" className={styles.primaryButton} disabled={busy} onClick={() => void publishMarketplaceListing()}>{draft.marketplaceStatus === 'live' ? 'Update listing' : 'List on Marketplace'}</button>{draft.marketplaceStatus === 'live' ? <button type="button" className={styles.dangerButton} disabled={busy} onClick={() => void action({ action: 'marketplace-remove' }, 'Marketplace listing removed.')}>Remove listing</button> : null}</div>
+      <div className={styles.actions}><button type="button" className={styles.primaryButton} disabled={busy} onClick={() => void publishMarketplaceListing()}>{draft.marketplaceStatus === 'live' ? 'Update listing' : 'List on Marketplace'}</button>{draft.marketplaceStatus === 'live' ? <Link className={styles.dangerButton} href={`/marketplace?listing=${encodeURIComponent(draft.id)}&manage=1`} prefetch={false}>Manage or remove advert</Link> : null}</div>
     </section>
   );
 }

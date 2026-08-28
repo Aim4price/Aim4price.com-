@@ -14,6 +14,9 @@ const USER_ID_TABLES = [
   'fuel_slips',
   'fuel_storage_events',
   'fuel_storage_units',
+  // Outcome snapshots contain seller and actor identifiers and must not
+  // survive a full account deletion, even though their asset FKs use SET NULL.
+  'marketplace_listing_outcomes',
   // Budget alerts cascade from budgets; budgets must precede asset deletion
   // so all-assets rows without an asset foreign key are also removed.
   'asset_cost_budgets',
@@ -341,7 +344,20 @@ async function deleteUserWorkspaceDataInTransaction(
     );
   }
 
+  if (tableSet.has('marketplace_listing_outcomes')) {
+    await queryable.query(
+      `update marketplace_listing_outcomes
+          set actor_id = null
+        where actor_id = $1 and seller_user_id <> $1`,
+      [userId],
+    );
+  }
+
   for (const tableName of USER_ID_TABLES) {
+    if (tableName === 'marketplace_listing_outcomes') {
+      await deleteByColumn(queryable, tableSet, tableName, 'seller_user_id', userId);
+      continue;
+    }
     if (
       tableName === 'dealer_app_staff'
       || tableName === 'owner_app_users'
