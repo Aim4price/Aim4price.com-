@@ -2971,7 +2971,7 @@ export default function MarketplaceClient({
     setManageListingFeedback('Creating your JPEG advert…');
     try {
       const { blob } = await createSharedMarketplaceAdJpeg(listing, {
-        design: 'aim4price-marketplace',
+        design: isDealerAccount && listing.adBrand ? 'saved-brand' : 'aim4price-marketplace',
       });
       downloadMarketplaceAd(blob, marketplaceAdFilename(listingDisplayTitle(listing)));
       setManageListingFeedback('JPEG advert downloaded.');
@@ -3818,7 +3818,7 @@ export default function MarketplaceClient({
               >
                 <span className={styles.marketplaceManageChoiceCopy}>
                   <strong>Download JPEG</strong>
-                  <small>Save an advert using the standard Aim4price Marketplace design.</small>
+                  <small>{isDealerAccount && manageListingTarget.adBrand ? 'Save an advert using its Brand Kit.' : 'Save an advert using the standard Aim4price Marketplace design.'}</small>
                 </span>
                 <span className={styles.marketplaceManageChoiceArrow} aria-hidden="true">↓</span>
               </button>
