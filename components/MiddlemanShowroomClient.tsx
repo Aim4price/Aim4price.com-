@@ -243,7 +243,7 @@ export function MiddlemanShowroomManager({
       <section className={styles.managerHero}>
         <div className={styles.managerHeroCopy}>
           <h1>A professional home for your machinery adverts</h1>
-          <p>Keep your live stock together, share one simple link and give every customer a polished view backed by Aim4price valuations.</p>
+          <p>Keep your live stock together, share one simple link and give every customer a polished view with clear equipment details.</p>
         </div>
         <div className={styles.heroActions}>
           <Link className={styles.primaryButton} href={valuationHref}><span aria-hidden="true">+</span> Value and create advert</Link>
@@ -513,7 +513,7 @@ export function PublicMiddlemanShowroom({ showroom, listings }: {
               ) : null}
             </div>
           ) : null}
-          <p className={styles.publicTrustLine}>Every advert is backed by an Aim4price valuation.</p>
+          <p className={styles.publicTrustLine}>Clear equipment details and direct seller contact.</p>
         </div>
       </section>
 
@@ -521,7 +521,7 @@ export function PublicMiddlemanShowroom({ showroom, listings }: {
         <div className={styles.inventoryIntro}>
           <div>
             <h2>Available equipment</h2>
-            <p>Browse valuation-backed equipment from {showroom.name} and contact the business directly.</p>
+            <p>Browse equipment listed by {showroom.name} and contact the seller directly.</p>
           </div>
           <span className={styles.inventorySummary}>{listings.length} live {listings.length === 1 ? 'advert' : 'adverts'}</span>
         </div>
@@ -538,7 +538,7 @@ export function PublicMiddlemanShowroom({ showroom, listings }: {
 
       <footer className={styles.publicFooter}>
         <div className={styles.publicFooterInner}>
-          <div><strong>Hosted on Aim4price.com</strong><span>Professional machinery advertising backed by valuations.</span></div>
+          <div><strong>Hosted on Aim4price.com</strong><span>Professional machinery advertising and direct seller contact.</span></div>
           <Link href="/valuation">Value your machinery</Link>
         </div>
       </footer>
