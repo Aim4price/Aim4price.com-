@@ -70,6 +70,36 @@ function websiteLabel(value: string): string {
   }
 }
 
+type ShowroomDetailIconName = 'location' | 'phone' | 'email' | 'website';
+
+function ShowroomDetailIcon({ name }: { name: ShowroomDetailIconName }) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      {name === 'location' ? (
+        <>
+          <path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z" />
+          <circle cx="12" cy="10" r="2.6" />
+        </>
+      ) : null}
+      {name === 'phone' ? (
+        <path d="M8.4 3.7 6.1 4.8c-.8.4-1.2 1.3-.9 2.2 1.8 5.5 6.3 10 11.8 11.8.9.3 1.8-.1 2.2-.9l1.1-2.3-4.1-2.1-1.1 1.8a14.7 14.7 0 0 1-6.4-6.4l1.8-1.1-2.1-4.1Z" />
+      ) : null}
+      {name === 'email' ? (
+        <>
+          <rect x="3" y="5" width="18" height="14" rx="2.5" />
+          <path d="m4 7 8 6 8-6" />
+        </>
+      ) : null}
+      {name === 'website' ? (
+        <>
+          <circle cx="12" cy="12" r="9" />
+          <path d="M3 12h18M12 3c2.4 2.5 3.7 5.5 3.7 9s-1.3 6.5-3.7 9c-2.4-2.5-3.7-5.5-3.7-9S9.6 5.5 12 3Z" />
+        </>
+      ) : null}
+    </svg>
+  );
+}
+
 export function MiddlemanShowroomManager({
   initialShowroom,
   initialListings,
@@ -486,14 +516,15 @@ export function PublicMiddlemanShowroom({ showroom, listings }: {
         <div className={styles.publicHeroInner}>
           <div className={styles.publicHeroMain}>
             <div className={styles.profileIdentity}>
-              {showroom.logoUrl ? <img src={showroom.logoUrl} alt={`${showroom.name} logo`} /> : <span>{showroom.name.slice(0, 2).toUpperCase()}</span>}
+              {showroom.logoUrl ? <img src={showroom.logoUrl} alt={`${showroom.name} logo`} /> : <span aria-hidden="true">{showroom.name.slice(0, 2).toUpperCase()}</span>}
               <div>
                 <h1>{showroom.name}</h1>
                 <p className={styles.publicAdvertSummary}>{listings.length} live {listings.length === 1 ? 'advert' : 'adverts'}</p>
                 {showroom.bio ? <p className={styles.publicBio}>{showroom.bio}</p> : null}
+                <p className={styles.publicTrustLine}>Clear equipment details and direct seller contact.</p>
               </div>
             </div>
-            <div className={styles.publicContactActions}>
+            <div className={styles.publicContactActions} role="group" aria-label={`${showroom.name} contact options`}>
               {showroom.phone ? <a className={styles.whatsappButton} href={whatsappHref(showroom.phone)} target="_blank" rel="noreferrer">Chat on WhatsApp</a> : null}
               {showroom.phone ? <a className={styles.secondaryButton} href={`tel:${showroom.phone}`}>Call business</a> : null}
               {showroom.email ? <a className={styles.secondaryButton} href={`mailto:${showroom.email}`}>Email business</a> : null}
@@ -502,20 +533,31 @@ export function PublicMiddlemanShowroom({ showroom, listings }: {
           {showroom.location || showroom.phone || showroom.email || showroom.websiteUrl ? (
             <div className={styles.publicBusinessDetails}>
               {showroom.location ? (
-                <div><span>Location</span><strong>{showroom.location}</strong></div>
+                <div>
+                  <ShowroomDetailIcon name="location" />
+                  <span className={styles.publicBusinessDetailCopy}><span>Location</span><strong>{showroom.location}</strong></span>
+                </div>
               ) : null}
               {showroom.phone ? (
-                <a href={`tel:${showroom.phone}`}><span>Phone</span><strong>{showroom.phone}</strong></a>
+                <a href={`tel:${showroom.phone}`}>
+                  <ShowroomDetailIcon name="phone" />
+                  <span className={styles.publicBusinessDetailCopy}><span>Phone</span><strong>{showroom.phone}</strong></span>
+                </a>
               ) : null}
               {showroom.email ? (
-                <a href={`mailto:${showroom.email}`}><span>Email</span><strong>{showroom.email}</strong></a>
+                <a href={`mailto:${showroom.email}`}>
+                  <ShowroomDetailIcon name="email" />
+                  <span className={styles.publicBusinessDetailCopy}><span>Email</span><strong>{showroom.email}</strong></span>
+                </a>
               ) : null}
               {showroom.websiteUrl ? (
-                <a href={showroom.websiteUrl} target="_blank" rel="noreferrer"><span>Website</span><strong>{websiteLabel(showroom.websiteUrl)}</strong></a>
+                <a href={showroom.websiteUrl} target="_blank" rel="noreferrer">
+                  <ShowroomDetailIcon name="website" />
+                  <span className={styles.publicBusinessDetailCopy}><span>Website</span><strong>{websiteLabel(showroom.websiteUrl)}</strong></span>
+                </a>
               ) : null}
             </div>
           ) : null}
-          <p className={styles.publicTrustLine}>Clear equipment details and direct seller contact.</p>
         </div>
       </section>
 
