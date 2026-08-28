@@ -9,6 +9,7 @@ import CaptureRequestDecisionModal from '../../components/CaptureRequestDecision
 import CaptureRequestStatusList, { type CaptureRequestStatusItem } from '../../components/CaptureRequestStatusList';
 import { WorkspaceTitlePanel } from '../../components/WorkspacePrimitives';
 import styles from './page.module.css';
+import wizardStyles from '../../components/AimWizardModal.module.css';
 
 type FlowMode = 'source-choice' | 'asset-manual' | 'asset-automatic' | 'manual-form' | 'upload' | 'review' | 'recurring' | null;
 type InvoiceSource = 'manual' | 'automatic' | 'fuel_slip';
@@ -3959,7 +3960,7 @@ export default function MyInvoicesClient({
 
       {budgetModalOpen ? (
         <div
-          className={`${styles.modalBackdrop} ${budgetAssetPickerOpen ? styles.budgetAssetPickerBackdrop : ''}`}
+          className={`${styles.modalBackdrop} ${budgetAssetPickerOpen ? styles.budgetAssetPickerBackdrop : wizardStyles.overlay}`}
           role="dialog"
           aria-modal="true"
           aria-labelledby={budgetAssetPickerOpen ? 'budget-scope-picker-title' : 'budget-modal-title'}
@@ -4065,11 +4066,11 @@ export default function MyInvoicesClient({
             </div>
           ) : (
             <form
-              className={[styles.downloadModal, styles.invoiceDropCodeModal, styles.budgetWizardModal].join(' ')}
+              className={[styles.downloadModal, styles.invoiceDropCodeModal, styles.budgetWizardModal, wizardStyles.dialog].join(' ')}
               onSubmit={submitCostBudget}
             >
-              <div className={[styles.modalHeader, styles.invoiceDropCodeHeader].join(' ')}>
-                <div>
+              <div className={[styles.modalHeader, styles.invoiceDropCodeHeader, wizardStyles.header].join(' ')}>
+                <div className={wizardStyles.headerText}>
                   <h2 id="budget-modal-title">{editingBudgetId ? 'Edit budget' : 'Spending budget'}</h2>
                   <p>{budgetWizardStep === 1
                     ? 'Choose what to track.'
@@ -4077,20 +4078,24 @@ export default function MyInvoicesClient({
                       ? 'Set the limit and warning level.'
                       : 'Review and save.'}</p>
                 </div>
-                <button type="button" className={styles.closeButton} onClick={closeBudgetModal} aria-label="Close budget">
+                <button type="button" className={`${styles.closeButton} ${wizardStyles.closeButton}`} onClick={closeBudgetModal} aria-label="Close budget">
                   <CloseIcon />
                 </button>
               </div>
 
-              <div className={[styles.invoiceDropCodeBody, styles.budgetWizardBody].join(' ')}>
-                <ol className={styles.invoiceDropWizardProgress} aria-label={'Step ' + budgetWizardStep + ' of 3'}>
+              <div className={[styles.invoiceDropCodeBody, styles.budgetWizardBody, wizardStyles.body].join(' ')}>
+                <p className={wizardStyles.intro}>Complete one short step at a time. Your spending budget is saved on the final step.</p>
+                <ol className={`${styles.invoiceDropWizardProgress} ${wizardStyles.progress}`} aria-label={'Step ' + budgetWizardStep + ' of 3'}>
                   {([['Coverage', 1], ['Limit', 2], ['Review', 3]] as const).map(([label, step]) => (
                     <li
                       key={label}
                       className={[
                         styles.invoiceDropWizardProgressItem,
+                        wizardStyles.progressItem,
                         budgetWizardStep === step ? styles.invoiceDropWizardProgressItemActive : '',
+                        budgetWizardStep === step ? wizardStyles.progressItemCurrent : '',
                         budgetWizardStep > step ? styles.invoiceDropWizardProgressItemComplete : '',
+                        budgetWizardStep > step ? wizardStyles.progressItemComplete : '',
                       ].join(' ')}
                       aria-current={budgetWizardStep === step ? 'step' : undefined}
                     >
@@ -4101,8 +4106,9 @@ export default function MyInvoicesClient({
                 </ol>
 
                 {budgetWizardStep === 1 ? (
-                  <section className={styles.invoiceDropWizardPanel} aria-labelledby="budget-coverage-title">
-                    <div className={styles.invoiceDropWizardHeading}>
+                  <section className={`${styles.invoiceDropWizardPanel} ${wizardStyles.panel}`} aria-labelledby="budget-coverage-title">
+                    <div className={`${styles.invoiceDropWizardHeading} ${wizardStyles.panelHeading}`}>
+                      <span className={wizardStyles.panelNumber} aria-hidden="true">1</span>
                       <h3 ref={budgetWizardStepHeadingRef} id="budget-coverage-title" tabIndex={-1}>What should this budget cover?</h3>
                       <p>Choose assets and a reset period.</p>
                     </div>
@@ -4154,8 +4160,9 @@ export default function MyInvoicesClient({
                 ) : null}
 
                 {budgetWizardStep === 2 ? (
-                  <section className={styles.invoiceDropWizardPanel} aria-labelledby="budget-limit-title">
-                    <div className={styles.invoiceDropWizardHeading}>
+                  <section className={`${styles.invoiceDropWizardPanel} ${wizardStyles.panel}`} aria-labelledby="budget-limit-title">
+                    <div className={`${styles.invoiceDropWizardHeading} ${wizardStyles.panelHeading}`}>
+                      <span className={wizardStyles.panelNumber} aria-hidden="true">2</span>
                       <h3 ref={budgetWizardStepHeadingRef} id="budget-limit-title" tabIndex={-1}>Set the spending limit</h3>
                       <p>Amounts include VAT.</p>
                     </div>
@@ -4222,8 +4229,9 @@ export default function MyInvoicesClient({
                 ) : null}
 
                 {budgetWizardStep === 3 ? (
-                  <section className={styles.invoiceDropWizardPanel} aria-labelledby="budget-review-title">
-                    <div className={styles.invoiceDropWizardHeading}>
+                  <section className={`${styles.invoiceDropWizardPanel} ${wizardStyles.panel}`} aria-labelledby="budget-review-title">
+                    <div className={`${styles.invoiceDropWizardHeading} ${wizardStyles.panelHeading}`}>
+                      <span className={wizardStyles.panelNumber} aria-hidden="true">3</span>
                       <h3 ref={budgetWizardStepHeadingRef} id="budget-review-title" tabIndex={-1}>Review your budget</h3>
                       <p>Check the details before saving.</p>
                     </div>
@@ -4274,21 +4282,21 @@ export default function MyInvoicesClient({
                 {budgetFormError ? <div className={styles.budgetFormError} role="alert">{budgetFormError}</div> : null}
               </div>
 
-              <div className={[styles.modalFooter, styles.invoiceDropWizardFooter, styles.budgetWizardFooter].join(' ')}>
+              <div className={[styles.modalFooter, styles.invoiceDropWizardFooter, styles.budgetWizardFooter, wizardStyles.footer].join(' ')}>
                 <button
                   type="button"
-                  className={styles.secondaryButton}
+                  className={`${styles.secondaryButton} ${wizardStyles.secondaryAction}`}
                   onClick={budgetWizardStep === 1 ? closeBudgetModal : goBackBudgetWizard}
                   disabled={budgetSaving}
                 >
                   {budgetWizardStep === 1 ? 'Cancel' : 'Back'}
                 </button>
                 {budgetWizardStep < 3 ? (
-                  <button type="button" className={styles.primaryButton} onClick={continueBudgetWizard} disabled={budgetSaving}>
+                  <button type="button" className={`${styles.primaryButton} ${wizardStyles.primaryAction}`} onClick={continueBudgetWizard} disabled={budgetSaving}>
                     Next
                   </button>
                 ) : (
-                  <button type="submit" className={styles.primaryButton} disabled={budgetSaving}>
+                  <button type="submit" className={`${styles.primaryButton} ${wizardStyles.primaryAction}`} disabled={budgetSaving}>
                     {budgetSaving ? 'Saving...' : editingBudgetId ? 'Save changes' : 'Create budget'}
                   </button>
                 )}
@@ -4320,10 +4328,10 @@ export default function MyInvoicesClient({
       ) : null}
 
       {invoiceDropCodeOpen && !invoiceDropAssetPickerOpen ? (
-        <div className={styles.modalBackdrop} role="dialog" aria-modal="true" aria-labelledby="invoice-drop-code-title">
-          <div className={`${styles.downloadModal} ${styles.invoiceDropCodeModal}`}>
-            <div className={`${styles.modalHeader} ${styles.invoiceDropCodeHeader}`}>
-              <div>
+        <div className={`${styles.modalBackdrop} ${wizardStyles.overlay}`} role="dialog" aria-modal="true" aria-labelledby="invoice-drop-code-title">
+          <div className={`${styles.downloadModal} ${styles.invoiceDropCodeModal} ${wizardStyles.dialog}`}>
+            <div className={`${styles.modalHeader} ${styles.invoiceDropCodeHeader} ${wizardStyles.header}`}>
+              <div className={wizardStyles.headerText}>
                 <h2 id="invoice-drop-code-title">Invoice Drop code</h2>
                 <p>{invoiceDropWizardStep === 1
                   ? 'Choose where invoices should go.'
@@ -4331,15 +4339,16 @@ export default function MyInvoicesClient({
                     ? invoiceDropScope === 'all' ? 'Confirm broad routing.' : 'Choose one saved asset.'
                     : 'Create, copy and share the code.'}</p>
               </div>
-              <button type="button" className={styles.closeButton} onClick={closeInvoiceDropCodeManager} aria-label="Close Invoice Drop code manager"><CloseIcon /></button>
+              <button type="button" className={`${styles.closeButton} ${wizardStyles.closeButton}`} onClick={closeInvoiceDropCodeManager} aria-label="Close Invoice Drop code manager"><CloseIcon /></button>
             </div>
 
-            <div className={styles.invoiceDropCodeBody}>
-              <ol className={styles.invoiceDropWizardProgress} aria-label={`Step ${invoiceDropWizardStep} of 3`}>
+            <div className={`${styles.invoiceDropCodeBody} ${wizardStyles.body}`}>
+              <p className={wizardStyles.intro}>Complete one short step at a time. Your contribution route stays private throughout.</p>
+              <ol className={`${styles.invoiceDropWizardProgress} ${wizardStyles.progress}`} aria-label={`Step ${invoiceDropWizardStep} of 3`}>
                 {([['Access', 1], ['Routing', 2], ['Code', 3]] as const).map(([label, step]) => (
                   <li
                     key={label}
-                    className={`${styles.invoiceDropWizardProgressItem} ${invoiceDropWizardStep === step ? styles.invoiceDropWizardProgressItemActive : ''} ${invoiceDropWizardStep > step ? styles.invoiceDropWizardProgressItemComplete : ''}`}
+                    className={`${styles.invoiceDropWizardProgressItem} ${wizardStyles.progressItem} ${invoiceDropWizardStep === step ? `${styles.invoiceDropWizardProgressItemActive} ${wizardStyles.progressItemCurrent}` : ''} ${invoiceDropWizardStep > step ? `${styles.invoiceDropWizardProgressItemComplete} ${wizardStyles.progressItemComplete}` : ''}`}
                     aria-current={invoiceDropWizardStep === step ? 'step' : undefined}
                   >
                     <span aria-hidden="true">{invoiceDropWizardStep > step ? '✓' : step}</span>
@@ -4349,8 +4358,9 @@ export default function MyInvoicesClient({
               </ol>
 
               {invoiceDropWizardStep === 1 ? (
-                <section className={styles.invoiceDropWizardPanel} aria-labelledby="invoice-drop-scope-title">
-                  <div className={styles.invoiceDropWizardHeading}>
+                <section className={`${styles.invoiceDropWizardPanel} ${wizardStyles.panel}`} aria-labelledby="invoice-drop-scope-title">
+                  <div className={`${styles.invoiceDropWizardHeading} ${wizardStyles.panelHeading}`}>
+                    <span className={wizardStyles.panelNumber} aria-hidden="true">1</span>
                     <h3 id="invoice-drop-scope-title">Where should invoices go?</h3>
                     <p>Choose one option.</p>
                   </div>
@@ -4392,20 +4402,25 @@ export default function MyInvoicesClient({
               ) : null}
 
               {invoiceDropWizardStep === 2 ? (
-                <section className={styles.invoiceDropWizardPanel} aria-labelledby="invoice-drop-routing-title">
+                <section className={`${styles.invoiceDropWizardPanel} ${wizardStyles.panel}`} aria-labelledby="invoice-drop-routing-title">
+                  <div className={`${styles.invoiceDropWizardHeading} ${wizardStyles.panelHeading}`}>
+                    <span className={wizardStyles.panelNumber} aria-hidden="true">2</span>
+                    <h3 id="invoice-drop-routing-title">Confirm the invoice route</h3>
+                    <p>{invoiceDropScope === 'all' ? 'Use one private code across your Asset Register.' : 'Lock this code to one saved asset.'}</p>
+                  </div>
                   {invoiceDropScope === 'all' ? (
                     <div className={styles.invoiceDropRouteReview}>
                       <span className={styles.invoiceDropRouteIcon} aria-hidden="true"><ContributionIcon /></span>
                       <div>
                         <span className={styles.invoiceDropCodeEyebrow}>All assets</span>
-                        <h3 id="invoice-drop-routing-title">One private routing code</h3>
+                        <h3>One private routing code</h3>
                         <p>The sender enters a make, model, registration, fleet number or serial. Aim4price returns at most one match.</p>
                       </div>
                     </div>
                   ) : (
                     <>
                       <div className={styles.invoiceDropWizardHeading}>
-                        <h3 id="invoice-drop-routing-title">Choose the asset</h3>
+                        <h3>Choose the asset</h3>
                         <p>Every invoice using this code routes directly here.</p>
                       </div>
                       {assets.length ? (
@@ -4444,12 +4459,17 @@ export default function MyInvoicesClient({
               ) : null}
 
               {invoiceDropWizardStep === 3 ? (
-                <section className={styles.invoiceDropWizardPanel} aria-labelledby="invoice-drop-code-step-title">
+                <section className={`${styles.invoiceDropWizardPanel} ${wizardStyles.panel}`} aria-labelledby="invoice-drop-code-step-title">
+                  <div className={`${styles.invoiceDropWizardHeading} ${wizardStyles.panelHeading}`}>
+                    <span className={wizardStyles.panelNumber} aria-hidden="true">3</span>
+                    <h3 id="invoice-drop-code-step-title">Create and share the code</h3>
+                    <p>Use the secure contribution code with your public upload link.</p>
+                  </div>
                   <div className={styles.invoiceDropSelectionSummary}>
                     <span className={styles.invoiceDropSelectionIcon} aria-hidden="true">{invoiceDropScope === 'all' ? <ContributionIcon /> : <LedgerIcon />}</span>
                     <div>
                       <span>Routing</span>
-                      <strong id="invoice-drop-code-step-title">{invoiceDropScope === 'all' ? 'All assets' : invoiceDropAsset?.title ?? 'One asset'}</strong>
+                      <strong>{invoiceDropScope === 'all' ? 'All assets' : invoiceDropAsset?.title ?? 'One asset'}</strong>
                       <small>{invoiceDropScope === 'all'
                         ? 'The sender identifies the asset.'
                         : invoiceDropAssetDetails || 'Invoices route directly to this asset.'}</small>
@@ -4544,24 +4564,24 @@ export default function MyInvoicesClient({
               ) : null}
             </div>
 
-            <div className={`${styles.modalFooter} ${styles.invoiceDropWizardFooter}`}>
+            <div className={`${styles.modalFooter} ${styles.invoiceDropWizardFooter} ${wizardStyles.footer}`}>
               {invoiceDropWizardStep === 1 ? (
-                <button type="button" className={styles.secondaryButton} onClick={closeInvoiceDropCodeManager}>Cancel</button>
+                <button type="button" className={`${styles.secondaryButton} ${wizardStyles.secondaryAction}`} onClick={closeInvoiceDropCodeManager}>Cancel</button>
               ) : !newInvoiceDropCode ? (
-                <button type="button" className={styles.secondaryButton} onClick={goBackInvoiceDropWizard} disabled={invoiceDropCodeSaving}>Back</button>
+                <button type="button" className={`${styles.secondaryButton} ${wizardStyles.secondaryAction}`} onClick={goBackInvoiceDropWizard} disabled={invoiceDropCodeSaving}>Back</button>
               ) : <span />}
 
               {invoiceDropWizardStep < 3 ? (
                 <button
                   type="button"
-                  className={styles.primaryButton}
+                  className={`${styles.primaryButton} ${wizardStyles.primaryAction}`}
                   onClick={continueInvoiceDropWizard}
                   disabled={invoiceDropWizardStep === 1 ? !invoiceDropScope : invoiceDropScope === 'asset' && !invoiceDropAssetId}
                 >
                   Next
                 </button>
               ) : (
-                <button type="button" className={styles.primaryButton} onClick={closeInvoiceDropCodeManager} disabled={invoiceDropCodeSaving}>Done</button>
+                <button type="button" className={`${styles.primaryButton} ${wizardStyles.primaryAction}`} onClick={closeInvoiceDropCodeManager} disabled={invoiceDropCodeSaving}>Done</button>
               )}
             </div>
           </div>
@@ -4694,7 +4714,7 @@ export default function MyInvoicesClient({
 
       {recurringOpen ? (
         <div
-          className={`${styles.modalBackdrop} ${recurringAssetPickerOpen ? styles.budgetAssetPickerBackdrop : ''}`}
+          className={`${styles.modalBackdrop} ${recurringAssetPickerOpen ? styles.budgetAssetPickerBackdrop : wizardStyles.overlay}`}
           role="dialog"
           aria-modal="true"
           aria-labelledby={recurringAssetPickerOpen ? 'recurring-asset-picker-title' : 'recurring-modal-title'}
@@ -4782,11 +4802,11 @@ export default function MyInvoicesClient({
             </div>
           ) : (
             <form
-              className={[styles.downloadModal, styles.invoiceDropCodeModal, styles.budgetWizardModal, styles.recurringWizardModal].join(' ')}
+              className={[styles.downloadModal, styles.invoiceDropCodeModal, styles.budgetWizardModal, styles.recurringWizardModal, wizardStyles.dialog].join(' ')}
               onSubmit={submitRecurringCommitment}
             >
-              <div className={[styles.modalHeader, styles.invoiceDropCodeHeader].join(' ')}>
-                <div>
+              <div className={[styles.modalHeader, styles.invoiceDropCodeHeader, wizardStyles.header].join(' ')}>
+                <div className={wizardStyles.headerText}>
                   <h2 id="recurring-modal-title">Add recurring commitment</h2>
                   <p>{recurringWizardStep === 1
                     ? 'Choose which assets this cost covers.'
@@ -4794,20 +4814,24 @@ export default function MyInvoicesClient({
                       ? 'Add the cost and schedule.'
                       : 'Review and save.'}</p>
                 </div>
-                <button type="button" className={styles.closeButton} onClick={closeModal} aria-label="Close recurring cost">
+                <button type="button" className={`${styles.closeButton} ${wizardStyles.closeButton}`} onClick={closeModal} aria-label="Close recurring cost">
                   <CloseIcon />
                 </button>
               </div>
 
-              <div className={[styles.invoiceDropCodeBody, styles.budgetWizardBody, styles.recurringWizardBody].join(' ')}>
-                <ol className={styles.invoiceDropWizardProgress} aria-label={'Step ' + recurringWizardStep + ' of 3'}>
+              <div className={[styles.invoiceDropCodeBody, styles.budgetWizardBody, styles.recurringWizardBody, wizardStyles.body].join(' ')}>
+                <p className={wizardStyles.intro}>Complete one short step at a time. Your recurring commitment is saved on the final step.</p>
+                <ol className={`${styles.invoiceDropWizardProgress} ${wizardStyles.progress}`} aria-label={'Step ' + recurringWizardStep + ' of 3'}>
                   {([['Coverage', 1], ['Details', 2], ['Review', 3]] as const).map(([label, step]) => (
                     <li
                       key={label}
                       className={[
                         styles.invoiceDropWizardProgressItem,
+                        wizardStyles.progressItem,
                         recurringWizardStep === step ? styles.invoiceDropWizardProgressItemActive : '',
+                        recurringWizardStep === step ? wizardStyles.progressItemCurrent : '',
                         recurringWizardStep > step ? styles.invoiceDropWizardProgressItemComplete : '',
+                        recurringWizardStep > step ? wizardStyles.progressItemComplete : '',
                       ].join(' ')}
                       aria-current={recurringWizardStep === step ? 'step' : undefined}
                     >
@@ -4818,8 +4842,9 @@ export default function MyInvoicesClient({
                 </ol>
 
                 {recurringWizardStep === 1 ? (
-                  <section className={styles.invoiceDropWizardPanel} aria-labelledby="recurring-coverage-title">
-                    <div className={styles.invoiceDropWizardHeading}>
+                  <section className={`${styles.invoiceDropWizardPanel} ${wizardStyles.panel}`} aria-labelledby="recurring-coverage-title">
+                    <div className={`${styles.invoiceDropWizardHeading} ${wizardStyles.panelHeading}`}>
+                      <span className={wizardStyles.panelNumber} aria-hidden="true">1</span>
                       <h3 ref={recurringWizardStepHeadingRef} id="recurring-coverage-title" tabIndex={-1}>What should this cost cover?</h3>
                       <p>Choose one or more saved assets.</p>
                     </div>
@@ -4853,8 +4878,9 @@ export default function MyInvoicesClient({
                 ) : null}
 
                 {recurringWizardStep === 2 ? (
-                  <section className={`${styles.invoiceDropWizardPanel} ${styles.recurringDetailsPanel}`} aria-labelledby="recurring-details-title">
-                    <div className={styles.invoiceDropWizardHeading}>
+                  <section className={`${styles.invoiceDropWizardPanel} ${styles.recurringDetailsPanel} ${wizardStyles.panel}`} aria-labelledby="recurring-details-title">
+                    <div className={`${styles.invoiceDropWizardHeading} ${wizardStyles.panelHeading}`}>
+                      <span className={wizardStyles.panelNumber} aria-hidden="true">2</span>
                       <h3 ref={recurringWizardStepHeadingRef} id="recurring-details-title" tabIndex={-1}>Set the recurring cost</h3>
                       <p>Add the amount, timing and useful reference details.</p>
                     </div>
@@ -4998,8 +5024,9 @@ export default function MyInvoicesClient({
                 ) : null}
 
                 {recurringWizardStep === 3 ? (
-                  <section className={styles.invoiceDropWizardPanel} aria-labelledby="recurring-review-title">
-                    <div className={styles.invoiceDropWizardHeading}>
+                  <section className={`${styles.invoiceDropWizardPanel} ${wizardStyles.panel}`} aria-labelledby="recurring-review-title">
+                    <div className={`${styles.invoiceDropWizardHeading} ${wizardStyles.panelHeading}`}>
+                      <span className={wizardStyles.panelNumber} aria-hidden="true">3</span>
                       <h3 ref={recurringWizardStepHeadingRef} id="recurring-review-title" tabIndex={-1}>Review your commitment</h3>
                       <p>Check the details before saving.</p>
                     </div>
@@ -5053,21 +5080,21 @@ export default function MyInvoicesClient({
                 {recurringError ? <div className={styles.budgetFormError} role="alert">{recurringError}</div> : null}
               </div>
 
-              <div className={[styles.modalFooter, styles.invoiceDropWizardFooter, styles.budgetWizardFooter].join(' ')}>
+              <div className={[styles.modalFooter, styles.invoiceDropWizardFooter, styles.budgetWizardFooter, wizardStyles.footer].join(' ')}>
                 <button
                   type="button"
-                  className={styles.secondaryButton}
+                  className={`${styles.secondaryButton} ${wizardStyles.secondaryAction}`}
                   onClick={recurringWizardStep === 1 ? () => setFlow('source-choice') : goBackRecurringWizard}
                   disabled={isSaving}
                 >
                   Back
                 </button>
                 {recurringWizardStep < 3 ? (
-                  <button type="button" className={styles.primaryButton} onClick={continueRecurringWizard} disabled={isSaving}>
+                  <button type="button" className={`${styles.primaryButton} ${wizardStyles.primaryAction}`} onClick={continueRecurringWizard} disabled={isSaving}>
                     Next
                   </button>
                 ) : (
-                  <button type="submit" className={styles.primaryButton} disabled={isSaving}>
+                  <button type="submit" className={`${styles.primaryButton} ${wizardStyles.primaryAction}`} disabled={isSaving}>
                     {isSaving ? 'Saving...' : 'Save commitment'}
                   </button>
                 )}
@@ -5778,13 +5805,13 @@ export default function MyInvoicesClient({
       ) : null}
 
       {formOpen ? (
-        <div className={styles.modalBackdrop} role="dialog" aria-modal="true" aria-label={formTitle}>
+        <div className={`${styles.modalBackdrop} ${manualCostWizardOpen ? wizardStyles.overlay : ''}`} role="dialog" aria-modal="true" aria-label={formTitle}>
           <form
-            className={`${styles.formModal} ${styles.costFormModal} ${manualCostWizardOpen ? styles.manualCostWizardModal : ''}`}
+            className={`${styles.formModal} ${styles.costFormModal} ${manualCostWizardOpen ? `${styles.manualCostWizardModal} ${wizardStyles.dialog}` : ''}`}
             onSubmit={handleInvoiceFormSubmit}
           >
-            <div className={styles.modalHeader}>
-              <div>
+            <div className={`${styles.modalHeader} ${manualCostWizardOpen ? wizardStyles.header : ''}`}>
+              <div className={manualCostWizardOpen ? wizardStyles.headerText : undefined}>
                 <h2>{formTitle}</h2>
                 <p>
                   {selectedAsset?.title ?? 'Selected asset'} · {manualCostWizardOpen
@@ -5796,11 +5823,11 @@ export default function MyInvoicesClient({
                     : captureMethodLabel(draft.source)}
                 </p>
               </div>
-              <button type="button" className={styles.closeButton} onClick={closeModal} aria-label="Close"><CloseIcon /></button>
+              <button type="button" className={`${styles.closeButton} ${manualCostWizardOpen ? wizardStyles.closeButton : ''}`} onClick={closeModal} aria-label="Close"><CloseIcon /></button>
             </div>
-            <div className={styles.modalDivider} />
+            <div className={`${styles.modalDivider} ${manualCostWizardOpen ? wizardStyles.divider : ''}`} />
 
-            <div className={styles.formModalScrollBody}>
+            <div className={`${styles.formModalScrollBody} ${manualCostWizardOpen ? wizardStyles.body : ''}`}>
               {extractionWarnings.length ? (
                 <div className={styles.warningBox}>
                   {extractionWarnings.map((warning) => <p key={warning}>{warning}</p>)}
@@ -5808,27 +5835,34 @@ export default function MyInvoicesClient({
               ) : null}
 
               {manualCostWizardOpen ? (
-                <ol className={styles.invoiceDropWizardProgress} aria-label={'Step ' + manualCostWizardStep + ' of 3'}>
-                  {([['Invoice', 1], ['Work', 2], ['Review', 3]] as const).map(([label, step]) => (
-                    <li
-                      key={label}
-                      className={[
-                        styles.invoiceDropWizardProgressItem,
-                        manualCostWizardStep === step ? styles.invoiceDropWizardProgressItemActive : '',
-                        manualCostWizardStep > step ? styles.invoiceDropWizardProgressItemComplete : '',
-                      ].join(' ')}
-                      aria-current={manualCostWizardStep === step ? 'step' : undefined}
-                    >
-                      <span aria-hidden="true">{manualCostWizardStep > step ? '✓' : step}</span>
-                      <strong>{label}</strong>
-                    </li>
-                  ))}
-                </ol>
+                <>
+                  <p className={wizardStyles.intro}>Complete one short step at a time. Your cost record is saved on the final step.</p>
+                  <ol className={`${styles.invoiceDropWizardProgress} ${wizardStyles.progress}`} aria-label={'Step ' + manualCostWizardStep + ' of 3'}>
+                    {([['Invoice', 1], ['Work', 2], ['Review', 3]] as const).map(([label, step]) => (
+                      <li
+                        key={label}
+                        className={[
+                          styles.invoiceDropWizardProgressItem,
+                          wizardStyles.progressItem,
+                          manualCostWizardStep === step ? styles.invoiceDropWizardProgressItemActive : '',
+                          manualCostWizardStep === step ? wizardStyles.progressItemCurrent : '',
+                          manualCostWizardStep > step ? styles.invoiceDropWizardProgressItemComplete : '',
+                          manualCostWizardStep > step ? wizardStyles.progressItemComplete : '',
+                        ].join(' ')}
+                        aria-current={manualCostWizardStep === step ? 'step' : undefined}
+                      >
+                        <span aria-hidden="true">{manualCostWizardStep > step ? '✓' : step}</span>
+                        <strong>{label}</strong>
+                      </li>
+                    ))}
+                  </ol>
+                </>
               ) : null}
 
-              <section className={`${styles.invoiceFormCard} ${manualCostWizardOpen ? `${styles.invoiceDropWizardPanel} ${styles.manualCostWizardPanel}` : ''}`}>
+              <section className={`${styles.invoiceFormCard} ${manualCostWizardOpen ? `${styles.invoiceDropWizardPanel} ${styles.manualCostWizardPanel} ${wizardStyles.panel}` : ''}`}>
                 {manualCostWizardOpen ? (
-                  <div className={styles.invoiceDropWizardHeading}>
+                  <div className={`${styles.invoiceDropWizardHeading} ${wizardStyles.panelHeading}`}>
+                    <span className={wizardStyles.panelNumber} aria-hidden="true">{manualCostWizardStep}</span>
                     <h3 ref={manualCostWizardStepHeadingRef} tabIndex={-1}>
                       {manualCostWizardStep === 1
                         ? 'Add the invoice details'
@@ -6072,10 +6106,10 @@ export default function MyInvoicesClient({
               </section>
             </div>
 
-            <div className={`${styles.modalFooter} ${manualCostWizardOpen ? styles.manualCostWizardFooter : ''}`}>
+            <div className={`${styles.modalFooter} ${manualCostWizardOpen ? `${styles.manualCostWizardFooter} ${wizardStyles.footer}` : ''}`}>
               <button
                 type="button"
-                className={styles.secondaryButton}
+                className={`${styles.secondaryButton} ${manualCostWizardOpen ? wizardStyles.secondaryAction : ''}`}
                 onClick={() => {
                   if (manualCostWizardOpen) {
                     if (manualCostWizardStep === 1) leaveManualCostWizard();
@@ -6089,11 +6123,11 @@ export default function MyInvoicesClient({
                 Back
               </button>
               {manualCostWizardOpen && manualCostWizardStep < 3 ? (
-                <button type="button" className={styles.primaryButton} onClick={continueManualCostWizard} disabled={isSaving}>
+                <button type="button" className={`${styles.primaryButton} ${wizardStyles.primaryAction}`} onClick={continueManualCostWizard} disabled={isSaving}>
                   Next
                 </button>
               ) : manualCostWizardOpen ? (
-                <button type="button" className={styles.primaryButton} onClick={() => void saveInvoiceDraft()} disabled={isSaving}>
+                <button type="button" className={`${styles.primaryButton} ${wizardStyles.primaryAction}`} onClick={() => void saveInvoiceDraft()} disabled={isSaving}>
                   {isSaving ? 'Saving...' : 'Save cost record'}
                 </button>
               ) : (

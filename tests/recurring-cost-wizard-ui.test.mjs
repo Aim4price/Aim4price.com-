@@ -10,7 +10,7 @@ const modalStart = client.indexOf('{recurringOpen ?');
 const modalEnd = client.indexOf('{filterOpen ?', modalStart);
 const recurringModal = client.slice(modalStart, modalEnd);
 
-test('recurring costs use the compact three-step Spending budget pattern', () => {
+test('recurring costs use the guided three-step Spending budget pattern', () => {
   assert.ok(modalStart >= 0 && modalEnd > modalStart, 'recurring cost modal should be present');
   assert.match(client, /type RecurringWizardStep = 1 \| 2 \| 3/);
   assert.match(client, /const \[recurringWizardStep, setRecurringWizardStep\]/);

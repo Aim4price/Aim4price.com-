@@ -23,6 +23,7 @@ import {
   type AccountDocumentType,
 } from '../../lib/account-document-taxonomy';
 import styles from './page.module.css';
+import wizardStyles from '../../components/AimWizardModal.module.css';
 
 type DocumentCategory = AccountDocumentCategory;
 type DocumentType = AccountDocumentType;
@@ -1375,32 +1376,18 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
       </div>
 
       {modalMode && !showAssetPicker ? (
-        <div className={styles.modalBackdrop} onMouseDown={(event) => { if (event.target === event.currentTarget) closeModal(); }}>
-          <section ref={modalRef} className={styles.modal} role="dialog" aria-modal="true" aria-labelledby="document-modal-title">
-            <header className={styles.modalHeader}>
-              <div>
-                <h2 id="document-modal-title">{modalMode === 'upload' ? activeUploadStep.label : 'Edit document'}</h2>
-                <p>{modalMode === 'upload' ? activeUploadStep.description : `Update the details and links for ${editingDocument?.fileName ?? 'this document'}.`}</p>
+        <div className={`${styles.modalBackdrop} ${modalMode === 'upload' ? wizardStyles.overlay : ''}`} onMouseDown={(event) => { if (event.target === event.currentTarget) closeModal(); }}>
+          <section ref={modalRef} className={`${styles.modal} ${modalMode === 'upload' ? wizardStyles.dialog : ''}`} role="dialog" aria-modal="true" aria-labelledby="document-modal-title">
+            <header className={`${styles.modalHeader} ${modalMode === 'upload' ? wizardStyles.header : ''}`}>
+              <div className={modalMode === 'upload' ? wizardStyles.headerText : undefined}>
+                <h2 id="document-modal-title">{modalMode === 'upload' ? 'Upload document' : 'Edit document'}</h2>
+                <p>{modalMode === 'upload' ? 'Add files, details and links in three short steps.' : `Update the details and links for ${editingDocument?.fileName ?? 'this document'}.`}</p>
               </div>
-              <button type="button" onClick={closeModal} disabled={busy} aria-label="Close dialog" data-modal-initial-focus="true"><Icon name="close" /></button>
-              {modalMode === 'upload' ? (
-                <ol className={styles.uploadSteps} aria-label="Upload progress">
-                  {UPLOAD_STEPS.map((item) => (
-                    <li
-                      key={item.step}
-                      className={item.step === uploadStep ? styles.uploadStepCurrent : item.step < uploadStep ? styles.uploadStepComplete : ''}
-                      aria-current={item.step === uploadStep ? 'step' : undefined}
-                    >
-                      <span>{item.step < uploadStep ? '✓' : item.step}</span>
-                      <strong>{item.label}</strong>
-                    </li>
-                  ))}
-                </ol>
-              ) : null}
+              <button type="button" className={modalMode === 'upload' ? wizardStyles.closeButton : undefined} onClick={closeModal} disabled={busy} aria-label="Close dialog" data-modal-initial-focus="true"><Icon name="close" /></button>
             </header>
 
             <form onSubmit={submitDocument} className={styles.modalForm}>
-              <div className={styles.modalScroll}>
+              <div className={`${styles.modalScroll} ${modalMode === 'upload' ? wizardStyles.body : ''}`}>
                 {modalNotice ? (
                   <div className={styles.modalNotice} role="alert">
                     <Icon name="info" />
@@ -1409,7 +1396,32 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
                   </div>
                 ) : null}
 
-                <fieldset className={styles.modalFields} disabled={busy}>
+                {modalMode === 'upload' ? (
+                  <>
+                    <p className={wizardStyles.intro}>Complete one short step at a time. Your documents are uploaded on the final step.</p>
+                    <ol className={`${styles.uploadSteps} ${wizardStyles.progress}`} aria-label="Upload progress">
+                      {UPLOAD_STEPS.map((item) => (
+                        <li
+                          key={item.step}
+                          className={`${wizardStyles.progressItem} ${item.step === uploadStep ? `${styles.uploadStepCurrent} ${wizardStyles.progressItemCurrent}` : item.step < uploadStep ? `${styles.uploadStepComplete} ${wizardStyles.progressItemComplete}` : ''}`}
+                          aria-current={item.step === uploadStep ? 'step' : undefined}
+                        >
+                          <span>{item.step < uploadStep ? '✓' : item.step}</span>
+                          <strong>{item.label}</strong>
+                        </li>
+                      ))}
+                    </ol>
+                  </>
+                ) : null}
+
+                <fieldset className={`${styles.modalFields} ${modalMode === 'upload' ? wizardStyles.panel : ''}`} disabled={busy}>
+                {modalMode === 'upload' ? (
+                  <div className={wizardStyles.panelHeading}>
+                    <span className={wizardStyles.panelNumber} aria-hidden="true">{uploadStep}</span>
+                    <h3>{activeUploadStep.label}</h3>
+                    <p>{activeUploadStep.description}</p>
+                  </div>
+                ) : null}
                 {modalMode === 'upload' && uploadStep === 1 ? (
                   <>
                   <div
@@ -1602,19 +1614,19 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
                 </fieldset>
               </div>
 
-              <footer className={styles.modalFooter}>
+              <footer className={`${styles.modalFooter} ${modalMode === 'upload' ? wizardStyles.footer : ''}`}>
                 <span className={styles.srOnly} role="status" aria-live="polite">
                   {uploadProgress ? `Uploading document ${uploadProgress.current} of ${uploadProgress.total}.` : ''}
                 </span>
                 <button
                   type="button"
-                  className={styles.cancelButton}
+                  className={`${styles.cancelButton} ${modalMode === 'upload' ? wizardStyles.secondaryAction : ''}`}
                   disabled={busy}
                   onClick={modalMode === 'upload' && uploadStep > 1 ? returnToPreviousUploadStep : closeModal}
                 >
                   {modalMode === 'upload' && uploadStep > 1 ? <><Icon name="chevron-left" /> Back</> : 'Cancel'}
                 </button>
-                <button type="submit" className={styles.uploadButton} disabled={busy}>
+                <button type="submit" className={`${styles.uploadButton} ${modalMode === 'upload' ? wizardStyles.primaryAction : ''}`} disabled={busy}>
                   {busy
                     ? <span className={styles.buttonSpinner} />
                     : <Icon name={modalMode === 'upload' && uploadStep < 3 ? 'chevron-right' : modalMode === 'upload' ? 'upload' : 'edit'} />}
@@ -1831,4 +1843,3 @@ export default function DocumentsClient({ initialAssetId = '', initialReturnTo =
     </div>
   );
 }
-

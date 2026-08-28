@@ -287,7 +287,7 @@ test('live vault interactions keep errors, focus and view mutations safe', () =>
   assert.match(client, /document\.body\.style\.overflow = previousOverflow/);
   assert.match(client, /event\.key === 'Escape' && showDocumentTypeOptions/);
   assert.match(client, /event\.stopPropagation\(\)/);
-  assert.match(client, /<fieldset className=\{styles\.modalFields\} disabled=\{busy\}>/);
+  assert.match(client, /<fieldset className=\{`\$\{styles\.modalFields\} \$\{modalMode === 'upload' \? wizardStyles\.panel : ''\}`\} disabled=\{busy\}>/);
   assert.match(client, /role="status" aria-live="polite"/);
   assert.match(client, /async function readVaultResponse/);
   assert.match(client, /setOperationBusy\(false\);\s*setModalMode\(null\);/);
@@ -305,7 +305,7 @@ test('Document Vault refinements use guided modal flows instead of pills and bro
   assert.match(client, /label: 'Upload document'/);
   assert.match(client, /label: 'Document details'/);
   assert.match(client, /label: 'Linked to\?'/);
-  assert.match(client, /className=\{styles\.uploadSteps\} aria-label="Upload progress"/);
+  assert.match(client, /className=\{`\$\{styles\.uploadSteps\} \$\{wizardStyles\.progress\}`\} aria-label="Upload progress"/);
   assert.match(client, /modalMode === 'upload' && uploadStep < 3/);
   assert.match(client, /uploadStep === 1[\s\S]*?setUploadStep\(2\)/);
   assert.match(client, /uploadStep === 2 && validateDocumentDetails\(\)/);
