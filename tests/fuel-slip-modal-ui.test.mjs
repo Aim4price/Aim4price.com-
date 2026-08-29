@@ -53,6 +53,18 @@ test('fuel entry, upload and review surfaces share the canonical cost wizard she
   assert.doesNotMatch(reviewModal, /Raw OCR and parser debug/);
 });
 
+test('Aim4price capture is an upload-only step with no operational-detail requirements', () => {
+  const extraction = sliceBetween(client, 'async function handleFuelSlipExtract()', 'function preventFuelSlipImplicitSubmit');
+
+  assert.match(extraction, /formData\.append\('file', fuelSlipUploadFile\)/);
+  assert.match(extraction, /formData\.append\('targetType', targetType\)/);
+  assert.match(extraction, /formData\.append\('targetId', targetId\)/);
+  assert.doesNotMatch(extraction, /customerFields|missingCustomerFields|getFuelSlipMissingFields|submittedPayload/);
+  assert.match(uploadModal, /Upload the slip only — no extra details are needed\./);
+  assert.doesNotMatch(uploadModal, /renderFuelSlipExtraFields\(\)|renderFuelSlipValidationNotice\(\)|operational details/);
+  assert.match(styles, /\.fuelSlipFlowBackdrop \.fuelSlipUploadWizardModal\s*\{[\s\S]*?width:\s*min\(860px, 100%\)/);
+});
+
 test('fuel wizard keeps the canonical two-step progress and final-step save behavior', () => {
   const progress = sliceBetween(client, 'function renderFuelSlipWizardProgress()', 'function renderFuelSlipExtraFields()');
 
