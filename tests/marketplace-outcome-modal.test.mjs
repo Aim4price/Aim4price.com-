@@ -18,7 +18,7 @@ test('shared Marketplace outcome dialog records a complete removal outcome', asy
     assert.match(source, new RegExp(`'${reason}'`));
   }
 
-  assert.match(source, /Did Aim4price help with this outcome\?/);
+  assert.match(source, /Did Aim4price help with this outcome in any way\?/);
   assert.match(source, /aim4priceHelped === null/);
   assert.match(source, /reason === 'other' && notes\.trim\(\)\.length < 3/);
   assert.match(source, /reason === 'sold' \|\| reason === 'traded'/);
@@ -31,13 +31,47 @@ test('shared Marketplace outcome dialog records a complete removal outcome', asy
   assert.match(source, /sourceSurface: source/);
 });
 
+test('advert removal mirrors the Asset Register confirmation and four-step disposal journey', async () => {
+  const [source, styles] = await Promise.all([
+    read('components/MarketplaceOutcomeModal.tsx'),
+    read('components/MarketplaceOutcomeModal.module.css'),
+  ]);
+
+  assert.match(source, /type RemovalStage = 'confirm' \| 'wizard'/);
+  assert.match(source, /Are you sure you want to remove this\?/);
+  assert.match(source, /Selected advert/);
+  assert.match(source, /Yes, remove advert/);
+  assert.match(source, /setStage\('wizard'\)/);
+
+  for (const step of ['Outcome', 'Details', 'Aim4price impact', 'Information']) {
+    assert.match(source, new RegExp(`label: '${step}'`));
+  }
+
+  assert.match(source, /aria-label=\{`Step \$\{step\} of 4`\}/);
+  assert.match(source, /aria-current=\{item\.step === step \? 'step'/);
+  assert.match(source, /step === 1[\s\S]*?What happened to this advert\?/);
+  assert.match(source, /step === 2[\s\S]*?\{detailsHeading\(reason\)\}/);
+  assert.match(source, /step === 3[\s\S]*?Did Aim4price help with this outcome in any way\?/);
+  assert.match(source, /step === 4[\s\S]*?Review what will happen/);
+  assert.match(source, /Withdraw advert and keep asset/);
+  assert.match(source, /Your saved asset, valuation and history stay available/);
+  assert.match(source, /step < 4[\s\S]*?nextStep[\s\S]*?submitOutcome/);
+
+  assert.match(styles, /\.confirmDialog\s*\{[^}]*width:\s*min\(58rem, 100%\)/);
+  assert.match(styles, /\.dialog\s*\{[^}]*width:\s*min\(52rem, 100%\)/);
+  assert.match(styles, /\.progress\s*\{[^}]*grid-template-columns:\s*repeat\(4, minmax\(0, 1fr\)\)/);
+  assert.match(styles, /\.reasonGrid\s*\{[^}]*grid-template-columns:\s*repeat\(3, minmax\(0, 1fr\)\)/);
+  assert.match(styles, /@media \(max-width: 720px\)[\s\S]*?\.reasonGrid\s*\{[^}]*repeat\(2, minmax\(0, 1fr\)\)/);
+  assert.match(styles, /@media \(max-width: 420px\)[\s\S]*?\.reasonGrid\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\)/);
+});
+
 test('shared Marketplace outcome dialog is keyboard and screen-reader accessible', async () => {
   const [source, styles] = await Promise.all([
     read('components/MarketplaceOutcomeModal.tsx'),
     read('components/MarketplaceOutcomeModal.module.css'),
   ]);
 
-  assert.match(source, /role="dialog"/);
+  assert.match(source, /role=\{stage === 'confirm' \? 'alertdialog' : 'dialog'\}/);
   assert.match(source, /aria-modal="true"/);
   assert.match(source, /aria-labelledby=\{titleId\}/);
   assert.match(source, /aria-describedby=\{descriptionId\}/);
@@ -45,14 +79,15 @@ test('shared Marketplace outcome dialog is keyboard and screen-reader accessible
   assert.match(source, /event\.key !== 'Tab'/);
   assert.match(source, /previouslyFocused\?\.focus\(\)/);
   assert.match(source, /role="alert"/);
-  assert.match(source, /aria-required="true"/);
+  assert.match(source, /aria-pressed=\{reason === option\.value\}/);
+  assert.match(source, /stepHeadingRef\.current\?\.focus\(\)/);
   assert.match(styles, /font-family: 'Montserrat'/);
   assert.match(styles, /\.dialog\s*\{[^}]*border-radius:\s*28px/);
   assert.match(styles, /\.closeButton\s*\{[^}]*width:\s*3rem;[^}]*height:\s*3rem;[^}]*border-radius:\s*999px/);
   assert.match(styles, /\.closeButton\s*\{[^}]*color:\s*#28647f;[^}]*background:\s*#e9f5fb/);
-  assert.match(styles, /\.option\s*\{[^}]*min-height:\s*3\.65rem;[^}]*border-radius:\s*14px/);
-  assert.match(styles, /\.cancelButton,[\s\S]*?\.removeButton\s*\{[^}]*min-height:\s*3\.35rem/);
-  assert.match(styles, /@media \(max-width: 640px\)/);
+  assert.match(styles, /\.option\s*\{[^}]*min-height:\s*3\.55rem;[^}]*border-radius:\s*0\.95rem/);
+  assert.match(styles, /\.cancelButton,[\s\S]*?\.removeButton\s*\{[^}]*min-height:\s*3\.45rem/);
+  assert.match(styles, /@media \(max-width: 720px\)/);
   assert.match(styles, /@media \(prefers-reduced-motion: reduce\)/);
   assert.doesNotMatch(styles, /text-transform:\s*uppercase/);
 });
