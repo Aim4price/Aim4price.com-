@@ -1861,6 +1861,7 @@
 }
 
 .compactExpandedTop > button,
+.compactExpandedTop > a,
 .compactExpandedTop > span {
   width: 100%;
   min-width: 0;
@@ -2074,6 +2075,12 @@
   .discoveryCardMuted {
     opacity: 0.22;
     filter: blur(1.4px);
+  }
+}
+
+@media (max-width: 420px) {
+  .compactAppSurface .discoveryDetailsGrid {
+    grid-template-columns: 1fr !important;
   }
 }
 

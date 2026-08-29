@@ -19,6 +19,14 @@ const marketplaceClient = read("app/marketplace/marketplace-client.tsx");
 const notifications = read("lib/notifications.ts");
 const notificationInbox = read("lib/notification-inbox.ts");
 const appHeader = read("components/AppHeader.tsx");
+const recentExpanded = client.slice(
+  client.indexOf("function renderExpanded("),
+  client.indexOf("function renderAdvertCard("),
+);
+const recentCards = client.slice(
+  client.indexOf("function renderAdvertCard("),
+  client.indexOf("return (", client.indexOf("function renderAdvertCard(")),
+);
 
 const listCte = store.slice(
   store.indexOf("const RECENT_ADVERTS_CTE"),
@@ -189,8 +197,55 @@ test("both Discovery views share one toolbar treatment and archived adverts avoi
   assert.match(client, /styles\.discoveryRefreshButton/);
   assert.match(client, /assetStyles\.filterTriggerButtonActive/);
   assert.match(client, /leadStyles\.leadRefreshIconActive/);
-  assert.match(client, /recentAdvertExpandedGridNoImage/);
+  assert.match(client, /Photo unavailable/);
   assert.doesNotMatch(client, />A4P</);
+});
+
+test("recent adverts reuse the normal Discovery card and detail structure", () => {
+  for (const token of [
+    "assetStyles.assetCard",
+    "leadStyles.leadAssetCard",
+    "assetStyles.assetCardExpanded",
+    "styles.discoveryLeadAssetCard",
+    "assetStyles.assetHeader",
+    "leadStyles.leadAssetHeader",
+    "assetStyles.assetBody",
+    "leadStyles.leadAssetBody",
+    "styles.discoveryLeadAssetBody",
+    "assetStyles.previewWrap",
+    "leadStyles.leadPreviewWrap",
+    "assetStyles.assetDetailDivider",
+    "assetStyles.assetDetailsPanel",
+    "styles.discoveryDetailsPanel",
+    "assetStyles.assetDetailsGrid",
+    "styles.discoveryDetailsGrid",
+    "assetStyles.assetPrimaryDetails",
+    "styles.discoveryDetailGroup",
+    "assetStyles.assetDetailRow",
+    "styles.discoveryDetailRow",
+    "styles.discoveryAccessNote",
+    "styles.discoveryInlineContact",
+  ]) {
+    assert.ok(recentExpanded.includes(token), `recent adverts should reuse ${token}`);
+  }
+  assert.doesNotMatch(recentExpanded, /recentAdvertExpandedGrid|recentAdvertDetailGrid/);
+});
+
+test("recent advert open and close controls match normal Discovery", () => {
+  for (const token of [
+    "assetStyles.primaryButton",
+    "workspaceStyles.actionButton",
+    "workspaceStyles.actionGreen",
+    "leadStyles.openLeadButton",
+    "styles.discoveryOpenButton",
+    "styles.discoveryCloseButton",
+  ]) {
+    assert.ok(recentCards.includes(token), `recent advert cards should reuse ${token}`);
+  }
+  assert.match(recentCards, /aria-expanded=\{isExpanded\}/);
+  assert.match(recentCards, /aria-controls=\{`recent-advert-\$\{advert\.id\}`\}/);
+  assert.match(recentCards, /\{isExpanded \? "Close" : "Open"\}/);
+  assert.doesNotMatch(recentCards, /recentAdvertOpenAction|recentAdvertCloseAction|View details|Hide details/);
 });
 
 test("WhatsApp contact follows existing authorization boundaries", () => {
@@ -223,7 +278,8 @@ test("new Marketplace snapshots retain discovery details after an asset changes"
 });
 
 test("recent adverts and request dialogs remain accessible and responsive", () => {
-  assert.match(client, /<h2 className=\{styles\.recentAdvertCardTitle\}>/);
+  assert.match(client, /<h2>\{advert\.title\}<\/h2>/);
+  assert.match(client, /<h3>\{advert\.title\}<\/h3>/);
   assert.match(client, /aria-haspopup="dialog"/);
   assert.match(client, /aria-expanded=\{filterOpen\}/);
   assert.match(client, /aria-label=\{`Showing \$\{pagination\.rangeStart\}/);
@@ -233,9 +289,11 @@ test("recent adverts and request dialogs remain accessible and responsive", () =
   assert.match(client, /aria-busy=\{loading\}/);
   assert.match(client, /aria-live="polite"/);
   assert.match(css, /\.discoveryViewSwitch/);
-  assert.match(css, /\.recentAdvertCard_available/);
-  assert.match(css, /\.recentAdvertCard_sold/);
-  assert.match(css, /\.recentAdvertCard_ended/);
+  assert.match(css, /\.recentAdvertStatus_available/);
+  assert.match(css, /\.recentAdvertStatus_sold/);
+  assert.match(css, /\.recentAdvertStatus_ended/);
+  assert.match(css, /\.compactExpandedTop > a/);
+  assert.match(css, /@media \(max-width: 420px\)[\s\S]*\.compactAppSurface \.discoveryDetailsGrid/);
   assert.match(css, /@media \(max-width: 760px\)[\s\S]*\.discoveryViewSwitchButtons[\s\S]*grid-template-columns: 1fr/);
   assert.match(css, /@media \(prefers-reduced-motion: reduce\)/);
 });
