@@ -4694,41 +4694,33 @@ export default function FuelClient({
       ) : null}
 
       {modalMode === 'fuel-slip' && fuelSlipFlow === 'upload' ? (
-        <div className={`${styles.fuelSlipFlowBackdrop} ${wizardStyles.overlay}`}>
-          <div className={`${styles.formModal} ${styles.costUploadModal} ${styles.fuelSlipUploadWizardModal} ${wizardStyles.dialog}`} role="dialog" aria-modal="true" aria-labelledby="fuel-slip-upload-title">
-            <div className={`${styles.modalHeader} ${wizardStyles.header}`}>
-              <div className={wizardStyles.headerText}>
-                <h2 id="fuel-slip-upload-title">Upload for Aim4price capture</h2>
-                <p>{selectedFuelSlipTargetName} · Slip upload</p>
+        <div className={styles.fuelSlipFlowBackdrop} role="dialog" aria-modal="true" aria-labelledby="fuel-slip-upload-title">
+          <div className={`${styles.formModal} ${styles.costUploadModal}`}>
+            <div className={styles.modalHeader}>
+              <div>
+                <h2 id="fuel-slip-upload-title">Upload fuel slip/photo</h2>
+                <p>{selectedFuelSlipTargetName} · Aim4price assisted capture</p>
               </div>
-              <button type="button" className={`${styles.closeButton} ${wizardStyles.closeButton}`} onClick={() => closeFuelSlipFlow()} aria-label="Close" disabled={isExtractingFuelSlip}><CloseIcon /></button>
+              <button type="button" className={styles.closeButton} onClick={() => closeFuelSlipFlow()} aria-label="Close" disabled={isExtractingFuelSlip}><CloseIcon /></button>
             </div>
-            <div className={`${styles.modalDivider} ${wizardStyles.divider}`} />
-            <div className={`${styles.formModalScrollBody} ${wizardStyles.body}`}>
-              <p className={wizardStyles.intro}>Add one clear photo or PDF. Aim4price will match it to the selected asset or storage tank and capture the slip details.</p>
-              <section className={`${styles.fuelSlipWizardPanel} ${wizardStyles.panel}`}>
-                <div className={`${styles.fuelSlipWizardHeading} ${wizardStyles.panelHeading}`}>
-                  <span className={wizardStyles.panelNumber} aria-hidden="true">1</span>
-                  <h3>Upload the fuel slip</h3>
-                  <p>Upload the slip only — no extra details are needed.</p>
+            <div className={styles.modalDivider} />
+            <div className={styles.formModalScrollBody}>
+              <section className={styles.uploadPanel}>
+                <h3>Documents and photos</h3>
+                <div className={`${styles.uploadBox} ${fuelSlipUploadReady ? styles.uploadBoxReady : ''}`}>
+                  <label className={styles.uploadButton}>
+                    <UploadIcon />
+                    Add fuel slip/photo
+                    <input type="file" accept="application/pdf,image/jpeg,image/jpg,image/png,image/webp" onChange={handleFuelSlipUploadChange} disabled={isSaving || isExtractingFuelSlip} />
+                  </label>
+                  <span className={styles.uploadCounter}>{fuelSlipUploadReady ? '1 / 1' : '0 / 1'}</span>
+                  {fuelSlipUploadFileName ? <p>{fuelSlipUploadFileName}</p> : null}
                 </div>
-                <section className={styles.uploadPanel}>
-                  <h3>Document or photo</h3>
-                  <div className={`${styles.uploadBox} ${fuelSlipUploadReady ? styles.uploadBoxReady : ''}`}>
-                    <label className={styles.uploadButton}>
-                      <UploadIcon />
-                      Add fuel slip/photo
-                      <input type="file" accept="application/pdf,image/jpeg,image/jpg,image/png,image/webp" onChange={handleFuelSlipUploadChange} disabled={isSaving || isExtractingFuelSlip} />
-                    </label>
-                    <span className={styles.uploadCounter}>{fuelSlipUploadReady ? '1 / 1' : '0 / 1'}</span>
-                    {fuelSlipUploadFileName ? <p>{fuelSlipUploadFileName}</p> : null}
-                  </div>
-                </section>
               </section>
             </div>
-            <div className={`${styles.modalFooter} ${wizardStyles.footer}`}>
-              <button type="button" className={`${styles.secondaryButton} ${wizardStyles.secondaryAction}`} onClick={handleFuelSlipUploadBack} disabled={isExtractingFuelSlip}>Back</button>
-              <button type="button" className={`${styles.primaryButton} ${wizardStyles.primaryAction}`} onClick={handleFuelSlipExtract} disabled={!fuelSlipUploadFile || isExtractingFuelSlip}>
+            <div className={styles.modalFooter}>
+              <button type="button" className={styles.secondaryButton} onClick={handleFuelSlipUploadBack} disabled={isExtractingFuelSlip}>Back</button>
+              <button type="button" className={styles.primaryButton} onClick={handleFuelSlipExtract} disabled={!fuelSlipUploadFile || isExtractingFuelSlip}>
                 {isExtractingFuelSlip ? 'Sending fuel slip/photo...' : 'Send for capture'}
               </button>
             </div>
