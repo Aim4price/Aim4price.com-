@@ -49,21 +49,21 @@ test('Cost Ledger sends uploaded invoices for verified capture without calling t
   assert.match(costClient, /CaptureRequestDecisionModal/);
 });
 
-test('Fuel assisted capture collects operational context before intake', () => {
+test('Fuel assisted capture only needs the selected target and uploaded slip at intake', () => {
   const assistedHandler = fuelClient.slice(
     fuelClient.indexOf('async function handleFuelSlipExtract'),
     fuelClient.indexOf('function preventFuelSlipImplicitSubmit'),
   );
 
-  assert.match(assistedHandler, /customerFields/);
-  assert.match(assistedHandler, /operatorName/);
-  assert.match(assistedHandler, /activityText/);
-  assert.match(assistedHandler, /workAreaText/);
+  assert.match(assistedHandler, /formData\.append\('file', fuelSlipUploadFile\)/);
+  assert.match(assistedHandler, /formData\.append\('targetType', targetType\)/);
+  assert.match(assistedHandler, /formData\.append\('targetId', targetId\)/);
+  assert.doesNotMatch(assistedHandler, /customerFields|operatorName|activityText|workAreaText|submittedPayload/);
   assert.match(assistedHandler, /\/api\/capture-requests\/fuel-slip/);
   assert.doesNotMatch(assistedHandler, /\/api\/fuel\/slips\/extract/);
   assert.match(retiredFuelReader, /status: 410/);
   assert.doesNotMatch(retiredFuelReader, /extractFuelSlipFromUpload/);
-  assert.match(fuelClient, /Aim4price will capture the supplier, date, litres, VAT and amount/);
+  assert.match(fuelClient, /Upload the slip only — no extra details are needed/);
   assert.doesNotMatch(fuelClient, /accept="[^"]*text\/plain/);
 });
 
