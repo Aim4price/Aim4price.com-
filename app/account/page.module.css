@@ -4376,10 +4376,13 @@
 
 .quickActionGroupHeader p {
   margin: 0.2rem 0 0;
+  overflow: hidden;
   color: #607168;
   font-size: 0.72rem;
   font-weight: 650;
   line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .quickActionGroup .quickActionList {
@@ -4391,6 +4394,12 @@
   padding: 0.72rem 0.8rem;
   border-radius: 0.95rem;
   background: rgba(255, 255, 255, 0.96);
+}
+
+.quickActionGroup .quickActionButton strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .securityActionsGrid {
@@ -4448,19 +4457,24 @@
 }
 
 .securityActionCopy strong {
+  overflow: hidden;
   color: #17362c;
   font-size: 0.9rem;
   font-weight: 850;
   line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .securityActionCopy small {
   min-width: 0;
-  overflow-wrap: anywhere;
+  overflow: hidden;
   color: #607168;
   font-size: 0.72rem;
   font-weight: 650;
   line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .dangerZone {
@@ -4502,18 +4516,57 @@
 }
 
 .dangerZoneButton {
-  min-height: var(--tap-target-min, 44px);
-  gap: 0.62rem;
-  padding: 0 1rem;
+  min-width: 12.5rem;
+  min-height: 3.25rem;
+  justify-content: flex-start;
+  gap: 0.72rem;
+  padding: 0.4rem 1rem 0.4rem 0.48rem;
+  border: 1px solid rgba(179, 55, 55, 0.24);
+  border-radius: 0.95rem;
+  color: #9f3434;
+  background: linear-gradient(180deg, #ffffff 0%, #fff6f6 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 10px 22px rgba(117, 38, 38, 0.08);
+  font-weight: 850;
 }
 
-.dangerZoneButton .quickActionIcon {
-  width: 2rem;
-  height: 2rem;
+.dangerZoneButtonIcon {
+  width: 2.3rem;
+  height: 2.3rem;
+  display: inline-grid;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid rgba(179, 55, 55, 0.14);
+  border-radius: 0.72rem;
+  color: #a63a3a;
+  background: rgba(198, 75, 75, 0.09);
+  transition:
+    color 160ms ease,
+    background 160ms ease,
+    border-color 160ms ease;
+}
+
+.dangerZoneButtonIcon svg {
+  width: 1.16rem;
+  height: 1.16rem;
+}
+
+.dangerZoneButton:hover:not(:disabled) {
+  border-color: rgba(151, 43, 43, 0.34);
+  color: #ffffff;
+  background: linear-gradient(180deg, #c94d4d 0%, #a93636 100%);
+  box-shadow: 0 13px 26px rgba(142, 43, 43, 0.18);
+}
+
+.dangerZoneButton:hover:not(:disabled) .dangerZoneButtonIcon {
+  border-color: rgba(255, 255, 255, 0.2);
   color: #ffffff;
   background: rgba(255, 255, 255, 0.12);
-  border-color: rgba(255, 255, 255, 0.18);
-  box-shadow: none;
+}
+
+.dangerZoneButton:focus-visible {
+  outline-color: rgba(179, 55, 55, 0.28);
 }
 
 .passwordModalCard {
@@ -4585,22 +4638,6 @@
 
 .securityFieldError {
   color: #963737;
-}
-
-.accountScrollableModalCard .modalCloseButton {
-  border: 1px solid rgba(35, 74, 155, 0.24);
-  border-radius: 999px;
-  color: #ffffff;
-  background: linear-gradient(180deg, #5b8bee 0%, #315fbe 100%);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.24),
-    0 10px 22px rgba(38, 76, 155, 0.22);
-}
-
-.accountScrollableModalCard .modalCloseButton:hover:not(:disabled) {
-  border-color: rgba(30, 65, 137, 0.36);
-  color: #ffffff;
-  background: linear-gradient(180deg, #4f80e3 0%, #294fa3 100%);
 }
 
 .accountScrollableModalCard .modalCloseButton:disabled {
@@ -4681,6 +4718,7 @@
 
   .dangerZoneButton {
     width: 100%;
+    justify-content: center;
   }
 
   .passwordModalIntro {
