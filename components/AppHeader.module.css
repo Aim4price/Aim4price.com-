@@ -134,7 +134,8 @@
   content: attr(data-tooltip);
   position: absolute;
   left: 50%;
-  bottom: calc(100% + 0.48rem);
+  top: -0.35rem;
+  bottom: auto;
   z-index: 4;
   width: max-content;
   max-width: 8rem;
