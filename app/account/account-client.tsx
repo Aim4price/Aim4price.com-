@@ -2505,7 +2505,6 @@ export default function AccountClient({
                 <QuickActionIcon name="security" />
                 <span className={styles.securityActionCopy}>
                   <strong>Change password</strong>
-                  <small>Use your current password</small>
                 </span>
                 <span className={styles.quickActionChevron} aria-hidden="true">›</span>
               </button>
@@ -2521,7 +2520,6 @@ export default function AccountClient({
                   <strong>
                     {isSendingResetEmail ? "Sending reset link..." : "Email a reset link"}
                   </strong>
-                  <small>{profile?.email || "Your account email"}</small>
                 </span>
                 <span className={styles.quickActionChevron} aria-hidden="true">›</span>
               </button>
@@ -2534,7 +2532,6 @@ export default function AccountClient({
           aria-labelledby="danger-zone-title"
         >
           <div className={styles.dangerZoneCopy}>
-            <span className={styles.dangerZoneEyebrow}>Danger zone</span>
             <h2 id="danger-zone-title">Delete account</h2>
             <p>
               Permanently delete your account and saved workspace.
