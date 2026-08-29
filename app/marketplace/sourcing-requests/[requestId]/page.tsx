@@ -50,12 +50,14 @@ function cleanPhoneForTel(value: string): string {
 
 function cleanPhoneForWhatsApp(value: string): string {
   const digits = value.replace(/\D/g, '');
-  if (!digits) return '';
-  if (digits.startsWith('27')) return digits;
-  if (digits.startsWith('0') && digits.length >= 10) {
-    return `27${digits.slice(1)}`;
-  }
-  return digits;
+  const normalized = digits.startsWith('27')
+    ? digits
+    : digits.startsWith('0')
+      ? `27${digits.slice(1)}`
+      : digits;
+  return /^[1-9]\d{7,14}$/.test(normalized) && !/^270+$/.test(normalized)
+    ? normalized
+    : '';
 }
 
 function cleanEmail(value: string): string {
@@ -89,6 +91,33 @@ function statusClass(status: string): string {
   if (status === 'declined') return workspaceStyles.statusDanger;
   if (status === 'closed') return workspaceStyles.statusGreen;
   return workspaceStyles.statusBlue;
+}
+
+function WhatsAppIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      aria-hidden="true"
+      className={className}
+      fill="none"
+      focusable="false"
+      viewBox="0 0 24 24"
+    >
+      <path
+        d="M12 3.25a8.25 8.25 0 0 0-7.13 12.4l-1.12 4.6 4.67-1.23A8.25 8.25 0 1 0 12 3.25Z"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="1.7"
+      />
+      <path
+        d="M8.15 7.25c.23-.24.57-.3.86-.15l1.1.56c.3.15.46.49.39.81l-.3 1.29c-.06.27.02.55.22.75l1.07 1.07c.2.2.48.28.75.22l1.29-.3c.32-.07.66.09.81.39l.56 1.1c.15.29.09.63-.15.86l-.83.83c-.6.6-1.5.83-2.3.56a10.5 10.5 0 0 1-6.8-6.8c-.27-.8-.04-1.7.56-2.3l.83-.83Z"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="1.7"
+      />
+    </svg>
+  );
 }
 
 export default async function MarketplaceSourcingRequestPage({
@@ -221,9 +250,12 @@ export default async function MarketplaceSourcingRequestPage({
                           href={whatsappHref(requesterPhoneForWhatsApp, requesterName, title)}
                           target="_blank"
                           rel="noopener noreferrer"
+                          referrerPolicy="no-referrer"
                           className={`${workspaceStyles.actionButton} ${workspaceStyles.actionGreen} ${styles.primaryAction}`}
+                          aria-label={`Reply to ${requesterName} on WhatsApp (opens in a new tab)`}
                         >
-                          WhatsApp requester
+                          <WhatsAppIcon className={styles.whatsappIcon} />
+                          <span>Reply on WhatsApp</span>
                         </a>
                       ) : null}
                       {requesterPhoneForTel ? (

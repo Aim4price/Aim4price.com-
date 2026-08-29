@@ -312,6 +312,28 @@ function normalize(value: unknown): string {
   return String(value ?? '').trim().toLowerCase();
 }
 
+function cleanPhoneForWhatsApp(value: unknown): string {
+  const digits = String(value ?? '').replace(/\D/g, '');
+  const normalized = digits.startsWith('27')
+    ? digits
+    : digits.startsWith('0')
+      ? `27${digits.slice(1)}`
+      : digits;
+  return /^[1-9]\d{7,14}$/.test(normalized) && !/^270+$/.test(normalized)
+    ? normalized
+    : '';
+}
+
+function sellerWhatsAppHref(listing: MarketplaceListing): string {
+  if (listing.publishedBy === 'seed') return '';
+  const phone = cleanPhoneForWhatsApp(listing.sellerPhone);
+  if (!phone) return '';
+  const seller = String(listing.sellerName ?? '').trim();
+  const greeting = seller ? `Hi ${seller}` : 'Hi';
+  const message = `${greeting}, I am interested in the ${listingDisplayTitle(listing)} advertised on Aim4price.`;
+  return `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+}
+
 function slugify(value: string): string {
   return value
     .toLowerCase()
@@ -3697,37 +3719,55 @@ export default function MarketplaceClient({
                 <h3>Seller information</h3>
 
                 {canExposeSellerContact ? (
-                  <div className={styles.contactRows}>
-                    <div className={styles.contactRow}>
-                      <span>Seller</span>
-                      <strong>{activeListing.sellerName || DEFAULT_MARKETPLACE_CONTACT_NAME}</strong>
-                    </div>
-                    {activeListing.sellerCompany ? (
+                  <>
+                    <div className={styles.contactRows}>
                       <div className={styles.contactRow}>
-                        <span>Company</span>
-                        <strong>{activeListing.sellerCompany}</strong>
+                        <span>Seller</span>
+                        <strong>{activeListing.sellerName || DEFAULT_MARKETPLACE_CONTACT_NAME}</strong>
                       </div>
-                    ) : null}
-                    <div className={styles.contactRow}>
-                      <span>Phone</span>
-                      <strong>
-                        <a
-                          href={`tel:${activeListing.sellerPhone || DEFAULT_MARKETPLACE_CONTACT_PHONE}`}
-                          className={styles.marketplaceContactNoWrap}
-                        >
-                          {activeListing.sellerPhone || DEFAULT_MARKETPLACE_CONTACT_PHONE}
-                        </a>
-                      </strong>
-                    </div>
-                    {activeListing.sellerEmail ? (
+                      {activeListing.sellerCompany ? (
+                        <div className={styles.contactRow}>
+                          <span>Company</span>
+                          <strong>{activeListing.sellerCompany}</strong>
+                        </div>
+                      ) : null}
                       <div className={styles.contactRow}>
-                        <span>Email</span>
+                        <span>Phone</span>
                         <strong>
-                          <a href={`mailto:${activeListing.sellerEmail}`}>{activeListing.sellerEmail}</a>
+                          {activeListing.sellerPhone ? (
+                            <a
+                              href={`tel:${activeListing.sellerPhone}`}
+                              className={styles.marketplaceContactNoWrap}
+                            >
+                              {activeListing.sellerPhone}
+                            </a>
+                          ) : 'Not supplied'}
                         </strong>
                       </div>
+                      {activeListing.sellerEmail ? (
+                        <div className={styles.contactRow}>
+                          <span>Email</span>
+                          <strong>
+                            <a href={`mailto:${activeListing.sellerEmail}`}>{activeListing.sellerEmail}</a>
+                          </strong>
+                        </div>
+                      ) : null}
+                    </div>
+
+                    {sellerWhatsAppHref(activeListing) ? (
+                      <nav className={styles.lockedActions} aria-label="Contact seller">
+                        <a
+                          href={sellerWhatsAppHref(activeListing)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          referrerPolicy="no-referrer"
+                          aria-label={`WhatsApp ${activeListing.sellerName || 'seller'} (opens in a new tab)`}
+                        >
+                          WhatsApp seller
+                        </a>
+                      </nav>
                     ) : null}
-                  </div>
+                  </>
                 ) : (
                   <div className={styles.blurredContactCard}>
                     <div className={`${styles.contactRows} ${styles.contactRowsBlurred}`} aria-hidden="true">

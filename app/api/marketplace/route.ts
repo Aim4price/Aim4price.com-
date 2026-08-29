@@ -25,6 +25,16 @@ function unauthorized() {
   return NextResponse.json({ ok: false, error: 'You must be signed in.' }, { status: 401 });
 }
 
+function marketplaceResponse(body: unknown, status = 200) {
+  return NextResponse.json(body, {
+    status,
+    headers: {
+      'Cache-Control': 'private, no-store, max-age=0',
+      Vary: 'Cookie',
+    },
+  });
+}
+
 function normalizePhotos(value: unknown): string[] {
   if (!Array.isArray(value)) return [];
 
@@ -90,6 +100,9 @@ export async function GET() {
   const session = await getOptionalSession();
 
   try {
+    let viewerUserId: string | null = null;
+    let exposeContact = false;
+
     if (session?.user?.id) {
       const profile = await getAccountProfile({
         id: session.user.id,
@@ -97,25 +110,31 @@ export async function GET() {
         email: session.user.email,
       });
 
-      if (profile.accountType !== 'owner' && profile.accountType !== 'dealer') {
-        return NextResponse.json(
+      if (
+        profile.accountStatus !== 'active'
+        || (profile.accountType !== 'owner' && profile.accountType !== 'dealer')
+      ) {
+        return marketplaceResponse(
           { ok: false, error: 'Marketplace is only available to owner and dealer accounts.' },
-          { status: 403 },
+          403,
         );
       }
+
+      viewerUserId = session.user.id;
+      exposeContact = true;
     }
 
     const listings = await listPublishedMarketplaceAssetListings({
-      viewerUserId: session?.user?.id ?? null,
-      exposeContact: Boolean(session?.user?.id),
+      viewerUserId,
+      exposeContact,
     });
 
-    return NextResponse.json({ ok: true, listings });
+    return marketplaceResponse({ ok: true, listings });
   } catch (error) {
     console.error('marketplace GET failed', error);
-    return NextResponse.json(
+    return marketplaceResponse(
       { ok: false, error: formatUnknownError(error, 'Failed to load marketplace.') },
-      { status: 500 },
+      500,
     );
   }
 }

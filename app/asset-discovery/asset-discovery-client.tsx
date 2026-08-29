@@ -248,6 +248,15 @@ function RefreshIcon({ className }: IconProps) {
   );
 }
 
+function WhatsAppIcon({ className }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M12 3.25a8.55 8.55 0 0 0-7.26 13.05l-1.06 3.9 4.04-1.02A8.55 8.55 0 1 0 12 3.25Z" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M8.55 7.65c.22-.48.45-.5.68-.5h.6c.2 0 .43.05.57.38l.78 1.82c.1.27.08.5-.08.72l-.42.53c-.1.12-.13.28-.05.43.48.9 1.35 1.78 2.34 2.34.15.08.3.05.43-.05l.53-.42c.22-.17.45-.2.72-.08l1.82.78c.33.13.38.37.38.57v.6c0 .23-.02.47-.5.68-.5.22-1.14.34-1.9.24-2.28-.32-5.83-3.86-6.15-6.15-.1-.76.02-1.4.25-1.9Z" fill="currentColor" />
+    </svg>
+  );
+}
+
 function SettingsIcon({ className }: IconProps) {
   return (
     <svg
@@ -427,6 +436,30 @@ function DiscoveryFilterDropdown({
 
 function cleanText(value: string | null | undefined): string {
   return typeof value === "string" ? value.trim() : "";
+}
+
+function cleanPhoneForWhatsApp(value: string): string {
+  const digits = value.replace(/\D/g, "");
+  const normalized = digits.startsWith("27")
+    ? digits
+    : digits.startsWith("0")
+      ? `27${digits.slice(1)}`
+      : digits;
+  return /^[1-9]\d{7,14}$/.test(normalized) && !/^270+$/.test(normalized)
+    ? normalized
+    : "";
+}
+
+function ownerWhatsAppHref(
+  contact: DiscoveryContact,
+  asset: Pick<AssetDiscoveryAsset, "brand" | "model">,
+): string {
+  const phone = cleanPhoneForWhatsApp(contact.phone);
+  if (!phone) return "";
+  const ownerName = cleanText(contact.businessName || contact.name) || "there";
+  const assetName = [cleanText(asset.brand), cleanText(asset.model)].filter(Boolean).join(" ") || "equipment";
+  const message = `Hi ${ownerName}, I am contacting you through Aim4price about your ${assetName}.`;
+  return `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
 }
 
 function formatDate(value: string | null | undefined): string {
@@ -2723,9 +2756,22 @@ export default function AssetDiscoveryClient({
             </div>
 
             <div className={`${workspaceStyles.modalFooter} ${styles.contactActions}`}>
-              {activeEnquiry.ownerContact?.phone ? (
+              {activeEnquiry.ownerContact?.phone && cleanPhoneForWhatsApp(activeEnquiry.ownerContact.phone) ? (
                 <a
                   className={`${workspaceStyles.actionButton} ${workspaceStyles.actionGreen} ${styles.contactPrimaryAction}`}
+                  href={ownerWhatsAppHref(activeEnquiry.ownerContact, activeEnquiry.asset)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  referrerPolicy="no-referrer"
+                  aria-label="WhatsApp owner (opens in a new tab)"
+                >
+                  <WhatsAppIcon className={styles.contactActionIcon} />
+                  WhatsApp owner
+                </a>
+              ) : null}
+              {activeEnquiry.ownerContact?.phone ? (
+                <a
+                  className={`${workspaceStyles.actionButton} ${workspaceStyles.actionNeutral} ${styles.contactSecondaryAction}`}
                   href={`tel:${activeEnquiry.ownerContact.phone}`}
                 >
                   Call owner
@@ -2733,7 +2779,7 @@ export default function AssetDiscoveryClient({
               ) : null}
               {activeEnquiry.ownerContact?.email ? (
                 <a
-                  className={`${workspaceStyles.actionButton} ${workspaceStyles.actionGreen} ${styles.contactPrimaryAction}`}
+                  className={`${workspaceStyles.actionButton} ${workspaceStyles.actionNeutral} ${styles.contactSecondaryAction}`}
                   href={`mailto:${activeEnquiry.ownerContact.email}`}
                 >
                   Email owner

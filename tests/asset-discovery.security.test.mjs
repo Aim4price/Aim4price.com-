@@ -70,6 +70,18 @@ test("approved owner enquiries expose each party's permitted contact only to the
   assert.match(discovery, /requesterAccountType === "dealer" \? requesterContact : null/);
 });
 
+test("approved contact gives the requester a direct WhatsApp action", () => {
+  const approvedContactModal = client.slice(
+    client.indexOf("{activeEnquiry ? ("),
+    client.indexOf("</section>", client.indexOf("{activeEnquiry ? (")),
+  );
+  assert.match(approvedContactModal, /activeEnquiry\.ownerContact\?\.phone/);
+  assert.match(approvedContactModal, /ownerWhatsAppHref\(activeEnquiry\.ownerContact, activeEnquiry\.asset\)/);
+  assert.match(approvedContactModal, /WhatsApp owner/);
+  assert.match(approvedContactModal, /target="_blank"/);
+  assert.match(approvedContactModal, /referrerPolicy="no-referrer"/);
+});
+
 test("locked list responses do not select photos or owner private fields", () => {
   const listSql = discovery.slice(
     discovery.indexOf("const listSql = `"),
