@@ -10,6 +10,7 @@ type NoticeTone = "error";
 type BasemapMode = "road" | "satellite";
 type ExportFormat = "pdf" | "xlsx";
 type ExportStep = "format" | "scope";
+type FetchMode = "initial" | "background" | "manual";
 type RegisterFilterId = string;
 type AssetStatusChoice = "yes" | "no" | "unknown" | "not_applicable";
 type AssetMapUsageMetric = "hours" | "km" | "percentage" | null;
@@ -59,19 +60,10 @@ type RegisterFilterOption = {
   value?: string;
 };
 
-type AssetMapSummary = {
-  totalAssets: number;
-  assetsWithLocation: number;
-  assetsWithoutLocation: number;
-  activeMappedAssets: number;
-  scannedLast30Days: number;
-};
-
 type AssetMapResponse = {
   ok: boolean;
   assets?: AssetMapItem[];
   registerFilters?: RegisterFilterOption[];
-  summary?: AssetMapSummary;
   error?: string;
 };
 
@@ -99,13 +91,6 @@ const BASEMAP_OPTIONS: Array<{ value: BasemapMode; label: string }> = [
   { value: "road", label: "Map" },
   { value: "satellite", label: "Satellite" },
 ];
-const EMPTY_SUMMARY: AssetMapSummary = {
-  totalAssets: 0,
-  assetsWithLocation: 0,
-  assetsWithoutLocation: 0,
-  activeMappedAssets: 0,
-  scannedLast30Days: 0,
-};
 
 function SearchIcon({ className }: IconProps) {
   return (
@@ -159,6 +144,33 @@ function DownloadIcon({ className }: IconProps) {
         stroke="currentColor"
         strokeWidth="2"
         strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+function RefreshIcon({ className }: IconProps) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        d="M20 7v5h-5"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M18.1 16a7.5 7.5 0 1 1 .9-8.8L20 12"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
     </svg>
   );
@@ -283,31 +295,6 @@ function CloseIcon({ className }: IconProps) {
   );
 }
 
-function ListIcon({ className }: IconProps) {
-  return (
-    <svg
-      className={className}
-      viewBox="0 0 24 24"
-      aria-hidden="true"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <path
-        d="M9 6h11M9 12h11M9 18h11"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-      />
-      <path
-        d="M4.5 6h.01M4.5 12h.01M4.5 18h.01"
-        stroke="currentColor"
-        strokeWidth="3"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-}
-
 function FocusIcon({ className }: IconProps) {
   return (
     <svg
@@ -398,6 +385,10 @@ function loadLeaflet(): Promise<any> {
       { once: true },
     );
     document.body.appendChild(script);
+  }).catch((error) => {
+    leafletLoaderPromise = null;
+    document.getElementById(LEAFLET_SCRIPT_ID)?.remove();
+    throw error;
   });
 
   return leafletLoaderPromise;
@@ -559,28 +550,6 @@ function buildLocationLabel(asset: AssetMapItem): string {
   return `${(asset.lastKnownLat as number).toFixed(5)}, ${(asset.lastKnownLng as number).toFixed(5)}`;
 }
 
-function buildFallbackSummary(assets: AssetMapItem[]): AssetMapSummary {
-  const mappedAssets = assets.filter(hasCoordinates);
-  const scannedLast30Days = assets.filter((asset) => {
-    if (!asset.lastScannedAtIso) return false;
-    const scannedAt = new Date(asset.lastScannedAtIso).getTime();
-    return (
-      Number.isFinite(scannedAt) &&
-      Date.now() - scannedAt <= 1000 * 60 * 60 * 24 * 30
-    );
-  }).length;
-
-  return {
-    totalAssets: assets.length,
-    assetsWithLocation: mappedAssets.length,
-    assetsWithoutLocation: Math.max(0, assets.length - mappedAssets.length),
-    activeMappedAssets: mappedAssets.filter(
-      (asset) => asset.qrStatus !== "deleted",
-    ).length,
-    scannedLast30Days,
-  };
-}
-
 function normalizeSearch(value: string): string {
   return value.trim().toLowerCase();
 }
@@ -594,6 +563,9 @@ function matchesSearch(asset: AssetMapItem, search: string): boolean {
     asset.assetTypeLabel,
     asset.kind,
     asset.serialNumber,
+    asset.publicAssetCode,
+    asset.plateLabel,
+    asset.licenseRegistrationNumber,
     asset.brandName,
     asset.modelName,
     asset.typedModelName,
@@ -697,7 +669,6 @@ function sortMappedAssets(left: AssetMapItem, right: AssetMapItem): number {
 
 export default function AssetMapClient() {
   const [assets, setAssets] = useState<AssetMapItem[]>([]);
-  const [summary, setSummary] = useState<AssetMapSummary>(EMPTY_SUMMARY);
   const [registerFilters, setRegisterFilters] = useState<
     RegisterFilterOption[]
   >(() => normalizeRegisterFilters());
@@ -717,14 +688,26 @@ export default function AssetMapClient() {
     tone: NoticeTone;
     message: string;
   } | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [dataStatus, setDataStatus] = useState<
+    "loading" | "ready" | "error"
+  >("loading");
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [mapRendererStatus, setMapRendererStatus] = useState<
+    "loading" | "ready" | "error"
+  >("loading");
+  const [mapRendererAttempt, setMapRendererAttempt] = useState(0);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isFilterMenuOpen, setIsFilterMenuOpen] = useState(false);
   const [isExportScopeMenuOpen, setIsExportScopeMenuOpen] = useState(false);
 
   const filterDropdownRef = useRef<HTMLDivElement | null>(null);
+  const filterTriggerRef = useRef<HTMLButtonElement | null>(null);
   const exportScopeDropdownRef = useRef<HTMLDivElement | null>(null);
+  const exportScopeTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const exportModalRef = useRef<HTMLElement | null>(null);
+  const exportTriggerRef = useRef<HTMLButtonElement | null>(null);
   const mapElementRef = useRef<HTMLDivElement | null>(null);
+  const selectedAssetCardRef = useRef<HTMLElement | null>(null);
   const mapRef = useRef<any>(null);
   const leafletRef = useRef<any>(null);
   const markerLayerRef = useRef<any>(null);
@@ -737,7 +720,11 @@ export default function AssetMapClient() {
   const assetButtonsByCodeRef = useRef<Map<string, HTMLButtonElement>>(
     new Map(),
   );
+  const mapDataRequestIdRef = useRef(0);
+  const mapDataAbortControllerRef = useRef<AbortController | null>(null);
+  const activeManualRequestIdRef = useRef<number | null>(null);
   const lastBoundsSignatureRef = useRef("");
+  const isLoading = dataStatus === "loading";
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -751,17 +738,33 @@ export default function AssetMapClient() {
   }, []);
 
   const fetchMapData = useCallback(
-    async (mode: "initial" | "background" = "initial") => {
+    async (mode: FetchMode = "initial") => {
       const initialLoad = mode === "initial";
+      const manualRefresh = mode === "manual";
+
+      if (mode === "background" && activeManualRequestIdRef.current !== null) {
+        return;
+      }
+
+      const requestId = mapDataRequestIdRef.current + 1;
+      mapDataRequestIdRef.current = requestId;
+      mapDataAbortControllerRef.current?.abort();
+      const controller = new AbortController();
+      mapDataAbortControllerRef.current = controller;
 
       if (initialLoad) {
-        setIsLoading(true);
+        setDataStatus("loading");
+      }
+      if (manualRefresh) {
+        activeManualRequestIdRef.current = requestId;
+        setIsRefreshing(true);
       }
 
       try {
         const response = await fetch("/api/asset-map", {
           credentials: "include",
           cache: "no-store",
+          signal: controller.signal,
         });
         const data = (await response
           .json()
@@ -769,6 +772,10 @@ export default function AssetMapClient() {
 
         if (!response.ok || !data?.ok || !Array.isArray(data.assets)) {
           throw new Error(data?.error ?? "Failed to load the asset map.");
+        }
+
+        if (requestId !== mapDataRequestIdRef.current) {
+          return;
         }
 
         const nextRegisterFilters = normalizeRegisterFilters(
@@ -786,7 +793,7 @@ export default function AssetMapClient() {
             ) ?? null)
           : null;
         setAssets(data.assets);
-        setSummary(data.summary ?? buildFallbackSummary(data.assets));
+        setDataStatus("ready");
         setRegisterFilters(nextRegisterFilters);
         setSelectedRegisterId((currentRegisterId) =>
           nextRegisterFilters.some((filter) => filter.id === currentRegisterId)
@@ -805,6 +812,16 @@ export default function AssetMapClient() {
         }
         setNotice(null);
       } catch (error) {
+        if (
+          controller.signal.aborted ||
+          requestId !== mapDataRequestIdRef.current
+        ) {
+          return;
+        }
+
+        setDataStatus((currentStatus) =>
+          currentStatus === "ready" ? currentStatus : "error",
+        );
         setNotice({
           tone: "error",
           message:
@@ -813,8 +830,16 @@ export default function AssetMapClient() {
               : "Failed to load the asset map.",
         });
       } finally {
-        if (initialLoad) {
-          setIsLoading(false);
+        if (mapDataAbortControllerRef.current === controller) {
+          mapDataAbortControllerRef.current = null;
+        }
+        if (
+          manualRefresh &&
+          activeManualRequestIdRef.current === requestId &&
+          mapDataRequestIdRef.current === requestId
+        ) {
+          activeManualRequestIdRef.current = null;
+          setIsRefreshing(false);
         }
       }
     },
@@ -824,6 +849,14 @@ export default function AssetMapClient() {
   useEffect(() => {
     void fetchMapData("initial");
   }, [fetchMapData]);
+
+  useEffect(
+    () => () => {
+      mapDataRequestIdRef.current += 1;
+      mapDataAbortControllerRef.current?.abort();
+    },
+    [],
+  );
 
   useEffect(() => {
     if (!notice) return undefined;
@@ -871,9 +904,61 @@ export default function AssetMapClient() {
     };
 
     const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Tab" && isExportModalOpen && exportModalRef.current) {
+        const focusRoots = [
+          exportModalRef.current,
+          document.getElementById("asset-map-export-registers"),
+        ].filter((root): root is HTMLElement => root instanceof HTMLElement);
+        const focusableElements = focusRoots
+          .flatMap((root) =>
+            Array.from(
+              root.querySelectorAll<HTMLElement>(
+                'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])',
+              ),
+            ),
+          )
+          .filter((element) => !element.hasAttribute("aria-hidden"));
+        const firstFocusable = focusableElements[0];
+        const lastFocusable = focusableElements[focusableElements.length - 1];
+        const activeElement = document.activeElement;
+        const focusIsInside = focusRoots.some(
+          (root) => activeElement && root.contains(activeElement),
+        );
+
+        if (!focusIsInside) {
+          event.preventDefault();
+          const focusTarget = event.shiftKey
+            ? (lastFocusable ?? exportModalRef.current)
+            : (firstFocusable ?? exportModalRef.current);
+          focusTarget.focus();
+          return;
+        }
+
+        if (
+          event.shiftKey &&
+          (activeElement === firstFocusable ||
+            activeElement === exportModalRef.current)
+        ) {
+          event.preventDefault();
+          lastFocusable?.focus();
+          return;
+        }
+
+        if (!event.shiftKey && activeElement === lastFocusable) {
+          event.preventDefault();
+          firstFocusable?.focus();
+          return;
+        }
+      }
+
       if (event.key !== "Escape") return;
 
       if (isFilterMenuOpen || isExportScopeMenuOpen) {
+        if (isExportScopeMenuOpen) {
+          exportScopeTriggerRef.current?.focus();
+        } else {
+          filterTriggerRef.current?.focus();
+        }
         setIsFilterMenuOpen(false);
         setIsExportScopeMenuOpen(false);
         return;
@@ -902,6 +987,43 @@ export default function AssetMapClient() {
     isExportModalOpen,
     selectedCode,
   ]);
+
+  useEffect(() => {
+    if (!isExportModalOpen || typeof document === "undefined") {
+      return undefined;
+    }
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const animationFrame = window.requestAnimationFrame(() => {
+      exportModalRef.current?.focus();
+    });
+
+    return () => {
+      window.cancelAnimationFrame(animationFrame);
+      document.body.style.overflow = previousOverflow;
+      exportTriggerRef.current?.focus();
+    };
+  }, [isExportModalOpen]);
+
+  useEffect(() => {
+    const openMenuId = isExportScopeMenuOpen
+      ? "asset-map-export-registers"
+      : isFilterMenuOpen
+        ? "asset-map-register-filter"
+        : null;
+    if (!openMenuId) return undefined;
+
+    const animationFrame = window.requestAnimationFrame(() => {
+      document
+        .querySelector<HTMLElement>(
+          `#${openMenuId} button[aria-pressed="true"]`,
+        )
+        ?.focus();
+    });
+
+    return () => window.cancelAnimationFrame(animationFrame);
+  }, [isExportScopeMenuOpen, isFilterMenuOpen]);
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -938,6 +1060,15 @@ export default function AssetMapClient() {
     () => filteredMappedAssets.filter((asset) => matchesSearch(asset, search)),
     [filteredMappedAssets, search],
   );
+  const selectedMarkerPosition = useMemo(() => {
+    const selectedAsset = visibleAssets.find(
+      (asset) => asset.publicAssetCode === selectedCode,
+    );
+
+    return selectedAsset
+      ? `${selectedAsset.lastKnownLat},${selectedAsset.lastKnownLng}`
+      : "";
+  }, [selectedCode, visibleAssets]);
   const exportScopedAssets = useMemo(
     () => filterAssetsByRegister(mappedAssets, exportRegisterId),
     [mappedAssets, exportRegisterId],
@@ -972,7 +1103,13 @@ export default function AssetMapClient() {
   }, [selectedCode]);
 
   useEffect(() => {
-    if (!selectedCode || typeof window === "undefined") return undefined;
+    if (
+      !selectedCode ||
+      isSidebarCollapsed ||
+      typeof window === "undefined"
+    ) {
+      return undefined;
+    }
 
     const animationFrame = window.requestAnimationFrame(() => {
       const selectedButton = assetButtonsByCodeRef.current.get(selectedCode);
@@ -985,20 +1122,7 @@ export default function AssetMapClient() {
     });
 
     return () => window.cancelAnimationFrame(animationFrame);
-  }, [selectedCode]);
-
-  useEffect(() => {
-    if (!search.trim()) {
-      return;
-    }
-
-    if (visibleAssets.length === 1) {
-      setSelectedCode(visibleAssets[0].publicAssetCode);
-      return;
-    }
-
-    setSelectedCode(null);
-  }, [search, visibleAssets]);
+  }, [isSidebarCollapsed, selectedCode]);
 
   useEffect(() => {
     let cancelled = false;
@@ -1014,6 +1138,7 @@ export default function AssetMapClient() {
       }
 
       leafletRef.current = L;
+      setMapRendererStatus("loading");
 
       const map = L.map(mapElementRef.current, {
         zoomControl: false,
@@ -1061,8 +1186,10 @@ export default function AssetMapClient() {
       map.setView(DEFAULT_CENTER, DEFAULT_ZOOM);
       const handleMapClick = () => setSelectedCode(null);
       map.on("click", handleMapClick);
+      const markerLayer = L.layerGroup().addTo(map);
       mapRef.current = map;
-      markerLayerRef.current = L.layerGroup().addTo(map);
+      markerLayerRef.current = markerLayer;
+      setMapRendererStatus("ready");
 
       const invalidate = () => map.invalidateSize();
       window.setTimeout(invalidate, 120);
@@ -1072,6 +1199,7 @@ export default function AssetMapClient() {
     }
 
     void initialiseMap().catch((error) => {
+      setMapRendererStatus("error");
       setNotice({
         tone: "error",
         message:
@@ -1084,7 +1212,7 @@ export default function AssetMapClient() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [mapRendererAttempt]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -1114,7 +1242,7 @@ export default function AssetMapClient() {
     }
 
     baseLayers.road.addTo(map);
-  }, [basemapMode]);
+  }, [basemapMode, mapRendererStatus]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -1188,7 +1316,7 @@ export default function AssetMapClient() {
         });
       }
     }
-  }, [selectedCode, visibleAssets]);
+  }, [mapRendererStatus, selectedCode, visibleAssets]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -1203,17 +1331,31 @@ export default function AssetMapClient() {
     const latLng = marker.getLatLng();
     const zoom = map.getZoom();
     const mapWidth = map.getSize().x;
+    const mapHeight = map.getSize().y;
+    const selectedCardHeight =
+      selectedAssetCardRef.current?.getBoundingClientRect().height ?? 0;
     const horizontalOffset =
       mapWidth >= 900 ? Math.min(mapWidth * 0.16, 170) : 0;
-    const targetCenter = horizontalOffset
+    const verticalOffset =
+      mapHeight >= 430 && selectedCardHeight > 0
+        ? Math.min(selectedCardHeight * 0.28, 82)
+        : 0;
+    const targetCenter = horizontalOffset || verticalOffset
       ? map.unproject(
-          map.project(latLng, zoom).add([horizontalOffset, 0]),
+          map
+            .project(latLng, zoom)
+            .add([horizontalOffset, verticalOffset]),
           zoom,
         )
       : latLng;
 
     map.panTo(targetCenter, { animate: true, duration: 0.55 });
-  }, [selectedCode]);
+  }, [
+    isSidebarCollapsed,
+    mapRendererStatus,
+    selectedCode,
+    selectedMarkerPosition,
+  ]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -1387,6 +1529,14 @@ export default function AssetMapClient() {
     setSelectedCode(null);
   }
 
+  function refreshAssetMap() {
+    if (mapRendererStatus === "error") {
+      setMapRendererStatus("loading");
+      setMapRendererAttempt((currentAttempt) => currentAttempt + 1);
+    }
+    void fetchMapData("manual");
+  }
+
   function openExportModal() {
     setExportRegisterId(selectedRegisterId);
     setExportFormat("pdf");
@@ -1415,11 +1565,13 @@ export default function AssetMapClient() {
   function selectPageRegisterFilter(registerId: RegisterFilterId) {
     setSelectedRegisterId(registerId);
     setIsFilterMenuOpen(false);
+    filterTriggerRef.current?.focus();
   }
 
   function selectExportRegisterFilter(registerId: RegisterFilterId) {
     setExportRegisterId(registerId);
     setIsExportScopeMenuOpen(false);
+    exportScopeTriggerRef.current?.focus();
   }
 
   function buildGoogleMapsHref(asset: AssetMapItem): string | null {
@@ -1437,54 +1589,21 @@ export default function AssetMapClient() {
           aria-label="Asset Map Tracking workspace"
         >
           <header className={styles.panelHeader}>
-            <div className={styles.pageTitleBlock}>
-              <div className={styles.pageTitleCopy}>
-                <span className={styles.pageEyebrow}>Live asset locations</span>
-                <h1>Asset Map</h1>
-                <p>
-                  Find an asset quickly and open its latest saved GPS location.
-                </p>
-              </div>
-
-              <dl
-                className={styles.summaryGrid}
-                aria-label="Asset location summary"
-              >
-                <div className={styles.summaryItem}>
-                  <dt>
-                    <span>Mapped assets</span>
-                    <small>GPS location saved</small>
-                  </dt>
-                  <dd>{isLoading ? "—" : summary.assetsWithLocation}</dd>
-                </div>
-                <div className={styles.summaryItem}>
-                  <dt>
-                    <span>Recently scanned</span>
-                    <small>Within 30 days</small>
-                  </dt>
-                  <dd>{isLoading ? "—" : summary.scannedLast30Days}</dd>
-                </div>
-                <div
-                  className={`${styles.summaryItem} ${summary.assetsWithoutLocation > 0 ? styles.summaryItemAttention : ""}`}
-                >
-                  <dt>
-                    <span>Need a location</span>
-                    <small>Update in Asset Register</small>
-                  </dt>
-                  <dd>{isLoading ? "—" : summary.assetsWithoutLocation}</dd>
-                </div>
-              </dl>
-            </div>
+            <h1 className={styles.visuallyHidden}>Asset Map</h1>
 
             <form
               className={styles.topActions}
               onSubmit={(event) => {
                 event.preventDefault();
+                const firstVisibleAsset = visibleAssets[0];
+                if (firstVisibleAsset) {
+                  setSelectedCode(firstVisibleAsset.publicAssetCode);
+                }
               }}
             >
               <label
                 className={styles.searchWrap}
-                aria-label="Search by asset name, type or serial"
+                aria-label="Search by asset name, serial or registration"
               >
                 <SearchIcon className={styles.searchIcon} />
                 <input
@@ -1492,7 +1611,8 @@ export default function AssetMapClient() {
                   className={styles.searchInput}
                   value={search}
                   onChange={(event) => handleSearchChange(event.target.value)}
-                  placeholder="Search by asset name, type or serial"
+                  placeholder="Search name, serial or registration"
+                  aria-describedby="asset-map-search-results"
                 />
                 {hasActiveSearch ? (
                   <button
@@ -1510,10 +1630,11 @@ export default function AssetMapClient() {
                 <div className={styles.filterDropdown} ref={filterDropdownRef}>
                   <button
                     type="button"
+                    ref={filterTriggerRef}
                     className={`${styles.filterControl} ${styles.topActionButton} ${isFilterMenuOpen ? styles.filterControlOpen : ""}`}
                     onClick={() => setIsFilterMenuOpen((current) => !current)}
-                    aria-haspopup="listbox"
                     aria-expanded={isFilterMenuOpen}
+                    aria-controls="asset-map-register-filter"
                   >
                     <FilterIcon className={styles.buttonIcon} />
                     <span className={styles.filterControlCopy}>
@@ -1529,10 +1650,10 @@ export default function AssetMapClient() {
                   </button>
                   {isFilterMenuOpen ? (
                     <DropdownOverlay
+                      id="asset-map-register-filter"
                       className={styles.filterMenu}
                       matchAnchorWidth={false}
-                      minimumWidth={352}
-                      role="listbox"
+                      role="group"
                       aria-label="Filter mapped assets by asset register"
                     >
                       {registerFilters.map((filter) => {
@@ -1545,8 +1666,7 @@ export default function AssetMapClient() {
                           <button
                             key={filter.id}
                             type="button"
-                            role="option"
-                            aria-selected={isSelected}
+                            aria-pressed={isSelected}
                             className={`${styles.filterMenuOption} ${isSelected ? styles.filterMenuOptionActive : ""}`}
                             onClick={() => selectPageRegisterFilter(filter.id)}
                           >
@@ -1568,6 +1688,23 @@ export default function AssetMapClient() {
                 </div>
                 <button
                   type="button"
+                  className={`${styles.secondaryAction} ${styles.topActionButton} ${styles.refreshAction}`}
+                  onClick={refreshAssetMap}
+                  disabled={isLoading || isRefreshing}
+                  aria-label={
+                    isRefreshing
+                      ? "Refreshing asset locations"
+                      : "Refresh asset locations"
+                  }
+                >
+                  <RefreshIcon
+                    className={`${styles.buttonIcon} ${isRefreshing ? styles.refreshIconActive : ""}`}
+                  />
+                  <span>{isRefreshing ? "Refreshing" : "Refresh"}</span>
+                </button>
+                <button
+                  type="button"
+                  ref={exportTriggerRef}
                   className={`${styles.primaryAction} ${styles.topActionButton} ${styles.topReportButton} ${!mappedAssets.length ? styles.actionDisabled : ""}`}
                   onClick={openExportModal}
                   disabled={!mappedAssets.length || isLoading}
@@ -1576,11 +1713,21 @@ export default function AssetMapClient() {
                   <span>Download</span>
                 </button>
               </div>
+              <span
+                id="asset-map-search-results"
+                className={styles.visuallyHidden}
+                aria-live="polite"
+              >
+                {visibleAssets.length} mapped{" "}
+                {visibleAssets.length === 1 ? "asset" : "assets"} shown
+              </span>
             </form>
           </header>
 
           {notice ? (
-            <div className={styles.notice}>{notice.message}</div>
+            <div className={styles.notice} role="alert">
+              {notice.message}
+            </div>
           ) : null}
 
           <section
@@ -1592,20 +1739,6 @@ export default function AssetMapClient() {
               aria-label="Visible mapped assets"
             >
               <div className={styles.assetSidebarHeader}>
-                {!isSidebarCollapsed ? (
-                  <span className={styles.assetSidebarHeading}>
-                    <span className={styles.assetSidebarIcon}>
-                      <ListIcon className={styles.buttonIcon} />
-                    </span>
-                    <span className={styles.assetSidebarTitle}>
-                      <strong>Assets on map</strong>
-                      <small>
-                        {visibleAssets.length} of {filteredMappedAssets.length}{" "}
-                        shown
-                      </small>
-                    </span>
-                  </span>
-                ) : null}
                 <button
                   type="button"
                   className={styles.sidebarToggleButton}
@@ -1621,6 +1754,26 @@ export default function AssetMapClient() {
                     className={`${styles.sidebarChevron} ${isSidebarCollapsed ? styles.sidebarChevronCollapsed : ""}`}
                   />
                 </button>
+                {!isSidebarCollapsed ? (
+                  <span className={styles.assetSidebarHeading}>
+                    <span className={styles.assetSidebarTitle}>
+                      <strong>
+                        {isLoading
+                          ? "Loading assets"
+                          : dataStatus === "error"
+                            ? "Locations unavailable"
+                            : hasActiveSearch
+                              ? `${visibleAssets.length} ${visibleAssets.length === 1 ? "result" : "results"}`
+                              : `${filteredMappedAssets.length} mapped ${filteredMappedAssets.length === 1 ? "asset" : "assets"}`}
+                      </strong>
+                      <small>
+                        {dataStatus === "error"
+                          ? "Refresh to try again"
+                          : selectedFilterLabel}
+                      </small>
+                    </span>
+                  </span>
+                ) : null}
               </div>
 
               {!isSidebarCollapsed ? (
@@ -1644,6 +1797,20 @@ export default function AssetMapClient() {
                       <span className={styles.visuallyHidden}>
                         Loading mapped assets
                       </span>
+                    </div>
+                  ) : dataStatus === "error" ? (
+                    <div className={styles.sidebarErrorState} role="alert">
+                      <strong>Couldn&apos;t load asset locations.</strong>
+                      <span>Your current filters and search are preserved.</span>
+                      <button
+                        type="button"
+                        className={styles.inlineRetryButton}
+                        onClick={refreshAssetMap}
+                        disabled={isRefreshing}
+                      >
+                        <RefreshIcon className={styles.buttonIcon} />
+                        {isRefreshing ? "Trying again" : "Try again"}
+                      </button>
                     </div>
                   ) : !mappedAssets.length ? (
                     <p className={styles.emptyState}>
@@ -1740,18 +1907,60 @@ export default function AssetMapClient() {
             </aside>
 
             <div className={styles.assetMapShell}>
-              {isLoading ? (
+              {dataStatus !== "error" &&
+              (isLoading || mapRendererStatus === "loading") ? (
                 <div
                   className={styles.mapLoading}
                   role="status"
                   aria-live="polite"
                 >
                   <span className={styles.loadingSpinner} aria-hidden="true" />
-                  <strong>Loading asset locations</strong>
-                  <span>Preparing your latest saved GPS positions.</span>
+                  <strong>
+                    {isLoading ? "Loading asset locations" : "Preparing map"}
+                  </strong>
+                  <span>
+                    {isLoading
+                      ? "Getting your latest saved GPS positions."
+                      : "Starting the interactive map renderer."}
+                  </span>
                 </div>
               ) : null}
-              {!isLoading && !mappedAssets.length ? (
+              {dataStatus === "error" ? (
+                <div className={styles.mapError} role="alert">
+                  <strong>Asset locations couldn&apos;t be loaded.</strong>
+                  <span>
+                    Check your connection and try again. Your selected filter
+                    and search will stay in place.
+                  </span>
+                  <button
+                    type="button"
+                    className={styles.inlineRetryButton}
+                    onClick={refreshAssetMap}
+                    disabled={isRefreshing}
+                  >
+                    <RefreshIcon className={styles.buttonIcon} />
+                    {isRefreshing ? "Trying again" : "Try again"}
+                  </button>
+                </div>
+              ) : null}
+              {dataStatus === "ready" && mapRendererStatus === "error" ? (
+                <div className={styles.mapError} role="alert">
+                  <strong>The interactive map couldn&apos;t start.</strong>
+                  <span>Try loading the map renderer again.</span>
+                  <button
+                    type="button"
+                    className={styles.inlineRetryButton}
+                    onClick={refreshAssetMap}
+                    disabled={isRefreshing}
+                  >
+                    <RefreshIcon className={styles.buttonIcon} />
+                    Try again
+                  </button>
+                </div>
+              ) : null}
+              {dataStatus === "ready" &&
+              mapRendererStatus === "ready" &&
+              !mappedAssets.length ? (
                 <div className={styles.mapEmpty}>
                   <strong>No GPS locations saved yet.</strong>
                   <span>
@@ -1760,7 +1969,8 @@ export default function AssetMapClient() {
                   </span>
                 </div>
               ) : null}
-              {!isLoading &&
+              {dataStatus === "ready" &&
+              mapRendererStatus === "ready" &&
               mappedAssets.length > 0 &&
               !filteredMappedAssets.length ? (
                 <div className={styles.mapEmpty}>
@@ -1773,7 +1983,8 @@ export default function AssetMapClient() {
                   </span>
                 </div>
               ) : null}
-              {!isLoading &&
+              {dataStatus === "ready" &&
+              mapRendererStatus === "ready" &&
               filteredMappedAssets.length > 0 &&
               !visibleAssets.length ? (
                 <div className={styles.mapEmpty}>
@@ -1790,9 +2001,10 @@ export default function AssetMapClient() {
 
               {selectedAsset ? (
                 <article
+                  ref={selectedAssetCardRef}
                   className={styles.selectedAssetCard}
-                  aria-label={`Selected asset: ${selectedAsset.title || "Saved asset"}`}
-                  aria-live="polite"
+                  aria-labelledby="selected-asset-card-title"
+                  tabIndex={-1}
                   onPointerDown={(event) => event.stopPropagation()}
                   onClick={(event) => event.stopPropagation()}
                   onDoubleClick={(event) => event.stopPropagation()}
@@ -1877,7 +2089,9 @@ export default function AssetMapClient() {
                             {selectedAssetIndex + 1}
                           </span>
                           <div className={styles.selectedAssetTitleGroup}>
-                            <h2>{selectedAsset.title || "Saved asset"}</h2>
+                            <h2 id="selected-asset-card-title">
+                              {selectedAsset.title || "Saved asset"}
+                            </h2>
                             <p>{buildAssetMeta(selectedAsset)}</p>
                             {showCardRegisterLabel ? (
                               <span className={styles.selectedRegisterLabel}>
@@ -1952,45 +2166,50 @@ export default function AssetMapClient() {
                 </article>
               ) : null}
 
-              {!selectedAsset && !isLoading && visibleAssets.length ? (
+              {!selectedAsset &&
+              dataStatus === "ready" &&
+              mapRendererStatus === "ready" &&
+              visibleAssets.length ? (
                 <div className={styles.mapHint}>
                   <MapIcon className={styles.buttonIcon} />
                   <span>Choose a marker or an asset from the list</span>
                 </div>
               ) : null}
 
-              <div
-                className={styles.mapControlStack}
-                aria-label="Map style"
-                onPointerDown={(event) => event.stopPropagation()}
-                onClick={(event) => event.stopPropagation()}
-                onDoubleClick={(event) => event.stopPropagation()}
-                onWheel={(event) => event.stopPropagation()}
-              >
-                <div className={styles.layerControl}>
-                  {BASEMAP_OPTIONS.map((option) => (
-                    <button
-                      key={option.value}
-                      type="button"
-                      className={`${styles.layerButton} ${basemapMode === option.value ? styles.layerButtonActive : ""}`}
-                      onClick={() => setBasemapMode(option.value)}
-                      aria-pressed={basemapMode === option.value}
-                    >
-                      {option.label}
-                    </button>
-                  ))}
-                </div>
-                <button
-                  type="button"
-                  className={styles.fitMapButton}
-                  onClick={showAllVisibleAssets}
-                  disabled={!visibleAssets.length}
+              {dataStatus === "ready" && mapRendererStatus === "ready" ? (
+                <div
+                  className={styles.mapControlStack}
+                  aria-label="Map style"
+                  onPointerDown={(event) => event.stopPropagation()}
+                  onClick={(event) => event.stopPropagation()}
+                  onDoubleClick={(event) => event.stopPropagation()}
+                  onWheel={(event) => event.stopPropagation()}
                 >
-                  <FocusIcon className={styles.buttonIcon} />
-                  <span>Show all locations</span>
-                  <small>{visibleAssets.length}</small>
-                </button>
-              </div>
+                  <div className={styles.layerControl}>
+                    {BASEMAP_OPTIONS.map((option) => (
+                      <button
+                        key={option.value}
+                        type="button"
+                        className={`${styles.layerButton} ${basemapMode === option.value ? styles.layerButtonActive : ""}`}
+                        onClick={() => setBasemapMode(option.value)}
+                        aria-pressed={basemapMode === option.value}
+                      >
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
+                  <button
+                    type="button"
+                    className={styles.fitMapButton}
+                    onClick={showAllVisibleAssets}
+                    disabled={!visibleAssets.length}
+                  >
+                    <FocusIcon className={styles.buttonIcon} />
+                    <span>Show all locations</span>
+                    <small>{visibleAssets.length}</small>
+                  </button>
+                </div>
+              ) : null}
             </div>
           </section>
         </article>
@@ -2003,10 +2222,12 @@ export default function AssetMapClient() {
           onMouseDown={closeExportModal}
         >
           <section
+            ref={exportModalRef}
             className={styles.exportModal}
             role="dialog"
             aria-modal="true"
             aria-labelledby="asset-map-export-title"
+            tabIndex={-1}
             onMouseDown={(event) => event.stopPropagation()}
           >
             <header className={styles.exportModalHeader}>
@@ -2100,20 +2321,22 @@ export default function AssetMapClient() {
                     </span>
                     <button
                       type="button"
+                      ref={exportScopeTriggerRef}
                       className={`${styles.exportScopeTrigger} ${isExportScopeMenuOpen ? styles.exportScopeTriggerOpen : ""}`}
                       onClick={() =>
                         setIsExportScopeMenuOpen((current) => !current)
                       }
-                      aria-haspopup="listbox"
                       aria-expanded={isExportScopeMenuOpen}
+                      aria-controls="asset-map-export-registers"
                     >
                       <span>{exportFilterLabel}</span>
                       <ChevronDownIcon className={styles.filterChevron} />
                     </button>
                     {isExportScopeMenuOpen ? (
                       <DropdownOverlay
+                        id="asset-map-export-registers"
                         className={`${styles.filterMenu} ${styles.exportScopeMenu}`}
-                        role="listbox"
+                        role="group"
                         aria-label="Choose asset register export scope"
                       >
                         {registerFilters.map((filter) => {
@@ -2123,8 +2346,7 @@ export default function AssetMapClient() {
                             <button
                               key={filter.id}
                               type="button"
-                              role="option"
-                              aria-selected={isSelected}
+                              aria-pressed={isSelected}
                               className={`${styles.filterMenuOption} ${isSelected ? styles.filterMenuOptionActive : ""}`}
                               onClick={() =>
                                 selectExportRegisterFilter(filter.id)
