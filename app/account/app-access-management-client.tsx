@@ -523,6 +523,8 @@ function AccessLauncher({
   onCopy: () => void;
   onShare: () => void;
 }) {
+  const streamlinedLauncher = config.qrApp === 'owner' || config.qrApp === 'field';
+
   return (
     <section className={styles.launcher} aria-labelledby="app-access-title">
       <div className={styles.launcherIntro}>
@@ -537,9 +539,11 @@ function AccessLauncher({
             <strong>New</strong>
             <small>{config.newDescription}</small>
           </span>
-          <span className={styles.actionMeta}>
-            <span className={styles.actionArrow} aria-hidden="true">›</span>
-          </span>
+          {streamlinedLauncher ? null : (
+            <span className={styles.actionMeta}>
+              <span className={styles.actionArrow} aria-hidden="true">›</span>
+            </span>
+          )}
         </button>
 
         <button type="button" className={`${styles.actionButton} ${styles.actionButtonManage}`} onClick={onManage}>
@@ -550,31 +554,61 @@ function AccessLauncher({
           </span>
           <span className={styles.actionMeta}>
             <span className={styles.countPill}>{loading ? '…' : count}</span>
-            <span className={styles.actionArrow} aria-hidden="true">›</span>
+            {streamlinedLauncher ? null : (
+              <span className={styles.actionArrow} aria-hidden="true">›</span>
+            )}
           </span>
         </button>
       </div>
 
-      <div className={styles.loginStrip}>
+      <div className={`${styles.loginStrip} ${streamlinedLauncher ? styles.loginStripStreamlined : ''}`}>
         <AppInstallQr config={config} loginLink={loginLink} />
         <div className={styles.loginLinkCard}>
           <span className={styles.loginLinkIcon}><LinkIcon /></span>
           <div className={styles.loginCopy}>
-            <span className={styles.loginLabel}>{config.loginLinkLabel}</span>
-            <a className={styles.loginUrl} href={loginLink} target="_blank" rel="noreferrer" title={loginLink}>
+            {streamlinedLauncher ? null : (
+              <span className={styles.loginLabel}>{config.loginLinkLabel}</span>
+            )}
+            <a
+              className={styles.loginUrl}
+              href={loginLink}
+              target="_blank"
+              rel="noreferrer"
+              title={loginLink}
+              aria-label={`Open ${config.loginLinkLabel}`}
+            >
               <code>{loginLink}</code>
               <span className={styles.loginUrlArrow} aria-hidden="true">↗</span>
             </a>
           </div>
         </div>
-        <div className={styles.loginActions} aria-label="App login link actions">
-          <button type="button" className={styles.linkButton} onClick={onCopy}>
+        <div
+          className={`${styles.loginActions} ${streamlinedLauncher ? styles.loginActionsIconOnly : ''}`}
+          aria-label="App login link actions"
+        >
+          <button
+            type="button"
+            className={`${styles.linkButton} ${streamlinedLauncher ? styles.linkButtonIconOnly : ''}`}
+            onClick={onCopy}
+            aria-label={`Copy ${config.loginLinkLabel}`}
+            title={streamlinedLauncher ? 'Copy link' : undefined}
+          >
             <span className={styles.linkButtonIcon}><CopyIcon /></span>
-            <span className={styles.linkButtonCopy}><strong>Copy link</strong><small>Clipboard</small></span>
+            {streamlinedLauncher ? null : (
+              <span className={styles.linkButtonCopy}><strong>Copy link</strong><small>Clipboard</small></span>
+            )}
           </button>
-          <button type="button" className={`${styles.linkButton} ${styles.linkButtonPrimary}`} onClick={onShare}>
+          <button
+            type="button"
+            className={`${styles.linkButton} ${styles.linkButtonPrimary} ${streamlinedLauncher ? styles.linkButtonIconOnly : ''}`}
+            onClick={onShare}
+            aria-label={`Share ${config.loginLinkLabel}`}
+            title={streamlinedLauncher ? 'Share link' : undefined}
+          >
             <span className={styles.linkButtonIcon}><ShareIcon /></span>
-            <span className={styles.linkButtonCopy}><strong>Share link</strong><small>Send access</small></span>
+            {streamlinedLauncher ? null : (
+              <span className={styles.linkButtonCopy}><strong>Share link</strong><small>Send access</small></span>
+            )}
           </button>
         </div>
       </div>

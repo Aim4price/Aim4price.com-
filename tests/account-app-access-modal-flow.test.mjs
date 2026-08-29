@@ -91,17 +91,53 @@ test('the login URL and link actions match the polished QR handoff', async () =>
 
   assert.match(shared, /className=\{styles\.loginLinkCard\}/);
   assert.match(shared, /className=\{styles\.loginLinkIcon\}><LinkIcon \/>/);
-  assert.match(shared, /className=\{styles\.loginUrl\} href=\{loginLink\}/);
+  assert.match(shared, /className=\{styles\.loginUrl\}[\s\S]*?href=\{loginLink\}/);
   assert.match(shared, /className=\{styles\.linkButtonIcon\}><CopyIcon \/>/);
   assert.match(shared, /className=\{styles\.linkButtonIcon\}><ShareIcon \/>/);
   assert.match(shared, /<strong>Copy link<\/strong><small>Clipboard<\/small>/);
   assert.match(shared, /<strong>Share link<\/strong><small>Send access<\/small>/);
+  const launcherStart = shared.indexOf('function AccessLauncher');
+  const launcherEnd = shared.indexOf('function InlineNotice', launcherStart);
+  const launcher = shared.slice(launcherStart, launcherEnd);
+
+  assert.match(launcher, /const streamlinedLauncher = config\.qrApp === 'owner' \|\| config\.qrApp === 'field'/);
+  assert.match(
+    launcher,
+    /\{streamlinedLauncher \? null : \(\s*<span className=\{styles\.actionMeta\}>\s*<span className=\{styles\.actionArrow\}/,
+  );
+  assert.match(
+    launcher,
+    /className=\{styles\.countPill\}[\s\S]*?\{streamlinedLauncher \? null : \(\s*<span className=\{styles\.actionArrow\}/,
+  );
+  assert.match(
+    launcher,
+    /\{streamlinedLauncher \? null : \(\s*<span className=\{styles\.loginLabel\}/,
+  );
+  assert.equal(
+    (launcher.match(/className=\{styles\.actionArrow\}/g) ?? []).length,
+    2,
+  );
+  assert.match(launcher, /aria-label=\{`Open \$\{config\.loginLinkLabel\}`\}/);
+  assert.match(launcher, /aria-label=\{`Copy \$\{config\.loginLinkLabel\}`\}/);
+  assert.match(launcher, /aria-label=\{`Share \$\{config\.loginLinkLabel\}`\}/);
+  assert.equal(
+    (launcher.match(/\{streamlinedLauncher \? null : \(\s*<span className=\{styles\.linkButtonCopy\}/g) ?? []).length,
+    2,
+  );
 
   assert.match(styles, /\.loginLinkCard \{[\s\S]*?min-height: 8\.35rem;[\s\S]*?linear-gradient\(145deg, #ffffff 0%, #f1f7fb 100%\)/);
   assert.match(styles, /\.loginUrl \{[\s\S]*?border-radius: 0\.78rem;[\s\S]*?background: rgba\(255, 255, 255, 0\.88\)/);
   assert.match(styles, /\.loginActions \{[\s\S]*?grid-template-columns: repeat\(2, minmax\(8rem, 1fr\)\)/);
   assert.match(styles, /\.linkButton \{[\s\S]*?min-height: 8\.35rem;[\s\S]*?border-radius: 1rem/);
   assert.match(styles, /\.linkButtonPrimary \{[\s\S]*?linear-gradient\(145deg, #238c68 0%, #12553e 100%\)/);
+  assert.match(styles, /\.loginStripStreamlined \{[\s\S]*?grid-template-columns: minmax\(15rem, 0\.9fr\) minmax\(18rem, 1\.35fr\) auto/);
+  assert.match(styles, /\.loginStripStreamlined \.loginUrl code \{[\s\S]*?text-overflow: ellipsis;[\s\S]*?white-space: nowrap/);
+  assert.match(styles, /\.loginActions\.loginActionsIconOnly \{[\s\S]*?grid-template-columns: 3\.5rem;[\s\S]*?grid-template-rows: repeat\(2, 3\.5rem\)/);
+  assert.match(styles, /\.linkButton\.linkButtonIconOnly \{[\s\S]*?width: 3\.5rem;[\s\S]*?height: 3\.5rem;[\s\S]*?min-height: 3\.5rem/);
+  assert.match(
+    styles,
+    /@media \(max-width: 820px\)[\s\S]*?\.loginStripStreamlined \{[\s\S]*?grid-template-columns: minmax\(0, 1fr\) auto;[\s\S]*?\.loginStripStreamlined \.qrHandoff \{[\s\S]*?grid-column: 1 \/ -1/,
+  );
 });
 
 test('all Manage directories and access choices stay alphabetical after every update', async () => {
