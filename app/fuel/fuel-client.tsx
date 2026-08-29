@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent,
 import AppHeader from '../../components/AppHeader';
 import CaptureRequestStatusList, { type CaptureRequestStatusItem } from '../../components/CaptureRequestStatusList';
 import styles from './page.module.css';
+import wizardStyles from '../../components/AimWizardModal.module.css';
 import { fuelSlipDecimalToInput, parseFuelSlipDecimal } from '../../lib/fuel-slip-number';
 import { ManageFuelStorageChoiceModal, MissingFuelEntryModal, ReconcileFuelBalanceModal, type MissingFuelLedgerPayload } from './missing-fuel-entry-modal';
 
@@ -528,7 +529,7 @@ function getFuelSlipMissingFieldPage(field: FuelSlipMissingFieldKey): FuelSlipFo
     : 'extra';
 }
 
-const FUEL_SLIP_MANAGER_PAGE_SIZE = 5;
+const FUEL_SLIP_MANAGER_PAGE_SIZE = 20;
 
 const FUEL_SLIP_CAPTURE_FILTER_OPTIONS: ReportSelectOption[] = [
   { value: 'all', label: 'All fuel slips' },
@@ -1677,12 +1678,13 @@ export default function FuelClient({
   const [openFuelSlipManagerFilterSelect, setOpenFuelSlipManagerFilterSelect] = useState<FuelSlipManagerFilterKey | null>(null);
   const [fuelSlipManagerTargetSearch, setFuelSlipManagerTargetSearch] = useState('');
   const [fuelSlipDownloadOpen, setFuelSlipDownloadOpen] = useState(false);
-  const [fuelSlipDownloadFilters, setFuelSlipDownloadFilters] = useState<FuelSlipManagerFilterState>(DEFAULT_FUEL_SLIP_MANAGER_FILTERS);
   const [draftFuelSlipDownloadFilters, setDraftFuelSlipDownloadFilters] = useState<FuelSlipManagerFilterState>(DEFAULT_FUEL_SLIP_MANAGER_FILTERS);
   const [openFuelSlipDownloadSelect, setOpenFuelSlipDownloadSelect] = useState<FuelSlipManagerFilterKey | null>(null);
   const [fuelSlipDownloadTargetSearch, setFuelSlipDownloadTargetSearch] = useState('');
   const [fuelSlipDownloadError, setFuelSlipDownloadError] = useState('');
   const [currentFuelSlipManagerPage, setCurrentFuelSlipManagerPage] = useState(1);
+  const [expandedFuelSlipId, setExpandedFuelSlipId] = useState<string | null>(null);
+  const [fuelSlipReturnToManager, setFuelSlipReturnToManager] = useState(false);
   const [isDownloadingFuelSlips, setIsDownloadingFuelSlips] = useState(false);
   const [deleteCandidateFuelSlip, setDeleteCandidateFuelSlip] = useState<FuelSlipRecord | null>(null);
   const [busyFuelSlipDeleteId, setBusyFuelSlipDeleteId] = useState<string | null>(null);
@@ -1700,6 +1702,11 @@ export default function FuelClient({
   const [fuelSlipFocusField, setFuelSlipFocusField] = useState<FuelSlipMissingFieldKey | null>(null);
   const [quickLaunchAssetId, setQuickLaunchAssetId] = useState<string | null>(null);
   const initialQuickLaunchHandledRef = useRef(false);
+  const fuelSlipManagerListRef = useRef<HTMLDivElement | null>(null);
+  const fuelSlipManagerChildDialogRef = useRef<HTMLDivElement | null>(null);
+  const fuelSlipManagerChildTriggerRef = useRef<HTMLElement | null>(null);
+  const fuelSlipManagerChildOpenRef = useRef(false);
+  const fuelSlipExtractionRequestRef = useRef(0);
 
   const selectedStorage = useMemo(
     () => storages.find((storage) => storage.id === selectedStorageId) ?? null,
@@ -1812,7 +1819,6 @@ export default function FuelClient({
     ? selectedFuelSlipTarget.storage?.name ?? 'Selected storage tank'
     : selectedFuelSlipTarget?.asset?.title ?? 'Selected asset or storage tank';
   const fuelSlipTargetPickerTitle = 'Choose Saved Asset';
-  const fuelSlipFormTitle = fuelSlipFlow === 'review' ? 'Review fuel slip details' : 'Enter fuel slip manually';
   const fuelSlipFormModeLabel = fuelSlipDraft.id
     ? 'Saved slip review'
     : fuelSlipFlow === 'review'
@@ -1875,12 +1881,34 @@ export default function FuelClient({
     return visibleFuelSlipManagerSlips.slice(startIndex, startIndex + FUEL_SLIP_MANAGER_PAGE_SIZE);
   }, [safeFuelSlipManagerPage, visibleFuelSlipManagerSlips]);
   const shouldShowFuelSlipManagerPagination = visibleFuelSlipManagerSlips.length > FUEL_SLIP_MANAGER_PAGE_SIZE;
+  const fuelSlipManagerResultStart = visibleFuelSlipManagerSlips.length
+    ? ((safeFuelSlipManagerPage - 1) * FUEL_SLIP_MANAGER_PAGE_SIZE) + 1
+    : 0;
+  const fuelSlipManagerResultEnd = Math.min(
+    safeFuelSlipManagerPage * FUEL_SLIP_MANAGER_PAGE_SIZE,
+    visibleFuelSlipManagerSlips.length,
+  );
+  const fuelSlipManagerFilteredTotals = useMemo(() => visibleFuelSlipManagerSlips.reduce(
+    (totals, slip) => ({
+      litres: totals.litres + (slip.litres ?? 0),
+      amount: totals.amount + (slip.totalAmount ?? 0),
+    }),
+    { litres: 0, amount: 0 },
+  ), [visibleFuelSlipManagerSlips]);
+  const fuelSlipManagerIncompleteTotalCount = useMemo(
+    () => visibleFuelSlipManagerSlips.filter((slip) => slip.litres === null || slip.totalAmount === null).length,
+    [visibleFuelSlipManagerSlips],
+  );
   const activeFuelSlipManagerFilterCount = useMemo(() => [
     fuelSlipManagerFilters.targetKey !== 'all',
     fuelSlipManagerFilters.capture !== 'all',
     fuelSlipManagerFilters.year !== 'all',
     fuelSlipManagerFilters.month !== 'all',
   ].filter(Boolean).length, [fuelSlipManagerFilters]);
+  const isFuelSlipManagerChildDialogOpen = fuelSlipManagerFilterOpen
+    || fuelSlipDownloadOpen
+    || Boolean(historyFuelSlip)
+    || Boolean(deleteCandidateFuelSlip);
 
 
   async function loadLedger(options: { silent?: boolean; discardAssetsOnError?: boolean } = {}) {
@@ -2021,11 +2049,126 @@ export default function FuelClient({
 
   useEffect(() => {
     setCurrentFuelSlipManagerPage(1);
+    setExpandedFuelSlipId(null);
   }, [fuelSlipManagerFilters, fuelSlipManagerSearch]);
 
   useEffect(() => {
     setCurrentFuelSlipManagerPage((page) => Math.min(page, totalFuelSlipManagerPages));
   }, [totalFuelSlipManagerPages]);
+
+  useEffect(() => {
+    if (modalMode !== 'fuel-slip-manager') return;
+    if (fuelSlipManagerListRef.current) fuelSlipManagerListRef.current.scrollTop = 0;
+  }, [fuelSlipManagerFilters, fuelSlipManagerSearch, modalMode, safeFuelSlipManagerPage]);
+
+  useEffect(() => {
+    const wasOpen = fuelSlipManagerChildOpenRef.current;
+    fuelSlipManagerChildOpenRef.current = isFuelSlipManagerChildDialogOpen;
+
+    if (!wasOpen && isFuelSlipManagerChildDialogOpen) {
+      const frame = window.requestAnimationFrame(() => {
+        const dialog = fuelSlipManagerChildDialogRef.current;
+        const firstControl = dialog?.querySelector<HTMLElement>(
+          'button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled), a[href], [tabindex]:not([tabindex="-1"])',
+        );
+        firstControl?.focus({ preventScroll: true });
+      });
+      return () => window.cancelAnimationFrame(frame);
+    }
+
+    if (wasOpen && !isFuelSlipManagerChildDialogOpen) {
+      const trigger = fuelSlipManagerChildTriggerRef.current;
+      fuelSlipManagerChildTriggerRef.current = null;
+      const frame = window.requestAnimationFrame(() => {
+        if (trigger?.isConnected) trigger.focus({ preventScroll: true });
+      });
+      return () => window.cancelAnimationFrame(frame);
+    }
+
+    return undefined;
+  }, [isFuelSlipManagerChildDialogOpen]);
+
+  useEffect(() => {
+    if (modalMode !== 'fuel-slip-manager') return undefined;
+
+    function handleFuelSlipManagerKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        if (openFuelSlipManagerFilterSelect) {
+          event.preventDefault();
+          setOpenFuelSlipManagerFilterSelect(null);
+          return;
+        }
+        if (openFuelSlipDownloadSelect) {
+          event.preventDefault();
+          setOpenFuelSlipDownloadSelect(null);
+          return;
+        }
+        if (deleteCandidateFuelSlip) {
+          event.preventDefault();
+          if (!busyFuelSlipDeleteId) setDeleteCandidateFuelSlip(null);
+          return;
+        }
+        if (historyFuelSlip) {
+          event.preventDefault();
+          closeFuelSlipHistory();
+          return;
+        }
+        if (fuelSlipDownloadOpen) {
+          event.preventDefault();
+          closeFuelSlipDownloadPanel();
+          return;
+        }
+        if (fuelSlipManagerFilterOpen) {
+          event.preventDefault();
+          closeFuelSlipManagerFilterPanel();
+          return;
+        }
+        event.preventDefault();
+        closeModal();
+        return;
+      }
+
+      if (event.key !== 'Tab' || !isFuelSlipManagerChildDialogOpen) return;
+      const dialog = fuelSlipManagerChildDialogRef.current;
+      if (!dialog) return;
+      const controls = Array.from(dialog.querySelectorAll<HTMLElement>(
+        'button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled), a[href], [tabindex]:not([tabindex="-1"])',
+      )).filter((control) => control.offsetParent !== null);
+      if (!controls.length) return;
+      const first = controls[0];
+      const last = controls[controls.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    }
+
+    document.addEventListener('keydown', handleFuelSlipManagerKeyDown);
+    return () => document.removeEventListener('keydown', handleFuelSlipManagerKeyDown);
+  }, [
+    busyFuelSlipDeleteId,
+    deleteCandidateFuelSlip,
+    fuelSlipDownloadOpen,
+    fuelSlipManagerFilterOpen,
+    historyFuelSlip,
+    isFuelSlipManagerChildDialogOpen,
+    modalMode,
+    openFuelSlipDownloadSelect,
+    openFuelSlipManagerFilterSelect,
+  ]);
+
+  useEffect(() => {
+    const availableYears = new Set(fuelSlipManagerYearOptions.map((option) => option.value));
+    const normalizeYear = (filters: FuelSlipManagerFilterState) => (
+      availableYears.has(filters.year) ? filters : { ...filters, year: 'all' }
+    );
+    setFuelSlipManagerFilters(normalizeYear);
+    setDraftFuelSlipManagerFilters(normalizeYear);
+    setDraftFuelSlipDownloadFilters(normalizeYear);
+  }, [fuelSlipManagerYearOptions]);
 
   useEffect(() => {
     const managerDropdownOpen = fuelSlipManagerFilterOpen && Boolean(openFuelSlipManagerFilterSelect);
@@ -2142,8 +2285,14 @@ export default function FuelClient({
     setModalMode('fuel-slip-menu');
   }
 
-  function openFuelSlipModal() {
+  function rememberFuelSlipManagerChildTrigger() {
+    const activeElement = document.activeElement;
+    fuelSlipManagerChildTriggerRef.current = activeElement instanceof HTMLElement ? activeElement : null;
+  }
+
+  function openFuelSlipModal(returnToManager = false) {
     resetFuelSlipValidationState();
+    setFuelSlipReturnToManager(returnToManager);
     setFuelSlipDraft(emptyFuelSlipDraft);
     setFuelSlipFlow('source-choice');
     setFuelSlipFormPage('details');
@@ -2166,6 +2315,7 @@ export default function FuelClient({
 
   function openFuelSlipManager() {
     resetFuelSlipValidationState();
+    setFuelSlipReturnToManager(false);
     setDraftFuelSlipManagerFilters(fuelSlipManagerFilters);
     setFuelSlipManagerFilterOpen(false);
     setOpenFuelSlipManagerFilterSelect(null);
@@ -2175,6 +2325,7 @@ export default function FuelClient({
     setFuelSlipDownloadTargetSearch('');
     setFuelSlipDownloadError('');
     setDeleteCandidateFuelSlip(null);
+    setExpandedFuelSlipId(null);
     setFuelSlipFlow(null);
     setFuelSlipFormPage('details');
     setIsStorageFuelSelectOpen(false);
@@ -2185,6 +2336,7 @@ export default function FuelClient({
 
   function openFuelSlipReview(slip: FuelSlipRecord) {
     resetFuelSlipValidationState();
+    setFuelSlipReturnToManager(true);
     setFuelSlipDraft(buildFuelSlipDraftFromRecord(slip));
     setFuelSlipFlow('review');
     setFuelSlipFormPage('details');
@@ -2206,6 +2358,7 @@ export default function FuelClient({
   }
 
   function openFuelSlipDeleteConfirm(slip: FuelSlipRecord) {
+    rememberFuelSlipManagerChildTrigger();
     setFuelSlipManagerFilterOpen(false);
     setOpenFuelSlipManagerFilterSelect(null);
     setFuelSlipManagerTargetSearch('');
@@ -2218,6 +2371,7 @@ export default function FuelClient({
   }
 
   async function openFuelSlipHistory(slip: FuelSlipRecord) {
+    rememberFuelSlipManagerChildTrigger();
     setHistoryFuelSlip(slip);
     setFuelHistoryEvents([]);
     setFuelHistoryError('');
@@ -2364,6 +2518,7 @@ export default function FuelClient({
 
   function closeModal() {
     if (isSaving || busyExclusionAssetId) return;
+    fuelSlipExtractionRequestRef.current += 1;
     const shouldReturnToAsset = Boolean(quickLaunchAssetId && initialReturnTo);
     setModalMode(null);
     setSelectedStorageId(null);
@@ -2394,6 +2549,7 @@ export default function FuelClient({
     setFuelSlipAttemptedSubmit(false);
     setFuelSlipValidationNotice('');
     setFuelSlipFocusField(null);
+    setFuelSlipReturnToManager(false);
     setExclusionSearch('');
     setSelectedExclusionAssetIds([]);
     setIsExclusionEditorOpen(false);
@@ -2401,6 +2557,32 @@ export default function FuelClient({
     setQuickLaunchAssetId(null);
     closeFuelSlipHistory();
     if (shouldReturnToAsset) returnFromQuickLaunch();
+  }
+
+  function closeFuelSlipFlow(options: { force?: boolean } = {}) {
+    if ((isSaving || isExtractingFuelSlip) && !options.force) return;
+    if (!fuelSlipReturnToManager) {
+      closeModal();
+      return;
+    }
+
+    fuelSlipExtractionRequestRef.current += 1;
+    resetFuelSlipValidationState();
+    setFuelSlipDraft(emptyFuelSlipDraft);
+    setFuelSlipFlow(null);
+    setFuelSlipFormPage('details');
+    setFuelSlipPickerSearch('');
+    setFuelSlipUploadFile(null);
+    setFuelSlipUploadFileName('');
+    setFuelSlipManagerFilterOpen(false);
+    setOpenFuelSlipManagerFilterSelect(null);
+    setFuelSlipDownloadOpen(false);
+    setOpenFuelSlipDownloadSelect(null);
+    setFuelSlipDownloadTargetSearch('');
+    setFuelSlipDownloadError('');
+    setQuickLaunchAssetId(null);
+    setFuelSlipReturnToManager(false);
+    setModalMode('fuel-slip-manager');
   }
 
   function resetFuelSlipValidationState() {
@@ -2496,7 +2678,7 @@ export default function FuelClient({
 
   function handleFuelSlipTargetChange(value: string) {
     resetFuelSlipValidationState();
-    setFuelSlipDraft((current) => ({
+    setFuelSlipDraft((current) => current.targetKey === value ? current : ({
       ...current,
       targetKey: value,
       odometerReading: '',
@@ -2539,6 +2721,8 @@ export default function FuelClient({
   }
 
   async function handleFuelSlipExtract() {
+    if (isExtractingFuelSlip) return;
+
     if (!fuelSlipUploadFile) {
       setNotice({ tone: 'error', message: 'Choose a fuel slip photo or PDF first.' });
       return;
@@ -2570,6 +2754,8 @@ export default function FuelClient({
       return;
     }
 
+    const extractionRequest = fuelSlipExtractionRequestRef.current + 1;
+    fuelSlipExtractionRequestRef.current = extractionRequest;
     setIsExtractingFuelSlip(true);
     setNotice(null);
 
@@ -2598,20 +2784,23 @@ export default function FuelClient({
       });
       const data = (await response.json()) as FuelCaptureRequestResponse;
 
+      if (fuelSlipExtractionRequestRef.current !== extractionRequest) return;
+
       if (!response.ok || !data.ok || !data.request) {
         throw new Error(data.error || 'The fuel slip could not be sent for Aim4price capture.');
       }
 
       setCaptureRequests((current) => [data.request!, ...current.filter((request) => request.id !== data.request!.id)]);
-      closeModal();
+      closeFuelSlipFlow({ force: true });
       setNotice({
         tone: 'success',
         message: `${data.request.referenceCode} received. Aim4price will capture and verify it within 24 hours.`,
       });
     } catch (error) {
+      if (fuelSlipExtractionRequestRef.current !== extractionRequest) return;
       setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'The fuel slip could not be sent for capture.' });
     } finally {
-      setIsExtractingFuelSlip(false);
+      if (fuelSlipExtractionRequestRef.current === extractionRequest) setIsExtractingFuelSlip(false);
     }
   }
 
@@ -2758,18 +2947,24 @@ export default function FuelClient({
       setFuelSlipPickerSearch('');
       setFuelSlipUploadFile(null);
       setFuelSlipUploadFileName('');
-      setFuelSlipManagerSearch('');
-      setFuelSlipManagerFilters(DEFAULT_FUEL_SLIP_MANAGER_FILTERS);
-      setDraftFuelSlipManagerFilters(DEFAULT_FUEL_SLIP_MANAGER_FILTERS);
-      setFuelSlipManagerTargetSearch('');
       setFuelSlipManagerFilterOpen(false);
       setOpenFuelSlipManagerFilterSelect(null);
       setFuelSlipDownloadOpen(false);
       setOpenFuelSlipDownloadSelect(null);
       setFuelSlipDownloadTargetSearch('');
       setFuelSlipDownloadError('');
-      setCurrentFuelSlipManagerPage(1);
+      if (reviewingExistingSlip) {
+        setExpandedFuelSlipId(fuelSlipDraft.id);
+      } else {
+        setFuelSlipManagerSearch('');
+        setFuelSlipManagerFilters(DEFAULT_FUEL_SLIP_MANAGER_FILTERS);
+        setDraftFuelSlipManagerFilters(DEFAULT_FUEL_SLIP_MANAGER_FILTERS);
+        setFuelSlipManagerTargetSearch('');
+        setCurrentFuelSlipManagerPage(1);
+        setExpandedFuelSlipId(null);
+      }
       setQuickLaunchAssetId(null);
+      setFuelSlipReturnToManager(false);
       setModalMode('fuel-slip-manager');
     } catch (error) {
       setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'Failed to save fuel slip.' });
@@ -2913,6 +3108,7 @@ export default function FuelClient({
   }
 
   function openFuelSlipManagerFilterPanel() {
+    rememberFuelSlipManagerChildTrigger();
     setDraftFuelSlipManagerFilters(fuelSlipManagerFilters);
     setOpenFuelSlipManagerFilterSelect(null);
     setFuelSlipManagerTargetSearch('');
@@ -2947,7 +3143,8 @@ export default function FuelClient({
   }
 
   function openFuelSlipDownloadPanel() {
-    setDraftFuelSlipDownloadFilters(fuelSlipDownloadFilters);
+    rememberFuelSlipManagerChildTrigger();
+    setDraftFuelSlipDownloadFilters(fuelSlipManagerFilters);
     setOpenFuelSlipDownloadSelect(null);
     setFuelSlipDownloadTargetSearch('');
     setFuelSlipDownloadError('');
@@ -2966,7 +3163,6 @@ export default function FuelClient({
 
   function clearFuelSlipDownloadFilters() {
     setDraftFuelSlipDownloadFilters(DEFAULT_FUEL_SLIP_MANAGER_FILTERS);
-    setFuelSlipDownloadFilters(DEFAULT_FUEL_SLIP_MANAGER_FILTERS);
     setOpenFuelSlipDownloadSelect(null);
     setFuelSlipDownloadTargetSearch('');
     setFuelSlipDownloadError('');
@@ -2975,7 +3171,7 @@ export default function FuelClient({
   function handleFuelSlipDownload() {
     if (isDownloadingFuelSlips) return;
 
-    const downloadableSlips = recentFuelSlips.filter((slip) => matchesFuelSlipManagerFilters(slip, draftFuelSlipDownloadFilters, ''));
+    const downloadableSlips = recentFuelSlips.filter((slip) => matchesFuelSlipManagerFilters(slip, draftFuelSlipDownloadFilters, fuelSlipManagerSearchTerm));
 
     if (!downloadableSlips.length) {
       setFuelSlipDownloadError('No fuel slips match the selected download filters.');
@@ -2987,7 +3183,6 @@ export default function FuelClient({
 
     try {
       downloadBlob(new Blob([buildFuelSlipCsv(downloadableSlips)], { type: 'text/csv;charset=utf-8' }), fuelSlipDownloadFileName());
-      setFuelSlipDownloadFilters(draftFuelSlipDownloadFilters);
       setNotice({ tone: 'success', message: 'Fuel slip CSV downloaded.' });
       closeFuelSlipDownloadPanel();
     } catch (error) {
@@ -3120,7 +3315,10 @@ export default function FuelClient({
     }
 
     if (fuelSlipDraft.id) {
-      openFuelSlipManager();
+      resetFuelSlipValidationState();
+      setFuelSlipFlow(null);
+      setFuelSlipReturnToManager(false);
+      setModalMode('fuel-slip-manager');
       return;
     }
 
@@ -3128,6 +3326,7 @@ export default function FuelClient({
   }
 
   function handleFuelSlipUploadBack() {
+    if (isExtractingFuelSlip) return;
     setFuelSlipFlow(quickLaunchAssetId ? 'source-choice' : 'target-automatic');
   }
 
@@ -3278,30 +3477,39 @@ export default function FuelClient({
     );
   }
 
-  function renderFuelSlipReviewStepProgress() {
+  function renderFuelSlipWizardProgress() {
+    const steps = [
+      { page: 'details', label: 'Slip', step: 1 },
+      { page: 'extra', label: 'Usage & work', step: 2 },
+    ] as const;
+
     return (
-      <div className={styles.fuelSlipReviewStepProgress} role="tablist" aria-label="Fuel slip review progress">
-        <button
-          type="button"
-          className={`${styles.fuelSlipReviewStepItem} ${fuelSlipFormPage === 'details' ? styles.fuelSlipReviewStepActive : ''}`}
-          onClick={() => handleFuelSlipStepSelect('details')}
-          role="tab"
-          aria-selected={fuelSlipFormPage === 'details'}
-        >
-          <strong>Step 1</strong>
-          <span>Slip details</span>
-        </button>
-        <button
-          type="button"
-          className={`${styles.fuelSlipReviewStepItem} ${fuelSlipFormPage === 'extra' ? styles.fuelSlipReviewStepActive : ''}`}
-          onClick={() => handleFuelSlipStepSelect('extra')}
-          role="tab"
-          aria-selected={fuelSlipFormPage === 'extra'}
-        >
-          <strong>Step 2</strong>
-          <span>Extra information</span>
-        </button>
-      </div>
+      <ol
+        className={`${styles.fuelSlipWizardProgress} ${wizardStyles.progress}`}
+        aria-label={`Step ${fuelSlipFormPage === 'details' ? 1 : 2} of 2`}
+      >
+        {steps.map(({ page, label, step }) => {
+          const isCurrent = fuelSlipFormPage === page;
+          const isComplete = page === 'details' && fuelSlipFormPage === 'extra';
+
+          return (
+            <li
+              key={page}
+              className={[
+                styles.fuelSlipWizardProgressItem,
+                wizardStyles.progressItem,
+                isCurrent ? wizardStyles.progressItemCurrent : '',
+                isComplete ? wizardStyles.progressItemComplete : '',
+              ].join(' ')}
+              data-complete={isComplete ? 'true' : undefined}
+              aria-current={isCurrent ? 'step' : undefined}
+            >
+              <span aria-hidden="true">{isComplete ? '✓' : step}</span>
+              <strong>{label}</strong>
+            </li>
+          );
+        })}
+      </ol>
     );
   }
 
@@ -3814,7 +4022,7 @@ export default function FuelClient({
                   <ChevronRightIcon />
                 </span>
               </button>
-              <button type="button" className={`${styles.sourceChoiceOption} ${styles.fuelSlipChoiceOption}`} onClick={openFuelSlipModal}>
+              <button type="button" className={`${styles.sourceChoiceOption} ${styles.fuelSlipChoiceOption}`} onClick={() => openFuelSlipModal()}>
                 <span className={styles.choiceGraphic}>
                   <PlusIcon />
                 </span>
@@ -3835,214 +4043,349 @@ export default function FuelClient({
       ) : null}
 
       {modalMode === 'fuel-slip-manager' ? (
-        <div className={styles.fuelSlipFlowBackdrop} role="dialog" aria-modal="true" aria-label="Manage fuel slips">
-          <div className={styles.fuelSlipManagerModal}>
-            <div className={styles.fuelSlipManagerHeader}>
-              <div>
-                <h2>Manage Fuel Slips</h2>
-                <p>Search, filter and download saved fuel slip data.</p>
+        <div className={`${styles.fuelSlipFlowBackdrop} ${styles.fuelSlipManagerBackdrop}`}>
+          <div
+            className={`${styles.fuelSlipManagerModal} ${wizardStyles.dialog}`}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="fuel-slip-manager-title"
+            aria-hidden={isFuelSlipManagerChildDialogOpen ? true : undefined}
+          >
+            <div className={`${styles.fuelSlipManagerHeader} ${wizardStyles.header}`}>
+              <div className={wizardStyles.headerText}>
+                <h2 id="fuel-slip-manager-title">Manage fuel slips</h2>
+                <p>Find, review and manage saved slips without losing your place.</p>
               </div>
-              <button type="button" className={styles.closeButton} onClick={closeModal} aria-label="Close manage fuel slips"><CloseIcon /></button>
+              <button type="button" className={`${styles.closeButton} ${wizardStyles.closeButton}`} onClick={closeModal} aria-label="Close manage fuel slips"><CloseIcon /></button>
             </div>
-            <div className={styles.modalDivider} />
 
-            <section className={styles.fuelSlipManagerToolbar} aria-label="Fuel slip manager controls">
-              <label className={styles.searchWrap}>
-                <SearchIcon className={styles.searchIcon} />
-                <input
-                  type="search"
-                  className={styles.searchInput}
-                  value={fuelSlipManagerSearch}
-                  onChange={(event) => setFuelSlipManagerSearch(event.target.value)}
-                  placeholder="Search suppliers, assets, storage units, slip numbers or amounts..."
-                  aria-label="Search saved fuel slips"
-                />
-                {fuelSlipManagerSearch.trim() ? (
-                  <button type="button" className={styles.clearSearchButton} onClick={() => setFuelSlipManagerSearch('')} aria-label="Clear fuel slip search">
-                    ×
+            <div className={`${styles.fuelSlipManagerBody} ${wizardStyles.body}`}>
+              <section className={styles.fuelSlipManagerToolbar} aria-label="Fuel slip manager controls">
+                <label className={styles.searchWrap}>
+                  <SearchIcon className={styles.searchIcon} />
+                  <input
+                    type="search"
+                    className={styles.searchInput}
+                    value={fuelSlipManagerSearch}
+                    onChange={(event) => setFuelSlipManagerSearch(event.target.value)}
+                    placeholder="Search supplier, asset, slip number or amount..."
+                    aria-label="Search saved fuel slips"
+                  />
+                  {fuelSlipManagerSearch.trim() ? (
+                    <button type="button" className={styles.clearSearchButton} onClick={() => setFuelSlipManagerSearch('')} aria-label="Clear fuel slip search">
+                      ×
+                    </button>
+                  ) : null}
+                </label>
+
+                <div className={styles.fuelSlipManagerToolbarButtons}>
+                  {!isAccountantReadOnly ? (
+                    <button type="button" className={`${styles.secondaryButton} ${styles.fuelSlipManagerToolbarButton} ${styles.fuelSlipManagerAddButton}`} onClick={() => openFuelSlipModal(true)}>
+                      <PlusIcon className={styles.buttonIcon} />
+                      <span>Add fuel slip</span>
+                    </button>
+                  ) : null}
+                  <button type="button" className={`${styles.secondaryButton} ${styles.fuelSlipManagerToolbarButton} ${styles.fuelSlipManagerFilterButton}`} onClick={openFuelSlipManagerFilterPanel}>
+                    <FilterIcon className={styles.buttonIcon} />
+                    <span>Filter</span>
+                    {activeFuelSlipManagerFilterCount ? <strong>{activeFuelSlipManagerFilterCount}</strong> : null}
+                  </button>
+                  <button
+                    type="button"
+                    className={`${styles.primaryButton} ${styles.fuelSlipManagerToolbarButton} ${styles.fuelSlipManagerDownloadButton}`}
+                    onClick={openFuelSlipDownloadPanel}
+                    disabled={!recentFuelSlips.length || isDownloadingFuelSlips}
+                  >
+                    <DownloadIcon className={styles.buttonIcon} />
+                    <span>Download</span>
+                  </button>
+                </div>
+              </section>
+
+              <div className={styles.fuelSlipManagerContextBar}>
+                <span>
+                  {activeFuelSlipManagerFilterCount || fuelSlipManagerSearch.trim()
+                    ? `${activeFuelSlipManagerFilterCount + (fuelSlipManagerSearch.trim() ? 1 : 0)} active ${activeFuelSlipManagerFilterCount + (fuelSlipManagerSearch.trim() ? 1 : 0) === 1 ? 'search or filter' : 'searches and filters'}`
+                    : recentFuelSlips.length >= 2000
+                      ? 'Showing the latest 2,000 loaded fuel slips'
+                      : 'Showing all loaded fuel slips'}
+                </span>
+                {activeFuelSlipManagerFilterCount || fuelSlipManagerSearch.trim() ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFuelSlipManagerSearch('');
+                      clearFuelSlipManagerFilters();
+                    }}
+                  >
+                    Clear all
                   </button>
                 ) : null}
-              </label>
-
-              <div className={styles.fuelSlipManagerToolbarButtons}>
-                {!isAccountantReadOnly ? (
-                  <button type="button" className={`${styles.secondaryButton} ${styles.fuelSlipManagerToolbarButton} ${styles.fuelSlipManagerAddButton}`} onClick={openFuelSlipModal}>
-                    <PlusIcon className={styles.buttonIcon} />
-                    <span>Add Fuel Slip</span>
-                  </button>
-                ) : null}
-                <button type="button" className={`${styles.secondaryButton} ${styles.fuelSlipManagerToolbarButton} ${styles.fuelSlipManagerFilterButton}`} onClick={openFuelSlipManagerFilterPanel}>
-                  <FilterIcon className={styles.buttonIcon} />
-                  <span>Filter</span>
-                  {activeFuelSlipManagerFilterCount ? <strong>{activeFuelSlipManagerFilterCount}</strong> : null}
-                </button>
-                <button
-                  type="button"
-                  className={`${styles.primaryButton} ${styles.fuelSlipManagerToolbarButton} ${styles.fuelSlipManagerDownloadButton}`}
-                  onClick={openFuelSlipDownloadPanel}
-                  disabled={!recentFuelSlips.length || isDownloadingFuelSlips}
-                >
-                  <DownloadIcon className={styles.buttonIcon} />
-                  <span>Download</span>
-                </button>
               </div>
-            </section>
 
-            <section className={styles.fuelSlipManagerPanel} aria-label="Saved fuel slips">
-              <div className={styles.fuelSlipManagerList}>
-                {isLoading ? <div className={styles.fuelSlipManagerEmptyState}>Loading saved fuel slips...</div> : null}
+              <section className={styles.fuelSlipManagerPanel} aria-label="Saved fuel slips">
+                <div className={styles.fuelSlipManagerSummary}>
+                  <div className={styles.fuelSlipManagerResultCopy} aria-live="polite">
+                    <strong>{visibleFuelSlipManagerSlips.length.toLocaleString('en-ZA')} {visibleFuelSlipManagerSlips.length === 1 ? 'fuel slip' : 'fuel slips'}</strong>
+                    <span>{visibleFuelSlipManagerSlips.length
+                      ? `Showing ${fuelSlipManagerResultStart.toLocaleString('en-ZA')}–${fuelSlipManagerResultEnd.toLocaleString('en-ZA')} of ${visibleFuelSlipManagerSlips.length.toLocaleString('en-ZA')}`
+                      : 'Adjust the search or filters to see more results.'}</span>
+                    {fuelSlipManagerIncompleteTotalCount ? (
+                      <small>{fuelSlipManagerIncompleteTotalCount.toLocaleString('en-ZA')} incomplete {fuelSlipManagerIncompleteTotalCount === 1 ? 'slip has' : 'slips have'} missing values that are not included in the totals.</small>
+                    ) : null}
+                  </div>
+                  <div className={styles.fuelSlipManagerTotals} aria-label="Totals for matching fuel slips">
+                    <span>
+                      <small>Recorded litres</small>
+                      <strong>{formatLitres(fuelSlipManagerFilteredTotals.litres)}</strong>
+                    </span>
+                    <span>
+                      <small>Recorded amount</small>
+                      <strong>{formatCurrency(fuelSlipManagerFilteredTotals.amount)}</strong>
+                    </span>
+                  </div>
+                </div>
 
-                {!isLoading && !visibleFuelSlipManagerSlips.length ? (
-                  <div className={styles.fuelSlipManagerEmptyState}>No saved fuel slips match the current search or filters.</div>
-                ) : null}
+                <div className={styles.fuelSlipManagerTableHeader} aria-hidden="true">
+                  <span>Date</span>
+                  <span>Supplier &amp; target</span>
+                  <span>Fuel</span>
+                  <span>Litres</span>
+                  <span>Total</span>
+                  <span>Status</span>
+                  <span>Details</span>
+                </div>
 
-                {!isLoading ? paginatedFuelSlipManagerSlips.map((slip) => {
-                  const updatedLabel = slip.updatedAtIso ? `Updated ${formatFuelSlipDateTime(slip.updatedAtIso)}` : '';
-                  const cardEndingLabel = formatCardEnding(slip.cardLast4 || slip.cardNumberMasked);
-                  const needsReview = fuelSlipNeedsReview(slip);
-                  const deletingThisSlip = busyFuelSlipDeleteId === slip.id;
+                <div className={styles.fuelSlipManagerList} ref={fuelSlipManagerListRef}>
+                  {isLoading ? <div className={styles.fuelSlipManagerEmptyState}>Loading saved fuel slips...</div> : null}
 
-                  return (
-                    <article className={styles.fuelSlipManagerRow} key={slip.id}>
-                      <div className={styles.fuelSlipManagerRowTop}>
-                        <div className={styles.fuelSlipManagerTitleBlock}>
-                          <h3 className={styles.fuelSlipManagerTitle}>{slip.supplierName || 'Unknown supplier'}</h3>
-                          <p className={styles.fuelSlipManagerTarget}>{fuelSlipTargetLabel(slip)}</p>
-                        </div>
-                        <span className={`${styles.fuelSlipManagerStatusBadge} ${needsReview ? styles.fuelSlipManagerStatusReview : ''}`}>
-                          {fuelSlipStatusLabel(slip)}
-                        </span>
-                      </div>
+                  {!isLoading && !recentFuelSlips.length ? (
+                    <div className={styles.fuelSlipManagerEmptyState}>
+                      <strong>No fuel slips yet</strong>
+                      <span>Add the first slip to start building a searchable fuel history.</span>
+                      {!isAccountantReadOnly ? (
+                        <button type="button" className={styles.primaryButton} onClick={() => openFuelSlipModal(true)}>
+                          <PlusIcon className={styles.buttonIcon} />
+                          <span>Add fuel slip</span>
+                        </button>
+                      ) : null}
+                    </div>
+                  ) : null}
 
-                      <div className={styles.fuelSlipManagerDetailGrid}>
-                        <span>
-                          <small>Target</small>
-                          <strong>{fuelSlipTargetLabel(slip)}</strong>
-                        </span>
-                        <span>
-                          <small>Type</small>
-                          <strong>{fuelSlipTargetTypeLabel(slip)}</strong>
-                        </span>
-                        <span>
-                          <small>Slip date</small>
-                          <strong>{formatFuelSlipDate(slip.documentDate)}</strong>
-                        </span>
-                        <span>
-                          <small>Fuel type</small>
-                          <strong>{slip.fuelType || '—'}</strong>
-                        </span>
-                        <span>
-                          <small>Litres</small>
-                          <strong>{formatLitres(slip.litres)}</strong>
-                        </span>
-                        <span>
-                          <small>Price / litre</small>
-                          <strong>{slip.pricePerLitre !== null ? `${formatCurrency(slip.pricePerLitre)}/L` : '—'}</strong>
-                        </span>
-                        <span>
-                          <small>Total amount</small>
-                          <strong>{formatCurrency(slip.totalAmount)}</strong>
-                        </span>
-                        <span>
-                          <small>Card</small>
-                          <strong>{cardEndingLabel || '—'}</strong>
-                        </span>
-                        <span>
-                          <small>Work use</small>
-                          <strong>{slip.workUseExcluded ? 'Excluded' : 'Included'}</strong>
-                        </span>
-                      </div>
+                  {!isLoading && recentFuelSlips.length > 0 && !visibleFuelSlipManagerSlips.length ? (
+                    <div className={styles.fuelSlipManagerEmptyState}>
+                      <strong>No matching fuel slips</strong>
+                      <span>Try a different supplier, asset, date or status.</span>
+                      <button
+                        type="button"
+                        className={styles.secondaryButton}
+                        onClick={() => {
+                          setFuelSlipManagerSearch('');
+                          clearFuelSlipManagerFilters();
+                        }}
+                      >
+                        Show all fuel slips
+                      </button>
+                    </div>
+                  ) : null}
 
-                      <div className={styles.fuelSlipManagerRowFooter}>
-                        <span className={styles.fuelSlipManagerRowUpdated}>{updatedLabel || 'Saved fuel slip'}</span>
-                        <div className={styles.fuelSlipManagerRowActions}>
-                          {slip.documentFileUrl ? (
-                            <a className={`${styles.secondaryButton} ${styles.fuelSlipManagerOpenButton}`} href={slip.documentFileUrl} target="_blank" rel="noreferrer">
-                              <OpenFileIcon className={styles.buttonIcon} />
-                              <span>Open file</span>
-                            </a>
-                          ) : null}
+                  {!isLoading ? paginatedFuelSlipManagerSlips.map((slip) => {
+                    const updatedLabel = slip.updatedAtIso ? `Updated ${formatFuelSlipDateTime(slip.updatedAtIso)}` : '';
+                    const cardEndingLabel = formatCardEnding(slip.cardLast4 || slip.cardNumberMasked);
+                    const needsReview = fuelSlipNeedsReview(slip);
+                    const deletingThisSlip = busyFuelSlipDeleteId === slip.id;
+                    const isExpanded = expandedFuelSlipId === slip.id;
+                    const detailsId = `fuel-slip-manager-details-${slip.id}`;
+
+                    return (
+                      <article
+                        className={styles.fuelSlipManagerRow}
+                        key={slip.id}
+                        data-expanded={isExpanded ? 'true' : undefined}
+                        aria-label={`${slip.supplierName || 'Unknown supplier'} fuel slip`}
+                      >
+                        <div className={styles.fuelSlipManagerRowMain}>
+                          <span className={styles.fuelSlipManagerDate} aria-label={`Date: ${formatFuelSlipDate(slip.documentDate)}. ${slip.slipNumber ? `Slip number: ${slip.slipNumber}` : `Target type: ${fuelSlipTargetTypeLabel(slip)}`}`}>
+                            <strong>{formatFuelSlipDate(slip.documentDate)}</strong>
+                            <small>{slip.slipNumber ? `Slip ${slip.slipNumber}` : fuelSlipTargetTypeLabel(slip)}</small>
+                          </span>
+                          <span className={styles.fuelSlipManagerIdentity} aria-label={`Supplier: ${slip.supplierName || 'Unknown supplier'}. Target: ${fuelSlipTargetLabel(slip)}`}>
+                            <strong>{slip.supplierName || 'Unknown supplier'}</strong>
+                            <small>{fuelSlipTargetLabel(slip)}</small>
+                          </span>
+                          <span className={styles.fuelSlipManagerMetric} aria-label={`Fuel: ${slip.fuelType || 'Not recorded'}. Price per litre: ${slip.pricePerLitre !== null ? formatCurrency(slip.pricePerLitre) : 'Not recorded'}`}>
+                            <strong>{slip.fuelType || 'Not recorded'}</strong>
+                            <small>{slip.pricePerLitre !== null ? `${formatCurrency(slip.pricePerLitre)}/L` : 'No unit price'}</small>
+                          </span>
+                          <span className={styles.fuelSlipManagerMetric} aria-label={`Litres: ${formatLitres(slip.litres)}`}>
+                            <strong>{formatLitres(slip.litres)}</strong>
+                            <small>Quantity</small>
+                          </span>
+                          <span className={`${styles.fuelSlipManagerMetric} ${styles.fuelSlipManagerAmount}`} aria-label={`Total amount: ${formatCurrency(slip.totalAmount)}`}>
+                            <strong>{formatCurrency(slip.totalAmount)}</strong>
+                            <small>Total amount</small>
+                          </span>
+                          {needsReview && !isAccountantReadOnly ? (
+                            <button
+                              type="button"
+                              className={`${styles.fuelSlipManagerStatusBadge} ${styles.fuelSlipManagerStatusReview} ${styles.fuelSlipManagerStatusAction}`}
+                              onClick={() => openFuelSlipReview(slip)}
+                              aria-label={`Review incomplete fuel slip from ${slip.supplierName || 'unknown supplier'} on ${formatFuelSlipDate(slip.documentDate)}`}
+                            >
+                              Review needed
+                            </button>
+                          ) : (
+                            <span className={`${styles.fuelSlipManagerStatusBadge} ${needsReview ? styles.fuelSlipManagerStatusReview : ''}`} aria-label={`Status: ${fuelSlipStatusLabel(slip)}`}>
+                              {fuelSlipStatusLabel(slip)}
+                            </span>
+                          )}
                           <button
                             type="button"
-                            className={`${styles.secondaryButton} ${styles.fuelSlipManagerOpenButton}`}
-                            onClick={() => void openFuelSlipHistory(slip)}
-                            disabled={deletingThisSlip}
+                            className={styles.fuelSlipManagerExpandButton}
+                            onClick={() => setExpandedFuelSlipId((current) => current === slip.id ? null : slip.id)}
+                            aria-expanded={isExpanded}
+                            aria-controls={detailsId}
+                            aria-label={`${isExpanded ? 'Hide' : 'View'} details for ${slip.supplierName || 'unknown supplier'} on ${formatFuelSlipDate(slip.documentDate)}`}
                           >
-                            <span>Change History</span>
+                            <span>{isExpanded ? 'Hide' : 'View'}</span>
+                            <ChevronDownIcon aria-hidden="true" />
                           </button>
-                          {!isAccountantReadOnly ? (
-                            <>
-                              {needsReview ? (
-                                <button
-                                  type="button"
-                                  className={`${styles.secondaryButton} ${styles.fuelSlipManagerReviewButton}`}
-                                  onClick={() => openFuelSlipReview(slip)}
-                                  disabled={deletingThisSlip}
-                                >
-                                  <FuelSlipsIcon className={styles.buttonIcon} />
-                                  <span>Review / Complete</span>
-                                </button>
-                              ) : (
-                                <button
-                                  type="button"
-                                  className={`${styles.secondaryButton} ${styles.fuelSlipManagerEditButton}`}
-                                  onClick={() => openFuelSlipReview(slip)}
-                                  disabled={deletingThisSlip}
-                                >
-                                  <EditIcon className={styles.buttonIcon} />
-                                  <span>Edit</span>
-                                </button>
-                              )}
+                        </div>
+
+                        {isExpanded ? (
+                          <div className={styles.fuelSlipManagerExpanded} id={detailsId}>
+                            <div className={styles.fuelSlipManagerSecondaryGrid}>
+                              <span>
+                                <small>Target type</small>
+                                <strong>{fuelSlipTargetTypeLabel(slip)}</strong>
+                              </span>
+                              <span>
+                                <small>Card</small>
+                                <strong>{cardEndingLabel || 'Not recorded'}</strong>
+                              </span>
+                              <span>
+                                <small>Work use</small>
+                                <strong>{slip.workUseExcluded ? 'Excluded' : 'Included'}</strong>
+                              </span>
+                              <span>
+                                <small>Last updated</small>
+                                <strong>{updatedLabel || 'Saved fuel slip'}</strong>
+                              </span>
+                              <span>
+                                <small>Slip / reference</small>
+                                <strong>{slip.slipNumber || 'Not recorded'}</strong>
+                              </span>
+                              <span>
+                                <small>Transaction</small>
+                                <strong>{slip.transactionNumber || 'Not recorded'}</strong>
+                              </span>
+                            </div>
+                            <div className={styles.fuelSlipManagerRowActions}>
+                              {slip.documentFileUrl ? (
+                                <a className={`${styles.secondaryButton} ${styles.fuelSlipManagerOpenButton}`} href={slip.documentFileUrl} target="_blank" rel="noreferrer">
+                                  <OpenFileIcon className={styles.buttonIcon} />
+                                  <span>Open file</span>
+                                </a>
+                              ) : null}
                               <button
                                 type="button"
-                                className={`${styles.secondaryButton} ${styles.fuelSlipManagerDeleteButton}`}
-                                onClick={() => openFuelSlipDeleteConfirm(slip)}
+                                className={`${styles.secondaryButton} ${styles.fuelSlipManagerOpenButton}`}
+                                onClick={() => void openFuelSlipHistory(slip)}
                                 disabled={deletingThisSlip}
                               >
-                                <TrashIcon className={styles.buttonIcon} />
-                                <span>{deletingThisSlip ? 'Voiding...' : 'Void'}</span>
+                                <span>Change history</span>
                               </button>
-                            </>
-                          ) : null}
-                        </div>
-                      </div>
-                    </article>
-                  );
-                }) : null}
-              </div>
+                              {!isAccountantReadOnly ? (
+                                <>
+                                  {needsReview ? (
+                                    <button
+                                      type="button"
+                                      className={`${styles.secondaryButton} ${styles.fuelSlipManagerReviewButton}`}
+                                      onClick={() => openFuelSlipReview(slip)}
+                                      disabled={deletingThisSlip}
+                                    >
+                                      <FuelSlipsIcon className={styles.buttonIcon} />
+                                      <span>Review / complete</span>
+                                    </button>
+                                  ) : (
+                                    <button
+                                      type="button"
+                                      className={`${styles.secondaryButton} ${styles.fuelSlipManagerEditButton}`}
+                                      onClick={() => openFuelSlipReview(slip)}
+                                      disabled={deletingThisSlip}
+                                    >
+                                      <EditIcon className={styles.buttonIcon} />
+                                      <span>Edit</span>
+                                    </button>
+                                  )}
+                                  <button
+                                    type="button"
+                                    className={`${styles.secondaryButton} ${styles.fuelSlipManagerDeleteButton}`}
+                                    onClick={() => openFuelSlipDeleteConfirm(slip)}
+                                    disabled={deletingThisSlip}
+                                  >
+                                    <TrashIcon className={styles.buttonIcon} />
+                                    <span>{deletingThisSlip ? 'Voiding...' : 'Void'}</span>
+                                  </button>
+                                </>
+                              ) : null}
+                            </div>
+                          </div>
+                        ) : null}
+                      </article>
+                    );
+                  }) : null}
+                </div>
 
-              {!isLoading && shouldShowFuelSlipManagerPagination ? (
-                <nav className={styles.fuelSlipManagerPaginationRow} aria-label="Fuel slips pagination">
-                  <button
-                    type="button"
-                    className={styles.fuelSlipManagerPaginationButton}
-                    onClick={() => setCurrentFuelSlipManagerPage((page) => Math.max(1, page - 1))}
-                    disabled={safeFuelSlipManagerPage <= 1}
-                  >
-                    Previous
-                  </button>
-                  <span className={styles.fuelSlipManagerPaginationStatus}>Page {safeFuelSlipManagerPage.toLocaleString('en-ZA')} of {totalFuelSlipManagerPages.toLocaleString('en-ZA')}</span>
-                  <button
-                    type="button"
-                    className={styles.fuelSlipManagerPaginationButton}
-                    onClick={() => setCurrentFuelSlipManagerPage((page) => Math.min(totalFuelSlipManagerPages, page + 1))}
-                    disabled={safeFuelSlipManagerPage >= totalFuelSlipManagerPages}
-                  >
-                    Next
-                  </button>
-                </nav>
-              ) : null}
-            </section>
+                {!isLoading && shouldShowFuelSlipManagerPagination ? (
+                  <nav className={styles.fuelSlipManagerPaginationRow} aria-label="Fuel slips pagination">
+                    <button
+                      type="button"
+                      className={styles.fuelSlipManagerPaginationButton}
+                      onClick={() => setCurrentFuelSlipManagerPage(1)}
+                      disabled={safeFuelSlipManagerPage <= 1}
+                    >
+                      First
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.fuelSlipManagerPaginationButton}
+                      onClick={() => setCurrentFuelSlipManagerPage((page) => Math.max(1, page - 1))}
+                      disabled={safeFuelSlipManagerPage <= 1}
+                    >
+                      Previous
+                    </button>
+                    <span className={styles.fuelSlipManagerPaginationStatus}>Page {safeFuelSlipManagerPage.toLocaleString('en-ZA')} of {totalFuelSlipManagerPages.toLocaleString('en-ZA')}</span>
+                    <button
+                      type="button"
+                      className={styles.fuelSlipManagerPaginationButton}
+                      onClick={() => setCurrentFuelSlipManagerPage((page) => Math.min(totalFuelSlipManagerPages, page + 1))}
+                      disabled={safeFuelSlipManagerPage >= totalFuelSlipManagerPages}
+                    >
+                      Next
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.fuelSlipManagerPaginationButton}
+                      onClick={() => setCurrentFuelSlipManagerPage(totalFuelSlipManagerPages)}
+                      disabled={safeFuelSlipManagerPage >= totalFuelSlipManagerPages}
+                    >
+                      Last
+                    </button>
+                  </nav>
+                ) : null}
+              </section>
+            </div>
           </div>
         </div>
       ) : null}
 
       {modalMode === 'fuel-slip-manager' && fuelSlipManagerFilterOpen ? (
-        <div className={styles.fuelSlipSubModalBackdrop} role="dialog" aria-modal="true" aria-label="Filter saved fuel slips">
-          <div className={styles.fuelSlipFilterModal}>
+        <div className={styles.fuelSlipSubModalBackdrop}>
+          <div className={styles.fuelSlipFilterModal} ref={fuelSlipManagerChildDialogRef} role="dialog" aria-modal="true" aria-labelledby="fuel-slip-filter-title">
             <div className={styles.modalHeader}>
               <div>
-                <h2>Filter Fuel Slips</h2>
+                <h2 id="fuel-slip-filter-title">Filter fuel slips</h2>
               </div>
               <button type="button" className={styles.closeButton} onClick={closeFuelSlipManagerFilterPanel} aria-label="Close fuel slip filters"><CloseIcon /></button>
             </div>
@@ -4103,11 +4446,14 @@ export default function FuelClient({
       ) : null}
 
       {modalMode === 'fuel-slip-manager' && fuelSlipDownloadOpen ? (
-        <div className={styles.fuelSlipSubModalBackdrop} role="dialog" aria-modal="true" aria-label="Download fuel slips">
-          <div className={styles.fuelSlipFilterModal}>
+        <div className={styles.fuelSlipSubModalBackdrop}>
+          <div className={styles.fuelSlipFilterModal} ref={fuelSlipManagerChildDialogRef} role="dialog" aria-modal="true" aria-labelledby="fuel-slip-download-title">
             <div className={styles.modalHeader}>
               <div>
-                <h2>Download Fuel Slips</h2>
+                <h2 id="fuel-slip-download-title">Download fuel slips</h2>
+                <p>{fuelSlipManagerSearch.trim()
+                  ? `Exports loaded slips matching “${fuelSlipManagerSearch.trim()}” and the filters below.`
+                  : 'Choose filters for the loaded slips you want to export.'}</p>
               </div>
               <button type="button" className={styles.closeButton} onClick={closeFuelSlipDownloadPanel} aria-label="Close fuel slip download"><CloseIcon /></button>
             </div>
@@ -4183,11 +4529,11 @@ export default function FuelClient({
       ) : null}
 
       {modalMode === 'fuel-slip-manager' && historyFuelSlip ? (
-        <div className={styles.fuelSlipSubModalBackdrop} role="dialog" aria-modal="true" aria-label="Fuel slip change history">
-          <div className={`${styles.fuelSlipFilterModal} ${styles.fuelHistoryModal}`}>
+        <div className={styles.fuelSlipSubModalBackdrop}>
+          <div className={`${styles.fuelSlipFilterModal} ${styles.fuelHistoryModal}`} ref={fuelSlipManagerChildDialogRef} role="dialog" aria-modal="true" aria-labelledby="fuel-slip-history-title">
             <div className={styles.modalHeader}>
               <div>
-                <h2>Change History</h2>
+                <h2 id="fuel-slip-history-title">Change history</h2>
                 <p>{historyFuelSlip.supplierName || 'Fuel slip'} · {formatFuelSlipDate(historyFuelSlip.documentDate)}</p>
               </div>
               <button type="button" className={styles.closeButton} onClick={closeFuelSlipHistory} aria-label="Close change history"><CloseIcon /></button>
@@ -4217,8 +4563,8 @@ export default function FuelClient({
       ) : null}
 
       {modalMode === 'fuel-slip-manager' && deleteCandidateFuelSlip ? (
-        <div className={`${styles.modalOverlay} ${styles.confirmDeleteOverlay} ${styles.fuelSlipDeleteOverlay}`} role="alertdialog" aria-modal="true" aria-labelledby="fuel-slip-delete-title" aria-describedby="fuel-slip-delete-copy">
-          <div className={styles.deleteConfirmModal}>
+        <div className={`${styles.modalOverlay} ${styles.confirmDeleteOverlay} ${styles.fuelSlipDeleteOverlay}`}>
+          <div className={styles.deleteConfirmModal} ref={fuelSlipManagerChildDialogRef} role="alertdialog" aria-modal="true" aria-labelledby="fuel-slip-delete-title" aria-describedby="fuel-slip-delete-copy">
             <button
               type="button"
               className={styles.deleteConfirmCloseButton}
@@ -4270,7 +4616,7 @@ export default function FuelClient({
                   ? `Save this fuel slip against ${quickLaunchAsset.title}. Choose how you want to capture it.`
                   : 'Choose how to capture a fuel slip for an included asset or storage tank.'}</p>
               </div>
-              <button type="button" className={styles.closeButton} onClick={closeModal} aria-label="Close add fuel slip"><CloseIcon /></button>
+              <button type="button" className={styles.closeButton} onClick={() => closeFuelSlipFlow()} aria-label="Close add fuel slip"><CloseIcon /></button>
             </div>
             <div className={styles.modalDivider} />
             <div className={styles.sourceChoiceGrid}>
@@ -4300,7 +4646,7 @@ export default function FuelClient({
               </button>
             </div>
             <div className={styles.modalFooter}>
-              <button type="button" className={styles.secondaryButton} onClick={closeModal}>Cancel</button>
+              <button type="button" className={styles.secondaryButton} onClick={() => closeFuelSlipFlow()}>Cancel</button>
             </div>
           </div>
         </div>
@@ -4314,7 +4660,7 @@ export default function FuelClient({
                 <h2>{fuelSlipTargetPickerTitle}</h2>
                 <p>Select an included asset or the storage tank this fuel slip belongs to.</p>
               </div>
-              <button type="button" className={styles.closeButton} onClick={closeModal} aria-label="Close"><CloseIcon /></button>
+              <button type="button" className={styles.closeButton} onClick={() => closeFuelSlipFlow()} aria-label="Close"><CloseIcon /></button>
             </div>
             <div className={styles.modalDivider} />
             <div className={styles.pickerToolbar} data-asset-choice-toolbar="true">
@@ -4373,43 +4719,51 @@ export default function FuelClient({
               ) : <div className={styles.emptyState}>No matching assets or storage tanks found.</div>}
             </div>
             <div className={styles.modalFooter} data-asset-choice-footer="true">
-              <button type="button" className={styles.secondaryButton} onClick={closeModal}>Cancel</button>
+              <button type="button" className={styles.secondaryButton} onClick={() => closeFuelSlipFlow()}>Cancel</button>
             </div>
           </div>
         </div>
       ) : null}
 
       {modalMode === 'fuel-slip' && fuelSlipFlow === 'upload' ? (
-        <div className={styles.fuelSlipFlowBackdrop} role="dialog" aria-modal="true" aria-label="Upload fuel slip/photo">
-          <div className={`${styles.formModal} ${styles.costUploadModal}`}>
-            <div className={styles.modalHeader}>
-              <div>
-                <h2>Upload for Aim4price capture</h2>
-                <p>{selectedFuelSlipTargetName} · Verified within 24 hours</p>
+        <div className={`${styles.fuelSlipFlowBackdrop} ${wizardStyles.overlay}`}>
+          <div className={`${styles.formModal} ${styles.costUploadModal} ${styles.fuelSlipUploadWizardModal} ${wizardStyles.dialog}`} role="dialog" aria-modal="true" aria-labelledby="fuel-slip-upload-title">
+            <div className={`${styles.modalHeader} ${wizardStyles.header}`}>
+              <div className={wizardStyles.headerText}>
+                <h2 id="fuel-slip-upload-title">Upload for Aim4price capture</h2>
+                <p>{selectedFuelSlipTargetName} · Upload details</p>
               </div>
-              <button type="button" className={styles.closeButton} onClick={closeModal} aria-label="Close"><CloseIcon /></button>
+              <button type="button" className={`${styles.closeButton} ${wizardStyles.closeButton}`} onClick={() => closeFuelSlipFlow()} aria-label="Close" disabled={isExtractingFuelSlip}><CloseIcon /></button>
             </div>
-            <div className={styles.modalDivider} />
-            <div className={styles.formModalScrollBody}>
-              {renderFuelSlipValidationNotice()}
-              <section className={styles.uploadPanel}>
-                <h3>Documents and photos</h3>
-                <div className={`${styles.uploadBox} ${fuelSlipUploadReady ? styles.uploadBoxReady : ''}`}>
-                  <label className={styles.uploadButton}>
-                    <UploadIcon />
-                    Add fuel slip/photo
-                    <input type="file" accept="application/pdf,image/jpeg,image/jpg,image/png,image/webp" onChange={handleFuelSlipUploadChange} disabled={isSaving || isExtractingFuelSlip} />
-                  </label>
-                  <span className={styles.uploadCounter}>{fuelSlipUploadReady ? '1 / 1' : '0 / 1'}</span>
-                  {fuelSlipUploadFileName ? <p>{fuelSlipUploadFileName}</p> : null}
+            <div className={`${styles.modalDivider} ${wizardStyles.divider}`} />
+            <div className={`${styles.formModalScrollBody} ${wizardStyles.body}`}>
+              <p className={wizardStyles.intro}>Add one clear photo or PDF. Aim4price captures the slip and keeps your operational details together.</p>
+              <section className={`${styles.fuelSlipWizardPanel} ${wizardStyles.panel}`}>
+                <div className={`${styles.fuelSlipWizardHeading} ${wizardStyles.panelHeading}`}>
+                  <span className={wizardStyles.panelNumber} aria-hidden="true">1</span>
+                  <h3>Upload the fuel slip</h3>
+                  <p>Files are checked and captured within 24 hours.</p>
                 </div>
+                {renderFuelSlipValidationNotice()}
+                <section className={styles.uploadPanel}>
+                  <h3>Document or photo</h3>
+                  <div className={`${styles.uploadBox} ${fuelSlipUploadReady ? styles.uploadBoxReady : ''}`}>
+                    <label className={styles.uploadButton}>
+                      <UploadIcon />
+                      Add fuel slip/photo
+                      <input type="file" accept="application/pdf,image/jpeg,image/jpg,image/png,image/webp" onChange={handleFuelSlipUploadChange} disabled={isSaving || isExtractingFuelSlip} />
+                    </label>
+                    <span className={styles.uploadCounter}>{fuelSlipUploadReady ? '1 / 1' : '0 / 1'}</span>
+                    {fuelSlipUploadFileName ? <p>{fuelSlipUploadFileName}</p> : null}
+                  </div>
+                </section>
+                <p className={styles.fuelSlipHelperText}>Add the operational details that are not shown on the slip. Aim4price will capture the supplier, date, litres, VAT and amount.</p>
+                {renderFuelSlipExtraFields()}
               </section>
-              <p className={styles.fuelSlipHelperText}>Add the operational details that are not shown on the fuel slip. Aim4price will capture the supplier, date, litres, VAT and amount.</p>
-              {renderFuelSlipExtraFields()}
             </div>
-            <div className={styles.modalFooter}>
-              <button type="button" className={styles.secondaryButton} onClick={handleFuelSlipUploadBack}>Back</button>
-              <button type="button" className={styles.primaryButton} onClick={handleFuelSlipExtract} disabled={!fuelSlipUploadFile || isExtractingFuelSlip}>
+            <div className={`${styles.modalFooter} ${wizardStyles.footer}`}>
+              <button type="button" className={`${styles.secondaryButton} ${wizardStyles.secondaryAction}`} onClick={handleFuelSlipUploadBack} disabled={isExtractingFuelSlip}>Back</button>
+              <button type="button" className={`${styles.primaryButton} ${wizardStyles.primaryAction}`} onClick={handleFuelSlipExtract} disabled={!fuelSlipUploadFile || isExtractingFuelSlip}>
                 {isExtractingFuelSlip ? 'Sending fuel slip/photo...' : 'Send for capture'}
               </button>
             </div>
@@ -4418,27 +4772,37 @@ export default function FuelClient({
       ) : null}
 
       {modalMode === 'fuel-slip' && fuelSlipFlow === 'manual-form' ? (
-        <div className={styles.fuelSlipFlowBackdrop} role="dialog" aria-modal="true" aria-label="Enter fuel slip manually">
-          <form className={`${styles.formModal} ${styles.costFormModal} ${styles.fuelSlipCostFormModal}`} onSubmit={preventFuelSlipImplicitSubmit}>
-            <div className={styles.modalHeader}>
-              <div>
-                <h2>Enter fuel slip manually</h2>
-                <p>{fuelSlipFormSubtitle}</p>
-                <span className={styles.fuelSlipStepPill}>{fuelSlipFormPage === 'details' ? 'Step 1 of 2 · Slip details' : 'Step 2 of 2 · Extra information'}</span>
+        <div className={`${styles.fuelSlipFlowBackdrop} ${wizardStyles.overlay}`}>
+          <form className={`${styles.formModal} ${styles.costFormModal} ${styles.fuelSlipCostFormModal} ${styles.fuelSlipWizardModal} ${wizardStyles.dialog}`} onSubmit={preventFuelSlipImplicitSubmit} role="dialog" aria-modal="true" aria-labelledby="fuel-slip-manual-title">
+            <div className={`${styles.modalHeader} ${wizardStyles.header}`}>
+              <div className={wizardStyles.headerText}>
+                <h2 id="fuel-slip-manual-title">Enter fuel slip manually</h2>
+                <p>{fuelSlipFormSubtitle} · {fuelSlipFormPage === 'details' ? 'Slip details' : 'Usage and work details'}</p>
               </div>
-              <button type="button" className={styles.closeButton} onClick={closeModal} aria-label="Close"><CloseIcon /></button>
+              <button type="button" className={`${styles.closeButton} ${wizardStyles.closeButton}`} onClick={() => closeFuelSlipFlow()} aria-label="Close" disabled={isSaving}><CloseIcon /></button>
             </div>
-            <div className={styles.modalDivider} />
-            <div key={fuelSlipFormPage} className={styles.formModalScrollBody} data-fuel-slip-scroll-body="true">
-              {renderFuelSlipValidationNotice()}
-              {fuelSlipFormPage === 'details' ? renderFuelSlipDetailsFields() : renderFuelSlipExtraFields()}
+            <div className={`${styles.modalDivider} ${wizardStyles.divider}`} />
+            <div key={fuelSlipFormPage} className={`${styles.formModalScrollBody} ${wizardStyles.body}`} data-fuel-slip-scroll-body="true">
+              <p className={wizardStyles.intro}>Complete one short step at a time. Your fuel slip is saved on the final step.</p>
+              {renderFuelSlipWizardProgress()}
+              <section className={`${styles.fuelSlipWizardPanel} ${wizardStyles.panel}`}>
+                <div className={`${styles.fuelSlipWizardHeading} ${wizardStyles.panelHeading}`}>
+                  <span className={wizardStyles.panelNumber} aria-hidden="true">{fuelSlipFormPage === 'details' ? 1 : 2}</span>
+                  <h3>{fuelSlipFormPage === 'details' ? 'Add the slip details' : 'Add usage and work details'}</h3>
+                  <p>{fuelSlipFormPage === 'details'
+                    ? 'Capture the supplier, date, fuel and totals.'
+                    : 'Record the reading, operator and work context.'}</p>
+                </div>
+                {renderFuelSlipValidationNotice()}
+                {fuelSlipFormPage === 'details' ? renderFuelSlipDetailsFields() : renderFuelSlipExtraFields()}
+              </section>
             </div>
-            <div className={styles.modalFooter}>
-              <button type="button" className={styles.secondaryButton} onClick={handleFuelSlipFormBack} disabled={isSaving}>Back</button>
+            <div className={`${styles.modalFooter} ${wizardStyles.footer}`}>
+              <button type="button" className={`${styles.secondaryButton} ${wizardStyles.secondaryAction}`} onClick={handleFuelSlipFormBack} disabled={isSaving}>Back</button>
               {fuelSlipFormPage === 'details' ? (
-                <button type="button" className={styles.primaryButton} onClick={handleFuelSlipNextPage} disabled={isSaving}>Next</button>
+                <button type="button" className={`${styles.primaryButton} ${wizardStyles.primaryAction}`} onClick={handleFuelSlipNextPage} disabled={isSaving}>Next</button>
               ) : (
-                <button type="button" className={styles.primaryButton} onClick={handleFuelSlipSaveClick} disabled={isSaving}>{isSaving ? 'Saving...' : 'Save Fuel Slip'}</button>
+                <button type="button" className={`${styles.primaryButton} ${wizardStyles.primaryAction}`} onClick={handleFuelSlipSaveClick} disabled={isSaving}>{isSaving ? 'Saving...' : 'Save fuel slip'}</button>
               )}
             </div>
           </form>
@@ -4446,52 +4810,62 @@ export default function FuelClient({
       ) : null}
 
       {modalMode === 'fuel-slip' && fuelSlipFlow === 'review' ? (
-        <div className={styles.fuelSlipFlowBackdrop} role="dialog" aria-modal="true" aria-label={fuelSlipFormTitle}>
-          <form className={`${styles.formModal} ${styles.costFormModal} ${styles.fuelSlipCostFormModal} ${styles.fuelSlipReviewFormModal}`} onSubmit={preventFuelSlipImplicitSubmit}>
-            <div className={styles.modalHeader}>
-              <div>
-                <h2>{fuelSlipDraft.id ? 'Review / Complete fuel slip' : 'Review fuel slip details'}</h2>
-                <p>{fuelSlipFormSubtitle}</p>
+        <div className={`${styles.fuelSlipFlowBackdrop} ${wizardStyles.overlay}`}>
+          <form className={`${styles.formModal} ${styles.costFormModal} ${styles.fuelSlipCostFormModal} ${styles.fuelSlipReviewFormModal} ${styles.fuelSlipWizardModal} ${wizardStyles.dialog}`} onSubmit={preventFuelSlipImplicitSubmit} role="dialog" aria-modal="true" aria-labelledby="fuel-slip-review-title">
+            <div className={`${styles.modalHeader} ${wizardStyles.header}`}>
+              <div className={wizardStyles.headerText}>
+                <h2 id="fuel-slip-review-title">{fuelSlipDraft.id ? 'Review / complete fuel slip' : 'Review fuel slip details'}</h2>
+                <p>{fuelSlipFormSubtitle} · {fuelSlipFormPage === 'details' ? 'Slip details' : 'Usage and work details'}</p>
               </div>
-              <button type="button" className={styles.closeButton} onClick={closeModal} aria-label="Close"><CloseIcon /></button>
+              <button type="button" className={`${styles.closeButton} ${wizardStyles.closeButton}`} onClick={() => closeFuelSlipFlow()} aria-label="Close" disabled={isSaving}><CloseIcon /></button>
             </div>
-            {renderFuelSlipReviewStepProgress()}
-            <div className={styles.modalDivider} />
-            <div key={fuelSlipFormPage} className={styles.formModalScrollBody} data-fuel-slip-scroll-body="true">
-              {renderFuelSlipValidationNotice()}
-
-              {visibleFuelSlipExtractionWarnings.length ? (
-                <div className={styles.warningBox}>
-                  {visibleFuelSlipExtractionWarnings.map((warning) => <p key={warning}>{warning}</p>)}
+            <div className={`${styles.modalDivider} ${wizardStyles.divider}`} />
+            <div key={fuelSlipFormPage} className={`${styles.formModalScrollBody} ${wizardStyles.body}`} data-fuel-slip-scroll-body="true">
+              <p className={wizardStyles.intro}>Check one short step at a time. Your changes are saved on the final step.</p>
+              {renderFuelSlipWizardProgress()}
+              <section className={`${styles.fuelSlipWizardPanel} ${wizardStyles.panel}`}>
+                <div className={`${styles.fuelSlipWizardHeading} ${wizardStyles.panelHeading}`}>
+                  <span className={wizardStyles.panelNumber} aria-hidden="true">{fuelSlipFormPage === 'details' ? 1 : 2}</span>
+                  <h3>{fuelSlipFormPage === 'details' ? 'Check the slip details' : 'Check usage and work details'}</h3>
+                  <p>{fuelSlipFormPage === 'details'
+                    ? 'Confirm the supplier, date, fuel and totals.'
+                    : 'Complete the reading, operator and work context.'}</p>
                 </div>
-              ) : null}
+                {renderFuelSlipValidationNotice()}
 
-              {fuelSlipFormPage === 'details' ? renderFuelSlipDetailsFields() : renderFuelSlipExtraFields()}
+                {visibleFuelSlipExtractionWarnings.length ? (
+                  <div className={styles.warningBox}>
+                    {visibleFuelSlipExtractionWarnings.map((warning) => <p key={warning}>{warning}</p>)}
+                  </div>
+                ) : null}
 
-              {fuelSlipFormPage === 'details' && fuelSlipDraft.documentFileUrl ? (
-                <a className={styles.fileLink} href={fuelSlipDraft.documentFileUrl} target="_blank" rel="noreferrer">Open attached fuel slip/photo: {fuelSlipDraft.originalFilename || 'Uploaded file'}</a>
-              ) : null}
+                {fuelSlipFormPage === 'details' ? renderFuelSlipDetailsFields() : renderFuelSlipExtraFields()}
 
-              {fuelSlipFormPage === 'details' && fuelSlipDraft.rawExtractedText ? (
-                <details className={styles.rawPreview} open>
-                  <summary>Raw OCR and parser debug</summary>
-                  <pre>{sanitizeFuelSlipSensitiveText(fuelSlipDraft.rawExtractedText)}</pre>
-                </details>
-              ) : null}
+                {fuelSlipFormPage === 'details' && fuelSlipDraft.documentFileUrl ? (
+                  <a className={styles.fileLink} href={fuelSlipDraft.documentFileUrl} target="_blank" rel="noreferrer">Open attached fuel slip/photo: {fuelSlipDraft.originalFilename || 'Uploaded file'}</a>
+                ) : null}
+
+                {fuelSlipFormPage === 'details' && fuelSlipDraft.rawExtractedText ? (
+                  <details className={styles.rawPreview}>
+                    <summary>Extracted slip text</summary>
+                    <pre>{sanitizeFuelSlipSensitiveText(fuelSlipDraft.rawExtractedText)}</pre>
+                  </details>
+                ) : null}
+              </section>
             </div>
-            <div className={styles.modalFooter}>
+            <div className={`${styles.modalFooter} ${wizardStyles.footer}`}>
               <button
                 type="button"
-                className={styles.secondaryButton}
+                className={`${styles.secondaryButton} ${wizardStyles.secondaryAction}`}
                 onClick={handleFuelSlipFormBack}
                 disabled={isSaving}
               >
                 Back
               </button>
               {fuelSlipFormPage === 'details' ? (
-                <button type="button" className={styles.primaryButton} onClick={handleFuelSlipNextPage} disabled={isSaving}>Next</button>
+                <button type="button" className={`${styles.primaryButton} ${wizardStyles.primaryAction}`} onClick={handleFuelSlipNextPage} disabled={isSaving}>Next</button>
               ) : (
-                <button type="button" className={styles.primaryButton} onClick={handleFuelSlipSaveClick} disabled={isSaving}>{isSaving ? 'Saving...' : fuelSlipDraft.id ? 'Save Changes' : 'Save Fuel Slip'}</button>
+                <button type="button" className={`${styles.primaryButton} ${wizardStyles.primaryAction}`} onClick={handleFuelSlipSaveClick} disabled={isSaving}>{isSaving ? 'Saving...' : fuelSlipDraft.id ? 'Save changes' : 'Save fuel slip'}</button>
               )}
             </div>
           </form>
