@@ -19,6 +19,16 @@ const managerModal = sliceBetween(
   "modalMode === 'fuel-slip-manager' ?",
   "modalMode === 'fuel-slip-manager' && fuelSlipManagerFilterOpen",
 );
+const filterModal = sliceBetween(
+  client,
+  "modalMode === 'fuel-slip-manager' && fuelSlipManagerFilterOpen",
+  "modalMode === 'fuel-slip-manager' && fuelSlipDownloadOpen",
+);
+const downloadModal = sliceBetween(
+  client,
+  "modalMode === 'fuel-slip-manager' && fuelSlipDownloadOpen",
+  "modalMode === 'fuel-slip-manager' && historyFuelSlip",
+);
 const uploadModal = sliceBetween(
   client,
   "modalMode === 'fuel-slip' && fuelSlipFlow === 'upload'",
@@ -104,8 +114,26 @@ test('fuel slip manager is compact, scalable and exposes secondary details on de
   assert.match(managerModal, />\s*Last\s*<\/button>/);
   assert.match(managerModal, /Show all fuel slips/);
   assert.match(managerModal, /styles\.fuelSlipManagerBackdrop/);
+  assert.match(managerModal, /Fuel Ledger/);
+  assert.match(managerModal, /activeFuelSlipManagerFilterChips\.map/);
+  assert.match(managerModal, /removeFuelSlipManagerFilter\(chip\.id\)/);
+  assert.match(managerModal, /Remove search for/);
+  assert.match(managerModal, /<section className=\{styles\.fuelSlipManagerContextBar\} aria-label="Current fuel slip view">/);
+  assert.match(managerModal, /role="group" aria-label="Active fuel slip search and filters"/);
+  assert.match(managerModal, /Clear all/);
   assert.doesNotMatch(managerModal, /wizardStyles\.overlay/);
   assert.doesNotMatch(managerModal, /styles\.fuelSlipManagerDetailGrid/);
+});
+
+test('fuel slip filters use the Cost Ledger modal language without limiting month-only filtering', () => {
+  assert.match(filterModal, /styles\.fuelSlipManagerFilterModal/);
+  assert.match(filterModal, /aria-describedby="fuel-slip-filter-description"/);
+  assert.match(filterModal, /Narrow the Fuel Ledger by target, source and slip period\./);
+  assert.match(filterModal, /label="Source \/ status"/);
+  assert.match(filterModal, /year: value/);
+  assert.match(filterModal, /month: value/);
+  assert.doesNotMatch(filterModal, /disabled=\{draftFuelSlipManagerFilters\.year === 'all'\}/);
+  assert.doesNotMatch(downloadModal, /styles\.fuelSlipManagerFilterModal/);
 });
 
 test('pagination only limits rendering while search, filters and downloads use the full loaded set', () => {
@@ -171,12 +199,18 @@ test('manager child dialogs provide names, Escape handling, focus containment an
 test('manager and two-step wizard stay usable on desktop and mobile viewports', () => {
   const redesignStyles = styles.slice(styles.indexOf('/* Fuel-slip wizard parity and high-volume manager */'));
   assert.match(redesignStyles, /\.fuelSlipManagerModal\.fuelSlipManagerModal \.fuelSlipManagerBody\s*\{[\s\S]*?grid-template-rows:\s*auto auto minmax\(0, 1fr\)/);
+  assert.match(redesignStyles, /\.fuelSlipManagerModal\.fuelSlipManagerModal\s*\{[\s\S]*?width:\s*min\(1320px, 100%\)[\s\S]*?height:\s*auto !important[\s\S]*?min-height:\s*0 !important/);
+  assert.match(redesignStyles, /\.fuelSlipManagerPanel\s*\{[\s\S]*?max-height:\s*590px/);
   assert.match(redesignStyles, /\.fuelSlipManagerList\s*\{[\s\S]*?overflow-y:\s*auto/);
   assert.match(redesignStyles, /\.fuelSlipManagerRowMain\s*\{[\s\S]*?grid-template-columns:\s*var\(--fuel-slip-manager-columns\)/);
-  assert.match(redesignStyles, /@media \(max-width: 1040px\)[\s\S]*?grid-template-areas:/);
+  assert.match(redesignStyles, /@media \(max-width: 1120px\)[\s\S]*?grid-template-areas:/);
   assert.match(redesignStyles, /"identity status"\s*"date details"\s*"fuel litres"\s*"amount amount"/);
   assert.match(redesignStyles, /@media \(max-width: 720px\)[\s\S]*?\.fuelSlipWizardProgress\s*\{[\s\S]*?grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\)/);
   assert.match(redesignStyles, /\.fuelSlipManagerBackdrop\s*\{[\s\S]*?align-items:\s*flex-end;[\s\S]*?padding:\s*0;/);
+  assert.match(redesignStyles, /@media \(max-width: 720px\)[\s\S]*?\.fuelSlipManagerModal\.fuelSlipManagerModal \.fuelSlipManagerBody\s*\{[\s\S]*?flex:\s*1 1 auto/);
   assert.match(redesignStyles, /@media \(max-width: 480px\)[\s\S]*?\.fuelSlipManagerPanel\s*\{[\s\S]*?min-height:\s*10rem/);
   assert.match(redesignStyles, /@media \(prefers-reduced-motion: reduce\)/);
+  assert.match(redesignStyles, /\.fuelSlipManagerFilterModal\.fuelSlipManagerFilterModal\s*\{[\s\S]*?width:\s*min\(100%, 960px\)[\s\S]*?border-radius:\s*2rem/);
+  assert.match(redesignStyles, /\.fuelSlipManagerFilterModal \.fuelSlipFilterGrid\s*\{[\s\S]*?grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\)/);
+  assert.match(redesignStyles, /@media \(max-width: 900px\)[\s\S]*?\.fuelSlipManagerFilterModal \.fuelSlipFilterGrid\s*\{[\s\S]*?grid-template-columns:\s*1fr/);
 });
