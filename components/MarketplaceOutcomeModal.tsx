@@ -334,49 +334,58 @@ export default function MarketplaceOutcomeModal({
         aria-describedby={descriptionId}
         tabIndex={-1}
       >
-        <header className={styles.header}>
-          <div>
-            <h2 id={titleId}>{stage === 'confirm' ? 'Are you sure you want to remove this?' : 'Remove this advert'}</h2>
-            <p id={descriptionId}>
-              {stage === 'confirm' ? (
-                <>Continue to tell Aim4price what happened to <strong>{listing.title}</strong>. The advert is withdrawn from Marketplace and your showroom; the saved asset and valuation remain available.</>
-              ) : listing.title}
-            </p>
-          </div>
-          <button
-            type="button"
-            className={styles.closeButton}
-            onClick={closeModal}
-            disabled={submitting}
-            aria-label="Close remove advert dialog"
-          >
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="m6 6 12 12M18 6 6 18" />
-            </svg>
-          </button>
-        </header>
-
         {stage === 'confirm' ? (
-          <>
-            <div className={`${styles.body} ${styles.confirmBody}`}>
-              <div className={styles.selectedAdvert}>
-                <span>Selected advert</span>
-                <strong>{listing.title}</strong>
-                <small>{money(listing.askingPriceExVat)} excl. VAT{location ? ` · ${location}` : ''}</small>
-              </div>
+          <div className={styles.confirmContent}>
+            <button
+              type="button"
+              className={`${styles.closeButton} ${styles.confirmCloseButton}`}
+              onClick={closeModal}
+              disabled={submitting}
+              aria-label="Close remove advert dialog"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="m6 6 12 12M18 6 6 18" />
+              </svg>
+            </button>
+            <h2 id={titleId}>Are you sure you want to remove this?</h2>
+            <p id={descriptionId}>
+              Continue to tell Aim4price what happened to <strong>{listing.title}</strong>. The advert is withdrawn from Marketplace and your showroom; the saved asset and valuation remain available.
+            </p>
+            <div className={styles.selectedAdvert}>
+              <span>Selected advert</span>
+              <strong>{listing.title}</strong>
+              <small>{money(listing.askingPriceExVat)} excl. VAT{location ? ` · ${location}` : ''}</small>
             </div>
-            <footer className={`${styles.actions} ${styles.confirmActions}`}>
+            <div className={styles.confirmActions}>
               <button type="button" className={styles.cancelButton} onClick={closeModal} disabled={submitting}>
                 Cancel
               </button>
               <button type="button" className={styles.removeButton} onClick={startRemoval} disabled={submitting}>
                 Yes, remove advert
               </button>
-            </footer>
-          </>
+            </div>
+          </div>
         ) : (
           <>
-            <div className={styles.body}>
+            <header className={styles.header}>
+              <div>
+                <h2 id={titleId}>Remove this advert</h2>
+                <p id={descriptionId}>{listing.title}</p>
+              </div>
+              <button
+                type="button"
+                className={styles.closeButton}
+                onClick={closeModal}
+                disabled={submitting}
+                aria-label="Close remove advert dialog"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="m6 6 12 12M18 6 6 18" />
+                </svg>
+              </button>
+            </header>
+
+            <div className={`${styles.body} ${styles.wizardBody}`}>
               <ol className={styles.progress} aria-label={`Step ${step} of 4`}>
                 {REMOVAL_STEPS.map((item) => (
                   <li
@@ -514,8 +523,9 @@ export default function MarketplaceOutcomeModal({
                     <small>Confirm the outcome before withdrawing the advert.</small>
                   </div>
                   <dl className={styles.summary}>
+                    <div><dt>Advert</dt><dd>{listing.title}</dd></div>
                     <div><dt>Outcome</dt><dd>{outcomeLabel(reason)}</dd></div>
-                    {isCompletedDeal ? <div><dt>Final amount</dt><dd>{parseOptionalMoney(finalPrice) ? money(parseOptionalMoney(finalPrice) ?? 0) : 'Not recorded'}</dd></div> : null}
+                    <div><dt>Final amount</dt><dd>{isCompletedDeal ? (parseOptionalMoney(finalPrice) ? money(parseOptionalMoney(finalPrice) ?? 0) : 'Not recorded') : 'Not applicable'}</dd></div>
                     <div><dt>Aim4price helped</dt><dd>{aim4priceHelped ? 'Yes' : 'No'}</dd></div>
                   </dl>
                   <div className={styles.informationCard}>
@@ -526,27 +536,27 @@ export default function MarketplaceOutcomeModal({
               ) : null}
 
               {error ? <p className={styles.error} role="alert">{error}</p> : null}
-            </div>
 
-            <footer className={styles.actions}>
-              <button
-                type="button"
-                className={styles.cancelButton}
-                onClick={step === 1 ? closeModal : previousStep}
-                disabled={submitting}
-              >
-                {step === 1 ? 'Cancel' : 'Back'}
-              </button>
-              {step < 4 ? (
-                <button type="button" className={styles.primaryButton} onClick={nextStep} disabled={submitting || (step === 1 && !reason) || (step === 3 && aim4priceHelped === null)}>
-                  Next
+              <footer className={`${styles.actions} ${styles.wizardActions}`}>
+                <button
+                  type="button"
+                  className={styles.cancelButton}
+                  onClick={step === 1 ? closeModal : previousStep}
+                  disabled={submitting}
+                >
+                  {step === 1 ? 'Cancel' : 'Back'}
                 </button>
-              ) : (
-                <button type="button" className={styles.removeButton} onClick={() => void submitOutcome()} disabled={submitting}>
-                  {submitting ? 'Removing advert…' : 'Remove advert'}
-                </button>
-              )}
-            </footer>
+                {step < 4 ? (
+                  <button type="button" className={styles.primaryButton} onClick={nextStep} disabled={submitting || (step === 1 && !reason) || (step === 3 && aim4priceHelped === null)}>
+                    Next
+                  </button>
+                ) : (
+                  <button type="button" className={styles.primaryButton} onClick={() => void submitOutcome()} disabled={submitting}>
+                    {submitting ? 'Saving outcome…' : 'Save outcome & remove advert'}
+                  </button>
+                )}
+              </footer>
+            </div>
           </>
         )}
       </section>

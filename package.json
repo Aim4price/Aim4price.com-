@@ -16,7 +16,7 @@
     "test:account-app-access": "node --test tests/account-app-access-modal-flow.test.mjs",
     "test:admin-accounts": "node --test tests/admin-experience.test.mjs tests/insurance-account-deletion.test.mjs",
     "test:admin-work-tracker": "node --experimental-strip-types --test tests/admin-work-tracker.test.mjs tests/admin-work-tracker.security.test.mjs",
-    "test:admin-marketplace": "node --experimental-strip-types --test tests/admin-marketplace-dashboard.test.mjs tests/marketplace-view-tracking.test.mjs",
+    "test:admin-marketplace": "node --experimental-strip-types --test tests/admin-marketplace-dashboard.test.mjs tests/marketplace-view-tracking.test.mjs tests/marketplace-outcomes.test.mjs tests/marketplace-outcome-modal.test.mjs",
     "test:admin-discovery": "node --experimental-strip-types --test tests/admin-global-assets.test.mjs tests/discovery-view-tracking.test.mjs",
     "test:asset-discovery": "node --test tests/asset-discovery.security.test.mjs tests/discovery-recent-adverts.security.test.mjs",
     "test:license-renewals": "node --test tests/licence-renewal-workflow.security.test.mjs tests/licensing-account-role.test.mjs",
@@ -40,7 +40,6 @@
     "test:ad-studio": "node --test tests/ad-studio.test.mjs tests/ad-studio-renderer.test.mjs",
     "test:report-design": "node --experimental-strip-types --test tests/report-design-lock.test.mjs tests/report-opening-lock.test.mjs tests/canonical-report-pdf.test.mjs tests/report-export-correctness.test.mjs",
     "test:valuation-rules": "node --experimental-strip-types --test tests/valuation-rules.test.mjs",
-    "test:saleability": "node --experimental-strip-types --test tests/shared-valuation.test.mjs tests/saleability.test.mjs tests/saleability-ui.test.mjs tests/valuation-rules.test.mjs tests/asset-register-projection-controls.test.mjs tests/mobile-valuation-flow.test.mjs",
     "verify:insurance": "node scripts/verify-insurance-workspace.cjs"
   },
   "dependencies": {

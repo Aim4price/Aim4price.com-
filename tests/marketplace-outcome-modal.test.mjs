@@ -56,9 +56,30 @@ test('advert removal mirrors the Asset Register confirmation and four-step dispo
   assert.match(source, /Withdraw advert and keep asset/);
   assert.match(source, /Your saved asset, valuation and history stay available/);
   assert.match(source, /step < 4[\s\S]*?nextStep[\s\S]*?submitOutcome/);
+  assert.match(source, /Save outcome & remove advert/);
 
-  assert.match(styles, /\.confirmDialog\s*\{[^}]*width:\s*min\(58rem, 100%\)/);
-  assert.match(styles, /\.dialog\s*\{[^}]*width:\s*min\(52rem, 100%\)/);
+  const confirmStart = source.indexOf("{stage === 'confirm' ? (");
+  const wizardStart = source.indexOf('\n        ) : (', confirmStart);
+  const confirmSource = source.slice(confirmStart, wizardStart);
+  const wizardSource = source.slice(wizardStart);
+
+  assert.match(confirmSource, /styles\.confirmContent/);
+  assert.match(confirmSource, /styles\.confirmCloseButton/);
+  assert.match(confirmSource, /styles\.selectedAdvert/);
+  assert.match(confirmSource, /styles\.confirmActions/);
+  assert.doesNotMatch(confirmSource, /styles\.header|styles\.body|<footer/);
+  assert.ok(wizardSource.indexOf('styles.wizardBody') < wizardSource.indexOf('styles.wizardActions'));
+  assert.match(wizardSource, /styles\.wizardActions[\s\S]*?className=\{styles\.primaryButton\}[\s\S]*?Save outcome & remove advert/);
+
+  assert.match(styles, /\.confirmDialog\s*\{[^}]*width:\s*min\(96vw, 58rem\)/);
+  assert.match(styles, /\.confirmDialog\s*\{[^}]*padding:\s*clamp\(1\.75rem, 2\.55vw, 2\.35rem\)/);
+  assert.match(styles, /\.confirmContent\s*\{[^}]*gap:\s*1\.15rem/);
+  assert.match(styles, /\.confirmContent h2\s*\{[^}]*padding:[^;]*1\.1rem[^;]*;[^}]*border-bottom:/);
+  assert.match(styles, /\.confirmCloseButton\s*\{[^}]*position:\s*absolute;[^}]*width:\s*3rem/);
+  assert.match(styles, /\.confirmActions\s*\{[^}]*justify-content:\s*flex-end;[^}]*gap:\s*0\.75rem/);
+  assert.match(styles, /\.dialog\s*\{[^}]*width:\s*min\(52rem, calc\(100vw - 2rem\)\)/);
+  assert.match(styles, /\.dialog\s*\{[^}]*max-height:\s*min\(90dvh, 52rem\);[^}]*display:\s*flex;[^}]*flex-direction:\s*column/);
+  assert.match(styles, /\.wizardActions\s*\{[^}]*position:\s*sticky;[^}]*bottom:\s*-1\.4rem;[^}]*padding:\s*0\.85rem 0 0/);
   assert.match(styles, /\.progress\s*\{[^}]*grid-template-columns:\s*repeat\(4, minmax\(0, 1fr\)\)/);
   assert.match(styles, /\.reasonGrid\s*\{[^}]*grid-template-columns:\s*repeat\(3, minmax\(0, 1fr\)\)/);
   assert.match(styles, /@media \(max-width: 720px\)[\s\S]*?\.reasonGrid\s*\{[^}]*repeat\(2, minmax\(0, 1fr\)\)/);
@@ -82,14 +103,14 @@ test('shared Marketplace outcome dialog is keyboard and screen-reader accessible
   assert.match(source, /aria-pressed=\{reason === option\.value\}/);
   assert.match(source, /stepHeadingRef\.current\?\.focus\(\)/);
   assert.match(styles, /font-family: 'Montserrat'/);
-  assert.match(styles, /\.dialog\s*\{[^}]*border-radius:\s*28px/);
-  assert.match(styles, /\.closeButton\s*\{[^}]*width:\s*3rem;[^}]*height:\s*3rem;[^}]*border-radius:\s*999px/);
-  assert.match(styles, /\.closeButton\s*\{[^}]*color:\s*#28647f;[^}]*background:\s*#e9f5fb/);
+  assert.match(styles, /\.dialog\s*\{[^}]*border-radius:\s*1\.8rem/);
+  assert.match(styles, /\.closeButton\s*\{[^}]*width:\s*3\.08rem;[^}]*height:\s*3\.08rem;[^}]*border-radius:\s*999px/);
+  assert.match(styles, /\.closeButton\s*\{[^}]*color:\s*#1d3b62;[^}]*background:\s*linear-gradient\(180deg, #f7fbff 0%, #edf4fb 100%\)/);
   assert.match(styles, /\.option\s*\{[^}]*min-height:\s*3\.55rem;[^}]*border-radius:\s*0\.95rem/);
-  assert.match(styles, /\.cancelButton,[\s\S]*?\.removeButton\s*\{[^}]*min-height:\s*3\.45rem/);
+  assert.match(styles, /\.cancelButton,[\s\S]*?\.removeButton\s*\{[^}]*min-height:\s*3\.25rem/);
   assert.match(styles, /@media \(max-width: 720px\)/);
   assert.match(styles, /@media \(prefers-reduced-motion: reduce\)/);
-  assert.doesNotMatch(styles, /text-transform:\s*uppercase/);
+  assert.match(styles, /\.selectedAdvert span\s*\{[^}]*text-transform:\s*uppercase/);
 });
 
 test('Marketplace and My Showroom use one managed outcome flow', async () => {

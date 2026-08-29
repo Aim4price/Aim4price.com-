@@ -16,6 +16,8 @@ const css = read("app/asset-discovery/page.module.css");
 const marketplaceStore = read("lib/marketplace-db.ts");
 const marketplaceRoute = read("app/api/marketplace/route.ts");
 const marketplaceClient = read("app/marketplace/marketplace-client.tsx");
+const marketplaceWhatsAppAction = read("components/MarketplaceWhatsAppAction.tsx");
+const marketplaceWhatsAppStyles = read("components/MarketplaceWhatsAppAction.module.css");
 const notifications = read("lib/notifications.ts");
 const notificationInbox = read("lib/notification-inbox.ts");
 const appHeader = read("components/AppHeader.tsx");
@@ -253,14 +255,31 @@ test("WhatsApp contact follows existing authorization boundaries", () => {
     marketplaceClient.indexOf("function cleanPhoneForWhatsApp"),
     marketplaceClient.indexOf("function slugify"),
   );
+  const exposedSellerContact = marketplaceClient.slice(
+    marketplaceClient.indexOf("{canExposeSellerContact ? ("),
+    marketplaceClient.indexOf(") : (", marketplaceClient.indexOf("{canExposeSellerContact ? (")),
+  );
   assert.match(client, /View advert &amp; contact seller/);
   assert.match(client, /Their private contact details remain hidden/);
   assert.match(requestPage, /Reply on WhatsApp/);
-  assert.match(marketplaceClient, /sellerWhatsAppHref\(activeListing\)/);
-  assert.match(marketplaceClient, /WhatsApp seller/);
+  assert.match(marketplaceClient, /const activeSellerWhatsAppHref = activeListing && canExposeSellerContact[\s\S]*?sellerWhatsAppHref\(activeListing\)/);
+  assert.match(exposedSellerContact, /<MarketplaceWhatsAppAction[\s\S]*?href=\{activeSellerWhatsAppHref\}/);
+  assert.doesNotMatch(exposedSellerContact, /styles\.lockedActions/);
   assert.match(sellerWhatsAppHelper, /listing\.sellerPhone/);
   assert.match(sellerWhatsAppHelper, /listing\.publishedBy === 'seed'/);
+  assert.match(sellerWhatsAppHelper, /\\d\{7,14\}/);
+  assert.match(sellerWhatsAppHelper, /encodeURIComponent\(message\)/);
   assert.doesNotMatch(sellerWhatsAppHelper, /DEFAULT_MARKETPLACE_CONTACT_PHONE/);
+  assert.match(marketplaceWhatsAppAction, /WhatsApp seller/);
+  assert.match(marketplaceWhatsAppAction, /Open a private chat about this advert/);
+  assert.match(marketplaceWhatsAppAction, /target="_blank"/);
+  assert.match(marketplaceWhatsAppAction, /rel="noopener noreferrer"/);
+  assert.match(marketplaceWhatsAppAction, /referrerPolicy="no-referrer"/);
+  assert.match(marketplaceWhatsAppAction, /opens in a new tab/);
+  assert.match(marketplaceWhatsAppAction, /aria-hidden="true"/);
+  assert.match(marketplaceWhatsAppStyles, /\.action\s*\{[^}]*width:\s*100%;[^}]*min-height:\s*4\.5rem;[^}]*grid-template-columns:\s*auto minmax\(0, 1fr\) auto/);
+  assert.match(marketplaceWhatsAppStyles, /\.action:focus-visible\s*\{[^}]*outline:\s*3px solid/);
+  assert.match(marketplaceWhatsAppStyles, /@media \(max-width: 480px\)[\s\S]*?\.action\s*\{[^}]*min-height:\s*4\.25rem/);
   assert.match(marketplaceRoute, /profile\.accountStatus !== 'active'/);
   assert.match(marketplaceRoute, /'Cache-Control': 'private, no-store, max-age=0'/);
   assert.match(marketplaceRoute, /Vary: 'Cookie'/);
