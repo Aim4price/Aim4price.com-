@@ -26,6 +26,9 @@ test("quick actions keep their button treatment while gaining clear groups", asy
   assert.match(source, /Manage Field Manager access/);
   assert.match(source, /Manage Owner App access/);
   assert.match(source, /Marketplace contact details/);
+  assert.match(source, /<strong>Field Manager access<\/strong>/);
+  assert.match(source, /<strong>Owner App access<\/strong>/);
+  assert.match(source, /<strong>Marketplace contact<\/strong>/);
   assert.match(source, /Discovery settings/);
 
   const quickActionsStart = source.indexOf("styles.quickActionsCard");
@@ -58,7 +61,10 @@ test("password controls are compact on the dashboard and edit inside a modal", a
 });
 
 test("dangerous account removal sits in its own guarded bottom section", async () => {
-  const source = await read("app/account/account-client.tsx");
+  const [source, styles] = await Promise.all([
+    read("app/account/account-client.tsx"),
+    read("app/account/page.module.css"),
+  ]);
 
   assert.match(source, /styles\.accountDeleteCard\} \$\{styles\.dangerZone/);
   assert.match(source, /Danger zone/);
@@ -66,6 +72,8 @@ test("dangerous account removal sits in its own guarded bottom section", async (
   assert.match(source, /role="alertdialog"/);
   assert.match(source, /ref=\{deleteDialogRef\}/);
   assert.match(source, /deleteModalError/);
+  assert.match(source, /className=\{styles\.dangerZoneButtonIcon\}/);
+  assert.doesNotMatch(source, /QuickActionIcon name="delete"/);
   assert.match(
     source,
     /value=\{deletePassword\}[\s\S]*?disabled=\{isDeletingAccount\}/,
@@ -74,6 +82,13 @@ test("dangerous account removal sits in its own guarded bottom section", async (
     source,
     /onClick=\{closeDeleteDialog\}[\s\S]*?disabled=\{isDeletingAccount\}[\s\S]*?autoFocus/,
   );
+  assert.match(
+    styles,
+    /\.dangerZoneButton \{[^}]*min-height: 3\.25rem;[^}]*border-radius: 0\.95rem;[^}]*background:/,
+  );
+  assert.match(styles, /\.dangerZoneButtonIcon \{[^}]*width: 2\.3rem;[^}]*background:/);
+  assert.match(styles, /\.dangerZoneButtonIcon svg \{[^}]*width: 1\.16rem;[^}]*height: 1\.16rem;/);
+  assert.match(styles, /\.dangerZoneButton:hover:not\(:disabled\) \{[^}]*box-shadow:/);
 });
 
 test("account dialogs restore focus and keep keyboard focus contained", async () => {
@@ -100,7 +115,22 @@ test("dashboard styling balances desktop cards and remains touch safe", async ()
   assert.match(styles, /\.heroAvatarEditBadge \{/);
   assert.match(
     styles,
-    /\.accountScrollableModalCard \.modalCloseButton \{[\s\S]*?border-radius: 999px;[\s\S]*?#315fbe/,
+    /\.modalCloseButton \{[^}]*border-radius: 14px;[^}]*color: #254733;[^}]*background: #f7faf8;/,
+  );
+  const refinementStyles = styles.slice(
+    styles.indexOf("/* === Account dashboard refinement, August 2026 === */"),
+  );
+  assert.doesNotMatch(
+    refinementStyles,
+    /\.accountScrollableModalCard \.modalCloseButton \{[^}]*#(?:5b8bee|315fbe)/,
+  );
+  assert.doesNotMatch(
+    refinementStyles,
+    /\.accountScrollableModalCard \.modalCloseButton \{[^}]*border-radius: 999px/,
+  );
+  assert.match(
+    styles,
+    /\.quickActionGroup \.quickActionButton strong \{[^}]*overflow: hidden;[^}]*text-overflow: ellipsis;[^}]*white-space: nowrap;/,
   );
   assert.match(
     styles,
