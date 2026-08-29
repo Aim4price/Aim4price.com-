@@ -22,7 +22,7 @@ test("restores the initial Asset Map structure", () => {
   assert.doesNotMatch(assetMapClient, /QR Asset Map/);
 });
 
-test("uses one canonical number for cards, markers, and selected details", () => {
+test("uses one canonical number for list cards and map markers", () => {
   assert.match(
     assetMapClient,
     /type NumberedAssetMapItem = AssetMapItem & \{[\s\S]*?mapNumber: number;/,
@@ -37,7 +37,7 @@ test("uses one canonical number for cards, markers, and selected details", () =>
   );
   assert.match(assetMapClient, /const markerNumber = asset\.mapNumber/);
   assert.match(assetMapClient, /\{asset\.mapNumber\}/);
-  assert.match(assetMapClient, /\{selectedAsset\.mapNumber\}/);
+  assert.doesNotMatch(assetMapClient, /\{selectedAsset\.mapNumber\}/);
   assert.doesNotMatch(assetMapClient, /const markerNumber = index \+ 1/);
   assert.doesNotMatch(assetMapClient, /selectedAssetIndex/);
   assert.match(
@@ -151,9 +151,9 @@ test("map controls and selection preserve the user's context", () => {
   );
 });
 
-test("selected overlay keeps the original compact content with its number", () => {
+test("selected overlay keeps the original compact content without a duplicate number badge", () => {
   assert.match(assetMapClient, /styles\.selectedAssetIdentity/);
-  assert.match(assetMapClient, /styles\.selectedAssetNumber/);
+  assert.doesNotMatch(assetMapClient, /styles\.selectedAssetNumber/);
   assert.match(assetMapClient, />Serial</);
   assert.match(assetMapClient, />Last scanned</);
   assert.match(assetMapClient, />Asset Register</);
@@ -174,7 +174,7 @@ test("styling keeps the original layout while improving map clarity", () => {
   );
   assert.match(assetMapStyles, /\.fitMapButton \{/);
   assert.match(assetMapStyles, /\.mapLoading,\s*\.mapError \{/);
-  assert.match(assetMapStyles, /\.selectedAssetNumber \{/);
+  assert.doesNotMatch(assetMapStyles, /\.selectedAssetNumber \{/);
   assert.match(assetMapStyles, /\.sidebarExpandButton \{/);
   assert.doesNotMatch(
     assetMapStyles,
