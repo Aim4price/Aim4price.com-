@@ -209,8 +209,8 @@ export function marketplaceListingToAdContent(
     aim4priceValueExVat: Number(listing.aim4priceValueExVat) || null,
     dealRating: isRating(listing.dealRating) ? listing.dealRating : calculatedRating,
     showDealRating: listing.showDealRating !== false,
-    sellerName: clean(brand.contactName || listing.sellerName) || 'Sales contact',
-    sellerPhone: clean(brand.phone || listing.sellerPhone) || '082 000 0000',
+    sellerName: clean(brand.contactName || listing.sellerName),
+    sellerPhone: clean(brand.phone || listing.sellerPhone),
     sellerCompany: clean(brand.businessName || listing.sellerCompany) || 'Marketplace seller',
     location: [clean(listing.area), clean(listing.province)].filter(Boolean).join(', '),
     imageUrls: listingImages(listing),
@@ -255,11 +255,28 @@ function strokeRounded(context: CanvasRenderingContext2D, rect: Rect, radius: nu
 }
 
 function contrast(hexColor: string): string {
+  const dark = '#10251f';
+  const light = '#ffffff';
+  return contrastRatio(light, hexColor) >= contrastRatio(dark, hexColor) ? light : dark;
+}
+
+function luminance(hexColor: string): number {
   const value = hexColor.replace('#', '');
-  const red = Number.parseInt(value.slice(0, 2), 16);
-  const green = Number.parseInt(value.slice(2, 4), 16);
-  const blue = Number.parseInt(value.slice(4, 6), 16);
-  return (red * 299 + green * 587 + blue * 114) / 1000 > 148 ? '#10251f' : '#ffffff';
+  const channels = [0, 2, 4].map((offset) => {
+    const channel = Number.parseInt(value.slice(offset, offset + 2), 16) / 255;
+    return channel <= .03928 ? channel / 12.92 : ((channel + .055) / 1.055) ** 2.4;
+  });
+  return channels[0] * .2126 + channels[1] * .7152 + channels[2] * .0722;
+}
+
+function contrastRatio(first: string, second: string): number {
+  const brighter = Math.max(luminance(first), luminance(second));
+  const darker = Math.min(luminance(first), luminance(second));
+  return (brighter + .05) / (darker + .05);
+}
+
+function readableColor(preferred: string, background: string, fallback = '#17362c'): string {
+  return contrastRatio(preferred, background) >= 4.5 ? preferred : fallback;
 }
 
 function fitText(context: CanvasRenderingContext2D, text: string, maxWidth: number): string {
@@ -285,6 +302,102 @@ function setFittedFont(
   }
   context.font = `${weight} ${size}px Montserrat, Inter, Arial, sans-serif`;
   return size;
+}
+
+type FittedTextOptions = {
+  weight: number;
+  maximumSize: number;
+  minimumSize: number;
+  maximumLines: number;
+  lineHeightRatio?: number;
+  verticalAlign?: 'top' | 'center';
+};
+
+type FittedTextResult = {
+  bottom: number;
+  fontSize: number;
+  lines: string[];
+};
+
+function layoutTextLines(context: CanvasRenderingContext2D, text: string, maxWidth: number): string[] {
+  const words = clean(text).split(/\s+/).filter(Boolean);
+  const output: string[] = [];
+  let line = '';
+
+  words.forEach((word) => {
+    const candidate = line ? `${line} ${word}` : word;
+    if (line && context.measureText(candidate).width > maxWidth) {
+      output.push(line);
+      line = word;
+    } else {
+      line = candidate;
+    }
+  });
+  if (line) output.push(line);
+  return output;
+}
+
+function fittedTextLayout(
+  context: CanvasRenderingContext2D,
+  text: string,
+  maxWidth: number,
+  options: FittedTextOptions,
+): { fontSize: number; lineHeight: number; lines: string[] } {
+  let fontSize = options.maximumSize;
+  let lines: string[] = [];
+
+  while (fontSize >= options.minimumSize) {
+    context.font = `${options.weight} ${fontSize}px Montserrat, Inter, Arial, sans-serif`;
+    lines = layoutTextLines(context, text, maxWidth);
+    const allLinesFit = lines.every((line) => context.measureText(line).width <= maxWidth);
+    if (lines.length <= options.maximumLines && allLinesFit) break;
+    fontSize -= 1;
+  }
+
+  fontSize = Math.max(options.minimumSize, fontSize);
+  context.font = `${options.weight} ${fontSize}px Montserrat, Inter, Arial, sans-serif`;
+  lines = layoutTextLines(context, text, maxWidth);
+  if (lines.length > options.maximumLines) {
+    const visible = lines.slice(0, options.maximumLines);
+    visible[visible.length - 1] = fitText(
+      context,
+      lines.slice(options.maximumLines - 1).join(' '),
+      maxWidth,
+    );
+    lines = visible;
+  } else {
+    lines = lines.map((line) => fitText(context, line, maxWidth));
+  }
+
+  return {
+    fontSize,
+    lineHeight: Math.round(fontSize * (options.lineHeightRatio ?? 1.08)),
+    lines,
+  };
+}
+
+function drawFittedMultilineText(
+  context: CanvasRenderingContext2D,
+  text: string,
+  rect: Rect,
+  options: FittedTextOptions,
+): FittedTextResult {
+  const layout = fittedTextLayout(context, text, rect.width, options);
+  const blockHeight = layout.fontSize + Math.max(0, layout.lines.length - 1) * layout.lineHeight;
+  const top = options.verticalAlign === 'center'
+    ? rect.y + Math.max(0, (rect.height - blockHeight) / 2)
+    : rect.y;
+  const firstBaseline = top + layout.fontSize * .82;
+
+  layout.lines.forEach((line, index) => {
+    context.fillText(line, rect.x, firstBaseline + index * layout.lineHeight);
+  });
+
+  return {
+    bottom: firstBaseline + Math.max(0, layout.lines.length - 1) * layout.lineHeight + layout.fontSize * .2,
+    fontSize: layout.fontSize,
+    lines: layout.lines,
+  };
 }
 
 function wrapText(context: CanvasRenderingContext2D, text: string, x: number, y: number, maxWidth: number, lineHeight: number, lines = 2): number {
@@ -424,9 +537,9 @@ function drawPhoto(
   options: { showPlaceholderLabel?: boolean } = {},
 ) {
   context.save();
-  context.shadowColor = 'rgba(9, 35, 28, 0.14)';
-  context.shadowBlur = 18;
-  context.shadowOffsetY = 9;
+  context.shadowColor = 'rgba(9, 35, 28, 0.11)';
+  context.shadowBlur = 14;
+  context.shadowOffsetY = 7;
   fillRounded(context, rect, 23, '#edf2ef');
   context.restore();
   if (image) {
@@ -447,28 +560,31 @@ function drawPhoto(
       context.restore();
     }
   }
-  strokeRounded(context, rect, 21, primary ? content.brand.primaryColor : 'rgba(255,255,255,.95)', primary ? 5 : 3);
-  fillRounded(context, { x: rect.x + 14, y: rect.y + 14, width: 42, height: 42 }, 12, primary ? content.brand.primaryColor : 'rgba(255,255,255,.94)');
-  context.save();
-  context.fillStyle = primary ? contrast(content.brand.primaryColor) : '#122d25';
-  context.font = '900 18px Montserrat, Inter, Arial, sans-serif';
-  context.textAlign = 'center';
-  context.textBaseline = 'middle';
-  context.fillText(String(index + 1), rect.x + 35, rect.y + 36);
-  context.restore();
+  strokeRounded(
+    context,
+    rect,
+    21,
+    primary ? content.brand.primaryColor : 'rgba(255,255,255,.95)',
+    primary ? 3 : 2,
+  );
 }
 
-function drawBrand(context: CanvasRenderingContext2D, content: MarketplaceAdContent, logo: HTMLImageElement | null, rect: Rect, dark: boolean) {
-  const foreground = dark ? '#ffffff' : content.brand.secondaryColor;
+function drawBrandHeader(
+  context: CanvasRenderingContext2D,
+  content: MarketplaceAdContent,
+  logo: HTMLImageElement | null,
+  rect: Rect,
+  options: { foreground: string; logoWidth?: number } ,
+) {
+  const foreground = options.foreground;
   if (logo) {
     const sourceWidth = logo.naturalWidth || logo.width;
     const sourceHeight = Math.max(1, logo.naturalHeight || logo.height);
-    const maxLogoWidth = Math.min(210, rect.width * .36);
-    const scale = Math.min(maxLogoWidth / sourceWidth, Math.min(80, rect.height - 20) / sourceHeight);
+    const plateWidth = Math.min(options.logoWidth ?? 196, rect.width * .43);
+    const plateHeight = Math.min(92, rect.height - 4);
+    const scale = Math.min((plateWidth - 28) / sourceWidth, (plateHeight - 20) / sourceHeight);
     const logoWidth = sourceWidth * scale;
     const logoHeight = sourceHeight * scale;
-    const plateWidth = Math.max(102, logoWidth + 28);
-    const plateHeight = Math.max(84, logoHeight + 18);
     const plate: Rect = {
       x: rect.x,
       y: rect.y + (rect.height - plateHeight) / 2,
@@ -489,26 +605,43 @@ function drawBrand(context: CanvasRenderingContext2D, content: MarketplaceAdCont
       logoWidth,
       logoHeight,
     );
-    const nameX = plate.x + plate.width + 18;
-    const nameWidth = Math.max(86, rect.x + rect.width - nameX);
+    const nameX = plate.x + plate.width + 20;
+    const nameWidth = Math.max(96, rect.x + rect.width - nameX);
     context.save();
     context.fillStyle = foreground;
-    setFittedFont(context, content.sellerCompany, nameWidth, 850, 28, 20);
-    context.textBaseline = 'middle';
-    context.fillText(fitText(context, content.sellerCompany, nameWidth), nameX, rect.y + rect.height / 2 + 1);
+    context.textBaseline = 'alphabetic';
+    drawFittedMultilineText(context, content.sellerCompany, {
+      x: nameX,
+      y: rect.y,
+      width: nameWidth,
+      height: rect.height,
+    }, {
+      weight: 850,
+      maximumSize: 28,
+      minimumSize: 18,
+      maximumLines: 2,
+      lineHeightRatio: 1.06,
+      verticalAlign: 'center',
+    });
     context.restore();
   } else {
     context.save();
     context.fillStyle = foreground;
-    context.font = '900 30px Montserrat, Inter, Arial, sans-serif';
-    context.textBaseline = 'middle';
-    context.fillText(fitText(context, content.sellerCompany, rect.width), rect.x, rect.y + rect.height / 2 + 1);
+    context.textBaseline = 'alphabetic';
+    drawFittedMultilineText(context, content.sellerCompany, rect, {
+      weight: 900,
+      maximumSize: 31,
+      minimumSize: 20,
+      maximumLines: 2,
+      lineHeightRatio: 1.06,
+      verticalAlign: 'center',
+    });
     context.restore();
   }
 }
 
-function drawRating(context: CanvasRenderingContext2D, content: MarketplaceAdContent, x: number, y: number) {
-  if (content.showDealRating === false) return;
+function drawRating(context: CanvasRenderingContext2D, content: MarketplaceAdContent, x: number, y: number): number {
+  if (content.showDealRating === false) return 0;
   const rating = getMarketplaceAdRating(content);
   context.save();
   context.font = '900 20px Montserrat, Inter, Arial, sans-serif';
@@ -519,6 +652,7 @@ function drawRating(context: CanvasRenderingContext2D, content: MarketplaceAdCon
   context.textBaseline = 'middle';
   context.fillText(rating.label, x + width / 2, y + 25);
   context.restore();
+  return 48;
 }
 
 function drawAim4priceCredit(context: CanvasRenderingContext2D, x: number, y: number, color: string) {
@@ -588,39 +722,69 @@ function drawContactDetails(
   content: MarketplaceAdContent,
   rect: Rect,
   color: string,
-  options: { wide?: boolean } = {},
+  options: { surface?: 'light' | 'dark' | 'none' } = {},
 ) {
   const optional = optionalBrandContacts(content);
-  const primaryLine = [clean(content.sellerName), displayPhone(content.sellerPhone)].filter(Boolean).join(' · ');
-  const availableWidth = rect.width;
+  const contactName = clean(content.sellerName);
+  const phone = displayPhone(content.sellerPhone);
+  if (!contactName && !phone && !optional.length) return;
+  const hasSurface = options.surface !== 'none';
+  const padding = hasSurface ? 18 : 0;
+  const availableWidth = rect.width - padding * 2;
+  const left = rect.x + padding;
 
   context.save();
-  context.strokeStyle = color;
-  context.globalAlpha = .2;
-  context.lineWidth = 1;
-  context.beginPath();
-  context.moveTo(rect.x, rect.y);
-  context.lineTo(rect.x + rect.width, rect.y);
-  context.stroke();
+  if (hasSurface) {
+    fillRounded(
+      context,
+      rect,
+      15,
+      options.surface === 'dark' ? 'rgba(255,255,255,.09)' : '#f4f8f6',
+    );
+    strokeRounded(
+      context,
+      rect,
+      15,
+      options.surface === 'dark' ? 'rgba(255,255,255,.17)' : '#d6e2dd',
+      1,
+    );
+  } else {
+    context.strokeStyle = color;
+    context.globalAlpha = .2;
+    context.lineWidth = 1;
+    context.beginPath();
+    context.moveTo(rect.x, rect.y);
+    context.lineTo(rect.x + rect.width, rect.y);
+    context.stroke();
+  }
 
   context.fillStyle = color;
-  context.globalAlpha = .92;
-  context.font = '800 18px Montserrat, Inter, Arial, sans-serif';
   context.textAlign = 'left';
   context.textBaseline = 'alphabetic';
-  context.fillText(fitText(context, primaryLine, availableWidth), rect.x, rect.y + 34);
-
-  if (options.wide && optional.length > 1) {
-    context.globalAlpha = .78;
-    context.font = '650 17px Montserrat, Inter, Arial, sans-serif';
-    context.fillText(fitText(context, optional.join(' · '), availableWidth), rect.x, rect.y + 65);
-  } else {
-    optional.slice(0, 2).forEach((line, index) => {
-      context.globalAlpha = .78;
-      context.font = '650 17px Montserrat, Inter, Arial, sans-serif';
-      context.fillText(fitText(context, line, availableWidth), rect.x, rect.y + 65 + index * 29);
-    });
+  context.globalAlpha = .95;
+  const primaryBaseline = rect.y + padding + 23;
+  if (phone) {
+    setFittedFont(context, phone, availableWidth * .46, 800, 21, 16);
+    const phoneWidth = context.measureText(phone).width;
+    if (contactName) {
+      const nameWidth = Math.max(80, availableWidth - phoneWidth - 18);
+      setFittedFont(context, contactName, nameWidth, 800, 21, 16);
+      context.fillText(fitText(context, contactName, nameWidth), left, primaryBaseline);
+    }
+    context.textAlign = 'right';
+    setFittedFont(context, phone, availableWidth * .46, 800, 21, 16);
+    context.fillText(phone, rect.x + rect.width - padding, primaryBaseline);
+    context.textAlign = 'left';
+  } else if (contactName) {
+    setFittedFont(context, contactName, availableWidth, 800, 21, 16);
+    context.fillText(fitText(context, contactName, availableWidth), left, primaryBaseline);
   }
+
+  optional.slice(0, 2).forEach((line, index) => {
+    context.globalAlpha = .8;
+    setFittedFont(context, line, availableWidth, 650, 18, 15);
+    context.fillText(fitText(context, line, availableWidth), left, primaryBaseline + 31 + index * 31);
+  });
   context.restore();
 }
 
@@ -871,48 +1035,100 @@ function drawInformationPanel(
   content: MarketplaceAdContent,
   logo: HTMLImageElement | null,
   rect: Rect,
-  options: { priceFirst?: boolean; light?: boolean } = {},
+  options: { variant?: 'standard' | 'price-focus' | 'classic' | 'minimal' | 'catalogue' } = {},
 ) {
   const primary = content.brand.primaryColor;
   const secondary = content.brand.secondaryColor;
-  const background = options.light ? '#ffffff' : primary;
-  const foreground = options.light ? secondary : contrast(primary);
-  context.fillStyle = background;
-  context.fillRect(rect.x, rect.y, rect.width, rect.height);
-  const pad = Math.max(32, rect.width * .07);
-  drawBrand(context, content, logo, { x: rect.x + pad, y: rect.y + 14, width: rect.width - pad * 2, height: 104 }, !options.light);
-  drawRating(context, content, rect.x + pad, rect.y + 132);
+  const variant = options.variant ?? 'standard';
+  const light = variant === 'classic' || variant === 'minimal' || variant === 'catalogue';
+  const background = light ? '#ffffff' : primary;
+  const foreground = light ? readableColor(secondary, background) : contrast(primary);
+  const pad = Math.max(36, rect.width * .07);
+  const contentWidth = rect.width - pad * 2;
+  const contactHeight = 126;
+  const contactTop = rect.y + rect.height - 205;
 
-  const titleY = options.priceFirst ? rect.y + 398 : rect.y + 224;
-  const priceY = options.priceFirst ? rect.y + 192 : rect.y + 398;
+  context.save();
+  context.shadowColor = 'rgba(9, 35, 28, .08)';
+  context.shadowBlur = 12;
+  context.shadowOffsetY = 5;
+  fillRounded(context, rect, 24, background);
+  context.restore();
+  strokeRounded(
+    context,
+    rect,
+    24,
+    light ? '#dbe6e1' : 'rgba(255,255,255,.11)',
+    1,
+  );
+
+  drawBrandHeader(context, content, logo, {
+    x: rect.x + pad,
+    y: rect.y + 14,
+    width: contentWidth,
+    height: 108,
+  }, { foreground, logoWidth: variant === 'minimal' ? 208 : 190 });
+
+  let cursor = rect.y + 136;
+  const ratingHeight = drawRating(context, content, rect.x + pad, cursor);
+  cursor += ratingHeight ? ratingHeight + 22 : 36;
+
+  if (variant === 'price-focus') {
+    drawPriceCard(context, content, {
+      x: rect.x + pad,
+      y: cursor,
+      width: contentWidth,
+      height: 154,
+    });
+    cursor += 178;
+  }
+
   context.save();
   context.fillStyle = foreground;
-  context.font = '850 39px Montserrat, Inter, Arial, sans-serif';
-  const titleBottom = wrapText(context, naturalTitle(content.title), rect.x + pad, titleY, rect.width - pad * 2, 44, 2);
+  context.textBaseline = 'alphabetic';
+  const title = drawFittedMultilineText(context, naturalTitle(content.title), {
+    x: rect.x + pad,
+    y: cursor,
+    width: contentWidth,
+    height: Math.max(110, contactTop - cursor - (variant === 'price-focus' ? 66 : 218)),
+  }, {
+    weight: 860,
+    maximumSize: variant === 'minimal' ? 43 : 41,
+    minimumSize: variant === 'minimal' ? 29 : 27,
+    maximumLines: 3,
+    lineHeightRatio: 1.04,
+  });
+  cursor = title.bottom + 16;
   context.globalAlpha = .78;
-  context.font = '700 19px Montserrat, Inter, Arial, sans-serif';
-  context.fillText(fitText(context, equipmentMeta(content), rect.width - pad * 2), rect.x + pad, titleBottom + 17);
+  const meta = equipmentMeta(content);
+  setFittedFont(context, meta, contentWidth, 700, 20, 16);
+  context.fillText(fitText(context, meta, contentWidth), rect.x + pad, cursor + 18);
   context.globalAlpha = 1;
   context.restore();
+  cursor += 44;
 
-  drawPriceCard(context, content, {
-    x: rect.x + pad,
-    y: priceY,
-    width: rect.width - pad * 2,
-    height: 144,
-  });
+  if (variant !== 'price-focus') {
+    const priceHeight = variant === 'minimal' ? 138 : 144;
+    const maximumPriceTop = contactTop - priceHeight - 22;
+    drawPriceCard(context, content, {
+      x: rect.x + pad,
+      y: Math.min(cursor, maximumPriceTop),
+      width: contentWidth,
+      height: priceHeight,
+    });
+  }
 
   drawContactDetails(context, content, {
     x: rect.x + pad,
-    y: rect.y + rect.height - 196,
-    width: rect.width - pad * 2,
-    height: 120,
-  }, foreground);
+    y: contactTop,
+    width: contentWidth,
+    height: contactHeight,
+  }, foreground, { surface: light ? 'light' : 'dark' });
   drawAim4priceCredit(context, rect.x + rect.width - pad, rect.y + rect.height - 25, foreground);
 }
 
 function photoRects(templateId: AdTemplateId, photoRect: Rect): Rect[] {
-  const gap = 16;
+  const gap = 14;
   if (templateId === 'duo-split') {
     return [
       { ...photoRect, height: (photoRect.height - gap) / 2 },
@@ -920,7 +1136,7 @@ function photoRects(templateId: AdTemplateId, photoRect: Rect): Rect[] {
     ];
   }
   if (templateId === 'gallery-three') {
-    const mainWidth = photoRect.width * .64;
+    const mainWidth = photoRect.width * .65;
     const sideWidth = photoRect.width - mainWidth - gap;
     return [
       { ...photoRect, width: mainWidth },
@@ -929,7 +1145,7 @@ function photoRects(templateId: AdTemplateId, photoRect: Rect): Rect[] {
     ];
   }
   if (templateId === 'showcase') {
-    const mainHeight = photoRect.height * .69;
+    const mainHeight = photoRect.height * .7;
     const thumbWidth = (photoRect.width - gap * 2) / 3;
     return [
       { ...photoRect, height: mainHeight },
@@ -992,26 +1208,46 @@ export async function renderMarketplaceAdCanvas(
     context.save();
     roundedPath(context, full, 26);
     context.clip();
-    const overlay = context.createLinearGradient(0, 330, 0, height);
+    const overlay = context.createLinearGradient(0, 280, 0, height);
     overlay.addColorStop(0, 'rgba(0,0,0,0)');
-    overlay.addColorStop(1, 'rgba(0,0,0,.9)');
+    overlay.addColorStop(.58, 'rgba(0,0,0,.16)');
+    overlay.addColorStop(1, 'rgba(0,0,0,.94)');
     context.fillStyle = overlay;
     context.fillRect(full.x, full.y, full.width, full.height);
     context.restore();
-    fillRounded(context, { x: 58, y: 50, width: 780, height: 128 }, 18, 'rgba(9, 40, 32, .78)');
-    drawBrand(context, content, logo, { x: 78, y: 62, width: 740, height: 104 }, true);
+    fillRounded(context, { x: 58, y: 50, width: 842, height: 124 }, 18, 'rgba(9, 40, 32, .78)');
+    strokeRounded(context, { x: 58, y: 50, width: 842, height: 124 }, 18, 'rgba(255,255,255,.16)', 1);
+    drawBrandHeader(context, content, logo, { x: 76, y: 58, width: 806, height: 108 }, {
+      foreground: '#ffffff',
+      logoWidth: 224,
+    });
     drawRating(context, content, 1320, 68);
     context.save();
     context.fillStyle = '#fff';
-    context.font = '850 51px Montserrat, Inter, Arial, sans-serif';
-    const bottom = wrapText(context, naturalTitle(content.title), 76, 535, 850, 57, 2);
+    context.shadowColor = 'rgba(0,0,0,.42)';
+    context.shadowBlur = 12;
+    context.shadowOffsetY = 4;
+    const title = drawFittedMultilineText(context, naturalTitle(content.title), {
+      x: 76,
+      y: 492,
+      width: 862,
+      height: 132,
+    }, {
+      weight: 860,
+      maximumSize: 54,
+      minimumSize: 36,
+      maximumLines: 2,
+      lineHeightRatio: 1.04,
+    });
+    context.shadowColor = 'transparent';
     context.globalAlpha = .8;
-    context.font = '750 23px Montserrat, Inter, Arial, sans-serif';
-    context.fillText(fitText(context, equipmentMeta(content), 850), 78, bottom + 15);
+    const meta = equipmentMeta(content);
+    setFittedFont(context, meta, 862, 750, 23, 18);
+    context.fillText(fitText(context, meta, 862), 78, title.bottom + 30);
     context.restore();
-    drawPriceCard(context, content, { x: 1012, y: 578, width: 500, height: 168 });
-    drawContactDetails(context, content, { x: 76, y: 755, width: 875, height: 82 }, '#ffffff', { wide: true });
-    drawAim4priceCredit(context, 1510, 832, '#ffffff');
+    drawPriceCard(context, content, { x: 1012, y: 588, width: 500, height: 168 });
+    drawContactDetails(context, content, { x: 76, y: 716, width: 862, height: 118 }, '#ffffff', { surface: 'dark' });
+    drawAim4priceCredit(context, 1510, 838, '#ffffff');
     return templateId;
   }
 
@@ -1023,17 +1259,28 @@ export async function renderMarketplaceAdCanvas(
     ? { x: 28, y: 28, width: 652, height: 844 }
     : { x: 994, y: 28, width: 578, height: 844 };
   if (templateId === 'classic') {
-    context.fillStyle = content.brand.primaryColor;
-    context.fillRect(0, 0, width, 18);
-    context.fillRect(0, height - 18, width, 18);
-    context.fillRect(0, 0, 18, height);
-    context.fillRect(width - 18, 0, 18, height);
+    strokeRounded(context, { x: 8, y: 8, width: width - 16, height: height - 16 }, 27, content.brand.primaryColor, 9);
   }
   const rects = photoRects(templateId, photoArea);
-  rects.forEach((rect, index) => drawPhoto(context, content, images[index] ?? null, index, rect, index === 0));
+  const equalPhotoWeight = templateId === 'duo-split' || templateId === 'catalogue-grid';
+  rects.forEach((rect, index) => drawPhoto(
+    context,
+    content,
+    images[index] ?? null,
+    index,
+    rect,
+    !equalPhotoWeight && index === 0,
+  ));
   drawInformationPanel(context, content, logo, infoArea, {
-    priceFirst: templateId === 'price-focus',
-    light: minimal || templateId === 'classic' || templateId === 'catalogue-grid',
+    variant: templateId === 'price-focus'
+      ? 'price-focus'
+      : templateId === 'classic'
+        ? 'classic'
+        : templateId === 'minimal'
+          ? 'minimal'
+          : templateId === 'catalogue-grid'
+            ? 'catalogue'
+            : 'standard',
   });
   return templateId;
 }
