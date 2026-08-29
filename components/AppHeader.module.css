@@ -104,6 +104,8 @@
 
 .navWindowButton {
   appearance: none;
+  position: relative;
+  isolation: isolate;
   width: 1.42rem;
   min-width: 1.42rem;
   height: 3.28rem;
@@ -128,6 +130,34 @@
     transform 160ms ease;
 }
 
+.navWindowButton::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 0.48rem);
+  z-index: 4;
+  width: max-content;
+  max-width: 8rem;
+  padding: 0.38rem 0.58rem;
+  border-radius: 0.55rem;
+  color: #ffffff;
+  background: #124c3c;
+  box-shadow: 0 10px 22px rgba(10, 47, 37, 0.2);
+  font-size: 0.72rem;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: 0;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transform: translate(-50%, 0.22rem);
+  transition:
+    opacity 140ms ease,
+    visibility 140ms ease,
+    transform 140ms ease;
+}
+
 .navWindowButton span {
   display: inline-flex;
   align-items: center;
@@ -141,6 +171,13 @@
   opacity: 0.86;
 }
 
+.navWindowButton:hover:not(:disabled)::after,
+.navWindowButton:focus-visible::after {
+  opacity: 1;
+  visibility: visible;
+  transform: translate(-50%, 0);
+}
+
 .navWindowButtonPrevious:hover:not(:disabled) {
   transform: translateX(-0.07rem);
 }
@@ -152,6 +189,12 @@
 .navWindowButton:disabled {
   cursor: default;
   opacity: 0.13;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .navWindowButton::after {
+    transition: none;
+  }
 }
 
 .actions {

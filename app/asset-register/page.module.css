@@ -32186,17 +32186,18 @@ button.documentOpenLink {
 
 /* === Manual Add Asset: visible click-to-select asset types === */
 .assetFormModalStepOne {
-  width: min(94vw, 960px) !important;
+  width: min(95vw, 64rem) !important;
   max-height: min(92vh, calc(100dvh - 1.5rem)) !important;
   overflow: hidden !important;
+  padding: clamp(1.35rem, 2.2vw, 1.7rem) !important;
 }
 
 .assetFormModalStepOne .assetFormModalChromeHeader {
-  min-height: 4.75rem !important;
+  min-height: 0 !important;
   align-items: center !important;
   gap: 1rem !important;
-  margin-bottom: 1rem !important;
-  padding: 0 4.5rem 1rem 0 !important;
+  margin: 0 0 1.25rem !important;
+  padding: 0 4.75rem 1.15rem 0 !important;
 }
 
 .assetFormModalStepOne .assetFormModalChromeHeader .modalHeaderText {
@@ -32207,19 +32208,19 @@ button.documentOpenLink {
 .assetFormModalStepOne .assetFormModalChromeHeader h3 {
   margin: 0 !important;
   color: #10352b !important;
-  font-size: clamp(1.55rem, 2.4vw, 2rem) !important;
-  font-weight: 760 !important;
-  letter-spacing: -0.04em !important;
-  line-height: 1.08 !important;
+  font-size: clamp(1.72rem, 2.5vw, 2.12rem) !important;
+  font-weight: 850 !important;
+  letter-spacing: -0.048em !important;
+  line-height: 1.05 !important;
 }
 
 .assetFormModalStepOne .assetFormModalChromeHeader p {
-  max-width: 38rem !important;
+  max-width: 48rem !important;
   margin: 0 !important;
   color: #607286 !important;
-  font-size: 0.94rem !important;
-  font-weight: 580 !important;
-  line-height: 1.45 !important;
+  font-size: 0.97rem !important;
+  font-weight: 600 !important;
+  line-height: 1.5 !important;
 }
 
 .assetFormModalStepOne .manualStepScrollBodyNoScroll {
@@ -32227,47 +32228,46 @@ button.documentOpenLink {
   max-height: calc(100dvh - 10.5rem) !important;
   overflow-x: hidden !important;
   overflow-y: auto !important;
-  padding: 0 0.32rem 0.12rem 0 !important;
-  margin: 0 -0.16rem 0 0 !important;
+  padding: 0.08rem 0.2rem 0.18rem 0 !important;
+  margin: 0 !important;
   overscroll-behavior: contain !important;
-  scrollbar-gutter: stable !important;
+  scrollbar-gutter: auto !important;
 }
 
 .assetFormModalStepOne .manualStepOneCard {
-  gap: 1.15rem !important;
-  padding: clamp(1.15rem, 2vw, 1.5rem) !important;
-  border-radius: 1.35rem !important;
-  border-color: rgba(199, 218, 227, 0.92) !important;
-  background:
-    radial-gradient(circle at 0% 0%, rgba(22, 83, 64, 0.05), transparent 40%),
-    linear-gradient(180deg, #ffffff 0%, #f8fbfa 100%) !important;
+  gap: 1.05rem !important;
+  padding: 0 0.08rem 0.08rem 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
 }
 
 .assetFormModalStepOne .manualStepIntro {
-  padding-bottom: 0.78rem !important;
+  padding: 0.08rem 0 0.9rem !important;
 }
 
 .assetFormModalStepOne .manualStepIntro h4 {
-  font-size: clamp(1.08rem, 1.6vw, 1.28rem) !important;
-  font-weight: 760 !important;
+  font-size: clamp(1.12rem, 1.6vw, 1.3rem) !important;
+  font-weight: 820 !important;
 }
 
 .manualAssetTypeGrid {
   display: grid !important;
   grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-  gap: 0.92rem !important;
+  gap: 1rem !important;
 }
 
 .manualAssetTypeCard {
   position: relative !important;
   width: 100% !important;
   min-width: 0 !important;
-  min-height: 6.45rem !important;
+  min-height: 6.3rem !important;
   display: grid !important;
   grid-template-columns: 3.05rem minmax(0, 1fr) 1.8rem !important;
   align-items: center !important;
-  gap: 0.95rem !important;
-  padding: 1rem 0.95rem !important;
+  gap: 1rem !important;
+  padding: 1.05rem 1.1rem !important;
   border: 1px solid rgba(205, 220, 229, 0.98) !important;
   border-radius: 1.08rem !important;
   color: #20313b !important;
@@ -32339,17 +32339,17 @@ button.documentOpenLink {
 
 .manualAssetTypeCopy strong {
   color: #10352b !important;
-  font-size: 1.03rem !important;
-  font-weight: 800 !important;
+  font-size: 1.06rem !important;
+  font-weight: 820 !important;
   letter-spacing: -0.022em !important;
   line-height: 1.18 !important;
 }
 
 .manualAssetTypeCopy small {
   color: #617286 !important;
-  font-size: 0.81rem !important;
-  font-weight: 570 !important;
-  line-height: 1.36 !important;
+  font-size: 0.86rem !important;
+  font-weight: 600 !important;
+  line-height: 1.42 !important;
 }
 
 .manualAssetTypeArrow {
@@ -32376,6 +32376,13 @@ button.documentOpenLink {
   border-color: rgba(22, 83, 64, 0.28) !important;
 }
 
+@media (max-width: 820px) {
+  .manualAssetTypeGrid {
+    grid-template-columns: 1fr !important;
+    gap: 0.72rem !important;
+  }
+}
+
 @media (max-width: 720px) {
   .assetFormModalStepOne {
     width: min(100%, calc(100vw - 1rem)) !important;
@@ -32385,9 +32392,9 @@ button.documentOpenLink {
   }
 
   .assetFormModalStepOne .assetFormModalChromeHeader {
-    min-height: 4.35rem !important;
-    margin-bottom: 0.8rem !important;
-    padding: 0 3.7rem 0.82rem 0 !important;
+    min-height: 0 !important;
+    margin-bottom: 0.95rem !important;
+    padding: 0 3.7rem 0.9rem 0 !important;
   }
 
   .assetFormModalStepOne .assetFormModalChromeHeader h3 {
@@ -32405,7 +32412,7 @@ button.documentOpenLink {
 
   .manualAssetTypeGrid {
     grid-template-columns: 1fr !important;
-    gap: 0.58rem !important;
+    gap: 0.65rem !important;
   }
 
   .manualAssetTypeCard {
@@ -35192,13 +35199,15 @@ button.documentOpenLink {
   width: min(44rem, calc(100vw - 2rem)) !important;
   max-height: min(90vh, 42rem) !important;
   overflow: hidden !important;
+  padding: 0 !important;
   border-radius: clamp(1.4rem, 2.2vw, 1.75rem) !important;
 }
 
 .newAcquisitionChoiceHeader {
   align-items: flex-start !important;
   gap: 1rem !important;
-  padding: clamp(1.35rem, 2.4vw, 1.7rem) clamp(1.4rem, 2.6vw, 1.8rem) clamp(1rem, 1.8vw, 1.2rem) !important;
+  margin: 0 !important;
+  padding: clamp(1.45rem, 2.5vw, 1.75rem) clamp(1.45rem, 2.7vw, 1.85rem) clamp(1.1rem, 1.9vw, 1.25rem) !important;
 }
 
 .newAcquisitionChoiceHeader .modalHeaderText {
@@ -35223,23 +35232,23 @@ button.documentOpenLink {
 }
 
 .newAcquisitionChoiceBody {
-  gap: clamp(1rem, 1.7vw, 1.2rem) !important;
-  padding: clamp(1.1rem, 2vw, 1.35rem) clamp(1.4rem, 2.6vw, 1.8rem) clamp(1.25rem, 2.2vw, 1.5rem) !important;
+  gap: clamp(1.05rem, 1.8vw, 1.25rem) !important;
+  padding: clamp(1.25rem, 2.1vw, 1.45rem) clamp(1.45rem, 2.7vw, 1.85rem) clamp(1.4rem, 2.4vw, 1.65rem) !important;
   overflow-x: hidden !important;
 }
 
 .newAcquisitionChoiceGrid {
   grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-  gap: clamp(0.75rem, 1.5vw, 0.95rem) !important;
+  gap: clamp(0.85rem, 1.6vw, 1rem) !important;
 }
 
 .newAcquisitionChoiceOption {
-  min-height: clamp(4.5rem, 7vw, 5rem) !important;
+  min-height: clamp(4.8rem, 7vw, 5.15rem) !important;
   display: flex !important;
   align-items: center !important;
   justify-content: flex-start !important;
   gap: 0.75rem !important;
-  padding: 0.95rem 1.1rem !important;
+  padding: 1.05rem 1.2rem !important;
   border: 1.5px solid #cbdbe3 !important;
   border-radius: 1.05rem !important;
   text-align: left !important;
@@ -35308,7 +35317,8 @@ button.documentOpenLink {
 
 .newAcquisitionChoiceActions {
   margin-top: 0 !important;
-  padding-top: 0.1rem !important;
+  gap: 0.75rem !important;
+  padding-top: 0.15rem !important;
   border-top: 0 !important;
 }
 

@@ -2424,6 +2424,7 @@ export default function AppHeader({
                 onClick={() => moveNavWindow(-1)}
                 disabled={navWindowStart <= 0}
                 aria-label="Show previous navigation items"
+                data-tooltip="Previous"
               >
                 <span aria-hidden="true">‹</span>
               </button>
@@ -2453,6 +2454,7 @@ export default function AppHeader({
                 onClick={() => moveNavWindow(1)}
                 disabled={navWindowStart >= navMaxWindowStart}
                 aria-label="Show next navigation items"
+                data-tooltip="Next"
               >
                 <span aria-hidden="true">›</span>
               </button>

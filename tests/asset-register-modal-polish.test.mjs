@@ -1,0 +1,64 @@
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import test from 'node:test';
+
+const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
+
+const assetRegisterClient = read('app/asset-register/asset-register-client.tsx');
+const assetRegisterStyles = read('app/asset-register/page.module.css');
+const header = read('components/AppHeader.tsx');
+const headerStyles = read('components/AppHeader.module.css');
+
+test('header navigation arrows expose clear Previous and Next hover labels', () => {
+  const previousButton = header.slice(
+    header.indexOf('styles.navWindowButtonPrevious'),
+    header.indexOf('</button>', header.indexOf('styles.navWindowButtonPrevious')),
+  );
+  const nextButton = header.slice(
+    header.indexOf('styles.navWindowButtonNext'),
+    header.indexOf('</button>', header.indexOf('styles.navWindowButtonNext')),
+  );
+
+  assert.match(previousButton, /aria-label="Show previous navigation items"/);
+  assert.match(previousButton, /data-tooltip="Previous"/);
+  assert.match(nextButton, /aria-label="Show next navigation items"/);
+  assert.match(nextButton, /data-tooltip="Next"/);
+  assert.match(headerStyles, /\.navWindowButton::after\s*\{[\s\S]*?content:\s*attr\(data-tooltip\);[\s\S]*?bottom:\s*calc\(100% \+ 0\.48rem\);/);
+  assert.match(headerStyles, /\.navWindowButton:hover:not\(:disabled\)::after,[\s\S]*?\.navWindowButton:focus-visible::after/);
+});
+
+test('Manage uses the concise GPS location helper copy', () => {
+  const manageMenu = assetRegisterClient.slice(
+    assetRegisterClient.indexOf('styles.ownerCommandOverlay'),
+    assetRegisterClient.indexOf('{activeAsset && ownerAssetCommandPanel', assetRegisterClient.indexOf('styles.ownerCommandOverlay')),
+  );
+
+  assert.match(manageMenu, /'Add a GPS location\.'/);
+  assert.doesNotMatch(manageMenu, /Add a GPS location to place it on the map/);
+});
+
+test('new acquisition modal has one controlled spacing system', () => {
+  const acquisitionStyles = assetRegisterStyles.slice(
+    assetRegisterStyles.indexOf('Final cascade: simple shared Owner/Accountant acquisition question.'),
+    assetRegisterStyles.indexOf('Owner paperwork and disposal refinements'),
+  );
+
+  assert.match(acquisitionStyles, /\.newAcquisitionChoiceModal\s*\{[\s\S]*?padding:\s*0 !important;/);
+  assert.match(acquisitionStyles, /\.newAcquisitionChoiceHeader\s*\{[\s\S]*?margin:\s*0 !important;[\s\S]*?padding:\s*clamp\(1\.45rem,/);
+  assert.match(acquisitionStyles, /\.newAcquisitionChoiceBody\s*\{[\s\S]*?gap:\s*clamp\(1\.05rem,[\s\S]*?padding:\s*clamp\(1\.25rem,/);
+  assert.match(acquisitionStyles, /\.newAcquisitionChoiceActions\s*\{[\s\S]*?gap:\s*0\.75rem !important;/);
+});
+
+test('Add an asset uses a wider, flatter and responsive choice layout', () => {
+  const addAssetStyles = assetRegisterStyles.slice(
+    assetRegisterStyles.indexOf('Manual Add Asset: visible click-to-select asset types'),
+    assetRegisterStyles.indexOf('Asset update modal: refined header, section navigation and autosave'),
+  );
+
+  assert.match(addAssetStyles, /\.assetFormModalStepOne\s*\{[\s\S]*?width:\s*min\(95vw, 64rem\) !important;/);
+  assert.match(addAssetStyles, /\.assetFormModalStepOne \.assetFormModalChromeHeader p\s*\{[\s\S]*?max-width:\s*48rem !important;/);
+  assert.match(addAssetStyles, /\.assetFormModalStepOne \.manualStepScrollBodyNoScroll\s*\{[\s\S]*?scrollbar-gutter:\s*auto !important;/);
+  assert.match(addAssetStyles, /\.assetFormModalStepOne \.manualStepOneCard\s*\{[\s\S]*?border:\s*0 !important;[\s\S]*?background:\s*transparent !important;[\s\S]*?box-shadow:\s*none !important;/);
+  assert.match(addAssetStyles, /\.manualAssetTypeGrid\s*\{[\s\S]*?grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\) !important;/);
+  assert.match(addAssetStyles, /@media \(max-width: 820px\)[\s\S]*?\.manualAssetTypeGrid\s*\{[\s\S]*?grid-template-columns:\s*1fr !important;/);
+});

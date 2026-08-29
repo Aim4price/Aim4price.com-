@@ -20940,7 +20940,7 @@ export default function AssetRegisterClient({
                         <strong>{hasAssetGpsCoordinates(activeAsset) ? 'Asset map' : 'Map asset'}</strong>
                         <small>{hasAssetGpsCoordinates(activeAsset)
                           ? 'View this asset selected on the map.'
-                          : 'Add a GPS location to place it on the map.'}</small>
+                          : 'Add a GPS location.'}</small>
                       </span>
                     </button>
                   ) : null}
