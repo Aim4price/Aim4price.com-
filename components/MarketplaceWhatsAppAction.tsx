@@ -24,10 +24,11 @@ export default function MarketplaceWhatsAppAction({ href, sellerName }: Marketpl
         </svg>
       </span>
       <span className={styles.copy}>
-        <strong>WhatsApp seller</strong>
-        <small>Open a private chat about this advert</small>
+        <strong className={styles.title}>Chat on WhatsApp</strong>
+        <span className={styles.description}>Message {contactName} about this advert</span>
       </span>
-      <span className={styles.arrow} aria-hidden="true">
+      <span className={styles.openCue} aria-hidden="true">
+        <span>Open</span>
         <svg viewBox="0 0 24 24">
           <path d="M5 12h13M13 7l5 5-5 5" />
         </svg>
