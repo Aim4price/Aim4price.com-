@@ -115,29 +115,82 @@ const STATUS_OPTIONS: Array<{ value: string; label: string }> = [
 
 function SearchIcon({ className }: IconProps) {
   return (
-    <svg className={className} viewBox="0 0 24 24" aria-hidden="true">
-      <circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" strokeWidth="1.8" />
-      <path d="m16 16 4 4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      aria-hidden="true"
+    >
+      <circle cx="11" cy="11" r="7" />
+      <path d="m20 20-3.5-3.5" />
     </svg>
   );
 }
 
 function RefreshIcon({ className }: IconProps) {
   return (
-    <svg className={className} viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M19 8a7 7 0 1 0 1 7" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-      <path d="M19 3v5h-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      aria-hidden="true"
+    >
+      <path
+        d="M20 11a8 8 0 0 0-14.7-4.3L4 8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path d="M4 4v4h4" strokeLinecap="round" strokeLinejoin="round" />
+      <path
+        d="M4 13a8 8 0 0 0 14.7 4.3L20 16"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path d="M20 20v-4h-4" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
 
 function FilterIcon({ className }: IconProps) {
   return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M4 5h16M7 12h10M10 19h4" />
+      <circle cx="15" cy="5" r="1.5" />
+      <circle cx="9" cy="12" r="1.5" />
+      <circle cx="15" cy="19" r="1.5" />
+    </svg>
+  );
+}
+
+function WhatsAppIcon({ className }: IconProps) {
+  return (
     <svg className={className} viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M4 6h16M7 12h10M10 18h4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-      <circle cx="8" cy="6" r="1.5" fill="currentColor" />
-      <circle cx="15" cy="12" r="1.5" fill="currentColor" />
-      <circle cx="12" cy="18" r="1.5" fill="currentColor" />
+      <path d="M12 3.25a8.55 8.55 0 0 0-7.26 13.05l-1.06 3.9 4.04-1.02A8.55 8.55 0 1 0 12 3.25Z" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M8.55 7.65c.22-.48.45-.5.68-.5h.6c.2 0 .43.05.57.38l.78 1.82c.1.27.08.5-.08.72l-.42.53c-.1.12-.13.28-.05.43.48.9 1.35 1.78 2.34 2.34.15.08.3.05.43-.05l.53-.42c.22-.17.45-.2.72-.08l1.82.78c.33.13.38.37.38.57v.6c0 .23-.02.47-.5.68-.5.22-1.14.34-1.9.24-2.28-.32-5.83-3.86-6.15-6.15-.1-.76.02-1.4.25-1.9Z" fill="currentColor" />
+    </svg>
+  );
+}
+
+function PhotoUnavailableIcon({ className }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <rect x="3.5" y="5" width="17" height="14" rx="2.5" stroke="currentColor" strokeWidth="1.8" />
+      <circle cx="9" cy="10" r="1.5" stroke="currentColor" strokeWidth="1.6" />
+      <path d="m5.5 17 4.2-4.2 3.1 3 2.2-2.1 3.5 3.3" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="m4 4 16 16" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
     </svg>
   );
 }
@@ -236,6 +289,7 @@ export default function RecentlyAdvertisedClient({
   const [sourcingLoadingId, setSourcingLoadingId] = useState<string | null>(null);
   const [sourcingRequest, setSourcingRequest] = useState<SourcingRequest | null>(null);
   const [sourcingError, setSourcingError] = useState<string | null>(null);
+  const [requestedAdvertIds, setRequestedAdvertIds] = useState<Set<string>>(() => new Set());
   const [failedImageIds, setFailedImageIds] = useState<Set<string>>(() => new Set());
   const filterTriggerRef = useRef<HTMLButtonElement | null>(null);
   const filterDialogRef = useRef<HTMLDivElement | null>(null);
@@ -374,6 +428,7 @@ export default function RecentlyAdvertisedClient({
       }
       if (sourcingRequestRef.current !== requestId) return;
       setSourcingRequest(payload.request);
+      setRequestedAdvertIds((current) => new Set(current).add(advert.id));
     } catch (cause) {
       if (sourcingRequestRef.current !== requestId) return;
       setSourcingError(cause instanceof Error ? cause.message : "Failed to send the sourcing request.");
@@ -392,7 +447,7 @@ export default function RecentlyAdvertisedClient({
   function renderStatus(advert: RecentAdvert) {
     return (
       <span className={`${styles.recentAdvertStatus} ${styles[`recentAdvertStatus_${advert.status}`]}`}>
-        {advert.statusLabel}
+        {advert.status === "available" ? "Advert active" : advert.statusLabel}
       </span>
     );
   }
@@ -400,70 +455,77 @@ export default function RecentlyAdvertisedClient({
   function renderExpanded(advert: RecentAdvert) {
     if (expandedAdvertId !== advert.id) return null;
     const hasContactAction = advert.status !== "available" || !advert.marketplaceHref;
+    const hasSavedImage = Boolean(advert.imageUrl) && !failedImageIds.has(advert.id);
+    const requestSent = requestedAdvertIds.has(advert.id);
+    const contactNoteId = `recent-advert-contact-note-${advert.id}`;
 
     return (
       <div className={styles.recentAdvertExpanded} id={`recent-advert-${advert.id}`}>
-        <div className={styles.recentAdvertExpandedGrid}>
-          <div className={styles.recentAdvertMedia}>
-            {advert.imageUrl && !failedImageIds.has(advert.id) ? (
+        <div className={`${styles.recentAdvertExpandedGrid} ${!hasSavedImage ? styles.recentAdvertExpandedGridNoImage : ""}`}>
+          {hasSavedImage ? (
+            <div className={styles.recentAdvertMedia}>
               <img
                 src={advert.imageUrl}
                 alt={`${advert.title} marketplace advert`}
                 loading="lazy"
                 onError={() => setFailedImageIds((current) => new Set(current).add(advert.id))}
               />
-            ) : (
-              <div className={styles.recentAdvertImagePlaceholder}>
-                <span aria-hidden="true">A4P</span>
-                <strong>Marketplace advert</strong>
-                <small>No advert photo was saved.</small>
-              </div>
-            )}
-          </div>
+            </div>
+          ) : null}
 
           <div className={styles.recentAdvertDetails}>
-            <div className={styles.recentAdvertDetailGrid}>
-              <div>
-                <span>Advertised by</span>
-                <strong>{advert.advertiserName}</strong>
+            {!hasSavedImage ? (
+              <div className={styles.recentAdvertPhotoNote}>
+                <span className={styles.recentAdvertPhotoNoteIcon} aria-hidden="true">
+                  <PhotoUnavailableIcon />
+                </span>
+                <span>
+                  <strong>Photo unavailable</strong>
+                  <small>No photo was saved with this Marketplace advert.</small>
+                </span>
               </div>
-              <div>
-                <span>Advertised</span>
-                <strong>{fullDateLabel(advert.publishedAtIso)}</strong>
-              </div>
-              <div>
-                <span>Location</span>
-                <strong>{[advert.area, advert.province].filter(Boolean).join(", ")}</strong>
-              </div>
-              <div>
-                <span>Advert status</span>
-                <strong>{advert.statusLabel}</strong>
-              </div>
-              <div>
-                <span>Equipment type</span>
-                <strong>{advert.type}</strong>
-              </div>
-              <div>
-                <span>Advertised price</span>
-                <strong>{formatPrice(advert.priceExVat)}</strong>
-              </div>
-            </div>
+            ) : null}
 
-            <div className={styles.recentAdvertDescription}>
-              <strong>About this advert</strong>
-              <p>{advert.description || `${advert.title} was advertised through the Aim4price Marketplace.`}</p>
-            </div>
+            <dl className={styles.recentAdvertDetailGrid}>
+              <div className={styles.recentAdvertPriceDetail}>
+                <dt>Advertised price</dt>
+                <dd>{formatPrice(advert.priceExVat)}</dd>
+              </div>
+              <div>
+                <dt>Location</dt>
+                <dd>{[advert.area, advert.province].filter(Boolean).join(", ")}</dd>
+              </div>
+              <div>
+                <dt>Advertised by</dt>
+                <dd>{advert.advertiserName}</dd>
+              </div>
+              <div>
+                <dt>Advertised</dt>
+                <dd>{fullDateLabel(advert.publishedAtIso)}</dd>
+              </div>
+              <div className={styles.recentAdvertDetailWide}>
+                <dt>Equipment type</dt>
+                <dd>{advert.type}</dd>
+              </div>
+            </dl>
+
+            {advert.description ? (
+              <div className={styles.recentAdvertDescription}>
+                <strong>About this advert</strong>
+                <p>{advert.description}</p>
+              </div>
+            ) : null}
 
             {advert.status === "available" && advert.marketplaceHref ? (
-              <p className={styles.recentAdvertAvailabilityNote}>
-                This advert is currently available. Open the Marketplace listing for its full information and seller contact.
+              <p className={styles.recentAdvertAvailabilityNote} id={contactNoteId}>
+                This advert is live. Open it to view the full listing and contact the seller by WhatsApp, phone or email.
               </p>
             ) : (
-              <p className={styles.recentAdvertSourcingNote}>
+              <p className={styles.recentAdvertSourcingNote} id={contactNoteId}>
                 {advert.status === "available"
-                  ? "Ask about this advert through Aim4price. "
+                  ? "This advert has no public Marketplace page. "
                   : "This advert is no longer active, but the advertiser may know where to find similar equipment. "}
-                Sending a request shares your saved Marketplace contact details only with this advertiser.
+                We will share your saved Marketplace phone or email only with {advert.advertiserName}, so they can contact you if they can help.
               </p>
             )}
 
@@ -472,8 +534,10 @@ export default function RecentlyAdvertisedClient({
                 <a
                   href={advert.marketplaceHref}
                   className={`${workspaceStyles.actionButton} ${workspaceStyles.actionGreen} ${styles.recentAdvertPrimaryAction}`}
+                  aria-describedby={contactNoteId}
                 >
-                  View advert
+                  <WhatsAppIcon className={styles.recentAdvertActionIcon} />
+                  <span>View advert &amp; contact seller</span>
                 </a>
               ) : hasContactAction ? (
                 <button
@@ -483,13 +547,19 @@ export default function RecentlyAdvertisedClient({
                     sourcingTriggerRef.current = event.currentTarget;
                     void sendSourcingRequest(advert);
                   }}
-                  disabled={sourcingLoadingId !== null}
+                  disabled={sourcingLoadingId !== null || requestSent}
+                  aria-describedby={contactNoteId}
                 >
-                  {sourcingLoadingId === advert.id
-                    ? "Sending request…"
-                    : advert.status === "available"
-                      ? "Ask advertiser about this advert"
-                      : "Ask advertiser to source one"}
+                  <WhatsAppIcon className={styles.recentAdvertActionIcon} />
+                  <span>
+                    {requestSent
+                      ? "Request sent"
+                      : sourcingLoadingId === advert.id
+                        ? "Sending request…"
+                        : advert.status === "available"
+                          ? "Ask advertiser about this advert"
+                          : "Ask advertiser to source one"}
+                  </span>
                 </button>
               ) : null}
             </div>
@@ -527,7 +597,7 @@ export default function RecentlyAdvertisedClient({
             aria-controls={`recent-advert-${advert.id}`}
             aria-label={`${isExpanded ? "Close" : "Open"} ${advert.title} advert details`}
           >
-            {isExpanded ? "Close" : "Open"}
+            {isExpanded ? "Hide details" : "View details"}
           </button>
           {renderExpanded(advert)}
         </article>
@@ -563,7 +633,7 @@ export default function RecentlyAdvertisedClient({
                   aria-controls={`recent-advert-${advert.id}`}
                   aria-label={`${isExpanded ? "Close" : "Open"} ${advert.title} advert details`}
                 >
-                  {isExpanded ? "Close" : "Open"}
+                  {isExpanded ? "Hide details" : "View details"}
                 </button>
               </div>
             </div>
@@ -619,8 +689,11 @@ export default function RecentlyAdvertisedClient({
         </section>
       ) : null}
 
-      <section className={styles.recentAdvertControls} aria-label="Search and filter recently advertised equipment">
-        <label className={`${assetStyles.searchWrap} ${workspaceStyles.searchField} ${styles.recentAdvertSearch}`}>
+      <section
+        className={`${assetStyles.toolbar} ${workspaceStyles.controlsRow} ${leadStyles.leadSearchToolbar} ${styles.parityToolbar}`}
+        aria-label="Search and filter recently advertised equipment"
+      >
+        <label className={`${assetStyles.searchWrap} ${workspaceStyles.searchField}`}>
           <SearchIcon className={assetStyles.searchIcon} />
           <input
             className={assetStyles.searchInput}
@@ -637,20 +710,20 @@ export default function RecentlyAdvertisedClient({
           ) : null}
         </label>
 
-        <div className={styles.recentAdvertToolbarActions}>
+        <div className={leadStyles.leadToolbarActions}>
           <button
             type="button"
-            className={`${assetStyles.secondaryButton} ${workspaceStyles.actionButton} ${workspaceStyles.actionNeutral} ${styles.recentAdvertRefreshButton}`}
+            className={`${assetStyles.secondaryButton} ${workspaceStyles.actionButton} ${workspaceStyles.actionNeutral} ${leadStyles.leadRefreshButton} ${styles.discoveryRefreshButton}`}
             onClick={() => setRefreshVersion((value) => value + 1)}
             disabled={loading}
           >
-            <RefreshIcon className={assetStyles.buttonIcon} />
+            <RefreshIcon className={`${assetStyles.buttonIcon} ${loading ? leadStyles.leadRefreshIconActive : ""}`} />
             <span>Refresh</span>
           </button>
           <button
             ref={filterTriggerRef}
             type="button"
-            className={`${assetStyles.secondaryButton} ${workspaceStyles.actionButton} ${workspaceStyles.actionMint} ${styles.recentAdvertFilterButton}`}
+            className={`${assetStyles.secondaryButton} ${assetStyles.filterTriggerButton} ${workspaceStyles.actionButton} ${workspaceStyles.actionMint} ${leadStyles.leadFilterButton} ${activeFilterCount ? assetStyles.filterTriggerButtonActive : ""}`}
             onClick={() => setFilterOpen(true)}
             disabled={loading}
             aria-haspopup="dialog"
@@ -792,11 +865,13 @@ export default function RecentlyAdvertisedClient({
           >
             <div className={`${assetStyles.modalHeader} ${workspaceStyles.modalHeader}`}>
               <div className={assetStyles.modalHeaderText}>
-                <span className={styles.recentAdvertContactKicker}>Marketplace sourcing request</span>
+                <span className={styles.recentAdvertContactKicker}>Marketplace contact request</span>
                 <h3 id="recent-advert-contact-title">
-                  {sourcingRequest.alreadyRequested ? "Request already sent" : "Request sent"}
+                  {sourcingRequest.alreadyRequested
+                    ? "Request already sent"
+                    : `Request sent to ${sourcingRequest.advertiserName}`}
                 </h3>
-                <p>{sourcingRequest.advertiserName} can now decide whether to respond through Aim4price.</p>
+                <p>They can contact you directly if they can help with this equipment.</p>
               </div>
               <button type="button" className={`${assetStyles.modalCloseButton} ${workspaceStyles.modalClose}`} onClick={() => setSourcingRequest(null)} aria-label="Close sourcing request confirmation">
                 <CloseIcon className={assetStyles.buttonIcon} />
@@ -808,11 +883,25 @@ export default function RecentlyAdvertisedClient({
                 <strong>{sourcingRequest.title}</strong>
               </div>
               <div className={styles.recentAdvertRequestConfirmation} role="status">
-                <strong>What happens next?</strong>
-                <p>The advertiser has been notified. Your Marketplace contact details are shared with them only because you sent this request; their private details remain hidden.</p>
+                <span className={styles.recentAdvertRequestConfirmationIcon} aria-hidden="true">
+                  <WhatsAppIcon />
+                </span>
+                <span>
+                  <strong>{sourcingRequest.alreadyRequested ? "Your request is still open" : "The advertiser has been notified"}</strong>
+                  <p>
+                    {sourcingRequest.advertiserName} can reply using the Marketplace phone or email you chose to share.
+                    If you saved a mobile number, they can reply on WhatsApp. Their private contact details remain hidden.
+                  </p>
+                  {sourcingRequest.alreadyRequested ? (
+                    <small>Originally sent {fullDateLabel(sourcingRequest.createdAtIso)}.</small>
+                  ) : null}
+                </span>
               </div>
             </div>
             <div className={`${workspaceStyles.modalFooter} ${styles.recentAdvertContactActions}`}>
+              <a href="/account" className={`${workspaceStyles.actionButton} ${workspaceStyles.actionNeutral}`}>
+                Review contact details
+              </a>
               <button type="button" className={`${workspaceStyles.actionButton} ${workspaceStyles.actionGreen}`} onClick={() => setSourcingRequest(null)}>Done</button>
             </div>
           </div>

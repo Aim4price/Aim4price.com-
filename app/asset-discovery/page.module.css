@@ -658,6 +658,12 @@
   min-width: 9.5rem;
 }
 
+.contactActionIcon {
+  width: 1.15rem;
+  height: 1.15rem;
+  flex: 0 0 auto;
+}
+
 .discoveryRefreshButton,
 .discoveryRefreshButton:hover,
 .discoveryRefreshButton:focus,
@@ -2247,36 +2253,6 @@
   text-transform: uppercase;
 }
 
-.recentAdvertControls {
-  min-width: 0;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 18px;
-  margin: 2px 0 14px;
-}
-
-.recentAdvertSearch {
-  margin: 0 !important;
-}
-
-.recentAdvertToolbarActions {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.recentAdvertRefreshButton,
-.recentAdvertFilterButton {
-  min-width: 154px;
-}
-
-.recentAdvertRefreshButton svg,
-.recentAdvertFilterButton svg {
-  width: 1.1rem;
-  height: 1.1rem;
-}
-
 .recentAdvertByline {
   min-width: 0;
   display: inline-flex;
@@ -2305,15 +2281,15 @@
 }
 
 .recentAdvertStatus {
-  min-width: 8.5rem;
-  min-height: 42px;
+  min-width: 0;
+  min-height: 34px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0 15px;
+  padding: 0 12px;
   border: 1px solid;
-  border-radius: 14px;
-  font-size: 0.78rem;
+  border-radius: 999px;
+  font-size: 0.69rem;
   font-weight: 900;
   letter-spacing: 0.035em;
   line-height: 1;
@@ -2366,8 +2342,8 @@
 
 .recentAdvertOpenAction,
 .recentAdvertCloseAction {
-  min-width: 11.25rem;
-  min-height: 54px;
+  min-width: 10rem;
+  min-height: 50px;
 }
 
 .recentAdvertOpenAction,
@@ -2382,16 +2358,16 @@
 .recentAdvertCloseAction,
 .recentAdvertCloseAction:hover:not(:disabled),
 .recentAdvertCloseAction:focus {
-  color: #ffffff !important;
-  border-color: #a93232 !important;
-  background: linear-gradient(180deg, #cf4e4e 0%, #a92f2f 100%) !important;
-  box-shadow: 0 9px 20px rgba(155, 42, 42, 0.2) !important;
+  color: #173c33 !important;
+  border-color: #c4d4ce !important;
+  background: #ffffff !important;
+  box-shadow: 0 7px 18px rgba(16, 50, 42, 0.06) !important;
 }
 
 .recentAdvertExpanded {
   min-width: 0;
   margin: 0 20px 20px;
-  padding: 18px;
+  padding: 16px;
   border: 1px solid rgba(18, 83, 63, 0.14);
   border-radius: 21px;
   background:
@@ -2403,14 +2379,19 @@
 .recentAdvertExpandedGrid {
   min-width: 0;
   display: grid;
-  grid-template-columns: minmax(240px, 0.62fr) minmax(0, 1.38fr);
-  align-items: stretch;
-  gap: 18px;
+  grid-template-columns: minmax(230px, 0.54fr) minmax(0, 1.46fr);
+  align-items: start;
+  gap: 16px;
+}
+
+.recentAdvertExpandedGridNoImage {
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .recentAdvertMedia {
   min-width: 0;
-  min-height: 290px;
+  min-height: 220px;
+  aspect-ratio: 16 / 10;
   overflow: hidden;
   border: 1px solid rgba(18, 53, 45, 0.12);
   border-radius: 18px;
@@ -2420,51 +2401,54 @@
 .recentAdvertMedia img {
   width: 100%;
   height: 100%;
-  min-height: 290px;
   display: block;
   object-fit: cover;
 }
 
-.recentAdvertImagePlaceholder {
-  width: 100%;
-  height: 100%;
-  min-height: 290px;
-  display: grid;
-  place-items: center;
-  align-content: center;
-  gap: 7px;
-  padding: 24px;
-  color: rgba(18, 53, 45, 0.76);
-  text-align: center;
-  background:
-    linear-gradient(135deg, rgba(35, 104, 81, 0.08), transparent 60%),
-    #edf3f0;
+.recentAdvertPhotoNote {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid rgba(18, 53, 45, 0.1);
+  border-radius: 13px;
+  color: rgba(18, 53, 45, 0.72);
+  background: #f8fbf9;
 }
 
-.recentAdvertImagePlaceholder > span {
-  width: 66px;
-  height: 66px;
+.recentAdvertPhotoNote > span:last-child {
+  min-width: 0;
   display: grid;
-  place-items: center;
-  border: 1px solid rgba(18, 83, 63, 0.18);
-  border-radius: 20px;
-  color: #155941;
-  background: rgba(255, 255, 255, 0.8);
-  font-size: 1rem;
-  font-weight: 950;
-  letter-spacing: -0.04em;
+  gap: 2px;
 }
 
-.recentAdvertImagePlaceholder strong {
-  margin-top: 4px;
+.recentAdvertPhotoNote strong {
   color: #12352d;
-  font-size: 0.95rem;
-  font-weight: 850;
+  font-size: 0.78rem;
+  font-weight: 820;
 }
 
-.recentAdvertImagePlaceholder small {
-  font-size: 0.76rem;
-  font-weight: 650;
+.recentAdvertPhotoNote small {
+  font-size: 0.72rem;
+  font-weight: 620;
+  line-height: 1.35;
+}
+
+.recentAdvertPhotoNoteIcon {
+  width: 34px;
+  min-width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  color: #527168;
+  background: #eaf2ee;
+}
+
+.recentAdvertPhotoNoteIcon svg {
+  width: 19px;
+  height: 19px;
 }
 
 .recentAdvertDetails {
@@ -2479,6 +2463,7 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 9px;
+  margin: 0;
 }
 
 .recentAdvertDetailGrid > div,
@@ -2488,16 +2473,17 @@
   display: grid;
   align-content: center;
   gap: 5px;
-  min-height: 70px;
-  padding: 11px 13px;
+  min-height: 64px;
+  padding: 10px 12px;
   border: 1px solid rgba(18, 53, 45, 0.1);
   border-radius: 14px;
   background: #f8fbf9;
 }
 
-.recentAdvertDetailGrid span,
+.recentAdvertDetailGrid dt,
 .recentAdvertContactGrid span,
 .recentAdvertContactAsset span {
+  margin: 0;
   color: rgba(18, 53, 45, 0.74);
   font-size: 0.64rem;
   font-weight: 920;
@@ -2506,15 +2492,26 @@
   text-transform: uppercase;
 }
 
-.recentAdvertDetailGrid strong,
+.recentAdvertDetailGrid dd,
 .recentAdvertContactGrid strong,
 .recentAdvertContactAsset strong {
   min-width: 0;
+  margin: 0;
   color: #12352d;
   font-size: 0.84rem;
   font-weight: 820;
   line-height: 1.35;
   overflow-wrap: anywhere;
+}
+
+.recentAdvertPriceDetail dd {
+  color: #0f6248;
+  font-size: 0.92rem;
+  font-weight: 900;
+}
+
+.recentAdvertDetailWide {
+  grid-column: 1 / -1;
 }
 
 .recentAdvertDescription {
@@ -2571,6 +2568,12 @@
 
 .recentAdvertPrimaryAction {
   width: 100%;
+}
+
+.recentAdvertActionIcon {
+  width: 1.2rem;
+  height: 1.2rem;
+  flex: 0 0 auto;
 }
 
 .recentAdvertPagination {
@@ -2637,7 +2640,7 @@
 }
 
 .recentAdvertContactModal {
-  width: min(100%, 54rem) !important;
+  width: min(100%, 42rem) !important;
 }
 
 .recentAdvertContactKicker {
@@ -2676,12 +2679,20 @@
 
 .recentAdvertRequestConfirmation {
   display: grid;
-  gap: 6px;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 11px;
   padding: 14px 15px;
   border: 1px solid rgba(66, 173, 115, 0.3);
   border-radius: 14px;
   color: #174637;
   background: #f1faf5;
+}
+
+.recentAdvertRequestConfirmation > span:last-child {
+  min-width: 0;
+  display: grid;
+  gap: 5px;
 }
 
 .recentAdvertRequestConfirmation strong {
@@ -2695,6 +2706,28 @@
   font-size: 0.8rem;
   font-weight: 650;
   line-height: 1.48;
+}
+
+.recentAdvertRequestConfirmation small {
+  color: rgba(18, 53, 45, 0.66);
+  font-size: 0.72rem;
+  font-weight: 650;
+}
+
+.recentAdvertRequestConfirmationIcon {
+  width: 38px;
+  min-width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  color: #ffffff;
+  background: #167553;
+}
+
+.recentAdvertRequestConfirmationIcon svg {
+  width: 21px;
+  height: 21px;
 }
 
 .recentAdvertCardCompact {
@@ -2774,8 +2807,7 @@
 }
 
 .recentAdvertCardCompact .recentAdvertMedia,
-.recentAdvertCardCompact .recentAdvertMedia img,
-.recentAdvertCardCompact .recentAdvertImagePlaceholder {
+.recentAdvertCardCompact .recentAdvertMedia img {
   min-height: 190px;
 }
 
@@ -2792,21 +2824,6 @@
     min-width: 0;
   }
 
-  .recentAdvertControls {
-    grid-template-columns: 1fr;
-    gap: 10px;
-  }
-
-  .recentAdvertToolbarActions {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .recentAdvertRefreshButton,
-  .recentAdvertFilterButton {
-    width: 100%;
-    min-width: 0;
-  }
 }
 
 @media (max-width: 820px) {
@@ -2815,8 +2832,7 @@
   }
 
   .recentAdvertMedia,
-  .recentAdvertMedia img,
-  .recentAdvertImagePlaceholder {
+  .recentAdvertMedia img {
     min-height: 240px;
     max-height: 420px;
   }
@@ -2865,21 +2881,6 @@
 
   .recentAdvertIntroBadge strong {
     font-size: 1.35rem;
-  }
-
-  .recentAdvertSearch {
-    min-height: 54px !important;
-  }
-
-  .recentAdvertToolbarActions {
-    gap: 8px;
-  }
-
-  .recentAdvertRefreshButton,
-  .recentAdvertFilterButton {
-    min-height: 50px;
-    padding: 0 10px;
-    font-size: 0.84rem;
   }
 
   .recentAdvertExpanded {

@@ -14,6 +14,8 @@ const discoveryPage = read("app/asset-discovery/page.tsx");
 const requestPage = read("app/marketplace/sourcing-requests/[requestId]/page.tsx");
 const css = read("app/asset-discovery/page.module.css");
 const marketplaceStore = read("lib/marketplace-db.ts");
+const marketplaceRoute = read("app/api/marketplace/route.ts");
+const marketplaceClient = read("app/marketplace/marketplace-client.tsx");
 const notifications = read("lib/notifications.ts");
 const notificationInbox = read("lib/notification-inbox.ts");
 const appHeader = read("components/AppHeader.tsx");
@@ -174,9 +176,39 @@ test("cards expose recency and identity while sourcing stays request-based", () 
   assert.match(client, /Sold \/ traded/);
   assert.match(client, /View advert/);
   assert.match(client, /Ask advertiser to source one/);
-  assert.match(client, /Sending a request shares your saved Marketplace contact details/);
+  assert.match(client, /share your saved Marketplace phone or email only with/);
   assert.match(client, /Request sent/);
   assert.doesNotMatch(client, /WhatsApp advertiser|Call advertiser|Email advertiser/);
+});
+
+test("both Discovery views share one toolbar treatment and archived adverts avoid fake branding", () => {
+  const toolbarClasses = /assetStyles\.toolbar\} \$\{workspaceStyles\.controlsRow\} \$\{leadStyles\.leadSearchToolbar\} \$\{styles\.parityToolbar/;
+  assert.match(discoveryClient, toolbarClasses);
+  assert.match(client, toolbarClasses);
+  assert.match(client, /leadStyles\.leadRefreshButton/);
+  assert.match(client, /styles\.discoveryRefreshButton/);
+  assert.match(client, /assetStyles\.filterTriggerButtonActive/);
+  assert.match(client, /leadStyles\.leadRefreshIconActive/);
+  assert.match(client, /recentAdvertExpandedGridNoImage/);
+  assert.doesNotMatch(client, />A4P</);
+});
+
+test("WhatsApp contact follows existing authorization boundaries", () => {
+  const sellerWhatsAppHelper = marketplaceClient.slice(
+    marketplaceClient.indexOf("function cleanPhoneForWhatsApp"),
+    marketplaceClient.indexOf("function slugify"),
+  );
+  assert.match(client, /View advert &amp; contact seller/);
+  assert.match(client, /Their private contact details remain hidden/);
+  assert.match(requestPage, /Reply on WhatsApp/);
+  assert.match(marketplaceClient, /sellerWhatsAppHref\(activeListing\)/);
+  assert.match(marketplaceClient, /WhatsApp seller/);
+  assert.match(sellerWhatsAppHelper, /listing\.sellerPhone/);
+  assert.match(sellerWhatsAppHelper, /listing\.publishedBy === 'seed'/);
+  assert.doesNotMatch(sellerWhatsAppHelper, /DEFAULT_MARKETPLACE_CONTACT_PHONE/);
+  assert.match(marketplaceRoute, /profile\.accountStatus !== 'active'/);
+  assert.match(marketplaceRoute, /'Cache-Control': 'private, no-store, max-age=0'/);
+  assert.match(marketplaceRoute, /Vary: 'Cookie'/);
 });
 
 test("new Marketplace snapshots retain discovery details after an asset changes", () => {
