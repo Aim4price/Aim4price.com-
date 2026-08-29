@@ -214,6 +214,16 @@ function IconSearch() {
   );
 }
 
+function IconFilters() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M4 7h10M18 7h2M4 17h2M10 17h10" />
+      <circle cx="16" cy="7" r="2" />
+      <circle cx="8" cy="17" r="2" />
+    </svg>
+  );
+}
+
 function IconPlus() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -3074,15 +3084,49 @@ export default function MarketplaceClient({
         </div>
       ) : null}
 
+      {showroomMode && !showroomHasNoInventory ? (
+        <div className={styles.showroomMobileTools}>
+          <label className={styles.showroomMobileSearch}>
+            <span aria-hidden="true"><IconSearch /></span>
+            <input
+              value={query}
+              onChange={(event: ChangeEvent<HTMLInputElement>) => setQuery(event.target.value)}
+              placeholder="Search this showroom"
+              aria-label="Search this showroom"
+            />
+            {query ? (
+              <button type="button" onClick={() => setQuery('')} aria-label="Clear showroom search">
+                <IconClose />
+              </button>
+            ) : null}
+          </label>
+          <button
+            type="button"
+            className={styles.showroomMobileFilterButton}
+            onClick={() => setDealerFiltersOpen((current) => !current)}
+            aria-expanded={dealerFiltersOpen}
+            aria-controls="showroom-marketplace-filters"
+          >
+            <IconFilters />
+            {dealerFiltersOpen ? 'Close filters' : 'Filters'}
+          </button>
+        </div>
+      ) : null}
+
       <div
         className={`${styles.marketplaceShell} ${showroomMode ? styles.showroomShell : ''} ${showroomHasNoInventory ? styles.showroomEmptyShell : ''}`}
       >
         {!showroomHasNoInventory ? (
           <aside
-            id={compactAppMode ? 'mobile-marketplace-filters' : undefined}
-            className={`${styles.sidebar} ${showroomMode ? styles.showroomSidebar : ''} ${compactAppMode ? dealerStyles.dealerMarketplaceSidebar : ''} ${dealerFiltersOpen ? dealerStyles.dealerMarketplaceSidebarOpen : ''}`}
+            id={showroomMode ? 'showroom-marketplace-filters' : compactAppMode ? 'mobile-marketplace-filters' : undefined}
+            className={`${styles.sidebar} ${showroomMode ? styles.showroomSidebar : ''} ${showroomMode && dealerFiltersOpen ? styles.showroomSidebarOpen : ''} ${compactAppMode ? dealerStyles.dealerMarketplaceSidebar : ''} ${dealerFiltersOpen ? dealerStyles.dealerMarketplaceSidebarOpen : ''}`}
             aria-label={showroomMode ? 'Showroom filters' : 'Marketplace filters'}
           >
+          {showroomMode ? (
+            <button type="button" className={styles.showroomCloseFilters} onClick={() => setDealerFiltersOpen(false)}>
+              Show equipment
+            </button>
+          ) : null}
           {compactAppMode ? (
             <button type="button" className={dealerStyles.marketplaceCloseFilters} onClick={() => setDealerFiltersOpen(false)}>
               Close filters

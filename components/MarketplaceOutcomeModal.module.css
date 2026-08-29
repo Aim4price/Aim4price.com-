@@ -19,13 +19,13 @@
 }
 
 .dialog {
-  width: min(46rem, 100%);
+  width: min(48rem, 100%);
   max-height: calc(100dvh - 2rem - env(safe-area-inset-top) - env(safe-area-inset-bottom));
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto;
   overflow: hidden;
   border: 1px solid #d5e3dd;
-  border-radius: 20px;
+  border-radius: 28px;
   color: #17362c;
   background: #fff;
   box-shadow: 0 30px 84px rgba(7, 27, 21, 0.28);
@@ -68,14 +68,22 @@
 .closeButton {
   display: grid;
   place-items: center;
-  width: 2.65rem;
-  height: 2.65rem;
-  border: 1px solid #cddbd5;
-  border-radius: 10px;
+  width: 3rem;
+  height: 3rem;
+  border: 1px solid #c8dfeb;
+  border-radius: 999px;
   padding: 0;
-  color: #294f43;
-  background: #fff;
+  color: #28647f;
+  background: #e9f5fb;
+  box-shadow: 0 7px 18px rgba(40, 100, 127, 0.1);
   cursor: pointer;
+  transition: transform 150ms ease, border-color 150ms ease, background 150ms ease;
+}
+
+.closeButton:hover:not(:disabled) {
+  transform: translateY(-1px);
+  border-color: #9dc7da;
+  background: #ddf0f9;
 }
 
 .closeButton svg {
@@ -180,10 +188,10 @@
   grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
   gap: 0.65rem;
-  min-height: 3.15rem;
+  min-height: 3.65rem;
   border: 1px solid #d6e2dd;
-  border-radius: 11px;
-  padding: 0.65rem 0.8rem;
+  border-radius: 14px;
+  padding: 0.75rem 0.9rem;
   color: #34564b;
   background: #fff;
   cursor: pointer;
@@ -335,10 +343,10 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 3rem;
-  border-radius: 11px;
-  padding: 0 1.15rem;
-  font-size: 0.75rem;
+  min-height: 3.35rem;
+  border-radius: 13px;
+  padding: 0 1.3rem;
+  font-size: 0.78rem;
   font-weight: 800;
   cursor: pointer;
 }
@@ -391,7 +399,7 @@
     border-right: 0;
     border-bottom: 0;
     border-left: 0;
-    border-radius: 18px 18px 0 0;
+    border-radius: 24px 24px 0 0;
   }
 
   .header,
@@ -418,12 +426,13 @@
   .cancelButton,
   .removeButton {
     width: 100%;
-    min-height: 3.1rem;
+    min-height: 3.4rem;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .option,
+  .closeButton,
   .cancelButton,
   .removeButton {
     transition: none;
