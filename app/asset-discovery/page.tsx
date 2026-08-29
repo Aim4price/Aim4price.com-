@@ -14,6 +14,7 @@ export const dynamic = 'force-dynamic';
 type AssetDiscoveryPageProps = {
   searchParams?: {
     openAsset?: string | string[];
+    view?: string | string[];
   };
 };
 
@@ -42,6 +43,12 @@ export default async function AssetDiscoveryPage({
       <AppHeader active="asset-discovery" />
       <AssetDiscoveryClient
         initialOpenAssetId={firstSearchValue(searchParams?.openAsset)}
+        initialView={
+          firstSearchValue(searchParams?.view) === 'recently-advertised'
+            ? 'recently-advertised'
+            : 'discovery'
+        }
+        allowRecentAdverts={profile.accountType !== 'licensing'}
       />
     </main>
   );

@@ -12,6 +12,7 @@ import leadStyles from "../leads/page.module.css";
 import mobileStyles from "../field-manager/page.module.css";
 import styles from "./page.module.css";
 import dealerStyles from "../dealer/dealer.module.css";
+import RecentlyAdvertisedClient from "./recently-advertised-client";
 
 type EnquiryStatus = "pending" | "approved" | "temporarily_denied";
 type RenewalTiming = "overdue" | "next_30_days" | "next_6_months" | "later";
@@ -608,13 +609,26 @@ export default function AssetDiscoveryClient({
   dealerAppMode = false,
   ownerAppMode = false,
   initialOpenAssetId = "",
+  initialView = "discovery",
+  allowRecentAdverts = true,
 }: {
   dealerAppMode?: boolean;
   ownerAppMode?: boolean;
   initialOpenAssetId?: string;
+  initialView?: "discovery" | "recently-advertised";
+  allowRecentAdverts?: boolean;
 } = {}) {
   const compactAppMode = dealerAppMode || ownerAppMode;
   const requestedOpenAssetId = cleanText(initialOpenAssetId);
+  const [activeDiscoveryView, setActiveDiscoveryView] = useState<
+    "discovery" | "recently-advertised"
+  >(
+    allowRecentAdverts &&
+      !requestedOpenAssetId &&
+      initialView === "recently-advertised"
+      ? "recently-advertised"
+      : "discovery",
+  );
   const preparedOpenAssetIdRef = useRef("");
   const autoOpenedAssetIdRef = useRef("");
   const [assets, setAssets] = useState<AssetDiscoveryAsset[]>([]);
@@ -666,6 +680,12 @@ export default function AssetDiscoveryClient({
     useState<DiscoveryEnquiryDetail | null>(null);
   const [loadingEnquiryId, setLoadingEnquiryId] = useState<string | null>(null);
   const licensingDiscovery = access?.accountType === "licensing";
+
+  useEffect(() => {
+    if ((!allowRecentAdverts || licensingDiscovery) && activeDiscoveryView !== "discovery") {
+      setActiveDiscoveryView("discovery");
+    }
+  }, [activeDiscoveryView, allowRecentAdverts, licensingDiscovery]);
 
   useEffect(() => {
     if (
@@ -753,6 +773,8 @@ export default function AssetDiscoveryClient({
   }, [openFilter]);
 
   useEffect(() => {
+    if (activeDiscoveryView !== "discovery") return undefined;
+
     let mounted = true;
     const params = new URLSearchParams();
     if (search) params.set("search", search);
@@ -838,6 +860,7 @@ export default function AssetDiscoveryClient({
     requestedOpenAssetId,
     search,
     type,
+    activeDiscoveryView,
   ]);
 
   useEffect(() => {
@@ -1859,6 +1882,82 @@ export default function AssetDiscoveryClient({
     );
   }
 
+  function changeDiscoveryView(
+    nextView: "discovery" | "recently-advertised",
+  ) {
+    if (nextView === "recently-advertised" && !allowRecentAdverts) return;
+    setActiveDiscoveryView(nextView);
+    setExpandedAssetId(null);
+    setActiveEnquiry(null);
+    setPhotoModal(null);
+    setNotice(null);
+
+    if (!compactAppMode && typeof window !== "undefined") {
+      const url = new URL(window.location.href);
+      if (nextView === "recently-advertised") {
+        url.searchParams.set("view", "recently-advertised");
+        url.searchParams.delete("openAsset");
+      } else {
+        url.searchParams.delete("view");
+      }
+      window.history.replaceState(
+        window.history.state,
+        "",
+        `${url.pathname}${url.search}${url.hash}`,
+      );
+    }
+  }
+
+  function renderDiscoveryViewSwitch() {
+    if (!allowRecentAdverts || licensingDiscovery) return null;
+
+    return (
+      <section className={styles.discoveryViewSwitch} aria-label="Choose a Discovery view">
+        <div className={styles.discoveryViewSwitchCopy}>
+          <strong>Explore more equipment</strong>
+          <span>
+            Browse owner assets or use Marketplace advert history to find someone who may know where to source one.
+          </span>
+        </div>
+        <div className={styles.discoveryViewSwitchButtons} role="group" aria-label="Discovery views">
+          <button
+            type="button"
+            aria-pressed={activeDiscoveryView === "discovery"}
+            className={activeDiscoveryView === "discovery" ? styles.discoveryViewSwitchActive : ""}
+            onClick={() => changeDiscoveryView("discovery")}
+          >
+            Available assets
+          </button>
+          <button
+            type="button"
+            aria-pressed={activeDiscoveryView === "recently-advertised"}
+            className={activeDiscoveryView === "recently-advertised" ? styles.discoveryViewSwitchActive : ""}
+            onClick={() => changeDiscoveryView("recently-advertised")}
+          >
+            Recently advertised
+          </button>
+        </div>
+      </section>
+    );
+  }
+
+  if (activeDiscoveryView === "recently-advertised" && allowRecentAdverts) {
+    return (
+      <section className={`${workspaceStyles.shell} ${styles.shell} ${compactAppMode ? `${dealerStyles.dealerDiscoverySurface} ${styles.compactAppSurface}` : ""}`}>
+        {compactAppMode ? (
+          <div className={`${mobileStyles.overviewIntro} ${styles.discoveryOverviewIntro}`}>
+            <h1>Discovery</h1>
+            <p>Find equipment through owner assets and recent Marketplace advertisers.</p>
+          </div>
+        ) : (
+          <WorkspaceTitlePanel title="Discover Assets" />
+        )}
+        {renderDiscoveryViewSwitch()}
+        <RecentlyAdvertisedClient compactAppMode={compactAppMode} />
+      </section>
+    );
+  }
+
   if (
     access?.accountType === "owner" &&
     !access.canBrowse &&
@@ -1873,6 +1972,8 @@ export default function AssetDiscoveryClient({
         aria-label="Discovery participation required"
       >
         <WorkspaceTitlePanel title="Discover Assets" />
+
+        {renderDiscoveryViewSwitch()}
 
         {notice ? (
           <div
@@ -1980,8 +2081,9 @@ export default function AssetDiscoveryClient({
           ) : null}
 
           <small>
-            Discovery includes eligible machinery and equipment only.
-            Marketplace listings and maintenance sharing remain separate.
+            Discovery includes eligible machinery and equipment only. Recently
+            advertised Marketplace equipment is available through the separate
+            view above; maintenance sharing remains separate.
           </small>
         </section>
       </section>
@@ -2004,6 +2106,8 @@ export default function AssetDiscoveryClient({
           title={licensingDiscovery ? "Renewal Discovery" : "Discover Assets"}
         />
       )}
+
+      {renderDiscoveryViewSwitch()}
 
       <section
         className={styles.controlsPanel}
@@ -2649,4 +2753,3 @@ export default function AssetDiscoveryClient({
     </section>
   );
 }
-

@@ -11,21 +11,32 @@ on:
       - 'app/admin/discovery/**'
       - 'app/api/admin/marketplace/**'
       - 'app/api/admin/discovery/**'
-      - 'app/api/asset-discovery/assets/**'
+      - 'app/api/asset-discovery/**'
+      - 'app/asset-discovery/**'
+      - 'app/marketplace/sourcing-requests/**'
       - 'app/api/marketplace/views/**'
       - 'app/marketplace/marketplace-client.tsx'
       - 'components/AdminNavigation*'
+      - 'components/AppHeader.tsx'
       - 'database/migrations/93-marketplace-view-discovery-tracking.sql'
       - 'database/migrations/94-asset-discovery-view-tracking.sql'
+      - 'database/migrations/99-marketplace-sourcing-requests.sql'
       - 'lib/admin-dashboard.ts'
       - 'lib/admin-global-assets*'
       - 'lib/admin-marketplace*'
       - 'lib/discovery-views.ts'
+      - 'lib/marketplace-db.ts'
+      - 'lib/marketplace-sourcing-requests.ts'
       - 'lib/marketplace-views.ts'
+      - 'lib/notification-inbox.ts'
+      - 'lib/notifications.ts'
+      - 'lib/recent-marketplace-adverts.ts'
       - 'tests/admin-marketplace-dashboard.test.mjs'
       - 'tests/marketplace-view-tracking.test.mjs'
       - 'tests/admin-global-assets.test.mjs'
       - 'tests/discovery-view-tracking.test.mjs'
+      - 'tests/asset-discovery.security.test.mjs'
+      - 'tests/discovery-recent-adverts.security.test.mjs'
       - 'package.json'
       - 'package-lock.json'
 
@@ -58,6 +69,9 @@ jobs:
 
       - name: Test Admin Discovery
         run: npm run test:admin-discovery
+
+      - name: Test Asset Discovery
+        run: npm run test:asset-discovery
 
       - name: Test Admin navigation
         run: npm run test:admin-accounts

@@ -27,6 +27,7 @@ import {
 } from './dealer-costs';
 import { listCaptureRequests } from './capture-requests';
 import { listCurrentCostBudgetAlertEvents } from './cost-budgets';
+import { listMarketplaceSourcingRequestNotifications } from './marketplace-sourcing-requests';
 
 export type HeaderNotificationCategory =
   | 'admin_message'
@@ -40,7 +41,8 @@ export type HeaderNotificationCategory =
   | 'cost_budget'
   | 'capture'
   | 'dealer_correction'
-  | 'asset_discovery';
+  | 'asset_discovery'
+  | 'marketplace_sourcing';
 
 export type HeaderNotificationTone = 'neutral' | 'success' | 'warning' | 'info';
 
@@ -54,6 +56,7 @@ export type HeaderNotificationItem = {
   createdAtIso: string;
   assetId?: string;
   assetDiscoveryEnquiryId?: string;
+  marketplaceSourcingRequestId?: string;
   dealerAssetCorrectionId?: string;
   dealerAssetCorrectionAction?: 'decision' | 'retry' | 'pending';
   dealerMaintenanceScheduleProposalId?: string;
@@ -801,6 +804,33 @@ async function listRequesterAssetDiscoveryNotifications(userId: string): Promise
   }
 }
 
+async function listMarketplaceSourcingNotifications(userId: string): Promise<HeaderNotificationItem[]> {
+  try {
+    const requests = await listMarketplaceSourcingRequestNotifications(userId);
+
+    return requests.map((request) => {
+      const pending = request.status === 'pending';
+      const requesterName = asText(request.requesterName) || 'An Aim4price user';
+      const equipmentTitle = asText(request.title) || 'similar equipment';
+
+      return {
+        id: `marketplace-sourcing:${request.id}`,
+        category: 'marketplace_sourcing',
+        tone: pending ? 'warning' : 'info',
+        title: pending ? 'New Marketplace sourcing request' : 'Marketplace sourcing request opened',
+        body: `${requesterName} asked whether you can help source equipment similar to ${equipmentTitle}.`,
+        href: `/marketplace/sourcing-requests/${encodeURIComponent(request.id)}`,
+        createdAtIso: isoFallback(request.updatedAtIso || request.createdAtIso),
+        marketplaceSourcingRequestId: request.id,
+        priority: pending,
+      } satisfies HeaderNotificationItem;
+    });
+  } catch (error) {
+    console.error('Failed to load Marketplace sourcing request notifications', error);
+    return [];
+  }
+}
+
 async function listQrScanNotifications(userId: string): Promise<HeaderNotificationItem[]> {
   try {
     await ensureFuelLedgerTables();
@@ -904,6 +934,7 @@ export async function listComputedHeaderNotifications(input: ListHeaderNotificat
         listOwnerLeadNotifications(input.userId),
         listOwnerAssetDiscoveryNotifications(input.userId),
         listRequesterAssetDiscoveryNotifications(input.userId),
+        listMarketplaceSourcingNotifications(input.userId),
         listOwnerRecurringMaintenanceNotifications(input.userId),
         listQrScanNotifications(input.userId),
         listFuelNotifications(input.userId),
@@ -912,6 +943,9 @@ export async function listComputedHeaderNotifications(input: ListHeaderNotificat
         listPartnerLeadNotifications(input.userId),
         accountType === 'dealer' || accountType === 'licensing'
           ? listRequesterAssetDiscoveryNotifications(input.userId)
+          : Promise.resolve([]),
+        accountType === 'dealer'
+          ? listMarketplaceSourcingNotifications(input.userId)
           : Promise.resolve([]),
       ]);
 

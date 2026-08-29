@@ -647,6 +647,25 @@ async function createMarketplaceListingSnapshot(row: MarketplaceAssetRow): Promi
     const rawTitle = asText(pick(row, ['title', 'name', 'asset_name'])) || `${brandName} ${modelName}`.trim() || 'Aim4price listing';
     const title = buildMarketplaceListingTitle(row, rawTitle);
     const imageUrls = buildPhotoList(row);
+    const existingSpecs = pickJsonObject(pick(row, ['specs_json']));
+    const lifeWorkedPercent = listingWorkedPercent(row, existingSpecs);
+    const usageAmount = readMarketplaceUsageAmount(row, existingSpecs);
+    const usageUnit = listingUsageUnit(
+      row,
+      existingSpecs,
+      lifeWorkedPercent,
+      usageAmount,
+    );
+    const snapshotUsageAmount = usageUnit === 'percent'
+      ? lifeWorkedPercent
+      : usageAmount;
+    const snapshotYear = Math.round(asNumber(pick(row, ['year_model', 'year']), 0));
+    const snapshotCondition = conditionLabel(
+      normalizeConditionKey(pick(row, ['condition', 'valuation_last_condition'])),
+    );
+    const snapshotFamilyLabel =
+      asText(pick(row, ['equipment_family_label', 'family_label']))
+      || familyLabelFromAssetKind(readAssetKind(row));
     const description =
       asText(pick(row, ['marketplace_notes', 'note', 'notes', 'description'])) ||
       `${title} available on the Aim4price marketplace.`;
@@ -705,7 +724,13 @@ async function createMarketplaceListingSnapshot(row: MarketplaceAssetRow): Promi
         modelName,
         normalizeListingModelName(modelName),
         JSON.stringify({
-          ...pickJsonObject(pick(row, ['specs_json'])),
+          ...existingSpecs,
+          ...(snapshotYear > 0 ? { yearModel: snapshotYear } : {}),
+          ...(snapshotUsageAmount !== null && snapshotUsageAmount > 0
+            ? { usageAmount: snapshotUsageAmount, usageUnit }
+            : {}),
+          ...(snapshotCondition ? { conditionLabel: snapshotCondition } : {}),
+          ...(snapshotFamilyLabel ? { familyLabel: snapshotFamilyLabel } : {}),
           marketplaceAdBrand: pick(row, ['marketplace_ad_brand']) ?? undefined,
         }),
       ],
