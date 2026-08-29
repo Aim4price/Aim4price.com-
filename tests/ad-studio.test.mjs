@@ -468,15 +468,16 @@ test('public showroom presents clear business details in a white seller-scoped M
 
   const publicShowroom = manager.slice(manager.indexOf('export function PublicMiddlemanShowroom'));
   const publicAdvertSummaryRule = managerCss.match(/\.publicAdvertSummary\s*\{[^}]*\}/)?.[0] ?? '';
-  const inventorySummaryRule = managerCss.match(/\.inventorySummary\s*\{[^}]*\}/)?.[0] ?? '';
 
   assert.match(publicPage, /sellerUserId: showroom\.userId/);
   assert.match(publicPage, /exposeContact: true/);
   assert.match(publicShowroom, /showroom\.logoUrl \? <img src=\{showroom\.logoUrl\} alt=\{`\$\{showroom\.name\} logo`\}/);
   assert.match(publicShowroom, /<span aria-hidden="true">\{showroom\.name\.slice\(0, 2\)\.toUpperCase\(\)\}<\/span>/);
   assert.match(publicShowroom, /<h1>\{showroom\.name\}<\/h1>/);
-  assert.match(publicShowroom, /className=\{styles\.publicAdvertSummary\}>\{listings\.length\} live/);
-  assert.match(publicShowroom, /showroom\.bio \? <p className=\{styles\.publicBio\}>\{showroom\.bio\}<\/p>/);
+  assert.match(publicShowroom, /const liveAdvertLabel = `\$\{listings\.length\} live/);
+  assert.equal(publicShowroom.match(/\$\{listings\.length\} live/g)?.length, 1);
+  assert.match(publicShowroom, /className=\{styles\.publicAdvertSummary\}>\{liveAdvertLabel\}/);
+  assert.match(publicShowroom, /showroom\.bio\s*\? <p className=\{styles\.publicBio\}>\{showroom\.bio\}<\/p>\s*: <p className=\{styles\.publicTrustLine\}>/);
   assert.match(publicShowroom, /className=\{styles\.publicAdvertSummary\}[\s\S]*?className=\{styles\.publicTrustLine\}[\s\S]*?className=\{styles\.publicContactActions\}/);
   assert.match(publicShowroom, /className=\{styles\.publicContactActions\} role="group" aria-label=\{`\$\{showroom\.name\} contact options`\}/);
   assert.match(publicShowroom, /className=\{styles\.publicBusinessDetails\}/);
@@ -492,25 +493,29 @@ test('public showroom presents clear business details in a white seller-scoped M
   assert.match(publicShowroom, /href=\{`mailto:\$\{showroom\.email\}`\}/);
   assert.match(publicShowroom, /href=\{showroom\.websiteUrl\} target="_blank" rel="noreferrer"/);
   assert.match(publicShowroom, /websiteLabel\(showroom\.websiteUrl\)/);
-  assert.match(publicShowroom, /className=\{styles\.inventorySummary\}>\{listings\.length\} live/);
+  assert.doesNotMatch(publicShowroom, /styles\.inventorySummary/);
+  assert.doesNotMatch(managerCss, /\.inventorySummary\s*\{/);
+  assert.match(publicShowroom, /aria-labelledby="showroom-inventory-title"/);
+  assert.match(publicShowroom, /<h2 id="showroom-inventory-title">Available equipment<\/h2>/);
   assert.match(publicShowroom, /Clear equipment details and direct seller contact\./);
   assert.match(publicShowroom, /Browse equipment listed by \{showroom\.name\} and contact the seller directly\./);
   assert.match(publicShowroom, /Professional machinery advertising and direct seller contact\./);
   assert.doesNotMatch(publicShowroom, /valuation-backed equipment|Every advert is backed by an Aim4price valuation|advertising backed by valuations/i);
   assert.doesNotMatch(publicAdvertSummaryRule, /border(?:-radius)?:|background:/);
-  assert.doesNotMatch(inventorySummaryRule, /border(?:-radius)?:|background:/);
 
   assert.doesNotMatch(publicShowroom, /styles\.(?:publicHeroSummary|trustStrip|inventoryIcon|inventoryCount)/);
   assert.doesNotMatch(managerCss, /\.(?:publicHeroSummary|trustStrip|inventoryIcon|inventoryCount)\s*\{/);
   assert.doesNotMatch(managerCss, /\.publicHero\s*\{[^}]*linear-gradient/);
   assert.match(managerCss, /\.publicPage\s*\{[^}]*background:\s*#fff/);
-  assert.match(managerCss, /\.publicHeroInner\s*\{[^}]*width:\s*min\(1540px,100%\)[^}]*background:\s*#fff/);
-  assert.match(managerCss, /\.publicHeroMain\s*\{[^}]*grid-template-columns:\s*minmax\(0,1fr\) minmax\(30rem,\.72fr\)/);
-  assert.match(managerCss, /\.profileIdentity h1\s*\{[^}]*font-size:\s*clamp\(2rem,3\.15vw,3\.2rem\)/);
-  assert.match(managerCss, /\.publicContactActions\s*\{[^}]*display:\s*grid;[^}]*repeat\(auto-fit,minmax\(9\.6rem,1fr\)\)/);
-  assert.match(managerCss, /\.publicBusinessDetails > \*\s*\{[^}]*grid-template-columns:\s*2\.1rem minmax\(0,1fr\)/);
+  assert.match(managerCss, /\.publicHeroInner\s*\{[^}]*width:\s*min\(1560px,100%\)[^}]*background:\s*#fff/);
+  assert.match(managerCss, /\.publicHeroMain\s*\{[^}]*grid-template-columns:\s*minmax\(0,1fr\) minmax\(27rem,\.62fr\)/);
+  assert.match(managerCss, /\.profileIdentity h1\s*\{[^}]*font-size:\s*clamp\(1\.9rem,2\.8vw,2\.85rem\)/);
+  assert.match(managerCss, /\.publicContactActions\s*\{[^}]*display:\s*flex;[^}]*flex-wrap:\s*wrap/);
+  assert.match(managerCss, /\.publicBusinessDetails > \*\s*\{[^}]*grid-template-columns:\s*1\.8rem minmax\(0,1fr\)/);
   assert.match(managerCss, /\.publicBusinessDetails svg\s*\{[^}]*stroke:\s*#285d4d/);
-  assert.match(managerCss, /@media \(max-width: 560px\)[\s\S]*?\.publicContactActions\s*\{[^}]*grid-template-columns:\s*minmax\(0,1fr\)/);
+  assert.match(managerCss, /\.publicBio\s*\{[^}]*white-space:\s*pre-line/);
+  assert.match(managerCss, /@media \(max-width: 420px\)[\s\S]*?\.publicBusinessDetails\s*\{[^}]*grid-template-columns:\s*minmax\(0,1fr\)/);
+  assert.match(managerCss, /@media \(max-width: 340px\)[\s\S]*?\.publicContactActions\s*\{[^}]*grid-template-columns:\s*minmax\(0,1fr\)/);
   assert.match(managerCss, /\.publicFooter\s*\{[^}]*background:\s*#fff/);
   assert.match(managerCss, /font-family: 'Montserrat'/);
   assert.doesNotMatch(managerCss, /text-transform:\s*uppercase/);
@@ -539,6 +544,16 @@ test('public showroom presents clear business details in a white seller-scoped M
   assert.match(marketplaceCss, /\.showroomResults \.listingCard\s*\{/);
   assert.match(marketplaceCss, /\.showroomEmptyState\s*\{[^}]*background:\s*#fff/);
   assert.match(marketplaceCss, /\.showroomEmptyShell/);
+  assert.match(marketplace, /className=\{styles\.showroomMobileTools\}/);
+  assert.match(marketplace, /aria-controls="showroom-marketplace-filters"/);
+  assert.match(marketplace, /aria-expanded=\{dealerFiltersOpen\}/);
+  assert.match(marketplace, /id=\{showroomMode \? 'showroom-marketplace-filters'/);
+  assert.match(marketplace, /showroomMode && dealerFiltersOpen \? styles\.showroomSidebarOpen/);
+  assert.match(marketplaceCss, /@media \(max-width: 900px\)[\s\S]*?\.showroomMobileTools\s*\{[^}]*display:\s*grid/);
+  assert.match(marketplaceCss, /\.showroomPage \.showroomSidebarOpen\s*\{[^}]*display:\s*grid/);
+  assert.match(marketplaceCss, /\.showroomSidebar \.categoryList,[\s\S]*?\.showroomSidebar \.familyList\s*\{[^}]*grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\)[^}]*overflow:\s*visible/);
+  assert.match(marketplaceCss, /\.showroomSidebar \.ratingFilterList\s*\{[^}]*grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\)[^}]*overflow:\s*visible/);
+  assert.match(marketplaceCss, /@media \(max-width:\s*640px\)[\s\S]*?\.showroomSidebar \.categoryList,[\s\S]*?\.showroomSidebar \.ratingFilterList\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\)/);
 });
 
 test('showroom manager follows the approved no-bubble layout with consistent link typography', async () => {
@@ -557,7 +572,8 @@ test('showroom manager follows the approved no-bubble layout with consistent lin
   assert.match(manager, /Create your first advert and it will appear here automatically\./);
   assert.doesNotMatch(managerCss, /\.eyebrow\s*\{/);
   assert.doesNotMatch(managerCss, /\.sectionIcon(?:\s|,|\{)/);
-  assert.match(managerCss, /\.managerGrid\s*\{[^}]*grid-template-columns:\s*minmax\(360px, \.67fr\) minmax\(0, 1\.08fr\)/);
+  assert.match(managerCss, /\.managerGrid\s*\{[^}]*grid-template-columns:\s*minmax\([^;]+\) minmax\([^;]+\)/);
+  assert.match(managerCss, /@media \(max-width: 1060px\)[\s\S]*?\.managerGrid\s*\{[^}]*grid-template-columns:\s*1fr/);
   assert.match(managerCss, /\.copyLinkButton\s*\{/);
   assert.match(managerCss, /\.slugField\s*\{[^}]*font-family:\s*'Montserrat'/);
   assert.match(managerCss, /\.slugPrefix\s*\{[^}]*font:\s*inherit/);
@@ -565,6 +581,64 @@ test('showroom manager follows the approved no-bubble layout with consistent lin
   assert.doesNotMatch(manager, /emptyStockIllustration|emptyStockMachine/);
   assert.doesNotMatch(managerCss, /\.emptyStockIllustration|\.emptyStockMachine/);
   assert.match(managerCss, /\.emptyStock\s*\{[^}]*align-content:\s*center/);
+  assert.doesNotMatch(managerCss, /\.statusPill\s*\{/);
+  assert.doesNotMatch(managerCss, /\.managerHero\s*\{[^}]*min-height:\s*clamp\(16\.5rem,\s*23vw,\s*20rem\)/);
+  assert.match(manager, /target="_blank" rel="noreferrer">Open public showroom/);
+  assert.match(managerCss, /@media \(max-width: 760px\)[\s\S]*?\.stockCard\s*\{[^}]*order:\s*-1/);
+  assert.match(managerCss, /@media \(max-width: 760px\)[\s\S]*?\.listingActions\s*\{[^}]*grid-template-columns:\s*1fr/);
+});
+
+test('private showroom advert manager matches the accessible Aim4price modal pattern', async () => {
+  const [manager, css] = await Promise.all([
+    read('components/MiddlemanShowroomClient.tsx'),
+    read('components/MiddlemanShowroomClient.module.css'),
+  ]);
+
+  const modal = manager.slice(
+    manager.indexOf('{manageListingTarget ? ('),
+    manager.indexOf('<MarketplaceOutcomeModal'),
+  );
+  const declarations = (selector) => {
+    const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return css.match(new RegExp(`${escaped}\\s*\\{([^}]*)\\}`))?.[1] ?? '';
+  };
+  const lengthInPixels = (rule, property) => {
+    const match = rule.match(new RegExp(`${property}:\\s*([\\d.]+)(px|rem)`));
+    assert.ok(match, `${property} must be declared`);
+    return Number(match[1]) * (match[2] === 'rem' ? 16 : 1);
+  };
+  const closeRule = declarations('.listingManagerClose');
+  const actionRule = css.match(/\.listingManagerActions\s*>\s*a\s*,\s*\.listingManagerActions\s*>\s*button\s*\{([^}]*)\}/)?.[1] ?? '';
+
+  assert.match(modal, /role="dialog"/);
+  assert.match(modal, /aria-modal="true"/);
+  assert.match(modal, /aria-labelledby="showroom-listing-manager-title"/);
+  assert.match(modal, /aria-describedby="showroom-listing-manager-description"/);
+  assert.match(modal, /id="showroom-listing-manager-description"/);
+  assert.match(modal, /className=\{styles\.listingManagerClose\}/);
+  assert.match(modal, /aria-label="Close advert manager"[\s\S]*?<svg/);
+  assert.doesNotMatch(modal, /aria-label="Close advert manager"[^>]*>\s*×/);
+  assert.match(modal, /ShowroomManageActionIcon name="edit"/);
+  assert.match(modal, /ShowroomManageActionIcon name="download"/);
+  assert.match(modal, /ShowroomManageActionIcon name="marketplace"/);
+  assert.match(modal, /ShowroomManageActionIcon name="remove"/);
+
+  assert.match(manager, /event\.key === 'Escape'/);
+  assert.match(manager, /event\.key !== 'Tab'/);
+  assert.match(manager, /manageTriggerRef\.current\?\.focus\(\)/);
+
+  assert.ok(lengthInPixels(closeRule, 'width') >= 44);
+  assert.ok(lengthInPixels(closeRule, 'height') >= 44);
+  assert.match(closeRule, /border-radius:\s*(?:999px|50%)/);
+  assert.match(closeRule, /background:\s*#e9f5fb/i);
+  assert.match(closeRule, /color:\s*#28647f/i);
+  assert.ok(lengthInPixels(actionRule, 'min-height') >= 72);
+  assert.ok(lengthInPixels(actionRule, 'border-radius') >= 14);
+  assert.match(css, /\.listingManagerClose:focus-visible/);
+
+  for (const action of ['Edit advert', 'Download JPEG', 'Open in Marketplace', 'Remove advert']) {
+    assert.match(modal, new RegExp(action));
+  }
 });
 
 test('private showroom exposes advert design only when the server grants Brand Kit editing', async () => {

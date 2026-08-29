@@ -75,6 +75,7 @@ function websiteLabel(value: string): string {
 }
 
 type ShowroomDetailIconName = 'location' | 'phone' | 'email' | 'website';
+type ShowroomManageActionIconName = 'edit' | 'download' | 'marketplace' | 'remove';
 
 function ShowroomDetailIcon({ name }: { name: ShowroomDetailIconName }) {
   return (
@@ -100,6 +101,60 @@ function ShowroomDetailIcon({ name }: { name: ShowroomDetailIconName }) {
           <path d="M3 12h18M12 3c2.4 2.5 3.7 5.5 3.7 9s-1.3 6.5-3.7 9c-2.4-2.5-3.7-5.5-3.7-9S9.6 5.5 12 3Z" />
         </>
       ) : null}
+    </svg>
+  );
+}
+
+function ShowroomManageActionIcon({ name }: { name: ShowroomManageActionIconName }) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      {name === 'edit' ? (
+        <>
+          <path d="m4 16.5-.5 4 4-.5L19 8.5 15.5 5 4 16.5Z" />
+          <path d="m13.8 6.7 3.5 3.5" />
+        </>
+      ) : null}
+      {name === 'download' ? (
+        <>
+          <path d="M12 3v11" />
+          <path d="m8 10 4 4 4-4" />
+          <path d="M5 18v2h14v-2" />
+        </>
+      ) : null}
+      {name === 'marketplace' ? (
+        <>
+          <path d="M4 9.5V20h16V9.5" />
+          <path d="M3 9.5 5.2 4h13.6L21 9.5" />
+          <path d="M8 20v-6h8v6" />
+          <path d="M3 9.5c0 1.4 1 2.5 2.3 2.5S8 10.9 8 9.5c0 1.4.9 2.5 2.2 2.5s2.3-1.1 2.3-2.5c0 1.4.9 2.5 2.2 2.5s2.3-1.1 2.3-2.5c0 1.4.9 2.5 2.2 2.5S21 10.9 21 9.5" />
+        </>
+      ) : null}
+      {name === 'remove' ? (
+        <>
+          <path d="M4 7h16" />
+          <path d="m9 7 .6-2h4.8l.6 2" />
+          <path d="m6.5 7 .8 13h9.4l.8-13" />
+          <path d="M10 11v5M14 11v5" />
+        </>
+      ) : null}
+    </svg>
+  );
+}
+
+function ShowroomManageActionArrow({ direction = 'right' }: { direction?: 'right' | 'down' }) {
+  return (
+    <svg className={styles.listingManagerActionArrow} viewBox="0 0 24 24" aria-hidden="true">
+      {direction === 'down' ? (
+        <>
+          <path d="M12 4v14" />
+          <path d="m7 13 5 5 5-5" />
+        </>
+      ) : (
+        <>
+          <path d="M5 12h14" />
+          <path d="m14 7 5 5-5 5" />
+        </>
+      )}
     </svg>
   );
 }
@@ -317,11 +372,11 @@ export function MiddlemanShowroomManager({
       <section className={styles.managerHero}>
         <div className={styles.managerHeroCopy}>
           <h1>A professional home for your machinery adverts</h1>
-          <p>Keep your live stock together, share one simple link and give every customer a polished view with clear equipment details.</p>
+          <p>Keep your adverts together and share one polished link with customers.</p>
         </div>
         <div className={styles.heroActions}>
           <Link className={styles.primaryButton} href={valuationHref}><span aria-hidden="true">+</span> Value and create advert</Link>
-          {showroom.isPublic ? <Link className={styles.secondaryButton} href={publicHref(showroom.slug)} target="_blank">Open public showroom <span aria-hidden="true">↗</span></Link> : null}
+          {showroom.isPublic ? <Link className={styles.secondaryButton} href={publicHref(showroom.slug)} target="_blank" rel="noreferrer">Open public showroom <span aria-hidden="true">↗</span></Link> : null}
         </div>
       </section>
 
@@ -332,7 +387,7 @@ export function MiddlemanShowroomManager({
               <h2>Showroom details</h2>
               <p>Choose how customers see and find your showroom.</p>
             </div>
-            <span className={`${styles.statusPill} ${isPublic ? styles.statusLive : ''}`}>{isPublic ? 'Live' : 'Hidden'}</span>
+            <span className={`${styles.statusText} ${isPublic ? styles.statusLive : ''}`}>{isPublic ? 'Live' : 'Hidden'}</span>
           </div>
           <div
             className={`${styles.showroomLogoField} ${logoDragActive ? styles.showroomLogoDragging : ''}`}
@@ -425,8 +480,8 @@ export function MiddlemanShowroomManager({
               <strong>Advert design</strong>
               <span>
                 {usesSavedBrandDesign
-                  ? 'Adverts with a saved Brand Kit use it. Other downloads use Aim4price standard.'
-                  : 'Downloads use the standard Aim4price Marketplace design.'}
+                  ? 'Downloads use your saved Brand Kit.'
+                  : 'Downloads use the Aim4price Marketplace design.'}
               </span>
             </div>
             {advertDesignHref ? (
@@ -553,14 +608,24 @@ export function MiddlemanShowroomManager({
             role="dialog"
             aria-modal="true"
             aria-labelledby="showroom-listing-manager-title"
+            aria-describedby="showroom-listing-manager-description"
             tabIndex={-1}
           >
             <header className={styles.listingManagerHeader}>
               <div>
                 <h2 id="showroom-listing-manager-title">Manage advert</h2>
-                <p>Update, share or remove this advert from one place.</p>
+                <p id="showroom-listing-manager-description">Update, share or remove this advert from one place.</p>
               </div>
-              <button type="button" onClick={() => setManageListingTarget(null)} aria-label="Close advert manager">×</button>
+              <button
+                className={styles.listingManagerClose}
+                type="button"
+                onClick={() => setManageListingTarget(null)}
+                aria-label="Close advert manager"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="m6 6 12 12M18 6 6 18" />
+                </svg>
+              </button>
             </header>
 
             <div className={styles.listingManagerSummary}>
@@ -573,29 +638,33 @@ export function MiddlemanShowroomManager({
 
             <div className={styles.listingManagerActions}>
               <Link
+                className={styles.listingManagerPrimary}
                 href={dealerAppMode
                   ? `/dealer/marketplace?listing=${encodeURIComponent(manageListingTarget.id)}&manage=1`
                   : `/asset-register?assetId=${encodeURIComponent(manageListingTarget.sourceAssetId || '')}&action=marketplace-edit`}
               >
-                <span><strong>Edit advert</strong><small>Update the price, description and seller details.</small></span>
-                <b aria-hidden="true">→</b>
+                <span className={styles.listingManagerActionIcon}><ShowroomManageActionIcon name="edit" /></span>
+                <span className={styles.listingManagerActionCopy}><strong>Edit advert</strong><small>Update the price, description and seller details.</small></span>
+                <ShowroomManageActionArrow />
               </Link>
               <button
                 type="button"
                 onClick={() => void downloadAdvert(manageListingTarget)}
                 disabled={busyListingId === manageListingTarget.id}
               >
-                <span>
+                <span className={styles.listingManagerActionIcon}><ShowroomManageActionIcon name="download" /></span>
+                <span className={styles.listingManagerActionCopy}>
                   <strong>Download JPEG</strong>
                   <small>{usesSavedBrandDesign && manageListingTarget.adBrand ? 'Use the Brand Kit saved with this advert.' : 'Use the standard Aim4price Marketplace advert design.'}</small>
                 </span>
-                <b aria-hidden="true">↓</b>
+                <ShowroomManageActionArrow direction="down" />
               </button>
               <Link
                 href={`${dealerAppMode ? '/dealer/marketplace' : '/marketplace'}?listing=${encodeURIComponent(manageListingTarget.id)}&manage=1`}
               >
-                <span><strong>Open in Marketplace</strong><small>View the advert and continue managing it in Marketplace.</small></span>
-                <b aria-hidden="true">→</b>
+                <span className={styles.listingManagerActionIcon}><ShowroomManageActionIcon name="marketplace" /></span>
+                <span className={styles.listingManagerActionCopy}><strong>Open in Marketplace</strong><small>View the advert and continue managing it in Marketplace.</small></span>
+                <ShowroomManageActionArrow />
               </Link>
               <button
                 type="button"
@@ -605,8 +674,9 @@ export function MiddlemanShowroomManager({
                   setManageListingTarget(null);
                 }}
               >
-                <span><strong>Remove advert</strong><small>Record the outcome and withdraw it everywhere.</small></span>
-                <b aria-hidden="true">→</b>
+                <span className={styles.listingManagerActionIcon}><ShowroomManageActionIcon name="remove" /></span>
+                <span className={styles.listingManagerActionCopy}><strong>Remove advert</strong><small>Record the outcome and withdraw it everywhere.</small></span>
+                <ShowroomManageActionArrow />
               </button>
             </div>
           </section>
@@ -645,6 +715,8 @@ export function PublicMiddlemanShowroom({ showroom, listings }: {
   showroom: PublicMiddlemanShowroomData;
   listings: MarketplaceListing[];
 }) {
+  const liveAdvertLabel = `${listings.length} live ${listings.length === 1 ? 'advert' : 'adverts'}`;
+
   return (
     <div className={styles.publicPage}>
       <header className={styles.publicTopbar}>
@@ -662,15 +734,16 @@ export function PublicMiddlemanShowroom({ showroom, listings }: {
               {showroom.logoUrl ? <img src={showroom.logoUrl} alt={`${showroom.name} logo`} /> : <span aria-hidden="true">{showroom.name.slice(0, 2).toUpperCase()}</span>}
               <div>
                 <h1>{showroom.name}</h1>
-                <p className={styles.publicAdvertSummary}>{listings.length} live {listings.length === 1 ? 'advert' : 'adverts'}</p>
-                {showroom.bio ? <p className={styles.publicBio}>{showroom.bio}</p> : null}
-                <p className={styles.publicTrustLine}>Clear equipment details and direct seller contact.</p>
+                <p className={styles.publicAdvertSummary}>{liveAdvertLabel}</p>
+                {showroom.bio
+                  ? <p className={styles.publicBio}>{showroom.bio}</p>
+                  : <p className={styles.publicTrustLine}>Clear equipment details and direct seller contact.</p>}
               </div>
             </div>
             <div className={styles.publicContactActions} role="group" aria-label={`${showroom.name} contact options`}>
-              {showroom.phone ? <a className={styles.whatsappButton} href={whatsappHref(showroom.phone)} target="_blank" rel="noreferrer">Chat on WhatsApp</a> : null}
-              {showroom.phone ? <a className={styles.secondaryButton} href={`tel:${showroom.phone}`}>Call business</a> : null}
-              {showroom.email ? <a className={styles.secondaryButton} href={`mailto:${showroom.email}`}>Email business</a> : null}
+              {showroom.phone ? <a className={styles.whatsappButton} href={whatsappHref(showroom.phone)} target="_blank" rel="noreferrer" aria-label={`Chat with ${showroom.name} on WhatsApp`}>Chat on WhatsApp</a> : null}
+              {showroom.phone ? <a className={styles.secondaryButton} href={`tel:${showroom.phone}`} aria-label={`Call ${showroom.name} at ${showroom.phone}`}>Call business</a> : null}
+              {showroom.email ? <a className={styles.secondaryButton} href={`mailto:${showroom.email}`} aria-label={`Email ${showroom.name} at ${showroom.email}`}>Email business</a> : null}
             </div>
           </div>
           {showroom.location || showroom.phone || showroom.email || showroom.websiteUrl ? (
@@ -704,13 +777,12 @@ export function PublicMiddlemanShowroom({ showroom, listings }: {
         </div>
       </section>
 
-      <section className={styles.marketplaceInventory} aria-label={`${showroom.name} showroom inventory`}>
+      <section className={styles.marketplaceInventory} aria-labelledby="showroom-inventory-title">
         <div className={styles.inventoryIntro}>
           <div>
-            <h2>Available equipment</h2>
+            <h2 id="showroom-inventory-title">Available equipment</h2>
             <p>Browse equipment listed by {showroom.name} and contact the seller directly.</p>
           </div>
-          <span className={styles.inventorySummary}>{listings.length} live {listings.length === 1 ? 'advert' : 'adverts'}</span>
         </div>
         <MarketplaceClient
           initialFilters={{ brand: '', model: '', drive: '', type: '' }}

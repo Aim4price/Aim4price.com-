@@ -47,6 +47,11 @@ test('shared Marketplace outcome dialog is keyboard and screen-reader accessible
   assert.match(source, /role="alert"/);
   assert.match(source, /aria-required="true"/);
   assert.match(styles, /font-family: 'Montserrat'/);
+  assert.match(styles, /\.dialog\s*\{[^}]*border-radius:\s*28px/);
+  assert.match(styles, /\.closeButton\s*\{[^}]*width:\s*3rem;[^}]*height:\s*3rem;[^}]*border-radius:\s*999px/);
+  assert.match(styles, /\.closeButton\s*\{[^}]*color:\s*#28647f;[^}]*background:\s*#e9f5fb/);
+  assert.match(styles, /\.option\s*\{[^}]*min-height:\s*3\.65rem;[^}]*border-radius:\s*14px/);
+  assert.match(styles, /\.cancelButton,[\s\S]*?\.removeButton\s*\{[^}]*min-height:\s*3\.35rem/);
   assert.match(styles, /@media \(max-width: 640px\)/);
   assert.match(styles, /@media \(prefers-reduced-motion: reduce\)/);
   assert.doesNotMatch(styles, /text-transform:\s*uppercase/);
