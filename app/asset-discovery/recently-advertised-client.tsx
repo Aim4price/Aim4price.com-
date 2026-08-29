@@ -184,17 +184,6 @@ function WhatsAppIcon({ className }: IconProps) {
   );
 }
 
-function PhotoUnavailableIcon({ className }: IconProps) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <rect x="3.5" y="5" width="17" height="14" rx="2.5" stroke="currentColor" strokeWidth="1.8" />
-      <circle cx="9" cy="10" r="1.5" stroke="currentColor" strokeWidth="1.6" />
-      <path d="m5.5 17 4.2-4.2 3.1 3 2.2-2.1 3.5 3.3" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="m4 4 16 16" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-    </svg>
-  );
-}
-
 function CloseIcon({ className }: IconProps) {
   return (
     <svg className={className} viewBox="0 0 24 24" aria-hidden="true">
@@ -447,158 +436,260 @@ export default function RecentlyAdvertisedClient({
   function renderStatus(advert: RecentAdvert) {
     return (
       <span className={`${styles.recentAdvertStatus} ${styles[`recentAdvertStatus_${advert.status}`]}`}>
-        {advert.status === "available" ? "Advert active" : advert.statusLabel}
+        {advert.statusLabel}
       </span>
+    );
+  }
+
+  function renderAdvertContactAction(advert: RecentAdvert) {
+    const requestSent = requestedAdvertIds.has(advert.id);
+    const isLiveAdvert = advert.status === "available" && Boolean(advert.marketplaceHref);
+    const contactNoteId = `recent-advert-contact-note-${advert.id}`;
+    const primaryClassName = compactAppMode
+      ? `${styles.primaryButton} ${styles.enquireButton}`
+      : `${assetStyles.primaryButton} ${workspaceStyles.actionButton} ${workspaceStyles.actionGreen} ${leadStyles.openLeadButton} ${styles.discoveryPrimaryAction}`;
+
+    if (isLiveAdvert && advert.marketplaceHref) {
+      return (
+        <a
+          href={advert.marketplaceHref}
+          className={primaryClassName}
+          aria-describedby={contactNoteId}
+        >
+          View advert &amp; contact seller
+        </a>
+      );
+    }
+
+    return (
+      <button
+        type="button"
+        className={
+          requestSent && !compactAppMode
+            ? `${assetStyles.secondaryButton} ${workspaceStyles.actionButton} ${styles.pendingRequestButton}`
+            : primaryClassName
+        }
+        onClick={(event) => {
+          sourcingTriggerRef.current = event.currentTarget;
+          void sendSourcingRequest(advert);
+        }}
+        disabled={sourcingLoadingId !== null || requestSent}
+        aria-describedby={contactNoteId}
+      >
+        {requestSent
+          ? "Request sent"
+          : sourcingLoadingId === advert.id
+            ? "Sending request…"
+            : advert.status === "available"
+              ? "Ask advertiser about this advert"
+              : "Ask advertiser to source one"}
+      </button>
     );
   }
 
   function renderExpanded(advert: RecentAdvert) {
     if (expandedAdvertId !== advert.id) return null;
-    const hasContactAction = advert.status !== "available" || !advert.marketplaceHref;
     const hasSavedImage = Boolean(advert.imageUrl) && !failedImageIds.has(advert.id);
-    const requestSent = requestedAdvertIds.has(advert.id);
+    const isLiveAdvert = advert.status === "available" && Boolean(advert.marketplaceHref);
     const contactNoteId = `recent-advert-contact-note-${advert.id}`;
+    const location = [clean(advert.area), clean(advert.province)].filter(Boolean).join(", ") || "Location not saved";
 
     return (
-      <div className={styles.recentAdvertExpanded} id={`recent-advert-${advert.id}`}>
-        <div className={`${styles.recentAdvertExpandedGrid} ${!hasSavedImage ? styles.recentAdvertExpandedGridNoImage : ""}`}>
-          {hasSavedImage ? (
-            <div className={styles.recentAdvertMedia}>
-              <img
-                src={advert.imageUrl}
-                alt={`${advert.title} marketplace advert`}
-                loading="lazy"
-                onError={() => setFailedImageIds((current) => new Set(current).add(advert.id))}
-              />
+      <div
+        id={`recent-advert-${advert.id}`}
+        className={`${assetStyles.assetCard} ${leadStyles.leadAssetCard} ${assetStyles.assetCardExpanded} ${styles.discoveryLeadAssetCard} ${compactAppMode ? styles.discoveryExpandedCompact : ""}`}
+        aria-label={`${advert.title} Marketplace advert details`}
+      >
+        {compactAppMode ? (
+          <div className={styles.compactExpandedTop}>
+            <div>
+              <span>Advert details</span>
+              <p>Review the saved Marketplace information and contact options.</p>
             </div>
-          ) : null}
-
-          <div className={styles.recentAdvertDetails}>
-            {!hasSavedImage ? (
-              <div className={styles.recentAdvertPhotoNote}>
-                <span className={styles.recentAdvertPhotoNoteIcon} aria-hidden="true">
-                  <PhotoUnavailableIcon />
+            {renderAdvertContactAction(advert)}
+          </div>
+        ) : (
+          <div className={`${assetStyles.assetHeader} ${leadStyles.leadAssetHeader}`}>
+            <div className={assetStyles.assetTitleBlock}>
+              <h2>{advert.title}</h2>
+              <p>{advertMeta(advert)}</p>
+              <div className={assetStyles.assetMetaRow}>
+                <span className={assetStyles.assetValueMethodLabel}>
+                  {clean(advert.type) || "Asset"}
                 </span>
-                <span>
-                  <strong>Photo unavailable</strong>
-                  <small>No photo was saved with this Marketplace advert.</small>
+                <span className={assetStyles.assetSavedDateLabel}>
+                  {clean(advert.province) || "Location not saved"}
                 </span>
               </div>
-            ) : null}
+            </div>
 
-            <dl className={styles.recentAdvertDetailGrid}>
-              <div className={styles.recentAdvertPriceDetail}>
-                <dt>Advertised price</dt>
-                <dd>{formatPrice(advert.priceExVat)}</dd>
+            <div className={`${assetStyles.assetHeaderAside} ${leadStyles.leadAssetHeaderAside}`}>
+              <div className={`${assetStyles.assetHeaderActions} ${leadStyles.leadAssetHeaderActions}`}>
+                {renderAdvertContactAction(advert)}
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div className={`${assetStyles.assetBody} ${leadStyles.leadAssetBody} ${styles.discoveryLeadAssetBody}`}>
+          <div className={`${assetStyles.previewWrap} ${leadStyles.leadPreviewWrap}`}>
+            <div className={`${assetStyles.previewStage} ${leadStyles.leadPreviewStage} ${styles.discoveryPreviewStage}`}>
+              {hasSavedImage ? (
+                <img
+                  src={advert.imageUrl}
+                  alt={`${advert.title} Marketplace advert`}
+                  className={`${assetStyles.previewImage} ${leadStyles.leadPreviewImage}`}
+                  loading="lazy"
+                  onError={() => setFailedImageIds((current) => new Set(current).add(advert.id))}
+                />
+              ) : (
+                <div className={`${assetStyles.previewPlaceholder} ${styles.discoveryPreviewPlaceholder} ${styles.discoveryPreviewLocked}`}>
+                  <div className={styles.discoveryLockedArtwork} aria-hidden="true">
+                    <span />
+                    <span />
+                    <span />
+                  </div>
+                  <div className={styles.discoveryLockedMedia}>
+                    <strong>Photo unavailable</strong>
+                    <span>No photo was saved with this Marketplace advert.</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className={assetStyles.assetDetailDivider} aria-hidden="true" />
+
+          <div className={`${assetStyles.assetDetailsPanel} ${styles.discoveryDetailsPanel}`}>
+            <div className={`${assetStyles.assetDetailsGrid} ${styles.discoveryDetailsGrid}`}>
+              <div className={`${assetStyles.assetPrimaryDetails} ${styles.discoveryDetailGroup}`}>
+                {[
+                  ["Asset type", advert.type],
+                  ["Brand", advert.brand],
+                  ["Model", advert.model],
+                  ["Year", advert.year],
+                ].map(([label, value]) => (
+                  <div className={`${assetStyles.assetDetailRow} ${styles.discoveryDetailRow}`} key={`${advert.id}-${label}`}>
+                    <span>{label}</span>
+                    <strong>{clean(value) || "Not saved"}</strong>
+                  </div>
+                ))}
+              </div>
+
+              <div className={`${assetStyles.assetPrimaryDetails} ${styles.discoveryDetailGroup}`}>
+                {[
+                  ["Usage", advert.usage],
+                  ["Condition", advert.condition],
+                  ["Province", advert.province],
+                  ["Advertised price", formatPrice(advert.priceExVat)],
+                ].map(([label, value]) => (
+                  <div className={`${assetStyles.assetDetailRow} ${styles.discoveryDetailRow}`} key={`${advert.id}-${label}`}>
+                    <span>{label}</span>
+                    <strong>{clean(value) || "Not saved"}</strong>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className={styles.discoveryAccessNote} id={contactNoteId}>
+              <strong>
+                {isLiveAdvert
+                  ? "Open this Marketplace advert to contact the seller."
+                  : advert.status === "available"
+                    ? "Ask whether the advertiser can help with this advert."
+                    : "Ask whether the advertiser can help source similar equipment."}
+              </strong>
+              {advert.description ? <span>{advert.description}</span> : null}
+              <span>
+                {isLiveAdvert
+                  ? `${dateLabel(advert.publishedAtIso)} by ${advert.advertiserName}. The live Marketplace page provides the seller's contact options.`
+                  : `${advert.status === "available" ? "No public Marketplace page is available. " : "This advert is no longer active, but the advertiser may know where to find similar equipment. "}We will share your saved Marketplace phone or email only with ${advert.advertiserName} if you send this request.`}
+              </span>
+            </div>
+
+            <div className={styles.discoveryInlineContact}>
+              <div>
+                <span>Advertised by</span>
+                <strong>{advert.advertiserName || "Not supplied"}</strong>
               </div>
               <div>
-                <dt>Location</dt>
-                <dd>{[advert.area, advert.province].filter(Boolean).join(", ")}</dd>
+                <span>Advertised</span>
+                <strong>{fullDateLabel(advert.publishedAtIso)}</strong>
               </div>
               <div>
-                <dt>Advertised by</dt>
-                <dd>{advert.advertiserName}</dd>
+                <span>Advert status</span>
+                <strong>{advert.statusLabel}</strong>
               </div>
               <div>
-                <dt>Advertised</dt>
-                <dd>{fullDateLabel(advert.publishedAtIso)}</dd>
+                <span>Location</span>
+                <strong>{location}</strong>
               </div>
-              <div className={styles.recentAdvertDetailWide}>
-                <dt>Equipment type</dt>
-                <dd>{advert.type}</dd>
-              </div>
-            </dl>
-
-            {advert.description ? (
-              <div className={styles.recentAdvertDescription}>
-                <strong>About this advert</strong>
-                <p>{advert.description}</p>
-              </div>
-            ) : null}
-
-            {advert.status === "available" && advert.marketplaceHref ? (
-              <p className={styles.recentAdvertAvailabilityNote} id={contactNoteId}>
-                This advert is live. Open it to view the full listing and contact the seller by WhatsApp, phone or email.
-              </p>
-            ) : (
-              <p className={styles.recentAdvertSourcingNote} id={contactNoteId}>
-                {advert.status === "available"
-                  ? "This advert has no public Marketplace page. "
-                  : "This advert is no longer active, but the advertiser may know where to find similar equipment. "}
-                We will share your saved Marketplace phone or email only with {advert.advertiserName}, so they can contact you if they can help.
-              </p>
-            )}
-
-            <div className={styles.recentAdvertExpandedActions}>
-              {advert.marketplaceHref ? (
-                <a
-                  href={advert.marketplaceHref}
-                  className={`${workspaceStyles.actionButton} ${workspaceStyles.actionGreen} ${styles.recentAdvertPrimaryAction}`}
-                  aria-describedby={contactNoteId}
-                >
-                  <WhatsAppIcon className={styles.recentAdvertActionIcon} />
-                  <span>View advert &amp; contact seller</span>
-                </a>
-              ) : hasContactAction ? (
-                <button
-                  type="button"
-                  className={`${workspaceStyles.actionButton} ${workspaceStyles.actionGreen} ${styles.recentAdvertPrimaryAction}`}
-                  onClick={(event) => {
-                    sourcingTriggerRef.current = event.currentTarget;
-                    void sendSourcingRequest(advert);
-                  }}
-                  disabled={sourcingLoadingId !== null || requestSent}
-                  aria-describedby={contactNoteId}
-                >
-                  <WhatsAppIcon className={styles.recentAdvertActionIcon} />
-                  <span>
-                    {requestSent
-                      ? "Request sent"
-                      : sourcingLoadingId === advert.id
-                        ? "Sending request…"
-                        : advert.status === "available"
-                          ? "Ask advertiser about this advert"
-                          : "Ask advertiser to source one"}
-                  </span>
-                </button>
-              ) : null}
             </div>
           </div>
         </div>
+
+        {compactAppMode ? (
+          <div className={styles.discoveryExpandedFooter}>
+            <button
+              type="button"
+              className={styles.discoveryCloseDetailsButton}
+              onClick={() => setExpandedAdvertId(null)}
+            >
+              <CloseIcon className={styles.buttonIcon} />
+              Close details
+            </button>
+          </div>
+        ) : null}
       </div>
     );
   }
 
   function renderAdvertCard(advert: RecentAdvert) {
     const isExpanded = expandedAdvertId === advert.id;
-    const statusClass = styles[`recentAdvertCard_${advert.status}`];
+    const compactOpenClassName = `${styles.discoveryOpenButton} ${
+      isExpanded
+        ? styles.discoveryCloseButton
+        : `${mobileStyles.mobilePrimaryButton} ${mobileStyles.overviewOpenButton} ${styles.discoveryOverviewOpenButton}`
+    }`;
+    const desktopOpenClassName = `${assetStyles.primaryButton} ${workspaceStyles.actionButton} ${workspaceStyles.actionGreen} ${leadStyles.openLeadButton} ${styles.discoveryOpenButton} ${isExpanded ? styles.discoveryCloseButton : ""}`;
+    const openControl = (
+      <button
+        type="button"
+        className={compactAppMode ? compactOpenClassName : desktopOpenClassName}
+        onClick={() => setExpandedAdvertId(isExpanded ? null : advert.id)}
+        aria-expanded={isExpanded}
+        aria-controls={`recent-advert-${advert.id}`}
+        aria-label={`${isExpanded ? "Close" : "Open"} ${advert.title} advert details`}
+      >
+        {isExpanded ? "Close" : "Open"}
+      </button>
+    );
 
     if (compactAppMode) {
       return (
         <article
           key={advert.id}
-          className={`${workspaceStyles.card} ${mobileStyles.overviewCard} ${styles.recentAdvertCardCompact} ${statusClass}`}
+          className={`${workspaceStyles.card} ${mobileStyles.overviewCard} ${styles.assetCard} ${styles.dealerAssetCard}`}
         >
-          <div className={styles.recentAdvertCompactLabels}>
-            <span>{advert.type}</span>
-            {renderStatus(advert)}
+          <div className={`${styles.assetCardHeader} ${styles.dealerAssetCardHeader}`}>
+            <div className={styles.assetIdentity}>
+              <div className={`${mobileStyles.overviewCardLabels} ${styles.discoveryCardLabels}`}>
+                <span className={mobileStyles.overviewType}>{clean(advert.type) || "Asset"}</span>
+                <span className={styles.discoveryLocationPill}>{clean(advert.province) || "Location not saved"}</span>
+              </div>
+              <h2>{advert.title}</h2>
+              <p className={styles.dealerAssetMeta}>{advertMeta(advert)}</p>
+              <p className={styles.recentAdvertByline}>
+                <span>{dateLabel(advert.publishedAtIso)}</span>
+                <strong>by {advert.advertiserName}</strong>
+              </p>
+            </div>
+
+            <div className={styles.assetActionRow}>
+              {renderStatus(advert)}
+              {openControl}
+            </div>
           </div>
-          <h2>{advert.title}</h2>
-          <p className={styles.recentAdvertMeta}>{advertMeta(advert)}</p>
-          <p className={styles.recentAdvertByline}>
-            <span>{dateLabel(advert.publishedAtIso)}</span>
-            <strong>by {advert.advertiserName}</strong>
-          </p>
-          <button
-            type="button"
-            className={`${workspaceStyles.actionButton} ${isExpanded ? styles.recentAdvertCloseAction : styles.recentAdvertOpenAction}`}
-            onClick={() => setExpandedAdvertId(isExpanded ? null : advert.id)}
-            aria-expanded={isExpanded}
-            aria-controls={`recent-advert-${advert.id}`}
-            aria-label={`${isExpanded ? "Close" : "Open"} ${advert.title} advert details`}
-          >
-            {isExpanded ? "Hide details" : "View details"}
-          </button>
           {renderExpanded(advert)}
         </article>
       );
@@ -607,12 +698,12 @@ export default function RecentlyAdvertisedClient({
     return (
       <article
         key={advert.id}
-        className={`${workspaceStyles.card} ${leadStyles.leadThread} ${statusClass} ${isExpanded ? leadStyles.leadThreadOpen : ""}`}
+        className={`${workspaceStyles.card} ${leadStyles.leadThread} ${leadStyles.leadThreadNew} ${isExpanded ? leadStyles.leadThreadOpen : ""}`}
       >
         <div className={leadStyles.clientPanel}>
           <div className={leadStyles.clientPanelHeader}>
             <div className={leadStyles.clientIdentity}>
-              <h2 className={styles.recentAdvertCardTitle}>{advert.title}</h2>
+              <h3>{advert.title}</h3>
               <strong className={leadStyles.leadAssetName}>{advertMeta(advert)}</strong>
               <span className={leadStyles.clientKicker}>
                 {[advert.type, advert.province].filter(Boolean).join(" · ")}
@@ -623,18 +714,9 @@ export default function RecentlyAdvertisedClient({
             </div>
 
             <div className={leadStyles.clientDecisionArea}>
-              <div className={`${leadStyles.clientActionRow} ${styles.recentAdvertCardActions}`}>
+              <div className={leadStyles.clientActionRow}>
                 {renderStatus(advert)}
-                <button
-                  type="button"
-                  className={`${workspaceStyles.actionButton} ${isExpanded ? styles.recentAdvertCloseAction : styles.recentAdvertOpenAction}`}
-                  onClick={() => setExpandedAdvertId(isExpanded ? null : advert.id)}
-                  aria-expanded={isExpanded}
-                  aria-controls={`recent-advert-${advert.id}`}
-                  aria-label={`${isExpanded ? "Close" : "Open"} ${advert.title} advert details`}
-                >
-                  {isExpanded ? "Hide details" : "View details"}
-                </button>
+                {openControl}
               </div>
             </div>
           </div>
