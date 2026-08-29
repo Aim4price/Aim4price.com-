@@ -6495,7 +6495,7 @@
 
 .costChoiceModal .sourceChoiceGrid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr);
   gap: 0.9rem;
   padding: 1.35rem 1.7rem 1.55rem;
   background:
