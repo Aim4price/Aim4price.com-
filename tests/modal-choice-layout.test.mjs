@@ -23,14 +23,10 @@ test('Add asset cost presents every capture action in one vertical column', () =
   );
 });
 
-test('Fuel slips stacks its menu actions without changing the add-slip chooser', () => {
+test('Fuel slips stacks both chooser screens into vertical action rows', () => {
   assert.match(fuelClient, /styles\.fuelSlipMenuModal/);
   assert.match(
-    ruleBody(fuelStyles, '.fuelSlipFlowBackdrop .fuelSlipMenuModal .sourceChoiceGrid'),
-    /grid-template-columns:\s*minmax\(0,\s*1fr\)/,
-  );
-  assert.match(
     ruleBody(fuelStyles, '.fuelSlipFlowBackdrop .fuelSlipChoiceModal .sourceChoiceGrid'),
-    /grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/,
+    /grid-template-columns:\s*minmax\(0,\s*1fr\)/,
   );
 });
