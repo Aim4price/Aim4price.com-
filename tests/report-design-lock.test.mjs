@@ -33,7 +33,7 @@ const APPROVED_REPORT_STYLES = [
   {
     path: '../app/api/asset-map/report/route.ts',
     styleIndexes: [0],
-    fingerprints: ['11113:becf9a153e53580e'],
+    fingerprints: ['13326:a80b9033eaf04045'],
   },
   {
     path: '../app/api/asset-register/scan-report/route.ts',
