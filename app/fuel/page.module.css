@@ -7486,10 +7486,14 @@
 }
 
 /* Fuel-slip wizard parity and high-volume manager */
-.fuelSlipFlowBackdrop .fuelSlipWizardModal,
-.fuelSlipFlowBackdrop .fuelSlipUploadWizardModal {
+.fuelSlipFlowBackdrop .fuelSlipWizardModal {
   width: min(1120px, 100%) !important;
   max-height: min(880px, calc(100dvh - 48px)) !important;
+}
+
+.fuelSlipFlowBackdrop .fuelSlipUploadWizardModal {
+  width: min(860px, 100%) !important;
+  max-height: min(720px, calc(100dvh - 48px)) !important;
 }
 
 .fuelSlipWizardProgress {
