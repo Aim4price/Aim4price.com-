@@ -40,7 +40,10 @@ test("quick actions keep their button treatment while gaining clear groups", asy
 });
 
 test("password controls are compact on the dashboard and edit inside a modal", async () => {
-  const source = await read("app/account/account-client.tsx");
+  const [source, styles] = await Promise.all([
+    read("app/account/account-client.tsx"),
+    read("app/account/page.module.css"),
+  ]);
 
   assert.match(source, /\| "password"/);
   assert.match(source, /openActionModal\("password"\)/);
@@ -58,6 +61,17 @@ test("password controls are compact on the dashboard and edit inside a modal", a
     5,
   );
   assert.match(source, /setActiveAccountModal\(null\)[\s\S]*?Password changed successfully/);
+  const securityStart = source.indexOf("styles.securityCard");
+  const dangerStart = source.indexOf("styles.accountDeleteCard", securityStart);
+  const securityMarkup = source.slice(securityStart, dangerStart);
+  assert.doesNotMatch(securityMarkup, /<small>/);
+  assert.doesNotMatch(securityMarkup, />Use your current password</);
+  assert.doesNotMatch(
+    securityMarkup,
+    /\{profile\?\.email \|\| "Your account email"\}/,
+  );
+  assert.match(styles, /\.securityActionCard \{[^}]*min-height: 4rem;/);
+  assert.doesNotMatch(styles, /\.securityActionCopy small/);
 });
 
 test("dangerous account removal sits in its own guarded bottom section", async () => {
@@ -67,7 +81,8 @@ test("dangerous account removal sits in its own guarded bottom section", async (
   ]);
 
   assert.match(source, /styles\.accountDeleteCard\} \$\{styles\.dangerZone/);
-  assert.match(source, /Danger zone/);
+  assert.doesNotMatch(source, /styles\.dangerZoneEyebrow|>Danger zone<\/span>/);
+  assert.doesNotMatch(styles, /\.dangerZoneEyebrow/);
   assert.match(source, /onClick=\{openDeleteDialog\}/);
   assert.match(source, /role="alertdialog"/);
   assert.match(source, /ref=\{deleteDialogRef\}/);
