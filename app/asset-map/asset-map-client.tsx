@@ -2031,9 +2031,6 @@ export default function AssetMapClient() {
                     <div className={styles.selectedAssetContent}>
                       <div className={styles.selectedAssetHeader}>
                         <div className={styles.selectedAssetIdentity}>
-                          <span className={styles.selectedAssetNumber}>
-                            {selectedAsset.mapNumber}
-                          </span>
                           <div className={styles.selectedAssetTitleGroup}>
                             <h2>{selectedAsset.title || "Saved asset"}</h2>
                             <p>{buildAssetMeta(selectedAsset)}</p>

@@ -1271,23 +1271,7 @@
   grid-row: 1;
   min-width: 0;
   display: grid;
-  grid-template-columns: 2rem minmax(0, 1fr);
   align-items: start;
-  gap: 0.58rem;
-}
-
-.selectedAssetNumber {
-  width: 2rem;
-  height: 2rem;
-  display: grid;
-  place-items: center;
-  margin-top: 0.24rem;
-  border-radius: 999px;
-  background: #103f35;
-  color: #ffffff;
-  font-size: 0.82rem;
-  font-weight: 850;
-  box-shadow: 0 8px 18px rgba(16, 63, 53, 0.16);
 }
 
 .selectedAssetTitleGroup {
