@@ -4363,12 +4363,12 @@
 
 .securityActionCard {
   width: 100%;
-  min-height: 4.65rem;
+  min-height: 4rem;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   gap: 0.82rem;
-  padding: 0.82rem 0.9rem;
+  padding: 0.72rem 0.9rem;
   border: 1px solid rgba(18, 45, 37, 0.085);
   border-radius: 1rem;
   color: #17362c;
@@ -4406,7 +4406,6 @@
 .securityActionCopy {
   min-width: 0;
   display: grid;
-  gap: 0.18rem;
 }
 
 .securityActionCopy strong {
@@ -4415,17 +4414,6 @@
   font-size: 0.9rem;
   font-weight: 850;
   line-height: 1.25;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.securityActionCopy small {
-  min-width: 0;
-  overflow: hidden;
-  color: #607168;
-  font-size: 0.72rem;
-  font-weight: 650;
-  line-height: 1.35;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -4443,16 +4431,6 @@
 
 .dangerZoneCopy {
   min-width: 0;
-}
-
-.dangerZoneEyebrow {
-  display: block;
-  margin-bottom: 0.22rem;
-  color: #aa4141;
-  font-size: 0.66rem;
-  font-weight: 900;
-  letter-spacing: 0.055em;
-  text-transform: uppercase;
 }
 
 .dangerZone h2 {
