@@ -16,6 +16,10 @@ import { isMiddlemanAccountSubtype } from "../../lib/middleman-account";
 import styles from "./page.module.css";
 
 type NoticeTone = "success" | "error";
+type AccountNotice = {
+  tone: NoticeTone;
+  message: string;
+};
 type BusinessDetailsStep = 1 | 2 | 3;
 type PartnerDirectoryStep = 1 | 2 | 3;
 type AccountActionModal =
@@ -23,7 +27,8 @@ type AccountActionModal =
   | "scanPin"
   | "marketplace"
   | "discovery"
-  | "partnerDirectory";
+  | "partnerDirectory"
+  | "password";
 
 type AccountProfile = {
   userId: string;
@@ -181,7 +186,65 @@ type QuickActionIconName =
   | "showroom"
   | "discovery"
   | "directory"
+  | "security"
+  | "reset"
   | "delete";
+
+const ACCOUNT_DIALOG_FOCUSABLE_SELECTOR = [
+  "button:not([disabled])",
+  "[href]",
+  "input:not([disabled])",
+  "select:not([disabled])",
+  "textarea:not([disabled])",
+  '[tabindex]:not([tabindex="-1"])',
+].join(",");
+
+function getAccountDialogFocusableElements(dialog: HTMLElement): HTMLElement[] {
+  return Array.from(
+    dialog.querySelectorAll<HTMLElement>(ACCOUNT_DIALOG_FOCUSABLE_SELECTOR),
+  ).filter(
+    (element) =>
+      element.getAttribute("aria-hidden") !== "true" &&
+      element.getClientRects().length > 0,
+  );
+}
+
+function keepFocusInsideAccountDialog(
+  event: KeyboardEvent,
+  dialog: HTMLElement,
+) {
+  if (event.key !== "Tab") {
+    return;
+  }
+
+  const focusableElements = getAccountDialogFocusableElements(dialog);
+
+  if (!focusableElements.length) {
+    event.preventDefault();
+    dialog.focus();
+    return;
+  }
+
+  const firstElement = focusableElements[0];
+  const lastElement = focusableElements[focusableElements.length - 1];
+
+  if (!dialog.contains(document.activeElement)) {
+    event.preventDefault();
+    (event.shiftKey ? lastElement : firstElement).focus();
+    return;
+  }
+
+  if (event.shiftKey && document.activeElement === firstElement) {
+    event.preventDefault();
+    lastElement.focus();
+    return;
+  }
+
+  if (!event.shiftKey && document.activeElement === lastElement) {
+    event.preventDefault();
+    firstElement.focus();
+  }
+}
 
 function QuickActionIcon({ name }: { name: QuickActionIconName }) {
   const svgProps = {
@@ -382,6 +445,46 @@ function QuickActionIcon({ name }: { name: QuickActionIconName }) {
           />
           <circle {...strokeProps} cx="12" cy="10" r="2.35" />
           <path {...strokeProps} d="M8.4 18.55h7.2" />
+        </svg>
+      ) : null}
+
+      {name === "security" ? (
+        <svg {...svgProps}>
+          <path
+            d="M6.2 10.15V8.1a5.8 5.8 0 0 1 11.6 0v2.05"
+            fill="currentColor"
+            opacity="0.14"
+          />
+          <rect
+            x="4.8"
+            y="10.15"
+            width="14.4"
+            height="10"
+            rx="2.4"
+            fill="currentColor"
+            opacity="0.14"
+          />
+          <path {...strokeProps} d="M7.8 10.15V8.1a4.2 4.2 0 0 1 8.4 0v2.05" />
+          <rect {...strokeProps} x="4.8" y="10.15" width="14.4" height="10" rx="2.4" />
+          <circle cx="12" cy="14.65" r="1.05" fill="currentColor" />
+          <path {...strokeProps} d="M12 15.7v1.35" />
+        </svg>
+      ) : null}
+
+      {name === "reset" ? (
+        <svg {...svgProps}>
+          <rect
+            x="3.75"
+            y="5.5"
+            width="16.5"
+            height="13"
+            rx="2.35"
+            fill="currentColor"
+            opacity="0.14"
+          />
+          <rect {...strokeProps} x="3.75" y="5.5" width="16.5" height="13" rx="2.35" />
+          <path {...strokeProps} d="m5.25 7.35 6.75 5.1 6.75-5.1" />
+          <path {...strokeProps} d="M15.5 16.1h3.2M17.1 14.5v3.2" />
         </svg>
       ) : null}
 
@@ -1007,6 +1110,23 @@ function ModalStepProgress({
   );
 }
 
+function ModalInlineNotice({ notice }: { notice: AccountNotice | null }) {
+  if (!notice) {
+    return null;
+  }
+
+  return (
+    <div
+      className={`${styles.modalInlineNotice} ${notice.tone === "error" ? styles.modalInlineNoticeError : styles.modalInlineNoticeSuccess}`}
+      role={notice.tone === "error" ? "alert" : "status"}
+      aria-live={notice.tone === "error" ? "assertive" : "polite"}
+      aria-atomic="true"
+    >
+      {notice.message}
+    </div>
+  );
+}
+
 export default function AccountClient({
   initialProfile = null,
   initialScanPinStatus = null,
@@ -1023,10 +1143,9 @@ export default function AccountClient({
     );
   const [scanPinDraft, setScanPinDraft] = useState("");
   const [scanPinConfirmDraft, setScanPinConfirmDraft] = useState("");
-  const [notice, setNotice] = useState<{
-    tone: NoticeTone;
-    message: string;
-  } | null>(null);
+  const [notice, setNotice] = useState<AccountNotice | null>(null);
+  const [actionModalNotice, setActionModalNotice] =
+    useState<AccountNotice | null>(null);
   const [isLoading, setIsLoading] = useState(!initialProfile);
   const [isLoadingScanPin, setIsLoadingScanPin] = useState(
     !initialScanPinStatus,
@@ -1037,11 +1156,14 @@ export default function AccountClient({
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [deletePassword, setDeletePassword] = useState("");
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
+  const [deleteModalError, setDeleteModalError] = useState<string | null>(null);
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmNewPassword, setConfirmNewPassword] = useState("");
   const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [passwordModalNotice, setPasswordModalNotice] =
+    useState<AccountNotice | null>(null);
   const [isSendingResetEmail, setIsSendingResetEmail] = useState(false);
   const [isReadingLogo, setIsReadingLogo] = useState(false);
   const [activeAccountModal, setActiveAccountModal] =
@@ -1050,10 +1172,24 @@ export default function AccountClient({
     useState<BusinessDetailsStep>(1);
   const [partnerDirectoryStep, setPartnerDirectoryStep] =
     useState<PartnerDirectoryStep>(1);
+  const activeDialogRef = useRef<HTMLElement | null>(null);
+  const deleteDialogRef = useRef<HTMLElement | null>(null);
+  const activeDialogTriggerRef = useRef<HTMLElement | null>(null);
+  const deleteDialogTriggerRef = useRef<HTMLElement | null>(null);
+  const activeActionModalBusyRef = useRef(false);
+  const deleteDialogBusyRef = useRef(false);
   const partnerMapElementRef = useRef<HTMLDivElement | null>(null);
   const partnerLeafletMapRef = useRef<any>(null);
   const partnerPinMarkerRef = useRef<any>(null);
   const partnerRadiusCircleRef = useRef<any>(null);
+
+  activeActionModalBusyRef.current =
+    isSavingProfile ||
+    isReadingLogo ||
+    isSavingScanPin ||
+    isDisablingScanPin ||
+    isChangingPassword;
+  deleteDialogBusyRef.current = isDeletingAccount;
 
   useEffect(() => {
     let mounted = true;
@@ -1151,7 +1287,7 @@ export default function AccountClient({
   }, []);
 
   useEffect(() => {
-    if (!notice) return undefined;
+    if (!notice || notice.tone === "error") return undefined;
 
     const timeout = window.setTimeout(() => setNotice(null), 3200);
     return () => window.clearTimeout(timeout);
@@ -1162,56 +1298,84 @@ export default function AccountClient({
       return undefined;
     }
 
+    const dialog = deleteDialogRef.current;
+    const returnFocusTarget = deleteDialogTriggerRef.current;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
 
-    const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape" && !isDeletingAccount) {
-        setIsDeleteDialogOpen(false);
+    const focusFrame = window.requestAnimationFrame(() => {
+      const initialFocusTarget =
+        dialog?.querySelector<HTMLElement>("[autofocus]") ??
+        (dialog ? getAccountDialogFocusableElements(dialog)[0] : null) ??
+        dialog;
+      initialFocusTarget?.focus();
+    });
+
+    const handleDialogKeyDown = (event: KeyboardEvent) => {
+      if (dialog) {
+        keepFocusInsideAccountDialog(event, dialog);
+      }
+
+      if (event.key === "Escape" && !deleteDialogBusyRef.current) {
+        closeDeleteDialog();
       }
     };
 
-    document.addEventListener("keydown", handleEscape);
+    document.addEventListener("keydown", handleDialogKeyDown);
 
     return () => {
+      window.cancelAnimationFrame(focusFrame);
       document.body.style.overflow = previousOverflow;
-      document.removeEventListener("keydown", handleEscape);
+      document.removeEventListener("keydown", handleDialogKeyDown);
+      window.requestAnimationFrame(() => {
+        if (returnFocusTarget?.isConnected) {
+          returnFocusTarget.focus();
+        }
+      });
     };
-  }, [isDeleteDialogOpen, isDeletingAccount]);
+  }, [isDeleteDialogOpen]);
 
   useEffect(() => {
     if (!activeAccountModal) {
       return undefined;
     }
 
+    const dialog = activeDialogRef.current;
+    const returnFocusTarget = activeDialogTriggerRef.current;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
 
-    const handleEscape = (event: KeyboardEvent) => {
-      if (
-        event.key === "Escape" &&
-        !isSavingProfile &&
-        !isReadingLogo &&
-        !isSavingScanPin &&
-        !isDisablingScanPin
-      ) {
+    const focusFrame = window.requestAnimationFrame(() => {
+      const initialFocusTarget =
+        dialog?.querySelector<HTMLElement>("[autofocus]") ??
+        (dialog ? getAccountDialogFocusableElements(dialog)[0] : null) ??
+        dialog;
+      initialFocusTarget?.focus();
+    });
+
+    const handleDialogKeyDown = (event: KeyboardEvent) => {
+      if (dialog) {
+        keepFocusInsideAccountDialog(event, dialog);
+      }
+
+      if (event.key === "Escape" && !activeActionModalBusyRef.current) {
         closeActionModal();
       }
     };
 
-    document.addEventListener("keydown", handleEscape);
+    document.addEventListener("keydown", handleDialogKeyDown);
 
     return () => {
+      window.cancelAnimationFrame(focusFrame);
       document.body.style.overflow = previousOverflow;
-      document.removeEventListener("keydown", handleEscape);
+      document.removeEventListener("keydown", handleDialogKeyDown);
+      window.requestAnimationFrame(() => {
+        if (returnFocusTarget?.isConnected) {
+          returnFocusTarget.focus();
+        }
+      });
     };
-  }, [
-    activeAccountModal,
-    isDisablingScanPin,
-    isReadingLogo,
-    isSavingProfile,
-    isSavingScanPin,
-  ]);
+  }, [activeAccountModal]);
 
   const completedFields = useMemo(
     () => countCompletedFields(profileDraft),
@@ -1414,7 +1578,7 @@ export default function AccountClient({
         );
       } catch (error) {
         if (!cancelled) {
-          setNotice({
+          setActionModalNotice({
             tone: "error",
             message:
               error instanceof Error
@@ -1470,7 +1634,7 @@ export default function AccountClient({
 
   function handleUseCurrentLocation() {
     if (typeof navigator === "undefined" || !navigator.geolocation) {
-      setNotice({
+      setActionModalNotice({
         tone: "error",
         message: "Current location is not available in this browser.",
       });
@@ -1480,13 +1644,13 @@ export default function AccountClient({
     navigator.geolocation.getCurrentPosition(
       (position) => {
         setPartnerMapPin(position.coords.latitude, position.coords.longitude);
-        setNotice({
+        setActionModalNotice({
           tone: "success",
           message: "Map pin set. Continue to additional information when ready.",
         });
       },
       () => {
-        setNotice({
+        setActionModalNotice({
           tone: "error",
           message:
             "Could not read your current location. Drop the pin manually on the map.",
@@ -1509,12 +1673,15 @@ export default function AccountClient({
       .toLowerCase();
 
     if (!ALLOWED_LOGO_TYPES.has(fileType)) {
-      setNotice({ tone: "error", message: "Upload a JPG, PNG or WEBP logo." });
+      setActionModalNotice({
+        tone: "error",
+        message: "Upload a JPG, PNG or WEBP logo.",
+      });
       return;
     }
 
     if (file.size > MAX_LOGO_UPLOAD_BYTES) {
-      setNotice({
+      setActionModalNotice({
         tone: "error",
         message: `Logo must be ${formatUploadSize(MAX_LOGO_UPLOAD_BYTES)} or smaller.`,
       });
@@ -1526,12 +1693,12 @@ export default function AccountClient({
     try {
       const dataUrl = await readFileAsDataUrl(file);
       setProfileDraft((current) => ({ ...current, logoUrl: dataUrl }));
-      setNotice({
+      setActionModalNotice({
         tone: "success",
         message: "Logo ready. Save the business details to apply it.",
       });
     } catch (error) {
-      setNotice({
+      setActionModalNotice({
         tone: "error",
         message:
           error instanceof Error ? error.message : "Failed to read image file.",
@@ -1543,7 +1710,7 @@ export default function AccountClient({
 
   function handleRemoveLogo() {
     setProfileDraft((current) => ({ ...current, logoUrl: "" }));
-    setNotice({
+    setActionModalNotice({
       tone: "success",
       message: "Logo removed from the draft. Save to apply the change.",
     });
@@ -1555,6 +1722,7 @@ export default function AccountClient({
     options?: { syncPrimaryLogoToRegister?: boolean },
   ): Promise<boolean> {
     setIsSavingProfile(true);
+    setActionModalNotice(null);
 
     const nextLogoUrl = nextDraft.logoUrl.trim();
     const currentLogoUrl = (profile?.logoUrl ?? "").trim();
@@ -1590,7 +1758,7 @@ export default function AccountClient({
       setNotice({ tone: "success", message: successMessage });
       return true;
     } catch (error) {
-      setNotice({
+      setActionModalNotice({
         tone: "error",
         message:
           error instanceof Error
@@ -1642,22 +1810,29 @@ export default function AccountClient({
 
   async function handleScanPinSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    setActionModalNotice(null);
 
     const normalizedPin = normalizePinInput(scanPinDraft);
     const normalizedConfirmPin = normalizePinInput(scanPinConfirmDraft);
 
     if (!normalizedPin) {
-      setNotice({ tone: "error", message: "Enter a scan PIN." });
+      setActionModalNotice({ tone: "error", message: "Enter a scan PIN." });
       return;
     }
 
     if (normalizedPin.length < 4 || normalizedPin.length > 8) {
-      setNotice({ tone: "error", message: "Scan PIN must be 4 to 8 digits." });
+      setActionModalNotice({
+        tone: "error",
+        message: "Scan PIN must be 4 to 8 digits.",
+      });
       return;
     }
 
     if (normalizedPin !== normalizedConfirmPin) {
-      setNotice({ tone: "error", message: "Scan PINs do not match." });
+      setActionModalNotice({
+        tone: "error",
+        message: "Scan PINs do not match.",
+      });
       return;
     }
 
@@ -1694,7 +1869,7 @@ export default function AccountClient({
         message: "Scan PIN saved. QR scan access is now active.",
       });
     } catch (error) {
-      setNotice({
+      setActionModalNotice({
         tone: "error",
         message:
           error instanceof Error ? error.message : "Failed to save scan PIN.",
@@ -1706,6 +1881,7 @@ export default function AccountClient({
 
   async function handleDisableScanPin() {
     setIsDisablingScanPin(true);
+    setActionModalNotice(null);
 
     try {
       const response = await fetch("/api/account-profile/scan-pin", {
@@ -1728,7 +1904,7 @@ export default function AccountClient({
       setActiveAccountModal(null);
       setNotice({ tone: "success", message: "Scan PIN disabled." });
     } catch (error) {
-      setNotice({
+      setActionModalNotice({
         tone: "error",
         message:
           error instanceof Error
@@ -1741,13 +1917,24 @@ export default function AccountClient({
   }
 
   function closeDeleteDialog() {
-    if (isDeletingAccount) {
+    if (deleteDialogBusyRef.current) {
       return;
     }
 
     setIsDeleteDialogOpen(false);
     setDeletePassword("");
     setDeleteConfirmText("");
+    setDeleteModalError(null);
+  }
+
+  function openDeleteDialog() {
+    activeDialogTriggerRef.current = null;
+    deleteDialogTriggerRef.current =
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null;
+    setDeleteModalError(null);
+    setIsDeleteDialogOpen(true);
   }
 
   function destroyPartnerMap() {
@@ -1760,12 +1947,7 @@ export default function AccountClient({
   }
 
   function closeActionModal() {
-    if (
-      isSavingProfile ||
-      isReadingLogo ||
-      isSavingScanPin ||
-      isDisablingScanPin
-    ) {
+    if (activeActionModalBusyRef.current) {
       return;
     }
 
@@ -1777,6 +1959,11 @@ export default function AccountClient({
 
     setScanPinDraft("");
     setScanPinConfirmDraft("");
+    setCurrentPassword("");
+    setNewPassword("");
+    setConfirmNewPassword("");
+    setPasswordModalNotice(null);
+    setActionModalNotice(null);
     setBusinessDetailsStep(1);
     setPartnerDirectoryStep(1);
     setActiveAccountModal(null);
@@ -1784,6 +1971,12 @@ export default function AccountClient({
 
   function openActionModal(modal: AccountActionModal) {
     destroyPartnerMap();
+    setActionModalNotice(null);
+
+    activeDialogTriggerRef.current =
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null;
 
     if (profile) {
       setProfileDraft(buildProfileDraft(profile));
@@ -1796,6 +1989,13 @@ export default function AccountClient({
 
     if (modal === "business") {
       setBusinessDetailsStep(1);
+    }
+
+    if (modal === "password") {
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmNewPassword("");
+      setPasswordModalNotice(null);
     }
 
     if (modal === "partnerDirectory") {
@@ -1853,16 +2053,24 @@ export default function AccountClient({
     openActionModal("partnerDirectory");
   }
 
+  function openPasswordEditor() {
+    openActionModal("password");
+  }
+
   async function handlePasswordChangeSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    setPasswordModalNotice(null);
 
     if (!currentPassword.trim()) {
-      setNotice({ tone: "error", message: "Enter your current password." });
+      setPasswordModalNotice({
+        tone: "error",
+        message: "Enter your current password.",
+      });
       return;
     }
 
     if (newPassword.length < 8) {
-      setNotice({
+      setPasswordModalNotice({
         tone: "error",
         message: "New password must be at least 8 characters.",
       });
@@ -1870,7 +2078,10 @@ export default function AccountClient({
     }
 
     if (newPassword !== confirmNewPassword) {
-      setNotice({ tone: "error", message: "New passwords do not match." });
+      setPasswordModalNotice({
+        tone: "error",
+        message: "New passwords do not match.",
+      });
       return;
     }
 
@@ -1901,9 +2112,11 @@ export default function AccountClient({
       setCurrentPassword("");
       setNewPassword("");
       setConfirmNewPassword("");
+      setPasswordModalNotice(null);
+      setActiveAccountModal(null);
       setNotice({ tone: "success", message: "Password changed successfully." });
     } catch (error) {
-      setNotice({
+      setPasswordModalNotice({
         tone: "error",
         message:
           error instanceof Error ? error.message : "Failed to change password.",
@@ -1967,20 +2180,15 @@ export default function AccountClient({
 
   async function handleDeleteAccount(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    setDeleteModalError(null);
 
     if (!deletePassword.trim()) {
-      setNotice({
-        tone: "error",
-        message: "Enter your password to delete this account.",
-      });
+      setDeleteModalError("Enter your password to delete this account.");
       return;
     }
 
     if (deleteConfirmText.trim().toUpperCase() !== "DELETE") {
-      setNotice({
-        tone: "error",
-        message: "Type DELETE to confirm account removal.",
-      });
+      setDeleteModalError("Type DELETE to confirm account removal.");
       return;
     }
 
@@ -2015,16 +2223,15 @@ export default function AccountClient({
       setIsDeleteDialogOpen(false);
       setDeletePassword("");
       setDeleteConfirmText("");
+      setDeleteModalError(null);
 
       window.setTimeout(() => {
         window.location.assign("/");
       }, 700);
     } catch (error) {
-      setNotice({
-        tone: "error",
-        message:
-          error instanceof Error ? error.message : "Failed to delete account.",
-      });
+      setDeleteModalError(
+        error instanceof Error ? error.message : "Failed to delete account.",
+      );
     } finally {
       setIsDeletingAccount(false);
     }
@@ -2037,23 +2244,31 @@ export default function AccountClient({
       <section className={styles.shell}>
         <section className={styles.accountHero}>
           <div className={styles.heroIdentityGroup}>
-            <label
-              className={`${styles.heroAvatar} ${logoUrl ? styles.heroAvatarWithLogo : ""}`}
-              title="Upload account logo"
-              aria-label="Upload account logo"
-            >
-              <input
-                type="file"
-                accept="image/jpeg,image/png,image/webp"
-                onChange={handleLogoFileChange}
-                disabled={isReadingLogo || isSavingProfile}
-              />
-              {logoUrl ? (
-                <img src={logoUrl} alt="Business logo" />
-              ) : (
-                <span>{profileInitials}</span>
-              )}
-            </label>
+            <div className={styles.heroAvatarControl}>
+              <label
+                className={`${styles.heroAvatar} ${logoUrl ? styles.heroAvatarWithLogo : ""}`}
+                title="Upload account logo"
+                aria-label="Upload account logo"
+              >
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  onChange={handleLogoFileChange}
+                  disabled={isReadingLogo || isSavingProfile}
+                />
+                {logoUrl ? (
+                  <img src={logoUrl} alt="Business logo" />
+                ) : (
+                  <span>{profileInitials}</span>
+                )}
+              </label>
+              <span className={styles.heroAvatarEditBadge} aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none">
+                  <path d="M8 7.25 9.2 5.5h5.6L16 7.25h2.25A1.75 1.75 0 0 1 20 9v8.25A1.75 1.75 0 0 1 18.25 19H5.75A1.75 1.75 0 0 1 4 17.25V9a1.75 1.75 0 0 1 1.75-1.75H8Z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
+                  <circle cx="12" cy="13" r="3.15" stroke="currentColor" strokeWidth="1.8" />
+                </svg>
+              </span>
+            </div>
 
             <div className={styles.heroCopy}>
               <h1>{accountDisplayName}</h1>
@@ -2077,16 +2292,34 @@ export default function AccountClient({
         {notice ? (
           <div
             className={`${styles.notice} ${notice.tone === "success" ? styles.noticeSuccess : styles.noticeError}`}
+            role={notice.tone === "error" ? "alert" : "status"}
+            aria-live={notice.tone === "error" ? "assertive" : "polite"}
+            aria-atomic="true"
           >
-            {notice.message}
+            <span>{notice.message}</span>
+            {notice.tone === "error" ? (
+              <button
+                type="button"
+                className={styles.noticeDismissButton}
+                onClick={() => setNotice(null)}
+                aria-label="Dismiss account message"
+              >
+                ×
+              </button>
+            ) : null}
           </div>
         ) : null}
 
-        <section className={styles.topGrid}>
+        <section className={styles.accountDashboard}>
           <section className={`${styles.card} ${styles.overviewCard}`}>
-            <div className={styles.compactCardHeader}>
-              <h2>Account overview</h2>
-              <p>Your account at a glance</p>
+            <div className={`${styles.compactCardHeader} ${styles.overviewHeader}`}>
+              <div>
+                <h2>Account overview</h2>
+                <p>Your essential account settings at a glance</p>
+              </div>
+              <span className={styles.overviewUpdated}>
+                Last updated <strong>{updatedLabel}</strong>
+              </span>
             </div>
 
             <div className={styles.metricGrid}>
@@ -2106,7 +2339,15 @@ export default function AccountClient({
                   {completedFields}/{PROFILE_COMPLETION_TOTAL}
                 </strong>
                 <small>{completionPercentage}% complete</small>
-                <div className={styles.progressTrack} aria-hidden="true">
+                <div
+                  className={styles.progressTrack}
+                  role="progressbar"
+                  aria-label="Profile completion"
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-valuenow={completionPercentage}
+                  aria-valuetext={`${completionPercentage}% complete`}
+                >
                   <span style={{ width: `${completionPercentage}%` }} />
                 </div>
               </div>
@@ -2119,11 +2360,6 @@ export default function AccountClient({
                   {isOwnerAccount ? scanPinDisplayLabel : directoryStatusLabel}
                 </strong>
               </div>
-
-              <div className={styles.metricTile}>
-                <span>Last updated</span>
-                <strong>{updatedLabel}</strong>
-              </div>
             </div>
           </section>
 
@@ -2133,266 +2369,372 @@ export default function AccountClient({
               <p>Frequently used actions</p>
             </div>
 
-            <div className={styles.quickActionList}>
+            <div className={styles.quickActionGroups}>
+              <section
+                className={styles.quickActionGroup}
+                aria-labelledby="account-assets-actions-title"
+              >
+                <div className={styles.quickActionGroupHeader}>
+                  <h3 id="account-assets-actions-title">Account &amp; assets</h3>
+                  <p>Profile, registers and secure asset access</p>
+                </div>
+
+                <div className={styles.quickActionList}>
+                  <button
+                    type="button"
+                    className={styles.quickActionButton}
+                    onClick={openBusinessEditor}
+                  >
+                    <QuickActionIcon name="business" />
+                    <strong>Edit business details</strong>
+                    <span className={styles.quickActionChevron} aria-hidden="true">›</span>
+                  </button>
+
+                  {isAssetRegisterAccount ? (
+                    <button
+                      type="button"
+                      className={styles.quickActionButton}
+                      onClick={openAssetRegistersPage}
+                    >
+                      <QuickActionIcon name="registers" />
+                      <strong>Manage asset registers</strong>
+                      <span className={styles.quickActionChevron} aria-hidden="true">›</span>
+                    </button>
+                  ) : null}
+
+                  {isAssetRegisterAccount ? (
+                    <button
+                      type="button"
+                      className={styles.quickActionButton}
+                      onClick={openAssetTransfersPage}
+                    >
+                      <QuickActionIcon name="claim" />
+                      <strong>Claim or send an asset</strong>
+                      <span className={styles.quickActionChevron} aria-hidden="true">›</span>
+                    </button>
+                  ) : null}
+
+                  {showScanPinControls ? (
+                    <button
+                      type="button"
+                      className={styles.quickActionButton}
+                      onClick={openScanPinEditor}
+                    >
+                      <QuickActionIcon name="pin" />
+                      <strong>Update QR PIN</strong>
+                      <span className={styles.quickActionChevron} aria-hidden="true">›</span>
+                    </button>
+                  ) : null}
+                </div>
+              </section>
+
+              <section
+                className={styles.quickActionGroup}
+                aria-labelledby="apps-visibility-actions-title"
+              >
+                <div className={styles.quickActionGroupHeader}>
+                  <h3 id="apps-visibility-actions-title">Apps &amp; visibility</h3>
+                  <p>People, marketplace and Discovery settings</p>
+                </div>
+
+                <div className={styles.quickActionList}>
+                  {isOwnerAccount ? (
+                    <button
+                      type="button"
+                      className={styles.quickActionButton}
+                      onClick={openFieldManagerPage}
+                    >
+                      <QuickActionIcon name="fieldManager" />
+                      <strong>Manage Field Manager access</strong>
+                      <span className={styles.quickActionChevron} aria-hidden="true">›</span>
+                    </button>
+                  ) : null}
+
+                  {isOwnerAccount ? (
+                    <button
+                      type="button"
+                      className={styles.quickActionButton}
+                      onClick={openOwnerAppAccessPage}
+                    >
+                      <QuickActionIcon name="ownerApp" />
+                      <strong>Manage Owner App access</strong>
+                      <span className={styles.quickActionChevron} aria-hidden="true">›</span>
+                    </button>
+                  ) : null}
+
+                  {isDealerAccount ? (
+                    <button
+                      type="button"
+                      className={styles.quickActionButton}
+                      onClick={openDealerAppAccessPage}
+                    >
+                      <QuickActionIcon name="dealer" />
+                      <strong>{isMiddlemanAccount ? "Middleman app access" : "Manage Dealer App staff"}</strong>
+                      <span className={styles.quickActionChevron} aria-hidden="true">›</span>
+                    </button>
+                  ) : null}
+
+                  {showMarketplaceContact ? (
+                    <button
+                      type="button"
+                      className={styles.quickActionButton}
+                      onClick={openMarketplaceEditor}
+                    >
+                      <QuickActionIcon name="marketplace" />
+                      <strong>Marketplace contact details</strong>
+                      <span className={styles.quickActionChevron} aria-hidden="true">›</span>
+                    </button>
+                  ) : null}
+
+                  {isOwnerAccount ? (
+                    <Link href="/my-showroom" className={styles.quickActionButton}>
+                      <QuickActionIcon name="showroom" />
+                      <strong>Manage my showroom</strong>
+                      <span className={styles.quickActionChevron} aria-hidden="true">›</span>
+                    </Link>
+                  ) : null}
+
+                  {isOwnerAccount ? (
+                    <button
+                      type="button"
+                      className={styles.quickActionButton}
+                      onClick={openDiscoveryEditor}
+                    >
+                      <QuickActionIcon name="discovery" />
+                      <strong>Discovery settings</strong>
+                      <span className={styles.quickActionChevron} aria-hidden="true">›</span>
+                    </button>
+                  ) : null}
+
+                  {showPartnerDirectory ? (
+                    <button
+                      type="button"
+                      className={styles.quickActionButton}
+                      onClick={openPartnerDirectory}
+                    >
+                      <QuickActionIcon name="directory" />
+                      <strong>Partner directory</strong>
+                      <span className={styles.quickActionChevron} aria-hidden="true">›</span>
+                    </button>
+                  ) : null}
+                </div>
+              </section>
+            </div>
+          </section>
+
+          <section
+            className={`${styles.card} ${styles.securityCard}`}
+            aria-labelledby="password-security-title"
+          >
+            <div className={styles.compactCardHeader}>
+              <h2 id="password-security-title">Password & security</h2>
+              <p>Keep control of your sign-in without cluttering your dashboard.</p>
+            </div>
+
+            <div className={styles.securityActionsGrid}>
               <button
                 type="button"
-                className={styles.quickActionButton}
-                onClick={openBusinessEditor}
+                className={styles.securityActionCard}
+                onClick={openPasswordEditor}
               >
-                <QuickActionIcon name="business" />
-                <strong>Edit business details</strong>
-                <span className={styles.quickActionChevron}>›</span>
+                <QuickActionIcon name="security" />
+                <span className={styles.securityActionCopy}>
+                  <strong>Change password</strong>
+                  <small>Update it securely using your current password</small>
+                </span>
+                <span className={styles.quickActionChevron} aria-hidden="true">›</span>
               </button>
 
-              {isAssetRegisterAccount ? (
-                <button
-                  type="button"
-                  className={styles.quickActionButton}
-                  onClick={openAssetRegistersPage}
-                >
-                  <QuickActionIcon name="registers" />
-                  <strong>Manage multiple asset registers</strong>
-                  <span className={styles.quickActionChevron}>›</span>
-                </button>
-              ) : null}
-
-              {isAssetRegisterAccount ? (
-                <button
-                  type="button"
-                  className={styles.quickActionButton}
-                  onClick={openAssetTransfersPage}
-                >
-                  <QuickActionIcon name="claim" />
-                  <strong>Claim or send an asset</strong>
-                  <span className={styles.quickActionChevron}>›</span>
-                </button>
-              ) : null}
-
-              {showScanPinControls ? (
-                <button
-                  type="button"
-                  className={styles.quickActionButton}
-                  onClick={openScanPinEditor}
-                >
-                  <QuickActionIcon name="pin" />
-                  <strong>Update QR PIN</strong>
-                  <span className={styles.quickActionChevron}>›</span>
-                </button>
-              ) : null}
-
-              {isOwnerAccount ? (
-                <button
-                  type="button"
-                  className={styles.quickActionButton}
-                  onClick={openFieldManagerPage}
-                >
-                  <QuickActionIcon name="fieldManager" />
-                  <strong>Field manager app</strong>
-                  <span className={styles.quickActionChevron}>›</span>
-                </button>
-              ) : null}
-
-              {isOwnerAccount ? (
-                <button
-                  type="button"
-                  className={styles.quickActionButton}
-                  onClick={openOwnerAppAccessPage}
-                >
-                  <QuickActionIcon name="ownerApp" />
-                  <strong>Owner app</strong>
-                  <span className={styles.quickActionChevron}>›</span>
-                </button>
-              ) : null}
-
-              {isDealerAccount ? (
-                <button
-                  type="button"
-                  className={styles.quickActionButton}
-                  onClick={openDealerAppAccessPage}
-                >
-                  <QuickActionIcon name="dealer" />
-                  <strong>{isMiddlemanAccount ? 'Middleman app access' : 'Manage Dealer App staff'}</strong>
-                  <span className={styles.quickActionChevron}>›</span>
-                </button>
-              ) : null}
-
-              {showMarketplaceContact ? (
-                <button
-                  type="button"
-                  className={styles.quickActionButton}
-                  onClick={openMarketplaceEditor}
-                >
-                  <QuickActionIcon name="marketplace" />
-                  <strong>Marketplace contact</strong>
-                  <span className={styles.quickActionChevron}>›</span>
-                </button>
-              ) : null}
-
-              {isOwnerAccount ? (
-                <Link href="/my-showroom" className={styles.quickActionButton}>
-                  <QuickActionIcon name="showroom" />
-                  <strong>Manage my showroom</strong>
-                  <span className={styles.quickActionChevron}>›</span>
-                </Link>
-              ) : null}
-
-              {isOwnerAccount ? (
-                <button
-                  type="button"
-                  className={styles.quickActionButton}
-                  onClick={openDiscoveryEditor}
-                >
-                  <QuickActionIcon name="discovery" />
-                  <strong>Discovery participation</strong>
-                  <span className={styles.quickActionChevron}>›</span>
-                </button>
-              ) : null}
-
-              {showPartnerDirectory ? (
-                <button
-                  type="button"
-                  className={styles.quickActionButton}
-                  onClick={openPartnerDirectory}
-                >
-                  <QuickActionIcon name="directory" />
-                  <strong>Partner directory</strong>
-                  <span className={styles.quickActionChevron}>›</span>
-                </button>
-              ) : null}
-
               <button
                 type="button"
-                className={`${styles.quickActionButton} ${styles.quickActionDanger}`}
-                onClick={() => setIsDeleteDialogOpen(true)}
+                className={styles.securityActionCard}
+                onClick={handleSendSelfResetEmail}
+                disabled={isSendingResetEmail || !profile?.email}
               >
-                <QuickActionIcon name="delete" />
-                <strong>Delete account</strong>
-                <span className={styles.quickActionChevron}>›</span>
+                <QuickActionIcon name="reset" />
+                <span className={styles.securityActionCopy}>
+                  <strong>
+                    {isSendingResetEmail ? "Sending reset link..." : "Email a reset link"}
+                  </strong>
+                  <small>{profile?.email || "Your account email"}</small>
+                </span>
+                <span className={styles.quickActionChevron} aria-hidden="true">›</span>
               </button>
             </div>
           </section>
         </section>
 
         <section
-          className={`${styles.card} ${styles.securityCard}`}
-          aria-labelledby="password-security-title"
+          className={`${styles.card} ${styles.accountDeleteCard} ${styles.dangerZone}`}
+          aria-labelledby="danger-zone-title"
         >
-          <div className={styles.compactCardHeader}>
-            <h2 id="password-security-title">Password & security</h2>
+          <div className={styles.dangerZoneCopy}>
+            <span className={styles.dangerZoneEyebrow}>Danger zone</span>
+            <h2 id="danger-zone-title">Delete account</h2>
             <p>
-              Update it here when you know the current password, or request a
-              secure email link if you do not.
+              Permanently remove your Aim4price account and its saved workspace data.
             </p>
           </div>
 
-          <div className={styles.securityGrid}>
-            <form
-              className={`${styles.securityForm} ${styles.securityPanel}`}
-              onSubmit={handlePasswordChangeSubmit}
-              noValidate
-            >
-              <div className={styles.securityPanelHeader}>
-                <span className={styles.securityPanelIcon} aria-hidden="true">•••</span>
-                <div>
-                  <strong>Change password</strong>
-                  <p>All three fields are required.</p>
-                </div>
-              </div>
-
-              <label className={styles.modalField}>
-                <span>Current password</span>
-                <input
-                  type="password"
-                  autoComplete="current-password"
-                  required
-                  value={currentPassword}
-                  onChange={(event) => setCurrentPassword(event.target.value)}
-                  placeholder="Enter current password"
-                />
-              </label>
-
-              <label className={styles.modalField}>
-                <span>New password</span>
-                <input
-                  type="password"
-                  autoComplete="new-password"
-                  minLength={8}
-                  required
-                  value={newPassword}
-                  onChange={(event) => setNewPassword(event.target.value)}
-                  placeholder="Minimum 8 characters"
-                />
-                <small className={styles.securityFieldHint}>
-                  Use at least 8 characters and avoid reusing an old password.
-                </small>
-              </label>
-
-              <label className={styles.modalField}>
-                <span>Confirm new password</span>
-                <input
-                  type="password"
-                  autoComplete="new-password"
-                  minLength={8}
-                  required
-                  value={confirmNewPassword}
-                  onChange={(event) =>
-                    setConfirmNewPassword(event.target.value)
-                  }
-                  placeholder="Repeat new password"
-                  aria-invalid={!passwordsMatch}
-                />
-                {!passwordsMatch ? (
-                  <small className={styles.securityFieldError} role="alert">
-                    The new passwords do not match.
-                  </small>
-                ) : null}
-              </label>
-
-              <div className={styles.securityActions}>
-                <button
-                  type="submit"
-                  className={styles.primaryButton}
-                  disabled={!canSubmitPasswordChange}
-                >
-                  {isChangingPassword
-                    ? "Updating password..."
-                    : "Update password"}
-                </button>
-              </div>
-            </form>
-
-            <div className={`${styles.securitySidePanel} ${styles.securityPanel}`}>
-              <div className={styles.securityPanelHeader}>
-                <span className={styles.securityPanelIcon} aria-hidden="true">↗</span>
-                <div>
-                  <strong>Forgot your current password?</strong>
-                  <p>We will email a secure reset link to:</p>
-                </div>
-              </div>
-              <span className={styles.securityEmail}>{profile?.email || "Your account email"}</span>
-              <p>The link expires automatically and can only be used once.</p>
-              <button
-                type="button"
-                className={styles.ghostButton}
-                onClick={handleSendSelfResetEmail}
-                disabled={isSendingResetEmail || !profile?.email}
-              >
-                {isSendingResetEmail
-                  ? "Sending..."
-                  : "Email me a reset link"}
-              </button>
-            </div>
-          </div>
+          <button
+            type="button"
+            className={`${styles.dangerButton} ${styles.dangerZoneButton}`}
+            onClick={openDeleteDialog}
+          >
+            <QuickActionIcon name="delete" />
+            <span>Delete account</span>
+          </button>
         </section>
       </section>
+
+      {activeAccountModal === "password" ? (
+        <div className={styles.modalBackdrop} onClick={closeActionModal}>
+          <section
+            ref={activeDialogRef}
+            className={`${styles.modalCard} ${styles.accountActionModalCardNarrow} ${styles.accountScrollableModalCard} ${styles.passwordModalCard}`}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="change-password-modal-title"
+            aria-describedby="change-password-modal-description"
+            tabIndex={-1}
+            onClick={(event) => event.stopPropagation()}
+          >
+            <AccountModalScroller>
+              <div className={styles.modalHeader}>
+                <h2 id="change-password-modal-title">Change password</h2>
+                <p id="change-password-modal-description">
+                  Use your current password to protect your Aim4price account.
+                </p>
+                <button
+                  type="button"
+                  className={styles.modalCloseButton}
+                  onClick={closeActionModal}
+                  aria-label="Close password editor"
+                  disabled={isChangingPassword}
+                >
+                  ×
+                </button>
+              </div>
+
+              <div className={styles.passwordModalIntro}>
+                <QuickActionIcon name="security" />
+                <div>
+                  <strong>Secure every signed-in device</strong>
+                  <p>Updating your password signs out your other active sessions.</p>
+                </div>
+              </div>
+
+              {passwordModalNotice ? (
+                <div
+                  className={`${styles.modalInlineNotice} ${passwordModalNotice.tone === "error" ? styles.modalInlineNoticeError : styles.modalInlineNoticeSuccess}`}
+                  role={passwordModalNotice.tone === "error" ? "alert" : "status"}
+                  aria-live={passwordModalNotice.tone === "error" ? "assertive" : "polite"}
+                  aria-atomic="true"
+                >
+                  {passwordModalNotice.message}
+                </div>
+              ) : null}
+
+              <form
+                className={`${styles.modalForm} ${styles.passwordModalForm}`}
+                onSubmit={handlePasswordChangeSubmit}
+                noValidate
+              >
+                <label className={styles.modalField}>
+                  <span>Current password</span>
+                  <input
+                    type="password"
+                    autoComplete="current-password"
+                    required
+                    autoFocus
+                    value={currentPassword}
+                    onChange={(event) => {
+                      setCurrentPassword(event.target.value);
+                      setPasswordModalNotice(null);
+                    }}
+                    placeholder="Enter current password"
+                  />
+                </label>
+
+                <label className={styles.modalField}>
+                  <span>New password</span>
+                  <input
+                    type="password"
+                    autoComplete="new-password"
+                    minLength={8}
+                    required
+                    value={newPassword}
+                    onChange={(event) => {
+                      setNewPassword(event.target.value);
+                      setPasswordModalNotice(null);
+                    }}
+                    placeholder="Minimum 8 characters"
+                    aria-describedby="password-requirements"
+                  />
+                  <small id="password-requirements" className={styles.securityFieldHint}>
+                    Use at least 8 characters and avoid reusing an old password.
+                  </small>
+                </label>
+
+                <label className={styles.modalField}>
+                  <span>Confirm new password</span>
+                  <input
+                    type="password"
+                    autoComplete="new-password"
+                    minLength={8}
+                    required
+                    value={confirmNewPassword}
+                    onChange={(event) => {
+                      setConfirmNewPassword(event.target.value);
+                      setPasswordModalNotice(null);
+                    }}
+                    placeholder="Repeat new password"
+                    aria-invalid={!passwordsMatch}
+                    aria-describedby={!passwordsMatch ? "password-match-error" : undefined}
+                  />
+                  {!passwordsMatch ? (
+                    <small
+                      id="password-match-error"
+                      className={styles.securityFieldError}
+                      role="alert"
+                    >
+                      The new passwords do not match.
+                    </small>
+                  ) : null}
+                </label>
+
+                <div className={styles.modalActions}>
+                  <button
+                    type="button"
+                    className={styles.ghostButton}
+                    onClick={closeActionModal}
+                    disabled={isChangingPassword}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className={styles.primaryButton}
+                    disabled={!canSubmitPasswordChange}
+                  >
+                    {isChangingPassword ? "Updating password..." : "Update password"}
+                  </button>
+                </div>
+              </form>
+            </AccountModalScroller>
+          </section>
+        </div>
+      ) : null}
 
       {activeAccountModal === "business" ? (
         <div className={styles.modalBackdrop} onClick={closeActionModal}>
           <section
+            ref={activeDialogRef}
             className={`${styles.modalCard} ${styles.accountActionModalCard} ${styles.accountScrollableModalCard} ${styles.businessDetailsModalCard}`}
             role="dialog"
             aria-modal="true"
             aria-labelledby="business-details-modal-title"
+            tabIndex={-1}
             onClick={(event) => event.stopPropagation()}
           >
             <AccountModalScroller>
@@ -2404,6 +2746,8 @@ export default function AccountClient({
                 </p>
                 <button type="button" className={styles.modalCloseButton} onClick={closeActionModal} aria-label="Close business details">×</button>
               </div>
+
+              <ModalInlineNotice notice={actionModalNotice} />
 
               <ModalStepProgress
                 currentStep={businessDetailsStep}
@@ -2545,10 +2889,12 @@ export default function AccountClient({
       {activeAccountModal === "scanPin" ? (
         <div className={styles.modalBackdrop} onClick={closeActionModal}>
           <section
+            ref={activeDialogRef}
             className={`${styles.modalCard} ${styles.accountActionModalCard} ${styles.accountActionModalCardNarrow} ${styles.accountScrollableModalCard} ${styles.scanPinModalCard}`}
             role="dialog"
             aria-modal="true"
             aria-labelledby="scan-pin-modal-title"
+            tabIndex={-1}
             onClick={(event) => event.stopPropagation()}
           >
             <AccountModalScroller>
@@ -2559,6 +2905,8 @@ export default function AccountClient({
                 </p>
                 <button type="button" className={styles.modalCloseButton} onClick={closeActionModal} aria-label="Close QR PIN editor">×</button>
               </div>
+
+              <ModalInlineNotice notice={actionModalNotice} />
 
             <div className={styles.pinModalStatus}>
               <span>Current PIN status</span>
@@ -2648,10 +2996,12 @@ export default function AccountClient({
       {activeAccountModal === "marketplace" ? (
         <div className={styles.modalBackdrop} onClick={closeActionModal}>
           <section
+            ref={activeDialogRef}
             className={`${styles.modalCard} ${styles.accountActionModalCard} ${styles.accountScrollableModalCard} ${styles.marketplaceModalCard}`}
             role="dialog"
             aria-modal="true"
             aria-labelledby="marketplace-contact-modal-title"
+            tabIndex={-1}
             onClick={(event) => event.stopPropagation()}
           >
             <AccountModalScroller>
@@ -2663,6 +3013,8 @@ export default function AccountClient({
                 </p>
                 <button type="button" className={styles.modalCloseButton} onClick={closeActionModal} aria-label="Close marketplace contact editor">×</button>
               </div>
+
+              <ModalInlineNotice notice={actionModalNotice} />
 
               {isLoading ? (
               <p className={styles.loading}>Loading marketplace contact...</p>
@@ -2759,10 +3111,12 @@ export default function AccountClient({
           onClick={closeActionModal}
         >
           <section
+            ref={activeDialogRef}
             className={`${styles.modalCard} ${styles.accountActionModalCardNarrow} ${styles.accountScrollableModalCard} ${styles.discoveryModalCard}`}
             role="dialog"
             aria-modal="true"
             aria-labelledby="discovery-participation-modal-title"
+            tabIndex={-1}
             onClick={(event) => event.stopPropagation()}
           >
             <AccountModalScroller>
@@ -2784,9 +3138,11 @@ export default function AccountClient({
                 </button>
               </div>
 
+              <ModalInlineNotice notice={actionModalNotice} />
+
               <form className={styles.modalForm} onSubmit={handleProfileSubmit}>
                 <label
-                  className={`${styles.toggleField} ${styles.discoveryParticipationToggle}`}
+                  className={styles.toggleField}
                 >
                   <input
                     type="checkbox"
@@ -2842,10 +3198,12 @@ export default function AccountClient({
       {activeAccountModal === "partnerDirectory" && showPartnerDirectory ? (
         <div className={styles.modalBackdrop} onClick={closeActionModal}>
           <section
+            ref={activeDialogRef}
             className={`${styles.modalCard} ${styles.accountActionModalCard} ${styles.accountScrollableModalCard} ${styles.partnerDirectoryModalCard}`}
             role="dialog"
             aria-modal="true"
             aria-labelledby="partner-directory-modal-title"
+            tabIndex={-1}
             onClick={(event) => event.stopPropagation()}
           >
             <AccountModalScroller>
@@ -2857,6 +3215,8 @@ export default function AccountClient({
                 </p>
                 <button type="button" className={styles.modalCloseButton} onClick={closeActionModal} aria-label="Close partner directory editor">×</button>
               </div>
+
+              <ModalInlineNotice notice={actionModalNotice} />
 
               <ModalStepProgress
                 currentStep={partnerDirectoryStep}
@@ -2987,21 +3347,43 @@ export default function AccountClient({
       {isDeleteDialogOpen ? (
         <div className={styles.modalBackdrop} onClick={closeDeleteDialog}>
           <section
+            ref={deleteDialogRef}
             className={`${styles.modalCard} ${styles.accountActionModalCardNarrow} ${styles.accountScrollableModalCard} ${styles.deleteAccountModalCard}`}
-            role="dialog"
+            role="alertdialog"
             aria-modal="true"
             aria-labelledby="delete-account-modal-title"
+            aria-describedby="delete-account-modal-description"
+            tabIndex={-1}
             onClick={(event) => event.stopPropagation()}
           >
             <AccountModalScroller>
               <div className={styles.modalHeader}>
                 <h2 id="delete-account-modal-title">Confirm permanent removal</h2>
-                <p>
+                <p id="delete-account-modal-description">
                   This removes your full Aim4price workspace, including saved
                   valuations, asset register items and account details.
                 </p>
-                <button type="button" className={styles.modalCloseButton} onClick={closeDeleteDialog} aria-label="Close account deletion">×</button>
+                <button
+                  type="button"
+                  className={styles.modalCloseButton}
+                  onClick={closeDeleteDialog}
+                  aria-label="Close account deletion"
+                  disabled={isDeletingAccount}
+                >
+                  ×
+                </button>
               </div>
+
+              {deleteModalError ? (
+                <div
+                  className={`${styles.modalInlineNotice} ${styles.modalInlineNoticeError}`}
+                  role="alert"
+                  aria-live="assertive"
+                  aria-atomic="true"
+                >
+                  {deleteModalError}
+                </div>
+              ) : null}
 
               <form className={styles.modalForm} onSubmit={handleDeleteAccount}>
               <div className={styles.confirmBox}>
@@ -3015,7 +3397,11 @@ export default function AccountClient({
                   type="password"
                   autoComplete="current-password"
                   value={deletePassword}
-                  onChange={(event) => setDeletePassword(event.target.value)}
+                  disabled={isDeletingAccount}
+                  onChange={(event) => {
+                    setDeletePassword(event.target.value);
+                    setDeleteModalError(null);
+                  }}
                   placeholder="Enter your password"
                 />
               </label>
@@ -3024,7 +3410,11 @@ export default function AccountClient({
                 <span>Type DELETE to confirm</span>
                 <input
                   value={deleteConfirmText}
-                  onChange={(event) => setDeleteConfirmText(event.target.value)}
+                  disabled={isDeletingAccount}
+                  onChange={(event) => {
+                    setDeleteConfirmText(event.target.value);
+                    setDeleteModalError(null);
+                  }}
                   placeholder="DELETE"
                 />
               </label>
@@ -3034,6 +3424,8 @@ export default function AccountClient({
                   type="button"
                   className={styles.ghostButton}
                   onClick={closeDeleteDialog}
+                  disabled={isDeletingAccount}
+                  autoFocus
                 >
                   Cancel
                 </button>
