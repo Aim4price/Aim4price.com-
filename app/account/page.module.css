@@ -225,6 +225,10 @@
 }
 
 .notice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
   min-height: 3rem;
   padding: 0.82rem 1rem;
   border-radius: 1rem;
@@ -241,6 +245,32 @@
 .noticeError {
   color: #8f3333;
   background: rgba(198, 75, 75, 0.12);
+}
+
+.noticeDismissButton {
+  display: inline-grid;
+  flex: 0 0 auto;
+  width: var(--tap-target-min, 44px);
+  min-width: var(--tap-target-min, 44px);
+  min-height: var(--tap-target-min, 44px);
+  place-items: center;
+  margin: -0.55rem -0.72rem -0.55rem 0;
+  border: 0;
+  border-radius: 999px;
+  color: currentColor;
+  background: transparent;
+  font-size: 1.35rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.noticeDismissButton:hover {
+  background: rgba(143, 51, 51, 0.08);
+}
+
+.noticeDismissButton:focus-visible {
+  outline: 3px solid rgba(49, 95, 190, 0.26);
+  outline-offset: 1px;
 }
 
 .topGrid {
@@ -4187,3 +4217,498 @@
   }
 }
 
+/* === Account dashboard refinement, August 2026 === */
+.accountHero {
+  min-height: clamp(7.5rem, 9vw, 8.2rem);
+  padding: clamp(1.05rem, 1.65vw, 1.3rem) clamp(1.15rem, 1.8vw, 1.45rem);
+  border-radius: 1.45rem;
+}
+
+.heroAvatarControl {
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.heroAvatar {
+  width: clamp(4.8rem, 6.2vw, 5.75rem);
+  height: clamp(4.8rem, 6.2vw, 5.75rem);
+}
+
+.heroAvatar::after {
+  display: none;
+}
+
+.heroAvatarEditBadge {
+  position: absolute;
+  right: -0.28rem;
+  bottom: 0.1rem;
+  width: 2rem;
+  height: 2rem;
+  display: grid;
+  place-items: center;
+  border: 3px solid #ffffff;
+  border-radius: 999px;
+  color: #ffffff;
+  background: linear-gradient(180deg, #5587eb 0%, #315fbf 100%);
+  box-shadow: 0 8px 18px rgba(28, 66, 141, 0.34);
+  pointer-events: none;
+}
+
+.heroAvatarEditBadge svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.heroAvatar:focus-within {
+  outline: 3px solid rgba(115, 159, 255, 0.72);
+  outline-offset: 4px;
+}
+
+.heroCopy small {
+  margin-top: 0.42rem;
+}
+
+.accountDashboard {
+  display: grid;
+  grid-template-columns: minmax(0, 0.82fr) minmax(30rem, 1.18fr);
+  grid-template-areas:
+    "overview quick"
+    "security quick";
+  gap: clamp(0.9rem, 1.45vw, 1.15rem);
+  align-items: start;
+}
+
+.accountDashboard > .card {
+  padding: clamp(1.05rem, 1.55vw, 1.3rem);
+  border-radius: 1.5rem;
+}
+
+.overviewCard {
+  grid-area: overview;
+}
+
+.quickActionsCard {
+  grid-area: quick;
+  align-self: stretch;
+}
+
+.securityCard {
+  grid-area: security;
+}
+
+.overviewHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.8rem;
+}
+
+.overviewHeader > div {
+  min-width: 0;
+}
+
+.overviewUpdated {
+  flex: 0 0 auto;
+  display: grid;
+  gap: 0.1rem;
+  min-height: 2.5rem;
+  padding: 0.45rem 0.65rem;
+  border: 1px solid rgba(62, 110, 213, 0.12);
+  border-radius: 0.8rem;
+  color: #64746f;
+  background: rgba(62, 110, 213, 0.055);
+  font-size: 0.64rem;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: 0.035em;
+  text-transform: uppercase;
+}
+
+.overviewUpdated strong {
+  color: #1b4167;
+  font-size: 0.75rem;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.overviewCard .metricGrid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.overviewCard .metricTile {
+  min-height: 6.05rem;
+  padding: 0.85rem 0.9rem;
+  border-radius: 1rem;
+}
+
+.quickActionGroups {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
+  align-items: start;
+}
+
+.quickActionGroup {
+  min-width: 0;
+  padding: 0.82rem;
+  border: 1px solid rgba(18, 45, 37, 0.075);
+  border-radius: 1.15rem;
+  background: linear-gradient(180deg, #f8fbfa 0%, #f4f8f6 100%);
+}
+
+.quickActionGroupHeader {
+  min-height: 3.4rem;
+  margin-bottom: 0.65rem;
+  padding: 0 0.1rem;
+}
+
+.quickActionGroupHeader h3 {
+  margin: 0;
+  color: #173a30;
+  font-family:
+    var(--font-heading, "Montserrat"), var(--font-body, "Inter"), sans-serif;
+  font-size: 0.94rem;
+  font-weight: 850;
+  line-height: 1.2;
+  letter-spacing: -0.025em;
+}
+
+.quickActionGroupHeader p {
+  margin: 0.2rem 0 0;
+  color: #607168;
+  font-size: 0.72rem;
+  font-weight: 650;
+  line-height: 1.35;
+}
+
+.quickActionGroup .quickActionList {
+  gap: 0.58rem;
+}
+
+.quickActionGroup .quickActionButton {
+  min-height: 4rem;
+  padding: 0.72rem 0.8rem;
+  border-radius: 0.95rem;
+  background: rgba(255, 255, 255, 0.96);
+}
+
+.securityActionsGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.65rem;
+}
+
+.securityActionCard {
+  width: 100%;
+  min-height: 4.65rem;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.82rem;
+  padding: 0.82rem 0.9rem;
+  border: 1px solid rgba(18, 45, 37, 0.085);
+  border-radius: 1rem;
+  color: #17362c;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbfa 100%);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    background 160ms ease;
+}
+
+.securityActionCard:hover:not(:disabled) {
+  transform: translateY(-1px);
+  border-color: rgba(31, 138, 102, 0.2);
+  background: #ffffff;
+  box-shadow: 0 12px 24px rgba(18, 45, 37, 0.06);
+}
+
+.securityActionCard:disabled {
+  opacity: 0.58;
+  cursor: not-allowed;
+}
+
+.securityActionCard:focus-visible,
+.primaryButton:focus-visible,
+.secondaryButton:focus-visible,
+.ghostButton:focus-visible,
+.dangerButton:focus-visible {
+  outline: 3px solid rgba(62, 110, 213, 0.28);
+  outline-offset: 3px;
+}
+
+.securityActionCopy {
+  min-width: 0;
+  display: grid;
+  gap: 0.18rem;
+}
+
+.securityActionCopy strong {
+  color: #17362c;
+  font-size: 0.9rem;
+  font-weight: 850;
+  line-height: 1.25;
+}
+
+.securityActionCopy small {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: #607168;
+  font-size: 0.72rem;
+  font-weight: 650;
+  line-height: 1.35;
+}
+
+.dangerZone {
+  grid-template-columns: minmax(0, 1fr) auto;
+  padding: 1rem 1.2rem;
+  border-color: rgba(190, 58, 58, 0.15);
+  border-radius: 1.35rem;
+  background:
+    radial-gradient(circle at 100% 0%, rgba(202, 66, 66, 0.075), transparent 18rem),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, #fffafa 100%);
+  box-shadow: 0 14px 32px rgba(90, 29, 29, 0.045);
+}
+
+.dangerZoneCopy {
+  min-width: 0;
+}
+
+.dangerZoneEyebrow {
+  display: block;
+  margin-bottom: 0.22rem;
+  color: #aa4141;
+  font-size: 0.66rem;
+  font-weight: 900;
+  letter-spacing: 0.055em;
+  text-transform: uppercase;
+}
+
+.dangerZone h2 {
+  color: #7f3030;
+  font-size: 1.08rem;
+  letter-spacing: -0.025em;
+}
+
+.dangerZone p {
+  margin-top: 0.28rem;
+  color: #765f5f;
+  font-size: 0.8rem;
+  font-weight: 650;
+}
+
+.dangerZoneButton {
+  min-height: var(--tap-target-min, 44px);
+  gap: 0.62rem;
+  padding: 0 1rem;
+}
+
+.dangerZoneButton .quickActionIcon {
+  width: 2rem;
+  height: 2rem;
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.18);
+  box-shadow: none;
+}
+
+.passwordModalCard {
+  width: min(100%, 46rem);
+}
+
+.passwordModalIntro {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  margin: 1rem 0;
+  padding: 0.9rem;
+  border: 1px solid rgba(62, 110, 213, 0.12);
+  border-radius: 1rem;
+  background: linear-gradient(135deg, rgba(62, 110, 213, 0.075), rgba(31, 138, 102, 0.06));
+}
+
+.passwordModalIntro > div {
+  min-width: 0;
+}
+
+.passwordModalIntro strong {
+  display: block;
+  color: #17362c;
+  font-size: 0.92rem;
+  font-weight: 850;
+}
+
+.passwordModalIntro p {
+  margin: 0.18rem 0 0;
+  color: #607168;
+  font-size: 0.78rem;
+  font-weight: 650;
+  line-height: 1.42;
+}
+
+.passwordModalForm {
+  display: grid;
+  gap: 0.88rem;
+}
+
+.modalInlineNotice {
+  margin-bottom: 0.85rem;
+  padding: 0.72rem 0.82rem;
+  border: 1px solid transparent;
+  border-radius: 0.85rem;
+  font-size: 0.8rem;
+  font-weight: 760;
+  line-height: 1.4;
+}
+
+.modalInlineNoticeError {
+  color: #8f3333;
+  border-color: rgba(198, 75, 75, 0.18);
+  background: rgba(198, 75, 75, 0.1);
+}
+
+.modalInlineNoticeSuccess {
+  color: #176047;
+  border-color: rgba(44, 173, 126, 0.18);
+  background: rgba(44, 173, 126, 0.1);
+}
+
+.securityFieldHint,
+.securityFieldError {
+  color: #607168;
+  font-size: 0.76rem;
+}
+
+.securityFieldError {
+  color: #963737;
+}
+
+.accountScrollableModalCard .modalCloseButton {
+  border: 1px solid rgba(35, 74, 155, 0.24);
+  border-radius: 999px;
+  color: #ffffff;
+  background: linear-gradient(180deg, #5b8bee 0%, #315fbe 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.24),
+    0 10px 22px rgba(38, 76, 155, 0.22);
+}
+
+.accountScrollableModalCard .modalCloseButton:hover:not(:disabled) {
+  border-color: rgba(30, 65, 137, 0.36);
+  color: #ffffff;
+  background: linear-gradient(180deg, #4f80e3 0%, #294fa3 100%);
+}
+
+.accountScrollableModalCard .modalCloseButton:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+@media (max-width: 1080px) {
+  .accountDashboard {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "overview"
+      "quick"
+      "security";
+  }
+
+  .securityActionsGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .accountHero {
+    display: flex !important;
+    min-height: 0;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 1rem !important;
+  }
+
+  .heroIdentityGroup {
+    width: 100%;
+  }
+
+  .heroAvatar {
+    width: 4.7rem;
+    height: 4.7rem;
+  }
+
+  .accountDashboard {
+    gap: 0.85rem;
+  }
+
+  .accountDashboard > .card {
+    padding: 1rem;
+    border-radius: 1.2rem;
+  }
+
+  .overviewHeader {
+    align-items: center;
+  }
+
+  .overviewCard .metricGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .overviewCard .metricTile {
+    min-height: 5.7rem;
+    padding: 0.78rem;
+  }
+
+  .quickActionGroups,
+  .securityActionsGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .quickActionGroup .quickActionButton,
+  .securityActionCard,
+  .dangerZoneButton {
+    min-height: var(--tap-target-min, 44px);
+  }
+
+  .dangerZone {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+    gap: 0.85rem;
+  }
+
+  .dangerZoneButton {
+    width: 100%;
+  }
+
+  .passwordModalIntro {
+    align-items: flex-start;
+  }
+
+  .passwordModalCard .modalField input {
+    font-size: 1rem;
+  }
+}
+
+@media (max-width: 520px) {
+  .overviewHeader {
+    display: grid;
+  }
+
+  .overviewUpdated {
+    width: fit-content;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .quickActionButton,
+  .securityActionCard,
+  .primaryButton,
+  .secondaryButton,
+  .ghostButton,
+  .dangerButton {
+    transition: none;
+  }
+}
