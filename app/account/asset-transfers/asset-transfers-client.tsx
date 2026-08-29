@@ -347,13 +347,12 @@ export default function AssetTransfersClient({ context = 'account' }: { context?
           </div>
 
           <div className={launcherStyles.actionGrid} aria-label="Choose an asset transfer direction">
-            <button type="button" className={`${launcherStyles.actionButton} ${launcherStyles.actionButtonNew}`} onClick={() => openFlow('incoming')}>
+            <button type="button" className={`${launcherStyles.actionButton} ${launcherStyles.actionButtonNew} ${styles.actionButtonWithoutMeta}`} onClick={() => openFlow('incoming')}>
               <span className={launcherStyles.actionIcon}><IncomingIcon /></span>
               <span className={launcherStyles.actionCopy}>
                 <strong>Incoming</strong>
                 <small>{isDealerContext ? 'Claim a trade-in into dealer inventory.' : 'Claim an asset into this account.'}</small>
               </span>
-              <span className={launcherStyles.actionMeta}><span className={launcherStyles.actionArrow} aria-hidden="true">›</span></span>
             </button>
 
             <button type="button" className={`${launcherStyles.actionButton} ${launcherStyles.actionButtonManage}`} onClick={() => openFlow('outgoing')}>
@@ -364,7 +363,6 @@ export default function AssetTransfersClient({ context = 'account' }: { context?
               </span>
               <span className={launcherStyles.actionMeta}>
                 <span className={launcherStyles.countPill}>{loading ? '…' : outgoing.length}</span>
-                <span className={launcherStyles.actionArrow} aria-hidden="true">›</span>
               </span>
             </button>
           </div>

@@ -36,7 +36,8 @@ test("quick actions keep their button treatment while gaining clear groups", asy
   const quickActionsMarkup = source.slice(quickActionsStart, securityStart);
 
   assert.doesNotMatch(quickActionsMarkup, /Delete account/);
-  assert.match(quickActionsMarkup, /quickActionChevron\} aria-hidden="true"/);
+  assert.doesNotMatch(quickActionsMarkup, /quickActionChevron\} aria-hidden="true"/);
+  assert.doesNotMatch(source, /styles\.quickActionChevron/);
 });
 
 test("password controls are compact on the dashboard and edit inside a modal", async () => {
@@ -71,6 +72,10 @@ test("password controls are compact on the dashboard and edit inside a modal", a
     /\{profile\?\.email \|\| "Your account email"\}/,
   );
   assert.match(styles, /\.securityActionCard \{[^}]*min-height: 4rem;/);
+  assert.match(
+    styles,
+    /\.securityActionCard \{[^}]*grid-template-columns: auto minmax\(0, 1fr\);/,
+  );
   assert.doesNotMatch(styles, /\.securityActionCopy small/);
 });
 
@@ -129,6 +134,11 @@ test("dashboard styling balances desktop cards and remains touch safe", async ()
   );
   assert.doesNotMatch(styles, /\.overviewUpdated/);
   assert.doesNotMatch(styles, /\.quickActionGroupHeader p/);
+  assert.doesNotMatch(styles, /\.quickActionChevron/);
+  assert.match(
+    styles,
+    /\.quickActionButton \{[\s\S]*?grid-template-columns: 2\.34rem minmax\(0, 1fr\);/,
+  );
   assert.match(styles, /\.heroAvatarEditBadge \{/);
   assert.match(
     styles,
