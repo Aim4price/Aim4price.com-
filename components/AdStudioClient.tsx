@@ -757,7 +757,7 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
                       <div className={styles.logoCopy}>
                         <div>
                           <strong>Your logo</strong>
-                          <span>Drop it here or choose a PNG, JPEG or WebP file up to 2 MB.</span>
+                          <span>Your logo appears in a dedicated white space without cropping. Choose a PNG, JPEG or WebP file up to 2 MB. Transparent logos work best; without one, we use your business name.</span>
                         </div>
                       </div>
                       <div className={styles.logoControls}>
@@ -796,7 +796,7 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
                           {draft.logoUrl ? (
                             <>
                               {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img src={draft.logoUrl} alt="Uploaded business logo" />
+                              <img src={draft.logoUrl} alt={`${draft.businessName || 'Business'} logo preview`} />
                               <small className={styles.logoDropHint}>Drop to replace</small>
                             </>
                           ) : (
@@ -828,25 +828,30 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
                 <section aria-labelledby="studio-layout-title">
                   <div className={styles.stepIntro}>
                     <h2 id="studio-layout-title">Choose your advert layout</h2>
-                    <p>Pick the design and number of photos you prefer.</p>
+                    <p>Pick the design you prefer. If a listing has fewer photos, Aim4price adapts the layout automatically.</p>
                   </div>
                   <fieldset className={styles.stepFieldset} disabled={!canManage || saving}>
                     <legend className={styles.srOnly}>Advert layout</legend>
                     <div className={styles.templateGrid}>
-                      {AD_TEMPLATE_OPTIONS.map((template, index) => (
+                      {AD_TEMPLATE_OPTIONS.map((template) => (
                         <button
                           key={template.id}
                           type="button"
                           className={`${styles.templateChoice} ${draft.templateId === template.id ? styles.templateChoiceActive : ''}`}
                           onClick={() => update('templateId', template.id)}
                           aria-pressed={draft.templateId === template.id}
+                          style={{
+                            '--brand-primary': draft.primaryColor,
+                            '--brand-secondary': draft.secondaryColor,
+                            '--brand-accent': draft.accentColor,
+                          } as CSSProperties}
                         >
                           <span className={`${styles.miniTemplate} ${TEMPLATE_CLASS_NAMES[template.id]}`} aria-hidden="true">
                             <i /><b /><em /><u />
                           </span>
                           <span className={styles.templateTitle}>
                             <strong>{template.name}</strong>
-                            <b>{draft.templateId === template.id ? 'Selected' : `Style ${index + 1}`}</b>
+                            <b>{draft.templateId === template.id ? 'Selected' : template.recommended ? 'Recommended' : template.purpose}</b>
                           </span>
                           <small>{template.description}</small>
                           <span className={styles.photoCountBadge}>{template.photoCount} photo{template.photoCount === 1 ? '' : 's'}</span>
@@ -917,10 +922,21 @@ export default function AdStudioClient({ dealerAppMode = false, middlemanMode = 
                     <p>Make sure everything looks right before saving.</p>
                   </div>
                   <div className={styles.reviewGrid}>
-                    <article>
+                    <article className={styles.reviewBrand}>
                       <span>Brand</span>
-                      <strong>{draft.businessName || 'Business name not added'}</strong>
-                      <small>{draft.contactName || 'No contact person'} · {draft.phone || 'No phone number'}</small>
+                      <div className={styles.reviewBrandSummary}>
+                        {draft.logoUrl ? (
+                          <span className={styles.reviewLogo}>
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={draft.logoUrl} alt="" />
+                          </span>
+                        ) : null}
+                        <div>
+                          <strong>{draft.businessName || 'Business name not added'}</strong>
+                          <small>{draft.contactName || 'No contact person'} · {draft.phone || 'No phone number'}</small>
+                        </div>
+                      </div>
+                      <small>{draft.logoUrl ? 'Logo contained in its dedicated white space without cropping.' : 'No logo added. Your business name will appear on its own.'}</small>
                     </article>
                     <article>
                       <span>Layout</span>

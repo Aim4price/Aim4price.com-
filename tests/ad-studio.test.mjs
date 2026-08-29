@@ -168,8 +168,11 @@ test('Studio and Marketplace use the same rated WYSIWYG JPEG renderer', async ()
   assert.match(renderer, /content\.brand\.website/);
   assert.match(renderer, /function drawCameraIcon/);
   assert.match(renderer, /Main equipment photo/);
-  assert.match(renderer, /const maxLogoWidth = Math\.min\(210, rect\.width \* \.36\)/);
-  assert.match(renderer, /const plateWidth = Math\.max\(102, logoWidth \+ 28\)/);
+  assert.match(renderer, /function drawBrandHeader/);
+  assert.match(renderer, /const plateWidth = Math\.min\(options\.logoWidth \?\? 196, rect\.width \* \.43\)/);
+  assert.match(renderer, /const plateHeight = Math\.min\(92, rect\.height - 4\)/);
+  assert.match(renderer, /drawFittedMultilineText\(context, content\.sellerCompany/);
+  assert.doesNotMatch(renderer, /context\.fillText\(String\(index \+ 1\)/);
   assert.match(renderer, /function equipmentMeta/);
   assert.match(renderer, /function displayPhone/);
   assert.match(renderer, /function drawPriceCard/);
