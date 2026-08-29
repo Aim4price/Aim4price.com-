@@ -103,7 +103,7 @@ type AccountProfileLogoState = {
   logoUrl: string | null;
 };
 
-type HeaderNotificationCategory = 'admin_message' | 'partner_note' | 'lead' | 'qr_scan' | 'fuel' | 'maintenance' | 'dealer_schedule' | 'dealer_cost' | 'cost_budget' | 'capture' | 'dealer_correction' | 'asset_discovery';
+type HeaderNotificationCategory = 'admin_message' | 'partner_note' | 'lead' | 'qr_scan' | 'fuel' | 'maintenance' | 'dealer_schedule' | 'dealer_cost' | 'cost_budget' | 'capture' | 'dealer_correction' | 'asset_discovery' | 'marketplace_sourcing';
 
 type HeaderNotificationTone = 'neutral' | 'success' | 'warning' | 'info';
 
@@ -116,6 +116,7 @@ type HeaderNotificationItem = {
   href: string;
   createdAtIso: string;
   assetDiscoveryEnquiryId?: string;
+  marketplaceSourcingRequestId?: string;
   dealerAssetCorrectionId?: string;
   dealerAssetCorrectionAction?: 'decision' | 'retry' | 'pending';
   dealerMaintenanceScheduleProposalId?: string;
@@ -1830,6 +1831,7 @@ export default function AppHeader({
         <Link
           key={notification.id}
           href={notification.href}
+          prefetch={notification.marketplaceSourcingRequestId ? false : undefined}
           className={baseClassName}
           onClick={() => handleNotificationLinkClick(notification.id)}
         >

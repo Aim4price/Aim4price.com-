@@ -74,6 +74,7 @@ function inboxStateKey(input: Pick<ListNotificationInboxInput, 'userId' | 'viewe
 function isActionRequired(item: HeaderNotificationItem): boolean {
   return Boolean(
     item.assetDiscoveryEnquiryId
+    || item.marketplaceSourcingRequestId
     || item.dealerAssetCorrectionId
     || item.dealerMaintenanceScheduleProposalId
     || item.dealerCostInvoiceId
@@ -85,6 +86,7 @@ function payloadFor(item: HeaderNotificationItem): Record<string, unknown> {
   return {
     assetId: item.assetId,
     assetDiscoveryEnquiryId: item.assetDiscoveryEnquiryId,
+    marketplaceSourcingRequestId: item.marketplaceSourcingRequestId,
     dealerAssetCorrectionId: item.dealerAssetCorrectionId,
     dealerAssetCorrectionAction: item.dealerAssetCorrectionAction,
     dealerMaintenanceScheduleProposalId: item.dealerMaintenanceScheduleProposalId,
@@ -269,6 +271,7 @@ function mapInboxItem(row: NotificationInboxRow, currentKeys: Set<string>): Noti
     createdAtIso: iso(row.source_created_at) || new Date(0).toISOString(),
     assetId: asOptionalText(payload.assetId),
     assetDiscoveryEnquiryId: asOptionalText(payload.assetDiscoveryEnquiryId),
+    marketplaceSourcingRequestId: asOptionalText(payload.marketplaceSourcingRequestId),
     dealerAssetCorrectionId: asOptionalText(payload.dealerAssetCorrectionId),
     dealerAssetCorrectionAction: asOptionalText(payload.dealerAssetCorrectionAction) as NotificationInboxItem['dealerAssetCorrectionAction'],
     dealerMaintenanceScheduleProposalId: asOptionalText(payload.dealerMaintenanceScheduleProposalId),
