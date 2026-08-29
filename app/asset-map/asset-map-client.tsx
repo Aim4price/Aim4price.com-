@@ -8,9 +8,9 @@ import styles from "./page.module.css";
 
 type NoticeTone = "error";
 type BasemapMode = "road" | "satellite";
+type FetchMode = "initial" | "background";
 type ExportFormat = "pdf" | "xlsx";
 type ExportStep = "format" | "scope";
-type FetchMode = "initial" | "background" | "manual";
 type RegisterFilterId = string;
 type AssetStatusChoice = "yes" | "no" | "unknown" | "not_applicable";
 type AssetMapUsageMetric = "hours" | "km" | "percentage" | null;
@@ -53,6 +53,10 @@ type AssetMapItem = {
   photos: string[];
 };
 
+type NumberedAssetMapItem = AssetMapItem & {
+  mapNumber: number;
+};
+
 type RegisterFilterOption = {
   id: RegisterFilterId;
   label: string;
@@ -64,6 +68,13 @@ type AssetMapResponse = {
   ok: boolean;
   assets?: AssetMapItem[];
   registerFilters?: RegisterFilterOption[];
+  summary?: {
+    totalAssets: number;
+    assetsWithLocation: number;
+    assetsWithoutLocation: number;
+    activeMappedAssets: number;
+    scannedLast30Days: number;
+  };
   error?: string;
 };
 
@@ -144,33 +155,6 @@ function DownloadIcon({ className }: IconProps) {
         stroke="currentColor"
         strokeWidth="2"
         strokeLinecap="round"
-      />
-    </svg>
-  );
-}
-
-function RefreshIcon({ className }: IconProps) {
-  return (
-    <svg
-      className={className}
-      viewBox="0 0 24 24"
-      aria-hidden="true"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <path
-        d="M20 7v5h-5"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M18.1 16a7.5 7.5 0 1 1 .9-8.8L20 12"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
       />
     </svg>
   );
@@ -295,31 +279,6 @@ function CloseIcon({ className }: IconProps) {
   );
 }
 
-function FocusIcon({ className }: IconProps) {
-  return (
-    <svg
-      className={className}
-      viewBox="0 0 24 24"
-      aria-hidden="true"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <path
-        d="M8 4H5a1 1 0 0 0-1 1v3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"
-        stroke="currentColor"
-        strokeWidth="2"
-      />
-    </svg>
-  );
-}
-
 function loadLeaflet(): Promise<any> {
   if (typeof window === "undefined") {
     return Promise.reject(new Error("Leaflet can only load in the browser."));
@@ -347,13 +306,19 @@ function loadLeaflet(): Promise<any> {
       LEAFLET_SCRIPT_ID,
     ) as HTMLScriptElement | null;
 
+    const handleFailure = (message: string) => {
+      leafletLoaderPromise = null;
+      document.getElementById(LEAFLET_SCRIPT_ID)?.remove();
+      reject(new Error(message));
+    };
+
     const handleLoaded = () => {
       if (window.L) {
         resolve(window.L);
         return;
       }
 
-      reject(new Error("Leaflet did not initialise correctly."));
+      handleFailure("Leaflet did not initialise correctly.");
     };
 
     if (existingScript) {
@@ -365,7 +330,7 @@ function loadLeaflet(): Promise<any> {
       existingScript.addEventListener("load", handleLoaded, { once: true });
       existingScript.addEventListener(
         "error",
-        () => reject(new Error("Failed to load the map renderer.")),
+        () => handleFailure("Failed to load the map renderer."),
         {
           once: true,
         },
@@ -381,14 +346,10 @@ function loadLeaflet(): Promise<any> {
     script.addEventListener("load", handleLoaded, { once: true });
     script.addEventListener(
       "error",
-      () => reject(new Error("Failed to load the map renderer.")),
+      () => handleFailure("Failed to load the map renderer."),
       { once: true },
     );
     document.body.appendChild(script);
-  }).catch((error) => {
-    leafletLoaderPromise = null;
-    document.getElementById(LEAFLET_SCRIPT_ID)?.remove();
-    throw error;
   });
 
   return leafletLoaderPromise;
@@ -407,24 +368,6 @@ function formatDate(value?: string | null): string {
     hour: "2-digit",
     minute: "2-digit",
   }).format(parsed);
-}
-
-function formatShortDate(value?: string | null): string {
-  if (!value) return "Not scanned yet";
-
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) return "Not scanned yet";
-
-  return new Intl.DateTimeFormat("en-ZA", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  }).format(parsed);
-}
-
-function buildShortScanLabel(value?: string | null): string {
-  const date = formatShortDate(value);
-  return date === "Not scanned yet" ? date : `Scanned ${date}`;
 }
 
 function formatCondition(value?: string | null): string {
@@ -488,8 +431,7 @@ function buildUsageDisplay(asset: AssetMapItem): string {
   if (apiUsageDisplay) return apiUsageDisplay;
 
   if (asset.usageMetric === "percentage") {
-    return asset.lifeWorkedPercent === null ||
-      !Number.isFinite(asset.lifeWorkedPercent)
+    return asset.lifeWorkedPercent === null || !Number.isFinite(asset.lifeWorkedPercent)
       ? "Usage not saved"
       : `${formatPercent(asset.lifeWorkedPercent)}% worked`;
   }
@@ -499,10 +441,7 @@ function buildUsageDisplay(asset: AssetMapItem): string {
     return `${formatNumber(asset.hours)} ${unit}`;
   }
 
-  if (
-    asset.lifeWorkedPercent !== null &&
-    Number.isFinite(asset.lifeWorkedPercent)
-  ) {
+  if (asset.lifeWorkedPercent !== null && Number.isFinite(asset.lifeWorkedPercent)) {
     return `${formatPercent(asset.lifeWorkedPercent)}% worked`;
   }
 
@@ -542,14 +481,6 @@ function hasCoordinates(asset: AssetMapItem): boolean {
   return true;
 }
 
-function buildLocationLabel(asset: AssetMapItem): string {
-  const savedLocation = String(asset.lastKnownLocationText ?? "").trim();
-  if (savedLocation) return savedLocation;
-  if (!hasCoordinates(asset)) return "Location not saved";
-
-  return `${(asset.lastKnownLat as number).toFixed(5)}, ${(asset.lastKnownLng as number).toFixed(5)}`;
-}
-
 function normalizeSearch(value: string): string {
   return value.trim().toLowerCase();
 }
@@ -563,14 +494,14 @@ function matchesSearch(asset: AssetMapItem, search: string): boolean {
     asset.assetTypeLabel,
     asset.kind,
     asset.serialNumber,
-    asset.publicAssetCode,
-    asset.plateLabel,
-    asset.licenseRegistrationNumber,
     asset.brandName,
     asset.modelName,
     asset.typedModelName,
     asset.registerName,
     asset.registerLabel,
+    asset.publicAssetCode,
+    asset.plateLabel,
+    asset.licenseRegistrationNumber,
     asset.lastKnownLocationText,
     asset.usageDisplay,
     formatCondition(asset.condition),
@@ -618,10 +549,10 @@ function normalizeRegisterFilters(
   return normalizedFilters;
 }
 
-function filterAssetsByRegister(
-  assets: AssetMapItem[],
+function filterAssetsByRegister<T extends AssetMapItem>(
+  assets: T[],
   registerId: RegisterFilterId,
-): AssetMapItem[] {
+): T[] {
   if (!registerId || registerId === ALL_REGISTER_FILTER_ID) return assets;
   return assets.filter((asset) => asset.registerId === registerId);
 }
@@ -653,18 +584,34 @@ function buildAssetMapReportHref(options: {
 }
 
 function sortMappedAssets(left: AssetMapItem, right: AssetMapItem): number {
-  const leftTime = left.lastScannedAtIso
+  const parsedLeftTime = left.lastScannedAtIso
     ? new Date(left.lastScannedAtIso).getTime()
     : 0;
-  const rightTime = right.lastScannedAtIso
+  const parsedRightTime = right.lastScannedAtIso
     ? new Date(right.lastScannedAtIso).getTime()
     : 0;
+  const leftTime = Number.isFinite(parsedLeftTime) ? parsedLeftTime : 0;
+  const rightTime = Number.isFinite(parsedRightTime) ? parsedRightTime : 0;
 
   if (rightTime !== leftTime) {
     return rightTime - leftTime;
   }
 
-  return left.title.localeCompare(right.title, "en", { sensitivity: "base" });
+  const titleOrder = left.title.localeCompare(right.title, "en", {
+    sensitivity: "base",
+  });
+  if (titleOrder !== 0) return titleOrder;
+
+  return left.publicAssetCode.localeCompare(right.publicAssetCode, "en", {
+    sensitivity: "base",
+  });
+}
+
+function numberMappedAssets(assets: AssetMapItem[]): NumberedAssetMapItem[] {
+  return assets
+    .filter(hasCoordinates)
+    .sort(sortMappedAssets)
+    .map((asset, index) => ({ ...asset, mapNumber: index + 1 }));
 }
 
 export default function AssetMapClient() {
@@ -691,7 +638,6 @@ export default function AssetMapClient() {
   const [dataStatus, setDataStatus] = useState<
     "loading" | "ready" | "error"
   >("loading");
-  const [isRefreshing, setIsRefreshing] = useState(false);
   const [mapRendererStatus, setMapRendererStatus] = useState<
     "loading" | "ready" | "error"
   >("loading");
@@ -722,7 +668,6 @@ export default function AssetMapClient() {
   );
   const mapDataRequestIdRef = useRef(0);
   const mapDataAbortControllerRef = useRef<AbortController | null>(null);
-  const activeManualRequestIdRef = useRef<number | null>(null);
   const lastBoundsSignatureRef = useRef("");
   const isLoading = dataStatus === "loading";
 
@@ -740,12 +685,6 @@ export default function AssetMapClient() {
   const fetchMapData = useCallback(
     async (mode: FetchMode = "initial") => {
       const initialLoad = mode === "initial";
-      const manualRefresh = mode === "manual";
-
-      if (mode === "background" && activeManualRequestIdRef.current !== null) {
-        return;
-      }
-
       const requestId = mapDataRequestIdRef.current + 1;
       mapDataRequestIdRef.current = requestId;
       mapDataAbortControllerRef.current?.abort();
@@ -754,10 +693,6 @@ export default function AssetMapClient() {
 
       if (initialLoad) {
         setDataStatus("loading");
-      }
-      if (manualRefresh) {
-        activeManualRequestIdRef.current = requestId;
-        setIsRefreshing(true);
       }
 
       try {
@@ -781,16 +716,11 @@ export default function AssetMapClient() {
         const nextRegisterFilters = normalizeRegisterFilters(
           data.registerFilters,
         );
-        const requestedAssetId =
-          initialLoad && typeof window !== "undefined"
-            ? new URLSearchParams(window.location.search)
-                .get("assetId")
-                ?.trim() || null
-            : null;
+        const requestedAssetId = initialLoad && typeof window !== "undefined"
+          ? new URLSearchParams(window.location.search).get("assetId")?.trim() || null
+          : null;
         const requestedAsset = requestedAssetId
-          ? (data.assets.find(
-              (asset) => asset.id === requestedAssetId && hasCoordinates(asset),
-            ) ?? null)
+          ? data.assets.find((asset) => asset.id === requestedAssetId && hasCoordinates(asset)) ?? null
           : null;
         setAssets(data.assets);
         setDataStatus("ready");
@@ -832,14 +762,6 @@ export default function AssetMapClient() {
       } finally {
         if (mapDataAbortControllerRef.current === controller) {
           mapDataAbortControllerRef.current = null;
-        }
-        if (
-          manualRefresh &&
-          activeManualRequestIdRef.current === requestId &&
-          mapDataRequestIdRef.current === requestId
-        ) {
-          activeManualRequestIdRef.current = null;
-          setIsRefreshing(false);
         }
       }
     },
@@ -889,7 +811,10 @@ export default function AssetMapClient() {
       if (
         isFilterMenuOpen &&
         filterDropdownRef.current &&
-        !filterDropdownRef.current.contains(target)
+        !filterDropdownRef.current.contains(target) &&
+        !document
+          .getElementById("asset-map-register-filter-menu")
+          ?.contains(target)
       ) {
         setIsFilterMenuOpen(false);
       }
@@ -897,7 +822,10 @@ export default function AssetMapClient() {
       if (
         isExportScopeMenuOpen &&
         exportScopeDropdownRef.current &&
-        !exportScopeDropdownRef.current.contains(target)
+        !exportScopeDropdownRef.current.contains(target) &&
+        !document
+          .getElementById("asset-map-export-register-menu")
+          ?.contains(target)
       ) {
         setIsExportScopeMenuOpen(false);
       }
@@ -907,7 +835,7 @@ export default function AssetMapClient() {
       if (event.key === "Tab" && isExportModalOpen && exportModalRef.current) {
         const focusRoots = [
           exportModalRef.current,
-          document.getElementById("asset-map-export-registers"),
+          document.getElementById("asset-map-export-register-menu"),
         ].filter((root): root is HTMLElement => root instanceof HTMLElement);
         const focusableElements = focusRoots
           .flatMap((root) =>
@@ -940,13 +868,13 @@ export default function AssetMapClient() {
             activeElement === exportModalRef.current)
         ) {
           event.preventDefault();
-          lastFocusable?.focus();
+          (lastFocusable ?? exportModalRef.current).focus();
           return;
         }
 
         if (!event.shiftKey && activeElement === lastFocusable) {
           event.preventDefault();
-          firstFocusable?.focus();
+          (firstFocusable ?? exportModalRef.current).focus();
           return;
         }
       }
@@ -1007,25 +935,6 @@ export default function AssetMapClient() {
   }, [isExportModalOpen]);
 
   useEffect(() => {
-    const openMenuId = isExportScopeMenuOpen
-      ? "asset-map-export-registers"
-      : isFilterMenuOpen
-        ? "asset-map-register-filter"
-        : null;
-    if (!openMenuId) return undefined;
-
-    const animationFrame = window.requestAnimationFrame(() => {
-      document
-        .querySelector<HTMLElement>(
-          `#${openMenuId} button[aria-pressed="true"]`,
-        )
-        ?.focus();
-    });
-
-    return () => window.cancelAnimationFrame(animationFrame);
-  }, [isExportScopeMenuOpen, isFilterMenuOpen]);
-
-  useEffect(() => {
     if (typeof window === "undefined") {
       return undefined;
     }
@@ -1047,10 +956,7 @@ export default function AssetMapClient() {
     window.localStorage.setItem(BASEMAP_STORAGE_KEY, basemapMode);
   }, [basemapMode]);
 
-  const mappedAssets = useMemo(
-    () => assets.filter(hasCoordinates).sort(sortMappedAssets),
-    [assets],
-  );
+  const mappedAssets = useMemo(() => numberMappedAssets(assets), [assets]);
   const filteredMappedAssets = useMemo(
     () => filterAssetsByRegister(mappedAssets, selectedRegisterId),
     [mappedAssets, selectedRegisterId],
@@ -1072,21 +978,6 @@ export default function AssetMapClient() {
   const exportScopedAssets = useMemo(
     () => filterAssetsByRegister(mappedAssets, exportRegisterId),
     [mappedAssets, exportRegisterId],
-  );
-  const mappedAssetCountsByRegister = useMemo(() => {
-    const counts = new Map<string, number>();
-    mappedAssets.forEach((asset) => {
-      counts.set(asset.registerId, (counts.get(asset.registerId) ?? 0) + 1);
-    });
-    return counts;
-  }, [mappedAssets]);
-
-  const getMappedAssetCountForFilter = useCallback(
-    (registerId: RegisterFilterId) =>
-      registerId === ALL_REGISTER_FILTER_ID
-        ? mappedAssets.length
-        : (mappedAssetCountsByRegister.get(registerId) ?? 0),
-    [mappedAssetCountsByRegister, mappedAssets.length],
   );
 
   useEffect(() => {
@@ -1124,90 +1015,113 @@ export default function AssetMapClient() {
     return () => window.cancelAnimationFrame(animationFrame);
   }, [isSidebarCollapsed, selectedCode]);
 
+  const showAllVisibleAssets = useCallback(() => {
+    const map = mapRef.current;
+    if (!map || !visibleAssets.length) return;
+
+    const bounds = visibleAssets.map(
+      (asset) =>
+        [asset.lastKnownLat as number, asset.lastKnownLng as number] as [
+          number,
+          number,
+        ],
+    );
+
+    setSelectedCode(null);
+    if (bounds.length === 1) {
+      map.setView(bounds[0], 13);
+    } else {
+      map.fitBounds(bounds, {
+        paddingTopLeft: [58, 82],
+        paddingBottomRight: [58, 82],
+        maxZoom: 13,
+      });
+    }
+  }, [visibleAssets]);
+
   useEffect(() => {
     let cancelled = false;
 
-    async function initialiseMap() {
-      if (!mapElementRef.current || mapRef.current) {
-        return;
-      }
-
-      const L = await loadLeaflet();
-      if (cancelled || !mapElementRef.current) {
-        return;
-      }
-
-      leafletRef.current = L;
-      setMapRendererStatus("loading");
-
-      const map = L.map(mapElementRef.current, {
-        zoomControl: false,
-        attributionControl: true,
-      });
-
-      L.control.zoom({ position: "topleft" }).addTo(map);
-
-      const roadLayer = L.tileLayer(
-        "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
-        {
-          maxZoom: 19,
-          attribution:
-            '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-        },
-      );
-      const satelliteLayer = L.tileLayer(
-        "https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-        {
-          maxZoom: 19,
-          attribution: "Tiles &copy; Esri",
-        },
-      );
-      const satelliteLabelLayer = L.tileLayer(
-        "https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}",
-        {
-          maxZoom: 19,
-          attribution: "Labels &copy; Esri",
-        },
-      );
-
-      baseLayersRef.current = {
-        road: roadLayer,
-        satellite: satelliteLayer,
-        satelliteLabels: satelliteLabelLayer,
-      };
-
-      const savedBasemapMode = window.localStorage.getItem(BASEMAP_STORAGE_KEY);
-      if (savedBasemapMode === "satellite") {
-        satelliteLayer.addTo(map);
-        satelliteLabelLayer.addTo(map);
-      } else {
-        roadLayer.addTo(map);
-      }
-      map.setView(DEFAULT_CENTER, DEFAULT_ZOOM);
-      const handleMapClick = () => setSelectedCode(null);
-      map.on("click", handleMapClick);
-      const markerLayer = L.layerGroup().addTo(map);
-      mapRef.current = map;
-      markerLayerRef.current = markerLayer;
+    if (mapRef.current) {
       setMapRendererStatus("ready");
-
-      const invalidate = () => map.invalidateSize();
-      window.setTimeout(invalidate, 120);
-      window.addEventListener("resize", invalidate);
-      (map as any).__aim4priceInvalidate = invalidate;
-      (map as any).__aim4priceHandleMapClick = handleMapClick;
+      return undefined;
     }
 
-    void initialiseMap().catch((error) => {
-      setMapRendererStatus("error");
-      setNotice({
-        tone: "error",
-        message:
-          error instanceof Error
-            ? error.message
-            : "Failed to load the map renderer.",
-      });
-    });
+    setMapRendererStatus("loading");
+
+    async function initialiseMap() {
+      try {
+        if (!mapElementRef.current || mapRef.current) {
+          return;
+        }
+
+        const L = await loadLeaflet();
+        if (cancelled || !mapElementRef.current) {
+          return;
+        }
+
+        leafletRef.current = L;
+
+        const map = L.map(mapElementRef.current, {
+          zoomControl: false,
+          attributionControl: true,
+        });
+
+        L.control.zoom({ position: "topleft" }).addTo(map);
+
+        const roadLayer = L.tileLayer(
+          "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+          {
+            maxZoom: 19,
+            attribution:
+              '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+          },
+        );
+        const satelliteLayer = L.tileLayer(
+          "https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+          {
+            maxZoom: 19,
+            updateWhenIdle: false,
+            keepBuffer: 4,
+            attribution: "Tiles &copy; Esri",
+          },
+        );
+        const satelliteLabelLayer = L.tileLayer(
+          "https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}",
+          {
+            maxZoom: 19,
+            updateWhenIdle: false,
+            keepBuffer: 4,
+            attribution: "Labels &copy; Esri",
+          },
+        );
+
+        baseLayersRef.current = {
+          road: roadLayer,
+          satellite: satelliteLayer,
+          satelliteLabels: satelliteLabelLayer,
+        };
+
+        roadLayer.addTo(map);
+        map.setView(DEFAULT_CENTER, DEFAULT_ZOOM);
+        mapRef.current = map;
+        markerLayerRef.current = L.layerGroup().addTo(map);
+        const handleMapClick = () => setSelectedCode(null);
+        map.on("click", handleMapClick);
+
+        const invalidate = () => map.invalidateSize();
+        window.setTimeout(invalidate, 120);
+        window.addEventListener("resize", invalidate);
+        (map as any).__aim4priceInvalidate = invalidate;
+        setMapRendererStatus("ready");
+      } catch {
+        if (!cancelled) {
+          setMapRendererStatus("error");
+        }
+      }
+    }
+
+    void initialiseMap();
 
     return () => {
       cancelled = true;
@@ -1249,7 +1163,7 @@ export default function AssetMapClient() {
     const L = leafletRef.current;
     const markerLayer = markerLayerRef.current;
 
-    if (!map || !L || !markerLayer) {
+    if (mapRendererStatus !== "ready" || !map || !L || !markerLayer) {
       return;
     }
 
@@ -1264,11 +1178,11 @@ export default function AssetMapClient() {
 
     const bounds: Array<[number, number]> = [];
 
-    visibleAssets.forEach((asset, index) => {
+    visibleAssets.forEach((asset) => {
       const lat = asset.lastKnownLat as number;
       const lng = asset.lastKnownLng as number;
       const isActive = asset.publicAssetCode === selectedCode;
-      const markerNumber = index + 1;
+      const markerNumber = asset.mapNumber;
 
       const icon = L.divIcon({
         className: `aim4priceMapMarker${isActive ? " aim4priceMapMarker--active" : ""}`,
@@ -1282,6 +1196,7 @@ export default function AssetMapClient() {
         icon,
         title: asset.title || asset.plateLabel || "Saved asset",
         bubblingMouseEvents: false,
+        zIndexOffset: isActive ? 1000 : 0,
       });
 
       const tooltipContent = document.createElement("span");
@@ -1300,7 +1215,7 @@ export default function AssetMapClient() {
     const signature = visibleAssets
       .map(
         (asset) =>
-          `${asset.publicAssetCode}:${asset.lastKnownLat ?? ""},${asset.lastKnownLng ?? ""}`,
+          `${asset.mapNumber}:${asset.publicAssetCode}:${asset.lastKnownLat ?? ""},${asset.lastKnownLng ?? ""}`,
       )
       .join("|");
     if (signature !== lastBoundsSignatureRef.current) {
@@ -1330,26 +1245,27 @@ export default function AssetMapClient() {
 
     const latLng = marker.getLatLng();
     const zoom = map.getZoom();
-    const mapWidth = map.getSize().x;
     const mapHeight = map.getSize().y;
     const selectedCardHeight =
       selectedAssetCardRef.current?.getBoundingClientRect().height ?? 0;
-    const horizontalOffset =
-      mapWidth >= 900 ? Math.min(mapWidth * 0.16, 170) : 0;
     const verticalOffset =
       mapHeight >= 430 && selectedCardHeight > 0
-        ? Math.min(selectedCardHeight * 0.28, 82)
+        ? Math.min(selectedCardHeight * 0.3, 88)
         : 0;
-    const targetCenter = horizontalOffset || verticalOffset
+    const targetCenter = verticalOffset
       ? map.unproject(
-          map
-            .project(latLng, zoom)
-            .add([horizontalOffset, verticalOffset]),
+          map.project(latLng, zoom).add([0, verticalOffset]),
           zoom,
         )
       : latLng;
 
-    map.panTo(targetCenter, { animate: true, duration: 0.55 });
+    const prefersReducedMotion =
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    map.panTo(targetCenter, {
+      animate: !prefersReducedMotion,
+      duration: prefersReducedMotion ? 0 : 0.55,
+    });
   }, [
     isSidebarCollapsed,
     mapRendererStatus,
@@ -1381,11 +1297,6 @@ export default function AssetMapClient() {
         window.removeEventListener("resize", invalidate);
       }
 
-      const handleMapClick = (map as any).__aim4priceHandleMapClick;
-      if (handleMapClick) {
-        map.off("click", handleMapClick);
-      }
-
       map.remove();
       mapRef.current = null;
       markerLayerRef.current = null;
@@ -1406,11 +1317,6 @@ export default function AssetMapClient() {
       null,
     [selectedCode, visibleAssets],
   );
-  const selectedAssetIndex = selectedAsset
-    ? visibleAssets.findIndex(
-        (asset) => asset.publicAssetCode === selectedAsset.publicAssetCode,
-      )
-    : -1;
 
   const selectedFilterLabel = findRegisterFilterLabel(
     registerFilters,
@@ -1459,47 +1365,6 @@ export default function AssetMapClient() {
     : null;
   const hasMultipleSelectedPhotos = selectedAssetPhotos.length > 1;
 
-  const showAllVisibleAssets = useCallback(() => {
-    const map = mapRef.current;
-    if (!map) return;
-
-    setSelectedCode(null);
-
-    const bounds = visibleAssets.map(
-      (asset) =>
-        [asset.lastKnownLat as number, asset.lastKnownLng as number] as [
-          number,
-          number,
-        ],
-    );
-
-    if (!bounds.length) {
-      map.setView(DEFAULT_CENTER, DEFAULT_ZOOM, { animate: true });
-      lastBoundsSignatureRef.current = "";
-      return;
-    }
-
-    lastBoundsSignatureRef.current = visibleAssets
-      .map(
-        (asset) =>
-          `${asset.publicAssetCode}:${asset.lastKnownLat ?? ""},${asset.lastKnownLng ?? ""}`,
-      )
-      .join("|");
-
-    if (bounds.length === 1) {
-      map.flyTo(bounds[0], 13, { animate: true, duration: 0.55 });
-      return;
-    }
-
-    map.fitBounds(bounds, {
-      paddingTopLeft: [58, 82],
-      paddingBottomRight: [58, 82],
-      maxZoom: 13,
-      animate: true,
-      duration: 0.55,
-    });
-  }, [visibleAssets]);
-
   const showPreviousSelectedPhoto = useCallback(() => {
     if (selectedAssetPhotos.length <= 1) return;
 
@@ -1524,17 +1389,16 @@ export default function AssetMapClient() {
     setSearch(value);
   }
 
+  function handleSearchSubmit() {
+    const firstVisibleAsset = visibleAssets[0];
+    if (firstVisibleAsset) {
+      setSelectedCode(firstVisibleAsset.publicAssetCode);
+    }
+  }
+
   function clearSearch() {
     setSearch("");
     setSelectedCode(null);
-  }
-
-  function refreshAssetMap() {
-    if (mapRendererStatus === "error") {
-      setMapRendererStatus("loading");
-      setMapRendererAttempt((currentAttempt) => currentAttempt + 1);
-    }
-    void fetchMapData("manual");
   }
 
   function openExportModal() {
@@ -1574,6 +1438,29 @@ export default function AssetMapClient() {
     exportScopeTriggerRef.current?.focus();
   }
 
+  function retryMapRenderer() {
+    const map = mapRef.current;
+    if (map) {
+      const invalidate = (map as any).__aim4priceInvalidate;
+      if (invalidate && typeof window !== "undefined") {
+        window.removeEventListener("resize", invalidate);
+      }
+      map.remove();
+    }
+
+    mapRef.current = null;
+    leafletRef.current = null;
+    markerLayerRef.current = null;
+    baseLayersRef.current = {
+      road: null,
+      satellite: null,
+      satelliteLabels: null,
+    };
+    markersByCodeRef.current.clear();
+    lastBoundsSignatureRef.current = "";
+    setMapRendererAttempt((currentAttempt) => currentAttempt + 1);
+  }
+
   function buildGoogleMapsHref(asset: AssetMapItem): string | null {
     if (!hasCoordinates(asset)) return null;
     return `https://www.google.com/maps/search/?api=1&query=${asset.lastKnownLat},${asset.lastKnownLng}`;
@@ -1589,21 +1476,20 @@ export default function AssetMapClient() {
           aria-label="Asset Map Tracking workspace"
         >
           <header className={styles.panelHeader}>
-            <h1 className={styles.visuallyHidden}>Asset Map</h1>
+            <div className={styles.pageTitleBlock}>
+              <h1>Asset Map Tracking</h1>
+            </div>
 
             <form
               className={styles.topActions}
               onSubmit={(event) => {
                 event.preventDefault();
-                const firstVisibleAsset = visibleAssets[0];
-                if (firstVisibleAsset) {
-                  setSelectedCode(firstVisibleAsset.publicAssetCode);
-                }
+                handleSearchSubmit();
               }}
             >
               <label
                 className={styles.searchWrap}
-                aria-label="Search by asset name, serial or registration"
+                aria-label="Search mapped assets"
               >
                 <SearchIcon className={styles.searchIcon} />
                 <input
@@ -1612,7 +1498,6 @@ export default function AssetMapClient() {
                   value={search}
                   onChange={(event) => handleSearchChange(event.target.value)}
                   placeholder="Search name, serial or registration"
-                  aria-describedby="asset-map-search-results"
                 />
                 {hasActiveSearch ? (
                   <button
@@ -1629,56 +1514,40 @@ export default function AssetMapClient() {
               <div className={styles.topActionButtons}>
                 <div className={styles.filterDropdown} ref={filterDropdownRef}>
                   <button
-                    type="button"
                     ref={filterTriggerRef}
+                    type="button"
                     className={`${styles.filterControl} ${styles.topActionButton} ${isFilterMenuOpen ? styles.filterControlOpen : ""}`}
                     onClick={() => setIsFilterMenuOpen((current) => !current)}
+                    aria-haspopup="menu"
                     aria-expanded={isFilterMenuOpen}
-                    aria-controls="asset-map-register-filter"
+                    aria-label={`Filter: ${selectedFilterLabel}`}
                   >
                     <FilterIcon className={styles.buttonIcon} />
-                    <span className={styles.filterControlCopy}>
-                      <small>Asset register</small>
-                      <span className={styles.filterControlLabel}>
-                        {selectedFilterLabel}
-                      </span>
+                    <span className={styles.filterControlLabel}>
+                      {selectedFilterLabel}
                     </span>
-                    <span className={styles.filterControlCount}>
-                      {filteredMappedAssets.length}
-                    </span>
-                    <ChevronDownIcon className={styles.filterChevron} />
                   </button>
                   {isFilterMenuOpen ? (
                     <DropdownOverlay
-                      id="asset-map-register-filter"
+                      id="asset-map-register-filter-menu"
                       className={styles.filterMenu}
                       matchAnchorWidth={false}
-                      role="group"
+                      role="menu"
                       aria-label="Filter mapped assets by asset register"
                     >
                       {registerFilters.map((filter) => {
                         const isSelected = filter.id === selectedRegisterId;
-                        const filterAssetCount = getMappedAssetCountForFilter(
-                          filter.id,
-                        );
 
                         return (
                           <button
                             key={filter.id}
                             type="button"
-                            aria-pressed={isSelected}
+                            role="menuitemradio"
+                            aria-checked={isSelected}
                             className={`${styles.filterMenuOption} ${isSelected ? styles.filterMenuOptionActive : ""}`}
                             onClick={() => selectPageRegisterFilter(filter.id)}
                           >
-                            <span className={styles.filterMenuOptionCopy}>
-                              <span>{filter.label}</span>
-                              <small>
-                                {filterAssetCount}{" "}
-                                {filterAssetCount === 1
-                                  ? "mapped asset"
-                                  : "mapped assets"}
-                              </small>
-                            </span>
+                            <span>{filter.label}</span>
                             {isSelected ? <strong>Selected</strong> : null}
                           </button>
                         );
@@ -1687,24 +1556,8 @@ export default function AssetMapClient() {
                   ) : null}
                 </div>
                 <button
-                  type="button"
-                  className={`${styles.secondaryAction} ${styles.topActionButton} ${styles.refreshAction}`}
-                  onClick={refreshAssetMap}
-                  disabled={isLoading || isRefreshing}
-                  aria-label={
-                    isRefreshing
-                      ? "Refreshing asset locations"
-                      : "Refresh asset locations"
-                  }
-                >
-                  <RefreshIcon
-                    className={`${styles.buttonIcon} ${isRefreshing ? styles.refreshIconActive : ""}`}
-                  />
-                  <span>{isRefreshing ? "Refreshing" : "Refresh"}</span>
-                </button>
-                <button
-                  type="button"
                   ref={exportTriggerRef}
+                  type="button"
                   className={`${styles.primaryAction} ${styles.topActionButton} ${styles.topReportButton} ${!mappedAssets.length ? styles.actionDisabled : ""}`}
                   onClick={openExportModal}
                   disabled={!mappedAssets.length || isLoading}
@@ -1713,18 +1566,10 @@ export default function AssetMapClient() {
                   <span>Download</span>
                 </button>
               </div>
-              <span
-                id="asset-map-search-results"
-                className={styles.visuallyHidden}
-                aria-live="polite"
-              >
-                {visibleAssets.length} mapped{" "}
-                {visibleAssets.length === 1 ? "asset" : "assets"} shown
-              </span>
             </form>
           </header>
 
-          {notice ? (
+          {notice && dataStatus === "ready" ? (
             <div className={styles.notice} role="alert">
               {notice.message}
             </div>
@@ -1735,6 +1580,7 @@ export default function AssetMapClient() {
             aria-label="Mapped assets and locations"
           >
             <aside
+              id="asset-map-asset-list"
               className={`${styles.assetSidebar} ${isSidebarCollapsed ? styles.assetSidebarCollapsed : ""}`}
               aria-label="Visible mapped assets"
             >
@@ -1749,28 +1595,19 @@ export default function AssetMapClient() {
                       : "Collapse asset list"
                   }
                   aria-expanded={!isSidebarCollapsed}
+                  aria-controls="asset-map-asset-list"
                 >
-                  <ChevronDownIcon
-                    className={`${styles.sidebarChevron} ${isSidebarCollapsed ? styles.sidebarChevronCollapsed : ""}`}
-                  />
+                  <span aria-hidden="true">
+                    {isSidebarCollapsed ? ">" : "<"}
+                  </span>
                 </button>
                 {!isSidebarCollapsed ? (
-                  <span className={styles.assetSidebarHeading}>
-                    <span className={styles.assetSidebarTitle}>
-                      <strong>
-                        {isLoading
-                          ? "Loading assets"
-                          : dataStatus === "error"
-                            ? "Locations unavailable"
-                            : hasActiveSearch
-                              ? `${visibleAssets.length} ${visibleAssets.length === 1 ? "result" : "results"}`
-                              : `${filteredMappedAssets.length} mapped ${filteredMappedAssets.length === 1 ? "asset" : "assets"}`}
-                      </strong>
-                      <small>
-                        {dataStatus === "error"
-                          ? "Refresh to try again"
-                          : selectedFilterLabel}
-                      </small>
+                  <span className={styles.assetSidebarTitle}>
+                    <strong>{visibleAssets.length}</strong>
+                    <span>
+                      {visibleAssets.length === 1
+                        ? "mapped asset"
+                        : "mapped assets"}
                     </span>
                   </span>
                 ) : null}
@@ -1778,38 +1615,20 @@ export default function AssetMapClient() {
 
               {!isSidebarCollapsed ? (
                 <div className={styles.assetList}>
-                  {isLoading ? (
-                    <div
-                      className={styles.assetListLoading}
-                      role="status"
-                      aria-live="polite"
-                    >
-                      {[0, 1, 2].map((item) => (
-                        <span className={styles.assetSkeleton} key={item}>
-                          <i />
-                          <span>
-                            <b />
-                            <b />
-                            <b />
-                          </span>
-                        </span>
-                      ))}
-                      <span className={styles.visuallyHidden}>
-                        Loading mapped assets
-                      </span>
-                    </div>
+                  {dataStatus === "loading" ? (
+                    <p className={styles.emptyState} role="status">
+                      Loading mapped assets…
+                    </p>
                   ) : dataStatus === "error" ? (
-                    <div className={styles.sidebarErrorState} role="alert">
-                      <strong>Couldn&apos;t load asset locations.</strong>
-                      <span>Your current filters and search are preserved.</span>
+                    <div className={styles.sidebarError} role="alert">
+                      <strong>Asset locations couldn&apos;t be loaded.</strong>
+                      <span>Check the connection and try again.</span>
                       <button
                         type="button"
-                        className={styles.inlineRetryButton}
-                        onClick={refreshAssetMap}
-                        disabled={isRefreshing}
+                        className={styles.retryButton}
+                        onClick={() => void fetchMapData("initial")}
                       >
-                        <RefreshIcon className={styles.buttonIcon} />
-                        {isRefreshing ? "Trying again" : "Try again"}
+                        Try again
                       </button>
                     </div>
                   ) : !mappedAssets.length ? (
@@ -1829,7 +1648,7 @@ export default function AssetMapClient() {
                       register.
                     </p>
                   ) : (
-                    visibleAssets.map((asset, index) => {
+                    visibleAssets.map((asset) => {
                       const isActive = selectedCode === asset.publicAssetCode;
                       const usageText = buildUsageDisplay(asset);
 
@@ -1857,10 +1676,9 @@ export default function AssetMapClient() {
                               setSelectedCode(asset.publicAssetCode)
                             }
                             aria-pressed={isActive}
-                            aria-label={`Show ${asset.title || "saved asset"} on the map`}
                           >
                             <span className={styles.assetNumber}>
-                              {index + 1}
+                              {asset.mapNumber}
                             </span>
                             <span className={styles.assetCardBody}>
                               <span className={styles.assetCardHeader}>
@@ -1885,17 +1703,6 @@ export default function AssetMapClient() {
                                 <span>{formatCondition(asset.condition)}</span>
                                 <span>{usageText}</span>
                               </span>
-                              <span className={styles.assetCardLocationRow}>
-                                <span className={styles.assetCardLocation}>
-                                  <MapIcon
-                                    className={styles.assetCardMetaIcon}
-                                  />
-                                  <span>{buildLocationLabel(asset)}</span>
-                                </span>
-                                <small>
-                                  {buildShortScanLabel(asset.lastScannedAtIso)}
-                                </small>
-                              </span>
                             </span>
                           </button>
                         </article>
@@ -1907,60 +1714,54 @@ export default function AssetMapClient() {
             </aside>
 
             <div className={styles.assetMapShell}>
-              {dataStatus !== "error" &&
-              (isLoading || mapRendererStatus === "loading") ? (
-                <div
-                  className={styles.mapLoading}
-                  role="status"
-                  aria-live="polite"
+              {isSidebarCollapsed ? (
+                <button
+                  type="button"
+                  className={styles.sidebarExpandButton}
+                  onClick={() => setIsSidebarCollapsed(false)}
+                  aria-label="Expand asset list"
+                  aria-expanded="false"
+                  aria-controls="asset-map-asset-list"
                 >
-                  <span className={styles.loadingSpinner} aria-hidden="true" />
-                  <strong>
-                    {isLoading ? "Loading asset locations" : "Preparing map"}
-                  </strong>
-                  <span>
-                    {isLoading
-                      ? "Getting your latest saved GPS positions."
-                      : "Starting the interactive map renderer."}
-                  </span>
-                </div>
+                  <span aria-hidden="true">&gt;</span>
+                </button>
               ) : null}
-              {dataStatus === "error" ? (
+
+              {dataStatus === "loading" ? (
+                <div className={styles.mapLoading} role="status">
+                  <span className={styles.mapLoadingPulse} aria-hidden="true" />
+                  <strong>Loading asset locations…</strong>
+                </div>
+              ) : dataStatus === "error" ? (
                 <div className={styles.mapError} role="alert">
                   <strong>Asset locations couldn&apos;t be loaded.</strong>
-                  <span>
-                    Check your connection and try again. Your selected filter
-                    and search will stay in place.
-                  </span>
+                  <span>Check the connection and try again.</span>
                   <button
                     type="button"
-                    className={styles.inlineRetryButton}
-                    onClick={refreshAssetMap}
-                    disabled={isRefreshing}
+                    className={styles.retryButton}
+                    onClick={() => void fetchMapData("initial")}
                   >
-                    <RefreshIcon className={styles.buttonIcon} />
-                    {isRefreshing ? "Trying again" : "Try again"}
-                  </button>
-                </div>
-              ) : null}
-              {dataStatus === "ready" && mapRendererStatus === "error" ? (
-                <div className={styles.mapError} role="alert">
-                  <strong>The interactive map couldn&apos;t start.</strong>
-                  <span>Try loading the map renderer again.</span>
-                  <button
-                    type="button"
-                    className={styles.inlineRetryButton}
-                    onClick={refreshAssetMap}
-                    disabled={isRefreshing}
-                  >
-                    <RefreshIcon className={styles.buttonIcon} />
                     Try again
                   </button>
                 </div>
-              ) : null}
-              {dataStatus === "ready" &&
-              mapRendererStatus === "ready" &&
-              !mappedAssets.length ? (
+              ) : mapRendererStatus === "loading" ? (
+                <div className={styles.mapLoading} role="status">
+                  <span className={styles.mapLoadingPulse} aria-hidden="true" />
+                  <strong>Preparing the map…</strong>
+                </div>
+              ) : mapRendererStatus === "error" ? (
+                <div className={styles.mapError} role="alert">
+                  <strong>The map couldn&apos;t start.</strong>
+                  <span>Your asset list is still available.</span>
+                  <button
+                    type="button"
+                    className={styles.retryButton}
+                    onClick={retryMapRenderer}
+                  >
+                    Try again
+                  </button>
+                </div>
+              ) : !mappedAssets.length ? (
                 <div className={styles.mapEmpty}>
                   <strong>No GPS locations saved yet.</strong>
                   <span>
@@ -2003,7 +1804,7 @@ export default function AssetMapClient() {
                 <article
                   ref={selectedAssetCardRef}
                   className={styles.selectedAssetCard}
-                  aria-labelledby="selected-asset-card-title"
+                  aria-label={`Selected asset: ${selectedAsset.title || "Saved asset"}`}
                   tabIndex={-1}
                   onPointerDown={(event) => event.stopPropagation()}
                   onClick={(event) => event.stopPropagation()}
@@ -2065,19 +1866,19 @@ export default function AssetMapClient() {
                           aria-label="Selected asset photos"
                         >
                           {selectedAssetPhotos.map((photo, index) => (
-                            <button
-                              type="button"
-                              key={`${selectedAsset.publicAssetCode}-photo-${index}`}
-                              className={`${styles.selectedPhotoThumbButton} ${index === selectedAssetSafePhotoIndex ? styles.selectedPhotoThumbButtonActive : ""}`}
-                              onClick={() => setSelectedPhotoIndex(index)}
-                              aria-label={`Show photo ${index + 1}`}
-                            >
-                              <img
-                                src={photo}
-                                alt={`${selectedAsset.title || "Selected asset"} thumbnail ${index + 1}`}
-                              />
-                            </button>
-                          ))}
+                              <button
+                                type="button"
+                                key={`${selectedAsset.publicAssetCode}-photo-${index}`}
+                                className={`${styles.selectedPhotoThumbButton} ${index === selectedAssetSafePhotoIndex ? styles.selectedPhotoThumbButtonActive : ""}`}
+                                onClick={() => setSelectedPhotoIndex(index)}
+                                aria-label={`Show photo ${index + 1}`}
+                              >
+                                <img
+                                  src={photo}
+                                  alt={`${selectedAsset.title || "Selected asset"} thumbnail ${index + 1}`}
+                                />
+                              </button>
+                            ))}
                         </div>
                       ) : null}
                     </div>
@@ -2086,12 +1887,10 @@ export default function AssetMapClient() {
                       <div className={styles.selectedAssetHeader}>
                         <div className={styles.selectedAssetIdentity}>
                           <span className={styles.selectedAssetNumber}>
-                            {selectedAssetIndex + 1}
+                            {selectedAsset.mapNumber}
                           </span>
                           <div className={styles.selectedAssetTitleGroup}>
-                            <h2 id="selected-asset-card-title">
-                              {selectedAsset.title || "Saved asset"}
-                            </h2>
+                            <h2>{selectedAsset.title || "Saved asset"}</h2>
                             <p>{buildAssetMeta(selectedAsset)}</p>
                             {showCardRegisterLabel ? (
                               <span className={styles.selectedRegisterLabel}>
@@ -2122,12 +1921,6 @@ export default function AssetMapClient() {
                             {formatDate(selectedAsset.lastScannedAtIso)}
                           </strong>
                         </span>
-                        <span>
-                          <small>Last known location</small>
-                          <strong title={buildLocationLabel(selectedAsset)}>
-                            {buildLocationLabel(selectedAsset)}
-                          </strong>
-                        </span>
                       </div>
 
                       <div className={styles.selectedActionRow}>
@@ -2136,7 +1929,7 @@ export default function AssetMapClient() {
                           className={`${styles.selectedActionButton} ${styles.selectedActionRegister}`}
                         >
                           <RegisterIcon className={styles.buttonIcon} />
-                          <span>Open register</span>
+                          <span>Asset Register</span>
                         </Link>
                         {selectedAssetGoogleMapsHref ? (
                           <a
@@ -2146,7 +1939,7 @@ export default function AssetMapClient() {
                             className={`${styles.selectedActionButton} ${styles.selectedActionMap}`}
                           >
                             <MapIcon className={styles.buttonIcon} />
-                            <span>Open in Maps</span>
+                            <span>Maps</span>
                           </a>
                         ) : null}
                         {selectedAssetReportHref ? (
@@ -2157,7 +1950,7 @@ export default function AssetMapClient() {
                             className={`${styles.selectedActionButton} ${styles.selectedActionDownload}`}
                           >
                             <DownloadIcon className={styles.buttonIcon} />
-                            <span>PDF report</span>
+                            <span>Download</span>
                           </a>
                         ) : null}
                       </div>
@@ -2166,48 +1959,45 @@ export default function AssetMapClient() {
                 </article>
               ) : null}
 
-              {!selectedAsset &&
-              dataStatus === "ready" &&
+              {dataStatus === "ready" &&
               mapRendererStatus === "ready" &&
               visibleAssets.length ? (
-                <div className={styles.mapHint}>
+                <button
+                  type="button"
+                  className={styles.fitMapButton}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    showAllVisibleAssets();
+                  }}
+                  onPointerDown={(event) => event.stopPropagation()}
+                >
                   <MapIcon className={styles.buttonIcon} />
-                  <span>Choose a marker or an asset from the list</span>
-                </div>
+                  <span>Show all locations</span>
+                  <strong>{visibleAssets.length}</strong>
+                </button>
               ) : null}
 
               {dataStatus === "ready" && mapRendererStatus === "ready" ? (
                 <div
-                  className={styles.mapControlStack}
+                  className={styles.layerControl}
+                  role="group"
                   aria-label="Map style"
                   onPointerDown={(event) => event.stopPropagation()}
                   onClick={(event) => event.stopPropagation()}
                   onDoubleClick={(event) => event.stopPropagation()}
                   onWheel={(event) => event.stopPropagation()}
                 >
-                  <div className={styles.layerControl}>
-                    {BASEMAP_OPTIONS.map((option) => (
-                      <button
-                        key={option.value}
-                        type="button"
-                        className={`${styles.layerButton} ${basemapMode === option.value ? styles.layerButtonActive : ""}`}
-                        onClick={() => setBasemapMode(option.value)}
-                        aria-pressed={basemapMode === option.value}
-                      >
-                        {option.label}
-                      </button>
-                    ))}
-                  </div>
-                  <button
-                    type="button"
-                    className={styles.fitMapButton}
-                    onClick={showAllVisibleAssets}
-                    disabled={!visibleAssets.length}
-                  >
-                    <FocusIcon className={styles.buttonIcon} />
-                    <span>Show all locations</span>
-                    <small>{visibleAssets.length}</small>
-                  </button>
+                  {BASEMAP_OPTIONS.map((option) => (
+                    <button
+                      key={option.value}
+                      type="button"
+                      className={`${styles.layerButton} ${basemapMode === option.value ? styles.layerButtonActive : ""}`}
+                      onClick={() => setBasemapMode(option.value)}
+                      aria-pressed={basemapMode === option.value}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
                 </div>
               ) : null}
             </div>
@@ -2232,11 +2022,7 @@ export default function AssetMapClient() {
           >
             <header className={styles.exportModalHeader}>
               <div>
-                <h2 id="asset-map-export-title">Download asset map</h2>
-                <p>
-                  Choose the file you need, then select the Asset Register to
-                  include.
-                </p>
+                <h2 id="asset-map-export-title">Export Asset Map Tracking</h2>
               </div>
               <button
                 type="button"
@@ -2320,23 +2106,23 @@ export default function AssetMapClient() {
                       Asset Register
                     </span>
                     <button
-                      type="button"
                       ref={exportScopeTriggerRef}
+                      type="button"
                       className={`${styles.exportScopeTrigger} ${isExportScopeMenuOpen ? styles.exportScopeTriggerOpen : ""}`}
                       onClick={() =>
                         setIsExportScopeMenuOpen((current) => !current)
                       }
+                      aria-haspopup="menu"
                       aria-expanded={isExportScopeMenuOpen}
-                      aria-controls="asset-map-export-registers"
                     >
                       <span>{exportFilterLabel}</span>
                       <ChevronDownIcon className={styles.filterChevron} />
                     </button>
                     {isExportScopeMenuOpen ? (
                       <DropdownOverlay
-                        id="asset-map-export-registers"
+                        id="asset-map-export-register-menu"
                         className={`${styles.filterMenu} ${styles.exportScopeMenu}`}
-                        role="group"
+                        role="menu"
                         aria-label="Choose asset register export scope"
                       >
                         {registerFilters.map((filter) => {
@@ -2346,7 +2132,8 @@ export default function AssetMapClient() {
                             <button
                               key={filter.id}
                               type="button"
-                              aria-pressed={isSelected}
+                              role="menuitemradio"
+                              aria-checked={isSelected}
                               className={`${styles.filterMenuOption} ${isSelected ? styles.filterMenuOptionActive : ""}`}
                               onClick={() =>
                                 selectExportRegisterFilter(filter.id)
