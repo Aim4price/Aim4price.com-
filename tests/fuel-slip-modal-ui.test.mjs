@@ -35,10 +35,10 @@ const reviewModal = sliceBetween(
   "modalMode === 'create-storage'",
 );
 
-test('fuel entry, upload and review surfaces share the canonical cost wizard shell', () => {
+test('fuel entry and review surfaces share the canonical cost wizard shell', () => {
   assert.ok(client.includes("import wizardStyles from '../../components/AimWizardModal.module.css'"));
 
-  for (const modal of [uploadModal, manualModal, reviewModal]) {
+  for (const modal of [manualModal, reviewModal]) {
     for (const className of ['overlay', 'dialog', 'header', 'headerText', 'closeButton', 'body', 'panel', 'panelHeading', 'panelNumber', 'footer', 'secondaryAction', 'primaryAction']) {
       assert.match(modal, new RegExp('wizardStyles\\.' + className), 'Expected wizardStyles.' + className);
     }
@@ -60,9 +60,17 @@ test('Aim4price capture is an upload-only step with no operational-detail requir
   assert.match(extraction, /formData\.append\('targetType', targetType\)/);
   assert.match(extraction, /formData\.append\('targetId', targetId\)/);
   assert.doesNotMatch(extraction, /customerFields|missingCustomerFields|getFuelSlipMissingFields|submittedPayload/);
-  assert.match(uploadModal, /Upload the slip only — no extra details are needed\./);
+  assert.match(uploadModal, /role="dialog"/);
+  assert.match(uploadModal, /aria-modal="true"/);
+  assert.match(uploadModal, /styles\.formModal[\s\S]*?styles\.costUploadModal/);
+  assert.match(uploadModal, /Upload fuel slip\/photo/);
+  assert.match(uploadModal, /Aim4price assisted capture/);
+  assert.match(uploadModal, /<section className=\{styles\.uploadPanel\}>[\s\S]*?Documents and photos/);
+  assert.match(uploadModal, /styles\.uploadBox/);
+  assert.match(uploadModal, /styles\.modalFooter/);
+  assert.doesNotMatch(uploadModal, /wizardStyles\.|fuelSlipUploadWizardModal|fuelSlipWizardPanel|fuelSlipWizardHeading/);
   assert.doesNotMatch(uploadModal, /renderFuelSlipExtraFields\(\)|renderFuelSlipValidationNotice\(\)|operational details/);
-  assert.match(styles, /\.fuelSlipFlowBackdrop \.fuelSlipUploadWizardModal\s*\{[\s\S]*?width:\s*min\(860px, 100%\)/);
+  assert.match(styles, /\.fuelSlipFlowBackdrop \.costUploadModal\s*\{[\s\S]*?width:\s*min\(100%, 860px\)/);
 });
 
 test('fuel wizard keeps the canonical two-step progress and final-step save behavior', () => {
