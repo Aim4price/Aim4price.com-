@@ -2734,26 +2734,6 @@ export default function FuelClient({
       return;
     }
 
-    const customerFields = new Set<FuelSlipMissingFieldKey>([
-      'odometerReading',
-      'hourMeterReading',
-      'operatorName',
-      'activityText',
-      'workAreaText',
-    ]);
-    const missingCustomerFields = getFuelSlipMissingFields(
-      fuelSlipDraft,
-      selectedFuelSlipTargetType,
-      selectedFuelSlipUsageMetric,
-      selectedFuelSlipAssetResolved,
-    ).filter((field) => customerFields.has(field));
-
-    if (missingCustomerFields.length) {
-      setFuelSlipAttemptedSubmit(true);
-      setFuelSlipValidationNotice('Add the usage and work information Aim4price cannot read from the slip.');
-      return;
-    }
-
     const extractionRequest = fuelSlipExtractionRequestRef.current + 1;
     fuelSlipExtractionRequestRef.current = extractionRequest;
     setIsExtractingFuelSlip(true);
@@ -2764,18 +2744,6 @@ export default function FuelClient({
       formData.append('file', fuelSlipUploadFile);
       formData.append('targetType', targetType);
       formData.append('targetId', targetId);
-      formData.append('submittedPayload', JSON.stringify({
-        targetLabel: selectedFuelSlipTargetName,
-        usageMetric: selectedFuelSlipUsageMetric,
-        odometerReading: fuelSlipDraft.odometerReading,
-        hourMeterReading: fuelSlipDraft.hourMeterReading,
-        operatorName: fuelSlipDraft.operatorName,
-        activityText: fuelSlipDraft.activityText,
-        workAreaText: fuelSlipDraft.workAreaText,
-        note: fuelSlipDraft.note,
-        assetFuelPercentBefore: fuelSlipDraft.assetFuelPercentBefore,
-        assetFuelPercentAfter: fuelSlipDraft.assetFuelPercentAfter,
-      }));
 
       const response = await fetch(scopedApiUrl('/api/capture-requests/fuel-slip'), {
         method: 'POST',
@@ -4731,20 +4699,19 @@ export default function FuelClient({
             <div className={`${styles.modalHeader} ${wizardStyles.header}`}>
               <div className={wizardStyles.headerText}>
                 <h2 id="fuel-slip-upload-title">Upload for Aim4price capture</h2>
-                <p>{selectedFuelSlipTargetName} · Upload details</p>
+                <p>{selectedFuelSlipTargetName} · Slip upload</p>
               </div>
               <button type="button" className={`${styles.closeButton} ${wizardStyles.closeButton}`} onClick={() => closeFuelSlipFlow()} aria-label="Close" disabled={isExtractingFuelSlip}><CloseIcon /></button>
             </div>
             <div className={`${styles.modalDivider} ${wizardStyles.divider}`} />
             <div className={`${styles.formModalScrollBody} ${wizardStyles.body}`}>
-              <p className={wizardStyles.intro}>Add one clear photo or PDF. Aim4price captures the slip and keeps your operational details together.</p>
+              <p className={wizardStyles.intro}>Add one clear photo or PDF. Aim4price will match it to the selected asset or storage tank and capture the slip details.</p>
               <section className={`${styles.fuelSlipWizardPanel} ${wizardStyles.panel}`}>
                 <div className={`${styles.fuelSlipWizardHeading} ${wizardStyles.panelHeading}`}>
                   <span className={wizardStyles.panelNumber} aria-hidden="true">1</span>
                   <h3>Upload the fuel slip</h3>
-                  <p>Files are checked and captured within 24 hours.</p>
+                  <p>Upload the slip only — no extra details are needed.</p>
                 </div>
-                {renderFuelSlipValidationNotice()}
                 <section className={styles.uploadPanel}>
                   <h3>Document or photo</h3>
                   <div className={`${styles.uploadBox} ${fuelSlipUploadReady ? styles.uploadBoxReady : ''}`}>
@@ -4757,8 +4724,6 @@ export default function FuelClient({
                     {fuelSlipUploadFileName ? <p>{fuelSlipUploadFileName}</p> : null}
                   </div>
                 </section>
-                <p className={styles.fuelSlipHelperText}>Add the operational details that are not shown on the slip. Aim4price will capture the supplier, date, litres, VAT and amount.</p>
-                {renderFuelSlipExtraFields()}
               </section>
             </div>
             <div className={`${styles.modalFooter} ${wizardStyles.footer}`}>
