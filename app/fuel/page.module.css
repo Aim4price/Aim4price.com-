@@ -5407,6 +5407,10 @@
     linear-gradient(180deg, #fbfdfc 0%, #f7faf9 100%);
 }
 
+.fuelSlipFlowBackdrop .fuelSlipMenuModal .sourceChoiceGrid {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .fuelSlipFlowBackdrop .fuelSlipChoiceModal .fuelSlipChoiceOption {
   position: relative;
   min-height: 6.35rem;
