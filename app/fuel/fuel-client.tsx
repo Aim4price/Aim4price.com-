@@ -1905,6 +1905,28 @@ export default function FuelClient({
     fuelSlipManagerFilters.year !== 'all',
     fuelSlipManagerFilters.month !== 'all',
   ].filter(Boolean).length, [fuelSlipManagerFilters]);
+  const activeFuelSlipManagerFilterChips = useMemo(() => {
+    const chips: Array<{ id: FuelSlipManagerFilterKey; label: string }> = [];
+
+    if (fuelSlipManagerFilters.targetKey !== 'all') {
+      const target = fuelSlipManagerTargetOptions.find((option) => option.value === fuelSlipManagerFilters.targetKey);
+      chips.push({ id: 'target', label: `Target: ${target?.label ?? 'Selected target'}` });
+    }
+    if (fuelSlipManagerFilters.capture !== 'all') {
+      const capture = FUEL_SLIP_CAPTURE_FILTER_OPTIONS.find((option) => option.value === fuelSlipManagerFilters.capture);
+      chips.push({ id: 'capture', label: `Source / status: ${capture?.label ?? 'Selected source'}` });
+    }
+    if (fuelSlipManagerFilters.year !== 'all') {
+      chips.push({ id: 'year', label: `Year: ${fuelSlipManagerFilters.year}` });
+    }
+    if (fuelSlipManagerFilters.month !== 'all') {
+      const month = fuelSlipManagerMonthOptions.find((option) => option.value === fuelSlipManagerFilters.month);
+      chips.push({ id: 'month', label: `Month: ${month?.label ?? fuelSlipManagerFilters.month}` });
+    }
+
+    return chips;
+  }, [fuelSlipManagerFilters, fuelSlipManagerMonthOptions, fuelSlipManagerTargetOptions]);
+  const activeFuelSlipManagerRefinementCount = activeFuelSlipManagerFilterCount + (fuelSlipManagerSearch.trim() ? 1 : 0);
   const isFuelSlipManagerChildDialogOpen = fuelSlipManagerFilterOpen
     || fuelSlipDownloadOpen
     || Boolean(historyFuelSlip)
@@ -3102,6 +3124,16 @@ export default function FuelClient({
     setFuelSlipManagerFilterOpen(false);
   }
 
+  function removeFuelSlipManagerFilter(filter: FuelSlipManagerFilterKey) {
+    setFuelSlipManagerFilters((current) => {
+      if (filter === 'target') return { ...current, targetKey: 'all' };
+      if (filter === 'capture') return { ...current, capture: 'all' };
+      if (filter === 'year') return { ...current, year: 'all' };
+      return { ...current, month: 'all' };
+    });
+    setCurrentFuelSlipManagerPage(1);
+  }
+
   function applyFuelSlipManagerFilters() {
     setFuelSlipManagerFilters(draftFuelSlipManagerFilters);
     setCurrentFuelSlipManagerPage(1);
@@ -4020,9 +4052,13 @@ export default function FuelClient({
             aria-hidden={isFuelSlipManagerChildDialogOpen ? true : undefined}
           >
             <div className={`${styles.fuelSlipManagerHeader} ${wizardStyles.header}`}>
-              <div className={wizardStyles.headerText}>
+              <div className={`${wizardStyles.headerText} ${styles.fuelSlipManagerHeaderCopy}`}>
+                <span className={styles.fuelSlipManagerEyebrow}>
+                  <FuelSlipsIcon aria-hidden="true" />
+                  Fuel Ledger
+                </span>
                 <h2 id="fuel-slip-manager-title">Manage fuel slips</h2>
-                <p>Find, review and manage saved slips without losing your place.</p>
+                <p>Search, filter, review and download saved fuel slips.</p>
               </div>
               <button type="button" className={`${styles.closeButton} ${wizardStyles.closeButton}`} onClick={closeModal} aria-label="Close manage fuel slips"><CloseIcon /></button>
             </div>
@@ -4036,7 +4072,7 @@ export default function FuelClient({
                     className={styles.searchInput}
                     value={fuelSlipManagerSearch}
                     onChange={(event) => setFuelSlipManagerSearch(event.target.value)}
-                    placeholder="Search supplier, asset, slip number or amount..."
+                    placeholder="Search supplier, target, slip or transaction number..."
                     aria-label="Search saved fuel slips"
                   />
                   {fuelSlipManagerSearch.trim() ? (
@@ -4070,15 +4106,35 @@ export default function FuelClient({
                 </div>
               </section>
 
-              <div className={styles.fuelSlipManagerContextBar}>
-                <span>
-                  {activeFuelSlipManagerFilterCount || fuelSlipManagerSearch.trim()
-                    ? `${activeFuelSlipManagerFilterCount + (fuelSlipManagerSearch.trim() ? 1 : 0)} active ${activeFuelSlipManagerFilterCount + (fuelSlipManagerSearch.trim() ? 1 : 0) === 1 ? 'search or filter' : 'searches and filters'}`
-                    : recentFuelSlips.length >= 2000
-                      ? 'Showing the latest 2,000 loaded fuel slips'
-                      : 'Showing all loaded fuel slips'}
-                </span>
-                {activeFuelSlipManagerFilterCount || fuelSlipManagerSearch.trim() ? (
+              <section className={styles.fuelSlipManagerContextBar} aria-label="Current fuel slip view">
+                <div className={styles.fuelSlipManagerContextLead}>
+                  <span className={styles.fuelSlipManagerContextIcon} aria-hidden="true"><FilterIcon /></span>
+                  <span className={styles.fuelSlipManagerContextCopy}>
+                    <strong>{activeFuelSlipManagerRefinementCount ? 'Refined view' : 'All saved slips'}</strong>
+                    <small>{activeFuelSlipManagerRefinementCount
+                      ? `${activeFuelSlipManagerRefinementCount} active ${activeFuelSlipManagerRefinementCount === 1 ? 'search or filter' : 'searches and filters'}`
+                      : recentFuelSlips.length >= 2000
+                        ? 'Latest 2,000 loaded slips'
+                        : `${recentFuelSlips.length.toLocaleString('en-ZA')} loaded ${recentFuelSlips.length === 1 ? 'slip' : 'slips'}`}</small>
+                  </span>
+                </div>
+                {activeFuelSlipManagerRefinementCount ? (
+                  <div className={styles.fuelSlipManagerContextChips} role="group" aria-label="Active fuel slip search and filters">
+                    {fuelSlipManagerSearch.trim() ? (
+                      <button type="button" title={fuelSlipManagerSearch.trim()} onClick={() => setFuelSlipManagerSearch('')} aria-label={`Remove search for ${fuelSlipManagerSearch.trim()}`}>
+                        <span>Search: “{fuelSlipManagerSearch.trim()}”</span>
+                        <strong aria-hidden="true">×</strong>
+                      </button>
+                    ) : null}
+                    {activeFuelSlipManagerFilterChips.map((chip) => (
+                      <button type="button" key={chip.id} title={chip.label} onClick={() => removeFuelSlipManagerFilter(chip.id)} aria-label={`Remove ${chip.label} filter`}>
+                        <span>{chip.label}</span>
+                        <strong aria-hidden="true">×</strong>
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
+                {activeFuelSlipManagerRefinementCount ? (
                   <button
                     type="button"
                     onClick={() => {
@@ -4089,11 +4145,12 @@ export default function FuelClient({
                     Clear all
                   </button>
                 ) : null}
-              </div>
+              </section>
 
               <section className={styles.fuelSlipManagerPanel} aria-label="Saved fuel slips">
                 <div className={styles.fuelSlipManagerSummary}>
                   <div className={styles.fuelSlipManagerResultCopy} aria-live="polite">
+                    <span className={styles.fuelSlipManagerSummaryLabel}>Ledger summary</span>
                     <strong>{visibleFuelSlipManagerSlips.length.toLocaleString('en-ZA')} {visibleFuelSlipManagerSlips.length === 1 ? 'fuel slip' : 'fuel slips'}</strong>
                     <span>{visibleFuelSlipManagerSlips.length
                       ? `Showing ${fuelSlipManagerResultStart.toLocaleString('en-ZA')}–${fuelSlipManagerResultEnd.toLocaleString('en-ZA')} of ${visibleFuelSlipManagerSlips.length.toLocaleString('en-ZA')}`
@@ -4350,10 +4407,11 @@ export default function FuelClient({
 
       {modalMode === 'fuel-slip-manager' && fuelSlipManagerFilterOpen ? (
         <div className={styles.fuelSlipSubModalBackdrop}>
-          <div className={styles.fuelSlipFilterModal} ref={fuelSlipManagerChildDialogRef} role="dialog" aria-modal="true" aria-labelledby="fuel-slip-filter-title">
+          <div className={`${styles.fuelSlipFilterModal} ${styles.fuelSlipManagerFilterModal}`} ref={fuelSlipManagerChildDialogRef} role="dialog" aria-modal="true" aria-labelledby="fuel-slip-filter-title" aria-describedby="fuel-slip-filter-description">
             <div className={styles.modalHeader}>
               <div>
                 <h2 id="fuel-slip-filter-title">Filter fuel slips</h2>
+                <p id="fuel-slip-filter-description">Narrow the Fuel Ledger by target, source and slip period.</p>
               </div>
               <button type="button" className={styles.closeButton} onClick={closeFuelSlipManagerFilterPanel} aria-label="Close fuel slip filters"><CloseIcon /></button>
             </div>
@@ -4375,7 +4433,7 @@ export default function FuelClient({
               />
 
               <FuelSlipFilterDropdown
-                label="Source"
+                label="Source / status"
                 dropdownKey="capture"
                 value={draftFuelSlipManagerFilters.capture}
                 options={FUEL_SLIP_CAPTURE_FILTER_OPTIONS}
