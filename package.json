@@ -29,6 +29,7 @@
     "test:asset-groups": "node --test tests/asset-register-groups.test.mjs",
     "test:umbrella-modal-design": "node --test tests/umbrella-wizard-modal-parity.test.mjs tests/budget-review-save-guard.test.mjs tests/manual-cost-wizard-ui.test.mjs tests/account-document-vault.test.mjs",
     "test:asset-card-ui": "node --experimental-strip-types --test tests/asset-register-card-ui.test.mjs tests/viewport-scrollbar.test.mjs",
+    "test:asset-map": "node --test tests/asset-map-ux.test.mjs",
     "test:dropdown-overlays": "node --experimental-strip-types --test tests/dropdown-overlay.test.mjs",
     "test:documents": "node --test tests/account-document-vault.test.mjs",
     "test:assistance-network": "node --test tests/assistance-network.test.mjs",
