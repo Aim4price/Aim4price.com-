@@ -4,14 +4,12 @@ import test from "node:test";
 
 const read = (path) => readFile(new URL(`../${path}`, import.meta.url), "utf8");
 
-test("account overview stays compact and gives the update date secondary weight", async () => {
+test("account overview stays compact without redundant update metadata", async () => {
   const source = await read("app/account/account-client.tsx");
 
   assert.equal((source.match(/className=\{styles\.metricTile\}/g) ?? []).length, 4);
-  assert.match(
-    source,
-    /className=\{styles\.overviewUpdated\}[\s\S]*?Last updated[\s\S]*?\{updatedLabel\}/,
-  );
+  assert.doesNotMatch(source, /styles\.overviewUpdated|updatedLabel|Last updated/);
+  assert.doesNotMatch(source, /function formatDate/);
   assert.match(source, /role="progressbar"/);
   assert.match(source, /aria-valuenow=\{completionPercentage\}/);
 });
@@ -30,6 +28,8 @@ test("quick actions keep their button treatment while gaining clear groups", asy
   assert.match(source, /<strong>Owner App access<\/strong>/);
   assert.match(source, /<strong>Marketplace contact<\/strong>/);
   assert.match(source, /Discovery settings/);
+  assert.doesNotMatch(source, /Profile, registers and secure asset access/);
+  assert.doesNotMatch(source, /People, marketplace and Discovery settings/);
 
   const quickActionsStart = source.indexOf("styles.quickActionsCard");
   const securityStart = source.indexOf("styles.securityCard", quickActionsStart);
@@ -112,6 +112,8 @@ test("dashboard styling balances desktop cards and remains touch safe", async ()
     styles,
     /\.quickActionGroups \{[\s\S]*?grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/,
   );
+  assert.doesNotMatch(styles, /\.overviewUpdated/);
+  assert.doesNotMatch(styles, /\.quickActionGroupHeader p/);
   assert.match(styles, /\.heroAvatarEditBadge \{/);
   assert.match(
     styles,
