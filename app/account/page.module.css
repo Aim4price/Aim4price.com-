@@ -4296,41 +4296,6 @@
   grid-area: security;
 }
 
-.overviewHeader {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 0.8rem;
-}
-
-.overviewHeader > div {
-  min-width: 0;
-}
-
-.overviewUpdated {
-  flex: 0 0 auto;
-  display: grid;
-  gap: 0.1rem;
-  min-height: 2.5rem;
-  padding: 0.45rem 0.65rem;
-  border: 1px solid rgba(62, 110, 213, 0.12);
-  border-radius: 0.8rem;
-  color: #64746f;
-  background: rgba(62, 110, 213, 0.055);
-  font-size: 0.64rem;
-  font-weight: 800;
-  line-height: 1.2;
-  letter-spacing: 0.035em;
-  text-transform: uppercase;
-}
-
-.overviewUpdated strong {
-  color: #1b4167;
-  font-size: 0.75rem;
-  letter-spacing: 0;
-  text-transform: none;
-}
-
 .overviewCard .metricGrid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.75rem;
@@ -4358,7 +4323,6 @@
 }
 
 .quickActionGroupHeader {
-  min-height: 3.4rem;
   margin-bottom: 0.65rem;
   padding: 0 0.1rem;
 }
@@ -4372,17 +4336,6 @@
   font-weight: 850;
   line-height: 1.2;
   letter-spacing: -0.025em;
-}
-
-.quickActionGroupHeader p {
-  margin: 0.2rem 0 0;
-  overflow: hidden;
-  color: #607168;
-  font-size: 0.72rem;
-  font-weight: 650;
-  line-height: 1.35;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .quickActionGroup .quickActionList {
@@ -4686,10 +4639,6 @@
     border-radius: 1.2rem;
   }
 
-  .overviewHeader {
-    align-items: center;
-  }
-
   .overviewCard .metricGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   }
@@ -4727,16 +4676,6 @@
 
   .passwordModalCard .modalField input {
     font-size: 1rem;
-  }
-}
-
-@media (max-width: 520px) {
-  .overviewHeader {
-    display: grid;
-  }
-
-  .overviewUpdated {
-    width: fit-content;
   }
 }
 
