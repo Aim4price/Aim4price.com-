@@ -5399,16 +5399,12 @@
 
 .fuelSlipFlowBackdrop .fuelSlipChoiceModal .sourceChoiceGrid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr);
   gap: 0.9rem;
   padding: 1.35rem 1.7rem 1.55rem;
   background:
     radial-gradient(circle at 100% 0%, rgba(25, 116, 84, 0.05), transparent 34%),
     linear-gradient(180deg, #fbfdfc 0%, #f7faf9 100%);
-}
-
-.fuelSlipFlowBackdrop .fuelSlipMenuModal .sourceChoiceGrid {
-  grid-template-columns: minmax(0, 1fr);
 }
 
 .fuelSlipFlowBackdrop .fuelSlipChoiceModal .fuelSlipChoiceOption {
