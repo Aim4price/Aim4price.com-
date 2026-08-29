@@ -43,6 +43,10 @@
   min-height: 0;
 }
 
+.transferLauncher .actionButtonWithoutMeta {
+  grid-template-columns: auto minmax(0, 1fr);
+}
+
 .transferGuide {
   min-width: 0;
   display: grid;

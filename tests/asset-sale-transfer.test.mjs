@@ -163,6 +163,9 @@ test('Account exposes modal-based incoming and outgoing transfer management', ()
   assert.match(transferPage, /launcherStyles\.actionButtonManage/);
   assert.match(transferPage, /openFlow\('incoming'\)/);
   assert.match(transferPage, /openFlow\('outgoing'\)/);
+  assert.doesNotMatch(transferPage, /launcherStyles\.actionArrow/);
+  assert.match(transferPage, /launcherStyles\.countPill/);
+  assert.match(transferPage, /styles\.actionButtonWithoutMeta/);
   assert.match(transferPage, /activeFlow === 'incoming'/);
   assert.match(transferPage, /activeFlow === 'outgoing'/);
   assert.match(transferPage, />Incoming</);

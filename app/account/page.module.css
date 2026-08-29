@@ -389,7 +389,7 @@
   width: 100%;
   min-height: 3.2rem;
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
   gap: 0.82rem;
   padding: 0.72rem 0.82rem;
@@ -457,11 +457,6 @@
   display: block;
 }
 
-.quickActionChevron {
-  color: #29483d;
-  font-size: 1.15rem;
-  font-weight: 900;
-}
 
 .quickActionDanger {
   color: #ab3a3a;
@@ -2632,7 +2627,7 @@
 
 /* === Account quick-action icon refinements === */
 .quickActionButton {
-  grid-template-columns: 2.34rem minmax(0, 1fr) 1.1rem;
+  grid-template-columns: 2.34rem minmax(0, 1fr);
   gap: 0.86rem;
   background: linear-gradient(
     180deg,
@@ -2699,10 +2694,6 @@
   border-color: rgba(31, 138, 102, 0.24);
 }
 
-.quickActionChevron {
-  justify-self: end;
-  line-height: 1;
-}
 
 .quickActionDanger:hover {
   border-color: rgba(198, 75, 75, 0.22);
@@ -2730,7 +2721,7 @@
 
 @media (max-width: 760px) {
   .quickActionButton {
-    grid-template-columns: 2.22rem minmax(0, 1fr) 1rem;
+    grid-template-columns: 2.22rem minmax(0, 1fr);
     min-height: 3.35rem;
     gap: 0.78rem;
   }
@@ -4365,7 +4356,7 @@
   width: 100%;
   min-height: 4rem;
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
   gap: 0.82rem;
   padding: 0.72rem 0.9rem;

@@ -2350,7 +2350,6 @@ export default function AccountClient({
                   >
                     <QuickActionIcon name="business" />
                     <strong>Edit business details</strong>
-                    <span className={styles.quickActionChevron} aria-hidden="true">›</span>
                   </button>
 
                   {isAssetRegisterAccount ? (
@@ -2361,7 +2360,6 @@ export default function AccountClient({
                     >
                       <QuickActionIcon name="registers" />
                       <strong>Manage asset registers</strong>
-                      <span className={styles.quickActionChevron} aria-hidden="true">›</span>
                     </button>
                   ) : null}
 
@@ -2373,7 +2371,6 @@ export default function AccountClient({
                     >
                       <QuickActionIcon name="claim" />
                       <strong>Claim or send an asset</strong>
-                      <span className={styles.quickActionChevron} aria-hidden="true">›</span>
                     </button>
                   ) : null}
 
@@ -2385,7 +2382,6 @@ export default function AccountClient({
                     >
                       <QuickActionIcon name="pin" />
                       <strong>Update QR PIN</strong>
-                      <span className={styles.quickActionChevron} aria-hidden="true">›</span>
                     </button>
                   ) : null}
                 </div>
@@ -2409,7 +2405,6 @@ export default function AccountClient({
                     >
                       <QuickActionIcon name="fieldManager" />
                       <strong>Field Manager access</strong>
-                      <span className={styles.quickActionChevron} aria-hidden="true">›</span>
                     </button>
                   ) : null}
 
@@ -2422,7 +2417,6 @@ export default function AccountClient({
                     >
                       <QuickActionIcon name="ownerApp" />
                       <strong>Owner App access</strong>
-                      <span className={styles.quickActionChevron} aria-hidden="true">›</span>
                     </button>
                   ) : null}
 
@@ -2434,7 +2428,6 @@ export default function AccountClient({
                     >
                       <QuickActionIcon name="dealer" />
                       <strong>{isMiddlemanAccount ? "Middleman app access" : "Manage Dealer App staff"}</strong>
-                      <span className={styles.quickActionChevron} aria-hidden="true">›</span>
                     </button>
                   ) : null}
 
@@ -2447,7 +2440,6 @@ export default function AccountClient({
                     >
                       <QuickActionIcon name="marketplace" />
                       <strong>Marketplace contact</strong>
-                      <span className={styles.quickActionChevron} aria-hidden="true">›</span>
                     </button>
                   ) : null}
 
@@ -2455,7 +2447,6 @@ export default function AccountClient({
                     <Link href="/my-showroom" className={styles.quickActionButton}>
                       <QuickActionIcon name="showroom" />
                       <strong>Manage my showroom</strong>
-                      <span className={styles.quickActionChevron} aria-hidden="true">›</span>
                     </Link>
                   ) : null}
 
@@ -2467,7 +2458,6 @@ export default function AccountClient({
                     >
                       <QuickActionIcon name="discovery" />
                       <strong>Discovery settings</strong>
-                      <span className={styles.quickActionChevron} aria-hidden="true">›</span>
                     </button>
                   ) : null}
 
@@ -2479,7 +2469,6 @@ export default function AccountClient({
                     >
                       <QuickActionIcon name="directory" />
                       <strong>Partner directory</strong>
-                      <span className={styles.quickActionChevron} aria-hidden="true">›</span>
                     </button>
                   ) : null}
                 </div>
@@ -2506,7 +2495,6 @@ export default function AccountClient({
                 <span className={styles.securityActionCopy}>
                   <strong>Change password</strong>
                 </span>
-                <span className={styles.quickActionChevron} aria-hidden="true">›</span>
               </button>
 
               <button
@@ -2521,7 +2509,6 @@ export default function AccountClient({
                     {isSendingResetEmail ? "Sending reset link..." : "Email a reset link"}
                   </strong>
                 </span>
-                <span className={styles.quickActionChevron} aria-hidden="true">›</span>
               </button>
             </div>
           </section>
