@@ -1,7 +1,14 @@
 "use client";
 
 import DropdownOverlay from "../../components/DropdownOverlay";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type KeyboardEvent as ReactKeyboardEvent,
+} from "react";
 import Link from "next/link";
 import AppHeader from "../../components/AppHeader";
 import styles from "./page.module.css";
@@ -98,6 +105,57 @@ const DEFAULT_CENTER: [number, number] = [-29.0, 24.0];
 const DEFAULT_ZOOM = 5;
 const ALL_REGISTER_FILTER_ID = "all";
 const BASEMAP_STORAGE_KEY = "aim4price-asset-map-basemap";
+
+function handleMenuNavigation(event: ReactKeyboardEvent<HTMLDivElement>) {
+  if (
+    event.key !== "ArrowDown" &&
+    event.key !== "ArrowUp" &&
+    event.key !== "Home" &&
+    event.key !== "End"
+  ) {
+    return;
+  }
+
+  const menuItems = Array.from(
+    event.currentTarget.querySelectorAll<HTMLButtonElement>(
+      '[role="menuitemradio"]:not([disabled])',
+    ),
+  );
+  if (!menuItems.length) return;
+
+  event.preventDefault();
+  const currentIndex = menuItems.indexOf(
+    document.activeElement as HTMLButtonElement,
+  );
+  let nextIndex = 0;
+
+  if (event.key === "End") {
+    nextIndex = menuItems.length - 1;
+  } else if (event.key === "ArrowUp") {
+    nextIndex = currentIndex <= 0 ? menuItems.length - 1 : currentIndex - 1;
+  } else if (event.key === "ArrowDown") {
+    nextIndex = currentIndex >= menuItems.length - 1 ? 0 : currentIndex + 1;
+  }
+
+  menuItems[nextIndex]?.focus();
+}
+
+function focusAdjacentControl(
+  root: ParentNode,
+  origin: HTMLElement | null,
+  backwards: boolean,
+) {
+  if (!origin) return;
+
+  const focusableElements = Array.from(
+    root.querySelectorAll<HTMLElement>(
+      'a[href], button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])',
+    ),
+  ).filter((element) => !element.hasAttribute("aria-hidden"));
+  const originIndex = focusableElements.indexOf(origin);
+  const nextIndex = backwards ? originIndex - 1 : originIndex + 1;
+  (focusableElements[nextIndex] ?? origin).focus();
+}
 const BASEMAP_OPTIONS: Array<{ value: BasemapMode; label: string }> = [
   { value: "road", label: "Map" },
   { value: "satellite", label: "Satellite" },
@@ -652,6 +710,8 @@ export default function AssetMapClient() {
   const exportScopeTriggerRef = useRef<HTMLButtonElement | null>(null);
   const exportModalRef = useRef<HTMLElement | null>(null);
   const exportTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const sidebarCollapseTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const sidebarExpandTriggerRef = useRef<HTMLButtonElement | null>(null);
   const mapElementRef = useRef<HTMLDivElement | null>(null);
   const selectedAssetCardRef = useRef<HTMLElement | null>(null);
   const mapRef = useRef<any>(null);
@@ -794,6 +854,44 @@ export default function AssetMapClient() {
   }, [isExportModalOpen, isExportScopeMenuOpen]);
 
   useEffect(() => {
+    if (!isFilterMenuOpen || typeof window === "undefined") {
+      return undefined;
+    }
+
+    const animationFrame = window.requestAnimationFrame(() => {
+      const menu = document.getElementById("asset-map-register-filter-menu");
+      const selectedItem = menu?.querySelector<HTMLElement>(
+        '[role="menuitemradio"][aria-checked="true"]',
+      );
+      const firstItem = menu?.querySelector<HTMLElement>(
+        '[role="menuitemradio"]',
+      );
+      (selectedItem ?? firstItem)?.focus();
+    });
+
+    return () => window.cancelAnimationFrame(animationFrame);
+  }, [isFilterMenuOpen]);
+
+  useEffect(() => {
+    if (!isExportScopeMenuOpen || typeof window === "undefined") {
+      return undefined;
+    }
+
+    const animationFrame = window.requestAnimationFrame(() => {
+      const menu = document.getElementById("asset-map-export-register-menu");
+      const selectedItem = menu?.querySelector<HTMLElement>(
+        '[role="menuitemradio"][aria-checked="true"]',
+      );
+      const firstItem = menu?.querySelector<HTMLElement>(
+        '[role="menuitemradio"]',
+      );
+      (selectedItem ?? firstItem)?.focus();
+    });
+
+    return () => window.cancelAnimationFrame(animationFrame);
+  }, [isExportScopeMenuOpen]);
+
+  useEffect(() => {
     if (
       typeof window === "undefined" ||
       (!isFilterMenuOpen &&
@@ -832,6 +930,8 @@ export default function AssetMapClient() {
     };
 
     const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.defaultPrevented) return;
+
       if (event.key === "Tab" && isExportModalOpen && exportModalRef.current) {
         const focusRoots = [
           exportModalRef.current,
@@ -1438,6 +1538,46 @@ export default function AssetMapClient() {
     exportScopeTriggerRef.current?.focus();
   }
 
+  function handlePageFilterMenuKeyDown(
+    event: ReactKeyboardEvent<HTMLDivElement>,
+  ) {
+    handleMenuNavigation(event);
+    if (event.key !== "Tab") return;
+
+    event.preventDefault();
+    setIsFilterMenuOpen(false);
+    focusAdjacentControl(document, filterTriggerRef.current, event.shiftKey);
+  }
+
+  function handleExportScopeMenuKeyDown(
+    event: ReactKeyboardEvent<HTMLDivElement>,
+  ) {
+    handleMenuNavigation(event);
+    if (event.key !== "Tab") return;
+
+    event.preventDefault();
+    setIsExportScopeMenuOpen(false);
+    if (exportModalRef.current) {
+      focusAdjacentControl(
+        exportModalRef.current,
+        exportScopeTriggerRef.current,
+        event.shiftKey,
+      );
+    }
+  }
+
+  function updateSidebarCollapsed(collapsed: boolean) {
+    setIsSidebarCollapsed(collapsed);
+    if (typeof window === "undefined") return;
+
+    window.requestAnimationFrame(() => {
+      const nextTrigger = collapsed
+        ? sidebarExpandTriggerRef.current
+        : sidebarCollapseTriggerRef.current;
+      nextTrigger?.focus();
+    });
+  }
+
   function retryMapRenderer() {
     const map = mapRef.current;
     if (map) {
@@ -1520,6 +1660,7 @@ export default function AssetMapClient() {
                     onClick={() => setIsFilterMenuOpen((current) => !current)}
                     aria-haspopup="menu"
                     aria-expanded={isFilterMenuOpen}
+                    aria-controls="asset-map-register-filter-menu"
                     aria-label={`Filter: ${selectedFilterLabel}`}
                   >
                     <FilterIcon className={styles.buttonIcon} />
@@ -1534,6 +1675,7 @@ export default function AssetMapClient() {
                       matchAnchorWidth={false}
                       role="menu"
                       aria-label="Filter mapped assets by asset register"
+                      onKeyDown={handlePageFilterMenuKeyDown}
                     >
                       {registerFilters.map((filter) => {
                         const isSelected = filter.id === selectedRegisterId;
@@ -1544,6 +1686,7 @@ export default function AssetMapClient() {
                             type="button"
                             role="menuitemradio"
                             aria-checked={isSelected}
+                            tabIndex={isSelected ? 0 : -1}
                             className={`${styles.filterMenuOption} ${isSelected ? styles.filterMenuOptionActive : ""}`}
                             onClick={() => selectPageRegisterFilter(filter.id)}
                           >
@@ -1586,9 +1729,10 @@ export default function AssetMapClient() {
             >
               <div className={styles.assetSidebarHeader}>
                 <button
+                  ref={sidebarCollapseTriggerRef}
                   type="button"
                   className={styles.sidebarToggleButton}
-                  onClick={() => setIsSidebarCollapsed((current) => !current)}
+                  onClick={() => updateSidebarCollapsed(true)}
                   aria-label={
                     isSidebarCollapsed
                       ? "Expand asset list"
@@ -1716,9 +1860,10 @@ export default function AssetMapClient() {
             <div className={styles.assetMapShell}>
               {isSidebarCollapsed ? (
                 <button
+                  ref={sidebarExpandTriggerRef}
                   type="button"
                   className={styles.sidebarExpandButton}
-                  onClick={() => setIsSidebarCollapsed(false)}
+                  onClick={() => updateSidebarCollapsed(false)}
                   aria-label="Expand asset list"
                   aria-expanded="false"
                   aria-controls="asset-map-asset-list"
@@ -2114,6 +2259,7 @@ export default function AssetMapClient() {
                       }
                       aria-haspopup="menu"
                       aria-expanded={isExportScopeMenuOpen}
+                      aria-controls="asset-map-export-register-menu"
                     >
                       <span>{exportFilterLabel}</span>
                       <ChevronDownIcon className={styles.filterChevron} />
@@ -2124,6 +2270,7 @@ export default function AssetMapClient() {
                         className={`${styles.filterMenu} ${styles.exportScopeMenu}`}
                         role="menu"
                         aria-label="Choose asset register export scope"
+                        onKeyDown={handleExportScopeMenuKeyDown}
                       >
                         {registerFilters.map((filter) => {
                           const isSelected = filter.id === exportRegisterId;
@@ -2134,6 +2281,7 @@ export default function AssetMapClient() {
                               type="button"
                               role="menuitemradio"
                               aria-checked={isSelected}
+                              tabIndex={isSelected ? 0 : -1}
                               className={`${styles.filterMenuOption} ${isSelected ? styles.filterMenuOptionActive : ""}`}
                               onClick={() =>
                                 selectExportRegisterFilter(filter.id)
