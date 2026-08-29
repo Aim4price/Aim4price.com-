@@ -20,11 +20,11 @@ test('quick inflation offers 3%, shows the active choice, and recalculates immed
 
 test('future condition uses the same retained-value percentages as the estimate page', () => {
   for (const [condition, factor] of [
-    ['excellent', '0.95'],
-    ['good', '0.85'],
-    ['fair', '0.75'],
-    ['used', '0.65'],
-    ['serious', '0.55'],
+    ['excellent', '1'],
+    ['good', '0.9'],
+    ['fair', '0.7'],
+    ['used', '0.45'],
+    ['serious', '0.25'],
   ]) {
     assert.match(sharedValuation, new RegExp(`${condition}:\\s*${factor.replace('.', '\\.')}\\b`));
   }

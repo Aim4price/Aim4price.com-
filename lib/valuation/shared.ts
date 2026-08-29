@@ -12,11 +12,11 @@ import {
 import { resolveSalvageValue } from './valuation-rules';
 
 export const CONDITION_FACTORS: Record<ConditionKey, number> = {
-  excellent: 0.95,
-  good: 0.85,
-  fair: 0.75,
-  used: 0.65,
-  serious: 0.55,
+  excellent: 1,
+  good: 0.9,
+  fair: 0.7,
+  used: 0.45,
+  serious: 0.25,
 };
 
 export const DEFAULT_ENGINE_FLOOR_PERCENT = 0.05;
@@ -257,7 +257,7 @@ export function getValuationConditionFactorOverride(
     return applyPopularityToConditionFactor(
       customConditionPercent / 100,
       advancedAssumptions?.popularityStars,
-      { min: ADVANCED_CONDITION_FACTOR_MIN_PERCENT / 100, max: ADVANCED_CONDITION_FACTOR_MAX_PERCENT / 100 },
+      { min: 0.1, max: ADVANCED_CONDITION_FACTOR_MAX_PERCENT / 100 },
     );
   }
 
