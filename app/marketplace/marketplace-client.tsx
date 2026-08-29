@@ -12,6 +12,7 @@ import {
 import AppHeader from '../../components/AppHeader';
 import GroupedCurrencyInput from '../../components/GroupedCurrencyInput';
 import MarketplaceOutcomeModal from '../../components/MarketplaceOutcomeModal';
+import MarketplaceWhatsAppAction from '../../components/MarketplaceWhatsAppAction';
 import styles from './page.module.css';
 import dealerStyles from '../dealer/dealer.module.css';
 import {
@@ -2485,6 +2486,9 @@ export default function MarketplaceClient({
   ].filter(Boolean) as ActiveFilterChip[];
 
   const canManageActiveListing = Boolean(activeListing?.canManage && activeListing?.sourceAssetId);
+  const activeSellerWhatsAppHref = activeListing && canExposeSellerContact
+    ? sellerWhatsAppHref(activeListing)
+    : '';
 
   const updateModalScrollRail = useCallback(() => {
     const node = modalDetailsRef.current;
@@ -3754,18 +3758,11 @@ export default function MarketplaceClient({
                       ) : null}
                     </div>
 
-                    {sellerWhatsAppHref(activeListing) ? (
-                      <nav className={styles.lockedActions} aria-label="Contact seller">
-                        <a
-                          href={sellerWhatsAppHref(activeListing)}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          referrerPolicy="no-referrer"
-                          aria-label={`WhatsApp ${activeListing.sellerName || 'seller'} (opens in a new tab)`}
-                        >
-                          WhatsApp seller
-                        </a>
-                      </nav>
+                    {activeSellerWhatsAppHref ? (
+                      <MarketplaceWhatsAppAction
+                        href={activeSellerWhatsAppHref}
+                        sellerName={activeListing.sellerName}
+                      />
                     ) : null}
                   </>
                 ) : (
