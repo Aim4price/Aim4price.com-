@@ -65,16 +65,11 @@
   width: 100%;
   max-width: none;
   min-width: 0;
-}
-
-.pageTitleBlock h1 {
-  width: 100%;
-  min-height: clamp(5.1rem, 7vw, 6.1rem);
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(18rem, 1fr) minmax(35rem, 1.4fr);
   align-items: center;
-  justify-content: flex-start;
-  margin: 0;
-  padding: clamp(1.15rem, 2vw, 1.55rem) clamp(1.25rem, 2.6vw, 2rem);
+  gap: clamp(1rem, 2vw, 1.65rem);
+  padding: clamp(1.15rem, 1.8vw, 1.55rem);
   border: 1.5px solid rgba(193, 211, 218, 0.98);
   border-radius: clamp(1.25rem, 2vw, 1.7rem);
   background:
@@ -92,17 +87,123 @@
     0 18px 38px rgba(16, 36, 40, 0.06),
     0 6px 16px rgba(16, 36, 40, 0.035),
     inset 0 1px 0 rgba(255, 255, 255, 0.98);
+}
+
+.pageTitleCopy {
+  min-width: 0;
+  display: grid;
+  align-content: center;
+  gap: 0.42rem;
+  padding: 0.1rem clamp(0.15rem, 0.7vw, 0.55rem);
+}
+
+.pageEyebrow {
+  color: #2d705c;
+  font-size: 0.72rem;
+  font-weight: 850;
+  line-height: 1;
+  letter-spacing: 0.095em;
+  text-transform: uppercase;
+}
+
+.pageTitleBlock h1 {
+  margin: 0;
   color: #073b30;
   font-family:
     var(--font-heading, "Montserrat"), var(--font-body, "Inter"), sans-serif;
-  font-size: clamp(2.35rem, 4.15vw, 3.55rem);
-  font-weight: 900;
-  line-height: 0.98;
-  letter-spacing: -0.062em;
-  text-transform: uppercase;
+  font-size: clamp(2.2rem, 3.6vw, 3.15rem);
+  font-weight: 850;
+  line-height: 1;
+  letter-spacing: -0.058em;
   text-shadow: none;
   overflow-wrap: anywhere;
   text-wrap: balance;
+}
+
+.pageTitleCopy p {
+  max-width: 32rem;
+  margin: 0.1rem 0 0;
+  color: #60736d;
+  font-size: clamp(0.88rem, 1vw, 0.96rem);
+  font-weight: 600;
+  line-height: 1.46;
+}
+
+.summaryGrid {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(0.58rem, 0.9vw, 0.78rem);
+  margin: 0;
+}
+
+.summaryItem {
+  min-width: 0;
+  min-height: 4.65rem;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.72rem 0.8rem;
+  border: 1px solid rgba(206, 220, 226, 0.95);
+  border-radius: 1rem;
+  background: linear-gradient(180deg, #ffffff 0%, #f5f9f8 100%);
+  box-shadow:
+    0 10px 22px rgba(16, 36, 40, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+}
+
+.summaryItem dt,
+.summaryItem dd {
+  margin: 0;
+}
+
+.summaryItem dt {
+  grid-column: 2;
+  min-width: 0;
+  display: grid;
+  gap: 0.16rem;
+}
+
+.summaryItem dt > span {
+  overflow: hidden;
+  color: #17362c;
+  font-size: 0.8rem;
+  font-weight: 780;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.summaryItem small {
+  overflow: hidden;
+  color: #7a8985;
+  font-size: 0.66rem;
+  font-weight: 620;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.summaryItem dd {
+  grid-column: 1;
+  grid-row: 1;
+  min-width: 2.15rem;
+  color: #0f5840;
+  font-size: clamp(1.42rem, 2vw, 1.78rem);
+  font-weight: 880;
+  line-height: 1;
+  letter-spacing: -0.055em;
+  text-align: center;
+}
+
+.summaryItemAttention {
+  border-color: rgba(225, 184, 140, 0.9);
+  background: linear-gradient(180deg, #fffdfb 0%, #fff5ea 100%);
+}
+
+.summaryItemAttention dd {
+  color: #985923;
 }
 
 .topActions {
@@ -174,7 +275,7 @@
 .topActionButtons {
   width: 100%;
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: minmax(12rem, 1.35fr) minmax(9.5rem, 0.8fr);
   align-items: stretch;
   justify-content: end;
   gap: clamp(0.62rem, 0.9vw, 0.82rem);
@@ -185,6 +286,7 @@
 .clearSearchButton,
 .sidebarToggleButton,
 .layerButton,
+.fitMapButton,
 .selectedActionButton,
 .selectedCardCloseButton,
 .selectedPhotoThumbButton {
@@ -216,6 +318,7 @@
 .clearSearchButton:hover,
 .sidebarToggleButton:hover,
 .layerButton:hover,
+.fitMapButton:hover,
 .selectedActionButton:hover,
 .selectedCardCloseButton:hover,
 .selectedPhotoThumbButton:hover,
@@ -228,6 +331,7 @@
 .clearSearchButton:active,
 .sidebarToggleButton:active,
 .layerButton:active,
+.fitMapButton:active,
 .selectedActionButton:active,
 .selectedCardCloseButton:active,
 .selectedPhotoThumbButton:active,
@@ -268,9 +372,9 @@
   min-height: clamp(3.25rem, 3.8vw, 3.72rem);
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  gap: 0.52rem;
-  padding: 0 clamp(1rem, 1.55vw, 1.32rem);
+  justify-content: flex-start;
+  gap: 0.62rem;
+  padding: 0 clamp(0.78rem, 1.2vw, 1rem);
   border: 1px solid #bfe2ce;
   border-radius: clamp(0.95rem, 1.35vw, 1.14rem);
   background: linear-gradient(180deg, #fbfffd 0%, #f0fbf5 100%);
@@ -310,12 +414,49 @@
 }
 
 .filterControlLabel {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
   color: #0f3d31;
   font-family:
     var(--font-heading, "Montserrat"), var(--font-body, "Inter"), sans-serif;
   font-size: inherit;
   font-weight: 850;
   letter-spacing: -0.018em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.filterControlCopy {
+  min-width: 0;
+  display: grid;
+  flex: 1 1 auto;
+  gap: 0.12rem;
+  text-align: left;
+}
+
+.filterControlCopy small {
+  color: #6e827a;
+  font-size: 0.62rem;
+  font-weight: 760;
+  letter-spacing: 0.055em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.filterControlCount {
+  min-width: 1.8rem;
+  height: 1.8rem;
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 auto;
+  padding: 0 0.42rem;
+  border: 1px solid rgba(145, 195, 169, 0.68);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.78);
+  color: #0f5840;
+  font-size: 0.72rem;
+  font-weight: 850;
 }
 
 .filterChevron {
@@ -324,6 +465,10 @@
   flex: 0 0 auto;
   color: #19352d;
   transition: transform 160ms ease;
+}
+
+.filterControlOpen .filterChevron {
+  transform: rotate(180deg);
 }
 
 .filterMenu {
@@ -376,7 +521,7 @@
   cursor: pointer;
 }
 
-.filterMenuOption span {
+.filterMenuOption > span {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -384,6 +529,28 @@
   font-size: 0.9rem;
   font-weight: 680;
   line-height: 1.25;
+}
+
+.filterMenuOptionCopy {
+  display: grid;
+  gap: 0.16rem;
+}
+
+.filterMenuOptionCopy > span {
+  overflow: hidden;
+  color: #17362c;
+  font-size: 0.9rem;
+  font-weight: 720;
+  line-height: 1.22;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.filterMenuOptionCopy small {
+  color: #75847f;
+  font-size: 0.69rem;
+  font-weight: 620;
+  line-height: 1.15;
 }
 
 .filterMenuOption strong {
@@ -433,6 +600,7 @@
 
 .secondaryAction,
 .layerButton,
+.fitMapButton,
 .selectedActionRegister,
 .clearSearchButton {
   color: var(--action-soft-text);
@@ -445,6 +613,7 @@
 
 .secondaryAction:hover:not(:disabled),
 .layerButton:hover,
+.fitMapButton:hover:not(:disabled),
 .selectedActionRegister:hover,
 .clearSearchButton:hover {
   color: var(--action-soft-text);
@@ -487,7 +656,8 @@
 
 .actionDisabled,
 .primaryAction:disabled,
-.secondaryAction:disabled {
+.secondaryAction:disabled,
+.fitMapButton:disabled {
   cursor: not-allowed;
   opacity: 0.62;
   transform: none;
@@ -521,7 +691,7 @@
 
 .mapStage {
   display: grid;
-  grid-template-columns: minmax(18rem, 22rem) minmax(0, 1fr);
+  grid-template-columns: minmax(19rem, 22.5rem) minmax(0, 1fr);
   gap: 0.85rem;
   height: clamp(34rem, 64vh, 46rem);
   min-height: clamp(34rem, 64vh, 46rem);
@@ -573,7 +743,7 @@
   min-height: 3.85rem;
   display: flex;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: space-between;
   gap: 0.75rem;
   padding: 0.72rem 0.82rem;
   border-bottom: 1px solid rgba(204, 219, 232, 0.82);
@@ -587,10 +757,29 @@
   border-bottom: 0;
 }
 
+.assetSidebarHeading {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.68rem;
+}
+
+.assetSidebarIcon {
+  width: 2.3rem;
+  min-width: 2.3rem;
+  height: 2.3rem;
+  display: grid;
+  place-items: center;
+  border: 1px solid #d8e8df;
+  border-radius: 0.78rem;
+  color: #165340;
+  background: linear-gradient(180deg, #ffffff 0%, #edf6f1 100%);
+}
+
 .sidebarToggleButton {
-  width: 2.65rem;
-  min-width: 2.65rem;
-  min-height: 2.65rem;
+  width: 2.5rem;
+  min-width: 2.5rem;
+  min-height: 2.5rem;
   padding: 0;
   border-radius: 999px;
   color: #123130;
@@ -603,6 +792,17 @@
   font-weight: 800;
 }
 
+.sidebarChevron {
+  width: 1.08rem;
+  height: 1.08rem;
+  transform: rotate(90deg);
+  transition: transform 180ms ease;
+}
+
+.sidebarChevronCollapsed {
+  transform: rotate(-90deg);
+}
+
 .sidebarToggleButton:hover {
   border-color: rgba(18, 49, 48, 0.34);
   box-shadow:
@@ -612,9 +812,8 @@
 
 .assetSidebarTitle {
   min-width: 0;
-  display: flex;
-  align-items: baseline;
-  gap: 0.35rem;
+  display: grid;
+  gap: 0.16rem;
   color: #637386;
   font-size: 0.84rem;
   font-weight: 760;
@@ -623,8 +822,16 @@
 
 .assetSidebarTitle strong {
   color: #073b30;
-  font-size: 1.05rem;
-  font-weight: 700;
+  font-size: 0.9rem;
+  font-weight: 800;
+  line-height: 1.15;
+}
+
+.assetSidebarTitle small {
+  color: #74837f;
+  font-size: 0.7rem;
+  font-weight: 620;
+  line-height: 1.2;
 }
 
 .assetList {
@@ -636,6 +843,79 @@
   gap: 0.76rem;
   padding: 0.85rem;
   padding-right: 0.74rem;
+}
+
+.assetListLoading {
+  display: grid;
+  gap: 0.76rem;
+}
+
+.assetSkeleton {
+  min-height: 7.1rem;
+  display: grid;
+  grid-template-columns: 2rem minmax(0, 1fr);
+  gap: 0.72rem;
+  padding: 0.95rem;
+  border: 1px solid rgba(208, 220, 225, 0.88);
+  border-radius: 1.1rem;
+  background: rgba(255, 255, 255, 0.74);
+  overflow: hidden;
+}
+
+.assetSkeleton i,
+.assetSkeleton b {
+  display: block;
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    rgba(220, 230, 227, 0.72) 20%,
+    rgba(241, 246, 244, 0.95) 48%,
+    rgba(220, 230, 227, 0.72) 76%
+  );
+  background-size: 220% 100%;
+  animation: assetMapSkeleton 1.35s ease-in-out infinite;
+}
+
+.assetSkeleton i {
+  width: 2rem;
+  height: 2rem;
+}
+
+.assetSkeleton > span {
+  display: grid;
+  align-content: start;
+  gap: 0.55rem;
+}
+
+.assetSkeleton b {
+  width: 88%;
+  height: 0.72rem;
+}
+
+.assetSkeleton b:nth-child(2) {
+  width: 52%;
+}
+
+.assetSkeleton b:nth-child(3) {
+  width: 70%;
+}
+
+@keyframes assetMapSkeleton {
+  to {
+    background-position: -220% 0;
+  }
+}
+
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .assetList::-webkit-scrollbar {
@@ -720,7 +1000,7 @@
   border: 0;
   border-radius: 1.13rem;
   background: transparent;
-  padding: 0.95rem;
+  padding: 0.88rem;
   color: inherit;
   text-align: left;
   cursor: pointer;
@@ -744,7 +1024,7 @@
 .assetCardBody {
   min-width: 0;
   display: grid;
-  gap: 0.46rem;
+  gap: 0.42rem;
 }
 
 .assetCardHeader {
@@ -805,6 +1085,44 @@
   color: rgba(98, 113, 131, 0.45);
 }
 
+.assetCardLocationRow {
+  min-width: 0;
+  display: grid;
+  gap: 0.22rem;
+  padding-top: 0.38rem;
+  border-top: 1px solid rgba(210, 222, 226, 0.78);
+}
+
+.assetCardLocation {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.32rem;
+  color: #315d50;
+  font-size: 0.72rem;
+  font-weight: 680;
+  line-height: 1.2;
+}
+
+.assetCardLocation > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.assetCardMetaIcon {
+  width: 0.78rem;
+  height: 0.78rem;
+  flex: 0 0 auto;
+}
+
+.assetCardLocationRow > small {
+  color: #86918e;
+  font-size: 0.66rem;
+  font-weight: 590;
+  line-height: 1.2;
+}
+
 .assetMapShell {
   position: relative;
   min-width: 0;
@@ -860,16 +1178,64 @@
   font-weight: 760;
 }
 
+.mapLoading {
+  position: absolute;
+  inset: 0;
+  z-index: 9;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 0.42rem;
+  padding: 1.5rem;
+  text-align: center;
+  color: #61726d;
+  background: rgba(244, 249, 247, 0.78);
+  backdrop-filter: blur(7px);
+}
+
+.mapLoading strong {
+  margin-top: 0.28rem;
+  color: #14372e;
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.mapLoading > span:last-child {
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.loadingSpinner {
+  width: 2rem;
+  height: 2rem;
+  border: 3px solid rgba(22, 83, 64, 0.17);
+  border-top-color: #197454;
+  border-radius: 999px;
+  animation: assetMapSpin 720ms linear infinite;
+}
+
+@keyframes assetMapSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .mapEmpty strong {
   color: #132d2d;
   font-size: 1.1rem;
 }
 
-.layerControl {
+.mapControlStack {
   position: absolute;
   z-index: 12;
   top: 0.88rem;
   right: 0.88rem;
+  display: grid;
+  justify-items: stretch;
+  gap: 0.48rem;
+}
+
+.layerControl {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -906,16 +1272,67 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.16);
 }
 
+.fitMapButton {
+  min-height: 2.7rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.5rem;
+  padding: 0 0.72rem;
+  border-radius: 0.92rem;
+  font-size: 0.78rem;
+  font-weight: 800;
+  backdrop-filter: blur(18px);
+}
+
+.fitMapButton > span {
+  flex: 1 1 auto;
+}
+
+.fitMapButton small {
+  min-width: 1.62rem;
+  height: 1.62rem;
+  display: inline-grid;
+  place-items: center;
+  padding: 0 0.35rem;
+  border: 1px solid rgba(145, 195, 169, 0.72);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.82);
+  color: #0f5840;
+  font-size: 0.66rem;
+  font-weight: 850;
+}
+
+.mapHint {
+  position: absolute;
+  z-index: 11;
+  left: 50%;
+  bottom: 0.9rem;
+  max-width: calc(100% - 2rem);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.46rem;
+  padding: 0.65rem 0.82rem;
+  border: 1px solid rgba(204, 219, 232, 0.9);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.92);
+  color: #24463c;
+  box-shadow: 0 13px 30px rgba(19, 39, 54, 0.12);
+  backdrop-filter: blur(14px);
+  font-size: 0.74rem;
+  font-weight: 720;
+  line-height: 1.2;
+  transform: translateX(-50%);
+}
+
 .selectedAssetCard {
   position: absolute;
   z-index: 16;
-  left: 50%;
-  right: auto;
+  left: auto;
+  right: clamp(0.82rem, 1.25vw, 1.05rem);
   bottom: clamp(0.95rem, 1.5vw, 1.25rem);
-  width: min(
-    calc(100% - clamp(1.5rem, 2.4vw, 2.4rem)),
-    clamp(700px, 84%, 920px)
-  );
+  width: min(calc(100% - clamp(1.5rem, 2.4vw, 2.4rem)), 790px);
   max-height: calc(100% - 6.2rem);
   overflow: auto;
   overscroll-behavior: contain;
@@ -928,14 +1345,11 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.98);
   backdrop-filter: blur(18px);
   padding: clamp(0.68rem, 1vw, 0.82rem);
-  transform: translateX(-50%);
+  transform: none;
 }
 
 .mapStageCollapsed .selectedAssetCard {
-  width: min(
-    calc(100% - clamp(1.5rem, 2.4vw, 2.4rem)),
-    clamp(740px, 82%, 980px)
-  );
+  width: min(calc(100% - clamp(1.5rem, 2.4vw, 2.4rem)), 830px);
 }
 
 .selectedCardCloseButton {
@@ -962,7 +1376,7 @@
 
 .selectedAssetMain {
   display: grid;
-  grid-template-columns: minmax(210px, clamp(220px, 30%, 270px)) minmax(0, 1fr);
+  grid-template-columns: minmax(190px, 220px) minmax(0, 1fr);
   gap: clamp(0.72rem, 1vw, 0.9rem);
   align-items: start;
 }
@@ -984,7 +1398,7 @@
 .selectedPhotoPlaceholder {
   width: 100%;
   min-height: 0;
-  height: clamp(150px, 16vw, 198px);
+  height: clamp(152px, 15vw, 184px);
   max-height: none;
   border-radius: 0.95rem;
   border: 1px solid #e3e9f0;
@@ -1121,14 +1535,35 @@
   row-gap: 0.22rem;
 }
 
+.selectedAssetIdentity {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 2rem minmax(0, 1fr);
+  align-items: start;
+  gap: 0.58rem;
+}
+
+.selectedAssetNumber {
+  width: 2rem;
+  height: 2rem;
+  display: grid;
+  place-items: center;
+  margin-top: 0.28rem;
+  border-radius: 999px;
+  background: #103f35;
+  color: #ffffff;
+  box-shadow: 0 8px 18px rgba(16, 63, 53, 0.2);
+  font-size: 0.74rem;
+  font-weight: 850;
+}
+
 .selectedAssetTitleGroup {
   min-width: 0;
-  display: contents;
+  display: grid;
+  gap: 0.22rem;
 }
 
 .selectedAssetHeader h2 {
-  grid-column: 1;
-  grid-row: 1;
   align-self: start;
   min-width: 0;
   margin: 0;
@@ -1138,32 +1573,33 @@
   font-weight: 800;
   line-height: 1.06;
   letter-spacing: -0.045em;
-  white-space: nowrap;
+  display: -webkit-box;
   overflow: hidden;
-  text-overflow: ellipsis;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
 .selectedAssetHeader p {
-  grid-column: 1 / -1;
-  grid-row: 2;
   min-width: 0;
   margin: 0;
   color: #5f6c78;
   line-height: 1.34;
   font-size: clamp(0.82rem, 0.9vw, 0.9rem);
   font-weight: 650;
-  white-space: nowrap;
-  overflow: visible;
-  text-overflow: clip;
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
 .selectedRegisterLabel {
-  grid-column: 1 / -1;
-  grid-row: 3;
+  overflow: hidden;
   color: #6f817b;
   font-size: 0.78rem;
   line-height: 1.25;
   font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .selectedValueBlock {
@@ -1203,7 +1639,7 @@
 
 .selectedDetailGrid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.5rem;
 }
 
@@ -1234,6 +1670,10 @@
   font-size: 0.84rem;
   line-height: 1.22;
   font-weight: 700;
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
 .selectedActionRow {
@@ -1263,12 +1703,12 @@
   width: 36px;
   height: 36px;
   border-radius: 999px;
-  color: #111827;
-  background: #ffffff;
-  border: 3px solid #111827;
+  color: #ffffff;
+  background: #0f5840;
+  border: 3px solid #ffffff;
   box-shadow:
-    0 14px 26px rgba(0, 0, 0, 0.26),
-    0 0 0 5px rgba(255, 255, 255, 0.32);
+    0 14px 26px rgba(9, 49, 37, 0.3),
+    0 0 0 3px rgba(15, 88, 64, 0.3);
   transition:
     transform 170ms ease,
     box-shadow 170ms ease;
@@ -1281,9 +1721,9 @@
   bottom: -6px;
   width: 12px;
   height: 12px;
-  border-right: 3px solid #111827;
-  border-bottom: 3px solid #111827;
-  background: #ffffff;
+  border-right: 3px solid #ffffff;
+  border-bottom: 3px solid #ffffff;
+  background: #0f5840;
   transform: translateX(-50%) rotate(45deg);
   border-radius: 0 0 3px 0;
 }
@@ -1299,10 +1739,16 @@
 }
 
 .assetMapShell :global(.aim4priceMapMarker--active .aim4priceMapMarkerPin) {
+  background: #bd6b2b;
   transform: translateY(-4px) scale(1.08);
   box-shadow:
     0 0 0 7px rgba(255, 255, 255, 0.44),
-    0 20px 36px rgba(0, 0, 0, 0.32);
+    0 20px 36px rgba(116, 59, 19, 0.34);
+}
+
+.assetMapShell
+  :global(.aim4priceMapMarker--active .aim4priceMapMarkerPin::after) {
+  background: #bd6b2b;
 }
 
 .assetMapShell :global(.leaflet-container) {
@@ -1707,6 +2153,14 @@
 }
 
 @media (max-width: 1120px) {
+  .pageTitleBlock {
+    grid-template-columns: 1fr;
+  }
+
+  .pageTitleCopy p {
+    max-width: none;
+  }
+
   .topActions {
     grid-template-columns: 1fr;
   }
@@ -1742,6 +2196,10 @@
 
   .selectedDetailGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .selectedDetailGrid > span:last-child {
+    grid-column: 1 / -1;
   }
 
   .selectedActionButton {
@@ -1782,7 +2240,7 @@
   }
 
   .pageTitleBlock h1 {
-    font-size: clamp(2.1rem, 9.4vw, 3.05rem);
+    font-size: clamp(2.1rem, 7.4vw, 3.05rem);
     letter-spacing: -0.065em;
   }
 
@@ -1813,15 +2271,16 @@
 
   .selectedAssetCard,
   .mapStageCollapsed .selectedAssetCard {
-    left: 50%;
+    left: 0.62rem;
+    right: 0.62rem;
     bottom: 0.72rem;
-    width: calc(100% - 1.24rem);
+    width: auto;
     max-height: calc(100% - 4.7rem);
     padding: 0.66rem;
   }
 
   .selectedAssetMain {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(175px, 205px) minmax(0, 1fr);
     gap: 0.64rem;
   }
 
@@ -1837,6 +2296,10 @@
   .selectedAssetContent {
     gap: 0.62rem;
     padding-right: 0;
+  }
+
+  .selectedDetailGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
@@ -1864,13 +2327,26 @@
   }
 
   .layerControl {
-    left: 1rem;
-    right: 1rem;
     width: auto;
+  }
+
+  .mapControlStack {
+    left: auto;
+    right: 0.72rem;
+    width: min(13rem, calc(100% - 4.8rem));
   }
 
   .layerButton {
     flex: 1 1 0;
+  }
+
+  .selectedAssetMain {
+    grid-template-columns: 1fr;
+  }
+
+  .selectedPhotoImage,
+  .selectedPhotoPlaceholder {
+    height: clamp(138px, 39vw, 176px);
   }
 
   .selectedAssetHeader {
@@ -1913,6 +2389,42 @@
   .exportChoices {
     grid-template-columns: 1fr;
   }
+
+  .summaryGrid {
+    gap: 0.42rem;
+  }
+
+  .summaryItem {
+    min-height: 4.2rem;
+    grid-template-columns: 1fr;
+    justify-items: center;
+    gap: 0.18rem;
+    padding: 0.55rem 0.28rem;
+    text-align: center;
+  }
+
+  .summaryItem dt {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  .summaryItem dd {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .summaryItem dt > span {
+    font-size: 0.68rem;
+    white-space: normal;
+  }
+
+  .summaryItem small {
+    display: none;
+  }
+
+  .mapHint {
+    display: none;
+  }
 }
 
 /* === Asset Map responsive consolidation pass === */
@@ -1951,11 +2463,8 @@
 
 @media (max-width: 860px) {
   .topActions,
-  .topActionButtons,
   .panelHeader,
-  .selectedAssetContent,
-  .selectedActionRow,
-  .selectedDetailGrid {
+  .selectedAssetContent {
     display: grid !important;
     grid-template-columns: 1fr !important;
     width: 100%;
@@ -2002,8 +2511,24 @@
   .selectedActionButton,
   .assetCardButton,
   .sidebarToggleButton,
-  .layerButton {
+  .layerButton,
+  .fitMapButton {
     width: 100%;
     min-height: var(--tap-target-min, 44px) !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .assetSkeleton i,
+  .assetSkeleton b,
+  .loadingSpinner {
+    animation: none;
+  }
+
+  .page *,
+  .page *::before,
+  .page *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
   }
 }
