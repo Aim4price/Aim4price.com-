@@ -129,6 +129,26 @@ test("map controls and selection preserve the user's context", () => {
     assetMapClient,
     /ref=\{filterTriggerRef\}[\s\S]{0,180}styles\.clearSearchButton/,
   );
+  assert.match(assetMapClient, /function updateSidebarCollapsed/);
+  assert.match(assetMapClient, /sidebarExpandTriggerRef\.current/);
+  assert.match(assetMapClient, /sidebarCollapseTriggerRef\.current/);
+  assert.match(assetMapClient, /nextTrigger\?\.focus\(\)/);
+  assert.match(assetMapClient, /function handleMenuNavigation/);
+  assert.match(assetMapClient, /event\.key !== "ArrowDown"/);
+  assert.match(assetMapClient, /menuItems\[nextIndex\]\?\.focus\(\)/);
+  assert.match(assetMapClient, /onKeyDown=\{handlePageFilterMenuKeyDown\}/);
+  assert.match(assetMapClient, /onKeyDown=\{handleExportScopeMenuKeyDown\}/);
+  assert.equal(
+    [...assetMapClient.matchAll(/tabIndex=\{isSelected \? 0 : -1\}/g)].length,
+    2,
+  );
+  assert.match(assetMapClient, /focusAdjacentControl\(document/);
+  assert.match(assetMapClient, /focusAdjacentControl\([\s\S]*?exportModalRef\.current/);
+  assert.equal(
+    [...assetMapClient.matchAll(/\(selectedItem \?\? firstItem\)\?\.focus\(\)/g)]
+      .length,
+    2,
+  );
 });
 
 test("selected overlay keeps the original compact content with its number", () => {
