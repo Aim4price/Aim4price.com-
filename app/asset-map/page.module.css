@@ -17,6 +17,18 @@
   --action-primary-hover: #0b4b37;
   --action-primary-border: #0f6248;
   --action-primary-shadow: rgba(25, 116, 84, 0.2);
+  --action-copper: #c8833e;
+  --action-copper-deep: #965622;
+  --action-copper-hover: #d59349;
+  --action-copper-hover-deep: #85501f;
+  --action-copper-border: #b46b2b;
+  --action-copper-shadow: rgba(180, 107, 43, 0.2);
+  --action-copper-soft-bg: #fff3e8;
+  --action-copper-soft-bg-hover: #ffe9d7;
+  --action-copper-soft-text: #7a3f0c;
+  --action-copper-soft-border: #dc8c4a;
+  --action-copper-soft-border-hover: #c97834;
+  --action-copper-soft-shadow: rgba(180, 107, 43, 0.08);
   --action-soft-bg: #edf7f1;
   --action-soft-bg-hover: #e1f0e8;
   --action-soft-text: #174438;
@@ -29,12 +41,12 @@
 .shell {
   width: min(calc(100% - 2rem), 1320px);
   margin: 0 auto;
-  padding: 1rem 0 2.5rem;
+  padding: 1.35rem 0 3rem;
 }
 
 .mapWorkspace {
   display: grid;
-  gap: clamp(0.78rem, 1vw, 0.95rem);
+  gap: clamp(1.05rem, 1.35vw, 1.25rem);
   padding: 0;
   border: 0;
   border-radius: 0;
@@ -43,13 +55,60 @@
 }
 
 .panelHeader {
+  display: grid;
+  grid-template-columns: 1fr;
+  align-items: stretch;
+  gap: clamp(0.85rem, 1.15vw, 1.08rem);
+}
+
+.pageTitleBlock {
   width: 100%;
+  max-width: none;
+  min-width: 0;
+}
+
+.pageTitleBlock h1 {
+  width: 100%;
+  min-height: clamp(5.1rem, 7vw, 6.1rem);
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  margin: 0;
+  padding: clamp(1.15rem, 2vw, 1.55rem) clamp(1.25rem, 2.6vw, 2rem);
+  border: 1.5px solid rgba(193, 211, 218, 0.98);
+  border-radius: clamp(1.25rem, 2vw, 1.7rem);
+  background:
+    radial-gradient(
+      circle at 3% 0%,
+      rgba(25, 116, 84, 0.08) 0%,
+      rgba(25, 116, 84, 0) 38%
+    ),
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.99) 0%,
+      rgba(248, 252, 253, 0.98) 100%
+    );
+  box-shadow:
+    0 18px 38px rgba(16, 36, 40, 0.06),
+    0 6px 16px rgba(16, 36, 40, 0.035),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+  color: #073b30;
+  font-family:
+    var(--font-heading, "Montserrat"), var(--font-body, "Inter"), sans-serif;
+  font-size: clamp(2.35rem, 4.15vw, 3.55rem);
+  font-weight: 900;
+  line-height: 0.98;
+  letter-spacing: -0.062em;
+  text-transform: uppercase;
+  text-shadow: none;
+  overflow-wrap: anywhere;
+  text-wrap: balance;
 }
 
 .topActions {
   width: 100%;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) clamp(31rem, 38vw, 37rem);
+  grid-template-columns: minmax(0, 1fr) clamp(22rem, 28vw, 29rem);
   align-items: center;
   justify-content: stretch;
   gap: clamp(0.7rem, 1vw, 0.95rem);
@@ -115,8 +174,7 @@
 .topActionButtons {
   width: 100%;
   display: grid;
-  grid-template-columns:
-    minmax(12rem, 1.35fr) minmax(8.5rem, 0.72fr) minmax(9.5rem, 0.82fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   align-items: stretch;
   justify-content: end;
   gap: clamp(0.62rem, 0.9vw, 0.82rem);
@@ -127,7 +185,6 @@
 .clearSearchButton,
 .sidebarToggleButton,
 .layerButton,
-.fitMapButton,
 .selectedActionButton,
 .selectedCardCloseButton,
 .selectedPhotoThumbButton {
@@ -139,7 +196,7 @@
   border: 1px solid transparent;
   font: inherit;
   font-size: 0.96rem;
-  font-weight: 700;
+  font-weight: 800;
   line-height: 1;
   letter-spacing: -0.015em;
   cursor: pointer;
@@ -159,7 +216,6 @@
 .clearSearchButton:hover,
 .sidebarToggleButton:hover,
 .layerButton:hover,
-.fitMapButton:hover,
 .selectedActionButton:hover,
 .selectedCardCloseButton:hover,
 .selectedPhotoThumbButton:hover,
@@ -172,7 +228,6 @@
 .clearSearchButton:active,
 .sidebarToggleButton:active,
 .layerButton:active,
-.fitMapButton:active,
 .selectedActionButton:active,
 .selectedCardCloseButton:active,
 .selectedPhotoThumbButton:active,
@@ -193,7 +248,7 @@
   padding-inline: clamp(1rem, 1.55vw, 1.32rem);
   border-radius: clamp(0.95rem, 1.35vw, 1.14rem);
   font-size: clamp(0.96rem, 1.08vw, 1.04rem);
-  font-weight: 720;
+  font-weight: 860;
 }
 
 .filterDropdown,
@@ -213,16 +268,16 @@
   min-height: clamp(3.25rem, 3.8vw, 3.72rem);
   display: inline-flex;
   align-items: center;
-  justify-content: flex-start;
-  gap: 0.62rem;
-  padding: 0 clamp(0.78rem, 1.2vw, 1rem);
+  justify-content: center;
+  gap: 0.52rem;
+  padding: 0 clamp(1rem, 1.55vw, 1.32rem);
   border: 1px solid #bfe2ce;
   border-radius: clamp(0.95rem, 1.35vw, 1.14rem);
   background: linear-gradient(180deg, #fbfffd 0%, #f0fbf5 100%);
   color: #0f5840;
   font: inherit;
   font-size: clamp(0.96rem, 1.08vw, 1.04rem);
-  font-weight: 720;
+  font-weight: 860;
   line-height: 1;
   letter-spacing: -0.015em;
   box-shadow:
@@ -255,49 +310,15 @@
 }
 
 .filterControlLabel {
-  display: block;
-  max-width: 100%;
+  min-width: 0;
   overflow: hidden;
+  text-overflow: ellipsis;
   color: #0f3d31;
   font-family:
     var(--font-heading, "Montserrat"), var(--font-body, "Inter"), sans-serif;
   font-size: inherit;
-  font-weight: 720;
+  font-weight: 850;
   letter-spacing: -0.018em;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.filterControlCopy {
-  min-width: 0;
-  display: grid;
-  flex: 1 1 auto;
-  gap: 0.12rem;
-  text-align: left;
-}
-
-.filterControlCopy small {
-  color: #6e827a;
-  font-size: 0.62rem;
-  font-weight: 680;
-  letter-spacing: 0.055em;
-  line-height: 1;
-  text-transform: uppercase;
-}
-
-.filterControlCount {
-  min-width: 1.8rem;
-  height: 1.8rem;
-  display: inline-grid;
-  place-items: center;
-  flex: 0 0 auto;
-  padding: 0 0.42rem;
-  border: 1px solid rgba(145, 195, 169, 0.68);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.78);
-  color: #0f5840;
-  font-size: 0.72rem;
-  font-weight: 720;
 }
 
 .filterChevron {
@@ -306,10 +327,6 @@
   flex: 0 0 auto;
   color: #19352d;
   transition: transform 160ms ease;
-}
-
-.filterControlOpen .filterChevron {
-  transform: rotate(180deg);
 }
 
 .filterMenu {
@@ -362,7 +379,7 @@
   cursor: pointer;
 }
 
-.filterMenuOption > span {
+.filterMenuOption span {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -370,28 +387,6 @@
   font-size: 0.9rem;
   font-weight: 680;
   line-height: 1.25;
-}
-
-.filterMenuOptionCopy {
-  display: grid;
-  gap: 0.16rem;
-}
-
-.filterMenuOptionCopy > span {
-  overflow: hidden;
-  color: #17362c;
-  font-size: 0.9rem;
-  font-weight: 720;
-  line-height: 1.22;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.filterMenuOptionCopy small {
-  color: #75847f;
-  font-size: 0.69rem;
-  font-weight: 620;
-  line-height: 1.15;
 }
 
 .filterMenuOption strong {
@@ -441,7 +436,6 @@
 
 .secondaryAction,
 .layerButton,
-.fitMapButton,
 .selectedActionRegister,
 .clearSearchButton {
   color: var(--action-soft-text);
@@ -454,7 +448,6 @@
 
 .secondaryAction:hover:not(:disabled),
 .layerButton:hover,
-.fitMapButton:hover:not(:disabled),
 .selectedActionRegister:hover,
 .clearSearchButton:hover {
   color: var(--action-soft-text);
@@ -470,27 +463,34 @@
 }
 
 .selectedActionMap {
-  color: #28453d;
-  background: linear-gradient(180deg, #ffffff 0%, #f3f7f5 100%);
-  border-color: #c9d8d1;
+  color: var(--action-copper-soft-text);
+  background: linear-gradient(
+    180deg,
+    #fffaf6 0%,
+    var(--action-copper-soft-bg) 100%
+  );
+  border-color: var(--action-copper-soft-border);
   box-shadow:
-    0 8px 18px rgba(20, 55, 46, 0.05),
+    0 10px 22px var(--action-copper-soft-shadow),
     inset 0 1px 0 rgba(255, 255, 255, 0.98);
 }
 
 .selectedActionMap:hover {
-  color: #174438;
-  background: linear-gradient(180deg, #ffffff 0%, #eaf3ee 100%);
-  border-color: #a8c9b9;
+  color: var(--action-copper-soft-text);
+  background: linear-gradient(
+    180deg,
+    #ffffff 0%,
+    var(--action-copper-soft-bg-hover) 100%
+  );
+  border-color: var(--action-copper-soft-border-hover);
   box-shadow:
-    0 10px 22px rgba(20, 55, 46, 0.08),
+    0 14px 28px rgba(180, 107, 43, 0.12),
     inset 0 1px 0 rgba(255, 255, 255, 1);
 }
 
 .actionDisabled,
 .primaryAction:disabled,
-.secondaryAction:disabled,
-.fitMapButton:disabled {
+.secondaryAction:disabled {
   cursor: not-allowed;
   opacity: 0.62;
   transform: none;
@@ -512,14 +512,6 @@
   flex: 0 0 auto;
 }
 
-.refreshAction {
-  white-space: nowrap;
-}
-
-.refreshIconActive {
-  animation: assetMapSpin 720ms linear infinite;
-}
-
 .notice {
   padding: 0.95rem 1rem;
   border-radius: 1rem;
@@ -532,10 +524,10 @@
 
 .mapStage {
   display: grid;
-  grid-template-columns: minmax(19rem, 22.5rem) minmax(0, 1fr);
+  grid-template-columns: minmax(18rem, 22rem) minmax(0, 1fr);
   gap: 0.85rem;
-  height: clamp(36rem, calc(100dvh - 12.5rem), 48rem);
-  min-height: clamp(36rem, calc(100dvh - 12.5rem), 48rem);
+  height: clamp(34rem, 64vh, 46rem);
+  min-height: clamp(34rem, 64vh, 46rem);
   overflow: hidden;
   padding: 0.85rem;
   border: 1px solid rgba(196, 215, 223, 0.96);
@@ -551,7 +543,7 @@
 }
 
 .mapStageCollapsed {
-  grid-template-columns: 3.7rem minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .assetSidebar {
@@ -577,7 +569,7 @@
 }
 
 .assetSidebarCollapsed {
-  grid-template-rows: minmax(0, 1fr);
+  display: none;
 }
 
 .assetSidebarHeader {
@@ -598,17 +590,10 @@
   border-bottom: 0;
 }
 
-.assetSidebarHeading {
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  gap: 0.68rem;
-}
-
 .sidebarToggleButton {
-  width: 2.5rem;
-  min-width: 2.5rem;
-  min-height: 2.5rem;
+  width: 2.65rem;
+  min-width: 2.65rem;
+  min-height: 2.65rem;
   padding: 0;
   border-radius: 999px;
   color: #123130;
@@ -621,17 +606,6 @@
   font-weight: 800;
 }
 
-.sidebarChevron {
-  width: 1.08rem;
-  height: 1.08rem;
-  transform: rotate(90deg);
-  transition: transform 180ms ease;
-}
-
-.sidebarChevronCollapsed {
-  transform: rotate(-90deg);
-}
-
 .sidebarToggleButton:hover {
   border-color: rgba(18, 49, 48, 0.34);
   box-shadow:
@@ -639,28 +613,44 @@
     inset 0 1px 0 rgba(255, 255, 255, 1);
 }
 
+.sidebarExpandButton {
+  appearance: none;
+  position: absolute;
+  z-index: 13;
+  left: 0.88rem;
+  top: 50%;
+  width: 2.65rem;
+  height: 2.65rem;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid rgba(18, 49, 48, 0.22);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.94);
+  color: #123130;
+  box-shadow: 0 12px 26px rgba(18, 49, 48, 0.14);
+  font: inherit;
+  font-size: 1.15rem;
+  font-weight: 800;
+  cursor: pointer;
+  transform: translateY(-50%);
+}
+
 .assetSidebarTitle {
   min-width: 0;
-  display: grid;
-  gap: 0.16rem;
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem;
   color: #637386;
   font-size: 0.84rem;
-  font-weight: 600;
+  font-weight: 760;
   line-height: 1.2;
 }
 
 .assetSidebarTitle strong {
   color: #073b30;
-  font-size: 0.94rem;
+  font-size: 1.05rem;
   font-weight: 700;
-  line-height: 1.15;
-}
-
-.assetSidebarTitle small {
-  color: #74837f;
-  font-size: 0.7rem;
-  font-weight: 550;
-  line-height: 1.2;
 }
 
 .assetList {
@@ -672,79 +662,6 @@
   gap: 0.76rem;
   padding: 0.85rem;
   padding-right: 0.74rem;
-}
-
-.assetListLoading {
-  display: grid;
-  gap: 0.76rem;
-}
-
-.assetSkeleton {
-  min-height: 7.1rem;
-  display: grid;
-  grid-template-columns: 2rem minmax(0, 1fr);
-  gap: 0.72rem;
-  padding: 0.95rem;
-  border: 1px solid rgba(208, 220, 225, 0.88);
-  border-radius: 1.1rem;
-  background: rgba(255, 255, 255, 0.74);
-  overflow: hidden;
-}
-
-.assetSkeleton i,
-.assetSkeleton b {
-  display: block;
-  border-radius: 999px;
-  background: linear-gradient(
-    90deg,
-    rgba(220, 230, 227, 0.72) 20%,
-    rgba(241, 246, 244, 0.95) 48%,
-    rgba(220, 230, 227, 0.72) 76%
-  );
-  background-size: 220% 100%;
-  animation: assetMapSkeleton 1.35s ease-in-out infinite;
-}
-
-.assetSkeleton i {
-  width: 2rem;
-  height: 2rem;
-}
-
-.assetSkeleton > span {
-  display: grid;
-  align-content: start;
-  gap: 0.55rem;
-}
-
-.assetSkeleton b {
-  width: 88%;
-  height: 0.72rem;
-}
-
-.assetSkeleton b:nth-child(2) {
-  width: 52%;
-}
-
-.assetSkeleton b:nth-child(3) {
-  width: 70%;
-}
-
-@keyframes assetMapSkeleton {
-  to {
-    background-position: -220% 0;
-  }
-}
-
-.visuallyHidden {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
 }
 
 .assetList::-webkit-scrollbar {
@@ -771,55 +688,6 @@
   font-weight: 600;
 }
 
-.sidebarErrorState {
-  display: grid;
-  justify-items: start;
-  gap: 0.5rem;
-  padding: 1rem;
-  border: 1px solid #efd6d2;
-  border-radius: 1rem;
-  background: #fff8f7;
-  color: #6f514c;
-  font-size: 0.82rem;
-  line-height: 1.45;
-}
-
-.sidebarErrorState strong {
-  color: #7e3028;
-  font-size: 0.92rem;
-}
-
-.inlineRetryButton {
-  appearance: none;
-  min-height: 2.55rem;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.45rem;
-  padding: 0 0.9rem;
-  border: 1px solid #b9d9c9;
-  border-radius: 0.82rem;
-  background: #ffffff;
-  color: #174438;
-  font: inherit;
-  font-size: 0.82rem;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.inlineRetryButton:hover:not(:disabled),
-.inlineRetryButton:focus-visible {
-  border-color: #8fc3a8;
-  background: #edf7f1;
-  outline: none;
-  box-shadow: 0 0 0 3px rgba(25, 116, 84, 0.1);
-}
-
-.inlineRetryButton:disabled {
-  cursor: wait;
-  opacity: 0.64;
-}
-
 .assetCard {
   position: relative;
   display: grid;
@@ -839,7 +707,9 @@
       rgba(248, 252, 253, 0.99) 100%
     );
   color: #17362c;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.96);
+  box-shadow:
+    0 14px 28px rgba(20, 43, 43, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96);
   transition:
     transform 160ms ease,
     border-color 160ms ease,
@@ -858,19 +728,12 @@
     ),
     linear-gradient(180deg, #ffffff 0%, #edf8f2 100%);
   box-shadow:
-    0 10px 22px rgba(20, 43, 43, 0.055),
+    0 18px 34px rgba(20, 43, 43, 0.07),
     inset 0 1px 0 rgba(255, 255, 255, 0.96);
 }
 
 .assetCardActive {
-  border-color: #83bea2;
-}
-
-.assetCard:focus-within {
-  border-color: #75b596;
-  box-shadow:
-    0 0 0 3px rgba(25, 116, 84, 0.12),
-    inset 0 1px 0 rgba(255, 255, 255, 0.96);
+  outline: 3px solid rgba(31, 108, 83, 0.14);
 }
 
 .assetCardButton {
@@ -883,7 +746,7 @@
   border: 0;
   border-radius: 1.13rem;
   background: transparent;
-  padding: 0.88rem;
+  padding: 0.95rem;
   color: inherit;
   text-align: left;
   cursor: pointer;
@@ -900,14 +763,14 @@
   font-family:
     var(--font-heading, "Montserrat"), var(--font-body, "Inter"), sans-serif;
   font-size: 0.84rem;
-  font-weight: 700;
-  box-shadow: 0 7px 14px rgba(16, 63, 53, 0.16);
+  font-weight: 800;
+  box-shadow: 0 10px 20px rgba(16, 63, 53, 0.2);
 }
 
 .assetCardBody {
   min-width: 0;
   display: grid;
-  gap: 0.42rem;
+  gap: 0.46rem;
 }
 
 .assetCardHeader {
@@ -925,7 +788,7 @@
   font-size: 1rem;
   line-height: 1.16;
   letter-spacing: -0.025em;
-  font-weight: 700;
+  font-weight: 800;
 }
 
 .assetCardHeader small {
@@ -939,7 +802,7 @@
   color: #2f6856;
   font-size: 0.78rem;
   line-height: 1.24;
-  font-weight: 600;
+  font-weight: 650;
   letter-spacing: 0;
   text-transform: none;
 }
@@ -966,44 +829,6 @@
   content: "•";
   margin-left: 0.32rem;
   color: rgba(98, 113, 131, 0.45);
-}
-
-.assetCardLocationRow {
-  min-width: 0;
-  display: grid;
-  gap: 0.22rem;
-  padding-top: 0.38rem;
-  border-top: 1px solid rgba(210, 222, 226, 0.78);
-}
-
-.assetCardLocation {
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  gap: 0.32rem;
-  color: #315d50;
-  font-size: 0.72rem;
-  font-weight: 680;
-  line-height: 1.2;
-}
-
-.assetCardLocation > span {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.assetCardMetaIcon {
-  width: 0.78rem;
-  height: 0.78rem;
-  flex: 0 0 auto;
-}
-
-.assetCardLocationRow > small {
-  color: #86918e;
-  font-size: 0.66rem;
-  font-weight: 590;
-  line-height: 1.2;
 }
 
 .assetMapShell {
@@ -1061,91 +886,85 @@
   font-weight: 760;
 }
 
+.mapEmpty strong {
+  color: #132d2d;
+  font-size: 1.1rem;
+}
+
+.mapLoading,
 .mapError {
-  position: absolute;
-  inset: 0;
-  z-index: 10;
-  display: grid;
-  place-content: center;
-  justify-items: center;
-  gap: 0.55rem;
-  padding: 1.5rem;
-  text-align: center;
-  color: #6f514c;
-  background: rgba(255, 250, 249, 0.92);
-  backdrop-filter: blur(7px);
-}
-
-.mapError strong {
-  color: #7e3028;
-  font-size: 1rem;
-}
-
-.mapError > span {
-  max-width: 30rem;
-  font-size: 0.84rem;
-  line-height: 1.5;
-  font-weight: 550;
-}
-
-.mapLoading {
   position: absolute;
   inset: 0;
   z-index: 9;
   display: grid;
   place-content: center;
   justify-items: center;
-  gap: 0.42rem;
+  gap: 0.48rem;
   padding: 1.5rem;
   text-align: center;
-  color: #61726d;
-  background: rgba(244, 249, 247, 0.78);
-  backdrop-filter: blur(7px);
+  color: #5d706a;
+  background: rgba(247, 250, 249, 0.86);
+  backdrop-filter: blur(6px);
 }
 
-.mapLoading strong {
-  margin-top: 0.28rem;
-  color: #14372e;
-  font-size: 1rem;
-  font-weight: 800;
+.mapLoading strong,
+.mapError strong,
+.sidebarError strong {
+  color: #17362c;
+  font-size: 0.98rem;
 }
 
-.mapLoading > span:last-child {
-  font-size: 0.82rem;
-  font-weight: 600;
-}
-
-.loadingSpinner {
-  width: 2rem;
-  height: 2rem;
-  border: 3px solid rgba(22, 83, 64, 0.17);
+.mapLoadingPulse {
+  width: 2.35rem;
+  height: 2.35rem;
+  border: 3px solid rgba(25, 116, 84, 0.18);
   border-top-color: #197454;
   border-radius: 999px;
-  animation: assetMapSpin 720ms linear infinite;
+  animation: mapLoadingSpin 760ms linear infinite;
 }
 
-@keyframes assetMapSpin {
+.sidebarError {
+  display: grid;
+  gap: 0.4rem;
+  padding: 0.95rem;
+  border: 1px solid rgba(171, 65, 65, 0.2);
+  border-radius: 1rem;
+  background: #fff8f8;
+  color: #795757;
+  line-height: 1.4;
+}
+
+.retryButton {
+  appearance: none;
+  justify-self: start;
+  min-height: 2.45rem;
+  margin-top: 0.2rem;
+  padding: 0 0.9rem;
+  border: 1px solid #b9d9c9;
+  border-radius: 0.78rem;
+  background: #edf7f1;
+  color: #174438;
+  font: inherit;
+  font-size: 0.84rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.mapError .retryButton {
+  justify-self: center;
+}
+
+@keyframes mapLoadingSpin {
   to {
     transform: rotate(360deg);
   }
 }
 
-.mapEmpty strong {
-  color: #132d2d;
-  font-size: 1.1rem;
-}
-
-.mapControlStack {
+.layerControl {
   position: absolute;
   z-index: 12;
   top: 0.88rem;
   right: 0.88rem;
-  display: grid;
-  justify-items: stretch;
-  gap: 0.48rem;
-}
-
-.layerControl {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1159,6 +978,56 @@
     0 4px 14px rgba(18, 41, 52, 0.06),
     inset 0 1px 0 rgba(255, 255, 255, 0.88);
   backdrop-filter: blur(18px);
+}
+
+.fitMapButton {
+  appearance: none;
+  position: absolute;
+  z-index: 12;
+  top: 4.65rem;
+  right: 0.88rem;
+  min-height: 2.65rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0 0.72rem;
+  border: 1px solid rgba(188, 215, 201, 0.96);
+  border-radius: 0.92rem;
+  background: rgba(255, 255, 255, 0.94);
+  color: #174438;
+  box-shadow:
+    0 14px 30px rgba(18, 41, 52, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(18px);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.fitMapButton .buttonIcon {
+  width: 0.96rem;
+  height: 0.96rem;
+}
+
+.fitMapButton strong {
+  min-width: 1.55rem;
+  min-height: 1.55rem;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid #c4dfd1;
+  border-radius: 999px;
+  background: #f3faf6;
+  font-size: 0.72rem;
+}
+
+.fitMapButton:hover,
+.fitMapButton:focus-visible,
+.retryButton:hover,
+.retryButton:focus-visible {
+  border-color: #8fc3a8;
+  background: #e4f4eb;
+  outline: none;
 }
 
 .layerButton {
@@ -1182,67 +1051,16 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.16);
 }
 
-.fitMapButton {
-  min-height: 2.7rem;
-  display: inline-flex;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 0.5rem;
-  padding: 0 0.72rem;
-  border-radius: 0.92rem;
-  font-size: 0.78rem;
-  font-weight: 800;
-  backdrop-filter: blur(18px);
-}
-
-.fitMapButton > span {
-  flex: 1 1 auto;
-}
-
-.fitMapButton small {
-  min-width: 1.62rem;
-  height: 1.62rem;
-  display: inline-grid;
-  place-items: center;
-  padding: 0 0.35rem;
-  border: 1px solid rgba(145, 195, 169, 0.72);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.82);
-  color: #0f5840;
-  font-size: 0.66rem;
-  font-weight: 850;
-}
-
-.mapHint {
-  position: absolute;
-  z-index: 11;
-  left: 50%;
-  bottom: 0.9rem;
-  max-width: calc(100% - 2rem);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.46rem;
-  padding: 0.65rem 0.82rem;
-  border: 1px solid rgba(204, 219, 232, 0.9);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.92);
-  color: #24463c;
-  box-shadow: 0 13px 30px rgba(19, 39, 54, 0.12);
-  backdrop-filter: blur(14px);
-  font-size: 0.74rem;
-  font-weight: 720;
-  line-height: 1.2;
-  transform: translateX(-50%);
-}
-
 .selectedAssetCard {
   position: absolute;
   z-index: 16;
-  left: auto;
-  right: clamp(0.82rem, 1.25vw, 1.05rem);
+  left: 50%;
+  right: auto;
   bottom: clamp(0.95rem, 1.5vw, 1.25rem);
-  width: min(calc(100% - clamp(1.5rem, 2.4vw, 2.4rem)), 760px);
+  width: min(
+    calc(100% - clamp(1.5rem, 2.4vw, 2.4rem)),
+    clamp(700px, 84%, 920px)
+  );
   max-height: calc(100% - 6.2rem);
   overflow: auto;
   overscroll-behavior: contain;
@@ -1250,17 +1068,19 @@
   border-radius: clamp(1.05rem, 1.4vw, 1.28rem);
   background: rgba(255, 255, 255, 0.985);
   box-shadow:
-    0 18px 42px rgba(19, 39, 54, 0.16),
-    0 6px 16px rgba(19, 39, 54, 0.08),
+    0 22px 52px rgba(19, 39, 54, 0.2),
+    0 8px 20px rgba(19, 39, 54, 0.11),
     inset 0 1px 0 rgba(255, 255, 255, 0.98);
   backdrop-filter: blur(18px);
   padding: clamp(0.68rem, 1vw, 0.82rem);
-  transform: none;
-  outline: none;
+  transform: translateX(-50%);
 }
 
 .mapStageCollapsed .selectedAssetCard {
-  width: min(calc(100% - clamp(1.5rem, 2.4vw, 2.4rem)), 790px);
+  width: min(
+    calc(100% - clamp(1.5rem, 2.4vw, 2.4rem)),
+    clamp(700px, 84%, 920px)
+  );
 }
 
 .selectedCardCloseButton {
@@ -1287,7 +1107,7 @@
 
 .selectedAssetMain {
   display: grid;
-  grid-template-columns: minmax(190px, 220px) minmax(0, 1fr);
+  grid-template-columns: minmax(210px, clamp(220px, 30%, 270px)) minmax(0, 1fr);
   gap: clamp(0.72rem, 1vw, 0.9rem);
   align-items: start;
 }
@@ -1309,7 +1129,7 @@
 .selectedPhotoPlaceholder {
   width: 100%;
   min-height: 0;
-  height: clamp(152px, 15vw, 184px);
+  height: clamp(150px, 16vw, 198px);
   max-height: none;
   border-radius: 0.95rem;
   border: 1px solid #e3e9f0;
@@ -1447,6 +1267,8 @@
 }
 
 .selectedAssetIdentity {
+  grid-column: 1;
+  grid-row: 1;
   min-width: 0;
   display: grid;
   grid-template-columns: 2rem minmax(0, 1fr);
@@ -1459,19 +1281,19 @@
   height: 2rem;
   display: grid;
   place-items: center;
-  margin-top: 0.28rem;
+  margin-top: 0.24rem;
   border-radius: 999px;
   background: #103f35;
   color: #ffffff;
-  box-shadow: 0 8px 18px rgba(16, 63, 53, 0.2);
-  font-size: 0.74rem;
-  font-weight: 700;
+  font-size: 0.82rem;
+  font-weight: 850;
+  box-shadow: 0 8px 18px rgba(16, 63, 53, 0.16);
 }
 
 .selectedAssetTitleGroup {
   min-width: 0;
   display: grid;
-  gap: 0.22rem;
+  gap: 0.2rem;
 }
 
 .selectedAssetHeader h2 {
@@ -1481,13 +1303,14 @@
   padding-top: clamp(0.38rem, 0.55vw, 0.52rem);
   color: var(--text);
   font-size: clamp(1.22rem, 1.65vw, 1.54rem);
-  font-weight: 700;
+  font-weight: 800;
   line-height: 1.06;
   letter-spacing: -0.045em;
   display: -webkit-box;
-  overflow: hidden;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
+  white-space: normal;
+  overflow: hidden;
 }
 
 .selectedAssetHeader p {
@@ -1496,21 +1319,16 @@
   color: #5f6c78;
   line-height: 1.34;
   font-size: clamp(0.82rem, 0.9vw, 0.9rem);
-  font-weight: 580;
-  display: -webkit-box;
+  font-weight: 650;
+  white-space: normal;
   overflow: hidden;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
 }
 
 .selectedRegisterLabel {
-  overflow: hidden;
   color: #6f817b;
   font-size: 0.78rem;
   line-height: 1.25;
   font-weight: 500;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .selectedValueBlock {
@@ -1525,7 +1343,7 @@
   display: block;
   color: #6b7789;
   font-size: 0.65rem;
-  font-weight: 650;
+  font-weight: 700;
   letter-spacing: 0.058em;
   text-transform: uppercase;
 }
@@ -1535,7 +1353,7 @@
   margin-top: 0.14rem;
   color: var(--text);
   font-size: clamp(1.16rem, 1.55vw, 1.34rem);
-  font-weight: 750;
+  font-weight: 850;
   line-height: 1;
   letter-spacing: -0.055em;
 }
@@ -1554,10 +1372,6 @@
   gap: 0.5rem;
 }
 
-.selectedDetailGrid > span:last-child {
-  grid-column: 1 / -1;
-}
-
 .selectedDetailGrid span {
   min-width: 0;
   min-height: 3.72rem;
@@ -1566,14 +1380,14 @@
   gap: 0.16rem;
   padding: 0.56rem 0.66rem;
   border-radius: 0.82rem;
-  background: #f4f7f6;
-  border: 1px solid #e3ebe7;
+  background: linear-gradient(180deg, #f5f8fa 0%, #eff3f6 100%);
+  border: 1px solid rgba(226, 233, 240, 0.9);
 }
 
 .selectedDetailGrid small {
   color: #6e7a87;
   font-size: 0.62rem;
-  font-weight: 650;
+  font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
@@ -1584,11 +1398,7 @@
   color: var(--text);
   font-size: 0.84rem;
   line-height: 1.22;
-  font-weight: 620;
-  display: -webkit-box;
-  overflow: hidden;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
+  font-weight: 700;
 }
 
 .selectedActionRow {
@@ -1622,8 +1432,8 @@
   background: #ffffff;
   border: 3px solid #0f5840;
   box-shadow:
-    0 12px 24px rgba(9, 49, 37, 0.28),
-    0 0 0 2px rgba(255, 255, 255, 0.94);
+    0 14px 26px rgba(0, 0, 0, 0.26),
+    0 0 0 5px rgba(255, 255, 255, 0.32);
   transition:
     transform 170ms ease,
     box-shadow 170ms ease;
@@ -1658,12 +1468,13 @@
   background: #0f5840;
   transform: translateY(-4px) scale(1.08);
   box-shadow:
-    0 0 0 7px rgba(205, 235, 219, 0.78),
-    0 18px 34px rgba(9, 49, 37, 0.34);
+    0 0 0 7px rgba(224, 244, 234, 0.78),
+    0 20px 36px rgba(15, 88, 64, 0.3);
 }
 
 .assetMapShell
   :global(.aim4priceMapMarker--active .aim4priceMapMarkerPin::after) {
+  border-color: #0f5840;
   background: #0f5840;
 }
 
@@ -1720,9 +1531,7 @@
 .exportModal {
   width: min(100%, 58rem);
   max-height: min(88vh, calc(100dvh - 2rem));
-  overflow-x: hidden;
   overflow-y: auto;
-  overscroll-behavior: contain;
   display: grid;
   gap: 1.14rem;
   padding: clamp(1.5rem, 2.35vw, 1.95rem);
@@ -2085,15 +1894,15 @@
   }
 
   .mapStageCollapsed {
-    grid-template-columns: 3.7rem minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .selectedAssetCard {
-    width: min(calc(100% - 1.55rem), 740px);
+    width: min(calc(100% - 1.55rem), 780px);
   }
 
   .mapStageCollapsed .selectedAssetCard {
-    width: min(calc(100% - 1.75rem), 780px);
+    width: min(calc(100% - 1.55rem), 780px);
   }
 
   .selectedAssetMain {
@@ -2107,10 +1916,6 @@
 
   .selectedDetailGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .selectedDetailGrid > span:last-child {
-    grid-column: 1 / -1;
   }
 
   .selectedActionButton {
@@ -2150,6 +1955,11 @@
     width: 100%;
   }
 
+  .pageTitleBlock h1 {
+    font-size: clamp(2.1rem, 9.4vw, 3.05rem);
+    letter-spacing: -0.065em;
+  }
+
   .mapStage,
   .mapStageCollapsed {
     grid-template-columns: 1fr;
@@ -2167,7 +1977,7 @@
   }
 
   .assetList {
-    max-height: 16rem;
+    max-height: 20rem;
   }
 
   .assetMapShell {
@@ -2177,16 +1987,15 @@
 
   .selectedAssetCard,
   .mapStageCollapsed .selectedAssetCard {
-    left: 0.62rem;
-    right: 0.62rem;
+    left: 50%;
     bottom: 0.72rem;
-    width: auto;
+    width: calc(100% - 1.24rem);
     max-height: calc(100% - 4.7rem);
     padding: 0.66rem;
   }
 
   .selectedAssetMain {
-    grid-template-columns: minmax(175px, 205px) minmax(0, 1fr);
+    grid-template-columns: minmax(155px, 190px) minmax(0, 1fr);
     gap: 0.64rem;
   }
 
@@ -2196,31 +2005,36 @@
 
   .selectedPhotoImage,
   .selectedPhotoPlaceholder {
-    height: clamp(145px, 32vw, 190px);
+    height: clamp(135px, 18vw, 165px);
   }
 
   .selectedAssetContent {
     gap: 0.62rem;
     padding-right: 2.45rem;
   }
-
-  .selectedDetailGrid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
 }
 
 @media (max-width: 620px) {
   .topActionButtons {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .filterDropdown {
-    grid-column: 1 / -1;
-  }
-
-  .selectedDetailGrid,
-  .selectedActionRow {
     grid-template-columns: 1fr;
+  }
+
+  .selectedAssetCard,
+  .mapStageCollapsed .selectedAssetCard {
+    max-height: 65%;
+  }
+
+  .selectedAssetMain {
+    grid-template-columns: 1fr;
+  }
+
+  .selectedPhotoImage,
+  .selectedPhotoPlaceholder {
+    height: clamp(120px, 32vw, 145px);
+  }
+
+  .selectedAssetContent {
+    padding-right: 0;
   }
 
   .searchWrap,
@@ -2240,10 +2054,6 @@
   }
 
   .layerControl {
-    width: auto;
-  }
-
-  .mapControlStack {
     left: auto;
     right: 0.72rem;
     width: min(13rem, calc(100% - 4.8rem));
@@ -2251,20 +2061,6 @@
 
   .layerButton {
     flex: 1 1 0;
-  }
-
-  .selectedAssetMain {
-    grid-template-columns: 1fr;
-  }
-
-  .selectedAssetCard,
-  .mapStageCollapsed .selectedAssetCard {
-    max-height: 68%;
-  }
-
-  .selectedPhotoImage,
-  .selectedPhotoPlaceholder {
-    height: clamp(138px, 39vw, 176px);
   }
 
   .selectedAssetHeader {
@@ -2307,12 +2103,31 @@
   .exportChoices {
     grid-template-columns: 1fr;
   }
+}
 
-  .mapHint {
-    display: none;
+@media (max-width: 460px) {
+  .selectedDetailGrid,
+  .selectedActionRow {
+    grid-template-columns: 1fr;
   }
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .mapLoadingPulse {
+    animation: none;
+  }
+
+  .mapStage,
+  .assetSidebar,
+  .assetCard,
+  .fitMapButton,
+  .retryButton,
+  .assetMapShell :global(.aim4priceMapMarkerPin) {
+    transition: none;
+  }
+}
+
+/* === Asset Map responsive consolidation pass === */
 .page,
 .shell,
 .mapWorkspace,
@@ -2322,6 +2137,13 @@
 .selectedAssetCard,
 .assetCard {
   max-width: 100%;
+  min-width: 0;
+}
+
+.shell *,
+.assetSidebar *,
+.selectedAssetCard *,
+.assetCard * {
   min-width: 0;
 }
 
@@ -2340,25 +2162,46 @@
 }
 
 @media (max-width: 860px) {
+  .topActions,
+  .topActionButtons,
+  .panelHeader,
+  .selectedAssetContent {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    width: 100%;
+  }
+
+  .mapWorkspace {
+    grid-template-columns: 1fr !important;
+  }
+
   .assetSidebar,
   .assetSidebarCollapsed {
-    position: static;
-    width: 100%;
-    max-height: none;
+    position: static !important;
+    width: 100% !important;
+    max-height: none !important;
   }
 }
 
 @media (max-width: 620px) {
   .shell {
-    width: min(calc(100% - 1rem), 48rem);
+    width: min(calc(100% - 1rem), 48rem) !important;
     padding-top: 0.95rem;
+  }
+
+  .pageTitleBlock h1 {
+    font-size: clamp(2rem, 10vw, 2.85rem) !important;
   }
 
   .mapStage,
   .assetSidebar,
   .selectedAssetCard,
   .assetCard {
-    border-radius: 1.2rem;
+    border-radius: 1.2rem !important;
+  }
+
+  .mapCanvas {
+    min-height: min(56dvh, 28rem) !important;
   }
 
   .primaryAction,
@@ -2367,24 +2210,9 @@
   .topActionButton,
   .topReportButton,
   .selectedActionButton,
-  .assetCardButton {
+  .assetCardButton,
+  .layerButton {
     width: 100%;
-    min-height: var(--tap-target-min, 44px);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .assetSkeleton i,
-  .assetSkeleton b,
-  .loadingSpinner,
-  .refreshIconActive {
-    animation: none;
-  }
-
-  .page *,
-  .page *::before,
-  .page *::after {
-    scroll-behavior: auto !important;
-    transition-duration: 0.01ms !important;
+    min-height: var(--tap-target-min, 44px) !important;
   }
 }
