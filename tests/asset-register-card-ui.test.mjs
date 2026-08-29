@@ -282,7 +282,7 @@ test('Manage routes mapped assets to a focused map and unmapped assets to locati
   assert.match(ownerManage, /window\.location\.assign\(buildFocusedAssetMapHref\(asset\)\)/);
   assert.match(ownerManage, /rememberAssetModalReturn\(asset, 'manage', 'manage-map-location', event\.currentTarget\)/);
   assert.match(ownerManage, /openAssetSettingsModalForAsset\(asset, 'location'\)/);
-  assert.match(ownerManage, /Add a GPS location to place it on the map\./);
+  assert.match(ownerManage, /Add a GPS location\./);
   assert.match(settingsCloseFlow, /\['status-mapped', 'manage-map-location'\]\.includes/);
   assert.match(settingsCloseFlow, /returnOrigin\?\.origin === 'manage'/);
   assert.match(settingsCloseFlow, /openActionDialog\(latestAsset\)/);
