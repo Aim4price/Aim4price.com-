@@ -656,19 +656,6 @@ function buildProfileDraft(profile: AccountProfile | null): ProfileDraft {
   };
 }
 
-function formatDate(value?: string | null): string {
-  if (!value) return "—";
-
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) return "—";
-
-  return new Intl.DateTimeFormat("en-ZA", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  }).format(parsed);
-}
-
 function formatMemberSince(value?: string | null): string {
   if (!value) return "Member since —";
 
@@ -1423,9 +1410,6 @@ export default function AccountClient({
     ? `${formatCoordinate(partnerDirectoryPin.lat)}, ${formatCoordinate(partnerDirectoryPin.lng)}`
     : "No map pin selected yet";
   const memberSinceLabel = formatMemberSince(profile?.createdAtIso);
-  const updatedLabel = formatDate(
-    profile?.updatedAtIso || profile?.createdAtIso,
-  );
   const directoryStatusLabel = profileDraft.partnerDirectoryEnabled
     ? "Visible"
     : "Hidden";
@@ -2297,14 +2281,9 @@ export default function AccountClient({
 
         <section className={styles.accountDashboard}>
           <section className={`${styles.card} ${styles.overviewCard}`}>
-            <div className={`${styles.compactCardHeader} ${styles.overviewHeader}`}>
-              <div>
-                <h2>Account overview</h2>
-                <p>Your account at a glance</p>
-              </div>
-              <span className={styles.overviewUpdated}>
-                Last updated <strong>{updatedLabel}</strong>
-              </span>
+            <div className={styles.compactCardHeader}>
+              <h2>Account overview</h2>
+              <p>Your account at a glance</p>
             </div>
 
             <div className={styles.metricGrid}>
@@ -2361,7 +2340,6 @@ export default function AccountClient({
               >
                 <div className={styles.quickActionGroupHeader}>
                   <h3 id="account-assets-actions-title">Account &amp; assets</h3>
-                  <p>Profile, registers and secure asset access</p>
                 </div>
 
                 <div className={styles.quickActionList}>
@@ -2419,7 +2397,6 @@ export default function AccountClient({
               >
                 <div className={styles.quickActionGroupHeader}>
                   <h3 id="apps-visibility-actions-title">Apps &amp; visibility</h3>
-                  <p>People, marketplace and Discovery settings</p>
                 </div>
 
                 <div className={styles.quickActionList}>
