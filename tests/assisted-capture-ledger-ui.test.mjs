@@ -63,7 +63,8 @@ test('Fuel assisted capture only needs the selected target and uploaded slip at 
   assert.doesNotMatch(assistedHandler, /\/api\/fuel\/slips\/extract/);
   assert.match(retiredFuelReader, /status: 410/);
   assert.doesNotMatch(retiredFuelReader, /extractFuelSlipFromUpload/);
-  assert.match(fuelClient, /Upload the slip only — no extra details are needed/);
+  assert.match(fuelClient, /Documents and photos/);
+  assert.match(fuelClient, /Add fuel slip\/photo/);
   assert.doesNotMatch(fuelClient, /accept="[^"]*text\/plain/);
 });
 
