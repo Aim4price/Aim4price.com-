@@ -187,8 +187,7 @@ type QuickActionIconName =
   | "discovery"
   | "directory"
   | "security"
-  | "reset"
-  | "delete";
+  | "reset";
 
 const ACCOUNT_DIALOG_FOCUSABLE_SELECTOR = [
   "button:not([disabled])",
@@ -488,20 +487,6 @@ function QuickActionIcon({ name }: { name: QuickActionIconName }) {
         </svg>
       ) : null}
 
-      {name === "delete" ? (
-        <svg {...svgProps}>
-          <path
-            d="M7.15 8.2h9.7l-.8 11.05H7.95L7.15 8.2Z"
-            fill="currentColor"
-            opacity="0.16"
-          />
-          <path {...strokeProps} d="M4.75 8.2h14.5" />
-          <path {...strokeProps} d="M9.55 8.2V5.25h4.9V8.2" />
-          <path {...strokeProps} d="M7.15 8.2l.8 11.05h8.1l.8-11.05" />
-          <path {...strokeProps} d="M10.35 11.65v4.35" />
-          <path {...strokeProps} d="M13.65 11.65v4.35" />
-        </svg>
-      ) : null}
     </span>
   );
 }
@@ -2315,7 +2300,7 @@ export default function AccountClient({
             <div className={`${styles.compactCardHeader} ${styles.overviewHeader}`}>
               <div>
                 <h2>Account overview</h2>
-                <p>Your essential account settings at a glance</p>
+                <p>Your account at a glance</p>
               </div>
               <span className={styles.overviewUpdated}>
                 Last updated <strong>{updatedLabel}</strong>
@@ -2443,9 +2428,10 @@ export default function AccountClient({
                       type="button"
                       className={styles.quickActionButton}
                       onClick={openFieldManagerPage}
+                      aria-label="Manage Field Manager access"
                     >
                       <QuickActionIcon name="fieldManager" />
-                      <strong>Manage Field Manager access</strong>
+                      <strong>Field Manager access</strong>
                       <span className={styles.quickActionChevron} aria-hidden="true">›</span>
                     </button>
                   ) : null}
@@ -2455,9 +2441,10 @@ export default function AccountClient({
                       type="button"
                       className={styles.quickActionButton}
                       onClick={openOwnerAppAccessPage}
+                      aria-label="Manage Owner App access"
                     >
                       <QuickActionIcon name="ownerApp" />
-                      <strong>Manage Owner App access</strong>
+                      <strong>Owner App access</strong>
                       <span className={styles.quickActionChevron} aria-hidden="true">›</span>
                     </button>
                   ) : null}
@@ -2479,9 +2466,10 @@ export default function AccountClient({
                       type="button"
                       className={styles.quickActionButton}
                       onClick={openMarketplaceEditor}
+                      aria-label="Marketplace contact details"
                     >
                       <QuickActionIcon name="marketplace" />
-                      <strong>Marketplace contact details</strong>
+                      <strong>Marketplace contact</strong>
                       <span className={styles.quickActionChevron} aria-hidden="true">›</span>
                     </button>
                   ) : null}
@@ -2528,7 +2516,7 @@ export default function AccountClient({
           >
             <div className={styles.compactCardHeader}>
               <h2 id="password-security-title">Password & security</h2>
-              <p>Keep control of your sign-in without cluttering your dashboard.</p>
+              <p>Secure your sign-in and recovery options.</p>
             </div>
 
             <div className={styles.securityActionsGrid}>
@@ -2540,7 +2528,7 @@ export default function AccountClient({
                 <QuickActionIcon name="security" />
                 <span className={styles.securityActionCopy}>
                   <strong>Change password</strong>
-                  <small>Update it securely using your current password</small>
+                  <small>Use your current password</small>
                 </span>
                 <span className={styles.quickActionChevron} aria-hidden="true">›</span>
               </button>
@@ -2572,7 +2560,7 @@ export default function AccountClient({
             <span className={styles.dangerZoneEyebrow}>Danger zone</span>
             <h2 id="danger-zone-title">Delete account</h2>
             <p>
-              Permanently remove your Aim4price account and its saved workspace data.
+              Permanently delete your account and saved workspace.
             </p>
           </div>
 
@@ -2581,7 +2569,14 @@ export default function AccountClient({
             className={`${styles.dangerButton} ${styles.dangerZoneButton}`}
             onClick={openDeleteDialog}
           >
-            <QuickActionIcon name="delete" />
+            <span className={styles.dangerZoneButtonIcon} aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none">
+                <path d="M5.5 7.5h13" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" />
+                <path d="M9.25 7.5V5.25h5.5V7.5" stroke="currentColor" strokeWidth="1.9" strokeLinejoin="round" />
+                <path d="m7.2 7.5.7 11.25h8.2l.7-11.25" stroke="currentColor" strokeWidth="1.9" strokeLinejoin="round" />
+                <path d="M10.1 11v4.3M13.9 11v4.3" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" />
+              </svg>
+            </span>
             <span>Delete account</span>
           </button>
         </section>
