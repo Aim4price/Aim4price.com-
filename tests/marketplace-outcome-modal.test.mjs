@@ -103,11 +103,13 @@ test('shared Marketplace outcome dialog is keyboard and screen-reader accessible
   assert.match(source, /aria-pressed=\{reason === option\.value\}/);
   assert.match(source, /stepHeadingRef\.current\?\.focus\(\)/);
   assert.match(styles, /font-family: 'Montserrat'/);
+  assert.match(styles, /\.dialog button,\s*\.dialog input,\s*\.dialog textarea\s*\{[^}]*font-family:\s*inherit/);
+  assert.doesNotMatch(styles, /\.dialog button,\s*\.dialog input,\s*\.dialog textarea\s*\{[^}]*font:\s*inherit/);
   assert.match(styles, /\.dialog\s*\{[^}]*border-radius:\s*1\.8rem/);
   assert.match(styles, /\.closeButton\s*\{[^}]*width:\s*3\.08rem;[^}]*height:\s*3\.08rem;[^}]*border-radius:\s*999px/);
   assert.match(styles, /\.closeButton\s*\{[^}]*color:\s*#1d3b62;[^}]*background:\s*linear-gradient\(180deg, #f7fbff 0%, #edf4fb 100%\)/);
   assert.match(styles, /\.option\s*\{[^}]*min-height:\s*3\.55rem;[^}]*border-radius:\s*0\.95rem/);
-  assert.match(styles, /\.cancelButton,[\s\S]*?\.removeButton\s*\{[^}]*min-height:\s*3\.25rem/);
+  assert.match(styles, /\.cancelButton,[\s\S]*?\.removeButton\s*\{[^}]*min-height:\s*3\.25rem;[^}]*font-weight:\s*800/);
   assert.match(styles, /@media \(max-width: 720px\)/);
   assert.match(styles, /@media \(prefers-reduced-motion: reduce\)/);
   assert.match(styles, /\.selectedAdvert span\s*\{[^}]*text-transform:\s*uppercase/);

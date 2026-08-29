@@ -44,7 +44,7 @@
 .dialog button,
 .dialog input,
 .dialog textarea {
-  font: inherit;
+  font-family: inherit;
 }
 
 .header {
@@ -588,7 +588,7 @@
   border-radius: 1.05rem;
   padding: 0 1.3rem;
   font-size: 0.98rem;
-  font-weight: 760;
+  font-weight: 800;
   cursor: pointer;
 }
 
