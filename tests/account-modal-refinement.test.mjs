@@ -78,18 +78,20 @@ test("modal CSS defines focused widths, spacing and sticky actions", async () =>
   assert.match(styles, /\.accountScrollableModalCard \.accountModalScrollThumb/);
 });
 
-test("password security presents direct update and reset-email paths", async () => {
+test("password security presents compact update and reset-email paths", async () => {
   const [source, styles] = await Promise.all([
     read("app/account/account-client.tsx"),
     read("app/account/page.module.css"),
   ]);
 
-  assert.match(source, /Forgot your current password\?/);
-  assert.match(source, /Email me a reset link/);
+  assert.match(source, /className=\{styles\.securityActionsGrid\}/);
+  assert.match(source, /Email a reset link/);
+  assert.match(source, /activeAccountModal === "password"/);
+  assert.match(source, /onSubmit=\{handlePasswordChangeSubmit\}/);
   assert.match(source, /disabled=\{!canSubmitPasswordChange\}/);
   assert.match(source, /The new passwords do not match/);
-  assert.match(styles, /\.securityPanelHeader/);
-  assert.match(styles, /\.securityActions[\s\S]*?justify-content: flex-end/);
+  assert.match(styles, /\.securityActionCard/);
+  assert.match(styles, /\.passwordModalCard/);
 });
 
 test("signup retains town and explicit directory participation", async () => {
