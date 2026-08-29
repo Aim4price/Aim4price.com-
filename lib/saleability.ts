@@ -14,6 +14,7 @@ export type GeneralSaleabilityInput = {
 export type SaleabilityComponent = {
   score: number;
   weight: number;
+  /** Harmonic influence on the final score; weaker inputs have more influence. */
   contribution: number;
 };
 
@@ -69,24 +70,32 @@ export type SaleabilityPlan = {
 
 export const GENERAL_SALEABILITY_WEIGHTS = {
   popularity: 0.40,
-  usefulLife: 0.35,
-  condition: 0.25,
+  usefulLife: 0.20,
+  condition: 0.40,
 } as const;
 
 const CONDITION_SCORES: Record<string, number> = {
-  excellent: 95,
-  good: 85,
-  fair: 75,
-  used: 65,
-  serious: 55,
+  excellent: 100,
+  good: 90,
+  fair: 70,
+  used: 45,
+  serious: 25,
+};
+
+const POPULARITY_SCORES: Record<1 | 2 | 3 | 4 | 5, number> = {
+  1: 10,
+  2: 30,
+  3: 55,
+  4: 75,
+  5: 100,
 };
 
 const MARKET_SCORES = {
-  saleArea: { local: 55, province: 75, south_africa: 100 },
-  similarAssetsAvailable: { none: 100, one_to_three: 80, four_to_ten: 60, more_than_ten: 30, unknown: 50 },
-  realisticBuyerPool: { many: 95, moderate: 65, few: 35, specialist: 20, unknown: 50 },
-  currentDemand: { strong: 95, normal: 65, weak: 30, unknown: 50 },
-  modelFamiliarity: { common: 95, less_common: 60, rare: 30, unknown: 50 },
+  saleArea: { local: 35, province: 65, south_africa: 100 },
+  similarAssetsAvailable: { none: 100, one_to_three: 75, four_to_ten: 45, more_than_ten: 10, unknown: 45 },
+  realisticBuyerPool: { many: 100, moderate: 60, few: 25, specialist: 5, unknown: 45 },
+  currentDemand: { strong: 100, normal: 55, weak: 10, unknown: 45 },
+  modelFamiliarity: { common: 100, less_common: 55, rare: 10, unknown: 45 },
 } as const;
 
 const MARKET_WEIGHTS = {
@@ -100,7 +109,6 @@ const MARKET_WEIGHTS = {
 function clamp(value: number, min = 0, max = 100): number {
   return Math.min(max, Math.max(min, value));
 }
-
 function finiteNumber(value: unknown): number | null {
   if (value === null || typeof value === 'undefined' || value === '') return null;
   const numeric = Number(value);
@@ -111,12 +119,17 @@ function rounded(value: number): number {
   return Math.round(value);
 }
 
-function component(score: number, weight: number): SaleabilityComponent {
+function component(score: number, weight: number, contribution: number): SaleabilityComponent {
   return {
     score: rounded(score),
     weight,
-    contribution: Math.round(score * weight * 10) / 10,
+    contribution,
   };
+}
+
+function weightedHarmonicScore(values: ReadonlyArray<{ score: number; weight: number }>): number {
+  if (values.some(({ score }) => score <= 0)) return 0;
+  return 1 / values.reduce((denominator, value) => denominator + value.weight / value.score, 0);
 }
 
 export function resolveLifeRemainingPercent(input: GeneralSaleabilityInput): number | null {
@@ -137,11 +150,11 @@ export function resolveLifeRemainingPercent(input: GeneralSaleabilityInput): num
 
 export function getSaleabilityBand(scoreInput: number): Pick<GeneralSaleabilityResult, 'grade' | 'gradeLabel' | 'naturalSellingWindow'> {
   const score = clamp(scoreInput);
-  if (score >= 80) return { grade: 'A', gradeLabel: 'Strong', naturalSellingWindow: '0–30 days' };
-  if (score >= 65) return { grade: 'B', gradeLabel: 'Good', naturalSellingWindow: '30–60 days' };
-  if (score >= 50) return { grade: 'C', gradeLabel: 'Moderate', naturalSellingWindow: '60–120 days' };
-  if (score >= 35) return { grade: 'D', gradeLabel: 'Limited', naturalSellingWindow: '120–180 days' };
-  return { grade: 'E', gradeLabel: 'Specialist', naturalSellingWindow: '180+ days / specialist buyer' };
+  if (score >= 85) return { grade: 'A', gradeLabel: 'Very strong', naturalSellingWindow: '0–30 days' };
+  if (score >= 70) return { grade: 'B', gradeLabel: 'Strong', naturalSellingWindow: '30–90 days' };
+  if (score >= 50) return { grade: 'C', gradeLabel: 'Moderate', naturalSellingWindow: '90–180 days' };
+  if (score >= 30) return { grade: 'D', gradeLabel: 'Difficult', naturalSellingWindow: '180–365 days' };
+  return { grade: 'E', gradeLabel: 'Very difficult', naturalSellingWindow: '365+ days / specialist buyer' };
 }
 
 export function calculateGeneralSaleability(input: GeneralSaleabilityInput): GeneralSaleabilityResult {
@@ -150,22 +163,35 @@ export function calculateGeneralSaleability(input: GeneralSaleabilityInput): Gen
   const detailedCondition = finiteNumber(input.conditionFactorPercent);
   const normalizedCondition = String(input.condition ?? '').trim().toLowerCase().replace(/[\s-]+/g, '_');
   const conditionScore = detailedCondition === null
-    ? CONDITION_SCORES[normalizedCondition] ?? 75
+    ? CONDITION_SCORES[normalizedCondition] ?? 50
     : clamp(detailedCondition);
   const suppliedPopularity = finiteNumber(input.popularityStars);
   const popularityStars = suppliedPopularity === null ? 3 : clamp(Math.round(suppliedPopularity), 1, 5);
-  const popularityScore = popularityStars * 20;
+  const popularityScore = POPULARITY_SCORES[popularityStars as 1 | 2 | 3 | 4 | 5];
 
+  // Saleability is constrained by its weakest fundamental. A weighted
+  // harmonic mean keeps an exhausted, badly conditioned or unpopular asset
+  // from being averaged into a healthy grade by the other two inputs.
+  const rawScore = weightedHarmonicScore([
+    { score: popularityScore, weight: GENERAL_SALEABILITY_WEIGHTS.popularity },
+    { score: lifeRemainingPercent, weight: GENERAL_SALEABILITY_WEIGHTS.usefulLife },
+    { score: conditionScore, weight: GENERAL_SALEABILITY_WEIGHTS.condition },
+  ]);
+  const score = rounded(rawScore);
+  const popularityContribution = score <= 0
+    ? 0
+    : Math.round(rawScore ** 2 * GENERAL_SALEABILITY_WEIGHTS.popularity / popularityScore * 10) / 10;
+  const usefulLifeContribution = score <= 0
+    ? 0
+    : Math.round(rawScore ** 2 * GENERAL_SALEABILITY_WEIGHTS.usefulLife / lifeRemainingPercent * 10) / 10;
+  const conditionContribution = score <= 0
+    ? 0
+    : Math.round(rawScore ** 2 * GENERAL_SALEABILITY_WEIGHTS.condition / conditionScore * 10) / 10;
   const components = {
-    popularity: component(popularityScore, GENERAL_SALEABILITY_WEIGHTS.popularity),
-    usefulLife: component(lifeRemainingPercent, GENERAL_SALEABILITY_WEIGHTS.usefulLife),
-    condition: component(conditionScore, GENERAL_SALEABILITY_WEIGHTS.condition),
+    popularity: component(popularityScore, GENERAL_SALEABILITY_WEIGHTS.popularity, popularityContribution),
+    usefulLife: component(lifeRemainingPercent, GENERAL_SALEABILITY_WEIGHTS.usefulLife, usefulLifeContribution),
+    condition: component(conditionScore, GENERAL_SALEABILITY_WEIGHTS.condition, conditionContribution),
   };
-  const score = rounded(
-    popularityScore * GENERAL_SALEABILITY_WEIGHTS.popularity
-      + lifeRemainingPercent * GENERAL_SALEABILITY_WEIGHTS.usefulLife
-      + conditionScore * GENERAL_SALEABILITY_WEIGHTS.condition,
-  );
   const band = getSaleabilityBand(score);
   const knownInputs = [resolvedLifeRemaining !== null, Boolean(normalizedCondition) || detailedCondition !== null, suppliedPopularity !== null]
     .filter(Boolean).length;
@@ -197,12 +223,62 @@ function roundSellingPrice(value: number): number {
   return Math.max(0, Math.round(value / increment) * increment);
 }
 
-function desiredTimelineLabel(timeline: DesiredSellingTimeline, fallback: string): string {
-  if (timeline === '14') return 'About 14–30 days';
-  if (timeline === '30') return 'About 30–45 days';
-  if (timeline === '60') return 'About 45–75 days';
-  if (timeline === '90') return 'About 60–120 days';
-  return fallback;
+const PLAN_TIMELINE_ORDER: readonly DesiredSellingTimeline[] = ['14', '30', '60', '90', 'flexible'];
+
+function resolveEffectiveTimeline(
+  timeline: DesiredSellingTimeline,
+  priority: SellingPriority,
+): DesiredSellingTimeline {
+  const selectedIndex = PLAN_TIMELINE_ORDER.indexOf(timeline);
+  const priorityShift = priority === 'fast_cashflow' ? -1 : priority === 'best_price' ? 1 : 0;
+  return PLAN_TIMELINE_ORDER[clamp(selectedIndex + priorityShift, 0, PLAN_TIMELINE_ORDER.length - 1)];
+}
+
+function expectedTimelineWithPlan(
+  grade: SaleabilityGrade,
+  timeline: DesiredSellingTimeline,
+  priority: SellingPriority,
+): string {
+  const effectiveTimeline = resolveEffectiveTimeline(timeline, priority);
+  const windows: Record<SaleabilityGrade, Record<DesiredSellingTimeline, string>> = {
+    A: {
+      '14': 'About 14–30 days',
+      '30': 'About 30–45 days',
+      '60': 'About 45–75 days',
+      '90': 'About 60–120 days',
+      flexible: 'About 90–180 days',
+    },
+    B: {
+      '14': 'About 30–60 days',
+      '30': 'About 45–75 days',
+      '60': 'About 60–90 days',
+      '90': 'About 75–120 days',
+      flexible: 'About 120–180 days',
+    },
+    C: {
+      '14': 'About 60–120 days',
+      '30': 'About 75–150 days',
+      '60': 'About 90–180 days',
+      '90': 'About 120–210 days',
+      flexible: 'About 180–270 days',
+    },
+    D: {
+      '14': 'About 120–240 days',
+      '30': 'About 150–270 days',
+      '60': 'About 180–300 days',
+      '90': 'About 210–365 days',
+      flexible: 'About 270–365+ days',
+    },
+    E: {
+      '14': 'About 270–365+ days / specialist buyer',
+      '30': 'About 300–420+ days / specialist buyer',
+      '60': 'About 365–540+ days / specialist buyer',
+      '90': 'About 450–630+ days / specialist buyer',
+      flexible: 'About 540+ days / specialist buyer',
+    },
+  };
+
+  return windows[grade][effectiveTimeline];
 }
 
 export function calculateRefinedSaleability(
@@ -217,32 +293,43 @@ export function calculateRefinedSaleability(
       + MARKET_SCORES.currentDemand[answers.currentDemand] * MARKET_WEIGHTS.currentDemand
       + MARKET_SCORES.modelFamiliarity[answers.modelFamiliarity] * MARKET_WEIGHTS.modelFamiliarity,
   );
-  const refinedScore = rounded(general.score * 0.60 + marketScore * 0.40);
+  // A weak market cannot be averaged away by strong asset fundamentals (or
+  // vice versa). The harmonic mean makes the weaker side materially visible.
+  const refinedScore = general.score <= 0 || marketScore <= 0
+    ? 0
+    : rounded(1 / (0.55 / general.score + 0.45 / marketScore));
   const band = getSaleabilityBand(refinedScore);
 
   const timelineAdjustment: Record<DesiredSellingTimeline, number> = {
-    '14': -0.08,
-    '30': -0.04,
-    '60': 0,
-    '90': 0.02,
-    flexible: 0.04,
+    '14': -0.12,
+    '30': -0.07,
+    '60': -0.03,
+    '90': 0,
+    flexible: 0.03,
   };
-  const priorityAdjustment: Record<SellingPriority, number> = {
-    best_price: 0.03,
-    balanced: 0,
-    fast_cashflow: -0.05,
-  };
-  const scoreAdjustment = refinedScore >= 80 ? 0.01 : refinedScore >= 65 ? 0 : refinedScore >= 50 ? -0.03 : refinedScore >= 35 ? -0.06 : -0.10;
+  const effectiveTimeline = resolveEffectiveTimeline(answers.desiredTimeline, answers.sellingPriority);
+  // The saved Aim4price valuation already reflects age, usage, condition and
+  // popularity. Only the additional current-market answers adjust price here,
+  // preventing the same asset factors from being deducted a second time.
+  const marketAdjustment = marketScore >= 85 ? 0.02 : marketScore >= 70 ? 0 : marketScore >= 50 ? -0.05 : marketScore >= 30 ? -0.10 : -0.16;
   const askingFactor = clamp(
-    1 + timelineAdjustment[answers.desiredTimeline] + priorityAdjustment[answers.sellingPriority] + scoreAdjustment,
-    0.75,
-    1.07,
+    1 + timelineAdjustment[effectiveTimeline] + marketAdjustment,
+    0.65,
+    1.05,
   );
   const safeValuation = Math.max(0, finiteNumber(valuationExVat) ?? 0);
   const recommendedAskingPriceExVat = roundSellingPrice(safeValuation * askingFactor);
-  const likelySellingRangeLowExVat = roundSellingPrice(recommendedAskingPriceExVat * 0.95);
-  const likelySellingRangeHighExVat = roundSellingPrice(recommendedAskingPriceExVat * 0.99);
-  const specialistWarning = refinedScore < 35
+  const sellingRangeFactors: Record<SaleabilityGrade, { low: number; high: number }> = {
+    A: { low: 0.97, high: 1 },
+    B: { low: 0.93, high: 0.99 },
+    C: { low: 0.88, high: 0.97 },
+    D: { low: 0.82, high: 0.95 },
+    E: { low: 0.75, high: 0.92 },
+  };
+  const rangeFactors = sellingRangeFactors[band.grade];
+  const likelySellingRangeLowExVat = roundSellingPrice(recommendedAskingPriceExVat * rangeFactors.low);
+  const likelySellingRangeHighExVat = roundSellingPrice(recommendedAskingPriceExVat * rangeFactors.high);
+  const specialistWarning = band.grade === 'E'
     ? ' This asset may still need a specialist buyer, even with sharper pricing.'
     : '';
 
@@ -254,7 +341,11 @@ export function calculateRefinedSaleability(
     recommendedAskingPriceExVat,
     likelySellingRangeLowExVat,
     likelySellingRangeHighExVat,
-    expectedTimelineWithPlan: desiredTimelineLabel(answers.desiredTimeline, band.naturalSellingWindow),
+    expectedTimelineWithPlan: expectedTimelineWithPlan(
+      band.grade,
+      answers.desiredTimeline,
+      answers.sellingPriority,
+    ),
     priceDifferenceFromValuationExVat: recommendedAskingPriceExVat - safeValuation,
     note: `The Aim4price valuation remains ${roundSellingPrice(safeValuation).toLocaleString('en-ZA')} excl. VAT. This is a separate selling-price guide, not a new valuation.${specialistWarning}`,
   };

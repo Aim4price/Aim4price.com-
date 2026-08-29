@@ -23,60 +23,61 @@ export type NormalizedDealerAssessment = {
 };
 
 const MECHANICAL_FACTORS: Record<DealerMechanicalCondition, number> = {
-  excellent: 0.95,
-  good: 0.85,
-  average: 0.75,
-  below_average: 0.65,
-  poor: 0.5,
+  excellent: 1,
+  good: 0.9,
+  average: 0.7,
+  below_average: 0.45,
+  poor: 0.2,
 };
 
 const BODY_FACTORS: Record<DealerBodyCondition, number> = {
-  excellent: 0.95,
-  good: 0.85,
-  average: 0.75,
-  poor: 0.6,
-  damaged: 0.45,
+  excellent: 1,
+  good: 0.9,
+  average: 0.7,
+  poor: 0.45,
+  damaged: 0.2,
 };
 
 const TYRE_FACTORS: Record<DealerTyreCondition, number> = {
-  '75_100': 0.95,
-  '50_75': 0.85,
-  '25_50': 0.75,
-  below_25: 0.65,
-  replacement_required: 0.55,
+  '75_100': 1,
+  '50_75': 0.9,
+  '25_50': 0.7,
+  below_25: 0.5,
+  replacement_required: 0.25,
 };
 
 const SERVICE_ADJUSTMENTS: Record<DealerServiceHistory, number> = {
   complete_verified: 0.02,
   partial: 0,
-  owner_recorded: -0.01,
-  none: -0.03,
-  unknown: -0.02,
+  owner_recorded: -0.02,
+  none: -0.05,
+  unknown: -0.03,
 };
 
 // Work required is deliberately capped. Mechanical, body and tyre selections
 // already capture most defects, so this is a market-readiness adjustment rather
 // than a second full repair-cost deduction.
 const WORK_ADJUSTMENTS: Record<DealerRequiredWork, number> = {
-  ready: 0.01,
+  ready: 0,
   minor: 0,
-  moderate: -0.02,
-  significant: -0.05,
-  major: -0.08,
+  moderate: -0.04,
+  significant: -0.08,
+  major: -0.12,
 };
 
-const POPULARITY_ADJUSTMENTS: Record<PopularityStars, number> = {
-  1: -0.08,
-  2: -0.04,
-  3: 0,
-  4: 0.025,
-  5: 0.05,
+const POPULARITY_FACTORS: Record<PopularityStars, number> = {
+  1: 0.7,
+  2: 0.85,
+  3: 1,
+  4: 1.08,
+  5: 1.15,
 };
+
+const STANDARD_COMBINED_FACTOR_BOUNDS = { min: 0.1, max: 1 } as const;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 }
-
 function normalizeEnum<T extends string>(value: unknown, allowed: readonly T[], label: string): T {
   const normalized = String(value ?? '').trim().toLowerCase();
   if ((allowed as readonly string[]).includes(normalized)) return normalized as T;
@@ -96,7 +97,7 @@ export function calculateDealerConditionFactor(input: Omit<NormalizedDealerAsses
     + SERVICE_ADJUSTMENTS[input.serviceHistory]
     + WORK_ADJUSTMENTS[input.requiredWork];
 
-  return Math.min(0.98, Math.max(0.4, adjusted));
+  return Math.min(1, Math.max(0.2, adjusted));
 }
 
 export function normalizeDealerAssessment(value: DealerAssessmentInput): NormalizedDealerAssessment | null {
@@ -134,9 +135,14 @@ export function normalizePopularityStars(value: unknown): PopularityStars | null
 export function applyPopularityToConditionFactor(
   baseConditionFactor: number,
   popularityStars: PopularityStars | null | undefined,
-  bounds: { min: number; max: number } = { min: 0.4, max: 0.98 },
+  bounds: { min: number; max: number } = STANDARD_COMBINED_FACTOR_BOUNDS,
 ): number {
   const normalizedPopularity = popularityStars ?? 3;
-  const adjusted = baseConditionFactor + POPULARITY_ADJUSTMENTS[normalizedPopularity];
+  // Popularity is a proportional marketability adjustment, not another
+  // physical-condition score. Standard assessments cannot exceed the
+  // undepreciated baseline, so healthy high-popularity assets deliberately
+  // plateau there. Callers may explicitly widen the bounds for a documented
+  // custom/scarcity factor.
+  const adjusted = baseConditionFactor * POPULARITY_FACTORS[normalizedPopularity];
   return Math.min(bounds.max, Math.max(bounds.min, adjusted));
 }

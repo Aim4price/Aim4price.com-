@@ -16,6 +16,10 @@ import {
   normalizeDealerAssessment,
 } from '../lib/valuation/dealer-assessment.ts';
 
+function assertClose(actual, expected) {
+  assert.ok(Math.abs(actual - expected) < 1e-12, `expected ${expected}, received ${actual}`);
+}
+
 function ageDepreciationPercent(yearModel, baseYear = 2026) {
   const age = Math.max(0, baseYear - yearModel);
   let depreciation = 0;
@@ -57,7 +61,6 @@ test('R800,000 uses the agreed 2.25% / R18,000 salvage reference', () => {
   assert.equal(calculateSalvagePercent(800_000), 2.25);
   assert.equal(calculateSalvageValue(800_000), 18_000);
 });
-
 test('salvage percentage never exceeds 3% and salvage value never falls at a price boundary', () => {
   let previousValue = 0;
   for (let replacementPrice = 0; replacementPrice <= 12_000_000; replacementPrice += 10_000) {
@@ -177,7 +180,7 @@ test('older-car marketability excludes SUVs and specialist body styles', () => {
   }
 });
 
-test('a normal detailed assessment reproduces the existing Good condition factor', () => {
+test('a normal detailed assessment uses the stronger Good condition factor', () => {
   const assessment = normalizeDealerAssessment({
     mechanicalCondition: 'good',
     bodyCondition: 'good',
@@ -185,10 +188,10 @@ test('a normal detailed assessment reproduces the existing Good condition factor
     serviceHistory: 'partial',
     requiredWork: 'minor',
   });
-  assert.equal(assessment?.conditionFactorPercent, 85);
+  assert.equal(assessment?.conditionFactorPercent, 90);
 });
 
-test('detailed physical-condition outcomes stay inside the controlled 40%-98% range', () => {
+test('detailed physical-condition outcomes use the full controlled 20%-100% range', () => {
   const excellent = calculateDealerConditionFactor({
     mechanicalCondition: 'excellent',
     bodyCondition: 'excellent',
@@ -203,8 +206,8 @@ test('detailed physical-condition outcomes stay inside the controlled 40%-98% ra
     serviceHistory: 'none',
     requiredWork: 'major',
   });
-  assert.equal(excellent, 0.98);
-  assert.equal(poor, 0.4);
+  assert.equal(excellent, 1);
+  assert.equal(poor, 0.2);
 });
 
 test('detailed assessments produce an ordered physical range without assuming a gearbox', () => {
@@ -230,20 +233,23 @@ test('detailed assessments produce an ordered physical range without assuming a 
     requiredWork: 'major',
   });
 
-  assert.ok(Math.abs(ready - 0.95) < Number.EPSILON * 2);
-  assert.equal(working, 0.72);
-  assert.equal(project, 0.4);
+  assert.ok(Math.abs(ready - 0.99) < Number.EPSILON * 2);
+  assertClose(working, 0.64);
+  assert.equal(project, 0.2);
   assert.ok(ready > working && working > project);
 });
 
-test('popularity is a separate controlled market adjustment for simple and detailed condition', () => {
-  assert.equal(applyPopularityToConditionFactor(0.85, 1), 0.77);
-  assert.equal(applyPopularityToConditionFactor(0.85, 2), 0.8099999999999999);
-  assert.equal(applyPopularityToConditionFactor(0.85, 3), 0.85);
-  assert.equal(applyPopularityToConditionFactor(0.85, 4), 0.875);
-  assert.equal(applyPopularityToConditionFactor(0.85, 5), 0.9);
-  assert.equal(applyPopularityToConditionFactor(0.98, 5), 0.98);
-  assert.equal(applyPopularityToConditionFactor(0.4, 1), 0.4);
+test('popularity is proportional while standard factors stay at or below baseline', () => {
+  assertClose(applyPopularityToConditionFactor(0.9, 1), 0.63);
+  assertClose(applyPopularityToConditionFactor(0.9, 2), 0.765);
+  assertClose(applyPopularityToConditionFactor(0.9, 3), 0.9);
+  assertClose(applyPopularityToConditionFactor(0.9, 4), 0.972);
+  assertClose(applyPopularityToConditionFactor(0.9, 5), 1);
+  assertClose(applyPopularityToConditionFactor(1, 3), 1);
+  assertClose(applyPopularityToConditionFactor(1, 5), 1);
+  assertClose(applyPopularityToConditionFactor(0.99, 5), 1);
+  assertClose(applyPopularityToConditionFactor(0.2, 1), 0.14);
+  assertClose(applyPopularityToConditionFactor(0.2, 5), 0.23);
 });
 
 test('required work is deliberately limited to avoid deducting the same physical fault twice', () => {
@@ -269,9 +275,9 @@ test('required work is deliberately limited to avoid deducting the same physical
     requiredWork: 'major',
   });
 
-  assert.equal(averageMinor, 0.75);
-  assert.equal(averageModerate, 0.73);
-  assert.equal(averageMajor, 0.67);
+  assert.equal(averageMinor, 0.7);
+  assertClose(averageModerate, 0.66);
+  assert.equal(averageMajor, 0.58);
 });
 
 test('detailed assessment price outcomes remain proportionate on a R200,000 pre-condition value', () => {
@@ -297,10 +303,29 @@ test('detailed assessment price outcomes remain proportionate on a R200,000 pre-
     requiredWork: 'major',
   });
 
-  assert.equal(Math.round(200_000 * applyPopularityToConditionFactor(readyPhysical, 5)), 196_000);
-  assert.equal(Math.round(200_000 * applyPopularityToConditionFactor(0.85, 3)), 170_000);
-  assert.equal(Math.round(200_000 * applyPopularityToConditionFactor(workingPhysical, 2)), 136_000);
-  assert.equal(Math.round(200_000 * applyPopularityToConditionFactor(projectPhysical, 1)), 80_000);
+  assert.equal(Math.round(200_000 * applyPopularityToConditionFactor(readyPhysical, 5)), 200_000);
+  assert.equal(Math.round(200_000 * applyPopularityToConditionFactor(0.9, 3)), 180_000);
+  assert.equal(Math.round(200_000 * applyPopularityToConditionFactor(workingPhysical, 2)), 108_800);
+  assert.equal(Math.round(200_000 * applyPopularityToConditionFactor(projectPhysical, 1)), 28_000);
+});
+
+test('broad condition uses the stronger scale and custom condition stays popularity-sensitive', async () => {
+  const sharedSource = await readFile(new URL('../lib/valuation/shared.ts', import.meta.url), 'utf8');
+
+  assert.match(sharedSource, /excellent:\s*1,[\s\S]*good:\s*0\.9,[\s\S]*fair:\s*0\.7,[\s\S]*used:\s*0\.45,[\s\S]*serious:\s*0\.25,/);
+  assert.doesNotMatch(
+    sharedSource,
+    /customConditionPercent[\s\S]*ADVANCED_CONDITION_FACTOR_MIN_PERCENT \/ 100,[\s\S]*ADVANCED_CONDITION_FACTOR_MAX_PERCENT \/ 100/,
+  );
+});
+
+test('stronger condition and popularity deductions still respect the salvage floor', () => {
+  const result = resolveSalvageValue(80_000 * 0.14, 800_000);
+
+  assert.equal(result.rawValueExVat, 11_200);
+  assert.equal(result.salvageValueExVat, 18_000);
+  assert.equal(result.finalValueExVat, 18_000);
+  assert.equal(result.isSalvageEstimate, true);
 });
 
 test('selected tractor extras always add a calculated value and are shown transparently', async () => {
