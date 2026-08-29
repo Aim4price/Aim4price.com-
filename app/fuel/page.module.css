@@ -7544,16 +7544,41 @@
 .fuelSlipManagerModal.fuelSlipManagerModal {
   --fuel-slip-manager-columns:
     7.2rem minmax(15rem, 1.5fr) minmax(9rem, 0.9fr) 6.6rem 7.8rem 9.2rem 6.5rem;
-  width: min(1480px, 100%) !important;
-  height: min(880px, calc(100dvh - 48px)) !important;
+  width: min(1320px, 100%) !important;
+  height: auto !important;
+  min-height: 0 !important;
   max-height: min(880px, calc(100dvh - 48px)) !important;
 }
 
 .fuelSlipManagerModal.fuelSlipManagerModal .fuelSlipManagerBody {
   grid-template-rows: auto auto minmax(0, 1fr);
-  gap: 12px !important;
+  flex: 0 1 auto;
+  gap: 14px !important;
   overflow: hidden !important;
-  padding: 22px 30px 26px !important;
+  padding: 26px 36px 30px !important;
+}
+
+.fuelSlipManagerHeaderCopy {
+  display: grid;
+  justify-items: start;
+}
+
+.fuelSlipManagerEyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 8px;
+  color: #147657;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.085em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.fuelSlipManagerEyebrow svg {
+  width: 16px;
+  height: 16px;
 }
 
 .fuelSlipManagerToolbar {
@@ -7570,13 +7595,15 @@
 
 .fuelSlipManagerToolbar .searchWrap {
   min-width: 0;
-  min-height: 52px;
+  min-height: 56px;
   margin: 0;
 }
 
 .fuelSlipManagerToolbar .searchInput {
-  min-height: 52px;
+  min-height: 56px;
   padding-right: 48px;
+  border-radius: 17px;
+  font-size: 15px;
 }
 
 .fuelSlipManagerToolbarButtons {
@@ -7588,27 +7615,133 @@
 
 .fuelSlipManagerModal button.fuelSlipManagerToolbarButton {
   min-width: 0 !important;
-  min-height: 52px !important;
-  padding: 0 17px !important;
-  border-radius: 14px !important;
-  font-size: 13px !important;
+  min-height: 56px !important;
+  padding: 0 19px !important;
+  border-radius: 17px !important;
+  font-size: 14px !important;
 }
 
 .fuelSlipManagerContextBar {
   min-width: 0;
-  min-height: 28px;
+  min-height: 52px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 0 4px;
+  gap: 10px;
+  padding: 8px 10px;
+  overflow: hidden;
+  border: 1px solid #d9e8e2;
+  border-radius: 14px;
   color: #697c75;
-  font-size: 11px;
+  background: #f7fbf9;
+  font-size: 12px;
   font-weight: 750;
 }
 
-.fuelSlipManagerContextBar button {
-  min-height: 28px;
+.fuelSlipManagerContextLead {
+  min-width: max-content;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.fuelSlipManagerContextIcon {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  flex: 0 0 34px;
+  place-items: center;
+  border: 1px solid #b9d9cd;
+  border-radius: 11px;
+  color: #0d7454;
+  background: #ffffff;
+}
+
+.fuelSlipManagerContextIcon svg {
+  width: 16px;
+  height: 16px;
+}
+
+.fuelSlipManagerContextCopy {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.fuelSlipManagerContextCopy strong {
+  color: #17473a;
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1.15;
+}
+
+.fuelSlipManagerContextCopy small {
+  color: #70827b;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.fuelSlipManagerContextChips {
+  min-width: 0;
+  display: flex;
+  flex: 1 1 auto;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 2px 0;
+  scrollbar-width: none;
+}
+
+.fuelSlipManagerContextChips::-webkit-scrollbar {
+  display: none;
+}
+
+.fuelSlipManagerContextChips > button {
+  max-width: 18rem;
+  min-height: 36px;
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 6px 0 10px;
+  border: 1px solid #cce3da;
+  border-radius: 999px;
+  color: #15533f;
+  background: #ffffff;
+  font: inherit;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.fuelSlipManagerContextChips > button > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fuelSlipManagerContextChips > button > strong {
+  width: 18px;
+  height: 18px;
+  display: grid;
+  flex: 0 0 18px;
+  place-items: center;
+  border-radius: 999px;
+  color: #0f694e;
+  background: #e5f4ed;
+  font-size: 13px;
+  line-height: 1;
+}
+
+.fuelSlipManagerContextChips > button:hover {
+  border-color: #8fc3b0;
+  background: #f1faf6;
+}
+
+.fuelSlipManagerContextBar > button {
+  flex: 0 0 auto;
+  min-height: 36px;
   padding: 0 10px;
   border: 1px solid #cbded6;
   border-radius: 999px;
@@ -7620,12 +7753,13 @@
   cursor: pointer;
 }
 
-.fuelSlipManagerContextBar button:hover {
+.fuelSlipManagerContextBar > button:hover {
   border-color: #8fc3b0;
   background: #f1faf6;
 }
 
-.fuelSlipManagerContextBar button:focus-visible {
+.fuelSlipManagerContextBar > button:focus-visible,
+.fuelSlipManagerContextChips > button:focus-visible {
   outline: 3px solid rgba(22, 134, 96, 0.18);
   outline-offset: 2px;
 }
@@ -7637,9 +7771,10 @@
   grid-template-rows: auto auto minmax(0, 1fr) auto;
   margin: 0;
   padding: 0;
+  max-height: 590px;
   overflow: hidden;
   border: 1px solid #d7e5df;
-  border-radius: 20px;
+  border-radius: 22px;
   background: #ffffff;
   box-shadow: 0 12px 28px rgba(12, 62, 47, 0.045);
 }
@@ -7650,7 +7785,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 20px;
-  padding: 13px 18px;
+  padding: 14px 20px;
   border-bottom: 1px solid #e0ebe7;
   background:
     radial-gradient(circle at 100% 0%, rgba(32, 139, 100, 0.06), transparent 18rem),
@@ -7663,9 +7798,18 @@
   gap: 3px;
 }
 
+.fuelSlipManagerResultCopy .fuelSlipManagerSummaryLabel {
+  color: #14805d;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.075em;
+  line-height: 1.15;
+  text-transform: uppercase;
+}
+
 .fuelSlipManagerResultCopy strong {
   color: #103f34;
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 900;
 }
 
@@ -7693,7 +7837,7 @@
 }
 
 .fuelSlipManagerTotals > span {
-  min-width: 132px;
+  min-width: 145px;
   display: grid;
   gap: 2px;
   padding: 8px 12px;
@@ -7705,7 +7849,7 @@
 .fuelSlipManagerTotals small,
 .fuelSlipManagerSecondaryGrid small {
   color: #778983;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 850;
   letter-spacing: 0.055em;
   line-height: 1.2;
@@ -7714,7 +7858,7 @@
 
 .fuelSlipManagerTotals strong {
   color: #0d4839;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 900;
 }
 
@@ -7732,7 +7876,7 @@
   border-bottom: 1px solid #dce8e3;
   color: #758780;
   background: #f4f8f6;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 900;
   letter-spacing: 0.075em;
   line-height: 1.2;
@@ -7740,7 +7884,7 @@
 }
 
 .fuelSlipManagerList {
-  min-height: 0;
+  min-height: 76px;
   display: block;
   overflow-x: hidden;
   overflow-y: auto;
@@ -7784,8 +7928,8 @@
 }
 
 .fuelSlipManagerRowMain {
-  min-height: 72px;
-  padding: 11px 18px;
+  min-height: 76px;
+  padding: 12px 20px;
 }
 
 .fuelSlipManagerDate,
@@ -7801,7 +7945,7 @@
 .fuelSlipManagerMetric strong {
   overflow: hidden;
   color: #18372f;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 850;
   line-height: 1.25;
   text-overflow: ellipsis;
@@ -7810,7 +7954,7 @@
 
 .fuelSlipManagerIdentity strong {
   color: #073f33;
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 900;
 }
 
@@ -7819,7 +7963,7 @@
 .fuelSlipManagerMetric small {
   overflow: hidden;
   color: #74857f;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 650;
   line-height: 1.25;
   text-overflow: ellipsis;
@@ -7828,7 +7972,7 @@
 
 .fuelSlipManagerAmount strong {
   color: #086d50;
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .fuelSlipManagerRowMain .fuelSlipManagerStatusBadge {
@@ -7838,7 +7982,7 @@
   justify-self: start;
   padding: 7px 10px;
   overflow: hidden;
-  font-size: 10px;
+  font-size: 11px;
   line-height: 1.15;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -7871,7 +8015,7 @@
   color: #174d3f;
   background: #ffffff;
   font: inherit;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 850;
   cursor: pointer;
   transition: border-color 140ms ease, background 140ms ease, transform 140ms ease;
@@ -8008,7 +8152,20 @@
 .fuelSlipManagerPaginationButton {
   min-height: 40px;
   padding: 0 13px;
+  border-color: #cfe0ea;
   border-radius: 11px;
+  color: #2f4150;
+  background: linear-gradient(180deg, #ffffff 0%, #f5f8fb 100%);
+}
+
+.fuelSlipManagerPaginationButton:hover:not(:disabled) {
+  border-color: #9fbdcd;
+  background: #eef5f8;
+}
+
+.fuelSlipManagerPaginationButton:focus-visible {
+  outline: 3px solid rgba(22, 134, 96, 0.18);
+  outline-offset: 2px;
 }
 
 .fuelSlipManagerPaginationStatus {
@@ -8040,7 +8197,7 @@
   }
 }
 
-@media (max-width: 1040px) {
+@media (max-width: 1120px) {
   .fuelSlipManagerModal.fuelSlipManagerModal {
     width: min(760px, 100%) !important;
   }
@@ -8152,7 +8309,17 @@
   }
 
   .fuelSlipManagerModal.fuelSlipManagerModal .fuelSlipManagerBody {
+    flex: 1 1 auto;
     padding: 14px 14px max(18px, env(safe-area-inset-bottom)) !important;
+  }
+
+  .fuelSlipManagerPanel {
+    max-height: none;
+  }
+
+  .fuelSlipManagerContextChips > button,
+  .fuelSlipManagerContextBar > button {
+    min-height: 42px;
   }
 
   .fuelSlipManagerSummary {
@@ -8200,7 +8367,7 @@
     min-height: 44px !important;
     gap: 5px;
     padding: 0 8px !important;
-    font-size: 0.78rem;
+    font-size: 0.78rem !important;
   }
 
   .fuelSlipManagerRowMain {
@@ -8233,5 +8400,146 @@
   .fuelSlipManagerExpanded {
     transition: none;
     animation: none;
+  }
+}
+
+/* Keep the manager filter in the same modal family as the Cost Ledger filter. */
+.fuelSlipManagerFilterModal.fuelSlipManagerFilterModal {
+  width: min(100%, 960px);
+  max-height: none;
+  display: grid;
+  grid-template-rows: auto auto auto;
+  gap: 1.12rem;
+  padding: clamp(1.5rem, 2.35vw, 1.95rem);
+  overflow: visible;
+  border-radius: 2rem;
+}
+
+.fuelSlipManagerFilterModal.fuelSlipManagerFilterModal .modalHeader {
+  align-items: flex-start;
+  gap: 1.15rem;
+  margin: 0;
+  padding: 0 0 1.18rem;
+  border-bottom: 1px solid rgba(216, 226, 236, 0.9);
+}
+
+.fuelSlipManagerFilterModal .modalHeader > div {
+  min-width: 0;
+  display: grid;
+  gap: 0.48rem;
+}
+
+.fuelSlipManagerFilterModal.fuelSlipManagerFilterModal .modalHeader h2 {
+  margin: 0;
+  color: #0f3329;
+  font-size: clamp(1.86rem, 2.65vw, 2.38rem);
+  font-weight: 760;
+  line-height: 1.03;
+  letter-spacing: -0.052em;
+}
+
+.fuelSlipManagerFilterModal.fuelSlipManagerFilterModal .modalHeader p {
+  margin: 0;
+  color: #627386;
+  font-size: 0.98rem;
+  font-weight: 720;
+  line-height: 1.38;
+}
+
+.fuelSlipManagerFilterModal.fuelSlipManagerFilterModal .closeButton {
+  width: 3.15rem;
+  min-width: 3.15rem;
+  height: 3.15rem;
+  min-height: 3.15rem;
+  border-radius: 999px;
+  border-color: rgba(210, 222, 237, 0.98);
+  background: linear-gradient(180deg, #f7fbff 0%, #eef5fb 100%);
+}
+
+.fuelSlipManagerFilterModal .closeButton svg {
+  width: 1.2rem;
+  height: 1.2rem;
+}
+
+.fuelSlipManagerFilterModal.fuelSlipManagerFilterModal .modalDivider {
+  display: none;
+}
+
+.fuelSlipManagerFilterModal .fuelSlipFilterGrid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  padding: 0;
+}
+
+.fuelSlipManagerFilterModal .filterField {
+  gap: 0.58rem;
+}
+
+.fuelSlipManagerFilterModal .customFilterSelectButton {
+  min-height: 3.48rem;
+  border-radius: 1.08rem;
+  font-size: 1rem;
+}
+
+.fuelSlipManagerFilterModal.fuelSlipManagerFilterModal .modalFooter {
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.8rem;
+  margin: 0.12rem 0 0;
+  padding: 0;
+  border-top: 0;
+  background: transparent;
+}
+
+.fuelSlipManagerFilterModal.fuelSlipManagerFilterModal .modalFooter .primaryButton,
+.fuelSlipManagerFilterModal.fuelSlipManagerFilterModal .modalFooter .secondaryButton {
+  min-height: 3.35rem;
+  border-radius: 1rem;
+  padding-inline: 1.28rem;
+  font-size: 1rem;
+  font-weight: 850;
+}
+
+.fuelSlipManagerFilterModal.fuelSlipManagerFilterModal .modalFooter .primaryButton {
+  min-width: 13.5rem;
+}
+
+@media (max-width: 900px) {
+  .fuelSlipManagerFilterModal.fuelSlipManagerFilterModal {
+    width: min(100%, calc(100vw - 1rem));
+    max-height: min(88vh, calc(100dvh - 1rem));
+    padding: 1rem;
+    overflow-y: auto;
+    border-radius: 1.35rem;
+  }
+
+  .fuelSlipManagerFilterModal.fuelSlipManagerFilterModal .modalHeader {
+    padding-bottom: 1rem;
+  }
+
+  .fuelSlipManagerFilterModal.fuelSlipManagerFilterModal .modalHeader h2 {
+    font-size: 1.58rem;
+  }
+
+  .fuelSlipManagerFilterModal .fuelSlipFilterGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .fuelSlipManagerFilterModal.fuelSlipManagerFilterModal .modalFooter {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .fuelSlipManagerFilterModal.fuelSlipManagerFilterModal .modalFooter .primaryButton,
+  .fuelSlipManagerFilterModal.fuelSlipManagerFilterModal .modalFooter .secondaryButton {
+    width: 100%;
+    min-width: 0;
+  }
+}
+
+@media (max-height: 640px) and (min-width: 901px) {
+  .fuelSlipManagerFilterModal.fuelSlipManagerFilterModal {
+    max-height: calc(100dvh - 1rem);
+    overflow-y: auto;
   }
 }
