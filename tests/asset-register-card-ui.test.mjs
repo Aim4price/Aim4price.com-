@@ -425,4 +425,3 @@ test('successful asset reports close only the report child and preserve Manage',
   assert.equal(ownershipHandler.match(/closeAssetReportDialog\(\)/g)?.length, 2);
   assert.doesNotMatch(ownershipHandler, /closeActionDialog\(\)/);
 });
-
