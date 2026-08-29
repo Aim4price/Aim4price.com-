@@ -3747,6 +3747,13 @@
   border-color: rgba(210, 222, 237, 0.98);
 }
 
+.fuelSlipFlowBackdrop .costUploadModal .closeButton {
+  width: 3.25rem;
+  min-width: 3.25rem;
+  height: 3.25rem;
+  min-height: 3.25rem;
+}
+
 .fuelSlipFlowBackdrop .sourceChoiceModal .modalDivider {
   display: none;
 }
@@ -4090,6 +4097,10 @@
     padding: 0;
   }
 
+  .fuelSlipFlowBackdrop .costUploadModal {
+    overflow: hidden;
+  }
+
   .fuelSlipFlowBackdrop .sourceChoiceGrid,
   .fuelSlipFlowBackdrop .formGrid {
     grid-template-columns: 1fr;
@@ -4123,6 +4134,10 @@
   .fuelSlipFlowBackdrop .costUploadModal .uploadBox,
   .fuelSlipFlowBackdrop .pickerToolbar {
     grid-template-columns: 1fr;
+  }
+
+  .fuelSlipFlowBackdrop .costUploadModal .uploadBox {
+    max-width: 100%;
   }
 }
 
@@ -7491,11 +7506,6 @@
   max-height: min(880px, calc(100dvh - 48px)) !important;
 }
 
-.fuelSlipFlowBackdrop .fuelSlipUploadWizardModal {
-  width: min(860px, 100%) !important;
-  max-height: min(720px, calc(100dvh - 48px)) !important;
-}
-
 .fuelSlipWizardProgress {
   width: 100%;
 }
@@ -7523,17 +7533,11 @@
   box-shadow: none !important;
 }
 
-.fuelSlipFlowBackdrop .fuelSlipUploadWizardModal .fuelSlipWizardPanel > .invoiceFormCard {
-  padding-top: 2px !important;
-}
-
-.fuelSlipFlowBackdrop .fuelSlipWizardModal .formGrid,
-.fuelSlipFlowBackdrop .fuelSlipUploadWizardModal .formGrid {
+.fuelSlipFlowBackdrop .fuelSlipWizardModal .formGrid {
   gap: 16px;
 }
 
-.fuelSlipFlowBackdrop .fuelSlipWizardModal .modalFooter,
-.fuelSlipFlowBackdrop .fuelSlipUploadWizardModal .modalFooter {
+.fuelSlipFlowBackdrop .fuelSlipWizardModal .modalFooter {
   justify-content: space-between !important;
 }
 
@@ -8130,8 +8134,7 @@
     padding: 0;
   }
 
-  .fuelSlipFlowBackdrop .fuelSlipWizardModal,
-  .fuelSlipFlowBackdrop .fuelSlipUploadWizardModal {
+  .fuelSlipFlowBackdrop .fuelSlipWizardModal {
     width: 100% !important;
     max-height: 94dvh !important;
     border-radius: 24px 24px 0 0 !important;
