@@ -5021,8 +5021,8 @@
   text-transform: uppercase;
 }
 
-.invoiceDropCodeModal {
-  width: min(100%, 720px);
+.downloadModal.invoiceDropCodeModal {
+  width: min(100%, 880px) !important;
   max-height: min(88dvh, 800px);
   grid-template-rows: auto minmax(0, 1fr) auto;
 }
