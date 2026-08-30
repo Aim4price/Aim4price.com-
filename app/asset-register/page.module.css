@@ -38393,29 +38393,17 @@ button.documentOpenLink {
 .ownerCommandChoiceAction > span {
   grid-column: 2;
   min-width: 0;
-  display: grid;
-  gap: 0.28rem;
-}
-
-.ownerCommandChoiceAction strong,
-.ownerCommandChoiceAction small {
   display: block;
-  width: 100%;
-  text-align: left !important;
 }
 
 .ownerCommandChoiceAction strong {
+  display: block;
+  width: 100%;
   color: #10352b;
-  font-size: 0.98rem;
+  font-size: clamp(1.18rem, 1.5vw, 1.35rem);
   font-weight: 850;
   line-height: 1.2;
-}
-
-.ownerCommandChoiceAction small {
-  color: #627386;
-  font-size: 0.8rem;
-  font-weight: 620;
-  line-height: 1.38;
+  text-align: left !important;
 }
 
 .ownerMarketplaceRemoveButton {
