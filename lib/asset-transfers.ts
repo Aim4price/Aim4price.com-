@@ -3,7 +3,11 @@ import type { PoolClient } from 'pg';
 import { getAccountProfile } from './account-profile';
 import { isAssetRegisterAccountType } from './asset-register-account-access';
 import { listInternalAssetRegisterUploadIds } from './asset-register-uploads';
-import { ensureAssetRegisterTables, getSelectedAssetRegister } from './asset-registers';
+import {
+  ensureAssetRegisterTables,
+  getOrCreatePrimaryAssetRegister,
+  getSelectedAssetRegister,
+} from './asset-registers';
 import { getAssetRegisterItemById, type AssetRegisterDocument, type AssetRegisterItem } from './asset-register-db';
 import { isDatabaseSchemaReady } from './database-schema-readiness';
 import { getDb } from './db';
@@ -47,7 +51,8 @@ export type ClaimedAssetTransfer = {
   assetId: string;
   assetTitle: string;
   registerId: string;
-  redirectTo: string;
+  registerName: string;
+  registerIsPrimary: boolean;
 };
 
 export type AdminAssetAllocationResult = {
@@ -88,6 +93,12 @@ type LockedAssetRow = {
   lifecycle_state: string | null;
   documents: unknown;
   specs_json: unknown;
+};
+
+type ClaimRegisterRow = {
+  id: string;
+  business_name: string;
+  is_primary: boolean;
 };
 
 const TRANSFER_VALID_DAYS = 30;
@@ -890,6 +901,7 @@ export async function claimAssetTransfer(input: {
   buyerEmail?: string | null;
   assetIdentifier: unknown;
   transferCode: unknown;
+  targetRegisterId?: unknown;
 }): Promise<ClaimedAssetTransfer> {
   await ensureAssetTransferSchema();
   await enforceClaimRateLimit(input.buyerUserId);
@@ -904,7 +916,15 @@ export async function claimAssetTransfer(input: {
   if (!isAssetRegisterAccountType(buyerProfile.accountType) || buyerProfile.accountStatus !== 'active') {
     throw new Error('ASSET_TRANSFER_ACCOUNT_REQUIRED');
   }
-  const buyerRegister = await getSelectedAssetRegister(input.buyerUserId);
+  const requestedRegisterId = buyerProfile.accountType === 'dealer'
+    ? cleanText(input.targetRegisterId)
+    : '';
+  const defaultBuyerRegister = requestedRegisterId
+    ? null
+    : buyerProfile.accountType === 'dealer'
+      ? await getOrCreatePrimaryAssetRegister(input.buyerUserId)
+      : await getSelectedAssetRegister(input.buyerUserId);
+  const targetBuyerRegisterId = requestedRegisterId || defaultBuyerRegister?.id || '';
   let lastError: unknown = new Error('ASSET_TRANSFER_CLAIM_FAILED');
 
   for (let attempt = 0; attempt < DATABASE_RETRY_ATTEMPTS; attempt += 1) {
@@ -928,6 +948,21 @@ export async function claimAssetTransfer(input: {
       if (recipientFromRow(offer) === 'dealer' && buyerProfile.accountType !== 'dealer') {
         throw new Error('ASSET_TRANSFER_DEALER_ACCOUNT_REQUIRED');
       }
+
+      const buyerRegisterResult = await client.query<ClaimRegisterRow>(
+        `select id::text, business_name, is_primary
+         from public.asset_registers
+         where user_id = $1 and id::text = $2
+         for share`,
+        [input.buyerUserId, targetBuyerRegisterId],
+      );
+      const buyerRegisterRow = buyerRegisterResult.rows[0];
+      if (!buyerRegisterRow) throw new Error('ASSET_TRANSFER_REGISTER_NOT_FOUND');
+      const buyerRegister = {
+        id: buyerRegisterRow.id,
+        businessName: cleanText(buyerRegisterRow.business_name) || 'Asset Register',
+        isPrimary: Boolean(buyerRegisterRow.is_primary),
+      };
 
       const assetResult = await client.query<LockedAssetRow>(
         `select id::text, user_id, register_id::text, valuation_run_id, lifecycle_state, documents, specs_json
@@ -993,8 +1028,8 @@ export async function claimAssetTransfer(input: {
            ($1, $2, 'asset_transferred_out', 'asset_register_item', $3, $4::jsonb, now()),
            ($2, $2, 'asset_transferred_in', 'asset_register_item', $3, $5::jsonb, now())`,
         [offer.seller_user_id, input.buyerUserId, asset.id,
-          JSON.stringify({ transferOfferId: offer.id, assetTitle: offer.asset_title, buyerUserId: input.buyerUserId }),
-          JSON.stringify({ transferOfferId: offer.id, assetTitle: offer.asset_title, sellerUserId: offer.seller_user_id })],
+          JSON.stringify({ transferOfferId: offer.id, assetTitle: offer.asset_title, buyerUserId: input.buyerUserId, buyerRegisterId: buyerRegister.id }),
+          JSON.stringify({ transferOfferId: offer.id, assetTitle: offer.asset_title, sellerUserId: offer.seller_user_id, registerId: buyerRegister.id })],
       );
       if (asset.register_id) {
         await client.query(`update public.asset_registers set updated_at = now() where id = $1::uuid and user_id = $2`, [asset.register_id, offer.seller_user_id]);
@@ -1007,9 +1042,8 @@ export async function claimAssetTransfer(input: {
         assetId: asset.id,
         assetTitle: cleanText(offer.asset_title) || 'Asset',
         registerId: buyerRegister.id,
-        redirectTo: buyerProfile.accountType === 'dealer'
-          ? `/dealer/inventory?assetId=${encodeURIComponent(asset.id)}`
-          : `/asset-register?assetId=${encodeURIComponent(asset.id)}`,
+        registerName: buyerRegister.businessName,
+        registerIsPrimary: buyerRegister.isPrimary,
       };
     } catch (error) {
       await client.query('rollback').catch(() => undefined);

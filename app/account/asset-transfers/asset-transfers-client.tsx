@@ -34,12 +34,30 @@ type TransferReceipt = {
   transferReason: 'sold' | 'traded_in';
   recipientAccountType: 'owner_or_dealer' | 'dealer';
 };
-type ClaimedTransfer = { assetId: string; assetTitle: string; registerId: string; redirectTo: string };
+type ClaimRegister = {
+  id: string;
+  businessName: string;
+  isPrimary: boolean;
+  isSelected: boolean;
+  assetCount: number;
+};
+type ClaimedTransfer = {
+  assetId: string;
+  assetTitle: string;
+  registerId: string;
+  registerName: string;
+  redirectTo: string;
+};
 type TransferResponse = {
   ok?: boolean;
   outgoing?: OutgoingTransfer[];
   transfer?: TransferReceipt;
   claimed?: ClaimedTransfer;
+  error?: string;
+};
+type AssetRegistersResponse = {
+  ok?: boolean;
+  registers?: ClaimRegister[];
   error?: string;
 };
 
@@ -65,6 +83,17 @@ function manageableOutgoing(items: OutgoingTransfer[] | undefined): OutgoingTran
   return Array.isArray(items)
     ? items.filter((item) => item.status === 'pending' || item.status === 'expired')
     : [];
+}
+
+function primaryClaimRegisterId(registers: ClaimRegister[]): string {
+  return registers.find((register) => register.isPrimary)?.id ?? registers[0]?.id ?? '';
+}
+
+function claimRegisterOptionLabel(register: ClaimRegister): string {
+  const assetLabel = `${register.assetCount} asset${register.assetCount === 1 ? '' : 's'}`;
+  return register.isPrimary
+    ? `Dealer Asset Register — ${register.businessName} (${assetLabel})`
+    : `${register.businessName} — Client Asset Register (${assetLabel})`;
 }
 
 function IncomingIcon() {
@@ -195,12 +224,23 @@ function TransferModal({
   );
 }
 
-export default function AssetTransfersClient({ context = 'account' }: { context?: 'account' | 'dealer' }) {
+export default function AssetTransfersClient({
+  context = 'account',
+  isDealerAccount: isDealerAccountProp,
+}: {
+  context?: 'account' | 'dealer';
+  isDealerAccount?: boolean;
+}) {
   const isDealerContext = context === 'dealer';
+  const isDealerAccount = isDealerAccountProp ?? isDealerContext;
   const [activeFlow, setActiveFlow] = useState<ActiveFlow>(null);
   const [outgoing, setOutgoing] = useState<OutgoingTransfer[]>([]);
   const [assetIdentifier, setAssetIdentifier] = useState('');
   const [transferCode, setTransferCode] = useState('');
+  const [claimRegisters, setClaimRegisters] = useState<ClaimRegister[]>([]);
+  const [claimRegisterId, setClaimRegisterId] = useState('');
+  const [claimRegistersLoading, setClaimRegistersLoading] = useState(isDealerAccount);
+  const [claimRegistersError, setClaimRegistersError] = useState('');
   const [loading, setLoading] = useState(true);
   const [busyAction, setBusyAction] = useState('');
   const [notice, setNotice] = useState<{ tone: 'success' | 'error'; message: string } | null>(null);
@@ -210,6 +250,10 @@ export default function AssetTransfersClient({ context = 'account' }: { context?
 
   const pendingCount = useMemo(() => outgoing.filter((item) => item.status === 'pending' || item.status === 'expired').length, [outgoing]);
   const cancelTransfer = useMemo(() => outgoing.find((item) => item.id === confirmingCancelId) || null, [confirmingCancelId, outgoing]);
+  const selectedClaimRegister = useMemo(
+    () => claimRegisters.find((register) => register.id === claimRegisterId) ?? null,
+    [claimRegisterId, claimRegisters],
+  );
 
   async function loadOutgoing() {
     setLoading(true);
@@ -226,7 +270,38 @@ export default function AssetTransfersClient({ context = 'account' }: { context?
     }
   }
 
-  useEffect(() => { void loadOutgoing(); }, []);
+  async function loadClaimRegisters() {
+    if (!isDealerAccount) return;
+    setClaimRegistersLoading(true);
+    setClaimRegistersError('');
+    try {
+      const response = await fetch('/api/asset-registers', { credentials: 'include', cache: 'no-store' });
+      const payload = await response.json().catch(() => null) as AssetRegistersResponse | null;
+      if (response.status === 401) { window.location.assign(isDealerContext ? '/dealer/login' : '/auth#login'); return; }
+      if (!response.ok || !payload?.ok) throw new Error(payload?.error || 'Asset Registers could not be loaded.');
+      const registers = Array.isArray(payload.registers)
+        ? [...payload.registers].sort((left, right) => Number(right.isPrimary) - Number(left.isPrimary))
+        : [];
+      if (!registers.length) throw new Error('No Asset Register is available for this Dealer account.');
+      setClaimRegisters(registers);
+      setClaimRegisterId((current) => (
+        registers.some((register) => register.id === current)
+          ? current
+          : primaryClaimRegisterId(registers)
+      ));
+    } catch (error) {
+      setClaimRegisters([]);
+      setClaimRegisterId('');
+      setClaimRegistersError(error instanceof Error ? error.message : 'Asset Registers could not be loaded.');
+    } finally {
+      setClaimRegistersLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    void loadOutgoing();
+    if (isDealerAccount) void loadClaimRegisters();
+  }, []);
 
   async function post(body: Record<string, unknown>): Promise<TransferResponse> {
     const response = await fetch('/api/asset-transfers', {
@@ -248,6 +323,12 @@ export default function AssetTransfersClient({ context = 'account' }: { context?
     setConfirmingCancelId('');
     setNotice(null);
     if (flow === 'outgoing' && !loading && !outgoing.length) void loadOutgoing();
+    if (flow === 'incoming' && isDealerAccount && claimRegisters.length) {
+      setClaimRegisterId(primaryClaimRegisterId(claimRegisters));
+    }
+    if (flow === 'incoming' && isDealerAccount && !claimRegistersLoading && !claimRegisters.length) {
+      void loadClaimRegisters();
+    }
   }
 
   function closeFlow() {
@@ -265,12 +346,17 @@ export default function AssetTransfersClient({ context = 'account' }: { context?
     setNotice(null);
     setClaimed(null);
     try {
-      const payload = await post({ action: 'claim', assetIdentifier, transferCode });
+      const payload = await post({
+        action: 'claim',
+        assetIdentifier,
+        transferCode,
+        ...(isDealerAccount ? { targetRegisterId: claimRegisterId } : {}),
+      });
       if (!payload.claimed) throw new Error('The transfer completed without an asset response.');
       setClaimed(payload.claimed);
       setAssetIdentifier('');
       setTransferCode('');
-      setNotice({ tone: 'success', message: `${payload.claimed.assetTitle} is now in your selected ${isDealerContext ? 'dealer inventory register' : 'asset register'}.` });
+      setNotice({ tone: 'success', message: `${payload.claimed.assetTitle} is now in ${payload.claimed.registerName}.` });
     } catch (error) {
       setNotice({ tone: 'error', message: error instanceof Error ? error.message : 'The asset could not be claimed.' });
     } finally {
@@ -379,18 +465,29 @@ export default function AssetTransfersClient({ context = 'account' }: { context?
       <TransferModal
         open={activeFlow === 'incoming'}
         title="Incoming asset"
-        description={isDealerContext ? 'Claim a trade-in into your selected dealer inventory register.' : 'Claim an asset into your selected Asset Register.'}
+        description={isDealerAccount ? 'Choose exactly which Asset Register should receive this asset.' : 'Claim an asset into your selected Asset Register.'}
         closeDisabled={Boolean(busyAction)}
         onClose={closeFlow}
         footer={claimed ? <>
-          <button type="button" className={wizardStyles.secondaryAction} onClick={() => { setClaimed(null); setNotice(null); }}>Claim another asset</button>
+          <button type="button" className={wizardStyles.secondaryAction} onClick={() => {
+            setClaimed(null);
+            setNotice(null);
+            if (isDealerAccount) setClaimRegisterId(primaryClaimRegisterId(claimRegisters));
+          }}>Claim another asset</button>
           <Link className={`${wizardStyles.primaryAction} ${styles.footerLink}`} href={claimed.redirectTo}>Open asset</Link>
         </> : <>
           <button type="button" className={wizardStyles.secondaryAction} onClick={closeFlow} disabled={Boolean(busyAction)}>Cancel</button>
-          <button type="submit" form="asset-transfer-claim-form" className={wizardStyles.primaryAction} disabled={busyAction === 'claim' || !assetIdentifier.trim() || !transferCode.trim()}>{busyAction === 'claim' ? 'Claiming asset…' : 'Claim asset'}</button>
+          <button
+            type="submit"
+            form="asset-transfer-claim-form"
+            className={wizardStyles.primaryAction}
+            disabled={busyAction === 'claim' || !assetIdentifier.trim() || !transferCode.trim() || (isDealerAccount && (!claimRegisterId || claimRegistersLoading))}
+          >{busyAction === 'claim' ? 'Claiming asset…' : 'Claim asset'}</button>
         </>}
       >
-        <p className={wizardStyles.intro}>Enter the shared transfer details first. The asset is saved to your selected register only after the code is verified.</p>
+        <p className={wizardStyles.intro}>{isDealerAccount
+          ? 'Select the destination first, then enter the shared transfer details. The chosen register is verified again before the asset moves.'
+          : 'Enter the shared transfer details first. The asset is saved to your selected register only after the code is verified.'}</p>
         <TransferProgress currentStep={claimed ? 2 : 1} labels={['Transfer details', 'Asset received']} />
         {notice ? <div className={notice.tone === 'success' ? styles.successNotice : styles.errorNotice} role={notice.tone === 'error' ? 'alert' : 'status'}>{notice.message}</div> : null}
         {claimed ? <section className={wizardStyles.panel}>
@@ -401,7 +498,7 @@ export default function AssetTransfersClient({ context = 'account' }: { context?
           </div>
           <div className={styles.claimResult}>
             <span className={styles.resultIcon}>✓</span>
-            <div><h3>{claimed.assetTitle}</h3><p>The asset is ready in your selected {isDealerContext ? 'dealer inventory register' : 'Asset Register'}.</p></div>
+            <div><h3>{claimed.assetTitle}</h3><p>The asset is ready in {claimed.registerName}.</p></div>
           </div>
         </section> : <section className={wizardStyles.panel}>
           <div className={wizardStyles.panelHeading}>
@@ -410,6 +507,31 @@ export default function AssetTransfersClient({ context = 'account' }: { context?
             <p>Use the identifier and one-time code exactly as the sender shared them.</p>
           </div>
           <form id="asset-transfer-claim-form" onSubmit={claim} className={styles.claimForm}>
+            {isDealerAccount ? <>
+              <label className={styles.registerField}>
+                <span>Save asset to</span>
+                <select
+                  data-modal-initial-focus
+                  value={claimRegisterId}
+                  onChange={(event) => setClaimRegisterId(event.target.value)}
+                  disabled={claimRegistersLoading || !claimRegisters.length}
+                  required
+                >
+                  {claimRegistersLoading ? <option value="">Loading Asset Registers…</option> : null}
+                  {!claimRegistersLoading && !claimRegisters.length ? <option value="">No Asset Register available</option> : null}
+                  {claimRegisters.map((register) => <option key={register.id} value={register.id}>{claimRegisterOptionLabel(register)}</option>)}
+                </select>
+                <small>{selectedClaimRegister?.isPrimary
+                  ? 'Your Dealer Asset Register is the safe default for incoming stock and trade-ins.'
+                  : selectedClaimRegister
+                    ? `This asset will be allocated to ${selectedClaimRegister.businessName}.`
+                    : 'Choose the exact Asset Register that should receive this asset.'}</small>
+              </label>
+              {claimRegistersError ? <div className={styles.registerError} role="alert">
+                <span>{claimRegistersError}</span>
+                <button type="button" onClick={() => void loadClaimRegisters()}>Try again</button>
+              </div> : null}
+            </> : null}
             <label><span>Serial / VIN or Aim4price Asset ID</span><input data-modal-initial-focus value={assetIdentifier} onChange={(event) => setAssetIdentifier(event.target.value)} placeholder="Enter the asset identifier" autoComplete="off" required /></label>
             <label><span>Transfer code</span><input value={transferCode} onChange={(event) => setTransferCode(event.target.value.toUpperCase())} placeholder="XXXX-XXXX-XXXX-XXXX" autoComplete="one-time-code" required /></label>
           </form>

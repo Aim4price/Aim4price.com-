@@ -15,6 +15,8 @@ const [
   lifecycle,
   transfers,
   transferRoute,
+  transferPage,
+  assetRegisters,
   migration,
   adminSales,
   adminRoute,
@@ -33,6 +35,8 @@ const [
   read('lib/asset-lifecycle.ts'),
   read('lib/asset-transfers.ts'),
   read('app/api/asset-transfers/route.ts'),
+  read('app/account/asset-transfers/asset-transfers-client.tsx'),
+  read('lib/asset-registers.ts'),
   read('database/migrations/91-dealer-inventory-register.sql'),
   read('lib/admin-asset-sales.ts'),
   read('app/api/admin/sold-assets/route.ts'),
@@ -76,9 +80,43 @@ test('trade-in claims are dealer-only and land in dealer inventory', () => {
   assert.match(transfers, /recipientAccountType[\s\S]*input\.transferReason === 'traded_in'/);
   assert.match(transfers, /recipientFromRow\(offer\) === 'dealer'/);
   assert.match(transfers, /buyerProfile\.accountType !== 'dealer'/);
-  assert.match(transfers, /\/dealer\/inventory\?assetId=/);
+  assert.match(transferRoute, /params\.set\('dealerView', input\.registerIsPrimary \? 'dealer' : 'client'\)/);
+  assert.match(transferRoute, /params\.set\('registerId', input\.registerId\)/);
+  assert.match(transferRoute, /params\.set\('assetId', input\.assetId\)/);
   assert.match(transferRoute, /ASSET_TRANSFER_DEALER_ACCOUNT_REQUIRED/);
   assert.match(inventoryTransfersPage, /AssetTransfersClient context="dealer"/);
+});
+
+test('dealer claims choose an owned register and safely default to dealer stock', () => {
+  const claimStart = transfers.indexOf('export async function claimAssetTransfer');
+  const claimEnd = transfers.indexOf('export async function regenerateAssetTransferCode');
+  const claimSource = transfers.slice(claimStart, claimEnd);
+
+  assert.match(transferPage, />Save asset to</);
+  assert.match(transferPage, /fetch\('\/api\/asset-registers'/);
+  assert.match(transferPage, /registers\.find\(\(register\) => register\.isPrimary\)/);
+  assert.match(transferPage, /targetRegisterId: claimRegisterId/);
+  assert.match(transferPage, /Dealer Asset Register/);
+  assert.match(transferPage, /Client Asset Register/);
+  assert.match(transferPage, /isDealerAccount/);
+
+  assert.match(transferRoute, /targetRegisterId: body\.targetRegisterId/);
+  assert.match(transferRoute, /ASSET_TRANSFER_REGISTER_NOT_FOUND/);
+  assert.match(transferRoute, /status: 400/);
+  assert.match(claimSource, /buyerProfile\.accountType === 'dealer'[\s\S]*cleanText\(input\.targetRegisterId\)/);
+  assert.match(claimSource, /getOrCreatePrimaryAssetRegister\(input\.buyerUserId\)/);
+  assert.match(claimSource, /from public\.asset_registers[\s\S]*where user_id = \$1 and id::text = \$2[\s\S]*for share/);
+  assert.match(claimSource, /\[input\.buyerUserId, targetBuyerRegisterId\]/);
+  assert.match(claimSource, /buyerRegister\.id/);
+  assert.match(assetRegisters, /where ar\.user_id = \$1 and ar\.id::text = \$2/);
+});
+
+test('normal dealers open the desktop register while dealer staff keep an authorised route', () => {
+  assert.match(transferRoute, /isDealerAppSession\(access\.session\)/);
+  assert.match(transferRoute, /input\.accountType === 'dealer' && input\.dealerAppSession/);
+  assert.match(transferRoute, /\? '\/dealer\/inventory'\s*:\s*'\/asset-register'/);
+  assert.match(inventoryPage, /AssetRegisterClient/);
+  assert.match(desktopRegisterPage, /AssetRegisterClient/);
 });
 
 test('portable history moves without private financial documents', () => {
