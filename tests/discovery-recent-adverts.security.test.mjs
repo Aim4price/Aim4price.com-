@@ -45,6 +45,14 @@ const mapAdvertFunction = store.slice(
   store.indexOf("function mapAdvert"),
   store.indexOf("function option"),
 );
+const publicSanitizers = store.slice(
+  store.indexOf("function safePublicYear"),
+  store.indexOf("function publicAdvertId"),
+);
+const publicSearchConfig = listFunction.slice(
+  listFunction.indexOf("const typeColumn"),
+  listFunction.indexOf("const filteredWhere"),
+);
 const sourcingCreate = sourcingStore.slice(
   sourcingStore.indexOf("export async function createMarketplaceSourcingRequest"),
   sourcingStore.indexOf("export async function listMarketplaceSourcingRequestNotifications"),
@@ -80,7 +88,52 @@ test("recent advert list is viewer-scoped, outcome-aware and contact-free", () =
   assert.doesNotMatch(listCte, /serial|registration|document/i);
   assert.match(
     mapAdvertFunction,
-    /description:\s*status === 'available' && sourceAssetId\s*\? text\(row\.description\)\s*: ''/,
+    /description:[\s\S]*identityVisible && status === 'available' && sourceAssetId[\s\S]*\? text\(row\.description\)[\s\S]*: ''/,
+  );
+  assert.match(mapAdvertFunction, /advertiserName: identityVisible/);
+  assert.match(mapAdvertFunction, /contactEligible: bool\(row\.contact_eligible\)/);
+  assert.match(mapAdvertFunction, /publicAdvertId\(row\.id\)/);
+  assert.match(
+    listCte,
+    /account_type = 'dealer'[\s\S]*account_subtype[\s\S]*'machinery-dealer'[\s\S]*'motor-dealer'[\s\S]*'equipment-middleman'[\s\S]*as contact_eligible/,
+  );
+});
+
+test("public recent adverts use taxonomy and allowlisted values instead of seller copy", () => {
+  assert.match(listCte, /brand\.name[\s\S]*as taxonomy_brand_name/);
+  assert.match(listCte, /model\.model_name[\s\S]*as taxonomy_model_name/);
+  assert.match(listCte, /family\.family_label[\s\S]*sector\.sector_label[\s\S]*as taxonomy_type_label/);
+  assert.match(listCte, /case lower\(trim\(listing\.province\)\)[\s\S]*as public_province/);
+  assert.match(publicSanitizers, /function safePublicYear[\s\S]*\/\^\\d\{4\}\$\//);
+  assert.match(publicSanitizers, /function safePublicUsage[\s\S]*taxonomy_usage_unit/);
+  assert.match(publicSanitizers, /function safePublicCondition[\s\S]*labels\[candidate\] \?\? ''/);
+  assert.match(publicSanitizers, /function safePublicTitle/);
+  assert.match(mapAdvertFunction, /title: identityVisible[\s\S]*safePublicTitle/);
+  assert.match(mapAdvertFunction, /brand: identityVisible \? text\(row\.brand_name\) : publicBrand/);
+  assert.match(mapAdvertFunction, /model: identityVisible \? text\(row\.model_name\) : publicModel/);
+  assert.match(mapAdvertFunction, /const imageUrl = identityVisible && status === 'available'/);
+  assert.match(mapAdvertFunction, /province: identityVisible[\s\S]*row\.public_province/);
+  assert.match(
+    publicSearchConfig,
+    /taxonomy_brand_name, taxonomy_model_name,[\s\S]*taxonomy_type_label, public_province, advert_status/,
+  );
+  const publicSearchBranch = publicSearchConfig.slice(
+    publicSearchConfig.indexOf(": `concat_ws"),
+  );
+  assert.doesNotMatch(
+    publicSearchBranch,
+    /(?:^|[ ,])(?:title|brand_name|model_name|year_label|condition_label|area|advertiser_name)(?:[ ,)]|$)/,
+  );
+});
+
+test("anonymous recent-advert reads skip runtime schema mutation", () => {
+  assert.match(
+    listFunction,
+    /if \(identityVisible\) \{\s*await ensureMarketplaceColumns\(\);\s*await ensureMarketplaceOutcomeSchema\(\);\s*\}/,
+  );
+  assert.doesNotMatch(
+    listFunction.slice(0, listFunction.indexOf("if (identityVisible)")),
+    /ensureMarketplaceColumns|ensureMarketplaceOutcomeSchema/,
   );
 });
 
@@ -93,14 +146,26 @@ test("search and pagination are escaped, parameterized and bounded", () => {
   assert.match(listFunction, /Math\.min\(requestedPage, totalPages\)/);
 });
 
-test("the recent-adverts API requires an active permitted account", () => {
-  assert.match(route, /status: 'unauthenticated'/);
-  assert.match(route, /status: 'forbidden'/);
+test("the recent-adverts API allows redacted public reads and protects contact writes", () => {
+  const getHandler = route.slice(
+    route.indexOf("export async function GET"),
+    route.indexOf("export async function POST"),
+  );
+  const postHandler = route.slice(route.indexOf("export async function POST"));
+
+  assert.match(route, /reason: 'sign_in_required'/);
+  assert.match(route, /identityVisible: false/);
   assert.match(route, /profile\.accountStatus !== 'active'/);
   assert.match(route, /\['owner', 'dealer'\]\.includes\(profile\.accountType\)/);
   assert.match(route, /dealerRoleCan\(dealerAppSession\.role, 'discovery'\)/);
-  assert.match(route, /You must be signed in\.[\s\S]*401/);
-  assert.match(route, /active owner and dealer accounts\.[\s\S]*403/);
+  assert.match(getHandler, /canContactAdvertisers: viewer\.canContact/);
+  assert.doesNotMatch(getHandler, /You must be signed in\.[\s\S]*401/);
+  assert.match(postHandler, /You must be signed in\.[\s\S]*401/);
+  assert.match(postHandler, /Contact requests are available to active owner and dealer accounts\.[\s\S]*403/);
+  assert.match(
+    postHandler,
+    /!body \|\| typeof body !== 'object' \|\| Array\.isArray\(body\)[\s\S]*400/,
+  );
   assert.match(route, /'Cache-Control': 'private, no-store, max-age=0'/);
   assert.match(route, /Vary: 'Cookie'/);
   assert.match(route, /createMarketplaceSourcingRequest/);
@@ -127,6 +192,18 @@ test("request recipients are resolved server-side from the latest visible advert
   assert.match(sourcingStore, /advert\.user_id <> \$1/);
   assert.match(sourcingStore, /requester\.account_status = 'active'/);
   assert.match(sourcingStore, /advertiser\.account_status = 'active'/);
+  assert.match(sourcingStore, /advertiser\.account_type = 'dealer'/);
+  assert.match(
+    sourcingStore,
+    /advertiser\.account_type = 'dealer'[\s\S]*advertiser\.account_subtype[\s\S]*'machinery-dealer'[\s\S]*'motor-dealer'[\s\S]*'equipment-middleman'/,
+  );
+  assert.doesNotMatch(
+    sourcingStore.slice(
+      sourcingStore.indexOf("join public.account_profiles advertiser"),
+      sourcingStore.indexOf("join public.account_profiles requester"),
+    ),
+    /auctioneer/,
+  );
   assert.match(sourcingStore, /outcome_reason, ''\) <> 'created_by_mistake'/);
   assert.doesNotMatch(sourcingCreate, /advertiserUserId:\s*input|input\.advertiser/i);
 });
@@ -171,23 +248,26 @@ test("Discovery preserves existing results and adds a separate recent-adverts vi
   assert.match(discoveryClient, /url\.searchParams\.set\("view", "recently-advertised"\)/);
   assert.match(discoveryClient, /activeDiscoveryView !== "discovery"/);
   assert.match(discoveryPage, /searchParams\?\.view/);
-  assert.match(discoveryPage, /profile\.accountType !== 'licensing'/);
+  assert.match(discoveryPage, /activeAccountType !== 'licensing'/);
   assert.doesNotMatch(discoveryClient, /DiscoveryMarketplaceSwitch/);
 });
 
-test("cards expose recency and identity while sourcing stays request-based", () => {
+test("cards use concise dealer-only contact actions and hide public identity", () => {
   const responseContract = client.slice(
     client.indexOf("type SourcingRequest ="),
     client.indexOf("type IconProps"),
   );
   assert.doesNotMatch(responseContract, /phone|email/i);
   assert.match(client, /timeZone: "Africa\/Johannesburg"/);
-  assert.match(client, /by \{advert\.advertiserName\}/);
+  assert.match(client, /advertiserIdentityVisible/);
+  assert.match(client, /recentAdvertPrivateValue/);
   assert.match(client, /Sold \/ traded/);
-  assert.match(client, /View advert/);
-  assert.match(client, /Ask advertiser to source one/);
-  assert.match(client, /share your saved Marketplace phone or email only with/);
+  assert.match(client, /if \(!advert\.contactEligible\) return null/);
+  assert.match(client, />\s*Contact\s*</);
+  assert.match(client, /Sign in to contact/);
+  assert.match(client, /Your saved Marketplace phone or email is shared with/);
   assert.match(client, /Request sent/);
+  assert.doesNotMatch(client, /Ask advertiser|source one|Marketplace contact request/i);
   assert.doesNotMatch(client, /WhatsApp advertiser|Call advertiser|Email advertiser/);
 });
 
@@ -250,7 +330,7 @@ test("recent advert open and close controls match normal Discovery", () => {
   assert.doesNotMatch(recentCards, /recentAdvertOpenAction|recentAdvertCloseAction|View details|Hide details/);
 });
 
-test("WhatsApp contact follows existing authorization boundaries", () => {
+test("Marketplace contact follows existing authorization boundaries", () => {
   const sellerWhatsAppHelper = marketplaceClient.slice(
     marketplaceClient.indexOf("function cleanPhoneForWhatsApp"),
     marketplaceClient.indexOf("function slugify"),
@@ -259,7 +339,8 @@ test("WhatsApp contact follows existing authorization boundaries", () => {
     marketplaceClient.indexOf("{canExposeSellerContact ? ("),
     marketplaceClient.indexOf(") : (", marketplaceClient.indexOf("{canExposeSellerContact ? (")),
   );
-  assert.match(client, /View advert &amp; contact seller/);
+  assert.match(client, /advert\.contactEligible && contactAccess === "allowed"/);
+  assert.match(client, /Contact details remain private until you sign in/);
   assert.match(client, /Their private contact details remain hidden/);
   assert.match(requestPage, /Reply on WhatsApp/);
   assert.match(marketplaceClient, /const activeSellerWhatsAppHref = activeListing && canExposeSellerContact[\s\S]*?sellerWhatsAppHref\(activeListing\)/);
@@ -302,8 +383,8 @@ test("new Marketplace snapshots retain discovery details after an asset changes"
 });
 
 test("recent adverts and request dialogs remain accessible and responsive", () => {
-  assert.match(client, /<h2>\{advert\.title\}<\/h2>/);
-  assert.match(client, /<h3>\{advert\.title\}<\/h3>/);
+  assert.match(client, /<h2[^>]*>\{advert\.title\}<\/h2>/);
+  assert.match(client, /<h3[^>]*>\{advert\.title\}<\/h3>/);
   assert.match(client, /aria-haspopup="dialog"/);
   assert.match(client, /aria-expanded=\{filterOpen\}/);
   assert.match(client, /aria-label=\{`Showing \$\{pagination\.rangeStart\}/);
@@ -317,6 +398,9 @@ test("recent adverts and request dialogs remain accessible and responsive", () =
   assert.match(css, /\.recentAdvertStatus_sold/);
   assert.match(css, /\.recentAdvertStatus_ended/);
   assert.match(css, /\.compactExpandedTop > a/);
+  assert.match(css, /\.recentAdvertStatus[\s\S]*border-radius: 6px/);
+  assert.match(css, /\.recentAdvertSummary span,[\s\S]*white-space: nowrap/);
+  assert.match(css, /\.recentAdvertContactHeader > button[\s\S]*position: static !important/);
   assert.match(css, /@media \(max-width: 420px\)[\s\S]*\.compactAppSurface \.discoveryDetailsGrid/);
   assert.match(css, /@media \(max-width: 760px\)[\s\S]*\.discoveryViewSwitchButtons[\s\S]*grid-template-columns: 1fr/);
   assert.match(css, /@media \(prefers-reduced-motion: reduce\)/);

@@ -36,6 +36,20 @@ type RecentAdvert = {
   priceExVat: number | null;
   imageUrl: string;
   marketplaceHref: string | null;
+  contactEligible: boolean;
+};
+
+type ContactAccess = "allowed" | "sign_in_required" | "not_eligible";
+
+type RecentAdvertViewerAccess = {
+  authenticated: boolean;
+  canContact: boolean;
+  identityVisible: boolean;
+  reason:
+    | "allowed"
+    | "sign_in_required"
+    | "account_not_eligible"
+    | "discovery_permission_required";
 };
 
 type FilterOption = {
@@ -68,6 +82,8 @@ type RecentAdvertResponse = {
   provinceOptions?: FilterOption[];
   summary?: RecentAdvertSummary;
   pagination?: RecentAdvertPagination;
+  canContactAdvertisers?: boolean;
+  access?: RecentAdvertViewerAccess;
   error?: string;
 };
 
@@ -175,11 +191,19 @@ function FilterIcon({ className }: IconProps) {
   );
 }
 
-function WhatsAppIcon({ className }: IconProps) {
+function ContactSentIcon({ className }: IconProps) {
   return (
-    <svg className={className} viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M12 3.25a8.55 8.55 0 0 0-7.26 13.05l-1.06 3.9 4.04-1.02A8.55 8.55 0 1 0 12 3.25Z" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M8.55 7.65c.22-.48.45-.5.68-.5h.6c.2 0 .43.05.57.38l.78 1.82c.1.27.08.5-.08.72l-.42.53c-.1.12-.13.28-.05.43.48.9 1.35 1.78 2.34 2.34.15.08.3.05.43-.05l.53-.42c.22-.17.45-.2.72-.08l1.82.78c.33.13.38.37.38.57v.6c0 .23-.02.47-.5.68-.5.22-1.14.34-1.9.24-2.28-.32-5.83-3.86-6.15-6.15-.1-.76.02-1.4.25-1.9Z" fill="currentColor" />
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="m4 5 16 7-16 7 2.4-5.2L15 12l-8.6-1.8L4 5Z" />
     </svg>
   );
 }
@@ -273,6 +297,8 @@ export default function RecentlyAdvertisedClient({
   const [refreshVersion, setRefreshVersion] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [contactAccess, setContactAccess] = useState<ContactAccess>("sign_in_required");
+  const [advertiserIdentityVisible, setAdvertiserIdentityVisible] = useState(false);
   const [expandedAdvertId, setExpandedAdvertId] = useState<string | null>(null);
   const [filterOpen, setFilterOpen] = useState(false);
   const [sourcingLoadingId, setSourcingLoadingId] = useState<string | null>(null);
@@ -373,6 +399,20 @@ export default function RecentlyAdvertisedClient({
         setProvinceOptions(Array.isArray(payload.provinceOptions) ? payload.provinceOptions : []);
         setSummary(payload.summary ?? EMPTY_SUMMARY);
         setPagination(payload.pagination ?? EMPTY_PAGINATION);
+        setContactAccess(
+          payload.access
+            ? payload.access.reason === "allowed" && payload.access.canContact
+              ? "allowed"
+              : payload.access.reason === "sign_in_required"
+                ? "sign_in_required"
+                : "not_eligible"
+            : payload.canContactAdvertisers
+              ? "allowed"
+              : "sign_in_required",
+        );
+        setAdvertiserIdentityVisible(
+          payload.access?.identityVisible ?? Boolean(payload.canContactAdvertisers),
+        );
         if (payload.pagination && payload.pagination.page !== currentPage) {
           setCurrentPage(payload.pagination.page);
         }
@@ -381,6 +421,8 @@ export default function RecentlyAdvertisedClient({
         setAdverts([]);
         setSummary(EMPTY_SUMMARY);
         setPagination(EMPTY_PAGINATION);
+        setContactAccess("sign_in_required");
+        setAdvertiserIdentityVisible(false);
         setError(cause instanceof Error ? cause.message : "Failed to load recently advertised equipment.");
       } finally {
         if (mounted) setLoading(false);
@@ -399,6 +441,8 @@ export default function RecentlyAdvertisedClient({
   );
 
   async function sendSourcingRequest(advert: RecentAdvert) {
+    if (!advert.contactEligible || contactAccess !== "allowed") return;
+
     const requestId = sourcingRequestRef.current + 1;
     sourcingRequestRef.current = requestId;
     try {
@@ -413,14 +457,14 @@ export default function RecentlyAdvertisedClient({
       });
       const payload = (await response.json()) as SourcingRequestResponse;
       if (!response.ok || !payload.ok || !payload.request) {
-        throw new Error(payload.error || "Failed to send the sourcing request.");
+        throw new Error(payload.error || "Failed to send the contact request.");
       }
       if (sourcingRequestRef.current !== requestId) return;
       setSourcingRequest(payload.request);
       setRequestedAdvertIds((current) => new Set(current).add(advert.id));
     } catch (cause) {
       if (sourcingRequestRef.current !== requestId) return;
-      setSourcingError(cause instanceof Error ? cause.message : "Failed to send the sourcing request.");
+      setSourcingError(cause instanceof Error ? cause.message : "Failed to send the contact request.");
     } finally {
       if (sourcingRequestRef.current === requestId) setSourcingLoadingId(null);
     }
@@ -441,13 +485,34 @@ export default function RecentlyAdvertisedClient({
     );
   }
 
+  function advertiserLabel(advert: RecentAdvert): string {
+    return advertiserIdentityVisible
+      ? clean(advert.advertiserName) || "Marketplace advertiser"
+      : "Marketplace advertiser";
+  }
+
   function renderAdvertContactAction(advert: RecentAdvert) {
+    if (!advert.contactEligible) return null;
+
     const requestSent = requestedAdvertIds.has(advert.id);
     const isLiveAdvert = advert.status === "available" && Boolean(advert.marketplaceHref);
     const contactNoteId = `recent-advert-contact-note-${advert.id}`;
     const primaryClassName = compactAppMode
       ? `${styles.primaryButton} ${styles.enquireButton}`
       : `${assetStyles.primaryButton} ${workspaceStyles.actionButton} ${workspaceStyles.actionGreen} ${leadStyles.openLeadButton} ${styles.discoveryPrimaryAction}`;
+
+    if (contactAccess !== "allowed") {
+      return (
+        <button
+          type="button"
+          className={`${primaryClassName} ${styles.recentAdvertContactDenied}`}
+          disabled
+          aria-describedby={contactNoteId}
+        >
+          {contactAccess === "sign_in_required" ? "Sign in to contact" : "Contact unavailable"}
+        </button>
+      );
+    }
 
     if (isLiveAdvert && advert.marketplaceHref) {
       return (
@@ -456,7 +521,7 @@ export default function RecentlyAdvertisedClient({
           className={primaryClassName}
           aria-describedby={contactNoteId}
         >
-          View advert &amp; contact seller
+          Contact
         </a>
       );
     }
@@ -479,10 +544,8 @@ export default function RecentlyAdvertisedClient({
         {requestSent
           ? "Request sent"
           : sourcingLoadingId === advert.id
-            ? "Sending request…"
-            : advert.status === "available"
-              ? "Ask advertiser about this advert"
-              : "Ask advertiser to source one"}
+            ? "Sending…"
+            : "Contact"}
       </button>
     );
   }
@@ -491,8 +554,14 @@ export default function RecentlyAdvertisedClient({
     if (expandedAdvertId !== advert.id) return null;
     const hasSavedImage = Boolean(advert.imageUrl) && !failedImageIds.has(advert.id);
     const isLiveAdvert = advert.status === "available" && Boolean(advert.marketplaceHref);
+    const canContactAdvert = advert.contactEligible && contactAccess === "allowed";
     const contactNoteId = `recent-advert-contact-note-${advert.id}`;
-    const location = [clean(advert.area), clean(advert.province)].filter(Boolean).join(", ") || "Location not saved";
+    const location = advertiserIdentityVisible
+      ? [clean(advert.area), clean(advert.province)]
+          .filter(Boolean)
+          .join(", ") || "Location not saved"
+      : clean(advert.province) || "Location hidden";
+    const visibleAdvertiserName = advertiserLabel(advert);
 
     return (
       <div
@@ -504,14 +573,14 @@ export default function RecentlyAdvertisedClient({
           <div className={styles.compactExpandedTop}>
             <div>
               <span>Advert details</span>
-              <p>Review the saved Marketplace information and contact options.</p>
+              <p>Review the saved Marketplace details.</p>
             </div>
             {renderAdvertContactAction(advert)}
           </div>
         ) : (
           <div className={`${assetStyles.assetHeader} ${leadStyles.leadAssetHeader}`}>
             <div className={assetStyles.assetTitleBlock}>
-              <h2>{advert.title}</h2>
+              <h2 className={styles.recentAdvertExpandedTitle} title={advert.title}>{advert.title}</h2>
               <p>{advertMeta(advert)}</p>
               <div className={assetStyles.assetMetaRow}>
                 <span className={assetStyles.assetValueMethodLabel}>
@@ -571,7 +640,7 @@ export default function RecentlyAdvertisedClient({
                 ].map(([label, value]) => (
                   <div className={`${assetStyles.assetDetailRow} ${styles.discoveryDetailRow}`} key={`${advert.id}-${label}`}>
                     <span>{label}</span>
-                    <strong>{clean(value) || "Not saved"}</strong>
+                    <strong title={clean(value) || "Not saved"}>{clean(value) || "Not saved"}</strong>
                   </div>
                 ))}
               </div>
@@ -581,11 +650,11 @@ export default function RecentlyAdvertisedClient({
                   ["Usage", advert.usage],
                   ["Condition", advert.condition],
                   ["Province", advert.province],
-                  ["Advertised price", formatPrice(advert.priceExVat)],
+                  ["Price", formatPrice(advert.priceExVat)],
                 ].map(([label, value]) => (
                   <div className={`${assetStyles.assetDetailRow} ${styles.discoveryDetailRow}`} key={`${advert.id}-${label}`}>
                     <span>{label}</span>
-                    <strong>{clean(value) || "Not saved"}</strong>
+                    <strong title={clean(value) || "Not saved"}>{clean(value) || "Not saved"}</strong>
                   </div>
                 ))}
               </div>
@@ -593,36 +662,64 @@ export default function RecentlyAdvertisedClient({
 
             <div className={styles.discoveryAccessNote} id={contactNoteId}>
               <strong>
-                {isLiveAdvert
-                  ? "Open this Marketplace advert to contact the seller."
-                  : advert.status === "available"
-                    ? "Ask whether the advertiser can help with this advert."
-                    : "Ask whether the advertiser can help source similar equipment."}
+                {!advert.contactEligible
+                  ? "Advert history"
+                  : contactAccess === "sign_in_required"
+                    ? "Sign in to contact this advertiser."
+                    : contactAccess === "not_eligible"
+                      ? "Contact is unavailable for this account."
+                      : "Contact this advertiser."}
               </strong>
               {advert.description ? <span>{advert.description}</span> : null}
               <span>
-                {isLiveAdvert
-                  ? `${dateLabel(advert.publishedAtIso)} by ${advert.advertiserName}. The live Marketplace page provides the seller's contact options.`
-                  : `${advert.status === "available" ? "No public Marketplace page is available. " : "This advert is no longer active, but the advertiser may know where to find similar equipment. "}We will share your saved Marketplace phone or email only with ${advert.advertiserName} if you send this request.`}
+                {!advert.contactEligible
+                  ? `${dateLabel(advert.publishedAtIso)} by ${visibleAdvertiserName}. This advert is shown for reference.`
+                  : !canContactAdvert
+                    ? contactAccess === "sign_in_required"
+                      ? "Contact details remain private until you sign in."
+                      : "Contact details remain private for this account."
+                    : isLiveAdvert
+                      ? "The Marketplace advert provides the advertiser's contact options."
+                      : `Your saved Marketplace phone or email is shared with ${visibleAdvertiserName} only after you send a request.`}
               </span>
             </div>
 
             <div className={styles.discoveryInlineContact}>
-              <div>
-                <span>Advertised by</span>
-                <strong>{advert.advertiserName || "Not supplied"}</strong>
+              <div
+                aria-label={
+                  advertiserIdentityVisible
+                    ? undefined
+                    : "Advertiser details hidden"
+                }
+              >
+                <span>Advertiser</span>
+                <strong
+                  className={
+                    advertiserIdentityVisible
+                      ? undefined
+                      : styles.recentAdvertPrivateValue
+                  }
+                  title={
+                    advertiserIdentityVisible
+                      ? visibleAdvertiserName
+                      : "Advertiser details hidden"
+                  }
+                  aria-hidden={!advertiserIdentityVisible}
+                >
+                  {visibleAdvertiserName}
+                </strong>
               </div>
               <div>
-                <span>Advertised</span>
-                <strong>{fullDateLabel(advert.publishedAtIso)}</strong>
+                <span>Date</span>
+                <strong title={fullDateLabel(advert.publishedAtIso)}>{fullDateLabel(advert.publishedAtIso)}</strong>
               </div>
               <div>
-                <span>Advert status</span>
-                <strong>{advert.statusLabel}</strong>
+                <span>Status</span>
+                <strong title={advert.statusLabel}>{advert.statusLabel}</strong>
               </div>
               <div>
                 <span>Location</span>
-                <strong>{location}</strong>
+                <strong title={location}>{location}</strong>
               </div>
             </div>
           </div>
@@ -677,11 +774,20 @@ export default function RecentlyAdvertisedClient({
                 <span className={mobileStyles.overviewType}>{clean(advert.type) || "Asset"}</span>
                 <span className={styles.discoveryLocationPill}>{clean(advert.province) || "Location not saved"}</span>
               </div>
-              <h2>{advert.title}</h2>
+              <h2 className={styles.recentAdvertCardTitle} title={advert.title}>{advert.title}</h2>
               <p className={styles.dealerAssetMeta}>{advertMeta(advert)}</p>
               <p className={styles.recentAdvertByline}>
                 <span>{dateLabel(advert.publishedAtIso)}</span>
-                <strong>by {advert.advertiserName}</strong>
+                <strong
+                  className={
+                    advertiserIdentityVisible
+                      ? undefined
+                      : styles.recentAdvertPrivateValue
+                  }
+                  aria-hidden={!advertiserIdentityVisible}
+                >
+                  by {advertiserLabel(advert)}
+                </strong>
               </p>
             </div>
 
@@ -703,13 +809,30 @@ export default function RecentlyAdvertisedClient({
         <div className={leadStyles.clientPanel}>
           <div className={leadStyles.clientPanelHeader}>
             <div className={leadStyles.clientIdentity}>
-              <h3>{advert.title}</h3>
+              <h3 className={styles.recentAdvertCardTitle} title={advert.title}>{advert.title}</h3>
               <strong className={leadStyles.leadAssetName}>{advertMeta(advert)}</strong>
               <span className={leadStyles.clientKicker}>
                 {[advert.type, advert.province].filter(Boolean).join(" · ")}
               </span>
-              <span className={styles.recentAdvertByline}>
-                {dateLabel(advert.publishedAtIso)} <strong>by {advert.advertiserName}</strong>
+              <span
+                className={styles.recentAdvertByline}
+                aria-label={
+                  advertiserIdentityVisible
+                    ? undefined
+                    : `${dateLabel(advert.publishedAtIso)}; advertiser details hidden`
+                }
+              >
+                {dateLabel(advert.publishedAtIso)}{" "}
+                <strong
+                  className={
+                    advertiserIdentityVisible
+                      ? undefined
+                      : styles.recentAdvertPrivateValue
+                  }
+                  aria-hidden={!advertiserIdentityVisible}
+                >
+                  by {advertiserLabel(advert)}
+                </strong>
               </span>
             </div>
 
@@ -730,7 +853,7 @@ export default function RecentlyAdvertisedClient({
     <div className={styles.recentAdvertSurface}>
       {!compactAppMode ? (
         <section
-          className={`${assetStyles.summaryRow} ${assetStyles.heroSummaryRow} ${leadStyles.leadSummaryRow}`}
+          className={`${assetStyles.summaryRow} ${assetStyles.heroSummaryRow} ${leadStyles.leadSummaryRow} ${styles.recentAdvertSummary}`}
           aria-label="Recently advertised summary"
         >
           <article className={`${assetStyles.summaryTile} ${assetStyles.metricSummaryTile} ${assetStyles.heroSummaryTile} ${leadStyles.leadOwnerSummaryCard} ${leadStyles.leadOwnerSummaryCardNew}`}>
@@ -741,7 +864,7 @@ export default function RecentlyAdvertisedClient({
               <strong className={`${assetStyles.heroSummaryValue} ${leadStyles.leadOwnerSummaryText}`}>{loading ? "—" : summary.totalAdverts}</strong>
             </div>
             <div className={`${assetStyles.heroSummaryFooter} ${assetStyles.heroTotalFooter} ${leadStyles.leadOwnerSummaryFooter}`}>
-              <small className={leadStyles.leadOwnerSummaryText}>Matching the current search and filters.</small>
+              <small className={leadStyles.leadOwnerSummaryText}>Matches this search.</small>
             </div>
           </article>
 
@@ -753,7 +876,7 @@ export default function RecentlyAdvertisedClient({
               <strong className={`${assetStyles.heroSummaryValue} ${leadStyles.leadOwnerSummaryText}`}>{loading ? "—" : summary.advertiserCount}</strong>
             </div>
             <div className={`${assetStyles.heroSummaryFooter} ${assetStyles.heroTotalFooter} ${leadStyles.leadOwnerSummaryFooter}`}>
-              <small className={leadStyles.leadOwnerSummaryText}>People and businesses who advertised these assets.</small>
+              <small className={leadStyles.leadOwnerSummaryText}>Advertisers in these results.</small>
             </div>
           </article>
 
@@ -765,7 +888,7 @@ export default function RecentlyAdvertisedClient({
               <strong className={`${assetStyles.heroSummaryValue} ${leadStyles.leadOwnerSummaryText}`}>{loading ? "—" : summary.provinceCount}</strong>
             </div>
             <div className={`${assetStyles.heroSummaryFooter} ${assetStyles.heroTotalFooter} ${leadStyles.leadOwnerSummaryFooter}`}>
-              <small className={leadStyles.leadOwnerSummaryText}>Marketplace locations represented in these results.</small>
+              <small className={leadStyles.leadOwnerSummaryText}>Provinces in these results.</small>
             </div>
           </article>
         </section>
@@ -906,7 +1029,7 @@ export default function RecentlyAdvertisedClient({
             </div>
             <div className={`${workspaceStyles.modalBody} ${styles.recentAdvertFilterFields}`}>
               <label>
-                <span>Advert status</span>
+                <span>Status</span>
                 <select value={status} onChange={(event) => { setStatus(event.target.value); setCurrentPage(1); }}>
                   {STATUS_OPTIONS.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
                 </select>
@@ -945,34 +1068,33 @@ export default function RecentlyAdvertisedClient({
             aria-labelledby="recent-advert-contact-title"
             onKeyDown={keepFocusInDialog}
           >
-            <div className={`${assetStyles.modalHeader} ${workspaceStyles.modalHeader}`}>
+            <div className={`${assetStyles.modalHeader} ${workspaceStyles.modalHeader} ${styles.recentAdvertContactHeader}`}>
               <div className={assetStyles.modalHeaderText}>
-                <span className={styles.recentAdvertContactKicker}>Marketplace contact request</span>
                 <h3 id="recent-advert-contact-title">
                   {sourcingRequest.alreadyRequested
-                    ? "Request already sent"
-                    : `Request sent to ${sourcingRequest.advertiserName}`}
+                    ? "Contact request already sent"
+                    : "Contact request sent"}
                 </h3>
-                <p>They can contact you directly if they can help with this equipment.</p>
+                <p>They can reply using your saved contact details.</p>
               </div>
-              <button type="button" className={`${assetStyles.modalCloseButton} ${workspaceStyles.modalClose}`} onClick={() => setSourcingRequest(null)} aria-label="Close sourcing request confirmation">
+              <button type="button" className={`${assetStyles.modalCloseButton} ${workspaceStyles.modalClose}`} onClick={() => setSourcingRequest(null)} aria-label="Close contact request confirmation">
                 <CloseIcon className={assetStyles.buttonIcon} />
               </button>
             </div>
             <div className={`${workspaceStyles.modalBody} ${styles.recentAdvertContactBody}`}>
               <div className={styles.recentAdvertContactAsset}>
-                <span>Marketplace advert</span>
+                <span>Advert</span>
                 <strong>{sourcingRequest.title}</strong>
               </div>
               <div className={styles.recentAdvertRequestConfirmation} role="status">
                 <span className={styles.recentAdvertRequestConfirmationIcon} aria-hidden="true">
-                  <WhatsAppIcon />
+                  <ContactSentIcon />
                 </span>
                 <span>
-                  <strong>{sourcingRequest.alreadyRequested ? "Your request is still open" : "The advertiser has been notified"}</strong>
+                  <strong>{sourcingRequest.alreadyRequested ? "Your request is open" : "The advertiser has been notified"}</strong>
                   <p>
                     {sourcingRequest.advertiserName} can reply using the Marketplace phone or email you chose to share.
-                    If you saved a mobile number, they can reply on WhatsApp. Their private contact details remain hidden.
+                    Their private contact details remain hidden.
                   </p>
                   {sourcingRequest.alreadyRequested ? (
                     <small>Originally sent {fullDateLabel(sourcingRequest.createdAtIso)}.</small>

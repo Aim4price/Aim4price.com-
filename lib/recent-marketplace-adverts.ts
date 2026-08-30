@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { getDb } from './db';
 import { ensureMarketplaceColumns } from './marketplace-db';
 import { ensureMarketplaceOutcomeSchema } from './marketplace-outcomes';
@@ -26,6 +27,7 @@ export type RecentMarketplaceAdvert = {
   description: string;
   advertiserName: string;
   advertiserType: 'business' | 'private';
+  contactEligible: boolean;
   status: RecentMarketplaceAdvertStatus;
   statusLabel: 'Available' | 'Sold / traded' | 'Advert ended';
   publishedAtIso: string;
@@ -76,11 +78,17 @@ type RecentAdvertRow = {
   usage_unit: unknown;
   condition_label: unknown;
   type_label: unknown;
+  taxonomy_brand_name: unknown;
+  taxonomy_model_name: unknown;
+  taxonomy_type_label: unknown;
+  taxonomy_usage_unit: unknown;
   province: unknown;
+  public_province: unknown;
   area: unknown;
   description: unknown;
   advertiser_name: unknown;
   advertiser_type: unknown;
+  contact_eligible: unknown;
   advert_status: unknown;
   published_at: unknown;
   asking_price_ex_vat: unknown;
@@ -250,7 +258,30 @@ const RECENT_ADVERTS_CTE = `
         nullif(trim(sector.sector_label), ''),
         'Equipment'
       ) as type_label,
+      coalesce(nullif(trim(brand.name), ''), '') as taxonomy_brand_name,
+      coalesce(nullif(trim(model.model_name), ''), '') as taxonomy_model_name,
+      coalesce(
+        nullif(trim(family.family_label), ''),
+        nullif(trim(sector.sector_label), ''),
+        'Equipment'
+      ) as taxonomy_type_label,
+      coalesce(nullif(trim(family.usage_metric_type), ''), 'hours')
+        as taxonomy_usage_unit,
       coalesce(nullif(trim(listing.province), ''), 'South Africa') as province,
+      case lower(trim(listing.province))
+        when 'eastern cape' then 'Eastern Cape'
+        when 'free state' then 'Free State'
+        when 'gauteng' then 'Gauteng'
+        when 'kwazulu-natal' then 'KwaZulu-Natal'
+        when 'kwazulu natal' then 'KwaZulu-Natal'
+        when 'kzn' then 'KwaZulu-Natal'
+        when 'limpopo' then 'Limpopo'
+        when 'mpumalanga' then 'Mpumalanga'
+        when 'north west' then 'North West'
+        when 'northern cape' then 'Northern Cape'
+        when 'western cape' then 'Western Cape'
+        else 'South Africa'
+      end as public_province,
       coalesce(nullif(trim(listing.area), ''), 'Location not saved') as area,
       coalesce(nullif(trim(listing.description), ''), '') as description,
       coalesce(
@@ -270,6 +301,14 @@ const RECENT_ADVERTS_CTE = `
         ) is null then 'private'
         else 'business'
       end as advertiser_type,
+      (
+        advertiser.account_type = 'dealer'
+        and lower(trim(coalesce(advertiser.account_subtype, ''))) in (
+          'machinery-dealer',
+          'motor-dealer',
+          'equipment-middleman'
+        )
+      ) as contact_eligible,
       case
         when listing.status = 'live' then 'available'
         when listing.outcome_reason in ('sold', 'traded') then 'sold'
@@ -305,6 +344,10 @@ function text(value: unknown): string {
 function integer(value: unknown, fallback = 0): number {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? Math.trunc(parsed) : fallback;
+}
+
+function bool(value: unknown): boolean {
+  return value === true || text(value).toLowerCase() === 'true';
 }
 
 function money(value: unknown): number | null {
@@ -373,44 +416,133 @@ function displayUsage(row: RecentAdvertRow): string {
   return `${formatted} ${unit === 'km' || unit.includes('kilo') ? 'km' : 'hours'}`;
 }
 
-function mapAdvert(row: RecentAdvertRow): RecentMarketplaceAdvert {
+function safePublicYear(value: unknown): string {
+  const candidate = text(value);
+  if (!/^\d{4}$/.test(candidate)) return '';
+  const year = Number(candidate);
+  return year >= 1900 && year <= new Date().getUTCFullYear() + 2
+    ? String(year)
+    : '';
+}
+
+function safePublicUsage(row: RecentAdvertRow): string {
+  const candidate = text(row.usage_amount).replace(/,/g, '');
+  if (!/^\d{1,9}(?:\.\d{1,2})?$/.test(candidate)) return '';
+  const amount = Number(candidate);
+  if (!Number.isFinite(amount) || amount < 0) return '';
+
+  const formatted = Math.round(amount).toLocaleString('en-ZA');
+  const taxonomyUnit = text(row.taxonomy_usage_unit).toLowerCase();
+  if (taxonomyUnit.includes('percent')) return `${formatted}% worked`;
+  return `${formatted} ${taxonomyUnit === 'km' || taxonomyUnit.includes('kilo') ? 'km' : 'hours'}`;
+}
+
+function safePublicCondition(value: unknown): string {
+  const candidate = text(value).toLowerCase();
+  const labels: Record<string, string> = {
+    new: 'New',
+    'as new': 'As new',
+    excellent: 'Excellent',
+    'very good': 'Very good',
+    good: 'Good',
+    fair: 'Fair',
+    poor: 'Poor',
+    used: 'Used',
+  };
+  return labels[candidate] ?? '';
+}
+
+function safePublicTitle(input: {
+  year: string;
+  brand: string;
+  model: string;
+  type: string;
+}): string {
+  const equipmentName = [input.brand, input.model].filter(Boolean).join(' ')
+    || input.type
+    || 'Equipment';
+  return [input.year, equipmentName].filter(Boolean).join(' ');
+}
+
+function publicAdvertId(value: unknown): string {
+  return `public-${createHash('sha256')
+    .update(text(value))
+    .digest('hex')
+    .slice(0, 32)}`;
+}
+
+function mapAdvert(
+  row: RecentAdvertRow,
+  identityVisible: boolean,
+): RecentMarketplaceAdvert {
   const status = cleanStatus(row.advert_status);
-  const sourceAssetId = text(row.source_asset_id) || null;
+  const sourceAssetId = identityVisible
+    ? text(row.source_asset_id) || null
+    : null;
+  const publicBrand = text(row.taxonomy_brand_name);
+  const publicModel = text(row.taxonomy_model_name);
+  const publicType = text(row.taxonomy_type_label) || 'Equipment';
+  const publicYear = safePublicYear(row.year_label);
   const primaryImage = text(row.primary_image_url);
-  const imageUrl = status === 'available'
+  const imageUrl = identityVisible && status === 'available'
     ? (/^https:\/\//i.test(primaryImage) || primaryImage.startsWith('/'))
       ? primaryImage
       : parseImages(row.image_urls)[0] ?? ''
     : '';
 
   return {
-    id: text(row.id),
+    // Current Marketplace adverts use `current:<asset id>` internally. Give
+    // public viewers an opaque, stable key so the redacted source asset id is
+    // not recoverable through the generic advert id field.
+    id: identityVisible ? text(row.id) : publicAdvertId(row.id),
     sourceAssetId,
-    title: text(row.title) || 'Aim4price listing',
-    brand: text(row.brand_name),
-    model: text(row.model_name),
-    year: text(row.year_label),
-    usage: displayUsage(row),
-    condition: text(row.condition_label),
-    type: text(row.type_label) || 'Equipment',
-    province: text(row.province) || 'South Africa',
-    area: text(row.area) || 'Location not saved',
+    title: identityVisible
+      ? text(row.title) || 'Aim4price listing'
+      : safePublicTitle({
+          year: publicYear,
+          brand: publicBrand,
+          model: publicModel,
+          type: publicType,
+        }),
+    brand: identityVisible ? text(row.brand_name) : publicBrand,
+    model: identityVisible ? text(row.model_name) : publicModel,
+    year: identityVisible ? text(row.year_label) : publicYear,
+    usage: identityVisible ? displayUsage(row) : safePublicUsage(row),
+    condition: identityVisible
+      ? text(row.condition_label)
+      : safePublicCondition(row.condition_label),
+    type: identityVisible
+      ? text(row.type_label) || 'Equipment'
+      : publicType,
+    province: identityVisible
+      ? text(row.province) || 'South Africa'
+      : text(row.public_province) || 'South Africa',
+    area: identityVisible
+      ? text(row.area) || 'Location not saved'
+      : 'Area hidden',
     // Historical free-form advert copy can contain contact details. Only return
     // it while the advert still has a public Marketplace destination.
     description:
-      status === 'available' && sourceAssetId ? text(row.description) : '',
-    advertiserName: text(row.advertiser_name) || 'Private advertiser',
+      identityVisible && status === 'available' && sourceAssetId
+        ? text(row.description)
+        : '',
+    advertiserName: identityVisible
+      ? text(row.advertiser_name) || 'Private advertiser'
+      : 'Advertiser details hidden',
     advertiserType:
-      text(row.advertiser_type).toLowerCase() === 'business'
+      (identityVisible
+        ? text(row.advertiser_type).toLowerCase() === 'business'
+        : bool(row.contact_eligible))
         ? 'business'
         : 'private',
+    contactEligible: bool(row.contact_eligible),
     status,
     statusLabel: statusLabel(status),
     publishedAtIso: iso(row.published_at),
     priceExVat: money(row.asking_price_ex_vat),
     imageUrl,
     marketplaceHref:
-      status === 'available' && sourceAssetId
+      identityVisible && status === 'available' && sourceAssetId
         ? `/marketplace/browse?listing=${encodeURIComponent(`asset-${sourceAssetId}`)}`
         : null,
   };
@@ -439,7 +571,8 @@ function escapeLike(value: string): string {
 }
 
 export async function listRecentMarketplaceAdverts(input: {
-  viewerUserId: string;
+  viewerUserId?: string | null;
+  identityVisible?: boolean;
   search?: string;
   status?: string;
   type?: string;
@@ -447,11 +580,19 @@ export async function listRecentMarketplaceAdverts(input: {
   page?: number;
   pageSize?: number;
 }): Promise<RecentMarketplaceAdvertListResult> {
-  await ensureMarketplaceColumns();
-  await ensureMarketplaceOutcomeSchema();
-
-  const viewerUserId = text(input.viewerUserId);
-  if (!viewerUserId) throw new Error('You must be signed in.');
+  const requestedViewerUserId = text(input.viewerUserId);
+  const identityVisible = Boolean(
+    input.identityVisible && requestedViewerUserId,
+  );
+  // Public Discovery reads must remain SELECT-only. Runtime schema repair is
+  // reserved for authenticated viewers whose full advert identity is exposed.
+  if (identityVisible) {
+    await ensureMarketplaceColumns();
+    await ensureMarketplaceOutcomeSchema();
+  }
+  const viewerUserId = identityVisible
+    ? requestedViewerUserId
+    : '__public_recent_marketplace_viewer__';
 
   const search = escapeLike(filterValue(input.search));
   const requestedStatus = text(input.status).toLowerCase();
@@ -465,15 +606,21 @@ export async function listRecentMarketplaceAdverts(input: {
   const requestedPage = pageNumber(input.page, 1);
   const pageSize = pageSizeNumber(input.pageSize);
   const filters = [viewerUserId, search, status, type, province];
+  const typeColumn = identityVisible ? 'type_label' : 'taxonomy_type_label';
+  const provinceColumn = identityVisible ? 'province' : 'public_province';
+  const searchHaystack = identityVisible
+    ? `concat_ws(' ', title, brand_name, model_name, year_label, type_label,
+        province, area, advertiser_name, condition_label)`
+    : `concat_ws(' ', taxonomy_brand_name, taxonomy_model_name,
+        taxonomy_type_label, public_province, advert_status)`;
   const filteredWhere = `
     where (
       $2::text = ''
-      or concat_ws(' ', title, brand_name, model_name, year_label, type_label,
-        province, area, advertiser_name, condition_label) ilike '%' || $2 || '%' escape '\\'
+      or ${searchHaystack} ilike '%' || $2 || '%' escape '\\'
     )
       and ($3::text = 'all' or advert_status = $3)
-      and ($4::text = 'all' or type_label = $4)
-      and ($5::text = 'all' or province = $5)
+      and ($4::text = 'all' or ${typeColumn} = $4)
+      and ($5::text = 'all' or ${provinceColumn} = $5)
   `;
 
   const db = getDb();
@@ -482,7 +629,7 @@ export async function listRecentMarketplaceAdverts(input: {
      select
        count(*)::int as total_adverts,
        count(distinct advertiser_user_id)::int as advertiser_count,
-       count(distinct province)::int as province_count
+       count(distinct ${provinceColumn})::int as province_count
      from recent_marketplace_adverts
      ${filteredWhere}`,
     filters,
@@ -504,22 +651,20 @@ export async function listRecentMarketplaceAdverts(input: {
     ),
     db.query<OptionRow>(
       `${RECENT_ADVERTS_CTE}
-       select type_label as value, count(*)::int as count
+       select ${typeColumn} as value, count(*)::int as count
        from recent_marketplace_adverts
-       where ($2::text = '' or concat_ws(' ', title, brand_name, model_name,
-         type_label, province, area, advertiser_name) ilike '%' || $2 || '%' escape '\\')
-       group by type_label
-       order by type_label`,
+       where ($2::text = '' or ${searchHaystack} ilike '%' || $2 || '%' escape '\\')
+       group by ${typeColumn}
+       order by ${typeColumn}`,
       [viewerUserId, search],
     ),
     db.query<OptionRow>(
       `${RECENT_ADVERTS_CTE}
-       select province as value, count(*)::int as count
+       select ${provinceColumn} as value, count(*)::int as count
        from recent_marketplace_adverts
-       where ($2::text = '' or concat_ws(' ', title, brand_name, model_name,
-         type_label, province, area, advertiser_name) ilike '%' || $2 || '%' escape '\\')
-       group by province
-       order by province`,
+       where ($2::text = '' or ${searchHaystack} ilike '%' || $2 || '%' escape '\\')
+       group by ${provinceColumn}
+       order by ${provinceColumn}`,
       [viewerUserId, search],
     ),
   ]);
@@ -529,7 +674,7 @@ export async function listRecentMarketplaceAdverts(input: {
   const rangeEnd = totalItems ? Math.min(offset + pageSize, totalItems) : 0;
 
   return {
-    adverts: advertResult.rows.map(mapAdvert),
+    adverts: advertResult.rows.map((row) => mapAdvert(row, identityVisible)),
     typeOptions: typeResult.rows.map(option).filter((item) => item.value),
     provinceOptions: provinceResult.rows.map(option).filter((item) => item.value),
     summary: {

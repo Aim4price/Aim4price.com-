@@ -71,11 +71,16 @@ type ListResponse = {
 };
 
 type DiscoveryAccess = {
-  accountType: "owner" | "dealer" | "licensing";
+  accountType: "owner" | "dealer" | "licensing" | "public";
   canBrowse: boolean;
+  canContact?: boolean;
   participationEnabled: boolean;
   eligibleAssetCount: number;
-  reason: "allowed" | "participation_disabled" | "no_eligible_assets";
+  reason:
+    | "allowed"
+    | "participation_disabled"
+    | "no_eligible_assets"
+    | "public_preview";
 };
 
 type DiscoveryAssetDetails = {
@@ -750,6 +755,8 @@ export default function AssetDiscoveryClient({
     useState<DiscoveryEnquiryDetail | null>(null);
   const [loadingEnquiryId, setLoadingEnquiryId] = useState<string | null>(null);
   const licensingDiscovery = access?.accountType === "licensing";
+  const privateDiscoveryAccess =
+    access?.accountType !== "public" && Boolean(access?.canContact);
 
   useEffect(() => {
     if ((!allowRecentAdverts || licensingDiscovery) && activeDiscoveryView !== "discovery") {
@@ -877,7 +884,27 @@ export default function AssetDiscoveryClient({
 
         if (!mounted) return;
         const nextAssets = Array.isArray(data.assets) ? data.assets : [];
-        setAccess(data.access ?? null);
+        const nextAccess = data.access ?? null;
+
+        // A session can expire while this client remains mounted. Clear every
+        // privileged cache in the same update that changes the viewer to a
+        // public or otherwise non-contactable account so stale contact details
+        // and photos cannot remain in the DOM.
+        if (
+          !nextAccess?.canContact ||
+          nextAccess.accountType === "public"
+        ) {
+          setExpandedAssetId(null);
+          setDetailsByAssetId({});
+          setPhotoIndexByAssetId({});
+          setPhotoModal(null);
+          setDetailsErrorByAssetId({});
+          setLoadingDetailsAssetId(null);
+          setActiveEnquiry(null);
+          setLoadingEnquiryId(null);
+        }
+
+        setAccess(nextAccess);
         setAssets(nextAssets);
         setProvinceOptions(
           Array.isArray(data.provinceOptions) ? data.provinceOptions : [],
@@ -897,7 +924,7 @@ export default function AssetDiscoveryClient({
           autoOpenedAssetIdRef.current !== requestedOpenAssetId
         ) {
           autoOpenedAssetIdRef.current = requestedOpenAssetId;
-          void toggleAssetDetails(requestedAsset);
+          void toggleAssetDetails(requestedAsset, data.access);
         }
       } catch (loadError) {
         if (!mounted) return;
@@ -905,6 +932,14 @@ export default function AssetDiscoveryClient({
         setAssets([]);
         setSummary(EMPTY_SUMMARY);
         setPagination(EMPTY_PAGINATION);
+        setExpandedAssetId(null);
+        setDetailsByAssetId({});
+        setPhotoIndexByAssetId({});
+        setPhotoModal(null);
+        setDetailsErrorByAssetId({});
+        setLoadingDetailsAssetId(null);
+        setActiveEnquiry(null);
+        setLoadingEnquiryId(null);
         setError(
           loadError instanceof Error
             ? loadError.message
@@ -1111,13 +1146,51 @@ export default function AssetDiscoveryClient({
     }
   }
 
-  async function toggleAssetDetails(asset: AssetDiscoveryAsset) {
+  async function toggleAssetDetails(
+    asset: AssetDiscoveryAsset,
+    accessOverride?: DiscoveryAccess,
+  ) {
     if (expandedAssetId === asset.id) {
       setExpandedAssetId(null);
       return;
     }
 
     setExpandedAssetId(asset.id);
+
+    const effectiveAccess = accessOverride ?? access;
+    if (effectiveAccess?.accountType === "public") {
+      setDetailsByAssetId((current) => ({
+        ...current,
+        [asset.id]: {
+          asset: {
+            id: asset.id,
+            type: asset.type,
+            brand: asset.brand,
+            model: asset.model,
+            year: asset.year,
+            usage: asset.usage,
+            condition: asset.condition,
+            province: asset.province,
+            renewalWindow: "",
+          },
+          enquiryId: null,
+          enquiryStatus: null,
+          photosUnlocked: false,
+          contactUnlocked: false,
+          accessSource: null,
+          photoUrls: [],
+          ownerContact: null,
+        },
+      }));
+      setLoadingDetailsAssetId(null);
+      setDetailsErrorByAssetId((current) => {
+        const next = { ...current };
+        delete next[asset.id];
+        return next;
+      });
+      return;
+    }
+
     setLoadingDetailsAssetId(asset.id);
     setDetailsErrorByAssetId((current) => {
       const next = { ...current };
@@ -1383,7 +1456,7 @@ export default function AssetDiscoveryClient({
   }
 
   async function openApprovedContact(asset: AssetDiscoveryAsset) {
-    if (!asset.enquiryId || loadingEnquiryId) return;
+    if (!privateDiscoveryAccess || !asset.enquiryId || loadingEnquiryId) return;
     setLoadingEnquiryId(asset.enquiryId);
     setNotice(null);
 
@@ -1419,6 +1492,20 @@ export default function AssetDiscoveryClient({
   function renderEnquiryControl(asset: AssetDiscoveryAsset) {
     const pillLabel = statusPillLabel(asset, licensingDiscovery);
     const isProcessing = processingAssetIds.has(asset.id);
+
+    if (access?.accountType === "public") {
+      return (
+        <button
+          type="button"
+          className={`${assetStyles.secondaryButton} ${workspaceStyles.actionButton} ${styles.discoveryPublicAction}`}
+          title="Sign in to request access from the owner"
+          aria-label="Sign in to contact the owner"
+          disabled
+        >
+          Sign in to contact
+        </button>
+      );
+    }
 
     if (asset.enquiryStatus === "approved" && asset.enquiryId) {
       return (
@@ -1570,7 +1657,7 @@ export default function AssetDiscoveryClient({
     photoUrls: string[],
     index: number,
   ) {
-    if (!photoUrls.length) return;
+    if (!privateDiscoveryAccess || !photoUrls.length) return;
     setPhotoModal({
       assetId: asset.id,
       title: dealerAssetDisplayName(asset),
@@ -1584,7 +1671,10 @@ export default function AssetDiscoveryClient({
     const details = detailsByAssetId[asset.id];
     const detailsError = detailsErrorByAssetId[asset.id];
     const isLoading = loadingDetailsAssetId === asset.id;
-    const photoUrls = details?.photosUnlocked ? details.photoUrls : [];
+    const photoUrls =
+      privateDiscoveryAccess && details?.photosUnlocked
+        ? details.photoUrls
+        : [];
     const photoIndex = getDiscoveryPhotoIndex(asset.id, photoUrls.length);
     const activePhotoUrl = photoUrls[photoIndex] ?? "";
     const hasMultiplePhotos = photoUrls.length > 1;
@@ -1770,7 +1860,9 @@ export default function AssetDiscoveryClient({
 
               <div className={styles.discoveryAccessNote}>
                 <strong>
-                  {details.accessSource === "dealer_share"
+                  {access?.accountType === "public"
+                    ? "Sign in to request access."
+                    : details.accessSource === "dealer_share"
                     ? "Photos open through an existing direct share."
                     : details.accessSource === "approved_enquiry"
                       ? "Owner-approved Discovery access."
@@ -1779,12 +1871,14 @@ export default function AssetDiscoveryClient({
                         : "Request access to ask whether the owner is interested in selling."}
                 </strong>
                 <span>
-                  {statusDescription(asset) ||
+                  {access?.accountType === "public"
+                    ? "Photos and contact details stay private until the owner approves your request."
+                    : statusDescription(asset) ||
                     "No contact details are shared unless the owner approves your request."}
                 </span>
               </div>
 
-              {details.ownerContact ? (
+              {privateDiscoveryAccess && details.ownerContact ? (
                 <div className={styles.discoveryInlineContact}>
                   <div>
                     <span>Owner or business</span>
@@ -1808,6 +1902,24 @@ export default function AssetDiscoveryClient({
                       {details.ownerContact.location || "Not supplied"}
                     </strong>
                   </div>
+                </div>
+              ) : access?.accountType === "public" ? (
+                <div
+                  className={`${styles.discoveryInlineContact} ${styles.discoveryPublicContactPreview}`}
+                  aria-label="Private contact details are hidden"
+                >
+                  {[
+                    ["Owner or business", "Private owner"],
+                    ["Phone", "000 000 0000"],
+                    ["Email", "private@example.com"],
+                    ["Location", "Private location"],
+                  ].map(([label, placeholder]) => (
+                    <div key={`${asset.id}-${label}`}>
+                      <span>{label}</span>
+                      <strong aria-hidden="true">{placeholder}</strong>
+                    </div>
+                  ))}
+                  <p>Sign in and request access to reveal approved contact details.</p>
                 </div>
               ) : null}
             </div>
@@ -1986,7 +2098,7 @@ export default function AssetDiscoveryClient({
         <div className={styles.discoveryViewSwitchCopy}>
           <strong>Explore more equipment</strong>
           <span>
-            Browse owner assets or use Marketplace advert history to find someone who may know where to source one.
+            Browse available assets or recent Marketplace adverts.
           </span>
         </div>
         <div className={styles.discoveryViewSwitchButtons} role="group" aria-label="Discovery views">
@@ -2483,7 +2595,7 @@ export default function AssetDiscoveryClient({
 
       {renderPagination()}
 
-      {photoModal ? (
+      {privateDiscoveryAccess && photoModal ? (
         <LeadPhotoViewerModal
           assetKey={`discovery-${photoModal.assetId}`}
           title={photoModal.title}
@@ -2742,7 +2854,7 @@ export default function AssetDiscoveryClient({
         </div>
       ) : null}
 
-      {activeEnquiry ? (
+      {privateDiscoveryAccess && activeEnquiry ? (
         <div
           className={`${workspaceStyles.modalOverlay} ${styles.contactOverlay}`}
           onMouseDown={() => setActiveEnquiry(null)}

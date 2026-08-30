@@ -1,8 +1,6 @@
-import { redirect } from 'next/navigation';
 import AppHeader from '../../components/AppHeader';
 import { getAccountProfile } from '../../lib/account-profile';
-import { requireActivePageAccess } from '../../lib/account-access';
-import { isMiddlemanAccountSubtype } from '../../lib/middleman-account';
+import { getServerSession } from '../../lib/auth-session';
 import AssetDiscoveryClient from './asset-discovery-client';
 import { workspaceStyles } from '../../components/WorkspacePrimitives';
 import leadStyles from '../leads/page.module.css';
@@ -25,17 +23,25 @@ function firstSearchValue(value: string | string[] | undefined): string {
 export default async function AssetDiscoveryPage({
   searchParams,
 }: AssetDiscoveryPageProps) {
-  const { session } = await requireActivePageAccess();
-  const profile = await getAccountProfile({
-    id: session.user.id,
-    name: session.user.name,
-    email: session.user.email,
+  const session = await getServerSession({
+    allowDealerApp: true,
+    allowOwnerApp: true,
   });
+  let activeAccountType = '';
 
-  if (isMiddlemanAccountSubtype(profile.accountSubtype)) redirect('/my-showroom');
-
-  if (!['dealer', 'owner', 'licensing'].includes(profile.accountType)) {
-    redirect('/leads');
+  if (session?.user?.id) {
+    try {
+      const profile = await getAccountProfile({
+        id: session.user.id,
+        name: session.user.name,
+        email: session.user.email,
+      });
+      if (profile.accountStatus === 'active') {
+        activeAccountType = profile.accountType;
+      }
+    } catch (error) {
+      console.error('asset-discovery page profile lookup failed', error);
+    }
   }
 
   return (
@@ -48,9 +54,8 @@ export default async function AssetDiscoveryPage({
             ? 'recently-advertised'
             : 'discovery'
         }
-        allowRecentAdverts={profile.accountType !== 'licensing'}
+        allowRecentAdverts={activeAccountType !== 'licensing'}
       />
     </main>
   );
 }
-
