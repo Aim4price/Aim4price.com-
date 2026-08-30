@@ -35731,6 +35731,11 @@ button.documentOpenLink {
   .assetDisposalProgressFour {
     grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
   }
+
+  .assetDisposalFooter > :nth-child(2):last-child {
+    grid-column: 1 / -1;
+    grid-row: 1;
+  }
 }
 
 /* === Bulk finance asset linking === */
