@@ -5952,9 +5952,9 @@
   }
 }
 
-/* Spending budget follows the compact Contribution wizard. */
-.budgetWizardModal {
-  width: min(100%, 700px);
+/* Spending budget follows the guided Contribution wizard with extra room for the four-step flow. */
+.downloadModal.budgetWizardModal {
+  width: min(1280px, 100%) !important;
   max-height: min(86dvh, 760px);
 }
 
@@ -6005,6 +6005,97 @@
   border: 0;
   border-radius: 0;
   background: transparent;
+}
+
+.budgetWizardPeriodChoices {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.budgetWizardPeriodChoice {
+  min-width: 0;
+  min-height: 7rem;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.9rem;
+  align-items: center;
+  padding: 1.1rem 1.2rem;
+  border: 1px solid rgba(184, 207, 216, 0.98);
+  border-radius: 1.05rem;
+  color: var(--brand-dark);
+  background: #ffffff;
+  font: inherit;
+  text-align: left;
+  box-shadow: 0 8px 20px rgba(17, 67, 52, 0.045);
+  cursor: pointer;
+  transition: border-color 150ms ease, background 150ms ease, box-shadow 150ms ease, transform 150ms ease;
+}
+
+.budgetWizardPeriodChoice:hover:not(:disabled),
+.budgetWizardPeriodChoice:focus-visible {
+  border-color: rgba(22, 134, 96, 0.58);
+  background: #f7fcf9;
+  box-shadow: 0 0 0 4px rgba(22, 134, 96, 0.09), 0 10px 24px rgba(17, 67, 52, 0.07);
+  outline: none;
+  transform: translateY(-1px);
+}
+
+.budgetWizardPeriodChoiceActive {
+  border-color: #168660;
+  background: linear-gradient(180deg, #f5fcf8 0%, #ebf8f2 100%);
+  box-shadow: 0 0 0 3px rgba(22, 134, 96, 0.1), 0 10px 24px rgba(17, 67, 52, 0.065);
+}
+
+.budgetWizardPeriodChoice:disabled {
+  cursor: not-allowed;
+}
+
+.budgetWizardPeriodChoiceUnavailable {
+  border-color: #d9e2df;
+  color: #60726c;
+  background: #f5f7f6;
+  box-shadow: none;
+  opacity: 0.78;
+}
+
+.budgetWizardPeriodChoiceIndicator {
+  width: 2.1rem;
+  height: 2.1rem;
+  display: grid;
+  place-items: center;
+  border: 1px solid #b8d3c8;
+  border-radius: 999px;
+  color: transparent;
+  background: #ffffff;
+  font-size: 0.9rem;
+  font-weight: 950;
+}
+
+.budgetWizardPeriodChoiceActive .budgetWizardPeriodChoiceIndicator {
+  border-color: #168660;
+  color: #ffffff;
+  background: #168660;
+}
+
+.budgetWizardPeriodChoiceCopy {
+  min-width: 0;
+  display: grid;
+  gap: 0.28rem;
+}
+
+.budgetWizardPeriodChoiceCopy strong {
+  color: inherit;
+  font-size: 1.05rem;
+  font-weight: 900;
+  line-height: 1.2;
+}
+
+.budgetWizardPeriodChoiceCopy small {
+  color: #667b73;
+  font-size: 0.8rem;
+  font-weight: 650;
+  line-height: 1.45;
 }
 
 .budgetPeriodLabel {
@@ -6067,6 +6158,10 @@
 }
 
 @media (max-width: 520px) {
+  .budgetWizardPeriodChoices {
+    grid-template-columns: 1fr;
+  }
+
   .budgetReviewGrid {
     grid-template-columns: 1fr;
   }
@@ -6077,6 +6172,12 @@
 
   .budgetWizardModal .budgetDeleteButton {
     width: 100%;
+  }
+}
+
+@media (max-width: 720px) {
+  .budgetWizardModal .invoiceDropWizardProgress {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
 
