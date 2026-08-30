@@ -313,6 +313,43 @@ function CloseIcon({ className }: IconProps) {
   );
 }
 
+function StatusCheckIcon({ className }: IconProps) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.25"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <circle cx="12" cy="12" r="9" />
+      <path d="m8 12 2.6 2.6L16.5 9" />
+    </svg>
+  );
+}
+
+function WarningIcon({ className }: IconProps) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.15"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M10.3 3.8 2.5 17.3A2 2 0 0 0 4.2 20h15.6a2 2 0 0 0 1.7-2.7L13.7 3.8a2 2 0 0 0-3.4 0Z" />
+      <path d="M12 8v5" />
+      <path d="M12 17h.01" />
+    </svg>
+  );
+}
+
 function ChevronDownIcon({ className }: IconProps) {
   return (
     <svg
@@ -2582,15 +2619,17 @@ export default function AssetDiscoveryClient({
             role="dialog"
             aria-modal="true"
             aria-labelledby="discovery-settings-title"
+            aria-describedby="discovery-settings-description"
           >
             <div
               className={`${assetStyles.modalHeader} ${workspaceStyles.modalHeader} ${styles.discoverySettingsHeader}`}
             >
-              <div className={assetStyles.modalHeaderText}>
+              <div
+                className={`${assetStyles.modalHeaderText} ${styles.discoverySettingsHeaderCopy}`}
+              >
                 <h3 id="discovery-settings-title">Discovery settings</h3>
-                <p>
-                  Control whether your eligible assets participate in owner
-                  Discovery.
+                <p id="discovery-settings-description">
+                  Manage how your eligible assets appear in owner Discovery.
                 </p>
               </div>
 
@@ -2608,29 +2647,70 @@ export default function AssetDiscoveryClient({
               className={`${workspaceStyles.modalBody} ${styles.discoverySettingsBody}`}
             >
               <div className={styles.discoverySettingsStatus}>
-                <span>Current status</span>
-                <strong>Discovery participation is enabled</strong>
-                <p>
-                  {access.eligibleAssetCount} eligible{" "}
-                  {access.eligibleAssetCount === 1 ? "asset is" : "assets are"}{" "}
-                  currently participating.
-                </p>
+                <span
+                  className={styles.discoverySettingsStatusIcon}
+                  aria-hidden="true"
+                >
+                  <StatusCheckIcon
+                    className={styles.discoverySettingsDialogIcon}
+                  />
+                </span>
+                <div className={styles.discoverySettingsStatusCopy}>
+                  <span className={styles.discoverySettingsEyebrow}>
+                    Current status
+                  </span>
+                  <strong>Discovery participation is enabled</strong>
+                  <p>
+                    {access.eligibleAssetCount} eligible{" "}
+                    {access.eligibleAssetCount === 1
+                      ? "asset is"
+                      : "assets are"}{" "}
+                    currently participating.
+                  </p>
+                </div>
               </div>
 
               <div className={styles.discoverySettingsWarning}>
-                <strong>Disable Discovery and remove my assets</strong>
-                <p className={styles.discoverySettingsWarningIntro}>
-                  If you continue:
-                </p>
+                <div className={styles.discoverySettingsWarningHeader}>
+                  <span
+                    className={styles.discoverySettingsWarningIcon}
+                    aria-hidden="true"
+                  >
+                    <WarningIcon
+                      className={styles.discoverySettingsDialogIcon}
+                    />
+                  </span>
+                  <div className={styles.discoverySettingsWarningCopy}>
+                    <span className={styles.discoverySettingsEyebrow}>
+                      Before you continue
+                    </span>
+                    <strong>Disable Discovery and remove my assets</strong>
+                    <p
+                      id="discovery-disable-impact"
+                      className={styles.discoverySettingsWarningIntro}
+                    >
+                      These changes take effect immediately:
+                    </p>
+                  </div>
+                </div>
                 <ul className={styles.discoverySettingsConsequences}>
                   <li>Your eligible assets will be removed from Discovery.</li>
                   <li>Active requests and approved access will be revoked.</li>
-                  <li>Nothing is deleted from your Asset Register.</li>
                   <li>
-                    You will not be able to browse other owners&apos; assets
-                    until you enable participation again.
+                    Browsing other owners&apos; assets will be paused until you
+                    enable participation again.
                   </li>
                 </ul>
+
+                <div className={styles.discoverySettingsAssurance}>
+                  <StatusCheckIcon
+                    className={styles.discoverySettingsAssuranceIcon}
+                  />
+                  <div>
+                    <strong>Your Asset Register stays intact</strong>
+                    <p>Nothing is deleted from your Asset Register.</p>
+                  </div>
+                </div>
               </div>
             </div>
 

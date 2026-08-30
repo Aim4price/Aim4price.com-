@@ -1218,7 +1218,11 @@
 }
 
 .discoverySettingsModal {
-  width: min(100%, 49rem) !important;
+  width: min(calc(100% - 2rem), 47.5rem) !important;
+  max-height: min(48rem, calc(100dvh - 2rem)) !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  border-radius: 1.45rem !important;
   scrollbar-width: none;
   -ms-overflow-style: none;
 }
@@ -1230,13 +1234,47 @@
 }
 
 .discoverySettingsHeader {
-  padding-bottom: clamp(1.1rem, 1.7vw, 1.35rem) !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  gap: clamp(2rem, 5vw, 4rem) !important;
+  align-items: start !important;
+  margin: 0 !important;
+  padding: clamp(1.35rem, 2.2vw, 1.55rem) clamp(1.35rem, 2.4vw, 1.65rem)
+    clamp(1.15rem, 1.9vw, 1.3rem) !important;
+  border-bottom: 1px solid #d8e3e8 !important;
+}
+
+.discoverySettingsHeaderCopy {
+  min-width: 0;
+  padding-top: 0.05rem;
+}
+
+.discoverySettingsHeaderCopy h3 {
+  margin: 0;
+}
+
+.discoverySettingsHeaderCopy p {
+  max-width: 36rem;
+  margin-top: 0.35rem;
+}
+
+.discoverySettingsHeader > button {
+  position: static !important;
+  inset: auto !important;
+  align-self: start !important;
+  justify-self: end !important;
+  width: 3rem !important;
+  min-width: 3rem !important;
+  height: 3rem !important;
+  margin: 0 !important;
+  flex: 0 0 3rem !important;
 }
 
 .discoverySettingsBody {
   display: grid;
-  gap: 1.15rem;
-  padding: clamp(1.25rem, 2.3vw, 1.75rem) !important;
+  gap: 0.9rem;
+  padding: clamp(1rem, 1.9vw, 1.2rem) clamp(1.15rem, 2.2vw, 1.4rem)
+    clamp(1.15rem, 2.1vw, 1.35rem) !important;
   scrollbar-gutter: auto !important;
   scrollbar-width: none;
   -ms-overflow-style: none;
@@ -1250,108 +1288,216 @@
 
 .discoverySettingsStatus,
 .discoverySettingsWarning {
-  padding: clamp(1.2rem, 2vw, 1.45rem);
   border: 1px solid #d3e1db;
-  border-radius: 1.15rem;
+  border-radius: 1.05rem;
   box-shadow:
-    0 9px 22px rgba(16, 50, 42, 0.035),
+    0 8px 20px rgba(16, 50, 42, 0.035),
     inset 0 1px 0 rgba(255, 255, 255, 0.88);
 }
 
 .discoverySettingsStatus {
-  border-left: 4px solid #318260;
+  display: grid;
+  grid-template-columns: 2.65rem minmax(0, 1fr);
+  gap: 0.85rem;
+  align-items: center;
+  padding: 0.95rem 1rem;
+  border-color: #bcdccd;
   background: linear-gradient(180deg, #f5fbf8 0%, #eef8f3 100%);
 }
 
-.discoverySettingsStatus span {
+.discoverySettingsStatusIcon,
+.discoverySettingsWarningIcon {
+  display: inline-grid;
+  place-items: center;
+  width: 2.65rem;
+  height: 2.65rem;
+  border-radius: 0.85rem;
+}
+
+.discoverySettingsStatusIcon {
+  color: #176d50;
+  border: 1px solid #b8dece;
+  background: #e5f6ee;
+}
+
+.discoverySettingsDialogIcon {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.discoverySettingsStatusCopy,
+.discoverySettingsWarningCopy {
+  min-width: 0;
+}
+
+.discoverySettingsEyebrow {
   display: block;
-  margin-bottom: 0.42rem;
+  margin-bottom: 0.24rem;
   color: #668078;
-  font-size: 0.7rem;
+  font-size: 0.68rem;
   font-weight: 850;
-  letter-spacing: 0.07em;
+  letter-spacing: 0.075em;
   text-transform: uppercase;
 }
 
-.discoverySettingsStatus strong,
-.discoverySettingsWarning strong {
+.discoverySettingsStatusCopy > strong,
+.discoverySettingsWarningCopy > strong {
   display: block;
   color: #123f34;
-  font-size: 1.02rem;
+  font-size: 0.98rem;
   font-weight: 850;
-  line-height: 1.35;
+  line-height: 1.32;
 }
 
-.discoverySettingsStatus p,
-.discoverySettingsWarning p {
-  margin: 0.5rem 0 0;
+.discoverySettingsStatusCopy > p,
+.discoverySettingsWarningCopy > p {
+  margin: 0.25rem 0 0;
   color: #5b7169;
-  font-size: 0.88rem;
+  font-size: 0.82rem;
   font-weight: 650;
-  line-height: 1.58;
+  line-height: 1.48;
 }
 
 .discoverySettingsWarning {
+  padding: 1.05rem;
   border-color: #edcaca;
-  border-left: 4px solid #c85555;
   background: linear-gradient(180deg, #fffafa 0%, #fff5f5 100%);
 }
 
-.discoverySettingsWarning strong {
+.discoverySettingsWarningHeader {
+  display: grid;
+  grid-template-columns: 2.65rem minmax(0, 1fr);
+  gap: 0.85rem;
+  align-items: start;
+}
+
+.discoverySettingsWarningIcon {
+  color: #a43b3b;
+  border: 1px solid #efc6c6;
+  background: #ffe9e9;
+}
+
+.discoverySettingsWarningCopy .discoverySettingsEyebrow {
+  color: #a95353;
+}
+
+.discoverySettingsWarningCopy > strong {
   color: #902f2f;
 }
 
-.discoverySettingsWarning .discoverySettingsWarningIntro {
-  margin-top: 0.55rem;
+.discoverySettingsWarningCopy > .discoverySettingsWarningIntro {
+  margin-top: 0.3rem;
   color: #596d66;
-  font-weight: 750;
+  font-weight: 680;
 }
 
 .discoverySettingsConsequences {
   display: grid;
-  gap: 0.55rem;
-  margin: 0.7rem 0 0;
+  gap: 0;
+  margin: 0.85rem 0 0;
   padding: 0;
+  overflow: hidden;
+  border: 1px solid #efd1d1;
+  border-radius: 0.85rem;
+  background: rgba(255, 255, 255, 0.62);
   list-style: none;
 }
 
 .discoverySettingsConsequences li {
   position: relative;
-  padding-left: 1.15rem;
+  padding: 0.65rem 0.8rem 0.65rem 2.05rem;
   color: #5b6f68;
-  font-size: 0.86rem;
-  font-weight: 640;
-  line-height: 1.5;
+  font-size: 0.84rem;
+  font-weight: 660;
+  line-height: 1.42;
+}
+
+.discoverySettingsConsequences li + li {
+  border-top: 1px solid #f0dada;
 }
 
 .discoverySettingsConsequences li::before {
   position: absolute;
-  top: 0.58em;
-  left: 0;
-  width: 0.42rem;
-  height: 0.42rem;
+  top: 1.02rem;
+  left: 0.85rem;
+  width: 0.38rem;
+  height: 0.38rem;
   border-radius: 50%;
   background: #c85555;
   content: "";
 }
 
+.discoverySettingsAssurance {
+  display: grid;
+  grid-template-columns: 1.25rem minmax(0, 1fr);
+  gap: 0.65rem;
+  align-items: start;
+  margin-top: 0.8rem;
+  padding: 0.75rem 0.8rem;
+  color: #176d50;
+  border: 1px solid #c4ded3;
+  border-radius: 0.85rem;
+  background: #f1f9f5;
+}
+
+.discoverySettingsAssuranceIcon {
+  width: 1.15rem;
+  height: 1.15rem;
+  margin-top: 0.05rem;
+}
+
+.discoverySettingsAssurance strong {
+  display: block;
+  color: #174c3d;
+  font-size: 0.8rem;
+  font-weight: 820;
+  line-height: 1.35;
+}
+
+.discoverySettingsAssurance p {
+  margin: 0.12rem 0 0;
+  color: #5b7169;
+  font-size: 0.8rem;
+  font-weight: 620;
+  line-height: 1.4;
+}
+
 .discoveryDisableButton {
   min-width: 13.5rem;
-  color: #9b2f2f !important;
-  border-color: #e4b6b6 !important;
-  background: linear-gradient(180deg, #ffffff 0%, #ffecec 100%) !important;
-  box-shadow: 0 9px 20px rgba(139, 44, 44, 0.08) !important;
+  color: #ffffff !important;
+  border-color: #a83f3f !important;
+  background: linear-gradient(180deg, #bc4b4b 0%, #a53a3a 100%) !important;
+  box-shadow: 0 9px 20px rgba(139, 44, 44, 0.18) !important;
 }
 
 .discoveryDisableButton:hover:not(:disabled) {
-  border-color: #d98f8f !important;
-  background: linear-gradient(180deg, #ffffff 0%, #ffdfdf 100%) !important;
+  border-color: #923434 !important;
+  background: linear-gradient(180deg, #ab4040 0%, #922f2f 100%) !important;
 }
 
 .discoverySettingsActions {
+  margin: 0 !important;
   justify-content: flex-end !important;
-  gap: 0.75rem !important;
-  padding-top: 1.05rem !important;
+  gap: 0.7rem !important;
+  padding: 0.95rem clamp(1.15rem, 2.2vw, 1.4rem) 1.1rem !important;
+  border-top: 1px solid #d8e3e8 !important;
+  background: #fbfdfd !important;
+}
+
+.discoverySettingsActions > :first-child {
+  min-width: 7.25rem;
+}
+
+@media (max-height: 650px) {
+  .discoverySettingsModal {
+    overflow-y: auto !important;
+    overscroll-behavior: contain;
+  }
+
+  .discoverySettingsBody {
+    flex: 0 0 auto !important;
+    overflow: visible !important;
+  }
 }
 
 @media (min-width: 901px) {

@@ -156,6 +156,17 @@ test("owner settings can disable participation without deleting Asset Register r
   assert.match(client, /updateOwnerDiscoveryParticipation\(false\)/);
 });
 
+test("owner settings modal separates status, consequences and reassurance", () => {
+  assert.match(client, /aria-describedby="discovery-settings-description"/);
+  assert.match(client, /discoverySettingsStatusIcon/);
+  assert.match(client, /Before you continue/);
+  assert.match(client, /These changes take effect immediately/);
+  assert.match(client, /Your Asset Register stays intact/);
+  assert.match(css, /\.discoverySettingsModal[\s\S]*padding: 0 !important/);
+  assert.match(css, /\.discoverySettingsHeader > button[\s\S]*position: static !important/);
+  assert.match(css, /@media \(max-height: 650px\)/);
+});
+
 test("participation explains request-based contact privacy and exclusions", () => {
   assert.match(client, /No contact details are shared immediately/);
   assert.match(client, /Property, land and buildings/);
