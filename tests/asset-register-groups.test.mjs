@@ -691,8 +691,11 @@ test('asset disposal uses a valid withdrawn marketplace state and keeps database
   assert.match(client, /draft\.reason === 'mistake_duplicate'[\s\S]{0,100}\? \{ reason: draft\.reason \}/);
   assert.match(disposalModal, /disposalDraft\.reason !== 'mistake_duplicate' \? \([\s\S]*?assetDisposalFields/);
   assert.match(disposalModal, /No explanation is required\./);
-  assert.match(styles, /\.assetDisposalModal \{[\s\S]*?display: flex !important;[\s\S]*?flex-direction: column !important;[\s\S]*?overflow: hidden !important;/);
-  assert.match(styles, /\.assetDisposalBody \{[\s\S]*?flex: 1 1 auto !important;[\s\S]*?min-height: 0 !important;[\s\S]*?overflow-y: auto !important;/);
+  assert.match(disposalModal, /styles\.assetDisposalOverlay/);
+  assert.match(styles, /\.assetDisposalOverlay \{[\s\S]*?width: 100vw !important;[\s\S]*?max-width: none !important;/);
+  assert.match(styles, /\.assetDisposalModal \{[\s\S]*?width: min\(60rem, calc\(100vw - 2rem\)\) !important;[\s\S]*?display: flex !important;[\s\S]*?flex-direction: column !important;[\s\S]*?overflow: hidden !important;[\s\S]*?margin-inline: auto !important;/);
+  assert.match(styles, /\.assetDisposalBody \{[\s\S]*?flex: 1 1 auto !important;[\s\S]*?min-height: 0 !important;[\s\S]*?overflow-y: auto !important;[\s\S]*?scrollbar-gutter: stable both-edges !important;[\s\S]*?padding: 1\.25rem 2rem 1\.5rem !important;/);
+  assert.match(styles, /@media \(max-width: 720px\) \{[\s\S]*?\.assetDisposalBody \{[\s\S]*?scrollbar-gutter: auto !important;/);
 });
 
 test('combined Asset Register groups are account-wide, preserve member counting, and project in every output', async () => {
