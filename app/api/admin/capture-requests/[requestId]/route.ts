@@ -10,10 +10,18 @@ import {
   updateCaptureRequestDraft,
   type CaptureAdminActor,
   type CaptureRequest,
+  type CaptureRequestDetail,
   type CaptureRequestEvent,
   type CaptureRequestFile,
 } from "../../../../../lib/capture-requests";
-import { finalizeCaptureRequestForAdmin } from "../../../../../lib/capture-finalization";
+import {
+  cancelCaptureRequestForAdmin,
+  finalizeCaptureRequestForAdmin,
+} from "../../../../../lib/capture-finalization";
+import {
+  getAdminCaptureTarget,
+  type AdminCaptureTarget,
+} from "../../../../../lib/admin-capture-targets";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -21,11 +29,14 @@ export const dynamic = "force-dynamic";
 type RouteContext = { params: { requestId?: string } };
 type AdminAction =
   | "claim"
+  | "confirm_match"
   | "save_draft"
   | "request_information"
   | "mark_duplicate"
   | "complete"
-  | "reject";
+  | "complete_direct"
+  | "reject"
+  | "delete";
 
 function cleanText(value: unknown, maxLength = 2_000): string {
   return typeof value === "string" ? value.trim().slice(0, maxLength) : "";
@@ -50,7 +61,10 @@ function compactIdentifier(value: string | null): string {
   return value.length > 20 ? `${value.slice(0, 8)}…${value.slice(-6)}` : value;
 }
 
-function mapRequest(request: CaptureRequest) {
+function mapRequest(
+  request: CaptureRequest,
+  matchedTarget: AdminCaptureTarget | null,
+) {
   const payload = request.capturedPayload ?? {};
   const candidate = request.candidatePayload ?? {};
   return {
@@ -62,15 +76,18 @@ function mapRequest(request: CaptureRequest) {
     senderBusinessName: request.sender.businessName,
     senderNote: request.requesterNote,
     ownerDisplayName:
+      matchedTarget?.ownerDisplayName ||
       payloadText(payload, "ownerDisplayName", "ownerName", "customerName") ||
       payloadText(candidate, "ownerDisplayName", "ownerName", "customerName") ||
       compactIdentifier(request.ownerUserId),
     assetDisplayName:
+      (matchedTarget?.targetType === "asset" ? matchedTarget.targetDisplayName : "") ||
       payloadText(payload, "assetDisplayName", "assetTitle", "assetName") ||
-      payloadText(candidate, "assetDisplayName", "submittedAssetDescription") ||
+      payloadText(candidate, "assetDisplayName", "targetLabel", "submittedAssetDescription") ||
       request.assetReference ||
       compactIdentifier(request.assetId),
     fuelStorageDisplayName:
+      (matchedTarget?.targetType === "fuel_storage" ? matchedTarget.targetDisplayName : "") ||
       payloadText(payload, "fuelStorageDisplayName", "storageName", "tankName") ||
       compactIdentifier(request.fuelStorageId),
   };
@@ -99,19 +116,26 @@ function mapEvent(event: CaptureRequestEvent) {
     eventType: event.eventType,
     actorDisplayName: event.actor.displayName,
     note: event.note,
+    metadata: event.metadata,
     createdAtIso: event.createdAtIso,
   };
 }
 
 async function buildResponseDetail(requestId: string) {
-  const [request, files, events] = await Promise.all([
-    getCaptureRequestDetail(requestId),
+  const request = await getCaptureRequestDetail(requestId);
+  if (!request) return null;
+  const [files, events, matchedTarget] = await Promise.all([
     listCaptureRequestFiles(requestId),
     listCaptureRequestEvents(requestId),
+    getAdminCaptureTarget({
+      ownerUserId: request.ownerUserId,
+      assetId: request.assetId,
+      fuelStorageId: request.fuelStorageId,
+    }),
   ]);
-  if (!request) return null;
   return {
-    request: mapRequest(request),
+    request: mapRequest(request, matchedTarget),
+    matchedTarget,
     files: files.map((file) => mapFile(requestId, file)),
     events: events.map(mapEvent),
   };
@@ -124,7 +148,10 @@ function statusForCaptureError(message: string): number {
     message.includes("ALREADY") ||
     message.includes("CLOSED") ||
     message.includes("TRANSITION") ||
-    message.includes("COMPLETION")
+    message.includes("COMPLETION") ||
+    message.includes("OUTPUT_EXISTS") ||
+    message.includes("REQUEST_CHANGED") ||
+    message.includes("FINALIZATION_IN_PROGRESS")
   ) return 409;
   if (message.startsWith("CAPTURE_")) return 400;
   return 500;
@@ -136,11 +163,15 @@ function friendlyCaptureError(message: string): string {
     CAPTURE_CLAIMED_BY_ANOTHER_ADMIN: "Another admin has already claimed this request.",
     CAPTURE_NOT_CLAIMED: "Claim this request before changing it.",
     CAPTURE_REQUEST_CLOSED: "This capture request can no longer be changed.",
+    CAPTURE_REQUEST_CHANGED: "This request changed in another Admin tab. Reload it and confirm the exact destination again.",
+    CAPTURE_FINALIZATION_IN_PROGRESS: "This request is already being finalized. Reload it before making another change.",
     CAPTURE_REQUEST_NOT_CLAIMABLE: "This capture request cannot be claimed in its current status.",
     CAPTURE_OWNER_REQUIRED: "Match the customer before continuing.",
     CAPTURE_ASSET_INVALID: "Choose a valid asset match.",
     CAPTURE_FUEL_STORAGE_INVALID: "Choose a valid fuel storage match.",
     CAPTURE_TARGET_INVALID: "Choose exactly one valid destination for this document.",
+    CAPTURE_TARGET_CONFIRMATION_REQUIRED: "Confirm the exact customer and destination before completing this request.",
+    CAPTURE_TARGET_CHANGE_REQUIRES_CONFIRMATION: "Use Change and confirm the replacement destination before saving it.",
     CAPTURE_ASSET_NOT_FOUND: "The selected asset does not belong to that customer.",
     CAPTURE_FUEL_STORAGE_NOT_FOUND: "The selected fuel storage does not belong to that customer.",
     CAPTURE_CLEAN_FILE_REQUIRED: "At least one attached file must pass its security check first.",
@@ -148,6 +179,8 @@ function friendlyCaptureError(message: string): string {
     CAPTURE_INFORMATION_REASON_REQUIRED: "Add the information that the sender must provide.",
     CAPTURE_REJECTION_REASON_REQUIRED: "Add a reason before rejecting this request.",
     CAPTURE_OWNER_APPROVAL_REQUIRED: "The owner must approve this submission first.",
+    CAPTURE_CANCELLATION_REASON_REQUIRED: "Add a reason before deleting this request from the queue.",
+    CAPTURE_CANCELLATION_OUTPUT_EXISTS: "A ledger record already exists for this request, so it cannot be deleted from the queue.",
     CAPTURE_OUTPUT_MISMATCH: "The final ledger record does not match this capture request.",
   };
   return messages[message] || (message.startsWith("CAPTURE_")
@@ -184,14 +217,31 @@ function draftMatch(request: CaptureRequest, draft: Record<string, unknown>) {
   return { ownerUserId, assetId, fuelStorageId, hasCompleteTarget, changed };
 }
 
+function draftTargetIsConfirmed(request: CaptureRequestDetail, draft: Record<string, unknown>): boolean {
+  const target = draftMatch(request, draft);
+  if (!target.hasCompleteTarget) return false;
+  const latestMatch = [...request.events]
+    .reverse()
+    .find((event) => event.eventType === "matched");
+  if (!latestMatch) return false;
+  return cleanText(latestMatch.metadata.ownerUserId, 200) === target.ownerUserId
+    && cleanText(latestMatch.metadata.assetId, 80) === target.assetId
+    && cleanText(latestMatch.metadata.fuelStorageId, 80) === target.fuelStorageId;
+}
+
 async function saveAdminDraft(
-  request: CaptureRequest,
+  request: CaptureRequestDetail,
   draft: Record<string, unknown>,
   actor: CaptureAdminActor,
+  options: { confirmMatch?: boolean } = {},
 ): Promise<CaptureRequest> {
   let current = await claimWhenNeeded(request, actor);
   const target = draftMatch(current, draft);
-  if (target.hasCompleteTarget && target.changed) {
+  if (target.changed && !options.confirmMatch) {
+    throw new Error("CAPTURE_TARGET_CHANGE_REQUIRES_CONFIRMATION");
+  }
+  if (options.confirmMatch) {
+    if (!target.hasCompleteTarget) throw new Error("CAPTURE_TARGET_INVALID");
     current = await matchCaptureRequest(current.id, {
       ownerUserId: target.ownerUserId,
       assetId: target.assetId || null,
@@ -201,6 +251,7 @@ async function saveAdminDraft(
   return updateCaptureRequestDraft(current.id, {
     capturedPayload: { ...current.capturedPayload, ...draft },
     adminNote: cleanText(draft.adminNote, 10_000),
+    expectedVersion: current.version,
   }, actor);
 }
 
@@ -237,30 +288,55 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
   const action = cleanText(body.action, 50) as AdminAction;
   const allowedActions: AdminAction[] = [
     "claim",
+    "confirm_match",
     "save_draft",
     "request_information",
     "mark_duplicate",
     "complete",
+    "complete_direct",
     "reject",
+    "delete",
   ];
   if (!allowedActions.includes(action)) return adminApiError("Choose a valid capture action.", 400);
 
   try {
     const existing = await getCaptureRequestDetail(requestId);
     if (!existing) return adminApiError("This capture request could not be found.", 404);
+    const requestVersion = Math.trunc(Number(body.requestVersion));
+    if (!Number.isFinite(requestVersion) || requestVersion < 1) {
+      return adminApiError("Reload this capture request before changing it.", 400);
+    }
+    if (existing.version !== requestVersion) {
+      return adminApiError(friendlyCaptureError("CAPTURE_REQUEST_CHANGED"), 409);
+    }
     const actor = access.actor;
     const note = cleanText(body.note, 2_000);
     const draft = readDraft(body);
     let message = "Capture request updated.";
 
-    if (["request_information", "mark_duplicate", "reject"].includes(action) && !note) {
+    if (["request_information", "mark_duplicate", "reject", "complete_direct", "delete"].includes(action) && !note) {
       return adminApiError("Add a short reason before using this action.", 400);
+    }
+    if (["complete", "complete_direct"].includes(action) && !draftTargetIsConfirmed(existing, draft)) {
+      return adminApiError(friendlyCaptureError("CAPTURE_TARGET_CONFIRMATION_REQUIRED"), 400);
+    }
+    if (
+      action === "complete_direct"
+      && existing.submissionChannel !== "dealer_upload"
+      && existing.submissionChannel !== "public_drop"
+    ) {
+      return adminApiError("Owner approval is not required for this submission.", 400);
     }
 
     switch (action) {
       case "claim":
         await claimCaptureRequest(requestId, actor);
         message = "Capture request claimed.";
+        break;
+
+      case "confirm_match":
+        await saveAdminDraft(existing, draft, actor, { confirmMatch: true });
+        message = "The exact customer and destination were confirmed.";
         break;
 
       case "save_draft":
@@ -297,11 +373,45 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
       }
 
       case "complete": {
-        await saveAdminDraft(existing, draft, actor);
-        const finalized = await finalizeCaptureRequestForAdmin(requestId, actor);
+        const saved = await saveAdminDraft(existing, draft, actor);
+        const target = draftMatch(saved, draft);
+        const finalized = await finalizeCaptureRequestForAdmin(requestId, actor, {
+          expectedVersion: saved.version,
+          expectedTarget: {
+            ownerUserId: target.ownerUserId,
+            assetId: target.assetId || null,
+            fuelStorageId: target.fuelStorageId || null,
+          },
+        });
         message = finalized.outcome === "awaiting_owner"
           ? "Document verified and sent to the owner for approval."
           : "Verified document saved to the ledger and completed.";
+        break;
+      }
+
+      case "complete_direct": {
+        const saved = existing.status === "awaiting_owner"
+          ? existing
+          : await saveAdminDraft(existing, draft, actor);
+        const target = draftMatch(saved, draft);
+        const finalized = await finalizeCaptureRequestForAdmin(requestId, actor, {
+          ownerApprovalOverrideReason: note,
+          expectedVersion: saved.version,
+          expectedTarget: {
+            ownerUserId: target.ownerUserId,
+            assetId: target.assetId || null,
+            fuelStorageId: target.fuelStorageId || null,
+          },
+        });
+        message = finalized.outcome === "completed"
+          ? "The Admin approval override was recorded and the verified document was saved directly to the ledger."
+          : "Document verified and sent to the owner for approval.";
+        break;
+      }
+
+      case "delete": {
+        await cancelCaptureRequestForAdmin(requestId, actor, note);
+        message = "Capture request deleted from the active queue. Its audit record was retained and source files were scheduled for secure removal.";
         break;
       }
     }

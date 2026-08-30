@@ -54,6 +54,36 @@ test('owner retraction keeps the audit record and enters terminal cleanup throug
   assert.match(migration, /queue_terminal_capture_file_cleanup_trigger/);
 });
 
+test('admin queue deletion is a locked cancellation that retains the audit trail and safely cleans orphaned documents', async () => {
+  const [adminRoute, finalizer, migration] = await Promise.all([
+    read('app/api/admin/capture-requests/[requestId]/route.ts'),
+    read('lib/capture-finalization.ts'),
+    read('database/migrations/84-assisted-capture-file-lifecycle.sql'),
+  ]);
+  const cancellationStart = finalizer.indexOf('export async function cancelCaptureRequestForAdmin');
+  const cancellationEnd = finalizer.indexOf('export async function retractCaptureRequestForOwner', cancellationStart);
+  const cancellation = finalizer.slice(cancellationStart, cancellationEnd);
+  const outputGuard = cancellation.indexOf('existingCanonicalOutput(request)');
+  const orphanCleanup = cancellation.indexOf('removeOrphanedCaptureInvoiceDocument(request)');
+  const cancelledTransition = cancellation.indexOf("transitionCaptureRequest(request.id, 'cancelled'");
+
+  assert.ok(cancellationStart >= 0 && cancellationEnd > cancellationStart);
+  assert.match(adminRoute, /case "delete"/);
+  assert.match(adminRoute, /cancelCaptureRequestForAdmin\(requestId, actor, note\)/);
+  assert.match(adminRoute, /audit record was retained/);
+  assert.match(cancellation, /withFinalizationLock\(requestId/);
+  assert.match(cancellation, /CAPTURE_CANCELLATION_REASON_REQUIRED/);
+  assert.match(cancellation, /CAPTURE_CANCELLATION_OUTPUT_EXISTS/);
+  assert.match(cancellation, /removeOrphanedCaptureInvoiceDocument\(request\)/);
+  assert.match(cancellation, /transitionCaptureRequest\(request\.id, 'cancelled'/);
+  assert.ok(outputGuard >= 0 && outputGuard < orphanCleanup && orphanCleanup < cancelledTransition);
+  assert.doesNotMatch(cancellation, /delete from public\.document_capture_(requests|files|events)/);
+  assert.doesNotMatch(adminRoute, /delete from public\.document_capture_(requests|files|events)/);
+  assert.match(migration, /new\.status not in \('declined', 'rejected', 'cancelled'\)/);
+  assert.match(migration, /queue_terminal_capture_file_cleanup_trigger/);
+  assert.match(migration, /'terminal_capture_request'/);
+});
+
 test('quarantine storage registers before returning and queues failed direct deletion', async () => {
   const storage = await read('lib/capture-quarantine-storage.ts');
   const verified = storage.indexOf('const verifiedBytes = await readObjectWithinLimit');

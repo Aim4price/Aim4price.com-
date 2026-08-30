@@ -127,9 +127,11 @@
 .claimButton,
 .secondaryButton,
 .completeButton,
+.directSaveButton,
 .closeButton,
 .clearButton,
-.exceptionActions button {
+.exceptionActions button,
+.deletePanel button {
   min-height: 2.75rem;
   padding: 0 1rem;
   border-radius: 0.75rem;
@@ -849,14 +851,17 @@
 
 .selectedMatch {
   margin-bottom: 0.7rem;
-  padding: 0.72rem 0.78rem;
+  padding: 0.9rem;
   border: 1px solid #b9d8c9;
   border-radius: 0.75rem;
   background: #edf8f2;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
+  display: grid;
+  gap: 0.85rem;
+}
+
+.selectedMatchConfirmed {
+  border-color: #67aa8a;
+  box-shadow: inset 0 0 0 1px rgba(23, 102, 76, 0.08);
 }
 
 .submittedAssetReference {
@@ -906,42 +911,105 @@
   font-weight: 850;
 }
 
-.selectedMatch > div {
+.selectedMatchCopy {
   min-width: 0;
   display: grid;
-  gap: 0.12rem;
+  gap: 0.18rem;
 }
 
-.selectedMatch span,
-.selectedMatch small {
-  overflow: hidden;
+.selectedMatchCopy span,
+.selectedMatchCopy small,
+.selectedMatchCopy em {
   color: #60776d;
-  font-size: 0.65rem;
+  font-size: 0.69rem;
+  font-style: normal;
   font-weight: 700;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 
-.selectedMatch strong {
-  overflow: hidden;
+.selectedMatchCopy strong {
   color: #1c5a42;
-  font-size: 0.8rem;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  font-size: 1rem;
+  font-weight: 900;
+  overflow-wrap: anywhere;
 }
 
-.selectedMatch button {
-  flex: 0 0 auto;
-  min-height: 2.1rem;
-  padding: 0 0.7rem;
+.selectedMatchActions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.selectedMatchActions button,
+.matchConfirmedBadge {
+  min-height: 2.35rem;
+  padding: 0 0.8rem;
   border: 1px solid #9ec9b5;
   border-radius: 0.6rem;
+  font: inherit;
+  font-size: 0.7rem;
+  font-weight: 850;
+}
+
+.selectedMatchActions button {
+  cursor: pointer;
+}
+
+.selectedMatchActions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+
+.confirmMatchButton {
+  border-color: #17664c !important;
+  color: #fff;
+  background: #17664c;
+}
+
+.changeMatchButton {
   color: #1d6248;
   background: #fff;
-  font: inherit;
-  font-size: 0.67rem;
-  font-weight: 850;
-  cursor: pointer;
+}
+
+.matchConfirmedBadge {
+  color: #15573f;
+  background: #dff2e9;
+  display: inline-flex;
+  align-items: center;
+}
+
+.matchRequired {
+  margin-bottom: 0.7rem;
+  padding: 0.78rem 0.85rem;
+  border: 1px solid #e1c98f;
+  border-radius: 0.72rem;
+  color: #6a5019;
+  background: #fff8e7;
+  display: grid;
+  gap: 0.2rem;
+}
+
+.matchRequired strong {
+  font-size: 0.78rem;
+}
+
+.matchRequired span,
+.matchSearchPanel > p {
+  margin: 0;
+  font-size: 0.69rem;
+  font-weight: 680;
+  line-height: 1.45;
+}
+
+.matchSearchPanel {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.matchSearchPanel > p {
+  color: #576f65;
 }
 
 .targetSearch {
@@ -1022,6 +1090,13 @@
   gap: 0.75rem;
 }
 
+fieldset.formGrid {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
 .fullField {
   grid-column: 1 / -1;
 }
@@ -1032,10 +1107,20 @@
   gap: 0.65rem;
 }
 
+.primaryActionsExternal {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
 .secondaryButton {
   border: 1px solid #cbd9d2;
   color: #345a4d;
   background: #fff;
+}
+
+.directSaveButton {
+  border: 1px solid #9c6a1a;
+  color: #6c470f;
+  background: #fff8e9;
 }
 
 .completeButton {
@@ -1046,14 +1131,16 @@
 }
 
 .exceptionPanel,
-.historyPanel {
+.historyPanel,
+.deletePanel {
   border: 1px solid #dce5e1;
   border-radius: 0.85rem;
   background: #fafcfb;
 }
 
 .exceptionPanel summary,
-.historyPanel summary {
+.historyPanel summary,
+.deletePanel summary {
   padding: 0.82rem 0.9rem;
   color: #3b5b50;
   font-size: 0.74rem;
@@ -1062,13 +1149,15 @@
 }
 
 .exceptionPanel[open],
-.historyPanel[open] {
+.historyPanel[open],
+.deletePanel[open] {
   padding-bottom: 0.85rem;
 }
 
 .exceptionPanel label,
 .exceptionActions,
-.historyPanel ol {
+.historyPanel ol,
+.deletePanelBody {
   margin: 0 0.85rem;
 }
 
@@ -1090,6 +1179,35 @@
   border-color: #dfa69f;
   color: #8b3028;
   background: #fff5f4;
+}
+
+.deletePanel {
+  border-color: #ecc7c2;
+  background: #fff9f8;
+}
+
+.deletePanel summary {
+  color: #843a32;
+}
+
+.deletePanelBody {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.deletePanelBody p {
+  margin: 0;
+  color: #765b57;
+  font-size: 0.72rem;
+  font-weight: 680;
+  line-height: 1.5;
+}
+
+.deletePanelBody button {
+  justify-self: start;
+  border: 1px solid #b64b40;
+  color: #fff;
+  background: #a63e34;
 }
 
 .historyPanel summary {

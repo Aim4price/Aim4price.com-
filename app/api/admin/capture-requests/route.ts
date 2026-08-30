@@ -51,7 +51,7 @@ function mapCaptureRequestForAdmin(request: CaptureRequest) {
     compactIdentifier(request.ownerUserId);
   const assetDisplayName =
     payloadText(payload, "assetDisplayName", "assetTitle", "assetName") ||
-    payloadText(candidate, "assetDisplayName", "submittedAssetDescription") ||
+    payloadText(candidate, "assetDisplayName", "targetLabel", "submittedAssetDescription") ||
     request.assetReference ||
     compactIdentifier(request.assetId);
   const fuelStorageDisplayName =

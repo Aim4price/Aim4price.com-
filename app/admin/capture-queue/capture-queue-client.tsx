@@ -45,6 +45,7 @@ type CaptureRow = {
   submittedAtIso: string;
   dueAtIso: string;
   updatedAtIso: string;
+  version: number;
   fileCount: number;
 };
 
@@ -64,6 +65,7 @@ type CaptureEvent = {
   eventType: string;
   actorDisplayName: string;
   note: string;
+  metadata: Record<string, unknown>;
   createdAtIso: string;
 };
 
@@ -136,6 +138,7 @@ type QueueResponse = {
 type DetailResponse = {
   ok: boolean;
   request?: CaptureDetail;
+  matchedTarget?: CaptureTarget | null;
   files?: CaptureFile[];
   events?: CaptureEvent[];
   error?: string;
@@ -144,11 +147,14 @@ type DetailResponse = {
 type Notice = { tone: "success" | "error"; message: string } | null;
 type BusyAction =
   | "claim"
+  | "confirm_match"
   | "save_draft"
   | "request_information"
   | "mark_duplicate"
   | "complete"
+  | "complete_direct"
   | "reject"
+  | "delete"
   | null;
 
 const EMPTY_COUNTS: QueueCounts = {
@@ -204,7 +210,7 @@ const STATUS_LABELS: Record<CaptureStatus, string> = {
   completed: "Completed",
   declined: "Declined",
   rejected: "Rejected",
-  cancelled: "Cancelled",
+  cancelled: "Deleted",
 };
 
 const CHANNEL_LABELS: Record<CaptureChannel, string> = {
@@ -275,13 +281,13 @@ function normaliseDraft(request: CaptureDetail): CaptureDraft {
   const payload = request.capturedPayload ?? EMPTY_DRAFT;
   const candidate = request.candidatePayload ?? {};
   return {
-    ownerUserId: cleanText(payload.ownerUserId) || request.ownerUserId || "",
-    assetId: cleanText(payload.assetId) || request.assetId || "",
-    fuelStorageId: cleanText(payload.fuelStorageId) || request.fuelStorageId || "",
-    ownerDisplayName: cleanText(payload.ownerDisplayName) || request.ownerDisplayName || "",
-    assetDisplayName: cleanText(payload.assetDisplayName) || request.assetDisplayName || "",
+    ownerUserId: request.ownerUserId || cleanText(payload.ownerUserId) || "",
+    assetId: request.assetId || cleanText(payload.assetId) || "",
+    fuelStorageId: request.fuelStorageId || cleanText(payload.fuelStorageId) || "",
+    ownerDisplayName: request.ownerDisplayName || cleanText(payload.ownerDisplayName) || "",
+    assetDisplayName: request.assetDisplayName || cleanText(payload.assetDisplayName) || "",
     fuelStorageDisplayName:
-      cleanText(payload.fuelStorageDisplayName) || request.fuelStorageDisplayName || "",
+      request.fuelStorageDisplayName || cleanText(payload.fuelStorageDisplayName) || "",
     supplierName: formValue(payload.supplierName, payload.supplier),
     invoiceNumber: formValue(payload.invoiceNumber, payload.documentNumber),
     slipNumber: formValue(payload.slipNumber, payload.invoiceNumber, payload.transactionNumber),
@@ -311,6 +317,18 @@ function normaliseDraft(request: CaptureDetail): CaptureDraft {
   };
 }
 
+function targetKey(input: {
+  ownerUserId?: unknown;
+  assetId?: unknown;
+  fuelStorageId?: unknown;
+}): string {
+  const ownerUserId = cleanText(input.ownerUserId);
+  const assetId = cleanText(input.assetId);
+  const fuelStorageId = cleanText(input.fuelStorageId);
+  if (!ownerUserId || Boolean(assetId) === Boolean(fuelStorageId)) return "";
+  return [ownerUserId, assetId, fuelStorageId].join(":");
+}
+
 export default function CaptureQueueClient() {
   const [rows, setRows] = useState<CaptureRow[]>([]);
   const [counts, setCounts] = useState<QueueCounts>(EMPTY_COUNTS);
@@ -334,12 +352,43 @@ export default function CaptureQueueClient() {
   const [matchSearch, setMatchSearch] = useState("");
   const [matchTargets, setMatchTargets] = useState<CaptureTarget[]>([]);
   const [isSearchingTargets, setIsSearchingTargets] = useState(false);
+  const [selectedTarget, setSelectedTarget] = useState<CaptureTarget | null>(null);
+  const [isChangingMatch, setIsChangingMatch] = useState(false);
+  const [deleteReason, setDeleteReason] = useState("");
   const queueLoadGenerationRef = useRef(0);
   const detailLoadGenerationRef = useRef(0);
   const workbenchRef = useRef<HTMLElement>(null);
   const isDraftDirty = useMemo(
     () => Boolean(detail) && JSON.stringify(draft) !== JSON.stringify(loadedDraft),
     [detail, draft, loadedDraft],
+  );
+  const currentTargetKey = targetKey(draft);
+  const selectedTargetKey = selectedTarget
+    ? targetKey({
+        ownerUserId: selectedTarget.ownerUserId,
+        assetId: selectedTarget.targetType === "asset" ? selectedTarget.targetId : "",
+        fuelStorageId: selectedTarget.targetType === "fuel_storage" ? selectedTarget.targetId : "",
+      })
+    : "";
+  const hasMatchedTarget = Boolean(
+    selectedTarget && currentTargetKey && selectedTargetKey === currentTargetKey,
+  );
+  const isMatchConfirmed = useMemo(() => {
+    if (!currentTargetKey) return false;
+    const latestMatch = [...events]
+      .reverse()
+      .find((event) => event.eventType === "matched");
+    return Boolean(latestMatch && targetKey(latestMatch.metadata) === currentTargetKey);
+  }, [currentTargetKey, events]);
+  const isExternalSubmission = detail?.submissionChannel === "dealer_upload"
+    || detail?.submissionChannel === "public_drop";
+  const isTerminalRequest = Boolean(
+    detail && ["completed", "declined", "rejected", "cancelled"].includes(detail.status),
+  );
+  const isRequestEditable = Boolean(detail && detail.status !== "awaiting_owner" && !isTerminalRequest);
+  const persistedTargetKey = detail ? targetKey(detail) : "";
+  const hasUnconfirmedTargetChange = Boolean(
+    detail && currentTargetKey !== persistedTargetKey && !isMatchConfirmed,
   );
   const isDraftDirtyRef = useRef(isDraftDirty);
 
@@ -388,6 +437,9 @@ export default function CaptureQueueClient() {
       setEvents([]);
       setDraft(EMPTY_DRAFT);
       setLoadedDraft(EMPTY_DRAFT);
+      setSelectedTarget(null);
+      setIsChangingMatch(false);
+      setDeleteReason("");
       return;
     }
     setIsDetailLoading(true);
@@ -410,10 +462,13 @@ export default function CaptureQueueClient() {
       setEvents(data.events ?? []);
       setDraft(nextDraft);
       setLoadedDraft(nextDraft);
+      setSelectedTarget(data.matchedTarget ?? null);
+      setIsChangingMatch(!data.matchedTarget);
       setMatchSearch("");
       setMatchTargets([]);
       setActiveFileId((current) => nextFiles.some((file) => file.id === current) ? current : nextFiles[0]?.id ?? "");
       setActionNote("");
+      setDeleteReason("");
       window.requestAnimationFrame(() => {
         workbenchRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
       });
@@ -545,21 +600,72 @@ export default function CaptureQueueClient() {
       fuelStorageDisplayName:
         target.targetType === "fuel_storage" ? target.targetDisplayName : "",
     }));
+    setSelectedTarget(target);
+    setIsChangingMatch(false);
+    setMatchSearch("");
+    setMatchTargets([]);
+  }
+
+  function beginMatchChange() {
+    setIsChangingMatch(true);
+    setMatchSearch("");
+    setMatchTargets([]);
+  }
+
+  function cancelMatchChange() {
+    if (!hasMatchedTarget) return;
+    setIsChangingMatch(false);
     setMatchSearch("");
     setMatchTargets([]);
   }
 
   async function runAction(action: Exclude<BusyAction, null>) {
     if (!selectedId || busyAction) return;
+    let requestNote = actionNote.trim();
     if (["request_information", "mark_duplicate", "reject"].includes(action) && !actionNote.trim()) {
       setNotice({ tone: "error", message: "Add a short reason before using this action." });
+      return;
+    }
+    if (action === "confirm_match" && !currentTargetKey) {
+      setNotice({ tone: "error", message: "Choose the customer and exact destination first." });
+      return;
+    }
+    if (["complete", "complete_direct"].includes(action) && !isMatchConfirmed) {
+      setNotice({ tone: "error", message: "Confirm the exact customer and destination before completing this request." });
       return;
     }
     if (action === "complete" && !window.confirm("Use these verified details to create the ledger record or send it to the owner for approval?")) {
       return;
     }
-    if (action === "reject" && !window.confirm("Reject this document request? The source file will remain in the audit history.")) {
+    if (action === "complete_direct") {
+      requestNote = window.prompt(
+        "How was the owner's approval confirmed? This reason will be saved in the audit history.",
+      )?.trim() || "";
+      if (!requestNote) return;
+      if (!window.confirm(
+        "Save this verified document directly to the owner's ledger without asking them to approve it again?",
+      )) return;
+    }
+    if (action === "reject" && !window.confirm(
+      "Reject this document request? Its audit metadata will remain and its source file will be scheduled for secure removal.",
+    )) {
       return;
+    }
+    if (action === "delete") {
+      requestNote = deleteReason.trim();
+      if (!requestNote) {
+        setNotice({ tone: "error", message: "Add a reason before deleting this request from the queue." });
+        return;
+      }
+      const typedReference = window.prompt(
+        `Type ${detail?.publicReference ?? ""} to delete this request from the active queue.`,
+      )?.trim();
+      if (typedReference !== detail?.publicReference) {
+        if (typedReference !== undefined && typedReference !== null) {
+          setNotice({ tone: "error", message: "The capture reference did not match. Nothing was deleted." });
+        }
+        return;
+      }
     }
 
     setBusyAction(action);
@@ -568,11 +674,23 @@ export default function CaptureQueueClient() {
       const response = await fetch(`/api/admin/capture-requests/${encodeURIComponent(selectedId)}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action, draft, note: actionNote.trim() }),
+        body: JSON.stringify({
+          action,
+          draft,
+          note: requestNote,
+          requestVersion: detail?.version,
+        }),
       });
       const data = (await response.json()) as DetailResponse & { message?: string };
       if (!response.ok || !data.ok) throw new Error(data.error || "The capture action failed.");
       setNotice({ tone: "success", message: data.message || "Capture request updated." });
+      if (action === "delete") {
+        isDraftDirtyRef.current = false;
+        setSelectedId("");
+        setDetail(null);
+        await loadQueue();
+        return;
+      }
       await Promise.all([loadQueue(), loadDetail(selectedId)]);
     } catch (error) {
       setNotice({
@@ -704,6 +822,7 @@ export default function CaptureQueueClient() {
               <option value="completed_today">Completed today</option>
               <option value="completed">Completed</option>
               <option value="rejected">Rejected</option>
+              <option value="cancelled">Deleted</option>
             </select>
           </label>
           <label>
@@ -895,53 +1014,86 @@ export default function CaptureQueueClient() {
                     <em>{cleanText(detail.candidatePayload.matchMethod) === "exact_unique_serial_or_vin" ? "Auto-matched" : "Check match"}</em>
                   </div>
                 ) : null}
-                {draft.ownerUserId && (draft.assetId || draft.fuelStorageId) ? (
-                  <div className={styles.selectedMatch}>
-                    <div>
-                      <span>Matched destination</span>
-                      <strong>{draft.assetDisplayName || draft.fuelStorageDisplayName || "Saved record"}</strong>
-                      <small>{draft.ownerDisplayName || "Asset owner"}</small>
+                {hasMatchedTarget && selectedTarget ? (
+                  <div className={`${styles.selectedMatch} ${isMatchConfirmed ? styles.selectedMatchConfirmed : ""}`}>
+                    <div className={styles.selectedMatchCopy}>
+                      <span>{isMatchConfirmed ? "Confirmed destination" : "Identified destination — confirm before completing"}</span>
+                      <strong>{selectedTarget.targetDisplayName}</strong>
+                      <small>{selectedTarget.ownerDisplayName}</small>
+                      <em>
+                        {[
+                          selectedTarget.targetType === "fuel_storage" ? "Fuel storage" : "Asset",
+                          selectedTarget.reference,
+                          selectedTarget.meta,
+                        ].filter(Boolean).join(" · ")}
+                      </em>
                     </div>
-                    <button type="button" onClick={() => {
-                      setDraft((current) => ({
-                        ...current,
-                        ownerUserId: "",
-                        assetId: "",
-                        fuelStorageId: "",
-                        ownerDisplayName: "",
-                        assetDisplayName: "",
-                        fuelStorageDisplayName: "",
-                      }));
-                      setMatchSearch("");
-                    }}>Change match</button>
-                  </div>
-                ) : null}
-                <label className={styles.targetSearch}>
-                  <span>{draft.ownerUserId ? "Find a different match" : "Find customer and destination"}</span>
-                  <input
-                    type="search"
-                    value={matchSearch}
-                    onChange={(event) => setMatchSearch(event.target.value)}
-                    placeholder={detail.requestType === "fuel_slip"
-                      ? "Search customer, asset, tank, serial or code"
-                      : "Search customer, asset, serial or Invoice Drop code"}
-                    autoComplete="off"
-                  />
-                </label>
-                {matchSearch.trim().length >= 2 ? (
-                  <DropdownOverlay className={styles.targetResults} role="listbox" aria-label="Customer and asset matches">
-                    {isSearchingTargets ? <span className={styles.targetEmpty}>Searching…</span> : matchTargets.length ? matchTargets.map((target) => (
-                      <button key={`${target.targetType}-${target.targetId}`} type="button" role="option" aria-selected="false" onClick={() => selectMatchTarget(target)}>
-                        <strong>{target.targetDisplayName}</strong>
-                        <span>{target.ownerDisplayName}</span>
-                        <small>{[target.targetType === "fuel_storage" ? "Fuel storage" : "Asset", target.reference, target.meta].filter(Boolean).join(" · ")}</small>
+                    <div className={styles.selectedMatchActions}>
+                      {isMatchConfirmed ? (
+                        <span className={styles.matchConfirmedBadge}>✓ Exact record confirmed</span>
+                      ) : (
+                        <button
+                          type="button"
+                          className={styles.confirmMatchButton}
+                          disabled={Boolean(busyAction) || !isRequestEditable}
+                          onClick={() => void runAction("confirm_match")}
+                        >
+                          {busyAction === "confirm_match"
+                            ? "Confirming…"
+                            : selectedTarget.targetType === "fuel_storage"
+                              ? "Confirm this fuel destination"
+                              : "Confirm this exact asset"}
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        className={styles.changeMatchButton}
+                        disabled={Boolean(busyAction) || !isRequestEditable}
+                        onClick={isChangingMatch ? cancelMatchChange : beginMatchChange}
+                      >
+                        {isChangingMatch ? "Cancel change" : "Change"}
                       </button>
-                    )) : <span className={styles.targetEmpty}>No matching customer, asset or tank found.</span>}
-                  </DropdownOverlay>
+                    </div>
+                  </div>
+                ) : (
+                  <div className={styles.matchRequired}>
+                    <strong>No exact destination is confirmed yet</strong>
+                    <span>Find the customer and exact asset or fuel destination before this request can be completed.</span>
+                  </div>
+                )}
+                {isRequestEditable && (!hasMatchedTarget || isChangingMatch) ? (
+                  <div className={styles.matchSearchPanel}>
+                    {isChangingMatch && hasMatchedTarget ? (
+                      <p>The current match stays in place until you choose and confirm a replacement.</p>
+                    ) : null}
+                    <label className={styles.targetSearch}>
+                      <span>{hasMatchedTarget ? "Find a replacement destination" : "Find customer and destination"}</span>
+                      <input
+                        type="search"
+                        value={matchSearch}
+                        onChange={(event) => setMatchSearch(event.target.value)}
+                        placeholder={detail.requestType === "fuel_slip"
+                          ? "Search customer, asset, tank, serial or code"
+                          : "Search customer, asset, serial or Invoice Drop code"}
+                        autoComplete="off"
+                      />
+                    </label>
+                    {matchSearch.trim().length >= 2 ? (
+                      <DropdownOverlay className={styles.targetResults} role="listbox" aria-label="Customer and asset matches">
+                        {isSearchingTargets ? <span className={styles.targetEmpty}>Searching…</span> : matchTargets.length ? matchTargets.map((target) => (
+                          <button key={`${target.targetType}-${target.targetId}`} type="button" role="option" aria-selected="false" onClick={() => selectMatchTarget(target)}>
+                            <strong>{target.targetDisplayName}</strong>
+                            <span>{target.ownerDisplayName}</span>
+                            <small>{[target.targetType === "fuel_storage" ? "Fuel storage" : "Asset", target.reference, target.meta].filter(Boolean).join(" · ")}</small>
+                          </button>
+                        )) : <span className={styles.targetEmpty}>No matching customer, asset or tank found.</span>}
+                      </DropdownOverlay>
+                    ) : null}
+                  </div>
                 ) : null}
               </div>
 
-              <div className={styles.formGrid}>
+              <fieldset className={styles.formGrid} disabled={!isRequestEditable}>
                 <label><span>Supplier</span><input value={draft.supplierName} onChange={(event) => updateDraft("supplierName", event.target.value)} autoComplete="off" /></label>
                 {detail.requestType === "fuel_slip" ? (
                   <label><span>Slip / transaction number</span><input value={draft.slipNumber} onChange={(event) => updateDraft("slipNumber", event.target.value)} autoComplete="off" /></label>
@@ -987,30 +1139,68 @@ export default function CaptureQueueClient() {
                   </>
                 )}
                 <label className={styles.fullField}><span>Internal admin note</span><textarea value={draft.adminNote} onChange={(event) => updateDraft("adminNote", event.target.value)} rows={3} placeholder="Only Aim4price admins can see this note." /></label>
-              </div>
+              </fieldset>
 
-              <div className={styles.primaryActions}>
-                <button type="button" className={styles.secondaryButton} disabled={Boolean(busyAction)} onClick={() => void runAction("save_draft")}>
+              <div className={`${styles.primaryActions} ${isExternalSubmission ? styles.primaryActionsExternal : ""}`}>
+                <button type="button" className={styles.secondaryButton} disabled={Boolean(busyAction) || !isRequestEditable || hasUnconfirmedTargetChange} onClick={() => void runAction("save_draft")}>
                   {busyAction === "save_draft" ? "Saving…" : "Save draft"}
                 </button>
-                <button type="button" className={styles.completeButton} disabled={Boolean(busyAction)} onClick={() => void runAction("complete")}>
+                <button type="button" className={styles.completeButton} disabled={Boolean(busyAction) || !isRequestEditable || !isMatchConfirmed} onClick={() => void runAction("complete")}>
                   {busyAction === "complete"
                     ? "Completing…"
                     : detail.submissionChannel === "owner_upload" || detail.submissionChannel === "accountant_upload"
                       ? "Create verified ledger record"
                       : "Verify & send to owner"}
                 </button>
+                {isExternalSubmission && !isTerminalRequest ? (
+                  <button
+                    type="button"
+                    className={styles.directSaveButton}
+                    disabled={Boolean(busyAction) || !isMatchConfirmed}
+                    onClick={() => void runAction("complete_direct")}
+                  >
+                    {busyAction === "complete_direct" ? "Saving…" : "Save directly — owner approved"}
+                  </button>
+                ) : null}
               </div>
 
               <details className={styles.exceptionPanel}>
                 <summary>Needs attention or cannot be completed</summary>
                 <label><span>Reason or message</span><textarea rows={3} value={actionNote} onChange={(event) => setActionNote(event.target.value)} placeholder="Required for information requests, duplicates and rejections." /></label>
                 <div className={styles.exceptionActions}>
-                  <button type="button" disabled={Boolean(busyAction)} onClick={() => void runAction("request_information")}>Request information</button>
-                  <button type="button" disabled={Boolean(busyAction)} onClick={() => void runAction("mark_duplicate")}>Mark duplicate</button>
-                  <button type="button" className={styles.rejectButton} disabled={Boolean(busyAction)} onClick={() => void runAction("reject")}>Reject</button>
+                  <button type="button" disabled={Boolean(busyAction) || !isRequestEditable || hasUnconfirmedTargetChange} onClick={() => void runAction("request_information")}>Request information</button>
+                  <button type="button" disabled={Boolean(busyAction) || !isRequestEditable} onClick={() => void runAction("mark_duplicate")}>Mark duplicate</button>
+                  <button type="button" className={styles.rejectButton} disabled={Boolean(busyAction) || !isRequestEditable} onClick={() => void runAction("reject")}>Reject</button>
                 </div>
               </details>
+
+              {!["completed", "declined", "rejected", "cancelled"].includes(detail.status) ? (
+                <details className={styles.deletePanel}>
+                  <summary>Delete capture request</summary>
+                  <div className={styles.deletePanelBody}>
+                    <p>
+                      Remove this unfinished request from the active queue. Its audit record is retained
+                      and uploaded source files are scheduled for secure removal.
+                    </p>
+                    <label>
+                      <span>Reason for deletion</span>
+                      <textarea
+                        rows={3}
+                        value={deleteReason}
+                        onChange={(event) => setDeleteReason(event.target.value)}
+                        placeholder="Explain why this request should be removed."
+                      />
+                    </label>
+                    <button
+                      type="button"
+                      disabled={Boolean(busyAction)}
+                      onClick={() => void runAction("delete")}
+                    >
+                      {busyAction === "delete" ? "Deleting…" : "Delete from queue"}
+                    </button>
+                  </div>
+                </details>
+              ) : null}
 
               <details className={styles.historyPanel}>
                 <summary>Audit history <span>{events.length}</span></summary>
@@ -1027,4 +1217,3 @@ export default function CaptureQueueClient() {
     </>
   );
 }
-
