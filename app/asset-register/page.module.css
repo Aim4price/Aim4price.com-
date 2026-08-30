@@ -35221,9 +35221,10 @@ button.documentOpenLink {
 
 .newAcquisitionChoiceHeader {
   display: grid !important;
-  grid-template-columns: minmax(0, 1fr) auto !important;
+  grid-template-columns: minmax(0, 1fr) 3.08rem !important;
   align-items: flex-start !important;
-  gap: 1rem !important;
+  column-gap: clamp(2rem, 3vw, 2.75rem) !important;
+  row-gap: 0 !important;
   margin: 0 !important;
   padding: clamp(1.45rem, 2.5vw, 1.75rem) clamp(1.45rem, 2.7vw, 1.85rem) clamp(1.1rem, 1.9vw, 1.25rem) !important;
 }
@@ -35237,7 +35238,7 @@ button.documentOpenLink {
 .newAcquisitionChoiceHeader .modalCloseButton {
   align-self: start !important;
   justify-self: end !important;
-  margin: 0 !important;
+  margin: 0.08rem 0 0 !important;
 }
 
 .newAcquisitionChoiceHeader .modalHeaderText h3 {
@@ -35248,11 +35249,13 @@ button.documentOpenLink {
 }
 
 .newAcquisitionChoiceHeader .modalHeaderText p {
-  max-width: none !important;
+  max-width: 34rem !important;
   font-size: clamp(0.9rem, 1.2vw, 0.98rem) !important;
   font-weight: 600 !important;
   line-height: 1.4 !important;
-  white-space: nowrap !important;
+  white-space: normal !important;
+  text-wrap: balance !important;
+  overflow-wrap: anywhere !important;
 }
 
 .newAcquisitionChoiceBody {
@@ -35360,6 +35363,7 @@ button.documentOpenLink {
   }
 
   .newAcquisitionChoiceHeader {
+    column-gap: 1.25rem !important;
     padding: 1.15rem 1.15rem 1rem !important;
   }
 
