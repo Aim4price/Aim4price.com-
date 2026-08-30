@@ -674,10 +674,11 @@ test('umbrella create and manage forms keep their footer actions fully visible',
   assert.match(styles, /\.footer \{[\s\S]*?flex: 0 0 auto;[\s\S]*?padding: 18px 36px max\(24px, env\(safe-area-inset-bottom\)\);/);
 });
 
-test('asset disposal uses a valid withdrawn marketplace state and keeps database errors private', async () => {
-  const [client, styles, lifecycle, route] = await Promise.all([
+test('asset disposal uses a valid withdrawn marketplace state and reuses the umbrella wizard design', async () => {
+  const [client, styles, groupModalStyles, lifecycle, route] = await Promise.all([
     readFile(new URL('../app/asset-register/asset-register-client.tsx', import.meta.url), 'utf8'),
     readFile(new URL('../app/asset-register/page.module.css', import.meta.url), 'utf8'),
+    readFile(new URL('../components/asset-register/AssetGroupManagerModal.module.css', import.meta.url), 'utf8'),
     readFile(new URL('../lib/asset-lifecycle.ts', import.meta.url), 'utf8'),
     readFile(new URL('../app/api/asset-register/route.ts', import.meta.url), 'utf8'),
   ]);
@@ -691,11 +692,37 @@ test('asset disposal uses a valid withdrawn marketplace state and keeps database
   assert.match(client, /draft\.reason === 'mistake_duplicate'[\s\S]{0,100}\? \{ reason: draft\.reason \}/);
   assert.match(disposalModal, /disposalDraft\.reason === 'mistake_duplicate' \? <p[\s\S]*?assetDisposalDeleteNotice[\s\S]*?: <div[\s\S]*?assetDisposalFields/);
   assert.match(disposalModal, /No price or disposal details are required\./);
-  assert.match(disposalModal, /styles\.assetDisposalOverlay/);
-  assert.match(styles, /\.assetDisposalOverlay \{[\s\S]*?width: 100vw !important;[\s\S]*?max-width: none !important;/);
-  assert.match(styles, /\.assetDisposalModal \{[\s\S]*?width: min\(60rem, calc\(100vw - 2rem\)\) !important;[\s\S]*?display: flex !important;[\s\S]*?flex-direction: column !important;[\s\S]*?overflow: hidden !important;[\s\S]*?margin-inline: auto !important;/);
-  assert.match(styles, /\.assetDisposalBody \{[\s\S]*?flex: 1 1 auto !important;[\s\S]*?min-height: 0 !important;[\s\S]*?overflow-y: auto !important;[\s\S]*?scrollbar-gutter: stable both-edges !important;[\s\S]*?padding: 1\.25rem 2rem 1\.5rem !important;/);
-  assert.match(styles, /@media \(max-width: 720px\) \{[\s\S]*?\.assetDisposalBody \{[\s\S]*?scrollbar-gutter: auto !important;/);
+
+  assert.match(client, /import groupModalStyles from '\.\.\/\.\.\/components\/asset-register\/AssetGroupManagerModal\.module\.css';/);
+  assert.match(disposalModal, /className=\{groupModalStyles\.backdrop\}/);
+  assert.match(disposalModal, /className=\{groupModalStyles\.dialog\}/);
+  assert.match(disposalModal, /<header className=\{groupModalStyles\.header\}>/);
+  assert.match(disposalModal, /<h2 id="disposal-title">Sell or remove this asset<\/h2>/);
+  assert.match(disposalModal, /className=\{groupModalStyles\.body\}/);
+  assert.match(disposalModal, /className=\{groupModalStyles\.intro\}/);
+  assert.match(disposalModal, /groupModalStyles\.wizardProgressStep/);
+  assert.match(disposalModal, /groupModalStyles\.wizardProgressStepCurrent/);
+  assert.match(disposalModal, /groupModalStyles\.wizardProgressStepComplete/);
+  assert.match(disposalModal, /<span>\{isComplete \? '✓' : item\.step\}<\/span>/);
+  assert.match(disposalModal, /groupModalStyles\.wizardBody/);
+  assert.match(disposalModal, /groupModalStyles\.stepCard/);
+  assert.match(disposalModal, /groupModalStyles\.stepNumber/);
+  assert.match(disposalModal, /groupModalStyles\.footer/);
+  assert.match(disposalModal, /groupModalStyles\.wizardFooter/);
+  assert.match(disposalModal, /groupModalStyles\.cancelButton/);
+  assert.match(disposalModal, /groupModalStyles\.saveButton/);
+  assert.doesNotMatch(disposalModal, /styles\.assetDisposalOverlay|styles\.assetDisposalModal|styles\.assetDisposalBody|styles\.assetDisposalActions/);
+
+  assert.match(groupModalStyles, /\.dialog \{[\s\S]*?width: min\(1120px, 100%\);[\s\S]*?max-height: min\(880px, calc\(100vh - 48px\)\);/);
+  assert.match(groupModalStyles, /\.header \{[\s\S]*?padding: 28px 36px 24px;/);
+  assert.match(groupModalStyles, /\.header h2 \{[\s\S]*?font-size: clamp\(28px, 4vw, 38px\);[\s\S]*?line-height: 1\.04;/);
+  assert.match(groupModalStyles, /\.body \{[\s\S]*?padding: 26px 36px 30px;/);
+  assert.match(groupModalStyles, /\.wizardProgressStep > span \{[\s\S]*?width: 44px;[\s\S]*?height: 44px;[\s\S]*?font-size: 14px;[\s\S]*?font-weight: 900;/);
+  assert.match(groupModalStyles, /\.wizardProgressStep > strong \{[\s\S]*?font-size: 14px;[\s\S]*?font-weight: 850;/);
+  assert.match(groupModalStyles, /\.stepCopy strong \{[\s\S]*?font-size: 19px;[\s\S]*?font-weight: 900;/);
+  assert.match(groupModalStyles, /\.footer \{[\s\S]*?padding: 18px 36px max\(24px, env\(safe-area-inset-bottom\)\);/);
+  assert.match(styles, /\.assetDisposalProgressFour \{[\s\S]*?grid-template-columns: repeat\(4, minmax\(0, 1fr\)\) !important;/);
+  assert.doesNotMatch(styles, /\.assetDisposalOverlay \{|\.assetDisposalModal \{|\.assetDisposalBody \{|\.assetDisposalActions \{/);
 });
 
 test('combined Asset Register groups are account-wide, preserve member counting, and project in every output', async () => {
