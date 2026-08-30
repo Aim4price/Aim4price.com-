@@ -59,7 +59,7 @@ function captureFileError(error: unknown): NextResponse {
   const code = error instanceof Error ? error.message : "";
   if (code.includes("NOT_FOUND")) return adminApiError("Capture file not found.", 404);
   if (code === "CAPTURE_FINALIZATION_IN_PROGRESS") {
-    return adminApiError("This request is already being finalized. Reload it before changing file security.", 409);
+    return adminApiError("This request is already being finalized. Reload it before changing the file security decision.", 409);
   }
   if (code.startsWith("CAPTURE_")) return adminApiError("The file security action is not valid.", 400);
   console.error("Admin capture file action failed", error);

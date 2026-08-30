@@ -30,6 +30,17 @@ function payloadText(payload: Record<string, unknown>, ...keys: string[]): strin
   return '';
 }
 
+function reviewValue(
+  captured: Record<string, unknown>,
+  candidate: Record<string, unknown>,
+  notApplicableKey: string,
+  capturedKeys: string[],
+  candidateKeys: string[] = capturedKeys,
+): string {
+  if (captured[notApplicableKey] === true) return 'N/A';
+  return payloadText(captured, ...capturedKeys) || payloadText(candidate, ...candidateKeys);
+}
+
 async function getOwnerActor(): Promise<{
   actorType: 'owner';
   userId: string;
@@ -94,9 +105,30 @@ function reviewFields(request: CaptureRequestDetail): Record<string, string> {
     litres: payloadText(captured, 'litres'),
     vatAmount: payloadText(captured, 'vatAmount', 'vat'),
     totalAmount: payloadText(captured, 'totalAmount', 'totalIncVat', 'total'),
-    operatorName: payloadText(candidate, 'operatorName'),
-    activityText: payloadText(candidate, 'activityText') || payloadText(captured, 'activity', 'activityText'),
-    workAreaText: payloadText(candidate, 'workAreaText'),
+    usageReading: reviewValue(
+      captured,
+      candidate,
+      'usageNotApplicable',
+      ['usageReading', 'hourMeterReading', 'odometerReading'],
+    ),
+    operatorName: reviewValue(
+      captured,
+      candidate,
+      'operatorNotApplicable',
+      ['operatorName'],
+    ),
+    activityText: reviewValue(
+      captured,
+      candidate,
+      'activityNotApplicable',
+      ['activityText', 'activity'],
+    ),
+    workAreaText: reviewValue(
+      captured,
+      candidate,
+      'workAreaNotApplicable',
+      ['workAreaText'],
+    ),
   };
 }
 

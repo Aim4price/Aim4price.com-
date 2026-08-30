@@ -7,6 +7,7 @@ import {
   listCaptureRequestFiles,
   matchCaptureRequest,
   transitionCaptureRequest,
+  updateCaptureRequestAssetUsage,
   updateCaptureRequestDraft,
   type CaptureAdminActor,
   type CaptureRequest,
@@ -30,6 +31,7 @@ type RouteContext = { params: { requestId?: string } };
 type AdminAction =
   | "claim"
   | "confirm_match"
+  | "update_usage"
   | "save_draft"
   | "request_information"
   | "mark_duplicate"
@@ -163,7 +165,7 @@ function friendlyCaptureError(message: string): string {
     CAPTURE_CLAIMED_BY_ANOTHER_ADMIN: "Another admin has already claimed this request.",
     CAPTURE_NOT_CLAIMED: "Claim this request before changing it.",
     CAPTURE_REQUEST_CLOSED: "This capture request can no longer be changed.",
-    CAPTURE_REQUEST_CHANGED: "This request changed in another Admin tab. Reload it and confirm the exact destination again.",
+    CAPTURE_REQUEST_CHANGED: "This request changed since you opened it. Review the latest details and confirm the exact destination again.",
     CAPTURE_FINALIZATION_IN_PROGRESS: "This request is already being finalized. Reload it before making another change.",
     CAPTURE_REQUEST_NOT_CLAIMABLE: "This capture request cannot be claimed in its current status.",
     CAPTURE_OWNER_REQUIRED: "Match the customer before continuing.",
@@ -182,6 +184,27 @@ function friendlyCaptureError(message: string): string {
     CAPTURE_CANCELLATION_REASON_REQUIRED: "Add a reason before deleting this request from the queue.",
     CAPTURE_CANCELLATION_OUTPUT_EXISTS: "A ledger record already exists for this request, so it cannot be deleted from the queue.",
     CAPTURE_OUTPUT_MISMATCH: "The final ledger record does not match this capture request.",
+    CAPTURE_INVOICE_SUPPLIER_REQUIRED: "Enter the invoice supplier.",
+    CAPTURE_INVOICE_NUMBER_REQUIRED: "Enter the invoice number.",
+    CAPTURE_INVOICE_DATE_REQUIRED: "Enter a valid invoice date.",
+    CAPTURE_INVOICE_TOTAL_REQUIRED: "Enter an invoice total greater than zero.",
+    CAPTURE_INVOICE_TOTALS_INVALID: "Check the invoice subtotal, VAT and total amounts.",
+    CAPTURE_FUEL_SUPPLIER_REQUIRED: "Enter the fuel supplier.",
+    CAPTURE_FUEL_DATE_REQUIRED: "Enter a valid fuel slip date.",
+    CAPTURE_FUEL_TYPE_REQUIRED: "Choose the fuel type.",
+    CAPTURE_FUEL_LITRES_REQUIRED: "Enter litres greater than zero.",
+    CAPTURE_FUEL_TOTAL_REQUIRED: "Enter a fuel total greater than zero.",
+    CAPTURE_FUEL_TOTALS_INVALID: "The fuel slip VAT cannot be greater than its total.",
+    CAPTURE_FUEL_OPERATOR_REQUIRED: "Enter the operator or choose N/A.",
+    CAPTURE_FUEL_ACTIVITY_REQUIRED: "Enter the activity or choose N/A.",
+    CAPTURE_FUEL_WORK_AREA_REQUIRED: "Enter the work area or choose N/A.",
+    CAPTURE_FUEL_USAGE_REQUIRED: "Enter the asset usage reading or choose N/A.",
+    CAPTURE_FUEL_FIELDS_INCOMPLETE: "Complete the required fuel fields or choose N/A where available.",
+    CAPTURE_USAGE_READING_REQUIRED: "Enter the document usage reading before updating the Asset Register.",
+    CAPTURE_USAGE_METRIC_MISMATCH: "The document usage unit does not match this asset's saved unit.",
+    CAPTURE_USAGE_NOT_APPLICABLE: "This document or asset has no applicable meter reading to update.",
+    CAPTURE_USAGE_CANNOT_DECREASE: "The Asset Register reading can never be lowered. Keep the document reading for history without updating the asset.",
+    CAPTURE_TARGET_NOT_CONFIRMED: "Confirm this exact asset again before updating its usage.",
   };
   return messages[message] || (message.startsWith("CAPTURE_")
     ? "This capture action is not valid in the request's current state."
@@ -246,6 +269,7 @@ async function saveAdminDraft(
       ownerUserId: target.ownerUserId,
       assetId: target.assetId || null,
       fuelStorageId: target.fuelStorageId || null,
+      expectedVersion: current.version,
     }, actor);
   }
   return updateCaptureRequestDraft(current.id, {
@@ -289,6 +313,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
   const allowedActions: AdminAction[] = [
     "claim",
     "confirm_match",
+    "update_usage",
     "save_draft",
     "request_information",
     "mark_duplicate",
@@ -306,9 +331,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     if (!Number.isFinite(requestVersion) || requestVersion < 1) {
       return adminApiError("Reload this capture request before changing it.", 400);
     }
-    if (existing.version !== requestVersion) {
-      return adminApiError(friendlyCaptureError("CAPTURE_REQUEST_CHANGED"), 409);
-    }
+    if (existing.version !== requestVersion) throw new Error("CAPTURE_REQUEST_CHANGED");
     const actor = access.actor;
     const note = cleanText(body.note, 2_000);
     const draft = readDraft(body);
@@ -317,8 +340,11 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     if (["request_information", "mark_duplicate", "reject", "complete_direct", "delete"].includes(action) && !note) {
       return adminApiError("Add a short reason before using this action.", 400);
     }
-    if (["complete", "complete_direct"].includes(action) && !draftTargetIsConfirmed(existing, draft)) {
+    if (["complete", "complete_direct", "update_usage"].includes(action) && !draftTargetIsConfirmed(existing, draft)) {
       return adminApiError(friendlyCaptureError("CAPTURE_TARGET_CONFIRMATION_REQUIRED"), 400);
+    }
+    if (action === "update_usage" && (!cleanText(draft.assetId, 80) || cleanText(draft.fuelStorageId, 80))) {
+      return adminApiError("Usage can only be updated for a confirmed asset.", 400);
     }
     if (
       action === "complete_direct"
@@ -338,6 +364,17 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
         await saveAdminDraft(existing, draft, actor, { confirmMatch: true });
         message = "The exact customer and destination were confirmed.";
         break;
+
+      case "update_usage": {
+        const saved = await saveAdminDraft(existing, draft, actor);
+        const usage = await updateCaptureRequestAssetUsage(requestId, {
+          expectedVersion: saved.version,
+        }, actor);
+        message = usage.updated
+          ? `Asset Register ${usage.metric === "km" ? "kilometres" : "hours"} updated from ${usage.previousReading ?? "not recorded"} to ${usage.newReading}.`
+          : `The Asset Register is already at ${usage.newReading} ${usage.metric === "km" ? "km" : "hours"}.`;
+        break;
+      }
 
       case "save_draft":
         await saveAdminDraft(existing, draft, actor);
@@ -422,6 +459,12 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     const code = error instanceof Error ? error.message : "";
     const status = statusForCaptureError(code);
     if (status === 500) console.error("Admin capture request PATCH failed", error);
-    return adminApiError(friendlyCaptureError(code), status);
+    const latestDetail = await buildResponseDetail(requestId).catch(() => null);
+    return NextResponse.json({
+      ok: false,
+      error: friendlyCaptureError(code),
+      errorCode: code.startsWith("CAPTURE_") ? code : undefined,
+      ...(latestDetail ?? {}),
+    }, { status });
   }
 }

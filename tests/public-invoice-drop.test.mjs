@@ -258,7 +258,13 @@ test('public route privately auto-links unique serial, VIN or owner-scoped broad
   assert.match(durableRateLimit, /on conflict \(rate_key\) do update/);
   assert.doesNotMatch(durableRateLimit, /ipAddress|userAgent/);
   assert.match(captureStore, /resolveUniqueAssetSerialOrVin/);
-  assert.match(captureStore, /regexp_replace\([\s\S]*?serial_number[\s\S]*?serial[\s\S]*?vin/);
+  assert.match(captureStore, /cross join lateral \([\s\S]*?serial_number[\s\S]*?serial[\s\S]*?vin[\s\S]*?serialNumber/);
+  assert.match(captureStore, /matched_identifier\.identifier as serial_or_vin/);
+  assert.match(captureStore, /identifiers\.identifier[\s\S]*?regexp_replace\([\s\S]*?\) = \$1/);
+  assert.doesNotMatch(
+    captureStore,
+    /where upper\(regexp_replace\([\s\S]*?coalesce\([\s\S]*?serial_number[\s\S]*?vin/,
+  );
   assert.match(captureStore, /limit 2/);
   assert.match(captureStore, /result\.rows\.length !== 1/);
 

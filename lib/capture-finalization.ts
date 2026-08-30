@@ -68,9 +68,13 @@ export type NormalizedFuelCapture = {
   pricePerLitre: number | null;
   odometerReading: number | null;
   hourMeterReading: number | null;
+  usageNotApplicable: boolean;
   operatorName: string;
+  operatorNotApplicable: boolean;
   activityText: string;
+  activityNotApplicable: boolean;
   workAreaText: string;
+  workAreaNotApplicable: boolean;
   note: string;
   assetFuelPercentBefore: number | null;
   assetFuelPercentAfter: number | null;
@@ -93,6 +97,21 @@ function firstText(payload: Record<string, unknown>, keys: string[], maxLength =
     if (value) return value;
   }
   return '';
+}
+
+function capturedTextOrCandidateFallback(
+  capturedPayload: Record<string, unknown>,
+  candidatePayload: Record<string, unknown>,
+  capturedKeys: string[],
+  candidateKeys: string[],
+  maxLength: number,
+): string {
+  const capturedFieldWasProvided = capturedKeys.some((key) => (
+    Object.prototype.hasOwnProperty.call(capturedPayload, key)
+  ));
+  return capturedFieldWasProvided
+    ? firstText(capturedPayload, capturedKeys, maxLength)
+    : firstText(candidatePayload, candidateKeys, maxLength);
 }
 
 function decimal(value: unknown): number | null {
@@ -231,10 +250,20 @@ export function normalizeFuelCapturePayload(
   const vatAmount = optionalNonNegative(capturedPayload.vatAmount ?? capturedPayload.vat);
   if (vatAmount !== null && vatAmount > totalAmount + 0.01) throw new Error('CAPTURE_FUEL_TOTALS_INVALID');
   const explicitRate = optionalNonNegative(capturedPayload.pricePerLitre);
-  const reviewedUsage = optionalNonNegative(capturedPayload.usageReading);
+  const usageNotApplicable = capturedPayload.usageNotApplicable === true;
+  const operatorNotApplicable = capturedPayload.operatorNotApplicable === true;
+  const activityNotApplicable = capturedPayload.activityNotApplicable === true;
+  const workAreaNotApplicable = capturedPayload.workAreaNotApplicable === true;
+  const reviewedUsage = usageNotApplicable
+    ? null
+    : optionalNonNegative(capturedPayload.usageReading);
   const usageMetric = text(capturedPayload.usageMetric ?? candidatePayload.usageMetric, 30).toLowerCase();
-  let odometerReading = optionalNonNegative(capturedPayload.odometerReading ?? candidatePayload.odometerReading);
-  let hourMeterReading = optionalNonNegative(capturedPayload.hourMeterReading ?? candidatePayload.hourMeterReading);
+  let odometerReading = usageNotApplicable
+    ? null
+    : optionalNonNegative(capturedPayload.odometerReading ?? candidatePayload.odometerReading);
+  let hourMeterReading = usageNotApplicable
+    ? null
+    : optionalNonNegative(capturedPayload.hourMeterReading ?? candidatePayload.hourMeterReading);
   if (reviewedUsage !== null) {
     if (usageMetric === 'km') odometerReading = reviewedUsage;
     if (usageMetric === 'hours') hourMeterReading = reviewedUsage;
@@ -255,12 +284,37 @@ export function normalizeFuelCapturePayload(
     pricePerLitre: explicitRate ?? Math.round((totalAmount / litres) * 10_000) / 10_000,
     odometerReading,
     hourMeterReading,
-    operatorName: firstText(capturedPayload, ['operatorName'], 100)
-      || firstText(candidatePayload, ['operatorName'], 100),
-    activityText: firstText(capturedPayload, ['activityText', 'activity'], 180)
-      || firstText(candidatePayload, ['activityText'], 180),
-    workAreaText: firstText(capturedPayload, ['workAreaText'], 180)
-      || firstText(candidatePayload, ['workAreaText'], 180),
+    usageNotApplicable,
+    operatorName: operatorNotApplicable
+      ? ''
+      : capturedTextOrCandidateFallback(
+          capturedPayload,
+          candidatePayload,
+          ['operatorName'],
+          ['operatorName'],
+          100,
+        ),
+    operatorNotApplicable,
+    activityText: activityNotApplicable
+      ? ''
+      : capturedTextOrCandidateFallback(
+          capturedPayload,
+          candidatePayload,
+          ['activityText', 'activity'],
+          ['activityText'],
+          180,
+        ),
+    activityNotApplicable,
+    workAreaText: workAreaNotApplicable
+      ? ''
+      : capturedTextOrCandidateFallback(
+          capturedPayload,
+          candidatePayload,
+          ['workAreaText'],
+          ['workAreaText'],
+          180,
+        ),
+    workAreaNotApplicable,
     note: firstText(capturedPayload, ['note'], 1_000)
       || firstText(candidatePayload, ['note'], 1_000),
     assetFuelPercentBefore: percentage(
@@ -517,12 +571,19 @@ async function assertFuelOperationalFields(
   captured: NormalizedFuelCapture,
 ): Promise<void> {
   if (!request.assetId) return;
-  if (!captured.operatorName) throw new Error('CAPTURE_FUEL_OPERATOR_REQUIRED');
-  if (!captured.activityText) throw new Error('CAPTURE_FUEL_ACTIVITY_REQUIRED');
-  if (!captured.workAreaText) throw new Error('CAPTURE_FUEL_WORK_AREA_REQUIRED');
+  if (!captured.operatorName && !captured.operatorNotApplicable) {
+    throw new Error('CAPTURE_FUEL_OPERATOR_REQUIRED');
+  }
+  if (!captured.activityText && !captured.activityNotApplicable) {
+    throw new Error('CAPTURE_FUEL_ACTIVITY_REQUIRED');
+  }
+  if (!captured.workAreaText && !captured.workAreaNotApplicable) {
+    throw new Error('CAPTURE_FUEL_WORK_AREA_REQUIRED');
+  }
   const assets = await listFuelAssetsForUser(request.ownerUserId ?? '');
   const asset = assets.find((entry) => entry.id === request.assetId);
   if (!asset) throw new Error('CAPTURE_ASSET_NOT_FOUND');
+  if (captured.usageNotApplicable) return;
   if (asset.usageMetric === 'km' && captured.odometerReading === null) {
     throw new Error('CAPTURE_FUEL_USAGE_REQUIRED');
   }
@@ -572,9 +633,13 @@ async function createFuelOutput(
     vatAmount: captured.vatAmount,
     odometerReading: captured.odometerReading,
     hourMeterReading: captured.hourMeterReading,
+    usageNotApplicable: captured.usageNotApplicable,
     operatorName: captured.operatorName,
+    operatorNotApplicable: captured.operatorNotApplicable,
     activityText: captured.activityText,
+    activityNotApplicable: captured.activityNotApplicable,
     workAreaText: captured.workAreaText,
+    workAreaNotApplicable: captured.workAreaNotApplicable,
     note: captured.note,
     assetFuelPercentBefore: captured.assetFuelPercentBefore,
     assetFuelPercentAfter: captured.assetFuelPercentAfter,
@@ -583,16 +648,18 @@ async function createFuelOutput(
     auditActorUserId: actor.userId,
     auditActorName: actor.displayName,
     auditReason: `Aim4price assisted capture ${request.publicReference}`,
+    updateAssetUsage: false,
   });
   if (result.pendingReview) throw new Error('CAPTURE_FUEL_FIELDS_INCOMPLETE');
   return result.fuelSlip.id;
 }
 
-function validateCapturedDraft(request: CaptureRequestDetail): void {
+async function validateCapturedDraft(request: CaptureRequestDetail): Promise<void> {
   if (request.requestType === 'invoice') {
     normalizeInvoiceCapturePayload(request.capturedPayload, request.candidatePayload, request.requesterNote);
   } else {
-    normalizeFuelCapturePayload(request.capturedPayload, request.candidatePayload);
+    const captured = normalizeFuelCapturePayload(request.capturedPayload, request.candidatePayload);
+    await assertFuelOperationalFields(request, captured);
   }
 }
 
@@ -685,7 +752,7 @@ export async function finalizeCaptureRequestForAdmin(
         : 'CAPTURE_NOT_CLAIMED');
     }
 
-    validateCapturedDraft(request);
+    await validateCapturedDraft(request);
     const ownerApproved = request.events.some((event) => event.eventType === 'owner_approved');
     if (
       EXTERNAL_CHANNELS.has(request.submissionChannel)
@@ -734,7 +801,7 @@ export async function approveCaptureRequestForOwner(
     if (!request.assignedAdminUserId || !request.assignedAdminDisplayName) {
       throw new Error('CAPTURE_ADMIN_REQUIRED');
     }
-    validateCapturedDraft(request);
+    await validateCapturedDraft(request);
     return completeCanonicalOutput(request, {
       actorType: 'admin',
       userId: request.assignedAdminUserId,

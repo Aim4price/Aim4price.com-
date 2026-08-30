@@ -156,9 +156,13 @@ export type FuelSlipTransaction = {
   siteNumber: string;
   odometerReading: number | null;
   hourMeterReading: number | null;
+  usageNotApplicable: boolean;
   operatorName: string;
+  operatorNotApplicable: boolean;
   activityText: string;
+  activityNotApplicable: boolean;
   workAreaText: string;
+  workAreaNotApplicable: boolean;
   note: string;
   latitude: number | null;
   longitude: number | null;
@@ -418,9 +422,13 @@ type FuelSlipRow = {
   site_number: string | null;
   odometer_reading: string | number | null;
   hour_meter_reading: string | number | null;
+  usage_not_applicable: boolean | null;
   operator_name: string | null;
+  operator_not_applicable: boolean | null;
   activity_text: string | null;
+  activity_not_applicable: boolean | null;
   work_area_text: string | null;
+  work_area_not_applicable: boolean | null;
   note: string | null;
   scan_latitude: string | number | null;
   scan_longitude: string | number | null;
@@ -1182,9 +1190,13 @@ function mapFuelSlipRow(row: FuelSlipRow): FuelSlipTransaction {
     siteNumber: maskStoredFuelSlipRawText(asText(row.site_number)),
     odometerReading: normalizeUsageReading(row.odometer_reading),
     hourMeterReading: normalizeUsageReading(row.hour_meter_reading),
+    usageNotApplicable: Boolean(row.usage_not_applicable),
     operatorName: maskStoredFuelSlipRawText(asText(row.operator_name)),
+    operatorNotApplicable: Boolean(row.operator_not_applicable),
     activityText: maskStoredFuelSlipRawText(asText(row.activity_text)),
+    activityNotApplicable: Boolean(row.activity_not_applicable),
     workAreaText: maskStoredFuelSlipRawText(asText(row.work_area_text)),
+    workAreaNotApplicable: Boolean(row.work_area_not_applicable),
     note: maskStoredFuelSlipRawText(asText(row.note)),
     latitude: normalizeCoordinate(row.scan_latitude, 90),
     longitude: normalizeCoordinate(row.scan_longitude, 180),
@@ -1817,9 +1829,13 @@ function fuelSlipSelectSql(): string {
     fs.site_number,
     fs.odometer_reading,
     fs.hour_meter_reading,
+    fs.usage_not_applicable,
     fs.operator_name,
+    fs.operator_not_applicable,
     fs.activity_text,
+    fs.activity_not_applicable,
     fs.work_area_text,
+    fs.work_area_not_applicable,
     fs.note,
     (
       select se.latitude
@@ -2226,9 +2242,13 @@ async function ensureFuelLedgerTablesOnce(): Promise<void> {
       site_number text,
       odometer_reading numeric(14,2),
       hour_meter_reading numeric(14,2),
+      usage_not_applicable boolean not null default false,
       operator_name text,
+      operator_not_applicable boolean not null default false,
       activity_text text,
+      activity_not_applicable boolean not null default false,
       work_area_text text,
+      work_area_not_applicable boolean not null default false,
       note text,
       asset_fuel_percent_before integer,
       asset_fuel_percent_after integer,
@@ -2278,9 +2298,13 @@ async function ensureFuelLedgerTablesOnce(): Promise<void> {
       add column if not exists site_number text,
       add column if not exists odometer_reading numeric(14,2),
       add column if not exists hour_meter_reading numeric(14,2),
+      add column if not exists usage_not_applicable boolean not null default false,
       add column if not exists operator_name text,
+      add column if not exists operator_not_applicable boolean not null default false,
       add column if not exists activity_text text,
+      add column if not exists activity_not_applicable boolean not null default false,
       add column if not exists work_area_text text,
+      add column if not exists work_area_not_applicable boolean not null default false,
       add column if not exists note text,
       add column if not exists asset_fuel_percent_before integer,
       add column if not exists asset_fuel_percent_after integer,
@@ -2291,6 +2315,23 @@ async function ensureFuelLedgerTablesOnce(): Promise<void> {
       add column if not exists extraction_warnings jsonb not null default '[]'::jsonb,
       add column if not exists created_at timestamptz not null default now(),
       add column if not exists updated_at timestamptz not null default now();
+
+    update public.fuel_slips
+    set
+      usage_not_applicable = coalesce(usage_not_applicable, false),
+      operator_not_applicable = coalesce(operator_not_applicable, false),
+      activity_not_applicable = coalesce(activity_not_applicable, false),
+      work_area_not_applicable = coalesce(work_area_not_applicable, false);
+
+    alter table if exists public.fuel_slips
+      alter column usage_not_applicable set default false,
+      alter column usage_not_applicable set not null,
+      alter column operator_not_applicable set default false,
+      alter column operator_not_applicable set not null,
+      alter column activity_not_applicable set default false,
+      alter column activity_not_applicable set not null,
+      alter column work_area_not_applicable set default false,
+      alter column work_area_not_applicable set not null;
 
     alter table if exists public.asset_scan_events
       alter column fuel_litres type numeric(12,3) using fuel_litres::numeric(12,3);
@@ -2716,9 +2757,10 @@ function fuelSlipReportNote(slip: FuelSlipTransaction): string {
     slip.transactionNumber ? `Transaction: ${slip.transactionNumber}` : '',
     slip.paymentMethod ? `Payment: ${slip.paymentMethod}` : '',
     formatCardEnding(slip.cardNumberMasked, slip.cardLast4),
-    slip.operatorName ? `Operator / manager: ${slip.operatorName}` : '',
-    slip.activityText ? `Activity: ${slip.activityText}` : '',
-    slip.workAreaText ? `Work area: ${slip.workAreaText}` : '',
+    slip.usageNotApplicable ? 'Usage: N/A' : '',
+    slip.operatorNotApplicable ? 'Operator / manager: N/A' : slip.operatorName ? `Operator / manager: ${slip.operatorName}` : '',
+    slip.activityNotApplicable ? 'Activity: N/A' : slip.activityText ? `Activity: ${slip.activityText}` : '',
+    slip.workAreaNotApplicable ? 'Work area: N/A' : slip.workAreaText ? `Work area: ${slip.workAreaText}` : '',
     slip.assetFuelPercentAfter !== null ? `Fuel percentage after fill: ${slip.assetFuelPercentAfter}%` : '',
     slip.note ? `Note: ${slip.note}` : '',
     slip.documentFileUrl ? `Document: ${slip.documentFileUrl}` : '',
@@ -2763,9 +2805,9 @@ function mapFuelSlipToReportEvent(slip: FuelSlipTransaction): FuelLedgerEvent {
     assetFuelPercentBefore: slip.assetFuelPercentBefore,
     assetFuelPercentAfter: slip.assetFuelPercentAfter,
     assetUsageReading: usageReading,
-    operatorName: slip.operatorName || slip.supplierName || 'Fuel Slip',
-    activityText: slip.activityText || 'Fuel Slip',
-    workAreaText: slip.workAreaText || (isStorageTarget ? 'Storage tank' : 'External fuel purchase'),
+    operatorName: slip.operatorNotApplicable ? 'N/A' : slip.operatorName || slip.supplierName || 'Fuel Slip',
+    activityText: slip.activityNotApplicable ? 'N/A' : slip.activityText || 'Fuel Slip',
+    workAreaText: slip.workAreaNotApplicable ? 'N/A' : slip.workAreaText || (isStorageTarget ? 'Storage tank' : 'External fuel purchase'),
     note: fuelSlipReportNote(slip),
     latitude: slip.latitude,
     longitude: slip.longitude,
@@ -2779,7 +2821,7 @@ function mapFuelSlipToReportEvent(slip: FuelSlipTransaction): FuelLedgerEvent {
     addedByUserId: '',
     addedByName: '',
     addedByEmail: '',
-    assetUsageMetric: slip.odometerReading !== null ? 'km' : slip.hourMeterReading !== null ? 'hours' : '',
+    assetUsageMetric: slip.usageNotApplicable ? 'none' : slip.odometerReading !== null ? 'km' : slip.hourMeterReading !== null ? 'hours' : '',
     lateEntryReason: '',
     evidenceType: '',
     evidenceReference: '',
@@ -3539,7 +3581,7 @@ async function insertFuelStorageEvent(
     assetFuelPercentAfter: number | null;
     assetUsageReading: number | null;
     assetUsageMetric?: FuelUsageMetric | null;
-    operatorName: string;
+    operatorName: string | null;
     activityText: string | null;
     workAreaText: string | null;
     note: string | null;
@@ -4702,9 +4744,14 @@ type SaveFuelSlipInput = {
   siteNumber?: unknown;
   odometerReading?: unknown;
   hourMeterReading?: unknown;
+  usageNotApplicable?: unknown;
+  updateAssetUsage?: unknown;
   operatorName?: unknown;
+  operatorNotApplicable?: unknown;
   activityText?: unknown;
+  activityNotApplicable?: unknown;
   workAreaText?: unknown;
+  workAreaNotApplicable?: unknown;
   note?: unknown;
   latitude?: unknown;
   longitude?: unknown;
@@ -4816,9 +4863,13 @@ function fuelSlipDirectSelectSql(): string {
     fs.site_number,
     fs.odometer_reading,
     fs.hour_meter_reading,
+    fs.usage_not_applicable,
     fs.operator_name,
+    fs.operator_not_applicable,
     fs.activity_text,
+    fs.activity_not_applicable,
     fs.work_area_text,
+    fs.work_area_not_applicable,
     fs.note,
     fs.asset_fuel_percent_before,
     fs.asset_fuel_percent_after,
@@ -5146,11 +5197,19 @@ export async function saveFuelSlipTransaction(userId: string, input: SaveFuelSli
   const merchantNumber = sanitizeFuelSlipTextField(input.merchantNumber, 80);
   const terminalNumber = sanitizeFuelSlipTextField(input.terminalNumber, 80);
   const siteNumber = sanitizeFuelSlipTextField(input.siteNumber, 80);
-  const odometerReading = normalizeUsageReading(input.odometerReading);
-  const hourMeterReading = normalizeUsageReading(input.hourMeterReading);
-  const operatorName = sanitizeFuelSlipTextField(input.operatorName, 100);
-  const activityText = sanitizeFuelSlipTextField(input.activityText, 180);
-  const workAreaText = sanitizeFuelSlipTextField(input.workAreaText, 180);
+  const usageNotApplicable = normalizeBoolean(input.usageNotApplicable) === true;
+  const operatorNotApplicable = normalizeBoolean(input.operatorNotApplicable) === true;
+  const activityNotApplicable = normalizeBoolean(input.activityNotApplicable) === true;
+  const workAreaNotApplicable = normalizeBoolean(input.workAreaNotApplicable) === true;
+  // Existing Fuel Ledger entry points keep their current behaviour when this new
+  // field is omitted. Admin Capture passes false unless the reviewer explicitly
+  // chooses to advance the asset's saved usage.
+  const updateAssetUsage = normalizeBoolean(input.updateAssetUsage) !== false && !usageNotApplicable;
+  const odometerReading = usageNotApplicable ? null : normalizeUsageReading(input.odometerReading);
+  const hourMeterReading = usageNotApplicable ? null : normalizeUsageReading(input.hourMeterReading);
+  const operatorName = operatorNotApplicable ? '' : sanitizeFuelSlipTextField(input.operatorName, 100);
+  const activityText = activityNotApplicable ? '' : sanitizeFuelSlipTextField(input.activityText, 180);
+  const workAreaText = workAreaNotApplicable ? '' : sanitizeFuelSlipTextField(input.workAreaText, 180);
   const note = sanitizeFuelSlipTextField(input.note, 1000);
   const latitude = normalizeCoordinate(input.latitude, 90);
   const longitude = normalizeCoordinate(input.longitude, 180);
@@ -5200,6 +5259,8 @@ export async function saveFuelSlipTransaction(userId: string, input: SaveFuelSli
     let usageComplete = true;
     let usageMetric: 'km' | 'hours' | 'none' = 'none';
     let usageReading: number | null = null;
+    let usageAdvanced = false;
+    let assetHasSavedValuation = false;
     let assetFuelPercentBefore: number | null = inputAssetFuelPercentBefore;
     const postingMissingReasons: string[] = [];
 
@@ -5259,7 +5320,11 @@ export async function saveFuelSlipTransaction(userId: string, input: SaveFuelSli
       if (!preservesExistingAsset) assertFuelAssetAvailableForEntry(asset, assetWorkUse);
       assetFuelPercentBefore = asset.fuelPercent ?? inputAssetFuelPercentBefore;
 
-      if (asset.usageMetric === 'km') {
+      if (usageNotApplicable) {
+        usageMetric = 'none';
+        usageReading = null;
+        usageComplete = true;
+      } else if (asset.usageMetric === 'km') {
         usageMetric = 'km';
         usageReading = odometerReading;
         usageComplete = odometerReading !== null;
@@ -5279,15 +5344,18 @@ export async function saveFuelSlipTransaction(userId: string, input: SaveFuelSli
         if (asset.usageMetric === 'both') postingMissingReasons.push('Current km / odometer or current hours');
       }
 
-      if (!operatorName) postingMissingReasons.push('Operator / manager name');
-      if (!activityText) postingMissingReasons.push('Activity / reason for fuel');
-      if (!workAreaText) postingMissingReasons.push('Where / direction / work area');
+      if (!operatorName && !operatorNotApplicable) postingMissingReasons.push('Operator / manager name');
+      if (!activityText && !activityNotApplicable) postingMissingReasons.push('Activity / reason for fuel');
+      if (!workAreaText && !workAreaNotApplicable) postingMissingReasons.push('Where / direction / work area');
 
-      const relevantUsageReading = usageReading ?? (asset.usageMetric === 'km' ? odometerReading : hourMeterReading ?? odometerReading);
       const currentUsageReading = normalizeUsageReading(assetRow.hours);
-      if (relevantUsageReading !== null && currentUsageReading !== null && relevantUsageReading < currentUsageReading) {
+      if (updateAssetUsage && usageReading !== null && currentUsageReading !== null && usageReading < currentUsageReading) {
         throw new Error('The usage reading cannot be lower than the reading already saved on this asset.');
       }
+      usageAdvanced = updateAssetUsage
+        && usageReading !== null
+        && (currentUsageReading === null || usageReading > currentUsageReading);
+      assetHasSavedValuation = hasSavedFuelAssetValuation(assetRow);
     } else {
       const storageResult = await client.query<FuelStorageRow>(
         `
@@ -5487,6 +5555,27 @@ export async function saveFuelSlipTransaction(userId: string, input: SaveFuelSli
     const fuelSlipId = savedSlip.rows[0]?.id;
     if (!fuelSlipId) throw new Error(existingFuelSlipId ? 'Fuel slip not found.' : 'Fuel slip could not be saved.');
 
+    await client.query(
+      `
+        update public.fuel_slips
+        set
+          usage_not_applicable = $3::boolean,
+          operator_not_applicable = $4::boolean,
+          activity_not_applicable = $5::boolean,
+          work_area_not_applicable = $6::boolean,
+          updated_at = now()
+        where user_id = $1 and id::text = $2
+      `,
+      [
+        userId,
+        fuelSlipId,
+        usageNotApplicable,
+        operatorNotApplicable,
+        activityNotApplicable,
+        workAreaNotApplicable,
+      ],
+    );
+
     let event: FuelLedgerEvent | null = null;
 
     if (!pendingReview && targetType === 'storage_tank' && storage) {
@@ -5522,9 +5611,9 @@ export async function saveFuelSlipTransaction(userId: string, input: SaveFuelSli
         assetFuelPercentBefore: null,
         assetFuelPercentAfter: null,
         assetUsageReading: null,
-        operatorName: operatorName || supplierName || 'Fuel Slip',
-        activityText: activityText || 'Fuel Slip / storage refill',
-        workAreaText: workAreaText || storage.name || null,
+        operatorName: operatorNotApplicable ? null : operatorName || supplierName || 'Fuel Slip',
+        activityText: activityNotApplicable ? null : activityText || 'Fuel Slip / storage refill',
+        workAreaText: workAreaNotApplicable ? null : workAreaText || storage.name || null,
         note: [description, note].filter(Boolean).join('\n\n') || null,
         latitude: null,
         longitude: null,
@@ -5647,7 +5736,7 @@ export async function saveFuelSlipTransaction(userId: string, input: SaveFuelSli
         );
       }
 
-      const nextSpecs = {
+      const fuelSlipSpecs = {
         ...(asset ? asRecord((await client.query<{ specs_json: unknown }>('select coalesce(specs_json, \'{}\'::jsonb) as specs_json from public.asset_register_items where user_id = $1 and id::text = $2 limit 1', [userId, assetId])).rows[0]?.specs_json) : {}),
         lastFuelSlipId: fuelSlipId,
         last_fuel_slip_id: fuelSlipId,
@@ -5661,12 +5750,12 @@ export async function saveFuelSlipTransaction(userId: string, input: SaveFuelSli
         last_fuel_slip_odometer_reading: odometerReading,
         lastFuelSlipHourMeterReading: hourMeterReading,
         last_fuel_slip_hour_meter_reading: hourMeterReading,
-        lastFuelSlipOperatorName: operatorName,
-        last_fuel_slip_operator_name: operatorName,
-        lastFuelSlipActivityText: activityText,
-        last_fuel_slip_activity_text: activityText,
-        lastFuelSlipWorkAreaText: workAreaText,
-        last_fuel_slip_work_area_text: workAreaText,
+        lastFuelSlipOperatorName: operatorName || null,
+        last_fuel_slip_operator_name: operatorName || null,
+        lastFuelSlipActivityText: activityText || null,
+        last_fuel_slip_activity_text: activityText || null,
+        lastFuelSlipWorkAreaText: workAreaText || null,
+        last_fuel_slip_work_area_text: workAreaText || null,
         lastFuelSlipLocationText: locationText,
         last_fuel_slip_location_text: locationText,
         lastFuelSlipAssetFuelPercentBefore: assetFuelPercentBefore,
@@ -5676,18 +5765,25 @@ export async function saveFuelSlipTransaction(userId: string, input: SaveFuelSli
         lastFuelSlipNote: note,
         last_fuel_slip_note: note,
       };
+      const nextSpecs = usageAdvanced && assetHasSavedValuation
+        ? markFuelAssetValuationNeedsUpdate(fuelSlipSpecs, ['usage changed'])
+        : fuelSlipSpecs;
 
       await client.query(
         `
           update public.asset_register_items
           set
-            hours = case when $3::numeric is null then hours else $3::numeric end,
+            hours = case
+              when $6::boolean and $3::numeric is not null
+                then greatest(coalesce(hours, $3::numeric), $3::numeric)
+              else hours
+            end,
             fuel_percent = case when $5::integer is null then fuel_percent else $5::integer end,
             specs_json = $4::jsonb,
             updated_at = now()
           where user_id = $1 and id::text = $2
         `,
-        [userId, assetId, usageReading, JSON.stringify(nextSpecs), assetFuelPercentAfter],
+        [userId, assetId, usageReading, JSON.stringify(nextSpecs), assetFuelPercentAfter, updateAssetUsage],
       );
 
       await client.query(
@@ -5724,9 +5820,9 @@ export async function saveFuelSlipTransaction(userId: string, input: SaveFuelSli
         `,
         [
           assetId,
-          operatorName || supplierName || 'Fuel Slip',
-          activityText || 'Fuel Slip',
-          workAreaText || null,
+          operatorNotApplicable ? null : operatorName || supplierName || 'Fuel Slip',
+          activityNotApplicable ? null : activityText || 'Fuel Slip',
+          workAreaNotApplicable ? null : workAreaText || null,
           usageReading,
           assetFuelPercentAfter,
           completedLitres,

@@ -34,19 +34,33 @@ test('matched capture targets are database-scoped to the recorded owner', () => 
 
 test('exact admin target hydration remains scoped to the recorded owner', () => {
   const exactTargetLookup = adminCaptureTargets.slice(
-    adminCaptureTargets.indexOf('export async function getAdminCaptureTarget'),
+    adminCaptureTargets.indexOf('export function adminCaptureTargetKey'),
     adminCaptureTargets.indexOf('export async function searchAdminCaptureTargets'),
   );
 
   assert.match(exactTargetLookup, /if \(!ownerUserId \|\| Boolean\(assetId\) === Boolean\(fuelStorageId\)\) return null/);
-  assert.match(exactTargetLookup, /where asset\.id = \$1::uuid[\s\S]*?and asset\.user_id = \$2/);
-  assert.match(exactTargetLookup, /where storage\.id = \$1::uuid[\s\S]*?and storage\.user_id = \$2/);
-  assert.match(exactTargetLookup, /and storage\.status = 'active'/);
+  assert.match(exactTargetLookup, /export async function getAdminCaptureTargets/);
+  assert.equal((exactTargetLookup.match(/select \* from unnest\(\$1::text\[\], \$2::text\[\]\)/g) ?? []).length, 2);
+  assert.match(exactTargetLookup, /join public\.asset_register_items asset[\s\S]*?asset\.id::text = requested\.target_id[\s\S]*?asset\.user_id::text = requested\.owner_user_id/);
+  assert.match(exactTargetLookup, /join public\.fuel_storage_units storage[\s\S]*?storage\.id::text = requested\.target_id[\s\S]*?storage\.user_id::text = requested\.owner_user_id[\s\S]*?storage\.status = 'active'/);
   assert.match(exactTargetLookup, /left join public\."user" auth_user on auth_user\.id = asset\.user_id/);
   assert.match(exactTargetLookup, /left join public\."user" auth_user on auth_user\.id = storage\.user_id/);
   assert.match(exactTargetLookup, /nullif\(auth_user\.name, ''\)[\s\S]*?nullif\(auth_user\.email, ''\)/);
+  assert.match(exactTargetLookup, /getAdminCaptureTargets\(\[input\]\)/);
   assert.match(adminCaptureItemRoute, /getAdminCaptureTarget\(\{[\s\S]*?ownerUserId: request\.ownerUserId,[\s\S]*?assetId: request\.assetId,[\s\S]*?fuelStorageId: request\.fuelStorageId/);
   assert.match(adminCaptureItemRoute, /request: mapRequest\(request, matchedTarget\),[\s\S]*?matchedTarget,/);
+});
+
+test('admin target hydration keeps canonical usage metadata and exact serial aliases', () => {
+  assert.match(adminCaptureTargets, /assetUsageMetric: "hours" \| "km" \| "percentage" \| "not_applicable" \| null/);
+  assert.match(adminCaptureTargets, /assetUsageReading: number \| null/);
+  assert.match(adminCaptureTargets, /assetUsageMetric: usage\?\.metric \?\? null/);
+  assert.match(adminCaptureTargets, /assetUsageReading: usage\?\.value \?\? null/);
+
+  for (const alias of ['serial_number', 'serial', 'vin', 'serialNumber']) {
+    const occurrences = adminCaptureTargets.match(new RegExp(`to_jsonb\\(asset\\)->>'${alias}'`, 'g')) ?? [];
+    assert.ok(occurrences.length >= 3, `${alias} must be included in canonical reference, metadata, and search`);
+  }
 });
 
 test('only private quarantined, hashed and size-limited capture files may be catalogued', () => {
@@ -169,7 +183,7 @@ test('admin confirmation is bound to the exact current capture target', () => {
   assert.match(confirmation, /target\.changed && !options\.confirmMatch[\s\S]*?CAPTURE_TARGET_CHANGE_REQUIRES_CONFIRMATION/);
   assert.match(confirmation, /if \(options\.confirmMatch\)[\s\S]*?matchCaptureRequest\(current\.id/);
   assert.match(adminCaptureItemRoute, /case "confirm_match":[\s\S]*?saveAdminDraft\(existing, draft, actor, \{ confirmMatch: true \}\)/);
-  assert.match(adminCaptureItemRoute, /\["complete", "complete_direct"\]\.includes\(action\) && !draftTargetIsConfirmed\(existing, draft\)/);
+  assert.match(adminCaptureItemRoute, /\["complete", "complete_direct", "update_usage"\]\.includes\(action\) && !draftTargetIsConfirmed\(existing, draft\)/);
   assert.match(capture, /eventType: 'matched'[\s\S]*?metadata: \{ ownerUserId, assetId, fuelStorageId \}/);
 });
 
