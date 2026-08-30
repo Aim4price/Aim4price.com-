@@ -11,6 +11,7 @@ import AssetGroupManagerModal, {
   type AssetGroupReportFormat,
   type AssetGroupReportKind,
 } from '../../components/asset-register/AssetGroupManagerModal';
+import groupModalStyles from '../../components/asset-register/AssetGroupManagerModal.module.css';
 import AssetExternalShare, {
   AssetShareDestinationPicker,
   type ExternalShareFileSource,
@@ -21826,31 +21827,59 @@ export default function AssetRegisterClient({
       ) : null}
 
       {disposalCandidateAsset ? (
-        <div className={`${styles.modalOverlay} ${styles.confirmDeleteOverlay} ${styles.assetDisposalOverlay}`}>
-          <div className={styles.modalBackdrop} onClick={() => { if (!busyDeleteId) setDisposalCandidateAsset(null); }} />
-          <form className={`${styles.modalCard} ${styles.assetLifecycleModal} ${styles.assetDisposalModal}`} role="dialog" aria-modal="true" aria-labelledby="disposal-title" onSubmit={(event) => {
+        <div
+          className={groupModalStyles.backdrop}
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget && !busyDeleteId) setDisposalCandidateAsset(null);
+          }}
+        >
+          <section className={groupModalStyles.dialog} role="dialog" aria-modal="true" aria-labelledby="disposal-title">
+            <form onSubmit={(event) => {
             if (disposalWizardStep === 4) void handleConfirmDisposal(event);
             else {
               event.preventDefault();
               handleDisposalWizardNext();
             }
-          }}>
-            <div className={`${styles.modalHeader} ${styles.assetDisposalHeader}`}>
-              <div className={styles.modalHeaderText}>
-                <h3 id="disposal-title">Sell or remove this asset</h3>
-                <p>{disposalCandidateAsset.title}</p>
-              </div>
-              <button type="button" className={styles.modalCloseButton} onClick={() => setDisposalCandidateAsset(null)} disabled={busyDeleteId === disposalCandidateAsset.id} aria-label="Close disposal details">
-                <CloseIcon className={styles.buttonIcon} />
-              </button>
-            </div>
-            <div className={`${styles.modalScrollBody} ${styles.assetLifecycleBody} ${styles.assetDisposalBody}`}>
-              <ol className={styles.assetDisposalProgress} aria-label={`Step ${disposalWizardStep} of 4`}>
-                {DISPOSAL_WIZARD_STEPS.map((item) => <li key={item.step} className={item.step === disposalWizardStep ? styles.assetDisposalProgressCurrent : item.step < disposalWizardStep ? styles.assetDisposalProgressComplete : ''}><span>{item.step}</span><small>{item.label}</small></li>)}
-              </ol>
+            }}>
+              <header className={groupModalStyles.header}>
+                <div className={groupModalStyles.headerText}>
+                  <h2 id="disposal-title">Sell or remove this asset</h2>
+                  <p>{disposalCandidateAsset.title}</p>
+                </div>
+                <button type="button" className={groupModalStyles.closeButton} onClick={() => setDisposalCandidateAsset(null)} disabled={busyDeleteId === disposalCandidateAsset.id} aria-label="Close disposal details">
+                  ×
+                </button>
+              </header>
+              <div className={groupModalStyles.body}>
+                <p className={groupModalStyles.intro}>Complete one short step at a time. The asset outcome is saved on the final step.</p>
+                <ol className={`${groupModalStyles.wizardProgress} ${styles.assetDisposalProgressFour}`} aria-label={`Step ${disposalWizardStep} of 4`}>
+                  {DISPOSAL_WIZARD_STEPS.map((item) => {
+                    const isCurrent = item.step === disposalWizardStep;
+                    const isComplete = item.step < disposalWizardStep;
+                    return (
+                      <li
+                        key={item.step}
+                        className={`${groupModalStyles.wizardProgressStep} ${isCurrent ? groupModalStyles.wizardProgressStepCurrent : ''} ${isComplete ? groupModalStyles.wizardProgressStepComplete : ''}`}
+                        aria-current={isCurrent ? 'step' : undefined}
+                      >
+                        <span>{isComplete ? '✓' : item.step}</span>
+                        <strong>{item.label}</strong>
+                      </li>
+                    );
+                  })}
+                </ol>
 
-              {disposalWizardStep === 1 ? <section className={styles.assetDisposalStep} aria-labelledby="asset-disposal-outcome-title">
-                <div className={styles.assetDisposalStepHeader}><strong id="asset-disposal-outcome-title">What happened to this asset?</strong><small>Choose the closest outcome. Only an asset added by mistake is removed from the active record without a disposal.</small></div>
+                <div className={groupModalStyles.wizardBody}>
+
+              {disposalWizardStep === 1 ? <section className={`${groupModalStyles.stepCard} ${groupModalStyles.wizardPanel} ${styles.assetDisposalStep}`} aria-labelledby="asset-disposal-outcome-title">
+                <div className={groupModalStyles.stepHeader}>
+                  <span className={groupModalStyles.stepNumber}>1</span>
+                  <div className={groupModalStyles.stepCopy}>
+                    <strong id="asset-disposal-outcome-title">What happened to this asset?</strong>
+                    <small>Choose the closest outcome. Only an asset added by mistake is removed from the active record without a disposal.</small>
+                  </div>
+                </div>
                 <div className={styles.assetDisposalReasonGrid} role="group" aria-label="Reason for removing asset">
                   {([
                     ['sold', 'Sold'],
@@ -21859,7 +21888,7 @@ export default function AssetRegisterClient({
                     ['written_off', 'Written off'],
                     ['mistake_duplicate', 'Added by mistake'],
                     ['other', 'Other'],
-                  ] as const).map(([value, label]) => <button key={value} type="button" className={`${styles.assetDisposalReasonButton} ${disposalDraft.reason === value ? styles.assetDisposalReasonButtonActive : ''}`} aria-pressed={disposalDraft.reason === value} onClick={() => setDisposalDraft((current) => ({
+                  ] as const).map(([value, label]) => <button key={value} type="button" className={`${groupModalStyles.choice} ${disposalDraft.reason === value ? groupModalStyles.choiceActive : ''} ${styles.assetDisposalReasonButton}`} aria-pressed={disposalDraft.reason === value} onClick={() => setDisposalDraft((current) => ({
                     ...current,
                     reason: value,
                     aim4priceOutcomeInfluence: disposalImpactRequired(value) ? current.aim4priceOutcomeInfluence : '',
@@ -21871,8 +21900,14 @@ export default function AssetRegisterClient({
                 </div>
               </section> : null}
 
-              {disposalWizardStep === 2 ? <section className={styles.assetDisposalStep} aria-labelledby="asset-disposal-details-title">
-                <div className={styles.assetDisposalStepHeader}><strong id="asset-disposal-details-title">Add the {disposalReasonLabel(disposalDraft.reason).toLowerCase()} details</strong><small>Save the effective date and any amount or reference that will help with future reports.</small></div>
+              {disposalWizardStep === 2 ? <section className={`${groupModalStyles.stepCard} ${groupModalStyles.wizardPanel} ${styles.assetDisposalStep}`} aria-labelledby="asset-disposal-details-title">
+                <div className={groupModalStyles.stepHeader}>
+                  <span className={groupModalStyles.stepNumber}>2</span>
+                  <div className={groupModalStyles.stepCopy}>
+                    <strong id="asset-disposal-details-title">Add the {disposalReasonLabel(disposalDraft.reason).toLowerCase()} details</strong>
+                    <small>Save the effective date and any amount or reference that will help with future reports.</small>
+                  </div>
+                </div>
                 {disposalDraft.reason === 'mistake_duplicate' ? <p className={`${styles.assetLifecycleNotice} ${styles.assetDisposalDeleteNotice}`}>No price or disposal details are required. The final step will clearly confirm what is removed and what audit information is retained.</p> : <div className={`${styles.assetLifecycleFields} ${styles.assetDisposalFields}`}>
                   <label className={styles.assetSettingsField}><span>Effective date</span><input type="date" required value={disposalDraft.disposalDate} onChange={(event) => setDisposalDraft((current) => ({ ...current, disposalDate: event.target.value }))} /></label>
                   <label className={styles.assetSettingsField}><span>{disposalAmountLabel(disposalDraft.reason)} <small>Optional, excl. VAT</small></span><input inputMode="decimal" value={disposalDraft.disposalAmountExVat} onChange={(event) => setDisposalDraft((current) => ({ ...current, disposalAmountExVat: event.target.value }))} placeholder="R 0" /></label>
@@ -21880,17 +21915,29 @@ export default function AssetRegisterClient({
                 </div>}
               </section> : null}
 
-              {disposalWizardStep === 3 ? <section className={styles.assetDisposalStep} aria-labelledby="asset-disposal-impact-title">
+              {disposalWizardStep === 3 ? <section className={`${groupModalStyles.stepCard} ${groupModalStyles.wizardPanel} ${styles.assetDisposalStep}`} aria-labelledby="asset-disposal-impact-title">
+                <div className={groupModalStyles.stepHeader}>
+                  <span className={groupModalStyles.stepNumber}>3</span>
+                  <div className={groupModalStyles.stepCopy}>
+                    <strong id="asset-disposal-impact-title">Did Aim4price help with this outcome in any way?</strong>
+                    <small>Pricing, reports, history, Marketplace or another Aim4price feature may have helped you decide, negotiate or complete the outcome.</small>
+                  </div>
+                </div>
                 {disposalImpactRequired(disposalDraft.reason) ? <div className={styles.assetSaleQuestion}>
-                  <div className={styles.assetSaleQuestionHeader}><strong id="asset-disposal-impact-title">Did Aim4price help with this outcome in any way?</strong><small>Pricing, reports, history, Marketplace or another Aim4price feature may have helped you decide, negotiate or complete the outcome.</small></div>
                   <div className={styles.assetSaleAnswerGrid} role="group" aria-label="Did Aim4price help with this outcome in any way?">
                     {([['yes', 'Yes'], ['no', 'No'], ['unsure', 'Not sure']] as const).map(([value, label]) => <button key={value} type="button" className={`${styles.assetSaleAnswerButton} ${disposalDraft.aim4priceOutcomeInfluence === value ? styles.assetSaleAnswerButtonActive : ''}`} aria-pressed={disposalDraft.aim4priceOutcomeInfluence === value} onClick={() => setDisposalDraft((current) => ({ ...current, aim4priceOutcomeInfluence: value }))}>{label}</button>)}
                   </div>
-                </div> : <div className={styles.assetDisposalInformationCard}><strong id="asset-disposal-impact-title">No Aim4price impact answer is needed</strong><p>This question is only required for sold, traded-in and scrapped assets. Continue to review what happens to the information.</p></div>}
+                </div> : <div className={styles.assetDisposalInformationCard}><strong>No Aim4price impact answer is needed</strong><p>This question is only required for sold, traded-in and scrapped assets. Continue to review what happens to the information.</p></div>}
               </section> : null}
 
-              {disposalWizardStep === 4 ? <section className={styles.assetDisposalStep} aria-labelledby="asset-disposal-information-title">
-                <div className={styles.assetDisposalStepHeader}><strong id="asset-disposal-information-title">What should happen to the asset information?</strong><small>Review the outcome before saving. Private account information is never sent with an asset.</small></div>
+              {disposalWizardStep === 4 ? <section className={`${groupModalStyles.stepCard} ${groupModalStyles.wizardPanel} ${styles.assetDisposalStep}`} aria-labelledby="asset-disposal-information-title">
+                <div className={groupModalStyles.stepHeader}>
+                  <span className={groupModalStyles.stepNumber}>4</span>
+                  <div className={groupModalStyles.stepCopy}>
+                    <strong id="asset-disposal-information-title">What should happen to the asset information?</strong>
+                    <small>Review the outcome before saving. Private account information is never sent with an asset.</small>
+                  </div>
+                </div>
                 <dl className={styles.assetDisposalSummary}><div><dt>Outcome</dt><dd>{disposalReasonLabel(disposalDraft.reason)}</dd></div>{disposalDraft.reason !== 'mistake_duplicate' ? <><div><dt>Date</dt><dd>{disposalDraft.disposalDate}</dd></div><div><dt>Amount</dt><dd>{disposalDraft.disposalAmountExVat ? `R ${disposalDraft.disposalAmountExVat}` : 'Not recorded'}</dd></div></> : null}{disposalImpactRequired(disposalDraft.reason) ? <div><dt>Aim4price helped</dt><dd>{disposalDraft.aim4priceOutcomeInfluence === 'yes' ? 'Yes' : disposalDraft.aim4priceOutcomeInfluence === 'no' ? 'No' : 'Not sure'}</dd></div> : null}</dl>
                 {disposalTransferAvailable(disposalDraft.reason) ? <div className={styles.assetSaleFlow}>
                   <section className={styles.assetSaleQuestion} aria-labelledby="asset-register-transfer-title">
@@ -21904,12 +21951,15 @@ export default function AssetRegisterClient({
                 </div> : disposalDraft.reason === 'mistake_duplicate' ? <p className={`${styles.assetLifecycleNotice} ${styles.assetDisposalDeleteNotice}`}>This removes the duplicate from the active register and retains its final snapshot and deletion audit.</p> : <div className={styles.assetDisposalInformationCard}><strong>Archive and retain history</strong><p>The asset leaves active totals while its lifecycle event, final snapshot and reporting history remain available.</p></div>}
               </section> : null}
 
-              <div className={`${styles.assetSettingsActions} ${styles.assetDisposalActions}`}>
-                <button type="button" className={styles.secondaryButton} onClick={() => disposalWizardStep === 1 ? setDisposalCandidateAsset(null) : setDisposalWizardStep((current) => Math.max(1, current - 1) as DisposalWizardStep)} disabled={busyDeleteId === disposalCandidateAsset.id}>{disposalWizardStep === 1 ? 'Cancel' : 'Back'}</button>
-                {disposalWizardStep < 4 ? <button type="submit" className={styles.primaryButton} disabled={busyDeleteId === disposalCandidateAsset.id || (disposalWizardStep === 1 && !disposalDraft.reason) || (disposalWizardStep === 3 && disposalImpactRequired(disposalDraft.reason) && !disposalDraft.aim4priceOutcomeInfluence)}>Next</button> : <button type="submit" className={`${styles.primaryButton} ${styles.deleteConfirmButton}`} disabled={busyDeleteId === disposalCandidateAsset.id || (disposalTransferAvailable(disposalDraft.reason) && !disposalDraft.transferAction)}>{busyDeleteId === disposalCandidateAsset.id ? 'Saving…' : disposalDraft.reason === 'mistake_duplicate' ? 'Delete duplicate' : disposalDraft.reason === 'traded_in' && disposalDraft.transferAction === 'claim_code' ? 'Save trade-in & create code' : disposalDraft.reason === 'traded_in' ? 'Save trade-in' : disposalDraft.reason === 'sold' && disposalDraft.transferAction === 'claim_code' ? 'Save sale & create code' : disposalDraft.reason === 'sold' ? 'Save sale' : 'Save disposal'}</button>}
+                </div>
               </div>
-            </div>
-          </form>
+
+              <footer className={`${groupModalStyles.footer} ${groupModalStyles.wizardFooter} ${styles.assetDisposalFooter}`}>
+                <button type="button" className={groupModalStyles.cancelButton} onClick={() => disposalWizardStep === 1 ? setDisposalCandidateAsset(null) : setDisposalWizardStep((current) => Math.max(1, current - 1) as DisposalWizardStep)} disabled={busyDeleteId === disposalCandidateAsset.id}>{disposalWizardStep === 1 ? 'Cancel' : 'Back'}</button>
+                {disposalWizardStep < 4 ? <button type="submit" className={groupModalStyles.saveButton} disabled={busyDeleteId === disposalCandidateAsset.id || (disposalWizardStep === 1 && !disposalDraft.reason) || (disposalWizardStep === 3 && disposalImpactRequired(disposalDraft.reason) && !disposalDraft.aim4priceOutcomeInfluence)}>Next</button> : <button type="submit" className={disposalDraft.reason === 'mistake_duplicate' ? groupModalStyles.deleteButton : groupModalStyles.saveButton} disabled={busyDeleteId === disposalCandidateAsset.id || (disposalTransferAvailable(disposalDraft.reason) && !disposalDraft.transferAction)}>{busyDeleteId === disposalCandidateAsset.id ? 'Saving…' : disposalDraft.reason === 'mistake_duplicate' ? 'Delete duplicate' : disposalDraft.reason === 'traded_in' && disposalDraft.transferAction === 'claim_code' ? 'Save trade-in & create code' : disposalDraft.reason === 'traded_in' ? 'Save trade-in' : disposalDraft.reason === 'sold' && disposalDraft.transferAction === 'claim_code' ? 'Save sale & create code' : disposalDraft.reason === 'sold' ? 'Save sale' : 'Save disposal'}</button>}
+              </footer>
+            </form>
+          </section>
         </div>
       ) : null}
 

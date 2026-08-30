@@ -35440,160 +35440,32 @@ button.documentOpenLink {
   inset: 0 !important;
 }
 
-.assetDisposalOverlay {
-  width: 100vw !important;
-  max-width: none !important;
-  box-sizing: border-box !important;
-  overflow-x: hidden !important;
-}
-
-.assetDisposalModal {
-  width: min(60rem, calc(100vw - 2rem)) !important;
-  max-height: min(90dvh, 52rem) !important;
-  display: flex !important;
-  flex-direction: column !important;
-  overflow: hidden !important;
-  padding: 0 !important;
-  margin-inline: auto !important;
-}
-
-.assetDisposalHeader {
-  margin: 0 !important;
-  padding: 1.5rem 2rem 1.2rem !important;
-  background: linear-gradient(135deg, rgba(238, 248, 243, 0.96), rgba(255, 255, 255, 0.98) 58%) !important;
-}
-
-.assetDisposalHeader .modalHeaderText {
-  gap: 0.28rem !important;
-}
-
-.assetDisposalBody {
-  flex: 1 1 auto !important;
-  min-height: 0 !important;
-  overflow-y: auto !important;
-  overscroll-behavior: contain !important;
-  scrollbar-gutter: stable both-edges !important;
-  gap: 1.15rem !important;
-  padding: 1.25rem 2rem 1.5rem !important;
-}
-
-.assetDisposalProgress {
-  display: grid !important;
-  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
-  gap: 0.6rem !important;
-  margin: 0 !important;
-  padding: 0 0.35rem !important;
-  list-style: none !important;
-}
-
-.assetDisposalProgress li {
-  position: relative !important;
-  display: grid !important;
-  justify-items: center !important;
-  gap: 0.3rem !important;
-  color: #81908b !important;
-  text-align: center !important;
-}
-
-.assetDisposalProgress li::before {
-  content: '' !important;
-  position: absolute !important;
-  z-index: 0 !important;
-  top: 0.82rem !important;
-  left: calc(-50% - 0.22rem) !important;
-  width: calc(100% + 0.44rem) !important;
-  height: 2px !important;
-  background: #dce6e1 !important;
-}
-
-.assetDisposalProgress li:first-child::before {
-  display: none !important;
-}
-
-.assetDisposalProgress li > span {
-  position: relative !important;
-  z-index: 1 !important;
-  width: 1.65rem !important;
-  height: 1.65rem !important;
-  display: grid !important;
-  place-items: center !important;
-  border: 2px solid #d1ddd7 !important;
-  border-radius: 999px !important;
-  color: #71827b !important;
-  background: #ffffff !important;
-  font-size: 0.7rem !important;
-  font-weight: 900 !important;
-}
-
-.assetDisposalProgress li > small {
-  font-size: 0.66rem !important;
-  font-weight: 760 !important;
-  line-height: 1.2 !important;
-}
-
-.assetDisposalProgress .assetDisposalProgressCurrent,
-.assetDisposalProgress .assetDisposalProgressComplete {
-  color: #176247 !important;
-}
-
-.assetDisposalProgress .assetDisposalProgressCurrent > span,
-.assetDisposalProgress .assetDisposalProgressComplete > span {
-  border-color: #1d7657 !important;
-  color: #ffffff !important;
-  background: #1d7657 !important;
-}
-
-.assetDisposalProgress .assetDisposalProgressComplete::before,
-.assetDisposalProgress .assetDisposalProgressCurrent::before {
-  background: #66a58d !important;
-}
-
 .assetDisposalStep {
-  min-height: 19rem !important;
+  min-width: 0 !important;
   display: grid !important;
   align-content: start !important;
-  gap: 1.1rem !important;
-}
-
-.assetDisposalStepHeader {
-  display: grid !important;
-  gap: 0.28rem !important;
-}
-
-.assetDisposalStepHeader strong {
-  color: #133c33 !important;
-  font-size: 1.08rem !important;
-  font-weight: 880 !important;
-  line-height: 1.25 !important;
-}
-
-.assetDisposalStepHeader small {
-  max-width: 42rem !important;
-  color: #68798a !important;
-  font-size: 0.8rem !important;
-  font-weight: 640 !important;
-  line-height: 1.45 !important;
+  gap: 18px !important;
 }
 
 .assetDisposalInformationCard {
   display: grid !important;
-  gap: 0.35rem !important;
-  padding: 1rem !important;
+  gap: 4px !important;
+  padding: 16px !important;
   border: 1px solid #d5e5dd !important;
-  border-radius: 1rem !important;
+  border-radius: 16px !important;
   background: linear-gradient(145deg, #f3faf6 0%, #ffffff 76%) !important;
 }
 
 .assetDisposalInformationCard strong {
   color: #154b3b !important;
-  font-size: 0.92rem !important;
+  font-size: 16px !important;
   font-weight: 850 !important;
 }
 
 .assetDisposalInformationCard p {
   margin: 0 !important;
   color: #62766d !important;
-  font-size: 0.78rem !important;
+  font-size: 13px !important;
   font-weight: 640 !important;
   line-height: 1.5 !important;
 }
@@ -35601,23 +35473,23 @@ button.documentOpenLink {
 .assetDisposalSummary {
   display: grid !important;
   grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
-  gap: 0.6rem !important;
+  gap: 10px !important;
   margin: 0 !important;
 }
 
 .assetDisposalSummary > div {
   min-width: 0 !important;
   display: grid !important;
-  gap: 0.22rem !important;
-  padding: 0.72rem 0.78rem !important;
+  gap: 4px !important;
+  padding: 12px 13px !important;
   border: 1px solid #e0e7e3 !important;
-  border-radius: 0.8rem !important;
+  border-radius: 13px !important;
   background: #f8faf9 !important;
 }
 
 .assetDisposalSummary dt {
   color: #7a8983 !important;
-  font-size: 0.62rem !important;
+  font-size: 10px !important;
   font-weight: 850 !important;
   letter-spacing: 0.04em !important;
   text-transform: uppercase !important;
@@ -35626,76 +35498,34 @@ button.documentOpenLink {
 .assetDisposalSummary dd {
   margin: 0 !important;
   color: #193b31 !important;
-  font-size: 0.78rem !important;
+  font-size: 13px !important;
   font-weight: 790 !important;
   overflow-wrap: anywhere !important;
-}
-
-.assetDisposalIntro {
-  display: flex !important;
-  align-items: baseline !important;
-  justify-content: space-between !important;
-  gap: 0.8rem !important;
-}
-
-.assetDisposalIntro strong {
-  color: #133c33 !important;
-  font-size: 1rem !important;
-  font-weight: 870 !important;
-}
-
-.assetDisposalIntro small {
-  color: #68798a !important;
-  font-size: 0.8rem !important;
-  font-weight: 640 !important;
 }
 
 .assetDisposalReasonGrid {
   display: grid !important;
   grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-  gap: 0.75rem !important;
+  gap: 12px !important;
 }
 
 .assetDisposalReasonButton {
-  min-height: 3.75rem !important;
-  display: flex !important;
-  align-items: center !important;
-  gap: 0.7rem !important;
-  padding: 0.8rem 1rem !important;
-  border: 1px solid rgba(205, 220, 231, 0.96) !important;
-  border-radius: 0.95rem !important;
-  color: #233846 !important;
-  background: linear-gradient(180deg, #ffffff 0%, #f6f9fb 100%) !important;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
-  cursor: pointer !important;
+  width: 100% !important;
   font: inherit !important;
   text-align: left !important;
 }
 
-.assetDisposalReasonButton strong {
-  font-size: 0.84rem !important;
-  font-weight: 790 !important;
-  line-height: 1.2 !important;
-}
-
 .assetDisposalReasonMarker {
-  width: 1rem !important;
-  height: 1rem !important;
-  flex: 0 0 1rem !important;
+  width: 20px !important;
+  height: 20px !important;
+  flex: 0 0 20px !important;
   border: 2px solid #b8cbd1 !important;
   border-radius: 999px !important;
   background: #ffffff !important;
 }
 
-.assetDisposalReasonButtonActive {
-  border-color: rgba(18, 113, 82, 0.72) !important;
-  color: #0f5e45 !important;
-  background: linear-gradient(180deg, #f7fcf9 0%, #eaf7f0 100%) !important;
-  box-shadow: 0 10px 22px rgba(18, 101, 74, 0.09), inset 0 1px 0 #ffffff !important;
-}
-
-.assetDisposalReasonButtonActive .assetDisposalReasonMarker {
-  border: 0.28rem solid #167455 !important;
+.assetDisposalReasonButton[aria-pressed='true'] .assetDisposalReasonMarker {
+  border: 5px solid #168660 !important;
 }
 
 .assetSaleFlow {
@@ -35872,18 +35702,8 @@ button.documentOpenLink {
   background: #fff4f4 !important;
 }
 
-.assetDisposalActions {
-  position: sticky !important;
-  z-index: 2 !important;
-  bottom: -1.4rem !important;
-  padding: 0.85rem 0 0 !important;
-  border-top: 1px solid rgba(211, 224, 231, 0.84) !important;
-  background: linear-gradient(180deg, rgba(249, 251, 252, 0), #f9fbfc 28%) !important;
-}
-
 @media (max-width: 720px) {
-  .assetStatusAcquisitionHeader,
-  .assetDisposalIntro {
+  .assetStatusAcquisitionHeader {
     align-items: flex-start !important;
     flex-direction: column !important;
   }
@@ -35908,26 +35728,13 @@ button.documentOpenLink {
     grid-column: auto !important;
   }
 
-  .assetDisposalHeader,
-  .assetDisposalBody {
-    padding-left: 1rem !important;
-    padding-right: 1rem !important;
+  .assetDisposalProgressFour {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
   }
 
-  .assetDisposalBody {
-    scrollbar-gutter: auto !important;
-  }
-
-  .assetDisposalProgress {
-    padding-inline: 0 !important;
-  }
-
-  .assetDisposalStep {
-    min-height: 22rem !important;
-  }
-
-  .assetDisposalProgress li > small {
-    font-size: 0.58rem !important;
+  .assetDisposalFooter > :nth-child(2):last-child {
+    grid-column: 1 / -1;
+    grid-row: 1;
   }
 }
 
