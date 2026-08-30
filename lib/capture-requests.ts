@@ -116,6 +116,7 @@ export type CaptureRequestDraftInput = {
   candidatePayload?: Record<string, unknown> | null;
   capturedPayload?: Record<string, unknown> | null;
   adminNote?: string | null;
+  expectedVersion?: number | null;
 };
 
 export type CaptureRequestMatchInput = {
@@ -963,6 +964,7 @@ export async function addCaptureRequestFile(
   const actor = normalizeActor(eventActor);
 
   return withTransaction(async (client) => {
+    await assertCaptureRequestNotFinalizing(client, id);
     const requestRow = await getLockedRequest(client, id);
     const status = enumValue(requestRow.status, CAPTURE_REQUEST_STATUSES, 'CAPTURE_STATUS_INVALID');
     if (TERMINAL_STATUSES.has(status)) throw new Error('CAPTURE_REQUEST_CLOSED');
@@ -1108,6 +1110,7 @@ export async function setCaptureRequestFileSecurityStatus(
   if (status === 'rejected' && !reason) throw new Error('CAPTURE_FILE_REJECTION_REASON_REQUIRED');
 
   return withTransaction(async (client) => {
+    await assertCaptureRequestNotFinalizing(client, requestUuid);
     const request = await getLockedRequest(client, requestUuid);
     const requestStatus = enumValue(request.status, CAPTURE_REQUEST_STATUSES, 'CAPTURE_STATUS_INVALID');
     if (TERMINAL_STATUSES.has(requestStatus)) throw new Error('CAPTURE_REQUEST_CLOSED');
@@ -1330,6 +1333,7 @@ export async function claimCaptureRequest(
   const actor = normalizeAdminActor(adminActor);
 
   return withTransaction(async (client) => {
+    await assertCaptureRequestNotFinalizing(client, id);
     const existing = await getLockedRequest(client, id);
     const fromStatus = enumValue(existing.status, CAPTURE_REQUEST_STATUSES, 'CAPTURE_STATUS_INVALID');
     if (TERMINAL_STATUSES.has(fromStatus) || fromStatus === 'awaiting_owner') {
@@ -1374,6 +1378,12 @@ export async function updateCaptureRequestDraft(
   const hasCandidatePayload = input.candidatePayload !== undefined;
   const hasCapturedPayload = input.capturedPayload !== undefined;
   const hasAdminNote = input.adminNote !== undefined;
+  const expectedVersion = input.expectedVersion === undefined || input.expectedVersion === null
+    ? null
+    : Math.trunc(Number(input.expectedVersion));
+  if (expectedVersion !== null && (!Number.isFinite(expectedVersion) || expectedVersion < 1)) {
+    throw new Error('CAPTURE_REQUEST_CHANGED');
+  }
   if (!hasCandidatePayload && !hasCapturedPayload && !hasAdminNote) {
     throw new Error('CAPTURE_DRAFT_EMPTY');
   }
@@ -1382,10 +1392,14 @@ export async function updateCaptureRequestDraft(
   const adminNote = hasAdminNote ? cleanMultilineText(input.adminNote, 10_000) : null;
 
   return withTransaction(async (client) => {
+    await assertCaptureRequestNotFinalizing(client, id);
     const existing = await getLockedRequest(client, id);
     const status = enumValue(existing.status, CAPTURE_REQUEST_STATUSES, 'CAPTURE_STATUS_INVALID');
     if (TERMINAL_STATUSES.has(status) || status === 'awaiting_owner') throw new Error('CAPTURE_REQUEST_CLOSED');
     assertClaimedBy(existing, actor);
+    if (expectedVersion !== null && asNumber(existing.version) !== expectedVersion) {
+      throw new Error('CAPTURE_REQUEST_CHANGED');
+    }
 
     await client.query(
       `update public.document_capture_requests
@@ -1432,6 +1446,7 @@ export async function matchCaptureRequest(
   const fuelStorageId = optionalUuid(input.fuelStorageId, 'CAPTURE_FUEL_STORAGE_INVALID');
 
   return withTransaction(async (client) => {
+    await assertCaptureRequestNotFinalizing(client, id);
     const existing = await getLockedRequest(client, id);
     const status = enumValue(existing.status, CAPTURE_REQUEST_STATUSES, 'CAPTURE_STATUS_INVALID');
     const requestType = enumValue(existing.request_type, CAPTURE_REQUEST_TYPES, 'CAPTURE_TYPE_INVALID');
@@ -1452,10 +1467,13 @@ export async function matchCaptureRequest(
           limit 1`,
         [existing.invoice_drop_code_id],
       );
+      const codeAssetId = code.rows[0]?.asset_register_item_id
+        ? String(code.rows[0].asset_register_item_id)
+        : null;
       if (
         !code.rows[0]
         || code.rows[0].owner_user_id !== ownerUserId
-        || String(code.rows[0].asset_register_item_id) !== assetId
+        || (codeAssetId && codeAssetId !== assetId)
       ) {
         throw new Error('CAPTURE_DROP_CODE_MISMATCH');
       }
@@ -1499,6 +1517,17 @@ async function assertFilesReady(client: Queryable, requestId: string): Promise<v
   if (asNumber(result.rows[0]?.pending_count) > 0) throw new Error('CAPTURE_FILE_SECURITY_PENDING');
 }
 
+async function assertCaptureRequestNotFinalizing(
+  client: Queryable,
+  requestId: string,
+): Promise<void> {
+  const result = await client.query<{ locked: boolean } & QueryResultRow>(
+    `select pg_try_advisory_xact_lock(hashtextextended($1, 0)) as locked`,
+    [`capture-finalization:${requestId}`],
+  );
+  if (!result.rows[0]?.locked) throw new Error('CAPTURE_FINALIZATION_IN_PROGRESS');
+}
+
 function assertTransitionActor(
   row: CaptureRequestRow,
   fromStatus: CaptureRequestStatus,
@@ -1536,7 +1565,12 @@ function assertTransitionActor(
 export async function transitionCaptureRequest(
   requestId: string,
   toStatusInput: Exclude<CaptureRequestStatus, 'completed'>,
-  options: { actor: CaptureEventActor; reason?: string | null; note?: string | null },
+  options: {
+    actor: CaptureEventActor;
+    reason?: string | null;
+    note?: string | null;
+    allowDuringFinalization?: boolean;
+  },
 ): Promise<CaptureRequest> {
   const id = asUuid(requestId, 'CAPTURE_REQUEST_NOT_FOUND');
   const toStatus = enumValue(
@@ -1551,6 +1585,9 @@ export async function transitionCaptureRequest(
   if (toStatus === 'rejected' && !reason) throw new Error('CAPTURE_REJECTION_REASON_REQUIRED');
 
   return withTransaction(async (client) => {
+    if (!options.allowDuringFinalization) {
+      await assertCaptureRequestNotFinalizing(client, id);
+    }
     const existing = await getLockedRequest(client, id);
     const fromStatus = enumValue(existing.status, CAPTURE_REQUEST_STATUSES, 'CAPTURE_STATUS_INVALID');
     if (fromStatus === toStatus) return getRequestWithCounts(client, id);
@@ -1670,7 +1707,10 @@ export async function completeCaptureRequest(
       if (!sameOutput) throw new Error('CAPTURE_ALREADY_COMPLETED');
       return getRequestWithCounts(client, id);
     }
-    if (status !== 'in_progress') throw new Error('CAPTURE_COMPLETION_STATUS_INVALID');
+    const mayOverrideAwaitingOwner = status === 'awaiting_owner' && Boolean(overrideReason);
+    if (status !== 'in_progress' && !mayOverrideAwaitingOwner) {
+      throw new Error('CAPTURE_COMPLETION_STATUS_INVALID');
+    }
     assertClaimedBy(existing, actor);
     if (!existing.owner_user_id || (!existing.asset_register_item_id && !existing.fuel_storage_id)) {
       throw new Error('CAPTURE_TARGET_REQUIRED');
@@ -1690,9 +1730,9 @@ export async function completeCaptureRequest(
               assigned_admin_display_name = null,
               claimed_at = null
         where id = $1::uuid
-          and status = 'in_progress'
+          and status = $4
         returning id`,
-      [id, outputType, outputId],
+      [id, outputType, outputId, status],
     );
     if (!result.rows[0]) throw new Error('CAPTURE_COMPLETION_CONFLICT');
     await insertEvent(client, {

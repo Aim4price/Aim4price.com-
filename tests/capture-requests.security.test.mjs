@@ -8,6 +8,8 @@ const migration = read('database/migrations/83-assisted-document-capture.sql');
 const ownerWideDropCodeMigration = read('database/migrations/87-owner-wide-invoice-drop-codes.sql');
 const accountDeletion = read('lib/account-deletion.ts');
 const retractionRoute = read('app/api/capture-requests/[requestId]/route.ts');
+const adminCaptureTargets = read('lib/admin-capture-targets.ts');
+const adminCaptureItemRoute = read('app/api/admin/capture-requests/[requestId]/route.ts');
 
 test('capture workflow has separate constrained request, file, event and drop-code tables', () => {
   assert.match(migration, /create table if not exists public\.document_capture_requests/i);
@@ -28,6 +30,23 @@ test('matched capture targets are database-scoped to the recorded owner', () => 
   assert.match(capture, /from public\.asset_register_items where id = \$1::uuid and user_id = \$2/);
   assert.match(capture, /from public\.fuel_storage_units where id = \$1::uuid and user_id = \$2/);
   assert.match(capture, /CAPTURE_DROP_CODE_MISMATCH/);
+});
+
+test('exact admin target hydration remains scoped to the recorded owner', () => {
+  const exactTargetLookup = adminCaptureTargets.slice(
+    adminCaptureTargets.indexOf('export async function getAdminCaptureTarget'),
+    adminCaptureTargets.indexOf('export async function searchAdminCaptureTargets'),
+  );
+
+  assert.match(exactTargetLookup, /if \(!ownerUserId \|\| Boolean\(assetId\) === Boolean\(fuelStorageId\)\) return null/);
+  assert.match(exactTargetLookup, /where asset\.id = \$1::uuid[\s\S]*?and asset\.user_id = \$2/);
+  assert.match(exactTargetLookup, /where storage\.id = \$1::uuid[\s\S]*?and storage\.user_id = \$2/);
+  assert.match(exactTargetLookup, /and storage\.status = 'active'/);
+  assert.match(exactTargetLookup, /left join public\."user" auth_user on auth_user\.id = asset\.user_id/);
+  assert.match(exactTargetLookup, /left join public\."user" auth_user on auth_user\.id = storage\.user_id/);
+  assert.match(exactTargetLookup, /nullif\(auth_user\.name, ''\)[\s\S]*?nullif\(auth_user\.email, ''\)/);
+  assert.match(adminCaptureItemRoute, /getAdminCaptureTarget\(\{[\s\S]*?ownerUserId: request\.ownerUserId,[\s\S]*?assetId: request\.assetId,[\s\S]*?fuelStorageId: request\.fuelStorageId/);
+  assert.match(adminCaptureItemRoute, /request: mapRequest\(request, matchedTarget\),[\s\S]*?matchedTarget,/);
 });
 
 test('only private quarantined, hashed and size-limited capture files may be catalogued', () => {
@@ -93,6 +112,22 @@ test('owner-wide drop codes stay owner-scoped without exposing a browseable asse
   assert.match(ownerSearch, /limit 2/);
   assert.match(ownerSearch, /result\.rows\.length !== 1/);
   assert.doesNotMatch(ownerSearch, /return result\.rows\.map|matches:/);
+
+  const createRequest = capture.slice(
+    capture.indexOf('export async function createCaptureRequest'),
+    capture.indexOf('export async function addCaptureRequestFile'),
+  );
+  const matchRequest = capture.slice(
+    capture.indexOf('export async function matchCaptureRequest'),
+    capture.indexOf('async function assertFilesReady'),
+  );
+
+  assert.match(createRequest, /const codeAssetId = matchedCode\.asset_register_item_id[\s\S]*?: null/);
+  assert.match(createRequest, /if \(codeAssetId && \(!assetId \|\| codeAssetId !== assetId\)\)/);
+  assert.doesNotMatch(createRequest, /String\(matchedCode\.asset_register_item_id\) !== assetId/);
+  assert.match(matchRequest, /const codeAssetId = code\.rows\[0\]\?\.asset_register_item_id[\s\S]*?: null/);
+  assert.match(matchRequest, /\|\| \(codeAssetId && codeAssetId !== assetId\)/);
+  assert.doesNotMatch(matchRequest, /String\(code\.rows\[0\]\.asset_register_item_id\) !== assetId/);
 });
 
 test('public serial and VIN matching is exact, unique and private', () => {
@@ -119,6 +154,23 @@ test('all admin work is claimed, row-locked and actor-attributed', () => {
   assert.match(capture, /eventType: 'claimed'/);
   assert.match(capture, /eventType: 'draft_saved'/);
   assert.match(capture, /eventType: 'matched'/);
+});
+
+test('admin confirmation is bound to the exact current capture target', () => {
+  const confirmation = adminCaptureItemRoute.slice(
+    adminCaptureItemRoute.indexOf('function draftTargetIsConfirmed'),
+    adminCaptureItemRoute.indexOf('export async function GET'),
+  );
+
+  assert.match(confirmation, /\.reverse\(\)[\s\S]*?event\.eventType === "matched"/);
+  assert.match(confirmation, /latestMatch\.metadata\.ownerUserId[\s\S]*?target\.ownerUserId/);
+  assert.match(confirmation, /latestMatch\.metadata\.assetId[\s\S]*?target\.assetId/);
+  assert.match(confirmation, /latestMatch\.metadata\.fuelStorageId[\s\S]*?target\.fuelStorageId/);
+  assert.match(confirmation, /target\.changed && !options\.confirmMatch[\s\S]*?CAPTURE_TARGET_CHANGE_REQUIRES_CONFIRMATION/);
+  assert.match(confirmation, /if \(options\.confirmMatch\)[\s\S]*?matchCaptureRequest\(current\.id/);
+  assert.match(adminCaptureItemRoute, /case "confirm_match":[\s\S]*?saveAdminDraft\(existing, draft, actor, \{ confirmMatch: true \}\)/);
+  assert.match(adminCaptureItemRoute, /\["complete", "complete_direct"\]\.includes\(action\) && !draftTargetIsConfirmed\(existing, draft\)/);
+  assert.match(capture, /eventType: 'matched'[\s\S]*?metadata: \{ ownerUserId, assetId, fuelStorageId \}/);
 });
 
 test('owner cancellation is limited to the matching owner-upload request', () => {

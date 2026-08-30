@@ -36,6 +36,12 @@ export type CaptureFinalizationOutcome = {
   outputId?: string;
 };
 
+type ExpectedCaptureTarget = {
+  ownerUserId: string;
+  assetId: string | null;
+  fuelStorageId: string | null;
+};
+
 export type NormalizedInvoiceCapture = {
   supplierName: string;
   invoiceNumber: string;
@@ -441,6 +447,7 @@ async function removeOrphanedCaptureInvoiceDocument(request: CaptureRequestDetai
 async function createInvoiceOutput(
   request: CaptureRequestDetail,
   promotedFiles: CaptureRequestFile[],
+  ownerApprovalOverridden = false,
 ): Promise<string> {
   if (!request.ownerUserId || !request.assetId) throw new Error('CAPTURE_TARGET_REQUIRED');
   const captured = normalizeInvoiceCapturePayload(
@@ -458,7 +465,8 @@ async function createInvoiceOutput(
         dealerUserId,
         dealerStaffId: text(request.candidatePayload.dealerStaffId, 200),
         displayName: request.sender.businessName || request.sender.name || 'Dealer',
-        ownerApproved: request.events.some((event) => event.eventType === 'owner_approved'),
+        ownerApproved: ownerApprovalOverridden
+          || request.events.some((event) => event.eventType === 'owner_approved'),
       }
     : { displayName: 'Aim4price assisted capture' };
   const document = await createInvoiceDocumentRecord({
@@ -588,20 +596,51 @@ function validateCapturedDraft(request: CaptureRequestDetail): void {
   }
 }
 
+function assertExpectedCaptureTarget(
+  request: CaptureRequestDetail,
+  expectedTarget: ExpectedCaptureTarget | undefined,
+): void {
+  if (!expectedTarget) return;
+  if (
+    request.ownerUserId !== expectedTarget.ownerUserId
+    || request.assetId !== expectedTarget.assetId
+    || request.fuelStorageId !== expectedTarget.fuelStorageId
+  ) {
+    throw new Error('CAPTURE_REQUEST_CHANGED');
+  }
+  const latestMatch = [...request.events]
+    .reverse()
+    .find((event) => event.eventType === 'matched');
+  if (
+    !latestMatch
+    || text(latestMatch.metadata.ownerUserId, 200) !== expectedTarget.ownerUserId
+    || text(latestMatch.metadata.assetId, 80) !== (expectedTarget.assetId ?? '')
+    || text(latestMatch.metadata.fuelStorageId, 80) !== (expectedTarget.fuelStorageId ?? '')
+  ) {
+    throw new Error('CAPTURE_TARGET_CONFIRMATION_REQUIRED');
+  }
+}
+
 async function completeCanonicalOutput(
   request: CaptureRequestDetail,
   actor: CaptureAdminActor,
+  options: { ownerApprovalOverrideReason?: string } = {},
 ): Promise<CaptureFinalizationOutcome> {
   let outputId = await existingCanonicalOutput(request);
   if (!outputId) {
     const promotedFiles = await promoteCleanFiles(request);
     outputId = request.requestType === 'invoice'
-      ? await createInvoiceOutput(request, promotedFiles)
+      ? await createInvoiceOutput(
+          request,
+          promotedFiles,
+          Boolean(options.ownerApprovalOverrideReason),
+        )
       : await createFuelOutput(request, promotedFiles, actor);
   }
   const completed = await completeCaptureRequest(request.id, {
     outputType: request.requestType,
     outputId,
+    ownerApprovalOverrideReason: options.ownerApprovalOverrideReason,
   }, actor);
   return { request: completed, outcome: 'completed', outputId };
 }
@@ -609,16 +648,37 @@ async function completeCanonicalOutput(
 export async function finalizeCaptureRequestForAdmin(
   requestId: string,
   actor: CaptureAdminActor,
+  options: {
+    ownerApprovalOverrideReason?: string | null;
+    expectedVersion?: number | null;
+    expectedTarget?: ExpectedCaptureTarget;
+  } = {},
 ): Promise<CaptureFinalizationOutcome> {
   return withFinalizationLock(requestId, async () => {
     const request = await getCaptureRequestDetail(requestId);
     if (!request) throw new Error('CAPTURE_REQUEST_NOT_FOUND');
+    if (
+      options.expectedVersion !== undefined
+      && options.expectedVersion !== null
+      && request.version !== options.expectedVersion
+    ) {
+      throw new Error('CAPTURE_REQUEST_CHANGED');
+    }
+    assertExpectedCaptureTarget(request, options.expectedTarget);
+    const ownerApprovalOverrideReason = text(options.ownerApprovalOverrideReason, 1_000);
     if (request.status === 'completed') {
       const outputId = request.finalInvoiceId ?? request.finalFuelSlipId ?? undefined;
       return { request, outcome: 'completed', outputId };
     }
-    if (request.status === 'awaiting_owner') return { request, outcome: 'awaiting_owner' };
-    if (request.status !== 'in_progress') throw new Error('CAPTURE_COMPLETION_STATUS_INVALID');
+    if (request.status === 'awaiting_owner' && !ownerApprovalOverrideReason) {
+      return { request, outcome: 'awaiting_owner' };
+    }
+    if (
+      request.status !== 'in_progress'
+      && !(request.status === 'awaiting_owner' && ownerApprovalOverrideReason)
+    ) {
+      throw new Error('CAPTURE_COMPLETION_STATUS_INVALID');
+    }
     if (request.assignedAdminUserId !== actor.userId) {
       throw new Error(request.assignedAdminUserId
         ? 'CAPTURE_CLAIMED_BY_ANOTHER_ADMIN'
@@ -627,14 +687,19 @@ export async function finalizeCaptureRequestForAdmin(
 
     validateCapturedDraft(request);
     const ownerApproved = request.events.some((event) => event.eventType === 'owner_approved');
-    if (EXTERNAL_CHANNELS.has(request.submissionChannel) && !ownerApproved) {
+    if (
+      EXTERNAL_CHANNELS.has(request.submissionChannel)
+      && !ownerApproved
+      && !ownerApprovalOverrideReason
+    ) {
       const awaiting = await transitionCaptureRequest(request.id, 'awaiting_owner', {
         actor,
         note: 'Aim4price verified the submitted document.',
+        allowDuringFinalization: true,
       });
       return { request: awaiting, outcome: 'awaiting_owner' };
     }
-    return completeCanonicalOutput(request, actor);
+    return completeCanonicalOutput(request, actor, { ownerApprovalOverrideReason });
   });
 }
 
@@ -655,6 +720,7 @@ export async function approveCaptureRequestForOwner(
       await transitionCaptureRequest(request.id, 'in_progress', {
         actor: ownerActor,
         note: 'Owner approved the verified document.',
+        allowDuringFinalization: true,
       });
       request = await getCaptureRequestDetail(request.id);
       if (!request) throw new Error('CAPTURE_REQUEST_NOT_FOUND');
@@ -692,6 +758,39 @@ export async function declineCaptureRequestForOwner(
     return transitionCaptureRequest(request.id, 'declined', {
       actor: ownerActor,
       reason: text(reason, 1_000) || 'Owner declined the verified document.',
+      allowDuringFinalization: true,
+    });
+  });
+}
+
+export async function cancelCaptureRequestForAdmin(
+  requestId: string,
+  actor: CaptureAdminActor,
+  reasonInput: string,
+): Promise<CaptureRequest> {
+  return withFinalizationLock(requestId, async () => {
+    const request = await getCaptureRequestDetail(requestId);
+    if (!request) throw new Error('CAPTURE_REQUEST_NOT_FOUND');
+    if (request.status === 'cancelled') return request;
+    if (['completed', 'declined', 'rejected'].includes(request.status)) {
+      throw new Error('CAPTURE_REQUEST_CLOSED');
+    }
+    if (
+      request.assignedAdminUserId
+      && request.assignedAdminUserId !== actor.userId
+    ) {
+      throw new Error('CAPTURE_CLAIMED_BY_ANOTHER_ADMIN');
+    }
+    const reason = text(reasonInput, 1_000);
+    if (!reason) throw new Error('CAPTURE_CANCELLATION_REASON_REQUIRED');
+    if (await existingCanonicalOutput(request)) {
+      throw new Error('CAPTURE_CANCELLATION_OUTPUT_EXISTS');
+    }
+    await removeOrphanedCaptureInvoiceDocument(request);
+    return transitionCaptureRequest(request.id, 'cancelled', {
+      actor,
+      reason: `Deleted from the Capture Queue: ${reason}`,
+      allowDuringFinalization: true,
     });
   });
 }
@@ -720,6 +819,7 @@ export async function retractCaptureRequestForOwner(
     return transitionCaptureRequest(request.id, 'cancelled', {
       actor: ownerActor,
       note: 'Retracted by the asset owner before ledger creation.',
+      allowDuringFinalization: true,
     });
   });
 }

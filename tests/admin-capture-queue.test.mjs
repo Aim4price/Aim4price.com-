@@ -151,6 +151,52 @@ test("matching uses an admin-scoped customer and destination search instead of r
   assert.match(targetStore, /left join public\.account_profiles profile/);
 });
 
+test("pre-matched requests show the authoritative saved destination and keep search locked", () => {
+  assert.match(itemRoute, /getAdminCaptureTarget/);
+  assert.match(itemRoute, /matchedTarget/);
+  assert.match(itemRoute, /matchedTarget\?\.ownerDisplayName/);
+  assert.match(itemRoute, /matchedTarget\?\.targetType === "asset"/);
+  assert.match(targetStore, /export async function getAdminCaptureTarget/);
+  assert.match(targetStore, /asset\.id = \$1::uuid[\s\S]*?asset\.user_id = \$2/);
+  assert.match(targetStore, /storage\.id = \$1::uuid[\s\S]*?storage\.user_id = \$2/);
+  assert.match(client, /request\.ownerUserId \|\| cleanText\(payload\.ownerUserId\)/);
+  assert.match(client, /request\.assetId \|\| cleanText\(payload\.assetId\)/);
+  assert.match(client, /Identified destination — confirm before completing/);
+  assert.match(client, /selectedTarget\.targetDisplayName/);
+  assert.match(client, /selectedTarget\.reference/);
+  assert.match(client, /!hasMatchedTarget \|\| isChangingMatch/);
+});
+
+test("changing a match preserves the current target until a replacement is chosen", () => {
+  const changeStart = client.indexOf("function beginMatchChange()");
+  const changeEnd = client.indexOf("function cancelMatchChange()", changeStart);
+  const changeHandler = client.slice(changeStart, changeEnd);
+
+  assert.ok(changeStart >= 0 && changeEnd > changeStart);
+  assert.match(changeHandler, /setIsChangingMatch\(true\)/);
+  assert.doesNotMatch(changeHandler, /ownerUserId: ""|assetId: ""|fuelStorageId: ""/);
+  assert.match(client, /The current match stays in place until you choose and confirm a replacement/);
+  assert.match(client, /onClick=\{isChangingMatch \? cancelMatchChange : beginMatchChange\}/);
+  assert.match(client, /setSelectedTarget\(target\)/);
+  assert.match(client, /setIsChangingMatch\(false\)/);
+});
+
+test("completion requires an actor-attributed confirmation of the exact current target", () => {
+  assert.match(client, /runAction\("confirm_match"\)/);
+  assert.match(client, /Confirm this exact asset/);
+  assert.match(client, /event\.eventType === "matched"/);
+  assert.match(client, /targetKey\(latestMatch\.metadata\) === currentTargetKey/);
+  assert.match(client, /disabled=\{Boolean\(busyAction\) \|\| !isMatchConfirmed\}/);
+  assert.match(client, /requestVersion: detail\?\.version/);
+  assert.match(itemRoute, /case "confirm_match"/);
+  assert.match(itemRoute, /saveAdminDraft\(existing, draft, actor, \{ confirmMatch: true \}\)/);
+  assert.match(itemRoute, /event\.eventType === "matched"/);
+  assert.match(itemRoute, /CAPTURE_TARGET_CONFIRMATION_REQUIRED/);
+  assert.match(itemRoute, /target\.changed && !options\.confirmMatch/);
+  assert.match(itemRoute, /CAPTURE_TARGET_CHANGE_REQUIRES_CONFIRMATION/);
+  assert.match(itemRoute, /metadata: event\.metadata/);
+});
+
 test("pending quarantine files use a private Chrome-compatible inspection before an explicit security decision", () => {
   assert.match(client, /Security decision required/);
   assert.match(client, /private preview/);
@@ -160,6 +206,7 @@ test("pending quarantine files use a private Chrome-compatible inspection before
   assert.doesNotMatch(fileRoute, /locked until its security check passes\.\", 423/);
   assert.match(fileRoute, /file\.securityStatus === "rejected"/);
   assert.match(fileRoute, /setCaptureRequestFileSecurityStatus/);
+  assert.match(fileRoute, /CAPTURE_FINALIZATION_IN_PROGRESS[\s\S]*?409/);
   assert.match(fileRoute, /readCaptureQuarantineFile/);
   assert.match(fileRoute, /resolveAssetRegisterUploadBytes/);
   assert.match(fileRoute, /Cache-Control": "private, no-store/);
@@ -173,17 +220,44 @@ test("pending quarantine files use a private Chrome-compatible inspection before
 test("admin workflow exposes guarded claim, draft, information, duplicate, complete and reject actions", () => {
   for (const action of [
     "claim",
+    "confirm_match",
     "save_draft",
     "request_information",
     "mark_duplicate",
     "complete",
+    "complete_direct",
     "reject",
+    "delete",
   ]) {
     assert.match(client, new RegExp(`runAction\\(\\\"${action}\\\"\\)`));
     assert.match(itemRoute, new RegExp(`case \\\"${action}\\\"`));
   }
   assert.match(client, /window\.confirm\("Use these verified details to create the ledger record/);
   assert.match(client, /Add a short reason before using this action/);
+});
+
+test("external approval override and queue deletion are deliberate audited actions", async () => {
+  const finalizer = await read("lib/capture-finalization.ts");
+  const cleanupMigration = await read("database/migrations/84-assisted-capture-file-lifecycle.sql");
+
+  assert.match(client, /Save directly — owner approved/);
+  assert.match(client, /How was the owner's approval confirmed/);
+  assert.match(itemRoute, /case "complete_direct"/);
+  assert.match(itemRoute, /ownerApprovalOverrideReason: note/);
+  assert.match(finalizer, /ownerApprovalOverrideReason/);
+  assert.match(finalizer, /ownerApproved: ownerApprovalOverridden/);
+
+  assert.match(client, /Delete capture request/);
+  assert.match(client, /Type \$\{detail\?\.publicReference/);
+  assert.match(client, /runAction\("delete"\)/);
+  assert.match(client, /setSelectedId\(""\)/);
+  assert.match(client, /<option value="cancelled">Deleted<\/option>/);
+  assert.match(itemRoute, /case "delete"/);
+  assert.match(itemRoute, /cancelCaptureRequestForAdmin/);
+  assert.match(finalizer, /withFinalizationLock\(requestId/);
+  assert.match(finalizer, /transitionCaptureRequest\(request\.id, 'cancelled'/);
+  assert.doesNotMatch(finalizer, /delete from public\.document_capture_(requests|files|events)/);
+  assert.match(cleanupMigration, /new\.status not in \('declined', 'rejected', 'cancelled'\)/);
 });
 
 test("API delegates workflow state and canonical creation to the capture domain", () => {
