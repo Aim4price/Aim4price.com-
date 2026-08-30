@@ -16,6 +16,7 @@ const [
   transfers,
   transferRoute,
   transferPage,
+  transferStyles,
   assetRegisters,
   migration,
   adminSales,
@@ -36,6 +37,7 @@ const [
   read('lib/asset-transfers.ts'),
   read('app/api/asset-transfers/route.ts'),
   read('app/account/asset-transfers/asset-transfers-client.tsx'),
+  read('app/account/asset-transfers/page.module.css'),
   read('lib/asset-registers.ts'),
   read('database/migrations/91-dealer-inventory-register.sql'),
   read('lib/admin-asset-sales.ts'),
@@ -109,6 +111,51 @@ test('dealer claims choose an owned register and safely default to dealer stock'
   assert.match(claimSource, /\[input\.buyerUserId, targetBuyerRegisterId\]/);
   assert.match(claimSource, /buyerRegister\.id/);
   assert.match(assetRegisters, /where ar\.user_id = \$1 and ar\.id::text = \$2/);
+});
+
+test('dealer register destination is a branded searchable keyboard picker', () => {
+  const pickerStart = transferPage.indexOf('function ClaimRegisterPicker');
+  const pickerEnd = transferPage.indexOf('function IncomingIcon');
+  const picker = transferPage.slice(pickerStart, pickerEnd);
+
+  assert.ok(pickerStart >= 0 && pickerEnd > pickerStart);
+  assert.doesNotMatch(picker, /<select\b|<option\b/);
+  assert.match(transferPage, /import DropdownOverlay from '\.\.\/\.\.\/\.\.\/components\/DropdownOverlay'/);
+  assert.match(picker, /<DropdownOverlay[\s\S]*role="listbox"/);
+  assert.match(picker, /anchorRef=\{registerPickerButtonRef\}/);
+  assert.match(picker, /type="search"/);
+  assert.match(picker, /placeholder="Search Asset Registers…"/);
+  assert.match(picker, /role="combobox"/);
+  assert.match(picker, /aria-autocomplete="list"/);
+  assert.match(picker, /aria-expanded=/);
+  assert.match(picker, /aria-controls=/);
+  assert.match(picker, /aria-activedescendant=/);
+  assert.match(picker, /role="option"/);
+  assert.match(picker, /aria-selected=/);
+  assert.match(picker, /tabIndex=\{-1\}/);
+  assert.match(picker, /No Asset Registers found/);
+  assert.match(picker, /aria-live="polite"/);
+
+  for (const key of ['ArrowDown', 'ArrowUp', 'Home', 'End', 'Enter', 'Escape', 'Tab']) {
+    assert.match(picker, new RegExp(`event\\.key === '${key}'`));
+  }
+  assert.match(picker, /event\.key === 'Escape'[\s\S]*event\.stopPropagation\(\)/);
+  assert.match(picker, /closeAndMoveFocus\(event\.shiftKey\)/);
+  assert.match(picker, /document\.addEventListener\('pointerdown'/);
+  assert.match(picker, /document\.removeEventListener\('pointerdown'/);
+  assert.match(picker, /event\.composedPath\(\)\.includes\(pickerRoot\)/);
+  assert.match(picker, /onChange\(register\.id\)/);
+
+  assert.match(transferPage, /function claimRegisterMatchesSearch[\s\S]*claimRegisterOptionLabel\(register\)[\s\S]*toLocaleLowerCase\('en-ZA'\)[\s\S]*includes\(normalizedSearch\)/);
+  assert.match(transferPage, /registers\.filter\(\(register\) => claimRegisterMatchesSearch\(register, claimRegisterSearch\)\)/);
+  assert.match(transferPage, /setClaimRegisterId\(primaryClaimRegisterId\(claimRegisters\)\)/);
+  assert.match(transferPage, /targetRegisterId: claimRegisterId/);
+
+  assert.match(transferStyles, /\.registerPickerOptions\s*\{[\s\S]*max-height\s*:/);
+  assert.match(transferStyles, /\.registerPickerOptions\s*\{[\s\S]*overflow-y\s*:\s*auto/);
+  assert.match(transferStyles, /\.registerPickerOptions\s*\{[\s\S]*scrollbar-width\s*:/);
+  assert.match(transferStyles, /\.registerPickerOptions::\-webkit-scrollbar/);
+  assert.match(transferStyles, /\.registerPickerOptions::\-webkit-scrollbar-thumb/);
 });
 
 test('normal dealers open the desktop register while dealer staff keep an authorised route', () => {
