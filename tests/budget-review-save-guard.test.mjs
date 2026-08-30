@@ -25,13 +25,13 @@ const saveCostBudget = slice(
 const budgetModal = slice('{budgetModalOpen ?', '{budgetDeleteCandidate ?');
 
 test('entering budget Review only advances local wizard state', () => {
-  assert.match(continueBudgetWizard, /if \(budgetWizardStep === 2\)/);
-  assert.match(continueBudgetWizard, /setBudgetWizardStep\(3\)/);
+  assert.match(continueBudgetWizard, /if \(budgetWizardStep === 3\)/);
+  assert.match(continueBudgetWizard, /setBudgetWizardStep\(4\)/);
   assert.doesNotMatch(continueBudgetWizard, /fetch\(|saveCostBudget|\/api\/my-invoices\/budgets/);
 });
 
 test('budget persistence is guarded behind the explicit Review save action', () => {
-  assert.match(saveCostBudget, /if \(budgetWizardStep !== 3 \|\| budgetSaving\) return;/);
+  assert.match(saveCostBudget, /if \(budgetWizardStep !== 4 \|\| budgetSaving\) return;/);
   assert.match(saveCostBudget, /\/api\/my-invoices\/budgets/);
   assert.match(saveCostBudget, /method: editingBudgetId \? 'PATCH' : 'POST'/);
 

@@ -100,7 +100,7 @@ type InvoiceSummary = {
 };
 
 type BudgetPeriod = 'monthly' | 'annual';
-type BudgetWizardStep = 1 | 2 | 3;
+type BudgetWizardStep = 1 | 2 | 3 | 4;
 type CostBudgetStatusName = 'on_track' | 'warning' | 'over_budget';
 
 type CostBudgetProgress = {
@@ -1539,15 +1539,36 @@ export default function MyInvoicesClient({
     return budgetAssets.filter((asset) => assetSearchText(asset).includes(query));
   }, [budgetAssetSearch, budgetAssets]);
 
-  const budgetUnavailableAssetIds = useMemo(() => new Set(
+  const budgetUnavailableAssetIdsByPeriod = useMemo<Record<BudgetPeriod, Set<string>>>(() => {
+    const unavailable: Record<BudgetPeriod, Set<string>> = {
+      monthly: new Set<string>(),
+      annual: new Set<string>(),
+    };
+    costBudgets.forEach((budget) => {
+      if (budget.id !== editingBudgetId && budget.assetId) {
+        unavailable[budget.period].add(budget.assetId);
+      }
+    });
+    return unavailable;
+  }, [costBudgets, editingBudgetId]);
+
+  const budgetUnavailableAllPeriods = useMemo(() => new Set(
     costBudgets
-      .filter((budget) => budget.period === budgetDraft.period && budget.id !== editingBudgetId && budget.assetId)
-      .map((budget) => budget.assetId as string),
-  ), [budgetDraft.period, costBudgets, editingBudgetId]);
+      .filter((budget) => budget.id !== editingBudgetId && !budget.assetId)
+      .map((budget) => budget.period),
+  ), [costBudgets, editingBudgetId]);
+
+  const budgetPeriodUnavailableAssetIds = budgetUnavailableAssetIdsByPeriod[budgetDraft.period];
+  const budgetPickerUnavailableAssetIds = useMemo(() => new Set(
+    budgetAssets
+      .filter((asset) => budgetUnavailableAssetIdsByPeriod.monthly.has(asset.id)
+        && budgetUnavailableAssetIdsByPeriod.annual.has(asset.id))
+      .map((asset) => asset.id),
+  ), [budgetAssets, budgetUnavailableAssetIdsByPeriod]);
 
   const selectableFilteredBudgetAssets = useMemo(
-    () => filteredBudgetAssets.filter((asset) => !budgetUnavailableAssetIds.has(asset.id)),
-    [budgetUnavailableAssetIds, filteredBudgetAssets],
+    () => filteredBudgetAssets.filter((asset) => !budgetPickerUnavailableAssetIds.has(asset.id)),
+    [budgetPickerUnavailableAssetIds, filteredBudgetAssets],
   );
 
   const allFilteredBudgetAssetsSelected = selectableFilteredBudgetAssets.length > 0
@@ -2188,7 +2209,7 @@ export default function MyInvoicesClient({
 
   function toggleBudgetPickerAsset(assetId: string) {
     setBudgetPickerAssetIds((current) => {
-      if (budgetUnavailableAssetIds.has(assetId)) return current.filter((id) => id !== assetId);
+      if (budgetPickerUnavailableAssetIds.has(assetId)) return current.filter((id) => id !== assetId);
       if (editingBudgetId) return [assetId];
       return current.includes(assetId)
         ? current.filter((id) => id !== assetId)
@@ -2224,32 +2245,40 @@ export default function MyInvoicesClient({
         setBudgetFormError('Choose at least one asset.');
         return;
       }
-      const unavailableCount = budgetSelectedAssetIds.filter((id) => budgetUnavailableAssetIds.has(id)).length;
-      if (unavailableCount) {
-        setBudgetFormError(`${unavailableCount} selected ${unavailableCount === 1 ? 'asset already has' : 'assets already have'} a ${budgetDraft.period} budget.`);
-        return;
-      }
       setBudgetWizardStep(2);
       return;
     }
     if (budgetWizardStep === 2) {
+      const unavailableCount = budgetSelectedAssetIds.filter((id) => budgetPeriodUnavailableAssetIds.has(id)).length;
+      const allAssetsUnavailable = budgetDraft.assetId === 'all'
+        && budgetUnavailableAllPeriods.has(budgetDraft.period);
+      if (unavailableCount || allAssetsUnavailable) {
+        setBudgetFormError(allAssetsUnavailable
+          ? `An all-assets ${budgetDraft.period} budget already exists. Choose the other period.`
+          : `${unavailableCount} selected ${unavailableCount === 1 ? 'asset already has' : 'assets already have'} a ${budgetDraft.period} budget. Choose the other period or go back and change the assets.`);
+        return;
+      }
+      setBudgetWizardStep(3);
+      return;
+    }
+    if (budgetWizardStep === 3) {
       if (!budgetLimitIsValid) {
         setBudgetFormError('Enter a budget amount and a warning level from 1% to 99%.');
         return;
       }
-      setBudgetWizardStep(3);
+      setBudgetWizardStep(4);
     }
   }
 
   function goBackBudgetWizard() {
     setBudgetFormError('');
-    setBudgetWizardStep((current) => (current === 3 ? 2 : 1));
+    setBudgetWizardStep((current) => (current === 4 ? 3 : current === 3 ? 2 : 1));
   }
 
   async function saveCostBudget() {
-    if (budgetWizardStep !== 3 || budgetSaving) return;
+    if (budgetWizardStep !== 4 || budgetSaving) return;
     if (!budgetLimitIsValid) {
-      setBudgetWizardStep(2);
+      setBudgetWizardStep(3);
       setBudgetFormError('Enter a budget amount and a warning level from 1% to 99%.');
       return;
     }
@@ -4024,7 +4053,7 @@ export default function MyInvoicesClient({
               <div className={[styles.assetList, styles.budgetAssetList].join(' ')} data-asset-choice-list="true">
                 {filteredBudgetAssets.length ? filteredBudgetAssets.map((asset) => {
                   const isSelected = budgetPickerAssetIds.includes(asset.id);
-                  const isUnavailable = budgetUnavailableAssetIds.has(asset.id);
+                  const isUnavailable = budgetPickerUnavailableAssetIds.has(asset.id);
                   return (
                     <button
                       type="button"
@@ -4088,8 +4117,10 @@ export default function MyInvoicesClient({
                   <p>{budgetWizardStep === 1
                     ? 'Choose what to track.'
                     : budgetWizardStep === 2
-                      ? 'Set the limit and warning level.'
-                      : 'Review and save.'}</p>
+                      ? 'Choose a monthly or annual budget.'
+                      : budgetWizardStep === 3
+                        ? 'Set the limit and warning level.'
+                        : 'Review and save.'}</p>
                 </div>
                 <button type="button" className={`${styles.closeButton} ${wizardStyles.closeButton}`} onClick={closeBudgetModal} aria-label="Close budget">
                   <CloseIcon />
@@ -4098,8 +4129,8 @@ export default function MyInvoicesClient({
 
               <div ref={budgetWizardBodyRef} className={[styles.invoiceDropCodeBody, styles.budgetWizardBody, wizardStyles.body].join(' ')}>
                 <p className={wizardStyles.intro}>Complete one short step at a time. Your spending budget is saved on the final step.</p>
-                <ol className={`${styles.invoiceDropWizardProgress} ${wizardStyles.progress}`} aria-label={'Step ' + budgetWizardStep + ' of 3'}>
-                  {([['Coverage', 1], ['Limit', 2], ['Review', 3]] as const).map(([label, step]) => (
+                <ol className={`${styles.invoiceDropWizardProgress} ${wizardStyles.progress}`} aria-label={'Step ' + budgetWizardStep + ' of 4'}>
+                  {([['Coverage', 1], ['Period', 2], ['Limit', 3], ['Review', 4]] as const).map(([label, step]) => (
                     <li
                       key={label}
                       className={[
@@ -4123,7 +4154,7 @@ export default function MyInvoicesClient({
                     <div className={`${styles.invoiceDropWizardHeading} ${wizardStyles.panelHeading}`}>
                       <span className={wizardStyles.panelNumber} aria-hidden="true">1</span>
                       <h3 ref={budgetWizardStepHeadingRef} id="budget-coverage-title" tabIndex={-1}>What should this budget cover?</h3>
-                      <p>Choose assets and a reset period.</p>
+                      <p>Choose one or more saved assets.</p>
                     </div>
 
                     <button
@@ -4149,33 +4180,61 @@ export default function MyInvoicesClient({
                       <span className={styles.budgetScopeAction}>{selectedBudgetAssets.length ? 'Change' : 'Choose'} <ChevronRightIcon /></span>
                     </button>
 
-                    <div className={[styles.budgetPeriodField, styles.budgetWizardPeriodField].join(' ')}>
-                      <span className={styles.budgetPeriodLabel}>When should it reset?</span>
-                      <div className={styles.budgetPeriodControl} role="group" aria-label="Budget reset period">
-                        {(['monthly', 'annual'] as const).map((period) => (
-                          <button
-                            type="button"
-                            key={period}
-                            className={budgetDraft.period === period ? styles.budgetPeriodOptionActive : ''}
-                            onClick={() => {
-                              setBudgetFormError('');
-                              setBudgetDraft((current) => ({ ...current, period }));
-                            }}
-                            aria-pressed={budgetDraft.period === period}
-                            disabled={budgetSaving}
-                          >
-                            {period === 'monthly' ? 'Monthly' : 'Annual'}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
                   </section>
                 ) : null}
 
                 {budgetWizardStep === 2 ? (
-                  <section className={`${styles.invoiceDropWizardPanel} ${wizardStyles.panel}`} aria-labelledby="budget-limit-title">
+                  <section className={`${styles.invoiceDropWizardPanel} ${wizardStyles.panel}`} aria-labelledby="budget-period-title">
                     <div className={`${styles.invoiceDropWizardHeading} ${wizardStyles.panelHeading}`}>
                       <span className={wizardStyles.panelNumber} aria-hidden="true">2</span>
+                      <h3 ref={budgetWizardStepHeadingRef} id="budget-period-title" tabIndex={-1}>Choose the budget period</h3>
+                      <p>Decide when the spending limit starts again.</p>
+                    </div>
+
+                    <div className={styles.budgetWizardPeriodChoices} role="group" aria-label="Budget reset period">
+                      {(['monthly', 'annual'] as const).map((period) => {
+                        const unavailableCount = budgetSelectedAssetIds.filter((id) => budgetUnavailableAssetIdsByPeriod[period].has(id)).length;
+                        const allAssetsUnavailable = budgetDraft.assetId === 'all' && budgetUnavailableAllPeriods.has(period);
+                        const periodUnavailable = unavailableCount > 0 || allAssetsUnavailable;
+                        const periodActive = budgetDraft.period === period;
+                        return (
+                          <button
+                            type="button"
+                            key={period}
+                            className={[
+                              styles.budgetWizardPeriodChoice,
+                              periodActive ? styles.budgetWizardPeriodChoiceActive : '',
+                              periodUnavailable ? styles.budgetWizardPeriodChoiceUnavailable : '',
+                            ].join(' ')}
+                            onClick={() => {
+                              setBudgetFormError('');
+                              setBudgetDraft((current) => ({ ...current, period }));
+                            }}
+                            aria-pressed={periodActive}
+                            disabled={budgetSaving || periodUnavailable}
+                          >
+                            <span className={styles.budgetWizardPeriodChoiceIndicator} aria-hidden="true">{periodActive ? '✓' : ''}</span>
+                            <span className={styles.budgetWizardPeriodChoiceCopy}>
+                              <strong>{period === 'monthly' ? 'Monthly' : 'Annual'}</strong>
+                              <small>{periodUnavailable
+                                ? allAssetsUnavailable
+                                  ? 'This period already has an all-assets budget.'
+                                  : `${unavailableCount} selected ${unavailableCount === 1 ? 'asset already has' : 'assets already have'} this budget period.`
+                                : period === 'monthly'
+                                  ? 'A fresh limit starts each month.'
+                                  : 'A fresh limit starts each calendar year.'}</small>
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </section>
+                ) : null}
+
+                {budgetWizardStep === 3 ? (
+                  <section className={`${styles.invoiceDropWizardPanel} ${wizardStyles.panel}`} aria-labelledby="budget-limit-title">
+                    <div className={`${styles.invoiceDropWizardHeading} ${wizardStyles.panelHeading}`}>
+                      <span className={wizardStyles.panelNumber} aria-hidden="true">3</span>
                       <h3 ref={budgetWizardStepHeadingRef} id="budget-limit-title" tabIndex={-1}>Set the spending limit</h3>
                       <p>Amounts include VAT.</p>
                     </div>
@@ -4241,10 +4300,10 @@ export default function MyInvoicesClient({
                   </section>
                 ) : null}
 
-                {budgetWizardStep === 3 ? (
+                {budgetWizardStep === 4 ? (
                   <section className={`${styles.invoiceDropWizardPanel} ${wizardStyles.panel}`} aria-labelledby="budget-review-title">
                     <div className={`${styles.invoiceDropWizardHeading} ${wizardStyles.panelHeading}`}>
-                      <span className={wizardStyles.panelNumber} aria-hidden="true">3</span>
+                      <span className={wizardStyles.panelNumber} aria-hidden="true">4</span>
                       <h3 ref={budgetWizardStepHeadingRef} id="budget-review-title" tabIndex={-1}>Review your budget</h3>
                       <p>Check the details before saving.</p>
                     </div>
@@ -4304,7 +4363,7 @@ export default function MyInvoicesClient({
                 >
                   {budgetWizardStep === 1 ? 'Cancel' : 'Back'}
                 </button>
-                {budgetWizardStep < 3 ? (
+                {budgetWizardStep < 4 ? (
                   <button key="budget-next" type="button" className={`${styles.primaryButton} ${wizardStyles.primaryAction}`} onClick={continueBudgetWizard} disabled={budgetSaving}>
                     Next
                   </button>

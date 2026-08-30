@@ -295,16 +295,17 @@ test('budget overview opens in a focused manager dialog and deep links reveal it
   }
 });
 
-test('budget setup uses a compact three-step wizard and shared searchable asset picker', () => {
+test('budget setup uses a wider four-step wizard and shared searchable asset picker', () => {
   const modalStart = costClient.indexOf('{budgetModalOpen ?');
   const modalEnd = costClient.indexOf('{budgetDeleteCandidate ?', modalStart);
   const budgetModal = costClient.slice(modalStart, modalEnd);
 
   assert.ok(modalStart >= 0 && modalEnd > modalStart, 'budget modal source should be present');
-  assert.match(budgetModal, /\[\['Coverage', 1\], \['Limit', 2\], \['Review', 3\]\]/);
+  assert.match(budgetModal, /\[\['Coverage', 1\], \['Period', 2\], \['Limit', 3\], \['Review', 4\]\]/);
   assert.match(budgetModal, /budgetWizardStep === 1/);
   assert.match(budgetModal, /budgetWizardStep === 2/);
   assert.match(budgetModal, /budgetWizardStep === 3/);
+  assert.match(budgetModal, /budgetWizardStep === 4/);
   assert.match(budgetModal, /Choose Saved Assets/);
   assert.match(budgetModal, /Search saved assets/);
   assert.match(budgetModal, /Select all shown/);
@@ -316,6 +317,8 @@ test('budget setup uses a compact three-step wizard and shared searchable asset 
   assert.doesNotMatch(budgetModal, /<select\b/);
   assert.doesNotMatch(budgetModal, /Asset scope|Limit &amp; alert|Cost control/);
   assert.match(costStyles, /\.budgetWizardModal\b/);
+  assert.match(costStyles, /\.downloadModal\.budgetWizardModal\s*\{[^}]*width:\s*min\(1280px, 100%\) !important;/);
+  assert.match(costStyles, /\.budgetWizardPeriodChoices\b/);
   assert.match(costStyles, /\.budgetReviewGrid\b/);
   assert.match(costStyles, /\.budgetAssetChoiceSelected\b/);
   assert.match(costStyles, /\.budgetAssetCheck\b/);

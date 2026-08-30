@@ -16,15 +16,17 @@ const modalStart = client.indexOf('{budgetModalOpen ?');
 const modalEnd = client.indexOf('{budgetDeleteCandidate ?', modalStart);
 const budgetModal = client.slice(modalStart, modalEnd);
 
-test('spending budget uses the same guided three-step pattern as Contribution', () => {
+test('spending budget uses a guided four-step flow with a dedicated period step', () => {
   assert.ok(modalStart >= 0 && modalEnd > modalStart, 'budget modal should be present');
-  assert.match(client, /type BudgetWizardStep = 1 \| 2 \| 3/);
+  assert.match(client, /type BudgetWizardStep = 1 \| 2 \| 3 \| 4/);
   assert.match(client, /const \[budgetWizardStep, setBudgetWizardStep\]/);
-  assert.match(budgetModal, /\[\['Coverage', 1\], \['Limit', 2\], \['Review', 3\]\]/);
+  assert.match(budgetModal, /\[\['Coverage', 1\], \['Period', 2\], \['Limit', 3\], \['Review', 4\]\]/);
+  assert.match(budgetModal, /Step ' \+ budgetWizardStep \+ ' of 4/);
   assert.match(budgetModal, /styles\.invoiceDropCodeModal/);
   assert.match(budgetModal, /styles\.invoiceDropWizardProgress/);
   assert.match(budgetModal, /styles\.invoiceDropWizardPanel/);
   assert.match(budgetModal, /What should this budget cover\?/);
+  assert.match(budgetModal, /Choose the budget period/);
   assert.match(budgetModal, /Set the spending limit/);
   assert.match(budgetModal, /Review your budget/);
   assert.match(budgetModal, /onClick=\{continueBudgetWizard\}/);
@@ -82,12 +84,38 @@ test('budget coverage uses its own complete asset list, independent of fuel excl
   assert.doesNotMatch(budgetAssetSelectors, /workUseExcluded|fuel_asset_exclusions/);
 });
 
-test('coverage reset controls have clean label spacing without a fieldset border collision', () => {
-  assert.match(budgetModal, /<span className=\{styles\.budgetPeriodLabel\}>When should it reset\?<\/span>/);
-  assert.match(budgetModal, /role="group" aria-label="Budget reset period"/);
-  assert.doesNotMatch(budgetModal, /<fieldset className=\{\[styles\.budgetPeriodField, styles\.budgetWizardPeriodField/);
-  assert.match(styles, /\.budgetWizardPeriodField\s*\{[^}]*gap:\s*0\.5rem;[^}]*border:\s*0;[^}]*background:\s*transparent;/);
-  assert.match(styles, /\.budgetPeriodLabel\s*\{[^}]*display:\s*block;[^}]*line-height:\s*1\.25;/);
+test('period is selected on step two in a wider, responsive budget modal', () => {
+  const coverageStart = budgetModal.indexOf('{budgetWizardStep === 1 ?');
+  const periodStart = budgetModal.indexOf('{budgetWizardStep === 2 ?', coverageStart);
+  const limitStart = budgetModal.indexOf('{budgetWizardStep === 3 ?', periodStart);
+  const coverageStep = budgetModal.slice(coverageStart, periodStart);
+  const periodStep = budgetModal.slice(periodStart, limitStart);
+
+  assert.doesNotMatch(coverageStep, /Budget reset period|Monthly|Annual/);
+  assert.match(periodStep, /Choose the budget period/);
+  assert.match(periodStep, /role="group" aria-label="Budget reset period"/);
+  assert.match(periodStep, /styles\.budgetWizardPeriodChoices/);
+  assert.match(periodStep, /styles\.budgetWizardPeriodChoiceActive/);
+  assert.match(periodStep, /A fresh limit starts each month\./);
+  assert.match(periodStep, /A fresh limit starts each calendar year\./);
+  assert.match(styles, /\.downloadModal\.budgetWizardModal\s*\{[^}]*width:\s*min\(1280px, 100%\) !important;/);
+  assert.match(styles, /\.budgetWizardPeriodChoices\s*\{[^}]*grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\);/);
+  assert.match(styles, /@media \(max-width: 720px\)[\s\S]*?\.budgetWizardModal \.invoiceDropWizardProgress\s*\{[^}]*grid-template-columns:\s*repeat\(4, minmax\(0, 1fr\)\);/);
+});
+
+test('period-specific duplicate checks happen after coverage is selected', () => {
+  const continueBudgetWizard = client.slice(
+    client.indexOf('function continueBudgetWizard()'),
+    client.indexOf('function goBackBudgetWizard()'),
+  );
+
+  assert.match(client, /const budgetUnavailableAssetIdsByPeriod = useMemo/);
+  assert.match(client, /const budgetPickerUnavailableAssetIds = useMemo/);
+  assert.match(client, /budgetUnavailableAssetIdsByPeriod\.monthly\.has\(asset\.id\)/);
+  assert.match(client, /budgetUnavailableAssetIdsByPeriod\.annual\.has\(asset\.id\)/);
+  assert.match(continueBudgetWizard, /if \(budgetWizardStep === 2\)[\s\S]*?budgetPeriodUnavailableAssetIds\.has/);
+  assert.match(continueBudgetWizard, /budgetUnavailableAllPeriods\.has\(budgetDraft\.period\)/);
+  assert.match(continueBudgetWizard, /setBudgetWizardStep\(3\)/);
 });
 
 test('limit validation happens before review and the review preserves every choice', () => {
