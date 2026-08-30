@@ -1,9 +1,19 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
+import {
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+  type FormEvent,
+  type KeyboardEvent as ReactKeyboardEvent,
+  type ReactNode,
+} from 'react';
 import AppHeader from '../../../components/AppHeader';
 import wizardStyles from '../../../components/AimWizardModal.module.css';
+import DropdownOverlay from '../../../components/DropdownOverlay';
 import launcherStyles from '../app-access-management.module.css';
 import styles from './page.module.css';
 
@@ -89,11 +99,334 @@ function primaryClaimRegisterId(registers: ClaimRegister[]): string {
   return registers.find((register) => register.isPrimary)?.id ?? registers[0]?.id ?? '';
 }
 
+function claimRegisterTypeLabel(register: ClaimRegister): string {
+  return register.isPrimary ? 'Dealer Asset Register' : 'Client Asset Register';
+}
+
+function claimRegisterAssetCountLabel(register: ClaimRegister): string {
+  return `${register.assetCount} asset${register.assetCount === 1 ? '' : 's'}`;
+}
+
 function claimRegisterOptionLabel(register: ClaimRegister): string {
-  const assetLabel = `${register.assetCount} asset${register.assetCount === 1 ? '' : 's'}`;
-  return register.isPrimary
-    ? `Dealer Asset Register — ${register.businessName} (${assetLabel})`
-    : `${register.businessName} — Client Asset Register (${assetLabel})`;
+  return [
+    register.businessName,
+    claimRegisterTypeLabel(register),
+    claimRegisterAssetCountLabel(register),
+    register.isPrimary ? 'Primary default register' : '',
+  ].filter(Boolean).join(' ');
+}
+
+function claimRegisterMatchesSearch(register: ClaimRegister, search: string): boolean {
+  const normalizedSearch = search.trim().toLocaleLowerCase('en-ZA');
+  if (!normalizedSearch) return true;
+  return claimRegisterOptionLabel(register)
+    .toLocaleLowerCase('en-ZA')
+    .includes(normalizedSearch);
+}
+
+function RegisterIcon({ isPrimary }: { isPrimary: boolean }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true">
+      <path d="M5 5.5A2.5 2.5 0 0 1 7.5 3h9A2.5 2.5 0 0 1 19 5.5v13a2.5 2.5 0 0 1-2.5 2.5h-9A2.5 2.5 0 0 1 5 18.5v-13Z" />
+      <path d="M8.5 7.5h7M8.5 11.5h7M8.5 15.5h3" strokeLinecap="round" />
+      {isPrimary ? <path d="m14 16.5 1.4 1.4 2.6-3" strokeLinecap="round" strokeLinejoin="round" /> : null}
+    </svg>
+  );
+}
+
+function SearchIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" aria-hidden="true">
+      <circle cx="10.8" cy="10.8" r="6.3" />
+      <path d="m15.5 15.5 4 4" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function ChevronIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+      <path d="m7 10 5 5 5-5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function CheckIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" aria-hidden="true">
+      <path d="m6.5 12.5 3.4 3.4 7.6-8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function ClaimRegisterPicker({
+  registers,
+  value,
+  loading,
+  onChange,
+}: {
+  registers: ClaimRegister[];
+  value: string;
+  loading: boolean;
+  onChange: (registerId: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [claimRegisterSearch, setClaimRegisterSearch] = useState('');
+  const [activeIndex, setActiveIndex] = useState(0);
+  const registerPickerRef = useRef<HTMLDivElement | null>(null);
+  const registerPickerButtonRef = useRef<HTMLButtonElement | null>(null);
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
+  const labelId = useId();
+  const valueId = useId();
+  const helperId = useId();
+  const listboxId = useId();
+  const disabled = loading || !registers.length;
+  const selected = registers.find((register) => register.id === value) ?? null;
+  const visibleRegisters = useMemo(
+    () => registers.filter((register) => claimRegisterMatchesSearch(register, claimRegisterSearch)),
+    [claimRegisterSearch, registers],
+  );
+  const safeActiveIndex = visibleRegisters.length
+    ? Math.min(activeIndex, visibleRegisters.length - 1)
+    : 0;
+
+  function closePicker(restoreFocus = true) {
+    setOpen(false);
+    setClaimRegisterSearch('');
+    if (restoreFocus) {
+      window.requestAnimationFrame(() => registerPickerButtonRef.current?.focus());
+    }
+  }
+
+  function openPicker() {
+    if (disabled) return;
+    setClaimRegisterSearch('');
+    setOpen(true);
+  }
+
+  function closeAndMoveFocus(backward: boolean) {
+    const trigger = registerPickerButtonRef.current;
+    if (!trigger) {
+      closePicker();
+      return;
+    }
+    const focusable = Array.from(document.querySelectorAll<HTMLElement>(
+      'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+    )).filter((element) => {
+      if (element.closest('[data-claim-register-picker-menu="true"]')) return false;
+      if (element.getAttribute('aria-hidden') === 'true') return false;
+      return element === trigger || element.getClientRects().length > 0;
+    });
+    const triggerIndex = focusable.indexOf(trigger);
+    const next = focusable[triggerIndex + (backward ? -1 : 1)] ?? trigger;
+    closePicker(false);
+    window.requestAnimationFrame(() => next.focus());
+  }
+
+  function chooseRegister(register: ClaimRegister) {
+    onChange(register.id);
+    closePicker();
+  }
+
+  function handleTriggerKeyDown(event: ReactKeyboardEvent<HTMLButtonElement>) {
+    if (
+      event.key === 'ArrowDown'
+      || event.key === 'ArrowUp'
+      || event.key === 'Enter'
+      || event.key === ' '
+    ) {
+      event.preventDefault();
+      openPicker();
+    }
+  }
+
+  function handleSearchKeyDown(event: ReactKeyboardEvent<HTMLInputElement>) {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      event.stopPropagation();
+      closePicker();
+      return;
+    }
+    if (event.key === 'Tab') {
+      if (!event.shiftKey && !visibleRegisters.length) return;
+      event.preventDefault();
+      closeAndMoveFocus(event.shiftKey);
+      return;
+    }
+    if (!visibleRegisters.length) return;
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      setActiveIndex((current) => (current + 1) % visibleRegisters.length);
+    } else if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      setActiveIndex((current) => (current - 1 + visibleRegisters.length) % visibleRegisters.length);
+    } else if (event.key === 'Home') {
+      event.preventDefault();
+      setActiveIndex(0);
+    } else if (event.key === 'End') {
+      event.preventDefault();
+      setActiveIndex(visibleRegisters.length - 1);
+    } else if (event.key === 'Enter') {
+      event.preventDefault();
+      chooseRegister(visibleRegisters[safeActiveIndex] ?? visibleRegisters[0]);
+    }
+  }
+
+  useEffect(() => {
+    if (!open) return undefined;
+    const focusFrame = window.requestAnimationFrame(() => {
+      searchInputRef.current?.focus({ preventScroll: true });
+    });
+
+    function handlePointerDown(event: PointerEvent) {
+      const pickerRoot = registerPickerRef.current;
+      if (pickerRoot && event.composedPath().includes(pickerRoot)) return;
+      const target = event.target;
+      if (target instanceof Element && target.closest('[data-claim-register-picker-menu="true"]')) return;
+      closePicker(false);
+    }
+
+    document.addEventListener('pointerdown', handlePointerDown);
+    return () => {
+      window.cancelAnimationFrame(focusFrame);
+      document.removeEventListener('pointerdown', handlePointerDown);
+    };
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    const selectedIndex = visibleRegisters.findIndex((register) => register.id === value);
+    setActiveIndex(selectedIndex >= 0 ? selectedIndex : 0);
+  }, [open, value]);
+
+  useEffect(() => {
+    if (disabled && open) closePicker(false);
+  }, [disabled, open]);
+
+  useEffect(() => {
+    if (!open || !visibleRegisters.length) return;
+    document
+      .getElementById(`${listboxId}-option-${safeActiveIndex}`)
+      ?.scrollIntoView({ block: 'nearest' });
+  }, [listboxId, open, safeActiveIndex, visibleRegisters.length]);
+
+  const helper = selected?.isPrimary
+    ? 'Your Dealer Asset Register is the safe default for incoming stock and trade-ins.'
+    : selected
+      ? `This asset will be allocated to ${selected.businessName}.`
+      : 'Choose the exact Asset Register that should receive this asset.';
+
+  return (
+    <div ref={registerPickerRef} className={styles.registerPicker}>
+      <span id={labelId} className={styles.registerPickerLabel}>Save asset to</span>
+      <button
+        ref={registerPickerButtonRef}
+        type="button"
+        className={`${styles.registerPickerTrigger} ${open ? styles.registerPickerTriggerOpen : ''}`}
+        data-modal-initial-focus
+        data-loading={loading ? 'true' : undefined}
+        disabled={disabled}
+        onClick={() => (open ? closePicker(false) : openPicker())}
+        onKeyDown={handleTriggerKeyDown}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        aria-controls={open ? listboxId : undefined}
+        aria-labelledby={`${labelId} ${valueId}`}
+        aria-describedby={helperId}
+      >
+        <span className={styles.registerPickerTriggerIcon}><RegisterIcon isPrimary={selected?.isPrimary ?? true} /></span>
+        <span id={valueId} className={styles.registerPickerTriggerCopy}>
+          <strong>{selected?.businessName ?? (loading ? 'Loading Asset Registers…' : 'No Asset Register available')}</strong>
+          {selected ? <small>{claimRegisterTypeLabel(selected)} · {claimRegisterAssetCountLabel(selected)}</small> : null}
+        </span>
+        <span className={styles.registerPickerChevron}><ChevronIcon /></span>
+      </button>
+      <small id={helperId} className={styles.registerPickerHelper}>{helper}</small>
+
+      {open ? <DropdownOverlay
+        anchorRef={registerPickerButtonRef}
+        id={listboxId}
+        className={styles.registerPickerMenu}
+        role="listbox"
+        aria-labelledby={labelId}
+        data-claim-register-picker-menu="true"
+        maxHeight={420}
+        onKeyDown={(event) => {
+          if (event.key !== 'Escape') return;
+          event.preventDefault();
+          event.stopPropagation();
+          closePicker();
+        }}
+      >
+        <div className={styles.registerPickerSearchRow}>
+          <span><SearchIcon /></span>
+          <input
+            ref={searchInputRef}
+            type="search"
+            value={claimRegisterSearch}
+            onChange={(event) => {
+              setClaimRegisterSearch(event.target.value);
+              setActiveIndex(0);
+            }}
+            onKeyDown={handleSearchKeyDown}
+            placeholder="Search Asset Registers…"
+            autoComplete="off"
+            role="combobox"
+            aria-label="Search Asset Registers"
+            aria-autocomplete="list"
+            aria-expanded={open}
+            aria-controls={listboxId}
+            aria-activedescendant={visibleRegisters.length ? `${listboxId}-option-${safeActiveIndex}` : undefined}
+          />
+        </div>
+        <div className={styles.registerPickerOptions}>
+          {visibleRegisters.length ? visibleRegisters.map((register, index) => {
+            const isSelected = register.id === value;
+            const isActive = index === safeActiveIndex;
+            return (
+              <button
+                key={register.id}
+                id={`${listboxId}-option-${index}`}
+                type="button"
+                tabIndex={-1}
+                role="option"
+                aria-selected={isSelected}
+                className={`${styles.registerPickerOption} ${isSelected ? styles.registerPickerOptionSelected : ''} ${isActive ? styles.registerPickerOptionActive : ''}`}
+                onPointerMove={() => setActiveIndex(index)}
+                onClick={() => chooseRegister(register)}
+              >
+                <span className={styles.registerPickerOptionIcon}><RegisterIcon isPrimary={register.isPrimary} /></span>
+                <span className={styles.registerPickerOptionCopy}>
+                  <strong>{register.businessName}</strong>
+                  <small>{claimRegisterTypeLabel(register)} · {claimRegisterAssetCountLabel(register)}</small>
+                  {register.isPrimary ? <em>Default for incoming dealer stock</em> : null}
+                </span>
+                <span className={styles.registerPickerCheck} aria-hidden="true">{isSelected ? <CheckIcon /> : null}</span>
+              </button>
+            );
+          }) : <div className={styles.registerPickerNoResults}>
+            <span><SearchIcon /></span>
+            <strong>No Asset Registers found</strong>
+            <small>Try a business name, register type or asset count.</small>
+            <button type="button" onClick={() => {
+              setClaimRegisterSearch('');
+              setActiveIndex(0);
+              window.requestAnimationFrame(() => searchInputRef.current?.focus({ preventScroll: true }));
+            }} onKeyDown={(event) => {
+              if (event.key !== 'Tab' || event.shiftKey) return;
+              event.preventDefault();
+              closeAndMoveFocus(false);
+            }}>Clear search</button>
+          </div>}
+        </div>
+        <div className={styles.registerPickerResultStatus} role="status" aria-live="polite">
+          {visibleRegisters.length
+            ? `${visibleRegisters.length} Asset Register${visibleRegisters.length === 1 ? '' : 's'} found`
+            : 'No Asset Registers found. Try a business name, register type or asset count.'}
+        </div>
+      </DropdownOverlay> : null}
+    </div>
+  );
 }
 
 function IncomingIcon() {
@@ -189,12 +522,15 @@ function TransferModal({
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     const focusFrame = window.requestAnimationFrame(() => {
-      const initialFocus = modalRef.current?.querySelector<HTMLElement>('[data-modal-initial-focus]');
+      const initialFocus = modalRef.current?.querySelector<HTMLElement>('[data-modal-initial-focus]:not(:disabled)');
       (initialFocus || closeRef.current)?.focus();
     });
 
     function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === 'Escape' && !closeDisabledRef.current) onCloseRef.current();
+      const target = event.target;
+      const pickerIsHandlingEscape = event.defaultPrevented
+        || (target instanceof Element && target.closest('[data-claim-register-picker-menu="true"]'));
+      if (event.key === 'Escape' && !pickerIsHandlingEscape && !closeDisabledRef.current) onCloseRef.current();
     }
 
     document.addEventListener('keydown', handleKeyDown);
@@ -250,10 +586,6 @@ export default function AssetTransfersClient({
 
   const pendingCount = useMemo(() => outgoing.filter((item) => item.status === 'pending' || item.status === 'expired').length, [outgoing]);
   const cancelTransfer = useMemo(() => outgoing.find((item) => item.id === confirmingCancelId) || null, [confirmingCancelId, outgoing]);
-  const selectedClaimRegister = useMemo(
-    () => claimRegisters.find((register) => register.id === claimRegisterId) ?? null,
-    [claimRegisterId, claimRegisters],
-  );
 
   async function loadOutgoing() {
     setLoading(true);
@@ -508,25 +840,12 @@ export default function AssetTransfersClient({
           </div>
           <form id="asset-transfer-claim-form" onSubmit={claim} className={styles.claimForm}>
             {isDealerAccount ? <>
-              <label className={styles.registerField}>
-                <span>Save asset to</span>
-                <select
-                  data-modal-initial-focus
-                  value={claimRegisterId}
-                  onChange={(event) => setClaimRegisterId(event.target.value)}
-                  disabled={claimRegistersLoading || !claimRegisters.length}
-                  required
-                >
-                  {claimRegistersLoading ? <option value="">Loading Asset Registers…</option> : null}
-                  {!claimRegistersLoading && !claimRegisters.length ? <option value="">No Asset Register available</option> : null}
-                  {claimRegisters.map((register) => <option key={register.id} value={register.id}>{claimRegisterOptionLabel(register)}</option>)}
-                </select>
-                <small>{selectedClaimRegister?.isPrimary
-                  ? 'Your Dealer Asset Register is the safe default for incoming stock and trade-ins.'
-                  : selectedClaimRegister
-                    ? `This asset will be allocated to ${selectedClaimRegister.businessName}.`
-                    : 'Choose the exact Asset Register that should receive this asset.'}</small>
-              </label>
+              <ClaimRegisterPicker
+                registers={claimRegisters}
+                value={claimRegisterId}
+                loading={claimRegistersLoading}
+                onChange={setClaimRegisterId}
+              />
               {claimRegistersError ? <div className={styles.registerError} role="alert">
                 <span>{claimRegistersError}</span>
                 <button type="button" onClick={() => void loadClaimRegisters()}>Try again</button>

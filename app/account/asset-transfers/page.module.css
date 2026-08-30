@@ -163,8 +163,7 @@
   font-weight: 850;
 }
 
-.claimForm input,
-.claimForm select {
+.claimForm input {
   width: 100%;
   min-height: 3.15rem;
   box-sizing: border-box;
@@ -178,34 +177,376 @@
   font-weight: 750;
 }
 
-.claimForm select {
-  appearance: none;
-  padding-right: 2.75rem;
-  background-image:
-    linear-gradient(45deg, transparent 50%, #436259 50%),
-    linear-gradient(135deg, #436259 50%, transparent 50%);
-  background-position:
-    calc(100% - 1.15rem) calc(50% - 0.12rem),
-    calc(100% - 0.82rem) calc(50% - 0.12rem);
-  background-size: 0.34rem 0.34rem, 0.34rem 0.34rem;
-  background-repeat: no-repeat;
-}
-
-.claimForm input:focus,
-.claimForm select:focus {
+.claimForm input:focus {
   outline: none;
   border-color: #2b8062;
   box-shadow: 0 0 0 4px rgba(43, 128, 98, 0.1);
 }
 
-.claimForm select:disabled {
-  cursor: wait;
-  color: #71827c;
-  background-color: #f2f5f3;
+.registerPicker {
+  grid-column: 1 / -1;
+  min-width: 0;
+  display: grid;
+  gap: 0.42rem;
 }
 
-.registerField {
-  grid-column: 1 / -1;
+.registerPickerLabel {
+  color: #40564e;
+  font-size: 0.78rem;
+  font-weight: 850;
+}
+
+.registerPickerTrigger {
+  width: 100%;
+  min-height: 4.15rem;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.78rem;
+  box-sizing: border-box;
+  border: 1px solid #cfded7;
+  border-radius: 0.95rem;
+  color: #17362c;
+  background: linear-gradient(180deg, #ffffff 0%, #f9fcfa 100%);
+  padding: 0.62rem 0.78rem;
+  box-shadow: 0 8px 20px rgba(18, 55, 43, 0.045), inset 0 1px 0 #ffffff;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 150ms ease, box-shadow 150ms ease, background 150ms ease;
+}
+
+.registerPickerTrigger:hover:not(:disabled) {
+  border-color: #8fc6b2;
+  background: #ffffff;
+  box-shadow: 0 10px 24px rgba(18, 55, 43, 0.07), inset 0 1px 0 #ffffff;
+}
+
+.registerPickerTrigger:focus-visible,
+.registerPickerTriggerOpen {
+  outline: none;
+  border-color: #218260;
+  box-shadow: 0 0 0 4px rgba(33, 130, 96, 0.12), 0 10px 24px rgba(18, 55, 43, 0.07);
+}
+
+.registerPickerTrigger:disabled {
+  color: #71827c;
+  background: #f2f5f3;
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+.registerPickerTrigger[data-loading='true'] {
+  cursor: wait;
+}
+
+.registerPickerTriggerIcon,
+.registerPickerOptionIcon {
+  width: 2.6rem;
+  height: 2.6rem;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  border: 1px solid #cde4d9;
+  border-radius: 0.78rem;
+  color: #1e7658;
+  background: linear-gradient(180deg, #f2faf6 0%, #e9f6ef 100%);
+}
+
+.registerPickerTriggerIcon svg,
+.registerPickerOptionIcon svg {
+  width: 1.35rem;
+  height: 1.35rem;
+}
+
+.registerPickerTriggerCopy,
+.registerPickerOptionCopy {
+  min-width: 0;
+  display: grid;
+  gap: 0.18rem;
+}
+
+.registerPickerTriggerCopy strong,
+.registerPickerOptionCopy strong {
+  color: #153c30;
+  font-size: 0.91rem;
+  font-weight: 900;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.registerPickerTriggerCopy small,
+.registerPickerOptionCopy small {
+  color: #657a71;
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.registerPickerChevron {
+  width: 2rem;
+  height: 2rem;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  color: #47665b;
+  background: #f0f6f3;
+  transition: transform 150ms ease, color 150ms ease, background 150ms ease;
+}
+
+.registerPickerTriggerOpen .registerPickerChevron {
+  color: #176047;
+  background: #e6f4ed;
+  transform: rotate(180deg);
+}
+
+.registerPickerChevron svg {
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
+.registerPickerHelper {
+  color: #667970;
+  font-size: 0.75rem;
+  font-weight: 650;
+  line-height: 1.42;
+}
+
+.registerPickerMenu {
+  display: grid;
+  gap: 0.42rem;
+  box-sizing: border-box;
+  border: 1px solid #cbdcd4;
+  border-radius: 1rem;
+  color: #17362c;
+  background: rgba(255, 255, 255, 0.99);
+  padding: 0.55rem;
+  box-shadow: 0 24px 60px rgba(14, 54, 41, 0.2), 0 4px 14px rgba(14, 54, 41, 0.09);
+  font-family: var(--font-body, 'Inter'), sans-serif;
+  overscroll-behavior: contain;
+}
+
+.registerPickerSearchRow {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0.6rem;
+  border: 1px solid #cfded7;
+  border-radius: 0.8rem;
+  background: #f7fbf9;
+  padding: 0 0.72rem;
+  box-shadow: 0 4px 12px rgba(18, 55, 43, 0.045);
+}
+
+.registerPickerSearchRow:focus-within {
+  border-color: #218260;
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(33, 130, 96, 0.11);
+}
+
+.registerPickerSearchRow > span {
+  width: 1.25rem;
+  height: 1.25rem;
+  display: grid;
+  place-items: center;
+  color: #557168;
+}
+
+.registerPickerSearchRow svg {
+  width: 1.15rem;
+  height: 1.15rem;
+}
+
+.registerPickerSearchRow input {
+  width: 100%;
+  min-width: 0;
+  min-height: 2.9rem;
+  box-sizing: border-box;
+  appearance: none;
+  border: 0;
+  outline: 0;
+  color: #17362c;
+  background: transparent;
+  padding: 0;
+  font: inherit;
+  font-size: 0.84rem;
+  font-weight: 750;
+}
+
+.registerPickerSearchRow input::placeholder {
+  color: #83918c;
+}
+
+.registerPickerSearchRow input::-webkit-search-cancel-button {
+  cursor: pointer;
+}
+
+.registerPickerOptions {
+  min-height: 0;
+  max-height: 17rem;
+  display: grid;
+  gap: 0.35rem;
+  overflow-y: auto;
+  padding-right: 0.12rem;
+  scrollbar-width: thin;
+  scrollbar-color: #9bc5b5 #edf4f1;
+  overscroll-behavior: contain;
+}
+
+.registerPickerOptions::-webkit-scrollbar {
+  width: 0.48rem;
+}
+
+.registerPickerOptions::-webkit-scrollbar-track {
+  border-radius: 999px;
+  background: #edf4f1;
+}
+
+.registerPickerOptions::-webkit-scrollbar-thumb {
+  border: 2px solid #edf4f1;
+  border-radius: 999px;
+  background: #79ae9a;
+}
+
+.registerPickerOption {
+  width: 100%;
+  min-height: 4.25rem;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.72rem;
+  box-sizing: border-box;
+  border: 1px solid transparent;
+  border-radius: 0.88rem;
+  color: #17362c;
+  background: #ffffff;
+  padding: 0.62rem 0.68rem;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 120ms ease, background 120ms ease, box-shadow 120ms ease;
+}
+
+.registerPickerOption:hover,
+.registerPickerOptionActive {
+  border-color: #cae1d7;
+  background: #f5fbf8;
+  box-shadow: inset 3px 0 0 #5aab8b;
+}
+
+.registerPickerOptionSelected {
+  border-color: #8bc8b1;
+  background: linear-gradient(135deg, #eff9f4 0%, #f9fcfa 100%);
+}
+
+.registerPickerOptionSelected .registerPickerOptionIcon {
+  border-color: #9bd2bc;
+  color: #ffffff;
+  background: #218260;
+}
+
+.registerPickerOptionCopy em {
+  width: fit-content;
+  border-radius: 999px;
+  color: #176047;
+  background: #e4f4ec;
+  padding: 0.2rem 0.42rem;
+  font-size: 0.64rem;
+  font-style: normal;
+  font-weight: 850;
+  line-height: 1.2;
+}
+
+.registerPickerCheck {
+  width: 1.75rem;
+  height: 1.75rem;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  color: #ffffff;
+  background: transparent;
+}
+
+.registerPickerOptionSelected .registerPickerCheck {
+  background: #218260;
+  box-shadow: 0 6px 12px rgba(33, 130, 96, 0.2);
+}
+
+.registerPickerCheck svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.registerPickerNoResults {
+  min-height: 9.5rem;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 0.32rem;
+  border: 1px dashed #cbdcd4;
+  border-radius: 0.88rem;
+  color: #6a7e75;
+  background: #f9fcfa;
+  padding: 1rem;
+  text-align: center;
+}
+
+.registerPickerNoResults > span {
+  width: 2.35rem;
+  height: 2.35rem;
+  display: grid;
+  place-items: center;
+  margin-bottom: 0.15rem;
+  border-radius: 999px;
+  color: #568071;
+  background: #eaf4ef;
+}
+
+.registerPickerNoResults svg {
+  width: 1.2rem;
+  height: 1.2rem;
+}
+
+.registerPickerNoResults strong {
+  color: #29473d;
+  font-size: 0.86rem;
+  font-weight: 900;
+}
+
+.registerPickerNoResults small {
+  font-size: 0.73rem;
+  font-weight: 650;
+  line-height: 1.4;
+}
+
+.registerPickerNoResults button {
+  margin-top: 0.28rem;
+  border: 0;
+  color: #176047;
+  background: transparent;
+  padding: 0.25rem 0.4rem;
+  font: inherit;
+  font-size: 0.73rem;
+  font-weight: 900;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.registerPickerResultStatus {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  border-top: 1px solid #e3ece8;
+  color: #6d7f77;
+  background: rgba(255, 255, 255, 0.98);
+  padding: 0.38rem 0.48rem 0.04rem;
+  font-size: 0.68rem;
+  font-weight: 750;
+  text-align: right;
 }
 
 .claimForm label small {
@@ -636,7 +977,10 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .backButton {
+  .backButton,
+  .registerPickerTrigger,
+  .registerPickerChevron,
+  .registerPickerOption {
     transition: none;
   }
 }
