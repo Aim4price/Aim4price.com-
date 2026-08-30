@@ -44,7 +44,8 @@ test('new acquisition modal has one controlled spacing system', () => {
   );
 
   assert.match(acquisitionStyles, /\.newAcquisitionChoiceModal\s*\{[\s\S]*?scrollbar-gutter:\s*auto !important;[\s\S]*?padding:\s*0 !important;/);
-  assert.match(acquisitionStyles, /\.newAcquisitionChoiceHeader\s*\{[\s\S]*?display:\s*grid !important;[\s\S]*?grid-template-columns:\s*minmax\(0, 1fr\) auto !important;[\s\S]*?margin:\s*0 !important;[\s\S]*?padding:\s*clamp\(1\.45rem,/);
+  assert.match(acquisitionStyles, /\.newAcquisitionChoiceHeader\s*\{[\s\S]*?display:\s*grid !important;[\s\S]*?grid-template-columns:\s*minmax\(0, 1fr\) 3\.08rem !important;[\s\S]*?column-gap:\s*clamp\(2rem, 3vw, 2\.75rem\) !important;[\s\S]*?margin:\s*0 !important;[\s\S]*?padding:\s*clamp\(1\.45rem,/);
+  assert.match(acquisitionStyles, /\.newAcquisitionChoiceHeader \.modalHeaderText p\s*\{[\s\S]*?max-width:\s*34rem !important;[\s\S]*?white-space:\s*normal !important;[\s\S]*?text-wrap:\s*balance !important;[\s\S]*?overflow-wrap:\s*anywhere !important;/);
   assert.match(acquisitionStyles, /\.newAcquisitionChoiceBody\s*\{[\s\S]*?gap:\s*clamp\(1\.05rem,[\s\S]*?padding:\s*clamp\(1\.25rem,/);
   assert.match(acquisitionStyles, /\.newAcquisitionChoiceActions\s*\{[\s\S]*?gap:\s*0\.75rem !important;/);
 });
