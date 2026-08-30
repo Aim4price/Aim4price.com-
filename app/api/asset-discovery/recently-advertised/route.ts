@@ -28,24 +28,47 @@ function positiveInt(value: string | null, fallback: number): number {
     : fallback;
 }
 
-type RecentAdvertViewer =
-  | { status: 'unauthenticated' }
-  | { status: 'forbidden' }
-  | { status: 'allowed'; userId: string };
+type RecentAdvertAccessReason =
+  | 'allowed'
+  | 'sign_in_required'
+  | 'account_not_eligible'
+  | 'discovery_permission_required';
+
+type RecentAdvertViewer = {
+  userId: string | null;
+  authenticated: boolean;
+  canContact: boolean;
+  identityVisible: boolean;
+  reason: RecentAdvertAccessReason;
+};
 
 async function getRecentAdvertViewer(): Promise<RecentAdvertViewer> {
   const session = await getServerSession({
     allowDealerApp: true,
     allowOwnerApp: true,
   });
-  if (!session?.user?.id) return { status: 'unauthenticated' };
+  if (!session?.user?.id) {
+    return {
+      userId: null,
+      authenticated: false,
+      canContact: false,
+      identityVisible: false,
+      reason: 'sign_in_required',
+    };
+  }
 
   const dealerAppSession = await getDealerAppSession();
   if (
     dealerAppSession
     && !dealerRoleCan(dealerAppSession.role, 'discovery')
   ) {
-    return { status: 'forbidden' };
+    return {
+      userId: session.user.id,
+      authenticated: true,
+      canContact: false,
+      identityVisible: false,
+      reason: 'discovery_permission_required',
+    };
   }
 
   const profile = await getAccountProfile({
@@ -58,31 +81,32 @@ async function getRecentAdvertViewer(): Promise<RecentAdvertViewer> {
     !['owner', 'dealer'].includes(profile.accountType)
     || profile.accountStatus !== 'active'
   ) {
-    return { status: 'forbidden' };
+    return {
+      userId: session.user.id,
+      authenticated: true,
+      canContact: false,
+      identityVisible: false,
+      reason: 'account_not_eligible',
+    };
   }
 
-  return { status: 'allowed', userId: session.user.id };
+  return {
+    userId: session.user.id,
+    authenticated: true,
+    canContact: true,
+    identityVisible: true,
+    reason: 'allowed',
+  };
 }
 
 export async function GET(request: NextRequest) {
   try {
     const viewer = await getRecentAdvertViewer();
-    if (viewer.status === 'unauthenticated') {
-      return json({ ok: false, error: 'You must be signed in.' }, 401);
-    }
-    if (viewer.status === 'forbidden') {
-      return json(
-        {
-          ok: false,
-          error: 'Recently advertised equipment is available to active owner and dealer accounts.',
-        },
-        403,
-      );
-    }
 
     const { searchParams } = request.nextUrl;
     const result = await listRecentMarketplaceAdverts({
       viewerUserId: viewer.userId,
+      identityVisible: viewer.identityVisible,
       search: searchParams.get('search') ?? undefined,
       status: searchParams.get('status') ?? undefined,
       type: searchParams.get('type') ?? undefined,
@@ -91,7 +115,17 @@ export async function GET(request: NextRequest) {
       pageSize: positiveInt(searchParams.get('pageSize'), 10),
     });
 
-    return json({ ok: true, ...result });
+    return json({
+      ok: true,
+      access: {
+        authenticated: viewer.authenticated,
+        canContact: viewer.canContact,
+        identityVisible: viewer.identityVisible,
+        reason: viewer.reason,
+      },
+      canContactAdvertisers: viewer.canContact,
+      ...result,
+    });
   } catch (error) {
     console.error('recently advertised Discovery GET failed', error);
     return json(
@@ -107,55 +141,60 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const viewer = await getRecentAdvertViewer();
-    if (viewer.status === 'unauthenticated') {
+    if (!viewer.authenticated) {
       return json({ ok: false, error: 'You must be signed in.' }, 401);
     }
-    if (viewer.status === 'forbidden') {
+    if (!viewer.canContact || !viewer.userId) {
       return json(
         {
           ok: false,
-          error: 'Recently advertised equipment is available to active owner and dealer accounts.',
+          error: 'Contact requests are available to active owner and dealer accounts.',
         },
         403,
       );
     }
 
-    let body: { listingId?: unknown };
+    let body: unknown;
     try {
-      body = (await request.json()) as { listingId?: unknown };
+      body = await request.json();
     } catch {
+      return json({ ok: false, error: 'Choose a valid advert.' }, 400);
+    }
+    if (!body || typeof body !== 'object' || Array.isArray(body)) {
       return json({ ok: false, error: 'Choose a valid advert.' }, 400);
     }
 
     const sourcingRequest = await createMarketplaceSourcingRequest({
       requesterUserId: viewer.userId,
-      listingId: String(body.listingId ?? '').trim(),
+      listingId: String(
+        (body as { listingId?: unknown }).listingId ?? '',
+      ).trim(),
     });
     return json(
       { ok: true, request: sourcingRequest },
       sourcingRequest.alreadyRequested ? 200 : 201,
     );
   } catch (error) {
-    console.error('recently advertised Discovery sourcing POST failed', error);
+    console.error('recently advertised Discovery contact POST failed', error);
     const code = error instanceof Error ? error.message : '';
     if (code === 'MARKETPLACE_SOURCING_REQUESTER_CONTACT_REQUIRED') {
       return json(
         {
           ok: false,
-          error: 'Add a Marketplace phone number or email in Manage before sending a sourcing request.',
+          error: 'Add a Marketplace phone number or email in Manage before sending a contact request.',
         },
         400,
       );
     }
     if (code === 'MARKETPLACE_SOURCING_REQUESTER_INELIGIBLE') {
       return json(
-        { ok: false, error: 'Only active owner and dealer accounts can send sourcing requests.' },
+        { ok: false, error: 'Only active owner and dealer accounts can send contact requests.' },
         403,
       );
     }
     if (code === 'MARKETPLACE_SOURCING_RATE_LIMITED') {
       return json(
-        { ok: false, error: 'You have sent several sourcing requests. Please try again later.' },
+        { ok: false, error: 'You have sent several contact requests. Please try again later.' },
         429,
       );
     }
@@ -164,14 +203,14 @@ export async function POST(request: NextRequest) {
       || code === 'MARKETPLACE_SOURCING_ADVERT_NOT_AVAILABLE'
     ) {
       return json(
-        { ok: false, error: 'This advert is no longer available for a sourcing request.' },
+        { ok: false, error: 'This advertiser is not available for contact.' },
         404,
       );
     }
     return json(
       {
         ok: false,
-        error: 'Failed to send the sourcing request.',
+        error: 'Failed to send the contact request.',
       },
       500,
     );

@@ -372,6 +372,20 @@
   background: linear-gradient(180deg, #ffffff 0%, #ffe8e8 100%) !important;
 }
 
+.discoveryPublicAction,
+.discoveryPublicAction:hover,
+.discoveryPublicAction:focus {
+  min-width: 10.5rem !important;
+  cursor: not-allowed !important;
+  color: #5d6f69 !important;
+  border-color: #cbd8d3 !important;
+  background: #f2f6f4 !important;
+  box-shadow: none !important;
+  opacity: 1 !important;
+  transform: none !important;
+  white-space: nowrap;
+}
+
 .emptyState {
   color: #607286;
   font-size: 0.9rem;
@@ -899,6 +913,31 @@
   font-size: 0.86rem;
   font-weight: 760;
   overflow-wrap: anywhere;
+}
+
+.discoveryPublicContactPreview {
+  position: relative;
+}
+
+.discoveryPublicContactPreview > div strong,
+.recentAdvertPrivateValue {
+  filter: blur(5px);
+  pointer-events: none;
+  user-select: none;
+}
+
+.discoveryPublicContactPreview > p {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 0.72rem 0.85rem;
+  border: 1px solid #d6e3de;
+  border-radius: 0.65rem;
+  color: #587068;
+  background: #f7faf8;
+  font-size: 0.76rem;
+  font-weight: 700;
+  line-height: 1.4;
+  text-align: center;
 }
 
 .discoveryPhotoGrid {
@@ -2268,10 +2307,13 @@
 
 .discoveryViewSwitchCopy span {
   max-width: 48rem;
+  overflow: hidden;
   color: rgba(18, 53, 45, 0.76);
   font-size: 0.82rem;
   font-weight: 650;
   line-height: 1.42;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .discoveryViewSwitchButtons {
@@ -2325,6 +2367,19 @@
   gap: 0;
 }
 
+.recentAdvertSummary,
+.recentAdvertSummary > article {
+  min-width: 0;
+}
+
+.recentAdvertSummary span,
+.recentAdvertSummary small {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .recentAdvertIntro {
   min-width: 0;
   display: grid;
@@ -2348,8 +2403,7 @@
   gap: 6px;
 }
 
-.recentAdvertIntro > div:first-child > span,
-.recentAdvertContactKicker {
+.recentAdvertIntro > div:first-child > span {
   color: #915315;
   font-size: 0.7rem;
   font-weight: 950;
@@ -2409,44 +2463,62 @@
 .recentAdvertByline {
   min-width: 0;
   display: inline-flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
   gap: 4px;
   margin-top: 7px;
+  overflow: hidden;
   color: rgba(18, 53, 45, 0.78) !important;
   font-size: 0.78rem !important;
   font-weight: 650 !important;
   line-height: 1.35 !important;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .recentAdvertCardTitle {
+  max-width: 100%;
   margin: 0;
+  overflow: hidden;
   color: var(--owner-ink, #12352d);
   font-size: clamp(1.25rem, 1.7vw, 1.52rem);
   font-weight: 800;
   line-height: 1.15;
   letter-spacing: -0.03em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .recentAdvertByline strong {
+  min-width: 0;
+  overflow: hidden;
   color: #155941;
   font-weight: 850;
+  text-overflow: ellipsis;
+}
+
+.recentAdvertExpandedTitle {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .recentAdvertStatus {
   min-width: 0;
-  min-height: 34px;
+  min-height: 32px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0 12px;
+  padding: 0 11px;
   border: 1px solid;
-  border-radius: 999px;
-  font-size: 0.69rem;
-  font-weight: 900;
-  letter-spacing: 0.035em;
+  border-left-width: 4px;
+  border-radius: 6px;
+  font-size: 0.74rem;
+  font-weight: 820;
+  letter-spacing: 0;
   line-height: 1;
-  text-transform: uppercase;
+  text-transform: none;
   white-space: nowrap;
 }
 
@@ -2466,6 +2538,18 @@
   color: #68717b;
   border-color: rgba(120, 132, 143, 0.32);
   background: #f4f6f7;
+}
+
+.recentAdvertContactDenied,
+.recentAdvertContactDenied:hover,
+.recentAdvertContactDenied:focus {
+  cursor: not-allowed !important;
+  color: #5f706a !important;
+  border-color: #cbd8d3 !important;
+  background: #f2f6f4 !important;
+  box-shadow: none !important;
+  opacity: 1 !important;
+  transform: none !important;
 }
 
 .recentAdvertCardActions {
@@ -2793,23 +2877,75 @@
 }
 
 .recentAdvertContactModal {
-  width: min(100%, 42rem) !important;
+  width: min(100%, 43rem) !important;
+  padding: 0 !important;
+  overflow: hidden !important;
 }
 
-.recentAdvertContactKicker {
-  display: block;
-  margin-bottom: 8px;
+.recentAdvertContactHeader {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) 3.1rem;
+  align-items: start !important;
+  gap: clamp(1.5rem, 4vw, 2.75rem) !important;
+  margin: 0 !important;
+  padding: 1.5rem 1.55rem 1.25rem !important;
+}
+
+.recentAdvertContactHeader > div {
+  min-width: 0;
+}
+
+.recentAdvertContactHeader h3 {
+  margin: 0 !important;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.recentAdvertContactHeader p {
+  max-width: 32rem;
+  margin-top: 0.5rem !important;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.recentAdvertContactHeader > button {
+  position: static !important;
+  inset: auto !important;
+  align-self: start;
+  justify-self: end;
 }
 
 .recentAdvertContactBody {
   display: grid;
-  gap: 13px;
+  gap: 0.9rem;
+  margin: 0 !important;
+  padding: 1.2rem 1.55rem 1.35rem !important;
 }
 
 .recentAdvertContactAsset {
-  min-height: 76px;
+  min-height: 0;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: baseline;
+  gap: 0.75rem;
+  padding: 0.9rem 1rem;
   border-color: rgba(205, 150, 69, 0.27);
   background: #fffaf0;
+}
+
+.recentAdvertContactAsset span {
+  margin: 0;
+  font-size: 0.75rem;
+  letter-spacing: 0;
+  text-transform: none;
+  white-space: nowrap;
+}
+
+.recentAdvertContactAsset strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .recentAdvertContactGrid {
@@ -2834,8 +2970,8 @@
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   align-items: start;
-  gap: 11px;
-  padding: 14px 15px;
+  gap: 14px;
+  padding: 16px;
   border: 1px solid rgba(66, 173, 115, 0.3);
   border-radius: 14px;
   color: #174637;
@@ -2845,7 +2981,7 @@
 .recentAdvertRequestConfirmation > span:last-child {
   min-width: 0;
   display: grid;
-  gap: 5px;
+  gap: 6px;
 }
 
 .recentAdvertRequestConfirmation strong {
@@ -2858,7 +2994,7 @@
   color: rgba(18, 53, 45, 0.78);
   font-size: 0.8rem;
   font-weight: 650;
-  line-height: 1.48;
+  line-height: 1.5;
 }
 
 .recentAdvertRequestConfirmation small {
@@ -2881,6 +3017,13 @@
 .recentAdvertRequestConfirmationIcon svg {
   width: 21px;
   height: 21px;
+}
+
+.recentAdvertContactActions {
+  justify-content: flex-end !important;
+  gap: 0.75rem !important;
+  margin: 0 !important;
+  padding: 1rem 1.55rem 1.3rem !important;
 }
 
 .recentAdvertCardCompact {
@@ -2927,8 +3070,31 @@
   min-width: 0;
   min-height: 28px;
   padding: 0 9px;
-  border-radius: 999px;
+  border-radius: 5px;
   font-size: 0.61rem;
+}
+
+.discoveryLeadAssetCard .discoveryDetailRow > span,
+.discoveryLeadAssetCard .discoveryDetailRow > strong,
+.discoveryLeadAssetCard .discoveryInlineContact span,
+.discoveryLeadAssetCard .discoveryInlineContact strong {
+  min-width: 0;
+  overflow: hidden;
+  overflow-wrap: normal;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.discoveryLeadAssetCard .discoveryDetailRow {
+  height: 3.08rem !important;
+  min-height: 3.08rem !important;
+  grid-template-columns: minmax(5.6rem, 0.75fr) minmax(0, 1.25fr) !important;
+}
+
+.discoveryLeadAssetCard .discoveryDetailRow > span,
+.discoveryLeadAssetCard .discoveryDetailRow > strong {
+  min-height: 0 !important;
+  border-bottom: 0 !important;
 }
 
 .recentAdvertMeta {
@@ -3059,6 +3225,24 @@
   .recentAdvertFilterActions > *,
   .recentAdvertContactActions > * {
     width: 100%;
+  }
+
+  .recentAdvertContactHeader {
+    grid-template-columns: minmax(0, 1fr) 2.75rem;
+    gap: 1rem !important;
+    padding: 1.2rem 1.15rem 1rem !important;
+  }
+
+  .recentAdvertContactHeader h3 {
+    font-size: 1.35rem !important;
+  }
+
+  .recentAdvertContactBody {
+    padding: 1rem 1.15rem 1.15rem !important;
+  }
+
+  .recentAdvertContactActions {
+    padding: 0.9rem 1.15rem 1.15rem !important;
   }
 
   .recentAdvertCloseAction {

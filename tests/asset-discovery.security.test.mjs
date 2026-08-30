@@ -71,9 +71,12 @@ test("approved owner enquiries expose each party's permitted contact only to the
 });
 
 test("approved contact gives the requester a direct WhatsApp action", () => {
+  const approvedContactStart = client.indexOf(
+    "{privateDiscoveryAccess && activeEnquiry ? (",
+  );
   const approvedContactModal = client.slice(
-    client.indexOf("{activeEnquiry ? ("),
-    client.indexOf("</section>", client.indexOf("{activeEnquiry ? (")),
+    approvedContactStart,
+    client.indexOf("</section>", approvedContactStart),
   );
   assert.match(approvedContactModal, /activeEnquiry\.ownerContact\?\.phone/);
   assert.match(approvedContactModal, /ownerWhatsAppHref\(activeEnquiry\.ownerContact, activeEnquiry\.asset\)/);
@@ -92,6 +95,109 @@ test("locked list responses do not select photos or owner private fields", () =>
     projection,
     /asset\.photos|owner\.user_id|owner\.phone|serial|registration|valuation|documents/i,
   );
+});
+
+test("public Discovery opens with a dedicated contact-free projection", () => {
+  const publicList = discovery.slice(
+    discovery.indexOf("export async function listPublicAssetDiscoveryAssets"),
+    discovery.indexOf("async function findSafeAssetForEnquiry"),
+  );
+  const publicAssetQuery = publicList.slice(
+    publicList.indexOf("const assetRows = await db.query<PublicAssetDiscoveryRow>"),
+  );
+  const publicProjection = publicAssetQuery.slice(
+    publicAssetQuery.indexOf("select"),
+    publicAssetQuery.indexOf("from public.asset_register_items"),
+  );
+
+  assert.match(discoveryPage, /getServerSession/);
+  assert.doesNotMatch(discoveryPage, /requireActivePageAccess|redirect\(/);
+  assert.match(discoveryPage, /allowRecentAdverts=\{activeAccountType !== 'licensing'\}/);
+  assert.match(discoveryRoute, /getPublicAssetDiscoveryBrowseAccess\(\)/);
+  assert.match(discoveryRoute, /listPublicAssetDiscoveryAssets\(commonFilters\)/);
+  assert.match(
+    discoveryRoute.slice(discoveryRoute.indexOf("export async function POST")),
+    /if \(!session\?\.user\?\.id\) return unauthorized\(\)/,
+  );
+  assert.match(discovery, /accountType: "public"/);
+  assert.match(discovery, /canContact: false/);
+  assert.match(discovery, /reason: "public_preview"/);
+  assert.doesNotMatch(publicList, /ensureAssetDiscoveryTables\(\)/);
+  assert.doesNotMatch(publicList, /create table|alter table|insert into|update public|delete from/i);
+  assert.doesNotMatch(publicProjection, /photos|phone|email|owner_user_id|enquiry|approved|request_again|renewal/i);
+  assert.doesNotMatch(
+    publicProjection,
+    /asset\.kind|asset\.brand_name|asset\.model_name|asset\.typed_model_name|specs_json|asset\.title/i,
+  );
+  assert.match(publicProjection, /PUBLIC_ASSET_TYPE_SQL/);
+  assert.match(publicProjection, /PUBLIC_ASSET_BRAND_SQL/);
+  assert.match(publicProjection, /PUBLIC_ASSET_MODEL_SQL/);
+  assert.match(publicProjection, /PUBLIC_SAFE_CONDITION_SQL/);
+  assert.match(publicProjection, /PUBLIC_SAFE_PROVINCE_SQL/);
+  assert.match(client, /access\?\.accountType === "public"/);
+  assert.match(client, /Sign in to contact/);
+  assert.match(client, /No private image was sent to your browser/);
+  assert.match(client, /discoveryPublicContactPreview/);
+  assert.match(client, /toggleAssetDetails\(requestedAsset, data\.access\)/);
+});
+
+test("public Discovery search is bounded and limited to curated or numeric fields", () => {
+  const publicWhere = discovery.slice(
+    discovery.indexOf("function basePublicAssetWhere"),
+    discovery.indexOf("export async function listAssetDiscoveryAssets"),
+  );
+
+  assert.match(discovery, /PUBLIC_DISCOVERY_SEARCH_MAX_LENGTH = 120/);
+  assert.match(
+    publicWhere,
+    /asText\(input\.search\)\.slice\(0, PUBLIC_DISCOVERY_SEARCH_MAX_LENGTH\)/,
+  );
+  assert.match(publicWhere, /PUBLIC_ASSET_TYPE_SQL/);
+  assert.match(publicWhere, /PUBLIC_ASSET_BRAND_SQL/);
+  assert.match(publicWhere, /PUBLIC_ASSET_MODEL_SQL/);
+  assert.match(publicWhere, /asset\.year_model::text/);
+  assert.match(publicWhere, /asset\.hours::text/);
+  assert.match(publicWhere, /asset\.life_worked_percent::text/);
+  assert.match(publicWhere, /PUBLIC_SAFE_CONDITION_SQL/);
+  assert.match(publicWhere, /PUBLIC_SAFE_PROVINCE_SQL/);
+  assert.doesNotMatch(
+    publicWhere,
+    /RESOLVED_ASSET_|ASSET_SPECS_JSON_SQL|asset\.typed_model_name|asset\.title|asset\.brand_name|asset\.model_name/,
+  );
+});
+
+test("public Discovery failures return a generic error", () => {
+  const getRoute = discoveryRoute.slice(
+    discoveryRoute.indexOf("export async function GET"),
+    discoveryRoute.indexOf("export async function POST"),
+  );
+
+  assert.match(getRoute, /error: "Failed to load Discovery\."/);
+  assert.doesNotMatch(getRoute, /errorMessage\(error/);
+});
+
+test("non-contactable access clears and gates all private client state", () => {
+  const accessTransition = client.slice(
+    client.indexOf("// A session can expire while this client remains mounted"),
+    client.indexOf("setAccess(nextAccess)"),
+  );
+
+  assert.match(client, /const privateDiscoveryAccess =/);
+  assert.match(
+    client,
+    /access\?\.accountType !== "public" && Boolean\(access\?\.canContact\)/,
+  );
+  assert.match(accessTransition, /!nextAccess\?\.canContact/);
+  assert.match(accessTransition, /nextAccess\.accountType === "public"/);
+  assert.match(accessTransition, /setExpandedAssetId\(null\)/);
+  assert.match(accessTransition, /setDetailsByAssetId\(\{\}\)/);
+  assert.match(accessTransition, /setPhotoIndexByAssetId\(\{\}\)/);
+  assert.match(accessTransition, /setPhotoModal\(null\)/);
+  assert.match(accessTransition, /setActiveEnquiry\(null\)/);
+  assert.match(client, /privateDiscoveryAccess && details\?\.photosUnlocked/);
+  assert.match(client, /privateDiscoveryAccess && details\.ownerContact/);
+  assert.match(client, /privateDiscoveryAccess && photoModal/);
+  assert.match(client, /privateDiscoveryAccess && activeEnquiry/);
 });
 
 test("locked cards render a static placeholder without a private image", () => {
@@ -255,7 +361,7 @@ test("approved notification opens the matching Discovery card", () => {
   assert.match(discoveryPage, /initialOpenAssetId=/);
   assert.match(discoveryRoute, /focusAssetId: searchParams\.get\("focusAssetId"\)/);
   assert.match(discovery, /focusOrderSql/);
-  assert.match(client, /void toggleAssetDetails\(requestedAsset\)/);
+  assert.match(client, /void toggleAssetDetails\(requestedAsset, data\.access\)/);
   assert.match(client, /scrollIntoView\(\{ behavior: "smooth", block: "start" \}\)/);
 });
 

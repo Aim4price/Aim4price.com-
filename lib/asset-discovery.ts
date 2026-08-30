@@ -72,12 +72,31 @@ export type AssetDiscoveryListResult = {
   pagination: AssetDiscoveryPagination;
 };
 
+export type PublicAssetDiscoveryAsset = Pick<
+  SafeAssetSummary,
+  "type" | "brand" | "model" | "year" | "usage" | "condition" | "province"
+> & {
+  id: string;
+};
+
+export type PublicAssetDiscoveryListResult = Omit<
+  AssetDiscoveryListResult,
+  "assets"
+> & {
+  assets: PublicAssetDiscoveryAsset[];
+};
+
 export type AssetDiscoveryBrowseAccess = {
-  accountType: "owner" | "dealer" | "licensing";
+  accountType: "owner" | "dealer" | "licensing" | "public";
   canBrowse: boolean;
+  canContact: boolean;
   participationEnabled: boolean;
   eligibleAssetCount: number;
-  reason: "allowed" | "participation_disabled" | "no_eligible_assets";
+  reason:
+    | "allowed"
+    | "participation_disabled"
+    | "no_eligible_assets"
+    | "public_preview";
 };
 
 export type AssetDiscoveryContactDetails = {
@@ -146,6 +165,19 @@ type AssetDiscoveryRow = {
   enquiry_status: string | null;
   request_again_at: string | null;
   approved_at: string | null;
+};
+
+type PublicAssetDiscoveryRow = {
+  id: string;
+  type_label: string | null;
+  brand_name: string | null;
+  model_name: string | null;
+  year_model: number | string | null;
+  hours: number | string | null;
+  life_worked_percent: number | string | null;
+  condition: string | null;
+  province: string | null;
+  family_usage_metric_type: string | null;
 };
 
 type EnquiryRow = {
@@ -261,6 +293,52 @@ const RESOLVED_ASSET_MODEL_SQL = `coalesce(
   nullif(trim((${ASSET_SPECS_JSON_SQL}->>'model_name')), ''),
   nullif(trim((${ASSET_SPECS_JSON_SQL}->>'model')), '')
 )`;
+// Public Discovery deliberately uses only curated taxonomy values. Asset-entered
+// names, titles and specs stay out of both the public projection and search.
+const PUBLIC_ASSET_TYPE_SQL =
+  "coalesce(nullif(trim(family.family_label), ''), 'Asset')";
+const PUBLIC_ASSET_BRAND_SQL =
+  "coalesce(nullif(trim(brand.name), ''), 'Unknown')";
+const PUBLIC_ASSET_MODEL_SQL = `coalesce(
+  nullif(trim(model.model_name), ''),
+  nullif(trim(model.display_name), ''),
+  'Unknown'
+)`;
+const PUBLIC_SAFE_CONDITION_SQL = `case lower(nullif(trim(asset.condition), ''))
+  when 'excellent' then 'Excellent'
+  when 'good' then 'Good'
+  when 'fair' then 'Fair'
+  when 'used' then 'Used'
+  when 'serious' then 'Serious Wear'
+  when 'serious wear' then 'Serious Wear'
+  when 'serious_wear' then 'Serious Wear'
+  else 'Unknown'
+end`;
+const PUBLIC_SAFE_PROVINCE_SQL = `case lower(nullif(trim(owner.province), ''))
+  when 'western cape' then 'Western Cape'
+  when 'gauteng' then 'Gauteng'
+  when 'kwazulu-natal' then 'KwaZulu-Natal'
+  when 'kwazulu natal' then 'KwaZulu-Natal'
+  when 'eastern cape' then 'Eastern Cape'
+  when 'free state' then 'Free State'
+  when 'limpopo' then 'Limpopo'
+  when 'mpumalanga' then 'Mpumalanga'
+  when 'northern cape' then 'Northern Cape'
+  when 'north west' then 'North West'
+  else 'Province not saved'
+end`;
+const PUBLIC_PROVINCE_ABBREVIATION_SQL = `case lower(${PUBLIC_SAFE_PROVINCE_SQL})
+  when 'western cape' then 'WC'
+  when 'gauteng' then 'GP'
+  when 'kwazulu-natal' then 'KZN'
+  when 'eastern cape' then 'EC'
+  when 'free state' then 'FS'
+  when 'limpopo' then 'LP'
+  when 'mpumalanga' then 'MP'
+  when 'northern cape' then 'NC'
+  when 'north west' then 'NW'
+  else ''
+end`;
 const LICENSE_RENEWAL_DATE_SQL = `coalesce(
   nullif(trim((${ASSET_SPECS_JSON_SQL}->>'licenseRenewalDate')), ''),
   nullif(trim((${ASSET_SPECS_JSON_SQL}->>'license_renewal_date')), ''),
@@ -328,6 +406,7 @@ const PROPERTY_LIKE_ASSET_PATTERN =
   "(property|building|land|house|office|shed|storage|warehouse)";
 const ASSET_DISCOVERY_DEFAULT_PAGE_SIZE = 10;
 const ASSET_DISCOVERY_PAGE_SIZE_OPTIONS = [10, 25, 50] as const;
+const PUBLIC_DISCOVERY_SEARCH_MAX_LENGTH = 120;
 let assetDiscoveryTablesPromise: Promise<void> | null = null;
 
 function asText(value: unknown): string {
@@ -730,6 +809,34 @@ function mapAsset(row: AssetDiscoveryRow): AssetDiscoveryAsset {
   };
 }
 
+function mapPublicAsset(
+  row: PublicAssetDiscoveryRow,
+): PublicAssetDiscoveryAsset {
+  const usageMetric = asText(row.family_usage_metric_type).toLowerCase();
+  const savedUsage = numericValue(row.hours);
+  const savedPercent = numericValue(row.life_worked_percent);
+  const usage = isPercentUsageValue(usageMetric)
+    ? savedPercent !== null
+      ? formatPercent(savedPercent)
+      : "Unknown"
+    : savedUsage !== null
+      ? `${formatWholeNumber(savedUsage)} ${isKilometreUsageValue(usageMetric) ? "km" : "hours"}`
+      : savedPercent !== null
+        ? formatPercent(savedPercent)
+        : "Unknown";
+
+  return {
+    id: row.id,
+    type: asText(row.type_label) || "Asset",
+    brand: asText(row.brand_name) || "Unknown",
+    model: asText(row.model_name) || "Unknown",
+    year: asInt(row.year_model) > 0 ? String(asInt(row.year_model)) : "Unknown",
+    usage,
+    condition: asText(row.condition) || "Unknown",
+    province: asText(row.province) || "Province not saved",
+  };
+}
+
 function contactDetails(input: {
   businessName?: string | null;
   displayName?: string | null;
@@ -1004,6 +1111,7 @@ export async function getAssetDiscoveryBrowseAccess(input: {
     return {
       accountType,
       canBrowse: true,
+      canContact: true,
       participationEnabled: true,
       eligibleAssetCount: 0,
       reason: "allowed",
@@ -1057,9 +1165,21 @@ export async function getAssetDiscoveryBrowseAccess(input: {
   return {
     accountType,
     canBrowse: reason === "allowed",
+    canContact: reason === "allowed",
     participationEnabled,
     eligibleAssetCount,
     reason,
+  };
+}
+
+export function getPublicAssetDiscoveryBrowseAccess(): AssetDiscoveryBrowseAccess {
+  return {
+    accountType: "public",
+    canBrowse: true,
+    canContact: false,
+    participationEnabled: false,
+    eligibleAssetCount: 0,
+    reason: "public_preview",
   };
 }
 
@@ -1226,6 +1346,66 @@ function baseAssetWhere(input: {
   if (type && type !== "all") {
     params.push(type.toLowerCase());
     where.push(`lower(${RESOLVED_ASSET_TYPE_SQL}) = $${params.length}`);
+  }
+
+  return { params, whereClause: `where ${where.join(" and ")}` };
+}
+
+function basePublicAssetWhere(input: {
+  search?: string;
+  province?: string;
+  type?: string;
+}) {
+  const params: unknown[] = [];
+  const where = [
+    "owner.account_type = 'owner'",
+    "owner.account_status = 'active'",
+    "owner.discovery_participation_enabled = true",
+    "asset.equipment_family_id is not null",
+    "family.id is not null",
+    "lower(coalesce(asset.selected_method, '')) <> 'manual'",
+    `${PUBLIC_ASSET_TYPE_SQL} !~* '${PROPERTY_LIKE_ASSET_PATTERN}'`,
+    `not exists (
+      select 1
+      from public.asset_discovery_enquiries blocked_enquiry
+      where blocked_enquiry.asset_register_item_id = asset.id
+        and blocked_enquiry.status = 'temporarily_denied'
+        and blocked_enquiry.request_again_at > now()
+    )`,
+  ];
+
+  const search = asText(input.search).slice(0, PUBLIC_DISCOVERY_SEARCH_MAX_LENGTH);
+  if (search) {
+    params.push(`%${escapeLike(search)}%`);
+    const p = `$${params.length}`;
+    where.push(`(
+      ${PUBLIC_ASSET_TYPE_SQL} ilike ${p} escape '\\'
+      or ${PUBLIC_ASSET_BRAND_SQL} ilike ${p} escape '\\'
+      or ${PUBLIC_ASSET_MODEL_SQL} ilike ${p} escape '\\'
+      or coalesce(asset.year_model::text, 'Unknown') ilike ${p} escape '\\'
+      or coalesce(asset.hours::text, '') ilike ${p} escape '\\'
+      or concat_ws(' ', nullif(asset.hours::text, ''), 'hours') ilike ${p} escape '\\'
+      or concat_ws(' ', nullif(asset.hours::text, ''), 'km') ilike ${p} escape '\\'
+      or coalesce(asset.life_worked_percent::text, '') ilike ${p} escape '\\'
+      or concat_ws(' ', nullif(asset.life_worked_percent::text, ''), '% worked') ilike ${p} escape '\\'
+      or ${PUBLIC_SAFE_CONDITION_SQL} ilike ${p} escape '\\'
+      or ${PUBLIC_SAFE_PROVINCE_SQL} ilike ${p} escape '\\'
+      or ${PUBLIC_PROVINCE_ABBREVIATION_SQL} ilike ${p} escape '\\'
+    )`);
+  }
+
+  const province = asText(input.province);
+  if (province === "__province_not_saved__") {
+    where.push(`${PUBLIC_SAFE_PROVINCE_SQL} = 'Province not saved'`);
+  } else if (province && province !== "all") {
+    params.push(province.toLowerCase());
+    where.push(`lower(${PUBLIC_SAFE_PROVINCE_SQL}) = $${params.length}`);
+  }
+
+  const type = asText(input.type);
+  if (type && type !== "all") {
+    params.push(type.toLowerCase());
+    where.push(`lower(${PUBLIC_ASSET_TYPE_SQL}) = $${params.length}`);
   }
 
   return { params, whereClause: `where ${where.join(" and ")}` };
@@ -1418,6 +1598,151 @@ export async function listAssetDiscoveryAssets(input: {
       provinceCount: Math.max(0, asInt(summaryRow?.province_count)),
       dueSoonCount: Math.max(0, asInt(summaryRow?.due_soon_count)),
       overdueCount: Math.max(0, asInt(summaryRow?.overdue_count)),
+    },
+    pagination: {
+      page,
+      pageSize,
+      totalItems,
+      totalPages,
+      rangeStart,
+      rangeEnd,
+      hasPreviousPage: page > 1,
+      hasNextPage: page < totalPages,
+    },
+  };
+}
+
+export async function listPublicAssetDiscoveryAssets(input: {
+  search?: string;
+  province?: string;
+  type?: string;
+  focusAssetId?: string;
+  page?: number;
+  pageSize?: number;
+}): Promise<PublicAssetDiscoveryListResult> {
+  const db = getDb();
+  const { params, whereClause } = basePublicAssetWhere(input);
+  const requestedPage = positiveInt(input.page, 1);
+  const pageSize = normalizeDiscoveryPageSize(input.pageSize);
+
+  const summarySql = `
+    select
+      count(*)::int as total_assets,
+      count(distinct ${PUBLIC_ASSET_TYPE_SQL})::int as type_count,
+      count(distinct ${PUBLIC_SAFE_PROVINCE_SQL})::int as province_count,
+      0::int as due_soon_count,
+      0::int as overdue_count
+    from public.asset_register_items asset
+    join public.account_profiles owner on owner.user_id = asset.user_id
+    left join public.equipment_families family on family.id = asset.equipment_family_id
+    left join public.equipment_models model on model.id = asset.equipment_model_id
+    left join public.brands brand on brand.id = coalesce(asset.brand_id, model.brand_id)
+    ${whereClause}
+  `;
+
+  const optionWhere = basePublicAssetWhere({});
+  const [summaryRows, provinceRows, typeRows] = await Promise.all([
+    db.query<AssetDiscoverySummaryRow>(summarySql, params),
+    db.query<OptionRow>(
+      `
+        select ${PUBLIC_SAFE_PROVINCE_SQL} as value, count(*)::int as count
+        from public.asset_register_items asset
+        join public.account_profiles owner on owner.user_id = asset.user_id
+        left join public.equipment_families family on family.id = asset.equipment_family_id
+        left join public.equipment_models model on model.id = asset.equipment_model_id
+        left join public.brands brand on brand.id = coalesce(asset.brand_id, model.brand_id)
+        ${optionWhere.whereClause}
+        group by ${PUBLIC_SAFE_PROVINCE_SQL}
+        order by ${PUBLIC_SAFE_PROVINCE_SQL} asc
+      `,
+      optionWhere.params,
+    ),
+    db.query<OptionRow>(
+      `
+        select ${PUBLIC_ASSET_TYPE_SQL} as value, count(*)::int as count
+        from public.asset_register_items asset
+        join public.account_profiles owner on owner.user_id = asset.user_id
+        left join public.equipment_families family on family.id = asset.equipment_family_id
+        left join public.equipment_models model on model.id = asset.equipment_model_id
+        left join public.brands brand on brand.id = coalesce(asset.brand_id, model.brand_id)
+        ${optionWhere.whereClause}
+        group by ${PUBLIC_ASSET_TYPE_SQL}
+        order by ${PUBLIC_ASSET_TYPE_SQL} asc
+      `,
+      optionWhere.params,
+    ),
+  ]);
+
+  const summaryRow = summaryRows.rows[0];
+  const totalItems = Math.max(0, asInt(summaryRow?.total_assets));
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+  const page = Math.min(Math.max(1, requestedPage), totalPages);
+  const offset = (page - 1) * pageSize;
+  const listParams = [...params];
+  const focusAssetId = asText(input.focusAssetId);
+  let focusOrderSql = "";
+  if (focusAssetId) {
+    listParams.push(focusAssetId);
+    focusOrderSql = `case when asset.id::text = $${listParams.length} then 0 else 1 end,`;
+  }
+  listParams.push(pageSize, offset);
+  const limitParam = `$${listParams.length - 1}`;
+  const offsetParam = `$${listParams.length}`;
+
+  const assetRows = await db.query<PublicAssetDiscoveryRow>(
+    `
+      select
+        asset.id::text,
+        ${PUBLIC_ASSET_TYPE_SQL} as type_label,
+        ${PUBLIC_ASSET_BRAND_SQL} as brand_name,
+        ${PUBLIC_ASSET_MODEL_SQL} as model_name,
+        asset.year_model,
+        asset.hours,
+        asset.life_worked_percent,
+        ${PUBLIC_SAFE_CONDITION_SQL} as condition,
+        ${PUBLIC_SAFE_PROVINCE_SQL} as province,
+        family.usage_metric_type as family_usage_metric_type
+      from public.asset_register_items asset
+      join public.account_profiles owner on owner.user_id = asset.user_id
+      left join public.equipment_families family on family.id = asset.equipment_family_id
+      left join public.equipment_models model on model.id = asset.equipment_model_id
+      left join public.brands brand on brand.id = coalesce(asset.brand_id, model.brand_id)
+      ${whereClause}
+      order by
+        ${focusOrderSql}
+        asset.updated_at desc nulls last,
+        asset.created_at desc nulls last,
+        asset.id desc
+      limit ${limitParam}
+      offset ${offsetParam}
+    `,
+    listParams,
+  );
+  const rangeStart = totalItems ? offset + 1 : 0;
+  const rangeEnd = totalItems ? Math.min(offset + pageSize, totalItems) : 0;
+
+  return {
+    assets: assetRows.rows.map(mapPublicAsset),
+    provinceOptions: provinceRows.rows
+      .map((row) => ({
+        value: asText(row.value) || "__province_not_saved__",
+        label: asText(row.value) || "Province not saved",
+        count: asInt(row.count),
+      }))
+      .filter((row) => row.count > 0),
+    typeOptions: typeRows.rows
+      .map((row) => ({
+        value: asText(row.value),
+        label: asText(row.value),
+        count: asInt(row.count),
+      }))
+      .filter((row) => row.value && row.count > 0),
+    summary: {
+      totalAssets: totalItems,
+      typeCount: Math.max(0, asInt(summaryRow?.type_count)),
+      provinceCount: Math.max(0, asInt(summaryRow?.province_count)),
+      dueSoonCount: 0,
+      overdueCount: 0,
     },
     pagination: {
       page,

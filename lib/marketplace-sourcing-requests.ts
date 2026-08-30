@@ -108,7 +108,7 @@ const MAX_REQUESTER_PHONE_LENGTH = 80;
 const MAX_REQUESTER_EMAIL_LENGTH = 320;
 const MAX_NEW_REQUESTS_PER_HOUR = 20;
 const DEFAULT_SOURCING_MESSAGE =
-  'I am looking for equipment like this. Can you help me source one?';
+  'I would like to contact you about this equipment.';
 
 let sourcingRequestSchemaPromise: Promise<void> | null = null;
 
@@ -206,7 +206,12 @@ const LATEST_VISIBLE_ADVERT_SQL = `
   join public.account_profiles advertiser
     on advertiser.user_id = advert.user_id
    and advertiser.account_status = 'active'
-   and advertiser.account_type in ('owner', 'dealer')
+   and advertiser.account_type = 'dealer'
+   and lower(trim(coalesce(advertiser.account_subtype, ''))) in (
+     'machinery-dealer',
+     'motor-dealer',
+     'equipment-middleman'
+   )
   join public.account_profiles requester
     on requester.user_id = $1
    and requester.account_status = 'active'
