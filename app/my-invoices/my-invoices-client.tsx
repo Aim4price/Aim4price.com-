@@ -1,7 +1,7 @@
 'use client';
 
 import DropdownOverlay from '../../components/DropdownOverlay';
-import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent, type SVGProps } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent, type SVGProps } from 'react';
 import { useSearchParams } from 'next/navigation';
 import AppHeader from '../../components/AppHeader';
 import { openCanonicalReportUrl } from '../../lib/report-open';
@@ -4130,22 +4130,33 @@ export default function MyInvoicesClient({
               <div ref={budgetWizardBodyRef} className={[styles.invoiceDropCodeBody, styles.budgetWizardBody, wizardStyles.body].join(' ')}>
                 <p className={wizardStyles.intro}>Complete one short step at a time. Your spending budget is saved on the final step.</p>
                 <ol className={`${styles.invoiceDropWizardProgress} ${wizardStyles.progress}`} aria-label={'Step ' + budgetWizardStep + ' of 4'}>
-                  {([['Coverage', 1], ['Period', 2], ['Limit', 3], ['Review', 4]] as const).map(([label, step]) => (
-                    <li
-                      key={label}
-                      className={[
-                        styles.invoiceDropWizardProgressItem,
-                        wizardStyles.progressItem,
-                        budgetWizardStep === step ? styles.invoiceDropWizardProgressItemActive : '',
-                        budgetWizardStep === step ? wizardStyles.progressItemCurrent : '',
-                        budgetWizardStep > step ? styles.invoiceDropWizardProgressItemComplete : '',
-                        budgetWizardStep > step ? wizardStyles.progressItemComplete : '',
-                      ].join(' ')}
-                      aria-current={budgetWizardStep === step ? 'step' : undefined}
-                    >
-                      <span aria-hidden="true">{budgetWizardStep > step ? '✓' : step}</span>
-                      <strong>{label}</strong>
-                    </li>
+                  {([['Coverage', 1], ['Period', 2], ['Limit', 3], ['Review', 4]] as const).map(([label, step], index) => (
+                    <Fragment key={label}>
+                      <li
+                        className={[
+                          styles.invoiceDropWizardProgressItem,
+                          wizardStyles.progressItem,
+                          budgetWizardStep === step ? styles.invoiceDropWizardProgressItemActive : '',
+                          budgetWizardStep === step ? wizardStyles.progressItemCurrent : '',
+                          budgetWizardStep > step ? styles.invoiceDropWizardProgressItemComplete : '',
+                          budgetWizardStep > step ? wizardStyles.progressItemComplete : '',
+                        ].join(' ')}
+                        aria-current={budgetWizardStep === step ? 'step' : undefined}
+                      >
+                        <span aria-hidden="true">{budgetWizardStep > step ? '✓' : step}</span>
+                        <strong>{label}</strong>
+                      </li>
+                      {index < 3 ? (
+                        <li
+                          role="presentation"
+                          aria-hidden="true"
+                          className={[
+                            styles.budgetWizardProgressConnector,
+                            budgetWizardStep > step ? styles.budgetWizardProgressConnectorComplete : '',
+                          ].join(' ')}
+                        />
+                      ) : null}
+                    </Fragment>
                   ))}
                 </ol>
 

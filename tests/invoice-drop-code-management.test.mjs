@@ -76,7 +76,7 @@ test('Cost Ledger exposes a gated three-step code wizard only in the direct owne
 });
 
 test('Invoice Drop code wizard stays focused and responsive', () => {
-  assert.match(ledgerStyles, /\.downloadModal\.invoiceDropCodeModal \{[\s\S]*?width: min\(100%, 1120px\) !important/);
+  assert.match(ledgerStyles, /\.downloadModal\.invoiceDropCodeModal \{[\s\S]*?width: min\(100%, 1280px\) !important/);
   assert.match(ledgerStyles, /\.invoiceDropWizardProgress \{[\s\S]*?grid-template-columns: repeat\(3, minmax\(0, 1fr\)\)/);
   assert.match(ledgerStyles, /\.invoiceDropScopeGrid \{[\s\S]*?grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
   assert.match(ledgerStyles, /@media \(max-width: 720px\)[\s\S]*?\.invoiceDropScopeGrid \{[\s\S]*?grid-template-columns: 1fr/);
