@@ -689,8 +689,8 @@ test('asset disposal uses a valid withdrawn marketplace state and keeps database
   assert.match(deleteHandler, /The asset could not be archived\. Please try again\./);
   assert.doesNotMatch(deleteHandler, /formatUnknownError\(error/);
   assert.match(client, /draft\.reason === 'mistake_duplicate'[\s\S]{0,100}\? \{ reason: draft\.reason \}/);
-  assert.match(disposalModal, /disposalDraft\.reason !== 'mistake_duplicate' \? \([\s\S]*?assetDisposalFields/);
-  assert.match(disposalModal, /No explanation is required\./);
+  assert.match(disposalModal, /disposalDraft\.reason === 'mistake_duplicate' \? <p[\s\S]*?assetDisposalDeleteNotice[\s\S]*?: <div[\s\S]*?assetDisposalFields/);
+  assert.match(disposalModal, /No price or disposal details are required\./);
   assert.match(disposalModal, /styles\.assetDisposalOverlay/);
   assert.match(styles, /\.assetDisposalOverlay \{[\s\S]*?width: 100vw !important;[\s\S]*?max-width: none !important;/);
   assert.match(styles, /\.assetDisposalModal \{[\s\S]*?width: min\(60rem, calc\(100vw - 2rem\)\) !important;[\s\S]*?display: flex !important;[\s\S]*?flex-direction: column !important;[\s\S]*?overflow: hidden !important;[\s\S]*?margin-inline: auto !important;/);
