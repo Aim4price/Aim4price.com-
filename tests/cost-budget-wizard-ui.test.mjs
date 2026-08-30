@@ -100,8 +100,14 @@ test('period is selected on step two in a wider, responsive budget modal', () =>
   assert.match(periodStep, /A fresh limit starts each calendar year\./);
   assert.match(styles, /\.downloadModal\.budgetWizardModal\s*\{[^}]*width:\s*min\(1280px, 100%\) !important;/);
   assert.match(styles, /\.budgetWizardPeriodChoices\s*\{[^}]*grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\);/);
-  assert.match(styles, /@media \(min-width: 1000px\)[\s\S]*?\.budgetWizardModal \.invoiceDropWizardProgressItem:not\(:last-child\) > strong\s*\{[^}]*flex:\s*0 0 4\.75rem;[^}]*min-width:\s*4\.75rem;[^}]*padding-right:\s*0;/);
-  assert.match(styles, /@media \(min-width: 1000px\)[\s\S]*?\.budgetWizardModal \.invoiceDropWizardProgressItem:not\(:last-child\)::after\s*\{[^}]*min-width:\s*3\.5rem;[^}]*margin:\s*0 0\.5rem;/);
+  assert.match(budgetModal, /\.map\(\(\[label, step\], index\) =>/);
+  assert.match(budgetModal, /index < 3/);
+  assert.match(budgetModal, /styles\.budgetWizardProgressConnector/);
+  assert.match(budgetModal, /budgetWizardStep > step \? styles\.budgetWizardProgressConnectorComplete/);
+  assert.match(styles, /\.budgetWizardProgressConnector\s*\{[^}]*display:\s*none;/);
+  assert.match(styles, /@media \(min-width: 1000px\)[\s\S]*?\.budgetWizardModal \.invoiceDropWizardProgress\s*\{[^}]*display:\s*grid !important;[^}]*grid-template-columns:\s*max-content minmax\(5rem, 1fr\)\s*max-content minmax\(5rem, 1fr\)\s*max-content minmax\(5rem, 1fr\)\s*max-content;[^}]*column-gap:\s*clamp\(0\.85rem, 1\.4vw, 1\.25rem\) !important;/);
+  assert.match(styles, /@media \(min-width: 1000px\)[\s\S]*?\.budgetWizardProgressConnector\s*\{[^}]*display:\s*block;[^}]*width:\s*100%;[^}]*height:\s*2px;/);
+  assert.match(styles, /\.budgetWizardProgressConnectorComplete\s*\{[^}]*background:\s*#83c8ae;/);
   assert.match(styles, /@media \(max-width: 720px\)[\s\S]*?\.budgetWizardModal \.invoiceDropWizardProgress\s*\{[^}]*grid-template-columns:\s*repeat\(4, minmax\(0, 1fr\)\);/);
 });
 

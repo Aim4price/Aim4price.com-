@@ -5022,7 +5022,7 @@
 }
 
 .downloadModal.invoiceDropCodeModal {
-  width: min(100%, 1120px) !important;
+  width: min(100%, 1280px) !important;
   max-height: min(88dvh, 800px);
   grid-template-rows: auto minmax(0, 1fr) auto;
 }
@@ -5988,16 +5988,46 @@
   padding: 0.36rem 0.52rem;
 }
 
+.budgetWizardProgressConnector {
+  display: none;
+}
+
 @media (min-width: 1000px) {
-  .budgetWizardModal .invoiceDropWizardProgressItem:not(:last-child) > strong {
-    flex: 0 0 4.75rem;
-    min-width: 4.75rem;
+  .budgetWizardModal .invoiceDropWizardProgress {
+    display: grid !important;
+    grid-template-columns:
+      max-content minmax(5rem, 1fr)
+      max-content minmax(5rem, 1fr)
+      max-content minmax(5rem, 1fr)
+      max-content;
+    align-items: center;
+    column-gap: clamp(0.85rem, 1.4vw, 1.25rem) !important;
+  }
+
+  .budgetWizardModal .invoiceDropWizardProgressItem {
+    display: flex !important;
+    flex: none;
+  }
+
+  .budgetWizardModal .invoiceDropWizardProgressItem > strong {
+    min-width: max-content;
     padding-right: 0;
   }
 
   .budgetWizardModal .invoiceDropWizardProgressItem:not(:last-child)::after {
-    min-width: 3.5rem;
-    margin: 0 0.5rem;
+    content: none !important;
+  }
+
+  .budgetWizardProgressConnector {
+    display: block;
+    width: 100%;
+    height: 2px;
+    align-self: center;
+    background: #dce8e3;
+  }
+
+  .budgetWizardProgressConnectorComplete {
+    background: #83c8ae;
   }
 }
 
