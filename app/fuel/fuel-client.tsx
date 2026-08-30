@@ -672,6 +672,16 @@ function EditIcon(props: SVGProps<SVGSVGElement>) {
   );
 }
 
+function HistoryIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <IconBase {...props}>
+      <path d="M3 12a9 9 0 1 0 3-6.7L3 8" />
+      <path d="M3 3v5h5" />
+      <path d="M12 7v5l3 2" />
+    </IconBase>
+  );
+}
+
 function FuelSlipsIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <IconBase {...props}>
@@ -4053,10 +4063,6 @@ export default function FuelClient({
           >
             <div className={`${styles.fuelSlipManagerHeader} ${wizardStyles.header}`}>
               <div className={`${wizardStyles.headerText} ${styles.fuelSlipManagerHeaderCopy}`}>
-                <span className={styles.fuelSlipManagerEyebrow}>
-                  <FuelSlipsIcon aria-hidden="true" />
-                  Fuel Ledger
-                </span>
                 <h2 id="fuel-slip-manager-title">Manage fuel slips</h2>
                 <p>Search, filter, review and download saved fuel slips.</p>
               </div>
@@ -4150,7 +4156,6 @@ export default function FuelClient({
               <section className={styles.fuelSlipManagerPanel} aria-label="Saved fuel slips">
                 <div className={styles.fuelSlipManagerSummary}>
                   <div className={styles.fuelSlipManagerResultCopy} aria-live="polite">
-                    <span className={styles.fuelSlipManagerSummaryLabel}>Ledger summary</span>
                     <strong>{visibleFuelSlipManagerSlips.length.toLocaleString('en-ZA')} {visibleFuelSlipManagerSlips.length === 1 ? 'fuel slip' : 'fuel slips'}</strong>
                     <span>{visibleFuelSlipManagerSlips.length
                       ? `Showing ${fuelSlipManagerResultStart.toLocaleString('en-ZA')}–${fuelSlipManagerResultEnd.toLocaleString('en-ZA')} of ${visibleFuelSlipManagerSlips.length.toLocaleString('en-ZA')}`
@@ -4318,6 +4323,7 @@ export default function FuelClient({
                                 onClick={() => void openFuelSlipHistory(slip)}
                                 disabled={deletingThisSlip}
                               >
+                                <HistoryIcon className={styles.buttonIcon} />
                                 <span>Change history</span>
                               </button>
                               {!isAccountantReadOnly ? (

@@ -110,11 +110,13 @@ test('fuel slip manager is compact, scalable and exposes secondary details on de
   assert.match(managerModal, /aria-expanded=\{isExpanded\}/);
   assert.match(managerModal, /aria-controls=\{detailsId\}/);
   assert.match(managerModal, /styles\.fuelSlipManagerExpanded/);
+  assert.match(managerModal, /<HistoryIcon className=\{styles\.buttonIcon\} \/>[\s\S]*?<span>Change history<\/span>/);
   assert.match(managerModal, />\s*First\s*<\/button>/);
   assert.match(managerModal, />\s*Last\s*<\/button>/);
   assert.match(managerModal, /Show all fuel slips/);
   assert.match(managerModal, /styles\.fuelSlipManagerBackdrop/);
-  assert.match(managerModal, /Fuel Ledger/);
+  assert.doesNotMatch(managerModal, /styles\.fuelSlipManagerEyebrow|>\s*Fuel Ledger\s*</);
+  assert.doesNotMatch(managerModal, /styles\.fuelSlipManagerSummaryLabel|>\s*Ledger summary\s*</i);
   assert.match(managerModal, /activeFuelSlipManagerFilterChips\.map/);
   assert.match(managerModal, /removeFuelSlipManagerFilter\(chip\.id\)/);
   assert.match(managerModal, /Remove search for/);
@@ -202,6 +204,11 @@ test('manager and two-step wizard stay usable on desktop and mobile viewports', 
   assert.match(redesignStyles, /\.fuelSlipManagerModal\.fuelSlipManagerModal\s*\{[\s\S]*?width:\s*min\(1320px, 100%\)[\s\S]*?height:\s*auto !important[\s\S]*?min-height:\s*0 !important/);
   assert.match(redesignStyles, /\.fuelSlipManagerPanel\s*\{[\s\S]*?max-height:\s*590px/);
   assert.match(redesignStyles, /\.fuelSlipManagerList\s*\{[\s\S]*?overflow-y:\s*auto/);
+  assert.match(redesignStyles, /\.fuelSlipManagerModal \.fuelSlipManagerToolbarButtons\s*\{[\s\S]*?repeat\(auto-fit, minmax\(148px, 1fr\)\)/);
+  assert.match(redesignStyles, /\.fuelSlipManagerModal button\.fuelSlipManagerToolbarButton\s*\{[\s\S]*?min-height:\s*64px !important[\s\S]*?border-radius:\s*16px !important/);
+  assert.match(redesignStyles, /\.fuelSlipManagerContextChips > button\s*\{[\s\S]*?border-radius:\s*10px/);
+  assert.match(redesignStyles, /\.fuelSlipManagerRowMain \.fuelSlipManagerStatusBadge\s*\{[\s\S]*?min-height:\s*42px[\s\S]*?border-radius:\s*10px/);
+  assert.match(redesignStyles, /\.fuelSlipManagerModal \.fuelSlipManagerExpanded \.fuelSlipManagerRowActions button,[\s\S]*?min-height:\s*52px !important/);
   assert.match(redesignStyles, /\.fuelSlipManagerRowMain\s*\{[\s\S]*?grid-template-columns:\s*var\(--fuel-slip-manager-columns\)/);
   assert.match(redesignStyles, /@media \(max-width: 1120px\)[\s\S]*?grid-template-areas:/);
   assert.match(redesignStyles, /"identity status"\s*"date details"\s*"fuel litres"\s*"amount amount"/);
