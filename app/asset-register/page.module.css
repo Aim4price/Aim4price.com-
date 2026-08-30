@@ -35440,18 +35440,26 @@ button.documentOpenLink {
   inset: 0 !important;
 }
 
+.assetDisposalOverlay {
+  width: 100vw !important;
+  max-width: none !important;
+  box-sizing: border-box !important;
+  overflow-x: hidden !important;
+}
+
 .assetDisposalModal {
-  width: min(52rem, calc(100vw - 2rem)) !important;
+  width: min(60rem, calc(100vw - 2rem)) !important;
   max-height: min(90dvh, 52rem) !important;
   display: flex !important;
   flex-direction: column !important;
   overflow: hidden !important;
   padding: 0 !important;
+  margin-inline: auto !important;
 }
 
 .assetDisposalHeader {
   margin: 0 !important;
-  padding: 1.35rem 1.5rem 1.1rem !important;
+  padding: 1.5rem 2rem 1.2rem !important;
   background: linear-gradient(135deg, rgba(238, 248, 243, 0.96), rgba(255, 255, 255, 0.98) 58%) !important;
 }
 
@@ -35464,17 +35472,17 @@ button.documentOpenLink {
   min-height: 0 !important;
   overflow-y: auto !important;
   overscroll-behavior: contain !important;
-  scrollbar-gutter: stable !important;
-  gap: 1rem !important;
-  padding: 1.15rem 1.5rem 1.4rem !important;
+  scrollbar-gutter: stable both-edges !important;
+  gap: 1.15rem !important;
+  padding: 1.25rem 2rem 1.5rem !important;
 }
 
 .assetDisposalProgress {
   display: grid !important;
   grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
-  gap: 0.45rem !important;
+  gap: 0.6rem !important;
   margin: 0 !important;
-  padding: 0 !important;
+  padding: 0 0.35rem !important;
   list-style: none !important;
 }
 
@@ -35544,7 +35552,7 @@ button.documentOpenLink {
   min-height: 19rem !important;
   display: grid !important;
   align-content: start !important;
-  gap: 1rem !important;
+  gap: 1.1rem !important;
 }
 
 .assetDisposalStepHeader {
@@ -35645,15 +35653,15 @@ button.documentOpenLink {
 .assetDisposalReasonGrid {
   display: grid !important;
   grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-  gap: 0.65rem !important;
+  gap: 0.75rem !important;
 }
 
 .assetDisposalReasonButton {
-  min-height: 3.55rem !important;
+  min-height: 3.75rem !important;
   display: flex !important;
   align-items: center !important;
-  gap: 0.65rem !important;
-  padding: 0.75rem 0.85rem !important;
+  gap: 0.7rem !important;
+  padding: 0.8rem 1rem !important;
   border: 1px solid rgba(205, 220, 231, 0.96) !important;
   border-radius: 0.95rem !important;
   color: #233846 !important;
@@ -35850,8 +35858,8 @@ button.documentOpenLink {
 
 .assetDisposalFields {
   grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-  gap: 0.85rem !important;
-  padding: 1rem !important;
+  gap: 1rem !important;
+  padding: 1.1rem !important;
 }
 
 .assetDisposalNoteField {
@@ -35904,6 +35912,14 @@ button.documentOpenLink {
   .assetDisposalBody {
     padding-left: 1rem !important;
     padding-right: 1rem !important;
+  }
+
+  .assetDisposalBody {
+    scrollbar-gutter: auto !important;
+  }
+
+  .assetDisposalProgress {
+    padding-inline: 0 !important;
   }
 
   .assetDisposalStep {
