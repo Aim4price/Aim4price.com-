@@ -21022,7 +21022,6 @@ export default function AssetRegisterClient({
                   <PlusIcon className={styles.buttonIcon} />
                   <span>
                     <strong>Add maintenance</strong>
-                    <small>Create a maintenance record already linked to this asset.</small>
                   </span>
                 </Link>
 
@@ -21033,7 +21032,6 @@ export default function AssetRegisterClient({
                   <ManageIcon className={styles.buttonIcon} />
                   <span>
                     <strong>Manage maintenance</strong>
-                    <small>Open this asset&apos;s service history, schedule and reminders.</small>
                   </span>
                 </Link>
 
@@ -21050,7 +21048,6 @@ export default function AssetRegisterClient({
                     <ManageIcon className={styles.buttonIcon} />
                     <span>
                       <strong>Dealer tracking settings</strong>
-                      <small>Review dealer maintenance access and update permissions.</small>
                     </span>
                   </button>
                 ) : null}
