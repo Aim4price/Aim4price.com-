@@ -59,16 +59,16 @@ test('Cost Ledger exposes a gated three-step code wizard only in the direct owne
   assert.match(ledger, /useState<InvoiceDropWizardStep>\(1\)/);
   assert.match(ledger, /\[\['Access', 1\], \['Routing', 2\], \['Code', 3\]\]/);
   assert.match(ledger, /invoiceDropWizardStep === 1[\s\S]*?Where should invoices go\?/);
-  assert.match(ledger, /Contribution-only access/);
+  assert.match(ledger, /Invoice uploads only\. No asset access\./);
   assert.match(ledger, /<strong>All assets<\/strong>/);
   assert.match(ledger, /<strong>One asset<\/strong>/);
   assert.match(ledger, /selectInvoiceDropScope\('all'\)/);
   assert.match(ledger, /selectInvoiceDropScope\('asset'\)/);
-  assert.match(ledger, /invoiceDropWizardStep === 2[\s\S]*?Choose the asset/);
-  assert.match(ledger, /invoiceDropWizardStep === 3[\s\S]*?Contribution code/);
+  assert.match(ledger, /invoiceDropWizardStep === 2[\s\S]*?Choose an asset/);
+  assert.match(ledger, /invoiceDropWizardStep === 3[\s\S]*?Create your code/);
   assert.match(ledger, /invoiceDropWizardStep !== 3/);
   assert.match(ledger, /setInvoiceDropCodeLoading\(true\);[\s\S]*?setInvoiceDropWizardStep\(3\)/);
-  assert.match(ledger, /never opens or lists your assets/i);
+  assert.match(ledger, /Your assets stay private\./);
   assert.match(ledger, /no asset list is shown/i);
   assert.match(ledger, /disabled=\{invoiceDropWizardStep === 1 \? !invoiceDropScope : invoiceDropScope === 'asset' && !invoiceDropAssetId\}/);
   assert.match(ledger, /const invoiceDropTargetKey = invoiceDropScope === 'all'[\s\S]*?\? 'all'[\s\S]*?: invoiceDropScope === 'asset'[\s\S]*?\? invoiceDropAssetId[\s\S]*?: ''/);
@@ -81,27 +81,31 @@ test('Invoice Drop code wizard stays focused and responsive', () => {
   assert.match(ledgerStyles, /\.invoiceDropScopeGrid \{[\s\S]*?grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
   assert.match(ledgerStyles, /@media \(max-width: 720px\)[\s\S]*?\.invoiceDropScopeGrid \{[\s\S]*?grid-template-columns: 1fr/);
   assert.match(ledgerStyles, /\.invoiceDropCodeHeader \.closeButton,[\s\S]*?border-radius: 999px/);
+  assert.match(ledgerStyles, /\.invoiceDropCodeCreateState \.primaryButton \{[\s\S]*?grid-column: 2/);
 });
 
 test('one-asset routing uses a searchable app-styled picker instead of a native select', () => {
   assert.match(invoiceDropWizard, /invoiceDropAssetPickerOpen/);
-  assert.match(invoiceDropWizard, /Search your Asset Register/);
+  assert.match(invoiceDropWizard, /invoiceDropAsset\?\.title \?\? 'Choose an asset'/);
   assert.match(invoiceDropWizard, /placeholder="Search assets\.\.\."/);
   assert.match(invoiceDropWizard, /filteredInvoiceDropAssets\.map/);
   assert.match(invoiceDropWizard, /chooseInvoiceDropAsset\(asset\.id\)/);
   assert.match(ledger, /const invoiceDropAssetDetails = useMemo/);
   assert.match(ledger, /formatAssetUsageReading\(invoiceDropAsset\.usageReading, invoiceDropAsset\.usageMetric\)/);
-  assert.match(invoiceDropWizard, /invoiceDropAssetDetails \|\| 'Invoices route directly to this asset\.'/);
+  assert.match(invoiceDropWizard, /invoiceDropAssetDetails \|\| \[invoiceDropAsset\.categoryLabel, invoiceDropAsset\.yearModel\]/);
+  assert.doesNotMatch(invoiceDropWizard, /Choose one saved asset/);
   assert.doesNotMatch(invoiceDropWizard, /<select/);
   assert.match(ledgerStyles, /\.invoiceDropAssetPickerModal \{[\s\S]*?width: min\(100%, 880px\)/);
 });
 
 test('code stage makes secure creation and deliberate replacement explicit', () => {
-  assert.match(invoiceDropWizard, /Generate a secure code/);
-  assert.match(invoiceDropWizard, /You do not need to type one/);
+  assert.match(invoiceDropWizard, /Create your code/);
   assert.match(invoiceDropWizard, /Create code/);
   assert.match(invoiceDropWizard, /Change code/);
-  assert.match(invoiceDropWizard, /Keep using it until you choose to change or revoke it/);
+  assert.match(invoiceDropWizard, /Active code/);
+  assert.doesNotMatch(invoiceDropWizard, /Generate a secure code/);
+  assert.doesNotMatch(invoiceDropWizard, /You do not need to type one/);
+  assert.doesNotMatch(invoiceDropWizard, /Keep using it until you choose to change or revoke it/);
   assert.match(ledger, /Change this code\? The current code will stop working immediately\./);
 });
 
@@ -114,8 +118,18 @@ test('current code can be explicitly viewed, hidden and copied without storing p
   assert.match(invoiceDropWizard, /visibleInvoiceDropCode/);
   assert.match(ledger, /setNewInvoiceDropCode\(''\)/);
   assert.match(ledger, /A4P-••••-••••-\{invoiceDropCode\.lastFour\}/);
-  assert.match(ledger, /owner-only screen/i);
+  assert.match(ledger, /Visible here only\./);
   assert.match(ledger, /href="\/drop-invoice"/);
   assert.match(ledger, /Copy link/);
   assert.match(ledger, /Share/);
+});
+
+test('Invoice Drop wizard avoids repeated headings and helper copy', () => {
+  assert.doesNotMatch(invoiceDropWizard, /Choose where invoices should go\./);
+  assert.doesNotMatch(invoiceDropWizard, /Complete one short step at a time/);
+  assert.doesNotMatch(invoiceDropWizard, /Choose one option\./);
+  assert.doesNotMatch(invoiceDropWizard, /Confirm the invoice route/);
+  assert.doesNotMatch(invoiceDropWizard, /Choose the asset/);
+  assert.doesNotMatch(invoiceDropWizard, /Create and share the code/);
+  assert.doesNotMatch(invoiceDropWizard, /<span>Contribution code<\/span>/);
 });
