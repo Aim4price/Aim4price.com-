@@ -4411,8 +4411,8 @@ export default function MyInvoicesClient({
       ) : null}
 
       {invoiceDropCodeOpen && !invoiceDropAssetPickerOpen ? (
-        <div className={`${styles.modalBackdrop} ${wizardStyles.overlay}`} role="dialog" aria-modal="true" aria-labelledby="invoice-drop-code-title">
-          <div className={`${styles.downloadModal} ${styles.invoiceDropCodeModal} ${wizardStyles.dialog}`}>
+        <div className={wizardStyles.overlay} role="dialog" aria-modal="true" aria-labelledby="invoice-drop-code-title">
+          <div className={`${styles.invoiceDropCodeModal} ${wizardStyles.dialog} ${wizardStyles.wideDialog}`}>
             <div className={`${styles.modalHeader} ${styles.invoiceDropCodeHeader} ${wizardStyles.header}`}>
               <div className={wizardStyles.headerText}>
                 <h2 id="invoice-drop-code-title">Invoice Drop code</h2>

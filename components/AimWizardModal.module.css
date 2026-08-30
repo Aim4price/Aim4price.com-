@@ -3,6 +3,8 @@
   inset: 0;
   z-index: 10000;
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
   place-items: center;
   padding: 24px;
   background: rgba(18, 37, 43, 0.48);
@@ -22,6 +24,10 @@
   border-radius: 30px !important;
   background: #ffffff !important;
   box-shadow: 0 34px 90px rgba(7, 31, 38, 0.32) !important;
+}
+
+.dialog.wideDialog {
+  width: min(1280px, 100%) !important;
 }
 
 .dialog > form {
