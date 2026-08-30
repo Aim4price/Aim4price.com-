@@ -163,7 +163,8 @@
   font-weight: 850;
 }
 
-.claimForm input {
+.claimForm input,
+.claimForm select {
   width: 100%;
   min-height: 3.15rem;
   box-sizing: border-box;
@@ -177,10 +178,68 @@
   font-weight: 750;
 }
 
-.claimForm input:focus {
+.claimForm select {
+  appearance: none;
+  padding-right: 2.75rem;
+  background-image:
+    linear-gradient(45deg, transparent 50%, #436259 50%),
+    linear-gradient(135deg, #436259 50%, transparent 50%);
+  background-position:
+    calc(100% - 1.15rem) calc(50% - 0.12rem),
+    calc(100% - 0.82rem) calc(50% - 0.12rem);
+  background-size: 0.34rem 0.34rem, 0.34rem 0.34rem;
+  background-repeat: no-repeat;
+}
+
+.claimForm input:focus,
+.claimForm select:focus {
   outline: none;
   border-color: #2b8062;
   box-shadow: 0 0 0 4px rgba(43, 128, 98, 0.1);
+}
+
+.claimForm select:disabled {
+  cursor: wait;
+  color: #71827c;
+  background-color: #f2f5f3;
+}
+
+.registerField {
+  grid-column: 1 / -1;
+}
+
+.claimForm label small {
+  color: #667970;
+  font-size: 0.75rem;
+  font-weight: 650;
+  line-height: 1.42;
+}
+
+.registerError {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  border: 1px solid #e2b4b4;
+  border-radius: 0.85rem;
+  color: #8a3f3f;
+  background: #fff4f4;
+  padding: 0.72rem 0.8rem;
+  font-size: 0.78rem;
+  font-weight: 750;
+}
+
+.registerError button {
+  flex: 0 0 auto;
+  border: 0;
+  color: #7b3434;
+  background: transparent;
+  padding: 0.25rem;
+  font: inherit;
+  font-weight: 900;
+  text-decoration: underline;
+  cursor: pointer;
 }
 
 .secondaryButton,

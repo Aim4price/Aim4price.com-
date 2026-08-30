@@ -16,7 +16,7 @@ export default async function DealerInventoryTransfersPage() {
 
   return (
     <div className={`${styles.page} ${styles.transferPage}`}>
-      <AssetTransfersClient context="dealer" />
+      <AssetTransfersClient context="dealer" isDealerAccount />
     </div>
   );
 }

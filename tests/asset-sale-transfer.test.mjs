@@ -98,6 +98,22 @@ test('claiming is Asset Register scoped, rate limited and does not reveal accoun
   assert.doesNotMatch(transferRoute, /buyer.*email.*exists/i);
 });
 
+test('claim completion opens the exact asset in the desktop Asset Register', () => {
+  const claimStart = transferSource.indexOf('export async function claimAssetTransfer');
+  const claimEnd = transferSource.indexOf('export async function regenerateAssetTransferCode');
+  const claimSource = transferSource.slice(claimStart, claimEnd);
+
+  assert.match(transferPage, /href=\{claimed\.redirectTo\}>Open asset/);
+  assert.match(transferRoute, /function claimedAssetRedirect/);
+  assert.match(transferRoute, /params\.set\('registerId', input\.registerId\)/);
+  assert.match(transferRoute, /params\.set\('assetId', input\.assetId\)/);
+  assert.match(transferRoute, /\? '\/dealer\/inventory'\s*:\s*'\/asset-register'/);
+  assert.doesNotMatch(claimSource, /\/owner-app\/assets\//);
+  assert.match(desktopClient, /params\.get\('convertedAssetId'\) \|\| params\.get\('assetId'\)/);
+  assert.match(desktopClient, /setExpandedAssetId\(focusAssetId\)/);
+  assert.match(desktopClient, /scrollToAssetCard\(focusAssetId\)/);
+});
+
 test('portable asset history moves while seller-private financial data is reset', () => {
   assert.match(transferSource, /asset_maintenance_records/);
   assert.match(transferSource, /asset_depreciation_snapshots/);

@@ -11,5 +11,5 @@ export default async function AssetTransfersPage() {
   const { session } = await requireActivePageAccess();
   const profile = await getAccountProfile({ id: session.user.id, name: session.user.name, email: session.user.email });
   if (!isAssetRegisterAccountType(profile.accountType)) redirect('/account');
-  return <AssetTransfersClient />;
+  return <AssetTransfersClient isDealerAccount={profile.accountType === 'dealer'} />;
 }

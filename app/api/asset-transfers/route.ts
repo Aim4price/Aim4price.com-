@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession, isAdminSupportSession } from '../../../lib/auth-session';
+import { getServerSession, isAdminSupportSession, isDealerAppSession } from '../../../lib/auth-session';
 import { getAssetRegisterAccountAccess } from '../../../lib/asset-register-account-access';
 import {
   cancelAssetTransfer,
@@ -26,7 +26,8 @@ async function requireTransferSession() {
       ),
     } as const;
   }
-  if (!await getAssetRegisterAccountAccess(session)) {
+  const accountAccess = await getAssetRegisterAccountAccess(session);
+  if (!accountAccess) {
     return {
       response: NextResponse.json(
         { ok: false, error: 'Asset transfers are available to Owner accounts and authorised Dealer inventory staff.' },
@@ -34,7 +35,27 @@ async function requireTransferSession() {
       ),
     } as const;
   }
-  return { session } as const;
+  return { session, accountAccess } as const;
+}
+
+function claimedAssetRedirect(input: {
+  accountType: 'owner' | 'dealer';
+  dealerAppSession: boolean;
+  registerId: string;
+  registerIsPrimary: boolean;
+  assetId: string;
+}): string {
+  const params = new URLSearchParams();
+  if (input.accountType === 'dealer') {
+    params.set('dealerView', input.registerIsPrimary ? 'dealer' : 'client');
+  }
+  params.set('registerId', input.registerId);
+  params.set('assetId', input.assetId);
+
+  const basePath = input.accountType === 'dealer' && input.dealerAppSession
+    ? '/dealer/inventory'
+    : '/asset-register';
+  return `${basePath}?${params.toString()}`;
 }
 
 function errorResponse(error: unknown) {
@@ -70,6 +91,12 @@ function errorResponse(error: unknown) {
     return NextResponse.json(
       { ok: false, error: 'Use an active Owner or Dealer account to claim this asset.' },
       { status: 403 },
+    );
+  }
+  if (code === 'ASSET_TRANSFER_REGISTER_NOT_FOUND') {
+    return NextResponse.json(
+      { ok: false, error: 'Choose an Asset Register that belongs to this account.' },
+      { status: 400 },
     );
   }
   if (code === 'ASSET_TRANSFER_NOT_FOUND') {
@@ -112,8 +139,21 @@ export async function POST(request: NextRequest) {
         buyerEmail: access.session.user.email,
         assetIdentifier: body.assetIdentifier,
         transferCode: body.transferCode,
+        targetRegisterId: body.targetRegisterId,
       });
-      return NextResponse.json({ ok: true, claimed });
+      return NextResponse.json({
+        ok: true,
+        claimed: {
+          ...claimed,
+          redirectTo: claimedAssetRedirect({
+            accountType: access.accountAccess.accountType,
+            dealerAppSession: isDealerAppSession(access.session),
+            registerId: claimed.registerId,
+            registerIsPrimary: claimed.registerIsPrimary,
+            assetId: claimed.assetId,
+          }),
+        },
+      });
     }
     if (action === 'regenerate') {
       const transfer = await regenerateAssetTransferCode({
