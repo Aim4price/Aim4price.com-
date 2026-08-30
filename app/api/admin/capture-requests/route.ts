@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { adminApiError, requireAdminApiAccess } from "../../../../lib/admin-api-access";
 import {
+  adminCaptureTargetKey,
+  getAdminCaptureTargets,
+  type AdminCaptureTarget,
+} from "../../../../lib/admin-capture-targets";
+import {
   CAPTURE_REQUEST_STATUSES,
   CAPTURE_REQUEST_TYPES,
   CAPTURE_SUBMISSION_CHANNELS,
@@ -40,21 +45,27 @@ function compactIdentifier(value: string | null): string {
   return value.length > 20 ? `${value.slice(0, 8)}…${value.slice(-6)}` : value;
 }
 
-function mapCaptureRequestForAdmin(request: CaptureRequest) {
+function mapCaptureRequestForAdmin(
+  request: CaptureRequest,
+  matchedTarget: AdminCaptureTarget | null,
+) {
   const payload = request.capturedPayload ?? {};
   const candidate = request.candidatePayload ?? {};
   const senderDisplayName =
     request.sender.businessName || request.sender.name || request.sender.email || request.sender.phone;
   const ownerDisplayName =
+    matchedTarget?.ownerDisplayName ||
     payloadText(payload, "ownerDisplayName", "ownerName", "customerName") ||
     payloadText(candidate, "ownerDisplayName", "ownerName", "customerName") ||
     compactIdentifier(request.ownerUserId);
   const assetDisplayName =
+    (matchedTarget?.targetType === "asset" ? matchedTarget.targetDisplayName : "") ||
     payloadText(payload, "assetDisplayName", "assetTitle", "assetName") ||
     payloadText(candidate, "assetDisplayName", "targetLabel", "submittedAssetDescription") ||
     request.assetReference ||
     compactIdentifier(request.assetId);
   const fuelStorageDisplayName =
+    (matchedTarget?.targetType === "fuel_storage" ? matchedTarget.targetDisplayName : "") ||
     payloadText(payload, "fuelStorageDisplayName", "storageName", "tankName") ||
     compactIdentifier(request.fuelStorageId);
 
@@ -144,10 +155,27 @@ export async function GET(request: NextRequest) {
     const visibleRequests = completedTodayOnly
       ? captureRequests.filter((entry) => isCompletedToday(entry, new Date()))
       : captureRequests;
+    const matchedTargets = await getAdminCaptureTargets(
+      visibleRequests.map((entry) => ({
+        ownerUserId: entry.ownerUserId,
+        assetId: entry.assetId,
+        fuelStorageId: entry.fuelStorageId,
+      })),
+    );
 
     return NextResponse.json({
       ok: true,
-      requests: visibleRequests.map(mapCaptureRequestForAdmin),
+      requests: visibleRequests.map((entry) => {
+        const targetKey = adminCaptureTargetKey({
+          ownerUserId: entry.ownerUserId,
+          assetId: entry.assetId,
+          fuelStorageId: entry.fuelStorageId,
+        });
+        return mapCaptureRequestForAdmin(
+          entry,
+          targetKey ? matchedTargets.get(targetKey) ?? null : null,
+        );
+      }),
       counts: {
         pending: queueCounts.totalOpen,
         dueToday: queueCounts.dueWithin24Hours,

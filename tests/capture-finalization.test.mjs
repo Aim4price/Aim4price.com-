@@ -206,11 +206,119 @@ test('admin-reviewed fuel values override the originally submitted hints', async
   assert.match(finalizer, /capturedPayload\.usageMetric \?\? candidatePayload\.usageMetric/);
   assert.match(finalizer, /capturedPayload\.odometerReading \?\? candidatePayload\.odometerReading/);
   assert.match(finalizer, /capturedPayload\.hourMeterReading \?\? candidatePayload\.hourMeterReading/);
-  assert.match(finalizer, /firstText\(capturedPayload, \['operatorName'\]/);
-  assert.match(finalizer, /firstText\(capturedPayload, \['activityText', 'activity'\]/);
-  assert.match(finalizer, /firstText\(capturedPayload, \['workAreaText'\]/);
+  assert.match(finalizer, /operatorName: operatorNotApplicable[\s\S]*?capturedTextOrCandidateFallback\([\s\S]*?\['operatorName'\]/);
+  assert.match(finalizer, /activityText: activityNotApplicable[\s\S]*?capturedTextOrCandidateFallback\([\s\S]*?\['activityText', 'activity'\]/);
+  assert.match(finalizer, /workAreaText: workAreaNotApplicable[\s\S]*?capturedTextOrCandidateFallback\([\s\S]*?\['workAreaText'\]/);
   assert.match(finalizer, /capturedPayload\.assetFuelPercentBefore \?\? candidatePayload\.assetFuelPercentBefore/);
   assert.match(finalizer, /capturedPayload\.assetFuelPercentAfter \?\? candidatePayload\.assetFuelPercentAfter/);
+});
+
+test('fuel capture N/A choices suppress hints and satisfy only their matching operational fields', async () => {
+  const finalizer = await read('lib/capture-finalization.ts');
+  const normalizeStart = finalizer.indexOf('export function normalizeFuelCapturePayload');
+  const normalizeEnd = finalizer.indexOf('function assertRequestId', normalizeStart);
+  const normalizeFuel = finalizer.slice(normalizeStart, normalizeEnd);
+  const operationalStart = finalizer.indexOf('async function assertFuelOperationalFields');
+  const operationalEnd = finalizer.indexOf('async function createFuelOutput', operationalStart);
+  const operationalValidation = finalizer.slice(operationalStart, operationalEnd);
+  const outputStart = operationalEnd;
+  const outputEnd = finalizer.indexOf('async function validateCapturedDraft', outputStart);
+  const fuelOutput = finalizer.slice(outputStart, outputEnd);
+
+  assert.ok(normalizeStart >= 0 && normalizeEnd > normalizeStart);
+  assert.ok(operationalStart >= 0 && operationalEnd > operationalStart);
+  assert.ok(outputStart >= 0 && outputEnd > outputStart);
+
+  for (const field of [
+    'usageNotApplicable',
+    'operatorNotApplicable',
+    'activityNotApplicable',
+    'workAreaNotApplicable',
+  ]) {
+    assert.match(normalizeFuel, new RegExp(`const ${field} = capturedPayload\\.${field} === true`));
+    assert.match(fuelOutput, new RegExp(`${field}: captured\\.${field}`));
+  }
+
+  assert.match(normalizeFuel, /let odometerReading = usageNotApplicable[\s\S]*?\? null[\s\S]*?capturedPayload\.odometerReading \?\? candidatePayload\.odometerReading/);
+  assert.match(normalizeFuel, /let hourMeterReading = usageNotApplicable[\s\S]*?\? null[\s\S]*?capturedPayload\.hourMeterReading \?\? candidatePayload\.hourMeterReading/);
+  assert.match(normalizeFuel, /operatorName: operatorNotApplicable[\s\S]*?\? ''[\s\S]*?: capturedTextOrCandidateFallback\([\s\S]*?\['operatorName'\]/);
+  assert.match(normalizeFuel, /activityText: activityNotApplicable[\s\S]*?\? ''[\s\S]*?: capturedTextOrCandidateFallback\([\s\S]*?\['activityText', 'activity'\]/);
+  assert.match(normalizeFuel, /workAreaText: workAreaNotApplicable[\s\S]*?\? ''[\s\S]*?: capturedTextOrCandidateFallback\([\s\S]*?\['workAreaText'\]/);
+
+  assert.match(operationalValidation, /!captured\.operatorName && !captured\.operatorNotApplicable/);
+  assert.match(operationalValidation, /!captured\.activityText && !captured\.activityNotApplicable/);
+  assert.match(operationalValidation, /!captured\.workAreaText && !captured\.workAreaNotApplicable/);
+  assert.match(operationalValidation, /if \(captured\.usageNotApplicable\) return/);
+  assert.ok(
+    operationalValidation.indexOf('if (captured.usageNotApplicable) return')
+      < operationalValidation.indexOf("asset.usageMetric === 'km'"),
+  );
+  assert.match(fuelOutput, /saveFuelSlipTransaction\(request\.ownerUserId, \{[\s\S]*?updateAssetUsage: false/);
+});
+
+test('explicitly blank reviewed fuel fields do not resurrect candidate hints', async () => {
+  const finalizer = await read('lib/capture-finalization.ts');
+  const helperStart = finalizer.indexOf('function capturedTextOrCandidateFallback');
+  const helperEnd = finalizer.indexOf('function decimal', helperStart);
+  const fallbackHelper = finalizer.slice(helperStart, helperEnd);
+  const normalizeStart = finalizer.indexOf('export function normalizeFuelCapturePayload');
+  const normalizeEnd = finalizer.indexOf('function assertRequestId', normalizeStart);
+  const normalizeFuel = finalizer.slice(normalizeStart, normalizeEnd);
+
+  assert.ok(helperStart >= 0 && helperEnd > helperStart);
+  assert.ok(normalizeStart >= 0 && normalizeEnd > normalizeStart);
+  assert.match(fallbackHelper, /capturedKeys\.some\(\(key\) => \([\s\S]*?Object\.prototype\.hasOwnProperty\.call\(capturedPayload, key\)/);
+  assert.match(fallbackHelper, /return capturedFieldWasProvided[\s\S]*?\? firstText\(capturedPayload, capturedKeys, maxLength\)[\s\S]*?: firstText\(candidatePayload, candidateKeys, maxLength\)/);
+  assert.match(normalizeFuel, /operatorName:[\s\S]*?capturedTextOrCandidateFallback\([\s\S]*?\['operatorName'\],[\s\S]*?\['operatorName'\]/);
+  assert.match(normalizeFuel, /activityText:[\s\S]*?capturedTextOrCandidateFallback\([\s\S]*?\['activityText', 'activity'\],[\s\S]*?\['activityText'\]/);
+  assert.match(normalizeFuel, /workAreaText:[\s\S]*?capturedTextOrCandidateFallback\([\s\S]*?\['workAreaText'\],[\s\S]*?\['workAreaText'\]/);
+  assert.doesNotMatch(normalizeFuel, /firstText\(capturedPayload, \['(?:operatorName|activityText|workAreaText)'[\s\S]*?\|\| firstText\(candidatePayload/);
+});
+
+test('fuel operational validation finishes before external owner review begins', async () => {
+  const finalizer = await read('lib/capture-finalization.ts');
+  const validationStart = finalizer.indexOf('async function validateCapturedDraft');
+  const validationEnd = finalizer.indexOf('function assertExpectedCaptureTarget', validationStart);
+  const draftValidation = finalizer.slice(validationStart, validationEnd);
+  const adminStart = finalizer.indexOf('export async function finalizeCaptureRequestForAdmin');
+  const adminEnd = finalizer.indexOf('export async function approveCaptureRequestForOwner', adminStart);
+  const adminCompletion = finalizer.slice(adminStart, adminEnd);
+  const ownerStart = adminEnd;
+  const ownerEnd = finalizer.indexOf('export async function declineCaptureRequestForOwner', ownerStart);
+  const ownerCompletion = finalizer.slice(ownerStart, ownerEnd);
+
+  assert.ok(validationStart >= 0 && validationEnd > validationStart);
+  assert.ok(adminStart >= 0 && adminEnd > adminStart);
+  assert.ok(ownerStart >= 0 && ownerEnd > ownerStart);
+  assert.match(draftValidation, /const captured = normalizeFuelCapturePayload/);
+  assert.match(draftValidation, /await assertFuelOperationalFields\(request, captured\)/);
+  assert.match(adminCompletion, /await validateCapturedDraft\(request\)/);
+  assert.ok(
+    adminCompletion.indexOf('await validateCapturedDraft(request)')
+      < adminCompletion.indexOf("transitionCaptureRequest(request.id, 'awaiting_owner'"),
+  );
+  assert.match(ownerCompletion, /await validateCapturedDraft\(request\)[\s\S]*?completeCanonicalOutput\(request/);
+});
+
+test('owner fuel review prefers captured values and renders explicit N/A without persisting it', async () => {
+  const decisionRoute = await read('app/api/capture-requests/[requestId]/decision/route.ts');
+  const helperStart = decisionRoute.indexOf('function reviewValue');
+  const helperEnd = decisionRoute.indexOf('async function getOwnerActor', helperStart);
+  const helper = decisionRoute.slice(helperStart, helperEnd);
+  const reviewStart = decisionRoute.indexOf('function reviewFields');
+  const reviewEnd = decisionRoute.indexOf('function responseDetail', reviewStart);
+  const review = decisionRoute.slice(reviewStart, reviewEnd);
+
+  assert.ok(helperStart >= 0 && helperEnd > helperStart);
+  assert.ok(reviewStart >= 0 && reviewEnd > reviewStart);
+  assert.match(helper, /captured\[notApplicableKey\] === true/);
+  assert.match(helper, /return 'N\/A'/);
+  assert.match(helper, /payloadText\(captured, \.\.\.capturedKeys\) \|\| payloadText\(candidate, \.\.\.candidateKeys\)/);
+  assert.match(review, /usageReading: reviewValue\([\s\S]*?'usageNotApplicable'/);
+  assert.match(review, /operatorName: reviewValue\([\s\S]*?'operatorNotApplicable'[\s\S]*?\['operatorName'\]/);
+  assert.match(review, /activityText: reviewValue\([\s\S]*?'activityNotApplicable'[\s\S]*?\['activityText', 'activity'\]/);
+  assert.match(review, /workAreaText: reviewValue\([\s\S]*?'workAreaNotApplicable'[\s\S]*?\['workAreaText'\]/);
+  assert.doesNotMatch(decisionRoute, /capturedPayload\.[A-Za-z]+\s*=\s*'N\/A'/);
 });
 
 test('approved dealer submissions keep dealer provenance on the document and ledger record', async () => {

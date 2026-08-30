@@ -100,6 +100,7 @@ type CaptureDraft = {
   totalAmount: string;
   pricePerLitre: string;
   usageMetric: string;
+  usageNotApplicable: boolean;
   litres: string;
   fuelType: string;
   usageReading: string;
@@ -108,8 +109,11 @@ type CaptureDraft = {
   repairWorkDone: string;
   notes: string;
   operatorName: string;
+  operatorNotApplicable: boolean;
   activityText: string;
+  activityNotApplicable: boolean;
   workAreaText: string;
+  workAreaNotApplicable: boolean;
   odometerReading: string;
   hourMeterReading: string;
   note: string;
@@ -126,6 +130,8 @@ type CaptureTarget = {
   targetDisplayName: string;
   reference: string;
   meta: string;
+  assetUsageMetric: "hours" | "km" | "percentage" | "not_applicable" | null;
+  assetUsageReading: number | null;
 };
 
 type QueueResponse = {
@@ -142,12 +148,15 @@ type DetailResponse = {
   files?: CaptureFile[];
   events?: CaptureEvent[];
   error?: string;
+  errorCode?: string;
+  message?: string;
 };
 
 type Notice = { tone: "success" | "error"; message: string } | null;
 type BusyAction =
   | "claim"
   | "confirm_match"
+  | "update_usage"
   | "save_draft"
   | "request_information"
   | "mark_duplicate"
@@ -183,6 +192,7 @@ const EMPTY_DRAFT: CaptureDraft = {
   totalAmount: "",
   pricePerLitre: "",
   usageMetric: "none",
+  usageNotApplicable: false,
   litres: "",
   fuelType: "",
   usageReading: "",
@@ -191,8 +201,11 @@ const EMPTY_DRAFT: CaptureDraft = {
   repairWorkDone: "",
   notes: "",
   operatorName: "",
+  operatorNotApplicable: false,
   activityText: "",
+  activityNotApplicable: false,
   workAreaText: "",
+  workAreaNotApplicable: false,
   odometerReading: "",
   hourMeterReading: "",
   note: "",
@@ -230,6 +243,44 @@ function formValue(...values: unknown[]): string {
     if (typeof value === "number" && Number.isFinite(value)) return String(value);
   }
   return "";
+}
+
+function booleanValue(...values: unknown[]): boolean {
+  for (const value of values) {
+    if (typeof value === "boolean") return value;
+  }
+  return false;
+}
+
+function usageNumber(value: unknown): number | null {
+  if (typeof value === "number") return Number.isFinite(value) && value >= 0 ? value : null;
+  if (typeof value !== "string" || !value.trim()) return null;
+  let normalized = value.trim().replace(/\s+/g, "");
+  if (normalized.includes(",") && normalized.includes(".")) {
+    normalized = normalized.lastIndexOf(",") > normalized.lastIndexOf(".")
+      ? normalized.replace(/\./g, "").replace(",", ".")
+      : normalized.replace(/,/g, "");
+  } else if (/^\d{1,3}(,\d{3})+$/.test(normalized)) {
+    normalized = normalized.replace(/,/g, "");
+  } else {
+    normalized = normalized.replace(",", ".");
+  }
+  const parsed = Number(normalized);
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : null;
+}
+
+function usageUnit(metric: CaptureTarget["assetUsageMetric"]): string {
+  if (metric === "hours") return "hours";
+  if (metric === "km") return "km";
+  return "";
+}
+
+function formatUsage(value: number | null, metric: CaptureTarget["assetUsageMetric"]): string {
+  if (value === null) return "Not recorded";
+  const formatted = new Intl.NumberFormat("en-ZA", {
+    maximumFractionDigits: 2,
+  }).format(value);
+  return `${formatted}${metric === "hours" ? " h" : metric === "km" ? " km" : ""}`;
 }
 
 function formatDateTime(value: string): string {
@@ -280,6 +331,22 @@ function sortOverdueFirst(rows: CaptureRow[]): CaptureRow[] {
 function normaliseDraft(request: CaptureDetail): CaptureDraft {
   const payload = request.capturedPayload ?? EMPTY_DRAFT;
   const candidate = request.candidatePayload ?? {};
+  const usageNotApplicable = booleanValue(
+    payload.usageNotApplicable,
+    candidate.usageNotApplicable,
+  );
+  const operatorNotApplicable = booleanValue(
+    payload.operatorNotApplicable,
+    candidate.operatorNotApplicable,
+  );
+  const activityNotApplicable = booleanValue(
+    payload.activityNotApplicable,
+    candidate.activityNotApplicable,
+  );
+  const workAreaNotApplicable = booleanValue(
+    payload.workAreaNotApplicable,
+    candidate.workAreaNotApplicable,
+  );
   return {
     ownerUserId: request.ownerUserId || cleanText(payload.ownerUserId) || "",
     assetId: request.assetId || cleanText(payload.assetId) || "",
@@ -297,19 +364,37 @@ function normaliseDraft(request: CaptureDetail): CaptureDraft {
     totalIncVat: formValue(payload.totalIncVat, payload.totalAmount, payload.total),
     totalAmount: formValue(payload.totalAmount, payload.totalIncVat, payload.total),
     pricePerLitre: formValue(payload.pricePerLitre),
-    usageMetric: formValue(payload.usageMetric, candidate.usageMetric) || "none",
+    usageMetric: usageNotApplicable
+      ? "none"
+      : formValue(payload.usageMetric, candidate.usageMetric) || "none",
+    usageNotApplicable,
     litres: formValue(payload.litres),
     fuelType: formValue(payload.fuelType),
-    usageReading: formValue(payload.usageReading, candidate.usageReading),
+    usageReading: usageNotApplicable
+      ? ""
+      : formValue(payload.usageReading, candidate.usageReading),
     maintenanceWorkDone: formValue(payload.maintenanceWorkDone, payload.maintenance),
     partsSupplied: formValue(payload.partsSupplied, payload.parts),
     repairWorkDone: formValue(payload.repairWorkDone, payload.repair),
     notes: formValue(payload.notes, payload.description, request.senderNote),
-    operatorName: formValue(payload.operatorName, candidate.operatorName),
-    activityText: formValue(payload.activityText, payload.activity, candidate.activityText),
-    workAreaText: formValue(payload.workAreaText, candidate.workAreaText),
-    odometerReading: formValue(payload.odometerReading, candidate.odometerReading),
-    hourMeterReading: formValue(payload.hourMeterReading, candidate.hourMeterReading),
+    operatorName: operatorNotApplicable
+      ? ""
+      : formValue(payload.operatorName, candidate.operatorName),
+    operatorNotApplicable,
+    activityText: activityNotApplicable
+      ? ""
+      : formValue(payload.activityText, payload.activity, candidate.activityText),
+    activityNotApplicable,
+    workAreaText: workAreaNotApplicable
+      ? ""
+      : formValue(payload.workAreaText, candidate.workAreaText),
+    workAreaNotApplicable,
+    odometerReading: usageNotApplicable
+      ? ""
+      : formValue(payload.odometerReading, candidate.odometerReading),
+    hourMeterReading: usageNotApplicable
+      ? ""
+      : formValue(payload.hourMeterReading, candidate.hourMeterReading),
     note: formValue(payload.note, candidate.note, request.senderNote),
     assetFuelPercentBefore: formValue(payload.assetFuelPercentBefore, candidate.assetFuelPercentBefore),
     assetFuelPercentAfter: formValue(payload.assetFuelPercentAfter, candidate.assetFuelPercentAfter),
@@ -355,6 +440,7 @@ export default function CaptureQueueClient() {
   const [selectedTarget, setSelectedTarget] = useState<CaptureTarget | null>(null);
   const [isChangingMatch, setIsChangingMatch] = useState(false);
   const [deleteReason, setDeleteReason] = useState("");
+  const [reconfirmationRequestId, setReconfirmationRequestId] = useState("");
   const queueLoadGenerationRef = useRef(0);
   const detailLoadGenerationRef = useRef(0);
   const workbenchRef = useRef<HTMLElement>(null);
@@ -373,13 +459,14 @@ export default function CaptureQueueClient() {
   const hasMatchedTarget = Boolean(
     selectedTarget && currentTargetKey && selectedTargetKey === currentTargetKey,
   );
+  const requiresTargetReconfirmation = reconfirmationRequestId === selectedId;
   const isMatchConfirmed = useMemo(() => {
-    if (!currentTargetKey) return false;
+    if (!currentTargetKey || requiresTargetReconfirmation) return false;
     const latestMatch = [...events]
       .reverse()
       .find((event) => event.eventType === "matched");
     return Boolean(latestMatch && targetKey(latestMatch.metadata) === currentTargetKey);
-  }, [currentTargetKey, events]);
+  }, [currentTargetKey, events, requiresTargetReconfirmation]);
   const isExternalSubmission = detail?.submissionChannel === "dealer_upload"
     || detail?.submissionChannel === "public_drop";
   const isTerminalRequest = Boolean(
@@ -390,9 +477,112 @@ export default function CaptureQueueClient() {
   const hasUnconfirmedTargetChange = Boolean(
     detail && currentTargetKey !== persistedTargetKey && !isMatchConfirmed,
   );
+  const usageUpdate = useMemo(() => {
+    const metric = selectedTarget?.targetType === "asset"
+      ? selectedTarget.assetUsageMetric
+      : null;
+    const supported = metric === "hours" || metric === "km";
+    const unit = usageUnit(metric);
+    const currentReading = selectedTarget?.targetType === "asset"
+      ? usageNumber(selectedTarget.assetUsageReading)
+      : null;
+    const invoiceMetricMatches = detail?.requestType !== "invoice" || draft.usageMetric === metric;
+    const rawDocumentReading = metric === "hours"
+      ? detail?.requestType === "fuel_slip" ? draft.hourMeterReading : draft.usageReading
+      : metric === "km"
+        ? detail?.requestType === "fuel_slip" ? draft.odometerReading : draft.usageReading
+        : "";
+    const documentReading = !draft.usageNotApplicable && invoiceMetricMatches && supported
+      ? usageNumber(rawDocumentReading)
+      : null;
+    const isLower = documentReading !== null
+      && currentReading !== null
+      && documentReading < currentReading;
+    const isEqual = documentReading !== null
+      && currentReading !== null
+      && Math.abs(documentReading - currentReading) < 0.0001;
+
+    let message = "This asset does not track hours or kilometres.";
+    let tone: "warning" | "ready" | "current" = "warning";
+    let canUpdate = false;
+    if (supported && !isMatchConfirmed) {
+      message = "Confirm this exact asset before updating its usage.";
+    } else if (supported && !isRequestEditable) {
+      message = "This request can no longer change the asset's usage.";
+    } else if (supported && draft.usageNotApplicable) {
+      message = "Usage is marked N/A, so this asset will not be updated.";
+    } else if (supported && !invoiceMetricMatches) {
+      message = `This asset tracks ${unit}. Set the invoice usage metric to ${metric === "hours" ? "Hours" : "Kilometres"}, or choose N/A.`;
+    } else if (supported && documentReading === null) {
+      message = `Enter the document's ${unit} reading, or choose N/A.`;
+    } else if (supported && isLower) {
+      message = "The document reading is below the current asset reading. Usage can never be lowered.";
+    } else if (supported && isEqual) {
+      message = "The asset is already up to date. No usage change is needed.";
+      tone = "current";
+    } else if (supported) {
+      message = "Ready to update. Recorded usage changes only when you click the button.";
+      tone = "ready";
+      canUpdate = true;
+    }
+
+    return {
+      metric,
+      supported,
+      unit,
+      currentReading,
+      documentReading,
+      documentLabel: draft.usageNotApplicable
+        ? "N/A"
+        : documentReading === null ? "Not entered" : formatUsage(documentReading, metric),
+      message,
+      tone,
+      canUpdate,
+    };
+  }, [
+    detail?.requestType,
+    draft.hourMeterReading,
+    draft.odometerReading,
+    draft.usageMetric,
+    draft.usageNotApplicable,
+    isMatchConfirmed,
+    isRequestEditable,
+    selectedTarget,
+  ]);
   const isDraftDirtyRef = useRef(isDraftDirty);
 
   isDraftDirtyRef.current = isDraftDirty;
+
+  const applyDetailResponse = useCallback((
+    data: DetailResponse,
+    options: { scrollIntoView?: boolean } = {},
+  ): boolean => {
+    if (!data.request) return false;
+    const nextFiles = [...(data.files ?? [])]
+      .sort((left, right) => left.pageOrder - right.pageOrder);
+    const nextDraft = normaliseDraft(data.request);
+    isDraftDirtyRef.current = false;
+    setDetail(data.request);
+    setFiles(nextFiles);
+    setEvents(data.events ?? []);
+    setDraft(nextDraft);
+    setLoadedDraft(nextDraft);
+    setSelectedTarget(data.matchedTarget ?? null);
+    setIsChangingMatch(!data.matchedTarget);
+    setMatchSearch("");
+    setMatchTargets([]);
+    setActiveFileId((current) => (
+      nextFiles.some((file) => file.id === current) ? current : nextFiles[0]?.id ?? ""
+    ));
+    setActionNote("");
+    setDeleteReason("");
+    if (options.scrollIntoView) {
+      window.requestAnimationFrame(() => {
+        workbenchRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    }
+    return true;
+  }, []);
 
   const loadQueue = useCallback(async () => {
     const generation = ++queueLoadGenerationRef.current;
@@ -455,23 +645,7 @@ export default function CaptureQueueClient() {
         throw new Error(data.error || "Failed to open this capture request.");
       }
       if (generation !== detailLoadGenerationRef.current) return;
-      const nextFiles = [...(data.files ?? [])].sort((left, right) => left.pageOrder - right.pageOrder);
-      const nextDraft = normaliseDraft(data.request);
-      setDetail(data.request);
-      setFiles(nextFiles);
-      setEvents(data.events ?? []);
-      setDraft(nextDraft);
-      setLoadedDraft(nextDraft);
-      setSelectedTarget(data.matchedTarget ?? null);
-      setIsChangingMatch(!data.matchedTarget);
-      setMatchSearch("");
-      setMatchTargets([]);
-      setActiveFileId((current) => nextFiles.some((file) => file.id === current) ? current : nextFiles[0]?.id ?? "");
-      setActionNote("");
-      setDeleteReason("");
-      window.requestAnimationFrame(() => {
-        workbenchRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-      });
+      applyDetailResponse(data, { scrollIntoView: true });
     } catch (error) {
       if (generation !== detailLoadGenerationRef.current) return;
       setNotice({
@@ -481,7 +655,7 @@ export default function CaptureQueueClient() {
     } finally {
       if (generation === detailLoadGenerationRef.current) setIsDetailLoading(false);
     }
-  }, []);
+  }, [applyDetailResponse]);
 
   useEffect(() => {
     const timeout = window.setTimeout(() => void loadQueue(), search.trim() ? 250 : 0);
@@ -573,10 +747,63 @@ export default function CaptureQueueClient() {
     setDraft((current) => ({ ...current, [key]: value }));
   }
 
+  function updateNotApplicable(
+    key:
+      | "usageNotApplicable"
+      | "operatorNotApplicable"
+      | "activityNotApplicable"
+      | "workAreaNotApplicable",
+    checked: boolean,
+  ) {
+    setDraft((current) => {
+      if (key === "usageNotApplicable") {
+        return {
+          ...current,
+          usageNotApplicable: checked,
+          ...(checked ? {
+            usageMetric: "none",
+            usageReading: "",
+            odometerReading: "",
+            hourMeterReading: "",
+          } : {}),
+        };
+      }
+      if (key === "operatorNotApplicable") {
+        return {
+          ...current,
+          operatorNotApplicable: checked,
+          ...(checked ? { operatorName: "" } : {}),
+        };
+      }
+      if (key === "activityNotApplicable") {
+        return {
+          ...current,
+          activityNotApplicable: checked,
+          ...(checked ? { activityText: "" } : {}),
+        };
+      }
+      return {
+        ...current,
+        workAreaNotApplicable: checked,
+        ...(checked ? { workAreaText: "" } : {}),
+      };
+    });
+  }
+
   function confirmDiscardDraft(): boolean {
     return !isDraftDirty || window.confirm(
       "Discard the unsaved changes in this capture request?",
     );
+  }
+
+  async function refreshQueueAndDetail() {
+    if (busyAction || isLoading || isDetailLoading || !confirmDiscardDraft()) return;
+    isDraftDirtyRef.current = false;
+    setNotice(null);
+    await Promise.all([
+      loadQueue(),
+      selectedId ? loadDetail(selectedId) : Promise.resolve(),
+    ]);
   }
 
   function openRequest(requestId: string) {
@@ -634,6 +861,19 @@ export default function CaptureQueueClient() {
       setNotice({ tone: "error", message: "Confirm the exact customer and destination before completing this request." });
       return;
     }
+    if (action === "update_usage") {
+      if (!usageUpdate.canUpdate || !usageUpdate.supported) {
+        setNotice({ tone: "error", message: usageUpdate.message });
+        return;
+      }
+      const fromReading = usageUpdate.currentReading === null
+        ? "no recorded usage"
+        : formatUsage(usageUpdate.currentReading, usageUpdate.metric);
+      const toReading = formatUsage(usageUpdate.documentReading, usageUpdate.metric);
+      if (!window.confirm(
+        `Update this asset from ${fromReading} to ${toReading}? This is a separate action from ledger completion, and recorded usage will never be lowered.`,
+      )) return;
+    }
     if (action === "complete" && !window.confirm("Use these verified details to create the ledger record or send it to the owner for approval?")) {
       return;
     }
@@ -668,6 +908,7 @@ export default function CaptureQueueClient() {
       }
     }
 
+    const submittedVersion = detail?.version;
     setBusyAction(action);
     setNotice(null);
     try {
@@ -681,17 +922,32 @@ export default function CaptureQueueClient() {
           requestVersion: detail?.version,
         }),
       });
-      const data = (await response.json()) as DetailResponse & { message?: string };
-      if (!response.ok || !data.ok) throw new Error(data.error || "The capture action failed.");
-      setNotice({ tone: "success", message: data.message || "Capture request updated." });
+      const data = (await response.json()) as DetailResponse;
+      if (!response.ok || !data.ok) {
+        if (data.request && data.request.version !== submittedVersion) {
+          applyDetailResponse(data);
+        }
+        if (data.errorCode === "CAPTURE_REQUEST_CHANGED") {
+          setReconfirmationRequestId(selectedId);
+        }
+        throw new Error(data.error || "The capture action failed.");
+      }
       if (action === "delete") {
         isDraftDirtyRef.current = false;
         setSelectedId("");
         setDetail(null);
+        setNotice({ tone: "success", message: data.message || "Capture request updated." });
         await loadQueue();
         return;
       }
-      await Promise.all([loadQueue(), loadDetail(selectedId)]);
+      if (!applyDetailResponse(data)) {
+        await loadDetail(selectedId);
+      }
+      if (action === "confirm_match") {
+        setReconfirmationRequestId((current) => current === selectedId ? "" : current);
+      }
+      setNotice({ tone: "success", message: data.message || "Capture request updated." });
+      await loadQueue();
     } catch (error) {
       setNotice({
         tone: "error",
@@ -761,8 +1017,13 @@ export default function CaptureQueueClient() {
           <strong>Oldest and overdue documents appear first</strong>
           <span>Nothing reaches a ledger until you complete its final action.</span>
         </div>
-        <button type="button" className={styles.refreshButton} onClick={() => void loadQueue()} disabled={isLoading}>
-          {isLoading ? "Refreshing…" : "Refresh queue"}
+        <button
+          type="button"
+          className={styles.refreshButton}
+          onClick={() => void refreshQueueAndDetail()}
+          disabled={isLoading || isDetailLoading || Boolean(busyAction)}
+        >
+          {isLoading || isDetailLoading ? "Refreshing…" : "Refresh queue"}
         </button>
       </section>
 
@@ -1093,6 +1354,52 @@ export default function CaptureQueueClient() {
                 ) : null}
               </div>
 
+              {hasMatchedTarget && selectedTarget?.targetType === "asset" ? (
+                <div className={styles.usageUpdateCard} aria-label="Asset usage update">
+                  <div className={styles.usageUpdateHeading}>
+                    <div>
+                      <p className={styles.eyebrow}>Asset usage</p>
+                      <strong>
+                        {usageUpdate.metric === "hours"
+                          ? "Update asset hours"
+                          : usageUpdate.metric === "km"
+                            ? "Update asset kilometres"
+                            : "Asset usage update"}
+                      </strong>
+                    </div>
+                    <span>Optional</span>
+                  </div>
+                  <div className={styles.usageComparison}>
+                    <div>
+                      <span>Current asset reading</span>
+                      <strong>{formatUsage(usageUpdate.currentReading, usageUpdate.metric)}</strong>
+                    </div>
+                    <div>
+                      <span>Reading on this {detail.requestType === "fuel_slip" ? "fuel slip" : "invoice"}</span>
+                      <strong>{usageUpdate.documentLabel}</strong>
+                    </div>
+                  </div>
+                  <p className={`${styles.usageStatus} ${styles[`usageStatus_${usageUpdate.tone}`]}`}>
+                    {usageUpdate.message}
+                  </p>
+                  <div className={styles.usageUpdateFooter}>
+                    <small>Completing the ledger record does not update usage. Only this button does.</small>
+                    {usageUpdate.supported ? (
+                      <button
+                        type="button"
+                        className={styles.updateUsageButton}
+                        disabled={Boolean(busyAction) || !usageUpdate.canUpdate}
+                        onClick={() => void runAction("update_usage")}
+                      >
+                        {busyAction === "update_usage"
+                          ? `Updating ${usageUpdate.unit}…`
+                          : usageUpdate.metric === "hours" ? "Update hours" : "Update kilometres"}
+                      </button>
+                    ) : null}
+                  </div>
+                </div>
+              ) : null}
+
               <fieldset className={styles.formGrid} disabled={!isRequestEditable}>
                 <label><span>Supplier</span><input value={draft.supplierName} onChange={(event) => updateDraft("supplierName", event.target.value)} autoComplete="off" /></label>
                 {detail.requestType === "fuel_slip" ? (
@@ -1108,11 +1415,49 @@ export default function CaptureQueueClient() {
                     <label><span>Price per litre</span><input inputMode="decimal" value={draft.pricePerLitre} onChange={(event) => updateDraft("pricePerLitre", event.target.value)} placeholder="R 0.00" /></label>
                     <label><span>VAT</span><input inputMode="decimal" value={draft.vatAmount} onChange={(event) => updateDraft("vatAmount", event.target.value)} placeholder="R 0.00" /></label>
                     <label><span>Total</span><input inputMode="decimal" value={draft.totalAmount} onChange={(event) => updateDraft("totalAmount", event.target.value)} placeholder="R 0.00" /></label>
-                    <label><span>Odometer reading</span><input inputMode="decimal" value={draft.odometerReading} onChange={(event) => updateDraft("odometerReading", event.target.value)} /></label>
-                    <label><span>Hour-meter reading</span><input inputMode="decimal" value={draft.hourMeterReading} onChange={(event) => updateDraft("hourMeterReading", event.target.value)} /></label>
-                    <label><span>Operator</span><input value={draft.operatorName} onChange={(event) => updateDraft("operatorName", event.target.value)} autoComplete="off" /></label>
-                    <label className={styles.fullField}><span>Activity / reason</span><input value={draft.activityText} onChange={(event) => updateDraft("activityText", event.target.value)} /></label>
-                    <label className={styles.fullField}><span>Work area</span><input value={draft.workAreaText} onChange={(event) => updateDraft("workAreaText", event.target.value)} /></label>
+                    <label><span>Odometer reading</span><input inputMode="decimal" value={draft.odometerReading} onChange={(event) => updateDraft("odometerReading", event.target.value)} disabled={draft.usageNotApplicable} /></label>
+                    <label><span>Hour-meter reading</span><input inputMode="decimal" value={draft.hourMeterReading} onChange={(event) => updateDraft("hourMeterReading", event.target.value)} disabled={draft.usageNotApplicable} /></label>
+                    <label className={`${styles.naControl} ${styles.fullField}`}>
+                      <input
+                        type="checkbox"
+                        checked={draft.usageNotApplicable}
+                        onChange={(event) => updateNotApplicable("usageNotApplicable", event.target.checked)}
+                      />
+                      <span>Usage reading N/A</span>
+                    </label>
+                    <div className={styles.fieldWithNa}>
+                      <label><span>Operator</span><input value={draft.operatorName} onChange={(event) => updateDraft("operatorName", event.target.value)} autoComplete="off" disabled={draft.operatorNotApplicable} /></label>
+                      <label className={styles.naControl}>
+                        <input
+                          type="checkbox"
+                          checked={draft.operatorNotApplicable}
+                          onChange={(event) => updateNotApplicable("operatorNotApplicable", event.target.checked)}
+                        />
+                        <span>Operator N/A</span>
+                      </label>
+                    </div>
+                    <div className={`${styles.fieldWithNa} ${styles.fullField}`}>
+                      <label><span>Activity / reason</span><input value={draft.activityText} onChange={(event) => updateDraft("activityText", event.target.value)} disabled={draft.activityNotApplicable} /></label>
+                      <label className={styles.naControl}>
+                        <input
+                          type="checkbox"
+                          checked={draft.activityNotApplicable}
+                          onChange={(event) => updateNotApplicable("activityNotApplicable", event.target.checked)}
+                        />
+                        <span>Activity N/A</span>
+                      </label>
+                    </div>
+                    <div className={`${styles.fieldWithNa} ${styles.fullField}`}>
+                      <label><span>Work area</span><input value={draft.workAreaText} onChange={(event) => updateDraft("workAreaText", event.target.value)} disabled={draft.workAreaNotApplicable} /></label>
+                      <label className={styles.naControl}>
+                        <input
+                          type="checkbox"
+                          checked={draft.workAreaNotApplicable}
+                          onChange={(event) => updateNotApplicable("workAreaNotApplicable", event.target.checked)}
+                        />
+                        <span>Work area N/A</span>
+                      </label>
+                    </div>
                     <label><span>Fuel level before (%)</span><input type="number" min="0" max="100" step="1" value={draft.assetFuelPercentBefore} onChange={(event) => updateDraft("assetFuelPercentBefore", event.target.value)} /></label>
                     <label><span>Fuel level after (%)</span><input type="number" min="0" max="100" step="1" value={draft.assetFuelPercentAfter} onChange={(event) => updateDraft("assetFuelPercentAfter", event.target.value)} /></label>
                     <label className={styles.fullField}><span>Fuel slip note</span><textarea value={draft.note} onChange={(event) => updateDraft("note", event.target.value)} rows={3} /></label>
@@ -1124,14 +1469,22 @@ export default function CaptureQueueClient() {
                     <label><span>Total incl. VAT</span><input inputMode="decimal" value={draft.totalIncVat} onChange={(event) => updateDraft("totalIncVat", event.target.value)} placeholder="R 0.00" /></label>
                     <label>
                       <span>Usage metric</span>
-                      <select value={draft.usageMetric} onChange={(event) => updateDraft("usageMetric", event.target.value)}>
-                        <option value="none">Not applicable</option>
+                      <select value={draft.usageMetric} onChange={(event) => updateDraft("usageMetric", event.target.value)} disabled={draft.usageNotApplicable}>
+                        <option value="none">No usage metric</option>
                         <option value="hours">Hours</option>
                         <option value="km">Kilometres</option>
                         <option value="percentage">Percentage</option>
                       </select>
                     </label>
-                    <label><span>Usage reading</span><input inputMode="decimal" value={draft.usageReading} onChange={(event) => updateDraft("usageReading", event.target.value)} disabled={draft.usageMetric === "none"} /></label>
+                    <label><span>Usage reading</span><input inputMode="decimal" value={draft.usageReading} onChange={(event) => updateDraft("usageReading", event.target.value)} disabled={draft.usageNotApplicable || draft.usageMetric === "none"} /></label>
+                    <label className={`${styles.naControl} ${styles.fullField}`}>
+                      <input
+                        type="checkbox"
+                        checked={draft.usageNotApplicable}
+                        onChange={(event) => updateNotApplicable("usageNotApplicable", event.target.checked)}
+                      />
+                      <span>Usage N/A</span>
+                    </label>
                     <label className={styles.fullField}><span>Maintenance work done</span><textarea value={draft.maintenanceWorkDone} onChange={(event) => updateDraft("maintenanceWorkDone", event.target.value)} rows={3} /></label>
                     <label className={styles.fullField}><span>Parts supplied</span><textarea value={draft.partsSupplied} onChange={(event) => updateDraft("partsSupplied", event.target.value)} rows={3} /></label>
                     <label className={styles.fullField}><span>Repair work done</span><textarea value={draft.repairWorkDone} onChange={(event) => updateDraft("repairWorkDone", event.target.value)} rows={3} /></label>

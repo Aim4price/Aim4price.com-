@@ -1,5 +1,6 @@
 import { createHmac, randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
 import type { PoolClient, QueryResult, QueryResultRow } from 'pg';
+import { resolveAssetUsage } from './asset-usage';
 import { getDb } from './db';
 
 export const CAPTURE_REQUEST_TYPES = ['invoice', 'fuel_slip'] as const;
@@ -123,6 +124,7 @@ export type CaptureRequestMatchInput = {
   ownerUserId: string;
   assetId?: string | null;
   fuelStorageId?: string | null;
+  expectedVersion: number;
 };
 
 export type CaptureRequest = {
@@ -202,6 +204,14 @@ export type CaptureRequestEvent = {
 export type CaptureRequestDetail = CaptureRequest & {
   files: CaptureRequestFile[];
   events: CaptureRequestEvent[];
+};
+
+export type CaptureRequestAssetUsageUpdateResult = {
+  request: CaptureRequest;
+  updated: boolean;
+  metric: 'hours' | 'km';
+  previousReading: number | null;
+  newReading: number;
 };
 
 export type CaptureRequestListFilters = {
@@ -393,6 +403,14 @@ type OwnerAssetSearchRow = QueryResultRow & {
   usage_reading: string | number | null;
   usage_metric: string | null;
   serial_or_vin: string | null;
+};
+
+type CaptureUsageAssetRow = QueryResultRow & {
+  kind: unknown;
+  hours: string | number | null;
+  life_worked_percent: string | number | null;
+  specs_json: unknown;
+  valuation_run_id: unknown;
 };
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -1433,6 +1451,221 @@ export async function updateCaptureRequestDraft(
   });
 }
 
+function captureUsageReading(value: unknown): number | null {
+  if (typeof value === 'number') {
+    return Number.isFinite(value) && value >= 0 ? value : null;
+  }
+  if (typeof value !== 'string' || !value.trim()) return null;
+
+  let normalized = value.trim().replace(/\s+/g, '');
+  if (normalized.includes(',') && normalized.includes('.')) {
+    normalized = normalized.lastIndexOf(',') > normalized.lastIndexOf('.')
+      ? normalized.replace(/\./g, '').replace(',', '.')
+      : normalized.replace(/,/g, '');
+  } else if (/^\d{1,3}(,\d{3})+$/.test(normalized)) {
+    normalized = normalized.replace(/,/g, '');
+  } else {
+    normalized = normalized.replace(',', '.');
+  }
+
+  if (!/^(?:\d+(?:\.\d*)?|\.\d+)$/.test(normalized)) return null;
+  const parsed = Number(normalized);
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : null;
+}
+
+function capturePayloadBoolean(value: unknown): boolean {
+  if (value === true || value === 1) return true;
+  return ['true', '1', 'yes', 'on'].includes(cleanText(value, 20).toLowerCase());
+}
+
+function markCaptureUsageValuationStale(
+  specs: Record<string, unknown>,
+  nowIso: string,
+): Record<string, unknown> {
+  const reason = 'Asset usage updated from Admin Capture';
+  const existingReasons = [specs.valuationStaleReasons, specs.valuation_stale_reasons]
+    .flatMap((value) => Array.isArray(value) ? value : [])
+    .map((value) => cleanText(value, 200))
+    .filter(Boolean);
+  const reasons = Array.from(new Set([...existingReasons, reason]));
+  const staleSince = cleanText(
+    specs.valuationStaleSince ?? specs.valuation_stale_since,
+    80,
+  ) || nowIso;
+
+  return {
+    ...specs,
+    valuationNeedsUpdate: true,
+    valuation_needs_update: true,
+    valuationStaleSince: staleSince,
+    valuation_stale_since: staleSince,
+    valuationStaleReason: reasons.join(', '),
+    valuation_stale_reason: reasons.join(', '),
+    valuationStaleReasons: reasons,
+    valuation_stale_reasons: reasons,
+  };
+}
+
+export async function updateCaptureRequestAssetUsage(
+  requestId: string,
+  input: { expectedVersion: number },
+  adminActor: CaptureAdminActor,
+): Promise<CaptureRequestAssetUsageUpdateResult> {
+  const id = asUuid(requestId, 'CAPTURE_REQUEST_NOT_FOUND');
+  const actor = normalizeAdminActor(adminActor);
+  const expectedVersion = Number(input?.expectedVersion);
+  if (!Number.isInteger(expectedVersion) || expectedVersion < 1) {
+    throw new Error('CAPTURE_REQUEST_CHANGED');
+  }
+
+  return withTransaction(async (client) => {
+    await assertCaptureRequestNotFinalizing(client, id);
+    const existing = await getLockedRequest(client, id);
+    const status = enumValue(existing.status, CAPTURE_REQUEST_STATUSES, 'CAPTURE_STATUS_INVALID');
+    if (status !== 'in_progress' && status !== 'needs_information') {
+      throw new Error('CAPTURE_USAGE_STATUS_INVALID');
+    }
+    assertClaimedBy(existing, actor);
+    if (asNumber(existing.version) !== expectedVersion) {
+      throw new Error('CAPTURE_REQUEST_CHANGED');
+    }
+
+    const ownerUserId = existing.owner_user_id ? String(existing.owner_user_id) : '';
+    const assetId = existing.asset_register_item_id ? String(existing.asset_register_item_id) : '';
+    if (!ownerUserId || !assetId || existing.fuel_storage_id) {
+      throw new Error('CAPTURE_TARGET_REQUIRED');
+    }
+
+    const latestMatchResult = await client.query<{ metadata: unknown } & QueryResultRow>(
+      `select metadata
+         from public.document_capture_events
+        where capture_request_id = $1::uuid
+          and event_type = 'matched'
+        order by created_at desc, id desc
+        limit 1`,
+      [id],
+    );
+    const latestMatch = jsonObject(latestMatchResult.rows[0]?.metadata);
+    const matchedOwnerUserId = cleanText(latestMatch.ownerUserId, 200);
+    const matchedAssetId = cleanText(latestMatch.assetId, 80);
+    const matchedFuelStorageId = cleanText(latestMatch.fuelStorageId, 80);
+    if (
+      matchedOwnerUserId !== ownerUserId
+      || matchedAssetId !== assetId
+      || matchedFuelStorageId
+    ) {
+      throw new Error('CAPTURE_TARGET_NOT_CONFIRMED');
+    }
+
+    const assetResult = await client.query<CaptureUsageAssetRow>(
+      `select
+         asset.kind,
+         asset.hours,
+         asset.life_worked_percent,
+         coalesce(asset.specs_json, '{}'::jsonb) as specs_json,
+         to_jsonb(asset) ->> 'valuation_run_id' as valuation_run_id
+       from public.asset_register_items asset
+       where asset.user_id = $1
+         and asset.id = $2::uuid
+       for update`,
+      [ownerUserId, assetId],
+    );
+    const asset = assetResult.rows[0];
+    if (!asset) throw new Error('CAPTURE_TARGET_MISMATCH');
+
+    const specs = jsonObject(asset.specs_json);
+    const resolvedUsage = resolveAssetUsage({
+      kind: asset.kind,
+      hours: asset.hours,
+      lifeWorkedPercent: asset.life_worked_percent,
+      specsJson: specs,
+    });
+    if (resolvedUsage.metric !== 'hours' && resolvedUsage.metric !== 'km') {
+      throw new Error('CAPTURE_USAGE_NOT_APPLICABLE');
+    }
+    const metric = resolvedUsage.metric;
+    const capturedPayload = jsonObject(existing.captured_payload);
+    let newReading: number | null = null;
+
+    if (existing.request_type === 'invoice') {
+      const capturedMetric = cleanText(capturedPayload.usageMetric, 30).toLowerCase();
+      if (capturedMetric !== metric) throw new Error('CAPTURE_USAGE_METRIC_MISMATCH');
+      newReading = captureUsageReading(capturedPayload.usageReading);
+    } else if (existing.request_type === 'fuel_slip') {
+      if (capturePayloadBoolean(capturedPayload.usageNotApplicable)) {
+        throw new Error('CAPTURE_USAGE_NOT_APPLICABLE');
+      }
+      newReading = captureUsageReading(
+        metric === 'km'
+          ? capturedPayload.odometerReading
+          : capturedPayload.hourMeterReading,
+      );
+    } else {
+      throw new Error('CAPTURE_TYPE_INVALID');
+    }
+
+    if (newReading === null) throw new Error('CAPTURE_USAGE_READING_REQUIRED');
+    const previousCandidates = [
+      captureUsageReading(asset.hours),
+      captureUsageReading(resolvedUsage.value),
+    ].filter((value): value is number => value !== null);
+    const previousReading = previousCandidates.length
+      ? Math.max(...previousCandidates)
+      : null;
+    if (previousReading !== null && newReading < previousReading) {
+      throw new Error('CAPTURE_USAGE_CANNOT_DECREASE');
+    }
+
+    if (previousReading !== null && newReading === previousReading) {
+      return {
+        request: await getRequestWithCounts(client, id),
+        updated: false,
+        metric,
+        previousReading,
+        newReading,
+      };
+    }
+
+    const hasSavedValuation = Boolean(asset.valuation_run_id);
+    const nextSpecs = hasSavedValuation
+      ? markCaptureUsageValuationStale(specs, new Date().toISOString())
+      : specs;
+    await client.query(
+      `update public.asset_register_items
+          set hours = greatest(coalesce(hours, $3::numeric), $3::numeric),
+              specs_json = case when $4::boolean then $5::jsonb else specs_json end,
+              updated_at = now()
+        where user_id = $1
+          and id = $2::uuid`,
+      [ownerUserId, assetId, newReading, hasSavedValuation, JSON.stringify(nextSpecs)],
+    );
+    await insertEvent(client, {
+      requestId: id,
+      eventType: 'note_added',
+      actor,
+      fromStatus: status,
+      toStatus: status,
+      note: `Updated asset ${metric === 'km' ? 'kilometres' : 'hours'} to ${newReading}.`,
+      metadata: {
+        action: 'asset_usage_updated',
+        ownerUserId,
+        assetId,
+        metric,
+        previousReading,
+        newReading,
+      },
+    });
+
+    return {
+      request: await getRequestWithCounts(client, id),
+      updated: true,
+      metric,
+      previousReading,
+      newReading,
+    };
+  });
+}
+
 export async function matchCaptureRequest(
   requestId: string,
   input: CaptureRequestMatchInput,
@@ -1444,10 +1677,17 @@ export async function matchCaptureRequest(
   if (!ownerUserId) throw new Error('CAPTURE_OWNER_REQUIRED');
   const assetId = optionalUuid(input.assetId, 'CAPTURE_ASSET_INVALID');
   const fuelStorageId = optionalUuid(input.fuelStorageId, 'CAPTURE_FUEL_STORAGE_INVALID');
+  const expectedVersion = Number(input.expectedVersion);
+  if (!Number.isInteger(expectedVersion) || expectedVersion < 1) {
+    throw new Error('CAPTURE_REQUEST_CHANGED');
+  }
 
   return withTransaction(async (client) => {
     await assertCaptureRequestNotFinalizing(client, id);
     const existing = await getLockedRequest(client, id);
+    if (asNumber(existing.version) !== expectedVersion) {
+      throw new Error('CAPTURE_REQUEST_CHANGED');
+    }
     const status = enumValue(existing.status, CAPTURE_REQUEST_STATUSES, 'CAPTURE_STATUS_INVALID');
     const requestType = enumValue(existing.request_type, CAPTURE_REQUEST_TYPES, 'CAPTURE_TYPE_INVALID');
     if (TERMINAL_STATUSES.has(status) || status === 'awaiting_owner') throw new Error('CAPTURE_REQUEST_CLOSED');
@@ -2127,25 +2367,26 @@ export async function resolveUniqueAssetSerialOrVin(
          nullif(concat_ws(' ', nullif(asset.brand_name, ''), nullif(asset.model_name, '')), ''),
          'Saved asset'
        ) as asset_display_name,
-       coalesce(
-         nullif(to_jsonb(asset)->>'serial_number', ''),
-         nullif(to_jsonb(asset)->>'serial', ''),
-         nullif(to_jsonb(asset)->>'vin', ''),
-         ''
-       ) as serial_or_vin
+       matched_identifier.identifier as serial_or_vin
      from public.asset_register_items asset
      left join public.account_profiles profile on profile.user_id = asset.user_id
-     where upper(regexp_replace(
-       coalesce(
-         nullif(to_jsonb(asset)->>'serial_number', ''),
-         nullif(to_jsonb(asset)->>'serial', ''),
-         nullif(to_jsonb(asset)->>'vin', ''),
-         ''
-       ),
-       '[^A-Za-z0-9]+',
-       '',
-       'g'
-     )) = $1
+     cross join lateral (
+       select identifiers.identifier
+       from (values
+         (1, nullif(to_jsonb(asset)->>'serial_number', '')),
+         (2, nullif(to_jsonb(asset)->>'serial', '')),
+         (3, nullif(to_jsonb(asset)->>'vin', '')),
+         (4, nullif(to_jsonb(asset)->>'serialNumber', ''))
+       ) as identifiers(priority, identifier)
+       where upper(regexp_replace(
+         identifiers.identifier,
+         '[^A-Za-z0-9]+',
+         '',
+         'g'
+       )) = $1
+       order by identifiers.priority
+       limit 1
+     ) matched_identifier
      order by asset.id
      limit 2`,
     [serialOrVin],

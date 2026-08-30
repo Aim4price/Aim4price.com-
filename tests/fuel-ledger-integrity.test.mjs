@@ -5,6 +5,7 @@ import test from 'node:test';
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
 const ledger = read('lib/fuel-ledger.ts');
 const migration = read('database/migrations/76-fuel-ledger-exclusions-and-audit.sql');
+const applicabilityMigration = read('database/migrations/100-fuel-slip-operational-applicability.sql');
 const fuelClient = read('app/fuel/fuel-client.tsx');
 const missingFuelEntryModal = read('app/fuel/missing-fuel-entry-modal.tsx');
 const fuelStyles = read('app/fuel/page.module.css');
@@ -170,4 +171,44 @@ test('supporting fuel proof remains optional at the petrol-station flow', () => 
   assert.match(petrolStationClient, /mode: upload \? 'automatic' : 'manual'/);
   assert.match(petrolStationClient, /Add fuel slip photo \(optional\)/);
   assert.match(petrolStationClient, /kept separately by your accountant/);
+});
+
+test('fuel-slip operational N/A choices are structured, nullable and migration-backed', () => {
+  for (const column of [
+    'usage_not_applicable',
+    'operator_not_applicable',
+    'activity_not_applicable',
+    'work_area_not_applicable',
+  ]) {
+    assert.match(applicabilityMigration, new RegExp(`add column if not exists ${column} boolean not null default false`));
+    assert.match(applicabilityMigration, new RegExp(`alter column ${column} set not null`));
+    assert.match(ledger, new RegExp(`${column}: boolean \\| null`));
+    assert.match(ledger, new RegExp(`fs\\.${column}`));
+  }
+
+  const saveFuelSlip = ledger.slice(ledger.indexOf('export async function saveFuelSlipTransaction'));
+  assert.match(saveFuelSlip, /const odometerReading = usageNotApplicable \? null/);
+  assert.match(saveFuelSlip, /const hourMeterReading = usageNotApplicable \? null/);
+  assert.match(saveFuelSlip, /const operatorName = operatorNotApplicable \? ''/);
+  assert.match(saveFuelSlip, /operatorName \|\| null,\s+activityText \|\| null,\s+workAreaText \|\| null/);
+  assert.doesNotMatch(saveFuelSlip, /['"]N\/A['"]/);
+  assert.match(ledger, /slip\.usageNotApplicable \? 'Usage: N\/A'/);
+  assert.match(ledger, /slip\.operatorNotApplicable \? 'N\/A'/);
+});
+
+test('fuel-slip posting accepts a value or explicit N/A for every operational field', () => {
+  const saveFuelSlip = ledger.slice(ledger.indexOf('export async function saveFuelSlipTransaction'));
+  assert.match(saveFuelSlip, /if \(usageNotApplicable\) \{\s+usageMetric = 'none';\s+usageReading = null;\s+usageComplete = true;/);
+  assert.match(saveFuelSlip, /if \(!operatorName && !operatorNotApplicable\) postingMissingReasons\.push/);
+  assert.match(saveFuelSlip, /if \(!activityText && !activityNotApplicable\) postingMissingReasons\.push/);
+  assert.match(saveFuelSlip, /if \(!workAreaText && !workAreaNotApplicable\) postingMissingReasons\.push/);
+});
+
+test('fuel-slip usage updates are explicit, monotonic and stale valuation only after an advance', () => {
+  const saveFuelSlip = ledger.slice(ledger.indexOf('export async function saveFuelSlipTransaction'));
+  assert.match(saveFuelSlip, /const updateAssetUsage = normalizeBoolean\(input\.updateAssetUsage\) !== false && !usageNotApplicable/);
+  assert.match(saveFuelSlip, /if \(updateAssetUsage && usageReading !== null && currentUsageReading !== null && usageReading < currentUsageReading\)/);
+  assert.match(saveFuelSlip, /usageAdvanced = updateAssetUsage\s+&& usageReading !== null\s+&& \(currentUsageReading === null \|\| usageReading > currentUsageReading\)/);
+  assert.match(saveFuelSlip, /when \$6::boolean and \$3::numeric is not null\s+then greatest\(coalesce\(hours, \$3::numeric\), \$3::numeric\)/);
+  assert.match(saveFuelSlip, /const nextSpecs = usageAdvanced && assetHasSavedValuation\s+\? markFuelAssetValuationNeedsUpdate/);
 });

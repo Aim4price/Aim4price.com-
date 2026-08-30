@@ -157,14 +157,39 @@ test("pre-matched requests show the authoritative saved destination and keep sea
   assert.match(itemRoute, /matchedTarget\?\.ownerDisplayName/);
   assert.match(itemRoute, /matchedTarget\?\.targetType === "asset"/);
   assert.match(targetStore, /export async function getAdminCaptureTarget/);
-  assert.match(targetStore, /asset\.id = \$1::uuid[\s\S]*?asset\.user_id = \$2/);
-  assert.match(targetStore, /storage\.id = \$1::uuid[\s\S]*?storage\.user_id = \$2/);
+  assert.match(targetStore, /export async function getAdminCaptureTargets/);
+  assert.match(targetStore, /select \* from unnest\(\$1::text\[\], \$2::text\[\]\)/);
+  assert.match(targetStore, /asset\.id::text = requested\.target_id[\s\S]*?asset\.user_id::text = requested\.owner_user_id/);
+  assert.match(targetStore, /storage\.id::text = requested\.target_id[\s\S]*?storage\.user_id::text = requested\.owner_user_id/);
   assert.match(client, /request\.ownerUserId \|\| cleanText\(payload\.ownerUserId\)/);
   assert.match(client, /request\.assetId \|\| cleanText\(payload\.assetId\)/);
   assert.match(client, /Identified destination — confirm before completing/);
   assert.match(client, /selectedTarget\.targetDisplayName/);
   assert.match(client, /selectedTarget\.reference/);
   assert.match(client, /!hasMatchedTarget \|\| isChangingMatch/);
+});
+
+test("queue rows batch-hydrate canonical owner and destination names", () => {
+  assert.match(collectionRoute, /getAdminCaptureTargets/);
+  assert.match(collectionRoute, /visibleRequests\.map\(\(entry\) => \(\{[\s\S]*?ownerUserId: entry\.ownerUserId,[\s\S]*?assetId: entry\.assetId,[\s\S]*?fuelStorageId: entry\.fuelStorageId/);
+  assert.match(collectionRoute, /adminCaptureTargetKey\(\{[\s\S]*?ownerUserId: entry\.ownerUserId,[\s\S]*?assetId: entry\.assetId,[\s\S]*?fuelStorageId: entry\.fuelStorageId/);
+  assert.match(collectionRoute, /matchedTarget\?\.ownerDisplayName \|\|[\s\S]*?payloadText\(payload, "ownerDisplayName"/);
+  assert.match(collectionRoute, /matchedTarget\?\.targetType === "asset" \? matchedTarget\.targetDisplayName/);
+  assert.match(collectionRoute, /matchedTarget\?\.targetType === "fuel_storage" \? matchedTarget\.targetDisplayName/);
+});
+
+test("canonical asset targets expose saved usage and every serial or VIN alias", () => {
+  assert.match(targetStore, /import \{ resolveAssetUsage \} from "\.\/asset-usage"/);
+  assert.match(targetStore, /assetUsageMetric: "hours" \| "km" \| "percentage" \| "not_applicable" \| null/);
+  assert.match(targetStore, /assetUsageReading: number \| null/);
+  assert.match(targetStore, /asset\.kind as asset_kind/);
+  assert.match(targetStore, /asset\.hours as asset_hours/);
+  assert.match(targetStore, /asset\.life_worked_percent as asset_life_worked_percent/);
+  assert.match(targetStore, /asset\.specs_json as asset_specs_json/);
+  assert.match(targetStore, /resolveAssetUsage\(\{[\s\S]*?kind: row\.asset_kind,[\s\S]*?hours: row\.asset_hours,[\s\S]*?lifeWorkedPercent: row\.asset_life_worked_percent,[\s\S]*?specsJson: row\.asset_specs_json/);
+  for (const alias of ["serial_number", "serial", "vin", "serialNumber"]) {
+    assert.match(targetStore, new RegExp(`to_jsonb\\(asset\\)->>'${alias}'`));
+  }
 });
 
 test("changing a match preserves the current target until a replacement is chosen", () => {
