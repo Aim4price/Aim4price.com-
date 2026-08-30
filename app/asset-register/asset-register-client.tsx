@@ -21826,7 +21826,7 @@ export default function AssetRegisterClient({
       ) : null}
 
       {disposalCandidateAsset ? (
-        <div className={`${styles.modalOverlay} ${styles.confirmDeleteOverlay}`}>
+        <div className={`${styles.modalOverlay} ${styles.confirmDeleteOverlay} ${styles.assetDisposalOverlay}`}>
           <div className={styles.modalBackdrop} onClick={() => { if (!busyDeleteId) setDisposalCandidateAsset(null); }} />
           <form className={`${styles.modalCard} ${styles.assetLifecycleModal} ${styles.assetDisposalModal}`} role="dialog" aria-modal="true" aria-labelledby="disposal-title" onSubmit={(event) => {
             if (disposalWizardStep === 4) void handleConfirmDisposal(event);
