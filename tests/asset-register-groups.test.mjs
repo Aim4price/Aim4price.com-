@@ -709,6 +709,7 @@ test('asset disposal uses a valid withdrawn marketplace state and reuses the umb
   assert.match(disposalModal, /groupModalStyles\.stepNumber/);
   assert.match(disposalModal, /groupModalStyles\.footer/);
   assert.match(disposalModal, /groupModalStyles\.wizardFooter/);
+  assert.match(disposalModal, /styles\.assetDisposalFooter/);
   assert.match(disposalModal, /groupModalStyles\.cancelButton/);
   assert.match(disposalModal, /groupModalStyles\.saveButton/);
   assert.doesNotMatch(disposalModal, /styles\.assetDisposalOverlay|styles\.assetDisposalModal|styles\.assetDisposalBody|styles\.assetDisposalActions/);
@@ -722,6 +723,7 @@ test('asset disposal uses a valid withdrawn marketplace state and reuses the umb
   assert.match(groupModalStyles, /\.stepCopy strong \{[\s\S]*?font-size: 19px;[\s\S]*?font-weight: 900;/);
   assert.match(groupModalStyles, /\.footer \{[\s\S]*?padding: 18px 36px max\(24px, env\(safe-area-inset-bottom\)\);/);
   assert.match(styles, /\.assetDisposalProgressFour \{[\s\S]*?grid-template-columns: repeat\(4, minmax\(0, 1fr\)\) !important;/);
+  assert.match(styles, /\.assetDisposalFooter > :nth-child\(2\):last-child \{[\s\S]*?grid-column: 1 \/ -1;[\s\S]*?grid-row: 1;/);
   assert.doesNotMatch(styles, /\.assetDisposalOverlay \{|\.assetDisposalModal \{|\.assetDisposalBody \{|\.assetDisposalActions \{/);
 });
 
