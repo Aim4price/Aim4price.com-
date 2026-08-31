@@ -11,6 +11,7 @@ import {
 } from 'react';
 import AppHeader from '../../components/AppHeader';
 import GroupedCurrencyInput from '../../components/GroupedCurrencyInput';
+import MarketplaceFilterSelect from './marketplace-filter-select';
 import MarketplaceOutcomeModal from '../../components/MarketplaceOutcomeModal';
 import MarketplaceWhatsAppAction from '../../components/MarketplaceWhatsAppAction';
 import styles from './page.module.css';
@@ -3306,19 +3307,12 @@ export default function MarketplaceClient({
               <h2>{showroomMode ? 'Condition' : 'Sort by'}</h2>
             </div>
 
-            <label className={styles.selectField}>
-              <select
-                value={conditionFilter}
-                onChange={(event) => setConditionFilter(event.target.value as ConditionFilterValue)}
-                aria-label={showroomMode ? 'Filter by condition' : 'Sort by Aim4price condition'}
-              >
-                {CONDITION_OPTIONS.map((option) => (
-                  <option key={option.value || 'all'} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <MarketplaceFilterSelect
+              value={conditionFilter}
+              options={CONDITION_OPTIONS}
+              onChange={setConditionFilter}
+              ariaLabel={showroomMode ? 'Filter by condition' : 'Sort by Aim4price condition'}
+            />
           </section>
 
           <section className={styles.sidebarSection}>
@@ -3326,42 +3320,29 @@ export default function MarketplaceClient({
               <h2>{showroomMode ? 'Location' : 'Distance'}</h2>
             </div>
 
-            <label className={styles.selectField}>
-              <select
-                value={locationFilter}
-                onChange={(event) => {
-                  const nextLocation = event.target.value;
-                  setLocationFilter(nextLocation);
+            <MarketplaceFilterSelect
+              value={locationFilter}
+              options={[
+                { value: 'south-africa', label: 'South Africa' },
+                ...availableProvinces.map((province) => ({ value: province, label: province })),
+              ]}
+              onChange={(nextLocation) => {
+                setLocationFilter(nextLocation);
 
-                  if (nextLocation === 'south-africa') {
-                    setDistanceFilter('all');
-                  }
-                }}
-                aria-label="Marketplace location"
-              >
-                <option value="south-africa">South Africa</option>
-                {availableProvinces.map((province) => (
-                  <option key={province} value={province}>
-                    {province}
-                  </option>
-                ))}
-              </select>
-            </label>
+                if (nextLocation === 'south-africa') {
+                  setDistanceFilter('all');
+                }
+              }}
+              ariaLabel="Marketplace location"
+            />
 
-            <label className={styles.selectField}>
-              <select
-                value={distanceFilter}
-                onChange={(event) => setDistanceFilter(event.target.value as DistanceFilterValue)}
-                disabled={locationFilter === 'south-africa'}
-                aria-label="Marketplace distance radius"
-              >
-                {DISTANCE_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <MarketplaceFilterSelect
+              value={distanceFilter}
+              options={DISTANCE_OPTIONS}
+              onChange={setDistanceFilter}
+              disabled={locationFilter === 'south-africa'}
+              ariaLabel="Marketplace distance radius"
+            />
           </section>
 
           {activeFilterChips.length ? (
