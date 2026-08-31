@@ -4345,15 +4345,16 @@
   }
 }
 
-/* Align only the desktop brand mark with the shared 1180px content shell. */
-@media (min-width: 1181px) and (max-width: 1240px) {
-  .brand {
-    transform: translateX(clamp(8px, calc((100vw - 1212px) / 2), 14px));
+/* Inset the mark on Home and Asset Register to the 1240px working column. */
+@media (min-width: 1181px) {
+  .innerBrandAligned {
+    position: relative;
   }
-}
 
-@media (min-width: 1241px) {
-  .brand {
-    transform: translateX(clamp(0px, calc((100vw - 1228px) / 2), 90px));
+  .brandWorkingColumn {
+    position: absolute;
+    top: 50%;
+    left: clamp(0px, calc((100% - 1240px) / 2), 60px);
+    transform: translateY(-50%);
   }
 }
