@@ -15,7 +15,7 @@ test('global layout tokens provide fluid gutters, spacing and stable text scalin
   assert.match(globals, /\.appRoot,[\s\S]*?\.appRoot > main,[\s\S]*?main \{[\s\S]*?min-width: 0;[\s\S]*?max-width: 100%/);
 });
 
-test('header keeps desktop navigation at larger widths and uses the account dropdown on compact touch devices', async () => {
+test('header keeps the complete desktop navigation on the fixed mobile canvas', async () => {
   const [header, headerClient, layout] = await Promise.all([
     read('components/AppHeader.module.css'),
     read('components/AppHeader.tsx'),
@@ -29,20 +29,39 @@ test('header keeps desktop navigation at larger widths and uses the account drop
   assert.match(layout, /width: 980/);
   assert.match(layout, /initialScale: -1/);
   assert.doesNotMatch(layout, /width: 'device-width'|initialScale: 1/);
-  assert.match(headerClient, /max-device-width: 900px/);
+  assert.match(headerClient, /window\.matchMedia\('\(max-width: 760px\)'\)/);
+  assert.doesNotMatch(headerClient, /max-device-width/);
   assert.match(headerClient, /usesCompactHeader \? styles\.innerCompact/);
   assert.match(headerClient, /usesCompactHeader \? styles\.navCompact/);
   assert.match(headerClient, /\{ key: 'home', href: '\/', label: 'Home' \}/);
   assert.match(headerClient, /\{ key: 'valuation', href: '\/valuation', label: 'Get Estimate' \}/);
   assert.match(header, /\.innerCompact \{[\s\S]*?grid-template-areas: "brand actions";[\s\S]*?row-gap: 0/);
   assert.match(header, /\.navCompact \{[\s\S]*?display: none/);
-  assert.match(header, /@media \(hover: none\) and \(pointer: coarse\) and \(max-device-width: 900px\)[\s\S]*?\.nav \{[\s\S]*?display: none/);
+  assert.doesNotMatch(header, /@media \(hover: none\) and \(pointer: coarse\) and \(max-device-width: 900px\)/);
   assert.doesNotMatch(header, /navSwipe/);
   assert.match(header, /@media \(max-width: 760px\)[\s\S]*?\.mobileMenuButton \{[\s\S]*?display: none;[\s\S]*?\.accountMenu \{[\s\S]*?display: block/);
   assert.match(headerClient, /!isLoadingSession && !session \? styles\.innerPublic/);
   assert.match(header, /@media \(max-width: 760px\)[\s\S]*?\.innerPublic \.actionsRail \{[\s\S]*?grid-template-columns: minmax\(3\.5rem, 0\.72fr\) minmax\(7rem, 1\.28fr\)/);
   assert.match(header, /\.innerPublic \.loginButton,[\s\S]*?\.innerPublic \.signupButton \{[\s\S]*?min-height: var\(--tap-target-min, 44px\)/);
   assert.match(header, /\.navWindowButton \{[\s\S]*?min-width: var\(--tap-target-min, 44px\)/);
+});
+
+test('website sign-out stays separate from installable app sessions and verifies closure', async () => {
+  const [headerClient, sessionCache, meRoute] = await Promise.all([
+    read('components/AppHeader.tsx'),
+    read('lib/header-session-cache.ts'),
+    read('app/api/me/route.ts'),
+  ]);
+
+  assert.match(sessionCache, /fetch\('\/api\/me\?scope=website'/);
+  assert.match(meRoute, /export async function GET\(request: Request\)/);
+  assert.match(meRoute, /searchParams\.get\('scope'\) === 'website'/);
+  assert.match(meRoute, /websiteOnly[\s\S]*?\? await getServerSession\(\)[\s\S]*?: await getServerSession\(\{ allowDealerApp: true, allowOwnerApp: true \}\)/);
+  assert.match(headerClient, /for \(let attempt = 0; attempt < 2; attempt \+= 1\)/);
+  assert.match(headerClient, /keepalive: true/);
+  assert.match(headerClient, /fetch\('\/api\/me\?scope=website'/);
+  assert.match(headerClient, /verification\?\.signedIn !== false/);
+  assert.match(headerClient, /clearCachedHeaderSession\(\)[\s\S]*?window\.location\.replace\('\/auth#login'\)/);
 });
 
 test('home page keeps the video-bubble hero usable at phone and tablet widths', async () => {
