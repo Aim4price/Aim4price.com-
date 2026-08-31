@@ -28,7 +28,10 @@ test('homepage presents four green Get Estimate video bubbles', async () => {
   assert.doesNotMatch(bubbles, /autoPlay/);
   assert.match(bubbles, /onMouseEnter=[\s\S]*?onMouseLeave=[\s\S]*?onFocus=[\s\S]*?onBlur=/);
   assert.match(bubbles, /prefers-reduced-motion: reduce/);
-  assert.match(bubbles, /\(hover: none\), \(pointer: coarse\)/);
+  assert.match(bubbles, /\(any-hover: hover\)/);
+  assert.match(bubbles, /previewRequestSequence/);
+  assert.match(bubbles, /resetSiblingPreviews/);
+  assert.match(bubbles, /:focus-visible/);
   assert.match(bubbles, /href="\/valuation"/);
 
   assert.match(styles, /Four interactive Get Estimate video bubbles/);
@@ -36,5 +39,8 @@ test('homepage presents four green Get Estimate video bubbles', async () => {
   assert.match(styles, /\.heroBubble\[data-preview-active='true'\] \.heroBubbleVideo \{[\s\S]*?opacity: 1/);
   assert.match(styles, /@media \(max-width: 1180px\)[\s\S]*?grid-template-columns: repeat\(4, minmax\(0, 1fr\)\)/);
   assert.match(styles, /@media \(max-width: 640px\)[\s\S]*?grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
-  assert.match(styles, /\.heroBubble:focus-visible \{[\s\S]*?outline: 3px solid/);
+  assert.match(styles, /\.heroBubbleTouchLabel \{[\s\S]*?display: none/);
+  assert.match(styles, /@media \(any-hover: none\)[\s\S]*?\.heroBubbleTouchLabel \{[\s\S]*?display: flex/);
+  assert.match(styles, /\.heroBubble:focus-visible \{[\s\S]*?outline: 3px solid #14684f/);
+  assert.match(styles, /@media \(forced-colors: active\)/);
 });
