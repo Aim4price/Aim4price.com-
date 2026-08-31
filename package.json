@@ -18,7 +18,7 @@
     "test:admin-work-tracker": "node --experimental-strip-types --test tests/admin-work-tracker.test.mjs tests/admin-work-tracker.security.test.mjs",
     "test:admin-marketplace": "node --experimental-strip-types --test tests/admin-marketplace-dashboard.test.mjs tests/marketplace-view-tracking.test.mjs tests/marketplace-outcomes.test.mjs tests/marketplace-outcome-modal.test.mjs",
     "test:admin-discovery": "node --experimental-strip-types --test tests/admin-global-assets.test.mjs tests/discovery-view-tracking.test.mjs",
-    "test:asset-discovery": "node --test tests/asset-discovery.security.test.mjs tests/discovery-recent-adverts.security.test.mjs",
+    "test:asset-discovery": "node --test tests/asset-discovery.security.test.mjs tests/discovery-recent-adverts.security.test.mjs tests/asset-discovery-filter-modal.test.mjs",
     "test:license-renewals": "node --test tests/licence-renewal-workflow.security.test.mjs tests/licensing-account-role.test.mjs",
     "test:accountant-workspace": "node --test tests/accountant-workspace.security.test.mjs",
     "test:maintenance-overview": "node --test tests/maintenance-overview-visibility.test.mjs",
