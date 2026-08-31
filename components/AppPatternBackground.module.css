@@ -9,32 +9,53 @@
   overflow: clip;
   isolation: isolate;
   background:
-    radial-gradient(
-      circle at top left,
-      rgba(169, 220, 196, 0.12),
-      transparent 34%
-    ),
-    radial-gradient(
-      circle at 92% 92%,
-      rgba(169, 220, 196, 0.07),
-      transparent 30%
-    ),
-    linear-gradient(180deg, #fafdfb 0%, #f7faf8 45%, #f1f7f3 100%);
+    radial-gradient(circle at 13% 14%, rgba(169, 220, 196, 0.13), transparent 31rem),
+    radial-gradient(circle at 88% 82%, rgba(169, 220, 196, 0.08), transparent 28rem),
+    linear-gradient(180deg, #fbfdfc 0%, #f7faf8 48%, #f2f7f4 100%);
 }
 
 .decoration {
   position: fixed;
-  inset: 0;
+  inset:
+    env(safe-area-inset-top, 0px)
+    env(safe-area-inset-right, 0px)
+    env(safe-area-inset-bottom, 0px)
+    env(safe-area-inset-left, 0px);
   z-index: 0;
   overflow: hidden;
   pointer-events: none;
 }
 
 .decoration *,
-.arcs,
-.dotGrid,
-.mintCircle {
+.topography {
   pointer-events: none;
+}
+
+.topography {
+  position: absolute;
+  inset: -3%;
+  width: 106%;
+  height: 106%;
+  color: #78b99b;
+  opacity: 0.24;
+  -webkit-mask-image: radial-gradient(
+    ellipse 58% 48% at 46% 44%,
+    rgba(0, 0, 0, 0.08) 0%,
+    rgba(0, 0, 0, 0.18) 34%,
+    rgba(0, 0, 0, 0.72) 72%,
+    #000000 100%
+  );
+  mask-image: radial-gradient(
+    ellipse 58% 48% at 46% 44%,
+    rgba(0, 0, 0, 0.08) 0%,
+    rgba(0, 0, 0, 0.18) 34%,
+    rgba(0, 0, 0, 0.72) 72%,
+    #000000 100%
+  );
+}
+
+.topography path {
+  stroke-width: 0.95;
 }
 
 .content {
@@ -57,101 +78,29 @@
   }
 }
 
-.arcs {
-  position: absolute;
-  width: clamp(250px, 31vw, 470px);
-  height: clamp(250px, 31vw, 470px);
-  fill: none;
-  stroke: #78b99b;
-  stroke-width: 1.25;
-  opacity: 0.18;
-}
-
-.arcsTopLeft {
-  top: env(safe-area-inset-top, 0px);
-  left: env(safe-area-inset-left, 0px);
-  transform: translate(-8%, -8%);
-}
-
-.arcsBottomRight {
-  right: env(safe-area-inset-right, 0px);
-  bottom: env(safe-area-inset-bottom, 0px);
-  transform: translate(8%, 8%);
-}
-
-.dotGrid {
-  position: absolute;
-  width: 60px;
-  height: 60px;
-  fill: #76b99a;
-  opacity: 0.25;
-}
-
-.dotGridTopRight {
-  top: calc(env(safe-area-inset-top, 0px) + clamp(88px, 12vh, 138px));
-  right: calc(env(safe-area-inset-right, 0px) + clamp(12px, 4vw, 64px));
-}
-
-.dotGridBottomLeft {
-  bottom: calc(env(safe-area-inset-bottom, 0px) + clamp(78px, 11vh, 132px));
-  left: calc(env(safe-area-inset-left, 0px) + clamp(10px, 4vw, 62px));
-}
-
-.mintCircle {
-  position: absolute;
-  width: clamp(150px, 20vw, 300px);
-  aspect-ratio: 1;
-  border-radius: 50%;
-  background: #a9dcc4;
-  opacity: 0.13;
-}
-
-.mintCircleLeft {
-  top: 37%;
-  left: 0;
-  transform: translate(-62%, -50%);
-}
-
-.mintCircleRight {
-  top: 67%;
-  right: 0;
-  transform: translate(62%, -50%);
-}
-
 @media (max-width: 600px) {
-  .arcs {
-    width: 270px;
-    height: 270px;
-    opacity: 0.17;
-  }
-
-  .dotGrid {
-    width: 56px;
-    height: 56px;
-  }
-
-  .dotGridTopRight {
-    top: calc(env(safe-area-inset-top, 0px) + 104px);
-    right: calc(env(safe-area-inset-right, 0px) + 5px);
-  }
-
-  .dotGridBottomLeft {
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 76px);
-    left: calc(env(safe-area-inset-left, 0px) + 4px);
-  }
-
-  .mintCircle {
-    width: 164px;
-    opacity: 0.12;
+  .topography {
+    inset: -10%;
+    width: 120%;
+    height: 120%;
+    opacity: 0.2;
+    -webkit-mask-image: radial-gradient(
+      ellipse 72% 56% at 50% 38%,
+      rgba(0, 0, 0, 0.14) 0%,
+      rgba(0, 0, 0, 0.34) 48%,
+      #000000 100%
+    );
+    mask-image: radial-gradient(
+      ellipse 72% 56% at 50% 38%,
+      rgba(0, 0, 0, 0.14) 0%,
+      rgba(0, 0, 0, 0.34) 48%,
+      #000000 100%
+    );
   }
 }
 
-@media (min-width: 900px) {
-  .mintCircleLeft {
-    top: 42%;
-  }
-
-  .mintCircleRight {
-    top: 62%;
+@media (prefers-contrast: more) {
+  .topography {
+    opacity: 0.16;
   }
 }
