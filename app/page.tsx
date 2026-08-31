@@ -97,11 +97,12 @@ export default async function HomePage() {
 
                 <h1 className={styles.heroTitle}>
                   <span>Digitise key assets.</span>
-                  <span>Manage every detail.</span>
+                  <span>Manage details.</span>
                 </h1>
 
                 <p className={styles.heroText}>
                   Create a living digital record for your assets, bringing its value, documents,
+                  <br />
                   maintenance, fuel, costs and history to one live system.
                 </p>
 
