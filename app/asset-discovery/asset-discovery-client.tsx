@@ -2615,11 +2615,19 @@ export default function AssetDiscoveryClient({
             role="dialog"
             aria-modal="true"
             aria-labelledby="discovery-filter-title"
+            aria-describedby="discovery-filter-description"
           >
-            <div className={`${assetStyles.modalHeader} ${workspaceStyles.modalHeader} ${leadStyles.leadFilterHeader}`}>
-              <div className={assetStyles.modalHeaderText}>
+            <div
+              className={`${assetStyles.modalHeader} ${workspaceStyles.modalHeader} ${leadStyles.leadFilterHeader} ${styles.discoveryFilterHeader}`}
+            >
+              <div
+                className={`${assetStyles.modalHeaderText} ${styles.discoveryFilterHeaderCopy}`}
+              >
                 <h3 id="discovery-filter-title">Choose which assets to show</h3>
-                <p className={leadStyles.leadFilterIntro}>
+                <p
+                  id="discovery-filter-description"
+                  className={leadStyles.leadFilterIntro}
+                >
                   {licensingDiscovery
                     ? "Filter renewals by asset, location, timing or opportunity status."
                     : "Filter Discovery by equipment type, owner province or page size."}
