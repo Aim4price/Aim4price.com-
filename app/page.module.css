@@ -998,3 +998,243 @@
     color: #42514b;
   }
 }
+
+/* === Four interactive Get Estimate video bubbles === */
+.heroBubbles {
+  position: relative;
+  width: min(100%, 32rem);
+  min-height: clamp(29rem, 32vw, 35rem);
+  justify-self: end;
+  align-self: center;
+}
+
+.heroBubble {
+  --bubble-size: 10rem;
+  position: absolute;
+  display: block;
+  width: var(--bubble-size);
+  aspect-ratio: 1;
+  overflow: hidden;
+  border: 1px solid rgba(24, 127, 91, 0.34);
+  border-radius: 50%;
+  background: #1b8965;
+  box-shadow:
+    0 20px 42px rgba(18, 68, 52, 0.14),
+    0 4px 12px rgba(18, 68, 52, 0.09),
+    inset 0 1px 0 rgba(255, 255, 255, 0.42);
+  isolation: isolate;
+  transform: translateZ(0);
+  transition:
+    transform 220ms ease,
+    border-color 220ms ease,
+    box-shadow 220ms ease;
+}
+
+.heroBubble:hover,
+.heroBubble:focus-visible {
+  border-color: rgba(24, 127, 91, 0.58);
+  box-shadow:
+    0 26px 52px rgba(18, 68, 52, 0.2),
+    0 6px 16px rgba(18, 68, 52, 0.11),
+    inset 0 1px 0 rgba(255, 255, 255, 0.42);
+  transform: translateY(-4px) scale(1.015);
+}
+
+.heroBubble:focus-visible {
+  outline: 3px solid #14684f;
+  outline-offset: 5px;
+}
+
+.heroBubbleVideo,
+.heroBubbleSurface {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+}
+
+.heroBubbleVideo {
+  z-index: 1;
+  object-fit: cover;
+  opacity: 0;
+  transform: scale(1.025);
+  filter: saturate(1.08) contrast(1.04) brightness(1.02);
+  transition:
+    opacity 260ms ease,
+    transform 720ms ease,
+    filter 260ms ease;
+}
+
+.heroBubbleSurface {
+  z-index: 2;
+  background:
+    radial-gradient(circle at 30% 22%, rgba(255, 255, 255, 0.32) 0, transparent 24%),
+    radial-gradient(circle at 76% 82%, rgba(5, 51, 37, 0.28) 0, transparent 48%),
+    linear-gradient(145deg, #31b88a 0%, #208f6b 48%, #126149 100%);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.18),
+    inset 0 -18px 34px rgba(5, 55, 40, 0.16);
+  opacity: 1;
+  transition: opacity 220ms ease;
+}
+
+.heroBubbleSurface::after {
+  content: '';
+  position: absolute;
+  inset: 9%;
+  border: 1px solid rgba(225, 251, 241, 0.22);
+  border-radius: 50%;
+}
+
+.heroBubbleTouchLabel {
+  position: absolute;
+  z-index: 3;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  color: #ffffff;
+  font-size: clamp(0.72rem, 2.6vw, 0.92rem);
+  line-height: 1.15;
+  font-weight: 800;
+  letter-spacing: -0.015em;
+  text-align: center;
+  text-shadow: 0 2px 8px rgba(5, 39, 29, 0.24);
+  pointer-events: none;
+}
+
+.heroBubble[data-preview-active='true'] .heroBubbleVideo {
+  opacity: 1;
+  transform: scale(1.075);
+  filter: saturate(1.18) contrast(1.07) brightness(1.03);
+}
+
+.heroBubble[data-preview-active='true'] .heroBubbleSurface {
+  opacity: 0;
+}
+
+.heroBubbleAgriculture {
+  --bubble-size: clamp(10.5rem, 13vw, 13.5rem);
+  top: 27%;
+  left: 0;
+}
+
+.heroBubbleConstruction {
+  --bubble-size: clamp(8.5rem, 10.5vw, 10.75rem);
+  top: 4%;
+  right: 5%;
+}
+
+.heroBubbleIndustrial {
+  --bubble-size: clamp(7.75rem, 9.5vw, 9.75rem);
+  bottom: 1%;
+  left: 20%;
+}
+
+.heroBubbleMotor {
+  --bubble-size: clamp(9.25rem, 11.5vw, 11.75rem);
+  right: 0;
+  bottom: 12%;
+}
+
+@media (min-width: 1181px) {
+  .heroGrid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+  }
+
+  .heroCopy {
+    position: relative;
+    z-index: 1;
+  }
+
+  .heroCopy,
+  .heroTitle {
+    max-width: 66rem;
+  }
+
+  .heroTitle {
+    font-size: clamp(3rem, 3.8vw, 4.75rem);
+  }
+
+  .heroBubbles {
+    position: absolute;
+    top: 50%;
+    right: 0;
+    right: calc(((100% - 100vw) / 2) + var(--shell-gutter));
+    width: clamp(21rem, 27vw, 32rem);
+    transform: translateY(-50%);
+  }
+}
+
+@media (max-width: 1180px) {
+  .heroGrid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: clamp(1.8rem, 4vw, 3rem);
+  }
+
+  .heroBubbles {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: clamp(0.6rem, 1.7vw, 1rem);
+    width: min(100%, 42rem);
+    min-height: 0;
+    margin-top: 0.25rem;
+    justify-self: start;
+    align-self: auto;
+  }
+
+  .heroBubble,
+  .heroBubbleAgriculture,
+  .heroBubbleConstruction,
+  .heroBubbleIndustrial,
+  .heroBubbleMotor {
+    position: relative;
+    inset: auto;
+    width: 100%;
+  }
+}
+
+@media (max-width: 640px) {
+  .heroBubbles {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: min(100%, 22rem);
+  }
+}
+
+@media (any-hover: none) {
+  .heroBubbleTouchLabel {
+    display: flex;
+  }
+
+  .heroBubble[data-preview-active='true'] .heroBubbleVideo {
+    opacity: 0;
+    transform: scale(1.025);
+  }
+
+  .heroBubble[data-preview-active='true'] .heroBubbleSurface {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .heroBubble,
+  .heroBubbleVideo,
+  .heroBubbleSurface {
+    transition: none;
+  }
+
+  .heroBubble:hover,
+  .heroBubble:focus-visible {
+    transform: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .heroBubble:focus-visible {
+    outline-color: Highlight;
+  }
+}
+

@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { redirectAdminToAdmin } from '../lib/account-access';
 import AppHeader from '../components/AppHeader';
+import HomeEstimateBubbles from './home-estimate-bubbles';
 import styles from './page.module.css';
 
 export const runtime = 'nodejs';
@@ -20,7 +21,7 @@ export default async function HomePage() {
               <div className={styles.heroCopy}>
                 <h1 className={styles.heroTitle}>
                   <span>Digitise the assets that matter.</span>
-                  <span>Manage the details.</span>
+                  <span>Track the finer details.</span>
                 </h1>
 
                 <p className={styles.heroText}>
@@ -38,6 +39,8 @@ export default async function HomePage() {
                   </Link>
                 </div>
               </div>
+
+              <HomeEstimateBubbles />
             </div>
           </div>
         </div>
