@@ -7943,7 +7943,7 @@
   z-index: 2;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  justify-content: flex-end;
   align-items: stretch;
   height: 100%;
   padding: 1.2rem 1.25rem 1.25rem;
@@ -12466,6 +12466,7 @@
   inset: auto;
   display: grid;
   place-items: center;
+  justify-content: center;
   width: 100%;
   height: 100%;
   padding: 1rem;

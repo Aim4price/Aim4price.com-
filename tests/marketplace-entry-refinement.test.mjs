@@ -36,18 +36,30 @@ test('Marketplace heading polish is isolated to the entry introduction', async (
   assert.doesNotMatch(styles, /\.entryEyebrow/);
 });
 
-test('Discovery and Marketplace content aligns to the top like Get Estimate cards', async () => {
-  const [source, styles] = await Promise.all([
+test('Get Estimate, Discovery and Marketplace wording aligns at the bottom', async () => {
+  const [source, styles, valuationStyles] = await Promise.all([
     read('app/marketplace/page.tsx'),
     read('app/marketplace/marketplace-entry.module.css'),
+    read('app/valuation/page.module.css'),
   ]);
   const contentRule = styles.slice(
     styles.indexOf('.entryChoiceContent.entryChoiceContent'),
     styles.indexOf('@media (max-width: 1180px)'),
   );
+  const sectorContentRules = [
+    ...valuationStyles.matchAll(/\.sectorBigCardContent\s*\{([^}]*)\}/g),
+  ].map((match) => match[1]);
   const contentClassUsages = source.match(/entryStyles\.entryChoiceContent/g) ?? [];
 
   assert.equal(contentClassUsages.length, 2);
-  assert.match(contentRule, /justify-content:\s*flex-start/);
-  assert.doesNotMatch(contentRule, /justify-content:\s*flex-end/);
+  assert.match(contentRule, /justify-content:\s*flex-end/);
+  assert.doesNotMatch(contentRule, /justify-content:\s*flex-start/);
+  assert.ok(
+    sectorContentRules.some((rule) => /justify-content:\s*flex-end/.test(rule)),
+    'Get Estimate sector cards should bottom-align their wording',
+  );
+  assert.ok(
+    sectorContentRules.every((rule) => !/justify-content:\s*space-between/.test(rule)),
+    'Get Estimate sector cards should not spread wording from top to bottom',
+  );
 });
