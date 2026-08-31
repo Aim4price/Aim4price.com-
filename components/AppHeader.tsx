@@ -2404,10 +2404,10 @@ export default function AppHeader({
         >
           <Link href="/" className={styles.brand} aria-label="Go to Aim4price home">
             <Image
-              src="/brand/Aim4price_Home_Logo.png"
+              src="/brand/aim4price-mark-black.png"
               alt="Aim4price"
-              width={900}
-              height={240}
+              width={660}
+              height={515}
               className={styles.headerBrandLogo}
               priority
             />
