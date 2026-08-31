@@ -947,8 +947,8 @@
 /* === Four interactive Get Estimate video bubbles === */
 .heroBubbles {
   position: relative;
-  width: min(100%, 28rem);
-  min-height: clamp(29rem, 31vw, 32.5rem);
+  width: min(100%, 32rem);
+  min-height: clamp(29rem, 32vw, 35rem);
   justify-self: end;
   align-self: center;
 }
@@ -969,7 +969,6 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.42);
   isolation: isolate;
   transform: translateZ(0);
-  cursor: pointer;
   transition:
     transform 220ms ease,
     border-color 220ms ease,
@@ -998,12 +997,6 @@
   width: 100%;
   height: 100%;
   border-radius: inherit;
-}
-
-.heroBubbleVideo,
-.heroBubbleSurface,
-.heroBubbleTouchLabel {
-  pointer-events: none;
 }
 
 .heroBubbleVideo {
@@ -1068,27 +1061,27 @@
 }
 
 .heroBubbleAgriculture {
-  --bubble-size: clamp(10.5rem, 12.8vw, 13.25rem);
-  top: 24%;
-  left: 4%;
+  --bubble-size: clamp(10.5rem, 13vw, 13.5rem);
+  top: 27%;
+  left: 0;
 }
 
 .heroBubbleConstruction {
-  --bubble-size: clamp(8.5rem, 10.2vw, 10.5rem);
-  top: 8%;
-  right: 4%;
+  --bubble-size: clamp(8.5rem, 10.5vw, 10.75rem);
+  top: 4%;
+  right: 5%;
 }
 
 .heroBubbleIndustrial {
-  --bubble-size: clamp(7.75rem, 9.2vw, 9.5rem);
-  bottom: 4%;
-  left: 10%;
+  --bubble-size: clamp(7.75rem, 9.5vw, 9.75rem);
+  bottom: 1%;
+  left: 20%;
 }
 
 .heroBubbleMotor {
-  --bubble-size: clamp(9.25rem, 11.2vw, 11.75rem);
-  right: 3%;
-  bottom: 18%;
+  --bubble-size: clamp(9.25rem, 11.5vw, 11.75rem);
+  right: 0;
+  bottom: 12%;
 }
 
 @media (min-width: 1181px) {
@@ -1115,8 +1108,8 @@
     position: absolute;
     top: 50%;
     right: 0;
-    right: calc(((100% - 100vw) / 2) + clamp(2.5rem, 4vw, 5rem));
-    width: clamp(20rem, 24vw, 28rem);
+    right: calc(((100% - 100vw) / 2) + var(--shell-gutter));
+    width: clamp(21rem, 27vw, 32rem);
     transform: translateY(-50%);
   }
 }
@@ -1189,3 +1182,4 @@
     outline-color: Highlight;
   }
 }
+
