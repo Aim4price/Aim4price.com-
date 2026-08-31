@@ -36,7 +36,10 @@ test('homepage presents four green Get Estimate video bubbles', async () => {
   assert.ok(previewStats.reduce((total, { size }) => total + size, 0) < 2_000_000);
   assert.equal((bubbles.match(/positionClass: styles\.heroBubble/g) ?? []).length, 4);
   assert.doesNotMatch(bubbles, /\/brand\/valuation\/(?:Agriculture|Construction|Industrial|Motor)\.mp4/);
-  assert.match(bubbles, /preload="auto"/);
+  assert.match(bubbles, /preload="none"/);
+  assert.match(bubbles, /connection\?\.saveData/);
+  assert.match(bubbles, /video\.preload = 'auto';[\s\S]*?video\.load\(\)/);
+  assert.match(bubbles, /ref=\{groupRef\}/);
   assert.match(bubbles, /muted[\s\S]*?loop[\s\S]*?playsInline/);
   assert.doesNotMatch(bubbles, /autoPlay/);
   assert.match(bubbles, /onMouseEnter=[\s\S]*?onMouseLeave=[\s\S]*?onFocus=[\s\S]*?onBlur=/);
