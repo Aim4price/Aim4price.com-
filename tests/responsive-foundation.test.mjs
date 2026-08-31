@@ -43,13 +43,14 @@ test('header keeps desktop navigation at larger widths and uses the account drop
   assert.match(header, /\.navWindowButton \{[\s\S]*?min-width: var\(--tap-target-min, 44px\)/);
 });
 
-test('home page keeps hero and footer calls to action usable at phone and tablet widths', async () => {
+test('home page keeps the video-bubble hero usable at phone and tablet widths', async () => {
   const home = await read('app/page.module.css');
 
   assert.match(home, /Homepage responsive contract, August 2026/);
   assert.match(home, /@media \(max-width: 900px\)[\s\S]*?\.heroGrid \{[\s\S]*?grid-template-columns: minmax\(0, 1fr\)/);
-  assert.match(home, /@media \(max-width: 760px\)[\s\S]*?\.rolesActions \{[\s\S]*?grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
-  assert.match(home, /\.rolesActions > \* \{[\s\S]*?min-height: var\(--tap-target-min, 44px\)/);
+  assert.match(home, /@media \(max-width: 1180px\)[\s\S]*?\.heroBubbles \{[\s\S]*?grid-template-columns: repeat\(4, minmax\(0, 1fr\)\)/);
+  assert.match(home, /@media \(max-width: 640px\)[\s\S]*?\.heroBubbles \{[\s\S]*?grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
+  assert.match(home, /\.heroBubble:focus-visible \{\s*outline: 3px solid #14684f/);
   assert.doesNotMatch(home, /\.heroActions|\.primaryCta|\.secondaryCta/);
 });
 
