@@ -21015,7 +21015,7 @@ export default function AssetRegisterClient({
                 >
                   <ManageIcon className={styles.buttonIcon} />
                   <span>
-                    <strong>Manage maintenance</strong>
+                    <strong>Manage</strong>
                   </span>
                 </Link>
 
