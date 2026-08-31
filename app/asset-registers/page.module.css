@@ -1455,8 +1455,8 @@
   top: calc(100% + 0.42rem);
   left: 0;
   right: 0;
-  max-height: 16rem;
-  overflow: auto;
+  max-height: 20rem;
+  overflow: hidden;
   padding: 0.45rem;
   border: 1px solid rgba(151, 184, 207, 0.98);
   border-radius: 1rem;
@@ -1465,6 +1465,125 @@
     0 20px 44px rgba(5, 17, 20, 0.18),
     0 6px 14px rgba(5, 17, 20, 0.1),
     inset 0 1px 0 rgba(255, 255, 255, 1);
+}
+
+.targetSelectMenuContent {
+  min-height: 0;
+  max-height: inherit;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 0.4rem;
+}
+
+.targetSelectSearch {
+  min-height: 2.75rem;
+  display: grid;
+  grid-template-columns: 1.05rem minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.3rem 0.38rem 0.3rem 0.72rem;
+  border: 1px solid #c5d9e6;
+  border-radius: 0.78rem;
+  background: linear-gradient(180deg, #ffffff 0%, #f3f8fb 100%);
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+.targetSelectSearch:focus-within {
+  border-color: #558fc6;
+  box-shadow: 0 0 0 3px rgba(85, 143, 198, 0.14);
+}
+
+.targetSelectSearchIcon {
+  width: 1.05rem;
+  height: 1.05rem;
+  color: #456377;
+}
+
+.targetSelectSearchInput {
+  min-width: 0;
+  width: 100%;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: #173229;
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 720;
+}
+
+.targetSelectSearchInput::placeholder {
+  color: #7b8a96;
+}
+
+.targetSelectSearchInput::-webkit-search-cancel-button {
+  display: none;
+  -webkit-appearance: none;
+}
+
+.targetSelectSearchClear {
+  width: 1.9rem;
+  min-width: 1.9rem;
+  min-height: 1.9rem;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 0.58rem;
+  background: #e8f1f5;
+  color: #29485c;
+  font: inherit;
+  font-size: 1.12rem;
+  font-weight: 800;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.targetSelectSearchClear:hover,
+.targetSelectSearchClear:focus-visible {
+  background: #dceaf1;
+  outline: 2px solid rgba(85, 143, 198, 0.34);
+  outline-offset: 1px;
+}
+
+.targetSelectOptions {
+  min-height: 0;
+  max-height: 14rem;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: auto;
+}
+
+.targetSelectOptionList {
+  display: grid;
+  gap: 0.08rem;
+}
+
+.targetSelectEmpty {
+  min-height: 5.2rem;
+  display: grid;
+  place-content: center;
+  gap: 0.22rem;
+  padding: 0.85rem 0.7rem;
+  color: #29485c;
+  text-align: center;
+}
+
+.targetSelectEmpty strong,
+.targetSelectEmpty small {
+  display: block;
+}
+
+.targetSelectEmpty strong {
+  color: #173229;
+  font-size: 0.9rem;
+  font-weight: 850;
+}
+
+.targetSelectEmpty small {
+  color: #71808c;
+  font-size: 0.76rem;
+  font-weight: 680;
 }
 
 .targetSelectOption {
