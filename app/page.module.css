@@ -933,3 +933,68 @@
     white-space: normal;
   }
 }
+
+/* Light hero without video media. */
+.heroMedia {
+  background: transparent;
+}
+
+.heroGrid {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
+}
+
+.heroCopy {
+  max-width: 100%;
+  color: #163f32;
+}
+
+.heroTitle {
+  max-width: 100%;
+  margin-top: 0;
+  color: #163f32;
+  font-size: clamp(3.6rem, 4.65vw, 5rem);
+}
+
+.heroText {
+  color: #42514b;
+}
+
+.secondaryCta {
+  color: #163f32;
+  background: rgba(255, 255, 255, 0.88);
+  border-color: rgba(22, 63, 50, 0.22);
+  box-shadow: 0 12px 26px rgba(18, 45, 37, 0.08);
+  backdrop-filter: none;
+}
+
+.secondaryCta:hover {
+  color: #12382c;
+  background: rgba(22, 63, 50, 0.07);
+  border-color: rgba(22, 63, 50, 0.32);
+}
+
+@media (max-width: 1100px) {
+  .heroCopy,
+  .heroTitle {
+    max-width: 100%;
+  }
+
+  .heroTitle {
+    font-size: clamp(2.9rem, 6.2vw, 4.1rem);
+  }
+
+  .heroTitle span {
+    white-space: normal;
+  }
+}
+
+@media (max-width: 640px) {
+  .heroTitle {
+    font-size: clamp(2.55rem, 11vw, 3.35rem);
+  }
+
+  .heroText {
+    color: #42514b;
+  }
+}

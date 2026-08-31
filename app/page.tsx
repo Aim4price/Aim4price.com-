@@ -1,8 +1,6 @@
-import Image from 'next/image';
 import Link from 'next/link';
 import { redirectAdminToAdmin } from '../lib/account-access';
 import AppHeader from '../components/AppHeader';
-import HomeHeroVideo from './home-hero-video';
 import styles from './page.module.css';
 
 export const runtime = 'nodejs';
@@ -17,10 +15,6 @@ export default async function HomePage() {
 
       <section className={styles.heroSection}>
         <div className={styles.heroMedia}>
-          <HomeHeroVideo />
-
-          <div className={styles.heroOverlay} />
-
           <div className={styles.shell}>
             <div className={styles.heroGrid}>
               <div className={styles.heroCopy}>
@@ -44,21 +38,6 @@ export default async function HomePage() {
                   </Link>
                 </div>
               </div>
-
-              <Link
-                href="/about-us"
-                className={styles.heroVisual}
-                aria-label="About Aim4price"
-              >
-                <Image
-                  src="/brand/aim4price-mark-white.png"
-                  alt="Aim4price"
-                  width={640}
-                  height={640}
-                  priority
-                  className={styles.heroLogo}
-                />
-              </Link>
             </div>
           </div>
         </div>
