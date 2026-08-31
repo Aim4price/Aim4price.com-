@@ -38323,26 +38323,74 @@ button.documentOpenLink {
 }
 
 .ownerCommandChoiceModal {
-  width: min(94vw, 58rem) !important;
-  max-height: min(90dvh, 42rem) !important;
+  width: min(100%, 740px) !important;
+  max-height: min(86vh, calc(100dvh - 2rem)) !important;
   display: flex !important;
   flex-direction: column !important;
   overflow: hidden !important;
-  padding: clamp(1.15rem, 2vw, 1.5rem) !important;
+  padding: clamp(1.2rem, 1.85vw, 1.5rem) !important;
+  border-radius: 1.75rem !important;
 }
 
 .ownerCommandChoiceHeader {
+  position: relative !important;
   flex: 0 0 auto;
-  margin-bottom: 1rem !important;
-  padding-bottom: 1rem;
-  border-bottom: 1px solid rgba(216, 226, 236, 0.92);
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  justify-content: flex-start !important;
+  align-items: flex-start !important;
+  gap: 1rem !important;
+  margin-bottom: clamp(1rem, 1.8vw, 1.2rem) !important;
+  padding: 0 0 clamp(1rem, 1.6vw, 1.16rem) !important;
+  text-align: left !important;
+  border-bottom: 1px solid rgba(216, 226, 236, 0.88) !important;
+}
+
+.ownerCommandChoiceHeader .modalHeaderText {
+  width: 100% !important;
+  max-width: none !important;
+  min-width: 0 !important;
+  display: grid !important;
+  justify-items: start !important;
+  gap: 0.52rem !important;
+  text-align: left !important;
 }
 
 .ownerCommandChoiceHeader h3 {
+  max-width: 36rem !important;
+  margin: 0 !important;
   color: #0d392d;
-  font-size: clamp(1.55rem, 2.7vw, 2rem);
+  font-size: clamp(1.78rem, 3vw, 2.28rem) !important;
   font-weight: 850;
+  line-height: 1.04 !important;
   letter-spacing: -0.045em;
+  text-align: left !important;
+}
+
+.ownerCommandChoiceHeader p {
+  max-width: 38rem !important;
+  margin: 0 !important;
+  color: #5f7186 !important;
+  font-size: clamp(0.96rem, 1.45vw, 1.04rem) !important;
+  font-weight: 620 !important;
+  line-height: 1.55 !important;
+  text-align: left !important;
+}
+
+.ownerCommandChoiceHeader .modalCloseButton {
+  position: static !important;
+  align-self: start !important;
+  justify-self: end !important;
+  margin: 0 !important;
+  z-index: 2 !important;
+  width: 2.55rem !important;
+  min-width: 2.55rem !important;
+  min-height: 2.55rem !important;
+}
+
+.ownerCommandChoiceHeader .modalCloseButton .buttonIcon {
+  width: 1rem !important;
+  height: 1rem !important;
 }
 
 .ownerCommandChoiceBody {
@@ -38361,18 +38409,21 @@ button.documentOpenLink {
 }
 
 .ownerCommandChoiceAction {
-  min-height: 8.25rem;
+  min-height: clamp(8.25rem, 16vw, 9.35rem);
   display: grid !important;
-  grid-template-columns: 2.8rem minmax(0, 1fr) !important;
+  grid-template-columns: 1fr !important;
+  grid-template-rows: auto auto !important;
+  align-content: center !important;
   align-items: center !important;
-  gap: 0.85rem !important;
-  padding: 1rem !important;
+  justify-items: center !important;
+  gap: 0.78rem !important;
+  padding: clamp(1.1rem, 1.8vw, 1.35rem) !important;
   border: 1px solid rgba(216, 226, 236, 0.98) !important;
-  border-radius: 1.15rem !important;
+  border-radius: 1.4rem !important;
   color: #1d3b62 !important;
   background: linear-gradient(180deg, #ffffff 0%, #f5f8fb 100%) !important;
   box-shadow: 0 10px 22px rgba(16, 31, 28, 0.04) !important;
-  text-align: left !important;
+  text-align: center !important;
   text-decoration: none !important;
 }
 
@@ -38384,16 +38435,37 @@ button.documentOpenLink {
 }
 
 .ownerCommandChoiceAction > .buttonIcon {
-  grid-column: 1;
-  width: 1.3rem !important;
-  height: 1.3rem !important;
-  justify-self: center;
+  box-sizing: border-box;
+  grid-column: 1 !important;
+  grid-row: 1 !important;
+  justify-self: center !important;
+  width: 3.2rem !important;
+  height: 3.2rem !important;
+  padding: 0.82rem !important;
+  color: #173b63;
+  background: linear-gradient(180deg, #f7fbff 0%, #edf4fb 100%);
+  border: 1px solid rgba(204, 219, 234, 0.96);
+  border-radius: 1.1rem;
+  box-shadow:
+    0 10px 22px rgba(16, 31, 28, 0.045),
+    inset 0 1px 0 rgba(255, 255, 255, 0.98);
+}
+
+.ownerCommandChoiceAction.optionFeaturedButton > .buttonIcon {
+  color: #124635;
+  background: linear-gradient(180deg, #effaf4 0%, #dff2e7 100%);
+  border-color: rgba(184, 221, 202, 0.98);
 }
 
 .ownerCommandChoiceAction > span {
-  grid-column: 2;
+  grid-column: 1 !important;
+  grid-row: 2 !important;
+  width: 100%;
   min-width: 0;
-  display: block;
+  display: grid;
+  justify-items: center;
+  gap: 0;
+  text-align: center;
 }
 
 .ownerCommandChoiceAction strong {
@@ -38403,7 +38475,9 @@ button.documentOpenLink {
   font-size: clamp(1.18rem, 1.5vw, 1.35rem);
   font-weight: 850;
   line-height: 1.2;
-  text-align: left !important;
+  max-width: 14rem;
+  text-align: center !important;
+  text-wrap: balance;
 }
 
 .ownerMarketplaceRemoveButton {
@@ -38457,7 +38531,11 @@ button.documentOpenLink {
   }
 
   .ownerCommandChoiceAction {
-    min-height: 5.75rem;
+    min-height: 7.35rem;
+  }
+
+  .ownerCommandChoiceHeader h3 {
+    font-size: clamp(1.34rem, 6.8vw, 1.68rem) !important;
   }
 
 }
