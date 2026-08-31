@@ -780,6 +780,8 @@ type RegisterSummaryDisplayRow = {
 };
 
 type RegisterSummaryDisplaySection = {
+  id: string;
+  tabLabel: string;
   title: string;
   description: string;
   rows: RegisterSummaryDisplayRow[];
@@ -6754,6 +6756,10 @@ export default function AssetRegisterClient({
   const isRegisterSummaryAtStart = registerSummaryStartIndex <= 0;
   const isRegisterSummaryAtEnd = registerSummaryStartIndex >= registerSummaryMaxIndex;
   const [isSummaryModalOpen, setIsSummaryModalOpen] = useState(false);
+  const [activeSummarySectionIndex, setActiveSummarySectionIndex] = useState(0);
+  const summaryTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const summaryDialogRef = useRef<HTMLDivElement | null>(null);
+  const summaryTabRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const [isRegisterShareModalOpen, setIsRegisterShareModalOpen] = useState(false);
   const [assetShareDestination, setAssetShareDestination] = useState<AssetShareDestination>('choice');
   const [externalShareReportScope, setExternalShareReportScope] = useState<ExternalShareReportScope>(null);
@@ -9272,8 +9278,10 @@ export default function AssetRegisterClient({
 
       return [
         {
-          title: 'Register Values',
-          description: 'Saved totals for the selected asset register, shown excluding and including VAT.',
+          id: 'values',
+          tabLabel: 'Values',
+          title: 'Register values',
+          description: 'Key asset values, excluding and including VAT.',
           rows: [
             {
               label: 'Total assets',
@@ -9298,8 +9306,10 @@ export default function AssetRegisterClient({
           ],
         },
         {
-          title: 'Register Status Counts',
-          description: 'Main saved status counts with matching values shown excluding and including VAT.',
+          id: 'status',
+          tabLabel: 'Status',
+          title: 'Status',
+          description: 'Insurance, licence and finance coverage.',
           rows: [
             {
               label: 'Assets insured',
@@ -9319,8 +9329,10 @@ export default function AssetRegisterClient({
           ],
         },
         {
-          title: 'Valuation Source',
-          description: 'Split between Aim4price-valued assets and manually added assets.',
+          id: 'valuation',
+          tabLabel: 'Valuation',
+          title: 'Valuation source',
+          description: 'Aim4price and manually added assets.',
           rows: [
             {
               label: 'Aim4price assets',
@@ -9335,8 +9347,10 @@ export default function AssetRegisterClient({
           ],
         },
         {
-          title: 'Asset Type Split',
-          description: 'Basic split across property, equipment, tools, stock and vehicles.',
+          id: 'asset-types',
+          tabLabel: 'Asset types',
+          title: 'Asset types',
+          description: 'Values grouped by asset type.',
           rows: [
             {
               label: 'Property',
@@ -9366,8 +9380,10 @@ export default function AssetRegisterClient({
           ],
         },
         {
-          title: 'Supporting Information',
-          description: 'Saved supporting information currently attached to assets.',
+          id: 'supporting',
+          tabLabel: 'Supporting',
+          title: 'Supporting information',
+          description: 'Saved maps, photos and documents.',
           rows: [
             { label: 'Assets mapped', count: registerBasicSummary.assetsMapped.toLocaleString('en-ZA') },
             { label: 'Assets with photos', count: registerBasicSummary.assetsWithPhotos.toLocaleString('en-ZA') },
@@ -9379,6 +9395,21 @@ export default function AssetRegisterClient({
     },
     [registerBasicSummary],
   );
+
+  const activeRegisterSummarySection =
+    registerSummarySections[activeSummarySectionIndex] ?? registerSummarySections[0]!;
+
+  useEffect(() => {
+    if (!isSummaryModalOpen) {
+      return undefined;
+    }
+
+    const animationFrame = window.requestAnimationFrame(() => {
+      summaryTabRefs.current[0]?.focus();
+    });
+
+    return () => window.cancelAnimationFrame(animationFrame);
+  }, [isSummaryModalOpen]);
 
   const quickPdfReportOptions = useMemo(() => PDF_REPORT_OPTIONS.filter((option) => option.value !== 'full'), []);
   const fullPdfReportOption = PDF_REPORT_OPTIONS[0];
@@ -14836,11 +14867,71 @@ export default function AssetRegisterClient({
   }
 
   function openSummaryModal() {
+    setActiveSummarySectionIndex(0);
     setIsSummaryModalOpen(true);
   }
 
   function closeSummaryModal() {
     setIsSummaryModalOpen(false);
+    window.requestAnimationFrame(() => summaryTriggerRef.current?.focus());
+  }
+
+  function selectSummarySection(index: number, restoreTabFocus = false) {
+    setActiveSummarySectionIndex(index);
+
+    if (restoreTabFocus) {
+      window.requestAnimationFrame(() => summaryTabRefs.current[index]?.focus());
+    }
+  }
+
+  function handleSummaryTabKeyDown(event: ReactKeyboardEvent<HTMLButtonElement>, index: number) {
+    const lastIndex = registerSummarySections.length - 1;
+    let nextIndex: number | null = null;
+
+    if (event.key === 'ArrowRight') {
+      nextIndex = index === lastIndex ? 0 : index + 1;
+    } else if (event.key === 'ArrowLeft') {
+      nextIndex = index === 0 ? lastIndex : index - 1;
+    } else if (event.key === 'Home') {
+      nextIndex = 0;
+    } else if (event.key === 'End') {
+      nextIndex = lastIndex;
+    }
+
+    if (nextIndex === null) {
+      return;
+    }
+
+    event.preventDefault();
+    selectSummarySection(nextIndex, true);
+  }
+
+  function handleSummaryDialogKeyDown(event: ReactKeyboardEvent<HTMLDivElement>) {
+    if (event.key !== 'Tab') {
+      return;
+    }
+
+    const focusableElements = Array.from(
+      summaryDialogRef.current?.querySelectorAll<HTMLElement>(
+        'button:not(:disabled), a[href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])',
+      ) ?? [],
+    ).filter((element) => element.getClientRects().length > 0 && element.getAttribute('aria-hidden') !== 'true');
+
+    if (!focusableElements.length) {
+      event.preventDefault();
+      return;
+    }
+
+    const firstElement = focusableElements[0];
+    const lastElement = focusableElements[focusableElements.length - 1];
+
+    if (event.shiftKey && document.activeElement === firstElement) {
+      event.preventDefault();
+      lastElement?.focus();
+    } else if (!event.shiftKey && document.activeElement === lastElement) {
+      event.preventDefault();
+      firstElement?.focus();
+    }
   }
 
   function handleDownloadRegisterSummary() {
@@ -15899,10 +15990,14 @@ export default function AssetRegisterClient({
               ) : null}
 
               <button
+                ref={summaryTriggerRef}
                 type="button"
                 className={`${styles.secondaryButton} ${styles.summaryTriggerButton} ${styles.headerOptionsButton}`}
                 onClick={openSummaryModal}
                 disabled={isLoading}
+                aria-haspopup="dialog"
+                aria-expanded={isSummaryModalOpen}
+                aria-controls="asset-register-summary-dialog"
               >
                 <OptionsIcon className={styles.buttonIcon} />
                 <span>Summary</span>
@@ -17943,10 +18038,19 @@ export default function AssetRegisterClient({
         <div className={`${styles.modalOverlay} ${styles.summaryModalOverlay}`}>
           <div className={styles.modalBackdrop} onClick={closeSummaryModal} />
 
-          <div className={`${styles.modalCard} ${styles.summaryModal}`} role="dialog" aria-modal="true" aria-labelledby="asset-register-summary-title">
+          <div
+            ref={summaryDialogRef}
+            id="asset-register-summary-dialog"
+            className={`${styles.modalCard} ${styles.summaryModal}`}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="asset-register-summary-title"
+            onKeyDown={handleSummaryDialogKeyDown}
+          >
             <div className={`${styles.modalHeader} ${styles.summaryModalHeader}`}>
               <div className={styles.modalHeaderText}>
                 <h3 id="asset-register-summary-title">Register summary</h3>
+                <p>Values, status and records at a glance.</p>
               </div>
 
               <div className={styles.summaryHeaderActions}>
@@ -17972,36 +18076,83 @@ export default function AssetRegisterClient({
             </div>
 
             <div className={styles.summaryModalBody}>
-              {registerSummarySections.map((section) => (
-                <section key={section.title} className={styles.summaryPanel} aria-label={section.title}>
-                  <div className={styles.summarySectionHeader}>
-                    <div>
-                      <span>{section.title}</span>
-                      <p>{section.description}</p>
-                    </div>
+              <div className={styles.summarySectionTabs} role="tablist" aria-label="Register summary sections">
+                {registerSummarySections.map((section, index) => {
+                  const isActive = index === activeSummarySectionIndex;
+
+                  return (
+                    <button
+                      key={section.id}
+                      ref={(element) => {
+                        summaryTabRefs.current[index] = element;
+                      }}
+                      id={`summary-tab-${section.id}`}
+                      type="button"
+                      className={`${styles.summarySectionTab} ${isActive ? styles.summarySectionTabActive : ''}`}
+                      role="tab"
+                      aria-selected={isActive}
+                      aria-controls="asset-register-summary-panel"
+                      tabIndex={isActive ? 0 : -1}
+                      onClick={() => selectSummarySection(index)}
+                      onKeyDown={(event) => handleSummaryTabKeyDown(event, index)}
+                    >
+                      {section.tabLabel}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <section
+                id="asset-register-summary-panel"
+                className={styles.summaryPanel}
+                role="tabpanel"
+                aria-labelledby={`summary-tab-${activeRegisterSummarySection.id}`}
+              >
+                <div className={styles.summarySectionHeader}>
+                  <div>
+                    <h4>{activeRegisterSummarySection.title}</h4>
+                    <p>{activeRegisterSummarySection.description}</p>
                   </div>
+                  <small>
+                    {activeRegisterSummarySection.rows.length}{' '}
+                    {activeRegisterSummarySection.rows.length === 1 ? 'metric' : 'metrics'}
+                  </small>
+                </div>
 
-                  <div className={`${styles.summarySimpleTable} ${section.hasValueColumn === false ? styles.summarySimpleTableCountOnly : ''}`}>
-                    <div className={styles.summarySimpleTableHeader} aria-hidden="true">
-                      <span>Metric</span>
-                      <span>Count</span>
-                      {section.hasValueColumn === false ? null : <span>Value excl. VAT</span>}
-                      {section.hasValueColumn === false ? null : <span>Value incl. VAT</span>}
-                    </div>
-
-                    <div className={styles.summarySimpleTableRows}>
-                      {section.rows.map((row) => (
-                        <div key={row.label} className={styles.summarySimpleTableRow}>
-                          <span>{row.label}</span>
-                          <strong>{row.count ?? ''}</strong>
-                          {section.hasValueColumn === false ? null : <small>{row.valueExVat ?? ''}</small>}
-                          {section.hasValueColumn === false ? null : <b>{row.valueInclVat ?? ''}</b>}
-                        </div>
+                <div
+                  className={styles.summaryTableScroll}
+                  role="region"
+                  aria-label={`${activeRegisterSummarySection.title} data`}
+                  tabIndex={0}
+                >
+                  <table
+                    className={`${styles.summaryDataTable} ${activeRegisterSummarySection.hasValueColumn === false ? styles.summaryDataTableCountOnly : ''}`}
+                  >
+                    <thead>
+                      <tr>
+                        <th scope="col">Metric</th>
+                        <th scope="col">Count</th>
+                        {activeRegisterSummarySection.hasValueColumn === false ? null : <th scope="col">Value excl. VAT</th>}
+                        {activeRegisterSummarySection.hasValueColumn === false ? null : <th scope="col">Value incl. VAT</th>}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {activeRegisterSummarySection.rows.map((row) => (
+                        <tr key={row.label}>
+                          <th scope="row">{row.label}</th>
+                          <td data-label="Count">{row.count ?? ''}</td>
+                          {activeRegisterSummarySection.hasValueColumn === false ? null : (
+                            <td data-label="Excl. VAT">{row.valueExVat ?? ''}</td>
+                          )}
+                          {activeRegisterSummarySection.hasValueColumn === false ? null : (
+                            <td data-label="Incl. VAT">{row.valueInclVat ?? ''}</td>
+                          )}
+                        </tr>
                       ))}
-                    </div>
-                  </div>
-                </section>
-              ))}
+                    </tbody>
+                  </table>
+                </div>
+              </section>
             </div>
           </div>
         </div>
