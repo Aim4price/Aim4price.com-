@@ -30,14 +30,14 @@
 
 .topography {
   position: absolute;
-  inset: -0.35rem;
+  inset: -0.5rem;
   background-image: url('/topographic-contours.svg');
   background-position: center;
   background-repeat: no-repeat;
   background-size: cover;
-  opacity: 0.54;
-  filter: blur(0.55px);
-  transform: scale(1.006);
+  opacity: 0.44;
+  filter: blur(1px);
+  transform: scale(1.008);
   transform-origin: center;
 }
 
@@ -64,13 +64,13 @@
 @media (max-width: 600px) {
   .topography {
     background-position: 52% center;
-    opacity: 0.5;
-    filter: blur(0.45px);
+    opacity: 0.42;
+    filter: blur(0.8px);
   }
 }
 
 @media (prefers-contrast: more) {
   .topography {
-    opacity: 0.4;
+    opacity: 0.34;
   }
 }

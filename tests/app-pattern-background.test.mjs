@@ -45,7 +45,7 @@ test('the component renders the large topographic artwork without repeating inli
 test('the contour artwork is a broad, solid-line vector composition', () => {
   assert.match(artwork, /<svg[^>]*viewBox="0 0 1920 1200"/);
   assert.ok((artwork.match(/<path /g) ?? []).length >= 24);
-  assert.match(artwork, /stroke="#52675f"/);
+  assert.match(artwork, /stroke="#71827b"/);
   assert.match(artwork, /stroke-linecap="round"/);
   assert.match(artwork, / C /);
   assert.doesNotMatch(artwork, / L /);
@@ -80,9 +80,9 @@ test('the background is responsive, interaction-safe, and uses the Aim4price pal
   assert.match(styles, /min-height:\s*100dvh/);
   assert.match(styles, /env\(safe-area-inset-/);
   assert.match(styles, /@media \(max-width: 600px\)/);
-  assert.match(styles, /\.topography\s*{[^}]*opacity:\s*0\.54/s);
-  assert.match(styles, /filter:\s*blur\(0\.55px\)/);
-  assert.match(styles, /transform:\s*scale\(1\.006\)/);
+  assert.match(styles, /\.topography\s*{[^}]*opacity:\s*0\.44/s);
+  assert.match(styles, /filter:\s*blur\(1px\)/);
+  assert.match(styles, /transform:\s*scale\(1\.008\)/);
   assert.match(styles, /@media \(prefers-contrast: more\)/);
   assert.match(styles, /--aim4price-card-shadow:\s*0 10px 30px rgba\(13, 62, 49, 0\.08\)/);
   assert.match(styles, /\.content > \*\s*{[^}]*background-color:\s*transparent !important/s);
