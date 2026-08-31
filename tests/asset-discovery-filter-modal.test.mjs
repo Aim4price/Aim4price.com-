@@ -6,6 +6,9 @@ const read = (path) =>
   readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
 
 const client = read("app/asset-discovery/asset-discovery-client.tsx");
+const recentAdvertsClient = read(
+  "app/asset-discovery/recently-advertised-client.tsx",
+);
 const css = read("app/asset-discovery/page.module.css");
 
 test("Discovery filter header keeps its own padded layout", () => {
@@ -35,7 +38,7 @@ test("Discovery filter header preserves close-button space on mobile", () => {
 test("Discovery filter body stays usable in short and narrow viewports", () => {
   assert.match(
     css,
-    /\.discoveryFilterModal\.discoveryFilterModal\[role='dialog'\]\s*\{[\s\S]*?max-height:[\s\S]*?!important;[\s\S]*?overflow:\s*hidden\s*!important;/,
+    /\.discoveryFilterModal\.discoveryFilterModal\[role='dialog'\]\s*\{[\s\S]*?width:\s*min\(calc\(100vw - 2rem\), 64rem\)\s*!important;[\s\S]*?max-height:[\s\S]*?!important;[\s\S]*?overflow:\s*hidden\s*!important;/,
   );
   assert.match(
     css,
@@ -45,6 +48,84 @@ test("Discovery filter body stays usable in short and narrow viewports", () => {
     css,
     /@media \(max-width: 900px\)\s*\{[\s\S]*?\.discoveryFilterForm\s*\{[\s\S]*?grid-template-columns:\s*1fr\s*!important;/,
   );
+});
+
+test("Recently advertised filter uses the same wider dialog layout", () => {
+  assert.match(
+    css,
+    /\.recentAdvertFilterModal\.recentAdvertFilterModal\[role='dialog'\]\s*\{[\s\S]*?width:\s*min\(calc\(100vw - 2rem\), 64rem\)\s*!important;/,
+  );
+  assert.match(
+    css,
+    /\.recentAdvertFilterFields\s*\{[\s\S]*?grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\);/,
+  );
+  assert.match(
+    css,
+    /@media \(max-width: 760px\)\s*\{[\s\S]*?\.recentAdvertFilterFields,[\s\S]*?grid-template-columns:\s*1fr;/,
+  );
+});
+
+test("Recently advertised filters use branded custom listboxes", () => {
+  const filterDropdown = recentAdvertsClient.slice(
+    recentAdvertsClient.indexOf("function RecentAdvertFilterDropdown("),
+    recentAdvertsClient.indexOf("function ContactSentIcon("),
+  );
+  const filterModal = recentAdvertsClient.slice(
+    recentAdvertsClient.indexOf("{filterOpen ? ("),
+    recentAdvertsClient.indexOf("{sourcingRequest ? ("),
+  );
+
+  assert.match(filterDropdown, /aria-haspopup="listbox"/);
+  assert.match(
+    filterDropdown,
+    /aria-controls=\{isOpen \? listboxId : undefined\}/,
+  );
+  assert.match(filterDropdown, /<DropdownOverlay[\s\S]*?role="listbox"/);
+  assert.match(filterDropdown, /role="option"/);
+  assert.match(filterDropdown, /aria-selected=\{isSelected\}/);
+  assert.match(filterDropdown, /event\.key === "ArrowDown"/);
+  assert.match(filterDropdown, /event\.key === "Home"/);
+  assert.match(filterDropdown, /event\.key === "End"/);
+  assert.match(filterDropdown, /event\.key === "Escape"/);
+  assert.match(filterDropdown, /event\.key === "Tab"/);
+  assert.match(filterDropdown, /tabIndex=\{isSelected \? 0 : -1\}/);
+  assert.equal(
+    (filterModal.match(/<RecentAdvertFilterDropdown/g) ?? []).length,
+    3,
+  );
+  assert.doesNotMatch(filterModal, /<select\b|<option\b/);
+});
+
+test("Discovery filters remain branded custom listboxes", () => {
+  const filterDropdown = client.slice(
+    client.indexOf("function DiscoveryFilterDropdown("),
+    client.indexOf("function cleanText("),
+  );
+  const filterModal = client.slice(
+    client.indexOf("{!compactAppMode && isFilterModalOpen ? ("),
+    client.indexOf(
+      'access?.accountType === "owner"',
+      client.indexOf("{!compactAppMode && isFilterModalOpen ? ("),
+    ),
+  );
+
+  assert.match(filterDropdown, /aria-haspopup="listbox"/);
+  assert.match(filterDropdown, /<DropdownOverlay[\s\S]*?role="listbox"/);
+  assert.match(filterDropdown, /role="option"/);
+  assert.match(filterDropdown, /aria-selected=\{isSelected\}/);
+  assert.equal(
+    (filterModal.match(/<DiscoveryFilterDropdown/g) ?? []).length,
+    5,
+  );
+  assert.doesNotMatch(filterModal, /<select\b|<option\b/);
+});
+
+test("Recently advertised filter dialog exposes its description", () => {
+  assert.match(
+    recentAdvertsClient,
+    /aria-describedby="recent-advert-filter-description"/,
+  );
+  assert.match(recentAdvertsClient, /id="recent-advert-filter-description"/);
 });
 
 test("Discovery filter dialog exposes its description to assistive technology", () => {
