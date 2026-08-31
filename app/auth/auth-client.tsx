@@ -15,6 +15,7 @@ import { isMiddlemanAccountSubtype } from "../../lib/middleman-account";
 import styles from "./page.module.css";
 
 type Mode = "signup" | "login" | "forgot";
+type SignupStep = 1 | 2 | 3;
 type SignupAccountType = "owner" | "middleman" | "dealer" | "finance" | "insurance" | "licensing";
 type SignupAccountSubtype =
   | "farmer"
@@ -55,6 +56,40 @@ type AuthNotice = {
   title: string;
   text: string;
 } | null;
+
+const SIGNUP_STEPS: ReadonlyArray<{ step: SignupStep; label: string }> = [
+  { step: 1, label: "Workspace" },
+  { step: 2, label: "Your details" },
+  { step: 3, label: "Secure account" },
+];
+
+function SignupProgress({ currentStep }: { currentStep: SignupStep }) {
+  return (
+    <ol className={styles.signupProgress} aria-label="Account setup progress">
+      {SIGNUP_STEPS.map(({ step, label }) => {
+        const isCurrent = step === currentStep;
+        const isComplete = step < currentStep;
+
+        return (
+          <li
+            key={step}
+            className={`${styles.signupProgressStep} ${
+              isCurrent
+                ? styles.signupProgressStepCurrent
+                : isComplete
+                  ? styles.signupProgressStepComplete
+                  : ""
+            }`}
+            aria-current={isCurrent ? "step" : undefined}
+          >
+            <span aria-hidden="true">{isComplete ? "✓" : step}</span>
+            <strong>{label}</strong>
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
 
 type SignupFormState = {
   accountType: SignupAccountType;
@@ -152,12 +187,14 @@ function CustomSelect<T extends string>({
   options,
   onChange,
   placeholder = "Select an option",
+  ariaLabel,
 }: {
   name: string;
   value: T;
   options: Array<SelectOption<T>>;
   onChange: (value: T) => void;
   placeholder?: string;
+  ariaLabel?: string;
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement | null>(null);
@@ -315,6 +352,11 @@ function CustomSelect<T extends string>({
         aria-haspopup="listbox"
         aria-expanded={isOpen}
         aria-controls={listboxId}
+        aria-label={
+          ariaLabel
+            ? `${ariaLabel}: ${selectedOption?.label ?? placeholder}`
+            : undefined
+        }
         onClick={() => {
           if (isOpen) {
             closeMenu();
@@ -558,6 +600,7 @@ async function postAuth(path: string, body: Record<string, unknown>) {
 
 export default function AuthClient() {
   const [mode, setMode] = useState<Mode>("signup");
+  const [signupStep, setSignupStep] = useState<SignupStep>(1);
   const [showSignupPassword, setShowSignupPassword] = useState(false);
   const [showLoginPassword, setShowLoginPassword] = useState(false);
   const [signupForm, setSignupForm] =
@@ -567,6 +610,8 @@ export default function AuthClient() {
     useState<ForgotFormState>(initialForgotState);
   const [notice, setNotice] = useState<AuthNotice>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const signupFlowRef = useRef<HTMLDivElement | null>(null);
+  const signupPanelRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -574,7 +619,11 @@ export default function AuthClient() {
     }
 
     const syncModeFromHash = () => {
-      setMode(getModeFromHash(window.location.hash));
+      const nextMode = getModeFromHash(window.location.hash);
+      setMode(nextMode);
+      if (nextMode === "signup") {
+        setSignupStep(1);
+      }
       setNotice(null);
     };
 
@@ -588,7 +637,7 @@ export default function AuthClient() {
     if (mode === "signup") {
       return {
         title: "Create your account",
-        text: "Choose the workspace that matches what you actually do. Middleman accounts are free and ready immediately; paid workspaces still require activation.",
+        text: "Create the workspace that matches how you use Aim4price.",
         action: "Create account",
         footer: "Already have an account?",
         footerAction: "Log in",
@@ -622,6 +671,10 @@ export default function AuthClient() {
     setMode(nextMode);
     setNotice(null);
 
+    if (nextMode === "signup") {
+      setSignupStep(1);
+    }
+
     if (typeof window !== "undefined") {
       const nextHash = `#${nextMode}`;
       if (window.location.hash !== nextHash) {
@@ -630,66 +683,100 @@ export default function AuthClient() {
     }
   };
 
-  const handleSignupSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setNotice(null);
+  const scrollSignupFlowIntoView = () => {
+    if (typeof window === "undefined") {
+      return;
+    }
 
+    window.requestAnimationFrame(() => {
+      signupPanelRef.current?.focus({ preventScroll: true });
+      signupFlowRef.current?.scrollIntoView({
+        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+          ? "auto"
+          : "smooth",
+        block: "start",
+      });
+    });
+  };
+
+  const moveToSignupStep = (nextStep: SignupStep) => {
+    setNotice(null);
+    setSignupStep(nextStep);
+    scrollSignupFlowIntoView();
+  };
+
+  const returnToSignupStep = (nextStep: SignupStep) => {
+    setSignupStep(nextStep);
+    scrollSignupFlowIntoView();
+  };
+
+  const validateSignupStep = (step: SignupStep) => {
     const name = signupForm.name.trim();
     const phone = signupForm.phone.trim();
     const email = signupForm.email.trim();
     const introducedByName = signupForm.introducedByName.trim();
-    const province = signupForm.province;
     const townCity = signupForm.townCity.trim();
 
-    if (
-      !name ||
-      !phone ||
-      !email ||
-      !signupForm.password ||
-      !signupForm.confirmPassword
-    ) {
-      setNotice({
-        tone: "error",
-        title: "Missing information",
-        text: "Complete your name, contact number, email and password before creating your account.",
-      });
-      return;
+    if (step === 1) {
+      return true;
     }
 
-    if (!signupForm.introducedByOption) {
-      setNotice({
-        tone: "error",
-        title: "Introduced by required",
-        text: "Select who introduced you to Aim4price before continuing.",
-      });
-      return;
+    if (step === 2) {
+      if (!name || !phone) {
+        setNotice({
+          tone: "error",
+          title: "Missing details",
+          text: "Add your full name and contact number before continuing.",
+        });
+        return false;
+      }
+
+      if (!signupForm.introducedByOption) {
+        setNotice({
+          tone: "error",
+          title: "Introduced by required",
+          text: "Select who introduced you to Aim4price before continuing.",
+        });
+        return false;
+      }
+
+      if (signupForm.introducedByOption === "other" && !introducedByName) {
+        setNotice({
+          tone: "error",
+          title: "Introduced by name required",
+          text: "Enter the name or source that introduced you to Aim4price.",
+        });
+        return false;
+      }
+
+      if (!signupForm.province) {
+        setNotice({
+          tone: "error",
+          title: "Province required",
+          text: "Select your province before continuing.",
+        });
+        return false;
+      }
+
+      if (!townCity) {
+        setNotice({
+          tone: "error",
+          title: "Town or city required",
+          text: "Add your town or city so Aim4price can keep local tools and results relevant.",
+        });
+        return false;
+      }
+
+      return true;
     }
 
-    if (signupForm.introducedByOption === "other" && !introducedByName) {
+    if (!email || !signupForm.password || !signupForm.confirmPassword) {
       setNotice({
         tone: "error",
-        title: "Introduced by name required",
-        text: "Enter the name or source that introduced you to Aim4price.",
+        title: "Missing account details",
+        text: "Complete your email and both password fields before creating your account.",
       });
-      return;
-    }
-
-    if (!province) {
-      setNotice({
-        tone: "error",
-        title: "Province required",
-        text: "Select your province before creating your Aim4price account.",
-      });
-      return;
-    }
-
-    if (!townCity) {
-      setNotice({
-        tone: "error",
-        title: "Town or city required",
-        text: "Add your town or city so Aim4price can provide relevant local tools and results.",
-      });
-      return;
+      return false;
     }
 
     if (signupForm.password.length < 8) {
@@ -698,7 +785,7 @@ export default function AuthClient() {
         title: "Password too short",
         text: "Use at least 8 characters before continuing.",
       });
-      return;
+      return false;
     }
 
     if (signupForm.password !== signupForm.confirmPassword) {
@@ -707,7 +794,7 @@ export default function AuthClient() {
         title: "Passwords do not match",
         text: "Confirm the same password in both password fields.",
       });
-      return;
+      return false;
     }
 
     if (!signupForm.acceptTerms) {
@@ -716,8 +803,38 @@ export default function AuthClient() {
         title: "Terms required",
         text: "Accept the terms and privacy policy before continuing.",
       });
+      return false;
+    }
+
+    return true;
+  };
+
+  const handleSignupSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setNotice(null);
+
+    if (signupStep < 3) {
+      if (validateSignupStep(signupStep)) {
+        moveToSignupStep((signupStep + 1) as SignupStep);
+      } else {
+        scrollSignupFlowIntoView();
+      }
       return;
     }
+
+    for (const step of SIGNUP_STEPS.map(({ step }) => step)) {
+      if (!validateSignupStep(step)) {
+        returnToSignupStep(step);
+        return;
+      }
+    }
+
+    const name = signupForm.name.trim();
+    const phone = signupForm.phone.trim();
+    const email = signupForm.email.trim();
+    const introducedByName = signupForm.introducedByName.trim();
+    const province = signupForm.province;
+    const townCity = signupForm.townCity.trim();
 
     setIsSubmitting(true);
 
@@ -747,6 +864,7 @@ export default function AuthClient() {
       const redirectUrl = extractRedirectUrl(payload);
 
       setSignupForm(initialSignupState);
+      setSignupStep(1);
       setNotice({
         tone: "success",
         title: "Account created",
@@ -893,7 +1011,7 @@ export default function AuthClient() {
 
   return (
     <main className={styles.page}>
-      <div className={styles.shell}>
+      <div className={`${styles.shell} ${mode === "signup" ? styles.signupShell : ""}`}>
         <div className={styles.topBar}>
           <Link href="/" className={styles.homeLink}>
             Back to home
@@ -933,7 +1051,7 @@ export default function AuthClient() {
               <p className={styles.authText}>{copy.text}</p>
             </div>
 
-            {notice ? (
+            {notice && mode !== "signup" ? (
               <div
                 className={`${styles.notice} ${
                   notice.tone === "success"
@@ -952,283 +1070,389 @@ export default function AuthClient() {
 
             {mode === "signup" ? (
               <form
-                className={styles.form}
+                className={`${styles.form} ${styles.signupForm}`}
                 onSubmit={handleSignupSubmit}
                 noValidate
               >
-                <div className={styles.signupTypeRow}>
-                  <div className={styles.field}>
-                    <span className={styles.label}>What would you like to use Aim4price for?</span>
-                    <CustomSelect
-                      name="accountType"
-                      value={signupForm.accountType}
-                      options={SIGNUP_ACCOUNT_TYPE_OPTIONS}
-                      onChange={(accountType) => {
-                        setSignupForm((current) => ({
-                          ...current,
-                          accountType,
-                          accountSubtype: getDefaultSubtype(accountType),
-                          directoryParticipation:
-                            accountType !== "owner" && accountType !== "middleman",
-                        }));
-                      }}
-                    />
-                  </div>
+                <div ref={signupFlowRef} className={styles.signupFlow}>
+                  <p className={styles.signupIntro}>
+                    Complete one short step at a time. Your account is created on the final step.
+                  </p>
+                  <SignupProgress currentStep={signupStep} />
 
-                  <div className={styles.field}>
-                    <span className={styles.label}>
-                      Which best describes your work?
-                    </span>
-                    <CustomSelect
-                      name="accountSubtype"
-                      value={signupForm.accountSubtype}
-                      options={SIGNUP_ACCOUNT_SUBTYPE_OPTIONS[signupForm.accountType]}
-                      onChange={(nextAccountSubtype) =>
-                        setSignupForm((current) => ({
-                          ...current,
-                          accountSubtype: nextAccountSubtype,
-                        }))
-                      }
-                    />
-                    {signupForm.accountType === "middleman" ? (
-                      <small className={styles.selectionHelp}>
-                        Free workspace for valuation-backed adverts and your public showroom.
-                      </small>
+                  {notice ? (
+                    <div
+                      className={`${styles.notice} ${styles.signupNotice} ${
+                        notice.tone === "success"
+                          ? styles.noticeSuccess
+                          : notice.tone === "info"
+                            ? styles.noticeInfo
+                            : styles.noticeError
+                      }`}
+                      role={notice.tone === "error" ? "alert" : "status"}
+                      aria-live="polite"
+                    >
+                      <strong className={styles.noticeTitle}>{notice.title}</strong>
+                      <span className={styles.noticeText}>{notice.text}</span>
+                    </div>
+                  ) : null}
+
+                  <div className={styles.signupWizardBody}>
+                    {signupStep === 1 ? (
+                      <section
+                        ref={signupPanelRef}
+                        tabIndex={-1}
+                        className={`${styles.signupStepCard} ${styles.signupWizardPanel}`}
+                        aria-labelledby="signup-step-workspace"
+                      >
+                        <div className={styles.signupStepHeader}>
+                          <span className={styles.signupStepNumber}>1</span>
+                          <div className={styles.signupStepCopy}>
+                            <strong id="signup-step-workspace">Choose your workspace</strong>
+                            <small>Choose what fits. Paid workspaces require activation after signup.</small>
+                          </div>
+                        </div>
+
+                        <div className={styles.signupFieldGrid}>
+                          <div className={styles.field}>
+                            <span className={styles.label}>What would you like to use Aim4price for?</span>
+                            <CustomSelect
+                              name="accountType"
+                              ariaLabel="What would you like to use Aim4price for?"
+                              value={signupForm.accountType}
+                              options={SIGNUP_ACCOUNT_TYPE_OPTIONS}
+                              onChange={(accountType) => {
+                                setSignupForm((current) => ({
+                                  ...current,
+                                  accountType,
+                                  accountSubtype: getDefaultSubtype(accountType),
+                                  directoryParticipation:
+                                    accountType !== "owner" && accountType !== "middleman",
+                                }));
+                              }}
+                            />
+                          </div>
+
+                          <div className={styles.field}>
+                            <span className={styles.label}>
+                              Which best describes your work?
+                            </span>
+                            <CustomSelect
+                              name="accountSubtype"
+                              ariaLabel="Which best describes your work?"
+                              value={signupForm.accountSubtype}
+                              options={SIGNUP_ACCOUNT_SUBTYPE_OPTIONS[signupForm.accountType]}
+                              onChange={(nextAccountSubtype) =>
+                                setSignupForm((current) => ({
+                                  ...current,
+                                  accountSubtype: nextAccountSubtype,
+                                }))
+                              }
+                            />
+                            {signupForm.accountType === "middleman" ? (
+                              <small className={styles.selectionHelp}>
+                                Free workspace for valuation-backed adverts and your public showroom.
+                              </small>
+                            ) : null}
+                          </div>
+
+                          {signupForm.accountType !== "owner" && signupForm.accountType !== "middleman" ? (
+                            <label className={`${styles.checkboxRow} ${styles.signupFieldWide} ${styles.directoryChoice}`}>
+                              <input
+                                type="checkbox"
+                                className={styles.checkbox}
+                                checked={signupForm.directoryParticipation}
+                                onChange={(event) =>
+                                  setSignupForm((current) => ({
+                                    ...current,
+                                    directoryParticipation: event.target.checked,
+                                  }))
+                                }
+                              />
+                              <span>List my business in the Aim4price partner directory so owners can find me by location. I can refine or disable this later.</span>
+                            </label>
+                          ) : null}
+                        </div>
+                      </section>
+                    ) : null}
+
+                    {signupStep === 2 ? (
+                      <section
+                        ref={signupPanelRef}
+                        tabIndex={-1}
+                        className={`${styles.signupStepCard} ${styles.signupWizardPanel}`}
+                        aria-labelledby="signup-step-details"
+                      >
+                        <div className={styles.signupStepHeader}>
+                          <span className={styles.signupStepNumber}>2</span>
+                          <div className={styles.signupStepCopy}>
+                            <strong id="signup-step-details">Add your details</strong>
+                            <small>Share the essentials Aim4price needs to identify and support you.</small>
+                          </div>
+                        </div>
+
+                        <div className={styles.signupFieldGrid}>
+                          <label className={styles.field}>
+                            <span className={styles.label}>Full name</span>
+                            <input
+                              type="text"
+                              name="name"
+                              autoComplete="name"
+                              placeholder="Kuyler Geldenhuys"
+                              className={styles.input}
+                              value={signupForm.name}
+                              onChange={(event) =>
+                                setSignupForm((current) => ({
+                                  ...current,
+                                  name: event.target.value,
+                                }))
+                              }
+                            />
+                          </label>
+
+                          <label className={styles.field}>
+                            <span className={styles.label}>Contact number</span>
+                            <input
+                              type="tel"
+                              name="phone"
+                              autoComplete="tel"
+                              inputMode="tel"
+                              placeholder="Phone or WhatsApp number"
+                              className={styles.input}
+                              value={signupForm.phone}
+                              onChange={(event) =>
+                                setSignupForm((current) => ({
+                                  ...current,
+                                  phone: event.target.value,
+                                }))
+                              }
+                            />
+                          </label>
+
+                          <div className={styles.field}>
+                            <span className={styles.label}>
+                              Who introduced you to Aim4price?
+                            </span>
+                            <CustomSelect
+                              name="introducedByOption"
+                              ariaLabel="Who introduced you to Aim4price?"
+                              value={signupForm.introducedByOption}
+                              options={INTRODUCED_BY_OPTIONS}
+                              placeholder="Choose one"
+                              onChange={(value) => {
+                                setSignupForm((current) => ({
+                                  ...current,
+                                  introducedByOption: value,
+                                  introducedByName:
+                                    value === "other" ? current.introducedByName : "",
+                                }));
+                              }}
+                            />
+                          </div>
+
+                          <div className={styles.field}>
+                            <span className={styles.label}>Province</span>
+                            <CustomSelect
+                              name="province"
+                              ariaLabel="Province"
+                              value={signupForm.province}
+                              options={PROVINCE_OPTIONS}
+                              placeholder="Choose province"
+                              onChange={(province) => {
+                                setSignupForm((current) => ({
+                                  ...current,
+                                  province,
+                                }));
+                              }}
+                            />
+                          </div>
+
+                          {signupForm.introducedByOption === "other" ? (
+                            <label className={`${styles.field} ${styles.signupFieldWide}`}>
+                              <span className={styles.label}>
+                                Introduced by name/source
+                              </span>
+                              <input
+                                type="text"
+                                name="introducedByName"
+                                autoComplete="off"
+                                placeholder="Name, business, event, advert, or source"
+                                className={styles.input}
+                                value={signupForm.introducedByName}
+                                onChange={(event) =>
+                                  setSignupForm((current) => ({
+                                    ...current,
+                                    introducedByName: event.target.value,
+                                  }))
+                                }
+                                required
+                              />
+                            </label>
+                          ) : null}
+
+                          <label className={`${styles.field} ${styles.signupFieldWide}`}>
+                            <span className={styles.label}>Town / city</span>
+                            <input
+                              type="text"
+                              name="townCity"
+                              autoComplete="address-level2"
+                              placeholder="Example: Oudtshoorn"
+                              className={styles.input}
+                              value={signupForm.townCity}
+                              onChange={(event) =>
+                                setSignupForm((current) => ({
+                                  ...current,
+                                  townCity: event.target.value,
+                                }))
+                              }
+                            />
+                          </label>
+                        </div>
+                      </section>
+                    ) : null}
+
+                    {signupStep === 3 ? (
+                      <section
+                        ref={signupPanelRef}
+                        tabIndex={-1}
+                        className={`${styles.signupStepCard} ${styles.signupWizardPanel}`}
+                        aria-labelledby="signup-step-account"
+                      >
+                        <div className={styles.signupStepHeader}>
+                          <span className={styles.signupStepNumber}>3</span>
+                          <div className={styles.signupStepCopy}>
+                            <strong id="signup-step-account">Secure your account</strong>
+                            <small>Add your login details, then create your Aim4price account.</small>
+                          </div>
+                        </div>
+
+                        <div className={styles.signupFieldGrid}>
+                          <label className={`${styles.field} ${styles.signupFieldWide}`}>
+                            <span className={styles.label}>Email address</span>
+                            <input
+                              type="email"
+                              name="email"
+                              autoComplete="email"
+                              inputMode="email"
+                              placeholder="name@example.com"
+                              className={styles.input}
+                              value={signupForm.email}
+                              onChange={(event) =>
+                                setSignupForm((current) => ({
+                                  ...current,
+                                  email: event.target.value,
+                                }))
+                              }
+                            />
+                          </label>
+
+                          <label className={styles.field}>
+                            <div className={styles.labelRow}>
+                              <span className={styles.label}>Password</span>
+                              <span className={styles.helperText}>
+                                Minimum 8 characters
+                              </span>
+                            </div>
+
+                            <div className={styles.passwordWrap}>
+                              <input
+                                type={showSignupPassword ? "text" : "password"}
+                                name="password"
+                                autoComplete="new-password"
+                                minLength={8}
+                                placeholder="Create a secure password"
+                                className={`${styles.input} ${styles.passwordInput}`}
+                                value={signupForm.password}
+                                onChange={(event) =>
+                                  setSignupForm((current) => ({
+                                    ...current,
+                                    password: event.target.value,
+                                  }))
+                                }
+                              />
+
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setShowSignupPassword((current) => !current)
+                                }
+                                className={styles.passwordToggle}
+                                aria-label={
+                                  showSignupPassword ? "Hide password" : "Show password"
+                                }
+                              >
+                                {showSignupPassword ? "Hide" : "Show"}
+                              </button>
+                            </div>
+                          </label>
+
+                          <label className={styles.field}>
+                            <span className={styles.label}>Confirm password</span>
+                            <input
+                              type={showSignupPassword ? "text" : "password"}
+                              name="confirmPassword"
+                              autoComplete="new-password"
+                              minLength={8}
+                              placeholder="Repeat your password"
+                              className={styles.input}
+                              value={signupForm.confirmPassword}
+                              onChange={(event) =>
+                                setSignupForm((current) => ({
+                                  ...current,
+                                  confirmPassword: event.target.value,
+                                }))
+                              }
+                            />
+                          </label>
+
+                          <label className={`${styles.checkboxRow} ${styles.signupFieldWide} ${styles.termsChoice}`}>
+                            <input
+                              type="checkbox"
+                              className={styles.checkbox}
+                              checked={signupForm.acceptTerms}
+                              onChange={(event) =>
+                                setSignupForm((current) => ({
+                                  ...current,
+                                  acceptTerms: event.target.checked,
+                                }))
+                              }
+                            />
+                            <span>I agree to the terms and privacy policy.</span>
+                          </label>
+                        </div>
+                      </section>
                     ) : null}
                   </div>
                 </div>
 
-                <div className={styles.field}>
-                  <span className={styles.label}>
-                    Who introduced you to Aim4price?
-                  </span>
-                  <CustomSelect
-                    name="introducedByOption"
-                    value={signupForm.introducedByOption}
-                    options={INTRODUCED_BY_OPTIONS}
-                    placeholder="Choose one"
-                    onChange={(value) => {
-                      setSignupForm((current) => ({
-                        ...current,
-                        introducedByOption: value,
-                        introducedByName:
-                          value === "other" ? current.introducedByName : "",
-                      }));
-                    }}
-                  />
-                </div>
-
-                {signupForm.introducedByOption === "other" ? (
-                  <label className={styles.field}>
-                    <span className={styles.label}>
-                      Introduced by name/source
-                    </span>
-                    <input
-                      type="text"
-                      name="introducedByName"
-                      autoComplete="off"
-                      placeholder="Name, business, event, advert, or source"
-                      className={styles.input}
-                      value={signupForm.introducedByName}
-                      onChange={(event) =>
-                        setSignupForm((current) => ({
-                          ...current,
-                          introducedByName: event.target.value,
-                        }))
-                      }
-                      required
-                    />
-                  </label>
-                ) : null}
-
-                <div className={styles.field}>
-                  <span className={styles.label}>Province</span>
-                  <CustomSelect
-                    name="province"
-                    value={signupForm.province}
-                    options={PROVINCE_OPTIONS}
-                    placeholder="Choose province"
-                    onChange={(province) => {
-                      setSignupForm((current) => ({
-                        ...current,
-                        province,
-                      }));
-                    }}
-                  />
-                </div>
-
-                <label className={styles.field}>
-                  <span className={styles.label}>Town / city</span>
-                  <input
-                    type="text"
-                    name="townCity"
-                    autoComplete="address-level2"
-                    placeholder="Example: Oudtshoorn"
-                    className={styles.input}
-                    value={signupForm.townCity}
-                    onChange={(event) =>
-                      setSignupForm((current) => ({
-                        ...current,
-                        townCity: event.target.value,
-                      }))
-                    }
-                  />
-                </label>
-
-                {signupForm.accountType !== "owner" && signupForm.accountType !== "middleman" ? (
-                  <label className={styles.checkboxRow}>
-                    <input
-                      type="checkbox"
-                      className={styles.checkbox}
-                      checked={signupForm.directoryParticipation}
-                      onChange={(event) =>
-                        setSignupForm((current) => ({
-                          ...current,
-                          directoryParticipation: event.target.checked,
-                        }))
-                      }
-                    />
-                    <span>List my business in the Aim4price partner directory so owners can find me by location. I can refine or disable this later.</span>
-                  </label>
-                ) : null}
-
-                <label className={styles.field}>
-                  <span className={styles.label}>Full name</span>
-                  <input
-                    type="text"
-                    name="name"
-                    autoComplete="name"
-                    placeholder="Kuyler Geldenhuys"
-                    className={styles.input}
-                    value={signupForm.name}
-                    onChange={(event) =>
-                      setSignupForm((current) => ({
-                        ...current,
-                        name: event.target.value,
-                      }))
-                    }
-                  />
-                </label>
-
-                <label className={styles.field}>
-                  <span className={styles.label}>Contact number</span>
-                  <input
-                    type="tel"
-                    name="phone"
-                    autoComplete="tel"
-                    inputMode="tel"
-                    placeholder="Phone or WhatsApp number"
-                    className={styles.input}
-                    value={signupForm.phone}
-                    onChange={(event) =>
-                      setSignupForm((current) => ({
-                        ...current,
-                        phone: event.target.value,
-                      }))
-                    }
-                  />
-                </label>
-
-                <label className={styles.field}>
-                  <span className={styles.label}>Email address</span>
-                  <input
-                    type="email"
-                    name="email"
-                    autoComplete="email"
-                    inputMode="email"
-                    placeholder="name@example.com"
-                    className={styles.input}
-                    value={signupForm.email}
-                    onChange={(event) =>
-                      setSignupForm((current) => ({
-                        ...current,
-                        email: event.target.value,
-                      }))
-                    }
-                  />
-                </label>
-
-                <label className={styles.field}>
-                  <div className={styles.labelRow}>
-                    <span className={styles.label}>Password</span>
-                    <span className={styles.helperText}>
-                      Minimum 8 characters
-                    </span>
-                  </div>
-
-                  <div className={styles.passwordWrap}>
-                    <input
-                      type={showSignupPassword ? "text" : "password"}
-                      name="password"
-                      autoComplete="new-password"
-                      minLength={8}
-                      placeholder="Create a secure password"
-                      className={`${styles.input} ${styles.passwordInput}`}
-                      value={signupForm.password}
-                      onChange={(event) =>
-                        setSignupForm((current) => ({
-                          ...current,
-                          password: event.target.value,
-                        }))
-                      }
-                    />
-
+                <div className={styles.signupFooter}>
+                  {signupStep === 1 ? (
+                    <Link href="/" className={styles.secondaryButton}>
+                      Cancel
+                    </Link>
+                  ) : (
                     <button
                       type="button"
-                      onClick={() =>
-                        setShowSignupPassword((current) => !current)
-                      }
-                      className={styles.passwordToggle}
-                      aria-label={
-                        showSignupPassword ? "Hide password" : "Show password"
-                      }
+                      className={styles.secondaryButton}
+                      onClick={() => moveToSignupStep((signupStep - 1) as SignupStep)}
+                      disabled={isSubmitting}
                     >
-                      {showSignupPassword ? "Hide" : "Show"}
+                      Back
                     </button>
-                  </div>
-                </label>
+                  )}
 
-                <label className={styles.field}>
-                  <span className={styles.label}>Confirm password</span>
-                  <input
-                    type={showSignupPassword ? "text" : "password"}
-                    name="confirmPassword"
-                    autoComplete="new-password"
-                    minLength={8}
-                    placeholder="Repeat your password"
-                    className={styles.input}
-                    value={signupForm.confirmPassword}
-                    onChange={(event) =>
-                      setSignupForm((current) => ({
-                        ...current,
-                        confirmPassword: event.target.value,
-                      }))
-                    }
-                  />
-                </label>
-
-                <label className={styles.checkboxRow}>
-                  <input
-                    type="checkbox"
-                    className={styles.checkbox}
-                    checked={signupForm.acceptTerms}
-                    onChange={(event) =>
-                      setSignupForm((current) => ({
-                        ...current,
-                        acceptTerms: event.target.checked,
-                      }))
-                    }
-                  />
-                  <span>I agree to the terms and privacy policy.</span>
-                </label>
-
-                <button
-                  type="submit"
-                  className={styles.primaryButton}
-                  disabled={isSubmitting}
-                >
-                  {isSubmitting ? "Creating account..." : copy.action}
-                </button>
+                  <button
+                    type="submit"
+                    className={`${styles.primaryButton} ${styles.signupPrimaryButton}`}
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting
+                      ? "Creating account..."
+                      : signupStep < 3
+                        ? "Next"
+                        : "Create account"}
+                  </button>
+                </div>
               </form>
             ) : null}
 
@@ -1384,4 +1608,3 @@ export default function AuthClient() {
     </main>
   );
 }
-

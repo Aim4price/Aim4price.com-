@@ -13,6 +13,10 @@
   padding: 1.5rem 0 3rem;
 }
 
+.signupShell {
+  width: min(100% - 2rem, 52rem);
+}
+
 .topBar {
   display: flex;
   justify-content: flex-end;
@@ -169,6 +173,274 @@
 .form {
   display: grid;
   gap: 0.86rem;
+}
+
+.signupForm {
+  gap: 0;
+}
+
+.signupFlow {
+  scroll-margin-top: 1rem;
+}
+
+.signupIntro {
+  margin: 0;
+  color: #526a63;
+  font-size: 0.94rem;
+  font-weight: 650;
+  line-height: 1.55;
+}
+
+.signupProgress {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  margin: 1.25rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.signupProgressStep {
+  position: relative;
+  min-width: 0;
+  display: flex;
+  flex: 1 1 0;
+  align-items: center;
+  gap: 0.68rem;
+  color: #667971;
+}
+
+.signupProgressStep:last-child {
+  flex: 0 0 auto;
+}
+
+.signupProgressStep:not(:last-child)::after {
+  content: "";
+  position: static;
+  z-index: 0;
+  min-width: 2rem;
+  height: 2px;
+  flex: 1 1 auto;
+  margin: 0 1rem;
+  background: #dce8e3;
+}
+
+.signupProgressStep > span {
+  position: relative;
+  z-index: 1;
+  width: 2.75rem;
+  height: 2.75rem;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border: 1px solid #c8dbd4;
+  border-radius: 999px;
+  color: #597068;
+  background: #f7faf8;
+  font-size: 0.86rem;
+  font-weight: 900;
+}
+
+.signupProgressStep > strong {
+  position: relative;
+  z-index: 1;
+  padding-right: 0.65rem;
+  color: inherit;
+  background: #ffffff;
+  font-size: 0.86rem;
+  font-weight: 850;
+  line-height: 1.25;
+  white-space: nowrap;
+}
+
+.signupProgressStepCurrent,
+.signupProgressStepComplete {
+  color: #087553;
+}
+
+.signupProgressStepCurrent > span {
+  border-color: #168660;
+  color: #ffffff;
+  background: #168660;
+  box-shadow: 0 0 0 5px rgba(22, 134, 96, 0.11);
+}
+
+.signupProgressStepComplete > span {
+  border-color: #92cdb7;
+  color: #087553;
+  background: #e5f6ef;
+}
+
+.signupProgressStepComplete:not(:last-child)::after {
+  background: #83c8ae;
+}
+
+.signupNotice {
+  margin-top: 1rem;
+}
+
+.signupWizardBody {
+  display: grid;
+  margin-top: 1.25rem;
+}
+
+.signupWizardPanel {
+  display: grid;
+  align-content: start;
+  animation: signupWizardStepIn 180ms ease both;
+}
+
+@keyframes signupWizardStepIn {
+  from {
+    opacity: 0;
+    transform: translateX(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.signupStepCard {
+  min-width: 0;
+  padding: 1.35rem 1.45rem;
+  border: 1px solid #d6e5df;
+  border-radius: 1.3rem;
+  background:
+    radial-gradient(circle at 100% 0%, rgba(32, 139, 100, 0.045), transparent 15rem),
+    linear-gradient(180deg, #ffffff 0%, #fbfdfc 100%);
+  box-shadow:
+    0 12px 28px rgba(12, 62, 47, 0.045),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95);
+}
+
+.signupStepCard:focus {
+  outline: 3px solid #168660;
+  outline-offset: 3px;
+}
+
+.signupStepHeader {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.85rem;
+  align-items: center;
+}
+
+.signupStepNumber {
+  width: 2.85rem;
+  height: 2.85rem;
+  display: grid;
+  place-items: center;
+  border: 1px solid #9fd1be;
+  border-radius: 0.92rem;
+  color: #087553;
+  background: linear-gradient(180deg, #eff9f5 0%, #e5f5ed 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.92);
+  font-size: 1rem;
+  font-weight: 900;
+}
+
+.signupStepCopy {
+  min-width: 0;
+  display: grid;
+  gap: 0.22rem;
+}
+
+.signupStepCopy strong {
+  color: #0b4437;
+  font-size: 1.14rem;
+  font-weight: 900;
+  line-height: 1.18;
+  letter-spacing: -0.025em;
+}
+
+.signupStepCopy small {
+  color: #667b73;
+  font-size: 0.8rem;
+  font-weight: 650;
+  line-height: 1.45;
+}
+
+.signupFieldGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.95rem;
+  margin-top: 1.2rem;
+}
+
+.signupFieldWide {
+  grid-column: 1 / -1;
+}
+
+.directoryChoice,
+.termsChoice {
+  padding: 0.85rem 0.95rem;
+  border: 1px solid #d6e5df;
+  border-radius: 0.92rem;
+  background: #f8fbfa;
+}
+
+.signupFooter {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.78rem;
+  min-height: 4.5rem;
+  margin-top: 1.15rem;
+  padding-top: 1rem;
+  border-top: 1px solid #d9e8e2;
+}
+
+.secondaryButton {
+  min-width: 6.8rem;
+  min-height: 3rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 1.05rem;
+  border: 1px solid #cbdcd6;
+  border-radius: 0.88rem;
+  background: #ffffff;
+  color: #18463a;
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 850;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    border-color 180ms ease,
+    background 180ms ease,
+    transform 180ms ease;
+}
+
+.secondaryButton:hover {
+  transform: translateY(-1px);
+  border-color: #a9c8bd;
+  background: #f9fcfb;
+}
+
+.secondaryButton:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.signupFooter .secondaryButton:focus-visible,
+.signupFooter .primaryButton.signupPrimaryButton:focus-visible {
+  outline: 3px solid #168660;
+  outline-offset: 3px;
+}
+
+.primaryButton.signupPrimaryButton {
+  width: auto;
+  min-width: 8.9rem;
+  min-height: 3rem;
+  padding: 0 1.35rem;
+  border-radius: 0.88rem;
+  background: #087553;
+  box-shadow: 0 10px 24px rgba(8, 117, 83, 0.2);
 }
 
 .signupTypeRow {
@@ -543,6 +815,7 @@
 .passwordToggle:focus-visible,
 .inlineTextButton:focus-visible,
 .primaryButton:focus-visible,
+.secondaryButton:focus-visible,
 .footerButton:focus-visible {
   outline: 3px solid rgba(23, 77, 62, 0.18);
   outline-offset: 3px;
@@ -580,6 +853,62 @@
   .signupTypeRow {
     gap: 0.86rem;
   }
+
+  .signupProgress {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .signupProgressStep {
+    display: grid;
+    flex: initial;
+    justify-items: center;
+    gap: 0.45rem;
+    text-align: center;
+  }
+
+  .signupProgressStep:last-child {
+    flex: initial;
+  }
+
+  .signupProgressStep:not(:last-child)::after {
+    position: absolute;
+    top: 1.35rem;
+    right: -50%;
+    left: 50%;
+    min-width: 0;
+    margin: 0;
+  }
+
+  .signupProgressStep > strong {
+    padding: 0 0.25rem;
+    background: transparent;
+    font-size: 0.7rem;
+    white-space: normal;
+  }
+
+  .signupStepCard {
+    padding: 1.1rem;
+    border-radius: 1.1rem;
+  }
+
+  .signupFieldGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .signupFieldWide {
+    grid-column: auto;
+  }
+
+  .signupFooter {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .secondaryButton,
+  .signupPrimaryButton {
+    width: 100%;
+  }
 }
 
 @media (max-width: 460px) {
@@ -592,6 +921,25 @@
     flex-direction: column;
     gap: 0.25rem;
   }
+
+  .signupStepHeader {
+    align-items: start;
+  }
+
+  .signupStepNumber {
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 0.8rem;
+    font-size: 0.92rem;
+  }
+
+  .signupStepCopy strong {
+    font-size: 1.03rem;
+  }
+
+  .signupStepCard {
+    padding: 1rem;
+  }
 }
 
 /* === Auth mobile safety pass === */
@@ -601,6 +949,10 @@
 .authCard,
 .form,
 .field,
+.signupFlow,
+.signupWizardBody,
+.signupStepCard,
+.signupFieldGrid,
 .signupTypeRow {
   max-width: 100%;
   min-width: 0;
@@ -621,6 +973,10 @@
   .shell {
     width: min(calc(100% - 1rem), 41rem);
     padding: 0.85rem 0 2.4rem;
+  }
+
+  .signupShell {
+    width: calc(100% - 1rem);
   }
 
   .homeLink,
@@ -646,5 +1002,22 @@
 
   .authCard {
     padding: 0.95rem;
+  }
+}
+
+@media (max-width: 360px) {
+  .signupFooter {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .secondaryButton,
+  .primaryButton.signupPrimaryButton {
+    min-width: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .signupWizardPanel {
+    animation: none;
   }
 }
