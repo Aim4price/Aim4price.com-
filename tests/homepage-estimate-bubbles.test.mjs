@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
+import { readFile, stat } from 'node:fs/promises';
 import test from 'node:test';
 
 const read = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
@@ -23,6 +23,11 @@ test('homepage presents four green Get Estimate video bubbles', async () => {
     '/brand/valuation/previews/industrial-home-preview.mp4',
     '/brand/valuation/previews/motor-home-preview.mp4',
   ]);
+  const previewStats = await Promise.all(
+    videoSources.map((source) => stat(new URL(`../public${source}`, import.meta.url))),
+  );
+  assert.ok(previewStats.every(({ size }) => size < 750_000));
+  assert.ok(previewStats.reduce((total, { size }) => total + size, 0) < 2_000_000);
   assert.equal((bubbles.match(/positionClass: styles\.heroBubble/g) ?? []).length, 4);
   assert.doesNotMatch(bubbles, /\/brand\/valuation\/(?:Agriculture|Construction|Industrial|Motor)\.mp4/);
   assert.match(bubbles, /preload="auto"/);
