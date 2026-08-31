@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import AdminWorkTrackerBar from '../components/AdminWorkTrackerBar';
 import AppFooter from '../components/AppFooter';
 import AppPatternBackground from '../components/AppPatternBackground';
+import MobileOrientationPrompt from '../components/MobileOrientationPrompt';
 import './globals.css';
 
 const brandTitle = 'Aim4price | Asset Intelligence, Management & Pricing';
@@ -60,6 +61,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         />
       </head>
       <body>
+        <MobileOrientationPrompt />
         <div className="appRoot">
           <AppPatternBackground>{children}</AppPatternBackground>
           <AdminWorkTrackerBar />
