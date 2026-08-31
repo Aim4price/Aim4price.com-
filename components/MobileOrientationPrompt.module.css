@@ -1,0 +1,180 @@
+.prompt {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483647;
+  display: none;
+  min-height: 100vh;
+  min-height: 100dvh;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  padding:
+    max(1.5rem, env(safe-area-inset-top, 0px))
+    max(1.25rem, env(safe-area-inset-right, 0px))
+    max(1.5rem, env(safe-area-inset-bottom, 0px))
+    max(1.25rem, env(safe-area-inset-left, 0px));
+  background:
+    radial-gradient(circle at 12% 12%, rgba(169, 220, 196, 0.34), transparent 38%),
+    radial-gradient(circle at 88% 86%, rgba(120, 185, 155, 0.19), transparent 34%),
+    linear-gradient(155deg, #fbfefc 0%, #f0f8f4 100%);
+  color: #123b30;
+  text-align: center;
+  isolation: isolate;
+  overscroll-behavior: none;
+}
+
+.prompt::before,
+.prompt::after {
+  position: absolute;
+  z-index: -1;
+  width: min(58vw, 17rem);
+  aspect-ratio: 1;
+  border: 1px solid rgba(64, 145, 108, 0.14);
+  border-radius: 50%;
+  content: '';
+}
+
+.prompt::before {
+  top: 0;
+  left: 0;
+  transform: translate(-38%, -38%);
+  box-shadow:
+    0 0 0 2.2rem rgba(64, 145, 108, 0.035),
+    0 0 0 4.4rem rgba(64, 145, 108, 0.025);
+}
+
+.prompt::after {
+  right: 0;
+  bottom: 0;
+  transform: translate(38%, 38%);
+  box-shadow:
+    0 0 0 2.2rem rgba(64, 145, 108, 0.035),
+    0 0 0 4.4rem rgba(64, 145, 108, 0.025);
+}
+
+.card {
+  display: grid;
+  width: min(100%, 31rem);
+  justify-items: center;
+}
+
+.iconSignal {
+  display: grid;
+  width: clamp(7.5rem, 34vw, 9.5rem);
+  aspect-ratio: 1;
+  margin-bottom: 1.35rem;
+  place-items: center;
+  border: 1px solid rgba(24, 77, 61, 0.13);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow:
+    0 18px 42px rgba(18, 59, 48, 0.11),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96);
+  animation: orientationSignal 1.55s ease-in-out infinite;
+}
+
+.icon {
+  width: 76%;
+  overflow: visible;
+}
+
+.arrow,
+.phone,
+.phoneDetail {
+  fill: none;
+  stroke: #17664f;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.arrow {
+  stroke-width: 6;
+}
+
+.phone {
+  fill: rgba(169, 220, 196, 0.18);
+  stroke-width: 5;
+}
+
+.phoneDetail {
+  stroke-width: 4;
+}
+
+.eyebrow {
+  margin: 0 0 0.55rem;
+  color: #28775e;
+  font-size: 0.78rem;
+  font-weight: 850;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+.card h1 {
+  margin: 0;
+  font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
+  font-size: clamp(1.9rem, 8vw, 2.65rem);
+  font-weight: 900;
+  line-height: 1.05;
+  letter-spacing: -0.055em;
+}
+
+.card > p:last-child {
+  margin: 0.8rem 0 0;
+  color: #5e746d;
+  font-size: clamp(0.96rem, 3.8vw, 1.08rem);
+  font-weight: 650;
+  line-height: 1.45;
+}
+
+@keyframes orientationSignal {
+  0%,
+  100% {
+    opacity: 0.62;
+    transform: rotate(-7deg) scale(0.96);
+    box-shadow:
+      0 14px 34px rgba(18, 59, 48, 0.08),
+      0 0 0 0 rgba(23, 102, 79, 0),
+      inset 0 1px 0 rgba(255, 255, 255, 0.96);
+  }
+
+  50% {
+    opacity: 1;
+    transform: rotate(7deg) scale(1.02);
+    box-shadow:
+      0 22px 48px rgba(18, 59, 48, 0.14),
+      0 0 0 0.85rem rgba(23, 102, 79, 0.075),
+      inset 0 1px 0 rgba(255, 255, 255, 0.96);
+  }
+}
+
+/*
+ * Aim4price intentionally keeps a 980px layout viewport on mobile. The
+ * device-width branch therefore detects the physical phone screen, while the
+ * width branch keeps this correct if the viewport strategy changes later.
+ */
+@media (orientation: portrait) and (max-width: 767px),
+  (orientation: portrait) and (max-device-width: 767px) {
+  .prompt {
+    display: flex;
+  }
+
+  .prompt + :global(.appRoot) {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .iconSignal {
+    animation: none;
+  }
+}
+
+@media print {
+  .prompt {
+    display: none !important;
+  }
+
+  .prompt + :global(.appRoot) {
+    display: flex !important;
+  }
+}
