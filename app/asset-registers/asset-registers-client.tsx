@@ -1128,17 +1128,46 @@ function RegisterTargetDropdown({
   onOpenDropdownChange,
   onChange,
 }: RegisterTargetDropdownProps) {
+  const targetSelectRef = useRef<HTMLDivElement | null>(null);
+  const targetMenuRef = useRef<HTMLDivElement | null>(null);
+  const targetTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const targetSearchInputRef = useRef<HTMLInputElement | null>(null);
+  const [targetSearchTerm, setTargetSearchTerm] = useState("");
   const selectedTarget = targets.find((target) => target.id === value) ?? null;
   const isDisabled = disabled || !targets.length;
   const isOpen = openDropdownId === dropdownId && !isDisabled;
+  const hasTargetSearch = Boolean(targetSearchTerm.trim());
+  const visibleTargets = useMemo(
+    () => targets.filter((target) => matchesRegisterSearch(target, targetSearchTerm)),
+    [targetSearchTerm, targets],
+  );
+  const targetListboxId = `register-target-options-${dropdownId}`;
   const displayLabel = selectedTarget
     ? selectedTarget.businessName
     : targets.length
       ? placeholder
       : "No target register available";
 
-  function closeDropdown() {
+  useEffect(() => {
+    if (!isOpen) {
+      setTargetSearchTerm("");
+      return undefined;
+    }
+
+    const animationFrame = window.requestAnimationFrame(() => {
+      targetSearchInputRef.current?.focus();
+    });
+
+    return () => window.cancelAnimationFrame(animationFrame);
+  }, [isOpen]);
+
+  function closeDropdown({ restoreFocus = false }: { restoreFocus?: boolean } = {}) {
+    setTargetSearchTerm("");
     onOpenDropdownChange(null);
+
+    if (restoreFocus) {
+      window.requestAnimationFrame(() => targetTriggerRef.current?.focus());
+    }
   }
 
   function handleBlur(event: FocusEvent<HTMLDivElement>) {
@@ -1146,74 +1175,137 @@ function RegisterTargetDropdown({
 
     if (
       !(nextFocus instanceof Node) ||
-      !event.currentTarget.contains(nextFocus)
+      (!targetSelectRef.current?.contains(nextFocus) &&
+        !targetMenuRef.current?.contains(nextFocus))
     ) {
       closeDropdown();
     }
   }
 
   return (
-    <div className={styles.targetSelect} onBlur={handleBlur}>
+    <div ref={targetSelectRef} className={styles.targetSelect} onBlur={handleBlur}>
       <button
+        ref={targetTriggerRef}
         type="button"
         className={`${styles.targetSelectButton} ${
           !selectedTarget ? styles.targetSelectButtonPlaceholder : ""
         } ${isOpen ? styles.targetSelectButtonOpen : ""}`}
-        onClick={() => onOpenDropdownChange(isOpen ? null : dropdownId)}
+        onClick={() => {
+          if (isOpen) {
+            closeDropdown();
+            return;
+          }
+
+          setTargetSearchTerm("");
+          onOpenDropdownChange(dropdownId);
+        }}
         disabled={isDisabled}
         aria-haspopup="listbox"
         aria-expanded={isOpen}
+        aria-controls={isOpen ? targetListboxId : undefined}
       >
         <span>{displayLabel}</span>
         <ChevronDownIcon className={styles.targetSelectChevron} />
       </button>
 
       {isOpen ? (
-        <DropdownOverlay className={styles.targetSelectMenu} role="listbox">
-          <button
-            type="button"
-            className={`${styles.targetSelectOption} ${
-              !value ? styles.targetSelectOptionSelected : ""
-            }`}
-            role="option"
-            aria-selected={!value}
-            onMouseDown={(event) => event.preventDefault()}
-            onClick={() => {
-              onChange("");
-              closeDropdown();
-            }}
-          >
-            <span>{placeholder}</span>
-            <small>Select a register before moving assets.</small>
-          </button>
-
-          {targets.map((target) => {
-            const isSelected = target.id === value;
-
-            return (
-              <button
-                key={target.id}
-                type="button"
-                className={`${styles.targetSelectOption} ${
-                  isSelected ? styles.targetSelectOptionSelected : ""
-                }`}
-                role="option"
-                aria-selected={isSelected}
-                onMouseDown={(event) => event.preventDefault()}
-                onClick={() => {
-                  onChange(target.id);
-                  closeDropdown();
+        <DropdownOverlay
+          className={styles.targetSelectMenu}
+          anchorRef={targetTriggerRef}
+          maxHeight={360}
+        >
+          <div ref={targetMenuRef} className={styles.targetSelectMenuContent} onBlur={handleBlur}>
+            <div className={styles.targetSelectSearch} role="search">
+              <SearchIcon className={styles.targetSelectSearchIcon} aria-hidden="true" />
+              <input
+                ref={targetSearchInputRef}
+                type="search"
+                className={styles.targetSelectSearchInput}
+                value={targetSearchTerm}
+                onChange={(event) => setTargetSearchTerm(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key !== "Escape") return;
+                  event.preventDefault();
+                  closeDropdown({ restoreFocus: true });
                 }}
-              >
-                <span>{target.businessName}</span>
-                <small>
-                  {`${target.assetCount} asset${
-                    target.assetCount === 1 ? "" : "s"
-                  } · ${money(target.totalValue)} register value`}
-                </small>
-              </button>
-            );
-          })}
+                placeholder="Search asset registers..."
+                aria-label="Search target asset registers"
+                aria-controls={targetListboxId}
+              />
+              {targetSearchTerm ? (
+                <button
+                  type="button"
+                  className={styles.targetSelectSearchClear}
+                  onMouseDown={(event) => event.preventDefault()}
+                  onClick={() => {
+                    setTargetSearchTerm("");
+                    window.requestAnimationFrame(() => targetSearchInputRef.current?.focus());
+                  }}
+                  aria-label="Clear target register search"
+                >
+                  <span aria-hidden="true">×</span>
+                </button>
+              ) : null}
+            </div>
+
+            <div className={styles.targetSelectOptions}>
+              <div id={targetListboxId} className={styles.targetSelectOptionList} role="listbox" aria-label="Target asset registers">
+                {!hasTargetSearch ? (
+                  <button
+                    type="button"
+                    className={`${styles.targetSelectOption} ${
+                      !value ? styles.targetSelectOptionSelected : ""
+                    }`}
+                    role="option"
+                    aria-selected={!value}
+                    onMouseDown={(event) => event.preventDefault()}
+                    onClick={() => {
+                      onChange("");
+                      closeDropdown({ restoreFocus: true });
+                    }}
+                  >
+                    <span>{placeholder}</span>
+                    <small>Select a register before moving assets.</small>
+                  </button>
+                ) : null}
+
+                {visibleTargets.map((target) => {
+                  const isSelected = target.id === value;
+
+                  return (
+                    <button
+                      key={target.id}
+                      type="button"
+                      className={`${styles.targetSelectOption} ${
+                        isSelected ? styles.targetSelectOptionSelected : ""
+                      }`}
+                      role="option"
+                      aria-selected={isSelected}
+                      onMouseDown={(event) => event.preventDefault()}
+                      onClick={() => {
+                        onChange(target.id);
+                        closeDropdown({ restoreFocus: true });
+                      }}
+                    >
+                      <span>{target.businessName}</span>
+                      <small>
+                        {`${target.assetCount} asset${
+                          target.assetCount === 1 ? "" : "s"
+                        } · ${money(target.totalValue)} register value`}
+                      </small>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {hasTargetSearch && !visibleTargets.length ? (
+                <div className={styles.targetSelectEmpty} role="status" aria-live="polite">
+                  <strong>No asset registers match your search.</strong>
+                  <small>Try another register name or clear the search.</small>
+                </div>
+              ) : null}
+            </div>
+          </div>
         </DropdownOverlay>
       ) : null}
     </div>
@@ -3856,4 +3948,3 @@ export default function AssetRegistersClient({
     </>
   );
 }
-
