@@ -55,8 +55,9 @@ test('homepage presents four green Get Estimate video bubbles', async () => {
   assert.match(appHeader, /const alignBrandToWorkingColumn = active === 'home' \|\| active === 'asset-register'/);
   assert.match(appHeader, /alignBrandToWorkingColumn \? styles\.innerBrandAligned/);
   assert.match(appHeader, /alignBrandToWorkingColumn \? styles\.brandWorkingColumn/);
-  assert.match(headerStyles, /@media \(min-width: 1181px\)[\s\S]*?\.innerBrandAligned \{[\s\S]*?position: relative/);
-  assert.match(headerStyles, /\.brandWorkingColumn \{[\s\S]*?left: clamp\(0px, calc\(\(100% - 1240px\) \/ 2\), 60px\)[\s\S]*?transform: translateY\(-50%\)/);
+  assert.match(headerStyles, /@media \(min-width: 1181px\)[\s\S]*?\.innerBrandAligned \{[\s\S]*?container-type: inline-size/);
+  assert.match(headerStyles, /\.brandWorkingColumn \{[\s\S]*?translateX\(clamp\(0px, calc\(\(100cqi - 1240px\) \/ 2\), 60px\)\)/);
   assert.doesNotMatch(headerStyles, /100vw - 1228px/);
+  assert.doesNotMatch(headerStyles, /\.brandWorkingColumn \{[^}]*position: absolute/);
   assert.match(styles, /@media \(forced-colors: active\)/);
 });
