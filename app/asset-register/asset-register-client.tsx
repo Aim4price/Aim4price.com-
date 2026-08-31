@@ -6124,8 +6124,9 @@ function buildAssetRegisterExportUrl(
 
 function buildAssetRegisterSummaryExportUrl(
   registerId: string | null | undefined,
-  format: ExportFormat,
+  format: ExportFormat | 'html',
   availableRegisterIds: string[] = [],
+  accountantShareId?: string,
 ): string {
   const params = new URLSearchParams({
     format,
@@ -6140,6 +6141,13 @@ function buildAssetRegisterSummaryExportUrl(
     params.set('entityName', 'Combined Asset Registers');
   } else if (cleanedRegisterId) {
     params.set('registerId', cleanedRegisterId);
+  }
+
+  if (accountantShareId) {
+    params.set('accountantShareId', accountantShareId);
+    if (cleanedRegisterId && cleanedRegisterId !== COMBINED_REGISTER_ID) {
+      params.set('accountantRegisterId', cleanedRegisterId);
+    }
   }
 
   return `/api/asset-register/export?${params.toString()}`;
@@ -14945,13 +14953,13 @@ export default function AssetRegisterClient({
     try {
       const url = buildAssetRegisterSummaryExportUrl(
         activeRegister?.id || activeRegisterId,
-        'pdf',
+        'html',
         assetRegisters.map((register) => register.id),
+        accountantShareId,
       );
-      const targetName = `aim4price-register-summary-${Date.now()}`;
-      const reportWindow = window.open(url, targetName);
+      const didOpen = openCanonicalReportUrl(url);
 
-      if (!reportWindow) {
+      if (!didOpen) {
         throw new Error('The register summary PDF window was blocked. Allow pop-ups for Aim4price, then try again.');
       }
 

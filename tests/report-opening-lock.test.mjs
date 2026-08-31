@@ -35,8 +35,9 @@ test('canonical report URL opening claims the tab before navigation', () => {
 });
 
 test('normal PDF actions use canonical browser HTML instead of the server Chromium renderer', async () => {
-  const [assetRegister, maintenance, invoices, ownerPicker, dealerMaintenance, dealerOwnership, reportOpen] = await Promise.all([
+  const [assetRegister, assetRegisters, maintenance, invoices, ownerPicker, dealerMaintenance, dealerOwnership, reportOpen] = await Promise.all([
     read('app/asset-register/asset-register-client.tsx'),
+    read('app/asset-registers/asset-registers-client.tsx'),
     read('app/maintenance/maintenance-client.tsx'),
     read('app/my-invoices/my-invoices-client.tsx'),
     read('app/owner-app/assets/[assetId]/owner-asset-report-picker.tsx'),
@@ -50,7 +51,11 @@ test('normal PDF actions use canonical browser HTML instead of the server Chromi
   assert.match(assetRegister, /const printableReportUrl =[\s\S]*?buildAssetGroupOwnershipReportUrl\(group, filters, 'html'\)[\s\S]*?buildAssetGroupTimelineReportUrl\(group, reportKind, filters, 'html'\)/);
   assert.match(assetRegister, /writeCanonicalReportHtml\(reportWindow, `\$\{asset\.title\} valuation`, reportHtml\)/);
   assert.match(assetRegister, /writeCanonicalReportHtml\(reportWindow, `\$\{reportName\} - \$\{reportOption\.label\} Report`, reportHtml\)/);
+  assert.match(assetRegister, /buildAssetRegisterSummaryExportUrl\([\s\S]*?'html'[\s\S]*?openCanonicalReportUrl\(url\)/);
   assert.doesNotMatch(assetRegister, /openPreparedExternalReport/);
+
+  assert.match(assetRegisters, /function buildScopedSummaryUrl[\s\S]*?format: "html"/);
+  assert.match(assetRegisters, /handleSummaryPdfExport[\s\S]*?openCanonicalReportUrl\(url\)/);
 
   assert.match(maintenance, /format === 'pdf' \? 'html' : format/);
   assert.match(invoices, /format === 'pdf' \? 'html' : format/);

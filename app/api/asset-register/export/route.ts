@@ -2420,7 +2420,7 @@ async function renderRegisterSummaryReportHtml(
             return Promise.resolve();
           }
 
-          return Promise.all(images.map(function (image) {
+          var imagesReady = Promise.all(images.map(function (image) {
             if (image.complete) {
               return Promise.resolve();
             }
@@ -2430,6 +2430,11 @@ async function renderRegisterSummaryReportHtml(
               image.addEventListener('error', resolve, { once: true });
             });
           }));
+
+          return Promise.race([
+            imagesReady,
+            new Promise(function (resolve) { window.setTimeout(resolve, 1200); }),
+          ]);
         }
 
         function waitForFonts() {
@@ -3045,6 +3050,18 @@ function createPdfBuffer(pageContents: string[]): Buffer {
   return Buffer.from(chunks.join(''), 'utf8');
 }
 
+function buildRegisterSummaryHtmlResponse(html: string, fileName: string): NextResponse {
+  return new NextResponse(html, {
+    status: 200,
+    headers: {
+      'Content-Type': 'text/html; charset=utf-8',
+      'Content-Disposition': `inline; filename="${fileName}"`,
+      'Cache-Control': 'private, no-store',
+      'X-Content-Type-Options': 'nosniff',
+    },
+  });
+}
+
 export async function GET(request: NextRequest) {
   const resolved = await resolveOwnerWorkspaceContext(request);
   if (!resolved.ok) return resolved.response;
@@ -3053,11 +3070,21 @@ export async function GET(request: NextRequest) {
 
   const params = new URL(request.url).searchParams;
   const format = params.get('format');
-  if (format !== 'xlsx' && format !== 'pdf') {
+  const reportKind = cleanText(params.get('reportKind')).toLowerCase() || 'full';
+
+  if (format !== 'xlsx' && format !== 'pdf' && format !== 'html') {
     return NextResponse.json(
-      { ok: false, error: 'Only PDF and XLSX exports are available on this endpoint.' },
+      { ok: false, error: 'Only PDF, HTML and XLSX exports are available on this endpoint.' },
       { status: 400 },
     );
+  }
+
+  if (reportKind !== 'full' && reportKind !== 'summary') {
+    return NextResponse.json({ ok: false, error: 'Invalid asset register export type.' }, { status: 400 });
+  }
+
+  if (format === 'html' && reportKind !== 'summary') {
+    return NextResponse.json({ ok: false, error: 'HTML is only available for the asset register summary.' }, { status: 400 });
   }
   const assetIdSelection = parseRequestedAssetIds(params);
 
@@ -3109,12 +3136,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ ok: false, error: 'Invalid asset register export scope.' }, { status: 400 });
     }
 
-    const reportKind = cleanText(params.get('reportKind')).toLowerCase() || 'full';
     const requestedGroupId = cleanText(params.get('groupId'));
-
-    if (reportKind !== 'full' && reportKind !== 'summary') {
-      return NextResponse.json({ ok: false, error: 'Invalid asset register export type.' }, { status: 400 });
-    }
 
     if (isScopedExport) {
       const scope = scopeParam as RegisterExportScope;
@@ -3214,6 +3236,14 @@ export async function GET(request: NextRequest) {
       }));
       const ownerSlug = pdfFileSlug(entityName || buildOwnerName(exportProfile));
 
+      if (format === 'html') {
+        const summaryItems = bundles.flatMap((bundle) => registerSummaryAssets(bundle.register, bundle.items));
+        const html = await renderRegisterSummaryReportHtml(summaryItems, exportProfile, generatedAt, request.url);
+        const fileName = `aim4price-register-summary-${ownerSlug}-${filenameDate}.html`;
+
+        return buildRegisterSummaryHtmlResponse(html, fileName);
+      }
+
       if (format === 'pdf') {
         if (reportKind === 'summary') {
           const summaryItems = bundles.flatMap((bundle) => registerSummaryAssets(bundle.register, bundle.items));
@@ -3275,7 +3305,7 @@ export async function GET(request: NextRequest) {
     }
 
     const requestedRegisterId = workspace.accountantAccess
-      ? workspace.accountantAccess.registerId
+      ? workspace.accountantRegisterId
       : String(params.get('registerId') ?? '').trim();
     const register = requestedRegisterId
       ? await getAssetRegisterForUser(ownerUserId, requestedRegisterId)
@@ -3331,6 +3361,15 @@ export async function GET(request: NextRequest) {
     const items = decorateAssetsWithGroups(selectedRawItems, projectAssetGroupsToAssets(groups, selectedRawItems));
     const generatedAt = new Date();
     const filenameDate = generatedAt.toISOString().slice(0, 10);
+
+    if (format === 'html') {
+      const ownerSlug = pdfFileSlug(buildOwnerName(exportProfile));
+      const html = await renderRegisterSummaryReportHtml(items, exportProfile, generatedAt, request.url);
+      const fileName = `aim4price-register-summary-${ownerSlug}-${filenameDate}.html`;
+
+      return buildRegisterSummaryHtmlResponse(html, fileName);
+    }
+
     if (format === 'pdf') {
       const ownerSlug = pdfFileSlug(buildOwnerName(exportProfile));
 

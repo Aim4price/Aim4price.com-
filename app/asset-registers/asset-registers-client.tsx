@@ -18,6 +18,7 @@ import {
   type AssetRegisterSummaryRow,
   type ReportKeyValue,
 } from "../../lib/report-print";
+import { openCanonicalReportUrl } from "../../lib/report-open";
 import styles from "./page.module.css";
 
 type NoticeTone = "success" | "error";
@@ -550,7 +551,7 @@ function buildScopedSummaryUrl(
   accountantShareId?: string,
 ): string {
   const params = new URLSearchParams({
-    format: "pdf",
+    format: "html",
     reportKind: "summary",
     scope,
   });
@@ -1865,10 +1866,9 @@ export default function AssetRegistersClient({
     setIsExporting(true);
 
     try {
-      const targetName = `aim4price-register-summary-${Date.now()}`;
-      const reportWindow = window.open(url, targetName);
+      const didOpen = openCanonicalReportUrl(url);
 
-      if (!reportWindow) {
+      if (!didOpen) {
         throw new Error("The register summary PDF window was blocked. Allow pop-ups for Aim4price, then try again.");
       }
 
