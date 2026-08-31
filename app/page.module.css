@@ -1041,7 +1041,7 @@
 }
 
 .heroBubble:focus-visible {
-  outline: 3px solid rgba(27, 137, 101, 0.48);
+  outline: 3px solid #14684f;
   outline-offset: 5px;
 }
 
@@ -1087,6 +1087,24 @@
   border-radius: 50%;
 }
 
+.heroBubbleTouchLabel {
+  position: absolute;
+  z-index: 3;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  color: #ffffff;
+  font-size: clamp(0.72rem, 2.6vw, 0.92rem);
+  line-height: 1.15;
+  font-weight: 800;
+  letter-spacing: -0.015em;
+  text-align: center;
+  text-shadow: 0 2px 8px rgba(5, 39, 29, 0.24);
+  pointer-events: none;
+}
+
 .heroBubble[data-preview-active='true'] .heroBubbleVideo {
   opacity: 1;
   transform: scale(1.075);
@@ -1123,8 +1141,13 @@
 
 @media (min-width: 1181px) {
   .heroGrid {
-    grid-template-columns: minmax(0, 1fr) minmax(24rem, 32rem);
-    gap: clamp(1.5rem, 2.75vw, 3.5rem);
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+  }
+
+  .heroCopy {
+    position: relative;
+    z-index: 1;
   }
 
   .heroCopy,
@@ -1134,6 +1157,14 @@
 
   .heroTitle {
     font-size: clamp(3rem, 3.8vw, 4.75rem);
+  }
+
+  .heroBubbles {
+    position: absolute;
+    top: 50%;
+    right: calc(((100vw - 100%) / -2) + var(--shell-gutter));
+    width: clamp(21rem, 27vw, 32rem);
+    transform: translateY(-50%);
   }
 }
 
@@ -1172,7 +1203,22 @@
   }
 }
 
-@media (hover: none), (pointer: coarse), (prefers-reduced-motion: reduce) {
+@media (any-hover: none) {
+  .heroBubbleTouchLabel {
+    display: flex;
+  }
+
+  .heroBubble[data-preview-active='true'] .heroBubbleVideo {
+    opacity: 0;
+    transform: scale(1.025);
+  }
+
+  .heroBubble[data-preview-active='true'] .heroBubbleSurface {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
   .heroBubble,
   .heroBubbleVideo,
   .heroBubbleSurface {
@@ -1183,14 +1229,11 @@
   .heroBubble:focus-visible {
     transform: none;
   }
+}
 
-  .heroBubble[data-preview-active='true'] .heroBubbleVideo {
-    opacity: 0;
-    transform: scale(1.025);
-  }
-
-  .heroBubble[data-preview-active='true'] .heroBubbleSurface {
-    opacity: 1;
+@media (forced-colors: active) {
+  .heroBubble:focus-visible {
+    outline-color: Highlight;
   }
 }
 
