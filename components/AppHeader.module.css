@@ -4313,12 +4313,12 @@
   background-clip: padding-box;
 }
 
-/* Compact black Aim4price logo used in the global header. */
+/* Standalone black Aim4price mark used in the global header. */
 .headerBrandLogo {
   display: block;
-  width: clamp(7.75rem, 9vw, 9.5rem);
+  width: clamp(4.25rem, 4.6vw, 4.8rem);
   height: auto;
-  max-height: 2.6rem;
+  max-height: 3.9rem;
   object-fit: contain;
   object-position: left center;
   filter: brightness(0) saturate(100%);
@@ -4326,21 +4326,21 @@
 
 @media (max-width: 1180px) {
   .headerBrandLogo {
-    width: clamp(7.25rem, 14vw, 8.75rem);
-    max-height: 2.35rem;
+    width: clamp(3.9rem, 7vw, 4.5rem);
+    max-height: 3.6rem;
   }
 }
 
 @media (max-width: 760px) {
   .headerBrandLogo {
-    width: clamp(5.6rem, 22vw, 7rem);
-    max-height: 1.95rem;
+    width: clamp(3.15rem, 13vw, 3.8rem);
+    max-height: 3.1rem;
   }
 }
 
 @media (max-width: 390px) {
   .headerBrandLogo {
-    width: clamp(5.1rem, 22vw, 5.8rem);
-    max-height: 1.65rem;
+    width: clamp(2.9rem, 13vw, 3.3rem);
+    max-height: 2.7rem;
   }
 }
