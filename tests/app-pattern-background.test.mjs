@@ -6,7 +6,6 @@ const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf
 
 const component = read('components/AppPatternBackground.tsx');
 const styles = read('components/AppPatternBackground.module.css');
-const artwork = read('public/topographic-contours.svg');
 const rootLayout = read('app/layout.tsx');
 const assetRegisterStyles = [
   read('app/asset-register/page.module.css'),
@@ -30,29 +29,17 @@ test('the root layout applies one shared pattern background across every page', 
   assert.match(layouts[1], /className={styles\.patternPageContent}/);
 });
 
-test('the component renders the large topographic artwork without repeating inline tiles', () => {
-  assert.match(component, /data-app-pattern="topographic-contours"/);
-  assert.match(component, /<span className={styles\.topography} \/>/);
-  assert.doesNotMatch(component, /CONTOUR_PATHS|<pattern|patternUnits/);
-  assert.doesNotMatch(component, /CornerArcs|DotGrid|mintCircle/);
-
-  assert.match(styles, /url\('\/topographic-contours\.svg'\)/);
-  assert.match(styles, /background-repeat:\s*no-repeat/);
-  assert.match(styles, /background-size:\s*cover/);
-  assert.doesNotMatch(styles, /mask-image/);
+test('the component renders the complete minimal arc composition', () => {
+  assert.equal((component.match(/<CornerArcs/g) ?? []).length, 2);
+  assert.equal((component.match(/<DotGrid/g) ?? []).length, 2);
+  assert.match(component, /mintCircleLeft/);
+  assert.match(component, /mintCircleRight/);
+  assert.match(component, /data-app-pattern="minimal-arc"/);
+  assert.doesNotMatch(component, /\.(?:png|jpe?g|webp|gif)/i);
+  assert.doesNotMatch(styles, /url\(/i);
 });
 
-test('the contour artwork is a broad, solid-line vector composition', () => {
-  assert.match(artwork, /<svg[^>]*viewBox="0 0 1920 1200"/);
-  assert.ok((artwork.match(/<path /g) ?? []).length >= 24);
-  assert.match(artwork, /stroke="#71827b"/);
-  assert.match(artwork, /stroke-linecap="round"/);
-  assert.match(artwork, / C /);
-  assert.doesNotMatch(artwork, / L /);
-  assert.doesNotMatch(artwork, /stroke-dasharray|<image|data:image/);
-});
-
-test('the Asset Register keeps the shared topographic pattern visible', () => {
+test('the Asset Register keeps the shared Minimal Arc Pattern visible', () => {
   for (const assetRegisterStyle of assetRegisterStyles) {
     const pageRules = [...assetRegisterStyle.matchAll(/(?:^|\n)\.page\s*\{([^}]*)\}/g)].map(
       (match) => match[1],
@@ -69,7 +56,7 @@ test('the Asset Register keeps the shared topographic pattern visible', () => {
 });
 
 test('the background is responsive, interaction-safe, and uses the Aim4price palette', () => {
-  for (const token of ['#fbfcfb', '#f7faf8', '#f3f7f5']) {
+  for (const token of ['#fafdfb', '#f7faf8', '#f1f7f3', '#78b99b', '#76b99a', '#a9dcc4']) {
     assert.ok(styles.includes(token), `missing ${token}`);
   }
   assert.match(styles, /\.decoration\s*{[^}]*position:\s*fixed/s);
@@ -80,10 +67,9 @@ test('the background is responsive, interaction-safe, and uses the Aim4price pal
   assert.match(styles, /min-height:\s*100dvh/);
   assert.match(styles, /env\(safe-area-inset-/);
   assert.match(styles, /@media \(max-width: 600px\)/);
-  assert.match(styles, /\.topography\s*{[^}]*opacity:\s*0\.44/s);
-  assert.match(styles, /filter:\s*blur\(1px\)/);
-  assert.match(styles, /transform:\s*scale\(1\.008\)/);
-  assert.match(styles, /@media \(prefers-contrast: more\)/);
+  assert.match(styles, /stroke-width:\s*1\.25/);
+  assert.match(styles, /\.arcs\s*{[^}]*opacity:\s*0\.18/s);
+  assert.match(styles, /\.dotGrid\s*{[^}]*opacity:\s*0\.25/s);
+  assert.match(styles, /\.mintCircle\s*{[^}]*opacity:\s*0\.13/s);
   assert.match(styles, /--aim4price-card-shadow:\s*0 10px 30px rgba\(13, 62, 49, 0\.08\)/);
-  assert.match(styles, /\.content > \*\s*{[^}]*background-color:\s*transparent !important/s);
 });
