@@ -119,6 +119,8 @@ export default function HomeEstimateBubbles() {
     }
 
     groupRef.current?.querySelectorAll<HTMLVideoElement>('video').forEach((video) => {
+      if (video.dataset.previewRequestId || !video.paused) return;
+
       video.preload = 'auto';
       video.load();
     });
