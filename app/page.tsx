@@ -96,13 +96,13 @@ export default async function HomePage() {
                 </p>
 
                 <h1 className={styles.heroTitle}>
-                  <span>Manage every asset.</span>
+                  <span>Digitise every asset.</span>
                   <span>One live system.</span>
                 </h1>
 
                 <p className={styles.heroText}>
-                  Build detailed records and reports, manage every stage of ownership and
-                  collaborate with trusted professionals through one owner-controlled Asset Register.
+                  Create a living digital record for every asset, bringing its value, documents,
+                  maintenance, fuel, costs and history together.
                 </p>
 
                 <div className={styles.heroActions}>
