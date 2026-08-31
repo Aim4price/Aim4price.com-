@@ -66,11 +66,11 @@ test('homepage presents four green Get Estimate video bubbles', async () => {
   assert.match(styles, /opacity 120ms ease,[\s\S]*?transform 480ms ease,[\s\S]*?filter 160ms ease/);
   assert.match(styles, /\.heroBubbleSurface \{[\s\S]*?transition: opacity 120ms ease/);
   assert.match(styles, /\.heroBubbleVideo,[\s\S]*?\.heroBubbleSurface,[\s\S]*?\.heroBubbleTouchLabel \{[\s\S]*?pointer-events: none/);
-  assert.match(styles, /\.heroBubbleAgriculture \{[\s\S]*?left: 0/);
-  assert.match(styles, /\.heroBubbleIndustrial \{[\s\S]*?left: 6%/);
-  assert.match(styles, /\.heroBubbleConstruction \{[\s\S]*?right: 1%/);
-  assert.match(styles, /\.heroBubbleMotor \{[\s\S]*?right: 0/);
-  assert.match(styles, /@media \(min-width: 1181px\)[\s\S]*?width: clamp\(22rem, 29vw, 34rem\)/);
+  assert.match(styles, /\.heroBubbleAgriculture \{[\s\S]*?left: 4%/);
+  assert.match(styles, /\.heroBubbleIndustrial \{[\s\S]*?left: 10%/);
+  assert.match(styles, /\.heroBubbleConstruction \{[\s\S]*?right: 4%/);
+  assert.match(styles, /\.heroBubbleMotor \{[\s\S]*?right: 3%/);
+  assert.match(styles, /@media \(min-width: 1181px\)[\s\S]*?width: clamp\(20rem, 24vw, 28rem\)/);
   assert.match(styles, /@media \(max-width: 1180px\)[\s\S]*?grid-template-columns: repeat\(4, minmax\(0, 1fr\)\)/);
   assert.match(styles, /@media \(max-width: 640px\)[\s\S]*?grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
   assert.match(styles, /\.heroBubbleTouchLabel \{[\s\S]*?display: none/);
