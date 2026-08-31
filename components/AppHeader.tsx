@@ -2402,7 +2402,7 @@ export default function AppHeader({
           className={`${styles.inner} ${isDealerAccount ? styles.innerDealer : ''} ${!isLoadingSession && !session ? styles.innerPublic : ''} ${usesCompactHeader ? styles.innerCompact : ''}`}
         >
           <Link href="/" className={styles.brand} aria-label="Go to Aim4price home">
-            <span className={styles.brandWordmark}>Aim4price</span>
+            <span className={styles.brandWordmark}>Aim4price.com</span>
           </Link>
 
           <nav
