@@ -119,6 +119,7 @@ export default function HomeEstimateBubbles() {
 
         resetVideo(video);
         video.preload = 'none';
+        video.load();
       });
     };
 
