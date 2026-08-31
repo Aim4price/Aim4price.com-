@@ -1,6 +1,22 @@
+'use client';
+
+import { usePathname } from 'next/navigation';
+
 import styles from './MobileOrientationPrompt.module.css';
 
+const MOBILE_APP_ROUTE_PREFIXES = ['/owner-app', '/dealer', '/field-manager'] as const;
+
+function isMobileAppRoute(pathname: string): boolean {
+  return MOBILE_APP_ROUTE_PREFIXES.some(
+    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
+  );
+}
+
 export default function MobileOrientationPrompt() {
+  const pathname = usePathname();
+
+  if (isMobileAppRoute(pathname)) return null;
+
   return (
     <section
       className={styles.prompt}

@@ -9,7 +9,9 @@ test('root layout mounts the phone orientation prompt before the complete app', 
 
   assert.match(layout, /import MobileOrientationPrompt from '\.\.\/components\/MobileOrientationPrompt'/);
   assert.match(layout, /<body>[\s\S]*?<MobileOrientationPrompt \/>[\s\S]*?<div className="appRoot">/);
-  assert.match(layout, /width: 980/);
+  assert.match(layout, /width: 'device-width'/);
+  assert.match(layout, /initialScale: 1/);
+  assert.doesNotMatch(layout, /width: 980|initialScale: -1/);
 });
 
 test('prompt clearly and accessibly tells portrait-phone users to rotate', async () => {
@@ -24,10 +26,22 @@ test('prompt clearly and accessibly tells portrait-phone users to rotate', async
   assert.match(prompt, /aria-hidden="true"/);
 });
 
+test('installable mobile apps bypass the orientation prompt', async () => {
+  const prompt = await read('components/MobileOrientationPrompt.tsx');
+
+  assert.match(prompt, /^'use client';/);
+  assert.match(prompt, /usePathname/);
+  assert.match(prompt, /MOBILE_APP_ROUTE_PREFIXES = \['\/owner-app', '\/dealer', '\/field-manager'\] as const/);
+  assert.match(prompt, /pathname === prefix \|\| pathname\.startsWith\(`\$\{prefix\}\/`\)/);
+  assert.match(prompt, /if \(isMobileAppRoute\(pathname\)\) return null/);
+  assert.doesNotMatch(prompt, /\/dealer-costs|\/account\/dealer-app|\/account\/owner-app/);
+});
+
 test('prompt gates only portrait phone widths and releases immediately in landscape', async () => {
   const styles = await read('components/MobileOrientationPrompt.module.css');
 
-  assert.match(styles, /@media \(orientation: portrait\) and \(max-width: 767px\),[\s\S]*?\(orientation: portrait\) and \(max-device-width: 767px\)/);
+  assert.match(styles, /@media \(orientation: portrait\) and \(max-width: 767px\)/);
+  assert.doesNotMatch(styles, /max-device-width/);
   assert.match(styles, /\.prompt \{[\s\S]*?display: none/);
   assert.match(styles, /@media \(orientation: portrait\)[\s\S]*?\.prompt \{\s*display: flex;[\s\S]*?\.prompt \+ :global\(\.appRoot\) \{\s*display: none;/);
   assert.doesNotMatch(styles, /screen\.orientation|orientation\.lock/);

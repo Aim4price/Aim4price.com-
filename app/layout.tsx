@@ -41,11 +41,10 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  // Match Chrome's desktop-site canvas while letting mobile browsers fit the
-  // whole canvas to the screen. Next.js restores initial-scale=1 when this is
-  // omitted, so an invalid negative value is used to preserve browser auto-fit.
-  width: 980,
-  initialScale: -1,
+  // Use the real device canvas so every responsive layout can reflow instead
+  // of shrinking a permanent desktop-width page onto the phone screen.
+  width: 'device-width',
+  initialScale: 1,
   userScalable: true,
 };
 
