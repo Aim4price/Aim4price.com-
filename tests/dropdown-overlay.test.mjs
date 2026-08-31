@@ -246,6 +246,26 @@ test('every custom listbox uses the shared overlay or a verified body portal', a
   assert.doesNotMatch(assetRegister, /usePortal\s*=\s*\{false\}/);
 });
 
+test('marketplace filters use branded listboxes instead of browser-native selects', async () => {
+  const [marketplace, filterSelect, styles] = await Promise.all([
+    read('app/marketplace/marketplace-client.tsx'),
+    read('app/marketplace/marketplace-filter-select.tsx'),
+    read('app/marketplace/page.module.css'),
+  ]);
+
+  assert.match(marketplace, /import MarketplaceFilterSelect from '\\.\\/marketplace-filter-select'/);
+  assert.equal((marketplace.match(/<MarketplaceFilterSelect/g) ?? []).length, 3);
+  assert.doesNotMatch(marketplace, /<select\\b/);
+  assert.match(filterSelect, /import DropdownOverlay from '\\.\\.\\/\\.\\.\\/components\\/DropdownOverlay'/);
+  assert.match(filterSelect, /<DropdownOverlay[\\s\\S]*?role="listbox"/);
+  assert.match(filterSelect, /aria-haspopup="listbox"/);
+  assert.match(filterSelect, /event\\.key === 'ArrowDown'/);
+  assert.match(filterSelect, /event\\.key === 'ArrowUp'/);
+  assert.match(filterSelect, /event\\.key !== 'Escape'/);
+  assert.match(styles, /\\.filterSelectMenu \\{[\\s\\S]*?border-radius: 0\\.9rem;[\\s\\S]*?box-shadow:/);
+  assert.match(styles, /\\.filterSelectOptionActive \\{[\\s\\S]*?background: #e8f3ee/);
+});
+
 test('report, modal, maintenance, fuel, invoice, and document dropdowns are migrated', async () => {
   const criticalFiles = [
     'components/asset-register/AssetGroupManagerModal.tsx',
