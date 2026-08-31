@@ -479,10 +479,37 @@
   width: min(calc(100vw - 2rem), 64rem) !important;
 }
 
+.discoveryFilterModal.discoveryFilterModal[role='dialog'] {
+  max-height: calc(100dvh - clamp(1.5rem, 4vw, 3rem)) !important;
+  overflow: hidden !important;
+}
+
+.discoveryFilterModal .discoveryFilterHeader {
+  margin: 0 !important;
+  padding: 1.55rem 5rem 1.35rem 1.7rem !important;
+  border-bottom: 1px solid rgba(211, 224, 234, 0.94) !important;
+}
+
+.discoveryFilterHeaderCopy {
+  display: grid;
+  min-width: 0;
+  gap: 0.48rem;
+}
+
+.discoveryFilterHeaderCopy > h3,
+.discoveryFilterHeaderCopy > p {
+  margin: 0 !important;
+}
+
 .discoveryFilterForm {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
   grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   gap: 1rem 1.1rem !important;
   padding: 1.35rem 1.6rem 1.55rem !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain;
 }
 
 .discoveryFilterModal p {
@@ -1668,6 +1695,10 @@
 }
 
 @media (max-width: 760px) {
+  .discoveryFilterModal .discoveryFilterHeader {
+    padding: 1.2rem 4.3rem 1.05rem 1.2rem !important;
+  }
+
   .pendingRequestButton,
   .discoveryStatusAction,
   .discoveryPrimaryAction {
