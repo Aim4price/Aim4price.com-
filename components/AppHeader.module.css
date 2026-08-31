@@ -4348,13 +4348,10 @@
 /* Inset the mark on Home and Asset Register to the 1240px working column. */
 @media (min-width: 1181px) {
   .innerBrandAligned {
-    position: relative;
+    container-type: inline-size;
   }
 
   .brandWorkingColumn {
-    position: absolute;
-    top: 50%;
-    left: clamp(0px, calc((100% - 1240px) / 2), 60px);
-    transform: translateY(-50%);
+    transform: translateX(clamp(0px, calc((100cqi - 1240px) / 2), 60px));
   }
 }
