@@ -325,7 +325,10 @@ export default function AccountPicker({
                 onClick={() => chooseOption(option)}
               >
                 <span className={styles.optionCopy}>
-                  <strong>{option.label}</strong>
+                  <strong>
+                    {option.label}
+                    {option.description ? ` · ${option.description}` : ""}
+                  </strong>
                 </span>
                 <span className={styles.check} aria-hidden="true">{isSelected ? "✓" : ""}</span>
               </button>
@@ -361,7 +364,11 @@ export default function AccountPicker({
         aria-labelledby={`${labelId} ${valueId}`}
       >
         <span id={valueId} className={styles.triggerCopy}>
-          <strong>{selected?.label ?? placeholder}</strong>
+          <strong>
+            {selected
+              ? `${selected.label}${selected.description ? ` · ${selected.description}` : ""}`
+              : placeholder}
+          </strong>
         </span>
         <svg viewBox="0 0 24 24" className={styles.chevron} aria-hidden="true"><path d="m7 10 5 5 5-5" /></svg>
       </button>

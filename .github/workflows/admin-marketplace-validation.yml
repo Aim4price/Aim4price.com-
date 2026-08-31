@@ -4,41 +4,78 @@ on:
   pull_request:
     paths:
       - '.github/workflows/admin-marketplace-validation.yml'
-      - 'app/admin/admin-foundation.css'
-      - 'app/admin/layout.tsx'
-      - 'app/admin/loading*'
-      - 'app/admin/marketplace/**'
-      - 'app/admin/discovery/**'
-      - 'app/api/admin/marketplace/**'
-      - 'app/api/admin/discovery/**'
+      - 'app/admin/**'
+      - 'app/api/admin/**'
+      - 'app/account/account-client.tsx'
+      - 'app/account/asset-transfers/**'
+      - 'app/asset-register/**'
+      - 'app/dealer/**'
+      - 'app/owner-app/assets/**'
+      - 'app/api/accountant/**'
+      - 'app/api/asset-register/**'
+      - 'app/api/asset-transfers/**'
+      - 'app/api/asset-issue-notes/**'
+      - 'app/api/asset-maintenance-status/**'
+      - 'app/api/dealer-maintenance-access/**'
+      - 'app/api/maintenance/**'
+      - 'app/api/owner-app/**'
       - 'app/api/asset-discovery/**'
       - 'app/asset-discovery/**'
       - 'app/marketplace/sourcing-requests/**'
+      - 'app/api/marketplace/route.ts'
       - 'app/api/marketplace/views/**'
+      - 'app/api/marketplace/outcomes/**'
+      - 'app/api/middleman-showroom/**'
       - 'app/marketplace/marketplace-client.tsx'
       - 'components/AdminNavigation*'
       - 'components/AppHeader.tsx'
+      - 'components/AccountantAssetManageModal.tsx'
       - 'components/MarketplaceOutcomeModal*'
+      - 'components/MiddlemanShowroomClient*'
+      - 'database/migrations/88-sold-asset-transfers.sql'
+      - 'database/migrations/89-asset-transfer-pending-state.sql'
+      - 'database/migrations/90-disposal-outcome-influence.sql'
+      - 'database/migrations/91-dealer-inventory-register.sql'
       - 'database/migrations/93-marketplace-view-discovery-tracking.sql'
       - 'database/migrations/94-asset-discovery-view-tracking.sql'
+      - 'database/migrations/98-marketplace-listing-outcomes.sql'
       - 'database/migrations/99-marketplace-sourcing-requests.sql'
       - 'lib/admin-dashboard.ts'
       - 'lib/admin-global-assets*'
       - 'lib/admin-marketplace*'
+      - 'lib/admin-asset-sales.ts'
+      - 'lib/account-deletion.ts'
+      - 'lib/asset-discovery.ts'
+      - 'lib/asset-lifecycle.ts'
+      - 'lib/asset-register-account-access.ts'
+      - 'lib/asset-registers.ts'
+      - 'lib/asset-transfers.ts'
       - 'lib/discovery-views.ts'
       - 'lib/marketplace-db.ts'
+      - 'lib/marketplace-outcomes.ts'
+      - 'lib/middleman-showroom-db.ts'
       - 'lib/marketplace-sourcing-requests.ts'
       - 'lib/marketplace-views.ts'
       - 'lib/notification-inbox.ts'
       - 'lib/notifications.ts'
       - 'lib/recent-marketplace-adverts.ts'
       - 'tests/admin-marketplace-dashboard.test.mjs'
+      - 'tests/admin-marketplace-outcomes.test.mjs'
+      - 'tests/admin-simplification.test.mjs'
+      - 'tests/admin-experience.test.mjs'
+      - 'tests/ad-studio.test.mjs'
+      - 'tests/asset-discovery-filter-modal.test.mjs'
+      - 'tests/asset-sale-transfer.test.mjs'
+      - 'tests/dealer-inventory-register.test.mjs'
+      - 'tests/insurance-account-deletion.test.mjs'
       - 'tests/marketplace-view-tracking.test.mjs'
       - 'tests/marketplace-outcome-modal.test.mjs'
+      - 'tests/marketplace-outcomes.test.mjs'
       - 'tests/admin-global-assets.test.mjs'
       - 'tests/discovery-view-tracking.test.mjs'
       - 'tests/asset-discovery.security.test.mjs'
       - 'tests/discovery-recent-adverts.security.test.mjs'
+      - 'tests/page-loading-performance.test.mjs'
       - 'package.json'
       - 'package-lock.json'
 
@@ -68,6 +105,15 @@ jobs:
 
       - name: Test Admin Marketplace
         run: npm run test:admin-marketplace
+
+      - name: Test Admin simplification
+        run: npm run test:admin-simplification
+
+      - name: Test asset outcome corrections
+        run: npm run test:asset-transfers
+
+      - name: Test showroom outcome guard
+        run: node --test --test-name-pattern="deleting a Middleman showroom" tests/ad-studio.test.mjs
 
       - name: Test Admin Discovery
         run: npm run test:admin-discovery

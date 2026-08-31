@@ -2485,7 +2485,7 @@ export default function MarketplaceClient({
       : null,
   ].filter(Boolean) as ActiveFilterChip[];
 
-  const canManageActiveListing = Boolean(activeListing?.canManage && activeListing?.sourceAssetId);
+  const canManageActiveListing = Boolean(activeListing?.canManage);
   const activeSellerWhatsAppHref = activeListing && canExposeSellerContact
     ? sellerWhatsAppHref(activeListing)
     : '';
@@ -2874,7 +2874,7 @@ export default function MarketplaceClient({
   }
 
   function openManageListingModal() {
-    if (!activeListing?.sourceAssetId || !activeListing.canManage) {
+    if (!activeListing?.canManage) {
       return;
     }
 
@@ -3021,7 +3021,7 @@ export default function MarketplaceClient({
   function openOutcomeListingModal() {
     const target = manageListingTarget ?? activeListing;
 
-    if (!target?.sourceAssetId || !target.canManage) {
+    if (!target?.canManage || (!target.sourceAssetId && !String(target.id ?? '').trim())) {
       return;
     }
 
@@ -3030,11 +3030,16 @@ export default function MarketplaceClient({
   }
 
   function handleListingOutcomeRemoved(listing: MarketplaceListing) {
-    const assetId = listing.sourceAssetId;
-    setItems((current) => current.filter((item) => item.sourceAssetId !== assetId));
+    const assetId = String(listing.sourceAssetId ?? '').trim();
+    setItems((current) => current.filter((item) => (
+      item.id !== listing.id && (!assetId || item.sourceAssetId !== assetId)
+    )));
     setOutcomeListingTarget(null);
 
-    if (activeListing?.sourceAssetId === assetId) {
+    if (
+      activeListing?.id === listing.id
+      || (assetId && activeListing?.sourceAssetId === assetId)
+    ) {
       closeListing();
     }
   }
@@ -3883,7 +3888,13 @@ export default function MarketplaceClient({
             </div>
 
             <div className={styles.marketplaceManageChoiceGrid}>
-              <button type="button" className={styles.marketplaceManageChoiceCard} onClick={handleEditManagedListing}>
+              <button
+                type="button"
+                className={styles.marketplaceManageChoiceCard}
+                onClick={handleEditManagedListing}
+                disabled={!manageListingTarget.sourceAssetId}
+                title={manageListingTarget.sourceAssetId ? 'Edit advert' : 'Editing requires a saved asset.'}
+              >
                 <span className={styles.marketplaceManageChoiceCopy}>
                   <strong>Edit advert</strong>
                   <small>Update the price, description and seller details.</small>

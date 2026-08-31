@@ -254,18 +254,36 @@ export async function deleteMiddlemanShowroomAndAdverts(profile: AccountProfile)
 
   try {
     await client.query('BEGIN');
-    const withdrawn = await client.query(
+    const assetRows = await client.query<{ marketplace_status: string | null }>(
       `
-        update asset_register_items
-        set marketplace_status = 'draft', updated_at = now()
-        where user_id = $1 and coalesce(marketplace_status, 'draft') = 'live'
+        select marketplace_status
+        from asset_register_items
+        where user_id = $1
+        for update
       `,
       [profile.userId],
     );
-    await client.query(`delete from marketplace_listings where user_id = $1`, [profile.userId]);
+    const listingRows = await client.query<{ status: string | null }>(
+      `
+        select status
+        from marketplace_listings
+        where user_id = $1
+        for update
+      `,
+      [profile.userId],
+    );
+    const hasLiveAdvert = assetRows.rows.some(
+      (row) => String(row.marketplace_status ?? '').trim().toLowerCase() === 'live',
+    ) || listingRows.rows.some(
+      (row) => String(row.status ?? '').trim().toLowerCase() === 'live',
+    );
+    if (hasLiveAdvert) {
+      throw new Error('SHOWROOM_LIVE_ADVERTS_REQUIRE_OUTCOMES');
+    }
+
     await client.query(`delete from middleman_showrooms where user_id = $1`, [profile.userId]);
     await client.query('COMMIT');
-    return withdrawn.rowCount ?? 0;
+    return 0;
   } catch (error) {
     await client.query('ROLLBACK');
     throw error;
@@ -273,3 +291,5 @@ export async function deleteMiddlemanShowroomAndAdverts(profile: AccountProfile)
     client.release();
   }
 }
+
+

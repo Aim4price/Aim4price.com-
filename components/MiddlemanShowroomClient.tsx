@@ -342,12 +342,17 @@ export function MiddlemanShowroomManager({
   }
 
   function handleListingOutcomeRemoved(listing: MarketplaceListing) {
-    setListings((current) => current.filter((item) => item.sourceAssetId !== listing.sourceAssetId));
+    setListings((current) => current.filter((item) => item.id !== listing.id));
     setOutcomeListingTarget(null);
     setMessage('Outcome saved. The advert was removed from Marketplace and your showroom.');
   }
 
   async function deleteShowroom() {
+    if (listings.length) {
+      setMessage('Remove each live advert and record its outcome first.');
+      setDeleteDialogOpen(false);
+      return;
+    }
     if (deleteConfirmation !== 'DELETE') return;
     setDeletingShowroom(true);
     setMessage('');
@@ -358,7 +363,6 @@ export function MiddlemanShowroomManager({
       });
       const data = await response.json() as { ok?: boolean; deletedAdvertCount?: number; error?: string };
       if (!response.ok || !data.ok) throw new Error(data.error || 'Failed to delete your showroom.');
-      setListings([]);
       window.location.assign(dealerAppMode ? '/dealer' : '/account');
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'Failed to delete your showroom.');
@@ -540,9 +544,16 @@ export function MiddlemanShowroomManager({
           <div className={styles.dangerZone}>
             <div>
               <strong>Delete showroom</strong>
-              <small>Permanently removes the public showroom and withdraws all its adverts from Marketplace. Saved valuations and assets remain available.</small>
+              <small>{listings.length ? 'Remove each live advert and record its outcome first.' : 'Advert history, valuations and assets stay saved.'}</small>
             </div>
-            <button type="button" onClick={() => setDeleteDialogOpen(true)}>Delete showroom</button>
+            <button
+              type="button"
+              onClick={() => setDeleteDialogOpen(true)}
+              disabled={listings.length > 0}
+              title={listings.length ? 'Remove each live advert first.' : 'Delete showroom'}
+            >
+              Delete showroom
+            </button>
           </div>
         </section>
 
@@ -637,16 +648,29 @@ export function MiddlemanShowroomManager({
             </div>
 
             <div className={styles.listingManagerActions}>
-              <Link
-                className={styles.listingManagerPrimary}
-                href={dealerAppMode
-                  ? `/dealer/marketplace?listing=${encodeURIComponent(manageListingTarget.id)}&manage=1`
-                  : `/asset-register?assetId=${encodeURIComponent(manageListingTarget.sourceAssetId || '')}&action=marketplace-edit`}
-              >
-                <span className={styles.listingManagerActionIcon}><ShowroomManageActionIcon name="edit" /></span>
-                <span className={styles.listingManagerActionCopy}><strong>Edit advert</strong><small>Update the price, description and seller details.</small></span>
-                <ShowroomManageActionArrow />
-              </Link>
+              {manageListingTarget.sourceAssetId ? (
+                <Link
+                  className={styles.listingManagerPrimary}
+                  href={dealerAppMode
+                    ? `/dealer/marketplace?listing=${encodeURIComponent(manageListingTarget.id)}&manage=1`
+                    : `/asset-register?assetId=${encodeURIComponent(manageListingTarget.sourceAssetId)}&action=marketplace-edit`}
+                >
+                  <span className={styles.listingManagerActionIcon}><ShowroomManageActionIcon name="edit" /></span>
+                  <span className={styles.listingManagerActionCopy}><strong>Edit advert</strong><small>Update the price, description and seller details.</small></span>
+                  <ShowroomManageActionArrow />
+                </Link>
+              ) : (
+                <button
+                  type="button"
+                  className={styles.listingManagerPrimary}
+                  disabled
+                  title="Editing requires a saved asset."
+                >
+                  <span className={styles.listingManagerActionIcon}><ShowroomManageActionIcon name="edit" /></span>
+                  <span className={styles.listingManagerActionCopy}><strong>Edit advert</strong><small>Editing requires a saved asset.</small></span>
+                  <ShowroomManageActionArrow />
+                </button>
+              )}
               <button
                 type="button"
                 onClick={() => void downloadAdvert(manageListingTarget)}
@@ -694,15 +718,15 @@ export function MiddlemanShowroomManager({
         <div className={styles.deleteBackdrop} onClick={() => !deletingShowroom && setDeleteDialogOpen(false)}>
           <section className={styles.deleteDialog} role="dialog" aria-modal="true" aria-labelledby="delete-showroom-title" onClick={(event) => event.stopPropagation()}>
             <span className={styles.deleteIcon}>!</span>
-            <h2 id="delete-showroom-title">Delete showroom and every advert?</h2>
-            <p>This withdraws all {listings.length} live {listings.length === 1 ? 'advert' : 'adverts'} from the normal Aim4price Marketplace and permanently deletes the public showroom. Your valuations and saved asset records are not deleted.</p>
+            <h2 id="delete-showroom-title">Delete showroom?</h2>
+            <p>This removes the public showroom. Advert history, valuations and assets stay saved.</p>
             <label>
               <span>Type DELETE to confirm</span>
               <input value={deleteConfirmation} onChange={(event) => setDeleteConfirmation(event.target.value.toUpperCase())} placeholder="DELETE" autoComplete="off" />
             </label>
             <div>
               <button type="button" className={styles.secondaryButton} onClick={() => setDeleteDialogOpen(false)} disabled={deletingShowroom}>Cancel</button>
-              <button type="button" className={styles.deleteConfirmButton} onClick={deleteShowroom} disabled={deleteConfirmation !== 'DELETE' || deletingShowroom}>{deletingShowroom ? 'Deleting...' : 'Delete showroom & adverts'}</button>
+              <button type="button" className={styles.deleteConfirmButton} onClick={deleteShowroom} disabled={deleteConfirmation !== 'DELETE' || deletingShowroom}>{deletingShowroom ? 'Deleting...' : 'Delete showroom'}</button>
             </div>
           </section>
         </div>

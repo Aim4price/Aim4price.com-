@@ -176,6 +176,7 @@
 .dangerZone strong { color: #8f3028; font-size: .75rem; font-weight: 800; }
 .dangerZone small { color: #7e706d; font-size: .67rem; line-height: 1.45; }
 .dangerZone button { flex: 0 0 auto; min-height: 2.55rem; border: 1px solid #e4b7b1; border-radius: 10px; padding: 0 .85rem; color: #9b3028; background: #fff7f5; font-size: .67rem; font-weight: 800; cursor: pointer; }
+.dangerZone button:disabled { opacity: .48; cursor: not-allowed; }
 
 .managerListings { display: grid; gap: .6rem; }
 .managerListing { display: grid; grid-template-columns: 104px minmax(0,1fr) auto; align-items: center; gap: .8rem; padding: .65rem; border: 1px solid #e0e9e5; border-radius: 15px; background: #fbfdfc; transition: border-color .16s ease, box-shadow .16s ease, transform .16s ease; }
@@ -223,6 +224,7 @@
 .listingManagerActionArrow { width: 1.15rem; height: 1.15rem; fill: none; stroke: #286650; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .listingManagerActions > button:disabled { cursor: wait; opacity: .5; }
 .listingManagerActions .listingManagerPrimary { border-color: #c6ded4; background: #f5faf8; }
+.listingManagerActions .listingManagerPrimary:disabled { cursor: not-allowed; }
 .listingManagerActions .listingManagerRemove { border-color: #ead0cc; color: #92372f; background: #fffafa; }
 .listingManagerActions .listingManagerRemove strong, .listingManagerActions .listingManagerRemove .listingManagerActionArrow { color: #92372f; stroke: #92372f; }
 .listingManagerActions .listingManagerRemove .listingManagerActionIcon { border-color: #efd8d4; color: #a13b32; background: #fff1ef; }

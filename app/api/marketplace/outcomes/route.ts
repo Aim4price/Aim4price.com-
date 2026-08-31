@@ -18,6 +18,7 @@ export const dynamic = 'force-dynamic';
 
 type OutcomeRequestBody = {
   assetId?: unknown;
+  listingId?: unknown;
   outcomeReason?: unknown;
   aim4priceHelped?: unknown;
   finalSalePriceExVat?: unknown;
@@ -28,7 +29,7 @@ type OutcomeRequestBody = {
 function errorResponse(error: unknown) {
   const code = error instanceof Error ? error.message : '';
 
-  if (code === 'ASSET_NOT_FOUND') {
+  if (code === 'ASSET_NOT_FOUND' || code === 'MARKETPLACE_LISTING_NOT_FOUND') {
     return NextResponse.json(
       { ok: false, error: 'This Marketplace advert could not be found.' },
       { status: 404 },
@@ -140,7 +141,8 @@ export async function POST(request: NextRequest) {
 
     const outcome = await closeMarketplaceListingWithOutcome({
       sellerUserId: session.user.id,
-      assetId: String(body.assetId ?? '').trim(),
+      assetId: String(body.assetId ?? '').trim() || null,
+      listingId: String(body.listingId ?? '').trim() || null,
       outcomeReason: String(body.outcomeReason ?? '').trim() as MarketplaceOutcomeReason,
       aim4priceHelped: body.aim4priceHelped as boolean,
       finalSalePriceExVat:

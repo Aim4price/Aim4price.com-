@@ -133,6 +133,11 @@
   gap: 1rem;
 }
 
+.sectionHeading > div {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
 .sectionHeading > div,
 .historyToolbar > div:first-child {
   display: grid;
@@ -183,17 +188,6 @@
   align-items: center;
   justify-content: space-between;
   gap: 0.5rem;
-}
-
-.noteField em {
-  padding: 0.18rem 0.4rem;
-  border-radius: 0.35rem;
-  color: #8b5b12;
-  background: #fff4d9;
-  font-size: 0.58rem;
-  font-style: normal;
-  letter-spacing: 0;
-  text-transform: none;
 }
 
 .startAction {
@@ -593,15 +587,6 @@
   list-style-position: inside;
 }
 
-.pageDetails summary small,
-.reportOptions summary small {
-  margin-left: auto;
-  color: #74837d;
-  font-size: 0.62rem;
-  font-weight: 680;
-  text-align: right;
-}
-
 .pageDetails[open] summary,
 .reportOptions[open] summary {
   border-bottom: 1px solid #e1e9e5;
@@ -840,17 +825,5 @@
   .sessionMeta {
     align-items: flex-start;
     flex-direction: column;
-  }
-
-  .pageDetails summary,
-  .reportOptions summary {
-    align-items: flex-start;
-    flex-direction: column;
-  }
-
-  .pageDetails summary small,
-  .reportOptions summary small {
-    margin-left: 0;
-    text-align: left;
   }
 }

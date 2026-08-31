@@ -228,6 +228,7 @@ export default function AdminAssetMapClient({
   const [lifecycle, setLifecycle] = useState("");
   const [selectedAssetId, setSelectedAssetId] = useState<string | null>(null);
   const [basemap, setBasemap] = useState<BasemapMode>("road");
+  const [mapReady, setMapReady] = useState(false);
   const [openingOwnerId, setOpeningOwnerId] = useState<string | null>(null);
   const [error, setError] = useState("");
   const mapElementRef = useRef<HTMLDivElement | null>(null);
@@ -315,12 +316,26 @@ export default function AdminAssetMapClient({
 
   useEffect(() => {
     let cancelled = false;
+    let resizeObserver: ResizeObserver | null = null;
+    let resizeFrame: number | null = null;
+    let settleTimer: number | null = null;
+
+    const scheduleMapResize = () => {
+      if (cancelled || !mapRef.current) return;
+      if (resizeFrame !== null) window.cancelAnimationFrame(resizeFrame);
+      resizeFrame = window.requestAnimationFrame(() => {
+        resizeFrame = null;
+        if (!cancelled) mapRef.current?.invalidateSize({ animate: false, pan: false });
+      });
+    };
+
     async function initialiseMap() {
       try {
         const L = await loadLeaflet();
-        if (cancelled || !mapElementRef.current || mapRef.current) return;
+        const mapElement = mapElementRef.current;
+        if (cancelled || !mapElement || mapRef.current) return;
         leafletRef.current = L;
-        const map = L.map(mapElementRef.current, {
+        const map = L.map(mapElement, {
           zoomControl: false,
           attributionControl: true,
         });
@@ -351,7 +366,15 @@ export default function AdminAssetMapClient({
             }).addTo(map)
           : L.layerGroup().addTo(map);
         mapRef.current = map;
-        window.setTimeout(() => map.invalidateSize(), 100);
+        setMapReady(true);
+
+        window.addEventListener("resize", scheduleMapResize);
+        if (typeof ResizeObserver !== "undefined") {
+          resizeObserver = new ResizeObserver(scheduleMapResize);
+          resizeObserver.observe(mapElement);
+        }
+        scheduleMapResize();
+        settleTimer = window.setTimeout(scheduleMapResize, 160);
       } catch (mapError) {
         setError(mapError instanceof Error ? mapError.message : "The map could not be loaded.");
       }
@@ -359,6 +382,10 @@ export default function AdminAssetMapClient({
     void initialiseMap();
     return () => {
       cancelled = true;
+      window.removeEventListener("resize", scheduleMapResize);
+      resizeObserver?.disconnect();
+      if (resizeFrame !== null) window.cancelAnimationFrame(resizeFrame);
+      if (settleTimer !== null) window.clearTimeout(settleTimer);
     };
   }, []);
 
@@ -376,7 +403,7 @@ export default function AdminAssetMapClient({
     } else {
       roadLayerRef.current.addTo(map);
     }
-  }, [basemap]);
+  }, [basemap, mapReady]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -423,7 +450,7 @@ export default function AdminAssetMapClient({
       if (bounds.length === 1) map.setView(bounds[0], 13);
       else map.fitBounds(bounds, { padding: [45, 45], maxZoom: 13 });
     }
-  }, [mappedAssets, selectedAssetId]);
+  }, [mapReady, mappedAssets, selectedAssetId]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -436,13 +463,17 @@ export default function AdminAssetMapClient({
     } else {
       map.panTo(marker.getLatLng());
     }
-  }, [selectedAssetId]);
+  }, [mapReady, selectedAssetId]);
 
   useEffect(() => {
     return () => {
       mapRef.current?.remove();
       mapRef.current = null;
+      leafletRef.current = null;
       markerLayerRef.current = null;
+      roadLayerRef.current = null;
+      satelliteLayerRef.current = null;
+      labelsLayerRef.current = null;
       markersByAssetIdRef.current.clear();
     };
   }, []);

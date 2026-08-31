@@ -29,6 +29,12 @@ test('shared Marketplace outcome dialog records a complete removal outcome', asy
   assert.match(source, /finalSalePriceExVat:/);
   assert.match(source, /outcomeNote:/);
   assert.match(source, /sourceSurface: source/);
+  assert.match(source, /const listingId = String\(listing\.id \?\? ''\)\.trim\(\)/);
+  assert.match(source, /assetId: assetId \|\| null/);
+  assert.match(source, /listingId,/);
+  assert.doesNotMatch(source, /not linked to a saved asset and cannot be removed here/);
+  assert.match(source, /assetId \? \(/);
+  assert.match(source, /its outcome history remains available/);
 });
 
 test('advert removal mirrors the Asset Register confirmation and four-step disposal journey', async () => {
@@ -127,12 +133,17 @@ test('Marketplace and My Showroom use one managed outcome flow', async () => {
   assert.match(marketplace, /Manage advert/);
   assert.match(marketplace, /Download JPEG/);
   assert.match(marketplace, /Remove advert/);
+  assert.match(marketplace, /const canManageActiveListing = Boolean\(activeListing\?\.canManage\)/);
+  assert.match(marketplace, /disabled=\{!manageListingTarget\.sourceAssetId\}/);
+  assert.match(marketplace, /item\.id !== listing\.id/);
   assert.doesNotMatch(marketplace, /method: 'DELETE'/);
 
   assert.match(showroom, /<MarketplaceOutcomeModal/);
   assert.match(showroom, /source="showroom"/);
   assert.match(showroom, /Manage advert/);
   assert.match(showroom, /Open in Marketplace/);
+  assert.match(showroom, /setListings\(\(current\) => current\.filter\(\(item\) => item\.id !== listing\.id\)\)/);
+  assert.match(showroom, /Editing requires a saved asset\./);
   assert.match(showroom, /design: usesSavedBrandDesign && listing\.adBrand \? 'saved-brand' : 'aim4price-marketplace'/);
   assert.doesNotMatch(showroom, /window\.confirm/);
   assert.doesNotMatch(showroom, /fetch\(`\/api\/marketplace\?assetId=[\s\S]*?method: 'DELETE'/);

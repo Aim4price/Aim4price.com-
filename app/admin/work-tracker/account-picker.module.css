@@ -45,10 +45,13 @@
 .triggerCopy,
 .optionCopy {
   min-width: 0;
+  flex: 1 1 auto;
 }
 
 .triggerCopy strong,
 .optionCopy strong {
+  display: block;
+  min-width: 0;
   overflow: hidden;
   color: #17362c;
   font-size: 0.8rem;

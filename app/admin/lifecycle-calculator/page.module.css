@@ -2135,16 +2135,17 @@
 }
 
 .scenarioChoice {
+  position: relative;
   min-width: 0;
-  min-height: 7.35rem;
-  padding: 0.82rem;
+  min-height: 6.1rem;
+  padding: 0.82rem 2.1rem 0.82rem 0.82rem;
   border: 1px solid #dce6e1;
   border-radius: 1rem;
   color: #17362c;
   background: #fafcfb;
   box-shadow: 0 10px 26px rgba(18, 53, 45, 0.04);
   display: grid;
-  align-content: start;
+  align-content: center;
   gap: 0.23rem;
   text-align: left;
   font: inherit;
@@ -2157,23 +2158,32 @@
   transform: translateY(-1px);
 }
 
-.scenarioChoice > span {
+.scenarioChoiceCheck {
+  position: absolute;
+  top: 0.82rem;
+  right: 0.82rem;
   color: #71817b;
-  font-size: 0.59rem;
-  font-weight: 900;
   font-size: 0.8rem;
+  font-weight: 900;
+  line-height: 1;
 }
 
 .scenarioChoice > strong {
+  overflow: hidden;
   font-size: 0.75rem;
   font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .scenarioChoice > b {
+  overflow: hidden;
   margin-top: 0.18rem;
   color: #12372d;
   font-size: 0.91rem;
   font-weight: 950;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .scenarioChoice > small {
@@ -2189,7 +2199,7 @@
   box-shadow: inset 0 0 0 1px rgba(31, 112, 81, 0.08), 0 12px 28px rgba(18, 83, 61, 0.09);
 }
 
-.scenarioChoiceActive > span,
+.scenarioChoiceActive > .scenarioChoiceCheck,
 .scenarioChoiceActive > b {
   color: #126047;
 }
@@ -2210,7 +2220,15 @@
   align-items: start;
 }
 
-.flowSectionLead,
+.flowSectionLead {
+  min-width: 0;
+  overflow: hidden;
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  white-space: nowrap;
+}
+
 .resultsLead {
   padding: 1rem 1.15rem;
   border: 1px solid #d7e5de;
@@ -2225,14 +2243,16 @@
 
 .flowSectionLead h2,
 .resultsLead h2 {
+  min-width: 0;
   margin: 0;
+  overflow: hidden;
   color: #12372d;
   font-size: 1.05rem;
   letter-spacing: -0.025em;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.flowSectionLead > div > span,
 .resultsLead > div > span {
   display: block;
   max-width: 54rem;
@@ -2243,13 +2263,13 @@
   line-height: 1.42;
 }
 
-.flowSectionLead > strong {
-  flex: 0 0 auto;
-  padding: 0.7rem 0.85rem;
-  border-radius: 0.8rem;
-  color: #155a43;
-  background: #e9f6ef;
+.flowSectionLead > span {
+  min-width: 0;
+  overflow: hidden;
+  color: #64756e;
   font-size: 0.72rem;
+  font-weight: 650;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
@@ -2742,10 +2762,32 @@
 
 .advancedGrid details > summary {
   list-style: none;
+  position: relative;
+  padding-right: 1.5rem;
 }
 
 .advancedGrid details > summary::-webkit-details-marker {
   display: none;
+}
+
+.advancedGrid details > summary:focus-visible {
+  outline: 2px solid #4c977a;
+  outline-offset: 4px;
+}
+
+.advancedGrid details > summary::after {
+  content: "+";
+  position: absolute;
+  top: 0;
+  right: 0;
+  color: #215c48;
+  font-size: 1.15rem;
+  font-weight: 800;
+  line-height: 1.2rem;
+}
+
+.advancedGrid details[open] > summary::after {
+  content: "−";
 }
 
 .detailsBody,
@@ -2833,7 +2875,6 @@
   }
 
   .decisionHeading,
-  .flowSectionLead,
   .resultsLead {
     align-items: stretch;
     flex-direction: column;
@@ -2843,7 +2884,6 @@
     justify-items: start;
   }
 
-  .flowSectionLead > strong,
   .resultsLead > div:last-child {
     width: 100%;
     min-width: 0;

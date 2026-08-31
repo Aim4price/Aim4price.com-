@@ -553,6 +553,12 @@
   gap: 1rem;
 }
 
+.activityModalHeader > div,
+.modalHeader > div {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
 .activityModalHeader h2 {
   margin: 0;
   color: #10372d;

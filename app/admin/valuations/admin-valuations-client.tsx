@@ -438,24 +438,24 @@ export default function AdminValuationsClient({
     <>
       <section className={styles.metrics} aria-label="Valuation summary">
         <article>
-          <strong>{summary.totalValuations.toLocaleString('en-ZA')}</strong>
           <span>Records</span>
+          <strong>{summary.totalValuations.toLocaleString('en-ZA')}</strong>
         </article>
         <article>
-          <strong>{summary.estimateEvents.toLocaleString('en-ZA')}</strong>
           <span>Estimates</span>
+          <strong>{summary.estimateEvents.toLocaleString('en-ZA')}</strong>
         </article>
         <article>
-          <strong>{summary.savedValuations.toLocaleString('en-ZA')}</strong>
           <span>Saved</span>
+          <strong>{summary.savedValuations.toLocaleString('en-ZA')}</strong>
         </article>
         <article>
-          <strong>{summary.knownAccountValuations.toLocaleString('en-ZA')}</strong>
           <span>Accounts</span>
+          <strong>{summary.knownAccountValuations.toLocaleString('en-ZA')}</strong>
         </article>
         <article>
-          <strong>{summary.unknownAccountValuations.toLocaleString('en-ZA')}</strong>
           <span>Guests</span>
+          <strong>{summary.unknownAccountValuations.toLocaleString('en-ZA')}</strong>
         </article>
       </section>
 

@@ -278,8 +278,8 @@
 .storageCard {
   padding: 1rem;
   display: grid;
-  grid-template-columns: minmax(10rem, 0.25fr) 1fr;
-  gap: 1.25rem;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
 }
 
 .storageRows {
