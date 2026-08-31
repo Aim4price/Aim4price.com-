@@ -92,7 +92,7 @@ export default async function HomePage() {
                   <span className={styles.heroEyebrowDivider} aria-hidden="true">
                     |
                   </span>
-                  <span>Digitising the Asset Lifecycle</span>
+                  <span>Asset Intelligence, Management &amp; Pricing</span>
                 </p>
 
                 <h1 className={styles.heroTitle}>
@@ -101,8 +101,8 @@ export default async function HomePage() {
                 </h1>
 
                 <p className={styles.heroText}>
-                  Give every asset a living digital record for its value, documents, maintenance,
-                  fuel, costs and history.
+                  Build detailed records and reports, manage every stage of ownership and
+                  collaborate with trusted professionals through one owner-controlled Asset Register.
                 </p>
 
                 <div className={styles.heroActions}>
