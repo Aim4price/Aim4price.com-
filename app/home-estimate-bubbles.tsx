@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useEffect, useRef } from 'react';
 import styles from './page.module.css';
 
 const ESTIMATE_BUBBLES = [
@@ -105,8 +106,27 @@ function resetBubblePreview(anchor: HTMLAnchorElement) {
 }
 
 export default function HomeEstimateBubbles() {
+  const groupRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const connection = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection;
+    if (
+      connection?.saveData ||
+      window.matchMedia(REDUCED_MOTION_QUERY).matches ||
+      !window.matchMedia(ANY_HOVER_QUERY).matches
+    ) {
+      return;
+    }
+
+    groupRef.current?.querySelectorAll<HTMLVideoElement>('video').forEach((video) => {
+      video.preload = 'auto';
+      video.load();
+    });
+  }, []);
+
   return (
     <div
+      ref={groupRef}
       className={styles.heroBubbles}
       role="group"
       aria-label="Explore Get Estimate videos"
@@ -135,7 +155,7 @@ export default function HomeEstimateBubbles() {
             muted
             loop
             playsInline
-            preload="auto"
+            preload="none"
             aria-hidden="true"
           >
             <source src={bubble.src} type="video/mp4" />
