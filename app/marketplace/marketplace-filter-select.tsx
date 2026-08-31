@@ -207,7 +207,6 @@ export default function MarketplaceFilterSelect<T extends string>({
                 type="button"
                 className={`${styles.filterSelectOption} ${selected ? styles.filterSelectOptionActive : ''}`}
                 onClick={() => chooseOption(option)}
-                onMouseEnter={() => setActiveIndex(optionIndex)}
                 onKeyDown={(event) => handleOptionKeyDown(event, optionIndex)}
                 role="option"
                 aria-selected={selected}
