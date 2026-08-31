@@ -31,10 +31,11 @@ const ESTIMATE_BUBBLES = [
 ] as const;
 
 const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
-const COARSE_POINTER_QUERY = '(hover: none), (pointer: coarse)';
+const ANY_HOVER_QUERY = '(any-hover: hover)';
+let previewRequestSequence = 0;
 
 function resetVideo(video: HTMLVideoElement) {
-  video.dataset.previewRequested = 'false';
+  delete video.dataset.previewRequestId;
   video.pause();
 
   try {
@@ -44,18 +45,28 @@ function resetVideo(video: HTMLVideoElement) {
   }
 }
 
+function resetSiblingPreviews(anchor: HTMLAnchorElement, activeVideo: HTMLVideoElement) {
+  anchor.parentElement
+    ?.querySelectorAll<HTMLVideoElement>('video')
+    .forEach((video) => {
+      if (video === activeVideo) return;
+
+      const siblingAnchor = video.closest<HTMLAnchorElement>('a');
+      if (siblingAnchor) delete siblingAnchor.dataset.previewActive;
+      resetVideo(video);
+    });
+}
+
 function playBubblePreview(anchor: HTMLAnchorElement) {
-  if (
-    window.matchMedia(REDUCED_MOTION_QUERY).matches ||
-    window.matchMedia(COARSE_POINTER_QUERY).matches
-  ) {
-    return;
-  }
+  if (window.matchMedia(REDUCED_MOTION_QUERY).matches) return;
 
   const video = anchor.querySelector<HTMLVideoElement>('video');
-  if (!video) return;
+  if (!video || (anchor.dataset.previewActive === 'true' && !video.paused)) return;
 
-  video.dataset.previewRequested = 'true';
+  resetSiblingPreviews(anchor, video);
+
+  const requestId = String(++previewRequestSequence);
+  video.dataset.previewRequestId = requestId;
   video.defaultMuted = true;
   video.muted = true;
 
@@ -68,16 +79,18 @@ function playBubblePreview(anchor: HTMLAnchorElement) {
   void video
     .play()
     .then(() => {
-      if (video.dataset.previewRequested === 'true') {
+      if (video.dataset.previewRequestId === requestId) {
         anchor.dataset.previewActive = 'true';
         return;
       }
 
-      resetVideo(video);
+      if (!video.dataset.previewRequestId) resetVideo(video);
     })
     .catch(() => {
+      if (video.dataset.previewRequestId !== requestId) return;
+
       delete anchor.dataset.previewActive;
-      video.dataset.previewRequested = 'false';
+      resetVideo(video);
     });
 }
 
@@ -104,9 +117,17 @@ export default function HomeEstimateBubbles() {
           href="/valuation"
           className={`${styles.heroBubble} ${bubble.positionClass}`}
           aria-label={`Open Get Estimate for ${bubble.label.toLowerCase()} assets`}
-          onMouseEnter={(event) => playBubblePreview(event.currentTarget)}
+          onMouseEnter={(event) => {
+            if (window.matchMedia(ANY_HOVER_QUERY).matches) {
+              playBubblePreview(event.currentTarget);
+            }
+          }}
           onMouseLeave={(event) => resetBubblePreview(event.currentTarget)}
-          onFocus={(event) => playBubblePreview(event.currentTarget)}
+          onFocus={(event) => {
+            if (event.currentTarget.matches(':focus-visible')) {
+              playBubblePreview(event.currentTarget);
+            }
+          }}
           onBlur={(event) => resetBubblePreview(event.currentTarget)}
         >
           <video
@@ -120,6 +141,9 @@ export default function HomeEstimateBubbles() {
             <source src={bubble.src} type="video/mp4" />
           </video>
           <span className={styles.heroBubbleSurface} aria-hidden="true" />
+          <span className={styles.heroBubbleTouchLabel} aria-hidden="true">
+            {bubble.label}
+          </span>
         </Link>
       ))}
     </div>
