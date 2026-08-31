@@ -3305,7 +3305,7 @@ export async function GET(request: NextRequest) {
     }
 
     const requestedRegisterId = workspace.accountantAccess
-      ? workspace.accountantAccess.registerId
+      ? workspace.accountantRegisterId
       : String(params.get('registerId') ?? '').trim();
     const register = requestedRegisterId
       ? await getAssetRegisterForUser(ownerUserId, requestedRegisterId)

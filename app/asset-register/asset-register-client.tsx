@@ -6143,7 +6143,12 @@ function buildAssetRegisterSummaryExportUrl(
     params.set('registerId', cleanedRegisterId);
   }
 
-  if (accountantShareId) params.set('accountantShareId', accountantShareId);
+  if (accountantShareId) {
+    params.set('accountantShareId', accountantShareId);
+    if (cleanedRegisterId && cleanedRegisterId !== COMBINED_REGISTER_ID) {
+      params.set('accountantRegisterId', cleanedRegisterId);
+    }
+  }
 
   return `/api/asset-register/export?${params.toString()}`;
 }

@@ -97,7 +97,8 @@ test('register summary opens the canonical browser PDF flow', () => {
   assert.match(summaryExportBuilder, /reportKind: 'summary'/);
   assert.match(summaryExportBuilder, /params\.set\('scope', registerIds\.length >= 2 \? 'combined' : 'all'\)/);
   assert.match(summaryExportBuilder, /params\.set\('registerId', cleanedRegisterId\)/);
-  assert.match(summaryExportBuilder, /if \(accountantShareId\) params\.set\('accountantShareId', accountantShareId\)/);
+  assert.match(summaryExportBuilder, /params\.set\('accountantShareId', accountantShareId\)/);
+  assert.match(summaryExportBuilder, /params\.set\('accountantRegisterId', cleanedRegisterId\)/);
   assert.match(summaryHandlers, /buildAssetRegisterSummaryExportUrl\(/);
   assert.match(summaryHandlers, /activeRegister\?\.id \|\| activeRegisterId,[\s\S]*?'html',[\s\S]*?accountantShareId/);
   assert.match(summaryHandlers, /const didOpen = openCanonicalReportUrl\(url\);/);

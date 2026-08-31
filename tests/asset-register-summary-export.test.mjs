@@ -30,6 +30,7 @@ test('both scoped and single-register summaries bypass Chromium for browser prin
   assert.equal(htmlResponses.length, 2);
   assert.match(getHandler, /const summaryItems = bundles\.flatMap[\s\S]*?renderRegisterSummaryReportHtml\(summaryItems/);
   assert.match(getHandler, /renderRegisterSummaryReportHtml\(items, exportProfile, generatedAt, request\.url\)/);
+  assert.match(getHandler, /workspace\.accountantAccess\s*\? workspace\.accountantRegisterId/);
 });
 
 test('explicit server PDF summaries remain available for external consumers', () => {
