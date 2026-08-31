@@ -117,18 +117,20 @@ function playClosestBubblePreview(group: HTMLDivElement, clientX: number, client
   let closestAnchor: HTMLAnchorElement | null = null;
   let closestDistance = Number.POSITIVE_INFINITY;
 
-  group.querySelectorAll<HTMLAnchorElement>('[data-estimate-bubble]').forEach((anchor) => {
+  const anchors = group.querySelectorAll<HTMLAnchorElement>('[data-estimate-bubble]');
+
+  for (const anchor of anchors) {
     const bounds = anchor.getBoundingClientRect();
     const distance = Math.hypot(
       clientX - (bounds.left + bounds.width / 2),
       clientY - (bounds.top + bounds.height / 2),
     );
 
-    if (distance >= closestDistance) return;
+    if (distance >= closestDistance) continue;
 
     closestAnchor = anchor;
     closestDistance = distance;
-  });
+  }
 
   if (closestAnchor) playBubblePreview(closestAnchor);
 }
