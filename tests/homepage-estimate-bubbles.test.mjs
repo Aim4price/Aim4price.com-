@@ -5,10 +5,11 @@ import test from 'node:test';
 const read = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
 
 test('homepage presents four green Get Estimate video bubbles', async () => {
-  const [page, bubbles, styles, headerStyles] = await Promise.all([
+  const [page, bubbles, styles, appHeader, headerStyles] = await Promise.all([
     read('app/page.tsx'),
     read('app/home-estimate-bubbles.tsx'),
     read('app/page.module.css'),
+    read('components/AppHeader.tsx'),
     read('components/AppHeader.module.css'),
   ]);
 
@@ -51,7 +52,11 @@ test('homepage presents four green Get Estimate video bubbles', async () => {
   assert.match(styles, /\.heroBubbleTouchLabel \{[\s\S]*?display: none/);
   assert.match(styles, /@media \(any-hover: none\)[\s\S]*?\.heroBubbleTouchLabel \{[\s\S]*?display: flex/);
   assert.match(styles, /\.heroBubble:focus-visible \{[\s\S]*?outline: 3px solid #14684f/);
-  assert.match(headerStyles, /@media \(min-width: 1181px\) and \(max-width: 1240px\)[\s\S]*?translateX\(clamp\(8px, calc\(\(100vw - 1212px\) \/ 2\), 14px\)\)/);
-  assert.match(headerStyles, /@media \(min-width: 1241px\)[\s\S]*?translateX\(clamp\(0px, calc\(\(100vw - 1228px\) \/ 2\), 90px\)\)/);
+  assert.match(appHeader, /const alignBrandToWorkingColumn = active === 'home' \|\| active === 'asset-register'/);
+  assert.match(appHeader, /alignBrandToWorkingColumn \? styles\.innerBrandAligned/);
+  assert.match(appHeader, /alignBrandToWorkingColumn \? styles\.brandWorkingColumn/);
+  assert.match(headerStyles, /@media \(min-width: 1181px\)[\s\S]*?\.innerBrandAligned \{[\s\S]*?position: relative/);
+  assert.match(headerStyles, /\.brandWorkingColumn \{[\s\S]*?left: clamp\(0px, calc\(\(100% - 1240px\) \/ 2\), 60px\)[\s\S]*?transform: translateY\(-50%\)/);
+  assert.doesNotMatch(headerStyles, /100vw - 1228px/);
   assert.match(styles, /@media \(forced-colors: active\)/);
 });
