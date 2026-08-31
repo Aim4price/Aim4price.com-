@@ -16,15 +16,16 @@ test('homepage presents four green Get Estimate video bubbles', async () => {
   assert.match(page, /import HomeEstimateBubbles from '\.\/home-estimate-bubbles'/);
   assert.match(page, /<HomeEstimateBubbles \/>/);
 
-  const videoSources = bubbles.match(/\/brand\/valuation\/(?:Agriculture|Construction|Industrial|Motor)\.mp4/g) ?? [];
+  const videoSources = bubbles.match(/\/brand\/valuation\/previews\/(?:agriculture|construction|industrial|motor)-home-preview\.mp4/g) ?? [];
   assert.deepEqual(videoSources, [
-    '/brand/valuation/Agriculture.mp4',
-    '/brand/valuation/Construction.mp4',
-    '/brand/valuation/Industrial.mp4',
-    '/brand/valuation/Motor.mp4',
+    '/brand/valuation/previews/agriculture-home-preview.mp4',
+    '/brand/valuation/previews/construction-home-preview.mp4',
+    '/brand/valuation/previews/industrial-home-preview.mp4',
+    '/brand/valuation/previews/motor-home-preview.mp4',
   ]);
   assert.equal((bubbles.match(/positionClass: styles\.heroBubble/g) ?? []).length, 4);
-  assert.match(bubbles, /preload="metadata"/);
+  assert.doesNotMatch(bubbles, /\/brand\/valuation\/(?:Agriculture|Construction|Industrial|Motor)\.mp4/);
+  assert.match(bubbles, /preload="auto"/);
   assert.match(bubbles, /muted[\s\S]*?loop[\s\S]*?playsInline/);
   assert.doesNotMatch(bubbles, /autoPlay/);
   assert.match(bubbles, /onMouseEnter=[\s\S]*?onMouseLeave=[\s\S]*?onFocus=[\s\S]*?onBlur=/);
