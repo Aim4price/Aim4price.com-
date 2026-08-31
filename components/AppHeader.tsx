@@ -39,7 +39,7 @@ type ActivePage =
   | 'showroom'
   | 'none';
 
-type BrandAlignment = 'header' | 'standard-shell' | 'wide-shell';
+type BrandAlignment = 'header' | 'working-column';
 
 type AppHeaderProps = {
   active: ActivePage;
@@ -740,11 +740,7 @@ export default function AppHeader({
   const primaryHref = ctaHref ?? signupHref;
   const pathname = usePathname();
   const brandAlignmentClass =
-    brandAlignment === 'standard-shell'
-      ? styles.brandStandardShell
-      : brandAlignment === 'wide-shell'
-        ? styles.brandWideShell
-        : '';
+    brandAlignment === 'working-column' ? styles.brandWorkingColumn : '';
   const searchParams = useSearchParams();
   const accountantWorkspaceShareId = useMemo(() => {
     const match = /^\/accountant\/registers\/([^/]+)(?:\/|$)/.exec(pathname || '');
