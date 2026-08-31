@@ -4344,3 +4344,16 @@
     max-height: 2.7rem;
   }
 }
+
+/* Align only the desktop brand mark with the shared 1180px content shell. */
+@media (min-width: 1181px) and (max-width: 1240px) {
+  .brand {
+    transform: translateX(clamp(8px, calc((100vw - 1212px) / 2), 14px));
+  }
+}
+
+@media (min-width: 1241px) {
+  .brand {
+    transform: translateX(clamp(0px, calc((100vw - 1228px) / 2), 90px));
+  }
+}
