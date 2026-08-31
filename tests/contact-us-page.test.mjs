@@ -5,17 +5,14 @@ import test from "node:test";
 const read = (path) =>
   readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
 
-const contactPage = read("app/contact-us/page.tsx");
-const homePage = read("app/page.tsx");
-const homeStyles = read("app/page.module.css");
-const aboutStyles = read("app/about-us/about-us.module.css");
-const rootLayout = read("app/layout.tsx");
 const portraitPath = new URL(
   "../public/about/kuyler-geldenhuys.jpg",
   import.meta.url,
 );
 
 test("publishes Contact Us with the founder details and supplied portrait", () => {
+  const contactPage = read("app/contact-us/page.tsx");
+
   assert.doesNotMatch(contactPage, /notFound\s*\(/);
   assert.match(contactPage, /Kuyler Chris Geldenhuys/);
   assert.match(contactPage, /062 572 1650/);
@@ -24,20 +21,22 @@ test("publishes Contact Us with the founder details and supplied portrait", () =
   assert.ok(existsSync(portraitPath));
 });
 
-test("links the Home hero logo to About Us", () => {
+test("links the Home platform action to About Us", () => {
+  const homePage = read("app/page.tsx");
+  const homeStyles = read("app/page.module.css");
+
   assert.match(
     homePage,
-    /<Link[\s\S]*?href="\/about-us"[\s\S]*?className={styles\.heroVisual}[\s\S]*?aria-label="About Aim4price"/,
+    /<Link href="\/about-us" className={styles\.secondaryCta}>[\s\S]*?Explore the platform/,
   );
-  assert.doesNotMatch(
-    homePage,
-    /className={styles\.heroVisual}\s+aria-hidden="true"/,
-  );
-  assert.match(homeStyles, /\.heroVisual:hover/);
-  assert.match(homeStyles, /pointer-events:\s*auto/);
+  assert.match(homeStyles, /\.secondaryCta:hover/);
+  assert.match(homeStyles, /\.secondaryCta:focus-visible/);
 });
 
 test("aligns the founder and contact boxes within the hero layout", () => {
+  const contactPage = read("app/contact-us/page.tsx");
+  const aboutStyles = read("app/about-us/about-us.module.css");
+
   assert.match(contactPage, /styles\.heroContactDetails/);
   assert.match(
     contactPage,
@@ -48,6 +47,10 @@ test("aligns the founder and contact boxes within the hero layout", () => {
 });
 
 test("uses one global background and keeps new public copy free of em dashes", () => {
+  const contactPage = read("app/contact-us/page.tsx");
+  const homePage = read("app/page.tsx");
+  const rootLayout = read("app/layout.tsx");
+
   assert.match(
     rootLayout,
     /<AppPatternBackground>{children}<\/AppPatternBackground>/,

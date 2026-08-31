@@ -9,17 +9,8 @@
   overflow: clip;
   isolation: isolate;
   background:
-    radial-gradient(
-      circle at top left,
-      rgba(169, 220, 196, 0.12),
-      transparent 34%
-    ),
-    radial-gradient(
-      circle at 92% 92%,
-      rgba(169, 220, 196, 0.07),
-      transparent 30%
-    ),
-    linear-gradient(180deg, #fafdfb 0%, #f7faf8 45%, #f1f7f3 100%);
+    radial-gradient(ellipse at 50% 32%, rgba(255, 255, 255, 0.98) 0%, rgba(251, 253, 252, 0.9) 34%, transparent 68%),
+    linear-gradient(180deg, #fbfdfc 0%, #f7faf8 50%, #f1f7f3 100%);
 }
 
 .decoration {
@@ -31,10 +22,30 @@
 }
 
 .decoration *,
-.arcs,
-.dotGrid,
-.mintCircle {
+.networkArtwork,
+.centerWash {
   pointer-events: none;
+}
+
+.networkArtwork {
+  position: absolute;
+  inset: -2%;
+  background-image: url('/brand/aim4price-network-background.png');
+  background-repeat: no-repeat;
+  background-position: center 52%;
+  background-size: 100% auto;
+  filter: sepia(0.2) saturate(0.72) hue-rotate(96deg) brightness(1.07);
+  opacity: 0.52;
+  transform: scale(1.035);
+  transform-origin: center;
+}
+
+.centerWash {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 50% 31%, rgba(255, 255, 255, 0.98) 0%, rgba(255, 255, 255, 0.9) 26%, rgba(255, 255, 255, 0.34) 51%, transparent 72%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.24) 0%, transparent 32%, rgba(237, 247, 242, 0.18) 100%);
 }
 
 .content {
@@ -51,107 +62,44 @@
   background-image: none !important;
 }
 
+.content > :global(.adminWorkspaceRoot) > * {
+  background-color: transparent !important;
+  background-image: none !important;
+}
+
 @supports not (overflow: clip) {
   .background {
     overflow: hidden;
   }
 }
 
-.arcs {
-  position: absolute;
-  width: clamp(250px, 31vw, 470px);
-  height: clamp(250px, 31vw, 470px);
-  fill: none;
-  stroke: #78b99b;
-  stroke-width: 1.25;
-  opacity: 0.18;
-}
-
-.arcsTopLeft {
-  top: env(safe-area-inset-top, 0px);
-  left: env(safe-area-inset-left, 0px);
-  transform: translate(-8%, -8%);
-}
-
-.arcsBottomRight {
-  right: env(safe-area-inset-right, 0px);
-  bottom: env(safe-area-inset-bottom, 0px);
-  transform: translate(8%, 8%);
-}
-
-.dotGrid {
-  position: absolute;
-  width: 60px;
-  height: 60px;
-  fill: #76b99a;
-  opacity: 0.25;
-}
-
-.dotGridTopRight {
-  top: calc(env(safe-area-inset-top, 0px) + clamp(88px, 12vh, 138px));
-  right: calc(env(safe-area-inset-right, 0px) + clamp(12px, 4vw, 64px));
-}
-
-.dotGridBottomLeft {
-  bottom: calc(env(safe-area-inset-bottom, 0px) + clamp(78px, 11vh, 132px));
-  left: calc(env(safe-area-inset-left, 0px) + clamp(10px, 4vw, 62px));
-}
-
-.mintCircle {
-  position: absolute;
-  width: clamp(150px, 20vw, 300px);
-  aspect-ratio: 1;
-  border-radius: 50%;
-  background: #a9dcc4;
-  opacity: 0.13;
-}
-
-.mintCircleLeft {
-  top: 37%;
-  left: 0;
-  transform: translate(-62%, -50%);
-}
-
-.mintCircleRight {
-  top: 67%;
-  right: 0;
-  transform: translate(62%, -50%);
-}
-
-@media (max-width: 600px) {
-  .arcs {
-    width: 270px;
-    height: 270px;
-    opacity: 0.17;
+@media (max-width: 760px) {
+  .networkArtwork {
+    inset: -4%;
+    background-size: 150% auto;
+    opacity: 0.43;
+    transform: scale(1.08);
   }
 
-  .dotGrid {
-    width: 56px;
-    height: 56px;
-  }
-
-  .dotGridTopRight {
-    top: calc(env(safe-area-inset-top, 0px) + 104px);
-    right: calc(env(safe-area-inset-right, 0px) + 5px);
-  }
-
-  .dotGridBottomLeft {
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 76px);
-    left: calc(env(safe-area-inset-left, 0px) + 4px);
-  }
-
-  .mintCircle {
-    width: 164px;
-    opacity: 0.12;
+  .centerWash {
+    background:
+      radial-gradient(ellipse at 50% 30%, rgba(255, 255, 255, 0.98) 0%, rgba(255, 255, 255, 0.9) 32%, rgba(255, 255, 255, 0.42) 60%, transparent 82%),
+      linear-gradient(180deg, rgba(255, 255, 255, 0.32) 0%, transparent 40%, rgba(237, 247, 242, 0.2) 100%);
   }
 }
 
-@media (min-width: 900px) {
-  .mintCircleLeft {
-    top: 42%;
+@media (forced-colors: active) {
+  .decoration {
+    display: none;
+  }
+}
+
+@media print {
+  .background {
+    background: #ffffff;
   }
 
-  .mintCircleRight {
-    top: 62%;
+  .decoration {
+    display: none;
   }
 }

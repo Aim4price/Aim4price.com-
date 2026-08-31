@@ -43,13 +43,14 @@ test('header keeps desktop navigation at larger widths and uses the account drop
   assert.match(header, /\.navWindowButton \{[\s\S]*?min-width: var\(--tap-target-min, 44px\)/);
 });
 
-test('home page keeps hero and footer calls to action usable at phone and tablet widths', async () => {
+test('home page keeps the static hero and audience choices usable at phone and tablet widths', async () => {
   const home = await read('app/page.module.css');
 
   assert.match(home, /Homepage responsive contract, August 2026/);
-  assert.match(home, /@media \(max-width: 900px\)[\s\S]*?\.heroGrid \{[\s\S]*?grid-template-columns: minmax\(0, 1fr\)/);
-  assert.match(home, /@media \(max-width: 760px\)[\s\S]*?\.heroActions,[\s\S]*?\.rolesActions \{[\s\S]*?grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
-  assert.match(home, /\.heroActions > \*,[\s\S]*?\.rolesActions > \* \{[\s\S]*?min-height: var\(--tap-target-min, 44px\)/);
+  assert.match(home, /@media \(max-width: 900px\)[\s\S]*?\.heroSection \{[\s\S]*?min-height: calc\(100svh - 5rem\)/);
+  assert.match(home, /@media \(max-width: 760px\)[\s\S]*?\.heroActions \{[\s\S]*?grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
+  assert.match(home, /\.heroActions > \* \{[\s\S]*?min-height: var\(--tap-target-min, 44px\)/);
+  assert.match(home, /@media \(max-width: 640px\)[\s\S]*?\.audienceGrid \{[\s\S]*?grid-template-columns: minmax\(0, 1fr\)/);
 });
 
 test('asset register has deterministic toolbar, card-action and modal device states', async () => {
@@ -88,3 +89,4 @@ test('account access labels remain single-line but cannot overflow narrow tiles'
   assert.match(access, /\.actionCopy small \{[\s\S]*?white-space: nowrap;[\s\S]*?overflow: hidden;[\s\S]*?text-overflow: ellipsis/);
   assert.match(access, /@media \(max-width: 640px\)[\s\S]*?\.actionCopy strong \{[\s\S]*?white-space: nowrap/);
 });
+
