@@ -1162,7 +1162,8 @@
   .heroBubbles {
     position: absolute;
     top: 50%;
-    right: calc(((100vw - 100%) / -2) + var(--shell-gutter));
+    right: 0;
+    right: calc(((100% - 100vw) / 2) + var(--shell-gutter));
     width: clamp(21rem, 27vw, 32rem);
     transform: translateY(-50%);
   }
