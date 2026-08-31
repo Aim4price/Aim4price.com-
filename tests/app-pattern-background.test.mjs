@@ -6,6 +6,7 @@ const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf
 
 const component = read('components/AppPatternBackground.tsx');
 const styles = read('components/AppPatternBackground.module.css');
+const artwork = read('public/topographic-contours.svg');
 const rootLayout = read('app/layout.tsx');
 const assetRegisterStyles = [
   read('app/asset-register/page.module.css'),
@@ -29,14 +30,24 @@ test('the root layout applies one shared pattern background across every page', 
   assert.match(layouts[1], /className={styles\.patternPageContent}/);
 });
 
-test('the component renders a complete vector topographic composition', () => {
-  assert.match(component, /function TopographicContours/);
-  assert.match(component, /patternUnits="userSpaceOnUse"/);
-  assert.ok((component.match(/\n\s*'M/g) ?? []).length >= 16);
+test('the component renders the large topographic artwork without repeating inline tiles', () => {
   assert.match(component, /data-app-pattern="topographic-contours"/);
+  assert.match(component, /<span className={styles\.topography} \/>/);
+  assert.doesNotMatch(component, /CONTOUR_PATHS|<pattern|patternUnits/);
   assert.doesNotMatch(component, /CornerArcs|DotGrid|mintCircle/);
-  assert.doesNotMatch(component, /\.(?:png|jpe?g|webp|gif)/i);
-  assert.doesNotMatch(styles, /\.arcs|\.dotGrid|\.mintCircle/);
+
+  assert.match(styles, /url\('\/topographic-contours\.svg'\)/);
+  assert.match(styles, /background-repeat:\s*no-repeat/);
+  assert.match(styles, /background-size:\s*cover/);
+  assert.doesNotMatch(styles, /mask-image/);
+});
+
+test('the contour artwork is a broad, solid-line vector composition', () => {
+  assert.match(artwork, /<svg[^>]*viewBox="0 0 1920 1200"/);
+  assert.ok((artwork.match(/<path /g) ?? []).length >= 24);
+  assert.match(artwork, /stroke="#52675f"/);
+  assert.match(artwork, /stroke-linecap="round"/);
+  assert.doesNotMatch(artwork, /stroke-dasharray|<image|data:image/);
 });
 
 test('the Asset Register keeps the shared topographic pattern visible', () => {
@@ -56,7 +67,7 @@ test('the Asset Register keeps the shared topographic pattern visible', () => {
 });
 
 test('the background is responsive, interaction-safe, and uses the Aim4price palette', () => {
-  for (const token of ['#fbfdfc', '#f7faf8', '#f2f7f4', '#78b99b']) {
+  for (const token of ['#fbfcfb', '#f7faf8', '#f3f7f5']) {
     assert.ok(styles.includes(token), `missing ${token}`);
   }
   assert.match(styles, /\.decoration\s*{[^}]*position:\s*fixed/s);
@@ -67,9 +78,7 @@ test('the background is responsive, interaction-safe, and uses the Aim4price pal
   assert.match(styles, /min-height:\s*100dvh/);
   assert.match(styles, /env\(safe-area-inset-/);
   assert.match(styles, /@media \(max-width: 600px\)/);
-  assert.match(styles, /stroke-width:\s*0\.95/);
-  assert.match(styles, /\.topography\s*{[^}]*opacity:\s*0\.24/s);
-  assert.match(styles, /mask-image:\s*radial-gradient/);
+  assert.match(styles, /\.topography\s*{[^}]*opacity:\s*0\.58/s);
   assert.match(styles, /@media \(prefers-contrast: more\)/);
   assert.match(styles, /--aim4price-card-shadow:\s*0 10px 30px rgba\(13, 62, 49, 0\.08\)/);
   assert.match(styles, /\.content > \*\s*{[^}]*background-color:\s*transparent !important/s);
