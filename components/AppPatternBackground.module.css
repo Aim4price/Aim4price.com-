@@ -8,10 +8,7 @@
   min-height: 100dvh;
   overflow: clip;
   isolation: isolate;
-  background:
-    radial-gradient(circle at 13% 14%, rgba(169, 220, 196, 0.13), transparent 31rem),
-    radial-gradient(circle at 88% 82%, rgba(169, 220, 196, 0.08), transparent 28rem),
-    linear-gradient(180deg, #fbfdfc 0%, #f7faf8 48%, #f2f7f4 100%);
+  background: linear-gradient(180deg, #fbfcfb 0%, #f7faf8 52%, #f3f7f5 100%);
 }
 
 .decoration {
@@ -33,29 +30,12 @@
 
 .topography {
   position: absolute;
-  inset: -3%;
-  width: 106%;
-  height: 106%;
-  color: #78b99b;
-  opacity: 0.24;
-  -webkit-mask-image: radial-gradient(
-    ellipse 58% 48% at 46% 44%,
-    rgba(0, 0, 0, 0.08) 0%,
-    rgba(0, 0, 0, 0.18) 34%,
-    rgba(0, 0, 0, 0.72) 72%,
-    #000000 100%
-  );
-  mask-image: radial-gradient(
-    ellipse 58% 48% at 46% 44%,
-    rgba(0, 0, 0, 0.08) 0%,
-    rgba(0, 0, 0, 0.18) 34%,
-    rgba(0, 0, 0, 0.72) 72%,
-    #000000 100%
-  );
-}
-
-.topography path {
-  stroke-width: 0.95;
+  inset: -1px;
+  background-image: url('/topographic-contours.svg');
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  opacity: 0.58;
 }
 
 .content {
@@ -80,27 +60,13 @@
 
 @media (max-width: 600px) {
   .topography {
-    inset: -10%;
-    width: 120%;
-    height: 120%;
-    opacity: 0.2;
-    -webkit-mask-image: radial-gradient(
-      ellipse 72% 56% at 50% 38%,
-      rgba(0, 0, 0, 0.14) 0%,
-      rgba(0, 0, 0, 0.34) 48%,
-      #000000 100%
-    );
-    mask-image: radial-gradient(
-      ellipse 72% 56% at 50% 38%,
-      rgba(0, 0, 0, 0.14) 0%,
-      rgba(0, 0, 0, 0.34) 48%,
-      #000000 100%
-    );
+    background-position: 52% center;
+    opacity: 0.52;
   }
 }
 
 @media (prefers-contrast: more) {
   .topography {
-    opacity: 0.16;
+    opacity: 0.42;
   }
 }
