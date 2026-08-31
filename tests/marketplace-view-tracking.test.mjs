@@ -139,7 +139,8 @@ test('popular and repeat-interest discovery filters use recorded view totals', (
 
 test('all Admin routes get immediate feedback and expensive pages prefetch only on intent', () => {
   assert.match(adminLoading, /aria-busy="true"/);
-  assert.match(adminLoading, /Loading Admin data/);
+  assert.match(adminLoading, /aria-label="Loading Admin"/);
+  assert.doesNotMatch(adminLoading, /Loading Admin data/);
   assert.match(adminNavigation, /prefetch=\{false\}/);
   assert.match(adminNavigation, /onMouseEnter=\{\(\) => router\.prefetch\(item\.href\)\}/);
   assert.match(adminFoundation, /text-transform: none !important/);
