@@ -4345,13 +4345,29 @@
   }
 }
 
-/* Inset the mark on Home and Asset Register to the 1240px working column. */
+/* Align the mark to the content shell chosen by each route. */
 @media (min-width: 1181px) {
   .innerBrandAligned {
     container-type: inline-size;
   }
+}
 
-  .brandWorkingColumn {
-    transform: translateX(clamp(0px, calc((100cqi - 1240px) / 2), 60px));
+@media (min-width: 1181px) and (max-width: 1240px) {
+  .brandStandardShell {
+    transform: translateX(clamp(8px, calc((100cqi - 1180px) / 2), 14px));
+  }
+
+  .brandWideShell {
+    transform: translateX(8px);
+  }
+}
+
+@media (min-width: 1241px) {
+  .brandStandardShell {
+    transform: translateX(clamp(0px, calc((100cqi - 1180px) / 2), 90px));
+  }
+
+  .brandWideShell {
+    transform: translateX(clamp(0px, calc((100cqi - 1320px) / 2), 20px));
   }
 }
