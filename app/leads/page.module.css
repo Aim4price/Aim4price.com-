@@ -5458,3 +5458,137 @@
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
 }
+
+/* === Role asset management matches the owner command centre === */
+.leadManageModal.leadManageModal,
+.licensingManageModal.licensingManageModal,
+.dealerAppLeads .leadManageModal.leadManageModal,
+.dealerDesktopLeads .leadManageModal.leadManageModal {
+  width: min(97vw, 84rem) !important;
+  max-width: 84rem !important;
+  height: auto !important;
+  max-height: min(95dvh, 60rem) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  padding: clamp(1.35rem, 2.15vw, 1.75rem) !important;
+  overflow: hidden !important;
+}
+
+.leadManageModal.leadManageModal [class*='optionsModalHeader'] {
+  flex: 0 0 auto !important;
+  min-height: 0 !important;
+  margin-bottom: 1.05rem !important;
+  padding: 0 0 1.05rem !important;
+}
+
+.leadManageModal.leadManageModal [class*='modalHeaderText'] h3 {
+  max-width: 100% !important;
+  margin: 0 !important;
+  font-size: clamp(2.05rem, 3.25vw, 2.8rem) !important;
+  line-height: 1.04 !important;
+  letter-spacing: -0.05em !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere;
+}
+
+.leadManageModal.leadManageModal [class*='modalHeaderText'] p {
+  margin-top: 0.5rem !important;
+  font-size: 1rem !important;
+  line-height: 1.45 !important;
+}
+
+.leadManageModal.leadManageModal .leadManageScrollBody.leadManageScrollBody {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  margin: 0 -0.2rem 0 0 !important;
+  padding: 0.08rem 0.45rem 0.4rem 0.08rem !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+}
+
+.leadManageModal.leadManageModal .manageOptionsGrid.manageOptionsGrid {
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 0.88rem !important;
+}
+
+.leadManageModal.leadManageModal .manageOptionsGrid.manageOptionsGrid > :last-child:nth-child(odd) {
+  grid-column: auto !important;
+}
+
+.leadManageModal.leadManageModal .manageOptionsGrid.manageOptionsGrid [class*='optionActionButton'] {
+  width: 100% !important;
+  min-width: 0 !important;
+  min-height: 6.25rem !important;
+  margin: 0 !important;
+  padding: 1.08rem 1.12rem !important;
+  box-sizing: border-box;
+}
+
+.leadManageModal.leadManageModal .manageOptionsGrid.manageOptionsGrid [class*='optionActionButton'] > span {
+  min-width: 0;
+}
+
+.leadManageModal.leadManageModal .manageOptionsGrid.manageOptionsGrid [class*='optionActionButton'] strong {
+  font-size: 1.12rem !important;
+  line-height: 1.2 !important;
+}
+
+.leadManageModal.leadManageModal .manageOptionsGrid.manageOptionsGrid [class*='optionActionButton'] small {
+  max-width: 100% !important;
+  font-size: 0.94rem !important;
+  line-height: 1.42 !important;
+}
+
+@media (min-width: 901px) {
+  .leadManageModal.leadManageModal .manageOptionsGrid.manageOptionsGrid [class*='optionActionButton'] small {
+    overflow: visible !important;
+    text-overflow: clip !important;
+    white-space: nowrap !important;
+    overflow-wrap: normal !important;
+  }
+}
+
+@media (min-width: 701px) and (max-width: 1180px) {
+  .leadManageModal.leadManageModal,
+  .licensingManageModal.licensingManageModal,
+  .dealerAppLeads .leadManageModal.leadManageModal,
+  .dealerDesktopLeads .leadManageModal.leadManageModal {
+    width: min(97vw, 68rem) !important;
+    max-width: 68rem !important;
+  }
+
+  .leadManageModal.leadManageModal .manageOptionsGrid.manageOptionsGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 700px) {
+  .leadManageOverlay,
+  .dealerAppLeads .leadManageOverlay {
+    padding: 0.5rem !important;
+  }
+
+  .leadManageModal.leadManageModal,
+  .licensingManageModal.licensingManageModal,
+  .dealerAppLeads .leadManageModal.leadManageModal,
+  .dealerDesktopLeads .leadManageModal.leadManageModal {
+    width: calc(100vw - 1rem) !important;
+    max-width: none !important;
+    height: auto !important;
+    max-height: calc(100dvh - 1rem) !important;
+    border-radius: 1.35rem !important;
+  }
+
+  .leadManageModal.leadManageModal .manageOptionsGrid.manageOptionsGrid {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .leadManageModal.leadManageModal .manageOptionsGrid.manageOptionsGrid [class*='optionActionButton'] {
+    min-height: 5.8rem !important;
+  }
+
+  .leadManageModal.leadManageModal .manageOptionsGrid.manageOptionsGrid [class*='optionActionButton'] small {
+    white-space: normal !important;
+    overflow-wrap: anywhere !important;
+  }
+}

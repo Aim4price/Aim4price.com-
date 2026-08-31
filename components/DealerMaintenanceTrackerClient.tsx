@@ -1805,9 +1805,9 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
       ) : null}
 
       {managedAsset ? (
-        <div className={`${assetStyles.modalOverlay} ${workspaceStyles.modalOverlay} ${styles.trackerManageOverlay}`}>
+        <div className={`${assetStyles.modalOverlay} ${assetStyles.ownerCommandOverlay} ${workspaceStyles.modalOverlay} ${styles.trackerManageOverlay}`}>
           <div className={assetStyles.modalBackdrop} onClick={() => setManagedAccessId(null)} />
-          <div className={`${assetStyles.optionsModal} ${workspaceStyles.modal} ${leadStyles.leadManageModal} ${styles.trackerManageModal}`} role="dialog" aria-modal="true" aria-labelledby="tracking-manage-title">
+          <div className={`${assetStyles.optionsModal} ${assetStyles.ownerCommandModal} ${workspaceStyles.modal} ${leadStyles.leadManageModal} ${styles.trackerManageModal}`} role="dialog" aria-modal="true" aria-labelledby="tracking-manage-title">
             <div className={`${assetStyles.modalHeader} ${assetStyles.optionsModalHeader} ${workspaceStyles.modalHeader}`}>
               <div className={assetStyles.modalHeaderText}>
                 <h3 id="tracking-manage-title">{managedAsset.assetTitle}</h3>
@@ -1818,12 +1818,12 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
               </button>
             </div>
 
-            <div className={`${assetStyles.modalScrollBody} ${assetStyles.optionsScrollBody} ${workspaceStyles.modalBody} ${styles.trackerManageBody}`}>
+            <div className={`${assetStyles.modalScrollBody} ${assetStyles.optionsScrollBody} ${assetStyles.ownerCommandScrollBody} ${workspaceStyles.modalBody} ${styles.trackerManageBody}`}>
               <div className={assetStyles.optionsContent}>
-                <div className={`${assetStyles.optionsGrid} ${assetStyles.assetOptionsGrid} ${leadStyles.manageOptionsGrid}`}>
+                <div className={`${assetStyles.optionsGrid} ${assetStyles.assetOptionsGrid} ${assetStyles.ownerCommandGrid} ${leadStyles.manageOptionsGrid}`}>
                   <button
                     type="button"
-                    className={`${assetStyles.optionActionButton} ${assetStyles.optionFeaturedButton} ${leadStyles.whatsAppActionButton}`}
+                    className={`${assetStyles.optionActionButton} ${assetStyles.ownerCommandAction} ${assetStyles.optionFeaturedButton} ${leadStyles.whatsAppActionButton}`}
                     onClick={() => openWhatsApp(managedAsset)}
                     disabled={!cleanPhoneForWhatsApp(managedAsset.ownerPhone)}
                     title={!cleanPhoneForWhatsApp(managedAsset.ownerPhone) ? 'No owner cellphone number is saved.' : undefined}
@@ -1831,13 +1831,13 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
                     <WhatsAppIcon className={`${assetStyles.buttonIcon} ${leadStyles.whatsAppIcon}`} />
                     <span>
                       <strong>WhatsApp owner</strong>
-                      <small>{managedAsset.ownerPhone ? 'Message the owner on WhatsApp.' : 'No owner number saved.'}</small>
+                      <small>{managedAsset.ownerPhone ? 'Message the owner.' : 'No owner number saved.'}</small>
                     </span>
                   </button>
 
                   <button
                     type="button"
-                    className={assetStyles.optionActionButton}
+                    className={`${assetStyles.optionActionButton} ${assetStyles.ownerCommandAction}`}
                     onClick={() => callOwner(managedAsset)}
                     disabled={!cleanPhoneForTel(managedAsset.ownerPhone)}
                     title={!cleanPhoneForTel(managedAsset.ownerPhone) ? 'No owner contact number is saved.' : undefined}
@@ -1845,13 +1845,13 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
                     <PhoneIcon className={assetStyles.buttonIcon} />
                     <span>
                       <strong>Call owner</strong>
-                      <small>{managedAsset.ownerPhone ? 'Call the saved owner number.' : 'No owner number saved.'}</small>
+                      <small>{managedAsset.ownerPhone ? 'Call the owner.' : 'No owner number saved.'}</small>
                     </span>
                   </button>
 
                   <button
                     type="button"
-                    className={assetStyles.optionActionButton}
+                    className={`${assetStyles.optionActionButton} ${assetStyles.ownerCommandAction}`}
                     onClick={() => emailOwner(managedAsset)}
                     disabled={!cleanEmail(managedAsset.ownerEmail)}
                     title={!cleanEmail(managedAsset.ownerEmail) ? 'No owner email address is saved.' : undefined}
@@ -1859,13 +1859,13 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
                     <EmailIcon className={assetStyles.buttonIcon} />
                     <span>
                       <strong>Email owner</strong>
-                      <small>{cleanEmail(managedAsset.ownerEmail) ? 'Email the owner about this asset.' : 'No owner email saved.'}</small>
+                      <small>{cleanEmail(managedAsset.ownerEmail) ? 'Email the owner.' : 'No owner email saved.'}</small>
                     </span>
                   </button>
 
                   <button
                     type="button"
-                    className={assetStyles.optionActionButton}
+                    className={`${assetStyles.optionActionButton} ${assetStyles.ownerCommandAction}`}
                     onClick={() => {
                       setManagedAccessId(null);
                       setScheduleAccessId(managedAsset.accessId);
@@ -1888,17 +1888,17 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
                         {!managedAsset.permissions.canCreateMaintenanceSchedules
                           ? 'Owner permission is required.'
                           : managedAsset.scheduleProposals.some((proposal) => proposal.status === 'pending')
-                            ? 'Update the schedule awaiting owner approval.'
+                            ? 'Update the pending schedule.'
                             : managedAsset.nextMaintenance
-                              ? 'Update the active maintenance schedule.'
-                              : 'Send a schedule for owner approval.'}
+                              ? 'Update the schedule.'
+                              : 'Send for owner approval.'}
                       </small>
                     </span>
                   </button>
 
                   <button
                     type="button"
-                    className={assetStyles.optionActionButton}
+                    className={`${assetStyles.optionActionButton} ${assetStyles.ownerCommandAction}`}
                     onClick={() => {
                       setManagedAccessId(null);
                       setReportAccessId(managedAsset.accessId);
@@ -1915,7 +1915,7 @@ export default function DealerMaintenanceTrackerClient({ initialAssets, dealerAp
 
                   <button
                     type="button"
-                    className={assetStyles.optionActionButton}
+                    className={`${assetStyles.optionActionButton} ${assetStyles.ownerCommandAction}`}
                     onClick={() => {
                       setManagedAccessId(null);
                       setCostReportAccessId(managedAsset.accessId);
