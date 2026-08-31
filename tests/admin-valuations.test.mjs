@@ -33,7 +33,8 @@ test('Admin Valuations page and API independently require Admin access', () => {
   assert.match(page, /await requireAdminPageAccess\(\)/);
   assert.match(api, /await requireAdminApiAccess\(\)/);
   assert.match(page, /AdminNavigation active="valuations"/);
-  assert.match(page, /Every completed estimate and saved valuation/);
+  assert.match(page, /<h1>Valuations<\/h1>/);
+  assert.doesNotMatch(page, /Every completed estimate and saved valuation/);
 });
 
 test('the valuation history combines every estimate event and saved valuation run', () => {
@@ -51,7 +52,7 @@ test('account details resolve when available and remain explicitly unknown for g
   assert.match(data, /left join public\."user" auth_user/);
   assert.match(data, /'Unknown \/ guest'/);
   assert.match(data, /history\.account_user_id is not null/);
-  assert.match(client, /No account attached/);
+  assert.match(client, /Unknown \/ guest/);
   assert.match(client, /Open account/);
 });
 
@@ -63,7 +64,7 @@ test('Admin Valuations supports server search, filters, sorting and pagination',
   assert.match(data, /group by valuation_year/);
   assert.match(data, /limit \$\{limitParameter\}/);
   assert.match(data, /offset \$\{offsetParameter\}/);
-  assert.match(client, /Asset, account, email, input or reference/);
+  assert.match(client, /Asset, account, email or reference/);
   assert.match(client, /Rows per page/);
 });
 
@@ -91,17 +92,17 @@ test('tractor estimates retain the usage path and percentage originally entered'
   assert.match(data, /\) = 'percent' then coalesce\([\s\S]*lifeWorkedPercent/);
 });
 
-test('the detail modal exposes who, when and every estimate-flow section', () => {
+test('the detail modal exposes the record, asset and full estimate flow', () => {
   assert.match(client, /role="dialog"/);
-  assert.match(client, /Who and when/);
-  assert.match(client, /What was estimated/);
-  assert.match(client, /Everything entered in the estimate path/);
-  assert.match(client, /Complete estimated result/);
+  assert.match(client, /<h3>Record<\/h3>/);
+  assert.match(client, /<h3>Asset<\/h3>/);
+  assert.match(client, />Inputs<\/h3>/);
+  assert.match(client, />Calculation<\/h3>/);
   assert.match(client, /buildAdminValuationInputSections/);
   assert.match(client, /buildAdminValuationOutputSections/);
-  assert.match(client, /recorded fields/);
+  assert.doesNotMatch(client, /fields<\/span>/);
   assert.match(client, /keepFocusInsideDetails/);
-  assert.match(client, /Fresh valuation history from 26 August 2026/);
+  assert.doesNotMatch(client, /Fresh valuation history from 26 August 2026/);
 });
 
 test('the valuation ledger restarts at a fixed cutoff without hiding future records', () => {

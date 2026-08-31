@@ -230,7 +230,7 @@ const CHANNEL_LABELS: Record<CaptureChannel, string> = {
   owner_upload: "Owner upload",
   accountant_upload: "Accountant upload",
   dealer_upload: "Dealer upload",
-  public_drop: "Public Invoice Drop",
+  public_drop: "Public drop",
 };
 
 function cleanText(value: unknown): string {
@@ -796,16 +796,6 @@ export default function CaptureQueueClient() {
     );
   }
 
-  async function refreshQueueAndDetail() {
-    if (busyAction || isLoading || isDetailLoading || !confirmDiscardDraft()) return;
-    isDraftDirtyRef.current = false;
-    setNotice(null);
-    await Promise.all([
-      loadQueue(),
-      selectedId ? loadDetail(selectedId) : Promise.resolve(),
-    ]);
-  }
-
   function openRequest(requestId: string) {
     if (requestId === selectedId || busyAction || !confirmDiscardDraft()) return;
     setSelectedId(requestId);
@@ -1012,21 +1002,6 @@ export default function CaptureQueueClient() {
 
   return (
     <>
-      <section className={styles.queueUtility}>
-        <div>
-          <strong>Oldest and overdue documents appear first</strong>
-          <span>Nothing reaches a ledger until you complete its final action.</span>
-        </div>
-        <button
-          type="button"
-          className={styles.refreshButton}
-          onClick={() => void refreshQueueAndDetail()}
-          disabled={isLoading || isDetailLoading || Boolean(busyAction)}
-        >
-          {isLoading || isDetailLoading ? "Refreshing…" : "Refresh queue"}
-        </button>
-      </section>
-
       <section className={styles.kpiGrid} aria-label="Capture queue summary">
         {kpis.map((kpi) => (
           <button
@@ -1051,11 +1026,7 @@ export default function CaptureQueueClient() {
 
       <section className={styles.queueCard}>
         <div className={styles.queueHeading}>
-          <div>
-            <p className={styles.eyebrow}>Work list</p>
-            <h2>Documents to capture</h2>
-          </div>
-          <span>{rows.length} shown</span>
+          <h2>Documents · {rows.length}</h2>
         </div>
 
         <div className={styles.filters} aria-label="Capture queue filters">
@@ -1065,7 +1036,7 @@ export default function CaptureQueueClient() {
               type="search"
               value={search}
               onChange={(event) => setSearch(event.target.value)}
-              placeholder="Reference, sender, customer or asset"
+              placeholder="Reference or asset"
             />
           </label>
           <label>
@@ -1101,7 +1072,7 @@ export default function CaptureQueueClient() {
               <option value="owner_upload">Owner uploads</option>
               <option value="accountant_upload">Accountant uploads</option>
               <option value="dealer_upload">Dealer uploads</option>
-              <option value="public_drop">Public Invoice Drop</option>
+              <option value="public_drop">Public drops</option>
             </select>
           </label>
           {hasActiveFilters ? (
@@ -1121,7 +1092,7 @@ export default function CaptureQueueClient() {
         </div>
 
         <div className={styles.queueTableWrap}>
-          <table className={styles.queueTable}>
+          {isLoading || rows.length ? <table className={styles.queueTable}>
             <thead>
               <tr>
                 <th>Request</th>
@@ -1147,21 +1118,21 @@ export default function CaptureQueueClient() {
                         disabled={Boolean(busyAction) || (isDetailLoading && selectedId === row.id)}
                       >
                         <strong>{row.publicReference || row.id}</strong>
-                        <span>{row.requestType === "fuel_slip" ? "Fuel slip" : "Invoice"} · {row.fileCount} {row.fileCount === 1 ? "file" : "files"}</span>
+                        <span>· {row.requestType === "fuel_slip" ? "Fuel slip" : "Invoice"} · {row.fileCount} {row.fileCount === 1 ? "file" : "files"}</span>
                       </button>
                     </td>
-                    <td><strong>{row.ownerDisplayName || "Unmatched customer"}</strong><span>{row.assetDisplayName || row.fuelStorageDisplayName || "Needs matching"}</span></td>
-                    <td><strong>{row.senderDisplayName || "Not provided"}</strong><span>{CHANNEL_LABELS[row.submissionChannel] ?? row.submissionChannel}</span></td>
-                    <td><span className={`${styles.statusPill} ${styles[`status_${row.status}`]}`}>{STATUS_LABELS[row.status] ?? row.status}</span></td>
-                    <td><strong className={timing === "overdue" ? styles.overdueText : ""}>{row.status === "awaiting_owner" ? "Owner review" : timing === "overdue" ? "Overdue" : formatDateTime(row.dueAtIso)}</strong><span>Received {formatDateTime(row.submittedAtIso)}</span></td>
+                    <td><strong>{row.ownerDisplayName || "Unmatched customer"}</strong><span>· {row.assetDisplayName || row.fuelStorageDisplayName || "Needs matching"}</span></td>
+                    <td><strong>{row.senderDisplayName || "Not provided"}</strong><span>· {CHANNEL_LABELS[row.submissionChannel] ?? row.submissionChannel}</span></td>
+                    <td><span className={`${styles.statusText} ${styles[`status_${row.status}`]}`}>{STATUS_LABELS[row.status] ?? row.status}</span></td>
+                    <td><strong className={timing === "overdue" ? styles.overdueText : ""}>{row.status === "awaiting_owner" ? "Owner review" : timing === "overdue" ? "Overdue" : formatDateTime(row.dueAtIso)}</strong><span>· Received {formatDateTime(row.submittedAtIso)}</span></td>
                     <td><strong>{row.assignedAdminDisplayName || "Unclaimed"}</strong></td>
                   </tr>
                 );
               }) : (
-                <tr><td colSpan={6} className={styles.emptyCell}>{hasActiveFilters ? "No capture requests match these filters." : "All caught up — there are no documents waiting for capture."}</td></tr>
+                <tr><td colSpan={6} className={styles.emptyCell}>{hasActiveFilters ? "No matches." : "No documents waiting."}</td></tr>
               )}
             </tbody>
-          </table>
+          </table> : <div className={styles.emptyCell}>No documents to capture.</div>}
         </div>
       </section>
 
@@ -1179,13 +1150,11 @@ export default function CaptureQueueClient() {
       {detail ? (
         <section ref={workbenchRef} className={styles.workbench} aria-labelledby="capture-workbench-title">
           <div className={styles.workbenchHeader}>
-            <div>
-              <p className={styles.eyebrow}>Capture workbench</p>
+            <div className={styles.workbenchTitle}>
               <h2 id="capture-workbench-title">{detail.publicReference || detail.id}</h2>
-              <span>{CHANNEL_LABELS[detail.submissionChannel]} · {detail.senderDisplayName || "Sender not provided"}</span>
             </div>
             <div className={styles.workbenchHeaderActions}>
-              <span className={`${styles.statusPill} ${styles[`status_${detail.status}`]}`}>{STATUS_LABELS[detail.status]}</span>
+              <span className={`${styles.statusText} ${styles[`status_${detail.status}`]}`}>{STATUS_LABELS[detail.status]}</span>
               <button type="button" className={styles.closeButton} onClick={closeRequest} disabled={Boolean(busyAction)}>Close</button>
             </div>
           </div>
@@ -1193,7 +1162,7 @@ export default function CaptureQueueClient() {
           <div className={styles.workbenchGrid}>
             <section className={styles.documentPanel} aria-label="Source document">
               <div className={styles.panelHeading}>
-                <div><strong>Source document</strong><span>Private admin preview</span></div>
+                <strong>Document</strong>
                 {activeFile?.downloadUrl && activeFile.securityStatus === "clean" ? (
                   <a href={activeFile.downloadUrl} target="_blank" rel="noreferrer">Open original</a>
                 ) : null}
@@ -1209,9 +1178,8 @@ export default function CaptureQueueClient() {
               ) : null}
               {activeFile?.securityStatus === "pending" ? (
                 <div className={styles.securityLock}>
-                  <span aria-hidden="true">◈</span>
                   <strong>Security decision required</strong>
-                  <p>Inspect this source only in the private preview, then record whether it is safe to use.</p>
+                  <p>Review the file and record its security result.</p>
                   <div className={styles.securityActions}>
                     <button type="button" disabled={busyFileSecurity} onClick={() => void runFileSecurity("clean")}>
                       {busyFileSecurity ? "Updating…" : "Mark check passed"}
@@ -1222,10 +1190,9 @@ export default function CaptureQueueClient() {
               ) : null}
               <div className={styles.documentViewer}>
                 {!activeFile ? (
-                  <div className={styles.viewerEmpty}><strong>No file is attached</strong><span>Keep the request open until the source document is available.</span></div>
+                  <div className={styles.viewerEmpty}><strong>No file attached</strong></div>
                 ) : activeFile.securityStatus === "rejected" ? (
                   <div className={styles.securityLock}>
-                    <span aria-hidden="true">×</span>
                     <strong>File rejected</strong>
                     <p>{activeFile.securityReason || "This file failed its security check and cannot be opened."}</p>
                   </div>
@@ -1237,7 +1204,7 @@ export default function CaptureQueueClient() {
                 ) : activeFile.securityStatus === "clean" ? (
                   <div className={styles.viewerEmpty}><strong>Preview unavailable</strong><a href={activeFile.downloadUrl}>Download {activeFile.originalFileName}</a></div>
                 ) : (
-                  <div className={styles.viewerEmpty}><strong>Preview unavailable</strong><span>Record the security decision before opening the original file.</span></div>
+                  <div className={styles.viewerEmpty}><strong>Security check required</strong></div>
                 )}
               </div>
               {activeFile ? (
@@ -1255,7 +1222,7 @@ export default function CaptureQueueClient() {
 
             <section className={styles.capturePanel} aria-label="Verified capture form">
               <div className={styles.panelHeading}>
-                <div><strong>Verified details</strong><span>Save a draft at any point</span></div>
+                <strong>Details</strong>
                 {!detail.assignedAdminDisplayName ? (
                   <button type="button" className={styles.claimButton} disabled={Boolean(busyAction)} onClick={() => void runAction("claim")}>
                     {busyAction === "claim" ? "Claiming…" : "Claim request"}
@@ -1264,7 +1231,7 @@ export default function CaptureQueueClient() {
               </div>
 
               <div className={styles.matchCard}>
-                <div><p className={styles.eyebrow}>Match</p><strong>Customer and record destination</strong></div>
+                <strong className={styles.matchHeading}>Destination</strong>
                 {cleanText(detail.candidatePayload.submittedSerialOrVin) ? (
                   <div className={styles.submittedAssetReference}>
                     <div>
@@ -1272,13 +1239,13 @@ export default function CaptureQueueClient() {
                       <strong>{cleanText(detail.candidatePayload.submittedSerialOrVin)}</strong>
                       <small>{cleanText(detail.candidatePayload.submittedAssetDescription) || "No make or model supplied"}</small>
                     </div>
-                    <em>{cleanText(detail.candidatePayload.matchMethod) === "exact_unique_serial_or_vin" ? "Auto-matched" : "Check match"}</em>
+                    <em>{cleanText(detail.candidatePayload.matchMethod) === "exact_unique_serial_or_vin" ? "Matched" : "Review match"}</em>
                   </div>
                 ) : null}
                 {hasMatchedTarget && selectedTarget ? (
                   <div className={`${styles.selectedMatch} ${isMatchConfirmed ? styles.selectedMatchConfirmed : ""}`}>
                     <div className={styles.selectedMatchCopy}>
-                      <span>{isMatchConfirmed ? "Confirmed destination" : "Identified destination — confirm before completing"}</span>
+                      <span>{isMatchConfirmed ? "Confirmed" : "Confirm destination"}</span>
                       <strong>{selectedTarget.targetDisplayName}</strong>
                       <small>{selectedTarget.ownerDisplayName}</small>
                       <em>
@@ -1291,7 +1258,7 @@ export default function CaptureQueueClient() {
                     </div>
                     <div className={styles.selectedMatchActions}>
                       {isMatchConfirmed ? (
-                        <span className={styles.matchConfirmedBadge}>✓ Exact record confirmed</span>
+                        <span className={styles.matchConfirmedText}>✓ Confirmed</span>
                       ) : (
                         <button
                           type="button"
@@ -1318,15 +1285,11 @@ export default function CaptureQueueClient() {
                   </div>
                 ) : (
                   <div className={styles.matchRequired}>
-                    <strong>No exact destination is confirmed yet</strong>
-                    <span>Find the customer and exact asset or fuel destination before this request can be completed.</span>
+                    <strong>Select the exact asset or fuel destination.</strong>
                   </div>
                 )}
                 {isRequestEditable && (!hasMatchedTarget || isChangingMatch) ? (
                   <div className={styles.matchSearchPanel}>
-                    {isChangingMatch && hasMatchedTarget ? (
-                      <p>The current match stays in place until you choose and confirm a replacement.</p>
-                    ) : null}
                     <label className={styles.targetSearch}>
                       <span>{hasMatchedTarget ? "Find a replacement destination" : "Find customer and destination"}</span>
                       <input
@@ -1357,17 +1320,13 @@ export default function CaptureQueueClient() {
               {hasMatchedTarget && selectedTarget?.targetType === "asset" ? (
                 <div className={styles.usageUpdateCard} aria-label="Asset usage update">
                   <div className={styles.usageUpdateHeading}>
-                    <div>
-                      <p className={styles.eyebrow}>Asset usage</p>
-                      <strong>
-                        {usageUpdate.metric === "hours"
-                          ? "Update asset hours"
-                          : usageUpdate.metric === "km"
-                            ? "Update asset kilometres"
-                            : "Asset usage update"}
-                      </strong>
-                    </div>
-                    <span>Optional</span>
+                    <strong>
+                      {usageUpdate.metric === "hours"
+                        ? "Update asset hours"
+                        : usageUpdate.metric === "km"
+                          ? "Update asset kilometres"
+                          : "Update asset usage"}
+                    </strong>
                   </div>
                   <div className={styles.usageComparison}>
                     <div>
@@ -1383,7 +1342,7 @@ export default function CaptureQueueClient() {
                     {usageUpdate.message}
                   </p>
                   <div className={styles.usageUpdateFooter}>
-                    <small>Completing the ledger record does not update usage. Only this button does.</small>
+                    <small>Usage only changes here.</small>
                     {usageUpdate.supported ? (
                       <button
                         type="button"
@@ -1518,7 +1477,7 @@ export default function CaptureQueueClient() {
               </div>
 
               <details className={styles.exceptionPanel}>
-                <summary>Needs attention or cannot be completed</summary>
+                <summary>Other actions</summary>
                 <label><span>Reason or message</span><textarea rows={3} value={actionNote} onChange={(event) => setActionNote(event.target.value)} placeholder="Required for information requests, duplicates and rejections." /></label>
                 <div className={styles.exceptionActions}>
                   <button type="button" disabled={Boolean(busyAction) || !isRequestEditable || hasUnconfirmedTargetChange} onClick={() => void runAction("request_information")}>Request information</button>
@@ -1531,10 +1490,7 @@ export default function CaptureQueueClient() {
                 <details className={styles.deletePanel}>
                   <summary>Delete capture request</summary>
                   <div className={styles.deletePanelBody}>
-                    <p>
-                      Remove this unfinished request from the active queue. Its audit record is retained
-                      and uploaded source files are scheduled for secure removal.
-                    </p>
+                    <p>The audit record is kept and uploaded files are removed.</p>
                     <label>
                       <span>Reason for deletion</span>
                       <textarea
@@ -1556,7 +1512,7 @@ export default function CaptureQueueClient() {
               ) : null}
 
               <details className={styles.historyPanel}>
-                <summary>Audit history <span>{events.length}</span></summary>
+                <summary>Audit history ({events.length})</summary>
                 <ol>
                   {events.length ? events.map((event) => (
                     <li key={event.id}><span>{formatDateTime(event.createdAtIso)}</span><strong>{event.eventType.replace(/_/g, " ")}</strong><small>{event.actorDisplayName || "System"}{event.note ? ` · ${event.note}` : ""}</small></li>

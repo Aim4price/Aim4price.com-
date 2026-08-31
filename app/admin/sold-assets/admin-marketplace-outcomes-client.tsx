@@ -3,7 +3,6 @@
 import { useMemo, useState } from 'react';
 import {
   formatAdminMarketplaceMoney,
-  summarizeAdminMarketplaceOutcomes,
   type AdminMarketplaceOutcomeReason,
   type AdminMarketplaceOutcomeReport,
   type AdminMarketplaceOutcomeRow,
@@ -92,17 +91,6 @@ function formatPercent(value: number): string {
   return `${Number.isInteger(rounded) ? rounded.toFixed(0) : rounded.toFixed(1)}%`;
 }
 
-function formatPriceDifference(finalPrice: number | null, comparisonPrice: number): string {
-  const finalValue = safeMoney(finalPrice);
-  const comparison = safeMoney(comparisonPrice);
-  if (!finalValue || !comparison) return '';
-  const difference = ((finalValue - comparison) / comparison) * 100;
-  const direction = difference > 0 ? 'above' : difference < 0 ? 'below' : 'in line with';
-  return difference === 0
-    ? 'In line with the Aim4price value'
-    : `${formatPercent(Math.abs(difference))} ${direction} the Aim4price value`;
-}
-
 export default function AdminMarketplaceOutcomesClient({
   report,
 }: {
@@ -166,10 +154,6 @@ export default function AdminMarketplaceOutcomesClient({
   }, [closed, helped, reason, report.outcomes, search, sort, source]);
 
   const allMetrics = report.metrics;
-  const filteredMetrics = useMemo(
-    () => summarizeAdminMarketplaceOutcomes(filteredOutcomes),
-    [filteredOutcomes],
-  );
   const totalPages = Math.max(1, Math.ceil(filteredOutcomes.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
   const pageStart = filteredOutcomes.length ? (currentPage - 1) * PAGE_SIZE : 0;
@@ -195,57 +179,36 @@ export default function AdminMarketplaceOutcomesClient({
 
   return (
     <>
-      <section className={styles.metrics} aria-label="Marketplace outcome summary">
+      <section className={styles.metrics} aria-label="Marketplace outcome summary. Both Yes and No answers are retained.">
         <article className={styles.featuredMetric}>
-          <span>Total outcomes</span>
+          <span>Outcomes</span>
           <strong>{allMetrics.totalOutcomes.toLocaleString('en-ZA')}</strong>
-          <small>Every advert closed through Marketplace or My Showroom</small>
         </article>
         <article>
           <span>Sold or traded</span>
           <strong>{allMetrics.soldOrTraded.toLocaleString('en-ZA')}</strong>
-          <small>Completed seller outcomes</small>
         </article>
         <article className={styles.helpedMetric}>
-          <span>Aim4price helped</span>
+          <span>Helped</span>
           <strong>{allMetrics.aim4priceHelpedCount.toLocaleString('en-ZA')}</strong>
-          <small>Seller answered Yes</small>
         </article>
         <article>
-          <span>Aim4price did not help</span>
+          <span>Not helped</span>
           <strong>{allMetrics.notHelpedCount.toLocaleString('en-ZA')}</strong>
-          <small>Seller answered No</small>
         </article>
         <article>
           <span>Help rate</span>
           <strong>{formatPercent(allMetrics.helpRatePercent)}</strong>
-          <small>Yes answers across all recorded outcomes</small>
         </article>
         <article>
-          <span>Recorded final value</span>
+          <span>Final value</span>
           <strong>{formatAdminMarketplaceMoney(allMetrics.recordedSaleValueExVat)}</strong>
-          <small>Optional sold and traded prices, excl. VAT</small>
         </article>
       </section>
-
-      <aside className={styles.definitionNote}>
-        <div>
-          <strong>Both Yes and No answers are retained.</strong>
-          <span>This keeps the Aim4price help rate meaningful instead of recording successful outcomes only.</span>
-        </div>
-        <div>
-          <strong>Advert history remains available.</strong>
-          <span>Closing an advert removes it from public pages without deleting its outcome evidence.</span>
-        </div>
-      </aside>
 
       <section className={styles.tableCard}>
         <header className={styles.tableHeader}>
           <div className={styles.tableTitle}>
-            <div>
-              <h2>Recorded outcomes</h2>
-              <span>Seller feedback, final prices, advert interest and closing source.</span>
-            </div>
             <strong>
               {filteredOutcomes.length
                 ? `${pageStart + 1}-${pageEnd} of ${filteredOutcomes.length.toLocaleString('en-ZA')}`
@@ -253,9 +216,9 @@ export default function AdminMarketplaceOutcomesClient({
             </strong>
           </div>
 
-          <div className={styles.filters}>
+          {report.outcomes.length ? <div className={styles.filters}>
             <label className={styles.searchField}>
-              <span>Find an asset or seller</span>
+              <span>Search</span>
               <input
                 type="search"
                 value={search}
@@ -263,7 +226,7 @@ export default function AdminMarketplaceOutcomesClient({
                   setSearch(event.target.value);
                   setPage(1);
                 }}
-                placeholder="Asset, seller, sector or reference"
+                placeholder="Asset or seller"
               />
             </label>
             <label>
@@ -282,7 +245,7 @@ export default function AdminMarketplaceOutcomesClient({
               </select>
             </label>
             <label>
-              <span>Did Aim4price help?</span>
+              <span>Helped</span>
               <select
                 value={helped}
                 onChange={(event) => {
@@ -296,7 +259,7 @@ export default function AdminMarketplaceOutcomesClient({
               </select>
             </label>
             <label>
-              <span>Closed from</span>
+              <span>Source</span>
               <select
                 value={source}
                 onChange={(event) => {
@@ -310,7 +273,7 @@ export default function AdminMarketplaceOutcomesClient({
               </select>
             </label>
             <label>
-              <span>Date closed</span>
+              <span>Closed</span>
               <select
                 value={closed}
                 onChange={(event) => {
@@ -327,7 +290,7 @@ export default function AdminMarketplaceOutcomesClient({
               </select>
             </label>
             <label>
-              <span>Order results</span>
+              <span>Sort</span>
               <select
                 value={sort}
                 onChange={(event) => {
@@ -342,77 +305,56 @@ export default function AdminMarketplaceOutcomesClient({
                 <option value="asset-az">Asset A-Z</option>
               </select>
             </label>
-            <button type="button" onClick={clearFilters} disabled={!filtersActive}>Clear filters</button>
-          </div>
+            {filtersActive ? <button type="button" onClick={clearFilters}>Clear filters</button> : null}
+          </div> : null}
         </header>
 
-        <div className={styles.resultSummary}>
-          <span><strong>{filteredMetrics.totalOutcomes.toLocaleString('en-ZA')}</strong> matching outcomes</span>
-          <span><strong>{filteredMetrics.aim4priceHelpedCount.toLocaleString('en-ZA')}</strong> Yes answers</span>
-          <span><strong>{filteredMetrics.notHelpedCount.toLocaleString('en-ZA')}</strong> No answers</span>
-          <span><strong>{formatPercent(filteredMetrics.helpRatePercent)}</strong> help rate</span>
-          <span><strong>{Math.round(filteredMetrics.avgDaysToOutcome).toLocaleString('en-ZA')}</strong> average days advertised</span>
-        </div>
-
-        <div className={styles.tableScroller}>
+        {report.outcomes.length ? <div className={styles.tableScroller}>
           <table>
             <thead>
               <tr>
-                <th>Asset and seller</th>
+                <th>Asset</th>
                 <th>Outcome</th>
-                <th>Aim4price contribution</th>
+                <th>Helped?</th>
                 <th>Price evidence</th>
-                <th>Advert activity</th>
+                <th>Activity</th>
               </tr>
             </thead>
             <tbody>
               {pageOutcomes.map((outcome) => {
-                const priceDifference = formatPriceDifference(
-                  outcome.finalSalePriceExVat,
-                  outcome.aim4priceValueExVat,
-                );
                 return (
                   <tr key={outcome.outcomeId}>
                     <td className={styles.assetCell}>
                       <strong>{outcome.title}</strong>
-                      <span>{outcome.sellerLabel || 'Unknown seller'}</span>
-                      {outcome.sellerEmail ? <small>{outcome.sellerEmail}</small> : null}
-                      <small>{outcome.sectorLabel || 'Uncategorised asset'}</small>
+                      <span>· {outcome.sellerLabel || 'Unknown seller'} · {outcome.sectorLabel || 'Uncategorised'}</span>
                     </td>
                     <td className={styles.outcomeCell}>
                       <strong>{reasonLabel(outcome.reason)}</strong>
-                      <span>Closed {formatDate(outcome.closedAtIso)}</span>
-                      <small>{outcome.sourceSurface === 'showroom' ? 'From My Showroom' : 'From Marketplace'}</small>
-                      {outcome.outcomeNote ? <small>{outcome.outcomeNote}</small> : null}
+                      <span>· {formatDate(outcome.closedAtIso)} · {outcome.sourceSurface === 'showroom' ? 'Showroom' : 'Marketplace'}</span>
                     </td>
                     <td>
                       <span className={outcome.aim4priceHelped ? styles.yesAnswer : styles.noAnswer}>
                         {outcome.aim4priceHelped ? 'Yes' : 'No'}
                       </span>
-                      <small>Seller response</small>
                     </td>
                     <td className={styles.priceCell}>
                       {safeMoney(outcome.finalSalePriceExVat) > 0 ? (
                         <>
                           <strong>{formatAdminMarketplaceMoney(safeMoney(outcome.finalSalePriceExVat))}</strong>
-                          <span>Final price excl. VAT</span>
                         </>
                       ) : (
-                        <><strong>Not provided</strong><span>Final price</span></>
+                        <strong>—</strong>
                       )}
                       {outcome.askingPriceExVat > 0 ? (
-                        <small>Asked {formatAdminMarketplaceMoney(outcome.askingPriceExVat)}</small>
+                        <small>· Asked {formatAdminMarketplaceMoney(outcome.askingPriceExVat)}</small>
                       ) : null}
                       {outcome.aim4priceValueExVat > 0 ? (
-                        <small>Aim4price value {formatAdminMarketplaceMoney(outcome.aim4priceValueExVat)}</small>
+                        <small>· Aim4price {formatAdminMarketplaceMoney(outcome.aim4priceValueExVat)}</small>
                       ) : null}
-                      {priceDifference ? <em>{priceDifference}</em> : null}
                     </td>
                     <td className={styles.activityCell}>
                       <strong>{outcome.totalViewsAtClose.toLocaleString('en-ZA')} {outcome.totalViewsAtClose === 1 ? 'view' : 'views'}</strong>
-                      <span>{outcome.accountViewsAtClose.toLocaleString('en-ZA')} account · {outcome.unknownViewsAtClose.toLocaleString('en-ZA')} unknown</span>
-                      <small>{outcome.uniqueViewersAtClose.toLocaleString('en-ZA')} different viewers</small>
-                      <small>{formatDays(daysToOutcome(outcome))}</small>
+                      <span>· {formatDays(daysToOutcome(outcome))}</span>
                     </td>
                   </tr>
                 );
@@ -422,19 +364,18 @@ export default function AdminMarketplaceOutcomesClient({
           {!pageOutcomes.length ? (
             <div className={styles.empty}>
               <strong>No outcomes found</strong>
-              <span>Clear the filters to return to every recorded Marketplace outcome.</span>
             </div>
           ) : null}
-        </div>
+        </div> : <div className={styles.empty}><strong>No outcomes recorded.</strong></div>}
 
-        <footer className={styles.pagination}>
+        {report.outcomes.length ? <footer className={styles.pagination}>
           <span>{filteredOutcomes.length.toLocaleString('en-ZA')} matching · {report.outcomes.length.toLocaleString('en-ZA')} all time</span>
           <div>
             <button type="button" onClick={() => setPage((current) => Math.max(1, current - 1))} disabled={currentPage <= 1}>Previous</button>
             <strong>Page {currentPage} of {totalPages}</strong>
             <button type="button" onClick={() => setPage((current) => Math.min(totalPages, current + 1))} disabled={currentPage >= totalPages}>Next</button>
           </div>
-        </footer>
+        </footer> : null}
       </section>
     </>
   );

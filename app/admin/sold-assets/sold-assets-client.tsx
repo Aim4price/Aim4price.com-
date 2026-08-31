@@ -104,7 +104,7 @@ export default function SoldAssetsClient({ report, allocationAccounts }: { repor
 
     <section className={styles.tableCard}>
       <header className={styles.tableHeader}>
-        <div><p>Outcome records</p><h2>Sold, traded-in and scrapped assets</h2><span>{rows.length.toLocaleString('en-ZA')} of {report.outcomes.length.toLocaleString('en-ZA')} records · {report.metrics.helpRatePercent}% helped rate</span></div>
+        <div className={styles.tableTitle}><h2>Outcomes</h2><strong>{rows.length.toLocaleString('en-ZA')} of {report.outcomes.length.toLocaleString('en-ZA')} · {report.metrics.helpRatePercent}% helped</strong></div>
         <div className={styles.filters}>
           <label><span>Search</span><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Asset or account" /></label>
           <label><span>Outcome</span><select value={outcomeFilter} onChange={(event) => setOutcomeFilter(event.target.value as OutcomeFilter)}><option value="all">All outcomes</option><option value="sold">Sold</option><option value="traded_in">Traded in</option><option value="scrapped">Scrapped</option></select></label>
@@ -124,16 +124,16 @@ export default function SoldAssetsClient({ report, allocationAccounts }: { repor
     {actionDialog ? <div className={styles.actionDialog} role="dialog" aria-modal="true" aria-labelledby="asset-outcome-action-title">
       <button type="button" className={styles.actionBackdrop} onClick={() => { if (!actionBusy) setActionDialog(null); }} aria-label="Close asset outcome action" />
       <section className={styles.actionModal}>
-        <header><div><p>{actionDialog.mode === 'allocate' ? 'Restore or allocate asset' : 'Delete outcome record'}</p><h2 id="asset-outcome-action-title">{actionDialog.record.assetTitle}</h2><span>{OUTCOME_LABELS[actionDialog.record.outcome]} by {actionDialog.record.sourceName}</span></div><button type="button" onClick={() => setActionDialog(null)} disabled={actionBusy} aria-label="Close">×</button></header>
+        <header><h2 id="asset-outcome-action-title">{actionDialog.mode === 'allocate' ? 'Allocate' : 'Delete'} · {actionDialog.record.assetTitle}</h2><button type="button" onClick={() => setActionDialog(null)} disabled={actionBusy} aria-label="Close">×</button></header>
         {actionDialog.mode === 'allocate' ? <div className={styles.actionBody}>
-          <div className={styles.actionNotice}><strong>Choose where the asset belongs</strong><p>Choose the original account to restore an outcome recorded by mistake, or another active Owner or Dealer account to move the portable asset dossier. Private invoices, finance, insurance and account access never move.</p></div>
+          <div className={styles.actionNotice}><strong>Choose an account</strong><p>Restore the asset to its original account or allocate it to another Owner or Dealer. Private records never move.</p></div>
           <label className={styles.accountSearch}><span>Find destination account</span><input type="search" value={accountSearch} onChange={(event) => setAccountSearch(event.target.value)} placeholder="Business, person or email" autoFocus /></label>
           <div className={styles.accountList} role="radiogroup" aria-label="Choose destination account">
             <button type="button" className={selectedBuyerUserId === actionDialog.record.sourceUserId ? styles.accountSelected : ''} role="radio" aria-checked={selectedBuyerUserId === actionDialog.record.sourceUserId} onClick={() => setSelectedBuyerUserId(actionDialog.record.sourceUserId)}><span><strong>{actionDialog.record.sourceName}</strong><small>Reverse this outcome and make the asset active again</small></span><em>Original account</em></button>
             {availableAccounts.length ? availableAccounts.map((account) => <button key={account.userId} type="button" className={selectedBuyerUserId === account.userId ? styles.accountSelected : ''} role="radio" aria-checked={selectedBuyerUserId === account.userId} onClick={() => setSelectedBuyerUserId(account.userId)}><span><strong>{account.name}</strong><small>{account.email || 'No email shown'}</small></span><em>{account.accountType === 'dealer' ? 'Dealer' : 'Owner'} · {account.accountSubtype}</em></button>) : accountSearch.trim() ? <p>No other active Owner or Dealer accounts match this search.</p> : null}
           </div>
         </div> : <div className={styles.actionBody}>
-          <div className={`${styles.actionNotice} ${styles.deleteNotice}`}><strong>Delete this outcome record?</strong><p>The asset remains archived for audit and linked financial history, but leaves this report. A pending code is cancelled. If the outcome was recorded by mistake and the asset must remain active, cancel and use Allocate → Original account instead.</p></div>
+          <div className={`${styles.actionNotice} ${styles.deleteNotice}`}><strong>Delete outcome?</strong><p>The record leaves this report, but the asset remains archived. Use Allocate to restore it.</p></div>
         </div>}
         {actionError ? <p className={styles.actionError}>{actionError}</p> : null}
         <footer><button type="button" onClick={() => setActionDialog(null)} disabled={actionBusy}>Cancel</button><button type="button" className={actionDialog.mode === 'delete' ? styles.confirmDelete : styles.confirmAllocate} onClick={() => void submitAction()} disabled={actionBusy || (actionDialog.mode === 'allocate' && !selectedBuyerUserId)}>{actionBusy ? 'Saving…' : actionDialog.mode === 'allocate' ? selectedBuyerUserId === actionDialog.record.sourceUserId ? 'Restore asset' : 'Allocate asset' : 'Delete outcome record'}</button></footer>

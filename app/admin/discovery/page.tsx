@@ -19,19 +19,6 @@ function first(value: string | string[] | undefined): string {
   return Array.isArray(value) ? value[0] ?? "" : value ?? "";
 }
 
-function formatGeneratedAt(value: string): string {
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) return "Unknown";
-  return new Intl.DateTimeFormat("en-ZA", {
-    timeZone: "Africa/Johannesburg",
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(parsed);
-}
-
 export default async function AdminDiscoveryPage({
   searchParams = {},
 }: {
@@ -58,11 +45,7 @@ export default async function AdminDiscoveryPage({
       <section className={styles.shell}>
         <header className={styles.topBar}>
           <div className={styles.titleBlock}>
-            <p>Aim4price admin</p>
-            <h1>Admin Discovery</h1>
-            <span>
-              Complete asset and owner directory · Updated {formatGeneratedAt(report.generatedAtIso)}
-            </span>
+            <h1>Discovery</h1>
           </div>
           <AdminNavigation active="discovery" />
         </header>

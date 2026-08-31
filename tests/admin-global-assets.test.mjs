@@ -47,22 +47,21 @@ test("the global map clusters every plottable asset and keeps missing GPS record
   assert.match(mapClient, /markerClusterGroup/);
   assert.match(mapClient, /chunkedLoading: true/);
   assert.match(mapClient, /removeOutsideVisibleBounds: true/);
-  assert.match(mapClient, /Missing GPS only/);
+  assert.match(mapClient, /Missing GPS/);
   assert.match(mapClient, /No GPS/);
-  assert.match(mapClient, /Open owner account/);
-  assert.match(mapClient, /Full Discovery record/);
+  assert.match(mapClient, /Open owner/);
+  assert.match(mapClient, /Discovery record/);
   assert.match(mapClient, /action: "open_account"/);
   assert.match(mapClient, /escapeHtml\(asset\.title\)/);
 });
 
-test("Admin Discovery is paginated, filterable and owner contact is already unlocked", () => {
+test("Admin Discovery is paginated, filterable and exposes owner contact actions", () => {
   assert.match(dataLayer, /limit \$\{limitParameter\}/);
   assert.match(dataLayer, /offset \$\{offsetParameter\}/);
   assert.match(dataLayer, /escapeLike\(filters\.search\)/);
   assert.match(discoveryRoute, /searchParams\.get\("pageSize"\)/);
-  assert.match(discoveryClient, /Search assets \+ owners/);
-  assert.match(discoveryClient, /Discovery disabled · Admin only/);
-  assert.match(discoveryClient, /Owner details · Admin unlocked/);
+  assert.match(discoveryClient, /Asset or owner/);
+  assert.match(discoveryClient, /Admin only/);
   assert.match(discoveryClient, /mailto:/);
   assert.match(discoveryClient, /tel:/);
   assert.match(discoveryClient, /Open owner account/);
@@ -107,10 +106,9 @@ test("province options aggregate by the shared normalized province expression", 
 
 test("the Admin Manage menu exposes the two global asset workspaces", () => {
   assert.match(navigation, /href: "\/admin\/asset-map"/);
-  assert.match(navigation, /label: "Global Asset Map"/);
+  assert.match(navigation, /label: "Asset Map"/);
   assert.match(navigation, /href: "\/admin\/discovery"/);
-  assert.match(navigation, /label: "Admin Discovery"/);
-  assert.match(navigation, /Search all assets with owner details unlocked/);
+  assert.match(navigation, /href: "\/admin\/discovery"[\s\S]*?label: "Discovery"/);
 });
 
 test("coordinate validation accepts real points and rejects missing or placeholder points", () => {

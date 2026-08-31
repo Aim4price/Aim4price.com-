@@ -207,7 +207,7 @@
   width: 1.4rem;
   height: 1.4rem;
   flex: 0 0 auto;
-  border-radius: 999px;
+  border-radius: 0.4rem;
   color: #ffffff;
   background: #176c50;
   display: grid;

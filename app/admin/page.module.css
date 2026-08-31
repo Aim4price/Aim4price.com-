@@ -8,47 +8,30 @@
   width: 100%;
   max-width: none;
   margin: 0 auto;
-  padding: 1.35rem clamp(1rem, 3vw, 4rem) 3rem;
+  padding: 1.1rem clamp(1rem, 3vw, 4rem) 3rem;
   box-sizing: border-box;
   display: grid;
-  gap: 0.8rem;
+  gap: 1rem;
 }
 
 .topBar {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: space-between;
   gap: 2rem;
-  padding: 0.25rem 0 0.45rem;
+  padding: 0.1rem 0 0.35rem;
 }
 
 .titleBlock {
   min-width: 15rem;
 }
 
-.eyebrow {
-  margin: 0 0 0.18rem;
-  color: #60716a;
-  font-size: 0.72rem;
-  font-weight: 900;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
 .titleBlock h1 {
   margin: 0;
   color: #0e2e26;
-  font-size: clamp(2rem, 3vw, 2.75rem);
-  line-height: 0.98;
-  letter-spacing: -0.055em;
-}
-
-.titleBlock span {
-  display: inline-block;
-  margin-top: 0.42rem;
-  color: #697973;
-  font-size: 0.93rem;
-  font-weight: 720;
+  font-size: clamp(1.8rem, 2.4vw, 2.25rem);
+  line-height: 1.05;
+  letter-spacing: -0.04em;
   white-space: nowrap;
 }
 
@@ -62,7 +45,7 @@
 .adminNav {
   padding: 0.25rem;
   border: 1px solid #d7e1dc;
-  border-radius: 999px;
+  border-radius: 0.65rem;
   background: #ffffff;
   box-shadow: 0 12px 28px rgba(18, 45, 37, 0.045);
   display: flex;
@@ -73,7 +56,7 @@
 .adminNavLink {
   min-height: 2.4rem;
   padding: 0 0.95rem;
-  border-radius: 999px;
+  border-radius: 0.5rem;
   color: #52645d;
   display: inline-flex;
   align-items: center;
@@ -100,42 +83,41 @@
 .userSummary {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr)) minmax(15rem, 1.35fr);
-  gap: 0.75rem;
+  gap: 0.8rem;
 }
 
 .userSummary article {
   min-width: 0;
-  padding: 0.72rem 0.85rem;
+  min-height: 4rem;
+  padding: 0.8rem 0.9rem;
   border: 1px solid #dfe8e3;
-  border-radius: 1rem;
+  border-radius: 0.7rem;
   background: #ffffff;
-  box-shadow: 0 14px 34px rgba(18, 45, 37, 0.045);
+  box-shadow: 0 8px 22px rgba(18, 45, 37, 0.035);
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  gap: 0.12rem 0.75rem;
+  align-items: center;
+  gap: 0.75rem;
 }
 
 .userSummary span {
+  min-width: 0;
+  overflow: hidden;
   color: #52645d;
   font-size: 0.72rem;
   font-weight: 900;
   text-transform: uppercase;
   letter-spacing: 0.045em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .userSummary strong {
   grid-column: 2;
-  grid-row: 1 / span 2;
-  align-self: center;
+  grid-row: 1;
   color: #17362c;
   font-size: 1.45rem;
   font-weight: 950;
-}
-
-.userSummary small {
-  color: #788780;
-  font-size: 0.7rem;
-  font-weight: 680;
 }
 
 .summaryActive {
@@ -167,7 +149,7 @@
 
 .summaryStorage {
   border-color: #c6dfd5 !important;
-  background: linear-gradient(145deg, #f2faf6 0%, #ffffff 100%) !important;
+  background: #f2faf6 !important;
 }
 
 .summaryStorage strong {
@@ -176,11 +158,11 @@
 }
 
 .filterPanel {
-  padding: 0.78rem 0.9rem 0.86rem;
+  padding: 0.9rem;
   border: 1px solid #dfe8e3;
-  border-radius: 1.05rem;
+  border-radius: 0.7rem;
   background: #ffffff;
-  box-shadow: 0 14px 34px rgba(18, 45, 37, 0.045);
+  box-shadow: 0 8px 22px rgba(18, 45, 37, 0.035);
   display: grid;
   gap: 0.58rem;
 }
@@ -192,21 +174,11 @@
   gap: 1rem;
 }
 
-.filterHeading > div {
-  display: grid;
-  gap: 0.15rem;
-}
-
 .filterHeading strong {
-  color: #17362c;
-  font-size: 0.88rem;
-  font-weight: 900;
-}
-
-.filterHeading span {
   color: #71817b;
-  font-size: 0.72rem;
-  font-weight: 700;
+  font-size: 0.75rem;
+  font-weight: 800;
+  white-space: nowrap;
 }
 
 .filterBar {
@@ -224,7 +196,7 @@
   min-height: 2.15rem;
   padding: 0 0.8rem;
   border: 1px solid #d7e1dc;
-  border-radius: 999px;
+  border-radius: 0.55rem;
   color: #375249;
   background: #f7faf8;
   font: inherit;
@@ -269,14 +241,14 @@
   width: 100%;
   min-height: 2.65rem;
   padding: 0 1.05rem;
-  border-radius: 999px;
+  border-radius: 0.6rem;
   border: 1px solid #d8e3dd;
   background: #ffffff;
   color: #18352d;
   font: inherit;
   font-size: 0.93rem;
   font-weight: 650;
-  box-shadow: 0 12px 28px rgba(18, 45, 37, 0.045);
+  box-shadow: none;
   transition:
     border-color 160ms ease,
     box-shadow 160ms ease;
@@ -318,7 +290,7 @@
   min-height: 2.65rem;
   padding: 0 1rem;
   border: 1px solid #d7e1dc;
-  border-radius: 999px;
+  border-radius: 0.6rem;
   color: #17362c;
   background: #ffffff;
   font: inherit;
@@ -326,7 +298,7 @@
   font-weight: 850;
   cursor: pointer;
   white-space: nowrap;
-  box-shadow: 0 12px 28px rgba(18, 45, 37, 0.045);
+  box-shadow: none;
   transition:
     background 160ms ease,
     border-color 160ms ease,
@@ -352,7 +324,7 @@
   min-height: 2.9rem;
   padding: 0 1.15rem;
   border: 1px solid #d7e1dc;
-  border-radius: 999px;
+  border-radius: 0.6rem;
   color: #17362c;
   background: #ffffff;
   text-decoration: none;
@@ -361,7 +333,7 @@
   font-weight: 850;
   cursor: pointer;
   white-space: nowrap;
-  box-shadow: 0 12px 28px rgba(18, 45, 37, 0.045);
+  box-shadow: none;
   transition:
     background 160ms ease,
     border-color 160ms ease,
@@ -386,7 +358,7 @@
   min-height: 2.9rem;
   padding: 0 1.1rem;
   border: 1px solid #235d87;
-  border-radius: 999px;
+  border-radius: 0.6rem;
   color: #ffffff;
   background: #235d87;
   font: inherit;
@@ -394,7 +366,7 @@
   font-weight: 880;
   white-space: nowrap;
   cursor: pointer;
-  box-shadow: 0 12px 28px rgba(35, 93, 135, 0.16);
+  box-shadow: 0 8px 20px rgba(35, 93, 135, 0.12);
   transition:
     background 160ms ease,
     border-color 160ms ease,
@@ -429,14 +401,7 @@
 .tableCard {
   min-width: 0;
   display: grid;
-  gap: 0.75rem;
-}
-
-.tableHint {
-  margin: 0;
-  color: #60716a;
-  font-size: 0.82rem;
-  font-weight: 820;
+  gap: 0.65rem;
 }
 
 .tableWrap {
@@ -444,9 +409,9 @@
   overflow-y: auto;
   max-height: calc(100vh - 13rem);
   border: 1px solid #dfe8e3;
-  border-radius: 1.1rem;
+  border-radius: 0.7rem;
   background: #ffffff;
-  box-shadow: 0 22px 50px rgba(18, 45, 37, 0.06);
+  box-shadow: 0 10px 28px rgba(18, 45, 37, 0.04);
   scrollbar-gutter: stable both-edges;
   overscroll-behavior: contain;
 }
@@ -458,7 +423,7 @@
 
 .tableWrap::-webkit-scrollbar-thumb {
   border: 3px solid #ffffff;
-  border-radius: 999px;
+  border-radius: 0.4rem;
   background: #b8c8c0;
 }
 
@@ -575,8 +540,9 @@
   min-width: 0;
   padding: 0;
   border: 0;
-  display: grid;
-  gap: 0.18rem;
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem;
   color: inherit;
   background: transparent;
   font: inherit;
@@ -600,8 +566,9 @@
 .accountTypeCell,
 .storageCell {
   min-width: 0;
-  display: grid;
-  gap: 0.14rem;
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem;
 }
 
 .accountTypeCell strong,
@@ -640,14 +607,14 @@
   font-weight: 700;
 }
 
-.statusPill,
+.statusText,
 .passwordSet,
 .passwordMissing {
   display: inline-flex;
   align-items: center;
-  min-height: 1.72rem;
-  padding: 0 0.65rem;
-  border-radius: 999px;
+  min-height: 0;
+  padding: 0;
+  border-radius: 0;
   font-size: 0.72rem;
   font-weight: 900;
   white-space: nowrap;
@@ -658,18 +625,18 @@
 .statusActive,
 .passwordSet {
   color: #176047;
-  background: rgba(44, 173, 126, 0.13);
+  background: transparent;
 }
 
 .statusPending {
   color: #8a6125;
-  background: rgba(230, 166, 63, 0.16);
+  background: transparent;
 }
 
 .statusSuspended,
 .passwordMissing {
   color: #8f3333;
-  background: rgba(198, 75, 75, 0.12);
+  background: transparent;
 }
 
 .openButton {
@@ -728,9 +695,9 @@
   gap: 1rem;
   padding: 0.74rem 0.85rem;
   border: 1px solid #dfe8e3;
-  border-radius: 1rem;
+  border-radius: 0.7rem;
   background: rgba(255, 255, 255, 0.92);
-  box-shadow: 0 14px 32px rgba(18, 45, 37, 0.045);
+  box-shadow: none;
 }
 
 .paginationBar span {
@@ -755,7 +722,7 @@
   min-height: 2.24rem;
   padding: 0 0.82rem;
   border: 1px solid #d7e1dc;
-  border-radius: 999px;
+  border-radius: 0.5rem;
   background: #ffffff;
   color: #17362c;
   font: inherit;
@@ -808,46 +775,33 @@
   max-height: min(92vh, 58rem);
   display: grid;
   grid-template-rows: auto auto auto minmax(12rem, 1fr) auto auto;
-  gap: 0.9rem;
+  gap: 1rem;
   padding: var(--modal-padding);
   border: 1px solid #dce7e1;
-  border-radius: 1.45rem;
+  border-radius: 0.8rem;
   background: #f8faf9;
   box-shadow: 0 28px 90px rgba(11, 31, 26, 0.22);
 }
 
 .qrModalHeader {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 1rem;
   padding-bottom: 0.85rem;
   border-bottom: 1px solid #dfe8e3;
 }
 
-.qrModalEyebrow {
-  margin: 0 0 0.22rem;
-  color: #60716a;
-  font-size: 0.68rem;
-  font-weight: 950;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
 .qrModalHeader h2 {
   margin: 0;
   color: #0e2e26;
-  font-size: clamp(1.55rem, 3vw, 2.1rem);
-  line-height: 1;
-  letter-spacing: -0.055em;
-}
-
-.qrModalHeader span {
-  display: inline-block;
-  margin-top: 0.45rem;
-  color: #6e7e78;
-  font-size: 0.86rem;
-  font-weight: 780;
+  max-width: calc(100vw - 8rem);
+  overflow: hidden;
+  font-size: clamp(1.35rem, 2.2vw, 1.75rem);
+  line-height: 1.1;
+  letter-spacing: -0.04em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .modalCloseButton {
@@ -858,7 +812,7 @@
   width: 2.55rem;
   height: 2.55rem;
   border: 1px solid #d7e1dc;
-  border-radius: 999px;
+  border-radius: 0.55rem;
   background: #ffffff;
   color: #17362c;
   font: inherit;
@@ -926,7 +880,7 @@
 .accountStorageDetails {
   padding: 0.78rem 0.9rem;
   border: 1px solid #dfe8e3;
-  border-radius: 0.95rem;
+  border-radius: 0.65rem;
   background: #ffffff;
 }
 
@@ -976,26 +930,22 @@
   margin-bottom: 0.75rem;
 }
 
-.accountStorageDetails .accountStorageNote {
-  margin: 0.65rem 0 0;
-}
-
 .accountStorageOverview > div {
   min-width: 0;
   display: grid;
   align-content: center;
   gap: 0.22rem;
-  min-height: 5.3rem;
-  padding: 0.85rem 0.95rem;
+  min-height: 4.25rem;
+  padding: 0.75rem 0.85rem;
   border: 1px solid #d7e7df;
-  border-radius: 1rem;
+  border-radius: 0.65rem;
   background: #ffffff;
 }
 
 .accountStorageOverview .accountStoragePrimary {
   border-color: #9fcdb8;
-  background: linear-gradient(145deg, #eaf7f1 0%, #f9fcfa 100%);
-  box-shadow: 0 12px 26px rgba(23, 96, 71, 0.08);
+  background: #eaf7f1;
+  box-shadow: none;
 }
 
 .accountStorageOverview span {
@@ -1004,6 +954,7 @@
   font-weight: 900;
   letter-spacing: 0.045em;
   text-transform: uppercase;
+  white-space: nowrap;
 }
 
 .accountStorageOverview strong {
@@ -1021,22 +972,6 @@
   font-size: 1.55rem;
 }
 
-.accountStorageOverview small {
-  color: #7a8983;
-  font-size: 0.7rem;
-  font-weight: 720;
-  line-height: 1.3;
-}
-
-.accountStorageNote {
-  margin: -0.2rem 0 0;
-  padding: 0 0.15rem;
-  color: #74827d;
-  font-size: 0.7rem;
-  font-weight: 680;
-  line-height: 1.4;
-}
-
 .accountActionSummary {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -1049,7 +984,7 @@
   gap: 0.28rem;
   padding: 0.8rem 0.85rem;
   border: 1px solid #dfe8e3;
-  border-radius: 0.95rem;
+  border-radius: 0.65rem;
   background: #ffffff;
 }
 
@@ -1061,6 +996,12 @@
   line-height: 1.35;
 }
 
+.accountActionSummary span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .accountActionSummary strong,
 .accountActionDanger strong {
   min-width: 0;
@@ -1068,7 +1009,9 @@
   font-size: 0.84rem;
   font-weight: 900;
   line-height: 1.3;
-  overflow-wrap: anywhere;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .accountActionSectionHeading {
@@ -1082,12 +1025,6 @@
   color: #17362c;
   font-size: 0.82rem;
   font-weight: 920;
-}
-
-.accountActionSectionHeading span {
-  color: #74827d;
-  font-size: 0.7rem;
-  font-weight: 680;
 }
 
 .accountActionGrid {
@@ -1113,13 +1050,14 @@
   min-height: 2.75rem;
   padding: 0.72rem 1rem;
   border: 1px solid #d7e1dc;
-  border-radius: 0.9rem;
+  border-radius: 0.6rem;
   background: #ffffff;
   color: #17362c;
   font: inherit;
   font-size: 0.82rem;
   font-weight: 880;
   line-height: 1.15;
+  white-space: nowrap;
   text-align: center;
   cursor: pointer;
   transition:
@@ -1160,9 +1098,9 @@
   gap: 0.85rem;
   padding: 1rem;
   border: 1px solid #bfd6e7;
-  border-radius: 1.05rem;
-  background: linear-gradient(145deg, #f3f9fd 0%, #ffffff 100%);
-  box-shadow: 0 14px 30px rgba(32, 88, 128, 0.07);
+  border-radius: 0.7rem;
+  background: #f3f9fd;
+  box-shadow: none;
 }
 
 .notificationComposerHeading {
@@ -1184,19 +1122,12 @@
   font-weight: 930;
 }
 
-.notificationComposerHeading span {
-  color: #687b74;
-  font-size: 0.75rem;
-  font-weight: 700;
-  line-height: 1.4;
-}
-
 .notificationComposerHeading > button {
   flex: 0 0 auto;
   width: 2rem;
   height: 2rem;
   border: 1px solid #cbdad3;
-  border-radius: 999px;
+  border-radius: 0.45rem;
   color: #38574d;
   background: #ffffff;
   font: inherit;
@@ -1284,10 +1215,9 @@
 
 .notificationPriorityPicker button {
   min-width: 0;
-  min-height: 3.65rem;
-  display: grid;
-  align-content: center;
-  gap: 0.15rem;
+  min-height: 2.8rem;
+  display: flex;
+  align-items: center;
   padding: 0.65rem 0.8rem;
   border: 1px solid #cbdad3;
   border-radius: 0.85rem;
@@ -1301,12 +1231,7 @@
 .notificationPriorityPicker button strong {
   font-size: 0.78rem;
   font-weight: 900;
-}
-
-.notificationPriorityPicker button span {
-  color: #71817b;
-  font-size: 0.67rem;
-  font-weight: 700;
+  white-space: nowrap;
 }
 
 .notificationPriorityPicker .notificationPrioritySelected {
@@ -1336,7 +1261,7 @@
 
 .notificationAudienceOption {
   min-width: 0;
-  min-height: 4.4rem;
+  min-height: 3.25rem;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
@@ -1362,8 +1287,7 @@
 
 .notificationAudienceOption > span {
   min-width: 0;
-  display: grid;
-  gap: 0.14rem;
+  display: block;
 }
 
 .notificationAudienceOption strong {
@@ -1371,15 +1295,7 @@
   font-size: 0.76rem;
   font-weight: 900;
   line-height: 1.2;
-}
-
-.notificationAudienceOption small {
-  overflow: hidden;
-  color: #788780;
-  font-size: 0.64rem;
-  font-weight: 680;
-  line-height: 1.25;
-  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .notificationAudienceOption b {
@@ -1389,7 +1305,7 @@
   align-items: center;
   justify-content: center;
   padding: 0 0.3rem;
-  border-radius: 999px;
+  border-radius: 0.4rem;
   color: #476159;
   background: #edf3f0;
   font-size: 0.7rem;
@@ -1413,8 +1329,7 @@
 }
 
 .groupNotificationSummary {
-  display: grid;
-  gap: 0.18rem;
+  display: block;
   padding: 0.78rem 0.85rem;
   border: 1px solid rgba(35, 93, 135, 0.2);
   border-radius: 0.9rem;
@@ -1431,13 +1346,7 @@
 .groupNotificationSummary strong {
   font-size: 0.8rem;
   font-weight: 900;
-}
-
-.groupNotificationSummary span {
-  color: #687b74;
-  font-size: 0.68rem;
-  font-weight: 700;
-  line-height: 1.35;
+  white-space: nowrap;
 }
 
 .groupNotificationConfirmation {
@@ -1538,8 +1447,8 @@
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   gap: 0.72rem;
-  align-items: flex-start;
-  padding: 0.88rem;
+  align-items: center;
+  padding: 0.8rem;
   border: 1px solid #dde8e2;
   border-radius: 1rem;
   background: #ffffff;
@@ -1568,8 +1477,7 @@
 
 .qrLayoutOption span {
   min-width: 0;
-  display: grid;
-  gap: 0.28rem;
+  display: block;
 }
 
 .qrLayoutOption strong {
@@ -1577,13 +1485,7 @@
   font-size: 0.9rem;
   font-weight: 900;
   line-height: 1.18;
-}
-
-.qrLayoutOption small {
-  color: #708079;
-  font-size: 0.76rem;
-  font-weight: 700;
-  line-height: 1.35;
+  white-space: nowrap;
 }
 
 .qrAssetControls {
@@ -1611,7 +1513,7 @@
   min-height: 2.7rem;
   padding: 0 1rem;
   border: 1px solid #d7e1dc;
-  border-radius: 999px;
+  border-radius: 0.6rem;
   background: #ffffff;
   color: #17362c;
   font: inherit;
@@ -1640,7 +1542,7 @@
   min-height: 2.7rem;
   padding: 0 1rem;
   border: 1px solid #d7e1dc;
-  border-radius: 999px;
+  border-radius: 0.6rem;
   background: #ffffff;
   color: #17362c;
   font: inherit;
@@ -1684,7 +1586,7 @@
 
 .qrAssetList::-webkit-scrollbar-thumb {
   border: 3px solid #ffffff;
-  border-radius: 999px;
+  border-radius: 0.4rem;
   background: #b8c8c0;
 }
 
@@ -1805,16 +1707,10 @@
 .nameManagerIntro {
   display: grid;
   gap: 0.28rem;
-  padding: 0.85rem 0.95rem;
+  padding: 0.75rem 0.85rem;
   border: 1px solid #dfe8e3;
   border-radius: 1rem;
   background: #ffffff;
-}
-
-.nameManagerIntro strong {
-  color: #17362c;
-  font-size: 0.9rem;
-  font-weight: 920;
 }
 
 .nameManagerIntro span {
@@ -1839,7 +1735,7 @@
   min-height: 2.7rem;
   padding: 0 1rem;
   border: 1px solid #d7e1dc;
-  border-radius: 999px;
+  border-radius: 0.6rem;
   background: #ffffff;
   color: #17362c;
   font: inherit;
@@ -1901,6 +1797,7 @@
   font-weight: 900;
   letter-spacing: 0.04em;
   text-transform: uppercase;
+  white-space: nowrap;
 }
 
 .namePreviewSummary strong {
@@ -1925,7 +1822,7 @@
 
 .namePreviewTableWrap::-webkit-scrollbar-thumb {
   border: 3px solid #ffffff;
-  border-radius: 999px;
+  border-radius: 0.4rem;
   background: #b8c8c0;
 }
 
@@ -1972,12 +1869,12 @@
   font-weight: 780;
 }
 
-.nameStatusPill {
+.nameStatusText {
   display: inline-flex;
   align-items: center;
-  min-height: 1.6rem;
-  padding: 0 0.58rem;
-  border-radius: 999px;
+  min-height: 1.45rem;
+  padding: 0 0.45rem;
+  border-radius: 0.3rem;
   font-size: 0.68rem;
   font-weight: 950;
   white-space: nowrap;
@@ -2245,6 +2142,19 @@
   .qrModal {
     max-height: none;
     border-radius: 1.05rem;
+  }
+
+  .qrModalHeader h2,
+  .notificationPriorityPicker button strong,
+  .notificationAudienceOption strong,
+  .groupNotificationSummary strong,
+  .qrLayoutOption strong,
+  .accountActionSummary span,
+  .accountActionSummary strong,
+  .namePreviewSummary span {
+    overflow: visible;
+    text-overflow: clip;
+    white-space: normal;
   }
 
   .accountActionSummary,

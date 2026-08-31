@@ -14,9 +14,7 @@ export default async function LifecycleCalculatorPage() {
       <section className={styles.shell}>
         <header className={styles.topBar}>
           <div className={styles.titleBlock}>
-            <p className={styles.eyebrow}>Aim4price admin</p>
-            <h1>Lifecycle &amp; Cash-Flow Model</h1>
-            <span>Ownership scenario planning workspace</span>
+            <h1>Lifecycle Model</h1>
           </div>
 
           <AdminNavigation active="lifecycle" />

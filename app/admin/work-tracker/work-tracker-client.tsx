@@ -453,7 +453,6 @@ export default function WorkTrackerClient({ initialClients }: { initialClients: 
     window.open(`/api/admin/work-tracker/report?${params.toString()}`, "_blank", "noopener,noreferrer");
   }
 
-  const selectedClient = clients.find((client) => client.userId === clientUserId) ?? null;
   const hasDirtyReportNotes = Boolean(
     clientUserId &&
       history?.sessions.some(
@@ -484,13 +483,7 @@ export default function WorkTrackerClient({ initialClients }: { initialClients: 
     <section className={styles.shell}>
       <header className={styles.topBar}>
         <div className={styles.titleBlock}>
-          <p className={styles.eyebrow}>Aim4price admin</p>
           <h1>Work tracker</h1>
-          <span>Start and stop work, then prepare a simple owner report.</span>
-          <p className={styles.privacyNote}>
-            <span aria-hidden="true">🔒</span>
-            Admin only. Owners see only reports you choose to print.
-          </p>
         </div>
         <AdminNavigation active="work-tracker" />
       </header>
@@ -507,8 +500,7 @@ export default function WorkTrackerClient({ initialClients }: { initialClients: 
       <section className={`${styles.activeCard} ${activeSession ? styles.activeCardRunning : ""}`} aria-label="Active Admin work">
         <div className={styles.sectionHeading}>
           <div>
-            <p className={styles.eyebrow}>{activeSession ? "Work in progress" : "Start work"}</p>
-            <h2>{activeSession ? activeSession.clientName : "Choose an account when work begins"}</h2>
+            <h2>{activeSession ? activeSession.clientName : "Start work"}</h2>
           </div>
           {activeSession ? <strong className={styles.liveTime}>{formatAdminWorkDuration(activeLiveSeconds)}</strong> : null}
         </div>
@@ -565,9 +557,8 @@ export default function WorkTrackerClient({ initialClients }: { initialClients: 
             />
             <div className={styles.startAction}>
               <button type="button" className={styles.startButton} onClick={() => void startWork()} disabled={isStarting || deletingSessionId !== null || !startClientUserId}>
-                {isStarting ? "Starting…" : "Start work & open account"}
+                {isStarting ? "Starting…" : "Start timer"}
               </button>
-              <small>Starts the timer and opens the selected account.</small>
             </div>
           </div>
         )}
@@ -576,19 +567,17 @@ export default function WorkTrackerClient({ initialClients }: { initialClients: 
       <section className={styles.historyCard} aria-label="Weekly and monthly work history">
         <div className={styles.historyToolbar}>
           <div>
-            <p className={styles.eyebrow}>History and reporting</p>
-            <h2>{period === "week" ? "Weekly tracker" : "Monthly tracker"}</h2>
-            <span>{periodRangeLabel(history)}</span>
+            <h2>Work history · {periodRangeLabel(history)}</h2>
           </div>
           <div className={styles.periodControls}>
             <div className={styles.periodToggle} role="group" aria-label="Tracker period">
-              <button type="button" aria-pressed={period === "week"} className={period === "week" ? styles.periodActive : ""} onClick={() => setPeriod("week")}>Weekly</button>
-              <button type="button" aria-pressed={period === "month"} className={period === "month" ? styles.periodActive : ""} onClick={() => setPeriod("month")}>Monthly</button>
+              <button type="button" aria-pressed={period === "week"} className={period === "week" ? styles.periodActive : ""} onClick={() => setPeriod("week")}>Week</button>
+              <button type="button" aria-pressed={period === "month"} className={period === "month" ? styles.periodActive : ""} onClick={() => setPeriod("month")}>Month</button>
             </div>
             <div className={styles.periodMove}>
-              <button type="button" onClick={() => setAnchor((value) => shiftAdminWorkAnchor(period, value, -1))}>Previous {period}</button>
-              <button type="button" onClick={() => setAnchor(getJohannesburgDateKey())} disabled={isCurrentPeriod}>This {period}</button>
-              <button type="button" onClick={() => setAnchor((value) => shiftAdminWorkAnchor(period, value, 1))} disabled={isCurrentPeriod}>Next {period}</button>
+              <button type="button" onClick={() => setAnchor((value) => shiftAdminWorkAnchor(period, value, -1))}>Previous</button>
+              <button type="button" onClick={() => setAnchor(getJohannesburgDateKey())} disabled={isCurrentPeriod}>Current</button>
+              <button type="button" onClick={() => setAnchor((value) => shiftAdminWorkAnchor(period, value, 1))} disabled={isCurrentPeriod}>Next</button>
             </div>
           </div>
         </div>
@@ -604,20 +593,14 @@ export default function WorkTrackerClient({ initialClients }: { initialClients: 
             emptyOption={ALL_ACCOUNTS_OPTION}
           />
           <button type="button" className={styles.reportButton} onClick={openReport} disabled={!clientUserId || isLoading || savingSessionId !== null || deletingSessionId !== null || hasDirtyReportNotes}>
-            Preview & print report
+            Print report
           </button>
-          <small>
-            {hasDirtyReportNotes
-              ? "Save edited notes before previewing this report."
-              : selectedClient
-                ? `Ready for ${selectedClient.name}.`
-                : "Select one account to enable its owner report."}
-          </small>
+          {hasDirtyReportNotes ? <small>Save notes first.</small> : null}
         </div>
 
         <section className={styles.summaryGrid} aria-label="Work period summary">
-          <article><span>Tracked time</span><strong>{formatAdminWorkDuration(displaySummary.trackedSeconds)}</strong><small>All completed sessions</small></article>
-          <article className={styles.reportableSummary}><span>Reportable time</span><strong>{formatAdminWorkDuration(displaySummary.reportableSeconds)}</strong><small>Included by Admin</small></article>
+          <article><span>Tracked</span><strong>{formatAdminWorkDuration(displaySummary.trackedSeconds)}</strong></article>
+          <article className={styles.reportableSummary}><span>Reportable</span><strong>{formatAdminWorkDuration(displaySummary.reportableSeconds)}</strong></article>
           <div className={styles.summaryFacts}>
             <span><strong>{displaySummary.includedSessionCount} / {displaySummary.sessionCount}</strong> sessions included</span>
             <span><strong>{displaySummary.pageCount}</strong> platform areas</span>
@@ -626,7 +609,7 @@ export default function WorkTrackerClient({ initialClients }: { initialClients: 
 
         <div className={styles.sessionList} aria-live="polite">
           {isLoading ? <p className={styles.emptyState}>Loading work sessions…</p> : null}
-          {!isLoading && !history?.sessions.length ? <p className={styles.emptyState}>No completed work sessions were recorded in this period.</p> : null}
+          {!isLoading && !history?.sessions.length ? <p className={styles.emptyState}>No work recorded for this period.</p> : null}
           {!isLoading ? history?.sessions.map((session) => (
             <article key={session.id} className={`${styles.sessionCard} ${!session.includeInReport ? styles.sessionExcluded : ""}`} aria-busy={deletingSessionId === session.id}>
               <header className={styles.sessionHeader}>
@@ -645,7 +628,6 @@ export default function WorkTrackerClient({ initialClients }: { initialClients: 
               <details className={styles.pageDetails}>
                 <summary>
                   <span>{session.pages.length} {session.pages.length === 1 ? "area" : "areas"} visited</span>
-                  <small>View page breakdown</small>
                 </summary>
                 <div className={styles.pagePills}>
                   {session.pages.length ? session.pages.map((page) => (

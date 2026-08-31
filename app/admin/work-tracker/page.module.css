@@ -39,6 +39,7 @@
   font-size: clamp(2rem, 3vw, 2.75rem);
   line-height: 0.98;
   letter-spacing: -0.055em;
+  white-space: nowrap;
 }
 
 .titleBlock span {
@@ -52,7 +53,7 @@
 .adminNav {
   padding: 0.25rem;
   border: 1px solid #d7e1dc;
-  border-radius: 999px;
+  border-radius: 0.7rem;
   background: #ffffff;
   box-shadow: 0 12px 28px rgba(18, 45, 37, 0.045);
   display: flex;
@@ -63,7 +64,7 @@
 .adminNavLink {
   min-height: 2.4rem;
   padding: 0 0.95rem;
-  border-radius: 999px;
+  border-radius: 0.55rem;
   color: #52645d;
   display: inline-flex;
   align-items: center;
@@ -202,7 +203,7 @@
 
 .noteField em {
   padding: 0.18rem 0.4rem;
-  border-radius: 999px;
+  border-radius: 0.35rem;
   color: #8b5b12;
   background: #fff4d9;
   font-size: 0.58rem;
@@ -408,7 +409,7 @@
 .periodMove {
   padding: 0.2rem;
   border: 1px solid #d6e1db;
-  border-radius: 999px;
+  border-radius: 0.7rem;
   background: #f8faf9;
   display: flex;
   align-items: center;
@@ -420,7 +421,7 @@
   min-height: 2.25rem;
   padding: 0 0.78rem;
   border: 0;
-  border-radius: 999px;
+  border-radius: 0.5rem;
   color: #51645c;
   background: transparent;
   font: inherit;
@@ -446,7 +447,7 @@
   border-radius: 0.9rem;
   background: #f7faf8;
   display: grid;
-  grid-template-columns: minmax(16rem, 1fr) auto minmax(11rem, auto);
+  grid-template-columns: minmax(16rem, 1fr) auto;
   align-items: end;
   gap: 0.7rem;
 }
@@ -472,7 +473,7 @@
   border-radius: 0.9rem;
   background: #ffffff;
   display: grid;
-  gap: 0.18rem;
+  gap: 0.3rem;
 }
 
 .summaryGrid span {
@@ -487,12 +488,6 @@
   color: #17362c;
   font-size: 1.15rem;
   font-weight: 950;
-}
-
-.summaryGrid small {
-  color: #7a8983;
-  font-size: 0.63rem;
-  font-weight: 680;
 }
 
 .reportableSummary {
@@ -548,8 +543,9 @@
 
 .sessionHeader > div {
   min-width: 0;
-  display: grid;
-  gap: 0.14rem;
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
 }
 
 .sessionHeader strong {
@@ -562,6 +558,7 @@
   color: #6e7e78;
   font-size: 0.68rem;
   font-weight: 700;
+  white-space: nowrap;
 }
 
 .sessionMeta {
@@ -579,8 +576,8 @@
 
 .includedBadge,
 .excludedBadge {
-  padding: 0.28rem 0.5rem;
-  border-radius: 999px;
+  padding: 0;
+  border-radius: 0;
   font-size: 0.59rem !important;
   font-weight: 850 !important;
   white-space: nowrap;
@@ -588,12 +585,12 @@
 
 .includedBadge {
   color: #176047 !important;
-  background: #e7f5ef;
+  background: transparent;
 }
 
 .excludedBadge {
   color: #65756f !important;
-  background: #edf1ef;
+  background: transparent;
 }
 
 .pageDetails,
@@ -629,17 +626,26 @@
 .pagePills {
   padding: 0.65rem 0.7rem;
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
+  gap: 0;
+  overflow-x: auto;
 }
 
 .pagePills span {
-  padding: 0.36rem 0.55rem;
-  border-radius: 999px;
+  padding: 0 0.55rem;
+  border-right: 1px solid #d9e5df;
   color: #31574a;
-  background: #edf7f2;
+  background: transparent;
   font-size: 0.65rem;
   font-weight: 760;
+  white-space: nowrap;
+}
+
+.pagePills span:first-child {
+  padding-left: 0;
+}
+
+.pagePills span:last-child {
+  border-right: 0;
 }
 
 .pagePills small {
@@ -661,7 +667,7 @@
   min-height: 2.25rem;
   padding: 0 0.65rem;
   border: 1px solid #d8e2dd;
-  border-radius: 999px;
+  border-radius: 0.55rem;
   color: #486159;
   background: #f8faf9;
   display: inline-flex;
@@ -684,7 +690,7 @@
   min-height: 2.25rem;
   padding: 0 0.75rem;
   border: 1px solid #cddad4;
-  border-radius: 999px;
+  border-radius: 0.55rem;
   color: #31574a;
   background: #ffffff;
   font: inherit;
@@ -712,7 +718,7 @@
 .deleteSessionButton {
   min-height: 2rem;
   padding: 0 0.65rem;
-  border-radius: 999px;
+  border-radius: 0.55rem;
   border-color: #d7aaaa;
   color: #8f2f2f;
   background: #fff8f8;

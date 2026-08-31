@@ -461,57 +461,34 @@ export default function AdminDiscoveryClient({
   return (
     <>
       <section className={styles.metrics} aria-label="Admin Discovery summary">
-        <article className={styles.featuredMetric}>
-          <span>Matching assets</span>
+        <article>
           <strong>{report.summary.totalAssets.toLocaleString("en-ZA")}</strong>
-          <small>{activeFilterCount ? `${activeFilterCount} active filters` : "All asset records"}</small>
+          <span>Assets</span>
         </article>
         <article>
-          <span>Total Discovery views</span>
           <strong>{report.summary.totalViews.toLocaleString("en-ZA")}</strong>
-          <small>
-            {report.summary.accountViews.toLocaleString("en-ZA")} account · {report.summary.unknownViews.toLocaleString("en-ZA")} unknown
-          </small>
+          <span>Views</span>
         </article>
         <article>
-          <span>Assets viewed</span>
           <strong>{report.summary.viewedAssets.toLocaleString("en-ZA")}</strong>
-          <small>Assets opened in protected Discovery</small>
+          <span>Viewed assets</span>
         </article>
-        <article className={report.summary.repeatInterestAssets ? styles.signalMetric : undefined}>
-          <span>Repeat interest</span>
+        <article>
           <strong>{report.summary.repeatInterestAssets.toLocaleString("en-ZA")}</strong>
-          <small>Flagged after 3 views by one viewer</small>
+          <span>Repeat interest</span>
         </article>
         <article>
-          <span>Matching value</span>
           <strong>{formatAdminAssetMoney(report.summary.totalValueExVat)}</strong>
-          <small>
-            Excl. VAT · {report.summary.missingValueAssets.toLocaleString("en-ZA")} missing
-          </small>
+          <span>Value</span>
         </article>
         <article>
-          <span>Owner accounts</span>
           <strong>{report.summary.ownerAccounts.toLocaleString("en-ZA")}</strong>
-          <small>{report.summary.discoveryEnabledAssets.toLocaleString("en-ZA")} enabled · {report.summary.discoveryDisabledAssets.toLocaleString("en-ZA")} admin only</small>
+          <span>Owners</span>
         </article>
       </section>
 
-      <aside className={styles.privacyNote}>
-        <strong>Admin-unlocked directory.</strong>
-        <span>
-          Owner contact details are available here without an enquiry. This does not change what customers can see
-          in regular Discovery or override their public participation setting. Viewer identities and timestamps
-          remain visible only to Admin; Discovery itself still requires an Aim4price account.
-        </span>
-      </aside>
-
       <section className={styles.discoveryCard}>
         <div className={styles.interestBar}>
-          <div>
-            <strong>Viewer interest</strong>
-            <span>Find popular assets or isolate repeat attention from one account.</span>
-          </div>
           <div className={styles.interestTabs} role="group" aria-label="Discovery popularity filter">
             {(["all", "viewed", "repeat", "unviewed"] as AdminAssetInterestFilter[]).map((option) => (
               <button
@@ -523,23 +500,21 @@ export default function AdminDiscoveryClient({
                 onClick={() => selectInterest(option)}
               >
                 {interestButtonLabel(option)}
-                {option === "repeat" ? <span>{report.summary.repeatInterestAssets}</span> : null}
+                {option === "repeat" ? ` (${report.summary.repeatInterestAssets})` : null}
               </button>
             ))}
           </div>
         </div>
         <header className={styles.filterHeader}>
           <div className={styles.filterTitle}>
-            <p>Complete directory</p>
-            <h2>All assets and owners</h2>
-            <span>
+            <h2>
               {report.pagination.totalItems
-                ? `Showing ${(report.pagination.page - 1) * report.pagination.pageSize + 1}-${Math.min(
+                ? `${(report.pagination.page - 1) * report.pagination.pageSize + 1}-${Math.min(
                     report.pagination.page * report.pagination.pageSize,
                     report.pagination.totalItems,
-                  )} of ${report.pagination.totalItems.toLocaleString("en-ZA")}`
-                : "No assets match the current filters"}
-            </span>
+                  )} of ${report.pagination.totalItems.toLocaleString("en-ZA")} assets`
+                : "No matching assets"}
+            </h2>
           </div>
 
           <div className={styles.filters}>
@@ -551,12 +526,12 @@ export default function AdminDiscoveryClient({
               }}
             >
               <label>
-                <span>Search assets + owners</span>
+                <span>Search</span>
                 <input
                   type="search"
                   value={searchDraft}
                   onChange={(event) => setSearchDraft(event.target.value)}
-                  placeholder="Name, email, phone, asset, serial or registration"
+                  placeholder="Asset or owner"
                 />
               </label>
               <button type="submit" disabled={loading}>Search</button>
@@ -618,9 +593,9 @@ export default function AdminDiscoveryClient({
                 }
                 disabled={loading}
               >
-                <option value="all">Enabled + disabled</option>
-                <option value="enabled">Discovery enabled</option>
-                <option value="disabled">Admin-only / disabled</option>
+                <option value="all">All participation</option>
+                <option value="enabled">Enabled</option>
+                <option value="disabled">Admin only</option>
               </select>
             </label>
             <label>
@@ -632,9 +607,9 @@ export default function AdminDiscoveryClient({
                 }
                 disabled={loading}
               >
-                <option value="all">Mapped + missing</option>
-                <option value="mapped">Mapped only</option>
-                <option value="missing">Missing GPS only</option>
+                <option value="all">All GPS</option>
+                <option value="mapped">Mapped</option>
+                <option value="missing">Missing</option>
               </select>
             </label>
             <label>
@@ -669,14 +644,16 @@ export default function AdminDiscoveryClient({
                 <option value="asset">Asset A-Z</option>
               </select>
             </label>
-            <button
-              type="button"
-              className={styles.clearButton}
-              onClick={clearFilters}
-              disabled={!activeFilterCount || loading}
-            >
-              Clear filters
-            </button>
+            {activeFilterCount ? (
+              <button
+                type="button"
+                className={styles.clearButton}
+                onClick={clearFilters}
+                disabled={loading}
+              >
+                Clear filters
+              </button>
+            ) : null}
           </div>
         </header>
 
@@ -689,16 +666,13 @@ export default function AdminDiscoveryClient({
               <tr>
                 <th>Asset</th>
                 <th>Owner</th>
-                <th>Email</th>
-                <th>Phone</th>
+                <th>Contact</th>
                 <th>Location</th>
                 <th>Value</th>
-                <th>Identifiers</th>
-                <th>Viewer interest</th>
-                <th>Discovery</th>
-                <th>GPS</th>
+                <th>Views</th>
+                <th>Access</th>
                 <th>Updated</th>
-                <th>Record</th>
+                <th>Action</th>
               </tr>
             </thead>
             <tbody>
@@ -708,78 +682,41 @@ export default function AdminDiscoveryClient({
                   <tr key={asset.id}>
                     <td>
                       <strong>{asset.title}</strong>
-                      <span>{assetIdentity(asset)}</span>
-                      <small>{asset.sectorLabel} · {titleCase(asset.lifecycleState)}</small>
+                      <span>· {assetIdentity(asset)} · {asset.sectorLabel}</span>
                     </td>
                     <td>
                       <strong>{asset.owner.label}</strong>
-                      <span>{asset.owner.name || "Name not saved"}</span>
-                      <small>{titleCase(asset.owner.accountType)} · {titleCase(asset.owner.accountStatus)}</small>
                     </td>
                     <td>
                       {asset.owner.email ? (
                         <a href={`mailto:${asset.owner.email}`}>{asset.owner.email}</a>
-                      ) : (
-                        <span>Not saved</span>
-                      )}
+                      ) : null}
+                      {asset.owner.phone ? <a href={`tel:${asset.owner.phone}`}> · {asset.owner.phone}</a> : null}
+                      {!asset.owner.email && !asset.owner.phone ? <span>—</span> : null}
                     </td>
                     <td>
-                      {asset.owner.phone ? (
-                        <a href={`tel:${asset.owner.phone}`}>{asset.owner.phone}</a>
-                      ) : (
-                        <span>Not saved</span>
-                      )}
-                    </td>
-                    <td>
-                      <strong>{asset.owner.townCity || "Town not saved"}</strong>
-                      <span>{asset.owner.province || "Province not saved"}</span>
+                      {[asset.owner.townCity, asset.owner.province].filter(Boolean).join(" · ") || "—"}
                     </td>
                     <td className={styles.moneyCell}>{formatAdminAssetValue(asset)}</td>
-                    <td>
-                      <strong>{asset.serialNumber || "No serial"}</strong>
-                      <span>{asset.registrationNumber || asset.publicAssetCode || "No registration"}</span>
-                    </td>
                     <td className={styles.interestCell}>
                       {asset.totalViews > 0 ? (
                         <>
                           <strong>{asset.totalViews.toLocaleString("en-ZA")} {asset.totalViews === 1 ? "view" : "views"}</strong>
-                          <span>{asset.accountViews.toLocaleString("en-ZA")} account · {asset.unknownViews.toLocaleString("en-ZA")} unknown</span>
-                          <small>Last opened {formatDateTime(asset.lastViewedAtIso)}</small>
-                          {asset.hasRepeatInterest ? (
-                            <em className={styles.repeatFlag}>
-                              <span aria-hidden="true">⚑</span>
-                              {asset.repeatViewerLabel || "One viewer"} · {asset.repeatViewerViews} views
-                            </em>
-                          ) : null}
                         </>
                       ) : (
-                        <>
-                          <strong>No views yet</strong>
-                          <span>Tracking starts with protected detail opens</span>
-                        </>
+                        <strong>0</strong>
                       )}
                       <button
                         type="button"
                         className={styles.activityButton}
                         onClick={(event) => openActivityModal(asset, event.currentTarget)}
                       >
-                        Viewer summary
+                        Activity
                       </button>
                     </td>
                     <td>
-                      <span
-                        className={
-                          asset.owner.discoveryParticipationEnabled
-                            ? styles.enabledBadge
-                            : styles.disabledBadge
-                        }
-                      >
-                        {asset.owner.discoveryParticipationEnabled ? "Enabled" : "Admin only"}
-                      </span>
-                    </td>
-                    <td>
-                      <span className={mapped ? styles.mappedBadge : styles.missingBadge}>
-                        {mapped ? "Mapped" : "Missing"}
+                      <span className={asset.owner.discoveryParticipationEnabled && mapped ? styles.enabledBadge : styles.disabledBadge}>
+                        {asset.owner.discoveryParticipationEnabled ? "Enabled" : "Admin only"} · {mapped ? "Mapped" : "No GPS"}
                       </span>
                     </td>
                     <td>{formatDate(asset.updatedAtIso)}</td>
@@ -789,7 +726,7 @@ export default function AdminDiscoveryClient({
                         className={styles.viewButton}
                         onClick={(event) => openDetails(asset, event.currentTarget)}
                       >
-                        View details
+                        View
                       </button>
                     </td>
                   </tr>
@@ -800,7 +737,6 @@ export default function AdminDiscoveryClient({
           {!report.assets.length ? (
             <div className={styles.emptyState}>
               <strong>No matching assets</strong>
-              <span>Change or clear the filters to widen this Admin Discovery result.</span>
             </div>
           ) : null}
         </div>
@@ -874,8 +810,9 @@ export default function AdminDiscoveryClient({
           >
             <header className={styles.activityModalHeader}>
               <div>
-                <h2 id="admin-discovery-viewer-summary-title">Viewer summary</h2>
-                <p>Who viewed {activityTarget.title}, and when?</p>
+                <h2 id="admin-discovery-viewer-summary-title">
+                  Viewer summary — {activityTarget.title}
+                </h2>
               </div>
               <button
                 type="button"
@@ -913,20 +850,15 @@ export default function AdminDiscoveryClient({
 
                 {activityDetails.repeatViewers > 0 ? (
                   <aside className={styles.repeatBanner}>
-                    <span aria-hidden="true">⚑</span>
-                    <div>
-                      <strong>Repeat interest detected</strong>
-                      <p>
-                        {activityDetails.repeatViewers} {activityDetails.repeatViewers === 1 ? "viewer has" : "viewers have"} opened this asset at least 3 times.
-                      </p>
-                    </div>
+                    <strong>
+                      Repeat interest: {activityDetails.repeatViewers} {activityDetails.repeatViewers === 1 ? "viewer" : "viewers"} with 3+ views
+                    </strong>
                   </aside>
                 ) : null}
 
                 <section className={styles.viewerSection}>
                   <div className={styles.activityHeading}>
                     <h3>Viewer summary</h3>
-                    <span>Grouped by Aim4price account or unknown viewer</span>
                   </div>
                   {activityDetails.viewerGroups.length ? (
                     <div className={styles.viewerList}>
@@ -945,7 +877,7 @@ export default function AdminDiscoveryClient({
                             <small>Last viewed {formatDateTime(viewer.lastViewedAtIso)}</small>
                           </div>
                           <div className={styles.viewerCount}>
-                            {viewer.hasRepeatInterest ? <em><span aria-hidden="true">⚑</span> Flagged</em> : null}
+                            {viewer.hasRepeatInterest ? <em>Repeat interest</em> : null}
                             <strong>{viewer.viewCount}</strong>
                             <span>{viewer.viewCount === 1 ? "view" : "views"}</span>
                           </div>
@@ -955,7 +887,6 @@ export default function AdminDiscoveryClient({
                   ) : (
                     <div className={styles.activityEmpty}>
                       <strong>No recorded views yet</strong>
-                      <span>This asset has not been opened since Discovery view tracking started.</span>
                     </div>
                   )}
                 </section>
@@ -963,7 +894,6 @@ export default function AdminDiscoveryClient({
                 <section className={styles.timelineSection}>
                   <div className={styles.activityHeading}>
                     <h3>View timeline</h3>
-                    <span>Successful protected detail opens, newest first</span>
                   </div>
                   {activityDetails.events.length ? (
                     <div className={styles.timeline}>
@@ -1021,9 +951,7 @@ export default function AdminDiscoveryClient({
           >
             <header className={styles.modalHeader}>
               <div>
-                <p>{selectedAsset.assetTypeLabel} · {selectedAsset.sectorLabel}</p>
                 <h2 id="admin-discovery-asset-title">{selectedAsset.title}</h2>
-                <span>{assetIdentity(selectedAsset)}</span>
               </div>
               <button
                 type="button"
@@ -1038,27 +966,17 @@ export default function AdminDiscoveryClient({
 
             <section className={styles.ownerHero}>
               <div>
-                <p>Owner details · Admin unlocked</p>
-                <h3>{selectedAsset.owner.label}</h3>
-                <span>{selectedAsset.owner.name || "Owner name not saved"}</span>
+                <h3>
+                  {selectedAsset.owner.label} · {selectedAsset.owner.discoveryParticipationEnabled ? "Enabled" : "Admin only"}
+                </h3>
               </div>
-              <span
-                className={
-                  selectedAsset.owner.discoveryParticipationEnabled
-                    ? styles.enabledBadge
-                    : styles.disabledBadge
-                }
-              >
-                {selectedAsset.owner.discoveryParticipationEnabled
-                  ? "Discovery enabled"
-                  : "Discovery disabled · Admin only"}
-              </span>
             </section>
 
             <div className={styles.detailColumns}>
               <section>
                 <h3>Owner and account</h3>
                 <dl>
+                  <div><dt>Name</dt><dd>{selectedAsset.owner.name || "Not saved"}</dd></div>
                   <div><dt>Email</dt><dd>{selectedAsset.owner.email || "Not saved"}</dd></div>
                   <div><dt>Phone</dt><dd>{selectedAsset.owner.phone || "Not saved"}</dd></div>
                   <div><dt>Business</dt><dd>{selectedAsset.owner.businessName || "Not saved"}</dd></div>
@@ -1075,6 +993,8 @@ export default function AdminDiscoveryClient({
               <section>
                 <h3>Asset record</h3>
                 <dl>
+                  <div><dt>Type</dt><dd>{assetIdentity(selectedAsset)}</dd></div>
+                  <div><dt>Sector</dt><dd>{selectedAsset.sectorLabel}</dd></div>
                   <div>
                     <dt>Value</dt>
                     <dd>

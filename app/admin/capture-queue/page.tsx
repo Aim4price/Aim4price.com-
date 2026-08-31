@@ -14,9 +14,7 @@ export default async function AdminCaptureQueuePage() {
       <section className={styles.shell}>
         <header className={styles.topBar}>
           <div className={styles.titleBlock}>
-            <p className={styles.eyebrow}>Aim4price admin</p>
             <h1>Capture Queue</h1>
-            <span>Verify submitted invoices and fuel slips before they reach a ledger.</span>
           </div>
 
           <AdminNavigation active="capture-queue" />

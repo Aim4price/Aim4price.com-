@@ -5,13 +5,11 @@ const TABLE_ROWS = Array.from({ length: 5 }, (_, index) => index);
 
 export default function AdminLoading() {
   return (
-    <main className={styles.page} aria-busy="true" aria-live="polite">
+    <main className={styles.page} aria-busy="true" aria-label="Loading Admin">
       <section className={styles.shell}>
         <header className={styles.header}>
           <div>
-            <span className={styles.pill}>Opening your Admin workspace</span>
             <span className={`${styles.skeleton} ${styles.title}`} />
-            <span className={`${styles.skeleton} ${styles.subtitle}`} />
           </div>
           <span className={`${styles.skeleton} ${styles.manage}`} />
         </header>
@@ -31,7 +29,6 @@ export default function AdminLoading() {
             <span key={row} className={`${styles.skeleton} ${styles.row}`} />
           ))}
         </section>
-        <p className={styles.status}>Loading Admin data…</p>
       </section>
     </main>
   );

@@ -13,16 +13,16 @@ test('Admin Asset Outcomes is protected and uses the reserved Admin navigation d
   assert.match(page, /await requireAdminPageAccess\(\)/);
   assert.match(page, /getAdminMarketplaceOutcomeReport\(\)/);
   assert.match(page, /<AdminNavigation active="sold-assets" \/>/);
-  assert.match(navigation, /href: "\/admin\/sold-assets"[\s\S]*?label: "Asset Outcomes"/);
+  assert.match(navigation, /href: "\/admin\/sold-assets"[\s\S]*?label: "Outcomes"/);
 });
 
-test('Admin Asset Outcomes exposes clear first-party help and value metrics', () => {
-  assert.match(client, /Total outcomes/);
+test('Admin Asset Outcomes exposes concise value metrics', () => {
+  assert.match(client, /<span>Outcomes<\/span>/);
   assert.match(client, /Sold or traded/);
-  assert.match(client, /Aim4price helped/);
-  assert.match(client, /Aim4price did not help/);
+  assert.match(client, /<span>Helped<\/span>/);
+  assert.match(client, /Not helped/);
   assert.match(client, /Help rate/);
-  assert.match(client, /Recorded final value/);
+  assert.match(client, /Final value/);
   assert.match(client, /Both Yes and No answers are retained/);
   assert.match(client, /safeMoney\(outcome\.finalSalePriceExVat\)/);
 });
@@ -34,18 +34,18 @@ test('Admin can filter every outcome without hiding No answers', () => {
   assert.match(client, /Marketplace and Showroom/);
   assert.match(client, /Last 30 days/);
   assert.match(client, /Highest final value/);
-  assert.match(client, /Asset, seller, sector or reference/);
+  assert.match(client, /Asset or seller/);
   assert.match(client, /PAGE_SIZE = 25/);
 });
 
-test('Admin outcome rows retain sale evidence and closing context', () => {
-  assert.match(client, /Final price excl\. VAT/);
-  assert.match(client, /Aim4price value/);
-  assert.match(client, /Seller response/);
-  assert.match(client, /From My Showroom/);
-  assert.match(client, /From Marketplace/);
-  assert.match(client, /different viewers/);
-  assert.match(client, /days advertised/);
+test('Admin outcome rows retain essential sale evidence and closing context', () => {
+  assert.match(client, /Price evidence/);
+  assert.match(client, /Aim4price/);
+  assert.match(client, /Showroom/);
+  assert.match(client, /Marketplace/);
+  assert.match(client, /totalViewsAtClose/);
+  assert.match(client, /formatDays\(daysToOutcome\(outcome\)\)/);
+  assert.doesNotMatch(styles, /\.yesAnswer[\s\S]*?border:\s*1px solid currentColor/);
 });
 
 test('Admin Asset Outcomes keeps the white responsive Aim4price layout', () => {
@@ -55,4 +55,3 @@ test('Admin Asset Outcomes keeps the white responsive Aim4price layout', () => {
   assert.match(styles, /@media \(max-width: 980px\)/);
   assert.match(styles, /@media \(max-width: 540px\)/);
 });
-
