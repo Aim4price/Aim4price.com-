@@ -26,9 +26,9 @@ test('header keeps desktop navigation at larger widths and uses the account drop
   assert.match(header, /@media \(min-width: 761px\) and \(max-width: 1180px\)[\s\S]*?\.nav \{[\s\S]*?display: grid;[\s\S]*?\.navRail \{[\s\S]*?grid-template-columns: repeat\(4, minmax\(0, 1fr\)\)/);
   assert.match(header, /@media \(min-width: 761px\) and \(max-width: 1180px\)[\s\S]*?\.mobileMenuButton,[\s\S]*?\.mobileMenuPanel \{[\s\S]*?display: none/);
   assert.match(headerClient, /usesCompactHeader[\s\S]*?navItems\.length/);
-  assert.match(layout, /width: 'device-width'/);
-  assert.match(layout, /initialScale: 1/);
-  assert.doesNotMatch(layout, /width: 980|initialScale: -1/);
+  assert.match(layout, /width: 980/);
+  assert.match(layout, /initialScale: -1/);
+  assert.doesNotMatch(layout, /width: 'device-width'|initialScale: 1/);
   assert.match(headerClient, /max-device-width: 900px/);
   assert.match(headerClient, /usesCompactHeader \? styles\.innerCompact/);
   assert.match(headerClient, /usesCompactHeader \? styles\.navCompact/);
