@@ -4125,10 +4125,10 @@ export default function LeadsClient({
       ) : null}
 
       {managedLead ? (
-        <div className={`${assetStyles.modalOverlay} ${dealerWorkspaceClass(workspaceStyles.modalOverlay)} ${styles.leadManageOverlay}`}>
+        <div className={`${assetStyles.modalOverlay} ${assetStyles.ownerCommandOverlay} ${dealerWorkspaceClass(workspaceStyles.modalOverlay)} ${styles.leadManageOverlay}`}>
           <div className={assetStyles.modalBackdrop} onClick={() => setManagedLead(null)} />
 
-          <div className={`${assetStyles.optionsModal} ${dealerWorkspaceClass(workspaceStyles.modal)} ${styles.leadManageModal} ${licensingWorkspaceMode ? styles.licensingManageModal : ''}`} role="dialog" aria-modal="true" aria-labelledby="lead-manage-title">
+          <div className={`${assetStyles.optionsModal} ${assetStyles.ownerCommandModal} ${dealerWorkspaceClass(workspaceStyles.modal)} ${styles.leadManageModal} ${licensingWorkspaceMode ? styles.licensingManageModal : ''}`} role="dialog" aria-modal="true" aria-labelledby="lead-manage-title">
             <div className={`${assetStyles.modalHeader} ${assetStyles.optionsModalHeader} ${dealerWorkspaceClass(workspaceStyles.modalHeader)}`}>
               <div className={assetStyles.modalHeaderText}>
                 <h3 id="lead-manage-title">{assetTitle(managedLead)}</h3>
@@ -4140,34 +4140,34 @@ export default function LeadsClient({
               </button>
             </div>
 
-            <div className={`${assetStyles.modalScrollBody} ${assetStyles.optionsScrollBody} ${dealerWorkspaceClass(workspaceStyles.modalBody)} ${styles.leadManageScrollBody}`}>
+            <div className={`${assetStyles.modalScrollBody} ${assetStyles.optionsScrollBody} ${assetStyles.ownerCommandScrollBody} ${dealerWorkspaceClass(workspaceStyles.modalBody)} ${styles.leadManageScrollBody}`}>
               <div className={assetStyles.optionsContent}>
-                <div className={`${assetStyles.optionsGrid} ${assetStyles.assetOptionsGrid} ${styles.manageOptionsGrid}`}>
+                <div className={`${assetStyles.optionsGrid} ${assetStyles.assetOptionsGrid} ${assetStyles.ownerCommandGrid} ${styles.manageOptionsGrid}`}>
                   {accountantWorkspaceMode ? (
                     <>
                       <button
                         type="button"
-                        className={`${assetStyles.optionActionButton} ${assetStyles.optionFeaturedButton}`}
+                        className={`${assetStyles.optionActionButton} ${assetStyles.ownerCommandAction} ${assetStyles.optionFeaturedButton}`}
                         onClick={() => void openLead(managedLead)}
                       >
                         <DocumentIcon className={assetStyles.buttonIcon} />
                         <span>
                           <strong>Open asset register</strong>
-                          <small className={styles.accountantManageDescription}>Open the client’s shared Asset Register.</small>
+                          <small className={styles.accountantManageDescription}>Open the shared register.</small>
                         </span>
                       </button>
 
-                      <button type="button" className={assetStyles.optionActionButton} onClick={() => openAccountantReportModal(managedLead)}>
+                      <button type="button" className={`${assetStyles.optionActionButton} ${assetStyles.ownerCommandAction}`} onClick={() => openAccountantReportModal(managedLead)}>
                         <DownloadIcon className={assetStyles.buttonIcon} />
                         <span>
                           <strong>Download reports</strong>
-                          <small className={styles.accountantManageDescription}>Choose an accountant-ready report.</small>
+                          <small className={styles.accountantManageDescription}>Choose a report.</small>
                         </span>
                       </button>
 
                       <button
                         type="button"
-                        className={assetStyles.optionActionButton}
+                        className={`${assetStyles.optionActionButton} ${assetStyles.ownerCommandAction}`}
                         onClick={() => openEmail(managedLead)}
                         disabled={!leadEmailRecipient(managedLead)}
                         title={!leadEmailRecipient(managedLead) ? 'No client email address is saved on this client.' : undefined}
@@ -4176,14 +4176,14 @@ export default function LeadsClient({
                         <span>
                           <strong>Email client</strong>
                           <small className={styles.accountantManageDescription}>
-                            {leadEmailRecipient(managedLead) ? 'Email the client about this register.' : 'No client email saved.'}
+                            {leadEmailRecipient(managedLead) ? 'Email the client.' : 'No email saved.'}
                           </small>
                         </span>
                       </button>
 
                       <button
                         type="button"
-                        className={`${assetStyles.optionActionButton} ${styles.accountantDeleteAction}`}
+                        className={`${assetStyles.optionActionButton} ${assetStyles.optionDangerButton} ${assetStyles.ownerCommandAction} ${assetStyles.ownerCommandDangerAction} ${styles.accountantDeleteAction}`}
                         onClick={() => {
                           setManagedLead(null);
                           setDeleteLeadTarget(managedLead);
@@ -4192,23 +4192,23 @@ export default function LeadsClient({
                         <DeleteIcon className={assetStyles.buttonIcon} />
                         <span>
                           <strong>Delete client</strong>
-                          <small className={styles.accountantManageDescription}>Remove this register from My Clients.</small>
+                          <small className={styles.accountantManageDescription}>Remove this register.</small>
                         </span>
                       </button>
                     </>
                   ) : (
                     <>
-                      <button type="button" className={`${assetStyles.optionActionButton} ${assetStyles.optionFeaturedButton} ${styles.whatsAppActionButton}`} onClick={() => openWhatsApp(managedLead)}>
+                      <button type="button" className={`${assetStyles.optionActionButton} ${assetStyles.ownerCommandAction} ${assetStyles.optionFeaturedButton} ${styles.whatsAppActionButton}`} onClick={() => openWhatsApp(managedLead)}>
                         <WhatsAppIcon className={`${assetStyles.buttonIcon} ${styles.whatsAppIcon}`} />
                         <span>
                           <strong>WhatsApp client</strong>
-                          <small>Open a WhatsApp message to the owner.</small>
+                          <small>Message the owner.</small>
                         </span>
                       </button>
 
                       <button
                         type="button"
-                        className={assetStyles.optionActionButton}
+                        className={`${assetStyles.optionActionButton} ${assetStyles.ownerCommandAction}`}
                         onClick={() => openEmail(managedLead)}
                         disabled={!leadEmailRecipient(managedLead)}
                         title={!leadEmailRecipient(managedLead) ? 'No client email address is saved on this lead.' : undefined}
@@ -4216,12 +4216,12 @@ export default function LeadsClient({
                         <EmailIcon className={assetStyles.buttonIcon} />
                         <span>
                           <strong>Email client</strong>
-                          <small>{leadEmailRecipient(managedLead) ? 'Open an email draft with asset context.' : 'No client email address saved.'}</small>
+                          <small>{leadEmailRecipient(managedLead) ? 'Email the owner.' : 'No email saved.'}</small>
                         </span>
                       </button>
 
                       {!licensingWorkspaceMode ? (
-                        <button type="button" className={assetStyles.optionActionButton} onClick={() => openLeadReportModal(managedLead)}>
+                        <button type="button" className={`${assetStyles.optionActionButton} ${assetStyles.ownerCommandAction}`} onClick={() => openLeadReportModal(managedLead)}>
                           <DownloadIcon className={assetStyles.buttonIcon} />
                           <span>
                             <strong>Reports</strong>
@@ -4232,21 +4232,21 @@ export default function LeadsClient({
 
 
                       {isDealerLeadsMode ? (
-                        <button type="button" className={assetStyles.optionActionButton} onClick={() => void openLeadQrModal(managedLead)}>
+                        <button type="button" className={`${assetStyles.optionActionButton} ${assetStyles.ownerCommandAction}`} onClick={() => void openLeadQrModal(managedLead)}>
                           <QrCodeIcon className={assetStyles.buttonIcon} />
                           <span>
                             <strong>QR code</strong>
-                            <small>Copy, download or print the asset QR label.</small>
+                            <small>Copy, print or download.</small>
                           </span>
                         </button>
                       ) : null}
 
                       {isDealerLeadsMode ? (
-                        <button type="button" className={assetStyles.optionActionButton} onClick={() => void openLeadPhotoUploadModal(managedLead)}>
+                        <button type="button" className={`${assetStyles.optionActionButton} ${assetStyles.ownerCommandAction}`} onClick={() => void openLeadPhotoUploadModal(managedLead)}>
                           <PhotosIcon className={assetStyles.buttonIcon} />
                           <span>
                             <strong>Photos</strong>
-                            <small>Add photos of this asset.</small>
+                            <small>Add asset photos.</small>
                           </span>
                         </button>
                       ) : null}
@@ -4254,7 +4254,7 @@ export default function LeadsClient({
                       {isTrackingLead(managedLead) && managedLead.maintenanceAccess?.isActive ? (
                         <button
                           type="button"
-                          className={assetStyles.optionActionButton}
+                          className={`${assetStyles.optionActionButton} ${assetStyles.ownerCommandAction}`}
                           onClick={() => openMaintenanceSchedule(managedLead)}
                           disabled={!managedLead.maintenanceAccess.permissions.canCreateMaintenanceSchedules}
                           title={!managedLead.maintenanceAccess.permissions.canCreateMaintenanceSchedules
@@ -4266,7 +4266,7 @@ export default function LeadsClient({
                             <strong>Schedule maintenance</strong>
                             <small>
                               {managedLead.maintenanceAccess.permissions.canCreateMaintenanceSchedules
-                                ? 'Send a schedule for the owner to approve.'
+                                ? 'Send for owner approval.'
                                 : 'Owner permission is required.'}
                             </small>
                           </span>
@@ -4281,7 +4281,7 @@ export default function LeadsClient({
                           serialNumber={asText(managedLead.assetSnapshot.serialNumber)}
                           replacementPriceExVat={snapshotReplacementPrice(managedLead.assetSnapshot)}
                           correction={managedLead.dealerCorrection}
-                          actionClassName={assetStyles.optionActionButton}
+                          actionClassName={`${assetStyles.optionActionButton} ${assetStyles.ownerCommandAction}`}
                           iconClassName={assetStyles.buttonIcon}
                           onSaved={handleDealerCorrectionSaved}
                         />
@@ -4299,7 +4299,7 @@ export default function LeadsClient({
                           canUpdateSerial={false}
                           canUpdateReplacementPrice={false}
                           canUpdateLicenseRenewalDate
-                          actionClassName={assetStyles.optionActionButton}
+                          actionClassName={`${assetStyles.optionActionButton} ${assetStyles.ownerCommandAction}`}
                           iconClassName={assetStyles.buttonIcon}
                           onSaved={handleDealerCorrectionSaved}
                         />
@@ -4308,13 +4308,13 @@ export default function LeadsClient({
                       {canAddDealerCosts && !isFullRegisterLead(managedLead) ? (
                         <button
                           type="button"
-                          className={assetStyles.optionActionButton}
+                          className={`${assetStyles.optionActionButton} ${assetStyles.ownerCommandAction}`}
                           onClick={() => openDealerCost(managedLead)}
                         >
                           <CostIcon className={assetStyles.buttonIcon} />
                           <span>
-                            <strong>Add asset cost</strong>
-                            <small>Upload an invoice or enter a cost manually.</small>
+                            <strong>Add cost</strong>
+                            <small>Record an expense for this asset.</small>
                           </span>
                         </button>
                       ) : null}

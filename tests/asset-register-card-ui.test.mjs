@@ -350,7 +350,7 @@ test('owner command layout is three columns wide, two medium and one mobile', ()
   assert.match(styles, /\.ownerCommandScrollBody\.optionsScrollBody\s*\{[\s\S]*?overflow-y:\s*auto !important;[\s\S]*?scrollbar-gutter:\s*auto !important;/);
   assert.match(styles, /\.optionsModal\.ownerCommandModal\s*\{[\s\S]*?overflow:\s*hidden !important;/);
   assert.match(styles, /@media \(min-width: 901px\)[\s\S]*?\.ownerCommandModal \.ownerCommandGrid \.ownerCommandAction small,[\s\S]*?white-space:\s*nowrap !important;/);
-  assert.match(dangerActionRule, /width:\s*100%;[\s\S]*?min-height:\s*5\.85rem;/);
+  assert.match(dangerActionRule, /width:\s*100%;[\s\S]*?min-height:\s*6\.25rem;/);
   assert.doesNotMatch(dangerActionRule, /grid-column/);
   assert.doesNotMatch(styles, /\.ownerCommandDangerZone/);
 });

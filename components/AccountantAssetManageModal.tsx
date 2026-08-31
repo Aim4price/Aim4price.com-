@@ -482,36 +482,36 @@ export default function AccountantAssetManageModal({
   const financeHasAgreement = finance.financeStatus === 'yes' || finance.financeStatus === 'paid';
 
   return (
-    <div className={`${styles.modalOverlay} ${styles.accountantManageOverlay}`}>
+    <div className={`${styles.modalOverlay} ${styles.ownerCommandOverlay} ${styles.accountantManageOverlay}`}>
       <div className={`${styles.modalBackdrop} ${styles.accountantManageBackdrop}`} onClick={busy ? undefined : onClose} />
-      <section className={`${styles.optionsModal} ${styles.accountantManageModal} ${view === 'finance' ? styles.accountantFinanceModal : ''}`} role="dialog" aria-modal="true" aria-labelledby="accountant-asset-manage-title">
+      <section className={`${styles.optionsModal} ${styles.accountantManageModal} ${view === 'menu' ? styles.ownerCommandModal : ''} ${view === 'finance' ? styles.accountantFinanceModal : ''}`} role="dialog" aria-modal="true" aria-labelledby="accountant-asset-manage-title">
         <div className={`${styles.modalHeader} ${styles.optionsModalHeader}`}>
           <div className={styles.modalHeaderText}>
             <h3 id="accountant-asset-manage-title">{title}</h3>
-            <p>{financeAssetPickerOpen ? 'Select every asset covered by the same agreement.' : view === 'menu' ? 'Accountant Workspace' : asset.title}</p>
+            <p>{financeAssetPickerOpen ? 'Select every asset covered by the same agreement.' : view === 'menu' ? assetMeta(asset) || 'No key details saved yet' : asset.title}</p>
           </div>
           <button type="button" className={styles.modalCloseButton} onClick={financeAssetPickerOpen ? () => setFinanceAssetPickerOpen(false) : onClose} disabled={busy} aria-label={financeAssetPickerOpen ? 'Close financed asset picker' : 'Close asset management'}>×</button>
         </div>
 
-        <div className={`${styles.modalScrollBody} ${styles.accountantManageBody} ${view === 'menu' ? styles.optionsScrollBody : styles.assetSettingsBody}`}>
+        <div className={`${styles.modalScrollBody} ${styles.accountantManageBody} ${view === 'menu' ? `${styles.optionsScrollBody} ${styles.ownerCommandScrollBody}` : styles.assetSettingsBody}`}>
           {view === 'menu' ? (
             <div className={styles.optionsContent}>
               {!allowDirectUpdates ? <div className={styles.accountantReadOnlyNotice}>The owner has shared this register as read-only. Reports and documents remain viewable.</div> : null}
-              <div className={`${styles.optionsGrid} ${styles.assetOptionsGrid}`}>
-                <button type="button" className={`${styles.optionActionButton} ${styles.optionFeaturedButton}`} onClick={() => setView('finance')}>
-                  <ActionIcon type="finance"/><span><strong>Finance Agreements</strong><small>Manage finance, payment and acquisition details.</small></span>
+              <div className={`${styles.optionsGrid} ${styles.assetOptionsGrid} ${styles.ownerCommandGrid}`}>
+                <button type="button" className={`${styles.optionActionButton} ${styles.ownerCommandAction} ${styles.optionFeaturedButton}`} onClick={() => setView('finance')}>
+                  <ActionIcon type="finance"/><span><strong>Finance agreements</strong><small>Manage finance and payments.</small></span>
                 </button>
-                <button type="button" className={styles.optionActionButton} onClick={() => setView('accounting')}>
-                  <ActionIcon type="accounting"/><span><strong>Accounting Book Value</strong><small>Keep book value separate from market value.</small></span>
+                <button type="button" className={`${styles.optionActionButton} ${styles.ownerCommandAction}`} onClick={() => setView('accounting')}>
+                  <ActionIcon type="accounting"/><span><strong>Accounting book value</strong><small>Keep book and market values separate.</small></span>
                 </button>
-                <button type="button" className={styles.optionActionButton} onClick={() => setView('documents')}>
-                  <ActionIcon type="document"/><span><strong>Documents</strong><small>View or add supporting documents.</small></span>
+                <button type="button" className={`${styles.optionActionButton} ${styles.ownerCommandAction}`} onClick={() => setView('documents')}>
+                  <ActionIcon type="document"/><span><strong>Documents</strong><small>View or add documents.</small></span>
                 </button>
-                <button type="button" className={styles.optionActionButton} onClick={() => setView('reports')}>
-                  <ActionIcon type="report"/><span><strong>Download reports</strong><small>Download reports for this asset.</small></span>
+                <button type="button" className={`${styles.optionActionButton} ${styles.ownerCommandAction}`} onClick={() => setView('reports')}>
+                  <ActionIcon type="report"/><span><strong>Download reports</strong><small>Choose and download reports.</small></span>
                 </button>
-                <button type="button" className={styles.optionActionButton} onClick={() => { setLifecycleReason('sold'); setLifecycleOutcomeInfluence(''); setView('dispose'); }}>
-                  <ActionIcon type="dispose"/><span><strong>Dispose asset</strong><small>Record a sale, trade, loss or transfer.</small></span>
+                <button type="button" className={`${styles.optionActionButton} ${styles.optionDangerButton} ${styles.ownerCommandAction} ${styles.ownerCommandDangerAction}`} onClick={() => { setLifecycleReason('sold'); setLifecycleOutcomeInfluence(''); setView('dispose'); }}>
+                  <ActionIcon type="dispose"/><span><strong>Dispose asset</strong><small>Record a sale, loss or transfer.</small></span>
                 </button>
               </div>
             </div>
