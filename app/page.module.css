@@ -1061,9 +1061,9 @@
   transform: scale(1.025);
   filter: saturate(1.08) contrast(1.04) brightness(1.02);
   transition:
-    opacity 260ms ease,
-    transform 720ms ease,
-    filter 260ms ease;
+    opacity 120ms ease,
+    transform 480ms ease,
+    filter 160ms ease;
 }
 
 .heroBubbleSurface {
@@ -1076,7 +1076,7 @@
     inset 0 0 0 1px rgba(255, 255, 255, 0.18),
     inset 0 -18px 34px rgba(5, 55, 40, 0.16);
   opacity: 1;
-  transition: opacity 220ms ease;
+  transition: opacity 120ms ease;
 }
 
 .heroBubbleSurface::after {
