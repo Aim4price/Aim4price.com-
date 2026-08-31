@@ -35,3 +35,19 @@ test('Marketplace heading polish is isolated to the entry introduction', async (
   assert.doesNotMatch(source, /entryEyebrow/);
   assert.doesNotMatch(styles, /\.entryEyebrow/);
 });
+
+test('Discovery and Marketplace content aligns to the top like Get Estimate cards', async () => {
+  const [source, styles] = await Promise.all([
+    read('app/marketplace/page.tsx'),
+    read('app/marketplace/marketplace-entry.module.css'),
+  ]);
+  const contentRule = styles.slice(
+    styles.indexOf('.entryChoiceContent.entryChoiceContent'),
+    styles.indexOf('@media (max-width: 1180px)'),
+  );
+  const contentClassUsages = source.match(/entryStyles\.entryChoiceContent/g) ?? [];
+
+  assert.equal(contentClassUsages.length, 2);
+  assert.match(contentRule, /justify-content:\s*flex-start/);
+  assert.doesNotMatch(contentRule, /justify-content:\s*flex-end/);
+});
