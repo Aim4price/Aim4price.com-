@@ -1,52 +1,75 @@
+import Image from 'next/image';
 import Link from 'next/link';
-
-import AppHeader from '../components/AppHeader';
 import { redirectAdminToAdmin } from '../lib/account-access';
+import AppHeader from '../components/AppHeader';
+import HomeHeroVideo from './home-hero-video';
 import styles from './page.module.css';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-type AudienceChoice = {
-  role: 'Owner' | 'Dealer';
-  eyebrow: string;
+type ProductStep = {
+  number: string;
+  title: string;
   text: string;
+  href: string;
   action: string;
 };
 
-const audienceChoices: AudienceChoice[] = [
+type RolePlayer = {
+  role: string;
+  text: string;
+};
+
+const productSteps: ProductStep[] = [
   {
-    role: 'Owner',
-    eyebrow: 'Own or manage assets',
-    text: 'Build a clear record of what you own, what it costs and what it is worth.',
-    action: 'Continue to signup',
+    number: '01',
+    title: 'Estimate the value',
+    text: 'Create a structured estimate using the asset details and condition.',
+    href: '/valuation',
+    action: 'Start estimate',
   },
   {
-    role: 'Dealer',
-    eyebrow: 'Sell or support assets',
-    text: 'Value equipment, work with asset owners and keep every opportunity organised.',
-    action: 'Continue to signup',
+    number: '02',
+    title: 'Create the record',
+    text: 'Keep values, photos, documents and QR-linked details together.',
+    href: '/asset-register',
+    action: 'Open Asset Register',
+  },
+  {
+    number: '03',
+    title: 'Manage ownership',
+    text: 'Track costs, fuel, maintenance, finance, insurance and licensing.',
+    href: '/asset-register',
+    action: 'Explore Asset Register',
+  },
+  {
+    number: '04',
+    title: 'Work with your team',
+    text: 'Give trusted professionals controlled access to the same asset information.',
+    href: '#roleplayers',
+    action: 'View role players',
   },
 ];
 
-function AudienceIcon({ role }: { role: AudienceChoice['role'] }) {
-  if (role === 'Owner') {
-    return (
-      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-        <circle cx="12" cy="7.5" r="3.5" />
-        <path d="M5.5 20c.4-4 2.55-6.15 6.5-6.15S18.1 16 18.5 20" />
-      </svg>
-    );
-  }
-
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-      <path d="M4 10.25 5.4 4h13.2l1.4 6.25" />
-      <path d="M5.25 10.25V20h13.5v-9.75" />
-      <path d="M3.5 10.25h17M8.5 20v-5h7v5" />
-    </svg>
-  );
-}
+const rolePlayers: RolePlayer[] = [
+  {
+    role: 'Dealers',
+    text: 'Valuation, servicing and replacement support.',
+  },
+  {
+    role: 'Accountants',
+    text: 'Financial records, documents and reports.',
+  },
+  {
+    role: 'Financiers',
+    text: 'Asset values, finance agreements and funding needs.',
+  },
+  {
+    role: 'Insurers & brokers',
+    text: 'Cover values, schedules and supporting evidence.',
+  },
+];
 
 export default async function HomePage() {
   await redirectAdminToAdmin();
@@ -55,79 +78,146 @@ export default async function HomePage() {
     <main className={styles.page}>
       <AppHeader active="home" />
 
-      <section className={styles.heroSection} aria-labelledby="home-hero-title">
-        <div className={`${styles.shell} ${styles.heroInner}`}>
-          <p className={styles.heroEyebrow}>Asset intelligence for South Africa</p>
+      <section className={styles.heroSection}>
+        <div className={styles.heroMedia}>
+          <HomeHeroVideo />
 
-          <h1 id="home-hero-title" className={styles.heroTitle}>
-            <span>Know every asset.</span>
-            <span>Understand every value.</span>
-          </h1>
+          <div className={styles.heroOverlay} />
 
-          <p className={styles.heroText}>
-            Manage, value and share the machinery, vehicles and equipment behind your business.
-          </p>
+          <div className={styles.shell}>
+            <div className={styles.heroGrid}>
+              <div className={styles.heroCopy}>
+                <p className={styles.heroEyebrow}>
+                  <span>AIM4PRICE.COM</span>
+                  <span className={styles.heroEyebrowDivider} aria-hidden="true">
+                    |
+                  </span>
+                  <span>Asset Intelligence, Management &amp; Pricing</span>
+                </p>
 
-          <div className={styles.heroActions}>
-            <Link href="#choose-your-path" className={styles.primaryCta}>
-              Find your path
-              <span aria-hidden="true">↓</span>
-            </Link>
-            <Link href="/about-us" className={styles.secondaryCta}>
-              Explore the platform
-            </Link>
+                <h1 className={styles.heroTitle}>
+                  <span>Manage every asset.</span>
+                  <span>One live system.</span>
+                </h1>
+
+                <p className={styles.heroText}>
+                  Build detailed records and reports, manage every stage of ownership and
+                  collaborate with trusted professionals through one owner-controlled Asset Register.
+                </p>
+
+                <div className={styles.heroActions}>
+                  <Link href="/valuation" className={styles.primaryCta}>
+                    Get free estimate
+                  </Link>
+                  <Link href="/asset-register" className={styles.secondaryCta}>
+                    Create Asset Register
+                  </Link>
+                </div>
+              </div>
+
+              <Link
+                href="/about-us"
+                className={styles.heroVisual}
+                aria-label="About Aim4price"
+              >
+                <Image
+                  src="/brand/aim4price-mark-white.png"
+                  alt="Aim4price"
+                  width={640}
+                  height={640}
+                  priority
+                  className={styles.heroLogo}
+                />
+              </Link>
+            </div>
           </div>
         </div>
-
-        <a
-          href="#choose-your-path"
-          className={styles.scrollCue}
-          aria-label="Choose how you use Aim4price"
-        >
-          <span aria-hidden="true" />
-          Choose your starting point
-        </a>
       </section>
 
-      <section
-        id="choose-your-path"
-        className={styles.audienceSection}
-        aria-labelledby="audience-title"
-      >
-        <div className={`${styles.shell} ${styles.audienceInner}`}>
-          <div className={styles.audienceHeading}>
-            <p className={styles.audienceEyebrow}>Start with your role</p>
-            <h2 id="audience-title" className={styles.audienceTitle}>
-              Are you an owner or a dealer?
-            </h2>
-            <p className={styles.audienceText}>
-              Choose the workspace that matches how you work with assets.
+      <section className={styles.productSection}>
+        <div className={styles.shell}>
+          <div className={styles.sectionHeading}>
+            <p className={styles.sectionEyebrow}>What Aim4price does</p>
+            <h2 className={styles.sectionTitle}>From estimate to a complete asset record.</h2>
+            <p className={styles.sectionText}>
+              Create the record once, then keep it useful throughout ownership.
             </p>
           </div>
 
-          <div className={styles.audienceGrid}>
-            {audienceChoices.map((choice) => (
-              <Link
-                key={choice.role}
-                href="/auth#signup"
-                className={styles.audienceCard}
-                aria-label={`Continue to signup and choose ${choice.role} as your workspace`}
-              >
-                <span className={styles.audienceIcon}>
-                  <AudienceIcon role={choice.role} />
-                </span>
-
-                <span className={styles.audienceCopy}>
-                  <span className={styles.audienceCardEyebrow}>{choice.eyebrow}</span>
-                  <strong>{choice.role}</strong>
-                  <span className={styles.audienceCardText}>{choice.text}</span>
-                  <span className={styles.audienceAction}>
-                    {choice.action}
-                    <span aria-hidden="true">→</span>
-                  </span>
-                </span>
+          <div className={styles.productGrid}>
+            {productSteps.map((step) => (
+              <Link key={step.number} href={step.href} className={styles.productCard}>
+                <span className={styles.productNumber}>{step.number}</span>
+                <h3 className={styles.productTitle}>{step.title}</h3>
+                <p className={styles.productText}>{step.text}</p>
+                <span className={styles.productAction}>{step.action}</span>
               </Link>
             ))}
+          </div>
+
+          <div className={styles.marketPrompt}>
+            <div>
+              <p className={styles.marketLabel}>Explore the market</p>
+              <p className={styles.marketText}>Browse listings and owner-authorised opportunities.</p>
+            </div>
+            <Link href="/marketplace" className={styles.marketLink}>
+              View Marketplace
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      <section id="roleplayers" className={styles.rolesSection}>
+        <div className={styles.shell}>
+          <div className={styles.rolesPanel}>
+            <div className={styles.rolesHeading}>
+              <p className={styles.rolesEyebrow}>One system, clear roles</p>
+              <h2 className={styles.rolesTitle}>
+                <span className={styles.rolesTitleLine}>
+                  The owner controls the Asset Register.
+                </span>
+                <span className={styles.rolesTitleLine}>Every role can contribute.</span>
+              </h2>
+              <p className={styles.rolesText}>
+                Trusted professionals contribute only where relevant.
+              </p>
+            </div>
+
+            <div className={styles.collaborationMap}>
+              <article className={styles.ownerHub}>
+                <p className={styles.ownerHubEyebrow}>Owner controlled</p>
+                <h3 className={styles.ownerHubTitle}>One Asset Register</h3>
+                <p className={styles.ownerHubText}>
+                  The owner sees the full record and controls who can access or update it.
+                </p>
+              </article>
+
+              <div className={styles.partnerGrid}>
+                {rolePlayers.map((player) => (
+                  <article key={player.role} className={styles.partnerCard}>
+                    <h3 className={styles.partnerTitle}>{player.role}</h3>
+                    <p className={styles.partnerText}>{player.text}</p>
+                  </article>
+                ))}
+              </div>
+            </div>
+
+            <div className={styles.rolesFooter}>
+              <div>
+                <p className={styles.rolesFooterLabel}>Start with one asset</p>
+                <p className={styles.rolesFooterText}>
+                  Create the first record, then keep building the register.
+                </p>
+              </div>
+              <div className={styles.rolesActions}>
+                <Link href="/valuation" className={styles.lightCta}>
+                  Get free estimate
+                </Link>
+                <Link href="/auth#signup" className={styles.outlineCta}>
+                  Create free account
+                </Link>
+              </div>
+            </div>
           </div>
         </div>
       </section>
