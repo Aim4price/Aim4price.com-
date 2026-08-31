@@ -35,9 +35,22 @@ test('prompt gates only portrait phone widths and releases immediately in landsc
 
 test('animation is calm, motion-safe and excluded from print exports', async () => {
   const styles = await read('components/MobileOrientationPrompt.module.css');
+  const prompt = await read('components/MobileOrientationPrompt.tsx');
 
-  assert.match(styles, /animation: orientationSignal 1\.55s ease-in-out infinite/);
+  assert.match(prompt, /className=\{styles\.phoneGroup\}/);
+  assert.match(prompt, /orientation-phone-frame/);
+  assert.match(prompt, /orientation-phone-screen/);
+  assert.match(prompt, /className=\{styles\.motionTrack\}/);
+  assert.match(prompt, /markerEnd="url\(#orientation-arrowhead\)"/);
+  assert.equal((prompt.match(/className=\{styles\.motionTrack\}/g) ?? []).length, 1);
+  assert.doesNotMatch(prompt, /styles\.orbit|styles\.arrowHead/);
+  assert.match(styles, /border-radius: 2\.75rem/);
+  assert.match(styles, /animation: orientationGlow 2\.8s ease-in-out infinite/);
+  assert.match(styles, /animation: phoneTurn 2\.8s cubic-bezier\(0\.65, 0, 0\.25, 1\) infinite/);
+  assert.match(styles, /animation: drawTurn 2\.8s ease-in-out infinite/);
+  assert.match(styles, /@keyframes phoneTurn[\s\S]*?transform: rotate\(90deg\)/);
   assert.match(styles, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?animation: none/);
+  assert.match(styles, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.phoneGroup \{\s*transform: rotate\(90deg\)/);
   assert.match(styles, /@media print[\s\S]*?\.prompt \{[\s\S]*?display: none !important/);
   assert.match(styles, /\.prompt \+ :global\(\.appRoot\)[\s\S]*?display: flex !important/);
 });
