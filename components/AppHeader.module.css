@@ -4313,32 +4313,34 @@
   background-clip: padding-box;
 }
 
-/* Text-only header wordmark, matching the footer brand treatment. */
-.brandWordmark {
-  display: inline-block;
-  color: #163f32;
-  font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
-  font-size: clamp(1.75rem, 2.2vw, 2.05rem);
-  font-weight: 850;
-  line-height: 0.96;
-  letter-spacing: -0.065em;
-  white-space: nowrap;
+/* Compact black Aim4price logo used in the global header. */
+.headerBrandLogo {
+  display: block;
+  width: clamp(7.75rem, 9vw, 9.5rem);
+  height: auto;
+  max-height: 2.6rem;
+  object-fit: contain;
+  object-position: left center;
+  filter: brightness(0) saturate(100%);
 }
 
 @media (max-width: 1180px) {
-  .brandWordmark {
-    font-size: clamp(1.65rem, 3.2vw, 1.95rem);
+  .headerBrandLogo {
+    width: clamp(7.25rem, 14vw, 8.75rem);
+    max-height: 2.35rem;
   }
 }
 
 @media (max-width: 760px) {
-  .brandWordmark {
-    font-size: clamp(1.35rem, 5.5vw, 1.65rem);
+  .headerBrandLogo {
+    width: clamp(5.6rem, 22vw, 7rem);
+    max-height: 1.95rem;
   }
 }
 
 @media (max-width: 390px) {
-  .brandWordmark {
-    font-size: clamp(1rem, 4.5vw, 1.15rem);
+  .headerBrandLogo {
+    width: clamp(5.1rem, 22vw, 5.8rem);
+    max-height: 1.65rem;
   }
 }
