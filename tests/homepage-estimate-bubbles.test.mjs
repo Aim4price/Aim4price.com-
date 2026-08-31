@@ -39,6 +39,7 @@ test('homepage presents four green Get Estimate video bubbles', async () => {
   assert.match(bubbles, /preload="none"/);
   assert.match(bubbles, /connection\?\.saveData/);
   assert.match(bubbles, /video\.preload = 'auto';[\s\S]*?video\.load\(\)/);
+  assert.match(bubbles, /video\.dataset\.previewRequestId \|\| !video\.paused/);
   assert.match(bubbles, /ref=\{groupRef\}/);
   assert.match(bubbles, /muted[\s\S]*?loop[\s\S]*?playsInline/);
   assert.doesNotMatch(bubbles, /autoPlay/);
