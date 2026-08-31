@@ -9,9 +9,9 @@ test('root layout mounts the phone orientation prompt before the complete app', 
 
   assert.match(layout, /import MobileOrientationPrompt from '\.\.\/components\/MobileOrientationPrompt'/);
   assert.match(layout, /<body>[\s\S]*?<MobileOrientationPrompt \/>[\s\S]*?<div className="appRoot">/);
-  assert.match(layout, /width: 'device-width'/);
-  assert.match(layout, /initialScale: 1/);
-  assert.doesNotMatch(layout, /width: 980|initialScale: -1/);
+  assert.match(layout, /width: 980/);
+  assert.match(layout, /initialScale: -1/);
+  assert.doesNotMatch(layout, /width: 'device-width'|initialScale: 1/);
 });
 
 test('prompt clearly and accessibly tells portrait-phone users to rotate', async () => {
@@ -67,8 +67,7 @@ test('installable mobile apps bypass the orientation prompt', async () => {
 test('prompt gates only portrait phone widths and releases immediately in landscape', async () => {
   const styles = await read('components/MobileOrientationPrompt.module.css');
 
-  assert.match(styles, /@media \(orientation: portrait\) and \(max-width: 767px\)/);
-  assert.doesNotMatch(styles, /max-device-width/);
+  assert.match(styles, /@media \(orientation: portrait\) and \(max-width: 767px\),[\s\S]*?\(orientation: portrait\) and \(max-device-width: 767px\)/);
   assert.match(styles, /\.prompt \{[\s\S]*?display: none/);
   assert.match(styles, /@media \(orientation: portrait\)[\s\S]*?\.prompt \{\s*display: flex;[\s\S]*?\.prompt \+ :global\(\.appRoot\) \{\s*display: none;/);
   assert.doesNotMatch(styles, /screen\.orientation|orientation\.lock/);

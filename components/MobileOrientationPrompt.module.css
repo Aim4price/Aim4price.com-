@@ -261,7 +261,13 @@
   }
 }
 
-@media (orientation: portrait) and (max-width: 767px) {
+/*
+ * Normal website routes use a fixed 980px layout viewport. The device-width
+ * branch detects the physical phone screen while the width branch preserves
+ * the gate for any route that later opts back into a responsive viewport.
+ */
+@media (orientation: portrait) and (max-width: 767px),
+  (orientation: portrait) and (max-device-width: 767px) {
   .prompt {
     display: flex;
   }

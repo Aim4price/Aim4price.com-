@@ -41,10 +41,11 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  // Use the real device canvas so every responsive layout can reflow instead
-  // of shrinking a permanent desktop-width page onto the phone screen.
-  width: 'device-width',
-  initialScale: 1,
+  // Keep normal website routes on a strict desktop canvas and let mobile
+  // browsers shrink the complete 980px layout to fit the physical screen.
+  // The installable apps override this in their nested layouts.
+  width: 980,
+  initialScale: -1,
   userScalable: true,
 };
 
