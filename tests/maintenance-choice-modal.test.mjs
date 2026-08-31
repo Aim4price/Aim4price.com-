@@ -21,7 +21,7 @@ test('maintenance choice modal uses concise add-asset-style action cards', () =>
 
   assert.ok(modalStart >= 0 && modalEnd > modalStart, 'expected maintenance choice modal');
   assert.match(modal, /<strong>Add maintenance<\/strong>/);
-  assert.match(modal, /<strong>Manage maintenance<\/strong>/);
+  assert.match(modal, /<strong>Manage<\/strong>/);
   assert.match(modal, /<strong>Dealer tracking settings<\/strong>/);
   assert.doesNotMatch(modal, /<small>/);
   assert.doesNotMatch(
