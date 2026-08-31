@@ -93,12 +93,15 @@ test('register summary supports keyboard navigation and restores focus', () => {
   assert.match(client, /aria-controls="asset-register-summary-dialog"/);
 });
 
-test('register summary keeps the existing PDF export contract', () => {
+test('register summary opens the canonical browser PDF flow', () => {
   assert.match(summaryExportBuilder, /reportKind: 'summary'/);
   assert.match(summaryExportBuilder, /params\.set\('scope', registerIds\.length >= 2 \? 'combined' : 'all'\)/);
   assert.match(summaryExportBuilder, /params\.set\('registerId', cleanedRegisterId\)/);
+  assert.match(summaryExportBuilder, /if \(accountantShareId\) params\.set\('accountantShareId', accountantShareId\)/);
   assert.match(summaryHandlers, /buildAssetRegisterSummaryExportUrl\(/);
-  assert.match(summaryHandlers, /const reportWindow = window\.open\(url, targetName\);/);
+  assert.match(summaryHandlers, /activeRegister\?\.id \|\| activeRegisterId,[\s\S]*?'html',[\s\S]*?accountantShareId/);
+  assert.match(summaryHandlers, /const didOpen = openCanonicalReportUrl\(url\);/);
+  assert.doesNotMatch(summaryHandlers, /window\.open\(url/);
   assert.match(summaryHandlers, /The register summary PDF window was blocked\./);
   assert.match(summaryHandlers, /Register summary PDF opened\./);
   assert.match(summaryModal, /onClick=\{handleDownloadRegisterSummary\}/);
