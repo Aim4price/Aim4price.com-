@@ -4345,7 +4345,7 @@
   }
 }
 
-/* Align the mark to the content shell chosen by each route. */
+/* Bring the mark close to the working columns without narrowing the header. */
 @media (min-width: 1181px) {
   .innerBrandAligned {
     container-type: inline-size;
@@ -4353,21 +4353,13 @@
 }
 
 @media (min-width: 1181px) and (max-width: 1240px) {
-  .brandStandardShell {
-    transform: translateX(clamp(8px, calc((100cqi - 1180px) / 2), 14px));
-  }
-
-  .brandWideShell {
+  .brandWorkingColumn {
     transform: translateX(8px);
   }
 }
 
 @media (min-width: 1241px) {
-  .brandStandardShell {
-    transform: translateX(clamp(0px, calc((100cqi - 1180px) / 2), 90px));
-  }
-
-  .brandWideShell {
-    transform: translateX(clamp(0px, calc((100cqi - 1320px) / 2), 20px));
+  .brandWorkingColumn {
+    transform: translateX(clamp(0px, calc((100cqi - 1240px) / 2), 60px));
   }
 }
