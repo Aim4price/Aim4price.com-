@@ -38,7 +38,6 @@ export default async function HomePage() {
                   </Link>
                 </div>
               </div>
-
             </div>
           </div>
         </div>
