@@ -164,19 +164,13 @@
   text-wrap: balance;
 }
 
-.heroActions,
 .rolesActions {
   display: flex;
   flex-wrap: wrap;
   gap: 0.8rem;
 }
 
-.heroActions {
-  margin-top: clamp(1.7rem, 2.4vw, 2.15rem);
-}
 
-.primaryCta,
-.secondaryCta,
 .lightCta,
 .outlineCta,
 .marketLink {
@@ -198,44 +192,16 @@
     box-shadow 180ms ease;
 }
 
-.primaryCta {
-  color: #ffffff;
-  background: linear-gradient(180deg, #249870 0%, #176c50 100%);
-  border: 1px solid rgba(9, 49, 37, 0.34);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.2),
-    0 16px 30px rgba(8, 21, 17, 0.23);
-}
 
-.secondaryCta {
-  color: #ffffff;
-  background: rgba(255, 255, 255, 0.09);
-  border: 1px solid rgba(255, 255, 255, 0.34);
-  backdrop-filter: blur(10px);
-}
 
-.primaryCta:hover,
-.secondaryCta:hover,
 .lightCta:hover,
 .outlineCta:hover,
 .marketLink:hover {
   transform: translateY(-2px);
 }
 
-.primaryCta:hover {
-  background: linear-gradient(180deg, #27a379 0%, #197454 100%);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.22),
-    0 20px 34px rgba(8, 21, 17, 0.27);
-}
 
-.secondaryCta:hover {
-  background: rgba(255, 255, 255, 0.15);
-  border-color: rgba(255, 255, 255, 0.48);
-}
 
-.primaryCta:focus-visible,
-.secondaryCta:focus-visible,
 .lightCta:focus-visible,
 .outlineCta:focus-visible,
 .marketLink:focus-visible,
@@ -701,8 +667,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .primaryCta,
-  .secondaryCta,
   .lightCta,
   .outlineCta,
   .marketLink,
@@ -713,8 +677,6 @@
     transition: none;
   }
 
-  .primaryCta:hover,
-  .secondaryCta:hover,
   .lightCta:hover,
   .outlineCta:hover,
   .marketLink:hover,
@@ -843,7 +805,6 @@
     text-wrap: pretty;
   }
 
-  .heroActions,
   .rolesActions {
     width: 100%;
     max-width: 34rem;
@@ -852,7 +813,6 @@
     gap: clamp(0.5rem, 2vw, 0.7rem);
   }
 
-  .heroActions > *,
   .rolesActions > * {
     width: 100%;
     min-width: 0;
@@ -900,12 +860,10 @@
     height: auto;
   }
 
-  .heroActions,
   .rolesActions {
     max-width: none;
   }
 
-  .heroActions > *,
   .rolesActions > * {
     padding-inline: 0.48rem;
     font-size: clamp(0.72rem, 3.15vw, 0.82rem);
@@ -960,19 +918,6 @@
   color: #42514b;
 }
 
-.secondaryCta {
-  color: #163f32;
-  background: rgba(255, 255, 255, 0.88);
-  border-color: rgba(22, 63, 50, 0.22);
-  box-shadow: 0 12px 26px rgba(18, 45, 37, 0.08);
-  backdrop-filter: none;
-}
-
-.secondaryCta:hover {
-  color: #12382c;
-  background: rgba(22, 63, 50, 0.07);
-  border-color: rgba(22, 63, 50, 0.32);
-}
 
 @media (max-width: 1100px) {
   .heroCopy,

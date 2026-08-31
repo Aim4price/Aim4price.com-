@@ -19,6 +19,10 @@ test('homepage presents four green Get Estimate video bubbles', async () => {
   assert.match(page, /import HomeEstimateBubbles from '\.\/home-estimate-bubbles'/);
   assert.match(page, /<HomeEstimateBubbles \/>/);
   assert.match(page, /<AppHeader active="home" brandAlignment="working-column" \/>/);
+  assert.doesNotMatch(page, /Get free estimate|Create Asset Register/i);
+  assert.doesNotMatch(page, /styles\.heroActions|styles\.primaryCta|styles\.secondaryCta/);
+  assert.doesNotMatch(page, /from 'next\/link'/);
+  assert.doesNotMatch(styles, /\.heroActions|\.primaryCta|\.secondaryCta/);
   assert.match(assetRegister, /<AppHeader active="asset-register" brandAlignment="working-column" \/>/);
   assert.match(registerGateway, /<AppHeader active="asset-register" brandAlignment="working-column" \/>/);
 
