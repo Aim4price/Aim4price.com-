@@ -142,7 +142,7 @@ test('single and bulk valuation deletion use validated prefixed record IDs', () 
   assert.match(data, /delete from public\.valuation_runs/);
   assert.match(data, /clearValuationRunReferences/);
   assert.match(data, /'admin_valuation_records_deleted'/);
-  assert.match(client, /Bulk delete/);
+  assert.match(client, /Delete selected/);
   assert.match(client, />\s*Delete\s*</);
   assert.match(client, /Type DELETE to confirm/);
   assert.match(client, /Delete permanently/);
@@ -247,7 +247,7 @@ test('flow detail helpers show entered fields in order and format usage correctl
 test('Valuations is available in the consolidated Admin Manage menu', () => {
   assert.match(navigation, /href: "\/admin\/valuations"/);
   assert.match(navigation, /label: "Valuations"/);
-  assert.match(navigation, /Review every estimate, input, result and account/);
+  assert.doesNotMatch(navigation, /description:/);
   assert.match(dashboard, /href: '\/admin\/valuations\?type=estimate'/);
   assert.match(dashboard, /href: '\/admin\/valuations\?type=saved'/);
   assert.match(dashboardPage, /card\.linkLabel/);

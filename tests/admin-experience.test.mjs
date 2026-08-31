@@ -108,7 +108,7 @@ test("admin users and pricing metrics share one logical storage ledger", () => {
   assert.match(adminStorageUsage, /null::timestamptz as created_at/);
   assert.match(adminUsers, /left join storage_by_user storage on storage\.user_id = u\.id/);
   assert.match(users, /<th>Storage<\/th>/);
-  assert.match(users, /accountActionModal\.storageGigabytesLabel/);
+  assert.match(users, /accountActionModal\.storageLabel/);
   assert.match(users, /accountActionModal\.bucketStorageLabel/);
   assert.match(users, /accountActionModal\.postgresStorageLabel/);
   assert.match(users, /Most storage/);

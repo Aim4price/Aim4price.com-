@@ -26,6 +26,8 @@ const mapClient = read("app/admin/asset-map/admin-asset-map-client.tsx");
 const lifecycleClient = read("app/admin/lifecycle-calculator/lifecycle-calculator-client.tsx");
 const marketplaceStyles = read("app/admin/marketplace/page.module.css");
 const outcomeStyles = read("app/admin/sold-assets/page.module.css");
+const accountStyles = read("app/admin/page.module.css");
+const accountPicker = read("app/admin/work-tracker/account-picker.tsx");
 
 test("every Admin workspace uses one concise page title", () => {
   const expectedTitles = {
@@ -79,4 +81,11 @@ test("map and lifecycle remove redundant labels while preserving their actions",
 test("status values are plain text rather than pills", () => {
   assert.match(marketplaceStyles, /\.badge \{[\s\S]*?padding: 0;[\s\S]*?border: 0;[\s\S]*?border-radius: 0;/);
   assert.match(outcomeStyles, /\.yesAnswer,[\s\S]*?padding: 0;[\s\S]*?border: 0;[\s\S]*?border-radius: 0;/);
+  assert.match(accountStyles, /\.nameStatusText \{[\s\S]*?padding: 0;[\s\S]*?border-radius: 0;/);
+});
+
+test("compact controls keep labels and modal titles on one line", () => {
+  assert.doesNotMatch(accountPicker, /<small>\{option\.description\}<\/small>/);
+  assert.match(accountStyles, /\.qrModalHeader h2 \{[\s\S]*?text-overflow: ellipsis;[\s\S]*?white-space: nowrap;/);
+  assert.doesNotMatch(accountStyles, /\.qrModalHeader h2,[\s\S]{0,500}white-space: normal;/);
 });

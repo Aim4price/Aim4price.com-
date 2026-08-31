@@ -326,7 +326,6 @@ export default function AccountPicker({
               >
                 <span className={styles.optionCopy}>
                   <strong>{option.label}</strong>
-                  <small>{option.description}</small>
                 </span>
                 <span className={styles.check} aria-hidden="true">{isSelected ? "✓" : ""}</span>
               </button>
@@ -370,4 +369,3 @@ export default function AccountPicker({
     </div>
   );
 }
-

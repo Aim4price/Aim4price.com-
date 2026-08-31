@@ -1870,11 +1870,10 @@
 }
 
 .nameStatusText {
-  display: inline-flex;
-  align-items: center;
-  min-height: 1.45rem;
-  padding: 0 0.45rem;
-  border-radius: 0.3rem;
+  display: inline;
+  min-height: 0;
+  padding: 0;
+  border-radius: 0;
   font-size: 0.68rem;
   font-weight: 950;
   white-space: nowrap;
@@ -1882,27 +1881,27 @@
 
 .nameStatusChanged {
   color: #176047;
-  background: rgba(44, 173, 126, 0.13);
+  background: transparent;
 }
 
 .nameStatusCommitted {
-  color: #ffffff;
-  background: #174d3e;
+  color: #174d3e;
+  background: transparent;
 }
 
 .nameStatusWarning {
   color: #8a6125;
-  background: rgba(230, 166, 63, 0.16);
+  background: transparent;
 }
 
 .nameStatusError {
   color: #8f3333;
-  background: rgba(198, 75, 75, 0.12);
+  background: transparent;
 }
 
 .nameStatusUnchanged {
   color: #60716a;
-  background: #edf3ef;
+  background: transparent;
 }
 
 .nameManagerEmpty {
@@ -2144,7 +2143,6 @@
     border-radius: 1.05rem;
   }
 
-  .qrModalHeader h2,
   .notificationPriorityPicker button strong,
   .notificationAudienceOption strong,
   .groupNotificationSummary strong,
