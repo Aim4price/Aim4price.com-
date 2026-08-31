@@ -1919,7 +1919,6 @@
   .tableWrap th,
   .tableWrap td {
     padding: 0.4rem;
-    white-space: normal;
     font-size: 0.62rem;
   }
 }

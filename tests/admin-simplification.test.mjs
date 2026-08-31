@@ -29,6 +29,18 @@ const marketplaceStyles = read("app/admin/marketplace/page.module.css");
 const outcomeStyles = read("app/admin/sold-assets/page.module.css");
 const accountStyles = read("app/admin/page.module.css");
 const accountPicker = read("app/admin/work-tracker/account-picker.tsx");
+const singleLineStyles = [
+  accountStyles,
+  dashboardStyles,
+  marketplaceStyles,
+  read("app/admin/asset-map/page.module.css"),
+  read("app/admin/capture-queue/page.module.css"),
+  read("app/admin/discovery/page.module.css"),
+  read("app/admin/lifecycle-calculator/page.module.css"),
+  read("app/admin/sold-assets/page.module.css"),
+  read("app/admin/valuations/page.module.css"),
+  read("app/admin/work-tracker/page.module.css"),
+];
 
 test("every Admin workspace uses one concise page title", () => {
   const expectedTitles = {
@@ -89,6 +101,7 @@ test("compact controls keep labels and modal titles on one line", () => {
   assert.doesNotMatch(accountPicker, /<small>\{option\.description\}<\/small>/);
   assert.match(accountStyles, /\.qrModalHeader h2 \{[\s\S]*?text-overflow: ellipsis;[\s\S]*?white-space: nowrap;/);
   assert.doesNotMatch(accountStyles, /\.qrModalHeader h2,[\s\S]{0,500}white-space: normal;/);
-  assert.doesNotMatch(accountStyles, /white-space:\s*normal/);
-  assert.doesNotMatch(dashboardStyles, /white-space:\s*normal/);
+  for (const styles of singleLineStyles) {
+    assert.doesNotMatch(styles, /white-space:\s*normal/);
+  }
 });

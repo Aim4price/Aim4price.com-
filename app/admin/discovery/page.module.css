@@ -1115,10 +1115,6 @@
     gap: 0.28rem;
   }
 
-  .timeline time {
-    white-space: normal;
-  }
-
   .pagination {
     grid-template-columns: 1fr;
     justify-items: stretch;
