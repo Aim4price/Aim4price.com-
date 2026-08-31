@@ -735,6 +735,7 @@ export default function AppHeader({
 }: AppHeaderProps) {
   const primaryHref = ctaHref ?? signupHref;
   const pathname = usePathname();
+  const alignBrandToWorkingColumn = active === 'home' || active === 'asset-register';
   const searchParams = useSearchParams();
   const accountantWorkspaceShareId = useMemo(() => {
     const match = /^\/accountant\/registers\/([^/]+)(?:\/|$)/.exec(pathname || '');
@@ -2400,9 +2401,9 @@ export default function AppHeader({
     <>
       <header className={styles.header}>
         <div
-          className={`${styles.inner} ${isDealerAccount ? styles.innerDealer : ''} ${!isLoadingSession && !session ? styles.innerPublic : ''} ${usesCompactHeader ? styles.innerCompact : ''}`}
+          className={`${styles.inner} ${isDealerAccount ? styles.innerDealer : ''} ${!isLoadingSession && !session ? styles.innerPublic : ''} ${usesCompactHeader ? styles.innerCompact : ''} ${alignBrandToWorkingColumn ? styles.innerBrandAligned : ''}`}
         >
-          <Link href="/" className={styles.brand} aria-label="Go to Aim4price home">
+          <Link href="/" className={`${styles.brand} ${alignBrandToWorkingColumn ? styles.brandWorkingColumn : ''}`} aria-label="Go to Aim4price home">
             <Image
               src="/brand/aim4price-mark-black.png"
               alt="Aim4price"
