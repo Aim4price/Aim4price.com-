@@ -72,7 +72,7 @@ test('homepage presents four green Get Estimate video bubbles', async () => {
   assert.match(styles, /Four interactive Get Estimate video bubbles/);
   assert.match(styles, /\.heroTitleUnderline \{[\s\S]*?text-decoration-line: underline[\s\S]*?text-decoration-color: #2a9a72/);
   assert.match(styles, /\.heroBubbleVideo,[\s\S]*?\.heroBubbleSurface \{[\s\S]*?pointer-events: none/);
-  assert.match(styles, /\.heroBubbleMotor \{[\s\S]*?right: 8%/);
+  assert.match(styles, /\.heroBubbleMotor \{[\s\S]*?right: 0;[\s\S]*?bottom: 25%/);
   assert.match(styles, /\.heroBubbleSurface \{[\s\S]*?linear-gradient\(145deg, #31b88a 0%, #208f6b 48%, #126149 100%\)/);
   assert.match(styles, /\.heroBubble\[data-preview-active='true'\] \.heroBubbleVideo \{[\s\S]*?opacity: 1/);
   assert.match(styles, /opacity 120ms ease,[\s\S]*?transform 480ms ease,[\s\S]*?filter 160ms ease/);
