@@ -19,8 +19,11 @@ export default async function HomePage() {
             <div className={styles.heroGrid}>
               <div className={styles.heroCopy}>
                 <h1 className={styles.heroTitle}>
-                  <span>Digitise the assets that matter.</span>
-                  <span>Track the finer details.</span>
+                  <span className={styles.heroTitleLine}>
+                    Digitise the assets{' '}
+                    <span className={styles.heroTitleUnderline}>that matter</span>.
+                  </span>
+                  <span className={styles.heroTitleLine}>Manage the finer details.</span>
                 </h1>
 
                 <p className={styles.heroText}>
