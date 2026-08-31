@@ -70,7 +70,6 @@ function playBubblePreview(anchor: HTMLAnchorElement) {
   video.dataset.previewRequestId = requestId;
   video.defaultMuted = true;
   video.muted = true;
-  anchor.dataset.previewActive = 'true';
 
   try {
     video.currentTime = 0;
@@ -81,7 +80,10 @@ function playBubblePreview(anchor: HTMLAnchorElement) {
   void video
     .play()
     .then(() => {
-      if (video.dataset.previewRequestId === requestId) return;
+      if (video.dataset.previewRequestId === requestId) {
+        anchor.dataset.previewActive = 'true';
+        return;
+      }
 
       if (!video.dataset.previewRequestId) resetVideo(video);
     })
@@ -93,8 +95,8 @@ function playBubblePreview(anchor: HTMLAnchorElement) {
     });
 }
 
-function resetBubblePreview(anchor: HTMLAnchorElement, preserveHover = true) {
-  if ((preserveHover && anchor.matches(':hover')) || document.activeElement === anchor) return;
+function resetBubblePreview(anchor: HTMLAnchorElement) {
+  if (anchor.matches(':hover') || document.activeElement === anchor) return;
 
   const video = anchor.querySelector<HTMLVideoElement>('video');
   if (!video) return;
@@ -153,20 +155,12 @@ export default function HomeEstimateBubbles() {
           href="/valuation"
           className={`${styles.heroBubble} ${bubble.positionClass}`}
           aria-label={`Open Get Estimate for ${bubble.label.toLowerCase()} assets`}
-          onPointerEnter={(event) => {
-            if (event.pointerType !== 'touch') {
+          onMouseEnter={(event) => {
+            if (window.matchMedia(ANY_HOVER_QUERY).matches) {
               playBubblePreview(event.currentTarget);
             }
           }}
-          onPointerMove={(event) => {
-            if (
-              event.pointerType !== 'touch' &&
-              event.currentTarget.dataset.previewActive !== 'true'
-            ) {
-              playBubblePreview(event.currentTarget);
-            }
-          }}
-          onPointerLeave={(event) => resetBubblePreview(event.currentTarget, false)}
+          onMouseLeave={(event) => resetBubblePreview(event.currentTarget)}
           onFocus={(event) => {
             if (event.currentTarget.matches(':focus-visible')) {
               playBubblePreview(event.currentTarget);
