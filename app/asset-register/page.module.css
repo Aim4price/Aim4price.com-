@@ -32188,6 +32188,441 @@ button.documentOpenLink {
   }
 }
 
+/* === Register summary: navigable section view === */
+.summaryModal {
+  width: min(94vw, 72rem) !important;
+  height: min(90dvh, 40rem) !important;
+  max-height: min(90dvh, 40rem) !important;
+  display: grid !important;
+  grid-template-rows: auto minmax(0, 1fr) !important;
+  overflow: hidden !important;
+  padding: clamp(1.15rem, 2vw, 1.55rem) !important;
+}
+
+.summaryModalHeader {
+  min-height: 4rem !important;
+  align-items: center !important;
+  padding-bottom: 0.9rem !important;
+}
+
+.summaryModalHeader .modalHeaderText {
+  display: grid !important;
+  gap: 0.2rem !important;
+  min-width: 0 !important;
+}
+
+.summaryModalHeader h3 {
+  font-size: clamp(2rem, 3.4vw, 2.55rem) !important;
+  line-height: 1.04 !important;
+  letter-spacing: -0.045em !important;
+}
+
+.summaryModalHeader p {
+  margin: 0 !important;
+  color: #5d6e80 !important;
+  font-size: 0.98rem !important;
+  font-weight: 680 !important;
+  line-height: 1.35 !important;
+}
+
+.summaryModalBody {
+  min-height: 0 !important;
+  display: grid !important;
+  grid-template-rows: auto minmax(0, 1fr) !important;
+  gap: 0.8rem !important;
+  overflow: hidden !important;
+  padding: 0.85rem 0 0 !important;
+  scrollbar-gutter: auto !important;
+}
+
+.summarySectionTabs {
+  min-width: 0 !important;
+  display: grid !important;
+  grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+  border: 1px solid rgba(157, 181, 191, 0.46) !important;
+  border-radius: 0.9rem !important;
+  background: #f2f6f4 !important;
+  overflow: hidden !important;
+}
+
+.summarySectionTab {
+  position: relative !important;
+  min-width: 0 !important;
+  min-height: 3.15rem !important;
+  display: grid !important;
+  place-items: center !important;
+  padding: 0.7rem 0.62rem !important;
+  border: 0 !important;
+  border-right: 1px solid rgba(157, 181, 191, 0.34) !important;
+  border-radius: 0 !important;
+  color: #586b7d !important;
+  background: transparent !important;
+  font: inherit !important;
+  font-size: 0.9rem !important;
+  font-weight: 790 !important;
+  line-height: 1.15 !important;
+  text-align: center !important;
+  cursor: pointer !important;
+  transition: color 150ms ease, background-color 150ms ease !important;
+}
+
+.summarySectionTab:last-child {
+  border-right: 0 !important;
+}
+
+.summarySectionTab::after {
+  content: '' !important;
+  position: absolute !important;
+  right: 0.62rem !important;
+  bottom: 0 !important;
+  left: 0.62rem !important;
+  height: 0.2rem !important;
+  border-radius: 0.2rem 0.2rem 0 0 !important;
+  background: transparent !important;
+}
+
+.summarySectionTab:hover {
+  color: #174c39 !important;
+  background: rgba(232, 243, 237, 0.72) !important;
+}
+
+.summarySectionTab:focus-visible {
+  z-index: 1 !important;
+  outline: 3px solid #2c7256 !important;
+  outline-offset: -3px !important;
+}
+
+.summarySectionTabActive {
+  color: #124735 !important;
+  background: #ffffff !important;
+}
+
+.summarySectionTabActive::after {
+  background: #2c7256 !important;
+}
+
+.summaryModal .summaryPanel {
+  min-height: 0 !important;
+  display: grid !important;
+  grid-template-rows: auto minmax(0, 1fr) !important;
+  overflow: hidden !important;
+  padding: 0 !important;
+  border: 1px solid rgba(157, 181, 191, 0.46) !important;
+  border-radius: 1rem !important;
+  background: #ffffff !important;
+  box-shadow: 0 8px 22px rgba(22, 52, 44, 0.035) !important;
+}
+
+.summaryModal .summarySectionHeader {
+  min-height: 4.4rem !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 1rem !important;
+  margin: 0 !important;
+  padding: 0.9rem 1.05rem !important;
+  border: 0 !important;
+  border-bottom: 1px solid rgba(157, 181, 191, 0.34) !important;
+  border-radius: 0 !important;
+  background: #f7faf8 !important;
+}
+
+.summaryModal .summarySectionHeader > div {
+  min-width: 0 !important;
+  display: grid !important;
+  gap: 0.2rem !important;
+}
+
+.summaryModal .summarySectionHeader h4 {
+  margin: 0 !important;
+  color: #123f31 !important;
+  font-size: 1.06rem !important;
+  font-weight: 850 !important;
+  line-height: 1.2 !important;
+  letter-spacing: -0.01em !important;
+}
+
+.summaryModal .summarySectionHeader p {
+  margin: 0 !important;
+  color: #5d6e80 !important;
+  font-size: 0.86rem !important;
+  font-weight: 650 !important;
+  line-height: 1.35 !important;
+}
+
+.summaryModal .summarySectionHeader > small {
+  flex: 0 0 auto !important;
+  color: #66776e !important;
+  font-size: 0.78rem !important;
+  font-weight: 760 !important;
+  white-space: nowrap !important;
+}
+
+.summaryTableScroll {
+  min-height: 0 !important;
+  overflow: auto !important;
+  overscroll-behavior: contain !important;
+}
+
+.summaryTableScroll:focus-visible {
+  outline: 3px solid #2c7256 !important;
+  outline-offset: -3px !important;
+}
+
+.summaryDataTable {
+  width: 100% !important;
+  border: 0 !important;
+  border-collapse: collapse !important;
+  border-spacing: 0 !important;
+  table-layout: fixed !important;
+  color: #29483d !important;
+  font-variant-numeric: tabular-nums !important;
+}
+
+.summaryDataTable th,
+.summaryDataTable td {
+  box-sizing: border-box !important;
+  padding: 0.85rem 1rem !important;
+  border: 0 !important;
+  border-bottom: 1px solid rgba(157, 181, 191, 0.28) !important;
+  background: transparent !important;
+  vertical-align: middle !important;
+}
+
+.summaryDataTable thead th {
+  height: 2.75rem !important;
+  color: #5d6e80 !important;
+  background: #fbfcfc !important;
+  font-size: 0.74rem !important;
+  font-weight: 820 !important;
+  letter-spacing: 0.045em !important;
+  line-height: 1.2 !important;
+  text-transform: uppercase !important;
+  white-space: nowrap !important;
+}
+
+.summaryDataTable thead th:first-child {
+  width: 34% !important;
+  text-align: left !important;
+}
+
+.summaryDataTable thead th:nth-child(2) {
+  width: 12% !important;
+  text-align: center !important;
+}
+
+.summaryDataTable thead th:nth-child(n + 3) {
+  width: 27% !important;
+  text-align: right !important;
+}
+
+.summaryDataTable tbody tr:last-child th,
+.summaryDataTable tbody tr:last-child td {
+  border-bottom: 0 !important;
+}
+
+.summaryDataTable tbody th {
+  color: #324c43 !important;
+  font-size: 0.94rem !important;
+  font-weight: 780 !important;
+  line-height: 1.3 !important;
+  text-align: left !important;
+}
+
+.summaryDataTable tbody td {
+  color: #5b6e81 !important;
+  font-size: 0.96rem !important;
+  font-weight: 760 !important;
+  line-height: 1.3 !important;
+  text-align: right !important;
+  white-space: nowrap !important;
+}
+
+.summaryDataTable tbody td:nth-child(2) {
+  color: #315d4d !important;
+  text-align: center !important;
+}
+
+.summaryDataTable thead th:last-child,
+.summaryDataTable tbody td:last-child {
+  color: #124b37 !important;
+  background: rgba(237, 247, 241, 0.62) !important;
+  font-weight: 840 !important;
+}
+
+.summaryDataTableCountOnly thead th:first-child {
+  width: 78% !important;
+}
+
+.summaryDataTableCountOnly thead th:nth-child(2) {
+  width: 22% !important;
+  text-align: right !important;
+}
+
+.summaryDataTableCountOnly tbody td:nth-child(2) {
+  color: #124b37 !important;
+  background: rgba(237, 247, 241, 0.62) !important;
+  font-weight: 840 !important;
+  text-align: right !important;
+}
+
+@media (max-width: 760px) {
+  .summaryModal {
+    width: 100% !important;
+    height: calc(100dvh - 1rem) !important;
+    max-height: calc(100dvh - 1rem) !important;
+    padding: 0.9rem !important;
+  }
+
+  .summaryModalHeader {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    align-items: start !important;
+    gap: 0.72rem !important;
+    padding-bottom: 0.75rem !important;
+  }
+
+  .summaryModalHeader .modalHeaderText {
+    min-height: 3.1rem !important;
+    padding-right: 0 !important;
+  }
+
+  .summaryModalHeader h3 {
+    font-size: clamp(1.8rem, 9vw, 2.15rem) !important;
+  }
+
+  .summaryModalHeader p {
+    font-size: 0.84rem !important;
+  }
+
+  .summaryHeaderActions {
+    display: contents !important;
+  }
+
+  .summaryModalHeader .modalCloseButton {
+    position: static !important;
+    grid-column: 2 !important;
+    grid-row: 1 !important;
+  }
+
+  .summaryModal .summaryDownloadButton {
+    grid-column: 1 / -1 !important;
+    grid-row: 2 !important;
+    width: 100% !important;
+  }
+
+  .summaryModalBody {
+    gap: 0.65rem !important;
+    padding-top: 0.65rem !important;
+  }
+
+  .summarySectionTabs {
+    display: flex !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    scrollbar-width: none !important;
+    overscroll-behavior-inline: contain !important;
+  }
+
+  .summarySectionTabs::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  .summarySectionTab {
+    flex: 0 0 auto !important;
+    min-width: 7.2rem !important;
+  }
+
+  .summaryModal .summarySectionHeader {
+    min-height: 4rem !important;
+    align-items: start !important;
+    padding: 0.78rem 0.82rem !important;
+  }
+
+  .summaryModal .summarySectionHeader h4 {
+    font-size: 0.98rem !important;
+  }
+
+  .summaryModal .summarySectionHeader p {
+    font-size: 0.8rem !important;
+  }
+
+  .summaryModal .summarySectionHeader > small {
+    padding-top: 0.08rem !important;
+    font-size: 0.72rem !important;
+  }
+
+  .summaryDataTable,
+  .summaryDataTable tbody {
+    display: block !important;
+  }
+
+  .summaryDataTable thead {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    margin: -1px !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    clip: rect(0 0 0 0) !important;
+    clip-path: inset(50%) !important;
+    border: 0 !important;
+    white-space: nowrap !important;
+  }
+
+  .summaryDataTable tbody tr {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    padding: 0.78rem 0.82rem !important;
+    border-bottom: 1px solid rgba(157, 181, 191, 0.3) !important;
+    background: #ffffff !important;
+  }
+
+  .summaryDataTable tbody tr:last-child {
+    border-bottom: 0 !important;
+  }
+
+  .summaryDataTable tbody th,
+  .summaryDataTable tbody td {
+    width: 100% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 1rem !important;
+    padding: 0.38rem 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+    text-align: right !important;
+  }
+
+  .summaryDataTable tbody th {
+    padding: 0 0 0.52rem !important;
+    border-bottom: 1px solid rgba(157, 181, 191, 0.24) !important;
+    color: #27463b !important;
+    text-align: left !important;
+  }
+
+  .summaryDataTable tbody td::before {
+    content: attr(data-label) !important;
+    color: #5d6e80 !important;
+    font-size: 0.76rem !important;
+    font-weight: 690 !important;
+    text-align: left !important;
+  }
+
+  .summaryDataTable tbody td:nth-child(2),
+  .summaryDataTableCountOnly tbody td:nth-child(2) {
+    background: transparent !important;
+    text-align: right !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .summarySectionTab {
+    transition: none !important;
+  }
+}
+
 /* === Manual Add Asset: visible click-to-select asset types === */
 .assetFormModalStepOne {
   width: min(95vw, 64rem) !important;
