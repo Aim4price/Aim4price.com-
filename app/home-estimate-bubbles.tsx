@@ -105,6 +105,36 @@ function resetBubblePreview(anchor: HTMLAnchorElement) {
   resetVideo(video);
 }
 
+function resetBubbleGroup(group: HTMLDivElement) {
+  group
+    .querySelectorAll<HTMLAnchorElement>('[data-estimate-bubble]')
+    .forEach((anchor) => resetBubblePreview(anchor));
+}
+
+function playClosestBubblePreview(group: HTMLDivElement, clientX: number, clientY: number) {
+  if (!window.matchMedia(ANY_HOVER_QUERY).matches) return;
+
+  let closestAnchor: HTMLAnchorElement | null = null;
+  let closestDistance = Number.POSITIVE_INFINITY;
+
+  const anchors = group.querySelectorAll<HTMLAnchorElement>('[data-estimate-bubble]');
+
+  for (const anchor of anchors) {
+    const bounds = anchor.getBoundingClientRect();
+    const distance = Math.hypot(
+      clientX - (bounds.left + bounds.width / 2),
+      clientY - (bounds.top + bounds.height / 2),
+    );
+
+    if (distance >= closestDistance) continue;
+
+    closestAnchor = anchor;
+    closestDistance = distance;
+  }
+
+  if (closestAnchor) playBubblePreview(closestAnchor);
+}
+
 export default function HomeEstimateBubbles() {
   const groupRef = useRef<HTMLDivElement>(null);
 
@@ -148,6 +178,13 @@ export default function HomeEstimateBubbles() {
       className={styles.heroBubbles}
       role="group"
       aria-label="Explore Get Estimate videos"
+      onMouseEnter={(event) =>
+        playClosestBubblePreview(event.currentTarget, event.clientX, event.clientY)
+      }
+      onMouseMove={(event) =>
+        playClosestBubblePreview(event.currentTarget, event.clientX, event.clientY)
+      }
+      onMouseLeave={(event) => resetBubbleGroup(event.currentTarget)}
     >
       {ESTIMATE_BUBBLES.map((bubble) => (
         <Link
@@ -155,12 +192,7 @@ export default function HomeEstimateBubbles() {
           href="/valuation"
           className={`${styles.heroBubble} ${bubble.positionClass}`}
           aria-label={`Open Get Estimate for ${bubble.label.toLowerCase()} assets`}
-          onMouseEnter={(event) => {
-            if (window.matchMedia(ANY_HOVER_QUERY).matches) {
-              playBubblePreview(event.currentTarget);
-            }
-          }}
-          onMouseLeave={(event) => resetBubblePreview(event.currentTarget)}
+          data-estimate-bubble={bubble.key}
           onFocus={(event) => {
             if (event.currentTarget.matches(':focus-visible')) {
               playBubblePreview(event.currentTarget);

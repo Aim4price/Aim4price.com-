@@ -15,7 +15,16 @@ test('homepage presents four green Get Estimate video bubbles', async () => {
     read('app/asset-register/dealer-register-gateway.tsx'),
   ]);
 
-  assert.match(page, /<span>Track the finer details\.<\/span>/);
+  assert.match(
+    page,
+    /Digitise the assets\{' '\}[\s\S]*?className=\{styles\.heroTitleUnderline\}>that matter<\/span>\./,
+  );
+  assert.match(
+    page,
+    /<span className=\{styles\.heroTitleLine\}>Manage the finer details\.<\/span>/,
+  );
+  assert.equal((page.match(/className=\{styles\.heroTitleLine\}/g) ?? []).length, 2);
+  assert.doesNotMatch(page, /Track the finer details/);
   assert.match(page, /import HomeEstimateBubbles from '\.\/home-estimate-bubbles'/);
   assert.match(page, /<HomeEstimateBubbles \/>/);
   assert.match(page, /<AppHeader active="home" brandAlignment="working-column" \/>/);
@@ -49,7 +58,10 @@ test('homepage presents four green Get Estimate video bubbles', async () => {
   assert.match(bubbles, /ref=\{groupRef\}/);
   assert.match(bubbles, /muted[\s\S]*?loop[\s\S]*?playsInline/);
   assert.doesNotMatch(bubbles, /autoPlay/);
-  assert.match(bubbles, /onMouseEnter=[\s\S]*?onMouseLeave=[\s\S]*?onFocus=[\s\S]*?onBlur=/);
+  assert.match(bubbles, /function playClosestBubblePreview[\s\S]*?Math\.hypot[\s\S]*?playBubblePreview\(closestAnchor\)/);
+  assert.match(bubbles, /onMouseEnter=[\s\S]*?onMouseMove=[\s\S]*?onMouseLeave=/);
+  assert.match(bubbles, /data-estimate-bubble=\{bubble\.key\}/);
+  assert.match(bubbles, /onFocus=[\s\S]*?onBlur=/);
   assert.match(bubbles, /prefers-reduced-motion: reduce/);
   assert.match(bubbles, /\(any-hover: hover\)/);
   assert.match(bubbles, /previewRequestSequence/);
@@ -58,6 +70,9 @@ test('homepage presents four green Get Estimate video bubbles', async () => {
   assert.match(bubbles, /href="\/valuation"/);
 
   assert.match(styles, /Four interactive Get Estimate video bubbles/);
+  assert.match(styles, /\.heroTitleUnderline \{[\s\S]*?text-decoration-line: underline[\s\S]*?text-decoration-color: #2a9a72/);
+  assert.match(styles, /\.heroBubbleVideo,[\s\S]*?\.heroBubbleSurface \{[\s\S]*?pointer-events: none/);
+  assert.match(styles, /\.heroBubbleMotor \{[\s\S]*?right: 8%/);
   assert.match(styles, /\.heroBubbleSurface \{[\s\S]*?linear-gradient\(145deg, #31b88a 0%, #208f6b 48%, #126149 100%\)/);
   assert.match(styles, /\.heroBubble\[data-preview-active='true'\] \.heroBubbleVideo \{[\s\S]*?opacity: 1/);
   assert.match(styles, /opacity 120ms ease,[\s\S]*?transform 480ms ease,[\s\S]*?filter 160ms ease/);
