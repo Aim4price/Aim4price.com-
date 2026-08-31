@@ -135,7 +135,7 @@ export default function HomeEstimateBubbles() {
             muted
             loop
             playsInline
-            preload="none"
+            preload="metadata"
             aria-hidden="true"
           >
             <source src={bubble.src} type="video/mp4" />
