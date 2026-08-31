@@ -2,10 +2,16 @@
   min-height: 100vh;
   color-scheme: light;
   scrollbar-color: #9bbcaf #eff5f2;
+  --admin-control-radius: 0.7rem;
+  --admin-card-radius: 1rem;
 }
 
 .adminWorkspaceRoot :where(button, a, input, select, textarea) {
   font: inherit;
+}
+
+.adminWorkspaceRoot :where(button, input, select, textarea) {
+  border-radius: var(--admin-control-radius);
 }
 
 .adminWorkspaceRoot :where(button, a, input, select, textarea):focus-visible {
@@ -13,7 +19,7 @@
   outline-offset: 2px;
 }
 
-/* Keep the shared Admin hierarchy conversational instead of tiny all-caps labels. */
+/* One compact hierarchy across every Admin workspace. */
 .adminWorkspaceRoot :where(
   [class*="titleBlock"] > p,
   [class*="eyebrow"],
@@ -35,11 +41,48 @@
 }
 
 .adminWorkspaceRoot :where(h1, h2, h3) {
-  text-wrap: balance;
+  text-wrap: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.adminWorkspaceRoot :where([class*="titleBlock"] > p, [class*="titleBlock"] > span) {
+  display: none !important;
+}
+
+.adminWorkspaceRoot :where([class*="titleBlock"] h1) {
+  margin: 0 !important;
+  font-size: clamp(2.25rem, 3.3vw, 3.25rem) !important;
+  line-height: 1 !important;
+  white-space: nowrap;
+}
+
+.adminWorkspaceRoot :where(
+  [class*="badge"],
+  [class*="Badge"],
+  [class*="chip"],
+  [class*="Chip"],
+  [class*="pill"],
+  [class*="Pill"]
+) {
+  border-radius: 0 !important;
+}
+
+@media (min-width: 761px) {
+  .adminWorkspaceRoot :where(button, [role="tab"], th, label > span:first-child) {
+    white-space: nowrap;
+  }
 }
 
 .adminWorkspaceRoot :where(button, a) {
   -webkit-tap-highlight-color: transparent;
+}
+
+@media (max-width: 760px) {
+  .adminWorkspaceRoot :where([class*="titleBlock"] h1) {
+    font-size: clamp(1.65rem, 7.2vw, 2.4rem) !important;
+  }
+
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -19,19 +19,6 @@ function first(value: string | string[] | undefined): string {
   return Array.isArray(value) ? value[0] ?? '' : value ?? '';
 }
 
-function formatGeneratedAt(value: string): string {
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) return 'Unknown';
-  return new Intl.DateTimeFormat('en-ZA', {
-    timeZone: 'Africa/Johannesburg',
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(parsed);
-}
-
 export default async function AdminValuationsPage({
   searchParams = {},
 }: {
@@ -55,12 +42,7 @@ export default async function AdminValuationsPage({
       <section className={styles.shell}>
         <header className={styles.topBar}>
           <div className={styles.titleBlock}>
-            <p>Aim4price admin</p>
             <h1>Valuations</h1>
-            <span>
-              Every completed estimate and saved valuation · Updated{' '}
-              {formatGeneratedAt(report.generatedAtIso)}
-            </span>
           </div>
           <AdminNavigation active="valuations" />
         </header>

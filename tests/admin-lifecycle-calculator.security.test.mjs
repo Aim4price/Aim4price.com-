@@ -56,10 +56,11 @@ test("normal navigation stays private while all admin navigation links to the mo
 });
 
 test("the calculator is a live workspace rather than a gated wizard", () => {
-  assert.match(client, /Build the ownership case/);
+  assert.match(client, /<h3>Funding structure<\/h3>/);
+  assert.doesNotMatch(client, /Build the ownership case/);
   assert.match(client, /buildLifecycleWorkspaceModel\(state\.modelInput\)/);
   assert.match(client, /model\.scenarios\.map/);
-  assert.match(client, /Standard vs Service Plan vs Service \+ Maintenance/);
+  assert.match(client, /title="Structure comparison"/);
   assert.match(client, /Use this structure/);
   assert.doesNotMatch(client, /activeStep/);
   assert.doesNotMatch(client, /hidden=\{/);
@@ -69,8 +70,8 @@ test("the calculator is a live workspace rather than a gated wizard", () => {
 });
 
 test("asset assumptions are generic and expose depreciation inputs", () => {
-  assert.match(client, /title="Asset & Lifecycle Assumptions"/);
-  assert.match(client, /Starting \/ new asset price/);
+  assert.match(client, /title="Asset"/);
+  assert.match(client, /label="Starting price"/);
   assert.match(client, /Usage basis/);
   assert.match(client, /Hours/);
   assert.match(client, /Kilometres/);
@@ -94,8 +95,8 @@ test("ownership and finance terms remain independent with automatic calendar yea
 });
 
 test("service and maintenance are separate editable lifecycle assumptions", () => {
-  assert.match(client, /title="Scheduled Service Provision"/);
-  assert.match(client, /title="Maintenance & Uptime Provision"/);
+  assert.match(client, /title="Service"/);
+  assert.match(client, /title="Maintenance"/);
   assert.match(client, /label="Service basis"/);
   assert.match(client, /Usage interval/);
   assert.match(client, /Calendar interval/);
@@ -122,13 +123,13 @@ test("VAT is explicit for base finance, package finance and refinance", () => {
 });
 
 test("future value, results, equity and next-cycle outputs are first-class sections", () => {
-  assert.match(client, /title="Future Asset Position"/);
+  assert.match(client, /title="Future position"/);
   assert.match(client, /Age depreciation/);
   assert.match(client, /Usage depreciation/);
   assert.match(client, /Aim4price retail ex VAT/);
-  assert.match(client, /title="Annual Cash-Flow Comparison"/);
-  assert.match(client, /title="Asset & Equity Position"/);
-  assert.match(client, /title="Next Asset Cycle"/);
+  assert.match(client, /title="Annual cash flow"/);
+  assert.match(client, /title="Equity position"/);
+  assert.match(client, /title="Replacement plan"/);
   assert.match(client, /title="Refinance \/ Cash-Flow Stress Test"/);
   assert.match(client, /title="Sensitivity \/ Stress Testing"/);
 });

@@ -33,7 +33,8 @@ test('Admin Valuations page and API independently require Admin access', () => {
   assert.match(page, /await requireAdminPageAccess\(\)/);
   assert.match(api, /await requireAdminApiAccess\(\)/);
   assert.match(page, /AdminNavigation active="valuations"/);
-  assert.match(page, /Every completed estimate and saved valuation/);
+  assert.match(page, /<h1>Valuations<\/h1>/);
+  assert.doesNotMatch(page, /Every completed estimate and saved valuation/);
 });
 
 test('the valuation history combines every estimate event and saved valuation run', () => {
@@ -51,7 +52,7 @@ test('account details resolve when available and remain explicitly unknown for g
   assert.match(data, /left join public\."user" auth_user/);
   assert.match(data, /'Unknown \/ guest'/);
   assert.match(data, /history\.account_user_id is not null/);
-  assert.match(client, /No account attached/);
+  assert.match(client, /Unknown \/ guest/);
   assert.match(client, /Open account/);
 });
 
@@ -63,7 +64,7 @@ test('Admin Valuations supports server search, filters, sorting and pagination',
   assert.match(data, /group by valuation_year/);
   assert.match(data, /limit \$\{limitParameter\}/);
   assert.match(data, /offset \$\{offsetParameter\}/);
-  assert.match(client, /Asset, account, email, input or reference/);
+  assert.match(client, /Asset, account, email or reference/);
   assert.match(client, /Rows per page/);
 });
 
@@ -91,17 +92,17 @@ test('tractor estimates retain the usage path and percentage originally entered'
   assert.match(data, /\) = 'percent' then coalesce\([\s\S]*lifeWorkedPercent/);
 });
 
-test('the detail modal exposes who, when and every estimate-flow section', () => {
+test('the detail modal exposes the record, asset and full estimate flow', () => {
   assert.match(client, /role="dialog"/);
-  assert.match(client, /Who and when/);
-  assert.match(client, /What was estimated/);
-  assert.match(client, /Everything entered in the estimate path/);
-  assert.match(client, /Complete estimated result/);
+  assert.match(client, /<h3>Record<\/h3>/);
+  assert.match(client, /<h3>Asset<\/h3>/);
+  assert.match(client, />Inputs<\/h3>/);
+  assert.match(client, />Calculation<\/h3>/);
   assert.match(client, /buildAdminValuationInputSections/);
   assert.match(client, /buildAdminValuationOutputSections/);
-  assert.match(client, /recorded fields/);
+  assert.doesNotMatch(client, /fields<\/span>/);
   assert.match(client, /keepFocusInsideDetails/);
-  assert.match(client, /Fresh valuation history from 26 August 2026/);
+  assert.doesNotMatch(client, /Fresh valuation history from 26 August 2026/);
 });
 
 test('the valuation ledger restarts at a fixed cutoff without hiding future records', () => {
@@ -141,7 +142,7 @@ test('single and bulk valuation deletion use validated prefixed record IDs', () 
   assert.match(data, /delete from public\.valuation_runs/);
   assert.match(data, /clearValuationRunReferences/);
   assert.match(data, /'admin_valuation_records_deleted'/);
-  assert.match(client, /Bulk delete/);
+  assert.match(client, /Delete selected/);
   assert.match(client, />\s*Delete\s*</);
   assert.match(client, /Type DELETE to confirm/);
   assert.match(client, /Delete permanently/);
@@ -246,7 +247,7 @@ test('flow detail helpers show entered fields in order and format usage correctl
 test('Valuations is available in the consolidated Admin Manage menu', () => {
   assert.match(navigation, /href: "\/admin\/valuations"/);
   assert.match(navigation, /label: "Valuations"/);
-  assert.match(navigation, /Review every estimate, input, result and account/);
+  assert.doesNotMatch(navigation, /description:/);
   assert.match(dashboard, /href: '\/admin\/valuations\?type=estimate'/);
   assert.match(dashboard, /href: '\/admin\/valuations\?type=saved'/);
   assert.match(dashboardPage, /card\.linkLabel/);

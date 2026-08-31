@@ -47,7 +47,8 @@ test("Discovery viewer identities and exact timestamps remain Admin-only", () =>
   assert.match(adminApi, /Cache-Control": "private, no-store"/);
   assert.match(viewStore, /Unknown viewer \$\{alias\}/);
   assert.match(viewStore, /hasRepeatInterest: viewCount >= 3/);
-  assert.match(adminClient, /Who viewed \{activityTarget\.title\}, and when\?/);
+  assert.match(adminClient, /Viewer summary — \{activityTarget\.title\}/);
+  assert.doesNotMatch(adminClient, /Who viewed \{activityTarget\.title\}, and when\?/);
   assert.match(adminClient, /Aim4price .* account viewed this asset/);
   assert.match(adminClient, /Unknown viewer viewed this asset/);
   assert.match(adminClient, /formatDateTime\(viewEvent\.viewedAtIso\)/);
@@ -75,7 +76,7 @@ test("the viewer summary is lazy, grouped and keyboard-accessible", () => {
   );
   assert.ok(openPosition >= 0 && fetchPosition >= 0);
   assert.match(adminClient, /Viewer summary/);
-  assert.match(adminClient, /Grouped by Aim4price account or unknown viewer/);
+  assert.doesNotMatch(adminClient, /Grouped by Aim4price account or unknown viewer/);
   assert.match(adminClient, /role="dialog"/);
   assert.match(adminClient, /keepFocusInsideActivity/);
   assert.match(adminClient, /activityDetails\.viewerGroups\.map/);

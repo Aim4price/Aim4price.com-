@@ -65,8 +65,8 @@ test("queue prioritises deadline work and includes useful operational filters", 
   assert.match(client, /Needs information/);
   assert.match(client, /Awaiting owner/);
   assert.match(client, /Completed today/);
-  assert.match(client, /Reference, sender, customer or asset/);
-  assert.match(client, /Public Invoice Drop/);
+  assert.match(client, /Reference or asset/);
+  assert.match(client, /Public drop/);
   assert.match(styles, /\.kpiGrid/);
   assert.match(styles, /\.kpiSelected/);
   assert.match(styles, /\.queueTableWrap/);
@@ -82,14 +82,13 @@ test("the 24-hour admin SLA pauses once a verified document is waiting on its ow
   assert.match(client, /row\.status === "awaiting_owner" \? "Owner review"/);
 });
 
-test("selected work uses a split private document and verified capture workbench", () => {
-  assert.match(client, /Capture workbench/);
-  assert.match(client, /Private admin preview/);
-  assert.match(client, /Verified details/);
-  assert.match(client, /Customer and record destination/);
+test("selected work uses a split source document and verified capture form", () => {
+  assert.match(client, /aria-label="Source document"/);
+  assert.match(client, /aria-label="Verified capture form"/);
+  assert.match(client, />Destination<\/strong>/);
   assert.match(client, /Submitted serial or VIN/);
   assert.match(client, /submittedAssetDescription/);
-  assert.match(client, /exact_unique_serial_or_vin[\s\S]*?Auto-matched/);
+  assert.match(client, /exact_unique_serial_or_vin[\s\S]*?Matched/);
   assert.match(client, /Internal admin note/);
   assert.match(client, /Audit history/);
   assert.match(client, /\/api\/admin\/capture-requests\/\$\{encodeURIComponent\(requestId\)\}/);
@@ -163,7 +162,7 @@ test("pre-matched requests show the authoritative saved destination and keep sea
   assert.match(targetStore, /storage\.id::text = requested\.target_id[\s\S]*?storage\.user_id::text = requested\.owner_user_id/);
   assert.match(client, /request\.ownerUserId \|\| cleanText\(payload\.ownerUserId\)/);
   assert.match(client, /request\.assetId \|\| cleanText\(payload\.assetId\)/);
-  assert.match(client, /Identified destination — confirm before completing/);
+  assert.match(client, /Confirm destination/);
   assert.match(client, /selectedTarget\.targetDisplayName/);
   assert.match(client, /selectedTarget\.reference/);
   assert.match(client, /!hasMatchedTarget \|\| isChangingMatch/);
@@ -200,7 +199,7 @@ test("changing a match preserves the current target until a replacement is chose
   assert.ok(changeStart >= 0 && changeEnd > changeStart);
   assert.match(changeHandler, /setIsChangingMatch\(true\)/);
   assert.doesNotMatch(changeHandler, /ownerUserId: ""|assetId: ""|fuelStorageId: ""/);
-  assert.match(client, /The current match stays in place until you choose and confirm a replacement/);
+  assert.match(client, /Find a replacement destination/);
   assert.match(client, /onClick=\{isChangingMatch \? cancelMatchChange : beginMatchChange\}/);
   assert.match(client, /setSelectedTarget\(target\)/);
   assert.match(client, /setIsChangingMatch\(false\)/);
@@ -224,7 +223,7 @@ test("completion requires an actor-attributed confirmation of the exact current 
 
 test("pending quarantine files use a private Chrome-compatible inspection before an explicit security decision", () => {
   assert.match(client, /Security decision required/);
-  assert.match(client, /private preview/);
+  assert.match(client, /Source document/);
   assert.match(client, /<iframe referrerPolicy="no-referrer"/);
   assert.match(client, /activeFile\?\.downloadUrl && activeFile\.securityStatus === "clean"/);
   assert.match(client, /Mark check passed/);

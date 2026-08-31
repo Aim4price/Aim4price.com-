@@ -175,18 +175,20 @@ test("the calm tracker keeps account selection compact and native selects out", 
   assert.match(trackerClient, /client\.email/);
   assert.match(trackerClient, /client\.accountType/);
   assert.doesNotMatch(trackerClient, /<select(?:\s|>)/);
-  assert.match(trackerClient, /Start work (?:&|&amp;) open account/);
-  assert.match(trackerClient, /Preview (?:&|&amp;) print report/);
-  assert.match(trackerClient, /styles\.privacyNote/);
-  assert.match(trackerStyles, /\.privacyNote\s*\{/);
+  assert.match(trackerClient, /Start timer/);
+  assert.match(trackerClient, /Print report/);
+  assert.doesNotMatch(trackerClient, /Start work (?:&|&amp;) open account/);
+  assert.doesNotMatch(trackerClient, /Preview (?:&|&amp;) print report/);
+  assert.doesNotMatch(trackerClient, /styles\.privacyNote/);
+  assert.doesNotMatch(trackerStyles, /\.privacyNote\s*\{/);
 });
 
 test("history navigation and optional session detail stay clear and progressive", () => {
   assert.match(trackerClient, /aria-pressed=\{period === "week"\}/);
   assert.match(trackerClient, /aria-pressed=\{period === "month"\}/);
-  assert.match(trackerClient, /Previous\s+\{period\}/);
-  assert.match(trackerClient, /This\s+\{period\}/);
-  assert.match(trackerClient, /Next\s+\{period\}/);
+  assert.match(trackerClient, />\s*Previous\s*</);
+  assert.match(trackerClient, />\s*Current\s*</);
+  assert.match(trackerClient, />\s*Next\s*</);
   assert.match(trackerClient, /shiftAdminWorkAnchor\(period, value, -1\)/);
   assert.match(trackerClient, /setAnchor\(getJohannesburgDateKey\(\)\)/);
   assert.match(trackerClient, /shiftAdminWorkAnchor\(period, value, 1\)/);

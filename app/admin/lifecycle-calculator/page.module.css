@@ -48,6 +48,7 @@
   font-size: clamp(2rem, 3vw, 2.75rem);
   line-height: 0.98;
   letter-spacing: -0.055em;
+  white-space: nowrap;
 }
 
 .titleBlock span {
@@ -74,7 +75,7 @@
   min-height: 2.9rem;
   padding: 0 1.15rem;
   border: 1px solid #d7e1dc;
-  border-radius: 999px;
+  border-radius: 0.7rem;
   color: #17362c;
   background: #ffffff;
   text-decoration: none;
@@ -201,7 +202,7 @@
   height: 1.55rem;
   flex: 0 0 auto;
   border: 1px solid #d9e4df;
-  border-radius: 999px;
+  border-radius: 0.45rem;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -891,7 +892,7 @@
   height: 2rem;
   margin-left: auto;
   border: 1px solid #d8e4de;
-  border-radius: 999px;
+  border-radius: 0.55rem;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1079,7 +1080,7 @@
   width: 2rem;
   height: 2rem;
   flex: 0 0 auto;
-  border-radius: 999px;
+  border-radius: 0.5rem;
   color: #ffffff;
   background: #278b67;
   display: grid;
@@ -1918,7 +1919,6 @@
   .tableWrap th,
   .tableWrap td {
     padding: 0.4rem;
-    white-space: normal;
     font-size: 0.62rem;
   }
 }
@@ -1936,15 +1936,15 @@
 
 .workspaceHeader {
   min-width: 0;
-  padding: 0.8rem 0.9rem 0.8rem 1rem;
-  border: 1px solid #d9e6df;
-  border-radius: 1.1rem;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
   color: #173e32;
-  background: rgba(255, 255, 255, 0.96);
-  box-shadow: 0 14px 34px rgba(18, 53, 45, 0.06);
+  background: transparent;
+  box-shadow: none;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 1rem;
 }
 
@@ -2064,7 +2064,7 @@
   width: 1.55rem;
   height: 1.55rem;
   flex: 0 0 auto;
-  border-radius: 999px;
+  border-radius: 0.45rem;
   color: #ffffff;
   background: #1f7658;
   display: grid;
@@ -2090,7 +2090,7 @@
 
 .decisionHeading {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: space-between;
   gap: 1rem;
 }
@@ -2100,6 +2100,7 @@
   color: #12372d;
   font-size: 1rem;
   letter-spacing: -0.02em;
+  white-space: nowrap;
 }
 
 .decisionHeading > p {
@@ -2160,8 +2161,7 @@
   color: #71817b;
   font-size: 0.59rem;
   font-weight: 900;
-  letter-spacing: 0.055em;
-  text-transform: uppercase;
+  font-size: 0.8rem;
 }
 
 .scenarioChoice > strong {
@@ -2229,6 +2229,7 @@
   color: #12372d;
   font-size: 1.05rem;
   letter-spacing: -0.025em;
+  white-space: nowrap;
 }
 
 .flowSectionLead > div > span,
@@ -2303,6 +2304,7 @@
 
 .workspace .sectionHeading h2 {
   font-size: 1rem;
+  white-space: nowrap;
 }
 
 .workspace .sectionHeading p {

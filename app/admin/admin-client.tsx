@@ -199,30 +199,13 @@ const MAX_NOTIFICATION_BODY_LENGTH = 1_200;
 const NOTIFICATION_AUDIENCE_OPTIONS: Array<{
   value: NotificationAudience;
   label: string;
-  description: string;
 }> = [
-  {
-    value: "all",
-    label: "All accounts",
-    description: "Every customer account",
-  },
-  { value: "owner", label: "Owners", description: "All owner accounts" },
-  { value: "dealer", label: "Dealers", description: "All dealer accounts" },
-  {
-    value: "insurance",
-    label: "Insurance",
-    description: "All insurance accounts",
-  },
-  {
-    value: "finance",
-    label: "Finance & accounting",
-    description: "Banks, finance houses and accountants",
-  },
-  {
-    value: "licensing",
-    label: "Licensing",
-    description: "All licensing accounts",
-  },
+  { value: "all", label: "All accounts" },
+  { value: "owner", label: "Owners" },
+  { value: "dealer", label: "Dealers" },
+  { value: "insurance", label: "Insurance" },
+  { value: "finance", label: "Finance & accounting" },
+  { value: "licensing", label: "Licensing" },
 ];
 
 function normalizeNotificationAudience(
@@ -263,7 +246,6 @@ function NotificationPriorityPicker({
           aria-pressed={value === "normal"}
         >
           <strong>Normal</strong>
-          <span>Standard notification</span>
         </button>
         <button
           type="button"
@@ -276,7 +258,6 @@ function NotificationPriorityPicker({
           aria-pressed={value === "priority"}
         >
           <strong>Priority</strong>
-          <span>Amber and shown first</span>
         </button>
       </div>
     </fieldset>
@@ -286,17 +267,14 @@ function NotificationPriorityPicker({
 const QR_LAYOUT_OPTIONS: Array<{
   value: QrLabelLayout;
   title: string;
-  description: string;
 }> = [
   {
     value: "full-labels-10-per-page",
     title: "10 full labels per page",
-    description: "Larger Aim4price plate labels for normal asset stickers.",
   },
   {
     value: "small-qr-25mm",
     title: "Small 25mm QR labels",
-    description: "Compact 25mm x 25mm QR stickers with the asset name above.",
   },
 ];
 
@@ -440,10 +418,10 @@ function formatProvince(value: string): string {
 }
 
 function statusClassName(status: AccountStatus): string {
-  if (status === "active") return `${styles.statusPill} ${styles.statusActive}`;
+  if (status === "active") return `${styles.statusText} ${styles.statusActive}`;
   if (status === "suspended")
-    return `${styles.statusPill} ${styles.statusSuspended}`;
-  return `${styles.statusPill} ${styles.statusPending}`;
+    return `${styles.statusText} ${styles.statusSuspended}`;
+  return `${styles.statusText} ${styles.statusPending}`;
 }
 
 function normalizeSearchValue(value: string): string {
@@ -643,22 +621,22 @@ function getAssetNameStatusLabel(status: AssetNamePreviewStatus): string {
 
 function getAssetNameStatusClassName(status: AssetNamePreviewStatus): string {
   if (status === "changed") {
-    return `${styles.nameStatusPill} ${styles.nameStatusChanged}`;
+    return `${styles.nameStatusText} ${styles.nameStatusChanged}`;
   }
 
   if (status === "committed") {
-    return `${styles.nameStatusPill} ${styles.nameStatusCommitted}`;
+    return `${styles.nameStatusText} ${styles.nameStatusCommitted}`;
   }
 
   if (status === "warning") {
-    return `${styles.nameStatusPill} ${styles.nameStatusWarning}`;
+    return `${styles.nameStatusText} ${styles.nameStatusWarning}`;
   }
 
   if (status === "error") {
-    return `${styles.nameStatusPill} ${styles.nameStatusError}`;
+    return `${styles.nameStatusText} ${styles.nameStatusError}`;
   }
 
-  return `${styles.nameStatusPill} ${styles.nameStatusUnchanged}`;
+  return `${styles.nameStatusText} ${styles.nameStatusUnchanged}`;
 }
 
 export default function AdminClient({
@@ -837,18 +815,13 @@ export default function AdminClient({
       ? 0
       : Math.min(pageStartIndex + ADMIN_PAGE_SIZE, visibleUsers.length);
   const paginatedUsers = visibleUsers.slice(pageStartIndex, pageEndIndex);
-  const visibleAccountLabel =
-    visibleUsers.length === 1 ? "account" : "accounts";
   const hasActiveFilters =
     searchTerm.trim().length > 0 ||
     signupDateFilter !== "all" ||
     provinceFilter !== "all";
-  const pageRangeLabel =
-    visibleUsers.length === 0
-      ? `No matching accounts${users.length ? ` out of ${users.length} total` : ""}`
-      : `Showing ${pageStartIndex + 1}-${pageEndIndex} of ${visibleUsers.length} ${visibleAccountLabel}${
-          hasActiveFilters ? ` (${users.length} total)` : ""
-        }`;
+  const pageRangeLabel = hasActiveFilters
+    ? `${visibleUsers.length} of ${users.length} accounts`
+    : `${users.length} ${users.length === 1 ? "account" : "accounts"}`;
   const accountSummary = useMemo(() => {
     const storageBytes = users.reduce(
       (total, user) => total + user.storageBytes,
@@ -1624,9 +1597,7 @@ export default function AdminClient({
     <section className={styles.shell}>
       <section className={styles.topBar}>
         <div className={styles.titleBlock}>
-          <p className={styles.eyebrow}>Aim4price admin</p>
-          <h1>User accounts</h1>
-          <span>Manage access, account health and user tools.</span>
+          <h1>Accounts</h1>
         </div>
 
         <div className={styles.headerActions}>
@@ -1639,7 +1610,7 @@ export default function AdminClient({
               openGroupNotificationComposer(event.currentTarget)
             }
           >
-            Message accounts
+            Message
           </button>
           <button
             type="button"
@@ -1656,30 +1627,22 @@ export default function AdminClient({
         <article>
           <span>All accounts</span>
           <strong>{accountSummary.total}</strong>
-          <small>Registered users</small>
         </article>
         <article className={styles.summaryActive}>
           <span>Active</span>
           <strong>{accountSummary.active}</strong>
-          <small>Can access Aim4price</small>
         </article>
         <article className={styles.summaryPending}>
           <span>Pending</span>
           <strong>{accountSummary.pending}</strong>
-          <small>Awaiting activation or payment</small>
         </article>
         <article className={styles.summarySuspended}>
           <span>Suspended</span>
           <strong>{accountSummary.suspended}</strong>
-          <small>Access currently paused</small>
         </article>
         <article className={styles.summaryStorage}>
-          <span>Tracked client storage</span>
-          <strong>{accountSummary.storageLabel}</strong>
-          <small>
-            {accountSummary.storageFileCount.toLocaleString("en-ZA")} logical
-            files · PostgreSQL + Bucket
-          </small>
+          <span>Client storage</span>
+          <strong>{accountSummary.storageLabel} · {accountSummary.storageFileCount.toLocaleString("en-ZA")} files</strong>
         </article>
       </section>
 
@@ -1688,10 +1651,7 @@ export default function AdminClient({
         aria-label="Find and filter user accounts"
       >
         <div className={styles.filterHeading}>
-          <div>
-            <strong>Find an account</strong>
-            <span>{pageRangeLabel}</span>
-          </div>
+          <strong>{pageRangeLabel}</strong>
           {hasActiveFilters ? (
             <button
               type="button"
@@ -1708,7 +1668,7 @@ export default function AdminClient({
         </div>
         <div className={styles.filterBar}>
           <label className={styles.searchField}>
-            <span>Search users</span>
+            <span>Search</span>
             <input
               type="search"
               value={searchTerm}
@@ -1718,7 +1678,7 @@ export default function AdminClient({
           </label>
 
           <label className={styles.signupFilter}>
-            <span>Filter signups</span>
+            <span>Signups</span>
             <select
               value={signupDateFilter}
               onChange={(event) =>
@@ -1754,7 +1714,7 @@ export default function AdminClient({
           </label>
 
           <label className={styles.signupFilter}>
-            <span>Sort accounts</span>
+            <span>Sort</span>
             <select
               value={accountSort}
               onChange={(event) =>
@@ -1782,7 +1742,6 @@ export default function AdminClient({
       ) : null}
 
       <section className={styles.tableCard} aria-label="User accounts">
-        <p className={styles.tableHint}>Select any account to view its options.</p>
         <div className={styles.tableWrap}>
           <table className={styles.userTable}>
             <thead>
@@ -1799,7 +1758,7 @@ export default function AdminClient({
               {visibleUsers.length === 0 ? (
                 <tr>
                   <td colSpan={6} className={styles.emptyCell}>
-                    No matching users found.
+                    No accounts found.
                   </td>
                 </tr>
               ) : (
@@ -1825,28 +1784,28 @@ export default function AdminClient({
                           openAccountActionModal(user, event.currentTarget);
                         }}
                       >
-                        <strong className={styles.nameCell}>{user.name}</strong>
-                        <span>{user.email || "No email saved"}</span>
+                        <strong className={styles.nameCell}>{user.name || user.email}</strong>
+                        {user.name && user.email ? <span>· {user.email}</span> : null}
                       </button>
                     </td>
                     <td>
                       <div className={styles.accountTypeCell}>
                         <strong>{formatAccountValue(user.accountType)}</strong>
-                        <span>{formatAccountValue(user.accountSubtype)}</span>
+                        <span>· {formatAccountValue(user.accountSubtype)}</span>
                       </div>
                     </td>
                     <td>
                       {user.province.trim() ? (
                         formatProvince(user.province)
                       ) : (
-                        <span className={styles.mutedText}>Not saved</span>
+                        <span className={styles.mutedText}>—</span>
                       )}
                     </td>
                     <td>
                       <div className={styles.storageCell}>
                         <strong>{user.storageLabel}</strong>
                         <span>
-                          {user.storageFileCount.toLocaleString("en-ZA")} {" "}
+                          · {user.storageFileCount.toLocaleString("en-ZA")} {" "}
                           {user.storageFileCount === 1 ? "file" : "files"}
                         </span>
                       </div>
@@ -1933,13 +1892,9 @@ export default function AdminClient({
           >
             <header className={styles.qrModalHeader}>
               <div>
-                <p className={styles.qrModalEyebrow}>Admin messages</p>
                 <h2 id="admin-group-notification-title">
-                  Message account groups
+                  Message
                 </h2>
-                <span>
-                  Send one notification to all accounts or a selected group.
-                </span>
               </div>
 
               <button
@@ -1999,7 +1954,6 @@ export default function AdminClient({
                         />
                         <span>
                           <strong>{option.label}</strong>
-                          <small>{option.description}</small>
                         </span>
                         <b>{count}</b>
                       </label>
@@ -2074,10 +2028,6 @@ export default function AdminClient({
                   {selectedGroupRecipientCount === 1 ? "account" : "accounts"}
                   {" will receive this notification"}
                 </strong>
-                <span>
-                  Recipients are selected securely from their saved account
-                  type when the message is sent.
-                </span>
               </div>
 
               <label className={styles.groupNotificationConfirmation}>
@@ -2101,7 +2051,7 @@ export default function AdminClient({
                   }
                 />
                 <span>
-                  I confirm this should be sent to the selected account group.
+                  Confirm this account group.
                 </span>
               </label>
 
@@ -2164,11 +2114,9 @@ export default function AdminClient({
           >
             <header className={styles.qrModalHeader}>
               <div>
-                <p className={styles.qrModalEyebrow}>Account options</p>
                 <h2 id="admin-account-action-modal-title">
                   {accountActionModal.name || "Unnamed account"}
                 </h2>
-                <span>{accountActionModal.email || "No email saved"}</span>
               </div>
 
               <button
@@ -2185,11 +2133,6 @@ export default function AdminClient({
                 ×
               </button>
             </header>
-
-            <div className={styles.accountActionSectionHeading}>
-              <strong>What would you like to do?</strong>
-              <span>Start tracked work, open the account directly, or send a message.</span>
-            </div>
 
             <div className={styles.accountPrimaryActions} role="group" aria-label="Primary account actions">
               <button
@@ -2284,31 +2227,20 @@ export default function AdminClient({
                 <div className={styles.accountStoragePrimary}>
                   <span>Tracked client storage</span>
                   <strong>{accountActionModal.storageLabel}</strong>
-                  <small>
-                    {accountActionModal.storageGigabytesLabel} · {" "}
-                    {accountActionModal.storageFileCount.toLocaleString("en-ZA")} {" "}
-                    {accountActionModal.storageFileCount === 1 ? "file" : "files"}
-                  </small>
                 </div>
                 <div>
                   <span>Bucket-only uploads</span>
                   <strong>{accountActionModal.bucketStorageLabel}</strong>
-                  <small>New low-cost uploads</small>
                 </div>
                 <div>
                   <span>PostgreSQL files</span>
                   <strong>{accountActionModal.postgresStorageLabel}</strong>
-                  <small>Uploads, evidence and inline logos</small>
                 </div>
               </section>
-              <p className={styles.accountStorageNote}>
-                Logical file size for client storage tracking. Internal URL references are counted once; database overhead, mirrors, backups and temporary recovery copies are excluded.
-              </p>
             </details>
 
             <div className={styles.accountActionSectionHeading}>
               <strong>Access &amp; account tools</strong>
-              <span>Only use these controls when an account needs maintenance.</span>
             </div>
 
             <div
@@ -2409,10 +2341,6 @@ export default function AdminClient({
                 <div className={styles.notificationComposerHeading}>
                   <div>
                     <strong>Send notification</strong>
-                    <span>
-                      This will appear as a new Aim4price notification for this
-                      account.
-                    </span>
                   </div>
                   <button
                     type="button"
@@ -2542,11 +2470,9 @@ export default function AdminClient({
           >
             <header className={styles.qrModalHeader} data-asset-choice-header="true">
               <div>
-                <p className={styles.qrModalEyebrow}>Admin QR print</p>
-                <h2 id="admin-qr-modal-title">Print QR labels</h2>
-                <span>
-                  {qrModal.user.name} · {qrModal.user.email || "No email saved"}
-                </span>
+                <h2 id="admin-qr-modal-title">
+                  Print QR labels — {qrModal.user.name || "Unnamed account"}
+                </h2>
               </div>
 
               <button
@@ -2579,7 +2505,6 @@ export default function AdminClient({
                   />
                   <span>
                     <strong>{option.title}</strong>
-                    <small>{option.description}</small>
                   </span>
                 </label>
               ))}
@@ -2587,7 +2512,7 @@ export default function AdminClient({
 
             <div className={styles.qrAssetControls} data-asset-choice-toolbar="true">
               <label className={styles.qrAssetSearch}>
-                <span>Choose assets</span>
+                <span>Assets</span>
                 <input
                   type="search"
                   value={qrModal.assetSearchTerm}
@@ -2717,12 +2642,9 @@ export default function AdminClient({
           >
             <header className={styles.qrModalHeader}>
               <div>
-                <p className={styles.qrModalEyebrow}>Admin asset rename</p>
-                <h2 id="admin-asset-name-modal-title">Asset Name Manager</h2>
-                <span>
-                  {assetNameModal.user.name} ·{" "}
-                  {assetNameModal.user.email || "No email saved"}
-                </span>
+                <h2 id="admin-asset-name-modal-title">
+                  Asset names — {assetNameModal.user.name || "Unnamed account"}
+                </h2>
               </div>
 
               <button
@@ -2741,13 +2663,8 @@ export default function AdminClient({
             </header>
 
             <div className={styles.nameManagerIntro}>
-              <strong>Bulk rename only</strong>
               <span>
-                Download the simple CSV, paste or upload it into ChatGPT if
-                needed, edit only new_asset_title, new_brand and new_model, then
-                upload the edited CSV here. Equipment, year_model and usage are
-                context only. Values, finance, insurance, license, valuation and
-                QR data are not editable here.
+                Edit the asset title, brand or model in the CSV, then upload it.
               </span>
             </div>
 
@@ -2845,8 +2762,7 @@ export default function AdminClient({
             <div className={styles.namePreviewTableWrap}>
               {!assetNameModal.preview ? (
                 <div className={styles.nameManagerEmpty}>
-                  No CSV preview loaded yet. Download the CSV template first,
-                  edit only the new columns, then upload it here.
+                  Upload a rename CSV to preview changes.
                 </div>
               ) : assetNameModal.preview.rows.length === 0 ? (
                 <div className={styles.nameManagerEmpty}>
@@ -2917,7 +2833,7 @@ export default function AdminClient({
             ) : null}
 
             <footer
-              className={`${styles.qrModalFooter} ${styles.nameModalFooter}`}
+              className={styles.qrModalFooter}
             >
               <span>
                 {validAssetNameChangeCount} valid changed row

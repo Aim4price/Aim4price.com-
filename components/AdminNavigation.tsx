@@ -21,67 +21,56 @@ const ADMIN_LINKS: Array<{
   key: AdminSection;
   href: string;
   label: string;
-  description: string;
 }> = [
   {
     href: "/admin",
     label: "Accounts",
     key: "accounts",
-    description: "Manage users, access and account details",
   },
   {
     href: "/admin/dashboard",
     label: "Dashboard",
     key: "dashboard",
-    description: "Review Aim4price activity and platform totals",
   },
   {
     href: "/admin/valuations",
     label: "Valuations",
     key: "valuations",
-    description: "Review every estimate, input, result and account",
   },
   {
     href: "/admin/marketplace",
     label: "Marketplace",
     key: "marketplace",
-    description: "Review advertised value and listing history, views and repeat interest",
   },
   {
     href: "/admin/asset-map",
-    label: "Global Asset Map",
+    label: "Asset Map",
     key: "asset-map",
-    description: "Map every saved asset across all accounts",
   },
   {
     href: "/admin/discovery",
-    label: "Admin Discovery",
+    label: "Discovery",
     key: "discovery",
-    description: "Search all assets with owner details unlocked",
   },
   {
     href: "/admin/sold-assets",
-    label: "Asset Outcomes",
+    label: "Outcomes",
     key: "sold-assets",
-    description: "Review closed adverts and whether Aim4price helped",
   },
   {
     href: "/admin/work-tracker",
     label: "Work Tracker",
     key: "work-tracker",
-    description: "Track and report Admin work",
   },
   {
     href: "/admin/capture-queue",
     label: "Capture Queue",
     key: "capture-queue",
-    description: "Review assisted document capture",
   },
   {
     href: "/admin/lifecycle-calculator",
     label: "Lifecycle Model",
     key: "lifecycle",
-    description: "Model ownership cost and lifecycle scenarios",
   },
 ];
 
@@ -94,9 +83,6 @@ export default function AdminNavigation({
   const [isOpen, setIsOpen] = useState(false);
   const manageButtonRef = useRef<HTMLButtonElement | null>(null);
   const modalRef = useRef<HTMLElement | null>(null);
-  const activeLink =
-    ADMIN_LINKS.find((item) => item.key === active) ?? ADMIN_LINKS[0];
-
   useEffect(() => {
     if (!isOpen || typeof window === "undefined") return;
 
@@ -164,10 +150,7 @@ export default function AdminNavigation({
           <i />
           <i />
         </span>
-        <span className={styles.manageCopy}>
-          <strong>Manage</strong>
-          <small>{activeLink.label}</small>
-        </span>
+        <strong className={styles.manageCopy}>Manage</strong>
         <span className={styles.manageChevron} aria-hidden="true">
           ⌄
         </span>
@@ -191,11 +174,7 @@ export default function AdminNavigation({
             tabIndex={-1}
           >
             <header className={styles.modalHeader}>
-              <div>
-                <p>Aim4price control centre</p>
-                <h2 id="admin-manage-modal-title">Choose a workspace</h2>
-                <span>Choose an Admin workspace.</span>
-              </div>
+              <h2 id="admin-manage-modal-title">Manage</h2>
               <button
                 type="button"
                 className={styles.closeButton}
@@ -220,11 +199,8 @@ export default function AdminNavigation({
                     onFocus={() => router.prefetch(item.href)}
                     onClick={() => setIsOpen(false)}
                   >
-                    <span>
-                      <strong>{item.label}</strong>
-                      <small>{item.description}</small>
-                    </span>
-                    <em>{isActive ? "Current" : "Open"}</em>
+                    <strong>{item.label}</strong>
+                    <span aria-hidden="true">›</span>
                   </Link>
                 );
               })}

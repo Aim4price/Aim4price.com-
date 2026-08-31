@@ -23,8 +23,8 @@ test("the one-page lifecycle flow has clear navigation and selectable structures
   assert.match(lifecycle, /href="#lifecycle-results"/);
   assert.match(lifecycle, /href="#lifecycle-planning"/);
   assert.match(lifecycle, /aria-pressed=\{scenario\.id === state\.preferredScenario\}/);
-  assert.match(lifecycle, /Choose the structure to use in the ownership summary/);
-  assert.match(lifecycle, /See the cost and cash-flow trade-off clearly/);
+  assert.match(lifecycle, /<h3>Funding structure<\/h3>/);
+  assert.match(lifecycle, /<h2>Results<\/h2>/);
   assert.match(lifecycleStyles, /\.workspaceNav \{[\s\S]*?position: sticky/);
   assert.match(lifecycleStyles, /\.scenarioChoiceActive/);
 });
@@ -48,7 +48,7 @@ test("service and maintenance choices use plain deal language", () => {
 });
 
 test("the users page separates navigation, account health and filtering", () => {
-  assert.match(users, /<h1>User accounts<\/h1>/);
+  assert.match(users, /<h1>Accounts<\/h1>/);
   assert.match(users, /aria-label="Account summary"/);
   assert.match(users, /accountSummary\.active/);
   assert.match(users, /<AdminNavigation active="accounts" \/>/);
@@ -90,7 +90,6 @@ test("admin users and pricing metrics share one logical storage ledger", () => {
   assert.match(adminDashboard, /with all_uploads as/);
   assert.match(adminDashboard, /Full estimates saved/);
   assert.doesNotMatch(adminDashboard, /PayFast\/payment logic/);
-  assert.match(dashboard, /timeZone: "Africa\/Johannesburg"/);
   assert.doesNotMatch(adminDashboard, /1024 \* 1024/);
   assert.doesNotMatch(
     adminDashboard,
@@ -109,7 +108,7 @@ test("admin users and pricing metrics share one logical storage ledger", () => {
   assert.match(adminStorageUsage, /null::timestamptz as created_at/);
   assert.match(adminUsers, /left join storage_by_user storage on storage\.user_id = u\.id/);
   assert.match(users, /<th>Storage<\/th>/);
-  assert.match(users, /accountActionModal\.storageGigabytesLabel/);
+  assert.match(users, /accountActionModal\.storageLabel/);
   assert.match(users, /accountActionModal\.bucketStorageLabel/);
   assert.match(users, /accountActionModal\.postgresStorageLabel/);
   assert.match(users, /Most storage/);
@@ -117,18 +116,19 @@ test("admin users and pricing metrics share one logical storage ledger", () => {
   assert.match(adminStorageUsage, /1000 \*\* 3/);
   assert.match(users, /Tracked client storage/);
   assert.match(userStyles, /\.accountStorageOverview/);
-  assert.match(dashboard, /Average tracked storage \/ account/);
-  assert.match(dashboard, /Tracked storage added in the last 30 days/);
+  assert.match(dashboard, /<h2>Storage<\/h2>/);
+  assert.match(dashboard, /Average per account/);
+  assert.match(dashboard, /Added in 30 days/);
   assert.doesNotMatch(dashboard, /central uploads/i);
 });
 
 test("the dashboard prioritises headline metrics and collapses optional detail", () => {
   assert.doesNotMatch(dashboard, /Live Aim4price activity/);
-  assert.match(dashboard, /At a glance/);
-  assert.match(dashboard, /Growth and engagement/);
-  assert.match(dashboard, /Asset workspace adoption/);
+  assert.match(dashboard, /id="overview-heading">Overview/);
+  assert.match(dashboard, /id="accounts-heading">Accounts/);
+  assert.match(dashboard, /id="product-heading">Product/);
   assert.match(dashboard, /<details className=\{styles\.detailsSection\}>/);
-  assert.match(dashboard, /Detailed product activity/);
+  assert.match(dashboard, /More activity/);
   assert.match(dashboard, /<AdminNavigation active="dashboard" \/>/);
   assert.doesNotMatch(dashboard, /className=\{styles\.dashboardHero\}/);
   assert.match(dashboardStyles, /\.featuredCard/);
@@ -151,17 +151,18 @@ test("all Admin pages use one complete navigation without Assistance Network con
   assert.doesNotMatch(adminNavigation, /assistance-network|Assistance Network/);
 });
 
-test("Admin navigation uses one Manage button and an accessible destination modal", () => {
-  assert.match(adminNavigation, /<strong>Manage<\/strong>/);
+test("Admin navigation uses one-line labels and an accessible destination modal", () => {
+  assert.match(adminNavigation, /<strong className=\{styles\.manageCopy\}>Manage<\/strong>/);
   assert.match(adminNavigation, /aria-haspopup="dialog"/);
   assert.match(adminNavigation, /role="dialog"/);
   assert.match(adminNavigation, /aria-labelledby="admin-manage-modal-title"/);
   assert.match(adminNavigation, /keepFocusInsideManageModal/);
   assert.match(adminNavigation, /manageButtonRef\.current\?\.focus\(\)/);
-  assert.match(adminNavigation, /Choose an Admin workspace/);
-  assert.match(adminNavigation, /Review advertised value and listing history/);
-  assert.match(adminNavigation, /Map every saved asset across all accounts/);
-  assert.match(adminNavigation, /Search all assets with owner details unlocked/);
+  assert.match(adminNavigation, /id="admin-manage-modal-title">Manage/);
+  assert.match(adminNavigation, /label: "Asset Map"/);
+  assert.match(adminNavigation, /label: "Discovery"/);
+  assert.match(adminNavigation, /label: "Outcomes"/);
+  assert.doesNotMatch(adminNavigation, /description:|>Current<|>Open</);
   assert.match(adminNavigationStyles, /\.manageButton/);
   assert.match(adminNavigationStyles, /\.optionGrid/);
   assert.match(adminNavigationStyles, /\.closeButton/);

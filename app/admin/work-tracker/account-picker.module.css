@@ -45,8 +45,6 @@
 .triggerCopy,
 .optionCopy {
   min-width: 0;
-  display: grid;
-  gap: 0.12rem;
 }
 
 .triggerCopy strong,
@@ -56,17 +54,6 @@
   font-size: 0.8rem;
   font-weight: 850;
   line-height: 1.25;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.triggerCopy small,
-.optionCopy small {
-  overflow: hidden;
-  color: #71817b;
-  font-size: 0.68rem;
-  font-weight: 650;
-  line-height: 1.3;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -207,7 +194,7 @@
   width: 1.4rem;
   height: 1.4rem;
   flex: 0 0 auto;
-  border-radius: 999px;
+  border-radius: 0.4rem;
   color: #ffffff;
   background: #176c50;
   display: grid;
@@ -247,11 +234,4 @@
   clip: rect(0 0 0 0);
   clip-path: inset(50%);
   white-space: nowrap;
-}
-
-@media (max-width: 620px) {
-  .triggerCopy small,
-  .optionCopy small {
-    white-space: normal;
-  }
 }

@@ -73,7 +73,7 @@ function interestButtonLabel(filter: AdminMarketplaceInterestFilter): string {
   if (filter === 'viewed') return 'Popular';
   if (filter === 'repeat') return 'Repeat interest';
   if (filter === 'unviewed') return 'Not viewed';
-  return 'All assets';
+  return 'All';
 }
 
 export default function AdminMarketplaceClient({ report }: { report: AdminMarketplaceReport }) {
@@ -127,10 +127,6 @@ export default function AdminMarketplaceClient({ report }: { report: AdminMarket
   const filteredAssets = useMemo(
     () => filterAndSortAdminMarketplaceAssets(assets, filters),
     [assets, filters],
-  );
-  const filteredMetrics = useMemo(
-    () => summarizeAdminMarketplaceAssets(filteredAssets),
-    [filteredAssets],
   );
   const totalPages = Math.max(1, Math.ceil(filteredAssets.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
@@ -370,62 +366,39 @@ export default function AdminMarketplaceClient({ report }: { report: AdminMarket
     <>
       <section className={styles.metrics} aria-label="Marketplace summary">
         <article className={styles.featuredMetric}>
-          <span>All-time advertised value</span>
+          <span>Advertised value</span>
           <strong>{formatAdminMarketplaceMoney(allMetrics.allTimeAdvertisedValueExVat)}</strong>
-          <small>{allMetrics.totalUniqueAssets.toLocaleString('en-ZA')} unique assets · Excl. VAT</small>
         </article>
         <article>
-          <span>Live advertised value</span>
+          <span>Live value</span>
           <strong>{formatAdminMarketplaceMoney(allMetrics.liveAdvertisedValueExVat)}</strong>
-          <small>{allMetrics.liveAssets.toLocaleString('en-ZA')} assets currently live</small>
         </article>
         <article>
-          <span>Marketplace views</span>
+          <span>Views</span>
           <strong>{allMetrics.totalViews.toLocaleString('en-ZA')}</strong>
-          <small>{allMetrics.viewedAssets.toLocaleString('en-ZA')} assets have been opened</small>
         </article>
         <article>
-          <span>Aim4price account views</span>
+          <span>Account views</span>
           <strong>{allMetrics.accountViews.toLocaleString('en-ZA')}</strong>
-          <small>Signed-in accounts identified by name</small>
         </article>
         <article>
-          <span>Unknown viewer views</span>
+          <span>Guest views</span>
           <strong>{allMetrics.unknownViews.toLocaleString('en-ZA')}</strong>
-          <small>Guest detail opens, grouped privately</small>
         </article>
         <article className={allMetrics.repeatInterestAssets ? styles.signalMetric : undefined}>
           <span>Repeat interest</span>
           <strong>{allMetrics.repeatInterestAssets.toLocaleString('en-ZA')}</strong>
-          <small>Assets flagged after 3 views by one viewer</small>
         </article>
       </section>
 
-      <aside className={styles.definitionNote}>
-        <div>
-          <strong>Views show real listing interest.</strong>
-          <span>
-            A view is recorded when someone opens an asset&apos;s Marketplace details. Seller self-views and rapid duplicate opens are excluded.
-          </span>
-        </div>
-        <div>
-          <strong>One asset, one advertised value.</strong>
-          <span>Re-listing stays in history without inflating the all-time value total.</span>
-        </div>
-      </aside>
-
-      <section className={styles.tableCard}>
+      <section className={styles.tableCard} aria-label="Marketplace listings">
         <header className={styles.tableHeader}>
           <div className={styles.tableTitle}>
-            <div>
-              <h2>Marketplace discovery</h2>
-              <span>Every asset ever advertised, who opened it, and when.</span>
-            </div>
-            <strong>
-              {filteredAssets.length
+            <h2>
+              Listings · {filteredAssets.length
                 ? `${pageStart + 1}-${pageEnd} of ${filteredAssets.length.toLocaleString('en-ZA')}`
                 : 'No matches'}
-            </strong>
+            </h2>
           </div>
 
           <div className={styles.interestTabs} role="group" aria-label="Marketplace popularity filter">
@@ -438,15 +411,15 @@ export default function AdminMarketplaceClient({ report }: { report: AdminMarket
                 onClick={() => selectInterest(option)}
               >
                 {interestButtonLabel(option)}
-                {option === 'viewed' ? <span>{allMetrics.viewedAssets}</span> : null}
-                {option === 'repeat' ? <span>{allMetrics.repeatInterestAssets}</span> : null}
+                {option === 'viewed' ? ` (${allMetrics.viewedAssets.toLocaleString('en-ZA')})` : ''}
+                {option === 'repeat' ? ` (${allMetrics.repeatInterestAssets.toLocaleString('en-ZA')})` : ''}
               </button>
             ))}
           </div>
 
           <div className={styles.filters}>
             <label className={styles.searchField}>
-              <span>Find an asset or account</span>
+              <span>Search</span>
               <input
                 type="search"
                 value={search}
@@ -454,11 +427,11 @@ export default function AdminMarketplaceClient({ report }: { report: AdminMarket
                   setSearch(event.target.value);
                   setPage(1);
                 }}
-                placeholder="Asset, seller, location or reference"
+                placeholder="Asset or seller"
               />
             </label>
             <label>
-              <span>Listing status</span>
+              <span>Status</span>
               <select
                 value={status}
                 onChange={(event) => {
@@ -474,7 +447,7 @@ export default function AdminMarketplaceClient({ report }: { report: AdminMarket
               </select>
             </label>
             <label>
-              <span>Asset sector</span>
+              <span>Sector</span>
               <select
                 value={sector}
                 onChange={(event) => {
@@ -489,8 +462,9 @@ export default function AdminMarketplaceClient({ report }: { report: AdminMarket
               </select>
             </label>
             <label>
-              <span>Last advertised</span>
+              <span>Advertised</span>
               <select
+                aria-label="Last advertised"
                 value={advertised}
                 onChange={(event) => {
                   setAdvertised(event.target.value);
@@ -506,7 +480,7 @@ export default function AdminMarketplaceClient({ report }: { report: AdminMarket
               </select>
             </label>
             <label>
-              <span>Order results</span>
+              <span>Sort</span>
               <select
                 value={sort}
                 onChange={(event) => {
@@ -524,15 +498,9 @@ export default function AdminMarketplaceClient({ report }: { report: AdminMarket
                 <option value="asset-az">Asset A-Z</option>
               </select>
             </label>
-            <button type="button" onClick={clearFilters} disabled={!filtersActive}>Clear filters</button>
+            {filtersActive ? <button type="button" onClick={clearFilters}>Clear filters</button> : null}
           </div>
         </header>
-
-        <div className={styles.resultSummary}>
-          <span><strong>{filteredMetrics.totalViews.toLocaleString('en-ZA')}</strong> views across this result</span>
-          <span><strong>{filteredMetrics.accountViews.toLocaleString('en-ZA')}</strong> known account views</span>
-          <span><strong>{filteredMetrics.repeatInterestAssets.toLocaleString('en-ZA')}</strong> repeat-interest flags</span>
-        </div>
 
         <div className={styles.tableScroller}>
           <table>
@@ -540,9 +508,9 @@ export default function AdminMarketplaceClient({ report }: { report: AdminMarket
               <tr>
                 <th>Asset</th>
                 <th>Seller</th>
-                <th>Listing</th>
-                <th>Viewer interest</th>
-                <th>Asking excl. VAT</th>
+                <th>Status</th>
+                <th>Views</th>
+                <th>Value excl. VAT</th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -557,37 +525,30 @@ export default function AdminMarketplaceClient({ report }: { report: AdminMarket
                   <tr key={asset.assetKey} className={asset.hasRepeatInterest ? styles.flaggedRow : undefined}>
                     <td className={styles.assetCell}>
                       <strong>{asset.title}</strong>
-                      <span>{assetDetails.join(' · ')}</span>
-                      <small>{formatLocation(asset.area, asset.province)}</small>
+                      <span>· {[...assetDetails, formatLocation(asset.area, asset.province)].filter(Boolean).join(' · ')}</span>
                     </td>
                     <td className={styles.sellerCell}>
                       <strong>{asset.sellerLabel}</strong>
-                      {asset.sellerEmail ? <span>{asset.sellerEmail}</span> : null}
                     </td>
                     <td>
                       <span className={`${styles.badge} ${styles[`status_${asset.status}`]}`}>
                         {STATUS_LABELS[asset.status]}
                       </span>
-                      <span>Latest {formatDate(asset.lastAdvertisedAtIso)}</span>
-                      <small>{asset.listingEvents} {asset.listingEvents === 1 ? 'listing' : 'listings'} in history</small>
+                      <span>· {formatDate(asset.lastAdvertisedAtIso)}</span>
                     </td>
                     <td className={styles.interestCell}>
                       {asset.totalViews > 0 ? (
                         <>
                           <strong>{asset.totalViews.toLocaleString('en-ZA')} {asset.totalViews === 1 ? 'view' : 'views'}</strong>
-                          <span>{asset.accountViews.toLocaleString('en-ZA')} account · {asset.unknownViews.toLocaleString('en-ZA')} unknown</span>
-                          <small>Last opened {formatDateTime(asset.lastViewedAtIso)}</small>
                           {asset.hasRepeatInterest ? (
                             <em className={styles.repeatFlag}>
-                              <span aria-hidden="true">⚑</span>
-                              {asset.repeatViewerLabel || 'One viewer'} · {asset.repeatViewerViews} views
+                              Repeat · {asset.repeatViewerViews} views
                             </em>
                           ) : null}
                         </>
                       ) : (
                         <>
-                          <strong>No views yet</strong>
-                          <span>Waiting for the first detail open</span>
+                          <strong>No views</strong>
                         </>
                       )}
                     </td>
@@ -604,7 +565,7 @@ export default function AdminMarketplaceClient({ report }: { report: AdminMarket
                           disabled={!asset.sourceAssetId}
                           onClick={(event) => openActivityModal(asset, event.currentTarget)}
                         >
-                          View activity
+                          Activity
                         </button>
                         <button
                           type="button"
@@ -612,7 +573,7 @@ export default function AdminMarketplaceClient({ report }: { report: AdminMarket
                           aria-label={`Delete ${asset.title} marketplace record`}
                           onClick={(event) => openDeleteModal(asset, event.currentTarget)}
                         >
-                          Delete listing
+                          Delete
                         </button>
                       </div>
                     </td>
@@ -623,8 +584,7 @@ export default function AdminMarketplaceClient({ report }: { report: AdminMarket
           </table>
           {!pageAssets.length ? (
             <div className={styles.empty}>
-              <strong>No marketplace assets found</strong>
-              <span>Clear the filters to return to the complete all-time history.</span>
+              <strong>No listings found</strong>
             </div>
           ) : null}
         </div>
@@ -647,14 +607,12 @@ export default function AdminMarketplaceClient({ report }: { report: AdminMarket
             className={styles.activityModal}
             role="dialog"
             aria-modal="true"
+            aria-label="Who viewed this asset?"
             aria-labelledby="marketplace-view-activity-title"
             tabIndex={-1}
           >
             <header className={styles.modalHeader}>
-              <div>
-                <h2 id="marketplace-view-activity-title">Who viewed this asset?</h2>
-                <p>{activityTarget.title}</p>
-              </div>
+              <h2 id="marketplace-view-activity-title">Activity · {activityTarget.title}</h2>
               <button type="button" className={styles.modalCloseButton} aria-label="Close Marketplace view activity" onClick={closeActivityModal}>
                 <span aria-hidden="true">×</span>
               </button>
@@ -684,18 +642,14 @@ export default function AdminMarketplaceClient({ report }: { report: AdminMarket
 
                 {activityDetails.repeatViewers > 0 ? (
                   <aside className={styles.repeatBanner}>
-                    <span aria-hidden="true">⚑</span>
-                    <div>
-                      <strong>Repeat interest detected</strong>
-                      <p>{activityDetails.repeatViewers} {activityDetails.repeatViewers === 1 ? 'viewer has' : 'viewers have'} opened this asset at least 3 times.</p>
-                    </div>
+                    <strong>Repeat interest</strong>
+                    <span>{activityDetails.repeatViewers} {activityDetails.repeatViewers === 1 ? 'viewer' : 'viewers'} with 3+ views</span>
                   </aside>
                 ) : null}
 
                 <section className={styles.viewerSection}>
                   <div className={styles.activityHeading}>
                     <h3>Viewer summary</h3>
-                    <span>Grouped by Aim4price account or unknown browser</span>
                   </div>
                   {activityDetails.viewerGroups.length ? (
                     <div className={styles.viewerList}>
@@ -722,7 +676,6 @@ export default function AdminMarketplaceClient({ report }: { report: AdminMarket
                   ) : (
                     <div className={styles.activityEmpty}>
                       <strong>No recorded views yet</strong>
-                      <span>This asset has not been opened since view tracking started.</span>
                     </div>
                   )}
                 </section>
@@ -730,7 +683,6 @@ export default function AdminMarketplaceClient({ report }: { report: AdminMarket
                 <section className={styles.timelineSection}>
                   <div className={styles.activityHeading}>
                     <h3>View timeline</h3>
-                    <span>Each recorded detail open, newest first</span>
                   </div>
                   {activityDetails.events.length ? (
                     <div className={styles.timeline}>
@@ -787,10 +739,7 @@ export default function AdminMarketplaceClient({ report }: { report: AdminMarket
             tabIndex={-1}
           >
             <header className={styles.deleteModalHeader}>
-              <div>
-                <h2 id="delete-marketplace-listing-title">Delete this listing?</h2>
-                <p>Marketplace record</p>
-              </div>
+              <h2 id="delete-marketplace-listing-title">Delete listing?</h2>
               <button type="button" className={styles.deleteCloseButton} aria-label="Close delete confirmation" disabled={deleteBusy} onClick={closeDeleteModal}>
                 <span aria-hidden="true">×</span>
               </button>
@@ -800,14 +749,11 @@ export default function AdminMarketplaceClient({ report }: { report: AdminMarket
               <span>{deleteTarget.sellerLabel} · {formatAdminMarketplaceMoney(deleteTarget.askingPriceExVat)}</span>
             </div>
             <p id="delete-marketplace-listing-description" className={styles.deleteDescription}>
-              This permanently removes{' '}
+              Permanently remove{' '}
               {deleteTarget.listingEvents === 1
-                ? 'this listing event'
+                ? 'this listing'
                 : `all ${deleteTarget.listingEvents.toLocaleString('en-ZA')} listing events for this asset`}{' '}
-              and its Marketplace view history from Admin.
-            </p>
-            <p className={styles.assetSafetyNote}>
-              If it is live, it will also be removed from the public Marketplace. The owner&apos;s underlying asset and Asset Register record will remain intact.
+              and its view history. The owner&apos;s underlying asset and Asset Register record will remain intact.
             </p>
             {deleteError ? <p className={styles.deleteError} role="alert">{deleteError}</p> : null}
             <footer className={styles.deleteActions}>

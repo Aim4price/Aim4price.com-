@@ -437,54 +437,30 @@ export default function AdminValuationsClient({
   return (
     <>
       <section className={styles.metrics} aria-label="Valuation summary">
-        <article className={styles.featuredMetric}>
-          <span>Matching valuations</span>
+        <article>
           <strong>{summary.totalValuations.toLocaleString('en-ZA')}</strong>
-          <small>{summary.valuedValuations.toLocaleString('en-ZA')} include a recorded estimate</small>
+          <span>Records</span>
         </article>
         <article>
-          <span>Estimate results</span>
           <strong>{summary.estimateEvents.toLocaleString('en-ZA')}</strong>
-          <small>Completed free estimate requests</small>
+          <span>Estimates</span>
         </article>
         <article>
-          <span>Saved valuations</span>
           <strong>{summary.savedValuations.toLocaleString('en-ZA')}</strong>
-          <small>Full valuation runs saved to an asset</small>
+          <span>Saved</span>
         </article>
         <article>
-          <span>Known accounts</span>
           <strong>{summary.knownAccountValuations.toLocaleString('en-ZA')}</strong>
-          <small>{summary.uniqueAccounts.toLocaleString('en-ZA')} different linked accounts</small>
+          <span>Accounts</span>
         </article>
         <article>
-          <span>Unknown / guest</span>
           <strong>{summary.unknownAccountValuations.toLocaleString('en-ZA')}</strong>
-          <small>Estimate events without a signed-in account</small>
+          <span>Guests</span>
         </article>
       </section>
 
-      <aside className={styles.historyNote}>
-        <strong>Fresh valuation history from 26 August 2026.</strong>
-        <span>
-          Earlier valuation records were cleared for a clean restart. Every new estimate now retains the complete
-          normalized flow, including specifications, condition answers, usage, pricing, extras, assumptions and
-          calculation output.
-        </span>
-      </aside>
-
       <section className={styles.valuationCard}>
         <header className={styles.filterHeader}>
-          <div className={styles.filterTitle}>
-            <p>Valuation log</p>
-            <h2>What was entered and estimated</h2>
-            <span>
-              {report.pagination.totalItems
-                ? `Showing ${firstItem}-${lastItem} of ${report.pagination.totalItems.toLocaleString('en-ZA')}`
-                : 'No valuations match the current filters'}
-            </span>
-          </div>
-
           <div className={styles.filters}>
             <div className={styles.searchField}>
               <label>
@@ -496,10 +472,13 @@ export default function AdminValuationsClient({
                   onKeyDown={(event) => {
                     if (event.key === 'Enter') submitSearch();
                   }}
-                  placeholder="Asset, account, email, input or reference"
+                  placeholder="Asset, account, email or reference"
                 />
               </label>
               <button type="button" onClick={submitSearch}>Search</button>
+              {activeFilterCount || filters.sort !== 'latest' ? (
+                <button type="button" className={styles.clearButton} onClick={clearFilters}>Clear</button>
+              ) : null}
             </div>
             <label>
               <span>Record</span>
@@ -558,29 +537,30 @@ export default function AdminValuationsClient({
                 <option value="asset">Asset A-Z</option>
               </select>
             </label>
-            <button type="button" className={styles.clearButton} onClick={clearFilters} disabled={!activeFilterCount && filters.sort === 'latest'}>
-              Clear {activeFilterCount ? `(${activeFilterCount})` : ''}
-            </button>
           </div>
         </header>
 
         {error ? <p className={styles.errorNotice} role="alert">{error}</p> : null}
         {loading ? <div className={styles.loadingBar} aria-label="Loading valuations" /> : null}
 
-        <div className={styles.bulkToolbar}>
-          <span>
+        <div className={styles.recordsToolbar}>
+          <strong>
             {selectedOnPageCount
-              ? `${selectedOnPageCount.toLocaleString('en-ZA')} valuation${selectedOnPageCount === 1 ? '' : 's'} selected`
-              : 'Select records below to permanently remove more than one valuation.'}
-          </span>
-          <button
-            type="button"
-            className={styles.bulkDeleteButton}
-            disabled={!selectedOnPageCount || loading || deleteBusy}
-            onClick={(event) => openDeleteModal(selectedValuations, 'bulk', event.currentTarget)}
-          >
-            Bulk delete{selectedOnPageCount ? ` (${selectedOnPageCount})` : ''}
-          </button>
+              ? `${selectedOnPageCount.toLocaleString('en-ZA')} selected`
+              : report.pagination.totalItems
+                ? `${firstItem}-${lastItem} of ${report.pagination.totalItems.toLocaleString('en-ZA')}`
+                : 'No results'}
+          </strong>
+          {selectedOnPageCount ? (
+            <button
+              type="button"
+              className={styles.bulkDeleteButton}
+              disabled={loading || deleteBusy}
+              onClick={(event) => openDeleteModal(selectedValuations, 'bulk', event.currentTarget)}
+            >
+              Delete selected
+            </button>
+          ) : null}
         </div>
 
         <div className={styles.tableScroller} aria-busy={loading}>
@@ -600,10 +580,9 @@ export default function AdminValuationsClient({
                 <th>When</th>
                 <th>Record</th>
                 <th>Account</th>
-                <th>Asset entered</th>
-                <th>Inputs</th>
+                <th>Asset</th>
                 <th>Estimate excl. VAT</th>
-                <th>Estimated range</th>
+                <th>Range</th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -621,33 +600,25 @@ export default function AdminValuationsClient({
                   </td>
                   <td>
                     <strong>{formatAdminValuationDateTime(valuation.createdAtIso)}</strong>
-                    <span>Reference {valuation.sourceId}</span>
                   </td>
                   <td>
-                    <span className={`${styles.badge} ${valuation.recordType === 'saved' ? styles.savedBadge : styles.estimateBadge}`}>
+                    <strong className={`${styles.recordType} ${valuation.recordType === 'saved' ? styles.savedRecord : styles.estimateRecord}`}>
                       {RECORD_LABELS[valuation.recordType]}
-                    </span>
-                    <small>{MODE_LABELS[valuation.valuationMode]}</small>
+                    </strong>
                   </td>
                   <td>
                     <strong>{valuation.account.label}</strong>
-                    {valuation.account.email ? <span>{valuation.account.email}</span> : null}
-                    {!valuation.account.known ? <small className={styles.unknownCopy}>No account attached</small> : null}
                   </td>
                   <td>
                     <strong>{assetTitle(valuation)}</strong>
-                    <span>{valuation.asset.sectorLabel} · {valuation.asset.familyLabel}</span>
-                  </td>
-                  <td>
-                    <strong>{valuation.asset.condition ? titleCase(valuation.asset.condition) : 'Condition not recorded'}</strong>
-                    <span>{formatUsage(valuation)}</span>
+                    <span>· {valuation.asset.sectorLabel}</span>
                   </td>
                   <td className={styles.moneyCell}>{formatAdminValuationMoney(valuation.estimate.selectedValueExVat)}</td>
                   <td>{formatRange(valuation)}</td>
                   <td>
                     <div className={styles.rowActions}>
                       <button type="button" className={styles.viewButton} onClick={(event) => openDetails(valuation, event.currentTarget)}>
-                        View complete flow
+                        View
                       </button>
                       <button
                         type="button"
@@ -666,7 +637,6 @@ export default function AdminValuationsClient({
           {!report.valuations.length ? (
             <div className={styles.emptyState}>
               <strong>No valuations found</strong>
-              <span>{activeFilterCount ? 'Clear the filters to return to the new valuation history.' : 'New completed estimates will appear here automatically.'}</span>
             </div>
           ) : null}
         </div>
@@ -691,23 +661,22 @@ export default function AdminValuationsClient({
           <button type="button" className={styles.backdrop} tabIndex={-1} aria-label="Close valuation details" onClick={() => { if (!openingAccount) setSelectedValuation(null); }} />
           <section ref={detailsRef} className={styles.detailsModal} role="dialog" aria-modal="true" aria-labelledby="admin-valuation-detail-title" tabIndex={-1}>
             <header className={styles.modalHeader}>
-              <div>
-                <p>{RECORD_LABELS[selectedValuation.recordType]} · {MODE_LABELS[selectedValuation.valuationMode]}</p>
-                <h2 id="admin-valuation-detail-title">{assetTitle(selectedValuation)}</h2>
-                <span>{formatAdminValuationDateTime(selectedValuation.createdAtIso)} · Reference {selectedValuation.sourceId}</span>
-              </div>
+              <h2 id="admin-valuation-detail-title">{assetTitle(selectedValuation)}</h2>
               <button type="button" aria-label="Close valuation details" onClick={() => { if (!openingAccount) setSelectedValuation(null); }}>×</button>
             </header>
 
-            <section className={styles.estimateHero}>
-              <div><p>Estimated value · Excl. VAT</p><strong>{formatAdminValuationMoney(selectedValuation.estimate.selectedValueExVat)}</strong></div>
-              <span>{formatRange(selectedValuation)}</span>
-            </section>
+            <div className={styles.estimateHero}>
+              <div><span>Estimate excl. VAT</span><strong>{formatAdminValuationMoney(selectedValuation.estimate.selectedValueExVat)}</strong></div>
+              <div><span>Range</span><strong>{formatRange(selectedValuation)}</strong></div>
+            </div>
 
             <div className={styles.detailColumns}>
               <section>
-                <h3>Who and when</h3>
+                <h3>Record</h3>
                 <dl>
+                  <div><dt>Record</dt><dd>{RECORD_LABELS[selectedValuation.recordType]}</dd></div>
+                  <div><dt>Valuation</dt><dd>{MODE_LABELS[selectedValuation.valuationMode]}</dd></div>
+                  <div><dt>Reference</dt><dd>{selectedValuation.sourceId}</dd></div>
                   <div><dt>Account</dt><dd>{selectedValuation.account.label}</dd></div>
                   <div><dt>Email</dt><dd>{selectedValuation.account.email || 'Unknown'}</dd></div>
                   <div><dt>User ID</dt><dd>{selectedValuation.account.userId || 'Unknown / guest'}</dd></div>
@@ -718,7 +687,7 @@ export default function AdminValuationsClient({
                 </dl>
               </section>
               <section>
-                <h3>What was estimated</h3>
+                <h3>Asset</h3>
                 <dl>
                   <div><dt>Asset</dt><dd>{assetTitle(selectedValuation)}</dd></div>
                   <div><dt>Sector</dt><dd>{selectedValuation.asset.sectorLabel}</dd></div>
@@ -734,12 +703,7 @@ export default function AdminValuationsClient({
 
             <section className={styles.flowRecord} aria-labelledby="admin-valuation-flow-title">
               <header className={styles.flowRecordHeader}>
-                <div>
-                  <p>Estimate flow record</p>
-                  <h3 id="admin-valuation-flow-title">Everything entered in the estimate path</h3>
-                  <span>Shown in the same order as asset selection, specifications, usage, condition and pricing.</span>
-                </div>
-                <strong>{inputSections.reduce((total, section) => total + section.rows.length, 0)} recorded fields</strong>
+                <h3 id="admin-valuation-flow-title">Inputs</h3>
               </header>
               {inputSections.length ? (
                 <div className={styles.flowSectionGrid}>
@@ -747,7 +711,6 @@ export default function AdminValuationsClient({
                     <article key={section.id} className={styles.flowSection}>
                       <header>
                         <h4>{section.title}</h4>
-                        <p>{section.description}</p>
                       </header>
                       <dl>
                         {section.rows.map((row, index) => (
@@ -767,12 +730,7 @@ export default function AdminValuationsClient({
 
             <section className={styles.flowRecord} aria-labelledby="admin-valuation-output-title">
               <header className={styles.flowRecordHeader}>
-                <div>
-                  <p>Calculation record</p>
-                  <h3 id="admin-valuation-output-title">Complete estimated result</h3>
-                  <span>Every retained calculation, catalog snapshot, market source and result field is included.</span>
-                </div>
-                <strong>{outputSections.reduce((total, section) => total + section.rows.length, 0)} recorded fields</strong>
+                <h3 id="admin-valuation-output-title">Calculation</h3>
               </header>
               {outputSections.length ? (
                 <div className={styles.flowSectionGrid}>
@@ -780,7 +738,6 @@ export default function AdminValuationsClient({
                     <article key={section.id} className={styles.flowSection}>
                       <header>
                         <h4>{section.title}</h4>
-                        <p>{section.description}</p>
                       </header>
                       <dl>
                         {section.rows.map((row, index) => (
@@ -827,14 +784,11 @@ export default function AdminValuationsClient({
             tabIndex={-1}
           >
             <header className={styles.deleteModalHeader}>
-              <div>
-                <p>Permanent removal</p>
-                <h2 id="admin-valuation-delete-title">
-                  {deleteTargets.mode === 'single'
-                    ? 'Delete this valuation?'
-                    : `Delete ${deleteTargets.valuations.length.toLocaleString('en-ZA')} valuations?`}
-                </h2>
-              </div>
+              <h2 id="admin-valuation-delete-title">
+                {deleteTargets.mode === 'single'
+                  ? 'Delete this valuation?'
+                  : `Delete ${deleteTargets.valuations.length.toLocaleString('en-ZA')} valuations?`}
+              </h2>
               <button type="button" aria-label="Close deletion confirmation" disabled={deleteBusy} onClick={closeDeleteModal}>×</button>
             </header>
 
@@ -851,8 +805,7 @@ export default function AdminValuationsClient({
             </div>
 
             <p id="admin-valuation-delete-description" className={styles.deleteDescription}>
-              This permanently removes the recorded estimate inputs, calculation output and saved valuation run.
-              Existing assets and accounts remain in their registers, but this valuation history cannot be recovered.
+              This permanently deletes the valuation record. The asset and account remain unchanged. This cannot be undone.
             </p>
 
             {deleteTargets.mode === 'bulk' ? (

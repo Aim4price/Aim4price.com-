@@ -123,7 +123,8 @@ test('admin has a confirmed account-group composer with live recipient counts', 
     read('app/admin/page.module.css'),
   ]);
 
-  assert.match(client, /Message account groups/);
+  assert.match(client, />\s*Message\s*</);
+  assert.doesNotMatch(client, /Message account groups/);
   assert.match(client, /NOTIFICATION_AUDIENCE_OPTIONS/);
   assert.match(client, /Finance & accounting/);
   assert.match(client, /notificationAudienceCounts/);

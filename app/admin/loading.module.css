@@ -22,19 +22,6 @@
 
 .header > div {
   width: min(40rem, 70vw);
-  display: grid;
-  gap: 0.65rem;
-}
-
-.pill {
-  width: fit-content;
-  padding: 0.4rem 0.68rem;
-  border: 1px solid #cee4da;
-  border-radius: 999px;
-  color: #276d55;
-  background: rgba(255, 255, 255, 0.75);
-  font-size: 0.76rem;
-  font-weight: 750;
 }
 
 .skeleton {
@@ -59,13 +46,8 @@
   height: 3.7rem;
 }
 
-.subtitle {
-  width: min(34rem, 92%);
-  height: 1.15rem;
-}
-
 .manage {
-  width: 12.2rem;
+  width: 9.5rem;
   height: 3.5rem;
   background: #e3f1eb;
 }
@@ -77,8 +59,8 @@
 }
 
 .card {
-  height: 8.5rem;
-  border-radius: 1.2rem;
+  height: 6.25rem;
+  border-radius: 0.75rem;
   box-shadow: 0 14px 34px rgba(25, 68, 53, 0.06);
 }
 
@@ -86,7 +68,7 @@
   margin-top: 1rem;
   padding: 1.2rem;
   border: 1px solid #d7e4de;
-  border-radius: 1.35rem;
+  border-radius: 0.85rem;
   background: rgba(255, 255, 255, 0.94);
   box-shadow: 0 18px 46px rgba(25, 68, 53, 0.08);
 }
@@ -114,14 +96,6 @@
   margin-top: 0.55rem;
   display: block;
   background: #f8fbf9;
-}
-
-.status {
-  margin: 1rem 0 0;
-  color: #6c7f77;
-  font-size: 0.8rem;
-  font-weight: 700;
-  text-align: center;
 }
 
 @keyframes shimmer {

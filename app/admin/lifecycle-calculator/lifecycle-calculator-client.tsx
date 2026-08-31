@@ -121,7 +121,6 @@ function NumericField({
   min = 0,
   max,
   step = 1,
-  help,
 }: {
   label: string;
   value: number;
@@ -199,7 +198,6 @@ function NumericField({
         />
         {suffix ? <b>{suffix}</b> : null}
       </div>
-      {help ? <small>{help}</small> : null}
     </label>
   );
 }
@@ -235,7 +233,6 @@ function SelectField<T extends string>({
   value,
   onChange,
   options,
-  help,
 }: {
   label: string;
   value: T;
@@ -255,7 +252,6 @@ function SelectField<T extends string>({
           ))}
         </select>
       </div>
-      {help ? <small>{help}</small> : null}
     </label>
   );
 }
@@ -264,7 +260,6 @@ function ToggleField({
   label,
   checked,
   onChange,
-  help,
 }: {
   label: string;
   checked: boolean;
@@ -278,10 +273,7 @@ function ToggleField({
         checked={checked}
         onChange={(event) => onChange(event.target.checked)}
       />
-      <span>
-        <strong>{label}</strong>
-        {help ? <small>{help}</small> : null}
-      </span>
+      <strong>{label}</strong>
     </label>
   );
 }
@@ -297,7 +289,6 @@ function VatControl({
     <div className={styles.vatControl}>
       <div>
         <strong>Prices entered</strong>
-        <small>15% VAT is kept explicit throughout finance and valuation.</small>
       </div>
       <div className={styles.segmentedButtons} role="group" aria-label="VAT treatment">
         <button
@@ -322,20 +313,16 @@ function VatControl({
 }
 
 function SectionHeading({
-  eyebrow,
   title,
-  description,
 }: {
   eyebrow?: string;
   title: string;
-  description: string;
+  description?: string;
 }) {
   return (
     <div className={styles.sectionHeading}>
       <div>
-        {eyebrow ? <span>{eyebrow}</span> : null}
         <h2>{title}</h2>
-        <p>{description}</p>
       </div>
     </div>
   );
@@ -344,7 +331,6 @@ function SectionHeading({
 function Metric({
   label,
   value,
-  detail,
   tone,
 }: {
   label: string;
@@ -356,7 +342,6 @@ function Metric({
     <div className={`${styles.metric} ${tone ? styles[`metric${tone}`] : ""}`}>
       <span>{label}</span>
       <strong>{value}</strong>
-      {detail ? <small>{detail}</small> : null}
     </div>
   );
 }
@@ -648,23 +633,16 @@ export default function LifecycleCalculatorClient() {
   return (
     <div className={styles.workspace}>
       <section className={styles.workspaceHeader}>
-        <div>
-          <p className={styles.eyebrow}>Aim4price Lifecycle Financial Model</p>
-          <h2>Build the ownership case</h2>
-          <span>
-            Enter the deal once, compare three funding structures, then finish with the future asset and equity position.
-          </span>
-        </div>
         <div className={styles.headerActions}>
           <button type="button" className={styles.secondaryButton} onClick={resetWorkspace}>
-            New model
+            New
           </button>
           <button
             type="button"
             className={styles.secondaryButton}
             onClick={() => window.print()}
           >
-            Print summary
+            Print
           </button>
           <button
             type="button"
@@ -672,7 +650,7 @@ export default function LifecycleCalculatorClient() {
             onClick={exportFinancialModel}
             disabled={exporting}
           >
-            {exporting ? "Preparing model…" : "Export Financial Model"}
+            {exporting ? "Preparing…" : "Export"}
           </button>
         </div>
       </section>
@@ -688,11 +666,7 @@ export default function LifecycleCalculatorClient() {
 
       <section className={styles.decisionPanel} aria-label="Key lifecycle answers">
         <div className={styles.decisionHeading}>
-          <div>
-            <p className={styles.eyebrow}>Live decision snapshot</p>
-            <h3>Choose the structure to use in the ownership summary</h3>
-          </div>
-          <p><span>Currently selected</span><strong>{preferred.label}</strong></p>
+          <h3>Funding structure</h3>
         </div>
         <div className={styles.answerStrip}>
           {model.scenarios.map((scenario) => (
@@ -703,24 +677,19 @@ export default function LifecycleCalculatorClient() {
               onClick={() => setState((current) => ({ ...current, preferredScenario: scenario.id }))}
               aria-pressed={scenario.id === state.preferredScenario}
             >
-              <span>{scenario.id === state.preferredScenario ? "✓ Selected" : "Select option"}</span>
+              {scenario.id === state.preferredScenario ? <span aria-hidden="true">✓</span> : null}
               <strong>{scenario.label}</strong>
               <b>{randCents(scenario.loan.monthlyPayment)} / month</b>
-              <small>
-                {scenario.id === "standard"
-                  ? "Standard asset finance only"
-                  : `${rand(scenario.workingCapitalProtected)} working capital protected`}
-              </small>
             </button>
           ))}
           <Metric
-            label={`Projected retail after ${model.input.ownershipYears} years`}
+            label={`Retail value (${model.input.ownershipYears} years)`}
             value={rand(model.future.projectedRetail.grossAmount)}
             detail={`${numberFormat.format(model.future.projectedUsage)} ${model.usageUnit} projected usage`}
             tone="green"
           />
           <Metric
-            label={`${preferred.label} trade equity`}
+            label="Trade equity"
             value={rand(preferred.equityAtDisposal)}
             detail={`${rand(preferred.settlementAtDisposal)} settlement at disposal`}
             tone={preferred.equityAtDisposal >= 0 ? "green" : "red"}
@@ -732,7 +701,7 @@ export default function LifecycleCalculatorClient() {
         <article className={styles.card}>
           <SectionHeading
             eyebrow="1"
-            title="Asset & Lifecycle Assumptions"
+            title="Asset"
             description="A simple starting point—no catalogue or valuation wizard required."
           />
           <div className={styles.formGrid}>
@@ -749,7 +718,7 @@ export default function LifecycleCalculatorClient() {
               placeholder="Asset being modelled"
             />
             <NumericField
-              label="Starting / new asset price"
+              label="Starting price"
               value={model.input.assetPrice}
               onChange={(value) => updateModel("assetPrice", value)}
               prefix="R"
@@ -848,7 +817,7 @@ export default function LifecycleCalculatorClient() {
         <article id="lifecycle-finance" className={styles.card}>
           <SectionHeading
             eyebrow="2"
-            title="Finance Assumptions"
+            title="Finance"
             description="Standard amortising finance. Ownership and finance terms remain separate."
           />
           <div className={styles.formGrid}>
@@ -860,7 +829,7 @@ export default function LifecycleCalculatorClient() {
               step={1_000}
             />
             <NumericField
-              label="Annual interest rate"
+              label="Interest rate"
               value={model.input.annualRatePct}
               onChange={(value) => updateModel("annualRatePct", value)}
               suffix="%"
@@ -899,19 +868,13 @@ export default function LifecycleCalculatorClient() {
               <span>Expected end of payment year</span>
               <strong>{model.input.purchaseYear + Math.ceil(model.input.financeTermMonths / 12)}</strong>
             </div>
-            <small>
-              {model.input.ownershipYears * 12} months owned versus {model.input.financeTermMonths} months
-              financed. When the finance and disposal horizons match, the balloon is settled once
-              from the disposal proceeds. If finance ends earlier, it is paid once in that year&apos;s
-              cash flow.
-            </small>
           </div>
         </article>
 
         <aside className={`${styles.card} ${styles.futurePanel}`}>
           <SectionHeading
             eyebrow="Live"
-            title="Future Asset Position"
+            title="Future position"
             description="The valuation trail remains visible while assumptions change."
           />
           <div className={styles.positionRows}>
@@ -931,18 +894,12 @@ export default function LifecycleCalculatorClient() {
             <div><span>Trade haircut</span><strong>{model.future.tradeHaircutPct}% · {rand(model.future.tradeHaircutAmount)}</strong></div>
             <div className={styles.positionTotal}><span>Projected trade value</span><strong>{rand(model.future.tradeValue.grossAmount)}</strong></div>
           </div>
-          <p className={styles.formulaNote}>
-            Future equivalent new price = starting ex-VAT value × (1 + inflation)<sup>years</sup>.
-            Aim4price then applies age, usage and condition depreciation on the ex-VAT basis.
-          </p>
         </aside>
       </section>
 
       <section id="lifecycle-provisions" className={styles.flowSectionLead}>
         <div>
-          <p className={styles.eyebrow}>3 · Choose provisions</p>
-          <h2>Add only what the client needs</h2>
-          <span>Service and maintenance remain separate. The three finance structures update automatically as these assumptions change.</span>
+          <h2>Provisions</h2>
         </div>
         <strong>{rand(serviceScenario.serviceFinanced)} service · {rand(fullScenario.maintenanceFinanced)} maintenance</strong>
       </section>
@@ -951,7 +908,7 @@ export default function LifecycleCalculatorClient() {
         <article className={styles.card}>
           <SectionHeading
             eyebrow="Service"
-            title="Scheduled Service Provision"
+            title="Service"
             description="Define predictable scheduled servicing before deciding how it is funded."
           />
           <div className={styles.formGrid}>
@@ -1037,7 +994,7 @@ export default function LifecycleCalculatorClient() {
         <article className={styles.card}>
           <SectionHeading
             eyebrow="Maintenance"
-            title="Maintenance & Uptime Provision"
+            title="Maintenance"
             description="Reserve money for post-warranty wear, parts and approved repairs."
           />
           <div className={styles.formGrid}>
@@ -1109,21 +1066,18 @@ export default function LifecycleCalculatorClient() {
 
       <section id="lifecycle-results" className={styles.resultsLead}>
         <div>
-          <p className={styles.eyebrow}>4 · Compare results</p>
-          <h2>See the cost and cash-flow trade-off clearly</h2>
-          <span>The selected option is highlighted throughout the results. You can change it here or in the snapshot above.</span>
+          <h2>Results</h2>
         </div>
         <div>
           <span>Preferred monthly payment</span>
           <strong>{randCents(preferred.loan.monthlyPayment)}</strong>
-          <small>{rand(preferred.equityAtDisposal)} projected disposal equity</small>
         </div>
       </section>
 
       <section className={`${styles.card} ${styles.comparisonSection}`}>
         <SectionHeading
           eyebrow="Main comparison"
-          title="Standard vs Service Plan vs Service + Maintenance"
+          title="Structure comparison"
           description="All structures remain calculated. Selection only highlights the preferred ownership structure."
         />
         <div className={styles.comparisonWrap}>
@@ -1167,27 +1121,12 @@ export default function LifecycleCalculatorClient() {
             </tbody>
           </table>
         </div>
-        <div className={styles.adviceGrid}>
-          {model.scenarios.map((scenario) => (
-            <article
-              key={scenario.id}
-              className={scenario.id === state.preferredScenario ? styles.advicePreferred : ""}
-            >
-              <span>{scenario.label}</span>
-              <strong>{scenario.description}</strong>
-              <p>
-                Liquidity costs {rand(scenario.financePremiumForLiquidity)} in additional interest and
-                protects {rand(scenario.workingCapitalProtected)} of separately timed expenditure.
-              </p>
-            </article>
-          ))}
-        </div>
       </section>
 
       <section id="lifecycle-cash-flow" className={`${styles.card} ${styles.cashFlowSection}`}>
         <SectionHeading
           eyebrow="Timing"
-          title="Annual Cash-Flow Comparison"
+          title="Annual cash flow"
           description="Shows when finance, service and maintenance cash actually leave the business."
         />
         <div className={styles.comparisonWrap}>
@@ -1245,9 +1184,7 @@ export default function LifecycleCalculatorClient() {
 
       <section id="lifecycle-planning" className={styles.flowSectionLead}>
         <div>
-          <p className={styles.eyebrow}>5 · Plan the next cycle</p>
-          <h2>Turn future value into a replacement plan</h2>
-          <span>Review expected trade equity, then allocate it to the next asset, service provision and maintenance reserve.</span>
+          <h2>Next cycle</h2>
         </div>
         <strong>{rand(preferred.equityAtDisposal)} projected equity</strong>
       </section>
@@ -1256,7 +1193,7 @@ export default function LifecycleCalculatorClient() {
         <article className={styles.card}>
           <SectionHeading
             eyebrow="Equity"
-            title="Asset & Equity Position"
+            title="Equity position"
             description="Trade value less the remaining settlement at planned disposal."
           />
           <div className={styles.equityHero}>
@@ -1268,7 +1205,6 @@ export default function LifecycleCalculatorClient() {
             {model.scenarios.map((scenario) => (
               <div key={scenario.id} className={scenario.id === state.preferredScenario ? styles.equityPreferred : ""}>
                 <span>{scenario.label}</span>
-                <small>Trade {rand(model.future.tradeValue.grossAmount)} − settlement {rand(scenario.settlementAtDisposal)}</small>
                 <strong>{rand(scenario.equityAtDisposal)} equity</strong>
               </div>
             ))}
@@ -1297,7 +1233,7 @@ export default function LifecycleCalculatorClient() {
         <article className={`${styles.card} ${styles.nextCycleCard}`}>
           <SectionHeading
             eyebrow="Replacement"
-            title="Next Asset Cycle"
+            title="Replacement plan"
             description="Allocate disposal equity to the next service provision, reserve and deposit."
           />
           <div className={styles.formGrid}>

@@ -228,7 +228,6 @@ export default function AdminAssetMapClient({
   const [lifecycle, setLifecycle] = useState("");
   const [selectedAssetId, setSelectedAssetId] = useState<string | null>(null);
   const [basemap, setBasemap] = useState<BasemapMode>("road");
-  const [refreshing, setRefreshing] = useState(false);
   const [openingOwnerId, setOpeningOwnerId] = useState<string | null>(null);
   const [error, setError] = useState("");
   const mapElementRef = useRef<HTMLDivElement | null>(null);
@@ -273,8 +272,7 @@ export default function AdminAssetMapClient({
     search.trim() || ownerUserId || province || sector || lifecycle || location !== "all",
   );
 
-  const refreshReport = useCallback(async (showBusy = true) => {
-    if (showBusy) setRefreshing(true);
+  const refreshReport = useCallback(async () => {
     setError("");
     try {
       const response = await fetch("/api/admin/asset-map", {
@@ -296,8 +294,6 @@ export default function AdminAssetMapClient({
           ? refreshError.message
           : "The global asset map could not be refreshed.",
       );
-    } finally {
-      if (showBusy) setRefreshing(false);
     }
   }, []);
 
@@ -312,7 +308,7 @@ export default function AdminAssetMapClient({
 
   useEffect(() => {
     const interval = window.setInterval(() => {
-      if (document.visibilityState === "visible") void refreshReport(false);
+      if (document.visibilityState === "visible") void refreshReport();
     }, 60_000);
     return () => window.clearInterval(interval);
   }, [refreshReport]);
@@ -397,12 +393,11 @@ export default function AdminAssetMapClient({
     }
 
     const bounds: Array<[number, number]> = [];
-    mappedAssets.forEach((asset, index) => {
-      const markerNumber = index + 1;
+    mappedAssets.forEach((asset) => {
       const isSelected = selectedAssetId === asset.id;
       const icon = L.divIcon({
         className: `adminGlobalAssetMarker${isSelected ? " adminGlobalAssetMarker--selected" : ""}`,
-        html: `<span><b>${markerNumber}</b></span>`,
+        html: `<span aria-hidden="true"><b></b></span>`,
         iconSize: [34, 40],
         iconAnchor: [17, 36],
       });
@@ -411,7 +406,7 @@ export default function AdminAssetMapClient({
         title: asset.title,
       });
       marker.bindTooltip(
-        `<strong>${escapeHtml(asset.title)}</strong><br>${escapeHtml(asset.owner.label)}`,
+        `<strong>${escapeHtml(asset.title)}</strong> · ${escapeHtml(asset.owner.label)}`,
         { direction: "top", offset: [0, -28], opacity: 0.96 },
       );
       marker.on("click", () => setSelectedAssetId(asset.id));
@@ -492,47 +487,40 @@ export default function AdminAssetMapClient({
     <>
       <section className={styles.metrics} aria-label="Global asset map summary">
         <article>
-          <span>All saved assets</span>
+          <span>Assets</span>
           <strong>{report.summary.totalAssets.toLocaleString("en-ZA")}</strong>
-          <small>Across every Aim4price account and register</small>
         </article>
         <article className={styles.featuredMetric}>
-          <span>Mapped assets</span>
+          <span>Mapped</span>
           <strong>{report.summary.mappedAssets.toLocaleString("en-ZA")}</strong>
-          <small>Assets with valid saved GPS coordinates</small>
         </article>
         <article>
           <span>Missing GPS</span>
           <strong>{report.summary.missingLocationAssets.toLocaleString("en-ZA")}</strong>
-          <small>Still searchable in the asset list</small>
         </article>
         <article>
-          <span>Owner accounts</span>
+          <span>Owners</span>
           <strong>{report.summary.ownerAccounts.toLocaleString("en-ZA")}</strong>
-          <small>Accounts represented on this workspace</small>
         </article>
         <article>
-          <span>Registered value</span>
+          <span>Value excl. VAT</span>
           <strong>{formatAdminAssetMoney(report.summary.totalValueExVat)}</strong>
-          <small>
-            Current saved value · Excl. VAT · {report.summary.missingValueAssets.toLocaleString("en-ZA")} missing
-          </small>
         </article>
       </section>
 
       <section className={styles.mapCard}>
         <header className={styles.filterBar}>
           <label className={styles.searchField}>
-            <span>Search everything</span>
+            <span>Search</span>
             <input
               type="search"
               value={search}
               onChange={(event) => setSearch(event.target.value)}
-              placeholder="Asset, owner, email, serial, registration or location"
+              placeholder="Asset, owner, serial, registration or location"
             />
           </label>
           <label>
-            <span>Owner account</span>
+            <span>Owner</span>
             <select value={ownerUserId} onChange={(event) => setOwnerUserId(event.target.value)}>
               <option value="">All accounts</option>
               {report.options.owners.map((option) => (
@@ -565,18 +553,18 @@ export default function AdminAssetMapClient({
             </select>
           </label>
           <label>
-            <span>GPS status</span>
+            <span>Location</span>
             <select
               value={location}
               onChange={(event) => setLocation(event.target.value as AdminAssetLocationFilter)}
             >
-              <option value="all">Mapped + missing</option>
-              <option value="mapped">Mapped only</option>
-              <option value="missing">Missing GPS only</option>
+              <option value="all">All locations</option>
+              <option value="mapped">Mapped</option>
+              <option value="missing">Missing GPS</option>
             </select>
           </label>
           <label>
-            <span>Lifecycle</span>
+            <span>State</span>
             <select value={lifecycle} onChange={(event) => setLifecycle(event.target.value)}>
               <option value="">All states</option>
               {report.options.lifecycleStates.map((option) => (
@@ -586,14 +574,11 @@ export default function AdminAssetMapClient({
               ))}
             </select>
           </label>
-          <div className={styles.filterActions}>
-            <button type="button" onClick={clearFilters} disabled={!filtersActive}>
-              Clear
-            </button>
-            <button type="button" onClick={() => void refreshReport()} disabled={refreshing}>
-              {refreshing ? "Refreshing…" : "Refresh"}
-            </button>
-          </div>
+          {filtersActive ? (
+            <div className={styles.filterActions}>
+              <button type="button" onClick={clearFilters}>Clear</button>
+            </div>
+          ) : null}
         </header>
 
         {error ? <p className={styles.errorNotice}>{error}</p> : null}
@@ -601,11 +586,7 @@ export default function AdminAssetMapClient({
         <div className={styles.mapWorkspace}>
           <aside className={styles.assetSidebar} aria-label="Filtered global assets">
             <header>
-              <div>
-                <strong>{filteredAssets.length.toLocaleString("en-ZA")}</strong>
-                <span>matching assets</span>
-              </div>
-              <small>{mappedAssets.length.toLocaleString("en-ZA")} visible map pins</small>
+              <strong>{filteredAssets.length.toLocaleString("en-ZA")} assets · {mappedAssets.length.toLocaleString("en-ZA")} mapped</strong>
             </header>
             <div className={styles.assetList}>
               {!sidebarAssets.length ? (
@@ -620,19 +601,9 @@ export default function AdminAssetMapClient({
                       className={`${styles.assetRow} ${selectedAssetId === asset.id ? styles.assetRowActive : ""}`}
                       onClick={() => setSelectedAssetId(asset.id)}
                     >
-                      <span className={mapped ? styles.mapNumber : styles.missingPin}>
-                        <b>
-                          {mapped
-                            ? mappedAssets.findIndex((mappedAsset) => mappedAsset.id === asset.id) + 1
-                            : "—"}
-                        </b>
-                      </span>
                       <span className={styles.assetRowCopy}>
                         <strong>{asset.title}</strong>
-                        <small>{asset.owner.label}</small>
-                        <em>
-                          {asset.assetTypeLabel} · {asset.owner.province || "Province not saved"}
-                        </em>
+                        <small>· {asset.owner.label} · {asset.owner.province || "No province"}</small>
                       </span>
                       <span className={mapped ? styles.mappedBadge : styles.missingBadge}>
                         {mapped ? "Mapped" : "No GPS"}
@@ -643,8 +614,7 @@ export default function AdminAssetMapClient({
               )}
               {filteredAssets.length > SIDEBAR_RENDER_LIMIT ? (
                 <p className={styles.listLimitNote}>
-                  Showing the first {SIDEBAR_RENDER_LIMIT.toLocaleString("en-ZA")} matches here.
-                  Use Admin Discovery for the complete paginated result.
+                  First {SIDEBAR_RENDER_LIMIT.toLocaleString("en-ZA")} shown. Use Discovery to view all.
                 </p>
               ) : null}
             </div>
@@ -652,14 +622,9 @@ export default function AdminAssetMapClient({
 
           <section className={styles.mapPane} aria-label="All account asset locations">
             <div ref={mapElementRef} className={styles.mapCanvas} />
-            {!mappedAssets.length ? (
+            {filteredAssets.length > 0 && !mappedAssets.length ? (
               <div className={styles.mapEmpty}>
-                <strong>No map pins in this view</strong>
-                <span>
-                  {filteredAssets.length
-                    ? "The matching assets do not have saved GPS coordinates."
-                    : "Clear or change the filters to see assets."}
-                </span>
+                <strong>No mapped assets</strong>
               </div>
             ) : null}
             <div className={styles.mapMode} aria-label="Map style">
@@ -682,11 +647,7 @@ export default function AdminAssetMapClient({
             {selectedAsset ? (
               <article className={styles.assetDetail} aria-label="Selected Admin asset">
                 <header>
-                  <div>
-                    <p>{selectedAsset.assetTypeLabel}</p>
-                    <h2>{selectedAsset.title}</h2>
-                    <span>{selectedAsset.owner.label}</span>
-                  </div>
+                  <h2>{selectedAsset.title}</h2>
                   <button
                     type="button"
                     aria-label="Close selected asset"
@@ -704,7 +665,7 @@ export default function AdminAssetMapClient({
                   <span><small>Lifecycle</small><strong>{titleCase(selectedAsset.lifecycleState)}</strong></span>
                 </div>
                 <section className={styles.ownerContact}>
-                  <strong>Owner details · Admin unlocked</strong>
+                  <strong>Owner</strong>
                   <span>{selectedAsset.owner.name || selectedAsset.owner.label}</span>
                   <span>{selectedAsset.owner.email || "Email not saved"}</span>
                   <span>{selectedAsset.owner.phone || "Phone not saved"}</span>
@@ -720,10 +681,10 @@ export default function AdminAssetMapClient({
                     onClick={() => void openOwnerAccount(selectedAsset)}
                     disabled={openingOwnerId === selectedAsset.ownerUserId}
                   >
-                    {openingOwnerId === selectedAsset.ownerUserId ? "Opening…" : "Open owner account"}
+                    {openingOwnerId === selectedAsset.ownerUserId ? "Opening…" : "Open owner"}
                   </button>
                   <Link href={`/admin/discovery?assetId=${encodeURIComponent(selectedAsset.id)}`}>
-                    Full Discovery record
+                    Discovery record
                   </Link>
                   {mapsHref(selectedAsset) ? (
                     <a href={mapsHref(selectedAsset) ?? ""} target="_blank" rel="noreferrer">

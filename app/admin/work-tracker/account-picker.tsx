@@ -326,7 +326,6 @@ export default function AccountPicker({
               >
                 <span className={styles.optionCopy}>
                   <strong>{option.label}</strong>
-                  <small>{option.description}</small>
                 </span>
                 <span className={styles.check} aria-hidden="true">{isSelected ? "✓" : ""}</span>
               </button>
@@ -335,14 +334,13 @@ export default function AccountPicker({
         }) : (
           <div className={styles.noResults}>
             <strong>No accounts found</strong>
-            <span>Try a name, email address or account type.</span>
           </div>
         )}
       </div>
       <div className={styles.resultStatus} role="status" aria-live="polite">
         {visibleOptions.length
           ? `${visibleOptions.length} ${visibleOptions.length === 1 ? "account" : "accounts"} found`
-          : "No accounts found. Try a name, email address or account type."}
+          : "No accounts found"}
       </div>
     </div>
   );
@@ -364,7 +362,6 @@ export default function AccountPicker({
       >
         <span id={valueId} className={styles.triggerCopy}>
           <strong>{selected?.label ?? placeholder}</strong>
-          {selected?.description ? <small>{selected.description}</small> : null}
         </span>
         <svg viewBox="0 0 24 24" className={styles.chevron} aria-hidden="true"><path d="m7 10 5 5 5-5" /></svg>
       </button>
@@ -372,4 +369,3 @@ export default function AccountPicker({
     </div>
   );
 }
-
