@@ -1,5 +1,6 @@
 "use client";
 
+import DropdownOverlay from "../../components/DropdownOverlay";
 import {
   useEffect,
   useMemo,
@@ -56,6 +57,13 @@ type FilterOption = {
   value: string;
   label: string;
   count: number;
+};
+
+type RecentAdvertFilterKey = "status" | "type" | "province";
+
+type RecentAdvertFilterChoice = {
+  value: string;
+  label: string;
 };
 
 type RecentAdvertSummary = {
@@ -191,6 +199,198 @@ function FilterIcon({ className }: IconProps) {
   );
 }
 
+function ChevronDownIcon({ className }: IconProps) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="m7 10 5 5 5-5" />
+    </svg>
+  );
+}
+
+function RecentAdvertFilterDropdown({
+  label,
+  filterKey,
+  value,
+  options,
+  openFilter,
+  onOpenChange,
+  onChange,
+  wide = false,
+}: {
+  label: string;
+  filterKey: RecentAdvertFilterKey;
+  value: string;
+  options: RecentAdvertFilterChoice[];
+  openFilter: RecentAdvertFilterKey | null;
+  onOpenChange: (filter: RecentAdvertFilterKey | null) => void;
+  onChange: (value: string) => void;
+  wide?: boolean;
+}) {
+  const isOpen = openFilter === filterKey;
+  const selectedOption = options.find((option) => option.value === value);
+  const triggerRef = useRef<HTMLButtonElement | null>(null);
+  const triggerId = `recent-advert-${filterKey}-filter-trigger`;
+  const labelId = `recent-advert-${filterKey}-filter-label`;
+  const valueId = `recent-advert-${filterKey}-filter-value`;
+  const listboxId = `recent-advert-${filterKey}-filter-options`;
+
+  useEffect(() => {
+    if (!isOpen) return undefined;
+    const frame = window.requestAnimationFrame(() => {
+      const listbox = document.getElementById(listboxId);
+      const selected = listbox?.querySelector<HTMLElement>(
+        '[role="option"][aria-selected="true"]',
+      );
+      selected?.focus();
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [isOpen, listboxId]);
+
+  function closeAndRestoreFocus() {
+    onOpenChange(null);
+    window.requestAnimationFrame(() => triggerRef.current?.focus());
+  }
+
+  function closeAndMoveFocus(reverse: boolean) {
+    const dialog = triggerRef.current?.closest('[role="dialog"]');
+    const focusable = dialog
+      ? Array.from(
+          dialog.querySelectorAll<HTMLElement>(
+            'button:not([disabled]), a[href], input:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+          ),
+        ).filter((element) => element.getClientRects().length > 0)
+      : [];
+    const triggerIndex = focusable.findIndex(
+      (element) => element === triggerRef.current,
+    );
+    const nextIndex = focusable.length
+      ? (triggerIndex + (reverse ? -1 : 1) + focusable.length) %
+        focusable.length
+      : -1;
+
+    onOpenChange(null);
+    window.requestAnimationFrame(() => {
+      (focusable[nextIndex] ?? triggerRef.current)?.focus();
+    });
+  }
+
+  function handleTriggerKeyDown(event: ReactKeyboardEvent<HTMLButtonElement>) {
+    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+      event.preventDefault();
+      onOpenChange(filterKey);
+      return;
+    }
+    if (event.key === "Escape" && isOpen) {
+      event.preventDefault();
+      event.stopPropagation();
+      closeAndRestoreFocus();
+    }
+  }
+
+  function handleListboxKeyDown(event: ReactKeyboardEvent<HTMLDivElement>) {
+    const optionButtons = Array.from(
+      event.currentTarget.querySelectorAll<HTMLButtonElement>('[role="option"]'),
+    );
+    const activeIndex = optionButtons.findIndex(
+      (option) => option === document.activeElement,
+    );
+    let nextIndex = activeIndex;
+
+    if (event.key === "ArrowDown") {
+      nextIndex = Math.min(optionButtons.length - 1, activeIndex + 1);
+    } else if (event.key === "ArrowUp") {
+      nextIndex = Math.max(0, activeIndex - 1);
+    } else if (event.key === "Home") {
+      nextIndex = 0;
+    } else if (event.key === "End") {
+      nextIndex = optionButtons.length - 1;
+    } else if (event.key === "Escape") {
+      event.preventDefault();
+      event.stopPropagation();
+      closeAndRestoreFocus();
+      return;
+    } else if (event.key === "Tab") {
+      event.preventDefault();
+      event.stopPropagation();
+      closeAndMoveFocus(event.shiftKey);
+      return;
+    } else {
+      return;
+    }
+
+    event.preventDefault();
+    optionButtons[nextIndex]?.focus();
+  }
+
+  return (
+    <div
+      className={`${styles.recentAdvertFilterField} ${wide ? styles.recentAdvertFilterFieldWide : ""} ${isOpen ? styles.recentAdvertFilterFieldOpen : ""}`}
+      data-recent-advert-filter="true"
+    >
+      <span id={labelId}>{label}</span>
+      <div className={`${leadStyles.leadFilterDropdown} ${styles.recentAdvertFilterDropdown}`}>
+        <button
+          ref={triggerRef}
+          id={triggerId}
+          type="button"
+          className={`${leadStyles.leadFilterSelectButton} ${styles.recentAdvertFilterSelectButton} ${isOpen ? leadStyles.leadFilterSelectButtonOpen : ""}`}
+          onClick={() => onOpenChange(isOpen ? null : filterKey)}
+          onKeyDown={handleTriggerKeyDown}
+          aria-haspopup="listbox"
+          aria-expanded={isOpen}
+          aria-controls={isOpen ? listboxId : undefined}
+          aria-labelledby={`${labelId} ${valueId}`}
+          data-recent-advert-filter-trigger="true"
+        >
+          <span id={valueId}>{selectedOption?.label ?? "Choose option"}</span>
+          <ChevronDownIcon className={leadStyles.leadFilterSelectIcon} />
+        </button>
+
+        {isOpen ? (
+          <DropdownOverlay
+            id={listboxId}
+            anchorRef={triggerRef}
+            className={`${leadStyles.leadFilterSelectMenu} ${styles.recentAdvertFilterSelectMenu}`}
+            role="listbox"
+            aria-labelledby={labelId}
+            onKeyDown={handleListboxKeyDown}
+          >
+            {options.map((option) => {
+              const isSelected = option.value === value;
+
+              return (
+                <button
+                  type="button"
+                  key={`${filterKey}-${option.value}`}
+                  className={`${leadStyles.leadFilterSelectOption} ${styles.recentAdvertFilterSelectOption} ${isSelected ? leadStyles.leadFilterSelectOptionActive : ""}`}
+                  onClick={() => {
+                    onChange(option.value);
+                    closeAndRestoreFocus();
+                  }}
+                  role="option"
+                  aria-selected={isSelected}
+                  tabIndex={isSelected ? 0 : -1}
+                >
+                  {option.label}
+                </button>
+              );
+            })}
+          </DropdownOverlay>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
 function ContactSentIcon({ className }: IconProps) {
   return (
     <svg
@@ -301,6 +501,7 @@ export default function RecentlyAdvertisedClient({
   const [advertiserIdentityVisible, setAdvertiserIdentityVisible] = useState(false);
   const [expandedAdvertId, setExpandedAdvertId] = useState<string | null>(null);
   const [filterOpen, setFilterOpen] = useState(false);
+  const [openFilter, setOpenFilter] = useState<RecentAdvertFilterKey | null>(null);
   const [sourcingLoadingId, setSourcingLoadingId] = useState<string | null>(null);
   const [sourcingRequest, setSourcingRequest] = useState<SourcingRequest | null>(null);
   const [sourcingError, setSourcingError] = useState<string | null>(null);
@@ -328,6 +529,10 @@ export default function RecentlyAdvertisedClient({
     document.body.style.overflow = "hidden";
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return;
+      if (filterOpen && openFilter) {
+        setOpenFilter(null);
+        return;
+      }
       setFilterOpen(false);
       setSourcingRequest(null);
       setSourcingError(null);
@@ -337,13 +542,15 @@ export default function RecentlyAdvertisedClient({
       document.body.style.overflow = previousOverflow;
       window.removeEventListener("keydown", onKeyDown);
     };
-  }, [filterOpen, sourcingRequest]);
+  }, [filterOpen, openFilter, sourcingRequest]);
 
   useEffect(() => {
     if (filterOpen) {
       filterWasOpenRef.current = true;
       const frame = window.requestAnimationFrame(() => {
-        filterDialogRef.current?.querySelector<HTMLElement>("select, button")?.focus();
+        filterDialogRef.current
+          ?.querySelector<HTMLElement>('[data-recent-advert-filter-trigger="true"]')
+          ?.focus();
       });
       return () => window.cancelAnimationFrame(frame);
     }
@@ -353,6 +560,24 @@ export default function RecentlyAdvertisedClient({
     }
     return undefined;
   }, [filterOpen]);
+
+  useEffect(() => {
+    if (!openFilter) return undefined;
+
+    const closeOnOutsideClick = (event: MouseEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (
+        !target?.closest(
+          '[data-recent-advert-filter="true"], [data-dropdown-overlay="true"]',
+        )
+      ) {
+        setOpenFilter(null);
+      }
+    };
+
+    document.addEventListener("mousedown", closeOnOutsideClick);
+    return () => document.removeEventListener("mousedown", closeOnOutsideClick);
+  }, [openFilter]);
 
   useEffect(() => {
     if (sourcingRequest) {
@@ -439,6 +664,26 @@ export default function RecentlyAdvertisedClient({
     () => [status, type, province].filter((value) => value !== "all").length,
     [province, status, type],
   );
+  const typeFilterChoices = useMemo<RecentAdvertFilterChoice[]>(
+    () => [
+      { value: "all", label: "All equipment types" },
+      ...typeOptions.map((item) => ({
+        value: item.value,
+        label: `${item.label} (${item.count})`,
+      })),
+    ],
+    [typeOptions],
+  );
+  const provinceFilterChoices = useMemo<RecentAdvertFilterChoice[]>(
+    () => [
+      { value: "all", label: "All provinces" },
+      ...provinceOptions.map((item) => ({
+        value: item.value,
+        label: `${item.label} (${item.count})`,
+      })),
+    ],
+    [provinceOptions],
+  );
 
   async function sendSourcingRequest(advert: RecentAdvert) {
     if (!advert.contactEligible || contactAccess !== "allowed") return;
@@ -470,11 +715,22 @@ export default function RecentlyAdvertisedClient({
     }
   }
 
+  function openFilterModal() {
+    setOpenFilter(null);
+    setFilterOpen(true);
+  }
+
+  function closeFilterModal() {
+    setOpenFilter(null);
+    setFilterOpen(false);
+  }
+
   function resetFilters() {
     setStatus("all");
     setType("all");
     setProvince("all");
     setCurrentPage(1);
+    setOpenFilter(null);
   }
 
   function renderStatus(advert: RecentAdvert) {
@@ -929,7 +1185,7 @@ export default function RecentlyAdvertisedClient({
             ref={filterTriggerRef}
             type="button"
             className={`${assetStyles.secondaryButton} ${assetStyles.filterTriggerButton} ${workspaceStyles.actionButton} ${workspaceStyles.actionMint} ${leadStyles.leadFilterButton} ${activeFilterCount ? assetStyles.filterTriggerButtonActive : ""}`}
-            onClick={() => setFilterOpen(true)}
+            onClick={openFilterModal}
             disabled={loading}
             aria-haspopup="dialog"
             aria-expanded={filterOpen}
@@ -1008,7 +1264,7 @@ export default function RecentlyAdvertisedClient({
 
       {filterOpen ? (
         <div className={`${assetStyles.modalOverlay} ${workspaceStyles.modalOverlay}`}>
-          <div className={assetStyles.modalBackdrop} onClick={() => setFilterOpen(false)} />
+          <div className={assetStyles.modalBackdrop} onClick={closeFilterModal} />
           <div
             ref={filterDialogRef}
             id="recent-advert-filter-dialog"
@@ -1016,42 +1272,60 @@ export default function RecentlyAdvertisedClient({
             role="dialog"
             aria-modal="true"
             aria-labelledby="recent-advert-filter-title"
+            aria-describedby="recent-advert-filter-description"
             onKeyDown={keepFocusInDialog}
           >
             <div className={`${assetStyles.modalHeader} ${workspaceStyles.modalHeader}`}>
               <div className={assetStyles.modalHeaderText}>
                 <h3 id="recent-advert-filter-title">Choose which adverts to show</h3>
-                <p>Filter by availability, equipment type or Marketplace location.</p>
+                <p id="recent-advert-filter-description">Filter by availability, equipment type or Marketplace location.</p>
               </div>
-              <button type="button" className={`${assetStyles.modalCloseButton} ${workspaceStyles.modalClose}`} onClick={() => setFilterOpen(false)} aria-label="Close recently advertised filters">
+              <button type="button" className={`${assetStyles.modalCloseButton} ${workspaceStyles.modalClose}`} onClick={closeFilterModal} aria-label="Close recently advertised filters">
                 <CloseIcon className={assetStyles.buttonIcon} />
               </button>
             </div>
             <div className={`${workspaceStyles.modalBody} ${styles.recentAdvertFilterFields}`}>
-              <label>
-                <span>Status</span>
-                <select value={status} onChange={(event) => { setStatus(event.target.value); setCurrentPage(1); }}>
-                  {STATUS_OPTIONS.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
-                </select>
-              </label>
-              <label>
-                <span>Equipment type</span>
-                <select value={type} onChange={(event) => { setType(event.target.value); setCurrentPage(1); }}>
-                  <option value="all">All equipment types</option>
-                  {typeOptions.map((item) => <option key={item.value} value={item.value}>{item.label} ({item.count})</option>)}
-                </select>
-              </label>
-              <label>
-                <span>Province</span>
-                <select value={province} onChange={(event) => { setProvince(event.target.value); setCurrentPage(1); }}>
-                  <option value="all">All provinces</option>
-                  {provinceOptions.map((item) => <option key={item.value} value={item.value}>{item.label} ({item.count})</option>)}
-                </select>
-              </label>
+              <RecentAdvertFilterDropdown
+                label="Status"
+                filterKey="status"
+                value={status}
+                options={STATUS_OPTIONS}
+                openFilter={openFilter}
+                onOpenChange={setOpenFilter}
+                onChange={(nextStatus) => {
+                  setStatus(nextStatus);
+                  setCurrentPage(1);
+                }}
+              />
+              <RecentAdvertFilterDropdown
+                label="Equipment type"
+                filterKey="type"
+                value={type}
+                options={typeFilterChoices}
+                openFilter={openFilter}
+                onOpenChange={setOpenFilter}
+                onChange={(nextType) => {
+                  setType(nextType);
+                  setCurrentPage(1);
+                }}
+              />
+              <RecentAdvertFilterDropdown
+                label="Province"
+                filterKey="province"
+                value={province}
+                options={provinceFilterChoices}
+                openFilter={openFilter}
+                onOpenChange={setOpenFilter}
+                onChange={(nextProvince) => {
+                  setProvince(nextProvince);
+                  setCurrentPage(1);
+                }}
+                wide
+              />
             </div>
             <div className={`${workspaceStyles.modalFooter} ${styles.recentAdvertFilterActions}`}>
               <button type="button" className={`${workspaceStyles.actionButton} ${workspaceStyles.actionNeutral}`} onClick={resetFilters}>Reset filters</button>
-              <button type="button" className={`${workspaceStyles.actionButton} ${workspaceStyles.actionGreen}`} onClick={() => setFilterOpen(false)}>Done</button>
+              <button type="button" className={`${workspaceStyles.actionButton} ${workspaceStyles.actionGreen}`} onClick={closeFilterModal}>Done</button>
             </div>
           </div>
         </div>

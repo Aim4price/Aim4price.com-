@@ -475,11 +475,8 @@
   cursor: default;
 }
 
-.discoveryFilterModal {
-  width: min(calc(100vw - 2rem), 64rem) !important;
-}
-
 .discoveryFilterModal.discoveryFilterModal[role='dialog'] {
+  width: min(calc(100vw - 2rem), 64rem) !important;
   max-height: calc(100dvh - clamp(1.5rem, 4vw, 3rem)) !important;
   overflow: hidden !important;
 }
@@ -2855,50 +2852,73 @@
   white-space: nowrap;
 }
 
-.recentAdvertFilterModal {
-  width: min(100%, 48rem) !important;
+.recentAdvertFilterModal.recentAdvertFilterModal[role='dialog'] {
+  width: min(calc(100vw - 2rem), 64rem) !important;
 }
 
 .recentAdvertFilterFields {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 13px;
+  gap: 1rem 1.1rem;
 }
 
-.recentAdvertFilterFields label {
+.recentAdvertFilterField {
   min-width: 0;
   display: grid;
-  gap: 7px;
+  gap: 0.55rem;
 }
 
-.recentAdvertFilterFields label:last-child {
+.recentAdvertFilterFieldWide {
   grid-column: 1 / -1;
 }
 
-.recentAdvertFilterFields label > span {
-  color: #174637;
-  font-size: 0.75rem;
-  font-weight: 850;
+.recentAdvertFilterFieldOpen {
+  z-index: 2;
 }
 
-.recentAdvertFilterFields select {
-  width: 100%;
-  min-width: 0;
-  min-height: 52px;
-  padding: 0 40px 0 14px;
-  border: 1px solid rgba(18, 53, 45, 0.14);
-  border-radius: 14px;
-  outline: 0;
-  color: #12352d;
-  background: #ffffff;
-  font: inherit;
+.recentAdvertFilterField > span {
+  color: #33424c;
+  font-family: var(--font-body, 'Inter'), ui-sans-serif, system-ui, sans-serif;
   font-size: 0.86rem;
-  font-weight: 720;
+  font-weight: 700;
+  line-height: 1.25;
 }
 
-.recentAdvertFilterFields select:focus {
-  border-color: rgba(35, 104, 81, 0.44);
+.recentAdvertFilterDropdown {
+  min-width: 0;
+}
+
+.recentAdvertFilterSelectButton.recentAdvertFilterSelectButton {
+  min-height: 3.55rem;
+  padding: 0 1.05rem;
+  border: 1px solid #dbe4ee;
+  border-radius: 1rem;
+  background: #ffffff;
+  color: #1d2d36;
+  font-family: var(--font-body, 'Inter'), ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.96rem;
+  font-weight: 700;
+}
+
+.recentAdvertFilterSelectButton:focus-visible {
+  border-color: rgba(35, 104, 81, 0.54);
+  outline: none;
   box-shadow: 0 0 0 4px rgba(35, 104, 81, 0.1);
+}
+
+.recentAdvertFilterSelectMenu.recentAdvertFilterSelectMenu {
+  max-height: min(16rem, calc(100dvh - 15rem));
+  padding: 0.48rem;
+  border-radius: 1.05rem;
+  font-family: var(--font-body, 'Inter'), ui-sans-serif, system-ui, sans-serif;
+}
+
+.recentAdvertFilterSelectOption.recentAdvertFilterSelectOption {
+  min-height: 2.8rem;
+  padding-inline: 0.95rem;
+  border-radius: 0.78rem;
+  font-size: 0.94rem;
+  font-weight: 700;
 }
 
 .recentAdvertFilterActions,
@@ -3244,7 +3264,7 @@
     grid-template-columns: 1fr;
   }
 
-  .recentAdvertFilterFields label:last-child {
+  .recentAdvertFilterFieldWide {
     grid-column: auto;
   }
 
