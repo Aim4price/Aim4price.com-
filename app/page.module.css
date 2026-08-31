@@ -1092,8 +1092,8 @@
 
 .heroBubbleMotor {
   --bubble-size: clamp(9.25rem, 11.5vw, 11.75rem);
-  right: 0;
-  bottom: 25%;
+  right: 4.6%;
+  bottom: 21.4%;
 }
 
 @media (min-width: 1181px) {
