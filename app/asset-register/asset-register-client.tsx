@@ -19575,18 +19575,13 @@ export default function AssetRegisterClient({
 
               {assetSettingsView === 'location' ? (
                 <section className={`${styles.assetSettingsSection} ${styles.assetSettingsLocationSection}`}>
-                  <div className={styles.assetSettingsSectionCopy}>
-                    {isManageMapLocationFlow ? (
-                      <span className={styles.assetSettingsMapHeroIcon} aria-hidden="true">
-                        <MapPinIcon className={styles.buttonIcon} />
-                      </span>
-                    ) : null}
-                    <span>{isManageMapLocationFlow ? 'Asset map' : 'Location'}</span>
-                    <h4>{isManageMapLocationFlow ? 'Choose how to map this asset' : 'Update asset location'}</h4>
-                    <p>{isManageMapLocationFlow
-                      ? 'Pick one simple method below. You can change the saved location at any time.'
-                      : 'Choose the easiest way to save where this asset is kept.'}</p>
-                  </div>
+                  {!isManageMapLocationFlow ? (
+                    <div className={styles.assetSettingsSectionCopy}>
+                      <span>Location</span>
+                      <h4>Update asset location</h4>
+                      <p>Choose the easiest way to save where this asset is kept.</p>
+                    </div>
+                  ) : null}
 
                   <div className={styles.assetSettingsLocationCurrent}>
                     <div className={styles.assetSettingsLocationCurrentMain}>
@@ -19597,17 +19592,12 @@ export default function AssetRegisterClient({
                       </span>
 
                       <div className={styles.assetSettingsLocationCurrentCopy}>
-                        <span>{isManageMapLocationFlow ? 'Map status' : 'Current location'}</span>
+                        {!isManageMapLocationFlow ? <span>Current location</span> : null}
                         <strong>
                           {assetSettingsLocationText || (hasAssetGpsCoordinates(editingAsset)
                             ? formatAssetSettingsGpsPosition(editingAsset)
                             : isManageMapLocationFlow ? 'Not mapped yet' : 'No location saved')}
                         </strong>
-                        {isManageMapLocationFlow ? (
-                          <small>{hasAssetGpsCoordinates(editingAsset)
-                            ? 'Location saved. Open the Asset Map to see this asset selected.'
-                            : 'Choose an option below to place it on your Asset Map.'}</small>
-                        ) : null}
                       </div>
 
                       {isManageMapLocationFlow && hasAssetGpsCoordinates(editingAsset) ? (
@@ -19616,7 +19606,7 @@ export default function AssetRegisterClient({
                           className={`${styles.assetSettingsMapLink} ${styles.assetSettingsMapAssetButton}`}
                           onClick={() => window.location.assign(buildFocusedAssetMapHref(editingAsset))}
                         >
-                          View on Asset Map
+                          View on asset map
                         </button>
                       ) : assetSettingsMapsUrl ? (
                         <a className={styles.assetSettingsMapLink} href={assetSettingsMapsUrl} target="_blank" rel="noreferrer">
@@ -19648,11 +19638,9 @@ export default function AssetRegisterClient({
                     >
                       <RefreshIcon className={styles.assetSettingsOptionIcon} />
                       <span>
-                        <span className={styles.assetSettingsRecommendedBadge}>Recommended</span>
+                        {!isManageMapLocationFlow ? <span className={styles.assetSettingsRecommendedBadge}>Recommended</span> : null}
                         <strong>{assetSettingsDeviceGpsButtonLabel}</strong>
-                        <small>{isManageMapLocationFlow
-                          ? 'Best when you are standing near the asset.'
-                          : 'Save this device’s current GPS position.'}</small>
+                        {!isManageMapLocationFlow ? <small>Save this device’s current GPS position.</small> : null}
                       </span>
                     </button>
 
@@ -19665,9 +19653,7 @@ export default function AssetRegisterClient({
                       <MapPinIcon className={styles.assetSettingsOptionIcon} />
                       <span>
                         <strong>Choose on map</strong>
-                        <small>{isManageMapLocationFlow
-                          ? 'Find the place visually and drop a pin.'
-                          : 'Drop and adjust a map pin.'}</small>
+                        {!isManageMapLocationFlow ? <small>Drop and adjust a map pin.</small> : null}
                       </span>
                     </button>
 
@@ -19680,9 +19666,7 @@ export default function AssetRegisterClient({
                       <DocumentIcon className={styles.assetSettingsOptionIcon} />
                       <span>
                         <strong>Enter coordinates</strong>
-                        <small>{isManageMapLocationFlow
-                          ? 'Paste a latitude and longitude from another source.'
-                          : 'Paste a saved GPS position.'}</small>
+                        {!isManageMapLocationFlow ? <small>Paste a saved GPS position.</small> : null}
                       </span>
                     </button>
                   </div>
