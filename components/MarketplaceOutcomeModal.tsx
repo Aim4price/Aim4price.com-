@@ -19,8 +19,8 @@ type RemovalStep = 1 | 2 | 3 | 4;
 
 export type MarketplaceOutcomeResult = {
   outcome?: { id?: string; [key: string]: unknown };
-  assetId?: string;
-  marketplaceStatus?: string;
+  assetId?: string | null;
+  marketplaceStatus?: string | null;
 };
 
 type MarketplaceOutcomeModalProps = {
@@ -203,6 +203,7 @@ export default function MarketplaceOutcomeModal({
   if (!listing) return null;
 
   const assetId = String(listing.sourceAssetId ?? '').trim();
+  const listingId = String(listing.id ?? '').trim();
   const isCompletedDeal = reason === 'sold' || reason === 'traded';
   const finalPriceLabel = reason === 'traded'
     ? 'Final trade-in value (optional)'
@@ -258,8 +259,8 @@ export default function MarketplaceOutcomeModal({
 
     if (!targetListing) return;
 
-    if (!assetId) {
-      setError('This advert is not linked to a saved asset and cannot be removed here.');
+    if (!assetId && !listingId) {
+      setError('This advert cannot be identified. Refresh the page and try again.');
       return;
     }
 
@@ -293,7 +294,8 @@ export default function MarketplaceOutcomeModal({
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          assetId,
+          assetId: assetId || null,
+          listingId,
           outcomeReason: reason,
           aim4priceHelped,
           finalSalePriceExVat: finalSalePriceExVat,
@@ -349,7 +351,11 @@ export default function MarketplaceOutcomeModal({
             </button>
             <h2 id={titleId}>Are you sure you want to remove this?</h2>
             <p id={descriptionId}>
-              Continue to tell Aim4price what happened to <strong>{listing.title}</strong>. The advert is withdrawn from Marketplace and your showroom; the saved asset and valuation remain available.
+              {assetId ? (
+                <>Continue to tell Aim4price what happened to <strong>{listing.title}</strong>. The advert is withdrawn from Marketplace and your showroom; the saved asset and valuation remain available.</>
+              ) : (
+                <>Continue to tell Aim4price what happened to <strong>{listing.title}</strong>. The advert is withdrawn from Marketplace and your showroom; its outcome history remains available.</>
+              )}
             </p>
             <div className={styles.selectedAdvert}>
               <span>Selected advert</span>
@@ -529,8 +535,10 @@ export default function MarketplaceOutcomeModal({
                     <div><dt>Aim4price helped</dt><dd>{aim4priceHelped ? 'Yes' : 'No'}</dd></div>
                   </dl>
                   <div className={styles.informationCard}>
-                    <strong>Withdraw advert and keep asset</strong>
-                    <p>The advert is removed from Marketplace and this showroom. Your saved asset, valuation and history stay available.</p>
+                    <strong>{assetId ? 'Withdraw advert and keep asset' : 'Withdraw advert'}</strong>
+                    <p>{assetId
+                      ? 'The advert is removed from Marketplace and this showroom. Your saved asset, valuation and history stay available.'
+                      : 'The advert is removed from Marketplace and this showroom. Its outcome history stays available.'}</p>
                   </div>
                 </section>
               ) : null}

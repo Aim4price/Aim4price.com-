@@ -248,7 +248,7 @@ function deriveBrandAndModel(row: Record<string, unknown>): { brandName: string;
     asText(pick(row, ['brand_name_snapshot', 'brand_name', 'brand'])) ||
     title.split(/\s+/).slice(0, 2).join(' ');
   const modelName =
-    asText(pick(row, ['model_name_snapshot', 'model_name', 'model'])) ||
+    asText(pick(row, ['model_name_snapshot', 'model_name_raw', 'model_name', 'model'])) ||
     title.replace(brandName, '').trim();
 
   return {
@@ -742,9 +742,14 @@ async function createMarketplaceListingSnapshot(row: MarketplaceAssetRow): Promi
 
 function buildMarketplaceListing(
   row: MarketplaceAssetRow,
-  options: { viewerUserId?: string | null; exposeContact: boolean },
+  options: {
+    viewerUserId?: string | null;
+    exposeContact: boolean;
+    listingSnapshot?: boolean;
+  },
 ): MarketplaceListing {
-  const assetId = asText(row.id);
+  const listingSnapshot = options.listingSnapshot === true;
+  const assetId = listingSnapshot ? '' : asText(row.id);
   const { brandName, modelName } = deriveBrandAndModel(row);
   const rawTitle = asText(pick(row, ['title', 'name', 'asset_name'])) || `${brandName} ${modelName}`.trim();
   const title = buildMarketplaceListingTitle(row, rawTitle);
@@ -754,7 +759,10 @@ function buildMarketplaceListing(
   const lifeWorkedPercent = listingWorkedPercent(row, specs);
   const usageAmount = readMarketplaceUsageAmount(row, specs);
   const usageUnit = listingUsageUnit(row, specs, lifeWorkedPercent, usageAmount);
-  const yearModel = Math.round(asNumber(pick(row, ['year_model', 'year']), new Date().getFullYear()));
+  const yearModel = Math.round(asNumber(
+    pick(row, ['year_model', 'year']),
+    asNumber(pick(specs, ['yearModel', 'year_model', 'year']), new Date().getFullYear()),
+  ));
   const hours = usageAmount;
   const publishedAtIso =
     asText(pick(row, ['updated_at', 'published_at', 'created_at'])) || new Date().toISOString();
@@ -773,25 +781,35 @@ function buildMarketplaceListing(
   );
   const aim4priceValueExVat = readAim4priceSavedValue(row);
   const explicitProfileLocation = asText(row.profile_location);
-  const province = titleCase(asText(pick(row, ['marketplace_province'])) || asText(row.profile_province) || 'South Africa');
-  const area = titleCase(
-    asText(pick(row, ['marketplace_area'])) || explicitProfileLocation || asText(row.profile_town_city) || 'Undisclosed',
+  const province = titleCase(
+    asText(pick(row, ['marketplace_province', 'province']))
+      || asText(row.profile_province)
+      || 'South Africa',
   );
-  const rawSellerCompany = asText(pick(row, ['marketplace_seller_company'])) || asText(row.profile_business_name) || undefined;
+  const area = titleCase(
+    asText(pick(row, ['marketplace_area', 'area']))
+      || explicitProfileLocation
+      || asText(row.profile_town_city)
+      || 'Undisclosed',
+  );
+  const rawSellerCompany = asText(pick(row, ['marketplace_seller_company', 'seller_company'])) || asText(row.profile_business_name) || undefined;
   const rawSellerName =
-    asText(pick(row, ['marketplace_seller_name'])) || rawSellerCompany || asText(row.profile_name) || 'Aim4price seller';
+    asText(pick(row, ['marketplace_seller_name', 'seller_name'])) || rawSellerCompany || asText(row.profile_name) || 'Aim4price seller';
   const sellerCompany = options.exposeContact ? rawSellerCompany : undefined;
   const sellerName = options.exposeContact ? rawSellerName : PUBLIC_MARKETPLACE_CONTACT_NAME;
   const sellerPhone = options.exposeContact
     ? asText(pick(row, ['seller_phone'])) || asText(row.profile_phone)
     : PUBLIC_MARKETPLACE_CONTACT_PHONE;
   const sellerEmail = options.exposeContact
-    ? asText(pick(row, ['marketplace_seller_email'])) || asText(row.profile_email)
+    ? asText(pick(row, ['marketplace_seller_email', 'seller_email'])) || asText(row.profile_email)
     : '';
   const description =
     asText(pick(row, ['marketplace_notes', 'note', 'notes', 'description'])) ||
     `${brandName} ${modelName} available on the Aim4price marketplace.`;
-  const imageUrls = buildPhotoList(row);
+  const imageUrls = mergePhotoLists(
+    buildPhotoList(row),
+    [asText(pick(row, ['primary_image_url']))].filter(Boolean),
+  );
   const sectorKey =
     normalizeSectorKey(pick(row, ['equipment_sector_key', 'sector_key', 'sector'])) ||
     'agricultural';
@@ -815,14 +833,20 @@ function buildMarketplaceListing(
   const assetKindFamilyLabel = familyLabelFromAssetKind(assetKind);
   const familyLabel = linkedFamilyLabel || assetKindFamilyLabel;
   const familyKey = linkedFamilyKey || slugify(familyLabel);
-  const conditionKey = normalizeConditionKey(pick(row, ['condition', 'valuation_last_condition']));
-  const adBrand = normalizeAdBrandSnapshot(pick(row, ['marketplace_ad_brand']), {
+  const conditionKey = normalizeConditionKey(
+    pick(row, ['condition', 'valuation_last_condition'])
+      ?? pick(specs, ['conditionLabel', 'condition_label', 'condition']),
+  );
+  const adBrand = normalizeAdBrandSnapshot(
+    pick(row, ['marketplace_ad_brand']) ?? pick(specs, ['marketplaceAdBrand']),
+    {
     exposeContact: options.exposeContact,
-  });
+    },
+  );
 
   return {
-    id: `asset-${assetId}`,
-    sourceAssetId: assetId,
+    id: listingSnapshot ? asText(row.id) : `asset-${assetId}`,
+    sourceAssetId: listingSnapshot ? undefined : assetId,
     modelId: asText(pick(row, ['model_id'])) || undefined,
     title,
     brandName,
@@ -842,7 +866,7 @@ function buildMarketplaceListing(
     province,
     area,
     location: explicitProfileLocation || `${area}, ${province}`,
-    sourceName: 'Aim4price Asset Register',
+    sourceName: listingSnapshot ? 'Marketplace advert' : 'Aim4price Asset Register',
     description,
     sellerName,
     sellerCompany,
@@ -891,35 +915,73 @@ export async function listPublishedMarketplaceAssetListings(options: {
   await ensureMarketplaceColumns();
 
   const db = getDb();
-  const result = await db.query<MarketplaceAssetRow>(
-    `
-      select
-        a.*,
-        s.sector_key as equipment_sector_key,
-        s.sector_label as equipment_sector_label,
-        ef.family_key as equipment_family_key,
-        ef.family_label as equipment_family_label,
-        ef.usage_metric_type as equipment_family_usage_metric_type,
-        ef.valuation_mode as equipment_family_valuation_mode,
-        p.business_name as profile_business_name,
-        coalesce(nullif(p.marketplace_phone, ''), nullif(p.phone, '')) as profile_phone,
-        p.province as profile_province,
-        p.town_city as profile_town_city,
-        nullif(p.marketplace_location, '') as profile_location,
-        coalesce(nullif(p.marketplace_seller_name, ''), nullif(p.display_name, '')) as profile_name,
-        nullif(p.marketplace_email, '') as profile_email
-      from asset_register_items a
-      left join public.equipment_families ef on ef.id = a.equipment_family_id
-      left join public.sectors s on s.id = coalesce(a.sector_id, ef.sector_id)
-      left join account_profiles p on p.user_id = a.user_id
-      where coalesce(a.marketplace_status, 'draft') = 'live'
-        and ($1::text is null or a.user_id = $1)
-      order by coalesce(a.updated_at, a.created_at) desc, a.id desc
-    `,
-    [options.sellerUserId ?? null],
-  );
+  const [assetResult, listingOnlyResult] = await Promise.all([
+    db.query<MarketplaceAssetRow>(
+      `
+        select
+          a.*,
+          s.sector_key as equipment_sector_key,
+          s.sector_label as equipment_sector_label,
+          ef.family_key as equipment_family_key,
+          ef.family_label as equipment_family_label,
+          ef.usage_metric_type as equipment_family_usage_metric_type,
+          ef.valuation_mode as equipment_family_valuation_mode,
+          p.business_name as profile_business_name,
+          coalesce(nullif(p.marketplace_phone, ''), nullif(p.phone, '')) as profile_phone,
+          p.province as profile_province,
+          p.town_city as profile_town_city,
+          nullif(p.marketplace_location, '') as profile_location,
+          coalesce(nullif(p.marketplace_seller_name, ''), nullif(p.display_name, '')) as profile_name,
+          nullif(p.marketplace_email, '') as profile_email
+        from asset_register_items a
+        left join public.equipment_families ef on ef.id = a.equipment_family_id
+        left join public.sectors s on s.id = coalesce(a.sector_id, ef.sector_id)
+        left join account_profiles p on p.user_id = a.user_id
+        where coalesce(a.marketplace_status, 'draft') = 'live'
+          and ($1::text is null or a.user_id = $1)
+        order by coalesce(a.updated_at, a.created_at) desc, a.id desc
+      `,
+      [options.sellerUserId ?? null],
+    ),
+    db.query<MarketplaceAssetRow>(
+      `
+        select
+          listing.*,
+          s.sector_key as equipment_sector_key,
+          s.sector_label as equipment_sector_label,
+          ef.family_key as equipment_family_key,
+          ef.family_label as equipment_family_label,
+          ef.usage_metric_type as equipment_family_usage_metric_type,
+          ef.valuation_mode as equipment_family_valuation_mode,
+          p.business_name as profile_business_name,
+          coalesce(nullif(p.marketplace_phone, ''), nullif(p.phone, '')) as profile_phone,
+          p.province as profile_province,
+          p.town_city as profile_town_city,
+          nullif(p.marketplace_location, '') as profile_location,
+          coalesce(nullif(p.marketplace_seller_name, ''), nullif(p.display_name, '')) as profile_name,
+          nullif(p.marketplace_email, '') as profile_email
+        from marketplace_listings listing
+        left join public.equipment_families ef on ef.id = listing.equipment_family_id
+        left join public.sectors s on s.id = coalesce(listing.sector_id, ef.sector_id)
+        left join account_profiles p on p.user_id = listing.user_id
+        where listing.asset_register_item_id is null
+          and lower(coalesce(listing.status, '')) = 'live'
+          and ($1::text is null or listing.user_id = $1)
+        order by coalesce(listing.published_at, listing.updated_at, listing.created_at) desc, listing.id desc
+      `,
+      [options.sellerUserId ?? null],
+    ),
+  ]);
 
-  return result.rows.map((row) => buildMarketplaceListing(row, options));
+  return [
+    ...assetResult.rows.map((row) => buildMarketplaceListing(row, options)),
+    ...listingOnlyResult.rows.map((row) => buildMarketplaceListing(row, {
+      ...options,
+      listingSnapshot: true,
+    })),
+  ].sort((left, right) => (
+    new Date(right.publishedAtIso).getTime() - new Date(left.publishedAtIso).getTime()
+  ));
 }
 
 export async function publishAssetRegisterItemToMarketplace(input: {

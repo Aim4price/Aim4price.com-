@@ -639,7 +639,7 @@ export default function WorkTrackerClient({ initialClients }: { initialClients: 
               <label className={styles.noteField}>
                 <span>
                   Work note
-                  {Object.prototype.hasOwnProperty.call(draftNotes, session.id) ? <em>Unsaved</em> : null}
+                  {Object.prototype.hasOwnProperty.call(draftNotes, session.id) ? " · Unsaved" : null}
                 </span>
                 <textarea
                   rows={2}
@@ -661,7 +661,6 @@ export default function WorkTrackerClient({ initialClients }: { initialClients: 
               <details className={styles.reportOptions}>
                 <summary>
                   <span>Report options</span>
-                  <small>{session.showTimesInReport ? "Times shown" : "Times hidden"} · {session.showNoteInReport ? "Note included" : "Note private"}</small>
                 </summary>
                 <div className={styles.reportOptionControls}>
                   <label><input type="checkbox" checked={session.showTimesInReport} disabled={savingSessionId !== null || deletingSessionId !== null} onChange={(event) => void patchSession(session.id, { showTimesInReport: event.target.checked })} /> Show activity times</label>

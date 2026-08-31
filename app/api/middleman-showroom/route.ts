@@ -32,6 +32,15 @@ export async function DELETE() {
     return NextResponse.json({ ok: true, deletedAdvertCount });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to delete your showroom.';
+    if (message === 'SHOWROOM_LIVE_ADVERTS_REQUIRE_OUTCOMES') {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: 'Remove each live advert and record its outcome before deleting the showroom.',
+        },
+        { status: 409 },
+      );
+    }
     const status = message === 'SHOWROOM_FORBIDDEN' ? 403 : 500;
     return NextResponse.json({ ok: false, error: message }, { status });
   }
@@ -74,3 +83,5 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ ok: false, error: message }, { status });
   }
 }
+
+

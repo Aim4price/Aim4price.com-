@@ -11,6 +11,7 @@ const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), "utf
 const dataLayer = read("lib/admin-global-assets.ts");
 const mapPage = read("app/admin/asset-map/page.tsx");
 const mapClient = read("app/admin/asset-map/admin-asset-map-client.tsx");
+const mapStyles = read("app/admin/asset-map/page.module.css");
 const discoveryPage = read("app/admin/discovery/page.tsx");
 const discoveryClient = read("app/admin/discovery/admin-discovery-client.tsx");
 const mapRoute = read("app/api/admin/asset-map/route.ts");
@@ -53,6 +54,29 @@ test("the global map clusters every plottable asset and keeps missing GPS record
   assert.match(mapClient, /Discovery record/);
   assert.match(mapClient, /action: "open_account"/);
   assert.match(mapClient, /escapeHtml\(asset\.title\)/);
+});
+
+test("the global map fills its pane and follows every container resize", () => {
+  assert.match(mapClient, /const \[mapReady, setMapReady\] = useState\(false\)/);
+  assert.match(mapClient, /setMapReady\(true\)/);
+  assert.match(mapClient, /new ResizeObserver\(scheduleMapResize\)/);
+  assert.match(mapClient, /resizeObserver\.observe\(mapElement\)/);
+  assert.match(mapClient, /window\.addEventListener\("resize", scheduleMapResize\)/);
+  assert.match(mapClient, /invalidateSize\(\{ animate: false, pan: false \}\)/);
+  assert.match(mapStyles, /\.mapCanvas \{[\s\S]*?position: absolute;[\s\S]*?inset: 0;/);
+  assert.match(mapStyles, /grid-template-areas: "sidebar map"/);
+  assert.match(
+    mapStyles,
+    /@media \(max-width: 980px\)[\s\S]*?grid-template-areas:\s*"map"\s*"sidebar"/,
+  );
+  assert.match(
+    mapStyles,
+    /@media \(max-width: 620px\)[\s\S]*?\.metrics \{[\s\S]*?grid-template-columns: repeat\(5, minmax\(8\.5rem, 1fr\)\);[\s\S]*?overflow-x: auto;/,
+  );
+  assert.match(
+    mapStyles,
+    /@media \(max-width: 620px\)[\s\S]*?\.filterBar \{[\s\S]*?display: flex;[\s\S]*?overflow-x: auto;/,
+  );
 });
 
 test("Admin Discovery is paginated, filterable and exposes owner contact actions", () => {

@@ -397,7 +397,14 @@
   height: 7rem;
   color: #708079;
   text-align: center;
+  vertical-align: middle;
   font-weight: 720;
+}
+
+.queueTableWrap > .emptyCell {
+  box-sizing: border-box;
+  display: grid;
+  place-items: center;
 }
 
 .workbench {
@@ -856,8 +863,13 @@
   border-bottom: 1px solid #e8eeeb;
   color: #2d4b41;
   background: #fff;
+  display: flex;
+  align-items: baseline;
+  gap: 0.3rem;
+  overflow: hidden;
   font: inherit;
   text-align: left;
+  white-space: nowrap;
   cursor: pointer;
 }
 
@@ -872,30 +884,26 @@
 }
 
 .targetResults strong,
-.targetResults span,
-.targetResults small {
+.targetResults span {
   display: block;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .targetResults strong {
+  max-width: 45%;
+  flex: 0 1 auto;
   color: #1c4e3c;
   font-size: 0.76rem;
 }
 
 .targetResults span {
-  margin-top: 0.14rem;
+  flex: 1 1 auto;
   color: #506a60;
   font-size: 0.69rem;
   font-weight: 750;
-}
-
-.targetResults small {
-  margin-top: 0.14rem;
-  color: #78867f;
-  font-size: 0.63rem;
 }
 
 .targetEmpty {

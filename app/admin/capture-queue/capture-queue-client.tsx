@@ -1092,7 +1092,7 @@ export default function CaptureQueueClient() {
         </div>
 
         <div className={styles.queueTableWrap}>
-          {isLoading || rows.length ? <table className={styles.queueTable}>
+          {isLoading || rows.length || hasActiveFilters ? <table className={styles.queueTable}>
             <thead>
               <tr>
                 <th>Request</th>
@@ -1179,7 +1179,6 @@ export default function CaptureQueueClient() {
               {activeFile?.securityStatus === "pending" ? (
                 <div className={styles.securityLock}>
                   <strong>Security decision required</strong>
-                  <p>Review the file and record its security result.</p>
                   <div className={styles.securityActions}>
                     <button type="button" disabled={busyFileSecurity} onClick={() => void runFileSecurity("clean")}>
                       {busyFileSecurity ? "Updating…" : "Mark check passed"}
@@ -1307,8 +1306,7 @@ export default function CaptureQueueClient() {
                         {isSearchingTargets ? <span className={styles.targetEmpty}>Searching…</span> : matchTargets.length ? matchTargets.map((target) => (
                           <button key={`${target.targetType}-${target.targetId}`} type="button" role="option" aria-selected="false" onClick={() => selectMatchTarget(target)}>
                             <strong>{target.targetDisplayName}</strong>
-                            <span>{target.ownerDisplayName}</span>
-                            <small>{[target.targetType === "fuel_storage" ? "Fuel storage" : "Asset", target.reference, target.meta].filter(Boolean).join(" · ")}</small>
+                            <span>· {[target.ownerDisplayName, target.targetType === "fuel_storage" ? "Fuel storage" : "Asset", target.reference, target.meta].filter(Boolean).join(" · ")}</span>
                           </button>
                         )) : <span className={styles.targetEmpty}>No matching customer, asset or tank found.</span>}
                       </DropdownOverlay>

@@ -51,11 +51,11 @@ const CONDITION_OPTIONS: Array<{
   label: string;
   description: string;
 }> = [
-  { id: "excellent", label: "Excellent", description: "Exceptional care and presentation" },
-  { id: "good", label: "Good", description: "Normal wear with strong upkeep" },
-  { id: "fair", label: "Fair", description: "Visible wear but fully usable" },
-  { id: "used", label: "Used", description: "Heavy wear or repairs expected" },
-  { id: "serious", label: "Serious attention", description: "Major work likely before resale" },
+  { id: "excellent", label: "Excellent", description: "Exceptional care" },
+  { id: "good", label: "Good", description: "Light wear, well kept" },
+  { id: "fair", label: "Fair", description: "Visible wear, usable" },
+  { id: "used", label: "Used", description: "Heavy wear, repairs likely" },
+  { id: "serious", label: "Serious attention", description: "Major work needed" },
 ];
 
 const INITIAL_STATE: WorkspaceState = {
@@ -677,7 +677,9 @@ export default function LifecycleCalculatorClient() {
               onClick={() => setState((current) => ({ ...current, preferredScenario: scenario.id }))}
               aria-pressed={scenario.id === state.preferredScenario}
             >
-              {scenario.id === state.preferredScenario ? <span aria-hidden="true">✓</span> : null}
+              {scenario.id === state.preferredScenario ? (
+                <span className={styles.scenarioChoiceCheck} aria-hidden="true">✓</span>
+              ) : null}
               <strong>{scenario.label}</strong>
               <b>{randCents(scenario.loan.monthlyPayment)} / month</b>
             </button>
@@ -898,10 +900,7 @@ export default function LifecycleCalculatorClient() {
       </section>
 
       <section id="lifecycle-provisions" className={styles.flowSectionLead}>
-        <div>
-          <h2>Provisions</h2>
-        </div>
-        <strong>{rand(serviceScenario.serviceFinanced)} service · {rand(fullScenario.maintenanceFinanced)} maintenance</strong>
+        <h2>Provisions · {rand(serviceScenario.serviceFinanced)} service · {rand(fullScenario.maintenanceFinanced)} maintenance</h2>
       </section>
 
       <section className={styles.provisionGrid}>
@@ -1183,10 +1182,7 @@ export default function LifecycleCalculatorClient() {
       </section>
 
       <section id="lifecycle-planning" className={styles.flowSectionLead}>
-        <div>
-          <h2>Next cycle</h2>
-        </div>
-        <strong>{rand(preferred.equityAtDisposal)} projected equity</strong>
+        <h2>Next cycle · {rand(preferred.equityAtDisposal)} projected equity</h2>
       </section>
 
       <section className={styles.outcomeGrid}>

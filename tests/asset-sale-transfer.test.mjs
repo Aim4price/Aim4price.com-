@@ -200,11 +200,15 @@ test('Account exposes modal-based incoming and outgoing transfer management', ()
   assert.doesNotMatch(transferPage, /<p>Outgoing<\/p>/);
 });
 
-test('Admin tracks and can correct sold, traded-in and scrapped outcomes', () => {
+test('Admin exposes and can correct sold, traded-in and scrapped outcomes', () => {
   assert.match(adminNavigation, /href: "\/admin\/sold-assets"/);
-  assert.match(adminNavigation, /label: "Asset Outcomes"/);
+  assert.match(adminNavigation, /label: "Outcomes"/);
   assert.match(adminPage, /<AdminNavigation active="sold-assets"/);
-  assert.match(adminPage, /Asset outcomes/);
+  assert.match(adminPage, /import SoldAssetsClient from '.\/sold-assets-client'/);
+  assert.match(adminPage, /getAdminAssetOutcomesReport/);
+  assert.match(adminPage, /listAdminAssetAllocationAccounts/);
+  assert.match(adminPage, /href="\/admin\/sold-assets\?source=assets"/);
+  assert.match(adminPage, /<SoldAssetsClient/);
   assert.match(adminSales, /totalOutcomes/);
   assert.match(adminSales, /totalSold/);
   assert.match(adminSales, /totalTradedIn/);
@@ -215,9 +219,9 @@ test('Admin tracks and can correct sold, traded-in and scrapped outcomes', () =>
   assert.match(adminSales, /event\.reason in \('sold', 'traded_in', 'scrapped'\)/);
   assert.match(adminClient, /All outcomes/);
   assert.match(adminClient, /Original account/);
-  assert.match(adminClient, /Restore asset/);
-  assert.match(adminClient, />Allocate</);
-  assert.match(adminClient, />Delete</);
+  assert.match(adminClient, /\? 'Restore'/);
+  assert.match(adminClient, /openAction\('allocate'/);
+  assert.match(adminClient, /openAction\('delete'/);
   assert.match(transferSource, /reason in \('sold', 'traded_in', 'scrapped'\)/);
   assert.match(transferSource, /asset_admin_outcome_restored/);
   assert.match(transferSource, /admin_disposed_asset_deleted/);

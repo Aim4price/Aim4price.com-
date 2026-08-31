@@ -462,28 +462,28 @@ export default function AdminDiscoveryClient({
     <>
       <section className={styles.metrics} aria-label="Admin Discovery summary">
         <article>
-          <strong>{report.summary.totalAssets.toLocaleString("en-ZA")}</strong>
           <span>Assets</span>
+          <strong>{report.summary.totalAssets.toLocaleString("en-ZA")}</strong>
         </article>
         <article>
-          <strong>{report.summary.totalViews.toLocaleString("en-ZA")}</strong>
           <span>Views</span>
+          <strong>{report.summary.totalViews.toLocaleString("en-ZA")}</strong>
         </article>
         <article>
-          <strong>{report.summary.viewedAssets.toLocaleString("en-ZA")}</strong>
           <span>Viewed assets</span>
+          <strong>{report.summary.viewedAssets.toLocaleString("en-ZA")}</strong>
         </article>
         <article>
-          <strong>{report.summary.repeatInterestAssets.toLocaleString("en-ZA")}</strong>
           <span>Repeat interest</span>
+          <strong>{report.summary.repeatInterestAssets.toLocaleString("en-ZA")}</strong>
         </article>
         <article>
-          <strong>{formatAdminAssetMoney(report.summary.totalValueExVat)}</strong>
           <span>Value</span>
+          <strong>{formatAdminAssetMoney(report.summary.totalValueExVat)}</strong>
         </article>
         <article>
-          <strong>{report.summary.ownerAccounts.toLocaleString("en-ZA")}</strong>
           <span>Owners</span>
+          <strong>{report.summary.ownerAccounts.toLocaleString("en-ZA")}</strong>
         </article>
       </section>
 
@@ -842,10 +842,10 @@ export default function AdminDiscoveryClient({
             {activityDetails ? (
               <div className={styles.activityBody}>
                 <section className={styles.activitySummary} aria-label="Discovery viewer activity summary">
-                  <article><strong>{activityDetails.totalViews}</strong><span>Total views</span></article>
-                  <article><strong>{activityDetails.accountViews}</strong><span>Account views</span></article>
-                  <article><strong>{activityDetails.unknownViews}</strong><span>Unknown views</span></article>
-                  <article><strong>{activityDetails.uniqueViewers}</strong><span>Different viewers</span></article>
+                  <article><span>Total views</span><strong>{activityDetails.totalViews}</strong></article>
+                  <article><span>Account views</span><strong>{activityDetails.accountViews}</strong></article>
+                  <article><span>Unknown views</span><strong>{activityDetails.unknownViews}</strong></article>
+                  <article><span>Different viewers</span><strong>{activityDetails.uniqueViewers}</strong></article>
                 </section>
 
                 {activityDetails.repeatViewers > 0 ? (
@@ -856,10 +856,7 @@ export default function AdminDiscoveryClient({
                   </aside>
                 ) : null}
 
-                <section className={styles.viewerSection}>
-                  <div className={styles.activityHeading}>
-                    <h3>Viewer summary</h3>
-                  </div>
+                <section className={styles.viewerSection} aria-label="Viewer groups">
                   {activityDetails.viewerGroups.length ? (
                     <div className={styles.viewerList}>
                       {activityDetails.viewerGroups.map((viewer) => (

@@ -924,7 +924,7 @@ test('Middleman navigation, app access and Marketplace stay focused without paid
   assert.match(discoveryPage, /isMiddlemanAccountSubtype\(profile\.accountSubtype\).*redirect\('\/dealer\/showroom'\)/s);
 });
 
-test('deleting a Middleman showroom withdraws all of its Marketplace adverts', async () => {
+test('deleting a Middleman showroom requires outcomes and preserves advert history', async () => {
   const [showroomDb, route, manager, accountDeletion] = await Promise.all([
     read('lib/middleman-showroom-db.ts'),
     read('app/api/middleman-showroom/route.ts'),
@@ -933,14 +933,30 @@ test('deleting a Middleman showroom withdraws all of its Marketplace adverts', a
   ]);
 
   assert.match(showroomDb, /deleteMiddlemanShowroomAndAdverts/);
-  assert.match(showroomDb, /update asset_register_items[\s\S]*marketplace_status = 'draft'/);
-  assert.match(showroomDb, /delete from marketplace_listings where user_id = \$1/);
+  assert.match(showroomDb, /select marketplace_status[\s\S]*from asset_register_items[\s\S]*for update/);
+  assert.match(showroomDb, /select status[\s\S]*from marketplace_listings[\s\S]*for update/);
+  assert.match(showroomDb, /assetRows\.rows\.some\([\s\S]*row\.marketplace_status[\s\S]*=== 'live'/);
+  assert.match(showroomDb, /listingRows\.rows\.some\([\s\S]*row\.status[\s\S]*=== 'live'/);
+  assert.match(showroomDb, /SHOWROOM_LIVE_ADVERTS_REQUIRE_OUTCOMES/);
+  assert.doesNotMatch(showroomDb, /delete from marketplace_listings/);
+  assert.doesNotMatch(showroomDb, /delete from marketplace_listing_outcomes/);
   assert.match(showroomDb, /delete from middleman_showrooms where user_id = \$1/);
   assert.match(showroomDb, /BEGIN[\s\S]*COMMIT/);
+  assert.ok(
+    showroomDb.indexOf("throw new Error('SHOWROOM_LIVE_ADVERTS_REQUIRE_OUTCOMES')")
+      < showroomDb.indexOf('delete from middleman_showrooms where user_id = $1'),
+    'the live-advert guard must run before the showroom delete',
+  );
   assert.match(route, /export async function DELETE/);
-  assert.match(route, /deletedAdvertCount/);
-  assert.match(manager, /Delete showroom & adverts/);
-  assert.match(manager, /Your valuations and saved asset records are not deleted/);
+  assert.match(route, /SHOWROOM_LIVE_ADVERTS_REQUIRE_OUTCOMES/);
+  assert.match(route, /record its outcome before deleting the showroom/);
+  assert.match(route, /status: 409/);
+  assert.match(manager, /if \(listings\.length\)/);
+  assert.match(manager, /Remove each live advert and record its outcome first/);
+  assert.match(manager, /disabled=\{listings\.length > 0\}/);
+  assert.match(manager, /Delete showroom\?/);
+  assert.match(manager, /Advert history, valuations and assets stay saved/);
+  assert.doesNotMatch(manager, /setListings\(\[\]\)/);
   assert.match(accountDeletion, /'middleman_showrooms'/);
 });
 

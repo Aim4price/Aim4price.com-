@@ -72,8 +72,8 @@ export default async function AdminDashboardPage() {
             <h2 id="overview-heading">Overview</h2>
           </div>
           <div className={`${styles.grid} ${styles.overviewGrid}`}>
-            {overviewCards.map((card, index) => (
-              <article key={card.id} className={`${styles.card} ${index === 0 ? styles.featuredCard : ""}`}>
+            {overviewCards.map((card) => (
+              <article key={card.id} className={`${styles.card} ${card.id === "free-estimates" ? styles.featuredCard : ""}`}>
                 <div className={styles.cardHeader}>
                   <h2>{cardTitle(card.id, card.title)}</h2>
                 </div>

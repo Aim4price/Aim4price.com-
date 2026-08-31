@@ -792,6 +792,11 @@
   border-bottom: 1px solid #dfe8e3;
 }
 
+.qrModalHeader > div {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
 .qrModalHeader h2 {
   margin: 0;
   color: #0e2e26;
@@ -1600,7 +1605,7 @@
 
 .qrAssetRow {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) minmax(10rem, auto);
+  grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
   gap: 0.7rem;
   padding: 0.72rem 0.78rem;
@@ -1621,11 +1626,12 @@
 
 .qrAssetMain {
   min-width: 0;
-  display: grid;
-  gap: 0.22rem;
+  overflow: hidden;
+  display: block;
 }
 
 .qrAssetMain strong {
+  display: block;
   min-width: 0;
   overflow: hidden;
   color: #17362c;
@@ -1636,26 +1642,10 @@
   white-space: nowrap;
 }
 
-.qrAssetMain small {
-  min-width: 0;
-  overflow: hidden;
-  color: #708079;
-  font-size: 0.72rem;
-  font-weight: 720;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.qrAssetCode {
-  justify-self: end;
-  max-width: 18rem;
-  overflow: hidden;
+.qrAssetMain [data-asset-choice-value="true"] {
   color: #697973;
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 0.68rem;
-  font-weight: 760;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  font-size: 0.8em;
 }
 
 .qrAssetEmpty {
@@ -1709,23 +1699,7 @@
 .nameModal {
   width: min(100%, 88rem);
   max-height: min(92vh, 62rem);
-  grid-template-rows: auto auto auto auto minmax(12rem, 1fr) auto auto auto;
-}
-
-.nameManagerIntro {
-  display: grid;
-  gap: 0.28rem;
-  padding: 0.75rem 0.85rem;
-  border: 1px solid #dfe8e3;
-  border-radius: 1rem;
-  background: #ffffff;
-}
-
-.nameManagerIntro span {
-  color: #65756f;
-  font-size: 0.8rem;
-  font-weight: 720;
-  line-height: 1.45;
+  grid-template-rows: auto auto auto minmax(12rem, 1fr) auto auto auto;
 }
 
 .nameManagerActions {
@@ -1993,7 +1967,7 @@
   }
 
   .userTable {
-    min-width: 0;
+    min-width: 900px;
   }
 
   .userTable th:nth-child(3),
@@ -2104,6 +2078,7 @@
 
   .tableWrap {
     max-height: none;
+    overflow-x: auto;
     overflow-y: visible;
   }
 
@@ -2193,16 +2168,6 @@
   .qrModalFooter {
     align-items: stretch;
     flex-direction: column;
-  }
-
-  .qrAssetRow {
-    grid-template-columns: auto minmax(0, 1fr);
-  }
-
-  .qrAssetCode {
-    grid-column: 2;
-    justify-self: start;
-    max-width: 100%;
   }
 
   .generateQrButton,

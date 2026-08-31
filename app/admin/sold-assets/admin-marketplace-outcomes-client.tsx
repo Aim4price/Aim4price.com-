@@ -1,8 +1,9 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   formatAdminMarketplaceMoney,
+  summarizeAdminMarketplaceOutcomes,
   type AdminMarketplaceOutcomeReason,
   type AdminMarketplaceOutcomeReport,
   type AdminMarketplaceOutcomeRow,
@@ -10,6 +11,7 @@ import {
 import styles from './page.module.css';
 
 const PAGE_SIZE = 25;
+const JOHANNESBURG_TIME_ZONE = 'Africa/Johannesburg';
 
 type HelpFilter = 'all' | 'yes' | 'no';
 type SourceFilter = 'all' | 'marketplace' | 'showroom';
@@ -39,11 +41,21 @@ function formatDate(value: string | null): string {
   const parsed = parseDate(value);
   if (!parsed) return 'Not recorded';
   return new Intl.DateTimeFormat('en-ZA', {
-    timeZone: 'Africa/Johannesburg',
+    timeZone: JOHANNESBURG_TIME_ZONE,
     day: '2-digit',
     month: 'short',
     year: 'numeric',
   }).format(parsed);
+}
+
+function yearInJohannesburg(value: string | null): number | null {
+  const parsed = parseDate(value);
+  if (!parsed) return null;
+  const year = Number(new Intl.DateTimeFormat('en', {
+    timeZone: JOHANNESBURG_TIME_ZONE,
+    year: 'numeric',
+  }).format(parsed));
+  return Number.isInteger(year) ? year : null;
 }
 
 function daysToOutcome(outcome: AdminMarketplaceOutcomeRow): number | null {
@@ -78,11 +90,35 @@ function matchesClosedFilter(
   }
 
   const year = Number(filter.slice('year:'.length));
-  return Number.isInteger(year) && new Date(closedAt).getFullYear() === year;
+  return Number.isInteger(year) && yearInJohannesburg(outcome.closedAtIso) === year;
 }
 
 function safeMoney(value: number | null): number {
   return value !== null && Number.isFinite(value) ? Math.max(0, value) : 0;
+}
+
+function recordedFinalValue(outcome: AdminMarketplaceOutcomeRow): number | null {
+  const value = outcome.finalSalePriceExVat;
+  return value !== null && Number.isFinite(value) && value > 0 ? value : null;
+}
+
+function compareRecordedFinalValue(
+  left: AdminMarketplaceOutcomeRow,
+  right: AdminMarketplaceOutcomeRow,
+  direction: 'high' | 'low',
+): number {
+  const leftValue = recordedFinalValue(left);
+  const rightValue = recordedFinalValue(right);
+  if (leftValue === null) return rightValue === null ? 0 : 1;
+  if (rightValue === null) return -1;
+  return direction === 'high' ? rightValue - leftValue : leftValue - rightValue;
+}
+
+function actorLabel(actorType: string): string {
+  if (actorType === 'admin_support') return 'Admin support';
+  if (actorType === 'dealer_staff') return 'Dealer staff';
+  if (actorType === 'owner_app') return 'Owner App';
+  return 'Account';
 }
 
 function formatPercent(value: number): string {
@@ -103,12 +139,15 @@ export default function AdminMarketplaceOutcomesClient({
   const [closed, setClosed] = useState<ClosedFilter>('all');
   const [sort, setSort] = useState<OutcomeSort>('latest');
   const [page, setPage] = useState(1);
+  const [detailOutcome, setDetailOutcome] = useState<AdminMarketplaceOutcomeRow | null>(null);
+  const detailDialogRef = useRef<HTMLElement>(null);
+  const detailTriggerRef = useRef<HTMLButtonElement | null>(null);
 
   const closedYears = useMemo(() => {
     const years = new Set<number>();
     for (const outcome of report.outcomes) {
-      const year = parseDate(outcome.closedAtIso)?.getFullYear();
-      if (Number.isInteger(year)) years.add(year as number);
+      const year = yearInJohannesburg(outcome.closedAtIso);
+      if (year !== null) years.add(year);
     }
     return Array.from(years).sort((left, right) => right - left);
   }, [report.outcomes]);
@@ -133,6 +172,9 @@ export default function AdminMarketplaceOutcomesClient({
           outcome.outcomeNote,
           outcome.sourceAssetId ?? '',
           outcome.listingId ?? '',
+          outcome.outcomeId,
+          outcome.accountUserId,
+          outcome.actorType,
         ]
           .join(' ')
           .toLocaleLowerCase('en-ZA')
@@ -141,10 +183,12 @@ export default function AdminMarketplaceOutcomesClient({
       .sort((left, right) => {
         if (sort === 'oldest') return dateTime(left.closedAtIso) - dateTime(right.closedAtIso);
         if (sort === 'final-value-high') {
-          return safeMoney(right.finalSalePriceExVat) - safeMoney(left.finalSalePriceExVat);
+          return compareRecordedFinalValue(left, right, 'high')
+            || dateTime(right.closedAtIso) - dateTime(left.closedAtIso);
         }
         if (sort === 'final-value-low') {
-          return safeMoney(left.finalSalePriceExVat) - safeMoney(right.finalSalePriceExVat);
+          return compareRecordedFinalValue(left, right, 'low')
+            || dateTime(right.closedAtIso) - dateTime(left.closedAtIso);
         }
         if (sort === 'asset-az') {
           return left.title.localeCompare(right.title, 'en-ZA', { sensitivity: 'base' });
@@ -153,7 +197,10 @@ export default function AdminMarketplaceOutcomesClient({
       });
   }, [closed, helped, reason, report.outcomes, search, sort, source]);
 
-  const allMetrics = report.metrics;
+  const visibleMetrics = useMemo(
+    () => summarizeAdminMarketplaceOutcomes(filteredOutcomes),
+    [filteredOutcomes],
+  );
   const totalPages = Math.max(1, Math.ceil(filteredOutcomes.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
   const pageStart = filteredOutcomes.length ? (currentPage - 1) * PAGE_SIZE : 0;
@@ -177,32 +224,76 @@ export default function AdminMarketplaceOutcomesClient({
     setPage(1);
   }
 
+  function openDetails(
+    outcome: AdminMarketplaceOutcomeRow,
+    trigger: HTMLButtonElement,
+  ) {
+    detailTriggerRef.current = trigger;
+    setDetailOutcome(outcome);
+  }
+
+  useEffect(() => {
+    if (!detailOutcome) return;
+
+    const dialog = detailDialogRef.current;
+    const focusable = dialog?.querySelectorAll<HTMLElement>(
+      'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+    );
+    const firstFocusable = focusable?.[0];
+    const lastFocusable = focusable?.[focusable.length - 1];
+    firstFocusable?.focus();
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        setDetailOutcome(null);
+        return;
+      }
+      if (event.key !== 'Tab' || !firstFocusable || !lastFocusable) return;
+      if (event.shiftKey && document.activeElement === firstFocusable) {
+        event.preventDefault();
+        lastFocusable.focus();
+      } else if (!event.shiftKey && document.activeElement === lastFocusable) {
+        event.preventDefault();
+        firstFocusable.focus();
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      detailTriggerRef.current?.focus();
+    };
+  }, [detailOutcome]);
+
   return (
     <>
-      <section className={styles.metrics} aria-label="Marketplace outcome summary. Both Yes and No answers are retained.">
+      <section className={styles.metrics} aria-label="Marketplace outcome summary">
         <article className={styles.featuredMetric}>
           <span>Outcomes</span>
-          <strong>{allMetrics.totalOutcomes.toLocaleString('en-ZA')}</strong>
+          <strong>{visibleMetrics.totalOutcomes.toLocaleString('en-ZA')}</strong>
         </article>
         <article>
           <span>Sold or traded</span>
-          <strong>{allMetrics.soldOrTraded.toLocaleString('en-ZA')}</strong>
+          <strong>{visibleMetrics.soldOrTraded.toLocaleString('en-ZA')}</strong>
         </article>
         <article className={styles.helpedMetric}>
           <span>Helped</span>
-          <strong>{allMetrics.aim4priceHelpedCount.toLocaleString('en-ZA')}</strong>
+          <strong>{visibleMetrics.aim4priceHelpedCount.toLocaleString('en-ZA')}</strong>
         </article>
         <article>
           <span>Not helped</span>
-          <strong>{allMetrics.notHelpedCount.toLocaleString('en-ZA')}</strong>
+          <strong>{visibleMetrics.notHelpedCount.toLocaleString('en-ZA')}</strong>
         </article>
         <article>
           <span>Help rate</span>
-          <strong>{formatPercent(allMetrics.helpRatePercent)}</strong>
+          <strong>{formatPercent(visibleMetrics.helpRatePercent)}</strong>
         </article>
         <article>
           <span>Final value</span>
-          <strong>{formatAdminMarketplaceMoney(allMetrics.recordedSaleValueExVat)}</strong>
+          <strong title={formatAdminMarketplaceMoney(visibleMetrics.recordedSaleValueExVat)}>
+            {formatAdminMarketplaceMoney(visibleMetrics.recordedSaleValueExVat)}
+          </strong>
         </article>
       </section>
 
@@ -226,7 +317,7 @@ export default function AdminMarketplaceOutcomesClient({
                   setSearch(event.target.value);
                   setPage(1);
                 }}
-                placeholder="Asset or seller"
+                placeholder="Asset, seller or reference"
               />
             </label>
             <label>
@@ -325,8 +416,17 @@ export default function AdminMarketplaceOutcomesClient({
                 return (
                   <tr key={outcome.outcomeId}>
                     <td className={styles.assetCell}>
-                      <strong>{outcome.title}</strong>
-                      <span>· {outcome.sellerLabel || 'Unknown seller'} · {outcome.sectorLabel || 'Uncategorised'}</span>
+                      <button
+                        type="button"
+                        className={styles.assetButton}
+                        aria-haspopup="dialog"
+                        onClick={(event) => openDetails(outcome, event.currentTarget)}
+                      >
+                        <strong title={outcome.title}>{outcome.title}</strong>
+                        <span title={`${outcome.sellerLabel || 'Unknown seller'} · ${outcome.sectorLabel || 'Uncategorised'}`}>
+                          · {outcome.sellerLabel || 'Unknown seller'} · {outcome.sectorLabel || 'Uncategorised'}
+                        </span>
+                      </button>
                     </td>
                     <td className={styles.outcomeCell}>
                       <strong>{reasonLabel(outcome.reason)}</strong>
@@ -377,6 +477,54 @@ export default function AdminMarketplaceOutcomesClient({
           </div>
         </footer> : null}
       </section>
+
+      {detailOutcome ? (
+        <div className={styles.detailOverlay}>
+          <button
+            type="button"
+            className={styles.detailBackdrop}
+            aria-label="Close outcome details"
+            onClick={() => setDetailOutcome(null)}
+          />
+          <section
+            ref={detailDialogRef}
+            className={styles.detailModal}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="marketplace-outcome-detail-title"
+          >
+            <header>
+              <h2 id="marketplace-outcome-detail-title" title={detailOutcome.title}>
+                {detailOutcome.title}
+              </h2>
+              <button
+                type="button"
+                onClick={() => setDetailOutcome(null)}
+                aria-label="Close"
+              >
+                ×
+              </button>
+            </header>
+            <div className={styles.detailBody}>
+              <dl className={styles.detailGrid}>
+                <div><dt>Outcome</dt><dd>{reasonLabel(detailOutcome.reason)}</dd></div>
+                <div><dt>Helped</dt><dd>{detailOutcome.aim4priceHelped ? 'Yes' : 'No'}</dd></div>
+                <div><dt>Seller</dt><dd title={detailOutcome.sellerEmail || detailOutcome.sellerLabel}>{detailOutcome.sellerLabel || 'Unknown seller'}{detailOutcome.sellerEmail ? ` · ${detailOutcome.sellerEmail}` : ''}</dd></div>
+                <div><dt>Sector</dt><dd>{detailOutcome.sectorLabel || 'Uncategorised'}</dd></div>
+                <div><dt>Source</dt><dd>{detailOutcome.sourceSurface === 'showroom' ? 'Showroom' : 'Marketplace'} · {actorLabel(detailOutcome.actorType)}</dd></div>
+                <div><dt>Closed</dt><dd>{formatDate(detailOutcome.closedAtIso)} · {formatDays(daysToOutcome(detailOutcome))}</dd></div>
+                <div><dt>Final value</dt><dd>{recordedFinalValue(detailOutcome) === null ? '—' : formatAdminMarketplaceMoney(recordedFinalValue(detailOutcome) as number)}</dd></div>
+                <div><dt>Asking value</dt><dd>{detailOutcome.askingPriceExVat > 0 ? formatAdminMarketplaceMoney(detailOutcome.askingPriceExVat) : '—'}</dd></div>
+                <div><dt>Aim4price value</dt><dd>{detailOutcome.aim4priceValueExVat > 0 ? formatAdminMarketplaceMoney(detailOutcome.aim4priceValueExVat) : '—'}</dd></div>
+                <div><dt>Views</dt><dd>{detailOutcome.totalViewsAtClose.toLocaleString('en-ZA')} total · {detailOutcome.uniqueViewersAtClose.toLocaleString('en-ZA')} unique</dd></div>
+                <div><dt>View source</dt><dd>{detailOutcome.accountViewsAtClose.toLocaleString('en-ZA')} accounts · {detailOutcome.unknownViewsAtClose.toLocaleString('en-ZA')} unknown</dd></div>
+                <div className={styles.detailWide}><dt>Note</dt><dd title={detailOutcome.outcomeNote || 'No note'}>{detailOutcome.outcomeNote || '—'}</dd></div>
+                <div className={styles.detailWide}><dt>References</dt><dd title={`${detailOutcome.outcomeId} · ${detailOutcome.listingId ?? 'No listing'} · ${detailOutcome.sourceAssetId ?? 'No asset'} · ${detailOutcome.accountUserId}`}>{detailOutcome.outcomeId} · {detailOutcome.listingId ?? 'No listing'} · {detailOutcome.sourceAssetId ?? 'No asset'} · {detailOutcome.accountUserId}</dd></div>
+              </dl>
+            </div>
+          </section>
+        </div>
+      ) : null}
     </>
   );
 }

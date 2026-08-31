@@ -26,7 +26,8 @@ export type MarketplaceOutcomeActorType = (typeof MARKETPLACE_OUTCOME_ACTOR_TYPE
 
 export type CloseMarketplaceListingOutcomeInput = {
   sellerUserId: string;
-  assetId: string;
+  assetId?: string | null;
+  listingId?: string | null;
   outcomeReason: MarketplaceOutcomeReason;
   aim4priceHelped: boolean;
   finalSalePriceExVat?: number | null;
@@ -39,8 +40,8 @@ export type CloseMarketplaceListingOutcomeInput = {
 export type MarketplaceListingOutcomeResult = {
   outcomeId: string;
   listingId: string | null;
-  assetId: string;
-  marketplaceStatus: 'draft';
+  assetId: string | null;
+  marketplaceStatus: 'draft' | null;
   outcomeReason: MarketplaceOutcomeReason;
   aim4priceHelped: boolean;
   finalSalePriceExVat: number | null;
@@ -60,6 +61,8 @@ type AssetRow = Record<string, unknown> & {
 
 type ListingRow = {
   id: unknown;
+  asset_register_item_id?: unknown;
+  status?: unknown;
   title: unknown;
   asking_price_ex_vat: unknown;
   published_at: unknown;
@@ -226,7 +229,8 @@ export async function ensureMarketplaceOutcomeSchema(): Promise<void> {
 
 function validateInput(input: CloseMarketplaceListingOutcomeInput): {
   sellerUserId: string;
-  assetId: string;
+  assetId: string | null;
+  listingId: string | null;
   outcomeReason: MarketplaceOutcomeReason;
   aim4priceHelped: boolean;
   finalSalePriceExVat: number | null;
@@ -237,13 +241,18 @@ function validateInput(input: CloseMarketplaceListingOutcomeInput): {
 } {
   const sellerUserId = cleanText(input.sellerUserId);
   const assetId = cleanText(input.assetId);
+  const listingId = cleanText(input.listingId);
   const outcomeReason = cleanText(input.outcomeReason);
   const sourceSurface = cleanText(input.sourceSurface);
   const actorType = cleanText(input.actorType || 'account');
   const actorId = cleanText(input.actorId).slice(0, MAX_REFERENCE_LENGTH) || null;
   const outcomeNote = cleanText(input.outcomeNote);
 
-  if (!sellerUserId || sellerUserId.length > MAX_REFERENCE_LENGTH || !UUID_PATTERN.test(assetId)) {
+  if (
+    !sellerUserId
+    || sellerUserId.length > MAX_REFERENCE_LENGTH
+    || (assetId ? !UUID_PATTERN.test(assetId) : !UUID_PATTERN.test(listingId))
+  ) {
     throw new Error('MARKETPLACE_OUTCOME_REFERENCE_INVALID');
   }
   if (!includesValue(MARKETPLACE_OUTCOME_REASONS, outcomeReason)) {
@@ -264,10 +273,6 @@ function validateInput(input: CloseMarketplaceListingOutcomeInput): {
   if (outcomeReason === 'other' && outcomeNote.length < 3) {
     throw new Error('MARKETPLACE_OUTCOME_NOTE_REQUIRED');
   }
-  if (outcomeReason === 'other' && outcomeNote.length < 3) {
-    throw new Error('MARKETPLACE_OUTCOME_NOTE_REQUIRED');
-  }
-
   const finalSalePriceExVat = optionalMoney(input.finalSalePriceExVat);
   if (
     input.finalSalePriceExVat !== null &&
@@ -282,7 +287,8 @@ function validateInput(input: CloseMarketplaceListingOutcomeInput): {
 
   return {
     sellerUserId,
-    assetId,
+    assetId: assetId || null,
+    listingId: listingId || null,
     outcomeReason,
     aim4priceHelped: input.aim4priceHelped,
     finalSalePriceExVat,
@@ -295,7 +301,7 @@ function validateInput(input: CloseMarketplaceListingOutcomeInput): {
 
 /**
  * Closes one seller-owned live advert and records an immutable outcome snapshot.
- * The asset remains in its Asset Register; only Marketplace visibility changes.
+ * Linked assets remain in the Asset Register; listing-only adverts retain a null asset reference.
  */
 export async function closeMarketplaceListingWithOutcome(
   input: CloseMarketplaceListingOutcomeInput,
@@ -307,64 +313,115 @@ export async function closeMarketplaceListingWithOutcome(
   try {
     await client.query('begin');
 
-    const assetResult = await client.query<AssetRow>(
-      `select *
-       from public.asset_register_items
-       where id = $1::uuid and user_id = $2
-       for update`,
-      [validated.assetId, validated.sellerUserId],
-    );
-    const asset = assetResult.rows[0];
-    if (!asset) {
-      throw new Error('ASSET_NOT_FOUND');
+    let asset: AssetRow | null = null;
+    let listing: ListingRow | null = null;
+
+    if (validated.assetId) {
+      const assetResult = await client.query<AssetRow>(
+        `select *
+         from public.asset_register_items
+         where id = $1::uuid and user_id = $2
+         for update`,
+        [validated.assetId, validated.sellerUserId],
+      );
+      asset = assetResult.rows[0] ?? null;
+      if (!asset) {
+        throw new Error('ASSET_NOT_FOUND');
+      }
+      if (cleanText(asset.marketplace_status).toLowerCase() !== 'live') {
+        throw new Error('MARKETPLACE_LISTING_NOT_LIVE');
+      }
+
+      const listingResult = await client.query<ListingRow>(
+        `select id::text, asset_register_item_id::text, status, title, asking_price_ex_vat, published_at
+         from public.marketplace_listings
+         where asset_register_item_id = $1::uuid
+           and user_id = $2
+           and lower(coalesce(status, '')) = 'live'
+         order by published_at desc nulls last, created_at desc, id desc
+         limit 1
+         for update`,
+        [validated.assetId, validated.sellerUserId],
+      );
+      listing = listingResult.rows[0] ?? null;
+
+      await client.query(
+        `update public.asset_register_items
+         set marketplace_status = 'draft', updated_at = now()
+         where id = $1::uuid and user_id = $2`,
+        [validated.assetId, validated.sellerUserId],
+      );
+
+      await client.query(
+        `update public.marketplace_listings
+         set status = 'withdrawn', withdrawn_at = coalesce(withdrawn_at, now()), updated_at = now()
+         where asset_register_item_id = $1::uuid
+           and user_id = $2
+           and lower(coalesce(status, '')) = 'live'`,
+        [validated.assetId, validated.sellerUserId],
+      );
+    } else {
+      if (!validated.listingId) {
+        throw new Error('MARKETPLACE_OUTCOME_REFERENCE_INVALID');
+      }
+
+      const listingResult = await client.query<ListingRow>(
+        `select id::text, asset_register_item_id::text, status, title, asking_price_ex_vat, published_at
+         from public.marketplace_listings
+         where id = $1::uuid and user_id = $2
+         for update`,
+        [validated.listingId, validated.sellerUserId],
+      );
+      listing = listingResult.rows[0] ?? null;
+      if (!listing) {
+        throw new Error('MARKETPLACE_LISTING_NOT_FOUND');
+      }
+      if (cleanText(listing.asset_register_item_id)) {
+        throw new Error('MARKETPLACE_OUTCOME_ASSET_REFERENCE_REQUIRED');
+      }
+      if (cleanText(listing.status).toLowerCase() !== 'live') {
+        throw new Error('MARKETPLACE_LISTING_NOT_LIVE');
+      }
+
+      await client.query(
+        `update public.marketplace_listings
+         set status = 'withdrawn', withdrawn_at = coalesce(withdrawn_at, now()), updated_at = now()
+         where id = $1::uuid
+           and user_id = $2
+           and lower(coalesce(status, '')) = 'live'`,
+        [validated.listingId, validated.sellerUserId],
+      );
     }
-    if (cleanText(asset.marketplace_status).toLowerCase() !== 'live') {
-      throw new Error('MARKETPLACE_LISTING_NOT_LIVE');
-    }
 
-    const listingResult = await client.query<ListingRow>(
-      `select id::text, title, asking_price_ex_vat, published_at
-       from public.marketplace_listings
-       where asset_register_item_id = $1::uuid
-         and user_id = $2
-         and lower(coalesce(status, '')) = 'live'
-       order by published_at desc nulls last, created_at desc, id desc
-       limit 1
-       for update`,
-      [validated.assetId, validated.sellerUserId],
-    );
-    const listing = listingResult.rows[0] ?? null;
-
-    await client.query(
-      `update public.asset_register_items
-       set marketplace_status = 'draft', updated_at = now()
-       where id = $1::uuid and user_id = $2`,
-      [validated.assetId, validated.sellerUserId],
-    );
-
-    await client.query(
-      `update public.marketplace_listings
-       set status = 'withdrawn', withdrawn_at = coalesce(withdrawn_at, now()), updated_at = now()
-       where asset_register_item_id = $1::uuid
-         and user_id = $2
-         and lower(coalesce(status, '')) = 'live'`,
-      [validated.assetId, validated.sellerUserId],
-    );
-
-    const viewResult = await client.query<ViewSnapshotRow>(
-      `select
-         count(*)::bigint as total_views,
-         count(*) filter (where viewer_user_id is not null)::bigint as account_views,
-         count(*) filter (where viewer_user_id is null)::bigint as unknown_views,
-         count(distinct case
-           when viewer_user_id is not null then 'account:' || viewer_user_id
-           else 'unknown:' || anonymous_viewer_hash
-         end)::bigint as unique_viewers
-       from public.marketplace_listing_views
-       where asset_register_item_id = $1::uuid
-         and ($2::timestamptz is null or viewed_at >= $2::timestamptz)`,
-      [validated.assetId, listing?.published_at ?? null],
-    );
+    const viewResult = validated.assetId
+      ? await client.query<ViewSnapshotRow>(
+        `select
+           count(*)::bigint as total_views,
+           count(*) filter (where viewer_user_id is not null)::bigint as account_views,
+           count(*) filter (where viewer_user_id is null)::bigint as unknown_views,
+           count(distinct case
+             when viewer_user_id is not null then 'account:' || viewer_user_id
+             else 'unknown:' || anonymous_viewer_hash
+           end)::bigint as unique_viewers
+         from public.marketplace_listing_views
+         where asset_register_item_id = $1::uuid
+           and ($2::timestamptz is null or viewed_at >= $2::timestamptz)`,
+        [validated.assetId, listing?.published_at ?? null],
+      )
+      : await client.query<ViewSnapshotRow>(
+        `select
+           count(*)::bigint as total_views,
+           count(*) filter (where viewer_user_id is not null)::bigint as account_views,
+           count(*) filter (where viewer_user_id is null)::bigint as unknown_views,
+           count(distinct case
+             when viewer_user_id is not null then 'account:' || viewer_user_id
+             else 'unknown:' || anonymous_viewer_hash
+           end)::bigint as unique_viewers
+         from public.marketplace_listing_views
+         where listing_reference = $1
+           and ($2::timestamptz is null or viewed_at >= $2::timestamptz)`,
+        [cleanText(listing?.id), listing?.published_at ?? null],
+      );
     const views = viewResult.rows[0];
     const totalViewsAtClose = Math.max(0, Math.round(cleanNumber(views?.total_views)));
     const accountViewsAtClose = Math.max(0, Math.round(cleanNumber(views?.account_views)));
@@ -374,18 +431,20 @@ export async function closeMarketplaceListingWithOutcome(
     const askingPriceExVat = Math.max(
       0,
       optionalMoney(listing?.asking_price_ex_vat) ??
-        moneyFromRow(asset, ['marketplace_price_ex_vat', 'asking_price_ex_vat']) ??
+        (asset ? moneyFromRow(asset, ['marketplace_price_ex_vat', 'asking_price_ex_vat']) : null) ??
         0,
     );
-    const aim4priceValueExVat = moneyFromRow(asset, [
-      'aim4price_value_ex_vat',
-      'aim4price_value',
-      'selected_value_ex_vat',
-      'selected_value',
-      'saved_value_ex_vat',
-      'value',
-    ]);
-    const title = cleanText(listing?.title) || titleFromAsset(asset);
+    const aim4priceValueExVat = asset
+      ? moneyFromRow(asset, [
+        'aim4price_value_ex_vat',
+        'aim4price_value',
+        'selected_value_ex_vat',
+        'selected_value',
+        'saved_value_ex_vat',
+        'value',
+      ])
+      : null;
+    const title = cleanText(listing?.title) || (asset ? titleFromAsset(asset) : 'Aim4price listing');
 
     const inserted = await client.query<OutcomeInsertRow>(
       `insert into public.marketplace_listing_outcomes (
@@ -445,7 +504,7 @@ export async function closeMarketplaceListingWithOutcome(
       outcomeId: cleanText(outcome.id),
       listingId: cleanText(listing?.id) || null,
       assetId: validated.assetId,
-      marketplaceStatus: 'draft',
+      marketplaceStatus: validated.assetId ? 'draft' : null,
       outcomeReason: validated.outcomeReason,
       aim4priceHelped: validated.aim4priceHelped,
       finalSalePriceExVat: validated.finalSalePriceExVat,

@@ -2439,10 +2439,7 @@ export default function AdminClient({
             ) : null}
 
             <div className={styles.accountActionDanger}>
-              <div>
-                <strong>Delete account</strong>
-                <span>Permanently removes the account and its saved workspace data.</span>
-              </div>
+              <strong>Delete account</strong>
               <button
                 type="button"
                 className={`${styles.accountActionButton} ${styles.deleteButton}`}
@@ -2588,15 +2585,16 @@ export default function AdminClient({
                       />
 
                       <span className={styles.qrAssetMain} data-asset-choice-copy="true">
-                        <strong>{asset.title}</strong>
-                        <small data-asset-choice-meta="true">
-                          {asset.registerName}
-                          {asset.plateLabel ? ` · ${asset.plateLabel}` : ""}
-                        </small>
-                      </span>
-
-                      <span className={styles.qrAssetCode} data-asset-choice-value="true">
-                        {asset.hasQr ? asset.publicAssetCode : "No QR"}
+                        <strong>
+                          {asset.title}
+                          <span data-asset-choice-meta="true">
+                            {` · ${asset.registerName}`}
+                            {asset.plateLabel ? ` · ${asset.plateLabel}` : ""}
+                          </span>
+                          <span data-asset-choice-value="true">
+                            {` · ${asset.hasQr ? asset.publicAssetCode : "No QR"}`}
+                          </span>
+                        </strong>
                       </span>
                     </label>
                   );
@@ -2661,12 +2659,6 @@ export default function AdminClient({
                 ×
               </button>
             </header>
-
-            <div className={styles.nameManagerIntro}>
-              <span>
-                Edit the asset title, brand or model in the CSV, then upload it.
-              </span>
-            </div>
 
             <div className={styles.nameManagerActions}>
               <button
