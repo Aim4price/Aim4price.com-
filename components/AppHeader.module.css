@@ -4312,3 +4312,33 @@
   background: rgba(23, 117, 83, 0.46);
   background-clip: padding-box;
 }
+
+/* Text-only header wordmark, matching the footer brand treatment. */
+.brandWordmark {
+  display: inline-block;
+  color: #000000;
+  font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
+  font-size: clamp(2rem, 3vw, 2.55rem);
+  font-weight: 850;
+  line-height: 0.96;
+  letter-spacing: -0.065em;
+  white-space: nowrap;
+}
+
+@media (max-width: 1180px) {
+  .brandWordmark {
+    font-size: clamp(1.9rem, 4vw, 2.25rem);
+  }
+}
+
+@media (max-width: 760px) {
+  .brandWordmark {
+    font-size: clamp(1.55rem, 7vw, 1.9rem);
+  }
+}
+
+@media (max-width: 390px) {
+  .brandWordmark {
+    font-size: clamp(1.35rem, 6.2vw, 1.55rem);
+  }
+}
