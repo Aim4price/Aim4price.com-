@@ -28,13 +28,40 @@ test('prompt clearly and accessibly tells portrait-phone users to rotate', async
 
 test('installable mobile apps bypass the orientation prompt', async () => {
   const prompt = await read('components/MobileOrientationPrompt.tsx');
+  const prefixSource = prompt.match(/MOBILE_APP_ROUTE_PREFIXES = \[(.*?)\] as const/)?.[1] ?? '';
+  const prefixes = [...prefixSource.matchAll(/'([^']+)'/g)].map((match) => match[1]);
+  const bypassesPrompt = (pathname) => prefixes.some(
+    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
+  );
 
   assert.match(prompt, /^'use client';/);
   assert.match(prompt, /usePathname/);
   assert.match(prompt, /MOBILE_APP_ROUTE_PREFIXES = \['\/owner-app', '\/dealer', '\/field-manager'\] as const/);
   assert.match(prompt, /pathname === prefix \|\| pathname\.startsWith\(`\$\{prefix\}\/`\)/);
   assert.match(prompt, /if \(isMobileAppRoute\(pathname\)\) return null/);
-  assert.doesNotMatch(prompt, /\/dealer-costs|\/account\/dealer-app|\/account\/owner-app/);
+  assert.deepEqual(prefixes, ['/owner-app', '/dealer', '/field-manager']);
+
+  for (const pathname of [
+    '/owner-app',
+    '/owner-app/assets',
+    '/dealer',
+    '/dealer/login',
+    '/field-manager',
+    '/field-manager/overview',
+  ]) {
+    assert.equal(bypassesPrompt(pathname), true, `${pathname} should bypass the prompt`);
+  }
+
+  for (const pathname of [
+    '/',
+    '/dealer-costs',
+    '/account/dealer-app',
+    '/account/owner-app',
+    '/account/field-manager',
+    '/admin',
+  ]) {
+    assert.equal(bypassesPrompt(pathname), false, `${pathname} should retain the prompt`);
+  }
 });
 
 test('prompt gates only portrait phone widths and releases immediately in landscape', async () => {
