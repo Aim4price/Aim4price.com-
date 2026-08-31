@@ -914,16 +914,24 @@
 }
 
 .accountStorageDetails > summary span {
+  min-width: 0;
+  overflow: hidden;
   color: #60716a;
   font-size: 0.72rem;
   font-weight: 850;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .accountStorageDetails > summary strong {
+  min-width: 0;
+  overflow: hidden;
   color: #17362c;
   font-size: 0.8rem;
   font-weight: 900;
   text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .accountStorageDetails[open] > summary {
@@ -2143,33 +2151,11 @@
     border-radius: 1.05rem;
   }
 
-  .notificationPriorityPicker button strong,
-  .notificationAudienceOption strong,
-  .groupNotificationSummary strong,
-  .qrLayoutOption strong,
-  .accountActionSummary span,
-  .accountActionSummary strong,
-  .namePreviewSummary span {
-    overflow: visible;
-    text-overflow: clip;
-    white-space: normal;
-  }
-
   .accountActionSummary,
   .accountActionGrid,
   .accountPrimaryActions,
   .accountStorageOverview {
     grid-template-columns: 1fr;
-  }
-
-  .accountStorageDetails > summary {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 0.15rem;
-  }
-
-  .accountStorageDetails > summary strong {
-    text-align: left;
   }
 
   .accountActionDanger {
@@ -2204,15 +2190,9 @@
     grid-template-columns: 1fr;
   }
 
-  .qrModalHeader,
   .qrModalFooter {
     align-items: stretch;
     flex-direction: column;
-  }
-
-  .modalCloseButton {
-    align-self: flex-end;
-    order: -1;
   }
 
   .qrAssetRow {

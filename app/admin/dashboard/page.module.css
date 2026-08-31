@@ -353,18 +353,4 @@
     width: 100%;
   }
 
-  .titleBlock h1,
-  .sectionHeading h2,
-  .card h2,
-  .storageCard h2,
-  .detailsSection > summary strong,
-  .valueRow dt,
-  .valueRow strong,
-  .valueRow dd span,
-  .storageRow span,
-  .storageRow strong {
-    overflow: visible;
-    text-overflow: clip;
-    white-space: normal;
-  }
 }

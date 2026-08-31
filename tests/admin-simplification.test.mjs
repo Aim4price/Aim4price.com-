@@ -22,6 +22,7 @@ const navigationStyles = read("components/AdminNavigation.module.css");
 const foundation = read("app/admin/admin-foundation.css");
 const loading = read("app/admin/loading.tsx");
 const dashboard = read("app/admin/dashboard/page.tsx");
+const dashboardStyles = read("app/admin/dashboard/page.module.css");
 const mapClient = read("app/admin/asset-map/admin-asset-map-client.tsx");
 const lifecycleClient = read("app/admin/lifecycle-calculator/lifecycle-calculator-client.tsx");
 const marketplaceStyles = read("app/admin/marketplace/page.module.css");
@@ -88,4 +89,6 @@ test("compact controls keep labels and modal titles on one line", () => {
   assert.doesNotMatch(accountPicker, /<small>\{option\.description\}<\/small>/);
   assert.match(accountStyles, /\.qrModalHeader h2 \{[\s\S]*?text-overflow: ellipsis;[\s\S]*?white-space: nowrap;/);
   assert.doesNotMatch(accountStyles, /\.qrModalHeader h2,[\s\S]{0,500}white-space: normal;/);
+  assert.doesNotMatch(accountStyles, /white-space:\s*normal/);
+  assert.doesNotMatch(dashboardStyles, /white-space:\s*normal/);
 });
