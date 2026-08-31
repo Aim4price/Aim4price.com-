@@ -109,21 +109,36 @@ export default function HomeEstimateBubbles() {
   const groupRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    const videos = Array.from(
+      groupRef.current?.querySelectorAll<HTMLVideoElement>('video') ?? [],
+    );
+    const cleanup = () => {
+      videos.forEach((video) => {
+        const anchor = video.closest<HTMLAnchorElement>('a');
+        if (anchor) delete anchor.dataset.previewActive;
+
+        resetVideo(video);
+        video.preload = 'none';
+      });
+    };
+
     const connection = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection;
     if (
       connection?.saveData ||
       window.matchMedia(REDUCED_MOTION_QUERY).matches ||
       !window.matchMedia(ANY_HOVER_QUERY).matches
     ) {
-      return;
+      return cleanup;
     }
 
-    groupRef.current?.querySelectorAll<HTMLVideoElement>('video').forEach((video) => {
+    videos.forEach((video) => {
       if (video.dataset.previewRequestId || !video.paused) return;
 
       video.preload = 'auto';
       video.load();
     });
+
+    return cleanup;
   }, []);
 
   return (
