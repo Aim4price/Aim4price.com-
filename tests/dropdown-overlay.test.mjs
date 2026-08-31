@@ -253,17 +253,17 @@ test('marketplace filters use branded listboxes instead of browser-native select
     read('app/marketplace/page.module.css'),
   ]);
 
-  assert.match(marketplace, /import MarketplaceFilterSelect from '\\.\\/marketplace-filter-select'/);
+  assert.ok(marketplace.includes("import MarketplaceFilterSelect from './marketplace-filter-select';"));
   assert.equal((marketplace.match(/<MarketplaceFilterSelect/g) ?? []).length, 3);
-  assert.doesNotMatch(marketplace, /<select\\b/);
-  assert.match(filterSelect, /import DropdownOverlay from '\\.\\.\\/\\.\\.\\/components\\/DropdownOverlay'/);
-  assert.match(filterSelect, /<DropdownOverlay[\\s\\S]*?role="listbox"/);
+  assert.doesNotMatch(marketplace, /<select\b/);
+  assert.ok(filterSelect.includes("import DropdownOverlay from '../../components/DropdownOverlay';"));
+  assert.match(filterSelect, /<DropdownOverlay[\s\S]*?role="listbox"/);
   assert.match(filterSelect, /aria-haspopup="listbox"/);
-  assert.match(filterSelect, /event\\.key === 'ArrowDown'/);
-  assert.match(filterSelect, /event\\.key === 'ArrowUp'/);
-  assert.match(filterSelect, /event\\.key !== 'Escape'/);
-  assert.match(styles, /\\.filterSelectMenu \\{[\\s\\S]*?border-radius: 0\\.9rem;[\\s\\S]*?box-shadow:/);
-  assert.match(styles, /\\.filterSelectOptionActive \\{[\\s\\S]*?background: #e8f3ee/);
+  assert.match(filterSelect, /event\.key === 'ArrowDown'/);
+  assert.match(filterSelect, /event\.key === 'ArrowUp'/);
+  assert.match(filterSelect, /event\.key !== 'Escape'/);
+  assert.match(styles, /\.filterSelectMenu \{[\s\S]*?border-radius: 0\.9rem;[\s\S]*?box-shadow:/);
+  assert.match(styles, /\.filterSelectOptionActive \{[\s\S]*?background: #e8f3ee/);
 });
 
 test('report, modal, maintenance, fuel, invoice, and document dropdowns are migrated', async () => {
