@@ -48,8 +48,9 @@ test('home page keeps hero and footer calls to action usable at phone and tablet
 
   assert.match(home, /Homepage responsive contract, August 2026/);
   assert.match(home, /@media \(max-width: 900px\)[\s\S]*?\.heroGrid \{[\s\S]*?grid-template-columns: minmax\(0, 1fr\)/);
-  assert.match(home, /@media \(max-width: 760px\)[\s\S]*?\.heroActions,[\s\S]*?\.rolesActions \{[\s\S]*?grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
-  assert.match(home, /\.heroActions > \*,[\s\S]*?\.rolesActions > \* \{[\s\S]*?min-height: var\(--tap-target-min, 44px\)/);
+  assert.match(home, /@media \(max-width: 760px\)[\s\S]*?\.rolesActions \{[\s\S]*?grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
+  assert.match(home, /\.rolesActions > \* \{[\s\S]*?min-height: var\(--tap-target-min, 44px\)/);
+  assert.doesNotMatch(home, /\.heroActions|\.primaryCta|\.secondaryCta/);
 });
 
 test('asset register has deterministic toolbar, card-action and modal device states', async () => {
