@@ -4262,8 +4262,8 @@
 
 }
 
-/* Aim4price keeps a 980px desktop-style canvas on phones, so the compact state
-   is also applied explicitly by the client after touch-device detection. */
+/* Compact classes apply only when the layout viewport itself is narrow.
+   A phone using Aim4price's 980px desktop canvas keeps the complete nav. */
 .innerCompact {
   grid-template-columns: auto minmax(0, 1fr);
   grid-template-areas: "brand actions";
@@ -4272,18 +4272,6 @@
 
 .navCompact {
   display: none;
-}
-
-@media (hover: none) and (pointer: coarse) and (max-device-width: 900px) {
-  .inner {
-    grid-template-columns: auto minmax(0, 1fr);
-    grid-template-areas: "brand actions";
-    row-gap: 0;
-  }
-
-  .nav {
-    display: none;
-  }
 }
 
 /* Keep every account action reachable when the menu grows beyond the viewport. */
