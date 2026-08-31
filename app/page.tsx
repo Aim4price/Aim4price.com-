@@ -12,7 +12,7 @@ export default async function HomePage() {
 
   return (
     <main className={styles.page}>
-      <AppHeader active="home" />
+      <AppHeader active="home" brandAlignment="working-column" />
 
       <section className={styles.heroSection}>
         <div className={styles.heroMedia}>

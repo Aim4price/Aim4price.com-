@@ -1,31 +1,32 @@
 'use client';
 
 import Link from 'next/link';
+import { useEffect, useRef } from 'react';
 import styles from './page.module.css';
 
 const ESTIMATE_BUBBLES = [
   {
     key: 'agriculture',
     label: 'Agriculture',
-    src: '/brand/valuation/Agriculture.mp4',
+    src: '/brand/valuation/previews/agriculture-home-preview.mp4',
     positionClass: styles.heroBubbleAgriculture,
   },
   {
     key: 'construction',
     label: 'Construction',
-    src: '/brand/valuation/Construction.mp4',
+    src: '/brand/valuation/previews/construction-home-preview.mp4',
     positionClass: styles.heroBubbleConstruction,
   },
   {
     key: 'industrial',
     label: 'Industrial',
-    src: '/brand/valuation/Industrial.mp4',
+    src: '/brand/valuation/previews/industrial-home-preview.mp4',
     positionClass: styles.heroBubbleIndustrial,
   },
   {
     key: 'motor',
     label: 'Motor',
-    src: '/brand/valuation/Motor.mp4',
+    src: '/brand/valuation/previews/motor-home-preview.mp4',
     positionClass: styles.heroBubbleMotor,
   },
 ] as const;
@@ -105,8 +106,29 @@ function resetBubblePreview(anchor: HTMLAnchorElement) {
 }
 
 export default function HomeEstimateBubbles() {
+  const groupRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const connection = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection;
+    if (
+      connection?.saveData ||
+      window.matchMedia(REDUCED_MOTION_QUERY).matches ||
+      !window.matchMedia(ANY_HOVER_QUERY).matches
+    ) {
+      return;
+    }
+
+    groupRef.current?.querySelectorAll<HTMLVideoElement>('video').forEach((video) => {
+      if (video.dataset.previewRequestId || !video.paused) return;
+
+      video.preload = 'auto';
+      video.load();
+    });
+  }, []);
+
   return (
     <div
+      ref={groupRef}
       className={styles.heroBubbles}
       role="group"
       aria-label="Explore Get Estimate videos"
