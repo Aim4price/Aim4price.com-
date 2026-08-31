@@ -7,25 +7,25 @@ const ESTIMATE_BUBBLES = [
   {
     key: 'agriculture',
     label: 'Agriculture',
-    src: '/brand/valuation/Agriculture.mp4',
+    src: '/brand/valuation/previews/agriculture-home-preview.mp4',
     positionClass: styles.heroBubbleAgriculture,
   },
   {
     key: 'construction',
     label: 'Construction',
-    src: '/brand/valuation/Construction.mp4',
+    src: '/brand/valuation/previews/construction-home-preview.mp4',
     positionClass: styles.heroBubbleConstruction,
   },
   {
     key: 'industrial',
     label: 'Industrial',
-    src: '/brand/valuation/Industrial.mp4',
+    src: '/brand/valuation/previews/industrial-home-preview.mp4',
     positionClass: styles.heroBubbleIndustrial,
   },
   {
     key: 'motor',
     label: 'Motor',
-    src: '/brand/valuation/Motor.mp4',
+    src: '/brand/valuation/previews/motor-home-preview.mp4',
     positionClass: styles.heroBubbleMotor,
   },
 ] as const;
@@ -135,7 +135,7 @@ export default function HomeEstimateBubbles() {
             muted
             loop
             playsInline
-            preload="metadata"
+            preload="auto"
             aria-hidden="true"
           >
             <source src={bubble.src} type="video/mp4" />
