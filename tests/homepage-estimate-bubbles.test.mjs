@@ -5,17 +5,22 @@ import test from 'node:test';
 const read = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
 
 test('homepage presents four green Get Estimate video bubbles', async () => {
-  const [page, bubbles, styles, appHeader, headerStyles] = await Promise.all([
+  const [page, bubbles, styles, appHeader, headerStyles, assetRegister, registerGateway] = await Promise.all([
     read('app/page.tsx'),
     read('app/home-estimate-bubbles.tsx'),
     read('app/page.module.css'),
     read('components/AppHeader.tsx'),
     read('components/AppHeader.module.css'),
+    read('app/asset-register/asset-register-client.tsx'),
+    read('app/asset-register/dealer-register-gateway.tsx'),
   ]);
 
   assert.match(page, /<span>Track the finer details\.<\/span>/);
   assert.match(page, /import HomeEstimateBubbles from '\.\/home-estimate-bubbles'/);
   assert.match(page, /<HomeEstimateBubbles \/>/);
+  assert.match(page, /<AppHeader active="home" brandAlignment="working-column" \/>/);
+  assert.match(assetRegister, /<AppHeader active="asset-register" brandAlignment="working-column" \/>/);
+  assert.match(registerGateway, /<AppHeader active="asset-register" brandAlignment="working-column" \/>/);
 
   const videoSources = bubbles.match(/\/brand\/valuation\/previews\/(?:agriculture|construction|industrial|motor)-home-preview\.mp4/g) ?? [];
   assert.deepEqual(videoSources, [
@@ -52,11 +57,13 @@ test('homepage presents four green Get Estimate video bubbles', async () => {
   assert.match(styles, /\.heroBubbleTouchLabel \{[\s\S]*?display: none/);
   assert.match(styles, /@media \(any-hover: none\)[\s\S]*?\.heroBubbleTouchLabel \{[\s\S]*?display: flex/);
   assert.match(styles, /\.heroBubble:focus-visible \{[\s\S]*?outline: 3px solid #14684f/);
-  assert.match(appHeader, /const alignBrandToWorkingColumn = active === 'home' \|\| active === 'asset-register'/);
-  assert.match(appHeader, /alignBrandToWorkingColumn \? styles\.innerBrandAligned/);
-  assert.match(appHeader, /alignBrandToWorkingColumn \? styles\.brandWorkingColumn/);
+  assert.match(appHeader, /type BrandAlignment = 'header' \| 'working-column'/);
+  assert.match(appHeader, /brandAlignment = 'header'/);
+  assert.match(appHeader, /brandAlignment === 'working-column' \? styles\.brandWorkingColumn : ''/);
+  assert.match(appHeader, /brandAlignmentClass \? styles\.innerBrandAligned/);
   assert.match(headerStyles, /@media \(min-width: 1181px\)[\s\S]*?\.innerBrandAligned \{[\s\S]*?container-type: inline-size/);
-  assert.match(headerStyles, /\.brandWorkingColumn \{[\s\S]*?translateX\(clamp\(0px, calc\(\(100cqi - 1240px\) \/ 2\), 60px\)\)/);
+  assert.match(headerStyles, /@media \(min-width: 1181px\) and \(max-width: 1240px\)[\s\S]*?\.brandWorkingColumn \{[\s\S]*?translateX\(8px\)/);
+  assert.match(headerStyles, /@media \(min-width: 1241px\)[\s\S]*?\.brandWorkingColumn \{[\s\S]*?translateX\(clamp\(0px, calc\(\(100cqi - 1240px\) \/ 2\), 60px\)\)/);
   assert.doesNotMatch(headerStyles, /100vw - 1228px/);
   assert.doesNotMatch(headerStyles, /\.brandWorkingColumn \{[^}]*position: absolute/);
   assert.match(styles, /@media \(forced-colors: active\)/);
