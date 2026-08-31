@@ -15941,7 +15941,7 @@ export default function AssetRegisterClient({
 
   return (
     <main className={styles.page}>
-      {showAppHeader ? <AppHeader active="asset-register" /> : null}
+      {showAppHeader ? <AppHeader active="asset-register" brandAlignment="wide-shell" /> : null}
 
       <section className={styles.shell}>
         {notice ? (
