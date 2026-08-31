@@ -2,7 +2,6 @@
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type MouseEventHandler, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
-import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
 import {
@@ -2403,14 +2402,7 @@ export default function AppHeader({
           className={`${styles.inner} ${isDealerAccount ? styles.innerDealer : ''} ${!isLoadingSession && !session ? styles.innerPublic : ''} ${usesCompactHeader ? styles.innerCompact : ''}`}
         >
           <Link href="/" className={styles.brand} aria-label="Go to Aim4price home">
-            <Image
-              src="/brand/Aim4price_Home_Logo.png"
-              alt="Aim4price"
-              width={900}
-              height={240}
-              className={styles.brandLogo}
-              priority
-            />
+            <span className={styles.brandWordmark}>Aim4price</span>
           </Link>
 
           <nav
