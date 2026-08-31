@@ -261,13 +261,7 @@
   }
 }
 
-/*
- * Aim4price intentionally keeps a 980px layout viewport on mobile. The
- * device-width branch therefore detects the physical phone screen, while the
- * width branch keeps this correct if the viewport strategy changes later.
- */
-@media (orientation: portrait) and (max-width: 767px),
-  (orientation: portrait) and (max-device-width: 767px) {
+@media (orientation: portrait) and (max-width: 767px) {
   .prompt {
     display: flex;
   }
