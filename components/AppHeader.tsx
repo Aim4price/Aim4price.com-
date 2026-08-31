@@ -1100,9 +1100,7 @@ export default function AppHeader({
   const hasNotificationPages = displayNotificationCount > NOTIFICATIONS_PER_PAGE;
 
   useEffect(() => {
-    const mediaQuery = window.matchMedia(
-      '(max-width: 760px), (hover: none) and (pointer: coarse) and (max-device-width: 900px)',
-    );
+    const mediaQuery = window.matchMedia('(max-width: 760px)');
     const syncCompactHeader = () => setUsesCompactHeader(mediaQuery.matches);
 
     syncCompactHeader();
@@ -1627,9 +1625,10 @@ export default function AppHeader({
   }
 
   async function handleSignOut() {
-    try {
-      setIsSigningOut(true);
+    if (isSigningOut) return;
+    setIsSigningOut(true);
 
+    try {
       await fetch('/api/admin/users', {
         method: 'POST',
         credentials: 'include',
@@ -1639,15 +1638,39 @@ export default function AppHeader({
         body: JSON.stringify({ action: 'close_account' }),
       }).catch(() => null);
 
-      await fetch('/api/auth/sign-out', {
-        method: 'POST',
+      let signOutResponse: Response | null = null;
+
+      for (let attempt = 0; attempt < 2; attempt += 1) {
+        signOutResponse = await fetch('/api/auth/sign-out', {
+          method: 'POST',
+          credentials: 'include',
+          cache: 'no-store',
+          keepalive: true,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({}),
+        }).catch(() => null);
+
+        if (signOutResponse?.ok) break;
+      }
+
+      if (!signOutResponse?.ok) {
+        throw new Error('The website session did not close.');
+      }
+
+      const verificationResponse = await fetch('/api/me?scope=website', {
         credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({}),
+        cache: 'no-store',
       });
-    } finally {
+      const verification = (await verificationResponse.json().catch(() => null)) as {
+        signedIn?: boolean;
+      } | null;
+
+      if (!verificationResponse.ok || verification?.signedIn !== false) {
+        throw new Error('The website session is still active.');
+      }
+
       clearLegacyPrototypeStorage();
       clearCachedHeaderSession();
       setSession(null);
@@ -1655,8 +1678,11 @@ export default function AppHeader({
       setMobileMenuOpen(false);
       setNotificationOpen(false);
       setNotifications([]);
-      setIsSigningOut(false);
       window.location.replace('/auth#login');
+    } catch (error) {
+      console.error('Aim4price website sign-out failed.', error);
+      setIsSigningOut(false);
+      window.alert('Aim4price could not sign you out completely. Check your connection and try again.');
     }
   }
 

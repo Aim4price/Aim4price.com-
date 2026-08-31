@@ -130,7 +130,7 @@ export function clearCachedHeaderSession(): void {
 }
 
 export async function refreshCachedHeaderSession(): Promise<HeaderSessionUser | null> {
-  const response = await fetch('/api/me', {
+  const response = await fetch('/api/me?scope=website', {
     credentials: 'include',
     cache: 'no-store',
   });
