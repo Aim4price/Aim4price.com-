@@ -38769,49 +38769,6 @@ button.documentOpenLink {
   box-shadow: none !important;
 }
 
-.assetSettingsMapEntryModal.assetSettingsLocationModal .assetSettingsSectionCopy {
-  grid-template-columns: 3.55rem minmax(0, 1fr) !important;
-  column-gap: 0.9rem !important;
-  row-gap: 0.26rem !important;
-  align-items: center !important;
-  padding: 0.15rem 0.15rem 0.22rem !important;
-}
-
-.assetSettingsMapEntryModal.assetSettingsLocationModal .assetSettingsMapHeroIcon {
-  grid-row: 1 / 4 !important;
-  display: grid !important;
-  place-items: center !important;
-  width: 3.55rem !important;
-  height: 3.55rem !important;
-  color: #ffffff !important;
-  border: 1px solid rgba(13, 92, 66, 0.9) !important;
-  border-radius: 1.08rem !important;
-  background: linear-gradient(145deg, #258467 0%, #0f5b43 100%) !important;
-  box-shadow: 0 12px 24px rgba(19, 96, 70, 0.2) !important;
-}
-
-.assetSettingsMapEntryModal.assetSettingsLocationModal .assetSettingsMapHeroIcon .buttonIcon {
-  width: 1.45rem !important;
-  height: 1.45rem !important;
-}
-
-.assetSettingsMapEntryModal.assetSettingsLocationModal .assetSettingsSectionCopy > span:not(.assetSettingsMapHeroIcon),
-.assetSettingsMapEntryModal.assetSettingsLocationModal .assetSettingsSectionCopy > h4,
-.assetSettingsMapEntryModal.assetSettingsLocationModal .assetSettingsSectionCopy > p {
-  grid-column: 2 !important;
-}
-
-.assetSettingsMapEntryModal.assetSettingsLocationModal .assetSettingsSectionCopy > h4 {
-  color: #103a2e !important;
-  font-size: clamp(1.06rem, 1.7vw, 1.28rem) !important;
-}
-
-.assetSettingsMapEntryModal.assetSettingsLocationModal .assetSettingsSectionCopy > p {
-  max-width: 38rem !important;
-  font-size: 0.88rem !important;
-  line-height: 1.42 !important;
-}
-
 .assetSettingsMapEntryModal .assetSettingsLocationCurrent {
   border-color: rgba(171, 205, 190, 0.98) !important;
   background:
@@ -38823,17 +38780,6 @@ button.documentOpenLink {
 .assetSettingsMapEntryModal .assetSettingsLocationCurrentMain {
   min-height: 5.15rem !important;
   padding: 0.82rem 0.9rem !important;
-}
-
-.assetSettingsMapEntryModal .assetSettingsLocationCurrentCopy small {
-  overflow: visible !important;
-  max-width: 34rem !important;
-  color: #65768a !important;
-  font-size: 0.78rem !important;
-  font-weight: 650 !important;
-  line-height: 1.35 !important;
-  text-overflow: clip !important;
-  white-space: normal !important;
 }
 
 .assetSettingsMapEntryModal .assetSettingsMapAssetButton {
@@ -38854,11 +38800,12 @@ button.documentOpenLink {
 }
 
 .assetSettingsMapEntryModal.assetSettingsLocationModal .assetSettingsLocationChoiceGrid {
+  grid-template-columns: minmax(0, 1fr) !important;
   gap: 0.72rem !important;
 }
 
 .assetSettingsMapEntryModal.assetSettingsLocationModal .assetSettingsLocationChoiceGrid .assetSettingsOptionButton {
-  min-height: 5.65rem !important;
+  min-height: 4.75rem !important;
   border-color: rgba(195, 216, 207, 0.98) !important;
   background:
     radial-gradient(circle at top left, rgba(33, 123, 91, 0.06), transparent 48%),
@@ -38872,7 +38819,8 @@ button.documentOpenLink {
 }
 
 .assetSettingsMapEntryModal.assetSettingsLocationModal .assetSettingsLocationChoiceGrid .assetSettingsLocationPrimaryChoice {
-  min-height: 5.8rem !important;
+  grid-column: auto !important;
+  min-height: 4.75rem !important;
   border-color: #176b50 !important;
   background:
     radial-gradient(circle at 8% 0%, rgba(255, 255, 255, 0.14), transparent 34%),
@@ -38888,16 +38836,6 @@ button.documentOpenLink {
 
   .assetSettingsMapEntryModal .assetSettingsBody {
     padding: 0.85rem 0.8rem 1rem !important;
-  }
-
-  .assetSettingsMapEntryModal.assetSettingsLocationModal .assetSettingsSectionCopy {
-    grid-template-columns: 3rem minmax(0, 1fr) !important;
-    column-gap: 0.72rem !important;
-  }
-
-  .assetSettingsMapEntryModal.assetSettingsLocationModal .assetSettingsMapHeroIcon {
-    width: 3rem !important;
-    height: 3rem !important;
   }
 
   .assetSettingsMapEntryModal .assetSettingsLocationCurrentCopy strong {

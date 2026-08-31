@@ -293,20 +293,35 @@ test('Manage map setup is a focused workflow without the Settings back button', 
     client.indexOf('{isAssetSettingsModalOpen && editingAsset ?'),
     client.indexOf('{activeAsset && isAccountantWorkspace', client.indexOf('{isAssetSettingsModalOpen && editingAsset ?')),
   );
-  const directMapStyles = styles.slice(styles.indexOf('/* Focused Map Asset flow opened from the Manage modal. */'));
+  const directMapStylesStart = styles.indexOf('/* Focused Map Asset flow opened from the Manage modal. */');
+  const directMapStyles = styles.slice(
+    directMapStylesStart,
+    styles.indexOf('/* === Cost budget warning state === */', directMapStylesStart),
+  );
 
   assert.match(client, /const isManageMapLocationFlow = assetModalReturnRef\.current\?\.origin === 'manage'[\s\S]*?assetModalReturnRef\.current\.action === 'manage-map-location'/);
   assert.match(settingsModal, /styles\.assetSettingsMapEntryModal/);
   assert.match(settingsModal, /\{isManageMapLocationFlow \? 'Map asset' : 'Settings'\}/);
   assert.match(settingsModal, /assetSettingsView !== 'menu' && !\(isManageMapLocationFlow && assetSettingsView === 'location'\)/);
-  assert.match(settingsModal, /Choose how to map this asset/);
+  assert.doesNotMatch(settingsModal, /Choose how to map this asset/);
   assert.match(settingsModal, /Use current location/);
   assert.match(settingsModal, /Choose on map/);
   assert.match(settingsModal, /Enter coordinates/);
-  assert.match(settingsModal, /View on Asset Map/);
+  assert.match(settingsModal, /View on asset map/);
+  assert.doesNotMatch(settingsModal, />Asset map</);
+  assert.doesNotMatch(settingsModal, />Map status</);
+  assert.doesNotMatch(settingsModal, /Pick one simple method below/);
+  assert.doesNotMatch(settingsModal, /Choose an option below to place it on your Asset Map/);
+  assert.doesNotMatch(settingsModal, /Best when you are standing near the asset/);
+  assert.doesNotMatch(settingsModal, /Find the place visually and drop a pin/);
+  assert.doesNotMatch(settingsModal, /Paste a latitude and longitude from another source/);
+  assert.match(settingsModal, /!isManageMapLocationFlow \? <span className=\{styles\.assetSettingsRecommendedBadge\}>Recommended<\/span> : null/);
   assert.match(settingsModal, /window\.location\.assign\(buildFocusedAssetMapHref\(editingAsset\)\)/);
   assert.match(directMapStyles, /\.assetSettingsMapEntryModal\.assetSettingsLocationModal \.assetSettingsLocationSection\s*\{[\s\S]*?border:\s*0 !important;[\s\S]*?background:\s*transparent !important;/);
-  assert.match(directMapStyles, /\.assetSettingsMapEntryModal\.assetSettingsLocationModal \.assetSettingsMapHeroIcon\s*\{/);
+  assert.match(directMapStyles, /\.assetSettingsMapEntryModal\.assetSettingsLocationModal \.assetSettingsLocationChoiceGrid\s*\{[\s\S]*?grid-template-columns:\s*minmax\(0, 1fr\) !important;/);
+  assert.match(directMapStyles, /\.assetSettingsMapEntryModal\.assetSettingsLocationModal \.assetSettingsLocationChoiceGrid \.assetSettingsLocationPrimaryChoice\s*\{[\s\S]*?grid-column:\s*auto !important;/);
+  assert.doesNotMatch(directMapStyles, /assetSettingsMapHeroIcon/);
+  assert.doesNotMatch(directMapStyles, /text-transform:\s*uppercase/);
   assert.match(directMapStyles, /\.assetSettingsMapEntryModal \.assetSettingsMapAssetButton\s*\{/);
 });
 
