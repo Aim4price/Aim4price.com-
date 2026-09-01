@@ -3805,6 +3805,14 @@
     max-width: 36rem;
   }
 
+  .heroStory .heroCopyState {
+    min-height: 12.5rem;
+  }
+
+  .heroStory .heroActions {
+    margin-top: 1.1rem;
+  }
+
   .heroStory .heroTitle {
     max-width: 36rem;
     font-size: 3.45rem;
@@ -3818,6 +3826,18 @@
   .heroStory .assetQuestionGroup {
     right: auto;
     left: 0;
+  }
+
+  .heroStory .assetActiveQuestion {
+    top: -4.25rem;
+    bottom: auto;
+  }
+}
+
+@media (min-width: 1361px) {
+  .heroStory .heroCopy,
+  .heroStory .assetHeroStage {
+    transform: translateX(3.25rem);
   }
 }
 
