@@ -2181,6 +2181,21 @@
   flex-direction: column;
 }
 
+.managePreviewHeader {
+  padding: 0.45rem 0.4rem 0.78rem;
+}
+
+.managePreviewHeader h2 {
+  margin-top: 0;
+  font-size: 1.04rem;
+}
+
+.managePreviewHeader p {
+  margin-top: 0.38rem;
+  font-size: 0.58rem;
+  line-height: 1.25;
+}
+
 .manageGrid {
   display: grid;
   min-height: 0;
@@ -2188,8 +2203,8 @@
   flex: 1;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   grid-template-rows: repeat(3, minmax(0, 1fr));
-  gap: 0.43rem;
-  padding-top: 0.58rem;
+  gap: 0.52rem;
+  padding-top: 0.68rem;
 }
 
 .manageTile {
@@ -2197,8 +2212,8 @@
   min-width: 0;
   grid-template-columns: 1.75rem minmax(0, 1fr);
   align-items: center;
-  gap: 0.45rem;
-  padding: 0.48rem;
+  gap: 0.55rem;
+  padding: 0.55rem 0.58rem;
   border: 1px solid rgba(193, 212, 204, 0.78);
   border-radius: 0.7rem;
   background: #ffffff;
@@ -2256,7 +2271,7 @@
 .manageTile strong {
   overflow: hidden;
   color: #153d32;
-  font-size: 0.56rem;
+  font-size: 0.59rem;
   line-height: 1.12;
   font-weight: 850;
   text-overflow: ellipsis;
