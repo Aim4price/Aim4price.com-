@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
+import { useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import styles from './page.module.css';
 
 type QuestionKey = 'have' | 'worth' | 'manage' | 'cost' | 'attention';
@@ -9,8 +9,6 @@ type QuestionKey = 'have' | 'worth' | 'manage' | 'cost' | 'attention';
 type Question = {
   key: QuestionKey;
   label: string;
-  connectorPath: string;
-  connectorDots: readonly [{ x: number; y: number }, { x: number; y: number }];
   icon: ReactNode;
 };
 
@@ -37,11 +35,6 @@ const QUESTIONS: readonly Question[] = [
   {
     key: 'have',
     label: 'What do you have?',
-    connectorPath: 'M 812 54 C 854 54 870 40 906 40',
-    connectorDots: [
-      { x: 812, y: 54 },
-      { x: 906, y: 40 },
-    ],
     icon: (
       <>
         <path d="M4.7 5.6h6.8l7.8 7.8-5.9 5.9-7.8-7.8z" />
@@ -52,11 +45,6 @@ const QUESTIONS: readonly Question[] = [
   {
     key: 'worth',
     label: 'What is it worth?',
-    connectorPath: 'M 812 174 C 854 174 870 160 906 160',
-    connectorDots: [
-      { x: 812, y: 174 },
-      { x: 906, y: 160 },
-    ],
     icon: (
       <>
         <path d="M4.5 18.5V14m5 4.5v-7m5 7V8m5 10.5V4.5" />
@@ -68,11 +56,6 @@ const QUESTIONS: readonly Question[] = [
   {
     key: 'manage',
     label: 'How can I manage it?',
-    connectorPath: 'M 812 294 C 854 294 870 280 906 280',
-    connectorDots: [
-      { x: 812, y: 294 },
-      { x: 906, y: 280 },
-    ],
     icon: (
       <>
         <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.09a2 2 0 0 1-1-1.74v-.51a2 2 0 0 1 1-1.72l.15-.1a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2Z" />
@@ -83,11 +66,6 @@ const QUESTIONS: readonly Question[] = [
   {
     key: 'cost',
     label: 'What does it cost me?',
-    connectorPath: 'M 812 414 C 854 414 870 400 906 400',
-    connectorDots: [
-      { x: 812, y: 414 },
-      { x: 906, y: 400 },
-    ],
     icon: (
       <>
         <circle cx="12" cy="12" r="8.2" />
@@ -98,11 +76,6 @@ const QUESTIONS: readonly Question[] = [
   {
     key: 'attention',
     label: 'What needs attention?',
-    connectorPath: 'M 812 534 C 854 534 870 520 906 520',
-    connectorDots: [
-      { x: 812, y: 534 },
-      { x: 906, y: 520 },
-    ],
     icon: (
       <>
         <path d="M12 3.3 2.9 19.1h18.2L12 3.3Z" />
@@ -115,17 +88,7 @@ const QUESTIONS: readonly Question[] = [
 export default function HomeAssetPreview() {
   const [activeQuestion, setActiveQuestion] = useState<QuestionKey>('have');
   const [hasUserSelected, setHasUserSelected] = useState(false);
-  const [isHorizontalRail, setIsHorizontalRail] = useState(false);
   const questionRefs = useRef<Array<HTMLButtonElement | null>>([]);
-
-  useEffect(() => {
-    const query = window.matchMedia('(max-width: 760px)');
-    const syncOrientation = () => setIsHorizontalRail(query.matches);
-
-    syncOrientation();
-    query.addEventListener('change', syncOrientation);
-    return () => query.removeEventListener('change', syncOrientation);
-  }, []);
 
   const selectQuestion = (index: number, moveFocus = false) => {
     const question = QUESTIONS[index];
@@ -158,30 +121,11 @@ export default function HomeAssetPreview() {
 
   return (
     <div className={styles.assetHeroStage}>
-      <svg
-        className={styles.assetConnectors}
-        viewBox="0 0 1000 600"
-        preserveAspectRatio="none"
-        aria-hidden="true"
-      >
-        {QUESTIONS.map((question) => {
-          const isActive = question.key === activeQuestion;
-          return (
-            <g key={question.key} className={isActive ? styles.assetConnectorActive : undefined}>
-              <path d={question.connectorPath} />
-              {question.connectorDots.map((dot, index) => (
-                <circle key={index} cx={dot.x} cy={dot.y} r="4" />
-              ))}
-            </g>
-          );
-        })}
-      </svg>
-
       <div
         className={styles.assetQuestionGroup}
         role="tablist"
         aria-label="Explore the Aim4price asset record"
-        aria-orientation={isHorizontalRail ? 'horizontal' : 'vertical'}
+        aria-orientation="horizontal"
       >
         {QUESTIONS.map((question, index) => {
           const isActive = question.key === activeQuestion;
