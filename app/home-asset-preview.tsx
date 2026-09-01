@@ -18,6 +18,13 @@ type Question = {
 const QUESTION_ROTATION_MS = 5000;
 const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
 
+const QUESTION_FEEDBACK: Readonly<Record<QuestionKey, string>> = {
+  have: 'Asset identity and condition details highlighted.',
+  worth: 'Current and replacement values highlighted.',
+  cost: 'Cost Ledger tracking for fuel, maintenance and repairs highlighted.',
+  attention: 'Licence, mapping and replacement information highlighted.',
+};
+
 const QUESTIONS: readonly Question[] = [
   {
     key: 'have',
@@ -198,7 +205,7 @@ export default function HomeAssetPreview() {
               width={960}
               height={720}
               priority
-              sizes="(min-width: 1181px) 17vw, 31vw"
+              sizes="(min-width: 1181px) 13vw, (min-width: 761px) 24vw, (min-width: 641px) 30vw, 40vw"
             />
             <span className={styles.assetPhotoCount} aria-hidden="true">
               1 / 3
@@ -210,23 +217,6 @@ export default function HomeAssetPreview() {
             </div>
           </div>
 
-          <div className={styles.assetDocumentsPanel}>
-            <span className={styles.assetDocumentAction} aria-hidden="true">
-              {activeQuestion === 'cost' ? 'Cost ledger' : '+ Add document'}
-            </span>
-            {activeQuestion === 'cost' ? (
-              <>
-                <strong>Ownership costs</strong>
-                <span>Fuel · Maintenance · Repairs</span>
-              </>
-            ) : (
-              <>
-                <strong>0 Documents</strong>
-                <span>View documents</span>
-              </>
-            )}
-          </div>
-
           <div className={styles.assetDetailsPanel}>
             <AssetDetail label="Year" value="2023" />
             <AssetDetail label="Usage" value="113 677 km" />
@@ -235,15 +225,35 @@ export default function HomeAssetPreview() {
             <AssetDetail label="Mapped" value="✓" status />
 
             <div className={styles.assetReplacementRow}>
-              <span>Replacement price</span>
-              <strong>
-                R 450 000
-                <small>Excl. VAT</small>
-              </strong>
+              {activeQuestion === 'cost' ? (
+                <>
+                  <span>Cost Ledger</span>
+                  <strong className={styles.assetCostSummary}>
+                    Tracks fuel · maintenance · repairs
+                  </strong>
+                </>
+              ) : (
+                <>
+                  <span>Replacement price</span>
+                  <strong>
+                    R 450 000
+                    <small>Excl. VAT</small>
+                  </strong>
+                </>
+              )}
             </div>
           </div>
         </div>
       </article>
+
+      <span
+        className={styles.assetQuestionFeedback}
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+      >
+        {hasUserSelected ? QUESTION_FEEDBACK[activeQuestion] : ''}
+      </span>
     </div>
   );
 }

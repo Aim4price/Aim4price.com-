@@ -86,7 +86,12 @@ test('homepage presents the living Asset Register hero and reveals the role choi
   assert.doesNotMatch(preview, /fetch\(|\/api\/asset-register|asset-register-client/);
   assert.match(preview, /assetPreviewActions} aria-hidden="true"/);
   assert.match(preview, /assetPhotoAction} aria-hidden="true"/);
-  assert.match(preview, /assetDocumentAction} aria-hidden="true"/);
+  assert.doesNotMatch(preview, /assetDocumentsPanel|assetDocumentAction|0 Documents|View documents/);
+  assert.match(preview, /activeQuestion === 'cost'/);
+  assert.match(preview, /Cost Ledger/);
+  assert.match(preview, /Tracks fuel · maintenance · repairs/);
+  assert.match(preview, /role="status"/);
+  assert.match(preview, /hasUserSelected \? QUESTION_FEEDBACK\[activeQuestion\] : ''/);
   assert.match(preview, /aria-label=\{status \? `\$\{label\}: yes` : undefined\}/);
 
   const heroImage = await stat(
@@ -103,10 +108,13 @@ test('homepage presents the living Asset Register hero and reveals the role choi
   assert.match(livingHeroStyles, /\.heroMedia \.shell \{[\s\S]*?width: var\(--shell-width\)/);
   assert.match(livingHeroStyles, /\.heroMedia \{[\s\S]*?min-height: clamp\(32rem, 34vw, 36rem\);[\s\S]*?background: transparent/);
   assert.doesNotMatch(livingHeroStyles, /\.heroMedia::before|\.heroMedia::after/);
-  assert.match(livingHeroStyles, /\.heroGrid \{[\s\S]*?grid-template-columns: minmax\(0, 1fr\) minmax\(0, 34rem\)/);
-  assert.match(livingHeroStyles, /\.assetHeroStage \{[\s\S]*?width: min\(100%, 34rem\)/);
+  assert.match(livingHeroStyles, /\.heroGrid \{[\s\S]*?grid-template-columns: minmax\(0, 1fr\) minmax\(0, 36\.5rem\)/);
+  assert.match(livingHeroStyles, /\.assetHeroStage \{[\s\S]*?width: min\(100%, 36\.5rem\)/);
   assert.match(livingHeroStyles, /\.assetQuestion \{[\s\S]*?--question-size: 5\.2rem/);
   assert.match(styles, /\.assetPreviewCard \{[\s\S]*?border: 1px solid rgba\(151, 205, 181, 0\.9\)/);
+  assert.match(styles, /\.assetPreviewCard \{[\s\S]*?right: 13%;[\s\S]*?left: 13%/);
+  assert.match(styles, /\.assetPreviewBody \{[\s\S]*?grid-template-columns: minmax\(0, 0\.92fr\) minmax\(0, 1\.58fr\)/);
+  assert.match(styles, /\.assetPreviewCard\[data-active-question='cost'\] \.assetReplacementRow/);
   assert.match(styles, /\.assetQuestionActive \{[\s\S]*?linear-gradient\(145deg, #1bb27d 0%, #087d56 100%\)/);
   assert.match(styles, /\.assetQuestion:focus-visible \{[\s\S]*?outline: 3px solid/);
   assert.match(styles, /\.assetQuestionHave \{[\s\S]*?top: 0\.3%;[\s\S]*?left: 0/);
@@ -118,9 +126,7 @@ test('homepage presents the living Asset Register hero and reveals the role choi
   assert.match(styles, /\.roleTitle:focus-visible \{[\s\S]*?outline: 3px solid/);
   assert.match(styles, /@media \(max-width: 1180px\)[\s\S]*?\.heroGrid \{[\s\S]*?grid-template-columns: minmax\(0, 1fr\)/);
   assert.match(styles, /@media \(max-width: 640px\)[\s\S]*?\.assetQuestionGroup \{[\s\S]*?grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
-  assert.match(styles, /\.assetPreviewCard\[data-active-question='cost'\] \.assetPreviewBody \{[\s\S]*?grid-template-rows: minmax\(0, 1fr\) minmax\(5rem, auto\)/);
-  assert.match(styles, /\.assetPreviewCard\[data-active-question='cost'\] \.assetDocumentsPanel \{[\s\S]*?display: flex;[\s\S]*?grid-row: 2/);
-  assert.match(styles, /\.assetPreviewCard\[data-active-question='cost'\] \.assetDetailsPanel \{[\s\S]*?grid-row: 1 \/ span 2/);
+  assert.doesNotMatch(livingHeroStyles, /assetDocumentsPanel|assetDocumentAction/);
   assert.match(styles, /@media \(prefers-reduced-motion: reduce\)/);
   assert.match(styles, /@media \(forced-colors: active\)/);
   assert.match(styles, /\.assetPreviewActions \{[\s\S]*?pointer-events: none/);
