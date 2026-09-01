@@ -465,24 +465,17 @@ function CostPreview() {
 
   return (
     <div className={styles.costPreview}>
-      <header className={styles.previewModalHeader}>
+      <header className={`${styles.previewModalHeader} ${styles.costPreviewHeader}`}>
         <div>
-          <span className={styles.previewEyebrow}>Reports</span>
           <h2>2023 Toyota Hilux Single Cab</h2>
-          <p>See what the asset costs across fuel, maintenance and ownership.</p>
+          <p>Year Model: 2023 · Usage: 113 677 km · Condition: Good</p>
         </div>
         <span className={styles.previewClose} aria-hidden="true">×</span>
       </header>
 
       <div className={styles.reportList}>
         {reports.map(([title, description], index) => (
-          <div
-            key={title}
-            className={[
-              styles.reportRow,
-              index === 2 || index === 4 ? styles.reportRowHighlighted : '',
-            ].filter(Boolean).join(' ')}
-          >
+          <div key={title} className={styles.reportRow}>
             <span className={styles.reportIcon}>
               <MiniGlyph type={index === 2 ? 'fuel' : index === 4 ? 'cost' : 'reports'} />
             </span>
