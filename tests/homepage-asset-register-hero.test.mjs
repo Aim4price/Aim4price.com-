@@ -4,10 +4,11 @@ import test from 'node:test';
 
 const read = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
 
-test('homepage presents the living Asset Register hero and role choice', async () => {
-  const [page, preview, styles, auth] = await Promise.all([
+test('homepage presents the living Asset Register hero and reveals the role choice on request', async () => {
+  const [page, preview, roleSelector, styles, auth] = await Promise.all([
     read('app/page.tsx'),
     read('app/home-asset-preview.tsx'),
+    read('app/home-role-selector.tsx'),
     read('app/page.module.css'),
     read('app/auth/auth-client.tsx'),
   ]);
@@ -21,18 +22,33 @@ test('homepage presents the living Asset Register hero and role choice', async (
   assert.match(page, /<AppHeader active="home" brandAlignment="working-column" \/>/);
   assert.match(page, /import HomeAssetPreview from '\.\/home-asset-preview'/);
   assert.match(page, /<HomeAssetPreview \/>/);
+  assert.match(page, /import HomeRoleSelector from '\.\/home-role-selector'/);
+  assert.match(page, /<HomeRoleSelector \/>/);
 
   assert.match(page, /href="\/valuation"[\s\S]*?Get Free Estimate/);
   assert.match(page, /<a href="#choose-role" className=\{styles\.secondaryCta\}>[\s\S]*?See How It Works/);
+  assert.doesNotMatch(page, /<section[\s\S]*?id="choose-role"/);
+  assert.match(roleSelector, /^'use client';/);
+  assert.match(roleSelector, /useState\(false\)/);
+  assert.match(roleSelector, /window\.location\.hash === ROLE_SECTION_HASH/);
+  assert.match(roleSelector, /addEventListener\('hashchange', syncVisibilityWithHash\)/);
+  assert.match(roleSelector, /removeEventListener\('hashchange', syncVisibilityWithHash\)/);
+  assert.match(roleSelector, /if \(!isVisible\) \{[\s\S]*?return null;/);
   assert.match(
-    page,
+    roleSelector,
     /<section[\s\S]*?id="choose-role"[\s\S]*?aria-labelledby="choose-role-title"/,
   );
-  assert.match(page, /id="choose-role-title"[\s\S]*?Which best describes you\?/);
-  assert.match(page, /I own or manage assets/);
-  assert.match(page, /I sell, service or support assets/);
-  assert.match(page, /href="\/auth\?accountType=owner#signup"/);
-  assert.match(page, /href="\/auth\?accountType=dealer#signup"/);
+  assert.match(roleSelector, /id="choose-role-title"[\s\S]*?Which best describes you\?/);
+  assert.match(roleSelector, /I own or manage assets/);
+  assert.match(roleSelector, /I sell, service or support assets/);
+  assert.match(roleSelector, /href="\/auth\?accountType=owner#signup"/);
+  assert.match(roleSelector, /href="\/auth\?accountType=dealer#signup"/);
+  assert.match(roleSelector, /window\.requestAnimationFrame/);
+  assert.match(roleSelector, /window\.cancelAnimationFrame/);
+  assert.match(roleSelector, /prefers-reduced-motion: reduce/);
+  assert.match(roleSelector, /scrollIntoView\(/);
+  assert.match(roleSelector, /focus\(\{ preventScroll: true \}\)/);
+  assert.match(roleSelector, /tabIndex=\{-1\}/);
   assert.match(auth, /getSignupAccountTypeFromSearch/);
   assert.match(auth, /accountType === "owner" \|\| accountType === "dealer"/);
   assert.match(auth, /accountSubtype: getDefaultSubtype\(requestedAccountType\)/);
@@ -79,9 +95,17 @@ test('homepage presents the living Asset Register hero and role choice', async (
   assert.ok(heroImage.size > 20_000);
   assert.ok(heroImage.size < 150_000);
 
-  assert.match(styles, /Living Asset Record homepage hero, September 2026/);
-  assert.match(styles, /\.heroMedia \.shell \{[\s\S]*?width: min\(calc\(100% - 3rem\), 92rem\)/);
-  assert.match(styles, /\.heroGrid \{[\s\S]*?grid-template-columns: minmax\(25rem, 0\.86fr\) minmax\(42rem, 1\.14fr\)/);
+  const livingHeroStyles = styles.slice(
+    styles.indexOf('/* === Living Asset Record homepage hero, September 2026 === */'),
+  );
+
+  assert.match(livingHeroStyles, /Living Asset Record homepage hero, September 2026/);
+  assert.match(livingHeroStyles, /\.heroMedia \.shell \{[\s\S]*?width: var\(--shell-width\)/);
+  assert.match(livingHeroStyles, /\.heroMedia \{[\s\S]*?min-height: clamp\(32rem, 34vw, 36rem\);[\s\S]*?background: transparent/);
+  assert.doesNotMatch(livingHeroStyles, /\.heroMedia::before|\.heroMedia::after/);
+  assert.match(livingHeroStyles, /\.heroGrid \{[\s\S]*?grid-template-columns: minmax\(0, 1fr\) minmax\(0, 34rem\)/);
+  assert.match(livingHeroStyles, /\.assetHeroStage \{[\s\S]*?width: min\(100%, 34rem\)/);
+  assert.match(livingHeroStyles, /\.assetQuestion \{[\s\S]*?--question-size: 5\.2rem/);
   assert.match(styles, /\.assetPreviewCard \{[\s\S]*?border: 1px solid rgba\(151, 205, 181, 0\.9\)/);
   assert.match(styles, /\.assetQuestionActive \{[\s\S]*?linear-gradient\(145deg, #1bb27d 0%, #087d56 100%\)/);
   assert.match(styles, /\.assetQuestion:focus-visible \{[\s\S]*?outline: 3px solid/);
@@ -90,6 +114,8 @@ test('homepage presents the living Asset Register hero and role choice', async (
   assert.match(styles, /\.assetQuestionCost \{[\s\S]*?bottom: 0\.5%;[\s\S]*?left: 0/);
   assert.match(styles, /\.assetQuestionAttention \{[\s\S]*?right: 0\.5%;[\s\S]*?bottom: 0\.4%/);
   assert.match(styles, /\.roleSection \{[\s\S]*?scroll-margin-top: 7rem/);
+  assert.match(styles, /\.roleSection \{[\s\S]*?background: transparent/);
+  assert.match(styles, /\.roleTitle:focus-visible \{[\s\S]*?outline: 3px solid/);
   assert.match(styles, /@media \(max-width: 1180px\)[\s\S]*?\.heroGrid \{[\s\S]*?grid-template-columns: minmax\(0, 1fr\)/);
   assert.match(styles, /@media \(max-width: 640px\)[\s\S]*?\.assetQuestionGroup \{[\s\S]*?grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
   assert.match(styles, /\.assetPreviewCard\[data-active-question='cost'\] \.assetPreviewBody \{[\s\S]*?grid-template-rows: minmax\(0, 1fr\) minmax\(5rem, auto\)/);
