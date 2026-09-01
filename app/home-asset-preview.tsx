@@ -295,34 +295,115 @@ function WorthPreview() {
           <span>Aim4price estimate</span>
           <strong>Confidence: High</strong>
         </div>
+
+        <h2 className={styles.worthAssetTitle}>2023 Toyota Hilux Single Cab</h2>
+
         <div className={styles.worthValueRow}>
-          <strong>R 239 454</strong>
+          <span>
+            <strong>R 237 150</strong>
+            <small>Excl. VAT</small>
+          </span>
           <div className={styles.worthVatToggle} aria-hidden="true">
             <span>VAT excluded</span>
             <span>VAT included</span>
           </div>
         </div>
-        <span className={styles.previewSrOnly}>Estimate shown with VAT included.</span>
-        <p>Bakkies / LDVs · Toyota · Toyota Hilux</p>
+        <span className={styles.previewSrOnly}>Estimate shown with VAT excluded.</span>
+        <p className={styles.worthUpdated}>Updated 01 Sept 2026</p>
 
         <div className={styles.worthFacts}>
-          <MiniFact label="Year model" value="2022" />
-          <MiniFact label="Usage" value="137 000 km" />
-          <MiniFact label="Condition" value="Excellent" />
-          <MiniFact label="Popularity" value="5 / 5 stars" />
+          <MiniFact label="Year model" value="2023" />
+          <MiniFact label="Usage" value="113 677 km" />
+          <MiniFact label="Condition" value="Good" />
+          <MiniFact label="Replacement price" value="R 450 000 excl. VAT" />
         </div>
       </section>
 
-      <aside className={styles.worthActions}>
-        <span className={styles.previewEyebrow}>Estimate actions</span>
-        <h2>Next steps</h2>
-        <p>Save the estimate, create an ad or keep the PDF.</p>
-        <div>
-          <span>Create Ad <b>↗</b></span>
-          <span>Save to Asset Register</span>
-          <span>Download PDF <b>↓</b></span>
+      <aside className={styles.worthReportPreview} aria-label="Asset Valuation Report preview">
+        <div
+          className={styles.worthReportPaper}
+          role="img"
+          aria-label="Miniature Asset Valuation Report for the 2023 Toyota Hilux Single Cab"
+        >
+          <header className={styles.worthReportHeader}>
+            <span className={styles.worthReportLogo}>A4</span>
+            <span>
+              <strong>Asset Valuation Report</strong>
+              <small>Aim4price asset register</small>
+            </span>
+            <span className={styles.worthReportGenerated}>
+              <small>Generated</small>
+              <strong>01 Sept 2026</strong>
+            </span>
+          </header>
+
+          <div className={styles.worthReportSummary}>
+            <span>
+              <small>Bakkies / LDVs</small>
+              <strong>2023 Toyota Hilux Single Cab</strong>
+              <em>Year 2023 · Usage 113 677 km · Condition Good</em>
+            </span>
+            <span>
+              <small>Estimated value</small>
+              <strong>R 237 150</strong>
+              <em>VAT excluded</em>
+            </span>
+          </div>
+
+          <div className={styles.worthReportBody}>
+            <section className={styles.worthReportDetails}>
+              <strong>Asset Details</strong>
+              <dl>
+                <div><dt>Category</dt><dd>Bakkies / LDVs</dd></div>
+                <div><dt>Brand</dt><dd>Toyota</dd></div>
+                <div><dt>Model</dt><dd>Hilux</dd></div>
+                <div><dt>Year</dt><dd>2023</dd></div>
+                <div><dt>Usage</dt><dd>113 677 km</dd></div>
+                <div><dt>Condition</dt><dd>Good</dd></div>
+                <div><dt>Replacement</dt><dd>R 450 000 excl. VAT</dd></div>
+              </dl>
+
+              <div className={styles.worthReportOwner}>
+                <strong>Client / Asset Owner</strong>
+                <span>Aim4price demo owner</span>
+              </div>
+            </section>
+
+            <section className={styles.worthReportSide}>
+              <div className={styles.worthReportRecord}>
+                <strong>Record Summary</strong>
+                <span>Insured <b>Not sure</b></span>
+                <span>Financed <b>Not sure</b></span>
+                <span>Documents <b>None</b></span>
+              </div>
+
+              <div className={styles.worthReportPhotos}>
+                <strong>Asset Photos</strong>
+                <Image
+                  src="/brand/home-asset-hilux-thumb-side.webp"
+                  alt="Side view of the Toyota Hilux in the valuation report"
+                  width={108}
+                  height={58}
+                  sizes="7rem"
+                />
+                <Image
+                  src="/brand/home-asset-hilux-thumb-rear.webp"
+                  alt="Rear view of the Toyota Hilux in the valuation report"
+                  width={108}
+                  height={58}
+                  sizes="7rem"
+                />
+              </div>
+            </section>
+          </div>
         </div>
       </aside>
+
+      <div className={styles.worthActions} aria-label="Estimate actions">
+        <span>Create Ad <b>↗</b></span>
+        <span>Save to Asset Register</span>
+        <span>Download PDF <b>↓</b></span>
+      </div>
     </div>
   );
 }
