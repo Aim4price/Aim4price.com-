@@ -254,9 +254,9 @@ function AssetCardPreview() {
         <div className={styles.assetPhotoPanel}>
           <Image
             src="/brand/home-asset-hilux-listing.webp"
-            alt="White Toyota Hilux single-cab work vehicle in a farm equipment yard"
-            width={342}
-            height={359}
+            alt="Left-side view of the white Toyota Hilux single-cab work vehicle"
+            width={1280}
+            height={960}
             priority
             sizes="(min-width: 1181px) 17vw, (min-width: 761px) 32vw, 42vw"
           />
