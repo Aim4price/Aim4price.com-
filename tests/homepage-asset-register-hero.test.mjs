@@ -59,7 +59,7 @@ test('homepage presents the five-question living Asset Register hero and reveals
   );
 
   assert.match(preview, /role="tablist"[\s\S]*?aria-label="Explore the Aim4price asset record"/);
-  assert.match(preview, /aria-orientation="horizontal"/);
+  assert.match(preview, /aria-orientation="vertical"/);
   assert.match(preview, /role="tab"/);
   assert.match(preview, /aria-selected=\{isActive\}/);
   assert.match(preview, /aria-controls="home-asset-preview"/);
@@ -67,11 +67,12 @@ test('homepage presents the five-question living Asset Register hero and reveals
   assert.match(preview, /role="tabpanel"/);
   assert.match(preview, /tabIndex=\{0\}/);
   assert.match(preview, /aria-labelledby=\{\`home-asset-question-/);
+  assert.match(preview, /aria-label=\{question\.label\}/);
   assert.match(preview, /assetQuestionBubble} aria-hidden="true"/);
-  assert.match(
-    preview,
-    /assetQuestionBubble[\s\S]*?question\.icon[\s\S]*?assetQuestionLabel[\s\S]*?question\.label/,
-  );
+  assert.match(preview, /assetQuestionBubble[\s\S]*?question\.icon/);
+  assert.doesNotMatch(preview, /styles\.assetQuestionLabel/);
+  assert.match(preview, /assetActiveQuestion/);
+  assert.match(preview, /QUESTIONS\[activeIndex\]\?\.label \?\? QUESTIONS\[0\]\.label/);
   assert.match(preview, /ArrowRight[\s\S]*?ArrowDown/);
   assert.match(preview, /ArrowLeft[\s\S]*?ArrowUp/);
   assert.match(preview, /event\.key === 'Home'/);
@@ -158,14 +159,15 @@ test('homepage presents the five-question living Asset Register hero and reveals
   );
 
   assert.match(livingHeroStyles, /\.heroMedia \.shell \{[\s\S]*?100rem/);
-  assert.match(livingHeroStyles, /\.heroGrid \{[\s\S]*?grid-template-columns: minmax\(30rem, 36rem\) minmax\(42rem, 48rem\)[\s\S]*?gap: clamp\(5rem, 6vw, 7rem\)/);
+  assert.match(livingHeroStyles, /\.heroGrid \{[\s\S]*?grid-template-columns: minmax\(30rem, 36rem\) minmax\(43\.5rem, 49\.5rem\)[\s\S]*?gap: clamp\(5rem, 6vw, 7rem\)/);
   assert.match(livingHeroStyles, /\.heroCopy \{[\s\S]*?width: min\(100%, 38rem\)[\s\S]*?transform: translateY\(0\.9rem\)/);
-  assert.match(livingHeroStyles, /\.assetHeroStage \{[\s\S]*?width: min\(100%, 48rem\)[\s\S]*?aspect-ratio: 1000 \/ 650[\s\S]*?justify-self: center/);
-  assert.match(livingHeroStyles, /\.assetQuestionGroup \{[\s\S]*?bottom: 0;[\s\S]*?height: 6rem;[\s\S]*?grid-template-columns: repeat\(5, minmax\(0, 1fr\)\)/);
+  assert.match(livingHeroStyles, /\.assetHeroStage \{[\s\S]*?width: min\(100%, 49\.5rem\)[\s\S]*?aspect-ratio: 1000 \/ 650[\s\S]*?justify-self: center/);
+  assert.match(livingHeroStyles, /\.assetQuestionGroup \{[\s\S]*?top: 0;[\s\S]*?right: 0;[\s\S]*?bottom: 4\.2rem;[\s\S]*?width: 4\.5rem;[\s\S]*?grid-template-rows: repeat\(5, minmax\(0, 1fr\)\)/);
   assert.match(livingHeroStyles, /\.assetQuestion \{[\s\S]*?--question-size: 3\.05rem[\s\S]*?min-height: var\(--tap-target-min, 44px\)/);
   assert.match(livingHeroStyles, /\.assetQuestionActive \{[\s\S]*?--question-size: 3\.35rem/);
-  assert.match(livingHeroStyles, /\.assetQuestionLabel \{[\s\S]*?font-size: 0\.72rem/);
-  assert.match(livingHeroStyles, /\.assetPreviewCard \{[\s\S]*?top: 0;[\s\S]*?right: 4\.5rem;[\s\S]*?bottom: 6\.5rem;[\s\S]*?left: 4\.5rem/);
+  assert.doesNotMatch(livingHeroStyles, /\.assetQuestionLabel|\.assetConnectors|\.assetConnectorActive/);
+  assert.match(livingHeroStyles, /\.assetPreviewCard \{[\s\S]*?top: 0;[\s\S]*?right: 4\.75rem;[\s\S]*?bottom: 4\.2rem;[\s\S]*?left: 6rem/);
+  assert.match(livingHeroStyles, /\.assetActiveQuestion \{[\s\S]*?right: 4\.75rem;[\s\S]*?bottom: 0;[\s\S]*?left: 6rem/);
   assert.match(livingHeroStyles, /@keyframes assetPreviewReveal/);
   assert.match(livingHeroStyles, /\.worthPreview/);
   assert.match(livingHeroStyles, /\.manageGrid/);
@@ -179,6 +181,7 @@ test('homepage presents the five-question living Asset Register hero and reveals
   assert.match(refinementStyles, /@media \(max-width: 760px\)[\s\S]*?grid-template-columns: repeat\(5, minmax\(0, 1fr\)\)/);
   assert.match(refinementStyles, /@media \(max-width: 760px\)[\s\S]*?\.assetQuestionGroup \{[\s\S]*?order: 2/);
   assert.match(refinementStyles, /@media \(max-width: 760px\)[\s\S]*?\.assetPreviewCard \{[\s\S]*?order: 1/);
+  assert.match(refinementStyles, /@media \(max-width: 760px\)[\s\S]*?\.assetActiveQuestion \{[\s\S]*?order: 3/);
   assert.match(refinementStyles, /@media \(max-width: 640px\)[\s\S]*?grid-template-columns: repeat\(6, minmax\(0, 1fr\)\)/);
   assert.match(refinementStyles, /@media \(max-width: 640px\)[\s\S]*?\.assetQuestion:nth-child\(4\) \{[\s\S]*?grid-column: 2 \/ span 2/);
   assert.match(refinementStyles, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.assetPreviewState \{[\s\S]*?animation: none/);
