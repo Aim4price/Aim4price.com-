@@ -419,16 +419,15 @@ function ManagePreview() {
     { type: 'map', title: 'Asset map', description: 'View this asset selected on the map.' },
     { type: 'qr', title: 'QR code', description: 'Copy, download or print the QR label.' },
     { type: 'marketplace', title: 'Marketplace', description: 'Create a listing for this asset.' },
-    { type: 'remove', title: 'Dispose or remove asset', description: 'Archive, sell, write off or remove.' },
+    { type: 'remove', title: 'Remove asset', description: 'Archive, sell, write off or remove.' },
   ];
 
   return (
     <div className={styles.managePreview}>
-      <header className={styles.previewModalHeader}>
+      <header className={`${styles.previewModalHeader} ${styles.managePreviewHeader}`}>
         <div>
-          <span className={styles.previewEyebrow}>Manage asset</span>
           <h2>2023 Toyota Hilux Single Cab</h2>
-          <p>Choose what you want to do with this asset.</p>
+          <p>Year Model: 2023 · Usage: 113 677 km · Condition: Good</p>
         </div>
         <span className={styles.previewClose} aria-hidden="true">×</span>
       </header>
