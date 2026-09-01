@@ -146,10 +146,19 @@ test('homepage presents the five-question living Asset Register hero and reveals
   assert.doesNotMatch(preview, /Dispose or remove asset/);
 
   // What does it cost me? — Fuel and ownership report choices.
-  assert.match(preview, /Download maintenance report/);
-  assert.match(preview, /Download fuel report/);
-  assert.match(preview, /Download depreciation log/);
-  assert.match(preview, /Download cost of ownership report/);
+  const costPreview = preview.slice(
+    preview.indexOf('function CostPreview()'),
+    preview.indexOf('function AttentionPreview()'),
+  );
+  assert.match(costPreview, /<h2>2023 Toyota Hilux Single Cab<\/h2>/);
+  assert.match(costPreview, /Year Model: 2023 · Usage: 113 677 km · Condition: Good/);
+  assert.doesNotMatch(costPreview, /previewEyebrow/);
+  assert.doesNotMatch(costPreview, /See what the asset costs across fuel, maintenance and ownership\./);
+  assert.doesNotMatch(costPreview, /reportRowHighlighted/);
+  assert.match(costPreview, /Download maintenance report/);
+  assert.match(costPreview, /Download fuel report/);
+  assert.match(costPreview, /Download depreciation log/);
+  assert.match(costPreview, /Download cost of ownership report/);
 
   // What needs attention? — the real open-issue presentation.
   assert.match(preview, /2024 Landini Super 110 \+ Front Loader/);
@@ -200,8 +209,10 @@ test('homepage presents the five-question living Asset Register hero and reveals
   assert.match(livingHeroStyles, /\.worthReportPaper \{[\s\S]*?width: 100%;[\s\S]*?max-height: 100%;[\s\S]*?aspect-ratio: 0\.65;[\s\S]*?overflow: hidden/);
   assert.match(livingHeroStyles, /\.worthReportBody \{[\s\S]*?min-width: 0;[\s\S]*?min-height: 0/);
   assert.match(livingHeroStyles, /\.worthActions \{[\s\S]*?grid-column: 1 \/ -1;[\s\S]*?grid-template-columns: minmax\(0, 0\.86fr\) minmax\(0, 1\.26fr\) minmax\(0, 0\.98fr\)/);
-  assert.match(livingHeroStyles, /\.managePreviewHeader \{[\s\S]*?padding: 0\.45rem 0\.4rem 0\.78rem/);
+  assert.match(livingHeroStyles, /\.managePreviewHeader,[\s\S]*?\.costPreviewHeader \{[\s\S]*?padding: 0\.45rem 0\.4rem 0\.78rem/);
   assert.match(livingHeroStyles, /\.manageGrid \{[\s\S]*?gap: 0\.52rem;[\s\S]*?padding-top: 0\.68rem/);
+  assert.match(livingHeroStyles, /\.reportRow \{[\s\S]*?background: #ffffff/);
+  assert.doesNotMatch(livingHeroStyles, /\.reportRowHighlighted/);
   assert.match(livingHeroStyles, /\.reportList/);
   assert.match(livingHeroStyles, /\.attentionPreview/);
   assert.doesNotMatch(livingHeroStyles, /\.assetDocumentsPanel|\.assetDocumentAction/);
