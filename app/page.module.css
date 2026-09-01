@@ -2181,16 +2181,19 @@
   flex-direction: column;
 }
 
-.managePreviewHeader {
+.managePreviewHeader,
+.costPreviewHeader {
   padding: 0.45rem 0.4rem 0.78rem;
 }
 
-.managePreviewHeader h2 {
+.managePreviewHeader h2,
+.costPreviewHeader h2 {
   margin-top: 0;
   font-size: 1.04rem;
 }
 
-.managePreviewHeader p {
+.managePreviewHeader p,
+.costPreviewHeader p {
   margin-top: 0.38rem;
   font-size: 0.58rem;
   line-height: 1.25;
@@ -2310,11 +2313,6 @@
   border: 1px solid rgba(193, 212, 204, 0.78);
   border-radius: 0.66rem;
   background: #ffffff;
-}
-
-.reportRowHighlighted {
-  border-color: rgba(78, 177, 133, 0.5);
-  background: linear-gradient(145deg, #edf9f4, #fbfdfc);
 }
 
 .reportRow > span:nth-child(2) {
