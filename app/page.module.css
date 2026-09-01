@@ -905,7 +905,7 @@
 
 /* === Living Asset Record homepage hero, September 2026 === */
 .heroMedia .shell {
-  width: var(--shell-width);
+  width: min(calc(100% - 2.5rem), 94rem);
 }
 
 .heroMedia {
@@ -916,22 +916,23 @@
 
 .heroGrid {
   min-height: inherit;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 50rem);
-  gap: 0;
+  grid-template-columns: minmax(30rem, 38rem) minmax(42rem, 48rem);
+  justify-content: space-between;
+  gap: clamp(3rem, 4.25vw, 5rem);
   padding: clamp(2.5rem, 5vh, 3.5rem) 0;
 }
 
 .heroCopy {
   position: relative;
   z-index: 5;
-  width: 41rem;
-  max-width: none;
+  width: min(100%, 38rem);
+  max-width: 38rem;
   color: #0c4637;
-  transform: translate(-1rem, 0.9rem);
+  transform: translateY(0.9rem);
 }
 
 .heroTitle {
-  max-width: 41rem;
+  max-width: 38rem;
   margin: 0;
   color: #0c4637;
   font-size: clamp(3.15rem, 3.6vw, 3.9rem);
@@ -1051,13 +1052,13 @@
 .assetHeroStage {
   position: relative;
   z-index: 3;
-  width: 50rem;
-  max-width: none;
-  aspect-ratio: 1000 / 560;
-  justify-self: end;
+  width: min(100%, 48rem);
+  max-width: 48rem;
+  aspect-ratio: 1000 / 600;
+  justify-self: center;
   align-self: center;
   min-width: 0;
-  transform: translate(5.5rem, -1.25rem);
+  transform: none;
 }
 
 .assetConnectors {
@@ -1083,140 +1084,158 @@
   vector-effect: non-scaling-stroke;
 }
 
-.assetConnectorHave,
-.assetConnectorWorth,
-.assetConnectorCost,
-.assetConnectorAttention {
+.assetConnectors g {
+  opacity: 0.45;
+  transition: opacity 180ms ease;
+}
+
+.assetConnectors .assetConnectorActive {
   opacity: 1;
+}
+
+.assetConnectorActive path {
+  stroke: rgba(25, 157, 111, 0.86);
+  stroke-width: 2;
+}
+
+.assetConnectorActive circle {
+  fill: #199d6f;
 }
 
 .assetQuestionGroup {
   position: absolute;
   z-index: 5;
-  inset: 0;
-  pointer-events: none;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  display: grid;
+  width: 8rem;
+  grid-template-rows: repeat(5, minmax(0, 1fr));
+  align-items: center;
 }
 
 .assetQuestion {
-  --question-size: 6.25rem;
-  position: absolute;
+  --question-size: 3.05rem;
+  position: relative;
   display: flex;
-  width: var(--question-size);
-  aspect-ratio: 1;
+  width: 100%;
+  min-width: var(--tap-target-min, 44px);
+  min-height: var(--tap-target-min, 44px);
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0.42rem;
-  padding: 0.72rem;
+  gap: 0.32rem;
+  padding: 0.12rem 0.15rem;
+  border: 0;
+  color: #0c4b3a;
+  background: transparent;
+  font: inherit;
+  cursor: pointer;
+  transition: color 180ms ease;
+}
+
+.assetQuestionBubble {
+  position: relative;
+  display: grid;
+  width: var(--question-size);
+  aspect-ratio: 1;
+  place-items: center;
   border: 1px solid rgba(65, 155, 119, 0.35);
   border-radius: 50%;
-  color: #0c4b3a;
   background:
     radial-gradient(circle at 32% 22%, rgba(255, 255, 255, 0.96) 0, rgba(255, 255, 255, 0) 36%),
     linear-gradient(145deg, rgba(255, 255, 255, 0.97) 0%, rgba(242, 250, 246, 0.98) 100%);
   box-shadow:
-    0 14px 30px rgba(20, 80, 60, 0.09),
+    0 10px 22px rgba(20, 80, 60, 0.09),
     inset 0 1px 0 rgba(255, 255, 255, 0.96);
-  font: inherit;
-  cursor: pointer;
-  pointer-events: auto;
   transition:
-    transform 190ms ease,
-    border-color 190ms ease,
-    color 190ms ease,
-    background 190ms ease,
-    box-shadow 190ms ease;
+    width 180ms ease,
+    border-color 180ms ease,
+    background 180ms ease,
+    box-shadow 180ms ease,
+    transform 180ms ease;
 }
 
-.assetQuestion::after {
+.assetQuestionBubble::after {
   content: '';
   position: absolute;
-  inset: 0.36rem;
+  inset: 0.22rem;
   border: 1px solid transparent;
   border-radius: inherit;
-  pointer-events: none;
 }
 
-.assetQuestion svg {
-  width: 1.55rem;
-  height: 1.55rem;
+.assetQuestionBubble svg {
+  width: 1.22rem;
+  height: 1.22rem;
   fill: none;
   stroke: currentColor;
-  stroke-width: 1.65;
+  stroke-width: 1.7;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
 
-.assetQuestion span {
-  max-width: 5.1rem;
-  font-size: 0.74rem;
-  line-height: 1.18;
+.assetQuestionLabel {
+  display: block;
+  width: 100%;
+  max-width: 7.3rem;
+  min-height: 1.6rem;
+  font-size: 0.72rem;
+  line-height: 1.2;
   font-weight: 800;
-  letter-spacing: -0.018em;
+  letter-spacing: -0.025em;
   text-align: center;
   text-wrap: balance;
 }
 
-.assetQuestion:hover {
-  transform: translateY(-3px);
+.assetQuestion:hover .assetQuestionBubble {
+  transform: translateY(-2px);
   border-color: rgba(33, 139, 100, 0.58);
   box-shadow:
-    0 18px 36px rgba(20, 80, 60, 0.13),
+    0 14px 28px rgba(20, 80, 60, 0.13),
     inset 0 1px 0 rgba(255, 255, 255, 0.96);
 }
 
 .assetQuestion:focus-visible {
   outline: 3px solid rgba(20, 104, 79, 0.34);
-  outline-offset: 4px;
+  outline-offset: 2px;
+  border-radius: 0.75rem;
 }
 
 .assetQuestionActive {
-  --question-size: 6.6rem;
+  --question-size: 3.35rem;
+  color: #0b4d3a;
+}
+
+.assetQuestionActive .assetQuestionBubble {
   color: #ffffff;
   border-color: rgba(20, 154, 107, 0.78);
   background:
     radial-gradient(circle at 31% 21%, rgba(128, 230, 191, 0.36) 0, transparent 30%),
     linear-gradient(145deg, #1bb27d 0%, #087d56 100%);
   box-shadow:
-    0 17px 34px rgba(9, 107, 72, 0.22),
+    0 13px 27px rgba(9, 107, 72, 0.22),
     inset 0 1px 0 rgba(255, 255, 255, 0.32);
 }
 
-.assetQuestionActive::after {
+.assetQuestionActive .assetQuestionBubble::after {
   border-color: rgba(255, 255, 255, 0.62);
 }
 
-.assetQuestionHave {
-  top: -13%;
-  right: 0.3%;
-}
-
-.assetQuestionWorth {
-  top: 10%;
-  right: 0.3%;
-}
-
-.assetQuestionCost {
-  top: 34%;
-  right: 0.3%;
-}
-
-.assetQuestionAttention {
-  top: 59.3%;
-  right: 0.3%;
+.assetQuestionActive .assetQuestionLabel {
+  color: #087c57;
 }
 
 .assetPreviewCard {
   position: absolute;
   z-index: 3;
-  top: 9%;
-  right: 17%;
-  bottom: 16%;
-  left: 17%;
+  top: 8%;
+  right: 9rem;
+  bottom: 8%;
+  left: 0;
   display: flex;
   min-width: 0;
   flex-direction: column;
-  padding: 0.68rem;
+  padding: 0.72rem;
   overflow: hidden;
   border: 1px solid rgba(151, 205, 181, 0.9);
   border-radius: 1rem;
@@ -1549,12 +1568,644 @@
   border: 0;
 }
 
-.assetPreviewCard[data-active-question='have'] .assetPhotoPanel,
-.assetPreviewCard[data-active-question='have'] .assetDetailRow:nth-child(-n + 3),
-.assetPreviewCard[data-active-question='attention'] .assetDetailRow:nth-child(n + 4),
-.assetPreviewCard[data-active-question='worth'] .assetReplacementRow {
-  border-color: rgba(25, 157, 111, 0.7);
-  box-shadow: 0 0 0 3px rgba(25, 157, 111, 0.1);
+.assetPreviewState {
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  flex-direction: column;
+  animation: assetPreviewReveal 190ms ease-out both;
+}
+
+@keyframes assetPreviewReveal {
+  from {
+    opacity: 0;
+    transform: translateY(0.3rem);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.previewEyebrow {
+  display: block;
+  color: #1b8061;
+  font-size: 0.54rem;
+  line-height: 1;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.previewSrOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.previewModalHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.25rem 0.35rem 0.65rem;
+  border-bottom: 1px solid rgba(199, 216, 223, 0.86);
+}
+
+.previewModalHeader h2,
+.previewModalHeader p {
+  margin: 0;
+}
+
+.previewModalHeader h2 {
+  margin-top: 0.28rem;
+  color: #073b30;
+  font-size: 1rem;
+  line-height: 1.1;
+  font-weight: 850;
+  letter-spacing: -0.03em;
+}
+
+.previewModalHeader p {
+  margin-top: 0.25rem;
+  color: #687a73;
+  font-size: 0.57rem;
+  line-height: 1.35;
+  font-weight: 650;
+}
+
+.previewClose {
+  display: grid;
+  width: 1.65rem;
+  aspect-ratio: 1;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid rgba(174, 197, 188, 0.68);
+  border-radius: 50%;
+  color: #31594c;
+  background: #ffffff;
+  font-size: 1rem;
+  line-height: 1;
+}
+
+/* Estimate final page preview. */
+.worthPreview {
+  display: grid;
+  min-height: 0;
+  height: 100%;
+  grid-template-columns: minmax(0, 1.65fr) minmax(9.5rem, 0.75fr);
+  gap: 0.72rem;
+}
+
+.worthResult,
+.worthActions {
+  min-width: 0;
+  border: 1px solid rgba(117, 196, 161, 0.45);
+  border-radius: 0.9rem;
+}
+
+.worthResult {
+  display: flex;
+  flex-direction: column;
+  padding: 0.95rem;
+  background:
+    radial-gradient(circle at 92% 8%, rgba(255, 255, 255, 0.8), transparent 36%),
+    linear-gradient(145deg, #e8f8f0 0%, #f8fcfa 100%);
+}
+
+.worthResultTopline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  color: #176d51;
+  font-size: 0.55rem;
+  line-height: 1;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.worthResultTopline strong {
+  padding: 0.28rem 0.46rem;
+  border-radius: 999px;
+  color: #0a7651;
+  background: rgba(255, 255, 255, 0.85);
+  font-size: 0.52rem;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.worthValueRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.worthValueRow > strong {
+  color: #0d5a3c;
+  font-size: clamp(1.8rem, 2.5vw, 2.5rem);
+  line-height: 0.95;
+  font-weight: 900;
+  letter-spacing: -0.06em;
+  white-space: nowrap;
+}
+
+.worthVatToggle {
+  display: inline-grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  padding: 0.16rem;
+  border: 1px solid rgba(82, 160, 126, 0.35);
+  border-radius: 0.62rem;
+  background: rgba(255, 255, 255, 0.72);
+  font-size: 0.45rem;
+  line-height: 1;
+  font-weight: 800;
+}
+
+.worthVatToggle span {
+  padding: 0.42rem 0.34rem;
+  border-radius: 0.45rem;
+  white-space: nowrap;
+}
+
+.worthVatToggle span:last-child {
+  color: #ffffff;
+  background: #176c51;
+}
+
+.worthResult > p {
+  margin: 0.55rem 0 0;
+  color: #53675f;
+  font-size: 0.56rem;
+  line-height: 1.3;
+  font-weight: 750;
+}
+
+.worthFacts {
+  display: grid;
+  min-height: 0;
+  flex: 1;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-content: end;
+  gap: 0.42rem;
+  margin-top: 0.65rem;
+}
+
+.miniFact {
+  display: flex;
+  min-width: 0;
+  min-height: 3rem;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.25rem;
+  padding: 0.48rem 0.58rem;
+  border: 1px solid rgba(184, 211, 199, 0.72);
+  border-radius: 0.68rem;
+  background: rgba(255, 255, 255, 0.82);
+}
+
+.miniFact span {
+  color: #577069;
+  font-size: 0.47rem;
+  line-height: 1;
+  font-weight: 850;
+  letter-spacing: 0.035em;
+  text-transform: uppercase;
+}
+
+.miniFact strong {
+  overflow: hidden;
+  color: #103e31;
+  font-size: 0.68rem;
+  line-height: 1.1;
+  font-weight: 850;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.worthActions {
+  display: flex;
+  flex-direction: column;
+  padding: 0.9rem;
+  background: #ffffff;
+}
+
+.worthActions h2,
+.worthActions p {
+  margin: 0;
+}
+
+.worthActions h2 {
+  margin-top: 0.4rem;
+  color: #0c4637;
+  font-size: 1rem;
+  line-height: 1.08;
+  font-weight: 850;
+  letter-spacing: -0.035em;
+}
+
+.worthActions p {
+  margin-top: 0.4rem;
+  color: #667872;
+  font-size: 0.54rem;
+  line-height: 1.4;
+}
+
+.worthActions > div {
+  display: grid;
+  gap: 0.42rem;
+  margin-top: auto;
+}
+
+.worthActions > div > span {
+  display: flex;
+  min-height: 2.35rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid rgba(177, 203, 193, 0.72);
+  border-radius: 0.62rem;
+  color: #174b3c;
+  background: #ffffff;
+  font-size: 0.56rem;
+  line-height: 1.15;
+  font-weight: 850;
+}
+
+.worthActions > div > span:first-child {
+  color: #ffffff;
+  border-color: #176c51;
+  background: linear-gradient(145deg, #1a6d52, #103f34);
+}
+
+.worthActions b {
+  display: grid;
+  width: 1.2rem;
+  aspect-ratio: 1;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  font-size: 0.68rem;
+}
+
+/* Owner Manage command preview. */
+.managePreview,
+.costPreview,
+.attentionPreview {
+  min-height: 0;
+  height: 100%;
+}
+
+.managePreview,
+.costPreview {
+  display: flex;
+  flex-direction: column;
+}
+
+.manageGrid {
+  display: grid;
+  min-height: 0;
+  height: auto;
+  flex: 1;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-rows: repeat(3, minmax(0, 1fr));
+  gap: 0.43rem;
+  padding-top: 0.58rem;
+}
+
+.manageTile {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: 1.75rem minmax(0, 1fr);
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.48rem;
+  border: 1px solid rgba(193, 212, 204, 0.78);
+  border-radius: 0.7rem;
+  background: #ffffff;
+  box-shadow: 0 6px 14px rgba(24, 70, 55, 0.04);
+}
+
+.manageTilePrimary {
+  border-color: rgba(78, 177, 133, 0.52);
+  background: linear-gradient(145deg, #eaf8f2, #f8fcfa);
+}
+
+.manageTileDanger {
+  border-color: rgba(213, 93, 84, 0.34);
+  background: #fff3f2;
+}
+
+.manageTileIcon,
+.reportIcon,
+.issueCardTitle > span {
+  display: grid;
+  width: 1.72rem;
+  aspect-ratio: 1;
+  place-items: center;
+  border-radius: 0.5rem;
+  color: #137455;
+  background: #e8f7f1;
+}
+
+.manageTileDanger .manageTileIcon {
+  color: #b23a32;
+  background: #fee1df;
+}
+
+.manageTile svg,
+.reportIcon svg,
+.issueCardTitle svg {
+  width: 0.9rem;
+  height: 0.9rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.65;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.manageTile > span:last-child {
+  min-width: 0;
+}
+
+.manageTile strong,
+.manageTile small {
+  display: block;
+}
+
+.manageTile strong {
+  overflow: hidden;
+  color: #153d32;
+  font-size: 0.56rem;
+  line-height: 1.12;
+  font-weight: 850;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.manageTile small {
+  display: -webkit-box;
+  margin-top: 0.2rem;
+  overflow: hidden;
+  color: #6b7b76;
+  font-size: 0.43rem;
+  line-height: 1.25;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+/* Reports and cost preview. */
+.reportList {
+  display: grid;
+  min-height: 0;
+  height: auto;
+  flex: 1;
+  grid-template-rows: repeat(5, minmax(0, 1fr));
+  gap: 0.36rem;
+  padding-top: 0.55rem;
+}
+
+.reportRow {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: 2rem minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.42rem 0.6rem;
+  border: 1px solid rgba(193, 212, 204, 0.78);
+  border-radius: 0.66rem;
+  background: #ffffff;
+}
+
+.reportRowHighlighted {
+  border-color: rgba(78, 177, 133, 0.5);
+  background: linear-gradient(145deg, #edf9f4, #fbfdfc);
+}
+
+.reportRow > span:nth-child(2) {
+  min-width: 0;
+}
+
+.reportRow strong,
+.reportRow small {
+  display: block;
+}
+
+.reportRow strong {
+  color: #163e33;
+  font-size: 0.58rem;
+  line-height: 1.1;
+  font-weight: 850;
+}
+
+.reportRow small {
+  margin-top: 0.16rem;
+  overflow: hidden;
+  color: #6b7b76;
+  font-size: 0.45rem;
+  line-height: 1.15;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.reportRow > b {
+  color: #248765;
+  font-size: 1rem;
+  line-height: 1;
+  font-weight: 500;
+}
+
+/* Open issue / attention preview. */
+.attentionPreview {
+  display: flex;
+  flex-direction: column;
+  padding: 0.2rem;
+  border-radius: 0.72rem;
+  background: linear-gradient(145deg, #fff8f7, #fffdfd);
+}
+
+.attentionHeader {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 0.75rem;
+  padding: 0.45rem 0.5rem 0.68rem;
+  border-bottom: 1px solid rgba(221, 166, 160, 0.58);
+}
+
+.attentionHeader h2,
+.attentionHeader p {
+  margin: 0;
+}
+
+.attentionHeader h2 {
+  margin-top: 0.42rem;
+  color: #4f241f;
+  font-size: 0.96rem;
+  line-height: 1.08;
+  font-weight: 850;
+  letter-spacing: -0.03em;
+}
+
+.attentionHeader p {
+  margin-top: 0.28rem;
+  color: #7b645f;
+  font-size: 0.52rem;
+  line-height: 1.2;
+  font-weight: 650;
+}
+
+.attentionHeader > strong {
+  color: #6d211b;
+  font-size: 1.25rem;
+  line-height: 1;
+  font-weight: 900;
+  letter-spacing: -0.045em;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.attentionHeader > strong small {
+  display: block;
+  margin-top: 0.2rem;
+  color: #806b67;
+  font-size: 0.52rem;
+  font-weight: 750;
+  letter-spacing: 0;
+}
+
+.attentionBadges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.attentionBadges span {
+  padding: 0.28rem 0.42rem;
+  border-radius: 999px;
+  color: #237056;
+  background: #e9f6f1;
+  font-size: 0.43rem;
+  line-height: 1;
+  font-weight: 900;
+  letter-spacing: 0.035em;
+  text-transform: uppercase;
+}
+
+.attentionBadges span:last-child {
+  color: #a52720;
+  background: #fde1df;
+}
+
+.attentionBody {
+  display: grid;
+  min-height: 0;
+  flex: 1;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 0.75fr);
+  gap: 0.58rem;
+  padding-top: 0.6rem;
+}
+
+.issueCard,
+.serviceCard {
+  position: relative;
+  min-width: 0;
+  padding: 0.8rem;
+  border-radius: 0.76rem;
+}
+
+.issueCard {
+  color: #ffffff;
+  background:
+    radial-gradient(circle at 90% 0, rgba(255, 255, 255, 0.16), transparent 36%),
+    linear-gradient(145deg, #d94b43, #ad2822);
+  box-shadow: 0 10px 24px rgba(160, 43, 34, 0.18);
+}
+
+.serviceCard {
+  color: #243e36;
+  border: 1px solid rgba(189, 207, 200, 0.84);
+  background: #f0f4f2;
+}
+
+.issueCardTitle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.issueCard .issueCardTitle > span {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.serviceCard .issueCardTitle > span {
+  color: #44655a;
+  background: #ffffff;
+}
+
+.issueCardTitle strong {
+  font-size: 0.72rem;
+  line-height: 1.1;
+  font-weight: 850;
+}
+
+.issueCard ul {
+  margin: 0.72rem 0 0;
+  padding-left: 1rem;
+  font-size: 0.58rem;
+  line-height: 1.5;
+  font-weight: 700;
+}
+
+.issueCard > p,
+.serviceCard > p {
+  margin: 0.68rem 0 0;
+  font-size: 0.5rem;
+  line-height: 1.45;
+}
+
+.issueCard > p {
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.serviceCard > p {
+  color: #66766f;
+}
+
+.issueNoted,
+.serviceNoted {
+  position: absolute;
+  right: 0.72rem;
+  bottom: 0.68rem;
+  padding: 0.35rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.5rem;
+  line-height: 1;
+  font-weight: 850;
+}
+
+.issueNoted {
+  color: #a92c25;
+  background: #ffffff;
+}
+
+.serviceNoted {
+  color: #49685e;
+  background: #ffffff;
 }
 
 /* Owner or dealer question reached from the secondary hero action. */
@@ -2210,5 +2861,262 @@
   .assetQuestion:focus-visible,
   .roleCard:focus-visible {
     outline-color: Highlight;
+  }
+}
+
+/* Five-question hero refinement: compact right rail and centred, changing preview. */
+@media (min-width: 1181px) and (max-width: 1600px) {
+  .heroMedia .shell {
+    width: min(calc(100% - 4rem), 84rem);
+  }
+}
+
+@media (min-width: 1361px) {
+  .assetHeroStage {
+    transform: none;
+  }
+
+  .assetQuestion {
+    --question-size: 3.05rem;
+  }
+
+  .assetQuestionActive {
+    --question-size: 3.35rem;
+  }
+
+  .assetQuestion:not(.assetQuestionActive) .assetQuestionBubble,
+  .assetQuestion:not(.assetQuestionActive) .assetQuestionLabel,
+  .assetQuestion:not(.assetQuestionActive) .assetQuestionBubble svg,
+  .assetQuestionActive .assetQuestionBubble,
+  .assetQuestionActive .assetQuestionLabel,
+  .assetQuestionActive .assetQuestionBubble svg {
+    position: static;
+    top: auto;
+  }
+
+  .assetQuestion:not(.assetQuestionActive) .assetQuestionBubble {
+    width: var(--question-size);
+  }
+
+  .assetQuestion:not(.assetQuestionActive) .assetQuestionBubble svg,
+  .assetQuestionActive .assetQuestionBubble svg {
+    width: 1.22rem;
+    height: 1.22rem;
+    stroke-width: 1.7;
+  }
+
+  .assetQuestion:not(.assetQuestionActive) .assetQuestionLabel,
+  .assetQuestionActive .assetQuestionLabel {
+    max-width: 7.3rem;
+    font-size: 0.72rem;
+    line-height: 1.2;
+    letter-spacing: -0.025em;
+  }
+
+  .assetPreviewCard {
+    top: 8%;
+  }
+}
+
+@media (max-width: 1360px) {
+  .heroGrid {
+    grid-template-columns: minmax(27rem, 34rem) minmax(36rem, 44rem);
+    gap: clamp(2.5rem, 3.5vw, 3.75rem);
+  }
+
+  .assetHeroStage {
+    width: min(100%, 44rem);
+    transform: none;
+  }
+
+  .assetConnectors {
+    display: block;
+  }
+
+  .assetQuestion {
+    --question-size: 2.78rem;
+  }
+
+  .assetQuestionActive {
+    --question-size: 3.02rem;
+  }
+
+  .assetQuestionLabel {
+    font-size: 0.7rem;
+  }
+}
+
+@media (max-width: 1180px) {
+  .heroMedia .shell {
+    width: var(--shell-width);
+  }
+
+  .heroGrid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: clamp(2rem, 4vw, 3rem);
+  }
+
+  .assetHeroStage {
+    width: min(100%, 48rem);
+    margin-inline: auto;
+    justify-self: center;
+  }
+}
+
+@media (max-width: 760px) {
+  .assetHeroStage {
+    display: grid;
+    aspect-ratio: auto;
+    gap: 0.9rem;
+  }
+
+  .assetConnectors {
+    display: none;
+  }
+
+  .assetQuestionGroup {
+    position: relative;
+    top: auto;
+    right: auto;
+    bottom: auto;
+    display: grid;
+    width: 100%;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-rows: minmax(4.8rem, auto);
+    gap: 0.2rem;
+  }
+
+  .assetQuestion {
+    --question-size: 2.65rem;
+    position: relative;
+    inset: auto;
+  }
+
+  .assetQuestionActive {
+    --question-size: 2.88rem;
+  }
+
+  .assetQuestionLabel {
+    max-width: 6rem;
+    font-size: 0.67rem;
+  }
+
+  .assetPreviewCard {
+    position: relative;
+    inset: auto;
+    min-height: 22rem;
+  }
+
+  .assetPreviewActions,
+  .assetThumbnails {
+    display: none;
+  }
+
+  .assetPreviewBody {
+    grid-template-columns: minmax(0, 1.08fr) minmax(0, 1fr);
+  }
+
+  .worthPreview {
+    grid-template-columns: minmax(0, 1.55fr) minmax(8.5rem, 0.72fr);
+  }
+
+  .manageTile {
+    grid-template-columns: 1.6rem minmax(0, 1fr);
+    padding: 0.4rem;
+  }
+
+  .manageTile small {
+    display: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .assetQuestionGroup {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    grid-template-rows: repeat(2, minmax(4.6rem, auto));
+    gap: 0.4rem;
+  }
+
+  .assetQuestion {
+    --question-size: 2.55rem;
+    width: 100%;
+    grid-column: span 2;
+  }
+
+  .assetQuestion:nth-child(4) {
+    grid-column: 2 / span 2;
+  }
+
+  .assetQuestionActive {
+    --question-size: 2.78rem;
+  }
+
+  .assetPreviewCard {
+    min-height: 24rem;
+  }
+
+  .worthPreview {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .worthActions {
+    display: none;
+  }
+
+  .manageGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .manageTile {
+    grid-template-columns: minmax(0, 1fr);
+    justify-items: center;
+    text-align: center;
+  }
+
+  .manageTile strong {
+    white-space: normal;
+  }
+
+  .reportRow small {
+    display: none;
+  }
+
+  .attentionBody {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .serviceCard {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .assetPreviewState {
+    animation: none;
+  }
+
+  .assetConnectors g,
+  .assetQuestionBubble {
+    transition: none;
+  }
+
+  .assetQuestion:hover .assetQuestionBubble {
+    transform: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .assetQuestion {
+    border: 0;
+  }
+
+  .assetQuestionBubble,
+  .worthResult,
+  .worthActions,
+  .manageTile,
+  .reportRow,
+  .issueCard,
+  .serviceCard {
+    border: 1px solid CanvasText;
   }
 }

@@ -70,7 +70,10 @@ test('home page keeps the Asset Register hero usable at phone and tablet widths'
   assert.match(home, /Living Asset Record homepage hero, September 2026/);
   assert.match(home, /@media \(max-width: 1180px\)[\s\S]*?\.heroGrid \{[\s\S]*?grid-template-columns: minmax\(0, 1fr\)/);
   assert.match(home, /@media \(max-width: 760px\)[\s\S]*?\.heroActions \{[\s\S]*?grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
-  assert.match(home, /@media \(max-width: 640px\)[\s\S]*?\.assetQuestionGroup \{[\s\S]*?grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
+  const fiveQuestionRefinement = home.slice(
+    home.lastIndexOf('/* Five-question hero refinement'),
+  );
+  assert.match(fiveQuestionRefinement, /@media \(max-width: 640px\)[\s\S]*?\.assetQuestionGroup \{[\s\S]*?grid-template-columns: repeat\(6, minmax\(0, 1fr\)\)/);
   assert.match(home, /@media \(max-width: 640px\)[\s\S]*?\.roleGrid \{[\s\S]*?grid-template-columns: minmax\(0, 1fr\)/);
   assert.match(home, /\.assetQuestion:focus-visible \{[\s\S]*?outline: 3px solid/);
   assert.match(home, /\.primaryCta,[\s\S]*?\.secondaryCta \{[\s\S]*?min-height: 3\.2rem/);

@@ -4,7 +4,7 @@ import test from 'node:test';
 
 const read = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
 
-test('homepage presents the living Asset Register hero and reveals the role choice on request', async () => {
+test('homepage presents the five-question living Asset Register hero and reveals role choice on request', async () => {
   const [page, preview, roleSelector, styles, auth] = await Promise.all([
     read('app/page.tsx'),
     read('app/home-asset-preview.tsx'),
@@ -34,86 +34,117 @@ test('homepage presents the living Asset Register hero and reveals the role choi
   assert.match(roleSelector, /addEventListener\('hashchange', syncVisibilityWithHash\)/);
   assert.match(roleSelector, /removeEventListener\('hashchange', syncVisibilityWithHash\)/);
   assert.match(roleSelector, /if \(!isVisible\) \{[\s\S]*?return null;/);
-  assert.match(
-    roleSelector,
-    /<section[\s\S]*?id="choose-role"[\s\S]*?aria-labelledby="choose-role-title"/,
-  );
   assert.match(roleSelector, /id="choose-role-title"[\s\S]*?Which best describes you\?/);
   assert.match(roleSelector, /I own or manage assets/);
   assert.match(roleSelector, /I sell, service or support assets/);
   assert.match(roleSelector, /href="\/auth\?accountType=owner#signup"/);
   assert.match(roleSelector, /href="\/auth\?accountType=dealer#signup"/);
-  assert.match(roleSelector, /window\.requestAnimationFrame/);
-  assert.match(roleSelector, /window\.cancelAnimationFrame/);
-  assert.match(roleSelector, /prefers-reduced-motion: reduce/);
   assert.match(roleSelector, /scrollIntoView\(/);
   assert.match(roleSelector, /focus\(\{ preventScroll: true \}\)/);
-  assert.match(roleSelector, /tabIndex=\{-1\}/);
-  assert.match(auth, /getSignupAccountTypeFromSearch/);
   assert.match(auth, /accountType === "owner" \|\| accountType === "dealer"/);
-  assert.match(auth, /accountSubtype: getDefaultSubtype\(requestedAccountType\)/);
 
+  assert.deepEqual(
+    [...preview.matchAll(/key: '([^']+)'/g)].map((match) => match[1]),
+    ['have', 'worth', 'manage', 'cost', 'attention'],
+  );
   assert.deepEqual(
     [...preview.matchAll(/label: '([^']+)'/g)].map((match) => match[1]),
     [
-      'What do I have?',
+      'What do you have?',
       'What is it worth?',
-      'What is it costing me?',
+      'How can I manage it?',
+      'What does it cost me?',
       'What needs attention?',
     ],
   );
-  assert.equal((preview.match(/type="button"/g) ?? []).length, 1);
-  assert.match(preview, /role="group"[\s\S]*?aria-label="Explore the Aim4price asset record"/);
-  assert.match(preview, /aria-pressed=\{isActive\}/);
-  assert.match(preview, /aria-controls="home-asset-preview"/);
-  assert.match(preview, /id="home-asset-preview"/);
-  assert.match(preview, /useState<QuestionKey>\('worth'\)/);
-  assert.match(preview, /QUESTION_ROTATION_MS = 5000/);
-  assert.match(preview, /prefers-reduced-motion: reduce/);
-  assert.match(preview, /autoAdvanceCount >= QUESTIONS\.length/);
-  assert.match(preview, /hasUserSelected/);
-  assert.match(preview, /window\.setTimeout/);
-  assert.doesNotMatch(preview, /window\.setInterval/);
-  assert.match(preview, /onMouseEnter=[\s\S]*?onMouseLeave=[\s\S]*?onFocusCapture=[\s\S]*?onBlurCapture=/);
 
+  assert.match(preview, /role="tablist"[\s\S]*?aria-label="Explore the Aim4price asset record"/);
+  assert.match(preview, /aria-orientation=\{isHorizontalRail \? 'horizontal' : 'vertical'\}/);
+  assert.match(preview, /matchMedia\('\(max-width: 760px\)'\)/);
+  assert.match(preview, /addEventListener\('change', syncOrientation\)/);
+  assert.match(preview, /removeEventListener\('change', syncOrientation\)/);
+  assert.match(preview, /role="tab"/);
+  assert.match(preview, /aria-selected=\{isActive\}/);
+  assert.match(preview, /aria-controls="home-asset-preview"/);
+  assert.match(preview, /tabIndex=\{isActive \? 0 : -1\}/);
+  assert.match(preview, /role="tabpanel"/);
+  assert.match(preview, /tabIndex=\{0\}/);
+  assert.match(preview, /aria-labelledby=\{\`home-asset-question-/);
+  assert.match(preview, /assetQuestionBubble} aria-hidden="true"/);
+  assert.match(
+    preview,
+    /assetQuestionBubble[\s\S]*?question\.icon[\s\S]*?assetQuestionLabel[\s\S]*?question\.label/,
+  );
+  assert.match(preview, /ArrowRight[\s\S]*?ArrowDown/);
+  assert.match(preview, /ArrowLeft[\s\S]*?ArrowUp/);
+  assert.match(preview, /event\.key === 'Home'/);
+  assert.match(preview, /event\.key === 'End'/);
+  assert.match(preview, /useState<QuestionKey>\('have'\)/);
+  assert.doesNotMatch(preview, /setTimeout|setInterval|QUESTION_ROTATION|autoAdvance/);
+
+  assert.match(preview, /switch \(activeQuestion\)/);
+  assert.match(preview, /case 'worth':[\s\S]*?<WorthPreview \/>/);
+  assert.match(preview, /case 'manage':[\s\S]*?<ManagePreview \/>/);
+  assert.match(preview, /case 'cost':[\s\S]*?<CostPreview \/>/);
+  assert.match(preview, /case 'attention':[\s\S]*?<AttentionPreview \/>/);
+  assert.match(preview, /case 'have':[\s\S]*?<AssetCardPreview \/>/);
+
+  // What do you have? — the approved Asset Register card, with the document column removed.
   assert.match(preview, /2023 Toyota Hilux Single Cab/);
   assert.match(preview, /R 237 150/);
   assert.match(preview, /R 450 000/);
   assert.match(preview, /113 677 km/);
   assert.match(preview, /\/brand\/home-asset-hilux-listing\.webp/);
   assert.match(preview, /alt="White Toyota Hilux single-cab work vehicle in a farm equipment yard"/);
-  assert.doesNotMatch(preview, /registration|serial|CAW 122854/i);
-  assert.doesNotMatch(preview, /fetch\(|\/api\/asset-register|asset-register-client/);
-  assert.match(preview, /assetPreviewActions} aria-hidden="true"/);
-  assert.doesNotMatch(preview, /assetPhotoAction|assetPhotoArrow|assetPhotoCount/);
-  assert.doesNotMatch(
-    preview,
-    /assetDocumentsPanel|assetDocumentAction|0 Documents|View documents|\+ Add document/,
-  );
-  assert.doesNotMatch(preview, /PREVIEW_STATES|previewState|home-asset-state|assetState/);
+  assert.doesNotMatch(preview, /assetDocumentsPanel|assetDocumentAction|0 Documents|View documents|\+ Add document/);
   assert.match(preview, /<AssetDetail label="Year" value="2023" \/>/);
-  assert.match(preview, /<AssetDetail label="Usage" value="113 677 km" \/>/);
-  assert.match(preview, /<AssetDetail label="Condition" value="Good" \/>/);
   assert.match(preview, /<AssetDetail label="Licensed" value="✓" status \/>/);
-  assert.match(preview, /<AssetDetail label="Mapped" value="✓" status \/>/);
-  assert.match(preview, /className=\{styles\.assetReplacementRow\}/);
-  assert.match(
-    preview,
-    /sizes="\(min-width: 1181px\) 17vw, \(min-width: 761px\) 32vw, 42vw"/,
-  );
-  assert.match(preview, /viewBox="0 0 1000 560"/);
-  assert.match(preview, /connectorDots/);
-  assert.equal((preview.match(/<circle key=\{index\}/g) ?? []).length, 1);
-  assert.equal((preview.match(/connectorPath: 'M 830 /g) ?? []).length, 4);
-  assert.equal((preview.match(/\{ x: 830, y:/g) ?? []).length, 4);
-  assert.doesNotMatch(preview, /connectorPath: 'M 1(?:22|32) /);
-  assert.match(preview, /assetShareAction[\s\S]*?<svg[\s\S]*?Share/);
-  assert.match(preview, /assetDetailsAction[\s\S]*?<svg[\s\S]*?Hide details/);
-  assert.match(preview, /assetManageAction[\s\S]*?<svg[\s\S]*?Manage/);
-  assert.match(preview, /M12\.22 2h-\.44/);
+
+  // What is it worth? — the final estimate page.
+  assert.match(preview, /Aim4price estimate/);
+  assert.match(preview, /Confidence: High/);
+  assert.match(preview, /R 239 454/);
+  assert.match(preview, /VAT excluded[\s\S]*?VAT included/);
+  assert.match(preview, /Estimate shown with VAT included\./);
+  assert.match(preview, /Create Ad/);
+  assert.match(preview, /Save to Asset Register/);
+  assert.match(preview, /Download PDF/);
+
+  // How can I manage it? — the same owner command set as the Asset Register.
+  for (const action of [
+    'Update asset',
+    'Reports',
+    'Add cost',
+    'Add fuel',
+    'Maintenance',
+    'Asset map',
+    'QR code',
+    'Marketplace',
+    'Dispose or remove asset',
+  ]) {
+    assert.match(preview, new RegExp(action));
+  }
+
+  // What does it cost me? — Fuel and ownership report choices.
+  assert.match(preview, /Download maintenance report/);
+  assert.match(preview, /Download fuel report/);
+  assert.match(preview, /Download depreciation log/);
+  assert.match(preview, /Download cost of ownership report/);
+
+  // What needs attention? — the real open-issue presentation.
+  assert.match(preview, /2024 Landini Super 110 \+ Front Loader/);
+  assert.match(preview, /Open issue reported/);
+  assert.match(preview, /Lisensie disk het verval 2025/);
+  assert.match(preview, /Sitplek kort aandag/);
+  assert.match(preview, /By Gerald · 29 Aug 2026/);
+
+  assert.match(preview, /viewBox="0 0 1000 600"/);
+  assert.equal((preview.match(/connectorPath: 'M 812 /g) ?? []).length, 5);
+  assert.equal((preview.match(/\{ x: 812, y:/g) ?? []).length, 5);
+  assert.match(preview, /assetConnectorActive/);
   assert.match(preview, /role="status"/);
   assert.match(preview, /hasUserSelected \? QUESTION_FEEDBACK\[activeQuestion\] : ''/);
-  assert.match(preview, /aria-label=\{status \? `\$\{label\}: yes` : undefined\}/);
+  assert.match(preview, /aria-label=\{status \? \`\$\{label\}: yes\` : undefined\}/);
 
   const heroImages = await Promise.all(
     [
@@ -128,49 +159,34 @@ test('homepage presents the living Asset Register hero and reveals the role choi
   const livingHeroStyles = styles.slice(
     styles.indexOf('/* === Living Asset Record homepage hero, September 2026 === */'),
   );
+  const refinementStyles = styles.slice(
+    styles.lastIndexOf('/* Five-question hero refinement'),
+  );
 
-  assert.match(livingHeroStyles, /Living Asset Record homepage hero, September 2026/);
-  assert.match(livingHeroStyles, /\.heroMedia \.shell \{[\s\S]*?width: var\(--shell-width\)/);
-  assert.match(livingHeroStyles, /\.heroMedia \{[\s\S]*?min-height: clamp\(32rem, 34vw, 36rem\);[\s\S]*?background: transparent/);
-  assert.doesNotMatch(livingHeroStyles, /\.heroMedia::before|\.heroMedia::after/);
-  assert.match(livingHeroStyles, /\.heroGrid \{[\s\S]*?grid-template-columns: minmax\(0, 1fr\) minmax\(0, 50rem\)/);
-  assert.match(livingHeroStyles, /\.assetHeroStage \{[\s\S]*?width: 50rem;[\s\S]*?aspect-ratio: 1000 \/ 560;[\s\S]*?transform: translate\(5\.5rem, -1\.25rem\)/);
-  assert.match(livingHeroStyles, /\.assetQuestion \{[\s\S]*?--question-size: 6\.25rem/);
-  assert.match(livingHeroStyles, /\.assetQuestionActive \{[\s\S]*?--question-size: 6\.6rem/);
-  assert.match(styles, /\.assetPreviewCard \{[\s\S]*?border: 1px solid rgba\(151, 205, 181, 0\.9\)/);
-  assert.match(styles, /\.assetPreviewCard \{[\s\S]*?top: 9%;[\s\S]*?right: 17%;[\s\S]*?bottom: 16%;[\s\S]*?left: 17%/);
-  assert.match(styles, /\.assetPreviewBody \{[\s\S]*?grid-template-columns: minmax\(0, 1\.23fr\) minmax\(0, 1fr\)/);
-  assert.match(styles, /\.assetConnectors circle \{[\s\S]*?fill: rgba\(115, 176, 151, 0\.78\)/);
-  assert.match(styles, /\.assetQuestionActive \{[\s\S]*?linear-gradient\(145deg, #1bb27d 0%, #087d56 100%\)/);
-  assert.match(styles, /\.assetQuestion:focus-visible \{[\s\S]*?outline: 3px solid/);
-  assert.match(styles, /\.assetQuestionHave \{[\s\S]*?top: -13%;[\s\S]*?right: 0\.3%/);
-  assert.match(styles, /\.assetQuestionWorth \{[\s\S]*?top: 10%;[\s\S]*?right: 0\.3%/);
-  assert.match(styles, /\.assetQuestionCost \{[\s\S]*?top: 34%;[\s\S]*?right: 0\.3%/);
-  assert.match(styles, /\.assetQuestionAttention \{[\s\S]*?top: 59\.3%;[\s\S]*?right: 0\.3%/);
-  assert.match(styles, /\.roleSection \{[\s\S]*?scroll-margin-top: 7rem/);
-  assert.match(styles, /\.roleSection \{[\s\S]*?background: transparent/);
-  assert.match(styles, /\.roleTitle:focus-visible \{[\s\S]*?outline: 3px solid/);
-  assert.match(styles, /@media \(max-width: 1180px\)[\s\S]*?\.heroGrid \{[\s\S]*?grid-template-columns: minmax\(0, 1fr\)/);
-  assert.match(styles, /@media \(max-width: 1360px\)[\s\S]*?\.assetConnectors \{[\s\S]*?display: none/);
-  assert.match(styles, /@media \(max-width: 1360px\)[\s\S]*?\.assetQuestion \{[\s\S]*?--question-size: 5rem/);
-  assert.match(styles, /@media \(max-width: 1360px\)[\s\S]*?\.assetQuestionHave \{[\s\S]*?top: 0/);
-  assert.match(styles, /@media \(max-width: 1360px\)[\s\S]*?\.assetQuestionWorth \{[\s\S]*?top: 24%/);
-  assert.match(styles, /@media \(max-width: 1360px\)[\s\S]*?\.assetQuestionCost \{[\s\S]*?top: 48%/);
-  assert.match(styles, /@media \(max-width: 1360px\)[\s\S]*?\.assetQuestionAttention \{[\s\S]*?top: 72%/);
-  assert.match(styles, /@media \(max-width: 760px\)[\s\S]*?\.assetPreviewBody \{[\s\S]*?grid-template-columns: minmax\(0, 1\.05fr\) minmax\(0, 1fr\)/);
-  assert.match(styles, /Exact large-desktop composition from the approved homepage hero artwork/);
-  assert.match(styles, /@media \(min-width: 1361px\)[\s\S]*?\.assetHeroStage \{[\s\S]*?translate\(5\.75rem, -1\.25rem\)/);
-  assert.match(styles, /@media \(min-width: 1361px\)[\s\S]*?\.assetQuestion:not\(\.assetQuestionActive\) svg \{[\s\S]*?width: 1\.95rem/);
-  assert.match(styles, /@media \(min-width: 1361px\)[\s\S]*?\.assetPreviewHeader \{[\s\S]*?padding-left: 0\.55rem/);
-  assert.match(styles, /@media \(min-width: 1361px\)[\s\S]*?\.assetPreviewActions \{[\s\S]*?display: flex/);
-  assert.match(styles, /@media \(min-width: 1361px\)[\s\S]*?\.assetDetailsPanel \{[\s\S]*?padding: 0\.4rem/);
-  assert.match(styles, /@media \(max-width: 640px\)[\s\S]*?\.assetQuestionGroup \{[\s\S]*?grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
-  assert.doesNotMatch(styles, /\.assetDocumentsPanel|\.assetDocumentAction/);
-  assert.doesNotMatch(styles, /\.assetState|@keyframes assetStateReveal|\.assetConnectorActive/);
-  assert.match(styles, /@media \(prefers-reduced-motion: reduce\)/);
-  assert.match(styles, /@media \(forced-colors: active\)/);
+  assert.match(livingHeroStyles, /\.heroMedia \.shell \{[\s\S]*?94rem/);
+  assert.match(livingHeroStyles, /\.heroGrid \{[\s\S]*?grid-template-columns: minmax\(30rem, 38rem\) minmax\(42rem, 48rem\)[\s\S]*?gap: clamp\(3rem, 4\.25vw, 5rem\)/);
+  assert.match(livingHeroStyles, /\.heroCopy \{[\s\S]*?width: min\(100%, 38rem\)[\s\S]*?transform: translateY\(0\.9rem\)/);
+  assert.match(livingHeroStyles, /\.assetHeroStage \{[\s\S]*?width: min\(100%, 48rem\)[\s\S]*?aspect-ratio: 1000 \/ 600[\s\S]*?justify-self: center/);
+  assert.match(livingHeroStyles, /\.assetQuestionGroup \{[\s\S]*?width: 8rem[\s\S]*?grid-template-rows: repeat\(5, minmax\(0, 1fr\)\)/);
+  assert.match(livingHeroStyles, /\.assetQuestion \{[\s\S]*?--question-size: 3\.05rem[\s\S]*?min-height: var\(--tap-target-min, 44px\)/);
+  assert.match(livingHeroStyles, /\.assetQuestionActive \{[\s\S]*?--question-size: 3\.35rem/);
+  assert.match(livingHeroStyles, /\.assetQuestionLabel \{[\s\S]*?font-size: 0\.72rem/);
+  assert.match(livingHeroStyles, /\.assetPreviewCard \{[\s\S]*?top: 8%;[\s\S]*?right: 9rem;[\s\S]*?bottom: 8%;[\s\S]*?left: 0/);
+  assert.match(livingHeroStyles, /@keyframes assetPreviewReveal/);
+  assert.match(livingHeroStyles, /\.worthPreview/);
+  assert.match(livingHeroStyles, /\.manageGrid/);
+  assert.match(livingHeroStyles, /\.reportList/);
+  assert.match(livingHeroStyles, /\.attentionPreview/);
+  assert.doesNotMatch(livingHeroStyles, /\.assetDocumentsPanel|\.assetDocumentAction/);
+
+  assert.match(refinementStyles, /@media \(min-width: 1361px\)[\s\S]*?\.assetHeroStage \{[\s\S]*?transform: none/);
+  assert.match(refinementStyles, /@media \(min-width: 1181px\) and \(max-width: 1600px\)[\s\S]*?width: min\(calc\(100% - 4rem\), 84rem\)/);
+  assert.match(refinementStyles, /@media \(max-width: 1180px\)[\s\S]*?\.assetHeroStage \{[\s\S]*?justify-self: center/);
+  assert.match(refinementStyles, /@media \(max-width: 760px\)[\s\S]*?grid-template-columns: repeat\(5, minmax\(0, 1fr\)\)/);
+  assert.match(refinementStyles, /@media \(max-width: 640px\)[\s\S]*?grid-template-columns: repeat\(6, minmax\(0, 1fr\)\)/);
+  assert.match(refinementStyles, /@media \(max-width: 640px\)[\s\S]*?\.assetQuestion:nth-child\(4\) \{[\s\S]*?grid-column: 2 \/ span 2/);
+  assert.match(refinementStyles, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.assetPreviewState \{[\s\S]*?animation: none/);
+  assert.match(refinementStyles, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.assetQuestion:hover \.assetQuestionBubble \{[\s\S]*?transform: none/);
+  assert.match(refinementStyles, /@media \(forced-colors: active\)[\s\S]*?\.assetQuestionBubble/);
   assert.match(styles, /\.assetPreviewActions \{[\s\S]*?pointer-events: none/);
-  assert.match(styles, /home-asset-hilux-thumb-side\.webp/);
-  assert.match(styles, /home-asset-hilux-thumb-rear\.webp/);
-  assert.match(styles, /home-asset-hilux-thumb-alt\.webp/);
 });
