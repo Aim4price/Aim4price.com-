@@ -326,6 +326,14 @@ test('homepage presents the five-question living Asset Register hero and reveals
   assert.match(storyStyles, /\.heroStory \.heroTitle \{[\s\S]*?max-width: 36rem;[\s\S]*?font-size: 3\.45rem/);
   assert.doesNotMatch(styles, /\.heroStory \.heroSticky \.shell \{[^}]*\b(?:92|100)rem\b/s);
 
+  // The visible copy and card move together inside the header rails without changing card insets.
+  assert.match(styles, /@media \(min-width: 1361px\)[\s\S]*?\.heroStory \.heroCopy,[\s\S]*?\.heroStory \.assetHeroStage \{[\s\S]*?transform: translateX\(3\.25rem\)/);
+
+  // The active question sits subtly above the card and the CTAs follow the copy closely.
+  assert.match(styles, /@media \(min-width: 1181px\)[\s\S]*?\.heroStory \.heroCopyState \{[\s\S]*?min-height: 12\.5rem/);
+  assert.match(styles, /@media \(min-width: 1181px\)[\s\S]*?\.heroStory \.heroActions \{[\s\S]*?margin-top: 1\.1rem/);
+  assert.match(styles, /@media \(min-width: 1181px\)[\s\S]*?\.heroStory \.assetActiveQuestion \{[\s\S]*?top: -4\.25rem;[\s\S]*?bottom: auto/);
+
   // Card and copy changes are immediate; the hero has no entrance, pulse or smooth-scroll motion.
   assert.doesNotMatch(storyStyles, /@keyframes hero(?:TitleLineReveal|TextReveal|SupportReveal|CardReveal)|@keyframes activeQuestionPulse/);
   assert.deepEqual(
