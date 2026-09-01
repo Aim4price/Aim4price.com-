@@ -104,9 +104,19 @@ test('homepage presents the five-question living Asset Register hero and reveals
   // What is it worth? — the final estimate page.
   assert.match(preview, /Aim4price estimate/);
   assert.match(preview, /Confidence: High/);
-  assert.match(preview, /R 239 454/);
+  assert.match(preview, /function WorthPreview\(\)[\s\S]*?2023 Toyota Hilux Single Cab/);
+  assert.match(preview, /function WorthPreview\(\)[\s\S]*?R 237 150/);
+  assert.doesNotMatch(preview, /R 239 454/);
   assert.match(preview, /VAT excluded[\s\S]*?VAT included/);
-  assert.match(preview, /Estimate shown with VAT included\./);
+  assert.match(preview, /Estimate shown with VAT excluded\./);
+  assert.match(preview, /Asset Valuation Report preview/);
+  assert.match(preview, /Miniature Asset Valuation Report for the 2023 Toyota Hilux Single Cab/);
+  assert.match(preview, /Asset Details/);
+  assert.match(preview, /Record Summary/);
+  assert.match(preview, /Client \/ Asset Owner/);
+  assert.match(preview, /Aim4price demo owner/);
+  assert.match(preview, /\/brand\/home-asset-hilux-thumb-side\.webp/);
+  assert.match(preview, /\/brand\/home-asset-hilux-thumb-rear\.webp/);
   assert.match(preview, /Create Ad/);
   assert.match(preview, /Save to Asset Register/);
   assert.match(preview, /Download PDF/);
@@ -175,7 +185,11 @@ test('homepage presents the five-question living Asset Register hero and reveals
   assert.match(livingHeroStyles, /\.assetActiveQuestionMain svg \{[\s\S]*?width: 1\.55rem/);
   assert.match(livingHeroStyles, /\.assetActiveQuestionAccent \{[\s\S]*?width: 2\.5rem[\s\S]*?height: 0\.18rem/);
   assert.match(livingHeroStyles, /@keyframes assetPreviewReveal/);
-  assert.match(livingHeroStyles, /\.worthPreview/);
+  assert.match(livingHeroStyles, /\.worthPreview \{[\s\S]*?grid-template-columns: minmax\(0, 1\.18fr\) minmax\(11\.75rem, 1fr\)[\s\S]*?grid-template-rows: minmax\(0, 1fr\) 2\.9rem/);
+  assert.match(livingHeroStyles, /\.worthReportPreview \{[\s\S]*?min-height: 0;[\s\S]*?overflow: hidden/);
+  assert.match(livingHeroStyles, /\.worthReportPaper \{[\s\S]*?min-width: 0;[\s\S]*?min-height: 0;[\s\S]*?overflow: hidden/);
+  assert.match(livingHeroStyles, /\.worthReportBody \{[\s\S]*?min-width: 0;[\s\S]*?min-height: 0/);
+  assert.match(livingHeroStyles, /\.worthActions \{[\s\S]*?grid-column: 1 \/ -1;[\s\S]*?grid-template-columns: minmax\(0, 0\.82fr\) minmax\(0, 1\.25fr\) minmax\(0, 0\.92fr\)/);
   assert.match(livingHeroStyles, /\.manageGrid/);
   assert.match(livingHeroStyles, /\.reportList/);
   assert.match(livingHeroStyles, /\.attentionPreview/);
@@ -190,6 +204,7 @@ test('homepage presents the five-question living Asset Register hero and reveals
   assert.match(refinementStyles, /@media \(max-width: 760px\)[\s\S]*?\.assetActiveQuestion \{[\s\S]*?order: 3/);
   assert.match(refinementStyles, /@media \(max-width: 640px\)[\s\S]*?grid-template-columns: repeat\(6, minmax\(0, 1fr\)\)/);
   assert.match(refinementStyles, /@media \(max-width: 640px\)[\s\S]*?\.assetQuestion:nth-child\(4\) \{[\s\S]*?grid-column: 2 \/ span 2/);
+  assert.match(refinementStyles, /@media \(max-width: 640px\)[\s\S]*?\.worthReportPreview,[\s\S]*?\.worthActions \{[\s\S]*?display: none/);
   assert.match(refinementStyles, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.assetPreviewState \{[\s\S]*?animation: none/);
   assert.match(refinementStyles, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.assetQuestion:hover \.assetQuestionBubble \{[\s\S]*?transform: none/);
   assert.match(refinementStyles, /@media \(forced-colors: active\)[\s\S]*?\.assetQuestionBubble/);
