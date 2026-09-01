@@ -5,7 +5,6 @@ import { useEffect, useRef, useState } from 'react';
 import styles from './page.module.css';
 
 const ROLE_SECTION_HASH = '#choose-role';
-const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
 
 export default function HomeRoleSelector() {
   const [isVisible, setIsVisible] = useState(false);
@@ -30,7 +29,7 @@ export default function HomeRoleSelector() {
 
     const frame = window.requestAnimationFrame(() => {
       sectionRef.current?.scrollIntoView({
-        behavior: window.matchMedia(REDUCED_MOTION_QUERY).matches ? 'auto' : 'smooth',
+        behavior: 'auto',
         block: 'start',
       });
       headingRef.current?.focus({ preventScroll: true });

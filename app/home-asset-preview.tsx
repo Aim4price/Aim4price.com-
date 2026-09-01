@@ -4,7 +4,12 @@ import Image from 'next/image';
 import { useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import styles from './page.module.css';
 
-type QuestionKey = 'have' | 'worth' | 'manage' | 'cost' | 'attention';
+export type QuestionKey = 'have' | 'worth' | 'manage' | 'cost' | 'attention';
+
+type HomeAssetPreviewProps = {
+  activeQuestion: QuestionKey;
+  onQuestionChange: (question: QuestionKey, index: number) => void;
+};
 
 type Question = {
   key: QuestionKey;
@@ -85,8 +90,10 @@ const QUESTIONS: readonly Question[] = [
   },
 ];
 
-export default function HomeAssetPreview() {
-  const [activeQuestion, setActiveQuestion] = useState<QuestionKey>('have');
+export default function HomeAssetPreview({
+  activeQuestion,
+  onQuestionChange,
+}: HomeAssetPreviewProps) {
   const [hasUserSelected, setHasUserSelected] = useState(false);
   const questionRefs = useRef<Array<HTMLButtonElement | null>>([]);
 
@@ -94,7 +101,7 @@ export default function HomeAssetPreview() {
     const question = QUESTIONS[index];
     if (!question) return;
 
-    setActiveQuestion(question.key);
+    onQuestionChange(question.key, index);
     setHasUserSelected(true);
     if (moveFocus) questionRefs.current[index]?.focus();
   };
@@ -178,7 +185,19 @@ export default function HomeAssetPreview() {
           </svg>
           <span>{QUESTIONS[activeIndex]?.label ?? QUESTIONS[0].label}</span>
         </span>
-        <span className={styles.assetActiveQuestionAccent} aria-hidden="true" />
+        <span className={styles.assetStoryProgress} aria-hidden="true">
+          {QUESTIONS.map((question, index) => (
+            <span
+              key={question.key}
+              className={index === activeIndex ? styles.assetStoryProgressActive : undefined}
+            />
+          ))}
+        </span>
+        <span className={styles.assetScrollCue} aria-hidden="true">
+          <svg viewBox="0 0 24 24">
+            <path d="m7 9.5 5 5 5-5" />
+          </svg>
+        </span>
       </p>
 
       <span
