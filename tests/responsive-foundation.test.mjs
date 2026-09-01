@@ -89,6 +89,8 @@ test('home page keeps the Asset Register hero usable at phone and tablet widths'
   assert.match(story, /\.heroStory \.assetHeroStage \{[\s\S]*?align-self: start/);
   assert.match(story, /\.heroSticky \.shell \{[\s\S]*?width: min\(calc\(100% - 4rem\), 84rem\)/);
   assert.match(story, /\.heroStory \.assetQuestionGroup \{[\s\S]*?right: auto;[\s\S]*?left: 0/);
+  assert.match(home, /@media \(min-width: 1361px\)[\s\S]*?\.heroStory \.heroCopy,[\s\S]*?\.heroStory \.assetHeroStage \{[\s\S]*?transform: translateX\(3\.25rem\)/);
+  assert.match(home, /@media \(min-width: 1181px\)[\s\S]*?\.heroStory \.assetActiveQuestion \{[\s\S]*?top: -4\.25rem;[\s\S]*?bottom: auto/);
   assert.doesNotMatch(story, /@keyframes hero|@keyframes activeQuestionPulse/);
 
   assert.match(story, /@media \(max-width: 1180px\)[\s\S]*?\.heroStory \{[\s\S]*?min-height: 0/);
