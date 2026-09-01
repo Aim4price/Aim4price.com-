@@ -19,25 +19,15 @@ type Question = {
   icon: ReactNode;
 };
 
-type PreviewTone = 'neutral' | 'success' | 'warning' | 'value';
-
-type PreviewRow = {
-  label: string;
-  value: string;
-  tone?: PreviewTone;
-};
-
-type PreviewState = {
-  heading: string;
-  description: string;
-  rows: readonly PreviewRow[];
-  featureLabel: string;
-  featureValue: string;
-  feedback: string;
-};
-
 const QUESTION_ROTATION_MS = 5000;
 const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
+
+const QUESTION_FEEDBACK: Readonly<Record<QuestionKey, string>> = {
+  have: 'Asset identity and condition details highlighted.',
+  worth: 'Current and replacement values highlighted.',
+  cost: 'Cost Ledger tracking for fuel, maintenance and repairs highlighted.',
+  attention: 'Licence, mapping and replacement information highlighted.',
+};
 
 const QUESTIONS: readonly Question[] = [
   {
@@ -108,67 +98,8 @@ const QUESTIONS: readonly Question[] = [
   },
 ];
 
-const PREVIEW_STATES: Readonly<Record<QuestionKey, PreviewState>> = {
-  have: {
-    heading: 'Asset overview',
-    description: 'Identity, condition and status in one place.',
-    rows: [
-      { label: 'Year model', value: '2023' },
-      { label: 'Usage', value: '113 677 km' },
-      { label: 'Condition', value: 'Good', tone: 'success' },
-      { label: 'Licensed', value: 'Confirmed', tone: 'success' },
-      { label: 'Mapped', value: 'Confirmed', tone: 'success' },
-    ],
-    featureLabel: 'Living record',
-    featureValue: 'Complete',
-    feedback: 'Showing asset identity, condition and status.',
-  },
-  worth: {
-    heading: 'Value over time',
-    description: 'Know its value today and what replacement would cost.',
-    rows: [
-      { label: 'Aim4price value', value: 'R 237 150', tone: 'value' },
-      { label: 'Replacement price', value: 'R 450 000', tone: 'value' },
-      { label: 'Updated', value: '01 Sept 2026' },
-      { label: 'Value basis', value: 'Aim4price estimate' },
-      { label: 'VAT', value: 'Excluded' },
-    ],
-    featureLabel: 'Value history',
-    featureValue: 'Tracked over time',
-    feedback: 'Showing current value, replacement price and value tracking.',
-  },
-  cost: {
-    heading: 'Cost of ownership',
-    description: 'Every running cost recorded against this asset.',
-    rows: [
-      { label: 'Fuel', value: 'Recorded per fill-up' },
-      { label: 'Maintenance', value: 'Service history' },
-      { label: 'Repairs', value: 'Parts and labour' },
-      { label: 'Other costs', value: 'Invoices and fees' },
-      { label: 'Period', value: 'Lifetime record' },
-    ],
-    featureLabel: 'Cost Ledger',
-    featureValue: 'One complete ledger',
-    feedback: 'Showing fuel, maintenance, repairs and ownership costs.',
-  },
-  attention: {
-    heading: 'Needs attention',
-    description: 'Missing information and upcoming actions at a glance.',
-    rows: [
-      { label: 'Licence', value: 'Confirmed', tone: 'success' },
-      { label: 'Location', value: 'Mapped', tone: 'success' },
-      { label: 'Insurance', value: 'Confirm', tone: 'warning' },
-      { label: 'Finance', value: 'Confirm', tone: 'warning' },
-      { label: 'Service history', value: 'Update required', tone: 'warning' },
-    ],
-    featureLabel: 'Attention summary',
-    featureValue: '3 items to review',
-    feedback: 'Showing missing information and items requiring attention.',
-  },
-};
-
 export default function HomeAssetPreview() {
-  const [activeQuestion, setActiveQuestion] = useState<QuestionKey>('have');
+  const [activeQuestion, setActiveQuestion] = useState<QuestionKey>('worth');
   const [isPaused, setIsPaused] = useState(false);
   const [autoAdvanceCount, setAutoAdvanceCount] = useState(0);
   const [hasUserSelected, setHasUserSelected] = useState(false);
@@ -177,7 +108,7 @@ export default function HomeAssetPreview() {
     if (
       isPaused ||
       hasUserSelected ||
-      autoAdvanceCount >= QUESTIONS.length - 1 ||
+      autoAdvanceCount >= QUESTIONS.length ||
       window.matchMedia(REDUCED_MOTION_QUERY).matches
     ) {
       return undefined;
@@ -193,8 +124,6 @@ export default function HomeAssetPreview() {
 
     return () => window.clearTimeout(rotation);
   }, [autoAdvanceCount, hasUserSelected, isPaused]);
-
-  const previewState = PREVIEW_STATES[activeQuestion];
 
   return (
     <div
@@ -215,15 +144,7 @@ export default function HomeAssetPreview() {
         aria-hidden="true"
       >
         {QUESTIONS.map((question) => (
-          <g
-            key={question.key}
-            className={[
-              question.connectorClass,
-              question.key === activeQuestion ? styles.assetConnectorActive : '',
-            ]
-              .filter(Boolean)
-              .join(' ')}
-          >
+          <g key={question.key} className={question.connectorClass}>
             <path d={question.connectorPath} />
             {question.connectorDots.map((dot, index) => (
               <circle key={index} cx={dot.x} cy={dot.y} r="4" />
@@ -243,7 +164,6 @@ export default function HomeAssetPreview() {
           return (
             <button
               key={question.key}
-              id={`asset-question-${question.key}`}
               type="button"
               className={[
                 styles.assetQuestion,
@@ -253,7 +173,7 @@ export default function HomeAssetPreview() {
                 .filter(Boolean)
                 .join(' ')}
               aria-pressed={isActive}
-              aria-controls="home-asset-state"
+              aria-controls="home-asset-preview"
               onClick={() => {
                 setActiveQuestion(question.key);
                 setHasUserSelected(true);
@@ -332,28 +252,21 @@ export default function HomeAssetPreview() {
             </div>
           </div>
 
-          <section
-            key={activeQuestion}
-            id="home-asset-state"
-            className={styles.assetDetailsPanel}
-            aria-labelledby={`asset-question-${activeQuestion}`}
-          >
-            <header className={styles.assetStateHeader}>
-              <h3>{previewState.heading}</h3>
-              <p>{previewState.description}</p>
-            </header>
+          <div className={styles.assetDetailsPanel}>
+            <AssetDetail label="Year" value="2023" />
+            <AssetDetail label="Usage" value="113 677 km" />
+            <AssetDetail label="Condition" value="Good" />
+            <AssetDetail label="Licensed" value="✓" status />
+            <AssetDetail label="Mapped" value="✓" status />
 
-            <dl className={styles.assetStateRows}>
-              {previewState.rows.map((row) => (
-                <AssetDetail key={row.label} {...row} />
-              ))}
-            </dl>
-
-            <div className={styles.assetStateFeature}>
-              <span>{previewState.featureLabel}</span>
-              <strong>{previewState.featureValue}</strong>
+            <div className={styles.assetReplacementRow}>
+              <span>Replacement price</span>
+              <strong>
+                R 450 000
+                <small>Excl. VAT</small>
+              </strong>
             </div>
-          </section>
+          </div>
         </div>
       </article>
 
@@ -363,7 +276,7 @@ export default function HomeAssetPreview() {
         aria-live="polite"
         aria-atomic="true"
       >
-        {hasUserSelected ? previewState.feedback : ''}
+        {hasUserSelected ? QUESTION_FEEDBACK[activeQuestion] : ''}
       </span>
     </div>
   );
@@ -372,12 +285,21 @@ export default function HomeAssetPreview() {
 function AssetDetail({
   label,
   value,
-  tone = 'neutral',
-}: PreviewRow) {
+  status = false,
+}: {
+  label: string;
+  value: string;
+  status?: boolean;
+}) {
   return (
     <div className={styles.assetDetailRow}>
-      <dt>{label}</dt>
-      <dd data-tone={tone}>{value}</dd>
+      <span>{label}</span>
+      <strong
+        className={status ? styles.assetStatusValue : undefined}
+        aria-label={status ? `${label}: yes` : undefined}
+      >
+        {value}
+      </strong>
     </div>
   );
 }
