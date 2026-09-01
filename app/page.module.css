@@ -1087,21 +1087,7 @@
 .assetConnectorWorth,
 .assetConnectorCost,
 .assetConnectorAttention {
-  opacity: 0.58;
-  transition: opacity 180ms ease;
-}
-
-.assetConnectorActive {
   opacity: 1;
-}
-
-.assetConnectorActive path {
-  stroke: rgba(77, 158, 126, 0.94);
-  stroke-width: 2;
-}
-
-.assetConnectorActive circle {
-  fill: rgba(77, 158, 126, 0.94);
 }
 
 .assetQuestionGroup {
@@ -1112,7 +1098,7 @@
 }
 
 .assetQuestion {
-  --question-size: 6rem;
+  --question-size: 6.25rem;
   position: absolute;
   display: flex;
   width: var(--question-size);
@@ -1185,7 +1171,7 @@
 }
 
 .assetQuestionActive {
-  --question-size: 6.4rem;
+  --question-size: 6.6rem;
   color: #ffffff;
   border-color: rgba(20, 154, 107, 0.78);
   background:
@@ -1397,17 +1383,20 @@
 }
 
 .assetPhotoPanel {
-  position: relative;
-  display: grid;
   min-width: 0;
-  min-height: 0;
-  grid-template-rows: minmax(0, 1fr) 2.35rem;
-  gap: 0.42rem;
-  padding: 0.42rem;
   overflow: hidden;
   border: 1px solid rgba(201, 216, 223, 0.92);
   border-radius: 0.9rem;
   background: #eef3f6;
+}
+
+.assetPhotoPanel {
+  position: relative;
+  display: grid;
+  min-height: 0;
+  grid-template-rows: minmax(0, 1fr) 2.35rem;
+  gap: 0.42rem;
+  padding: 0.42rem;
   transition:
     border-color 180ms ease,
     box-shadow 180ms ease;
@@ -1445,72 +1434,10 @@
 
 .assetDetailsPanel {
   display: grid;
-  box-sizing: border-box;
   min-width: 0;
   min-height: 0;
-  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-rows: repeat(5, minmax(1.6rem, 1fr)) minmax(2.6rem, 1.35fr);
   gap: 0.32rem;
-  padding: 0.4rem;
-  border: 1px solid rgba(201, 216, 223, 0.92);
-  border-radius: 0.9rem;
-  background: #f8fafb;
-  animation: assetStateReveal 260ms ease-out both;
-  transition:
-    border-color 180ms ease,
-    box-shadow 180ms ease;
-}
-
-@keyframes assetStateReveal {
-  from {
-    opacity: 0.55;
-    transform: translateY(0.22rem);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.assetStateHeader {
-  min-width: 0;
-  padding: 0.08rem 0.18rem 0.18rem;
-}
-
-.assetStateHeader h3,
-.assetStateHeader p {
-  margin: 0;
-}
-
-.assetStateHeader h3 {
-  overflow: hidden;
-  color: #0b4a39;
-  font-size: clamp(0.62rem, 0.72vw, 0.76rem);
-  line-height: 1.1;
-  font-weight: 850;
-  letter-spacing: -0.02em;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.assetStateHeader p {
-  margin-top: 0.2rem;
-  overflow: hidden;
-  color: #687983;
-  font-size: clamp(0.43rem, 0.49vw, 0.52rem);
-  line-height: 1.2;
-  font-weight: 650;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.assetStateRows {
-  display: grid;
-  min-width: 0;
-  min-height: 0;
-  grid-template-rows: repeat(5, minmax(1.25rem, 1fr));
-  gap: 0.25rem;
-  margin: 0;
 }
 
 .assetDetailRow {
@@ -1526,16 +1453,15 @@
     box-shadow 180ms ease;
 }
 
-.assetDetailRow > dt,
-.assetDetailRow > dd {
+.assetDetailRow > span,
+.assetDetailRow > strong {
   display: flex;
   min-width: 0;
   align-items: center;
-  margin: 0;
   padding: 0.25rem 0.55rem;
 }
 
-.assetDetailRow > dt {
+.assetDetailRow > span {
   color: #334b5c;
   background: #f1f6f8;
   font-size: clamp(0.47rem, 0.56vw, 0.6rem);
@@ -1545,7 +1471,7 @@
   text-transform: uppercase;
 }
 
-.assetDetailRow > dd {
+.assetDetailRow > strong {
   overflow: hidden;
   color: #10352b;
   font-size: clamp(0.5rem, 0.6vw, 0.64rem);
@@ -1555,23 +1481,14 @@
   white-space: nowrap;
 }
 
-.assetDetailRow > dd[data-tone='success'] {
-  color: #0b8a5a;
-  background: #f0faf5;
+.assetStatusValue {
+  justify-content: flex-start;
+  color: #16a85b !important;
+  background: #ffffff;
+  font-size: clamp(0.78rem, 0.93vw, 0.96rem) !important;
 }
 
-.assetDetailRow > dd[data-tone='warning'] {
-  color: #a25520;
-  background: #fff6ed;
-}
-
-.assetDetailRow > dd[data-tone='value'] {
-  color: #0b5b45;
-  background: #f0faf6;
-  font-weight: 900;
-}
-
-.assetStateFeature {
+.assetReplacementRow {
   display: grid;
   min-width: 0;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -1589,7 +1506,7 @@
     box-shadow 180ms ease;
 }
 
-.assetStateFeature > span {
+.assetReplacementRow > span {
   overflow: hidden;
   color: #176f52;
   font-size: clamp(0.47rem, 0.56vw, 0.59rem);
@@ -1601,16 +1518,23 @@
   white-space: nowrap;
 }
 
-.assetStateFeature > strong {
-  overflow: hidden;
+.assetReplacementRow > strong {
   color: #062f27;
-  font-size: clamp(0.65rem, 0.76vw, 0.82rem);
+  font-size: clamp(0.72rem, 0.86vw, 0.92rem);
   line-height: 1;
   font-weight: 900;
   letter-spacing: -0.025em;
   text-align: right;
-  text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.assetReplacementRow small {
+  display: block;
+  margin-top: 0.18rem;
+  color: #5d6d7c;
+  font-size: clamp(0.42rem, 0.48vw, 0.51rem);
+  line-height: 1;
+  font-weight: 800;
 }
 
 .assetQuestionFeedback {
@@ -1626,9 +1550,9 @@
 }
 
 .assetPreviewCard[data-active-question='have'] .assetPhotoPanel,
-.assetPreviewCard[data-active-question='worth'] .assetDetailsPanel,
-.assetPreviewCard[data-active-question='cost'] .assetDetailsPanel,
-.assetPreviewCard[data-active-question='attention'] .assetDetailsPanel {
+.assetPreviewCard[data-active-question='have'] .assetDetailRow:nth-child(-n + 3),
+.assetPreviewCard[data-active-question='attention'] .assetDetailRow:nth-child(n + 4),
+.assetPreviewCard[data-active-question='worth'] .assetReplacementRow {
   border-color: rgba(25, 157, 111, 0.7);
   box-shadow: 0 0 0 3px rgba(25, 157, 111, 0.1);
 }
@@ -1844,6 +1768,34 @@
     letter-spacing: -0.018em;
   }
 
+  .assetQuestionHave {
+    top: -13%;
+    right: 0.3%;
+    bottom: auto;
+    left: auto;
+  }
+
+  .assetQuestionWorth {
+    top: 10%;
+    right: 0.3%;
+    bottom: auto;
+    left: auto;
+  }
+
+  .assetQuestionCost {
+    top: 34%;
+    right: 0.3%;
+    bottom: auto;
+    left: auto;
+  }
+
+  .assetQuestionAttention {
+    top: 59.3%;
+    right: 0.3%;
+    bottom: auto;
+    left: auto;
+  }
+
   .assetPreviewCard {
     top: 8.8%;
   }
@@ -1955,36 +1907,39 @@
 
   .assetDetailsPanel {
     box-sizing: border-box;
-    grid-template-rows: auto minmax(0, 1fr) auto;
-    gap: 0.3rem;
+    grid-template-rows: repeat(5, minmax(1.6rem, 1fr)) minmax(2.6rem, 1.55fr);
+    gap: 0.25rem;
     padding: 0.4rem;
     border: 1px solid rgba(201, 216, 223, 0.92);
     border-radius: 0.9rem;
     background: #f8fafb;
   }
 
-  .assetStateRows {
-    grid-template-rows: repeat(5, minmax(1.25rem, 1fr));
-    gap: 0.25rem;
-  }
-
-  .assetDetailRow > dt {
+  .assetDetailRow > span {
     font-size: 0.54rem;
     font-weight: 800;
   }
 
-  .assetDetailRow > dd {
+  .assetDetailRow > strong {
     font-size: 0.56rem;
     font-weight: 800;
   }
 
-  .assetStateFeature > span {
+  .assetStatusValue {
+    font-size: 0.9rem !important;
+  }
+
+  .assetReplacementRow > span {
     font-size: 0.54rem;
     font-weight: 800;
   }
 
-  .assetStateFeature > strong {
+  .assetReplacementRow > strong {
     font-size: 0.82rem;
+  }
+
+  .assetReplacementRow small {
+    font-size: 0.46rem;
   }
 }
 
@@ -2020,6 +1975,8 @@
   .assetQuestionCost,
   .assetQuestionAttention {
     right: 0.3%;
+    bottom: auto;
+    left: auto;
   }
 
   .assetQuestionHave {
@@ -2216,16 +2173,11 @@
   .assetQuestion,
   .assetCurrentValue,
   .assetPhotoPanel,
-  .assetDetailsPanel,
   .assetDetailRow,
-  .assetStateFeature,
+  .assetReplacementRow,
   .roleCard,
   .roleArrow {
     transition: none;
-  }
-
-  .assetDetailsPanel {
-    animation: none;
   }
 
   .roleSection {
