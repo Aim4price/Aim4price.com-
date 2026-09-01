@@ -53,8 +53,13 @@ test('homepage presents the living Asset Register hero and reveals the role choi
   assert.match(auth, /accountType === "owner" \|\| accountType === "dealer"/);
   assert.match(auth, /accountSubtype: getDefaultSubtype\(requestedAccountType\)/);
 
+  const questionConfiguration = preview.slice(
+    preview.indexOf('const QUESTIONS'),
+    preview.indexOf('const PREVIEW_STATES'),
+  );
+
   assert.deepEqual(
-    [...preview.matchAll(/label: '([^']+)'/g)].map((match) => match[1]),
+    [...questionConfiguration.matchAll(/label: '([^']+)'/g)].map((match) => match[1]),
     [
       'What do I have?',
       'What is it worth?',
@@ -65,12 +70,13 @@ test('homepage presents the living Asset Register hero and reveals the role choi
   assert.equal((preview.match(/type="button"/g) ?? []).length, 1);
   assert.match(preview, /role="group"[\s\S]*?aria-label="Explore the Aim4price asset record"/);
   assert.match(preview, /aria-pressed=\{isActive\}/);
-  assert.match(preview, /aria-controls="home-asset-preview"/);
+  assert.match(preview, /aria-controls="home-asset-state"/);
   assert.match(preview, /id="home-asset-preview"/);
-  assert.match(preview, /useState<QuestionKey>\('worth'\)/);
+  assert.match(preview, /id="home-asset-state"/);
+  assert.match(preview, /useState<QuestionKey>\('have'\)/);
   assert.match(preview, /QUESTION_ROTATION_MS = 5000/);
   assert.match(preview, /prefers-reduced-motion: reduce/);
-  assert.match(preview, /autoAdvanceCount >= QUESTIONS\.length/);
+  assert.match(preview, /autoAdvanceCount >= QUESTIONS\.length - 1/);
   assert.match(preview, /hasUserSelected/);
   assert.match(preview, /window\.setTimeout/);
   assert.doesNotMatch(preview, /window\.setInterval/);
@@ -86,23 +92,36 @@ test('homepage presents the living Asset Register hero and reveals the role choi
   assert.doesNotMatch(preview, /fetch\(|\/api\/asset-register|asset-register-client/);
   assert.match(preview, /assetPreviewActions} aria-hidden="true"/);
   assert.doesNotMatch(preview, /assetPhotoAction|assetPhotoArrow|assetPhotoCount/);
-  assert.match(preview, /assetDocumentsPanel/);
-  assert.match(preview, /assetDocumentAction/);
-  assert.match(preview, /0 Documents/);
-  assert.match(preview, /View documents/);
-  assert.match(preview, /activeQuestion === 'cost' \? 'Cost ledger' : '\+ Add document'/);
-  assert.match(preview, /Ownership costs/);
-  assert.match(preview, /Fuel · Maintenance · Repairs/);
+  assert.doesNotMatch(
+    preview,
+    /assetDocumentsPanel|assetDocumentAction|0 Documents|View documents|\+ Add document/,
+  );
+  assert.match(preview, /const PREVIEW_STATES: Readonly<Record<QuestionKey, PreviewState>>/);
+  assert.match(preview, /const previewState = PREVIEW_STATES\[activeQuestion\]/);
+  assert.match(preview, /Asset overview/);
+  assert.match(preview, /Value over time/);
+  assert.match(preview, /Cost of ownership/);
+  assert.match(preview, /Needs attention/);
+  assert.match(preview, /Fuel/);
+  assert.match(preview, /Maintenance/);
+  assert.match(preview, /Repairs/);
+  assert.match(preview, /Insurance/);
+  assert.match(preview, /Service history/);
+  assert.match(preview, /aria-labelledby=\{`asset-question-\$\{activeQuestion\}`\}/);
+  assert.match(preview, /<dt>\{label\}<\/dt>/);
+  assert.match(preview, /<dd data-tone=\{tone\}>\{value\}<\/dd>/);
   assert.match(preview, /viewBox="0 0 1000 560"/);
   assert.match(preview, /connectorDots/);
   assert.equal((preview.match(/<circle key=\{index\}/g) ?? []).length, 1);
+  assert.equal((preview.match(/connectorPath: 'M 830 /g) ?? []).length, 4);
+  assert.equal((preview.match(/\{ x: 830, y:/g) ?? []).length, 4);
+  assert.doesNotMatch(preview, /connectorPath: 'M 1(?:22|32) /);
   assert.match(preview, /assetShareAction[\s\S]*?<svg[\s\S]*?Share/);
   assert.match(preview, /assetDetailsAction[\s\S]*?<svg[\s\S]*?Hide details/);
   assert.match(preview, /assetManageAction[\s\S]*?<svg[\s\S]*?Manage/);
   assert.match(preview, /M12\.22 2h-\.44/);
   assert.match(preview, /role="status"/);
-  assert.match(preview, /hasUserSelected \? QUESTION_FEEDBACK\[activeQuestion\] : ''/);
-  assert.match(preview, /aria-label=\{status \? `\$\{label\}: yes` : undefined\}/);
+  assert.match(preview, /hasUserSelected \? previewState\.feedback : ''/);
 
   const heroImages = await Promise.all(
     [
@@ -124,18 +143,18 @@ test('homepage presents the living Asset Register hero and reveals the role choi
   assert.doesNotMatch(livingHeroStyles, /\.heroMedia::before|\.heroMedia::after/);
   assert.match(livingHeroStyles, /\.heroGrid \{[\s\S]*?grid-template-columns: minmax\(0, 1fr\) minmax\(0, 50rem\)/);
   assert.match(livingHeroStyles, /\.assetHeroStage \{[\s\S]*?width: 50rem;[\s\S]*?aspect-ratio: 1000 \/ 560;[\s\S]*?transform: translate\(5\.5rem, -1\.25rem\)/);
-  assert.match(livingHeroStyles, /\.assetQuestion \{[\s\S]*?--question-size: 6\.25rem/);
-  assert.match(livingHeroStyles, /\.assetQuestionActive \{[\s\S]*?--question-size: 6\.6rem/);
+  assert.match(livingHeroStyles, /\.assetQuestion \{[\s\S]*?--question-size: 6rem/);
+  assert.match(livingHeroStyles, /\.assetQuestionActive \{[\s\S]*?--question-size: 6\.4rem/);
   assert.match(styles, /\.assetPreviewCard \{[\s\S]*?border: 1px solid rgba\(151, 205, 181, 0\.9\)/);
   assert.match(styles, /\.assetPreviewCard \{[\s\S]*?top: 9%;[\s\S]*?right: 17%;[\s\S]*?bottom: 16%;[\s\S]*?left: 17%/);
-  assert.match(styles, /\.assetPreviewBody \{[\s\S]*?grid-template-columns: minmax\(0, 1\.37fr\) minmax\(0, 1fr\) minmax\(0, 2fr\)/);
+  assert.match(styles, /\.assetPreviewBody \{[\s\S]*?grid-template-columns: minmax\(0, 1\.23fr\) minmax\(0, 1fr\)/);
   assert.match(styles, /\.assetConnectors circle \{[\s\S]*?fill: rgba\(115, 176, 151, 0\.78\)/);
   assert.match(styles, /\.assetQuestionActive \{[\s\S]*?linear-gradient\(145deg, #1bb27d 0%, #087d56 100%\)/);
   assert.match(styles, /\.assetQuestion:focus-visible \{[\s\S]*?outline: 3px solid/);
-  assert.match(styles, /\.assetQuestionHave \{[\s\S]*?top: 0\.3%;[\s\S]*?left: 0/);
-  assert.match(styles, /\.assetQuestionWorth \{[\s\S]*?top: 9\.7%;[\s\S]*?right: 0/);
-  assert.match(styles, /\.assetQuestionCost \{[\s\S]*?bottom: 7%;[\s\S]*?left: 0/);
-  assert.match(styles, /\.assetQuestionAttention \{[\s\S]*?right: 2%;[\s\S]*?bottom: 0/);
+  assert.match(styles, /\.assetQuestionHave \{[\s\S]*?top: -13%;[\s\S]*?right: 0\.3%/);
+  assert.match(styles, /\.assetQuestionWorth \{[\s\S]*?top: 10%;[\s\S]*?right: 0\.3%/);
+  assert.match(styles, /\.assetQuestionCost \{[\s\S]*?top: 34%;[\s\S]*?right: 0\.3%/);
+  assert.match(styles, /\.assetQuestionAttention \{[\s\S]*?top: 59\.3%;[\s\S]*?right: 0\.3%/);
   assert.match(styles, /\.roleSection \{[\s\S]*?scroll-margin-top: 7rem/);
   assert.match(styles, /\.roleSection \{[\s\S]*?background: transparent/);
   assert.match(styles, /\.roleTitle:focus-visible \{[\s\S]*?outline: 3px solid/);
@@ -147,8 +166,10 @@ test('homepage presents the living Asset Register hero and reveals the role choi
   assert.match(styles, /@media \(min-width: 1361px\)[\s\S]*?\.assetPreviewActions \{[\s\S]*?display: flex/);
   assert.match(styles, /@media \(min-width: 1361px\)[\s\S]*?\.assetDetailsPanel \{[\s\S]*?padding: 0\.4rem/);
   assert.match(styles, /@media \(max-width: 640px\)[\s\S]*?\.assetQuestionGroup \{[\s\S]*?grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
-  assert.match(styles, /\.assetDocumentsPanel \{[\s\S]*?display: flex/);
-  assert.match(styles, /@media \(max-width: 760px\)[\s\S]*?\.assetPreviewCard\[data-active-question='cost'\] \.assetDocumentsPanel \{[\s\S]*?display: flex/);
+  assert.doesNotMatch(styles, /\.assetDocumentsPanel|\.assetDocumentAction/);
+  assert.match(styles, /\.assetStateRows \{[\s\S]*?grid-template-rows: repeat\(5, minmax\(1\.25rem, 1fr\)\)/);
+  assert.match(styles, /\.assetDetailRow > dd\[data-tone='warning'\]/);
+  assert.match(styles, /@keyframes assetStateReveal/);
   assert.match(styles, /@media \(prefers-reduced-motion: reduce\)/);
   assert.match(styles, /@media \(forced-colors: active\)/);
   assert.match(styles, /\.assetPreviewActions \{[\s\S]*?pointer-events: none/);

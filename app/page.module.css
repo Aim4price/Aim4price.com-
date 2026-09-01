@@ -1087,7 +1087,21 @@
 .assetConnectorWorth,
 .assetConnectorCost,
 .assetConnectorAttention {
+  opacity: 0.58;
+  transition: opacity 180ms ease;
+}
+
+.assetConnectorActive {
   opacity: 1;
+}
+
+.assetConnectorActive path {
+  stroke: rgba(77, 158, 126, 0.94);
+  stroke-width: 2;
+}
+
+.assetConnectorActive circle {
+  fill: rgba(77, 158, 126, 0.94);
 }
 
 .assetQuestionGroup {
@@ -1098,7 +1112,7 @@
 }
 
 .assetQuestion {
-  --question-size: 6.25rem;
+  --question-size: 6rem;
   position: absolute;
   display: flex;
   width: var(--question-size);
@@ -1171,7 +1185,7 @@
 }
 
 .assetQuestionActive {
-  --question-size: 6.6rem;
+  --question-size: 6.4rem;
   color: #ffffff;
   border-color: rgba(20, 154, 107, 0.78);
   background:
@@ -1187,23 +1201,23 @@
 }
 
 .assetQuestionHave {
-  top: 0.3%;
-  left: 0;
+  top: -13%;
+  right: 0.3%;
 }
 
 .assetQuestionWorth {
-  top: 9.7%;
-  right: 0;
+  top: 10%;
+  right: 0.3%;
 }
 
 .assetQuestionCost {
-  bottom: 7%;
-  left: 0;
+  top: 34%;
+  right: 0.3%;
 }
 
 .assetQuestionAttention {
-  right: 2%;
-  bottom: 0;
+  top: 59.3%;
+  right: 0.3%;
 }
 
 .assetPreviewCard {
@@ -1377,27 +1391,23 @@
   display: grid;
   min-height: 0;
   flex: 1;
-  grid-template-columns: minmax(0, 1.37fr) minmax(0, 1fr) minmax(0, 2fr);
-  gap: 0.5rem;
+  grid-template-columns: minmax(0, 1.23fr) minmax(0, 1fr);
+  gap: 0.65rem;
   padding-top: 0.55rem;
-}
-
-.assetPhotoPanel,
-.assetDocumentsPanel {
-  min-width: 0;
-  overflow: hidden;
-  border: 1px solid rgba(201, 216, 223, 0.92);
-  border-radius: 0.9rem;
-  background: #eef3f6;
 }
 
 .assetPhotoPanel {
   position: relative;
   display: grid;
+  min-width: 0;
   min-height: 0;
   grid-template-rows: minmax(0, 1fr) 2.35rem;
   gap: 0.42rem;
   padding: 0.42rem;
+  overflow: hidden;
+  border: 1px solid rgba(201, 216, 223, 0.92);
+  border-radius: 0.9rem;
+  background: #eef3f6;
   transition:
     border-color 180ms ease,
     box-shadow 180ms ease;
@@ -1411,29 +1421,10 @@
   object-fit: cover;
 }
 
-.assetDocumentAction {
-  position: absolute;
-  z-index: 2;
-  top: 0.72rem;
-  left: 0.72rem;
-  display: inline-flex;
-  min-height: 1.8rem;
-  align-items: center;
-  justify-content: center;
-  padding: 0 0.65rem;
-  border-radius: 999px;
-  color: #153e32;
-  background: rgba(255, 255, 255, 0.94);
-  box-shadow: 0 8px 18px rgba(26, 55, 47, 0.12);
-  font-size: clamp(0.48rem, 0.58vw, 0.6rem);
-  line-height: 1;
-  font-weight: 850;
-  white-space: nowrap;
-  backdrop-filter: blur(7px);
-}
-
 .assetThumbnails {
   display: grid;
+  width: 100%;
+  max-width: 14rem;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.3rem;
 }
@@ -1452,53 +1443,74 @@
   background-image: url('/brand/home-asset-hilux-thumb-alt.webp');
 }
 
-.assetDocumentsPanel {
-  position: relative;
-  display: flex;
+.assetDetailsPanel {
+  display: grid;
+  box-sizing: border-box;
+  min-width: 0;
   min-height: 0;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 0.65rem;
-  padding: 2.6rem 0.55rem 0.7rem;
-  background:
-    radial-gradient(circle at 76% 18%, rgba(255, 255, 255, 0.7) 0, transparent 42%),
-    linear-gradient(145deg, #f1f6f5 0%, #edf3f4 100%);
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 0.32rem;
+  padding: 0.4rem;
+  border: 1px solid rgba(201, 216, 223, 0.92);
+  border-radius: 0.9rem;
+  background: #f8fafb;
+  animation: assetStateReveal 260ms ease-out both;
   transition:
     border-color 180ms ease,
     box-shadow 180ms ease;
 }
 
-.assetDocumentsPanel strong {
-  color: #103c30;
-  font-size: clamp(0.65rem, 0.74vw, 0.78rem);
-  line-height: 1.15;
-  font-weight: 850;
-  text-align: center;
+@keyframes assetStateReveal {
+  from {
+    opacity: 0.55;
+    transform: translateY(0.22rem);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-.assetDocumentsPanel > span:last-child {
-  display: inline-flex;
-  min-height: 1.78rem;
-  align-items: center;
-  justify-content: center;
-  padding: 0 0.58rem;
-  border: 1px solid rgba(73, 160, 125, 0.5);
-  border-radius: 999px;
-  color: #137254;
-  background: rgba(255, 255, 255, 0.84);
-  font-size: clamp(0.46rem, 0.54vw, 0.57rem);
-  line-height: 1;
+.assetStateHeader {
+  min-width: 0;
+  padding: 0.08rem 0.18rem 0.18rem;
+}
+
+.assetStateHeader h3,
+.assetStateHeader p {
+  margin: 0;
+}
+
+.assetStateHeader h3 {
+  overflow: hidden;
+  color: #0b4a39;
+  font-size: clamp(0.62rem, 0.72vw, 0.76rem);
+  line-height: 1.1;
   font-weight: 850;
+  letter-spacing: -0.02em;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.assetDetailsPanel {
+.assetStateHeader p {
+  margin-top: 0.2rem;
+  overflow: hidden;
+  color: #687983;
+  font-size: clamp(0.43rem, 0.49vw, 0.52rem);
+  line-height: 1.2;
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.assetStateRows {
   display: grid;
   min-width: 0;
   min-height: 0;
-  grid-template-rows: repeat(5, minmax(1.6rem, 1fr)) minmax(2.6rem, 1.35fr);
-  gap: 0.32rem;
+  grid-template-rows: repeat(5, minmax(1.25rem, 1fr));
+  gap: 0.25rem;
+  margin: 0;
 }
 
 .assetDetailRow {
@@ -1514,15 +1526,16 @@
     box-shadow 180ms ease;
 }
 
-.assetDetailRow > span,
-.assetDetailRow > strong {
+.assetDetailRow > dt,
+.assetDetailRow > dd {
   display: flex;
   min-width: 0;
   align-items: center;
+  margin: 0;
   padding: 0.25rem 0.55rem;
 }
 
-.assetDetailRow > span {
+.assetDetailRow > dt {
   color: #334b5c;
   background: #f1f6f8;
   font-size: clamp(0.47rem, 0.56vw, 0.6rem);
@@ -1532,7 +1545,7 @@
   text-transform: uppercase;
 }
 
-.assetDetailRow > strong {
+.assetDetailRow > dd {
   overflow: hidden;
   color: #10352b;
   font-size: clamp(0.5rem, 0.6vw, 0.64rem);
@@ -1542,14 +1555,23 @@
   white-space: nowrap;
 }
 
-.assetStatusValue {
-  justify-content: flex-start;
-  color: #16a85b !important;
-  background: #ffffff;
-  font-size: clamp(0.78rem, 0.93vw, 0.96rem) !important;
+.assetDetailRow > dd[data-tone='success'] {
+  color: #0b8a5a;
+  background: #f0faf5;
 }
 
-.assetReplacementRow {
+.assetDetailRow > dd[data-tone='warning'] {
+  color: #a25520;
+  background: #fff6ed;
+}
+
+.assetDetailRow > dd[data-tone='value'] {
+  color: #0b5b45;
+  background: #f0faf6;
+  font-weight: 900;
+}
+
+.assetStateFeature {
   display: grid;
   min-width: 0;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -1567,7 +1589,7 @@
     box-shadow 180ms ease;
 }
 
-.assetReplacementRow > span {
+.assetStateFeature > span {
   overflow: hidden;
   color: #176f52;
   font-size: clamp(0.47rem, 0.56vw, 0.59rem);
@@ -1579,23 +1601,16 @@
   white-space: nowrap;
 }
 
-.assetReplacementRow > strong {
+.assetStateFeature > strong {
+  overflow: hidden;
   color: #062f27;
-  font-size: clamp(0.72rem, 0.86vw, 0.92rem);
+  font-size: clamp(0.65rem, 0.76vw, 0.82rem);
   line-height: 1;
   font-weight: 900;
   letter-spacing: -0.025em;
   text-align: right;
+  text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.assetReplacementRow small {
-  display: block;
-  margin-top: 0.18rem;
-  color: #5d6d7c;
-  font-size: clamp(0.42rem, 0.48vw, 0.51rem);
-  line-height: 1;
-  font-weight: 800;
 }
 
 .assetQuestionFeedback {
@@ -1611,11 +1626,9 @@
 }
 
 .assetPreviewCard[data-active-question='have'] .assetPhotoPanel,
-.assetPreviewCard[data-active-question='have'] .assetDetailRow:nth-child(-n + 3),
-.assetPreviewCard[data-active-question='attention'] .assetDocumentsPanel,
-.assetPreviewCard[data-active-question='attention'] .assetDetailRow:nth-child(n + 4),
-.assetPreviewCard[data-active-question='worth'] .assetReplacementRow,
-.assetPreviewCard[data-active-question='cost'] .assetDocumentsPanel {
+.assetPreviewCard[data-active-question='worth'] .assetDetailsPanel,
+.assetPreviewCard[data-active-question='cost'] .assetDetailsPanel,
+.assetPreviewCard[data-active-question='attention'] .assetDetailsPanel {
   border-color: rgba(25, 157, 111, 0.7);
   box-shadow: 0 0 0 3px rgba(25, 157, 111, 0.1);
 }
@@ -1831,26 +1844,6 @@
     letter-spacing: -0.018em;
   }
 
-  .assetQuestionHave {
-    top: -0.1%;
-    left: 0.2%;
-  }
-
-  .assetQuestionWorth {
-    top: 9.35%;
-    right: 0.3%;
-  }
-
-  .assetQuestionCost {
-    bottom: 7.7%;
-    left: -0.3%;
-  }
-
-  .assetQuestionAttention {
-    right: 2.8%;
-    bottom: 1.1%;
-  }
-
   .assetPreviewCard {
     top: 8.8%;
   }
@@ -1954,68 +1947,44 @@
   }
 
   .assetThumbnails {
-    grid-template-columns: repeat(3, 2.35rem);
+    max-width: 14rem;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     justify-content: start;
     gap: 0.25rem;
   }
 
-  .assetDocumentAction {
-    top: 0.52rem;
-    min-height: 1.55rem;
-    padding-inline: 1rem;
-    font-size: 0.48rem;
-  }
-
-  .assetDocumentsPanel {
-    gap: 0.35rem;
-    padding-top: 3.15rem;
-  }
-
-  .assetDocumentsPanel strong {
-    font-size: 0.62rem;
-  }
-
-  .assetDocumentsPanel > span:last-child {
-    min-height: 1.55rem;
-    padding-inline: 0.9rem;
-    font-size: 0.46rem;
-  }
-
   .assetDetailsPanel {
     box-sizing: border-box;
-    grid-template-rows: repeat(5, minmax(1.6rem, 1fr)) minmax(2.6rem, 1.55fr);
-    gap: 0.25rem;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    gap: 0.3rem;
     padding: 0.4rem;
     border: 1px solid rgba(201, 216, 223, 0.92);
     border-radius: 0.9rem;
     background: #f8fafb;
   }
 
-  .assetDetailRow > span {
+  .assetStateRows {
+    grid-template-rows: repeat(5, minmax(1.25rem, 1fr));
+    gap: 0.25rem;
+  }
+
+  .assetDetailRow > dt {
     font-size: 0.54rem;
     font-weight: 800;
   }
 
-  .assetDetailRow > strong {
+  .assetDetailRow > dd {
     font-size: 0.56rem;
     font-weight: 800;
   }
 
-  .assetStatusValue {
-    font-size: 0.9rem !important;
-  }
-
-  .assetReplacementRow > span {
+  .assetStateFeature > span {
     font-size: 0.54rem;
     font-weight: 800;
   }
 
-  .assetReplacementRow > strong {
+  .assetStateFeature > strong {
     font-size: 0.82rem;
-  }
-
-  .assetReplacementRow small {
-    font-size: 0.46rem;
   }
 }
 
@@ -2032,6 +2001,41 @@
   .assetHeroStage {
     width: 44rem;
     transform: translate(2rem, -0.75rem);
+  }
+
+  .assetConnectors {
+    display: none;
+  }
+
+  .assetQuestion {
+    --question-size: 5rem;
+  }
+
+  .assetQuestionActive {
+    --question-size: 5.35rem;
+  }
+
+  .assetQuestionHave,
+  .assetQuestionWorth,
+  .assetQuestionCost,
+  .assetQuestionAttention {
+    right: 0.3%;
+  }
+
+  .assetQuestionHave {
+    top: 0;
+  }
+
+  .assetQuestionWorth {
+    top: 24%;
+  }
+
+  .assetQuestionCost {
+    top: 48%;
+  }
+
+  .assetQuestionAttention {
+    top: 72%;
   }
 }
 
@@ -2126,38 +2130,12 @@
     display: none;
   }
 
-  .assetDocumentsPanel {
-    display: none;
-  }
-
-  .assetPreviewCard[data-active-question='cost'] .assetPreviewBody {
-    grid-template-rows: minmax(0, 1fr) minmax(5rem, auto);
-  }
-
-  .assetPreviewCard[data-active-question='cost'] .assetPhotoPanel {
-    grid-column: 1;
-    grid-row: 1;
-  }
-
-  .assetPreviewCard[data-active-question='cost'] .assetDocumentsPanel {
-    display: flex;
-    grid-column: 1;
-    grid-row: 2;
-    min-height: 5rem;
-    padding-top: 2.45rem;
-  }
-
-  .assetPreviewCard[data-active-question='cost'] .assetDetailsPanel {
-    grid-column: 2;
-    grid-row: 1 / span 2;
-  }
-
   .assetPreviewAside {
     min-width: 8rem;
   }
 
   .assetPreviewBody {
-    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.35fr);
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
   }
 
   .assetPhotoPanel {
@@ -2221,10 +2199,6 @@
     min-height: 20.5rem;
   }
 
-  .assetPreviewCard[data-active-question='cost'] {
-    min-height: 23rem;
-  }
-
   .assetPreviewIdentity p,
   .assetPreviewActions,
   .assetThumbnails {
@@ -2242,12 +2216,16 @@
   .assetQuestion,
   .assetCurrentValue,
   .assetPhotoPanel,
-  .assetDocumentsPanel,
+  .assetDetailsPanel,
   .assetDetailRow,
-  .assetReplacementRow,
+  .assetStateFeature,
   .roleCard,
   .roleArrow {
     transition: none;
+  }
+
+  .assetDetailsPanel {
+    animation: none;
   }
 
   .roleSection {
