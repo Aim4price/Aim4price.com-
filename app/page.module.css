@@ -1674,31 +1674,8 @@
     linear-gradient(145deg, #e8f8f0 0%, #f8fcfa 100%);
 }
 
-.worthResultTopline {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-  color: #176d51;
-  font-size: 0.55rem;
-  line-height: 1;
-  font-weight: 900;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
-.worthResultTopline strong {
-  padding: 0.28rem 0.46rem;
-  border-radius: 999px;
-  color: #0a7651;
-  background: rgba(255, 255, 255, 0.85);
-  font-size: 0.52rem;
-  letter-spacing: 0;
-  text-transform: none;
-}
-
 .worthAssetTitle {
-  margin: 1rem 0 0;
+  margin: 0;
   overflow: hidden;
   color: #0a4a38;
   font-size: 1.02rem;
@@ -1765,14 +1742,6 @@
 .worthVatToggle span:first-child {
   color: #ffffff;
   background: #176c51;
-}
-
-.worthUpdated {
-  margin: 0.58rem 0 0;
-  color: #53675f;
-  font-size: 0.56rem;
-  line-height: 1.2;
-  font-weight: 750;
 }
 
 .worthFacts {
