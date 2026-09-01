@@ -161,11 +161,23 @@ test('homepage presents the five-question living Asset Register hero and reveals
   assert.match(costPreview, /Download cost of ownership report/);
 
   // What needs attention? — the real open-issue presentation.
-  assert.match(preview, /2024 Landini Super 110 \+ Front Loader/);
-  assert.match(preview, /Open issue reported/);
-  assert.match(preview, /Lisensie disk het verval 2025/);
-  assert.match(preview, /Sitplek kort aandag/);
-  assert.match(preview, /By Gerald · 29 Aug 2026/);
+  const attentionPreview = preview.slice(
+    preview.indexOf('function AttentionPreview()'),
+    preview.indexOf('function MiniFact('),
+  );
+  assert.match(attentionPreview, /<h2>2023 Toyota Hilux Single Cab<\/h2>/);
+  assert.match(attentionPreview, /Year Model: 2023 · Usage: 113 677 km · Condition: Good/);
+  assert.match(attentionPreview, /R 237 150[\s\S]*?Excl\. VAT/);
+  assert.match(attentionPreview, /Aim4price value[\s\S]*?Updated 01 Sept 2026/);
+  assert.match(attentionPreview, /Share[\s\S]*?View details[\s\S]*?Manage/);
+  assert.match(attentionPreview, /Open issue reported/);
+  assert.match(attentionPreview, /Lisensie disk het verval 2025/);
+  assert.match(attentionPreview, /Sitplek kort aandag/);
+  assert.match(attentionPreview, /Maintenance has been done/);
+  assert.match(attentionPreview, /Changed engine oil/);
+  assert.match(attentionPreview, /By Gerald · 29 Aug 2026/);
+  assert.doesNotMatch(attentionPreview, /2024 Landini Super 110 \+ Front Loader/);
+  assert.doesNotMatch(attentionPreview, /20 741 hours|R 446 250/);
 
   assert.doesNotMatch(preview, /assetConnectors|connectorPath|connectorDots|assetConnectorActive/);
   assert.match(preview, /role="status"/);
@@ -214,7 +226,9 @@ test('homepage presents the five-question living Asset Register hero and reveals
   assert.match(livingHeroStyles, /\.reportRow \{[\s\S]*?background: #ffffff/);
   assert.doesNotMatch(livingHeroStyles, /\.reportRowHighlighted/);
   assert.match(livingHeroStyles, /\.reportList/);
-  assert.match(livingHeroStyles, /\.attentionPreview/);
+  assert.match(livingHeroStyles, /\.assetHeroStage\[data-active-question='attention'\] \.assetPreviewCard \{[\s\S]*?border-color: rgba\(225, 70, 61, 0\.78\)[\s\S]*?background: linear-gradient/);
+  assert.match(livingHeroStyles, /\.attentionBody \{[\s\S]*?grid-template-columns: minmax\(0, 1fr\);[\s\S]*?grid-template-rows: minmax\(0, 0\.85fr\) minmax\(0, 1\.15fr\)/);
+  assert.match(livingHeroStyles, /\.serviceCard \{[\s\S]*?color: #ffffff;[\s\S]*?background: linear-gradient\(145deg, #404956, #5c6775\)/);
   assert.doesNotMatch(livingHeroStyles, /\.assetDocumentsPanel|\.assetDocumentAction/);
 
   assert.match(refinementStyles, /@media \(min-width: 1361px\)[\s\S]*?\.assetHeroStage \{[\s\S]*?transform: none/);
@@ -227,6 +241,7 @@ test('homepage presents the five-question living Asset Register hero and reveals
   assert.match(refinementStyles, /@media \(max-width: 640px\)[\s\S]*?grid-template-columns: repeat\(6, minmax\(0, 1fr\)\)/);
   assert.match(refinementStyles, /@media \(max-width: 640px\)[\s\S]*?\.assetQuestion:nth-child\(4\) \{[\s\S]*?grid-column: 2 \/ span 2/);
   assert.match(refinementStyles, /@media \(max-width: 640px\)[\s\S]*?\.worthReportPreview,[\s\S]*?\.worthActions \{[\s\S]*?display: none/);
+  assert.doesNotMatch(refinementStyles, /\.serviceCard \{[\s\S]*?display: none/);
   assert.match(refinementStyles, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.assetPreviewState \{[\s\S]*?animation: none/);
   assert.match(refinementStyles, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.assetQuestion:hover \.assetQuestionBubble \{[\s\S]*?transform: none/);
   assert.match(refinementStyles, /@media \(forced-colors: active\)[\s\S]*?\.assetQuestionBubble/);
