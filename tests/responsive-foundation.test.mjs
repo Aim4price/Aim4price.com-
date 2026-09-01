@@ -65,18 +65,41 @@ test('website sign-out stays separate from installable app sessions and verifies
 });
 
 test('home page keeps the Asset Register hero usable at phone and tablet widths', async () => {
-  const home = await read('app/page.module.css');
+  const [home, hero] = await Promise.all([
+    read('app/page.module.css'),
+    read('app/home-hero-experience.tsx'),
+  ]);
+  const storyStart = home.indexOf('/* === Scroll-driven homepage story, September 2026 === */');
+  const followingLegacyBlock = home.indexOf('/* Five-question hero refinement', storyStart);
+  const story = home.slice(
+    storyStart,
+    followingLegacyBlock === -1 ? undefined : followingLegacyBlock,
+  );
 
   assert.match(home, /Living Asset Record homepage hero, September 2026/);
+  assert.ok(storyStart >= 0);
+  assert.match(hero, /const DESKTOP_STORY_QUERY = '\(min-width: 1181px\)'/);
+  assert.match(hero, /setIsDesktopStory\([\s\S]*?desktopStoryMedia\.matches[\s\S]*?!reducedMotionMedia\.matches/);
+  assert.match(story, /@media \(min-width: 1181px\)[\s\S]*?\.heroSticky \{[\s\S]*?position: sticky/);
+  assert.match(story, /@media \(min-width: 1181px\)[\s\S]*?\.heroScrollTrack \{[\s\S]*?grid-template-rows: repeat\(5, minmax\(0, 1fr\)\)/);
+  assert.match(story, /\.heroStory \.heroGrid \{[\s\S]*?align-items: start/);
+  assert.match(story, /\.heroStory \.heroCopy \{[\s\S]*?align-self: start/);
+  assert.match(story, /\.heroStory \.assetHeroStage \{[\s\S]*?align-self: start/);
+
+  assert.match(story, /@media \(max-width: 1180px\)[\s\S]*?\.heroStory \{[\s\S]*?min-height: 0/);
+  assert.match(story, /@media \(max-width: 1180px\)[\s\S]*?\.heroSticky \{[\s\S]*?position: relative;[\s\S]*?height: auto/);
+  assert.match(story, /@media \(max-width: 1180px\)[\s\S]*?\.heroStory \.heroGrid \{[\s\S]*?grid-template-columns: minmax\(0, 1fr\)/);
   assert.match(home, /@media \(max-width: 1180px\)[\s\S]*?\.heroGrid \{[\s\S]*?grid-template-columns: minmax\(0, 1fr\)/);
   assert.match(home, /@media \(max-width: 760px\)[\s\S]*?\.heroActions \{[\s\S]*?grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
-  const fiveQuestionRefinement = home.slice(
-    home.lastIndexOf('/* Five-question hero refinement'),
-  );
-  assert.match(fiveQuestionRefinement, /@media \(max-width: 640px\)[\s\S]*?\.assetQuestionGroup \{[\s\S]*?grid-template-columns: repeat\(6, minmax\(0, 1fr\)\)/);
+  assert.match(home, /@media \(max-width: 640px\)[\s\S]*?\.assetQuestionGroup \{[\s\S]*?grid-template-columns: repeat\(6, minmax\(0, 1fr\)\)/);
+  assert.match(story, /@media \(max-width: 1180px\)[\s\S]*?\.assetScrollCue \{[\s\S]*?display: none/);
+  assert.match(home, /@media \(max-width: 640px\)[\s\S]*?\.assetPreviewCard(?:,[\s\S]*?)?\{[\s\S]*?min-height: clamp\(24rem, 112vw, 29rem\)/);
   assert.match(home, /@media \(max-width: 640px\)[\s\S]*?\.roleGrid \{[\s\S]*?grid-template-columns: minmax\(0, 1fr\)/);
   assert.match(home, /\.assetQuestion:focus-visible \{[\s\S]*?outline: 3px solid/);
   assert.match(home, /\.primaryCta,[\s\S]*?\.secondaryCta \{[\s\S]*?min-height: 3\.2rem/);
+  assert.match(story, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.heroStory \{[\s\S]*?min-height: 0/);
+  assert.match(story, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.heroSticky \{[\s\S]*?position: relative/);
+  assert.match(story, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.heroScrollTrack \{[\s\S]*?display: none/);
   assert.match(home, /@media \(forced-colors: active\)/);
 });
 
