@@ -3171,6 +3171,453 @@
   }
 }
 
+/* === Scroll-driven homepage story, September 2026 === */
+.heroStory {
+  position: relative;
+  min-height: calc(100svh - 5.75rem);
+}
+
+.heroSticky {
+  width: 100%;
+}
+
+.heroScrollTrack {
+  display: none;
+}
+
+.heroCopyState {
+  min-width: 0;
+}
+
+.heroSupport {
+  animation: heroSupportReveal 520ms 330ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.assetStoryProgress {
+  display: inline-flex;
+  min-height: 0.2rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.38rem;
+}
+
+.assetStoryProgress > span {
+  display: block;
+  width: 0.82rem;
+  height: 0.16rem;
+  border-radius: 999px;
+  background: rgba(55, 161, 121, 0.2);
+  transition:
+    width 220ms ease,
+    background 220ms ease,
+    box-shadow 220ms ease;
+}
+
+.assetStoryProgress > .assetStoryProgressActive {
+  width: 1.2rem;
+  background: #169d6f;
+  box-shadow: 0 4px 10px rgba(22, 157, 111, 0.18);
+}
+
+.assetScrollCue {
+  display: inline-grid;
+  width: 1.25rem;
+  height: 1rem;
+  place-items: center;
+  color: rgba(13, 91, 67, 0.55);
+  transition:
+    opacity 180ms ease,
+    transform 180ms ease;
+}
+
+.assetScrollCue svg {
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.assetHeroStage[data-active-question='attention'] .assetScrollCue {
+  opacity: 0;
+  transform: translateY(-0.2rem);
+}
+
+@keyframes heroTitleLineReveal {
+  from {
+    opacity: 0;
+    clip-path: inset(100% 0 0 0);
+    transform: translateY(1.15rem);
+  }
+
+  to {
+    opacity: 1;
+    clip-path: inset(0 0 0 0);
+    transform: translateY(0);
+  }
+}
+
+@keyframes heroTextReveal {
+  from {
+    opacity: 0;
+    transform: translateY(0.65rem);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes heroSupportReveal {
+  from {
+    opacity: 0;
+    transform: translateY(0.7rem);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes heroCardReveal {
+  from {
+    opacity: 0;
+    transform: translate3d(1.65rem, 0, 0) scale(0.987);
+  }
+
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes activeQuestionPulse {
+  0% {
+    box-shadow:
+      0 13px 27px rgba(9, 107, 72, 0.22),
+      0 0 0 0 rgba(27, 178, 125, 0.24),
+      inset 0 1px 0 rgba(255, 255, 255, 0.32);
+  }
+
+  100% {
+    box-shadow:
+      0 13px 27px rgba(9, 107, 72, 0.22),
+      0 0 0 0.62rem rgba(27, 178, 125, 0),
+      inset 0 1px 0 rgba(255, 255, 255, 0.32);
+  }
+}
+
+@media (min-width: 1181px) {
+  .heroStory {
+    min-height: calc(340svh - 5.75rem);
+  }
+
+  .heroSticky {
+    position: sticky;
+    z-index: 2;
+    top: 5.75rem;
+    height: calc(100svh - 5.75rem);
+    min-height: 34rem;
+    overflow: clip;
+  }
+
+  .heroScrollTrack {
+    position: absolute;
+    z-index: 0;
+    inset: 0;
+    display: grid;
+    grid-template-rows: repeat(5, minmax(0, 1fr));
+    pointer-events: none;
+  }
+
+  .heroScrollStep {
+    min-height: 0;
+  }
+
+  .heroSticky .shell {
+    width: min(calc(100% - 6rem), 100rem);
+    height: 100%;
+  }
+
+  .heroStory .heroGrid {
+    height: 100%;
+    min-height: 0;
+    grid-template-columns: minmax(38rem, 41rem) minmax(46rem, 49.5rem);
+    align-content: center;
+    align-items: start;
+    justify-content: space-between;
+    gap: clamp(4.75rem, 5vw, 6.25rem);
+    padding: clamp(2.25rem, 4vh, 3rem) 0;
+  }
+
+  .heroStory .heroCopy {
+    width: min(100%, 41rem);
+    max-width: 41rem;
+    align-self: start;
+    transform: none;
+  }
+
+  .heroCopyState {
+    min-height: 15.9rem;
+  }
+
+  .heroStory .heroTitle {
+    max-width: 41rem;
+    font-size: clamp(3.75rem, 4.1vw, 4.5rem);
+    line-height: 0.95;
+    letter-spacing: -0.058em;
+  }
+
+  .heroStory .heroTitleLine {
+    animation: heroTitleLineReveal 500ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation-delay: calc(var(--hero-line-index, 0) * 75ms);
+  }
+
+  .heroStory .heroTitleLine + .heroTitleLine {
+    margin-top: 0.12em;
+    letter-spacing: -0.04em;
+  }
+
+  .heroStory .heroText {
+    max-width: 34rem;
+    min-height: 4.15rem;
+    margin-top: 1.45rem;
+    font-size: clamp(1.08rem, 1.25vw, 1.25rem);
+    line-height: 1.55;
+    animation: heroTextReveal 360ms 150ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .heroStory .heroActions {
+    margin-top: 1.75rem;
+  }
+
+  .heroStory .heroSectors {
+    margin-top: 1.45rem;
+  }
+
+  .heroStory .assetHeroStage {
+    width: min(100%, 49.5rem);
+    max-width: 49.5rem;
+    aspect-ratio: 1000 / 650;
+    align-self: start;
+    justify-self: center;
+    transform: none;
+  }
+
+  .heroStory .assetHeroStage::before {
+    content: '';
+    position: absolute;
+    z-index: -1;
+    top: 5%;
+    right: 4.2rem;
+    bottom: 12%;
+    left: 5.2rem;
+    border-radius: 2.4rem;
+    background: rgba(59, 173, 129, 0.11);
+    filter: blur(2.2rem);
+    pointer-events: none;
+  }
+
+  .heroStory .assetQuestionGroup {
+    top: 0;
+    right: 0;
+    bottom: 4.65rem;
+    width: 4.5rem;
+  }
+
+  .heroStory .assetPreviewCard {
+    top: 0;
+    right: 5.1rem;
+    bottom: 4.65rem;
+    left: 6rem;
+  }
+
+  .heroStory .assetActiveQuestion {
+    right: 5.1rem;
+    bottom: -0.1rem;
+    left: 6rem;
+    min-height: 4.55rem;
+    grid-template-rows: auto auto auto;
+    gap: 0.28rem;
+    padding-top: 0.22rem;
+  }
+
+  .heroStory .assetActiveQuestionMain {
+    font-size: 1.08rem;
+  }
+
+  .heroStory .assetActiveQuestionMain svg {
+    width: 1.5rem;
+    height: 1.5rem;
+  }
+
+  .heroStory .assetPreviewState {
+    animation: heroCardReveal 330ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .heroStory .assetQuestionActive .assetQuestionBubble {
+    animation: activeQuestionPulse 480ms ease-out both;
+  }
+}
+
+@media (min-width: 1361px) and (max-width: 1600px) {
+  .heroSticky .shell {
+    width: min(calc(100% - 4rem), 92rem);
+  }
+
+  .heroStory .heroGrid {
+    grid-template-columns: minmax(31rem, 36rem) minmax(40rem, 44rem);
+    gap: clamp(3.5rem, 4.5vw, 5rem);
+  }
+
+  .heroStory .heroTitle {
+    max-width: 36rem;
+    font-size: clamp(3.55rem, 4vw, 4rem);
+  }
+
+  .heroStory .heroCopy {
+    width: min(100%, 36rem);
+    max-width: 36rem;
+  }
+
+  .heroStory .assetHeroStage {
+    width: min(100%, 44rem);
+  }
+}
+
+@media (min-width: 1181px) and (max-width: 1360px) {
+  .heroSticky .shell {
+    width: min(calc(100% - 3rem), 84rem);
+  }
+
+  .heroStory .heroGrid {
+    grid-template-columns: minmax(27rem, 31rem) minmax(34rem, 44rem);
+    gap: clamp(2.5rem, 3.5vw, 4rem);
+  }
+
+  .heroStory .heroCopy {
+    width: min(100%, 31rem);
+    max-width: 31rem;
+  }
+
+  .heroStory .heroTitle {
+    max-width: 31rem;
+    font-size: clamp(3.35rem, 4.25vw, 3.7rem);
+  }
+
+  .heroCopyState {
+    min-height: 14.5rem;
+  }
+
+  .heroStory .assetHeroStage {
+    width: min(100%, 44rem);
+  }
+}
+
+@media (min-width: 1181px) {
+  .heroSection[data-active-question='attention'] .heroTitle {
+    font-size: clamp(3.4rem, 3.75vw, 4rem);
+  }
+}
+
+@media (max-width: 1180px) {
+  .heroStory {
+    min-height: 0;
+  }
+
+  .heroSticky {
+    position: relative;
+    top: auto;
+    height: auto;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .heroStory .heroGrid {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+    gap: clamp(2.25rem, 4vw, 3rem);
+  }
+
+  .heroCopyState {
+    min-height: 13.5rem;
+  }
+
+  .heroStory .heroTitleLine {
+    animation: heroTitleLineReveal 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation-delay: calc(var(--hero-line-index, 0) * 65ms);
+  }
+
+  .heroStory .heroText {
+    min-height: 3.5rem;
+    animation: heroTextReveal 320ms 120ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .assetScrollCue {
+    display: none;
+  }
+}
+
+@media (max-width: 760px) {
+  .heroCopyState {
+    min-height: 0;
+  }
+
+  .heroStory .heroText {
+    min-height: 0;
+  }
+
+  .assetStoryProgress {
+    margin-top: 0.1rem;
+  }
+
+}
+
+@media (max-width: 640px) {
+  .assetPreviewCard,
+  .assetPreviewCard[data-active-question='attention'] {
+    min-height: clamp(24rem, 112vw, 29rem);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  .heroStory {
+    min-height: 0;
+  }
+
+  .heroSticky {
+    position: relative;
+    top: auto;
+    height: auto;
+    min-height: 0;
+  }
+
+  .heroScrollTrack {
+    display: none;
+  }
+
+  .heroCopyState,
+  .heroTitleLine,
+  .heroText,
+  .heroSupport,
+  .assetPreviewState,
+  .assetQuestionBubble,
+  .assetStoryProgress > span,
+  .assetScrollCue {
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
+  }
+}
+
 /* Five-question hero refinement: icon rail at right, active question below the preview. */
 @media (min-width: 1181px) and (max-width: 1600px) {
   .heroMedia .shell {
@@ -3426,5 +3873,19 @@
   .issueCard,
   .serviceCard {
     border: 1px solid CanvasText;
+  }
+}
+
+/* Final cascade guard for the scroll-story composition. */
+@media (min-width: 1361px) and (max-width: 1600px) {
+  .heroStory .heroSticky .shell {
+    width: min(calc(100% - 4rem), 92rem);
+  }
+}
+
+@media (max-width: 640px) {
+  .heroStory .assetPreviewCard,
+  .heroStory .assetPreviewCard[data-active-question='attention'] {
+    min-height: clamp(24rem, 112vw, 29rem);
   }
 }
