@@ -172,7 +172,13 @@ export default function HomeAssetPreview() {
       </article>
 
       <p className={styles.assetActiveQuestion} aria-live="polite" aria-atomic="true">
-        {QUESTIONS[activeIndex]?.label ?? QUESTIONS[0].label}
+        <span className={styles.assetActiveQuestionMain}>
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            {QUESTIONS[activeIndex]?.icon ?? QUESTIONS[0].icon}
+          </svg>
+          <span>{QUESTIONS[activeIndex]?.label ?? QUESTIONS[0].label}</span>
+        </span>
+        <span className={styles.assetActiveQuestionAccent} aria-hidden="true" />
       </p>
 
       <span
