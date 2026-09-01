@@ -1064,12 +1064,6 @@
   transform: none;
 }
 
-@media (min-width: 761px) {
-  .assetHeroStage[data-active-question='worth'] {
-    aspect-ratio: 1000 / 760;
-  }
-}
-
 .assetQuestionGroup {
   position: absolute;
   z-index: 5;
@@ -1844,8 +1838,9 @@
 
 .worthReportPaper {
   display: flex;
-  width: 100%;
-  height: auto;
+  width: auto;
+  height: 100%;
+  max-width: 100%;
   max-height: 100%;
   min-width: 0;
   min-height: 0;
@@ -1862,7 +1857,7 @@
 .worthReportHeader {
   display: grid;
   min-width: 0;
-  grid-template-columns: 1.15rem minmax(0, 1fr) auto;
+  grid-template-columns: 1.35rem minmax(0, 1fr) auto;
   align-items: center;
   gap: 0.3rem;
   padding-bottom: 0.34rem;
@@ -1877,17 +1872,10 @@
 }
 
 .worthReportLogo {
-  display: grid;
-  width: 1.15rem;
-  aspect-ratio: 1;
-  place-items: center;
-  border: 0.12rem solid #121b1f;
-  border-radius: 50%;
-  color: #121b1f;
-  background: #f6d73d;
-  font-size: 0.31rem;
-  line-height: 1;
-  font-weight: 950;
+  display: block;
+  width: 1.35rem;
+  height: auto;
+  object-fit: contain;
 }
 
 .worthReportHeader > span:nth-child(2) strong {

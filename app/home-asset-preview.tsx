@@ -327,7 +327,15 @@ function WorthPreview() {
           aria-label="Miniature Asset Valuation Report for the 2023 Toyota Hilux Single Cab"
         >
           <header className={styles.worthReportHeader}>
-            <span className={styles.worthReportLogo}>A4</span>
+            <Image
+              src="/brand/aim4price-mark-black.png"
+              alt=""
+              width={660}
+              height={515}
+              sizes="1.35rem"
+              className={styles.worthReportLogo}
+              aria-hidden="true"
+            />
             <span>
               <strong>Asset Valuation Report</strong>
               <small>Aim4price asset register</small>
