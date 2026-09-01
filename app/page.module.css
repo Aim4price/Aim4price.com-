@@ -1064,6 +1064,12 @@
   transform: none;
 }
 
+@media (min-width: 761px) {
+  .assetHeroStage[data-active-question='worth'] {
+    aspect-ratio: 1000 / 760;
+  }
+}
+
 .assetQuestionGroup {
   position: absolute;
   z-index: 5;
@@ -1653,13 +1659,12 @@
   display: grid;
   min-height: 0;
   height: 100%;
-  grid-template-columns: minmax(0, 1.18fr) minmax(11.75rem, 1fr);
-  grid-template-rows: minmax(0, 1fr) 2.9rem;
-  gap: 0.65rem 0.72rem;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr) 2.7rem;
+  gap: 0.75rem 0.55rem;
 }
 
-.worthResult,
-.worthReportPreview {
+.worthResult {
   min-width: 0;
   border: 1px solid rgba(117, 196, 161, 0.45);
   border-radius: 0.9rem;
@@ -1699,10 +1704,10 @@
 }
 
 .worthAssetTitle {
-  margin: 0.62rem 0 0;
+  margin: 1rem 0 0;
   overflow: hidden;
   color: #0a4a38;
-  font-size: 0.92rem;
+  font-size: 1.02rem;
   line-height: 1.08;
   font-weight: 850;
   letter-spacing: -0.034em;
@@ -1711,11 +1716,8 @@
 }
 
 .worthValueRow {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  margin-top: 0.58rem;
+  display: block;
+  margin-top: 1.1rem;
 }
 
 .worthValueRow > span {
@@ -1730,35 +1732,38 @@
 
 .worthValueRow > span > strong {
   color: #0d5a3c;
-  font-size: clamp(1.72rem, 2.35vw, 2.28rem);
-  line-height: 0.95;
+  font-size: clamp(2.05rem, 3vw, 2.5rem);
+  line-height: 0.92;
   font-weight: 900;
   letter-spacing: -0.06em;
   white-space: nowrap;
 }
 
 .worthValueRow > span > small {
-  margin-top: 0.3rem;
+  margin-top: 0.42rem;
   color: #60736c;
-  font-size: 0.52rem;
+  font-size: 0.56rem;
   line-height: 1;
   font-weight: 750;
 }
 
 .worthVatToggle {
   display: inline-grid;
+  width: min(100%, 13rem);
+  align-self: flex-start;
   grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-top: 0.8rem;
   padding: 0.16rem;
   border: 1px solid rgba(82, 160, 126, 0.35);
   border-radius: 0.62rem;
   background: rgba(255, 255, 255, 0.72);
-  font-size: 0.45rem;
+  font-size: 0.49rem;
   line-height: 1;
   font-weight: 800;
 }
 
 .worthVatToggle span {
-  padding: 0.42rem 0.34rem;
+  padding: 0.48rem 0.58rem;
   border-radius: 0.45rem;
   white-space: nowrap;
 }
@@ -1769,9 +1774,9 @@
 }
 
 .worthUpdated {
-  margin: 0.4rem 0 0;
+  margin: 0.58rem 0 0;
   color: #53675f;
-  font-size: 0.5rem;
+  font-size: 0.56rem;
   line-height: 1.2;
   font-weight: 750;
 }
@@ -1782,18 +1787,18 @@
   flex: 1;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   align-content: end;
-  gap: 0.42rem;
-  margin-top: 0.55rem;
+  gap: 0.5rem;
+  margin-top: 0.8rem;
 }
 
 .miniFact {
   display: flex;
   min-width: 0;
-  min-height: 3rem;
+  min-height: 3.35rem;
   flex-direction: column;
   justify-content: center;
-  gap: 0.25rem;
-  padding: 0.48rem 0.58rem;
+  gap: 0.3rem;
+  padding: 0.55rem 0.6rem;
   border: 1px solid rgba(184, 211, 199, 0.72);
   border-radius: 0.68rem;
   background: rgba(255, 255, 255, 0.82);
@@ -1801,7 +1806,7 @@
 
 .miniFact span {
   color: #577069;
-  font-size: 0.47rem;
+  font-size: 0.49rem;
   line-height: 1;
   font-weight: 850;
   letter-spacing: 0.035em;
@@ -1811,7 +1816,7 @@
 .miniFact strong {
   overflow: hidden;
   color: #103e31;
-  font-size: 0.65rem;
+  font-size: 0.68rem;
   line-height: 1.1;
   font-weight: 850;
   text-overflow: ellipsis;
@@ -1819,27 +1824,37 @@
 }
 
 .worthFacts .miniFact:last-child strong {
-  font-size: 0.58rem;
+  overflow: visible;
+  font-size: 0.54rem;
+  line-height: 1.15;
+  text-overflow: clip;
+  white-space: normal;
 }
 
 .worthReportPreview {
   display: grid;
+  min-width: 0;
   min-height: 0;
-  place-items: stretch;
-  padding: 0.45rem;
+  place-items: center;
+  padding: 0;
   overflow: hidden;
-  background: linear-gradient(145deg, #eef3f5 0%, #f7f9fa 100%);
+  border-radius: 0.9rem;
+  background: transparent;
 }
 
 .worthReportPaper {
   display: flex;
+  width: 100%;
+  height: auto;
+  max-height: 100%;
   min-width: 0;
   min-height: 0;
+  aspect-ratio: 0.65;
   flex-direction: column;
-  padding: 0.5rem;
+  padding: 0.62rem;
   overflow: hidden;
   border: 1px solid rgba(191, 204, 211, 0.82);
-  border-radius: 0.48rem;
+  border-radius: 0.68rem;
   background: #ffffff;
   box-shadow: 0 7px 16px rgba(37, 55, 65, 0.1);
 }
@@ -1977,7 +1992,7 @@
   display: grid;
   min-width: 0;
   min-height: 0;
-  flex: 1;
+  flex: 0 0 55%;
   grid-template-columns: minmax(0, 1.42fr) minmax(3.85rem, 0.76fr);
   gap: 0.32rem;
   margin-top: 0.32rem;
@@ -2107,14 +2122,14 @@
   display: grid;
   min-width: 0;
   grid-column: 1 / -1;
-  grid-template-columns: minmax(0, 0.82fr) minmax(0, 1.25fr) minmax(0, 0.92fr);
-  gap: 0.55rem;
+  grid-template-columns: minmax(0, 0.86fr) minmax(0, 1.26fr) minmax(0, 0.98fr);
+  gap: 0.85rem;
 }
 
 .worthActions > span {
   display: flex;
   min-width: 0;
-  min-height: 2.9rem;
+  min-height: 2.7rem;
   align-items: center;
   justify-content: space-between;
   gap: 0.4rem;
@@ -2123,7 +2138,7 @@
   border-radius: 0.68rem;
   color: #174b3c;
   background: #ffffff;
-  font-size: 0.6rem;
+  font-size: 0.64rem;
   line-height: 1.15;
   font-weight: 850;
   text-align: left;
@@ -2145,6 +2160,11 @@
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.2);
   font-size: 0.68rem;
+}
+
+.worthActions > span:not(:nth-child(2)) b {
+  color: #174b3c;
+  background: #edf4f1;
 }
 
 /* Owner Manage command preview. */
