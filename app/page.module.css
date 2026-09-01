@@ -905,7 +905,7 @@
 
 /* === Living Asset Record homepage hero, September 2026 === */
 .heroMedia .shell {
-  width: min(calc(100% - 2.5rem), 94rem);
+  width: min(calc(100% - 2.5rem), 100rem);
 }
 
 .heroMedia {
@@ -916,9 +916,9 @@
 
 .heroGrid {
   min-height: inherit;
-  grid-template-columns: minmax(30rem, 38rem) minmax(42rem, 48rem);
+  grid-template-columns: minmax(30rem, 36rem) minmax(42rem, 48rem);
   justify-content: space-between;
-  gap: clamp(3rem, 4.25vw, 5rem);
+  gap: clamp(5rem, 6vw, 7rem);
   padding: clamp(2.5rem, 5vh, 3.5rem) 0;
 }
 
@@ -1054,7 +1054,7 @@
   z-index: 3;
   width: min(100%, 48rem);
   max-width: 48rem;
-  aspect-ratio: 1000 / 600;
+  aspect-ratio: 1000 / 650;
   justify-self: center;
   align-self: center;
   min-width: 0;
@@ -1105,13 +1105,14 @@
 .assetQuestionGroup {
   position: absolute;
   z-index: 5;
-  top: 0;
   right: 0;
   bottom: 0;
+  left: 0;
   display: grid;
-  width: 8rem;
-  grid-template-rows: repeat(5, minmax(0, 1fr));
+  height: 6rem;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   align-items: center;
+  gap: 0.35rem;
 }
 
 .assetQuestion {
@@ -1228,10 +1229,10 @@
 .assetPreviewCard {
   position: absolute;
   z-index: 3;
-  top: 8%;
-  right: 9rem;
-  bottom: 8%;
-  left: 0;
+  top: 0;
+  right: 4.5rem;
+  bottom: 6.5rem;
+  left: 4.5rem;
   display: flex;
   min-width: 0;
   flex-direction: column;
@@ -2864,10 +2865,14 @@
   }
 }
 
-/* Five-question hero refinement: compact right rail and centred, changing preview. */
+/* Five-question hero refinement: controls sit below the centred, changing preview. */
 @media (min-width: 1181px) and (max-width: 1600px) {
   .heroMedia .shell {
     width: min(calc(100% - 4rem), 84rem);
+  }
+
+  .assetHeroStage {
+    width: min(100%, 44rem);
   }
 }
 
@@ -2914,23 +2919,19 @@
   }
 
   .assetPreviewCard {
-    top: 8%;
+    top: 0;
   }
 }
 
 @media (max-width: 1360px) {
   .heroGrid {
-    grid-template-columns: minmax(27rem, 34rem) minmax(36rem, 44rem);
-    gap: clamp(2.5rem, 3.5vw, 3.75rem);
+    grid-template-columns: minmax(30rem, 31rem) minmax(34rem, 44rem);
+    gap: clamp(5rem, 5vw, 6rem);
   }
 
   .assetHeroStage {
     width: min(100%, 44rem);
     transform: none;
-  }
-
-  .assetConnectors {
-    display: block;
   }
 
   .assetQuestion {
@@ -2984,6 +2985,7 @@
     grid-template-columns: repeat(5, minmax(0, 1fr));
     grid-template-rows: minmax(4.8rem, auto);
     gap: 0.2rem;
+    order: 2;
   }
 
   .assetQuestion {
@@ -3005,6 +3007,7 @@
     position: relative;
     inset: auto;
     min-height: 22rem;
+    order: 1;
   }
 
   .assetPreviewActions,
