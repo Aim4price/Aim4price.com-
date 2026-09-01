@@ -97,7 +97,8 @@ test('homepage presents the five-question living Asset Register hero and reveals
   assert.match(preview, /R 450 000/);
   assert.match(preview, /113 677 km/);
   assert.match(preview, /\/brand\/home-asset-hilux-listing\.webp/);
-  assert.match(preview, /alt="White Toyota Hilux single-cab work vehicle in a farm equipment yard"/);
+  assert.match(preview, /alt="Left-side view of the white Toyota Hilux single-cab work vehicle"/);
+  assert.match(preview, /width=\{1280\}[\s\S]*?height=\{960\}/);
   assert.doesNotMatch(preview, /assetDocumentsPanel|assetDocumentAction|0 Documents|View documents|\+ Add document/);
   assert.match(preview, /<AssetDetail label="Year" value="2023" \/>/);
   assert.match(preview, /<AssetDetail label="Licensed" value="✓" status \/>/);
@@ -199,7 +200,8 @@ test('homepage presents the five-question living Asset Register hero and reveals
       'home-asset-hilux-thumb-alt.webp',
     ].map((filename) => stat(new URL(`../public/brand/${filename}`, import.meta.url))),
   );
-  assert.ok(heroImages.every(({ size }) => size > 1_000 && size < 150_000));
+  assert.ok(heroImages[0].size > 80_000 && heroImages[0].size < 150_000);
+  assert.ok(heroImages.slice(1).every(({ size }) => size > 15_000 && size < 50_000));
 
   const livingHeroStyles = styles.slice(
     styles.indexOf('/* === Living Asset Record homepage hero, September 2026 === */'),
