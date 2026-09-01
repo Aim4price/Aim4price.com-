@@ -140,6 +140,12 @@ test('homepage presents the living Asset Register hero and reveals the role choi
   assert.match(styles, /\.roleSection \{[\s\S]*?background: transparent/);
   assert.match(styles, /\.roleTitle:focus-visible \{[\s\S]*?outline: 3px solid/);
   assert.match(styles, /@media \(max-width: 1180px\)[\s\S]*?\.heroGrid \{[\s\S]*?grid-template-columns: minmax\(0, 1fr\)/);
+  assert.match(styles, /Exact large-desktop composition from the approved homepage hero artwork/);
+  assert.match(styles, /@media \(min-width: 1361px\)[\s\S]*?\.assetHeroStage \{[\s\S]*?translate\(5\.75rem, -1\.25rem\)/);
+  assert.match(styles, /@media \(min-width: 1361px\)[\s\S]*?\.assetQuestion:not\(\.assetQuestionActive\) svg \{[\s\S]*?width: 1\.95rem/);
+  assert.match(styles, /@media \(min-width: 1361px\)[\s\S]*?\.assetPreviewHeader \{[\s\S]*?padding-left: 0\.55rem/);
+  assert.match(styles, /@media \(min-width: 1361px\)[\s\S]*?\.assetPreviewActions \{[\s\S]*?display: flex/);
+  assert.match(styles, /@media \(min-width: 1361px\)[\s\S]*?\.assetDetailsPanel \{[\s\S]*?padding: 0\.4rem/);
   assert.match(styles, /@media \(max-width: 640px\)[\s\S]*?\.assetQuestionGroup \{[\s\S]*?grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
   assert.match(styles, /\.assetDocumentsPanel \{[\s\S]*?display: flex/);
   assert.match(styles, /@media \(max-width: 760px\)[\s\S]*?\.assetPreviewCard\[data-active-question='cost'\] \.assetDocumentsPanel \{[\s\S]*?display: flex/);
