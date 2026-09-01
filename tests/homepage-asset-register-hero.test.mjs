@@ -58,7 +58,8 @@ test('homepage presents the five-question living Asset Register hero and reveals
   assert.match(hero, /const activeStage = HERO_STAGES\.find\(\(\{ key \}\) => key === activeQuestion\)/);
   assert.match(hero, /<HomeAssetPreview[\s\S]*?activeQuestion=\{activeQuestion\}[\s\S]*?onQuestionChange=\{handleQuestionChange\}/);
   assert.match(hero, /setActiveQuestion\(question\)[\s\S]*?stepRefs\.current\[index\]\?\.scrollIntoView/);
-  assert.match(hero, /behavior: prefersReducedMotion \? 'auto' : 'smooth'/);
+  assert.match(hero, /behavior: 'auto'/);
+  assert.doesNotMatch(hero, /behavior: 'smooth'|prefersReducedMotion|--hero-line-index/);
   assert.match(hero, /if \(!isDesktopStory\) return;/);
 
   assert.match(hero, /window\.matchMedia\(REDUCED_MOTION_QUERY\)/);
@@ -281,7 +282,7 @@ test('homepage presents the five-question living Asset Register hero and reveals
   assert.match(livingHeroStyles, /\.heroCopy \{[\s\S]*?width: min\(100%, 38rem\)[\s\S]*?align-self: start;[\s\S]*?transform: none/);
   assert.match(livingHeroStyles, /\.assetHeroStage \{[\s\S]*?width: min\(100%, 49\.5rem\)[\s\S]*?aspect-ratio: 1000 \/ 650[\s\S]*?justify-self: center;[\s\S]*?align-self: start/);
   assert.doesNotMatch(livingHeroStyles, /\.assetHeroStage\[data-active-question='worth'\]/);
-  assert.match(livingHeroStyles, /\.assetQuestionGroup \{[\s\S]*?top: 0;[\s\S]*?right: 0;[\s\S]*?bottom: 4\.2rem;[\s\S]*?width: 4\.5rem;[\s\S]*?grid-template-rows: repeat\(5, minmax\(0, 1fr\)\)/);
+  assert.match(livingHeroStyles, /\.assetQuestionGroup \{[\s\S]*?top: 0;[\s\S]*?right: auto;[\s\S]*?bottom: 4\.2rem;[\s\S]*?left: 0;[\s\S]*?width: 4\.5rem;[\s\S]*?grid-template-rows: repeat\(5, minmax\(0, 1fr\)\)/);
   assert.match(livingHeroStyles, /\.assetQuestion \{[\s\S]*?--question-size: 3\.05rem[\s\S]*?min-height: var\(--tap-target-min, 44px\)/);
   assert.match(livingHeroStyles, /\.assetQuestionActive \{[\s\S]*?--question-size: 3\.35rem/);
   assert.doesNotMatch(livingHeroStyles, /\.assetQuestionLabel|\.assetConnectors|\.assetConnectorActive/);
@@ -290,7 +291,8 @@ test('homepage presents the five-question living Asset Register hero and reveals
   assert.match(livingHeroStyles, /\.assetActiveQuestionMain \{[\s\S]*?font-size: 1\.08rem/);
   assert.match(livingHeroStyles, /\.assetActiveQuestionMain svg \{[\s\S]*?width: 1\.55rem/);
   assert.doesNotMatch(activeQuestionStyles, /border:|background:|box-shadow:/);
-  assert.match(livingHeroStyles, /@keyframes assetPreviewReveal/);
+  assert.doesNotMatch(livingHeroStyles, /@keyframes assetPreviewReveal/);
+  assert.match(livingHeroStyles, /\.assetPreviewState \{[\s\S]*?animation: none/);
   assert.match(livingHeroStyles, /\.worthPreview \{[\s\S]*?grid-template-columns: minmax\(0, 1\.15fr\) minmax\(0, 1fr\)[\s\S]*?grid-template-rows: minmax\(0, 1fr\) 2\.7rem/);
   assert.match(livingHeroStyles, /\.worthReportPreview \{[\s\S]*?min-height: 0;[\s\S]*?overflow: hidden/);
   assert.match(livingHeroStyles, /\.worthReportPaper \{[\s\S]*?width: auto;[\s\S]*?height: 100%;[\s\S]*?max-width: 100%;[\s\S]*?max-height: 100%;[\s\S]*?aspect-ratio: 0\.65;[\s\S]*?overflow: hidden/);
@@ -313,22 +315,27 @@ test('homepage presents the five-question living Asset Register hero and reveals
   assert.match(storyStyles, /@media \(min-width: 1181px\)[\s\S]*?\.heroStory \{[\s\S]*?min-height: calc\(340svh - 5\.75rem\)/);
   assert.match(storyStyles, /\.heroSticky \{[\s\S]*?position: sticky;[\s\S]*?top: 5\.75rem;[\s\S]*?height: calc\(100svh - 5\.75rem\)/);
   assert.match(storyStyles, /\.heroScrollTrack \{[\s\S]*?display: grid;[\s\S]*?grid-template-rows: repeat\(5, minmax\(0, 1fr\)\);[\s\S]*?pointer-events: none/);
-  assert.match(storyStyles, /\.heroSticky \.shell \{[\s\S]*?width: min\(calc\(100% - 6rem\), 100rem\);[\s\S]*?height: 100%/);
+  assert.match(storyStyles, /\.heroSticky \.shell \{[\s\S]*?width: min\(calc\(100% - 4rem\), 84rem\);[\s\S]*?height: 100%/);
 
   // Copy and card share the same grid start line, while the card never exceeds the approved width.
-  assert.match(storyStyles, /\.heroStory \.heroGrid \{[\s\S]*?grid-template-columns: minmax\(38rem, 41rem\) minmax\(46rem, 49\.5rem\);[\s\S]*?align-content: center;[\s\S]*?align-items: start;[\s\S]*?gap: clamp\(4\.75rem, 5vw, 6\.25rem\)/);
-  assert.match(storyStyles, /\.heroStory \.heroCopy \{[\s\S]*?width: min\(100%, 41rem\);[\s\S]*?align-self: start;[\s\S]*?transform: none/);
-  assert.match(storyStyles, /\.heroStory \.assetHeroStage \{[\s\S]*?width: min\(100%, 49\.5rem\);[\s\S]*?max-width: 49\.5rem;[\s\S]*?aspect-ratio: 1000 \/ 650;[\s\S]*?align-self: start;[\s\S]*?justify-self: center/);
+  assert.match(storyStyles, /\.heroStory \.heroGrid \{[\s\S]*?grid-template-columns: minmax\(0, 5fr\) minmax\(0, 6fr\);[\s\S]*?align-content: center;[\s\S]*?align-items: start;[\s\S]*?gap: 4rem/);
+  assert.match(storyStyles, /\.heroStory \.heroCopy \{[\s\S]*?width: min\(100%, 36rem\);[\s\S]*?max-width: 36rem;[\s\S]*?align-self: start;[\s\S]*?transform: none/);
+  assert.match(storyStyles, /\.heroStory \.assetHeroStage \{[\s\S]*?width: min\(100%, 44rem\);[\s\S]*?max-width: 44rem;[\s\S]*?aspect-ratio: 1000 \/ 650;[\s\S]*?align-self: start;[\s\S]*?justify-self: center/);
+  assert.match(storyStyles, /\.heroStory \.assetQuestionGroup \{[\s\S]*?right: auto;[\s\S]*?left: 0;[\s\S]*?width: 4\.5rem/);
   assert.match(storyStyles, /\.heroStory \.assetPreviewCard \{[\s\S]*?top: 0;[\s\S]*?right: 5\.1rem;[\s\S]*?bottom: 4\.65rem;[\s\S]*?left: 6rem/);
-  assert.match(storyStyles, /\.heroStory \.heroTitle \{[\s\S]*?font-size: clamp\(3\.75rem, 4\.1vw, 4\.5rem\)/);
-  assert.match(storyStyles, /@media \(min-width: 1361px\) and \(max-width: 1600px\)[\s\S]*?\.heroSticky \.shell \{[\s\S]*?width: min\(calc\(100% - 4rem\), 92rem\)/);
+  assert.match(storyStyles, /\.heroStory \.heroTitle \{[\s\S]*?max-width: 36rem;[\s\S]*?font-size: 3\.45rem/);
+  assert.doesNotMatch(styles, /\.heroStory \.heroSticky \.shell \{[^}]*\b(?:92|100)rem\b/s);
 
-  // Motion is finite and purposeful: copy/card entrance plus a restrained active-bubble pulse.
-  assert.match(storyStyles, /@keyframes heroTitleLineReveal/);
-  assert.match(storyStyles, /@keyframes heroCardReveal/);
-  assert.match(storyStyles, /\.heroStory \.heroTitleLine \{[\s\S]*?animation: heroTitleLineReveal 500ms/);
-  assert.match(storyStyles, /\.heroStory \.assetPreviewState \{[\s\S]*?animation: heroCardReveal 330ms/);
-  assert.doesNotMatch(storyStyles, /animation[^;{}]*\binfinite\b/);
+  // Card and copy changes are immediate; the hero has no entrance, pulse or smooth-scroll motion.
+  assert.doesNotMatch(storyStyles, /@keyframes hero(?:TitleLineReveal|TextReveal|SupportReveal|CardReveal)|@keyframes activeQuestionPulse/);
+  assert.deepEqual(
+    [...storyStyles.matchAll(/animation:\s*([^;{}]+)/g)]
+      .map((match) => match[1].trim())
+      .filter((value) => !value.startsWith('none')),
+    [],
+  );
+  assert.match(styles, /\.heroStory \.heroTitleLine,[\s\S]*?\.heroStory \.secondaryCta \{[\s\S]*?animation: none !important;[\s\S]*?transition: none !important/);
+  assert.match(styles, /\.heroStory \.assetQuestion:hover \.assetQuestionBubble,[\s\S]*?\.heroStory \.secondaryCta:hover \{[\s\S]*?transform: none/);
   assert.doesNotMatch(storyStyles, /scroll-snap/);
 
   // The question remains a subtle, unboxed caption with progress dashes and a scroll cue.

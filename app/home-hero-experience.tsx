@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import HomeAssetPreview, { type QuestionKey } from './home-asset-preview';
 import styles from './page.module.css';
 
@@ -44,7 +44,6 @@ export const HERO_STAGES: readonly HeroStage[] = [
 
 export default function HomeHeroExperience() {
   const [activeQuestion, setActiveQuestion] = useState<QuestionKey>('have');
-  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
   const [isDesktopStory, setIsDesktopStory] = useState(false);
   const stepRefs = useRef<Array<HTMLDivElement | null>>([]);
 
@@ -53,7 +52,6 @@ export default function HomeHeroExperience() {
     const desktopStoryMedia = window.matchMedia(DESKTOP_STORY_QUERY);
 
     const syncMediaPreferences = () => {
-      setPrefersReducedMotion(reducedMotionMedia.matches);
       setIsDesktopStory(
         desktopStoryMedia.matches
           && !reducedMotionMedia.matches
@@ -123,7 +121,7 @@ export default function HomeHeroExperience() {
     if (!isDesktopStory) return;
 
     stepRefs.current[index]?.scrollIntoView({
-      behavior: prefersReducedMotion ? 'auto' : 'smooth',
+      behavior: 'auto',
       block: 'center',
     });
   };
@@ -141,12 +139,8 @@ export default function HomeHeroExperience() {
               <div className={styles.heroCopy}>
                 <div key={activeStage.key} className={styles.heroCopyState}>
                   <h1 id="home-hero-title" className={styles.heroTitle}>
-                    {activeStage.titleLines.map((line, index) => (
-                      <span
-                        key={line}
-                        className={styles.heroTitleLine}
-                        style={{ '--hero-line-index': index } as CSSProperties}
-                      >
+                    {activeStage.titleLines.map((line) => (
+                      <span key={line} className={styles.heroTitleLine}>
                         {line}
                       </span>
                     ))}
