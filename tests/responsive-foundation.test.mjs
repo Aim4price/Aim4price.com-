@@ -80,11 +80,16 @@ test('home page keeps the Asset Register hero usable at phone and tablet widths'
   assert.ok(storyStart >= 0);
   assert.match(hero, /const DESKTOP_STORY_QUERY = '\(min-width: 1181px\)'/);
   assert.match(hero, /setIsDesktopStory\([\s\S]*?desktopStoryMedia\.matches[\s\S]*?!reducedMotionMedia\.matches/);
+  assert.match(hero, /behavior: 'auto'/);
+  assert.doesNotMatch(hero, /behavior: 'smooth'|prefersReducedMotion|--hero-line-index/);
   assert.match(story, /@media \(min-width: 1181px\)[\s\S]*?\.heroSticky \{[\s\S]*?position: sticky/);
   assert.match(story, /@media \(min-width: 1181px\)[\s\S]*?\.heroScrollTrack \{[\s\S]*?grid-template-rows: repeat\(5, minmax\(0, 1fr\)\)/);
   assert.match(story, /\.heroStory \.heroGrid \{[\s\S]*?align-items: start/);
   assert.match(story, /\.heroStory \.heroCopy \{[\s\S]*?align-self: start/);
   assert.match(story, /\.heroStory \.assetHeroStage \{[\s\S]*?align-self: start/);
+  assert.match(story, /\.heroSticky \.shell \{[\s\S]*?width: min\(calc\(100% - 4rem\), 84rem\)/);
+  assert.match(story, /\.heroStory \.assetQuestionGroup \{[\s\S]*?right: auto;[\s\S]*?left: 0/);
+  assert.doesNotMatch(story, /@keyframes hero|@keyframes activeQuestionPulse/);
 
   assert.match(story, /@media \(max-width: 1180px\)[\s\S]*?\.heroStory \{[\s\S]*?min-height: 0/);
   assert.match(story, /@media \(max-width: 1180px\)[\s\S]*?\.heroSticky \{[\s\S]*?position: relative;[\s\S]*?height: auto/);
