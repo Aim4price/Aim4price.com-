@@ -3835,6 +3835,10 @@
 }
 
 @media (min-width: 1361px) {
+  .heroStory .heroGrid {
+    top: clamp(0.75rem, 4vh, 1.75rem);
+  }
+
   .heroStory .heroCopy,
   .heroStory .assetHeroStage {
     transform: translateX(3.25rem);
