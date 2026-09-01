@@ -133,10 +133,17 @@ test('homepage presents the five-question living Asset Register hero and reveals
     'Asset map',
     'QR code',
     'Marketplace',
-    'Dispose or remove asset',
+    'Remove asset',
   ]) {
     assert.match(preview, new RegExp(action));
   }
+  assert.match(
+    preview,
+    /function ManagePreview\(\)[\s\S]*?Year Model: 2023 · Usage: 113 677 km · Condition: Good/,
+  );
+  assert.doesNotMatch(preview, /function ManagePreview\(\)[\s\S]*?Manage asset/);
+  assert.doesNotMatch(preview, /function ManagePreview\(\)[\s\S]*?Choose what you want to do with this asset\./);
+  assert.doesNotMatch(preview, /Dispose or remove asset/);
 
   // What does it cost me? — Fuel and ownership report choices.
   assert.match(preview, /Download maintenance report/);
@@ -193,7 +200,8 @@ test('homepage presents the five-question living Asset Register hero and reveals
   assert.match(livingHeroStyles, /\.worthReportPaper \{[\s\S]*?width: 100%;[\s\S]*?max-height: 100%;[\s\S]*?aspect-ratio: 0\.65;[\s\S]*?overflow: hidden/);
   assert.match(livingHeroStyles, /\.worthReportBody \{[\s\S]*?min-width: 0;[\s\S]*?min-height: 0/);
   assert.match(livingHeroStyles, /\.worthActions \{[\s\S]*?grid-column: 1 \/ -1;[\s\S]*?grid-template-columns: minmax\(0, 0\.86fr\) minmax\(0, 1\.26fr\) minmax\(0, 0\.98fr\)/);
-  assert.match(livingHeroStyles, /\.manageGrid/);
+  assert.match(livingHeroStyles, /\.managePreviewHeader \{[\s\S]*?padding: 0\.45rem 0\.4rem 0\.78rem/);
+  assert.match(livingHeroStyles, /\.manageGrid \{[\s\S]*?gap: 0\.52rem;[\s\S]*?padding-top: 0\.68rem/);
   assert.match(livingHeroStyles, /\.reportList/);
   assert.match(livingHeroStyles, /\.attentionPreview/);
   assert.doesNotMatch(livingHeroStyles, /\.assetDocumentsPanel|\.assetDocumentAction/);
