@@ -460,6 +460,16 @@ function getModeFromHash(hash: string): Mode {
   return "signup";
 }
 
+function getSignupAccountTypeFromSearch(
+  search: string,
+): Extract<SignupAccountType, "owner" | "dealer"> | null {
+  const accountType = new URLSearchParams(search).get("accountType");
+
+  return accountType === "owner" || accountType === "dealer"
+    ? accountType
+    : null;
+}
+
 function getNestedRecord(value: unknown): Record<string, unknown> | null {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     return null;
@@ -616,6 +626,18 @@ export default function AuthClient() {
   useEffect(() => {
     if (typeof window === "undefined") {
       return undefined;
+    }
+
+    const requestedAccountType = getSignupAccountTypeFromSearch(
+      window.location.search,
+    );
+
+    if (requestedAccountType) {
+      setSignupForm((current) => ({
+        ...current,
+        accountType: requestedAccountType,
+        accountSubtype: getDefaultSubtype(requestedAccountType),
+      }));
     }
 
     const syncModeFromHash = () => {

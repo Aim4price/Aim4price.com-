@@ -64,15 +64,17 @@ test('website sign-out stays separate from installable app sessions and verifies
   assert.match(headerClient, /clearCachedHeaderSession\(\)[\s\S]*?window\.location\.replace\('\/auth#login'\)/);
 });
 
-test('home page keeps the video-bubble hero usable at phone and tablet widths', async () => {
+test('home page keeps the Asset Register hero usable at phone and tablet widths', async () => {
   const home = await read('app/page.module.css');
 
-  assert.match(home, /Homepage responsive contract, August 2026/);
-  assert.match(home, /@media \(max-width: 900px\)[\s\S]*?\.heroGrid \{[\s\S]*?grid-template-columns: minmax\(0, 1fr\)/);
-  assert.match(home, /@media \(max-width: 1180px\)[\s\S]*?\.heroBubbles \{[\s\S]*?grid-template-columns: repeat\(4, minmax\(0, 1fr\)\)/);
-  assert.match(home, /@media \(max-width: 640px\)[\s\S]*?\.heroBubbles \{[\s\S]*?grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
-  assert.match(home, /\.heroBubble:focus-visible \{\s*outline: 3px solid #14684f/);
-  assert.doesNotMatch(home, /\.heroActions|\.primaryCta|\.secondaryCta/);
+  assert.match(home, /Living Asset Record homepage hero, September 2026/);
+  assert.match(home, /@media \(max-width: 1180px\)[\s\S]*?\.heroGrid \{[\s\S]*?grid-template-columns: minmax\(0, 1fr\)/);
+  assert.match(home, /@media \(max-width: 760px\)[\s\S]*?\.heroActions \{[\s\S]*?grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
+  assert.match(home, /@media \(max-width: 640px\)[\s\S]*?\.assetQuestionGroup \{[\s\S]*?grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
+  assert.match(home, /@media \(max-width: 640px\)[\s\S]*?\.roleGrid \{[\s\S]*?grid-template-columns: minmax\(0, 1fr\)/);
+  assert.match(home, /\.assetQuestion:focus-visible \{[\s\S]*?outline: 3px solid/);
+  assert.match(home, /\.primaryCta,[\s\S]*?\.secondaryCta \{[\s\S]*?min-height: 3\.65rem/);
+  assert.match(home, /@media \(forced-colors: active\)/);
 });
 
 test('asset register has deterministic toolbar, card-action and modal device states', async () => {
@@ -111,3 +113,4 @@ test('account access labels remain single-line but cannot overflow narrow tiles'
   assert.match(access, /\.actionCopy small \{[\s\S]*?white-space: nowrap;[\s\S]*?overflow: hidden;[\s\S]*?text-overflow: ellipsis/);
   assert.match(access, /@media \(max-width: 640px\)[\s\S]*?\.actionCopy strong \{[\s\S]*?white-space: nowrap/);
 });
+
