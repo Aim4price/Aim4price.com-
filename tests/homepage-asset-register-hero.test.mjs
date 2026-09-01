@@ -350,7 +350,7 @@ test('homepage presents the five-question living Asset Register hero and reveals
   assert.doesNotMatch(styles, /\.serviceCard \{[^}]*display:\s*none/s);
 
   // Reduced motion removes the sticky runway and every story animation/transition.
-  assert.match(storyStyles, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?html \{[\s\S]*?scroll-behavior: auto/);
+  assert.doesNotMatch(storyStyles, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\bhtml\s*\{/);
   assert.match(storyStyles, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.heroStory \{[\s\S]*?min-height: 0;[\s\S]*?\.heroSticky \{[\s\S]*?position: relative;[\s\S]*?height: auto/);
   assert.match(storyStyles, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.heroScrollTrack \{[\s\S]*?display: none/);
   assert.match(storyStyles, /\.heroCopyState,[\s\S]*?\.assetScrollCue \{[\s\S]*?animation: none !important;[\s\S]*?transition: none !important;[\s\S]*?transform: none !important/);
