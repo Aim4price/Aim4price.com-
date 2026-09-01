@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { redirectAdminToAdmin } from '../lib/account-access';
 import AppHeader from '../components/AppHeader';
+import HomeRoleSelector from './home-role-selector';
 import HomeAssetPreview from './home-asset-preview';
 import styles from './page.module.css';
 
@@ -52,47 +53,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <section
-        id="choose-role"
-        className={styles.roleSection}
-        aria-labelledby="choose-role-title"
-      >
-        <div className={styles.shell}>
-          <h2 id="choose-role-title" className={styles.roleTitle}>
-            Which best describes you?
-          </h2>
-
-          <div className={styles.roleGrid}>
-            <Link
-              href="/auth?accountType=owner#signup"
-              className={styles.roleCard}
-              aria-label="Continue as someone who owns or manages assets"
-            >
-              <span>
-                <strong>I own or manage assets</strong>
-                <small>Farmers, contractors, fleet operators and business owners.</small>
-              </span>
-              <span className={styles.roleArrow} aria-hidden="true">
-                →
-              </span>
-            </Link>
-
-            <Link
-              href="/auth?accountType=dealer#signup"
-              className={styles.roleCard}
-              aria-label="Continue as someone who sells, services or supports assets"
-            >
-              <span>
-                <strong>I sell, service or support assets</strong>
-                <small>Dealers, workshops and service providers.</small>
-              </span>
-              <span className={styles.roleArrow} aria-hidden="true">
-                →
-              </span>
-            </Link>
-          </div>
-        </div>
-      </section>
+      <HomeRoleSelector />
     </main>
   );
 }
