@@ -120,7 +120,7 @@ export default function HomeAssetPreview() {
   const activeIndex = QUESTIONS.findIndex(({ key }) => key === activeQuestion);
 
   return (
-    <div className={styles.assetHeroStage}>
+    <div className={styles.assetHeroStage} data-active-question={activeQuestion}>
       <div
         className={styles.assetQuestionGroup}
         role="tablist"
@@ -303,13 +303,14 @@ function WorthPreview() {
             <strong>R 237 150</strong>
             <small>Excl. VAT</small>
           </span>
-          <div className={styles.worthVatToggle} aria-hidden="true">
-            <span>VAT excluded</span>
-            <span>VAT included</span>
-          </div>
         </div>
         <span className={styles.previewSrOnly}>Estimate shown with VAT excluded.</span>
         <p className={styles.worthUpdated}>Updated 01 Sept 2026</p>
+
+        <div className={styles.worthVatToggle} aria-hidden="true">
+          <span>VAT excluded</span>
+          <span>VAT included</span>
+        </div>
 
         <div className={styles.worthFacts}>
           <MiniFact label="Year model" value="2023" />
