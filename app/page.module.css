@@ -2349,21 +2349,30 @@
 }
 
 /* Open issue / attention preview. */
+.assetHeroStage[data-active-question='attention'] .assetPreviewCard {
+  border-color: rgba(225, 70, 61, 0.78);
+  background: linear-gradient(145deg, #fff1f0 0%, #fffafa 100%);
+}
+
 .attentionPreview {
   display: flex;
   flex-direction: column;
-  padding: 0.2rem;
+  padding: 0.15rem;
   border-radius: 0.72rem;
-  background: linear-gradient(145deg, #fff8f7, #fffdfd);
+  background: transparent;
 }
 
 .attentionHeader {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) minmax(13.5rem, 15rem);
   align-items: start;
   gap: 0.75rem;
-  padding: 0.45rem 0.5rem 0.68rem;
+  padding: 0.35rem 0.5rem 0.72rem;
   border-bottom: 1px solid rgba(221, 166, 160, 0.58);
+}
+
+.attentionIdentity {
+  min-width: 0;
 }
 
 .attentionHeader h2,
@@ -2373,8 +2382,8 @@
 
 .attentionHeader h2 {
   margin-top: 0.42rem;
-  color: #4f241f;
-  font-size: 0.96rem;
+  color: #0a4a38;
+  font-size: 1rem;
   line-height: 1.08;
   font-weight: 850;
   letter-spacing: -0.03em;
@@ -2388,9 +2397,40 @@
   font-weight: 650;
 }
 
-.attentionHeader > strong {
-  color: #6d211b;
-  font-size: 1.25rem;
+.attentionValueLabel,
+.attentionUpdated {
+  display: block;
+}
+
+.attentionValueLabel {
+  margin-top: 0.48rem;
+  color: #29443b;
+  font-size: 0.58rem;
+  line-height: 1.1;
+  font-weight: 850;
+}
+
+.attentionUpdated {
+  margin-top: 0.16rem;
+  color: #687984;
+  font-size: 0.52rem;
+  line-height: 1.1;
+  font-weight: 700;
+}
+
+.attentionAside {
+  display: flex;
+  min-width: 0;
+  height: 100%;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.attentionPrice {
+  align-self: flex-end;
+  color: #0a4a38;
+  font-size: 1.38rem;
   line-height: 1;
   font-weight: 900;
   letter-spacing: -0.045em;
@@ -2398,13 +2438,17 @@
   white-space: nowrap;
 }
 
-.attentionHeader > strong small {
+.attentionPrice small {
   display: block;
   margin-top: 0.2rem;
   color: #806b67;
   font-size: 0.52rem;
   font-weight: 750;
   letter-spacing: 0;
+}
+
+.attentionActions {
+  width: 100%;
 }
 
 .attentionBadges {
@@ -2434,7 +2478,8 @@
   display: grid;
   min-height: 0;
   flex: 1;
-  grid-template-columns: minmax(0, 1.25fr) minmax(0, 0.75fr);
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 0.85fr) minmax(0, 1.15fr);
   gap: 0.58rem;
   padding-top: 0.6rem;
 }
@@ -2443,7 +2488,7 @@
 .serviceCard {
   position: relative;
   min-width: 0;
-  padding: 0.8rem;
+  padding: 0.75rem 4.8rem 0.75rem 0.85rem;
   border-radius: 0.76rem;
 }
 
@@ -2456,61 +2501,54 @@
 }
 
 .serviceCard {
-  color: #243e36;
-  border: 1px solid rgba(189, 207, 200, 0.84);
-  background: #f0f4f2;
+  color: #ffffff;
+  border: 0;
+  background: linear-gradient(145deg, #404956, #5c6775);
+  box-shadow: 0 10px 24px rgba(45, 55, 68, 0.16);
 }
 
 .issueCardTitle {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.issueCard .issueCardTitle > span {
-  color: #ffffff;
-  background: rgba(255, 255, 255, 0.18);
-}
-
-.serviceCard .issueCardTitle > span {
-  color: #44655a;
-  background: #ffffff;
+  display: block;
 }
 
 .issueCardTitle strong {
-  font-size: 0.72rem;
+  font-size: 0.74rem;
   line-height: 1.1;
   font-weight: 850;
 }
 
 .issueCard ul {
-  margin: 0.72rem 0 0;
-  padding-left: 1rem;
+  margin: 0.48rem 0 0;
+  padding: 0;
+  list-style: none;
   font-size: 0.58rem;
-  line-height: 1.5;
+  line-height: 1.45;
   font-weight: 700;
 }
 
-.issueCard > p,
 .serviceCard > p {
-  margin: 0.68rem 0 0;
+  margin: 0.42rem 0 0;
+  color: rgba(255, 255, 255, 0.9);
   font-size: 0.5rem;
-  line-height: 1.45;
+  line-height: 1.4;
 }
 
-.issueCard > p {
-  color: rgba(255, 255, 255, 0.82);
-}
-
-.serviceCard > p {
-  color: #66766f;
+.attentionByline {
+  display: block;
+  margin-top: 0.42rem;
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 0.5rem;
+  line-height: 1.2;
+  font-weight: 750;
 }
 
 .issueNoted,
 .serviceNoted {
   position: absolute;
-  right: 0.72rem;
-  bottom: 0.68rem;
+  top: 50%;
+  right: 0.8rem;
+  bottom: auto;
+  transform: translateY(-50%);
   padding: 0.35rem 0.55rem;
   border-radius: 999px;
   font-size: 0.5rem;
@@ -2524,7 +2562,7 @@
 }
 
 .serviceNoted {
-  color: #49685e;
+  color: #28313d;
   background: #ffffff;
 }
 
@@ -3360,6 +3398,10 @@
     min-height: 24rem;
   }
 
+  .assetPreviewCard[data-active-question='attention'] {
+    min-height: 29rem;
+  }
+
   .worthPreview {
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: minmax(0, 1fr);
@@ -3392,8 +3434,8 @@
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .serviceCard {
-    display: none;
+  .attentionHeader {
+    grid-template-columns: minmax(0, 1fr) auto;
   }
 }
 
