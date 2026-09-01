@@ -27,6 +27,14 @@ test('the normal website inherits an auto-fitted desktop viewport from the share
   assert.doesNotMatch(homeSource, /export const viewport|width:\s*980/);
 });
 
+test('the normal website renders immediately without an orientation gate', async () => {
+  const rootSource = await readFile(rootLayoutPath, 'utf8');
+
+  assert.match(rootSource, /<body>[\s\S]*?<div className="appRoot">/);
+  assert.doesNotMatch(rootSource, /MobileOrientationPrompt/);
+  assert.doesNotMatch(rootSource, /Turn your phone sideways|Rotate to landscape/);
+});
+
 test('the three role apps keep zoomable device-width viewports', async () => {
   for (const layoutPath of protectedAppLayoutPaths) {
     const source = await readFile(layoutPath, 'utf8');
