@@ -73,7 +73,7 @@ test('home page keeps the Asset Register hero usable at phone and tablet widths'
   assert.match(home, /@media \(max-width: 640px\)[\s\S]*?\.assetQuestionGroup \{[\s\S]*?grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
   assert.match(home, /@media \(max-width: 640px\)[\s\S]*?\.roleGrid \{[\s\S]*?grid-template-columns: minmax\(0, 1fr\)/);
   assert.match(home, /\.assetQuestion:focus-visible \{[\s\S]*?outline: 3px solid/);
-  assert.match(home, /\.primaryCta,[\s\S]*?\.secondaryCta \{[\s\S]*?min-height: 3\.65rem/);
+  assert.match(home, /\.primaryCta,[\s\S]*?\.secondaryCta \{[\s\S]*?min-height: 3\.2rem/);
   assert.match(home, /@media \(forced-colors: active\)/);
 });
 
@@ -113,4 +113,3 @@ test('account access labels remain single-line but cannot overflow narrow tiles'
   assert.match(access, /\.actionCopy small \{[\s\S]*?white-space: nowrap;[\s\S]*?overflow: hidden;[\s\S]*?text-overflow: ellipsis/);
   assert.match(access, /@media \(max-width: 640px\)[\s\S]*?\.actionCopy strong \{[\s\S]*?white-space: nowrap/);
 });
-

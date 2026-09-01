@@ -12,6 +12,10 @@ type Question = {
   positionClass: string;
   connectorClass: string;
   connectorPath: string;
+  connectorDots: readonly [
+    { x: number; y: number },
+    { x: number; y: number },
+  ];
   icon: ReactNode;
 };
 
@@ -31,7 +35,11 @@ const QUESTIONS: readonly Question[] = [
     label: 'What do I have?',
     positionClass: styles.assetQuestionHave,
     connectorClass: styles.assetConnectorHave,
-    connectorPath: 'M 109 60 C 128 60 126 104 146 104',
+    connectorPath: 'M 132 70 C 148 70 153 85 170 85',
+    connectorDots: [
+      { x: 132, y: 70 },
+      { x: 170, y: 85 },
+    ],
     icon: (
       <>
         <path d="M4.7 5.6h6.8l7.8 7.8-5.9 5.9-7.8-7.8z" />
@@ -44,7 +52,11 @@ const QUESTIONS: readonly Question[] = [
     label: 'What is it worth?',
     positionClass: styles.assetQuestionWorth,
     connectorClass: styles.assetConnectorWorth,
-    connectorPath: 'M 632 166 C 645 166 650 166 659 166',
+    connectorPath: 'M 830 126 C 846 126 853 127 868 127',
+    connectorDots: [
+      { x: 830, y: 126 },
+      { x: 868, y: 127 },
+    ],
     icon: (
       <>
         <path d="M4.5 18.5V14m5 4.5v-7m5 7V8m5 10.5V4.5" />
@@ -58,7 +70,11 @@ const QUESTIONS: readonly Question[] = [
     label: 'What is it costing me?',
     positionClass: styles.assetQuestionCost,
     connectorClass: styles.assetConnectorCost,
-    connectorPath: 'M 109 498 C 128 498 126 454 146 454',
+    connectorPath: 'M 122 455 C 144 455 150 401 170 401',
+    connectorDots: [
+      { x: 122, y: 455 },
+      { x: 170, y: 401 },
+    ],
     icon: (
       <>
         <circle cx="12" cy="12" r="8.2" />
@@ -71,7 +87,11 @@ const QUESTIONS: readonly Question[] = [
     label: 'What needs attention?',
     positionClass: styles.assetQuestionAttention,
     connectorClass: styles.assetConnectorAttention,
-    connectorPath: 'M 632 438 C 649 438 650 490 660 490',
+    connectorPath: 'M 830 421 C 850 421 850 443 870 443',
+    connectorDots: [
+      { x: 830, y: 421 },
+      { x: 870, y: 443 },
+    ],
     icon: (
       <path d="M14.8 5.1a4.6 4.6 0 0 0-5.7 5.7l-5 5a2.2 2.2 0 0 0 3.1 3.1l5-5a4.6 4.6 0 0 0 5.7-5.7l-2.7 2.7-2.1-.5-.5-2.1z" />
     ),
@@ -119,16 +139,17 @@ export default function HomeAssetPreview() {
     >
       <svg
         className={styles.assetConnectors}
-        viewBox="0 0 760 560"
+        viewBox="0 0 1000 560"
         preserveAspectRatio="none"
         aria-hidden="true"
       >
         {QUESTIONS.map((question) => (
-          <path
-            key={question.key}
-            d={question.connectorPath}
-            className={question.connectorClass}
-          />
+          <g key={question.key} className={question.connectorClass}>
+            <path d={question.connectorPath} />
+            {question.connectorDots.map((dot, index) => (
+              <circle key={index} cx={dot.x} cy={dot.y} r="4" />
+            ))}
+          </g>
         ))}
       </svg>
 
@@ -187,34 +208,65 @@ export default function HomeAssetPreview() {
               <small>Excl. VAT</small>
             </div>
             <div className={styles.assetPreviewActions} aria-hidden="true">
-              <span className={styles.assetShareAction}>Share</span>
-              <span className={styles.assetDetailsAction}>Hide details</span>
-              <span className={styles.assetManageAction}>Manage</span>
+              <span className={styles.assetShareAction}>
+                <svg viewBox="0 0 24 24">
+                  <circle cx="18" cy="5" r="2.2" />
+                  <circle cx="6" cy="12" r="2.2" />
+                  <circle cx="18" cy="19" r="2.2" />
+                  <path d="m8 11 7.8-4.6M8 13l7.8 4.6" />
+                </svg>
+                Share
+              </span>
+              <span className={styles.assetDetailsAction}>
+                <svg viewBox="0 0 24 24">
+                  <circle cx="12" cy="12" r="9" />
+                  <path d="m8.5 13.7 3.5-3.5 3.5 3.5" />
+                </svg>
+                Hide details
+              </span>
+              <span className={styles.assetManageAction}>
+                <svg viewBox="0 0 24 24">
+                  <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.09a2 2 0 0 1-1-1.74v-.51a2 2 0 0 1 1-1.72l.15-.1a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2Z" />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
+                Manage
+              </span>
             </div>
           </div>
         </header>
 
         <div className={styles.assetPreviewBody}>
           <div className={styles.assetPhotoPanel}>
-            <span className={styles.assetPhotoAction} aria-hidden="true">
-              + Add photos
-            </span>
             <Image
-              src="/brand/home-asset-hilux.webp"
+              src="/brand/home-asset-hilux-listing.webp"
               alt="White Toyota Hilux single-cab work vehicle in a farm equipment yard"
-              width={960}
-              height={720}
+              width={342}
+              height={359}
               priority
-              sizes="(min-width: 1181px) 13vw, (min-width: 761px) 24vw, (min-width: 641px) 30vw, 40vw"
+              sizes="(min-width: 1181px) 12vw, (min-width: 761px) 23vw, (min-width: 641px) 30vw, 40vw"
             />
-            <span className={styles.assetPhotoCount} aria-hidden="true">
-              1 / 3
-            </span>
             <div className={styles.assetThumbnails} aria-hidden="true">
               <span />
               <span />
               <span />
             </div>
+          </div>
+
+          <div className={styles.assetDocumentsPanel}>
+            <span className={styles.assetDocumentAction} aria-hidden="true">
+              {activeQuestion === 'cost' ? 'Cost ledger' : '+ Add document'}
+            </span>
+            {activeQuestion === 'cost' ? (
+              <>
+                <strong>Ownership costs</strong>
+                <span>Fuel · Maintenance · Repairs</span>
+              </>
+            ) : (
+              <>
+                <strong>0 Documents</strong>
+                <span>View documents</span>
+              </>
+            )}
           </div>
 
           <div className={styles.assetDetailsPanel}>
@@ -225,22 +277,11 @@ export default function HomeAssetPreview() {
             <AssetDetail label="Mapped" value="✓" status />
 
             <div className={styles.assetReplacementRow}>
-              {activeQuestion === 'cost' ? (
-                <>
-                  <span>Cost Ledger</span>
-                  <strong className={styles.assetCostSummary}>
-                    Tracks fuel · maintenance · repairs
-                  </strong>
-                </>
-              ) : (
-                <>
-                  <span>Replacement price</span>
-                  <strong>
-                    R 450 000
-                    <small>Excl. VAT</small>
-                  </strong>
-                </>
-              )}
+              <span>Replacement price</span>
+              <strong>
+                R 450 000
+                <small>Excl. VAT</small>
+              </strong>
             </div>
           </div>
         </div>
