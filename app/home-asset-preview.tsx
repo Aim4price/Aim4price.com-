@@ -291,11 +291,6 @@ function WorthPreview() {
   return (
     <div className={styles.worthPreview}>
       <section className={styles.worthResult}>
-        <div className={styles.worthResultTopline}>
-          <span>Aim4price estimate</span>
-          <strong>Confidence: High</strong>
-        </div>
-
         <h2 className={styles.worthAssetTitle}>2023 Toyota Hilux Single Cab</h2>
 
         <div className={styles.worthValueRow}>
@@ -305,7 +300,6 @@ function WorthPreview() {
           </span>
         </div>
         <span className={styles.previewSrOnly}>Estimate shown with VAT excluded.</span>
-        <p className={styles.worthUpdated}>Updated 01 Sept 2026</p>
 
         <div className={styles.worthVatToggle} aria-hidden="true">
           <span>VAT excluded</span>
@@ -316,7 +310,7 @@ function WorthPreview() {
           <MiniFact label="Year model" value="2023" />
           <MiniFact label="Usage" value="113 677 km" />
           <MiniFact label="Condition" value="Good" />
-          <MiniFact label="Replacement price" value="R 450 000 excl. VAT" />
+          <MiniFact label="Replacement" value="R 450 000 excl. VAT" />
         </div>
       </section>
 

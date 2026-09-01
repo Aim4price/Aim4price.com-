@@ -103,28 +103,32 @@ test('homepage presents the five-question living Asset Register hero and reveals
   assert.match(preview, /<AssetDetail label="Licensed" value="✓" status \/>/);
 
   // What is it worth? — the final estimate page.
-  assert.match(preview, /Aim4price estimate/);
-  assert.match(preview, /Confidence: High/);
-  assert.match(preview, /function WorthPreview\(\)[\s\S]*?2023 Toyota Hilux Single Cab/);
-  assert.match(preview, /function WorthPreview\(\)[\s\S]*?R 237 150/);
-  assert.doesNotMatch(preview, /R 239 454/);
-  assert.match(preview, /VAT excluded[\s\S]*?VAT included/);
-  assert.match(preview, /Estimate shown with VAT excluded\./);
-  assert.match(preview, /worthUpdated[\s\S]*?worthVatToggle/);
-  assert.match(preview, /Asset Valuation Report preview/);
-  assert.match(preview, /Miniature Asset Valuation Report for the 2023 Toyota Hilux Single Cab/);
-  assert.match(preview, /src="\/brand\/aim4price-mark-black\.png"/);
-  assert.match(preview, /width=\{660\}[\s\S]*?height=\{515\}[\s\S]*?className=\{styles\.worthReportLogo\}/);
-  assert.doesNotMatch(preview, /worthReportLogo\}>A4<\/span>/);
-  assert.match(preview, /Asset Details/);
-  assert.match(preview, /Record Summary/);
-  assert.match(preview, /Client \/ Asset Owner/);
-  assert.match(preview, /Aim4price demo owner/);
-  assert.match(preview, /\/brand\/home-asset-hilux-thumb-side\.webp/);
-  assert.match(preview, /\/brand\/home-asset-hilux-thumb-rear\.webp/);
-  assert.match(preview, /Create Ad/);
-  assert.match(preview, /Save to Asset Register/);
-  assert.match(preview, /Download PDF/);
+  const worthPreview = preview.slice(
+    preview.indexOf('function WorthPreview()'),
+    preview.indexOf('function ManagePreview()'),
+  );
+  assert.doesNotMatch(worthPreview, /Aim4price estimate|Confidence: High|Updated 01 Sept 2026/);
+  assert.match(worthPreview, /2023 Toyota Hilux Single Cab/);
+  assert.match(worthPreview, /R 237 150/);
+  assert.doesNotMatch(worthPreview, /R 239 454/);
+  assert.match(worthPreview, /VAT excluded[\s\S]*?VAT included/);
+  assert.match(worthPreview, /Estimate shown with VAT excluded\./);
+  assert.match(worthPreview, /<MiniFact label="Replacement" value="R 450 000 excl\. VAT" \/>/);
+  assert.doesNotMatch(worthPreview, /label="Replacement price"/);
+  assert.match(worthPreview, /Asset Valuation Report preview/);
+  assert.match(worthPreview, /Miniature Asset Valuation Report for the 2023 Toyota Hilux Single Cab/);
+  assert.match(worthPreview, /src="\/brand\/aim4price-mark-black\.png"/);
+  assert.match(worthPreview, /width=\{660\}[\s\S]*?height=\{515\}[\s\S]*?className=\{styles\.worthReportLogo\}/);
+  assert.doesNotMatch(worthPreview, /worthReportLogo\}>A4<\/span>/);
+  assert.match(worthPreview, /Asset Details/);
+  assert.match(worthPreview, /Record Summary/);
+  assert.match(worthPreview, /Client \/ Asset Owner/);
+  assert.match(worthPreview, /Aim4price demo owner/);
+  assert.match(worthPreview, /\/brand\/home-asset-hilux-thumb-side\.webp/);
+  assert.match(worthPreview, /\/brand\/home-asset-hilux-thumb-rear\.webp/);
+  assert.match(worthPreview, /Create Ad/);
+  assert.match(worthPreview, /Save to Asset Register/);
+  assert.match(worthPreview, /Download PDF/);
 
   // How can I manage it? — the same owner command set as the Asset Register.
   for (const action of [
