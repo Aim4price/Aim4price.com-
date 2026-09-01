@@ -125,7 +125,7 @@ export default function HomeAssetPreview() {
         className={styles.assetQuestionGroup}
         role="tablist"
         aria-label="Explore the Aim4price asset record"
-        aria-orientation="horizontal"
+        aria-orientation="vertical"
       >
         {QUESTIONS.map((question, index) => {
           const isActive = question.key === activeQuestion;
@@ -144,6 +144,7 @@ export default function HomeAssetPreview() {
                 isActive ? styles.assetQuestionActive : '',
               ].filter(Boolean).join(' ')}
               aria-selected={isActive}
+              aria-label={question.label}
               aria-controls="home-asset-preview"
               tabIndex={isActive ? 0 : -1}
               onClick={() => selectQuestion(index)}
@@ -152,7 +153,6 @@ export default function HomeAssetPreview() {
               <span className={styles.assetQuestionBubble} aria-hidden="true">
                 <svg viewBox="0 0 24 24">{question.icon}</svg>
               </span>
-              <span className={styles.assetQuestionLabel}>{question.label}</span>
             </button>
           );
         })}
@@ -170,6 +170,10 @@ export default function HomeAssetPreview() {
           <PreviewContent activeQuestion={activeQuestion} />
         </div>
       </article>
+
+      <p className={styles.assetActiveQuestion} aria-live="polite" aria-atomic="true">
+        {QUESTIONS[activeIndex]?.label ?? QUESTIONS[0].label}
+      </p>
 
       <span
         className={styles.assetQuestionFeedback}
