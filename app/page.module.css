@@ -1750,6 +1750,275 @@
   }
 }
 
+/* Exact large-desktop composition from the approved homepage hero artwork. */
+@media (min-width: 1361px) {
+  .heroTitle {
+    max-width: 41rem;
+    font-size: 3.85rem;
+  }
+
+  .heroTitleLine:first-child {
+    letter-spacing: -0.057em;
+  }
+
+  .heroTitleLine + .heroTitleLine {
+    margin-top: 0.18em;
+    letter-spacing: -0.03em;
+  }
+
+  .heroText {
+    margin-top: 1.2rem;
+    color: #596571;
+    letter-spacing: -0.006em;
+  }
+
+  .heroActions {
+    gap: 1.2rem;
+  }
+
+  .primaryCta,
+  .secondaryCta {
+    width: 12rem;
+    min-width: 0;
+    min-height: 3.15rem;
+    box-sizing: border-box;
+    padding-inline: 1rem;
+    border-radius: 0.75rem;
+    font-size: 0.92rem;
+    font-weight: 750;
+  }
+
+  .heroSectors {
+    column-gap: 0.35rem;
+    margin-top: 1.45rem;
+  }
+
+  .assetHeroStage {
+    transform: translate(5.75rem, -1.25rem);
+  }
+
+  .assetQuestion:not(.assetQuestionActive) svg,
+  .assetQuestion:not(.assetQuestionActive) span {
+    position: relative;
+    top: -0.2rem;
+  }
+
+  .assetQuestion:not(.assetQuestionActive) svg {
+    width: 1.95rem;
+    height: 1.95rem;
+    stroke-width: 1.45;
+  }
+
+  .assetQuestion:not(.assetQuestionActive) span {
+    max-width: 4.75rem;
+    font-size: 0.7rem;
+    line-height: 1.3;
+    letter-spacing: -0.035em;
+  }
+
+  .assetQuestionActive {
+    --question-size: 6.4rem;
+  }
+
+  .assetQuestionActive svg {
+    width: 1.7rem;
+    height: 1.7rem;
+  }
+
+  .assetQuestionActive span {
+    font-size: 0.74rem;
+    line-height: 1.18;
+    letter-spacing: -0.018em;
+  }
+
+  .assetQuestionHave {
+    top: -0.1%;
+    left: 0.2%;
+  }
+
+  .assetQuestionWorth {
+    top: 9.35%;
+    right: 0.3%;
+  }
+
+  .assetQuestionCost {
+    bottom: 7.7%;
+    left: -0.3%;
+  }
+
+  .assetQuestionAttention {
+    right: 2.8%;
+    bottom: 1.1%;
+  }
+
+  .assetPreviewCard {
+    top: 8.8%;
+  }
+
+  .assetPreviewHeader {
+    grid-template-columns: minmax(0, 1fr) auto;
+    padding-right: 0.3rem;
+    padding-bottom: 0.45rem;
+    padding-left: 0.55rem;
+  }
+
+  .assetPreviewIdentity {
+    width: 18rem;
+    padding-top: 0.3rem;
+  }
+
+  .assetPreviewIdentity h2 {
+    font-size: 1rem;
+    font-weight: 800;
+    letter-spacing: -0.025em;
+  }
+
+  .assetPreviewIdentity p {
+    margin-top: 0.45rem;
+  }
+
+  .assetPreviewIdentity strong {
+    margin-top: 0.72rem;
+    font-size: 0.6rem;
+  }
+
+  .assetPreviewIdentity small {
+    margin-top: 0.23rem;
+  }
+
+  .assetPreviewAside {
+    min-width: 0;
+    gap: 0.68rem;
+  }
+
+  .assetCurrentValue {
+    min-height: 2.65rem;
+    box-sizing: border-box;
+    padding: 0.15rem 0.2rem;
+  }
+
+  .assetCurrentValue strong {
+    font-size: 1.22rem;
+  }
+
+  .assetCurrentValue small {
+    font-size: 0.58rem;
+  }
+
+  .assetPreviewActions {
+    display: flex;
+    width: auto;
+    justify-content: flex-end;
+  }
+
+  .assetPreviewActions span {
+    min-height: 1.8rem;
+    box-sizing: border-box;
+    padding-inline: 0;
+    border-radius: 0.52rem;
+    font-size: 0.49rem;
+    font-weight: 800;
+  }
+
+  .assetPreviewActions svg {
+    width: 0.65rem;
+    height: 0.65rem;
+    stroke-width: 1.5;
+  }
+
+  .assetShareAction {
+    width: 4.3rem;
+  }
+
+  .assetDetailsAction {
+    width: 5.4rem;
+  }
+
+  .assetManageAction {
+    width: 4.95rem;
+  }
+
+  .assetDetailsAction svg circle {
+    fill: #dcecff;
+    stroke: none;
+  }
+
+  .assetPreviewBody {
+    margin-left: -0.1rem;
+    gap: 0.65rem;
+  }
+
+  .assetPhotoPanel {
+    gap: 0.68rem;
+    padding-bottom: 0.58rem;
+  }
+
+  .assetThumbnails {
+    grid-template-columns: repeat(3, 2.35rem);
+    justify-content: start;
+    gap: 0.25rem;
+  }
+
+  .assetDocumentAction {
+    top: 0.52rem;
+    min-height: 1.55rem;
+    padding-inline: 1rem;
+    font-size: 0.48rem;
+  }
+
+  .assetDocumentsPanel {
+    gap: 0.35rem;
+    padding-top: 3.15rem;
+  }
+
+  .assetDocumentsPanel strong {
+    font-size: 0.62rem;
+  }
+
+  .assetDocumentsPanel > span:last-child {
+    min-height: 1.55rem;
+    padding-inline: 0.9rem;
+    font-size: 0.46rem;
+  }
+
+  .assetDetailsPanel {
+    box-sizing: border-box;
+    grid-template-rows: repeat(5, minmax(1.6rem, 1fr)) minmax(2.6rem, 1.55fr);
+    gap: 0.25rem;
+    padding: 0.4rem;
+    border: 1px solid rgba(201, 216, 223, 0.92);
+    border-radius: 0.9rem;
+    background: #f8fafb;
+  }
+
+  .assetDetailRow > span {
+    font-size: 0.54rem;
+    font-weight: 800;
+  }
+
+  .assetDetailRow > strong {
+    font-size: 0.56rem;
+    font-weight: 800;
+  }
+
+  .assetStatusValue {
+    font-size: 0.9rem !important;
+  }
+
+  .assetReplacementRow > span {
+    font-size: 0.54rem;
+    font-weight: 800;
+  }
+
+  .assetReplacementRow > strong {
+    font-size: 0.82rem;
+  }
+
+  .assetReplacementRow small {
+    font-size: 0.46rem;
+  }
+}
+
 @media (max-width: 1360px) {
   .heroGrid {
     grid-template-columns: minmax(0, 1fr) minmax(0, 44rem);
