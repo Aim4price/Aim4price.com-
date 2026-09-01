@@ -495,37 +495,71 @@ function AttentionPreview() {
   return (
     <div className={styles.attentionPreview}>
       <header className={styles.attentionHeader}>
-        <div>
+        <div className={styles.attentionIdentity}>
           <div className={styles.attentionBadges}>
             <span>Maintenance serviced</span>
             <span>Open issue</span>
           </div>
-          <h2>2024 Landini Super 110 + Front Loader</h2>
-          <p>Year Model: 2024 · Usage: 20 741 hours · Condition: Good</p>
+          <h2>2023 Toyota Hilux Single Cab</h2>
+          <p>Year Model: 2023 · Usage: 113 677 km · Condition: Good</p>
+          <strong className={styles.attentionValueLabel}>Aim4price value</strong>
+          <small className={styles.attentionUpdated}>Updated 01 Sept 2026</small>
         </div>
-        <strong>R 446 250<small>Excl. VAT</small></strong>
+
+        <div className={styles.attentionAside}>
+          <strong className={styles.attentionPrice}>
+            R 237 150
+            <small>Excl. VAT</small>
+          </strong>
+
+          <div className={`${styles.assetPreviewActions} ${styles.attentionActions}`} aria-hidden="true">
+            <span className={styles.assetShareAction}>
+              <svg viewBox="0 0 24 24">
+                <circle cx="18" cy="5" r="2.2" />
+                <circle cx="6" cy="12" r="2.2" />
+                <circle cx="18" cy="19" r="2.2" />
+                <path d="m8 11 7.8-4.6M8 13l7.8 4.6" />
+              </svg>
+              Share
+            </span>
+            <span className={styles.assetDetailsAction}>
+              <svg viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="9" />
+                <path d="m8.5 10.3 3.5 3.5 3.5-3.5" />
+              </svg>
+              View details
+            </span>
+            <span className={styles.assetManageAction}>
+              <MiniGlyph type="maintenance" />
+              Manage
+            </span>
+          </div>
+        </div>
       </header>
 
       <div className={styles.attentionBody}>
         <section className={styles.issueCard}>
           <div className={styles.issueCardTitle}>
-            <span><MiniGlyph type="maintenance" /></span>
             <strong>Open issue reported</strong>
           </div>
           <ul>
             <li>Lisensie disk het verval 2025</li>
             <li>Sitplek kort aandag</li>
           </ul>
-          <p>By Gerald · 29 Aug 2026</p>
+          <small className={styles.attentionByline}>By Gerald · 29 Aug 2026</small>
           <span className={styles.issueNoted}>Noted</span>
         </section>
 
         <section className={styles.serviceCard}>
           <div className={styles.issueCardTitle}>
-            <span><MiniGlyph type="maintenance" /></span>
             <strong>Maintenance has been done</strong>
           </div>
-          <p>Routine service captured with notes, parts and the next service reading.</p>
+          <p>
+            Serviced: Changed engine oil, Changed air filters, Changed oil filters,
+            Changed diesel filters, Greased machine · By Skimmelkrans · Gerald
+          </p>
+          <p>Notes/Problems: Lisensie disk het verval 2025</p>
+          <small className={styles.attentionByline}>By Gerald · 29 Aug 2026</small>
           <span className={styles.serviceNoted}>Noted</span>
         </section>
       </div>
