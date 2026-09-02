@@ -25,11 +25,11 @@ test('wide static Home has a dedicated desktop composition below the cinematic h
   );
   assert.match(
     tuning,
-    /@media \(min-width: 1181px\) and \(max-height: 699px\) \{[\s\S]*?padding-block: clamp\(1\.25rem, 3\.2vh, 1\.75rem\) clamp\(2\.25rem, 5\.5vh, 3rem\)/,
+    /@media \(min-width: 1181px\) and \(max-height: 699px\) \{[\s\S]*?section\[data-story-capability\] div:has\(> \[data-story-opening\]\)[\s\S]*?padding-block: clamp\(1\.25rem, 3\.2vh, 1\.75rem\) clamp\(2\.25rem, 5\.5vh, 3rem\)/,
   );
   assert.match(
     tuning,
-    /@media \(min-width: 1181px\) and \(max-height: 620px\) \{[\s\S]*?padding-block: 1rem 2\.25rem/,
+    /@media \(min-width: 1181px\) and \(max-height: 620px\) \{[\s\S]*?section\[data-story-capability\] div:has\(> \[data-story-opening\]\)[\s\S]*?padding-block: 1rem 2\.25rem/,
   );
 
   assert.doesNotMatch(tuning, /\bzoom\s*:/);
