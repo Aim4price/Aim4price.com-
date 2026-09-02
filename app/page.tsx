@@ -12,7 +12,7 @@ export default async function HomePage() {
 
   return (
     <main className={styles.page}>
-      <AppHeader active="home" brandAlignment="working-column" />
+      <AppHeader active="home" />
 
       <HomeHeroExperience />
 
@@ -20,4 +20,3 @@ export default async function HomePage() {
     </main>
   );
 }
-
