@@ -12,7 +12,11 @@ export default async function HomePage() {
 
   return (
     <HomeDisplayCheck>
-      <AppHeader active="home" brandAlignment="working-column" />
+      <AppHeader
+        active="home"
+        brandAlignment="working-column"
+        standardCanvas
+      />
 
       <HomeHeroExperience />
 

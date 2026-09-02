@@ -14,7 +14,7 @@ test('homepage plays one slower timed tour, returns to its brand frame, then fol
     read('app/auth/auth-client.tsx'),
   ]);
 
-  assert.match(page, /<AppHeader active="home" brandAlignment="working-column" \/>/);
+  assert.match(page, /<AppHeader[\s\S]*?active="home"[\s\S]*?brandAlignment="working-column"[\s\S]*?standardCanvas[\s\S]*?\/>/);
   assert.match(page, /import HomeHeroExperience from '\.\/home-hero-experience'/);
   assert.match(page, /<HomeHeroExperience \/>/);
   assert.doesNotMatch(page, /import HomeAssetPreview/);
@@ -72,13 +72,11 @@ test('homepage plays one slower timed tour, returns to its brand frame, then fol
     assert.match(hero, new RegExp(`${question}: HERO_FEATURE_DURATION_MS`));
   }
   assert.match(hero, /window\.matchMedia\(REDUCED_MOTION_QUERY\)/);
-  assert.match(hero, /window\.matchMedia\(CINEMATIC_STORY_QUERY\)/);
-  assert.match(hero, /CINEMATIC_STORY_QUERY = '\(min-width: 1181px\) and \(min-height: 640px\)'/);
-  assert.match(hero, /cinematicStoryMedia\.matches && !reducedMotionMedia\.matches/);
+  assert.match(hero, /const supportsStory = !reducedMotionMedia\.matches/);
+  assert.doesNotMatch(hero, /CINEMATIC_STORY_QUERY|cinematicStoryMedia/);
   assert.match(hero, /const \[isCinematicStory, setIsCinematicStory\] = useState\(false\)/);
   assert.match(hero, /data-story-capability=\{isCinematicStory \? 'cinematic' : 'static'\}/);
   assert.match(hero, /reducedMotionMedia\.addEventListener\('change', syncStoryCapability\)/);
-  assert.match(hero, /cinematicStoryMedia\.addEventListener\('change', syncStoryCapability\)/);
   assert.match(hero, /if \(!supportsStory\) \{[\s\S]*?setIsAutoplaying\(false\)[\s\S]*?setIsManuallyControlled\(true\)[\s\S]*?updateStoryStep\(FEATURE_START_INDEX\)/);
   assert.match(hero, /const storyStep = HERO_STORY_STEPS\[storyStepIndex\]/);
   assert.match(hero, /window\.setTimeout\([\s\S]*?STORY_DURATIONS\[storyStep\]/);
@@ -107,10 +105,12 @@ test('homepage plays one slower timed tour, returns to its brand frame, then fol
   assert.match(hero, /scrollClaimRef\.current = scrollClaimRef\.current \|\| claimControl/);
   assert.match(hero, /scrollFrameRef\.current = window\.requestAnimationFrame\(\(\) => \{/);
   assert.match(hero, /currentScrollY = window\.scrollY/);
-  assert.match(hero, /sectionTop = currentScrollY \+ section\.getBoundingClientRect\(\)\.top/);
-  assert.match(hero, /stickyTop =\s*Number\.parseFloat\(window\.getComputedStyle\(sticky\)\.top\) \|\| 0/);
+  assert.match(hero, /sectionRect = section\.getBoundingClientRect\(\)/);
+  assert.match(hero, /stickyRect = sticky\.getBoundingClientRect\(\)/);
+  assert.match(hero, /sectionTop = currentScrollY \+ sectionRect\.top/);
+  assert.match(hero, /stickyTop =[\s\S]*?Number\.parseFloat\(window\.getComputedStyle\(sticky\)\.top\)[\s\S]*?homeDisplayScale/);
   assert.match(hero, /trackStart = sectionTop - stickyTop/);
-  assert.match(hero, /trackTravel = Math\.max\([\s\S]*?1,[\s\S]*?section\.offsetHeight - sticky\.offsetHeight,[\s\S]*?\)/);
+  assert.match(hero, /trackTravel = Math\.max\([\s\S]*?1,[\s\S]*?sectionRect\.height - stickyRect\.height,[\s\S]*?\)/);
   assert.match(hero, /localScroll = Math\.max\([\s\S]*?0,[\s\S]*?Math\.min\(trackTravel, currentScrollY - trackStart\),[\s\S]*?\)/);
   assert.match(hero, /progress = localScroll \/ trackTravel/);
   assert.match(hero, /nextIndex = clampStoryIndex\([\s\S]*?Math\.floor\(progress \* HERO_STORY_STEPS\.length\),[\s\S]*?\)/);
@@ -436,21 +436,19 @@ test('homepage plays one slower timed tour, returns to its brand frame, then fol
   assert.match(storyHeroStyles, /@media \(min-width: 1181px\) and \(max-width: 1240px\) and \(min-height: 640px\)[\s\S]*?\.storyHeroGrid \{[\s\S]*?--hero-working-inset: 8px/);
   assert.match(storyHeroStyles, /@media \(min-width: 1181px\) and \(min-height: 640px\) and \(max-height: 759px\)[\s\S]*?\.assetStageMotion \{[\s\S]*?width: min\(43rem, calc\(100% \+ 5rem\)\)/);
 
-  const chosenCompactStart = storyHeroStyles.indexOf(
-    '/* The #543 desktop composition is the default.',
+  const standardCanvasStart = storyHeroStyles.indexOf(
+    '/* === One calibrated standard Home canvas, September 2026 ===',
   );
-  const chosenCompactEnd = storyHeroStyles.indexOf(
-    '/* Static-wide is the sole fallback',
-    chosenCompactStart,
-  );
-  assert.ok(chosenCompactStart >= 0 && chosenCompactEnd > chosenCompactStart);
-  const chosenCompactStyles = storyHeroStyles.slice(chosenCompactStart, chosenCompactEnd);
-  assert.match(chosenCompactStyles, /@media \(min-width: 1181px\) and \(min-height: 640px\)/);
-  assert.match(chosenCompactStyles, /\.page\[data-home-display-size='small'\] \.heroStory \.heroMedia \.shell \{[\s\S]*?width: min\(calc\(100% - 2\.25rem\), 1280px\)/);
-  assert.match(chosenCompactStyles, /\.page\[data-home-display-size='small'\] \.storyHeroGrid \{[\s\S]*?grid-template-columns: minmax\(26rem, 1fr\) minmax\(32rem, 40rem\)/);
-  assert.match(chosenCompactStyles, /\.page\[data-home-display-size='small'\] \.assetStageMotion \{[\s\S]*?width: min\(39\.5rem, calc\(100% \+ 3\.5rem\)\)/);
-  assert.match(chosenCompactStyles, /\.page\[data-home-display-size='compact'\] \.storyHeroGrid \{[\s\S]*?grid-template-columns: minmax\(28rem, 1fr\) minmax\(36rem, 44\.5rem\)/);
-  assert.match(chosenCompactStyles, /\.page\[data-home-display-size='compact'\] \.assetStageMotion \{[\s\S]*?width: min\(44\.5rem, calc\(100% \+ 4rem\)\)/);
+  assert.ok(standardCanvasStart >= 0);
+  const standardCanvasStyles = storyHeroStyles.slice(standardCanvasStart);
+  assert.doesNotMatch(standardCanvasStyles, /@media \(prefers-reduced-motion: no-preference\)/);
+  assert.match(standardCanvasStyles, /\.page\[data-home-standard-canvas='true'\] \.storyHeroGrid \{[\s\S]*?grid-template-columns: minmax\(31rem, 1fr\) minmax\(39rem, 49\.5rem\)/);
+  assert.match(standardCanvasStyles, /\.page\[data-home-standard-canvas='true'\] \.assetStageMotion \{[\s\S]*?width: min\(45\.5rem, calc\(100% \+ 7rem\)\)/);
+  assert.match(standardCanvasStyles, /\.page\[data-home-standard-canvas='true'\] \.heroBrandCopy,[\s\S]*?\.heroPromiseCopy \{[\s\S]*?display: flex/);
+  assert.match(standardCanvasStyles, /\.page\[data-home-standard-canvas='true'\] \.heroStory \.heroActions \{[\s\S]*?display: flex[\s\S]*?grid-template-columns: none/);
+  assert.match(standardCanvasStyles, /\.page\[data-home-standard-canvas='true'\] \.assetPreviewIdentity p \{[\s\S]*?display: block/);
+  assert.match(standardCanvasStyles, /\.page\[data-home-standard-canvas='true'\] \.roleGrid \{[\s\S]*?grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
+  assert.doesNotMatch(storyHeroStyles, /data-home-display-size='small'|data-home-display-size='compact'/);
   assert.doesNotMatch(storyHeroStyles, /Compact laptop density contract, September 2026|max-width: 1599px|max-height: 899px/);
 
   assert.doesNotMatch(storyHeroStyles, /@media \(min-width: 901px\) and \(max-width: 1180px\)/);

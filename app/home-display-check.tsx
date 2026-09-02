@@ -17,97 +17,117 @@ import {
 import pageStyles from './page.module.css';
 import styles from './home-display-check.module.css';
 
-const DISPLAY_CHECK_QUERY =
-  '(min-width: 1181px) and (min-height: 640px) and (hover: hover) and (pointer: fine)';
-const DISPLAY_COMPLETED_KEY = 'aim4price:home-display-check:completed:v2';
-const DISPLAY_PREFERENCE_KEY = 'aim4price:home-display-preference:v3';
+const DISPLAY_COMPLETED_KEY = 'aim4price:home-display-check:completed:v3';
+const DISPLAY_PREFERENCE_KEY = 'aim4price:home-display-preference:v4';
 const DISPLAY_STORAGE_BACKEND_KEY = 'aim4price:home-display-storage-backend';
 const STALE_DISPLAY_KEYS = [
+  'aim4price:home-display-check:completed:v2',
   'aim4price:home-display-check:completed',
+  'aim4price:home-display-preference:v3',
   'aim4price:home-display-preference:v2',
   'aim4price:home-display-preference:v1',
   'aim4price:home-display-check:v2',
   'aim4price:home-display-check:v1',
 ] as const;
-const DISPLAY_PREFERENCE_VERSION = 3;
-const ORIGINAL_CANVAS_WIDTH = 1360;
-const ORIGINAL_CANVAS_HEIGHT = 620;
-const PREVIEW_SAFE_WIDTH_RATIO = 0.96;
-const PREVIEW_SAFE_HEIGHT_RATIO = 0.93;
-
-export const DISPLAY_SIZES = [
-  { id: 'small', label: 'Small', scale: 0.78 },
-  { id: 'compact', label: 'Compact', scale: 0.9 },
-  { id: 'original', label: 'Original', scale: 1 },
-] as const;
-
-type DisplaySize = (typeof DISPLAY_SIZES)[number]['id'];
-
-type StoredDisplayPreference = {
-  version: typeof DISPLAY_PREFERENCE_VERSION;
-  selections: Partial<Record<DisplaySize, DisplaySize>>;
-};
+const DISPLAY_PREFERENCE_VERSION = 4;
+const STANDARD_CANVAS_WIDTH = 1360;
+const STANDARD_HERO_HEIGHT = 620;
+const MIN_SITE_SCALE = 0.1;
+const MAX_SITE_SCALE = 1.5;
+const SITE_SCALE_STEP = 0.05;
+const VIEWPORT_HORIZONTAL_INSET = 32;
+const VIEWPORT_VERTICAL_INSET = 48;
+const PREVIEW_SAFE_WIDTH = 0.92;
+const PREVIEW_SAFE_HEIGHT = 0.84;
 
 type ViewportSize = {
   width: number;
   height: number;
 };
 
+type DisplaySignature = ViewportSize & {
+  screenWidth: number;
+  screenHeight: number;
+  pixelRatio: number;
+};
+
+type StoredDisplayPreference = {
+  version: typeof DISPLAY_PREFERENCE_VERSION;
+  scale: number;
+  viewport: DisplaySignature;
+};
+
 const HomeDisplayReadyContext = createContext(true);
+const HomeDisplayScaleContext = createContext(1);
 
 export function useHomeDisplayReady() {
   return useContext(HomeDisplayReadyContext);
 }
 
-const isDisplaySize = (value: unknown): value is DisplaySize =>
-  DISPLAY_SIZES.some(({ id }) => id === value);
+export function useHomeDisplayScale() {
+  return useContext(HomeDisplayScaleContext);
+}
+
+const clampSiteScale = (scale: number) =>
+  Math.min(MAX_SITE_SCALE, Math.max(MIN_SITE_SCALE, scale));
+
+const normalizeSiteScale = (scale: number) =>
+  Number(clampSiteScale(scale).toFixed(2));
 
 const getViewportSize = (): ViewportSize => ({
   width: window.innerWidth,
   height: window.innerHeight,
 });
 
-const getPreviewRatios = (
-  viewport: ViewportSize,
-  scale: (typeof DISPLAY_SIZES)[number]['scale'],
-) => ({
-  width: (ORIGINAL_CANVAS_WIDTH * scale) / Math.max(1, viewport.width - 48),
-  height: (ORIGINAL_CANVAS_HEIGHT * scale) / Math.max(1, viewport.height - 96),
+const getDisplaySignature = (): DisplaySignature => ({
+  ...getViewportSize(),
+  screenWidth: window.screen?.width ?? window.innerWidth,
+  screenHeight: window.screen?.height ?? window.innerHeight,
+  pixelRatio: window.devicePixelRatio || 1,
 });
 
-const doesSizeFitViewport = (viewport: ViewportSize, size: DisplaySize) => {
-  const option = DISPLAY_SIZES.find(({ id }) => id === size) ?? DISPLAY_SIZES[0];
-  const ratios = getPreviewRatios(viewport, option.scale);
+const getRawFitLimit = (viewport: ViewportSize) =>
+  Math.min(
+    1,
+    Math.max(0, viewport.width - VIEWPORT_HORIZONTAL_INSET) /
+      STANDARD_CANVAS_WIDTH,
+    Math.max(0, viewport.height - VIEWPORT_VERTICAL_INSET) /
+      STANDARD_HERO_HEIGHT,
+  );
+
+const getRecommendedScale = (viewport: ViewportSize) => {
+  const fitLimit = getRawFitLimit(viewport);
+  const steppedScale =
+    Math.floor((fitLimit + Number.EPSILON) / SITE_SCALE_STEP) * SITE_SCALE_STEP;
+
+  return normalizeSiteScale(steppedScale);
+};
+
+const doesScaleFitViewport = (viewport: ViewportSize, scale: number) =>
+  STANDARD_CANVAS_WIDTH * scale <=
+    Math.max(1, viewport.width - VIEWPORT_HORIZONTAL_INSET) &&
+  STANDARD_HERO_HEIGHT * scale <=
+    Math.max(1, viewport.height - VIEWPORT_VERTICAL_INSET);
+
+const relativeDifference = (left: number, right: number) =>
+  Math.abs(left - right) / Math.max(1, left, right);
+
+const hasDisplayMateriallyChanged = (
+  previous: DisplaySignature,
+  current: DisplaySignature,
+) => {
+  const orientationChanged =
+    previous.width >= previous.height !== current.width >= current.height;
+
   return (
-    ratios.width <= PREVIEW_SAFE_WIDTH_RATIO &&
-    ratios.height <= PREVIEW_SAFE_HEIGHT_RATIO
+    orientationChanged ||
+    relativeDifference(previous.width, current.width) > 0.08 ||
+    relativeDifference(previous.height, current.height) > 0.2 ||
+    relativeDifference(previous.screenWidth, current.screenWidth) > 0.08 ||
+    relativeDifference(previous.screenHeight, current.screenHeight) > 0.08 ||
+    relativeDifference(previous.pixelRatio, current.pixelRatio) > 0.08
   );
 };
-
-const getRecommendedSizeIndex = (viewport: ViewportSize) => {
-  let recommendedIndex = 0;
-
-  DISPLAY_SIZES.forEach((option, index) => {
-    if (doesSizeFitViewport(viewport, option.id)) {
-      recommendedIndex = index;
-    }
-  });
-
-  return recommendedIndex;
-};
-
-const getRecommendedSize = (viewport: ViewportSize): DisplaySize =>
-  DISPLAY_SIZES[getRecommendedSizeIndex(viewport)]?.id ?? 'small';
-
-const getSizeIndex = (size: DisplaySize) =>
-  Math.max(0, DISPLAY_SIZES.findIndex(({ id }) => id === size));
-
-const createDisplayPreference = (
-  selections: StoredDisplayPreference['selections'] = {},
-): StoredDisplayPreference => ({
-  version: DISPLAY_PREFERENCE_VERSION,
-  selections,
-});
 
 const hasSecureConnection = () => {
   if (window.location.protocol === 'https:' && window.isSecureContext) return true;
@@ -202,39 +222,44 @@ const removeStorageItem = (key: string) => {
   }
 };
 
+const isValidSignature = (value: unknown): value is DisplaySignature => {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+  const signature = value as Partial<DisplaySignature>;
+
+  return [
+    signature.width,
+    signature.height,
+    signature.screenWidth,
+    signature.screenHeight,
+    signature.pixelRatio,
+  ].every((entry) => typeof entry === 'number' && Number.isFinite(entry) && entry > 0);
+};
+
 const readStoredPreference = (): StoredDisplayPreference | null => {
   try {
     const raw = readStorageItem(DISPLAY_PREFERENCE_KEY);
     if (!raw) return null;
 
-    const parsed = JSON.parse(raw) as {
-      version?: number;
-      selections?: unknown;
-    };
+    const parsed = JSON.parse(raw) as Partial<StoredDisplayPreference>;
     if (
       parsed.version !== DISPLAY_PREFERENCE_VERSION ||
-      !parsed.selections ||
-      typeof parsed.selections !== 'object' ||
-      Array.isArray(parsed.selections)
+      typeof parsed.scale !== 'number' ||
+      !Number.isFinite(parsed.scale) ||
+      parsed.scale < MIN_SITE_SCALE ||
+      parsed.scale > MAX_SITE_SCALE ||
+      !isValidSignature(parsed.viewport)
     ) {
       removeStorageItem(DISPLAY_PREFERENCE_KEY);
       return null;
     }
 
-    const selections: StoredDisplayPreference['selections'] = {};
-    const storedSelections = parsed.selections as Record<string, unknown>;
-    for (const { id } of DISPLAY_SIZES) {
-      const selectedSize = storedSelections[id];
-      if (selectedSize === undefined) continue;
-      if (!isDisplaySize(selectedSize)) {
-        removeStorageItem(DISPLAY_PREFERENCE_KEY);
-        return null;
-      }
-      selections[id] = selectedSize;
-    }
-
-    return createDisplayPreference(selections);
+    return {
+      version: DISPLAY_PREFERENCE_VERSION,
+      scale: normalizeSiteScale(parsed.scale),
+      viewport: parsed.viewport,
+    };
   } catch {
+    removeStorageItem(DISPLAY_PREFERENCE_KEY);
     return null;
   }
 };
@@ -246,28 +271,25 @@ const persistDisplayCompletion = (preference: StoredDisplayPreference) => {
 
 const readDisplayCompletion = () => {
   const isCompleted = readStorageItem(DISPLAY_COMPLETED_KEY) === '1';
-  const storedPreference = readStoredPreference();
-  if (isCompleted && storedPreference) {
-    return { completed: true, preference: storedPreference } as const;
-  }
+  const preference = readStoredPreference();
 
-  if (isCompleted) {
-    removeStorageItem(DISPLAY_COMPLETED_KEY);
-  }
-  if (storedPreference) {
-    removeStorageItem(DISPLAY_PREFERENCE_KEY);
-  }
   for (const key of STALE_DISPLAY_KEYS) {
     removeStorageItem(key);
   }
 
-  return { completed: false, preference: createDisplayPreference() } as const;
+  if (isCompleted && preference) {
+    return { completed: true, preference } as const;
+  }
+
+  removeStorageItem(DISPLAY_COMPLETED_KEY);
+  if (preference) removeStorageItem(DISPLAY_PREFERENCE_KEY);
+  return { completed: false, preference: null } as const;
 };
 
 export default function HomeDisplayCheck({ children }: { children: ReactNode }) {
-  const [sizeIndex, setSizeIndex] = useState(DISPLAY_SIZES.length - 1);
+  const [siteScale, setSiteScale] = useState(1);
   const [viewport, setViewport] = useState<ViewportSize>({
-    width: 1600,
+    width: STANDARD_CANVAS_WIDTH + VIEWPORT_HORIZONTAL_INSET,
     height: 900,
   });
   const [isMounted, setIsMounted] = useState(false);
@@ -284,24 +306,36 @@ export default function HomeDisplayCheck({ children }: { children: ReactNode }) 
   const resizeFrameRef = useRef<number | null>(null);
   const viewportTimerRef = useRef<number | null>(null);
   const hasCompletedCheckRef = useRef(false);
-  const displayPreferenceRef = useRef<StoredDisplayPreference>(
-    createDisplayPreference(),
-  );
+  const displayPreferenceRef = useRef<StoredDisplayPreference | null>(null);
 
-  const size = DISPLAY_SIZES[sizeIndex] ?? DISPLAY_SIZES[1];
-  const recommendedSizeIndex = useMemo(
-    () => getRecommendedSizeIndex(viewport),
+  const recommendedScale = useMemo(
+    () => getRecommendedScale(viewport),
     [viewport],
   );
 
   const previewStyle = useMemo(() => {
-    const ratios = getPreviewRatios(viewport, size.scale);
+    const fitLimit = Math.max(MIN_SITE_SCALE, getRawFitLimit(viewport));
+    const sizeRatio = siteScale / fitLimit;
 
     return {
-      '--display-preview-width': `${ratios.width * 100}%`,
-      '--display-preview-height': `${ratios.height * 100}%`,
+      '--display-preview-width': `${PREVIEW_SAFE_WIDTH * sizeRatio * 100}%`,
+      '--display-preview-height': `${PREVIEW_SAFE_HEIGHT * sizeRatio * 100}%`,
     } as CSSProperties;
-  }, [size.scale, viewport.height, viewport.width]);
+  }, [siteScale, viewport]);
+
+  const canvasStyle = useMemo(() => {
+    const logicalViewportHeight = Math.max(
+      STANDARD_HERO_HEIGHT,
+      viewport.height / Math.max(MIN_SITE_SCALE, siteScale),
+    );
+
+    return {
+      '--aim4price-site-scale': String(siteScale),
+      '--aim4price-scaled-canvas-width': `${STANDARD_CANVAS_WIDTH * siteScale}px`,
+      '--aim4price-canvas-height': `${logicalViewportHeight}px`,
+      '--aim4price-story-height': `${logicalViewportHeight * 4.4}px`,
+    } as CSSProperties;
+  }, [siteScale, viewport.height]);
 
   const measurePreviewFit = useCallback(() => {
     const frame = frameRef.current?.getBoundingClientRect();
@@ -313,12 +347,13 @@ export default function HomeDisplayCheck({ children }: { children: ReactNode }) 
 
     const safeInset = 5;
     setDoesPreviewFit(
-      preview.left >= frame.left + safeInset &&
+      doesScaleFitViewport(viewport, siteScale) &&
+        preview.left >= frame.left + safeInset &&
         preview.top >= frame.top + safeInset &&
         preview.right <= frame.right - safeInset &&
         preview.bottom <= frame.bottom - safeInset,
     );
-  }, []);
+  }, [siteScale, viewport]);
 
   const scheduleFitMeasurement = useCallback(() => {
     if (resizeFrameRef.current !== null) {
@@ -331,27 +366,32 @@ export default function HomeDisplayCheck({ children }: { children: ReactNode }) 
     });
   }, [measurePreviewFit]);
 
-  const completeDisplayCheck = useCallback((nextIndex: number) => {
-    const nextViewport = getViewportSize();
-    const profile = getRecommendedSize(nextViewport);
-    const selectedSize = DISPLAY_SIZES[nextIndex]?.id ?? profile;
+  const openRequiredCheck = useCallback((nextViewport: ViewportSize) => {
+    setViewport(nextViewport);
+    setSiteScale(getRecommendedScale(nextViewport));
+    setDoesPreviewFit(false);
+    setIsDisplayReady(false);
+    setIsGateOpen(true);
+  }, []);
 
-    if (!hasSecureConnection() || !doesSizeFitViewport(nextViewport, selectedSize)) {
-      setViewport(nextViewport);
-      setSizeIndex(getRecommendedSizeIndex(nextViewport));
-      setDoesPreviewFit(false);
-      setIsDisplayReady(false);
-      setIsGateOpen(true);
+  const completeDisplayCheck = useCallback((selectedScale: number) => {
+    const nextSignature = getDisplaySignature();
+    const nextIsSecure = hasSecureConnection();
+
+    if (!nextIsSecure || !doesScaleFitViewport(nextSignature, selectedScale)) {
+      setIsSecure(nextIsSecure);
+      openRequiredCheck(nextSignature);
       return;
     }
 
-    const storedPreference = readStoredPreference();
-    const preference = createDisplayPreference({
-      ...displayPreferenceRef.current.selections,
-      ...storedPreference?.selections,
-      [profile]: selectedSize,
-    });
-    setSizeIndex(nextIndex);
+    const preference: StoredDisplayPreference = {
+      version: DISPLAY_PREFERENCE_VERSION,
+      scale: normalizeSiteScale(selectedScale),
+      viewport: nextSignature,
+    };
+
+    setViewport(nextSignature);
+    setSiteScale(preference.scale);
     persistDisplayCompletion(preference);
     hasCompletedCheckRef.current = true;
     displayPreferenceRef.current = preference;
@@ -361,82 +401,59 @@ export default function HomeDisplayCheck({ children }: { children: ReactNode }) 
     window.requestAnimationFrame(() => {
       document.getElementById('home-hero-title')?.focus();
     });
-  }, []);
+  }, [openRequiredCheck]);
 
   useEffect(() => {
     setIsMounted(true);
-    const desktopMedia = window.matchMedia(DISPLAY_CHECK_QUERY);
 
     const syncCapability = () => {
-      const nextViewport = getViewportSize();
+      const nextSignature = getDisplaySignature();
       const nextIsSecure = hasSecureConnection();
       const completion = readDisplayCompletion();
-      const profile = getRecommendedSize(nextViewport);
-      const savedSize = completion.preference.selections[profile];
+      const savedPreference = completion.preference;
 
-      setViewport(nextViewport);
+      setViewport(nextSignature);
       setIsSecure(nextIsSecure);
       setSecureHref(getSecureHref());
       hasCompletedCheckRef.current = completion.completed;
-      displayPreferenceRef.current = completion.preference;
-
-      if (!desktopMedia.matches) {
-        setIsGateOpen(false);
-        setIsDisplayReady(true);
-        return;
-      }
+      displayPreferenceRef.current = savedPreference;
 
       if (
+        nextIsSecure &&
         completion.completed &&
-        savedSize &&
-        doesSizeFitViewport(nextViewport, savedSize)
+        savedPreference &&
+        doesScaleFitViewport(nextSignature, savedPreference.scale) &&
+        !hasDisplayMateriallyChanged(savedPreference.viewport, nextSignature)
       ) {
-        setSizeIndex(getSizeIndex(savedSize));
+        setSiteScale(savedPreference.scale);
         setIsGateOpen(false);
         setIsDisplayReady(true);
         return;
       }
 
-      setSizeIndex(getRecommendedSizeIndex(nextViewport));
-      setDoesPreviewFit(false);
-      setIsDisplayReady(false);
-      setIsGateOpen(true);
+      openRequiredCheck(nextSignature);
     };
 
     syncCapability();
-    desktopMedia.addEventListener('change', syncCapability);
     window.addEventListener('storage', syncCapability);
-    return () => {
-      desktopMedia.removeEventListener('change', syncCapability);
-      window.removeEventListener('storage', syncCapability);
-    };
-  }, []);
+    return () => window.removeEventListener('storage', syncCapability);
+  }, [openRequiredCheck]);
 
   useEffect(() => {
     const syncViewport = () => {
-      const nextViewport = getViewportSize();
-      setViewport(nextViewport);
+      const nextSignature = getDisplaySignature();
+      setViewport(nextSignature);
 
+      if (!isDisplayReady || !hasCompletedCheckRef.current) return;
+
+      const preference = displayPreferenceRef.current;
       if (
-        !isDisplayReady ||
-        !hasCompletedCheckRef.current ||
-        !window.matchMedia(DISPLAY_CHECK_QUERY).matches
+        !preference ||
+        !doesScaleFitViewport(nextSignature, preference.scale) ||
+        hasDisplayMateriallyChanged(preference.viewport, nextSignature)
       ) {
-        return;
+        openRequiredCheck(nextSignature);
       }
-
-      const profile = getRecommendedSize(nextViewport);
-      const savedSize = displayPreferenceRef.current.selections[profile];
-
-      if (!savedSize || !doesSizeFitViewport(nextViewport, savedSize)) {
-        setSizeIndex(getRecommendedSizeIndex(nextViewport));
-        setDoesPreviewFit(false);
-        setIsDisplayReady(false);
-        setIsGateOpen(true);
-        return;
-      }
-
-      setSizeIndex(getSizeIndex(savedSize));
     };
 
     const scheduleViewportSync = () => {
@@ -447,13 +464,14 @@ export default function HomeDisplayCheck({ children }: { children: ReactNode }) 
       viewportTimerRef.current = window.setTimeout(() => {
         viewportTimerRef.current = null;
         syncViewport();
-      }, 160);
+      }, 180);
     };
 
     window.addEventListener('resize', scheduleViewportSync, { passive: true });
     window.addEventListener('orientationchange', scheduleViewportSync);
     window.addEventListener('pageshow', scheduleViewportSync);
     window.addEventListener('focus', scheduleViewportSync);
+    window.screen?.orientation?.addEventListener?.('change', scheduleViewportSync);
     const observer =
       'ResizeObserver' in window ? new ResizeObserver(scheduleViewportSync) : null;
     observer?.observe(document.documentElement);
@@ -464,12 +482,13 @@ export default function HomeDisplayCheck({ children }: { children: ReactNode }) 
       window.removeEventListener('orientationchange', scheduleViewportSync);
       window.removeEventListener('pageshow', scheduleViewportSync);
       window.removeEventListener('focus', scheduleViewportSync);
+      window.screen?.orientation?.removeEventListener?.('change', scheduleViewportSync);
       if (viewportTimerRef.current !== null) {
         window.clearTimeout(viewportTimerRef.current);
         viewportTimerRef.current = null;
       }
     };
-  }, [isDisplayReady]);
+  }, [isDisplayReady, openRequiredCheck]);
 
   useLayoutEffect(() => {
     if (!isGateOpen) return undefined;
@@ -487,7 +506,7 @@ export default function HomeDisplayCheck({ children }: { children: ReactNode }) 
         resizeFrameRef.current = null;
       }
     };
-  }, [isGateOpen, previewStyle, scheduleFitMeasurement, sizeIndex]);
+  }, [isGateOpen, previewStyle, scheduleFitMeasurement, siteScale]);
 
   useEffect(() => {
     const content = contentRef.current;
@@ -514,22 +533,22 @@ export default function HomeDisplayCheck({ children }: { children: ReactNode }) 
     };
   }, [isDisplayReady]);
 
-  const adjustSize = (direction: -1 | 1) => {
+  const adjustScale = (direction: -1 | 1) => {
     setDoesPreviewFit(false);
-    setSizeIndex((current) =>
-      Math.max(0, Math.min(DISPLAY_SIZES.length - 1, current + direction)),
+    setSiteScale((current) =>
+      normalizeSiteScale(current + direction * SITE_SCALE_STEP),
     );
   };
 
-  const selectRecommendedSize = () => {
+  const selectRecommendedScale = () => {
     setDoesPreviewFit(false);
-    setSizeIndex(recommendedSizeIndex);
+    setSiteScale(recommendedScale);
     window.requestAnimationFrame(scheduleFitMeasurement);
   };
 
   const handleContinue = () => {
     if (!isSecure || !doesPreviewFit) return;
-    completeDisplayCheck(sizeIndex);
+    completeDisplayCheck(siteScale);
   };
 
   const handleDialogKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
@@ -564,149 +583,161 @@ export default function HomeDisplayCheck({ children }: { children: ReactNode }) 
     }
   };
 
+  const percentageLabel = `${Math.round(siteScale * 100)}%`;
+
   return (
     <HomeDisplayReadyContext.Provider value={isDisplayReady}>
-      <main
-        className={`${pageStyles.page} ${styles.displayRoot}`}
-        data-home-display-size={size.id}
-      >
-        <div
-          ref={contentRef}
-          className={styles.homeContent}
-          data-display-ready={isDisplayReady ? 'true' : 'false'}
-          aria-hidden={isMounted && !isDisplayReady ? 'true' : undefined}
+      <HomeDisplayScaleContext.Provider value={siteScale}>
+        <main
+          className={`${pageStyles.page} ${styles.displayRoot}`}
+          data-home-standard-canvas="true"
+          style={canvasStyle}
         >
-          {children}
-        </div>
-
-        {isMounted && isGateOpen ? (
-          <div className={styles.backdrop} role="presentation">
+          <div
+            className={styles.canvasPositioner}
+            data-display-ready={isDisplayReady ? 'true' : 'false'}
+          >
             <div
-              ref={dialogRef}
-              className={styles.dialog}
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby="home-display-check-title"
-              aria-describedby="home-display-check-description"
-              tabIndex={-1}
-              onKeyDown={handleDialogKeyDown}
+              ref={contentRef}
+              className={styles.homeContent}
+              data-display-ready={isDisplayReady ? 'true' : 'false'}
+              aria-hidden={isMounted && !isDisplayReady ? 'true' : undefined}
             >
-              <header className={styles.dialogHeader}>
-                <Image
-                  className={styles.logo}
-                  src="/brand/aim4price-mark-black.png"
-                  alt=""
-                  width={66}
-                  height={52}
-                  unoptimized
-                />
-                <div>
-                  <h2 id="home-display-check-title">Display fit required</h2>
-                  <p id="home-display-check-description">
-                    Fit the card inside the frame, then continue to Aim4price.
-                  </p>
-                </div>
-              </header>
+              {children}
+            </div>
+          </div>
 
-              <p
-                className={styles.securityLine}
-                data-secure={isSecure ? 'true' : 'false'}
+          {isMounted && isGateOpen ? (
+            <div className={styles.backdrop} role="presentation">
+              <div
+                ref={dialogRef}
+                className={styles.dialog}
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="home-display-check-title"
+                aria-describedby="home-display-check-description"
+                tabIndex={-1}
+                onKeyDown={handleDialogKeyDown}
               >
-                <span aria-hidden="true">{isSecure ? '✓' : '!'}</span>
-                {isSecure ? 'Secure connection' : 'Secure connection required'}
-              </p>
+                <header className={styles.dialogHeader}>
+                  <Image
+                    className={styles.logo}
+                    src="/brand/aim4price-mark-black.png"
+                    alt=""
+                    width={66}
+                    height={52}
+                    unoptimized
+                  />
+                  <div>
+                    <h2 id="home-display-check-title">Display fit required</h2>
+                    <p id="home-display-check-description">
+                      Scale the complete Aim4price page to fit, then continue.
+                    </p>
+                  </div>
+                </header>
 
-              <div className={styles.fitCanvas}>
-                <div
-                  ref={frameRef}
-                  className={styles.fitFrame}
-                  data-fit={doesPreviewFit ? 'true' : 'false'}
+                <p
+                  className={styles.securityLine}
+                  data-secure={isSecure ? 'true' : 'false'}
                 >
+                  <span aria-hidden="true">{isSecure ? '✓' : '!'}</span>
+                  {isSecure ? 'Secure connection' : 'Secure connection required'}
+                </p>
+
+                <div className={styles.fitCanvas}>
                   <div
-                    ref={previewRef}
-                    className={styles.fitPreview}
-                    style={previewStyle}
-                    aria-hidden="true"
+                    ref={frameRef}
+                    className={styles.fitFrame}
+                    data-fit={doesPreviewFit ? 'true' : 'false'}
                   >
-                    <div className={styles.previewTopline}>
-                      <span>2023 Toyota Hilux</span>
-                      <strong>R 237 150</strong>
-                    </div>
-                    <div className={styles.previewBody}>
-                      <div className={styles.previewPhoto}>
-                        <Image
-                          src="/brand/home-asset-hilux-listing.webp"
-                          alt=""
-                          fill
-                          sizes="180px"
-                          unoptimized
-                        />
+                    <div
+                      ref={previewRef}
+                      className={styles.fitPreview}
+                      style={previewStyle}
+                      aria-hidden="true"
+                    >
+                      <div className={styles.previewTopline}>
+                        <span>2023 Toyota Hilux</span>
+                        <strong>R 237 150</strong>
                       </div>
-                      <div className={styles.previewFacts}>
-                        <span>YEAR <strong>2023</strong></span>
-                        <span>USAGE <strong>113 677 km</strong></span>
-                        <span>CONDITION <strong>Good</strong></span>
+                      <div className={styles.previewBody}>
+                        <div className={styles.previewPhoto}>
+                          <Image
+                            src="/brand/home-asset-hilux-listing.webp"
+                            alt=""
+                            fill
+                            sizes="180px"
+                            unoptimized
+                          />
+                        </div>
+                        <div className={styles.previewFacts}>
+                          <span>YEAR <strong>2023</strong></span>
+                          <span>USAGE <strong>113 677 km</strong></span>
+                          <span>CONDITION <strong>Good</strong></span>
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
-              </div>
 
-              <div className={styles.sizeControls}>
-                <button
-                  type="button"
-                  aria-label="Make Aim4price smaller"
-                  onClick={() => adjustSize(-1)}
-                  disabled={sizeIndex === 0}
-                >
-                  −
-                </button>
-                <p role="status" aria-live="polite" aria-atomic="true">
-                  <strong>{size.label}</strong>
-                  <span>
-                    {doesPreviewFit ? 'Card fits the frame' : 'Choose a smaller size'}
-                  </span>
-                </p>
-                <button
-                  type="button"
-                  aria-label="Make Aim4price larger"
-                  onClick={() => adjustSize(1)}
-                  disabled={sizeIndex === DISPLAY_SIZES.length - 1}
-                >
-                  +
-                </button>
-              </div>
-
-              {!isSecure ? (
-                <a className={styles.secureLink} href={secureHref}>
-                  Open secure Aim4price
-                </a>
-              ) : null}
-
-              <footer className={styles.dialogFooter}>
-                <p>Required before entering Aim4price.</p>
-                <div>
+                <div className={styles.sizeControls}>
                   <button
                     type="button"
-                    className={styles.recommendedButton}
-                    onClick={selectRecommendedSize}
+                    aria-label="Zoom the complete Aim4price page out"
+                    onClick={() => adjustScale(-1)}
+                    disabled={siteScale <= MIN_SITE_SCALE}
                   >
-                    Use recommended size
+                    −
                   </button>
+                  <p role="status" aria-live="polite" aria-atomic="true">
+                    <strong>{percentageLabel}</strong>
+                    <span>
+                      {doesPreviewFit
+                        ? 'Complete page fits the frame'
+                        : 'Zoom out until the page fits'}
+                    </span>
+                  </p>
                   <button
                     type="button"
-                    className={styles.continueButton}
-                    onClick={handleContinue}
-                    disabled={!isSecure || !doesPreviewFit}
+                    aria-label="Zoom the complete Aim4price page in"
+                    onClick={() => adjustScale(1)}
+                    disabled={siteScale >= MAX_SITE_SCALE}
                   >
-                    Continue to Aim4price
+                    +
                   </button>
                 </div>
-              </footer>
+
+                {!isSecure ? (
+                  <a className={styles.secureLink} href={secureHref}>
+                    Open secure Aim4price
+                  </a>
+                ) : null}
+
+                <footer className={styles.dialogFooter}>
+                  <p>Required before entering Aim4price.</p>
+                  <div>
+                    <button
+                      type="button"
+                      className={styles.recommendedButton}
+                      onClick={selectRecommendedScale}
+                    >
+                      Use recommended fit
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.continueButton}
+                      onClick={handleContinue}
+                      disabled={!isSecure || !doesPreviewFit}
+                    >
+                      Continue to Aim4price
+                    </button>
+                  </div>
+                </footer>
+              </div>
             </div>
-          </div>
-        ) : null}
-      </main>
+          ) : null}
+        </main>
+      </HomeDisplayScaleContext.Provider>
     </HomeDisplayReadyContext.Provider>
   );
 }
