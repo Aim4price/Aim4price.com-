@@ -82,8 +82,8 @@ test('home page keeps the feature-led Asset Register hero usable at desktop, tab
   assert.match(hero, /window\.matchMedia\(REDUCED_MOTION_QUERY\)/);
   assert.match(hero, /href="#choose-role" className=\{styles\.primaryCta\}/);
   assert.doesNotMatch(hero, /heroAudienceCta|heroSectors/);
-  assert.doesNotMatch(hero, /playbackId|key=\{playbackId\}/);
-  assert.match(hero, /onPlaybackToggle=\{handlePlaybackToggle\}/);
+  assert.doesNotMatch(hero, /heroPlatformLabel|One living record per asset|record—/);
+  assert.doesNotMatch(hero, /handlePlaybackToggle|onPlaybackToggle|playbackId|key=\{playbackId\}/);
   assert.doesNotMatch(hero, /DESKTOP_STORY_QUERY|IntersectionObserver|scrollIntoView|heroScrollTrack/);
 
   assert.match(feature, /\.heroStory \{[\s\S]*?min-height: 0/);
@@ -91,12 +91,15 @@ test('home page keeps the feature-led Asset Register hero usable at desktop, tab
   assert.doesNotMatch(feature, /position: sticky|340svh|scroll-snap/);
   assert.match(feature, /\.heroStory \.heroMedia \.shell \{[\s\S]*?width: min\(calc\(100% - 3rem\), 100rem\)/);
   assert.match(feature, /\.heroStory \.heroGrid \{[\s\S]*?grid-template-columns: minmax\(31rem, 37rem\) minmax\(39rem, 49\.5rem\)/);
+  assert.match(feature, /\.heroStory \.heroCopy \{[\s\S]*?clamp\(0px, calc\(\(100vw - 1288px\) \/ 2\), 180px\)[\s\S]*?-1\.75rem/);
+  assert.doesNotMatch(feature, /\.heroPlatformLabel|\.assetPlaybackControl|\.assetStoryControls/);
   assert.match(feature, /\.heroStory \.assetActiveQuestion \{[\s\S]*?top: -4\.25rem/);
   assert.match(feature, /@media \(min-width: 1361px\) and \(max-width: 1479px\)[\s\S]*?\.heroStory \.assetPreviewActions \{[\s\S]*?display: grid/);
 
+  assert.match(feature, /@media \(min-width: 1181px\) and \(max-width: 1240px\)[\s\S]*?\.heroStory \.heroCopy \{[\s\S]*?transform: translate\(8px, -1\.75rem\)/);
   assert.match(feature, /@media \(min-width: 1181px\) and \(max-width: 1360px\)[\s\S]*?\.heroStory \.heroGrid \{[\s\S]*?grid-template-columns: minmax\(27rem, 31rem\) minmax\(34rem, 44rem\)/);
   assert.match(feature, /@media \(max-width: 1180px\)[\s\S]*?\.heroStory \.heroMedia \{[\s\S]*?min-height: 0/);
-  assert.match(feature, /@media \(max-width: 1180px\)[\s\S]*?\.heroStory \.heroGrid \{[\s\S]*?grid-template-columns: minmax\(0, 1fr\)/);
+  assert.match(feature, /@media \(max-width: 1180px\)[\s\S]*?\.heroStory \.heroGrid \{[\s\S]*?grid-template-columns: minmax\(0, 1fr\)[\s\S]*?\.heroStory \.heroCopy \{[\s\S]*?transform: none/);
   assert.match(feature, /@media \(max-width: 760px\)[\s\S]*?\.heroStory \.heroActions \{[\s\S]*?grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
   assert.match(feature, /@media \(max-width: 760px\)[\s\S]*?\.heroStory \.assetQuestionGroup \{[\s\S]*?grid-template-columns: repeat\(5, minmax\(0, 1fr\)\)/);
   assert.match(feature, /@media \(max-width: 760px\)[\s\S]*?\.heroStory \.assetPreviewCard \{[\s\S]*?position: relative;[\s\S]*?order: 1/);
