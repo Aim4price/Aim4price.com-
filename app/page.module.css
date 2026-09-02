@@ -3182,7 +3182,7 @@
 }
 
 .heroStory .heroMedia {
-  min-height: clamp(41rem, calc(100svh - 5.75rem), 54rem);
+  min-height: clamp(42.5rem, calc(100svh - 5.75rem), 54rem);
 }
 
 .heroStory .heroMedia::after {
@@ -3418,6 +3418,8 @@
 }
 
 .heroStory .assetPreviewState {
+  width: 100%;
+  flex: 1 1 auto;
   animation: heroPreviewReveal 440ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
@@ -3481,6 +3483,27 @@
 
   to {
     transform: scaleX(1);
+  }
+}
+
+@media (min-width: 1361px) and (max-width: 1479px) {
+  .heroStory .assetPreviewIdentity {
+    width: auto;
+  }
+
+  .heroStory .assetPreviewAside {
+    min-width: 11.5rem;
+  }
+
+  .heroStory .assetPreviewActions {
+    display: grid;
+    width: 100%;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .heroStory .assetPreviewActions span {
+    width: auto;
+    padding-inline: 0.35rem;
   }
 }
 
@@ -3581,7 +3604,7 @@
   }
 
   .heroStory .heroTitle {
-    font-size: clamp(2.55rem, 9.2vw, 3.55rem);
+    font-size: clamp(2.05rem, 8.2vw, 3.55rem);
   }
 
   .heroStory .heroTitleLine {
@@ -3642,6 +3665,7 @@
   .heroStory .assetPreviewCard {
     position: relative;
     inset: auto;
+    height: clamp(22rem, 64vw, 28rem);
     min-height: clamp(22rem, 64vw, 28rem);
     order: 1;
   }
@@ -3704,6 +3728,7 @@
 
   .heroStory .assetPreviewCard,
   .heroStory .assetPreviewCard[data-active-question='attention'] {
+    height: clamp(24rem, 112vw, 29rem);
     min-height: clamp(24rem, 112vw, 29rem);
   }
 
