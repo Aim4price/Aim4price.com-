@@ -4309,223 +4309,80 @@
   }
 }
 
-/* Compact laptop density contract, September 2026.
-   Use the available CSS viewport—not browser zoom or display pixel ratio—so
-   125% desktop scaling receives the same balanced composition automatically. */
-@media (min-width: 1181px) and (max-width: 1599px) and (min-height: 640px),
-  (min-width: 1181px) and (min-height: 640px) and (max-height: 899px) {
-  .heroStory .heroMedia .shell {
+/* The #543 desktop composition is the default. Compact is applied only after
+   the visitor explicitly accepts it in the display check. */
+@media (min-width: 1181px) and (min-height: 640px) {
+  .page[data-home-display-size='compact'] .heroStory .heroMedia .shell {
     width: min(calc(100% - 2.25rem), 1280px);
   }
 
-  .storyHeroGrid {
+  .page[data-home-display-size='compact'] .storyHeroGrid {
     --hero-working-inset: clamp(0px, calc((100% - 1240px) / 2), 20px);
     width: calc(100% - var(--hero-working-inset));
     grid-template-columns: minmax(26rem, 1fr) minmax(32rem, 40rem);
     gap: clamp(1.5rem, 2vw, 2.25rem);
     margin-inline-start: var(--hero-working-inset);
-    padding: clamp(0.85rem, 2.2vh, 1.5rem) 0;
+    padding-block: clamp(0.85rem, 2.2vh, 1.5rem);
   }
 
-  .heroCopyDeck {
+  .page[data-home-display-size='compact'] .heroCopyDeck {
     min-height: clamp(20rem, 58vh, 23.5rem);
   }
 
-  .heroBrandTitle span:first-child {
+  .page[data-home-display-size='compact'] .heroBrandTitle span:first-child {
     font-size: clamp(3.1rem, 3.75vw, 4.15rem);
   }
 
-  .heroBrandTitle span:not(:first-child) {
+  .page[data-home-display-size='compact'] .heroBrandTitle span:not(:first-child) {
     font-size: clamp(2rem, 2.3vw, 2.4rem);
   }
 
-  .heroPromiseTitle {
+  .page[data-home-display-size='compact'] .heroPromiseTitle {
     font-size: clamp(2.2rem, 2.45vw, 2.55rem);
   }
 
-  .heroPromiseText {
+  .page[data-home-display-size='compact'] .heroPromiseText {
     max-width: 31rem;
     margin-top: 1.25rem;
     font-size: clamp(0.94rem, 1vw, 1.04rem);
     line-height: 1.52;
   }
 
-  .heroStory .heroActions {
+  .page[data-home-display-size='compact'] .heroStory .heroActions {
     gap: 0.8rem;
     margin-top: 1.35rem;
   }
 
-  .storyHeroLogo {
+  .page[data-home-display-size='compact'] .storyHeroLogo {
     --story-logo-halo-size: clamp(22rem, 25vw, 27rem);
   }
 
-  .storyHeroLogoImage {
+  .page[data-home-display-size='compact'] .storyHeroLogoImage {
     width: clamp(13rem, 14vw, 15.5rem);
   }
 
-  .assetStageMotion {
+  .page[data-home-display-size='compact'] .assetStageMotion {
     --asset-preview-center-inset: 1.75rem;
     width: min(39.5rem, calc(100% + 3.5rem));
   }
 
-  .featureNarrative {
+  .page[data-home-display-size='compact'] .featureNarrative {
     --feature-copy-inset: clamp(4rem, 5.5vw, 5.5rem);
     width: min(100%, 26rem);
     min-height: 18rem;
   }
 
-  .featureNarrativeLayer h2 {
+  .page[data-home-display-size='compact'] .featureNarrativeLayer h2 {
     max-width: 25rem;
     margin-top: 0.75rem;
     font-size: clamp(2.25rem, 2.85vw, 3.15rem);
   }
 
-  .featureNarrativeLayer > p:last-child {
+  .page[data-home-display-size='compact'] .featureNarrativeLayer > p:last-child {
     max-width: 25rem;
     margin-top: 0.8rem;
     font-size: clamp(0.94rem, 1vw, 1.04rem);
     line-height: 1.5;
-  }
-
-  .roleSection {
-    padding: clamp(3.25rem, 4.5vw, 4.25rem) 0;
-  }
-
-  .roleTitle {
-    margin-bottom: clamp(1.8rem, 2.5vw, 2.35rem);
-    font-size: clamp(2.55rem, 3.1vw, 3.35rem);
-  }
-
-  .roleGrid {
-    max-width: 70rem;
-    gap: clamp(1rem, 1.5vw, 1.35rem);
-  }
-
-  .roleCard {
-    min-height: clamp(13.5rem, 16vw, 15rem);
-    padding: clamp(1.75rem, 2.25vw, 2.25rem);
-  }
-
-  .roleCard strong {
-    font-size: clamp(1.45rem, 1.75vw, 1.8rem);
-  }
-
-  .roleCard small {
-    margin-top: 0.9rem;
-    font-size: clamp(0.92rem, 1vw, 1rem);
-    line-height: 1.52;
-  }
-
-  .roleArrow {
-    font-size: clamp(2.5rem, 3vw, 3.2rem);
-  }
-}
-
-/* A visitor-approved homepage density. The security/display check changes
-   bounded layout tokens; it never zooms or transforms the complete page. */
-@media (min-width: 1181px) and (min-height: 640px) {
-  .page[data-home-display-density] .heroStory .heroMedia .shell {
-    width: min(
-      calc(100% - var(--home-density-shell-gutter)),
-      var(--home-density-shell-max)
-    );
-  }
-
-  .page[data-home-display-density] .storyHeroGrid {
-    --hero-working-inset: clamp(0px, calc((100% - 1240px) / 2), 60px);
-    width: calc(100% - var(--hero-working-inset));
-    grid-template-columns:
-      var(--home-density-grid-left)
-      var(--home-density-grid-right);
-    gap: var(--home-density-grid-gap);
-    margin-inline-start: var(--hero-working-inset);
-    padding-block: var(--home-density-grid-padding);
-  }
-
-  .page[data-home-display-density] .heroCopyDeck {
-    min-height: var(--home-density-copy-height);
-  }
-
-  .page[data-home-display-density] .heroBrandTitle span:first-child {
-    font-size: var(--home-density-brand-primary);
-  }
-
-  .page[data-home-display-density] .heroBrandTitle span:not(:first-child) {
-    font-size: var(--home-density-brand-secondary);
-  }
-
-  .page[data-home-display-density] .heroPromiseTitle {
-    font-size: var(--home-density-promise-title);
-  }
-
-  .page[data-home-display-density] .heroPromiseText {
-    font-size: var(--home-density-promise-copy);
-  }
-
-  .page[data-home-display-density] .storyHeroLogo {
-    --story-logo-halo-size: var(--home-density-logo-halo);
-  }
-
-  .page[data-home-display-density] .storyHeroLogoImage {
-    width: var(--home-density-logo-width);
-  }
-
-  .page[data-home-display-density] .assetStageMotion {
-    --asset-preview-center-inset: var(--home-density-asset-inset);
-    width: min(
-      var(--home-density-asset-width),
-      calc(100% + var(--home-density-asset-overflow))
-    );
-  }
-
-  .page[data-home-display-density] .featureNarrative {
-    --feature-copy-inset: var(--home-density-feature-inset);
-    width: min(100%, var(--home-density-feature-width));
-  }
-
-  .page[data-home-display-density] .featureNarrativeLayer h2 {
-    font-size: var(--home-density-feature-title);
-  }
-
-  .page[data-home-display-density] .featureNarrativeLayer > p:last-child {
-    font-size: var(--home-density-feature-copy);
-  }
-
-  .page[data-home-display-density] .roleSection {
-    padding-block: var(--home-density-role-padding);
-  }
-
-  .page[data-home-display-density] .roleTitle {
-    margin-bottom: var(--home-density-role-title-margin);
-    font-size: var(--home-density-role-title);
-  }
-
-  .page[data-home-display-density] .roleGrid {
-    max-width: var(--home-density-role-grid);
-    gap: var(--home-density-role-gap);
-  }
-
-  .page[data-home-display-density] .roleCard {
-    min-height: var(--home-density-role-card-height);
-    padding: var(--home-density-role-card-padding);
-  }
-
-  .page[data-home-display-density] .roleCard strong {
-    font-size: var(--home-density-role-card-title);
-  }
-
-  .page[data-home-display-density] .roleCard small {
-    font-size: var(--home-density-role-card-copy);
-  }
-
-  .page[data-home-display-density] .roleArrow {
-    font-size: var(--home-density-role-arrow);
-  }
-}
-
-@media (min-width: 1181px) and (max-width: 1240px) and (min-height: 640px) {
-  .storyHeroGrid {
-    --hero-working-inset: 8px;
   }
 }
 
