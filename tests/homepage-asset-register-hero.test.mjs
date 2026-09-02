@@ -444,6 +444,9 @@ test('homepage plays one slower timed tour, returns to its brand frame, then fol
   assert.doesNotMatch(standardCanvasStyles, /@media \(prefers-reduced-motion: no-preference\)/);
   assert.match(standardCanvasStyles, /\.page\[data-home-standard-canvas='true'\] \.storyHeroGrid \{[\s\S]*?grid-template-columns: minmax\(31rem, 1fr\) minmax\(39rem, 49\.5rem\)/);
   assert.match(standardCanvasStyles, /\.page\[data-home-standard-canvas='true'\] \.assetStageMotion \{[\s\S]*?width: min\(45\.5rem, calc\(100% \+ 7rem\)\)/);
+  assert.match(standardCanvasStyles, /\.page\[data-home-standard-canvas='true'\] \.heroBrandCopy,[\s\S]*?\.heroPromiseCopy \{[\s\S]*?display: flex/);
+  assert.match(standardCanvasStyles, /\.page\[data-home-standard-canvas='true'\] \.heroStory \.heroActions \{[\s\S]*?display: flex[\s\S]*?grid-template-columns: none/);
+  assert.match(standardCanvasStyles, /\.page\[data-home-standard-canvas='true'\] \.assetPreviewIdentity p \{[\s\S]*?display: block/);
   assert.match(standardCanvasStyles, /\.page\[data-home-standard-canvas='true'\] \.roleGrid \{[\s\S]*?grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
   assert.doesNotMatch(storyHeroStyles, /data-home-display-size='small'|data-home-display-size='compact'/);
   assert.doesNotMatch(storyHeroStyles, /Compact laptop density contract, September 2026|max-width: 1599px|max-height: 899px/);
