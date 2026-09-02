@@ -63,7 +63,13 @@ test('the preview is measured on both axes before Continue unlocks', async () =>
   assert.match(check, /id: 'original', label: 'Original', scale: 1/);
   assert.match(check, /ratios\.width <= PREVIEW_SAFE_WIDTH_RATIO/);
   assert.match(check, /ratios\.height <= PREVIEW_SAFE_HEIGHT_RATIO/);
-  assert.match(check, /Math\.min\(current, recommendedIndex\)/);
+  assert.match(check, /getAdaptiveSizeIndex/);
+  assert.match(check, /getRecommendedSizeIndex\(viewport\) \+ preferenceOffset/);
+  assert.match(check, /preferenceOffsetRef\.current/);
+  assert.match(check, /new ResizeObserver\(scheduleViewportSync\)/);
+  assert.match(check, /window\.addEventListener\('orientationchange', scheduleViewportSync\)/);
+  assert.match(check, /window\.addEventListener\('pageshow', scheduleViewportSync\)/);
+  assert.match(check, /window\.addEventListener\('focus', scheduleViewportSync\)/);
   assert.match(check, /aria-label="Make Aim4price smaller"/);
   assert.match(check, /aria-label="Make Aim4price larger"/);
   assert.match(check, /disabled=\{!isSecure \|\| !doesPreviewFit\}/);
@@ -77,11 +83,16 @@ test('original preserves #543 and compact is an explicit homepage-only choice', 
     read('components/AppHeader.module.css'),
   ]);
 
-  assert.match(check, /DISPLAY_STORAGE_KEY = 'aim4price:home-display-check:v2'/);
-  assert.match(check, /DISPLAY_STORAGE_VERSION = 2/);
-  assert.match(check, /window\.localStorage\.getItem/);
-  assert.match(check, /window\.localStorage\.setItem/);
-  assert.match(check, /viewportClass/);
+  assert.match(check, /DISPLAY_COMPLETED_KEY = 'aim4price:home-display-check:completed'/);
+  assert.match(check, /DISPLAY_PREFERENCE_KEY = 'aim4price:home-display-preference:v1'/);
+  assert.match(check, /window\.localStorage/);
+  assert.match(check, /window\.sessionStorage/);
+  assert.match(check, /persistDisplayCompletion\(preferenceOffset\)/);
+  assert.match(check, /hasCompletedCheckRef\.current = true/);
+  assert.match(check, /LEGACY_DISPLAY_KEYS/);
+  assert.match(check, /aim4price:home-display-check:v2/);
+  assert.match(check, /aim4price:home-display-check:v1/);
+  assert.match(check, /window\.addEventListener\('storage', syncCapability\)/);
   assert.match(check, /data-home-display-size=\{size\.id\}/);
   assert.match(pageStyles, /The #543 desktop composition is the default/);
   assert.match(pageStyles, /\.page\[data-home-display-size='compact'\]/);
