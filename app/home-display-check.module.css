@@ -6,6 +6,12 @@
   display: contents;
 }
 
+.homeContent[data-display-ready='false'] {
+  visibility: hidden;
+  pointer-events: none;
+  user-select: none;
+}
+
 .backdrop {
   position: fixed;
   z-index: 10000;
@@ -14,18 +20,19 @@
   place-items: center;
   padding: 1rem;
   background:
-    radial-gradient(circle at 16% 8%, rgba(62, 197, 145, 0.16), transparent 28rem),
-    radial-gradient(circle at 88% 92%, rgba(7, 91, 66, 0.12), transparent 30rem),
-    rgba(243, 250, 247, 0.94);
-  backdrop-filter: blur(16px);
+    radial-gradient(circle at 16% 8%, rgba(62, 197, 145, 0.18), transparent 28rem),
+    radial-gradient(circle at 88% 92%, rgba(7, 91, 66, 0.14), transparent 30rem),
+    rgba(243, 250, 247, 0.985);
+  backdrop-filter: blur(20px);
+  overscroll-behavior: contain;
   animation: backdropIn 240ms ease both;
 }
 
 .dialog {
-  width: min(100%, 32.5rem);
+  width: min(100%, 36rem);
   max-height: calc(100dvh - 2rem);
   overflow: hidden;
-  padding: clamp(1.1rem, 2.6vw, 1.5rem);
+  padding: clamp(1.25rem, 2.6vw, 1.75rem);
   border: 1px solid rgba(20, 137, 96, 0.24);
   border-radius: 1.35rem;
   background: rgba(255, 255, 255, 0.97);
@@ -61,7 +68,7 @@
 
 .dialogHeader h2 {
   color: #073e30;
-  font-size: clamp(1.42rem, 3.4vw, 1.75rem);
+  font-size: clamp(1.6rem, 3.4vw, 2rem);
   line-height: 1.05;
   letter-spacing: -0.035em;
 }
@@ -329,6 +336,7 @@
 }
 
 .continueButton {
+  min-width: 11.5rem;
   border: 1px solid #087451;
   color: white;
   background: linear-gradient(135deg, #17aa78, #087451);
