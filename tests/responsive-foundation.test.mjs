@@ -15,7 +15,7 @@ test('global layout tokens provide fluid gutters, spacing and stable text scalin
   assert.match(globals, /\.appRoot,[\s\S]*?\.appRoot > main,[\s\S]*?main \{[\s\S]*?min-width: 0;[\s\S]*?max-width: 100%/);
 });
 
-test('header has deterministic desktop, tablet and true-mobile navigation states', async () => {
+test('header keeps responsive routes and supports the calibrated standard Home canvas', async () => {
   const [header, headerClient, layout] = await Promise.all([
     read('components/AppHeader.module.css'),
     read('components/AppHeader.tsx'),
@@ -53,13 +53,15 @@ test('header has deterministic desktop, tablet and true-mobile navigation states
   assert.match(headerClient, /mobileMenuAuthLinkPrimary[\s\S]*?\{ctaLabel\}/);
   assert.match(header, /\.navWindowButton \{[\s\S]*?min-width: var\(--tap-target-min, 44px\)/);
 
-  assert.match(headerClient, /<header className=\{styles\.header\}>/);
+  assert.match(headerClient, /standardCanvas \? styles\.headerStandardCanvas/);
   assert.doesNotMatch(headerClient, /homeDensity/);
   assert.doesNotMatch(header, /Homepage-only compact laptop density contract|\.homeDensity/);
-  assert.match(header, /Homepage display fitting is intentionally scoped to the hero/);
+  assert.match(header, /Home can render the complete desktop navigation inside its calibrated/);
   assert.doesNotMatch(header, /data-home-display-size/);
   assert.match(header, /\.inner \{[\s\S]*?width: min\(calc\(100% - 3rem\), 1360px\);[\s\S]*?min-height: 5\.75rem/);
   assert.match(header, /\.headerBrandLogo \{[\s\S]*?width: clamp\(4\.25rem, 4\.6vw, 4\.8rem\)/);
+  assert.match(header, /\.headerStandardCanvas \.nav,[\s\S]*?display: flex/);
+  assert.match(header, /\.headerStandardCanvas \.mobileMenuButton,[\s\S]*?display: none/);
   assert.doesNotMatch(header, /max-width: 1599px|max-height: 899px/);
 });
 
@@ -81,7 +83,7 @@ test('website sign-out stays separate from installable app sessions and verifies
   assert.match(headerClient, /clearCachedHeaderSession\(\)[\s\S]*?window\.location\.replace\('\/auth#login'\)/);
 });
 
-test('home page keeps the eight-step story usable at desktop, compact and reduced-motion sizes', async () => {
+test('home page keeps the eight-step story on one scalable standard canvas', async () => {
   const [home, hero] = await Promise.all([
     read('app/page.module.css'),
     read('app/home-hero-experience.tsx'),
@@ -97,9 +99,9 @@ test('home page keeps the eight-step story usable at desktop, compact and reduce
   assert.match(hero, /HERO_STORY_STEPS = \[[\s\S]*?'brand',[\s\S]*?'promise',[\s\S]*?'preview',[\s\S]*?\.\.\.HERO_STAGES/);
   assert.match(hero, /HERO_FEATURE_DURATION_MS = 4800/);
   assert.match(hero, /window\.matchMedia\(REDUCED_MOTION_QUERY\)/);
-  assert.match(hero, /window\.matchMedia\(CINEMATIC_STORY_QUERY\)/);
-  assert.match(hero, /CINEMATIC_STORY_QUERY = '\(min-width: 1181px\) and \(min-height: 640px\)'/);
-  assert.match(hero, /cinematicStoryMedia\.matches && !reducedMotionMedia\.matches/);
+  assert.match(hero, /const supportsStory = !reducedMotionMedia\.matches/);
+  assert.match(hero, /useHomeDisplayScale/);
+  assert.doesNotMatch(hero, /CINEMATIC_STORY_QUERY|cinematicStoryMedia/);
   assert.match(hero, /const \[isCinematicStory, setIsCinematicStory\] = useState\(false\)/);
   assert.match(hero, /data-story-capability=\{isCinematicStory \? 'cinematic' : 'static'\}/);
   assert.match(hero, /finishAutoplay[\s\S]*?updateStoryStep\(0\)/);
@@ -110,7 +112,7 @@ test('home page keeps the eight-step story usable at desktop, compact and reduce
   assert.match(hero, /new IntersectionObserver\([\s\S]*?setIsHeroVisible\(entry\?\.isIntersecting \?\? true\)/);
   assert.match(hero, /window\.addEventListener\('scroll', handleScroll, \{ passive: true \}\)/);
   assert.match(hero, /window\.removeEventListener\('scroll', handleScroll\)/);
-  assert.match(hero, /trackTravel = Math\.max\([\s\S]*?section\.offsetHeight - sticky\.offsetHeight/);
+  assert.match(hero, /trackTravel = Math\.max\([\s\S]*?sectionRect\.height - stickyRect\.height/);
   assert.match(hero, /localScroll = Math\.max\([\s\S]*?Math\.min\(trackTravel, currentScrollY - trackStart\)/);
   assert.match(hero, /nextIndex = clampStoryIndex\([\s\S]*?Math\.floor\(progress \* HERO_STORY_STEPS\.length\)/);
   assert.match(hero, /const handleScroll = \(\) => scheduleStorySync\(true\)/);
@@ -154,27 +156,18 @@ test('home page keeps the eight-step story usable at desktop, compact and reduce
   assert.match(story, /\.heroPromiseTitle \{[\s\S]*?font-size: clamp\(2\.65rem, 2\.95vw, 2\.95rem\)/);
   assert.doesNotMatch(story, /data-autoplay-finished='true'[^{]*\.storyHeroLogo/);
 
-  const chosenCompactStart = story.indexOf(
-    '/* The #543 desktop composition is the default.',
+  const standardCanvasStart = story.indexOf(
+    '/* === One calibrated standard Home canvas, September 2026 ===',
   );
-  const chosenCompactEnd = story.indexOf('/* Static-wide is the sole fallback', chosenCompactStart);
-  assert.ok(chosenCompactStart >= 0 && chosenCompactEnd > chosenCompactStart);
-  const chosenCompact = story.slice(chosenCompactStart, chosenCompactEnd);
+  assert.ok(standardCanvasStart >= 0);
+  const standardCanvas = story.slice(standardCanvasStart);
 
-  assert.match(chosenCompact, /@media \(min-width: 1181px\) and \(min-height: 640px\)/);
-  assert.match(chosenCompact, /\.page\[data-home-display-size='small'\] \.storyHeroGrid \{[\s\S]*?grid-template-columns: minmax\(26rem, 1fr\) minmax\(32rem, 40rem\);[\s\S]*?gap: clamp\(1\.5rem, 2vw, 2\.25rem\);[\s\S]*?padding-block: clamp\(0\.85rem, 2\.2vh, 1\.5rem\)/);
-  assert.match(chosenCompact, /\.page\[data-home-display-size='compact'\] \.storyHeroGrid \{[\s\S]*?grid-template-columns: minmax\(28rem, 1fr\) minmax\(36rem, 44\.5rem\);[\s\S]*?gap: clamp\(1\.75rem, 2\.2vw, 2\.5rem\)/);
-  assert.match(chosenCompact, /\.page\[data-home-display-size='compact'\] \.heroBrandTitle span:first-child \{[\s\S]*?font-size: clamp\(3\.4rem, 4\.2vw, 4\.8rem\)/);
-  assert.match(chosenCompact, /\.page\[data-home-display-size='compact'\] \.heroBrandTitle span:not\(:first-child\) \{[\s\S]*?font-size: clamp\(2\.25rem, 2\.5vw, 2\.85rem\)/);
-  assert.match(chosenCompact, /\.page\[data-home-display-size='compact'\] \.heroPromiseTitle \{[\s\S]*?font-size: clamp\(2\.4rem, 2\.65vw, 2\.7rem\)/);
-  assert.match(chosenCompact, /\.page\[data-home-display-size='compact'\] \.storyHeroLogoImage \{[\s\S]*?width: clamp\(14\.25rem, 15vw, 17\.25rem\)/);
-  assert.match(chosenCompact, /\.page\[data-home-display-size='compact'\] \.assetStageMotion \{[\s\S]*?width: min\(44\.5rem, calc\(100% \+ 4rem\)\)/);
-  assert.match(chosenCompact, /\.page\[data-home-display-size='compact'\] \.featureNarrativeLayer h2 \{[\s\S]*?font-size: clamp\(2\.55rem, 3\.3vw, 3\.6rem\)/);
-  assert.match(chosenCompact, /\.page\[data-home-display-size='compact'\] \.featureNarrativeLayer > p:last-child \{[\s\S]*?font-size: clamp\(0\.98rem, 1\.08vw, 1\.1rem\);[\s\S]*?line-height: 1\.54/);
-  assert.doesNotMatch(chosenCompact, /@media[^\{]*max-width:\s*1180px/);
-  assert.doesNotMatch(chosenCompact, /\bzoom\s*:/);
-  assert.doesNotMatch(chosenCompact, /transform:\s*scale\(0\./);
-  assert.doesNotMatch(chosenCompact, /display:\s*none/);
+  assert.doesNotMatch(standardCanvas, /@media \(prefers-reduced-motion: no-preference\)/);
+  assert.match(standardCanvas, /\.page\[data-home-standard-canvas='true'\] \.heroStory \{[\s\S]*?--aim4price-story-height/);
+  assert.match(standardCanvas, /\.page\[data-home-standard-canvas='true'\] \.storyHeroGrid \{[\s\S]*?grid-template-columns: minmax\(31rem, 1fr\) minmax\(39rem, 49\.5rem\)/);
+  assert.match(standardCanvas, /\.page\[data-home-standard-canvas='true'\] \.assetStageMotion \{[\s\S]*?width: min\(45\.5rem, calc\(100% \+ 7rem\)\)/);
+  assert.match(standardCanvas, /\.page\[data-home-standard-canvas='true'\] \.roleGrid \{[\s\S]*?grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
+  assert.doesNotMatch(story, /data-home-display-size/);
   assert.doesNotMatch(story, /Compact laptop density contract, September 2026|max-width: 1599px|max-height: 899px/);
 
   assert.doesNotMatch(story, /@media \(min-width: 901px\) and \(max-width: 1180px\)/);
