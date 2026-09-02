@@ -99,6 +99,7 @@ export default function HomeHeroExperience() {
   const stickyRef = useRef<HTMLDivElement | null>(null);
   const storyStepRef = useRef(0);
   const autoplayFinishedRef = useRef(false);
+  const manualControlRef = useRef(false);
   const scrollFrameRef = useRef<number | null>(null);
   const scrollClaimRef = useRef(false);
 
@@ -124,6 +125,7 @@ export default function HomeHeroExperience() {
   }, [updateStoryStep]);
 
   const claimManualControl = useCallback(() => {
+    manualControlRef.current = true;
     setIsManuallyControlled(true);
     setIsAutoplaying(false);
     setIsPaused(false);
@@ -140,8 +142,9 @@ export default function HomeHeroExperience() {
 
       if (!supportsStory) {
         setIsAutoplaying(false);
-        setIsManuallyControlled(true);
-        updateStoryStep(FEATURE_START_INDEX);
+        if (!manualControlRef.current) updateStoryStep(FEATURE_START_INDEX);
+      } else if (!manualControlRef.current) {
+        updateStoryStep(0);
       }
     };
 
