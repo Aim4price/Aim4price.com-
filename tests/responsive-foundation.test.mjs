@@ -166,6 +166,9 @@ test('home page keeps the eight-step story on one scalable standard canvas', asy
   assert.match(standardCanvas, /\.page\[data-home-standard-canvas='true'\] \.heroStory \{[\s\S]*?--aim4price-story-height/);
   assert.match(standardCanvas, /\.page\[data-home-standard-canvas='true'\] \.storyHeroGrid \{[\s\S]*?grid-template-columns: minmax\(31rem, 1fr\) minmax\(39rem, 49\.5rem\)/);
   assert.match(standardCanvas, /\.page\[data-home-standard-canvas='true'\] \.assetStageMotion \{[\s\S]*?width: min\(45\.5rem, calc\(100% \+ 7rem\)\)/);
+  assert.match(standardCanvas, /\.page\[data-home-standard-canvas='true'\] \.heroPromiseCopy \{[\s\S]*?display: flex/);
+  assert.match(standardCanvas, /\.page\[data-home-standard-canvas='true'\] \.heroStory \.primaryCta,[\s\S]*?min-height: 3\.45rem/);
+  assert.match(standardCanvas, /\.page\[data-home-standard-canvas='true'\] \.assetPreviewAside \{[\s\S]*?min-width: 12\.75rem/);
   assert.match(standardCanvas, /\.page\[data-home-standard-canvas='true'\] \.roleGrid \{[\s\S]*?grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
   assert.doesNotMatch(story, /data-home-display-size/);
   assert.doesNotMatch(story, /Compact laptop density contract, September 2026|max-width: 1599px|max-height: 899px/);
