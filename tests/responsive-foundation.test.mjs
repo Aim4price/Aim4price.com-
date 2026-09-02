@@ -8,6 +8,7 @@ test('global layout tokens provide fluid gutters, spacing and stable text scalin
   const globals = await read('app/globals.css');
 
   assert.match(globals, /--shell-width: min\(calc\(100% - \(var\(--shell-gutter\) \* 2\)\), var\(--shell-max\)\)/);
+  assert.match(globals, /--site-wide-shell-max: 1360px/);
   assert.match(globals, /--layout-section-gap: clamp\(/);
   assert.match(globals, /--layout-card-gap: clamp\(/);
   assert.match(globals, /--control-min-height: 44px/);
@@ -83,11 +84,11 @@ test('home page uses one fluid layout contract instead of a calibrated fixed can
   const story = home.slice(storyStart);
 
   assert.ok(storyStart >= 0);
-  assert.match(page, /<main className={styles\.page}>/);
-  assert.match(page, /<AppHeader active="home" \/>/);
+  assert.match(page, /<div className={styles\.page}>[\s\S]*?<AppHeader active="home" \/>[\s\S]*?<main className={styles\.homeMain}>/);
+  assert.ok(page.indexOf('<AppHeader active="home" />') < page.indexOf('<main className={styles.homeMain}>'));
   assert.doesNotMatch(page, /HomeDisplayCheck|standardCanvas|displayScale/);
 
-  assert.match(home, /--home-shell-max: 1360px/);
+  assert.match(home, /--home-shell-max: var\(--site-wide-shell-max, 1360px\)/);
   assert.match(home, /--home-gutter: var\(--shell-gutter, 1\.5rem\)/);
   assert.match(home, /\.shell \{[\s\S]*?width: min\([\s\S]*?calc\(100% - \(var\(--home-gutter\) \* 2\)\),[\s\S]*?var\(--home-shell-max\)/);
   assert.doesNotMatch(home, /zoom:\s*var\(|min-width:\s*1360px|--asset-stage-shift-x/);
@@ -97,6 +98,12 @@ test('home page uses one fluid layout contract instead of a calibrated fixed can
   assert.match(hero, /HERO_FEATURE_DURATION_MS = 4800/);
   assert.match(hero, /\(min-width: 1181px\) and \(min-height: 700px\) and \(hover: hover\) and \(pointer: fine\)/);
   assert.match(hero, /cinematicStoryMedia\.matches && !reducedMotionMedia\.matches/);
+  assert.match(hero, /reducedMotionMedia\.addEventListener\('change', syncStoryCapability\)/);
+  assert.match(hero, /cinematicStoryMedia\.addEventListener\('change', syncStoryCapability\)/);
+  assert.match(hero, /reducedMotionMedia\.removeEventListener\('change', syncStoryCapability\)/);
+  assert.match(hero, /cinematicStoryMedia\.removeEventListener\('change', syncStoryCapability\)/);
+  assert.match(hero, /if \(!manualControlRef\.current\) updateStoryStep\(FEATURE_START_INDEX\)/);
+  assert.match(hero, /else if \(!manualControlRef\.current\) \{[\s\S]*?updateStoryStep\(0\)/);
   assert.match(hero, /finishAutoplay[\s\S]*?updateStoryStep\(0\)/);
   assert.match(hero, /new IntersectionObserver\([\s\S]*?setIsHeroVisible\(entry\?\.isIntersecting \?\? true\)/);
   assert.match(hero, /window\.addEventListener\('scroll', handleScroll, \{ passive: true \}\)/);
@@ -137,6 +144,9 @@ test('home page uses one fluid layout contract instead of a calibrated fixed can
   assert.match(story, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?animation: none !important;[\s\S]*?transition: none !important/);
   assert.match(home, /@media \(forced-colors: active\)/);
   assert.match(home, /@media \(max-width: 760px\)[\s\S]*?\.roleGrid \{[\s\S]*?grid-template-columns: minmax\(0, 1fr\)/);
+  assert.match(home, /@media \(min-width: 761px\) and \(max-width: 1180px\)[\s\S]*?--app-header-height: 7\.5rem/);
+  assert.match(home, /@media \(max-width: 760px\)[\s\S]*?--app-header-height: 4rem/);
+  assert.match(home, /\.roleSection \{[\s\S]*?scroll-margin-top: calc\(var\(--app-header-height\) \+ 1rem\)/);
 });
 
 test('asset register has deterministic toolbar, card-action and modal device states', async () => {
