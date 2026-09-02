@@ -4381,3 +4381,81 @@
     transform: translateX(clamp(0px, calc((100cqi - 1240px) / 2), 60px));
   }
 }
+
+/* Homepage-only compact laptop density contract, September 2026.
+   The apps keep their existing header and control dimensions. */
+@media (min-width: 1181px) and (max-width: 1599px) and (min-height: 640px),
+  (min-width: 1181px) and (min-height: 640px) and (max-height: 899px) {
+  .homeDensity .inner {
+    width: min(calc(100% - 2.25rem), 1280px);
+    min-height: 5.15rem;
+    padding: 0.62rem 0;
+    grid-template-columns: minmax(12rem, 1fr) auto minmax(12rem, 1fr);
+    gap: clamp(0.9rem, 1.55vw, 1.65rem);
+  }
+
+  .homeDensity .innerDealer {
+    grid-template-columns: minmax(11.5rem, 1fr) auto minmax(11.5rem, 1fr);
+  }
+
+  .homeDensity .headerBrandLogo {
+    width: clamp(3.8rem, 4vw, 4.25rem);
+    max-height: 3.35rem;
+  }
+
+  .homeDensity .navRail,
+  .homeDensity .actionsRail {
+    gap: 0.32rem;
+    padding: 0.3rem;
+    border-radius: 1.15rem;
+  }
+
+  .homeDensity .navLink {
+    min-width: clamp(5.9rem, 6.4vw, 7.25rem);
+    min-height: var(--tap-target-min, 44px);
+    padding-inline: 0.85rem;
+    border-radius: 0.85rem;
+    font-size: 0.92rem;
+  }
+
+  .homeDensity .navWindowButton {
+    width: 1.25rem;
+    min-width: 1.25rem;
+    height: var(--tap-target-min, 44px);
+    min-height: var(--tap-target-min, 44px);
+    font-size: 1.6rem;
+  }
+
+  .homeDensity .signupButton,
+  .homeDensity .loginButton,
+  .homeDensity .accountButton,
+  .homeDensity .notificationButton {
+    min-height: var(--tap-target-min, 44px);
+    padding-inline: 1rem;
+    border-radius: 0.85rem;
+    font-size: 0.92rem;
+  }
+
+  .homeDensity .notificationButton {
+    width: var(--tap-target-min, 44px);
+    min-width: var(--tap-target-min, 44px);
+    padding: 0;
+  }
+
+  .homeDensity .accountMenu {
+    width: 11.25rem;
+    flex: 0 0 11.25rem;
+  }
+
+  .homeDensity .accountButton {
+    width: 100%;
+    gap: 0.58rem;
+    padding-left: 0.82rem;
+    padding-right: 0.75rem;
+  }
+
+  .homeDensity .accountAvatar {
+    width: 1.75rem;
+    height: 1.75rem;
+  }
+}
