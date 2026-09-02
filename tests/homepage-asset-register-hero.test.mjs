@@ -163,10 +163,10 @@ test('homepage plays one slower timed tour, returns to its brand frame, then fol
     assert.match(featureStories, new RegExp(copy.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
   }
   assert.match(hero, /<aside[\s\S]*?className=\{styles\.featureNarrative\}[\s\S]*?aria-label="What Aim4price helps you do"/);
-  assert.match(hero, /HERO_STAGES\.map\(\(question, index\) =>/);
+  assert.match(hero, /HERO_STAGES\.map\(\(question\) =>/);
   assert.match(hero, /data-active=\{isActive \? 'true' : 'false'\}/);
   assert.match(hero, /aria-hidden=\{!isActive \|\| storyMode !== 'features'\}/);
-  assert.match(hero, /String\(index \+ 1\)\.padStart\(2, '0'\)/);
+  assert.doesNotMatch(hero, /featureNarrativeEyebrow|feature\.eyebrow|eyebrow: string/);
   assert.match(hero, /<span>\/ 05<\/span>/);
   assert.match(hero, /aria-pressed=\{isPaused\}/);
   assert.match(hero, /\{isDesktopStory &&[\s\S]*?!isManuallyControlled &&[\s\S]*?!hasAutoplayFinished \? \(/);
@@ -411,6 +411,8 @@ test('homepage plays one slower timed tour, returns to its brand frame, then fol
   assert.match(desktopStoryStyles, /\.heroCopyDeck \{[\s\S]*?grid-column: 1;[\s\S]*?grid-row: 1/);
   assert.match(desktopStoryStyles, /\.storyHeroLogo,[\s\S]*?\.assetStageMotion,[\s\S]*?\.featureNarrative \{[\s\S]*?grid-column: 2;[\s\S]*?grid-row: 1/);
   assert.match(desktopStoryStyles, /\.assetStageMotion \{[\s\S]*?--asset-preview-center-inset: 2\.325rem;[\s\S]*?width: min\(45\.5rem, calc\(100% \+ 7rem\)\);[\s\S]*?justify-self: end/);
+  assert.match(desktopStoryStyles, /\.featureNarrative \{[\s\S]*?--feature-copy-inset: clamp\(5\.5rem, 8vw, 7\.75rem\)/);
+  assert.match(desktopStoryStyles, /\.featureNarrativeLayer h2,[\s\S]*?\.featureNarrativeLayer > p:last-child \{[\s\S]*?inset-inline-start: calc\(0rem - var\(--feature-copy-inset\)\)/);
   assert.match(desktopStoryStyles, /\.heroStory \.assetQuestionGroup,[\s\S]*?\.heroStory \.assetPreviewCard \{[\s\S]*?top: var\(--asset-preview-center-inset\);[\s\S]*?bottom: var\(--asset-preview-center-inset\)/);
   assert.match(desktopStoryStyles, /\.heroStory \.assetActiveQuestion \{[\s\S]*?top: calc\(-4\.25rem \+ var\(--asset-preview-center-inset\)\);[\s\S]*?bottom: auto/);
   assert.match(desktopStoryStyles, /\.heroStory \.assetPreviewCard,[\s\S]*?\.heroStory \.assetActiveQuestion \{[\s\S]*?right: 3\.25rem;[\s\S]*?left: 5rem/);
@@ -454,5 +456,5 @@ test('homepage plays one slower timed tour, returns to its brand frame, then fol
   assert.match(storyHeroStyles, /@media \(prefers-reduced-motion: reduce\) and \(min-width: 1181px\)[\s\S]*?\.heroBrandCopy \{[\s\S]*?opacity: 1;[\s\S]*?\.storyHeroLogo \{[\s\S]*?opacity: 1;[\s\S]*?\.assetStageMotion \{[\s\S]*?transform: none !important;[\s\S]*?\.compactHeroActions \{[\s\S]*?display: flex/);
   assert.match(storyHeroStyles, /@media \(prefers-reduced-motion: reduce\) and \(min-width: 1181px\)[\s\S]*?\.storyHeroLogo::before \{[\s\S]*?display: none/);
   assert.match(storyHeroStyles, /@media \(prefers-reduced-motion: reduce\) and \(min-width: 1181px\)[\s\S]*?\.heroStory \.heroMedia\.heroSticky \{[\s\S]*?height: auto;[\s\S]*?overflow: hidden/);
-  assert.match(storyHeroStyles, /@media \(forced-colors: active\)[\s\S]*?\.storyPauseControl,[\s\S]*?border: 1px solid CanvasText/);
+  assert.match(storyHeroStyles, /@media \(forced-colors: active\)[\s\S]*?\.storyPauseControl \{[\s\S]*?border: 1px solid CanvasText/);
 });

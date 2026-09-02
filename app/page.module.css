@@ -3823,7 +3823,6 @@
 .heroBrandTitle,
 .heroPromiseTitle,
 .heroPromiseText,
-.featureNarrativeEyebrow,
 .featureNarrativeLayer h2,
 .featureNarrativeLayer > p,
 .featureNarrativeCount {
@@ -4025,30 +4024,6 @@
   transition-delay: 100ms, 100ms, 100ms, 0s;
 }
 
-.featureNarrativeEyebrow {
-  display: flex;
-  align-items: center;
-  gap: 0.8rem;
-  color: #198763;
-  font-size: 0.76rem;
-  line-height: 1.2;
-  font-weight: 850;
-  letter-spacing: 0.105em;
-  text-transform: uppercase;
-}
-
-.featureNarrativeEyebrow span {
-  display: inline-grid;
-  width: 2.25rem;
-  aspect-ratio: 1;
-  place-items: center;
-  border: 1px solid rgba(31, 148, 107, 0.35);
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.72);
-  font-size: 0.68rem;
-  letter-spacing: 0.04em;
-}
-
 .featureNarrativeLayer h2 {
   max-width: 29rem;
   margin-top: 1.15rem;
@@ -4233,6 +4208,16 @@
     --asset-preview-center-inset: 2.325rem;
     width: min(45.5rem, calc(100% + 7rem));
     justify-self: end;
+  }
+
+  .featureNarrative {
+    --feature-copy-inset: clamp(5.5rem, 8vw, 7.75rem);
+  }
+
+  .featureNarrativeLayer h2,
+  .featureNarrativeLayer > p:last-child {
+    position: relative;
+    inset-inline-start: calc(0rem - var(--feature-copy-inset));
   }
 
   .heroStory .assetQuestionGroup,
@@ -4421,6 +4406,10 @@
     display: block;
   }
 
+  .featureNarrativeLayer h2 {
+    margin-top: 0;
+  }
+
   .featureNarrativeCount {
     position: relative;
     right: auto;
@@ -4498,8 +4487,7 @@
 }
 
 @media (forced-colors: active) {
-  .storyPauseControl,
-  .featureNarrativeEyebrow span {
+  .storyPauseControl {
     border: 1px solid CanvasText;
   }
 
