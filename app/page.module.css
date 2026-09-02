@@ -3839,7 +3839,7 @@
 }
 
 .heroBrandTitle {
-  line-height: 0.98;
+  line-height: 1;
 }
 
 .heroBrandTitle span,
@@ -3849,16 +3849,32 @@
 }
 
 .heroBrandTitle span:first-child {
-  margin-bottom: 0.34em;
-  font-size: clamp(3.45rem, 4.45vw, 4.9rem);
+  margin-bottom: 0.3em;
+  font-size: clamp(3.75rem, 4.65vw, 5.35rem);
 }
 
 .heroBrandTitle span:not(:first-child) {
-  font-size: clamp(2.55rem, 3.1vw, 3.35rem);
+  font-size: clamp(2.5rem, 2.75vw, 3.15rem);
+  font-weight: 820;
+  letter-spacing: -0.046em;
 }
 
 .heroBrandTitle span + span {
-  margin-top: 0.16em;
+  margin-top: 0;
+}
+
+.heroBrandTitle span:not(:first-child) + span {
+  margin-top: 0.1em;
+}
+
+.heroBrandTitle span:first-child::after {
+  content: '';
+  display: block;
+  width: clamp(3rem, 4vw, 4rem);
+  height: 2px;
+  margin-top: 0.28em;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #1ba677 0%, rgba(27, 166, 119, 0.32) 100%);
 }
 
 .heroPromiseTitle {
@@ -3883,6 +3899,10 @@
 .storyHeroLogo {
   position: relative;
   z-index: 3;
+  display: grid;
+  width: clamp(24rem, 29vw, 34rem);
+  aspect-ratio: 1;
+  place-items: center;
   min-width: 0;
   align-self: center;
   justify-self: center;
@@ -3898,12 +3918,58 @@
     visibility 0s linear 850ms;
 }
 
+.storyHeroLogo::before,
+.storyHeroLogo::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.storyHeroLogo::before {
+  z-index: -2;
+  background: radial-gradient(
+    circle,
+    rgba(89, 195, 155, 0.22) 0%,
+    rgba(142, 220, 190, 0.14) 34%,
+    rgba(185, 235, 216, 0.06) 52%,
+    rgba(209, 244, 230, 0) 72%
+  );
+  filter: blur(10px);
+  transform: scale(1.08);
+}
+
+.storyHeroLogo::after {
+  z-index: -1;
+  background:
+    radial-gradient(
+      circle,
+      transparent 55.7%,
+      rgba(53, 142, 109, 0.12) 56%,
+      rgba(53, 142, 109, 0.12) 56.25%,
+      transparent 56.55%
+    ),
+    radial-gradient(
+      circle,
+      transparent 75.7%,
+      rgba(53, 142, 109, 0.09) 76%,
+      rgba(53, 142, 109, 0.09) 76.25%,
+      transparent 76.55%
+    );
+}
+
 .storyHeroLogoImage {
+  position: relative;
+  z-index: 1;
   display: block;
-  width: clamp(15rem, 18vw, 19.5rem);
+  width: clamp(15.5rem, 16vw, 19rem);
   height: auto;
   object-fit: contain;
-  filter: brightness(0) saturate(100%);
+  filter:
+    brightness(0)
+    saturate(100%)
+    drop-shadow(0 1.2rem 0.8rem rgba(12, 67, 49, 0.16));
 }
 
 .assetStageMotion {
@@ -4203,11 +4269,11 @@
   }
 
   .heroBrandTitle span:first-child {
-    font-size: clamp(3.15rem, 4.2vw, 3.7rem);
+    font-size: clamp(3.2rem, 4.25vw, 3.9rem);
   }
 
   .heroBrandTitle span:not(:first-child) {
-    font-size: clamp(2.05rem, 2.7vw, 2.35rem);
+    font-size: clamp(2.05rem, 2.65vw, 2.4rem);
   }
 
   .heroPromiseTitle {
@@ -4306,7 +4372,7 @@
   }
 
   .storyHeroLogo {
-    width: 100%;
+    width: min(100%, 30rem);
     order: 2;
     opacity: 1;
     visibility: visible;
@@ -4437,6 +4503,11 @@
   .storyHeroLogoImage {
     filter: none;
   }
+
+  .storyHeroLogo::before,
+  .storyHeroLogo::after {
+    display: none;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) and (min-width: 1181px) {
@@ -4487,7 +4558,7 @@
   }
 
   .storyHeroLogo {
-    width: 100%;
+    width: min(100%, 34rem);
     grid-column: 2;
     grid-row: 1;
     opacity: 1;
