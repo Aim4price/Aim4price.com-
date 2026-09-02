@@ -2441,6 +2441,7 @@ export default function AppHeader({
               width={660}
               height={515}
               className={styles.headerBrandLogo}
+              data-aim4price-header-mark
               priority
             />
           </Link>

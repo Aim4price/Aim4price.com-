@@ -5,22 +5,29 @@ import test from 'node:test';
 const read = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
 
 test('homepage presents a fixed feature-led hero and reveals role choice on request', async () => {
-  const [page, hero, preview, roleSelector, styles, auth] = await Promise.all([
+  const [page, hero, preview, roleSelector, styles, auth, header] = await Promise.all([
     read('app/page.tsx'),
     read('app/home-hero-experience.tsx'),
     read('app/home-asset-preview.tsx'),
     read('app/home-role-selector.tsx'),
     read('app/page.module.css'),
     read('app/auth/auth-client.tsx'),
+    read('components/AppHeader.tsx'),
   ]);
 
   assert.match(page, /<AppHeader active="home" brandAlignment="working-column" \/>/);
+  assert.match(page, /import \{ cookies \} from 'next\/headers'/);
+  assert.match(page, /HOME_INTRO_COOKIE = 'a4p_home_intro'/);
+  assert.match(page, /cookies\(\)\.get\(HOME_INTRO_COOKIE\)\?\.value !== 'v1'/);
   assert.match(page, /import HomeHeroExperience from '\.\/home-hero-experience'/);
-  assert.match(page, /<HomeHeroExperience \/>/);
+  assert.match(page, /<HomeHeroExperience showIntro=\{showHomeIntro\} \/>/);
   assert.doesNotMatch(page, /import HomeAssetPreview/);
   assert.match(page, /import HomeRoleSelector from '\.\/home-role-selector'/);
   assert.match(page, /<HomeRoleSelector \/>/);
-  assert.ok(page.indexOf('<HomeHeroExperience />') < page.indexOf('<HomeRoleSelector />'));
+  assert.ok(
+    page.indexOf('<HomeHeroExperience showIntro={showHomeIntro} />') <
+      page.indexOf('<HomeRoleSelector />'),
+  );
 
   const heroStages = hero.slice(
     hero.indexOf('export const HERO_STAGES'),
@@ -35,11 +42,26 @@ test('homepage presents a fixed feature-led hero and reveals role choice on requ
   assert.doesNotMatch(hero, /heroPlatformLabel|One living record per asset/);
   assert.match(hero, /Know what you have\./);
   assert.match(hero, /Know what it’s worth\./);
-  assert.match(hero, /Know what it costs\./);
-  assert.match(hero, /every important asset one living digital record that connects/);
+  assert.match(hero, /Know what it really costs\./);
+  assert.match(hero, /Aim4price keeps each asset’s identity/);
   assert.match(hero, /indicative value/);
-  assert.match(hero, /documents, maintenance, fuel, costs and history[\s\S]*?throughout its working life/);
+  assert.match(hero, /maintenance, fuel and ownership costs connected in one living record/);
   assert.doesNotMatch(hero, /record—connecting|record—/);
+
+  assert.match(hero, /type IntroPhase = 'visible' \| 'exiting' \| 'complete'/);
+  assert.match(hero, /showIntro\?: boolean/);
+  assert.match(hero, /showIntro = false/);
+  assert.match(hero, /HOME_INTRO_COOKIE = 'a4p_home_intro'/);
+  assert.match(hero, /HOME_INTRO_HOLD_MS = 1650/);
+  assert.match(hero, /HOME_INTRO_EXIT_MS = 700/);
+  assert.match(hero, /HERO_AUTOPLAY_AFTER_INTRO_MS = 700/);
+  assert.match(hero, /Every asset\.[\s\S]*?One living record\./);
+  assert.match(hero, /Aim4price connects identity, value, documents, maintenance and ownership costs[\s\S]*?throughout an asset’s working life/);
+  assert.match(hero, /src="\/brand\/aim4price-mark-black\.png"/);
+  assert.match(hero, /className=\{styles\.homeIntro\}[\s\S]*?data-phase=\{introPhase\}[\s\S]*?aria-hidden="true"/);
+  assert.match(hero, /data-intro-phase=\{introPhase\}/);
+  assert.match(header, /data-aim4price-header-mark/);
+  assert.match(hero, /document\.querySelector<HTMLImageElement>\([\s\S]*?'\[data-aim4price-header-mark\]'/);
 
   assert.match(hero, /<a href="#choose-role" className=\{styles\.primaryCta\}>[\s\S]*?See Aim4price in Action/);
   assert.match(hero, /<Link href="\/valuation" className=\{styles\.secondaryCta\}>[\s\S]*?Get a Free Estimate/);
@@ -57,7 +79,9 @@ test('homepage presents a fixed feature-led hero and reveals role choice on requ
   assert.match(hero, /const shouldAutoplay = !reducedMotionMedia\.matches/);
   assert.match(hero, /reducedMotionMedia\.addEventListener\('change', syncMotionPreference\)/);
   assert.match(hero, /reducedMotionMedia\.removeEventListener\('change', syncMotionPreference\)/);
-  assert.match(hero, /window\.setTimeout\([\s\S]*?HERO_AUTOPLAY_DELAY_MS/);
+  assert.match(hero, /if \(!canAutoplay \|\| introIsActive \|\| hasAutoStarted\.current\) return undefined/);
+  assert.match(hero, /introWasShown\.current[\s\S]*?HERO_AUTOPLAY_AFTER_INTRO_MS[\s\S]*?HERO_AUTOPLAY_DELAY_MS/);
+  assert.match(hero, /window\.setTimeout\([\s\S]*?autoplayDelay/);
   assert.match(hero, /window\.setTimeout\([\s\S]*?HERO_STAGE_DURATION_MS/);
   assert.match(hero, /HERO_STAGES\.indexOf\(activeQuestion\)/);
   assert.match(hero, /setActiveQuestion\(HERO_STAGES\[activeIndex \+ 1\]!\)/);
@@ -66,14 +90,33 @@ test('homepage presents a fixed feature-led hero and reveals role choice on requ
   assert.match(hero, /window\.clearTimeout\(stageTimer\)/);
   assert.match(hero, /hasAutoStarted\.current = true;[\s\S]*?setActiveQuestion\('have'\);[\s\S]*?setIsAutoplaying\(true\)/);
   assert.match(hero, /document\.addEventListener\('visibilitychange', pauseWhenHidden\)/);
+  assert.match(hero, /document\.addEventListener\('visibilitychange', pauseWhenHidden\);[\s\S]*?pauseWhenHidden\(\)/);
   assert.match(hero, /document\.removeEventListener\('visibilitychange', pauseWhenHidden\)/);
 
+  assert.match(hero, /document\.cookie[\s\S]*?HOME_INTRO_COOKIE\}=v1; Path=\/; SameSite=Lax/);
+  assert.match(hero, /introSessionClaimed = useRef\(false\)/);
+  assert.match(hero, /introWasAlreadySeen = introCookieExists && !introSessionClaimed\.current/);
+  assert.match(hero, /document\.cookie[\s\S]*?introSessionClaimed\.current = true/);
+  assert.doesNotMatch(hero, /Max-Age|Expires=/);
+  assert.match(hero, /window\.location\.hash === '#choose-role'/);
+  assert.match(hero, /reducedMotionMedia\.matches \|\|[\s\S]*?document\.hidden \|\|[\s\S]*?window\.location\.hash/);
+  assert.match(hero, /window\.scrollY > 4/);
+  assert.match(hero, /window\.addEventListener\('pointerdown', skipIntro\)/);
+  assert.match(hero, /window\.addEventListener\('click', skipIntro\)/);
+  assert.match(hero, /window\.addEventListener\('wheel', skipIntroOnWheel, \{ passive: false \}\)/);
+  assert.match(hero, /window\.addEventListener\('keydown', skipIntroOnKeydown\)/);
+  assert.match(hero, /event\.key === 'Escape' \|\| event\.key === 'Tab'/);
+  assert.match(hero, /removeIntroListeners\(\)[\s\S]*?setIntroPhase\('complete'\)/);
+  assert.match(hero, /event\.preventDefault\(\);[\s\S]*?skipIntro\(\)/);
+  assert.match(hero, /document\.documentElement\.style\.overflow = 'hidden'/);
+  assert.match(hero, /document\.documentElement\.style\.overflow = previousOverflow/);
+
   assert.match(hero, /const handleQuestionChange[\s\S]*?hasAutoStarted\.current = true;[\s\S]*?setIsAutoplaying\(false\);[\s\S]*?setActiveQuestion\(question\)/);
-  assert.match(hero, /const handlePreviewInteraction = \(source: 'pointer' \| 'focus'\)[\s\S]*?source === 'focus'[\s\S]*?hasAutoStarted\.current = true[\s\S]*?if \(!isAutoplaying\) return;[\s\S]*?setIsAutoplaying\(false\)/);
+  assert.match(hero, /const handlePreviewInteraction = \(_source: 'pointer' \| 'focus'\)[\s\S]*?hasAutoStarted\.current = true[\s\S]*?if \(!isAutoplaying\) return;[\s\S]*?setIsAutoplaying\(false\)/);
   assert.match(hero, /<HomeAssetPreview[\s\S]*?activeQuestion=\{activeQuestion\}[\s\S]*?onQuestionChange=\{handleQuestionChange\}[\s\S]*?onInteraction=\{handlePreviewInteraction\}/);
   assert.doesNotMatch(hero, /handlePlaybackToggle|onPlaybackToggle=|playbackId|setPlaybackId|key=\{playbackId\}/);
   assert.doesNotMatch(hero, /IntersectionObserver|scrollIntoView|heroScrollTrack|heroScrollStep|DESKTOP_STORY_QUERY/);
-  assert.doesNotMatch(hero, /addEventListener\(['"](?:wheel|touchmove)|preventDefault|scroll-snap|setInterval/);
+  assert.doesNotMatch(hero, /addEventListener\(['"]touchmove|scroll-snap|setInterval/);
 
   assert.doesNotMatch(page, /<section[\s\S]*?id="choose-role"/);
   assert.match(roleSelector, /^'use client';/);
@@ -102,7 +145,7 @@ test('homepage presents a fixed feature-led hero and reveals role choice on requ
     [
       'Know what you have',
       'Know what it’s worth',
-      'Know what it costs',
+      'Know what it really costs',
       'Manage its working life',
       'See what needs attention',
     ],
@@ -279,6 +322,15 @@ test('homepage presents a fixed feature-led hero and reveals role choice on requ
   assert.doesNotMatch(livingHeroStyles, /\.assetDocumentsPanel|\.assetDocumentAction/);
 
   assert.match(featureHeroStyles, /\.heroStory \{[\s\S]*?min-height: 0/);
+  assert.match(featureHeroStyles, /\.homeIntro \{[\s\S]*?position: fixed;[\s\S]*?z-index: 150;[\s\S]*?100dvh[\s\S]*?touch-action: none/);
+  assert.match(featureHeroStyles, /\.homeIntroCurtain \{[\s\S]*?radial-gradient[\s\S]*?#ffffff[\s\S]*?transform 700ms/);
+  assert.match(featureHeroStyles, /\.homeIntroLogoStage \{[\s\S]*?animation: homeIntroLogoReveal 520ms/);
+  assert.match(featureHeroStyles, /\.homeIntroTitle \{[\s\S]*?font-size: clamp\(3\.25rem, 5\.4vw, 5\.4rem\)/);
+  assert.match(featureHeroStyles, /\.homeIntro\[data-phase='exiting'\] \.homeIntroCurtain \{[\s\S]*?translate3d\(0, -100%, 0\)/);
+  assert.doesNotMatch(featureHeroStyles, /\.homeIntro\[data-phase='exiting'\] \{[\s\S]*?pointer-events: none/);
+  assert.match(featureHeroStyles, /\.homeIntro\[data-phase='exiting'\] \.homeIntroLogoStage \{[\s\S]*?--home-intro-logo-x[\s\S]*?--home-intro-logo-scale/);
+  assert.match(featureHeroStyles, /@keyframes homeIntroLogoReveal/);
+  assert.match(featureHeroStyles, /@keyframes homeIntroTextReveal/);
   assert.match(featureHeroStyles, /\.heroSticky \{[\s\S]*?position: relative;[\s\S]*?top: auto;[\s\S]*?height: auto/);
   assert.match(featureHeroStyles, /\.heroScrollTrack,[\s\S]*?\.assetScrollCue \{[\s\S]*?display: none/);
   assert.doesNotMatch(featureHeroStyles, /340svh|position: sticky|grid-template-rows: repeat\(5/);
@@ -288,9 +340,11 @@ test('homepage presents a fixed feature-led hero and reveals role choice on requ
   assert.match(featureHeroStyles, /\.heroStory \.heroMedia::after \{[\s\S]*?radial-gradient\([\s\S]*?pointer-events: none/);
   assert.match(featureHeroStyles, /\.heroStory \.heroMedia \.shell \{[\s\S]*?100rem/);
   assert.match(featureHeroStyles, /\.heroStory \.heroGrid \{[\s\S]*?grid-template-columns: minmax\(31rem, 37rem\) minmax\(39rem, 49\.5rem\)[\s\S]*?align-items: center;[\s\S]*?gap: clamp\(3\.5rem, 5vw, 6rem\)/);
+  assert.match(featureHeroStyles, /\.heroSection\[data-intro-phase='visible'\] \.heroGrid \{[\s\S]*?opacity: 0;[\s\S]*?translateY\(1\.5rem\)/);
   assert.match(featureHeroStyles, /\.heroStory \.heroCopy \{[\s\S]*?max-width: 37rem;[\s\S]*?display: flex;[\s\S]*?justify-content: center;[\s\S]*?align-self: center;[\s\S]*?clamp\(0px, calc\(\(100vw - 1288px\) \/ 2\), 180px\)[\s\S]*?-1\.75rem/);
   assert.doesNotMatch(featureHeroStyles, /\.heroPlatformLabel/);
   assert.match(featureHeroStyles, /\.heroStory \.heroTitle \{[\s\S]*?font-size: clamp\(3\.15rem, 3\.4vw, 3\.65rem\)/);
+  assert.match(featureHeroStyles, /@media \(min-width: 1361px\)[\s\S]*?\.heroStory \.heroTitleLine:last-child \{[\s\S]*?font-size: 0\.9em;[\s\S]*?scaleX\(0\.93\)/);
   assert.match(featureHeroStyles, /\.heroStory \.heroText \{[\s\S]*?max-width: 34rem;[\s\S]*?line-height: 1\.62/);
   assert.match(featureHeroStyles, /\.heroStory \.primaryCta \{[\s\S]*?width: 14\.4rem;[\s\S]*?cursor: pointer/);
   assert.doesNotMatch(featureHeroStyles, /\.heroAudienceCta/);
@@ -309,7 +363,9 @@ test('homepage presents a fixed feature-led hero and reveals role choice on requ
   assert.match(featureHeroStyles, /@media \(min-width: 1361px\) and \(max-width: 1479px\)[\s\S]*?\.heroStory \.assetPreviewIdentity \{[\s\S]*?width: auto[\s\S]*?\.heroStory \.assetPreviewActions \{[\s\S]*?display: grid/);
 
   assert.match(featureHeroStyles, /@media \(max-width: 1180px\)[\s\S]*?\.heroStory \.heroGrid \{[\s\S]*?grid-template-columns: minmax\(0, 1fr\)[\s\S]*?\.heroStory \.heroCopy \{[\s\S]*?transform: none/);
+  assert.match(featureHeroStyles, /@media \(min-width: 1181px\) and \(max-width: 1360px\)[\s\S]*?\.heroStory \.heroTitleLine:last-child \{[\s\S]*?font-size: 0\.84em;[\s\S]*?scaleX\(0\.88\)/);
   assert.match(featureHeroStyles, /@media \(max-width: 760px\)[\s\S]*?\.heroStory \.heroActions \{[\s\S]*?grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
+  assert.match(featureHeroStyles, /@media \(max-width: 760px\)[\s\S]*?\.homeIntroTitle \{[\s\S]*?font-size: clamp\(2\.6rem, 12vw, 4\.35rem\)/);
   assert.match(featureHeroStyles, /@media \(max-width: 760px\)[\s\S]*?\.heroStory \.assetQuestionGroup \{[\s\S]*?grid-template-columns: repeat\(5, minmax\(0, 1fr\)\);[\s\S]*?order: 2/);
   assert.match(featureHeroStyles, /@media \(max-width: 760px\)[\s\S]*?\.heroStory \.assetPreviewCard \{[\s\S]*?position: relative;[\s\S]*?order: 1/);
   assert.match(featureHeroStyles, /@media \(max-width: 760px\)[\s\S]*?\.heroStory \.assetPreviewCard \{[\s\S]*?height: clamp\(22rem, 64vw, 28rem\)/);
@@ -318,6 +374,8 @@ test('homepage presents a fixed feature-led hero and reveals role choice on requ
   assert.match(featureHeroStyles, /@media \(max-width: 640px\)[\s\S]*?\.heroStory \.assetPreviewCard,[\s\S]*?min-height: clamp\(24rem, 112vw, 29rem\)/);
   assert.doesNotMatch(featureHeroStyles, /\.serviceCard \{[^}]*display:\s*none/s);
 
+  assert.match(featureHeroStyles, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.homeIntro \{[\s\S]*?display: none/);
+  assert.match(featureHeroStyles, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.heroSection\[data-intro-phase\] \.heroGrid \{[\s\S]*?transition: none/);
   assert.match(featureHeroStyles, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.heroStory \.assetPreviewState,[\s\S]*?animation: none/);
   assert.match(featureHeroStyles, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.heroStory \.assetQuestionBubble,[\s\S]*?transition: none/);
   assert.match(featureHeroStyles, /@media \(forced-colors: active\)[\s\S]*?\.assetQuestionBubble/);
