@@ -369,7 +369,6 @@ export default function HomeHeroExperience() {
 
                 <div
                   className={[styles.storyCopyLayer, styles.heroPromiseCopy].join(' ')}
-                  aria-hidden={storyStepIndex !== 1 && storyStepIndex !== 2}
                 >
                   <p className={styles.heroPromiseTitle}>
                     <span>Know what you have.</span>
@@ -431,7 +430,6 @@ export default function HomeHeroExperience() {
                       key={question}
                       className={styles.featureNarrativeLayer}
                       data-active={isActive ? 'true' : 'false'}
-                      aria-hidden={!isActive || storyMode !== 'features'}
                     >
                       <h2>{feature.title}</h2>
                       <p>{feature.body}</p>
