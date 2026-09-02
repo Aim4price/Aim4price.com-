@@ -44,7 +44,6 @@ type BrandAlignment = 'header' | 'working-column';
 type AppHeaderProps = {
   active: ActivePage;
   brandAlignment?: BrandAlignment;
-  standardCanvas?: boolean;
   signupHref?: string;
   loginHref?: string;
   ctaHref?: string;
@@ -733,7 +732,6 @@ function formatDateTime(value: string | null | undefined): string {
 export default function AppHeader({
   active,
   brandAlignment = 'header',
-  standardCanvas = false,
   signupHref = '/auth#signup',
   loginHref = '/auth#login',
   ctaHref,
@@ -1102,18 +1100,13 @@ export default function AppHeader({
   const hasNotificationPages = displayNotificationCount > NOTIFICATIONS_PER_PAGE;
 
   useEffect(() => {
-    if (standardCanvas) {
-      setUsesCompactHeader(false);
-      return undefined;
-    }
-
     const mediaQuery = window.matchMedia('(max-width: 760px)');
     const syncCompactHeader = () => setUsesCompactHeader(mediaQuery.matches);
 
     syncCompactHeader();
     mediaQuery.addEventListener('change', syncCompactHeader);
     return () => mediaQuery.removeEventListener('change', syncCompactHeader);
-  }, [standardCanvas]);
+  }, []);
 
   useEffect(() => {
     setNotificationPage((current) => Math.min(current, notificationPageCount));
@@ -2437,9 +2430,7 @@ export default function AppHeader({
 
   return (
     <>
-      <header
-        className={`${styles.header} ${standardCanvas ? styles.headerStandardCanvas : ''}`}
-      >
+      <header className={styles.header}>
         <div
           className={`${styles.inner} ${isDealerAccount ? styles.innerDealer : ''} ${!isLoadingSession && !session ? styles.innerPublic : ''} ${usesCompactHeader ? styles.innerCompact : ''} ${brandAlignmentClass ? styles.innerBrandAligned : ''}`}
         >
@@ -2681,3 +2672,4 @@ export default function AppHeader({
     </>
   );
 }
+
