@@ -13,7 +13,7 @@ import HomeAssetPreview, { type QuestionKey } from './home-asset-preview';
 import styles from './page.module.css';
 
 const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
-const DESKTOP_STORY_QUERY = '(min-width: 1181px) and (min-height: 640px)';
+const DESKTOP_STORY_QUERY = '(min-width: 901px) and (min-height: 640px)';
 const FEATURE_START_INDEX = 3;
 
 export const HERO_FEATURE_DURATION_MS = 4800;

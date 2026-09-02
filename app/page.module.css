@@ -4149,7 +4149,7 @@
   animation-duration: 4800ms;
 }
 
-@media (min-width: 1181px) and (min-height: 640px) {
+@media (min-width: 901px) and (min-height: 640px) {
   .heroStory {
     min-height: 440svh;
   }
@@ -4238,7 +4238,7 @@
   }
 }
 
-@media (min-width: 1181px) and (max-width: 1360px) and (min-height: 640px) {
+@media (min-width: 901px) and (max-width: 1360px) and (min-height: 640px) {
   .heroStory .heroMedia .shell {
     width: min(calc(100% - 3rem), 1360px);
   }
@@ -4274,7 +4274,7 @@
   }
 }
 
-@media (min-width: 1181px) and (max-width: 1240px) and (min-height: 640px) {
+@media (min-width: 901px) and (max-width: 1240px) and (min-height: 640px) {
   .storyHeroGrid {
     --hero-working-inset: 8px;
   }
@@ -4309,7 +4309,290 @@
   }
 }
 
-@media (max-width: 1180px), (max-height: 639px) {
+@media (min-width: 901px) and (max-width: 1180px) and (min-height: 640px) {
+  .heroSticky {
+    top: 8.4rem;
+    height: calc(100vh - 8.4rem);
+    height: calc(100dvh - 8.4rem);
+  }
+
+  .heroStory .heroMedia.heroSticky {
+    height: calc(100vh - 8.4rem);
+    height: calc(100dvh - 8.4rem);
+  }
+
+  .storyHeroGrid {
+    --hero-working-inset: 0px;
+    width: 100%;
+    grid-template-columns: minmax(17.5rem, 0.82fr) minmax(28rem, 1.18fr);
+    gap: clamp(1rem, 2vw, 1.5rem);
+    margin-inline-start: 0;
+    padding-block: 1rem;
+  }
+
+  .heroCopyDeck {
+    min-height: 0;
+  }
+
+  .heroBrandTitle span:first-child {
+    font-size: clamp(2.45rem, 4vw, 3.35rem);
+  }
+
+  .heroBrandTitle span:not(:first-child) {
+    font-size: clamp(1.25rem, 2.2vw, 1.9rem);
+  }
+
+  .heroPromiseTitle {
+    max-width: calc(100% - 2.75rem);
+    font-size: clamp(1.45rem, 2.5vw, 2.35rem);
+  }
+
+  .heroPromiseText {
+    max-width: calc(100% - 2.75rem);
+    margin-top: 1rem;
+    font-size: 0.9rem;
+    line-height: 1.5;
+  }
+
+  .heroStory .heroActions {
+    width: min(100%, 18.25rem);
+    display: grid;
+    grid-template-columns: minmax(0, 9.25rem) minmax(0, 8.5rem);
+    gap: 0.5rem;
+    margin-top: 1.2rem;
+  }
+
+  .heroStory .primaryCta,
+  .heroStory .secondaryCta {
+    width: 100%;
+    min-height: 3rem;
+    padding-inline: 0.65rem;
+    font-size: 0.78rem;
+  }
+
+  .storyHeroLogo {
+    --story-logo-halo-size: clamp(19rem, 27vw, 23rem);
+  }
+
+  .storyHeroLogoImage {
+    width: clamp(11rem, 18vw, 13.5rem);
+  }
+
+  .assetStageMotion {
+    --asset-preview-center-inset: 1rem;
+    width: min(40rem, calc(100% + 4.25rem));
+    justify-self: end;
+  }
+
+  .heroStory .assetQuestionGroup {
+    width: 3.5rem;
+  }
+
+  .heroStory .assetQuestion {
+    --question-size: 2.45rem;
+  }
+
+  .heroStory .assetQuestionActive {
+    --question-size: 2.7rem;
+  }
+
+  .heroStory .assetPreviewCard,
+  .heroStory .assetActiveQuestion {
+    right: 2.25rem;
+    left: 4rem;
+  }
+
+  .heroStory .assetActiveQuestionMain {
+    font-size: 0.92rem;
+  }
+
+  .assetPreviewCard {
+    padding: 0.6rem;
+  }
+
+  .assetPreviewHeader {
+    gap: 0.45rem;
+    padding-bottom: 0.5rem;
+  }
+
+  .assetPreviewAside {
+    min-width: 10.25rem;
+    gap: 0.35rem;
+  }
+
+  .assetPreviewActions {
+    grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.28fr) minmax(0, 0.92fr);
+    gap: 0.2rem;
+  }
+
+  .assetPreviewActions span {
+    min-height: 1.65rem;
+    gap: 0.16rem;
+    padding-inline: 0.12rem;
+    font-size: 0.46rem;
+  }
+
+  .assetPreviewActions svg {
+    width: 0.58rem;
+    height: 0.58rem;
+  }
+
+  .assetPreviewBody {
+    gap: 0.45rem;
+    padding-top: 0.4rem;
+  }
+
+  .assetPhotoPanel {
+    gap: 0.32rem;
+    padding: 0.32rem;
+  }
+
+  .assetDetailsPanel {
+    gap: 0.22rem;
+  }
+
+  .worthPreview {
+    grid-template-rows: minmax(0, 1fr) 2.35rem;
+    gap: 0.55rem;
+  }
+
+  .worthResult {
+    padding: 0.65rem 0.7rem;
+  }
+
+  .worthValueRow {
+    margin-top: 0.65rem;
+  }
+
+  .worthVatToggle,
+  .worthFacts {
+    margin-top: 0.5rem;
+  }
+
+  .miniFact {
+    min-height: 2.7rem;
+    gap: 0.22rem;
+    padding: 0.4rem 0.45rem;
+  }
+
+  .worthActions {
+    gap: 0.55rem;
+  }
+
+  .worthActions > span {
+    min-height: 2.35rem;
+    padding: 0.35rem 0.55rem;
+  }
+
+  .attentionHeader {
+    grid-template-columns: minmax(0, 1fr) minmax(10rem, 11.5rem);
+    gap: 0.5rem;
+    padding: 0.25rem 0.35rem 0.5rem;
+  }
+
+  .attentionAside {
+    gap: 0.45rem;
+  }
+
+  .attentionHeader h2 {
+    font-size: 0.9rem;
+  }
+
+  .attentionHeader p {
+    font-size: 0.48rem;
+  }
+
+  .attentionBody {
+    gap: 0.4rem;
+    padding-top: 0.4rem;
+  }
+
+  .issueCard,
+  .serviceCard {
+    padding: 0.55rem 4.25rem 0.55rem 0.65rem;
+  }
+
+  .manageGrid {
+    gap: 0.38rem;
+    padding-top: 0.48rem;
+  }
+
+  .manageTile {
+    grid-template-columns: 1.55rem minmax(0, 1fr);
+    gap: 0.4rem;
+    padding: 0.42rem;
+  }
+
+  .reportList {
+    gap: 0.28rem;
+    padding-top: 0.4rem;
+  }
+
+  .reportRow {
+    grid-template-columns: 1.75rem minmax(0, 1fr) auto;
+    gap: 0.4rem;
+    padding: 0.34rem 0.48rem;
+  }
+
+  .featureNarrative {
+    --feature-copy-inset: 0.5rem;
+    width: min(100%, clamp(19rem, 30vw, 23rem));
+    justify-self: end;
+  }
+
+  .featureNarrativeLayer h2 {
+    margin-top: 1.75rem;
+    font-size: clamp(1.95rem, 3.3vw, 2.85rem);
+  }
+
+  .featureNarrativeLayer > p:last-child {
+    margin-top: 0.85rem;
+    font-size: clamp(0.88rem, 1.3vw, 1rem);
+    line-height: 1.5;
+  }
+}
+
+@media (min-width: 901px) and (max-width: 980px) and (min-height: 640px) {
+  .assetStageMotion {
+    width: min(38rem, calc(100% + 3rem));
+  }
+
+  .featureNarrative {
+    --feature-copy-inset: 0;
+  }
+}
+
+@media (min-width: 981px) and (max-width: 1180px) and (min-height: 640px) {
+  .assetStageMotion {
+    --asset-preview-center-inset: 1.35rem;
+  }
+
+  .featureNarrative {
+    --feature-copy-inset: 1.25rem;
+  }
+}
+
+@media (min-width: 1041px) and (max-width: 1180px) and (min-height: 640px) {
+  .assetStageMotion {
+    --asset-preview-center-inset: 1.65rem;
+  }
+
+  .featureNarrative {
+    --feature-copy-inset: 2.25rem;
+  }
+}
+
+@media (min-width: 1121px) and (max-width: 1180px) and (min-height: 640px) {
+  .assetStageMotion {
+    --asset-preview-center-inset: 2rem;
+  }
+
+  .featureNarrative {
+    --feature-copy-inset: 3.75rem;
+  }
+}
+
+@media (max-width: 900px), (max-height: 639px) {
   .heroStory {
     min-height: 0 !important;
   }
@@ -4500,7 +4783,7 @@
   }
 }
 
-@media (prefers-reduced-motion: reduce) and (min-width: 1181px) {
+@media (prefers-reduced-motion: reduce) and (min-width: 901px) {
   .heroStory {
     min-height: 0 !important;
   }
@@ -4606,5 +4889,50 @@
     grid-row: 3;
     flex-wrap: wrap;
     gap: 0.85rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) and (min-width: 901px) and (max-width: 1180px) {
+  .storyHeroGrid {
+    width: 100%;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: repeat(5, auto);
+    gap: 2rem;
+    padding-block: 3rem;
+  }
+
+  .heroCopyDeck,
+  .storyHeroLogo,
+  .assetStageMotion,
+  .featureNarrative,
+  .compactHeroActions {
+    width: min(100%, 40rem);
+    grid-column: 1;
+    margin-inline: auto;
+  }
+
+  .heroCopyDeck {
+    grid-row: 1;
+  }
+
+  .storyHeroLogo {
+    grid-row: 2;
+  }
+
+  .assetStageMotion {
+    grid-row: 3;
+  }
+
+  .featureNarrative {
+    --feature-copy-inset: 0;
+    grid-row: 4;
+  }
+
+  .featureNarrativeLayer h2 {
+    margin-top: 0;
+  }
+
+  .compactHeroActions {
+    grid-row: 5;
   }
 }

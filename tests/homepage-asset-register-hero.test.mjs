@@ -73,6 +73,7 @@ test('homepage plays one slower timed tour, returns to its brand frame, then fol
   }
   assert.match(hero, /window\.matchMedia\(REDUCED_MOTION_QUERY\)/);
   assert.match(hero, /window\.matchMedia\(DESKTOP_STORY_QUERY\)/);
+  assert.match(hero, /DESKTOP_STORY_QUERY = '\(min-width: 901px\) and \(min-height: 640px\)'/);
   assert.match(hero, /desktopStoryMedia\.matches && !reducedMotionMedia\.matches/);
   assert.match(hero, /reducedMotionMedia\.addEventListener\('change', syncStoryCapability\)/);
   assert.match(hero, /desktopStoryMedia\.addEventListener\('change', syncStoryCapability\)/);
@@ -399,8 +400,8 @@ test('homepage plays one slower timed tour, returns to its brand frame, then fol
   assert.match(storyHeroStyles, /\.featureNarrativeCount \{[\s\S]*?position: absolute;[\s\S]*?top: 0\.35rem;[\s\S]*?bottom: auto/);
 
   const desktopStoryStyles = storyHeroStyles.slice(
-    storyHeroStyles.indexOf('@media (min-width: 1181px) and (min-height: 640px)'),
-    storyHeroStyles.indexOf('@media (min-width: 1181px) and (max-width: 1360px)'),
+    storyHeroStyles.indexOf('@media (min-width: 901px) and (min-height: 640px)'),
+    storyHeroStyles.indexOf('@media (min-width: 901px) and (max-width: 1360px)'),
   );
   assert.match(desktopStoryStyles, /\.heroStory \{[\s\S]*?min-height: 440svh/);
   assert.doesNotMatch(storyHeroStyles, /--hero-story-height|data-story-complete/);
@@ -418,17 +419,30 @@ test('homepage plays one slower timed tour, returns to its brand frame, then fol
   assert.match(desktopStoryStyles, /\.heroStory \.assetPreviewCard,[\s\S]*?\.heroStory \.assetActiveQuestion \{[\s\S]*?right: 3\.25rem;[\s\S]*?left: 5rem/);
 
   const mediumDesktopStoryStyles = storyHeroStyles.slice(
-    storyHeroStyles.indexOf('@media (min-width: 1181px) and (max-width: 1360px)'),
-    storyHeroStyles.indexOf('@media (min-width: 1181px) and (max-width: 1240px)'),
+    storyHeroStyles.indexOf('@media (min-width: 901px) and (max-width: 1360px)'),
+    storyHeroStyles.indexOf('@media (min-width: 901px) and (max-width: 1240px)'),
   );
   assert.match(mediumDesktopStoryStyles, /\.heroStory \.heroMedia \.shell \{[\s\S]*?width: min\(calc\(100% - 3rem\), 1360px\)/);
   assert.match(mediumDesktopStoryStyles, /\.storyHeroGrid \{[\s\S]*?grid-template-columns: minmax\(27rem, 31rem\) minmax\(34rem, 44rem\)/);
   assert.match(mediumDesktopStoryStyles, /\.assetStageMotion \{[\s\S]*?width: min\(44rem, calc\(100% \+ 6rem\)\);[\s\S]*?justify-self: end/);
-  assert.match(storyHeroStyles, /@media \(min-width: 1181px\) and \(max-width: 1240px\) and \(min-height: 640px\)[\s\S]*?\.storyHeroGrid \{[\s\S]*?--hero-working-inset: 8px/);
+  assert.match(storyHeroStyles, /@media \(min-width: 901px\) and \(max-width: 1240px\) and \(min-height: 640px\)[\s\S]*?\.storyHeroGrid \{[\s\S]*?--hero-working-inset: 8px/);
   assert.match(storyHeroStyles, /@media \(min-width: 1181px\) and \(min-height: 640px\) and \(max-height: 759px\)[\s\S]*?\.assetStageMotion \{[\s\S]*?width: min\(43rem, calc\(100% \+ 5rem\)\)/);
 
+  const narrowDesktopStoryStyles = storyHeroStyles.slice(
+    storyHeroStyles.indexOf('@media (min-width: 901px) and (max-width: 1180px) and (min-height: 640px)'),
+    storyHeroStyles.indexOf('@media (min-width: 981px) and (max-width: 1180px) and (min-height: 640px)'),
+  );
+  assert.match(narrowDesktopStoryStyles, /\.heroSticky \{[\s\S]*?top: 8\.4rem;[\s\S]*?height: calc\(100dvh - 8\.4rem\)/);
+  assert.match(narrowDesktopStoryStyles, /\.storyHeroGrid \{[\s\S]*?grid-template-columns: minmax\(17\.5rem, 0\.82fr\) minmax\(28rem, 1\.18fr\)/);
+  assert.match(narrowDesktopStoryStyles, /\.assetStageMotion \{[\s\S]*?width: min\(40rem, calc\(100% \+ 4\.25rem\)\)/);
+  assert.match(narrowDesktopStoryStyles, /\.assetPreviewActions \{[\s\S]*?minmax\(0, 0\.8fr\)[\s\S]*?minmax\(0, 1\.28fr\)[\s\S]*?minmax\(0, 0\.92fr\)/);
+  assert.match(narrowDesktopStoryStyles, /\.worthResult \{[\s\S]*?padding: 0\.65rem 0\.7rem/);
+  assert.match(narrowDesktopStoryStyles, /\.attentionHeader \{[\s\S]*?minmax\(10rem, 11\.5rem\)/);
+  assert.match(narrowDesktopStoryStyles, /\.featureNarrative \{[\s\S]*?--feature-copy-inset: 0\.5rem;[\s\S]*?clamp\(19rem, 30vw, 23rem\)/);
+  assert.match(narrowDesktopStoryStyles, /@media \(min-width: 901px\) and \(max-width: 980px\) and \(min-height: 640px\)[\s\S]*?width: min\(38rem, calc\(100% \+ 3rem\)\)[\s\S]*?--feature-copy-inset: 0/);
+
   const compactStoryStyles = storyHeroStyles.slice(
-    storyHeroStyles.indexOf('@media (max-width: 1180px), (max-height: 639px)'),
+    storyHeroStyles.indexOf('@media (max-width: 900px), (max-height: 639px)'),
     storyHeroStyles.indexOf('@media (max-width: 760px)'),
   );
   assert.match(compactStoryStyles, /\.heroStory \{[\s\S]*?min-height: 0 !important/);
@@ -453,8 +467,8 @@ test('homepage plays one slower timed tour, returns to its brand frame, then fol
   );
   assert.match(reducedMotionStyles, /\.storyCopyLayer,[\s\S]*?\.storyPauseControl \{[\s\S]*?animation: none !important;[\s\S]*?transition: none !important/);
   assert.match(reducedMotionStyles, /\.storyCopyLayer,[\s\S]*?\.featureNarrativeLayer \{[\s\S]*?filter: none !important/);
-  assert.match(storyHeroStyles, /@media \(prefers-reduced-motion: reduce\) and \(min-width: 1181px\)[\s\S]*?\.heroBrandCopy \{[\s\S]*?opacity: 1;[\s\S]*?\.storyHeroLogo \{[\s\S]*?opacity: 1;[\s\S]*?\.assetStageMotion \{[\s\S]*?transform: none !important;[\s\S]*?\.compactHeroActions \{[\s\S]*?display: flex/);
-  assert.match(storyHeroStyles, /@media \(prefers-reduced-motion: reduce\) and \(min-width: 1181px\)[\s\S]*?\.storyHeroLogo::before \{[\s\S]*?display: none/);
-  assert.match(storyHeroStyles, /@media \(prefers-reduced-motion: reduce\) and \(min-width: 1181px\)[\s\S]*?\.heroStory \.heroMedia\.heroSticky \{[\s\S]*?height: auto;[\s\S]*?overflow: hidden/);
+  assert.match(storyHeroStyles, /@media \(prefers-reduced-motion: reduce\) and \(min-width: 901px\)[\s\S]*?\.heroBrandCopy \{[\s\S]*?opacity: 1;[\s\S]*?\.storyHeroLogo \{[\s\S]*?opacity: 1;[\s\S]*?\.assetStageMotion \{[\s\S]*?transform: none !important;[\s\S]*?\.compactHeroActions \{[\s\S]*?display: flex/);
+  assert.match(storyHeroStyles, /@media \(prefers-reduced-motion: reduce\) and \(min-width: 901px\)[\s\S]*?\.storyHeroLogo::before \{[\s\S]*?display: none/);
+  assert.match(storyHeroStyles, /@media \(prefers-reduced-motion: reduce\) and \(min-width: 901px\)[\s\S]*?\.heroStory \.heroMedia\.heroSticky \{[\s\S]*?height: auto;[\s\S]*?overflow: hidden/);
   assert.match(storyHeroStyles, /@media \(forced-colors: active\)[\s\S]*?\.storyPauseControl \{[\s\S]*?border: 1px solid CanvasText/);
 });
