@@ -275,7 +275,8 @@ const persistDisplayCompletion = (preference: StoredDisplayPreference) => {
 const readDisplayCompletion = (viewport: ViewportSize) => {
   const isCompleted = readStorageItem(DISPLAY_COMPLETED_KEY) === '1';
   const storedPreference = readStoredPreference();
-  if (isCompleted && storedPreference) {
+  if (storedPreference) {
+    if (!isCompleted) persistDisplayCompletion(storedPreference);
     return { completed: true, preference: storedPreference } as const;
   }
 
@@ -285,10 +286,9 @@ const readDisplayCompletion = (viewport: ViewportSize) => {
     return { completed: true, preference: legacyPreference } as const;
   }
 
-  if (isCompleted || storedPreference) {
+  if (isCompleted) {
     const profile = getRecommendedSize(viewport);
-    const recoveredPreference =
-      storedPreference ?? createDisplayPreference({ [profile]: profile });
+    const recoveredPreference = createDisplayPreference({ [profile]: profile });
     persistDisplayCompletion(recoveredPreference);
     return { completed: true, preference: recoveredPreference } as const;
   }
