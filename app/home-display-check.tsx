@@ -19,8 +19,13 @@ import styles from './home-display-check.module.css';
 
 const DISPLAY_CHECK_QUERY =
   '(min-width: 1181px) and (min-height: 640px) and (hover: hover) and (pointer: fine)';
-const DISPLAY_STORAGE_KEY = 'aim4price:home-display-check:v2';
-const DISPLAY_STORAGE_VERSION = 2;
+const DISPLAY_COMPLETED_KEY = 'aim4price:home-display-check:completed';
+const DISPLAY_PREFERENCE_KEY = 'aim4price:home-display-preference:v1';
+const LEGACY_DISPLAY_KEYS = [
+  'aim4price:home-display-check:v2',
+  'aim4price:home-display-check:v1',
+] as const;
+const DISPLAY_PREFERENCE_VERSION = 1;
 const ORIGINAL_CANVAS_WIDTH = 1360;
 const ORIGINAL_CANVAS_HEIGHT = 620;
 const PREVIEW_SAFE_WIDTH_RATIO = 0.96;
@@ -32,11 +37,11 @@ export const DISPLAY_SIZES = [
 ] as const;
 
 type DisplaySize = (typeof DISPLAY_SIZES)[number]['id'];
+type DisplayPreferenceOffset = -1 | 0;
 
-type StoredDisplayCheck = {
-  version: typeof DISPLAY_STORAGE_VERSION;
-  size: DisplaySize;
-  viewportClass: string;
+type StoredDisplayPreference = {
+  version: typeof DISPLAY_PREFERENCE_VERSION;
+  offset: DisplayPreferenceOffset;
 };
 
 type ViewportSize = {
@@ -82,8 +87,19 @@ const getRecommendedSizeIndex = (viewport: ViewportSize) => {
   return recommendedIndex;
 };
 
-const getViewportClass = (viewport: ViewportSize) =>
-  `recommended-${DISPLAY_SIZES[getRecommendedSizeIndex(viewport)].id}`;
+const clampSizeIndex = (index: number) =>
+  Math.max(0, Math.min(DISPLAY_SIZES.length - 1, index));
+
+const getAdaptiveSizeIndex = (
+  viewport: ViewportSize,
+  preferenceOffset: DisplayPreferenceOffset,
+) => clampSizeIndex(getRecommendedSizeIndex(viewport) + preferenceOffset);
+
+const getPreferenceOffset = (
+  selectedIndex: number,
+  recommendedIndex: number,
+): DisplayPreferenceOffset =>
+  Math.max(-1, Math.min(0, selectedIndex - recommendedIndex)) as DisplayPreferenceOffset;
 
 const hasSecureConnection = () => {
   if (window.location.protocol === 'https:' && window.isSecureContext) return true;
@@ -104,38 +120,131 @@ const getSecureHref = () => {
   }
 };
 
-const readStoredDisplayCheck = (): StoredDisplayCheck | null => {
+const readStorageItem = (key: string) => {
+  for (const getStorage of [
+    () => window.localStorage,
+    () => window.sessionStorage,
+  ]) {
+    try {
+      const value = getStorage().getItem(key);
+      if (value !== null) return value;
+    } catch {
+      // Try the session-only fallback when persistent storage is restricted.
+    }
+  }
+
+  return null;
+};
+
+const writeStorageItem = (key: string, value: string) => {
   try {
-    const raw = window.localStorage.getItem(DISPLAY_STORAGE_KEY);
+    window.localStorage.setItem(key, value);
+    return;
+  } catch {
+    try {
+      window.sessionStorage.setItem(key, value);
+    } catch {
+      // Component state still keeps the acknowledgement for this page view.
+    }
+  }
+};
+
+const removeStorageItem = (key: string) => {
+  for (const getStorage of [
+    () => window.localStorage,
+    () => window.sessionStorage,
+  ]) {
+    try {
+      getStorage().removeItem(key);
+    } catch {
+      // A storage restriction must never block the homepage.
+    }
+  }
+};
+
+const readStoredPreference = (): DisplayPreferenceOffset | null => {
+  try {
+    const raw = readStorageItem(DISPLAY_PREFERENCE_KEY);
     if (!raw) return null;
 
-    const parsed = JSON.parse(raw) as Partial<StoredDisplayCheck>;
+    const parsed = JSON.parse(raw) as Partial<StoredDisplayPreference>;
     if (
-      parsed.version !== DISPLAY_STORAGE_VERSION ||
-      !isDisplaySize(parsed.size) ||
-      typeof parsed.viewportClass !== 'string'
+      parsed.version !== DISPLAY_PREFERENCE_VERSION ||
+      (parsed.offset !== -1 && parsed.offset !== 0)
     ) {
-      window.localStorage.removeItem(DISPLAY_STORAGE_KEY);
+      removeStorageItem(DISPLAY_PREFERENCE_KEY);
       return null;
     }
 
-    return parsed as StoredDisplayCheck;
+    return parsed.offset;
   } catch {
     return null;
   }
 };
 
-const writeStoredDisplayCheck = (size: DisplaySize, viewportClass: string) => {
-  try {
-    const value: StoredDisplayCheck = {
-      version: DISPLAY_STORAGE_VERSION,
-      size,
-      viewportClass,
-    };
-    window.localStorage.setItem(DISPLAY_STORAGE_KEY, JSON.stringify(value));
-  } catch {
-    // Restricted storage must never prevent the visitor from continuing.
+const readLegacyPreference = (): DisplayPreferenceOffset | null => {
+  for (const key of LEGACY_DISPLAY_KEYS) {
+    try {
+      const raw = readStorageItem(key);
+      if (!raw) continue;
+      const parsed = JSON.parse(raw) as {
+        version?: number;
+        size?: unknown;
+        density?: unknown;
+        viewportClass?: unknown;
+      };
+
+      if (key.endsWith(':v2') && parsed.version === 2 && isDisplaySize(parsed.size)) {
+        const selectedIndex = DISPLAY_SIZES.findIndex(({ id }) => id === parsed.size);
+        const recommendedIndex =
+          parsed.viewportClass === 'recommended-original'
+            ? 1
+            : parsed.viewportClass === 'recommended-compact'
+              ? 0
+              : parsed.size === 'compact'
+                ? 1
+                : selectedIndex;
+        return getPreferenceOffset(selectedIndex, recommendedIndex);
+      }
+
+      if (
+        key.endsWith(':v1') &&
+        parsed.version === 1 &&
+        ['compact', 'balanced', 'spacious'].includes(String(parsed.density))
+      ) {
+        return parsed.density === 'compact' ? -1 : 0;
+      }
+    } catch {
+      // Ignore malformed legacy data and continue to the next known format.
+    }
   }
+
+  return null;
+};
+
+const persistDisplayCompletion = (offset: DisplayPreferenceOffset) => {
+  const preference: StoredDisplayPreference = {
+    version: DISPLAY_PREFERENCE_VERSION,
+    offset,
+  };
+  writeStorageItem(DISPLAY_COMPLETED_KEY, '1');
+  writeStorageItem(DISPLAY_PREFERENCE_KEY, JSON.stringify(preference));
+};
+
+const readDisplayCompletion = () => {
+  const isCompleted = readStorageItem(DISPLAY_COMPLETED_KEY) === '1';
+  const storedPreference = readStoredPreference();
+  if (isCompleted) {
+    return { completed: true, offset: storedPreference ?? 0 } as const;
+  }
+
+  const legacyPreference = readLegacyPreference();
+  if (legacyPreference !== null) {
+    persistDisplayCompletion(legacyPreference);
+    return { completed: true, offset: legacyPreference } as const;
+  }
+
+  return { completed: false, offset: 0 } as const;
 };
 
 export default function HomeDisplayCheck({ children }: { children: ReactNode }) {
@@ -156,6 +265,9 @@ export default function HomeDisplayCheck({ children }: { children: ReactNode }) 
   const frameRef = useRef<HTMLDivElement | null>(null);
   const previewRef = useRef<HTMLDivElement | null>(null);
   const resizeFrameRef = useRef<number | null>(null);
+  const viewportTimerRef = useRef<number | null>(null);
+  const hasCompletedCheckRef = useRef(false);
+  const preferenceOffsetRef = useRef<DisplayPreferenceOffset>(0);
 
   const size = DISPLAY_SIZES[sizeIndex] ?? DISPLAY_SIZES[1];
   const recommendedSizeIndex = useMemo(
@@ -201,10 +313,15 @@ export default function HomeDisplayCheck({ children }: { children: ReactNode }) 
   }, [measurePreviewFit]);
 
   const acceptSize = useCallback((nextIndex: number) => {
-    const nextSize = DISPLAY_SIZES[nextIndex] ?? DISPLAY_SIZES[0];
     const nextViewport = getViewportSize();
+    const preferenceOffset = getPreferenceOffset(
+      nextIndex,
+      getRecommendedSizeIndex(nextViewport),
+    );
     setSizeIndex(nextIndex);
-    writeStoredDisplayCheck(nextSize.id, getViewportClass(nextViewport));
+    persistDisplayCompletion(preferenceOffset);
+    hasCompletedCheckRef.current = true;
+    preferenceOffsetRef.current = preferenceOffset;
     setIsGateOpen(false);
     setIsDisplayReady(true);
 
@@ -219,34 +336,32 @@ export default function HomeDisplayCheck({ children }: { children: ReactNode }) 
 
     const syncCapability = () => {
       const nextViewport = getViewportSize();
-      const nextViewportClass = getViewportClass(nextViewport);
       const nextIsSecure = hasSecureConnection();
+      const completion = readDisplayCompletion();
 
       setViewport(nextViewport);
       setIsSecure(nextIsSecure);
       setSecureHref(getSecureHref());
 
       if (!desktopMedia.matches) {
+        hasCompletedCheckRef.current = completion.completed;
+        preferenceOffsetRef.current = completion.offset;
         setIsGateOpen(false);
         setIsDisplayReady(true);
         return;
       }
 
-      const stored = readStoredDisplayCheck();
-      if (
-        nextIsSecure &&
-        stored &&
-        stored.viewportClass === nextViewportClass
-      ) {
-        const storedIndex = DISPLAY_SIZES.findIndex(
-          ({ id }) => id === stored.size,
-        );
-        setSizeIndex(storedIndex >= 0 ? storedIndex : 0);
+      if (completion.completed) {
+        setSizeIndex(getAdaptiveSizeIndex(nextViewport, completion.offset));
+        hasCompletedCheckRef.current = true;
+        preferenceOffsetRef.current = completion.offset;
         setIsGateOpen(false);
         setIsDisplayReady(true);
         return;
       }
 
+      hasCompletedCheckRef.current = false;
+      preferenceOffsetRef.current = 0;
       setSizeIndex(getRecommendedSizeIndex(nextViewport));
       setDoesPreviewFit(false);
       setIsDisplayReady(false);
@@ -255,36 +370,61 @@ export default function HomeDisplayCheck({ children }: { children: ReactNode }) 
 
     syncCapability();
     desktopMedia.addEventListener('change', syncCapability);
-    return () => desktopMedia.removeEventListener('change', syncCapability);
+    window.addEventListener('storage', syncCapability);
+    return () => {
+      desktopMedia.removeEventListener('change', syncCapability);
+      window.removeEventListener('storage', syncCapability);
+    };
   }, []);
 
   useEffect(() => {
-    const handleResize = () => {
+    const syncViewport = () => {
       const nextViewport = getViewportSize();
       setViewport(nextViewport);
 
       if (
         !isDisplayReady ||
+        !hasCompletedCheckRef.current ||
         !window.matchMedia(DISPLAY_CHECK_QUERY).matches
       ) {
         return;
       }
 
-      const recommendedIndex = getRecommendedSizeIndex(nextViewport);
-      setSizeIndex((current) => {
-        const nextIndex = Math.min(current, recommendedIndex);
-        if (nextIndex !== current) {
-          writeStoredDisplayCheck(
-            DISPLAY_SIZES[nextIndex].id,
-            getViewportClass(nextViewport),
-          );
-        }
-        return nextIndex;
-      });
+      setSizeIndex(
+        getAdaptiveSizeIndex(nextViewport, preferenceOffsetRef.current),
+      );
     };
 
-    window.addEventListener('resize', handleResize, { passive: true });
-    return () => window.removeEventListener('resize', handleResize);
+    const scheduleViewportSync = () => {
+      if (viewportTimerRef.current !== null) {
+        window.clearTimeout(viewportTimerRef.current);
+      }
+
+      viewportTimerRef.current = window.setTimeout(() => {
+        viewportTimerRef.current = null;
+        syncViewport();
+      }, 160);
+    };
+
+    window.addEventListener('resize', scheduleViewportSync, { passive: true });
+    window.addEventListener('orientationchange', scheduleViewportSync);
+    window.addEventListener('pageshow', scheduleViewportSync);
+    window.addEventListener('focus', scheduleViewportSync);
+    const observer =
+      'ResizeObserver' in window ? new ResizeObserver(scheduleViewportSync) : null;
+    observer?.observe(document.documentElement);
+
+    return () => {
+      observer?.disconnect();
+      window.removeEventListener('resize', scheduleViewportSync);
+      window.removeEventListener('orientationchange', scheduleViewportSync);
+      window.removeEventListener('pageshow', scheduleViewportSync);
+      window.removeEventListener('focus', scheduleViewportSync);
+      if (viewportTimerRef.current !== null) {
+        window.clearTimeout(viewportTimerRef.current);
+        viewportTimerRef.current = null;
+      }
+    };
   }, [isDisplayReady]);
 
   useLayoutEffect(() => {
