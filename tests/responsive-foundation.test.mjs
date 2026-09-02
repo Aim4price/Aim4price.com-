@@ -81,7 +81,7 @@ test('home page keeps the eight-step story usable at desktop, compact and reduce
   assert.match(hero, /HERO_FEATURE_DURATION_MS = 4800/);
   assert.match(hero, /window\.matchMedia\(REDUCED_MOTION_QUERY\)/);
   assert.match(hero, /window\.matchMedia\(DESKTOP_STORY_QUERY\)/);
-  assert.match(hero, /DESKTOP_STORY_QUERY = '\(min-width: 1181px\) and \(min-height: 640px\)'/);
+  assert.match(hero, /DESKTOP_STORY_QUERY = '\(min-width: 901px\) and \(min-height: 640px\)'/);
   assert.match(hero, /desktopStoryMedia\.matches && !reducedMotionMedia\.matches/);
   assert.match(hero, /finishAutoplay[\s\S]*?updateStoryStep\(0\)/);
   assert.match(hero, /const timer = window\.setTimeout\(\(\) => \{[\s\S]*?if \(autoplayFinishedRef\.current\) return/);
@@ -106,8 +106,8 @@ test('home page keeps the eight-step story usable at desktop, compact and reduce
   assert.doesNotMatch(hero, /PROMISE_STEP_INDEX|HERO_STORY_SCROLL_RATIO|data-story-complete|isStoryComplete|completeStory|scrollAnchorRef|lastScrollYRef|storyHeightPx|setStoryHeightPx|scrollIntoView/);
 
   const desktop = story.slice(
-    story.indexOf('@media (min-width: 1181px) and (min-height: 640px)'),
-    story.indexOf('@media (min-width: 1181px) and (max-width: 1360px)'),
+    story.indexOf('@media (min-width: 901px) and (min-height: 640px)'),
+    story.indexOf('@media (min-width: 901px) and (max-width: 1360px)'),
   );
   assert.match(desktop, /\.heroStory \{[\s\S]*?440svh/);
   assert.doesNotMatch(story, /--hero-story-height|data-story-complete/);
@@ -121,16 +121,29 @@ test('home page keeps the eight-step story usable at desktop, compact and reduce
   assert.match(desktop, /\.featureNarrative \{[\s\S]*?--feature-copy-inset: clamp\(5\.5rem, 8vw, 7\.75rem\)/);
   assert.match(desktop, /\.featureNarrativeLayer h2,[\s\S]*?\.featureNarrativeLayer > p:last-child \{[\s\S]*?inset-inline-start: calc\(0rem - var\(--feature-copy-inset\)\)/);
   assert.match(desktop, /\.heroStory \.assetQuestionGroup,[\s\S]*?\.heroStory \.assetPreviewCard \{[\s\S]*?top: var\(--asset-preview-center-inset\);[\s\S]*?bottom: var\(--asset-preview-center-inset\)/);
-  assert.match(story, /@media \(min-width: 1181px\) and \(max-width: 1360px\) and \(min-height: 640px\)[\s\S]*?\.storyHeroGrid \{[\s\S]*?grid-template-columns: minmax\(27rem, 31rem\) minmax\(34rem, 44rem\)/);
-  assert.match(story, /@media \(min-width: 1181px\) and \(max-width: 1360px\) and \(min-height: 640px\)[\s\S]*?\.assetStageMotion \{[\s\S]*?width: min\(44rem, calc\(100% \+ 6rem\)\)/);
-  assert.match(story, /@media \(min-width: 1181px\) and \(max-width: 1240px\) and \(min-height: 640px\)[\s\S]*?--hero-working-inset: 8px/);
+  assert.match(story, /@media \(min-width: 901px\) and \(max-width: 1360px\) and \(min-height: 640px\)[\s\S]*?\.storyHeroGrid \{[\s\S]*?grid-template-columns: minmax\(27rem, 31rem\) minmax\(34rem, 44rem\)/);
+  assert.match(story, /@media \(min-width: 901px\) and \(max-width: 1360px\) and \(min-height: 640px\)[\s\S]*?\.assetStageMotion \{[\s\S]*?width: min\(44rem, calc\(100% \+ 6rem\)\)/);
+  assert.match(story, /@media \(min-width: 901px\) and \(max-width: 1240px\) and \(min-height: 640px\)[\s\S]*?--hero-working-inset: 8px/);
   assert.match(story, /@media \(min-width: 1181px\) and \(min-height: 640px\) and \(max-height: 759px\)[\s\S]*?\.assetStageMotion \{[\s\S]*?width: min\(43rem, calc\(100% \+ 5rem\)\)/);
   assert.match(story, /\.featureNarrativeCount \{[\s\S]*?top: 0\.35rem;[\s\S]*?bottom: auto/);
   assert.match(story, /\.heroPromiseTitle \{[\s\S]*?font-size: clamp\(2\.65rem, 2\.95vw, 2\.95rem\)/);
   assert.doesNotMatch(story, /data-autoplay-finished='true'[^{]*\.storyHeroLogo/);
 
+  const narrow = story.slice(
+    story.indexOf('@media (min-width: 901px) and (max-width: 1180px) and (min-height: 640px)'),
+    story.indexOf('@media (min-width: 981px) and (max-width: 1180px) and (min-height: 640px)'),
+  );
+  assert.match(narrow, /\.heroSticky \{[\s\S]*?top: 8\.4rem;[\s\S]*?height: calc\(100dvh - 8\.4rem\)/);
+  assert.match(narrow, /\.storyHeroGrid \{[\s\S]*?grid-template-columns: minmax\(17\.5rem, 0\.82fr\) minmax\(28rem, 1\.18fr\)/);
+  assert.match(narrow, /\.heroBrandTitle span:first-child \{[\s\S]*?font-size: clamp\(2\.45rem, 4vw, 3\.35rem\)/);
+  assert.match(narrow, /\.assetStageMotion \{[\s\S]*?width: min\(40rem, calc\(100% \+ 4\.25rem\)\)/);
+  assert.match(narrow, /\.assetPreviewActions \{[\s\S]*?minmax\(0, 0\.8fr\)[\s\S]*?minmax\(0, 1\.28fr\)[\s\S]*?minmax\(0, 0\.92fr\)/);
+  assert.match(narrow, /\.attentionHeader \{[\s\S]*?minmax\(10rem, 11\.5rem\)/);
+  assert.match(narrow, /\.featureNarrative \{[\s\S]*?--feature-copy-inset: 0\.5rem;[\s\S]*?clamp\(19rem, 30vw, 23rem\)/);
+  assert.match(narrow, /@media \(min-width: 901px\) and \(max-width: 980px\) and \(min-height: 640px\)[\s\S]*?width: min\(38rem, calc\(100% \+ 3rem\)\)[\s\S]*?--feature-copy-inset: 0/);
+
   const compact = story.slice(
-    story.indexOf('@media (max-width: 1180px), (max-height: 639px)'),
+    story.indexOf('@media (max-width: 900px), (max-height: 639px)'),
     story.indexOf('@media (max-width: 760px)'),
   );
   assert.match(compact, /\.heroStory \{[\s\S]*?min-height: 0 !important/);
@@ -152,8 +165,8 @@ test('home page keeps the eight-step story usable at desktop, compact and reduce
   assert.match(home, /\.primaryCta,[\s\S]*?\.secondaryCta \{[\s\S]*?min-height: 3\.2rem/);
   assert.match(story, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.storyCopyLayer,[\s\S]*?animation: none !important;[\s\S]*?transition: none !important/);
   assert.match(story, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.storyCopyLayer,[\s\S]*?filter: none !important/);
-  assert.match(story, /@media \(prefers-reduced-motion: reduce\) and \(min-width: 1181px\)[\s\S]*?\.heroBrandCopy \{[\s\S]*?opacity: 1;[\s\S]*?\.compactHeroActions \{[\s\S]*?display: flex/);
-  assert.match(story, /@media \(prefers-reduced-motion: reduce\) and \(min-width: 1181px\)[\s\S]*?\.heroStory \.heroMedia\.heroSticky \{[\s\S]*?height: auto;[\s\S]*?overflow: hidden/);
+  assert.match(story, /@media \(prefers-reduced-motion: reduce\) and \(min-width: 901px\)[\s\S]*?\.heroBrandCopy \{[\s\S]*?opacity: 1;[\s\S]*?\.compactHeroActions \{[\s\S]*?display: flex/);
+  assert.match(story, /@media \(prefers-reduced-motion: reduce\) and \(min-width: 901px\)[\s\S]*?\.heroStory \.heroMedia\.heroSticky \{[\s\S]*?height: auto;[\s\S]*?overflow: hidden/);
   assert.doesNotMatch(story, /scroll-snap|overscroll-behavior/);
   assert.match(home, /@media \(forced-colors: active\)/);
 });
