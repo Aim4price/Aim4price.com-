@@ -225,17 +225,33 @@ export default function HomeHeroExperience() {
           return;
         }
 
+        const scrollInstantly = (operation: () => void) => {
+          const root = document.documentElement;
+          const previousInlineBehavior = root.style.scrollBehavior;
+          root.style.scrollBehavior = 'auto';
+
+          try {
+            operation();
+          } finally {
+            root.style.scrollBehavior = previousInlineBehavior;
+          }
+        };
+
         if (anchor.kind === 'role') {
           const roleSection = document.getElementById('choose-role');
           if (roleSection) {
             const delta = roleSection.getBoundingClientRect().top - anchor.viewportOffset;
             if (Math.abs(delta) > 1) {
-              window.scrollBy({ top: delta, left: 0, behavior: 'auto' });
+              scrollInstantly(() => {
+                window.scrollBy({ top: delta, left: 0, behavior: 'auto' });
+              });
             }
           }
         } else if (anchor.wasAtTop) {
           updateStoryStep(0);
-          window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+          scrollInstantly(() => {
+            window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+          });
         } else if (supportsStory) {
           updateStoryStep(anchor.step);
           const sectionTop = window.scrollY + section.getBoundingClientRect().top;
@@ -246,10 +262,12 @@ export default function HomeHeroExperience() {
           const stepProgress = (clampStoryIndex(anchor.step) + 0.5) /
             HERO_STORY_STEPS.length;
 
-          window.scrollTo({
-            top: trackStart + stepProgress * trackTravel,
-            left: 0,
-            behavior: 'auto',
+          scrollInstantly(() => {
+            window.scrollTo({
+              top: trackStart + stepProgress * trackTravel,
+              left: 0,
+              behavior: 'auto',
+            });
           });
         } else {
           updateStoryStep(anchor.step);
@@ -263,7 +281,9 @@ export default function HomeHeroExperience() {
           if (target) {
             const delta = target.getBoundingClientRect().top - anchor.viewportOffset;
             if (Math.abs(delta) > 1) {
-              window.scrollBy({ top: delta, left: 0, behavior: 'auto' });
+              scrollInstantly(() => {
+                window.scrollBy({ top: delta, left: 0, behavior: 'auto' });
+              });
             }
           }
         }
