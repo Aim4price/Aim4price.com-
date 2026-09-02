@@ -13,7 +13,7 @@ import HomeAssetPreview, { type QuestionKey } from './home-asset-preview';
 import styles from './page.module.css';
 
 const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
-const DESKTOP_STORY_QUERY = '(min-width: 901px) and (min-height: 640px)';
+const CINEMATIC_STORY_QUERY = '(min-width: 1181px) and (min-height: 640px)';
 const FEATURE_START_INDEX = 3;
 
 export const HERO_FEATURE_DURATION_MS = 4800;
@@ -90,7 +90,7 @@ export default function HomeHeroExperience() {
   const [isPaused, setIsPaused] = useState(false);
   const [isPageVisible, setIsPageVisible] = useState(true);
   const [isHeroVisible, setIsHeroVisible] = useState(true);
-  const [isDesktopStory, setIsDesktopStory] = useState(true);
+  const [isCinematicStory, setIsCinematicStory] = useState(false);
   const [isManuallyControlled, setIsManuallyControlled] = useState(false);
   const [hasAutoplayFinished, setHasAutoplayFinished] = useState(false);
 
@@ -132,12 +132,12 @@ export default function HomeHeroExperience() {
 
   useEffect(() => {
     const reducedMotionMedia = window.matchMedia(REDUCED_MOTION_QUERY);
-    const desktopStoryMedia = window.matchMedia(DESKTOP_STORY_QUERY);
+    const cinematicStoryMedia = window.matchMedia(CINEMATIC_STORY_QUERY);
 
     const syncStoryCapability = () => {
-      const supportsStory = desktopStoryMedia.matches && !reducedMotionMedia.matches;
+      const supportsStory = cinematicStoryMedia.matches && !reducedMotionMedia.matches;
       setCanAutoplay(supportsStory);
-      setIsDesktopStory(supportsStory);
+      setIsCinematicStory(supportsStory);
 
       if (!supportsStory) {
         setIsAutoplaying(false);
@@ -148,13 +148,39 @@ export default function HomeHeroExperience() {
 
     syncStoryCapability();
     reducedMotionMedia.addEventListener('change', syncStoryCapability);
-    desktopStoryMedia.addEventListener('change', syncStoryCapability);
+    cinematicStoryMedia.addEventListener('change', syncStoryCapability);
 
     return () => {
       reducedMotionMedia.removeEventListener('change', syncStoryCapability);
-      desktopStoryMedia.removeEventListener('change', syncStoryCapability);
+      cinematicStoryMedia.removeEventListener('change', syncStoryCapability);
     };
   }, [updateStoryStep]);
+
+  useEffect(() => {
+    const section = sectionRef.current;
+    const header = section?.previousElementSibling;
+    if (!section || !(header instanceof HTMLElement)) return undefined;
+
+    const syncHeaderHeight = () => {
+      section.style.setProperty(
+        '--home-header-height',
+        `${Math.ceil(header.getBoundingClientRect().height)}px`,
+      );
+    };
+
+    syncHeaderHeight();
+    window.addEventListener('resize', syncHeaderHeight);
+
+    const observer =
+      'ResizeObserver' in window ? new ResizeObserver(syncHeaderHeight) : null;
+    observer?.observe(header);
+
+    return () => {
+      observer?.disconnect();
+      window.removeEventListener('resize', syncHeaderHeight);
+      section.style.removeProperty('--home-header-height');
+    };
+  }, []);
 
   useEffect(() => {
     const syncVisibility = () => setIsPageVisible(!document.hidden);
@@ -219,7 +245,7 @@ export default function HomeHeroExperience() {
   ]);
 
   useEffect(() => {
-    if (!isDesktopStory) return undefined;
+    if (!isCinematicStory) return undefined;
 
     const scheduleStorySync = (claimControl: boolean) => {
       if (claimControl) autoplayFinishedRef.current = true;
@@ -289,22 +315,47 @@ export default function HomeHeroExperience() {
       }
       scrollClaimRef.current = false;
     };
-  }, [isDesktopStory, updateStoryStep]);
+  }, [isCinematicStory, updateStoryStep]);
 
   useEffect(() => {
     const storyGrid = storyGridRef.current;
     const assetMotion = assetMotionRef.current;
     if (!storyGrid || !assetMotion) return undefined;
 
+    if (!isCinematicStory) {
+      assetMotion.style.removeProperty('--asset-stage-shift-x');
+      return undefined;
+    }
+
+    let frame: number | null = null;
+
     const measureAssetShift = () => {
       assetMotion.style.setProperty('--asset-stage-shift-x', `${-assetMotion.offsetLeft}px`);
     };
 
-    measureAssetShift();
-    window.addEventListener('resize', measureAssetShift);
+    const scheduleMeasurement = () => {
+      if (frame !== null) window.cancelAnimationFrame(frame);
+      frame = window.requestAnimationFrame(() => {
+        frame = null;
+        measureAssetShift();
+      });
+    };
 
-    return () => window.removeEventListener('resize', measureAssetShift);
-  }, [isDesktopStory, storyStepIndex]);
+    scheduleMeasurement();
+    window.addEventListener('resize', scheduleMeasurement);
+
+    const observer =
+      'ResizeObserver' in window ? new ResizeObserver(scheduleMeasurement) : null;
+    observer?.observe(storyGrid);
+    observer?.observe(assetMotion);
+
+    return () => {
+      observer?.disconnect();
+      window.removeEventListener('resize', scheduleMeasurement);
+      if (frame !== null) window.cancelAnimationFrame(frame);
+      assetMotion.style.removeProperty('--asset-stage-shift-x');
+    };
+  }, [isCinematicStory]);
 
   const handleQuestionChange = (question: QuestionKey, index: number) => {
     claimManualControl();
@@ -338,6 +389,7 @@ export default function HomeHeroExperience() {
       aria-labelledby="home-hero-title"
       data-story-step={storyStep}
       data-story-mode={storyMode}
+      data-story-capability={isCinematicStory ? 'cinematic' : 'static'}
       data-active-question={activeQuestion}
       data-autoplay={
         isAutoplaying && storyStepIndex >= FEATURE_START_INDEX ? 'true' : 'false'
@@ -460,7 +512,7 @@ export default function HomeHeroExperience() {
                 </Link>
               </div>
 
-              {isDesktopStory &&
+              {isCinematicStory &&
                 !isManuallyControlled &&
                 !hasAutoplayFinished ? (
                 <button
