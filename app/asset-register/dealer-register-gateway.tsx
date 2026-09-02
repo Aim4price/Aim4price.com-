@@ -37,7 +37,7 @@ export default function DealerRegisterGateway({
 
   return (
     <main className={valuationStyles.page}>
-      {showAppHeader ? <AppHeader active="asset-register" /> : null}
+      {showAppHeader ? <AppHeader active="asset-register" brandAlignment="working-column" /> : null}
 
       <div className={`${valuationStyles.container} ${entryStyles.entryContainer}`}>
         <section className={`${valuationStyles.wizardShell} ${valuationStyles.sectorWizardShell} ${entryStyles.entryShell}`}>
