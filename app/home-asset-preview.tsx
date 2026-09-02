@@ -132,14 +132,14 @@ export default function HomeAssetPreview({
     <div
       className={styles.assetHeroStage}
       data-active-question={activeQuestion}
+      onPointerEnter={() => onInteraction?.('pointer-enter')}
+      onPointerLeave={() => onInteraction?.('pointer-leave')}
+      onFocusCapture={() => onInteraction?.('focus')}
     >
       <div
         className={styles.assetQuestionGroup}
         role="tablist"
         aria-label="Explore the Aim4price asset record"
-        onPointerEnter={() => onInteraction?.('pointer-enter')}
-        onPointerLeave={() => onInteraction?.('pointer-leave')}
-        onFocusCapture={() => onInteraction?.('focus')}
       >
         {QUESTIONS.map((question, index) => {
           const isActive = question.key === activeQuestion;
@@ -179,9 +179,6 @@ export default function HomeAssetPreview({
         tabIndex={0}
         className={styles.assetPreviewCard}
         data-active-question={activeQuestion}
-        onPointerEnter={() => onInteraction?.('pointer-enter')}
-        onPointerLeave={() => onInteraction?.('pointer-leave')}
-        onFocusCapture={() => onInteraction?.('focus')}
       >
         <div key={activeQuestion} className={styles.assetPreviewState}>
           <PreviewContent activeQuestion={activeQuestion} />
