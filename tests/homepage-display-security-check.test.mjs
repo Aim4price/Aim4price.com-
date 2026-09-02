@@ -41,8 +41,8 @@ test('the display check applies one numeric whole-page scale instead of style pr
   ]);
 
   assert.match(check, /STANDARD_CANVAS_WIDTH = 1360/);
-  assert.match(check, /MIN_SITE_SCALE = 0\.15/);
-  assert.match(check, /MAX_SITE_SCALE = 1\.15/);
+  assert.match(check, /MIN_SITE_SCALE = 0\.1/);
+  assert.match(check, /MAX_SITE_SCALE = 1\.5/);
   assert.match(check, /SITE_SCALE_STEP = 0\.05/);
   assert.match(check, /getRecommendedScale/);
   assert.match(check, /setSiteScale\(\(current\) =>[\s\S]*?direction \* SITE_SCALE_STEP/);
