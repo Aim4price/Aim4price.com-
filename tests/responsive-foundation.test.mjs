@@ -53,25 +53,13 @@ test('header has deterministic desktop, tablet and true-mobile navigation states
   assert.match(headerClient, /mobileMenuAuthLinkPrimary[\s\S]*?\{ctaLabel\}/);
   assert.match(header, /\.navWindowButton \{[\s\S]*?min-width: var\(--tap-target-min, 44px\)/);
 
-  const chosenCompactStart = header.indexOf(
-    '/* The homepage keeps the #543 header by default.',
-  );
-  assert.ok(chosenCompactStart >= 0);
-  const chosenCompact = header.slice(chosenCompactStart);
-
   assert.match(headerClient, /<header className=\{styles\.header\}>/);
   assert.doesNotMatch(headerClient, /homeDensity/);
   assert.doesNotMatch(header, /Homepage-only compact laptop density contract|\.homeDensity/);
-  assert.match(chosenCompact, /@media \(min-width: 1181px\) and \(min-height: 640px\)/);
-  assert.match(chosenCompact, /:global\(\[data-home-display-size='compact'\]\) \.inner \{[\s\S]*?width: min\(calc\(100% - 2\.25rem\), 1280px\);[\s\S]*?min-height: 5\.15rem;[\s\S]*?grid-template-columns: minmax\(12rem, 1fr\) auto minmax\(12rem, 1fr\)/);
-  assert.match(chosenCompact, /:global\(\[data-home-display-size='compact'\]\) \.headerBrandLogo \{[\s\S]*?width: clamp\(3\.8rem, 4vw, 4\.25rem\)/);
-  assert.match(chosenCompact, /:global\(\[data-home-display-size='compact'\]\) \.navRail,[\s\S]*?:global\(\[data-home-display-size='compact'\]\) \.actionsRail \{[\s\S]*?gap: 0\.32rem;[\s\S]*?padding: 0\.3rem/);
-  assert.match(chosenCompact, /:global\(\[data-home-display-size='compact'\]\) \.navLink \{[\s\S]*?min-width: clamp\(5\.9rem, 6\.4vw, 7\.25rem\);[\s\S]*?min-height: var\(--tap-target-min, 44px\);[\s\S]*?font-size: 0\.92rem/);
-  assert.match(chosenCompact, /:global\(\[data-home-display-size='compact'\]\) \.signupButton,[\s\S]*?:global\(\[data-home-display-size='compact'\]\) \.notificationButton \{[\s\S]*?min-height: var\(--tap-target-min, 44px\)/);
-  assert.match(chosenCompact, /:global\(\[data-home-display-size='compact'\]\) \.accountMenu \{[\s\S]*?width: 11\.25rem;[\s\S]*?flex-basis: 11\.25rem/);
-  assert.doesNotMatch(chosenCompact, /\bzoom\s*:/);
-  assert.doesNotMatch(chosenCompact, /transform:\s*scale\(0\./);
-  assert.doesNotMatch(chosenCompact, /display:\s*none/);
+  assert.match(header, /Homepage display fitting is intentionally scoped to the hero/);
+  assert.doesNotMatch(header, /data-home-display-size/);
+  assert.match(header, /\.inner \{[\s\S]*?width: min\(calc\(100% - 3rem\), 1360px\);[\s\S]*?min-height: 5\.75rem/);
+  assert.match(header, /\.headerBrandLogo \{[\s\S]*?width: clamp\(4\.25rem, 4\.6vw, 4\.8rem\)/);
   assert.doesNotMatch(header, /max-width: 1599px|max-height: 899px/);
 });
 
