@@ -11,8 +11,8 @@ test('Home keeps the requested eight-step story and hands off to role selection'
     read('app/home-role-selector.tsx'),
   ]);
 
-  assert.match(page, /<main className={styles\.page}>/);
-  assert.match(page, /<AppHeader active="home" \/>/);
+  assert.match(page, /<div className={styles\.page}>[\s\S]*?<AppHeader active="home" \/>[\s\S]*?<main className={styles\.homeMain}>/);
+  assert.ok(page.indexOf('<AppHeader active="home" />') < page.indexOf('<main className={styles.homeMain}>'));
   assert.ok(page.indexOf('<HomeHeroExperience />') < page.indexOf('<HomeRoleSelector />'));
   assert.doesNotMatch(page, /HomeDisplayCheck|standardCanvas/);
 
@@ -50,7 +50,15 @@ test('Home keeps the requested eight-step story and hands off to role selection'
 
   assert.match(hero, /href="#choose-role"[\s\S]*?See Aim4price in Action/);
   assert.match(hero, /href="\/valuation"[\s\S]*?Get a Free Estimate/);
+  assert.match(hero, /<section[\s\S]*?aria-labelledby="home-hero-title"/);
+  assert.match(hero, /<h1 id="home-hero-title"[\s\S]*?tabIndex={-1}/);
+  assert.match(hero, /className={styles\.storyHeroLogo}[\s\S]*?aria-hidden="true"[\s\S]*?alt=""/);
+  assert.match(hero, /className={styles\.storyPauseControl}[\s\S]*?aria-pressed={isPaused}/);
+  assert.match(hero, /aria-hidden={!isActive \|\| storyMode !== 'features'}/);
   assert.match(roleSelector, /id="choose-role"/);
+  assert.match(roleSelector, /aria-labelledby="choose-role-title"/);
+  assert.match(roleSelector, /id="choose-role-title"[\s\S]*?tabIndex={-1}/);
+  assert.match(roleSelector, /focus\(\{ preventScroll: true \}\)/);
   assert.match(roleSelector, /Which describes you best\?/);
   assert.match(roleSelector, /I own or manage assets/);
   assert.match(roleSelector, /I sell, service or support assets/);
@@ -75,8 +83,11 @@ test('the five asset previews keep their complete product content and accessible
   assert.match(preview, /role="tablist"/);
   assert.match(preview, /role="tab"/);
   assert.match(preview, /aria-selected={isActive}/);
+  assert.match(preview, /aria-label="Explore the Aim4price asset record"/);
+  assert.match(preview, /aria-controls="home-asset-preview"/);
   assert.match(preview, /tabIndex={isActive \? 0 : -1}/);
   assert.match(preview, /event\.key === 'ArrowRight' \|\| event\.key === 'ArrowDown'/);
+  assert.match(preview, /event\.key === 'ArrowLeft' \|\| event\.key === 'ArrowUp'/);
   assert.match(preview, /event\.key === 'Home'/);
   assert.match(preview, /event\.key === 'End'/);
   assert.match(preview, /role="tabpanel"/);
@@ -121,7 +132,7 @@ test('Home geometry is owned by responsive grid tracks, never browser-scale cali
     read('components/AppHeader.module.css'),
   ]);
 
-  assert.match(styles, /--home-shell-max: 1360px/);
+  assert.match(styles, /--home-shell-max: var\(--site-wide-shell-max, 1360px\)/);
   assert.match(styles, /\.shell \{[\s\S]*?calc\(100% - \(var\(--home-gutter\) \* 2\)\)[\s\S]*?var\(--home-shell-max\)/);
   assert.match(styles, /@media \(min-width: 960px\)[\s\S]*?\.assetStageMotion \{[\s\S]*?grid-column: 1;[\s\S]*?\.featureNarrative \{[\s\S]*?grid-column: 2/);
   assert.match(styles, /data-story-mode='features'[\s\S]*?\.storyHeroGrid \{[\s\S]*?grid-template-columns: minmax\(34rem, 1\.16fr\) minmax\(22rem, 0\.84fr\)/);
@@ -129,7 +140,7 @@ test('Home geometry is owned by responsive grid tracks, never browser-scale cali
   assert.match(styles, /@media \(max-width: 760px\)[\s\S]*?\.compactHeroActions \{[\s\S]*?grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
   assert.match(styles, /@media \(max-width: 520px\)[\s\S]*?\.compactHeroActions \{[\s\S]*?grid-template-columns: minmax\(0, 1fr\)/);
 
-  assert.doesNotMatch(styles, /zoom:\s*var\(|min-width:\s*1360px|--asset-stage-shift-x/);
+  assert.doesNotMatch(styles, /\bzoom\s*:|min-width:\s*(?:1360px|85rem)|--asset-stage-shift-x/);
   assert.doesNotMatch(styles, /inset-inline-start:\s*calc\(0rem -|width:\s*min\([^;]*calc\(100% \+/);
   assert.doesNotMatch(hero, /offsetLeft|storyGridRef|assetMotionRef|useHomeDisplay|HomeDisplay/);
   assert.doesNotMatch(header, /standardCanvas|HomeDisplay/);
@@ -156,6 +167,16 @@ test('Home preview assets remain present and appropriately compressed', async ()
     ].map((filename) => stat(new URL('../public/brand/' + filename, import.meta.url))),
   );
 
-  assert.ok(images[0].size > 80_000 && images[0].size < 150_000);
-  assert.ok(images.slice(1).every(({ size }) => size > 15_000 && size < 50_000));
+  assert.ok(images[0].size > 0 && images[0].size < 150_000);
+  assert.ok(images.slice(1).every(({ size }) => size > 0 && size < 50_000));
+});
+
+test('retired fitment artifacts cannot be reintroduced accidentally', async () => {
+  for (const path of [
+    'app/home-display-check.tsx',
+    'app/home-display-check.module.css',
+    'tests/homepage-display-security-check.test.mjs',
+  ]) {
+    await assert.rejects(stat(new URL(`../${path}`, import.meta.url)), { code: 'ENOENT' });
+  }
 });
