@@ -93,8 +93,7 @@ test('the five asset previews keep their complete product content and accessible
   assert.match(preview, /event\.key === 'End'/);
   assert.match(preview, /role="tabpanel"/);
   assert.match(preview, /role="status"[\s\S]*?aria-live="polite"/);
-  assert.match(preview, /onPointerEnter=\{\(\) => onInteraction\?\.\('pointer-enter'\)\}/);
-  assert.match(preview, /onPointerLeave=\{\(\) => onInteraction\?\.\('pointer-leave'\)\}/);
+  assert.match(preview, /className={styles\.assetHeroStage}[\s\S]*?onPointerEnter=\{\(\) => onInteraction\?\.\('pointer-enter'\)\}[\s\S]*?onPointerLeave=\{\(\) => onInteraction\?\.\('pointer-leave'\)\}/);
 
   assert.match(preview, /2023 Toyota Hilux Single Cab/);
   assert.match(preview, /R 237 150/);
@@ -141,7 +140,8 @@ test('Home geometry is owned by responsive grid tracks, never browser-scale cali
   assert.match(styles, /@media \(min-width: 960px\)[\s\S]*?\.assetStageMotion \{[\s\S]*?grid-column: 1;[\s\S]*?\.featureNarrative \{[\s\S]*?grid-column: 2/);
   assert.match(styles, /data-story-mode='features'[\s\S]*?\.storyHeroGrid \{[\s\S]*?grid-template-columns: minmax\(34rem, 1\.16fr\) minmax\(22rem, 0\.84fr\)/);
   assert.match(styles, /data-story-capability='cinematic'[\s\S]*?\.assetStageMotion \{[\s\S]*?grid-column: 1 \/ -1/);
-  assert.match(styles, /data-story-mode='preview'[\s\S]*?\.assetHeroStage \{[\s\S]*?left: calc\(100% - min\(55%, 49\.5rem\)\)/);
+  assert.match(styles, /data-story-capability='cinematic'[\s\S]*?\.assetHeroStage \{[\s\S]*?left: calc\(100% - min\(55%, 49\.5rem\)\)[\s\S]*?transition: left 900ms/);
+  assert.match(styles, /data-story-mode='features'[\s\S]*?\.assetHeroStage \{[\s\S]*?left: 0/);
   assert.match(styles, /@media \(max-width: 760px\)[\s\S]*?\.compactHeroActions \{[\s\S]*?grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
   assert.match(styles, /@media \(max-width: 520px\)[\s\S]*?\.compactHeroActions \{[\s\S]*?grid-template-columns: minmax\(0, 1fr\)/);
 
@@ -149,6 +149,9 @@ test('Home geometry is owned by responsive grid tracks, never browser-scale cali
   assert.doesNotMatch(styles, /inset-inline-start:\s*calc\(0rem -|width:\s*min\([^;]*calc\(100% \+/);
   assert.doesNotMatch(hero, /offsetLeft|storyGridRef|assetMotionRef|useHomeDisplay|HomeDisplay/);
   assert.doesNotMatch(hero, /previousElementSibling|ResizeObserver/);
+  assert.match(hero, /data-story-opening/);
+  assert.match(hero, /data-story-preview/);
+  assert.match(hero, /data-story-narrative/);
   assert.doesNotMatch(header, /standardCanvas|HomeDisplay/);
   assert.doesNotMatch(header, /brandAlignment|brandWorkingColumn/);
   assert.doesNotMatch(headerStyles, /headerStandardCanvas|standardCanvas|brandWorkingColumn/);
