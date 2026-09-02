@@ -574,7 +574,7 @@ export default function HomeDisplayCheck({ children }: { children: ReactNode }) 
           ref={contentRef}
           className={styles.homeContent}
           data-display-ready={isDisplayReady ? 'true' : 'false'}
-          aria-hidden={!isDisplayReady ? 'true' : undefined}
+          aria-hidden={isMounted && !isDisplayReady ? 'true' : undefined}
         >
           {children}
         </div>
