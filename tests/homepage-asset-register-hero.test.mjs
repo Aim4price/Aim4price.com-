@@ -12,7 +12,7 @@ test('Home keeps the requested eight-step story and hands off to role selection'
   ]);
 
   assert.match(page, /<main className={styles\.page}>/);
-  assert.match(page, /<AppHeader active="home" brandAlignment="working-column" \/>/);
+  assert.match(page, /<AppHeader active="home" \/>/);
   assert.ok(page.indexOf('<HomeHeroExperience />') < page.indexOf('<HomeRoleSelector />'));
   assert.doesNotMatch(page, /HomeDisplayCheck|standardCanvas/);
 
@@ -133,7 +133,8 @@ test('Home geometry is owned by responsive grid tracks, never browser-scale cali
   assert.doesNotMatch(styles, /inset-inline-start:\s*calc\(0rem -|width:\s*min\([^;]*calc\(100% \+/);
   assert.doesNotMatch(hero, /offsetLeft|storyGridRef|assetMotionRef|useHomeDisplay|HomeDisplay/);
   assert.doesNotMatch(header, /standardCanvas|HomeDisplay/);
-  assert.doesNotMatch(headerStyles, /headerStandardCanvas|standardCanvas/);
+  assert.doesNotMatch(header, /brandAlignment|brandWorkingColumn/);
+  assert.doesNotMatch(headerStyles, /headerStandardCanvas|standardCanvas|brandWorkingColumn/);
 
   assert.match(hero, /\(min-width: 1181px\) and \(min-height: 700px\) and \(hover: hover\) and \(pointer: fine\)/);
   assert.match(styles, /@media \(min-width: 1181px\) and \(min-height: 700px\) and \(hover: hover\) and \(pointer: fine\)/);
