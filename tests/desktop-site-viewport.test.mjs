@@ -72,7 +72,8 @@ test('the Home hero keeps the #543 desktop composition unless compact is explici
   assert.match(storyStyles, /\.heroStory \.heroMedia \.shell \{[\s\S]*?width: min\(calc\(100% - 3rem\), 1360px\)/);
   assert.match(storyStyles, /\.storyHeroGrid \{[\s\S]*?grid-template-columns: minmax\(31rem, 1fr\) minmax\(39rem, 49\.5rem\)/);
   assert.match(storyStyles, /\.page\[data-home-display-size='compact'\] \.storyHeroGrid \{[\s\S]*?grid-template-columns: minmax\(26rem, 1fr\) minmax\(32rem, 40rem\)/);
-  assert.match(headerSource, /:global\(\[data-home-display-size='compact'\]\) \.inner \{[\s\S]*?width: min\(calc\(100% - 2\.25rem\), 1280px\)/);
+  assert.doesNotMatch(headerSource, /data-home-display-size/);
+  assert.match(headerSource, /\.inner \{[\s\S]*?width: min\(calc\(100% - 3rem\), 1360px\);[\s\S]*?min-height: 5\.75rem/);
   assert.match(headerClientSource, /<header className=\{styles\.header\}>/);
   assert.doesNotMatch(storyStyles, /Compact laptop density contract, September 2026[\s\S]*?max-width: 1599px[\s\S]*?max-height: 899px/);
   assert.doesNotMatch(headerSource, /Homepage-only compact laptop density contract|\.homeDensity/);
