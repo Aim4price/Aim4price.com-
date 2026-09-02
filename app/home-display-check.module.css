@@ -6,10 +6,12 @@
   display: contents;
 }
 
-.homeContent[data-display-ready='false'] {
-  visibility: hidden;
-  pointer-events: none;
-  user-select: none;
+@media (min-width: 1181px) and (min-height: 640px) and (hover: hover) and (pointer: fine) {
+  .homeContent[data-display-ready='false'] {
+    visibility: hidden;
+    pointer-events: none;
+    user-select: none;
+  }
 }
 
 .backdrop {
