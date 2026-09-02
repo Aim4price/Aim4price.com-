@@ -65,9 +65,10 @@ test('website sign-out stays separate from installable app sessions and verifies
 });
 
 test('home page keeps the feature-led Asset Register hero usable at desktop, tablet and phone widths', async () => {
-  const [home, hero] = await Promise.all([
+  const [home, hero, headerClient] = await Promise.all([
     read('app/page.module.css'),
     read('app/home-hero-experience.tsx'),
+    read('components/AppHeader.tsx'),
   ]);
   const featureStart = home.indexOf(
     '/* === Feature-led living record homepage hero, September 2026 === */',
@@ -78,8 +79,14 @@ test('home page keeps the feature-led Asset Register hero usable at desktop, tab
   assert.match(home, /Living Asset Record homepage hero, September 2026/);
   assert.match(hero, /HERO_STAGES: readonly QuestionKey\[\]/);
   assert.match(hero, /HERO_AUTOPLAY_DELAY_MS = 2500/);
+  assert.match(hero, /HERO_AUTOPLAY_AFTER_INTRO_MS = 700/);
   assert.match(hero, /HERO_STAGE_DURATION_MS = 2800/);
+  assert.match(hero, /HOME_INTRO_HOLD_MS = 1650/);
+  assert.match(hero, /HOME_INTRO_EXIT_MS = 700/);
   assert.match(hero, /window\.matchMedia\(REDUCED_MOTION_QUERY\)/);
+  assert.match(hero, /Every asset\.[\s\S]*?One living record\./);
+  assert.match(hero, /Know what it really costs\./);
+  assert.match(headerClient, /data-aim4price-header-mark/);
   assert.match(hero, /href="#choose-role" className=\{styles\.primaryCta\}/);
   assert.doesNotMatch(hero, /heroAudienceCta|heroSectors/);
   assert.doesNotMatch(hero, /heroPlatformLabel|One living record per asset|record—/);
@@ -87,20 +94,26 @@ test('home page keeps the feature-led Asset Register hero usable at desktop, tab
   assert.doesNotMatch(hero, /DESKTOP_STORY_QUERY|IntersectionObserver|scrollIntoView|heroScrollTrack/);
 
   assert.match(feature, /\.heroStory \{[\s\S]*?min-height: 0/);
+  assert.match(feature, /\.homeIntro \{[\s\S]*?position: fixed;[\s\S]*?100dvh/);
+  assert.match(feature, /\.homeIntro\[data-phase='exiting'\] \.homeIntroCurtain \{[\s\S]*?translate3d\(0, -100%, 0\)/);
+  assert.match(feature, /\.heroSection\[data-intro-phase='visible'\] \.heroGrid \{[\s\S]*?opacity: 0/);
   assert.match(feature, /\.heroSticky \{[\s\S]*?position: relative;[\s\S]*?height: auto/);
   assert.doesNotMatch(feature, /position: sticky|340svh|scroll-snap/);
   assert.match(feature, /\.heroStory \.heroMedia \.shell \{[\s\S]*?width: min\(calc\(100% - 3rem\), 100rem\)/);
   assert.match(feature, /\.heroStory \.heroGrid \{[\s\S]*?grid-template-columns: minmax\(31rem, 37rem\) minmax\(39rem, 49\.5rem\)/);
   assert.match(feature, /\.heroStory \.heroCopy \{[\s\S]*?clamp\(0px, calc\(\(100vw - 1288px\) \/ 2\), 180px\)[\s\S]*?-1\.75rem/);
+  assert.match(feature, /@media \(min-width: 1361px\)[\s\S]*?\.heroStory \.heroTitleLine:last-child \{[\s\S]*?font-size: 0\.9em;[\s\S]*?scaleX\(0\.93\)/);
   assert.doesNotMatch(feature, /\.heroPlatformLabel|\.assetPlaybackControl|\.assetStoryControls/);
   assert.match(feature, /\.heroStory \.assetActiveQuestion \{[\s\S]*?top: -4\.25rem/);
   assert.match(feature, /@media \(min-width: 1361px\) and \(max-width: 1479px\)[\s\S]*?\.heroStory \.assetPreviewActions \{[\s\S]*?display: grid/);
 
   assert.match(feature, /@media \(min-width: 1181px\) and \(max-width: 1240px\)[\s\S]*?\.heroStory \.heroCopy \{[\s\S]*?transform: translate\(8px, -1\.75rem\)/);
   assert.match(feature, /@media \(min-width: 1181px\) and \(max-width: 1360px\)[\s\S]*?\.heroStory \.heroGrid \{[\s\S]*?grid-template-columns: minmax\(27rem, 31rem\) minmax\(34rem, 44rem\)/);
+  assert.match(feature, /@media \(min-width: 1181px\) and \(max-width: 1360px\)[\s\S]*?\.heroStory \.heroTitleLine:last-child \{[\s\S]*?font-size: 0\.84em;[\s\S]*?scaleX\(0\.88\)/);
   assert.match(feature, /@media \(max-width: 1180px\)[\s\S]*?\.heroStory \.heroMedia \{[\s\S]*?min-height: 0/);
   assert.match(feature, /@media \(max-width: 1180px\)[\s\S]*?\.heroStory \.heroGrid \{[\s\S]*?grid-template-columns: minmax\(0, 1fr\)[\s\S]*?\.heroStory \.heroCopy \{[\s\S]*?transform: none/);
   assert.match(feature, /@media \(max-width: 760px\)[\s\S]*?\.heroStory \.heroActions \{[\s\S]*?grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
+  assert.match(feature, /@media \(max-width: 760px\)[\s\S]*?\.homeIntroTitle \{[\s\S]*?12vw/);
   assert.match(feature, /@media \(max-width: 760px\)[\s\S]*?\.heroStory \.assetQuestionGroup \{[\s\S]*?grid-template-columns: repeat\(5, minmax\(0, 1fr\)\)/);
   assert.match(feature, /@media \(max-width: 760px\)[\s\S]*?\.heroStory \.assetPreviewCard \{[\s\S]*?position: relative;[\s\S]*?order: 1/);
   assert.match(feature, /@media \(max-width: 760px\)[\s\S]*?\.heroStory \.assetPreviewCard \{[\s\S]*?height: clamp\(22rem, 64vw, 28rem\)/);
@@ -113,6 +126,8 @@ test('home page keeps the feature-led Asset Register hero usable at desktop, tab
   assert.match(home, /\.primaryCta,[\s\S]*?\.secondaryCta \{[\s\S]*?min-height: 3\.2rem/);
   assert.match(feature, /@keyframes heroPreviewReveal/);
   assert.match(feature, /@keyframes heroProgressFill/);
+  assert.match(feature, /@keyframes homeIntroLogoReveal/);
+  assert.match(feature, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.homeIntro \{[\s\S]*?display: none/);
   assert.match(feature, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?animation: none/);
   assert.match(home, /@media \(forced-colors: active\)/);
 });
