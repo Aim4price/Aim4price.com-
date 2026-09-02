@@ -61,7 +61,7 @@ const QUESTIONS: readonly Question[] = [
   },
   {
     key: 'cost',
-    label: 'Know what it costs',
+    label: 'Know what it really costs',
     icon: (
       <>
         <circle cx="12" cy="12" r="8.2" />
