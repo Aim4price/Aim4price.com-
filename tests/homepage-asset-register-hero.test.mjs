@@ -431,6 +431,7 @@ test('homepage plays one slower timed tour, returns to its brand frame, then fol
   assert.match(compactStoryStyles, /\.heroBrandCopy \{[\s\S]*?opacity: 1;[\s\S]*?filter: none/);
   assert.match(compactStoryStyles, /\.heroPromiseCopy \{[\s\S]*?display: none/);
   assert.match(compactStoryStyles, /\.storyHeroLogo \{[\s\S]*?order: 2;[\s\S]*?opacity: 1;[\s\S]*?filter: none/);
+  assert.match(compactStoryStyles, /\.storyHeroLogo::before,[\s\S]*?\.storyHeroLogo::after \{[\s\S]*?display: none/);
   assert.match(compactStoryStyles, /\.assetStageMotion \{[\s\S]*?order: 3;[\s\S]*?opacity: 1;[\s\S]*?transform: none !important/);
   assert.match(compactStoryStyles, /\.featureNarrative \{[\s\S]*?order: 4;[\s\S]*?opacity: 1;[\s\S]*?filter: none/);
   assert.match(compactStoryStyles, /\.compactHeroActions \{[\s\S]*?display: flex;[\s\S]*?order: 5/);
@@ -447,6 +448,7 @@ test('homepage plays one slower timed tour, returns to its brand frame, then fol
   assert.match(reducedMotionStyles, /\.storyCopyLayer,[\s\S]*?\.storyPauseControl \{[\s\S]*?animation: none !important;[\s\S]*?transition: none !important/);
   assert.match(reducedMotionStyles, /\.storyCopyLayer,[\s\S]*?\.featureNarrativeLayer \{[\s\S]*?filter: none !important/);
   assert.match(storyHeroStyles, /@media \(prefers-reduced-motion: reduce\) and \(min-width: 1181px\)[\s\S]*?\.heroBrandCopy \{[\s\S]*?opacity: 1;[\s\S]*?\.storyHeroLogo \{[\s\S]*?opacity: 1;[\s\S]*?\.assetStageMotion \{[\s\S]*?transform: none !important;[\s\S]*?\.compactHeroActions \{[\s\S]*?display: flex/);
+  assert.match(storyHeroStyles, /@media \(prefers-reduced-motion: reduce\) and \(min-width: 1181px\)[\s\S]*?\.storyHeroLogo::before,[\s\S]*?\.storyHeroLogo::after \{[\s\S]*?display: none/);
   assert.match(storyHeroStyles, /@media \(prefers-reduced-motion: reduce\) and \(min-width: 1181px\)[\s\S]*?\.heroStory \.heroMedia\.heroSticky \{[\s\S]*?height: auto;[\s\S]*?overflow: hidden/);
   assert.match(storyHeroStyles, /@media \(forced-colors: active\)[\s\S]*?\.storyPauseControl,[\s\S]*?border: 1px solid CanvasText/);
 });
