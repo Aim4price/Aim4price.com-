@@ -10,6 +10,7 @@ import {
   type FocusEvent,
 } from 'react';
 import HomeAssetPreview, { type QuestionKey } from './home-asset-preview';
+import { useHomeDisplayReady } from './home-display-check';
 import styles from './page.module.css';
 
 const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
@@ -83,6 +84,7 @@ const clampStoryIndex = (index: number) =>
   Math.max(0, Math.min(HERO_STORY_STEPS.length - 1, index));
 
 export default function HomeHeroExperience() {
+  const isHomeDisplayReady = useHomeDisplayReady();
   const [storyStepIndex, setStoryStepIndex] = useState(0);
   const [activeQuestion, setActiveQuestion] = useState<QuestionKey>('have');
   const [canAutoplay, setCanAutoplay] = useState(false);
@@ -207,6 +209,7 @@ export default function HomeHeroExperience() {
   useEffect(() => {
     if (
       !canAutoplay ||
+      !isHomeDisplayReady ||
       !isPageVisible ||
       !isHeroVisible ||
       isPaused ||
@@ -236,6 +239,7 @@ export default function HomeHeroExperience() {
     canAutoplay,
     finishAutoplay,
     hasAutoplayFinished,
+    isHomeDisplayReady,
     isManuallyControlled,
     isHeroVisible,
     isPageVisible,
@@ -245,7 +249,7 @@ export default function HomeHeroExperience() {
   ]);
 
   useEffect(() => {
-    if (!isCinematicStory) return undefined;
+    if (!isCinematicStory || !isHomeDisplayReady) return undefined;
 
     const scheduleStorySync = (claimControl: boolean) => {
       if (claimControl) autoplayFinishedRef.current = true;
@@ -315,7 +319,7 @@ export default function HomeHeroExperience() {
       }
       scrollClaimRef.current = false;
     };
-  }, [isCinematicStory, updateStoryStep]);
+  }, [isCinematicStory, isHomeDisplayReady, updateStoryStep]);
 
   useEffect(() => {
     const storyGrid = storyGridRef.current;
@@ -395,7 +399,7 @@ export default function HomeHeroExperience() {
         isAutoplaying && storyStepIndex >= FEATURE_START_INDEX ? 'true' : 'false'
       }
     >
-      <h1 id="home-hero-title" className={styles.heroA11yTitle}>
+      <h1 id="home-hero-title" className={styles.heroA11yTitle} tabIndex={-1}>
         Aim4price.com asset management software built for South Africa
       </h1>
 
