@@ -36,7 +36,6 @@ export const HERO_STORY_STEPS = [
 type StoryStep = (typeof HERO_STORY_STEPS)[number];
 
 type FeatureStory = {
-  eyebrow: string;
   title: string;
   body: string;
 };
@@ -54,31 +53,26 @@ const STORY_DURATIONS: Readonly<Record<StoryStep, number>> = {
 
 const FEATURE_STORIES: Readonly<Record<QuestionKey, FeatureStory>> = {
   have: {
-    eyebrow: 'Know what you have',
     title: 'One complete record for every asset.',
     body:
       'Keep its identity, serial or VIN, specifications, photos, documents, condition and last-known location together, so you always know what belongs where.',
   },
   worth: {
-    eyebrow: 'Know what it’s worth',
     title: 'Understand what it’s worth.',
     body:
       'Create an indicative estimate from year, usage, condition and replacement context, then keep valuation changes and depreciation history visible.',
   },
   cost: {
-    eyebrow: 'Know what it really costs',
     title: 'See what it really costs.',
     body:
       'Connect invoices, repairs, parts, fuel and recurring commitments to the asset that caused them, with budgets and supporting evidence.',
   },
   manage: {
-    eyebrow: 'Manage its working life',
     title: 'Manage its entire working life.',
     body:
       'Update details, plan maintenance, capture work and usage, organise documents and carry the same record through listing, disposal or transfer.',
   },
   attention: {
-    eyebrow: 'See what needs attention',
     title: 'Bring the next action forward.',
     body:
       'Surface overdue maintenance, licence and document dates, budget pressure and reported problems before important work is missed.',
@@ -430,7 +424,7 @@ export default function HomeHeroExperience() {
                 className={styles.featureNarrative}
                 aria-label="What Aim4price helps you do"
               >
-                {HERO_STAGES.map((question, index) => {
+                {HERO_STAGES.map((question) => {
                   const feature = FEATURE_STORIES[question];
                   const isActive = question === activeQuestion;
 
@@ -441,10 +435,6 @@ export default function HomeHeroExperience() {
                       data-active={isActive ? 'true' : 'false'}
                       aria-hidden={!isActive || storyMode !== 'features'}
                     >
-                      <p className={styles.featureNarrativeEyebrow}>
-                        <span>{String(index + 1).padStart(2, '0')}</span>
-                        {feature.eyebrow}
-                      </p>
                       <h2>{feature.title}</h2>
                       <p>{feature.body}</p>
                     </div>
