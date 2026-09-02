@@ -3,6 +3,7 @@ import AppHeader from '../components/AppHeader';
 import HomeHeroExperience from './home-hero-experience';
 import HomeRoleSelector from './home-role-selector';
 import styles from './page.module.css';
+import './home-wide-static.css';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
