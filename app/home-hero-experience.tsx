@@ -19,7 +19,7 @@ export const HERO_STAGES: readonly QuestionKey[] = [
 
 export default function HomeHeroExperience() {
   const [activeQuestion, setActiveQuestion] = useState<QuestionKey>('have');
-  const [canAutoplay, setCanAutoplay] = useState(false);
+  const [canAutoplay, setCanAutoplay] = useState(true);
   const [isAutoplaying, setIsAutoplaying] = useState(false);
   const [playbackId, setPlaybackId] = useState(0);
   const hasAutoStarted = useRef(false);
@@ -55,6 +55,19 @@ export default function HomeHeroExperience() {
   }, [canAutoplay]);
 
   useEffect(() => {
+    const pauseWhenHidden = () => {
+      if (!document.hidden) return;
+
+      hasAutoStarted.current = true;
+      setIsAutoplaying(false);
+    };
+
+    document.addEventListener('visibilitychange', pauseWhenHidden);
+
+    return () => document.removeEventListener('visibilitychange', pauseWhenHidden);
+  }, []);
+
+  useEffect(() => {
     if (!canAutoplay || !isAutoplaying) return undefined;
 
     const activeIndex = HERO_STAGES.indexOf(activeQuestion);
@@ -76,11 +89,30 @@ export default function HomeHeroExperience() {
     setActiveQuestion(question);
   };
 
-  const handleReplay = () => {
+  const handleDemoAction = () => {
     hasAutoStarted.current = true;
-    setActiveQuestion('have');
+
+    if (isAutoplaying) {
+      setIsAutoplaying(false);
+      return;
+    }
+
     setPlaybackId((currentId) => currentId + 1);
-    setIsAutoplaying(canAutoplay);
+
+    if (!canAutoplay) {
+      const activeIndex = HERO_STAGES.indexOf(activeQuestion);
+      const nextIndex = (activeIndex + 1) % HERO_STAGES.length;
+      setActiveQuestion(HERO_STAGES[nextIndex]!);
+      return;
+    }
+
+    setActiveQuestion('have');
+    setIsAutoplaying(true);
+  };
+
+  const handlePreviewInteraction = () => {
+    hasAutoStarted.current = true;
+    setIsAutoplaying(false);
   };
 
   return (
@@ -113,8 +145,16 @@ export default function HomeHeroExperience() {
 
                 <div className={styles.heroSupport}>
                   <div className={styles.heroActions}>
-                    <button type="button" className={styles.primaryCta} onClick={handleReplay}>
-                      See Aim4price in Action
+                    <button
+                      type="button"
+                      className={styles.primaryCta}
+                      onClick={handleDemoAction}
+                    >
+                      {!canAutoplay
+                        ? 'Show Next Feature'
+                        : isAutoplaying
+                          ? 'Pause Animation'
+                          : 'See Aim4price in Action'}
                     </button>
                     <Link href="/valuation" className={styles.secondaryCta}>
                       Get a Free Estimate
@@ -136,8 +176,10 @@ export default function HomeHeroExperience() {
               </div>
 
               <HomeAssetPreview
+                key={playbackId}
                 activeQuestion={activeQuestion}
                 onQuestionChange={handleQuestionChange}
+                onInteraction={handlePreviewInteraction}
               />
             </div>
           </div>
