@@ -4382,35 +4382,34 @@
   }
 }
 
-/* Homepage-only compact laptop density contract, September 2026.
-   The apps keep their existing header and control dimensions. */
-@media (min-width: 1181px) and (max-width: 1599px) and (min-height: 640px),
-  (min-width: 1181px) and (min-height: 640px) and (max-height: 899px) {
-  .homeDensity .inner {
+/* The homepage keeps the #543 header by default. Compact is an explicit,
+   homepage-only choice and never reduces controls inside the role apps. */
+@media (min-width: 1181px) and (min-height: 640px) {
+  :global([data-home-display-size='compact']) .inner {
     width: min(calc(100% - 2.25rem), 1280px);
     min-height: 5.15rem;
-    padding: 0.62rem 0;
+    padding-block: 0.62rem;
     grid-template-columns: minmax(12rem, 1fr) auto minmax(12rem, 1fr);
     gap: clamp(0.9rem, 1.55vw, 1.65rem);
   }
 
-  .homeDensity .innerDealer {
+  :global([data-home-display-size='compact']) .innerDealer {
     grid-template-columns: minmax(11.5rem, 1fr) auto minmax(11.5rem, 1fr);
   }
 
-  .homeDensity .headerBrandLogo {
+  :global([data-home-display-size='compact']) .headerBrandLogo {
     width: clamp(3.8rem, 4vw, 4.25rem);
     max-height: 3.35rem;
   }
 
-  .homeDensity .navRail,
-  .homeDensity .actionsRail {
+  :global([data-home-display-size='compact']) .navRail,
+  :global([data-home-display-size='compact']) .actionsRail {
     gap: 0.32rem;
     padding: 0.3rem;
     border-radius: 1.15rem;
   }
 
-  .homeDensity .navLink {
+  :global([data-home-display-size='compact']) .navLink {
     min-width: clamp(5.9rem, 6.4vw, 7.25rem);
     min-height: var(--tap-target-min, 44px);
     padding-inline: 0.85rem;
@@ -4418,7 +4417,7 @@
     font-size: 0.92rem;
   }
 
-  .homeDensity .navWindowButton {
+  :global([data-home-display-size='compact']) .navWindowButton {
     width: 1.25rem;
     min-width: 1.25rem;
     height: var(--tap-target-min, 44px);
@@ -4426,113 +4425,36 @@
     font-size: 1.6rem;
   }
 
-  .homeDensity .signupButton,
-  .homeDensity .loginButton,
-  .homeDensity .accountButton,
-  .homeDensity .notificationButton {
+  :global([data-home-display-size='compact']) .signupButton,
+  :global([data-home-display-size='compact']) .loginButton,
+  :global([data-home-display-size='compact']) .accountButton,
+  :global([data-home-display-size='compact']) .notificationButton {
     min-height: var(--tap-target-min, 44px);
     padding-inline: 1rem;
     border-radius: 0.85rem;
     font-size: 0.92rem;
   }
 
-  .homeDensity .notificationButton {
+  :global([data-home-display-size='compact']) .notificationButton {
     width: var(--tap-target-min, 44px);
     min-width: var(--tap-target-min, 44px);
     padding: 0;
   }
 
-  .homeDensity .accountMenu {
+  :global([data-home-display-size='compact']) .accountMenu {
     width: 11.25rem;
-    flex: 0 0 11.25rem;
+    flex-basis: 11.25rem;
   }
 
-  .homeDensity .accountButton {
+  :global([data-home-display-size='compact']) .accountButton {
     width: 100%;
     gap: 0.58rem;
     padding-left: 0.82rem;
     padding-right: 0.75rem;
   }
 
-  .homeDensity .accountAvatar {
+  :global([data-home-display-size='compact']) .accountAvatar {
     width: 1.75rem;
     height: 1.75rem;
-  }
-}
-
-/* The public homepage may apply a visitor-approved density after its display
-   check. These variables are absent from every role app, so app controls keep
-   their independent sizing contract. */
-@media (min-width: 1181px) and (min-height: 640px) {
-  :global([data-home-display-density]) .homeDensity .inner {
-    width: min(
-      calc(100% - var(--home-density-shell-gutter)),
-      var(--home-density-shell-max)
-    );
-    min-height: var(--home-density-header-height);
-    grid-template-columns:
-      minmax(var(--home-density-header-column), 1fr)
-      auto
-      minmax(var(--home-density-header-column), 1fr);
-    gap: var(--home-density-header-gap);
-  }
-
-  :global([data-home-display-density]) .homeDensity .innerDealer {
-    grid-template-columns:
-      minmax(var(--home-density-header-column), 1fr)
-      auto
-      minmax(var(--home-density-header-column), 1fr);
-  }
-
-  :global([data-home-display-density]) .homeDensity .headerBrandLogo {
-    width: var(--home-density-header-logo);
-  }
-
-  :global([data-home-display-density]) .homeDensity .navRail,
-  :global([data-home-display-density]) .homeDensity .actionsRail {
-    gap: var(--home-density-rail-gap);
-    padding: var(--home-density-rail-padding);
-    border-radius: var(--home-density-rail-radius);
-  }
-
-  :global([data-home-display-density]) .homeDensity .navLink {
-    min-width: var(--home-density-nav-width);
-    min-height: var(--tap-target-min, 44px);
-    padding-inline: var(--home-density-nav-padding);
-    border-radius: var(--home-density-control-radius);
-    font-size: var(--home-density-control-font);
-  }
-
-  :global([data-home-display-density]) .homeDensity .navWindowButton {
-    width: var(--home-density-arrow-width);
-    min-width: var(--home-density-arrow-width);
-    height: var(--tap-target-min, 44px);
-    min-height: var(--tap-target-min, 44px);
-  }
-
-  :global([data-home-display-density]) .homeDensity .signupButton,
-  :global([data-home-display-density]) .homeDensity .loginButton,
-  :global([data-home-display-density]) .homeDensity .accountButton,
-  :global([data-home-display-density]) .homeDensity .notificationButton {
-    min-height: var(--tap-target-min, 44px);
-    padding-inline: var(--home-density-action-padding);
-    border-radius: var(--home-density-control-radius);
-    font-size: var(--home-density-control-font);
-  }
-
-  :global([data-home-display-density]) .homeDensity .notificationButton {
-    width: var(--tap-target-min, 44px);
-    min-width: var(--tap-target-min, 44px);
-    padding: 0;
-  }
-
-  :global([data-home-display-density]) .homeDensity .accountMenu {
-    width: var(--home-density-account-width);
-    flex-basis: var(--home-density-account-width);
-  }
-
-  :global([data-home-display-density]) .homeDensity .accountAvatar {
-    width: var(--home-density-avatar-size);
-    height: var(--home-density-avatar-size);
   }
 }
