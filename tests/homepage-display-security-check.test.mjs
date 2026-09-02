@@ -153,7 +153,7 @@ test('the modal is mandatory, isolates focus and pauses the hero until Continue'
   assert.match(check, /document\.body\.style\.overflow = 'hidden'/);
   assert.match(check, /const \[isGateOpen, setIsGateOpen\] = useState\(true\)/);
   assert.match(check, /data-display-ready=\{isDisplayReady \? 'true' : 'false'\}/);
-  assert.match(check, /aria-hidden=\{!isDisplayReady \? 'true' : undefined\}/);
+  assert.match(check, /aria-hidden=\{isMounted && !isDisplayReady \? 'true' : undefined\}/);
   assert.match(check, /if \(event\.key === 'Escape'\)[\s\S]*?event\.preventDefault\(\)[\s\S]*?event\.stopPropagation\(\)/);
   assert.doesNotMatch(check, /if \(event\.key === 'Escape'\)[\s\S]*?completeDisplayCheck/);
   assert.match(check, /const selectRecommendedSize = \(\) => \{[\s\S]*?setSizeIndex\(recommendedSizeIndex\)[\s\S]*?scheduleFitMeasurement/);
@@ -173,5 +173,5 @@ test('the modal is mandatory, isolates focus and pauses the hero until Continue'
   assert.match(hero, /id="home-hero-title"[\s\S]*?tabIndex=\{-1\}/);
   assert.match(styles, /@media \(prefers-reduced-motion: reduce\)/);
   assert.match(styles, /@media \(forced-colors: active\)/);
-  assert.match(styles, /\.homeContent\[data-display-ready='false'\] \{[\s\S]*?visibility: hidden;[\s\S]*?pointer-events: none/);
+  assert.match(styles, /@media \(min-width: 1181px\) and \(min-height: 640px\) and \(hover: hover\) and \(pointer: fine\)[\s\S]*?\.homeContent\[data-display-ready='false'\] \{[\s\S]*?visibility: hidden;[\s\S]*?pointer-events: none/);
 });
