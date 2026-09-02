@@ -80,6 +80,9 @@ test('home page keeps the feature-led Asset Register hero usable at desktop, tab
   assert.match(hero, /HERO_AUTOPLAY_DELAY_MS = 1000/);
   assert.match(hero, /HERO_STAGE_DURATION_MS = 2800/);
   assert.match(hero, /window\.matchMedia\(REDUCED_MOTION_QUERY\)/);
+  assert.match(hero, /Show Next Feature/);
+  assert.match(hero, /Pause Animation/);
+  assert.match(hero, /key=\{playbackId\}/);
   assert.doesNotMatch(hero, /DESKTOP_STORY_QUERY|IntersectionObserver|scrollIntoView|heroScrollTrack/);
 
   assert.match(feature, /\.heroStory \{[\s\S]*?min-height: 0/);
@@ -88,6 +91,7 @@ test('home page keeps the feature-led Asset Register hero usable at desktop, tab
   assert.match(feature, /\.heroStory \.heroMedia \.shell \{[\s\S]*?width: min\(calc\(100% - 3rem\), 100rem\)/);
   assert.match(feature, /\.heroStory \.heroGrid \{[\s\S]*?grid-template-columns: minmax\(31rem, 37rem\) minmax\(39rem, 49\.5rem\)/);
   assert.match(feature, /\.heroStory \.assetActiveQuestion \{[\s\S]*?top: -4\.25rem/);
+  assert.match(feature, /@media \(min-width: 1361px\) and \(max-width: 1479px\)[\s\S]*?\.heroStory \.assetPreviewActions \{[\s\S]*?display: grid/);
 
   assert.match(feature, /@media \(min-width: 1181px\) and \(max-width: 1360px\)[\s\S]*?\.heroStory \.heroGrid \{[\s\S]*?grid-template-columns: minmax\(27rem, 31rem\) minmax\(34rem, 44rem\)/);
   assert.match(feature, /@media \(max-width: 1180px\)[\s\S]*?\.heroStory \.heroMedia \{[\s\S]*?min-height: 0/);
@@ -95,6 +99,7 @@ test('home page keeps the feature-led Asset Register hero usable at desktop, tab
   assert.match(feature, /@media \(max-width: 760px\)[\s\S]*?\.heroStory \.heroActions \{[\s\S]*?grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
   assert.match(feature, /@media \(max-width: 760px\)[\s\S]*?\.heroStory \.assetQuestionGroup \{[\s\S]*?grid-template-columns: repeat\(5, minmax\(0, 1fr\)\)/);
   assert.match(feature, /@media \(max-width: 760px\)[\s\S]*?\.heroStory \.assetPreviewCard \{[\s\S]*?position: relative;[\s\S]*?order: 1/);
+  assert.match(feature, /@media \(max-width: 760px\)[\s\S]*?\.heroStory \.assetPreviewCard \{[\s\S]*?height: clamp\(22rem, 64vw, 28rem\)/);
   assert.match(feature, /@media \(max-width: 640px\)[\s\S]*?\.heroStory \.heroActions \{[\s\S]*?grid-template-columns: minmax\(0, 1fr\)/);
   assert.match(feature, /@media \(max-width: 640px\)[\s\S]*?\.heroStory \.assetQuestionGroup \{[\s\S]*?grid-template-columns: repeat\(6, minmax\(0, 1fr\)\)/);
   assert.match(feature, /@media \(max-width: 640px\)[\s\S]*?\.heroStory \.assetPreviewCard,[\s\S]*?min-height: clamp\(24rem, 112vw, 29rem\)/);
