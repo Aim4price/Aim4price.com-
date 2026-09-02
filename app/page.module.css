@@ -3897,11 +3897,10 @@
 }
 
 .storyHeroLogo {
+  --story-logo-halo-size: clamp(24rem, 29vw, 34rem);
   position: relative;
   z-index: 3;
   display: grid;
-  width: clamp(24rem, 29vw, 34rem);
-  aspect-ratio: 1;
   place-items: center;
   min-width: 0;
   align-self: center;
@@ -3922,7 +3921,10 @@
 .storyHeroLogo::after {
   content: '';
   position: absolute;
-  inset: 0;
+  top: 50%;
+  left: 50%;
+  width: var(--story-logo-halo-size);
+  aspect-ratio: 1;
   border-radius: 50%;
   pointer-events: none;
 }
@@ -3937,7 +3939,7 @@
     rgba(209, 244, 230, 0) 72%
   );
   filter: blur(10px);
-  transform: scale(1.08);
+  transform: translate(-50%, -50%) scale(1.08);
 }
 
 .storyHeroLogo::after {
@@ -3957,6 +3959,7 @@
       rgba(53, 142, 109, 0.09) 76.25%,
       transparent 76.55%
     );
+  transform: translate(-50%, -50%);
 }
 
 .storyHeroLogoImage {
@@ -4301,6 +4304,10 @@
 }
 
 @media (min-width: 1181px) and (min-height: 640px) and (max-height: 759px) {
+  .storyHeroLogo {
+    --story-logo-halo-size: 29rem;
+  }
+
   .storyHeroGrid {
     padding-block: 1rem;
   }
@@ -4372,12 +4379,17 @@
   }
 
   .storyHeroLogo {
-    width: min(100%, 30rem);
+    width: 100%;
     order: 2;
     opacity: 1;
     visibility: visible;
     filter: none;
     transform: none;
+  }
+
+  .storyHeroLogo::before,
+  .storyHeroLogo::after {
+    display: none;
   }
 
   .storyHeroLogoImage {
@@ -4558,12 +4570,17 @@
   }
 
   .storyHeroLogo {
-    width: min(100%, 34rem);
+    width: 100%;
     grid-column: 2;
     grid-row: 1;
     opacity: 1;
     visibility: visible;
     transform: none;
+  }
+
+  .storyHeroLogo::before,
+  .storyHeroLogo::after {
+    display: none;
   }
 
   .assetStageMotion {
