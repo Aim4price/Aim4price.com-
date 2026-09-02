@@ -4309,14 +4309,14 @@
   }
 }
 
-/* The #543 desktop composition is the default. Compact is applied only after
-   the visitor explicitly accepts it in the display check. */
+/* The #543 desktop composition is the default. Small remains available as a
+   guaranteed-fit fallback for unusually short or narrow desktop viewports. */
 @media (min-width: 1181px) and (min-height: 640px) {
-  .page[data-home-display-size='compact'] .heroStory .heroMedia .shell {
+  .page[data-home-display-size='small'] .heroStory .heroMedia .shell {
     width: min(calc(100% - 2.25rem), 1280px);
   }
 
-  .page[data-home-display-size='compact'] .storyHeroGrid {
+  .page[data-home-display-size='small'] .storyHeroGrid {
     --hero-working-inset: clamp(0px, calc((100% - 1240px) / 2), 20px);
     width: calc(100% - var(--hero-working-inset));
     grid-template-columns: minmax(26rem, 1fr) minmax(32rem, 40rem);
@@ -4325,64 +4325,141 @@
     padding-block: clamp(0.85rem, 2.2vh, 1.5rem);
   }
 
-  .page[data-home-display-size='compact'] .heroCopyDeck {
+  .page[data-home-display-size='small'] .heroCopyDeck {
     min-height: clamp(20rem, 58vh, 23.5rem);
   }
 
-  .page[data-home-display-size='compact'] .heroBrandTitle span:first-child {
+  .page[data-home-display-size='small'] .heroBrandTitle span:first-child {
     font-size: clamp(3.1rem, 3.75vw, 4.15rem);
   }
 
-  .page[data-home-display-size='compact'] .heroBrandTitle span:not(:first-child) {
+  .page[data-home-display-size='small'] .heroBrandTitle span:not(:first-child) {
     font-size: clamp(2rem, 2.3vw, 2.4rem);
   }
 
-  .page[data-home-display-size='compact'] .heroPromiseTitle {
+  .page[data-home-display-size='small'] .heroPromiseTitle {
     font-size: clamp(2.2rem, 2.45vw, 2.55rem);
   }
 
-  .page[data-home-display-size='compact'] .heroPromiseText {
+  .page[data-home-display-size='small'] .heroPromiseText {
     max-width: 31rem;
     margin-top: 1.25rem;
     font-size: clamp(0.94rem, 1vw, 1.04rem);
     line-height: 1.52;
   }
 
-  .page[data-home-display-size='compact'] .heroStory .heroActions {
+  .page[data-home-display-size='small'] .heroStory .heroActions {
     gap: 0.8rem;
     margin-top: 1.35rem;
   }
 
-  .page[data-home-display-size='compact'] .storyHeroLogo {
+  .page[data-home-display-size='small'] .storyHeroLogo {
     --story-logo-halo-size: clamp(22rem, 25vw, 27rem);
   }
 
-  .page[data-home-display-size='compact'] .storyHeroLogoImage {
+  .page[data-home-display-size='small'] .storyHeroLogoImage {
     width: clamp(13rem, 14vw, 15.5rem);
   }
 
-  .page[data-home-display-size='compact'] .assetStageMotion {
+  .page[data-home-display-size='small'] .assetStageMotion {
     --asset-preview-center-inset: 1.75rem;
     width: min(39.5rem, calc(100% + 3.5rem));
   }
 
-  .page[data-home-display-size='compact'] .featureNarrative {
+  .page[data-home-display-size='small'] .featureNarrative {
     --feature-copy-inset: clamp(4rem, 5.5vw, 5.5rem);
     width: min(100%, 26rem);
     min-height: 18rem;
   }
 
-  .page[data-home-display-size='compact'] .featureNarrativeLayer h2 {
+  .page[data-home-display-size='small'] .featureNarrativeLayer h2 {
     max-width: 25rem;
     margin-top: 0.75rem;
     font-size: clamp(2.25rem, 2.85vw, 3.15rem);
   }
 
-  .page[data-home-display-size='compact'] .featureNarrativeLayer > p:last-child {
+  .page[data-home-display-size='small'] .featureNarrativeLayer > p:last-child {
     max-width: 25rem;
     margin-top: 0.8rem;
     font-size: clamp(0.94rem, 1vw, 1.04rem);
     line-height: 1.5;
+  }
+}
+
+/* Compact keeps the complete composition at roughly 90% of Original. It is
+   the preferred fit for full desktop layouts that cannot safely use Original. */
+@media (min-width: 1181px) and (min-height: 640px) {
+  .page[data-home-display-size='compact'] .heroStory .heroMedia .shell {
+    width: min(calc(100% - 2.5rem), 1320px);
+  }
+
+  .page[data-home-display-size='compact'] .storyHeroGrid {
+    --hero-working-inset: clamp(0px, calc((100% - 1280px) / 2), 24px);
+    width: calc(100% - var(--hero-working-inset));
+    grid-template-columns: minmax(28rem, 1fr) minmax(36rem, 44.5rem);
+    gap: clamp(1.75rem, 2.2vw, 2.5rem);
+    margin-inline-start: var(--hero-working-inset);
+    padding-block: clamp(1rem, 2.4vh, 1.75rem);
+  }
+
+  .page[data-home-display-size='compact'] .heroCopyDeck {
+    min-height: clamp(22rem, 62vh, 25rem);
+  }
+
+  .page[data-home-display-size='compact'] .heroBrandTitle span:first-child {
+    font-size: clamp(3.4rem, 4.2vw, 4.8rem);
+  }
+
+  .page[data-home-display-size='compact'] .heroBrandTitle span:not(:first-child) {
+    font-size: clamp(2.25rem, 2.5vw, 2.85rem);
+  }
+
+  .page[data-home-display-size='compact'] .heroPromiseTitle {
+    font-size: clamp(2.4rem, 2.65vw, 2.7rem);
+  }
+
+  .page[data-home-display-size='compact'] .heroPromiseText {
+    max-width: 32.5rem;
+    margin-top: 1.55rem;
+    font-size: clamp(0.98rem, 1.04vw, 1.08rem);
+    line-height: 1.56;
+  }
+
+  .page[data-home-display-size='compact'] .heroStory .heroActions {
+    gap: 0.9rem;
+    margin-top: 1.5rem;
+  }
+
+  .page[data-home-display-size='compact'] .storyHeroLogo {
+    --story-logo-halo-size: clamp(24rem, 27vw, 30.5rem);
+  }
+
+  .page[data-home-display-size='compact'] .storyHeroLogoImage {
+    width: clamp(14.25rem, 15vw, 17.25rem);
+  }
+
+  .page[data-home-display-size='compact'] .assetStageMotion {
+    --asset-preview-center-inset: 2rem;
+    width: min(44.5rem, calc(100% + 4rem));
+  }
+
+  .page[data-home-display-size='compact'] .featureNarrative {
+    --feature-copy-inset: clamp(4.5rem, 6vw, 6rem);
+    width: min(100%, 28rem);
+    min-height: 20rem;
+  }
+
+  .page[data-home-display-size='compact'] .featureNarrativeLayer h2 {
+    max-width: 27rem;
+    margin-top: 1rem;
+    font-size: clamp(2.55rem, 3.3vw, 3.6rem);
+  }
+
+  .page[data-home-display-size='compact'] .featureNarrativeLayer > p:last-child {
+    max-width: 27rem;
+    margin-top: 0.95rem;
+    font-size: clamp(0.98rem, 1.08vw, 1.1rem);
+    line-height: 1.54;
   }
 }
 
