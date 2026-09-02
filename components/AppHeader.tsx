@@ -2446,7 +2446,7 @@ export default function AppHeader({
           </Link>
 
           <nav
-            className={`${styles.nav} ${usesCompactHeader ? styles.navCompact : ''}`}
+            className={`${styles.nav} ${showNavWindowControls ? styles.navWindowed : styles.navStatic} ${usesCompactHeader ? styles.navCompact : ''}`}
             aria-label="Primary navigation"
           >
             {showNavWindowControls ? (
