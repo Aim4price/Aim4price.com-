@@ -84,11 +84,11 @@ test('home page uses one fluid layout contract instead of a calibrated fixed can
 
   assert.ok(storyStart >= 0);
   assert.match(page, /<main className={styles\.page}>/);
-  assert.match(page, /<AppHeader active="home" brandAlignment="working-column" \/>/);
+  assert.match(page, /<AppHeader active="home" \/>/);
   assert.doesNotMatch(page, /HomeDisplayCheck|standardCanvas|displayScale/);
 
   assert.match(home, /--home-shell-max: 1360px/);
-  assert.match(home, /--home-gutter: 1\.5rem/);
+  assert.match(home, /--home-gutter: var\(--shell-gutter, 1\.5rem\)/);
   assert.match(home, /\.shell \{[\s\S]*?width: min\([\s\S]*?calc\(100% - \(var\(--home-gutter\) \* 2\)\),[\s\S]*?var\(--home-shell-max\)/);
   assert.doesNotMatch(home, /zoom:\s*var\(|min-width:\s*1360px|--asset-stage-shift-x/);
   assert.doesNotMatch(story, /inset-inline-start:\s*calc\(0rem -|width:\s*min\([^;]*calc\(100% \+/);
@@ -130,7 +130,7 @@ test('home page uses one fluid layout contract instead of a calibrated fixed can
   assert.match(cinematic, /\.featureNarrative \{[\s\S]*?grid-column: 2/);
   assert.match(cinematic, /filter: blur\(14px\)[\s\S]*?opacity 820ms[\s\S]*?filter 820ms/);
 
-  assert.match(story, /@media \(max-width: 760px\)[\s\S]*?--home-gutter: 1rem/);
+  assert.doesNotMatch(story, /@media \(max-width: 760px\)[\s\S]*?--home-gutter:/);
   assert.match(story, /@media \(max-width: 760px\)[\s\S]*?\.assetQuestionGroup \{[\s\S]*?grid-template-rows: minmax\(3\.5rem, auto\)/);
   assert.match(story, /@media \(max-width: 760px\)[\s\S]*?\.compactHeroActions \{[\s\S]*?grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
   assert.match(story, /@media \(max-width: 520px\)[\s\S]*?\.compactHeroActions \{[\s\S]*?grid-template-columns: minmax\(0, 1fr\)/);
