@@ -88,25 +88,6 @@ export default function HomeHeroExperience() {
     setActiveQuestion(question);
   };
 
-  const handlePlaybackToggle = () => {
-    hasAutoStarted.current = true;
-
-    if (isAutoplaying) {
-      setIsAutoplaying(false);
-      return;
-    }
-
-    if (!canAutoplay) {
-      const activeIndex = HERO_STAGES.indexOf(activeQuestion);
-      const nextIndex = (activeIndex + 1) % HERO_STAGES.length;
-      setActiveQuestion(HERO_STAGES[nextIndex]!);
-      return;
-    }
-
-    setActiveQuestion('have');
-    setIsAutoplaying(true);
-  };
-
   const handlePreviewInteraction = (source: 'pointer' | 'focus') => {
     if (source === 'focus') hasAutoStarted.current = true;
 
@@ -128,8 +109,6 @@ export default function HomeHeroExperience() {
             <div className={styles.heroGrid}>
               <div className={styles.heroCopy}>
                 <div className={styles.heroCopyState}>
-                  <p className={styles.heroPlatformLabel}>One living record per asset</p>
-
                   <h1 id="home-hero-title" className={styles.heroTitle}>
                     <span className={styles.heroTitleLine}>Know what you have.</span>
                     <span className={styles.heroTitleLine}>Know what it’s worth.</span>
@@ -137,9 +116,9 @@ export default function HomeHeroExperience() {
                   </h1>
 
                   <p className={styles.heroText}>
-                    Aim4price gives every important asset one living digital record—connecting
-                    its identity, indicative value, documents, maintenance, fuel, costs and
-                    history throughout its working life.
+                    Aim4price gives every important asset one living digital record that connects
+                    its identity, indicative value, documents, maintenance, fuel, costs and history
+                    throughout its working life.
                   </p>
                 </div>
 
@@ -157,11 +136,8 @@ export default function HomeHeroExperience() {
 
               <HomeAssetPreview
                 activeQuestion={activeQuestion}
-                canAutoplay={canAutoplay}
-                isAutoplaying={isAutoplaying}
                 onQuestionChange={handleQuestionChange}
                 onInteraction={handlePreviewInteraction}
-                onPlaybackToggle={handlePlaybackToggle}
               />
             </div>
           </div>
