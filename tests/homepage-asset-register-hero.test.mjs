@@ -435,7 +435,21 @@ test('homepage plays one slower timed tour, returns to its brand frame, then fol
   assert.match(mediumDesktopStoryStyles, /\.assetStageMotion \{[\s\S]*?width: min\(44rem, calc\(100% \+ 6rem\)\);[\s\S]*?justify-self: end/);
   assert.match(storyHeroStyles, /@media \(min-width: 1181px\) and \(max-width: 1240px\) and \(min-height: 640px\)[\s\S]*?\.storyHeroGrid \{[\s\S]*?--hero-working-inset: 8px/);
   assert.match(storyHeroStyles, /@media \(min-width: 1181px\) and \(min-height: 640px\) and \(max-height: 759px\)[\s\S]*?\.assetStageMotion \{[\s\S]*?width: min\(43rem, calc\(100% \+ 5rem\)\)/);
-  assert.match(storyHeroStyles, /Compact laptop density contract, September 2026[\s\S]*?@media \(min-width: 1181px\) and \(max-width: 1599px\) and \(min-height: 640px\),\s*\(min-width: 1181px\) and \(min-height: 640px\) and \(max-height: 899px\)/);
+
+  const chosenCompactStart = storyHeroStyles.indexOf(
+    '/* The #543 desktop composition is the default.',
+  );
+  const chosenCompactEnd = storyHeroStyles.indexOf(
+    '/* Static-wide is the sole fallback',
+    chosenCompactStart,
+  );
+  assert.ok(chosenCompactStart >= 0 && chosenCompactEnd > chosenCompactStart);
+  const chosenCompactStyles = storyHeroStyles.slice(chosenCompactStart, chosenCompactEnd);
+  assert.match(chosenCompactStyles, /@media \(min-width: 1181px\) and \(min-height: 640px\)/);
+  assert.match(chosenCompactStyles, /\.page\[data-home-display-size='compact'\] \.heroStory \.heroMedia \.shell \{[\s\S]*?width: min\(calc\(100% - 2\.25rem\), 1280px\)/);
+  assert.match(chosenCompactStyles, /\.page\[data-home-display-size='compact'\] \.storyHeroGrid \{[\s\S]*?grid-template-columns: minmax\(26rem, 1fr\) minmax\(32rem, 40rem\)/);
+  assert.match(chosenCompactStyles, /\.page\[data-home-display-size='compact'\] \.assetStageMotion \{[\s\S]*?width: min\(39\.5rem, calc\(100% \+ 3\.5rem\)\)/);
+  assert.doesNotMatch(storyHeroStyles, /Compact laptop density contract, September 2026|max-width: 1599px|max-height: 899px/);
 
   assert.doesNotMatch(storyHeroStyles, /@media \(min-width: 901px\) and \(max-width: 1180px\)/);
   assert.doesNotMatch(storyHeroStyles, /top: 8\.4rem|height: calc\(100dvh - 8\.4rem\)/);

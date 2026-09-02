@@ -19,26 +19,24 @@ import styles from './home-display-check.module.css';
 
 const DISPLAY_CHECK_QUERY =
   '(min-width: 1181px) and (min-height: 640px) and (hover: hover) and (pointer: fine)';
-const DISPLAY_STORAGE_KEY = 'aim4price:home-display-check:v1';
-const DISPLAY_STORAGE_VERSION = 1;
-const DISPLAY_CANVAS_WIDTH = 1360;
-const DISPLAY_CANVAS_HEIGHT = 780;
-const VIEWPORT_WIDTH_BUCKET = 160;
-const VIEWPORT_HEIGHT_BUCKET = 120;
+const DISPLAY_STORAGE_KEY = 'aim4price:home-display-check:v2';
+const DISPLAY_STORAGE_VERSION = 2;
+const ORIGINAL_CANVAS_WIDTH = 1360;
+const ORIGINAL_CANVAS_HEIGHT = 620;
+const PREVIEW_SAFE_WIDTH_RATIO = 0.96;
+const PREVIEW_SAFE_HEIGHT_RATIO = 0.9;
 
-export const DISPLAY_DENSITIES = [
-  { id: 'compact', label: 'Compact', fitScale: 0.58 },
-  { id: 'balanced', label: 'Balanced', fitScale: 0.88 },
-  { id: 'spacious', label: 'Spacious', fitScale: 1.08 },
+export const DISPLAY_SIZES = [
+  { id: 'compact', label: 'Compact', scale: 0.78 },
+  { id: 'original', label: 'Original', scale: 1 },
 ] as const;
 
-type DisplayDensity = (typeof DISPLAY_DENSITIES)[number]['id'];
+type DisplaySize = (typeof DISPLAY_SIZES)[number]['id'];
 
 type StoredDisplayCheck = {
   version: typeof DISPLAY_STORAGE_VERSION;
-  density: DisplayDensity;
-  viewportSignature: string;
-  completedAt: string;
+  size: DisplaySize;
+  viewportClass: string;
 };
 
 type ViewportSize = {
@@ -46,36 +44,36 @@ type ViewportSize = {
   height: number;
 };
 
-type SecurityStatus = 'checking' | 'protected' | 'local-development' | 'insecure';
-
 const HomeDisplayReadyContext = createContext(true);
 
 export function useHomeDisplayReady() {
   return useContext(HomeDisplayReadyContext);
 }
 
-const isDisplayDensity = (value: unknown): value is DisplayDensity =>
-  DISPLAY_DENSITIES.some(({ id }) => id === value);
+const isDisplaySize = (value: unknown): value is DisplaySize =>
+  DISPLAY_SIZES.some(({ id }) => id === value);
 
 const getViewportSize = (): ViewportSize => ({
   width: window.innerWidth,
   height: window.innerHeight,
 });
 
-const getViewportSignature = ({ width, height }: ViewportSize) =>
-  `${Math.round(width / VIEWPORT_WIDTH_BUCKET) * VIEWPORT_WIDTH_BUCKET}x${
-    Math.round(height / VIEWPORT_HEIGHT_BUCKET) * VIEWPORT_HEIGHT_BUCKET
-  }`;
+const getPreviewRatios = (
+  viewport: ViewportSize,
+  scale: (typeof DISPLAY_SIZES)[number]['scale'],
+) => ({
+  width: (ORIGINAL_CANVAS_WIDTH * scale) / Math.max(1, viewport.width - 48),
+  height: (ORIGINAL_CANVAS_HEIGHT * scale) / Math.max(1, viewport.height - 96),
+});
 
-const getRecommendedDensityIndex = ({ width, height }: ViewportSize) => {
-  const safeWidth = Math.max(1, width - 48) * 0.92;
-  const safeHeight = Math.max(1, height - 108) * 0.92;
+const getRecommendedSizeIndex = (viewport: ViewportSize) => {
   let recommendedIndex = 0;
 
-  DISPLAY_DENSITIES.forEach((option, index) => {
+  DISPLAY_SIZES.forEach((option, index) => {
+    const ratios = getPreviewRatios(viewport, option.scale);
     if (
-      DISPLAY_CANVAS_WIDTH * option.fitScale <= safeWidth &&
-      DISPLAY_CANVAS_HEIGHT * option.fitScale <= safeHeight
+      ratios.width <= PREVIEW_SAFE_WIDTH_RATIO &&
+      ratios.height <= PREVIEW_SAFE_HEIGHT_RATIO
     ) {
       recommendedIndex = index;
     }
@@ -84,15 +82,26 @@ const getRecommendedDensityIndex = ({ width, height }: ViewportSize) => {
   return recommendedIndex;
 };
 
-const getSecurityStatus = (): SecurityStatus => {
-  if (window.location.protocol === 'https:' && window.isSecureContext) {
-    return 'protected';
-  }
+const getViewportClass = (viewport: ViewportSize) =>
+  `recommended-${DISPLAY_SIZES[getRecommendedSizeIndex(viewport)].id}`;
 
-  const isLocalDevelopment =
+const hasSecureConnection = () => {
+  if (window.location.protocol === 'https:' && window.isSecureContext) return true;
+
+  return (
     window.isSecureContext &&
-    ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname);
-  return isLocalDevelopment ? 'local-development' : 'insecure';
+    ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname)
+  );
+};
+
+const getSecureHref = () => {
+  try {
+    const url = new URL(window.location.href);
+    url.protocol = 'https:';
+    return url.toString();
+  } catch {
+    return 'https://www.aim4price.com/';
+  }
 };
 
 const readStoredDisplayCheck = (): StoredDisplayCheck | null => {
@@ -103,9 +112,8 @@ const readStoredDisplayCheck = (): StoredDisplayCheck | null => {
     const parsed = JSON.parse(raw) as Partial<StoredDisplayCheck>;
     if (
       parsed.version !== DISPLAY_STORAGE_VERSION ||
-      !isDisplayDensity(parsed.density) ||
-      typeof parsed.viewportSignature !== 'string' ||
-      typeof parsed.completedAt !== 'string'
+      !isDisplaySize(parsed.size) ||
+      typeof parsed.viewportClass !== 'string'
     ) {
       window.localStorage.removeItem(DISPLAY_STORAGE_KEY);
       return null;
@@ -117,39 +125,29 @@ const readStoredDisplayCheck = (): StoredDisplayCheck | null => {
   }
 };
 
-const writeStoredDisplayCheck = (
-  density: DisplayDensity,
-  viewportSignature: string,
-) => {
+const writeStoredDisplayCheck = (size: DisplaySize, viewportClass: string) => {
   try {
     const value: StoredDisplayCheck = {
       version: DISPLAY_STORAGE_VERSION,
-      density,
-      viewportSignature,
-      completedAt: new Date().toISOString(),
+      size,
+      viewportClass,
     };
     window.localStorage.setItem(DISPLAY_STORAGE_KEY, JSON.stringify(value));
   } catch {
-    // Storage can be unavailable in private or restricted browsing. The check
-    // still completes safely; it will simply be offered again next time.
-  }
-};
-
-const removeStoredDisplayCheck = () => {
-  try {
-    window.localStorage.removeItem(DISPLAY_STORAGE_KEY);
-  } catch {
-    // A storage restriction must never prevent the visitor from continuing.
+    // Restricted storage must never prevent the visitor from continuing.
   }
 };
 
 export default function HomeDisplayCheck({ children }: { children: ReactNode }) {
-  const [densityIndex, setDensityIndex] = useState(DISPLAY_DENSITIES.length - 1);
-  const [viewport, setViewport] = useState<ViewportSize>({ width: 1600, height: 900 });
+  const [sizeIndex, setSizeIndex] = useState(DISPLAY_SIZES.length - 1);
+  const [viewport, setViewport] = useState<ViewportSize>({
+    width: 1600,
+    height: 900,
+  });
   const [isMounted, setIsMounted] = useState(false);
   const [isGateOpen, setIsGateOpen] = useState(false);
   const [isDisplayReady, setIsDisplayReady] = useState(false);
-  const [securityStatus, setSecurityStatus] = useState<SecurityStatus>('checking');
+  const [isSecure, setIsSecure] = useState(false);
   const [doesPreviewFit, setDoesPreviewFit] = useState(false);
   const [secureHref, setSecureHref] = useState('https://www.aim4price.com/');
 
@@ -157,33 +155,22 @@ export default function HomeDisplayCheck({ children }: { children: ReactNode }) 
   const dialogRef = useRef<HTMLDivElement | null>(null);
   const frameRef = useRef<HTMLDivElement | null>(null);
   const previewRef = useRef<HTMLDivElement | null>(null);
-  const smallerButtonRef = useRef<HTMLButtonElement | null>(null);
-  const acceptedViewportRef = useRef<string | null>(null);
   const resizeFrameRef = useRef<number | null>(null);
 
-  const density = DISPLAY_DENSITIES[densityIndex] ?? DISPLAY_DENSITIES[1];
-  const recommendedDensityIndex = useMemo(
-    () => getRecommendedDensityIndex(viewport),
+  const size = DISPLAY_SIZES[sizeIndex] ?? DISPLAY_SIZES[1];
+  const recommendedSizeIndex = useMemo(
+    () => getRecommendedSizeIndex(viewport),
     [viewport],
   );
-  const securityPassed =
-    securityStatus === 'protected' || securityStatus === 'local-development';
-  const canContinue = securityPassed && doesPreviewFit;
 
-  const previewDimensions = useMemo(() => {
-    const availableWidth = Math.max(1, viewport.width - 48);
-    const availableHeight = Math.max(1, viewport.height - 108);
+  const previewStyle = useMemo(() => {
+    const ratios = getPreviewRatios(viewport, size.scale);
 
     return {
-      width: `${(DISPLAY_CANVAS_WIDTH * density.fitScale * 100) / availableWidth}%`,
-      height: `${(DISPLAY_CANVAS_HEIGHT * density.fitScale * 100) / availableHeight}%`,
-    };
-  }, [density.fitScale, viewport.height, viewport.width]);
-
-  const previewStyle = {
-    '--display-preview-width': previewDimensions.width,
-    '--display-preview-height': previewDimensions.height,
-  } as CSSProperties;
+      '--display-preview-width': `${ratios.width * 100}%`,
+      '--display-preview-height': `${ratios.height * 100}%`,
+    } as CSSProperties;
+  }, [size.scale, viewport.height, viewport.width]);
 
   const measurePreviewFit = useCallback(() => {
     const frame = frameRef.current?.getBoundingClientRect();
@@ -193,27 +180,38 @@ export default function HomeDisplayCheck({ children }: { children: ReactNode }) 
       return;
     }
 
-    const safeInset = 8;
-    const fits =
+    const safeInset = 6;
+    setDoesPreviewFit(
       preview.left >= frame.left + safeInset &&
-      preview.top >= frame.top + safeInset &&
-      preview.right <= frame.right - safeInset &&
-      preview.bottom <= frame.bottom - safeInset &&
-      preview.width <= frame.width - safeInset * 2 &&
-      preview.height <= frame.height - safeInset * 2;
-
-    setDoesPreviewFit(fits);
+        preview.top >= frame.top + safeInset &&
+        preview.right <= frame.right - safeInset &&
+        preview.bottom <= frame.bottom - safeInset,
+    );
   }, []);
 
   const scheduleFitMeasurement = useCallback(() => {
     if (resizeFrameRef.current !== null) {
       window.cancelAnimationFrame(resizeFrameRef.current);
     }
+
     resizeFrameRef.current = window.requestAnimationFrame(() => {
       resizeFrameRef.current = null;
       measurePreviewFit();
     });
   }, [measurePreviewFit]);
+
+  const acceptSize = useCallback((nextIndex: number) => {
+    const nextSize = DISPLAY_SIZES[nextIndex] ?? DISPLAY_SIZES[0];
+    const nextViewport = getViewportSize();
+    setSizeIndex(nextIndex);
+    writeStoredDisplayCheck(nextSize.id, getViewportClass(nextViewport));
+    setIsGateOpen(false);
+    setIsDisplayReady(true);
+
+    window.requestAnimationFrame(() => {
+      document.getElementById('home-hero-title')?.focus();
+    });
+  }, []);
 
   useEffect(() => {
     setIsMounted(true);
@@ -221,23 +219,12 @@ export default function HomeDisplayCheck({ children }: { children: ReactNode }) 
 
     const syncCapability = () => {
       const nextViewport = getViewportSize();
-      const nextSignature = getViewportSignature(nextViewport);
-      const nextSecurityStatus = getSecurityStatus();
-      const nextSecurityPassed =
-        nextSecurityStatus === 'protected' ||
-        nextSecurityStatus === 'local-development';
+      const nextViewportClass = getViewportClass(nextViewport);
+      const nextIsSecure = hasSecureConnection();
 
       setViewport(nextViewport);
-      setSecurityStatus(nextSecurityStatus);
-      setSecureHref(() => {
-        try {
-          const url = new URL(window.location.href);
-          url.protocol = 'https:';
-          return url.toString();
-        } catch {
-          return 'https://www.aim4price.com/';
-        }
-      });
+      setIsSecure(nextIsSecure);
+      setSecureHref(getSecureHref());
 
       if (!desktopMedia.matches) {
         setIsGateOpen(false);
@@ -246,29 +233,21 @@ export default function HomeDisplayCheck({ children }: { children: ReactNode }) 
       }
 
       const stored = readStoredDisplayCheck();
-      if (nextSecurityPassed && stored) {
-        const storedIndex = DISPLAY_DENSITIES.findIndex(({ id }) => id === stored.density);
-        const recommendedIndex = getRecommendedDensityIndex(nextViewport);
-        const nextIndex = Math.min(
-          storedIndex >= 0 ? storedIndex : recommendedIndex,
-          recommendedIndex,
+      if (
+        nextIsSecure &&
+        stored &&
+        stored.viewportClass === nextViewportClass
+      ) {
+        const storedIndex = DISPLAY_SIZES.findIndex(
+          ({ id }) => id === stored.size,
         );
-        setDensityIndex(nextIndex);
-        writeStoredDisplayCheck(DISPLAY_DENSITIES[nextIndex].id, nextSignature);
-        acceptedViewportRef.current = nextSignature;
+        setSizeIndex(storedIndex >= 0 ? storedIndex : 0);
         setIsGateOpen(false);
         setIsDisplayReady(true);
         return;
       }
 
-      if (stored) removeStoredDisplayCheck();
-      acceptedViewportRef.current = null;
-      setDensityIndex(
-        Math.min(
-          DISPLAY_DENSITIES.length - 1,
-          getRecommendedDensityIndex(nextViewport) + 1,
-        ),
-      );
+      setSizeIndex(getRecommendedSizeIndex(nextViewport));
       setDoesPreviewFit(false);
       setIsDisplayReady(false);
       setIsGateOpen(true);
@@ -276,69 +255,58 @@ export default function HomeDisplayCheck({ children }: { children: ReactNode }) 
 
     syncCapability();
     desktopMedia.addEventListener('change', syncCapability);
-
     return () => desktopMedia.removeEventListener('change', syncCapability);
   }, []);
 
   useEffect(() => {
-    if (!isMounted) return undefined;
-
-    const handleViewportChange = () => {
+    const handleResize = () => {
       const nextViewport = getViewportSize();
-      const nextSignature = getViewportSignature(nextViewport);
-      const supportsDisplayCheck = window.matchMedia(DISPLAY_CHECK_QUERY).matches;
       setViewport(nextViewport);
 
-      if (!supportsDisplayCheck) {
-        setIsGateOpen(false);
-        setIsDisplayReady(true);
+      if (
+        !isDisplayReady ||
+        !window.matchMedia(DISPLAY_CHECK_QUERY).matches
+      ) {
         return;
       }
 
-      if (isDisplayReady && acceptedViewportRef.current) {
-        const recommendedIndex = getRecommendedDensityIndex(nextViewport);
-        const nextIndex = Math.min(densityIndex, recommendedIndex);
-        if (nextIndex !== densityIndex) setDensityIndex(nextIndex);
-        acceptedViewportRef.current = nextSignature;
-        writeStoredDisplayCheck(DISPLAY_DENSITIES[nextIndex].id, nextSignature);
-      }
+      const recommendedIndex = getRecommendedSizeIndex(nextViewport);
+      setSizeIndex((current) => {
+        const nextIndex = Math.min(current, recommendedIndex);
+        if (nextIndex !== current) {
+          writeStoredDisplayCheck(
+            DISPLAY_SIZES[nextIndex].id,
+            getViewportClass(nextViewport),
+          );
+        }
+        return nextIndex;
+      });
     };
 
-    window.addEventListener('resize', handleViewportChange, { passive: true });
-    return () => window.removeEventListener('resize', handleViewportChange);
-  }, [densityIndex, isDisplayReady, isMounted]);
+    window.addEventListener('resize', handleResize, { passive: true });
+    return () => window.removeEventListener('resize', handleResize);
+  }, [isDisplayReady]);
 
   useLayoutEffect(() => {
     if (!isGateOpen) return undefined;
 
     scheduleFitMeasurement();
-    const frame = frameRef.current;
-    const preview = previewRef.current;
     const observer =
       'ResizeObserver' in window ? new ResizeObserver(scheduleFitMeasurement) : null;
-    if (frame) observer?.observe(frame);
-    if (preview) observer?.observe(preview);
-
-    let disposed = false;
-    if ('fonts' in document) {
-      void document.fonts.ready.then(() => {
-        if (!disposed) scheduleFitMeasurement();
-      });
-    }
+    if (frameRef.current) observer?.observe(frameRef.current);
+    if (previewRef.current) observer?.observe(previewRef.current);
 
     return () => {
-      disposed = true;
       observer?.disconnect();
       if (resizeFrameRef.current !== null) {
         window.cancelAnimationFrame(resizeFrameRef.current);
         resizeFrameRef.current = null;
       }
     };
-  }, [densityIndex, isGateOpen, previewDimensions.height, previewDimensions.width, scheduleFitMeasurement]);
+  }, [isGateOpen, previewStyle, scheduleFitMeasurement, sizeIndex]);
 
   useEffect(() => {
     const content = contentRef.current;
-    const dialog = dialogRef.current;
     if (!content) return undefined;
 
     if (!isGateOpen) {
@@ -346,63 +314,38 @@ export default function HomeDisplayCheck({ children }: { children: ReactNode }) 
       return undefined;
     }
 
-    const inertedNodes: Array<{ element: HTMLElement; wasInert: boolean }> = [];
-    let activeBranch: HTMLElement | null = dialog;
-    while (activeBranch) {
-      const parent = activeBranch.parentElement;
-      if (!parent || parent === document.body) break;
-      Array.from(parent.children).forEach((sibling) => {
-        if (sibling !== activeBranch && sibling instanceof HTMLElement) {
-          inertedNodes.push({ element: sibling, wasInert: sibling.hasAttribute('inert') });
-          sibling.setAttribute('inert', '');
-        }
-      });
-      activeBranch = parent;
-    }
-
+    content.setAttribute('inert', '');
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     window.requestAnimationFrame(() => dialogRef.current?.focus());
 
     return () => {
-      inertedNodes.forEach(({ element, wasInert }) => {
-        if (!wasInert) element.removeAttribute('inert');
-      });
+      content.removeAttribute('inert');
       document.body.style.overflow = previousOverflow;
     };
   }, [isGateOpen]);
 
-  const adjustDensity = (direction: -1 | 1) => {
+  const adjustSize = (direction: -1 | 1) => {
     setDoesPreviewFit(false);
-    setDensityIndex((current) =>
-      Math.max(0, Math.min(DISPLAY_DENSITIES.length - 1, current + direction)),
+    setSizeIndex((current) =>
+      Math.max(0, Math.min(DISPLAY_SIZES.length - 1, current + direction)),
     );
   };
 
-  const useRecommendedDensity = () => {
-    const recommendedIndex = getRecommendedDensityIndex(getViewportSize());
-    setDoesPreviewFit(false);
-    setDensityIndex(recommendedIndex);
-    window.requestAnimationFrame(scheduleFitMeasurement);
+  const useRecommendedSize = () => {
+    if (!isSecure) return;
+    acceptSize(recommendedSizeIndex);
   };
 
   const handleContinue = () => {
-    if (!canContinue) return;
-
-    const signature = getViewportSignature(getViewportSize());
-    writeStoredDisplayCheck(density.id, signature);
-    acceptedViewportRef.current = signature;
-    setIsGateOpen(false);
-    setIsDisplayReady(true);
-
-    window.requestAnimationFrame(() => {
-      document.getElementById('home-hero-title')?.focus();
-    });
+    if (!isSecure || !doesPreviewFit) return;
+    acceptSize(sizeIndex);
   };
 
   const handleDialogKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (event.key === 'Escape') {
       event.preventDefault();
+      useRecommendedSize();
       return;
     }
     if (event.key !== 'Tab') return;
@@ -429,7 +372,7 @@ export default function HomeDisplayCheck({ children }: { children: ReactNode }) 
     <HomeDisplayReadyContext.Provider value={isDisplayReady}>
       <main
         className={`${pageStyles.page} ${styles.displayRoot}`}
-        data-home-display-density={density.id}
+        data-home-display-size={size.id}
       >
         <div
           ref={contentRef}
@@ -451,162 +394,119 @@ export default function HomeDisplayCheck({ children }: { children: ReactNode }) 
               tabIndex={-1}
               onKeyDown={handleDialogKeyDown}
             >
-              <div className={styles.dialogHeader}>
-                <div className={styles.securityMark} aria-hidden="true">
-                  <Image
-                    src="/brand/aim4price-mark-black.png"
-                    alt=""
-                    width={66}
-                    height={52}
-                    unoptimized
-                  />
-                </div>
+              <header className={styles.dialogHeader}>
+                <Image
+                  className={styles.logo}
+                  src="/brand/aim4price-mark-black.png"
+                  alt=""
+                  width={66}
+                  height={52}
+                  unoptimized
+                />
                 <div>
-                  <p className={styles.eyebrow}>Aim4price protected setup</p>
-                  <h2 id="home-display-check-title">Aim4price security &amp; display check</h2>
+                  <h2 id="home-display-check-title">Quick display check</h2>
                   <p id="home-display-check-description">
-                    Aim4price verifies this page is using a protected browser context, then
-                    makes sure important asset information fits your screen correctly.
+                    Use − or + until the card sits inside the frame.
                   </p>
                 </div>
-              </div>
+              </header>
 
-              <div className={styles.statusGrid}>
-                <div className={styles.statusItem} data-passed={securityPassed ? 'true' : 'false'}>
-                  <span className={styles.statusIcon} aria-hidden="true">
-                    {securityPassed ? '✓' : '!'}
-                  </span>
-                  <span>
-                    <strong>
-                      {securityStatus === 'protected'
-                        ? 'Connection protected'
-                        : securityStatus === 'local-development'
-                          ? 'Local development context'
-                          : 'Secure connection required'}
-                    </strong>
-                    <small>
-                      {securityStatus === 'protected'
-                        ? 'This page is using HTTPS in a protected browser context.'
-                        : securityStatus === 'local-development'
-                          ? 'Browser-authorized local context. Production still requires HTTPS.'
-                          : 'Open Aim4price over HTTPS to continue.'}
-                    </small>
-                  </span>
-                </div>
+              <p
+                className={styles.securityLine}
+                data-secure={isSecure ? 'true' : 'false'}
+              >
+                <span aria-hidden="true">{isSecure ? '✓' : '!'}</span>
+                {isSecure ? 'Secure connection' : 'Secure connection required'}
+              </p>
 
-                <div className={styles.statusItem} data-passed={doesPreviewFit ? 'true' : 'false'}>
-                  <span className={styles.statusIcon} aria-hidden="true">
-                    {doesPreviewFit ? '✓' : '2'}
-                  </span>
-                  <span>
-                    <strong>{doesPreviewFit ? 'Display verified' : 'Display fit'}</strong>
-                    <small>{doesPreviewFit ? 'Aim4price is ready for this screen.' : 'Adjust the preview below.'}</small>
-                  </span>
-                </div>
-              </div>
-
-              <section className={styles.fitSection} aria-labelledby="display-fit-title">
-                <div className={styles.fitHeading}>
-                  <div>
-                    <h3 id="display-fit-title">Fit the complete asset card inside the frame</h3>
-                    <p>Use − and + until all four edges sit within the green outline.</p>
-                  </div>
-                  <span className={styles.densityLabel}>{density.label}</span>
-                </div>
-
-                <div className={styles.fitCanvas}>
+              <div className={styles.fitCanvas}>
+                <div
+                  ref={frameRef}
+                  className={styles.fitFrame}
+                  data-fit={doesPreviewFit ? 'true' : 'false'}
+                >
                   <div
-                    ref={frameRef}
-                    className={styles.fitFrame}
-                    data-fit={doesPreviewFit ? 'true' : 'false'}
+                    ref={previewRef}
+                    className={styles.fitPreview}
+                    style={previewStyle}
+                    aria-hidden="true"
                   >
-                    <div
-                      ref={previewRef}
-                      className={styles.fitPreview}
-                      style={previewStyle}
-                      aria-hidden="true"
-                    >
-                      <div className={styles.previewTopline}>
-                        <span>2023 Toyota Hilux Single Cab</span>
-                        <strong>R 237 150</strong>
+                    <div className={styles.previewTopline}>
+                      <span>2023 Toyota Hilux</span>
+                      <strong>R 237 150</strong>
+                    </div>
+                    <div className={styles.previewBody}>
+                      <div className={styles.previewPhoto}>
+                        <Image
+                          src="/brand/home-asset-hilux-listing.webp"
+                          alt=""
+                          fill
+                          sizes="180px"
+                          unoptimized
+                        />
                       </div>
-                      <div className={styles.previewBody}>
-                        <div className={styles.previewPhoto} aria-hidden="true">
-                          <Image
-                            src="/brand/home-asset-hilux-listing.webp"
-                            alt=""
-                            fill
-                            sizes="20rem"
-                            unoptimized
-                          />
-                          <span>Aim4price asset</span>
-                        </div>
-                        <div className={styles.previewFacts} aria-hidden="true">
-                          <span>YEAR <strong>2023</strong></span>
-                          <span>USAGE <strong>113 677 km</strong></span>
-                          <span>CONDITION <strong>Good</strong></span>
-                        </div>
+                      <div className={styles.previewFacts}>
+                        <span>YEAR <strong>2023</strong></span>
+                        <span>USAGE <strong>113 677 km</strong></span>
+                        <span>CONDITION <strong>Good</strong></span>
                       </div>
                     </div>
                   </div>
                 </div>
+              </div>
 
-                <div className={styles.densityControls}>
-                  <button
-                    ref={smallerButtonRef}
-                    type="button"
-                    className={styles.densityButton}
-                    aria-label="Make display smaller"
-                    onClick={() => adjustDensity(-1)}
-                    disabled={densityIndex === 0}
-                  >
-                    −
-                  </button>
-                  <p role="status" aria-live="polite" aria-atomic="true">
-                    <strong>Display size: {density.label}</strong>
-                    <span>
-                      {doesPreviewFit
-                        ? 'The complete card is inside the frame.'
-                        : 'The card still extends beyond the frame.'}
-                    </span>
-                  </p>
-                  <button
-                    type="button"
-                    className={styles.densityButton}
-                    aria-label="Make display larger"
-                    onClick={() => adjustDensity(1)}
-                    disabled={densityIndex === DISPLAY_DENSITIES.length - 1}
-                  >
-                    +
-                  </button>
-                </div>
-              </section>
-
-              <div className={styles.dialogFooter}>
-                <p>
-                  Your display preference is stored only in this browser. This check does not
-                  inspect personal files or identify your device.
+              <div className={styles.sizeControls}>
+                <button
+                  type="button"
+                  aria-label="Make Aim4price smaller"
+                  onClick={() => adjustSize(-1)}
+                  disabled={sizeIndex === 0}
+                >
+                  −
+                </button>
+                <p role="status" aria-live="polite" aria-atomic="true">
+                  <strong>{size.label}</strong>
+                  <span>
+                    {doesPreviewFit ? 'Card fits the frame' : 'Choose a smaller size'}
+                  </span>
                 </p>
-                <div className={styles.footerActions}>
-                  {!securityPassed ? (
-                    <a className={styles.secureLink} href={secureHref}>
-                      Open secure Aim4price
-                    </a>
-                  ) : densityIndex !== recommendedDensityIndex ? (
-                    <button type="button" className={styles.recommendedButton} onClick={useRecommendedDensity}>
-                      Use recommended size
-                    </button>
-                  ) : null}
+                <button
+                  type="button"
+                  aria-label="Make Aim4price larger"
+                  onClick={() => adjustSize(1)}
+                  disabled={sizeIndex === DISPLAY_SIZES.length - 1}
+                >
+                  +
+                </button>
+              </div>
+
+              {!isSecure ? (
+                <a className={styles.secureLink} href={secureHref}>
+                  Open secure Aim4price
+                </a>
+              ) : null}
+
+              <footer className={styles.dialogFooter}>
+                <p>Saved in this browser.</p>
+                <div>
+                  <button
+                    type="button"
+                    className={styles.recommendedButton}
+                    onClick={useRecommendedSize}
+                    disabled={!isSecure}
+                  >
+                    Use recommended
+                  </button>
                   <button
                     type="button"
                     className={styles.continueButton}
-                    disabled={!canContinue}
                     onClick={handleContinue}
+                    disabled={!isSecure || !doesPreviewFit}
                   >
-                    Continue to Aim4price
+                    Continue
                   </button>
                 </div>
-              </div>
+              </footer>
             </div>
           </div>
         ) : null}
