@@ -614,6 +614,7 @@
 
 .assetPreviewState {
   display: flex;
+  flex: 1 1 auto;
   min-width: 0;
   min-height: 0;
   height: 100%;
@@ -1645,13 +1646,15 @@
 
 .heroBrandCopy {
   display: flex;
-  min-height: 100%;
+  min-height: 0;
   flex-direction: column;
   justify-content: center;
 }
 
 .heroPromiseCopy {
-  display: none;
+  display: flex;
+  flex-direction: column;
+  margin-top: clamp(2rem, 5vw, 3.5rem);
 }
 
 .heroBrandTitle,
@@ -2017,7 +2020,7 @@
 }
 
 /* Cinematic layout for sufficiently large, precise-pointer screens only. */
-@media (min-width: 1181px) and (min-height: 700px) and (hover: hover) and (pointer: fine) {
+@media (min-width: 1181px) and (min-height: 700px) and (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
   .heroSection[data-story-capability='cinematic'] .heroStory {
     min-height: 500svh;
   }
@@ -2061,19 +2064,19 @@
     align-self: stretch;
   }
 
-  .heroSection[data-story-capability='cinematic'] .storyHeroLogo,
-  .heroSection[data-story-capability='cinematic'] .assetStageMotion {
+  .heroSection[data-story-capability='cinematic'] .storyHeroLogo {
     grid-column: 2;
+  }
+
+  .heroSection[data-story-capability='cinematic'] .assetStageMotion {
+    width: 100%;
+    grid-column: 1 / -1;
+    justify-self: stretch;
   }
 
   .heroSection[data-story-capability='cinematic'] .featureNarrative {
     grid-column: 2;
     justify-self: start;
-  }
-
-  .heroSection[data-story-capability='cinematic'][data-story-mode='features'] .assetStageMotion {
-    grid-column: 1;
-    justify-self: stretch;
   }
 
   .heroSection[data-story-capability='cinematic'] .compactHeroActions {
@@ -2101,6 +2104,7 @@
 
   .heroSection[data-story-capability='cinematic'] .heroPromiseCopy {
     display: flex;
+    margin-top: 0;
   }
 
   .heroSection[data-story-capability='cinematic'] .storyHeroLogo,
@@ -2153,6 +2157,10 @@
     margin-top: 0;
   }
 
+  .heroSection[data-story-capability='cinematic'] .featureNarrativeLayer h2 {
+    padding-inline-end: 4.75rem;
+  }
+
   .heroSection[data-story-capability='cinematic'][data-story-step='brand'] .heroBrandCopy,
   .heroSection[data-story-capability='cinematic'][data-story-step='promise'] .heroPromiseCopy,
   .heroSection[data-story-capability='cinematic'][data-story-step='preview'] .heroPromiseCopy {
@@ -2183,17 +2191,18 @@
     pointer-events: auto;
   }
 
-  .heroSection[data-story-capability='cinematic'][data-story-mode='preview'] .assetStageMotion {
-    animation: assetStageToPreview 760ms cubic-bezier(0.22, 1, 0.36, 1) both;
-  }
-
-  .heroSection[data-story-capability='cinematic'][data-story-mode='features'] .assetStageMotion {
-    animation: assetStageToFeature 760ms cubic-bezier(0.22, 1, 0.36, 1) both;
-  }
-
   .heroSection[data-story-capability='cinematic'] .assetHeroStage {
+    position: relative;
+    left: 0;
     display: block;
+    width: min(55%, 49.5rem);
+    max-width: 49.5rem;
     aspect-ratio: 1000 / 650;
+    transition: left 900ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .heroSection[data-story-capability='cinematic'][data-story-mode='preview'] .assetHeroStage {
+    left: calc(100% - min(55%, 49.5rem));
   }
 
   .heroSection[data-story-capability='cinematic'] .assetQuestionGroup {
@@ -2264,34 +2273,6 @@
   }
 }
 
-@keyframes assetStageToPreview {
-  from {
-    opacity: 0;
-    filter: blur(12px);
-    transform: translateX(-1.5rem) scale(0.985);
-  }
-
-  to {
-    opacity: 1;
-    filter: blur(0);
-    transform: translateX(0) scale(1);
-  }
-}
-
-@keyframes assetStageToFeature {
-  from {
-    opacity: 0;
-    filter: blur(12px);
-    transform: translateX(1.5rem) scale(0.985);
-  }
-
-  to {
-    opacity: 1;
-    filter: blur(0);
-    transform: translateX(0) scale(1);
-  }
-}
-
 .assetPreviewState {
   animation: heroPreviewReveal 440ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
@@ -2359,7 +2340,7 @@
   }
 }
 
-@media (min-width: 1181px) and (max-width: 1360px) and (min-height: 700px) and (hover: hover) and (pointer: fine) {
+@media (min-width: 1181px) and (max-width: 1360px) and (min-height: 700px) and (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
   .heroSection[data-story-capability='cinematic'] .storyHeroGrid {
     grid-template-columns: minmax(25rem, 0.86fr) minmax(34rem, 1.14fr);
     gap: clamp(1.6rem, 2.4vw, 2.5rem);
@@ -2582,7 +2563,8 @@
   .secondaryCta,
   .assetQuestion,
   .roleCard,
-  .roleArrow {
+  .roleArrow,
+  .roleSection {
     animation: none !important;
     transition: none !important;
   }
