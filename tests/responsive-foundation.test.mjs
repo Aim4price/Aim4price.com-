@@ -13,6 +13,7 @@ test('global layout tokens provide fluid gutters, spacing and stable text scalin
   assert.match(globals, /--layout-card-gap: clamp\(/);
   assert.match(globals, /--control-min-height: 44px/);
   assert.match(globals, /-webkit-text-size-adjust: 100%/);
+  assert.match(globals, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?scroll-behavior: auto/);
   assert.match(globals, /\.appRoot,[\s\S]*?\.appRoot > main,[\s\S]*?main \{[\s\S]*?min-width: 0;[\s\S]*?max-width: 100%/);
 });
 
@@ -98,6 +99,7 @@ test('home page uses one fluid layout contract instead of a calibrated fixed can
   assert.match(hero, /HERO_FEATURE_DURATION_MS = 4800/);
   assert.match(hero, /\(min-width: 1181px\) and \(min-height: 700px\) and \(hover: hover\) and \(pointer: fine\)/);
   assert.match(hero, /cinematicStoryMedia\.matches && !reducedMotionMedia\.matches/);
+  assert.match(hero, /const \[isCinematicStory, setIsCinematicStory\] = useState\(true\)/);
   assert.match(hero, /reducedMotionMedia\.addEventListener\('change', syncStoryCapability\)/);
   assert.match(hero, /cinematicStoryMedia\.addEventListener\('change', syncStoryCapability\)/);
   assert.match(hero, /reducedMotionMedia\.removeEventListener\('change', syncStoryCapability\)/);
@@ -105,13 +107,14 @@ test('home page uses one fluid layout contract instead of a calibrated fixed can
   assert.match(hero, /if \(!manualControlRef\.current\) updateStoryStep\(FEATURE_START_INDEX\)/);
   assert.match(hero, /else if \(!manualControlRef\.current\) \{[\s\S]*?updateStoryStep\(0\)/);
   assert.match(hero, /finishAutoplay[\s\S]*?updateStoryStep\(0\)/);
+  assert.match(hero, /isPreviewHovered[\s\S]*?setIsPreviewHovered\(source === 'pointer-enter'\)/);
   assert.match(hero, /new IntersectionObserver\([\s\S]*?setIsHeroVisible\(entry\?\.isIntersecting \?\? true\)/);
   assert.match(hero, /window\.addEventListener\('scroll', handleScroll, \{ passive: true \}\)/);
   assert.match(hero, /trackTravel = Math\.max\([\s\S]*?section\.offsetHeight - sticky\.offsetHeight/);
   assert.match(hero, /nextIndex = clampStoryIndex\([\s\S]*?Math\.floor\(progress \* HERO_STORY_STEPS\.length\)/);
-  assert.match(hero, /new ResizeObserver\(syncHeaderHeight\)/);
-  assert.match(hero, /--home-header-height/);
+  assert.doesNotMatch(hero, /previousElementSibling|ResizeObserver|--home-header-height/);
   assert.doesNotMatch(hero, /storyGridRef|assetMotionRef|offsetLeft|--asset-stage-shift-x/);
+  assert.match(home, /top: var\(--home-header-height, 5\.75rem\)/);
 
   const scrollFlow = hero.slice(
     hero.indexOf('const scheduleStorySync = (claimControl: boolean)'),
@@ -127,13 +130,14 @@ test('home page uses one fluid layout contract instead of a calibrated fixed can
 
   const cinematic = story.slice(
     story.indexOf('@media (min-width: 1181px) and (min-height: 700px)'),
-    story.indexOf('@keyframes assetStageToPreview'),
+    story.indexOf('@media (min-width: 1181px) and (max-width: 1360px)'),
   );
-  assert.match(cinematic, /and \(hover: hover\) and \(pointer: fine\)/);
+  assert.match(cinematic, /and \(hover: hover\) and \(pointer: fine\) and \(prefers-reduced-motion: no-preference\)/);
   assert.match(cinematic, /\.heroStory \{[\s\S]*?min-height: 500svh/);
   assert.match(cinematic, /\.heroSticky \{[\s\S]*?position: sticky;[\s\S]*?height: calc\(100dvh - var\(--home-header-height, 5\.75rem\)\);[\s\S]*?overflow: hidden/);
   assert.match(cinematic, /data-story-mode='features'[\s\S]*?\.storyHeroGrid \{[\s\S]*?grid-template-columns: minmax\(34rem, 1\.16fr\) minmax\(22rem, 0\.84fr\)/);
-  assert.match(cinematic, /data-story-mode='features'[\s\S]*?\.assetStageMotion \{[\s\S]*?grid-column: 1/);
+  assert.match(cinematic, /\.assetStageMotion \{[\s\S]*?grid-column: 1 \/ -1/);
+  assert.match(cinematic, /data-story-mode='preview'[\s\S]*?\.assetHeroStage \{[\s\S]*?left: calc\(100% - min\(55%, 49\.5rem\)\)/);
   assert.match(cinematic, /\.featureNarrative \{[\s\S]*?grid-column: 2/);
   assert.match(cinematic, /filter: blur\(14px\)[\s\S]*?opacity 820ms[\s\S]*?filter 820ms/);
 
@@ -142,6 +146,7 @@ test('home page uses one fluid layout contract instead of a calibrated fixed can
   assert.match(story, /@media \(max-width: 760px\)[\s\S]*?\.compactHeroActions \{[\s\S]*?grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
   assert.match(story, /@media \(max-width: 520px\)[\s\S]*?\.compactHeroActions \{[\s\S]*?grid-template-columns: minmax\(0, 1fr\)/);
   assert.match(story, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?animation: none !important;[\s\S]*?transition: none !important/);
+  assert.match(story, /\.heroPromiseCopy \{[\s\S]*?display: flex/);
   assert.match(home, /@media \(forced-colors: active\)/);
   assert.match(home, /@media \(max-width: 760px\)[\s\S]*?\.roleGrid \{[\s\S]*?grid-template-columns: minmax\(0, 1fr\)/);
   assert.match(home, /@media \(min-width: 761px\) and \(max-width: 1180px\)[\s\S]*?--app-header-height: 7\.5rem/);
