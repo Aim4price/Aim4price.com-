@@ -140,7 +140,7 @@ test('homepage plays one slower timed tour, returns to its brand frame, then fol
   assert.match(hero, /className=\{styles\.storyHeroGrid\}[\s\S]*?onFocusCapture=\{handleStoryFocus\}/);
 
   assert.equal((hero.match(/className=\{styles\.storyHeroLogo\}/g) ?? []).length, 1);
-  assert.match(hero, /className=\{styles\.storyHeroLogo\}[\s\S]*?src="\/brand\/aim4price-mark-black\.png"[\s\S]*?className=\{styles\.storyHeroLogoImage\}/);
+  assert.match(hero, /className=\{styles\.storyHeroLogo\}[\s\S]*?src="\/brand\/aim4price-mark-black\.png"[\s\S]*?quality=\{100\}[\s\S]*?unoptimized[\s\S]*?className=\{styles\.storyHeroLogoImage\}/);
   assert.match(hero, /<div ref=\{assetMotionRef\} className=\{styles\.assetStageMotion\}>[\s\S]*?<HomeAssetPreview/);
   assert.doesNotMatch(hero, /shouldRenderPreview|\{shouldRenderPreview \?/);
 
@@ -377,7 +377,12 @@ test('homepage plays one slower timed tour, returns to its brand frame, then fol
   assert.doesNotMatch(storyHeroStyles, /\.heroStory \.heroMedia \.shell \{[^}]*100rem/s);
   assert.match(storyHeroStyles, /\.storyCopyLayer \{[\s\S]*?filter: blur\(14px\);[\s\S]*?opacity 820ms[\s\S]*?filter 820ms[\s\S]*?transform 820ms/);
   assert.match(storyHeroStyles, /\.heroBrandTitle span,[\s\S]*?\.heroPromiseTitle span \{[\s\S]*?white-space: nowrap/);
+  assert.match(storyHeroStyles, /\.heroBrandTitle span:first-child::after \{[\s\S]*?content: ''[\s\S]*?linear-gradient\(90deg, #1ba677/);
   assert.match(storyHeroStyles, /\.storyHeroLogo \{[\s\S]*?filter: blur\(14px\);[\s\S]*?opacity 850ms[\s\S]*?filter 850ms/);
+  assert.match(storyHeroStyles, /\.storyHeroLogo::before,[\s\S]*?\.storyHeroLogo::after \{[\s\S]*?border-radius: 50%/);
+  assert.match(storyHeroStyles, /\.storyHeroLogo::before \{[\s\S]*?radial-gradient\([\s\S]*?rgba\(89, 195, 155, 0\.22\)/);
+  assert.match(storyHeroStyles, /\.storyHeroLogo::after \{[\s\S]*?rgba\(53, 142, 109, 0\.12\)[\s\S]*?rgba\(53, 142, 109, 0\.09\)/);
+  assert.match(storyHeroStyles, /\.storyHeroLogoImage \{[\s\S]*?drop-shadow\(0 1\.2rem 0\.8rem rgba\(12, 67, 49, 0\.16\)\)/);
   assert.match(storyHeroStyles, /\.assetStageMotion \{[\s\S]*?filter: blur\(14px\);[\s\S]*?transform 940ms/);
   assert.match(storyHeroStyles, /\.featureNarrativeLayer \{[\s\S]*?filter: blur\(12px\);[\s\S]*?opacity 700ms[\s\S]*?filter 700ms/);
 
