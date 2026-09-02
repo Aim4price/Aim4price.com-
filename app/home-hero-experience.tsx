@@ -15,9 +15,10 @@ import styles from './page.module.css';
 
 const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
 const DESKTOP_STORY_QUERY = '(min-width: 1181px) and (min-height: 640px)';
+const PROMISE_STEP_INDEX = 1;
 const FEATURE_START_INDEX = 3;
 
-export const HERO_FEATURE_DURATION_MS = 3200;
+export const HERO_FEATURE_DURATION_MS = 4800;
 export const HERO_STORY_SCROLL_RATIO = 0.32;
 
 export const HERO_STAGES: readonly QuestionKey[] = [
@@ -48,9 +49,9 @@ type FeatureStory = {
 };
 
 const STORY_DURATIONS: Readonly<Record<StoryStep, number>> = {
-  brand: 2600,
-  promise: 2800,
-  preview: 2400,
+  brand: 3800,
+  promise: 4800,
+  preview: 3600,
   have: HERO_FEATURE_DURATION_MS,
   worth: HERO_FEATURE_DURATION_MS,
   cost: HERO_FEATURE_DURATION_MS,
@@ -105,6 +106,7 @@ export default function HomeHeroExperience() {
   const [isDesktopStory, setIsDesktopStory] = useState(true);
   const [isManuallyControlled, setIsManuallyControlled] = useState(false);
   const [isScrollDriven, setIsScrollDriven] = useState(false);
+  const [hasAutoplayFinished, setHasAutoplayFinished] = useState(false);
   const [isStoryComplete, setIsStoryComplete] = useState(false);
   const [storyHeightPx, setStoryHeightPx] = useState<number | null>(null);
 
@@ -113,6 +115,7 @@ export default function HomeHeroExperience() {
   const storyGridRef = useRef<HTMLDivElement | null>(null);
   const assetMotionRef = useRef<HTMLDivElement | null>(null);
   const storyStepRef = useRef(0);
+  const autoplayFinishedRef = useRef(false);
   const storyCompleteRef = useRef(false);
   const scrollAnchorRef = useRef<{ scrollY: number; stepIndex: number } | null>(null);
   const lastScrollYRef = useRef(0);
@@ -127,10 +130,21 @@ export default function HomeHeroExperience() {
     if (safeIndex >= FEATURE_START_INDEX) {
       const questionIndex = safeIndex - FEATURE_START_INDEX;
       setActiveQuestion(HERO_STAGES[questionIndex] ?? 'have');
-    } else if (safeIndex === FEATURE_START_INDEX - 1) {
+    } else {
       setActiveQuestion('have');
     }
   }, []);
+
+  const finishAutoplay = useCallback(() => {
+    autoplayFinishedRef.current = true;
+    scrollAnchorRef.current = null;
+    lastScrollYRef.current = window.scrollY;
+    setHasAutoplayFinished(true);
+    setIsAutoplaying(false);
+    setIsPaused(false);
+    setIsScrollDriven(false);
+    updateStoryStep(PROMISE_STEP_INDEX);
+  }, [updateStoryStep]);
 
   const completeStory = useCallback((collapseFromStart = false) => {
     if (storyCompleteRef.current) return;
@@ -244,8 +258,6 @@ export default function HomeHeroExperience() {
 
     if (window.location.hash !== '#choose-role' && window.scrollY <= 4) return undefined;
 
-    setIsManuallyControlled(true);
-    updateStoryStep(FEATURE_START_INDEX);
     const roleWasTargeted = window.location.hash === '#choose-role';
     const section = sectionRef.current;
     const sticky = stickyRef.current;
@@ -258,10 +270,25 @@ export default function HomeHeroExperience() {
         : Number.POSITIVE_INFINITY;
     const restoredBeyondStory = window.scrollY >= sectionEnd - 4;
 
-    const frame = window.requestAnimationFrame(() => {
-      completeStory(roleWasTargeted || restoredBeyondStory);
+    if (!roleWasTargeted && !restoredBeyondStory) {
+      autoplayFinishedRef.current = true;
+      setHasAutoplayFinished(true);
+      setIsManuallyControlled(true);
+      setIsScrollDriven(true);
+      updateStoryStep(PROMISE_STEP_INDEX);
+      scrollAnchorRef.current = {
+        scrollY: window.scrollY,
+        stepIndex: PROMISE_STEP_INDEX,
+      };
+      return undefined;
+    }
 
-      if (roleWasTargeted || restoredBeyondStory) alignRoleSection();
+    setIsManuallyControlled(true);
+    updateStoryStep(FEATURE_START_INDEX);
+
+    const frame = window.requestAnimationFrame(() => {
+      completeStory(true);
+      alignRoleSection();
     });
 
     return () => {
@@ -276,6 +303,7 @@ export default function HomeHeroExperience() {
       !isHeroVisible ||
       isPaused ||
       isManuallyControlled ||
+      hasAutoplayFinished ||
       isStoryComplete
     ) {
       setIsAutoplaying(false);
@@ -287,7 +315,7 @@ export default function HomeHeroExperience() {
 
     const timer = window.setTimeout(() => {
       if (storyStepIndex >= HERO_STORY_STEPS.length - 1) {
-        completeStory();
+        if (!autoplayFinishedRef.current) finishAutoplay();
         return;
       }
 
@@ -297,7 +325,8 @@ export default function HomeHeroExperience() {
     return () => window.clearTimeout(timer);
   }, [
     canAutoplay,
-    completeStory,
+    finishAutoplay,
+    hasAutoplayFinished,
     isManuallyControlled,
     isHeroVisible,
     isPageVisible,
@@ -436,6 +465,7 @@ export default function HomeHeroExperience() {
       data-story-mode={storyMode}
       data-story-complete={isStoryComplete ? 'true' : 'false'}
       data-scroll-driven={isScrollDriven ? 'true' : 'false'}
+      data-autoplay-finished={hasAutoplayFinished ? 'true' : 'false'}
       data-active-question={activeQuestion}
       data-autoplay={
         isAutoplaying && storyStepIndex >= FEATURE_START_INDEX ? 'true' : 'false'
@@ -561,7 +591,10 @@ export default function HomeHeroExperience() {
                 </Link>
               </div>
 
-              {!isStoryComplete && isDesktopStory && !isManuallyControlled ? (
+              {!isStoryComplete &&
+                isDesktopStory &&
+                !isManuallyControlled &&
+                !hasAutoplayFinished ? (
                 <button
                   type="button"
                   className={styles.storyPauseControl}
