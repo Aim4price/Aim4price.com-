@@ -1,8 +1,8 @@
 import { redirectAdminToAdmin } from '../lib/account-access';
 import AppHeader from '../components/AppHeader';
-import HomeDisplayCheck from './home-display-check';
 import HomeHeroExperience from './home-hero-experience';
 import HomeRoleSelector from './home-role-selector';
+import styles from './page.module.css';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -11,16 +11,14 @@ export default async function HomePage() {
   await redirectAdminToAdmin();
 
   return (
-    <HomeDisplayCheck>
-      <AppHeader
-        active="home"
-        brandAlignment="working-column"
-        standardCanvas
-      />
+    <div className={styles.page}>
+      <AppHeader active="home" />
 
-      <HomeHeroExperience />
+      <main className={styles.homeMain}>
+        <HomeHeroExperience />
 
-      <HomeRoleSelector />
-    </HomeDisplayCheck>
+        <HomeRoleSelector />
+      </main>
+    </div>
   );
 }

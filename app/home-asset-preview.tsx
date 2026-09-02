@@ -9,7 +9,7 @@ export type QuestionKey = 'have' | 'worth' | 'cost' | 'manage' | 'attention';
 type HomeAssetPreviewProps = {
   activeQuestion: QuestionKey;
   onQuestionChange: (question: QuestionKey, index: number) => void;
-  onInteraction?: (source: 'pointer' | 'focus') => void;
+  onInteraction?: (source: 'pointer-enter' | 'pointer-leave' | 'focus') => void;
 };
 
 type Question = {
@@ -132,13 +132,14 @@ export default function HomeAssetPreview({
     <div
       className={styles.assetHeroStage}
       data-active-question={activeQuestion}
+      onPointerEnter={() => onInteraction?.('pointer-enter')}
+      onPointerLeave={() => onInteraction?.('pointer-leave')}
+      onFocusCapture={() => onInteraction?.('focus')}
     >
       <div
         className={styles.assetQuestionGroup}
         role="tablist"
         aria-label="Explore the Aim4price asset record"
-        onPointerEnter={() => onInteraction?.('pointer')}
-        onFocusCapture={() => onInteraction?.('focus')}
       >
         {QUESTIONS.map((question, index) => {
           const isActive = question.key === activeQuestion;
@@ -178,8 +179,6 @@ export default function HomeAssetPreview({
         tabIndex={0}
         className={styles.assetPreviewCard}
         data-active-question={activeQuestion}
-        onPointerEnter={() => onInteraction?.('pointer')}
-        onFocusCapture={() => onInteraction?.('focus')}
       >
         <div key={activeQuestion} className={styles.assetPreviewState}>
           <PreviewContent activeQuestion={activeQuestion} />
@@ -280,7 +279,7 @@ function AssetCardPreview() {
             width={1280}
             height={960}
             priority
-            sizes="(min-width: 1181px) 17vw, (min-width: 761px) 32vw, 42vw"
+            sizes="(min-width: 1600px) 430px, (min-width: 1181px) 32vw, (min-width: 761px) 48vw, 52vw"
           />
           <div className={styles.assetThumbnails} aria-hidden="true">
             <span />

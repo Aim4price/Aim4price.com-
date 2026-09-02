@@ -13,6 +13,7 @@
   --shadow-soft: 0 18px 38px rgba(16, 42, 34, 0.05);
   --shadow-card: 0 12px 30px rgba(16, 42, 34, 0.05);
   --shell-max: 1180px;
+  --site-wide-shell-max: 1360px;
   --shell-narrow-max: 1040px;
   --shell-gutter: 1.5rem;
   --layout-section-gap: clamp(0.9rem, 1.4vw, 1.35rem);
@@ -39,6 +40,12 @@ html {
   scrollbar-gutter: stable;
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
 }
 
 body {

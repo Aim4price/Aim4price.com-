@@ -37,6 +37,7 @@
     "test:assistance-network": "node --test tests/assistance-network.test.mjs",
     "test:app-umbrella-access": "node --test tests/app-umbrella-directory-access.test.mjs",
     "test:responsive-foundation": "node --test tests/responsive-foundation.test.mjs",
+    "test:homepage-responsive": "node --test tests/responsive-foundation.test.mjs tests/homepage-asset-register-hero.test.mjs tests/desktop-site-viewport.test.mjs",
     "test:upload-storage": "node --test tests/asset-register-upload-storage.test.mjs tests/upload-object-storage-foundation.test.mjs tests/bucket-only-upload-catalog.test.mjs tests/bucket-only-upload-runtime.test.mjs tests/bucket-only-upload-purge.test.mjs",
     "test:invoice-drop": "node --experimental-strip-types --test tests/public-invoice-drop.test.mjs",
     "test:capture-queue": "node --test tests/admin-capture-queue.test.mjs tests/admin-capture-usage-update.test.mjs tests/capture-requests.security.test.mjs tests/capture-finalization.test.mjs tests/capture-lifecycle-cleanup.test.mjs",
