@@ -39,8 +39,11 @@ type ActivePage =
   | 'showroom'
   | 'none';
 
+type BrandAlignment = 'header' | 'working-column';
+
 type AppHeaderProps = {
   active: ActivePage;
+  brandAlignment?: BrandAlignment;
   signupHref?: string;
   loginHref?: string;
   ctaHref?: string;
@@ -728,6 +731,7 @@ function formatDateTime(value: string | null | undefined): string {
 
 export default function AppHeader({
   active,
+  brandAlignment = 'header',
   signupHref = '/auth#signup',
   loginHref = '/auth#login',
   ctaHref,
@@ -735,6 +739,8 @@ export default function AppHeader({
 }: AppHeaderProps) {
   const primaryHref = ctaHref ?? signupHref;
   const pathname = usePathname();
+  const brandAlignmentClass =
+    brandAlignment === 'working-column' ? styles.brandWorkingColumn : '';
   const searchParams = useSearchParams();
   const accountantWorkspaceShareId = useMemo(() => {
     const match = /^\/accountant\/registers\/([^/]+)(?:\/|$)/.exec(pathname || '');
@@ -2426,9 +2432,9 @@ export default function AppHeader({
     <>
       <header className={styles.header}>
         <div
-          className={`${styles.inner} ${isDealerAccount ? styles.innerDealer : ''} ${!isLoadingSession && !session ? styles.innerPublic : ''} ${usesCompactHeader ? styles.innerCompact : ''}`}
+          className={`${styles.inner} ${isDealerAccount ? styles.innerDealer : ''} ${!isLoadingSession && !session ? styles.innerPublic : ''} ${usesCompactHeader ? styles.innerCompact : ''} ${brandAlignmentClass ? styles.innerBrandAligned : ''}`}
         >
-          <Link href="/" className={styles.brand} aria-label="Go to Aim4price home">
+          <Link href="/" className={`${styles.brand} ${brandAlignmentClass}`} aria-label="Go to Aim4price home">
             <Image
               src="/brand/aim4price-mark-black.png"
               alt="Aim4price"
@@ -2440,7 +2446,7 @@ export default function AppHeader({
           </Link>
 
           <nav
-            className={`${styles.nav} ${showNavWindowControls ? styles.navWindowed : styles.navStatic} ${usesCompactHeader ? styles.navCompact : ''}`}
+            className={`${styles.nav} ${usesCompactHeader ? styles.navCompact : ''}`}
             aria-label="Primary navigation"
           >
             {showNavWindowControls ? (

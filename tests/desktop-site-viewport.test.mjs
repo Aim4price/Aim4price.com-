@@ -4,7 +4,6 @@ import test from 'node:test';
 
 const rootLayoutPath = new URL('../app/layout.tsx', import.meta.url);
 const homePagePath = new URL('../app/page.tsx', import.meta.url);
-const homeHeroPath = new URL('../app/home-hero-experience.tsx', import.meta.url);
 const homeStylesPath = new URL('../app/page.module.css', import.meta.url);
 const homeVideoPath = new URL('../app/home-hero-video.tsx', import.meta.url);
 
@@ -14,18 +13,16 @@ const protectedAppLayoutPaths = [
   new URL('../app/owner-app/layout.tsx', import.meta.url),
 ];
 
-test('the normal website uses the physical device viewport without disabling zoom', async () => {
+test('the normal website inherits an auto-fitted desktop viewport from the shared root', async () => {
   const [rootSource, homeSource] = await Promise.all([
     readFile(rootLayoutPath, 'utf8'),
     readFile(homePagePath, 'utf8'),
   ]);
 
   assert.match(rootSource, /export const viewport: Viewport\s*=\s*\{/);
-  assert.match(rootSource, /width:\s*['"]device-width['"]/);
-  assert.match(rootSource, /initialScale:\s*1/);
+  assert.match(rootSource, /width:\s*980/);
+  assert.match(rootSource, /initialScale:\s*-1/);
   assert.match(rootSource, /userScalable:\s*true/);
-  assert.match(rootSource, /viewportFit:\s*['"]cover['"]/);
-  assert.doesNotMatch(rootSource, /width:\s*980|initialScale:\s*-1/);
   assert.doesNotMatch(rootSource, /maximumScale|minimumScale/);
   assert.doesNotMatch(homeSource, /export const viewport|width:\s*980/);
 });
@@ -49,43 +46,25 @@ test('the three role apps keep zoomable device-width viewports', async () => {
   }
 });
 
-test('the Home hero enhances capable desktops and stays in normal flow elsewhere', async () => {
-  const [heroSource, styleSource] = await Promise.all([
-    readFile(homeHeroPath, 'utf8'),
+test('the Home page no longer carries narrow-screen layout branches or copy', async () => {
+  const [pageSource, styleSource] = await Promise.all([
+    readFile(homePagePath, 'utf8'),
     readFile(homeStylesPath, 'utf8'),
   ]);
 
-  assert.match(
-    heroSource,
-    /\(min-width: 1181px\) and \(min-height: 700px\) and \(hover: hover\) and \(pointer: fine\)/,
-  );
-  assert.match(heroSource, /data-story-capability={isCinematicStory \? 'cinematic' : 'static'}/);
-  assert.match(
-    styleSource,
-    /@media \(min-width: 1181px\) and \(min-height: 700px\) and \(hover: hover\) and \(pointer: fine\)[\s\S]*?min-height: 500svh[\s\S]*?position: sticky/,
-  );
-  assert.match(
-    styleSource,
-    /\.assetStageMotion \.assetHeroStage \{[\s\S]*?display: grid;[\s\S]*?aspect-ratio: auto/,
-  );
-  assert.match(
-    styleSource,
-    /@media \(max-width: 760px\)[\s\S]*?grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/,
-  );
-  assert.doesNotMatch(styleSource, /\bzoom\s*:|min-width:\s*(?:1360px|85rem)|--asset-stage-shift-x/);
-  assert.doesNotMatch(heroSource, /offsetLeft|preventDefault\(\)[\s\S]*?(?:wheel|touchmove)/);
+  assert.doesNotMatch(styleSource, /@media\s*\([^)]*max-width/);
+  assert.match(styleSource, /@media\s*\(prefers-reduced-motion:\s*reduce\)/);
+  assert.doesNotMatch(pageSource, /heroTextMobile|heroTextDesktop/);
 });
 
-test('Home does not require a fitment gate or a device-specific video to render', async () => {
-  const [homeSource, heroSource, styleSource] = await Promise.all([
-    readFile(homePagePath, 'utf8'),
-    readFile(homeHeroPath, 'utf8'),
+test('the Home hero keeps reliable playback without a mobile-only video asset', async () => {
+  const [videoSource, styleSource] = await Promise.all([
+    readFile(homeVideoPath, 'utf8'),
     readFile(homeStylesPath, 'utf8'),
   ]);
 
-  assert.doesNotMatch(homeSource, /HomeDisplayCheck|standardCanvas/);
-  assert.doesNotMatch(heroSource, /useHomeDisplay|displayReady|displayScale/);
-  assert.doesNotMatch(styleSource, /homeContent|aim4price-site-scale/);
-  assert.match(styleSource, /@media \(prefers-reduced-motion: reduce\)/);
-  assert.match(styleSource, /@media \(forced-colors: active\)/);
+  assert.match(videoSource, /src="\/brand\/AIM4PRICE\.mp4"/);
+  assert.match(videoSource, /playsInline/);
+  assert.doesNotMatch(videoSource, /AIM4PRICE-mobile\.mp4|media="\(max-width:/);
+  assert.match(styleSource, /\.heroVideoPlay\s*\{[^}]*display:\s*inline-flex/s);
 });

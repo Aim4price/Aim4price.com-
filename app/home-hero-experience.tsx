@@ -13,8 +13,7 @@ import HomeAssetPreview, { type QuestionKey } from './home-asset-preview';
 import styles from './page.module.css';
 
 const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
-const CINEMATIC_STORY_QUERY =
-  '(min-width: 1181px) and (min-height: 700px) and (hover: hover) and (pointer: fine)';
+const DESKTOP_STORY_QUERY = '(min-width: 1181px) and (min-height: 640px)';
 const FEATURE_START_INDEX = 3;
 
 export const HERO_FEATURE_DURATION_MS = 4800;
@@ -40,18 +39,6 @@ type FeatureStory = {
   title: string;
   body: string;
 };
-
-type StoryViewportAnchor =
-  | {
-      kind: 'hero';
-      step: number;
-      viewportOffset: number;
-      wasAtTop: boolean;
-    }
-  | {
-      kind: 'role';
-      viewportOffset: number;
-    };
 
 const STORY_DURATIONS: Readonly<Record<StoryStep, number>> = {
   brand: 3800,
@@ -101,39 +88,25 @@ export default function HomeHeroExperience() {
   const [canAutoplay, setCanAutoplay] = useState(false);
   const [isAutoplaying, setIsAutoplaying] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
-  const [isPreviewHovered, setIsPreviewHovered] = useState(false);
   const [isPageVisible, setIsPageVisible] = useState(true);
   const [isHeroVisible, setIsHeroVisible] = useState(true);
-  // CSS capability queries choose the visible first-paint layout. Starting with
-  // the attribute present prevents an eligible desktop flashing the static stack.
-  const [isCinematicStory, setIsCinematicStory] = useState(true);
+  const [isDesktopStory, setIsDesktopStory] = useState(true);
   const [isManuallyControlled, setIsManuallyControlled] = useState(false);
   const [hasAutoplayFinished, setHasAutoplayFinished] = useState(false);
 
   const sectionRef = useRef<HTMLElement | null>(null);
   const stickyRef = useRef<HTMLDivElement | null>(null);
+  const storyGridRef = useRef<HTMLDivElement | null>(null);
+  const assetMotionRef = useRef<HTMLDivElement | null>(null);
   const storyStepRef = useRef(0);
   const autoplayFinishedRef = useRef(false);
-  const manualControlRef = useRef(false);
   const scrollFrameRef = useRef<number | null>(null);
   const scrollClaimRef = useRef(false);
-  const storyCapabilityRef = useRef<boolean | null>(null);
-  const viewportAnchorRef = useRef<StoryViewportAnchor | null>(null);
-  const anchorFrameRef = useRef<number | null>(null);
-  const capabilityRestoreRef = useRef(false);
-  const capabilityFrameOneRef = useRef<number | null>(null);
-  const capabilityFrameTwoRef = useRef<number | null>(null);
-  const capabilityReleaseTimerRef = useRef<number | null>(null);
 
   const updateStoryStep = useCallback((nextIndex: number) => {
     const safeIndex = clampStoryIndex(nextIndex);
     storyStepRef.current = safeIndex;
     setStoryStepIndex(safeIndex);
-
-    const viewportAnchor = viewportAnchorRef.current;
-    if (viewportAnchor?.kind === 'hero') {
-      viewportAnchorRef.current = { ...viewportAnchor, step: safeIndex };
-    }
 
     if (safeIndex >= FEATURE_START_INDEX) {
       const questionIndex = safeIndex - FEATURE_START_INDEX;
@@ -152,248 +125,36 @@ export default function HomeHeroExperience() {
   }, [updateStoryStep]);
 
   const claimManualControl = useCallback(() => {
-    manualControlRef.current = true;
     setIsManuallyControlled(true);
     setIsAutoplaying(false);
     setIsPaused(false);
   }, []);
 
-  const captureViewportAnchor = useCallback(() => {
-    if (capabilityRestoreRef.current) return;
-
-    const section = sectionRef.current;
-    const sticky = stickyRef.current;
-    if (!section || !sticky) return;
-
-    const roleSection = document.getElementById('choose-role');
-    const rootFontSize = Number.parseFloat(
-      window.getComputedStyle(document.documentElement).fontSize,
-    ) || 16;
-    const headerHeightValue = window
-      .getComputedStyle(section)
-      .getPropertyValue('--app-header-height')
-      .trim();
-    const parsedHeaderHeight = Number.parseFloat(headerHeightValue) || 0;
-    const headerHeight = headerHeightValue.endsWith('rem')
-      ? parsedHeaderHeight * rootFontSize
-      : parsedHeaderHeight;
-    const roleRect = roleSection?.getBoundingClientRect();
-
-    if (roleRect && roleRect.top < window.innerHeight) {
-      viewportAnchorRef.current = {
-        kind: 'role',
-        viewportOffset: roleRect.top,
-      };
-      return;
-    }
-
-    let semanticStep = storyStepRef.current;
-    if (storyCapabilityRef.current === false) {
-      const anchorLine = headerHeight + 1;
-      const previewRect = section
-        .querySelector<HTMLElement>('[data-story-preview]')
-        ?.getBoundingClientRect();
-      const narrativeRect = section
-        .querySelector<HTMLElement>('[data-story-narrative]')
-        ?.getBoundingClientRect();
-
-      if (window.scrollY <= 4) {
-        semanticStep = 0;
-      } else if (!previewRect || previewRect.top > anchorLine) {
-        semanticStep = 1;
-      } else if (manualControlRef.current && semanticStep >= FEATURE_START_INDEX) {
-        // Keep an explicitly selected card while it remains in view. The opening
-        // landmarks above still win, so returning to the top can never restore a
-        // stale feature after moving between screens or rotating the device.
-        semanticStep = clampStoryIndex(semanticStep);
-      } else if (!narrativeRect || narrativeRect.top > anchorLine) {
-        semanticStep = 2;
-      } else {
-        semanticStep = Math.max(FEATURE_START_INDEX, semanticStep);
-      }
-    }
-
-    viewportAnchorRef.current = {
-      kind: 'hero',
-      step: semanticStep,
-      viewportOffset: Math.max(
-        headerHeight,
-        sticky.getBoundingClientRect().top,
-      ),
-      wasAtTop: window.scrollY <= 4,
-    };
-  }, []);
-
-  const scheduleCapabilityRestore = useCallback((
-    supportsStory: boolean,
-    anchor: StoryViewportAnchor,
-  ) => {
-    if (capabilityFrameOneRef.current !== null) {
-      window.cancelAnimationFrame(capabilityFrameOneRef.current);
-    }
-    if (capabilityFrameTwoRef.current !== null) {
-      window.cancelAnimationFrame(capabilityFrameTwoRef.current);
-    }
-    if (capabilityReleaseTimerRef.current !== null) {
-      window.clearTimeout(capabilityReleaseTimerRef.current);
-    }
-
-    capabilityRestoreRef.current = true;
-    capabilityFrameOneRef.current = window.requestAnimationFrame(() => {
-      capabilityFrameOneRef.current = null;
-      capabilityFrameTwoRef.current = window.requestAnimationFrame(() => {
-        capabilityFrameTwoRef.current = null;
-
-        const section = sectionRef.current;
-        const sticky = stickyRef.current;
-        if (!section || !sticky) {
-          capabilityRestoreRef.current = false;
-          return;
-        }
-
-        const scrollInstantly = (operation: () => void) => {
-          const root = document.documentElement;
-          const previousInlineBehavior = root.style.scrollBehavior;
-          root.style.scrollBehavior = 'auto';
-
-          try {
-            operation();
-          } finally {
-            root.style.scrollBehavior = previousInlineBehavior;
-          }
-        };
-
-        if (anchor.kind === 'role') {
-          const roleSection = document.getElementById('choose-role');
-          if (roleSection) {
-            const delta = roleSection.getBoundingClientRect().top - anchor.viewportOffset;
-            if (Math.abs(delta) > 1) {
-              scrollInstantly(() => {
-                window.scrollBy({ top: delta, left: 0, behavior: 'auto' });
-              });
-            }
-          }
-        } else if (anchor.wasAtTop) {
-          updateStoryStep(0);
-          scrollInstantly(() => {
-            window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
-          });
-        } else if (supportsStory) {
-          updateStoryStep(anchor.step);
-          const sectionTop = window.scrollY + section.getBoundingClientRect().top;
-          const stickyTop =
-            Number.parseFloat(window.getComputedStyle(sticky).top) || 0;
-          const trackStart = sectionTop - stickyTop;
-          const trackTravel = Math.max(1, section.offsetHeight - sticky.offsetHeight);
-          const stepProgress = (clampStoryIndex(anchor.step) + 0.5) /
-            HERO_STORY_STEPS.length;
-
-          scrollInstantly(() => {
-            window.scrollTo({
-              top: trackStart + stepProgress * trackTravel,
-              left: 0,
-              behavior: 'auto',
-            });
-          });
-        } else {
-          updateStoryStep(anchor.step);
-          const selector = anchor.step >= FEATURE_START_INDEX
-            ? '[data-story-narrative]'
-            : anchor.step === 2
-              ? '[data-story-preview]'
-              : '[data-story-opening]';
-          const target = section.querySelector<HTMLElement>(selector);
-
-          if (target) {
-            const delta = target.getBoundingClientRect().top - anchor.viewportOffset;
-            if (Math.abs(delta) > 1) {
-              scrollInstantly(() => {
-                window.scrollBy({ top: delta, left: 0, behavior: 'auto' });
-              });
-            }
-          }
-        }
-
-        capabilityReleaseTimerRef.current = window.setTimeout(() => {
-          capabilityReleaseTimerRef.current = null;
-          capabilityRestoreRef.current = false;
-          captureViewportAnchor();
-        }, 48);
-      });
-    });
-  }, [captureViewportAnchor, updateStoryStep]);
-
   useEffect(() => {
     const reducedMotionMedia = window.matchMedia(REDUCED_MOTION_QUERY);
-    const cinematicStoryMedia = window.matchMedia(CINEMATIC_STORY_QUERY);
+    const desktopStoryMedia = window.matchMedia(DESKTOP_STORY_QUERY);
 
     const syncStoryCapability = () => {
-      const supportsStory = cinematicStoryMedia.matches && !reducedMotionMedia.matches;
-      const previousCapability = storyCapabilityRef.current;
-      const savedAnchor = viewportAnchorRef.current;
-      storyCapabilityRef.current = supportsStory;
+      const supportsStory = desktopStoryMedia.matches && !reducedMotionMedia.matches;
       setCanAutoplay(supportsStory);
-      setIsCinematicStory(supportsStory);
+      setIsDesktopStory(supportsStory);
 
       if (!supportsStory) {
         setIsAutoplaying(false);
-        if (!manualControlRef.current) updateStoryStep(FEATURE_START_INDEX);
-      } else if (!manualControlRef.current) {
-        updateStoryStep(0);
-      }
-
-      if (
-        previousCapability !== null &&
-        previousCapability !== supportsStory &&
-        savedAnchor
-      ) {
-        scheduleCapabilityRestore(supportsStory, savedAnchor);
+        setIsManuallyControlled(true);
+        updateStoryStep(FEATURE_START_INDEX);
       }
     };
 
     syncStoryCapability();
     reducedMotionMedia.addEventListener('change', syncStoryCapability);
-    cinematicStoryMedia.addEventListener('change', syncStoryCapability);
+    desktopStoryMedia.addEventListener('change', syncStoryCapability);
 
     return () => {
       reducedMotionMedia.removeEventListener('change', syncStoryCapability);
-      cinematicStoryMedia.removeEventListener('change', syncStoryCapability);
-      if (capabilityFrameOneRef.current !== null) {
-        window.cancelAnimationFrame(capabilityFrameOneRef.current);
-      }
-      if (capabilityFrameTwoRef.current !== null) {
-        window.cancelAnimationFrame(capabilityFrameTwoRef.current);
-      }
-      if (capabilityReleaseTimerRef.current !== null) {
-        window.clearTimeout(capabilityReleaseTimerRef.current);
-      }
-      capabilityRestoreRef.current = false;
+      desktopStoryMedia.removeEventListener('change', syncStoryCapability);
     };
-  }, [scheduleCapabilityRestore, updateStoryStep]);
-
-  useEffect(() => {
-    const scheduleAnchorCapture = () => {
-      if (capabilityRestoreRef.current || anchorFrameRef.current !== null) return;
-
-      anchorFrameRef.current = window.requestAnimationFrame(() => {
-        anchorFrameRef.current = null;
-        captureViewportAnchor();
-      });
-    };
-
-    captureViewportAnchor();
-    window.addEventListener('scroll', scheduleAnchorCapture, { passive: true });
-    window.addEventListener('pageshow', scheduleAnchorCapture);
-
-    return () => {
-      window.removeEventListener('scroll', scheduleAnchorCapture);
-      window.removeEventListener('pageshow', scheduleAnchorCapture);
-      if (anchorFrameRef.current !== null) {
-        window.cancelAnimationFrame(anchorFrameRef.current);
-        anchorFrameRef.current = null;
-      }
-    };
-  }, [captureViewportAnchor]);
+  }, [updateStoryStep]);
 
   useEffect(() => {
     const syncVisibility = () => setIsPageVisible(!document.hidden);
@@ -423,7 +184,6 @@ export default function HomeHeroExperience() {
       !isPageVisible ||
       !isHeroVisible ||
       isPaused ||
-      isPreviewHovered ||
       isManuallyControlled ||
       hasAutoplayFinished
     ) {
@@ -454,13 +214,12 @@ export default function HomeHeroExperience() {
     isHeroVisible,
     isPageVisible,
     isPaused,
-    isPreviewHovered,
     storyStepIndex,
     updateStoryStep,
   ]);
 
   useEffect(() => {
-    if (!isCinematicStory) return undefined;
+    if (!isDesktopStory) return undefined;
 
     const scheduleStorySync = (claimControl: boolean) => {
       if (claimControl) autoplayFinishedRef.current = true;
@@ -498,7 +257,6 @@ export default function HomeHeroExperience() {
         if (nextIndex !== storyStepRef.current) updateStoryStep(nextIndex);
 
         if (shouldClaimControl) {
-          manualControlRef.current = true;
           setHasAutoplayFinished(true);
           setIsManuallyControlled(true);
           setIsPaused(false);
@@ -507,12 +265,8 @@ export default function HomeHeroExperience() {
       });
     };
 
-    const handleScroll = () => {
-      if (capabilityRestoreRef.current) return;
-      scheduleStorySync(true);
-    };
+    const handleScroll = () => scheduleStorySync(true);
     const handleResize = () => {
-      if (capabilityRestoreRef.current) return;
       if (autoplayFinishedRef.current || window.scrollY > 4) {
         scheduleStorySync(window.scrollY > 4);
       }
@@ -523,9 +277,7 @@ export default function HomeHeroExperience() {
     window.addEventListener('resize', handleResize);
     window.addEventListener('pageshow', handlePageShow);
 
-    if (window.scrollY > 4 && !capabilityRestoreRef.current) {
-      scheduleStorySync(true);
-    }
+    if (window.scrollY > 4) scheduleStorySync(true);
 
     return () => {
       window.removeEventListener('scroll', handleScroll);
@@ -537,7 +289,22 @@ export default function HomeHeroExperience() {
       }
       scrollClaimRef.current = false;
     };
-  }, [isCinematicStory, updateStoryStep]);
+  }, [isDesktopStory, updateStoryStep]);
+
+  useEffect(() => {
+    const storyGrid = storyGridRef.current;
+    const assetMotion = assetMotionRef.current;
+    if (!storyGrid || !assetMotion) return undefined;
+
+    const measureAssetShift = () => {
+      assetMotion.style.setProperty('--asset-stage-shift-x', `${-assetMotion.offsetLeft}px`);
+    };
+
+    measureAssetShift();
+    window.addEventListener('resize', measureAssetShift);
+
+    return () => window.removeEventListener('resize', measureAssetShift);
+  }, [isDesktopStory, storyStepIndex]);
 
   const handleQuestionChange = (question: QuestionKey, index: number) => {
     claimManualControl();
@@ -545,16 +312,8 @@ export default function HomeHeroExperience() {
     updateStoryStep(FEATURE_START_INDEX + index);
   };
 
-  const handlePreviewInteraction = (
-    source: 'pointer-enter' | 'pointer-leave' | 'focus',
-  ) => {
-    if (source === 'focus') {
-      setIsPreviewHovered(false);
-      claimManualControl();
-      return;
-    }
-
-    setIsPreviewHovered(source === 'pointer-enter');
+  const handlePreviewInteraction = (source: 'pointer' | 'focus') => {
+    if (source === 'focus') claimManualControl();
   };
 
   const handleRoleSkip = () => {
@@ -579,13 +338,12 @@ export default function HomeHeroExperience() {
       aria-labelledby="home-hero-title"
       data-story-step={storyStep}
       data-story-mode={storyMode}
-      data-story-capability={isCinematicStory ? 'cinematic' : 'static'}
       data-active-question={activeQuestion}
       data-autoplay={
         isAutoplaying && storyStepIndex >= FEATURE_START_INDEX ? 'true' : 'false'
       }
     >
-      <h1 id="home-hero-title" className={styles.heroA11yTitle} tabIndex={-1}>
+      <h1 id="home-hero-title" className={styles.heroA11yTitle}>
         Aim4price.com asset management software built for South Africa
       </h1>
 
@@ -595,8 +353,12 @@ export default function HomeHeroExperience() {
           className={[styles.heroMedia, styles.heroSticky].join(' ')}
         >
           <div className={styles.shell}>
-            <div className={styles.storyHeroGrid} onFocusCapture={handleStoryFocus}>
-              <div className={styles.heroCopyDeck} data-story-opening>
+            <div
+              ref={storyGridRef}
+              className={styles.storyHeroGrid}
+              onFocusCapture={handleStoryFocus}
+            >
+              <div className={styles.heroCopyDeck}>
                 <div
                   className={[styles.storyCopyLayer, styles.heroBrandCopy].join(' ')}
                   aria-hidden="true"
@@ -610,6 +372,7 @@ export default function HomeHeroExperience() {
 
                 <div
                   className={[styles.storyCopyLayer, styles.heroPromiseCopy].join(' ')}
+                  aria-hidden={storyStepIndex !== 1 && storyStepIndex !== 2}
                 >
                   <p className={styles.heroPromiseTitle}>
                     <span>Know what you have.</span>
@@ -649,7 +412,7 @@ export default function HomeHeroExperience() {
                 />
               </div>
 
-              <div className={styles.assetStageMotion} data-story-preview>
+              <div ref={assetMotionRef} className={styles.assetStageMotion}>
                 <HomeAssetPreview
                   activeQuestion={activeQuestion}
                   onQuestionChange={handleQuestionChange}
@@ -660,7 +423,6 @@ export default function HomeHeroExperience() {
               <aside
                 className={styles.featureNarrative}
                 aria-label="What Aim4price helps you do"
-                data-story-narrative
               >
                 {HERO_STAGES.map((question) => {
                   const feature = FEATURE_STORIES[question];
@@ -671,6 +433,7 @@ export default function HomeHeroExperience() {
                       key={question}
                       className={styles.featureNarrativeLayer}
                       data-active={isActive ? 'true' : 'false'}
+                      aria-hidden={!isActive || storyMode !== 'features'}
                     >
                       <h2>{feature.title}</h2>
                       <p>{feature.body}</p>
@@ -697,7 +460,7 @@ export default function HomeHeroExperience() {
                 </Link>
               </div>
 
-              {isCinematicStory &&
+              {isDesktopStory &&
                 !isManuallyControlled &&
                 !hasAutoplayFinished ? (
                 <button
