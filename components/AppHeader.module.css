@@ -4495,6 +4495,20 @@
 .headerStandardCanvas .signupButton,
 .headerStandardCanvas .accountButton {
   min-height: 3.28rem;
+  border-radius: 1rem;
+  font-size: 0.98rem;
+}
+
+.headerStandardCanvas .notificationButton {
+  width: 3.28rem;
+  min-width: 3.28rem;
+  height: 3.28rem;
+  padding: 0;
+}
+
+.headerStandardCanvas .loginButton,
+.headerStandardCanvas .signupButton {
+  padding: 0 1.32rem;
 }
 
 .headerStandardCanvas .innerPublic .signupButton,
@@ -4510,15 +4524,29 @@
 }
 
 .headerStandardCanvas .accountButton {
+  position: relative;
+  width: 100%;
+  min-width: 0;
   min-height: 3.28rem;
-  gap: 0.7rem;
-  padding: 0 0.92rem 0 1rem;
+  justify-content: center;
+  gap: 0;
+  padding: 0 1rem;
 }
 
 .headerStandardCanvas .accountButton > .accountAvatar {
-  position: relative;
+  position: absolute;
+  top: 50%;
+  left: 0.95rem;
   display: grid;
-  transform: none;
+  transform: translateY(-50%);
+}
+
+.headerStandardCanvas .accountButtonTextFull {
+  display: inline;
+}
+
+.headerStandardCanvas .accountButtonTextCompact {
+  display: none;
 }
 
 .headerStandardCanvas .accountPopover {
