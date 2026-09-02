@@ -53,23 +53,26 @@ test('header has deterministic desktop, tablet and true-mobile navigation states
   assert.match(headerClient, /mobileMenuAuthLinkPrimary[\s\S]*?\{ctaLabel\}/);
   assert.match(header, /\.navWindowButton \{[\s\S]*?min-width: var\(--tap-target-min, 44px\)/);
 
-  const densityStart = header.indexOf(
-    '/* Homepage-only compact laptop density contract, September 2026.',
+  const chosenCompactStart = header.indexOf(
+    '/* The homepage keeps the #543 header by default.',
   );
-  assert.ok(densityStart >= 0);
-  const density = header.slice(densityStart);
+  assert.ok(chosenCompactStart >= 0);
+  const chosenCompact = header.slice(chosenCompactStart);
 
-  assert.match(headerClient, /<header className=\{`\$\{styles\.header\} \$\{pathname === '\/' \? styles\.homeDensity : ''\}`\}>/);
-  assert.match(density, /@media \(min-width: 1181px\) and \(max-width: 1599px\) and \(min-height: 640px\),\s*\(min-width: 1181px\) and \(min-height: 640px\) and \(max-height: 899px\)/);
-  assert.match(density, /\.homeDensity \.inner \{[\s\S]*?width: min\(calc\(100% - 2\.25rem\), 1280px\);[\s\S]*?min-height: 5\.15rem;[\s\S]*?grid-template-columns: minmax\(12rem, 1fr\) auto minmax\(12rem, 1fr\)/);
-  assert.match(density, /\.homeDensity \.headerBrandLogo \{[\s\S]*?width: clamp\(3\.8rem, 4vw, 4\.25rem\)/);
-  assert.match(density, /\.homeDensity \.navRail,[\s\S]*?\.homeDensity \.actionsRail \{[\s\S]*?gap: 0\.32rem;[\s\S]*?padding: 0\.3rem/);
-  assert.match(density, /\.homeDensity \.navLink \{[\s\S]*?min-width: clamp\(5\.9rem, 6\.4vw, 7\.25rem\);[\s\S]*?min-height: var\(--tap-target-min, 44px\);[\s\S]*?font-size: 0\.92rem/);
-  assert.match(density, /\.homeDensity \.signupButton,[\s\S]*?\.homeDensity \.notificationButton \{[\s\S]*?min-height: var\(--tap-target-min, 44px\)/);
-  assert.match(density, /\.homeDensity \.accountMenu \{[\s\S]*?width: 11\.25rem;[\s\S]*?flex: 0 0 11\.25rem/);
-  assert.doesNotMatch(density, /\bzoom\s*:/);
-  assert.doesNotMatch(density, /transform:\s*scale\(0\./);
-  assert.doesNotMatch(density, /display:\s*none/);
+  assert.match(headerClient, /<header className=\{styles\.header\}>/);
+  assert.doesNotMatch(headerClient, /homeDensity/);
+  assert.doesNotMatch(header, /Homepage-only compact laptop density contract|\.homeDensity/);
+  assert.match(chosenCompact, /@media \(min-width: 1181px\) and \(min-height: 640px\)/);
+  assert.match(chosenCompact, /:global\(\[data-home-display-size='compact'\]\) \.inner \{[\s\S]*?width: min\(calc\(100% - 2\.25rem\), 1280px\);[\s\S]*?min-height: 5\.15rem;[\s\S]*?grid-template-columns: minmax\(12rem, 1fr\) auto minmax\(12rem, 1fr\)/);
+  assert.match(chosenCompact, /:global\(\[data-home-display-size='compact'\]\) \.headerBrandLogo \{[\s\S]*?width: clamp\(3\.8rem, 4vw, 4\.25rem\)/);
+  assert.match(chosenCompact, /:global\(\[data-home-display-size='compact'\]\) \.navRail,[\s\S]*?:global\(\[data-home-display-size='compact'\]\) \.actionsRail \{[\s\S]*?gap: 0\.32rem;[\s\S]*?padding: 0\.3rem/);
+  assert.match(chosenCompact, /:global\(\[data-home-display-size='compact'\]\) \.navLink \{[\s\S]*?min-width: clamp\(5\.9rem, 6\.4vw, 7\.25rem\);[\s\S]*?min-height: var\(--tap-target-min, 44px\);[\s\S]*?font-size: 0\.92rem/);
+  assert.match(chosenCompact, /:global\(\[data-home-display-size='compact'\]\) \.signupButton,[\s\S]*?:global\(\[data-home-display-size='compact'\]\) \.notificationButton \{[\s\S]*?min-height: var\(--tap-target-min, 44px\)/);
+  assert.match(chosenCompact, /:global\(\[data-home-display-size='compact'\]\) \.accountMenu \{[\s\S]*?width: 11\.25rem;[\s\S]*?flex-basis: 11\.25rem/);
+  assert.doesNotMatch(chosenCompact, /\bzoom\s*:/);
+  assert.doesNotMatch(chosenCompact, /transform:\s*scale\(0\./);
+  assert.doesNotMatch(chosenCompact, /display:\s*none/);
+  assert.doesNotMatch(header, /max-width: 1599px|max-height: 899px/);
 });
 
 test('website sign-out stays separate from installable app sessions and verifies closure', async () => {
@@ -163,26 +166,27 @@ test('home page keeps the eight-step story usable at desktop, compact and reduce
   assert.match(story, /\.heroPromiseTitle \{[\s\S]*?font-size: clamp\(2\.65rem, 2\.95vw, 2\.95rem\)/);
   assert.doesNotMatch(story, /data-autoplay-finished='true'[^{]*\.storyHeroLogo/);
 
-  const densityStart = story.indexOf(
-    '/* Compact laptop density contract, September 2026.',
+  const chosenCompactStart = story.indexOf(
+    '/* The #543 desktop composition is the default.',
   );
-  const densityEnd = story.indexOf('/* Static-wide is the sole fallback', densityStart);
-  assert.ok(densityStart >= 0 && densityEnd > densityStart);
-  const density = story.slice(densityStart, densityEnd);
+  const chosenCompactEnd = story.indexOf('/* Static-wide is the sole fallback', chosenCompactStart);
+  assert.ok(chosenCompactStart >= 0 && chosenCompactEnd > chosenCompactStart);
+  const chosenCompact = story.slice(chosenCompactStart, chosenCompactEnd);
 
-  assert.match(density, /@media \(min-width: 1181px\) and \(max-width: 1599px\) and \(min-height: 640px\),\s*\(min-width: 1181px\) and \(min-height: 640px\) and \(max-height: 899px\)/);
-  assert.match(density, /\.storyHeroGrid \{[\s\S]*?grid-template-columns: minmax\(26rem, 1fr\) minmax\(32rem, 40rem\);[\s\S]*?gap: clamp\(1\.5rem, 2vw, 2\.25rem\);[\s\S]*?padding: clamp\(0\.85rem, 2\.2vh, 1\.5rem\) 0/);
-  assert.match(density, /\.heroBrandTitle span:first-child \{[\s\S]*?font-size: clamp\(3\.1rem, 3\.75vw, 4\.15rem\)/);
-  assert.match(density, /\.heroBrandTitle span:not\(:first-child\) \{[\s\S]*?font-size: clamp\(2rem, 2\.3vw, 2\.4rem\)/);
-  assert.match(density, /\.heroPromiseTitle \{[\s\S]*?font-size: clamp\(2\.2rem, 2\.45vw, 2\.55rem\)/);
-  assert.match(density, /\.storyHeroLogoImage \{[\s\S]*?width: clamp\(13rem, 14vw, 15\.5rem\)/);
-  assert.match(density, /\.assetStageMotion \{[\s\S]*?width: min\(39\.5rem, calc\(100% \+ 3\.5rem\)\)/);
-  assert.match(density, /\.featureNarrativeLayer h2 \{[\s\S]*?font-size: clamp\(2\.25rem, 2\.85vw, 3\.15rem\)/);
-  assert.match(density, /\.featureNarrativeLayer > p:last-child \{[\s\S]*?font-size: clamp\(0\.94rem, 1vw, 1\.04rem\);[\s\S]*?line-height: 1\.5/);
-  assert.doesNotMatch(density, /@media[^\{]*max-width:\s*1180px/);
-  assert.doesNotMatch(density, /\bzoom\s*:/);
-  assert.doesNotMatch(density, /transform:\s*scale\(0\./);
-  assert.doesNotMatch(density, /display:\s*none/);
+  assert.match(chosenCompact, /@media \(min-width: 1181px\) and \(min-height: 640px\)/);
+  assert.match(chosenCompact, /\.page\[data-home-display-size='compact'\] \.storyHeroGrid \{[\s\S]*?grid-template-columns: minmax\(26rem, 1fr\) minmax\(32rem, 40rem\);[\s\S]*?gap: clamp\(1\.5rem, 2vw, 2\.25rem\);[\s\S]*?padding-block: clamp\(0\.85rem, 2\.2vh, 1\.5rem\)/);
+  assert.match(chosenCompact, /\.page\[data-home-display-size='compact'\] \.heroBrandTitle span:first-child \{[\s\S]*?font-size: clamp\(3\.1rem, 3\.75vw, 4\.15rem\)/);
+  assert.match(chosenCompact, /\.page\[data-home-display-size='compact'\] \.heroBrandTitle span:not\(:first-child\) \{[\s\S]*?font-size: clamp\(2rem, 2\.3vw, 2\.4rem\)/);
+  assert.match(chosenCompact, /\.page\[data-home-display-size='compact'\] \.heroPromiseTitle \{[\s\S]*?font-size: clamp\(2\.2rem, 2\.45vw, 2\.55rem\)/);
+  assert.match(chosenCompact, /\.page\[data-home-display-size='compact'\] \.storyHeroLogoImage \{[\s\S]*?width: clamp\(13rem, 14vw, 15\.5rem\)/);
+  assert.match(chosenCompact, /\.page\[data-home-display-size='compact'\] \.assetStageMotion \{[\s\S]*?width: min\(39\.5rem, calc\(100% \+ 3\.5rem\)\)/);
+  assert.match(chosenCompact, /\.page\[data-home-display-size='compact'\] \.featureNarrativeLayer h2 \{[\s\S]*?font-size: clamp\(2\.25rem, 2\.85vw, 3\.15rem\)/);
+  assert.match(chosenCompact, /\.page\[data-home-display-size='compact'\] \.featureNarrativeLayer > p:last-child \{[\s\S]*?font-size: clamp\(0\.94rem, 1vw, 1\.04rem\);[\s\S]*?line-height: 1\.5/);
+  assert.doesNotMatch(chosenCompact, /@media[^\{]*max-width:\s*1180px/);
+  assert.doesNotMatch(chosenCompact, /\bzoom\s*:/);
+  assert.doesNotMatch(chosenCompact, /transform:\s*scale\(0\./);
+  assert.doesNotMatch(chosenCompact, /display:\s*none/);
+  assert.doesNotMatch(story, /Compact laptop density contract, September 2026|max-width: 1599px|max-height: 899px/);
 
   assert.doesNotMatch(story, /@media \(min-width: 901px\) and \(max-width: 1180px\)/);
   assert.doesNotMatch(story, /top: 8\.4rem|height: calc\(100dvh - 8\.4rem\)/);
