@@ -412,7 +412,6 @@ export default function HomeHeroExperience() {
                   alt=""
                   width={660}
                   height={515}
-                  quality={100}
                   unoptimized
                   className={styles.storyHeroLogoImage}
                   priority
