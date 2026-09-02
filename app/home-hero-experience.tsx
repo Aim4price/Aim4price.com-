@@ -10,13 +10,11 @@ import {
   type FocusEvent,
 } from 'react';
 import HomeAssetPreview, { type QuestionKey } from './home-asset-preview';
-import {
-  useHomeDisplayReady,
-  useHomeDisplayScale,
-} from './home-display-check';
 import styles from './page.module.css';
 
 const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
+const CINEMATIC_STORY_QUERY =
+  '(min-width: 1181px) and (min-height: 700px) and (hover: hover) and (pointer: fine)';
 const FEATURE_START_INDEX = 3;
 
 export const HERO_FEATURE_DURATION_MS = 4800;
@@ -86,8 +84,6 @@ const clampStoryIndex = (index: number) =>
   Math.max(0, Math.min(HERO_STORY_STEPS.length - 1, index));
 
 export default function HomeHeroExperience() {
-  const isHomeDisplayReady = useHomeDisplayReady();
-  const homeDisplayScale = useHomeDisplayScale();
   const [storyStepIndex, setStoryStepIndex] = useState(0);
   const [activeQuestion, setActiveQuestion] = useState<QuestionKey>('have');
   const [canAutoplay, setCanAutoplay] = useState(false);
@@ -101,8 +97,6 @@ export default function HomeHeroExperience() {
 
   const sectionRef = useRef<HTMLElement | null>(null);
   const stickyRef = useRef<HTMLDivElement | null>(null);
-  const storyGridRef = useRef<HTMLDivElement | null>(null);
-  const assetMotionRef = useRef<HTMLDivElement | null>(null);
   const storyStepRef = useRef(0);
   const autoplayFinishedRef = useRef(false);
   const scrollFrameRef = useRef<number | null>(null);
@@ -137,9 +131,10 @@ export default function HomeHeroExperience() {
 
   useEffect(() => {
     const reducedMotionMedia = window.matchMedia(REDUCED_MOTION_QUERY);
+    const cinematicStoryMedia = window.matchMedia(CINEMATIC_STORY_QUERY);
 
     const syncStoryCapability = () => {
-      const supportsStory = !reducedMotionMedia.matches;
+      const supportsStory = cinematicStoryMedia.matches && !reducedMotionMedia.matches;
       setCanAutoplay(supportsStory);
       setIsCinematicStory(supportsStory);
 
@@ -152,9 +147,11 @@ export default function HomeHeroExperience() {
 
     syncStoryCapability();
     reducedMotionMedia.addEventListener('change', syncStoryCapability);
+    cinematicStoryMedia.addEventListener('change', syncStoryCapability);
 
     return () => {
       reducedMotionMedia.removeEventListener('change', syncStoryCapability);
+      cinematicStoryMedia.removeEventListener('change', syncStoryCapability);
     };
   }, [updateStoryStep]);
 
@@ -166,7 +163,7 @@ export default function HomeHeroExperience() {
     const syncHeaderHeight = () => {
       section.style.setProperty(
         '--home-header-height',
-        `${Math.ceil(header.getBoundingClientRect().height / homeDisplayScale)}px`,
+        `${Math.ceil(header.getBoundingClientRect().height)}px`,
       );
     };
 
@@ -182,7 +179,7 @@ export default function HomeHeroExperience() {
       window.removeEventListener('resize', syncHeaderHeight);
       section.style.removeProperty('--home-header-height');
     };
-  }, [homeDisplayScale]);
+  }, []);
 
   useEffect(() => {
     const syncVisibility = () => setIsPageVisible(!document.hidden);
@@ -209,7 +206,6 @@ export default function HomeHeroExperience() {
   useEffect(() => {
     if (
       !canAutoplay ||
-      !isHomeDisplayReady ||
       !isPageVisible ||
       !isHeroVisible ||
       isPaused ||
@@ -239,7 +235,6 @@ export default function HomeHeroExperience() {
     canAutoplay,
     finishAutoplay,
     hasAutoplayFinished,
-    isHomeDisplayReady,
     isManuallyControlled,
     isHeroVisible,
     isPageVisible,
@@ -249,7 +244,7 @@ export default function HomeHeroExperience() {
   ]);
 
   useEffect(() => {
-    if (!isCinematicStory || !isHomeDisplayReady) return undefined;
+    if (!isCinematicStory) return undefined;
 
     const scheduleStorySync = (claimControl: boolean) => {
       if (claimControl) autoplayFinishedRef.current = true;
@@ -267,16 +262,13 @@ export default function HomeHeroExperience() {
         if (!section || !sticky) return;
 
         const currentScrollY = window.scrollY;
-        const sectionRect = section.getBoundingClientRect();
-        const stickyRect = sticky.getBoundingClientRect();
-        const sectionTop = currentScrollY + sectionRect.top;
+        const sectionTop = currentScrollY + section.getBoundingClientRect().top;
         const stickyTop =
-          (Number.parseFloat(window.getComputedStyle(sticky).top) || 0) *
-          homeDisplayScale;
+          Number.parseFloat(window.getComputedStyle(sticky).top) || 0;
         const trackStart = sectionTop - stickyTop;
         const trackTravel = Math.max(
           1,
-          sectionRect.height - stickyRect.height,
+          section.offsetHeight - sticky.offsetHeight,
         );
         const localScroll = Math.max(
           0,
@@ -322,47 +314,7 @@ export default function HomeHeroExperience() {
       }
       scrollClaimRef.current = false;
     };
-  }, [homeDisplayScale, isCinematicStory, isHomeDisplayReady, updateStoryStep]);
-
-  useEffect(() => {
-    const storyGrid = storyGridRef.current;
-    const assetMotion = assetMotionRef.current;
-    if (!storyGrid || !assetMotion) return undefined;
-
-    if (!isCinematicStory) {
-      assetMotion.style.removeProperty('--asset-stage-shift-x');
-      return undefined;
-    }
-
-    let frame: number | null = null;
-
-    const measureAssetShift = () => {
-      assetMotion.style.setProperty('--asset-stage-shift-x', `${-assetMotion.offsetLeft}px`);
-    };
-
-    const scheduleMeasurement = () => {
-      if (frame !== null) window.cancelAnimationFrame(frame);
-      frame = window.requestAnimationFrame(() => {
-        frame = null;
-        measureAssetShift();
-      });
-    };
-
-    scheduleMeasurement();
-    window.addEventListener('resize', scheduleMeasurement);
-
-    const observer =
-      'ResizeObserver' in window ? new ResizeObserver(scheduleMeasurement) : null;
-    observer?.observe(storyGrid);
-    observer?.observe(assetMotion);
-
-    return () => {
-      observer?.disconnect();
-      window.removeEventListener('resize', scheduleMeasurement);
-      if (frame !== null) window.cancelAnimationFrame(frame);
-      assetMotion.style.removeProperty('--asset-stage-shift-x');
-    };
-  }, [isCinematicStory]);
+  }, [isCinematicStory, updateStoryStep]);
 
   const handleQuestionChange = (question: QuestionKey, index: number) => {
     claimManualControl();
@@ -412,11 +364,7 @@ export default function HomeHeroExperience() {
           className={[styles.heroMedia, styles.heroSticky].join(' ')}
         >
           <div className={styles.shell}>
-            <div
-              ref={storyGridRef}
-              className={styles.storyHeroGrid}
-              onFocusCapture={handleStoryFocus}
-            >
+            <div className={styles.storyHeroGrid} onFocusCapture={handleStoryFocus}>
               <div className={styles.heroCopyDeck}>
                 <div
                   className={[styles.storyCopyLayer, styles.heroBrandCopy].join(' ')}
@@ -471,7 +419,7 @@ export default function HomeHeroExperience() {
                 />
               </div>
 
-              <div ref={assetMotionRef} className={styles.assetStageMotion}>
+              <div className={styles.assetStageMotion}>
                 <HomeAssetPreview
                   activeQuestion={activeQuestion}
                   onQuestionChange={handleQuestionChange}
