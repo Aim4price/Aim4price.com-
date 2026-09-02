@@ -27,6 +27,8 @@ test('Home uses one mandatory standard canvas on desktop, tablet and mobile', as
   assert.match(header, /standardCanvas\?: boolean/);
   assert.match(header, /standardCanvas \? styles\.headerStandardCanvas/);
   assert.match(headerStyles, /\.headerStandardCanvas \.nav,[\s\S]*?display: flex/);
+  assert.match(headerStyles, /\.headerStandardCanvas \.notificationButton \{[\s\S]*?width: 3\.28rem/);
+  assert.match(headerStyles, /\.headerStandardCanvas \.accountButtonTextFull \{[\s\S]*?display: inline/);
   assert.match(headerStyles, /\.headerStandardCanvas \.mobileMenuButton,[\s\S]*?display: none/);
   assert.doesNotMatch(headerStyles, /data-home-display-size/);
 });
