@@ -9,6 +9,7 @@ export type QuestionKey = 'have' | 'worth' | 'cost' | 'manage' | 'attention';
 type HomeAssetPreviewProps = {
   activeQuestion: QuestionKey;
   onQuestionChange: (question: QuestionKey, index: number) => void;
+  onInteraction?: () => void;
 };
 
 type Question = {
@@ -93,8 +94,9 @@ const QUESTIONS: readonly Question[] = [
 export default function HomeAssetPreview({
   activeQuestion,
   onQuestionChange,
+  onInteraction,
 }: HomeAssetPreviewProps) {
-  const [hasUserSelected, setHasUserSelected] = useState(false);
+  const [feedback, setFeedback] = useState('');
   const questionRefs = useRef<Array<HTMLButtonElement | null>>([]);
 
   const selectQuestion = (index: number, moveFocus = false) => {
@@ -102,7 +104,7 @@ export default function HomeAssetPreview({
     if (!question) return;
 
     onQuestionChange(question.key, index);
-    setHasUserSelected(true);
+    setFeedback(QUESTION_FEEDBACK[question.key]);
     if (moveFocus) questionRefs.current[index]?.focus();
   };
 
@@ -127,12 +129,16 @@ export default function HomeAssetPreview({
   const activeIndex = QUESTIONS.findIndex(({ key }) => key === activeQuestion);
 
   return (
-    <div className={styles.assetHeroStage} data-active-question={activeQuestion}>
+    <div
+      className={styles.assetHeroStage}
+      data-active-question={activeQuestion}
+      onPointerEnter={onInteraction}
+      onFocusCapture={onInteraction}
+    >
       <div
         className={styles.assetQuestionGroup}
         role="tablist"
         aria-label="Explore the Aim4price asset record"
-        aria-orientation="vertical"
       >
         {QUESTIONS.map((question, index) => {
           const isActive = question.key === activeQuestion;
@@ -178,7 +184,7 @@ export default function HomeAssetPreview({
         </div>
       </article>
 
-      <p className={styles.assetActiveQuestion} aria-live="polite" aria-atomic="true">
+      <p className={styles.assetActiveQuestion}>
         <span className={styles.assetActiveQuestionMain}>
           <svg viewBox="0 0 24 24" aria-hidden="true">
             {QUESTIONS[activeIndex]?.icon ?? QUESTIONS[0].icon}
@@ -201,7 +207,7 @@ export default function HomeAssetPreview({
         aria-live="polite"
         aria-atomic="true"
       >
-        {hasUserSelected ? QUESTION_FEEDBACK[activeQuestion] : ''}
+        {feedback}
       </span>
     </div>
   );
