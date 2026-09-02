@@ -23,6 +23,8 @@ const DISPLAY_STORAGE_KEY = 'aim4price:home-display-check:v2';
 const DISPLAY_STORAGE_VERSION = 2;
 const ORIGINAL_CANVAS_WIDTH = 1360;
 const ORIGINAL_CANVAS_HEIGHT = 620;
+const PREVIEW_SAFE_WIDTH_RATIO = 0.96;
+const PREVIEW_SAFE_HEIGHT_RATIO = 0.9;
 
 export const DISPLAY_SIZES = [
   { id: 'compact', label: 'Compact', scale: 0.78 },
@@ -56,11 +58,32 @@ const getViewportSize = (): ViewportSize => ({
   height: window.innerHeight,
 });
 
-const getViewportClass = ({ width, height }: ViewportSize) =>
-  `${width >= 1500 ? 'wide' : 'standard'}-${height >= 786 ? 'tall' : 'short'}`;
+const getPreviewRatios = (
+  viewport: ViewportSize,
+  scale: (typeof DISPLAY_SIZES)[number]['scale'],
+) => ({
+  width: (ORIGINAL_CANVAS_WIDTH * scale) / Math.max(1, viewport.width - 48),
+  height: (ORIGINAL_CANVAS_HEIGHT * scale) / Math.max(1, viewport.height - 96),
+});
 
-const getRecommendedSizeIndex = ({ width, height }: ViewportSize) =>
-  width >= 1500 && height >= 786 ? 1 : 0;
+const getRecommendedSizeIndex = (viewport: ViewportSize) => {
+  let recommendedIndex = 0;
+
+  DISPLAY_SIZES.forEach((option, index) => {
+    const ratios = getPreviewRatios(viewport, option.scale);
+    if (
+      ratios.width <= PREVIEW_SAFE_WIDTH_RATIO &&
+      ratios.height <= PREVIEW_SAFE_HEIGHT_RATIO
+    ) {
+      recommendedIndex = index;
+    }
+  });
+
+  return recommendedIndex;
+};
+
+const getViewportClass = (viewport: ViewportSize) =>
+  `recommended-${DISPLAY_SIZES[getRecommendedSizeIndex(viewport)].id}`;
 
 const hasSecureConnection = () => {
   if (window.location.protocol === 'https:' && window.isSecureContext) return true;
@@ -141,16 +164,11 @@ export default function HomeDisplayCheck({ children }: { children: ReactNode }) 
   );
 
   const previewStyle = useMemo(() => {
-    const availableWidth = Math.max(1, viewport.width - 48);
-    const availableHeight = Math.max(1, viewport.height - 96);
+    const ratios = getPreviewRatios(viewport, size.scale);
 
     return {
-      '--display-preview-width': `${
-        (ORIGINAL_CANVAS_WIDTH * size.scale * 100) / availableWidth
-      }%`,
-      '--display-preview-height': `${
-        (ORIGINAL_CANVAS_HEIGHT * size.scale * 100) / availableHeight
-      }%`,
+      '--display-preview-width': `${ratios.width * 100}%`,
+      '--display-preview-height': `${ratios.height * 100}%`,
     } as CSSProperties;
   }, [size.scale, viewport.height, viewport.width]);
 
@@ -241,10 +259,33 @@ export default function HomeDisplayCheck({ children }: { children: ReactNode }) 
   }, []);
 
   useEffect(() => {
-    const handleResize = () => setViewport(getViewportSize());
+    const handleResize = () => {
+      const nextViewport = getViewportSize();
+      setViewport(nextViewport);
+
+      if (
+        !isDisplayReady ||
+        !window.matchMedia(DISPLAY_CHECK_QUERY).matches
+      ) {
+        return;
+      }
+
+      const recommendedIndex = getRecommendedSizeIndex(nextViewport);
+      setSizeIndex((current) => {
+        const nextIndex = Math.min(current, recommendedIndex);
+        if (nextIndex !== current) {
+          writeStoredDisplayCheck(
+            DISPLAY_SIZES[nextIndex].id,
+            getViewportClass(nextViewport),
+          );
+        }
+        return nextIndex;
+      });
+    };
+
     window.addEventListener('resize', handleResize, { passive: true });
     return () => window.removeEventListener('resize', handleResize);
-  }, []);
+  }, [isDisplayReady]);
 
   useLayoutEffect(() => {
     if (!isGateOpen) return undefined;
