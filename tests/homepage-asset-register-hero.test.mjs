@@ -92,11 +92,14 @@ test('the five asset previews keep their complete product content and accessible
   assert.match(preview, /event\.key === 'End'/);
   assert.match(preview, /role="tabpanel"/);
   assert.match(preview, /role="status"[\s\S]*?aria-live="polite"/);
+  assert.match(preview, /onPointerEnter=\{\(\) => onInteraction\?\.\('pointer-enter'\)\}/);
+  assert.match(preview, /onPointerLeave=\{\(\) => onInteraction\?\.\('pointer-leave'\)\}/);
 
   assert.match(preview, /2023 Toyota Hilux Single Cab/);
   assert.match(preview, /R 237 150/);
   assert.match(preview, /R 450 000/);
   assert.match(preview, /home-asset-hilux-listing\.webp/);
+  assert.match(preview, /\(min-width: 1600px\) 430px[\s\S]*?\(min-width: 761px\) 48vw/);
   assert.match(preview, /Asset Valuation Report preview/);
   assert.match(preview, /Create Ad/);
   assert.match(preview, /Save to Asset Register/);
@@ -136,19 +139,21 @@ test('Home geometry is owned by responsive grid tracks, never browser-scale cali
   assert.match(styles, /\.shell \{[\s\S]*?calc\(100% - \(var\(--home-gutter\) \* 2\)\)[\s\S]*?var\(--home-shell-max\)/);
   assert.match(styles, /@media \(min-width: 960px\)[\s\S]*?\.assetStageMotion \{[\s\S]*?grid-column: 1;[\s\S]*?\.featureNarrative \{[\s\S]*?grid-column: 2/);
   assert.match(styles, /data-story-mode='features'[\s\S]*?\.storyHeroGrid \{[\s\S]*?grid-template-columns: minmax\(34rem, 1\.16fr\) minmax\(22rem, 0\.84fr\)/);
-  assert.match(styles, /data-story-mode='features'[\s\S]*?\.assetStageMotion \{[\s\S]*?grid-column: 1/);
+  assert.match(styles, /data-story-capability='cinematic'[\s\S]*?\.assetStageMotion \{[\s\S]*?grid-column: 1 \/ -1/);
+  assert.match(styles, /data-story-mode='preview'[\s\S]*?\.assetHeroStage \{[\s\S]*?left: calc\(100% - min\(55%, 49\.5rem\)\)/);
   assert.match(styles, /@media \(max-width: 760px\)[\s\S]*?\.compactHeroActions \{[\s\S]*?grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
   assert.match(styles, /@media \(max-width: 520px\)[\s\S]*?\.compactHeroActions \{[\s\S]*?grid-template-columns: minmax\(0, 1fr\)/);
 
   assert.doesNotMatch(styles, /\bzoom\s*:|min-width:\s*(?:1360px|85rem)|--asset-stage-shift-x/);
   assert.doesNotMatch(styles, /inset-inline-start:\s*calc\(0rem -|width:\s*min\([^;]*calc\(100% \+/);
   assert.doesNotMatch(hero, /offsetLeft|storyGridRef|assetMotionRef|useHomeDisplay|HomeDisplay/);
+  assert.doesNotMatch(hero, /previousElementSibling|ResizeObserver/);
   assert.doesNotMatch(header, /standardCanvas|HomeDisplay/);
   assert.doesNotMatch(header, /brandAlignment|brandWorkingColumn/);
   assert.doesNotMatch(headerStyles, /headerStandardCanvas|standardCanvas|brandWorkingColumn/);
 
   assert.match(hero, /\(min-width: 1181px\) and \(min-height: 700px\) and \(hover: hover\) and \(pointer: fine\)/);
-  assert.match(styles, /@media \(min-width: 1181px\) and \(min-height: 700px\) and \(hover: hover\) and \(pointer: fine\)/);
+  assert.match(styles, /@media \(min-width: 1181px\) and \(min-height: 700px\) and \(hover: hover\) and \(pointer: fine\) and \(prefers-reduced-motion: no-preference\)/);
   assert.match(styles, /@media \(min-width: 761px\) and \(max-width: 959px\)/);
   assert.match(styles, /@media \(max-width: 760px\)/);
   assert.match(styles, /@media \(max-width: 520px\)/);
