@@ -89,9 +89,12 @@ export default function HomeHeroExperience() {
   const [canAutoplay, setCanAutoplay] = useState(false);
   const [isAutoplaying, setIsAutoplaying] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
+  const [isPreviewHovered, setIsPreviewHovered] = useState(false);
   const [isPageVisible, setIsPageVisible] = useState(true);
   const [isHeroVisible, setIsHeroVisible] = useState(true);
-  const [isCinematicStory, setIsCinematicStory] = useState(false);
+  // CSS capability queries choose the visible first-paint layout. Starting with
+  // the attribute present prevents an eligible desktop flashing the static stack.
+  const [isCinematicStory, setIsCinematicStory] = useState(true);
   const [isManuallyControlled, setIsManuallyControlled] = useState(false);
   const [hasAutoplayFinished, setHasAutoplayFinished] = useState(false);
 
@@ -159,32 +162,6 @@ export default function HomeHeroExperience() {
   }, [updateStoryStep]);
 
   useEffect(() => {
-    const section = sectionRef.current;
-    const header = section?.previousElementSibling;
-    if (!section || !(header instanceof HTMLElement)) return undefined;
-
-    const syncHeaderHeight = () => {
-      section.style.setProperty(
-        '--home-header-height',
-        `${Math.ceil(header.getBoundingClientRect().height)}px`,
-      );
-    };
-
-    syncHeaderHeight();
-    window.addEventListener('resize', syncHeaderHeight);
-
-    const observer =
-      'ResizeObserver' in window ? new ResizeObserver(syncHeaderHeight) : null;
-    observer?.observe(header);
-
-    return () => {
-      observer?.disconnect();
-      window.removeEventListener('resize', syncHeaderHeight);
-      section.style.removeProperty('--home-header-height');
-    };
-  }, []);
-
-  useEffect(() => {
     const syncVisibility = () => setIsPageVisible(!document.hidden);
 
     syncVisibility();
@@ -212,6 +189,7 @@ export default function HomeHeroExperience() {
       !isPageVisible ||
       !isHeroVisible ||
       isPaused ||
+      isPreviewHovered ||
       isManuallyControlled ||
       hasAutoplayFinished
     ) {
@@ -242,6 +220,7 @@ export default function HomeHeroExperience() {
     isHeroVisible,
     isPageVisible,
     isPaused,
+    isPreviewHovered,
     storyStepIndex,
     updateStoryStep,
   ]);
@@ -325,8 +304,16 @@ export default function HomeHeroExperience() {
     updateStoryStep(FEATURE_START_INDEX + index);
   };
 
-  const handlePreviewInteraction = (source: 'pointer' | 'focus') => {
-    if (source === 'focus') claimManualControl();
+  const handlePreviewInteraction = (
+    source: 'pointer-enter' | 'pointer-leave' | 'focus',
+  ) => {
+    if (source === 'focus') {
+      setIsPreviewHovered(false);
+      claimManualControl();
+      return;
+    }
+
+    setIsPreviewHovered(source === 'pointer-enter');
   };
 
   const handleRoleSkip = () => {
@@ -433,6 +420,7 @@ export default function HomeHeroExperience() {
               <aside
                 className={styles.featureNarrative}
                 aria-label="What Aim4price helps you do"
+                data-story-narrative
               >
                 {HERO_STAGES.map((question) => {
                   const feature = FEATURE_STORIES[question];
