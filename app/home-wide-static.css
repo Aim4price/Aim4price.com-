@@ -97,16 +97,21 @@
  * Short desktop windows need another density step. This is the state reached
  * by common 1080p monitors with OS scaling and by laptop windows with browser
  * chrome/taskbars consuming a large share of the vertical viewport.
+ *
+ * The selector intentionally accepts either capability attribute value here.
+ * Home initializes as cinematic before hydration, while the 700px media gate
+ * already guarantees that cinematic CSS cannot activate in this height range.
+ * This keeps first paint and hydrated layout geometrically identical.
  */
 @media (min-width: 1181px) and (max-height: 699px) {
-  section[data-story-capability='static'] div:has(> [data-story-opening]) {
+  section[data-story-capability] div:has(> [data-story-opening]) {
     grid-template-columns: minmax(0, 1.22fr) minmax(20rem, 0.78fr);
     column-gap: clamp(2rem, 3.5vw, 3.75rem);
     row-gap: clamp(2rem, 4.5vh, 2.75rem);
     padding-block: clamp(1.25rem, 3.2vh, 1.75rem) clamp(2.25rem, 5.5vh, 3rem);
   }
 
-  section[data-story-capability='static']
+  section[data-story-capability]
     [data-story-opening]
     > div:first-child
     > p
@@ -114,7 +119,7 @@
     font-size: clamp(3.15rem, 4.05vw, 4rem);
   }
 
-  section[data-story-capability='static']
+  section[data-story-capability]
     [data-story-opening]
     > div:first-child
     > p
@@ -122,18 +127,18 @@
     font-size: clamp(1.72rem, 2.2vw, 2.1rem);
   }
 
-  section[data-story-capability='static'] [data-story-opening] > div:last-child {
+  section[data-story-capability] [data-story-opening] > div:last-child {
     margin-top: clamp(1rem, 2.6vh, 1.35rem);
   }
 
-  section[data-story-capability='static']
+  section[data-story-capability]
     [data-story-opening]
     > div:last-child
     > p:first-child {
     font-size: clamp(2.05rem, 2.4vw, 2.4rem);
   }
 
-  section[data-story-capability='static']
+  section[data-story-capability]
     [data-story-opening]
     > div:last-child
     > p:nth-child(2) {
@@ -143,33 +148,35 @@
     line-height: 1.44;
   }
 
-  section[data-story-capability='static']
+  section[data-story-capability]
     [data-story-opening]
     > div:last-child
     > div:last-child {
     margin-top: 0.95rem;
   }
 
-  section[data-story-capability='static'] [data-story-opening] + div {
+  section[data-story-capability] [data-story-opening] + div {
+    align-self: start;
+    justify-self: center;
     margin-top: clamp(3.25rem, 7.5vh, 4.25rem);
   }
 
-  section[data-story-capability='static'] [data-story-opening] + div > img {
+  section[data-story-capability] [data-story-opening] + div > img {
     width: clamp(9.75rem, 11.75vw, 12rem);
   }
 
-  section[data-story-capability='static'] [data-story-opening] + div::before {
+  section[data-story-capability] [data-story-opening] + div::before {
     width: clamp(15rem, 21vw, 20rem);
   }
 }
 
 @media (min-width: 1181px) and (max-height: 620px) {
-  section[data-story-capability='static'] div:has(> [data-story-opening]) {
+  section[data-story-capability] div:has(> [data-story-opening]) {
     row-gap: 1.8rem;
     padding-block: 1rem 2.25rem;
   }
 
-  section[data-story-capability='static']
+  section[data-story-capability]
     [data-story-opening]
     > div:first-child
     > p
@@ -177,7 +184,7 @@
     font-size: clamp(2.9rem, 3.7vw, 3.6rem);
   }
 
-  section[data-story-capability='static']
+  section[data-story-capability]
     [data-story-opening]
     > div:first-child
     > p
@@ -185,14 +192,14 @@
     font-size: clamp(1.6rem, 2vw, 1.9rem);
   }
 
-  section[data-story-capability='static']
+  section[data-story-capability]
     [data-story-opening]
     > div:last-child
     > p:first-child {
     font-size: clamp(1.9rem, 2.2vw, 2.2rem);
   }
 
-  section[data-story-capability='static']
+  section[data-story-capability]
     [data-story-opening]
     > div:last-child
     > p:nth-child(2) {
@@ -201,7 +208,7 @@
     line-height: 1.4;
   }
 
-  section[data-story-capability='static'] [data-story-opening] + div {
+  section[data-story-capability] [data-story-opening] + div {
     margin-top: 2.75rem;
   }
 }
