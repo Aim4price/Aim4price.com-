@@ -4421,6 +4421,108 @@
   }
 }
 
+/* A visitor-approved homepage density. The security/display check changes
+   bounded layout tokens; it never zooms or transforms the complete page. */
+@media (min-width: 1181px) and (min-height: 640px) {
+  .page[data-home-display-density] .heroStory .heroMedia .shell {
+    width: min(
+      calc(100% - var(--home-density-shell-gutter)),
+      var(--home-density-shell-max)
+    );
+  }
+
+  .page[data-home-display-density] .storyHeroGrid {
+    --hero-working-inset: clamp(0px, calc((100% - 1240px) / 2), 60px);
+    width: calc(100% - var(--hero-working-inset));
+    grid-template-columns:
+      var(--home-density-grid-left)
+      var(--home-density-grid-right);
+    gap: var(--home-density-grid-gap);
+    margin-inline-start: var(--hero-working-inset);
+    padding-block: var(--home-density-grid-padding);
+  }
+
+  .page[data-home-display-density] .heroCopyDeck {
+    min-height: var(--home-density-copy-height);
+  }
+
+  .page[data-home-display-density] .heroBrandTitle span:first-child {
+    font-size: var(--home-density-brand-primary);
+  }
+
+  .page[data-home-display-density] .heroBrandTitle span:not(:first-child) {
+    font-size: var(--home-density-brand-secondary);
+  }
+
+  .page[data-home-display-density] .heroPromiseTitle {
+    font-size: var(--home-density-promise-title);
+  }
+
+  .page[data-home-display-density] .heroPromiseText {
+    font-size: var(--home-density-promise-copy);
+  }
+
+  .page[data-home-display-density] .storyHeroLogo {
+    --story-logo-halo-size: var(--home-density-logo-halo);
+  }
+
+  .page[data-home-display-density] .storyHeroLogoImage {
+    width: var(--home-density-logo-width);
+  }
+
+  .page[data-home-display-density] .assetStageMotion {
+    --asset-preview-center-inset: var(--home-density-asset-inset);
+    width: min(
+      var(--home-density-asset-width),
+      calc(100% + var(--home-density-asset-overflow))
+    );
+  }
+
+  .page[data-home-display-density] .featureNarrative {
+    --feature-copy-inset: var(--home-density-feature-inset);
+    width: min(100%, var(--home-density-feature-width));
+  }
+
+  .page[data-home-display-density] .featureNarrativeLayer h2 {
+    font-size: var(--home-density-feature-title);
+  }
+
+  .page[data-home-display-density] .featureNarrativeLayer > p:last-child {
+    font-size: var(--home-density-feature-copy);
+  }
+
+  .page[data-home-display-density] .roleSection {
+    padding-block: var(--home-density-role-padding);
+  }
+
+  .page[data-home-display-density] .roleTitle {
+    margin-bottom: var(--home-density-role-title-margin);
+    font-size: var(--home-density-role-title);
+  }
+
+  .page[data-home-display-density] .roleGrid {
+    max-width: var(--home-density-role-grid);
+    gap: var(--home-density-role-gap);
+  }
+
+  .page[data-home-display-density] .roleCard {
+    min-height: var(--home-density-role-card-height);
+    padding: var(--home-density-role-card-padding);
+  }
+
+  .page[data-home-display-density] .roleCard strong {
+    font-size: var(--home-density-role-card-title);
+  }
+
+  .page[data-home-display-density] .roleCard small {
+    font-size: var(--home-density-role-card-copy);
+  }
+
+  .page[data-home-display-density] .roleArrow {
+    font-size: var(--home-density-role-arrow);
+  }
+}
+
 @media (min-width: 1181px) and (max-width: 1240px) and (min-height: 640px) {
   .storyHeroGrid {
     --hero-working-inset: 8px;
