@@ -162,14 +162,15 @@ test('home page keeps the eight-step story usable at desktop, compact and reduce
   const chosenCompact = story.slice(chosenCompactStart, chosenCompactEnd);
 
   assert.match(chosenCompact, /@media \(min-width: 1181px\) and \(min-height: 640px\)/);
-  assert.match(chosenCompact, /\.page\[data-home-display-size='compact'\] \.storyHeroGrid \{[\s\S]*?grid-template-columns: minmax\(26rem, 1fr\) minmax\(32rem, 40rem\);[\s\S]*?gap: clamp\(1\.5rem, 2vw, 2\.25rem\);[\s\S]*?padding-block: clamp\(0\.85rem, 2\.2vh, 1\.5rem\)/);
-  assert.match(chosenCompact, /\.page\[data-home-display-size='compact'\] \.heroBrandTitle span:first-child \{[\s\S]*?font-size: clamp\(3\.1rem, 3\.75vw, 4\.15rem\)/);
-  assert.match(chosenCompact, /\.page\[data-home-display-size='compact'\] \.heroBrandTitle span:not\(:first-child\) \{[\s\S]*?font-size: clamp\(2rem, 2\.3vw, 2\.4rem\)/);
-  assert.match(chosenCompact, /\.page\[data-home-display-size='compact'\] \.heroPromiseTitle \{[\s\S]*?font-size: clamp\(2\.2rem, 2\.45vw, 2\.55rem\)/);
-  assert.match(chosenCompact, /\.page\[data-home-display-size='compact'\] \.storyHeroLogoImage \{[\s\S]*?width: clamp\(13rem, 14vw, 15\.5rem\)/);
-  assert.match(chosenCompact, /\.page\[data-home-display-size='compact'\] \.assetStageMotion \{[\s\S]*?width: min\(39\.5rem, calc\(100% \+ 3\.5rem\)\)/);
-  assert.match(chosenCompact, /\.page\[data-home-display-size='compact'\] \.featureNarrativeLayer h2 \{[\s\S]*?font-size: clamp\(2\.25rem, 2\.85vw, 3\.15rem\)/);
-  assert.match(chosenCompact, /\.page\[data-home-display-size='compact'\] \.featureNarrativeLayer > p:last-child \{[\s\S]*?font-size: clamp\(0\.94rem, 1vw, 1\.04rem\);[\s\S]*?line-height: 1\.5/);
+  assert.match(chosenCompact, /\.page\[data-home-display-size='small'\] \.storyHeroGrid \{[\s\S]*?grid-template-columns: minmax\(26rem, 1fr\) minmax\(32rem, 40rem\);[\s\S]*?gap: clamp\(1\.5rem, 2vw, 2\.25rem\);[\s\S]*?padding-block: clamp\(0\.85rem, 2\.2vh, 1\.5rem\)/);
+  assert.match(chosenCompact, /\.page\[data-home-display-size='compact'\] \.storyHeroGrid \{[\s\S]*?grid-template-columns: minmax\(28rem, 1fr\) minmax\(36rem, 44\.5rem\);[\s\S]*?gap: clamp\(1\.75rem, 2\.2vw, 2\.5rem\)/);
+  assert.match(chosenCompact, /\.page\[data-home-display-size='compact'\] \.heroBrandTitle span:first-child \{[\s\S]*?font-size: clamp\(3\.4rem, 4\.2vw, 4\.8rem\)/);
+  assert.match(chosenCompact, /\.page\[data-home-display-size='compact'\] \.heroBrandTitle span:not\(:first-child\) \{[\s\S]*?font-size: clamp\(2\.25rem, 2\.5vw, 2\.85rem\)/);
+  assert.match(chosenCompact, /\.page\[data-home-display-size='compact'\] \.heroPromiseTitle \{[\s\S]*?font-size: clamp\(2\.4rem, 2\.65vw, 2\.7rem\)/);
+  assert.match(chosenCompact, /\.page\[data-home-display-size='compact'\] \.storyHeroLogoImage \{[\s\S]*?width: clamp\(14\.25rem, 15vw, 17\.25rem\)/);
+  assert.match(chosenCompact, /\.page\[data-home-display-size='compact'\] \.assetStageMotion \{[\s\S]*?width: min\(44\.5rem, calc\(100% \+ 4rem\)\)/);
+  assert.match(chosenCompact, /\.page\[data-home-display-size='compact'\] \.featureNarrativeLayer h2 \{[\s\S]*?font-size: clamp\(2\.55rem, 3\.3vw, 3\.6rem\)/);
+  assert.match(chosenCompact, /\.page\[data-home-display-size='compact'\] \.featureNarrativeLayer > p:last-child \{[\s\S]*?font-size: clamp\(0\.98rem, 1\.08vw, 1\.1rem\);[\s\S]*?line-height: 1\.54/);
   assert.doesNotMatch(chosenCompact, /@media[^\{]*max-width:\s*1180px/);
   assert.doesNotMatch(chosenCompact, /\bzoom\s*:/);
   assert.doesNotMatch(chosenCompact, /transform:\s*scale\(0\./);
