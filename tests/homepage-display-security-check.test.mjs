@@ -61,6 +61,9 @@ test('the preview is measured on both axes before Continue unlocks', async () =>
   assert.match(check, /new ResizeObserver\(scheduleFitMeasurement\)/);
   assert.match(check, /id: 'compact', label: 'Compact', scale: 0\.78/);
   assert.match(check, /id: 'original', label: 'Original', scale: 1/);
+  assert.match(check, /ratios\.width <= PREVIEW_SAFE_WIDTH_RATIO/);
+  assert.match(check, /ratios\.height <= PREVIEW_SAFE_HEIGHT_RATIO/);
+  assert.match(check, /Math\.min\(current, recommendedIndex\)/);
   assert.match(check, /aria-label="Make Aim4price smaller"/);
   assert.match(check, /aria-label="Make Aim4price larger"/);
   assert.match(check, /disabled=\{!isSecure \|\| !doesPreviewFit\}/);
