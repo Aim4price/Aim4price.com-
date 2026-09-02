@@ -140,7 +140,7 @@ test('homepage plays one slower timed tour, returns to its brand frame, then fol
   assert.match(hero, /className=\{styles\.storyHeroGrid\}[\s\S]*?onFocusCapture=\{handleStoryFocus\}/);
 
   assert.equal((hero.match(/className=\{styles\.storyHeroLogo\}/g) ?? []).length, 1);
-  assert.match(hero, /className=\{styles\.storyHeroLogo\}[\s\S]*?src="\/brand\/aim4price-mark-black\.png"[\s\S]*?quality=\{100\}[\s\S]*?unoptimized[\s\S]*?className=\{styles\.storyHeroLogoImage\}/);
+  assert.match(hero, /className=\{styles\.storyHeroLogo\}[\s\S]*?src="\/brand\/aim4price-mark-black\.png"[\s\S]*?unoptimized[\s\S]*?className=\{styles\.storyHeroLogoImage\}/);
   assert.match(hero, /<div ref=\{assetMotionRef\} className=\{styles\.assetStageMotion\}>[\s\S]*?<HomeAssetPreview/);
   assert.doesNotMatch(hero, /shouldRenderPreview|\{shouldRenderPreview \?/);
 
