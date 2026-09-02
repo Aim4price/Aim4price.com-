@@ -7,8 +7,6 @@ const homePagePath = new URL('../app/page.tsx', import.meta.url);
 const homeHeroPath = new URL('../app/home-hero-experience.tsx', import.meta.url);
 const homeStylesPath = new URL('../app/page.module.css', import.meta.url);
 const homeVideoPath = new URL('../app/home-hero-video.tsx', import.meta.url);
-const headerPath = new URL('../components/AppHeader.module.css', import.meta.url);
-const headerClientPath = new URL('../components/AppHeader.tsx', import.meta.url);
 
 const protectedAppLayoutPaths = [
   new URL('../app/dealer/layout.tsx', import.meta.url),
@@ -48,59 +46,46 @@ test('the three role apps keep zoomable device-width viewports', async () => {
     assert.match(source, /initialScale:\s*1/);
     assert.match(source, /userScalable:\s*true/);
     assert.doesNotMatch(source, /maximumScale|minimumScale/);
-    assert.doesNotMatch(source, /homeDensity|compact laptop density/i);
   }
 });
 
-test('the Home hero keeps one #543 composition and scales the complete canvas', async () => {
-  const [heroSource, styleSource, headerSource, headerClientSource] = await Promise.all([
+test('the Home hero enhances capable desktops and stays in normal flow elsewhere', async () => {
+  const [heroSource, styleSource] = await Promise.all([
     readFile(homeHeroPath, 'utf8'),
     readFile(homeStylesPath, 'utf8'),
-    readFile(headerPath, 'utf8'),
-    readFile(headerClientPath, 'utf8'),
   ]);
 
-  const storyStart = styleSource.indexOf(
-    '/* === Timed and scroll-led Aim4price homepage story, September 2026 === */',
+  assert.match(
+    heroSource,
+    /\(min-width: 1181px\) and \(min-height: 700px\) and \(hover: hover\) and \(pointer: fine\)/,
   );
-  assert.ok(storyStart >= 0);
-  const storyStyles = styleSource.slice(storyStart);
-
-  assert.match(heroSource, /const supportsStory = !reducedMotionMedia\.matches/);
-  assert.match(heroSource, /useHomeDisplayScale/);
-  assert.doesNotMatch(heroSource, /CINEMATIC_STORY_QUERY|cinematicStoryMedia/);
-  assert.match(heroSource, /data-story-capability=\{isCinematicStory \? 'cinematic' : 'static'\}/);
-  assert.match(storyStyles, /@media \(min-width: 1181px\) and \(min-height: 640px\)[\s\S]*?min-height: 440svh[\s\S]*?position: sticky/);
-  assert.match(storyStyles, /\.heroStory \.heroMedia \.shell \{[\s\S]*?width: min\(calc\(100% - 3rem\), 1360px\)/);
-  assert.match(storyStyles, /\.storyHeroGrid \{[\s\S]*?grid-template-columns: minmax\(31rem, 1fr\) minmax\(39rem, 49\.5rem\)/);
-  assert.match(storyStyles, /One calibrated standard Home canvas/);
-  assert.match(storyStyles, /\.page\[data-home-standard-canvas='true'\] \.storyHeroGrid \{[\s\S]*?grid-template-columns: minmax\(31rem, 1fr\) minmax\(39rem, 49\.5rem\)/);
-  assert.doesNotMatch(storyStyles, /data-home-display-size/);
-  assert.doesNotMatch(headerSource, /data-home-display-size/);
-  assert.match(headerSource, /\.inner \{[\s\S]*?width: min\(calc\(100% - 3rem\), 1360px\);[\s\S]*?min-height: 5\.75rem/);
-  assert.match(headerClientSource, /standardCanvas \? styles\.headerStandardCanvas/);
-  assert.match(headerSource, /\.headerStandardCanvas \.nav,[\s\S]*?display: flex/);
-  assert.doesNotMatch(storyStyles, /Compact laptop density contract, September 2026[\s\S]*?max-width: 1599px[\s\S]*?max-height: 899px/);
-  assert.doesNotMatch(headerSource, /Homepage-only compact laptop density contract|\.homeDensity/);
-  assert.doesNotMatch(headerClientSource, /homeDensity/);
-  assert.match(storyStyles, /@media \(max-width: 1180px\), \(max-height: 639px\), \(prefers-reduced-motion: reduce\)[\s\S]*?position: relative[\s\S]*?transform: none !important/);
-  assert.match(storyStyles, /@media \(max-width: 760px\)[\s\S]*?grid-template-columns: repeat\(5, minmax\(0, 1fr\)\)/);
-  assert.match(storyStyles, /@media \(max-width: 760px\)[\s\S]*?\.heroBrandTitle span \{[\s\S]*?white-space: normal/);
-  assert.doesNotMatch(storyStyles, /@media \(min-width: 901px\) and \(max-width: 1180px\)/);
-
-  const densitySources = [heroSource, styleSource, headerSource, headerClientSource].join('\n');
-  assert.doesNotMatch(densitySources, /visualViewport|outerWidth/);
-  assert.doesNotMatch(styleSource, /data-home-display-size/);
+  assert.match(heroSource, /data-story-capability={isCinematicStory \? 'cinematic' : 'static'}/);
+  assert.match(
+    styleSource,
+    /@media \(min-width: 1181px\) and \(min-height: 700px\) and \(hover: hover\) and \(pointer: fine\)[\s\S]*?min-height: 500svh[\s\S]*?position: sticky/,
+  );
+  assert.match(
+    styleSource,
+    /\.assetStageMotion \.assetHeroStage \{[\s\S]*?display: grid;[\s\S]*?aspect-ratio: auto/,
+  );
+  assert.match(
+    styleSource,
+    /@media \(max-width: 760px\)[\s\S]*?grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/,
+  );
+  assert.doesNotMatch(styleSource, /zoom:\s*var\(|min-width:\s*1360px|--asset-stage-shift-x/);
+  assert.doesNotMatch(heroSource, /offsetLeft|preventDefault\(\)[\s\S]*?(?:wheel|touchmove)/);
 });
 
-test('the Home hero keeps reliable playback without a mobile-only video asset', async () => {
-  const [videoSource, styleSource] = await Promise.all([
-    readFile(homeVideoPath, 'utf8'),
+test('Home does not require a fitment gate or a device-specific video to render', async () => {
+  const [homeSource, heroSource, styleSource] = await Promise.all([
+    readFile(homePagePath, 'utf8'),
+    readFile(homeHeroPath, 'utf8'),
     readFile(homeStylesPath, 'utf8'),
   ]);
 
-  assert.match(videoSource, /src="\/brand\/AIM4PRICE\.mp4"/);
-  assert.match(videoSource, /playsInline/);
-  assert.doesNotMatch(videoSource, /AIM4PRICE-mobile\.mp4|media="\(max-width:/);
-  assert.match(styleSource, /\.heroVideoPlay\s*\{[^}]*display:\s*inline-flex/s);
+  assert.doesNotMatch(homeSource, /HomeDisplayCheck|standardCanvas/);
+  assert.doesNotMatch(heroSource, /useHomeDisplay|displayReady|displayScale/);
+  assert.doesNotMatch(styleSource, /homeContent|aim4price-site-scale/);
+  assert.match(styleSource, /@media \(prefers-reduced-motion: reduce\)/);
+  assert.match(styleSource, /@media \(forced-colors: active\)/);
 });
