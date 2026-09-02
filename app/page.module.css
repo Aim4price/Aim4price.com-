@@ -4309,160 +4309,6 @@
   }
 }
 
-/* The #543 desktop composition is the default. Small remains available as a
-   guaranteed-fit fallback for unusually short or narrow desktop viewports. */
-@media (min-width: 1181px) and (min-height: 640px) {
-  .page[data-home-display-size='small'] .heroStory .heroMedia .shell {
-    width: min(calc(100% - 2.25rem), 1280px);
-  }
-
-  .page[data-home-display-size='small'] .storyHeroGrid {
-    --hero-working-inset: clamp(0px, calc((100% - 1240px) / 2), 20px);
-    width: calc(100% - var(--hero-working-inset));
-    grid-template-columns: minmax(26rem, 1fr) minmax(32rem, 40rem);
-    gap: clamp(1.5rem, 2vw, 2.25rem);
-    margin-inline-start: var(--hero-working-inset);
-    padding-block: clamp(0.85rem, 2.2vh, 1.5rem);
-  }
-
-  .page[data-home-display-size='small'] .heroCopyDeck {
-    min-height: clamp(20rem, 58vh, 23.5rem);
-  }
-
-  .page[data-home-display-size='small'] .heroBrandTitle span:first-child {
-    font-size: clamp(3.1rem, 3.75vw, 4.15rem);
-  }
-
-  .page[data-home-display-size='small'] .heroBrandTitle span:not(:first-child) {
-    font-size: clamp(2rem, 2.3vw, 2.4rem);
-  }
-
-  .page[data-home-display-size='small'] .heroPromiseTitle {
-    font-size: clamp(2.2rem, 2.45vw, 2.55rem);
-  }
-
-  .page[data-home-display-size='small'] .heroPromiseText {
-    max-width: 31rem;
-    margin-top: 1.25rem;
-    font-size: clamp(0.94rem, 1vw, 1.04rem);
-    line-height: 1.52;
-  }
-
-  .page[data-home-display-size='small'] .heroStory .heroActions {
-    gap: 0.8rem;
-    margin-top: 1.35rem;
-  }
-
-  .page[data-home-display-size='small'] .storyHeroLogo {
-    --story-logo-halo-size: clamp(22rem, 25vw, 27rem);
-  }
-
-  .page[data-home-display-size='small'] .storyHeroLogoImage {
-    width: clamp(13rem, 14vw, 15.5rem);
-  }
-
-  .page[data-home-display-size='small'] .assetStageMotion {
-    --asset-preview-center-inset: 1.75rem;
-    width: min(39.5rem, calc(100% + 3.5rem));
-  }
-
-  .page[data-home-display-size='small'] .featureNarrative {
-    --feature-copy-inset: clamp(4rem, 5.5vw, 5.5rem);
-    width: min(100%, 26rem);
-    min-height: 18rem;
-  }
-
-  .page[data-home-display-size='small'] .featureNarrativeLayer h2 {
-    max-width: 25rem;
-    margin-top: 0.75rem;
-    font-size: clamp(2.25rem, 2.85vw, 3.15rem);
-  }
-
-  .page[data-home-display-size='small'] .featureNarrativeLayer > p:last-child {
-    max-width: 25rem;
-    margin-top: 0.8rem;
-    font-size: clamp(0.94rem, 1vw, 1.04rem);
-    line-height: 1.5;
-  }
-}
-
-/* Compact keeps the complete composition at roughly 90% of Original. It is
-   the preferred fit for full desktop layouts that cannot safely use Original. */
-@media (min-width: 1181px) and (min-height: 640px) {
-  .page[data-home-display-size='compact'] .heroStory .heroMedia .shell {
-    width: min(calc(100% - 2.5rem), 1320px);
-  }
-
-  .page[data-home-display-size='compact'] .storyHeroGrid {
-    --hero-working-inset: clamp(0px, calc((100% - 1280px) / 2), 24px);
-    width: calc(100% - var(--hero-working-inset));
-    grid-template-columns: minmax(28rem, 1fr) minmax(36rem, 44.5rem);
-    gap: clamp(1.75rem, 2.2vw, 2.5rem);
-    margin-inline-start: var(--hero-working-inset);
-    padding-block: clamp(1rem, 2.4vh, 1.75rem);
-  }
-
-  .page[data-home-display-size='compact'] .heroCopyDeck {
-    min-height: clamp(22rem, 62vh, 25rem);
-  }
-
-  .page[data-home-display-size='compact'] .heroBrandTitle span:first-child {
-    font-size: clamp(3.4rem, 4.2vw, 4.8rem);
-  }
-
-  .page[data-home-display-size='compact'] .heroBrandTitle span:not(:first-child) {
-    font-size: clamp(2.25rem, 2.5vw, 2.85rem);
-  }
-
-  .page[data-home-display-size='compact'] .heroPromiseTitle {
-    font-size: clamp(2.4rem, 2.65vw, 2.7rem);
-  }
-
-  .page[data-home-display-size='compact'] .heroPromiseText {
-    max-width: 32.5rem;
-    margin-top: 1.55rem;
-    font-size: clamp(0.98rem, 1.04vw, 1.08rem);
-    line-height: 1.56;
-  }
-
-  .page[data-home-display-size='compact'] .heroStory .heroActions {
-    gap: 0.9rem;
-    margin-top: 1.5rem;
-  }
-
-  .page[data-home-display-size='compact'] .storyHeroLogo {
-    --story-logo-halo-size: clamp(24rem, 27vw, 30.5rem);
-  }
-
-  .page[data-home-display-size='compact'] .storyHeroLogoImage {
-    width: clamp(14.25rem, 15vw, 17.25rem);
-  }
-
-  .page[data-home-display-size='compact'] .assetStageMotion {
-    --asset-preview-center-inset: 2rem;
-    width: min(44.5rem, calc(100% + 4rem));
-  }
-
-  .page[data-home-display-size='compact'] .featureNarrative {
-    --feature-copy-inset: clamp(4.5rem, 6vw, 6rem);
-    width: min(100%, 28rem);
-    min-height: 20rem;
-  }
-
-  .page[data-home-display-size='compact'] .featureNarrativeLayer h2 {
-    max-width: 27rem;
-    margin-top: 1rem;
-    font-size: clamp(2.55rem, 3.3vw, 3.6rem);
-  }
-
-  .page[data-home-display-size='compact'] .featureNarrativeLayer > p:last-child {
-    max-width: 27rem;
-    margin-top: 0.95rem;
-    font-size: clamp(0.98rem, 1.08vw, 1.1rem);
-    line-height: 1.54;
-  }
-}
-
 /* Static-wide is the sole fallback for tablets, short windows and reduced motion. */
 @media (max-width: 1180px), (max-height: 639px), (prefers-reduced-motion: reduce) {
   .heroStory {
@@ -4823,6 +4669,351 @@
   .storyHeroLogo::before {
     display: none;
   }
+}
+
+/* === One calibrated standard Home canvas, September 2026 ===
+   Home always keeps the approved desktop composition. HomeDisplayCheck scales
+   this complete canvas as one unit on laptops, tablets and phones. */
+.page[data-home-standard-canvas='true'] .heroStory {
+    min-height: var(--aim4price-story-height, 3960px) !important;
+  }
+
+  .page[data-home-standard-canvas='true'] .heroSticky,
+  .page[data-home-standard-canvas='true'] .heroStory .heroMedia,
+  .page[data-home-standard-canvas='true'] .heroStory .heroMedia.heroSticky {
+    position: sticky;
+    top: 5.75rem;
+    width: 100%;
+    height: calc(var(--aim4price-canvas-height, 900px) - 5.75rem);
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .page[data-home-standard-canvas='true'] .heroStory .heroMedia .shell {
+    width: min(calc(100% - 3rem), 1360px);
+    height: 100%;
+    min-height: 0;
+  }
+
+  .page[data-home-standard-canvas='true'] .storyHeroGrid {
+    --hero-working-inset: clamp(0px, calc((100% - 1240px) / 2), 60px);
+    width: calc(100% - var(--hero-working-inset));
+    height: 100%;
+    min-height: 0;
+    grid-template-columns: minmax(31rem, 1fr) minmax(39rem, 49.5rem);
+    grid-template-rows: none;
+    align-items: center;
+    justify-content: space-between;
+    gap: 3rem;
+    margin-inline-start: var(--hero-working-inset);
+    padding: 2rem 0;
+  }
+
+  .page[data-home-standard-canvas='true'] .heroCopyDeck {
+    min-height: 28rem;
+    grid-column: 1;
+    grid-row: 1;
+    align-self: stretch;
+  }
+
+  .page[data-home-standard-canvas='true'] .storyCopyLayer {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    opacity: 0;
+    visibility: hidden;
+    filter: blur(14px);
+    transform: translateY(0.75rem);
+    pointer-events: none;
+  }
+
+  .page[data-home-standard-canvas='true'] .heroBrandCopy,
+  .page[data-home-standard-canvas='true'] .heroPromiseCopy {
+    height: auto;
+    opacity: 0;
+    visibility: hidden;
+    filter: blur(14px);
+    transform: translateY(0.75rem);
+    pointer-events: none;
+  }
+
+  .page[data-home-standard-canvas='true'] .heroSection[data-story-step='brand'] .heroBrandCopy,
+  .page[data-home-standard-canvas='true'] .heroSection[data-story-step='promise'] .heroPromiseCopy,
+  .page[data-home-standard-canvas='true'] .heroSection[data-story-step='preview'] .heroPromiseCopy {
+    opacity: 1;
+    visibility: visible;
+    filter: blur(0);
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+
+  .page[data-home-standard-canvas='true'] .heroBrandTitle,
+  .page[data-home-standard-canvas='true'] .heroBrandTitle span,
+  .page[data-home-standard-canvas='true'] .heroPromiseTitle span {
+    white-space: nowrap;
+  }
+
+  .page[data-home-standard-canvas='true'] .heroBrandTitle span:first-child {
+    font-size: 5rem;
+  }
+
+  .page[data-home-standard-canvas='true'] .heroBrandTitle span:not(:first-child) {
+    font-size: 2.75rem;
+  }
+
+  .page[data-home-standard-canvas='true'] .heroPromiseTitle {
+    font-size: 2.85rem;
+  }
+
+  .page[data-home-standard-canvas='true'] .heroPromiseText {
+    max-width: 33.5rem;
+    margin-top: 1.85rem;
+    font-size: 1.08rem;
+    line-height: 1.6;
+  }
+
+  .page[data-home-standard-canvas='true'] .storyHeroLogo,
+  .page[data-home-standard-canvas='true'] .assetStageMotion,
+  .page[data-home-standard-canvas='true'] .featureNarrative {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .page[data-home-standard-canvas='true'] .storyHeroLogo {
+    --story-logo-halo-size: 30rem;
+    width: auto;
+    margin: 0;
+    opacity: 0;
+    visibility: hidden;
+    filter: blur(14px);
+    transform: translateY(0.65rem) scale(0.97);
+  }
+
+  .page[data-home-standard-canvas='true'] .storyHeroLogo::before {
+    display: block;
+  }
+
+  .page[data-home-standard-canvas='true'] .storyHeroLogoImage {
+    width: 17rem;
+    margin-inline: 0;
+  }
+
+  .page[data-home-standard-canvas='true'] .heroSection[data-story-step='brand'] .storyHeroLogo,
+  .page[data-home-standard-canvas='true'] .heroSection[data-story-step='promise'] .storyHeroLogo {
+    opacity: 1;
+    visibility: visible;
+    filter: blur(0);
+    transform: translateY(0) scale(1);
+  }
+
+  .page[data-home-standard-canvas='true'] .assetStageMotion {
+    --asset-preview-center-inset: 2.325rem;
+    --asset-stage-shift-x: 0px;
+    width: min(45.5rem, calc(100% + 7rem));
+    margin: 0;
+    justify-self: end;
+    opacity: 0;
+    visibility: hidden;
+    filter: blur(14px);
+    transform: translate3d(0, 0.7rem, 0) scale(0.992) !important;
+    pointer-events: none;
+  }
+
+  .page[data-home-standard-canvas='true'] .assetStageMotion .assetHeroStage {
+    position: relative;
+    display: block;
+    width: 100%;
+    max-width: none;
+    aspect-ratio: 1000 / 650;
+    margin: 0;
+    align-self: start;
+  }
+
+  .page[data-home-standard-canvas='true'] .heroSection[data-story-mode='preview'] .assetStageMotion,
+  .page[data-home-standard-canvas='true'] .heroSection[data-story-mode='features'] .assetStageMotion {
+    opacity: 1;
+    visibility: visible;
+    filter: blur(0);
+    transform: translate3d(0, 0, 0) scale(1) !important;
+    pointer-events: auto;
+  }
+
+  .page[data-home-standard-canvas='true'] .heroSection[data-story-mode='features'] .assetStageMotion {
+    transform: translate3d(var(--asset-stage-shift-x), 0, 0) scale(1) !important;
+  }
+
+  .page[data-home-standard-canvas='true'] .heroStory .assetQuestionGroup {
+    position: absolute;
+    inset: var(--asset-preview-center-inset) auto var(--asset-preview-center-inset) 0;
+    display: grid;
+    width: 4.5rem;
+    grid-template-columns: none;
+    grid-template-rows: repeat(5, minmax(0, 1fr));
+    gap: 0.2rem;
+    order: initial;
+  }
+
+  .page[data-home-standard-canvas='true'] .heroStory .assetQuestion,
+  .page[data-home-standard-canvas='true'] .heroStory .assetQuestion:nth-child(4) {
+    --question-size: 3.05rem;
+    position: relative;
+    inset: auto;
+    width: 100%;
+    grid-column: auto;
+  }
+
+  .page[data-home-standard-canvas='true'] .heroStory .assetQuestionActive {
+    --question-size: 3.35rem;
+  }
+
+  .page[data-home-standard-canvas='true'] .heroStory .assetPreviewCard,
+  .page[data-home-standard-canvas='true'] .heroStory .assetPreviewCard[data-active-question='attention'] {
+    position: absolute;
+    top: var(--asset-preview-center-inset);
+    right: 3.25rem;
+    bottom: var(--asset-preview-center-inset);
+    left: 5rem;
+    height: auto;
+    min-height: 0;
+    order: initial;
+  }
+
+  .page[data-home-standard-canvas='true'] .heroStory .assetActiveQuestion {
+    position: absolute;
+    display: grid;
+    top: calc(-4.25rem + var(--asset-preview-center-inset));
+    right: 3.25rem;
+    bottom: auto;
+    left: 5rem;
+    min-height: 3.7rem;
+    order: initial;
+  }
+
+  .page[data-home-standard-canvas='true'] .assetPreviewActions,
+  .page[data-home-standard-canvas='true'] .assetThumbnails {
+    display: grid;
+  }
+
+  .page[data-home-standard-canvas='true'] .assetPreviewBody {
+    grid-template-columns: minmax(0, 1.23fr) minmax(0, 1fr);
+  }
+
+  .page[data-home-standard-canvas='true'] .assetPhotoPanel {
+    grid-template-rows: minmax(0, 1fr) 2.35rem;
+  }
+
+  .page[data-home-standard-canvas='true'] .worthPreview {
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) 2.7rem;
+  }
+
+  .page[data-home-standard-canvas='true'] .worthReportPreview,
+  .page[data-home-standard-canvas='true'] .worthActions {
+    display: grid;
+  }
+
+  .page[data-home-standard-canvas='true'] .manageGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-rows: repeat(3, minmax(0, 1fr));
+  }
+
+  .page[data-home-standard-canvas='true'] .manageTile {
+    grid-template-columns: 1.75rem minmax(0, 1fr);
+    justify-items: stretch;
+    padding: 0.55rem 0.58rem;
+    text-align: left;
+  }
+
+  .page[data-home-standard-canvas='true'] .manageTile small,
+  .page[data-home-standard-canvas='true'] .reportRow small {
+    display: block;
+  }
+
+  .page[data-home-standard-canvas='true'] .attentionHeader {
+    grid-template-columns: minmax(0, 1fr) minmax(13.5rem, 15rem);
+  }
+
+  .page[data-home-standard-canvas='true'] .attentionBody {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .page[data-home-standard-canvas='true'] .featureNarrative {
+    --feature-copy-inset: clamp(5.5rem, 8rem, 7.75rem);
+    position: relative;
+    width: min(100%, 31rem);
+    min-height: 22rem;
+    align-self: center;
+    justify-self: end;
+    padding: 0;
+    opacity: 0;
+    visibility: hidden;
+    filter: blur(12px);
+    transform: translateY(0.85rem);
+    pointer-events: none;
+  }
+
+  .page[data-home-standard-canvas='true'] .featureNarrativeLayer,
+  .page[data-home-standard-canvas='true'] .featureNarrativeLayer[data-active='true'] {
+    position: absolute;
+    inset: 0 0 auto;
+    display: block;
+  }
+
+  .page[data-home-standard-canvas='true'] .featureNarrativeLayer h2,
+  .page[data-home-standard-canvas='true'] .featureNarrativeLayer > p:last-child {
+    position: relative;
+    inset-inline-start: calc(0rem - var(--feature-copy-inset));
+  }
+
+  .page[data-home-standard-canvas='true'] .featureNarrativeLayer h2 {
+    max-width: 29rem;
+    margin-top: 1.15rem;
+    font-size: 3.6rem;
+  }
+
+  .page[data-home-standard-canvas='true'] .featureNarrativeLayer > p:last-child {
+    max-width: 28rem;
+    margin-top: 1.1rem;
+    font-size: 1.08rem;
+    line-height: 1.58;
+  }
+
+  .page[data-home-standard-canvas='true'] .featureNarrativeCount {
+    position: absolute;
+    top: 0.35rem;
+    right: 0;
+    bottom: auto;
+    justify-content: flex-start;
+    margin-top: 0;
+  }
+
+  .page[data-home-standard-canvas='true'] .heroSection[data-story-mode='features'] .featureNarrative {
+    opacity: 1;
+    visibility: visible;
+    filter: blur(0);
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+
+  .page[data-home-standard-canvas='true'] .compactHeroActions {
+    display: none;
+  }
+
+  .page[data-home-standard-canvas='true'] .storyPauseControl {
+    display: inline-flex;
+  }
+
+  .page[data-home-standard-canvas='true'] .roleGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    max-width: 78rem;
+  }
+
+  .page[data-home-standard-canvas='true'] .roleTitle {
+    font-size: 3.8rem;
+  }
+
+.page[data-home-standard-canvas='true'] .roleCard {
+  min-height: 17rem;
 }
 
 @media (forced-colors: active) {
