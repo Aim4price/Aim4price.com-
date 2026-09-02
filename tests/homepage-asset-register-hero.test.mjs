@@ -379,16 +379,18 @@ test('homepage plays one slower timed tour, returns to its brand frame, then fol
   assert.match(storyHeroStyles, /\.heroBrandTitle span,[\s\S]*?\.heroPromiseTitle span \{[\s\S]*?white-space: nowrap/);
   assert.match(storyHeroStyles, /\.heroBrandTitle span:first-child::after \{[\s\S]*?content: ''[\s\S]*?linear-gradient\(90deg, #1ba677/);
   assert.match(storyHeroStyles, /\.storyHeroLogo \{[\s\S]*?filter: blur\(14px\);[\s\S]*?opacity 850ms[\s\S]*?filter 850ms/);
-  assert.match(storyHeroStyles, /\.storyHeroLogo::before,[\s\S]*?\.storyHeroLogo::after \{[\s\S]*?border-radius: 50%/);
+  assert.match(storyHeroStyles, /\.storyHeroLogo::before \{[\s\S]*?border-radius: 50%/);
   assert.match(storyHeroStyles, /\.storyHeroLogo::before \{[\s\S]*?radial-gradient\([\s\S]*?rgba\(89, 195, 155, 0\.22\)/);
-  assert.match(storyHeroStyles, /\.storyHeroLogo::after \{[\s\S]*?rgba\(53, 142, 109, 0\.12\)[\s\S]*?rgba\(53, 142, 109, 0\.09\)/);
+  assert.doesNotMatch(storyHeroStyles, /\.storyHeroLogo::after/);
   assert.match(storyHeroStyles, /\.storyHeroLogoImage \{[\s\S]*?drop-shadow\(0 1\.2rem 0\.8rem rgba\(12, 67, 49, 0\.16\)\)/);
   assert.match(storyHeroStyles, /\.assetStageMotion \{[\s\S]*?filter: blur\(14px\);[\s\S]*?transform 940ms/);
   assert.match(storyHeroStyles, /\.featureNarrativeLayer \{[\s\S]*?filter: blur\(12px\);[\s\S]*?opacity 700ms[\s\S]*?filter 700ms/);
 
   assert.match(storyHeroStyles, /\.heroSection\[data-story-step='brand'\] \.heroBrandCopy,[\s\S]*?\.heroSection\[data-story-step='preview'\] \.heroPromiseCopy \{[\s\S]*?filter: blur\(0\)/);
   assert.match(storyHeroStyles, /\.heroSection\[data-story-step='brand'\] \.storyHeroLogo,[\s\S]*?\.heroSection\[data-story-step='promise'\] \.storyHeroLogo \{[\s\S]*?filter: blur\(0\)[\s\S]*?scale\(1\)/);
-  assert.match(storyHeroStyles, /\.heroPromiseTitle \{[\s\S]*?font-size: clamp\(2\.55rem, 2\.85vw, 2\.75rem\)/);
+  assert.match(storyHeroStyles, /\.heroPromiseTitle \{[\s\S]*?font-size: clamp\(2\.65rem, 2\.95vw, 2\.95rem\);[\s\S]*?line-height: 1\.01/);
+  assert.match(storyHeroStyles, /\.heroPromiseText \{[\s\S]*?max-width: 33\.5rem;[\s\S]*?margin-top: 1\.85rem;[\s\S]*?line-height: 1\.6/);
+  assert.match(styles, /\.heroStory \.heroActions \{[\s\S]*?gap: 1rem;[\s\S]*?margin-top: 1\.85rem/);
   assert.doesNotMatch(storyHeroStyles, /data-autoplay-finished='true'[^{]*\.storyHeroLogo/);
   assert.match(storyHeroStyles, /\.heroSection\[data-story-mode='preview'\] \.assetStageMotion,[\s\S]*?\.heroSection\[data-story-mode='features'\] \.assetStageMotion \{[\s\S]*?filter: blur\(0\)/);
   assert.match(storyHeroStyles, /\.heroSection\[data-story-mode='features'\] \.assetStageMotion \{[\s\S]*?translate3d\(var\(--asset-stage-shift-x\), 0, 0\)/);
@@ -431,7 +433,7 @@ test('homepage plays one slower timed tour, returns to its brand frame, then fol
   assert.match(compactStoryStyles, /\.heroBrandCopy \{[\s\S]*?opacity: 1;[\s\S]*?filter: none/);
   assert.match(compactStoryStyles, /\.heroPromiseCopy \{[\s\S]*?display: none/);
   assert.match(compactStoryStyles, /\.storyHeroLogo \{[\s\S]*?order: 2;[\s\S]*?opacity: 1;[\s\S]*?filter: none/);
-  assert.match(compactStoryStyles, /\.storyHeroLogo::before,[\s\S]*?\.storyHeroLogo::after \{[\s\S]*?display: none/);
+  assert.match(compactStoryStyles, /\.storyHeroLogo::before \{[\s\S]*?display: none/);
   assert.match(compactStoryStyles, /\.assetStageMotion \{[\s\S]*?order: 3;[\s\S]*?opacity: 1;[\s\S]*?transform: none !important/);
   assert.match(compactStoryStyles, /\.featureNarrative \{[\s\S]*?order: 4;[\s\S]*?opacity: 1;[\s\S]*?filter: none/);
   assert.match(compactStoryStyles, /\.compactHeroActions \{[\s\S]*?display: flex;[\s\S]*?order: 5/);
@@ -448,7 +450,7 @@ test('homepage plays one slower timed tour, returns to its brand frame, then fol
   assert.match(reducedMotionStyles, /\.storyCopyLayer,[\s\S]*?\.storyPauseControl \{[\s\S]*?animation: none !important;[\s\S]*?transition: none !important/);
   assert.match(reducedMotionStyles, /\.storyCopyLayer,[\s\S]*?\.featureNarrativeLayer \{[\s\S]*?filter: none !important/);
   assert.match(storyHeroStyles, /@media \(prefers-reduced-motion: reduce\) and \(min-width: 1181px\)[\s\S]*?\.heroBrandCopy \{[\s\S]*?opacity: 1;[\s\S]*?\.storyHeroLogo \{[\s\S]*?opacity: 1;[\s\S]*?\.assetStageMotion \{[\s\S]*?transform: none !important;[\s\S]*?\.compactHeroActions \{[\s\S]*?display: flex/);
-  assert.match(storyHeroStyles, /@media \(prefers-reduced-motion: reduce\) and \(min-width: 1181px\)[\s\S]*?\.storyHeroLogo::before,[\s\S]*?\.storyHeroLogo::after \{[\s\S]*?display: none/);
+  assert.match(storyHeroStyles, /@media \(prefers-reduced-motion: reduce\) and \(min-width: 1181px\)[\s\S]*?\.storyHeroLogo::before \{[\s\S]*?display: none/);
   assert.match(storyHeroStyles, /@media \(prefers-reduced-motion: reduce\) and \(min-width: 1181px\)[\s\S]*?\.heroStory \.heroMedia\.heroSticky \{[\s\S]*?height: auto;[\s\S]*?overflow: hidden/);
   assert.match(storyHeroStyles, /@media \(forced-colors: active\)[\s\S]*?\.storyPauseControl,[\s\S]*?border: 1px solid CanvasText/);
 });
