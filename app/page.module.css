@@ -4230,8 +4230,20 @@
   }
 
   .assetStageMotion {
+    --asset-preview-center-inset: 2.325rem;
     width: min(45.5rem, calc(100% + 7rem));
     justify-self: end;
+  }
+
+  .heroStory .assetQuestionGroup,
+  .heroStory .assetPreviewCard {
+    top: var(--asset-preview-center-inset);
+    bottom: var(--asset-preview-center-inset);
+  }
+
+  .heroStory .assetActiveQuestion {
+    top: calc(-4.25rem + var(--asset-preview-center-inset));
+    bottom: auto;
   }
 
   .heroStory .assetPreviewCard,
