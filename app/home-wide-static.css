@@ -1,0 +1,214 @@
+/*
+ * Wide static Home composition.
+ *
+ * The cinematic story intentionally requires a tall viewport. A 1920x1080
+ * Windows display at 125% scaling can still expose a wide CSS viewport while
+ * falling just below that height gate. In that case Home must remain a real
+ * desktop composition instead of inheriting the looser tablet/static spacing.
+ *
+ * These rules are global on purpose, but are tightly scoped to the semantic
+ * data attributes owned by HomeHeroExperience. They do not affect tablet,
+ * phone, or cinematic states and do not use zoom or a fixed desktop canvas.
+ */
+
+@media (min-width: 1181px) {
+  section[data-story-capability='static'] div:has(> [data-story-opening]) {
+    grid-template-columns: minmax(0, 1.18fr) minmax(21rem, 0.82fr);
+    column-gap: clamp(2.4rem, 4vw, 4.75rem);
+    row-gap: clamp(2.75rem, 5vw, 4rem);
+    padding-block: clamp(2rem, 5vh, 3.25rem) clamp(3rem, 7vh, 4.5rem);
+  }
+
+  section[data-story-capability='static'] [data-story-opening] {
+    align-self: start;
+  }
+
+  section[data-story-capability='static']
+    [data-story-opening]
+    > div:first-child
+    > p
+    > span:first-child {
+    font-size: clamp(3.6rem, 4.65vw, 4.75rem);
+  }
+
+  section[data-story-capability='static']
+    [data-story-opening]
+    > div:first-child
+    > p
+    > span:not(:first-child) {
+    font-size: clamp(1.95rem, 2.55vw, 2.55rem);
+    line-height: 1.03;
+  }
+
+  section[data-story-capability='static']
+    [data-story-opening]
+    > div:first-child
+    > p
+    > span:first-child::after {
+    width: clamp(2.75rem, 3.4vw, 3.5rem);
+    margin-top: 0.24em;
+  }
+
+  section[data-story-capability='static'] [data-story-opening] > div:last-child {
+    margin-top: clamp(1.6rem, 3.5vh, 2.25rem);
+  }
+
+  section[data-story-capability='static']
+    [data-story-opening]
+    > div:last-child
+    > p:first-child {
+    font-size: clamp(2.25rem, 2.75vw, 2.75rem);
+    line-height: 1;
+  }
+
+  section[data-story-capability='static']
+    [data-story-opening]
+    > div:last-child
+    > p:nth-child(2) {
+    max-width: 31rem;
+    margin-top: 1.15rem;
+    font-size: clamp(0.96rem, 1.02vw, 1.08rem);
+    line-height: 1.5;
+  }
+
+  section[data-story-capability='static']
+    [data-story-opening]
+    > div:last-child
+    > div:last-child {
+    margin-top: 1.2rem;
+  }
+
+  section[data-story-capability='static'] [data-story-opening] + div {
+    align-self: start;
+    justify-self: center;
+    margin-top: clamp(4.75rem, 10vh, 7rem);
+  }
+
+  section[data-story-capability='static'] [data-story-opening] + div > img {
+    width: clamp(10.75rem, 13.5vw, 14rem);
+  }
+
+  section[data-story-capability='static'] [data-story-opening] + div::before {
+    width: clamp(17rem, 24vw, 24rem);
+  }
+}
+
+/*
+ * Short desktop windows need another density step. This is the state reached
+ * by common 1080p monitors with OS scaling and by laptop windows with browser
+ * chrome/taskbars consuming a large share of the vertical viewport.
+ *
+ * The selector intentionally accepts either capability attribute value here.
+ * Home initializes as cinematic before hydration, while the 700px media gate
+ * already guarantees that cinematic CSS cannot activate in this height range.
+ * This keeps first paint and hydrated layout geometrically identical.
+ */
+@media (min-width: 1181px) and (max-height: 699px) {
+  section[data-story-capability] div:has(> [data-story-opening]) {
+    grid-template-columns: minmax(0, 1.22fr) minmax(20rem, 0.78fr);
+    column-gap: clamp(2rem, 3.5vw, 3.75rem);
+    row-gap: clamp(2rem, 4.5vh, 2.75rem);
+    padding-block: clamp(1.25rem, 3.2vh, 1.75rem) clamp(2.25rem, 5.5vh, 3rem);
+  }
+
+  section[data-story-capability]
+    [data-story-opening]
+    > div:first-child
+    > p
+    > span:first-child {
+    font-size: clamp(3.15rem, 4.05vw, 4rem);
+  }
+
+  section[data-story-capability]
+    [data-story-opening]
+    > div:first-child
+    > p
+    > span:not(:first-child) {
+    font-size: clamp(1.72rem, 2.2vw, 2.1rem);
+  }
+
+  section[data-story-capability] [data-story-opening] > div:last-child {
+    margin-top: clamp(1rem, 2.6vh, 1.35rem);
+  }
+
+  section[data-story-capability]
+    [data-story-opening]
+    > div:last-child
+    > p:first-child {
+    font-size: clamp(2.05rem, 2.4vw, 2.4rem);
+  }
+
+  section[data-story-capability]
+    [data-story-opening]
+    > div:last-child
+    > p:nth-child(2) {
+    max-width: 29rem;
+    margin-top: 0.85rem;
+    font-size: clamp(0.9rem, 0.95vw, 0.98rem);
+    line-height: 1.44;
+  }
+
+  section[data-story-capability]
+    [data-story-opening]
+    > div:last-child
+    > div:last-child {
+    margin-top: 0.95rem;
+  }
+
+  section[data-story-capability] [data-story-opening] + div {
+    align-self: start;
+    justify-self: center;
+    margin-top: clamp(3.25rem, 7.5vh, 4.25rem);
+  }
+
+  section[data-story-capability] [data-story-opening] + div > img {
+    width: clamp(9.75rem, 11.75vw, 12rem);
+  }
+
+  section[data-story-capability] [data-story-opening] + div::before {
+    width: clamp(15rem, 21vw, 20rem);
+  }
+}
+
+@media (min-width: 1181px) and (max-height: 620px) {
+  section[data-story-capability] div:has(> [data-story-opening]) {
+    row-gap: 1.8rem;
+    padding-block: 1rem 2.25rem;
+  }
+
+  section[data-story-capability]
+    [data-story-opening]
+    > div:first-child
+    > p
+    > span:first-child {
+    font-size: clamp(2.9rem, 3.7vw, 3.6rem);
+  }
+
+  section[data-story-capability]
+    [data-story-opening]
+    > div:first-child
+    > p
+    > span:not(:first-child) {
+    font-size: clamp(1.6rem, 2vw, 1.9rem);
+  }
+
+  section[data-story-capability]
+    [data-story-opening]
+    > div:last-child
+    > p:first-child {
+    font-size: clamp(1.9rem, 2.2vw, 2.2rem);
+  }
+
+  section[data-story-capability]
+    [data-story-opening]
+    > div:last-child
+    > p:nth-child(2) {
+    margin-top: 0.72rem;
+    font-size: 0.9rem;
+    line-height: 1.4;
+  }
+
+  section[data-story-capability] [data-story-opening] + div {
+    margin-top: 2.75rem;
+  }
+}
