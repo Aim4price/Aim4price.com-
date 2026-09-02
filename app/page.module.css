@@ -3269,28 +3269,28 @@
 }
 
 .heroStory .heroActions {
-  gap: 0.85rem;
-  margin-top: 1.65rem;
+  gap: 1rem;
+  margin-top: 1.85rem;
 }
 
 .heroStory .primaryCta,
 .heroStory .secondaryCta {
   min-width: 0;
-  min-height: 3.35rem;
+  min-height: 3.45rem;
   box-sizing: border-box;
   padding-inline: 1.35rem;
   border-radius: 0.8rem;
 }
 
 .heroStory .primaryCta {
-  width: 14.4rem;
+  width: 14.75rem;
   appearance: none;
   font-family: inherit;
   cursor: pointer;
 }
 
 .heroStory .secondaryCta {
-  width: 12.25rem;
+  width: 12.5rem;
 }
 
 .heroStory .assetHeroStage {
@@ -3878,20 +3878,21 @@
 }
 
 .heroPromiseTitle {
-  font-size: clamp(2.55rem, 2.85vw, 2.75rem);
-  line-height: 0.98;
+  font-size: clamp(2.65rem, 2.95vw, 2.95rem);
+  line-height: 1.01;
+  letter-spacing: -0.054em;
 }
 
 .heroPromiseTitle span + span {
-  margin-top: 0.09em;
+  margin-top: 0.075em;
 }
 
 .heroPromiseText {
-  max-width: 35rem;
-  margin-top: 1.45rem;
+  max-width: 33.5rem;
+  margin-top: 1.85rem;
   color: #52645d;
-  font-size: clamp(1rem, 1.08vw, 1.14rem);
-  line-height: 1.62;
+  font-size: clamp(1rem, 1.06vw, 1.12rem);
+  line-height: 1.6;
   letter-spacing: -0.012em;
   text-wrap: pretty;
 }
@@ -3917,8 +3918,7 @@
     visibility 0s linear 850ms;
 }
 
-.storyHeroLogo::before,
-.storyHeroLogo::after {
+.storyHeroLogo::before {
   content: '';
   position: absolute;
   top: 50%;
@@ -3940,26 +3940,6 @@
   );
   filter: blur(10px);
   transform: translate(-50%, -50%) scale(1.08);
-}
-
-.storyHeroLogo::after {
-  z-index: -1;
-  background:
-    radial-gradient(
-      circle,
-      transparent 55.7%,
-      rgba(53, 142, 109, 0.12) 56%,
-      rgba(53, 142, 109, 0.12) 56.25%,
-      transparent 56.55%
-    ),
-    radial-gradient(
-      circle,
-      transparent 75.7%,
-      rgba(53, 142, 109, 0.09) 76%,
-      rgba(53, 142, 109, 0.09) 76.25%,
-      transparent 76.55%
-    );
-  transform: translate(-50%, -50%);
 }
 
 .storyHeroLogoImage {
@@ -4280,7 +4260,7 @@
   }
 
   .heroPromiseTitle {
-    font-size: clamp(2.15rem, 2.75vw, 2.45rem);
+    font-size: clamp(2.3rem, 2.85vw, 2.65rem);
   }
 
   .assetStageMotion {
@@ -4387,8 +4367,7 @@
     transform: none;
   }
 
-  .storyHeroLogo::before,
-  .storyHeroLogo::after {
+  .storyHeroLogo::before {
     display: none;
   }
 
@@ -4516,8 +4495,7 @@
     filter: none;
   }
 
-  .storyHeroLogo::before,
-  .storyHeroLogo::after {
+  .storyHeroLogo::before {
     display: none;
   }
 }
@@ -4578,8 +4556,7 @@
     transform: none;
   }
 
-  .storyHeroLogo::before,
-  .storyHeroLogo::after {
+  .storyHeroLogo::before {
     display: none;
   }
 
