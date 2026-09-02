@@ -187,9 +187,35 @@ export default function HomeHeroExperience() {
       return;
     }
 
+    let semanticStep = storyStepRef.current;
+    if (storyCapabilityRef.current === false) {
+      const anchorLine = headerHeight + 1;
+      const previewRect = section
+        .querySelector<HTMLElement>('[data-story-preview]')
+        ?.getBoundingClientRect();
+      const narrativeRect = section
+        .querySelector<HTMLElement>('[data-story-narrative]')
+        ?.getBoundingClientRect();
+
+      if (window.scrollY <= 4) {
+        semanticStep = 0;
+      } else if (!previewRect || previewRect.top > anchorLine) {
+        semanticStep = 1;
+      } else if (manualControlRef.current && semanticStep >= FEATURE_START_INDEX) {
+        // Keep an explicitly selected card while it remains in view. The opening
+        // landmarks above still win, so returning to the top can never restore a
+        // stale feature after moving between screens or rotating the device.
+        semanticStep = clampStoryIndex(semanticStep);
+      } else if (!narrativeRect || narrativeRect.top > anchorLine) {
+        semanticStep = 2;
+      } else {
+        semanticStep = Math.max(FEATURE_START_INDEX, semanticStep);
+      }
+    }
+
     viewportAnchorRef.current = {
       kind: 'hero',
-      step: storyStepRef.current,
+      step: semanticStep,
       viewportOffset: Math.max(
         headerHeight,
         sticky.getBoundingClientRect().top,
