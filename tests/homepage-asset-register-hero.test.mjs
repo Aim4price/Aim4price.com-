@@ -4,7 +4,7 @@ import test from 'node:test';
 
 const read = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
 
-test('homepage plays one slower timed tour, then resets for a scroll-led story before the permanent role choice', async () => {
+test('homepage plays one slower timed tour, returns to its brand frame, then follows scroll in both directions', async () => {
   const [page, hero, preview, roleSelector, styles, auth] = await Promise.all([
     read('app/page.tsx'),
     read('app/home-hero-experience.tsx'),
@@ -61,17 +61,12 @@ test('homepage plays one slower timed tour, then resets for a scroll-led story b
   assert.match(hero, /useState<QuestionKey>\('have'\)/);
   assert.match(hero, /data-story-step=\{storyStep\}/);
   assert.match(hero, /data-story-mode=\{storyMode\}/);
-  assert.match(hero, /data-story-complete=\{isStoryComplete \? 'true' : 'false'\}/);
-  assert.match(hero, /data-scroll-driven=\{isScrollDriven \? 'true' : 'false'\}/);
-  assert.match(hero, /data-autoplay-finished=\{hasAutoplayFinished \? 'true' : 'false'\}/);
   assert.match(hero, /data-active-question=\{activeQuestion\}/);
   assert.match(hero, /isAutoplaying && storyStepIndex >= FEATURE_START_INDEX/);
   assert.match(hero, /<HomeAssetPreview[\s\S]*?activeQuestion=\{activeQuestion\}[\s\S]*?onQuestionChange=\{handleQuestionChange\}/);
 
-  assert.match(hero, /const PROMISE_STEP_INDEX = 1/);
   assert.match(hero, /const FEATURE_START_INDEX = 3/);
   assert.match(hero, /HERO_FEATURE_DURATION_MS = 4800/);
-  assert.match(hero, /HERO_STORY_SCROLL_RATIO = 0\.32/);
   assert.match(hero, /brand: 3800,[\s\S]*?promise: 4800,[\s\S]*?preview: 3600/);
   for (const question of featureSteps) {
     assert.match(hero, new RegExp(`${question}: HERO_FEATURE_DURATION_MS`));
@@ -81,11 +76,12 @@ test('homepage plays one slower timed tour, then resets for a scroll-led story b
   assert.match(hero, /desktopStoryMedia\.matches && !reducedMotionMedia\.matches/);
   assert.match(hero, /reducedMotionMedia\.addEventListener\('change', syncStoryCapability\)/);
   assert.match(hero, /desktopStoryMedia\.addEventListener\('change', syncStoryCapability\)/);
-  assert.match(hero, /if \(!supportsStory\) \{[\s\S]*?setIsStoryComplete\(true\)[\s\S]*?updateStoryStep\(FEATURE_START_INDEX\)/);
+  assert.match(hero, /if \(!supportsStory\) \{[\s\S]*?setIsAutoplaying\(false\)[\s\S]*?setIsManuallyControlled\(true\)[\s\S]*?updateStoryStep\(FEATURE_START_INDEX\)/);
   assert.match(hero, /const storyStep = HERO_STORY_STEPS\[storyStepIndex\]/);
   assert.match(hero, /window\.setTimeout\([\s\S]*?STORY_DURATIONS\[storyStep\]/);
-  assert.match(hero, /const finishAutoplay = useCallback\(\(\) => \{[\s\S]*?autoplayFinishedRef\.current = true;[\s\S]*?scrollAnchorRef\.current = null;[\s\S]*?setHasAutoplayFinished\(true\);[\s\S]*?updateStoryStep\(PROMISE_STEP_INDEX\)/);
+  assert.match(hero, /const finishAutoplay = useCallback\(\(\) => \{[\s\S]*?autoplayFinishedRef\.current = true;[\s\S]*?setHasAutoplayFinished\(true\);[\s\S]*?setIsAutoplaying\(false\);[\s\S]*?setIsPaused\(false\);[\s\S]*?updateStoryStep\(0\)/);
   assert.match(hero, /storyStepIndex >= HERO_STORY_STEPS\.length - 1[\s\S]*?finishAutoplay\(\)/);
+  assert.match(hero, /const timer = window\.setTimeout\(\(\) => \{[\s\S]*?if \(autoplayFinishedRef\.current\) return/);
   const terminalAutoplay = hero.slice(
     hero.indexOf('if (storyStepIndex >= HERO_STORY_STEPS.length - 1)'),
     hero.indexOf('updateStoryStep(storyStepIndex + 1)'),
@@ -103,30 +99,43 @@ test('homepage plays one slower timed tour, then resets for a scroll-led story b
 
   assert.match(hero, /window\.addEventListener\('scroll', handleScroll, \{ passive: true \}\)/);
   assert.match(hero, /window\.removeEventListener\('scroll', handleScroll\)/);
-  assert.match(hero, /window\.requestAnimationFrame\(\(\) => \{/);
-  assert.match(hero, /stepDistance = Math\.max\(180, sticky\.offsetHeight \* HERO_STORY_SCROLL_RATIO\)/);
-  assert.match(hero, /stepDelta = Math\.trunc\(distance \/ stepDistance\)/);
-  assert.match(hero, /nextIndex = clampStoryIndex\(anchor\.stepIndex \+ stepDelta\)/);
-  assert.match(hero, /remainingSteps = HERO_STORY_STEPS\.length - 1 - anchor\.stepIndex;[\s\S]*?distance >= \(remainingSteps \+ 1\) \* stepDistance[\s\S]*?completeStory\(\)/);
-  assert.match(hero, /setIsManuallyControlled\(true\)[\s\S]*?setIsScrollDriven\(true\)[\s\S]*?setIsAutoplaying\(false\)/);
-  assert.match(hero, /stickyTop = Number\.parseFloat\(window\.getComputedStyle\(sticky\)\.top\) \|\| 0/);
-  assert.match(hero, /setStoryHeightPx\([\s\S]*?sticky\.offsetHeight \+ stickyTop,[\s\S]*?localScroll \+ sticky\.offsetHeight \+ stickyTop/);
+  assert.match(hero, /const scheduleStorySync = \(claimControl: boolean\) => \{/);
+  assert.match(hero, /if \(claimControl\) autoplayFinishedRef\.current = true/);
+  assert.match(hero, /scrollClaimRef\.current = scrollClaimRef\.current \|\| claimControl/);
+  assert.match(hero, /scrollFrameRef\.current = window\.requestAnimationFrame\(\(\) => \{/);
+  assert.match(hero, /currentScrollY = window\.scrollY/);
+  assert.match(hero, /sectionTop = currentScrollY \+ section\.getBoundingClientRect\(\)\.top/);
+  assert.match(hero, /stickyTop =\s*Number\.parseFloat\(window\.getComputedStyle\(sticky\)\.top\) \|\| 0/);
+  assert.match(hero, /trackStart = sectionTop - stickyTop/);
+  assert.match(hero, /trackTravel = Math\.max\([\s\S]*?1,[\s\S]*?section\.offsetHeight - sticky\.offsetHeight,[\s\S]*?\)/);
+  assert.match(hero, /localScroll = Math\.max\([\s\S]*?0,[\s\S]*?Math\.min\(trackTravel, currentScrollY - trackStart\),[\s\S]*?\)/);
+  assert.match(hero, /progress = localScroll \/ trackTravel/);
+  assert.match(hero, /nextIndex = clampStoryIndex\([\s\S]*?Math\.floor\(progress \* HERO_STORY_STEPS\.length\),[\s\S]*?\)/);
+  assert.match(hero, /if \(nextIndex !== storyStepRef\.current\) updateStoryStep\(nextIndex\)/);
+  assert.match(hero, /if \(shouldClaimControl\) \{[\s\S]*?setHasAutoplayFinished\(true\);[\s\S]*?setIsManuallyControlled\(true\);[\s\S]*?setIsPaused\(false\);[\s\S]*?setIsAutoplaying\(false\)/);
+  assert.match(hero, /const handleScroll = \(\) => scheduleStorySync\(true\)/);
+  assert.match(hero, /window\.addEventListener\('resize', handleResize\)/);
+  assert.match(hero, /window\.addEventListener\('pageshow', handlePageShow\)/);
+  assert.match(hero, /if \(window\.scrollY > 4\) scheduleStorySync\(true\)/);
+  assert.match(hero, /window\.removeEventListener\('resize', handleResize\)/);
+  assert.match(hero, /window\.removeEventListener\('pageshow', handlePageShow\)/);
   const nativeScrollFlow = hero.slice(
-    hero.indexOf('if (!isDesktopStory || isStoryComplete)'),
+    hero.indexOf('const scheduleStorySync = (claimControl: boolean)'),
     hero.indexOf('const storyGrid = storyGridRef.current'),
   );
   assert.doesNotMatch(nativeScrollFlow, /addEventListener\(['"](?:wheel|touchmove)|preventDefault|scrollTo\(|scrollIntoView\(|setInterval/);
-  assert.match(hero, /roleWasTargeted = window\.location\.hash === '#choose-role'/);
-  assert.match(hero, /restoredBeyondStory = window\.scrollY >= sectionEnd - 4/);
-  assert.match(hero, /if \(!roleWasTargeted && !restoredBeyondStory\) \{[\s\S]*?setHasAutoplayFinished\(true\)[\s\S]*?setIsScrollDriven\(true\)[\s\S]*?updateStoryStep\(PROMISE_STEP_INDEX\)[\s\S]*?scrollAnchorRef\.current = \{[\s\S]*?stepIndex: PROMISE_STEP_INDEX/);
-  assert.match(hero, /completeStory\(true\);[\s\S]*?alignRoleSection\(\)/);
-  assert.match(hero, /getElementById\('choose-role'\)\?\.scrollIntoView\(\{[\s\S]*?behavior: 'auto',[\s\S]*?block: 'start'/);
+  assert.doesNotMatch(hero, /PROMISE_STEP_INDEX|HERO_STORY_SCROLL_RATIO|data-story-complete|isStoryComplete|storyCompleteRef|completeStory|scrollAnchorRef|lastScrollYRef|storyHeightPx|setStoryHeightPx|isScrollDriven|alignRoleSection|getElementById\('choose-role'\)|scrollIntoView/);
 
   assert.match(hero, /const handleQuestionChange[\s\S]*?claimManualControl\(\);[\s\S]*?setActiveQuestion\(question\);[\s\S]*?updateStoryStep\(FEATURE_START_INDEX \+ index\)/);
   assert.match(hero, /const handlePreviewInteraction = \(source: 'pointer' \| 'focus'\)[\s\S]*?source === 'focus'[\s\S]*?claimManualControl\(\)/);
   assert.match(hero, /<HomeAssetPreview[\s\S]*?activeQuestion=\{activeQuestion\}[\s\S]*?onQuestionChange=\{handleQuestionChange\}[\s\S]*?onInteraction=\{handlePreviewInteraction\}/);
   assert.doesNotMatch(hero, /handlePlaybackToggle|onPlaybackToggle=|playbackId|setPlaybackId|key=\{playbackId\}/);
-  assert.match(hero, /const handleRoleSkip = \(\) => \{[\s\S]*?claimManualControl\(\);[\s\S]*?completeStory\(\)/);
+  assert.match(hero, /const handleRoleSkip = \(\) => \{[\s\S]*?claimManualControl\(\);[\s\S]*?\};/);
+  const roleSkip = hero.slice(
+    hero.indexOf('const handleRoleSkip = () => {'),
+    hero.indexOf('const handleStoryFocus'),
+  );
+  assert.doesNotMatch(roleSkip, /updateStoryStep|scrollIntoView|completeStory/);
   assert.match(hero, /const handleStoryFocus = \(event: FocusEvent<HTMLDivElement>\)[\s\S]*?target\.closest\('\[data-story-pause-control\]'\)[\s\S]*?claimManualControl\(\)/);
   assert.match(hero, /className=\{styles\.storyHeroGrid\}[\s\S]*?onFocusCapture=\{handleStoryFocus\}/);
 
@@ -160,7 +169,7 @@ test('homepage plays one slower timed tour, then resets for a scroll-led story b
   assert.match(hero, /String\(index \+ 1\)\.padStart\(2, '0'\)/);
   assert.match(hero, /<span>\/ 05<\/span>/);
   assert.match(hero, /aria-pressed=\{isPaused\}/);
-  assert.match(hero, /!isStoryComplete &&[\s\S]*?isDesktopStory &&[\s\S]*?!isManuallyControlled &&[\s\S]*?!hasAutoplayFinished/);
+  assert.match(hero, /\{isDesktopStory &&[\s\S]*?!isManuallyControlled &&[\s\S]*?!hasAutoplayFinished \? \(/);
   assert.match(hero, /data-story-pause-control/);
   assert.match(hero, /isPaused \? 'Continue animation' : 'Pause animation'/);
 
@@ -374,7 +383,8 @@ test('homepage plays one slower timed tour, then resets for a scroll-led story b
 
   assert.match(storyHeroStyles, /\.heroSection\[data-story-step='brand'\] \.heroBrandCopy,[\s\S]*?\.heroSection\[data-story-step='preview'\] \.heroPromiseCopy \{[\s\S]*?filter: blur\(0\)/);
   assert.match(storyHeroStyles, /\.heroSection\[data-story-step='brand'\] \.storyHeroLogo,[\s\S]*?\.heroSection\[data-story-step='promise'\] \.storyHeroLogo \{[\s\S]*?filter: blur\(0\)[\s\S]*?scale\(1\)/);
-  assert.match(storyHeroStyles, /data-autoplay-finished='true'\]\[data-story-step='promise'\] \.storyHeroLogo \{[\s\S]*?opacity: 0;[\s\S]*?visibility: hidden;[\s\S]*?filter: blur\(14px\)/);
+  assert.match(storyHeroStyles, /\.heroPromiseTitle \{[\s\S]*?font-size: clamp\(2\.55rem, 2\.85vw, 2\.75rem\)/);
+  assert.doesNotMatch(storyHeroStyles, /data-autoplay-finished='true'[^{]*\.storyHeroLogo/);
   assert.match(storyHeroStyles, /\.heroSection\[data-story-mode='preview'\] \.assetStageMotion,[\s\S]*?\.heroSection\[data-story-mode='features'\] \.assetStageMotion \{[\s\S]*?filter: blur\(0\)/);
   assert.match(storyHeroStyles, /\.heroSection\[data-story-mode='features'\] \.assetStageMotion \{[\s\S]*?translate3d\(var\(--asset-stage-shift-x\), 0, 0\)/);
   assert.match(storyHeroStyles, /\.heroSection\[data-story-mode='features'\] \.featureNarrative \{[\s\S]*?opacity: 1;[\s\S]*?filter: blur\(0\)/);
@@ -385,12 +395,26 @@ test('homepage plays one slower timed tour, then resets for a scroll-led story b
     storyHeroStyles.indexOf('@media (min-width: 1181px) and (min-height: 640px)'),
     storyHeroStyles.indexOf('@media (min-width: 1181px) and (max-width: 1360px)'),
   );
-  assert.match(desktopStoryStyles, /\.heroStory \{[\s\S]*?min-height: var\(--hero-story-height, 440svh\)/);
-  assert.match(desktopStoryStyles, /data-story-complete='true'[\s\S]*?calc\(100svh - 5\.75rem\)/);
-  assert.match(desktopStoryStyles, /\.heroSticky \{[\s\S]*?position: sticky;[\s\S]*?top: 5\.75rem;[\s\S]*?height: calc\(100svh - 5\.75rem\);[\s\S]*?overflow: hidden/);
-  assert.match(desktopStoryStyles, /\.storyHeroGrid \{[\s\S]*?--hero-working-inset: clamp\(0px, calc\(\(100% - 1240px\) \/ 2\), 60px\);[\s\S]*?width: calc\(100% - var\(--hero-working-inset\)\);[\s\S]*?grid-template-columns: repeat\(2, minmax\(0, 1fr\)\);[\s\S]*?margin-inline-start: var\(--hero-working-inset\)/);
+  assert.match(desktopStoryStyles, /\.heroStory \{[\s\S]*?min-height: 440svh/);
+  assert.doesNotMatch(storyHeroStyles, /--hero-story-height|data-story-complete/);
+  assert.match(desktopStoryStyles, /\.heroSticky \{[\s\S]*?position: sticky;[\s\S]*?top: 5\.75rem;[\s\S]*?height: calc\(100dvh - 5\.75rem\);[\s\S]*?overflow: hidden/);
+  assert.match(desktopStoryStyles, /\.heroStory \.heroMedia \{[\s\S]*?min-height: 0;[\s\S]*?\}[\s\S]*?\.heroStory \.heroMedia\.heroSticky \{[\s\S]*?height: calc\(100dvh - 5\.75rem\)/);
+  assert.doesNotMatch(desktopStoryStyles, /\.heroStory \.heroMedia \{[^}]*height: 100%/s);
+  assert.match(desktopStoryStyles, /\.storyHeroGrid \{[\s\S]*?--hero-working-inset: clamp\(0px, calc\(\(100% - 1240px\) \/ 2\), 60px\);[\s\S]*?width: calc\(100% - var\(--hero-working-inset\)\);[\s\S]*?height: 100%;[\s\S]*?grid-template-columns: minmax\(31rem, 1fr\) minmax\(39rem, 49\.5rem\);[\s\S]*?gap: clamp\(2\.5rem, 3vw, 3\.5rem\);[\s\S]*?margin-inline-start: var\(--hero-working-inset\)/);
   assert.match(desktopStoryStyles, /\.heroCopyDeck \{[\s\S]*?grid-column: 1;[\s\S]*?grid-row: 1/);
   assert.match(desktopStoryStyles, /\.storyHeroLogo,[\s\S]*?\.assetStageMotion,[\s\S]*?\.featureNarrative \{[\s\S]*?grid-column: 2;[\s\S]*?grid-row: 1/);
+  assert.match(desktopStoryStyles, /\.assetStageMotion \{[\s\S]*?width: min\(45\.5rem, calc\(100% \+ 7rem\)\);[\s\S]*?justify-self: end/);
+  assert.match(desktopStoryStyles, /\.heroStory \.assetPreviewCard,[\s\S]*?\.heroStory \.assetActiveQuestion \{[\s\S]*?right: 3\.25rem;[\s\S]*?left: 5rem/);
+
+  const mediumDesktopStoryStyles = storyHeroStyles.slice(
+    storyHeroStyles.indexOf('@media (min-width: 1181px) and (max-width: 1360px)'),
+    storyHeroStyles.indexOf('@media (min-width: 1181px) and (max-width: 1240px)'),
+  );
+  assert.match(mediumDesktopStoryStyles, /\.heroStory \.heroMedia \.shell \{[\s\S]*?width: min\(calc\(100% - 3rem\), 1360px\)/);
+  assert.match(mediumDesktopStoryStyles, /\.storyHeroGrid \{[\s\S]*?grid-template-columns: minmax\(27rem, 31rem\) minmax\(34rem, 44rem\)/);
+  assert.match(mediumDesktopStoryStyles, /\.assetStageMotion \{[\s\S]*?width: min\(44rem, calc\(100% \+ 6rem\)\);[\s\S]*?justify-self: end/);
+  assert.match(storyHeroStyles, /@media \(min-width: 1181px\) and \(max-width: 1240px\) and \(min-height: 640px\)[\s\S]*?\.storyHeroGrid \{[\s\S]*?--hero-working-inset: 8px/);
+  assert.match(storyHeroStyles, /@media \(min-width: 1181px\) and \(min-height: 640px\) and \(max-height: 759px\)[\s\S]*?\.assetStageMotion \{[\s\S]*?width: min\(43rem, calc\(100% \+ 5rem\)\)/);
 
   const compactStoryStyles = storyHeroStyles.slice(
     storyHeroStyles.indexOf('@media (max-width: 1180px), (max-height: 639px)'),
@@ -418,5 +442,6 @@ test('homepage plays one slower timed tour, then resets for a scroll-led story b
   assert.match(reducedMotionStyles, /\.storyCopyLayer,[\s\S]*?\.storyPauseControl \{[\s\S]*?animation: none !important;[\s\S]*?transition: none !important/);
   assert.match(reducedMotionStyles, /\.storyCopyLayer,[\s\S]*?\.featureNarrativeLayer \{[\s\S]*?filter: none !important/);
   assert.match(storyHeroStyles, /@media \(prefers-reduced-motion: reduce\) and \(min-width: 1181px\)[\s\S]*?\.heroBrandCopy \{[\s\S]*?opacity: 1;[\s\S]*?\.storyHeroLogo \{[\s\S]*?opacity: 1;[\s\S]*?\.assetStageMotion \{[\s\S]*?transform: none !important;[\s\S]*?\.compactHeroActions \{[\s\S]*?display: flex/);
+  assert.match(storyHeroStyles, /@media \(prefers-reduced-motion: reduce\) and \(min-width: 1181px\)[\s\S]*?\.heroStory \.heroMedia\.heroSticky \{[\s\S]*?height: auto;[\s\S]*?overflow: hidden/);
   assert.match(storyHeroStyles, /@media \(forced-colors: active\)[\s\S]*?\.storyPauseControl,[\s\S]*?border: 1px solid CanvasText/);
 });
