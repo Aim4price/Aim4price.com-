@@ -107,14 +107,19 @@ test('home page uses one fluid layout contract instead of a calibrated fixed can
   assert.match(hero, /if \(!manualControlRef\.current\) updateStoryStep\(FEATURE_START_INDEX\)/);
   assert.match(hero, /else if \(!manualControlRef\.current\) \{[\s\S]*?updateStoryStep\(0\)/);
   assert.match(hero, /finishAutoplay[\s\S]*?updateStoryStep\(0\)/);
-  assert.match(hero, /isPreviewHovered[\s\S]*?setIsPreviewHovered\(source === 'pointer-enter'\)/);
+  assert.match(hero, /isPaused \|\|\s+isPreviewHovered \|\|\s+isManuallyControlled/);
+  assert.match(hero, /setIsPreviewHovered\(source === 'pointer-enter'\)/);
   assert.match(hero, /new IntersectionObserver\([\s\S]*?setIsHeroVisible\(entry\?\.isIntersecting \?\? true\)/);
   assert.match(hero, /window\.addEventListener\('scroll', handleScroll, \{ passive: true \}\)/);
   assert.match(hero, /trackTravel = Math\.max\([\s\S]*?section\.offsetHeight - sticky\.offsetHeight/);
   assert.match(hero, /nextIndex = clampStoryIndex\([\s\S]*?Math\.floor\(progress \* HERO_STORY_STEPS\.length\)/);
+  assert.match(hero, /if \(shouldClaimControl\) \{[\s\S]*?manualControlRef\.current = true;[\s\S]*?setIsManuallyControlled\(true\)/);
   assert.doesNotMatch(hero, /previousElementSibling|ResizeObserver|--home-header-height/);
   assert.doesNotMatch(hero, /storyGridRef|assetMotionRef|offsetLeft|--asset-stage-shift-x/);
-  assert.match(home, /top: var\(--home-header-height, 5\.75rem\)/);
+  assert.match(home, /top: var\(--app-header-height, 5\.75rem\)/);
+  assert.match(hero, /viewportAnchorRef[\s\S]*?kind: 'role'[\s\S]*?viewportOffset: roleRect\.top/);
+  assert.match(hero, /roleSection\.getBoundingClientRect\(\)\.top - anchor\.viewportOffset[\s\S]*?window\.scrollBy/);
+  assert.match(hero, /const handleScroll = \(\) => \{[\s\S]*?if \(capabilityRestoreRef\.current\) return;[\s\S]*?scheduleStorySync\(true\)/);
 
   const scrollFlow = hero.slice(
     hero.indexOf('const scheduleStorySync = (claimControl: boolean)'),
@@ -134,12 +139,15 @@ test('home page uses one fluid layout contract instead of a calibrated fixed can
   );
   assert.match(cinematic, /and \(hover: hover\) and \(pointer: fine\) and \(prefers-reduced-motion: no-preference\)/);
   assert.match(cinematic, /\.heroStory \{[\s\S]*?min-height: 500svh/);
-  assert.match(cinematic, /\.heroSticky \{[\s\S]*?position: sticky;[\s\S]*?height: calc\(100dvh - var\(--home-header-height, 5\.75rem\)\);[\s\S]*?overflow: hidden/);
+  assert.match(cinematic, /\.heroSticky \{[\s\S]*?position: sticky;[\s\S]*?height: calc\(100dvh - var\(--app-header-height, 5\.75rem\)\);[\s\S]*?overflow: hidden/);
   assert.match(cinematic, /data-story-mode='features'[\s\S]*?\.storyHeroGrid \{[\s\S]*?grid-template-columns: minmax\(34rem, 1\.16fr\) minmax\(22rem, 0\.84fr\)/);
   assert.match(cinematic, /\.assetStageMotion \{[\s\S]*?grid-column: 1 \/ -1/);
-  assert.match(cinematic, /data-story-mode='preview'[\s\S]*?\.assetHeroStage \{[\s\S]*?left: calc\(100% - min\(55%, 49\.5rem\)\)/);
+  assert.match(cinematic, /\.assetHeroStage \{[\s\S]*?left: calc\(100% - min\(55%, 49\.5rem\)\);[\s\S]*?width: min\(55%, 49\.5rem\);[\s\S]*?transition: left 900ms/);
+  assert.match(cinematic, /data-story-mode='features'[\s\S]*?\.assetHeroStage \{[\s\S]*?left: 0/);
+  assert.doesNotMatch(cinematic, /\[data-story-mode='preview'\]\s+\.assetHeroStage\s*\{/);
   assert.match(cinematic, /\.featureNarrative \{[\s\S]*?grid-column: 2/);
   assert.match(cinematic, /filter: blur\(14px\)[\s\S]*?opacity 820ms[\s\S]*?filter 820ms/);
+  assert.match(cinematic, /data-story-step='brand'[\s\S]*?\.heroBrandCopy[\s\S]*?data-story-step='brand'[\s\S]*?\.storyHeroLogo/);
 
   assert.doesNotMatch(story, /@media \(max-width: 760px\)[\s\S]*?--home-gutter:/);
   assert.match(story, /@media \(max-width: 760px\)[\s\S]*?\.assetQuestionGroup \{[\s\S]*?grid-template-rows: minmax\(3\.5rem, auto\)/);
