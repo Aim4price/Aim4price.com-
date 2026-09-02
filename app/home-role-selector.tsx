@@ -1,50 +1,38 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import styles from './page.module.css';
 
 const ROLE_SECTION_HASH = '#choose-role';
 
 export default function HomeRoleSelector() {
-  const [isVisible, setIsVisible] = useState(false);
-  const sectionRef = useRef<HTMLElement | null>(null);
   const headingRef = useRef<HTMLHeadingElement | null>(null);
 
   useEffect(() => {
-    const syncVisibilityWithHash = () => {
-      setIsVisible(window.location.hash === ROLE_SECTION_HASH);
+    let frame: number | null = null;
+
+    const focusHeadingWhenTargeted = () => {
+      if (window.location.hash !== ROLE_SECTION_HASH) return;
+
+      if (frame !== null) window.cancelAnimationFrame(frame);
+      frame = window.requestAnimationFrame(() => {
+        frame = null;
+        headingRef.current?.focus({ preventScroll: true });
+      });
     };
 
-    syncVisibilityWithHash();
-    window.addEventListener('hashchange', syncVisibilityWithHash);
+    focusHeadingWhenTargeted();
+    window.addEventListener('hashchange', focusHeadingWhenTargeted);
 
-    return () => window.removeEventListener('hashchange', syncVisibilityWithHash);
+    return () => {
+      if (frame !== null) window.cancelAnimationFrame(frame);
+      window.removeEventListener('hashchange', focusHeadingWhenTargeted);
+    };
   }, []);
-
-  useEffect(() => {
-    if (!isVisible) {
-      return undefined;
-    }
-
-    const frame = window.requestAnimationFrame(() => {
-      sectionRef.current?.scrollIntoView({
-        behavior: 'auto',
-        block: 'start',
-      });
-      headingRef.current?.focus({ preventScroll: true });
-    });
-
-    return () => window.cancelAnimationFrame(frame);
-  }, [isVisible]);
-
-  if (!isVisible) {
-    return null;
-  }
 
   return (
     <section
-      ref={sectionRef}
       id="choose-role"
       className={styles.roleSection}
       aria-labelledby="choose-role-title"
@@ -56,7 +44,7 @@ export default function HomeRoleSelector() {
           className={styles.roleTitle}
           tabIndex={-1}
         >
-          Which best describes you?
+          Which describes you best?
         </h2>
 
         <div className={styles.roleGrid}>
