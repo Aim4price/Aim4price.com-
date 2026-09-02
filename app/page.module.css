@@ -3222,34 +3222,19 @@
 .heroStory .heroCopy {
   width: min(100%, 37rem);
   max-width: 37rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
   align-self: center;
-  transform: none;
+  transform: translate(
+    clamp(0px, calc((100vw - 1288px) / 2), 180px),
+    -1.75rem
+  );
 }
 
 .heroCopyState {
   min-width: 0;
   min-height: 0;
-}
-
-.heroPlatformLabel {
-  display: flex;
-  align-items: center;
-  gap: 0.7rem;
-  margin: 0 0 1rem;
-  color: #15845f;
-  font-size: 0.76rem;
-  line-height: 1.2;
-  font-weight: 850;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-
-.heroPlatformLabel::before {
-  content: '';
-  width: 2.3rem;
-  height: 0.14rem;
-  border-radius: 999px;
-  background: #1aa675;
 }
 
 .heroStory .heroTitle {
@@ -3407,55 +3392,6 @@
   gap: 0.38rem;
 }
 
-.assetStoryControls {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.55rem;
-}
-
-.assetPlaybackControl {
-  display: grid;
-  width: 1.55rem;
-  height: 1.55rem;
-  flex: 0 0 auto;
-  place-items: center;
-  padding: 0;
-  border: 1px solid rgba(31, 143, 102, 0.3);
-  border-radius: 50%;
-  color: #0f805b;
-  background: rgba(255, 255, 255, 0.76);
-  box-shadow: 0 5px 12px rgba(19, 97, 71, 0.08);
-  cursor: pointer;
-  transition:
-    color 180ms ease,
-    border-color 180ms ease,
-    background 180ms ease,
-    transform 180ms ease;
-}
-
-.assetPlaybackControl:hover {
-  color: #ffffff;
-  border-color: #148c63;
-  background: #148c63;
-  transform: translateY(-1px);
-}
-
-.assetPlaybackControl:focus-visible {
-  outline: 3px solid rgba(20, 104, 79, 0.3);
-  outline-offset: 2px;
-}
-
-.assetPlaybackControl svg {
-  width: 0.8rem;
-  height: 0.8rem;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
 .assetStoryProgress > span {
   position: relative;
   display: block;
@@ -3532,6 +3468,12 @@
   }
 }
 
+@media (min-width: 1181px) and (max-width: 1240px) {
+  .heroStory .heroCopy {
+    transform: translate(8px, -1.75rem);
+  }
+}
+
 @media (min-width: 1181px) and (max-width: 1360px) {
   .heroStory .heroMedia .shell {
     width: min(calc(100% - 3rem), 84rem);
@@ -3593,6 +3535,10 @@
     max-width: 48rem;
   }
 
+  .heroStory .heroCopy {
+    transform: none;
+  }
+
   .heroStory .heroTitle {
     font-size: clamp(3.15rem, 6vw, 4.4rem);
   }
@@ -3621,11 +3567,6 @@
   .heroStory .heroGrid {
     gap: 2.5rem;
     padding: 2.6rem 0 3rem;
-  }
-
-  .heroPlatformLabel {
-    margin-bottom: 0.85rem;
-    font-size: 0.7rem;
   }
 
   .heroStory .heroTitle {
@@ -3797,13 +3738,11 @@
   }
 
   .heroStory .assetQuestionBubble,
-  .heroStory .assetStoryProgress > span,
-  .assetPlaybackControl {
+  .heroStory .assetStoryProgress > span {
     transition: none;
   }
 
-  .heroStory .assetQuestion:hover .assetQuestionBubble,
-  .assetPlaybackControl:hover {
+  .heroStory .assetQuestion:hover .assetQuestionBubble {
     transform: none;
   }
 }
@@ -3814,7 +3753,6 @@
   }
 
   .assetQuestionBubble,
-  .assetPlaybackControl,
   .assetActiveQuestion,
   .worthResult,
   .worthReportPreview,
