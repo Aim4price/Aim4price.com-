@@ -118,6 +118,7 @@ test('home page uses one fluid layout contract instead of a calibrated fixed can
   assert.doesNotMatch(hero, /storyGridRef|assetMotionRef|offsetLeft|--asset-stage-shift-x/);
   assert.match(home, /top: var\(--app-header-height, 5\.75rem\)/);
   assert.match(hero, /viewportAnchorRef[\s\S]*?kind: 'role'[\s\S]*?viewportOffset: roleRect\.top/);
+  assert.match(hero, /storyCapabilityRef\.current === false[\s\S]*?window\.scrollY <= 4[\s\S]*?semanticStep = 0[\s\S]*?previewRect\.top > anchorLine[\s\S]*?semanticStep = 1[\s\S]*?manualControlRef\.current && semanticStep >= FEATURE_START_INDEX[\s\S]*?narrativeRect\.top > anchorLine[\s\S]*?semanticStep = 2/);
   assert.match(hero, /roleSection\.getBoundingClientRect\(\)\.top - anchor\.viewportOffset[\s\S]*?window\.scrollBy/);
   assert.match(hero, /const scrollInstantly = \(operation: \(\) => void\)[\s\S]*?root\.style\.scrollBehavior = 'auto'[\s\S]*?finally[\s\S]*?previousInlineBehavior/);
   assert.match(hero, /scrollInstantly\(\(\) => \{[\s\S]*?window\.scrollTo/);
