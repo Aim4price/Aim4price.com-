@@ -1,6 +1,6 @@
 .page {
   --home-shell-max: 1360px;
-  --home-gutter: 1.5rem;
+  --home-gutter: var(--shell-gutter, 1.5rem);
   min-width: 0;
   min-height: 100vh;
   color: var(--text-strong);
@@ -2375,10 +2375,6 @@
 }
 
 @media (max-width: 760px) {
-  .page {
-    --home-gutter: 1rem;
-  }
-
   .storyHeroGrid {
     gap: 2rem;
     padding-block: 2.25rem 3.5rem;
@@ -2548,10 +2544,6 @@
 }
 
 @media (max-width: 360px) {
-  .page {
-    --home-gutter: 0.8rem;
-  }
-
   .heroBrandTitle span:first-child {
     font-size: 2.2rem;
   }
@@ -2769,4 +2761,3 @@
     padding: 1.65rem;
   }
 }
-
