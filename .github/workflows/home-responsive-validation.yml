@@ -5,6 +5,7 @@ on:
     paths:
       - "app/page.tsx"
       - "app/page.module.css"
+      - "app/home-wide-static.css"
       - "app/home-hero-experience.tsx"
       - "app/home-asset-preview.tsx"
       - "app/home-role-selector.tsx"
@@ -15,6 +16,7 @@ on:
       - "tests/responsive-foundation.test.mjs"
       - "tests/homepage-asset-register-hero.test.mjs"
       - "tests/desktop-site-viewport.test.mjs"
+      - "tests/home-wide-static-layout.test.mjs"
       - "package.json"
       - ".github/workflows/home-responsive-validation.yml"
   workflow_dispatch:
@@ -48,3 +50,6 @@ jobs:
 
       - name: Test Home responsive contract
         run: npm run test:homepage-responsive
+
+      - name: Test wide static desktop composition
+        run: node --test tests/home-wide-static-layout.test.mjs
