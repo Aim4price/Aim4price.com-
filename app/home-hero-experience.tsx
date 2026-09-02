@@ -7,7 +7,6 @@ import {
   useEffect,
   useRef,
   useState,
-  type CSSProperties,
   type FocusEvent,
 } from 'react';
 import HomeAssetPreview, { type QuestionKey } from './home-asset-preview';
@@ -15,11 +14,9 @@ import styles from './page.module.css';
 
 const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
 const DESKTOP_STORY_QUERY = '(min-width: 1181px) and (min-height: 640px)';
-const PROMISE_STEP_INDEX = 1;
 const FEATURE_START_INDEX = 3;
 
 export const HERO_FEATURE_DURATION_MS = 4800;
-export const HERO_STORY_SCROLL_RATIO = 0.32;
 
 export const HERO_STAGES: readonly QuestionKey[] = [
   'have',
@@ -37,10 +34,6 @@ export const HERO_STORY_STEPS = [
 ] as const;
 
 type StoryStep = (typeof HERO_STORY_STEPS)[number];
-
-type StoryStyle = CSSProperties & {
-  '--hero-story-height'?: string;
-};
 
 type FeatureStory = {
   eyebrow: string;
@@ -105,10 +98,7 @@ export default function HomeHeroExperience() {
   const [isHeroVisible, setIsHeroVisible] = useState(true);
   const [isDesktopStory, setIsDesktopStory] = useState(true);
   const [isManuallyControlled, setIsManuallyControlled] = useState(false);
-  const [isScrollDriven, setIsScrollDriven] = useState(false);
   const [hasAutoplayFinished, setHasAutoplayFinished] = useState(false);
-  const [isStoryComplete, setIsStoryComplete] = useState(false);
-  const [storyHeightPx, setStoryHeightPx] = useState<number | null>(null);
 
   const sectionRef = useRef<HTMLElement | null>(null);
   const stickyRef = useRef<HTMLDivElement | null>(null);
@@ -116,11 +106,8 @@ export default function HomeHeroExperience() {
   const assetMotionRef = useRef<HTMLDivElement | null>(null);
   const storyStepRef = useRef(0);
   const autoplayFinishedRef = useRef(false);
-  const storyCompleteRef = useRef(false);
-  const scrollAnchorRef = useRef<{ scrollY: number; stepIndex: number } | null>(null);
-  const lastScrollYRef = useRef(0);
   const scrollFrameRef = useRef<number | null>(null);
-  const roleAlignmentFrameRef = useRef<number | null>(null);
+  const scrollClaimRef = useRef(false);
 
   const updateStoryStep = useCallback((nextIndex: number) => {
     const safeIndex = clampStoryIndex(nextIndex);
@@ -137,70 +124,17 @@ export default function HomeHeroExperience() {
 
   const finishAutoplay = useCallback(() => {
     autoplayFinishedRef.current = true;
-    scrollAnchorRef.current = null;
-    lastScrollYRef.current = window.scrollY;
     setHasAutoplayFinished(true);
     setIsAutoplaying(false);
     setIsPaused(false);
-    setIsScrollDriven(false);
-    updateStoryStep(PROMISE_STEP_INDEX);
+    updateStoryStep(0);
   }, [updateStoryStep]);
-
-  const completeStory = useCallback((collapseFromStart = false) => {
-    if (storyCompleteRef.current) return;
-
-    const section = sectionRef.current;
-    const sticky = stickyRef.current;
-    if (section && sticky) {
-      const sectionTop = window.scrollY + section.getBoundingClientRect().top;
-      const localScroll = collapseFromStart
-        ? 0
-        : Math.max(0, window.scrollY - sectionTop);
-      const stickyTop = Number.parseFloat(window.getComputedStyle(sticky).top) || 0;
-      setStoryHeightPx(
-        Math.ceil(
-          Math.max(
-            sticky.offsetHeight + stickyTop,
-            localScroll + sticky.offsetHeight + stickyTop,
-          ),
-        ),
-      );
-    }
-
-    storyCompleteRef.current = true;
-    setIsStoryComplete(true);
-    setIsAutoplaying(false);
-  }, []);
 
   const claimManualControl = useCallback(() => {
     setIsManuallyControlled(true);
     setIsAutoplaying(false);
     setIsPaused(false);
-    scrollAnchorRef.current = null;
   }, []);
-
-  const alignRoleSection = useCallback(() => {
-    if (roleAlignmentFrameRef.current !== null) {
-      window.cancelAnimationFrame(roleAlignmentFrameRef.current);
-    }
-
-    roleAlignmentFrameRef.current = window.requestAnimationFrame(() => {
-      roleAlignmentFrameRef.current = null;
-      document.getElementById('choose-role')?.scrollIntoView({
-        behavior: 'auto',
-        block: 'start',
-      });
-    });
-  }, []);
-
-  useEffect(
-    () => () => {
-      if (roleAlignmentFrameRef.current !== null) {
-        window.cancelAnimationFrame(roleAlignmentFrameRef.current);
-      }
-    },
-    [],
-  );
 
   useEffect(() => {
     const reducedMotionMedia = window.matchMedia(REDUCED_MOTION_QUERY);
@@ -212,9 +146,6 @@ export default function HomeHeroExperience() {
       setIsDesktopStory(supportsStory);
 
       if (!supportsStory) {
-        storyCompleteRef.current = true;
-        setIsStoryComplete(true);
-        setStoryHeightPx(null);
         setIsAutoplaying(false);
         setIsManuallyControlled(true);
         updateStoryStep(FEATURE_START_INDEX);
@@ -254,57 +185,13 @@ export default function HomeHeroExperience() {
   }, []);
 
   useEffect(() => {
-    lastScrollYRef.current = window.scrollY;
-
-    if (window.location.hash !== '#choose-role' && window.scrollY <= 4) return undefined;
-
-    const roleWasTargeted = window.location.hash === '#choose-role';
-    const section = sectionRef.current;
-    const sticky = stickyRef.current;
-    const sectionTop = section
-      ? window.scrollY + section.getBoundingClientRect().top
-      : 0;
-    const sectionEnd =
-      section && sticky
-        ? sectionTop + section.offsetHeight - sticky.offsetHeight
-        : Number.POSITIVE_INFINITY;
-    const restoredBeyondStory = window.scrollY >= sectionEnd - 4;
-
-    if (!roleWasTargeted && !restoredBeyondStory) {
-      autoplayFinishedRef.current = true;
-      setHasAutoplayFinished(true);
-      setIsManuallyControlled(true);
-      setIsScrollDriven(true);
-      updateStoryStep(PROMISE_STEP_INDEX);
-      scrollAnchorRef.current = {
-        scrollY: window.scrollY,
-        stepIndex: PROMISE_STEP_INDEX,
-      };
-      return undefined;
-    }
-
-    setIsManuallyControlled(true);
-    updateStoryStep(FEATURE_START_INDEX);
-
-    const frame = window.requestAnimationFrame(() => {
-      completeStory(true);
-      alignRoleSection();
-    });
-
-    return () => {
-      window.cancelAnimationFrame(frame);
-    };
-  }, [alignRoleSection, completeStory, updateStoryStep]);
-
-  useEffect(() => {
     if (
       !canAutoplay ||
       !isPageVisible ||
       !isHeroVisible ||
       isPaused ||
       isManuallyControlled ||
-      hasAutoplayFinished ||
-      isStoryComplete
+      hasAutoplayFinished
     ) {
       setIsAutoplaying(false);
       return undefined;
@@ -314,8 +201,10 @@ export default function HomeHeroExperience() {
     setIsAutoplaying(true);
 
     const timer = window.setTimeout(() => {
+      if (autoplayFinishedRef.current) return;
+
       if (storyStepIndex >= HERO_STORY_STEPS.length - 1) {
-        if (!autoplayFinishedRef.current) finishAutoplay();
+        finishAutoplay();
         return;
       }
 
@@ -331,85 +220,82 @@ export default function HomeHeroExperience() {
     isHeroVisible,
     isPageVisible,
     isPaused,
-    isStoryComplete,
     storyStepIndex,
     updateStoryStep,
   ]);
 
   useEffect(() => {
-    if (!isDesktopStory || isStoryComplete) return undefined;
+    if (!isDesktopStory) return undefined;
 
-    const handleScroll = () => {
+    const scheduleStorySync = (claimControl: boolean) => {
+      if (claimControl) autoplayFinishedRef.current = true;
+      scrollClaimRef.current = scrollClaimRef.current || claimControl;
       if (scrollFrameRef.current !== null) return;
 
       scrollFrameRef.current = window.requestAnimationFrame(() => {
         scrollFrameRef.current = null;
 
+        const shouldClaimControl = scrollClaimRef.current;
+        scrollClaimRef.current = false;
+
         const section = sectionRef.current;
         const sticky = stickyRef.current;
-        if (!section || !sticky || storyCompleteRef.current) return;
+        if (!section || !sticky) return;
 
         const currentScrollY = window.scrollY;
         const sectionTop = currentScrollY + section.getBoundingClientRect().top;
-        const sectionEnd = sectionTop + section.offsetHeight - sticky.offsetHeight;
-        const previousScrollY = lastScrollYRef.current;
-        lastScrollYRef.current = currentScrollY;
-
-        if (currentScrollY > sectionEnd + 4) {
-          if (previousScrollY <= sectionEnd + 4) {
-            completeStory(true);
-            alignRoleSection();
-          }
-          return;
-        }
-
-        if (
-          currentScrollY < sectionTop - 4 ||
-          Math.abs(currentScrollY - previousScrollY) < 4
-        ) {
-          return;
-        }
-
-        if (!scrollAnchorRef.current) {
-          scrollAnchorRef.current = {
-            scrollY: previousScrollY,
-            stepIndex: storyStepRef.current,
-          };
-          setIsManuallyControlled(true);
-          setIsScrollDriven(true);
-          setIsPaused(false);
-          setIsAutoplaying(false);
-        }
-
-        const anchor = scrollAnchorRef.current;
-        const stepDistance = Math.max(180, sticky.offsetHeight * HERO_STORY_SCROLL_RATIO);
-        const distance = currentScrollY - anchor.scrollY;
-        const stepDelta = Math.trunc(distance / stepDistance);
-        const nextIndex = clampStoryIndex(anchor.stepIndex + stepDelta);
+        const stickyTop =
+          Number.parseFloat(window.getComputedStyle(sticky).top) || 0;
+        const trackStart = sectionTop - stickyTop;
+        const trackTravel = Math.max(
+          1,
+          section.offsetHeight - sticky.offsetHeight,
+        );
+        const localScroll = Math.max(
+          0,
+          Math.min(trackTravel, currentScrollY - trackStart),
+        );
+        const progress = localScroll / trackTravel;
+        const nextIndex = clampStoryIndex(
+          Math.floor(progress * HERO_STORY_STEPS.length),
+        );
 
         if (nextIndex !== storyStepRef.current) updateStoryStep(nextIndex);
 
-        const remainingSteps = HERO_STORY_STEPS.length - 1 - anchor.stepIndex;
-        if (distance >= (remainingSteps + 1) * stepDistance) completeStory();
+        if (shouldClaimControl) {
+          setHasAutoplayFinished(true);
+          setIsManuallyControlled(true);
+          setIsPaused(false);
+          setIsAutoplaying(false);
+        }
       });
     };
 
+    const handleScroll = () => scheduleStorySync(true);
+    const handleResize = () => {
+      if (autoplayFinishedRef.current || window.scrollY > 4) {
+        scheduleStorySync(window.scrollY > 4);
+      }
+    };
+    const handlePageShow = () => scheduleStorySync(window.scrollY > 4);
+
     window.addEventListener('scroll', handleScroll, { passive: true });
+    window.addEventListener('resize', handleResize);
+    window.addEventListener('pageshow', handlePageShow);
+
+    if (window.scrollY > 4) scheduleStorySync(true);
 
     return () => {
       window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('pageshow', handlePageShow);
       if (scrollFrameRef.current !== null) {
         window.cancelAnimationFrame(scrollFrameRef.current);
         scrollFrameRef.current = null;
       }
+      scrollClaimRef.current = false;
     };
-  }, [
-    alignRoleSection,
-    completeStory,
-    isDesktopStory,
-    isStoryComplete,
-    updateStoryStep,
-  ]);
+  }, [isDesktopStory, updateStoryStep]);
 
   useEffect(() => {
     const storyGrid = storyGridRef.current;
@@ -438,7 +324,6 @@ export default function HomeHeroExperience() {
 
   const handleRoleSkip = () => {
     claimManualControl();
-    completeStory();
   };
 
   const handleStoryFocus = (event: FocusEvent<HTMLDivElement>) => {
@@ -451,10 +336,6 @@ export default function HomeHeroExperience() {
   const storyStep = HERO_STORY_STEPS[storyStepIndex] ?? HERO_STORY_STEPS[0];
   const storyMode =
     storyStepIndex < 2 ? 'opening' : storyStepIndex === 2 ? 'preview' : 'features';
-  const storyStyle: StoryStyle | undefined =
-    storyHeightPx === null
-      ? undefined
-      : { '--hero-story-height': `${storyHeightPx}px` };
 
   return (
     <section
@@ -463,9 +344,6 @@ export default function HomeHeroExperience() {
       aria-labelledby="home-hero-title"
       data-story-step={storyStep}
       data-story-mode={storyMode}
-      data-story-complete={isStoryComplete ? 'true' : 'false'}
-      data-scroll-driven={isScrollDriven ? 'true' : 'false'}
-      data-autoplay-finished={hasAutoplayFinished ? 'true' : 'false'}
       data-active-question={activeQuestion}
       data-autoplay={
         isAutoplaying && storyStepIndex >= FEATURE_START_INDEX ? 'true' : 'false'
@@ -475,7 +353,7 @@ export default function HomeHeroExperience() {
         Aim4price.com asset management software built for South Africa
       </h1>
 
-      <div className={styles.heroStory} style={storyStyle}>
+      <div className={styles.heroStory}>
         <div
           ref={stickyRef}
           className={[styles.heroMedia, styles.heroSticky].join(' ')}
@@ -591,8 +469,7 @@ export default function HomeHeroExperience() {
                 </Link>
               </div>
 
-              {!isStoryComplete &&
-                isDesktopStory &&
+              {isDesktopStory &&
                 !isManuallyControlled &&
                 !hasAutoplayFinished ? (
                 <button
