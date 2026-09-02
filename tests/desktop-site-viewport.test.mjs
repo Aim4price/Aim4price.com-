@@ -52,7 +52,7 @@ test('the three role apps keep zoomable device-width viewports', async () => {
   }
 });
 
-test('the Home hero keeps the #543 desktop composition unless compact is explicitly chosen', async () => {
+test('the Home hero keeps one #543 composition and scales the complete canvas', async () => {
   const [heroSource, styleSource, headerSource, headerClientSource] = await Promise.all([
     readFile(homeHeroPath, 'utf8'),
     readFile(homeStylesPath, 'utf8'),
@@ -66,16 +66,20 @@ test('the Home hero keeps the #543 desktop composition unless compact is explici
   assert.ok(storyStart >= 0);
   const storyStyles = styleSource.slice(storyStart);
 
-  assert.match(heroSource, /CINEMATIC_STORY_QUERY = '\(min-width: 1181px\) and \(min-height: 640px\)'/);
+  assert.match(heroSource, /const supportsStory = !reducedMotionMedia\.matches/);
+  assert.match(heroSource, /useHomeDisplayScale/);
+  assert.doesNotMatch(heroSource, /CINEMATIC_STORY_QUERY|cinematicStoryMedia/);
   assert.match(heroSource, /data-story-capability=\{isCinematicStory \? 'cinematic' : 'static'\}/);
   assert.match(storyStyles, /@media \(min-width: 1181px\) and \(min-height: 640px\)[\s\S]*?min-height: 440svh[\s\S]*?position: sticky/);
   assert.match(storyStyles, /\.heroStory \.heroMedia \.shell \{[\s\S]*?width: min\(calc\(100% - 3rem\), 1360px\)/);
   assert.match(storyStyles, /\.storyHeroGrid \{[\s\S]*?grid-template-columns: minmax\(31rem, 1fr\) minmax\(39rem, 49\.5rem\)/);
-  assert.match(storyStyles, /\.page\[data-home-display-size='small'\] \.storyHeroGrid \{[\s\S]*?grid-template-columns: minmax\(26rem, 1fr\) minmax\(32rem, 40rem\)/);
-  assert.match(storyStyles, /\.page\[data-home-display-size='compact'\] \.storyHeroGrid \{[\s\S]*?grid-template-columns: minmax\(28rem, 1fr\) minmax\(36rem, 44\.5rem\)/);
+  assert.match(storyStyles, /One calibrated standard Home canvas/);
+  assert.match(storyStyles, /\.page\[data-home-standard-canvas='true'\] \.storyHeroGrid \{[\s\S]*?grid-template-columns: minmax\(31rem, 1fr\) minmax\(39rem, 49\.5rem\)/);
+  assert.doesNotMatch(storyStyles, /data-home-display-size/);
   assert.doesNotMatch(headerSource, /data-home-display-size/);
   assert.match(headerSource, /\.inner \{[\s\S]*?width: min\(calc\(100% - 3rem\), 1360px\);[\s\S]*?min-height: 5\.75rem/);
-  assert.match(headerClientSource, /<header className=\{styles\.header\}>/);
+  assert.match(headerClientSource, /standardCanvas \? styles\.headerStandardCanvas/);
+  assert.match(headerSource, /\.headerStandardCanvas \.nav,[\s\S]*?display: flex/);
   assert.doesNotMatch(storyStyles, /Compact laptop density contract, September 2026[\s\S]*?max-width: 1599px[\s\S]*?max-height: 899px/);
   assert.doesNotMatch(headerSource, /Homepage-only compact laptop density contract|\.homeDensity/);
   assert.doesNotMatch(headerClientSource, /homeDensity/);
@@ -85,9 +89,8 @@ test('the Home hero keeps the #543 desktop composition unless compact is explici
   assert.doesNotMatch(storyStyles, /@media \(min-width: 901px\) and \(max-width: 1180px\)/);
 
   const densitySources = [heroSource, styleSource, headerSource, headerClientSource].join('\n');
-  assert.doesNotMatch(densitySources, /devicePixelRatio|visualViewport|outerWidth|screen\.width/);
-  assert.doesNotMatch(densitySources, /\bzoom\s*:/);
-  assert.doesNotMatch(densitySources, /transform:\s*scale\(0\./);
+  assert.doesNotMatch(densitySources, /visualViewport|outerWidth/);
+  assert.doesNotMatch(styleSource, /data-home-display-size/);
 });
 
 test('the Home hero keeps reliable playback without a mobile-only video asset', async () => {
