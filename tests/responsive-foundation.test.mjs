@@ -79,41 +79,52 @@ test('home page keeps the eight-step story usable at desktop, compact and reduce
   assert.match(hero, /HERO_STAGES: readonly QuestionKey\[\]/);
   assert.match(hero, /HERO_STORY_STEPS = \[[\s\S]*?'brand',[\s\S]*?'promise',[\s\S]*?'preview',[\s\S]*?\.\.\.HERO_STAGES/);
   assert.match(hero, /HERO_FEATURE_DURATION_MS = 4800/);
-  assert.match(hero, /HERO_STORY_SCROLL_RATIO = 0\.32/);
-  assert.match(hero, /const PROMISE_STEP_INDEX = 1/);
   assert.match(hero, /window\.matchMedia\(REDUCED_MOTION_QUERY\)/);
   assert.match(hero, /window\.matchMedia\(DESKTOP_STORY_QUERY\)/);
   assert.match(hero, /DESKTOP_STORY_QUERY = '\(min-width: 1181px\) and \(min-height: 640px\)'/);
   assert.match(hero, /desktopStoryMedia\.matches && !reducedMotionMedia\.matches/);
-  assert.match(hero, /hasAutoplayFinished \|\|[\s\S]*?isStoryComplete/);
-  assert.match(hero, /finishAutoplay[\s\S]*?updateStoryStep\(PROMISE_STEP_INDEX\)/);
+  assert.match(hero, /finishAutoplay[\s\S]*?updateStoryStep\(0\)/);
+  assert.match(hero, /const timer = window\.setTimeout\(\(\) => \{[\s\S]*?if \(autoplayFinishedRef\.current\) return/);
   assert.match(hero, /href="#choose-role"[\s\S]*?className=\{styles\.primaryCta\}[\s\S]*?onClick=\{handleRoleSkip\}/);
   assert.doesNotMatch(hero, /heroAudienceCta|heroSectors/);
   assert.doesNotMatch(hero, /handlePlaybackToggle|onPlaybackToggle|playbackId|key=\{playbackId\}/);
   assert.match(hero, /new IntersectionObserver\([\s\S]*?setIsHeroVisible\(entry\?\.isIntersecting \?\? true\)/);
   assert.match(hero, /window\.addEventListener\('scroll', handleScroll, \{ passive: true \}\)/);
   assert.match(hero, /window\.removeEventListener\('scroll', handleScroll\)/);
+  assert.match(hero, /trackTravel = Math\.max\([\s\S]*?section\.offsetHeight - sticky\.offsetHeight/);
+  assert.match(hero, /localScroll = Math\.max\([\s\S]*?Math\.min\(trackTravel, currentScrollY - trackStart\)/);
+  assert.match(hero, /nextIndex = clampStoryIndex\([\s\S]*?Math\.floor\(progress \* HERO_STORY_STEPS\.length\)/);
+  assert.match(hero, /const handleScroll = \(\) => scheduleStorySync\(true\)/);
+  assert.match(hero, /const scheduleStorySync = \(claimControl: boolean\) => \{[\s\S]*?if \(claimControl\) autoplayFinishedRef\.current = true/);
+  assert.match(hero, /window\.addEventListener\('resize', handleResize\)/);
+  assert.match(hero, /window\.addEventListener\('pageshow', handlePageShow\)/);
   const nativeScrollFlow = hero.slice(
-    hero.indexOf('if (!isDesktopStory || isStoryComplete)'),
+    hero.indexOf('const scheduleStorySync = (claimControl: boolean)'),
     hero.indexOf('const storyGrid = storyGridRef.current'),
   );
   assert.doesNotMatch(nativeScrollFlow, /scrollIntoView|scrollTo\(|preventDefault|addEventListener\(['"](?:wheel|touchmove)/);
-  assert.match(hero, /getElementById\('choose-role'\)\?\.scrollIntoView\(\{[\s\S]*?behavior: 'auto',[\s\S]*?block: 'start'/);
+  assert.doesNotMatch(hero, /PROMISE_STEP_INDEX|HERO_STORY_SCROLL_RATIO|data-story-complete|isStoryComplete|completeStory|scrollAnchorRef|lastScrollYRef|storyHeightPx|setStoryHeightPx|scrollIntoView/);
 
   const desktop = story.slice(
     story.indexOf('@media (min-width: 1181px) and (min-height: 640px)'),
     story.indexOf('@media (min-width: 1181px) and (max-width: 1360px)'),
   );
   assert.match(desktop, /\.heroStory \{[\s\S]*?440svh/);
-  assert.match(desktop, /data-story-complete='true'[\s\S]*?calc\(100svh - 5\.75rem\)/);
-  assert.match(desktop, /\.heroSticky \{[\s\S]*?position: sticky;[\s\S]*?height: calc\(100svh - 5\.75rem\)/);
+  assert.doesNotMatch(story, /--hero-story-height|data-story-complete/);
+  assert.match(desktop, /\.heroSticky \{[\s\S]*?position: sticky;[\s\S]*?height: calc\(100dvh - 5\.75rem\)/);
+  assert.match(desktop, /\.heroStory \.heroMedia\.heroSticky \{[\s\S]*?height: calc\(100dvh - 5\.75rem\)/);
+  assert.doesNotMatch(desktop, /\.heroStory \.heroMedia \{[^}]*height: 100%/s);
   assert.match(story, /\.heroStory \.heroMedia \.shell \{[\s\S]*?width: min\(calc\(100% - 3rem\), 1360px\)/);
   assert.doesNotMatch(story, /\.heroStory \.heroMedia \.shell \{[^}]*100rem/s);
-  assert.match(desktop, /\.storyHeroGrid \{[\s\S]*?--hero-working-inset: clamp\(0px, calc\(\(100% - 1240px\) \/ 2\), 60px\);[\s\S]*?grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
-  assert.match(story, /@media \(min-width: 1181px\) and \(max-width: 1360px\) and \(min-height: 640px\)[\s\S]*?\.storyHeroGrid \{[\s\S]*?grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
+  assert.match(desktop, /\.storyHeroGrid \{[\s\S]*?--hero-working-inset: clamp\(0px, calc\(\(100% - 1240px\) \/ 2\), 60px\);[\s\S]*?width: calc\(100% - var\(--hero-working-inset\)\);[\s\S]*?height: 100%;[\s\S]*?grid-template-columns: minmax\(31rem, 1fr\) minmax\(39rem, 49\.5rem\);[\s\S]*?margin-inline-start: var\(--hero-working-inset\)/);
+  assert.match(desktop, /\.assetStageMotion \{[\s\S]*?width: min\(45\.5rem, calc\(100% \+ 7rem\)\);[\s\S]*?justify-self: end/);
+  assert.match(story, /@media \(min-width: 1181px\) and \(max-width: 1360px\) and \(min-height: 640px\)[\s\S]*?\.storyHeroGrid \{[\s\S]*?grid-template-columns: minmax\(27rem, 31rem\) minmax\(34rem, 44rem\)/);
+  assert.match(story, /@media \(min-width: 1181px\) and \(max-width: 1360px\) and \(min-height: 640px\)[\s\S]*?\.assetStageMotion \{[\s\S]*?width: min\(44rem, calc\(100% \+ 6rem\)\)/);
   assert.match(story, /@media \(min-width: 1181px\) and \(max-width: 1240px\) and \(min-height: 640px\)[\s\S]*?--hero-working-inset: 8px/);
-  assert.match(story, /@media \(min-width: 1181px\) and \(min-height: 640px\) and \(max-height: 759px\)[\s\S]*?\.assetStageMotion \{[\s\S]*?43rem/);
+  assert.match(story, /@media \(min-width: 1181px\) and \(min-height: 640px\) and \(max-height: 759px\)[\s\S]*?\.assetStageMotion \{[\s\S]*?width: min\(43rem, calc\(100% \+ 5rem\)\)/);
   assert.match(story, /\.featureNarrativeCount \{[\s\S]*?top: 0\.35rem;[\s\S]*?bottom: auto/);
+  assert.match(story, /\.heroPromiseTitle \{[\s\S]*?font-size: clamp\(2\.55rem, 2\.85vw, 2\.75rem\)/);
+  assert.doesNotMatch(story, /data-autoplay-finished='true'[^{]*\.storyHeroLogo/);
 
   const compact = story.slice(
     story.indexOf('@media (max-width: 1180px), (max-height: 639px)'),
@@ -139,6 +150,7 @@ test('home page keeps the eight-step story usable at desktop, compact and reduce
   assert.match(story, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.storyCopyLayer,[\s\S]*?animation: none !important;[\s\S]*?transition: none !important/);
   assert.match(story, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.storyCopyLayer,[\s\S]*?filter: none !important/);
   assert.match(story, /@media \(prefers-reduced-motion: reduce\) and \(min-width: 1181px\)[\s\S]*?\.heroBrandCopy \{[\s\S]*?opacity: 1;[\s\S]*?\.compactHeroActions \{[\s\S]*?display: flex/);
+  assert.match(story, /@media \(prefers-reduced-motion: reduce\) and \(min-width: 1181px\)[\s\S]*?\.heroStory \.heroMedia\.heroSticky \{[\s\S]*?height: auto;[\s\S]*?overflow: hidden/);
   assert.doesNotMatch(story, /scroll-snap|overscroll-behavior/);
   assert.match(home, /@media \(forced-colors: active\)/);
 });
