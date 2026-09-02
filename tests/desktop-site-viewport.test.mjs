@@ -72,7 +72,7 @@ test('the Home hero enhances capable desktops and stays in normal flow elsewhere
     styleSource,
     /@media \(max-width: 760px\)[\s\S]*?grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/,
   );
-  assert.doesNotMatch(styleSource, /zoom:\s*var\(|min-width:\s*1360px|--asset-stage-shift-x/);
+  assert.doesNotMatch(styleSource, /\bzoom\s*:|min-width:\s*(?:1360px|85rem)|--asset-stage-shift-x/);
   assert.doesNotMatch(heroSource, /offsetLeft|preventDefault\(\)[\s\S]*?(?:wheel|touchmove)/);
 });
 
