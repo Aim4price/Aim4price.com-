@@ -4,7 +4,7 @@ import test from 'node:test';
 
 const read = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
 
-test('homepage presents the five-question living Asset Register hero and reveals role choice on request', async () => {
+test('homepage presents a fixed feature-led hero and reveals role choice on request', async () => {
   const [page, hero, preview, roleSelector, styles, auth] = await Promise.all([
     read('app/page.tsx'),
     read('app/home-hero-experience.tsx'),
@@ -27,54 +27,47 @@ test('homepage presents the five-question living Asset Register hero and reveals
     hero.indexOf('export default function HomeHeroExperience'),
   );
   assert.deepEqual(
-    [...heroStages.matchAll(/key: '([^']+)'/g)].map((match) => match[1]),
-    ['have', 'worth', 'manage', 'cost', 'attention'],
-  );
-  assert.deepEqual(
-    [...heroStages.matchAll(/titleLines: \['([^']+)', '([^']+)'\]/g)].map((match) => match.slice(1)),
-    [
-      ['Everything you own.', 'One living record.'],
-      ['Know what it’s worth.', 'At every stage.'],
-      ['Manage every asset.', 'From one place.'],
-      ['Know what every asset', 'really costs.'],
-      ['See what needs attention.', 'Before it costs you.'],
-    ],
-  );
-  assert.deepEqual(
-    [...heroStages.matchAll(/description: '([^']+)'/g)].map((match) => match[1]),
-    [
-      'Know what you have, where it is and whether its record is complete.',
-      'Follow its value over time and keep a clear valuation report ready.',
-      'Update records, capture costs, schedule maintenance, map, share or sell.',
-      'Bring fuel, maintenance, repairs and ownership costs into one clear view.',
-      'Spot open issues, expired items and upcoming maintenance early.',
-    ],
+    [...heroStages.matchAll(/^\s+'([^']+)',?$/gm)].map((match) => match[1]),
+    ['have', 'worth', 'cost', 'manage', 'attention'],
   );
 
   assert.match(hero, /^'use client';/);
-  assert.match(hero, /href="\/valuation"[\s\S]*?Get Free Estimate/);
-  assert.match(hero, /<a href="#choose-role" className=\{styles\.secondaryCta\}>[\s\S]*?See How It Works/);
-  assert.match(hero, /useState<QuestionKey>\('have'\)/);
-  assert.match(hero, /const activeStage = HERO_STAGES\.find\(\(\{ key \}\) => key === activeQuestion\)/);
-  assert.match(hero, /<HomeAssetPreview[\s\S]*?activeQuestion=\{activeQuestion\}[\s\S]*?onQuestionChange=\{handleQuestionChange\}/);
-  assert.match(hero, /setActiveQuestion\(question\)[\s\S]*?stepRefs\.current\[index\]\?\.scrollIntoView/);
-  assert.match(hero, /behavior: 'auto'/);
-  assert.doesNotMatch(hero, /behavior: 'smooth'|prefersReducedMotion|--hero-line-index/);
-  assert.match(hero, /if \(!isDesktopStory\) return;/);
+  assert.match(hero, /One living record per asset/);
+  assert.match(hero, /Know what you have\./);
+  assert.match(hero, /Know what it’s worth\./);
+  assert.match(hero, /Know what it costs\./);
+  assert.match(hero, /every important asset one living digital record/);
+  assert.match(hero, /indicative value/);
+  assert.match(hero, /documents, maintenance, fuel, costs and[\s\S]*?history throughout its working life/);
 
-  assert.match(hero, /window\.matchMedia\(REDUCED_MOTION_QUERY\)/);
-  assert.match(hero, /window\.matchMedia\(DESKTOP_STORY_QUERY\)/);
-  assert.match(hero, /desktopStoryMedia\.matches[\s\S]*?!reducedMotionMedia\.matches[\s\S]*?'IntersectionObserver' in window/);
-  assert.match(hero, /new IntersectionObserver\(/);
-  assert.match(hero, /entry\.isIntersecting \? entry\.intersectionRatio : 0/);
-  assert.match(hero, /rootMargin: '-44% 0px -44% 0px'/);
-  assert.match(hero, /threshold: \[0, 0\.01, 0\.5, 1\]/);
-  assert.match(hero, /observer\.observe\(step\)/);
-  assert.match(hero, /return \(\) => observer\.disconnect\(\)/);
-  assert.match(hero, /data-hero-stage=\{stage\.key\}/);
+  assert.match(hero, /<button type="button" className=\{styles\.primaryCta\} onClick=\{handleReplay\}>[\s\S]*?See Aim4price in Action/);
+  assert.match(hero, /<Link href="\/valuation" className=\{styles\.secondaryCta\}>[\s\S]*?Get a Free Estimate/);
+  assert.match(hero, /<a href="#choose-role" className=\{styles\.heroAudienceCta\}>[\s\S]*?Choose how you’ll use Aim4price/);
+  assert.match(hero, /useState<QuestionKey>\('have'\)/);
+  assert.match(hero, /useState\(false\)/);
+  assert.match(hero, /useRef\(false\)/);
   assert.match(hero, /data-active-question=\{activeQuestion\}/);
-  assert.doesNotMatch(hero, /addEventListener\(['"](?:wheel|touchmove)/);
-  assert.doesNotMatch(hero, /preventDefault|scroll-snap|setTimeout|setInterval|autoAdvance|QUESTION_ROTATION/);
+  assert.match(hero, /data-autoplay=\{isAutoplaying \? 'true' : 'false'\}/);
+  assert.match(hero, /<HomeAssetPreview[\s\S]*?activeQuestion=\{activeQuestion\}[\s\S]*?onQuestionChange=\{handleQuestionChange\}/);
+
+  assert.match(hero, /HERO_AUTOPLAY_DELAY_MS = 1000/);
+  assert.match(hero, /HERO_STAGE_DURATION_MS = 2800/);
+  assert.match(hero, /window\.matchMedia\(REDUCED_MOTION_QUERY\)/);
+  assert.match(hero, /const shouldAutoplay = !reducedMotionMedia\.matches/);
+  assert.match(hero, /reducedMotionMedia\.addEventListener\('change', syncMotionPreference\)/);
+  assert.match(hero, /reducedMotionMedia\.removeEventListener\('change', syncMotionPreference\)/);
+  assert.match(hero, /window\.setTimeout\([\s\S]*?HERO_AUTOPLAY_DELAY_MS/);
+  assert.match(hero, /window\.setTimeout\([\s\S]*?HERO_STAGE_DURATION_MS/);
+  assert.match(hero, /HERO_STAGES\.indexOf\(activeQuestion\)/);
+  assert.match(hero, /setActiveQuestion\(HERO_STAGES\[activeIndex \+ 1\]!\)/);
+  assert.match(hero, /activeIndex >= HERO_STAGES\.length - 1[\s\S]*?setIsAutoplaying\(false\)/);
+  assert.match(hero, /window\.clearTimeout\(startTimer\)/);
+  assert.match(hero, /window\.clearTimeout\(stageTimer\)/);
+
+  assert.match(hero, /const handleQuestionChange[\s\S]*?hasAutoStarted\.current = true;[\s\S]*?setIsAutoplaying\(false\);[\s\S]*?setActiveQuestion\(question\)/);
+  assert.match(hero, /const handleReplay[\s\S]*?setActiveQuestion\('have'\);[\s\S]*?setPlaybackId[\s\S]*?setIsAutoplaying\(canAutoplay\)/);
+  assert.doesNotMatch(hero, /IntersectionObserver|scrollIntoView|heroScrollTrack|heroScrollStep|DESKTOP_STORY_QUERY/);
+  assert.doesNotMatch(hero, /addEventListener\(['"](?:wheel|touchmove)|preventDefault|scroll-snap|setInterval/);
 
   assert.doesNotMatch(page, /<section[\s\S]*?id="choose-role"/);
   assert.match(roleSelector, /^'use client';/);
@@ -96,16 +89,16 @@ test('homepage presents the five-question living Asset Register hero and reveals
 
   assert.deepEqual(
     [...preview.matchAll(/key: '([^']+)'/g)].map((match) => match[1]),
-    ['have', 'worth', 'manage', 'cost', 'attention'],
+    ['have', 'worth', 'cost', 'manage', 'attention'],
   );
   assert.deepEqual(
     [...preview.matchAll(/label: '([^']+)'/g)].map((match) => match[1]),
     [
-      'What do you have?',
-      'What is it worth?',
-      'How can I manage it?',
-      'What does it cost me?',
-      'What needs attention?',
+      'Know what you have',
+      'Know what it’s worth',
+      'Know what it costs',
+      'Manage its working life',
+      'See what needs attention',
     ],
   );
 
@@ -129,8 +122,7 @@ test('homepage presents the five-question living Asset Register hero and reveals
   assert.match(preview, /QUESTIONS\[activeIndex\]\?\.label \?\? QUESTIONS\[0\]\.label/);
   assert.match(preview, /assetStoryProgress/);
   assert.match(preview, /assetStoryProgressActive/);
-  assert.match(preview, /assetScrollCue/);
-  assert.match(preview, /<path d="m7 9\.5 5 5 5-5" \/>/);
+  assert.doesNotMatch(preview, /assetScrollCue|m7 9\.5 5 5 5-5/);
   assert.doesNotMatch(preview, /assetActiveQuestionAccent/);
   assert.match(preview, /ArrowRight[\s\S]*?ArrowDown/);
   assert.match(preview, /ArrowLeft[\s\S]*?ArrowUp/);
@@ -264,113 +256,53 @@ test('homepage presents the five-question living Asset Register hero and reveals
   const livingHeroStyles = styles.slice(
     styles.indexOf('/* === Living Asset Record homepage hero, September 2026 === */'),
   );
-  const storyStart = styles.indexOf('/* === Scroll-driven homepage story, September 2026 === */');
-  const followingLegacyBlock = styles.indexOf('/* Five-question hero refinement', storyStart);
-  const storyStyles = styles.slice(
-    storyStart,
-    followingLegacyBlock === -1 ? undefined : followingLegacyBlock,
+  const featureHeroStart = styles.indexOf(
+    '/* === Feature-led living record homepage hero, September 2026 === */',
   );
-  const activeQuestionStyles = livingHeroStyles.slice(
-    livingHeroStyles.indexOf('.assetActiveQuestion {'),
-    livingHeroStyles.indexOf('.assetActiveQuestionMain {'),
-  );
+  const featureHeroStyles = styles.slice(featureHeroStart);
 
-  assert.ok(storyStart >= 0);
-
-  assert.match(livingHeroStyles, /\.heroMedia \.shell \{[\s\S]*?100rem/);
-  assert.match(livingHeroStyles, /\.heroGrid \{[\s\S]*?grid-template-columns: minmax\(30rem, 36rem\) minmax\(43\.5rem, 49\.5rem\)[\s\S]*?align-content: center;[\s\S]*?align-items: start;[\s\S]*?gap: clamp\(5rem, 6vw, 7rem\)/);
-  assert.match(livingHeroStyles, /\.heroCopy \{[\s\S]*?width: min\(100%, 38rem\)[\s\S]*?align-self: start;[\s\S]*?transform: none/);
-  assert.match(livingHeroStyles, /\.assetHeroStage \{[\s\S]*?width: min\(100%, 49\.5rem\)[\s\S]*?aspect-ratio: 1000 \/ 650[\s\S]*?justify-self: center;[\s\S]*?align-self: start/);
-  assert.doesNotMatch(livingHeroStyles, /\.assetHeroStage\[data-active-question='worth'\]/);
-  assert.match(livingHeroStyles, /\.assetQuestionGroup \{[\s\S]*?top: 0;[\s\S]*?right: auto;[\s\S]*?bottom: 4\.2rem;[\s\S]*?left: 0;[\s\S]*?width: 4\.5rem;[\s\S]*?grid-template-rows: repeat\(5, minmax\(0, 1fr\)\)/);
-  assert.match(livingHeroStyles, /\.assetQuestion \{[\s\S]*?--question-size: 3\.05rem[\s\S]*?min-height: var\(--tap-target-min, 44px\)/);
-  assert.match(livingHeroStyles, /\.assetQuestionActive \{[\s\S]*?--question-size: 3\.35rem/);
-  assert.doesNotMatch(livingHeroStyles, /\.assetQuestionLabel|\.assetConnectors|\.assetConnectorActive/);
-  assert.match(livingHeroStyles, /\.assetPreviewCard \{[\s\S]*?top: 0;[\s\S]*?right: 4\.75rem;[\s\S]*?bottom: 4\.2rem;[\s\S]*?left: 6rem/);
-  assert.match(livingHeroStyles, /\.assetActiveQuestion \{[\s\S]*?right: 4\.75rem;[\s\S]*?bottom: 0;[\s\S]*?left: 6rem/);
-  assert.match(livingHeroStyles, /\.assetActiveQuestionMain \{[\s\S]*?font-size: 1\.08rem/);
-  assert.match(livingHeroStyles, /\.assetActiveQuestionMain svg \{[\s\S]*?width: 1\.55rem/);
-  assert.doesNotMatch(activeQuestionStyles, /border:|background:|box-shadow:/);
-  assert.doesNotMatch(livingHeroStyles, /@keyframes assetPreviewReveal/);
-  assert.match(livingHeroStyles, /\.assetPreviewState \{[\s\S]*?animation: none/);
-  assert.match(livingHeroStyles, /\.worthPreview \{[\s\S]*?grid-template-columns: minmax\(0, 1\.15fr\) minmax\(0, 1fr\)[\s\S]*?grid-template-rows: minmax\(0, 1fr\) 2\.7rem/);
-  assert.match(livingHeroStyles, /\.worthReportPreview \{[\s\S]*?min-height: 0;[\s\S]*?overflow: hidden/);
-  assert.match(livingHeroStyles, /\.worthReportPaper \{[\s\S]*?width: auto;[\s\S]*?height: 100%;[\s\S]*?max-width: 100%;[\s\S]*?max-height: 100%;[\s\S]*?aspect-ratio: 0\.65;[\s\S]*?overflow: hidden/);
-  assert.match(livingHeroStyles, /\.worthReportHeader \{[\s\S]*?grid-template-columns: 1\.35rem minmax\(0, 1fr\) auto/);
-  assert.match(livingHeroStyles, /\.worthReportLogo \{[\s\S]*?display: block;[\s\S]*?width: 1\.35rem;[\s\S]*?height: auto;[\s\S]*?object-fit: contain/);
-  assert.match(livingHeroStyles, /\.worthReportBody \{[\s\S]*?min-width: 0;[\s\S]*?min-height: 0/);
-  assert.match(livingHeroStyles, /\.worthActions \{[\s\S]*?grid-column: 1 \/ -1;[\s\S]*?grid-template-columns: minmax\(0, 0\.86fr\) minmax\(0, 1\.26fr\) minmax\(0, 0\.98fr\)/);
-  assert.match(livingHeroStyles, /\.managePreviewHeader,[\s\S]*?\.costPreviewHeader \{[\s\S]*?padding: 0\.45rem 0\.4rem 0\.78rem/);
-  assert.match(livingHeroStyles, /\.manageGrid \{[\s\S]*?gap: 0\.52rem;[\s\S]*?padding-top: 0\.68rem/);
-  assert.match(livingHeroStyles, /\.reportRow \{[\s\S]*?background: #ffffff/);
-  assert.doesNotMatch(livingHeroStyles, /\.reportRowHighlighted/);
-  assert.match(livingHeroStyles, /\.reportList/);
-  assert.match(livingHeroStyles, /\.assetHeroStage\[data-active-question='attention'\] \.assetPreviewCard \{[\s\S]*?border-color: rgba\(225, 70, 61, 0\.78\)[\s\S]*?background: linear-gradient/);
-  assert.match(livingHeroStyles, /\.attentionBody \{[\s\S]*?grid-template-columns: minmax\(0, 1fr\);[\s\S]*?grid-template-rows: minmax\(0, 0\.85fr\) minmax\(0, 1\.15fr\)/);
-  assert.match(livingHeroStyles, /\.serviceCard \{[\s\S]*?color: #ffffff;[\s\S]*?background: linear-gradient\(145deg, #404956, #5c6775\)/);
+  assert.ok(featureHeroStart >= 0);
+  assert.match(livingHeroStyles, /\.assetPreviewActions \{[\s\S]*?pointer-events: none/);
   assert.doesNotMatch(livingHeroStyles, /\.assetDocumentsPanel|\.assetDocumentAction/);
 
-  // The desktop story uses native scrolling to advance five passive stage markers.
-  assert.match(storyStyles, /\.heroStory \{[\s\S]*?min-height: calc\(100svh - 5\.75rem\)/);
-  assert.match(storyStyles, /@media \(min-width: 1181px\)[\s\S]*?\.heroStory \{[\s\S]*?min-height: calc\(340svh - 5\.75rem\)/);
-  assert.match(storyStyles, /\.heroSticky \{[\s\S]*?position: sticky;[\s\S]*?top: 5\.75rem;[\s\S]*?height: calc\(100svh - 5\.75rem\)/);
-  assert.match(storyStyles, /\.heroScrollTrack \{[\s\S]*?display: grid;[\s\S]*?grid-template-rows: repeat\(5, minmax\(0, 1fr\)\);[\s\S]*?pointer-events: none/);
-  assert.match(storyStyles, /\.heroSticky \.shell \{[\s\S]*?width: min\(calc\(100% - 4rem\), 84rem\);[\s\S]*?height: 100%/);
+  assert.match(featureHeroStyles, /\.heroStory \{[\s\S]*?min-height: 0/);
+  assert.match(featureHeroStyles, /\.heroSticky \{[\s\S]*?position: relative;[\s\S]*?top: auto;[\s\S]*?height: auto/);
+  assert.match(featureHeroStyles, /\.heroScrollTrack,[\s\S]*?\.assetScrollCue \{[\s\S]*?display: none/);
+  assert.doesNotMatch(featureHeroStyles, /340svh|position: sticky|grid-template-rows: repeat\(5/);
+  assert.doesNotMatch(styles, /Scroll-driven homepage story|Final cascade guard for the scroll-story composition/);
 
-  // Copy and card share the same grid start line, while the card never exceeds the approved width.
-  assert.match(storyStyles, /\.heroStory \.heroGrid \{[\s\S]*?grid-template-columns: minmax\(0, 5fr\) minmax\(0, 6fr\);[\s\S]*?align-content: center;[\s\S]*?align-items: start;[\s\S]*?gap: 4rem/);
-  assert.match(storyStyles, /\.heroStory \.heroCopy \{[\s\S]*?width: min\(100%, 36rem\);[\s\S]*?max-width: 36rem;[\s\S]*?align-self: start;[\s\S]*?transform: none/);
-  assert.match(storyStyles, /\.heroStory \.assetHeroStage \{[\s\S]*?width: min\(100%, 44rem\);[\s\S]*?max-width: 44rem;[\s\S]*?aspect-ratio: 1000 \/ 650;[\s\S]*?align-self: start;[\s\S]*?justify-self: center/);
-  assert.match(storyStyles, /\.heroStory \.assetQuestionGroup \{[\s\S]*?right: auto;[\s\S]*?left: 0;[\s\S]*?width: 4\.5rem/);
-  assert.match(storyStyles, /\.heroStory \.assetPreviewCard \{[\s\S]*?top: 0;[\s\S]*?right: 5\.1rem;[\s\S]*?bottom: 4\.65rem;[\s\S]*?left: 6rem/);
-  assert.match(storyStyles, /\.heroStory \.heroTitle \{[\s\S]*?max-width: 36rem;[\s\S]*?font-size: 3\.45rem/);
-  assert.doesNotMatch(styles, /\.heroStory \.heroSticky \.shell \{[^}]*\b(?:92|100)rem\b/s);
+  assert.match(featureHeroStyles, /\.heroStory \.heroMedia \{[\s\S]*?min-height: clamp\(41rem, calc\(100svh - 5\.75rem\), 54rem\)/);
+  assert.match(featureHeroStyles, /\.heroStory \.heroMedia::after \{[\s\S]*?radial-gradient\([\s\S]*?pointer-events: none/);
+  assert.match(featureHeroStyles, /\.heroStory \.heroMedia \.shell \{[\s\S]*?100rem/);
+  assert.match(featureHeroStyles, /\.heroStory \.heroGrid \{[\s\S]*?grid-template-columns: minmax\(31rem, 37rem\) minmax\(39rem, 49\.5rem\)[\s\S]*?align-items: center;[\s\S]*?gap: clamp\(3\.5rem, 5vw, 6rem\)/);
+  assert.match(featureHeroStyles, /\.heroStory \.heroCopy \{[\s\S]*?max-width: 37rem;[\s\S]*?align-self: center/);
+  assert.match(featureHeroStyles, /\.heroPlatformLabel \{[\s\S]*?text-transform: uppercase/);
+  assert.match(featureHeroStyles, /\.heroStory \.heroTitle \{[\s\S]*?font-size: clamp\(3\.15rem, 3\.4vw, 3\.65rem\)/);
+  assert.match(featureHeroStyles, /\.heroStory \.heroText \{[\s\S]*?max-width: 34rem;[\s\S]*?line-height: 1\.62/);
+  assert.match(featureHeroStyles, /\.heroStory \.primaryCta \{[\s\S]*?width: 14\.4rem;[\s\S]*?cursor: pointer/);
+  assert.match(featureHeroStyles, /\.heroAudienceCta \{[\s\S]*?margin-top: 1\.05rem/);
 
-  // The visible copy and card move together inside the header rails and sit evenly
-  // between the header and lower hero edge without changing card insets.
-  assert.match(styles, /@media \(min-width: 1361px\)[\s\S]*?\.heroStory \.heroGrid \{[\s\S]*?top: clamp\(0\.75rem, 4vh, 1\.75rem\)/);
-  assert.match(styles, /@media \(min-width: 1361px\)[\s\S]*?\.heroStory \.heroCopy,[\s\S]*?\.heroStory \.assetHeroStage \{[\s\S]*?transform: translateX\(3\.25rem\)/);
+  assert.match(featureHeroStyles, /\.heroStory \.assetHeroStage \{[\s\S]*?width: min\(100%, 49\.5rem\);[\s\S]*?align-self: center/);
+  assert.match(featureHeroStyles, /\.heroStory \.assetPreviewCard \{[\s\S]*?right: 4\.85rem;[\s\S]*?left: 6rem;[\s\S]*?box-shadow/);
+  assert.match(featureHeroStyles, /\.heroStory \.assetActiveQuestion \{[\s\S]*?top: -4\.25rem;[\s\S]*?bottom: auto/);
+  assert.match(featureHeroStyles, /\.assetStoryProgress > \.assetStoryProgressActive \{[\s\S]*?width: 1\.45rem/);
 
-  // The active question sits subtly above the card and the CTAs follow the copy closely.
-  assert.match(styles, /@media \(min-width: 1181px\)[\s\S]*?\.heroStory \.heroCopyState \{[\s\S]*?min-height: 12\.5rem/);
-  assert.match(styles, /@media \(min-width: 1181px\)[\s\S]*?\.heroStory \.heroActions \{[\s\S]*?margin-top: 1\.1rem/);
-  assert.match(styles, /@media \(min-width: 1181px\)[\s\S]*?\.heroStory \.assetActiveQuestion \{[\s\S]*?top: -4\.25rem;[\s\S]*?bottom: auto/);
+  assert.match(featureHeroStyles, /@keyframes heroPreviewReveal/);
+  assert.match(featureHeroStyles, /@keyframes heroProgressFill/);
+  assert.match(featureHeroStyles, /\.heroStory \.assetPreviewState \{[\s\S]*?animation: heroPreviewReveal 440ms/);
+  assert.match(featureHeroStyles, /\.heroSection\[data-autoplay='true'\] \.assetStoryProgress > \.assetStoryProgressActive::after \{[\s\S]*?animation: heroProgressFill 2800ms/);
 
-  // Card and copy changes are immediate; the hero has no entrance, pulse or smooth-scroll motion.
-  assert.doesNotMatch(storyStyles, /@keyframes hero(?:TitleLineReveal|TextReveal|SupportReveal|CardReveal)|@keyframes activeQuestionPulse/);
-  assert.deepEqual(
-    [...storyStyles.matchAll(/animation:\s*([^;{}]+)/g)]
-      .map((match) => match[1].trim())
-      .filter((value) => !value.startsWith('none')),
-    [],
-  );
-  assert.match(styles, /\.heroStory \.heroTitleLine,[\s\S]*?\.heroStory \.secondaryCta \{[\s\S]*?animation: none !important;[\s\S]*?transition: none !important/);
-  assert.match(styles, /\.heroStory \.assetQuestion:hover \.assetQuestionBubble,[\s\S]*?\.heroStory \.secondaryCta:hover \{[\s\S]*?transform: none/);
-  assert.doesNotMatch(storyStyles, /scroll-snap/);
+  assert.match(featureHeroStyles, /@media \(max-width: 1180px\)[\s\S]*?\.heroStory \.heroGrid \{[\s\S]*?grid-template-columns: minmax\(0, 1fr\)/);
+  assert.match(featureHeroStyles, /@media \(max-width: 760px\)[\s\S]*?\.heroStory \.heroActions \{[\s\S]*?grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
+  assert.match(featureHeroStyles, /@media \(max-width: 760px\)[\s\S]*?\.heroStory \.assetQuestionGroup \{[\s\S]*?grid-template-columns: repeat\(5, minmax\(0, 1fr\)\);[\s\S]*?order: 2/);
+  assert.match(featureHeroStyles, /@media \(max-width: 760px\)[\s\S]*?\.heroStory \.assetPreviewCard \{[\s\S]*?position: relative;[\s\S]*?order: 1/);
+  assert.match(featureHeroStyles, /@media \(max-width: 640px\)[\s\S]*?\.heroStory \.heroActions \{[\s\S]*?grid-template-columns: minmax\(0, 1fr\)/);
+  assert.match(featureHeroStyles, /@media \(max-width: 640px\)[\s\S]*?\.heroStory \.assetQuestionGroup \{[\s\S]*?grid-template-columns: repeat\(6, minmax\(0, 1fr\)\)/);
+  assert.match(featureHeroStyles, /@media \(max-width: 640px\)[\s\S]*?\.heroStory \.assetPreviewCard,[\s\S]*?min-height: clamp\(24rem, 112vw, 29rem\)/);
+  assert.doesNotMatch(featureHeroStyles, /\.serviceCard \{[^}]*display:\s*none/s);
 
-  // The question remains a subtle, unboxed caption with progress dashes and a scroll cue.
-  assert.match(storyStyles, /\.assetStoryProgress \{[\s\S]*?display: inline-flex;[\s\S]*?gap: 0\.38rem/);
-  assert.match(storyStyles, /\.assetStoryProgress > span \{[\s\S]*?width: 0\.82rem;[\s\S]*?height: 0\.16rem/);
-  assert.match(storyStyles, /\.assetStoryProgress > \.assetStoryProgressActive \{[\s\S]*?width: 1\.2rem;[\s\S]*?background: #169d6f/);
-  assert.match(storyStyles, /\.assetScrollCue \{[\s\S]*?color: rgba\(13, 91, 67, 0\.55\)/);
-  assert.match(storyStyles, /\.assetHeroStage\[data-active-question='attention'\] \.assetScrollCue \{[\s\S]*?opacity: 0/);
-
-  // Tablet and phone layouts return to normal document flow and retain manual bubble controls.
-  assert.match(storyStyles, /@media \(max-width: 1180px\)[\s\S]*?\.heroStory \{[\s\S]*?min-height: 0;[\s\S]*?\.heroSticky \{[\s\S]*?position: relative;[\s\S]*?top: auto;[\s\S]*?height: auto/);
-  assert.match(storyStyles, /@media \(max-width: 1180px\)[\s\S]*?\.heroStory \.heroGrid \{[\s\S]*?grid-template-columns: minmax\(0, 1fr\);[\s\S]*?align-items: start/);
-  assert.match(styles, /@media \(max-width: 760px\)[\s\S]*?\.assetQuestionGroup \{[\s\S]*?grid-template-columns: repeat\(5, minmax\(0, 1fr\)\);[\s\S]*?order: 2/);
-  assert.match(styles, /@media \(max-width: 760px\)[\s\S]*?\.assetPreviewCard \{[\s\S]*?order: 1/);
-  assert.match(styles, /@media \(max-width: 760px\)[\s\S]*?\.assetActiveQuestion \{[\s\S]*?order: 3/);
-  assert.match(styles, /@media \(max-width: 640px\)[\s\S]*?\.assetQuestionGroup \{[\s\S]*?grid-template-columns: repeat\(6, minmax\(0, 1fr\)\)/);
-  assert.match(styles, /@media \(max-width: 640px\)[\s\S]*?\.assetQuestion:nth-child\(4\) \{[\s\S]*?grid-column: 2 \/ span 2/);
-  assert.match(styles, /@media \(max-width: 640px\)[\s\S]*?\.worthReportPreview,[\s\S]*?\.worthActions \{[\s\S]*?display: none/);
-  assert.doesNotMatch(styles, /\.serviceCard \{[^}]*display:\s*none/s);
-
-  // Reduced motion removes the sticky runway and every story animation/transition.
-  assert.doesNotMatch(storyStyles, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\bhtml\s*\{/);
-  assert.match(storyStyles, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.heroStory \{[\s\S]*?min-height: 0;[\s\S]*?\.heroSticky \{[\s\S]*?position: relative;[\s\S]*?height: auto/);
-  assert.match(storyStyles, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.heroScrollTrack \{[\s\S]*?display: none/);
-  assert.match(storyStyles, /\.heroCopyState,[\s\S]*?\.assetScrollCue \{[\s\S]*?animation: none !important;[\s\S]*?transition: none !important;[\s\S]*?transform: none !important/);
-  assert.match(styles, /@media \(forced-colors: active\)[\s\S]*?\.assetQuestionBubble/);
-  assert.match(styles, /\.assetPreviewActions \{[\s\S]*?pointer-events: none/);
+  assert.match(featureHeroStyles, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.heroStory \.assetPreviewState,[\s\S]*?animation: none/);
+  assert.match(featureHeroStyles, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.heroStory \.assetQuestionBubble,[\s\S]*?transition: none/);
+  assert.match(featureHeroStyles, /@media \(forced-colors: active\)[\s\S]*?\.assetQuestionBubble/);
 });
+
