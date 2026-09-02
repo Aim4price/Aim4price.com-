@@ -2027,9 +2027,9 @@
 
   .heroSection[data-story-capability='cinematic'] .heroSticky {
     position: sticky;
-    top: var(--home-header-height, 5.75rem);
-    height: calc(100vh - var(--home-header-height, 5.75rem));
-    height: calc(100dvh - var(--home-header-height, 5.75rem));
+    top: var(--app-header-height, 5.75rem);
+    height: calc(100vh - var(--app-header-height, 5.75rem));
+    height: calc(100dvh - var(--app-header-height, 5.75rem));
     overflow: hidden;
   }
 
@@ -2193,7 +2193,7 @@
 
   .heroSection[data-story-capability='cinematic'] .assetHeroStage {
     position: relative;
-    left: 0;
+    left: calc(100% - min(55%, 49.5rem));
     display: block;
     width: min(55%, 49.5rem);
     max-width: 49.5rem;
@@ -2201,8 +2201,8 @@
     transition: left 900ms cubic-bezier(0.22, 1, 0.36, 1);
   }
 
-  .heroSection[data-story-capability='cinematic'][data-story-mode='preview'] .assetHeroStage {
-    left: calc(100% - min(55%, 49.5rem));
+  .heroSection[data-story-capability='cinematic'][data-story-mode='features'] .assetHeroStage {
+    left: 0;
   }
 
   .heroSection[data-story-capability='cinematic'] .assetQuestionGroup {
