@@ -26,23 +26,24 @@ test('the compact display check is homepage-only and leaves touch devices and ap
     check,
     /if \(!desktopMedia\.matches\)[\s\S]*?setIsGateOpen\(false\)[\s\S]*?setIsDisplayReady\(true\)/,
   );
-  assert.match(checkStyles, /\.dialog \{[\s\S]*?width: min\(100%, 32\.5rem\)[\s\S]*?max-height: calc\(100dvh - 2rem\)[\s\S]*?overflow: hidden/);
+  assert.match(checkStyles, /\.dialog \{[\s\S]*?width: min\(100%, 36rem\)[\s\S]*?max-height: calc\(100dvh - 2rem\)[\s\S]*?overflow: hidden/);
   assert.doesNotMatch(header, /homeDensity/);
   assert.doesNotMatch(header, /HomeDisplayCheck|home-display-check/);
   assert.doesNotMatch(headerStyles, /homeDensity/);
 });
 
-test('the check keeps security language truthful and deliberately small', async () => {
+test('the required check keeps its security language truthful and explicit', async () => {
   const check = await read('app/home-display-check.tsx');
 
   assert.match(check, /window\.location\.protocol === 'https:' && window\.isSecureContext/);
   assert.match(check, /'localhost', '127\.0\.0\.1', '::1'/);
-  assert.match(check, /Quick display check/);
-  assert.match(check, /Use − or \+ until the card sits inside the frame\./);
+  assert.match(check, /Display fit required/);
+  assert.match(check, /Fit the card inside the frame, then continue to Aim4price\./);
   assert.match(check, /Secure connection/);
   assert.match(check, /Secure connection required/);
   assert.match(check, /Open secure Aim4price/);
-  assert.match(check, /Saved for this display setup\./);
+  assert.match(check, /Required before entering Aim4price\./);
+  assert.match(check, /Continue to Aim4price/);
   assert.doesNotMatch(check, /security &amp; display check|protected setup|inspect personal files/);
 });
 
@@ -53,16 +54,18 @@ test('the preview is measured on both axes before Continue unlocks', async () =>
   ]);
 
   assert.match(check, /getBoundingClientRect\(\)/);
-  assert.match(check, /const safeInset = 6/);
+  assert.match(check, /const safeInset = 5/);
   assert.match(check, /preview\.left >= frame\.left \+ safeInset/);
   assert.match(check, /preview\.top >= frame\.top \+ safeInset/);
   assert.match(check, /preview\.right <= frame\.right - safeInset/);
   assert.match(check, /preview\.bottom <= frame\.bottom - safeInset/);
   assert.match(check, /new ResizeObserver\(scheduleFitMeasurement\)/);
-  assert.match(check, /id: 'compact', label: 'Compact', scale: 0\.78/);
+  assert.match(check, /id: 'small', label: 'Small', scale: 0\.78/);
+  assert.match(check, /id: 'compact', label: 'Compact', scale: 0\.9/);
   assert.match(check, /id: 'original', label: 'Original', scale: 1/);
   assert.match(check, /ratios\.width <= PREVIEW_SAFE_WIDTH_RATIO/);
   assert.match(check, /ratios\.height <= PREVIEW_SAFE_HEIGHT_RATIO/);
+  assert.match(check, /PREVIEW_SAFE_HEIGHT_RATIO = 0\.93/);
   assert.match(check, /doesSizeFitViewport/);
   assert.match(check, /getRecommendedSize/);
   assert.match(check, /displayPreferenceRef\.current/);
@@ -78,28 +81,30 @@ test('the preview is measured on both axes before Continue unlocks', async () =>
   assert.match(styles, /\.sizeControls > button \{[\s\S]*?min-height: 2\.75rem/);
 });
 
-test('original preserves #543 and compact is an explicit homepage-only choice', async () => {
+test('original preserves #543 and the two fitted sizes stay homepage-only', async () => {
   const [check, pageStyles, headerStyles] = await Promise.all([
     read('app/home-display-check.tsx'),
     read('app/page.module.css'),
     read('components/AppHeader.module.css'),
   ]);
 
-  assert.match(check, /DISPLAY_COMPLETED_KEY = 'aim4price:home-display-check:completed'/);
-  assert.match(check, /DISPLAY_PREFERENCE_KEY = 'aim4price:home-display-preference:v2'/);
-  assert.match(check, /LEGACY_DISPLAY_PREFERENCE_KEY = 'aim4price:home-display-preference:v1'/);
+  assert.match(check, /DISPLAY_COMPLETED_KEY = 'aim4price:home-display-check:completed:v2'/);
+  assert.match(check, /DISPLAY_PREFERENCE_KEY = 'aim4price:home-display-preference:v3'/);
   assert.match(check, /window\.localStorage/);
   assert.match(check, /window\.sessionStorage/);
   assert.match(check, /DISPLAY_STORAGE_BACKEND_KEY/);
   assert.match(check, /home-display-storage-backend/);
   assert.match(check, /persistDisplayCompletion\(preference\)/);
   assert.match(check, /hasCompletedCheckRef\.current = true/);
-  assert.match(check, /LEGACY_DISPLAY_KEYS/);
+  assert.match(check, /STALE_DISPLAY_KEYS/);
+  assert.match(check, /aim4price:home-display-check:completed'/);
+  assert.match(check, /aim4price:home-display-preference:v2/);
   assert.match(check, /aim4price:home-display-check:v2/);
   assert.match(check, /aim4price:home-display-check:v1/);
   assert.match(check, /window\.addEventListener\('storage', syncCapability\)/);
   assert.match(check, /data-home-display-size=\{size\.id\}/);
   assert.match(pageStyles, /The #543 desktop composition is the default/);
+  assert.match(pageStyles, /\.page\[data-home-display-size='small'\]/);
   assert.match(pageStyles, /\.page\[data-home-display-size='compact'\]/);
   assert.doesNotMatch(pageStyles, /data-home-display-size='original'/);
   assert.doesNotMatch(pageStyles, /home-density-/);
@@ -126,13 +131,13 @@ test('a materially different or invalid desktop layout reopens the fitment check
   );
   assert.match(check, /window\.setTimeout\([\s\S]*?syncViewport\(\)[\s\S]*?160/);
   assert.match(check, /completion\.completed &&[\s\S]*?savedSize &&[\s\S]*?doesSizeFitViewport\(nextViewport, savedSize\)/);
-  assert.match(
-    check,
-    /if \(isCompleted\) \{[\s\S]*?completed: true, preference: createDisplayPreference\(\)/,
-  );
+  assert.match(check, /if \(isCompleted && storedPreference\)[\s\S]*?completed: true, preference: storedPreference/);
+  assert.match(check, /if \(isCompleted\) \{[\s\S]*?removeStorageItem\(DISPLAY_COMPLETED_KEY\)/);
+  assert.match(check, /if \(storedPreference\) \{[\s\S]*?removeStorageItem\(DISPLAY_PREFERENCE_KEY\)/);
+  assert.doesNotMatch(check, /if \(storedPreference\)[^}]*?persistDisplayCompletion/);
 });
 
-test('the modal isolates focus and pauses the hero story until it closes', async () => {
+test('the modal is mandatory, isolates focus and pauses the hero until Continue', async () => {
   const [check, styles, hero] = await Promise.all([
     read('app/home-display-check.tsx'),
     read('app/home-display-check.module.css'),
@@ -144,9 +149,18 @@ test('the modal isolates focus and pauses the hero story until it closes', async
   assert.match(check, /aria-labelledby="home-display-check-title"/);
   assert.match(check, /aria-describedby="home-display-check-description"/);
   assert.match(check, /aria-live="polite"/);
-  assert.match(check, /content\.setAttribute\('inert', ''\)/);
+  assert.match(check, /if \(isDisplayReady\)[\s\S]*?content\.removeAttribute\('inert'\)[\s\S]*?content\.setAttribute\('inert', ''\)/);
   assert.match(check, /document\.body\.style\.overflow = 'hidden'/);
-  assert.match(check, /if \(event\.key === 'Escape'\)[\s\S]*?useRecommendedSize\(\)/);
+  assert.match(check, /const \[isGateOpen, setIsGateOpen\] = useState\(true\)/);
+  assert.match(check, /data-display-ready=\{isDisplayReady \? 'true' : 'false'\}/);
+  assert.match(check, /aria-hidden=\{isMounted && !isDisplayReady \? 'true' : undefined\}/);
+  assert.match(check, /if \(event\.key === 'Escape'\)[\s\S]*?event\.preventDefault\(\)[\s\S]*?event\.stopPropagation\(\)/);
+  assert.doesNotMatch(check, /if \(event\.key === 'Escape'\)[\s\S]*?completeDisplayCheck/);
+  assert.match(check, /const selectRecommendedSize = \(\) => \{[\s\S]*?setSizeIndex\(recommendedSizeIndex\)[\s\S]*?scheduleFitMeasurement/);
+  assert.doesNotMatch(check, /const selectRecommendedSize = \(\) => \{[^}]*?completeDisplayCheck/);
+  assert.match(check, /const handleContinue = \(\) => \{[\s\S]*?completeDisplayCheck\(sizeIndex\)/);
+  assert.equal((check.match(/completeDisplayCheck\(sizeIndex\)/g) ?? []).length, 1);
+  assert.match(check, /const completeDisplayCheck = useCallback[\s\S]*?!hasSecureConnection\(\) \|\| !doesSizeFitViewport\(nextViewport, selectedSize\)[\s\S]*?setIsDisplayReady\(false\)[\s\S]*?setIsGateOpen\(true\)[\s\S]*?return/);
   assert.match(check, /event\.key !== 'Tab'/);
   assert.match(check, /const firstControl = dialogRef\.current\?\.querySelector/);
   assert.match(check, /\(firstControl \?\? dialogRef\.current\)\?\.focus\(\)/);
@@ -159,4 +173,5 @@ test('the modal isolates focus and pauses the hero story until it closes', async
   assert.match(hero, /id="home-hero-title"[\s\S]*?tabIndex=\{-1\}/);
   assert.match(styles, /@media \(prefers-reduced-motion: reduce\)/);
   assert.match(styles, /@media \(forced-colors: active\)/);
+  assert.match(styles, /@media \(min-width: 1181px\) and \(min-height: 640px\) and \(hover: hover\) and \(pointer: fine\)[\s\S]*?\.homeContent\[data-display-ready='false'\] \{[\s\S]*?visibility: hidden;[\s\S]*?pointer-events: none/);
 });

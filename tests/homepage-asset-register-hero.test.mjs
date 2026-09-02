@@ -446,9 +446,11 @@ test('homepage plays one slower timed tour, returns to its brand frame, then fol
   assert.ok(chosenCompactStart >= 0 && chosenCompactEnd > chosenCompactStart);
   const chosenCompactStyles = storyHeroStyles.slice(chosenCompactStart, chosenCompactEnd);
   assert.match(chosenCompactStyles, /@media \(min-width: 1181px\) and \(min-height: 640px\)/);
-  assert.match(chosenCompactStyles, /\.page\[data-home-display-size='compact'\] \.heroStory \.heroMedia \.shell \{[\s\S]*?width: min\(calc\(100% - 2\.25rem\), 1280px\)/);
-  assert.match(chosenCompactStyles, /\.page\[data-home-display-size='compact'\] \.storyHeroGrid \{[\s\S]*?grid-template-columns: minmax\(26rem, 1fr\) minmax\(32rem, 40rem\)/);
-  assert.match(chosenCompactStyles, /\.page\[data-home-display-size='compact'\] \.assetStageMotion \{[\s\S]*?width: min\(39\.5rem, calc\(100% \+ 3\.5rem\)\)/);
+  assert.match(chosenCompactStyles, /\.page\[data-home-display-size='small'\] \.heroStory \.heroMedia \.shell \{[\s\S]*?width: min\(calc\(100% - 2\.25rem\), 1280px\)/);
+  assert.match(chosenCompactStyles, /\.page\[data-home-display-size='small'\] \.storyHeroGrid \{[\s\S]*?grid-template-columns: minmax\(26rem, 1fr\) minmax\(32rem, 40rem\)/);
+  assert.match(chosenCompactStyles, /\.page\[data-home-display-size='small'\] \.assetStageMotion \{[\s\S]*?width: min\(39\.5rem, calc\(100% \+ 3\.5rem\)\)/);
+  assert.match(chosenCompactStyles, /\.page\[data-home-display-size='compact'\] \.storyHeroGrid \{[\s\S]*?grid-template-columns: minmax\(28rem, 1fr\) minmax\(36rem, 44\.5rem\)/);
+  assert.match(chosenCompactStyles, /\.page\[data-home-display-size='compact'\] \.assetStageMotion \{[\s\S]*?width: min\(44\.5rem, calc\(100% \+ 4rem\)\)/);
   assert.doesNotMatch(storyHeroStyles, /Compact laptop density contract, September 2026|max-width: 1599px|max-height: 899px/);
 
   assert.doesNotMatch(storyHeroStyles, /@media \(min-width: 901px\) and \(max-width: 1180px\)/);

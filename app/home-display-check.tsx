@@ -19,22 +19,25 @@ import styles from './home-display-check.module.css';
 
 const DISPLAY_CHECK_QUERY =
   '(min-width: 1181px) and (min-height: 640px) and (hover: hover) and (pointer: fine)';
-const DISPLAY_COMPLETED_KEY = 'aim4price:home-display-check:completed';
-const DISPLAY_PREFERENCE_KEY = 'aim4price:home-display-preference:v2';
+const DISPLAY_COMPLETED_KEY = 'aim4price:home-display-check:completed:v2';
+const DISPLAY_PREFERENCE_KEY = 'aim4price:home-display-preference:v3';
 const DISPLAY_STORAGE_BACKEND_KEY = 'aim4price:home-display-storage-backend';
-const LEGACY_DISPLAY_PREFERENCE_KEY = 'aim4price:home-display-preference:v1';
-const LEGACY_DISPLAY_KEYS = [
+const STALE_DISPLAY_KEYS = [
+  'aim4price:home-display-check:completed',
+  'aim4price:home-display-preference:v2',
+  'aim4price:home-display-preference:v1',
   'aim4price:home-display-check:v2',
   'aim4price:home-display-check:v1',
 ] as const;
-const DISPLAY_PREFERENCE_VERSION = 2;
+const DISPLAY_PREFERENCE_VERSION = 3;
 const ORIGINAL_CANVAS_WIDTH = 1360;
 const ORIGINAL_CANVAS_HEIGHT = 620;
 const PREVIEW_SAFE_WIDTH_RATIO = 0.96;
-const PREVIEW_SAFE_HEIGHT_RATIO = 0.9;
+const PREVIEW_SAFE_HEIGHT_RATIO = 0.93;
 
 export const DISPLAY_SIZES = [
-  { id: 'compact', label: 'Compact', scale: 0.78 },
+  { id: 'small', label: 'Small', scale: 0.78 },
+  { id: 'compact', label: 'Compact', scale: 0.9 },
   { id: 'original', label: 'Original', scale: 1 },
 ] as const;
 
@@ -93,11 +96,8 @@ const getRecommendedSizeIndex = (viewport: ViewportSize) => {
   return recommendedIndex;
 };
 
-const clampSizeIndex = (index: number) =>
-  Math.max(0, Math.min(DISPLAY_SIZES.length - 1, index));
-
 const getRecommendedSize = (viewport: ViewportSize): DisplaySize =>
-  DISPLAY_SIZES[getRecommendedSizeIndex(viewport)]?.id ?? 'compact';
+  DISPLAY_SIZES[getRecommendedSizeIndex(viewport)]?.id ?? 'small';
 
 const getSizeIndex = (size: DisplaySize) =>
   Math.max(0, DISPLAY_SIZES.findIndex(({ id }) => id === size));
@@ -197,7 +197,7 @@ const removeStorageItem = (key: string) => {
     try {
       getStorage().removeItem(key);
     } catch {
-      // A storage restriction must never block the homepage.
+      // The in-memory mandatory gate remains authoritative if storage is restricted.
     }
   }
 };
@@ -239,88 +239,26 @@ const readStoredPreference = (): StoredDisplayPreference | null => {
   }
 };
 
-const readLegacyPreference = (
-  viewport: ViewportSize,
-): StoredDisplayPreference | null => {
-  try {
-    const raw = readStorageItem(LEGACY_DISPLAY_PREFERENCE_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw) as { version?: number; offset?: unknown };
-      if (parsed.version === 1 && (parsed.offset === -1 || parsed.offset === 0)) {
-        const recommendedIndex = getRecommendedSizeIndex(viewport);
-        const selectedIndex = clampSizeIndex(recommendedIndex + parsed.offset);
-        const profile = getRecommendedSize(viewport);
-        const selectedSize = DISPLAY_SIZES[selectedIndex]?.id ?? profile;
-        return createDisplayPreference({ [profile]: selectedSize });
-      }
-    }
-  } catch {
-    // Continue to the display-check records used by earlier releases.
-  }
-
-  for (const key of LEGACY_DISPLAY_KEYS) {
-    try {
-      const raw = readStorageItem(key);
-      if (!raw) continue;
-      const parsed = JSON.parse(raw) as {
-        version?: number;
-        size?: unknown;
-        density?: unknown;
-        viewportClass?: unknown;
-      };
-
-      if (key.endsWith(':v2') && parsed.version === 2 && isDisplaySize(parsed.size)) {
-        const profile =
-          parsed.viewportClass === 'recommended-original'
-            ? 'original'
-            : parsed.viewportClass === 'recommended-compact'
-              ? 'compact'
-              : getRecommendedSize(viewport);
-        return createDisplayPreference({ [profile]: parsed.size });
-      }
-
-      if (
-        key.endsWith(':v1') &&
-        parsed.version === 1 &&
-        ['compact', 'balanced', 'spacious'].includes(String(parsed.density))
-      ) {
-        const profile = getRecommendedSize(viewport);
-        const recommendedIndex = getRecommendedSizeIndex(viewport);
-        const selectedIndex = clampSizeIndex(
-          recommendedIndex + (parsed.density === 'compact' ? -1 : 0),
-        );
-        const selectedSize = DISPLAY_SIZES[selectedIndex]?.id ?? profile;
-        return createDisplayPreference({ [profile]: selectedSize });
-      }
-    } catch {
-      // Ignore malformed legacy data and continue to the next known format.
-    }
-  }
-
-  return null;
-};
-
 const persistDisplayCompletion = (preference: StoredDisplayPreference) => {
   writeStorageItem(DISPLAY_COMPLETED_KEY, '1');
   writeStorageItem(DISPLAY_PREFERENCE_KEY, JSON.stringify(preference));
 };
 
-const readDisplayCompletion = (viewport: ViewportSize) => {
+const readDisplayCompletion = () => {
   const isCompleted = readStorageItem(DISPLAY_COMPLETED_KEY) === '1';
   const storedPreference = readStoredPreference();
-  if (storedPreference) {
-    if (!isCompleted) persistDisplayCompletion(storedPreference);
+  if (isCompleted && storedPreference) {
     return { completed: true, preference: storedPreference } as const;
   }
 
-  const legacyPreference = readLegacyPreference(viewport);
-  if (legacyPreference !== null) {
-    persistDisplayCompletion(legacyPreference);
-    return { completed: true, preference: legacyPreference } as const;
-  }
-
   if (isCompleted) {
-    return { completed: true, preference: createDisplayPreference() } as const;
+    removeStorageItem(DISPLAY_COMPLETED_KEY);
+  }
+  if (storedPreference) {
+    removeStorageItem(DISPLAY_PREFERENCE_KEY);
+  }
+  for (const key of STALE_DISPLAY_KEYS) {
+    removeStorageItem(key);
   }
 
   return { completed: false, preference: createDisplayPreference() } as const;
@@ -333,7 +271,7 @@ export default function HomeDisplayCheck({ children }: { children: ReactNode }) 
     height: 900,
   });
   const [isMounted, setIsMounted] = useState(false);
-  const [isGateOpen, setIsGateOpen] = useState(false);
+  const [isGateOpen, setIsGateOpen] = useState(true);
   const [isDisplayReady, setIsDisplayReady] = useState(false);
   const [isSecure, setIsSecure] = useState(false);
   const [doesPreviewFit, setDoesPreviewFit] = useState(false);
@@ -373,7 +311,7 @@ export default function HomeDisplayCheck({ children }: { children: ReactNode }) 
       return;
     }
 
-    const safeInset = 6;
+    const safeInset = 5;
     setDoesPreviewFit(
       preview.left >= frame.left + safeInset &&
         preview.top >= frame.top + safeInset &&
@@ -393,10 +331,20 @@ export default function HomeDisplayCheck({ children }: { children: ReactNode }) 
     });
   }, [measurePreviewFit]);
 
-  const acceptSize = useCallback((nextIndex: number) => {
+  const completeDisplayCheck = useCallback((nextIndex: number) => {
     const nextViewport = getViewportSize();
     const profile = getRecommendedSize(nextViewport);
     const selectedSize = DISPLAY_SIZES[nextIndex]?.id ?? profile;
+
+    if (!hasSecureConnection() || !doesSizeFitViewport(nextViewport, selectedSize)) {
+      setViewport(nextViewport);
+      setSizeIndex(getRecommendedSizeIndex(nextViewport));
+      setDoesPreviewFit(false);
+      setIsDisplayReady(false);
+      setIsGateOpen(true);
+      return;
+    }
+
     const storedPreference = readStoredPreference();
     const preference = createDisplayPreference({
       ...displayPreferenceRef.current.selections,
@@ -422,7 +370,7 @@ export default function HomeDisplayCheck({ children }: { children: ReactNode }) 
     const syncCapability = () => {
       const nextViewport = getViewportSize();
       const nextIsSecure = hasSecureConnection();
-      const completion = readDisplayCompletion(nextViewport);
+      const completion = readDisplayCompletion();
       const profile = getRecommendedSize(nextViewport);
       const savedSize = completion.preference.selections[profile];
 
@@ -545,7 +493,7 @@ export default function HomeDisplayCheck({ children }: { children: ReactNode }) 
     const content = contentRef.current;
     if (!content) return undefined;
 
-    if (!isGateOpen) {
+    if (isDisplayReady) {
       content.removeAttribute('inert');
       return undefined;
     }
@@ -564,7 +512,7 @@ export default function HomeDisplayCheck({ children }: { children: ReactNode }) 
       content.removeAttribute('inert');
       document.body.style.overflow = previousOverflow;
     };
-  }, [isGateOpen]);
+  }, [isDisplayReady]);
 
   const adjustSize = (direction: -1 | 1) => {
     setDoesPreviewFit(false);
@@ -573,20 +521,21 @@ export default function HomeDisplayCheck({ children }: { children: ReactNode }) 
     );
   };
 
-  const useRecommendedSize = () => {
-    if (!isSecure) return;
-    acceptSize(recommendedSizeIndex);
+  const selectRecommendedSize = () => {
+    setDoesPreviewFit(false);
+    setSizeIndex(recommendedSizeIndex);
+    window.requestAnimationFrame(scheduleFitMeasurement);
   };
 
   const handleContinue = () => {
     if (!isSecure || !doesPreviewFit) return;
-    acceptSize(sizeIndex);
+    completeDisplayCheck(sizeIndex);
   };
 
   const handleDialogKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (event.key === 'Escape') {
       event.preventDefault();
-      useRecommendedSize();
+      event.stopPropagation();
       return;
     }
     if (event.key !== 'Tab') return;
@@ -624,7 +573,8 @@ export default function HomeDisplayCheck({ children }: { children: ReactNode }) 
         <div
           ref={contentRef}
           className={styles.homeContent}
-          aria-hidden={isGateOpen ? 'true' : undefined}
+          data-display-ready={isDisplayReady ? 'true' : 'false'}
+          aria-hidden={isMounted && !isDisplayReady ? 'true' : undefined}
         >
           {children}
         </div>
@@ -651,9 +601,9 @@ export default function HomeDisplayCheck({ children }: { children: ReactNode }) 
                   unoptimized
                 />
                 <div>
-                  <h2 id="home-display-check-title">Quick display check</h2>
+                  <h2 id="home-display-check-title">Display fit required</h2>
                   <p id="home-display-check-description">
-                    Use − or + until the card sits inside the frame.
+                    Fit the card inside the frame, then continue to Aim4price.
                   </p>
                 </div>
               </header>
@@ -734,15 +684,14 @@ export default function HomeDisplayCheck({ children }: { children: ReactNode }) 
               ) : null}
 
               <footer className={styles.dialogFooter}>
-                <p>Saved for this display setup.</p>
+                <p>Required before entering Aim4price.</p>
                 <div>
                   <button
                     type="button"
                     className={styles.recommendedButton}
-                    onClick={useRecommendedSize}
-                    disabled={!isSecure}
+                    onClick={selectRecommendedSize}
                   >
-                    Use recommended
+                    Use recommended size
                   </button>
                   <button
                     type="button"
@@ -750,7 +699,7 @@ export default function HomeDisplayCheck({ children }: { children: ReactNode }) 
                     onClick={handleContinue}
                     disabled={!isSecure || !doesPreviewFit}
                   >
-                    Continue
+                    Continue to Aim4price
                   </button>
                 </div>
               </footer>
