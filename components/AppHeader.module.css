@@ -10,7 +10,7 @@
 }
 
 .inner {
-  width: min(calc(100% - 3rem), 1360px);
+  width: min(calc(100% - 3rem), var(--site-wide-shell-max, 1360px));
   margin: 0 auto;
   min-height: 5.75rem;
   padding: 0.82rem 0;
