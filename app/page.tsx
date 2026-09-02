@@ -11,12 +11,14 @@ export default async function HomePage() {
   await redirectAdminToAdmin();
 
   return (
-    <main className={styles.page}>
+    <div className={styles.page}>
       <AppHeader active="home" />
 
-      <HomeHeroExperience />
+      <main className={styles.homeMain}>
+        <HomeHeroExperience />
 
-      <HomeRoleSelector />
-    </main>
+        <HomeRoleSelector />
+      </main>
+    </div>
   );
 }
