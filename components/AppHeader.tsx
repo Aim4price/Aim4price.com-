@@ -2430,7 +2430,7 @@ export default function AppHeader({
 
   return (
     <>
-      <header className={styles.header}>
+      <header className={`${styles.header} ${pathname === '/' ? styles.homeDensity : ''}`}>
         <div
           className={`${styles.inner} ${isDealerAccount ? styles.innerDealer : ''} ${!isLoadingSession && !session ? styles.innerPublic : ''} ${usesCompactHeader ? styles.innerCompact : ''} ${brandAlignmentClass ? styles.innerBrandAligned : ''}`}
         >

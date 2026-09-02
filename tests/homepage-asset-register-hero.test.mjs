@@ -435,6 +435,7 @@ test('homepage plays one slower timed tour, returns to its brand frame, then fol
   assert.match(mediumDesktopStoryStyles, /\.assetStageMotion \{[\s\S]*?width: min\(44rem, calc\(100% \+ 6rem\)\);[\s\S]*?justify-self: end/);
   assert.match(storyHeroStyles, /@media \(min-width: 1181px\) and \(max-width: 1240px\) and \(min-height: 640px\)[\s\S]*?\.storyHeroGrid \{[\s\S]*?--hero-working-inset: 8px/);
   assert.match(storyHeroStyles, /@media \(min-width: 1181px\) and \(min-height: 640px\) and \(max-height: 759px\)[\s\S]*?\.assetStageMotion \{[\s\S]*?width: min\(43rem, calc\(100% \+ 5rem\)\)/);
+  assert.match(storyHeroStyles, /Compact laptop density contract, September 2026[\s\S]*?@media \(min-width: 1181px\) and \(max-width: 1599px\) and \(min-height: 640px\),\s*\(min-width: 1181px\) and \(min-height: 640px\) and \(max-height: 899px\)/);
 
   assert.doesNotMatch(storyHeroStyles, /@media \(min-width: 901px\) and \(max-width: 1180px\)/);
   assert.doesNotMatch(storyHeroStyles, /top: 8\.4rem|height: calc\(100dvh - 8\.4rem\)/);

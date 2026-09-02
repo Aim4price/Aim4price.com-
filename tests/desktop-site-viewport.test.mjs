@@ -7,6 +7,8 @@ const homePagePath = new URL('../app/page.tsx', import.meta.url);
 const homeHeroPath = new URL('../app/home-hero-experience.tsx', import.meta.url);
 const homeStylesPath = new URL('../app/page.module.css', import.meta.url);
 const homeVideoPath = new URL('../app/home-hero-video.tsx', import.meta.url);
+const headerPath = new URL('../components/AppHeader.module.css', import.meta.url);
+const headerClientPath = new URL('../components/AppHeader.tsx', import.meta.url);
 
 const protectedAppLayoutPaths = [
   new URL('../app/dealer/layout.tsx', import.meta.url),
@@ -46,13 +48,16 @@ test('the three role apps keep zoomable device-width viewports', async () => {
     assert.match(source, /initialScale:\s*1/);
     assert.match(source, /userScalable:\s*true/);
     assert.doesNotMatch(source, /maximumScale|minimumScale/);
+    assert.doesNotMatch(source, /homeDensity|compact laptop density/i);
   }
 });
 
-test('the Home hero has cinematic desktop, static-wide and phone contracts', async () => {
-  const [heroSource, styleSource] = await Promise.all([
+test('the Home hero has cinematic, compact-laptop, static-wide and phone contracts', async () => {
+  const [heroSource, styleSource, headerSource, headerClientSource] = await Promise.all([
     readFile(homeHeroPath, 'utf8'),
     readFile(homeStylesPath, 'utf8'),
+    readFile(headerPath, 'utf8'),
+    readFile(headerClientPath, 'utf8'),
   ]);
 
   const storyStart = styleSource.indexOf(
@@ -64,10 +69,17 @@ test('the Home hero has cinematic desktop, static-wide and phone contracts', asy
   assert.match(heroSource, /CINEMATIC_STORY_QUERY = '\(min-width: 1181px\) and \(min-height: 640px\)'/);
   assert.match(heroSource, /data-story-capability=\{isCinematicStory \? 'cinematic' : 'static'\}/);
   assert.match(storyStyles, /@media \(min-width: 1181px\) and \(min-height: 640px\)[\s\S]*?min-height: 440svh[\s\S]*?position: sticky/);
+  assert.match(storyStyles, /Compact laptop density contract, September 2026[\s\S]*?max-width: 1599px[\s\S]*?max-height: 899px/);
+  assert.match(headerSource, /Homepage-only compact laptop density contract, September 2026[\s\S]*?\.homeDensity \.inner/);
+  assert.match(headerClientSource, /pathname === '\/' \? styles\.homeDensity : ''/);
   assert.match(storyStyles, /@media \(max-width: 1180px\), \(max-height: 639px\), \(prefers-reduced-motion: reduce\)[\s\S]*?position: relative[\s\S]*?transform: none !important/);
   assert.match(storyStyles, /@media \(max-width: 760px\)[\s\S]*?grid-template-columns: repeat\(5, minmax\(0, 1fr\)\)/);
   assert.match(storyStyles, /@media \(max-width: 760px\)[\s\S]*?\.heroBrandTitle span \{[\s\S]*?white-space: normal/);
   assert.doesNotMatch(storyStyles, /@media \(min-width: 901px\) and \(max-width: 1180px\)/);
+
+  const densitySources = [heroSource, styleSource, headerSource, headerClientSource].join('\n');
+  assert.doesNotMatch(densitySources, /devicePixelRatio|visualViewport|outerWidth|screen\.width/);
+  assert.doesNotMatch(densitySources, /\bzoom\s*:/);
 });
 
 test('the Home hero keeps reliable playback without a mobile-only video asset', async () => {
