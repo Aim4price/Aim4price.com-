@@ -40,12 +40,10 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  // Keep normal website routes on a strict desktop canvas and let mobile
-  // browsers shrink the complete 980px layout to fit the physical screen.
-  // The installable apps override this in their nested layouts.
-  width: 980,
-  initialScale: -1,
+  width: 'device-width',
+  initialScale: 1,
   userScalable: true,
+  viewportFit: 'cover',
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
