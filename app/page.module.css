@@ -4729,6 +4729,7 @@
 
   .page[data-home-standard-canvas='true'] .heroBrandCopy,
   .page[data-home-standard-canvas='true'] .heroPromiseCopy {
+    display: flex;
     height: auto;
     opacity: 0;
     visibility: hidden;
@@ -4757,6 +4758,10 @@
     font-size: 5rem;
   }
 
+  .page[data-home-standard-canvas='true'] .heroBrandTitle {
+    text-wrap: balance;
+  }
+
   .page[data-home-standard-canvas='true'] .heroBrandTitle span:not(:first-child) {
     font-size: 2.75rem;
   }
@@ -4770,6 +4775,31 @@
     margin-top: 1.85rem;
     font-size: 1.08rem;
     line-height: 1.6;
+  }
+
+  .page[data-home-standard-canvas='true'] .heroStory .heroActions {
+    width: auto;
+    display: flex;
+    grid-template-columns: none;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-top: 1.85rem;
+  }
+
+  .page[data-home-standard-canvas='true'] .heroStory .primaryCta,
+  .page[data-home-standard-canvas='true'] .heroStory .secondaryCta {
+    min-width: 0;
+    min-height: 3.45rem;
+    padding-inline: 1.35rem;
+    text-align: center;
+  }
+
+  .page[data-home-standard-canvas='true'] .heroStory .primaryCta {
+    width: 14.75rem;
+  }
+
+  .page[data-home-standard-canvas='true'] .heroStory .secondaryCta {
+    width: 12.5rem;
   }
 
   .page[data-home-standard-canvas='true'] .storyHeroLogo,
@@ -4894,6 +4924,14 @@
     display: grid;
   }
 
+  .page[data-home-standard-canvas='true'] .assetPreviewIdentity p {
+    display: block;
+  }
+
+  .page[data-home-standard-canvas='true'] .assetPreviewAside {
+    min-width: 12.75rem;
+  }
+
   .page[data-home-standard-canvas='true'] .assetPreviewBody {
     grid-template-columns: minmax(0, 1.23fr) minmax(0, 1fr);
   }
@@ -4927,6 +4965,10 @@
   .page[data-home-standard-canvas='true'] .manageTile small,
   .page[data-home-standard-canvas='true'] .reportRow small {
     display: block;
+  }
+
+  .page[data-home-standard-canvas='true'] .manageTile strong {
+    white-space: nowrap;
   }
 
   .page[data-home-standard-canvas='true'] .attentionHeader {
@@ -4969,6 +5011,7 @@
     max-width: 29rem;
     margin-top: 1.15rem;
     font-size: 3.6rem;
+    line-height: 0.98;
   }
 
   .page[data-home-standard-canvas='true'] .featureNarrativeLayer > p:last-child {
@@ -5003,8 +5046,13 @@
     display: inline-flex;
   }
 
+  .page[data-home-standard-canvas='true'] .roleSection {
+    padding: 5rem 0;
+  }
+
   .page[data-home-standard-canvas='true'] .roleGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.7rem;
     max-width: 78rem;
   }
 
@@ -5014,6 +5062,19 @@
 
 .page[data-home-standard-canvas='true'] .roleCard {
   min-height: 17rem;
+  padding: 2.55rem;
+}
+
+.page[data-home-standard-canvas='true'] .roleCard strong {
+  font-size: 1.825rem;
+}
+
+.page[data-home-standard-canvas='true'] .roleCard small {
+  font-size: 1.02rem;
+}
+
+.page[data-home-standard-canvas='true'] .roleArrow {
+  font-size: 3.14rem;
 }
 
 @media (forced-colors: active) {
