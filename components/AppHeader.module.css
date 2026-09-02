@@ -4459,3 +4459,80 @@
     height: 1.75rem;
   }
 }
+
+/* The public homepage may apply a visitor-approved density after its display
+   check. These variables are absent from every role app, so app controls keep
+   their independent sizing contract. */
+@media (min-width: 1181px) and (min-height: 640px) {
+  :global([data-home-display-density]) .homeDensity .inner {
+    width: min(
+      calc(100% - var(--home-density-shell-gutter)),
+      var(--home-density-shell-max)
+    );
+    min-height: var(--home-density-header-height);
+    grid-template-columns:
+      minmax(var(--home-density-header-column), 1fr)
+      auto
+      minmax(var(--home-density-header-column), 1fr);
+    gap: var(--home-density-header-gap);
+  }
+
+  :global([data-home-display-density]) .homeDensity .innerDealer {
+    grid-template-columns:
+      minmax(var(--home-density-header-column), 1fr)
+      auto
+      minmax(var(--home-density-header-column), 1fr);
+  }
+
+  :global([data-home-display-density]) .homeDensity .headerBrandLogo {
+    width: var(--home-density-header-logo);
+  }
+
+  :global([data-home-display-density]) .homeDensity .navRail,
+  :global([data-home-display-density]) .homeDensity .actionsRail {
+    gap: var(--home-density-rail-gap);
+    padding: var(--home-density-rail-padding);
+    border-radius: var(--home-density-rail-radius);
+  }
+
+  :global([data-home-display-density]) .homeDensity .navLink {
+    min-width: var(--home-density-nav-width);
+    min-height: var(--tap-target-min, 44px);
+    padding-inline: var(--home-density-nav-padding);
+    border-radius: var(--home-density-control-radius);
+    font-size: var(--home-density-control-font);
+  }
+
+  :global([data-home-display-density]) .homeDensity .navWindowButton {
+    width: var(--home-density-arrow-width);
+    min-width: var(--home-density-arrow-width);
+    height: var(--tap-target-min, 44px);
+    min-height: var(--tap-target-min, 44px);
+  }
+
+  :global([data-home-display-density]) .homeDensity .signupButton,
+  :global([data-home-display-density]) .homeDensity .loginButton,
+  :global([data-home-display-density]) .homeDensity .accountButton,
+  :global([data-home-display-density]) .homeDensity .notificationButton {
+    min-height: var(--tap-target-min, 44px);
+    padding-inline: var(--home-density-action-padding);
+    border-radius: var(--home-density-control-radius);
+    font-size: var(--home-density-control-font);
+  }
+
+  :global([data-home-display-density]) .homeDensity .notificationButton {
+    width: var(--tap-target-min, 44px);
+    min-width: var(--tap-target-min, 44px);
+    padding: 0;
+  }
+
+  :global([data-home-display-density]) .homeDensity .accountMenu {
+    width: var(--home-density-account-width);
+    flex-basis: var(--home-density-account-width);
+  }
+
+  :global([data-home-display-density]) .homeDensity .accountAvatar {
+    width: var(--home-density-avatar-size);
+    height: var(--home-density-avatar-size);
+  }
+}
