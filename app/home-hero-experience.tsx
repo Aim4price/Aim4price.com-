@@ -41,6 +41,18 @@ type FeatureStory = {
   body: string;
 };
 
+type StoryViewportAnchor =
+  | {
+      kind: 'hero';
+      step: number;
+      viewportOffset: number;
+      wasAtTop: boolean;
+    }
+  | {
+      kind: 'role';
+      viewportOffset: number;
+    };
+
 const STORY_DURATIONS: Readonly<Record<StoryStep, number>> = {
   brand: 3800,
   promise: 4800,
@@ -105,11 +117,23 @@ export default function HomeHeroExperience() {
   const manualControlRef = useRef(false);
   const scrollFrameRef = useRef<number | null>(null);
   const scrollClaimRef = useRef(false);
+  const storyCapabilityRef = useRef<boolean | null>(null);
+  const viewportAnchorRef = useRef<StoryViewportAnchor | null>(null);
+  const anchorFrameRef = useRef<number | null>(null);
+  const capabilityRestoreRef = useRef(false);
+  const capabilityFrameOneRef = useRef<number | null>(null);
+  const capabilityFrameTwoRef = useRef<number | null>(null);
+  const capabilityReleaseTimerRef = useRef<number | null>(null);
 
   const updateStoryStep = useCallback((nextIndex: number) => {
     const safeIndex = clampStoryIndex(nextIndex);
     storyStepRef.current = safeIndex;
     setStoryStepIndex(safeIndex);
+
+    const viewportAnchor = viewportAnchorRef.current;
+    if (viewportAnchor?.kind === 'hero') {
+      viewportAnchorRef.current = { ...viewportAnchor, step: safeIndex };
+    }
 
     if (safeIndex >= FEATURE_START_INDEX) {
       const questionIndex = safeIndex - FEATURE_START_INDEX;
@@ -134,12 +158,134 @@ export default function HomeHeroExperience() {
     setIsPaused(false);
   }, []);
 
+  const captureViewportAnchor = useCallback(() => {
+    if (capabilityRestoreRef.current) return;
+
+    const section = sectionRef.current;
+    const sticky = stickyRef.current;
+    if (!section || !sticky) return;
+
+    const roleSection = document.getElementById('choose-role');
+    const rootFontSize = Number.parseFloat(
+      window.getComputedStyle(document.documentElement).fontSize,
+    ) || 16;
+    const headerHeightValue = window
+      .getComputedStyle(section)
+      .getPropertyValue('--app-header-height')
+      .trim();
+    const parsedHeaderHeight = Number.parseFloat(headerHeightValue) || 0;
+    const headerHeight = headerHeightValue.endsWith('rem')
+      ? parsedHeaderHeight * rootFontSize
+      : parsedHeaderHeight;
+    const roleRect = roleSection?.getBoundingClientRect();
+
+    if (roleRect && roleRect.top < window.innerHeight) {
+      viewportAnchorRef.current = {
+        kind: 'role',
+        viewportOffset: roleRect.top,
+      };
+      return;
+    }
+
+    viewportAnchorRef.current = {
+      kind: 'hero',
+      step: storyStepRef.current,
+      viewportOffset: Math.max(
+        headerHeight,
+        sticky.getBoundingClientRect().top,
+      ),
+      wasAtTop: window.scrollY <= 4,
+    };
+  }, []);
+
+  const scheduleCapabilityRestore = useCallback((
+    supportsStory: boolean,
+    anchor: StoryViewportAnchor,
+  ) => {
+    if (capabilityFrameOneRef.current !== null) {
+      window.cancelAnimationFrame(capabilityFrameOneRef.current);
+    }
+    if (capabilityFrameTwoRef.current !== null) {
+      window.cancelAnimationFrame(capabilityFrameTwoRef.current);
+    }
+    if (capabilityReleaseTimerRef.current !== null) {
+      window.clearTimeout(capabilityReleaseTimerRef.current);
+    }
+
+    capabilityRestoreRef.current = true;
+    capabilityFrameOneRef.current = window.requestAnimationFrame(() => {
+      capabilityFrameOneRef.current = null;
+      capabilityFrameTwoRef.current = window.requestAnimationFrame(() => {
+        capabilityFrameTwoRef.current = null;
+
+        const section = sectionRef.current;
+        const sticky = stickyRef.current;
+        if (!section || !sticky) {
+          capabilityRestoreRef.current = false;
+          return;
+        }
+
+        if (anchor.kind === 'role') {
+          const roleSection = document.getElementById('choose-role');
+          if (roleSection) {
+            const delta = roleSection.getBoundingClientRect().top - anchor.viewportOffset;
+            if (Math.abs(delta) > 1) {
+              window.scrollBy({ top: delta, left: 0, behavior: 'auto' });
+            }
+          }
+        } else if (anchor.wasAtTop) {
+          updateStoryStep(0);
+          window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+        } else if (supportsStory) {
+          updateStoryStep(anchor.step);
+          const sectionTop = window.scrollY + section.getBoundingClientRect().top;
+          const stickyTop =
+            Number.parseFloat(window.getComputedStyle(sticky).top) || 0;
+          const trackStart = sectionTop - stickyTop;
+          const trackTravel = Math.max(1, section.offsetHeight - sticky.offsetHeight);
+          const stepProgress = (clampStoryIndex(anchor.step) + 0.5) /
+            HERO_STORY_STEPS.length;
+
+          window.scrollTo({
+            top: trackStart + stepProgress * trackTravel,
+            left: 0,
+            behavior: 'auto',
+          });
+        } else {
+          updateStoryStep(anchor.step);
+          const selector = anchor.step >= FEATURE_START_INDEX
+            ? '[data-story-narrative]'
+            : anchor.step === 2
+              ? '[data-story-preview]'
+              : '[data-story-opening]';
+          const target = section.querySelector<HTMLElement>(selector);
+
+          if (target) {
+            const delta = target.getBoundingClientRect().top - anchor.viewportOffset;
+            if (Math.abs(delta) > 1) {
+              window.scrollBy({ top: delta, left: 0, behavior: 'auto' });
+            }
+          }
+        }
+
+        capabilityReleaseTimerRef.current = window.setTimeout(() => {
+          capabilityReleaseTimerRef.current = null;
+          capabilityRestoreRef.current = false;
+          captureViewportAnchor();
+        }, 48);
+      });
+    });
+  }, [captureViewportAnchor, updateStoryStep]);
+
   useEffect(() => {
     const reducedMotionMedia = window.matchMedia(REDUCED_MOTION_QUERY);
     const cinematicStoryMedia = window.matchMedia(CINEMATIC_STORY_QUERY);
 
     const syncStoryCapability = () => {
       const supportsStory = cinematicStoryMedia.matches && !reducedMotionMedia.matches;
+      const previousCapability = storyCapabilityRef.current;
+      const savedAnchor = viewportAnchorRef.current;
+      storyCapabilityRef.current = supportsStory;
       setCanAutoplay(supportsStory);
       setIsCinematicStory(supportsStory);
 
@@ -148,6 +294,14 @@ export default function HomeHeroExperience() {
         if (!manualControlRef.current) updateStoryStep(FEATURE_START_INDEX);
       } else if (!manualControlRef.current) {
         updateStoryStep(0);
+      }
+
+      if (
+        previousCapability !== null &&
+        previousCapability !== supportsStory &&
+        savedAnchor
+      ) {
+        scheduleCapabilityRestore(supportsStory, savedAnchor);
       }
     };
 
@@ -158,8 +312,42 @@ export default function HomeHeroExperience() {
     return () => {
       reducedMotionMedia.removeEventListener('change', syncStoryCapability);
       cinematicStoryMedia.removeEventListener('change', syncStoryCapability);
+      if (capabilityFrameOneRef.current !== null) {
+        window.cancelAnimationFrame(capabilityFrameOneRef.current);
+      }
+      if (capabilityFrameTwoRef.current !== null) {
+        window.cancelAnimationFrame(capabilityFrameTwoRef.current);
+      }
+      if (capabilityReleaseTimerRef.current !== null) {
+        window.clearTimeout(capabilityReleaseTimerRef.current);
+      }
+      capabilityRestoreRef.current = false;
     };
-  }, [updateStoryStep]);
+  }, [scheduleCapabilityRestore, updateStoryStep]);
+
+  useEffect(() => {
+    const scheduleAnchorCapture = () => {
+      if (capabilityRestoreRef.current || anchorFrameRef.current !== null) return;
+
+      anchorFrameRef.current = window.requestAnimationFrame(() => {
+        anchorFrameRef.current = null;
+        captureViewportAnchor();
+      });
+    };
+
+    captureViewportAnchor();
+    window.addEventListener('scroll', scheduleAnchorCapture, { passive: true });
+    window.addEventListener('pageshow', scheduleAnchorCapture);
+
+    return () => {
+      window.removeEventListener('scroll', scheduleAnchorCapture);
+      window.removeEventListener('pageshow', scheduleAnchorCapture);
+      if (anchorFrameRef.current !== null) {
+        window.cancelAnimationFrame(anchorFrameRef.current);
+        anchorFrameRef.current = null;
+      }
+    };
+  }, [captureViewportAnchor]);
 
   useEffect(() => {
     const syncVisibility = () => setIsPageVisible(!document.hidden);
@@ -264,6 +452,7 @@ export default function HomeHeroExperience() {
         if (nextIndex !== storyStepRef.current) updateStoryStep(nextIndex);
 
         if (shouldClaimControl) {
+          manualControlRef.current = true;
           setHasAutoplayFinished(true);
           setIsManuallyControlled(true);
           setIsPaused(false);
@@ -272,8 +461,12 @@ export default function HomeHeroExperience() {
       });
     };
 
-    const handleScroll = () => scheduleStorySync(true);
+    const handleScroll = () => {
+      if (capabilityRestoreRef.current) return;
+      scheduleStorySync(true);
+    };
     const handleResize = () => {
+      if (capabilityRestoreRef.current) return;
       if (autoplayFinishedRef.current || window.scrollY > 4) {
         scheduleStorySync(window.scrollY > 4);
       }
@@ -284,7 +477,9 @@ export default function HomeHeroExperience() {
     window.addEventListener('resize', handleResize);
     window.addEventListener('pageshow', handlePageShow);
 
-    if (window.scrollY > 4) scheduleStorySync(true);
+    if (window.scrollY > 4 && !capabilityRestoreRef.current) {
+      scheduleStorySync(true);
+    }
 
     return () => {
       window.removeEventListener('scroll', handleScroll);
@@ -355,7 +550,7 @@ export default function HomeHeroExperience() {
         >
           <div className={styles.shell}>
             <div className={styles.storyHeroGrid} onFocusCapture={handleStoryFocus}>
-              <div className={styles.heroCopyDeck}>
+              <div className={styles.heroCopyDeck} data-story-opening>
                 <div
                   className={[styles.storyCopyLayer, styles.heroBrandCopy].join(' ')}
                   aria-hidden="true"
@@ -408,7 +603,7 @@ export default function HomeHeroExperience() {
                 />
               </div>
 
-              <div className={styles.assetStageMotion}>
+              <div className={styles.assetStageMotion} data-story-preview>
                 <HomeAssetPreview
                   activeQuestion={activeQuestion}
                   onQuestionChange={handleQuestionChange}
