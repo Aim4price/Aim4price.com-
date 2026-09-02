@@ -103,8 +103,9 @@ test('original preserves #543 and compact is an explicit homepage-only choice', 
   assert.match(pageStyles, /\.page\[data-home-display-size='compact'\]/);
   assert.doesNotMatch(pageStyles, /data-home-display-size='original'/);
   assert.doesNotMatch(pageStyles, /home-density-/);
-  assert.match(headerStyles, /:global\(\[data-home-display-size='compact'\]\) \.inner/);
-  assert.doesNotMatch(headerStyles, /data-home-display-size='original'/);
+  assert.match(headerStyles, /Homepage display fitting is intentionally scoped to the hero/);
+  assert.doesNotMatch(headerStyles, /data-home-display-size/);
+  assert.match(headerStyles, /\.inner \{[\s\S]*?width: min\(calc\(100% - 3rem\), 1360px\);[\s\S]*?min-height: 5\.75rem/);
 
   const combined = [check, pageStyles, headerStyles].join('\n');
   assert.doesNotMatch(combined, /devicePixelRatio|visualViewport|outerWidth|screen\.width/);
