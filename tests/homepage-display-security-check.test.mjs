@@ -67,6 +67,8 @@ test('the preview is measured on both axes before Continue unlocks', async () =>
   assert.match(check, /getRecommendedSize/);
   assert.match(check, /displayPreferenceRef\.current/);
   assert.match(check, /new ResizeObserver\(scheduleViewportSync\)/);
+  assert.match(check, /window\.addEventListener\('resize', scheduleViewportSync/);
+  assert.match(check, /window\.removeEventListener\('resize', scheduleViewportSync\)/);
   assert.match(check, /window\.addEventListener\('orientationchange', scheduleViewportSync\)/);
   assert.match(check, /window\.addEventListener\('pageshow', scheduleViewportSync\)/);
   assert.match(check, /window\.addEventListener\('focus', scheduleViewportSync\)/);
@@ -88,6 +90,8 @@ test('original preserves #543 and compact is an explicit homepage-only choice', 
   assert.match(check, /LEGACY_DISPLAY_PREFERENCE_KEY = 'aim4price:home-display-preference:v1'/);
   assert.match(check, /window\.localStorage/);
   assert.match(check, /window\.sessionStorage/);
+  assert.match(check, /DISPLAY_STORAGE_BACKEND_KEY/);
+  assert.match(check, /home-display-storage-backend/);
   assert.match(check, /persistDisplayCompletion\(preference\)/);
   assert.match(check, /hasCompletedCheckRef\.current = true/);
   assert.match(check, /LEGACY_DISPLAY_KEYS/);
@@ -121,6 +125,10 @@ test('a materially different or invalid desktop layout reopens the fitment check
   );
   assert.match(check, /window\.setTimeout\([\s\S]*?syncViewport\(\)[\s\S]*?160/);
   assert.match(check, /completion\.completed &&[\s\S]*?savedSize &&[\s\S]*?doesSizeFitViewport\(nextViewport, savedSize\)/);
+  assert.match(
+    check,
+    /if \(isCompleted\) \{[\s\S]*?completed: true, preference: createDisplayPreference\(\)/,
+  );
 });
 
 test('the modal isolates focus and pauses the hero story until it closes', async () => {
@@ -139,7 +147,9 @@ test('the modal isolates focus and pauses the hero story until it closes', async
   assert.match(check, /document\.body\.style\.overflow = 'hidden'/);
   assert.match(check, /if \(event\.key === 'Escape'\)[\s\S]*?useRecommendedSize\(\)/);
   assert.match(check, /event\.key !== 'Tab'/);
-  assert.match(check, /dialogRef\.current\?\.focus\(\)/);
+  assert.match(check, /const firstControl = dialogRef\.current\?\.querySelector/);
+  assert.match(check, /\(firstControl \?\? dialogRef\.current\)\?\.focus\(\)/);
+  assert.match(check, /!isFocusInside \|\| activeElement === dialog \|\| activeElement === first/);
   assert.match(check, /document\.getElementById\('home-hero-title'\)\?\.focus\(\)/);
 
   assert.match(hero, /useHomeDisplayReady\(\)/);
