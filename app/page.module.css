@@ -1,10 +1,16 @@
 .page {
-  --home-shell-max: 1360px;
+  --home-shell-max: var(--site-wide-shell-max, 1360px);
   --home-gutter: var(--shell-gutter, 1.5rem);
+  --app-header-height: 5.75rem;
   min-width: 0;
   min-height: 100vh;
   color: var(--text-strong);
   background: transparent;
+}
+
+.homeMain {
+  min-width: 0;
+  max-width: 100%;
 }
 
 .shell {
@@ -19,7 +25,7 @@
 .heroSection {
   position: relative;
   min-width: 0;
-  scroll-margin-top: 5.75rem;
+  scroll-margin-top: var(--app-header-height);
   isolation: isolate;
 }
 
@@ -2004,6 +2010,12 @@
   }
 }
 
+@media (min-width: 761px) and (max-width: 1180px) {
+  .page {
+    --app-header-height: 7.5rem;
+  }
+}
+
 /* Cinematic layout for sufficiently large, precise-pointer screens only. */
 @media (min-width: 1181px) and (min-height: 700px) and (hover: hover) and (pointer: fine) {
   .heroSection[data-story-capability='cinematic'] .heroStory {
@@ -2375,6 +2387,10 @@
 }
 
 @media (max-width: 760px) {
+  .page {
+    --app-header-height: 4rem;
+  }
+
   .storyHeroGrid {
     gap: 2rem;
     padding-block: 2.25rem 3.5rem;
@@ -2623,7 +2639,7 @@
 /* Role choice is a separate section after the five-card story. */
 .roleSection {
   position: relative;
-  scroll-margin-top: 7rem;
+  scroll-margin-top: calc(var(--app-header-height) + 1rem);
   padding-block: clamp(4rem, 7vw, 6.5rem);
   overflow: hidden;
   border-top: 1px solid rgba(28, 96, 74, 0.07);
