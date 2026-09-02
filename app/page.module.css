@@ -3160,255 +3160,355 @@
   }
 }
 
-/* === Scroll-driven homepage story, September 2026 === */
+/* === Feature-led living record homepage hero, September 2026 === */
 .heroStory {
   position: relative;
-  min-height: calc(100svh - 5.75rem);
+  min-height: 0;
 }
 
 .heroSticky {
+  position: relative;
+  top: auto;
   width: 100%;
+  height: auto;
+  min-height: 0;
+  overflow: hidden;
 }
 
-.heroScrollTrack {
+.heroScrollTrack,
+.heroScrollStep,
+.assetScrollCue {
   display: none;
+}
+
+.heroStory .heroMedia {
+  min-height: clamp(42.5rem, calc(100svh - 5.75rem), 54rem);
+}
+
+.heroStory .heroMedia::after {
+  content: '';
+  position: absolute;
+  z-index: 0;
+  top: 5%;
+  right: -8rem;
+  width: min(54rem, 58vw);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    rgba(169, 230, 204, 0.34) 0%,
+    rgba(210, 243, 228, 0.2) 44%,
+    rgba(241, 251, 246, 0) 72%
+  );
+  filter: blur(0.3rem);
+  pointer-events: none;
+}
+
+.heroStory .heroMedia .shell {
+  width: min(calc(100% - 3rem), 100rem);
+  min-height: inherit;
+}
+
+.heroStory .heroGrid {
+  min-height: inherit;
+  grid-template-columns: minmax(31rem, 37rem) minmax(39rem, 49.5rem);
+  align-content: center;
+  align-items: center;
+  justify-content: space-between;
+  gap: clamp(3.5rem, 5vw, 6rem);
+  padding: clamp(3.5rem, 6vh, 5rem) 0;
+}
+
+.heroStory .heroCopy {
+  width: min(100%, 37rem);
+  max-width: 37rem;
+  align-self: center;
+  transform: none;
 }
 
 .heroCopyState {
   min-width: 0;
+  min-height: 0;
 }
 
-.heroSupport {
-  animation: none;
+.heroPlatformLabel {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  margin: 0 0 1rem;
+  color: #15845f;
+  font-size: 0.76rem;
+  line-height: 1.2;
+  font-weight: 850;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.heroPlatformLabel::before {
+  content: '';
+  width: 2.3rem;
+  height: 0.14rem;
+  border-radius: 999px;
+  background: #1aa675;
+}
+
+.heroStory .heroTitle {
+  max-width: 37rem;
+  margin: 0;
+  font-size: clamp(3.15rem, 3.4vw, 3.65rem);
+  line-height: 0.98;
+  letter-spacing: -0.057em;
+  text-wrap: balance;
+}
+
+.heroStory .heroTitleLine {
+  display: block;
+  white-space: nowrap;
+}
+
+.heroStory .heroTitleLine + .heroTitleLine {
+  margin-top: 0.09em;
+  letter-spacing: -0.048em;
+}
+
+.heroStory .heroText {
+  max-width: 34rem;
+  min-height: 0;
+  margin-top: 1.45rem;
+  color: #52645d;
+  font-size: clamp(1rem, 1.08vw, 1.14rem);
+  line-height: 1.62;
+  text-wrap: pretty;
+}
+
+.heroStory .heroActions {
+  gap: 0.85rem;
+  margin-top: 1.65rem;
+}
+
+.heroStory .primaryCta,
+.heroStory .secondaryCta {
+  min-width: 0;
+  min-height: 3.35rem;
+  box-sizing: border-box;
+  padding-inline: 1.35rem;
+  border-radius: 0.8rem;
+}
+
+.heroStory .primaryCta {
+  width: 14.4rem;
+  appearance: none;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.heroStory .secondaryCta {
+  width: 12.25rem;
+}
+
+.heroAudienceCta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-top: 1.05rem;
+  color: #176f53;
+  font-size: 0.86rem;
+  line-height: 1.4;
+  font-weight: 750;
+  text-underline-offset: 0.18em;
+}
+
+.heroAudienceCta span {
+  transition: transform 180ms ease;
+}
+
+.heroAudienceCta:hover span {
+  transform: translateX(0.18rem);
+}
+
+.heroStory .heroSectors {
+  margin-top: 1.35rem;
+}
+
+.heroStory .assetHeroStage {
+  width: min(100%, 49.5rem);
+  max-width: 49.5rem;
+  align-self: center;
+  justify-self: center;
+  transform: none;
+}
+
+.heroStory .assetHeroStage::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  top: 3%;
+  right: 3.5rem;
+  bottom: 10%;
+  left: 4.8rem;
+  border-radius: 2.5rem;
+  background: rgba(52, 174, 126, 0.12);
+  filter: blur(2.4rem);
+  pointer-events: none;
+}
+
+.heroStory .assetQuestionGroup {
+  top: 0;
+  right: auto;
+  bottom: 4.65rem;
+  left: 0;
+  width: 4.5rem;
+}
+
+.heroStory .assetQuestion {
+  --question-size: 3.05rem;
+}
+
+.heroStory .assetQuestionActive {
+  --question-size: 3.35rem;
+}
+
+.heroStory .assetQuestion:not(.assetQuestionActive) .assetQuestionBubble,
+.heroStory .assetQuestion:not(.assetQuestionActive) .assetQuestionBubble svg,
+.heroStory .assetQuestionActive .assetQuestionBubble,
+.heroStory .assetQuestionActive .assetQuestionBubble svg {
+  position: static;
+  top: auto;
+}
+
+.heroStory .assetQuestion:not(.assetQuestionActive) .assetQuestionBubble {
+  width: var(--question-size);
+}
+
+.heroStory .assetQuestion:not(.assetQuestionActive) .assetQuestionBubble svg,
+.heroStory .assetQuestionActive .assetQuestionBubble svg {
+  width: 1.22rem;
+  height: 1.22rem;
+  stroke-width: 1.7;
+}
+
+.heroStory .assetQuestionActive .assetQuestionBubble {
+  transform: scale(1.025);
+}
+
+.heroStory .assetPreviewCard {
+  top: 0;
+  right: 4.85rem;
+  bottom: 4.65rem;
+  left: 6rem;
+  border-color: rgba(119, 194, 159, 0.88);
+  box-shadow:
+    0 24px 54px rgba(20, 62, 49, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96);
+}
+
+.heroStory .assetActiveQuestion {
+  top: -4.25rem;
+  right: 4.85rem;
+  bottom: auto;
+  left: 6rem;
+  min-height: 3.6rem;
+  grid-template-rows: auto auto;
+  gap: 0.34rem;
+  padding: 0;
+}
+
+.heroStory .assetActiveQuestionMain {
+  font-size: 1.08rem;
+}
+
+.heroStory .assetPreviewState {
+  width: 100%;
+  flex: 1 1 auto;
+  animation: heroPreviewReveal 440ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 .assetStoryProgress {
   display: inline-flex;
-  min-height: 0.2rem;
+  min-height: 0.22rem;
   align-items: center;
   justify-content: center;
   gap: 0.38rem;
 }
 
 .assetStoryProgress > span {
+  position: relative;
   display: block;
   width: 0.82rem;
-  height: 0.16rem;
+  height: 0.17rem;
+  overflow: hidden;
   border-radius: 999px;
   background: rgba(55, 161, 121, 0.2);
-  transition: none;
+  transition:
+    width 180ms ease,
+    background 180ms ease;
 }
 
 .assetStoryProgress > .assetStoryProgressActive {
-  width: 1.2rem;
+  width: 1.45rem;
   background: #169d6f;
   box-shadow: 0 4px 10px rgba(22, 157, 111, 0.18);
 }
 
-.assetScrollCue {
-  display: inline-grid;
-  width: 1.25rem;
-  height: 1rem;
-  place-items: center;
-  color: rgba(13, 91, 67, 0.55);
-  transition: none;
+.heroSection[data-autoplay='true'] .assetStoryProgress > .assetStoryProgressActive {
+  background: rgba(22, 157, 111, 0.2);
 }
 
-.assetScrollCue svg {
-  width: 100%;
-  height: 100%;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
+.heroSection[data-autoplay='true'] .assetStoryProgress > .assetStoryProgressActive::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: #169d6f;
+  transform-origin: left center;
+  animation: heroProgressFill 2800ms linear both;
 }
 
-.assetHeroStage[data-active-question='attention'] .assetScrollCue {
-  opacity: 0;
-  transform: none;
-}
-
-@media (min-width: 1181px) {
-  .heroStory {
-    min-height: calc(340svh - 5.75rem);
+@keyframes heroPreviewReveal {
+  from {
+    opacity: 0;
+    transform: translateY(0.55rem) scale(0.992);
   }
 
-  .heroSticky {
-    position: sticky;
-    z-index: 2;
-    top: 5.75rem;
-    height: calc(100svh - 5.75rem);
-    min-height: 34rem;
-    overflow: clip;
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes heroProgressFill {
+  from {
+    transform: scaleX(0);
   }
 
-  .heroScrollTrack {
-    position: absolute;
-    z-index: 0;
-    inset: 0;
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@media (min-width: 1361px) and (max-width: 1479px) {
+  .heroStory .assetPreviewIdentity {
+    width: auto;
+  }
+
+  .heroStory .assetPreviewAside {
+    min-width: 11.5rem;
+  }
+
+  .heroStory .assetPreviewActions {
     display: grid;
-    grid-template-rows: repeat(5, minmax(0, 1fr));
-    pointer-events: none;
+    width: 100%;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
-  .heroScrollStep {
-    min-height: 0;
-  }
-
-  .heroSticky .shell {
-    width: min(calc(100% - 4rem), 84rem);
-    height: 100%;
-  }
-
-  .heroStory .heroGrid {
-    height: 100%;
-    min-height: 0;
-    grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
-    align-content: center;
-    align-items: start;
-    justify-content: space-between;
-    gap: 4rem;
-    padding: clamp(2.25rem, 4vh, 3rem) 0;
-  }
-
-  .heroStory .heroCopy {
-    width: min(100%, 36rem);
-    max-width: 36rem;
-    align-self: start;
-    transform: none;
-  }
-
-  .heroCopyState {
-    min-height: 15.9rem;
-  }
-
-  .heroStory .heroTitle {
-    max-width: 36rem;
-    font-size: 3.45rem;
-    line-height: 0.95;
-    letter-spacing: -0.058em;
-  }
-
-  .heroStory .heroTitleLine {
-    animation: none;
-  }
-
-  .heroStory .heroTitleLine + .heroTitleLine {
-    margin-top: 0.12em;
-    letter-spacing: -0.04em;
-  }
-
-  .heroStory .heroText {
-    max-width: 30rem;
-    min-height: 4.15rem;
-    margin-top: 1.45rem;
-    font-size: clamp(1.02rem, 1.24vw, 1.2rem);
-    line-height: 1.55;
-    animation: none;
-  }
-
-  .heroStory .heroActions {
-    margin-top: 1.75rem;
-  }
-
-  .heroStory .heroSectors {
-    margin-top: 1.45rem;
-  }
-
-  .heroStory .assetHeroStage {
-    width: min(100%, 44rem);
-    max-width: 44rem;
-    aspect-ratio: 1000 / 650;
-    align-self: start;
-    justify-self: center;
-    transform: none;
-  }
-
-  .heroStory .assetHeroStage::before {
-    content: '';
-    position: absolute;
-    z-index: -1;
-    top: 5%;
-    right: 4.2rem;
-    bottom: 12%;
-    left: 5.2rem;
-    border-radius: 2.4rem;
-    background: rgba(59, 173, 129, 0.11);
-    filter: blur(2.2rem);
-    pointer-events: none;
-  }
-
-  .heroStory .assetQuestionGroup {
-    top: 0;
-    right: auto;
-    bottom: 4.65rem;
-    left: 0;
-    width: 4.5rem;
-  }
-
-  .heroStory .assetPreviewCard {
-    top: 0;
-    right: 5.1rem;
-    bottom: 4.65rem;
-    left: 6rem;
-  }
-
-  .heroStory .assetActiveQuestion {
-    right: 5.1rem;
-    bottom: -0.1rem;
-    left: 6rem;
-    min-height: 4.55rem;
-    grid-template-rows: auto auto auto;
-    gap: 0.28rem;
-    padding-top: 0.22rem;
-  }
-
-  .heroStory .assetActiveQuestionMain {
-    font-size: 1.08rem;
-  }
-
-  .heroStory .assetActiveQuestionMain svg {
-    width: 1.5rem;
-    height: 1.5rem;
-  }
-
-  .heroStory .assetPreviewState {
-    animation: none;
-  }
-
-  .heroStory .assetQuestionActive .assetQuestionBubble {
-    animation: none;
-  }
-}
-
-@media (min-width: 1361px) and (max-width: 1600px) {
-  .heroSticky .shell {
-    width: min(calc(100% - 4rem), 84rem);
-  }
-
-  .heroStory .heroGrid {
-    grid-template-columns: minmax(31rem, 36rem) minmax(40rem, 44rem);
-    gap: 4rem;
-  }
-
-  .heroStory .heroTitle {
-    max-width: 36rem;
-    font-size: 3.45rem;
-  }
-
-  .heroStory .heroCopy {
-    width: min(100%, 36rem);
-    max-width: 36rem;
-  }
-
-  .heroStory .assetHeroStage {
-    width: min(100%, 44rem);
+  .heroStory .assetPreviewActions span {
+    width: auto;
+    padding-inline: 0.35rem;
   }
 }
 
 @media (min-width: 1181px) and (max-width: 1360px) {
-  .heroSticky .shell {
+  .heroStory .heroMedia .shell {
     width: min(calc(100% - 3rem), 84rem);
   }
 
@@ -3417,252 +3517,162 @@
     gap: clamp(2.5rem, 3.5vw, 4rem);
   }
 
-  .heroStory .heroCopy {
+  .heroStory .heroCopy,
+  .heroStory .heroTitle {
     width: min(100%, 31rem);
     max-width: 31rem;
   }
 
   .heroStory .heroTitle {
-    max-width: 31rem;
-    font-size: clamp(3.35rem, 4.25vw, 3.7rem);
+    font-size: clamp(2.9rem, 3.65vw, 3.25rem);
   }
 
-  .heroCopyState {
-    min-height: 14.5rem;
+  .heroStory .heroText {
+    max-width: 30rem;
   }
 
   .heroStory .assetHeroStage {
     width: min(100%, 44rem);
-  }
-}
-
-@media (min-width: 1181px) {
-  .heroSection[data-active-question='attention'] .heroTitle {
-    font-size: 3.05rem;
-  }
-}
-
-@media (max-width: 1180px) {
-  .heroStory {
-    min-height: 0;
+    max-width: 44rem;
   }
 
-  .heroSticky {
-    position: relative;
-    top: auto;
-    height: auto;
-    min-height: 0;
-    overflow: hidden;
-  }
-
-  .heroStory .heroGrid {
-    grid-template-columns: minmax(0, 1fr);
-    align-items: start;
-    gap: clamp(2.25rem, 4vw, 3rem);
-  }
-
-  .heroCopyState {
-    min-height: 13.5rem;
-  }
-
-  .heroStory .heroTitleLine {
-    animation: none;
-  }
-
-  .heroStory .heroText {
-    min-height: 3.5rem;
-    animation: none;
-  }
-
-  .assetScrollCue {
-    display: none;
-  }
-}
-
-@media (max-width: 760px) {
-  .heroCopyState {
-    min-height: 0;
-  }
-
-  .heroStory .heroText {
-    min-height: 0;
-  }
-
-  .assetStoryProgress {
-    margin-top: 0.1rem;
-  }
-
-}
-
-@media (max-width: 640px) {
-  .assetPreviewCard,
-  .assetPreviewCard[data-active-question='attention'] {
-    min-height: clamp(24rem, 112vw, 29rem);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .heroStory {
-    min-height: 0;
-  }
-
-  .heroSticky {
-    position: relative;
-    top: auto;
-    height: auto;
-    min-height: 0;
-  }
-
-  .heroScrollTrack {
-    display: none;
-  }
-
-  .heroCopyState,
-  .heroTitleLine,
-  .heroText,
-  .heroSupport,
-  .assetPreviewState,
-  .assetQuestionBubble,
-  .assetStoryProgress > span,
-  .assetScrollCue {
-    animation: none !important;
-    transition: none !important;
-    transform: none !important;
-  }
-}
-
-/* Five-question hero refinement: icon rail at right, active question below the preview. */
-@media (min-width: 1181px) and (max-width: 1600px) {
-  .heroMedia .shell {
-    width: min(calc(100% - 4rem), 84rem);
-  }
-
-  .assetHeroStage {
-    width: min(100%, 44rem);
-  }
-
-  .heroTitle {
-    font-size: 3.45rem;
-  }
-}
-
-@media (min-width: 1361px) {
-  .assetHeroStage {
-    transform: none;
-  }
-
-  .assetQuestion {
-    --question-size: 3.05rem;
-  }
-
-  .assetQuestionActive {
-    --question-size: 3.35rem;
-  }
-
-  .assetQuestion:not(.assetQuestionActive) .assetQuestionBubble,
-  .assetQuestion:not(.assetQuestionActive) .assetQuestionBubble svg,
-  .assetQuestionActive .assetQuestionBubble,
-  .assetQuestionActive .assetQuestionBubble svg {
-    position: static;
-    top: auto;
-  }
-
-  .assetQuestion:not(.assetQuestionActive) .assetQuestionBubble {
-    width: var(--question-size);
-  }
-
-  .assetQuestion:not(.assetQuestionActive) .assetQuestionBubble svg,
-  .assetQuestionActive .assetQuestionBubble svg {
-    width: 1.22rem;
-    height: 1.22rem;
-    stroke-width: 1.7;
-  }
-
-  .assetPreviewCard {
-    top: 0;
-  }
-}
-
-@media (max-width: 1360px) {
-  .heroGrid {
-    grid-template-columns: minmax(30rem, 31rem) minmax(34rem, 44rem);
-    gap: clamp(5rem, 5vw, 6rem);
-  }
-
-  .assetHeroStage {
-    width: min(100%, 44rem);
-    transform: none;
-  }
-
-  .assetQuestion {
+  .heroStory .assetQuestion {
     --question-size: 2.78rem;
   }
 
-  .assetQuestionActive {
+  .heroStory .assetQuestionActive {
     --question-size: 3.02rem;
   }
-
 }
 
 @media (max-width: 1180px) {
-  .heroMedia .shell {
+  .heroStory .heroMedia {
+    min-height: 0;
+  }
+
+  .heroStory .heroMedia .shell {
     width: var(--shell-width);
   }
 
-  .heroGrid {
+  .heroStory .heroGrid {
+    min-height: 0;
     grid-template-columns: minmax(0, 1fr);
-    gap: clamp(2rem, 4vw, 3rem);
+    align-items: start;
+    gap: clamp(2.4rem, 5vw, 3.4rem);
+    padding: clamp(3rem, 6vw, 4.5rem) 0;
   }
 
-  .assetHeroStage {
+  .heroStory .heroCopy,
+  .heroStory .heroTitle {
+    width: auto;
+    max-width: 48rem;
+  }
+
+  .heroStory .heroTitle {
+    font-size: clamp(3.15rem, 6vw, 4.4rem);
+  }
+
+  .heroStory .heroText {
+    max-width: 43rem;
+  }
+
+  .heroStory .assetHeroStage {
     width: min(100%, 48rem);
+    max-width: 48rem;
     margin-inline: auto;
-    justify-self: center;
+    align-self: start;
+  }
+
+  .heroStory .assetActiveQuestion {
+    top: auto;
+    right: 4.85rem;
+    bottom: 0;
+    left: 6rem;
+    min-height: 4rem;
   }
 }
 
 @media (max-width: 760px) {
-  .assetHeroStage {
-    display: grid;
-    aspect-ratio: auto;
-    gap: 0.9rem;
+  .heroStory .heroGrid {
+    gap: 2.5rem;
+    padding: 2.6rem 0 3rem;
   }
 
-  .assetQuestionGroup {
+  .heroPlatformLabel {
+    margin-bottom: 0.85rem;
+    font-size: 0.7rem;
+  }
+
+  .heroStory .heroTitle {
+    font-size: clamp(2.05rem, 8.2vw, 3.55rem);
+  }
+
+  .heroStory .heroTitleLine {
+    white-space: normal;
+  }
+
+  .heroStory .heroText {
+    margin-top: 1.25rem;
+    font-size: clamp(0.96rem, 3.35vw, 1.08rem);
+    line-height: 1.56;
+  }
+
+  .heroStory .heroActions {
+    display: grid;
+    width: min(100%, 34rem);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .heroStory .primaryCta,
+  .heroStory .secondaryCta {
+    width: 100%;
+    min-height: var(--tap-target-min, 44px);
+    padding-inline: 0.7rem;
+    text-align: center;
+  }
+
+  .heroAudienceCta {
+    margin-top: 1rem;
+  }
+
+  .heroStory .assetHeroStage {
+    display: grid;
+    aspect-ratio: auto;
+    gap: 0.8rem;
+  }
+
+  .heroStory .assetQuestionGroup {
     position: relative;
-    top: auto;
-    right: auto;
-    bottom: auto;
+    inset: auto;
     display: grid;
     width: 100%;
     grid-template-columns: repeat(5, minmax(0, 1fr));
-    grid-template-rows: minmax(4.8rem, auto);
+    grid-template-rows: minmax(4.6rem, auto);
     gap: 0.2rem;
     order: 2;
   }
 
-  .assetQuestion {
+  .heroStory .assetQuestion {
     --question-size: 2.65rem;
     position: relative;
     inset: auto;
   }
 
-  .assetQuestionActive {
+  .heroStory .assetQuestionActive {
     --question-size: 2.88rem;
   }
 
-  .assetPreviewCard {
+  .heroStory .assetPreviewCard {
     position: relative;
     inset: auto;
-    min-height: 22rem;
+    height: clamp(22rem, 64vw, 28rem);
+    min-height: clamp(22rem, 64vw, 28rem);
     order: 1;
   }
 
-  .assetActiveQuestion {
+  .heroStory .assetActiveQuestion {
     position: relative;
-    right: auto;
-    bottom: auto;
-    left: auto;
+    inset: auto;
     min-height: 3.2rem;
     order: 3;
   }
@@ -3691,32 +3701,35 @@
 }
 
 @media (max-width: 640px) {
-  .assetQuestionGroup {
-    grid-template-columns: repeat(6, minmax(0, 1fr));
-    grid-template-rows: repeat(2, minmax(4.6rem, auto));
-    gap: 0.4rem;
+  .heroStory .heroActions {
+    width: 100%;
+    grid-template-columns: minmax(0, 1fr);
   }
 
-  .assetQuestion {
+  .heroStory .assetQuestionGroup {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    grid-template-rows: repeat(2, minmax(4.5rem, auto));
+    gap: 0.35rem;
+  }
+
+  .heroStory .assetQuestion {
     --question-size: 2.55rem;
     width: 100%;
     grid-column: span 2;
   }
 
-  .assetQuestion:nth-child(4) {
+  .heroStory .assetQuestion:nth-child(4) {
     grid-column: 2 / span 2;
   }
 
-  .assetQuestionActive {
+  .heroStory .assetQuestionActive {
     --question-size: 2.78rem;
   }
 
-  .assetPreviewCard {
-    min-height: 24rem;
-  }
-
-  .assetPreviewCard[data-active-question='attention'] {
-    min-height: 29rem;
+  .heroStory .assetPreviewCard,
+  .heroStory .assetPreviewCard[data-active-question='attention'] {
+    height: clamp(24rem, 112vw, 29rem);
+    min-height: clamp(24rem, 112vw, 29rem);
   }
 
   .worthPreview {
@@ -3757,15 +3770,19 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .assetPreviewState {
+  .heroStory .assetPreviewState,
+  .heroSection[data-autoplay='true'] .assetStoryProgress > .assetStoryProgressActive::after {
     animation: none;
   }
 
-  .assetQuestionBubble {
+  .heroStory .assetQuestionBubble,
+  .heroStory .assetStoryProgress > span,
+  .heroAudienceCta span {
     transition: none;
   }
 
-  .assetQuestion:hover .assetQuestionBubble {
+  .heroStory .assetQuestion:hover .assetQuestionBubble,
+  .heroAudienceCta:hover span {
     transform: none;
   }
 }
@@ -3786,95 +3803,5 @@
   .issueCard,
   .serviceCard {
     border: 1px solid CanvasText;
-  }
-}
-
-/* Final cascade guard for the scroll-story composition. */
-@media (min-width: 1181px) {
-  .heroStory .heroSticky .shell {
-    width: min(calc(100% - 4rem), 84rem);
-  }
-
-  .heroStory .heroGrid {
-    grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
-    gap: 4rem;
-  }
-
-  .heroStory .heroCopy {
-    width: min(100%, 36rem);
-    max-width: 36rem;
-  }
-
-  .heroStory .heroCopyState {
-    min-height: 12.5rem;
-  }
-
-  .heroStory .heroActions {
-    margin-top: 1.1rem;
-  }
-
-  .heroStory .heroTitle {
-    max-width: 36rem;
-    font-size: 3.45rem;
-  }
-
-  .heroStory .assetHeroStage {
-    width: min(100%, 44rem);
-    max-width: 44rem;
-  }
-
-  .heroStory .assetQuestionGroup {
-    right: auto;
-    left: 0;
-  }
-
-  .heroStory .assetActiveQuestion {
-    top: -4.25rem;
-    bottom: auto;
-  }
-}
-
-@media (min-width: 1361px) {
-  .heroStory .heroGrid {
-    top: clamp(0.75rem, 4vh, 1.75rem);
-  }
-
-  .heroStory .heroCopy,
-  .heroStory .assetHeroStage {
-    transform: translateX(3.25rem);
-  }
-}
-
-@media (min-width: 761px) and (max-width: 1180px) {
-  .heroStory .assetQuestionGroup {
-    right: auto;
-    left: 0;
-  }
-}
-
-.heroStory .heroTitleLine,
-.heroStory .heroText,
-.heroStory .heroSupport,
-.heroStory .assetPreviewState,
-.heroStory .assetQuestion,
-.heroStory .assetQuestionBubble,
-.heroStory .assetStoryProgress > span,
-.heroStory .assetScrollCue,
-.heroStory .primaryCta,
-.heroStory .secondaryCta {
-  animation: none !important;
-  transition: none !important;
-}
-
-.heroStory .assetQuestion:hover .assetQuestionBubble,
-.heroStory .primaryCta:hover,
-.heroStory .secondaryCta:hover {
-  transform: none;
-}
-
-@media (max-width: 640px) {
-  .heroStory .assetPreviewCard,
-  .heroStory .assetPreviewCard[data-active-question='attention'] {
-    min-height: clamp(24rem, 112vw, 29rem);
   }
 }

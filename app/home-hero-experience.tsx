@@ -6,124 +6,113 @@ import HomeAssetPreview, { type QuestionKey } from './home-asset-preview';
 import styles from './page.module.css';
 
 const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
-const DESKTOP_STORY_QUERY = '(min-width: 1181px)';
+export const HERO_AUTOPLAY_DELAY_MS = 1000;
+export const HERO_STAGE_DURATION_MS = 2800;
 
-type HeroStage = {
-  key: QuestionKey;
-  titleLines: readonly [string, string];
-  description: string;
-};
-
-export const HERO_STAGES: readonly HeroStage[] = [
-  {
-    key: 'have',
-    titleLines: ['Everything you own.', 'One living record.'],
-    description: 'Know what you have, where it is and whether its record is complete.',
-  },
-  {
-    key: 'worth',
-    titleLines: ['Know what it’s worth.', 'At every stage.'],
-    description: 'Follow its value over time and keep a clear valuation report ready.',
-  },
-  {
-    key: 'manage',
-    titleLines: ['Manage every asset.', 'From one place.'],
-    description: 'Update records, capture costs, schedule maintenance, map, share or sell.',
-  },
-  {
-    key: 'cost',
-    titleLines: ['Know what every asset', 'really costs.'],
-    description: 'Bring fuel, maintenance, repairs and ownership costs into one clear view.',
-  },
-  {
-    key: 'attention',
-    titleLines: ['See what needs attention.', 'Before it costs you.'],
-    description: 'Spot open issues, expired items and upcoming maintenance early.',
-  },
+export const HERO_STAGES: readonly QuestionKey[] = [
+  'have',
+  'worth',
+  'cost',
+  'manage',
+  'attention',
 ];
 
 export default function HomeHeroExperience() {
   const [activeQuestion, setActiveQuestion] = useState<QuestionKey>('have');
-  const [isDesktopStory, setIsDesktopStory] = useState(false);
-  const stepRefs = useRef<Array<HTMLDivElement | null>>([]);
+  const [canAutoplay, setCanAutoplay] = useState(true);
+  const [isAutoplaying, setIsAutoplaying] = useState(false);
+  const [playbackId, setPlaybackId] = useState(0);
+  const hasAutoStarted = useRef(false);
 
   useEffect(() => {
     const reducedMotionMedia = window.matchMedia(REDUCED_MOTION_QUERY);
-    const desktopStoryMedia = window.matchMedia(DESKTOP_STORY_QUERY);
 
-    const syncMediaPreferences = () => {
-      setIsDesktopStory(
-        desktopStoryMedia.matches
-          && !reducedMotionMedia.matches
-          && 'IntersectionObserver' in window,
-      );
+    const syncMotionPreference = () => {
+      const shouldAutoplay = !reducedMotionMedia.matches;
+      setCanAutoplay(shouldAutoplay);
+
+      if (!shouldAutoplay) setIsAutoplaying(false);
     };
 
-    syncMediaPreferences();
-    reducedMotionMedia.addEventListener('change', syncMediaPreferences);
-    desktopStoryMedia.addEventListener('change', syncMediaPreferences);
+    syncMotionPreference();
+    reducedMotionMedia.addEventListener('change', syncMotionPreference);
 
-    return () => {
-      reducedMotionMedia.removeEventListener('change', syncMediaPreferences);
-      desktopStoryMedia.removeEventListener('change', syncMediaPreferences);
-    };
+    return () => reducedMotionMedia.removeEventListener('change', syncMotionPreference);
   }, []);
 
   useEffect(() => {
-    if (!isDesktopStory) return undefined;
+    if (!canAutoplay || hasAutoStarted.current) return undefined;
 
-    const intersectionRatios = new Map<Element, number>();
-    const observer = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) {
-          intersectionRatios.set(entry.target, entry.isIntersecting ? entry.intersectionRatio : 0);
-        }
+    const startTimer = window.setTimeout(() => {
+      if (hasAutoStarted.current) return;
 
-        const visibleStep = stepRefs.current
-          .filter((step): step is HTMLDivElement => Boolean(step))
-          .filter((step) => (intersectionRatios.get(step) ?? 0) > 0)
-          .sort((left, right) => {
-            const ratioDifference =
-              (intersectionRatios.get(right) ?? 0) - (intersectionRatios.get(left) ?? 0);
+      hasAutoStarted.current = true;
+      setActiveQuestion('have');
+      setIsAutoplaying(true);
+    }, HERO_AUTOPLAY_DELAY_MS);
 
-            if (ratioDifference !== 0) return ratioDifference;
+    return () => window.clearTimeout(startTimer);
+  }, [canAutoplay]);
 
-            const viewportMiddle = window.innerHeight / 2;
-            const leftRect = left.getBoundingClientRect();
-            const rightRect = right.getBoundingClientRect();
-            const leftDistance = Math.abs(leftRect.top + leftRect.height / 2 - viewportMiddle);
-            const rightDistance = Math.abs(rightRect.top + rightRect.height / 2 - viewportMiddle);
-            return leftDistance - rightDistance;
-          })[0];
+  useEffect(() => {
+    const pauseWhenHidden = () => {
+      if (!document.hidden) return;
 
-        const nextQuestion = visibleStep?.dataset.heroStage as QuestionKey | undefined;
-        if (nextQuestion) setActiveQuestion(nextQuestion);
-      },
-      {
-        root: null,
-        rootMargin: '-44% 0px -44% 0px',
-        threshold: [0, 0.01, 0.5, 1],
-      },
-    );
+      hasAutoStarted.current = true;
+      setIsAutoplaying(false);
+    };
 
-    stepRefs.current.forEach((step) => {
-      if (step) observer.observe(step);
-    });
+    document.addEventListener('visibilitychange', pauseWhenHidden);
 
-    return () => observer.disconnect();
-  }, [isDesktopStory]);
+    return () => document.removeEventListener('visibilitychange', pauseWhenHidden);
+  }, []);
 
-  const activeStage = HERO_STAGES.find(({ key }) => key === activeQuestion) ?? HERO_STAGES[0]!;
+  useEffect(() => {
+    if (!canAutoplay || !isAutoplaying) return undefined;
 
-  const handleQuestionChange = (question: QuestionKey, index: number) => {
+    const activeIndex = HERO_STAGES.indexOf(activeQuestion);
+    const stageTimer = window.setTimeout(() => {
+      if (activeIndex >= HERO_STAGES.length - 1) {
+        setIsAutoplaying(false);
+        return;
+      }
+
+      setActiveQuestion(HERO_STAGES[activeIndex + 1]!);
+    }, HERO_STAGE_DURATION_MS);
+
+    return () => window.clearTimeout(stageTimer);
+  }, [activeQuestion, canAutoplay, isAutoplaying, playbackId]);
+
+  const handleQuestionChange = (question: QuestionKey, _index: number) => {
+    hasAutoStarted.current = true;
+    setIsAutoplaying(false);
     setActiveQuestion(question);
+  };
 
-    if (!isDesktopStory) return;
+  const handleDemoAction = () => {
+    hasAutoStarted.current = true;
 
-    stepRefs.current[index]?.scrollIntoView({
-      behavior: 'auto',
-      block: 'center',
-    });
+    if (isAutoplaying) {
+      setIsAutoplaying(false);
+      return;
+    }
+
+    setPlaybackId((currentId) => currentId + 1);
+
+    if (!canAutoplay) {
+      const activeIndex = HERO_STAGES.indexOf(activeQuestion);
+      const nextIndex = (activeIndex + 1) % HERO_STAGES.length;
+      setActiveQuestion(HERO_STAGES[nextIndex]!);
+      return;
+    }
+
+    setActiveQuestion('have');
+    setIsAutoplaying(true);
+  };
+
+  const handlePreviewInteraction = () => {
+    hasAutoStarted.current = true;
+    setIsAutoplaying(false);
   };
 
   return (
@@ -131,33 +120,51 @@ export default function HomeHeroExperience() {
       className={styles.heroSection}
       aria-labelledby="home-hero-title"
       data-active-question={activeQuestion}
+      data-autoplay={isAutoplaying ? 'true' : 'false'}
     >
       <div className={styles.heroStory}>
-        <div className={`${styles.heroMedia} ${styles.heroSticky}`}>
+        <div className={[styles.heroMedia, styles.heroSticky].join(' ')}>
           <div className={styles.shell}>
             <div className={styles.heroGrid}>
               <div className={styles.heroCopy}>
-                <div key={activeStage.key} className={styles.heroCopyState}>
+                <div className={styles.heroCopyState}>
+                  <p className={styles.heroPlatformLabel}>One living record per asset</p>
+
                   <h1 id="home-hero-title" className={styles.heroTitle}>
-                    {activeStage.titleLines.map((line) => (
-                      <span key={line} className={styles.heroTitleLine}>
-                        {line}
-                      </span>
-                    ))}
+                    <span className={styles.heroTitleLine}>Know what you have.</span>
+                    <span className={styles.heroTitleLine}>Know what it’s worth.</span>
+                    <span className={styles.heroTitleLine}>Know what it costs.</span>
                   </h1>
 
-                  <p className={styles.heroText}>{activeStage.description}</p>
+                  <p className={styles.heroText}>
+                    Aim4price gives every important asset one living digital record—connecting
+                    its identity, indicative value, documents, maintenance, fuel, costs and
+                    history throughout its working life.
+                  </p>
                 </div>
 
                 <div className={styles.heroSupport}>
                   <div className={styles.heroActions}>
-                    <Link href="/valuation" className={styles.primaryCta}>
-                      Get Free Estimate
+                    <button
+                      type="button"
+                      className={styles.primaryCta}
+                      onClick={handleDemoAction}
+                    >
+                      {!canAutoplay
+                        ? 'Show Next Feature'
+                        : isAutoplaying
+                          ? 'Pause Animation'
+                          : 'See Aim4price in Action'}
+                    </button>
+                    <Link href="/valuation" className={styles.secondaryCta}>
+                      Get a Free Estimate
                     </Link>
-                    <a href="#choose-role" className={styles.secondaryCta}>
-                      See How It Works
-                    </a>
                   </div>
+
+                  <a href="#choose-role" className={styles.heroAudienceCta}>
+                    Choose how you’ll use Aim4price
+                    <span aria-hidden="true">→</span>
+                  </a>
 
                   <p className={styles.heroSectors}>
                     <span>Agriculture</span>
@@ -169,24 +176,13 @@ export default function HomeHeroExperience() {
               </div>
 
               <HomeAssetPreview
+                key={playbackId}
                 activeQuestion={activeQuestion}
                 onQuestionChange={handleQuestionChange}
+                onInteraction={handlePreviewInteraction}
               />
             </div>
           </div>
-        </div>
-
-        <div className={styles.heroScrollTrack} aria-hidden="true">
-          {HERO_STAGES.map((stage, index) => (
-            <div
-              key={stage.key}
-              ref={(element) => {
-                stepRefs.current[index] = element;
-              }}
-              className={styles.heroScrollStep}
-              data-hero-stage={stage.key}
-            />
-          ))}
         </div>
       </div>
     </section>

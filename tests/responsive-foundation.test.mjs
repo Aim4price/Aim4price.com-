@@ -64,50 +64,52 @@ test('website sign-out stays separate from installable app sessions and verifies
   assert.match(headerClient, /clearCachedHeaderSession\(\)[\s\S]*?window\.location\.replace\('\/auth#login'\)/);
 });
 
-test('home page keeps the Asset Register hero usable at phone and tablet widths', async () => {
+test('home page keeps the feature-led Asset Register hero usable at desktop, tablet and phone widths', async () => {
   const [home, hero] = await Promise.all([
     read('app/page.module.css'),
     read('app/home-hero-experience.tsx'),
   ]);
-  const storyStart = home.indexOf('/* === Scroll-driven homepage story, September 2026 === */');
-  const followingLegacyBlock = home.indexOf('/* Five-question hero refinement', storyStart);
-  const story = home.slice(
-    storyStart,
-    followingLegacyBlock === -1 ? undefined : followingLegacyBlock,
+  const featureStart = home.indexOf(
+    '/* === Feature-led living record homepage hero, September 2026 === */',
   );
+  const feature = home.slice(featureStart);
 
+  assert.ok(featureStart >= 0);
   assert.match(home, /Living Asset Record homepage hero, September 2026/);
-  assert.ok(storyStart >= 0);
-  assert.match(hero, /const DESKTOP_STORY_QUERY = '\(min-width: 1181px\)'/);
-  assert.match(hero, /setIsDesktopStory\([\s\S]*?desktopStoryMedia\.matches[\s\S]*?!reducedMotionMedia\.matches/);
-  assert.match(hero, /behavior: 'auto'/);
-  assert.doesNotMatch(hero, /behavior: 'smooth'|prefersReducedMotion|--hero-line-index/);
-  assert.match(story, /@media \(min-width: 1181px\)[\s\S]*?\.heroSticky \{[\s\S]*?position: sticky/);
-  assert.match(story, /@media \(min-width: 1181px\)[\s\S]*?\.heroScrollTrack \{[\s\S]*?grid-template-rows: repeat\(5, minmax\(0, 1fr\)\)/);
-  assert.match(story, /\.heroStory \.heroGrid \{[\s\S]*?align-items: start/);
-  assert.match(story, /\.heroStory \.heroCopy \{[\s\S]*?align-self: start/);
-  assert.match(story, /\.heroStory \.assetHeroStage \{[\s\S]*?align-self: start/);
-  assert.match(story, /\.heroSticky \.shell \{[\s\S]*?width: min\(calc\(100% - 4rem\), 84rem\)/);
-  assert.match(story, /\.heroStory \.assetQuestionGroup \{[\s\S]*?right: auto;[\s\S]*?left: 0/);
-  assert.match(home, /@media \(min-width: 1361px\)[\s\S]*?\.heroStory \.heroGrid \{[\s\S]*?top: clamp\(0\.75rem, 4vh, 1\.75rem\)/);
-  assert.match(home, /@media \(min-width: 1361px\)[\s\S]*?\.heroStory \.heroCopy,[\s\S]*?\.heroStory \.assetHeroStage \{[\s\S]*?transform: translateX\(3\.25rem\)/);
-  assert.match(home, /@media \(min-width: 1181px\)[\s\S]*?\.heroStory \.assetActiveQuestion \{[\s\S]*?top: -4\.25rem;[\s\S]*?bottom: auto/);
-  assert.doesNotMatch(story, /@keyframes hero|@keyframes activeQuestionPulse/);
+  assert.match(hero, /HERO_STAGES: readonly QuestionKey\[\]/);
+  assert.match(hero, /HERO_AUTOPLAY_DELAY_MS = 1000/);
+  assert.match(hero, /HERO_STAGE_DURATION_MS = 2800/);
+  assert.match(hero, /window\.matchMedia\(REDUCED_MOTION_QUERY\)/);
+  assert.match(hero, /Show Next Feature/);
+  assert.match(hero, /Pause Animation/);
+  assert.match(hero, /key=\{playbackId\}/);
+  assert.doesNotMatch(hero, /DESKTOP_STORY_QUERY|IntersectionObserver|scrollIntoView|heroScrollTrack/);
 
-  assert.match(story, /@media \(max-width: 1180px\)[\s\S]*?\.heroStory \{[\s\S]*?min-height: 0/);
-  assert.match(story, /@media \(max-width: 1180px\)[\s\S]*?\.heroSticky \{[\s\S]*?position: relative;[\s\S]*?height: auto/);
-  assert.match(story, /@media \(max-width: 1180px\)[\s\S]*?\.heroStory \.heroGrid \{[\s\S]*?grid-template-columns: minmax\(0, 1fr\)/);
-  assert.match(home, /@media \(max-width: 1180px\)[\s\S]*?\.heroGrid \{[\s\S]*?grid-template-columns: minmax\(0, 1fr\)/);
-  assert.match(home, /@media \(max-width: 760px\)[\s\S]*?\.heroActions \{[\s\S]*?grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
-  assert.match(home, /@media \(max-width: 640px\)[\s\S]*?\.assetQuestionGroup \{[\s\S]*?grid-template-columns: repeat\(6, minmax\(0, 1fr\)\)/);
-  assert.match(story, /@media \(max-width: 1180px\)[\s\S]*?\.assetScrollCue \{[\s\S]*?display: none/);
-  assert.match(home, /@media \(max-width: 640px\)[\s\S]*?\.assetPreviewCard(?:,[\s\S]*?)?\{[\s\S]*?min-height: clamp\(24rem, 112vw, 29rem\)/);
+  assert.match(feature, /\.heroStory \{[\s\S]*?min-height: 0/);
+  assert.match(feature, /\.heroSticky \{[\s\S]*?position: relative;[\s\S]*?height: auto/);
+  assert.doesNotMatch(feature, /position: sticky|340svh|scroll-snap/);
+  assert.match(feature, /\.heroStory \.heroMedia \.shell \{[\s\S]*?width: min\(calc\(100% - 3rem\), 100rem\)/);
+  assert.match(feature, /\.heroStory \.heroGrid \{[\s\S]*?grid-template-columns: minmax\(31rem, 37rem\) minmax\(39rem, 49\.5rem\)/);
+  assert.match(feature, /\.heroStory \.assetActiveQuestion \{[\s\S]*?top: -4\.25rem/);
+  assert.match(feature, /@media \(min-width: 1361px\) and \(max-width: 1479px\)[\s\S]*?\.heroStory \.assetPreviewActions \{[\s\S]*?display: grid/);
+
+  assert.match(feature, /@media \(min-width: 1181px\) and \(max-width: 1360px\)[\s\S]*?\.heroStory \.heroGrid \{[\s\S]*?grid-template-columns: minmax\(27rem, 31rem\) minmax\(34rem, 44rem\)/);
+  assert.match(feature, /@media \(max-width: 1180px\)[\s\S]*?\.heroStory \.heroMedia \{[\s\S]*?min-height: 0/);
+  assert.match(feature, /@media \(max-width: 1180px\)[\s\S]*?\.heroStory \.heroGrid \{[\s\S]*?grid-template-columns: minmax\(0, 1fr\)/);
+  assert.match(feature, /@media \(max-width: 760px\)[\s\S]*?\.heroStory \.heroActions \{[\s\S]*?grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
+  assert.match(feature, /@media \(max-width: 760px\)[\s\S]*?\.heroStory \.assetQuestionGroup \{[\s\S]*?grid-template-columns: repeat\(5, minmax\(0, 1fr\)\)/);
+  assert.match(feature, /@media \(max-width: 760px\)[\s\S]*?\.heroStory \.assetPreviewCard \{[\s\S]*?position: relative;[\s\S]*?order: 1/);
+  assert.match(feature, /@media \(max-width: 760px\)[\s\S]*?\.heroStory \.assetPreviewCard \{[\s\S]*?height: clamp\(22rem, 64vw, 28rem\)/);
+  assert.match(feature, /@media \(max-width: 640px\)[\s\S]*?\.heroStory \.heroActions \{[\s\S]*?grid-template-columns: minmax\(0, 1fr\)/);
+  assert.match(feature, /@media \(max-width: 640px\)[\s\S]*?\.heroStory \.assetQuestionGroup \{[\s\S]*?grid-template-columns: repeat\(6, minmax\(0, 1fr\)\)/);
+  assert.match(feature, /@media \(max-width: 640px\)[\s\S]*?\.heroStory \.assetPreviewCard,[\s\S]*?min-height: clamp\(24rem, 112vw, 29rem\)/);
   assert.match(home, /@media \(max-width: 640px\)[\s\S]*?\.roleGrid \{[\s\S]*?grid-template-columns: minmax\(0, 1fr\)/);
+
   assert.match(home, /\.assetQuestion:focus-visible \{[\s\S]*?outline: 3px solid/);
   assert.match(home, /\.primaryCta,[\s\S]*?\.secondaryCta \{[\s\S]*?min-height: 3\.2rem/);
-  assert.match(story, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.heroStory \{[\s\S]*?min-height: 0/);
-  assert.match(story, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.heroSticky \{[\s\S]*?position: relative/);
-  assert.match(story, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.heroScrollTrack \{[\s\S]*?display: none/);
+  assert.match(feature, /@keyframes heroPreviewReveal/);
+  assert.match(feature, /@keyframes heroProgressFill/);
+  assert.match(feature, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?animation: none/);
   assert.match(home, /@media \(forced-colors: active\)/);
 });
 

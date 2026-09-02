@@ -4,11 +4,12 @@ import Image from 'next/image';
 import { useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import styles from './page.module.css';
 
-export type QuestionKey = 'have' | 'worth' | 'manage' | 'cost' | 'attention';
+export type QuestionKey = 'have' | 'worth' | 'cost' | 'manage' | 'attention';
 
 type HomeAssetPreviewProps = {
   activeQuestion: QuestionKey;
   onQuestionChange: (question: QuestionKey, index: number) => void;
+  onInteraction?: () => void;
 };
 
 type Question = {
@@ -29,17 +30,17 @@ type ManageGlyph =
   | 'remove';
 
 const QUESTION_FEEDBACK: Readonly<Record<QuestionKey, string>> = {
-  have: 'Showing the current Asset Register card.',
-  worth: 'Showing the final Aim4price estimate.',
+  have: 'Showing the complete asset record.',
+  worth: 'Showing the indicative value and valuation report.',
+  cost: 'Showing fuel and ownership costs.',
   manage: 'Showing the asset management tools.',
-  cost: 'Showing fuel and ownership reports.',
   attention: 'Showing an open issue that needs attention.',
 };
 
 const QUESTIONS: readonly Question[] = [
   {
     key: 'have',
-    label: 'What do you have?',
+    label: 'Know what you have',
     icon: (
       <>
         <path d="M4.7 5.6h6.8l7.8 7.8-5.9 5.9-7.8-7.8z" />
@@ -49,7 +50,7 @@ const QUESTIONS: readonly Question[] = [
   },
   {
     key: 'worth',
-    label: 'What is it worth?',
+    label: 'Know what it’s worth',
     icon: (
       <>
         <path d="M4.5 18.5V14m5 4.5v-7m5 7V8m5 10.5V4.5" />
@@ -59,18 +60,8 @@ const QUESTIONS: readonly Question[] = [
     ),
   },
   {
-    key: 'manage',
-    label: 'How can I manage it?',
-    icon: (
-      <>
-        <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.09a2 2 0 0 1-1-1.74v-.51a2 2 0 0 1 1-1.72l.15-.1a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2Z" />
-        <circle cx="12" cy="12" r="3" />
-      </>
-    ),
-  },
-  {
     key: 'cost',
-    label: 'What does it cost me?',
+    label: 'Know what it costs',
     icon: (
       <>
         <circle cx="12" cy="12" r="8.2" />
@@ -79,8 +70,18 @@ const QUESTIONS: readonly Question[] = [
     ),
   },
   {
+    key: 'manage',
+    label: 'Manage its working life',
+    icon: (
+      <>
+        <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.09a2 2 0 0 1-1-1.74v-.51a2 2 0 0 1 1-1.72l.15-.1a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2Z" />
+        <circle cx="12" cy="12" r="3" />
+      </>
+    ),
+  },
+  {
     key: 'attention',
-    label: 'What needs attention?',
+    label: 'See what needs attention',
     icon: (
       <>
         <path d="M12 3.3 2.9 19.1h18.2L12 3.3Z" />
@@ -93,8 +94,9 @@ const QUESTIONS: readonly Question[] = [
 export default function HomeAssetPreview({
   activeQuestion,
   onQuestionChange,
+  onInteraction,
 }: HomeAssetPreviewProps) {
-  const [hasUserSelected, setHasUserSelected] = useState(false);
+  const [feedback, setFeedback] = useState('');
   const questionRefs = useRef<Array<HTMLButtonElement | null>>([]);
 
   const selectQuestion = (index: number, moveFocus = false) => {
@@ -102,7 +104,7 @@ export default function HomeAssetPreview({
     if (!question) return;
 
     onQuestionChange(question.key, index);
-    setHasUserSelected(true);
+    setFeedback(QUESTION_FEEDBACK[question.key]);
     if (moveFocus) questionRefs.current[index]?.focus();
   };
 
@@ -127,12 +129,16 @@ export default function HomeAssetPreview({
   const activeIndex = QUESTIONS.findIndex(({ key }) => key === activeQuestion);
 
   return (
-    <div className={styles.assetHeroStage} data-active-question={activeQuestion}>
+    <div
+      className={styles.assetHeroStage}
+      data-active-question={activeQuestion}
+      onPointerEnter={onInteraction}
+      onFocusCapture={onInteraction}
+    >
       <div
         className={styles.assetQuestionGroup}
         role="tablist"
         aria-label="Explore the Aim4price asset record"
-        aria-orientation="vertical"
       >
         {QUESTIONS.map((question, index) => {
           const isActive = question.key === activeQuestion;
@@ -178,7 +184,7 @@ export default function HomeAssetPreview({
         </div>
       </article>
 
-      <p className={styles.assetActiveQuestion} aria-live="polite" aria-atomic="true">
+      <p className={styles.assetActiveQuestion}>
         <span className={styles.assetActiveQuestionMain}>
           <svg viewBox="0 0 24 24" aria-hidden="true">
             {QUESTIONS[activeIndex]?.icon ?? QUESTIONS[0].icon}
@@ -193,11 +199,6 @@ export default function HomeAssetPreview({
             />
           ))}
         </span>
-        <span className={styles.assetScrollCue} aria-hidden="true">
-          <svg viewBox="0 0 24 24">
-            <path d="m7 9.5 5 5 5-5" />
-          </svg>
-        </span>
       </p>
 
       <span
@@ -206,7 +207,7 @@ export default function HomeAssetPreview({
         aria-live="polite"
         aria-atomic="true"
       >
-        {hasUserSelected ? QUESTION_FEEDBACK[activeQuestion] : ''}
+        {feedback}
       </span>
     </div>
   );
