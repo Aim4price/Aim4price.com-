@@ -54,7 +54,8 @@ test('Home keeps the requested eight-step story and hands off to role selection'
   assert.match(hero, /<h1 id="home-hero-title"[\s\S]*?tabIndex={-1}/);
   assert.match(hero, /className={styles\.storyHeroLogo}[\s\S]*?aria-hidden="true"[\s\S]*?alt=""/);
   assert.match(hero, /className={styles\.storyPauseControl}[\s\S]*?aria-pressed={isPaused}/);
-  assert.match(hero, /aria-hidden={!isActive \|\| storyMode !== 'features'}/);
+  assert.match(hero, /className={styles\.featureNarrativeLayer}[\s\S]*?data-active={isActive \? 'true' : 'false'}/);
+  assert.doesNotMatch(hero, /aria-hidden={storyStepIndex|aria-hidden={!isActive/);
   assert.match(roleSelector, /id="choose-role"/);
   assert.match(roleSelector, /aria-labelledby="choose-role-title"/);
   assert.match(roleSelector, /id="choose-role-title"[\s\S]*?tabIndex={-1}/);
