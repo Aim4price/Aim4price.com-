@@ -21,6 +21,7 @@ const DISPLAY_CHECK_QUERY =
   '(min-width: 1181px) and (min-height: 640px) and (hover: hover) and (pointer: fine)';
 const DISPLAY_COMPLETED_KEY = 'aim4price:home-display-check:completed';
 const DISPLAY_PREFERENCE_KEY = 'aim4price:home-display-preference:v2';
+const DISPLAY_STORAGE_BACKEND_KEY = 'aim4price:home-display-storage-backend';
 const LEGACY_DISPLAY_PREFERENCE_KEY = 'aim4price:home-display-preference:v1';
 const LEGACY_DISPLAY_KEYS = [
   'aim4price:home-display-check:v2',
@@ -128,10 +129,19 @@ const getSecureHref = () => {
 };
 
 const readStorageItem = (key: string) => {
-  for (const getStorage of [
-    () => window.localStorage,
-    () => window.sessionStorage,
-  ]) {
+  let preferSession = false;
+  try {
+    preferSession =
+      window.sessionStorage.getItem(DISPLAY_STORAGE_BACKEND_KEY) === 'session';
+  } catch {
+    // Persistent storage remains the default when session storage is unavailable.
+  }
+
+  const storageCandidates = preferSession
+    ? [() => window.sessionStorage, () => window.localStorage]
+    : [() => window.localStorage, () => window.sessionStorage];
+
+  for (const getStorage of storageCandidates) {
     try {
       const value = getStorage().getItem(key);
       if (value !== null) return value;
@@ -144,12 +154,35 @@ const readStorageItem = (key: string) => {
 };
 
 const writeStorageItem = (key: string, value: string) => {
+  let preferSession = false;
+  try {
+    preferSession =
+      window.sessionStorage.getItem(DISPLAY_STORAGE_BACKEND_KEY) === 'session';
+  } catch {
+    // Try persistent storage first below.
+  }
+
+  if (preferSession) {
+    try {
+      window.sessionStorage.setItem(key, value);
+      return;
+    } catch {
+      // The session backend became unavailable; retry persistent storage.
+    }
+  }
+
   try {
     window.localStorage.setItem(key, value);
+    try {
+      window.sessionStorage.removeItem(DISPLAY_STORAGE_BACKEND_KEY);
+    } catch {
+      // The successful persistent write is still authoritative.
+    }
     return;
   } catch {
     try {
       window.sessionStorage.setItem(key, value);
+      window.sessionStorage.setItem(DISPLAY_STORAGE_BACKEND_KEY, 'session');
     } catch {
       // Component state still keeps the acknowledgement for this page view.
     }
@@ -287,10 +320,7 @@ const readDisplayCompletion = (viewport: ViewportSize) => {
   }
 
   if (isCompleted) {
-    const profile = getRecommendedSize(viewport);
-    const recoveredPreference = createDisplayPreference({ [profile]: profile });
-    persistDisplayCompletion(recoveredPreference);
-    return { completed: true, preference: recoveredPreference } as const;
+    return { completed: true, preference: createDisplayPreference() } as const;
   }
 
   return { completed: false, preference: createDisplayPreference() } as const;
@@ -523,7 +553,12 @@ export default function HomeDisplayCheck({ children }: { children: ReactNode }) 
     content.setAttribute('inert', '');
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
-    window.requestAnimationFrame(() => dialogRef.current?.focus());
+    window.requestAnimationFrame(() => {
+      const firstControl = dialogRef.current?.querySelector<HTMLElement>(
+        'button:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])',
+      );
+      (firstControl ?? dialogRef.current)?.focus();
+    });
 
     return () => {
       content.removeAttribute('inert');
@@ -565,10 +600,16 @@ export default function HomeDisplayCheck({ children }: { children: ReactNode }) 
 
     const first = focusable[0];
     const last = focusable[focusable.length - 1];
-    if (event.shiftKey && document.activeElement === first) {
+    const dialog = dialogRef.current;
+    const activeElement = document.activeElement;
+    const isFocusInside = Boolean(activeElement && dialog?.contains(activeElement));
+    if (
+      event.shiftKey &&
+      (!isFocusInside || activeElement === dialog || activeElement === first)
+    ) {
       event.preventDefault();
       last.focus();
-    } else if (!event.shiftKey && document.activeElement === last) {
+    } else if (!event.shiftKey && (!isFocusInside || activeElement === last)) {
       event.preventDefault();
       first.focus();
     }
