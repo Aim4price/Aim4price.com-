@@ -8,8 +8,11 @@ export type QuestionKey = 'have' | 'worth' | 'cost' | 'manage' | 'attention';
 
 type HomeAssetPreviewProps = {
   activeQuestion: QuestionKey;
+  canAutoplay: boolean;
+  isAutoplaying: boolean;
   onQuestionChange: (question: QuestionKey, index: number) => void;
-  onInteraction?: () => void;
+  onInteraction?: (source: 'pointer' | 'focus') => void;
+  onPlaybackToggle: () => void;
 };
 
 type Question = {
@@ -93,8 +96,11 @@ const QUESTIONS: readonly Question[] = [
 
 export default function HomeAssetPreview({
   activeQuestion,
+  canAutoplay,
+  isAutoplaying,
   onQuestionChange,
   onInteraction,
+  onPlaybackToggle,
 }: HomeAssetPreviewProps) {
   const [feedback, setFeedback] = useState('');
   const questionRefs = useRef<Array<HTMLButtonElement | null>>([]);
@@ -127,18 +133,23 @@ export default function HomeAssetPreview({
   };
 
   const activeIndex = QUESTIONS.findIndex(({ key }) => key === activeQuestion);
+  const playbackLabel = canAutoplay
+    ? isAutoplaying
+      ? 'Pause feature animation'
+      : 'Play feature animation'
+    : 'Show next feature';
 
   return (
     <div
       className={styles.assetHeroStage}
       data-active-question={activeQuestion}
-      onPointerEnter={onInteraction}
-      onFocusCapture={onInteraction}
     >
       <div
         className={styles.assetQuestionGroup}
         role="tablist"
         aria-label="Explore the Aim4price asset record"
+        onPointerEnter={() => onInteraction?.('pointer')}
+        onFocusCapture={() => onInteraction?.('focus')}
       >
         {QUESTIONS.map((question, index) => {
           const isActive = question.key === activeQuestion;
@@ -178,6 +189,8 @@ export default function HomeAssetPreview({
         tabIndex={0}
         className={styles.assetPreviewCard}
         data-active-question={activeQuestion}
+        onPointerEnter={() => onInteraction?.('pointer')}
+        onFocusCapture={() => onInteraction?.('focus')}
       >
         <div key={activeQuestion} className={styles.assetPreviewState}>
           <PreviewContent activeQuestion={activeQuestion} />
@@ -191,13 +204,32 @@ export default function HomeAssetPreview({
           </svg>
           <span>{QUESTIONS[activeIndex]?.label ?? QUESTIONS[0].label}</span>
         </span>
-        <span className={styles.assetStoryProgress} aria-hidden="true">
-          {QUESTIONS.map((question, index) => (
-            <span
-              key={question.key}
-              className={index === activeIndex ? styles.assetStoryProgressActive : undefined}
-            />
-          ))}
+        <span className={styles.assetStoryControls}>
+          <span className={styles.assetStoryProgress} aria-hidden="true">
+            {QUESTIONS.map((question, index) => (
+              <span
+                key={question.key}
+                className={index === activeIndex ? styles.assetStoryProgressActive : undefined}
+              />
+            ))}
+          </span>
+          <button
+            type="button"
+            className={styles.assetPlaybackControl}
+            onClick={onPlaybackToggle}
+            aria-label={playbackLabel}
+            title={playbackLabel}
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              {!canAutoplay ? (
+                <path d="m7 6 6 6-6 6M15 6v12" />
+              ) : isAutoplaying ? (
+                <path d="M9 7v10M15 7v10" />
+              ) : (
+                <path d="m9 6 9 6-9 6Z" />
+              )}
+            </svg>
+          </button>
         </span>
       </p>
 

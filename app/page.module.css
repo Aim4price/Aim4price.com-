@@ -3306,30 +3306,6 @@
   width: 12.25rem;
 }
 
-.heroAudienceCta {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.45rem;
-  margin-top: 1.05rem;
-  color: #176f53;
-  font-size: 0.86rem;
-  line-height: 1.4;
-  font-weight: 750;
-  text-underline-offset: 0.18em;
-}
-
-.heroAudienceCta span {
-  transition: transform 180ms ease;
-}
-
-.heroAudienceCta:hover span {
-  transform: translateX(0.18rem);
-}
-
-.heroStory .heroSectors {
-  margin-top: 1.35rem;
-}
-
 .heroStory .assetHeroStage {
   width: min(100%, 49.5rem);
   max-width: 49.5rem;
@@ -3429,6 +3405,55 @@
   align-items: center;
   justify-content: center;
   gap: 0.38rem;
+}
+
+.assetStoryControls {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+}
+
+.assetPlaybackControl {
+  display: grid;
+  width: 1.55rem;
+  height: 1.55rem;
+  flex: 0 0 auto;
+  place-items: center;
+  padding: 0;
+  border: 1px solid rgba(31, 143, 102, 0.3);
+  border-radius: 50%;
+  color: #0f805b;
+  background: rgba(255, 255, 255, 0.76);
+  box-shadow: 0 5px 12px rgba(19, 97, 71, 0.08);
+  cursor: pointer;
+  transition:
+    color 180ms ease,
+    border-color 180ms ease,
+    background 180ms ease,
+    transform 180ms ease;
+}
+
+.assetPlaybackControl:hover {
+  color: #ffffff;
+  border-color: #148c63;
+  background: #148c63;
+  transform: translateY(-1px);
+}
+
+.assetPlaybackControl:focus-visible {
+  outline: 3px solid rgba(20, 104, 79, 0.3);
+  outline-offset: 2px;
+}
+
+.assetPlaybackControl svg {
+  width: 0.8rem;
+  height: 0.8rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .assetStoryProgress > span {
@@ -3631,10 +3656,6 @@
     text-align: center;
   }
 
-  .heroAudienceCta {
-    margin-top: 1rem;
-  }
-
   .heroStory .assetHeroStage {
     display: grid;
     aspect-ratio: auto;
@@ -3777,12 +3798,12 @@
 
   .heroStory .assetQuestionBubble,
   .heroStory .assetStoryProgress > span,
-  .heroAudienceCta span {
+  .assetPlaybackControl {
     transition: none;
   }
 
   .heroStory .assetQuestion:hover .assetQuestionBubble,
-  .heroAudienceCta:hover span {
+  .assetPlaybackControl:hover {
     transform: none;
   }
 }
@@ -3793,6 +3814,7 @@
   }
 
   .assetQuestionBubble,
+  .assetPlaybackControl,
   .assetActiveQuestion,
   .worthResult,
   .worthReportPreview,

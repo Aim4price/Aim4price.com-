@@ -77,12 +77,13 @@ test('home page keeps the feature-led Asset Register hero usable at desktop, tab
   assert.ok(featureStart >= 0);
   assert.match(home, /Living Asset Record homepage hero, September 2026/);
   assert.match(hero, /HERO_STAGES: readonly QuestionKey\[\]/);
-  assert.match(hero, /HERO_AUTOPLAY_DELAY_MS = 1000/);
+  assert.match(hero, /HERO_AUTOPLAY_DELAY_MS = 2500/);
   assert.match(hero, /HERO_STAGE_DURATION_MS = 2800/);
   assert.match(hero, /window\.matchMedia\(REDUCED_MOTION_QUERY\)/);
-  assert.match(hero, /Show Next Feature/);
-  assert.match(hero, /Pause Animation/);
-  assert.match(hero, /key=\{playbackId\}/);
+  assert.match(hero, /href="#choose-role" className=\{styles\.primaryCta\}/);
+  assert.doesNotMatch(hero, /heroAudienceCta|heroSectors/);
+  assert.doesNotMatch(hero, /playbackId|key=\{playbackId\}/);
+  assert.match(hero, /onPlaybackToggle=\{handlePlaybackToggle\}/);
   assert.doesNotMatch(hero, /DESKTOP_STORY_QUERY|IntersectionObserver|scrollIntoView|heroScrollTrack/);
 
   assert.match(feature, /\.heroStory \{[\s\S]*?min-height: 0/);

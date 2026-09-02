@@ -40,9 +40,9 @@ test('homepage presents a fixed feature-led hero and reveals role choice on requ
   assert.match(hero, /indicative value/);
   assert.match(hero, /documents, maintenance, fuel, costs and[\s\S]*?history throughout its working life/);
 
-  assert.match(hero, /className=\{styles\.primaryCta\}[\s\S]*?onClick=\{handleDemoAction\}[\s\S]*?Show Next Feature[\s\S]*?Pause Animation[\s\S]*?See Aim4price in Action/);
+  assert.match(hero, /<a href="#choose-role" className=\{styles\.primaryCta\}>[\s\S]*?See Aim4price in Action/);
   assert.match(hero, /<Link href="\/valuation" className=\{styles\.secondaryCta\}>[\s\S]*?Get a Free Estimate/);
-  assert.match(hero, /<a href="#choose-role" className=\{styles\.heroAudienceCta\}>[\s\S]*?Choose how you’ll use Aim4price/);
+  assert.doesNotMatch(hero, /heroAudienceCta|heroSectors|Choose how you’ll use Aim4price|Agriculture|Construction|Industrial|Motor/);
   assert.match(hero, /useState<QuestionKey>\('have'\)/);
   assert.match(hero, /useState\(false\)/);
   assert.match(hero, /useRef\(false\)/);
@@ -50,7 +50,7 @@ test('homepage presents a fixed feature-led hero and reveals role choice on requ
   assert.match(hero, /data-autoplay=\{isAutoplaying \? 'true' : 'false'\}/);
   assert.match(hero, /<HomeAssetPreview[\s\S]*?activeQuestion=\{activeQuestion\}[\s\S]*?onQuestionChange=\{handleQuestionChange\}/);
 
-  assert.match(hero, /HERO_AUTOPLAY_DELAY_MS = 1000/);
+  assert.match(hero, /HERO_AUTOPLAY_DELAY_MS = 2500/);
   assert.match(hero, /HERO_STAGE_DURATION_MS = 2800/);
   assert.match(hero, /window\.matchMedia\(REDUCED_MOTION_QUERY\)/);
   assert.match(hero, /const shouldAutoplay = !reducedMotionMedia\.matches/);
@@ -63,15 +63,17 @@ test('homepage presents a fixed feature-led hero and reveals role choice on requ
   assert.match(hero, /activeIndex >= HERO_STAGES\.length - 1[\s\S]*?setIsAutoplaying\(false\)/);
   assert.match(hero, /window\.clearTimeout\(startTimer\)/);
   assert.match(hero, /window\.clearTimeout\(stageTimer\)/);
+  assert.match(hero, /hasAutoStarted\.current = true;[\s\S]*?setActiveQuestion\('have'\);[\s\S]*?setIsAutoplaying\(true\)/);
   assert.match(hero, /document\.addEventListener\('visibilitychange', pauseWhenHidden\)/);
   assert.match(hero, /document\.removeEventListener\('visibilitychange', pauseWhenHidden\)/);
 
   assert.match(hero, /const handleQuestionChange[\s\S]*?hasAutoStarted\.current = true;[\s\S]*?setIsAutoplaying\(false\);[\s\S]*?setActiveQuestion\(question\)/);
-  assert.match(hero, /const handleDemoAction[\s\S]*?if \(isAutoplaying\)[\s\S]*?setIsAutoplaying\(false\)/);
+  assert.match(hero, /const handlePlaybackToggle[\s\S]*?if \(isAutoplaying\)[\s\S]*?setIsAutoplaying\(false\)/);
   assert.match(hero, /if \(!canAutoplay\)[\s\S]*?nextIndex[\s\S]*?setActiveQuestion\(HERO_STAGES\[nextIndex\]!\)/);
   assert.match(hero, /setActiveQuestion\('have'\);[\s\S]*?setIsAutoplaying\(true\)/);
-  assert.match(hero, /const handlePreviewInteraction[\s\S]*?setIsAutoplaying\(false\)/);
-  assert.match(hero, /<HomeAssetPreview[\s\S]*?key=\{playbackId\}[\s\S]*?onInteraction=\{handlePreviewInteraction\}/);
+  assert.match(hero, /const handlePreviewInteraction = \(source: 'pointer' \| 'focus'\)[\s\S]*?source === 'focus'[\s\S]*?hasAutoStarted\.current = true[\s\S]*?if \(!isAutoplaying\) return;[\s\S]*?setIsAutoplaying\(false\)/);
+  assert.match(hero, /<HomeAssetPreview[\s\S]*?canAutoplay=\{canAutoplay\}[\s\S]*?isAutoplaying=\{isAutoplaying\}[\s\S]*?onInteraction=\{handlePreviewInteraction\}[\s\S]*?onPlaybackToggle=\{handlePlaybackToggle\}/);
+  assert.doesNotMatch(hero, /playbackId|setPlaybackId|key=\{playbackId\}/);
   assert.doesNotMatch(hero, /IntersectionObserver|scrollIntoView|heroScrollTrack|heroScrollStep|DESKTOP_STORY_QUERY/);
   assert.doesNotMatch(hero, /addEventListener\(['"](?:wheel|touchmove)|preventDefault|scroll-snap|setInterval/);
 
@@ -128,6 +130,11 @@ test('homepage presents a fixed feature-led hero and reveals role choice on requ
   assert.match(preview, /QUESTIONS\[activeIndex\]\?\.label \?\? QUESTIONS\[0\]\.label/);
   assert.match(preview, /assetStoryProgress/);
   assert.match(preview, /assetStoryProgressActive/);
+  assert.match(preview, /assetStoryControls/);
+  assert.match(preview, /assetPlaybackControl/);
+  assert.match(preview, /Pause feature animation/);
+  assert.match(preview, /Play feature animation/);
+  assert.match(preview, /Show next feature/);
   assert.doesNotMatch(preview, /assetScrollCue|m7 9\.5 5 5 5-5/);
   assert.doesNotMatch(preview, /assetActiveQuestionAccent/);
   assert.match(preview, /ArrowRight[\s\S]*?ArrowDown/);
@@ -135,11 +142,16 @@ test('homepage presents a fixed feature-led hero and reveals role choice on requ
   assert.match(preview, /event\.key === 'Home'/);
   assert.match(preview, /event\.key === 'End'/);
   assert.match(preview, /type HomeAssetPreviewProps = \{[\s\S]*?activeQuestion: QuestionKey;[\s\S]*?onQuestionChange: \(question: QuestionKey, index: number\) => void;/);
-  assert.match(preview, /onInteraction\?: \(\) => void/);
+  assert.match(preview, /canAutoplay: boolean;/);
+  assert.match(preview, /isAutoplaying: boolean;/);
+  assert.match(preview, /onInteraction\?: \(source: 'pointer' \| 'focus'\) => void/);
+  assert.match(preview, /onPlaybackToggle: \(\) => void/);
   assert.match(preview, /export default function HomeAssetPreview\(\{[\s\S]*?activeQuestion,[\s\S]*?onQuestionChange,/);
   assert.match(preview, /onQuestionChange\(question\.key, index\)/);
-  assert.match(preview, /onPointerEnter=\{onInteraction\}/);
-  assert.match(preview, /onFocusCapture=\{onInteraction\}/);
+  assert.match(preview, /onPointerEnter=\{\(\) => onInteraction\?\.\('pointer'\)\}/);
+  assert.match(preview, /onFocusCapture=\{\(\) => onInteraction\?\.\('focus'\)\}/);
+  assert.match(preview, /onClick=\{onPlaybackToggle\}/);
+  assert.match(preview, /aria-label=\{playbackLabel\}/);
   assert.doesNotMatch(preview, /useState<QuestionKey>/);
   assert.doesNotMatch(preview, /setTimeout|setInterval|QUESTION_ROTATION|autoAdvance/);
 
@@ -291,12 +303,15 @@ test('homepage presents a fixed feature-led hero and reveals role choice on requ
   assert.match(featureHeroStyles, /\.heroStory \.heroTitle \{[\s\S]*?font-size: clamp\(3\.15rem, 3\.4vw, 3\.65rem\)/);
   assert.match(featureHeroStyles, /\.heroStory \.heroText \{[\s\S]*?max-width: 34rem;[\s\S]*?line-height: 1\.62/);
   assert.match(featureHeroStyles, /\.heroStory \.primaryCta \{[\s\S]*?width: 14\.4rem;[\s\S]*?cursor: pointer/);
-  assert.match(featureHeroStyles, /\.heroAudienceCta \{[\s\S]*?margin-top: 1\.05rem/);
+  assert.doesNotMatch(featureHeroStyles, /\.heroAudienceCta/);
 
   assert.match(featureHeroStyles, /\.heroStory \.assetHeroStage \{[\s\S]*?width: min\(100%, 49\.5rem\);[\s\S]*?align-self: center/);
   assert.match(featureHeroStyles, /\.heroStory \.assetPreviewCard \{[\s\S]*?right: 4\.85rem;[\s\S]*?left: 6rem;[\s\S]*?box-shadow/);
   assert.match(featureHeroStyles, /\.heroStory \.assetActiveQuestion \{[\s\S]*?top: -4\.25rem;[\s\S]*?bottom: auto/);
   assert.match(featureHeroStyles, /\.assetStoryProgress > \.assetStoryProgressActive \{[\s\S]*?width: 1\.45rem/);
+  assert.match(featureHeroStyles, /\.assetStoryControls \{[\s\S]*?display: inline-flex/);
+  assert.match(featureHeroStyles, /\.assetPlaybackControl \{[\s\S]*?width: 1\.55rem;[\s\S]*?cursor: pointer/);
+  assert.match(featureHeroStyles, /\.assetPlaybackControl:focus-visible \{[\s\S]*?outline: 3px solid/);
 
   assert.match(featureHeroStyles, /@keyframes heroPreviewReveal/);
   assert.match(featureHeroStyles, /@keyframes heroProgressFill/);

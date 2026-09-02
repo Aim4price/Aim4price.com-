@@ -6,7 +6,7 @@ import HomeAssetPreview, { type QuestionKey } from './home-asset-preview';
 import styles from './page.module.css';
 
 const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
-export const HERO_AUTOPLAY_DELAY_MS = 1000;
+export const HERO_AUTOPLAY_DELAY_MS = 2500;
 export const HERO_STAGE_DURATION_MS = 2800;
 
 export const HERO_STAGES: readonly QuestionKey[] = [
@@ -21,7 +21,6 @@ export default function HomeHeroExperience() {
   const [activeQuestion, setActiveQuestion] = useState<QuestionKey>('have');
   const [canAutoplay, setCanAutoplay] = useState(true);
   const [isAutoplaying, setIsAutoplaying] = useState(false);
-  const [playbackId, setPlaybackId] = useState(0);
   const hasAutoStarted = useRef(false);
 
   useEffect(() => {
@@ -81,7 +80,7 @@ export default function HomeHeroExperience() {
     }, HERO_STAGE_DURATION_MS);
 
     return () => window.clearTimeout(stageTimer);
-  }, [activeQuestion, canAutoplay, isAutoplaying, playbackId]);
+  }, [activeQuestion, canAutoplay, isAutoplaying]);
 
   const handleQuestionChange = (question: QuestionKey, _index: number) => {
     hasAutoStarted.current = true;
@@ -89,15 +88,13 @@ export default function HomeHeroExperience() {
     setActiveQuestion(question);
   };
 
-  const handleDemoAction = () => {
+  const handlePlaybackToggle = () => {
     hasAutoStarted.current = true;
 
     if (isAutoplaying) {
       setIsAutoplaying(false);
       return;
     }
-
-    setPlaybackId((currentId) => currentId + 1);
 
     if (!canAutoplay) {
       const activeIndex = HERO_STAGES.indexOf(activeQuestion);
@@ -110,8 +107,11 @@ export default function HomeHeroExperience() {
     setIsAutoplaying(true);
   };
 
-  const handlePreviewInteraction = () => {
-    hasAutoStarted.current = true;
+  const handlePreviewInteraction = (source: 'pointer' | 'focus') => {
+    if (source === 'focus') hasAutoStarted.current = true;
+
+    if (!isAutoplaying) return;
+
     setIsAutoplaying(false);
   };
 
@@ -145,41 +145,23 @@ export default function HomeHeroExperience() {
 
                 <div className={styles.heroSupport}>
                   <div className={styles.heroActions}>
-                    <button
-                      type="button"
-                      className={styles.primaryCta}
-                      onClick={handleDemoAction}
-                    >
-                      {!canAutoplay
-                        ? 'Show Next Feature'
-                        : isAutoplaying
-                          ? 'Pause Animation'
-                          : 'See Aim4price in Action'}
-                    </button>
+                    <a href="#choose-role" className={styles.primaryCta}>
+                      See Aim4price in Action
+                    </a>
                     <Link href="/valuation" className={styles.secondaryCta}>
                       Get a Free Estimate
                     </Link>
                   </div>
-
-                  <a href="#choose-role" className={styles.heroAudienceCta}>
-                    Choose how you’ll use Aim4price
-                    <span aria-hidden="true">→</span>
-                  </a>
-
-                  <p className={styles.heroSectors}>
-                    <span>Agriculture</span>
-                    <span>Construction</span>
-                    <span>Industrial</span>
-                    <span>Motor</span>
-                  </p>
                 </div>
               </div>
 
               <HomeAssetPreview
-                key={playbackId}
                 activeQuestion={activeQuestion}
+                canAutoplay={canAutoplay}
+                isAutoplaying={isAutoplaying}
                 onQuestionChange={handleQuestionChange}
                 onInteraction={handlePreviewInteraction}
+                onPlaybackToggle={handlePlaybackToggle}
               />
             </div>
           </div>
