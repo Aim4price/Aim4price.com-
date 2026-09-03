@@ -1,0 +1,57 @@
+/* Asset Register Overview / Assets switch refinement, September 2026.
+ * Keep the selected view obvious without the heavy dark-green block.
+ * The selector is intentionally scoped to this one labelled control.
+ */
+[aria-label='Choose Asset Register view'] {
+  border-color: rgba(198, 219, 209, 0.92);
+  background: rgba(255, 255, 255, 0.86);
+  box-shadow:
+    0 12px 30px rgba(20, 36, 33, 0.035),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+[aria-label='Choose Asset Register view'] > button {
+  color: #29483e;
+}
+
+[aria-label='Choose Asset Register view'] > button:hover {
+  border-color: rgba(71, 143, 112, 0.22);
+  background: rgba(242, 249, 246, 0.92);
+}
+
+[aria-label='Choose Asset Register view'] > button[aria-pressed='true'] {
+  color: #0f5f49 !important;
+  border-color: rgba(62, 145, 111, 0.28) !important;
+  background: linear-gradient(
+    135deg,
+    rgba(235, 248, 242, 0.98) 0%,
+    rgba(248, 252, 250, 0.99) 100%
+  ) !important;
+  box-shadow:
+    0 8px 18px rgba(15, 104, 79, 0.065),
+    inset 0 1px 0 rgba(255, 255, 255, 0.94) !important;
+}
+
+[aria-label='Choose Asset Register view'] > button[aria-pressed='true']:hover {
+  color: #0d5844 !important;
+  border-color: rgba(47, 130, 97, 0.34) !important;
+  background: linear-gradient(
+    135deg,
+    rgba(229, 245, 237, 0.99) 0%,
+    rgba(244, 250, 247, 0.99) 100%
+  ) !important;
+}
+
+[aria-label='Choose Asset Register view'] > button[aria-pressed='true'] > span:first-child {
+  color: #0f684f !important;
+  border-color: rgba(55, 139, 105, 0.2) !important;
+  background: rgba(226, 243, 235, 0.98) !important;
+}
+
+[aria-label='Choose Asset Register view'] > button[aria-pressed='true'] small {
+  color: #688179 !important;
+}
+
+[aria-label='Choose Asset Register view'] > button[aria-pressed='true'] > span:last-child {
+  color: #5f8275 !important;
+}
