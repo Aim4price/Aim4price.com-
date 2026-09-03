@@ -3,6 +3,7 @@ import { getAccountProfile } from "../../lib/account-profile";
 import { requireActivePageAccess } from "../../lib/account-access";
 import { listAssetRegisters } from "../../lib/asset-registers";
 import AssetRegisterClient from "./asset-register-client";
+import AssetRegisterOverview from "./asset-register-overview";
 import DealerRegisterGateway from "./dealer-register-gateway";
 
 export const runtime = "nodejs";
@@ -40,19 +41,25 @@ export default async function AssetRegisterPage({
         redirect(`/asset-register?dealerView=dealer&registerId=${encodeURIComponent(primaryRegister.id)}`);
       }
       return (
-        <AssetRegisterClient
-          dealerRegisterMode="dealer"
-          registerManagementHref="/asset-registers"
-        />
+        <>
+          <AssetRegisterClient
+            dealerRegisterMode="dealer"
+            registerManagementHref="/asset-registers"
+          />
+          <AssetRegisterOverview />
+        </>
       );
     }
 
     if (requestedView === "client" && requestedRegister && requestedRegister.id !== primaryRegister?.id) {
       return (
-        <AssetRegisterClient
-          dealerRegisterMode="client"
-          registerManagementHref="/asset-registers"
-        />
+        <>
+          <AssetRegisterClient
+            dealerRegisterMode="client"
+            registerManagementHref="/asset-registers"
+          />
+          <AssetRegisterOverview />
+        </>
       );
     }
 
@@ -63,10 +70,13 @@ export default async function AssetRegisterPage({
     if (requestedRegister) {
       const dealerRegisterMode = requestedRegister.id === primaryRegister?.id ? "dealer" : "client";
       return (
-        <AssetRegisterClient
-          dealerRegisterMode={dealerRegisterMode}
-          registerManagementHref="/asset-registers"
-        />
+        <>
+          <AssetRegisterClient
+            dealerRegisterMode={dealerRegisterMode}
+            registerManagementHref="/asset-registers"
+          />
+          <AssetRegisterOverview />
+        </>
       );
     }
 
@@ -77,5 +87,10 @@ export default async function AssetRegisterPage({
     );
   }
 
-  return <AssetRegisterClient />;
+  return (
+    <>
+      <AssetRegisterClient />
+      <AssetRegisterOverview />
+    </>
+  );
 }
