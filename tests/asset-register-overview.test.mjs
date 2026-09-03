@@ -87,6 +87,21 @@ test('view switch communicates useful counts without bringing the pill strip bac
   assert.doesNotMatch(styles, /\.viewSwitchCount/);
 });
 
+test('Overview hides the normal asset workspace and ends with Go to assets instead', () => {
+  assert.match(overview, /syncAssetViewSiblings\(portalHost, activeView === 'assets'\)/);
+  assert.match(overview, /sibling\.hidden = true/);
+  assert.match(overview, /<div className=\{styles\.overviewFooter\}>[\s\S]*?<strong>Go to assets<\/strong>/);
+  assert.match(overview, /onClick=\{goToAssets\}/);
+  assert.match(overview, /selectView\('assets'\)/);
+  assert.match(overview, /portalHost\?\.scrollIntoView/);
+  assert.match(styles, /\.goToAssetsButton/);
+  assert.match(styles, /\.goToAssetsIcon/);
+  assert.match(styles, /\.goToAssetsCopy/);
+  assert.doesNotMatch(overview, /INITIAL_VISIBLE_ITEMS/);
+  assert.doesNotMatch(overview, /showMoreButton/);
+  assert.doesNotMatch(overview, /Show \d+ more/);
+});
+
 test('overview keeps Asset Register card styling with loading, error and responsive states', () => {
   assert.match(overview, /registerStyles\.assetCard/);
   assert.match(styles, /\.overviewCard,[\s\S]*?\.stateCard/);
