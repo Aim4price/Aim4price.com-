@@ -127,7 +127,9 @@ test('page-size controls live beside the header action rail and introduce themse
   assert.match(zoom, /pathname !== '\/'[\s\S]*?hasSeenIntro\(\)/);
   assert.match(zoom, /Increase or decrease page size here\./);
   assert.match(zoom, /aria-label="Aim4price page size controls"/);
-  assert.match(zoom, /aria-label="Decrease page size"/);
-  assert.match(zoom, /aria-label="Increase page size"/);
+  assert.match(zoom, /aria-label="Zoom out"[\s\S]*?data-tooltip="Zoom out"/);
+  assert.match(zoom, /aria-label="Zoom in"[\s\S]*?data-tooltip="Zoom in"/);
+  assert.match(styles, /\.zoomButton::after \{[\s\S]*?content: attr\(data-tooltip\)[\s\S]*?background: #124c3c/);
+  assert.match(styles, /\.zoomButton:hover:not\(:disabled\)::after,[\s\S]*?\.zoomButton:focus-visible::after[\s\S]*?visibility: visible/);
   assert.match(zoom, /setShowIntro\(false\)[\s\S]*?zoomRef\.current = normalizedZoom/);
 });
