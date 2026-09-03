@@ -69,25 +69,27 @@ test('page zoom is minimal, manual overrides stay stable and installable apps re
   assert.match(zoom, /usesContainedScroll[\s\S]*?host\.scrollLeft = Math\.max\(0, desiredLeft\)/);
 });
 
-test('automatic display sizing follows browser-window size without fighting Ctrl zoom', async () => {
+test('automatic display sizing uses one continuous browser-window curve without fighting Ctrl zoom', async () => {
   const [zoom, styles] = await Promise.all([
     read('components/SiteWorkspaceZoom.tsx'),
     read('components/SiteWorkspaceZoom.module.css'),
   ]);
 
-  assert.match(zoom, /AUTO_ZOOM_STEP = 5/);
   assert.match(zoom, /AUTO_BASE_WINDOW_WIDTH = 1440/);
-  assert.match(zoom, /AUTO_DESKTOP_WINDOW_WIDTH = 1920/);
-  assert.match(zoom, /AUTO_LARGE_WINDOW_WIDTH = 2560/);
   assert.match(zoom, /AUTO_MAX_WINDOW_WIDTH = 3840/);
   assert.match(zoom, /AUTO_MAX_ZOOM = 140/);
   assert.match(zoom, /const outerWidth = Number\(window\.outerWidth\)/);
   assert.match(zoom, /function calculateAutoZoom\(windowWidth: number\)/);
-  assert.match(zoom, /AUTO_BASE_WINDOW_WIDTH, AUTO_DESKTOP_WINDOW_WIDTH, 100, 120/);
-  assert.match(zoom, /AUTO_DESKTOP_WINDOW_WIDTH, AUTO_LARGE_WINDOW_WIDTH, 120, 130/);
-  assert.match(zoom, /AUTO_LARGE_WINDOW_WIDTH, AUTO_MAX_WINDOW_WIDTH, 130, AUTO_MAX_ZOOM/);
+  assert.match(zoom, /windowWidth - AUTO_BASE_WINDOW_WIDTH/);
+  assert.match(zoom, /AUTO_MAX_WINDOW_WIDTH - AUTO_BASE_WINDOW_WIDTH/);
+  assert.match(zoom, /const easedProgress = Math\.sqrt\(progress\)/);
+  assert.match(zoom, /DEFAULT_ZOOM \+ \(AUTO_MAX_ZOOM - DEFAULT_ZOOM\) \* easedProgress/);
+  assert.doesNotMatch(zoom, /AUTO_DESKTOP_WINDOW_WIDTH|AUTO_LARGE_WINDOW_WIDTH|AUTO_ZOOM_STEP/);
+  assert.doesNotMatch(zoom, /DisplayProfile|displayProfileForWidth|aim4priceDisplayProfile/);
+  assert.doesNotMatch(styles, /data-aim4price-display-profile/);
+
   assert.match(zoom, /if \(savedZoomValue && savedZoom !== DEFAULT_ZOOM\)[\s\S]*?mode: 'manual'/);
-  assert.match(zoom, /zoomModeRef\.current === 'auto'[\s\S]*?applyZoom\(calculateAutoZoom\(windowWidth\)\)/);
+  assert.match(zoom, /zoomModeRef\.current === 'auto'[\s\S]*?applyZoom\(calculateAutoZoom\(readWindowWidth\(\)\)\)/);
   assert.match(zoom, /window\.addEventListener\('resize', syncWindowSizing\)/);
   assert.match(zoom, /window\.addEventListener\('orientationchange', syncWindowSizing\)/);
   assert.match(zoom, /zoomModeRef\.current = 'auto'/);
@@ -95,15 +97,39 @@ test('automatic display sizing follows browser-window size without fighting Ctrl
   assert.match(zoom, /data-zoom-preference=\{zoomMode\}/);
   assert.match(zoom, /Automatic page size \$\{zoom\} percent/);
   assert.match(zoom, /Page size adjusts automatically\. Use − or \+ if needed\./);
+});
 
-  assert.match(zoom, /host\.dataset\.aim4priceDisplayProfile = displayProfileForWidth\(windowWidth\)/);
-  assert.match(zoom, /if \(windowWidth >= 2200\) return 'expansive'/);
-  assert.match(zoom, /if \(windowWidth >= 1600\) return 'wide'/);
+test('Home desktop geometry stays continuous across historical 1240, 1360 and short-height endpoints', async () => {
+  const [styles, homeStyles] = await Promise.all([
+    read('components/SiteWorkspaceZoom.module.css'),
+    read('app/page.module.css'),
+  ]);
 
-  assert.match(styles, /data-aim4price-display-profile='wide'[\s\S]*?What Aim4price helps you do[\s\S]*?gap: 5rem !important/);
-  assert.match(styles, /data-aim4price-display-profile='wide'[\s\S]*?--feature-copy-inset: 5\.5rem !important/);
-  assert.match(styles, /data-aim4price-display-profile='expansive'[\s\S]*?gap: 5\.5rem !important/);
-  assert.match(styles, /data-aim4price-display-profile='expansive'[\s\S]*?--feature-copy-inset: 4\.75rem !important/);
+  // Historical endpoint rules are still present in the mature Home stylesheet,
+  // but the shared site shell now supersedes the geometry they used to change.
+  assert.match(homeStyles, /@media \(min-width: 1181px\) and \(max-width: 1360px\) and \(min-height: 640px\)/);
+  assert.match(homeStyles, /@media \(min-width: 1181px\) and \(max-width: 1240px\) and \(min-height: 640px\)/);
+  assert.match(homeStyles, /@media \(min-width: 1181px\) and \(min-height: 640px\) and \(max-height: 759px\)/);
+
+  assert.match(styles, /@media \(min-width: 1181px\) and \(min-height: 640px\)/);
+  assert.match(styles, /--hero-working-inset: clamp\(0px, calc\(\(100% - 1240px\) \/ 2\), 60px\) !important/);
+  assert.match(styles, /minmax\(clamp\(27rem, 31vw, 31rem\), 1fr\)/);
+  assert.match(styles, /minmax\(clamp\(34rem, 43vw, 39rem\), 49\.5rem\) !important/);
+  assert.match(styles, /gap: clamp\(3rem, 4\.5vw, 6rem\) !important/);
+  assert.match(styles, /padding-block: clamp\(1rem, 3\.5vh, 3rem\) !important/);
+  assert.match(styles, /calc\(\(100dvh - 5\.75rem\) \* 1\.25\)/);
+  assert.match(styles, /--feature-copy-inset: clamp\(4\.75rem, calc\(12rem - 4vw\), 7\.75rem\) !important/);
+  assert.match(styles, /width: min\(100%, clamp\(27rem, 27vw, 31rem\)\) !important/);
+  assert.match(styles, /min-height: clamp\(18rem, 36vh, 22rem\) !important/);
+  assert.match(styles, /font-size: clamp\(2\.4rem, min\(3\.45vw, 5\.4vh\), 4rem\) !important/);
+
+  // Do not reintroduce monitor-specific layout tiers in the shared override.
+  const continuityBlock = styles.slice(
+    styles.indexOf('One continuous desktop Home composition.'),
+    styles.indexOf('Keep the page-size control as a genuinely separate header tool.'),
+  );
+  assert.doesNotMatch(continuityBlock, /max-width:\s*1240px|max-width:\s*1360px|max-height:\s*759px/);
+  assert.doesNotMatch(continuityBlock, /1600px|2200px|2560px/);
 });
 
 test('Home keeps window scrolling and measures its story in rendered zoomed coordinates', async () => {

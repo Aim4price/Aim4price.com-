@@ -29,42 +29,74 @@
 }
 
 /*
- * A large desktop window should use its extra horizontal room without changing
- * the Home story into another responsive layout. The preview is deliberately
- * translated back toward the left edge during feature steps while the feature
- * narrative stays in the right grid column. These display-profile overrides
- * increase that relationship spacing only on genuinely wide browser windows.
- * The profile is derived from window.outerWidth, so Ctrl +/- does not flip it.
+ * One continuous desktop Home composition.
+ *
+ * The Home stylesheet still carries historical 1240/1360/759 tuning from the
+ * earlier responsive experiments. Those rules created visible 1px cliffs when
+ * a viewport crossed their endpoints. Rather than adding another layout tier,
+ * the stable site shell normalises the properties that actually changed the
+ * composition. From 1181px upward the same desktop grid now breathes through
+ * clamp()/vw/vh relationships; only the genuine tablet/short-screen boundary
+ * below this media query is allowed to recompose the Home.
  */
-@media (min-height: 640px) {
+@media (min-width: 1181px) and (min-height: 640px) {
   .root :global(
-    [data-aim4price-display-profile='wide']
+    [data-aim4price-site-zoom-host='true']
       section[data-story-mode]
       div:has(> aside[aria-label='What Aim4price helps you do'])
   ) {
-    gap: 5rem !important;
+    --hero-working-inset: clamp(0px, calc((100% - 1240px) / 2), 60px) !important;
+    grid-template-columns:
+      minmax(clamp(27rem, 31vw, 31rem), 1fr)
+      minmax(clamp(34rem, 43vw, 39rem), 49.5rem) !important;
+    gap: clamp(3rem, 4.5vw, 6rem) !important;
+    padding-block: clamp(1rem, 3.5vh, 3rem) !important;
   }
 
   .root :global(
-    [data-aim4price-display-profile='wide']
-      aside[aria-label='What Aim4price helps you do']
-  ) {
-    --feature-copy-inset: 5.5rem !important;
-  }
-
-  .root :global(
-    [data-aim4price-display-profile='expansive']
+    [data-aim4price-site-zoom-host='true']
       section[data-story-mode]
       div:has(> aside[aria-label='What Aim4price helps you do'])
+      > div:has(> div[data-active-question])
   ) {
-    gap: 5.5rem !important;
+    width: min(
+      45.5rem,
+      calc(100% + clamp(5rem, 5vw, 7rem)),
+      calc((100dvh - 5.75rem) * 1.25)
+    ) !important;
+    justify-self: end !important;
   }
 
   .root :global(
-    [data-aim4price-display-profile='expansive']
+    [data-aim4price-site-zoom-host='true']
+      section[data-story-mode]
       aside[aria-label='What Aim4price helps you do']
   ) {
-    --feature-copy-inset: 4.75rem !important;
+    --feature-copy-inset: clamp(4.75rem, calc(12rem - 4vw), 7.75rem) !important;
+    width: min(100%, clamp(27rem, 27vw, 31rem)) !important;
+    min-height: clamp(18rem, 36vh, 22rem) !important;
+  }
+
+  .root :global(
+    [data-aim4price-site-zoom-host='true']
+      section[data-story-mode]
+      aside[aria-label='What Aim4price helps you do']
+      > div[data-active]
+      > h2
+  ) {
+    margin-top: clamp(1rem, 1.5vh, 1.15rem) !important;
+    font-size: clamp(2.4rem, min(3.45vw, 5.4vh), 4rem) !important;
+  }
+
+  .root :global(
+    [data-aim4price-site-zoom-host='true']
+      section[data-story-mode]
+      aside[aria-label='What Aim4price helps you do']
+      > div[data-active]
+      > p
+  ) {
+    margin-top: clamp(1rem, 1.45vh, 1.1rem) !important;
+    line-height: 1.58 !important;
   }
 }
 
