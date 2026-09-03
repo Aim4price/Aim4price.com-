@@ -1,3 +1,7 @@
+:global([data-asset-register-overview-managed='true']) {
+  display: none !important;
+}
+
 .registerViewArea {
   display: grid;
   gap: 0.72rem;
