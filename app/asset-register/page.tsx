@@ -1,23 +1,11 @@
-import type { ReactNode } from "react";
 import { redirect } from "next/navigation";
-import AppHeader from "../../components/AppHeader";
 import { getAccountProfile } from "../../lib/account-profile";
 import { requireActivePageAccess } from "../../lib/account-access";
 import { listAssetRegisters } from "../../lib/asset-registers";
 import AssetRegisterClient from "./asset-register-client";
-import AssetRegisterWorkspaceFrame from "./asset-register-workspace-frame";
 import DealerRegisterGateway from "./dealer-register-gateway";
 
 export const runtime = "nodejs";
-
-function renderWorkspace(children: ReactNode) {
-  return (
-    <>
-      <AppHeader active="asset-register" brandAlignment="working-column" />
-      <AssetRegisterWorkspaceFrame>{children}</AssetRegisterWorkspaceFrame>
-    </>
-  );
-}
 
 export default async function AssetRegisterPage({
   searchParams,
@@ -51,22 +39,20 @@ export default async function AssetRegisterPage({
       if (requestedRegister?.id !== primaryRegister.id) {
         redirect(`/asset-register?dealerView=dealer&registerId=${encodeURIComponent(primaryRegister.id)}`);
       }
-      return renderWorkspace(
+      return (
         <AssetRegisterClient
-          showAppHeader={false}
           dealerRegisterMode="dealer"
           registerManagementHref="/asset-registers"
-        />,
+        />
       );
     }
 
     if (requestedView === "client" && requestedRegister && requestedRegister.id !== primaryRegister?.id) {
-      return renderWorkspace(
+      return (
         <AssetRegisterClient
-          showAppHeader={false}
           dealerRegisterMode="client"
           registerManagementHref="/asset-registers"
-        />,
+        />
       );
     }
 
@@ -76,12 +62,11 @@ export default async function AssetRegisterPage({
 
     if (requestedRegister) {
       const dealerRegisterMode = requestedRegister.id === primaryRegister?.id ? "dealer" : "client";
-      return renderWorkspace(
+      return (
         <AssetRegisterClient
-          showAppHeader={false}
           dealerRegisterMode={dealerRegisterMode}
           registerManagementHref="/asset-registers"
-        />,
+        />
       );
     }
 
@@ -92,5 +77,5 @@ export default async function AssetRegisterPage({
     );
   }
 
-  return renderWorkspace(<AssetRegisterClient showAppHeader={false} />);
+  return <AssetRegisterClient />;
 }
