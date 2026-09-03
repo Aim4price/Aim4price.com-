@@ -90,7 +90,10 @@ test('view switch communicates useful counts without bringing the pill strip bac
 test('Overview hides the normal asset workspace and ends with Go to assets instead', () => {
   assert.match(overview, /syncAssetViewSiblings\(portalHost, activeView === 'assets'\)/);
   assert.match(overview, /sibling\.hidden = true/);
-  assert.match(styles, /:global\(\[data-asset-register-overview-managed='true'\]\)\s*\{[\s\S]*?display:\s*none\s*!important;/);
+  assert.match(overview, /sibling\.style\.setProperty\('display', 'none', 'important'\)/);
+  assert.match(overview, /assetRegisterOverviewDisplayPriority/);
+  assert.match(overview, /restoreManagedAssetViewElement/);
+  assert.match(overview, /style\.removeProperty\('display'\)/);
   assert.match(overview, /<div className=\{styles\.overviewFooter\}>[\s\S]*?<strong>Go to assets<\/strong>/);
   assert.match(overview, /onClick=\{goToAssets\}/);
   assert.match(overview, /selectView\('assets'\)/);
