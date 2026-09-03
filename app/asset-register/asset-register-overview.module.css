@@ -1,107 +1,142 @@
 .registerViewArea {
   display: grid;
-  gap: 0.95rem;
+  gap: 0.72rem;
   margin: 0 0 1rem;
 }
 
 .viewSwitch {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.7rem;
+  gap: 0.45rem;
+  padding: 0.42rem;
+  border: 1px solid rgba(213, 226, 220, 0.92);
+  border-radius: 1.35rem;
+  background: rgba(255, 255, 255, 0.76);
+  box-shadow:
+    0 14px 34px rgba(20, 36, 33, 0.045),
+    inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(14px);
 }
 
 .viewSwitchButton {
-  display: inline-flex;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  min-height: 3.35rem;
-  padding: 0.75rem 1rem;
-  border: 1px solid var(--line-strong);
-  border-radius: 1.05rem;
+  gap: 0.72rem;
+  min-height: 4.25rem;
+  padding: 0.62rem 0.78rem;
+  border: 1px solid transparent;
+  border-radius: 1.02rem;
   color: var(--text);
-  background: rgba(255, 255, 255, 0.9);
+  background: transparent;
   font: inherit;
-  font-size: 0.96rem;
-  font-weight: 850;
+  text-align: left;
   cursor: pointer;
-  box-shadow: 0 8px 20px rgba(20, 36, 33, 0.025);
-  transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease, background 160ms ease, color 160ms ease;
+  transition:
+    transform 150ms ease,
+    border-color 150ms ease,
+    box-shadow 150ms ease,
+    background 150ms ease,
+    color 150ms ease;
 }
 
 .viewSwitchButton:hover {
   transform: translateY(-1px);
   border-color: var(--brand-soft-border);
-  box-shadow: 0 12px 24px rgba(20, 36, 33, 0.05);
+  background: rgba(237, 246, 241, 0.82);
+}
+
+.viewSwitchButton:focus-visible {
+  outline: 3px solid rgba(22, 83, 64, 0.16);
+  outline-offset: 2px;
 }
 
 .viewSwitchButtonActive {
   color: #ffffff;
-  background: var(--brand-mid);
   border-color: var(--brand-mid);
-  box-shadow: 0 12px 24px rgba(22, 83, 64, 0.13);
+  background: linear-gradient(135deg, var(--brand-mid) 0%, var(--brand-dark) 100%);
+  box-shadow: 0 10px 22px rgba(16, 56, 47, 0.16);
 }
 
 .viewSwitchButtonActive:hover {
   border-color: var(--brand-dark);
-  background: var(--brand-dark);
+  background: linear-gradient(135deg, #174f40 0%, #0d3129 100%);
 }
 
-.viewSwitchCount {
-  font-size: 0.86rem;
-  font-weight: 800;
-  opacity: 0.72;
+.viewSwitchIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.7rem;
+  height: 2.7rem;
+  flex: 0 0 auto;
+  border: 1px solid var(--brand-soft-border);
+  border-radius: 0.92rem;
+  color: var(--brand-mid);
+  background: rgba(237, 246, 241, 0.92);
+}
+
+.viewSwitchIcon svg {
+  width: 1.28rem;
+  height: 1.28rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+
+.viewSwitchButtonActive .viewSwitchIcon {
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.viewSwitchCopy {
+  display: grid;
+  gap: 0.12rem;
+  min-width: 0;
+}
+
+.viewSwitchCopy strong {
+  font-size: 1rem;
+  line-height: 1.2;
+  letter-spacing: -0.015em;
+}
+
+.viewSwitchCopy small {
+  overflow: hidden;
+  color: var(--text-muted);
+  font-size: 0.79rem;
+  font-weight: 650;
+  line-height: 1.3;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.viewSwitchButtonActive .viewSwitchCopy small {
+  color: rgba(255, 255, 255, 0.74);
+}
+
+.viewSwitchArrow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  color: var(--text-muted);
+  font-size: 1.2rem;
+  font-weight: 850;
+  line-height: 1;
+}
+
+.viewSwitchButtonActive .viewSwitchArrow {
+  color: rgba(255, 255, 255, 0.9);
 }
 
 .overview {
   display: grid;
-  gap: 0.85rem;
-}
-
-.overviewHeader {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 1.2rem;
-  padding: 0.1rem 0.15rem 0.05rem;
-}
-
-.overviewTitleBlock {
-  display: grid;
-  gap: 0.35rem;
-  min-width: 0;
-}
-
-.overviewTitleBlock h2 {
-  margin: 0;
-  color: var(--text);
-  font-size: clamp(1.28rem, 1.8vw, 1.58rem);
-  line-height: 1.12;
-  letter-spacing: -0.035em;
-}
-
-.overviewTitleBlock p {
-  margin: 0;
-  color: var(--text-muted);
-  font-size: 0.91rem;
-  line-height: 1.5;
-}
-
-.overviewSummary {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 0.28rem 0.5rem;
-  margin: 0;
-  max-width: 37rem;
-  color: var(--text-muted);
-  font-size: 0.82rem;
-  line-height: 1.45;
-}
-
-.overviewSummary strong {
-  color: var(--danger-text);
-  font-weight: 800;
+  gap: 0.72rem;
 }
 
 .overviewList {
@@ -391,32 +426,41 @@
   }
 }
 
-@media (max-width: 900px) {
-  .overviewHeader {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 0.55rem;
-  }
-
-  .overviewSummary {
-    justify-content: flex-start;
-  }
-}
-
 @media (max-width: 760px) {
   .registerViewArea {
-    gap: 0.8rem;
+    gap: 0.62rem;
   }
 
   .viewSwitch {
-    gap: 0.5rem;
+    gap: 0.32rem;
+    padding: 0.32rem;
+    border-radius: 1.15rem;
   }
 
   .viewSwitchButton {
-    min-height: 3.1rem;
-    padding-inline: 0.7rem;
-    border-radius: 0.95rem;
-    font-size: 0.9rem;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 0.55rem;
+    min-height: 3.75rem;
+    padding: 0.52rem 0.58rem;
+    border-radius: 0.9rem;
+  }
+
+  .viewSwitchIcon {
+    width: 2.35rem;
+    height: 2.35rem;
+    border-radius: 0.78rem;
+  }
+
+  .viewSwitchCopy strong {
+    font-size: 0.92rem;
+  }
+
+  .viewSwitchCopy small {
+    font-size: 0.7rem;
+  }
+
+  .viewSwitchArrow {
+    display: none;
   }
 
   .overviewCard {
@@ -447,5 +491,25 @@
 
   .retryButton {
     width: 100%;
+  }
+}
+
+@media (max-width: 520px) {
+  .viewSwitchButton {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    text-align: center;
+  }
+
+  .viewSwitchIcon {
+    display: none;
+  }
+
+  .viewSwitchCopy {
+    justify-items: center;
+  }
+
+  .viewSwitchCopy small {
+    max-width: 100%;
   }
 }
