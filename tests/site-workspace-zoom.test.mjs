@@ -99,7 +99,7 @@ test('Home keeps window scrolling and measures its story in rendered zoomed coor
   assert.match(desktopStory, /\.heroStory \{[\s\S]*?min-height: 440svh/);
 });
 
-test('page-size controls live in the header and introduce themselves once on Home', async () => {
+test('page-size controls live beside the header action rail and introduce themselves once on Home', async () => {
   const [zoom, styles] = await Promise.all([
     read('components/SiteWorkspaceZoom.tsx'),
     read('components/SiteWorkspaceZoom.module.css'),
@@ -118,6 +118,10 @@ test('page-size controls live in the header and introduce themselves once on Hom
   assert.match(headerControlsRule, /display: inline-flex/);
   assert.match(headerControlsRule, /min-width:/);
   assert.match(headerControlsRule, /margin-left:/);
+  assert.match(styles, /:has\(> \[data-site-workspace-zoom-controls\]\)[\s\S]*?> :first-child[\s\S]*?width: max-content !important/);
+  assert.match(styles, /div:has\(> \[aria-label='Open manage menu'\]\)[\s\S]*?flex: 0 0 10\.25rem !important/);
+  assert.match(styles, /\[aria-label='Open manage menu'\][\s\S]*?box-sizing: border-box !important[\s\S]*?width: 100% !important/);
+
   assert.match(styles, /\.controlsIntro \{[\s\S]*?animation: pageZoomControlIntro/);
   assert.match(styles, /@keyframes pageZoomControlIntro[\s\S]*?transform: scale\(1\.12\)/);
   assert.match(zoom, /pathname !== '\/'[\s\S]*?hasSeenIntro\(\)/);
