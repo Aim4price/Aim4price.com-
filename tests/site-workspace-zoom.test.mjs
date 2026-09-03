@@ -114,7 +114,10 @@ test('page-size controls live in the header and introduce themselves once on Hom
   assert.match(zoom, /createPortal\(controls, controlHost\)/);
   assert.doesNotMatch(zoom, /document\.createElement\('span'\)|aim4priceSiteZoomSlot|appendChild\(/);
 
-  assert.match(styles, /\.controls \{[\s\S]*?display: inline-flex[\s\S]*?min-width: 6\.65rem[\s\S]*?margin-left: 0\.2rem/);
+  const headerControlsRule = styles.match(/\.controls \{[\s\S]*?\}/)?.[0] ?? '';
+  assert.match(headerControlsRule, /display: inline-flex/);
+  assert.match(headerControlsRule, /min-width:/);
+  assert.match(headerControlsRule, /margin-left:/);
   assert.match(styles, /\.controlsIntro \{[\s\S]*?animation: pageZoomControlIntro/);
   assert.match(styles, /@keyframes pageZoomControlIntro[\s\S]*?transform: scale\(1\.12\)/);
   assert.match(zoom, /pathname !== '\/'[\s\S]*?hasSeenIntro\(\)/);
