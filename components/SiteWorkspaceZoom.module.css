@@ -1,0 +1,98 @@
+.root {
+  min-width: 0;
+  width: 100%;
+}
+
+.root :global([data-aim4price-site-zoom-host='true']) {
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: auto !important;
+  overflow-y: visible;
+  overscroll-behavior-x: contain;
+  scrollbar-gutter: stable;
+}
+
+.root :global([data-aim4price-site-zoom-host='true'] > [data-aim4price-app-header='true'] ~ *) {
+  zoom: var(--aim4price-site-workspace-zoom, 1);
+}
+
+.controls {
+  position: fixed;
+  top: 6.28rem;
+  right: max(0.75rem, env(safe-area-inset-right));
+  z-index: 96;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.08rem;
+  color: #153b31;
+  font-family: inherit;
+  font-size: 0.84rem;
+  font-weight: 850;
+  line-height: 1;
+  text-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.96),
+    0 0 10px rgba(255, 255, 255, 0.92);
+}
+
+.zoomButton,
+.zoomValue {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.zoomButton {
+  display: inline-grid;
+  width: 2.35rem;
+  height: 2.35rem;
+  padding: 0;
+  place-items: center;
+  border-radius: 999px;
+  font-size: 1.16rem;
+  line-height: 1;
+}
+
+.zoomValue {
+  min-width: 3.8rem;
+  min-height: 2.35rem;
+  padding: 0 0.32rem;
+  border-radius: 0.7rem;
+  color: #0f6a50;
+  font-size: 0.8rem;
+}
+
+.zoomButton:hover:not(:disabled),
+.zoomValue:hover {
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.zoomButton:focus-visible,
+.zoomValue:focus-visible {
+  outline: 2px solid rgba(18, 103, 79, 0.38);
+  outline-offset: 1px;
+  background: rgba(255, 255, 255, 0.82);
+}
+
+.zoomButton:disabled {
+  cursor: default;
+  opacity: 0.3;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .zoomButton,
+  .zoomValue {
+    transition: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .zoomButton:focus-visible,
+  .zoomValue:focus-visible {
+    outline: 2px solid CanvasText;
+  }
+}
