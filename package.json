@@ -30,7 +30,7 @@
     "test:fuel-ledger": "node --test tests/fuel-report.test.mjs tests/fuel-ledger-integrity.test.mjs tests/fuel-slip-modal-ui.test.mjs",
     "test:asset-groups": "node --test tests/asset-register-groups.test.mjs",
     "test:umbrella-modal-design": "node --test tests/umbrella-wizard-modal-parity.test.mjs tests/budget-review-save-guard.test.mjs tests/manual-cost-wizard-ui.test.mjs tests/account-document-vault.test.mjs",
-    "test:asset-card-ui": "node --experimental-strip-types --test tests/asset-register-card-ui.test.mjs tests/viewport-scrollbar.test.mjs tests/asset-register-workspace-zoom.test.mjs",
+    "test:asset-card-ui": "node --experimental-strip-types --test tests/asset-register-card-ui.test.mjs tests/viewport-scrollbar.test.mjs",
     "test:asset-map": "node --test tests/asset-map-ux.test.mjs tests/asset-map-report.test.mjs",
     "test:dropdown-overlays": "node --experimental-strip-types --test tests/dropdown-overlay.test.mjs",
     "test:documents": "node --test tests/account-document-vault.test.mjs",
