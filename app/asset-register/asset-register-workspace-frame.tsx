@@ -83,9 +83,12 @@ export default function AssetRegisterWorkspaceFrame({ children }: { children: Re
     const usableWidth = Math.max(1, viewport.clientWidth - 24);
     const rawZoom = (usableWidth / WORKSPACE_BASE_WIDTH) * 100;
     const fittedZoom = Math.max(FIT_MIN_ZOOM, Math.min(100, Math.floor(rawZoom / 5) * 5));
-    changeZoom(fittedZoom);
-    viewport.scrollLeft = 0;
-  }, [changeZoom]);
+
+    setZoom(clampZoom(fittedZoom));
+    window.requestAnimationFrame(() => {
+      viewport.scrollLeft = 0;
+    });
+  }, []);
 
   const workspaceStyle: WorkspaceStyle = {
     '--asset-register-workspace-zoom': zoom / 100,
