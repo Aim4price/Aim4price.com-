@@ -105,7 +105,6 @@ type OverviewItem = {
   sortTime: number;
 };
 
-const INITIAL_VISIBLE_ITEMS = 6;
 const REGISTER_VIEW_STORAGE_KEY = 'aim4price:asset-register:content-view';
 
 function text(value: unknown): string {
@@ -157,6 +156,7 @@ function priorityForStatus(status: string, fallback: number): number {
 
 function buildOverviewItems(assets: OverviewAsset[], groups: OverviewGroup[]): OverviewItem[] {
   const umbrellaByAssetId = new Map<string, string>();
+
   groups.forEach((group) => {
     group.members.forEach((member) => {
       umbrellaByAssetId.set(member.assetId, group.name);
@@ -186,7 +186,10 @@ function buildOverviewItems(assets: OverviewAsset[], groups: OverviewGroup[]): O
         status: 'Needs attention',
         headline: 'Problem reported',
         detail: text(problem.note) || text(problem.summary) || 'A problem note was reported for this asset.',
-        meta: [text(problem.operatorName) ? `Reported by ${text(problem.operatorName)}` : '', reported ? `Reported ${reported}` : ''].filter(Boolean).join(' • '),
+        meta: [
+          text(problem.operatorName) ? `Reported by ${text(problem.operatorName)}` : '',
+          reported ? `Reported ${reported}` : '',
+        ].filter(Boolean).join(' • '),
         sortPriority: 0,
         sortTime: new Date(problem.createdAtIso || 0).getTime() || 0,
       });
@@ -218,8 +221,10 @@ function buildOverviewItems(assets: OverviewAsset[], groups: OverviewGroup[]): O
         category: 'maintenance',
         section: sectionForAlert(maintenance.computedStatus),
         status: text(maintenance.computedStatusLabel) || 'Upcoming',
-        headline: text(maintenance.heading) || (maintenance.maintenanceType === 'checkup' ? 'Check-up due' : 'Service due'),
-        detail: text(maintenance.body) || `${maintenance.maintenanceType === 'checkup' ? 'Check-up' : 'Service'} is scheduled for this asset.`,
+        headline: text(maintenance.heading)
+          || (maintenance.maintenanceType === 'checkup' ? 'Check-up due' : 'Service due'),
+        detail: text(maintenance.body)
+          || `${maintenance.maintenanceType === 'checkup' ? 'Check-up' : 'Service'} is scheduled for this asset.`,
         meta: maintenanceMeta(maintenance),
         sortPriority: priorityForStatus(maintenance.computedStatus, 6),
         sortTime: new Date(maintenance.dueDate || maintenance.createdAtIso || 0).getTime() || 0,
@@ -238,7 +243,10 @@ function buildOverviewItems(assets: OverviewAsset[], groups: OverviewGroup[]): O
         status: text(licence.computedStatusLabel) || 'Due soon',
         headline: text(licence.heading) || 'Licence renewal',
         detail: text(licence.body) || 'Licence renewal needs attention.',
-        meta: [registration ? `Registration ${registration}` : '', renewalDate ? `Renews ${renewalDate}` : ''].filter(Boolean).join(' • '),
+        meta: [
+          registration ? `Registration ${registration}` : '',
+          renewalDate ? `Renews ${renewalDate}` : '',
+        ].filter(Boolean).join(' • '),
         sortPriority: priorityForStatus(licence.computedStatus, 6),
         sortTime: new Date(licence.renewalDate || 0).getTime() || 0,
       });
@@ -252,6 +260,7 @@ function buildOverviewItems(assets: OverviewAsset[], groups: OverviewGroup[]): O
         : maintenanceStatus.kind === 'serviced'
           ? 'Service recorded'
           : 'Check-up recorded';
+
       items.push({
         ...base,
         id: `maintenance-update:${maintenanceStatus.id}`,
@@ -259,8 +268,13 @@ function buildOverviewItems(assets: OverviewAsset[], groups: OverviewGroup[]): O
         section: 'recent',
         status: 'Recent update',
         headline: kindLabel,
-        detail: text(maintenanceStatus.note) || text(maintenanceStatus.summary) || 'Maintenance activity was recorded for this asset.',
-        meta: [text(maintenanceStatus.operatorName) ? `By ${text(maintenanceStatus.operatorName)}` : '', performed].filter(Boolean).join(' • '),
+        detail: text(maintenanceStatus.note)
+          || text(maintenanceStatus.summary)
+          || 'Maintenance activity was recorded for this asset.',
+        meta: [
+          text(maintenanceStatus.operatorName) ? `By ${text(maintenanceStatus.operatorName)}` : '',
+          performed,
+        ].filter(Boolean).join(' • '),
         sortPriority: 7,
         sortTime: new Date(maintenanceStatus.createdAtIso || 0).getTime() || 0,
       });
@@ -275,8 +289,10 @@ function buildOverviewItems(assets: OverviewAsset[], groups: OverviewGroup[]): O
     };
     const sectionDifference = sectionPriority[left.section] - sectionPriority[right.section];
     if (sectionDifference) return sectionDifference;
+
     const priorityDifference = left.sortPriority - right.sortPriority;
     if (priorityDifference) return priorityDifference;
+
     if (left.section === 'recent') return right.sortTime - left.sortTime;
     if (left.sortTime && right.sortTime) return left.sortTime - right.sortTime;
     return left.assetTitle.localeCompare(right.assetTitle);
@@ -300,21 +316,35 @@ function categoryClassName(category: OverviewCategory): string {
 function categoryIcon(category: OverviewCategory) {
   if (category === 'maintenance') {
     return (
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.8 6.2a5.2 5.2 0 0 0-6.5 6.5L3.6 17.4a2.1 2.1 0 1 0 3 3l4.7-4.7a5.2 5.2 0 0 0 6.5-6.5l-3 3-3-3 3-3Z" /></svg>
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M14.8 6.2a5.2 5.2 0 0 0-6.5 6.5L3.6 17.4a2.1 2.1 0 1 0 3 3l4.7-4.7a5.2 5.2 0 0 0 6.5-6.5l-3 3-3-3 3-3Z" />
+      </svg>
     );
   }
+
   if (category === 'licence') {
     return (
-      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="14" rx="2" /><path d="M8 3v4M16 3v4M4 10h16M8 14h3" /></svg>
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <rect x="4" y="5" width="16" height="14" rx="2" />
+        <path d="M8 3v4M16 3v4M4 10h16M8 14h3" />
+      </svg>
     );
   }
+
   if (category === 'problem') {
     return (
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 2.8 19h18.4L12 3Z" /><path d="M12 9v4M12 16.5h.01" /></svg>
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M12 3 2.8 19h18.4L12 3Z" />
+        <path d="M12 9v4M12 16.5h.01" />
+      </svg>
     );
   }
+
   return (
-    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v12H9l-4 4V4Z" /><path d="M8 8h8M8 12h5" /></svg>
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M5 4h14v12H9l-4 4V4Z" />
+      <path d="M8 8h8M8 12h5" />
+    </svg>
   );
 }
 
@@ -397,7 +427,6 @@ export default function AssetRegisterOverview() {
   const [groups, setGroups] = useState<OverviewGroup[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [expanded, setExpanded] = useState(false);
 
   useEffect(() => {
     try {
@@ -461,7 +490,6 @@ export default function AssetRegisterOverview() {
   const selectView = useCallback((nextView: RegisterContentView) => {
     syncAssetViewSiblings(portalHost, nextView === 'assets');
     setActiveView(nextView);
-    if (nextView === 'assets') setExpanded(false);
 
     try {
       window.sessionStorage.setItem(REGISTER_VIEW_STORAGE_KEY, nextView);
@@ -469,6 +497,18 @@ export default function AssetRegisterOverview() {
       // Ignore storage failures and keep the in-memory view selection.
     }
   }, [portalHost]);
+
+  const goToAssets = useCallback(() => {
+    selectView('assets');
+
+    window.requestAnimationFrame(() => {
+      const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+      portalHost?.scrollIntoView({
+        block: 'start',
+        behavior: reduceMotion ? 'auto' : 'smooth',
+      });
+    });
+  }, [portalHost, selectView]);
 
   const loadOverview = useCallback(async () => {
     setLoading(true);
@@ -479,17 +519,21 @@ export default function AssetRegisterOverview() {
       const params = new URLSearchParams();
       const registerId = text(current.searchParams.get('registerId'));
       const scope = text(current.searchParams.get('scope'));
+
       if (registerId) params.set('registerId', registerId);
       if (scope === 'combined') params.set('scope', 'combined');
+
       const suffix = params.toString() ? `?${params.toString()}` : '';
       const response = await fetch(`/api/asset-register${suffix}`, {
         cache: 'no-store',
         headers: { Accept: 'application/json' },
       });
       const payload = await response.json() as AssetRegisterOverviewResponse;
+
       if (!response.ok || !payload.ok) {
         throw new Error(payload.error || 'The Asset Register overview could not be loaded.');
       }
+
       setAssets(payload.items ?? payload.assets ?? []);
       setGroups(payload.groups ?? []);
     } catch (loadError) {
@@ -507,12 +551,11 @@ export default function AssetRegisterOverview() {
   }, [loadOverview]);
 
   const overviewItems = useMemo(() => buildOverviewItems(assets, groups), [assets, groups]);
-  const visibleItems = expanded ? overviewItems : overviewItems.slice(0, INITIAL_VISIBLE_ITEMS);
-  const hiddenCount = Math.max(0, overviewItems.length - visibleItems.length);
   const attentionCount = useMemo(
     () => overviewItems.filter((item) => item.section === 'needs_attention').length,
     [overviewItems],
   );
+
   const overviewSwitchDetail = loading
     ? 'Checking updates…'
     : error
@@ -520,6 +563,7 @@ export default function AssetRegisterOverview() {
       : overviewItems.length === 0
         ? 'No open updates'
         : `${overviewItems.length} update${overviewItems.length === 1 ? '' : 's'}${attentionCount ? ` · ${attentionCount} need attention` : ''}`;
+
   const assetSwitchDetail = loading
     ? 'Loading register…'
     : `${assets.length} asset${assets.length === 1 ? '' : 's'}`;
@@ -542,6 +586,7 @@ export default function AssetRegisterOverview() {
           </span>
           <span className={styles.viewSwitchArrow} aria-hidden="true">{activeView === 'overview' ? '✓' : '›'}</span>
         </button>
+
         <button
           type="button"
           className={`${styles.viewSwitchButton} ${activeView === 'assets' ? styles.viewSwitchButtonActive : ''}`}
@@ -562,70 +607,102 @@ export default function AssetRegisterOverview() {
           {loading ? (
             <div className={`${styles.stateCard} ${styles.loadingCard}`} role="status">
               <span className={styles.loadingDot} aria-hidden="true" />
-              <div><strong>Checking the register</strong><p>Loading maintenance, licensing and problem notes.</p></div>
+              <div>
+                <strong>Checking the register</strong>
+                <p>Loading maintenance, licensing and problem notes.</p>
+              </div>
             </div>
           ) : error ? (
             <div className={`${styles.stateCard} ${styles.errorCard}`} role="alert">
-              <div><strong>Overview unavailable</strong><p>{error}</p></div>
-              <button type="button" className={styles.retryButton} onClick={() => void loadOverview()}>Retry</button>
+              <div>
+                <strong>Overview unavailable</strong>
+                <p>{error}</p>
+              </div>
+              <button type="button" className={styles.retryButton} onClick={() => void loadOverview()}>
+                Retry
+              </button>
             </div>
           ) : overviewItems.length === 0 ? (
             <div className={`${styles.stateCard} ${styles.clearCard}`}>
               <span className={styles.clearIcon} aria-hidden="true">✓</span>
-              <div><strong>Nothing needs attention right now</strong><p>No open maintenance alerts, licence renewals, problem notes or partner notes were found.</p></div>
+              <div>
+                <strong>Nothing needs attention right now</strong>
+                <p>No open maintenance alerts, licence renewals, problem notes or partner notes were found.</p>
+              </div>
             </div>
           ) : (
-            <>
-              <div className={styles.overviewList}>
-                {visibleItems.map((item) => (
-                  <article
-                    key={item.id}
-                    className={`${registerStyles.assetCard} ${styles.overviewCard} ${item.section === 'needs_attention' ? styles.cardAttention : item.section === 'coming_up' ? styles.cardUpcoming : styles.cardRecent}`}
+            <div className={styles.overviewList}>
+              {overviewItems.map((item) => (
+                <article
+                  key={item.id}
+                  className={`${registerStyles.assetCard} ${styles.overviewCard} ${
+                    item.section === 'needs_attention'
+                      ? styles.cardAttention
+                      : item.section === 'coming_up'
+                        ? styles.cardUpcoming
+                        : styles.cardRecent
+                  }`}
+                >
+                  <div className={`${styles.categoryIcon} ${categoryClassName(item.category)}`}>
+                    {categoryIcon(item.category)}
+                  </div>
+
+                  <div className={styles.cardBody}>
+                    <div className={styles.cardContext}>
+                      <strong className={categoryClassName(item.category)}>{categoryLabel(item.category)}</strong>
+                      <span aria-hidden="true">•</span>
+                      <span>{item.umbrellaName || 'Standalone asset'}</span>
+                      <span aria-hidden="true">•</span>
+                      <span
+                        className={
+                          item.section === 'needs_attention'
+                            ? styles.statusAttention
+                            : item.section === 'coming_up'
+                              ? styles.statusUpcoming
+                              : styles.statusRecent
+                        }
+                      >
+                        {item.status}
+                      </span>
+                    </div>
+
+                    <h3 className={styles.assetTitle}>{item.assetTitle}</h3>
+                    <strong className={styles.headline}>{item.headline}</strong>
+                    <p className={styles.detail}>{item.detail}</p>
+
+                    <div className={styles.metaRow}>
+                      {assetMeta(item) ? <span>{assetMeta(item)}</span> : null}
+                      {item.meta ? <span>{item.meta}</span> : null}
+                    </div>
+                  </div>
+
+                  <a
+                    className={styles.viewAssetButton}
+                    href={buildAssetHref(item.assetId)}
+                    onClick={() => selectView('assets')}
                   >
-                    <div className={`${styles.categoryIcon} ${categoryClassName(item.category)}`}>
-                      {categoryIcon(item.category)}
-                    </div>
-
-                    <div className={styles.cardBody}>
-                      <div className={styles.cardContext}>
-                        <strong className={categoryClassName(item.category)}>{categoryLabel(item.category)}</strong>
-                        <span aria-hidden="true">•</span>
-                        <span>{item.umbrellaName || 'Standalone asset'}</span>
-                        <span aria-hidden="true">•</span>
-                        <span className={item.section === 'needs_attention' ? styles.statusAttention : item.section === 'coming_up' ? styles.statusUpcoming : styles.statusRecent}>
-                          {item.status}
-                        </span>
-                      </div>
-                      <h3 className={styles.assetTitle}>{item.assetTitle}</h3>
-                      <strong className={styles.headline}>{item.headline}</strong>
-                      <p className={styles.detail}>{item.detail}</p>
-                      <div className={styles.metaRow}>
-                        {assetMeta(item) ? <span>{assetMeta(item)}</span> : null}
-                        {item.meta ? <span>{item.meta}</span> : null}
-                      </div>
-                    </div>
-
-                    <a
-                      className={styles.viewAssetButton}
-                      href={buildAssetHref(item.assetId)}
-                      onClick={() => selectView('assets')}
-                    >
-                      View asset
-                      <span aria-hidden="true">→</span>
-                    </a>
-                  </article>
-                ))}
-              </div>
-
-              {overviewItems.length > INITIAL_VISIBLE_ITEMS ? (
-                <div className={styles.overviewFooter}>
-                  <button type="button" className={styles.showMoreButton} onClick={() => setExpanded((value) => !value)}>
-                    {expanded ? 'Show less' : `Show ${hiddenCount} more`}
-                  </button>
-                </div>
-              ) : null}
-            </>
+                    View asset
+                    <span aria-hidden="true">→</span>
+                  </a>
+                </article>
+              ))}
+            </div>
           )}
+
+          <div className={styles.overviewFooter}>
+            <button
+              type="button"
+              className={styles.goToAssetsButton}
+              onClick={goToAssets}
+            >
+              <span className={styles.goToAssetsIcon}>{assetsViewIcon()}</span>
+              <span className={styles.goToAssetsCopy}>
+                <strong>Go to assets</strong>
+                {!loading ? <small>{assets.length} asset{assets.length === 1 ? '' : 's'} in this register</small> : null}
+              </span>
+              <span className={styles.goToAssetsArrow} aria-hidden="true">→</span>
+            </button>
+          </div>
         </section>
       ) : null}
     </div>,

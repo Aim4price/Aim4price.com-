@@ -46,7 +46,8 @@
   background: rgba(237, 246, 241, 0.82);
 }
 
-.viewSwitchButton:focus-visible {
+.viewSwitchButton:focus-visible,
+.goToAssetsButton:focus-visible {
   outline: 3px solid rgba(22, 83, 64, 0.16);
   outline-offset: 2px;
 }
@@ -76,7 +77,8 @@
   background: rgba(237, 246, 241, 0.92);
 }
 
-.viewSwitchIcon svg {
+.viewSwitchIcon svg,
+.goToAssetsIcon svg {
   width: 1.28rem;
   height: 1.28rem;
   fill: none;
@@ -300,8 +302,7 @@
 }
 
 .viewAssetButton,
-.retryButton,
-.showMoreButton {
+.retryButton {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -322,8 +323,7 @@
 }
 
 .viewAssetButton:hover,
-.retryButton:hover,
-.showMoreButton:hover {
+.retryButton:hover {
   transform: translateY(-1px);
   border-color: #c4d3e5;
   box-shadow: 0 8px 16px rgba(41, 69, 107, 0.08);
@@ -392,8 +392,7 @@
   background: var(--danger-bg);
 }
 
-.retryButton,
-.showMoreButton {
+.retryButton {
   border-color: var(--line-strong);
   color: var(--text);
   background: var(--surface);
@@ -402,11 +401,73 @@
 .overviewFooter {
   display: flex;
   justify-content: center;
-  padding-top: 0.05rem;
+  padding: 0.28rem 0 0.08rem;
 }
 
-.showMoreButton {
-  min-height: 2.55rem;
+.goToAssetsButton {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.78rem;
+  width: min(100%, 34rem);
+  min-height: 4rem;
+  padding: 0.62rem 0.72rem;
+  border: 1px solid var(--brand-mid);
+  border-radius: 1.08rem;
+  color: #ffffff;
+  background: linear-gradient(135deg, var(--brand-mid) 0%, var(--brand-dark) 100%);
+  box-shadow: 0 12px 26px rgba(16, 56, 47, 0.14);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: transform 150ms ease, box-shadow 150ms ease, background 150ms ease;
+}
+
+.goToAssetsButton:hover {
+  transform: translateY(-1px);
+  background: linear-gradient(135deg, #174f40 0%, #0d3129 100%);
+  box-shadow: 0 16px 30px rgba(16, 56, 47, 0.18);
+}
+
+.goToAssetsIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.55rem;
+  height: 2.55rem;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 0.86rem;
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.09);
+}
+
+.goToAssetsCopy {
+  display: grid;
+  gap: 0.08rem;
+  min-width: 0;
+}
+
+.goToAssetsCopy strong {
+  font-size: 0.96rem;
+  line-height: 1.2;
+}
+
+.goToAssetsCopy small {
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.76rem;
+  font-weight: 650;
+  line-height: 1.3;
+}
+
+.goToAssetsArrow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.8rem;
+  height: 1.8rem;
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 1.05rem;
+  font-weight: 850;
 }
 
 @keyframes overviewPulse {
@@ -419,7 +480,7 @@
   .overviewCard,
   .viewAssetButton,
   .retryButton,
-  .showMoreButton,
+  .goToAssetsButton,
   .loadingDot::after {
     animation: none;
     transition: none;
@@ -492,6 +553,10 @@
   .retryButton {
     width: 100%;
   }
+
+  .goToAssetsButton {
+    width: 100%;
+  }
 }
 
 @media (max-width: 520px) {
@@ -511,5 +576,9 @@
 
   .viewSwitchCopy small {
     max-width: 100%;
+  }
+
+  .goToAssetsButton {
+    grid-template-columns: auto minmax(0, 1fr) auto;
   }
 }
