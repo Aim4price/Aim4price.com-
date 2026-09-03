@@ -50,10 +50,16 @@ test('page zoom is minimal, does not trigger responsive breakpoints and leaves i
   assert.match(zoom, /EXCLUDED_ROUTE_PREFIXES = \['\/owner-app', '\/dealer', '\/field-manager', '\/admin'\]/);
   assert.match(zoom, /pathname === prefix \|\| pathname\.startsWith\(`\$\{prefix\}\/`\)/);
   assert.doesNotMatch(zoom, /matchMedia|devicePixelRatio|screen\.width|innerWidth/);
-  assert.doesNotMatch(styles, /transform:\s*scale\(/);
+
+  const pageZoomRule = styles.match(
+    /data-aim4price-site-zoom-host='true'\] > \[data-aim4price-app-header='true'\] ~ \*[\s\S]*?\}/,
+  )?.[0] ?? '';
+  assert.match(pageZoomRule, /zoom: var\(--aim4price-site-workspace-zoom, 1\)/);
+  assert.doesNotMatch(pageZoomRule, /transform:\s*scale\(/);
 
   assert.match(styles, /\.zoomButton,[\s\S]*?\.zoomValue \{[\s\S]*?border: 0;[\s\S]*?background: transparent;[\s\S]*?box-shadow: none/);
   const controlsBlock = styles.slice(styles.indexOf('.controls {'), styles.indexOf('.zoomButton,'));
+  assert.doesNotMatch(controlsBlock, /position:\s*fixed/);
   assert.doesNotMatch(controlsBlock, /border:|background:|box-shadow:/);
 
   assert.match(zoom, /usesContainedScroll[\s\S]*?host\.scrollLeft = Math\.max\(0, desiredLeft\)/);
@@ -91,4 +97,30 @@ test('Home keeps window scrolling and measures its story in rendered zoomed coor
   const desktopStory = homeStyles.slice(homeStyles.indexOf('@media (min-width: 1181px) and (min-height: 640px)'));
   assert.match(desktopStory, /\.heroSticky \{[\s\S]*?position: sticky;[\s\S]*?top: 5\.75rem/);
   assert.match(desktopStory, /\.heroStory \{[\s\S]*?min-height: 440svh/);
+});
+
+test('page-size controls live in the header and introduce themselves once on Home', async () => {
+  const [zoom, styles] = await Promise.all([
+    read('components/SiteWorkspaceZoom.tsx'),
+    read('components/SiteWorkspaceZoom.module.css'),
+  ]);
+
+  assert.match(zoom, /import \{ createPortal \} from 'react-dom'/);
+  assert.match(zoom, /INTRO_STORAGE_KEY = 'aim4price\.site\.workspace-zoom-intro\.v1'/);
+  assert.match(zoom, /const headerInner = header\?\.firstElementChild/);
+  assert.match(zoom, /const headerActions = headerInner\?\.lastElementChild/);
+  assert.match(zoom, /controlHostRef\.current = headerActions/);
+  assert.match(zoom, /setControlHost\(headerActions\)/);
+  assert.match(zoom, /createPortal\(controls, controlHost\)/);
+  assert.doesNotMatch(zoom, /document\.createElement\('span'\)|aim4priceSiteZoomSlot|appendChild\(/);
+
+  assert.match(styles, /\.controls \{[\s\S]*?display: inline-flex[\s\S]*?min-width: 6\.65rem[\s\S]*?margin-left: 0\.2rem/);
+  assert.match(styles, /\.controlsIntro \{[\s\S]*?animation: pageZoomControlIntro/);
+  assert.match(styles, /@keyframes pageZoomControlIntro[\s\S]*?transform: scale\(1\.12\)/);
+  assert.match(zoom, /pathname !== '\/'[\s\S]*?hasSeenIntro\(\)/);
+  assert.match(zoom, /Increase or decrease page size here\./);
+  assert.match(zoom, /aria-label="Aim4price page size controls"/);
+  assert.match(zoom, /aria-label="Decrease page size"/);
+  assert.match(zoom, /aria-label="Increase page size"/);
+  assert.match(zoom, /setShowIntro\(false\)[\s\S]*?zoomRef\.current = normalizedZoom/);
 });
