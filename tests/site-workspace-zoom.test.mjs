@@ -59,7 +59,7 @@ test('page zoom is minimal, does not trigger responsive breakpoints and leaves i
   assert.match(zoom, /usesContainedScroll[\s\S]*?host\.scrollLeft = Math\.max\(0, desiredLeft\)/);
 });
 
-test('Home keeps window scrolling so its sticky scroll story is not trapped by the zoom host', async () => {
+test('Home keeps window scrolling and measures its story in rendered zoomed coordinates', async () => {
   const [zoom, styles, homeStory, homeStyles] = await Promise.all([
     read('components/SiteWorkspaceZoom.tsx'),
     read('components/SiteWorkspaceZoom.module.css'),
@@ -82,7 +82,12 @@ test('Home keeps window scrolling so its sticky scroll story is not trapped by t
   );
 
   assert.match(homeStory, /const currentScrollY = window\.scrollY/);
+  assert.match(homeStory, /const sectionRect = section\.getBoundingClientRect\(\)/);
+  assert.match(homeStory, /const stickyRect = sticky\.getBoundingClientRect\(\)/);
+  assert.match(homeStory, /sectionRect\.height - stickyRect\.height/);
+  assert.doesNotMatch(homeStory, /section\.offsetHeight - sticky\.offsetHeight/);
   assert.match(homeStory, /window\.addEventListener\('scroll', handleScroll/);
+
   const desktopStory = homeStyles.slice(homeStyles.indexOf('@media (min-width: 1181px) and (min-height: 640px)'));
   assert.match(desktopStory, /\.heroSticky \{[\s\S]*?position: sticky;[\s\S]*?top: 5\.75rem/);
   assert.match(desktopStory, /\.heroStory \{[\s\S]*?min-height: 440svh/);
