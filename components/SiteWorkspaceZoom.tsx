@@ -11,6 +11,8 @@ const MAX_ZOOM = 150;
 const ZOOM_STEP = 10;
 const EXCLUDED_ROUTE_PREFIXES = ['/owner-app', '/dealer', '/field-manager', '/admin'] as const;
 
+type SiteZoomMode = 'workspace' | 'viewport';
+
 function clampZoom(value: number): number {
   if (!Number.isFinite(value)) return DEFAULT_ZOOM;
   return Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, Math.round(value)));
@@ -22,6 +24,14 @@ function routeMatchesPrefix(pathname: string, prefix: string): boolean {
 
 function isExcludedRoute(pathname: string): boolean {
   return EXCLUDED_ROUTE_PREFIXES.some((prefix) => routeMatchesPrefix(pathname, prefix));
+}
+
+function siteZoomMode(pathname: string): SiteZoomMode {
+  // Home owns a long viewport-relative sticky scroll story. Giving its page
+  // host overflow would turn that host into the sticky containing scroller.
+  // Keep Home on window/document scrolling while ordinary workspaces retain
+  // their contained horizontal overflow.
+  return pathname === '/' ? 'viewport' : 'workspace';
 }
 
 function readSavedZoom(): number {
@@ -50,6 +60,7 @@ export default function SiteWorkspaceZoom({ children }: { children: ReactNode })
 
     if (host) {
       delete host.dataset.aim4priceSiteZoomHost;
+      delete host.dataset.aim4priceSiteZoomMode;
       host.style.removeProperty('--aim4price-site-workspace-zoom');
     }
 
@@ -79,6 +90,7 @@ export default function SiteWorkspaceZoom({ children }: { children: ReactNode })
 
     header.dataset.aim4priceAppHeader = 'true';
     host.dataset.aim4priceSiteZoomHost = 'true';
+    host.dataset.aim4priceSiteZoomMode = siteZoomMode(pathname);
     host.style.setProperty('--aim4price-site-workspace-zoom', String(zoomRef.current / 100));
     setIsAvailable(true);
     return true;
@@ -110,7 +122,7 @@ export default function SiteWorkspaceZoom({ children }: { children: ReactNode })
 
     if (isExcludedRoute(pathname)) return undefined;
 
-    let frameId = window.requestAnimationFrame(() => {
+    const frameId = window.requestAnimationFrame(() => {
       bindCurrentPage();
     });
 
@@ -133,8 +145,9 @@ export default function SiteWorkspaceZoom({ children }: { children: ReactNode })
   const changeZoom = useCallback((nextZoom: number) => {
     const normalizedZoom = clampZoom(nextZoom);
     const host = hostRef.current;
-    const previousScrollWidth = host?.scrollWidth ?? 0;
-    const previousCenter = host && previousScrollWidth > 0
+    const usesContainedScroll = host?.dataset.aim4priceSiteZoomMode === 'workspace';
+    const previousScrollWidth = usesContainedScroll ? host.scrollWidth : 0;
+    const previousCenter = usesContainedScroll && previousScrollWidth > 0
       ? (host.scrollLeft + host.clientWidth / 2) / previousScrollWidth
       : 0;
 
@@ -142,7 +155,7 @@ export default function SiteWorkspaceZoom({ children }: { children: ReactNode })
     host?.style.setProperty('--aim4price-site-workspace-zoom', String(normalizedZoom / 100));
     setZoom(normalizedZoom);
 
-    if (!host || previousScrollWidth <= 0) return;
+    if (!host || !usesContainedScroll || previousScrollWidth <= 0) return;
 
     window.requestAnimationFrame(() => {
       if (!host.isConnected) return;
