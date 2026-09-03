@@ -237,13 +237,19 @@ export default function HomeHeroExperience() {
         if (!section || !sticky) return;
 
         const currentScrollY = window.scrollY;
-        const sectionTop = currentScrollY + section.getBoundingClientRect().top;
+        const sectionRect = section.getBoundingClientRect();
+        const stickyRect = sticky.getBoundingClientRect();
+        const sectionTop = currentScrollY + sectionRect.top;
         const stickyTop =
           Number.parseFloat(window.getComputedStyle(sticky).top) || 0;
         const trackStart = sectionTop - stickyTop;
+        // Use rendered geometry rather than offsetHeight. CSS `zoom` changes
+        // the physical scroll distance but offsetHeight remains unzoomed,
+        // which otherwise makes later story stages unreachable when zoomed
+        // out and finish too early when zoomed in.
         const trackTravel = Math.max(
           1,
-          section.offsetHeight - sticky.offsetHeight,
+          sectionRect.height - stickyRect.height,
         );
         const localScroll = Math.max(
           0,

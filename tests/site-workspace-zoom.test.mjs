@@ -34,7 +34,7 @@ test('normal Aim4price website pages share one persistent user-controlled zoom l
   assert.match(zoom, /host\.dataset\.aim4priceSiteZoomHost = 'true'/);
   assert.match(zoom, /--aim4price-site-workspace-zoom/);
 
-  assert.match(styles, /data-aim4price-site-zoom-host='true'[\s\S]*?overflow-x: auto !important/);
+  assert.match(styles, /data-aim4price-site-zoom-mode='workspace'[\s\S]*?overflow-x: auto !important/);
   assert.match(
     styles,
     /data-aim4price-site-zoom-host='true'\] > \[data-aim4price-app-header='true'\] ~ \*[\s\S]*?zoom: var\(--aim4price-site-workspace-zoom, 1\)/,
@@ -56,5 +56,39 @@ test('page zoom is minimal, does not trigger responsive breakpoints and leaves i
   const controlsBlock = styles.slice(styles.indexOf('.controls {'), styles.indexOf('.zoomButton,'));
   assert.doesNotMatch(controlsBlock, /border:|background:|box-shadow:/);
 
-  assert.match(zoom, /previousCenter[\s\S]*?host\.scrollLeft = Math\.max\(0, desiredLeft\)/);
+  assert.match(zoom, /usesContainedScroll[\s\S]*?host\.scrollLeft = Math\.max\(0, desiredLeft\)/);
+});
+
+test('Home keeps window scrolling and measures its story in rendered zoomed coordinates', async () => {
+  const [zoom, styles, homeStory, homeStyles] = await Promise.all([
+    read('components/SiteWorkspaceZoom.tsx'),
+    read('components/SiteWorkspaceZoom.module.css'),
+    read('app/home-hero-experience.tsx'),
+    read('app/page.module.css'),
+  ]);
+
+  assert.match(zoom, /type SiteZoomMode = 'workspace' \| 'viewport'/);
+  assert.match(zoom, /return pathname === '\/' \? 'viewport' : 'workspace'/);
+  assert.match(zoom, /host\.dataset\.aim4priceSiteZoomMode = siteZoomMode\(pathname\)/);
+  assert.match(zoom, /delete host\.dataset\.aim4priceSiteZoomMode/);
+
+  assert.match(
+    styles,
+    /data-aim4price-site-zoom-mode='viewport'[\s\S]*?overflow: visible !important[\s\S]*?scrollbar-gutter: auto/,
+  );
+  assert.doesNotMatch(
+    styles.match(/data-aim4price-site-zoom-mode='viewport'[\s\S]*?\}/)?.[0] ?? '',
+    /overflow-x:\s*auto/,
+  );
+
+  assert.match(homeStory, /const currentScrollY = window\.scrollY/);
+  assert.match(homeStory, /const sectionRect = section\.getBoundingClientRect\(\)/);
+  assert.match(homeStory, /const stickyRect = sticky\.getBoundingClientRect\(\)/);
+  assert.match(homeStory, /sectionRect\.height - stickyRect\.height/);
+  assert.doesNotMatch(homeStory, /section\.offsetHeight - sticky\.offsetHeight/);
+  assert.match(homeStory, /window\.addEventListener\('scroll', handleScroll/);
+
+  const desktopStory = homeStyles.slice(homeStyles.indexOf('@media (min-width: 1181px) and (min-height: 640px)'));
+  assert.match(desktopStory, /\.heroSticky \{[\s\S]*?position: sticky;[\s\S]*?top: 5\.75rem/);
+  assert.match(desktopStory, /\.heroStory \{[\s\S]*?min-height: 440svh/);
 });
