@@ -1,15 +1,69 @@
+.registerViewArea {
+  display: grid;
+  gap: 0.95rem;
+  margin: 0 0 1rem;
+}
+
+.viewSwitch {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.7rem;
+}
+
+.viewSwitchButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 3.35rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 1.05rem;
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.9);
+  font: inherit;
+  font-size: 0.96rem;
+  font-weight: 850;
+  cursor: pointer;
+  box-shadow: 0 8px 20px rgba(20, 36, 33, 0.025);
+  transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease, background 160ms ease, color 160ms ease;
+}
+
+.viewSwitchButton:hover {
+  transform: translateY(-1px);
+  border-color: var(--brand-soft-border);
+  box-shadow: 0 12px 24px rgba(20, 36, 33, 0.05);
+}
+
+.viewSwitchButtonActive {
+  color: #ffffff;
+  background: var(--brand-mid);
+  border-color: var(--brand-mid);
+  box-shadow: 0 12px 24px rgba(22, 83, 64, 0.13);
+}
+
+.viewSwitchButtonActive:hover {
+  border-color: var(--brand-dark);
+  background: var(--brand-dark);
+}
+
+.viewSwitchCount {
+  font-size: 0.86rem;
+  font-weight: 800;
+  opacity: 0.72;
+}
+
 .overview {
   display: grid;
-  gap: 0.8rem;
-  margin: 0 0 1rem;
+  gap: 0.85rem;
 }
 
 .overviewHeader {
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
-  gap: 1rem;
-  padding: 0.15rem 0.15rem 0.1rem;
+  gap: 1.2rem;
+  padding: 0.1rem 0.15rem 0.05rem;
 }
 
 .overviewTitleBlock {
@@ -18,81 +72,36 @@
   min-width: 0;
 }
 
-.overviewEyebrow {
-  color: var(--brand-mid);
-  font-size: 0.76rem;
-  font-weight: 850;
-  letter-spacing: 0.07em;
-  text-transform: uppercase;
-}
-
-.overviewHeadingRow {
-  display: flex;
-  align-items: center;
-  gap: 0.55rem;
-}
-
-.overviewHeadingRow h2 {
+.overviewTitleBlock h2 {
   margin: 0;
   color: var(--text);
-  font-size: clamp(1.25rem, 1.8vw, 1.55rem);
+  font-size: clamp(1.28rem, 1.8vw, 1.58rem);
   line-height: 1.12;
   letter-spacing: -0.035em;
-}
-
-.totalCount {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 1.8rem;
-  min-height: 1.8rem;
-  padding: 0 0.5rem;
-  border-radius: 999px;
-  color: var(--brand-mid);
-  background: var(--brand-soft);
-  border: 1px solid var(--brand-soft-border);
-  font-size: 0.8rem;
-  font-weight: 850;
 }
 
 .overviewTitleBlock p {
   margin: 0;
   color: var(--text-muted);
-  font-size: 0.9rem;
+  font-size: 0.91rem;
   line-height: 1.5;
 }
 
-.overviewCounts {
+.overviewSummary {
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
-  gap: 0.45rem;
-}
-
-.overviewCounts span,
-.typeBadge,
-.umbrellaBadge,
-.statusBadge {
-  display: inline-flex;
-  align-items: center;
-  min-height: 1.85rem;
-  padding: 0 0.7rem;
-  border-radius: 999px;
-  white-space: nowrap;
-  font-size: 0.76rem;
-  font-weight: 800;
-}
-
-.overviewCounts span {
+  gap: 0.28rem 0.5rem;
+  margin: 0;
+  max-width: 37rem;
   color: var(--text-muted);
-  background: rgba(255, 255, 255, 0.78);
-  border: 1px solid var(--line);
+  font-size: 0.82rem;
+  line-height: 1.45;
 }
 
-.overviewCounts .countAttention {
+.overviewSummary strong {
   color: var(--danger-text);
-  background: var(--danger-bg);
-  border-color: var(--danger-line);
+  font-weight: 800;
 }
 
 .overviewList {
@@ -112,8 +121,8 @@
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  gap: 0.9rem;
-  padding: 0.9rem 0.95rem;
+  gap: 0.95rem;
+  padding: 0.95rem 1rem;
   transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
 }
 
@@ -157,83 +166,78 @@
   stroke-width: 1.8;
 }
 
+.categoryMaintenance {
+  color: var(--brand-mid);
+}
+
 .categoryProblem {
   color: var(--danger-text);
-  background: var(--danger-bg);
-  border-color: var(--danger-line);
 }
 
 .categoryLicence {
   color: var(--blue-text);
-  background: var(--blue-soft);
-  border-color: var(--blue-soft-border);
 }
 
 .categoryNote {
   color: #80520b;
+}
+
+.categoryIcon.categoryProblem {
+  background: var(--danger-bg);
+  border-color: var(--danger-line);
+}
+
+.categoryIcon.categoryLicence {
+  background: var(--blue-soft);
+  border-color: var(--blue-soft-border);
+}
+
+.categoryIcon.categoryNote {
   background: #fff8e8;
   border-color: #f0dfb4;
 }
 
 .cardBody {
   display: grid;
-  gap: 0.3rem;
+  gap: 0.28rem;
   min-width: 0;
 }
 
-.cardBadges {
+.cardContext {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.4rem;
-  margin-bottom: 0.05rem;
-}
-
-.typeBadge {
-  color: var(--brand-mid);
-  background: var(--brand-soft);
-  border: 1px solid var(--brand-soft-border);
-}
-
-.umbrellaBadge {
-  color: var(--text-muted);
-  background: var(--surface-muted);
-  border: 1px solid var(--line-strong);
-}
-
-.assetTitleRow {
-  display: flex;
   align-items: center;
-  flex-wrap: wrap;
-  gap: 0.55rem;
+  gap: 0.22rem 0.42rem;
+  color: var(--text-muted);
+  font-size: 0.79rem;
+  line-height: 1.4;
 }
 
-.assetTitleRow h3 {
-  margin: 0;
+.cardContext strong {
+  font-weight: 850;
+}
+
+.statusAttention {
+  color: var(--danger-text);
+  font-weight: 800;
+}
+
+.statusUpcoming {
+  color: var(--blue-text);
+  font-weight: 800;
+}
+
+.statusRecent {
+  color: var(--brand-mid);
+  font-weight: 800;
+}
+
+.assetTitle {
+  margin: 0.04rem 0 0;
   color: var(--text);
-  font-size: 1.06rem;
+  font-size: 1.07rem;
   line-height: 1.2;
   letter-spacing: -0.025em;
-}
-
-.statusBadge {
-  min-height: 1.7rem;
-  padding-inline: 0.58rem;
-  color: var(--text-muted);
-  background: var(--surface-muted);
-  border: 1px solid var(--line);
-  font-size: 0.72rem;
-}
-
-.cardAttention .statusBadge {
-  color: var(--danger-text);
-  background: var(--danger-bg);
-  border-color: var(--danger-line);
-}
-
-.cardUpcoming .statusBadge {
-  color: var(--blue-text);
-  background: var(--blue-soft);
-  border-color: var(--blue-soft-border);
 }
 
 .headline {
@@ -338,7 +342,7 @@
   content: '';
   width: 0.7rem;
   height: 0.7rem;
-  border-radius: 999px;
+  border-radius: 50%;
   background: var(--brand-mid);
   animation: overviewPulse 1.1s ease-in-out infinite;
 }
@@ -355,7 +359,7 @@
 
 .retryButton,
 .showMoreButton {
-  border: 1px solid var(--line-strong);
+  border-color: var(--line-strong);
   color: var(--text);
   background: var(--surface);
 }
@@ -376,6 +380,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .viewSwitchButton,
   .overviewCard,
   .viewAssetButton,
   .retryButton,
@@ -390,14 +395,30 @@
   .overviewHeader {
     align-items: flex-start;
     flex-direction: column;
+    gap: 0.55rem;
   }
 
-  .overviewCounts {
+  .overviewSummary {
     justify-content: flex-start;
   }
 }
 
 @media (max-width: 760px) {
+  .registerViewArea {
+    gap: 0.8rem;
+  }
+
+  .viewSwitch {
+    gap: 0.5rem;
+  }
+
+  .viewSwitchButton {
+    min-height: 3.1rem;
+    padding-inline: 0.7rem;
+    border-radius: 0.95rem;
+    font-size: 0.9rem;
+  }
+
   .overviewCard {
     grid-template-columns: auto minmax(0, 1fr);
     align-items: flex-start;
@@ -415,16 +436,8 @@
     height: 2.55rem;
   }
 
-  .assetTitleRow {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 0.35rem;
-  }
-
-  .overviewCounts span {
-    min-height: 1.7rem;
-    padding-inline: 0.6rem;
-    font-size: 0.72rem;
+  .cardContext {
+    font-size: 0.75rem;
   }
 
   .stateCard {
