@@ -54,6 +54,7 @@ test('page zoom is minimal, does not trigger responsive breakpoints and leaves i
 
   assert.match(styles, /\.zoomButton,[\s\S]*?\.zoomValue \{[\s\S]*?border: 0;[\s\S]*?background: transparent;[\s\S]*?box-shadow: none/);
   const controlsBlock = styles.slice(styles.indexOf('.controls {'), styles.indexOf('.zoomButton,'));
+  assert.doesNotMatch(controlsBlock, /position:\s*fixed/);
   assert.doesNotMatch(controlsBlock, /border:|background:|box-shadow:/);
 
   assert.match(zoom, /usesContainedScroll[\s\S]*?host\.scrollLeft = Math\.max\(0, desiredLeft\)/);
@@ -91,4 +92,27 @@ test('Home keeps window scrolling and measures its story in rendered zoomed coor
   const desktopStory = homeStyles.slice(homeStyles.indexOf('@media (min-width: 1181px) and (min-height: 640px)'));
   assert.match(desktopStory, /\.heroSticky \{[\s\S]*?position: sticky;[\s\S]*?top: 5\.75rem/);
   assert.match(desktopStory, /\.heroStory \{[\s\S]*?min-height: 440svh/);
+});
+
+test('zoom controls live in the header and introduce themselves once on Home', async () => {
+  const [zoom, styles] = await Promise.all([
+    read('components/SiteWorkspaceZoom.tsx'),
+    read('components/SiteWorkspaceZoom.module.css'),
+  ]);
+
+  assert.match(zoom, /import \{ createPortal \} from 'react-dom'/);
+  assert.match(zoom, /INTRO_STORAGE_KEY = 'aim4price\.site\.workspace-zoom-intro\.v1'/);
+  assert.match(zoom, /const headerInner = header\?\.firstElementChild/);
+  assert.match(zoom, /const headerActions = headerInner\?\.lastElementChild/);
+  assert.match(zoom, /document\.createElement\('span'\)/);
+  assert.match(zoom, /nextControlHost\.dataset\.aim4priceSiteZoomSlot = 'true'/);
+  assert.match(zoom, /headerActions\.appendChild\(nextControlHost\)/);
+  assert.match(zoom, /createPortal\(controls, controlHost\)/);
+
+  assert.match(styles, /\.headerSlot \{[\s\S]*?display: inline-flex/);
+  assert.match(styles, /\.controlsIntro \{[\s\S]*?animation: pageZoomControlIntro/);
+  assert.match(styles, /@keyframes pageZoomControlIntro/);
+  assert.match(zoom, /pathname !== '\/'[\s\S]*?hasSeenIntro\(\)/);
+  assert.match(zoom, /Increase or decrease page size here\./);
+  assert.match(zoom, /setShowIntro\(false\)[\s\S]*?zoomRef\.current = normalizedZoom/);
 });
