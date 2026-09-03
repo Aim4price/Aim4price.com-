@@ -318,6 +318,26 @@ function categoryIcon(category: OverviewCategory) {
   );
 }
 
+function overviewViewIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M5 6h14M5 12h9M5 18h6" />
+      <circle cx="18" cy="17" r="2.5" />
+    </svg>
+  );
+}
+
+function assetsViewIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <rect x="4" y="4" width="6" height="6" rx="1.5" />
+      <rect x="14" y="4" width="6" height="6" rx="1.5" />
+      <rect x="4" y="14" width="6" height="6" rx="1.5" />
+      <rect x="14" y="14" width="6" height="6" rx="1.5" />
+    </svg>
+  );
+}
+
 function buildAssetHref(assetId: string): string {
   const url = new URL(window.location.href);
   url.searchParams.set('assetId', assetId);
@@ -439,6 +459,7 @@ export default function AssetRegisterOverview() {
   }, [activeView, portalHost]);
 
   const selectView = useCallback((nextView: RegisterContentView) => {
+    syncAssetViewSiblings(portalHost, nextView === 'assets');
     setActiveView(nextView);
     if (nextView === 'assets') setExpanded(false);
 
@@ -447,7 +468,7 @@ export default function AssetRegisterOverview() {
     } catch {
       // Ignore storage failures and keep the in-memory view selection.
     }
-  }, []);
+  }, [portalHost]);
 
   const loadOverview = useCallback(async () => {
     setLoading(true);
@@ -488,13 +509,20 @@ export default function AssetRegisterOverview() {
   const overviewItems = useMemo(() => buildOverviewItems(assets, groups), [assets, groups]);
   const visibleItems = expanded ? overviewItems : overviewItems.slice(0, INITIAL_VISIBLE_ITEMS);
   const hiddenCount = Math.max(0, overviewItems.length - visibleItems.length);
-  const counts = useMemo(() => ({
-    attention: overviewItems.filter((item) => item.section === 'needs_attention').length,
-    maintenance: overviewItems.filter((item) => item.category === 'maintenance').length,
-    licence: overviewItems.filter((item) => item.category === 'licence').length,
-    problem: overviewItems.filter((item) => item.category === 'problem').length,
-    note: overviewItems.filter((item) => item.category === 'note').length,
-  }), [overviewItems]);
+  const attentionCount = useMemo(
+    () => overviewItems.filter((item) => item.section === 'needs_attention').length,
+    [overviewItems],
+  );
+  const overviewSwitchDetail = loading
+    ? 'Checking updates…'
+    : error
+      ? 'Updates unavailable'
+      : overviewItems.length === 0
+        ? 'No open updates'
+        : `${overviewItems.length} update${overviewItems.length === 1 ? '' : 's'}${attentionCount ? ` · ${attentionCount} need attention` : ''}`;
+  const assetSwitchDetail = loading
+    ? 'Loading register…'
+    : `${assets.length} asset${assets.length === 1 ? '' : 's'}`;
 
   if (!portalHost) return null;
 
@@ -507,8 +535,12 @@ export default function AssetRegisterOverview() {
           aria-pressed={activeView === 'overview'}
           onClick={() => selectView('overview')}
         >
-          <span>Overview</span>
-          {!loading && !error ? <span className={styles.viewSwitchCount}>{overviewItems.length}</span> : null}
+          <span className={styles.viewSwitchIcon}>{overviewViewIcon()}</span>
+          <span className={styles.viewSwitchCopy}>
+            <strong>Overview</strong>
+            <small>{overviewSwitchDetail}</small>
+          </span>
+          <span className={styles.viewSwitchArrow} aria-hidden="true">{activeView === 'overview' ? '✓' : '›'}</span>
         </button>
         <button
           type="button"
@@ -516,32 +548,17 @@ export default function AssetRegisterOverview() {
           aria-pressed={activeView === 'assets'}
           onClick={() => selectView('assets')}
         >
-          <span>Assets</span>
-          {!loading && !error ? <span className={styles.viewSwitchCount}>{assets.length}</span> : null}
+          <span className={styles.viewSwitchIcon}>{assetsViewIcon()}</span>
+          <span className={styles.viewSwitchCopy}>
+            <strong>Assets</strong>
+            <small>{assetSwitchDetail}</small>
+          </span>
+          <span className={styles.viewSwitchArrow} aria-hidden="true">{activeView === 'assets' ? '✓' : '›'}</span>
         </button>
       </div>
 
       {activeView === 'overview' ? (
-        <section className={styles.overview} aria-labelledby="asset-register-overview-title">
-          <div className={styles.overviewHeader}>
-            <div className={styles.overviewTitleBlock}>
-              <h2 id="asset-register-overview-title">Needs attention &amp; coming up</h2>
-              <p>Maintenance, licence renewals and notes across standalone assets and assets inside umbrellas.</p>
-            </div>
-
-            {!loading && !error && overviewItems.length ? (
-              <p className={styles.overviewSummary}>
-                <strong>{counts.attention} need attention</strong>
-                <span aria-hidden="true">•</span>
-                <span>{counts.maintenance} maintenance</span>
-                <span aria-hidden="true">•</span>
-                <span>{counts.licence} licensing</span>
-                <span aria-hidden="true">•</span>
-                <span>{counts.problem + counts.note} problems / notes</span>
-              </p>
-            ) : null}
-          </div>
-
+        <section className={styles.overview} aria-label="Asset Register overview">
           {loading ? (
             <div className={`${styles.stateCard} ${styles.loadingCard}`} role="status">
               <span className={styles.loadingDot} aria-hidden="true" />
