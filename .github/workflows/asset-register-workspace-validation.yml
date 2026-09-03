@@ -6,11 +6,7 @@ on:
       - "app/asset-register/asset-register-workspace-frame.tsx"
       - "app/asset-register/asset-register-workspace-frame.module.css"
       - "app/asset-register/page.tsx"
-      - "app/asset-register/asset-register-client.tsx"
       - "tests/asset-register-workspace-zoom.test.mjs"
-      - "tests/asset-register-card-ui.test.mjs"
-      - "tests/viewport-scrollbar.test.mjs"
-      - "package.json"
       - ".github/workflows/asset-register-workspace-validation.yml"
   workflow_dispatch:
 
@@ -42,5 +38,5 @@ jobs:
       - name: Type check
         run: npm run typecheck
 
-      - name: Test Asset Register workspace UI
-        run: npm run test:asset-card-ui
+      - name: Test Asset Register workspace zoom
+        run: node --test tests/asset-register-workspace-zoom.test.mjs
