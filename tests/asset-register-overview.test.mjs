@@ -31,17 +31,46 @@ test('quick overview reuses the existing Asset Register alert payload', () => {
 test('umbrella member alerts stay visible without expanding the umbrella', () => {
   assert.match(overview, /group\.members\.forEach/);
   assert.match(overview, /umbrellaByAssetId\.set\(member\.assetId, group\.name\)/);
-  assert.match(overview, /Umbrella · \{item\.umbrellaName\}/);
-  assert.match(overview, /Standalone asset/);
+  assert.match(overview, /item\.umbrellaName \|\| 'Standalone asset'/);
+  assert.match(overview, /assetId: asset\.id/);
 });
 
-test('overview is inserted after register summary and before the existing toolbar', () => {
+test('Overview and Assets switch sits under summary cards and keeps Assets as the safe default', () => {
   assert.match(overview, /document\.querySelector<HTMLElement>\(`\.\$\{registerStyles\.toolbar\}`\)/);
   assert.match(overview, /parent\.insertBefore\(host, toolbar\)/);
   assert.match(overview, /createPortal\(/);
+  assert.match(overview, /useState<RegisterContentView>\('assets'\)/);
+  assert.match(overview, />Overview</);
+  assert.match(overview, />Assets</);
+  assert.match(overview, /REGISTER_VIEW_STORAGE_KEY/);
+  assert.match(overview, /window\.sessionStorage\.setItem/);
+  assert.match(styles, /\.viewSwitch/);
+  assert.match(styles, /grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
+  assert.match(styles, /\.viewSwitchButtonActive/);
 });
 
-test('overview uses Asset Register card styling with loading, error and responsive states', () => {
+test('switching to Overview hides the existing asset workspace without touching its implementation', () => {
+  assert.match(overview, /function syncAssetViewSiblings/);
+  assert.match(overview, /host\.nextElementSibling/);
+  assert.match(overview, /sibling\.hidden = true/);
+  assert.match(overview, /assetRegisterOverviewManaged/);
+  assert.match(overview, /activeView === 'assets'/);
+  assert.match(overview, /activeView === 'overview'/);
+  assert.match(overview, /restoreManagedAssetViewSiblings/);
+});
+
+test('overview removes the small uppercase label and pill-heavy badge treatment', () => {
+  assert.doesNotMatch(overview, /overviewEyebrow/);
+  assert.doesNotMatch(overview, /cardBadges/);
+  assert.doesNotMatch(overview, /typeBadge/);
+  assert.doesNotMatch(overview, /umbrellaBadge/);
+  assert.doesNotMatch(overview, /statusBadge/);
+  assert.doesNotMatch(styles, /text-transform:\s*uppercase/);
+  assert.match(overview, /className=\{styles\.cardContext\}/);
+  assert.match(overview, /className=\{styles\.overviewSummary\}/);
+});
+
+test('overview keeps Asset Register card styling with loading, error and responsive states', () => {
   assert.match(overview, /registerStyles\.assetCard/);
   assert.match(styles, /\.overviewCard,[\s\S]*?\.stateCard/);
   assert.match(styles, /border-radius: 1\.5rem/);
