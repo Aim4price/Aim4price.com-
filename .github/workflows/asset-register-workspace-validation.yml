@@ -1,12 +1,13 @@
-name: Asset Register workspace validation
+name: Site workspace zoom validation
 
 on:
   pull_request:
     paths:
-      - "app/asset-register/asset-register-workspace-frame.tsx"
-      - "app/asset-register/asset-register-workspace-frame.module.css"
-      - "app/asset-register/page.tsx"
-      - "tests/asset-register-workspace-zoom.test.mjs"
+      - "app/layout.tsx"
+      - "components/SiteWorkspaceZoom.tsx"
+      - "components/SiteWorkspaceZoom.module.css"
+      - "components/AppHeader.tsx"
+      - "tests/site-workspace-zoom.test.mjs"
       - ".github/workflows/asset-register-workspace-validation.yml"
   workflow_dispatch:
 
@@ -14,7 +15,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: asset-register-workspace-${{ github.workflow }}-${{ github.ref }}
+  group: site-workspace-zoom-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -38,5 +39,5 @@ jobs:
       - name: Type check
         run: npm run typecheck
 
-      - name: Test Asset Register workspace zoom
-        run: node --test tests/asset-register-workspace-zoom.test.mjs
+      - name: Test shared page zoom
+        run: node --test tests/site-workspace-zoom.test.mjs
