@@ -67,6 +67,17 @@
     padding-right: 0.94rem !important;
     gap: 0.62rem !important;
   }
+
+  /* The circular account logo carries more visual weight than the text.
+     Add a small optical spacer only after the logo so “Manage” no longer
+     feels attached to it, without widening the gap before the menu mark. */
+  .root :global(
+    [data-aim4price-app-header='true']
+      [aria-label='Open manage menu']
+      > span:first-child
+  ) {
+    margin-right: 0.18rem;
+  }
 }
 
 .controls {
