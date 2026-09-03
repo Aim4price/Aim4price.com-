@@ -6,10 +6,22 @@
 .root :global([data-aim4price-site-zoom-host='true']) {
   min-width: 0;
   max-width: 100%;
+}
+
+.root :global([data-aim4price-site-zoom-host='true'][data-aim4price-site-zoom-mode='workspace']) {
   overflow-x: auto !important;
   overflow-y: visible;
   overscroll-behavior-x: contain;
   scrollbar-gutter: stable;
+}
+
+.root :global([data-aim4price-site-zoom-host='true'][data-aim4price-site-zoom-mode='viewport']) {
+  /* Home's cinematic hero depends on window.scrollY and viewport-relative
+     position: sticky. Never make its page host an overflow ancestor. */
+  max-width: none;
+  overflow: visible !important;
+  overscroll-behavior-x: auto;
+  scrollbar-gutter: auto;
 }
 
 .root :global([data-aim4price-site-zoom-host='true'] > [data-aim4price-app-header='true'] ~ *) {
