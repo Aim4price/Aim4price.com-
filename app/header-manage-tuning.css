@@ -1,0 +1,24 @@
+/* Signed-in desktop header/manage spacing refinement, September 2026. */
+@media (min-width: 1181px) {
+  /* Give the signed-in header a little more breathing room beside the zoom controls. */
+  header:has(button[aria-label='Open manage menu']) > div {
+    position: relative;
+    left: -1rem;
+  }
+
+  /* Keep the Manage control comfortably wide without defeating long account-name sizing. */
+  div:has(> button[aria-label='Open manage menu']) {
+    min-width: 14.75rem;
+  }
+
+  button[aria-label='Open manage menu'] {
+    min-width: 14.75rem;
+    gap: 0.95rem;
+    padding-inline: 1.08rem;
+  }
+
+  /* The account dropdown should read as a proper menu, not a narrow extension of the button. */
+  #header-account-menu {
+    min-width: max(18rem, 100%);
+  }
+}
