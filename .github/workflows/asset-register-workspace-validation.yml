@@ -1,0 +1,46 @@
+name: Asset Register workspace validation
+
+on:
+  pull_request:
+    paths:
+      - "app/asset-register/asset-register-workspace-frame.tsx"
+      - "app/asset-register/asset-register-workspace-frame.module.css"
+      - "app/asset-register/page.tsx"
+      - "app/asset-register/asset-register-client.tsx"
+      - "tests/asset-register-workspace-zoom.test.mjs"
+      - "tests/asset-register-card-ui.test.mjs"
+      - "tests/viewport-scrollbar.test.mjs"
+      - "package.json"
+      - ".github/workflows/asset-register-workspace-validation.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: asset-register-workspace-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type check
+        run: npm run typecheck
+
+      - name: Test Asset Register workspace UI
+        run: npm run test:asset-card-ui
