@@ -40,26 +40,35 @@ test('Overview and Assets switch sits under summary cards and keeps Assets as th
   assert.match(overview, /parent\.insertBefore\(host, toolbar\)/);
   assert.match(overview, /createPortal\(/);
   assert.match(overview, /useState<RegisterContentView>\('assets'\)/);
-  assert.match(overview, />Overview</);
-  assert.match(overview, />Assets</);
+  assert.match(overview, /<strong>Overview<\/strong>/);
+  assert.match(overview, /<strong>Assets<\/strong>/);
+  assert.match(overview, /overviewViewIcon\(\)/);
+  assert.match(overview, /assetsViewIcon\(\)/);
   assert.match(overview, /REGISTER_VIEW_STORAGE_KEY/);
   assert.match(overview, /window\.sessionStorage\.setItem/);
   assert.match(styles, /\.viewSwitch/);
   assert.match(styles, /grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
   assert.match(styles, /\.viewSwitchButtonActive/);
+  assert.match(styles, /\.viewSwitchIcon/);
+  assert.match(styles, /\.viewSwitchCopy/);
 });
 
-test('switching to Overview hides the existing asset workspace without touching its implementation', () => {
+test('switching views updates the existing asset workspace immediately without rewriting it', () => {
   assert.match(overview, /function syncAssetViewSiblings/);
   assert.match(overview, /host\.nextElementSibling/);
   assert.match(overview, /sibling\.hidden = true/);
   assert.match(overview, /assetRegisterOverviewManaged/);
+  assert.match(overview, /syncAssetViewSiblings\(portalHost, nextView === 'assets'\)/);
   assert.match(overview, /activeView === 'assets'/);
   assert.match(overview, /activeView === 'overview'/);
   assert.match(overview, /restoreManagedAssetViewSiblings/);
 });
 
-test('overview removes the small uppercase label and pill-heavy badge treatment', () => {
+test('overview starts directly with asset update cards and avoids extra heading or pill-heavy chrome', () => {
+  assert.doesNotMatch(overview, /Needs attention &amp; coming up/);
+  assert.doesNotMatch(overview, /Maintenance, licence renewals and notes across standalone assets/);
+  assert.doesNotMatch(overview, /overviewHeader/);
+  assert.doesNotMatch(overview, /overviewSummary/);
   assert.doesNotMatch(overview, /overviewEyebrow/);
   assert.doesNotMatch(overview, /cardBadges/);
   assert.doesNotMatch(overview, /typeBadge/);
@@ -67,7 +76,15 @@ test('overview removes the small uppercase label and pill-heavy badge treatment'
   assert.doesNotMatch(overview, /statusBadge/);
   assert.doesNotMatch(styles, /text-transform:\s*uppercase/);
   assert.match(overview, /className=\{styles\.cardContext\}/);
-  assert.match(overview, /className=\{styles\.overviewSummary\}/);
+  assert.match(overview, /<section className=\{styles\.overview\} aria-label="Asset Register overview">/);
+});
+
+test('view switch communicates useful counts without bringing the pill strip back', () => {
+  assert.match(overview, /overviewSwitchDetail/);
+  assert.match(overview, /assetSwitchDetail/);
+  assert.match(overview, /need attention/);
+  assert.match(overview, /Loading register…/);
+  assert.doesNotMatch(styles, /\.viewSwitchCount/);
 });
 
 test('overview keeps Asset Register card styling with loading, error and responsive states', () => {
@@ -78,6 +95,7 @@ test('overview keeps Asset Register card styling with loading, error and respons
   assert.match(styles, /\.cardAttention/);
   assert.match(styles, /\.cardUpcoming/);
   assert.match(styles, /@media \(max-width: 760px\)/);
+  assert.match(styles, /@media \(max-width: 520px\)/);
   assert.match(overview, /Checking the register/);
   assert.match(overview, /Overview unavailable/);
   assert.match(overview, /Nothing needs attention right now/);
