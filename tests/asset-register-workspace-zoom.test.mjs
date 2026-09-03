@@ -45,5 +45,6 @@ test('custom workspace zoom does not use viewport breakpoints as its scaling mec
 
   assert.doesNotMatch(frame, /matchMedia|innerWidth|devicePixelRatio|screen\.width/);
   assert.doesNotMatch(styles, /transform:\s*scale\(/);
-  assert.match(styles, /data-workspace-zoom|\.viewport/);
+  assert.match(frame, /data-workspace-zoom=\{zoom\}/);
+  assert.match(styles, /\.viewport \{/);
 });
