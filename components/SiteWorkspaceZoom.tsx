@@ -250,8 +250,8 @@ export default function SiteWorkspaceZoom({ children }: { children: ReactNode })
         className={styles.zoomButton}
         onClick={() => changeZoom(zoom - ZOOM_STEP)}
         disabled={zoom <= MIN_ZOOM}
-        aria-label="Decrease page size"
-        title="Decrease page size"
+        aria-label="Zoom out"
+        data-tooltip="Zoom out"
       >
         −
       </button>
@@ -271,8 +271,8 @@ export default function SiteWorkspaceZoom({ children }: { children: ReactNode })
         className={styles.zoomButton}
         onClick={() => changeZoom(zoom + ZOOM_STEP)}
         disabled={zoom >= MAX_ZOOM}
-        aria-label="Increase page size"
-        title="Increase page size"
+        aria-label="Zoom in"
+        data-tooltip="Zoom in"
       >
         +
       </button>
