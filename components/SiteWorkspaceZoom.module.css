@@ -28,22 +28,30 @@
   zoom: var(--aim4price-site-workspace-zoom, 1);
 }
 
-.controls {
-  position: fixed;
-  top: 6.28rem;
-  right: max(0.75rem, env(safe-area-inset-right));
-  z-index: 96;
+.headerSlot {
+  position: relative;
+  z-index: 2;
   display: inline-flex;
   align-items: center;
-  gap: 0.08rem;
+  justify-content: center;
+  flex: 0 0 auto;
+  min-width: 6.65rem;
+  min-height: 3.28rem;
+  margin-left: 0.2rem;
+}
+
+.controls {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.02rem;
   color: #153b31;
   font-family: inherit;
   font-size: 0.84rem;
   font-weight: 850;
   line-height: 1;
-  text-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.96),
-    0 0 10px rgba(255, 255, 255, 0.92);
+  transform-origin: center;
 }
 
 .zoomButton,
@@ -56,48 +64,191 @@
   font: inherit;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
+  transition:
+    background 150ms ease,
+    color 150ms ease,
+    opacity 150ms ease,
+    transform 150ms ease;
 }
 
 .zoomButton {
   display: inline-grid;
-  width: 2.35rem;
-  height: 2.35rem;
+  width: 1.85rem;
+  min-width: 1.85rem;
+  height: 2.5rem;
   padding: 0;
   place-items: center;
   border-radius: 999px;
-  font-size: 1.16rem;
+  font-size: 1.2rem;
   line-height: 1;
 }
 
 .zoomValue {
-  min-width: 3.8rem;
-  min-height: 2.35rem;
-  padding: 0 0.32rem;
+  min-width: 3rem;
+  min-height: 2.5rem;
+  padding: 0 0.2rem;
   border-radius: 0.7rem;
   color: #0f6a50;
-  font-size: 0.8rem;
+  font-size: 0.76rem;
 }
 
 .zoomButton:hover:not(:disabled),
 .zoomValue:hover {
-  background: rgba(255, 255, 255, 0.72);
+  background: rgba(23, 77, 62, 0.055);
+}
+
+.zoomButton:hover:not(:disabled) {
+  transform: scale(1.05);
 }
 
 .zoomButton:focus-visible,
 .zoomValue:focus-visible {
   outline: 2px solid rgba(18, 103, 79, 0.38);
   outline-offset: 1px;
-  background: rgba(255, 255, 255, 0.82);
+  background: rgba(255, 255, 255, 0.84);
 }
 
 .zoomButton:disabled {
   cursor: default;
-  opacity: 0.3;
+  opacity: 0.28;
+}
+
+.controlsIntro {
+  animation: pageZoomControlIntro 760ms cubic-bezier(0.2, 0.9, 0.25, 1.15) both;
+}
+
+.introNote {
+  position: absolute;
+  top: calc(100% + 0.62rem);
+  right: -0.1rem;
+  z-index: 5;
+  width: max-content;
+  max-width: min(15rem, calc(100vw - 1.5rem));
+  padding: 0.55rem 0.72rem;
+  border-radius: 0.72rem;
+  color: #ffffff;
+  background: rgba(16, 73, 57, 0.96);
+  box-shadow: 0 14px 30px rgba(11, 48, 38, 0.18);
+  font-size: 0.72rem;
+  font-weight: 780;
+  line-height: 1.28;
+  letter-spacing: -0.006em;
+  white-space: normal;
+  pointer-events: none;
+  animation: pageZoomIntroNote 420ms ease-out 180ms both;
+}
+
+.introNote::before {
+  content: '';
+  position: absolute;
+  right: 1.25rem;
+  top: -0.3rem;
+  width: 0.62rem;
+  height: 0.62rem;
+  background: inherit;
+  transform: rotate(45deg);
+}
+
+@keyframes pageZoomControlIntro {
+  0% {
+    opacity: 0.28;
+    transform: scale(0.82);
+  }
+
+  58% {
+    opacity: 1;
+    transform: scale(1.12);
+  }
+
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes pageZoomIntroNote {
+  from {
+    opacity: 0;
+    transform: translateY(-0.28rem) scale(0.97);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (max-width: 1180px) {
+  .headerSlot {
+    min-width: 6.2rem;
+    min-height: 2.85rem;
+    margin-left: 0.1rem;
+  }
+
+  .zoomButton {
+    width: 1.7rem;
+    min-width: 1.7rem;
+    height: 2.35rem;
+  }
+
+  .zoomValue {
+    min-width: 2.8rem;
+    min-height: 2.35rem;
+    font-size: 0.72rem;
+  }
+}
+
+@media (max-width: 900px) {
+  .headerSlot {
+    min-width: 5.6rem;
+    min-height: 2.9rem;
+    margin-left: 0.04rem;
+  }
+
+  .zoomButton {
+    width: 1.6rem;
+    min-width: 1.6rem;
+    height: 2.35rem;
+    font-size: 1.08rem;
+  }
+
+  .zoomValue {
+    min-width: 2.55rem;
+    min-height: 2.35rem;
+    padding-inline: 0.08rem;
+    font-size: 0.68rem;
+  }
+}
+
+@media (max-width: 720px) {
+  .headerSlot {
+    min-width: 3.35rem;
+    min-height: 2.75rem;
+  }
+
+  .zoomButton {
+    width: 1.62rem;
+    min-width: 1.62rem;
+    height: 2.35rem;
+  }
+
+  .zoomValue {
+    display: none;
+  }
+
+  .introNote {
+    right: 0;
+    max-width: min(13.5rem, calc(100vw - 1rem));
+    font-size: 0.69rem;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .controlsIntro,
+  .introNote,
   .zoomButton,
   .zoomValue {
+    animation: none;
     transition: none;
   }
 }
@@ -106,5 +257,9 @@
   .zoomButton:focus-visible,
   .zoomValue:focus-visible {
     outline: 2px solid CanvasText;
+  }
+
+  .introNote {
+    border: 1px solid CanvasText;
   }
 }
