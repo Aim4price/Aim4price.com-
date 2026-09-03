@@ -12,10 +12,7 @@ const DEFAULT_ZOOM = 100;
 const MIN_ZOOM = 70;
 const MAX_ZOOM = 150;
 const ZOOM_STEP = 10;
-const AUTO_ZOOM_STEP = 5;
 const AUTO_BASE_WINDOW_WIDTH = 1440;
-const AUTO_DESKTOP_WINDOW_WIDTH = 1920;
-const AUTO_LARGE_WINDOW_WIDTH = 2560;
 const AUTO_MAX_WINDOW_WIDTH = 3840;
 const AUTO_MAX_ZOOM = 140;
 const INTRO_DELAY_MS = 900;
@@ -24,7 +21,6 @@ const EXCLUDED_ROUTE_PREFIXES = ['/owner-app', '/dealer', '/field-manager', '/ad
 
 type SiteZoomMode = 'workspace' | 'viewport';
 type ZoomPreferenceMode = 'auto' | 'manual';
-type DisplayProfile = 'standard' | 'wide' | 'expansive';
 
 type SavedZoomPreference = {
   mode: ZoomPreferenceMode;
@@ -34,21 +30,6 @@ type SavedZoomPreference = {
 function clampZoom(value: number): number {
   if (!Number.isFinite(value)) return DEFAULT_ZOOM;
   return Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, Math.round(value)));
-}
-
-function roundAutoZoom(value: number): number {
-  return clampZoom(Math.round(value / AUTO_ZOOM_STEP) * AUTO_ZOOM_STEP);
-}
-
-function interpolate(
-  value: number,
-  inputStart: number,
-  inputEnd: number,
-  outputStart: number,
-  outputEnd: number,
-): number {
-  const progress = Math.max(0, Math.min(1, (value - inputStart) / (inputEnd - inputStart)));
-  return outputStart + (outputEnd - outputStart) * progress;
 }
 
 function readWindowWidth(): number {
@@ -66,30 +47,22 @@ function calculateAutoZoom(windowWidth: number): number {
     return DEFAULT_ZOOM;
   }
 
-  if (windowWidth <= AUTO_DESKTOP_WINDOW_WIDTH) {
-    return roundAutoZoom(
-      interpolate(windowWidth, AUTO_BASE_WINDOW_WIDTH, AUTO_DESKTOP_WINDOW_WIDTH, 100, 120),
-    );
-  }
-
-  if (windowWidth <= AUTO_LARGE_WINDOW_WIDTH) {
-    return roundAutoZoom(
-      interpolate(windowWidth, AUTO_DESKTOP_WINDOW_WIDTH, AUTO_LARGE_WINDOW_WIDTH, 120, 130),
-    );
-  }
-
-  return Math.min(
-    AUTO_MAX_ZOOM,
-    roundAutoZoom(
-      interpolate(windowWidth, AUTO_LARGE_WINDOW_WIDTH, AUTO_MAX_WINDOW_WIDTH, 130, AUTO_MAX_ZOOM),
+  const progress = Math.max(
+    0,
+    Math.min(
+      1,
+      (windowWidth - AUTO_BASE_WINDOW_WIDTH)
+        / (AUTO_MAX_WINDOW_WIDTH - AUTO_BASE_WINDOW_WIDTH),
     ),
   );
-}
 
-function displayProfileForWidth(windowWidth: number): DisplayProfile {
-  if (windowWidth >= 2200) return 'expansive';
-  if (windowWidth >= 1600) return 'wide';
-  return 'standard';
+  // One continuous ease-out curve replaces monitor-size tiers. It grows
+  // quickly enough to make a 1080p external monitor feel substantial, then
+  // tapers toward the cap so very large windows do not become oversized.
+  const easedProgress = Math.sqrt(progress);
+  return clampZoom(
+    DEFAULT_ZOOM + (AUTO_MAX_ZOOM - DEFAULT_ZOOM) * easedProgress,
+  );
 }
 
 function routeMatchesPrefix(pathname: string, prefix: string): boolean {
@@ -175,7 +148,6 @@ export default function SiteWorkspaceZoom({ children }: { children: ReactNode })
     if (host) {
       delete host.dataset.aim4priceSiteZoomHost;
       delete host.dataset.aim4priceSiteZoomMode;
-      delete host.dataset.aim4priceDisplayProfile;
       host.style.removeProperty('--aim4price-site-workspace-zoom');
     }
 
@@ -220,11 +192,9 @@ export default function SiteWorkspaceZoom({ children }: { children: ReactNode })
       setControlHost(headerActions);
     }
 
-    const windowWidth = readWindowWidth();
     header.dataset.aim4priceAppHeader = 'true';
     host.dataset.aim4priceSiteZoomHost = 'true';
     host.dataset.aim4priceSiteZoomMode = siteZoomMode(pathname);
-    host.dataset.aim4priceDisplayProfile = displayProfileForWidth(windowWidth);
     host.style.setProperty('--aim4price-site-workspace-zoom', String(zoomRef.current / 100));
     setIsAvailable(true);
     return true;
@@ -331,19 +301,11 @@ export default function SiteWorkspaceZoom({ children }: { children: ReactNode })
     if (!hasLoadedPreference || isExcludedRoute(pathname)) return undefined;
 
     const syncWindowSizing = () => {
-      const windowWidth = readWindowWidth();
-      const host = hostRef.current;
-
-      if (host) {
-        host.dataset.aim4priceDisplayProfile = displayProfileForWidth(windowWidth);
-      }
-
-      // window.outerWidth tracks the actual browser-window/display size but is
-      // not the page's responsive CSS viewport. Browser Ctrl +/- therefore
-      // remains a user-controlled magnification layer instead of causing Auto
-      // sizing to fight it.
+      // Auto sizing only controls perceived size. Layout selection remains a
+      // CSS concern, so moving the same browser window between displays does
+      // not introduce another family of responsive endpoint states.
       if (zoomModeRef.current === 'auto') {
-        applyZoom(calculateAutoZoom(windowWidth));
+        applyZoom(calculateAutoZoom(readWindowWidth()));
       }
     };
 
