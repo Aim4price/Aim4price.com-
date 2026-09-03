@@ -29,6 +29,46 @@
 }
 
 /*
+ * A large desktop window should use its extra horizontal room without changing
+ * the Home story into another responsive layout. The preview is deliberately
+ * translated back toward the left edge during feature steps while the feature
+ * narrative stays in the right grid column. These display-profile overrides
+ * increase that relationship spacing only on genuinely wide browser windows.
+ * The profile is derived from window.outerWidth, so Ctrl +/- does not flip it.
+ */
+@media (min-height: 640px) {
+  .root :global(
+    [data-aim4price-display-profile='wide']
+      section[data-story-mode]
+      div:has(> aside[aria-label='What Aim4price helps you do'])
+  ) {
+    gap: 5rem !important;
+  }
+
+  .root :global(
+    [data-aim4price-display-profile='wide']
+      aside[aria-label='What Aim4price helps you do']
+  ) {
+    --feature-copy-inset: 5.5rem !important;
+  }
+
+  .root :global(
+    [data-aim4price-display-profile='expansive']
+      section[data-story-mode]
+      div:has(> aside[aria-label='What Aim4price helps you do'])
+  ) {
+    gap: 5.5rem !important;
+  }
+
+  .root :global(
+    [data-aim4price-display-profile='expansive']
+      aside[aria-label='What Aim4price helps you do']
+  ) {
+    --feature-copy-inset: 4.75rem !important;
+  }
+}
+
+/*
  * Keep the page-size control as a genuinely separate header tool. The control
  * is portaled as a sibling of the existing action rail, so the rail retains
  * its own rounded boundary instead of visually swallowing the zoom buttons.
