@@ -7,6 +7,7 @@ import styles from './asset-register-overview.module.css';
 
 type OverviewCategory = 'problem' | 'maintenance' | 'licence' | 'note';
 type OverviewSection = 'needs_attention' | 'coming_up' | 'recent';
+type RegisterContentView = 'overview' | 'assets';
 
 type IssueNoteStatus = {
   id: string;
@@ -105,6 +106,7 @@ type OverviewItem = {
 };
 
 const INITIAL_VISIBLE_ITEMS = 6;
+const REGISTER_VIEW_STORAGE_KEY = 'aim4price:asset-register:content-view';
 
 function text(value: unknown): string {
   return String(value ?? '').replace(/\s+/g, ' ').trim();
@@ -227,6 +229,7 @@ function buildOverviewItems(assets: OverviewAsset[], groups: OverviewGroup[]): O
     const licence = asset.licenseRenewalAlert;
     if (licence) {
       const registration = text(licence.registrationNumber);
+      const renewalDate = dateLabel(licence.renewalDate);
       items.push({
         ...base,
         id: `licence:${licence.id}`,
@@ -235,7 +238,7 @@ function buildOverviewItems(assets: OverviewAsset[], groups: OverviewGroup[]): O
         status: text(licence.computedStatusLabel) || 'Due soon',
         headline: text(licence.heading) || 'Licence renewal',
         detail: text(licence.body) || 'Licence renewal needs attention.',
-        meta: [registration ? `Registration ${registration}` : '', dateLabel(licence.renewalDate) ? `Renews ${dateLabel(licence.renewalDate)}` : ''].filter(Boolean).join(' • '),
+        meta: [registration ? `Registration ${registration}` : '', renewalDate ? `Renews ${renewalDate}` : ''].filter(Boolean).join(' • '),
         sortPriority: priorityForStatus(licence.computedStatus, 6),
         sortTime: new Date(licence.renewalDate || 0).getTime() || 0,
       });
@@ -291,7 +294,7 @@ function categoryClassName(category: OverviewCategory): string {
   if (category === 'problem') return styles.categoryProblem;
   if (category === 'licence') return styles.categoryLicence;
   if (category === 'note') return styles.categoryNote;
-  return '';
+  return styles.categoryMaintenance;
 }
 
 function categoryIcon(category: OverviewCategory) {
@@ -324,19 +327,68 @@ function buildAssetHref(assetId: string): string {
 
 function assetMeta(item: OverviewItem): string {
   return [
-    item.umbrellaName ? `Umbrella · ${item.umbrellaName}` : 'Standalone asset',
     item.registerName,
     item.assetIdentifier ? `Serial / VIN · ${item.assetIdentifier}` : '',
   ].filter(Boolean).join(' • ');
 }
 
+function restoreManagedAssetViewSiblings(host: HTMLDivElement | null) {
+  if (!host?.parentElement) return;
+
+  let sibling = host.nextElementSibling;
+  while (sibling) {
+    if (sibling instanceof HTMLElement && sibling.dataset.assetRegisterOverviewManaged === 'true') {
+      sibling.hidden = sibling.dataset.assetRegisterOverviewWasHidden === 'true';
+      delete sibling.dataset.assetRegisterOverviewManaged;
+      delete sibling.dataset.assetRegisterOverviewWasHidden;
+    }
+    sibling = sibling.nextElementSibling;
+  }
+}
+
+function syncAssetViewSiblings(host: HTMLDivElement | null, showAssets: boolean) {
+  if (!host?.parentElement) return;
+
+  let sibling = host.nextElementSibling;
+  while (sibling) {
+    if (sibling instanceof HTMLElement) {
+      if (showAssets) {
+        if (sibling.dataset.assetRegisterOverviewManaged === 'true') {
+          sibling.hidden = sibling.dataset.assetRegisterOverviewWasHidden === 'true';
+          delete sibling.dataset.assetRegisterOverviewManaged;
+          delete sibling.dataset.assetRegisterOverviewWasHidden;
+        }
+      } else {
+        if (sibling.dataset.assetRegisterOverviewManaged !== 'true') {
+          sibling.dataset.assetRegisterOverviewManaged = 'true';
+          sibling.dataset.assetRegisterOverviewWasHidden = sibling.hidden ? 'true' : 'false';
+        }
+        sibling.hidden = true;
+      }
+    }
+    sibling = sibling.nextElementSibling;
+  }
+}
+
 export default function AssetRegisterOverview() {
   const [portalHost, setPortalHost] = useState<HTMLDivElement | null>(null);
+  const [activeView, setActiveView] = useState<RegisterContentView>('assets');
   const [assets, setAssets] = useState<OverviewAsset[]>([]);
   const [groups, setGroups] = useState<OverviewGroup[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [expanded, setExpanded] = useState(false);
+
+  useEffect(() => {
+    try {
+      const storedView = window.sessionStorage.getItem(REGISTER_VIEW_STORAGE_KEY);
+      if (storedView === 'overview' || storedView === 'assets') {
+        setActiveView(storedView);
+      }
+    } catch {
+      // Session storage is optional. Defaulting to Assets keeps the register usable.
+    }
+  }, []);
 
   useEffect(() => {
     let host: HTMLDivElement | null = null;
@@ -365,8 +417,36 @@ export default function AssetRegisterOverview() {
 
     return () => {
       observer.disconnect();
+      restoreManagedAssetViewSiblings(host);
       host?.remove();
     };
+  }, []);
+
+  useEffect(() => {
+    if (!portalHost?.parentElement) return undefined;
+
+    const parent = portalHost.parentElement;
+    const sync = () => syncAssetViewSiblings(portalHost, activeView === 'assets');
+    const observer = new MutationObserver(sync);
+
+    sync();
+    observer.observe(parent, { childList: true });
+
+    return () => {
+      observer.disconnect();
+      if (activeView === 'overview') restoreManagedAssetViewSiblings(portalHost);
+    };
+  }, [activeView, portalHost]);
+
+  const selectView = useCallback((nextView: RegisterContentView) => {
+    setActiveView(nextView);
+    if (nextView === 'assets') setExpanded(false);
+
+    try {
+      window.sessionStorage.setItem(REGISTER_VIEW_STORAGE_KEY, nextView);
+    } catch {
+      // Ignore storage failures and keep the in-memory view selection.
+    }
   }, []);
 
   const loadOverview = useCallback(async () => {
@@ -419,89 +499,119 @@ export default function AssetRegisterOverview() {
   if (!portalHost) return null;
 
   return createPortal(
-    <section className={styles.overview} aria-labelledby="asset-register-overview-title">
-      <div className={styles.overviewHeader}>
-        <div className={styles.overviewTitleBlock}>
-          <span className={styles.overviewEyebrow}>Asset overview</span>
-          <div className={styles.overviewHeadingRow}>
-            <h2 id="asset-register-overview-title">Needs attention &amp; coming up</h2>
-            {!loading && !error ? <span className={styles.totalCount}>{overviewItems.length}</span> : null}
-          </div>
-          <p>Maintenance, licence renewals and notes across standalone assets and assets inside umbrellas.</p>
-        </div>
-
-        {!loading && !error && overviewItems.length ? (
-          <div className={styles.overviewCounts} aria-label="Overview counts">
-            <span className={counts.attention ? styles.countAttention : ''}>{counts.attention} attention</span>
-            <span>{counts.maintenance} maintenance</span>
-            <span>{counts.licence} licensing</span>
-            <span>{counts.problem + counts.note} problems / notes</span>
-          </div>
-        ) : null}
+    <div className={styles.registerViewArea}>
+      <div className={styles.viewSwitch} role="group" aria-label="Choose Asset Register view">
+        <button
+          type="button"
+          className={`${styles.viewSwitchButton} ${activeView === 'overview' ? styles.viewSwitchButtonActive : ''}`}
+          aria-pressed={activeView === 'overview'}
+          onClick={() => selectView('overview')}
+        >
+          <span>Overview</span>
+          {!loading && !error ? <span className={styles.viewSwitchCount}>{overviewItems.length}</span> : null}
+        </button>
+        <button
+          type="button"
+          className={`${styles.viewSwitchButton} ${activeView === 'assets' ? styles.viewSwitchButtonActive : ''}`}
+          aria-pressed={activeView === 'assets'}
+          onClick={() => selectView('assets')}
+        >
+          <span>Assets</span>
+          {!loading && !error ? <span className={styles.viewSwitchCount}>{assets.length}</span> : null}
+        </button>
       </div>
 
-      {loading ? (
-        <div className={`${styles.stateCard} ${styles.loadingCard}`} role="status">
-          <span className={styles.loadingDot} aria-hidden="true" />
-          <div><strong>Checking the register</strong><p>Loading maintenance, licensing and problem notes.</p></div>
-        </div>
-      ) : error ? (
-        <div className={`${styles.stateCard} ${styles.errorCard}`} role="alert">
-          <div><strong>Overview unavailable</strong><p>{error}</p></div>
-          <button type="button" className={styles.retryButton} onClick={() => void loadOverview()}>Retry</button>
-        </div>
-      ) : overviewItems.length === 0 ? (
-        <div className={`${styles.stateCard} ${styles.clearCard}`}>
-          <span className={styles.clearIcon} aria-hidden="true">✓</span>
-          <div><strong>Nothing needs attention right now</strong><p>No open maintenance alerts, licence renewals, problem notes or partner notes were found.</p></div>
-        </div>
-      ) : (
-        <>
-          <div className={styles.overviewList}>
-            {visibleItems.map((item) => (
-              <article
-                key={item.id}
-                className={`${registerStyles.assetCard} ${styles.overviewCard} ${item.section === 'needs_attention' ? styles.cardAttention : item.section === 'coming_up' ? styles.cardUpcoming : styles.cardRecent}`}
-              >
-                <div className={`${styles.categoryIcon} ${categoryClassName(item.category)}`}>
-                  {categoryIcon(item.category)}
-                </div>
+      {activeView === 'overview' ? (
+        <section className={styles.overview} aria-labelledby="asset-register-overview-title">
+          <div className={styles.overviewHeader}>
+            <div className={styles.overviewTitleBlock}>
+              <h2 id="asset-register-overview-title">Needs attention &amp; coming up</h2>
+              <p>Maintenance, licence renewals and notes across standalone assets and assets inside umbrellas.</p>
+            </div>
 
-                <div className={styles.cardBody}>
-                  <div className={styles.cardBadges}>
-                    <span className={styles.typeBadge}>{categoryLabel(item.category)}</span>
-                    {item.umbrellaName ? <span className={styles.umbrellaBadge}>Umbrella · {item.umbrellaName}</span> : null}
-                  </div>
-                  <div className={styles.assetTitleRow}>
-                    <h3>{item.assetTitle}</h3>
-                    <span className={styles.statusBadge}>{item.status}</span>
-                  </div>
-                  <strong className={styles.headline}>{item.headline}</strong>
-                  <p className={styles.detail}>{item.detail}</p>
-                  <div className={styles.metaRow}>
-                    <span>{assetMeta(item)}</span>
-                    {item.meta ? <span>{item.meta}</span> : null}
-                  </div>
-                </div>
-
-                <a className={styles.viewAssetButton} href={buildAssetHref(item.assetId)}>
-                  View asset
-                  <span aria-hidden="true">→</span>
-                </a>
-              </article>
-            ))}
+            {!loading && !error && overviewItems.length ? (
+              <p className={styles.overviewSummary}>
+                <strong>{counts.attention} need attention</strong>
+                <span aria-hidden="true">•</span>
+                <span>{counts.maintenance} maintenance</span>
+                <span aria-hidden="true">•</span>
+                <span>{counts.licence} licensing</span>
+                <span aria-hidden="true">•</span>
+                <span>{counts.problem + counts.note} problems / notes</span>
+              </p>
+            ) : null}
           </div>
 
-          {overviewItems.length > INITIAL_VISIBLE_ITEMS ? (
-            <div className={styles.overviewFooter}>
-              <button type="button" className={styles.showMoreButton} onClick={() => setExpanded((value) => !value)}>
-                {expanded ? 'Show less' : `Show ${hiddenCount} more`}
-              </button>
+          {loading ? (
+            <div className={`${styles.stateCard} ${styles.loadingCard}`} role="status">
+              <span className={styles.loadingDot} aria-hidden="true" />
+              <div><strong>Checking the register</strong><p>Loading maintenance, licensing and problem notes.</p></div>
             </div>
-          ) : null}
-        </>
-      )}
-    </section>,
+          ) : error ? (
+            <div className={`${styles.stateCard} ${styles.errorCard}`} role="alert">
+              <div><strong>Overview unavailable</strong><p>{error}</p></div>
+              <button type="button" className={styles.retryButton} onClick={() => void loadOverview()}>Retry</button>
+            </div>
+          ) : overviewItems.length === 0 ? (
+            <div className={`${styles.stateCard} ${styles.clearCard}`}>
+              <span className={styles.clearIcon} aria-hidden="true">✓</span>
+              <div><strong>Nothing needs attention right now</strong><p>No open maintenance alerts, licence renewals, problem notes or partner notes were found.</p></div>
+            </div>
+          ) : (
+            <>
+              <div className={styles.overviewList}>
+                {visibleItems.map((item) => (
+                  <article
+                    key={item.id}
+                    className={`${registerStyles.assetCard} ${styles.overviewCard} ${item.section === 'needs_attention' ? styles.cardAttention : item.section === 'coming_up' ? styles.cardUpcoming : styles.cardRecent}`}
+                  >
+                    <div className={`${styles.categoryIcon} ${categoryClassName(item.category)}`}>
+                      {categoryIcon(item.category)}
+                    </div>
+
+                    <div className={styles.cardBody}>
+                      <div className={styles.cardContext}>
+                        <strong className={categoryClassName(item.category)}>{categoryLabel(item.category)}</strong>
+                        <span aria-hidden="true">•</span>
+                        <span>{item.umbrellaName || 'Standalone asset'}</span>
+                        <span aria-hidden="true">•</span>
+                        <span className={item.section === 'needs_attention' ? styles.statusAttention : item.section === 'coming_up' ? styles.statusUpcoming : styles.statusRecent}>
+                          {item.status}
+                        </span>
+                      </div>
+                      <h3 className={styles.assetTitle}>{item.assetTitle}</h3>
+                      <strong className={styles.headline}>{item.headline}</strong>
+                      <p className={styles.detail}>{item.detail}</p>
+                      <div className={styles.metaRow}>
+                        {assetMeta(item) ? <span>{assetMeta(item)}</span> : null}
+                        {item.meta ? <span>{item.meta}</span> : null}
+                      </div>
+                    </div>
+
+                    <a
+                      className={styles.viewAssetButton}
+                      href={buildAssetHref(item.assetId)}
+                      onClick={() => selectView('assets')}
+                    >
+                      View asset
+                      <span aria-hidden="true">→</span>
+                    </a>
+                  </article>
+                ))}
+              </div>
+
+              {overviewItems.length > INITIAL_VISIBLE_ITEMS ? (
+                <div className={styles.overviewFooter}>
+                  <button type="button" className={styles.showMoreButton} onClick={() => setExpanded((value) => !value)}>
+                    {expanded ? 'Show less' : `Show ${hiddenCount} more`}
+                  </button>
+                </div>
+              ) : null}
+            </>
+          )}
+        </section>
+      ) : null}
+    </div>,
     portalHost,
   );
 }
