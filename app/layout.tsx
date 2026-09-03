@@ -5,6 +5,7 @@ import AppFooter from '../components/AppFooter';
 import AppPatternBackground from '../components/AppPatternBackground';
 import SiteWorkspaceZoom from '../components/SiteWorkspaceZoom';
 import './globals.css';
+import './header-manage-tuning.css';
 
 const brandTitle = 'Aim4price | Asset Intelligence, Management & Pricing';
 const brandDescription =
