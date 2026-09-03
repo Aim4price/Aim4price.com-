@@ -6,20 +6,90 @@ import { usePathname } from 'next/navigation';
 import styles from './SiteWorkspaceZoom.module.css';
 
 const STORAGE_KEY = 'aim4price.site.workspace-zoom.v1';
+const ZOOM_MODE_STORAGE_KEY = 'aim4price.site.workspace-zoom-mode.v1';
 const INTRO_STORAGE_KEY = 'aim4price.site.workspace-zoom-intro.v1';
 const DEFAULT_ZOOM = 100;
 const MIN_ZOOM = 70;
 const MAX_ZOOM = 150;
 const ZOOM_STEP = 10;
+const AUTO_ZOOM_STEP = 5;
+const AUTO_BASE_WINDOW_WIDTH = 1440;
+const AUTO_DESKTOP_WINDOW_WIDTH = 1920;
+const AUTO_LARGE_WINDOW_WIDTH = 2560;
+const AUTO_MAX_WINDOW_WIDTH = 3840;
+const AUTO_MAX_ZOOM = 140;
 const INTRO_DELAY_MS = 900;
 const INTRO_DURATION_MS = 5200;
 const EXCLUDED_ROUTE_PREFIXES = ['/owner-app', '/dealer', '/field-manager', '/admin'] as const;
 
 type SiteZoomMode = 'workspace' | 'viewport';
+type ZoomPreferenceMode = 'auto' | 'manual';
+type DisplayProfile = 'standard' | 'wide' | 'expansive';
+
+type SavedZoomPreference = {
+  mode: ZoomPreferenceMode;
+  zoom: number;
+};
 
 function clampZoom(value: number): number {
   if (!Number.isFinite(value)) return DEFAULT_ZOOM;
   return Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, Math.round(value)));
+}
+
+function roundAutoZoom(value: number): number {
+  return clampZoom(Math.round(value / AUTO_ZOOM_STEP) * AUTO_ZOOM_STEP);
+}
+
+function interpolate(
+  value: number,
+  inputStart: number,
+  inputEnd: number,
+  outputStart: number,
+  outputEnd: number,
+): number {
+  const progress = Math.max(0, Math.min(1, (value - inputStart) / (inputEnd - inputStart)));
+  return outputStart + (outputEnd - outputStart) * progress;
+}
+
+function readWindowWidth(): number {
+  const outerWidth = Number(window.outerWidth);
+  if (Number.isFinite(outerWidth) && outerWidth > 0) return outerWidth;
+
+  const documentWidth = Number(document.documentElement.clientWidth);
+  if (Number.isFinite(documentWidth) && documentWidth > 0) return documentWidth;
+
+  return AUTO_BASE_WINDOW_WIDTH;
+}
+
+function calculateAutoZoom(windowWidth: number): number {
+  if (!Number.isFinite(windowWidth) || windowWidth <= AUTO_BASE_WINDOW_WIDTH) {
+    return DEFAULT_ZOOM;
+  }
+
+  if (windowWidth <= AUTO_DESKTOP_WINDOW_WIDTH) {
+    return roundAutoZoom(
+      interpolate(windowWidth, AUTO_BASE_WINDOW_WIDTH, AUTO_DESKTOP_WINDOW_WIDTH, 100, 120),
+    );
+  }
+
+  if (windowWidth <= AUTO_LARGE_WINDOW_WIDTH) {
+    return roundAutoZoom(
+      interpolate(windowWidth, AUTO_DESKTOP_WINDOW_WIDTH, AUTO_LARGE_WINDOW_WIDTH, 120, 130),
+    );
+  }
+
+  return Math.min(
+    AUTO_MAX_ZOOM,
+    roundAutoZoom(
+      interpolate(windowWidth, AUTO_LARGE_WINDOW_WIDTH, AUTO_MAX_WINDOW_WIDTH, 130, AUTO_MAX_ZOOM),
+    ),
+  );
+}
+
+function displayProfileForWidth(windowWidth: number): DisplayProfile {
+  if (windowWidth >= 2200) return 'expansive';
+  if (windowWidth >= 1600) return 'wide';
+  return 'standard';
 }
 
 function routeMatchesPrefix(pathname: string, prefix: string): boolean {
@@ -38,13 +108,32 @@ function siteZoomMode(pathname: string): SiteZoomMode {
   return pathname === '/' ? 'viewport' : 'workspace';
 }
 
-function readSavedZoom(): number {
+function readSavedPreference(): SavedZoomPreference {
+  const automaticZoom = calculateAutoZoom(readWindowWidth());
+
   try {
-    const saved = window.localStorage.getItem(STORAGE_KEY);
-    if (!saved) return DEFAULT_ZOOM;
-    return clampZoom(Number(saved));
+    const savedMode = window.localStorage.getItem(ZOOM_MODE_STORAGE_KEY);
+    const savedZoomValue = window.localStorage.getItem(STORAGE_KEY);
+    const savedZoom = savedZoomValue ? clampZoom(Number(savedZoomValue)) : DEFAULT_ZOOM;
+
+    if (savedMode === 'manual') {
+      return { mode: 'manual', zoom: savedZoom };
+    }
+
+    if (savedMode === 'auto') {
+      return { mode: 'auto', zoom: automaticZoom };
+    }
+
+    // Existing Aim4price users may already have a non-100% zoom saved from
+    // before Auto sizing existed. Preserve that explicit choice. A missing or
+    // 100% legacy value becomes Auto so normal users get the new display fit.
+    if (savedZoomValue && savedZoom !== DEFAULT_ZOOM) {
+      return { mode: 'manual', zoom: savedZoom };
+    }
+
+    return { mode: 'auto', zoom: automaticZoom };
   } catch {
-    return DEFAULT_ZOOM;
+    return { mode: 'auto', zoom: automaticZoom };
   }
 }
 
@@ -71,7 +160,9 @@ export default function SiteWorkspaceZoom({ children }: { children: ReactNode })
   const headerRef = useRef<HTMLElement | null>(null);
   const controlHostRef = useRef<HTMLElement | null>(null);
   const zoomRef = useRef(DEFAULT_ZOOM);
+  const zoomModeRef = useRef<ZoomPreferenceMode>('auto');
   const [zoom, setZoom] = useState(DEFAULT_ZOOM);
+  const [zoomMode, setZoomMode] = useState<ZoomPreferenceMode>('auto');
   const [hasLoadedPreference, setHasLoadedPreference] = useState(false);
   const [isAvailable, setIsAvailable] = useState(false);
   const [controlHost, setControlHost] = useState<HTMLElement | null>(null);
@@ -84,6 +175,7 @@ export default function SiteWorkspaceZoom({ children }: { children: ReactNode })
     if (host) {
       delete host.dataset.aim4priceSiteZoomHost;
       delete host.dataset.aim4priceSiteZoomMode;
+      delete host.dataset.aim4priceDisplayProfile;
       host.style.removeProperty('--aim4price-site-workspace-zoom');
     }
 
@@ -128,18 +220,64 @@ export default function SiteWorkspaceZoom({ children }: { children: ReactNode })
       setControlHost(headerActions);
     }
 
+    const windowWidth = readWindowWidth();
     header.dataset.aim4priceAppHeader = 'true';
     host.dataset.aim4priceSiteZoomHost = 'true';
     host.dataset.aim4priceSiteZoomMode = siteZoomMode(pathname);
+    host.dataset.aim4priceDisplayProfile = displayProfileForWidth(windowWidth);
     host.style.setProperty('--aim4price-site-workspace-zoom', String(zoomRef.current / 100));
     setIsAvailable(true);
     return true;
   }, [clearBoundHost, pathname]);
 
-  useEffect(() => {
-    const savedZoom = readSavedZoom();
-    zoomRef.current = savedZoom;
-    setZoom(savedZoom);
+  const applyZoom = useCallback((nextZoom: number) => {
+    const normalizedZoom = clampZoom(nextZoom);
+    const host = hostRef.current;
+    const usesContainedScroll = host?.dataset.aim4priceSiteZoomMode === 'workspace';
+    const previousScrollWidth = usesContainedScroll ? host.scrollWidth : 0;
+    const previousCenter = usesContainedScroll && previousScrollWidth > 0
+      ? (host.scrollLeft + host.clientWidth / 2) / previousScrollWidth
+      : 0;
+
+    if (normalizedZoom === zoomRef.current) {
+      host?.style.setProperty('--aim4price-site-workspace-zoom', String(normalizedZoom / 100));
+      return;
+    }
+
+    zoomRef.current = normalizedZoom;
+    host?.style.setProperty('--aim4price-site-workspace-zoom', String(normalizedZoom / 100));
+    setZoom(normalizedZoom);
+
+    if (!host || !usesContainedScroll || previousScrollWidth <= 0) return;
+
+    window.requestAnimationFrame(() => {
+      if (!host.isConnected) return;
+      const nextScrollWidth = host.scrollWidth;
+      const desiredLeft = previousCenter * nextScrollWidth - host.clientWidth / 2;
+      host.scrollLeft = Math.max(0, desiredLeft);
+    });
+  }, []);
+
+  const changeZoom = useCallback((nextZoom: number) => {
+    setShowIntro(false);
+    zoomModeRef.current = 'manual';
+    setZoomMode('manual');
+    applyZoom(nextZoom);
+  }, [applyZoom]);
+
+  const enableAutoZoom = useCallback(() => {
+    setShowIntro(false);
+    zoomModeRef.current = 'auto';
+    setZoomMode('auto');
+    applyZoom(calculateAutoZoom(readWindowWidth()));
+  }, [applyZoom]);
+
+  useLayoutEffect(() => {
+    const preference = readSavedPreference();
+    zoomRef.current = preference.zoom;
+    zoomModeRef.current = preference.mode;
+    setZoom(preference.zoom);
+    setZoomMode(preference.mode);
     setHasLoadedPreference(true);
   }, []);
 
@@ -151,10 +289,11 @@ export default function SiteWorkspaceZoom({ children }: { children: ReactNode })
 
     try {
       window.localStorage.setItem(STORAGE_KEY, String(zoom));
+      window.localStorage.setItem(ZOOM_MODE_STORAGE_KEY, zoomMode);
     } catch {
       // The control still works for the current session when storage is blocked.
     }
-  }, [hasLoadedPreference, zoom]);
+  }, [hasLoadedPreference, zoom, zoomMode]);
 
   useLayoutEffect(() => {
     clearBoundHost();
@@ -189,6 +328,36 @@ export default function SiteWorkspaceZoom({ children }: { children: ReactNode })
   }, [bindCurrentPage, clearBoundHost, pathname]);
 
   useEffect(() => {
+    if (!hasLoadedPreference || isExcludedRoute(pathname)) return undefined;
+
+    const syncWindowSizing = () => {
+      const windowWidth = readWindowWidth();
+      const host = hostRef.current;
+
+      if (host) {
+        host.dataset.aim4priceDisplayProfile = displayProfileForWidth(windowWidth);
+      }
+
+      // window.outerWidth tracks the actual browser-window/display size but is
+      // not the page's responsive CSS viewport. Browser Ctrl +/- therefore
+      // remains a user-controlled magnification layer instead of causing Auto
+      // sizing to fight it.
+      if (zoomModeRef.current === 'auto') {
+        applyZoom(calculateAutoZoom(windowWidth));
+      }
+    };
+
+    syncWindowSizing();
+    window.addEventListener('resize', syncWindowSizing);
+    window.addEventListener('orientationchange', syncWindowSizing);
+
+    return () => {
+      window.removeEventListener('resize', syncWindowSizing);
+      window.removeEventListener('orientationchange', syncWindowSizing);
+    };
+  }, [applyZoom, hasLoadedPreference, pathname]);
+
+  useEffect(() => {
     setShowIntro(false);
 
     if (
@@ -214,29 +383,9 @@ export default function SiteWorkspaceZoom({ children }: { children: ReactNode })
     };
   }, [controlHost, hasLoadedPreference, isAvailable, pathname]);
 
-  const changeZoom = useCallback((nextZoom: number) => {
-    const normalizedZoom = clampZoom(nextZoom);
-    const host = hostRef.current;
-    const usesContainedScroll = host?.dataset.aim4priceSiteZoomMode === 'workspace';
-    const previousScrollWidth = usesContainedScroll ? host.scrollWidth : 0;
-    const previousCenter = usesContainedScroll && previousScrollWidth > 0
-      ? (host.scrollLeft + host.clientWidth / 2) / previousScrollWidth
-      : 0;
-
-    setShowIntro(false);
-    zoomRef.current = normalizedZoom;
-    host?.style.setProperty('--aim4price-site-workspace-zoom', String(normalizedZoom / 100));
-    setZoom(normalizedZoom);
-
-    if (!host || !usesContainedScroll || previousScrollWidth <= 0) return;
-
-    window.requestAnimationFrame(() => {
-      if (!host.isConnected) return;
-      const nextScrollWidth = host.scrollWidth;
-      const desiredLeft = previousCenter * nextScrollWidth - host.clientWidth / 2;
-      host.scrollLeft = Math.max(0, desiredLeft);
-    });
-  }, []);
+  const zoomValueLabel = zoomMode === 'auto'
+    ? `Automatic page size ${zoom} percent.`
+    : `Page size ${zoom} percent. Return to automatic sizing.`;
 
   const controls = isAvailable ? (
     <div
@@ -244,6 +393,7 @@ export default function SiteWorkspaceZoom({ children }: { children: ReactNode })
       role="toolbar"
       aria-label="Aim4price page size controls"
       data-site-workspace-zoom-controls
+      data-zoom-preference={zoomMode}
     >
       <button
         type="button"
@@ -259,9 +409,9 @@ export default function SiteWorkspaceZoom({ children }: { children: ReactNode })
       <button
         type="button"
         className={styles.zoomValue}
-        onClick={() => changeZoom(DEFAULT_ZOOM)}
-        aria-label={`Page size ${zoom} percent. Reset to 100 percent.`}
-        title="Reset page size to 100%"
+        onClick={enableAutoZoom}
+        aria-label={zoomValueLabel}
+        title={zoomMode === 'auto' ? 'Page size is automatic' : 'Return to automatic page size'}
       >
         {zoom}%
       </button>
@@ -279,7 +429,7 @@ export default function SiteWorkspaceZoom({ children }: { children: ReactNode })
 
       {showIntro ? (
         <span className={styles.introNote} role="status">
-          Increase or decrease page size here.
+          Page size adjusts automatically. Use − or + if needed.
         </span>
       ) : null}
     </div>
