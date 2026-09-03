@@ -382,15 +382,32 @@ function assetMeta(item: OverviewItem): string {
   ].filter(Boolean).join(' • ');
 }
 
+function restoreManagedAssetViewElement(element: HTMLElement) {
+  if (element.dataset.assetRegisterOverviewManaged !== 'true') return;
+
+  element.hidden = element.dataset.assetRegisterOverviewWasHidden === 'true';
+
+  const previousDisplay = element.dataset.assetRegisterOverviewDisplay ?? '';
+  const previousDisplayPriority = element.dataset.assetRegisterOverviewDisplayPriority ?? '';
+  if (previousDisplay) {
+    element.style.setProperty('display', previousDisplay, previousDisplayPriority);
+  } else {
+    element.style.removeProperty('display');
+  }
+
+  delete element.dataset.assetRegisterOverviewManaged;
+  delete element.dataset.assetRegisterOverviewWasHidden;
+  delete element.dataset.assetRegisterOverviewDisplay;
+  delete element.dataset.assetRegisterOverviewDisplayPriority;
+}
+
 function restoreManagedAssetViewSiblings(host: HTMLDivElement | null) {
   if (!host?.parentElement) return;
 
   let sibling = host.nextElementSibling;
   while (sibling) {
-    if (sibling instanceof HTMLElement && sibling.dataset.assetRegisterOverviewManaged === 'true') {
-      sibling.hidden = sibling.dataset.assetRegisterOverviewWasHidden === 'true';
-      delete sibling.dataset.assetRegisterOverviewManaged;
-      delete sibling.dataset.assetRegisterOverviewWasHidden;
+    if (sibling instanceof HTMLElement) {
+      restoreManagedAssetViewElement(sibling);
     }
     sibling = sibling.nextElementSibling;
   }
@@ -403,17 +420,17 @@ function syncAssetViewSiblings(host: HTMLDivElement | null, showAssets: boolean)
   while (sibling) {
     if (sibling instanceof HTMLElement) {
       if (showAssets) {
-        if (sibling.dataset.assetRegisterOverviewManaged === 'true') {
-          sibling.hidden = sibling.dataset.assetRegisterOverviewWasHidden === 'true';
-          delete sibling.dataset.assetRegisterOverviewManaged;
-          delete sibling.dataset.assetRegisterOverviewWasHidden;
-        }
+        restoreManagedAssetViewElement(sibling);
       } else {
         if (sibling.dataset.assetRegisterOverviewManaged !== 'true') {
           sibling.dataset.assetRegisterOverviewManaged = 'true';
           sibling.dataset.assetRegisterOverviewWasHidden = sibling.hidden ? 'true' : 'false';
+          sibling.dataset.assetRegisterOverviewDisplay = sibling.style.getPropertyValue('display');
+          sibling.dataset.assetRegisterOverviewDisplayPriority = sibling.style.getPropertyPriority('display');
         }
+
         sibling.hidden = true;
+        sibling.style.setProperty('display', 'none', 'important');
       }
     }
     sibling = sibling.nextElementSibling;
