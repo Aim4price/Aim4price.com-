@@ -12,10 +12,29 @@ const [client, publicPage, dealerPage, ownerPage, serverValuation] = await Promi
   read('lib/server-valuation.ts'),
 ]);
 
-test('quick estimate is the shared public, dealer and owner valuation entry point', () => {
+test('plain Get Estimate uses Quick while specialist and app workflows keep the mature client', () => {
   assert.match(publicPage, /QuickValuationClient/);
-  assert.match(dealerPage, /QuickValuationClient dealerAppMode/);
-  assert.match(ownerPage, /QuickValuationClient ownerAppMode/);
+  assert.match(publicPage, /ValuationClient/);
+  assert.match(publicPage, /hasSpecialistValuationContext/);
+  assert.match(publicPage, /return <ValuationClient \/>/);
+  assert.match(publicPage, /return <QuickValuationClient \/>/);
+  assert.match(dealerPage, /<ValuationClient dealerAppMode \/>/);
+  assert.match(ownerPage, /<ValuationClient ownerAppMode \/>/);
+});
+
+test('specialist valuation URLs retain register, accountant, conversion and Marketplace behaviour', () => {
+  for (const param of [
+    'accountantShareId',
+    'registerId',
+    'dealerRegisterMode',
+    'convertAssetId',
+    'conversionAssetId',
+    'conversion',
+    'marketplace',
+    'marketplaceListing',
+  ]) {
+    assert.match(publicPage, new RegExp(`"${param}"`));
+  }
 });
 
 test('quick estimate removes the customer-facing path/spec decision', () => {
