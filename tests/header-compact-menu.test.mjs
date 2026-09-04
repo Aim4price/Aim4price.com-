@@ -39,6 +39,7 @@ test('761 to 1180 becomes one header row with Menu instead of a second navigatio
   assert.match(compact, /> div:last-child \{[\s\S]*?grid-area: actions !important/);
   assert.match(compact, /button\[aria-controls='app-header-mobile-menu'\][\s\S]*?display: inline-flex !important[\s\S]*?order: -1 !important/);
   assert.match(compact, /button\[aria-controls='app-header-mobile-menu'\]::after[\s\S]*?content: '⌄'/);
+  assert.match(compact, /div:has\(> \[aria-label='Open manage menu'\]\)[\s\S]*?display: block !important/);
 });
 
 test('compact Menu is a bounded navigation dropdown rather than the phone drawer', async () => {
@@ -48,10 +49,9 @@ test('compact Menu is a bounded navigation dropdown rather than the phone drawer
     menu,
     /body > div\[role='presentation'\]:has\(> #app-header-mobile-menu\)[\s\S]*?background: transparent !important[\s\S]*?backdrop-filter: none !important/,
   );
-  assert.match(
-    menu,
-    /#app-header-mobile-menu \{[\s\S]*?position: fixed !important[\s\S]*?width: min\(20\.5rem, calc\(100vw - 2rem\)\) !important[\s\S]*?bottom: auto !important[\s\S]*?left: auto !important/,
-  );
+  assert.match(menu, /#app-header-mobile-menu \{[\s\S]*?position: fixed !important/);
+  assert.match(menu, /#app-header-mobile-menu \{[\s\S]*?bottom: auto !important[\s\S]*?left: auto !important/);
+  assert.match(menu, /#app-header-mobile-menu \{[\s\S]*?width: min\(20\.5rem, calc\(100vw - 2rem\)\) !important/);
   assert.match(
     menu,
     /#app-header-mobile-menu > nav \{[\s\S]*?grid-template-columns: minmax\(0, 1fr\) !important/,
