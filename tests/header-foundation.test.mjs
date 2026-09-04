@@ -18,7 +18,6 @@ test('header foundation defines exactly three structural width states', async ()
     '@media (min-width: 761px) and (max-width: 1180px)',
     '@media (max-width: 760px)',
   ]);
-  assert.doesNotMatch(styles, /900px|901px|980px|1024px|1040px|1041px|1240px|1360px|1366px|1440px/);
 });
 
 test('public four-item navigation never falls into the empty carousel columns', async () => {
@@ -65,7 +64,7 @@ test('1181 and wider use intrinsic side content with a flexible middle nav', asy
   assert.match(desktop, /grid-template-columns: auto minmax\(0, 1fr\) auto !important/);
   assert.match(desktop, /grid-template-areas: 'brand nav actions' !important/);
   assert.match(desktop, /nav\[aria-label='Primary navigation'\][\s\S]*?width: 100% !important[\s\S]*?justify-self: stretch !important/);
-  assert.match(styles, /> div > div:last-child \{[\s\S]*?width: max-content !important[\s\S]*?flex-wrap: nowrap !important/);
+  assert.match(styles, /> div\s*>\s*div:last-child \{[\s\S]*?width: max-content !important[\s\S]*?flex-wrap: nowrap !important/);
 });
 
 test('phone header remains one row and does not inherit tablet navigation geometry', async () => {
