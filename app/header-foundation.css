@@ -1,0 +1,255 @@
+/*
+ * Aim4price website header foundation
+ *
+ * One source of truth for header geometry. Historical AppHeader media queries
+ * still own visual details, menus and notification presentation, but they no
+ * longer decide where the logo, primary nav and account controls live.
+ *
+ * Structural states:
+ *   <= 760px   phone: one row, primary nav hidden
+ *   761-1180px compact: brand/actions row + full-width nav row
+ *   >= 1181px  desktop: brand + flexible nav + intrinsic actions in one row
+ */
+
+header:has(> div > a[aria-label='Go to Aim4price home']) > div {
+  box-sizing: border-box;
+  min-width: 0 !important;
+  max-width: 1360px !important;
+  margin-inline: auto !important;
+}
+
+header:has(> div > a[aria-label='Go to Aim4price home'])
+  > div
+  > a[aria-label='Go to Aim4price home'] {
+  min-width: 0 !important;
+  justify-self: start !important;
+}
+
+header:has(> div > a[aria-label='Go to Aim4price home'])
+  > div
+  > nav[aria-label='Primary navigation'] {
+  min-width: 0 !important;
+  max-width: 100% !important;
+  align-items: stretch !important;
+}
+
+/* The rail is always a single flexible row. This removes the old fixed
+   min-widths that made the 761-1180 header wrap or collapse. */
+header:has(> div > a[aria-label='Go to Aim4price home'])
+  > div
+  > nav[aria-label='Primary navigation']
+  > div {
+  box-sizing: border-box;
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  align-items: stretch !important;
+  justify-content: center !important;
+  width: min(100%, 46rem) !important;
+  max-width: 46rem !important;
+  min-width: 0 !important;
+  margin-inline: auto !important;
+  overflow: hidden !important;
+}
+
+header:has(> div > a[aria-label='Go to Aim4price home'])
+  > div
+  > nav[aria-label='Primary navigation']
+  > div
+  > a {
+  box-sizing: border-box;
+  flex: 1 1 0 !important;
+  width: auto !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  overflow-wrap: normal !important;
+  text-overflow: ellipsis !important;
+}
+
+/* Public navigation has no previous/next buttons. The historical tablet rule
+   always reserved 44px / flexible / 44px columns anyway, which placed the
+   public nav rail in the first 44px column. Only use the three-column grid
+   when the carousel buttons actually exist. */
+header:has(> div > a[aria-label='Go to Aim4price home'])
+  > div
+  > nav[aria-label='Primary navigation']:not(:has(> button)) {
+  display: flex !important;
+  justify-content: center !important;
+}
+
+header:has(> div > a[aria-label='Go to Aim4price home'])
+  > div
+  > nav[aria-label='Primary navigation']:has(> button) {
+  display: grid !important;
+  grid-template-columns: 2.75rem minmax(0, 1fr) 2.75rem !important;
+  gap: 0.3rem !important;
+}
+
+header:has(> div > a[aria-label='Go to Aim4price home'])
+  > div
+  > nav[aria-label='Primary navigation']:has(> button)
+  > div {
+  width: 100% !important;
+  max-width: 46rem !important;
+}
+
+header:has(> div > a[aria-label='Go to Aim4price home'])
+  > div
+  > div:last-child {
+  min-width: 0 !important;
+  width: max-content !important;
+  max-width: none !important;
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  align-items: center !important;
+  justify-self: end !important;
+  justify-content: flex-end !important;
+}
+
+header:has(> div > a[aria-label='Go to Aim4price home'])
+  > div
+  > div:last-child
+  > :first-child {
+  flex: 0 0 auto !important;
+  width: max-content !important;
+  max-width: none !important;
+}
+
+/* --------------------------------------------------------------------------
+ * Desktop: one row. Use actual content widths for logo/actions and let the
+ * middle nav consume whatever space remains. This removes the old symmetric
+ * 16rem side tracks that clipped the page-size controls around 1181-1366px.
+ * ----------------------------------------------------------------------- */
+@media (min-width: 1181px) {
+  header:has(> div > a[aria-label='Go to Aim4price home']) > div {
+    width: min(calc(100% - clamp(2rem, 3vw, 3rem)), 1360px) !important;
+    min-height: 5.75rem !important;
+    padding: 0.82rem 0 !important;
+    display: grid !important;
+    grid-template-columns: auto minmax(0, 1fr) auto !important;
+    grid-template-areas: 'brand nav actions' !important;
+    align-items: center !important;
+    gap: clamp(0.7rem, 1.35vw, 1.55rem) !important;
+  }
+
+  header:has(> div > a[aria-label='Go to Aim4price home'])
+    > div
+    > a[aria-label='Go to Aim4price home'] {
+    grid-area: brand !important;
+  }
+
+  header:has(> div > a[aria-label='Go to Aim4price home'])
+    > div
+    > nav[aria-label='Primary navigation'] {
+    grid-area: nav !important;
+    width: 100% !important;
+    justify-self: stretch !important;
+    justify-content: center !important;
+  }
+
+  header:has(> div > a[aria-label='Go to Aim4price home'])
+    > div
+    > nav[aria-label='Primary navigation']
+    > div
+    > a {
+    min-height: 3.28rem !important;
+    padding-inline: clamp(0.62rem, 1vw, 1.05rem) !important;
+    font-size: clamp(0.86rem, 0.92vw, 0.98rem) !important;
+  }
+
+  header:has(> div > a[aria-label='Go to Aim4price home'])
+    > div
+    > div:last-child {
+    grid-area: actions !important;
+  }
+}
+
+/* --------------------------------------------------------------------------
+ * Compact desktop/tablet: two intentional rows. The nav receives the entire
+ * second row instead of trying to squeeze between the mark and auth controls.
+ * ----------------------------------------------------------------------- */
+@media (min-width: 761px) and (max-width: 1180px) {
+  header:has(> div > a[aria-label='Go to Aim4price home']) > div {
+    width: min(calc(100% - 2rem), 1180px) !important;
+    min-height: auto !important;
+    padding: 0.62rem 0 0.72rem !important;
+    display: grid !important;
+    grid-template-columns: auto minmax(0, 1fr) !important;
+    grid-template-areas:
+      'brand actions'
+      'nav nav' !important;
+    align-items: center !important;
+    row-gap: 0.58rem !important;
+    column-gap: 0.8rem !important;
+  }
+
+  header:has(> div > a[aria-label='Go to Aim4price home'])
+    > div
+    > a[aria-label='Go to Aim4price home'] {
+    grid-area: brand !important;
+  }
+
+  header:has(> div > a[aria-label='Go to Aim4price home'])
+    > div
+    > nav[aria-label='Primary navigation'] {
+    grid-area: nav !important;
+    width: 100% !important;
+    justify-self: stretch !important;
+    justify-content: center !important;
+    overflow: visible !important;
+  }
+
+  header:has(> div > a[aria-label='Go to Aim4price home'])
+    > div
+    > nav[aria-label='Primary navigation']
+    > div
+    > a {
+    min-height: 2.85rem !important;
+    padding: 0.5rem clamp(0.48rem, 1.15vw, 0.75rem) !important;
+    font-size: clamp(0.77rem, 1.25vw, 0.9rem) !important;
+    line-height: 1.08 !important;
+    text-align: center !important;
+  }
+
+  header:has(> div > a[aria-label='Go to Aim4price home'])
+    > div
+    > div:last-child {
+    grid-area: actions !important;
+  }
+}
+
+/* --------------------------------------------------------------------------
+ * Phone: one header row. Existing AppHeader mobile-menu/account presentation
+ * remains intact; this layer only guarantees stable structural placement.
+ * ----------------------------------------------------------------------- */
+@media (max-width: 760px) {
+  header:has(> div > a[aria-label='Go to Aim4price home']) > div {
+    width: min(calc(100% - 1rem), 48rem) !important;
+    min-height: auto !important;
+    padding: 0.48rem 0 0.55rem !important;
+    display: grid !important;
+    grid-template-columns: auto minmax(0, 1fr) !important;
+    grid-template-areas: 'brand actions' !important;
+    align-items: center !important;
+    gap: 0.5rem !important;
+  }
+
+  header:has(> div > a[aria-label='Go to Aim4price home'])
+    > div
+    > a[aria-label='Go to Aim4price home'] {
+    grid-area: brand !important;
+  }
+
+  header:has(> div > a[aria-label='Go to Aim4price home'])
+    > div
+    > nav[aria-label='Primary navigation'] {
+    display: none !important;
+  }
+
+  header:has(> div > a[aria-label='Go to Aim4price home'])
+    > div
+    > div:last-child {
+    grid-area: actions !important;
+  }
+}
