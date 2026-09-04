@@ -47,6 +47,14 @@
     justify-content: flex-end !important;
   }
 
+  /* Older <=900px rules hide the signed-in account wrapper. Keep Manage
+     reachable in the compact-header band rather than forcing navigation and
+     account actions into different systems. */
+  header:has(> div > a[aria-label='Go to Aim4price home'])
+    div:has(> [aria-label='Open manage menu']) {
+    display: block !important;
+  }
+
   /* Menu is already rendered by AppHeader. At compact widths it becomes the
      primary navigation trigger and sits before the auth/manage controls. */
   header:has(> div > a[aria-label='Go to Aim4price home'])
@@ -176,10 +184,32 @@
     box-shadow: none !important;
   }
 
+  #app-header-mobile-menu > nav > a > span:first-child {
+    color: #176b50 !important;
+    background: #e8f3ee !important;
+    border-color: rgba(23, 107, 80, 0.09) !important;
+  }
+
+  #app-header-mobile-menu > nav > a > span:last-child {
+    color: rgba(23, 107, 80, 0.58) !important;
+    background: rgba(23, 107, 80, 0.06) !important;
+  }
+
   #app-header-mobile-menu > nav > a[aria-current='page'] {
     border-color: rgba(15, 104, 79, 0.2) !important;
     background: #effaf5 !important;
     color: #0f684f !important;
+  }
+
+  #app-header-mobile-menu > nav > a[aria-current='page'] > span:first-child {
+    color: #0f684f !important;
+    background: #dff2e9 !important;
+    border-color: rgba(15, 104, 79, 0.12) !important;
+  }
+
+  #app-header-mobile-menu > nav > a[aria-current='page'] > span:last-child {
+    color: #0f684f !important;
+    background: rgba(15, 104, 79, 0.08) !important;
   }
 
   /* Login/Create Account or Manage remains visible in the actual header, so the
