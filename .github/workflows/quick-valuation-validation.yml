@@ -6,6 +6,7 @@ on:
       - "app/valuation/**"
       - "app/dealer/valuation/page.tsx"
       - "app/owner-app/valuation/page.tsx"
+      - "lib/server-valuation.ts"
       - "tests/quick-valuation-flow.test.mjs"
       - ".github/workflows/quick-valuation-validation.yml"
   workflow_dispatch:
