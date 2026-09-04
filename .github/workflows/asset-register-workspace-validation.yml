@@ -4,10 +4,12 @@ on:
   pull_request:
     paths:
       - "app/layout.tsx"
+      - "app/compact-desktop-continuity.css"
       - "components/SiteWorkspaceZoom.tsx"
       - "components/SiteWorkspaceZoom.module.css"
       - "components/AppHeader.tsx"
       - "tests/site-workspace-zoom.test.mjs"
+      - "tests/compact-desktop-continuity.test.mjs"
       - ".github/workflows/asset-register-workspace-validation.yml"
   workflow_dispatch:
 
@@ -39,5 +41,5 @@ jobs:
       - name: Type check
         run: npm run typecheck
 
-      - name: Test shared page zoom
-        run: node --test tests/site-workspace-zoom.test.mjs
+      - name: Test shared page zoom and compact desktop continuity
+        run: node --test tests/site-workspace-zoom.test.mjs tests/compact-desktop-continuity.test.mjs
