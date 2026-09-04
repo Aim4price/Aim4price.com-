@@ -9,6 +9,7 @@ import './header-manage-tuning.css';
 import './asset-register-view-tuning.css';
 import './compact-desktop-continuity.css';
 import './header-foundation.css';
+import './header-compact-menu.css';
 
 const brandTitle = 'Aim4price | Asset Intelligence, Management & Pricing';
 const brandDescription =

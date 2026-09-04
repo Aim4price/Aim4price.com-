@@ -7,7 +7,7 @@
  *
  * Structural states:
  *   <= 760px   phone: one row, primary nav hidden
- *   761-1180px compact: one row with a Menu dropdown
+ *   761-1180px compact: brand/actions row + full-width nav row
  *   >= 1181px  desktop: brand + flexible nav + intrinsic actions in one row
  */
 
@@ -33,7 +33,8 @@ header:has(> div > a[aria-label='Go to Aim4price home'])
   align-items: stretch !important;
 }
 
-/* Desktop navigation rail: a single flexible row. */
+/* The rail is always a single flexible row. This removes the old fixed
+   min-widths that made the 761-1180 header wrap or collapse. */
 header:has(> div > a[aria-label='Go to Aim4price home'])
   > div
   > nav[aria-label='Primary navigation']
@@ -66,7 +67,10 @@ header:has(> div > a[aria-label='Go to Aim4price home'])
   text-overflow: ellipsis !important;
 }
 
-/* Only allocate carousel columns when Previous / Next buttons exist. */
+/* Public navigation has no previous/next buttons. The historical tablet rule
+   always reserved 44px / flexible / 44px columns anyway, which placed the
+   public nav rail in the first 44px column. Only use the three-column grid
+   when the carousel buttons actually exist. */
 header:has(> div > a[aria-label='Go to Aim4price home'])
   > div
   > nav[aria-label='Primary navigation']:not(:has(> button)) {
@@ -90,7 +94,6 @@ header:has(> div > a[aria-label='Go to Aim4price home'])
   max-width: 46rem !important;
 }
 
-/* Keep the account/auth rail and page-size controls intrinsic and on one line. */
 header:has(> div > a[aria-label='Go to Aim4price home'])
   > div
   > div:last-child {
@@ -115,7 +118,8 @@ header:has(> div > a[aria-label='Go to Aim4price home'])
 
 /* --------------------------------------------------------------------------
  * Desktop: one row. Use actual content widths for logo/actions and let the
- * middle nav consume whatever space remains.
+ * middle nav consume whatever space remains. This removes the old symmetric
+ * 16rem side tracks that clipped the page-size controls around 1181-1366px.
  * ----------------------------------------------------------------------- */
 @media (min-width: 1181px) {
   header:has(> div > a[aria-label='Go to Aim4price home']) > div {
@@ -159,27 +163,25 @@ header:has(> div > a[aria-label='Go to Aim4price home'])
     > div:last-child {
     grid-area: actions !important;
   }
-
-  header:has(> div > a[aria-label='Go to Aim4price home'])
-    button[aria-controls='app-header-mobile-menu'] {
-    display: none !important;
-  }
 }
 
 /* --------------------------------------------------------------------------
- * Compact desktop/tablet: one clean row. Full navigation moves into the
- * existing Menu overlay instead of creating a tall second header row.
+ * Compact desktop/tablet: two intentional rows. The nav receives the entire
+ * second row instead of trying to squeeze between the mark and auth controls.
  * ----------------------------------------------------------------------- */
 @media (min-width: 761px) and (max-width: 1180px) {
   header:has(> div > a[aria-label='Go to Aim4price home']) > div {
     width: min(calc(100% - 2rem), 1180px) !important;
-    min-height: 5.2rem !important;
-    padding: 0.68rem 0 !important;
+    min-height: auto !important;
+    padding: 0.62rem 0 0.72rem !important;
     display: grid !important;
     grid-template-columns: auto minmax(0, 1fr) !important;
-    grid-template-areas: 'brand actions' !important;
+    grid-template-areas:
+      'brand actions'
+      'nav nav' !important;
     align-items: center !important;
-    gap: 0.8rem !important;
+    row-gap: 0.58rem !important;
+    column-gap: 0.8rem !important;
   }
 
   header:has(> div > a[aria-label='Go to Aim4price home'])
@@ -191,7 +193,23 @@ header:has(> div > a[aria-label='Go to Aim4price home'])
   header:has(> div > a[aria-label='Go to Aim4price home'])
     > div
     > nav[aria-label='Primary navigation'] {
-    display: none !important;
+    grid-area: nav !important;
+    width: 100% !important;
+    justify-self: stretch !important;
+    justify-content: center !important;
+    overflow: visible !important;
+  }
+
+  header:has(> div > a[aria-label='Go to Aim4price home'])
+    > div
+    > nav[aria-label='Primary navigation']
+    > div
+    > a {
+    min-height: 2.85rem !important;
+    padding: 0.5rem clamp(0.48rem, 1.15vw, 0.75rem) !important;
+    font-size: clamp(0.77rem, 1.25vw, 0.9rem) !important;
+    line-height: 1.08 !important;
+    text-align: center !important;
   }
 
   header:has(> div > a[aria-label='Go to Aim4price home'])
@@ -199,75 +217,11 @@ header:has(> div > a[aria-label='Go to Aim4price home'])
     > div:last-child {
     grid-area: actions !important;
   }
-
-  /* Reuse the existing Menu control, but make it the compact-width navigation
-     trigger rather than a phone-only control. */
-  header:has(> div > a[aria-label='Go to Aim4price home'])
-    button[aria-controls='app-header-mobile-menu'] {
-    display: inline-flex !important;
-    order: -1;
-    min-height: 2.85rem;
-    padding-inline: 0.82rem;
-    white-space: nowrap;
-  }
-
-  header:has(> div > a[aria-label='Go to Aim4price home'])
-    button[aria-controls='app-header-mobile-menu']::after {
-    content: '⌄';
-    margin-left: 0.12rem;
-    color: currentColor;
-    font-size: 0.86rem;
-    line-height: 1;
-    transform: translateY(-0.08rem);
-  }
-
-  header:has(> div > a[aria-label='Go to Aim4price home'])
-    button[aria-expanded='true'][aria-controls='app-header-mobile-menu']::after {
-    transform: rotate(180deg) translateY(0.08rem);
-  }
-
-  /* The portal becomes a compact dropdown surface. The transparent full-screen
-     backdrop keeps outside-click dismissal without visually dimming the page. */
-  body > div:has(> #app-header-mobile-menu) {
-    display: block !important;
-    position: fixed !important;
-    inset: 0 !important;
-    z-index: 10020 !important;
-    width: auto !important;
-    min-height: 100dvh !important;
-    background: transparent !important;
-    backdrop-filter: none !important;
-    animation: none !important;
-  }
-
-  #app-header-mobile-menu {
-    display: grid !important;
-    position: fixed !important;
-    top: calc(env(safe-area-inset-top) + 5.25rem) !important;
-    right: max(1rem, env(safe-area-inset-right)) !important;
-    bottom: auto !important;
-    left: auto !important;
-    width: min(23rem, calc(100vw - 2rem)) !important;
-    max-width: 23rem !important;
-    max-height: calc(100dvh - 6rem) !important;
-    grid-template-rows: auto minmax(0, 1fr) !important;
-    gap: 0.62rem !important;
-    padding: 0.68rem !important;
-    border-radius: 1.28rem !important;
-    box-shadow:
-      0 24px 60px rgba(8, 25, 20, 0.2),
-      0 8px 24px rgba(18, 45, 37, 0.1) !important;
-  }
-
-  /* Header already exposes Login/Create Account or Manage. Keep this dropdown
-     focused on navigation instead of duplicating those account actions. */
-  #app-header-mobile-menu > div:last-child {
-    display: none !important;
-  }
 }
 
 /* --------------------------------------------------------------------------
- * Phone: one header row. Existing AppHeader phone presentation remains intact.
+ * Phone: one header row. Existing AppHeader mobile-menu/account presentation
+ * remains intact; this layer only guarantees stable structural placement.
  * ----------------------------------------------------------------------- */
 @media (max-width: 760px) {
   header:has(> div > a[aria-label='Go to Aim4price home']) > div {
