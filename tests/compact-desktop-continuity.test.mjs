@@ -4,31 +4,26 @@ import test from 'node:test';
 
 const read = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
 
-test('root layout loads the compact desktop continuity layer last', async () => {
+test('root layout loads Home continuity before the dedicated header foundation', async () => {
   const layout = await read('app/layout.tsx');
 
   assert.match(layout, /import '\.\/compact-desktop-continuity\.css';/);
+  assert.match(layout, /import '\.\/header-foundation\.css';/);
   assert.ok(
     layout.indexOf("import './compact-desktop-continuity.css';")
       > layout.indexOf("import './asset-register-view-tuning.css';"),
   );
+  assert.ok(
+    layout.indexOf("import './header-foundation.css';")
+      > layout.indexOf("import './compact-desktop-continuity.css';"),
+  );
 });
 
-test('901 to 1180 header stays a clean two-row compact desktop header', async () => {
+test('compact desktop continuity is Home-only and no longer owns header geometry', async () => {
   const styles = await read('app/compact-desktop-continuity.css');
 
-  const compactHeader = styles.slice(
-    styles.indexOf('@media (min-width: 901px) and (max-width: 1180px)'),
-    styles.indexOf('901–1180px is not a phone layout.'),
-  );
-
-  assert.match(compactHeader, /grid-template-areas:[\s\S]*?'brand actions'[\s\S]*?'nav nav' !important/);
-  assert.match(compactHeader, /nav\[aria-label='Primary navigation'\][\s\S]*?width: 100% !important/);
-  assert.match(compactHeader, /nav\[aria-label='Primary navigation'\][\s\S]*?> div \{[\s\S]*?flex-wrap: nowrap !important/);
-  assert.match(compactHeader, /nav\[aria-label='Primary navigation'\][\s\S]*?> div[\s\S]*?> a \{[\s\S]*?flex: 1 1 0 !important[\s\S]*?min-width: 0 !important/);
-  assert.match(compactHeader, /white-space: nowrap !important[\s\S]*?overflow: hidden !important/);
-  assert.match(compactHeader, /nav\[aria-label='Primary navigation'\]:has\(> button\)[\s\S]*?width: min\(calc\(100% - 3rem\), 46rem\) !important/);
-  assert.match(compactHeader, /> div > div:last-child \{[\s\S]*?grid-area: actions !important[\s\S]*?justify-self: end !important/);
+  assert.match(styles, /Compact desktop Home continuity/);
+  assert.doesNotMatch(styles, /Go to Aim4price home|Primary navigation|header:has/);
 });
 
 test('compact desktop Home uses a static two-column hero instead of the legacy giant stack', async () => {
@@ -55,5 +50,4 @@ test('narrow compact desktop tightens the preview without becoming mobile', asyn
   assert.match(narrow, /minmax\(18\.5rem, 0\.82fr\)/);
   assert.match(narrow, /minmax\(25rem, 1\.18fr\) !important/);
   assert.match(narrow, /width: min\(100%, 33rem\) !important/);
-  assert.doesNotMatch(narrow, /display:\s*none[^}]*nav\[aria-label='Primary navigation'\]/);
 });
