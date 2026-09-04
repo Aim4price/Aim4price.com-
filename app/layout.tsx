@@ -7,6 +7,7 @@ import SiteWorkspaceZoom from '../components/SiteWorkspaceZoom';
 import './globals.css';
 import './header-manage-tuning.css';
 import './asset-register-view-tuning.css';
+import './compact-desktop-continuity.css';
 
 const brandTitle = 'Aim4price | Asset Intelligence, Management & Pricing';
 const brandDescription =
