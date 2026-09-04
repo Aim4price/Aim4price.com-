@@ -1,5 +1,5 @@
 import { redirectAdminToAdmin } from "../../lib/account-access";
-import ValuationClient from "./valuation-client";
+import ValuationClient from "./quick-valuation-client";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
