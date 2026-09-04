@@ -3,7 +3,7 @@ import { getServerSession } from '../../../lib/auth-session';
 import { getDealerAppSession } from '../../../lib/dealer-app-session';
 import { dealerRoleCan } from '../../../lib/dealer-app-access';
 import { getAccountProfile } from '../../../lib/account-profile';
-import ValuationClient from '../../valuation/quick-valuation-client';
+import ValuationClient from '../../valuation/valuation-client';
 import styles from '../dealer.module.css';
 
 export const runtime = 'nodejs';
