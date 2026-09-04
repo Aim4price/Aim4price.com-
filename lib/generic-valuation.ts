@@ -389,6 +389,7 @@ type DepreciationInput = {
   usageAmount: number | null;
   lifeWorkedPercent: number | null;
   usageMetricType: UsageMetricType;
+  valuationMode: ValuationMode;
   condition: GenericCondition;
   isPropelled: boolean;
   familyKey: EquipmentFamilyKey;
@@ -612,7 +613,7 @@ function resolveDepreciation(input: DepreciationInput): {
   });
 
   if (!input.replacementPrice || input.replacementPrice <= 0) {
-    const fallbackMethod: DepreciationMethodUsed = input.isPropelled || isUsageAmountMetric(input.usageMetricType)
+    const fallbackMethod: DepreciationMethodUsed = input.valuationMode === 'year_condition' || input.isPropelled || isUsageAmountMetric(input.usageMetricType)
       ? 'semi_depreciation'
       : 'percentage_depreciation';
 
@@ -622,7 +623,7 @@ function resolveDepreciation(input: DepreciationInput): {
       lifeWorkedPercent: null,
       lifeRemainingPercent: null,
       estimatedHours: null,
-      maxLifetimeHours: input.isPropelled || isUsageAmountMetric(input.usageMetricType) ? resolveMaxLifetimeHours(input) : null,
+      maxLifetimeHours: input.valuationMode === 'year_condition' ? null : input.isPropelled || isUsageAmountMetric(input.usageMetricType) ? resolveMaxLifetimeHours(input) : null,
       ageDepPct: null,
       usageDepPct: null,
       averageDepPct: null,
@@ -635,8 +636,43 @@ function resolveDepreciation(input: DepreciationInput): {
   }
 
   const yearForDepreciation = input.yearModelUnknown ? currentBaseYear() : Math.round(input.year);
+
+  // Family-first Basic Estimate can explicitly mark families where usage is not
+  // a meaningful measurement. Keep the shared age, condition, marketability and
+  // salvage mathematics, but do not invent a percentage-worked fallback.
+  if (input.valuationMode === 'year_condition') {
+    const ageDepPct = input.yearModelUnknown ? 0 : tractorAgeDepPct(yearForDepreciation);
+    const ageAdjustedValue = input.replacementPrice * (1 - ageDepPct / 100);
+    const conditionAdjustedValue = applyCondition(
+      ageAdjustedValue,
+      input.condition,
+      getValuationConditionFactorOverride(input.condition, input.advancedAssumptions),
+    );
+    const marketabilityAdjustedValue = conditionAdjustedValue * marketability.factor;
+    const salvage = resolveSalvageValue(marketabilityAdjustedValue, input.replacementPrice);
+
+    return {
+      method: 'semi_depreciation',
+      depreciationBaseValueExVat: salvage.finalValueExVat,
+      lifeWorkedPercent: null,
+      lifeRemainingPercent: null,
+      estimatedHours: null,
+      maxLifetimeHours: null,
+      ageDepPct,
+      usageDepPct: null,
+      averageDepPct: ageDepPct,
+      marketabilityFactor: marketability.factor,
+      marketabilityReductionPercent: marketability.reductionPercent,
+      salvagePercent: salvage.salvagePercent,
+      salvageValueExVat: salvage.salvageValueExVat,
+      isSalvageEstimate: salvage.isSalvageEstimate,
+    };
+  }
+
   const explicitPercentageBasis =
-    specsUseExplicitPercentageBasis(input.specsJson) || input.usageMetricType === 'wear_class';
+    input.valuationMode === 'percent_used' ||
+    specsUseExplicitPercentageBasis(input.specsJson) ||
+    input.usageMetricType === 'wear_class';
 
   if (explicitPercentageBasis) {
     const lifeWorkedPercent = resolveLifeWorkedPercent(input, 50);
@@ -1792,6 +1828,7 @@ export async function runGenericValuation(input: GenericValuationInput): Promise
     usageAmount: toNumber(input.usageAmount),
     lifeWorkedPercent,
     usageMetricType: family.usageMetricType,
+    valuationMode: family.valuationMode,
     condition: normalizeCondition(input.condition),
     isPropelled: family.isPropelled,
     familyKey: family.key,
@@ -1825,11 +1862,13 @@ export async function runGenericValuation(input: GenericValuationInput): Promise
   const usesPercentageBasis =
     selectedCalculation.depreciationMethodUsed === 'percentage_depreciation' ||
     (usageAmountUsed === null && selectedLifeWorkedPercent !== null);
-  const persistedUsageMode = usesPercentageBasis
-    ? 'percent'
-    : family.usageMetricType === 'km'
-      ? 'km'
-      : 'hours';
+  const persistedUsageMode = family.valuationMode === 'year_condition'
+    ? 'none'
+    : usesPercentageBasis
+      ? 'percent'
+      : family.usageMetricType === 'km'
+        ? 'km'
+        : 'hours';
 
   specsJson = {
     ...specsJson,
@@ -1858,8 +1897,8 @@ export async function runGenericValuation(input: GenericValuationInput): Promise
         }),
     usageMode: persistedUsageMode,
     usage_mode: persistedUsageMode,
-    usageBasis: usesPercentageBasis ? 'percent' : 'reading',
-    usage_basis: usesPercentageBasis ? 'percent' : 'reading',
+    usageBasis: family.valuationMode === 'year_condition' ? 'none' : usesPercentageBasis ? 'percent' : 'reading',
+    usage_basis: family.valuationMode === 'year_condition' ? 'none' : usesPercentageBasis ? 'percent' : 'reading',
     depreciationMethodUsed: selectedCalculation.depreciationMethodUsed,
     depreciation_method_used: selectedCalculation.depreciationMethodUsed,
     ...(selectedLifeWorkedPercent !== null
@@ -1902,7 +1941,11 @@ export async function runGenericValuation(input: GenericValuationInput): Promise
       notes.push(`Motor usage profile used ${motorUsageProfile.usefulLifeKm.toLocaleString('en-ZA')} lifetime kilometres.`);
     }
   }
-  notes.push('Aim4price used replacement price, usage, age, condition and specs.');
+  notes.push(
+    family.valuationMode === 'year_condition'
+      ? 'Aim4price used replacement price, age, condition and family assumptions; no usage reading was applied.'
+      : 'Aim4price used replacement price, usage, age, condition and specs.',
+  );
   if (advancedAssumptions && (advancedAssumptions.maxLifetimeUsage !== null || advancedAssumptions.conditionFactorPercent !== null)) {
     notes.push('Advanced assumptions were applied to this valuation run.');
   }
@@ -1917,7 +1960,9 @@ export async function runGenericValuation(input: GenericValuationInput): Promise
 
   const usageSentenceLabel = getUsageSentenceLabel(family.sectorKey, family.usageMetricType);
 
-  if (selectedCalculation.depreciationMethodUsed === 'full_depreciation') {
+  if (family.valuationMode === 'year_condition') {
+    notes.push('Year and condition depreciation used. This family does not require a usage or percentage-worked input.');
+  } else if (selectedCalculation.depreciationMethodUsed === 'full_depreciation') {
     notes.push(`Full depreciation used: year, ${usageSentenceLabel} and condition.`);
   } else if (selectedCalculation.depreciationMethodUsed === 'semi_depreciation') {
     notes.push(

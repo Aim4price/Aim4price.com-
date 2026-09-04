@@ -27,7 +27,7 @@ test('app sector choices are static green cards and progress numbers are centere
   assert.match(client, /!compactAppMode && !shouldAutoPlaySectorVideos/);
   assert.match(valuationStyles, /\.appValuation \.sectorBigCardApp[^\{]*\{[\s\S]*?place-items: center;[\s\S]*?background: #1d5742;/);
   assert.match(appStyles, /button\[class\*='sectorBigCardApp'\][^\{]*\{[\s\S]*?place-items: center !important;[\s\S]*?background: #1d5742 !important;/);
-  assert.match(appStyles, /wizardHeader[^\n]*> \[class\*='stepper'\][^\{]*\{[\s\S]*?grid-template-columns: repeat\(5, minmax\(0, 1fr\)\) !important;[\s\S]*?align-items: center !important;/);
+  assert.match(appStyles, /wizardHeader[^\n]*> \[class\*='stepper'\][^\{]*\{[\s\S]*?grid-template-columns: repeat\(6, minmax\(0, 1fr\)\) !important;[\s\S]*?align-items: center !important;/);
   assert.match(appStyles, /\[class\*='stepperItem'\][^\{]*\{[\s\S]*?place-items: center !important;[\s\S]*?width: 36px !important;[\s\S]*?height: 36px !important;[\s\S]*?background: transparent !important;/);
   assert.match(appStyles, /\[class\*='stepperBullet'\][^\{]*\{[\s\S]*?place-items: center !important;[\s\S]*?width: 34px !important;[\s\S]*?height: 34px !important;[\s\S]*?border-radius: 50% !important;[\s\S]*?line-height: 1 !important;/);
 });
@@ -41,13 +41,14 @@ test('app selections open as searchable lists and remain available when navigati
   assert.match(appStyles, /equipmentPickerCard[^\n]*equipmentDropdownMenu[^\{]*\{[\s\S]*?background: transparent !important/);
 });
 
-test('choosing a path opens a separate app setup page at the top', () => {
-  assert.match(client, /const showPathChoices = !compactAppMode \|\| !flowMode/);
-  assert.match(client, /styles\.pathSetupPage/);
-  assert.match(client, /compactAppMode && step === 3 && flowMode && !selectedBrandIsUnknown/);
-  assert.match(client, /const compactPathChoicePage = compactAppMode && step === 3 && !flowMode/);
-  assert.match(client, /scrollWizardToStart\(\)/);
-  assert.match(valuationStyles, /pathSetupContent > \.currentCard[^\{]*\{[\s\S]*?margin-top: 0 !important/);
+test('Basic Estimate bypasses the legacy Path decision in both Owner and Dealer apps', () => {
+  assert.match(client, /const basicEstimateActive = estimateExperience === 'basic'/);
+  assert.match(client, /if \(basicEstimateActive\) \{[\s\S]*?if \(step === 2\) return renderBasicBrandModelStep\(\);[\s\S]*?if \(step === 3\) return renderBasicLevelStep\(\);/);
+  assert.match(client, /Basic Estimate/);
+  assert.match(client, /Advanced Estimate/);
+  assert.match(client, /Coming soon/);
+  assert.match(client, /compactAppMode && selectedSector && estimateExperience/);
+  assert.match(valuationStyles, /\.estimateModeGrid[^\{]*\{[\s\S]*?grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
 });
 
 test('compact model and tractor choices use concise app wording', () => {
@@ -81,8 +82,9 @@ test('condition assessment starts broad and reveals detail only when requested',
   assert.match(client, /Detailed condition \$\{currentDetailedSectionNumber\} of \$\{detailedAssessmentSections\.length\}/);
   assert.match(client, /activeDetailedAssessmentSection/);
   assert.match(client, /detailedAssessmentSummary/);
-  assert.match(client, /currentDetailedSection === 'Mechanical condition'/);
-  assert.match(client, /currentDetailedSection === 'Required work'/);
+  assert.match(client, /currentDetailedSection === detailedAssessmentSections\[0\]\.label/);
+  assert.match(client, /currentDetailedSection === detailedAssessmentSections\[4\]\.label/);
+  assert.match(client, /basicEstimateActive \? basicConditionTemplate\.mechanical : 'Mechanical condition'/);
   assert.match(valuationStyles, /conditionButtonGrid > \.conditionChoiceButton:last-child:nth-child\(odd\)[^\{]*\{[\s\S]*?grid-column: 1 \/ -1/);
   assert.match(valuationStyles, /\.appValuation \.conditionChoiceButtonActive[^\{]*\{[\s\S]*?background: #1d5742;/);
   assert.match(valuationStyles, /\.appValuation \.detailedAssessmentEntry[^\{]*\{[\s\S]*?display: grid;[\s\S]*?background: #f0f7f3;/);
