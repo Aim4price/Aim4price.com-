@@ -1,0 +1,24 @@
+name: Codex temporary source export
+
+on:
+  push:
+    branches:
+      - codex/family-first-basic-estimate-v2
+
+permissions:
+  contents: read
+
+jobs:
+  export-source:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Create source archive
+        run: tar --exclude=.git -czf /tmp/aim4price-source.tgz .
+      - name: Upload source archive
+        uses: actions/upload-artifact@v4
+        with:
+          name: aim4price-source
+          path: /tmp/aim4price-source.tgz
+          retention-days: 1
