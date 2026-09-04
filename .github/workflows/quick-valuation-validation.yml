@@ -42,11 +42,17 @@ jobs:
       - name: Type check
         run: npm run typecheck
 
-      - name: Test quick valuation and compatibility contracts
-        run: >-
-          node --test
-          tests/quick-valuation-flow.test.mjs
-          tests/mobile-valuation-flow.test.mjs
-          tests/dealer-client-asset-register-flow.test.mjs
-          tests/accountant-workspace.security.test.mjs
-          tests/valuation-rules.test.mjs
+      - name: Test Quick Estimate contract
+        run: node --test tests/quick-valuation-flow.test.mjs
+
+      - name: Test mobile valuation compatibility
+        run: node --test tests/mobile-valuation-flow.test.mjs
+
+      - name: Test Dealer client-register compatibility
+        run: node --test tests/dealer-client-asset-register-flow.test.mjs
+
+      - name: Test accountant workspace compatibility
+        run: node --test tests/accountant-workspace.security.test.mjs
+
+      - name: Test valuation rules compatibility
+        run: node --test tests/valuation-rules.test.mjs
