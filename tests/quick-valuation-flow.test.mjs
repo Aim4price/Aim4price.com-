@@ -4,11 +4,12 @@ import test from 'node:test';
 
 const read = async (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
 
-const [client, publicPage, dealerPage, ownerPage] = await Promise.all([
+const [client, publicPage, dealerPage, ownerPage, serverValuation] = await Promise.all([
   read('app/valuation/quick-valuation-client.tsx'),
   read('app/valuation/page.tsx'),
   read('app/dealer/valuation/page.tsx'),
   read('app/owner-app/valuation/page.tsx'),
+  read('lib/server-valuation.ts'),
 ]);
 
 test('quick estimate is the shared public, dealer and owner valuation entry point', () => {
@@ -54,6 +55,14 @@ test('replacement price is confirmed before the existing valuation APIs run', ()
   assert.match(client, /Confirm or enter a replacement price before calculating the estimate/);
   assert.match(client, /\/api\/tractor-valuations/);
   assert.match(client, /\/api\/generic-valuations/);
+});
+
+test('tractor engine keeps Aim4price basis when model price falls back to a broad saved band', () => {
+  assert.match(serverValuation, /left join lateral/);
+  assert.match(serverValuation, /public\.replacement_price_bands/);
+  assert.match(serverValuation, /nullif\(em\.aim4price_replacement_price_ex_vat, 0\)/);
+  assert.match(serverValuation, /coalesce\(rpb\.spec_match_json, '\{\}'::jsonb\) = '\{\}'::jsonb/);
+  assert.match(serverValuation, /replacementPriceBasis: Result\['replacementPriceBasis'\] = userReplacementPriceExVat \? 'user' : 'aim4price'/);
 });
 
 test('saving still uses the existing valuation run to Asset Register path', () => {
