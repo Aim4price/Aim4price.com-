@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation';
-import ValuationClient from '../../valuation/quick-valuation-client';
+import ValuationClient from '../../valuation/valuation-client';
 import { ownerAppCan, requireOwnerAppPageAccess } from '../../../lib/owner-app-access';
 import OwnerAppNav from '../owner-app-nav';
 import styles from '../owner-app.module.css';
