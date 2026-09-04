@@ -6,14 +6,12 @@ on:
       - "app/layout.tsx"
       - "app/compact-desktop-continuity.css"
       - "app/header-foundation.css"
-      - "app/header-compact-menu.css"
       - "components/SiteWorkspaceZoom.tsx"
       - "components/SiteWorkspaceZoom.module.css"
       - "components/AppHeader.tsx"
       - "tests/site-workspace-zoom.test.mjs"
       - "tests/compact-desktop-continuity.test.mjs"
       - "tests/header-foundation.test.mjs"
-      - "tests/header-compact-menu.test.mjs"
       - ".github/workflows/asset-register-workspace-validation.yml"
   workflow_dispatch:
 
@@ -45,5 +43,5 @@ jobs:
       - name: Type check
         run: npm run typecheck
 
-      - name: Test shared zoom, Home continuity and compact header Menu
-        run: node --test tests/site-workspace-zoom.test.mjs tests/compact-desktop-continuity.test.mjs tests/header-foundation.test.mjs tests/header-compact-menu.test.mjs
+      - name: Test shared zoom, Home continuity and header foundation
+        run: node --test tests/site-workspace-zoom.test.mjs tests/compact-desktop-continuity.test.mjs tests/header-foundation.test.mjs
