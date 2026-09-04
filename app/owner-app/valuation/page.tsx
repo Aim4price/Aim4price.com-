@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation';
-import ValuationClient from '../../valuation/valuation-client';
+import QuickValuationClient from '../../valuation/quick-valuation-client';
 import { ownerAppCan, requireOwnerAppPageAccess } from '../../../lib/owner-app-access';
 import OwnerAppNav from '../owner-app-nav';
 import styles from '../owner-app.module.css';
@@ -18,7 +18,7 @@ export default async function OwnerAppValuationPage({ searchParams }: { searchPa
         backHref={returnToAddAsset ? '/owner-app/assets/add' : '/owner-app'}
         backLabel={returnToAddAsset ? 'Add Asset' : 'Home'}
       />
-      <ValuationClient ownerAppMode />
+      <QuickValuationClient ownerAppMode />
     </div>
   );
 }
