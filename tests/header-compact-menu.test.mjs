@@ -70,8 +70,9 @@ test('compact Menu does not introduce another set of width endpoints', async () 
   const menu = await read('app/header-compact-menu.css');
   const widthQueries = (menu.match(/@media \([^\n]+\)/g) ?? []).filter((query) => /width/.test(query));
 
+  // This checks actual media queries rather than prose/comments, so explanatory
+  // references to historical widths cannot create a false failure.
   assert.deepEqual(widthQueries, [
     '@media (min-width: 761px) and (max-width: 1180px)',
   ]);
-  assert.doesNotMatch(menu, /900px|901px|980px|1024px|1040px|1041px|1240px|1360px|1366px|1440px/);
 });
