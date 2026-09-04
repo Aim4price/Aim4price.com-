@@ -1,0 +1,197 @@
+/*
+ * Compact website navigation menu
+ *
+ * PRs #577 and #578 tried to make header-foundation.css own both header
+ * geometry and dropdown presentation. Keep the foundation focused on geometry
+ * and layer this behaviour separately instead.
+ *
+ * The compact range has one deliberate rule: 761–1180px uses the same single
+ * header row as the phone shell, but keeps Login/Create Account or Manage and
+ * the page-size controls visible while primary navigation moves into Menu.
+ */
+@media (min-width: 761px) and (max-width: 1180px) {
+  header:has(> div > a[aria-label='Go to Aim4price home']) > div {
+    width: min(calc(100% - 2rem), 1180px) !important;
+    min-height: 5.15rem !important;
+    padding: 0.64rem 0 !important;
+    display: grid !important;
+    grid-template-columns: auto minmax(0, 1fr) !important;
+    grid-template-areas: 'brand actions' !important;
+    align-items: center !important;
+    gap: 0.72rem !important;
+  }
+
+  header:has(> div > a[aria-label='Go to Aim4price home'])
+    > div
+    > a[aria-label='Go to Aim4price home'] {
+    grid-area: brand !important;
+  }
+
+  header:has(> div > a[aria-label='Go to Aim4price home'])
+    > div
+    > nav[aria-label='Primary navigation'] {
+    display: none !important;
+  }
+
+  header:has(> div > a[aria-label='Go to Aim4price home'])
+    > div
+    > div:last-child {
+    grid-area: actions !important;
+    width: max-content !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+    justify-self: end !important;
+    justify-content: flex-end !important;
+  }
+
+  /* Menu is already rendered by AppHeader. At compact widths it becomes the
+     primary navigation trigger and sits before the auth/manage controls. */
+  header:has(> div > a[aria-label='Go to Aim4price home'])
+    button[aria-controls='app-header-mobile-menu'] {
+    display: inline-flex !important;
+    order: -1 !important;
+    min-height: 2.85rem !important;
+    padding-inline: 0.82rem !important;
+    gap: 0.44rem !important;
+    white-space: nowrap !important;
+  }
+
+  header:has(> div > a[aria-label='Go to Aim4price home'])
+    button[aria-controls='app-header-mobile-menu']::after {
+    content: '⌄';
+    display: inline-block;
+    margin-left: 0.04rem;
+    color: currentColor;
+    font-size: 0.82rem;
+    line-height: 1;
+    transform: translateY(-0.08rem);
+    transform-origin: center;
+    transition: transform 160ms ease;
+  }
+
+  header:has(> div > a[aria-label='Go to Aim4price home'])
+    button[aria-expanded='true'][aria-controls='app-header-mobile-menu']::after {
+    transform: rotate(180deg) translateY(0.08rem);
+  }
+
+  /* AppHeader renders the navigation panel through a portal. Keep the click-away
+     surface, but remove the phone drawer's dimmed backdrop at compact widths. */
+  body > div[role='presentation']:has(> #app-header-mobile-menu) {
+    display: block !important;
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 10020 !important;
+    box-sizing: border-box !important;
+    width: auto !important;
+    min-height: 100dvh !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    background: transparent !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    animation: none !important;
+  }
+
+  #app-header-mobile-menu {
+    display: grid !important;
+    position: fixed !important;
+    top: calc(env(safe-area-inset-top) + 5.35rem) !important;
+    right: max(1rem, env(safe-area-inset-right)) !important;
+    bottom: auto !important;
+    left: auto !important;
+    z-index: 10030 !important;
+    box-sizing: border-box !important;
+    width: min(20.5rem, calc(100vw - 2rem)) !important;
+    max-width: 20.5rem !important;
+    max-height: calc(100dvh - 6.15rem) !important;
+    grid-template-rows: auto minmax(0, 1fr) !important;
+    align-content: stretch !important;
+    gap: 0.52rem !important;
+    padding: 0.62rem !important;
+    overflow: hidden !important;
+    border: 1px solid rgba(18, 45, 37, 0.1) !important;
+    border-radius: 1.16rem !important;
+    background: rgba(251, 253, 252, 0.99) !important;
+    box-shadow:
+      0 24px 58px rgba(8, 25, 20, 0.18),
+      0 8px 22px rgba(18, 45, 37, 0.08),
+      inset 0 1px 0 rgba(255, 255, 255, 0.94) !important;
+    animation: none !important;
+  }
+
+  /* Make the dropdown header compact and neutral rather than inheriting the
+     dark phone-drawer treatment used below 901px. */
+  #app-header-mobile-menu > div:first-child {
+    min-height: 0 !important;
+    padding: 0.7rem 0.76rem !important;
+    border: 1px solid rgba(18, 45, 37, 0.07) !important;
+    border-radius: 0.92rem !important;
+    background: rgba(247, 250, 248, 0.94) !important;
+    box-shadow: none !important;
+  }
+
+  #app-header-mobile-menu > div:first-child > div:first-child > span:first-child {
+    display: none !important;
+  }
+
+  #app-header-mobile-menu > div:first-child > div:first-child > strong {
+    color: #17362c !important;
+    font-size: 1rem !important;
+    line-height: 1.12 !important;
+    letter-spacing: -0.02em !important;
+  }
+
+  #app-header-mobile-menu > div:first-child > button {
+    width: 2.45rem !important;
+    min-width: 2.45rem !important;
+    height: 2.45rem !important;
+    border: 1px solid rgba(18, 45, 37, 0.1) !important;
+    border-radius: 0.78rem !important;
+    background: #ffffff !important;
+    color: #42514b !important;
+    box-shadow: none !important;
+  }
+
+  #app-header-mobile-menu > nav {
+    min-height: 0 !important;
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    align-content: start !important;
+    gap: 0.38rem !important;
+    padding: 0.04rem !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+  }
+
+  #app-header-mobile-menu > nav > a {
+    min-height: 3.1rem !important;
+    padding: 0.42rem 0.56rem !important;
+    border: 1px solid rgba(18, 45, 37, 0.075) !important;
+    border-radius: 0.9rem !important;
+    background: rgba(255, 255, 255, 0.96) !important;
+    color: #29443a !important;
+    box-shadow: none !important;
+  }
+
+  #app-header-mobile-menu > nav > a[aria-current='page'] {
+    border-color: rgba(15, 104, 79, 0.2) !important;
+    background: #effaf5 !important;
+    color: #0f684f !important;
+  }
+
+  /* Login/Create Account or Manage remains visible in the actual header, so the
+     dropdown contains navigation only rather than repeating account actions. */
+  #app-header-mobile-menu > div:last-child {
+    display: none !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  header:has(> div > a[aria-label='Go to Aim4price home'])
+    button[aria-controls='app-header-mobile-menu']::after {
+    transition: none !important;
+  }
+}
