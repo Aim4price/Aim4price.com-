@@ -56,6 +56,7 @@ type CatalogModel = {
   cabType: string | null;
   aim4priceReplacementPriceExVat: number | null;
   replacementPriceYear: number | null;
+  isGenericFallback: boolean;
   specsJson: Record<string, unknown>;
 };
 
@@ -244,7 +245,7 @@ export default function QuickValuationClient({ dealerAppMode = false, ownerAppMo
   const [saveLoading, setSaveLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [isSignedIn, setIsSignedIn] = useState(false);
-  const [accountProfile, setAccountProfile] = useState<AccountProfile | null>(null);
+  const [, setAccountProfile] = useState<AccountProfile | null>(null);
   const [dealerRegisters, setDealerRegisters] = useState<DealerRegister[]>([]);
   const [dealerRegisterId, setDealerRegisterId] = useState('');
 
@@ -268,7 +269,6 @@ export default function QuickValuationClient({ dealerAppMode = false, ownerAppMo
   const usageUnit = getUsageDisplayUnit(selectedSector, selectedFamily?.usageMetricType);
   const usageFieldLabel = getUsageFieldLabel(selectedSector, selectedFamily?.usageMetricType);
   const usageShortUnit = getUsageShortUnit(selectedSector, selectedFamily?.usageMetricType);
-  const yearNumber = yearUnknown ? CURRENT_YEAR : Number(year);
   const usageNumber = usageMode === 'reading' ? parsePositive(usageAmount) : null;
   const workedPercentNumber = usageMode === 'percent' ? parseNumber(lifeWorkedPercent) : null;
   const anyExtraSelected = frontPto || frontLoader || gpsEnabled || otherExtraEnabled;
