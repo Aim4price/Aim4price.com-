@@ -12,14 +12,16 @@ const [client, publicPage, dealerPage, ownerPage, serverValuation] = await Promi
   read('lib/server-valuation.ts'),
 ]);
 
-test('plain Get Estimate uses Quick while specialist and app workflows keep the mature client', () => {
+test('plain Get Estimate and Owner app use Quick while specialist and Dealer workflows keep mature fallbacks', () => {
   assert.match(publicPage, /QuickValuationClient/);
   assert.match(publicPage, /ValuationClient/);
   assert.match(publicPage, /hasSpecialistValuationContext/);
   assert.match(publicPage, /return <ValuationClient \/>/);
   assert.match(publicPage, /return <QuickValuationClient \/>/);
   assert.match(dealerPage, /<ValuationClient dealerAppMode \/>/);
-  assert.match(ownerPage, /<ValuationClient ownerAppMode \/>/);
+  assert.match(ownerPage, /QuickValuationClient/);
+  assert.match(ownerPage, /mode === 'detailed'/);
+  assert.match(ownerPage, /<ValuationClient ownerAppMode \/> : <QuickValuationClient ownerAppMode \/>/);
 });
 
 test('specialist valuation URLs retain register, accountant, conversion and Marketplace behaviour', () => {
