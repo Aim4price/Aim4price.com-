@@ -172,6 +172,30 @@
   line-height: 1.45;
 }
 
+/* The existing Get Estimate stylesheet owns the stepper container, labels and
+   active/completed item states. The Quick client intentionally keeps that
+   contract and only restores the circular bullet styling for its first child. */
+:global([class*='stepperItem']) > span:first-child {
+  display: grid;
+  width: 2.1rem;
+  height: 2.1rem;
+  place-items: center;
+  flex: 0 0 auto;
+  border: 1px solid rgba(31, 91, 69, 0.18);
+  border-radius: 999px;
+  background: #ffffff;
+  color: #536b62;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+:global([class*='stepperItemActive']) > span:first-child,
+:global([class*='stepperItemComplete']) > span:first-child {
+  border-color: #167e5a;
+  background: #167e5a;
+  color: #ffffff;
+}
+
 @media (max-width: 720px) {
   .twoColumn,
   .threeColumn,
@@ -186,5 +210,10 @@
   .footerActions,
   .footerActions > * {
     width: 100%;
+  }
+
+  :global([class*='stepperItem']) > span:first-child {
+    width: 34px;
+    height: 34px;
   }
 }
