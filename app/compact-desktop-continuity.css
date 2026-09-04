@@ -1,10 +1,88 @@
 /*
- * Compact desktop Home continuity
+ * Compact desktop continuity
  *
- * Header geometry now lives in the dedicated header foundation. This layer is
- * intentionally Home-only: it keeps 901–1180px and short desktop viewports in
- * a compact two-column hero instead of the historical giant stacked fallback.
+ * The public website has one true mobile composition below 901px and one
+ * full cinematic desktop story above 1180px / 640px high. This layer keeps
+ * the middle 901–1180px range coherent instead of letting older 1040/1180
+ * header and Home rules fight each other.
  */
+
+@media (min-width: 901px) and (max-width: 1180px) {
+  header:has(a[aria-label='Go to Aim4price home']) > div {
+    width: min(calc(100% - 2rem), 1180px) !important;
+    min-height: auto !important;
+    padding: 0.68rem 0 0.78rem !important;
+    display: grid !important;
+    grid-template-columns: auto minmax(0, 1fr) !important;
+    grid-template-areas:
+      'brand actions'
+      'nav nav' !important;
+    align-items: center !important;
+    gap: 0.62rem 0.95rem !important;
+  }
+
+  header:has(a[aria-label='Go to Aim4price home'])
+    > div
+    > a[aria-label='Go to Aim4price home'] {
+    grid-area: brand !important;
+    justify-self: start !important;
+  }
+
+  header:has(a[aria-label='Go to Aim4price home'])
+    > div
+    > nav[aria-label='Primary navigation'] {
+    grid-area: nav !important;
+    width: 100% !important;
+    min-width: 100% !important;
+    max-width: 100% !important;
+    justify-self: stretch !important;
+    justify-content: center !important;
+    overflow: visible !important;
+  }
+
+  header:has(a[aria-label='Go to Aim4price home'])
+    > div
+    > nav[aria-label='Primary navigation']
+    > div {
+    width: min(100%, 46rem) !important;
+    max-width: 46rem !important;
+    flex: 0 1 46rem !important;
+    flex-wrap: nowrap !important;
+    align-items: stretch !important;
+    justify-content: center !important;
+    overflow: hidden !important;
+  }
+
+  header:has(a[aria-label='Go to Aim4price home'])
+    > div
+    > nav[aria-label='Primary navigation']:has(> button)
+    > div {
+    width: min(calc(100% - 3rem), 46rem) !important;
+    flex-basis: min(calc(100% - 3rem), 46rem) !important;
+  }
+
+  header:has(a[aria-label='Go to Aim4price home'])
+    > div
+    > nav[aria-label='Primary navigation']
+    > div
+    > a {
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    white-space: nowrap !important;
+    overflow-wrap: normal !important;
+    text-overflow: ellipsis !important;
+    overflow: hidden !important;
+  }
+
+  header:has(a[aria-label='Go to Aim4price home']) > div > div:last-child {
+    grid-area: actions !important;
+    width: auto !important;
+    min-width: 0 !important;
+    justify-self: end !important;
+    justify-content: flex-end !important;
+  }
+}
 
 /*
  * 901–1180px is not a phone layout. Keep a static, two-column Home hero so a
