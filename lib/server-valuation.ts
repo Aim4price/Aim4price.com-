@@ -189,8 +189,11 @@ async function fetchModel(modelId: string): Promise<DbTractorCatalogRow | null> 
         em.power_kw,
         em.year_start,
         em.year_end,
-        em.aim4price_replacement_price_ex_vat,
-        em.replacement_price_year,
+        coalesce(
+          nullif(em.aim4price_replacement_price_ex_vat, 0),
+          replacement_fallback.replacement_price_ex_vat
+        ) as aim4price_replacement_price_ex_vat,
+        coalesce(em.replacement_price_year, replacement_fallback.replacement_price_year) as replacement_price_year,
         em.is_generic_fallback,
         em.specs_json
       from public.equipment_models em
@@ -200,6 +203,24 @@ async function fetchModel(modelId: string): Promise<DbTractorCatalogRow | null> 
         on s.id = ef.sector_id
       left join public.brands b
         on b.id = em.brand_id
+      left join lateral (
+        select
+          round((rpb.replacement_min_ex_vat + rpb.replacement_max_ex_vat) / 2.0) as replacement_price_ex_vat,
+          rpb.replacement_price_year
+        from public.replacement_price_bands rpb
+        where rpb.equipment_family_id = ef.id
+          and rpb.is_active = true
+          and (rpb.brand_id = em.brand_id or rpb.brand_id is null)
+          and coalesce(rpb.spec_match_json, '{}'::jsonb) = '{}'::jsonb
+          and rpb.replacement_min_ex_vat > 0
+          and rpb.replacement_max_ex_vat > 0
+        order by
+          case when rpb.brand_id = em.brand_id then 0 else 1 end asc,
+          coalesce(rpb.confidence, 0) desc,
+          rpb.sort_order asc,
+          rpb.id asc
+        limit 1
+      ) replacement_fallback on true
       where s.sector_key = 'agricultural'
         and ef.family_key = 'tractors'
         and em.is_active = true
