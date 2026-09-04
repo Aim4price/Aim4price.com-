@@ -1,5 +1,5 @@
 import { redirectAdminToAdmin } from "../../lib/account-access";
-import ValuationClient from "./valuation-client";
+import QuickValuationClient from "./quick-valuation-client";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -7,5 +7,5 @@ export const dynamic = "force-dynamic";
 export default async function ValuationPage() {
   await redirectAdminToAdmin();
 
-  return <ValuationClient />;
+  return <QuickValuationClient />;
 }
