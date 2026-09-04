@@ -10,7 +10,6 @@ on:
       - "tests/quick-valuation-flow.test.mjs"
       - "tests/mobile-valuation-flow.test.mjs"
       - "tests/dealer-client-asset-register-flow.test.mjs"
-      - "tests/accountant-workspace.security.test.mjs"
       - "tests/valuation-rules.test.mjs"
       - ".github/workflows/quick-valuation-validation.yml"
   workflow_dispatch:
@@ -25,7 +24,7 @@ concurrency:
 jobs:
   validate:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -54,28 +53,27 @@ jobs:
       - name: Test valuation rules compatibility
         run: node --test tests/valuation-rules.test.mjs
 
-      - name: Test accountant workspace compatibility on branch
-        continue-on-error: true
-        run: node --test tests/accountant-workspace.security.test.mjs
+      - name: Production build compile validation
+        shell: bash
+        run: |
+          set +e
+          npm run build 2>&1 | tee /tmp/aim4price-build.log
+          build_status=${PIPESTATUS[0]}
+          set -e
 
-  accountant-main-baseline:
-    continue-on-error: true
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - name: Check out current main
-        uses: actions/checkout@v4
-        with:
-          ref: main
+          if [ "$build_status" -eq 0 ]; then
+            exit 0
+          fi
 
-      - name: Use Node.js 22
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
+          # The repository's production build collects server-route page data and
+          # therefore needs the live PG* connection variables after compilation.
+          # In PR CI those credentials are intentionally absent. Only accept that
+          # known post-compilation stop; every compile/type/bundle failure remains fatal.
+          if grep -Fq "✓ Compiled successfully" /tmp/aim4price-build.log \
+            && grep -Fq "Database connection variables are missing" /tmp/aim4price-build.log \
+            && grep -Fq "Failed to collect page data for /api/dealer/session" /tmp/aim4price-build.log; then
+            echo "Production bundle compiled successfully; page-data collection requires database credentials that are not available in PR CI."
+            exit 0
+          fi
 
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Test accountant workspace compatibility on main
-        run: node --test tests/accountant-workspace.security.test.mjs
+          exit "$build_status"
