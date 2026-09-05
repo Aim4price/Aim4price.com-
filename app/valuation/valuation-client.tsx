@@ -85,8 +85,9 @@ type GpsType = 'full-autosteer' | 'guidance-only';
 type ReplacementPriceBasis = 'aim4price' | 'user';
 type VatDisplayMode = 'excl' | 'incl';
 type DepreciationMethodUsed = 'full_depreciation' | 'semi_depreciation' | 'percentage_depreciation';
-type DetailsModal = 'year' | 'usage' | null;
+type DetailsModal = 'year' | 'usage' | 'condition' | 'popularity' | 'extras' | null;
 type UsageModalMode = 'hours' | 'percent';
+type ConditionModalMode = 'basic' | 'advanced';
 
 type AdvancedAssumptionsRequest = {
   maxLifetimeUsage?: number | null;
@@ -1846,6 +1847,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
   const [conditionStepComplete, setConditionStepComplete] = useState(false);
   const [activeDetailsModal, setActiveDetailsModal] = useState<DetailsModal>(null);
   const [usageModalMode, setUsageModalMode] = useState<UsageModalMode>('hours');
+  const [conditionModalMode, setConditionModalMode] = useState<ConditionModalMode>('basic');
   const [resultState, setResultState] = useState<ValuationResultState | null>(null);
   const [selectedMethod, setSelectedMethod] = useState<MethodKey>('aim4price');
   const [message, setMessage] = useState('');
@@ -7305,6 +7307,393 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     const currentDetailedSection = activeDetailedAssessmentSection || firstIncompleteDetailedSection;
     const currentDetailedSectionIndex = detailedAssessmentSections.findIndex((section) => section.label === currentDetailedSection);
     const currentDetailedSectionNumber = currentDetailedSectionIndex >= 0 ? currentDetailedSectionIndex + 1 : detailedAssessmentSections.length;
+    const conditionReady = Boolean(conditionStepComplete && (!detailedAssessmentOpen || detailedAssessmentComplete));
+    const basicExtrasComplete = Boolean(
+      basicExtraChoice === 'none'
+      || (basicExtraChoice === 'family' && basicFamilyExtra && basicExtraReplacementPriceExVat)
+      || (basicExtraChoice === 'other' && normalizeText(otherExtraName) && basicExtraReplacementPriceExVat),
+    );
+    const basicExtrasSummary = basicExtraChoice === 'none'
+      ? 'None fitted'
+      : basicExtraChoice === 'family'
+        ? basicFamilyExtra?.label ?? 'Family extra'
+        : basicExtraChoice === 'other'
+          ? normalizeText(otherExtraName) || 'Other extra'
+          : 'Choose fitted extras';
+
+    function openBasicConditionModal() {
+      setConditionModalMode(detailedAssessmentOpen ? 'advanced' : 'basic');
+      setDetailedAssessmentError('');
+      setMessage('');
+      setActiveDetailsModal('condition');
+    }
+
+    function selectConditionModalMode(nextMode: ConditionModalMode) {
+      setMessage('');
+      setDetailedAssessmentError('');
+
+      if (nextMode === 'basic') {
+        if (conditionModalMode !== 'basic' || detailedAssessmentOpen) {
+          clearDetailedAssessment();
+          setConditionStepComplete(false);
+        }
+        setConditionModalMode('basic');
+        resetResult();
+        return;
+      }
+
+      if (conditionModalMode !== 'advanced') setPopularityStars(0);
+      setConditionModalMode('advanced');
+      setDetailedAssessmentOpen(true);
+      setConditionStepComplete(true);
+      setActiveDetailedAssessmentSection(firstIncompleteDetailedSection || basicConditionTemplate.mechanical);
+      resetResult();
+    }
+
+    function saveConditionModal() {
+      if (conditionModalMode === 'advanced') {
+        if (!detailedAssessmentComplete) {
+          setDetailedAssessmentError('Complete all five advanced condition questions.');
+          return;
+        }
+        setConditionStepComplete(true);
+      } else if (!conditionStepComplete || detailedAssessmentOpen) {
+        setMessage('Choose the closest overall condition.');
+        return;
+      }
+
+      setDetailedAssessmentError('');
+      setMessage('');
+      setActiveDetailsModal(null);
+      scrollToDetailsCard('valuation-popularity-step');
+    }
+
+    function renderBasicConditionModal() {
+      return (
+        <div className={styles.detailsModalOverlay} role="dialog" aria-modal="true" aria-label="Choose condition">
+          <button type="button" className={styles.detailsModalBackdrop} aria-label="Close" onClick={() => setActiveDetailsModal(null)} />
+          <div className={`${styles.detailsModal} ${styles.specChoiceModal}`}>
+            <div className={`${styles.detailsModalHeader} ${compactAppMode ? dealerStyles.dealerCompactModalHeader : ''}`}>
+              <div>
+                {!compactAppMode ? (
+                  <>
+                    <h3 className={styles.detailsModalTitle}>Condition</h3>
+                    <p className={styles.detailsModalText}>Choose a basic overall condition or use the advanced condition assessment.</p>
+                  </>
+                ) : null}
+              </div>
+              <button type="button" className={styles.saveModalClose} onClick={() => setActiveDetailsModal(null)} aria-label="Close">×</button>
+            </div>
+
+            <div className={`${styles.choiceGrid} ${styles.conditionModeGrid}`}>
+              <button
+                type="button"
+                className={`${styles.choiceCard} ${styles.conditionModeCard} ${conditionModalMode === 'basic' ? styles.choiceCardActive : ''}`}
+                aria-pressed={conditionModalMode === 'basic'}
+                onClick={() => selectConditionModalMode('basic')}
+              >
+                <span className={styles.specStepNumber}>1</span>
+                <span className={styles.conditionModeCopy}>
+                  <strong>Basic condition</strong>
+                  <small>Choose the closest overall condition.</small>
+                </span>
+              </button>
+              <button
+                type="button"
+                className={`${styles.choiceCard} ${styles.conditionModeCard} ${conditionModalMode === 'advanced' ? styles.choiceCardActive : ''}`}
+                aria-pressed={conditionModalMode === 'advanced'}
+                onClick={() => selectConditionModalMode('advanced')}
+              >
+                <span className={styles.specStepNumber}>2</span>
+                <span className={styles.conditionModeCopy}>
+                  <strong>Advanced condition</strong>
+                  <small>Assess the important condition areas separately.</small>
+                </span>
+              </button>
+            </div>
+
+            {conditionModalMode === 'basic' ? (
+              <div className={styles.conditionButtonGrid}>
+                {conditionOptions.map((option) => {
+                  const selected = conditionStepComplete && !detailedAssessmentOpen && condition === option.key;
+                  return (
+                    <button
+                      key={option.key}
+                      type="button"
+                      className={`${styles.conditionChoiceButton} ${selected ? styles.conditionChoiceButtonActive : ''}`}
+                      aria-pressed={selected}
+                      onClick={() => {
+                        setCondition(option.key);
+                        setConditionStepComplete(true);
+                        clearDetailedAssessment();
+                        setConditionModalMode('basic');
+                        setMessage('');
+                        resetResult();
+                      }}
+                    >
+                      {compactAppMode ? <span className={styles.conditionChoiceIndicator} aria-hidden="true">{selected ? '✓' : ''}</span> : null}
+                      <span className={styles.conditionChoiceLabel}>{option.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className={styles.detailedAssessmentPanel}>
+                <div className={styles.detailedAssessmentHeader}>
+                  <strong>Advanced condition</strong>
+                  <span>Choose the closest answer for each condition area.</span>
+                </div>
+                {renderDealerAssessmentGroup(detailedAssessmentSections[0].label, dealerMechanicalCondition, DEALER_MECHANICAL_OPTIONS, (value) => {
+                  setDealerMechanicalCondition(value);
+                  resetResult();
+                }, currentDetailedSection === detailedAssessmentSections[0].label, detailedAssessmentSections[1].label)}
+                {renderDealerAssessmentGroup(detailedAssessmentSections[1].label, dealerBodyCondition, DEALER_BODY_OPTIONS, (value) => {
+                  setDealerBodyCondition(value);
+                  resetResult();
+                }, currentDetailedSection === detailedAssessmentSections[1].label, detailedAssessmentSections[2].label)}
+                {renderDealerAssessmentGroup(detailedAssessmentSections[2].label, dealerTyreCondition, DEALER_TYRE_OPTIONS, (value) => {
+                  setDealerTyreCondition(value);
+                  resetResult();
+                }, currentDetailedSection === detailedAssessmentSections[2].label, detailedAssessmentSections[3].label)}
+                {renderDealerAssessmentGroup(detailedAssessmentSections[3].label, dealerServiceHistory, DEALER_SERVICE_OPTIONS, (value) => {
+                  setDealerServiceHistory(value);
+                  resetResult();
+                }, currentDetailedSection === detailedAssessmentSections[3].label, detailedAssessmentSections[4].label)}
+                {renderDealerAssessmentGroup(detailedAssessmentSections[4].label, dealerRequiredWork, DEALER_WORK_OPTIONS, (value) => {
+                  setDealerRequiredWork(value);
+                  resetResult();
+                }, currentDetailedSection === detailedAssessmentSections[4].label, '')}
+              </div>
+            )}
+
+            {detailedAssessmentError ? <p className={styles.advancedError}>{detailedAssessmentError}</p> : null}
+            {message ? <p className={styles.modalMessage}>{message}</p> : null}
+
+            <div className={styles.detailsModalActions}>
+              <button type="button" className={styles.secondaryButton} onClick={() => setActiveDetailsModal(null)}>Cancel</button>
+              <button type="button" className={styles.primaryButton} onClick={saveConditionModal}>Continue</button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    function renderBasicPopularityModal() {
+      return (
+        <div className={styles.detailsModalOverlay} role="dialog" aria-modal="true" aria-label="Choose popularity">
+          <button type="button" className={styles.detailsModalBackdrop} aria-label="Close" onClick={() => setActiveDetailsModal(null)} />
+          <div className={`${styles.detailsModal} ${styles.specChoiceModal}`}>
+            <div className={`${styles.detailsModalHeader} ${compactAppMode ? dealerStyles.dealerCompactModalHeader : ''}`}>
+              <div>
+                {!compactAppMode ? (
+                  <>
+                    <h3 className={styles.detailsModalTitle}>Popularity</h3>
+                    <p className={styles.detailsModalText}>Rate current market demand for this asset.</p>
+                  </>
+                ) : null}
+              </div>
+              <button type="button" className={styles.saveModalClose} onClick={() => setActiveDetailsModal(null)} aria-label="Close">×</button>
+            </div>
+
+            <div className={styles.popularityStars} role="group" aria-label="Popularity from 1 to 5 stars">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <button
+                  key={star}
+                  type="button"
+                  className={star <= popularityStars ? styles.popularityStarActive : ''}
+                  onClick={() => {
+                    setPopularityStars(star);
+                    setMessage('');
+                    resetResult();
+                  }}
+                  aria-label={`${star} star${star === 1 ? '' : 's'}`}
+                  aria-pressed={popularityStars === star}
+                >
+                  ★
+                </button>
+              ))}
+            </div>
+            <small className={styles.advancedFieldHelp}>1 = difficult to sell, 3 = normal demand, 5 = highly sought after.</small>
+            {message ? <p className={styles.modalMessage}>{message}</p> : null}
+
+            <div className={styles.detailsModalActions}>
+              <button type="button" className={styles.secondaryButton} onClick={() => setActiveDetailsModal(null)}>Cancel</button>
+              <button
+                type="button"
+                className={styles.primaryButton}
+                onClick={() => {
+                  if (!popularityStepComplete) {
+                    setMessage('Choose a popularity rating from 1 to 5 stars.');
+                    return;
+                  }
+                  setMessage('');
+                  setActiveDetailsModal(null);
+                  scrollToDetailsCard('valuation-extras-step');
+                }}
+              >
+                Continue
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    function renderBasicExtrasModal() {
+      return (
+        <div className={styles.detailsModalOverlay} role="dialog" aria-modal="true" aria-label="Choose fitted extras">
+          <button type="button" className={styles.detailsModalBackdrop} aria-label="Close" onClick={() => setActiveDetailsModal(null)} />
+          <div className={`${styles.detailsModal} ${styles.specChoiceModal}`}>
+            <div className={`${styles.detailsModalHeader} ${compactAppMode ? dealerStyles.dealerCompactModalHeader : ''}`}>
+              <div>
+                {!compactAppMode ? (
+                  <>
+                    <h3 className={styles.detailsModalTitle}>Extras</h3>
+                    <p className={styles.detailsModalText}>Confirm whether a fitted extra should be included in the replacement price.</p>
+                  </>
+                ) : null}
+              </div>
+              <button type="button" className={styles.saveModalClose} onClick={() => setActiveDetailsModal(null)} aria-label="Close">×</button>
+            </div>
+
+            <div className={`${styles.choiceGrid} ${styles.basicExtrasGrid}`}>
+              <button
+                type="button"
+                className={`${styles.choiceCard} ${basicExtraChoice === 'none' ? styles.choiceCardActive : ''}`}
+                aria-pressed={basicExtraChoice === 'none'}
+                onClick={() => {
+                  setBasicExtraChoice('none');
+                  setBasicFamilyExtraReplacementPrice('');
+                  setOtherExtraEnabled(false);
+                  setOtherExtraName('');
+                  setOtherExtraReplacementPrice('');
+                  setMessage('');
+                  resetResult();
+                }}
+              >
+                <strong>None fitted</strong>
+                <span className={styles.choiceCardNote}>No extra added</span>
+              </button>
+
+              {basicFamilyExtra ? (
+                <button
+                  type="button"
+                  className={`${styles.choiceCard} ${basicExtraChoice === 'family' ? styles.choiceCardActive : ''}`}
+                  aria-pressed={basicExtraChoice === 'family'}
+                  onClick={() => {
+                    setBasicExtraChoice('family');
+                    setOtherExtraEnabled(false);
+                    setOtherExtraName('');
+                    setOtherExtraReplacementPrice('');
+                    setMessage('');
+                    resetResult();
+                  }}
+                >
+                  <strong>{basicFamilyExtra.label}</strong>
+                  <span className={styles.choiceCardNote}>Common family extra</span>
+                </button>
+              ) : null}
+
+              <button
+                type="button"
+                className={`${styles.choiceCard} ${basicExtraChoice === 'other' ? styles.choiceCardActive : ''}`}
+                aria-pressed={basicExtraChoice === 'other'}
+                onClick={() => {
+                  setBasicExtraChoice('other');
+                  setBasicFamilyExtraReplacementPrice('');
+                  setOtherExtraEnabled(true);
+                  setMessage('');
+                  resetResult();
+                }}
+              >
+                <strong>Other extra</strong>
+                <span className={styles.choiceCardNote}>Add one other fitted extra</span>
+              </button>
+            </div>
+
+            {basicExtraChoice === 'family' && basicFamilyExtra ? (
+              <label className={`${styles.field} ${styles.basicExtraPriceField}`}>
+                <span className={styles.fieldLabel}>{basicFamilyExtra.label} replacement price (excl. VAT)</span>
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  value={basicFamilyExtraReplacementPrice}
+                  onChange={(event) => {
+                    setBasicFamilyExtraReplacementPrice(event.target.value);
+                    setMessage('');
+                    resetResult();
+                  }}
+                  placeholder="e.g. 150 000"
+                />
+              </label>
+            ) : null}
+
+            {basicExtraChoice === 'other' ? (
+              <div className={`${styles.inputGrid} ${styles.basicExtraFields}`}>
+                <label className={styles.field}>
+                  <span className={styles.fieldLabel}>Extra name</span>
+                  <input
+                    value={otherExtraName}
+                    onChange={(event) => {
+                      setOtherExtraName(event.target.value);
+                      setMessage('');
+                      resetResult();
+                    }}
+                    maxLength={100}
+                    placeholder="e.g. Weight set"
+                  />
+                </label>
+                <label className={styles.field}>
+                  <span className={styles.fieldLabel}>Replacement price (excl. VAT)</span>
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    value={otherExtraReplacementPrice}
+                    onChange={(event) => {
+                      setOtherExtraReplacementPrice(event.target.value);
+                      setMessage('');
+                      resetResult();
+                    }}
+                    placeholder="e.g. 25 000"
+                  />
+                </label>
+              </div>
+            ) : null}
+
+            {message ? <p className={styles.modalMessage}>{message}</p> : null}
+            <div className={styles.detailsModalActions}>
+              <button type="button" className={styles.secondaryButton} onClick={() => setActiveDetailsModal(null)}>Cancel</button>
+              <button
+                type="button"
+                className={styles.primaryButton}
+                onClick={() => {
+                  if (!basicExtraChoice) {
+                    setMessage('Choose whether an extra is fitted.');
+                    return;
+                  }
+                  if (basicExtraChoice === 'family' && (!basicFamilyExtra || !basicExtraReplacementPriceExVat)) {
+                    setMessage(`Enter the replacement price for ${basicFamilyExtra?.label ?? 'the fitted extra'}, excluding VAT.`);
+                    return;
+                  }
+                  if (basicExtraChoice === 'other' && !normalizeText(otherExtraName)) {
+                    setMessage('Enter a name for the other fitted extra.');
+                    return;
+                  }
+                  if (basicExtraChoice === 'other' && !basicExtraReplacementPriceExVat) {
+                    setMessage('Enter the replacement price for the other fitted extra, excluding VAT.');
+                    return;
+                  }
+                  setMessage('');
+                  setActiveDetailsModal(null);
+                }}
+              >
+                Continue
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
 
     return (
       <div className={basicEstimateActive ? styles.basicFamilyContextStage : undefined}>
@@ -7363,7 +7752,23 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
             )
           ) : null}
 
-          {usageStepComplete ? (
+          {basicEstimateActive && usageStepComplete ? (
+            <button
+              id="valuation-condition-step"
+              type="button"
+              className={`${styles.specStepCard} ${conditionReady ? styles.specStepCardComplete : styles.specStepCardActive}`}
+              onClick={openBasicConditionModal}
+            >
+              <span className={`${styles.specStepNumber} ${conditionReady ? styles.specStepNumberDone : ''}`}>{conditionReady ? '✓' : 3}</span>
+              <span className={styles.specStepContent}>
+                <strong>Condition</strong>
+                <small>{conditionReady ? (detailedAssessmentOpen ? 'Advanced condition' : conditionLabel(condition)) : 'Choose Basic or Advanced condition.'}</small>
+              </span>
+              <span className={styles.specStepAction}>{conditionReady ? 'Edit' : 'Add condition'}</span>
+            </button>
+          ) : null}
+
+          {!basicEstimateActive && usageStepComplete ? (
             <div id="valuation-condition-step" className={`${styles.currentCard} ${styles.conditionStepCard}`}>
               <div className={styles.currentCardHead}>
                 <div>
@@ -7490,7 +7895,26 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
             </div>
           ) : null}
 
-          {conditionStepComplete && (!detailedAssessmentOpen || detailedAssessmentComplete) ? (
+          {basicEstimateActive && conditionReady ? (
+            <button
+              id="valuation-popularity-step"
+              type="button"
+              className={`${styles.specStepCard} ${popularityStepComplete ? styles.specStepCardComplete : styles.specStepCardActive}`}
+              onClick={() => {
+                setMessage('');
+                setActiveDetailsModal('popularity');
+              }}
+            >
+              <span className={`${styles.specStepNumber} ${popularityStepComplete ? styles.specStepNumberDone : ''}`}>{popularityStepComplete ? '✓' : 4}</span>
+              <span className={styles.specStepContent}>
+                <strong>Popularity</strong>
+                <small>{popularityStepComplete ? `${popularityStars} / 5 stars` : 'Rate current market demand for this asset.'}</small>
+              </span>
+              <span className={styles.specStepAction}>{popularityStepComplete ? 'Edit' : 'Add rating'}</span>
+            </button>
+          ) : null}
+
+          {!basicEstimateActive && conditionStepComplete && (!detailedAssessmentOpen || detailedAssessmentComplete) ? (
             <div id="valuation-popularity-step" className={`${styles.currentCard} ${styles.popularityStepCard}`}>
               <div className={styles.currentCardHead}>
                 <div>
@@ -7530,124 +7954,24 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
           {popularityStepComplete && shouldAskGenericSpecQuestions ? renderSpecQuestionsProgress() : null}
 
           {basicEstimateActive && popularityStepComplete ? (
-            <div className={`${styles.currentCard} ${styles.basicExtrasCard}`}>
-              <div className={styles.currentCardHead}>
-                <div>
-                  <span className={styles.currentEyebrow}>{compactAppMode ? 'Asset details 5 of 5' : 'Step 5'}</span>
-                  <h3 className={styles.currentTitle}>Extras</h3>
-                  <p className={styles.currentHint}>Confirm whether a common fitted extra should be included in the configured replacement price.</p>
-                </div>
-                <span className={styles.selectedSummaryPill} data-selection-status={basicExtraChoice ? 'selected' : 'pending'}>
-                  {basicExtraChoice === 'none'
-                    ? 'None fitted'
-                    : basicExtraChoice === 'family'
-                      ? basicFamilyExtra?.label ?? 'Family extra'
-                      : basicExtraChoice === 'other'
-                        ? normalizeText(otherExtraName) || 'Other extra'
-                        : 'Choose one'}
-                </span>
-              </div>
-
-              <div className={`${styles.choiceGrid} ${styles.basicExtrasGrid}`}>
-                <button
-                  type="button"
-                  className={`${styles.choiceCard} ${basicExtraChoice === 'none' ? styles.choiceCardActive : ''}`}
-                  aria-pressed={basicExtraChoice === 'none'}
-                  onClick={() => {
-                    setBasicExtraChoice('none');
-                    setBasicFamilyExtraReplacementPrice('');
-                    setOtherExtraEnabled(false);
-                    setOtherExtraName('');
-                    setOtherExtraReplacementPrice('');
-                    resetResult();
-                  }}
-                >
-                  <strong>None fitted</strong>
-                  <span className={styles.choiceCardNote}>No extra added</span>
-                </button>
-
-                {basicFamilyExtra ? (
-                  <button
-                    type="button"
-                    className={`${styles.choiceCard} ${basicExtraChoice === 'family' ? styles.choiceCardActive : ''}`}
-                    aria-pressed={basicExtraChoice === 'family'}
-                    onClick={() => {
-                      setBasicExtraChoice('family');
-                      setOtherExtraEnabled(false);
-                      setOtherExtraName('');
-                      setOtherExtraReplacementPrice('');
-                      resetResult();
-                    }}
-                  >
-                    <strong>{basicFamilyExtra.label}</strong>
-                    <span className={styles.choiceCardNote}>Common family extra</span>
-                  </button>
-                ) : null}
-
-                <button
-                  type="button"
-                  className={`${styles.choiceCard} ${basicExtraChoice === 'other' ? styles.choiceCardActive : ''}`}
-                  aria-pressed={basicExtraChoice === 'other'}
-                  onClick={() => {
-                    setBasicExtraChoice('other');
-                    setBasicFamilyExtraReplacementPrice('');
-                    setOtherExtraEnabled(true);
-                    resetResult();
-                  }}
-                >
-                  <strong>Other extra</strong>
-                  <span className={styles.choiceCardNote}>Add one other fitted extra</span>
-                </button>
-              </div>
-
-              {basicExtraChoice === 'family' && basicFamilyExtra ? (
-                <label className={`${styles.field} ${styles.basicExtraPriceField}`}>
-                  <span className={styles.fieldLabel}>{basicFamilyExtra.label} replacement price (excl. VAT)</span>
-                  <input
-                    type="text"
-                    inputMode="decimal"
-                    value={basicFamilyExtraReplacementPrice}
-                    onChange={(event) => {
-                      setBasicFamilyExtraReplacementPrice(event.target.value);
-                      resetResult();
-                    }}
-                    placeholder="e.g. 150 000"
-                  />
-                  <span className={styles.fieldHint}>Aim4price adds this to the configured new-asset replacement price before applying the same valuation mathematics.</span>
-                </label>
-              ) : null}
-
-              {basicExtraChoice === 'other' ? (
-                <div className={`${styles.inputGrid} ${styles.basicExtraFields}`}>
-                  <label className={styles.field}>
-                    <span className={styles.fieldLabel}>Extra name</span>
-                    <input
-                      value={otherExtraName}
-                      onChange={(event) => {
-                        setOtherExtraName(event.target.value);
-                        resetResult();
-                      }}
-                      maxLength={100}
-                      placeholder="e.g. Weight set"
-                    />
-                  </label>
-                  <label className={styles.field}>
-                    <span className={styles.fieldLabel}>Replacement price (excl. VAT)</span>
-                    <input
-                      type="text"
-                      inputMode="decimal"
-                      value={otherExtraReplacementPrice}
-                      onChange={(event) => {
-                        setOtherExtraReplacementPrice(event.target.value);
-                        resetResult();
-                      }}
-                      placeholder="e.g. 25 000"
-                    />
-                  </label>
-                </div>
-              ) : null}
-            </div>
+            <button
+              id="valuation-extras-step"
+              type="button"
+              className={`${styles.specStepCard} ${basicExtrasComplete ? styles.specStepCardComplete : styles.specStepCardActive}`}
+              onClick={() => {
+                setMessage('');
+                setActiveDetailsModal('extras');
+              }}
+            >
+              <span className={`${styles.specStepNumber} ${basicExtrasComplete ? styles.specStepNumberDone : ''}`}>{basicExtrasComplete ? '✓' : 5}</span>
+              <span className={styles.specStepContent}>
+                <strong>Extras</strong>
+                <small>{basicExtrasComplete ? basicExtrasSummary : 'Confirm fitted extras.'}</small>
+              </span>
+              <span className={styles.specStepAction}>{basicExtrasComplete ? 'Edit' : 'Add extras'}</span>
+            </button>
           ) : null}
+
         </div>
 
         {!basicEstimateActive && !genericPath && popularityStepComplete ? (
@@ -7805,6 +8129,9 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
 
         {activeDetailsModal === 'year' ? renderYearModal() : null}
         {activeDetailsModal === 'usage' ? renderUsageModal(showHoursInput) : null}
+        {basicEstimateActive && activeDetailsModal === 'condition' ? renderBasicConditionModal() : null}
+        {basicEstimateActive && activeDetailsModal === 'popularity' ? renderBasicPopularityModal() : null}
+        {basicEstimateActive && activeDetailsModal === 'extras' ? renderBasicExtrasModal() : null}
       </div>
     );
   }
@@ -7853,7 +8180,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                 setDetailedAssessmentError('');
                 if (compactAppMode) {
                   setActiveDetailedAssessmentSection(nextSection);
-                  if (!nextSection) scrollToDetailsCard('valuation-popularity-step');
+                  if (!nextSection && activeDetailsModal !== 'condition') scrollToDetailsCard('valuation-popularity-step');
                 }
               }}
             >
