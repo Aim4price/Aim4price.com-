@@ -1839,6 +1839,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
   const [otherExtraReplacementPrice, setOtherExtraReplacementPrice] = useState('');
   const [userReplacementPrice, setUserReplacementPrice] = useState('');
   const [basicReplacementPrice, setBasicReplacementPrice] = useState('');
+  const [basicReplacementVatMode, setBasicReplacementVatMode] = useState<VatDisplayMode>('excl');
   const [replacementPriceBasis, setReplacementPriceBasis] = useState<ReplacementPriceBasis>('aim4price');
   const [yearModelUnknown, setYearModelUnknown] = useState(false);
   const [lifeWorkedPercent, setLifeWorkedPercent] = useState('');
@@ -1958,7 +1959,14 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     [basicReplacementBands, basicSpecLevel],
   );
   const basicSpecLevelLabel = BASIC_SPECIFICATION_LEVELS.find((option) => option.key === basicSpecLevel)?.label ?? '';
-  const basicBaseReplacementPriceExVat = parseMoneyInput(basicReplacementPrice);
+  const basicReplacementEnteredPrice = parseMoneyInput(basicReplacementPrice);
+  const basicBaseReplacementPriceExVat = basicReplacementEnteredPrice === null
+    ? null
+    : Math.round(
+        basicReplacementVatMode === 'incl'
+          ? basicReplacementEnteredPrice / (1 + VAT_RATE)
+          : basicReplacementEnteredPrice,
+      );
   const basicExtraReplacementPriceExVat = basicExtraChoice === 'family'
     ? parseMoneyInput(basicFamilyExtraReplacementPrice)
     : basicExtraChoice === 'other'
@@ -3069,8 +3077,12 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
 
   useEffect(() => {
     if (!basicEstimateActive || step !== 5 || !basicReplacementGuide || String(basicReplacementPrice).trim()) return;
-    setBasicReplacementPrice(String(basicReplacementGuide.suggestedExVat));
-  }, [basicEstimateActive, basicReplacementGuide, basicReplacementPrice, step]);
+    const defaultMode = getDefaultVatDisplayMode(selectedSector, selectedFamily?.familyKey);
+    setBasicReplacementVatMode(defaultMode);
+    if (!basicReplacementGuide) return;
+    const suggestedPrice = getVatDisplayValue(basicReplacementGuide.suggestedExVat, defaultMode);
+    if (suggestedPrice !== null) setBasicReplacementPrice(String(Math.round(suggestedPrice)));
+  }, [basicEstimateActive, basicReplacementGuide, basicReplacementPrice, selectedFamily?.familyKey, selectedSector, step]);
 
   useEffect(() => {
     let ignore = false;
@@ -5952,11 +5964,10 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
 
   function renderBasicReplacementStep() {
     const guide = basicReplacementGuide;
-    const inputPrice = basicBaseReplacementPriceExVat;
     const replacementSliderMin = 0;
     const replacementSliderMax = 5_000_000;
     const replacementSliderStep = 50_000;
-    const replacementSliderDefault = guide?.suggestedExVat ?? 0;
+    const replacementSliderDefault = getVatDisplayValue(guide?.suggestedExVat ?? 0, basicReplacementVatMode) ?? 0;
     const normalizedReplacementInput = String(basicReplacementPrice).replace(/[^0-9.-]/g, '');
     const parsedReplacementInput = normalizedReplacementInput === '' ? null : Number(normalizedReplacementInput);
     const hasReplacementSliderInput = parsedReplacementInput !== null
@@ -5971,8 +5982,21 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     );
     const progress = ((sliderValue - replacementSliderMin) / Math.max(1, replacementSliderMax - replacementSliderMin)) * 100;
     const sliderStyle = { '--year-progress': `${Math.min(100, Math.max(0, progress))}%` } as CSSProperties;
-    const hasExtra = basicExtraChoice === 'family' || basicExtraChoice === 'other';
-    const extraName = basicExtraChoice === 'family' ? basicFamilyExtra?.label : normalizeText(otherExtraName);
+    const replacementVatLabel = basicReplacementVatMode === 'incl' ? 'Including VAT' : 'Excluding VAT';
+
+    function setBasicReplacementVatModePreservingPrice(nextMode: VatDisplayMode) {
+      if (nextMode === basicReplacementVatMode) return;
+      const currentDisplayPrice = parseMoneyInput(basicReplacementPrice);
+      if (currentDisplayPrice !== null) {
+        const convertedPrice = nextMode === 'incl'
+          ? currentDisplayPrice * (1 + VAT_RATE)
+          : currentDisplayPrice / (1 + VAT_RATE);
+        setBasicReplacementPrice(String(Math.round(convertedPrice)));
+      }
+      setBasicReplacementVatMode(nextMode);
+      setMessage('');
+      resetResult();
+    }
 
     return (
       <div className={`${styles.stepBlock} ${styles.replacementStage} ${styles.basicFamilyContextStage}`}>
@@ -5981,14 +6005,33 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
         </div>
         <div>
           <h2 className={styles.stepTitle}>Replacement price</h2>
-          <p className={styles.stepText}>Choose the current new replacement price for a comparable asset. All figures on this step are excluding VAT.</p>
+          <p className={styles.stepText}>Choose the current new replacement price for a comparable asset.</p>
+        </div>
+
+        <div className={styles.replacementVatToggle} role="group" aria-label="Replacement price VAT basis">
+          <button
+            type="button"
+            className={basicReplacementVatMode === 'excl' ? styles.replacementVatToggleActive : ''}
+            aria-pressed={basicReplacementVatMode === 'excl'}
+            onClick={() => setBasicReplacementVatModePreservingPrice('excl')}
+          >
+            Excluding VAT
+          </button>
+          <button
+            type="button"
+            className={basicReplacementVatMode === 'incl' ? styles.replacementVatToggleActive : ''}
+            aria-pressed={basicReplacementVatMode === 'incl'}
+            onClick={() => setBasicReplacementVatModePreservingPrice('incl')}
+          >
+            Including VAT
+          </button>
         </div>
 
         <div className={`${styles.yearSliderPanel} ${styles.replacementSliderPanel}`}>
           <div className={`${styles.yearSliderReadout} ${styles.replacementSliderReadout}`}>
             <span>Selected replacement price</span>
             <strong>{money(selectedReplacementPrice)}</strong>
-            <small>Excluding VAT</small>
+            <small>{replacementVatLabel}</small>
           </div>
 
           <label className={styles.yearSliderControl}>
@@ -6041,7 +6084,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
 
         <div className={`${styles.currentCard} ${styles.replacementManualCard}`}>
           <label className={styles.field}>
-            <span className={styles.fieldLabel}>Or enter replacement price manually (excl. VAT)</span>
+            <span className={styles.fieldLabel}>Or enter replacement price manually ({basicReplacementVatMode === 'incl' ? 'incl. VAT' : 'excl. VAT'})</span>
             <input
               type="text"
               inputMode="decimal"
@@ -6053,31 +6096,8 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
               }}
               placeholder="e.g. 1 850 000"
             />
-            <span className={styles.fieldHint}>You can always override Aim4price&apos;s guide with the price you believe best represents the comparable new asset.</span>
+            <span className={styles.fieldHint}>You can always override the slider with the price you believe best represents the comparable new asset.</span>
           </label>
-
-          {inputPrice ? (
-            <div className={styles.replacementBreakdown}>
-              <span>
-                <small>Asset replacement</small>
-                <strong>{money(inputPrice)}</strong>
-              </span>
-              {hasExtra && basicExtraReplacementPriceExVat ? (
-                <>
-                  <span className={styles.replacementBreakdownSymbol}>+</span>
-                  <span>
-                    <small>{extraName || 'Extra'}</small>
-                    <strong>{money(basicExtraReplacementPriceExVat)}</strong>
-                  </span>
-                </>
-              ) : null}
-              <span className={styles.replacementBreakdownSymbol}>=</span>
-              <span>
-                <small>Configured asset replacement</small>
-                <strong>{money(basicTotalReplacementPriceExVat ?? inputPrice)}</strong>
-              </span>
-            </div>
-          ) : null}
         </div>
       </div>
     );
