@@ -136,19 +136,28 @@ test('Specification Level does not repeat Brand or Model above the heading', () 
 
 test('Basic Specs uses modal cards for condition, popularity and extras', () => {
   assert.match(client, /type DetailsModal = 'year' \| 'usage' \| 'condition' \| 'popularity' \| 'extras' \| null/);
+  assert.match(client, /type ConditionModalView = 'choose' \| 'basic' \| 'advanced'/);
   assert.match(client, /function renderBasicConditionModal\(\)/);
-  assert.match(client, /<strong>Basic condition<\/strong>/);
-  assert.match(client, /<strong>Advanced condition<\/strong>/);
+  assert.match(client, /conditionModalView === 'choose'/);
+  assert.match(client, /chooseConditionRoute\('basic'\)/);
+  assert.match(client, /chooseConditionRoute\('advanced'\)/);
+  assert.match(client, /<strong>Basic<\/strong>/);
+  assert.match(client, /<strong>Advanced<\/strong>/);
   assert.match(client, /basicEstimateActive && usageStepComplete[\s\S]*?id="valuation-condition-step"[\s\S]*?conditionReady \? '✓' : 3/);
   assert.match(client, /basicEstimateActive && conditionReady[\s\S]*?id="valuation-popularity-step"[\s\S]*?popularityStepComplete \? '✓' : 4/);
   assert.match(client, /basicEstimateActive && popularityStepComplete[\s\S]*?id="valuation-extras-step"[\s\S]*?basicExtrasComplete \? '✓' : 5/);
   assert.match(client, /activeDetailsModal === 'condition' \? renderBasicConditionModal\(\)/);
   assert.match(client, /activeDetailsModal === 'popularity' \? renderBasicPopularityModal\(\)/);
   assert.match(client, /activeDetailsModal === 'extras' \? renderBasicExtrasModal\(\)/);
-  assert.match(valuationStyles, /\.conditionModeGrid[^\{]*\{[\s\S]*?grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
-  assert.match(valuationStyles, /\.specChoiceModal[^\{]*\{[\s\S]*?overflow-y: auto/);
+  assert.match(client, /styles\.conditionRouteModal/);
+  assert.match(client, /styles\.conditionOptionsModal/);
+  assert.match(client, /styles\.popularityModalPanel/);
+  assert.match(client, /styles\.popularityModalStarButton/);
+  assert.match(valuationStyles, /\.conditionRouteGrid[^\{]*\{[\s\S]*?grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
+  assert.match(valuationStyles, /\.conditionAdvancedPanel[^\{]*\{[\s\S]*?overflow-y: auto/);
+  assert.match(valuationStyles, /\.specChoiceModal[^\{]*\{[\s\S]*?scrollbar-width: thin/);
+  assert.match(valuationStyles, /\.popularityModalStars[^\{]*\{[\s\S]*?grid-template-columns: repeat\(5, minmax\(0, 1fr\)\)/);
 });
-
 test('Basic usage follows family valuationMode, including no-usage and percentage-worked families', () => {
   assert.match(client, /const basicUsageNotRequired = basicEstimateActive && selectedFamily\?\.valuationMode === 'year_condition'/);
   assert.match(client, /const basicUsesPercentageWorked = basicEstimateActive && selectedFamily\?\.valuationMode === 'percent_used'/);
