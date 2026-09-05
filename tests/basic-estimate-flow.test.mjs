@@ -115,12 +115,23 @@ test('typed Brand and optional Model stay simple and user-facing', () => {
   assert.match(client, /<span className=\{styles\.fieldLabel\}>Brand<\/span>[\s\S]*?placeholder="e\.g\. John Deere"/);
   assert.match(client, /<span className=\{styles\.fieldLabel\}>Model<\/span>[\s\S]*?placeholder="e\.g\. 6155M"/);
   assert.match(client, /Add as much brand and model detail as you can\. Aim4price will use it to build the strongest estimate possible\./);
+  assert.match(client, /styles\.basicIdentityIntro/);
   assert.doesNotMatch(client, /I don&apos;t know the model/);
   assert.doesNotMatch(client, /Brand and model are stored with the estimate and Asset Register without creating catalogue records/);
   assert.match(client, /setBrandSlug\(UNKNOWN_BRAND_SLUG\)/);
   assert.match(client, /setGenericModelMode\(normalizeText\(typedModelName\) \? 'manual' : 'unknown'\)/);
   assert.match(client, /\[TYPED_BRAND_NAME_SPEC_KEY\]: typedUnlistedBrandName/);
   assert.match(client, /basic_estimate: true/);
+});
+
+test('Specification Level does not repeat Brand or Model above the heading', () => {
+  const levelStart = client.indexOf('function renderBasicLevelStep()');
+  const levelEnd = client.indexOf('function renderBasicReplacementStep()', levelStart);
+  const levelBlock = client.slice(levelStart, levelEnd);
+  assert.ok(levelStart >= 0 && levelEnd > levelStart);
+  assert.doesNotMatch(levelBlock, /normalizeText\(unlistedBrandName\)/);
+  assert.doesNotMatch(levelBlock, /normalizeText\(typedModelName\)/);
+  assert.match(levelBlock, /styles\.equipmentStageTopSolo[\s\S]*?selectedFamily\.familyLabel/);
 });
 
 test('Basic usage follows family valuationMode, including no-usage and percentage-worked families', () => {
@@ -161,6 +172,8 @@ test('replacement styling reuses the year slider visual language and does not in
   assert.doesNotMatch(basicCss, /font-family\s*:/, 'Basic Estimate must inherit Aim4price typography');
   assert.match(valuationStyles, /\.estimateModeSectorLabel[^\{]*\{[\s\S]*?position: absolute;[\s\S]*?right: 0;[\s\S]*?justify-content: flex-end;/);
   assert.match(valuationStyles, /\.basicFamilyContextStage[^\{]*\{[\s\S]*?position: relative;/);
+  assert.match(valuationStyles, /\.basicIdentityIntro[^\{]*\{[\s\S]*?max-width: none;[\s\S]*?white-space: nowrap;/);
+  assert.match(valuationStyles, /@media \(max-width: 1020px\) \{[\s\S]*?\.basicIdentityIntro[^\{]*\{[\s\S]*?white-space: normal;/);
   assert.match(valuationStyles, /\.sectorWizardShell[^\{]*\{[\s\S]*?width: min\(100%, 1088px\);/);
   assert.match(valuationStyles, /\.estimateModeSectorLabel \.selectedSummaryPill,\s*\.equipmentStageTopSolo \.selectedSummaryPill \{[\s\S]*?font-size: 0\.82rem;[\s\S]*?font-weight: 850;[\s\S]*?letter-spacing: 0\.11em;[\s\S]*?line-height: 1\.15;/);
   assert.match(valuationStyles, /@media \(max-width: 900px\) \{[\s\S]*?\.equipmentStageTopSolo \{[\s\S]*?justify-content: flex-end;/);
