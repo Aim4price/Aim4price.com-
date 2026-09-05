@@ -7375,37 +7375,28 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
             <div className={`${styles.detailsModal} ${styles.specChoiceModal} ${styles.conditionRouteModal}`}>
               <div className={`${styles.detailsModalHeader} ${compactAppMode ? dealerStyles.dealerCompactModalHeader : ''}`}>
                 <div>
-                  {!compactAppMode ? (
-                    <>
-                      <h3 className={styles.detailsModalTitle}>Condition</h3>
-                      <p className={styles.detailsModalText}>Choose how you want to assess the condition.</p>
-                    </>
-                  ) : null}
+                  {!compactAppMode ? <h3 className={styles.detailsModalTitle}>Condition</h3> : null}
                 </div>
                 <button type="button" className={styles.saveModalClose} onClick={() => setActiveDetailsModal(null)} aria-label="Close">×</button>
               </div>
 
               <div className={styles.conditionRouteGrid}>
-                <button type="button" className={styles.conditionRouteCard} onClick={() => chooseConditionRoute('basic')}>
+                <button type="button" className={styles.conditionRouteCard} aria-label="Use Basic condition" onClick={() => chooseConditionRoute('basic')}>
                   <span className={styles.conditionRouteNumber}>1</span>
                   <span className={styles.conditionRouteCopy}>
                     <strong>Basic</strong>
-                    <small>Choose one overall condition for the asset.</small>
                   </span>
                   <span className={styles.conditionRouteArrow} aria-hidden="true">→</span>
                 </button>
 
-                <button type="button" className={styles.conditionRouteCard} onClick={() => chooseConditionRoute('advanced')}>
+                <button type="button" className={styles.conditionRouteCard} aria-label="Use Advanced condition" onClick={() => chooseConditionRoute('advanced')}>
                   <span className={styles.conditionRouteNumber}>2</span>
                   <span className={styles.conditionRouteCopy}>
                     <strong>Advanced</strong>
-                    <small>Assess the important condition areas separately.</small>
                   </span>
                   <span className={styles.conditionRouteArrow} aria-hidden="true">→</span>
                 </button>
               </div>
-
-              <p className={styles.conditionRouteNote}>Choose the amount of detail you know. Both routes feed the same Aim4price estimate.</p>
 
               <div className={`${styles.detailsModalActions} ${styles.conditionRouteActions}`}>
                 <button type="button" className={styles.secondaryButton} onClick={() => setActiveDetailsModal(null)}>Cancel</button>
@@ -7416,23 +7407,114 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
       }
 
       const advancedCondition = conditionModalView === 'advanced';
+      const advancedQuestionTotal = detailedAssessmentSections.length;
+      const advancedQuestionIndex = currentDetailedSectionIndex >= 0 ? currentDetailedSectionIndex : 0;
+      const advancedQuestion = detailedAssessmentSections[advancedQuestionIndex] ?? detailedAssessmentSections[0];
+      const advancedQuestionProgress = advancedQuestionTotal
+        ? ((advancedQuestionIndex + 1) / advancedQuestionTotal) * 100
+        : 0;
+
+      function showNextAdvancedQuestion(currentIndex: number) {
+        const nextIndex = Math.min(currentIndex + 1, advancedQuestionTotal - 1);
+        const nextSection = detailedAssessmentSections[nextIndex];
+        if (nextSection) setActiveDetailedAssessmentSection(nextSection.label);
+      }
+
+      function goBackFromConditionDetail() {
+        if (advancedCondition && advancedQuestionIndex > 0) {
+          const previousSection = detailedAssessmentSections[advancedQuestionIndex - 1];
+          if (previousSection) setActiveDetailedAssessmentSection(previousSection.label);
+          setMessage('');
+          setDetailedAssessmentError('');
+          return;
+        }
+        returnToConditionChooser();
+      }
+
+      function renderAdvancedConditionQuestion() {
+        if (!advancedQuestion) return null;
+
+        if (advancedQuestionIndex === 0) {
+          return renderDealerAssessmentGroup(
+            advancedQuestion.label,
+            dealerMechanicalCondition,
+            DEALER_MECHANICAL_OPTIONS,
+            (value) => {
+              setDealerMechanicalCondition(value);
+              showNextAdvancedQuestion(0);
+              resetResult();
+            },
+            true,
+            detailedAssessmentSections[1]?.label ?? advancedQuestion.label,
+          );
+        }
+
+        if (advancedQuestionIndex === 1) {
+          return renderDealerAssessmentGroup(
+            advancedQuestion.label,
+            dealerBodyCondition,
+            DEALER_BODY_OPTIONS,
+            (value) => {
+              setDealerBodyCondition(value);
+              showNextAdvancedQuestion(1);
+              resetResult();
+            },
+            true,
+            detailedAssessmentSections[2]?.label ?? advancedQuestion.label,
+          );
+        }
+
+        if (advancedQuestionIndex === 2) {
+          return renderDealerAssessmentGroup(
+            advancedQuestion.label,
+            dealerTyreCondition,
+            DEALER_TYRE_OPTIONS,
+            (value) => {
+              setDealerTyreCondition(value);
+              showNextAdvancedQuestion(2);
+              resetResult();
+            },
+            true,
+            detailedAssessmentSections[3]?.label ?? advancedQuestion.label,
+          );
+        }
+
+        if (advancedQuestionIndex === 3) {
+          return renderDealerAssessmentGroup(
+            advancedQuestion.label,
+            dealerServiceHistory,
+            DEALER_SERVICE_OPTIONS,
+            (value) => {
+              setDealerServiceHistory(value);
+              showNextAdvancedQuestion(3);
+              resetResult();
+            },
+            true,
+            detailedAssessmentSections[4]?.label ?? advancedQuestion.label,
+          );
+        }
+
+        return renderDealerAssessmentGroup(
+          advancedQuestion.label,
+          dealerRequiredWork,
+          DEALER_WORK_OPTIONS,
+          (value) => {
+            setDealerRequiredWork(value);
+            setActiveDetailedAssessmentSection(advancedQuestion.label);
+            resetResult();
+          },
+          true,
+          advancedQuestion.label,
+        );
+      }
+
       return (
         <div className={styles.detailsModalOverlay} role="dialog" aria-modal="true" aria-label={advancedCondition ? 'Advanced condition' : 'Basic condition'}>
           <button type="button" className={styles.detailsModalBackdrop} aria-label="Close" onClick={() => setActiveDetailsModal(null)} />
-          <div className={`${styles.detailsModal} ${styles.specChoiceModal} ${styles.conditionOptionsModal}`}>
+          <div className={`${styles.detailsModal} ${styles.specChoiceModal} ${styles.conditionOptionsModal} ${advancedCondition ? styles.conditionProgressiveModal : styles.conditionBasicModal}`}>
             <div className={`${styles.detailsModalHeader} ${compactAppMode ? dealerStyles.dealerCompactModalHeader : ''}`}>
-              <div className={styles.conditionModalHeaderCopy}>
-                {!compactAppMode ? (
-                  <>
-                    <button type="button" className={styles.conditionModalBackButton} onClick={returnToConditionChooser}>← Condition type</button>
-                    <h3 className={styles.detailsModalTitle}>{advancedCondition ? 'Advanced condition' : 'Basic condition'}</h3>
-                    <p className={styles.detailsModalText}>
-                      {advancedCondition
-                        ? 'Assess each important condition area for a more detailed adjustment.'
-                        : 'Choose the closest overall condition for this asset.'}
-                    </p>
-                  </>
-                ) : null}
+              <div>
+                {!compactAppMode ? <h3 className={styles.detailsModalTitle}>{advancedCondition ? 'Advanced condition' : 'Basic condition'}</h3> : null}
               </div>
               <button type="button" className={styles.saveModalClose} onClick={() => setActiveDetailsModal(null)} aria-label="Close">×</button>
             </div>
@@ -7463,31 +7545,20 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                   })}
                 </div>
               ) : (
-                <div className={`${styles.detailedAssessmentPanel} ${styles.conditionAdvancedPanel}`}>
-                  <div className={styles.detailedAssessmentHeader}>
-                    <strong>Advanced condition assessment</strong>
-                    <span>Choose the closest answer for each condition area.</span>
+                <div className={styles.conditionQuestionFlow}>
+                  <div className={styles.conditionQuestionProgress}>
+                    <div className={styles.conditionQuestionProgressTop}>
+                      <span>Question {advancedQuestionIndex + 1} of {advancedQuestionTotal}</span>
+                      <strong>{advancedQuestion?.label}</strong>
+                    </div>
+                    <div className={styles.conditionQuestionProgressTrack} aria-hidden="true">
+                      <span style={{ width: `${advancedQuestionProgress}%` }} />
+                    </div>
                   </div>
-                  {renderDealerAssessmentGroup(detailedAssessmentSections[0].label, dealerMechanicalCondition, DEALER_MECHANICAL_OPTIONS, (value) => {
-                    setDealerMechanicalCondition(value);
-                    resetResult();
-                  }, currentDetailedSection === detailedAssessmentSections[0].label, detailedAssessmentSections[1].label)}
-                  {renderDealerAssessmentGroup(detailedAssessmentSections[1].label, dealerBodyCondition, DEALER_BODY_OPTIONS, (value) => {
-                    setDealerBodyCondition(value);
-                    resetResult();
-                  }, currentDetailedSection === detailedAssessmentSections[1].label, detailedAssessmentSections[2].label)}
-                  {renderDealerAssessmentGroup(detailedAssessmentSections[2].label, dealerTyreCondition, DEALER_TYRE_OPTIONS, (value) => {
-                    setDealerTyreCondition(value);
-                    resetResult();
-                  }, currentDetailedSection === detailedAssessmentSections[2].label, detailedAssessmentSections[3].label)}
-                  {renderDealerAssessmentGroup(detailedAssessmentSections[3].label, dealerServiceHistory, DEALER_SERVICE_OPTIONS, (value) => {
-                    setDealerServiceHistory(value);
-                    resetResult();
-                  }, currentDetailedSection === detailedAssessmentSections[3].label, detailedAssessmentSections[4].label)}
-                  {renderDealerAssessmentGroup(detailedAssessmentSections[4].label, dealerRequiredWork, DEALER_WORK_OPTIONS, (value) => {
-                    setDealerRequiredWork(value);
-                    resetResult();
-                  }, currentDetailedSection === detailedAssessmentSections[4].label, '')}
+
+                  <div className={styles.conditionQuestionCard}>
+                    {renderAdvancedConditionQuestion()}
+                  </div>
                 </div>
               )}
             </div>
@@ -7495,9 +7566,18 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
             {detailedAssessmentError ? <p className={styles.advancedError}>{detailedAssessmentError}</p> : null}
             {message ? <p className={styles.modalMessage}>{message}</p> : null}
 
-            <div className={`${styles.detailsModalActions} ${styles.specModalStickyActions}`}>
-              <button type="button" className={styles.secondaryButton} onClick={returnToConditionChooser}>Back</button>
-              <button type="button" className={styles.primaryButton} onClick={saveConditionModal}>Continue</button>
+            <div className={`${styles.detailsModalActions} ${styles.conditionDetailActions}`}>
+              <button type="button" className={styles.secondaryButton} onClick={goBackFromConditionDetail}>
+                {advancedCondition && advancedQuestionIndex > 0 ? 'Previous' : 'Back'}
+              </button>
+              <button
+                type="button"
+                className={styles.primaryButton}
+                disabled={advancedCondition ? !detailedAssessmentComplete : !conditionStepComplete || detailedAssessmentOpen}
+                onClick={saveConditionModal}
+              >
+                Continue
+              </button>
             </div>
           </div>
         </div>

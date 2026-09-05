@@ -13976,3 +13976,235 @@
     font-size: 0.64rem;
   }
 }
+
+
+/* === Basic Condition progressive modal refinement === */
+.conditionRouteModal .detailsModalHeader {
+  margin-bottom: 0.15rem;
+}
+
+.conditionRouteModal .conditionRouteGrid {
+  margin-top: 0.7rem;
+}
+
+.conditionRouteModal .conditionRouteCard {
+  min-height: 104px;
+  padding: 1rem 1.05rem;
+}
+
+.conditionRouteModal .conditionRouteCopy {
+  align-self: center;
+}
+
+.conditionRouteModal .conditionRouteCopy strong {
+  font-size: 1.16rem;
+}
+
+.conditionRouteModal .conditionRouteCopy small,
+.conditionRouteModal .conditionRouteNote {
+  display: none;
+}
+
+.conditionRouteModal .conditionRouteActions {
+  margin-top: 0.55rem;
+}
+
+.conditionBasicModal {
+  width: min(900px, calc(100vw - 2rem));
+  max-height: none;
+  overflow: hidden;
+}
+
+.conditionBasicModal .conditionModalBody {
+  margin-top: 0.8rem;
+}
+
+.conditionBasicModal .basicConditionOptionGrid {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+
+.conditionBasicModal .conditionChoiceButton {
+  position: relative;
+  min-height: 92px;
+  padding: 1rem 0.65rem;
+  border-radius: 16px;
+  background: linear-gradient(180deg, #ffffff 0%, #f8faf9 100%);
+  font-size: 0.9rem;
+  box-shadow: 0 8px 20px rgba(14, 54, 42, 0.035);
+}
+
+.conditionBasicModal .conditionChoiceButton:hover,
+.conditionBasicModal .conditionChoiceButton:focus-visible {
+  transform: translateY(-1px);
+  border-color: rgba(9, 111, 81, 0.48);
+  background: #f0f8f4;
+  outline: none;
+}
+
+.conditionBasicModal .conditionChoiceButtonActive {
+  border-color: rgba(8, 111, 80, 0.68);
+  background: linear-gradient(180deg, #edf8f3 0%, #e5f3ed 100%);
+  color: #0b513f;
+  box-shadow: 0 0 0 3px rgba(10, 111, 82, 0.08), 0 10px 24px rgba(14, 54, 42, 0.05);
+}
+
+.conditionBasicModal .conditionChoiceButtonActive::after {
+  content: '✓';
+  position: absolute;
+  top: 0.55rem;
+  right: 0.62rem;
+  display: grid;
+  place-items: center;
+  width: 1.35rem;
+  height: 1.35rem;
+  border-radius: 999px;
+  background: #17654f;
+  color: #ffffff;
+  font-size: 0.68rem;
+  font-weight: 900;
+}
+
+.conditionProgressiveModal {
+  width: min(760px, calc(100vw - 2rem));
+  max-height: none;
+  overflow: hidden;
+}
+
+.conditionProgressiveModal .conditionModalBody {
+  margin-top: 0.75rem;
+}
+
+.conditionQuestionFlow {
+  display: grid;
+  gap: 1rem;
+}
+
+.conditionQuestionProgress {
+  display: grid;
+  gap: 0.7rem;
+  padding: 1rem 1.05rem;
+  border: 1px solid rgba(11, 81, 63, 0.12);
+  border-radius: 16px;
+  background: linear-gradient(180deg, rgba(243, 249, 246, 0.95) 0%, rgba(249, 251, 250, 0.96) 100%);
+}
+
+.conditionQuestionProgressTop {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.conditionQuestionProgressTop span {
+  color: #6c7b75;
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.045em;
+  text-transform: uppercase;
+}
+
+.conditionQuestionProgressTop strong {
+  color: #123f34;
+  font-size: 1rem;
+  text-align: right;
+}
+
+.conditionQuestionProgressTrack {
+  height: 7px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(17, 82, 63, 0.09);
+}
+
+.conditionQuestionProgressTrack span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #145943 0%, #2b8467 100%);
+  transition: width 180ms ease;
+}
+
+.conditionQuestionCard {
+  padding: 1rem 1.05rem 1.05rem;
+  border: 1px solid rgba(11, 81, 63, 0.12);
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: 0 10px 26px rgba(14, 54, 42, 0.04);
+}
+
+.conditionQuestionCard .dealerAssessmentGroup {
+  padding: 0;
+  border: 0;
+}
+
+.conditionQuestionCard .dealerAssessmentGroup legend {
+  display: none;
+}
+
+.conditionQuestionCard .dealerAssessmentOptions {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.55rem;
+}
+
+.conditionQuestionCard .dealerAssessmentOption {
+  min-height: 56px;
+  border-radius: 12px;
+  font-size: 0.78rem;
+}
+
+.conditionQuestionCard .dealerAssessmentOption:hover,
+.conditionQuestionCard .dealerAssessmentOption:focus-visible {
+  border-color: rgba(9, 111, 81, 0.48);
+  background: #f0f8f4;
+  outline: none;
+}
+
+.conditionProgressiveModal .primaryButton:disabled,
+.conditionBasicModal .primaryButton:disabled {
+  opacity: 0.48;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.conditionDetailActions {
+  margin-top: 1rem;
+}
+
+@media (max-width: 860px) {
+  .conditionBasicModal .basicConditionOptionGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 700px) {
+  .conditionRouteModal .conditionRouteGrid,
+  .conditionBasicModal .basicConditionOptionGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .conditionQuestionProgressTop {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .conditionQuestionProgressTop strong {
+    text-align: left;
+  }
+
+  .conditionQuestionCard .dealerAssessmentOptions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 460px) {
+  .conditionRouteModal .conditionRouteGrid,
+  .conditionBasicModal .basicConditionOptionGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .conditionBasicModal .conditionChoiceButton {
+    min-height: 66px;
+  }
+}
