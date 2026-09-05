@@ -7024,7 +7024,6 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
         <div className={`${styles.detailsModal} ${styles.yearDetailsModal}`}>
           <div className={`${styles.detailsModalHeader} ${compactAppMode ? dealerStyles.dealerCompactModalHeader : ''}`}>
             <div>
-              <span className={styles.currentEyebrow}>{compactAppMode ? 'Asset details 1 of 5' : 'Step 1'}</span>
               {!compactAppMode ? (
                 <>
                   <h3 className={styles.detailsModalTitle}>{getAssetNounTitle(selectedSector)} manufacturing year</h3>
@@ -7137,7 +7136,6 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
         <div className={styles.detailsModal}>
           <div className={`${styles.detailsModalHeader} ${compactAppMode ? dealerStyles.dealerCompactModalHeader : ''}`}>
             <div>
-              <span className={styles.currentEyebrow}>{compactAppMode ? 'Asset details 2 of 5' : 'Step 2'}</span>
               {!compactAppMode ? (
                 <>
                   <h3 className={styles.detailsModalTitle}>{usageModalMode === 'hours' && showHoursInput ? selectedUsageFieldLabel : 'Worked percentage'}</h3>
