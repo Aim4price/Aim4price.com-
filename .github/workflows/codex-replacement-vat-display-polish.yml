@@ -1,0 +1,47 @@
+name: Replacement VAT display polish
+
+on:
+  push:
+    branches:
+      - codex/replacement-vat-display-polish-20260905
+
+permissions:
+  contents: write
+
+jobs:
+  apply-and-validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: codex/replacement-vat-display-polish-20260905
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Apply replacement VAT polish
+        run: python .github/codex-replacement-vat-polish.py
+
+      - name: Validate diff
+        run: git diff --check
+
+      - run: npm ci
+      - run: npm run typecheck
+
+      - name: Focused regression tests
+        run: node --experimental-strip-types --test tests/basic-estimate-flow.test.mjs tests/mobile-valuation-flow.test.mjs
+
+      - name: Commit final implementation
+        shell: bash
+        run: |
+          rm .github/workflows/codex-replacement-vat-display-polish.yml
+          rm .github/codex-replacement-vat-polish.py
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Polish replacement VAT controls"
+          git push origin HEAD:codex/replacement-vat-display-polish-20260905
