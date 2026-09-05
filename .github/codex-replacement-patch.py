@@ -23,6 +23,7 @@ fn = client.index('  function renderBasicReplacementStep() {')
 variables_end = client.index('    const hasExtra =', fn)
 new_variables = """  function renderBasicReplacementStep() {
     const guide = basicReplacementGuide;
+    const inputPrice = basicBaseReplacementPriceExVat;
     const replacementSliderMin = 0;
     const replacementSliderMax = 5_000_000;
     const replacementSliderStep = 50_000;
