@@ -5733,7 +5733,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
       return (
         <div className={styles.sectorStart}>
           <div className={styles.sectorIntro}>
-            <div className={styles.selectedSummary}>
+            <div className={`${styles.selectedSummary} ${styles.estimateModeSectorLabel}`}>
               <span className={styles.selectedSummaryPill}>{SECTOR_LABELS[selectedSector]}</span>
             </div>
             <h2 className={styles.stepTitle}>Choose estimate type</h2>
@@ -5743,35 +5743,34 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
           <div className={`${styles.sectorLargeGrid} ${styles.estimateModeGrid}`}>
             <button
               type="button"
-              className={`${styles.sectorBigCard} ${compactAppMode ? styles.sectorBigCardApp : ''} ${styles.sectorBigCardLive} ${styles.estimateModeCard}`}
+              className={`${styles.sectorBigCard} ${compactAppMode ? styles.sectorBigCardApp : ''} ${styles.sectorBigCardLive} ${styles.estimateModeCard} ${styles.estimateModeBasicCard}`}
               onClick={() => handleEstimateExperienceSelect('basic')}
             >
               <span className={styles.sectorBigCardContent}>
                 <span className={styles.sectorLabelWrap}>
-                  <strong className={styles.sectorLabel}>Basic Estimate</strong>
-                  <span className={`${styles.sectorCardHint} ${styles.estimateModeCopy}`}>
-                    Quick mathematical estimate using the asset family, its condition, usage and replacement price.
-                  </span>
-                  <span className={styles.sectorCardHint}>Start estimate →</span>
+                  <strong className={styles.sectorLabel}>Basic</strong>
+                  <span className={styles.sectorCardHint}>Start →</span>
                 </span>
               </span>
             </button>
 
             <button
               type="button"
-              className={`${styles.sectorBigCard} ${compactAppMode ? styles.sectorBigCardApp : ''} ${styles.sectorBigCardSoon} ${styles.estimateModeCard} ${styles.estimateModeCardLocked}`}
+              className={`${styles.sectorBigCard} ${compactAppMode ? styles.sectorBigCardApp : ''} ${styles.estimateModeCard} ${styles.estimateModeAdvancedCard} ${styles.estimateModeCardLocked}`}
               disabled
               aria-disabled="true"
             >
               <span className={styles.sectorBigCardContent}>
                 <span className={styles.sectorCardTopRow}>
-                  <span className={styles.soonBadge}>Coming soon</span>
+                  <span className={styles.exclusiveBadge}>
+                    <svg className={styles.exclusiveBadgeIcon} viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                      <path fill="currentColor" d="M3 6.75 7.5 11 12 4l4.5 7L21 6.75 19.4 18H4.6L3 6.75Zm2.2 12.75h13.6V21H5.2v-1.5Z" />
+                    </svg>
+                    <span>Aim4price Exclusive</span>
+                  </span>
                 </span>
                 <span className={styles.sectorLabelWrap}>
-                  <strong className={styles.sectorLabel}>Advanced Estimate</strong>
-                  <span className={`${styles.sectorCardHint} ${styles.estimateModeCopy}`}>
-                    Deeper model, specification and Aim4price market intelligence.
-                  </span>
+                  <strong className={styles.sectorLabel}>Advanced</strong>
                 </span>
               </span>
             </button>
