@@ -1,0 +1,71 @@
+name: Replacement VAT final validation
+
+on:
+  push:
+    branches:
+      - codex/replacement-vat-display-polish-20260905
+
+permissions:
+  contents: write
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out branch
+        uses: actions/checkout@v4
+        with:
+          ref: codex/replacement-vat-display-polish-20260905
+          fetch-depth: 0
+
+      - name: Use Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate committed diff
+        run: |
+          git fetch origin main
+          git diff --check origin/main...HEAD
+
+      - name: Type check
+        run: npm run typecheck
+
+      - name: Focused Basic Estimate regressions
+        run: node --experimental-strip-types --test tests/basic-estimate-flow.test.mjs tests/mobile-valuation-flow.test.mjs
+
+      - name: Production build compile validation
+        shell: bash
+        run: |
+          set +e
+          npm run build 2>&1 | tee /tmp/aim4price-build.log
+          build_status=${PIPESTATUS[0]}
+          set -e
+
+          if [ "$build_status" -eq 0 ]; then
+            exit 0
+          fi
+
+          if grep -Fq "✓ Compiled successfully" /tmp/aim4price-build.log \
+            && grep -Fq "Database connection variables are missing" /tmp/aim4price-build.log \
+            && grep -Fq "Failed to collect page data for /api/dealer/session" /tmp/aim4price-build.log; then
+            echo "Production bundle compiled successfully; page-data collection requires database credentials that are not available in CI."
+            exit 0
+          fi
+
+          exit "$build_status"
+
+      - name: Remove validation scaffold
+        shell: bash
+        run: |
+          rm .github/workflows/codex-replacement-vat-final-validation.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Remove final VAT validation scaffold"
+          git push origin HEAD:codex/replacement-vat-display-polish-20260905
