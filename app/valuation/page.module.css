@@ -13615,8 +13615,8 @@
 
 .estimateModeAdvancedCard .sectorCardTopRow {
   position: absolute;
-  top: 0.85rem;
-  right: 0.9rem;
+  top: 0.55rem;
+  right: 0.55rem;
   z-index: 5;
   width: auto;
   min-height: 0;
@@ -13692,8 +13692,8 @@
   }
 
   .estimateModeAdvancedCard .sectorCardTopRow {
-    top: 0.8rem;
-    right: 0.8rem;
+    top: 0.6rem;
+    right: 0.6rem;
   }
 
   .exclusiveBadge {
