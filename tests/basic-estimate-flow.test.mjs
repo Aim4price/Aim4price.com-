@@ -200,7 +200,7 @@ test('popularity, explicit extras and replacement-price confirmation are mandato
   assert.match(client, /None fitted/);
   assert.match(client, /Other extra/);
   assert.match(client, /Selected replacement price/);
-  assert.match(client, /Enter replacement price manually/);
+  assert.match(client, /Or enter replacement price manually/);
   assert.doesNotMatch(client, /Replacement price required/);
   assert.doesNotMatch(client, /Aim4price does not yet have a reliable replacement-price range/);
   assert.doesNotMatch(client, /Aim4price provides an indicative estimate only\. It is not a certified valuation or inspection report\. Final value should still be checked against asset condition, documents, location and current market demand\./);
@@ -232,6 +232,37 @@ test('replacement styling reuses the year slider visual language and does not in
   assert.ok(estimateTypeCss, 'Estimate type parity styling block should be present');
   assert.doesNotMatch(estimateTypeCss, /\.estimateModeCard \.sectorLabel/);
   assert.doesNotMatch(estimateTypeCss, /\.estimateModeCard \.sectorBigCardContent/);
+});
+
+test('Basic replacement slider uses the temporary general R0 to R5 million range', () => {
+  const replacementStart = client.indexOf('function renderBasicReplacementStep()');
+  assert.ok(replacementStart >= 0);
+  const replacementBlock = client.slice(replacementStart, replacementStart + 18000);
+  assert.match(replacementBlock, /const replacementSliderMin = 0;/);
+  assert.match(replacementBlock, /const replacementSliderMax = 5_000_000;/);
+  assert.match(replacementBlock, /const replacementSliderStep = 50_000;/);
+  assert.match(replacementBlock, /styles\.yearSliderPanel/);
+  assert.match(replacementBlock, /styles\.yearSliderReadout/);
+  assert.match(replacementBlock, /styles\.yearRangeInput/);
+  assert.match(replacementBlock, /styles\.yearSliderMeta/);
+  assert.match(replacementBlock, /styles\.yearFineTuneRow/);
+  assert.match(replacementBlock, /− R50 000/);
+  assert.match(replacementBlock, /\+ R50 000/);
+  assert.match(replacementBlock, /money\(selectedReplacementPrice\)/);
+  assert.match(replacementBlock, /Math\.min\([\s\S]*?replacementSliderMax,[\s\S]*?Math\.max\(replacementSliderMin, selectedReplacementPrice\)/);
+  assert.doesNotMatch(replacementBlock, /min=\{guide\.minExVat\}/);
+  assert.doesNotMatch(replacementBlock, /max=\{guide\.maxExVat\}/);
+  assert.doesNotMatch(replacementBlock, /step=\{guide\.sliderStep\}/);
+});
+
+test('Basic replacement slider keeps zero stable and preserves manual values above the temporary slider ceiling', () => {
+  assert.match(client, /step !== 5 \|\| !basicReplacementGuide \|\| String\(basicReplacementPrice\)\.trim\(\)/);
+  const replacementStart = client.indexOf('function renderBasicReplacementStep()');
+  const replacementBlock = client.slice(replacementStart, replacementStart + 18000);
+  assert.match(replacementBlock, /parsedReplacementInput >= 0/);
+  assert.match(replacementBlock, /const selectedReplacementPrice = hasReplacementSliderInput[\s\S]*?\? parsedReplacementInput[\s\S]*?: replacementSliderDefault/);
+  assert.match(replacementBlock, /<strong>\{money\(selectedReplacementPrice\)\}<\/strong>/);
+  assert.match(replacementBlock, /value=\{sliderValue\}/);
 });
 
 test('the final result renderer and save destinations remain shared with the existing valuation flow', () => {

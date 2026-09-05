@@ -3068,7 +3068,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
   }, [basicEstimateActive, selectedFamily, selectedSector]);
 
   useEffect(() => {
-    if (!basicEstimateActive || step !== 5 || !basicReplacementGuide || parseMoneyInput(basicReplacementPrice)) return;
+    if (!basicEstimateActive || step !== 5 || !basicReplacementGuide || String(basicReplacementPrice).trim()) return;
     setBasicReplacementPrice(String(basicReplacementGuide.suggestedExVat));
   }, [basicEstimateActive, basicReplacementGuide, basicReplacementPrice, step]);
 
@@ -5953,12 +5953,23 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
   function renderBasicReplacementStep() {
     const guide = basicReplacementGuide;
     const inputPrice = basicBaseReplacementPriceExVat;
-    const sliderValue = guide
-      ? Math.min(guide.maxExVat, Math.max(guide.minExVat, inputPrice ?? guide.suggestedExVat))
-      : null;
-    const progress = guide && sliderValue !== null
-      ? ((sliderValue - guide.minExVat) / Math.max(1, guide.maxExVat - guide.minExVat)) * 100
-      : 0;
+    const replacementSliderMin = 0;
+    const replacementSliderMax = 5_000_000;
+    const replacementSliderStep = 50_000;
+    const replacementSliderDefault = guide?.suggestedExVat ?? 0;
+    const normalizedReplacementInput = String(basicReplacementPrice).replace(/[^0-9.-]/g, '');
+    const parsedReplacementInput = normalizedReplacementInput === '' ? null : Number(normalizedReplacementInput);
+    const hasReplacementSliderInput = parsedReplacementInput !== null
+      && Number.isFinite(parsedReplacementInput)
+      && parsedReplacementInput >= 0;
+    const selectedReplacementPrice = hasReplacementSliderInput
+      ? parsedReplacementInput
+      : replacementSliderDefault;
+    const sliderValue = Math.min(
+      replacementSliderMax,
+      Math.max(replacementSliderMin, selectedReplacementPrice),
+    );
+    const progress = ((sliderValue - replacementSliderMin) / Math.max(1, replacementSliderMax - replacementSliderMin)) * 100;
     const sliderStyle = { '--year-progress': `${Math.min(100, Math.max(0, progress))}%` } as CSSProperties;
     const hasExtra = basicExtraChoice === 'family' || basicExtraChoice === 'other';
     const extraName = basicExtraChoice === 'family' ? basicFamilyExtra?.label : normalizeText(otherExtraName);
@@ -5973,60 +5984,64 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
           <p className={styles.stepText}>Choose the current new replacement price for a comparable asset. All figures on this step are excluding VAT.</p>
         </div>
 
-        {basicReplacementBandsLoading ? (
-          <div className={`${styles.currentCard} ${styles.replacementGuideCard}`}>
-            <h3 className={styles.currentTitle}>Finding Aim4price guidance...</h3>
-            <p className={styles.currentHint}>Checking the available family replacement-price information.</p>
+        <div className={`${styles.yearSliderPanel} ${styles.replacementSliderPanel}`}>
+          <div className={`${styles.yearSliderReadout} ${styles.replacementSliderReadout}`}>
+            <span>Selected replacement price</span>
+            <strong>{money(selectedReplacementPrice)}</strong>
+            <small>Excluding VAT</small>
           </div>
-        ) : guide ? (
-          <div className={`${styles.currentCard} ${styles.replacementGuideCard}`}>
-            <div className={styles.currentCardHead}>
-              <div>
-                <span className={styles.currentEyebrow}>Aim4price family guide · {basicSpecLevelLabel}</span>
-                <h3 className={styles.currentTitle}>Select replacement price</h3>
-                <p className={styles.currentHint}>
-                  {guide.source === 'tier'
-                    ? 'This range uses available family and specification-level pricing.'
-                    : 'This is a broad guide positioned from the available family pricing, not exact-model pricing.'}
-                </p>
-              </div>
-            </div>
 
-            <div className={`${styles.yearSliderPanel} ${styles.replacementSliderPanel}`}>
-              <div className={`${styles.yearSliderReadout} ${styles.replacementSliderReadout}`}>
-                <span>Selected replacement price</span>
-                <strong>{money(inputPrice ?? guide.suggestedExVat)}</strong>
-                <small>Excluding VAT</small>
-              </div>
+          <label className={styles.yearSliderControl}>
+            <span className={styles.fieldLabel}>Slide to replacement price</span>
+            <input
+              className={styles.yearRangeInput}
+              style={sliderStyle}
+              type="range"
+              min={replacementSliderMin}
+              max={replacementSliderMax}
+              step={replacementSliderStep}
+              value={sliderValue}
+              onChange={(event) => {
+                setBasicReplacementPrice(event.target.value);
+                setMessage('');
+                resetResult();
+              }}
+            />
+            <span className={styles.yearSliderMeta}>
+              <span>{money(replacementSliderMin)}</span>
+              <span>{money(replacementSliderMax)}</span>
+            </span>
+          </label>
 
-              <label className={styles.yearSliderControl}>
-                <span className={styles.fieldLabel}>Slide to replacement price</span>
-                <input
-                  className={styles.yearRangeInput}
-                  style={sliderStyle}
-                  type="range"
-                  min={guide.minExVat}
-                  max={guide.maxExVat}
-                  step={guide.sliderStep}
-                  value={sliderValue ?? guide.suggestedExVat}
-                  onChange={(event) => {
-                    setBasicReplacementPrice(event.target.value);
-                    setMessage('');
-                    resetResult();
-                  }}
-                />
-                <span className={styles.yearSliderMeta}>
-                  <span>{money(guide.minExVat)}</span>
-                  <span>{money(guide.maxExVat)}</span>
-                </span>
-              </label>
-            </div>
+          <div className={styles.yearFineTuneRow}>
+            <button
+              type="button"
+              className={styles.yearFineTuneButton}
+              onClick={() => {
+                setBasicReplacementPrice(String(Math.max(replacementSliderMin, sliderValue - replacementSliderStep)));
+                setMessage('');
+                resetResult();
+              }}
+            >
+              − R50 000
+            </button>
+            <button
+              type="button"
+              className={styles.yearFineTuneButton}
+              onClick={() => {
+                setBasicReplacementPrice(String(Math.min(replacementSliderMax, sliderValue + replacementSliderStep)));
+                setMessage('');
+                resetResult();
+              }}
+            >
+              + R50 000
+            </button>
           </div>
-        ) : null}
+        </div>
 
         <div className={`${styles.currentCard} ${styles.replacementManualCard}`}>
           <label className={styles.field}>
-            <span className={styles.fieldLabel}>Enter replacement price manually (excl. VAT)</span>
+            <span className={styles.fieldLabel}>Or enter replacement price manually (excl. VAT)</span>
             <input
               type="text"
               inputMode="decimal"
