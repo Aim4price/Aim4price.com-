@@ -1,5 +1,4 @@
 from pathlib import Path
-import re
 
 client_path = Path('app/valuation/valuation-client.tsx')
 styles_path = Path('app/valuation/page.module.css')
@@ -206,23 +205,29 @@ vat_css = """.replacementVatToggle {
 """ + panel_anchor
 styles = replace_once(styles, panel_anchor, vat_css, 'Replacement slider panel styles')
 
-styles, count = re.subn(
-    r"\.replacementSliderReadout strong \{\n  font-size: clamp\(2\.2rem, 4\.25vw, 3\.6rem\);\n\}",
-    ".replacementSliderReadout strong {\n  font-size: clamp(1.75rem, 2.7vw, 2.55rem);\n  line-height: 1;\n  letter-spacing: -0.04em;\n  white-space: nowrap;\n}",
-    styles,
-    count=1,
+desktop_readout_start = styles.index('.replacementSliderReadout strong {')
+desktop_readout_end = styles.index('}', desktop_readout_start) + 1
+desktop_readout_block = styles[desktop_readout_start:desktop_readout_end]
+if 'font-size: clamp(2.2rem, 4.25vw, 3.6rem);' not in desktop_readout_block:
+    raise RuntimeError('Could not find desktop replacement-price readout sizing')
+desktop_readout_block = desktop_readout_block.replace(
+    'font-size: clamp(2.2rem, 4.25vw, 3.6rem);',
+    'font-size: clamp(1.75rem, 2.7vw, 2.55rem);\n  white-space: nowrap;',
+    1,
 )
-if count != 1:
-    raise RuntimeError('Could not replace desktop replacement-price readout sizing')
+styles = styles[:desktop_readout_start] + desktop_readout_block + styles[desktop_readout_end:]
 
-styles, count = re.subn(
-    r"  \.replacementSliderReadout strong \{\n    font-size: clamp\(2rem, 10vw, 3rem\);\n  \}",
-    "  .replacementSliderReadout strong {\n    font-size: clamp(1.65rem, 7.5vw, 2.25rem);\n  }",
-    styles,
-    count=1,
+mobile_readout_start = styles.index('.replacementSliderReadout strong {', desktop_readout_start + len(desktop_readout_block))
+mobile_readout_end = styles.index('}', mobile_readout_start) + 1
+mobile_readout_block = styles[mobile_readout_start:mobile_readout_end]
+if 'font-size: clamp(2rem, 10vw, 3rem);' not in mobile_readout_block:
+    raise RuntimeError('Could not find mobile replacement-price readout sizing')
+mobile_readout_block = mobile_readout_block.replace(
+    'font-size: clamp(2rem, 10vw, 3rem);',
+    'font-size: clamp(1.65rem, 7.5vw, 2.25rem);',
+    1,
 )
-if count != 1:
-    raise RuntimeError('Could not replace mobile replacement-price readout sizing')
+styles = styles[:mobile_readout_start] + mobile_readout_block + styles[mobile_readout_end:]
 
 # Regression coverage for the VAT selector, ex-VAT normalization and removal of the redundant breakdown.
 test_anchor = "test('the final result renderer and save destinations remain shared with the existing valuation flow', () => {"
