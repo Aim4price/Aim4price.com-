@@ -5966,10 +5966,6 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
         <div className={`${styles.equipmentStageTop} ${styles.equipmentStageTopSolo}`}>
           {selectedFamily ? <span className={styles.selectedSummaryPill}>{selectedFamily.familyLabel}</span> : null}
         </div>
-        <div className={styles.selectedSummary}>
-          {basicSpecLevelLabel ? <span className={styles.selectedSummaryPill}>{basicSpecLevelLabel}</span> : null}
-        </div>
-
         <div>
           <h2 className={styles.stepTitle}>Replacement price</h2>
           <p className={styles.stepText}>Choose the current new replacement price for a comparable asset. All figures on this step are excluding VAT.</p>
@@ -6024,15 +6020,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
               </label>
             </div>
           </div>
-        ) : (
-          <div className={`${styles.currentCard} ${styles.replacementNoRange}`}>
-            <h3 className={styles.currentTitle}>Replacement price required</h3>
-            <p className={styles.currentHint}>
-              Aim4price does not yet have a reliable replacement-price range for this family and level. Enter the comparable new replacement price manually to continue.
-            </p>
-            {basicReplacementBandsError ? <small className={styles.advancedFieldHelp}>{basicReplacementBandsError}</small> : null}
-          </div>
-        )}
+        ) : null}
 
         <div className={`${styles.currentCard} ${styles.replacementManualCard}`}>
           <label className={styles.field}>
@@ -8508,7 +8496,6 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
 
             <div
               className={`${styles.wizardFooter} ${step === 1 || compactPathChoicePage ? styles.wizardFooterSingle : ''}`}
-              data-has-disclaimer={basicEstimateActive ? step === 5 : step === 4}
             >
               <button
                 type="button"
@@ -8519,13 +8506,6 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
               >
                 Back
               </button>
-              {(basicEstimateActive ? step === 5 : step === 4) ? (
-                <p className={styles.preEstimateDisclaimer} data-valuation-disclaimer="true">
-                  {compactAppMode
-                    ? 'Indicative estimate only. Confirm condition, documents, location and market demand.'
-                    : 'Aim4price provides an indicative estimate only. It is not a certified valuation or inspection report. Final value should still be checked against asset condition, documents, location and current market demand.'}
-                </p>
-              ) : null}
               {step === 1 || compactPathChoicePage ? null : step === 6 ? (
                 <button
                   type="button"
