@@ -13323,30 +13323,43 @@
   gap: 1rem;
 }
 
+.replacementPriceStack {
+  display: grid;
+  gap: 0.68rem;
+  min-width: 0;
+  align-self: stretch;
+}
+
 .replacementVatToggle {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  width: min(100%, 25rem);
-  gap: 0.45rem;
-  margin: 0 auto 0.1rem;
-  padding: 0.35rem;
-  border: 1px solid rgba(18, 68, 52, 0.11);
-  border-radius: 1rem;
-  background: rgba(247, 250, 248, 0.92);
+  width: 100%;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0.3rem;
+  border: 1px solid rgba(18, 68, 52, 0.13);
+  border-radius: 0.9rem;
+  background: rgba(239, 246, 242, 0.96);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.92),
+    0 8px 18px rgba(18, 68, 52, 0.035);
 }
 
 .replacementVatToggle button {
-  min-height: 2.75rem;
-  padding: 0.62rem 0.9rem;
+  min-width: 0;
+  min-height: 2.65rem;
+  padding: 0.62rem 0.68rem;
   border: 1px solid transparent;
-  border-radius: 0.72rem;
+  border-radius: 0.64rem;
   background: transparent;
-  color: #62736c;
+  color: #60716a;
   font: inherit;
-  font-size: 0.82rem;
-  font-weight: 800;
+  font-size: 0.79rem;
+  font-weight: 850;
+  line-height: 1.15;
   cursor: pointer;
   transition:
+    transform 150ms ease,
     background 160ms ease,
     border-color 160ms ease,
     box-shadow 160ms ease,
@@ -13354,15 +13367,21 @@
 }
 
 .replacementVatToggle button:hover {
-  color: #184c3b;
-  background: rgba(255, 255, 255, 0.72);
+  color: #123f32;
+  background: rgba(255, 255, 255, 0.78);
+}
+
+.replacementVatToggle button:active {
+  transform: translateY(1px);
 }
 
 .replacementVatToggle button.replacementVatToggleActive {
-  border-color: rgba(18, 68, 52, 0.14);
-  background: #ffffff;
-  color: #0f4a39;
-  box-shadow: 0 5px 12px rgba(18, 68, 52, 0.07);
+  border-color: rgba(12, 66, 48, 0.88);
+  background: linear-gradient(180deg, #176047 0%, #104a39 100%);
+  color: #ffffff;
+  box-shadow:
+    0 7px 14px rgba(15, 74, 57, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
 }
 
 .replacementSliderPanel {
@@ -13460,6 +13479,15 @@
 
   .replacementSliderReadout strong {
     font-size: clamp(1.5rem, 7vw, 2rem);
+  }
+
+  .replacementPriceStack {
+    gap: 0.6rem;
+  }
+
+  .replacementVatToggle button {
+    min-height: 2.8rem;
+    font-size: 0.8rem;
   }
 }
 
