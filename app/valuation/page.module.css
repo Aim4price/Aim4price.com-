@@ -14003,11 +14003,13 @@
 
 .popularityModalStarButton {
   display: grid;
+  grid-template-rows: auto auto;
   place-items: center;
-  align-content: end;
+  align-content: center;
+  justify-items: center;
   gap: 0.18rem;
   min-height: 76px;
-  padding: 0.25rem 0.5rem 0.18rem;
+  padding: 0.55rem 0.5rem;
   box-sizing: border-box;
   border: 1px solid rgba(13, 73, 57, 0.13);
   border-radius: 14px;
@@ -14038,15 +14040,20 @@
 }
 
 .popularityModalStarGlyph {
+  display: block;
   font-size: 1.7rem;
   line-height: 1;
-  transform: translateY(6px);
+  transform: none;
 }
 
 .popularityModalStarButton small {
+  display: block;
+  margin: 0;
   color: currentColor;
   font-size: 0.72rem;
   font-weight: 850;
+  line-height: 1;
+  text-align: center;
 }
 
 .popularityScaleLabels {
