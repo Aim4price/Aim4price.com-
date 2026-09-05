@@ -5864,14 +5864,14 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
 
   function renderBasicBrandModelStep() {
     return (
-      <div className={styles.stepBlock}>
-        <div className={styles.selectedSummary}>
+      <div className={`${styles.stepBlock} ${styles.basicFamilyContextStage}`}>
+        <div className={`${styles.equipmentStageTop} ${styles.equipmentStageTopSolo}`}>
           {selectedFamily ? <span className={styles.selectedSummaryPill}>{selectedFamily.familyLabel}</span> : null}
         </div>
 
         <div>
           <h2 className={styles.stepTitle}>Brand &amp; Model</h2>
-          <p className={styles.stepText}>Add the asset identity. It does not need to match Aim4price&apos;s catalogue.</p>
+          <p className={styles.stepText}>Add as much brand and model detail as you can. Aim4price will use it to build the strongest estimate possible.</p>
         </div>
 
         <div className={`${styles.currentCard} ${styles.basicIdentityCard}`}>
@@ -5904,21 +5904,8 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
               placeholder="e.g. 6155M"
               autoComplete="off"
             />
-            <span className={styles.fieldHint}>Optional. Brand and model are stored with the estimate and Asset Register without creating catalogue records.</span>
           </label>
 
-          <button
-            type="button"
-            className={`${styles.unknownAnswerButton} ${genericModelMode === 'unknown' ? styles.basicUnknownSelected : ''}`}
-            aria-pressed={genericModelMode === 'unknown'}
-            onClick={() => {
-              setTypedModelName('');
-              setGenericModelMode('unknown');
-              resetResult();
-            }}
-          >
-            I don&apos;t know the model
-          </button>
         </div>
       </div>
     );
@@ -5926,9 +5913,11 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
 
   function renderBasicLevelStep() {
     return (
-      <div className={styles.stepBlock}>
-        <div className={styles.selectedSummary}>
+      <div className={`${styles.stepBlock} ${styles.basicFamilyContextStage}`}>
+        <div className={`${styles.equipmentStageTop} ${styles.equipmentStageTopSolo}`}>
           {selectedFamily ? <span className={styles.selectedSummaryPill}>{selectedFamily.familyLabel}</span> : null}
+        </div>
+        <div className={styles.selectedSummary}>
           {normalizeText(unlistedBrandName) ? <span className={styles.selectedSummaryPill}>{normalizeText(unlistedBrandName)}</span> : null}
           {normalizeText(typedModelName) ? <span className={styles.selectedSummaryPill}>{normalizeText(typedModelName)}</span> : null}
         </div>
@@ -5978,9 +5967,11 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     const extraName = basicExtraChoice === 'family' ? basicFamilyExtra?.label : normalizeText(otherExtraName);
 
     return (
-      <div className={`${styles.stepBlock} ${styles.replacementStage}`}>
-        <div className={styles.selectedSummary}>
+      <div className={`${styles.stepBlock} ${styles.replacementStage} ${styles.basicFamilyContextStage}`}>
+        <div className={`${styles.equipmentStageTop} ${styles.equipmentStageTopSolo}`}>
           {selectedFamily ? <span className={styles.selectedSummaryPill}>{selectedFamily.familyLabel}</span> : null}
+        </div>
+        <div className={styles.selectedSummary}>
           {basicSpecLevelLabel ? <span className={styles.selectedSummaryPill}>{basicSpecLevelLabel}</span> : null}
         </div>
 
@@ -7335,7 +7326,12 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     const currentDetailedSectionNumber = currentDetailedSectionIndex >= 0 ? currentDetailedSectionIndex + 1 : detailedAssessmentSections.length;
 
     return (
-      <div>
+      <div className={basicEstimateActive ? styles.basicFamilyContextStage : undefined}>
+        {basicEstimateActive && selectedFamily ? (
+          <div className={`${styles.equipmentStageTop} ${styles.equipmentStageTopSolo}`}>
+            <span className={styles.selectedSummaryPill}>{selectedFamily.familyLabel}</span>
+          </div>
+        ) : null}
         <h2 className={styles.stepTitle}>{detailsTitle}</h2>
         <p className={styles.stepText}>{detailsIntro}</p>
 
