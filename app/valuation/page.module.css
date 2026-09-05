@@ -14004,8 +14004,11 @@
 .popularityModalStarButton {
   display: grid;
   place-items: center;
+  align-content: end;
   gap: 0.18rem;
   min-height: 76px;
+  padding: 0.25rem 0.5rem 0.18rem;
+  box-sizing: border-box;
   border: 1px solid rgba(13, 73, 57, 0.13);
   border-radius: 14px;
   background: #ffffff;
