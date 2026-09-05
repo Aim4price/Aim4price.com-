@@ -19,7 +19,7 @@ def replace_once(text: str, old: str, new: str, label: str) -> str:
 client = replace_once(
     client,
     '                  <span className={`${styles.sectorCardHint} ${styles.estimateModeAdvancedSpacer}`} aria-hidden="true">Start estimate →</span>',
-    '                  <span className={`${styles.sectorCardHint} ${styles.estimateModeAdvancedHint}`}>Start estimate →</span>',
+    '                  <span className={`${styles.sectorCardHint} ${styles.estimateModeAdvancedHint}`} aria-hidden="true">Start estimate →</span>',
     'Advanced cosmetic Start estimate hint',
 )
 
@@ -279,18 +279,18 @@ styles = replace_once(
     'Mobile Exclusive badge positioning',
 )
 
-# Regression coverage: Advanced stays locked, but the badge/CTA are visually present and correctly positioned.
+# Regression coverage: Advanced stays locked, while its visible CTA remains presentation-only.
 tests = replace_once(
     tests,
     "  assert.match(client, /<strong className=\\{styles\\.sectorLabel\\}>Advanced<\\/strong>[\\s\\S]*?styles\\.estimateModeAdvancedSpacer/);\n",
-    "  assert.match(client, /<strong className=\\{styles\\.sectorLabel\\}>Advanced<\\/strong>[\\s\\S]*?styles\\.estimateModeAdvancedHint[\\s\\S]*?Start estimate →/);\n  assert.match(client, /styles\\.estimateModeAdvancedCard[\\s\\S]*?styles\\.estimateModeCardLocked[\\s\\S]*?disabled[\\s\\S]*?aria-disabled=\"true\"/);\n",
+    "  const advancedCardStart = client.indexOf('estimateModeAdvancedCard');\n  assert.notEqual(advancedCardStart, -1);\n  const advancedCardChunk = client.slice(\n    client.lastIndexOf('<button', advancedCardStart),\n    client.indexOf('</button>', advancedCardStart) + '</button>'.length,\n  );\n  assert.match(advancedCardChunk, /estimateModeCardLocked/);\n  assert.match(advancedCardChunk, /\\bdisabled\\b/);\n  assert.match(advancedCardChunk, /aria-disabled=\"true\"/);\n  assert.match(advancedCardChunk, /estimateModeAdvancedHint/);\n  assert.match(advancedCardChunk, /aria-hidden=\"true\"/);\n  assert.match(advancedCardChunk, /Start estimate →/);\n",
     'Advanced estimate regression assertion',
 )
 
 tests = replace_once(
     tests,
-    "  assert.match(valuationStyles, /\\.estimateModeAdvancedCard \\.sectorCardTopRow[^\\{]*\\{[\\s\\S]*?position: absolute;[\\s\\S]*?right: clamp\\(1rem, 1\\.35vw, 1\\.2rem\\);/);\n  assert.match(valuationStyles, /\\.estimateModeAdvancedSpacer[^\\{]*\\{[\\s\\S]*?visibility: hidden;/);\n",
-    "  assert.match(valuationStyles, /\\.estimateModeAdvancedCard \\.sectorCardTopRow[^\\{]*\\{[\\s\\S]*?position: absolute;[\\s\\S]*?top: 0\\.85rem;[\\s\\S]*?right: 0\\.9rem;[\\s\\S]*?justify-content: flex-end;/);\n  assert.match(valuationStyles, /\\.estimateModeAdvancedHint[^\\{]*\\{[\\s\\S]*?opacity: 0\\.92;/);\n  assert.doesNotMatch(valuationStyles, /\\.estimateModeAdvancedSpacer/);\n",
+    "  assert.match(valuationStyles, /\\.estimateModeAdvancedCard \\.sectorCardTopRow[^\\{]*\\{[\\s\\S]*?position: absolute;[\\s\\S]*?right: clamp\\(1rem, 1\\.35vw, 1\\.2rem\\);/);\n  assert.match(valuationStyles, /\\.estimateModeAdvancedSpacer[^\\{]*\\{[\\s\\S]*?visibility: hidden;/);\n  assert.match(valuationStyles, /\\.exclusiveBadge[^\\{]*\\{[\\s\\S]*?border: 1px solid rgba\\(239, 193, 84, 0\\.9\\);[\\s\\S]*?text-transform: uppercase;/);\n",
+    "  assert.match(valuationStyles, /\\.estimateModeAdvancedCard \\.sectorCardTopRow[^\\{]*\\{[\\s\\S]*?position: absolute;[\\s\\S]*?top: 0\\.85rem;[\\s\\S]*?right: 0\\.9rem;[\\s\\S]*?justify-content: flex-end;/);\n  assert.match(valuationStyles, /\\.estimateModeAdvancedHint[^\\{]*\\{[\\s\\S]*?opacity: 0\\.92;/);\n  assert.doesNotMatch(valuationStyles, /\\.estimateModeAdvancedSpacer/);\n  assert.match(valuationStyles, /\\.exclusiveBadge[^\\{]*\\{[\\s\\S]*?border: 1px solid rgba\\(239, 193, 84, 0\\.92\\);[\\s\\S]*?white-space: nowrap;[\\s\\S]*?text-transform: uppercase;/);\n",
     'Advanced estimate styling regression assertions',
 )
 
