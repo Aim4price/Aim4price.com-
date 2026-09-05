@@ -265,6 +265,31 @@ test('Basic replacement slider keeps zero stable and preserves manual values abo
   assert.match(replacementBlock, /value=\{sliderValue\}/);
 });
 
+test('Basic replacement VAT selector preserves an ex-VAT valuation basis and removes the redundant breakdown', () => {
+  assert.match(client, /const \[basicReplacementVatMode, setBasicReplacementVatMode\] = useState<VatDisplayMode>\('excl'\);/);
+  assert.match(client, /const basicBaseReplacementPriceExVat = basicReplacementEnteredPrice === null[\s\S]*?basicReplacementVatMode === 'incl'[\s\S]*?basicReplacementEnteredPrice \/ \(1 \+ VAT_RATE\)/);
+
+  const replacementStart = client.indexOf('function renderBasicReplacementStep()');
+  const replacementEnd = client.indexOf('function renderMotorSubtypeSelection', replacementStart);
+  const replacementBlock = client.slice(replacementStart, replacementEnd);
+  assert.ok(replacementStart >= 0 && replacementEnd > replacementStart);
+  assert.match(replacementBlock, /role="group" aria-label="Replacement price VAT basis"/);
+  assert.match(replacementBlock, />\s*Excluding VAT\s*<\/button>/);
+  assert.match(replacementBlock, />\s*Including VAT\s*<\/button>/);
+  assert.match(replacementBlock, /setBasicReplacementVatModePreservingPrice\('excl'\)/);
+  assert.match(replacementBlock, /setBasicReplacementVatModePreservingPrice\('incl'\)/);
+  assert.match(replacementBlock, /currentDisplayPrice \* \(1 \+ VAT_RATE\)/);
+  assert.match(replacementBlock, /currentDisplayPrice \/ \(1 \+ VAT_RATE\)/);
+  assert.match(replacementBlock, /replacementVatLabel/);
+  assert.doesNotMatch(replacementBlock, /Asset replacement/);
+  assert.doesNotMatch(replacementBlock, /Configured asset replacement/);
+  assert.doesNotMatch(replacementBlock, /replacementBreakdown/);
+
+  assert.match(valuationStyles, /\.replacementVatToggle/);
+  assert.match(valuationStyles, /\.replacementVatToggle button\.replacementVatToggleActive/);
+  assert.match(valuationStyles, /\.replacementSliderReadout strong[^\{]*\{[\s\S]*?font-size: clamp\(1\.6rem, 2\.2vw, 2\.2rem\);[\s\S]*?white-space: nowrap;/);
+});
+
 test('the final result renderer and save destinations remain shared with the existing valuation flow', () => {
   assert.match(client, /if \(basicEstimateActive\) \{[\s\S]*?if \(step === 5\) return renderBasicReplacementStep\(\);[\s\S]*?return renderResultStep\(\);/);
   assert.match(client, /Save to Asset Register/);
