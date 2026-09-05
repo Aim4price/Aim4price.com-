@@ -14208,3 +14208,83 @@
     min-height: 66px;
   }
 }
+
+
+/* === Condition modal size and spacing parity === */
+.conditionBasicModal,
+.conditionProgressiveModal {
+  width: min(900px, calc(100vw - 2rem));
+}
+
+.conditionProgressiveModal .detailsModalHeader {
+  margin-bottom: 0;
+}
+
+.conditionProgressiveModal .conditionModalBody {
+  margin-top: 0.8rem;
+}
+
+.conditionProgressiveModal .conditionQuestionFlow {
+  gap: 0.72rem;
+}
+
+.conditionProgressiveModal .conditionQuestionProgress {
+  gap: 0.48rem;
+  padding: 0.68rem 0.9rem;
+  border-radius: 14px;
+}
+
+.conditionProgressiveModal .conditionQuestionProgressTop {
+  flex-wrap: nowrap;
+  gap: 0.8rem;
+}
+
+.conditionProgressiveModal .conditionQuestionProgressTop span {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.conditionProgressiveModal .conditionQuestionProgressTop strong {
+  min-width: 0;
+  font-size: 0.9rem;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.conditionProgressiveModal .conditionQuestionProgressTrack {
+  height: 5px;
+}
+
+.conditionProgressiveModal .conditionQuestionCard {
+  padding: 0.72rem 0.85rem;
+  border-radius: 14px;
+}
+
+.conditionProgressiveModal .conditionQuestionCard .dealerAssessmentOptions {
+  gap: 0.65rem;
+}
+
+.conditionProgressiveModal .conditionQuestionCard .dealerAssessmentOption {
+  min-height: 64px;
+  padding: 0.7rem 0.48rem;
+  border-radius: 14px;
+  font-size: 0.9rem;
+  line-height: 1.15;
+  white-space: nowrap;
+}
+
+.conditionProgressiveModal .conditionDetailActions {
+  margin-top: 0.78rem;
+}
+
+@media (max-width: 760px) {
+  .conditionBasicModal,
+  .conditionProgressiveModal {
+    width: 100%;
+  }
+
+  .conditionProgressiveModal .conditionQuestionProgressTop strong,
+  .conditionProgressiveModal .conditionQuestionCard .dealerAssessmentOption {
+    white-space: normal;
+  }
+}
