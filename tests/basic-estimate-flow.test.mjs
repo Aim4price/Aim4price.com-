@@ -236,7 +236,7 @@ test('replacement styling reuses the year slider visual language and does not in
   assert.match(valuationStyles, /\.sectorWizardShell[^\{]*\{[\s\S]*?width: min\(100%, 1088px\);/);
   assert.match(valuationStyles, /\.estimateModeSectorLabel \.selectedSummaryPill,\s*\.equipmentStageTopSolo \.selectedSummaryPill \{[\s\S]*?font-size: 0\.82rem;[\s\S]*?font-weight: 850;[\s\S]*?letter-spacing: 0\.11em;[\s\S]*?line-height: 1\.15;/);
   assert.match(valuationStyles, /@media \(max-width: 900px\) \{[\s\S]*?\.equipmentStageTopSolo \{[\s\S]*?justify-content: flex-end;/);
-  assert.match(valuationStyles, /\.estimateModeAdvancedCard \.sectorCardTopRow[^\{]*\{[\s\S]*?position: absolute;[\s\S]*?top: 0\.85rem;[\s\S]*?right: 0\.9rem;[\s\S]*?justify-content: flex-end;/);
+  assert.match(valuationStyles, /\.estimateModeAdvancedCard \.sectorCardTopRow[^\{]*\{[\s\S]*?position: absolute;[\s\S]*?top: 0\.55rem;[\s\S]*?right: 0\.55rem;[\s\S]*?justify-content: flex-end;/);
   assert.match(valuationStyles, /\.estimateModeAdvancedHint[^\{]*\{[\s\S]*?opacity: 0\.92;/);
   assert.doesNotMatch(valuationStyles, /\.estimateModeAdvancedSpacer/);
   assert.match(valuationStyles, /\.exclusiveBadge[^\{]*\{[\s\S]*?border: 1px solid rgba\(239, 193, 84, 0\.92\);[\s\S]*?white-space: nowrap;[\s\S]*?text-transform: uppercase;/);
