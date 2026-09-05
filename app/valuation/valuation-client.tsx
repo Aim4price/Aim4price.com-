@@ -5785,7 +5785,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                 </span>
                 <span className={styles.sectorLabelWrap}>
                   <strong className={styles.sectorLabel}>Advanced</strong>
-                  <span className={`${styles.sectorCardHint} ${styles.estimateModeAdvancedSpacer}`} aria-hidden="true">Start estimate →</span>
+                  <span className={`${styles.sectorCardHint} ${styles.estimateModeAdvancedHint}`} aria-hidden="true">Start estimate →</span>
                 </span>
               </span>
             </button>
