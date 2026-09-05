@@ -99,6 +99,10 @@ test('Basic Estimate exposes the requested six-step family-first flow and bypass
   assert.match(client, /styles\.estimateModeSectorLabel/);
   assert.match(client, /styles\.exclusiveBadge/);
   assert.doesNotMatch(client, /styles\.estimateModeBasicCard/);
+  assert.match(client, /function renderBasicBrandModelStep\(\)[\s\S]*?styles\.basicFamilyContextStage[\s\S]*?styles\.equipmentStageTopSolo[\s\S]*?selectedFamily\.familyLabel/);
+  assert.match(client, /function renderBasicLevelStep\(\)[\s\S]*?styles\.basicFamilyContextStage[\s\S]*?styles\.equipmentStageTopSolo[\s\S]*?selectedFamily\.familyLabel/);
+  assert.match(client, /function renderDetailsStep\(\)[\s\S]*?basicEstimateActive && selectedFamily[\s\S]*?styles\.equipmentStageTopSolo[\s\S]*?selectedFamily\.familyLabel/);
+  assert.match(client, /function renderBasicReplacementStep\(\)[\s\S]*?styles\.basicFamilyContextStage[\s\S]*?styles\.equipmentStageTopSolo[\s\S]*?selectedFamily\.familyLabel/);
   assert.match(client, /<section className=\{`\$\{styles\.wizardShell\} \$\{styles\.sectorWizardShell\}`\}>/);
   assert.match(client, /id="valuation-wizard-card" className=\{`\$\{styles\.wizardCard\} \$\{styles\.sectorWizardCard\}`\}/);
   assert.doesNotMatch(client, /isSectorIntroStep \? styles\.sectorWizardShell/);
@@ -107,11 +111,14 @@ test('Basic Estimate exposes the requested six-step family-first flow and bypass
   assert.doesNotMatch(client, /Deeper model, specification and Aim4price market intelligence\./);
 });
 
-test('typed Brand and optional Model are stored as identity inputs without creating catalogue requirements', () => {
+test('typed Brand and optional Model stay simple and user-facing', () => {
   assert.match(client, /<span className=\{styles\.fieldLabel\}>Brand<\/span>[\s\S]*?placeholder="e\.g\. John Deere"/);
-  assert.match(client, /<span className=\{styles\.fieldLabel\}>Model<\/span>[\s\S]*?placeholder="e\.g\. 6155M"[\s\S]*?Optional\. Brand and model are stored/);
-  assert.match(client, /I don&apos;t know the model/);
+  assert.match(client, /<span className=\{styles\.fieldLabel\}>Model<\/span>[\s\S]*?placeholder="e\.g\. 6155M"/);
+  assert.match(client, /Add as much brand and model detail as you can\. Aim4price will use it to build the strongest estimate possible\./);
+  assert.doesNotMatch(client, /I don&apos;t know the model/);
+  assert.doesNotMatch(client, /Brand and model are stored with the estimate and Asset Register without creating catalogue records/);
   assert.match(client, /setBrandSlug\(UNKNOWN_BRAND_SLUG\)/);
+  assert.match(client, /setGenericModelMode\(normalizeText\(typedModelName\) \? 'manual' : 'unknown'\)/);
   assert.match(client, /\[TYPED_BRAND_NAME_SPEC_KEY\]: typedUnlistedBrandName/);
   assert.match(client, /basic_estimate: true/);
 });
@@ -153,6 +160,7 @@ test('replacement styling reuses the year slider visual language and does not in
   assert.ok(basicCss, 'Basic Estimate styling block should be present');
   assert.doesNotMatch(basicCss, /font-family\s*:/, 'Basic Estimate must inherit Aim4price typography');
   assert.match(valuationStyles, /\.estimateModeSectorLabel[^\{]*\{[\s\S]*?position: absolute;[\s\S]*?right: 0;[\s\S]*?justify-content: flex-end;/);
+  assert.match(valuationStyles, /\.basicFamilyContextStage[^\{]*\{[\s\S]*?position: relative;/);
   assert.match(valuationStyles, /\.sectorWizardShell[^\{]*\{[\s\S]*?width: min\(100%, 1088px\);/);
   assert.match(valuationStyles, /\.estimateModeSectorLabel \.selectedSummaryPill,\s*\.equipmentStageTopSolo \.selectedSummaryPill \{[\s\S]*?font-size: 0\.82rem;[\s\S]*?font-weight: 850;[\s\S]*?letter-spacing: 0\.11em;[\s\S]*?line-height: 1\.15;/);
   assert.match(valuationStyles, /@media \(max-width: 900px\) \{[\s\S]*?\.equipmentStageTopSolo \{[\s\S]*?justify-content: flex-end;/);
