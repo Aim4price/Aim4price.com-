@@ -13251,6 +13251,11 @@
   position: relative;
 }
 
+.basicIdentityIntro {
+  max-width: none;
+  white-space: nowrap;
+}
+
 .basicIdentityCard {
   display: grid;
   gap: 1rem;
@@ -13374,6 +13379,10 @@
 }
 
 @media (max-width: 1020px) {
+  .basicIdentityIntro {
+    white-space: normal;
+  }
+
   .stepper {
     gap: 0.45rem;
   }

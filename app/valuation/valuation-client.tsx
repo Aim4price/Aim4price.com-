@@ -5871,7 +5871,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
 
         <div>
           <h2 className={styles.stepTitle}>Brand &amp; Model</h2>
-          <p className={styles.stepText}>Add as much brand and model detail as you can. Aim4price will use it to build the strongest estimate possible.</p>
+          <p className={`${styles.stepText} ${styles.basicIdentityIntro}`}>Add as much brand and model detail as you can. Aim4price will use it to build the strongest estimate possible.</p>
         </div>
 
         <div className={`${styles.currentCard} ${styles.basicIdentityCard}`}>
@@ -5917,11 +5917,6 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
         <div className={`${styles.equipmentStageTop} ${styles.equipmentStageTopSolo}`}>
           {selectedFamily ? <span className={styles.selectedSummaryPill}>{selectedFamily.familyLabel}</span> : null}
         </div>
-        <div className={styles.selectedSummary}>
-          {normalizeText(unlistedBrandName) ? <span className={styles.selectedSummaryPill}>{normalizeText(unlistedBrandName)}</span> : null}
-          {normalizeText(typedModelName) ? <span className={styles.selectedSummaryPill}>{normalizeText(typedModelName)}</span> : null}
-        </div>
-
         <div>
           <h2 className={styles.stepTitle}>Specification level</h2>
           <p className={styles.stepText}>Where does this asset roughly sit in the new-asset market?</p>
