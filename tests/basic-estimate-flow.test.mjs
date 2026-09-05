@@ -158,6 +158,28 @@ test('Basic Specs uses modal cards for condition, popularity and extras', () => 
   assert.match(valuationStyles, /\.specChoiceModal[^\{]*\{[\s\S]*?scrollbar-width: thin/);
   assert.match(valuationStyles, /\.popularityModalStars[^\{]*\{[\s\S]*?grid-template-columns: repeat\(5, minmax\(0, 1fr\)\)/);
 });
+test('Condition modal keeps the route choice minimal and shows Advanced questions one at a time', () => {
+  const conditionStart = client.indexOf('function renderBasicConditionModal()');
+  const popularityStart = client.indexOf('function renderBasicPopularityModal()', conditionStart);
+  const conditionBlock = client.slice(conditionStart, popularityStart);
+  const chooserStart = conditionBlock.indexOf("conditionModalView === 'choose'");
+  const detailStart = conditionBlock.indexOf('const advancedCondition', chooserStart);
+  const chooserBlock = conditionBlock.slice(chooserStart, detailStart);
+
+  assert.ok(conditionStart >= 0 && popularityStart > conditionStart);
+  assert.doesNotMatch(chooserBlock, /Choose one overall condition for the asset\./);
+  assert.doesNotMatch(chooserBlock, /Assess the important condition areas separately\./);
+  assert.doesNotMatch(chooserBlock, /Choose the amount of detail you know\. Both routes feed the same Aim4price estimate\./);
+  assert.doesNotMatch(conditionBlock, /conditionModalBackButton/);
+  assert.match(conditionBlock, /const advancedQuestionIndex = currentDetailedSectionIndex >= 0 \? currentDetailedSectionIndex : 0/);
+  assert.match(conditionBlock, /Question \{advancedQuestionIndex \+ 1\} of \{advancedQuestionTotal\}/);
+  assert.match(conditionBlock, /showNextAdvancedQuestion\(0\)/);
+  assert.match(conditionBlock, /showNextAdvancedQuestion\(3\)/);
+  assert.match(valuationStyles, /\.conditionBasicModal \.basicConditionOptionGrid[^\{]*\{[\s\S]*?grid-template-columns: repeat\(5, minmax\(0, 1fr\)\)/);
+  assert.match(valuationStyles, /\.conditionProgressiveModal[^\{]*\{[\s\S]*?overflow: hidden/);
+  assert.match(valuationStyles, /\.conditionQuestionProgressTrack/);
+});
+
 test('Basic usage follows family valuationMode, including no-usage and percentage-worked families', () => {
   assert.match(client, /const basicUsageNotRequired = basicEstimateActive && selectedFamily\?\.valuationMode === 'year_condition'/);
   assert.match(client, /const basicUsesPercentageWorked = basicEstimateActive && selectedFamily\?\.valuationMode === 'percent_used'/);
