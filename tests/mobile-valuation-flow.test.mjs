@@ -44,9 +44,9 @@ test('app selections open as searchable lists and remain available when navigati
 test('Basic Estimate bypasses the legacy Path decision in both Owner and Dealer apps', () => {
   assert.match(client, /const basicEstimateActive = estimateExperience === 'basic'/);
   assert.match(client, /if \(basicEstimateActive\) \{[\s\S]*?if \(step === 2\) return renderBasicBrandModelStep\(\);[\s\S]*?if \(step === 3\) return renderBasicLevelStep\(\);/);
-  assert.match(client, /Basic Estimate/);
-  assert.match(client, /Advanced Estimate/);
-  assert.match(client, /Coming soon/);
+  assert.match(client, /<strong className=\{styles\.sectorLabel\}>Basic<\/strong>/);
+  assert.match(client, /<strong className=\{styles\.sectorLabel\}>Advanced<\/strong>/);
+  assert.match(client, /Aim4price Exclusive/);
   assert.match(client, /compactAppMode && selectedSector && estimateExperience/);
   assert.match(valuationStyles, /\.estimateModeGrid[^\{]*\{[\s\S]*?grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
 });

@@ -13446,3 +13446,170 @@
     font-size: clamp(2rem, 10vw, 3rem);
   }
 }
+
+
+/* === Estimate type: Aim4price Exclusive design === */
+.estimateModeSectorLabel {
+  width: 100%;
+  justify-content: flex-end;
+  margin: 0 0 0.15rem;
+}
+
+.estimateModeSectorLabel .selectedSummaryPill {
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: #2f6252;
+  font-size: 0.82rem;
+  font-weight: 850;
+  letter-spacing: 0.11em;
+  line-height: 1.15;
+  text-transform: uppercase;
+}
+
+.estimateModeGrid {
+  gap: 1.05rem;
+}
+
+.estimateModeCard {
+  min-height: 18rem;
+  border-radius: 1.6rem;
+}
+
+.estimateModeCard .sectorBigCardContent {
+  justify-content: center;
+  align-items: flex-start;
+  gap: 0.95rem;
+  padding: 2.05rem 2.2rem;
+}
+
+.estimateModeCard .sectorLabelWrap {
+  max-width: none;
+  gap: 2.65rem;
+}
+
+.estimateModeCard .sectorLabel {
+  max-width: none;
+  font-size: clamp(2.35rem, 3.7vw, 3.25rem);
+  line-height: 0.96;
+  letter-spacing: -0.06em;
+  text-shadow: 0 10px 28px rgba(4, 18, 13, 0.24);
+}
+
+.estimateModeBasicCard {
+  border-color: rgba(88, 158, 132, 0.34);
+  background:
+    radial-gradient(circle at 12% 0%, rgba(255, 255, 255, 0.09), transparent 34%),
+    linear-gradient(135deg, #174d3c 0%, #082f26 100%);
+  box-shadow:
+    0 28px 52px rgba(12, 45, 34, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+.estimateModeBasicCard:hover,
+.estimateModeBasicCard:focus-visible {
+  background:
+    radial-gradient(circle at 12% 0%, rgba(255, 255, 255, 0.12), transparent 35%),
+    linear-gradient(135deg, #195442 0%, #083329 100%);
+}
+
+.estimateModeBasicCard .sectorCardHint {
+  color: rgba(244, 250, 247, 0.9);
+  font-size: 1rem;
+  font-weight: 750;
+  letter-spacing: -0.01em;
+}
+
+.estimateModeAdvancedCard,
+.estimateModeAdvancedCard:hover,
+.estimateModeAdvancedCard:focus-visible {
+  border-color: rgba(188, 211, 202, 0.2);
+  background:
+    radial-gradient(circle at 12% 0%, rgba(255, 255, 255, 0.1), transparent 34%),
+    linear-gradient(135deg, #4d7669 0%, #2f5b4f 100%);
+  box-shadow:
+    0 28px 52px rgba(18, 55, 44, 0.13),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+.estimateModeAdvancedCard .sectorBigCardContent {
+  opacity: 1;
+  filter: none;
+}
+
+.estimateModeAdvancedCard .sectorCardTopRow {
+  width: 100%;
+  justify-content: flex-start;
+  margin-bottom: 0.05rem;
+}
+
+.estimateModeAdvancedCard .sectorLabelWrap {
+  gap: 0;
+}
+
+.estimateModeCardLocked,
+.estimateModeCardLocked:hover,
+.estimateModeCardLocked:focus-visible {
+  opacity: 1;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.exclusiveBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  min-height: 2.45rem;
+  padding: 0 1.05rem;
+  border: 1px solid rgba(239, 193, 84, 0.9);
+  border-radius: 999px;
+  background: rgba(22, 55, 44, 0.42);
+  color: #f4cd6c;
+  box-shadow:
+    0 10px 24px rgba(17, 40, 33, 0.14),
+    inset 0 1px 0 rgba(255, 242, 199, 0.08);
+  font-size: 0.78rem;
+  font-weight: 850;
+  letter-spacing: 0.11em;
+  line-height: 1;
+  text-transform: uppercase;
+  backdrop-filter: blur(10px);
+}
+
+.exclusiveBadgeIcon {
+  width: 1.05rem;
+  height: 1.05rem;
+  flex: 0 0 auto;
+}
+
+@media (max-width: 760px) {
+  .estimateModeCard {
+    min-height: 13rem;
+  }
+
+  .estimateModeCard .sectorBigCardContent {
+    padding: 1.45rem 1.4rem;
+  }
+
+  .estimateModeCard .sectorLabel {
+    font-size: clamp(2.05rem, 10vw, 2.65rem);
+  }
+
+  .estimateModeCard .sectorLabelWrap {
+    gap: 1.85rem;
+  }
+
+  .estimateModeAdvancedCard .sectorLabelWrap {
+    gap: 0;
+  }
+
+  .exclusiveBadge {
+    min-height: 2.2rem;
+    padding-inline: 0.85rem;
+    font-size: 0.7rem;
+  }
+}
