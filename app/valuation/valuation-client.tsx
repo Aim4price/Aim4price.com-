@@ -8474,8 +8474,8 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
         </div>
       ) : null}
       <div className={styles.container}>
-        <section className={`${styles.wizardShell} ${isSectorIntroStep ? styles.sectorWizardShell : ''}`}>
-          <div id="valuation-wizard-card" className={`${styles.wizardCard} ${isSectorIntroStep ? styles.sectorWizardCard : ''}`}>
+        <section className={`${styles.wizardShell} ${styles.sectorWizardShell}`}>
+          <div id="valuation-wizard-card" className={`${styles.wizardCard} ${styles.sectorWizardCard}`}>
             {step > 1 || (compactAppMode && selectedSector && estimateExperience) ? (
               <div className={styles.wizardHeader}>
                 {compactAppMode ? (

@@ -13428,7 +13428,8 @@
   margin: 0;
 }
 
-.estimateModeSectorLabel .selectedSummaryPill {
+.estimateModeSectorLabel .selectedSummaryPill,
+.equipmentStageTopSolo .selectedSummaryPill {
   min-height: 0;
   padding: 0;
   border: 0;
@@ -13491,6 +13492,17 @@
   width: 0.95rem;
   height: 0.95rem;
   flex: 0 0 auto;
+}
+
+@media (max-width: 900px) {
+  .equipmentStageTopSolo {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .equipmentStageTopSolo .selectedSummaryPill {
+    margin-left: auto;
+  }
 }
 
 @media (max-width: 760px) {

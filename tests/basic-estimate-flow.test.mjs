@@ -99,6 +99,10 @@ test('Basic Estimate exposes the requested six-step family-first flow and bypass
   assert.match(client, /styles\.estimateModeSectorLabel/);
   assert.match(client, /styles\.exclusiveBadge/);
   assert.doesNotMatch(client, /styles\.estimateModeBasicCard/);
+  assert.match(client, /<section className=\{`\$\{styles\.wizardShell\} \$\{styles\.sectorWizardShell\}`\}>/);
+  assert.match(client, /id="valuation-wizard-card" className=\{`\$\{styles\.wizardCard\} \$\{styles\.sectorWizardCard\}`\}/);
+  assert.doesNotMatch(client, /isSectorIntroStep \? styles\.sectorWizardShell/);
+  assert.doesNotMatch(client, /isSectorIntroStep \? styles\.sectorWizardCard/);
   assert.doesNotMatch(client, /Quick mathematical estimate using the asset family, its condition, usage and replacement price\./);
   assert.doesNotMatch(client, /Deeper model, specification and Aim4price market intelligence\./);
 });
@@ -149,6 +153,9 @@ test('replacement styling reuses the year slider visual language and does not in
   assert.ok(basicCss, 'Basic Estimate styling block should be present');
   assert.doesNotMatch(basicCss, /font-family\s*:/, 'Basic Estimate must inherit Aim4price typography');
   assert.match(valuationStyles, /\.estimateModeSectorLabel[^\{]*\{[\s\S]*?position: absolute;[\s\S]*?right: 0;[\s\S]*?justify-content: flex-end;/);
+  assert.match(valuationStyles, /\.sectorWizardShell[^\{]*\{[\s\S]*?width: min\(100%, 1088px\);/);
+  assert.match(valuationStyles, /\.estimateModeSectorLabel \.selectedSummaryPill,\s*\.equipmentStageTopSolo \.selectedSummaryPill \{[\s\S]*?font-size: 0\.82rem;[\s\S]*?font-weight: 850;[\s\S]*?letter-spacing: 0\.11em;[\s\S]*?line-height: 1\.15;/);
+  assert.match(valuationStyles, /@media \(max-width: 900px\) \{[\s\S]*?\.equipmentStageTopSolo \{[\s\S]*?justify-content: flex-end;/);
   assert.match(valuationStyles, /\.estimateModeAdvancedCard \.sectorCardTopRow[^\{]*\{[\s\S]*?position: absolute;[\s\S]*?right: clamp\(1rem, 1\.35vw, 1\.2rem\);/);
   assert.match(valuationStyles, /\.estimateModeAdvancedSpacer[^\{]*\{[\s\S]*?visibility: hidden;/);
   assert.match(valuationStyles, /\.exclusiveBadge[^\{]*\{[\s\S]*?border: 1px solid rgba\(239, 193, 84, 0\.9\);[\s\S]*?text-transform: uppercase;/);
