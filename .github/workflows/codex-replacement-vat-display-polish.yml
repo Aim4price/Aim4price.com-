@@ -26,6 +26,20 @@ jobs:
       - name: Apply replacement VAT polish
         run: python .github/codex-replacement-vat-polish.py
 
+      - name: Preserve Basic Estimate replacement-guide guard
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('app/valuation/valuation-client.tsx')
+          source = path.read_text()
+          old = "    if (!basicEstimateActive || step !== 5 || String(basicReplacementPrice).trim()) return;\n"
+          new = "    if (!basicEstimateActive || step !== 5 || !basicReplacementGuide || String(basicReplacementPrice).trim()) return;\n"
+          if source.count(old) != 1:
+              raise SystemExit('Expected exactly one generated Basic Estimate replacement defaulting guard')
+          path.write_text(source.replace(old, new, 1))
+          PY
+
       - name: Validate diff
         run: git diff --check
 
