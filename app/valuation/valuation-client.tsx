@@ -87,7 +87,7 @@ type VatDisplayMode = 'excl' | 'incl';
 type DepreciationMethodUsed = 'full_depreciation' | 'semi_depreciation' | 'percentage_depreciation';
 type DetailsModal = 'year' | 'usage' | 'condition' | 'popularity' | 'extras' | null;
 type UsageModalMode = 'hours' | 'percent';
-type ConditionModalMode = 'basic' | 'advanced';
+type ConditionModalView = 'choose' | 'basic' | 'advanced';
 
 type AdvancedAssumptionsRequest = {
   maxLifetimeUsage?: number | null;
@@ -1847,7 +1847,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
   const [conditionStepComplete, setConditionStepComplete] = useState(false);
   const [activeDetailsModal, setActiveDetailsModal] = useState<DetailsModal>(null);
   const [usageModalMode, setUsageModalMode] = useState<UsageModalMode>('hours');
-  const [conditionModalMode, setConditionModalMode] = useState<ConditionModalMode>('basic');
+  const [conditionModalView, setConditionModalView] = useState<ConditionModalView>('choose');
   const [resultState, setResultState] = useState<ValuationResultState | null>(null);
   const [selectedMethod, setSelectedMethod] = useState<MethodKey>('aim4price');
   const [message, setMessage] = useState('');
@@ -7322,43 +7322,42 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
           : 'Choose fitted extras';
 
     function openBasicConditionModal() {
-      setConditionModalMode(detailedAssessmentOpen ? 'advanced' : 'basic');
+      setConditionModalView('choose');
       setDetailedAssessmentError('');
       setMessage('');
       setActiveDetailsModal('condition');
     }
 
-    function selectConditionModalMode(nextMode: ConditionModalMode) {
+    function chooseConditionRoute(nextView: Exclude<ConditionModalView, 'choose'>) {
+      setConditionModalView(nextView);
       setMessage('');
       setDetailedAssessmentError('');
 
-      if (nextMode === 'basic') {
-        if (conditionModalMode !== 'basic' || detailedAssessmentOpen) {
-          clearDetailedAssessment();
-          setConditionStepComplete(false);
-        }
-        setConditionModalMode('basic');
-        resetResult();
-        return;
+      if (nextView === 'advanced') {
+        setActiveDetailedAssessmentSection(firstIncompleteDetailedSection || basicConditionTemplate.mechanical);
       }
+    }
 
-      if (conditionModalMode !== 'advanced') setPopularityStars(0);
-      setConditionModalMode('advanced');
-      setDetailedAssessmentOpen(true);
-      setConditionStepComplete(true);
-      setActiveDetailedAssessmentSection(firstIncompleteDetailedSection || basicConditionTemplate.mechanical);
-      resetResult();
+    function returnToConditionChooser() {
+      setConditionModalView('choose');
+      setMessage('');
+      setDetailedAssessmentError('');
     }
 
     function saveConditionModal() {
-      if (conditionModalMode === 'advanced') {
+      if (conditionModalView === 'advanced') {
         if (!detailedAssessmentComplete) {
           setDetailedAssessmentError('Complete all five advanced condition questions.');
           return;
         }
+        setDetailedAssessmentOpen(true);
         setConditionStepComplete(true);
-      } else if (!conditionStepComplete || detailedAssessmentOpen) {
-        setMessage('Choose the closest overall condition.');
+      } else if (conditionModalView === 'basic') {
+        if (!conditionStepComplete || detailedAssessmentOpen) {
+          setMessage('Choose the closest overall condition.');
+          return;
+        }
+      } else {
         return;
       }
 
@@ -7369,108 +7368,135 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     }
 
     function renderBasicConditionModal() {
+      if (conditionModalView === 'choose') {
+        return (
+          <div className={styles.detailsModalOverlay} role="dialog" aria-modal="true" aria-label="Choose condition type">
+            <button type="button" className={styles.detailsModalBackdrop} aria-label="Close" onClick={() => setActiveDetailsModal(null)} />
+            <div className={`${styles.detailsModal} ${styles.specChoiceModal} ${styles.conditionRouteModal}`}>
+              <div className={`${styles.detailsModalHeader} ${compactAppMode ? dealerStyles.dealerCompactModalHeader : ''}`}>
+                <div>
+                  {!compactAppMode ? (
+                    <>
+                      <h3 className={styles.detailsModalTitle}>Condition</h3>
+                      <p className={styles.detailsModalText}>Choose how you want to assess the condition.</p>
+                    </>
+                  ) : null}
+                </div>
+                <button type="button" className={styles.saveModalClose} onClick={() => setActiveDetailsModal(null)} aria-label="Close">×</button>
+              </div>
+
+              <div className={styles.conditionRouteGrid}>
+                <button type="button" className={styles.conditionRouteCard} onClick={() => chooseConditionRoute('basic')}>
+                  <span className={styles.conditionRouteNumber}>1</span>
+                  <span className={styles.conditionRouteCopy}>
+                    <strong>Basic</strong>
+                    <small>Choose one overall condition for the asset.</small>
+                  </span>
+                  <span className={styles.conditionRouteArrow} aria-hidden="true">→</span>
+                </button>
+
+                <button type="button" className={styles.conditionRouteCard} onClick={() => chooseConditionRoute('advanced')}>
+                  <span className={styles.conditionRouteNumber}>2</span>
+                  <span className={styles.conditionRouteCopy}>
+                    <strong>Advanced</strong>
+                    <small>Assess the important condition areas separately.</small>
+                  </span>
+                  <span className={styles.conditionRouteArrow} aria-hidden="true">→</span>
+                </button>
+              </div>
+
+              <p className={styles.conditionRouteNote}>Choose the amount of detail you know. Both routes feed the same Aim4price estimate.</p>
+
+              <div className={`${styles.detailsModalActions} ${styles.conditionRouteActions}`}>
+                <button type="button" className={styles.secondaryButton} onClick={() => setActiveDetailsModal(null)}>Cancel</button>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      const advancedCondition = conditionModalView === 'advanced';
       return (
-        <div className={styles.detailsModalOverlay} role="dialog" aria-modal="true" aria-label="Choose condition">
+        <div className={styles.detailsModalOverlay} role="dialog" aria-modal="true" aria-label={advancedCondition ? 'Advanced condition' : 'Basic condition'}>
           <button type="button" className={styles.detailsModalBackdrop} aria-label="Close" onClick={() => setActiveDetailsModal(null)} />
-          <div className={`${styles.detailsModal} ${styles.specChoiceModal}`}>
+          <div className={`${styles.detailsModal} ${styles.specChoiceModal} ${styles.conditionOptionsModal}`}>
             <div className={`${styles.detailsModalHeader} ${compactAppMode ? dealerStyles.dealerCompactModalHeader : ''}`}>
-              <div>
+              <div className={styles.conditionModalHeaderCopy}>
                 {!compactAppMode ? (
                   <>
-                    <h3 className={styles.detailsModalTitle}>Condition</h3>
-                    <p className={styles.detailsModalText}>Choose a basic overall condition or use the advanced condition assessment.</p>
+                    <button type="button" className={styles.conditionModalBackButton} onClick={returnToConditionChooser}>← Condition type</button>
+                    <h3 className={styles.detailsModalTitle}>{advancedCondition ? 'Advanced condition' : 'Basic condition'}</h3>
+                    <p className={styles.detailsModalText}>
+                      {advancedCondition
+                        ? 'Assess each important condition area for a more detailed adjustment.'
+                        : 'Choose the closest overall condition for this asset.'}
+                    </p>
                   </>
                 ) : null}
               </div>
               <button type="button" className={styles.saveModalClose} onClick={() => setActiveDetailsModal(null)} aria-label="Close">×</button>
             </div>
 
-            <div className={`${styles.choiceGrid} ${styles.conditionModeGrid}`}>
-              <button
-                type="button"
-                className={`${styles.choiceCard} ${styles.conditionModeCard} ${conditionModalMode === 'basic' ? styles.choiceCardActive : ''}`}
-                aria-pressed={conditionModalMode === 'basic'}
-                onClick={() => selectConditionModalMode('basic')}
-              >
-                <span className={styles.specStepNumber}>1</span>
-                <span className={styles.conditionModeCopy}>
-                  <strong>Basic condition</strong>
-                  <small>Choose the closest overall condition.</small>
-                </span>
-              </button>
-              <button
-                type="button"
-                className={`${styles.choiceCard} ${styles.conditionModeCard} ${conditionModalMode === 'advanced' ? styles.choiceCardActive : ''}`}
-                aria-pressed={conditionModalMode === 'advanced'}
-                onClick={() => selectConditionModalMode('advanced')}
-              >
-                <span className={styles.specStepNumber}>2</span>
-                <span className={styles.conditionModeCopy}>
-                  <strong>Advanced condition</strong>
-                  <small>Assess the important condition areas separately.</small>
-                </span>
-              </button>
-            </div>
-
-            {conditionModalMode === 'basic' ? (
-              <div className={styles.conditionButtonGrid}>
-                {conditionOptions.map((option) => {
-                  const selected = conditionStepComplete && !detailedAssessmentOpen && condition === option.key;
-                  return (
-                    <button
-                      key={option.key}
-                      type="button"
-                      className={`${styles.conditionChoiceButton} ${selected ? styles.conditionChoiceButtonActive : ''}`}
-                      aria-pressed={selected}
-                      onClick={() => {
-                        setCondition(option.key);
-                        setConditionStepComplete(true);
-                        clearDetailedAssessment();
-                        setConditionModalMode('basic');
-                        setMessage('');
-                        resetResult();
-                      }}
-                    >
-                      {compactAppMode ? <span className={styles.conditionChoiceIndicator} aria-hidden="true">{selected ? '✓' : ''}</span> : null}
-                      <span className={styles.conditionChoiceLabel}>{option.label}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            ) : (
-              <div className={styles.detailedAssessmentPanel}>
-                <div className={styles.detailedAssessmentHeader}>
-                  <strong>Advanced condition</strong>
-                  <span>Choose the closest answer for each condition area.</span>
+            <div className={styles.conditionModalBody}>
+              {!advancedCondition ? (
+                <div className={styles.basicConditionOptionGrid}>
+                  {conditionOptions.map((option) => {
+                    const selected = conditionStepComplete && !detailedAssessmentOpen && condition === option.key;
+                    return (
+                      <button
+                        key={option.key}
+                        type="button"
+                        className={`${styles.conditionChoiceButton} ${selected ? styles.conditionChoiceButtonActive : ''}`}
+                        aria-pressed={selected}
+                        onClick={() => {
+                          clearDetailedAssessment(false);
+                          setCondition(option.key);
+                          setConditionStepComplete(true);
+                          setMessage('');
+                          resetResult();
+                        }}
+                      >
+                        {compactAppMode ? <span className={styles.conditionChoiceIndicator} aria-hidden="true">{selected ? '✓' : ''}</span> : null}
+                        <span className={styles.conditionChoiceLabel}>{option.label}</span>
+                      </button>
+                    );
+                  })}
                 </div>
-                {renderDealerAssessmentGroup(detailedAssessmentSections[0].label, dealerMechanicalCondition, DEALER_MECHANICAL_OPTIONS, (value) => {
-                  setDealerMechanicalCondition(value);
-                  resetResult();
-                }, currentDetailedSection === detailedAssessmentSections[0].label, detailedAssessmentSections[1].label)}
-                {renderDealerAssessmentGroup(detailedAssessmentSections[1].label, dealerBodyCondition, DEALER_BODY_OPTIONS, (value) => {
-                  setDealerBodyCondition(value);
-                  resetResult();
-                }, currentDetailedSection === detailedAssessmentSections[1].label, detailedAssessmentSections[2].label)}
-                {renderDealerAssessmentGroup(detailedAssessmentSections[2].label, dealerTyreCondition, DEALER_TYRE_OPTIONS, (value) => {
-                  setDealerTyreCondition(value);
-                  resetResult();
-                }, currentDetailedSection === detailedAssessmentSections[2].label, detailedAssessmentSections[3].label)}
-                {renderDealerAssessmentGroup(detailedAssessmentSections[3].label, dealerServiceHistory, DEALER_SERVICE_OPTIONS, (value) => {
-                  setDealerServiceHistory(value);
-                  resetResult();
-                }, currentDetailedSection === detailedAssessmentSections[3].label, detailedAssessmentSections[4].label)}
-                {renderDealerAssessmentGroup(detailedAssessmentSections[4].label, dealerRequiredWork, DEALER_WORK_OPTIONS, (value) => {
-                  setDealerRequiredWork(value);
-                  resetResult();
-                }, currentDetailedSection === detailedAssessmentSections[4].label, '')}
-              </div>
-            )}
+              ) : (
+                <div className={`${styles.detailedAssessmentPanel} ${styles.conditionAdvancedPanel}`}>
+                  <div className={styles.detailedAssessmentHeader}>
+                    <strong>Advanced condition assessment</strong>
+                    <span>Choose the closest answer for each condition area.</span>
+                  </div>
+                  {renderDealerAssessmentGroup(detailedAssessmentSections[0].label, dealerMechanicalCondition, DEALER_MECHANICAL_OPTIONS, (value) => {
+                    setDealerMechanicalCondition(value);
+                    resetResult();
+                  }, currentDetailedSection === detailedAssessmentSections[0].label, detailedAssessmentSections[1].label)}
+                  {renderDealerAssessmentGroup(detailedAssessmentSections[1].label, dealerBodyCondition, DEALER_BODY_OPTIONS, (value) => {
+                    setDealerBodyCondition(value);
+                    resetResult();
+                  }, currentDetailedSection === detailedAssessmentSections[1].label, detailedAssessmentSections[2].label)}
+                  {renderDealerAssessmentGroup(detailedAssessmentSections[2].label, dealerTyreCondition, DEALER_TYRE_OPTIONS, (value) => {
+                    setDealerTyreCondition(value);
+                    resetResult();
+                  }, currentDetailedSection === detailedAssessmentSections[2].label, detailedAssessmentSections[3].label)}
+                  {renderDealerAssessmentGroup(detailedAssessmentSections[3].label, dealerServiceHistory, DEALER_SERVICE_OPTIONS, (value) => {
+                    setDealerServiceHistory(value);
+                    resetResult();
+                  }, currentDetailedSection === detailedAssessmentSections[3].label, detailedAssessmentSections[4].label)}
+                  {renderDealerAssessmentGroup(detailedAssessmentSections[4].label, dealerRequiredWork, DEALER_WORK_OPTIONS, (value) => {
+                    setDealerRequiredWork(value);
+                    resetResult();
+                  }, currentDetailedSection === detailedAssessmentSections[4].label, '')}
+                </div>
+              )}
+            </div>
 
             {detailedAssessmentError ? <p className={styles.advancedError}>{detailedAssessmentError}</p> : null}
             {message ? <p className={styles.modalMessage}>{message}</p> : null}
 
-            <div className={styles.detailsModalActions}>
-              <button type="button" className={styles.secondaryButton} onClick={() => setActiveDetailsModal(null)}>Cancel</button>
+            <div className={`${styles.detailsModalActions} ${styles.specModalStickyActions}`}>
+              <button type="button" className={styles.secondaryButton} onClick={returnToConditionChooser}>Back</button>
               <button type="button" className={styles.primaryButton} onClick={saveConditionModal}>Continue</button>
             </div>
           </div>
@@ -7479,10 +7505,20 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     }
 
     function renderBasicPopularityModal() {
+      const popularityLabels = [
+        '',
+        'Difficult to sell',
+        'Below normal demand',
+        'Normal demand',
+        'Strong demand',
+        'Highly sought after',
+      ];
+      const popularityLabel = popularityStepComplete ? popularityLabels[popularityStars] : 'Choose a rating to continue';
+
       return (
         <div className={styles.detailsModalOverlay} role="dialog" aria-modal="true" aria-label="Choose popularity">
           <button type="button" className={styles.detailsModalBackdrop} aria-label="Close" onClick={() => setActiveDetailsModal(null)} />
-          <div className={`${styles.detailsModal} ${styles.specChoiceModal}`}>
+          <div className={`${styles.detailsModal} ${styles.specChoiceModal} ${styles.popularityModal}`}>
             <div className={`${styles.detailsModalHeader} ${compactAppMode ? dealerStyles.dealerCompactModalHeader : ''}`}>
               <div>
                 {!compactAppMode ? (
@@ -7495,37 +7531,54 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
               <button type="button" className={styles.saveModalClose} onClick={() => setActiveDetailsModal(null)} aria-label="Close">×</button>
             </div>
 
-            <div className={styles.popularityStars} role="group" aria-label="Popularity from 1 to 5 stars">
-              {[1, 2, 3, 4, 5].map((star) => (
-                <button
-                  key={star}
-                  type="button"
-                  className={star <= popularityStars ? styles.popularityStarActive : ''}
-                  onClick={() => {
-                    setPopularityStars(star);
-                    setMessage('');
-                    resetResult();
-                  }}
-                  aria-label={`${star} star${star === 1 ? '' : 's'}`}
-                  aria-pressed={popularityStars === star}
-                >
-                  ★
-                </button>
-              ))}
+            <div className={styles.popularityModalPanel}>
+              <div className={styles.popularityModalSummary}>
+                <span>Selected rating</span>
+                <strong>{popularityStepComplete ? popularityStars : '—'} <small>/ 5</small></strong>
+                <p>{popularityLabel}</p>
+              </div>
+
+              <div className={styles.popularityModalStars} role="group" aria-label="Popularity from 1 to 5 stars">
+                {[1, 2, 3, 4, 5].map((star) => {
+                  const active = star <= popularityStars;
+                  const selected = popularityStars === star;
+                  return (
+                    <button
+                      key={star}
+                      type="button"
+                      className={`${styles.popularityModalStarButton} ${active ? styles.popularityModalStarButtonActive : ''} ${selected ? styles.popularityModalStarButtonSelected : ''}`}
+                      onClick={() => {
+                        setPopularityStars(star);
+                        setMessage('');
+                        resetResult();
+                      }}
+                      aria-label={`${star} star${star === 1 ? '' : 's'}`}
+                      aria-pressed={selected}
+                    >
+                      <span className={styles.popularityModalStarGlyph} aria-hidden="true">★</span>
+                      <small>{star}</small>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className={styles.popularityScaleLabels} aria-hidden="true">
+                <span>Difficult to sell</span>
+                <span>Normal demand</span>
+                <span>Highly sought after</span>
+              </div>
             </div>
-            <small className={styles.advancedFieldHelp}>1 = difficult to sell, 3 = normal demand, 5 = highly sought after.</small>
+
             {message ? <p className={styles.modalMessage}>{message}</p> : null}
 
-            <div className={styles.detailsModalActions}>
+            <div className={`${styles.detailsModalActions} ${styles.popularityModalActions}`}>
               <button type="button" className={styles.secondaryButton} onClick={() => setActiveDetailsModal(null)}>Cancel</button>
               <button
                 type="button"
                 className={styles.primaryButton}
+                disabled={!popularityStepComplete}
                 onClick={() => {
-                  if (!popularityStepComplete) {
-                    setMessage('Choose a popularity rating from 1 to 5 stars.');
-                    return;
-                  }
+                  if (!popularityStepComplete) return;
                   setMessage('');
                   setActiveDetailsModal(null);
                   scrollToDetailsCard('valuation-extras-step');

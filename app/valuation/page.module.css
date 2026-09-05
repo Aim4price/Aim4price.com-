@@ -13588,3 +13588,391 @@
     grid-template-columns: 1fr;
   }
 }
+
+
+/* === Basic Specs modal styling polish === */
+.specChoiceModal {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(22, 91, 70, 0.42) transparent;
+}
+
+.specChoiceModal::-webkit-scrollbar,
+.conditionAdvancedPanel::-webkit-scrollbar {
+  width: 10px;
+}
+
+.specChoiceModal::-webkit-scrollbar-track,
+.conditionAdvancedPanel::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.specChoiceModal::-webkit-scrollbar-thumb,
+.conditionAdvancedPanel::-webkit-scrollbar-thumb {
+  border: 3px solid transparent;
+  border-radius: 999px;
+  background: rgba(22, 91, 70, 0.38);
+  background-clip: padding-box;
+}
+
+.specChoiceModal::-webkit-scrollbar-thumb:hover,
+.conditionAdvancedPanel::-webkit-scrollbar-thumb:hover {
+  background: rgba(22, 91, 70, 0.58);
+  background-clip: padding-box;
+}
+
+.conditionRouteModal {
+  width: min(760px, calc(100vw - 2rem));
+}
+
+.conditionRouteGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.9rem;
+  margin-top: 1.1rem;
+}
+
+.conditionRouteCard {
+  display: grid;
+  grid-template-columns: 3.15rem minmax(0, 1fr) 2rem;
+  align-items: center;
+  gap: 0.9rem;
+  min-height: 132px;
+  padding: 1.05rem;
+  border: 1px solid rgba(10, 77, 59, 0.14);
+  border-radius: 18px;
+  background: linear-gradient(180deg, #ffffff 0%, #f7faf8 100%);
+  color: #123f34;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  box-shadow: 0 10px 24px rgba(14, 54, 42, 0.05);
+  transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
+}
+
+.conditionRouteCard:hover,
+.conditionRouteCard:focus-visible {
+  transform: translateY(-2px);
+  border-color: rgba(10, 111, 82, 0.48);
+  background: linear-gradient(180deg, #ffffff 0%, #eff8f4 100%);
+  box-shadow: 0 16px 34px rgba(14, 54, 42, 0.1);
+  outline: none;
+}
+
+.conditionRouteNumber {
+  display: grid;
+  place-items: center;
+  width: 3.15rem;
+  height: 3.15rem;
+  border: 1px solid rgba(10, 77, 59, 0.12);
+  border-radius: 999px;
+  background: #f6faf8;
+  color: #0f6049;
+  font-size: 1rem;
+  font-weight: 850;
+}
+
+.conditionRouteCopy {
+  display: grid;
+  gap: 0.28rem;
+  min-width: 0;
+}
+
+.conditionRouteCopy strong {
+  color: #123f34;
+  font-size: 1.12rem;
+  font-weight: 850;
+  line-height: 1.15;
+}
+
+.conditionRouteCopy small {
+  color: #697b74;
+  font-size: 0.86rem;
+  line-height: 1.45;
+}
+
+.conditionRouteArrow {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 999px;
+  color: #0b7155;
+  font-size: 1.25rem;
+  font-weight: 800;
+}
+
+.conditionRouteNote {
+  margin: 0.85rem 0 0;
+  color: #718079;
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+.conditionRouteActions {
+  margin-top: 0.85rem;
+  padding-top: 0.2rem;
+}
+
+.conditionOptionsModal {
+  width: min(800px, calc(100vw - 2rem));
+  max-height: min(88vh, 820px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.conditionModalHeaderCopy {
+  display: grid;
+  gap: 0.18rem;
+}
+
+.conditionModalBackButton {
+  width: max-content;
+  margin: 0 0 0.35rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #17654f;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.conditionModalBackButton:hover {
+  color: #0b4536;
+}
+
+.conditionModalBody {
+  margin-top: 1rem;
+}
+
+.basicConditionOptionGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.7rem;
+}
+
+.basicConditionOptionGrid .conditionChoiceButton {
+  min-height: 72px;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #ffffff 0%, #f8faf9 100%);
+  font-size: 0.94rem;
+  box-shadow: 0 7px 18px rgba(14, 54, 42, 0.035);
+}
+
+.basicConditionOptionGrid .conditionChoiceButton:hover {
+  border-color: rgba(9, 111, 81, 0.46);
+  background: #f0f8f4;
+}
+
+.conditionAdvancedPanel {
+  max-height: min(55vh, 520px);
+  margin-top: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(22, 91, 70, 0.42) transparent;
+}
+
+.specModalStickyActions {
+  position: sticky;
+  z-index: 4;
+  bottom: -1rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  padding-bottom: 0.2rem;
+  border-top: 1px solid rgba(13, 73, 57, 0.08);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, #ffffff 22%, #ffffff 100%);
+}
+
+.popularityModal {
+  width: min(720px, calc(100vw - 2rem));
+}
+
+.popularityModalPanel {
+  margin-top: 1rem;
+  padding: 1.15rem;
+  border: 1px solid rgba(13, 73, 57, 0.11);
+  border-radius: 18px;
+  background:
+    radial-gradient(circle at top left, rgba(26, 118, 88, 0.07), transparent 42%),
+    linear-gradient(180deg, #fbfdfc 0%, #f5f9f7 100%);
+}
+
+.popularityModalSummary {
+  display: grid;
+  gap: 0.08rem;
+}
+
+.popularityModalSummary > span {
+  color: #72817a;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.popularityModalSummary > strong {
+  margin-top: 0.1rem;
+  color: #123f34;
+  font-size: 2.2rem;
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+
+.popularityModalSummary > strong small {
+  color: #7a8982;
+  font-size: 0.95rem;
+  font-weight: 750;
+  letter-spacing: 0;
+}
+
+.popularityModalSummary > p {
+  margin: 0.28rem 0 0;
+  color: #5f746d;
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+.popularityModalStars {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.62rem;
+  margin-top: 1.15rem;
+}
+
+.popularityModalStarButton {
+  display: grid;
+  place-items: center;
+  gap: 0.18rem;
+  min-height: 76px;
+  border: 1px solid rgba(13, 73, 57, 0.13);
+  border-radius: 14px;
+  background: #ffffff;
+  color: #bdc8c3;
+  font: inherit;
+  cursor: pointer;
+  box-shadow: 0 7px 16px rgba(14, 54, 42, 0.035);
+  transition: transform 150ms ease, border-color 150ms ease, background 150ms ease, box-shadow 150ms ease, color 150ms ease;
+}
+
+.popularityModalStarButton:hover,
+.popularityModalStarButton:focus-visible {
+  transform: translateY(-2px);
+  border-color: rgba(212, 155, 34, 0.58);
+  outline: none;
+}
+
+.popularityModalStarButtonActive {
+  border-color: rgba(212, 155, 34, 0.62);
+  background: linear-gradient(180deg, #fffdf5 0%, #fff7d9 100%);
+  color: #d49b22;
+}
+
+.popularityModalStarButtonSelected {
+  border-color: #cf9419;
+  box-shadow: 0 0 0 3px rgba(212, 155, 34, 0.12), 0 10px 22px rgba(109, 77, 13, 0.08);
+}
+
+.popularityModalStarGlyph {
+  font-size: 1.7rem;
+  line-height: 1;
+}
+
+.popularityModalStarButton small {
+  color: currentColor;
+  font-size: 0.72rem;
+  font-weight: 850;
+}
+
+.popularityScaleLabels {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+  margin-top: 0.7rem;
+  color: #798780;
+  font-size: 0.7rem;
+  line-height: 1.35;
+}
+
+.popularityScaleLabels span:nth-child(2) {
+  text-align: center;
+}
+
+.popularityScaleLabels span:last-child {
+  text-align: right;
+}
+
+.popularityModalActions {
+  margin-top: 1rem;
+}
+
+.popularityModal .primaryButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.52;
+}
+
+@media (max-width: 700px) {
+  .conditionRouteGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .conditionRouteCard {
+    min-height: 108px;
+  }
+
+  .basicConditionOptionGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .conditionOptionsModal,
+  .conditionRouteModal,
+  .popularityModal {
+    width: 100%;
+  }
+
+  .popularityModalPanel {
+    padding: 0.9rem;
+  }
+
+  .popularityModalStars {
+    gap: 0.4rem;
+  }
+
+  .popularityModalStarButton {
+    min-height: 64px;
+    border-radius: 12px;
+  }
+
+  .popularityModalStarGlyph {
+    font-size: 1.45rem;
+  }
+}
+
+@media (max-width: 460px) {
+  .basicConditionOptionGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .conditionRouteCard {
+    grid-template-columns: 2.7rem minmax(0, 1fr) 1.7rem;
+    padding: 0.9rem;
+  }
+
+  .conditionRouteNumber {
+    width: 2.7rem;
+    height: 2.7rem;
+  }
+
+  .popularityModalStars {
+    gap: 0.28rem;
+  }
+
+  .popularityModalStarButton {
+    min-height: 58px;
+  }
+
+  .popularityScaleLabels {
+    font-size: 0.64rem;
+  }
+}
