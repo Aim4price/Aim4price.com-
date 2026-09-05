@@ -276,6 +276,9 @@ test('Basic replacement VAT selector preserves an ex-VAT valuation basis and rem
   assert.match(replacementBlock, /role="group" aria-label="Replacement price VAT basis"/);
   assert.match(replacementBlock, /styles\.replacementPriceStack[\s\S]*?styles\.replacementSliderReadout[\s\S]*?styles\.replacementVatToggle[\s\S]*?<label className=\{styles\.yearSliderControl\}>/);
   assert.match(valuationStyles, /\.replacementPriceStack/);
+  assert.match(valuationStyles, /\.replacementPriceStack[^\{]*\{[\s\S]*?grid-row: 1 \/ span 2;[\s\S]*?align-self: center;/);
+  assert.match(valuationStyles, /\.replacementSliderPanel[^\{]*\{[\s\S]*?grid-template-columns: minmax\(19rem, 21rem\) minmax\(0, 1fr\);[\s\S]*?align-items: center;/);
+  assert.match(valuationStyles, /@media \(max-width: 900px\) \{[\s\S]*?\.replacementSliderPanel[^\{]*\{[\s\S]*?grid-template-columns: minmax\(0, 1fr\);/);
   assert.match(replacementBlock, />\s*Excluding VAT\s*<\/button>/);
   assert.match(replacementBlock, />\s*Including VAT\s*<\/button>/);
   assert.match(replacementBlock, /setBasicReplacementVatModePreservingPrice\('excl'\)/);
