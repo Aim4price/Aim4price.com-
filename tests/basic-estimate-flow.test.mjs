@@ -155,7 +155,9 @@ test('popularity, explicit extras and replacement-price confirmation are mandato
   assert.match(client, /Other extra/);
   assert.match(client, /Selected replacement price/);
   assert.match(client, /Enter replacement price manually/);
-  assert.match(client, /Aim4price does not yet have a reliable replacement-price range/);
+  assert.doesNotMatch(client, /Replacement price required/);
+  assert.doesNotMatch(client, /Aim4price does not yet have a reliable replacement-price range/);
+  assert.doesNotMatch(client, /Aim4price provides an indicative estimate only\. It is not a certified valuation or inspection report\. Final value should still be checked against asset condition, documents, location and current market demand\./);
   assert.match(client, /basicTotalReplacementPriceExVat/);
 });
 
