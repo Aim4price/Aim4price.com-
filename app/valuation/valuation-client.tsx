@@ -602,11 +602,11 @@ const DEALER_TYRE_OPTIONS = [
   { value: '50_75', label: '50-75%' },
   { value: '25_50', label: '25-50%' },
   { value: 'below_25', label: 'Below 25%' },
-  { value: 'replacement_required', label: 'Replacement required' },
+  { value: 'replacement_required', label: 'Replace' },
 ] as const;
 
 const DEALER_SERVICE_OPTIONS = [
-  { value: 'complete_verified', label: 'Complete and verified' },
+  { value: 'complete_verified', label: 'Complete' },
   { value: 'partial', label: 'Partial' },
   { value: 'owner_recorded', label: 'Owner-recorded' },
   { value: 'none', label: 'None' },
