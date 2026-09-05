@@ -6008,30 +6008,32 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
           <p className={styles.stepText}>Choose the current new replacement price for a comparable asset.</p>
         </div>
 
-        <div className={styles.replacementVatToggle} role="group" aria-label="Replacement price VAT basis">
-          <button
-            type="button"
-            className={basicReplacementVatMode === 'excl' ? styles.replacementVatToggleActive : ''}
-            aria-pressed={basicReplacementVatMode === 'excl'}
-            onClick={() => setBasicReplacementVatModePreservingPrice('excl')}
-          >
-            Excluding VAT
-          </button>
-          <button
-            type="button"
-            className={basicReplacementVatMode === 'incl' ? styles.replacementVatToggleActive : ''}
-            aria-pressed={basicReplacementVatMode === 'incl'}
-            onClick={() => setBasicReplacementVatModePreservingPrice('incl')}
-          >
-            Including VAT
-          </button>
-        </div>
-
         <div className={`${styles.yearSliderPanel} ${styles.replacementSliderPanel}`}>
-          <div className={`${styles.yearSliderReadout} ${styles.replacementSliderReadout}`}>
-            <span>Selected replacement price</span>
-            <strong>{money(selectedReplacementPrice)}</strong>
-            <small>{replacementVatLabel}</small>
+          <div className={styles.replacementPriceStack}>
+            <div className={`${styles.yearSliderReadout} ${styles.replacementSliderReadout}`}>
+              <span>Selected replacement price</span>
+              <strong>{money(selectedReplacementPrice)}</strong>
+              <small>{replacementVatLabel}</small>
+            </div>
+
+            <div className={styles.replacementVatToggle} role="group" aria-label="Replacement price VAT basis">
+              <button
+                type="button"
+                className={basicReplacementVatMode === 'excl' ? styles.replacementVatToggleActive : ''}
+                aria-pressed={basicReplacementVatMode === 'excl'}
+                onClick={() => setBasicReplacementVatModePreservingPrice('excl')}
+              >
+                Excluding VAT
+              </button>
+              <button
+                type="button"
+                className={basicReplacementVatMode === 'incl' ? styles.replacementVatToggleActive : ''}
+                aria-pressed={basicReplacementVatMode === 'incl'}
+                onClick={() => setBasicReplacementVatModePreservingPrice('incl')}
+              >
+                Including VAT
+              </button>
+            </div>
           </div>
 
           <label className={styles.yearSliderControl}>

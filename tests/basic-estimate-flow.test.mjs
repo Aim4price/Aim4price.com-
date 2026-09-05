@@ -274,6 +274,8 @@ test('Basic replacement VAT selector preserves an ex-VAT valuation basis and rem
   const replacementBlock = client.slice(replacementStart, replacementEnd);
   assert.ok(replacementStart >= 0 && replacementEnd > replacementStart);
   assert.match(replacementBlock, /role="group" aria-label="Replacement price VAT basis"/);
+  assert.match(replacementBlock, /styles\.replacementPriceStack[\s\S]*?styles\.replacementSliderReadout[\s\S]*?styles\.replacementVatToggle[\s\S]*?<label className=\{styles\.yearSliderControl\}>/);
+  assert.match(valuationStyles, /\.replacementPriceStack/);
   assert.match(replacementBlock, />\s*Excluding VAT\s*<\/button>/);
   assert.match(replacementBlock, />\s*Including VAT\s*<\/button>/);
   assert.match(replacementBlock, /setBasicReplacementVatModePreservingPrice\('excl'\)/);
