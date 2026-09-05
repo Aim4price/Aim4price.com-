@@ -2801,7 +2801,7 @@
 
   .dealerValuationSurface [class*='wizardHeader'] > [class*='stepper'] {
     display: grid !important;
-    grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+    grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
     align-items: center !important;
     gap: 6px !important;
     overflow: visible !important;

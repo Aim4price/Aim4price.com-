@@ -38,6 +38,15 @@ import {
 } from '../../lib/equipment-types';
 import { conditionLabel, money, type Result } from '../../lib/tractor-logic';
 import {
+  BASIC_SPECIFICATION_LEVELS,
+  getBasicConditionTemplate,
+  getBasicFamilyExtra,
+  resolveBasicReplacementGuide,
+  type BasicExtraChoice,
+  type BasicReplacementBandInput,
+  type BasicSpecificationLevel,
+} from '../../lib/basic-estimate';
+import {
   ADVANCED_CONDITION_FACTOR_MAX_PERCENT,
   ADVANCED_CONDITION_FACTOR_MIN_PERCENT,
   ADVANCED_LIFETIME_HOURS_MAX,
@@ -67,7 +76,8 @@ import {
   type GeneralSaleabilityInput,
 } from '../../lib/saleability';
 
-type Step = 1 | 2 | 3 | 4 | 5;
+type Step = 1 | 2 | 3 | 4 | 5 | 6;
+type EstimateExperience = 'basic' | 'advanced' | '';
 type MethodKey = 'aim4price';
 type FlowMode = 'exact_model' | 'generic_specs' | '';
 type FinalSaveIntent = 'asset-register' | 'marketplace';
@@ -267,6 +277,13 @@ type FamiliesApiResponse = {
 type BrandsApiResponse = {
   ok: boolean;
   brands?: BrandRow[];
+  error?: string;
+};
+
+type ReplacementPriceBandsApiResponse = {
+  ok: boolean;
+  count?: number;
+  bands?: BasicReplacementBandInput[];
   error?: string;
 };
 
@@ -494,23 +511,15 @@ const MARKETPLACE_INTRO_DISMISSED_KEY = 'aim4price-marketplace-intro-dismissed';
 
 const WIZARD_STEPS: Array<{ step: Step; label: string }> = [
   { step: 1, label: 'Equipment' },
-  { step: 2, label: 'Brand' },
-  { step: 3, label: 'Path' },
+  { step: 2, label: 'Brand & Model' },
+  { step: 3, label: 'Level' },
   { step: 4, label: 'Specs' },
-  { step: 5, label: 'Value' },
+  { step: 5, label: 'Replacement' },
+  { step: 6, label: 'Value' },
 ];
 
 
-function getWizardStepLabel(step: Step, sectorKey: SectorKey | null): string {
-  if (sectorKey === 'motor') {
-    if (step === 1) return 'Sector';
-    if (step === 2) return 'Model';
-    if (step === 3) return 'Type';
-    if (step === 4) return 'Options';
-    return 'Value';
-  }
-
-  if (step === 1) return getAssetNounTitle(sectorKey);
+function getWizardStepLabel(step: Step, _sectorKey: SectorKey | null): string {
   return WIZARD_STEPS.find((item) => item.step === step)?.label ?? String(step);
 }
 
@@ -833,11 +842,11 @@ function resetSectorPreview(card: HTMLButtonElement) {
 }
 
 function nextStep(step: Step): Step {
-  return step === 1 ? 2 : step === 2 ? 3 : step === 3 ? 4 : 5;
+  return step === 1 ? 2 : step === 2 ? 3 : step === 3 ? 4 : step === 4 ? 5 : 6;
 }
 
 function previousStep(step: Step): Step {
-  return step === 5 ? 4 : step === 4 ? 3 : step === 3 ? 2 : 1;
+  return step === 6 ? 5 : step === 5 ? 4 : step === 4 ? 3 : step === 3 ? 2 : 1;
 }
 
 function normalizeText(value: unknown): string {
@@ -1762,6 +1771,13 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
   const marketplacePath = ownerAppMode ? '/owner-app/marketplace' : dealerAppMode ? '/dealer/marketplace' : '/marketplace';
   const [step, setStep] = useState<Step>(1);
   const [selectedSector, setSelectedSector] = useState<SectorKey | null>(null);
+  const [estimateExperience, setEstimateExperience] = useState<EstimateExperience>('');
+  const [basicSpecLevel, setBasicSpecLevel] = useState<BasicSpecificationLevel | ''>('');
+  const [basicReplacementBands, setBasicReplacementBands] = useState<BasicReplacementBandInput[]>([]);
+  const [basicReplacementBandsLoading, setBasicReplacementBandsLoading] = useState(false);
+  const [basicReplacementBandsError, setBasicReplacementBandsError] = useState('');
+  const [basicExtraChoice, setBasicExtraChoice] = useState<BasicExtraChoice>('');
+  const [basicFamilyExtraReplacementPrice, setBasicFamilyExtraReplacementPrice] = useState('');
   const [families, setFamilies] = useState<EquipmentFamilyRecord[]>([]);
   const [familiesLoading, setFamiliesLoading] = useState(false);
   const [familySearch, setFamilySearch] = useState('');
@@ -1821,6 +1837,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
   const [otherExtraName, setOtherExtraName] = useState('');
   const [otherExtraReplacementPrice, setOtherExtraReplacementPrice] = useState('');
   const [userReplacementPrice, setUserReplacementPrice] = useState('');
+  const [basicReplacementPrice, setBasicReplacementPrice] = useState('');
   const [replacementPriceBasis, setReplacementPriceBasis] = useState<ReplacementPriceBasis>('aim4price');
   const [yearModelUnknown, setYearModelUnknown] = useState(false);
   const [lifeWorkedPercent, setLifeWorkedPercent] = useState('');
@@ -1920,6 +1937,36 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     () => families.find((family) => family.familyKey === familyKey) ?? null,
     [families, familyKey],
   );
+  const basicEstimateActive = estimateExperience === 'basic';
+  const basicFamilyExtra = useMemo(
+    () => getBasicFamilyExtra(selectedFamily?.familyKey, selectedFamily?.familyLabel),
+    [selectedFamily?.familyKey, selectedFamily?.familyLabel],
+  );
+  const basicConditionTemplate = useMemo(
+    () => getBasicConditionTemplate({
+      familyKey: selectedFamily?.familyKey,
+      familyLabel: selectedFamily?.familyLabel,
+      isPropelled: selectedFamily?.isPropelled,
+      usageMetricType: selectedFamily?.usageMetricType,
+    }),
+    [selectedFamily?.familyKey, selectedFamily?.familyLabel, selectedFamily?.isPropelled, selectedFamily?.usageMetricType],
+  );
+  const basicReplacementGuide = useMemo(
+    () => basicSpecLevel ? resolveBasicReplacementGuide(basicReplacementBands, basicSpecLevel) : null,
+    [basicReplacementBands, basicSpecLevel],
+  );
+  const basicSpecLevelLabel = BASIC_SPECIFICATION_LEVELS.find((option) => option.key === basicSpecLevel)?.label ?? '';
+  const basicBaseReplacementPriceExVat = parseMoneyInput(basicReplacementPrice);
+  const basicExtraReplacementPriceExVat = basicExtraChoice === 'family'
+    ? parseMoneyInput(basicFamilyExtraReplacementPrice)
+    : basicExtraChoice === 'other'
+      ? parseMoneyInput(otherExtraReplacementPrice)
+      : 0;
+  const basicTotalReplacementPriceExVat = basicBaseReplacementPriceExVat && basicBaseReplacementPriceExVat > 0
+    ? basicBaseReplacementPriceExVat + (basicExtraReplacementPriceExVat ?? 0)
+    : null;
+  const basicUsageNotRequired = basicEstimateActive && selectedFamily?.valuationMode === 'year_condition';
+  const basicUsesPercentageWorked = basicEstimateActive && selectedFamily?.valuationMode === 'percent_used';
   const selectedMotorSubtypeConfig = useMemo(
     () => getMotorSubtypeConfig(selectedSector, selectedFamily?.familyKey),
     [selectedSector, selectedFamily],
@@ -1982,7 +2029,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
   );
   const motorTypeOptions = selectedMotorCanonicalModel?.typeOptions ?? [];
   const motorTypeRequiredForSelectedModel = motorTypeOptions.length > 1;
-  const motorSearchFlowActive = isMotorSector(selectedSector);
+  const motorSearchFlowActive = !basicEstimateActive && isMotorSector(selectedSector);
   const submittedGenericModelName =
     genericModelMode === 'catalog'
       ? getGenericModelSubmitName(selectedGenericModel)
@@ -2056,9 +2103,9 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
   const genericExactModelPath = flowMode === 'exact_model' && !exactTractorAvailable && exactModelRowsAvailable && !selectedBrandIsUnknown;
   const motorCanonicalPricingPath = motorSearchFlowActive && Boolean(selectedGenericModel);
   const motorExactModelPricingPath = motorSearchFlowActive && (genericExactModelPath || motorCanonicalPricingPath);
-  const genericValuationPath = flowMode === 'generic_specs' || genericExactModelPath || motorCanonicalPricingPath;
-  const genericModelRequired = genericExactModelPath || motorCanonicalPricingPath;
-  const shouldAskGenericSpecQuestions = genericValuationPath && (!genericExactModelPath || motorExactModelPricingPath);
+  const genericValuationPath = basicEstimateActive || flowMode === 'generic_specs' || genericExactModelPath || motorCanonicalPricingPath;
+  const genericModelRequired = !basicEstimateActive && (genericExactModelPath || motorCanonicalPricingPath);
+  const shouldAskGenericSpecQuestions = !basicEstimateActive && genericValuationPath && (!genericExactModelPath || motorExactModelPricingPath);
   const tractorSetupComplete = Boolean(tractorType && drive && cab);
   const filteredModels = useMemo(() => {
     const query = modelQuery.trim().toLowerCase();
@@ -2157,25 +2204,59 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
             motor_type_required: motorTypeRequiredForSelectedModel,
           }
         : {}),
+      ...(basicEstimateActive
+        ? {
+            basic_estimate: true,
+            basic_specification_level: basicSpecLevel,
+            basic_specification_level_label: basicSpecLevelLabel,
+            spec_level: basicSpecLevelLabel,
+            valuationMode: selectedFamily?.valuationMode ?? '',
+            valuation_mode: selectedFamily?.valuationMode ?? '',
+            basic_asset_replacement_price_ex_vat: basicBaseReplacementPriceExVat,
+            basic_extra_choice: basicExtraChoice || 'none',
+            ...(basicExtraChoice === 'family' && basicFamilyExtra
+              ? {
+                  basic_extra_key: basicFamilyExtra.key,
+                  basic_extra_name: basicFamilyExtra.label,
+                  basic_extra_replacement_price_ex_vat: basicExtraReplacementPriceExVat,
+                }
+              : {}),
+            ...(basicExtraChoice === 'other'
+              ? {
+                  basic_extra_key: 'other',
+                  basic_extra_name: normalizeText(otherExtraName),
+                  basic_extra_replacement_price_ex_vat: basicExtraReplacementPriceExVat,
+                }
+              : {}),
+            basic_total_replacement_price_ex_vat: basicTotalReplacementPriceExVat,
+          }
+        : {}),
       ...(typedUnlistedBrandName
         ? {
             [UNLISTED_BRAND_NAME_SPEC_KEY]: typedUnlistedBrandName,
             [TYPED_BRAND_NAME_SPEC_KEY]: typedUnlistedBrandName,
           }
         : {}),
-      ...(usesPercentageBasis
+      ...(basicUsageNotRequired
         ? {
-            usageMode: 'percent',
-            usage_mode: 'percent',
-            usageBasis: 'percent',
-            usage_basis: 'percent',
+            usageMode: 'none',
+            usage_mode: 'none',
+            usageBasis: 'none',
+            usage_basis: 'none',
           }
-        : {
-            usageMode: readingUsageMode,
-            usage_mode: readingUsageMode,
-            usageBasis: 'reading',
-            usage_basis: 'reading',
-          }),
+        : usesPercentageBasis
+          ? {
+              usageMode: 'percent',
+              usage_mode: 'percent',
+              usageBasis: 'percent',
+              usage_basis: 'percent',
+            }
+          : {
+              usageMode: readingUsageMode,
+              usage_mode: readingUsageMode,
+              usageBasis: 'reading',
+              usage_basis: 'reading',
+            }),
       ...(lifeWorkedPercentNumber !== null
         ? {
             lifeWorkedPercent: lifeWorkedPercentNumber,
@@ -2226,6 +2307,17 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     selectedMotorTypeOption,
     selectedMotorCanonicalModel,
     motorTypeRequiredForSelectedModel,
+    basicEstimateActive,
+    basicSpecLevel,
+    basicSpecLevelLabel,
+    selectedFamily?.valuationMode,
+    basicBaseReplacementPriceExVat,
+    basicExtraChoice,
+    basicFamilyExtra,
+    basicExtraReplacementPriceExVat,
+    basicTotalReplacementPriceExVat,
+    otherExtraName,
+    basicUsageNotRequired,
   ]);
   const headlineValue = getHeadlineValue(resultState, selectedMethod, replacementPriceBasis);
   const headlineDisplayValue = getVatDisplayValue(headlineValue, vatDisplayMode);
@@ -2751,6 +2843,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     setUsageAmount('');
     setLifeWorkedPercent('');
     setUserReplacementPrice('');
+    setBasicReplacementPrice('');
     setCondition('good');
     setYearStepComplete(false);
     setUsageStepComplete(false);
@@ -2800,6 +2893,57 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
   useEffect(() => {
     if (!selectedFamily || !selectedSector) return;
 
+    if (basicEstimateActive) {
+      setResultState(null);
+      setSelectedMethod('aim4price');
+      setReplacementPriceBasis('aim4price');
+      setFinalSaveIntent(null);
+      setFinalSaveError('');
+      setSavedMarketplaceAssetId(null);
+      setMotorSubtypeValue('');
+      setMotorSubtypeDropdownOpen(false);
+      setBrandSearch('');
+      setBrandDropdownOpen(false);
+      setBrands([]);
+      setBrandsLoading(false);
+      setBrandSlug(UNKNOWN_BRAND_SLUG);
+      setUnlistedBrandName('');
+      setModelQuery('');
+      setModelDropdownOpen(false);
+      setModelId('');
+      setTractorType('');
+      setDrive('');
+      setCab('');
+      setTractorModels([]);
+      setGenericCatalogModels([]);
+      setGenericModelsLoading(false);
+      setGenericModelLookupKey('');
+      setGenericModelsFullyLoadedKey('');
+      clearGenericModelSelection({ clearManual: true, clearPrefilledSpecs: true });
+      setTypedModelName('');
+      setYear(String(CURRENT_YEAR));
+      setUsageAmount('');
+      setLifeWorkedPercent('');
+      setUserReplacementPrice('');
+      setBasicReplacementPrice('');
+      setYearModelUnknown(false);
+      setYearStepComplete(false);
+      setUsageStepComplete(false);
+      setConditionStepComplete(false);
+      setCondition('good');
+      clearDetailedAssessment();
+      setActiveDetailsModal(null);
+      setUsageModalMode('hours');
+      setFlowMode('generic_specs');
+      setBasicSpecLevel('');
+      setBasicExtraChoice('');
+      setBasicFamilyExtraReplacementPrice('');
+      setOtherExtraEnabled(false);
+      setOtherExtraName('');
+      setOtherExtraReplacementPrice('');
+      return;
+    }
+
     if (isMotorSector(selectedSector)) {
       setBrandsLoading(false);
       return;
@@ -2840,6 +2984,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     setUsageAmount('');
     setLifeWorkedPercent('');
     setUserReplacementPrice('');
+    setBasicReplacementPrice('');
     setYearModelUnknown(false);
     setYearStepComplete(false);
     setUsageStepComplete(false);
@@ -2877,7 +3022,53 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     return () => {
       ignore = true;
     };
-  }, [compactAppMode, selectedFamily, selectedSector]);
+  }, [basicEstimateActive, compactAppMode, selectedFamily, selectedSector]);
+
+  useEffect(() => {
+    if (!basicEstimateActive || !selectedFamily || !selectedSector) {
+      setBasicReplacementBands([]);
+      setBasicReplacementBandsLoading(false);
+      setBasicReplacementBandsError('');
+      return;
+    }
+
+    let ignore = false;
+    setBasicReplacementBandsLoading(true);
+    setBasicReplacementBandsError('');
+
+    const params = new URLSearchParams({
+      sectorKey: selectedSector,
+      familyKey: selectedFamily.familyKey,
+    });
+
+    fetch(`/api/replacement-price-bands?${params.toString()}`, { cache: 'no-store' })
+      .then(async (response) => {
+        const data = (await response.json()) as ReplacementPriceBandsApiResponse;
+        if (!response.ok || !data.ok || !Array.isArray(data.bands)) {
+          throw new Error(data.error ?? 'Could not load Aim4price replacement-price guidance.');
+        }
+        if (!ignore) setBasicReplacementBands(data.bands);
+      })
+      .catch((error) => {
+        console.error(error);
+        if (!ignore) {
+          setBasicReplacementBands([]);
+          setBasicReplacementBandsError(error instanceof Error ? error.message : 'Could not load replacement-price guidance.');
+        }
+      })
+      .finally(() => {
+        if (!ignore) setBasicReplacementBandsLoading(false);
+      });
+
+    return () => {
+      ignore = true;
+    };
+  }, [basicEstimateActive, selectedFamily, selectedSector]);
+
+  useEffect(() => {
+    if (!basicEstimateActive || step !== 5 || !basicReplacementGuide || parseMoneyInput(basicReplacementPrice)) return;
+    setBasicReplacementPrice(String(basicReplacementGuide.suggestedExVat));
+  }, [basicEstimateActive, basicReplacementGuide, basicReplacementPrice, step]);
 
   useEffect(() => {
     let ignore = false;
@@ -3258,6 +3449,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
 
   function validateGenericModelSelection(): string | null {
     if (!genericValuationPath) return null;
+    if (basicEstimateActive) return null;
 
     if (isMotorSector(selectedSector)) {
       if (!selectedMotorCanonicalModel || !selectedGenericModel) return 'Search and choose the clean Motor model first.';
@@ -3296,6 +3488,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     setUsageAmount('');
     setLifeWorkedPercent('');
     setUserReplacementPrice('');
+    setBasicReplacementPrice('');
     setFrontPto(false);
     setFrontLoader(false);
     setFrontLoaderYear('');
@@ -3331,10 +3524,11 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
   function validateDetails(): string | null {
     if (!selectedFamily) return `Choose an ${getAssetTypeLabel(selectedSector)} first.`;
     if (!selectedBrand) return 'Choose a brand first.';
+    if (basicEstimateActive && !normalizeText(unlistedBrandName)) return 'Enter the brand name.';
 
     const genericPath = genericValuationPath;
     const selfPropelled = selectedFamily?.isPropelled || selectedFamily?.usageMetricType === 'hours' || selectedFamily?.usageMetricType === 'km';
-    const showHoursInput = !genericPath || selfPropelled;
+    const showHoursInput = !basicUsageNotRequired && !basicUsesPercentageWorked && (!genericPath || selfPropelled);
 
     if (!yearStepComplete) return `Choose the ${getAssetNounLabel(selectedSector)} manufacturing year or mark it as unknown.`;
 
@@ -3344,15 +3538,15 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
       }
     }
 
-    if (!usageStepComplete) {
+    if (!basicUsageNotRequired && !usageStepComplete) {
       return showHoursInput ? `Enter the ${selectedUsageFieldLabel.toLowerCase()} or estimate how much it has worked.` : `Estimate how much the ${getAssetNounLabel(selectedSector)} has worked.`;
     }
 
-    if (showHoursInput && !usageNumber && lifeWorkedPercentNumber === null) {
+    if (!basicUsageNotRequired && showHoursInput && !usageNumber && lifeWorkedPercentNumber === null) {
       return `Enter ${selectedUsageFieldLabel.toLowerCase()} or estimate how much the ${getAssetNounLabel(selectedSector)} has worked.`;
     }
 
-    if (!showHoursInput && lifeWorkedPercentNumber === null) {
+    if (!basicUsageNotRequired && !showHoursInput && lifeWorkedPercentNumber === null) {
       return `Estimate how much the ${getAssetNounLabel(selectedSector)} has worked as a percentage.`;
     }
 
@@ -3361,6 +3555,18 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
       return 'Complete all five detailed asset assessment questions or use the simple condition.';
     }
     if (!popularityStepComplete) return 'Choose a popularity rating from 1 to 5 stars.';
+
+    if (basicEstimateActive) {
+      if (!basicExtraChoice) return 'Confirm whether an extra is fitted.';
+      if (basicExtraChoice === 'family' && (!basicFamilyExtra || !basicExtraReplacementPriceExVat)) {
+        return `Enter the replacement price for ${basicFamilyExtra?.label ?? 'the fitted extra'}, excluding VAT.`;
+      }
+      if (basicExtraChoice === 'other') {
+        if (!normalizeText(otherExtraName)) return 'Enter a name for the other extra.';
+        if (!basicExtraReplacementPriceExVat) return 'Enter the replacement price of the other extra, excluding VAT.';
+      }
+    }
+
     if (flowMode === 'exact_model' && exactTractorAvailable && !tractorSetupComplete) return 'Complete the type, drive and cab setup first.';
     if (flowMode === 'exact_model' && exactTractorAvailable && !selectedModel) return 'Choose the exact model first.';
 
@@ -3735,15 +3941,18 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
             usageAmount: usageNumber,
             lifeWorkedPercent: lifeWorkedPercentNumber,
             condition,
-            userReplacementPriceExVat: null,
-            userReplacementPriceYear: null,
+            userReplacementPriceExVat: basicEstimateActive ? basicTotalReplacementPriceExVat : null,
+            userReplacementPriceYear: basicEstimateActive ? CURRENT_YEAR : null,
             advancedAssumptions,
           }),
         });
         const data = (await response.json()) as GenericValuationApiResponse;
         if (!response.ok || !data.ok || !data.result) throw new Error(data.error ?? 'Failed to calculate generic estimate.');
         setResultState({ kind: 'generic', result: data.result });
-        setReplacementPriceBasis(data.result.replacementPriceBasis ?? 'aim4price');
+        setReplacementPriceBasis(basicEstimateActive ? 'user' : data.result.replacementPriceBasis ?? 'aim4price');
+        if (basicEstimateActive && basicTotalReplacementPriceExVat) {
+          setUserReplacementPrice(String(Math.round(basicTotalReplacementPriceExVat)));
+        }
         setSelectedMethod('aim4price');
         setReplacementPanelOpen(false);
       }
@@ -3751,7 +3960,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
       if (!isSignedIn) {
         setGuestValuationCount(incrementGuestValuationCount());
       }
-      setStep(5);
+      setStep(6);
       scrollWizardToStart();
     } catch (error) {
       console.error(error);
@@ -4881,6 +5090,61 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
 
   function handleNext() {
     setMessage('');
+
+    if (basicEstimateActive) {
+      if (step === 1) {
+        if (!selectedFamily) {
+          setMessage(`Choose an ${getAssetTypeLabel(selectedSector)} first.`);
+          return;
+        }
+        setStep(2);
+        scrollWizardToStart();
+        return;
+      }
+
+      if (step === 2) {
+        if (!normalizeText(unlistedBrandName)) {
+          setMessage('Enter the brand name.');
+          return;
+        }
+        setBrandSlug(UNKNOWN_BRAND_SLUG);
+        setGenericModelMode(normalizeText(typedModelName) ? 'manual' : 'unknown');
+        setStep(3);
+        scrollWizardToStart();
+        return;
+      }
+
+      if (step === 3) {
+        if (!basicSpecLevel) {
+          setMessage('Choose Entry, Standard or Premium.');
+          return;
+        }
+        setStep(4);
+        scrollWizardToStart();
+        return;
+      }
+
+      if (step === 4) {
+        const detailsMessage = validateDetails();
+        if (detailsMessage) {
+          setMessage(detailsMessage);
+          return;
+        }
+        setStep(5);
+        scrollWizardToStart();
+        return;
+      }
+
+      if (step === 5) {
+        if (!basicBaseReplacementPriceExVat) {
+          setMessage('Enter a replacement price excluding VAT.');
+          return;
+        }
+        openReplacementPriceNotice();
+        return;
+      }
+    }
+
     if (isMotorSector(selectedSector)) {
       if (step === 2) {
         const motorModelMessage = validateMotorCanonicalSelection();
@@ -4941,6 +5205,13 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
   function resetToSectorSelection() {
     setStep(1);
     setSelectedSector(null);
+    setEstimateExperience('');
+    setBasicSpecLevel('');
+    setBasicReplacementBands([]);
+    setBasicReplacementBandsLoading(false);
+    setBasicReplacementBandsError('');
+    setBasicExtraChoice('');
+    setBasicFamilyExtraReplacementPrice('');
     setFamilies([]);
     setFamilyKey('');
     setMotorSubtypeValue('');
@@ -4981,6 +5252,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     setUsageAmount('');
     setLifeWorkedPercent('');
     setUserReplacementPrice('');
+    setBasicReplacementPrice('');
     setYearModelUnknown(false);
     setMessage('');
     resetResult();
@@ -4995,11 +5267,21 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
 
     setMessage('');
     setSelectedSector(sectorKey);
-    setEquipmentDropdownOpen(compactAppMode);
-    if (sectorKey === 'motor') {
-      setStep(2);
-    }
+    setEstimateExperience('');
+    setEquipmentDropdownOpen(false);
+    setStep(1);
     resetResult();
+  }
+
+  function handleEstimateExperienceSelect(nextExperience: EstimateExperience) {
+    if (nextExperience !== 'basic') return;
+
+    setEstimateExperience('basic');
+    setFlowMode('generic_specs');
+    setEquipmentDropdownOpen(compactAppMode);
+    setMessage('');
+    resetResult();
+    scrollWizardToStart();
   }
 
 
@@ -5157,9 +5439,19 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     setGenericModelsFullyLoadedKey('');
     clearGenericModelSelection({ clearManual: true, clearPrefilledSpecs: true });
     setBrandSearch('');
-    setBrandDropdownOpen(compactAppMode);
-    setBrandSlug('');
+    setBrandDropdownOpen(basicEstimateActive ? false : compactAppMode);
+    setBrandSlug(basicEstimateActive ? UNKNOWN_BRAND_SLUG : '');
     setUnlistedBrandName('');
+    if (basicEstimateActive) {
+      setFlowMode('generic_specs');
+      setBasicSpecLevel('');
+      setBasicExtraChoice('');
+      setBasicFamilyExtraReplacementPrice('');
+      setBasicReplacementPrice('');
+      setOtherExtraEnabled(false);
+      setOtherExtraName('');
+      setOtherExtraReplacementPrice('');
+    }
     resetResult();
     setStep(2);
     scrollWizardToStart();
@@ -5308,6 +5600,25 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
 
   function handleBack() {
     setMessage('');
+
+    if (basicEstimateActive) {
+      if (step === 1) {
+        setEstimateExperience('');
+        setEquipmentDropdownOpen(false);
+        scrollWizardToStart();
+        return;
+      }
+      if (step === 2) {
+        setStep(1);
+        setEquipmentDropdownOpen(compactAppMode);
+        scrollWizardToStart();
+        return;
+      }
+      setStep(previousStep(step));
+      scrollWizardToStart();
+      return;
+    }
+
     if (step === 1) {
       if (selectedSector) {
         resetToSectorSelection();
@@ -5334,14 +5645,14 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
   }
 
   function handleWizardStepJump(targetStep: Step) {
-    if (targetStep >= step || targetStep === 5) return;
+    if (targetStep >= step || targetStep === 6) return;
 
     setMessage('');
     setReplacementNoticeOpen(false);
     setActiveDetailsModal(null);
     if (compactAppMode && targetStep === 1) setEquipmentDropdownOpen(true);
     if (compactAppMode && targetStep === 2) setBrandDropdownOpen(true);
-    setStep(isMotorSector(selectedSector) && targetStep === 3 ? 2 : targetStep);
+    setStep(!basicEstimateActive && isMotorSector(selectedSector) && targetStep === 3 ? 2 : targetStep);
 
     requestAnimationFrame(() => {
       document.getElementById('valuation-wizard-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -5413,6 +5724,57 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                 </button>
               );
             })}
+          </div>
+        </div>
+      );
+    }
+
+    if (!estimateExperience) {
+      return (
+        <div className={styles.sectorStart}>
+          <div className={styles.sectorIntro}>
+            <div className={styles.selectedSummary}>
+              <span className={styles.selectedSummaryPill}>{SECTOR_LABELS[selectedSector]}</span>
+            </div>
+            <h2 className={styles.stepTitle}>Choose estimate type</h2>
+            <p className={styles.stepText}>Choose how you want Aim4price to build the estimate.</p>
+          </div>
+
+          <div className={`${styles.sectorLargeGrid} ${styles.estimateModeGrid}`}>
+            <button
+              type="button"
+              className={`${styles.sectorBigCard} ${compactAppMode ? styles.sectorBigCardApp : ''} ${styles.sectorBigCardLive} ${styles.estimateModeCard}`}
+              onClick={() => handleEstimateExperienceSelect('basic')}
+            >
+              <span className={styles.sectorBigCardContent}>
+                <span className={styles.sectorLabelWrap}>
+                  <strong className={styles.sectorLabel}>Basic Estimate</strong>
+                  <span className={`${styles.sectorCardHint} ${styles.estimateModeCopy}`}>
+                    Quick mathematical estimate using the asset family, its condition, usage and replacement price.
+                  </span>
+                  <span className={styles.sectorCardHint}>Start estimate →</span>
+                </span>
+              </span>
+            </button>
+
+            <button
+              type="button"
+              className={`${styles.sectorBigCard} ${compactAppMode ? styles.sectorBigCardApp : ''} ${styles.sectorBigCardSoon} ${styles.estimateModeCard} ${styles.estimateModeCardLocked}`}
+              disabled
+              aria-disabled="true"
+            >
+              <span className={styles.sectorBigCardContent}>
+                <span className={styles.sectorCardTopRow}>
+                  <span className={styles.soonBadge}>Coming soon</span>
+                </span>
+                <span className={styles.sectorLabelWrap}>
+                  <strong className={styles.sectorLabel}>Advanced Estimate</strong>
+                  <span className={`${styles.sectorCardHint} ${styles.estimateModeCopy}`}>
+                    Deeper model, specification and Aim4price market intelligence.
+                  </span>
+                </span>
+              </span>
+            </button>
           </div>
         </div>
       );
@@ -5494,6 +5856,236 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
 
           {!filteredFamilies.length && !familiesLoading ? (
             <p className={styles.message}>No matching {getAssetTypeLabel(selectedSector)} found. Clear the search or import it into the {getCatalogImportLabel(selectedSector)}.</p>
+          ) : null}
+        </div>
+      </div>
+    );
+  }
+
+  function renderBasicBrandModelStep() {
+    return (
+      <div className={styles.stepBlock}>
+        <div className={styles.selectedSummary}>
+          {selectedFamily ? <span className={styles.selectedSummaryPill}>{selectedFamily.familyLabel}</span> : null}
+        </div>
+
+        <div>
+          <h2 className={styles.stepTitle}>Brand &amp; Model</h2>
+          <p className={styles.stepText}>Add the asset identity. It does not need to match Aim4price&apos;s catalogue.</p>
+        </div>
+
+        <div className={`${styles.currentCard} ${styles.basicIdentityCard}`}>
+          <label className={styles.field}>
+            <span className={styles.fieldLabel}>Brand</span>
+            <input
+              type="text"
+              value={unlistedBrandName}
+              onChange={(event) => {
+                setUnlistedBrandName(event.target.value);
+                setBrandSlug(UNKNOWN_BRAND_SLUG);
+                resetResult();
+              }}
+              placeholder="e.g. John Deere"
+              autoComplete="off"
+            />
+          </label>
+
+          <label className={styles.field}>
+            <span className={styles.fieldLabel}>Model</span>
+            <input
+              type="text"
+              value={typedModelName}
+              onChange={(event) => {
+                const value = event.target.value;
+                setTypedModelName(value);
+                setGenericModelMode(normalizeText(value) ? 'manual' : '');
+                resetResult();
+              }}
+              placeholder="e.g. 6155M"
+              autoComplete="off"
+            />
+            <span className={styles.fieldHint}>Optional. Brand and model are stored with the estimate and Asset Register without creating catalogue records.</span>
+          </label>
+
+          <button
+            type="button"
+            className={`${styles.unknownAnswerButton} ${genericModelMode === 'unknown' ? styles.basicUnknownSelected : ''}`}
+            aria-pressed={genericModelMode === 'unknown'}
+            onClick={() => {
+              setTypedModelName('');
+              setGenericModelMode('unknown');
+              resetResult();
+            }}
+          >
+            I don&apos;t know the model
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  function renderBasicLevelStep() {
+    return (
+      <div className={styles.stepBlock}>
+        <div className={styles.selectedSummary}>
+          {selectedFamily ? <span className={styles.selectedSummaryPill}>{selectedFamily.familyLabel}</span> : null}
+          {normalizeText(unlistedBrandName) ? <span className={styles.selectedSummaryPill}>{normalizeText(unlistedBrandName)}</span> : null}
+          {normalizeText(typedModelName) ? <span className={styles.selectedSummaryPill}>{normalizeText(typedModelName)}</span> : null}
+        </div>
+
+        <div>
+          <h2 className={styles.stepTitle}>Specification level</h2>
+          <p className={styles.stepText}>Where does this asset roughly sit in the new-asset market?</p>
+        </div>
+
+        <div className={`${styles.choiceGrid} ${styles.basicLevelGrid}`}>
+          {BASIC_SPECIFICATION_LEVELS.map((option) => {
+            const selected = basicSpecLevel === option.key;
+            return (
+              <button
+                key={option.key}
+                type="button"
+                className={`${styles.choiceCard} ${styles.pathChoiceCard} ${styles.basicLevelCard} ${selected ? styles.choiceCardActive : ''}`}
+                aria-pressed={selected}
+                onClick={() => {
+                  setBasicSpecLevel(option.key);
+                  setBasicReplacementPrice('');
+                  setMessage('');
+                  resetResult();
+                }}
+              >
+                <strong>{option.label}</strong>
+                <span className={styles.choiceCardNote}>{option.description}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
+  function renderBasicReplacementStep() {
+    const guide = basicReplacementGuide;
+    const inputPrice = basicBaseReplacementPriceExVat;
+    const sliderValue = guide
+      ? Math.min(guide.maxExVat, Math.max(guide.minExVat, inputPrice ?? guide.suggestedExVat))
+      : null;
+    const progress = guide && sliderValue !== null
+      ? ((sliderValue - guide.minExVat) / Math.max(1, guide.maxExVat - guide.minExVat)) * 100
+      : 0;
+    const sliderStyle = { '--year-progress': `${Math.min(100, Math.max(0, progress))}%` } as CSSProperties;
+    const hasExtra = basicExtraChoice === 'family' || basicExtraChoice === 'other';
+    const extraName = basicExtraChoice === 'family' ? basicFamilyExtra?.label : normalizeText(otherExtraName);
+
+    return (
+      <div className={`${styles.stepBlock} ${styles.replacementStage}`}>
+        <div className={styles.selectedSummary}>
+          {selectedFamily ? <span className={styles.selectedSummaryPill}>{selectedFamily.familyLabel}</span> : null}
+          {basicSpecLevelLabel ? <span className={styles.selectedSummaryPill}>{basicSpecLevelLabel}</span> : null}
+        </div>
+
+        <div>
+          <h2 className={styles.stepTitle}>Replacement price</h2>
+          <p className={styles.stepText}>Choose the current new replacement price for a comparable asset. All figures on this step are excluding VAT.</p>
+        </div>
+
+        {basicReplacementBandsLoading ? (
+          <div className={`${styles.currentCard} ${styles.replacementGuideCard}`}>
+            <h3 className={styles.currentTitle}>Finding Aim4price guidance...</h3>
+            <p className={styles.currentHint}>Checking the available family replacement-price information.</p>
+          </div>
+        ) : guide ? (
+          <div className={`${styles.currentCard} ${styles.replacementGuideCard}`}>
+            <div className={styles.currentCardHead}>
+              <div>
+                <span className={styles.currentEyebrow}>Aim4price family guide · {basicSpecLevelLabel}</span>
+                <h3 className={styles.currentTitle}>Select replacement price</h3>
+                <p className={styles.currentHint}>
+                  {guide.source === 'tier'
+                    ? 'This range uses available family and specification-level pricing.'
+                    : 'This is a broad guide positioned from the available family pricing, not exact-model pricing.'}
+                </p>
+              </div>
+            </div>
+
+            <div className={`${styles.yearSliderPanel} ${styles.replacementSliderPanel}`}>
+              <div className={`${styles.yearSliderReadout} ${styles.replacementSliderReadout}`}>
+                <span>Selected replacement price</span>
+                <strong>{money(inputPrice ?? guide.suggestedExVat)}</strong>
+                <small>Excluding VAT</small>
+              </div>
+
+              <label className={styles.yearSliderControl}>
+                <span className={styles.fieldLabel}>Slide to replacement price</span>
+                <input
+                  className={styles.yearRangeInput}
+                  style={sliderStyle}
+                  type="range"
+                  min={guide.minExVat}
+                  max={guide.maxExVat}
+                  step={guide.sliderStep}
+                  value={sliderValue ?? guide.suggestedExVat}
+                  onChange={(event) => {
+                    setBasicReplacementPrice(event.target.value);
+                    setMessage('');
+                    resetResult();
+                  }}
+                />
+                <span className={styles.yearSliderMeta}>
+                  <span>{money(guide.minExVat)}</span>
+                  <span>{money(guide.maxExVat)}</span>
+                </span>
+              </label>
+            </div>
+          </div>
+        ) : (
+          <div className={`${styles.currentCard} ${styles.replacementNoRange}`}>
+            <h3 className={styles.currentTitle}>Replacement price required</h3>
+            <p className={styles.currentHint}>
+              Aim4price does not yet have a reliable replacement-price range for this family and level. Enter the comparable new replacement price manually to continue.
+            </p>
+            {basicReplacementBandsError ? <small className={styles.advancedFieldHelp}>{basicReplacementBandsError}</small> : null}
+          </div>
+        )}
+
+        <div className={`${styles.currentCard} ${styles.replacementManualCard}`}>
+          <label className={styles.field}>
+            <span className={styles.fieldLabel}>Enter replacement price manually (excl. VAT)</span>
+            <input
+              type="text"
+              inputMode="decimal"
+              value={basicReplacementPrice}
+              onChange={(event) => {
+                setBasicReplacementPrice(event.target.value);
+                setMessage('');
+                resetResult();
+              }}
+              placeholder="e.g. 1 850 000"
+            />
+            <span className={styles.fieldHint}>You can always override Aim4price&apos;s guide with the price you believe best represents the comparable new asset.</span>
+          </label>
+
+          {inputPrice ? (
+            <div className={styles.replacementBreakdown}>
+              <span>
+                <small>Asset replacement</small>
+                <strong>{money(inputPrice)}</strong>
+              </span>
+              {hasExtra && basicExtraReplacementPriceExVat ? (
+                <>
+                  <span className={styles.replacementBreakdownSymbol}>+</span>
+                  <span>
+                    <small>{extraName || 'Extra'}</small>
+                    <strong>{money(basicExtraReplacementPriceExVat)}</strong>
+                  </span>
+                </>
+              ) : null}
+              <span className={styles.replacementBreakdownSymbol}>=</span>
+              <span>
+                <small>Configured asset replacement</small>
+                <strong>{money(basicTotalReplacementPriceExVat ?? inputPrice)}</strong>
+              </span>
+            </div>
           ) : null}
         </div>
       </div>
@@ -6351,6 +6943,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
   }
 
   function getUsageAnswerLabel(showHoursInput: boolean): string {
+    if (basicUsageNotRequired) return 'Not required for this family';
     if (!usageStepComplete) return 'Not answered';
     const usage = toNumberOrNull(usageAmount);
     if (showHoursInput && usage !== null) return `${usage.toLocaleString('en-ZA')} ${selectedUsageShortUnit}`;
@@ -6375,20 +6968,30 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     setYear(String(parsedYear));
     setYearModelUnknown(false);
     setYearStepComplete(true);
+    if (basicUsageNotRequired) {
+      setUsageAmount('');
+      setLifeWorkedPercent('');
+      setUsageStepComplete(true);
+    }
     setActiveDetailsModal(null);
     setMessage('');
     resetResult();
-    scrollToDetailsCard('valuation-usage-step');
+    scrollToDetailsCard(basicUsageNotRequired ? 'valuation-condition-step' : 'valuation-usage-step');
   }
 
   function saveUnknownYear() {
     setYear('');
     setYearModelUnknown(true);
     setYearStepComplete(true);
+    if (basicUsageNotRequired) {
+      setUsageAmount('');
+      setLifeWorkedPercent('');
+      setUsageStepComplete(true);
+    }
     setActiveDetailsModal(null);
     setMessage('');
     resetResult();
-    scrollToDetailsCard('valuation-usage-step');
+    scrollToDetailsCard(basicUsageNotRequired ? 'valuation-condition-step' : 'valuation-usage-step');
   }
 
   function saveUsageAnswer(showHoursInput: boolean) {
@@ -6699,26 +7302,32 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
   function renderDetailsStep() {
     const genericPath = genericValuationPath;
     const selfPropelled = selectedFamily?.isPropelled || selectedFamily?.usageMetricType === 'hours' || selectedFamily?.usageMetricType === 'km';
-    const showHoursInput = !genericPath || selfPropelled;
-    const usageTitle = showHoursInput ? selectedUsageFieldLabel : 'Worked percentage';
-    const detailsTitle = genericExactModelPath
-      ? `${getAssetNounTitle(selectedSector)} details`
-      : genericPath
-        ? getSpecsTitle(selectedSector)
-        : 'Tractor details';
-    const detailsIntro = genericExactModelPath
+    const showHoursInput = !basicUsageNotRequired && !basicUsesPercentageWorked && (!genericPath || selfPropelled);
+    const usageTitle = basicUsageNotRequired ? 'Usage / life worked' : showHoursInput ? selectedUsageFieldLabel : 'Worked percentage';
+    const detailsTitle = basicEstimateActive
+      ? 'Asset details'
+      : genericExactModelPath
+        ? `${getAssetNounTitle(selectedSector)} details`
+        : genericPath
+          ? getSpecsTitle(selectedSector)
+          : 'Tractor details';
+    const detailsIntro = basicEstimateActive
       ? compactAppMode
-        ? `Add year, ${usageTitle.toLowerCase()}, condition and popularity.`
-        : `Aim4price will use the selected catalogue model replacement price. Add year, ${usageTitle.toLowerCase()}, condition and popularity to calculate the estimate.`
-      : compactAppMode
-        ? 'Answer each step.'
-        : 'Answer one step at a time. Aim4price only reveals the next question after the current one is saved.';
+        ? 'Add the key details for this asset.'
+        : 'Add the simple family-driven information Aim4price needs for the estimate.'
+      : genericExactModelPath
+        ? compactAppMode
+          ? `Add year, ${usageTitle.toLowerCase()}, condition and popularity.`
+          : `Aim4price will use the selected catalogue model replacement price. Add year, ${usageTitle.toLowerCase()}, condition and popularity to calculate the estimate.`
+        : compactAppMode
+          ? 'Answer each step.'
+          : 'Answer one step at a time. Aim4price only reveals the next question after the current one is saved.';
     const detailedAssessmentSections = [
-      { label: 'Mechanical condition', value: dealerMechanicalCondition },
-      { label: 'Body / frame / structure', value: dealerBodyCondition },
-      { label: 'Tyres / wear components', value: dealerTyreCondition },
-      { label: 'Service history', value: dealerServiceHistory },
-      { label: 'Required work', value: dealerRequiredWork },
+      { label: basicEstimateActive ? basicConditionTemplate.mechanical : 'Mechanical condition', value: dealerMechanicalCondition },
+      { label: basicEstimateActive ? basicConditionTemplate.body : 'Body / frame / structure', value: dealerBodyCondition },
+      { label: basicEstimateActive ? basicConditionTemplate.wear : 'Tyres / wear components', value: dealerTyreCondition },
+      { label: basicEstimateActive ? basicConditionTemplate.service : 'Service history', value: dealerServiceHistory },
+      { label: basicEstimateActive ? basicConditionTemplate.requiredWork : 'Required work', value: dealerRequiredWork },
     ];
     const firstIncompleteDetailedSection = detailedAssessmentSections.find((section) => !section.value)?.label ?? '';
     const currentDetailedSection = activeDetailedAssessmentSection || firstIncompleteDetailedSection;
@@ -6748,19 +7357,33 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
           </button>
 
           {yearStepComplete ? (
-            <button
-              id="valuation-usage-step"
-              type="button"
-              className={`${styles.specStepCard} ${usageStepComplete ? styles.specStepCardComplete : styles.specStepCardActive}`}
-              onClick={() => openUsageModal(showHoursInput)}
-            >
-              <span className={`${styles.specStepNumber} ${usageStepComplete ? styles.specStepNumberDone : ''}`}>{usageStepComplete ? '✓' : 2}</span>
-              <span className={styles.specStepContent}>
-                <strong>{usageTitle}</strong>
-                <small>{usageStepComplete ? getUsageAnswerLabel(showHoursInput) : `Add ${usageTitle.toLowerCase()} to continue.`}</small>
-              </span>
-              <span className={styles.specStepAction}>{usageStepComplete ? 'Edit' : 'Add details'}</span>
-            </button>
+            basicUsageNotRequired ? (
+              <div
+                id="valuation-usage-step"
+                className={`${styles.specStepCard} ${styles.specStepCardComplete} ${styles.basicUsageSkipped}`}
+              >
+                <span className={`${styles.specStepNumber} ${styles.specStepNumberDone}`}>✓</span>
+                <span className={styles.specStepContent}>
+                  <strong>{usageTitle}</strong>
+                  <small>Not required for this family. Aim4price will use year and condition without inventing a usage percentage.</small>
+                </span>
+                <span className={styles.specStepAction}>Not required</span>
+              </div>
+            ) : (
+              <button
+                id="valuation-usage-step"
+                type="button"
+                className={`${styles.specStepCard} ${usageStepComplete ? styles.specStepCardComplete : styles.specStepCardActive}`}
+                onClick={() => openUsageModal(showHoursInput)}
+              >
+                <span className={`${styles.specStepNumber} ${usageStepComplete ? styles.specStepNumberDone : ''}`}>{usageStepComplete ? '✓' : 2}</span>
+                <span className={styles.specStepContent}>
+                  <strong>{usageTitle}</strong>
+                  <small>{usageStepComplete ? getUsageAnswerLabel(showHoursInput) : `Add ${usageTitle.toLowerCase()} to continue.`}</small>
+                </span>
+                <span className={styles.specStepAction}>{usageStepComplete ? 'Edit' : 'Add details'}</span>
+              </button>
+            )
           ) : null}
 
           {usageStepComplete ? (
@@ -6816,7 +7439,9 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                           ? detailedAssessmentOpen
                             ? 'These answers replace the broad condition choice.'
                             : 'Answer five quick condition questions for a more accurate estimate.'
-                          : 'Assess the mechanical condition, body, tyres or wear components, service history and required work.'}
+                          : basicEstimateActive
+                            ? `Assess ${basicConditionTemplate.mechanical.toLowerCase()}, ${basicConditionTemplate.body.toLowerCase()}, ${basicConditionTemplate.wear.toLowerCase()}, ${basicConditionTemplate.service.toLowerCase()} and ${basicConditionTemplate.requiredWork.toLowerCase()}.`
+                            : 'Assess the mechanical condition, body, tyres or wear components, service history and required work.'}
                       </span>
                     </div>
                     <button
@@ -6830,7 +7455,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                           scrollToDetailsCard('valuation-detailed-condition-entry');
                         } else {
                           setDetailedAssessmentOpen(true);
-                          setActiveDetailedAssessmentSection(firstIncompleteDetailedSection || 'Mechanical condition');
+                          setActiveDetailedAssessmentSection(firstIncompleteDetailedSection || (basicEstimateActive ? basicConditionTemplate.mechanical : 'Mechanical condition'));
                           setDetailedAssessmentError('');
                           scrollToDetailsCard('detailed-condition-assessment');
                         }
@@ -6859,26 +7484,26 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                         : 'This replaces the broad condition percentage. It is not applied as a second condition deduction.'}
                     </span>
                   </div>
-                  {renderDealerAssessmentGroup('Mechanical condition', dealerMechanicalCondition, DEALER_MECHANICAL_OPTIONS, (value) => {
+                  {renderDealerAssessmentGroup(detailedAssessmentSections[0].label, dealerMechanicalCondition, DEALER_MECHANICAL_OPTIONS, (value) => {
                     setDealerMechanicalCondition(value);
                     resetResult();
-                  }, currentDetailedSection === 'Mechanical condition', 'Body / frame / structure')}
-                  {renderDealerAssessmentGroup('Body / frame / structure', dealerBodyCondition, DEALER_BODY_OPTIONS, (value) => {
+                  }, currentDetailedSection === detailedAssessmentSections[0].label, detailedAssessmentSections[1].label)}
+                  {renderDealerAssessmentGroup(detailedAssessmentSections[1].label, dealerBodyCondition, DEALER_BODY_OPTIONS, (value) => {
                     setDealerBodyCondition(value);
                     resetResult();
-                  }, currentDetailedSection === 'Body / frame / structure', 'Tyres / wear components')}
-                  {renderDealerAssessmentGroup('Tyres / wear components', dealerTyreCondition, DEALER_TYRE_OPTIONS, (value) => {
+                  }, currentDetailedSection === detailedAssessmentSections[1].label, detailedAssessmentSections[2].label)}
+                  {renderDealerAssessmentGroup(detailedAssessmentSections[2].label, dealerTyreCondition, DEALER_TYRE_OPTIONS, (value) => {
                     setDealerTyreCondition(value);
                     resetResult();
-                  }, currentDetailedSection === 'Tyres / wear components', 'Service history')}
-                  {renderDealerAssessmentGroup('Service history', dealerServiceHistory, DEALER_SERVICE_OPTIONS, (value) => {
+                  }, currentDetailedSection === detailedAssessmentSections[2].label, detailedAssessmentSections[3].label)}
+                  {renderDealerAssessmentGroup(detailedAssessmentSections[3].label, dealerServiceHistory, DEALER_SERVICE_OPTIONS, (value) => {
                     setDealerServiceHistory(value);
                     resetResult();
-                  }, currentDetailedSection === 'Service history', 'Required work')}
-                  {renderDealerAssessmentGroup('Required work', dealerRequiredWork, DEALER_WORK_OPTIONS, (value) => {
+                  }, currentDetailedSection === detailedAssessmentSections[3].label, detailedAssessmentSections[4].label)}
+                  {renderDealerAssessmentGroup(detailedAssessmentSections[4].label, dealerRequiredWork, DEALER_WORK_OPTIONS, (value) => {
                     setDealerRequiredWork(value);
                     resetResult();
-                  }, currentDetailedSection === 'Required work', '')}
+                  }, currentDetailedSection === detailedAssessmentSections[4].label, '')}
                   {detailedAssessmentError ? <p className={styles.advancedError}>{detailedAssessmentError}</p> : null}
                   {detailedAssessmentComplete && !compactAppMode ? <p className={styles.detailedAssessmentReady}>Detailed condition complete.</p> : null}
                 </div>
@@ -6926,9 +7551,129 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
           ) : null}
 
           {popularityStepComplete && shouldAskGenericSpecQuestions ? renderSpecQuestionsProgress() : null}
+
+          {basicEstimateActive && popularityStepComplete ? (
+            <div className={`${styles.currentCard} ${styles.basicExtrasCard}`}>
+              <div className={styles.currentCardHead}>
+                <div>
+                  <span className={styles.currentEyebrow}>{compactAppMode ? 'Asset details 5 of 5' : 'Step 5'}</span>
+                  <h3 className={styles.currentTitle}>Extras</h3>
+                  <p className={styles.currentHint}>Confirm whether a common fitted extra should be included in the configured replacement price.</p>
+                </div>
+                <span className={styles.selectedSummaryPill} data-selection-status={basicExtraChoice ? 'selected' : 'pending'}>
+                  {basicExtraChoice === 'none'
+                    ? 'None fitted'
+                    : basicExtraChoice === 'family'
+                      ? basicFamilyExtra?.label ?? 'Family extra'
+                      : basicExtraChoice === 'other'
+                        ? normalizeText(otherExtraName) || 'Other extra'
+                        : 'Choose one'}
+                </span>
+              </div>
+
+              <div className={`${styles.choiceGrid} ${styles.basicExtrasGrid}`}>
+                <button
+                  type="button"
+                  className={`${styles.choiceCard} ${basicExtraChoice === 'none' ? styles.choiceCardActive : ''}`}
+                  aria-pressed={basicExtraChoice === 'none'}
+                  onClick={() => {
+                    setBasicExtraChoice('none');
+                    setBasicFamilyExtraReplacementPrice('');
+                    setOtherExtraEnabled(false);
+                    setOtherExtraName('');
+                    setOtherExtraReplacementPrice('');
+                    resetResult();
+                  }}
+                >
+                  <strong>None fitted</strong>
+                  <span className={styles.choiceCardNote}>No extra added</span>
+                </button>
+
+                {basicFamilyExtra ? (
+                  <button
+                    type="button"
+                    className={`${styles.choiceCard} ${basicExtraChoice === 'family' ? styles.choiceCardActive : ''}`}
+                    aria-pressed={basicExtraChoice === 'family'}
+                    onClick={() => {
+                      setBasicExtraChoice('family');
+                      setOtherExtraEnabled(false);
+                      setOtherExtraName('');
+                      setOtherExtraReplacementPrice('');
+                      resetResult();
+                    }}
+                  >
+                    <strong>{basicFamilyExtra.label}</strong>
+                    <span className={styles.choiceCardNote}>Common family extra</span>
+                  </button>
+                ) : null}
+
+                <button
+                  type="button"
+                  className={`${styles.choiceCard} ${basicExtraChoice === 'other' ? styles.choiceCardActive : ''}`}
+                  aria-pressed={basicExtraChoice === 'other'}
+                  onClick={() => {
+                    setBasicExtraChoice('other');
+                    setBasicFamilyExtraReplacementPrice('');
+                    setOtherExtraEnabled(true);
+                    resetResult();
+                  }}
+                >
+                  <strong>Other extra</strong>
+                  <span className={styles.choiceCardNote}>Add one other fitted extra</span>
+                </button>
+              </div>
+
+              {basicExtraChoice === 'family' && basicFamilyExtra ? (
+                <label className={`${styles.field} ${styles.basicExtraPriceField}`}>
+                  <span className={styles.fieldLabel}>{basicFamilyExtra.label} replacement price (excl. VAT)</span>
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    value={basicFamilyExtraReplacementPrice}
+                    onChange={(event) => {
+                      setBasicFamilyExtraReplacementPrice(event.target.value);
+                      resetResult();
+                    }}
+                    placeholder="e.g. 150 000"
+                  />
+                  <span className={styles.fieldHint}>Aim4price adds this to the configured new-asset replacement price before applying the same valuation mathematics.</span>
+                </label>
+              ) : null}
+
+              {basicExtraChoice === 'other' ? (
+                <div className={`${styles.inputGrid} ${styles.basicExtraFields}`}>
+                  <label className={styles.field}>
+                    <span className={styles.fieldLabel}>Extra name</span>
+                    <input
+                      value={otherExtraName}
+                      onChange={(event) => {
+                        setOtherExtraName(event.target.value);
+                        resetResult();
+                      }}
+                      maxLength={100}
+                      placeholder="e.g. Weight set"
+                    />
+                  </label>
+                  <label className={styles.field}>
+                    <span className={styles.fieldLabel}>Replacement price (excl. VAT)</span>
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      value={otherExtraReplacementPrice}
+                      onChange={(event) => {
+                        setOtherExtraReplacementPrice(event.target.value);
+                        resetResult();
+                      }}
+                      placeholder="e.g. 25 000"
+                    />
+                  </label>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
         </div>
 
-        {!genericPath && popularityStepComplete ? (
+        {!basicEstimateActive && !genericPath && popularityStepComplete ? (
           <div className={styles.currentCard} style={{ marginTop: '1rem' }}>
             <h3 className={styles.currentTitle}>Tractor extras</h3>
             <p className={styles.currentHint}>Select fitted extras. Their replacement prices are depreciated before value is added.</p>
@@ -7672,6 +8417,15 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
 
   function renderStepBody() {
     if (step === 1) return renderMachineStep();
+
+    if (basicEstimateActive) {
+      if (step === 2) return renderBasicBrandModelStep();
+      if (step === 3) return renderBasicLevelStep();
+      if (step === 4) return renderDetailsStep();
+      if (step === 5) return renderBasicReplacementStep();
+      return renderResultStep();
+    }
+
     if (isMotorSector(selectedSector)) {
       if (step === 2) return renderMotorSearchStep();
       if (step === 3 || step === 4) return renderDetailsStep();
@@ -7708,7 +8462,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
   const finalSaveCta = finalSaveIntent === 'marketplace'
     ? 'Save and continue to advert details'
     : 'Confirm and save';
-  const isSectorIntroStep = step === 1 && !selectedSector;
+  const isSectorIntroStep = step === 1 && (!selectedSector || !estimateExperience);
   const compactPathChoicePage = compactAppMode && step === 3 && !flowMode;
 
   return (
@@ -7722,7 +8476,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
       <div className={styles.container}>
         <section className={`${styles.wizardShell} ${isSectorIntroStep ? styles.sectorWizardShell : ''}`}>
           <div id="valuation-wizard-card" className={`${styles.wizardCard} ${isSectorIntroStep ? styles.sectorWizardCard : ''}`}>
-            {step > 1 || (compactAppMode && selectedSector) ? (
+            {step > 1 || (compactAppMode && selectedSector && estimateExperience) ? (
               <div className={styles.wizardHeader}>
                 {compactAppMode ? (
                   <div className={styles.mobileStepSummary} aria-live="polite">
@@ -7733,7 +8487,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                   {WIZARD_STEPS.map((item) => {
                     const active = item.step === step;
                     const complete = item.step < step;
-                    const canJumpBack = complete && item.step <= 4;
+                    const canJumpBack = complete && item.step <= 5;
                     const stepLabel = getWizardStepLabel(item.step, selectedSector);
                     return (
                       <button
@@ -7765,7 +8519,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
 
             <div
               className={`${styles.wizardFooter} ${step === 1 || compactPathChoicePage ? styles.wizardFooterSingle : ''}`}
-              data-has-disclaimer={step === 4}
+              data-has-disclaimer={basicEstimateActive ? step === 5 : step === 4}
             >
               <button
                 type="button"
@@ -7776,14 +8530,14 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
               >
                 Back
               </button>
-              {step === 4 ? (
+              {(basicEstimateActive ? step === 5 : step === 4) ? (
                 <p className={styles.preEstimateDisclaimer} data-valuation-disclaimer="true">
                   {compactAppMode
                     ? 'Indicative estimate only. Confirm condition, documents, location and market demand.'
                     : 'Aim4price provides an indicative estimate only. It is not a certified valuation or inspection report. Final value should still be checked against asset condition, documents, location and current market demand.'}
                 </p>
               ) : null}
-              {step === 1 || compactPathChoicePage ? null : step === 5 ? (
+              {step === 1 || compactPathChoicePage ? null : step === 6 ? (
                 <button
                   type="button"
                   className={styles.secondaryButton}
@@ -7799,9 +8553,12 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                   className={styles.primaryButton}
                   data-valuation-action="next"
                   onClick={handleNext}
-                  disabled={valuationLoading || (step === 2 && (isMotorSector(selectedSector) ? motorCanonicalLoading : brandsLoading || !selectedBrand))}
+                  disabled={
+                    valuationLoading
+                    || (!basicEstimateActive && step === 2 && (isMotorSector(selectedSector) ? motorCanonicalLoading : brandsLoading || !selectedBrand))
+                  }
                 >
-                  {valuationLoading ? 'Calculating...' : step === 4 ? 'Get Estimate' : 'Continue'}
+                  {valuationLoading ? 'Calculating...' : basicEstimateActive ? step === 5 ? 'Get Estimate' : 'Continue' : step === 4 ? 'Get Estimate' : 'Continue'}
                 </button>
               )}
             </div>
