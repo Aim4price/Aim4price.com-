@@ -5732,7 +5732,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     if (!estimateExperience) {
       return (
         <div className={styles.sectorStart}>
-          <div className={styles.sectorIntro}>
+          <div className={`${styles.sectorIntro} ${styles.estimateModeIntro}`}>
             <div className={`${styles.selectedSummary} ${styles.estimateModeSectorLabel}`}>
               <span className={styles.selectedSummaryPill}>{SECTOR_LABELS[selectedSector]}</span>
             </div>
@@ -5743,20 +5743,20 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
           <div className={`${styles.sectorLargeGrid} ${styles.estimateModeGrid}`}>
             <button
               type="button"
-              className={`${styles.sectorBigCard} ${compactAppMode ? styles.sectorBigCardApp : ''} ${styles.sectorBigCardLive} ${styles.estimateModeCard} ${styles.estimateModeBasicCard}`}
+              className={`${styles.sectorBigCard} ${compactAppMode ? styles.sectorBigCardApp : ''} ${styles.sectorBigCardLive}`}
               onClick={() => handleEstimateExperienceSelect('basic')}
             >
               <span className={styles.sectorBigCardContent}>
                 <span className={styles.sectorLabelWrap}>
                   <strong className={styles.sectorLabel}>Basic</strong>
-                  <span className={styles.sectorCardHint}>Start →</span>
+                  <span className={styles.sectorCardHint}>Start estimate →</span>
                 </span>
               </span>
             </button>
 
             <button
               type="button"
-              className={`${styles.sectorBigCard} ${compactAppMode ? styles.sectorBigCardApp : ''} ${styles.estimateModeCard} ${styles.estimateModeAdvancedCard} ${styles.estimateModeCardLocked}`}
+              className={`${styles.sectorBigCard} ${compactAppMode ? styles.sectorBigCardApp : ''} ${styles.estimateModeAdvancedCard} ${styles.estimateModeCardLocked}`}
               disabled
               aria-disabled="true"
             >
@@ -5771,6 +5771,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                 </span>
                 <span className={styles.sectorLabelWrap}>
                   <strong className={styles.sectorLabel}>Advanced</strong>
+                  <span className={`${styles.sectorCardHint} ${styles.estimateModeAdvancedSpacer}`} aria-hidden="true">Start estimate →</span>
                 </span>
               </span>
             </button>

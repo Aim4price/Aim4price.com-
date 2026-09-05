@@ -13247,43 +13247,6 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
-.estimateModeCard {
-  min-height: 15.6rem;
-  text-align: left;
-}
-
-.estimateModeCard .sectorBigCardContent {
-  justify-content: flex-end;
-}
-
-.estimateModeCard .sectorLabelWrap {
-  max-width: 31rem;
-  gap: 0.6rem;
-}
-
-.estimateModeCopy {
-  display: block;
-  max-width: 30rem;
-  font-size: 1rem;
-  font-weight: 650;
-  line-height: 1.55;
-  text-shadow: none;
-}
-
-.estimateModeCardLocked,
-.estimateModeCardLocked:hover,
-.estimateModeCardLocked:focus-visible {
-  cursor: not-allowed;
-  transform: none;
-  box-shadow:
-    0 28px 48px rgba(13, 36, 28, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.08);
-}
-
-.estimateModeCardLocked {
-  opacity: 0.82;
-}
-
 .basicIdentityCard {
   display: grid;
   gap: 1rem;
@@ -13430,9 +13393,6 @@
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .estimateModeCard {
-    min-height: 12.6rem;
-  }
 
   .replacementBreakdown {
     grid-template-columns: minmax(0, 1fr);
@@ -13448,11 +13408,24 @@
 }
 
 
-/* === Estimate type: Aim4price Exclusive design === */
+/* === Estimate type: sector-card parity ===
+   Basic and Advanced intentionally inherit the exact sector card typography,
+   weight, spacing, radius, background and sizing. Only positioning/status UI
+   specific to this choice screen is defined below. */
+.estimateModeIntro {
+  position: relative;
+}
+
 .estimateModeSectorLabel {
-  width: 100%;
+  position: absolute;
+  top: 0.15rem;
+  right: 0;
+  z-index: 3;
+  display: flex;
+  width: auto;
+  align-items: center;
   justify-content: flex-end;
-  margin: 0 0 0.15rem;
+  margin: 0;
 }
 
 .estimateModeSectorLabel .selectedSummaryPill {
@@ -13470,91 +13443,25 @@
   text-transform: uppercase;
 }
 
-.estimateModeGrid {
-  gap: 1.05rem;
-}
-
-.estimateModeCard {
-  min-height: 18rem;
-  border-radius: 1.6rem;
-}
-
-.estimateModeCard .sectorBigCardContent {
-  justify-content: center;
-  align-items: flex-start;
-  gap: 0.95rem;
-  padding: 2.05rem 2.2rem;
-}
-
-.estimateModeCard .sectorLabelWrap {
-  max-width: none;
-  gap: 2.65rem;
-}
-
-.estimateModeCard .sectorLabel {
-  max-width: none;
-  font-size: clamp(2.35rem, 3.7vw, 3.25rem);
-  line-height: 0.96;
-  letter-spacing: -0.06em;
-  text-shadow: 0 10px 28px rgba(4, 18, 13, 0.24);
-}
-
-.estimateModeBasicCard {
-  border-color: rgba(88, 158, 132, 0.34);
-  background:
-    radial-gradient(circle at 12% 0%, rgba(255, 255, 255, 0.09), transparent 34%),
-    linear-gradient(135deg, #174d3c 0%, #082f26 100%);
-  box-shadow:
-    0 28px 52px rgba(12, 45, 34, 0.16),
-    inset 0 1px 0 rgba(255, 255, 255, 0.12);
-}
-
-.estimateModeBasicCard:hover,
-.estimateModeBasicCard:focus-visible {
-  background:
-    radial-gradient(circle at 12% 0%, rgba(255, 255, 255, 0.12), transparent 35%),
-    linear-gradient(135deg, #195442 0%, #083329 100%);
-}
-
-.estimateModeBasicCard .sectorCardHint {
-  color: rgba(244, 250, 247, 0.9);
-  font-size: 1rem;
-  font-weight: 750;
-  letter-spacing: -0.01em;
-}
-
-.estimateModeAdvancedCard,
-.estimateModeAdvancedCard:hover,
-.estimateModeAdvancedCard:focus-visible {
-  border-color: rgba(188, 211, 202, 0.2);
-  background:
-    radial-gradient(circle at 12% 0%, rgba(255, 255, 255, 0.1), transparent 34%),
-    linear-gradient(135deg, #4d7669 0%, #2f5b4f 100%);
-  box-shadow:
-    0 28px 52px rgba(18, 55, 44, 0.13),
-    inset 0 1px 0 rgba(255, 255, 255, 0.12);
-}
-
-.estimateModeAdvancedCard .sectorBigCardContent {
-  opacity: 1;
-  filter: none;
-}
-
 .estimateModeAdvancedCard .sectorCardTopRow {
-  width: 100%;
-  justify-content: flex-start;
-  margin-bottom: 0.05rem;
+  position: absolute;
+  top: clamp(1rem, 1.35vw, 1.2rem);
+  right: clamp(1rem, 1.35vw, 1.2rem);
+  z-index: 4;
+  width: auto;
+  min-height: 0;
+  margin: 0;
 }
 
-.estimateModeAdvancedCard .sectorLabelWrap {
-  gap: 0;
+.estimateModeAdvancedSpacer {
+  visibility: hidden;
 }
 
 .estimateModeCardLocked,
 .estimateModeCardLocked:hover,
 .estimateModeCardLocked:focus-visible {
-  opacity: 1;
   cursor: not-allowed;
+  opacity: 1;
   transform: none;
 }
 
@@ -13562,54 +13469,51 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.55rem;
-  min-height: 2.45rem;
-  padding: 0 1.05rem;
+  gap: 0.5rem;
+  min-height: 2.15rem;
+  padding: 0 0.86rem;
   border: 1px solid rgba(239, 193, 84, 0.9);
   border-radius: 999px;
-  background: rgba(22, 55, 44, 0.42);
+  background: rgba(17, 52, 41, 0.72);
   color: #f4cd6c;
   box-shadow:
-    0 10px 24px rgba(17, 40, 33, 0.14),
+    0 10px 22px rgba(10, 34, 26, 0.16),
     inset 0 1px 0 rgba(255, 242, 199, 0.08);
-  font-size: 0.78rem;
+  font-size: 0.7rem;
   font-weight: 850;
-  letter-spacing: 0.11em;
+  letter-spacing: 0.09em;
   line-height: 1;
   text-transform: uppercase;
   backdrop-filter: blur(10px);
 }
 
 .exclusiveBadgeIcon {
-  width: 1.05rem;
-  height: 1.05rem;
+  width: 0.95rem;
+  height: 0.95rem;
   flex: 0 0 auto;
 }
 
 @media (max-width: 760px) {
-  .estimateModeCard {
-    min-height: 13rem;
+  .estimateModeIntro {
+    position: static;
   }
 
-  .estimateModeCard .sectorBigCardContent {
-    padding: 1.45rem 1.4rem;
+  .estimateModeSectorLabel {
+    position: static;
+    display: flex;
+    width: 100%;
+    justify-content: flex-end;
+    margin-bottom: 0.05rem;
   }
 
-  .estimateModeCard .sectorLabel {
-    font-size: clamp(2.05rem, 10vw, 2.65rem);
-  }
-
-  .estimateModeCard .sectorLabelWrap {
-    gap: 1.85rem;
-  }
-
-  .estimateModeAdvancedCard .sectorLabelWrap {
-    gap: 0;
+  .estimateModeAdvancedCard .sectorCardTopRow {
+    top: 1rem;
+    right: 1rem;
   }
 
   .exclusiveBadge {
-    min-height: 2.2rem;
-    padding-inline: 0.85rem;
-    font-size: 0.7rem;
+    min-height: 2rem;
+    padding-inline: 0.72rem;
+    font-size: 0.64rem;
   }
 }

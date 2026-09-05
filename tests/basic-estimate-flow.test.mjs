@@ -92,11 +92,13 @@ test('family-aware condition labels and common extras stay deliberately small', 
 test('Basic Estimate exposes the requested six-step family-first flow and bypasses the legacy Path screen', () => {
   assert.match(client, /\{ step: 1, label: 'Equipment' \}[\s\S]*?\{ step: 2, label: 'Brand & Model' \}[\s\S]*?\{ step: 3, label: 'Level' \}[\s\S]*?\{ step: 4, label: 'Specs' \}[\s\S]*?\{ step: 5, label: 'Replacement' \}[\s\S]*?\{ step: 6, label: 'Value' \}/);
   assert.match(client, /if \(basicEstimateActive\) \{[\s\S]*?if \(step === 2\) return renderBasicBrandModelStep\(\);[\s\S]*?if \(step === 3\) return renderBasicLevelStep\(\);[\s\S]*?if \(step === 4\) return renderDetailsStep\(\);[\s\S]*?if \(step === 5\) return renderBasicReplacementStep\(\);/);
-  assert.match(client, /<strong className=\{styles\.sectorLabel\}>Basic<\/strong>/);
-  assert.match(client, /<strong className=\{styles\.sectorLabel\}>Advanced<\/strong>/);
+  assert.match(client, /<strong className=\{styles\.sectorLabel\}>Basic<\/strong>[\s\S]*?<span className=\{styles\.sectorCardHint\}>Start estimate →<\/span>/);
+  assert.match(client, /<strong className=\{styles\.sectorLabel\}>Advanced<\/strong>[\s\S]*?styles\.estimateModeAdvancedSpacer/);
   assert.match(client, /Aim4price Exclusive/);
+  assert.match(client, /styles\.estimateModeIntro/);
   assert.match(client, /styles\.estimateModeSectorLabel/);
   assert.match(client, /styles\.exclusiveBadge/);
+  assert.doesNotMatch(client, /styles\.estimateModeBasicCard/);
   assert.doesNotMatch(client, /Quick mathematical estimate using the asset family, its condition, usage and replacement price\./);
   assert.doesNotMatch(client, /Deeper model, specification and Aim4price market intelligence\./);
 });
@@ -146,8 +148,14 @@ test('replacement styling reuses the year slider visual language and does not in
   const basicCss = valuationStyles.split('/* === Family-first Basic Estimate ===')[1] ?? '';
   assert.ok(basicCss, 'Basic Estimate styling block should be present');
   assert.doesNotMatch(basicCss, /font-family\s*:/, 'Basic Estimate must inherit Aim4price typography');
-  assert.match(valuationStyles, /\.estimateModeSectorLabel[^\{]*\{[\s\S]*?justify-content: flex-end;/);
+  assert.match(valuationStyles, /\.estimateModeSectorLabel[^\{]*\{[\s\S]*?position: absolute;[\s\S]*?right: 0;[\s\S]*?justify-content: flex-end;/);
+  assert.match(valuationStyles, /\.estimateModeAdvancedCard \.sectorCardTopRow[^\{]*\{[\s\S]*?position: absolute;[\s\S]*?right: clamp\(1rem, 1\.35vw, 1\.2rem\);/);
+  assert.match(valuationStyles, /\.estimateModeAdvancedSpacer[^\{]*\{[\s\S]*?visibility: hidden;/);
   assert.match(valuationStyles, /\.exclusiveBadge[^\{]*\{[\s\S]*?border: 1px solid rgba\(239, 193, 84, 0\.9\);[\s\S]*?text-transform: uppercase;/);
+  const estimateTypeCss = valuationStyles.split('/* === Estimate type: sector-card parity ===')[1] ?? '';
+  assert.ok(estimateTypeCss, 'Estimate type parity styling block should be present');
+  assert.doesNotMatch(estimateTypeCss, /\.estimateModeCard \.sectorLabel/);
+  assert.doesNotMatch(estimateTypeCss, /\.estimateModeCard \.sectorBigCardContent/);
 });
 
 test('the final result renderer and save destinations remain shared with the existing valuation flow', () => {
