@@ -154,9 +154,32 @@ client = replace_once(
     'Replacement manual input hint',
 )
 
-breakdown_start = client.index('          {inputPrice ? (', render_start)
-breakdown_end = client.index('          ) : null}', breakdown_start) + len('          ) : null}')
-client = client[:breakdown_start] + client[breakdown_end:]
+breakdown_block = """
+
+          {inputPrice ? (
+            <div className={styles.replacementBreakdown}>
+              <span>
+                <small>Asset replacement</small>
+                <strong>{money(inputPrice)}</strong>
+              </span>
+              {hasExtra && basicExtraReplacementPriceExVat ? (
+                <>
+                  <span className={styles.replacementBreakdownSymbol}>+</span>
+                  <span>
+                    <small>{extraName || 'Extra'}</small>
+                    <strong>{money(basicExtraReplacementPriceExVat)}</strong>
+                  </span>
+                </>
+              ) : null}
+              <span className={styles.replacementBreakdownSymbol}>=</span>
+              <span>
+                <small>Configured asset replacement</small>
+                <strong>{money(basicTotalReplacementPriceExVat ?? inputPrice)}</strong>
+              </span>
+            </div>
+          ) : null}
+"""
+client = replace_once(client, breakdown_block, '\n', 'Replacement price breakdown')
 
 # VAT selector styling and a smaller, guaranteed single-line replacement-price readout.
 panel_anchor = ".replacementSliderPanel {\n  margin-top: 0.2rem;\n}\n"
@@ -212,7 +235,7 @@ if 'font-size: clamp(2.2rem, 4.25vw, 3.6rem);' not in desktop_readout_block:
     raise RuntimeError('Could not find desktop replacement-price readout sizing')
 desktop_readout_block = desktop_readout_block.replace(
     'font-size: clamp(2.2rem, 4.25vw, 3.6rem);',
-    'font-size: clamp(1.75rem, 2.7vw, 2.55rem);\n  white-space: nowrap;',
+    'font-size: clamp(1.6rem, 2.2vw, 2.2rem);\n  white-space: nowrap;',
     1,
 )
 styles = styles[:desktop_readout_start] + desktop_readout_block + styles[desktop_readout_end:]
@@ -224,7 +247,7 @@ if 'font-size: clamp(2rem, 10vw, 3rem);' not in mobile_readout_block:
     raise RuntimeError('Could not find mobile replacement-price readout sizing')
 mobile_readout_block = mobile_readout_block.replace(
     'font-size: clamp(2rem, 10vw, 3rem);',
-    'font-size: clamp(1.65rem, 7.5vw, 2.25rem);',
+    'font-size: clamp(1.5rem, 7vw, 2rem);',
     1,
 )
 styles = styles[:mobile_readout_start] + mobile_readout_block + styles[mobile_readout_end:]
@@ -255,7 +278,7 @@ addition = r'''test('Basic replacement VAT selector preserves an ex-VAT valuatio
 
   assert.match(valuationStyles, /\.replacementVatToggle/);
   assert.match(valuationStyles, /\.replacementVatToggle button\.replacementVatToggleActive/);
-  assert.match(valuationStyles, /\.replacementSliderReadout strong[^\{]*\{[\s\S]*?font-size: clamp\(1\.75rem, 2\.7vw, 2\.55rem\);[\s\S]*?white-space: nowrap;/);
+  assert.match(valuationStyles, /\.replacementSliderReadout strong[^\{]*\{[\s\S]*?font-size: clamp\(1\.6rem, 2\.2vw, 2\.2rem\);[\s\S]*?white-space: nowrap;/);
 });
 
 '''
