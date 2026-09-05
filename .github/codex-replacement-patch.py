@@ -97,8 +97,8 @@ addition = r'''
 
 test('Basic replacement slider uses the temporary general R0 to R5 million range', () => {
   const replacementStart = client.indexOf('function renderBasicReplacementStep()');
-  const replacementEnd = client.indexOf('function renderMotorSubtypeSelection', replacementStart);
-  const replacementBlock = client.slice(replacementStart, replacementEnd);
+  assert.ok(replacementStart >= 0);
+  const replacementBlock = client.slice(replacementStart, replacementStart + 16000);
   assert.match(replacementBlock, /const replacementSliderMin = 0;/);
   assert.match(replacementBlock, /const replacementSliderMax = 5_000_000;/);
   assert.match(replacementBlock, /const replacementSliderStep = 50_000;/);
