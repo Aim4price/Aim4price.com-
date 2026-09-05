@@ -93,7 +93,18 @@ test('Basic Estimate exposes the requested six-step family-first flow and bypass
   assert.match(client, /\{ step: 1, label: 'Equipment' \}[\s\S]*?\{ step: 2, label: 'Brand & Model' \}[\s\S]*?\{ step: 3, label: 'Level' \}[\s\S]*?\{ step: 4, label: 'Specs' \}[\s\S]*?\{ step: 5, label: 'Replacement' \}[\s\S]*?\{ step: 6, label: 'Value' \}/);
   assert.match(client, /if \(basicEstimateActive\) \{[\s\S]*?if \(step === 2\) return renderBasicBrandModelStep\(\);[\s\S]*?if \(step === 3\) return renderBasicLevelStep\(\);[\s\S]*?if \(step === 4\) return renderDetailsStep\(\);[\s\S]*?if \(step === 5\) return renderBasicReplacementStep\(\);/);
   assert.match(client, /<strong className=\{styles\.sectorLabel\}>Basic<\/strong>[\s\S]*?<span className=\{styles\.sectorCardHint\}>Start estimate →<\/span>/);
-  assert.match(client, /<strong className=\{styles\.sectorLabel\}>Advanced<\/strong>[\s\S]*?styles\.estimateModeAdvancedSpacer/);
+  const advancedCardStart = client.indexOf('estimateModeAdvancedCard');
+  assert.notEqual(advancedCardStart, -1);
+  const advancedCardChunk = client.slice(
+    client.lastIndexOf('<button', advancedCardStart),
+    client.indexOf('</button>', advancedCardStart) + '</button>'.length,
+  );
+  assert.match(advancedCardChunk, /estimateModeCardLocked/);
+  assert.match(advancedCardChunk, /\bdisabled\b/);
+  assert.match(advancedCardChunk, /aria-disabled="true"/);
+  assert.match(advancedCardChunk, /estimateModeAdvancedHint/);
+  assert.match(advancedCardChunk, /aria-hidden="true"/);
+  assert.match(advancedCardChunk, /Start estimate →/);
   assert.match(client, /Aim4price Exclusive/);
   assert.match(client, /styles\.estimateModeIntro/);
   assert.match(client, /styles\.estimateModeSectorLabel/);
@@ -225,9 +236,10 @@ test('replacement styling reuses the year slider visual language and does not in
   assert.match(valuationStyles, /\.sectorWizardShell[^\{]*\{[\s\S]*?width: min\(100%, 1088px\);/);
   assert.match(valuationStyles, /\.estimateModeSectorLabel \.selectedSummaryPill,\s*\.equipmentStageTopSolo \.selectedSummaryPill \{[\s\S]*?font-size: 0\.82rem;[\s\S]*?font-weight: 850;[\s\S]*?letter-spacing: 0\.11em;[\s\S]*?line-height: 1\.15;/);
   assert.match(valuationStyles, /@media \(max-width: 900px\) \{[\s\S]*?\.equipmentStageTopSolo \{[\s\S]*?justify-content: flex-end;/);
-  assert.match(valuationStyles, /\.estimateModeAdvancedCard \.sectorCardTopRow[^\{]*\{[\s\S]*?position: absolute;[\s\S]*?right: clamp\(1rem, 1\.35vw, 1\.2rem\);/);
-  assert.match(valuationStyles, /\.estimateModeAdvancedSpacer[^\{]*\{[\s\S]*?visibility: hidden;/);
-  assert.match(valuationStyles, /\.exclusiveBadge[^\{]*\{[\s\S]*?border: 1px solid rgba\(239, 193, 84, 0\.9\);[\s\S]*?text-transform: uppercase;/);
+  assert.match(valuationStyles, /\.estimateModeAdvancedCard \.sectorCardTopRow[^\{]*\{[\s\S]*?position: absolute;[\s\S]*?top: 0\.85rem;[\s\S]*?right: 0\.9rem;[\s\S]*?justify-content: flex-end;/);
+  assert.match(valuationStyles, /\.estimateModeAdvancedHint[^\{]*\{[\s\S]*?opacity: 0\.92;/);
+  assert.doesNotMatch(valuationStyles, /\.estimateModeAdvancedSpacer/);
+  assert.match(valuationStyles, /\.exclusiveBadge[^\{]*\{[\s\S]*?border: 1px solid rgba\(239, 193, 84, 0\.92\);[\s\S]*?white-space: nowrap;[\s\S]*?text-transform: uppercase;/);
   const estimateTypeCss = valuationStyles.split('/* === Estimate type: sector-card parity ===')[1] ?? '';
   assert.ok(estimateTypeCss, 'Estimate type parity styling block should be present');
   assert.doesNotMatch(estimateTypeCss, /\.estimateModeCard \.sectorLabel/);
@@ -276,8 +288,9 @@ test('Basic replacement VAT selector preserves an ex-VAT valuation basis and rem
   assert.match(replacementBlock, /role="group" aria-label="Replacement price VAT basis"/);
   assert.match(replacementBlock, /styles\.replacementPriceStack[\s\S]*?styles\.replacementSliderReadout[\s\S]*?styles\.replacementVatToggle[\s\S]*?<label className=\{styles\.yearSliderControl\}>/);
   assert.match(valuationStyles, /\.replacementPriceStack/);
-  assert.match(valuationStyles, /\.replacementPriceStack[^\{]*\{[\s\S]*?grid-row: 1 \/ span 2;[\s\S]*?align-self: center;/);
-  assert.match(valuationStyles, /\.replacementSliderPanel[^\{]*\{[\s\S]*?grid-template-columns: minmax\(19rem, 21rem\) minmax\(0, 1fr\);[\s\S]*?align-items: center;/);
+  assert.match(valuationStyles, /\.replacementPriceStack[^\{]*\{[\s\S]*?grid-row: 1 \/ span 2;[\s\S]*?grid-template-rows: minmax\(0, 1fr\) auto;[\s\S]*?align-self: stretch;/);
+  assert.match(valuationStyles, /\.replacementSliderPanel[^\{]*\{[\s\S]*?grid-template-columns: minmax\(20rem, 21\.5rem\) minmax\(0, 1fr\);[\s\S]*?grid-template-rows: minmax\(9\.75rem, 1fr\) auto;[\s\S]*?align-items: stretch;/);
+  assert.match(valuationStyles, /\.replacementSliderPanel \.yearFineTuneButton[^\{]*\{[\s\S]*?min-height: 3\.45rem;/);
   assert.match(valuationStyles, /@media \(max-width: 900px\) \{[\s\S]*?\.replacementSliderPanel[^\{]*\{[\s\S]*?grid-template-columns: minmax\(0, 1fr\);/);
   assert.match(replacementBlock, />\s*Excluding VAT\s*<\/button>/);
   assert.match(replacementBlock, />\s*Including VAT\s*<\/button>/);
