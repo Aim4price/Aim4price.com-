@@ -1,0 +1,68 @@
+name: Temporary homepage copy validation
+
+on:
+  push:
+    branches:
+      - codex/home-hero-cost-copy-20260907
+
+permissions:
+  contents: write
+
+jobs:
+  patch-and-validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Apply homepage copy change
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          hero_path = Path('app/home-hero-experience.tsx')
+          hero = hero_path.read_text()
+          old_hero = '<span>Know what it really costs.</span>'
+          new_hero = '<span>Know what is costs</span>'
+          if hero.count(old_hero) != 1:
+              raise SystemExit(f'Expected one hero phrase, found {hero.count(old_hero)}')
+          hero_path.write_text(hero.replace(old_hero, new_hero, 1))
+
+          test_path = Path('tests/homepage-asset-register-hero.test.mjs')
+          test = test_path.read_text()
+          old_test = "  assert.match(hero, /Know what it really costs\\./);"
+          new_test = "  assert.match(hero, /Know what is costs/);"
+          if test.count(old_test) != 1:
+              raise SystemExit(f'Expected one hero assertion, found {test.count(old_test)}')
+          test_path.write_text(test.replace(old_test, new_test, 1))
+          PY
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run homepage regression
+        run: node --experimental-strip-types --test tests/homepage-asset-register-hero.test.mjs
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Commit validated changes
+        shell: bash
+        run: |
+          if git diff --quiet -- app/home-hero-experience.tsx tests/homepage-asset-register-hero.test.mjs; then
+            echo "No source changes to commit."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app/home-hero-experience.tsx tests/homepage-asset-register-hero.test.mjs
+          git commit -m "Update homepage cost headline"
+          git push origin HEAD:codex/home-hero-cost-copy-20260907
