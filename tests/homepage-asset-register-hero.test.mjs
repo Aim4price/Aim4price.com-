@@ -49,7 +49,7 @@ test('homepage plays one slower timed tour, returns to its brand frame, then fol
   assert.match(hero, /<span>built for South Africa\.<\/span>/);
   assert.match(hero, /Know what you have\./);
   assert.match(hero, /Know what it’s worth\./);
-  assert.match(hero, /Know what is costs/);
+  assert.match(hero, /Know what is costs\./);
   assert.match(hero, /every important asset one living record, connecting its/);
   assert.match(hero, /indicative value/);
   assert.match(hero, /documents, maintenance, fuel and ownership costs/);
