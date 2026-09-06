@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import styles from "./auth-polish.module.css";
+import "./signup-cleanup.css";
 
 type AuthLayoutProps = {
   children: ReactNode;
