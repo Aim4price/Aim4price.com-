@@ -1,0 +1,15 @@
+/* Signup-specific simplification requested from the current auth flow.
+   Keep the step cards themselves; remove only the redundant top progress
+   chrome/helper copy and the repeated footer mode prompt. */
+
+main section[aria-labelledby="auth-heading"] > form > div:first-child > p:first-child,
+main ol[aria-label="Account setup progress"],
+main section[aria-labelledby="auth-heading"] > p:last-child {
+  display: none !important;
+}
+
+/* With the top progress block removed, keep a deliberate but compact gap
+   between the account heading and the active signup step card. */
+main section[aria-labelledby="auth-heading"] > form > div:first-child > div:last-child {
+  margin-top: 0.7rem !important;
+}
