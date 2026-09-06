@@ -148,6 +148,11 @@ test('Specification Level does not repeat Brand or Model above the heading', () 
 test('Basic Specs uses modal cards for condition, popularity and extras', () => {
   assert.match(client, /type DetailsModal = 'year' \| 'usage' \| 'condition' \| 'popularity' \| 'extras' \| null/);
   assert.match(client, /type ConditionModalView = 'choose' \| 'basic' \| 'advanced'/);
+  assert.match(client, /type ExtrasModalView = 'choose' \| 'options'/);
+  assert.match(client, /extrasModalView === 'choose'/);
+  assert.match(client, /<strong>No extras<\/strong>/);
+  assert.match(client, /<strong>Extras<\/strong>/);
+  assert.match(client, /setExtrasModalView\('options'\)/);
   assert.match(client, /function renderBasicConditionModal\(\)/);
   assert.match(client, /conditionModalView === 'choose'/);
   assert.match(client, /chooseConditionRoute\('basic'\)/);

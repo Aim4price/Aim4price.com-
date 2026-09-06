@@ -88,6 +88,7 @@ type DepreciationMethodUsed = 'full_depreciation' | 'semi_depreciation' | 'perce
 type DetailsModal = 'year' | 'usage' | 'condition' | 'popularity' | 'extras' | null;
 type UsageModalMode = 'hours' | 'percent';
 type ConditionModalView = 'choose' | 'basic' | 'advanced';
+type ExtrasModalView = 'choose' | 'options';
 
 type AdvancedAssumptionsRequest = {
   maxLifetimeUsage?: number | null;
@@ -1849,6 +1850,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
   const [activeDetailsModal, setActiveDetailsModal] = useState<DetailsModal>(null);
   const [usageModalMode, setUsageModalMode] = useState<UsageModalMode>('hours');
   const [conditionModalView, setConditionModalView] = useState<ConditionModalView>('choose');
+  const [extrasModalView, setExtrasModalView] = useState<ExtrasModalView>('choose');
   const [resultState, setResultState] = useState<ValuationResultState | null>(null);
   const [selectedMethod, setSelectedMethod] = useState<MethodKey>('aim4price');
   const [message, setMessage] = useState('');
@@ -7710,6 +7712,70 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     }
 
     function renderBasicExtrasModal() {
+      if (extrasModalView === 'choose') {
+        return (
+          <div className={styles.detailsModalOverlay} role="dialog" aria-modal="true" aria-label="Choose extras type">
+            <button type="button" className={styles.detailsModalBackdrop} aria-label="Close" onClick={() => setActiveDetailsModal(null)} />
+            <div className={`${styles.detailsModal} ${styles.specChoiceModal} ${styles.conditionRouteModal}`}>
+              <div className={`${styles.detailsModalHeader} ${compactAppMode ? dealerStyles.dealerCompactModalHeader : ''}`}>
+                <div>
+                  {!compactAppMode ? <h3 className={styles.detailsModalTitle}>Extras</h3> : null}
+                </div>
+                <button type="button" className={styles.saveModalClose} onClick={() => setActiveDetailsModal(null)} aria-label="Close">×</button>
+              </div>
+
+              <div className={styles.conditionRouteGrid}>
+                <button
+                  type="button"
+                  className={styles.conditionRouteCard}
+                  aria-label="No fitted extras"
+                  onClick={() => {
+                    setBasicExtraChoice('none');
+                    setBasicFamilyExtraReplacementPrice('');
+                    setOtherExtraEnabled(false);
+                    setOtherExtraName('');
+                    setOtherExtraReplacementPrice('');
+                    setMessage('');
+                    resetResult();
+                    setActiveDetailsModal(null);
+                  }}
+                >
+                  <span className={styles.conditionRouteNumber}>1</span>
+                  <span className={styles.conditionRouteCopy}>
+                    <strong>No extras</strong>
+                  </span>
+                  <span className={styles.conditionRouteArrow} aria-hidden="true">→</span>
+                </button>
+
+                <button
+                  type="button"
+                  className={styles.conditionRouteCard}
+                  aria-label="Choose fitted extras"
+                  onClick={() => {
+                    if (basicExtraChoice === 'none') {
+                      setBasicExtraChoice('');
+                    }
+                    setExtrasModalView('options');
+                    setMessage('');
+                    resetResult();
+                  }}
+                >
+                  <span className={styles.conditionRouteNumber}>2</span>
+                  <span className={styles.conditionRouteCopy}>
+                    <strong>Extras</strong>
+                  </span>
+                  <span className={styles.conditionRouteArrow} aria-hidden="true">→</span>
+                </button>
+              </div>
+
+              <div className={`${styles.detailsModalActions} ${styles.conditionRouteActions}`}>
+                <button type="button" className={styles.secondaryButton} onClick={() => setActiveDetailsModal(null)}>Cancel</button>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
       return (
         <div className={styles.detailsModalOverlay} role="dialog" aria-modal="true" aria-label="Choose fitted extras">
           <button type="button" className={styles.detailsModalBackdrop} aria-label="Close" onClick={() => setActiveDetailsModal(null)} />
@@ -7719,7 +7785,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                 {!compactAppMode ? (
                   <>
                     <h3 className={styles.detailsModalTitle}>Extras</h3>
-                    <p className={styles.detailsModalText}>Confirm whether a fitted extra should be included in the replacement price.</p>
+                    <p className={styles.detailsModalText}>Choose the fitted extra that applies, or add another.</p>
                   </>
                 ) : null}
               </div>
@@ -7727,24 +7793,6 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
             </div>
 
             <div className={`${styles.choiceGrid} ${styles.basicExtrasGrid}`}>
-              <button
-                type="button"
-                className={`${styles.choiceCard} ${basicExtraChoice === 'none' ? styles.choiceCardActive : ''}`}
-                aria-pressed={basicExtraChoice === 'none'}
-                onClick={() => {
-                  setBasicExtraChoice('none');
-                  setBasicFamilyExtraReplacementPrice('');
-                  setOtherExtraEnabled(false);
-                  setOtherExtraName('');
-                  setOtherExtraReplacementPrice('');
-                  setMessage('');
-                  resetResult();
-                }}
-              >
-                <strong>None fitted</strong>
-                <span className={styles.choiceCardNote}>No extra added</span>
-              </button>
-
               {basicFamilyExtra ? (
                 <button
                   type="button"
@@ -7832,13 +7880,22 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
 
             {message ? <p className={styles.modalMessage}>{message}</p> : null}
             <div className={styles.detailsModalActions}>
-              <button type="button" className={styles.secondaryButton} onClick={() => setActiveDetailsModal(null)}>Cancel</button>
+              <button
+                type="button"
+                className={styles.secondaryButton}
+                onClick={() => {
+                  setExtrasModalView('choose');
+                  setMessage('');
+                }}
+              >
+                Back
+              </button>
               <button
                 type="button"
                 className={styles.primaryButton}
                 onClick={() => {
-                  if (!basicExtraChoice) {
-                    setMessage('Choose whether an extra is fitted.');
+                  if (!basicExtraChoice || basicExtraChoice === 'none') {
+                    setMessage('Choose a fitted extra, or go back and choose No extras.');
                     return;
                   }
                   if (basicExtraChoice === 'family' && (!basicFamilyExtra || !basicExtraReplacementPriceExVat)) {
@@ -8129,6 +8186,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
               type="button"
               className={`${styles.specStepCard} ${basicExtrasComplete ? styles.specStepCardComplete : styles.specStepCardActive}`}
               onClick={() => {
+                setExtrasModalView('choose');
                 setMessage('');
                 setActiveDetailsModal('extras');
               }}
