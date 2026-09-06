@@ -226,12 +226,12 @@
   box-shadow: 0 10px 22px rgba(8, 117, 83, 0.17);
 }
 
-/* DropdownOverlay portals the listboxes to document.body, so these four
-   signup menus need explicit route-specific global selectors. */
-:global(#accountType-dropdown-listbox),
-:global(#accountSubtype-dropdown-listbox),
-:global(#introducedByOption-dropdown-listbox),
-:global(#province-dropdown-listbox) {
+/* DropdownOverlay portals the listboxes to document.body. Tie those portal
+   styles to the auth route by requiring body to contain this layout scope. */
+:global(body):has(.scope) :global(#accountType-dropdown-listbox),
+:global(body):has(.scope) :global(#accountSubtype-dropdown-listbox),
+:global(body):has(.scope) :global(#introducedByOption-dropdown-listbox),
+:global(body):has(.scope) :global(#province-dropdown-listbox) {
   gap: 0.18rem;
   padding: 0.42rem;
   border: 1px solid #c7ddd4;
@@ -242,10 +242,10 @@
     0 7px 18px rgba(13, 40, 31, 0.07);
 }
 
-:global(#accountType-dropdown-listbox [role="option"]),
-:global(#accountSubtype-dropdown-listbox [role="option"]),
-:global(#introducedByOption-dropdown-listbox [role="option"]),
-:global(#province-dropdown-listbox [role="option"]) {
+:global(body):has(.scope) :global(#accountType-dropdown-listbox [role="option"]),
+:global(body):has(.scope) :global(#accountSubtype-dropdown-listbox [role="option"]),
+:global(body):has(.scope) :global(#introducedByOption-dropdown-listbox [role="option"]),
+:global(body):has(.scope) :global(#province-dropdown-listbox [role="option"]) {
   min-height: 2.62rem;
   padding: 0.62rem 0.72rem;
   border-radius: 0.68rem;
@@ -253,31 +253,31 @@
   font-weight: 760;
 }
 
-:global(#accountType-dropdown-listbox [role="option"]:hover),
-:global(#accountType-dropdown-listbox [role="option"]:focus-visible),
-:global(#accountSubtype-dropdown-listbox [role="option"]:hover),
-:global(#accountSubtype-dropdown-listbox [role="option"]:focus-visible),
-:global(#introducedByOption-dropdown-listbox [role="option"]:hover),
-:global(#introducedByOption-dropdown-listbox [role="option"]:focus-visible),
-:global(#province-dropdown-listbox [role="option"]:hover),
-:global(#province-dropdown-listbox [role="option"]:focus-visible) {
+:global(body):has(.scope) :global(#accountType-dropdown-listbox [role="option"]:hover),
+:global(body):has(.scope) :global(#accountType-dropdown-listbox [role="option"]:focus-visible),
+:global(body):has(.scope) :global(#accountSubtype-dropdown-listbox [role="option"]:hover),
+:global(body):has(.scope) :global(#accountSubtype-dropdown-listbox [role="option"]:focus-visible),
+:global(body):has(.scope) :global(#introducedByOption-dropdown-listbox [role="option"]:hover),
+:global(body):has(.scope) :global(#introducedByOption-dropdown-listbox [role="option"]:focus-visible),
+:global(body):has(.scope) :global(#province-dropdown-listbox [role="option"]:hover),
+:global(body):has(.scope) :global(#province-dropdown-listbox [role="option"]:focus-visible) {
   border-color: #d5e6df;
   background: #f2f8f5;
 }
 
-:global(#accountType-dropdown-listbox [role="option"][aria-selected="true"]),
-:global(#accountSubtype-dropdown-listbox [role="option"][aria-selected="true"]),
-:global(#introducedByOption-dropdown-listbox [role="option"][aria-selected="true"]),
-:global(#province-dropdown-listbox [role="option"][aria-selected="true"]) {
+:global(body):has(.scope) :global(#accountType-dropdown-listbox [role="option"][aria-selected="true"]),
+:global(body):has(.scope) :global(#accountSubtype-dropdown-listbox [role="option"][aria-selected="true"]),
+:global(body):has(.scope) :global(#introducedByOption-dropdown-listbox [role="option"][aria-selected="true"]),
+:global(body):has(.scope) :global(#province-dropdown-listbox [role="option"][aria-selected="true"]) {
   border-color: #b4d8c9;
   background: #e8f5ef;
   color: #0b5d43;
 }
 
-:global(#accountType-dropdown-listbox [role="option"][aria-selected="true"] > span:last-child),
-:global(#accountSubtype-dropdown-listbox [role="option"][aria-selected="true"] > span:last-child),
-:global(#introducedByOption-dropdown-listbox [role="option"][aria-selected="true"] > span:last-child),
-:global(#province-dropdown-listbox [role="option"][aria-selected="true"] > span:last-child) {
+:global(body):has(.scope) :global(#accountType-dropdown-listbox [role="option"][aria-selected="true"] > span:last-child),
+:global(body):has(.scope) :global(#accountSubtype-dropdown-listbox [role="option"][aria-selected="true"] > span:last-child),
+:global(body):has(.scope) :global(#introducedByOption-dropdown-listbox [role="option"][aria-selected="true"] > span:last-child),
+:global(body):has(.scope) :global(#province-dropdown-listbox [role="option"][aria-selected="true"] > span:last-child) {
   background: #087553;
 }
 
