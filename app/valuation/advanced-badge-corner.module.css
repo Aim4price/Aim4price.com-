@@ -1,0 +1,18 @@
+.scope {
+  display: contents;
+}
+
+/* The badge row is positioned inside the card's padded content box. Pull it
+   back through that outer card padding so the pill sits against the actual
+   top-right card corner rather than appearing inset. */
+.scope :global([class*="estimateModeAdvancedCard"]) :global([class*="sectorCardTopRow"]) {
+  top: -0.9rem !important;
+  right: -1rem !important;
+}
+
+@media (max-width: 720px) {
+  .scope :global([class*="estimateModeAdvancedCard"]) :global([class*="sectorCardTopRow"]) {
+    top: -0.75rem !important;
+    right: -0.8rem !important;
+  }
+}
