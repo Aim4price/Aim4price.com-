@@ -2,18 +2,17 @@
   display: contents;
 }
 
-/* The badge row is positioned inside the card's padded content box. Pull it
-   back through that outer card padding so the pill sits against the actual
-   top-right card corner rather than appearing inset. Keep a small top inset
-   so the badge has a little breathing room from the rounded edge. */
+/* The badge row is positioned inside the card's padded content box. These
+   offsets compensate for that padding so the badge has the same visible gap
+   from the Advanced card's outer top and right edges. */
 .scope :global([class*="estimateModeAdvancedCard"]) :global([class*="sectorCardTopRow"]) {
-  top: -0.55rem !important;
+  top: -0.75rem !important;
   right: -1rem !important;
 }
 
 @media (max-width: 720px) {
   .scope :global([class*="estimateModeAdvancedCard"]) :global([class*="sectorCardTopRow"]) {
-    top: -0.55rem !important;
+    top: -0.8rem !important;
     right: -0.8rem !important;
   }
 }
