@@ -1,0 +1,251 @@
+from pathlib import Path
+
+client_path = Path('app/valuation/valuation-client.tsx')
+client = client_path.read_text()
+
+type_anchor = "type ConditionModalView = 'choose' | 'basic' | 'advanced';"
+type_replacement = type_anchor + "\ntype ExtrasModalView = 'choose' | 'options';"
+if type_anchor not in client:
+    raise SystemExit('Missing ConditionModalView anchor')
+if "type ExtrasModalView = 'choose' | 'options';" not in client:
+    client = client.replace(type_anchor, type_replacement, 1)
+
+state_anchor = "  const [usageModalMode, setUsageModalMode] = useState<UsageModalMode>('hours');\n  const [conditionModalView, setConditionModalView] = useState<ConditionModalView>('choose');\n  const [resultState, setResultState] = useState<ValuationResultState | null>(null);"
+state_replacement = "  const [usageModalMode, setUsageModalMode] = useState<UsageModalMode>('hours');\n  const [conditionModalView, setConditionModalView] = useState<ConditionModalView>('choose');\n  const [extrasModalView, setExtrasModalView] = useState<ExtrasModalView>('choose');\n  const [resultState, setResultState] = useState<ValuationResultState | null>(null);"
+if state_anchor not in client:
+    raise SystemExit('Missing modal state anchor')
+client = client.replace(state_anchor, state_replacement, 1)
+
+function_start = client.index('    function renderBasicExtrasModal() {')
+function_end_anchor = "\n\n    return (\n      <div className={basicEstimateActive ? styles.basicFamilyContextStage : undefined}>"
+function_end = client.index(function_end_anchor, function_start)
+
+new_function = r'''    function renderBasicExtrasModal() {
+      if (extrasModalView === 'choose') {
+        return (
+          <div className={styles.detailsModalOverlay} role="dialog" aria-modal="true" aria-label="Choose extras type">
+            <button type="button" className={styles.detailsModalBackdrop} aria-label="Close" onClick={() => setActiveDetailsModal(null)} />
+            <div className={`${styles.detailsModal} ${styles.specChoiceModal} ${styles.conditionRouteModal}`}>
+              <div className={`${styles.detailsModalHeader} ${compactAppMode ? dealerStyles.dealerCompactModalHeader : ''}`}>
+                <div>
+                  {!compactAppMode ? <h3 className={styles.detailsModalTitle}>Extras</h3> : null}
+                </div>
+                <button type="button" className={styles.saveModalClose} onClick={() => setActiveDetailsModal(null)} aria-label="Close">×</button>
+              </div>
+
+              <div className={styles.conditionRouteGrid}>
+                <button
+                  type="button"
+                  className={styles.conditionRouteCard}
+                  aria-label="No fitted extras"
+                  onClick={() => {
+                    setBasicExtraChoice('none');
+                    setBasicFamilyExtraReplacementPrice('');
+                    setOtherExtraEnabled(false);
+                    setOtherExtraName('');
+                    setOtherExtraReplacementPrice('');
+                    setMessage('');
+                    resetResult();
+                    setActiveDetailsModal(null);
+                  }}
+                >
+                  <span className={styles.conditionRouteNumber}>1</span>
+                  <span className={styles.conditionRouteCopy}>
+                    <strong>No extras</strong>
+                  </span>
+                  <span className={styles.conditionRouteArrow} aria-hidden="true">→</span>
+                </button>
+
+                <button
+                  type="button"
+                  className={styles.conditionRouteCard}
+                  aria-label="Choose fitted extras"
+                  onClick={() => {
+                    if (basicExtraChoice === 'none') {
+                      setBasicExtraChoice('');
+                    }
+                    setExtrasModalView('options');
+                    setMessage('');
+                    resetResult();
+                  }}
+                >
+                  <span className={styles.conditionRouteNumber}>2</span>
+                  <span className={styles.conditionRouteCopy}>
+                    <strong>Extras</strong>
+                  </span>
+                  <span className={styles.conditionRouteArrow} aria-hidden="true">→</span>
+                </button>
+              </div>
+
+              <div className={`${styles.detailsModalActions} ${styles.conditionRouteActions}`}>
+                <button type="button" className={styles.secondaryButton} onClick={() => setActiveDetailsModal(null)}>Cancel</button>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      return (
+        <div className={styles.detailsModalOverlay} role="dialog" aria-modal="true" aria-label="Choose fitted extras">
+          <button type="button" className={styles.detailsModalBackdrop} aria-label="Close" onClick={() => setActiveDetailsModal(null)} />
+          <div className={`${styles.detailsModal} ${styles.specChoiceModal}`}>
+            <div className={`${styles.detailsModalHeader} ${compactAppMode ? dealerStyles.dealerCompactModalHeader : ''}`}>
+              <div>
+                {!compactAppMode ? (
+                  <>
+                    <h3 className={styles.detailsModalTitle}>Extras</h3>
+                    <p className={styles.detailsModalText}>Choose the fitted extra that applies, or add another.</p>
+                  </>
+                ) : null}
+              </div>
+              <button type="button" className={styles.saveModalClose} onClick={() => setActiveDetailsModal(null)} aria-label="Close">×</button>
+            </div>
+
+            <div className={`${styles.choiceGrid} ${styles.basicExtrasGrid}`}>
+              {basicFamilyExtra ? (
+                <button
+                  type="button"
+                  className={`${styles.choiceCard} ${basicExtraChoice === 'family' ? styles.choiceCardActive : ''}`}
+                  aria-pressed={basicExtraChoice === 'family'}
+                  onClick={() => {
+                    setBasicExtraChoice('family');
+                    setOtherExtraEnabled(false);
+                    setOtherExtraName('');
+                    setOtherExtraReplacementPrice('');
+                    setMessage('');
+                    resetResult();
+                  }}
+                >
+                  <strong>{basicFamilyExtra.label}</strong>
+                  <span className={styles.choiceCardNote}>Common family extra</span>
+                </button>
+              ) : null}
+
+              <button
+                type="button"
+                className={`${styles.choiceCard} ${basicExtraChoice === 'other' ? styles.choiceCardActive : ''}`}
+                aria-pressed={basicExtraChoice === 'other'}
+                onClick={() => {
+                  setBasicExtraChoice('other');
+                  setBasicFamilyExtraReplacementPrice('');
+                  setOtherExtraEnabled(true);
+                  setMessage('');
+                  resetResult();
+                }}
+              >
+                <strong>Other extra</strong>
+                <span className={styles.choiceCardNote}>Add one other fitted extra</span>
+              </button>
+            </div>
+
+            {basicExtraChoice === 'family' && basicFamilyExtra ? (
+              <label className={`${styles.field} ${styles.basicExtraPriceField}`}>
+                <span className={styles.fieldLabel}>{basicFamilyExtra.label} replacement price (excl. VAT)</span>
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  value={basicFamilyExtraReplacementPrice}
+                  onChange={(event) => {
+                    setBasicFamilyExtraReplacementPrice(event.target.value);
+                    setMessage('');
+                    resetResult();
+                  }}
+                  placeholder="e.g. 150 000"
+                />
+              </label>
+            ) : null}
+
+            {basicExtraChoice === 'other' ? (
+              <div className={`${styles.inputGrid} ${styles.basicExtraFields}`}>
+                <label className={styles.field}>
+                  <span className={styles.fieldLabel}>Extra name</span>
+                  <input
+                    value={otherExtraName}
+                    onChange={(event) => {
+                      setOtherExtraName(event.target.value);
+                      setMessage('');
+                      resetResult();
+                    }}
+                    maxLength={100}
+                    placeholder="e.g. Weight set"
+                  />
+                </label>
+                <label className={styles.field}>
+                  <span className={styles.fieldLabel}>Replacement price (excl. VAT)</span>
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    value={otherExtraReplacementPrice}
+                    onChange={(event) => {
+                      setOtherExtraReplacementPrice(event.target.value);
+                      setMessage('');
+                      resetResult();
+                    }}
+                    placeholder="e.g. 25 000"
+                  />
+                </label>
+              </div>
+            ) : null}
+
+            {message ? <p className={styles.modalMessage}>{message}</p> : null}
+            <div className={styles.detailsModalActions}>
+              <button
+                type="button"
+                className={styles.secondaryButton}
+                onClick={() => {
+                  setExtrasModalView('choose');
+                  setMessage('');
+                }}
+              >
+                Back
+              </button>
+              <button
+                type="button"
+                className={styles.primaryButton}
+                onClick={() => {
+                  if (!basicExtraChoice || basicExtraChoice === 'none') {
+                    setMessage('Choose a fitted extra, or go back and choose No extras.');
+                    return;
+                  }
+                  if (basicExtraChoice === 'family' && (!basicFamilyExtra || !basicExtraReplacementPriceExVat)) {
+                    setMessage(`Enter the replacement price for ${basicFamilyExtra?.label ?? 'the fitted extra'}, excluding VAT.`);
+                    return;
+                  }
+                  if (basicExtraChoice === 'other' && !normalizeText(otherExtraName)) {
+                    setMessage('Enter a name for the other fitted extra.');
+                    return;
+                  }
+                  if (basicExtraChoice === 'other' && !basicExtraReplacementPriceExVat) {
+                    setMessage('Enter the replacement price for the other fitted extra, excluding VAT.');
+                    return;
+                  }
+                  setMessage('');
+                  setActiveDetailsModal(null);
+                }}
+              >
+                Continue
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }'''
+
+client = client[:function_start] + new_function + client[function_end:]
+
+extras_open_anchor = "              onClick={() => {\n                setMessage('');\n                setActiveDetailsModal('extras');\n              }}"
+extras_open_replacement = "              onClick={() => {\n                setExtrasModalView('choose');\n                setMessage('');\n                setActiveDetailsModal('extras');\n              }}"
+if client.count(extras_open_anchor) != 1:
+    raise SystemExit(f'Expected one extras open handler, found {client.count(extras_open_anchor)}')
+client = client.replace(extras_open_anchor, extras_open_replacement, 1)
+
+client_path.write_text(client)
+
+test_path = Path('tests/basic-estimate-flow.test.mjs')
+test_source = test_path.read_text()
+assertion_anchor = "  assert.match(client, /type ConditionModalView = 'choose' \\| 'basic' \\| 'advanced'/);"
+assertion_replacement = assertion_anchor + "\n  assert.match(client, /type ExtrasModalView = 'choose' \\| 'options'/);\n  assert.match(client, /extrasModalView === 'choose'/);\n  assert.match(client, /<strong>No extras<\\/strong>/);\n  assert.match(client, /<strong>Extras<\\/strong>/);\n  assert.match(client, /setExtrasModalView\\('options'\\)/);"
+if assertion_anchor not in test_source:
+    raise SystemExit('Missing Basic Specs modal assertion anchor')
+test_source = test_source.replace(assertion_anchor, assertion_replacement, 1)
+test_path.write_text(test_source)
