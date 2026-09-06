@@ -49,7 +49,7 @@ test('homepage plays one slower timed tour, returns to its brand frame, then fol
   assert.match(hero, /<span>built for South Africa\.<\/span>/);
   assert.match(hero, /Know what you have\./);
   assert.match(hero, /Know what it’s worth\./);
-  assert.match(hero, /Know what it really costs\./);
+  assert.match(hero, /Know what is costs\./);
   assert.match(hero, /every important asset one living record, connecting its/);
   assert.match(hero, /indicative value/);
   assert.match(hero, /documents, maintenance, fuel and ownership costs/);
@@ -104,10 +104,12 @@ test('homepage plays one slower timed tour, returns to its brand frame, then fol
   assert.match(hero, /scrollClaimRef\.current = scrollClaimRef\.current \|\| claimControl/);
   assert.match(hero, /scrollFrameRef\.current = window\.requestAnimationFrame\(\(\) => \{/);
   assert.match(hero, /currentScrollY = window\.scrollY/);
-  assert.match(hero, /sectionTop = currentScrollY \+ section\.getBoundingClientRect\(\)\.top/);
+  assert.match(hero, /const sectionRect = section\.getBoundingClientRect\(\)/);
+  assert.match(hero, /const stickyRect = sticky\.getBoundingClientRect\(\)/);
+  assert.match(hero, /sectionTop = currentScrollY \+ sectionRect\.top/);
   assert.match(hero, /stickyTop =\s*Number\.parseFloat\(window\.getComputedStyle\(sticky\)\.top\) \|\| 0/);
   assert.match(hero, /trackStart = sectionTop - stickyTop/);
-  assert.match(hero, /trackTravel = Math\.max\([\s\S]*?1,[\s\S]*?section\.offsetHeight - sticky\.offsetHeight,[\s\S]*?\)/);
+  assert.match(hero, /trackTravel = Math\.max\([\s\S]*?1,[\s\S]*?sectionRect\.height - stickyRect\.height,[\s\S]*?\)/);
   assert.match(hero, /localScroll = Math\.max\([\s\S]*?0,[\s\S]*?Math\.min\(trackTravel, currentScrollY - trackStart\),[\s\S]*?\)/);
   assert.match(hero, /progress = localScroll \/ trackTravel/);
   assert.match(hero, /nextIndex = clampStoryIndex\([\s\S]*?Math\.floor\(progress \* HERO_STORY_STEPS\.length\),[\s\S]*?\)/);
