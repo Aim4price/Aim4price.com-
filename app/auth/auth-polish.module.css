@@ -199,8 +199,9 @@
   transform: translateY(0.12rem) rotate(225deg);
 }
 
-/* A login switch already exists at the top of the card; do not repeat it at
-   the bottom of the signup wizard. */
+/* The signup/login rail already provides the mode switch. Remove the duplicate
+   signup footer completely from the rendered layout. */
+.scope :global(section[aria-labelledby="auth-heading"]:has(> form [name="accountType"]) > p:last-child),
 .scope :global(form:has([name="accountType"]) + p) {
   display: none !important;
 }
