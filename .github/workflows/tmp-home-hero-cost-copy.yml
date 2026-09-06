@@ -42,7 +42,21 @@ jobs:
           new_test = "  assert.match(hero, /Know what is costs/);"
           if test.count(old_test) != 1:
               raise SystemExit(f'Expected one hero assertion, found {test.count(old_test)}')
-          test_path.write_text(test.replace(old_test, new_test, 1))
+          test = test.replace(old_test, new_test, 1)
+
+          old_section_top = "  assert.match(hero, /sectionTop = currentScrollY \\+ section\\.getBoundingClientRect\\(\\)\\.top/);"
+          new_section_top = "  assert.match(hero, /const sectionRect = section\\.getBoundingClientRect\\(\\)/);\n  assert.match(hero, /const stickyRect = sticky\\.getBoundingClientRect\\(\\)/);\n  assert.match(hero, /sectionTop = currentScrollY \\+ sectionRect\\.top/);"
+          if test.count(old_section_top) != 1:
+              raise SystemExit(f'Expected one stale sectionTop assertion, found {test.count(old_section_top)}')
+          test = test.replace(old_section_top, new_section_top, 1)
+
+          old_track = "  assert.match(hero, /trackTravel = Math\\.max\\([\\s\\S]*?1,[\\s\\S]*?section\\.offsetHeight - sticky\\.offsetHeight,[\\s\\S]*?\\)/);"
+          new_track = "  assert.match(hero, /trackTravel = Math\\.max\\([\\s\\S]*?1,[\\s\\S]*?sectionRect\\.height - stickyRect\\.height,[\\s\\S]*?\\)/);"
+          if test.count(old_track) != 1:
+              raise SystemExit(f'Expected one stale trackTravel assertion, found {test.count(old_track)}')
+          test = test.replace(old_track, new_track, 1)
+
+          test_path.write_text(test)
           PY
 
       - name: Install dependencies
