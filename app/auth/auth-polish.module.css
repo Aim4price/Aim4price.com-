@@ -1,0 +1,330 @@
+.scope {
+  min-height: 100dvh;
+}
+
+/* Keep the signup wizard roomy horizontally, but trim the vertical stack so a
+   full step reads as one composition on ordinary laptop displays. */
+.scope :global(main:has(form [name="accountType"]) > div) {
+  width: min(100% - 2rem, 55.5rem);
+  padding-top: 1rem;
+  padding-bottom: 2rem;
+}
+
+.scope :global(main:has(form [name="accountType"]) section[aria-labelledby="auth-heading"]) {
+  gap: 0.78rem;
+  padding: 1.2rem 1.35rem 1.05rem;
+}
+
+.scope :global(main:has(form [name="accountType"]) [aria-label="Authentication mode"]) {
+  gap: 0.24rem;
+  padding: 0.24rem;
+  border-radius: 0.98rem;
+  background: #f2f6f4;
+}
+
+.scope :global(main:has(form [name="accountType"]) [aria-label="Authentication mode"] > button) {
+  min-height: 2.72rem;
+  border-radius: 0.76rem;
+}
+
+.scope :global(main:has(form [name="accountType"]) #auth-heading) {
+  font-size: clamp(2.1rem, 3.25vw, 2.55rem);
+  line-height: 1;
+  letter-spacing: -0.047em;
+}
+
+.scope :global(main:has(form [name="accountType"]) #auth-heading + p) {
+  font-size: 0.92rem;
+  line-height: 1.42;
+}
+
+.scope :global(form:has([name="accountType"]) > div:first-child > p:first-child) {
+  font-size: 0.88rem;
+  line-height: 1.4;
+}
+
+.scope :global(ol[aria-label="Account setup progress"]) {
+  margin-top: 0.82rem;
+}
+
+.scope :global(ol[aria-label="Account setup progress"] > li) {
+  gap: 0.55rem;
+}
+
+.scope :global(ol[aria-label="Account setup progress"] > li > span) {
+  width: 2.55rem;
+  height: 2.55rem;
+  font-size: 0.82rem;
+}
+
+.scope :global(ol[aria-label="Account setup progress"] > li > strong) {
+  padding-right: 0.4rem;
+  font-size: 0.82rem;
+}
+
+.scope :global(ol[aria-label="Account setup progress"] > li:not(:last-child)::after) {
+  min-width: 1.6rem;
+  margin-right: 0.65rem;
+  margin-left: 0.65rem;
+}
+
+.scope :global(form:has([name="accountType"]) > div:first-child > div:last-child) {
+  margin-top: 0.88rem;
+}
+
+.scope :global(section[aria-labelledby^="signup-step-"]) {
+  padding: 1.08rem 1.2rem;
+  border-color: #d2e3dc;
+  border-radius: 1.08rem;
+  background:
+    radial-gradient(circle at 100% 0%, rgba(24, 134, 96, 0.052), transparent 14rem),
+    linear-gradient(180deg, #ffffff 0%, #fbfdfc 100%);
+  box-shadow:
+    0 10px 24px rgba(12, 62, 47, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96);
+}
+
+/* Programmatic step focus should not leave the heavy green rectangle visible.
+   Keyboard focus still receives the existing focus-visible treatment. */
+.scope :global(section[aria-labelledby^="signup-step-"]:focus:not(:focus-visible)) {
+  outline: none;
+}
+
+.scope :global(section[aria-labelledby^="signup-step-"] > div:first-child) {
+  gap: 0.72rem;
+}
+
+.scope :global(section[aria-labelledby^="signup-step-"] > div:first-child > span:first-child) {
+  width: 2.65rem;
+  height: 2.65rem;
+  border-radius: 0.82rem;
+}
+
+.scope :global(section[aria-labelledby^="signup-step-"] > div:first-child strong) {
+  font-size: 1.08rem;
+  line-height: 1.15;
+}
+
+.scope :global(section[aria-labelledby^="signup-step-"] > div:first-child small) {
+  font-size: 0.77rem;
+  line-height: 1.35;
+}
+
+.scope :global(section[aria-labelledby^="signup-step-"] > div:last-child) {
+  gap: 0.72rem 0.88rem;
+  margin-top: 0.92rem;
+}
+
+.scope :global(form:has([name="accountType"]) input:not([type="checkbox"])) {
+  min-height: 3.08rem;
+  border-color: #d4e0dc;
+  border-radius: 0.82rem;
+  background: #ffffff;
+}
+
+.scope :global(form:has([name="accountType"]) input:not([type="checkbox"]):hover) {
+  border-color: #b9d0c7;
+}
+
+.scope :global(form:has([name="accountType"]) input:not([type="checkbox"]):focus) {
+  border-color: #8ab9a7;
+  box-shadow: 0 0 0 4px rgba(16, 123, 87, 0.08);
+}
+
+/* Signup dropdown trigger: more deliberate selected state and a dedicated
+   chevron control, rather than an arrow floating at the far edge. */
+.scope :global(button[aria-haspopup="listbox"][aria-controls$="-dropdown-listbox"]) {
+  min-height: 3.08rem;
+  padding: 0.52rem 3.35rem 0.52rem 0.95rem;
+  border: 1px solid #cfded8;
+  border-radius: 0.82rem;
+  background: linear-gradient(180deg, #ffffff 0%, #fafcfb 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.95);
+}
+
+.scope :global(button[aria-haspopup="listbox"][aria-controls$="-dropdown-listbox"]:hover) {
+  border-color: #a9c8bc;
+  background: #ffffff;
+  box-shadow:
+    0 0 0 3px rgba(16, 123, 87, 0.055),
+    0 8px 18px rgba(18, 45, 37, 0.035);
+}
+
+.scope :global(button[aria-haspopup="listbox"][aria-controls$="-dropdown-listbox"][aria-expanded="true"]) {
+  border-color: #83b9a5;
+  background: #ffffff;
+  box-shadow:
+    0 0 0 4px rgba(16, 123, 87, 0.08),
+    0 10px 22px rgba(18, 45, 37, 0.045);
+}
+
+.scope :global(button[aria-haspopup="listbox"][aria-controls$="-dropdown-listbox"] > span:first-child) {
+  font-size: 0.92rem;
+  font-weight: 780;
+}
+
+.scope :global(button[aria-haspopup="listbox"][aria-controls$="-dropdown-listbox"] > span:last-child) {
+  top: 50%;
+  right: 0.62rem;
+  width: 2rem;
+  height: 2rem;
+  display: grid;
+  place-items: center;
+  border: 1px solid #d4e3dd;
+  border-radius: 0.62rem;
+  background: #f3f8f6;
+  transform: translateY(-50%);
+  transition:
+    border-color 160ms ease,
+    background 160ms ease;
+}
+
+.scope :global(button[aria-haspopup="listbox"][aria-controls$="-dropdown-listbox"] > span:last-child::after) {
+  content: "";
+  width: 0.46rem;
+  height: 0.46rem;
+  border-right: 2px solid #174d3e;
+  border-bottom: 2px solid #174d3e;
+  transform: translateY(-0.12rem) rotate(45deg);
+  transition: transform 160ms ease;
+}
+
+.scope :global(button[aria-haspopup="listbox"][aria-controls$="-dropdown-listbox"][aria-expanded="true"] > span:last-child) {
+  border-color: #acd1c3;
+  background: #eaf5f0;
+  transform: translateY(-50%);
+}
+
+.scope :global(button[aria-haspopup="listbox"][aria-controls$="-dropdown-listbox"][aria-expanded="true"] > span:last-child::after) {
+  transform: translateY(0.12rem) rotate(225deg);
+}
+
+/* A login switch already exists at the top of the card; do not repeat it at
+   the bottom of the signup wizard. */
+.scope :global(form:has([name="accountType"]) + p) {
+  display: none !important;
+}
+
+.scope :global(form:has([name="accountType"]) > div:last-child) {
+  min-height: 3.7rem;
+  gap: 0.65rem;
+  margin-top: 0.82rem;
+  padding-top: 0.78rem;
+}
+
+.scope :global(form:has([name="accountType"]) > div:last-child > a),
+.scope :global(form:has([name="accountType"]) > div:last-child > button) {
+  min-height: 2.85rem;
+  border-radius: 0.8rem;
+}
+
+.scope :global(form:has([name="accountType"]) > div:last-child > button[type="submit"]) {
+  min-width: 9.2rem;
+  padding-right: 1.45rem;
+  padding-left: 1.45rem;
+  background: linear-gradient(180deg, #0b8861 0%, #087553 100%);
+  box-shadow: 0 10px 22px rgba(8, 117, 83, 0.17);
+}
+
+/* DropdownOverlay portals the listboxes to document.body, so these four
+   signup menus need explicit route-specific global selectors. */
+:global(#accountType-dropdown-listbox),
+:global(#accountSubtype-dropdown-listbox),
+:global(#introducedByOption-dropdown-listbox),
+:global(#province-dropdown-listbox) {
+  gap: 0.18rem;
+  padding: 0.42rem;
+  border: 1px solid #c7ddd4;
+  border-radius: 0.92rem;
+  background: rgba(255, 255, 255, 0.995);
+  box-shadow:
+    0 24px 48px rgba(13, 40, 31, 0.16),
+    0 7px 18px rgba(13, 40, 31, 0.07);
+}
+
+:global(#accountType-dropdown-listbox [role="option"]),
+:global(#accountSubtype-dropdown-listbox [role="option"]),
+:global(#introducedByOption-dropdown-listbox [role="option"]),
+:global(#province-dropdown-listbox [role="option"]) {
+  min-height: 2.62rem;
+  padding: 0.62rem 0.72rem;
+  border-radius: 0.68rem;
+  font-size: 0.9rem;
+  font-weight: 760;
+}
+
+:global(#accountType-dropdown-listbox [role="option"]:hover),
+:global(#accountType-dropdown-listbox [role="option"]:focus-visible),
+:global(#accountSubtype-dropdown-listbox [role="option"]:hover),
+:global(#accountSubtype-dropdown-listbox [role="option"]:focus-visible),
+:global(#introducedByOption-dropdown-listbox [role="option"]:hover),
+:global(#introducedByOption-dropdown-listbox [role="option"]:focus-visible),
+:global(#province-dropdown-listbox [role="option"]:hover),
+:global(#province-dropdown-listbox [role="option"]:focus-visible) {
+  border-color: #d5e6df;
+  background: #f2f8f5;
+}
+
+:global(#accountType-dropdown-listbox [role="option"][aria-selected="true"]),
+:global(#accountSubtype-dropdown-listbox [role="option"][aria-selected="true"]),
+:global(#introducedByOption-dropdown-listbox [role="option"][aria-selected="true"]),
+:global(#province-dropdown-listbox [role="option"][aria-selected="true"]) {
+  border-color: #b4d8c9;
+  background: #e8f5ef;
+  color: #0b5d43;
+}
+
+:global(#accountType-dropdown-listbox [role="option"][aria-selected="true"] > span:last-child),
+:global(#accountSubtype-dropdown-listbox [role="option"][aria-selected="true"] > span:last-child),
+:global(#introducedByOption-dropdown-listbox [role="option"][aria-selected="true"] > span:last-child),
+:global(#province-dropdown-listbox [role="option"][aria-selected="true"] > span:last-child) {
+  background: #087553;
+}
+
+@media (max-width: 720px) {
+  .scope :global(main:has(form [name="accountType"]) > div) {
+    width: calc(100% - 1rem);
+    padding-top: 0.75rem;
+    padding-bottom: 1.5rem;
+  }
+
+  .scope :global(main:has(form [name="accountType"]) section[aria-labelledby="auth-heading"]) {
+    gap: 0.82rem;
+    padding: 1rem;
+  }
+
+  .scope :global(main:has(form [name="accountType"]) #auth-heading) {
+    font-size: clamp(1.9rem, 8vw, 2.35rem);
+  }
+
+  .scope :global(ol[aria-label="Account setup progress"] > li > span) {
+    width: 2.45rem;
+    height: 2.45rem;
+  }
+
+  .scope :global(section[aria-labelledby^="signup-step-"]) {
+    padding: 1rem;
+  }
+
+  .scope :global(section[aria-labelledby^="signup-step-"] > div:last-child) {
+    gap: 0.82rem;
+  }
+
+  .scope :global(form:has([name="accountType"]) > div:last-child) {
+    margin-top: 0.9rem;
+  }
+}
+
+@media (max-width: 420px) {
+  .scope :global(main:has(form [name="accountType"]) section[aria-labelledby="auth-heading"]) {
+    padding: 0.9rem;
+  }
+
+  .scope :global(section[aria-labelledby^="signup-step-"]) {
+    padding: 0.9rem;
+  }
+
+  .scope :global(button[aria-haspopup="listbox"][aria-controls$="-dropdown-listbox"]) {
+    padding-left: 0.85rem;
+  }
+}
