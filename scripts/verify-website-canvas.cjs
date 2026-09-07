@@ -176,7 +176,7 @@ async function check(browser, url) {
     assert.equal(surfaces.image,'none','Estimate uses shared pattern');
     assert.equal(surfaces.color,'rgba(0, 0, 0, 0)');
     await page.$eval('[aria-label="Open footer"]',e=>e.click());await delay(850);
-    const footerSurfaces=await page.$eval('footer [class*="footerPanel"],footer [class*="footerDock"]',elements=>elements.map(e=>{const r=e.getBoundingClientRect();return {left:r.left,right:r.right,viewport:document.documentElement.getBoundingClientRect().width}}));
+    const footerSurfaces=await page.$$eval('footer [class*="footerPanel"],footer [class*="footerDock"]',elements=>elements.map(e=>{const r=e.getBoundingClientRect();return {left:r.left,right:r.right,viewport:document.documentElement.getBoundingClientRect().width}}));
     assert.equal(footerSurfaces.length,2);
     for(const surface of footerSurfaces)assert.ok(Math.abs(surface.left)<2&&Math.abs(surface.right-surface.viewport)<2,`footer panel and dock reach both viewport edges: ${JSON.stringify(surface)}`);
     await page.$eval('footer',e=>e.scrollIntoView({block:'end',behavior:'instant'}));
