@@ -624,6 +624,12 @@ function isPercentProjectionCandidate(input: {
   valuationInput: Record<string, unknown>;
   valuationOutput: Record<string, unknown>;
 }): boolean {
+  const basicSpecs = asObject(input.asset.specsJson);
+  if (basicSpecs.basic_catalogue_release) {
+    if (basicSpecs.basic_usage_basis === 'reading') return false;
+    return basicSpecs.basic_usage_basis === 'percent' || basicSpecs.basic_calculation_profile === 'user_life_worked_v1' ||
+      input.asset.depreciationMethodUsed === 'percentage_depreciation';
+  }
   if (input.asset.kind === 'vehicle') {
     return false;
   }
@@ -658,6 +664,8 @@ function isMotorProjectionCandidate(input: {
   valuationInput: Record<string, unknown>;
   valuationOutput: Record<string, unknown>;
 }): boolean {
+  // Basic meter profiles use the shared usage calculation, including non-motor hours.
+  if (asObject(input.asset.specsJson).basic_catalogue_release) return true;
   const sectorKey = getSectorKey(input);
   const usageMetric = readUsageMetric(input);
 
@@ -885,7 +893,7 @@ function calculateMotorProjection(input: {
   const currentCondition = normalizeCondition(input.asset.condition || pick(input.row, ['condition']) || input.valuationInput.condition);
   const targetCondition = input.targetCondition ?? currentCondition;
   const maxLifetimeUsage = readMotorLifetimeUsage({ ...input, familyKey });
-  const usageMetric: UsageMetric = 'km';
+  const usageMetric: UsageMetric = asObject(input.asset.specsJson).basic_catalogue_release ? readUsageMetric(input) : 'km';
 
   const currentModelSnapshot = calculateUsageBasedSnapshot({
     targetYear: input.baseYear,
