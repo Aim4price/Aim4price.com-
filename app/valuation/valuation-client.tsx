@@ -1,4 +1,6 @@
 'use client';
+
+import { resolveCatalogueGuide, type BasicCatalogueIdentity } from '../../lib/basic-catalogue-guide';
 import { useWebsiteStyles } from '../../components/useWebsiteStyles';
 import website_dealerStyles from '../../components/website-styles/DealerControls.module.css';
 
@@ -100,6 +102,7 @@ type AdvancedAssumptionsRequest = {
 };
 
 type EquipmentFamilyRecord = {
+  basicCatalogue?: BasicCatalogueIdentity;
   id: number;
   sectorId: number;
   sectorKey: SectorKey;
@@ -1961,8 +1964,12 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     [selectedFamily?.familyKey, selectedFamily?.familyLabel, selectedFamily?.isPropelled, selectedFamily?.usageMetricType],
   );
   const basicReplacementGuide = useMemo(
-    () => basicSpecLevel ? resolveBasicReplacementGuide(basicReplacementBands, basicSpecLevel) : null,
-    [basicReplacementBands, basicSpecLevel],
+    () => basicSpecLevel
+      ? selectedFamily?.basicCatalogue
+        ? resolveCatalogueGuide(selectedFamily.basicCatalogue, basicSpecLevel)
+        : resolveBasicReplacementGuide(basicReplacementBands, basicSpecLevel)
+      : null,
+    [basicReplacementBands, basicSpecLevel, selectedFamily],
   );
   const basicSpecLevelLabel = BASIC_SPECIFICATION_LEVELS.find((option) => option.key === basicSpecLevel)?.label ?? '';
   const basicReplacementEnteredPrice = parseMoneyInput(basicReplacementPrice);
@@ -2061,7 +2068,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
   const filteredFamilies = useMemo(() => {
     const query = familySearch.trim().toLowerCase();
     const matches = families.filter((family) =>
-      searchIncludes(`${family.familyLabel} ${family.familyKey} ${family.sectorLabel}`, familySearch),
+      searchIncludes(`${family.familyLabel} ${family.familyKey} ${family.sectorLabel} ${family.basicCatalogue?.groupLabel ?? ''}`, familySearch),
     );
 
     if (!query) return matches;
@@ -2223,6 +2230,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
       ...(basicEstimateActive
         ? {
             basic_estimate: true,
+            ...(selectedFamily?.basicCatalogue ? { basic_catalogue_release: selectedFamily.basicCatalogue.releaseKey } : {}),
             basic_specification_level: basicSpecLevel,
             basic_specification_level_label: basicSpecLevelLabel,
             spec_level: basicSpecLevelLabel,
@@ -2886,7 +2894,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
 
     async function loadFamilies() {
       try {
-        const params = new URLSearchParams({ sectorKey: sectorForRequest, includeInactive: 'true' });
+        const params = new URLSearchParams({ sectorKey: sectorForRequest, includeInactive: 'true', experience: basicEstimateActive ? 'basic' : 'advanced' });
         const response = await fetch(`/api/equipment-families?${params.toString()}`, { cache: 'no-store' });
         const data = (await response.json()) as FamiliesApiResponse;
         if (!response.ok || !data.ok || !Array.isArray(data.families)) throw new Error(data.error ?? 'Failed to load families.');
@@ -2904,7 +2912,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     return () => {
       ignore = true;
     };
-  }, [compactAppMode, selectedSector]);
+  }, [compactAppMode, selectedSector, basicEstimateActive]);
 
   useEffect(() => {
     if (!selectedFamily || !selectedSector) return;
@@ -3041,7 +3049,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
   }, [basicEstimateActive, compactAppMode, selectedFamily, selectedSector]);
 
   useEffect(() => {
-    if (!basicEstimateActive || !selectedFamily || !selectedSector) {
+    if (!basicEstimateActive || !selectedFamily || !selectedSector || selectedFamily.basicCatalogue) {
       setBasicReplacementBands([]);
       setBasicReplacementBandsLoading(false);
       setBasicReplacementBandsError('');
@@ -5862,7 +5870,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                       className={`${styles.equipmentDropdownOption} ${familyKey === family.familyKey ? styles.equipmentDropdownOptionActive : ''}`}
                       onClick={() => handleFamilySelection(family.familyKey)}
                     >
-                      <span>{family.familyLabel}</span>
+                      <span>{family.familyLabel}{family.basicCatalogue ? <small className={styles.fieldHint}> · {family.basicCatalogue.groupLabel}</small> : null}</span>
                     </button>
                   ))
                 ) : (
@@ -5970,9 +5978,10 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
 
   function renderBasicReplacementStep() {
     const guide = basicReplacementGuide;
-    const replacementSliderMin = 0;
-    const replacementSliderMax = 5_000_000;
-    const replacementSliderStep = 50_000;
+    const catalogueGuide = selectedFamily?.basicCatalogue ? guide : null;
+    const replacementSliderMin = catalogueGuide ? getVatDisplayValue(catalogueGuide.minExVat, basicReplacementVatMode)! : 0;
+    const replacementSliderMax = catalogueGuide ? getVatDisplayValue(catalogueGuide.maxExVat, basicReplacementVatMode)! : 5_000_000;
+    const replacementSliderStep = catalogueGuide ? getVatDisplayValue(catalogueGuide.sliderStep, basicReplacementVatMode)! : 50_000;
     const replacementSliderDefault = getVatDisplayValue(guide?.suggestedExVat ?? 0, basicReplacementVatMode) ?? 0;
     const normalizedReplacementInput = String(basicReplacementPrice).replace(/[^0-9.-]/g, '');
     const parsedReplacementInput = normalizedReplacementInput === '' ? null : Number(normalizedReplacementInput);
@@ -6012,6 +6021,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
         <div>
           <h2 className={styles.stepTitle}>Replacement price</h2>
           <p className={styles.stepText}>Choose the current new replacement price for a comparable asset.</p>
+          {catalogueGuide ? <p className={styles.fieldHint}>{basicSpecLevelLabel} · Suggested ballpark range. You can enter any replacement price below.</p> : null}
         </div>
 
         <div className={`${styles.yearSliderPanel} ${styles.replacementSliderPanel}`}>
@@ -6050,10 +6060,10 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
               type="range"
               min={replacementSliderMin}
               max={replacementSliderMax}
-              step={replacementSliderStep}
+              step={catalogueGuide ? 'any' : replacementSliderStep}
               value={sliderValue}
               onChange={(event) => {
-                setBasicReplacementPrice(event.target.value);
+                setBasicReplacementPrice(catalogueGuide ? String(Math.round(Number(event.target.value))) : event.target.value);
                 setMessage('');
                 resetResult();
               }}
@@ -6074,7 +6084,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                 resetResult();
               }}
             >
-              − R50 000
+              − {money(replacementSliderStep)}
             </button>
             <button
               type="button"
@@ -6085,7 +6095,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                 resetResult();
               }}
             >
-              + R50 000
+              + {money(replacementSliderStep)}
             </button>
           </div>
         </div>
@@ -9701,4 +9711,5 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     </main>
   );
 }
+
 

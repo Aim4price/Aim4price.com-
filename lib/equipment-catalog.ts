@@ -1,4 +1,5 @@
 import { getDb } from './db';
+import type { BasicCatalogueIdentity } from './basic-catalogue-guide';
 import type {
   EquipmentFamilyKey,
   SectorKey,
@@ -8,6 +9,7 @@ import type {
 } from './equipment-types';
 
 export type EquipmentFamilyRecord = {
+  basicCatalogue?: BasicCatalogueIdentity;
   id: number;
   sectorId: number;
   sectorKey: SectorKey;
@@ -463,3 +465,4 @@ export async function fetchEquipmentLinkForModelSelection(modelId: string | numb
 
 // Backward-compatible export name used by older code paths.
 export const fetchEquipmentLinkForLegacyTractorCatalogId = fetchEquipmentLinkForModelSelection;
+

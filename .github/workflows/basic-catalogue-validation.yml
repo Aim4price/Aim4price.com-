@@ -1,0 +1,52 @@
+name: Basic catalogue validation
+
+on:
+  pull_request:
+    paths:
+      - 'lib/basic-*.ts'
+      - 'lib/generic-valuation.ts'
+      - 'lib/equipment-catalog.ts'
+      - 'lib/asset-register-db.ts'
+      - 'app/api/equipment-families/route.ts'
+      - 'app/valuation/valuation-client.tsx'
+      - 'tests/basic-*.test.mjs'
+      - '.github/workflows/basic-catalogue-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: basic-catalogue-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Basic and shared valuation regressions
+        run: node --experimental-strip-types --test tests/basic-catalogue.test.mjs tests/basic-estimate-flow.test.mjs tests/shared-valuation.test.mjs tests/valuation-rules.test.mjs
+      - run: npm run typecheck
+      - name: Production bundle validation
+        shell: bash
+        run: |
+          set +e
+          npm run build 2>&1 | tee /tmp/basic-build.log
+          build_status=${PIPESTATUS[0]}
+          set -e
+          if [ "$build_status" -eq 0 ]; then exit 0; fi
+          # Same narrowly defined missing-database stop as the existing PR workflows.
+          if grep -Fq "✓ Compiled successfully" /tmp/basic-build.log \
+            && grep -Fq "Database connection variables are missing" /tmp/basic-build.log \
+            && grep -Fq "Failed to collect page data for /api/dealer/session" /tmp/basic-build.log; then
+            echo "Bundle compiled; page-data collection requires deployment database credentials."
+            exit 0
+          fi
+          exit "$build_status"

@@ -1732,7 +1732,7 @@ function mapAssetRegisterRow(row: AssetRegisterRow): AssetRegisterItem {
     sectorId: asNumber(row.sector_id),
     equipmentFamilyId: asNumber(row.equipment_family_id),
     equipmentFamilyKey: asText(row.equipment_family_key),
-    equipmentFamilyLabel: asText(row.equipment_family_label),
+    equipmentFamilyLabel: asText(row.equipment_family_label) || asText(specsJson.basic_family_label),
     equipmentModelId: asNumber(row.equipment_model_id),
     typedModelName: asText(row.typed_model_name),
     normalizedTypedModelName: asText(row.normalized_typed_model_name),
@@ -3894,3 +3894,4 @@ export async function createAssetRegisterItemFromGenericValuation(input: {
 function toRoundedNumber(value: number | null): number | null {
   return value === null || !Number.isFinite(value) ? null : Math.round(value);
 }
+

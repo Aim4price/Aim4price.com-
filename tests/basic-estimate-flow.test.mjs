@@ -40,11 +40,11 @@ test('Basic replacement guides only use family-level replacement bands', () => {
   assert.equal(guide, null, 'brand/model pricing must not be aggregated into a made-up family range');
 });
 
-test('Entry, Standard and Premium position broad family pricing without changing valuation directly', () => {
+test('Entry, Standard and Quality position broad family pricing without changing valuation directly', () => {
   assert.deepEqual(BASIC_SPECIFICATION_LEVELS.map(({ key, label }) => [key, label]), [
     ['entry', 'Entry'],
     ['standard', 'Standard'],
-    ['premium', 'Premium'],
+    ['premium', 'Quality'],
   ]);
 
   const familyBands = [band()];
@@ -251,25 +251,15 @@ test('replacement styling reuses the year slider visual language and does not in
   assert.doesNotMatch(estimateTypeCss, /\.estimateModeCard \.sectorBigCardContent/);
 });
 
-test('Basic replacement slider uses the temporary general R0 to R5 million range', () => {
-  const replacementStart = client.indexOf('function renderBasicReplacementStep()');
-  assert.ok(replacementStart >= 0);
-  const replacementBlock = client.slice(replacementStart, replacementStart + 18000);
-  assert.match(replacementBlock, /const replacementSliderMin = 0;/);
-  assert.match(replacementBlock, /const replacementSliderMax = 5_000_000;/);
-  assert.match(replacementBlock, /const replacementSliderStep = 50_000;/);
-  assert.match(replacementBlock, /styles\.yearSliderPanel/);
-  assert.match(replacementBlock, /styles\.yearSliderReadout/);
-  assert.match(replacementBlock, /styles\.yearRangeInput/);
-  assert.match(replacementBlock, /styles\.yearSliderMeta/);
-  assert.match(replacementBlock, /styles\.yearFineTuneRow/);
-  assert.match(replacementBlock, /− R50 000/);
-  assert.match(replacementBlock, /\+ R50 000/);
-  assert.match(replacementBlock, /money\(selectedReplacementPrice\)/);
-  assert.match(replacementBlock, /Math\.min\([\s\S]*?replacementSliderMax,[\s\S]*?Math\.max\(replacementSliderMin, selectedReplacementPrice\)/);
-  assert.doesNotMatch(replacementBlock, /min=\{guide\.minExVat\}/);
-  assert.doesNotMatch(replacementBlock, /max=\{guide\.maxExVat\}/);
-  assert.doesNotMatch(replacementBlock, /step=\{guide\.sliderStep\}/);
+test('Basic catalogue sliders use researched bounds and retain the legacy fallback', () => {
+  const replacementBlock = client.slice(client.indexOf('function renderBasicReplacementStep()'), client.indexOf('function renderMotorSubtypeSelection'));
+  assert.match(replacementBlock, /catalogueGuide.minExVat/);
+  assert.match(replacementBlock, /catalogueGuide.maxExVat/);
+  assert.match(replacementBlock, /catalogueGuide.sliderStep/);
+  assert.match(replacementBlock, /: 5_000_000/);
+  assert.match(replacementBlock, /step=\{catalogueGuide \? 'any' : replacementSliderStep\}/);
+  assert.match(replacementBlock, /− \{money\(replacementSliderStep\)\}/);
+  assert.match(replacementBlock, /value=\{basicReplacementPrice\}/);
 });
 
 test('Basic replacement slider keeps zero stable and preserves manual values above the temporary slider ceiling', () => {
@@ -321,4 +311,5 @@ test('the final result renderer and save destinations remain shared with the exi
   assert.match(client, /Marketplace/);
   assert.match(client, /downloadValuationPdf/);
 });
+
 

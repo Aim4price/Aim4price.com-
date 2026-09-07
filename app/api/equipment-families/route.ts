@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { basicCatalogueEnabled, listBasicCatalogueFamilies } from '../../../lib/basic-catalogue';
 import { listEquipmentFamilies } from '../../../lib/equipment-catalog';
 import { isSectorKey, type SectorKey } from '../../../lib/equipment-types';
 
@@ -15,7 +16,9 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ ok: false, error: 'Invalid sectorKey.' }, { status: 400 });
     }
 
-    const families = await listEquipmentFamilies({
+    const families = searchParams.get('experience') === 'basic' && basicCatalogueEnabled()
+      ? await listBasicCatalogueFamilies((sectorKeyParam as SectorKey | null) ?? null)
+      : await listEquipmentFamilies({
       sectorKey: (sectorKeyParam as SectorKey | null) ?? null,
       includeInactive,
     });
@@ -32,3 +35,4 @@ export async function GET(request: NextRequest) {
     );
   }
 }
+
