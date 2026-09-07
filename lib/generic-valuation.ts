@@ -1,5 +1,6 @@
 import { getBasicCatalogueFamily } from './basic-catalogue';
 import { resolveCatalogueGuide } from './basic-catalogue-guide';
+import { BASIC_USAGE_MODE_KEYS, resolveBasicUsage } from './basic-usage';
 import type { BasicSpecificationLevel } from './basic-estimate';
 import { getDb } from './db';
 import {
@@ -385,6 +386,7 @@ function scoreBand(band: ReplacementPriceBand): number {
 }
 
 type DepreciationInput = {
+  basicLifetime?: number;
   sectorKey: SectorKey;
   replacementPrice: number | null;
   year: number;
@@ -463,6 +465,7 @@ function specsUseExplicitPercentageBasis(specs: Record<string, unknown>): boolea
 function resolveMaxLifetimeHours(input: DepreciationInput): number {
   const advancedLifetime = positiveUsageAmount(input.advancedAssumptions?.maxLifetimeUsage);
   if (advancedLifetime !== null) return advancedLifetime;
+  if (input.basicLifetime !== undefined) return input.basicLifetime;
 
   const specs = input.specsJson;
   const explicit =
@@ -710,7 +713,8 @@ function resolveDepreciation(input: DepreciationInput): {
 
   if (input.isPropelled || isUsageAmountMetric(input.usageMetricType)) {
     const maxLifetimeHours = resolveMaxLifetimeHours(input);
-    const knownHours = positiveUsageAmount(input.usageAmount);
+    const knownHours = input.basicLifetime !== undefined && input.usageAmount !== null
+      ? input.usageAmount : positiveUsageAmount(input.usageAmount);
 
     if (knownHours !== null) {
       const calculated = calculateEngineHoursValue({
@@ -1708,7 +1712,7 @@ async function collectTypedModelKeys(input: {
 
 export async function runGenericValuation(input: GenericValuationInput): Promise<GenericValuationResult> {
   const rawSpecsJson = normalizeSpecsJson(input.specsJson);
-  const lifeWorkedPercent = positivePercent(input.lifeWorkedPercent);
+  let lifeWorkedPercent = positivePercent(input.lifeWorkedPercent);
   const inputYear = Math.round(input.year);
   let specsJson: Record<string, unknown> = {
     ...rawSpecsJson,
@@ -1749,17 +1753,27 @@ export async function runGenericValuation(input: GenericValuationInput): Promise
   const basicGuide = basicCatalogue
     ? resolveCatalogueGuide(basicCatalogue, rawSpecsJson.basic_specification_level as BasicSpecificationLevel)
     : null;
+  let basicUsageAmount: number | null = null;
   if (basicCatalogue) {
-    if (input.lifeWorkedPercent == null || !Number.isFinite(input.lifeWorkedPercent) || lifeWorkedPercent === null || Number(input.lifeWorkedPercent) > 100) throw new Error('Enter the percentage of useful life worked.');
+    const profile = basicCatalogue.usageProfile!;
+    const usage = resolveBasicUsage({ profile, specs: rawSpecsJson, usageAmount: input.usageAmount, lifeWorkedPercent: input.lifeWorkedPercent });
+    basicUsageAmount = usage.usageAmount;
+    lifeWorkedPercent = usage.lifeWorkedPercent;
     if (!Number.isFinite(input.userReplacementPriceExVat) || Number(input.userReplacementPriceExVat) <= 0) {
       throw new Error('Confirm a positive replacement price.');
     }
     // Do not accept model links or a caller-supplied catalogue snapshot as evidence.
     for (const key of ['catalog_model_id', 'equipment_model_id', 'equipmentModelId', 'aim4_model_key', 'selected_model_key']) delete specsJson[key];
+    // Clear stale percentage markers when explicitly switching back to a reading.
+    for (const key of BASIC_USAGE_MODE_KEYS) delete specsJson[key];
+    for (const key of ['max_lifetime_hours', 'expected_lifetime_hours', 'lifetime_hours', 'design_life_hours',
+      'max_lifetime_km', 'expected_lifetime_km', 'lifetime_km', 'design_life_km']) delete specsJson[key];
     specsJson = { ...specsJson, basic_catalogue_release: basicCatalogue.releaseKey,
       basic_catalogue: basicCatalogue, basic_family_label: basicCatalogue.familyLabel,
-      basic_calculation_profile: 'user_life_worked_v1',
-      valuation_mode: 'percent_used', valuationMode: 'percent_used' };
+      basic_calculation_profile: profile.version, basic_usage_profile_version: profile.version,
+      basic_usage_profile: profile, basic_usage_basis: usage.basis,
+      valuation_mode: usage.basis === 'percent' ? 'percent_used' : 'engine_hours',
+      valuationMode: usage.basis === 'percent' ? 'percent_used' : 'engine_hours' };
   }
   const family: FamilyContext | null = basicRecord ? {
     id: null, key: basicRecord.familyKey, label: basicRecord.familyLabel,
@@ -1859,7 +1873,8 @@ export async function runGenericValuation(input: GenericValuationInput): Promise
     sectorKey: family.sectorKey,
     year: inputYear,
     yearModelUnknown: input.yearModelUnknown,
-    usageAmount: basicRecord ? null : toNumber(input.usageAmount),
+    usageAmount: basicRecord ? basicUsageAmount : toNumber(input.usageAmount),
+    basicLifetime: basicCatalogue?.usageProfile?.primaryMetric !== 'percent' ? basicCatalogue?.usageProfile?.expectedLifetime : undefined,
     lifeWorkedPercent,
     usageMetricType: family.usageMetricType,
     valuationMode: family.valuationMode,
@@ -1891,7 +1906,7 @@ export async function runGenericValuation(input: GenericValuationInput): Promise
   const valuationLowExVat = selectedCalculation.valuationLowExVat;
   const valuationMidExVat = selectedCalculation.valuationMidExVat;
   const valuationHighExVat = selectedCalculation.valuationHighExVat;
-  const usageAmountUsed = basicRecord ? null : toNumber(input.usageAmount);
+  const usageAmountUsed = basicRecord ? basicUsageAmount : toNumber(input.usageAmount);
   const selectedLifeWorkedPercent = selectedCalculation.lifeWorkedPercent;
   const usesPercentageBasis =
     selectedCalculation.depreciationMethodUsed === 'percentage_depreciation' ||
@@ -1931,6 +1946,8 @@ export async function runGenericValuation(input: GenericValuationInput): Promise
         }),
     usageMode: persistedUsageMode,
     usage_mode: persistedUsageMode,
+    ...(basicCatalogue ? { usageMetric: persistedUsageMode, usage_metric: persistedUsageMode,
+      usageUnit: persistedUsageMode, usage_unit: persistedUsageMode } : {}),
     usageBasis: family.valuationMode === 'year_condition' ? 'none' : usesPercentageBasis ? 'percent' : 'reading',
     usage_basis: family.valuationMode === 'year_condition' ? 'none' : usesPercentageBasis ? 'percent' : 'reading',
     depreciationMethodUsed: selectedCalculation.depreciationMethodUsed,
@@ -1968,7 +1985,12 @@ export async function runGenericValuation(input: GenericValuationInput): Promise
   const calculatedConfidenceLabel = confidenceLabel(confidenceScore);
 
   const notes: string[] = [];
-  if (basicCatalogue) notes.push('Rounded Basic ballpark pricing; useful life worked was supplied by the user.');
+  if (basicCatalogue) {
+    const profile = basicCatalogue.usageProfile!;
+    notes.push(`Basic useful-life planning default: ${profile.expectedLifetime.toLocaleString('en-ZA')} ${profile.lifetimeUnit}. This is an indicative economic life, not a guaranteed lifespan.`);
+    if (basicUsageAmount === null) notes.push('Useful life worked was supplied by the user; no meter reading was inferred.');
+    if (profile.lifetimeUnit === 'years') notes.push('Reference years are context only; the existing age and percentage calculation is unchanged.');
+  }
   if (!replacementBand && !userReplacementPriceExVat) notes.push('No replacement price matched yet. Add pricing data or enter a user replacement price.');
   if (motorPricingRow) {
     notes.push(`Motor pricing matrix matched: ${motorPricingRow.typeLabel}, ${motorPricingRow.specLevel} specification.`);
@@ -1993,7 +2015,7 @@ export async function runGenericValuation(input: GenericValuationInput): Promise
     notes.push(`Depreciation reached the indicative salvage range of ${selectedCalculation.salvagePercent}% of replacement price.`);
   }
 
-  const usageSentenceLabel = getUsageSentenceLabel(family.sectorKey, family.usageMetricType);
+  const usageSentenceLabel = getUsageSentenceLabel(basicRecord ? null : family.sectorKey, family.usageMetricType);
 
   if (family.valuationMode === 'year_condition') {
     notes.push('Year and condition depreciation used. This family does not require a usage or percentage-worked input.');
@@ -2049,7 +2071,7 @@ export async function runGenericValuation(input: GenericValuationInput): Promise
     specsJson,
     year: inputYear,
     yearModelUnknown: input.yearModelUnknown,
-    usageAmount: basicRecord ? null : toNumber(input.usageAmount),
+    usageAmount: basicRecord ? basicUsageAmount : toNumber(input.usageAmount),
     condition: normalizeCondition(input.condition),
     replacementPriceBand: replacementBand,
     replacementPriceMinExVat,
@@ -2085,4 +2107,3 @@ export async function runGenericValuation(input: GenericValuationInput): Promise
 export function getGenericSelectedMethodValue(result: GenericValuationResult, _method: GenericSelectedMethod): number | null {
   return result.valuationMidExVat ?? result.aim4priceValueExVat;
 }
-

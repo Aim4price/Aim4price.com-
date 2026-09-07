@@ -479,6 +479,8 @@ function recordUsageReading(record: Record<string, unknown>): number | null {
 
 function assetUsesPercentUsageForRevaluation(asset: AssetRegisterItem, ...extraSources: Record<string, unknown>[]): boolean {
   const specs = asset.specsJson ?? {};
+  if (specs.basic_catalogue_release && specs.basic_usage_basis === 'reading') return false;
+  if (specs.basic_catalogue_release && specs.basic_usage_basis === 'percent') return true;
   const depreciationMethod = asText(asset.depreciationMethodUsed).toLowerCase();
   const percent = readLifeWorkedPercent(asset, {}, ...extraSources);
   const usageReading = asNumber(asset.hours) ?? recordUsageReading(specs);

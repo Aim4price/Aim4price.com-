@@ -1,4 +1,5 @@
 import type { BasicReplacementGuide, BasicSpecificationLevel } from './basic-estimate';
+import type { BasicUsageProfile } from './basic-usage-profiles';
 
 export type BasicCatalogueIdentity = {
   releaseKey: string;
@@ -10,6 +11,7 @@ export type BasicCatalogueIdentity = {
   maximumExVat: number;
   pricingAsOf: string;
   confidence: string;
+  usageProfile?: BasicUsageProfile;
 };
 
 /** Equal thirds of the interval, including the researched minimum and maximum. */

@@ -1116,9 +1116,9 @@ function pdfFileSlug(value: string): string {
   return parts.join('-') || 'Estimate';
 }
 
-function toNumberOrNull(value: unknown): number | null {
+function toNumberOrNull(value: unknown, allowZero = false): number | null {
   const numeric = parseFlexibleNumber(value);
-  return numeric !== null && numeric > 0 ? numeric : null;
+  return numeric !== null && (numeric > 0 || (allowZero && numeric === 0)) ? numeric : null;
 }
 
 function toPercentOrNull(value: unknown): number | null {
@@ -1167,10 +1167,11 @@ function formatSingleUsageSummary(args: {
   sectorKey?: SectorKey | string | null;
   usageMetricType?: UsageMetricType | string | null;
   fallbackUnit?: string;
+  allowZero?: boolean;
   fallback?: string;
 }): string {
   const actualUsageAmount = args.actualUsageAmount ?? null;
-  if (actualUsageAmount !== null && Number.isFinite(actualUsageAmount) && actualUsageAmount > 0) {
+  if (actualUsageAmount !== null && Number.isFinite(actualUsageAmount) && (actualUsageAmount > 0 || (args.allowZero && actualUsageAmount === 0))) {
     const unit = args.fallbackUnit ?? getUsageShortUnit(args.sectorKey, args.usageMetricType);
     return `${formatWholeNumber(actualUsageAmount)} ${unit}`;
   }
@@ -1721,6 +1722,10 @@ function getResultUsageMetricType(state: ValuationResultState | null): UsageMetr
   return state?.kind === 'generic' ? state.result.family.usageMetricType : 'hours';
 }
 
+function getResultUsageSectorKey(state: ValuationResultState | null): SectorKey | null {
+  return state?.kind === 'generic' && state.result.specsJson.basic_catalogue_release ? null : getResultSectorKey(state);
+}
+
 function getResultSectorKey(state: ValuationResultState | null): SectorKey {
   return state?.kind === 'generic' ? state.result.sector.key : 'agricultural';
 }
@@ -2060,10 +2065,12 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
         ? normalizeText(typedModelName)
         : '';
   const shouldSaveGenericModelCandidate = genericModelMode === 'manual' && !selectedBrandIsUnknown && Boolean(normalizeText(typedModelName));
-  const selectedUsageDisplayUnit = getUsageDisplayUnit(selectedSector, selectedFamily?.usageMetricType);
-  const selectedUsageFieldLabel = getUsageFieldLabel(selectedSector, selectedFamily?.usageMetricType);
-  const selectedUsageSentenceLabel = getUsageSentenceLabel(selectedSector, selectedFamily?.usageMetricType);
-  const selectedUsageShortUnit = getUsageShortUnit(selectedSector, selectedFamily?.usageMetricType);
+  const selectedUsageSector = selectedFamily?.basicCatalogue ? null : selectedSector;
+  const selectedBasicUsageProfile = selectedFamily?.basicCatalogue?.usageProfile;
+  const selectedUsageDisplayUnit = getUsageDisplayUnit(selectedUsageSector, selectedFamily?.usageMetricType);
+  const selectedUsageFieldLabel = getUsageFieldLabel(selectedUsageSector, selectedFamily?.usageMetricType);
+  const selectedUsageSentenceLabel = getUsageSentenceLabel(selectedUsageSector, selectedFamily?.usageMetricType);
+  const selectedUsageShortUnit = getUsageShortUnit(selectedUsageSector, selectedFamily?.usageMetricType);
   const selectedMarketUsageToleranceLabel = selectedUsageDisplayUnit === 'km' ? '50,000 km' : '1,000 hours';
   const filteredFamilies = useMemo(() => {
     const query = familySearch.trim().toLowerCase();
@@ -2188,7 +2195,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
 
   const yearNumber = Number(year);
   const calculationYear = yearModelUnknown || !Number.isInteger(yearNumber) ? CURRENT_YEAR : yearNumber;
-  const usageNumber = toNumberOrNull(usageAmount);
+  const usageNumber = toNumberOrNull(usageAmount, Boolean(selectedFamily?.basicCatalogue));
   const lifeWorkedPercentNumber = toPercentOrNull(lifeWorkedPercent);
   const effectiveSpecQuestions = useMemo(
     () => mergeSpecQuestions(
@@ -2230,7 +2237,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
       ...(basicEstimateActive
         ? {
             basic_estimate: true,
-            ...(selectedFamily?.basicCatalogue ? { basic_catalogue_release: selectedFamily.basicCatalogue.releaseKey } : {}),
+            ...(selectedFamily?.basicCatalogue ? { basic_catalogue_release: selectedFamily.basicCatalogue.releaseKey, basic_usage_basis: usesPercentageBasis ? 'percent' : 'reading' } : {}),
             basic_specification_level: basicSpecLevel,
             basic_specification_level_label: basicSpecLevelLabel,
             spec_level: basicSpecLevelLabel,
@@ -3570,7 +3577,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
       return showHoursInput ? `Enter the ${selectedUsageFieldLabel.toLowerCase()} or estimate how much it has worked.` : `Estimate how much the ${getAssetNounLabel(selectedSector)} has worked.`;
     }
 
-    if (!basicUsageNotRequired && showHoursInput && !usageNumber && lifeWorkedPercentNumber === null) {
+    if (!basicUsageNotRequired && showHoursInput && (selectedFamily?.basicCatalogue ? usageNumber === null || usageNumber < 0 : !usageNumber) && lifeWorkedPercentNumber === null) {
       return `Enter ${selectedUsageFieldLabel.toLowerCase()} or estimate how much the ${getAssetNounLabel(selectedSector)} has worked.`;
     }
 
@@ -3653,7 +3660,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
 
     const usageMetricType = getResultUsageMetricType(resultState);
     const lifetimeUnitLabel = getLifetimeUnitLabel(usageMetricType);
-    const lifetimeShortUnit = getUsageShortUnit(getResultSectorKey(resultState), usageMetricType);
+    const lifetimeShortUnit = getUsageShortUnit(getResultUsageSectorKey(resultState), usageMetricType);
     const lifetimeMin = usageMetricType === 'km' ? ADVANCED_LIFETIME_KM_MIN : ADVANCED_LIFETIME_HOURS_MIN;
     const lifetimeMax = usageMetricType === 'km' ? ADVANCED_LIFETIME_KM_MAX : ADVANCED_LIFETIME_HOURS_MAX;
     const lifetimeText = normalizeText(advancedLifetimeUsage);
@@ -4117,7 +4124,8 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     const usageLabel = formatSingleUsageSummary({
       actualUsageAmount: result.usageAmount,
       lifeWorkedPercent: result.lifeWorkedPercent,
-      sectorKey: result.sector.key,
+      sectorKey: result.specsJson.basic_catalogue_release ? null : result.sector.key,
+      allowZero: Boolean(result.specsJson.basic_catalogue_release),
       usageMetricType: result.family.usageMetricType,
       fallback: '',
     }) || null;
@@ -4163,7 +4171,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     const resultYear = isGeneric ? genericResult?.year ?? calculationYear : calculationYear;
     const yearSummary = yearModelUnknown ? 'Unknown' : String(resultYear);
     const resultUsageShortUnit = isGeneric && genericResult
-      ? getUsageShortUnit(genericResult.sector.key, genericResult.family.usageMetricType)
+      ? getUsageShortUnit(genericResult.specsJson.basic_catalogue_release ? null : genericResult.sector.key, genericResult.family.usageMetricType)
       : 'hours';
     const usageSummary = formatSingleUsageSummary({
       actualUsageAmount: isGeneric ? genericResult?.usageAmount ?? usageNumber : usageNumber,
@@ -4171,6 +4179,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
       sectorKey: genericResult?.sector.key ?? selectedSector,
       usageMetricType: genericResult?.family.usageMetricType ?? selectedFamily?.usageMetricType,
       fallbackUnit: resultUsageShortUnit,
+      allowZero: Boolean(genericResult?.specsJson.basic_catalogue_release),
     });
     const tractorReplacementBasisText = tractorResult?.totalReplacementPriceUsedExVat
       ? `Asset and selected-extra replacement prices total ${moneyExVat(tractorResult.totalReplacementPriceUsedExVat)}`
@@ -4199,7 +4208,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     ));
     const advancedAssumptionsApplied = hasAppliedAdvancedAssumptions(appliedAdvancedAssumptions);
     const advancedUsageMetricType = getResultUsageMetricType(resultState);
-    const advancedUsageShortUnit = getUsageShortUnit(getResultSectorKey(resultState), advancedUsageMetricType);
+    const advancedUsageShortUnit = getUsageShortUnit(getResultUsageSectorKey(resultState), advancedUsageMetricType);
     const advancedRecordRows = advancedAssumptionsApplied
       ? compactPdfRows([
           { label: 'Advanced assumptions', value: 'Applied' },
@@ -6974,7 +6983,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
   function getUsageAnswerLabel(showHoursInput: boolean): string {
     if (basicUsageNotRequired) return 'Not required for this family';
     if (!usageStepComplete) return 'Not answered';
-    const usage = toNumberOrNull(usageAmount);
+    const usage = toNumberOrNull(usageAmount, Boolean(selectedFamily?.basicCatalogue));
     if (showHoursInput && usage !== null) return `${usage.toLocaleString('en-ZA')} ${selectedUsageShortUnit}`;
     const workedPercent = toPercentOrNull(lifeWorkedPercent);
     if (workedPercent !== null) return `${workedPercent}% worked`;
@@ -6982,7 +6991,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
   }
 
   function openUsageModal(showHoursInput: boolean) {
-    setUsageModalMode(showHoursInput ? 'hours' : 'percent');
+    setUsageModalMode(showHoursInput && !(selectedFamily?.basicCatalogue && usageAmount === '' && lifeWorkedPercent !== '') ? 'hours' : 'percent');
     setActiveDetailsModal('usage');
     setMessage('');
   }
@@ -7025,8 +7034,8 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
 
   function saveUsageAnswer(showHoursInput: boolean) {
     if (usageModalMode === 'hours' && showHoursInput) {
-      const hours = toNumberOrNull(usageAmount);
-      if (hours === null) {
+      const hours = toNumberOrNull(usageAmount, Boolean(selectedFamily?.basicCatalogue));
+      if (hours === null || (selectedFamily?.basicCatalogue && hours < 0)) {
         setMessage(`Enter the ${selectedUsageFieldLabel.toLowerCase()}, or choose that you do not know it.`);
         return;
       }
@@ -7197,6 +7206,14 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
             </button>
           </div>
 
+          {selectedBasicUsageProfile ? (
+            <p className={styles.detailsModalText}>
+              Basic useful-life guide: {selectedBasicUsageProfile.expectedLifetime.toLocaleString('en-ZA')} {selectedBasicUsageProfile.lifetimeUnit}.
+              {' '}This is a rounded planning assumption; actual life varies with use and maintenance.
+              {selectedBasicUsageProfile.lifetimeUnit === 'years' ? ' Use it as context when estimating percentage worked.' : ' If the reading is unknown, you can estimate percentage worked.'}
+            </p>
+          ) : null}
+
           {usageModalMode === 'hours' && showHoursInput ? (
             <>
               <label className={`${styles.field} ${styles.modalInputField}`}>
@@ -7218,7 +7235,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
                   setUsageModalMode('percent');
                 }}
               >
-                {compactAppMode ? 'I do not know' : getUnknownUsageButtonLabel(selectedSector, selectedFamily?.usageMetricType)}
+                {compactAppMode ? 'I do not know' : getUnknownUsageButtonLabel(selectedUsageSector, selectedFamily?.usageMetricType)}
               </button>
             </>
           ) : (
@@ -8499,7 +8516,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     const resultYear = isGeneric ? genericResult?.year ?? calculationYear : calculationYear;
     const yearSummary = yearModelUnknown ? 'Unknown' : String(resultYear);
     const resultUsageShortUnit = isGeneric && genericResult
-      ? getUsageShortUnit(genericResult.sector.key, genericResult.family.usageMetricType)
+      ? getUsageShortUnit(genericResult.specsJson.basic_catalogue_release ? null : genericResult.sector.key, genericResult.family.usageMetricType)
       : 'hours';
     const usageSummary = formatSingleUsageSummary({
       actualUsageAmount: isGeneric ? genericResult?.usageAmount ?? usageNumber : usageNumber,
@@ -8507,6 +8524,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
       sectorKey: genericResult?.sector.key ?? selectedSector,
       usageMetricType: genericResult?.family.usageMetricType ?? selectedFamily?.usageMetricType,
       fallbackUnit: resultUsageShortUnit,
+      allowZero: Boolean(genericResult?.specsJson.basic_catalogue_release),
     });
     const tractorExtrasReplacementPriceExVat = tractorResult
       ? (tractorResult.frontPtoReplacementPriceExVat ?? 0)
@@ -8529,7 +8547,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     );
     const resultUsageMetricType = getResultUsageMetricType(resultState);
     const resultSectorKey = getResultSectorKey(resultState);
-    const advancedLifetimeShortUnit = getUsageShortUnit(resultSectorKey, resultUsageMetricType);
+    const advancedLifetimeShortUnit = getUsageShortUnit(getResultUsageSectorKey(resultState), resultUsageMetricType);
     const advancedLifetimeMin = resultUsageMetricType === 'km' ? ADVANCED_LIFETIME_KM_MIN : ADVANCED_LIFETIME_HOURS_MIN;
     const advancedLifetimeMax = resultUsageMetricType === 'km' ? ADVANCED_LIFETIME_KM_MAX : ADVANCED_LIFETIME_HOURS_MAX;
     const advancedLifetimeInputLabel = resultUsageMetricType === 'km' ? 'Expected lifetime in km' : 'Expected lifetime in hours';

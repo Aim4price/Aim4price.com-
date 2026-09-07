@@ -54,6 +54,13 @@ function normalizePositiveInteger(value: unknown): number | null {
   return Number.isInteger(numeric) && numeric > 0 ? numeric : null;
 }
 
+function normalizeUsageNumber(value: unknown, strict = false): number | null {
+  if (value == null) return null;
+  // Basic must not turn an empty string or boolean into a zero meter reading.
+  if (strict && typeof value !== 'number') return Number.NaN;
+  return Number(value);
+}
+
 function normalizeReplacementPrice(value: unknown): number | null {
   if (value === null || typeof value === 'undefined') return null;
 
@@ -126,6 +133,8 @@ export async function POST(request: NextRequest) {
       if (profile?.accountStatus !== 'active') return advancedAccessDenied();
     }
 
+    const specsJson = body.specsJson && typeof body.specsJson === 'object' ? (body.specsJson as Record<string, unknown>) : {};
+    const basicCatalogue = Boolean(specsJson.basic_catalogue_release);
     const valuationInput: GenericValuationInput = {
       sectorKey: sectorKey as SectorKey,
       familyKey,
@@ -133,14 +142,11 @@ export async function POST(request: NextRequest) {
       equipmentModelId: normalizePositiveInteger(body.equipmentModelId),
       typedModelName: String(body.typedModelName ?? '').trim() || null,
       saveModelCandidate: parseBoolean(body.saveModelCandidate),
-      specsJson: body.specsJson && typeof body.specsJson === 'object' ? (body.specsJson as Record<string, unknown>) : {},
+      specsJson,
       year,
       yearModelUnknown,
-      usageAmount: body.usageAmount === null || typeof body.usageAmount === 'undefined' ? null : Number(body.usageAmount),
-      lifeWorkedPercent:
-        body.lifeWorkedPercent === null || typeof body.lifeWorkedPercent === 'undefined'
-          ? null
-          : Number(body.lifeWorkedPercent),
+      usageAmount: normalizeUsageNumber(body.usageAmount, basicCatalogue),
+      lifeWorkedPercent: normalizeUsageNumber(body.lifeWorkedPercent, basicCatalogue),
       condition,
       userReplacementPriceExVat,
       userReplacementPriceYear: resolvedReplacementPriceYear,
