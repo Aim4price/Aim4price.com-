@@ -1406,11 +1406,11 @@
 
 .assetPreviewDialog {
   width: 68rem;
-  max-width: calc(100% - 2rem);
-  max-height: calc(100% - 2rem);
+  max-width: none;
+  max-height: none;
   margin: auto;
   padding: 0;
-  overflow: auto;
+  overflow: hidden;
   border: 1px solid #97cdb5;
   border-radius: 1.25rem;
   color: #17362c;
@@ -1458,7 +1458,7 @@
 
 .assetPreviewDialogBody {
   padding: 1.25rem;
-  overflow: auto;
+  overflow: hidden;
 }
 
 .assetPreviewExpandedContent {
@@ -1471,6 +1471,10 @@
 
 .assetPreviewExpandedContent .previewClose {
   display: none;
+}
+
+.assetPreviewExpandedContent .worthReportPhotos {
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .previewEyebrow {
