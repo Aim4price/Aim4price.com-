@@ -3522,10 +3522,21 @@
   }
 }
 
+/* Keep both opening actions on one row within the canonical copy column. */
+.heroPromiseCopy .heroActions {
+  flex-wrap: nowrap;
+}
+
+.heroPromiseCopy .heroActions > a {
+  padding-inline: 1rem;
+  white-space: nowrap;
+}
+
 /* Keep the story near the header instead of centring it in the tall sticky stage. */
 @media (prefers-reduced-motion: no-preference) {
   .storyHeroGrid {
     align-content: start;
+    padding-top: 3.5rem;
   }
 
   .storyCopyLayer {
