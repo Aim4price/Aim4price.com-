@@ -91,11 +91,14 @@ async function check(browser, url) {
   // Height only controls visible area; it must not select a different composition.
   await visit('/',1366,768);const tall=await geometry();await page.setViewport({width:1366,height:600});await delay(150);const short=await geometry();
   assert.equal(tall.scale,short.scale);assert.deepEqual(tall.items,short.items);
-  const initialStory=await page.$eval('section[data-story-step]',e=>e.dataset.storyStep);
+  // Autoplay may have advanced before visit() pauses it. Scrolling is absolute:
+  // 80% of the eight-stage track selects Manage; the top selects Brand.
+  // Do not use the incidental paused autoplay frame as the return-to-top target.
   await page.evaluate(()=>{const section=document.querySelector('section[data-story-step]'),sticky=section.querySelector('[class*="heroSticky"]'),scale=Number(document.querySelector('[data-website-canvas]').dataset.websiteScale);window.scrollTo({top:section.getBoundingClientRect().top+scrollY+(section.getBoundingClientRect().height-sticky.getBoundingClientRect().height)*.8-parseFloat(getComputedStyle(sticky).top)*scale,behavior:'instant'})});
-  await page.waitForFunction(initial=>document.querySelector('section[data-story-step]').dataset.storyStep!==initial,{timeout:10000},initialStory);
+  await page.waitForFunction(()=>document.querySelector('section[data-story-step]')?.dataset.storyStep==='manage',{timeout:10000});
   await page.evaluate(()=>window.scrollTo({top:0,left:0,behavior:'instant'}));
-  await page.waitForFunction(initial=>document.querySelector('section[data-story-step]').dataset.storyStep===initial,{timeout:10000},initialStory);
+  await page.waitForFunction(()=>document.querySelector('section[data-story-step]')?.dataset.storyStep==='brand',{timeout:10000});
+  console.log('PASS story scroll: Manage at 80%, Brand at the top');
   // Header actions, notifications, Manage and the footer use real components.
   signedIn=true;await page.evaluate(()=>sessionStorage.clear());await visit('/canvas-validation?page=account',768);
   await page.click('[aria-label="Open manage menu"]');await page.waitForSelector('[class*="accountPopover"]');
