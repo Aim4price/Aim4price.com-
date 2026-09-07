@@ -1004,6 +1004,7 @@ function buildManualSpecsJson(
     usage_metric: usageMetric,
     usage_unit: usageMetric,
     ...usageBasisSpecs,
+    ...(specs.basic_catalogue_release ? { basic_usage_basis: usageBasisSpecs.usage_basis } : {}),
     ...incomingYearModelSpecs,
     licenseRegistrationNumber,
     license_registration_number: licenseRegistrationNumber,
@@ -1233,7 +1234,7 @@ function withGenericUsageMetadata(
   specs: Record<string, unknown>,
   result: GenericValuationResult,
 ): Record<string, unknown> {
-  const usageMetric = result.sector.key === 'motor' || result.family.usageMetricType === 'km' ? 'km' : 'hours';
+  const usageMetric = result.family.usageMetricType === 'km' || (!result.specsJson.basic_catalogue_release && result.sector.key === 'motor') ? 'km' : 'hours';
   const lifeWorkedPercent = asNumber(result.lifeWorkedPercent);
   const usageSpecs = genericValuationResultUsesPercentBasis(result) && lifeWorkedPercent !== null
     ? buildPercentUsageSpecsJson({}, lifeWorkedPercent)
@@ -3894,4 +3895,3 @@ export async function createAssetRegisterItemFromGenericValuation(input: {
 function toRoundedNumber(value: number | null): number | null {
   return value === null || !Number.isFinite(value) ? null : Math.round(value);
 }
-

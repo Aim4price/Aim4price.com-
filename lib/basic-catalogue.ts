@@ -2,6 +2,7 @@ import { getDb } from './db';
 import type { EquipmentFamilyRecord } from './equipment-catalog';
 import type { SectorKey } from './equipment-types';
 import type { BasicCatalogueIdentity } from './basic-catalogue-guide';
+import { getBasicUsageProfile } from './basic-usage-profiles';
 
 export const BASIC_CATALOGUE_RELEASE = 'basic_ballpark_20260907_v1';
 const INPUT_SHA256 = '1da6093df504e69dca872a043515b962cd6cefc36559bd2a217e510d1e01505c';
@@ -33,6 +34,7 @@ export async function listBasicCatalogueFamilies(sectorKey: SectorKey | null): P
     [BASIC_CATALOGUE_RELEASE, sectorKey],
   );
   return result.rows.map((row, index) => {
+    const usageProfile = getBasicUsageProfile(row.sector_key, row.family_key);
     const basicCatalogue: BasicCatalogueIdentity = {
       releaseKey: BASIC_CATALOGUE_RELEASE,
       familyKey: row.family_key,
@@ -43,12 +45,15 @@ export async function listBasicCatalogueFamilies(sectorKey: SectorKey | null): P
       maximumExVat: Number(row.maximum_ex_vat),
       pricingAsOf: row.pricing_as_of,
       confidence: row.confidence,
+      usageProfile,
     };
     return {
       // UI record only; never a public.equipment_families foreign key.
       id: 0, sectorId: Number(row.sector_id), sectorKey: row.sector_key,
       sectorLabel: row.sector_label, familyKey: row.family_key, familyLabel: row.label,
-      isPropelled: false, usageMetricType: 'wear_class', valuationMode: 'percent_used',
+      isPropelled: false,
+      usageMetricType: usageProfile.primaryMetric === 'percent' ? 'wear_class' : usageProfile.primaryMetric,
+      valuationMode: usageProfile.primaryMetric === 'percent' ? 'percent_used' : 'engine_hours',
       catalogMode: 'generic_specs', sortOrder: index, isActive: true, basicCatalogue,
     };
   });
