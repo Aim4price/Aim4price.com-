@@ -7,7 +7,11 @@ import styles from './page.module.css';
 
 export type QuestionKey = 'have' | 'worth' | 'cost' | 'manage' | 'attention';
 
+type PreviewKey = QuestionKey | 'register';
+
 type HomeAssetPreviewProps = {
+  showRegister?: boolean;
+  onOpenRegister?: () => void;
   activeQuestion: QuestionKey;
   onQuestionChange: (question: QuestionKey, index: number) => void;
   onInteraction?: (source: 'pointer' | 'focus') => void;
@@ -94,11 +98,13 @@ const QUESTIONS: readonly Question[] = [
 
 export default function HomeAssetPreview({
   activeQuestion,
+  showRegister = false,
+  onOpenRegister,
   onQuestionChange,
   onInteraction,
 }: HomeAssetPreviewProps) {
   const [feedback, setFeedback] = useState('');
-  const [openedQuestion, setOpenedQuestion] = useState<QuestionKey | null>(null);
+  const [openedQuestion, setOpenedQuestion] = useState<PreviewKey | null>(null);
   const openButtonRef = useRef<HTMLButtonElement | null>(null);
   const questionRefs = useRef<Array<HTMLButtonElement | null>>([]);
 
@@ -109,8 +115,9 @@ export default function HomeAssetPreview({
 
   const openPreview = () => {
     // Claim manual control so the story stays on the card being inspected.
-    onQuestionChange(activeQuestion, QUESTIONS.findIndex(({ key }) => key === activeQuestion));
-    setOpenedQuestion(activeQuestion);
+    if (showRegister) onOpenRegister?.();
+    else onQuestionChange(activeQuestion, QUESTIONS.findIndex(({ key }) => key === activeQuestion));
+    setOpenedQuestion(showRegister ? 'register' : activeQuestion);
   };
 
   const selectQuestion = (index: number, moveFocus = false) => {
@@ -147,7 +154,7 @@ export default function HomeAssetPreview({
       className={styles.assetHeroStage}
       data-active-question={activeQuestion}
     >
-      <div
+      {!showRegister && <div
         className={styles.assetQuestionGroup}
         role="tablist"
         aria-label="Explore the Aim4price asset record"
@@ -183,12 +190,12 @@ export default function HomeAssetPreview({
             </button>
           );
         })}
-      </div>
+      </div>}
 
       <article
         id="home-asset-preview"
-        role="tabpanel"
-        aria-labelledby={`home-asset-question-${QUESTIONS[activeIndex]?.key ?? 'have'}`}
+        role={showRegister ? 'region' : 'tabpanel'}
+        aria-labelledby={showRegister ? 'home-register-preview-label' : `home-asset-question-${QUESTIONS[activeIndex]?.key ?? 'have'}`}
         tabIndex={0}
         className={styles.assetPreviewCard}
         data-active-question={activeQuestion}
@@ -196,13 +203,13 @@ export default function HomeAssetPreview({
         onFocusCapture={() => onInteraction?.('focus')}
       >
         <div key={activeQuestion} className={styles.assetPreviewState}>
-          <PreviewContent activeQuestion={activeQuestion} />
+          <PreviewContent activeQuestion={showRegister ? 'register' : activeQuestion} />
         </div>
         <button
           ref={openButtonRef}
           type="button"
           className={styles.assetPreviewOpen}
-          aria-label={`Open preview: ${QUESTIONS[activeIndex]?.label ?? QUESTIONS[0].label}`}
+          aria-label={`Open preview: ${showRegister ? 'Asset Register' : QUESTIONS[activeIndex]?.label ?? QUESTIONS[0].label}`}
           aria-haspopup="dialog"
           onClick={openPreview}
         >
@@ -217,14 +224,14 @@ export default function HomeAssetPreview({
         )
         : null}
 
-      <p className={styles.assetActiveQuestion}>
+      <p id="home-register-preview-label" className={styles.assetActiveQuestion}>
         <span className={styles.assetActiveQuestionMain}>
           <svg viewBox="0 0 24 24" aria-hidden="true">
             {QUESTIONS[activeIndex]?.icon ?? QUESTIONS[0].icon}
           </svg>
-          <span>{QUESTIONS[activeIndex]?.label ?? QUESTIONS[0].label}</span>
+          <span>{showRegister ? 'Asset Register' : QUESTIONS[activeIndex]?.label ?? QUESTIONS[0].label}</span>
         </span>
-        <span className={styles.assetStoryProgress} aria-hidden="true">
+        <span className={styles.assetStoryProgress} aria-hidden="true" style={showRegister ? { visibility: 'hidden' } : undefined}>
           {QUESTIONS.map((question, index) => (
             <span
               key={question.key}
@@ -247,7 +254,7 @@ export default function HomeAssetPreview({
 }
 
 function ExpandedPreview({ activeQuestion, onClose }: {
-  activeQuestion: QuestionKey;
+  activeQuestion: PreviewKey;
   onClose: () => void;
 }) {
   const dialogRef = useRef<HTMLDialogElement | null>(null);
@@ -296,6 +303,7 @@ function ExpandedPreview({ activeQuestion, onClose }: {
 
   return (
     <dialog
+      data-home-preview-dialog
       ref={dialogRef}
       className={styles.assetPreviewDialog}
       aria-labelledby="home-expanded-preview-title"
@@ -309,7 +317,7 @@ function ExpandedPreview({ activeQuestion, onClose }: {
     >
       <header className={styles.assetPreviewDialogHeader}>
         <h2 id="home-expanded-preview-title">
-          {QUESTIONS.find(({ key }) => key === activeQuestion)?.label}
+          {activeQuestion === 'register' ? 'Asset Register' : QUESTIONS.find(({ key }) => key === activeQuestion)?.label}
         </h2>
         <button type="button" onClick={dismiss} autoFocus aria-label="Close preview">
           Close <span aria-hidden="true">×</span>
@@ -324,8 +332,10 @@ function ExpandedPreview({ activeQuestion, onClose }: {
   );
 }
 
-function PreviewContent({ activeQuestion }: { activeQuestion: QuestionKey }) {
+function PreviewContent({ activeQuestion }: { activeQuestion: PreviewKey }) {
   switch (activeQuestion) {
+    case 'register':
+      return <RegisterPreview />;
     case 'worth':
       return <WorthPreview />;
     case 'manage':
@@ -338,6 +348,41 @@ function PreviewContent({ activeQuestion }: { activeQuestion: QuestionKey }) {
     default:
       return <AssetCardPreview />;
   }
+}
+
+function RegisterPreview() {
+  const assets = [
+    { name: '2023 Toyota Hilux Single Cab', year: '2023', usage: '113 677 km', value: 'R 237 150' },
+    { name: '2013 Toyota Hilux 2.5 4x4', year: '2013', usage: '328 242 km', value: 'R 122 400' },
+    { name: '2023 Toyota Hilux Single Cab', year: '2023', usage: '140 825 km', value: 'R 256 275' },
+  ];
+
+  return (
+    <div className={styles.registerPreview}>
+      <header className={styles.registerPreviewTitle}><h2>TEST BUSINESS PTY LTD</h2><span>⇄</span></header>
+      <div className={styles.registerPreviewToolbar} aria-hidden="true">
+        <span>Share</span><span>Summary</span><span>Filters</span><span>↓ Download</span>
+      </div>
+      <div className={styles.registerPreviewStats}>
+        <div><small>Register value</small><strong>R 11 450 567 <small>+ VAT</small></strong><span>Excl. VAT　 |　 Incl. VAT</span></div>
+        <div><small>Aim4price valued equipment</small><strong>58</strong></div>
+        <div><small>Total assets</small><strong>101</strong><span>1 umbrella · 9 grouped assets shown</span></div>
+      </div>
+      <div className={styles.registerPreviewTabs} aria-hidden="true"><span>▤　Overview</span><strong>▦　Assets　✓</strong></div>
+      <div className={styles.registerPreviewSearch} aria-hidden="true"><span>⌕　Toyota Hilux</span><span>Refresh</span><span>Create Umbrella</span><strong>+ Add Asset</strong></div>
+      <section className={styles.registerPreviewGroup}>
+        <header><div><strong>Vehicles</strong><small>9 grouped assets · Every asset counted · Combined umbrella</small></div><div><strong>Counted value R 3 305 000</strong><small>Excl. VAT</small></div></header>
+        <div className={styles.registerPreviewAssets}>
+          {assets.map((asset, index) => (
+            <article key={index} className={styles.registerPreviewRow}>
+              <div><h3>{asset.name}</h3><p>Year Model: {asset.year} · Usage: {asset.usage} · Condition: Good</p><small><b>Aim4price value</b> · Updated 01 Sept 2026</small></div>
+              <div><strong>{asset.value}</strong><small>Excl. VAT</small><span aria-hidden="true">Share　　View details　　Manage</span></div>
+            </article>
+          ))}
+        </div>
+      </section>
+    </div>
+  );
 }
 
 function AssetCardPreview() {
