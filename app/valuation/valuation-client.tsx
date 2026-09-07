@@ -6029,7 +6029,6 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
         <div>
           <h2 className={styles.stepTitle}>Replacement price</h2>
           <p className={styles.stepText}>Choose the current new replacement price for a comparable asset.</p>
-          {catalogueGuide ? <p className={styles.fieldHint}>{basicSpecLevelLabel} · Suggested ballpark range. You can enter any replacement price below.</p> : null}
         </div>
 
         <div className={`${styles.yearSliderPanel} ${styles.replacementSliderPanel}`}>
