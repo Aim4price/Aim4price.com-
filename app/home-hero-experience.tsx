@@ -383,7 +383,7 @@ export default function HomeHeroExperience() {
                   <p className={styles.heroPromiseTitle}>
                     <span>Know what you have.</span>
                     <span>Know what it’s worth.</span>
-                    <span>Know what is costs.</span>
+                    <span>Know what it costs.</span>
                   </p>
 
                   <p className={styles.heroPromiseText}>

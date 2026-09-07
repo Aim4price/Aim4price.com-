@@ -3522,6 +3522,18 @@
   }
 }
 
+.heroPromiseCopy .heroPromiseTitle {
+  line-height: 1.08;
+}
+
+.heroPromiseCopy .heroPromiseText {
+  margin-top: 1.5rem;
+}
+
+.heroPromiseCopy .heroActions {
+  margin-top: 1.5rem;
+}
+
 /* Keep both opening actions on one row within the canonical copy column. */
 .heroPromiseCopy .heroActions {
   flex-wrap: nowrap;
@@ -3532,7 +3544,7 @@
   white-space: nowrap;
 }
 
-/* Keep the story near the header instead of centring it in the tall sticky stage. */
+/* Centre the opening copy and logo within the content row, not the tall sticky stage. */
 @media (prefers-reduced-motion: no-preference) {
   .storyHeroGrid {
     align-content: start;
@@ -3540,13 +3552,13 @@
   }
 
   .storyCopyLayer {
-    justify-content: flex-start;
-    padding-top: 1.5rem;
+    justify-content: center;
+    padding-block: 2rem;
   }
 
   .storyHeroLogo {
-    align-self: start;
-    margin-top: 1.5rem;
+    align-self: center;
+    margin-top: 0;
   }
 }
 
