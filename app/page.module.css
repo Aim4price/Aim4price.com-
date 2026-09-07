@@ -3522,6 +3522,23 @@
   }
 }
 
+/* Keep the story near the header instead of centring it in the tall sticky stage. */
+@media (prefers-reduced-motion: no-preference) {
+  .storyHeroGrid {
+    align-content: start;
+  }
+
+  .storyCopyLayer {
+    justify-content: flex-start;
+    padding-top: 1.5rem;
+  }
+
+  .storyHeroLogo {
+    align-self: start;
+    margin-top: 1.5rem;
+  }
+}
+
 @media (forced-colors: active) {
   .storyPauseControl {
     border: 1px solid CanvasText;
