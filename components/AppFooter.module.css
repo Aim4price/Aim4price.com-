@@ -380,3 +380,10 @@
   }
 }
 
+
+/* Both the animated panel and its dock reach the viewport edges at reduced zoom. */
+:global(:where([data-website-canvas])) .drawerRegion,
+:global(:where([data-website-canvas])) .footerDock {
+  width: max(var(--website-design-width), var(--website-visible-width, var(--website-design-width)));
+  margin-inline: min(0px, calc((var(--website-design-width) - var(--website-visible-width, var(--website-design-width))) / 2));
+}

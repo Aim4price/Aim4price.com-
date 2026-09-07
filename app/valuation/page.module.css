@@ -14474,3 +14474,8 @@
   }
 }
 
+
+/* Let the shared website pattern show through every Get Estimate step. */
+:global(:where([data-website-canvas])) .page {
+  background: transparent;
+}

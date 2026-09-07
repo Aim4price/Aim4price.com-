@@ -161,6 +161,28 @@ async function check(browser, url) {
   await page.setViewport({width:512,height:600,deviceScaleFactor:1.5});await delay(150);
   assert.equal(await page.$eval('[data-website-canvas]',e=>Number(e.dataset.websiteScale)),before);
   console.log('PASS height, portals, anchored menus, manual persistence/Auto, footer, Manage, notifications, browser-zoom geometry');
+  // Website surfaces must reach the screen edges without widening their content.
+  for (const requestedScale of [.91, .5]) {
+    await page.setViewport({width:1920,height:1080,deviceScaleFactor:1});
+    await page.evaluate(scale=>localStorage.setItem('aim4price.website-canvas.v2',JSON.stringify({mode:'manual',scale})),requestedScale);
+    await page.goto(url+'/valuation',{waitUntil:'networkidle2',timeout:120000});
+    await page.waitForFunction(scale=>Number(document.querySelector('[data-website-canvas]')?.dataset.websiteScale)===scale,{},requestedScale);
+    const surfaces=await page.evaluate(()=>{
+      const header=document.querySelector('header:has(a[aria-label="Go to Aim4price home"])');
+      const rect=header.getBoundingClientRect(),style=getComputedStyle(header.closest('main'));
+      return {left:rect.left,right:rect.right,viewport:document.documentElement.getBoundingClientRect().width,image:style.backgroundImage,color:style.backgroundColor};
+    });
+    assert.ok(Math.abs(surfaces.left)<2&&Math.abs(surfaces.right-surfaces.viewport)<2,`header reaches both viewport edges: ${JSON.stringify(surfaces)}`);
+    assert.equal(surfaces.image,'none','Estimate uses shared pattern');
+    assert.equal(surfaces.color,'rgba(0, 0, 0, 0)');
+    await page.$eval('[aria-label="Open footer"]',e=>e.click());await delay(850);
+    const footerSurfaces=await page.$$eval('footer [class*="footerPanel"],footer [class*="footerDock"]',elements=>elements.map(e=>{const r=e.getBoundingClientRect();return {left:r.left,right:r.right,viewport:document.documentElement.getBoundingClientRect().width}}));
+    assert.equal(footerSurfaces.length,2);
+    for(const surface of footerSurfaces)assert.ok(Math.abs(surface.left)<2&&Math.abs(surface.right-surface.viewport)<2,`footer panel and dock reach both viewport edges: ${JSON.stringify(surface)}`);
+    await page.$eval('footer',e=>e.scrollIntoView({block:'end',behavior:'instant'}));
+    await page.screenshot({path:path.join(output,`footer-full-width-${requestedScale}.png`)});
+  }
+  console.log('PASS Estimate shared background and full-width header/footer at 91% and 50%');
   // Native apps keep their own mobile viewport, DOM host and shared styles.
   for(const route of ['/owner-app/login','/dealer/login','/field-manager/login']) {
     const snapshots=[];

@@ -4493,3 +4493,10 @@
 }
 
 
+
+/* Extend the header surface while its inner navigation keeps canonical geometry. */
+:global(:where([data-website-canvas])) .header {
+  width: max(var(--website-design-width), var(--website-visible-width, var(--website-design-width)));
+  max-width: none;
+  margin-inline: min(0px, calc((var(--website-design-width) - var(--website-visible-width, var(--website-design-width))) / 2));
+}
