@@ -269,7 +269,10 @@ export default function HomeHeroExperience() {
       });
     };
 
-    const handleScroll = () => scheduleStorySync(true);
+    const handleScroll = () => {
+      if (document.querySelector('[data-home-preview-dialog][open]')) return;
+      scheduleStorySync(true);
+    };
     const handleResize = () => {
       if (autoplayFinishedRef.current || window.scrollY > 4) {
         scheduleStorySync(window.scrollY > 4);
@@ -420,6 +423,8 @@ export default function HomeHeroExperience() {
 
               <div ref={assetMotionRef} className={styles.assetStageMotion}>
                 <HomeAssetPreview
+                  showRegister={storyStepIndex < FEATURE_START_INDEX}
+                  onOpenRegister={claimManualControl}
                   activeQuestion={activeQuestion}
                   onQuestionChange={handleQuestionChange}
                   onInteraction={handlePreviewInteraction}
@@ -486,3 +491,4 @@ export default function HomeHeroExperience() {
     </section>
   );
 }
+
