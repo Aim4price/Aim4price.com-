@@ -1,4 +1,8 @@
 'use client';
+import { useWebsiteStyles } from '../../components/useWebsiteStyles';
+import website_dealerStyles from '../../components/website-styles/DealerControls.module.css';
+
+import { currentWebsiteScale } from '../../lib/website-canvas';
 
 import {
   useCallback,
@@ -15,7 +19,7 @@ import MarketplaceFilterSelect from './marketplace-filter-select';
 import MarketplaceOutcomeModal from '../../components/MarketplaceOutcomeModal';
 import MarketplaceWhatsAppAction from '../../components/MarketplaceWhatsAppAction';
 import styles from './page.module.css';
-import dealerStyles from '../dealer/dealer.module.css';
+import native_dealerStyles from '../dealer/dealer.module.css';
 import {
   FALLBACK_MARKETPLACE_IMAGE,
   calculateMarketplaceDealRating,
@@ -2135,6 +2139,8 @@ export default function MarketplaceClient({
   dealerAppMode = false,
   ownerAppMode = false,
 }: MarketplaceClientProps & { dealerAppMode?: boolean; ownerAppMode?: boolean }) {
+  const dealerStyles = useWebsiteStyles(native_dealerStyles, website_dealerStyles);
+
   const initialSearch = [initialFilters.brand, initialFilters.model]
     .map((value) => String(value ?? '').trim())
     .filter(Boolean)
@@ -2730,7 +2736,7 @@ export default function MarketplaceClient({
       return;
     }
 
-    const nextTop = node.getBoundingClientRect().top + window.scrollY - 120;
+    const nextTop = node.getBoundingClientRect().top + window.scrollY - 120 * currentWebsiteScale();
     window.scrollTo({ top: Math.max(0, nextTop), behavior: 'smooth' });
   }
 
@@ -3504,7 +3510,7 @@ export default function MarketplaceClient({
       </div>
 
       {createListingModalOpen ? (
-        <div className={styles.createListingOverlay} onClick={() => setCreateListingModalOpen(false)}>
+        <div className={styles.createListingOverlay} data-website-overlay onClick={() => setCreateListingModalOpen(false)}>
           <div
             className={styles.createListingDialog}
             role="dialog"
@@ -3575,7 +3581,7 @@ export default function MarketplaceClient({
       ) : null}
 
       {activeListing ? (
-        <div className={styles.modalOverlay} onClick={closeListing}>
+        <div className={styles.modalOverlay} data-website-overlay onClick={closeListing}>
           <div
             className={`${styles.listingModal} ${activeImages.length ? '' : styles.listingModalNoMedia}`}
             role="dialog"
@@ -3841,7 +3847,7 @@ export default function MarketplaceClient({
       ) : null}
 
       {manageListingTarget ? (
-        <div className={styles.marketplaceManageBackdrop} onClick={closeManageListingModal}>
+        <div className={styles.marketplaceManageBackdrop} data-website-overlay onClick={closeManageListingModal}>
           <div
             className={styles.marketplaceManageModal}
             role="dialog"
@@ -3917,7 +3923,7 @@ export default function MarketplaceClient({
       ) : null}
 
       {editListingTarget && editListingDraft ? (
-        <div className={dealerStyles.editListingOverlay} onMouseDown={closeListingEditModal}>
+        <div className={dealerStyles.editListingOverlay} data-website-overlay onMouseDown={closeListingEditModal}>
           <section
             className={dealerStyles.editListingModal}
             role="dialog"
@@ -3989,7 +3995,7 @@ export default function MarketplaceClient({
       />
 
       {shareListing ? (
-        <div className={styles.shareOverlay} onClick={closeShareSheet}>
+        <div className={styles.shareOverlay} data-website-overlay onClick={closeShareSheet}>
           <div
             className={styles.shareDialog}
             role="dialog"
@@ -4057,3 +4063,4 @@ export default function MarketplaceClient({
     </main>
   );
 }
+

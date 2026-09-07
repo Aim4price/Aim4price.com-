@@ -544,7 +544,7 @@ function TransferModal({
   if (!open) return null;
 
   return (
-    <div className={wizardStyles.overlay} onMouseDown={(event) => { if (event.target === event.currentTarget && !closeDisabled) onClose(); }}>
+    <div className={wizardStyles.overlay} data-website-overlay onMouseDown={(event) => { if (event.target === event.currentTarget && !closeDisabled) onClose(); }}>
       <section ref={modalRef} className={wizardStyles.dialog} role="dialog" aria-modal="true" aria-labelledby={titleId} aria-describedby={descriptionId}>
         <header className={wizardStyles.header}>
           <div className={wizardStyles.headerText}>

@@ -35,7 +35,7 @@
 .leadsTitleBlock h1 {
   margin: 0;
   color: #17362c;
-  font-size: clamp(2rem, 3.5vw, 2.55rem);
+  font-size: clamp(2rem, calc(var(--website-design-vw, 1vw) * 3.5), 2.55rem);
   line-height: 0.98;
   letter-spacing: -0.05em;
   font-weight: 760;
@@ -141,7 +141,7 @@
   margin: 0;
   color: #0d3028;
   font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
-  font-size: clamp(1.42rem, 1.9vw, 1.72rem);
+  font-size: clamp(1.42rem, calc(var(--website-design-vw, 1vw) * 1.9), 1.72rem);
   font-weight: 760;
   line-height: 1.08;
   letter-spacing: -0.032em;
@@ -357,7 +357,7 @@
 .fullRegisterPdfPanel strong {
   display: block;
   color: var(--lead-ink);
-  font-size: clamp(1.15rem, 1.6vw, 1.35rem);
+  font-size: clamp(1.15rem, calc(var(--website-design-vw, 1vw) * 1.6), 1.35rem);
   font-weight: 850;
   line-height: 1.05;
   letter-spacing: -0.035em;
@@ -380,7 +380,7 @@
   background:
     radial-gradient(circle at 100% 0%, rgba(23, 96, 72, 0.045), transparent 35%),
     linear-gradient(180deg, #ffffff 0%, #f7fafc 100%);
-  padding: clamp(0.85rem, 1.4vw, 1.05rem);
+  padding: clamp(0.85rem, calc(var(--website-design-vw, 1vw) * 1.4), 1.05rem);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.98),
     0 16px 32px rgba(22, 48, 42, 0.035);
@@ -419,7 +419,7 @@
 
 .fullRegisterStatRow strong {
   color: var(--lead-ink);
-  font-size: clamp(1.1rem, 1.6vw, 1.35rem);
+  font-size: clamp(1.1rem, calc(var(--website-design-vw, 1vw) * 1.6), 1.35rem);
   font-weight: 900;
   line-height: 1;
   text-align: right;
@@ -454,8 +454,8 @@
 }
 
 .leadFilterModal {
-  width: min(100%, 820px) !important;
-  padding: clamp(1.25rem, 2vw, 1.65rem) !important;
+  width: min(var(--website-dialog-reference-width, 100%), 820px) !important;
+  padding: clamp(1.25rem, calc(var(--website-design-vw, 1vw) * 2), 1.65rem) !important;
 }
 
 .leadFilterIntro {
@@ -500,10 +500,10 @@
 }
 
 .leadDeleteModal {
-  width: min(100%, 920px) !important;
+  width: min(var(--website-dialog-reference-width, 100%), 920px) !important;
   grid-template-columns: 4.6rem minmax(0, 1fr) !important;
-  gap: clamp(1.45rem, 2.2vw, 2rem) !important;
-  padding: clamp(2rem, 3vw, 2.85rem) !important;
+  gap: clamp(1.45rem, calc(var(--website-design-vw, 1vw) * 2.2), 2rem) !important;
+  padding: clamp(2rem, calc(var(--website-design-vw, 1vw) * 3), 2.85rem) !important;
   border-radius: 2rem !important;
 }
 
@@ -522,7 +522,7 @@
 
 .leadDeleteContent h3 {
   max-width: 34rem !important;
-  font-size: clamp(1.78rem, 3vw, 2.38rem) !important;
+  font-size: clamp(1.78rem, calc(var(--website-design-vw, 1vw) * 3), 2.38rem) !important;
   line-height: 1.03 !important;
   letter-spacing: -0.058em !important;
 }
@@ -582,68 +582,68 @@
 }
 
 @media (max-width: 1180px) {
-  .leadAssetBody.leadAssetBody,
-  .fullRegisterLeadBody.fullRegisterLeadBody {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadAssetBody.leadAssetBody,
+  :global(:where(html:not(:has([data-website-canvas])))) .fullRegisterLeadBody.fullRegisterLeadBody {
     grid-template-columns: 1fr;
   }
 
-  .fullRegisterStatsGrid {
+  :global(:where(html:not(:has([data-website-canvas])))) .fullRegisterStatsGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
 @media (max-width: 1080px) {
-  .leadsRegisterHeader {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadsRegisterHeader {
     grid-template-columns: 1fr !important;
     align-items: start !important;
   }
 
-  .leadHeaderActions,
-  .leadFilterButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadHeaderActions,
+  :global(:where(html:not(:has([data-website-canvas])))) .leadFilterButton {
     width: 100% !important;
   }
 
-  .leadHeaderActions {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadHeaderActions {
     justify-content: stretch !important;
   }
 }
 
 @media (max-width: 900px) {
-  .clientPanelHeader {
+  :global(:where(html:not(:has([data-website-canvas])))) .clientPanelHeader {
     grid-template-columns: 1fr;
     align-items: start;
   }
 
-  .clientDecisionArea {
+  :global(:where(html:not(:has([data-website-canvas])))) .clientDecisionArea {
     justify-items: stretch;
   }
 
-  .clientActionRow {
+  :global(:where(html:not(:has([data-website-canvas])))) .clientActionRow {
     justify-content: stretch;
   }
 
-  .clientActionRow button,
-  .clientDecisionArea > button {
+  :global(:where(html:not(:has([data-website-canvas])))) .clientActionRow button,
+  :global(:where(html:not(:has([data-website-canvas])))) .clientDecisionArea > button {
     width: 100%;
   }
 
-  .manageOptionsGrid,
-  .leadFilterForm {
+  :global(:where(html:not(:has([data-website-canvas])))) .manageOptionsGrid,
+  :global(:where(html:not(:has([data-website-canvas])))) .leadFilterForm {
     grid-template-columns: 1fr;
   }
 }
 
 @media (max-width: 760px) {
-  .clientPanel h3 {
+  :global(:where(html:not(:has([data-website-canvas])))) .clientPanel h3 {
     font-weight: 740;
     letter-spacing: -0.026em;
   }
 
-  .leadFilterIntro {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadFilterIntro {
     white-space: normal;
   }
 
-  .leadDeleteModal {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadDeleteModal {
     width: min(100%, calc(100vw - 1.25rem)) !important;
     grid-template-columns: 1fr !important;
     gap: 1rem !important;
@@ -651,25 +651,25 @@
     border-radius: 1.55rem !important;
   }
 
-  .leadDeleteIcon {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadDeleteIcon {
     width: 3.55rem !important;
     height: 3.55rem !important;
     border-radius: 1.15rem !important;
     margin-top: 0;
   }
 
-  .leadDeleteContent {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadDeleteContent {
     gap: 0.95rem !important;
   }
 
-  .leadDeleteActions {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadDeleteActions {
     flex-direction: column-reverse !important;
     align-items: stretch !important;
     gap: 0.7rem !important;
   }
 
-  .leadDeleteActions > button,
-  .leadDeleteConfirmButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadDeleteActions > button,
+  :global(:where(html:not(:has([data-website-canvas])))) .leadDeleteConfirmButton {
     width: 100%;
     min-width: 0 !important;
   }
@@ -692,7 +692,7 @@
 
 .licensingLeadHeader {
   grid-template-columns: minmax(0, 1fr) auto !important;
-  gap: clamp(1.25rem, 3vw, 3rem) !important;
+  gap: clamp(1.25rem, calc(var(--website-design-vw, 1vw) * 3), 3rem) !important;
   min-height: 0 !important;
   align-items: center !important;
   padding: 0.1rem 0.15rem !important;
@@ -705,7 +705,7 @@
 }
 
 .licensingLeadThread .leadCardTitleRow h3 {
-  font-size: clamp(1.22rem, 1.8vw, 1.55rem) !important;
+  font-size: clamp(1.22rem, calc(var(--website-design-vw, 1vw) * 1.8), 1.55rem) !important;
 }
 
 .licensingLeadThread .leadAssetName {
@@ -811,31 +811,31 @@
 }
 
 @media (max-width: 900px) {
-  .licensingLeadHeader {
+  :global(:where(html:not(:has([data-website-canvas])))) .licensingLeadHeader {
     grid-template-columns: 1fr !important;
     gap: 1rem !important;
   }
 
-  .licensingLeadThread .clientDecisionArea,
-  .licensingLeadThread .clientActionRow {
+  :global(:where(html:not(:has([data-website-canvas])))) .licensingLeadThread .clientDecisionArea,
+  :global(:where(html:not(:has([data-website-canvas])))) .licensingLeadThread .clientActionRow {
     width: 100%;
   }
 
-  .licensingLeadThread .clientActionRow > button {
+  :global(:where(html:not(:has([data-website-canvas])))) .licensingLeadThread .clientActionRow > button {
     width: 100%;
   }
 
-  .licenceOutcomeBadge {
+  :global(:where(html:not(:has([data-website-canvas])))) .licenceOutcomeBadge {
     width: 100%;
   }
 }
 
 @media (max-width: 560px) {
-  .licenceRenewalMeta {
+  :global(:where(html:not(:has([data-website-canvas])))) .licenceRenewalMeta {
     width: 100%;
   }
 
-  .licenceRenewalMetaCopy strong {
+  :global(:where(html:not(:has([data-website-canvas])))) .licenceRenewalMetaCopy strong {
     white-space: normal;
   }
 }
@@ -843,8 +843,8 @@
 /* === Dealer lead photo viewer and communication modal refinement === */
 .leadEmailModal.leadEmailModal,
 .leadNoteModal.leadNoteModal {
-  width: min(94vw, 900px) !important;
-  max-height: calc(100dvh - 2rem) !important;
+  width: min(calc(var(--website-design-vw, 1vw) * 94), 900px) !important;
+  max-height: calc(calc(var(--website-visible-height, 100dvh) * 1) - 2rem) !important;
   display: flex !important;
   flex-direction: column !important;
   padding: 0 !important;
@@ -883,7 +883,7 @@
 .leadModalTitleGroup h3 {
   margin: 0 !important;
   color: #0d392e !important;
-  font-size: clamp(1.65rem, 3vw, 2.15rem) !important;
+  font-size: clamp(1.65rem, calc(var(--website-design-vw, 1vw) * 3), 2.15rem) !important;
   font-weight: 850 !important;
   line-height: 1.05 !important;
   letter-spacing: -0.045em !important;
@@ -1040,7 +1040,7 @@
   position: fixed !important;
   inset: 0 !important;
   z-index: 10100 !important;
-  min-height: 100dvh;
+  min-height: calc(var(--website-visible-height, 100dvh) * 1);
   display: grid !important;
   place-items: center !important;
   overflow: hidden !important;
@@ -1061,9 +1061,9 @@
 .leadPhotoModal {
   position: relative;
   z-index: 2;
-  width: min(calc(100vw - 2rem), 720px);
-  max-width: 100%;
-  max-height: calc(100dvh - 2rem);
+  width: min(calc(calc(var(--website-design-vw, 1vw) * 100) - 2rem), 720px);
+  max-width: var(--website-dialog-reference-width, 100%);
+  max-height: calc(calc(var(--website-visible-height, 100dvh) * 1) - 2rem);
   min-width: 0;
   min-height: 0;
   box-sizing: border-box;
@@ -1078,11 +1078,11 @@
 }
 
 .assetPhotoModal {
-  width: min(calc(100vw - 2rem), 720px);
+  width: min(calc(calc(var(--website-design-vw, 1vw) * 100) - 2rem), 720px);
 }
 
 .sentPhotoModal {
-  width: min(calc(100vw - 2rem), 640px);
+  width: min(calc(calc(var(--website-design-vw, 1vw) * 100) - 2rem), 640px);
 }
 
 .leadPhotoModalHeader {
@@ -1169,14 +1169,14 @@
 .leadPhotoModalFrame {
   position: relative;
   width: 100%;
-  height: min(52dvh, 420px);
+  height: min(calc(var(--website-design-vh, 1dvh) * 52), 420px);
   max-height: 420px;
   min-height: 0;
   box-sizing: border-box;
   display: grid;
   place-items: center;
   overflow: hidden;
-  padding: clamp(0.4rem, 1vw, 0.7rem);
+  padding: clamp(0.4rem, calc(var(--website-design-vw, 1vw) * 1), 0.7rem);
   border: 1px solid rgba(29, 49, 58, 0.32);
   border-radius: 0.95rem;
   background:
@@ -1267,88 +1267,88 @@
 }
 
 @media (max-width: 760px) {
-  .leadEmailModal.leadEmailModal,
-  .leadNoteModal.leadNoteModal {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadEmailModal.leadEmailModal,
+  :global(:where(html:not(:has([data-website-canvas])))) .leadNoteModal.leadNoteModal {
     width: calc(100vw - 1.25rem) !important;
     max-height: calc(100dvh - 1.25rem) !important;
     border-radius: 1.15rem !important;
   }
 
-  .leadEmailHeader.leadEmailHeader,
-  .leadNoteHeader.leadNoteHeader {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadEmailHeader.leadEmailHeader,
+  :global(:where(html:not(:has([data-website-canvas])))) .leadNoteHeader.leadNoteHeader {
     padding: 1.05rem 4rem 0.95rem 1rem !important;
   }
 
-  .leadEmailDraftPanel.leadEmailDraftPanel,
-  .leadNoteBody.leadNoteBody {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadEmailDraftPanel.leadEmailDraftPanel,
+  :global(:where(html:not(:has([data-website-canvas])))) .leadNoteBody.leadNoteBody {
     padding: 1rem !important;
   }
 
-  .leadEmailActions.leadEmailActions,
-  .leadNoteActions.leadNoteActions {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadEmailActions.leadEmailActions,
+  :global(:where(html:not(:has([data-website-canvas])))) .leadNoteActions.leadNoteActions {
     display: grid !important;
     grid-template-columns: 1fr;
     padding: 0.85rem 1rem 1rem !important;
   }
 
-  .leadEmailActionGroup {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadEmailActionGroup {
     display: grid;
     grid-template-columns: 1fr;
   }
 
-  .leadEmailActionGroup > button,
-  .leadEmailActions > .leadModalCancelButton,
-  .leadNoteActions > button {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadEmailActionGroup > button,
+  :global(:where(html:not(:has([data-website-canvas])))) .leadEmailActions > .leadModalCancelButton,
+  :global(:where(html:not(:has([data-website-canvas])))) .leadNoteActions > button {
     width: 100%;
   }
 
-  .leadPhotoModal {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadPhotoModal {
     width: calc(100vw - 1rem);
     max-height: calc(100dvh - 2rem);
     border-radius: 1rem;
   }
 
-  .assetPhotoModal,
-  .sentPhotoModal {
+  :global(:where(html:not(:has([data-website-canvas])))) .assetPhotoModal,
+  :global(:where(html:not(:has([data-website-canvas])))) .sentPhotoModal {
     width: calc(100vw - 1rem);
   }
 
-  .leadPhotoModalHeader {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadPhotoModalHeader {
     gap: 0.65rem;
     padding: 0.75rem 0.75rem 0.72rem 0.9rem;
   }
 
-  .leadPhotoModalCloseButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadPhotoModalCloseButton {
     width: 2.4rem;
     height: 2.4rem;
   }
 
-  .leadPhotoModalBody {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadPhotoModalBody {
     gap: 0.55rem;
     padding: 0.6rem;
   }
 
-  .leadPhotoModalFrame {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadPhotoModalFrame {
     height: min(44dvh, 340px);
     max-height: 340px;
     padding: 0.35rem;
     border-radius: 0.8rem;
   }
 
-  .leadPhotoModalNavButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadPhotoModalNavButton {
     width: 2.4rem;
     height: 2.4rem;
   }
 
-  .leadPhotoModalNavPrevious {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadPhotoModalNavPrevious {
     left: 0.4rem;
   }
 
-  .leadPhotoModalNavNext {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadPhotoModalNavNext {
     right: 0.4rem;
   }
 
-  .leadPhotoModalThumbButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadPhotoModalThumbButton {
     flex-basis: 3.5rem;
     width: 3.5rem;
     height: 2.7rem;
@@ -1356,7 +1356,7 @@
 }
 
 @media (max-height: 700px) {
-  .leadPhotoModalFrame {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadPhotoModalFrame {
     height: min(42dvh, 300px);
     max-height: 300px;
   }
@@ -1365,13 +1365,13 @@
 /* Preserve the established Finance and Insurance lead hierarchy. */
 .leadsPage:not(.dealerOwnerParity) .leadsRegisterHeader {
   width: 100% !important;
-  min-height: clamp(5.1rem, 7vw, 6.1rem) !important;
+  min-height: clamp(5.1rem, calc(var(--website-design-vw, 1vw) * 7), 6.1rem) !important;
   display: flex !important;
   align-items: center !important;
-  margin: 0 0 clamp(1.05rem, 1.5vw, 1.3rem) !important;
-  padding: clamp(1.15rem, 2vw, 1.55rem) clamp(1.25rem, 2.6vw, 2rem) !important;
+  margin: 0 0 clamp(1.05rem, calc(var(--website-design-vw, 1vw) * 1.5), 1.3rem) !important;
+  padding: clamp(1.15rem, calc(var(--website-design-vw, 1vw) * 2), 1.55rem) clamp(1.25rem, calc(var(--website-design-vw, 1vw) * 2.6), 2rem) !important;
   border: 1.5px solid rgba(193, 211, 218, 0.98) !important;
-  border-radius: clamp(1.25rem, 2vw, 1.7rem) !important;
+  border-radius: clamp(1.25rem, calc(var(--website-design-vw, 1vw) * 2), 1.7rem) !important;
   background:
     radial-gradient(circle at 3% 0%, rgba(25, 116, 84, 0.08) 0%, rgba(25, 116, 84, 0) 38%),
     linear-gradient(180deg, rgba(255, 255, 255, 0.99) 0%, rgba(248, 252, 253, 0.98) 100%) !important;
@@ -1398,7 +1398,7 @@
   background: transparent !important;
   box-shadow: none !important;
   font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif !important;
-  font-size: clamp(2.35rem, 4.15vw, 3.55rem) !important;
+  font-size: clamp(2.35rem, calc(var(--website-design-vw, 1vw) * 4.15), 3.55rem) !important;
   font-weight: 900 !important;
   line-height: 0.98 !important;
   letter-spacing: -0.062em !important;
@@ -1408,15 +1408,15 @@
 }
 
 .leadsPage:not(.dealerOwnerParity) .leadSummaryRow {
-  gap: clamp(0.9rem, 1.25vw, 1.15rem) !important;
-  margin-bottom: clamp(1rem, 1.4vw, 1.2rem) !important;
+  gap: clamp(0.9rem, calc(var(--website-design-vw, 1vw) * 1.25), 1.15rem) !important;
+  margin-bottom: clamp(1rem, calc(var(--website-design-vw, 1vw) * 1.4), 1.2rem) !important;
 }
 
 .leadsPage:not(.dealerOwnerParity) .leadSummaryCard {
-  min-height: clamp(8.35rem, 9.2vw, 9.3rem) !important;
+  min-height: clamp(8.35rem, calc(var(--website-design-vw, 1vw) * 9.2), 9.3rem) !important;
   padding: 1.15rem 1.3rem 1.15rem 1.55rem !important;
   border-color: rgba(196, 215, 223, 0.98) !important;
-  border-radius: clamp(1.25rem, 1.7vw, 1.55rem) !important;
+  border-radius: clamp(1.25rem, calc(var(--website-design-vw, 1vw) * 1.7), 1.55rem) !important;
   box-shadow:
     0 12px 26px rgba(16, 31, 28, 0.045),
     inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
@@ -1428,7 +1428,7 @@
 }
 
 .leadsPage:not(.dealerOwnerParity) .leadSummaryCard > strong {
-  font-size: clamp(2.25rem, 3.4vw, 3rem) !important;
+  font-size: clamp(2.25rem, calc(var(--website-design-vw, 1vw) * 3.4), 3rem) !important;
 }
 
 .leadsPage:not(.dealerOwnerParity) .leadSummaryCard > small {
@@ -1456,7 +1456,7 @@
 .leadsPage:not(.dealerOwnerParity) .leadThread,
 .leadsPage:not(.dealerOwnerParity) .leadThreadNew:not(.leadThreadOpen),
 .leadsPage:not(.dealerOwnerParity) .leadThreadDone {
-  padding: clamp(1.05rem, 1.45vw, 1.25rem) !important;
+  padding: clamp(1.05rem, calc(var(--website-design-vw, 1vw) * 1.45), 1.25rem) !important;
   border-color: rgba(198, 216, 223, 0.98) !important;
   border-radius: 1.45rem !important;
   background:
@@ -1465,8 +1465,8 @@
 }
 
 .leadsPage:not(.dealerOwnerParity) .clientPanelHeader {
-  min-height: clamp(6.2rem, 7vw, 7rem) !important;
-  gap: clamp(1rem, 1.8vw, 1.5rem) !important;
+  min-height: clamp(6.2rem, calc(var(--website-design-vw, 1vw) * 7), 7rem) !important;
+  gap: clamp(1rem, calc(var(--website-design-vw, 1vw) * 1.8), 1.5rem) !important;
 }
 
 .leadsPage:not(.dealerOwnerParity) .clientIdentity {
@@ -1477,7 +1477,7 @@
 .leadsPage:not(.dealerOwnerParity) .clientPanel h3,
 .leadsPage:not(.dealerOwnerParity) .leadThreadNew:not(.leadThreadOpen) .clientPanel h3,
 .leadsPage:not(.dealerOwnerParity) .leadThreadDone .clientPanel h3 {
-  font-size: clamp(1.42rem, 1.9vw, 1.72rem) !important;
+  font-size: clamp(1.42rem, calc(var(--website-design-vw, 1vw) * 1.9), 1.72rem) !important;
   font-weight: 850 !important;
   letter-spacing: -0.04em !important;
 }
@@ -1487,22 +1487,22 @@
 }
 
 @media (max-width: 760px) {
-  .leadsPage:not(.dealerOwnerParity) .leadsRegisterHeader {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadsPage:not(.dealerOwnerParity) .leadsRegisterHeader {
     min-height: 4.35rem !important;
     padding: 1rem 1.05rem !important;
     border-radius: 1.15rem !important;
   }
 
-  .leadsPage:not(.dealerOwnerParity) .leadsHeroTitleBlock h1 {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadsPage:not(.dealerOwnerParity) .leadsHeroTitleBlock h1 {
     font-size: clamp(1.75rem, 9vw, 2.2rem) !important;
     letter-spacing: -0.045em !important;
   }
 
-  .leadsPage:not(.dealerOwnerParity) .leadSummaryCard {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadsPage:not(.dealerOwnerParity) .leadSummaryCard {
     min-height: 6.4rem !important;
   }
 
-  .leadsPage:not(.dealerOwnerParity) .clientPanelHeader {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadsPage:not(.dealerOwnerParity) .clientPanelHeader {
     min-height: 0 !important;
   }
 }
@@ -1567,7 +1567,7 @@
   background: transparent !important;
   box-shadow: none !important;
   color: var(--owner-ink) !important;
-  font-size: clamp(1.95rem, 3.2vw, 2.65rem) !important;
+  font-size: clamp(1.95rem, calc(var(--website-design-vw, 1vw) * 3.2), 2.65rem) !important;
   font-weight: 800 !important;
   line-height: 1.04 !important;
   letter-spacing: -0.045em !important;
@@ -1626,7 +1626,7 @@
   grid-row: 1 / span 2;
   align-self: center;
   color: var(--owner-ink);
-  font-size: clamp(1.9rem, 3vw, 2.45rem);
+  font-size: clamp(1.9rem, calc(var(--website-design-vw, 1vw) * 3), 2.45rem);
   font-weight: 900;
   line-height: 1;
   letter-spacing: -0.05em;
@@ -1745,7 +1745,7 @@
 .leadsPage .leadThreadNew:not(.leadThreadOpen) .clientPanel h3,
 .leadsPage .leadThreadDone .clientPanel h3 {
   color: var(--owner-ink) !important;
-  font-size: clamp(1.25rem, 1.7vw, 1.52rem) !important;
+  font-size: clamp(1.25rem, calc(var(--website-design-vw, 1vw) * 1.7), 1.52rem) !important;
   font-weight: 800 !important;
   line-height: 1.15 !important;
   letter-spacing: -0.03em !important;
@@ -1834,7 +1834,7 @@
 }
 
 .leadNoteModal {
-  width: min(100%, 56rem) !important;
+  width: min(var(--website-dialog-reference-width, 100%), 56rem) !important;
   padding: 1.25rem !important;
   border: 1px solid var(--owner-line) !important;
   border-radius: 22px !important;
@@ -1902,90 +1902,90 @@
 }
 
 @media (max-width: 900px) {
-  .leadSummaryRow {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadSummaryRow {
     grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
   }
 
-  .leadSummaryCard {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadSummaryCard {
     min-height: 6.5rem;
     grid-template-columns: 1fr;
   }
 
-  .leadSummaryCard > strong {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadSummaryCard > strong {
     grid-column: 1;
     grid-row: auto;
   }
 }
 
 @media (max-width: 700px) {
-  .leadsRegisterHeader {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadsRegisterHeader {
     border-radius: 18px !important;
   }
 
-  .leadSummaryRow {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadSummaryRow {
     grid-template-columns: 1fr !important;
   }
 
-  .leadSummaryCard {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadSummaryCard {
     min-height: 5.8rem;
     grid-template-columns: minmax(0, 1fr) auto;
   }
 
-  .leadSummaryCard > strong {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadSummaryCard > strong {
     grid-column: 2;
     grid-row: 1 / span 2;
   }
 
-  .clientPanelHeader,
-  .clientActionRow {
+  :global(:where(html:not(:has([data-website-canvas])))) .clientPanelHeader,
+  :global(:where(html:not(:has([data-website-canvas])))) .clientActionRow {
     grid-template-columns: 1fr !important;
   }
 
-  .leadResultSummary {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadResultSummary {
     flex-wrap: wrap;
   }
 
-  .leadNoteAttachmentDropzone {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadNoteAttachmentDropzone {
     grid-template-columns: 1fr !important;
   }
 
-  .leadNoteAttachmentIcon,
-  .leadNoteAttachmentEyebrow,
-  .leadNoteAttachmentDropzone > strong,
-  .leadNoteAttachmentDropzone > small {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadNoteAttachmentIcon,
+  :global(:where(html:not(:has([data-website-canvas])))) .leadNoteAttachmentEyebrow,
+  :global(:where(html:not(:has([data-website-canvas])))) .leadNoteAttachmentDropzone > strong,
+  :global(:where(html:not(:has([data-website-canvas])))) .leadNoteAttachmentDropzone > small {
     grid-column: 1;
     grid-row: auto;
   }
 }
 
 @media (max-width: 620px) {
-  .fullRegisterStatsGrid {
+  :global(:where(html:not(:has([data-website-canvas])))) .fullRegisterStatsGrid {
     grid-template-columns: 1fr;
   }
 
-  .fullRegisterPdfPanel {
+  :global(:where(html:not(:has([data-website-canvas])))) .fullRegisterPdfPanel {
     min-height: 12rem;
   }
 
-  .leadThread {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadThread {
     padding: 0.78rem;
     border-radius: 1.35rem;
   }
 
-  .clientPanelHeader {
+  :global(:where(html:not(:has([data-website-canvas])))) .clientPanelHeader {
     min-height: 0;
   }
 
-  .clientInlineMeta {
+  :global(:where(html:not(:has([data-website-canvas])))) .clientInlineMeta {
     display: grid;
     gap: 0.28rem;
   }
 
-  .clientInlineMeta span:not(:last-child)::after {
+  :global(:where(html:not(:has([data-website-canvas])))) .clientInlineMeta span:not(:last-child)::after {
     display: none;
   }
 
-  .leadPreviewMeta {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadPreviewMeta {
     width: 100%;
     justify-content: space-between;
     border-radius: 1rem;
@@ -1999,9 +1999,9 @@
 
 /* === White delete modal alignment === */
 .leadDeleteModal {
-  width: min(100%, 760px) !important;
+  width: min(var(--website-dialog-reference-width, 100%), 760px) !important;
   grid-template-columns: 1fr !important;
-  padding: clamp(1.55rem, 2.4vw, 2.15rem) !important;
+  padding: clamp(1.55rem, calc(var(--website-design-vw, 1vw) * 2.4), 2.15rem) !important;
   border-radius: 1.75rem !important;
 }
 
@@ -2016,7 +2016,7 @@
 
 .leadDeleteContent h3 {
   max-width: none !important;
-  font-size: clamp(1.55rem, 2.35vw, 2.05rem) !important;
+  font-size: clamp(1.55rem, calc(var(--website-design-vw, 1vw) * 2.35), 2.05rem) !important;
   font-weight: 820 !important;
   letter-spacing: -0.052em !important;
 }
@@ -2060,12 +2060,12 @@
 }
 
 @media (max-width: 760px) {
-  .leadDeleteModal {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadDeleteModal {
     width: min(100%, calc(100vw - 1.25rem)) !important;
     padding: 1.15rem !important;
   }
 
-  .leadDeleteActions {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadDeleteActions {
     display: grid !important;
     grid-template-columns: 1fr !important;
   }
@@ -2084,18 +2084,18 @@
 
 .leadDeleteCloseButton {
   position: absolute !important;
-  top: clamp(1.3rem, 2vw, 1.75rem) !important;
-  right: clamp(1.3rem, 2vw, 1.75rem) !important;
+  top: clamp(1.3rem, calc(var(--website-design-vw, 1vw) * 2), 1.75rem) !important;
+  right: clamp(1.3rem, calc(var(--website-design-vw, 1vw) * 2), 1.75rem) !important;
   margin: 0 !important;
   z-index: 3;
 }
 
 @media (max-width: 760px) {
-  .leadDeleteHeader {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadDeleteHeader {
     padding-right: 3.75rem !important;
   }
 
-  .leadDeleteCloseButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadDeleteCloseButton {
     top: 1rem !important;
     right: 1rem !important;
   }
@@ -2124,7 +2124,7 @@
   grid-template-columns: 1fr !important;
   align-items: stretch !important;
   gap: 0 !important;
-  margin-bottom: clamp(1.05rem, 1.45vw, 1.35rem) !important;
+  margin-bottom: clamp(1.05rem, calc(var(--website-design-vw, 1vw) * 1.45), 1.35rem) !important;
 }
 
 .leadsHeroTitleBlock {
@@ -2138,14 +2138,14 @@
 .leadsHeroTitleBlock h1 {
   width: 100% !important;
   max-width: 100% !important;
-  min-height: clamp(5.1rem, 7vw, 6.1rem) !important;
+  min-height: clamp(5.1rem, calc(var(--website-design-vw, 1vw) * 7), 6.1rem) !important;
   display: flex !important;
   align-items: center !important;
   justify-content: flex-start !important;
   margin: 0 !important;
-  padding: clamp(1.15rem, 2vw, 1.55rem) clamp(1.25rem, 2.6vw, 2rem) !important;
+  padding: clamp(1.15rem, calc(var(--website-design-vw, 1vw) * 2), 1.55rem) clamp(1.25rem, calc(var(--website-design-vw, 1vw) * 2.6), 2rem) !important;
   border: 1.5px solid rgba(193, 211, 218, 0.98) !important;
-  border-radius: clamp(1.25rem, 2vw, 1.7rem) !important;
+  border-radius: clamp(1.25rem, calc(var(--website-design-vw, 1vw) * 2), 1.7rem) !important;
   background:
     radial-gradient(circle at 3% 0%, rgba(25, 116, 84, 0.08) 0%, rgba(25, 116, 84, 0) 38%),
     linear-gradient(180deg, rgba(255, 255, 255, 0.99) 0%, rgba(248, 252, 253, 0.98) 100%) !important;
@@ -2156,7 +2156,7 @@
   color: #073b30 !important;
   text-shadow: none !important;
   font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif !important;
-  font-size: clamp(2.35rem, 4.15vw, 3.55rem) !important;
+  font-size: clamp(2.35rem, calc(var(--website-design-vw, 1vw) * 4.15), 3.55rem) !important;
   font-weight: 900 !important;
   line-height: 0.98 !important;
   letter-spacing: -0.062em !important;
@@ -2168,7 +2168,7 @@
 .leadSearchToolbar {
   grid-template-columns: minmax(0, 1fr) minmax(168px, auto) !important;
   align-items: stretch !important;
-  gap: clamp(0.8rem, 1.15vw, 1rem) !important;
+  gap: clamp(0.8rem, calc(var(--website-design-vw, 1vw) * 1.15), 1rem) !important;
   margin-bottom: 1rem !important;
 }
 
@@ -2182,11 +2182,11 @@
 }
 
 .leadThread {
-  padding: clamp(0.92rem, 1.35vw, 1.12rem) !important;
+  padding: clamp(0.92rem, calc(var(--website-design-vw, 1vw) * 1.35), 1.12rem) !important;
 }
 
 .clientPanelHeader {
-  min-height: clamp(4.4rem, 5.2vw, 5.1rem) !important;
+  min-height: clamp(4.4rem, calc(var(--website-design-vw, 1vw) * 5.2), 5.1rem) !important;
   gap: 1rem !important;
 }
 
@@ -2202,13 +2202,13 @@
 }
 
 .clientPanel h3 {
-  font-size: clamp(1.5rem, 2vw, 1.85rem) !important;
+  font-size: clamp(1.5rem, calc(var(--website-design-vw, 1vw) * 2), 1.85rem) !important;
   font-weight: 850 !important;
   letter-spacing: -0.045em !important;
 }
 
 @media (max-width: 760px) {
-  .leadsHeroTitleBlock h1 {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadsHeroTitleBlock h1 {
     min-height: 4.35rem !important;
     padding: 1rem 1.05rem !important;
     border-radius: 1.15rem !important;
@@ -2216,12 +2216,12 @@
     letter-spacing: -0.045em !important;
   }
 
-  .leadSearchToolbar {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadSearchToolbar {
     grid-template-columns: 1fr !important;
     gap: 0.65rem !important;
   }
 
-  .leadSearchToolbar .leadFilterButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadSearchToolbar .leadFilterButton {
     min-width: 0 !important;
   }
 }
@@ -2311,7 +2311,7 @@
   width: fit-content;
   max-width: 100%;
   color: #273f4e;
-  font-size: clamp(0.98rem, 1.1vw, 1.06rem);
+  font-size: clamp(0.98rem, calc(var(--website-design-vw, 1vw) * 1.1), 1.06rem);
   font-weight: 760;
   line-height: 1.35;
   text-decoration: none;
@@ -2340,11 +2340,11 @@
 }
 
 @media (max-width: 620px) {
-  .leadContactStack {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadContactStack {
     width: 100%;
   }
 
-  .leadContactLine {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadContactLine {
     width: 100%;
   }
 }
@@ -2385,7 +2385,7 @@
   margin: 0 !important;
   color: #073b30 !important;
   font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif !important;
-  font-size: clamp(1.42rem, 1.9vw, 1.72rem) !important;
+  font-size: clamp(1.42rem, calc(var(--website-design-vw, 1vw) * 1.9), 1.72rem) !important;
   font-weight: 760 !important;
   line-height: 1.08 !important;
   letter-spacing: -0.032em !important;
@@ -2428,8 +2428,8 @@
 }
 
 @media (max-width: 760px) {
-  .leadsPage .clientPanel h3,
-  .leadsPage .leadThreadNew:not(.leadThreadOpen) .clientPanel h3 {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadsPage .clientPanel h3,
+  :global(:where(html:not(:has([data-website-canvas])))) .leadsPage .leadThreadNew:not(.leadThreadOpen) .clientPanel h3 {
     font-weight: 740 !important;
     letter-spacing: -0.026em !important;
   }
@@ -2438,7 +2438,7 @@
 /* === Leads page: opened asset card spacing === */
 .leadAssetHeader {
   grid-template-columns: minmax(0, 1fr) fit-content(390px) !important;
-  gap: clamp(0.78rem, 1vw, 1.05rem) !important;
+  gap: clamp(0.78rem, calc(var(--website-design-vw, 1vw) * 1), 1.05rem) !important;
   align-items: start !important;
 }
 
@@ -2467,7 +2467,7 @@
 
 .leadAssetHeaderActions > button {
   margin-right: 0 !important;
-  min-width: clamp(140px, 10.5vw, 166px) !important;
+  min-width: clamp(140px, calc(var(--website-design-vw, 1vw) * 10.5), 166px) !important;
   min-height: 3.06rem !important;
   padding-inline: 0.92rem !important;
 }
@@ -2479,63 +2479,63 @@
 }
 
 @media (max-width: 980px) {
-  .leadAssetHeader {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadAssetHeader {
     grid-template-columns: 1fr !important;
     gap: 0.8rem !important;
   }
 
-  .leadAssetHeaderAside {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadAssetHeaderAside {
     width: 100% !important;
     justify-items: stretch !important;
   }
 
-  .leadValueBlock {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadValueBlock {
     width: 100% !important;
     justify-items: start !important;
     text-align: left !important;
   }
 
-  .leadAssetHeaderActions {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadAssetHeaderActions {
     width: 100% !important;
     justify-content: stretch !important;
   }
 
-  .leadAssetHeaderActions > button {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadAssetHeaderActions > button {
     flex: 1 1 0;
     min-width: 0 !important;
   }
 }
 
 @media (max-width: 620px) {
-  .leadContactStack {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadContactStack {
     display: grid !important;
     grid-template-columns: 1fr !important;
     gap: 0.42rem !important;
   }
 
-  .leadContactGroup {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadContactGroup {
     width: 100%;
     display: grid;
     grid-template-columns: 1fr;
     gap: 0;
   }
 
-  .leadContactLine {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadContactLine {
     width: 100% !important;
     display: grid !important;
     grid-template-columns: minmax(7.7rem, auto) minmax(0, 1fr);
     gap: 0.5rem !important;
   }
 
-  .leadContactDivider {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadContactDivider {
     display: none;
   }
 
-  .leadAssetHeaderActions {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadAssetHeaderActions {
     flex-direction: column;
   }
 
-  .leadAssetHeaderActions > button {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadAssetHeaderActions > button {
     width: 100%;
   }
 }
@@ -2655,12 +2655,12 @@
 }
 
 @media (max-width: 620px) {
-  .leadNoteAttachmentPreview {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadNoteAttachmentPreview {
     display: grid;
     align-items: stretch;
   }
 
-  .leadNoteAttachmentPreview button {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadNoteAttachmentPreview button {
     width: 100%;
   }
 }
@@ -2735,7 +2735,7 @@
   right: 0;
   left: 0;
   z-index: 40;
-  max-height: min(18rem, 42vh);
+  max-height: min(18rem, calc(var(--website-design-vh, 1vh) * 42));
   overflow-y: auto;
   padding: 0.35rem;
   border: 1px solid rgba(187, 211, 224, 0.98);
@@ -2872,31 +2872,31 @@
 }
 
 @media (max-width: 620px) {
-  .leadPagination,
-  .leadPaginationControls {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadPagination,
+  :global(:where(html:not(:has([data-website-canvas])))) .leadPaginationControls {
     align-items: stretch;
     width: 100%;
   }
 
-  .leadPaginationControls {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadPaginationControls {
     display: grid;
     grid-template-columns: 1fr;
   }
 
-  .leadPaginationButton,
-  .leadPaginationPages {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadPaginationButton,
+  :global(:where(html:not(:has([data-website-canvas])))) .leadPaginationPages {
     width: 100%;
   }
 
-  .leadPaginationPages {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadPaginationPages {
     justify-content: center;
   }
 }
 
 /* === Leads desktop email draft modal === */
 .leadEmailModal {
-  width: min(100%, 860px) !important;
-  padding: clamp(1.2rem, 2vw, 1.55rem) !important;
+  width: min(var(--website-dialog-reference-width, 100%), 860px) !important;
+  padding: clamp(1.2rem, calc(var(--website-design-vw, 1vw) * 2), 1.55rem) !important;
 }
 
 .leadEmailDraftPanel {
@@ -2951,12 +2951,12 @@
 }
 
 @media (max-width: 620px) {
-  .leadEmailActions {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadEmailActions {
     display: grid;
     grid-template-columns: 1fr;
   }
 
-  .leadEmailActions > button {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadEmailActions > button {
     width: 100%;
   }
 }
@@ -2984,7 +2984,7 @@
   display: flex;
   align-items: stretch;
   justify-content: flex-end;
-  gap: clamp(0.72rem, 1vw, 0.9rem);
+  gap: clamp(0.72rem, calc(var(--website-design-vw, 1vw) * 1), 0.9rem);
   min-width: 0;
 }
 
@@ -3140,36 +3140,36 @@
 }
 
 @media (max-width: 900px) {
-  .leadToolbarActions {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadToolbarActions {
     width: 100%;
   }
 
-  .leadToolbarActions .leadFilterButton,
-  .leadRefreshButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadToolbarActions .leadFilterButton,
+  :global(:where(html:not(:has([data-website-canvas])))) .leadRefreshButton {
     width: 100% !important;
   }
 
-  .clientActionRow .markDoneLeadButton,
-  .clientActionRow .doneLeadPill {
+  :global(:where(html:not(:has([data-website-canvas])))) .clientActionRow .markDoneLeadButton,
+  :global(:where(html:not(:has([data-website-canvas])))) .clientActionRow .doneLeadPill {
     width: 100%;
   }
 }
 
 @media (max-width: 760px) {
-  .leadToolbarActions {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadToolbarActions {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 0.65rem;
   }
 
-  .leadRefreshButton,
-  .leadToolbarActions .leadFilterButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadRefreshButton,
+  :global(:where(html:not(:has([data-website-canvas])))) .leadToolbarActions .leadFilterButton {
     min-width: 0 !important;
   }
 }
 
 @media (max-width: 520px) {
-  .leadToolbarActions {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadToolbarActions {
     grid-template-columns: 1fr;
   }
 }
@@ -3313,25 +3313,25 @@
 }
 
 @media (max-width: 1180px) {
-  .leadAssetBody.leadAssetBody {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadAssetBody.leadAssetBody {
     grid-template-columns: 1fr !important;
   }
 
-  .leadPreviewWrap {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadPreviewWrap {
     width: min(100%, 360px) !important;
   }
 }
 
 @media (max-width: 620px) {
-  .leadPreviewWrap {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadPreviewWrap {
     width: 100% !important;
   }
 
-  .ownerSharedPhotoGrid {
+  :global(:where(html:not(:has([data-website-canvas])))) .ownerSharedPhotoGrid {
     grid-template-columns: repeat(auto-fill, minmax(5.6rem, 6.25rem));
   }
 
-  .ownerSharedPhotoLink {
+  :global(:where(html:not(:has([data-website-canvas])))) .ownerSharedPhotoLink {
     width: 100%;
     height: auto;
     aspect-ratio: 1 / 1;
@@ -3386,85 +3386,85 @@
 }
 
 @media (max-width: 900px) {
-  .leadsRegisterHeader,
-  .leadToolbarActions,
-  .leadSearchToolbar,
-  .leadFilterForm,
-  .leadFilterActions,
-  .leadEmailActions,
-  .leadNoteActions,
-  .leadDeleteActions,
-  .clientActionRow,
-  .manageOptionsGrid,
-  .leadSummaryRow,
-  .fullRegisterStatsGrid,
-  .leadAssetBody,
-  .leadAssetHeader,
-  .leadAssetHeaderActions {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadsRegisterHeader,
+  :global(:where(html:not(:has([data-website-canvas])))) .leadToolbarActions,
+  :global(:where(html:not(:has([data-website-canvas])))) .leadSearchToolbar,
+  :global(:where(html:not(:has([data-website-canvas])))) .leadFilterForm,
+  :global(:where(html:not(:has([data-website-canvas])))) .leadFilterActions,
+  :global(:where(html:not(:has([data-website-canvas])))) .leadEmailActions,
+  :global(:where(html:not(:has([data-website-canvas])))) .leadNoteActions,
+  :global(:where(html:not(:has([data-website-canvas])))) .leadDeleteActions,
+  :global(:where(html:not(:has([data-website-canvas])))) .clientActionRow,
+  :global(:where(html:not(:has([data-website-canvas])))) .manageOptionsGrid,
+  :global(:where(html:not(:has([data-website-canvas])))) .leadSummaryRow,
+  :global(:where(html:not(:has([data-website-canvas])))) .fullRegisterStatsGrid,
+  :global(:where(html:not(:has([data-website-canvas])))) .leadAssetBody,
+  :global(:where(html:not(:has([data-website-canvas])))) .leadAssetHeader,
+  :global(:where(html:not(:has([data-website-canvas])))) .leadAssetHeaderActions {
     grid-template-columns: 1fr !important;
     display: grid !important;
     width: 100%;
   }
 
-  .leadToolbarActions > *,
-  .leadFilterActions > *,
-  .leadEmailActions > *,
-  .leadNoteActions > *,
-  .leadDeleteActions > *,
-  .clientActionRow > *,
-  .leadAssetHeaderActions > * {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadToolbarActions > *,
+  :global(:where(html:not(:has([data-website-canvas])))) .leadFilterActions > *,
+  :global(:where(html:not(:has([data-website-canvas])))) .leadEmailActions > *,
+  :global(:where(html:not(:has([data-website-canvas])))) .leadNoteActions > *,
+  :global(:where(html:not(:has([data-website-canvas])))) .leadDeleteActions > *,
+  :global(:where(html:not(:has([data-website-canvas])))) .clientActionRow > *,
+  :global(:where(html:not(:has([data-website-canvas])))) .leadAssetHeaderActions > * {
     width: 100%;
   }
 }
 
 @media (max-width: 760px) {
-  .leadsPage {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadsPage {
     padding-inline: 0.5rem !important;
   }
 
-  .leadsRegisterPanel,
-  .leadThread,
-  .leadAssetCard,
-  .clientPanel,
-  .fullRegisterLeadCard,
-  .fullRegisterStatsPanel {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadsRegisterPanel,
+  :global(:where(html:not(:has([data-website-canvas])))) .leadThread,
+  :global(:where(html:not(:has([data-website-canvas])))) .leadAssetCard,
+  :global(:where(html:not(:has([data-website-canvas])))) .clientPanel,
+  :global(:where(html:not(:has([data-website-canvas])))) .fullRegisterLeadCard,
+  :global(:where(html:not(:has([data-website-canvas])))) .fullRegisterStatsPanel {
     border-radius: 1.2rem !important;
   }
 
-  .leadsHeroTitleBlock h1 {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadsHeroTitleBlock h1 {
     font-size: clamp(1.85rem, 9vw, 2.45rem) !important;
   }
 
-  .openLeadButton,
-  .markDoneLeadButton,
-  .doneLeadPill,
-  .deleteLeadButton,
-  .closeLeadButton,
-  .leadRefreshButton,
-  .leadFilterButton,
-  .leadPaginationButton,
-  .leadManageButton,
-  .whatsAppActionButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .openLeadButton,
+  :global(:where(html:not(:has([data-website-canvas])))) .markDoneLeadButton,
+  :global(:where(html:not(:has([data-website-canvas])))) .doneLeadPill,
+  :global(:where(html:not(:has([data-website-canvas])))) .deleteLeadButton,
+  :global(:where(html:not(:has([data-website-canvas])))) .closeLeadButton,
+  :global(:where(html:not(:has([data-website-canvas])))) .leadRefreshButton,
+  :global(:where(html:not(:has([data-website-canvas])))) .leadFilterButton,
+  :global(:where(html:not(:has([data-website-canvas])))) .leadPaginationButton,
+  :global(:where(html:not(:has([data-website-canvas])))) .leadManageButton,
+  :global(:where(html:not(:has([data-website-canvas])))) .whatsAppActionButton {
     width: 100%;
     min-height: var(--tap-target-min, 44px) !important;
   }
 
-  .leadFilterDropdown,
-  .leadFilterModal,
-  .leadEmailModal,
-  .leadReportModal,
-  .leadDeleteModal {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadFilterDropdown,
+  :global(:where(html:not(:has([data-website-canvas])))) .leadFilterModal,
+  :global(:where(html:not(:has([data-website-canvas])))) .leadEmailModal,
+  :global(:where(html:not(:has([data-website-canvas])))) .leadReportModal,
+  :global(:where(html:not(:has([data-website-canvas])))) .leadDeleteModal {
     width: min(100%, 48rem) !important;
     max-height: calc(100dvh - 1.5rem) !important;
     overflow: hidden !important;
     border-radius: 1.25rem !important;
   }
 
-  .leadFilterIntro,
-  .leadEmailDraftPanel,
-  .leadReportModal,
-  .leadDeleteContent,
-  .fullRegisterLeadBody {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadFilterIntro,
+  :global(:where(html:not(:has([data-website-canvas])))) .leadEmailDraftPanel,
+  :global(:where(html:not(:has([data-website-canvas])))) .leadReportModal,
+  :global(:where(html:not(:has([data-website-canvas])))) .leadDeleteContent,
+  :global(:where(html:not(:has([data-website-canvas])))) .fullRegisterLeadBody {
     max-height: calc(100dvh - 10rem);
     overflow-y: auto;
     overscroll-behavior: contain;
@@ -3509,7 +3509,7 @@
   background: transparent !important;
   box-shadow: none !important;
   color: #12352d !important;
-  font-size: clamp(1.95rem, 3.2vw, 2.65rem) !important;
+  font-size: clamp(1.95rem, calc(var(--website-design-vw, 1vw) * 3.2), 2.65rem) !important;
   font-weight: 800 !important;
   line-height: 1.04 !important;
   letter-spacing: -0.045em !important;
@@ -3552,7 +3552,7 @@
 .leadsPage .leadThreadNew:not(.leadThreadOpen) .clientPanel h3,
 .leadsPage .leadThreadDone .clientPanel h3 {
   color: #12352d !important;
-  font-size: clamp(1.25rem, 1.7vw, 1.52rem) !important;
+  font-size: clamp(1.25rem, calc(var(--website-design-vw, 1vw) * 1.7), 1.52rem) !important;
   font-weight: 800 !important;
   line-height: 1.15 !important;
   letter-spacing: -0.03em !important;
@@ -3610,14 +3610,14 @@
 }
 
 @media (max-width: 760px) {
-  .leadsPage .leadsHeroTitleBlock h1 {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadsPage .leadsHeroTitleBlock h1 {
     font-size: clamp(1.75rem, 9vw, 2.2rem) !important;
   }
 }
 
 /* === Dealer lead modal viewport safety === */
 .leadManageModal {
-  width: min(64rem, calc(100vw - 2rem)) !important;
+  width: min(64rem, calc(calc(var(--website-design-vw, 1vw) * 100) - 2rem)) !important;
   max-width: 64rem !important;
 }
 
@@ -3627,7 +3627,7 @@
 .leadReportModal,
 .leadDeleteModal,
 .leadNoteModal {
-  max-height: calc(100dvh - 2rem) !important;
+  max-height: calc(calc(var(--website-visible-height, 100dvh) * 1) - 2rem) !important;
   overflow-x: hidden !important;
   overflow-y: auto !important;
   overscroll-behavior: contain;
@@ -3667,12 +3667,12 @@
 }
 
 @media (max-width: 760px) {
-  .leadFilterModal,
-  .leadManageModal,
-  .leadEmailModal,
-  .leadReportModal,
-  .leadDeleteModal,
-  .leadNoteModal {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadFilterModal,
+  :global(:where(html:not(:has([data-website-canvas])))) .leadManageModal,
+  :global(:where(html:not(:has([data-website-canvas])))) .leadEmailModal,
+  :global(:where(html:not(:has([data-website-canvas])))) .leadReportModal,
+  :global(:where(html:not(:has([data-website-canvas])))) .leadDeleteModal,
+  :global(:where(html:not(:has([data-website-canvas])))) .leadNoteModal {
     max-height: calc(100dvh - 1.5rem) !important;
   }
 }
@@ -3874,14 +3874,14 @@
 }
 
 @media (max-width: 560px) {
-  .trackingLeadPurpose {
+  :global(:where(html:not(:has([data-website-canvas])))) .trackingLeadPurpose {
     width: 100%;
     grid-template-columns: 2.25rem minmax(0, 1fr);
     gap: 0.68rem;
     padding: 0.68rem;
   }
 
-  .trackingLeadPurposeIcon {
+  :global(:where(html:not(:has([data-website-canvas])))) .trackingLeadPurposeIcon {
     width: 2.25rem;
     height: 2.25rem;
   }
@@ -3966,7 +3966,7 @@
 
 .leadFilterModal .leadFilterSelectMenu {
   z-index: 10000;
-  max-height: min(18rem, calc(100dvh - 15rem));
+  max-height: min(18rem, calc(calc(var(--website-visible-height, 100dvh) * 1) - 15rem));
   overscroll-behavior: contain;
 }
 
@@ -3976,7 +3976,7 @@
 }
 
 .leadNoteModal.leadNoteModal {
-  max-height: calc(100dvh - 2rem) !important;
+  max-height: calc(calc(var(--website-visible-height, 100dvh) * 1) - 2rem) !important;
   padding: 0 !important;
   overflow: hidden !important;
   scrollbar-gutter: auto !important;
@@ -4013,19 +4013,19 @@
 }
 
 @media (max-width: 760px) {
-  .leadFilterModal.leadFilterModal {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadFilterModal.leadFilterModal {
     max-height: calc(100dvh - 1.5rem) !important;
   }
 
-  .leadFilterModal .leadFilterForm {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadFilterModal .leadFilterForm {
     overflow-y: visible !important;
   }
 
-  .leadNoteBody {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadNoteBody {
     padding: 1rem;
   }
 
-  .leadNoteActions.leadNoteActions {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadNoteActions.leadNoteActions {
     padding: 0.85rem 1rem 1rem !important;
   }
 }
@@ -4140,8 +4140,8 @@
 }
 
 .leadFilterModal.leadFilterModal {
-  width: min(100%, 52rem) !important;
-  max-height: calc(100dvh - clamp(1.5rem, 4vw, 3rem)) !important;
+  width: min(var(--website-dialog-reference-width, 100%), 52rem) !important;
+  max-height: calc(calc(var(--website-visible-height, 100dvh) * 1) - clamp(1.5rem, calc(var(--website-design-vw, 1vw) * 4), 3rem)) !important;
   overflow: visible !important;
   padding: 0 !important;
   border: 1px solid rgba(203, 218, 230, 0.98) !important;
@@ -4157,7 +4157,7 @@
 }
 
 .accountantFilterModal.accountantFilterModal {
-  width: min(calc(100vw - 2rem), 60rem) !important;
+  width: min(calc(calc(var(--website-design-vw, 1vw) * 100) - 2rem), 60rem) !important;
 }
 
 .leadFilterHeader {
@@ -4170,7 +4170,7 @@
   margin: 0 !important;
   color: #073b30 !important;
   font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif !important;
-  font-size: clamp(1.65rem, 2.8vw, 2.15rem) !important;
+  font-size: clamp(1.65rem, calc(var(--website-design-vw, 1vw) * 2.8), 2.15rem) !important;
   font-weight: 800 !important;
   line-height: 1.04 !important;
   letter-spacing: -0.05em !important;
@@ -4229,7 +4229,7 @@
 
 .leadFilterModal .leadFilterSelectMenu {
   top: calc(100% + 0.55rem);
-  max-height: min(13rem, calc(100dvh - 15rem));
+  max-height: min(13rem, calc(calc(var(--website-visible-height, 100dvh) * 1) - 15rem));
   padding: 0.48rem;
   border-radius: 1.05rem;
   font-family: var(--font-body, 'Inter'), ui-sans-serif, system-ui, sans-serif;
@@ -4268,73 +4268,73 @@
 }
 
 @media (max-width: 900px) {
-  .trackingLeadActions {
+  :global(:where(html:not(:has([data-website-canvas])))) .trackingLeadActions {
     width: 100%;
     min-width: 0;
   }
 
-  .trackingLeadActionsClosed {
+  :global(:where(html:not(:has([data-website-canvas])))) .trackingLeadActionsClosed {
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   }
 
-  .trackingLeadActionsOpen {
+  :global(:where(html:not(:has([data-website-canvas])))) .trackingLeadActionsOpen {
     grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
   }
 }
 
 @media (max-width: 760px) {
-  .leadThreadTracking .clientPanelHeader {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadThreadTracking .clientPanelHeader {
     min-height: 0 !important;
     padding-block: 0;
   }
 
-  .trackingLeadActions {
+  :global(:where(html:not(:has([data-website-canvas])))) .trackingLeadActions {
     margin-top: 0.25rem;
   }
 
-  .leadFilterModal.leadFilterModal {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadFilterModal.leadFilterModal {
     border-radius: 1.65rem !important;
   }
 
-  .leadFilterHeader {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadFilterHeader {
     padding: 1.2rem 4.3rem 1.05rem 1.2rem !important;
   }
 
-  .leadFilterIntro {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadFilterIntro {
     max-height: none !important;
     overflow: visible !important;
   }
 
-  .leadFilterModal .leadFilterForm {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadFilterModal .leadFilterForm {
     grid-template-columns: 1fr !important;
     gap: 1rem;
     padding: 1.2rem 1.2rem 1.35rem;
   }
 
-  .leadFilterModal .leadFilterField:last-child {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadFilterModal .leadFilterField:last-child {
     grid-column: auto;
   }
 
-  .leadFilterModal .leadFilterActions {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadFilterModal .leadFilterActions {
     display: grid !important;
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     padding: 1rem 1.2rem 1.2rem !important;
     border-radius: 0 0 1.65rem 1.65rem;
   }
 
-  .leadFilterModal .leadFilterActions > button {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadFilterModal .leadFilterActions > button {
     width: 100%;
     min-width: 0;
   }
 }
 
 @media (max-width: 620px) {
-  .trackingLeadActionsClosed,
-  .trackingLeadActionsOpen {
+  :global(:where(html:not(:has([data-website-canvas])))) .trackingLeadActionsClosed,
+  :global(:where(html:not(:has([data-website-canvas])))) .trackingLeadActionsOpen {
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   }
 
-  .trackingLeadActionsOpen .deleteLeadButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .trackingLeadActionsOpen .deleteLeadButton {
     grid-column: 1 / -1;
   }
 }
@@ -4400,7 +4400,7 @@
 }
 
 .leadDeleteModal.leadDeleteModal {
-  width: min(calc(100vw - 2rem), 46rem) !important;
+  width: min(calc(calc(var(--website-design-vw, 1vw) * 100) - 2rem), 46rem) !important;
   display: block !important;
   padding: 0 !important;
   overflow: hidden !important;
@@ -4424,7 +4424,7 @@
   margin: 0 0 0.38rem !important;
   padding: 0 !important;
   border: 0 !important;
-  font-size: clamp(1.55rem, 2.35vw, 2rem) !important;
+  font-size: clamp(1.55rem, calc(var(--website-design-vw, 1vw) * 2.35), 2rem) !important;
 }
 
 .leadDeleteHeader p {
@@ -4487,8 +4487,8 @@
 }
 
 @media (max-width: 980px) {
-  .leadsPage .leadAssetHeaderActions > button,
-  .leadsPage .leadAssetHeaderActions > .leadQuickActionButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadsPage .leadAssetHeaderActions > button,
+  :global(:where(html:not(:has([data-website-canvas])))) .leadsPage .leadAssetHeaderActions > .leadQuickActionButton {
     flex: 1 1 0;
     width: auto;
     min-width: 0 !important;
@@ -4497,38 +4497,38 @@
 }
 
 @media (max-width: 900px) {
-  .leadsPage .clientActionRow > button,
-  .trackingLeadActions > button {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadsPage .clientActionRow > button,
+  :global(:where(html:not(:has([data-website-canvas])))) .trackingLeadActions > button {
     width: 100% !important;
     min-width: 0 !important;
   }
 }
 
 @media (max-width: 760px) {
-  .leadDeleteModal.leadDeleteModal {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadDeleteModal.leadDeleteModal {
     width: min(calc(100vw - 1rem), 46rem) !important;
     border-radius: 1.3rem !important;
   }
 
-  .leadDeleteHeader.leadDeleteHeader {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadDeleteHeader.leadDeleteHeader {
     padding: 1.2rem 4.3rem 1.05rem 1.2rem !important;
   }
 
-  .leadDeleteSummary.leadDeleteSummary {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadDeleteSummary.leadDeleteSummary {
     margin: 1.1rem 1.2rem 0 !important;
   }
 
-  .leadDeleteWarning {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadDeleteWarning {
     margin: 0.8rem 1.2rem 1.1rem;
   }
 
-  .leadDeleteActions.leadDeleteActions {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadDeleteActions.leadDeleteActions {
     display: grid !important;
     grid-template-columns: 1fr !important;
     padding: 0.95rem 1.2rem 1.2rem !important;
   }
 
-  .leadDeleteActions > button {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadDeleteActions > button {
     width: 100%;
     min-width: 0 !important;
   }
@@ -4568,32 +4568,32 @@
 }
 
 @media (max-width: 760px) {
-  .dealerOwnerParity .leadSummaryRow {
+  :global(:where(html:not(:has([data-website-canvas])))) .dealerOwnerParity .leadSummaryRow {
     grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
     gap: 0.42rem !important;
     margin-bottom: 0.75rem !important;
   }
 
-  .dealerOwnerParity .leadSummaryFilterButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .dealerOwnerParity .leadSummaryFilterButton {
     min-height: 6.8rem !important;
     padding: 0.75rem 0.62rem !important;
     border-radius: 0.95rem !important;
   }
 
-  .dealerOwnerParity .leadSummaryFilterButton [class*='heroSummaryTitle'] {
+  :global(:where(html:not(:has([data-website-canvas])))) .dealerOwnerParity .leadSummaryFilterButton [class*='heroSummaryTitle'] {
     font-size: 0.72rem !important;
     line-height: 1.15 !important;
   }
 
-  .dealerOwnerParity .leadSummaryFilterButton [class*='heroSummaryValue'] {
+  :global(:where(html:not(:has([data-website-canvas])))) .dealerOwnerParity .leadSummaryFilterButton [class*='heroSummaryValue'] {
     font-size: 1.75rem !important;
   }
 
-  .dealerOwnerParity .leadSummaryFilterButton [class*='heroSummaryFooter'] {
+  :global(:where(html:not(:has([data-website-canvas])))) .dealerOwnerParity .leadSummaryFilterButton [class*='heroSummaryFooter'] {
     display: none !important;
   }
 
-  .leadThreadMuted {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadThreadMuted {
     opacity: 0.22;
     filter: blur(1.4px);
   }
@@ -4610,7 +4610,7 @@
 /* === Dealer App Leads final mobile usability pass === */
 .dealerAppLeads .leadsTitlePanel h1 {
   max-width: 100%;
-  font-size: clamp(1.75rem, 8vw, 2.45rem) !important;
+  font-size: clamp(1.75rem, calc(var(--website-design-vw, 1vw) * 8), 2.45rem) !important;
   line-height: 1 !important;
   white-space: nowrap;
 }
@@ -4676,9 +4676,9 @@
 }
 
 .leadManageModal.leadManageModal {
-  width: min(62rem, calc(100vw - 1.5rem)) !important;
+  width: min(62rem, calc(calc(var(--website-design-vw, 1vw) * 100) - 1.5rem)) !important;
   max-width: 62rem !important;
-  max-height: calc(100dvh - 1.5rem - env(safe-area-inset-top) - env(safe-area-inset-bottom)) !important;
+  max-height: calc(calc(var(--website-visible-height, 100dvh) * 1) - 1.5rem - env(safe-area-inset-top) - env(safe-area-inset-bottom)) !important;
   display: grid !important;
   grid-template-rows: auto minmax(0, 1fr);
   margin: auto !important;
@@ -4723,7 +4723,7 @@
 }
 
 .licensingManageModal.licensingManageModal {
-  width: min(54rem, calc(100vw - 1.5rem)) !important;
+  width: min(54rem, calc(calc(var(--website-design-vw, 1vw) * 100) - 1.5rem)) !important;
   max-width: 54rem !important;
   border-radius: 1.65rem !important;
 }
@@ -4740,7 +4740,7 @@
 
 .licensingManageModal [class*='modalHeaderText'] h3 {
   margin: 0 !important;
-  font-size: clamp(1.7rem, 3.2vw, 2.35rem) !important;
+  font-size: clamp(1.7rem, calc(var(--website-design-vw, 1vw) * 3.2), 2.35rem) !important;
   line-height: 1.05 !important;
   overflow-wrap: anywhere;
 }
@@ -4765,58 +4765,58 @@
 }
 
 @media (max-width: 900px) {
-  .dealerAppLeads .trackingLeadActionsSingle.trackingLeadActionsClosed {
+  :global(:where(html:not(:has([data-website-canvas])))) .dealerAppLeads .trackingLeadActionsSingle.trackingLeadActionsClosed {
     width: 100% !important;
     min-width: 0 !important;
     grid-template-columns: minmax(0, 1fr) !important;
   }
 
-  .dealerAppLeads .trackingLeadActionsSingle.trackingLeadActionsClosed > button {
+  :global(:where(html:not(:has([data-website-canvas])))) .dealerAppLeads .trackingLeadActionsSingle.trackingLeadActionsClosed > button {
     width: 100% !important;
     min-width: 0 !important;
   }
 }
 
 @media (max-width: 760px) {
-  .leadManageOverlay {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadManageOverlay {
     align-items: flex-start !important;
     padding-inline: 0.5rem !important;
   }
 
-  .leadManageModal.leadManageModal {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadManageModal.leadManageModal {
     width: 100% !important;
     max-height: calc(100dvh - 1rem - env(safe-area-inset-top) - env(safe-area-inset-bottom)) !important;
     border-radius: 1.35rem !important;
   }
 
-  .leadManageModal .manageOptionsGrid {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadManageModal .manageOptionsGrid {
     gap: 0.72rem !important;
   }
 
-  .leadManageModal .manageOptionsGrid > button {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadManageModal .manageOptionsGrid > button {
     min-height: 5.75rem;
   }
 
-  .licensingManageModal [class*='optionsModalHeader'] {
+  :global(:where(html:not(:has([data-website-canvas])))) .licensingManageModal [class*='optionsModalHeader'] {
     padding: 1.25rem 4.25rem 1rem 1.2rem !important;
   }
 
-  .licensingManageModal .leadManageScrollBody {
+  :global(:where(html:not(:has([data-website-canvas])))) .licensingManageModal .leadManageScrollBody {
     padding: 0.9rem !important;
   }
 
-  .licensingManageModal .manageOptionsGrid {
+  :global(:where(html:not(:has([data-website-canvas])))) .licensingManageModal .manageOptionsGrid {
     grid-template-columns: 1fr;
     gap: 0.75rem !important;
   }
 
-  .licensingManageModal .manageOptionsGrid > :last-child:nth-child(odd) {
+  :global(:where(html:not(:has([data-website-canvas])))) .licensingManageModal .manageOptionsGrid > :last-child:nth-child(odd) {
     grid-column: auto;
   }
 }
 
 @media (max-width: 420px) and (max-height: 720px) {
-  .leadNoteBody textarea:focus {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadNoteBody textarea:focus {
     min-height: 10rem !important;
   }
 }
@@ -4847,9 +4847,9 @@
 }
 
 .dealerAppLeads .leadNoteModal.leadNoteModal {
-  width: min(56rem, calc(100vw - 1rem)) !important;
-  height: min(48rem, calc(100dvh - 1rem - env(safe-area-inset-top) - env(safe-area-inset-bottom))) !important;
-  max-height: calc(100dvh - 1rem - env(safe-area-inset-top) - env(safe-area-inset-bottom)) !important;
+  width: min(56rem, calc(calc(var(--website-design-vw, 1vw) * 100) - 1rem)) !important;
+  height: min(48rem, calc(calc(var(--website-design-vh, 1dvh) * 100) - 1rem - env(safe-area-inset-top) - env(safe-area-inset-bottom))) !important;
+  max-height: calc(calc(var(--website-visible-height, 100dvh) * 1) - 1rem - env(safe-area-inset-top) - env(safe-area-inset-bottom)) !important;
   display: grid !important;
   grid-template-rows: auto minmax(0, 1fr) auto;
   margin: auto !important;
@@ -4888,10 +4888,10 @@
 }
 
 .dealerAppLeads .leadManageModal.leadManageModal {
-  width: min(68rem, calc(100vw - 1rem)) !important;
+  width: min(68rem, calc(calc(var(--website-design-vw, 1vw) * 100) - 1rem)) !important;
   max-width: 68rem !important;
-  height: min(52rem, calc(100dvh - 1rem - env(safe-area-inset-top) - env(safe-area-inset-bottom))) !important;
-  max-height: calc(100dvh - 1rem - env(safe-area-inset-top) - env(safe-area-inset-bottom)) !important;
+  height: min(52rem, calc(calc(var(--website-design-vh, 1dvh) * 100) - 1rem - env(safe-area-inset-top) - env(safe-area-inset-bottom))) !important;
+  max-height: calc(calc(var(--website-visible-height, 100dvh) * 1) - 1rem - env(safe-area-inset-top) - env(safe-area-inset-bottom)) !important;
 }
 
 .dealerAppLeads .leadManageModal [class*='optionsModalHeader'] {
@@ -4906,7 +4906,7 @@
 .dealerAppLeads .leadManageModal [class*='modalHeaderText'] h3 {
   max-width: 100%;
   margin: 0 !important;
-  font-size: clamp(1.65rem, 4vw, 2.25rem) !important;
+  font-size: clamp(1.65rem, calc(var(--website-design-vw, 1vw) * 4), 2.25rem) !important;
   line-height: 1.08 !important;
   white-space: normal !important;
   overflow-wrap: anywhere;
@@ -4940,7 +4940,7 @@
 }
 
 @media (max-width: 760px) {
-  .dealerAppLeads .leadManageOverlay {
+  :global(:where(html:not(:has([data-website-canvas])))) .dealerAppLeads .leadManageOverlay {
     padding:
       max(0.35rem, env(safe-area-inset-top))
       max(0.35rem, env(safe-area-inset-right))
@@ -4948,73 +4948,73 @@
       max(0.35rem, env(safe-area-inset-left)) !important;
   }
 
-  .dealerAppLeads .leadManageModal.leadManageModal {
+  :global(:where(html:not(:has([data-website-canvas])))) .dealerAppLeads .leadManageModal.leadManageModal {
     width: calc(100vw - 0.7rem) !important;
     height: calc(100dvh - 0.7rem - env(safe-area-inset-top) - env(safe-area-inset-bottom)) !important;
     max-height: calc(100dvh - 0.7rem - env(safe-area-inset-top) - env(safe-area-inset-bottom)) !important;
   }
 
-  .dealerAppLeads .leadManageModal [class*='optionsModalHeader'] {
+  :global(:where(html:not(:has([data-website-canvas])))) .dealerAppLeads .leadManageModal [class*='optionsModalHeader'] {
     padding: 1.1rem 4.3rem 1rem 1.1rem !important;
   }
 
-  .dealerAppLeads .leadManageScrollBody {
+  :global(:where(html:not(:has([data-website-canvas])))) .dealerAppLeads .leadManageScrollBody {
     padding: 0.9rem !important;
   }
 
-  .dealerAppLeads .leadManageModal .manageOptionsGrid {
+  :global(:where(html:not(:has([data-website-canvas])))) .dealerAppLeads .leadManageModal .manageOptionsGrid {
     grid-template-columns: minmax(0, 1fr) !important;
     gap: 0.9rem !important;
   }
 
-  .dealerAppLeads .leadManageModal .manageOptionsGrid > button {
+  :global(:where(html:not(:has([data-website-canvas])))) .dealerAppLeads .leadManageModal .manageOptionsGrid > button {
     min-height: 7rem !important;
   }
 }
 
 @media (max-width: 420px) {
-  .dealerAppLeads .clientActionRow,
-  .dealerAppLeads .trackingLeadActions,
-  .dealerAppLeads .trackingLeadActionsClosed,
-  .dealerAppLeads .trackingLeadActionsOpen,
-  .dealerAppLeads .trackingLeadActionsSingle.trackingLeadActionsClosed,
-  .dealerAppLeads .trackingLeadActionsSingle.trackingLeadActionsOpen {
+  :global(:where(html:not(:has([data-website-canvas])))) .dealerAppLeads .clientActionRow,
+  :global(:where(html:not(:has([data-website-canvas])))) .dealerAppLeads .trackingLeadActions,
+  :global(:where(html:not(:has([data-website-canvas])))) .dealerAppLeads .trackingLeadActionsClosed,
+  :global(:where(html:not(:has([data-website-canvas])))) .dealerAppLeads .trackingLeadActionsOpen,
+  :global(:where(html:not(:has([data-website-canvas])))) .dealerAppLeads .trackingLeadActionsSingle.trackingLeadActionsClosed,
+  :global(:where(html:not(:has([data-website-canvas])))) .dealerAppLeads .trackingLeadActionsSingle.trackingLeadActionsOpen {
     width: 100% !important;
     min-width: 0 !important;
     max-width: 100% !important;
     grid-template-columns: minmax(0, 1fr) !important;
   }
 
-  .dealerAppLeads .trackingLeadActions > button {
+  :global(:where(html:not(:has([data-website-canvas])))) .dealerAppLeads .trackingLeadActions > button {
     width: 100% !important;
     min-width: 0 !important;
     max-width: none !important;
   }
 
-  .dealerAppLeads .leadNoteModal.leadNoteModal {
+  :global(:where(html:not(:has([data-website-canvas])))) .dealerAppLeads .leadNoteModal.leadNoteModal {
     width: calc(100vw - 0.7rem) !important;
     height: calc(100dvh - 0.7rem - env(safe-area-inset-top) - env(safe-area-inset-bottom)) !important;
     max-height: calc(100dvh - 0.7rem - env(safe-area-inset-top) - env(safe-area-inset-bottom)) !important;
   }
 
-  .dealerAppLeads .leadNoteHeader.leadNoteHeader {
+  :global(:where(html:not(:has([data-website-canvas])))) .dealerAppLeads .leadNoteHeader.leadNoteHeader {
     padding: 1rem 4rem 0.9rem 1rem !important;
   }
 
-  .dealerAppLeads .leadNoteBody.leadNoteBody {
+  :global(:where(html:not(:has([data-website-canvas])))) .dealerAppLeads .leadNoteBody.leadNoteBody {
     padding: 1rem 0.85rem !important;
   }
 
-  .dealerAppLeads .leadNoteActions.leadNoteActions {
+  :global(:where(html:not(:has([data-website-canvas])))) .dealerAppLeads .leadNoteActions.leadNoteActions {
     padding: 0.8rem 0.85rem max(0.85rem, env(safe-area-inset-bottom)) !important;
   }
 }
 
 /* === Dealer desktop Leads keeps a compact two-column management layout === */
 .dealerDesktopLeads .leadManageModal.leadManageModal {
-  width: min(60rem, calc(100vw - 3rem)) !important;
+  width: min(60rem, calc(calc(var(--website-design-vw, 1vw) * 100) - 3rem)) !important;
   max-width: 60rem !important;
-  max-height: calc(100dvh - 3rem) !important;
+  max-height: calc(calc(var(--website-visible-height, 100dvh) * 1) - 3rem) !important;
 }
 
 .dealerDesktopLeads .leadManageModal [class*='optionsModalHeader'] {
@@ -5052,12 +5052,12 @@
 
 /* === Dealer lead QR and photo tools === */
 .leadPhotoUploadOverlay {
-  padding: clamp(0.75rem, 2vw, 1.5rem);
+  padding: clamp(0.75rem, calc(var(--website-design-vw, 1vw) * 2), 1.5rem);
 }
 
 .leadPhotoUploadModal {
-  width: min(58rem, calc(100vw - 2rem));
-  max-height: calc(100dvh - 2rem);
+  width: min(58rem, calc(calc(var(--website-design-vw, 1vw) * 100) - 2rem));
+  max-height: calc(calc(var(--website-visible-height, 100dvh) * 1) - 2rem);
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto;
   overflow: hidden;
@@ -5221,20 +5221,20 @@
 }
 
 @media (max-width: 720px) {
-  .leadPhotoUploadModal {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadPhotoUploadModal {
     width: calc(100vw - 1rem);
     max-height: calc(100dvh - 1rem);
   }
 
-  .leadPhotoUploadBody {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadPhotoUploadBody {
     padding: 1rem;
   }
 
-  .leadPhotoPreviewGrid {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadPhotoPreviewGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .leadPhotoUploadActions {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadPhotoUploadActions {
     padding: 0.85rem 1rem max(0.85rem, env(safe-area-inset-bottom));
   }
 }
@@ -5413,19 +5413,19 @@
 }
 
 @media (max-width: 900px) {
-  .fullRegisterAssetBody {
+  :global(:where(html:not(:has([data-website-canvas])))) .fullRegisterAssetBody {
     grid-template-columns: 1fr;
   }
 }
 
 @media (max-width: 620px) {
-  .fullRegisterAssetHeader,
-  .fullRegisterAssetsHeading {
+  :global(:where(html:not(:has([data-website-canvas])))) .fullRegisterAssetHeader,
+  :global(:where(html:not(:has([data-website-canvas])))) .fullRegisterAssetsHeading {
     align-items: flex-start;
     flex-direction: column;
   }
 
-  .fullRegisterAssetHeader > div:last-child {
+  :global(:where(html:not(:has([data-website-canvas])))) .fullRegisterAssetHeader > div:last-child {
     text-align: left;
   }
 }
@@ -5464,13 +5464,13 @@
 .licensingManageModal.licensingManageModal,
 .dealerAppLeads .leadManageModal.leadManageModal,
 .dealerDesktopLeads .leadManageModal.leadManageModal {
-  width: min(97vw, 84rem) !important;
+  width: min(calc(var(--website-design-vw, 1vw) * 97), 84rem) !important;
   max-width: 84rem !important;
   height: auto !important;
-  max-height: min(95dvh, 60rem) !important;
+  max-height: min(calc(var(--website-visible-height, 100dvh) * 0.95), 60rem) !important;
   display: flex !important;
   flex-direction: column !important;
-  padding: clamp(1.35rem, 2.15vw, 1.75rem) !important;
+  padding: clamp(1.35rem, calc(var(--website-design-vw, 1vw) * 2.15), 1.75rem) !important;
   overflow: hidden !important;
 }
 
@@ -5484,7 +5484,7 @@
 .leadManageModal.leadManageModal [class*='modalHeaderText'] h3 {
   max-width: 100% !important;
   margin: 0 !important;
-  font-size: clamp(2.05rem, 3.25vw, 2.8rem) !important;
+  font-size: clamp(2.05rem, calc(var(--website-design-vw, 1vw) * 3.25), 2.8rem) !important;
   line-height: 1.04 !important;
   letter-spacing: -0.05em !important;
   white-space: normal !important;
@@ -5539,8 +5539,15 @@
   line-height: 1.42 !important;
 }
 
+:global(:where([data-website-canvas])) .leadManageModal.leadManageModal .manageOptionsGrid.manageOptionsGrid [class*='optionActionButton'] small {
+    overflow: visible !important;
+    text-overflow: clip !important;
+    white-space: nowrap !important;
+    overflow-wrap: normal !important;
+  }
+
 @media (min-width: 901px) {
-  .leadManageModal.leadManageModal .manageOptionsGrid.manageOptionsGrid [class*='optionActionButton'] small {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadManageModal.leadManageModal .manageOptionsGrid.manageOptionsGrid [class*='optionActionButton'] small {
     overflow: visible !important;
     text-overflow: clip !important;
     white-space: nowrap !important;
@@ -5549,29 +5556,29 @@
 }
 
 @media (min-width: 701px) and (max-width: 1180px) {
-  .leadManageModal.leadManageModal,
-  .licensingManageModal.licensingManageModal,
-  .dealerAppLeads .leadManageModal.leadManageModal,
-  .dealerDesktopLeads .leadManageModal.leadManageModal {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadManageModal.leadManageModal,
+  :global(:where(html:not(:has([data-website-canvas])))) .licensingManageModal.licensingManageModal,
+  :global(:where(html:not(:has([data-website-canvas])))) .dealerAppLeads .leadManageModal.leadManageModal,
+  :global(:where(html:not(:has([data-website-canvas])))) .dealerDesktopLeads .leadManageModal.leadManageModal {
     width: min(97vw, 68rem) !important;
     max-width: 68rem !important;
   }
 
-  .leadManageModal.leadManageModal .manageOptionsGrid.manageOptionsGrid {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadManageModal.leadManageModal .manageOptionsGrid.manageOptionsGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   }
 }
 
 @media (max-width: 700px) {
-  .leadManageOverlay,
-  .dealerAppLeads .leadManageOverlay {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadManageOverlay,
+  :global(:where(html:not(:has([data-website-canvas])))) .dealerAppLeads .leadManageOverlay {
     padding: 0.5rem !important;
   }
 
-  .leadManageModal.leadManageModal,
-  .licensingManageModal.licensingManageModal,
-  .dealerAppLeads .leadManageModal.leadManageModal,
-  .dealerDesktopLeads .leadManageModal.leadManageModal {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadManageModal.leadManageModal,
+  :global(:where(html:not(:has([data-website-canvas])))) .licensingManageModal.licensingManageModal,
+  :global(:where(html:not(:has([data-website-canvas])))) .dealerAppLeads .leadManageModal.leadManageModal,
+  :global(:where(html:not(:has([data-website-canvas])))) .dealerDesktopLeads .leadManageModal.leadManageModal {
     width: calc(100vw - 1rem) !important;
     max-width: none !important;
     height: auto !important;
@@ -5579,16 +5586,17 @@
     border-radius: 1.35rem !important;
   }
 
-  .leadManageModal.leadManageModal .manageOptionsGrid.manageOptionsGrid {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadManageModal.leadManageModal .manageOptionsGrid.manageOptionsGrid {
     grid-template-columns: minmax(0, 1fr) !important;
   }
 
-  .leadManageModal.leadManageModal .manageOptionsGrid.manageOptionsGrid [class*='optionActionButton'] {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadManageModal.leadManageModal .manageOptionsGrid.manageOptionsGrid [class*='optionActionButton'] {
     min-height: 5.8rem !important;
   }
 
-  .leadManageModal.leadManageModal .manageOptionsGrid.manageOptionsGrid [class*='optionActionButton'] small {
+  :global(:where(html:not(:has([data-website-canvas])))) .leadManageModal.leadManageModal .manageOptionsGrid.manageOptionsGrid [class*='optionActionButton'] small {
     white-space: normal !important;
     overflow-wrap: anywhere !important;
   }
 }
+

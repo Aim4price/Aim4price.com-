@@ -90,7 +90,7 @@
 
 .modal {
   position: relative;
-  width: min(46rem, 100%);
+  width: min(46rem, var(--website-dialog-reference-width, 100%));
   max-height: min(43rem, calc(100vh - 2rem));
   overflow-y: auto;
   box-sizing: border-box;
@@ -211,7 +211,7 @@
   }
 
   .modal {
-    width: 100%;
+    width: var(--website-dialog-reference-width, 100%);
     max-height: calc(100vh - 1.1rem);
     padding: 0.9rem;
     border-radius: 1.2rem;
@@ -227,3 +227,4 @@
     display: none !important;
   }
 }
+

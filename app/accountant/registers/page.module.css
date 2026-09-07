@@ -8,8 +8,8 @@
 }
 
 .accountantRegisterGraphic svg {
-  width: clamp(3rem, 4.5vw, 4.25rem);
-  height: clamp(3rem, 4.5vw, 4.25rem);
+  width: clamp(3rem, calc(var(--website-design-vw) * 4.5), 4.25rem);
+  height: clamp(3rem, calc(var(--website-design-vw) * 4.5), 4.25rem);
 }
 
 .accountantRegisterGraphic span {
@@ -29,16 +29,4 @@
 
 .moveManagerPanel {
   border-bottom: 0;
-}
-
-@media (max-width: 980px) {
-  .accountantRegisterGraphic {
-    width: min(8.5rem, 100%);
-  }
-}
-
-@media (max-width: 620px) {
-  .accountantUnitActions {
-    grid-template-columns: 1fr !important;
-  }
 }

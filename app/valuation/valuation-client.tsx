@@ -1,4 +1,6 @@
 'use client';
+import { useWebsiteStyles } from '../../components/useWebsiteStyles';
+import website_dealerStyles from '../../components/website-styles/DealerControls.module.css';
 
 import {
   useEffect,
@@ -14,7 +16,7 @@ import { useRouter } from 'next/navigation';
 import AppHeader from '../../components/AppHeader';
 import SaleabilityModal from '../../components/SaleabilityModal';
 import styles from './page.module.css';
-import dealerStyles from '../dealer/dealer.module.css';
+import native_dealerStyles from '../dealer/dealer.module.css';
 import {
   conditionOptions,
   type BrandRow,
@@ -1767,6 +1769,8 @@ function normalizeReportEmail(value: unknown): string {
 }
 
 export default function ValuationClient({ dealerAppMode = false, ownerAppMode = false }: { dealerAppMode?: boolean; ownerAppMode?: boolean } = {}) {
+  const dealerStyles = useWebsiteStyles(native_dealerStyles, website_dealerStyles);
+
   const router = useRouter();
   const compactAppMode = dealerAppMode || ownerAppMode;
   const appHomePath = ownerAppMode ? '/owner-app' : dealerAppMode ? '/dealer' : '/';
@@ -7048,7 +7052,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     const yearSliderStyle = { '--year-progress': `${yearSliderProgress}%` } as CSSProperties;
 
     return (
-      <div className={styles.detailsModalOverlay} role="dialog" aria-modal="true" aria-label={`Choose ${getAssetNounLabel(selectedSector)} manufacturing year`}>
+      <div className={styles.detailsModalOverlay} data-website-overlay role="dialog" aria-modal="true" aria-label={`Choose ${getAssetNounLabel(selectedSector)} manufacturing year`}>
         <button type="button" className={styles.detailsModalBackdrop} aria-label="Close" onClick={() => setActiveDetailsModal(null)} />
         <div className={`${styles.detailsModal} ${styles.yearDetailsModal}`}>
           <div className={`${styles.detailsModalHeader} ${compactAppMode ? dealerStyles.dealerCompactModalHeader : ''}`}>
@@ -7160,7 +7164,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     const percentageValue = toPercentOrNull(lifeWorkedPercent) ?? 50;
 
     return (
-      <div className={styles.detailsModalOverlay} role="dialog" aria-modal="true" aria-label={`Enter ${getAssetNounLabel(selectedSector)} usage`}>
+      <div className={styles.detailsModalOverlay} data-website-overlay role="dialog" aria-modal="true" aria-label={`Enter ${getAssetNounLabel(selectedSector)} usage`}>
         <button type="button" className={styles.detailsModalBackdrop} aria-label="Close" onClick={() => setActiveDetailsModal(null)} />
         <div className={styles.detailsModal}>
           <div className={`${styles.detailsModalHeader} ${compactAppMode ? dealerStyles.dealerCompactModalHeader : ''}`}>
@@ -7409,7 +7413,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     function renderBasicConditionModal() {
       if (conditionModalView === 'choose') {
         return (
-          <div className={styles.detailsModalOverlay} role="dialog" aria-modal="true" aria-label="Choose condition type">
+          <div className={styles.detailsModalOverlay} data-website-overlay role="dialog" aria-modal="true" aria-label="Choose condition type">
             <button type="button" className={styles.detailsModalBackdrop} aria-label="Close" onClick={() => setActiveDetailsModal(null)} />
             <div className={`${styles.detailsModal} ${styles.specChoiceModal} ${styles.conditionRouteModal}`}>
               <div className={`${styles.detailsModalHeader} ${compactAppMode ? dealerStyles.dealerCompactModalHeader : ''}`}>
@@ -7548,7 +7552,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
       }
 
       return (
-        <div className={styles.detailsModalOverlay} role="dialog" aria-modal="true" aria-label={advancedCondition ? 'Advanced condition' : 'Basic condition'}>
+        <div className={styles.detailsModalOverlay} data-website-overlay role="dialog" aria-modal="true" aria-label={advancedCondition ? 'Advanced condition' : 'Basic condition'}>
           <button type="button" className={styles.detailsModalBackdrop} aria-label="Close" onClick={() => setActiveDetailsModal(null)} />
           <div className={`${styles.detailsModal} ${styles.specChoiceModal} ${styles.conditionOptionsModal} ${advancedCondition ? styles.conditionProgressiveModal : styles.conditionBasicModal}`}>
             <div className={`${styles.detailsModalHeader} ${compactAppMode ? dealerStyles.dealerCompactModalHeader : ''}`}>
@@ -7635,7 +7639,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
       const popularityLabel = popularityStepComplete ? popularityLabels[popularityStars] : 'Choose a rating to continue';
 
       return (
-        <div className={styles.detailsModalOverlay} role="dialog" aria-modal="true" aria-label="Choose popularity">
+        <div className={styles.detailsModalOverlay} data-website-overlay role="dialog" aria-modal="true" aria-label="Choose popularity">
           <button type="button" className={styles.detailsModalBackdrop} aria-label="Close" onClick={() => setActiveDetailsModal(null)} />
           <div className={`${styles.detailsModal} ${styles.specChoiceModal} ${styles.popularityModal}`}>
             <div className={`${styles.detailsModalHeader} ${compactAppMode ? dealerStyles.dealerCompactModalHeader : ''}`}>
@@ -7714,7 +7718,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     function renderBasicExtrasModal() {
       if (extrasModalView === 'choose') {
         return (
-          <div className={styles.detailsModalOverlay} role="dialog" aria-modal="true" aria-label="Choose extras type">
+          <div className={styles.detailsModalOverlay} data-website-overlay role="dialog" aria-modal="true" aria-label="Choose extras type">
             <button type="button" className={styles.detailsModalBackdrop} aria-label="Close" onClick={() => setActiveDetailsModal(null)} />
             <div className={`${styles.detailsModal} ${styles.specChoiceModal} ${styles.conditionRouteModal}`}>
               <div className={`${styles.detailsModalHeader} ${compactAppMode ? dealerStyles.dealerCompactModalHeader : ''}`}>
@@ -7777,7 +7781,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
       }
 
       return (
-        <div className={styles.detailsModalOverlay} role="dialog" aria-modal="true" aria-label="Choose fitted extras">
+        <div className={styles.detailsModalOverlay} data-website-overlay role="dialog" aria-modal="true" aria-label="Choose fitted extras">
           <button type="button" className={styles.detailsModalBackdrop} aria-label="Close" onClick={() => setActiveDetailsModal(null)} />
           <div className={`${styles.detailsModal} ${styles.specChoiceModal}`}>
             <div className={`${styles.detailsModalHeader} ${compactAppMode ? dealerStyles.dealerCompactModalHeader : ''}`}>
@@ -9091,7 +9095,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
       </div>
 
       {replacementNoticeOpen ? (
-        <div className={styles.replacementNoticeOverlay} onClick={closeReplacementPriceNotice}>
+        <div className={styles.replacementNoticeOverlay} data-website-overlay onClick={closeReplacementPriceNotice}>
           <section
             ref={replacementNoticeDialogRef}
             className={styles.replacementNoticeModal}
@@ -9136,7 +9140,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
       ) : null}
 
       {isDealerRegisterDestinationOpen ? (
-        <div className={styles.finalSaveOverlay} onClick={closeDealerRegisterDestination}>
+        <div className={styles.finalSaveOverlay} data-website-overlay onClick={closeDealerRegisterDestination}>
           <section
             ref={dealerRegisterDestinationDialogRef}
             className={`${styles.finalSaveModal} ${styles.dealerRegisterDestinationModal}`}
@@ -9195,7 +9199,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
       ) : null}
 
       {isDealerClientRegisterPickerOpen ? (
-        <div className={styles.finalSaveOverlay} onClick={closeDealerClientRegisterPicker}>
+        <div className={styles.finalSaveOverlay} data-website-overlay onClick={closeDealerClientRegisterPicker}>
           <section
             className={`${styles.finalSaveModal} ${styles.dealerClientRegisterPicker}`}
             role="dialog"
@@ -9264,7 +9268,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
       ) : null}
 
       {finalSaveIntent && !conversionAssetId ? (
-        <div className={styles.finalSaveOverlay} onClick={closeFinalSaveModal}>
+        <div className={styles.finalSaveOverlay} data-website-overlay onClick={closeFinalSaveModal}>
           <section
             className={styles.finalSaveModal}
             role="dialog"
@@ -9363,7 +9367,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
       ) : null}
 
       {marketplaceMode && marketplaceIntroOpen ? (
-        <div className={styles.marketplaceIntroOverlay} onClick={closeMarketplaceIntroModal}>
+        <div className={styles.marketplaceIntroOverlay} data-website-overlay onClick={closeMarketplaceIntroModal}>
           <section
             className={styles.marketplaceIntroModal}
             role="dialog"
@@ -9420,7 +9424,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
       ) : null}
 
       {marketplaceDraft ? (
-        <div className={styles.marketplacePublishOverlay} onClick={closeMarketplacePublishModal}>
+        <div className={styles.marketplacePublishOverlay} data-website-overlay onClick={closeMarketplacePublishModal}>
           <form
             className={styles.marketplacePublishModal}
             onSubmit={publishEstimateToMarketplace}
@@ -9655,7 +9659,7 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
       ) : null}
 
       {publishedAdvertDownload ? (
-        <div className={styles.marketplaceIntroOverlay} onClick={() => setPublishedAdvertDownload(null)}>
+        <div className={styles.marketplaceIntroOverlay} data-website-overlay onClick={() => setPublishedAdvertDownload(null)}>
           <section
             className={`${styles.marketplaceIntroModal} ${styles.marketplaceAdvertSuccessModal}`}
             role="dialog"
@@ -9697,3 +9701,4 @@ export default function ValuationClient({ dealerAppMode = false, ownerAppMode = 
     </main>
   );
 }
+

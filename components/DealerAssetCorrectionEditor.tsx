@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useId, useState } from 'react';
-import { createPortal } from 'react-dom';
+import { createPortal } from './WebsitePortal';
 import { useRouter } from 'next/navigation';
 import type {
   DealerAssetCorrectionField,
@@ -258,7 +258,7 @@ export default function DealerAssetCorrectionEditor({
       ) : null}
 
       {mounted && activeField ? createPortal(
-        <div className={styles.overlay} role="presentation" onMouseDown={(event) => {
+        <div className={styles.overlay} data-website-overlay role="presentation" onMouseDown={(event) => {
           if (event.target === event.currentTarget) closeEditor();
         }}>
           <section className={styles.modal} role="dialog" aria-modal="true" aria-labelledby={titleId}>
@@ -314,3 +314,4 @@ export default function DealerAssetCorrectionEditor({
     </>
   );
 }
+

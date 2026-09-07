@@ -322,7 +322,7 @@ export default function MarketplaceOutcomeModal({
 
   return (
     <div
-      className={styles.backdrop}
+      className={styles.backdrop} data-website-overlay
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) closeModal();
       }}
@@ -571,3 +571,4 @@ export default function MarketplaceOutcomeModal({
     </div>
   );
 }
+

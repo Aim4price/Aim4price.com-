@@ -4,7 +4,7 @@
   z-index: 1300;
   display: grid;
   place-items: center;
-  padding: clamp(0.8rem, 2vw, 1.5rem);
+  padding: clamp(0.8rem, calc(var(--website-design-vw, 1vw) * 2), 1.5rem);
 }
 
 .backdrop {
@@ -20,8 +20,8 @@
 
 .modal {
   position: relative;
-  width: min(900px, 100%);
-  max-height: min(900px, calc(100dvh - 1.6rem));
+  width: min(900px, var(--website-dialog-reference-width, 100%));
+  max-height: min(900px, calc(calc(var(--website-visible-height, 100dvh) * 1) - 1.6rem));
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto;
   overflow: hidden;
@@ -40,7 +40,7 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 1.25rem;
-  padding: clamp(1.25rem, 2.5vw, 1.75rem);
+  padding: clamp(1.25rem, calc(var(--website-design-vw, 1vw) * 2.5), 1.75rem);
   border-bottom: 1px solid #dfeae7;
   background:
     radial-gradient(circle at 0 0, rgba(11, 127, 90, 0.12), transparent 38%),
@@ -61,7 +61,7 @@
   margin: 0;
   color: #073d31;
   font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
-  font-size: clamp(1.65rem, 3.4vw, 2.25rem);
+  font-size: clamp(1.65rem, calc(var(--website-design-vw, 1vw) * 3.4), 2.25rem);
   font-weight: 900;
   line-height: 1.05;
   letter-spacing: -0.045em;
@@ -114,7 +114,7 @@
 .body {
   min-height: 0;
   overflow-y: auto;
-  padding: clamp(1rem, 2.4vw, 1.45rem);
+  padding: clamp(1rem, calc(var(--website-design-vw, 1vw) * 2.4), 1.45rem);
 }
 
 .state,
@@ -205,7 +205,7 @@
   display: block;
   margin-top: 0.15rem;
   color: #087553;
-  font-size: clamp(1.65rem, 4vw, 2.15rem);
+  font-size: clamp(1.65rem, calc(var(--website-design-vw, 1vw) * 4), 2.15rem);
   line-height: 1;
   letter-spacing: -0.05em;
 }
@@ -445,7 +445,7 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
   gap: 0.75rem;
-  padding: 0.9rem clamp(1rem, 2.4vw, 1.45rem) clamp(1rem, 2.4vw, 1.35rem);
+  padding: 0.9rem clamp(1rem, calc(var(--website-design-vw, 1vw) * 2.4), 1.45rem) clamp(1rem, calc(var(--website-design-vw, 1vw) * 2.4), 1.35rem);
   border-top: 1px solid #dfeae7;
   background: rgba(250, 253, 252, 0.98);
   box-shadow: 0 -12px 24px rgba(18, 52, 44, 0.035);
@@ -507,63 +507,63 @@
 }
 
 @media (max-width: 700px) {
-  .header p {
+  :global(:where(html:not(:has([data-website-canvas])))) .header p {
     white-space: normal;
   }
 
-  .details {
+  :global(:where(html:not(:has([data-website-canvas])))) .details {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
 @media (max-width: 560px) {
-  .overlay {
+  :global(:where(html:not(:has([data-website-canvas])))) .overlay {
     align-items: end;
     padding: 0;
   }
 
-  .modal {
+  :global(:where(html:not(:has([data-website-canvas])))) .modal {
     width: 100%;
     max-height: 95dvh;
     border-radius: 1.35rem 1.35rem 0 0;
   }
 
-  .header {
+  :global(:where(html:not(:has([data-website-canvas])))) .header {
     padding: 1rem;
   }
 
-  .header p {
+  :global(:where(html:not(:has([data-website-canvas])))) .header p {
     font-size: 0.86rem;
   }
 
-  .closeButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .closeButton {
     width: 2.55rem;
     height: 2.55rem;
   }
 
-  .body {
+  :global(:where(html:not(:has([data-website-canvas])))) .body {
     padding: 0.85rem 1rem 1rem;
   }
 
-  .summary {
+  :global(:where(html:not(:has([data-website-canvas])))) .summary {
     grid-template-columns: 1fr;
   }
 
-  .total {
+  :global(:where(html:not(:has([data-website-canvas])))) .total {
     min-width: 0;
     text-align: left;
   }
 
-  .amountBreakdown {
+  :global(:where(html:not(:has([data-website-canvas])))) .amountBreakdown {
     grid-column: 1;
   }
 
-  .details,
-  .workGrid {
+  :global(:where(html:not(:has([data-website-canvas])))) .details,
+  :global(:where(html:not(:has([data-website-canvas])))) .workGrid {
     grid-template-columns: 1fr;
   }
 
-  .footer {
+  :global(:where(html:not(:has([data-website-canvas])))) .footer {
     grid-template-columns: 1fr;
     padding: 0.8rem 1rem max(0.9rem, env(safe-area-inset-bottom));
   }
@@ -582,3 +582,4 @@
     transition: none;
   }
 }
+

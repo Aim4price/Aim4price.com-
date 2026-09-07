@@ -1,19 +1,13 @@
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
 import test from 'node:test';
+import { read, assertNoWebsiteReflow } from './helpers/site-layout-audit.mjs';
 
-const read = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
-
-test('desktop Manage control and dropdown keep deliberate spacing', async () => {
-  const [layout, tuning] = await Promise.all([
-    read('app/layout.tsx'),
-    read('app/header-manage-tuning.css'),
-  ]);
-
-  assert.match(layout, /import '\.\/header-manage-tuning\.css';/);
-  assert.match(tuning, /@media \(min-width: 1181px\)/);
-  assert.match(tuning, /header:has\(button\[aria-label='Open manage menu'\]\) > div\s*\{[\s\S]*?left: -1rem;/);
-  assert.match(tuning, /div:has\(> button\[aria-label='Open manage menu'\]\)\s*\{[\s\S]*?min-width: 14\.75rem;/);
-  assert.match(tuning, /button\[aria-label='Open manage menu'\]\s*\{[\s\S]*?min-width: 14\.75rem;[\s\S]*?gap: 0\.95rem;[\s\S]*?padding-inline: 1\.08rem;/);
-  assert.match(tuning, /#header-account-menu\s*\{[\s\S]*?min-width: max\(18rem, 100%\);/);
+test('desktop Manage sizing belongs to the header and applies at every website scale', async () => {
+  const [layout,css]=await Promise.all([read('app/layout.tsx'),read('components/AppHeader.module.css')]);
+  assert.doesNotMatch(layout,/header-manage-tuning/);
+  assertNoWebsiteReflow(css);
+  assert.match(css,/\.accountMenu\s*\{[^}]*width: 10\.25rem;[^}]*min-width: 10\.25rem;[^}]*flex: 0 0 10\.25rem;/);
+  assert.match(css,/\.accountButton\s*\{[^}]*box-sizing: border-box;[^}]*width: 100%;[^}]*padding-left: 0\.86rem;[^}]*padding-right: 0\.94rem;/);
+  assert.match(css,/\.accountPopover\s*\{[^}]*min-width: max\(18rem, 100%\)/);
+  assert.match(css,/\.actions \{ min-width: max-content; \}/);
 });

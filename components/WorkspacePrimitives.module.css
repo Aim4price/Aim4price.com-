@@ -11,7 +11,7 @@
   --workspace-copper: #723b0d;
   --workspace-copper-line: #c87534;
   --workspace-danger: #a53a32;
-  min-height: 100vh;
+  min-height: calc(var(--website-design-vh, 1vh) * 100);
   min-width: 0;
   color: var(--workspace-ink);
   background:
@@ -24,24 +24,24 @@
   width: min(calc(100% - 2rem), 1360px);
   min-width: 0;
   margin: 0 auto;
-  padding: clamp(1rem, 1.7vw, 1.35rem) 0 3.5rem;
+  padding: clamp(1rem, calc(var(--website-design-vw, 1vw) * 1.7), 1.35rem) 0 3.5rem;
 }
 
 .titlePanel {
   width: 100%;
   min-width: 0;
-  margin-bottom: clamp(1.05rem, 1.5vw, 1.3rem);
+  margin-bottom: clamp(1.05rem, calc(var(--website-design-vw, 1vw) * 1.5), 1.3rem);
 }
 
 .titlePanel > div {
   width: 100%;
   min-width: 0;
-  min-height: clamp(5.1rem, 7vw, 6.1rem);
+  min-height: clamp(5.1rem, calc(var(--website-design-vw, 1vw) * 7), 6.1rem);
   display: flex;
   align-items: center;
-  padding: clamp(1.15rem, 2vw, 1.55rem) clamp(1.25rem, 2.6vw, 2rem);
+  padding: clamp(1.15rem, calc(var(--website-design-vw, 1vw) * 2), 1.55rem) clamp(1.25rem, calc(var(--website-design-vw, 1vw) * 2.6), 2rem);
   border: 1.5px solid rgba(193, 211, 218, 0.98);
-  border-radius: clamp(1.25rem, 2vw, 1.7rem);
+  border-radius: clamp(1.25rem, calc(var(--website-design-vw, 1vw) * 2), 1.7rem);
   background:
     radial-gradient(circle at 3% 0%, rgba(25, 116, 84, 0.08) 0%, rgba(25, 116, 84, 0) 38%),
     linear-gradient(180deg, rgba(255, 255, 255, 0.99) 0%, rgba(248, 252, 253, 0.98) 100%);
@@ -56,7 +56,7 @@
   margin: 0;
   color: var(--workspace-ink);
   font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
-  font-size: clamp(2.35rem, 4.15vw, 3.55rem);
+  font-size: clamp(2.35rem, calc(var(--website-design-vw, 1vw) * 4.15), 3.55rem);
   font-weight: 900;
   line-height: 0.98;
   letter-spacing: -0.062em;
@@ -68,20 +68,20 @@
 .summaryGrid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: clamp(0.9rem, 1.25vw, 1.15rem);
-  margin-bottom: clamp(1rem, 1.4vw, 1.2rem);
+  gap: clamp(0.9rem, calc(var(--website-design-vw, 1vw) * 1.25), 1.15rem);
+  margin-bottom: clamp(1rem, calc(var(--website-design-vw, 1vw) * 1.4), 1.2rem);
 }
 
 .summaryTile {
   min-width: 0;
-  min-height: clamp(8.35rem, 9.2vw, 9.3rem);
+  min-height: clamp(8.35rem, calc(var(--website-design-vw, 1vw) * 9.2), 9.3rem);
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 1rem;
   padding: 1.15rem 1.3rem;
   border: 1px solid var(--workspace-line);
-  border-radius: clamp(1.25rem, 1.7vw, 1.55rem);
+  border-radius: clamp(1.25rem, calc(var(--website-design-vw, 1vw) * 1.7), 1.55rem);
   background: linear-gradient(180deg, #ffffff 0%, #f7fafb 100%);
   box-shadow:
     0 12px 26px rgba(16, 31, 28, 0.045),
@@ -115,7 +115,7 @@
 .summaryTile > strong {
   color: var(--workspace-ink);
   font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
-  font-size: clamp(2.25rem, 3.4vw, 3rem);
+  font-size: clamp(2.25rem, calc(var(--website-design-vw, 1vw) * 3.4), 3rem);
   font-weight: 900;
   line-height: 1;
   letter-spacing: -0.06em;
@@ -327,10 +327,10 @@
   position: fixed;
   inset: 0;
   z-index: 10000;
-  min-height: 100dvh;
+  min-height: calc(var(--website-visible-height, 100dvh) * 1);
   display: grid;
   place-items: center;
-  padding: clamp(0.75rem, 2vw, 1.5rem);
+  padding: clamp(0.75rem, calc(var(--website-design-vw, 1vw) * 2), 1.5rem);
   overflow: hidden;
   background: rgba(11, 31, 25, 0.42);
   backdrop-filter: blur(18px) saturate(0.9);
@@ -339,13 +339,13 @@
 
 .modal {
   width: min(100%, 54rem);
-  max-height: calc(100dvh - clamp(1.5rem, 4vw, 3rem));
+  max-height: calc(calc(var(--website-visible-height, 100dvh) * 1) - clamp(1.5rem, calc(var(--website-design-vw, 1vw) * 4), 3rem));
   min-height: 0;
   display: flex;
   flex-direction: column;
   overflow: hidden;
   border: 1px solid rgba(203, 218, 230, 0.98);
-  border-radius: clamp(1.4rem, 2vw, 1.85rem);
+  border-radius: clamp(1.4rem, calc(var(--website-design-vw, 1vw) * 2), 1.85rem);
   background:
     radial-gradient(circle at top left, rgba(22, 83, 64, 0.04), transparent 32%),
     linear-gradient(180deg, #ffffff 0%, #f9fcfd 100%);
@@ -358,7 +358,7 @@
   position: relative;
   flex: 0 0 auto;
   min-width: 0;
-  padding: clamp(1.2rem, 2vw, 1.6rem) clamp(4.4rem, 5vw, 5rem) clamp(1rem, 1.6vw, 1.3rem) clamp(1.2rem, 2vw, 1.6rem);
+  padding: clamp(1.2rem, calc(var(--website-design-vw, 1vw) * 2), 1.6rem) clamp(4.4rem, calc(var(--website-design-vw, 1vw) * 5), 5rem) clamp(1rem, calc(var(--website-design-vw, 1vw) * 1.6), 1.3rem) clamp(1.2rem, calc(var(--website-design-vw, 1vw) * 2), 1.6rem);
   border-bottom: 1px solid rgba(211, 224, 234, 0.94);
 }
 
@@ -367,7 +367,7 @@
   margin: 0;
   color: var(--workspace-ink);
   font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
-  font-size: clamp(1.65rem, 2.8vw, 2.25rem);
+  font-size: clamp(1.65rem, calc(var(--website-design-vw, 1vw) * 2.8), 2.25rem);
   font-weight: 800;
   line-height: 1.04;
   letter-spacing: -0.05em;
@@ -389,7 +389,7 @@
   overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-gutter: stable;
-  padding: clamp(1rem, 2vw, 1.5rem);
+  padding: clamp(1rem, calc(var(--website-design-vw, 1vw) * 2), 1.5rem);
   scrollbar-width: thin;
   scrollbar-color: rgba(25, 116, 84, 0.5) rgba(238, 245, 240, 0.9);
 }
@@ -401,7 +401,7 @@
   align-items: center;
   justify-content: flex-end;
   gap: 0.75rem;
-  padding: 0.95rem clamp(1rem, 2vw, 1.5rem) clamp(1rem, 2vw, 1.5rem);
+  padding: 0.95rem clamp(1rem, calc(var(--website-design-vw, 1vw) * 2), 1.5rem) clamp(1rem, calc(var(--website-design-vw, 1vw) * 2), 1.5rem);
   border-top: 1px solid rgba(211, 224, 234, 0.94);
   background: rgba(255, 255, 255, 0.96);
 }
@@ -409,8 +409,8 @@
 .modalClose {
   appearance: none;
   position: absolute;
-  top: clamp(1rem, 1.6vw, 1.25rem);
-  right: clamp(1rem, 1.6vw, 1.25rem);
+  top: clamp(1rem, calc(var(--website-design-vw, 1vw) * 1.6), 1.25rem);
+  right: clamp(1rem, calc(var(--website-design-vw, 1vw) * 1.6), 1.25rem);
   width: 3rem;
   min-width: 3rem;
   height: 3rem;
@@ -428,53 +428,53 @@
 }
 
 @media (max-width: 900px) {
-  .summaryGrid { grid-template-columns: 1fr; }
-  .controlsRow { grid-template-columns: 1fr; }
+  :global(:where(html:not(:has([data-website-canvas])))) .summaryGrid { grid-template-columns: 1fr; }
+  :global(:where(html:not(:has([data-website-canvas])))) .controlsRow { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 760px) {
-  .shell {
+  :global(:where(html:not(:has([data-website-canvas])))) .shell {
     width: min(calc(100% - 1rem), 48rem);
     padding-top: 0.85rem;
   }
 
-  .titlePanel > div {
+  :global(:where(html:not(:has([data-website-canvas])))) .titlePanel > div {
     min-height: 4.35rem;
     padding: 1rem 1.05rem;
     border-radius: 1.15rem;
   }
 
-  .titlePanel h1 {
+  :global(:where(html:not(:has([data-website-canvas])))) .titlePanel h1 {
     font-size: clamp(1.75rem, 9vw, 2.2rem);
     letter-spacing: -0.045em;
   }
 
-  .summaryTile {
+  :global(:where(html:not(:has([data-website-canvas])))) .summaryTile {
     min-height: 6.4rem;
     padding: 1rem;
   }
 
-  .pagination,
-  .modalFooter {
+  :global(:where(html:not(:has([data-website-canvas])))) .pagination,
+  :global(:where(html:not(:has([data-website-canvas])))) .modalFooter {
     align-items: stretch;
     flex-direction: column;
   }
 
-  .modalFooter > * {
+  :global(:where(html:not(:has([data-website-canvas])))) .modalFooter > * {
     width: 100%;
   }
 
-  .modal {
+  :global(:where(html:not(:has([data-website-canvas])))) .modal {
     width: 100%;
     max-height: calc(100dvh - 1.5rem);
     border-radius: 1.3rem;
   }
 
-  .modalHeader {
+  :global(:where(html:not(:has([data-website-canvas])))) .modalHeader {
     padding: 1.05rem 4rem 0.95rem 1.05rem;
   }
 
-  .modalClose {
+  :global(:where(html:not(:has([data-website-canvas])))) .modalClose {
     top: 0.85rem;
     right: 0.85rem;
     width: 2.65rem;
@@ -482,3 +482,4 @@
     height: 2.65rem;
   }
 }
+

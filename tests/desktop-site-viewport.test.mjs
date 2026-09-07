@@ -13,15 +13,15 @@ const protectedAppLayoutPaths = [
   new URL('../app/owner-app/layout.tsx', import.meta.url),
 ];
 
-test('the normal website inherits an auto-fitted desktop viewport from the shared root', async () => {
+test('the normal website uses a device viewport with native zoom enabled', async () => {
   const [rootSource, homeSource] = await Promise.all([
     readFile(rootLayoutPath, 'utf8'),
     readFile(homePagePath, 'utf8'),
   ]);
 
   assert.match(rootSource, /export const viewport: Viewport\s*=\s*\{/);
-  assert.match(rootSource, /width:\s*980/);
-  assert.match(rootSource, /initialScale:\s*-1/);
+  assert.match(rootSource, /width:\s*['"]device-width['"]/);
+  assert.match(rootSource, /initialScale:\s*1/);
   assert.match(rootSource, /userScalable:\s*true/);
   assert.doesNotMatch(rootSource, /maximumScale|minimumScale/);
   assert.doesNotMatch(homeSource, /export const viewport|width:\s*980/);
@@ -67,4 +67,14 @@ test('the Home hero keeps reliable playback without a mobile-only video asset', 
   assert.match(videoSource, /playsInline/);
   assert.doesNotMatch(videoSource, /AIM4PRICE-mobile\.mp4|media="\(max-width:/);
   assert.match(styleSource, /\.heroVideoPlay\s*\{[^}]*display:\s*inline-flex/s);
+});
+
+
+test('operational viewports preserve their former inherited settings', async () => {
+  for (const route of ['admin', 'scan', 'fuel-scan']) {
+    const source = await readFile(new URL('../app/' + route + '/layout.tsx', import.meta.url), 'utf8');
+    assert.match(source, /width: 980/);
+    assert.match(source, /initialScale: -1/);
+    assert.match(source, /userScalable: true/);
+  }
 });

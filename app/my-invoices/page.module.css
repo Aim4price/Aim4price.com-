@@ -18,9 +18,9 @@
   --copper-bg: #fff3e6;
   --copper-border: #e8a56a;
   --shadow: 0 22px 54px rgba(18, 35, 39, 0.1);
-  --ledger-inline-gutter: clamp(0.7rem, 2vw, 1.5rem);
-  --ledger-panel-inset: clamp(1.15rem, 1.9vw, 1.7rem);
-  min-height: 100vh;
+  --ledger-inline-gutter: clamp(0.7rem, calc(var(--website-design-vw, 1vw) * 2), 1.5rem);
+  --ledger-panel-inset: clamp(1.15rem, calc(var(--website-design-vw, 1vw) * 1.9), 1.7rem);
+  min-height: calc(var(--website-design-vh, 1vh) * 100);
   background: linear-gradient(180deg, #f7faf9 0%, #edf4f5 100%);
   color: var(--text);
 }
@@ -29,12 +29,12 @@
   width: min(calc(100% - 2rem), 1320px);
   box-sizing: border-box;
   margin: 0 auto;
-  padding: clamp(1.1rem, 2vw, 1.6rem) 0 3rem;
+  padding: clamp(1.1rem, calc(var(--website-design-vw, 1vw) * 2), 1.6rem) 0 3rem;
 }
 
 .page:not(.dealerCostsPage) .shell {
   width: min(calc(100% - (var(--ledger-inline-gutter) * 2)), 1320px);
-  padding-top: calc(clamp(1.25rem, 2vw, 1.85rem) + var(--ledger-panel-inset));
+  padding-top: calc(clamp(1.25rem, calc(var(--website-design-vw, 1vw) * 2), 1.85rem) + var(--ledger-panel-inset));
   padding-inline: var(--ledger-panel-inset);
 }
 
@@ -59,18 +59,18 @@
 }
 
 .pageTitleBlock {
-  margin-bottom: clamp(0.85rem, 1.15vw, 1.08rem);
+  margin-bottom: clamp(0.85rem, calc(var(--website-design-vw, 1vw) * 1.15), 1.08rem);
 }
 
 .pageTitleBlock > div {
   width: 100%;
   min-width: 0;
-  min-height: clamp(5.1rem, 7vw, 6.1rem);
+  min-height: clamp(5.1rem, calc(var(--website-design-vw, 1vw) * 7), 6.1rem);
   display: flex;
   align-items: center;
-  padding: clamp(1.15rem, 2vw, 1.55rem) clamp(1.25rem, 2.6vw, 2rem);
+  padding: clamp(1.15rem, calc(var(--website-design-vw, 1vw) * 2), 1.55rem) clamp(1.25rem, calc(var(--website-design-vw, 1vw) * 2.6), 2rem);
   border: 1.5px solid rgba(193, 211, 218, 0.98);
-  border-radius: clamp(1.25rem, 2vw, 1.7rem);
+  border-radius: clamp(1.25rem, calc(var(--website-design-vw, 1vw) * 2), 1.7rem);
   background:
     radial-gradient(circle at 3% 0%, rgba(25, 116, 84, 0.08) 0%, rgba(25, 116, 84, 0) 38%),
     linear-gradient(180deg, rgba(255, 255, 255, 0.99) 0%, rgba(248, 252, 253, 0.98) 100%);
@@ -85,7 +85,7 @@
   margin: 0;
   color: var(--brand-dark);
   font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
-  font-size: clamp(2.35rem, 4.15vw, 3.55rem);
+  font-size: clamp(2.35rem, calc(var(--website-design-vw, 1vw) * 4.15), 3.55rem);
   font-weight: 900;
   line-height: 0.98;
   letter-spacing: -0.062em;
@@ -97,12 +97,12 @@
 .pageTitleBlock p {
   margin: 0.7rem 0 0;
   color: var(--text-muted);
-  font-size: clamp(0.9rem, 1.3vw, 1.02rem);
+  font-size: clamp(0.9rem, calc(var(--website-design-vw, 1vw) * 1.3), 1.02rem);
   font-weight: 720;
 }
 
 .dealerCostsPage {
-  min-height: calc(100dvh - 68px - env(safe-area-inset-top));
+  min-height: calc(calc(var(--website-design-vh, 1dvh) * 100) - 68px - env(safe-area-inset-top));
 }
 
 .dealerCostsTitlePanel {
@@ -114,8 +114,8 @@
   grid-template-columns: repeat(4, minmax(0, 1fr));
   align-items: stretch;
   justify-content: stretch;
-  gap: clamp(0.78rem, 1.35vw, 1.25rem);
-  margin-bottom: clamp(1.05rem, 1.45vw, 1.35rem);
+  gap: clamp(0.78rem, calc(var(--website-design-vw, 1vw) * 1.35), 1.25rem);
+  margin-bottom: clamp(1.05rem, calc(var(--website-design-vw, 1vw) * 1.45), 1.35rem);
 }
 
 .costActionGridCompact {
@@ -126,12 +126,12 @@
   position: relative;
   width: 100%;
   min-width: 0;
-  min-height: clamp(3.62rem, 4.45vw, 4.08rem);
+  min-height: clamp(3.62rem, calc(var(--website-design-vw, 1vw) * 4.45), 4.08rem);
   justify-content: center;
   gap: 0.55rem;
-  padding: 0 clamp(1rem, 1.8vw, 1.45rem);
-  border-radius: clamp(1rem, 1.45vw, 1.22rem);
-  font-size: clamp(0.98rem, 1.15vw, 1.08rem);
+  padding: 0 clamp(1rem, calc(var(--website-design-vw, 1vw) * 1.8), 1.45rem);
+  border-radius: clamp(1rem, calc(var(--website-design-vw, 1vw) * 1.45), 1.22rem);
+  font-size: clamp(0.98rem, calc(var(--website-design-vw, 1vw) * 1.15), 1.08rem);
   font-weight: 860;
   letter-spacing: -0.015em;
   box-shadow: 0 14px 28px rgba(18, 35, 39, 0.065), inset 0 1px 0 rgba(255, 255, 255, 0.98);
@@ -221,19 +221,19 @@
 .optionGrid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: clamp(1rem, 2vw, 1.5rem);
-  margin-bottom: clamp(1rem, 2vw, 1.5rem);
+  gap: clamp(1rem, calc(var(--website-design-vw, 1vw) * 2), 1.5rem);
+  margin-bottom: clamp(1rem, calc(var(--website-design-vw, 1vw) * 2), 1.5rem);
 }
 
 .optionCard {
-  min-height: clamp(12rem, 18vw, 15rem);
+  min-height: clamp(12rem, calc(var(--website-design-vw, 1vw) * 18), 15rem);
   display: grid;
   align-content: center;
   justify-items: center;
   gap: 0.75rem;
-  padding: clamp(1.5rem, 3vw, 2.5rem);
+  padding: clamp(1.5rem, calc(var(--website-design-vw, 1vw) * 3), 2.5rem);
   border: 2px solid rgba(193, 211, 218, 0.95);
-  border-radius: clamp(1.5rem, 2.5vw, 2.25rem);
+  border-radius: clamp(1.5rem, calc(var(--website-design-vw, 1vw) * 2.5), 2.25rem);
   background:
     radial-gradient(circle at 50% 0%, rgba(25, 116, 84, 0.08), transparent 55%),
     #ffffff;
@@ -252,7 +252,7 @@
 
 .optionCard span {
   font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
-  font-size: clamp(2.1rem, 4vw, 3.25rem);
+  font-size: clamp(2.1rem, calc(var(--website-design-vw, 1vw) * 4), 3.25rem);
   font-weight: 900;
   line-height: 1;
   letter-spacing: -0.06em;
@@ -263,8 +263,8 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  gap: clamp(0.9rem, 1.2vw, 1.1rem);
-  margin-bottom: clamp(1rem, 1.8vw, 1.3rem);
+  gap: clamp(0.9rem, calc(var(--website-design-vw, 1vw) * 1.2), 1.1rem);
+  margin-bottom: clamp(1rem, calc(var(--website-design-vw, 1vw) * 1.8), 1.3rem);
 }
 
 .ownerInvoiceToolbar {
@@ -329,7 +329,7 @@
 .toolbarButtons {
   display: grid;
   grid-template-columns: repeat(3, minmax(9.5rem, auto));
-  gap: clamp(0.8rem, 1vw, 0.95rem);
+  gap: clamp(0.8rem, calc(var(--website-design-vw, 1vw) * 1), 0.95rem);
 }
 
 .toolbarButtons.dealerToolbarButtons {
@@ -426,9 +426,9 @@
 
 .toolbarButton {
   min-height: 3.75rem;
-  padding-inline: clamp(1rem, 1.55vw, 1.32rem);
+  padding-inline: clamp(1rem, calc(var(--website-design-vw, 1vw) * 1.55), 1.32rem);
   border-radius: 1.14rem;
-  font-size: clamp(0.96rem, 1.08vw, 1.04rem);
+  font-size: clamp(0.96rem, calc(var(--website-design-vw, 1vw) * 1.08), 1.04rem);
   font-weight: 860;
 }
 
@@ -597,7 +597,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: clamp(1rem, 3vw, 2rem);
+  padding: clamp(1rem, calc(var(--website-design-vw, 1vw) * 3), 2rem);
   background: rgba(12, 22, 25, 0.44);
   backdrop-filter: blur(10px);
   overflow: hidden;
@@ -608,10 +608,10 @@
 .filterModal,
 .downloadModal {
   width: min(100%, 1120px);
-  max-height: min(90vh, calc(100dvh - 2.5rem));
+  max-height: min(calc(var(--website-visible-height, 100vh) * 0.9), calc(calc(var(--website-visible-height, 100dvh) * 1) - 2.5rem));
   overflow: hidden;
   border: 1px solid rgba(207, 224, 234, 0.95);
-  border-radius: clamp(1.45rem, 2.2vw, 2rem);
+  border-radius: clamp(1.45rem, calc(var(--website-design-vw, 1vw) * 2.2), 2rem);
   background:
     radial-gradient(circle at top left, rgba(22, 83, 64, 0.06), transparent 34%),
     linear-gradient(180deg, #ffffff 0%, #f8fbfc 100%);
@@ -624,7 +624,7 @@
 }
 
 .formModal {
-  width: min(100%, 1060px);
+  width: min(var(--website-dialog-reference-width, 100%), 1060px);
   display: grid;
   grid-template-rows: auto auto minmax(0, 1fr) auto;
 }
@@ -650,17 +650,17 @@
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  padding: clamp(1.25rem, 2.2vw, 1.75rem) clamp(1.25rem, 2.4vw, 2rem) 0;
+  padding: clamp(1.25rem, calc(var(--website-design-vw, 1vw) * 2.2), 1.75rem) clamp(1.25rem, calc(var(--website-design-vw, 1vw) * 2.4), 2rem) 0;
 }
 
 .modalHeader h2 {
-  font-size: clamp(1.8rem, 3vw, 2.55rem);
+  font-size: clamp(1.8rem, calc(var(--website-design-vw, 1vw) * 3), 2.55rem);
   line-height: 1.02;
 }
 
 .modalDivider {
   height: 1px;
-  margin: 1.15rem clamp(1.25rem, 2.4vw, 2rem);
+  margin: 1.15rem clamp(1.25rem, calc(var(--website-design-vw, 1vw) * 2.4), 2rem);
   background: var(--line);
 }
 
@@ -671,7 +671,7 @@
   scrollbar-gutter: stable;
   scrollbar-width: thin;
   scrollbar-color: rgba(22, 83, 64, 0.52) rgba(239, 244, 247, 0.98);
-  padding: 0 clamp(1.25rem, 2.4vw, 2rem) 1rem;
+  padding: 0 clamp(1.25rem, calc(var(--website-design-vw, 1vw) * 2.4), 2rem) 1rem;
 }
 
 .assetList {
@@ -685,7 +685,7 @@
   display: grid;
   align-content: start;
   gap: 0.75rem;
-  margin: 0 clamp(1.25rem, 2.4vw, 2rem);
+  margin: 0 clamp(1.25rem, calc(var(--website-design-vw, 1vw) * 2.4), 2rem);
   padding: 0 0.6rem 0 0;
 }
 
@@ -722,7 +722,7 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 0.8rem;
-  padding: 0 clamp(1.25rem, 2.4vw, 2rem) 1rem;
+  padding: 0 clamp(1.25rem, calc(var(--website-design-vw, 1vw) * 2.4), 2rem) 1rem;
 }
 
 .pickerToolbar input,
@@ -815,7 +815,7 @@
 .uploadPanel {
   display: grid;
   gap: 1rem;
-  padding: clamp(1rem, 2vw, 1.35rem);
+  padding: clamp(1rem, calc(var(--website-design-vw, 1vw) * 2), 1.35rem);
   border: 1px solid rgba(221, 229, 237, 0.96);
   border-radius: 1.35rem;
   background:
@@ -856,7 +856,7 @@
 .uploadPanel h3 {
   padding-bottom: 1rem;
   border-bottom: 1px solid var(--line);
-  font-size: clamp(1.35rem, 2.2vw, 1.8rem);
+  font-size: clamp(1.35rem, calc(var(--website-design-vw, 1vw) * 2.2), 1.8rem);
 }
 
 .warningBox {
@@ -892,7 +892,7 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
   min-height: 0;
   overflow: visible;
-  padding: 0 clamp(1.25rem, 2.4vw, 2rem) 1rem;
+  padding: 0 clamp(1.25rem, calc(var(--website-design-vw, 1vw) * 2.4), 2rem) 1rem;
 }
 
 .formGrid label,
@@ -1046,7 +1046,7 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.9rem;
-  padding: 0 clamp(1.25rem, 2.4vw, 2rem) 1rem;
+  padding: 0 clamp(1.25rem, calc(var(--website-design-vw, 1vw) * 2.4), 2rem) 1rem;
 }
 
 .downloadChoiceButton {
@@ -1096,7 +1096,7 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.86rem;
-  padding: 0 clamp(1.25rem, 2.4vw, 2rem) 1rem;
+  padding: 0 clamp(1.25rem, calc(var(--website-design-vw, 1vw) * 2.4), 2rem) 1rem;
 }
 
 .sourceChoiceOption,
@@ -1277,7 +1277,7 @@
   right: 0;
   left: 0;
   z-index: 80;
-  max-height: min(18rem, 44vh);
+  max-height: min(18rem, calc(var(--website-design-vh, 1vh) * 44));
   overflow-y: auto;
   overscroll-behavior: contain;
   padding: 0.35rem;
@@ -1404,164 +1404,164 @@
   justify-content: flex-end;
   gap: 0.8rem;
   margin-top: auto;
-  padding: 1.15rem clamp(1.25rem, 2.4vw, 2rem) clamp(1.25rem, 2.4vw, 2rem);
+  padding: 1.15rem clamp(1.25rem, calc(var(--website-design-vw, 1vw) * 2.4), 2rem) clamp(1.25rem, calc(var(--website-design-vw, 1vw) * 2.4), 2rem);
   border-top: 1px solid var(--line);
   background: linear-gradient(180deg, rgba(248, 251, 252, 0) 0%, rgba(248, 251, 252, 0.98) 34%, rgba(248, 251, 252, 1) 100%);
 }
 
 @media (max-width: 1180px) {
-  .page {
+  :global(:where(html:not(:has([data-website-canvas])))) .page {
     --ledger-panel-inset: 1rem;
   }
 
-  .page:not(.dealerCostsPage) .shell {
+  :global(:where(html:not(:has([data-website-canvas])))) .page:not(.dealerCostsPage) .shell {
     padding-top: calc(clamp(1.25rem, 2vw, 1.85rem) + var(--ledger-panel-inset));
   }
 }
 
 @media (max-width: 1100px) {
-  .invoiceToolbar {
+  :global(:where(html:not(:has([data-website-canvas])))) .invoiceToolbar {
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .ownerInvoiceToolbar {
+  :global(:where(html:not(:has([data-website-canvas])))) .ownerInvoiceToolbar {
     grid-template-columns: minmax(0, 1fr) auto;
   }
 
-  .toolbarButtons {
+  :global(:where(html:not(:has([data-website-canvas])))) .toolbarButtons {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
-  .toolbarButtons.dealerToolbarButtons {
+  :global(:where(html:not(:has([data-website-canvas])))) .toolbarButtons.dealerToolbarButtons {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
 }
 
 @media (max-width: 980px) {
-  .costActionGrid {
+  :global(:where(html:not(:has([data-website-canvas])))) .costActionGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
 @media (max-width: 760px) {
-  .page {
+  :global(:where(html:not(:has([data-website-canvas])))) .page {
     --ledger-panel-inset: clamp(0.65rem, 2.6vw, 0.85rem);
   }
 
-  .shell {
+  :global(:where(html:not(:has([data-website-canvas])))) .shell {
     width: min(calc(100% - 1rem), 48rem);
   }
 
-  .page:not(.dealerCostsPage) .shell {
+  :global(:where(html:not(:has([data-website-canvas])))) .page:not(.dealerCostsPage) .shell {
     padding-top: calc(0.95rem + var(--ledger-panel-inset));
     padding-inline: var(--ledger-panel-inset);
   }
 
-  .optionGrid,
-  .formGrid,
-  .filterGrid,
-  .sourceChoiceGrid,
-  .reportChoiceGrid,
-  .downloadChoiceGrid,
-  .toolbarButtons,
-  .pickerToolbar,
-  .uploadBox,
-  .uploadInline {
+  :global(:where(html:not(:has([data-website-canvas])))) .optionGrid,
+  :global(:where(html:not(:has([data-website-canvas])))) .formGrid,
+  :global(:where(html:not(:has([data-website-canvas])))) .filterGrid,
+  :global(:where(html:not(:has([data-website-canvas])))) .sourceChoiceGrid,
+  :global(:where(html:not(:has([data-website-canvas])))) .reportChoiceGrid,
+  :global(:where(html:not(:has([data-website-canvas])))) .downloadChoiceGrid,
+  :global(:where(html:not(:has([data-website-canvas])))) .toolbarButtons,
+  :global(:where(html:not(:has([data-website-canvas])))) .pickerToolbar,
+  :global(:where(html:not(:has([data-website-canvas])))) .uploadBox,
+  :global(:where(html:not(:has([data-website-canvas])))) .uploadInline {
     grid-template-columns: 1fr;
   }
 
-  .toolbarButtons.dealerToolbarButtons {
+  :global(:where(html:not(:has([data-website-canvas])))) .toolbarButtons.dealerToolbarButtons {
     grid-template-columns: 1fr;
   }
 
-  .costActionGrid {
+  :global(:where(html:not(:has([data-website-canvas])))) .costActionGrid {
     gap: 0.72rem;
   }
 
-  .assetRow {
+  :global(:where(html:not(:has([data-website-canvas])))) .assetRow {
     grid-template-columns: 1fr;
   }
 
-  .assetValue {
+  :global(:where(html:not(:has([data-website-canvas])))) .assetValue {
     grid-column: 1;
     justify-items: start;
     text-align: left;
   }
 
-  .modalBackdrop {
+  :global(:where(html:not(:has([data-website-canvas])))) .modalBackdrop {
     align-items: stretch;
     padding: 0.5rem;
   }
 
-  .assetModal,
-  .formModal,
-  .filterModal,
-  .downloadModal {
+  :global(:where(html:not(:has([data-website-canvas])))) .assetModal,
+  :global(:where(html:not(:has([data-website-canvas])))) .formModal,
+  :global(:where(html:not(:has([data-website-canvas])))) .filterModal,
+  :global(:where(html:not(:has([data-website-canvas])))) .downloadModal {
     max-height: calc(100dvh - 1rem);
     border-radius: 1.25rem;
   }
 
-  .modalHeader {
+  :global(:where(html:not(:has([data-website-canvas])))) .modalHeader {
     align-items: flex-start;
   }
 
-  .modalFooter {
+  :global(:where(html:not(:has([data-website-canvas])))) .modalFooter {
     flex-direction: column-reverse;
   }
 
-  .paginationRow {
+  :global(:where(html:not(:has([data-website-canvas])))) .paginationRow {
     display: grid;
     grid-template-columns: 1fr;
     justify-items: stretch;
   }
 
-  .paginationStatus {
+  :global(:where(html:not(:has([data-website-canvas])))) .paginationStatus {
     text-align: center;
   }
 
-  .paginationButton,
-  .modalFooter button,
-  .modalFooter a,
-  .toolbarButtons button,
-  .toolbarButtons a {
+  :global(:where(html:not(:has([data-website-canvas])))) .paginationButton,
+  :global(:where(html:not(:has([data-website-canvas])))) .modalFooter button,
+  :global(:where(html:not(:has([data-website-canvas])))) .modalFooter a,
+  :global(:where(html:not(:has([data-website-canvas])))) .toolbarButtons button,
+  :global(:where(html:not(:has([data-website-canvas])))) .toolbarButtons a {
     width: 100%;
     min-width: 0;
   }
 }
 
 @media (max-width: 640px) {
-  .pageTitleBlock {
+  :global(:where(html:not(:has([data-website-canvas])))) .pageTitleBlock {
     margin-bottom: 0.72rem;
   }
 
-  .pageTitleBlock > div {
+  :global(:where(html:not(:has([data-website-canvas])))) .pageTitleBlock > div {
     min-height: 4.35rem;
     padding: 1rem 1.05rem;
     border-radius: 1.15rem;
   }
 
-  .pageTitleBlock h1 {
+  :global(:where(html:not(:has([data-website-canvas])))) .pageTitleBlock h1 {
     font-size: clamp(1.75rem, 9vw, 2.2rem);
     letter-spacing: -0.045em;
   }
 
-  .costActionGrid {
+  :global(:where(html:not(:has([data-website-canvas])))) .costActionGrid {
     grid-template-columns: 1fr;
     gap: 0.65rem;
   }
 
-  .costActionGrid .costActionButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .costActionGrid .costActionButton {
     min-height: 3.25rem;
   }
 }
 
 @media (max-width: 600px) {
-  .ownerInvoiceToolbar {
+  :global(:where(html:not(:has([data-website-canvas])))) .ownerInvoiceToolbar {
     grid-template-columns: 1fr;
   }
 
-  .searchFilterButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .searchFilterButton {
     width: 100%;
     min-width: 0;
   }
@@ -1577,7 +1577,7 @@
   display: grid;
   grid-template-rows: auto auto auto;
   gap: 1.12rem;
-  padding: clamp(1.5rem, 2.35vw, 1.95rem);
+  padding: clamp(1.5rem, calc(var(--website-design-vw, 1vw) * 2.35), 1.95rem);
   border-radius: 2rem;
 }
 
@@ -1604,7 +1604,7 @@
 .reportModal .modalHeader h2 {
   margin: 0;
   color: #0f3329;
-  font-size: clamp(1.86rem, 2.65vw, 2.38rem);
+  font-size: clamp(1.86rem, calc(var(--website-design-vw, 1vw) * 2.65), 2.38rem);
   font-weight: 760;
   line-height: 1.03;
   letter-spacing: -0.052em;
@@ -1727,7 +1727,7 @@
 }
 
 .reportModal {
-  max-height: min(94vh, calc(100dvh - 1.25rem));
+  max-height: min(calc(var(--website-visible-height, 100vh) * 0.94), calc(calc(var(--website-visible-height, 100dvh) * 1) - 1.25rem));
   overflow-y: auto;
   overscroll-behavior: contain;
 }
@@ -1791,9 +1791,9 @@
 }
 
 @media (max-width: 900px) {
-  .filterModal,
-  .sourceChoiceModal,
-  .reportModal {
+  :global(:where(html:not(:has([data-website-canvas])))) .filterModal,
+  :global(:where(html:not(:has([data-website-canvas])))) .sourceChoiceModal,
+  :global(:where(html:not(:has([data-website-canvas])))) .reportModal {
     width: min(100%, calc(100vw - 1rem));
     max-height: min(88vh, calc(100dvh - 1rem));
     overflow-y: auto;
@@ -1801,46 +1801,46 @@
     border-radius: 1.35rem;
   }
 
-  .filterModal .modalHeader,
-  .sourceChoiceModal .modalHeader,
-  .reportModal .modalHeader {
+  :global(:where(html:not(:has([data-website-canvas])))) .filterModal .modalHeader,
+  :global(:where(html:not(:has([data-website-canvas])))) .sourceChoiceModal .modalHeader,
+  :global(:where(html:not(:has([data-website-canvas])))) .reportModal .modalHeader {
     margin-bottom: 0;
     padding-bottom: 1rem;
   }
 
-  .filterModal .modalHeader h2,
-  .sourceChoiceModal .modalHeader h2,
-  .reportModal .modalHeader h2 {
+  :global(:where(html:not(:has([data-website-canvas])))) .filterModal .modalHeader h2,
+  :global(:where(html:not(:has([data-website-canvas])))) .sourceChoiceModal .modalHeader h2,
+  :global(:where(html:not(:has([data-website-canvas])))) .reportModal .modalHeader h2 {
     font-size: 1.58rem;
   }
 
-  .filterModal .filterGrid,
-  .sourceChoiceGrid,
-  .reportChoiceGrid,
-  .reportPeriodGrid {
+  :global(:where(html:not(:has([data-website-canvas])))) .filterModal .filterGrid,
+  :global(:where(html:not(:has([data-website-canvas])))) .sourceChoiceGrid,
+  :global(:where(html:not(:has([data-website-canvas])))) .reportChoiceGrid,
+  :global(:where(html:not(:has([data-website-canvas])))) .reportPeriodGrid {
     grid-template-columns: 1fr;
   }
 
-  .sourceChoiceOption,
-  .reportOption {
+  :global(:where(html:not(:has([data-website-canvas])))) .sourceChoiceOption,
+  :global(:where(html:not(:has([data-website-canvas])))) .reportOption {
     min-height: auto;
     padding: 1rem;
     border-radius: 1.12rem;
   }
 
-  .filterModal .modalFooter,
-  .sourceChoiceModal .modalFooter,
-  .reportModal .modalFooter {
+  :global(:where(html:not(:has([data-website-canvas])))) .filterModal .modalFooter,
+  :global(:where(html:not(:has([data-website-canvas])))) .sourceChoiceModal .modalFooter,
+  :global(:where(html:not(:has([data-website-canvas])))) .reportModal .modalFooter {
     flex-direction: column;
     align-items: stretch;
   }
 
-  .filterModal .modalFooter .primaryButton,
-  .filterModal .modalFooter .secondaryButton,
-  .sourceChoiceModal .modalFooter .primaryButton,
-  .sourceChoiceModal .modalFooter .secondaryButton,
-  .reportModal .modalFooter .primaryButton,
-  .reportModal .modalFooter .secondaryButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .filterModal .modalFooter .primaryButton,
+  :global(:where(html:not(:has([data-website-canvas])))) .filterModal .modalFooter .secondaryButton,
+  :global(:where(html:not(:has([data-website-canvas])))) .sourceChoiceModal .modalFooter .primaryButton,
+  :global(:where(html:not(:has([data-website-canvas])))) .sourceChoiceModal .modalFooter .secondaryButton,
+  :global(:where(html:not(:has([data-website-canvas])))) .reportModal .modalFooter .primaryButton,
+  :global(:where(html:not(:has([data-website-canvas])))) .reportModal .modalFooter .secondaryButton {
     width: 100%;
     min-width: 0;
   }
@@ -1850,11 +1850,11 @@
 .costFormModal,
 .costUploadModal {
   width: min(100%, 1120px);
-  max-height: min(92vh, calc(100dvh - 1rem));
+  max-height: min(calc(var(--website-visible-height, 100vh) * 0.92), calc(calc(var(--website-visible-height, 100dvh) * 1) - 1rem));
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto;
   gap: 0;
-  padding: clamp(1.35rem, 2.2vw, 1.85rem);
+  padding: clamp(1.35rem, calc(var(--website-design-vw, 1vw) * 2.2), 1.85rem);
   border-radius: 2rem;
   background:
     radial-gradient(circle at top left, rgba(22, 83, 64, 0.055), transparent 34%),
@@ -1880,7 +1880,7 @@
 .costUploadModal .modalHeader h2 {
   margin: 0;
   color: #0f3329;
-  font-size: clamp(1.85rem, 2.45vw, 2.35rem);
+  font-size: clamp(1.85rem, calc(var(--website-design-vw, 1vw) * 2.45), 2.35rem);
   font-weight: 720;
   line-height: 1.04;
   letter-spacing: -0.04em;
@@ -1997,7 +1997,7 @@
 
 .costFormModal .formGrid .customFilterSelectMenu {
   z-index: 120;
-  max-height: min(14rem, 46vh);
+  max-height: min(14rem, calc(var(--website-visible-height, 100vh) * 0.46));
 }
 
 .costFormModal .formGrid input::placeholder,
@@ -2179,7 +2179,7 @@
 
 .costUploadModal .uploadPanel {
   gap: 1rem;
-  padding: clamp(1.2rem, 2vw, 1.55rem);
+  padding: clamp(1.2rem, calc(var(--website-design-vw, 1vw) * 2), 1.55rem);
   border-radius: 1.48rem;
 }
 
@@ -2187,7 +2187,7 @@
   margin: 0;
   padding-bottom: 0.85rem;
   color: #10352b;
-  font-size: clamp(1.38rem, 1.85vw, 1.68rem);
+  font-size: clamp(1.38rem, calc(var(--website-design-vw, 1vw) * 1.85), 1.68rem);
   font-weight: 720;
   letter-spacing: -0.028em;
   line-height: 1.15;
@@ -2258,49 +2258,49 @@
 }
 
 @media (max-width: 900px) {
-  .costFormModal,
-  .costUploadModal {
+  :global(:where(html:not(:has([data-website-canvas])))) .costFormModal,
+  :global(:where(html:not(:has([data-website-canvas])))) .costUploadModal {
     width: min(100%, calc(100vw - 1rem));
     max-height: min(92vh, calc(100dvh - 1rem));
     padding: 1.08rem;
     border-radius: 1.35rem;
   }
 
-  .costUploadModal {
+  :global(:where(html:not(:has([data-website-canvas])))) .costUploadModal {
     overflow: hidden;
   }
 
-  .costFormModal .formGrid,
-  .costFormModal .textAreaGrid {
+  :global(:where(html:not(:has([data-website-canvas])))) .costFormModal .formGrid,
+  :global(:where(html:not(:has([data-website-canvas])))) .costFormModal .textAreaGrid {
     grid-template-columns: 1fr;
   }
 
-  .costFormModal .uploadInline {
+  :global(:where(html:not(:has([data-website-canvas])))) .costFormModal .uploadInline {
     grid-template-columns: 1fr;
     align-items: stretch;
   }
 
-  .costFormModal .uploadInline strong {
+  :global(:where(html:not(:has([data-website-canvas])))) .costFormModal .uploadInline strong {
     white-space: normal;
   }
 
-  .costFormModal .modalFooter,
-  .costUploadModal .modalFooter {
+  :global(:where(html:not(:has([data-website-canvas])))) .costFormModal .modalFooter,
+  :global(:where(html:not(:has([data-website-canvas])))) .costUploadModal .modalFooter {
     flex-direction: column-reverse;
     align-items: stretch;
   }
 
-  .costFormModal .modalFooter .primaryButton,
-  .costFormModal .modalFooter .secondaryButton,
-  .costUploadModal .modalFooter .primaryButton,
-  .costUploadModal .modalFooter .secondaryButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .costFormModal .modalFooter .primaryButton,
+  :global(:where(html:not(:has([data-website-canvas])))) .costFormModal .modalFooter .secondaryButton,
+  :global(:where(html:not(:has([data-website-canvas])))) .costUploadModal .modalFooter .primaryButton,
+  :global(:where(html:not(:has([data-website-canvas])))) .costUploadModal .modalFooter .secondaryButton {
     width: 100%;
     min-width: 0;
   }
 }
 
 @media (max-width: 520px) {
-  .costUploadModal .uploadBox {
+  :global(:where(html:not(:has([data-website-canvas])))) .costUploadModal .uploadBox {
     grid-template-columns: 1fr;
     max-width: 100%;
   }
@@ -2362,7 +2362,7 @@
   overflow-wrap: anywhere;
   color: #073b30;
   font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
-  font-size: clamp(1.42rem, 1.9vw, 1.72rem);
+  font-size: clamp(1.42rem, calc(var(--website-design-vw, 1vw) * 1.9), 1.72rem);
   font-weight: 760;
   line-height: 1.08;
   letter-spacing: -0.032em;
@@ -2439,7 +2439,7 @@
   margin: 0;
   color: #073b30;
   font-family: inherit;
-  font-size: clamp(1.5rem, 2.05vw, 1.9rem);
+  font-size: clamp(1.5rem, calc(var(--website-design-vw, 1vw) * 2.05), 1.9rem);
   font-weight: 900;
   line-height: 1;
   letter-spacing: -0.055em;
@@ -2554,9 +2554,9 @@
 
 .deleteConfirmModal {
   position: relative;
-  width: min(96vw, 58rem);
+  width: min(calc(var(--website-design-vw, 1vw) * 96), 58rem);
   display: block;
-  padding: clamp(1.75rem, 2.55vw, 2.35rem);
+  padding: clamp(1.75rem, calc(var(--website-design-vw, 1vw) * 2.55), 2.35rem);
   border: 1px solid rgba(203, 218, 230, 0.98);
   border-radius: 1.8rem;
   background: rgba(255, 255, 255, 0.98);
@@ -2565,8 +2565,8 @@
 
 .deleteConfirmCloseButton {
   position: absolute;
-  top: clamp(1rem, 1.6vw, 1.25rem);
-  right: clamp(1rem, 1.6vw, 1.25rem);
+  top: clamp(1rem, calc(var(--website-design-vw, 1vw) * 1.6), 1.25rem);
+  right: clamp(1rem, calc(var(--website-design-vw, 1vw) * 1.6), 1.25rem);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -2597,7 +2597,7 @@
   border-bottom: 1px solid rgba(211, 224, 234, 0.98);
   color: #0c382f;
   font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
-  font-size: clamp(1.65rem, 3vw, 2.25rem);
+  font-size: clamp(1.65rem, calc(var(--website-design-vw, 1vw) * 3), 2.25rem);
   font-weight: 760;
   line-height: 1.02;
   letter-spacing: -0.05em;
@@ -2699,92 +2699,92 @@
 }
 
 @media (max-width: 960px) {
-  .invoiceHeader {
+  :global(:where(html:not(:has([data-website-canvas])))) .invoiceHeader {
     grid-template-columns: 1fr;
     align-items: start;
   }
 
-  .invoiceHeaderAside {
+  :global(:where(html:not(:has([data-website-canvas])))) .invoiceHeaderAside {
     width: 100%;
     min-width: 0;
     justify-items: stretch;
   }
 
-  .invoiceValueBlock {
+  :global(:where(html:not(:has([data-website-canvas])))) .invoiceValueBlock {
     min-width: 0;
     padding-left: 0;
     justify-items: start;
     text-align: left;
   }
 
-  .invoicePrice,
-  .invoiceVatLabel {
+  :global(:where(html:not(:has([data-website-canvas])))) .invoicePrice,
+  :global(:where(html:not(:has([data-website-canvas])))) .invoiceVatLabel {
     text-align: left;
   }
 
-  .rowActions {
+  :global(:where(html:not(:has([data-website-canvas])))) .rowActions {
     justify-content: stretch;
   }
 
-  .rowActions .secondaryButtonSmall,
-  .rowActions .dangerButtonSmall {
+  :global(:where(html:not(:has([data-website-canvas])))) .rowActions .secondaryButtonSmall,
+  :global(:where(html:not(:has([data-website-canvas])))) .rowActions .dangerButtonSmall {
     flex: 1 1 180px;
   }
 }
 
 @media (max-width: 760px) {
-  .invoiceRow {
+  :global(:where(html:not(:has([data-website-canvas])))) .invoiceRow {
     padding: 1.05rem;
     border-radius: 1.25rem;
   }
 
-  .invoiceTitle {
+  :global(:where(html:not(:has([data-website-canvas])))) .invoiceTitle {
     font-size: 1.35rem;
     font-weight: 740;
     letter-spacing: -0.026em;
   }
 
-  .invoicePrice {
+  :global(:where(html:not(:has([data-website-canvas])))) .invoicePrice {
     font-size: 1.45rem;
     white-space: nowrap;
   }
 
-  .rowActions {
+  :global(:where(html:not(:has([data-website-canvas])))) .rowActions {
     width: 100%;
     display: grid;
     grid-template-columns: 1fr;
   }
 
-  .secondaryButtonSmall,
-  .dangerButtonSmall {
+  :global(:where(html:not(:has([data-website-canvas])))) .secondaryButtonSmall,
+  :global(:where(html:not(:has([data-website-canvas])))) .dangerButtonSmall {
     width: 100%;
     min-width: 0;
   }
 
-  .deleteConfirmModal {
+  :global(:where(html:not(:has([data-website-canvas])))) .deleteConfirmModal {
     width: min(100%, calc(100vw - 1.25rem));
     padding: 1.15rem;
     border-radius: 1.4rem;
   }
 
-  .deleteConfirmCloseButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .deleteConfirmCloseButton {
     top: 0.85rem;
     right: 0.85rem;
     width: 2.65rem;
     height: 2.65rem;
   }
 
-  .deleteConfirmContent h3 {
+  :global(:where(html:not(:has([data-website-canvas])))) .deleteConfirmContent h3 {
     padding-right: 3rem;
   }
 
-  .deleteConfirmActions {
+  :global(:where(html:not(:has([data-website-canvas])))) .deleteConfirmActions {
     display: grid;
     grid-template-columns: 1fr;
   }
 
-  .deleteConfirmActions .secondaryButton,
-  .deleteConfirmActions .deleteConfirmButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .deleteConfirmActions .secondaryButton,
+  :global(:where(html:not(:has([data-website-canvas])))) .deleteConfirmActions .deleteConfirmButton {
     width: 100%;
   }
 }
@@ -3004,17 +3004,17 @@
 }
 
 @media (max-width: 900px) {
-  .downloadExportModal {
+  :global(:where(html:not(:has([data-website-canvas])))) .downloadExportModal {
     width: min(100%, calc(100vw - 1rem));
     max-height: min(92vh, calc(100dvh - 1rem));
     overflow-y: auto;
   }
 
-  .downloadStageRail {
+  :global(:where(html:not(:has([data-website-canvas])))) .downloadStageRail {
     gap: 0.42rem;
   }
 
-  .downloadStageItem {
+  :global(:where(html:not(:has([data-website-canvas])))) .downloadStageItem {
     justify-content: center;
     min-height: 2.55rem;
     gap: 0.38rem;
@@ -3022,54 +3022,54 @@
     font-size: 0.7rem;
   }
 
-  .downloadStageNumber {
+  :global(:where(html:not(:has([data-website-canvas])))) .downloadStageNumber {
     width: 1.35rem;
     min-width: 1.35rem;
     height: 1.35rem;
     font-size: 0.62rem;
   }
 
-  .downloadFormatGrid {
+  :global(:where(html:not(:has([data-website-canvas])))) .downloadFormatGrid {
     grid-template-columns: 1fr;
   }
 
-  .downloadFormatGrid .reportOption {
+  :global(:where(html:not(:has([data-website-canvas])))) .downloadFormatGrid .reportOption {
     min-height: auto;
   }
 
-  .downloadExportModal .downloadModalFooter {
+  :global(:where(html:not(:has([data-website-canvas])))) .downloadExportModal .downloadModalFooter {
     align-items: stretch;
     flex-direction: column;
   }
 
-  .downloadFooterActions {
+  :global(:where(html:not(:has([data-website-canvas])))) .downloadFooterActions {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     width: 100%;
   }
 
-  .downloadExportModal .downloadModalFooter .primaryButton,
-  .downloadExportModal .downloadModalFooter .secondaryButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .downloadExportModal .downloadModalFooter .primaryButton,
+  :global(:where(html:not(:has([data-website-canvas])))) .downloadExportModal .downloadModalFooter .secondaryButton {
     width: 100%;
     min-width: 0;
   }
 
-  .downloadFormatFooter {
+  :global(:where(html:not(:has([data-website-canvas])))) .downloadFormatFooter {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
 @media (max-width: 560px) {
-  .downloadStageItem {
+  :global(:where(html:not(:has([data-website-canvas])))) .downloadStageItem {
     display: grid;
     justify-items: center;
     gap: 0.25rem;
     text-align: center;
   }
 
-  .downloadFooterActions,
-  .downloadFormatFooter {
+  :global(:where(html:not(:has([data-website-canvas])))) .downloadFooterActions,
+  :global(:where(html:not(:has([data-website-canvas])))) .downloadFormatFooter {
     grid-template-columns: 1fr;
   }
 }
@@ -3077,7 +3077,7 @@
 /* === Accounting-ready CSV export === */
 .downloadAccountingModal {
   width: min(100%, 980px);
-  max-height: min(92vh, calc(100dvh - 1.5rem));
+  max-height: min(calc(var(--website-visible-height, 100vh) * 0.92), calc(calc(var(--website-visible-height, 100dvh) * 1) - 1.5rem));
   overflow-y: auto;
 }
 
@@ -3363,18 +3363,18 @@
 
 .accountingSettingsBackdrop {
   z-index: 110;
-  padding: clamp(0.5rem, 2vw, 1.5rem);
+  padding: clamp(0.5rem, calc(var(--website-design-vw, 1vw) * 2), 1.5rem);
   background: rgba(9, 18, 20, 0.58);
 }
 
 .accountingSettingsModal {
   width: min(100%, 1000px);
-  max-height: min(94vh, calc(100dvh - 1rem));
+  max-height: min(calc(var(--website-visible-height, 100vh) * 0.94), calc(calc(var(--website-visible-height, 100dvh) * 1) - 1rem));
 }
 
 .accountingSettingsModal .modalHeader {
   align-items: center;
-  padding: 1.35rem clamp(1.25rem, 2.4vw, 1.75rem) 0;
+  padding: 1.35rem clamp(1.25rem, calc(var(--website-design-vw, 1vw) * 2.4), 1.75rem) 0;
 }
 
 .accountingSettingsModal .modalHeader > div {
@@ -3384,7 +3384,7 @@
 }
 
 .accountingSettingsModal .modalHeader h2 {
-  font-size: clamp(2rem, 3.25vw, 2.55rem);
+  font-size: clamp(2rem, calc(var(--website-design-vw, 1vw) * 3.25), 2.55rem);
   line-height: 1;
 }
 
@@ -3404,7 +3404,7 @@
 }
 
 .accountingSettingsModal .modalDivider {
-  margin: 0.95rem clamp(1.25rem, 2.4vw, 1.75rem);
+  margin: 0.95rem clamp(1.25rem, calc(var(--website-design-vw, 1vw) * 2.4), 1.75rem);
 }
 
 .accountingSettingsBody {
@@ -3414,7 +3414,7 @@
   gap: 0.75rem;
   overflow-y: auto;
   overscroll-behavior: contain;
-  padding: 0 clamp(1.25rem, 2.4vw, 1.75rem) 0.85rem;
+  padding: 0 clamp(1.25rem, calc(var(--website-design-vw, 1vw) * 2.4), 1.75rem) 0.85rem;
   scrollbar-gutter: stable;
   scrollbar-width: thin;
   scrollbar-color: rgba(41, 112, 89, 0.52) rgba(231, 238, 241, 0.72);
@@ -3648,60 +3648,60 @@
 }
 
 @media (max-width: 900px) {
-  .accountingSetupSummary {
+  :global(:where(html:not(:has([data-website-canvas])))) .accountingSetupSummary {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .accountingSettingsModal {
+  :global(:where(html:not(:has([data-website-canvas])))) .accountingSettingsModal {
     max-height: calc(100dvh - 1rem);
   }
 }
 
 @media (max-width: 680px) {
-  .accountingSoftwareGrid,
-  .accountingSettingsGrid,
-  .accountingSupplierGrid {
+  :global(:where(html:not(:has([data-website-canvas])))) .accountingSoftwareGrid,
+  :global(:where(html:not(:has([data-website-canvas])))) .accountingSettingsGrid,
+  :global(:where(html:not(:has([data-website-canvas])))) .accountingSupplierGrid {
     grid-template-columns: 1fr;
   }
 
-  .accountingSetupHeader,
-  .accountingSettingsSectionHeading {
+  :global(:where(html:not(:has([data-website-canvas])))) .accountingSetupHeader,
+  :global(:where(html:not(:has([data-website-canvas])))) .accountingSettingsSectionHeading {
     align-items: stretch;
     flex-direction: column;
   }
 
-  .accountingSetupHeader {
+  :global(:where(html:not(:has([data-website-canvas])))) .accountingSetupHeader {
     grid-template-columns: auto minmax(0, 1fr);
   }
 
-  .accountingSetupHeader .accountingSettingsButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .accountingSetupHeader .accountingSettingsButton {
     grid-column: 1 / -1;
   }
 
-  .accountingSettingsButton,
-  .accountingSettingsSectionHeading .secondaryButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .accountingSettingsButton,
+  :global(:where(html:not(:has([data-website-canvas])))) .accountingSettingsSectionHeading .secondaryButton {
     width: 100%;
   }
 
-  .accountingAccountAddRow {
+  :global(:where(html:not(:has([data-website-canvas])))) .accountingAccountAddRow {
     grid-template-columns: 1fr;
   }
 
-  .accountingAccountAddRow .secondaryButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .accountingAccountAddRow .secondaryButton {
     width: 100%;
   }
 }
 
 @media (max-width: 480px) {
-  .accountingSetupSummary {
+  :global(:where(html:not(:has([data-website-canvas])))) .accountingSetupSummary {
     grid-template-columns: 1fr;
   }
 
-  .accountingSettingsBackdrop {
+  :global(:where(html:not(:has([data-website-canvas])))) .accountingSettingsBackdrop {
     padding: 0.25rem;
   }
 
-  .accountingSettingsModal {
+  :global(:where(html:not(:has([data-website-canvas])))) .accountingSettingsModal {
     max-height: calc(100dvh - 0.5rem);
     border-radius: 1.1rem;
   }
@@ -3715,7 +3715,7 @@
 }
 
 @media (max-width: 720px) {
-  .recurringChoiceOption .choiceTitleBlock small {
+  :global(:where(html:not(:has([data-website-canvas])))) .recurringChoiceOption .choiceTitleBlock small {
     white-space: normal;
   }
 }
@@ -3723,7 +3723,7 @@
 .budgetSection {
   display: grid;
   gap: 1.15rem;
-  padding: clamp(1.2rem, 2.4vw, 1.7rem);
+  padding: clamp(1.2rem, calc(var(--website-design-vw, 1vw) * 2.4), 1.7rem);
   border: 1px solid rgba(210, 224, 232, 0.96);
   border-radius: 1.55rem;
   background:
@@ -3784,7 +3784,7 @@
 .budgetDeleteDialog h2 {
   margin: 0;
   color: var(--brand-dark);
-  font-size: clamp(1.35rem, 2.3vw, 1.8rem);
+  font-size: clamp(1.35rem, calc(var(--website-design-vw, 1vw) * 2.3), 1.8rem);
   line-height: 1.12;
 }
 
@@ -3947,7 +3947,7 @@
 
 .budgetAmount strong {
   color: var(--brand-dark);
-  font-size: clamp(1.42rem, 2.7vw, 2rem);
+  font-size: clamp(1.42rem, calc(var(--website-design-vw, 1vw) * 2.7), 2rem);
   font-weight: 950;
   letter-spacing: -0.035em;
 }
@@ -4069,15 +4069,15 @@
 .budgetModal,
 .budgetManagerModal {
   width: min(100%, 1060px);
-  max-height: min(88vh, calc(100dvh - 1rem));
+  max-height: min(calc(var(--website-visible-height, 100vh) * 0.88), calc(calc(var(--website-visible-height, 100dvh) * 1) - 1rem));
   grid-template-rows: auto minmax(0, 1fr) auto;
   gap: 0;
-  padding: clamp(1.05rem, 1.7vw, 1.4rem);
+  padding: clamp(1.05rem, calc(var(--website-design-vw, 1vw) * 1.7), 1.4rem);
   border-radius: 1.55rem;
 }
 
 .budgetManagerModal {
-  width: min(100%, 940px);
+  width: min(var(--website-dialog-reference-width, 100%), 940px);
 }
 
 .budgetModal .modalHeader,
@@ -4098,7 +4098,7 @@
 .budgetManagerModal .modalHeader h2 {
   margin: 0;
   color: #0f3329;
-  font-size: clamp(1.7rem, 2.2vw, 2.1rem);
+  font-size: clamp(1.7rem, calc(var(--website-design-vw, 1vw) * 2.2), 2.1rem);
   font-weight: 720;
   line-height: 1.04;
   letter-spacing: -0.04em;
@@ -4239,13 +4239,13 @@
 
 .budgetAssetPickerModal {
   width: min(100%, 1120px);
-  max-height: min(90vh, calc(100dvh - 2.5rem));
-  border-radius: clamp(1.45rem, 2.2vw, 2rem);
+  max-height: min(calc(var(--website-visible-height, 100vh) * 0.9), calc(calc(var(--website-visible-height, 100dvh) * 1) - 2.5rem));
+  border-radius: clamp(1.45rem, calc(var(--website-design-vw, 1vw) * 2.2), 2rem);
 }
 
 .budgetAssetPickerModal .modalHeader {
   align-items: center;
-  padding: clamp(1.25rem, 2.2vw, 1.75rem) clamp(1.25rem, 2.4vw, 2rem) 0;
+  padding: clamp(1.25rem, calc(var(--website-design-vw, 1vw) * 2.2), 1.75rem) clamp(1.25rem, calc(var(--website-design-vw, 1vw) * 2.4), 2rem) 0;
 }
 
 .budgetAssetPickerModal .modalHeader > div {
@@ -4257,7 +4257,7 @@
 .budgetAssetPickerModal .modalHeader h2 {
   margin: 0;
   color: var(--brand-dark);
-  font-size: clamp(1.8rem, 3vw, 2.55rem);
+  font-size: clamp(1.8rem, calc(var(--website-design-vw, 1vw) * 3), 2.55rem);
   font-weight: 760;
   line-height: 1.02;
   letter-spacing: -0.052em;
@@ -4281,14 +4281,14 @@
 }
 
 .budgetAssetPickerModal .modalDivider {
-  margin: 1.15rem clamp(1.25rem, 2.4vw, 2rem);
+  margin: 1.15rem clamp(1.25rem, calc(var(--website-design-vw, 1vw) * 2.4), 2rem);
 }
 
 .budgetAssetPickerToolbar {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto auto;
   gap: 0.8rem;
-  padding: 0 clamp(1.25rem, 2.4vw, 2rem) 1rem;
+  padding: 0 clamp(1.25rem, calc(var(--website-design-vw, 1vw) * 2.4), 2rem) 1rem;
 }
 
 .budgetSelectAllButton {
@@ -4310,7 +4310,7 @@
   flex: 1 1 20rem;
   min-height: 0;
   gap: 0.75rem;
-  margin: 0 clamp(1.25rem, 2.4vw, 2rem);
+  margin: 0 clamp(1.25rem, calc(var(--website-design-vw, 1vw) * 2.4), 2rem);
   padding: 0 0.6rem 0 0;
 }
 
@@ -4398,8 +4398,8 @@
   align-items: center;
   justify-content: flex-end;
   gap: 0.72rem;
-  margin: 0 clamp(1.25rem, 2.4vw, 2rem);
-  padding: 1rem 0 clamp(1.25rem, 2.2vw, 1.75rem);
+  margin: 0 clamp(1.25rem, calc(var(--website-design-vw, 1vw) * 2.4), 2rem);
+  padding: 1rem 0 clamp(1.25rem, calc(var(--website-design-vw, 1vw) * 2.2), 1.75rem);
   border-top: 1px solid rgba(216, 226, 236, 0.88);
   background: transparent;
 }
@@ -4842,7 +4842,7 @@
   width: min(100%, 520px);
   display: grid;
   gap: 1rem;
-  padding: clamp(1.2rem, 3vw, 1.7rem);
+  padding: clamp(1.2rem, calc(var(--website-design-vw, 1vw) * 3), 1.7rem);
   border: 1px solid #e2c8c5;
   border-radius: 1.35rem;
   background: #ffffff;
@@ -4878,38 +4878,38 @@
 }
 
 @media (max-width: 900px) {
-  .budgetSetupGrid {
+  :global(:where(html:not(:has([data-website-canvas])))) .budgetSetupGrid {
     grid-template-columns: 1fr;
   }
 
-  .budgetAssetPickerBackdrop {
+  :global(:where(html:not(:has([data-website-canvas])))) .budgetAssetPickerBackdrop {
     padding: 0.5rem;
   }
 
-  .budgetAssetPickerModal {
+  :global(:where(html:not(:has([data-website-canvas])))) .budgetAssetPickerModal {
     width: min(100%, calc(100vw - 1rem));
     max-height: min(92vh, calc(100dvh - 1rem));
     padding: 0;
     border-radius: 1.35rem;
   }
 
-  .budgetAssetPickerModal .budgetScopeRow {
+  :global(:where(html:not(:has([data-website-canvas])))) .budgetAssetPickerModal .budgetScopeRow {
     grid-template-columns: 1fr;
   }
 
-  .budgetAssetPickerModal .assetValue {
+  :global(:where(html:not(:has([data-website-canvas])))) .budgetAssetPickerModal .assetValue {
     grid-column: auto;
     justify-items: start;
     text-align: left;
   }
 
-  .budgetAssetPickerFooter {
+  :global(:where(html:not(:has([data-website-canvas])))) .budgetAssetPickerFooter {
     flex-direction: column-reverse;
     align-items: stretch;
   }
 
-  .budgetAssetPickerFooter .primaryButton,
-  .budgetAssetPickerFooter .secondaryButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .budgetAssetPickerFooter .primaryButton,
+  :global(:where(html:not(:has([data-website-canvas])))) .budgetAssetPickerFooter .secondaryButton {
     width: 100%;
     min-width: 0;
   }
@@ -4917,7 +4917,7 @@
 }
 
 @media (max-width: 960px) {
-  .budgetAssetSelectionCount {
+  :global(:where(html:not(:has([data-website-canvas])))) .budgetAssetSelectionCount {
     width: 100%;
     margin-right: 0;
     text-align: center;
@@ -4925,89 +4925,89 @@
 }
 
 @media (max-width: 760px) {
-  .budgetAssetPickerToolbar {
+  :global(:where(html:not(:has([data-website-canvas])))) .budgetAssetPickerToolbar {
     grid-template-columns: 1fr;
   }
 }
 
 @media (max-width: 720px) {
-  .budgetSectionHeader,
-  .budgetMeta,
-  .budgetFocusBar,
-  .budgetModalFooter,
-  .budgetManagerToolbar,
-  .budgetManagerFooter {
+  :global(:where(html:not(:has([data-website-canvas])))) .budgetSectionHeader,
+  :global(:where(html:not(:has([data-website-canvas])))) .budgetMeta,
+  :global(:where(html:not(:has([data-website-canvas])))) .budgetFocusBar,
+  :global(:where(html:not(:has([data-website-canvas])))) .budgetModalFooter,
+  :global(:where(html:not(:has([data-website-canvas])))) .budgetManagerToolbar,
+  :global(:where(html:not(:has([data-website-canvas])))) .budgetManagerFooter {
     align-items: stretch;
     flex-direction: column;
   }
 
-  .budgetSectionHeader .primaryButton,
-  .budgetModalFooter > div,
-  .budgetManagerToolbar .primaryButton,
-  .budgetModalActions,
-  .budgetModalActions > *,
-  .budgetDeleteActions,
-  .budgetDeleteActions > * {
+  :global(:where(html:not(:has([data-website-canvas])))) .budgetSectionHeader .primaryButton,
+  :global(:where(html:not(:has([data-website-canvas])))) .budgetModalFooter > div,
+  :global(:where(html:not(:has([data-website-canvas])))) .budgetManagerToolbar .primaryButton,
+  :global(:where(html:not(:has([data-website-canvas])))) .budgetModalActions,
+  :global(:where(html:not(:has([data-website-canvas])))) .budgetModalActions > *,
+  :global(:where(html:not(:has([data-website-canvas])))) .budgetDeleteActions,
+  :global(:where(html:not(:has([data-website-canvas])))) .budgetDeleteActions > * {
     width: 100%;
   }
 
-  .budgetLimitGrid {
+  :global(:where(html:not(:has([data-website-canvas])))) .budgetLimitGrid {
     grid-template-columns: 1fr;
   }
 
-  .budgetSectionHeading {
+  :global(:where(html:not(:has([data-website-canvas])))) .budgetSectionHeading {
     align-items: flex-start;
   }
 
-  .budgetSectionIcon {
+  :global(:where(html:not(:has([data-website-canvas])))) .budgetSectionIcon {
     width: 3.25rem;
     height: 3.25rem;
   }
 
-  .budgetModal,
-  .budgetManagerModal,
-  .budgetAssetPickerModal {
+  :global(:where(html:not(:has([data-website-canvas])))) .budgetModal,
+  :global(:where(html:not(:has([data-website-canvas])))) .budgetManagerModal,
+  :global(:where(html:not(:has([data-website-canvas])))) .budgetAssetPickerModal {
     max-height: calc(100dvh - 1rem);
     padding: 1rem;
     border-radius: 1.3rem;
   }
 
-  .budgetAssetPickerModal {
+  :global(:where(html:not(:has([data-website-canvas])))) .budgetAssetPickerModal {
     padding: 0;
   }
 
-  .budgetScopeTrigger {
+  :global(:where(html:not(:has([data-website-canvas])))) .budgetScopeTrigger {
     grid-template-columns: minmax(0, 1fr) auto;
   }
 
-  .budgetScopeAction {
+  :global(:where(html:not(:has([data-website-canvas])))) .budgetScopeAction {
     justify-self: end;
   }
 
-  .budgetScopeCopy strong,
-  .budgetScopeCopy small {
+  :global(:where(html:not(:has([data-website-canvas])))) .budgetScopeCopy strong,
+  :global(:where(html:not(:has([data-website-canvas])))) .budgetScopeCopy small {
     white-space: normal;
   }
 
-  .budgetScopeRow {
+  :global(:where(html:not(:has([data-website-canvas])))) .budgetScopeRow {
     grid-template-columns: 1fr;
   }
 
-  .budgetScopeRow .assetValue {
+  :global(:where(html:not(:has([data-website-canvas])))) .budgetScopeRow .assetValue {
     grid-column: auto;
     justify-items: start;
     text-align: left;
   }
 
-  .budgetAssetPickerToolbar {
+  :global(:where(html:not(:has([data-website-canvas])))) .budgetAssetPickerToolbar {
     grid-template-columns: 1fr;
   }
 
-  .budgetMeta span:last-child {
+  :global(:where(html:not(:has([data-website-canvas])))) .budgetMeta span:last-child {
     text-align: left;
   }
 
-  .budgetDeleteActions {
+  :global(:where(html:not(:has([data-website-canvas])))) .budgetDeleteActions {
     flex-direction: column-reverse;
   }
 }
@@ -5022,7 +5022,7 @@
 }
 
 .invoiceDropCodeModal {
-  max-height: min(88dvh, 800px);
+  max-height: min(calc(var(--website-visible-height, 100dvh) * 0.88), 800px);
   grid-template-rows: auto minmax(0, 1fr) auto;
 }
 
@@ -5036,7 +5036,7 @@
 }
 
 .invoiceDropCodeHeader h2 {
-  font-size: clamp(2rem, 4vw, 2.55rem);
+  font-size: clamp(2rem, calc(var(--website-design-vw, 1vw) * 4), 2.55rem);
 }
 
 .invoiceDropCodeHeader p {
@@ -5144,7 +5144,7 @@
 .invoiceDropWizardPanel {
   display: grid;
   gap: 0.9rem;
-  padding: clamp(1rem, 2.2vw, 1.25rem);
+  padding: clamp(1rem, calc(var(--website-design-vw, 1vw) * 2.2), 1.25rem);
   border: 1px solid rgba(203, 219, 225, 0.98);
   border-radius: 1.25rem;
   background:
@@ -5163,7 +5163,7 @@
   margin: 0;
   color: var(--brand-dark);
   font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
-  font-size: clamp(1.3rem, 2.6vw, 1.55rem);
+  font-size: clamp(1.3rem, calc(var(--website-design-vw, 1vw) * 2.6), 1.55rem);
   font-weight: 900;
   letter-spacing: -0.035em;
   line-height: 1.08;
@@ -5485,7 +5485,7 @@
   color: #2b6655;
   background: rgba(255, 255, 255, 0.82);
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  font-size: clamp(1rem, 3vw, 1.22rem);
+  font-size: clamp(1rem, calc(var(--website-design-vw, 1vw) * 3), 1.22rem);
   font-weight: 900;
   letter-spacing: 0.045em;
 }
@@ -5575,7 +5575,7 @@
   overflow-wrap: anywhere;
   color: #123f34;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  font-size: clamp(1rem, 3vw, 1.28rem);
+  font-size: clamp(1rem, calc(var(--website-design-vw, 1vw) * 3), 1.28rem);
   font-weight: 900;
   letter-spacing: 0.045em;
 }
@@ -5693,7 +5693,7 @@
 
 .invoiceDropAssetPickerModal {
   width: min(100%, 880px);
-  max-height: min(84dvh, 760px);
+  max-height: min(calc(var(--website-visible-height, 100dvh) * 0.84), 760px);
 }
 
 .invoiceDropAssetPickerHeader {
@@ -5701,7 +5701,7 @@
 }
 
 .invoiceDropAssetPickerHeader h2 {
-  font-size: clamp(1.8rem, 3.5vw, 2.35rem);
+  font-size: clamp(1.8rem, calc(var(--website-design-vw, 1vw) * 3.5), 2.35rem);
 }
 
 .invoiceDropAssetPickerHeader p {
@@ -5810,149 +5810,149 @@
 }
 
 @media (max-width: 720px) {
-  .invoiceDropCodeModal {
+  :global(:where(html:not(:has([data-website-canvas])))) .invoiceDropCodeModal {
     max-height: calc(100dvh - 1rem);
   }
 
-  .invoiceDropCodeHeader {
+  :global(:where(html:not(:has([data-website-canvas])))) .invoiceDropCodeHeader {
     padding: 1.1rem 1rem 0.85rem;
   }
 
-  .invoiceDropCodeHeader .closeButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .invoiceDropCodeHeader .closeButton {
     width: 2.8rem;
     height: 2.8rem;
   }
 
-  .invoiceDropAssetPickerModal {
+  :global(:where(html:not(:has([data-website-canvas])))) .invoiceDropAssetPickerModal {
     max-height: calc(100dvh - 1rem);
   }
 
-  .invoiceDropAssetPickerHeader {
+  :global(:where(html:not(:has([data-website-canvas])))) .invoiceDropAssetPickerHeader {
     padding: 1.05rem 1rem 0;
   }
 
-  .invoiceDropAssetPickerHeader .closeButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .invoiceDropAssetPickerHeader .closeButton {
     width: 2.8rem;
     height: 2.8rem;
   }
 
-  .invoiceDropAssetPickerToolbar {
+  :global(:where(html:not(:has([data-website-canvas])))) .invoiceDropAssetPickerToolbar {
     padding: 0 1rem 0.85rem;
   }
 
-  .invoiceDropAssetPickerList {
+  :global(:where(html:not(:has([data-website-canvas])))) .invoiceDropAssetPickerList {
     margin-inline: 1rem;
   }
 
-  .invoiceDropAssetPickerFooter {
+  :global(:where(html:not(:has([data-website-canvas])))) .invoiceDropAssetPickerFooter {
     flex-direction: row;
     padding: 0.85rem 1rem 1rem;
   }
 
-  .invoiceDropCodeBody {
+  :global(:where(html:not(:has([data-website-canvas])))) .invoiceDropCodeBody {
     padding: 0.8rem 1rem 0.9rem;
   }
 
-  .invoiceDropScopeGrid {
+  :global(:where(html:not(:has([data-website-canvas])))) .invoiceDropScopeGrid {
     grid-template-columns: 1fr;
   }
 
-  .invoiceDropScopeOption {
+  :global(:where(html:not(:has([data-website-canvas])))) .invoiceDropScopeOption {
     min-height: 5rem;
   }
 
-  .invoiceDropWizardFooter {
+  :global(:where(html:not(:has([data-website-canvas])))) .invoiceDropWizardFooter {
     flex-direction: row;
     padding: 0.85rem 1rem 1rem;
   }
 
-  .invoiceDropWizardFooter > button {
+  :global(:where(html:not(:has([data-website-canvas])))) .invoiceDropWizardFooter > button {
     width: auto;
     min-width: 7rem;
   }
 }
 
 @media (max-width: 520px) {
-  .invoiceDropWizardProgressItem {
+  :global(:where(html:not(:has([data-website-canvas])))) .invoiceDropWizardProgressItem {
     justify-content: center;
     gap: 0.35rem;
     padding-inline: 0.4rem;
   }
 
-  .invoiceDropWizardProgressItem strong {
+  :global(:where(html:not(:has([data-website-canvas])))) .invoiceDropWizardProgressItem strong {
     font-size: 0.7rem;
   }
 
-  .invoiceDropWizardPanel {
+  :global(:where(html:not(:has([data-website-canvas])))) .invoiceDropWizardPanel {
     padding: 0.9rem;
     border-radius: 1.05rem;
   }
 
-  .invoiceDropAssetPickerTrigger {
+  :global(:where(html:not(:has([data-website-canvas])))) .invoiceDropAssetPickerTrigger {
     grid-template-columns: 1fr;
     gap: 0.65rem;
   }
 
-  .invoiceDropAssetPickerAction {
+  :global(:where(html:not(:has([data-website-canvas])))) .invoiceDropAssetPickerAction {
     justify-self: stretch;
   }
 
-  .invoiceDropCodeCreateState {
+  :global(:where(html:not(:has([data-website-canvas])))) .invoiceDropCodeCreateState {
     grid-template-columns: 1fr;
   }
 
-  .invoiceDropCodeCreateState > code,
-  .invoiceDropCodeCreateState .primaryButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .invoiceDropCodeCreateState > code,
+  :global(:where(html:not(:has([data-website-canvas])))) .invoiceDropCodeCreateState .primaryButton {
     width: 100%;
   }
 
-  .invoiceDropCodeCreateState .primaryButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .invoiceDropCodeCreateState .primaryButton {
     grid-column: 1;
   }
 
-  .invoiceDropAssetPickerToolbar {
+  :global(:where(html:not(:has([data-website-canvas])))) .invoiceDropAssetPickerToolbar {
     grid-template-columns: 1fr;
   }
 
-  .invoiceDropAssetPickerRow,
-  .invoiceDropAssetPickerRowAside {
+  :global(:where(html:not(:has([data-website-canvas])))) .invoiceDropAssetPickerRow,
+  :global(:where(html:not(:has([data-website-canvas])))) .invoiceDropAssetPickerRowAside {
     grid-template-columns: 1fr;
   }
 
-  .invoiceDropAssetPickerRowAside {
+  :global(:where(html:not(:has([data-website-canvas])))) .invoiceDropAssetPickerRowAside {
     display: grid;
     justify-content: stretch;
   }
 
-  .invoiceDropAssetPickerRowAside .assetValue {
+  :global(:where(html:not(:has([data-website-canvas])))) .invoiceDropAssetPickerRowAside .assetValue {
     justify-items: start;
     text-align: left;
   }
 
-  .invoiceDropAssetPickerSelection {
+  :global(:where(html:not(:has([data-website-canvas])))) .invoiceDropAssetPickerSelection {
     justify-self: start;
   }
 
-  .invoiceDropRouteReview {
+  :global(:where(html:not(:has([data-website-canvas])))) .invoiceDropRouteReview {
     grid-template-columns: 1fr;
     min-height: 0;
   }
 
-  .invoiceDropLinkCard {
+  :global(:where(html:not(:has([data-website-canvas])))) .invoiceDropLinkCard {
     grid-template-columns: 1fr;
   }
 
-  .invoiceDropLinkCard .invoiceDropCodeInlineActions {
+  :global(:where(html:not(:has([data-website-canvas])))) .invoiceDropLinkCard .invoiceDropCodeInlineActions {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
-  .invoiceDropLinkCard .invoiceDropCodeInlineActions > * {
+  :global(:where(html:not(:has([data-website-canvas])))) .invoiceDropLinkCard .invoiceDropCodeInlineActions > * {
     width: 100%;
     min-width: 0;
   }
 
-  .invoiceDropWizardFooter > button {
+  :global(:where(html:not(:has([data-website-canvas])))) .invoiceDropWizardFooter > button {
     flex: 1 1 0;
     min-width: 0;
   }
@@ -5961,7 +5961,7 @@
 /* Spending budget follows the guided Contribution wizard with extra room for the four-step flow. */
 .downloadModal.budgetWizardModal {
   width: min(1280px, 100%) !important;
-  max-height: min(86dvh, 760px);
+  max-height: min(calc(var(--website-visible-height, 100dvh) * 0.86), 760px);
 }
 
 .budgetWizardModal .invoiceDropCodeHeader {
@@ -5969,7 +5969,7 @@
 }
 
 .budgetWizardModal .invoiceDropCodeHeader h2 {
-  font-size: clamp(1.75rem, 3.4vw, 2.15rem);
+  font-size: clamp(1.75rem, calc(var(--website-design-vw, 1vw) * 3.4), 2.15rem);
 }
 
 .budgetWizardModal .invoiceDropCodeHeader .closeButton {
@@ -5991,8 +5991,45 @@
   display: none;
 }
 
+:global(:where([data-website-canvas])) .budgetWizardModal .invoiceDropWizardProgress {
+    display: grid !important;
+    grid-template-columns:
+      max-content minmax(5rem, 1fr)
+      max-content minmax(5rem, 1fr)
+      max-content minmax(5rem, 1fr)
+      max-content;
+    align-items: center;
+    column-gap: clamp(0.85rem, calc(var(--website-design-vw, 1vw) * 1.4), 1.25rem) !important;
+  }
+
+:global(:where([data-website-canvas])) .budgetWizardModal .invoiceDropWizardProgressItem {
+    display: flex !important;
+    flex: none;
+  }
+
+:global(:where([data-website-canvas])) .budgetWizardModal .invoiceDropWizardProgressItem > strong {
+    min-width: max-content;
+    padding-right: 0;
+  }
+
+:global(:where([data-website-canvas])) .budgetWizardModal .invoiceDropWizardProgressItem:not(:last-child)::after {
+    content: none !important;
+  }
+
+:global(:where([data-website-canvas])) .budgetWizardProgressConnector {
+    display: block;
+    width: 100%;
+    height: 2px;
+    align-self: center;
+    background: #dce8e3;
+  }
+
+:global(:where([data-website-canvas])) .budgetWizardProgressConnectorComplete {
+    background: #83c8ae;
+  }
+
 @media (min-width: 1000px) {
-  .budgetWizardModal .invoiceDropWizardProgress {
+  :global(:where(html:not(:has([data-website-canvas])))) .budgetWizardModal .invoiceDropWizardProgress {
     display: grid !important;
     grid-template-columns:
       max-content minmax(5rem, 1fr)
@@ -6003,21 +6040,21 @@
     column-gap: clamp(0.85rem, 1.4vw, 1.25rem) !important;
   }
 
-  .budgetWizardModal .invoiceDropWizardProgressItem {
+  :global(:where(html:not(:has([data-website-canvas])))) .budgetWizardModal .invoiceDropWizardProgressItem {
     display: flex !important;
     flex: none;
   }
 
-  .budgetWizardModal .invoiceDropWizardProgressItem > strong {
+  :global(:where(html:not(:has([data-website-canvas])))) .budgetWizardModal .invoiceDropWizardProgressItem > strong {
     min-width: max-content;
     padding-right: 0;
   }
 
-  .budgetWizardModal .invoiceDropWizardProgressItem:not(:last-child)::after {
+  :global(:where(html:not(:has([data-website-canvas])))) .budgetWizardModal .invoiceDropWizardProgressItem:not(:last-child)::after {
     content: none !important;
   }
 
-  .budgetWizardProgressConnector {
+  :global(:where(html:not(:has([data-website-canvas])))) .budgetWizardProgressConnector {
     display: block;
     width: 100%;
     height: 2px;
@@ -6025,7 +6062,7 @@
     background: #dce8e3;
   }
 
-  .budgetWizardProgressConnectorComplete {
+  :global(:where(html:not(:has([data-website-canvas])))) .budgetWizardProgressConnectorComplete {
     background: #83c8ae;
   }
 }
@@ -6207,25 +6244,25 @@
 }
 
 @media (max-width: 520px) {
-  .budgetWizardPeriodChoices {
+  :global(:where(html:not(:has([data-website-canvas])))) .budgetWizardPeriodChoices {
     grid-template-columns: 1fr;
   }
 
-  .budgetReviewGrid {
+  :global(:where(html:not(:has([data-website-canvas])))) .budgetReviewGrid {
     grid-template-columns: 1fr;
   }
 
-  .budgetReviewGrid > div:last-child {
+  :global(:where(html:not(:has([data-website-canvas])))) .budgetReviewGrid > div:last-child {
     grid-column: auto;
   }
 
-  .budgetWizardModal .budgetDeleteButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .budgetWizardModal .budgetDeleteButton {
     width: 100%;
   }
 }
 
 @media (max-width: 720px) {
-  .budgetWizardModal .invoiceDropWizardProgress {
+  :global(:where(html:not(:has([data-website-canvas])))) .budgetWizardModal .invoiceDropWizardProgress {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
@@ -6233,7 +6270,7 @@
 /* Recurring costs use the same compact, guided pattern as Spending budgets. */
 .recurringWizardModal {
   width: min(100%, 940px);
-  max-height: min(94dvh, 880px);
+  max-height: min(calc(var(--website-visible-height, 100dvh) * 0.94), 880px);
 }
 
 .recurringWizardBody {
@@ -6411,25 +6448,46 @@
   gap: 1.15rem;
 }
 
-@media (min-width: 721px) {
-  .recurringWizardModal .invoiceDropCodeHeader {
+:global(:where([data-website-canvas])) .recurringWizardModal .invoiceDropCodeHeader {
     padding: 1.3rem 1.65rem 1rem;
   }
 
-  .recurringWizardBody {
+:global(:where([data-website-canvas])) .recurringWizardBody {
     padding: 0.95rem 1.65rem 1.1rem;
   }
 
-  .recurringWizardModal .invoiceDropWizardProgress {
+:global(:where([data-website-canvas])) .recurringWizardModal .invoiceDropWizardProgress {
     gap: 0.75rem;
   }
 
-  .recurringWizardModal .invoiceDropWizardPanel {
+:global(:where([data-website-canvas])) .recurringWizardModal .invoiceDropWizardPanel {
     gap: 1.1rem;
     padding: 1.3rem 1.4rem 1.4rem;
   }
 
-  .recurringWizardModal .budgetWizardFooter {
+:global(:where([data-website-canvas])) .recurringWizardModal .budgetWizardFooter {
+    padding: 0.9rem 1.65rem 1.05rem;
+  }
+
+@media (min-width: 721px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .recurringWizardModal .invoiceDropCodeHeader {
+    padding: 1.3rem 1.65rem 1rem;
+  }
+
+  :global(:where(html:not(:has([data-website-canvas])))) .recurringWizardBody {
+    padding: 0.95rem 1.65rem 1.1rem;
+  }
+
+  :global(:where(html:not(:has([data-website-canvas])))) .recurringWizardModal .invoiceDropWizardProgress {
+    gap: 0.75rem;
+  }
+
+  :global(:where(html:not(:has([data-website-canvas])))) .recurringWizardModal .invoiceDropWizardPanel {
+    gap: 1.1rem;
+    padding: 1.3rem 1.4rem 1.4rem;
+  }
+
+  :global(:where(html:not(:has([data-website-canvas])))) .recurringWizardModal .budgetWizardFooter {
     padding: 0.9rem 1.65rem 1.05rem;
   }
 }
@@ -6459,36 +6517,36 @@
 }
 
 @media (max-width: 620px) {
-  .recurringDetailsGrid,
-  .recurringOptionalGrid,
-  .recurringDateGrid {
+  :global(:where(html:not(:has([data-website-canvas])))) .recurringDetailsGrid,
+  :global(:where(html:not(:has([data-website-canvas])))) .recurringOptionalGrid,
+  :global(:where(html:not(:has([data-website-canvas])))) .recurringDateGrid {
     grid-template-columns: 1fr;
     gap: 0.95rem;
   }
 
-  .recurringDescriptionField,
-  .recurringReviewGrid > div:last-child,
-  .recurringReviewWide {
+  :global(:where(html:not(:has([data-website-canvas])))) .recurringDescriptionField,
+  :global(:where(html:not(:has([data-website-canvas])))) .recurringReviewGrid > div:last-child,
+  :global(:where(html:not(:has([data-website-canvas])))) .recurringReviewWide {
     grid-column: auto;
   }
 
-  .recurringFrequencyControl {
+  :global(:where(html:not(:has([data-website-canvas])))) .recurringFrequencyControl {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
 @media (max-width: 420px) {
-  .recurringWizardModal .invoiceDropWizardProgressItem {
+  :global(:where(html:not(:has([data-website-canvas])))) .recurringWizardModal .invoiceDropWizardProgressItem {
     gap: 0.34rem;
     padding-inline: 0.38rem;
   }
 
-  .recurringWizardModal .invoiceDropWizardProgressItem > span {
+  :global(:where(html:not(:has([data-website-canvas])))) .recurringWizardModal .invoiceDropWizardProgressItem > span {
     width: 1.55rem;
     height: 1.55rem;
   }
 
-  .recurringWizardModal .invoiceDropWizardProgressItem strong {
+  :global(:where(html:not(:has([data-website-canvas])))) .recurringWizardModal .invoiceDropWizardProgressItem strong {
     font-size: 0.66rem;
   }
 }
@@ -6496,7 +6554,7 @@
 /* Manual costs use the same guided, review-before-save pattern as recurring costs. */
 .manualCostWizardModal {
   width: min(1120px, 100%) !important;
-  max-height: min(94dvh, 880px);
+  max-height: min(calc(var(--website-visible-height, 100dvh) * 0.94), 880px);
 }
 
 .manualCostWizardModal .formModalScrollBody {
@@ -6555,22 +6613,22 @@
 }
 
 @media (max-width: 900px) {
-  .manualCostWizardModal .manualCostInvoiceGrid {
+  :global(:where(html:not(:has([data-website-canvas])))) .manualCostWizardModal .manualCostInvoiceGrid {
     grid-template-columns: 1fr;
   }
 
-  .manualCostWizardModal .manualCostWizardPanel {
+  :global(:where(html:not(:has([data-website-canvas])))) .manualCostWizardModal .manualCostWizardPanel {
     padding: 1rem;
   }
 }
 
 @media (max-width: 520px) {
-  .manualCostReviewGrid {
+  :global(:where(html:not(:has([data-website-canvas])))) .manualCostReviewGrid {
     grid-template-columns: 1fr;
   }
 
-  .manualCostReviewGrid > div:last-child,
-  .manualCostReviewWide {
+  :global(:where(html:not(:has([data-website-canvas])))) .manualCostReviewGrid > div:last-child,
+  :global(:where(html:not(:has([data-website-canvas])))) .manualCostReviewWide {
     grid-column: auto;
   }
 }
@@ -6578,7 +6636,7 @@
 /* Add Cost uses the same compact choice pattern as Fuel Slips. */
 .costChoiceModal {
   width: min(100%, 1120px);
-  max-height: min(90vh, calc(100dvh - 2rem));
+  max-height: min(calc(var(--website-visible-height, 100vh) * 0.9), calc(calc(var(--website-visible-height, 100dvh) * 1) - 2rem));
   grid-template-rows: auto auto auto;
   gap: 0;
   overflow-x: hidden;
@@ -6624,7 +6682,7 @@
   max-width: none;
   margin: 0;
   color: #5f7186;
-  font-size: clamp(0.96rem, 1.3vw, 1.02rem);
+  font-size: clamp(0.96rem, calc(var(--website-design-vw, 1vw) * 1.3), 1.02rem);
   font-weight: 620;
   line-height: 1.42;
   text-align: left;
@@ -6777,81 +6835,87 @@
   background: #ffffff;
 }
 
+:global(:where([data-website-canvas])) .costChoiceModal .choiceTitleBlock strong,
+  :global(:where([data-website-canvas])) .costChoiceModal .choiceTitleBlock small {
+    white-space: nowrap;
+  }
+
 @media (min-width: 1180px) {
-  .costChoiceModal .choiceTitleBlock strong,
-  .costChoiceModal .choiceTitleBlock small {
+  :global(:where(html:not(:has([data-website-canvas])))) .costChoiceModal .choiceTitleBlock strong,
+  :global(:where(html:not(:has([data-website-canvas])))) .costChoiceModal .choiceTitleBlock small {
     white-space: nowrap;
   }
 }
 
 @media (max-width: 900px) {
-  .costChoiceModal {
+  :global(:where(html:not(:has([data-website-canvas])))) .costChoiceModal {
     width: min(100%, calc(100vw - 1rem));
     max-height: min(92vh, calc(100dvh - 1rem));
     padding: 0;
     border-radius: 1.35rem;
   }
 
-  .costChoiceModal .modalHeader {
+  :global(:where(html:not(:has([data-website-canvas])))) .costChoiceModal .modalHeader {
     padding: 1.2rem 1.25rem 1rem;
   }
 
-  .costChoiceModal .modalHeader h2 {
+  :global(:where(html:not(:has([data-website-canvas])))) .costChoiceModal .modalHeader h2 {
     font-size: clamp(1.34rem, 6.8vw, 1.68rem);
   }
 
-  .costChoiceModal .modalHeader p {
+  :global(:where(html:not(:has([data-website-canvas])))) .costChoiceModal .modalHeader p {
     max-width: 100%;
     font-size: 0.95rem;
     line-height: 1.42;
   }
 
-  .costChoiceModal .sourceChoiceGrid {
+  :global(:where(html:not(:has([data-website-canvas])))) .costChoiceModal .sourceChoiceGrid {
     grid-template-columns: 1fr;
     padding: 1rem 1.25rem 1.2rem;
   }
 
-  .costChoiceModal .modalFooter {
+  :global(:where(html:not(:has([data-website-canvas])))) .costChoiceModal .modalFooter {
     padding: 0.9rem 1.25rem;
   }
 }
 
 @media (max-width: 560px) {
-  .costChoiceModal .modalHeader {
+  :global(:where(html:not(:has([data-website-canvas])))) .costChoiceModal .modalHeader {
     align-items: flex-start;
     gap: 0.85rem;
   }
 
-  .costChoiceModal .costChoiceOption {
+  :global(:where(html:not(:has([data-website-canvas])))) .costChoiceModal .costChoiceOption {
     min-height: 5.6rem;
     grid-template-columns: 3.35rem minmax(0, 1fr) 1.6rem;
     gap: 0.72rem;
     padding: 0.78rem 0.82rem;
   }
 
-  .costChoiceModal .choiceGraphic {
+  :global(:where(html:not(:has([data-website-canvas])))) .costChoiceModal .choiceGraphic {
     width: 3.35rem;
     min-width: 3.35rem;
     height: 3.35rem;
   }
 
-  .costChoiceModal .choiceGraphic svg {
+  :global(:where(html:not(:has([data-website-canvas])))) .costChoiceModal .choiceGraphic svg {
     width: 1.62rem;
     height: 1.62rem;
   }
 
-  .costChoiceModal .choiceTitleBlock strong {
+  :global(:where(html:not(:has([data-website-canvas])))) .costChoiceModal .choiceTitleBlock strong {
     font-size: 1rem;
   }
 
-  .costChoiceModal .choiceTitleBlock small {
+  :global(:where(html:not(:has([data-website-canvas])))) .costChoiceModal .choiceTitleBlock small {
     font-size: 0.85rem;
     line-height: 1.32;
   }
 
-  .costChoiceArrow {
+  :global(:where(html:not(:has([data-website-canvas])))) .costChoiceArrow {
     width: 1.6rem;
     min-width: 1.6rem;
     height: 1.6rem;
   }
 }
+

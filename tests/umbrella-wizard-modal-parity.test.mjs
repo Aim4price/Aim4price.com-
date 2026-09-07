@@ -83,11 +83,11 @@ test("all five requested wizards use the shared umbrella modal shell", () => {
 test("the shared shell carries the umbrella proportions, spacing and surfaces", () => {
   assert.match(
     umbrellaStyles,
-    /\.dialog\s*\{[\s\S]*?width: min\(1120px, 100%\);[\s\S]*?border-radius: 30px;/,
+    /\.dialog\s*\{[\s\S]*?width: min\(1120px, var\(--website-dialog-reference-width, 100%\)\);[\s\S]*?border-radius: 30px;/,
   );
   assert.match(
     wizardStyles,
-    /\.dialog\s*\{[\s\S]*?width: min\(1120px, 100%\) !important;[\s\S]*?border-radius: 30px !important;/,
+    /\.dialog\s*\{[\s\S]*?width: min\(1120px, var\(--website-dialog-reference-width, 100%\)\) !important;[\s\S]*?border-radius: 30px !important;/,
   );
 
   assert.match(
@@ -306,3 +306,4 @@ test("Manage umbrella explicitly removes deselected assets before save", () => {
     /\.memberSelectOptionDanger\s*\{[^}]*border-color:\s*#edcbc6;[^}]*background:\s*#fff7f5;[^}]*color:\s*#963b34/,
   );
 });
+

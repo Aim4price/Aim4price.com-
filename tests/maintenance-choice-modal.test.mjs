@@ -46,11 +46,11 @@ test('maintenance choice modal uses concise add-asset-style action cards', () =>
   );
   assert.match(
     styles.slice(commandStylesStart, actionStylesStart),
-    /\.ownerCommandChoiceModal\s*\{[\s\S]*?width:\s*min\(100%, 740px\) !important;[\s\S]*?border-radius:\s*1\.75rem !important;/,
+    /\.ownerCommandChoiceModal\s*\{[\s\S]*?width:\s*min\(var\(--website-dialog-reference-width, 100%\), 740px\) !important;[\s\S]*?border-radius:\s*1\.75rem !important;/,
   );
   assert.match(
     actionStyles,
-    /\.ownerCommandChoiceAction strong\s*\{[\s\S]*?font-size:\s*clamp\(1\.18rem, 1\.5vw, 1\.35rem\);/,
+    /\.ownerCommandChoiceAction strong\s*\{[\s\S]*?font-size:\s*clamp\(1\.18rem, calc\(var\(--website-design-vw(?:, 1vw)?\) \* 1\.5\), 1\.35rem\);/,
   );
   assert.match(
     actionStyles,
@@ -74,3 +74,4 @@ test('maintenance choice modal uses concise add-asset-style action cards', () =>
   );
   assert.doesNotMatch(actionStyles, /\.ownerCommandChoiceAction small/);
 });
+

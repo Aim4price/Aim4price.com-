@@ -1,5 +1,5 @@
 .page {
-  min-height: 100vh;
+  min-height: calc(var(--website-design-vh, 1vh) * 100);
   color: #0a3f34;
   background:
     radial-gradient(circle at 50% 0%, rgba(221, 239, 233, 0.5), transparent 30rem),
@@ -7,10 +7,10 @@
 }
 
 .choiceSection {
-  min-height: calc(100dvh - 7rem);
+  min-height: calc(calc(var(--website-design-vh, 1dvh) * 100) - 7rem);
   display: grid;
   place-items: start center;
-  padding: clamp(2.75rem, 5vw, 4.5rem) 1.25rem 3.5rem;
+  padding: clamp(2.75rem, calc(var(--website-design-vw, 1vw) * 5), 4.5rem) 1.25rem 3.5rem;
 }
 
 .choiceGrid {
@@ -116,7 +116,7 @@
   min-width: 0;
   margin: 0;
   font-family: var(--font-heading, 'Montserrat'), sans-serif;
-  font-size: clamp(1.25rem, 1.8vw, 1.5rem);
+  font-size: clamp(1.25rem, calc(var(--website-design-vw, 1vw) * 1.8), 1.5rem);
   font-weight: 850;
   letter-spacing: -0.035em;
   line-height: 1.15;
@@ -187,18 +187,18 @@
 }
 
 @media (max-width: 700px) {
-  .choiceSection {
+  :global(:where(html:not(:has([data-website-canvas])))) .choiceSection {
     min-height: auto;
     padding: 2rem 1rem 3rem;
   }
 
-  .choiceGrid {
+  :global(:where(html:not(:has([data-website-canvas])))) .choiceGrid {
     width: min(100%, 28rem);
     grid-template-columns: 1fr;
     gap: 1rem;
   }
 
-  .choiceCard {
+  :global(:where(html:not(:has([data-website-canvas])))) .choiceCard {
     min-height: 11.25rem;
     grid-template-rows: 6.35rem auto;
     gap: 0.75rem;
@@ -206,16 +206,16 @@
     border-radius: 1.4rem;
   }
 
-  .choiceIcon {
+  :global(:where(html:not(:has([data-website-canvas])))) .choiceIcon {
     border-radius: 1.05rem;
   }
 
-  .choiceIcon svg {
+  :global(:where(html:not(:has([data-website-canvas])))) .choiceIcon svg {
     width: 2.55rem;
     height: 2.55rem;
   }
 
-  .choiceFooter {
+  :global(:where(html:not(:has([data-website-canvas])))) .choiceFooter {
     min-height: 2.35rem;
     padding-left: 0.35rem;
   }
@@ -241,11 +241,11 @@
 }
 
 .entryContent.entryContent {
-  padding: clamp(1.75rem, 2.5vw, 2.7rem);
+  padding: clamp(1.75rem, calc(var(--website-design-vw, 1vw) * 2.5), 2.7rem);
 }
 
 .entryStart.entryStart {
-  gap: clamp(1.45rem, 2vw, 2rem);
+  gap: clamp(1.45rem, calc(var(--website-design-vw, 1vw) * 2), 2rem);
 }
 
 .entryIntro.entryIntro {
@@ -268,70 +268,71 @@
 }
 
 .entryGrid.entryGrid {
-  gap: clamp(1.2rem, 1.8vw, 1.65rem);
+  gap: clamp(1.2rem, calc(var(--website-design-vw, 1vw) * 1.8), 1.65rem);
 }
 
 .entryChoiceCard.entryChoiceCard {
-  min-height: clamp(19rem, 22vw, 21.5rem);
+  min-height: clamp(19rem, calc(var(--website-design-vw, 1vw) * 22), 21.5rem);
 }
 
 .entryChoiceContent.entryChoiceContent {
   justify-content: flex-end;
-  padding: clamp(1.45rem, 2vw, 1.9rem);
+  padding: clamp(1.45rem, calc(var(--website-design-vw, 1vw) * 2), 1.9rem);
 }
 
 @media (max-width: 1180px) {
-  .entryContainer.entryContainer {
+  :global(:where(html:not(:has([data-website-canvas])))) .entryContainer.entryContainer {
     width: min(calc(100% - 2rem), 1180px);
   }
 
-  .entryChoiceCard.entryChoiceCard {
+  :global(:where(html:not(:has([data-website-canvas])))) .entryChoiceCard.entryChoiceCard {
     min-height: clamp(16rem, 25vw, 18rem);
   }
 }
 
 @media (max-width: 900px) {
-  .entryContainer.entryContainer {
+  :global(:where(html:not(:has([data-website-canvas])))) .entryContainer.entryContainer {
     width: min(calc(100% - 1.4rem), 56rem);
   }
 
-  .entryContent.entryContent {
+  :global(:where(html:not(:has([data-website-canvas])))) .entryContent.entryContent {
     padding: 1.35rem 1rem 1.2rem;
   }
 
-  .entryChoiceCard.entryChoiceCard {
+  :global(:where(html:not(:has([data-website-canvas])))) .entryChoiceCard.entryChoiceCard {
     min-height: 14.5rem;
   }
 }
 
 @media (max-width: 720px) {
-  .entryContainer.entryContainer {
+  :global(:where(html:not(:has([data-website-canvas])))) .entryContainer.entryContainer {
     width: min(calc(100% - 1rem), 46rem);
   }
 
-  .entryContent.entryContent {
+  :global(:where(html:not(:has([data-website-canvas])))) .entryContent.entryContent {
     padding: 1rem 0.8rem;
   }
 
-  .entryStart.entryStart {
+  :global(:where(html:not(:has([data-website-canvas])))) .entryStart.entryStart {
     gap: 1rem;
   }
 
-  .entryIntro.entryIntro {
+  :global(:where(html:not(:has([data-website-canvas])))) .entryIntro.entryIntro {
     gap: 0.4rem;
   }
 
-  .entryGrid.entryGrid {
+  :global(:where(html:not(:has([data-website-canvas])))) .entryGrid.entryGrid {
     gap: 0.85rem;
   }
 
-  .entryChoiceCard.entryChoiceCard {
+  :global(:where(html:not(:has([data-website-canvas])))) .entryChoiceCard.entryChoiceCard {
     min-height: 13.2rem;
   }
 }
 
 @media (max-width: 430px) {
-  .entryContainer.entryContainer {
+  :global(:where(html:not(:has([data-website-canvas])))) .entryContainer.entryContainer {
     width: min(calc(100% - 0.9rem), 44rem);
   }
 }
+

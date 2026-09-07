@@ -3812,7 +3812,7 @@ export default function MyInvoicesClient({
       ) : null}
 
       {budgetManagerOpen && !budgetModalOpen && !budgetDeleteCandidate ? (
-        <div className={styles.modalBackdrop}>
+        <div className={styles.modalBackdrop} data-website-overlay>
           <div
             ref={budgetManagerDialogRef}
             className={`${styles.formModal} ${styles.budgetManagerModal}`}
@@ -4002,7 +4002,7 @@ export default function MyInvoicesClient({
 
       {budgetModalOpen ? (
         <div
-          className={`${styles.modalBackdrop} ${budgetAssetPickerOpen ? styles.budgetAssetPickerBackdrop : wizardStyles.overlay}`}
+          className={`${styles.modalBackdrop} ${budgetAssetPickerOpen ? styles.budgetAssetPickerBackdrop : wizardStyles.overlay}`} data-website-overlay
           role="dialog"
           aria-modal="true"
           aria-labelledby={budgetAssetPickerOpen ? 'budget-scope-picker-title' : 'budget-modal-title'}
@@ -4389,7 +4389,7 @@ export default function MyInvoicesClient({
         </div>
       ) : null}
       {budgetDeleteCandidate ? (
-        <div className={styles.modalBackdrop} role="alertdialog" aria-modal="true" aria-labelledby="delete-budget-title" aria-describedby="delete-budget-description">
+        <div className={styles.modalBackdrop} data-website-overlay role="alertdialog" aria-modal="true" aria-labelledby="delete-budget-title" aria-describedby="delete-budget-description">
           <div className={styles.budgetDeleteDialog}>
             <div>
               <h2 id="delete-budget-title">Remove this spending budget?</h2>
@@ -4411,7 +4411,7 @@ export default function MyInvoicesClient({
       ) : null}
 
       {invoiceDropCodeOpen && !invoiceDropAssetPickerOpen ? (
-        <div className={wizardStyles.overlay} role="dialog" aria-modal="true" aria-labelledby="invoice-drop-code-title">
+        <div className={wizardStyles.overlay} data-website-overlay role="dialog" aria-modal="true" aria-labelledby="invoice-drop-code-title">
           <div className={`${styles.invoiceDropCodeModal} ${wizardStyles.dialog} ${wizardStyles.wideDialog}`}>
             <div className={`${styles.modalHeader} ${styles.invoiceDropCodeHeader} ${wizardStyles.header}`}>
               <div className={wizardStyles.headerText}>
@@ -4645,7 +4645,7 @@ export default function MyInvoicesClient({
       ) : null}
 
       {invoiceDropCodeOpen && invoiceDropAssetPickerOpen ? (
-        <div className={`${styles.modalBackdrop} ${styles.invoiceDropAssetPickerBackdrop}`} role="dialog" aria-modal="true" aria-labelledby="invoice-drop-asset-picker-title">
+        <div className={`${styles.modalBackdrop} ${styles.invoiceDropAssetPickerBackdrop}`} data-website-overlay role="dialog" aria-modal="true" aria-labelledby="invoice-drop-asset-picker-title">
           <div className={`${styles.assetModal} ${styles.invoiceDropAssetPickerModal}`} data-asset-choice-surface="true" data-asset-choice-modal="true">
             <div className={`${styles.modalHeader} ${styles.invoiceDropAssetPickerHeader}`} data-asset-choice-header="true">
               <div>
@@ -4707,7 +4707,7 @@ export default function MyInvoicesClient({
       ) : null}
 
       {sourceChoiceOpen ? (
-        <div className={styles.modalBackdrop} role="dialog" aria-modal="true" aria-label="Choose cost capture method">
+        <div className={styles.modalBackdrop} data-website-overlay role="dialog" aria-modal="true" aria-label="Choose cost capture method">
           <div
             className={`${styles.downloadModal} ${styles.sourceChoiceModal} ${styles.costChoiceModal}`}
             data-cost-choice-modal="true"
@@ -4769,7 +4769,7 @@ export default function MyInvoicesClient({
 
       {recurringOpen ? (
         <div
-          className={`${styles.modalBackdrop} ${recurringAssetPickerOpen ? styles.budgetAssetPickerBackdrop : wizardStyles.overlay}`}
+          className={`${styles.modalBackdrop} ${recurringAssetPickerOpen ? styles.budgetAssetPickerBackdrop : wizardStyles.overlay}`} data-website-overlay
           role="dialog"
           aria-modal="true"
           aria-labelledby={recurringAssetPickerOpen ? 'recurring-asset-picker-title' : 'recurring-modal-title'}
@@ -5160,7 +5160,7 @@ export default function MyInvoicesClient({
       ) : null}
 
       {filterOpen ? (
-        <div className={styles.modalBackdrop} role="dialog" aria-modal="true" aria-label="Filter saved cost records">
+        <div className={styles.modalBackdrop} data-website-overlay role="dialog" aria-modal="true" aria-label="Filter saved cost records">
           <div className={styles.filterModal}>
             <div className={styles.modalHeader}>
               <div>
@@ -5249,7 +5249,7 @@ export default function MyInvoicesClient({
       ) : null}
 
       {!dealerMode && downloadOpen ? (
-        <div className={styles.modalBackdrop} role="dialog" aria-modal="true" aria-label="Download cost records">
+        <div className={styles.modalBackdrop} data-website-overlay role="dialog" aria-modal="true" aria-label="Download cost records">
           <div className={`${styles.downloadModal} ${styles.reportModal} ${styles.downloadExportModal} ${downloadStep === 'format' ? styles.downloadFormatModal : ''} ${downloadStep === 'accounting' ? styles.downloadAccountingModal : ''}`}>
             <div className={styles.modalHeader}>
               <div>
@@ -5567,7 +5567,7 @@ export default function MyInvoicesClient({
       ) : null}
 
       {!dealerMode && accountingSettingsOpen ? (
-        <div className={`${styles.modalBackdrop} ${styles.accountingSettingsBackdrop}`} role="dialog" aria-modal="true" aria-label="Accounting CSV settings">
+        <div className={`${styles.modalBackdrop} ${styles.accountingSettingsBackdrop}`} data-website-overlay role="dialog" aria-modal="true" aria-label="Accounting CSV settings">
           <form className={`${styles.formModal} ${styles.accountingSettingsModal}`} onSubmit={saveAccountingSettings}>
             <div className={styles.modalHeader}>
               <div>
@@ -5774,7 +5774,7 @@ export default function MyInvoicesClient({
       ) : null}
 
       {assetPickerOpen ? (
-        <div className={styles.modalBackdrop} role="dialog" aria-modal="true" aria-label={flowTitle}>
+        <div className={styles.modalBackdrop} data-website-overlay role="dialog" aria-modal="true" aria-label={flowTitle}>
           <div className={styles.assetModal} data-asset-choice-surface="true" data-asset-choice-modal="true">
             <div className={styles.modalHeader} data-asset-choice-header="true">
               <div>
@@ -5825,7 +5825,7 @@ export default function MyInvoicesClient({
       ) : null}
 
       {flow === 'upload' ? (
-        <div className={styles.modalBackdrop} role="dialog" aria-modal="true" aria-label="Upload invoice/photo">
+        <div className={styles.modalBackdrop} data-website-overlay role="dialog" aria-modal="true" aria-label="Upload invoice/photo">
           <div className={`${styles.formModal} ${styles.costUploadModal}`}>
             <div className={styles.modalHeader}>
               <div>
@@ -5860,7 +5860,7 @@ export default function MyInvoicesClient({
       ) : null}
 
       {formOpen ? (
-        <div className={`${styles.modalBackdrop} ${manualCostWizardOpen ? wizardStyles.overlay : ''}`} role="dialog" aria-modal="true" aria-label={formTitle}>
+        <div className={`${styles.modalBackdrop} ${manualCostWizardOpen ? wizardStyles.overlay : ''}`} data-website-overlay role="dialog" aria-modal="true" aria-label={formTitle}>
           <form
             className={`${styles.formModal} ${styles.costFormModal} ${manualCostWizardOpen ? `${styles.manualCostWizardModal} ${wizardStyles.dialog}` : ''}`}
             onSubmit={handleInvoiceFormSubmit}
@@ -6196,7 +6196,7 @@ export default function MyInvoicesClient({
       ) : null}
 
       {deleteCandidateInvoice ? (
-        <div className={`${styles.modalBackdrop} ${styles.confirmDeleteBackdrop}`} onClick={closeDeleteInvoiceDialog}>
+        <div className={`${styles.modalBackdrop} ${styles.confirmDeleteBackdrop}`} data-website-overlay onClick={closeDeleteInvoiceDialog}>
           <div
             className={styles.deleteConfirmModal}
             role="alertdialog"
@@ -6266,3 +6266,4 @@ export default function MyInvoicesClient({
     </main>
   );
 }
+

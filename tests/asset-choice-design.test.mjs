@@ -21,13 +21,13 @@ const header = read('../components/AppHeader.tsx');
 test('shared asset-choice typography matches the Export Asset Register contract', () => {
   assert.match(
     globals,
-    /\[data-asset-choice-header='true'\] h2,\s*\[data-asset-choice-header='true'\] h3\s*\{[\s\S]*?font-family:\s*var\(--font-heading, 'Montserrat'\), var\(--font-body, 'Inter'\), sans-serif !important;[\s\S]*?font-size:\s*clamp\(2rem, 3vw, 2\.75rem\) !important;[\s\S]*?font-weight:\s*900 !important;[\s\S]*?line-height:\s*1\.02 !important;[\s\S]*?letter-spacing:\s*-0\.065em !important;/,
+    /\[data-asset-choice-header='true'\] h2,\s*\[data-asset-choice-header='true'\] h3\s*\{[\s\S]*?font-family:\s*var\(--font-heading, 'Montserrat'\), var\(--font-body, 'Inter'\), sans-serif !important;[\s\S]*?font-size:\s*clamp\(2rem, calc\(var\(--website-design-vw(?:, 1vw)?\) \* 3\), 2\.75rem\) !important;[\s\S]*?font-weight:\s*900 !important;[\s\S]*?line-height:\s*1\.02 !important;[\s\S]*?letter-spacing:\s*-0\.065em !important;/,
   );
   assert.match(
     assetRegisterStyles,
-    /\.assetFilterModalHeader h3,\s*\.exportModalHeader h3\s*\{[\s\S]*?font-size:\s*clamp\(2rem, 3vw, 2\.75rem\) !important;[\s\S]*?font-weight:\s*900 !important;[\s\S]*?line-height:\s*1\.02 !important;[\s\S]*?letter-spacing:\s*-0\.065em !important;/,
+    /\.assetFilterModalHeader h3,\s*\.exportModalHeader h3\s*\{[\s\S]*?font-size:\s*clamp\(2rem, calc\(var\(--website-design-vw(?:, 1vw)?\) \* 3\), 2\.75rem\) !important;[\s\S]*?font-weight:\s*900 !important;[\s\S]*?line-height:\s*1\.02 !important;[\s\S]*?letter-spacing:\s*-0\.065em !important;/,
   );
-  assert.match(globals, /\[data-asset-choice-copy='true'\] > strong\s*\{[\s\S]*?font-size:\s*clamp\(1rem, 1\.08vw, 1\.12rem\) !important;[\s\S]*?font-weight:\s*900 !important;[\s\S]*?line-height:\s*1\.2 !important;/);
+  assert.match(globals, /\[data-asset-choice-copy='true'\] > strong\s*\{[\s\S]*?font-size:\s*clamp\(1rem, calc\(var\(--website-design-vw(?:, 1vw)?\) \* 1\.08\), 1\.12rem\) !important;[\s\S]*?font-weight:\s*900 !important;[\s\S]*?line-height:\s*1\.2 !important;/);
   assert.match(globals, /\[data-asset-choice-meta='true'\]\s*\{[\s\S]*?font-size:\s*0\.93rem !important;[\s\S]*?font-weight:\s*660 !important;[\s\S]*?line-height:\s*1\.35 !important;/);
   assert.match(globals, /\[data-asset-choice-secondary='true'\]\s*\{[\s\S]*?font-size:\s*0\.86rem !important;[\s\S]*?font-weight:\s*660 !important;/);
   assert.match(globals, /\[data-asset-choice-value='true'\] > strong\s*\{[\s\S]*?font-size:\s*1rem !important;[\s\S]*?font-weight:\s*880 !important;/);
@@ -90,7 +90,7 @@ test('Maintenance asset search uses the Cost Tracking single-input toolbar', () 
   const reportMaintenanceToolbar = maintenanceClient.slice(secondToolbarStart, secondToolbarEnd);
   assert.match(primaryMaintenanceToolbar, /value=\{pickerSearch\}[\s\S]*?setPickerSearch\(event\.target\.value\)[\s\S]*?setPickerSearch\(''\)/);
   assert.match(reportMaintenanceToolbar, /value=\{downloadAssetSearch\}[\s\S]*?setDownloadAssetSearch\(event\.target\.value\)[\s\S]*?setDownloadAssetSearch\(''\)/);
-  assert.match(maintenanceStyles, /\.assetModal \.pickerToolbar\s*\{[\s\S]*?padding:\s*0 clamp\(1\.25rem, 2\.4vw, 2rem\) 1rem;/);
+  assert.match(maintenanceStyles, /\.assetModal \.pickerToolbar\s*\{[\s\S]*?padding:\s*0 clamp\(1\.25rem, calc\(var\(--website-design-vw(?:, 1vw)?\) \* 2\.4\), 2rem\) 1rem;/);
   assert.match(maintenanceStyles, /\.maintenanceExportBody \.pickerToolbar\s*\{\s*padding:\s*0 0 1rem;/);
 });
 
@@ -123,3 +123,4 @@ test('sharing, QR-label and app-access asset selectors use the shared design con
     assert.match(dedicatedModal, /data-asset-choice-footer="true"/);
   }
 });
+

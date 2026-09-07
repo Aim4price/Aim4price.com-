@@ -1,5 +1,7 @@
 "use client";
 
+import { currentWebsiteScale } from '../../lib/website-canvas';
+
 import DropdownOverlay from "../../components/DropdownOverlay";
 import {
   useCallback,
@@ -1347,7 +1349,7 @@ export default function AssetMapClient() {
     const zoom = map.getZoom();
     const mapHeight = map.getSize().y;
     const selectedCardHeight =
-      selectedAssetCardRef.current?.getBoundingClientRect().height ?? 0;
+      (selectedAssetCardRef.current?.getBoundingClientRect().height ?? 0) / currentWebsiteScale();
     const verticalOffset =
       mapHeight >= 430 && selectedCardHeight > 0
         ? Math.min(selectedCardHeight * 0.3, 88)
@@ -2149,7 +2151,7 @@ export default function AssetMapClient() {
 
       {isExportModalOpen ? (
         <div
-          className={styles.modalBackdrop}
+          className={styles.modalBackdrop} data-website-overlay
           role="presentation"
           onMouseDown={closeExportModal}
         >
@@ -2348,3 +2350,4 @@ export default function AssetMapClient() {
     </main>
   );
 }
+

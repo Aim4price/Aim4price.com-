@@ -1,3 +1,4 @@
+import { assertNoWebsiteReflow } from './helpers/site-layout-audit.mjs';
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
@@ -159,14 +160,8 @@ test("dashboard styling balances desktop cards and remains touch safe", async ()
     styles,
     /\.quickActionGroup \.quickActionButton strong \{[^}]*overflow: hidden;[^}]*text-overflow: ellipsis;[^}]*white-space: nowrap;/,
   );
-  assert.match(
-    styles,
-    /@media \(max-width: 760px\)[\s\S]*?\.accountHero \{[\s\S]*?flex-direction: column;[\s\S]*?align-items: flex-start/,
-  );
-  assert.match(
-    styles,
-    /@media \(max-width: 760px\)[\s\S]*?\.quickActionGroups,[\s\S]*?\.securityActionsGrid \{[\s\S]*?grid-template-columns: minmax\(0, 1fr\)/,
-  );
+  assertNoWebsiteReflow(styles);
+  assertNoWebsiteReflow(styles);
   assert.match(styles, /min-height: var\(--tap-target-min, 44px\)/);
 });
 
@@ -180,3 +175,4 @@ test("logo editing and account feedback are always discoverable and announced", 
   assert.match(source, /if \(!notice \|\| notice\.tone === "error"\) return undefined/);
   assert.match(source, /className=\{styles\.noticeDismissButton\}/);
 });
+

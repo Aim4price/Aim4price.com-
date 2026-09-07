@@ -200,7 +200,7 @@ export default function DesktopServiceModal({
 
   if (askScheduleLink && scheduleDecision === null) {
     return (
-      <div className={styles.overlay} role="presentation">
+      <div className={styles.overlay} data-website-overlay role="presentation">
         <button className={styles.backdrop} type="button" onClick={onClose} aria-label="Close service choice" disabled={busy} />
         <section className={styles.modal} role="dialog" aria-modal="true" aria-labelledby="scheduled-service-choice-title">
           <header className={styles.header}>
@@ -253,7 +253,7 @@ export default function DesktopServiceModal({
   }
 
   return (
-    <div className={styles.overlay} role="presentation">
+    <div className={styles.overlay} data-website-overlay role="presentation">
       <button className={styles.backdrop} type="button" onClick={onClose} aria-label="Close service form" disabled={busy} />
       <section className={styles.modal} role="dialog" aria-modal="true" aria-labelledby="desktop-service-title">
         <header className={styles.header}>
@@ -386,3 +386,4 @@ export default function DesktopServiceModal({
     </div>
   );
 }
+

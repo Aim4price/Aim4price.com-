@@ -44,7 +44,7 @@ test('new acquisition modal has one controlled spacing system', () => {
   );
 
   assert.match(acquisitionStyles, /\.newAcquisitionChoiceModal\s*\{[\s\S]*?scrollbar-gutter:\s*auto !important;[\s\S]*?padding:\s*0 !important;/);
-  assert.match(acquisitionStyles, /\.newAcquisitionChoiceHeader\s*\{[\s\S]*?display:\s*grid !important;[\s\S]*?grid-template-columns:\s*minmax\(0, 1fr\) 3\.08rem !important;[\s\S]*?column-gap:\s*clamp\(2rem, 3vw, 2\.75rem\) !important;[\s\S]*?margin:\s*0 !important;[\s\S]*?padding:\s*clamp\(1\.45rem,/);
+  assert.match(acquisitionStyles, /\.newAcquisitionChoiceHeader\s*\{[\s\S]*?display:\s*grid !important;[\s\S]*?grid-template-columns:\s*minmax\(0, 1fr\) 3\.08rem !important;[\s\S]*?column-gap:\s*clamp\(2rem, calc\(var\(--website-design-vw(?:, 1vw)?\) \* 3\), 2\.75rem\) !important;[\s\S]*?margin:\s*0 !important;[\s\S]*?padding:\s*clamp\(1\.45rem,/);
   assert.match(acquisitionStyles, /\.newAcquisitionChoiceHeader \.modalHeaderText p\s*\{[\s\S]*?max-width:\s*34rem !important;[\s\S]*?white-space:\s*normal !important;[\s\S]*?text-wrap:\s*balance !important;[\s\S]*?overflow-wrap:\s*anywhere !important;/);
   assert.match(acquisitionStyles, /\.newAcquisitionChoiceBody\s*\{[\s\S]*?gap:\s*clamp\(1\.05rem,[\s\S]*?padding:\s*clamp\(1\.25rem,/);
   assert.match(acquisitionStyles, /\.newAcquisitionChoiceActions\s*\{[\s\S]*?gap:\s*0\.75rem !important;/);
@@ -56,7 +56,7 @@ test('Add an asset uses a wider, flatter and responsive choice layout', () => {
     assetRegisterStyles.indexOf('Asset update modal: refined header, section navigation and autosave'),
   );
 
-  assert.match(addAssetStyles, /\.assetFormModalStepOne\s*\{[\s\S]*?width:\s*min\(95vw, 64rem\) !important;[\s\S]*?scrollbar-gutter:\s*auto !important;/);
+  assert.match(addAssetStyles, /\.assetFormModalStepOne\s*\{[\s\S]*?width:\s*min\(calc\(var\(--website-design-vw(?:, 1vw)?\) \* 95\), 64rem\) !important;[\s\S]*?scrollbar-gutter:\s*auto !important;/);
   assert.match(addAssetStyles, /\.assetFormModalStepOne \.assetFormModalChromeHeader\s*\{[\s\S]*?display:\s*grid !important;[\s\S]*?grid-template-columns:\s*minmax\(0, 1fr\) auto !important;[\s\S]*?padding:\s*0 0 1\.15rem !important;/);
   assert.match(addAssetStyles, /\.assetFormModalStepOne \.assetFormModalChromeHeader p\s*\{[\s\S]*?max-width:\s*48rem !important;/);
   assert.match(addAssetStyles, /\.assetFormModalStepOne \.manualStepScrollBodyNoScroll\s*\{[\s\S]*?scrollbar-gutter:\s*auto !important;/);
@@ -77,3 +77,4 @@ test('asset entry modal close controls align to the far edge of their headers', 
   assert.match(assetRegisterStyles, /\.newAcquisitionChoiceHeader \.modalCloseButton\s*\{[\s\S]*?justify-self:\s*end !important;[\s\S]*?margin:\s*0 !important;/);
   assert.match(assetRegisterStyles, /\.assetFormModalStepOne \.assetFormModalChromeHeader \.modalCloseButton\s*\{[\s\S]*?justify-self:\s*end !important;[\s\S]*?margin:\s*0 !important;/);
 });
+

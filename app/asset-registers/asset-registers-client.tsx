@@ -2951,7 +2951,7 @@ export default function AssetRegistersClient({
 
       {isExportFlowOpen ? (
         <div
-          className={`${styles.modalOverlay} ${styles.exportFlowOverlay}`}
+          className={`${styles.modalOverlay} ${styles.exportFlowOverlay}`} data-website-overlay
           role="dialog"
           aria-modal="true"
           aria-labelledby="export-registers-title"
@@ -3304,7 +3304,7 @@ export default function AssetRegistersClient({
 
       {managedRegister ? (
         <div
-          className={`${styles.modalOverlay} ${styles.manageModalOverlay}`}
+          className={`${styles.modalOverlay} ${styles.manageModalOverlay}`} data-website-overlay
           role="dialog"
           aria-modal="true"
           aria-labelledby="manage-register-title"
@@ -3487,7 +3487,7 @@ export default function AssetRegistersClient({
 
       {isQrModalOpen && managedRegister ? (
         <div
-          className={`${styles.modalOverlay} ${styles.qrLabelsOverlay}`}
+          className={`${styles.modalOverlay} ${styles.qrLabelsOverlay}`} data-website-overlay
           role="dialog"
           aria-modal="true"
           aria-labelledby="qr-labels-title"
@@ -3639,7 +3639,7 @@ export default function AssetRegistersClient({
 
       {managedRegister && isEditDetailsModalOpen ? (
         <div
-          className={`${styles.modalOverlay} ${styles.editDetailsOverlay}`}
+          className={`${styles.modalOverlay} ${styles.editDetailsOverlay}`} data-website-overlay
           role="dialog"
           aria-modal="true"
           aria-labelledby="edit-register-title"
@@ -3750,7 +3750,7 @@ export default function AssetRegistersClient({
 
       {isCreateModalOpen ? (
         <div
-          className={styles.modalOverlay}
+          className={styles.modalOverlay} data-website-overlay
           role="dialog"
           aria-modal="true"
           aria-labelledby="add-register-title"
@@ -3862,7 +3862,7 @@ export default function AssetRegistersClient({
 
       {deleteCandidateRegister ? (
         <div
-          className={`${styles.modalOverlay} ${styles.deleteConfirmOverlay}`}
+          className={`${styles.modalOverlay} ${styles.deleteConfirmOverlay}`} data-website-overlay
           role="alertdialog"
           aria-modal="true"
           aria-labelledby="delete-register-title"
@@ -3948,3 +3948,4 @@ export default function AssetRegistersClient({
     </>
   );
 }
+

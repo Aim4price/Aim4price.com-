@@ -1,8 +1,10 @@
 'use client';
+import { useWebsiteStyles } from '../../components/useWebsiteStyles';
+import website_dealerStyles from '../../components/website-styles/DealerControls.module.css';
 
 import DropdownOverlay from '../../components/DropdownOverlay';
 import { useCallback, useEffect, useMemo, useState, type ChangeEvent, type DragEvent } from 'react';
-import { createPortal } from 'react-dom';
+import { createPortal } from '../../components/WebsitePortal';
 import dynamic from 'next/dynamic';
 import AppHeader from '../../components/AppHeader';
 import {
@@ -12,7 +14,7 @@ import {
 import { openAssetRegisterSummaryPrint, openAssetSheetPrint, type ReportKeyValue, type ReportMethodCard } from '../../lib/report-print';
 import assetStyles from '../asset-register/page.module.css';
 import styles from './page.module.css';
-import dealerStyles from '../dealer/dealer.module.css';
+import native_dealerStyles from '../dealer/dealer.module.css';
 import type { DealerAssetCorrectionRequest } from '../../lib/dealer-asset-corrections';
 
 const AccountantRegisterReportsModal = dynamic(
@@ -1760,6 +1762,8 @@ export default function LeadsClient({
   initialLeadsHaveMore = false,
   initialSessionUserId = '',
 }: LeadsClientProps = {}) {
+  const dealerStyles = useWebsiteStyles(native_dealerStyles, website_dealerStyles);
+
   const useDealerWorkspaceStyles = licensingWorkspaceMode || accountantWorkspaceMode || (dealerWorkspaceMode ?? dealerAppMode);
   const isDealerLeadsMode = Boolean(dealerAppMode || dealerWorkspaceMode);
   const canAddDealerCosts = isDealerLeadsMode;
@@ -4049,8 +4053,8 @@ export default function LeadsClient({
       ) : null}
 
       {isFilterModalOpen ? (
-        <div className={`${assetStyles.modalOverlay} ${dealerWorkspaceClass(workspaceStyles.modalOverlay)}`}>
-          <div className={assetStyles.modalBackdrop} onClick={closeLeadFilterModal} />
+        <div className={`${assetStyles.modalOverlay} ${dealerWorkspaceClass(workspaceStyles.modalOverlay)}`} data-website-overlay>
+          <div className={assetStyles.modalBackdrop} data-website-overlay onClick={closeLeadFilterModal} />
 
           <div
             className={`${assetStyles.modalCard} ${dealerWorkspaceClass(workspaceStyles.modal)} ${styles.leadFilterModal} ${accountantWorkspaceMode ? styles.accountantFilterModal : ''}`}
@@ -4125,8 +4129,8 @@ export default function LeadsClient({
       ) : null}
 
       {managedLead ? (
-        <div className={`${assetStyles.modalOverlay} ${assetStyles.ownerCommandOverlay} ${dealerWorkspaceClass(workspaceStyles.modalOverlay)} ${styles.leadManageOverlay}`}>
-          <div className={assetStyles.modalBackdrop} onClick={() => setManagedLead(null)} />
+        <div className={`${assetStyles.modalOverlay} ${assetStyles.ownerCommandOverlay} ${dealerWorkspaceClass(workspaceStyles.modalOverlay)} ${styles.leadManageOverlay}`} data-website-overlay>
+          <div className={assetStyles.modalBackdrop} data-website-overlay onClick={() => setManagedLead(null)} />
 
           <div className={`${assetStyles.optionsModal} ${assetStyles.ownerCommandModal} ${dealerWorkspaceClass(workspaceStyles.modal)} ${styles.leadManageModal} ${licensingWorkspaceMode ? styles.licensingManageModal : ''}`} role="dialog" aria-modal="true" aria-labelledby="lead-manage-title">
             <div className={`${assetStyles.modalHeader} ${assetStyles.optionsModalHeader} ${dealerWorkspaceClass(workspaceStyles.modalHeader)}`}>
@@ -4329,8 +4333,8 @@ export default function LeadsClient({
 
 
       {qrLeadAsset ? (
-        <div className={`${assetStyles.modalOverlay} ${assetStyles.subModalOverlay}`}>
-          <div className={assetStyles.modalBackdrop} onClick={closeLeadQrModal} />
+        <div className={`${assetStyles.modalOverlay} ${assetStyles.subModalOverlay}`} data-website-overlay>
+          <div className={assetStyles.modalBackdrop} data-website-overlay onClick={closeLeadQrModal} />
 
           <div className={`${assetStyles.modalCard} ${assetStyles.qrModal}`} role="dialog" aria-modal="true" aria-labelledby="lead-asset-qr-title">
             <div className={`${assetStyles.modalHeader} ${assetStyles.qrModalHeader}`}>
@@ -4384,8 +4388,8 @@ export default function LeadsClient({
       ) : null}
 
       {photoUploadLead ? (
-        <div className={`${assetStyles.modalOverlay} ${dealerWorkspaceClass(workspaceStyles.modalOverlay)} ${styles.leadPhotoUploadOverlay}`}>
-          <div className={assetStyles.modalBackdrop} onClick={closeLeadPhotoUploadModal} />
+        <div className={`${assetStyles.modalOverlay} ${dealerWorkspaceClass(workspaceStyles.modalOverlay)} ${styles.leadPhotoUploadOverlay}`} data-website-overlay>
+          <div className={assetStyles.modalBackdrop} data-website-overlay onClick={closeLeadPhotoUploadModal} />
 
           <div className={`${assetStyles.modalCard} ${dealerWorkspaceClass(workspaceStyles.modal)} ${styles.leadPhotoUploadModal}`} role="dialog" aria-modal="true" aria-labelledby="lead-photo-upload-title">
             <div className={`${assetStyles.modalHeader} ${dealerWorkspaceClass(workspaceStyles.modalHeader)}`}>
@@ -4478,8 +4482,8 @@ export default function LeadsClient({
       ) : null}
 
       {emailLead ? (
-        <div className={`${assetStyles.modalOverlay} ${dealerWorkspaceClass(workspaceStyles.modalOverlay)}`}>
-          <div className={assetStyles.modalBackdrop} onClick={closeEmailModal} />
+        <div className={`${assetStyles.modalOverlay} ${dealerWorkspaceClass(workspaceStyles.modalOverlay)}`} data-website-overlay>
+          <div className={assetStyles.modalBackdrop} data-website-overlay onClick={closeEmailModal} />
 
           <div className={`${assetStyles.modalCard} ${dealerWorkspaceClass(workspaceStyles.modal)} ${styles.leadEmailModal}`} role="dialog" aria-modal="true" aria-labelledby="lead-email-title">
             <div className={`${assetStyles.modalHeader} ${dealerWorkspaceClass(workspaceStyles.modalHeader)} ${styles.leadEmailHeader}`}>
@@ -4533,8 +4537,8 @@ export default function LeadsClient({
       ) : null}
 
       {reportLead ? (
-        <div className={`${assetStyles.modalOverlay} ${assetStyles.subModalOverlay}`}>
-          <div className={assetStyles.modalBackdrop} onClick={closeLeadReportModal} />
+        <div className={`${assetStyles.modalOverlay} ${assetStyles.subModalOverlay}`} data-website-overlay>
+          <div className={assetStyles.modalBackdrop} data-website-overlay onClick={closeLeadReportModal} />
 
           <div
             className={`${assetStyles.modalCard} ${assetStyles.assetReportModal}`}
@@ -4628,8 +4632,8 @@ export default function LeadsClient({
       ) : null}
 
       {deleteLeadTarget ? (
-        <div className={`${assetStyles.modalOverlay} ${assetStyles.confirmDeleteOverlay} ${dealerWorkspaceClass(workspaceStyles.modalOverlay)}`}>
-          <div className={assetStyles.modalBackdrop} onClick={closeDeleteLeadModal} />
+        <div className={`${assetStyles.modalOverlay} ${assetStyles.confirmDeleteOverlay} ${dealerWorkspaceClass(workspaceStyles.modalOverlay)}`} data-website-overlay>
+          <div className={assetStyles.modalBackdrop} data-website-overlay onClick={closeDeleteLeadModal} />
 
           <div
             className={`${assetStyles.deleteConfirmModal} ${dealerWorkspaceClass(workspaceStyles.modal)} ${styles.leadDeleteModal}`}
@@ -4694,8 +4698,8 @@ export default function LeadsClient({
 
       {typeof document !== 'undefined' && assetPhotoModal && assetPhotoModalUrl
         ? createPortal(
-          <div className={`${assetStyles.modalOverlay} ${assetStyles.photoViewerOverlay}`}>
-            <div className={assetStyles.modalBackdrop} onClick={closeAssetPhotoModal} />
+          <div className={`${assetStyles.modalOverlay} ${assetStyles.photoViewerOverlay}`} data-website-overlay>
+            <div className={assetStyles.modalBackdrop} data-website-overlay onClick={closeAssetPhotoModal} />
 
             <div
               className={assetStyles.photoViewerModal}
@@ -4754,8 +4758,8 @@ export default function LeadsClient({
 
       {typeof document !== 'undefined' && sentPhotoModal && sentPhotoModalUrl
         ? createPortal(
-          <div className={`${assetStyles.modalOverlay} ${assetStyles.photoViewerOverlay}`}>
-            <div className={assetStyles.modalBackdrop} onClick={closeSentPhotoModal} />
+          <div className={`${assetStyles.modalOverlay} ${assetStyles.photoViewerOverlay}`} data-website-overlay>
+            <div className={assetStyles.modalBackdrop} data-website-overlay onClick={closeSentPhotoModal} />
 
             <div
               className={assetStyles.photoViewerModal}
@@ -4813,8 +4817,8 @@ export default function LeadsClient({
         : null}
 
       {noteLead ? (
-        <div className={`${assetStyles.modalOverlay} ${dealerWorkspaceClass(workspaceStyles.modalOverlay)} ${styles.leadNoteOverlay}`}>
-          <div className={assetStyles.modalBackdrop} onClick={closeNoteModal} />
+        <div className={`${assetStyles.modalOverlay} ${dealerWorkspaceClass(workspaceStyles.modalOverlay)} ${styles.leadNoteOverlay}`} data-website-overlay>
+          <div className={assetStyles.modalBackdrop} data-website-overlay onClick={closeNoteModal} />
 
           <div className={`${assetStyles.modalCard} ${assetStyles.sharedNoteModal} ${dealerWorkspaceClass(workspaceStyles.modal)} ${styles.leadNoteModal}`} role="dialog" aria-modal="true" aria-labelledby="lead-note-title">
             <div className={`${assetStyles.modalHeader} ${dealerWorkspaceClass(workspaceStyles.modalHeader)} ${styles.leadNoteHeader}`}>
@@ -4895,3 +4899,4 @@ export default function LeadsClient({
     </main>
   );
 }
+

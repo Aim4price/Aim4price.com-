@@ -346,7 +346,7 @@ test('umbrella cards expose aligned actions and the Manage modal uses a clear op
   assert.match(client, /<strong>Counted value \{money\(displayedGroupValue\)\}<\/strong>/);
   assert.doesNotMatch(client, /styles\.assetGroupValueLabel|styles\.assetGroupValueVat/);
   assert.match(styles, /\.assetGroupValue \{[\s\S]*?gap: 0\.18rem;[\s\S]*?text-align: right;/);
-  assert.match(styles, /\.assetGroupValue strong \{[\s\S]*?font-size: clamp\(0\.96rem, 1\.25vw, 1\.15rem\);/);
+  assert.match(styles, /\.assetGroupValue strong \{[\s\S]*?font-size: clamp\(0\.96rem, calc\(var\(--website-design-vw(?:, 1vw)?\) \* 1\.25\), 1\.15rem\);/);
   assert.match(modal, /Edit umbrella/);
   assert.match(modal, /<strong>Manage umbrella<\/strong>/);
   assert.match(modal, /Name, structure and assets/);
@@ -404,11 +404,11 @@ test('the umbrella Manage modal reuses the readable asset Manage and report-form
   assert.match(modalStyles, /\.wizardProgress \{[\s\S]*?display: flex;[\s\S]*?width: 100%;[\s\S]*?max-width: none;/);
   assert.match(modalStyles, /\.wizardProgressStep:not\(:last-child\)::after \{[\s\S]*?flex: 1 1 auto;[\s\S]*?margin: 0 18px;/);
   assert.match(modalStyles, /\.manageMenuGrid \.manageMenuDanger \{[\s\S]*?grid-column: 1 \/ -1;/);
-  assert.doesNotMatch(modalStyles, /\.wizardPanel \{[\s\S]*?min-height: clamp\(20rem, 43vh, 29rem\)/);
+  assert.doesNotMatch(modalStyles, /\.wizardPanel \{[\s\S]*?min-height: clamp\(20rem, (?:calc\(var\(--website-design-vh(?:, 1vh)?\) \* 43\)|calc\(var\(--website-visible-height(?:, 100vh)?\) \* 0\.43\)), 29rem\)/);
   assert.match(modalStyles, /\.wizardFooter/);
   assert.match(modalStyles, /\.stepNumber \{[\s\S]*?width: 46px;[\s\S]*?height: 46px;/);
   assert.match(modalStyles, /\.stepCopy strong \{[\s\S]*?font-size: 19px/);
-  assert.match(modalStyles, /\.manageHeader h3 \{[\s\S]*?font-size: clamp\(2rem, 3\.1vw, 2\.65rem\)/);
+  assert.match(modalStyles, /\.manageHeader h3 \{[\s\S]*?font-size: clamp\(2rem, calc\(var\(--website-design-vw(?:, 1vw)?\) \* 3\.1\), 2\.65rem\)/);
   assert.match(modalStyles, /\.manageMenuGrid \.manageMenuAction strong \{[\s\S]*?font-size: 1\.12rem/);
   assert.match(modalStyles, /\.manageMenuGrid \.manageMenuAction \.menuOptionSubtitle \{[\s\S]*?font-size: 0\.94rem/);
   assert.match(modal, /styles\.manageMenuIconTile/);
@@ -421,7 +421,7 @@ test('the umbrella Manage modal reuses the readable asset Manage and report-form
   assert.match(modalStyles, /\.manageMenuIconGlyph \{[\s\S]*?width: 24px;[\s\S]*?height: 24px;/);
   assert.doesNotMatch(modal, /MembersIcon className=\{`\$\{registerStyles\.buttonIcon\}/);
   assert.match(modalStyles, /\.backdrop \{/);
-  assert.match(registerStyles, /\.ownerCommandModal \.optionsModalHeader h3 \{[\s\S]*?font-size: clamp\(2\.05rem, 3\.25vw, 2\.8rem\)/);
+  assert.match(registerStyles, /\.ownerCommandModal \.optionsModalHeader h3 \{[\s\S]*?font-size: clamp\(2\.05rem, calc\(var\(--website-design-vw(?:, 1vw)?\) \* 3\.25\), 2\.8rem\)/);
   assert.match(registerStyles, /\.ownerCommandModal \.ownerCommandGrid \.ownerCommandAction strong \{[\s\S]*?font-size: 1\.12rem/);
   assert.match(registerStyles, /\.ownerCommandModal \.ownerCommandGrid \.ownerCommandAction small \{[\s\S]*?font-size: 0\.94rem/);
 });
@@ -714,9 +714,9 @@ test('asset disposal uses a valid withdrawn marketplace state and reuses the umb
   assert.match(disposalModal, /groupModalStyles\.saveButton/);
   assert.doesNotMatch(disposalModal, /styles\.assetDisposalOverlay|styles\.assetDisposalModal|styles\.assetDisposalBody|styles\.assetDisposalActions/);
 
-  assert.match(groupModalStyles, /\.dialog \{[\s\S]*?width: min\(1120px, 100%\);[\s\S]*?max-height: min\(880px, calc\(100vh - 48px\)\);/);
+  assert.match(groupModalStyles, /\.dialog \{[\s\S]*?width: min\(1120px, var\(--website-dialog-reference-width, 100%\)\);[\s\S]*?max-height: min\(880px, calc\((?:calc\(var\(--website-design-vh(?:, 1vh)?\) \* 100\)|calc\(var\(--website-visible-height(?:, 100vh)?\) \* 1\)) - 48px\)\);/);
   assert.match(groupModalStyles, /\.header \{[\s\S]*?padding: 28px 36px 24px;/);
-  assert.match(groupModalStyles, /\.header h2 \{[\s\S]*?font-size: clamp\(28px, 4vw, 38px\);[\s\S]*?line-height: 1\.04;/);
+  assert.match(groupModalStyles, /\.header h2 \{[\s\S]*?font-size: clamp\(28px, calc\(var\(--website-design-vw(?:, 1vw)?\) \* 4\), 38px\);[\s\S]*?line-height: 1\.04;/);
   assert.match(groupModalStyles, /\.body \{[\s\S]*?padding: 26px 36px 30px;/);
   assert.match(groupModalStyles, /\.wizardProgressStep > span \{[\s\S]*?width: 44px;[\s\S]*?height: 44px;[\s\S]*?font-size: 14px;[\s\S]*?font-weight: 900;/);
   assert.match(groupModalStyles, /\.wizardProgressStep > strong \{[\s\S]*?font-size: 14px;[\s\S]*?font-weight: 850;/);
@@ -853,3 +853,4 @@ test('maintenance PDF and Excel builders accept PostgreSQL Date timestamps', asy
   assert.match(html, /30 Jul 2026/);
   assert.equal(workbook[0].rows.at(-1)[0].value, '2013 Landini 5-100H');
 });
+

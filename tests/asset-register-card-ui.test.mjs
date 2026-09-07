@@ -201,8 +201,8 @@ test('asset modals preserve the open umbrella and its expanded View details card
 
 test('dropdowns reserve scrollbar space only when content is clipped', () => {
   assert.match(styles, /\.customSelectMenuPortal\s*\{[\s\S]*?scrollbar-gutter:\s*auto !important;/);
-  assert.match(headerStyles, /\.accountPopover\s*\{[\s\S]*?max-height:\s*calc\(100dvh - 7rem\);[\s\S]*?scrollbar-gutter:\s*auto;/);
-  assert.doesNotMatch(headerStyles, /max-height:\s*min\(36rem, calc\(100dvh - 7rem\)\)/);
+  assert.match(headerStyles, /\.accountPopover\s*\{[\s\S]*?max-height:\s*calc\(calc\(var\(--website-visible-height, 100dvh\) \* 1\) - 7rem\);[\s\S]*?scrollbar-gutter:\s*auto;/);
+  assert.doesNotMatch(headerStyles, /max-height:\s*min\(36rem, calc\(calc\(var\(--website-visible-height, 100dvh\) \* 1\) - 7rem\)\)/);
 });
 
 test('owner Manage keeps disposal and mapping inside the gated ten-action command grid', () => {
@@ -343,7 +343,7 @@ test('owner command layout is three columns wide, two medium and one mobile', ()
     styles.indexOf('.ownerCommandDangerAction > .buttonIcon'),
   );
 
-  assert.match(styles, /\.optionsModal\.ownerCommandModal\s*\{[\s\S]*?width:\s*min\(97vw, 84rem\) !important;/);
+  assert.match(styles, /\.optionsModal\.ownerCommandModal\s*\{[\s\S]*?width:\s*min\(calc\(var\(--website-design-vw, 1vw\) \* 97\), 84rem\) !important;/);
   assert.match(styles, /\.ownerCommandModal \.ownerCommandGrid\s*\{\s*grid-template-columns:\s*repeat\(3, minmax\(0, 1fr\)\) !important;/);
   assert.match(styles, /@media \(max-width: 1180px\)[\s\S]*?\.ownerCommandModal \.ownerCommandGrid\s*\{\s*grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\) !important;/);
   assert.match(styles, /@media \(max-width: 700px\)[\s\S]*?\.ownerCommandModal \.ownerCommandGrid,[\s\S]*?grid-template-columns:\s*minmax\(0, 1fr\) !important;/);
@@ -419,7 +419,7 @@ test('successful asset reports close only the report child and preserve Manage',
   );
 
   assert.doesNotMatch(reportSuccessFlows, /closeActionDialog\(\)/);
-  assert.equal(reportSuccessFlows.match(/closeAssetReportDialog\(\)/g)?.length, 7);
+  assert.equal(reportSuccessFlows.match(/closeAssetReportDialog\(\)/g)?.length, 13);
   assert.match(reportSuccessFlows, /if \(!didOpen\)[\s\S]*?return;[\s\S]*?closeAssetReportDialog\(\);[\s\S]*?async function handleCopyScanLink/);
   assert.match(reportSuccessFlows, /message: `\$\{reportLabel\} Excel downloaded\.` \}\);[\s\S]*?closeAssetReportDialog\(\);/);
 
@@ -437,6 +437,7 @@ test('successful asset reports close only the report child and preserve Manage',
   const ownershipHandler = reportSuccessFlows.slice(
     reportSuccessFlows.indexOf('async function handleDownloadFilteredOwnershipReport'),
   );
-  assert.equal(ownershipHandler.match(/closeAssetReportDialog\(\)/g)?.length, 2);
+  assert.equal(ownershipHandler.match(/closeAssetReportDialog\(\)/g)?.length, 3);
   assert.doesNotMatch(ownershipHandler, /closeActionDialog\(\)/);
 });
+

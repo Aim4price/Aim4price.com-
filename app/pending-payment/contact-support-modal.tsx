@@ -90,7 +90,7 @@ export default function ContactSupportModal() {
 
       {isOpen ? (
         <div
-          className={styles.modalBackdrop}
+          className={styles.modalBackdrop} data-website-overlay
           role="presentation"
           onClick={() => setIsOpen(false)}
         >
@@ -164,3 +164,4 @@ export default function ContactSupportModal() {
     </>
   );
 }
+

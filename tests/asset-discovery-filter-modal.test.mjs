@@ -38,7 +38,7 @@ test("Discovery filter header preserves close-button space on mobile", () => {
 test("Discovery filter body stays usable in short and narrow viewports", () => {
   assert.match(
     css,
-    /\.discoveryFilterModal\.discoveryFilterModal\[role='dialog'\]\s*\{[\s\S]*?width:\s*min\(calc\(100vw - 2rem\), 64rem\)\s*!important;[\s\S]*?max-height:[\s\S]*?!important;[\s\S]*?overflow:\s*hidden\s*!important;/,
+    /\.discoveryFilterModal\.discoveryFilterModal\[role='dialog'\]\s*\{[\s\S]*?width:\s*min\(calc\(calc\(var\(--website-design-vw(?:, 1vw)?\) \* 100\) - 2rem\), 64rem\)\s*!important;[\s\S]*?max-height:[\s\S]*?!important;[\s\S]*?overflow:\s*hidden\s*!important;/,
   );
   assert.match(
     css,
@@ -53,7 +53,7 @@ test("Discovery filter body stays usable in short and narrow viewports", () => {
 test("Recently advertised filter uses the same wider dialog layout", () => {
   assert.match(
     css,
-    /\.recentAdvertFilterModal\.recentAdvertFilterModal\[role='dialog'\]\s*\{[\s\S]*?width:\s*min\(calc\(100vw - 2rem\), 64rem\)\s*!important;/,
+    /\.recentAdvertFilterModal\.recentAdvertFilterModal\[role='dialog'\]\s*\{[\s\S]*?width:\s*min\(calc\(calc\(var\(--website-design-vw(?:, 1vw)?\) \* 100\) - 2rem\), 64rem\)\s*!important;/,
   );
   assert.match(
     css,
@@ -153,3 +153,4 @@ test("Discovery filter retains its fields and explicit actions", () => {
   assert.match(filterModal, /Reset filters/);
   assert.match(filterModal, /Apply filters/);
 });
+

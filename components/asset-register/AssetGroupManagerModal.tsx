@@ -1,6 +1,8 @@
 'use client';
 
-import { createPortal } from 'react-dom';
+import { websiteLogicalRect, websiteVisibleViewport } from '../../lib/website-canvas';
+
+import { createPortal } from '../WebsitePortal';
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type FormEvent } from 'react';
 import DropdownOverlay from '../DropdownOverlay';
 import {
@@ -159,17 +161,18 @@ function AssetGroupMemberSelect({
 
     const button = rootRef.current?.querySelector('button');
     if (!(button instanceof HTMLButtonElement)) return;
-    const rect = button.getBoundingClientRect();
+    const rect = websiteLogicalRect(button.getBoundingClientRect());
+    const viewport = websiteVisibleViewport();
     const estimatedMenuHeight = Math.min(240, options.length * 48 + 14);
-    const roomBelow = window.innerHeight - rect.bottom;
+    const roomBelow = viewport.height - rect.bottom;
     const openUpward = roomBelow < estimatedMenuHeight + 16 && rect.top > roomBelow;
-    const width = Math.min(rect.width, window.innerWidth - 24);
+    const width = Math.min(rect.width, viewport.width - 24);
 
     setMenuStyle({
-      left: Math.max(12, Math.min(rect.left, window.innerWidth - width - 12)),
+      left: Math.max(12, Math.min(rect.left, viewport.width - width - 12)),
       top: openUpward
         ? Math.max(12, rect.top - estimatedMenuHeight - 8)
-        : Math.min(window.innerHeight - estimatedMenuHeight - 12, rect.bottom + 8),
+        : Math.min(viewport.height - estimatedMenuHeight - 12, rect.bottom + 8),
       width,
     });
 
@@ -793,11 +796,11 @@ export default function AssetGroupManagerModal({
   const isAttachingReport = reportDeliveryMode === 'attach';
 
   return (
-    <div className={useSharedAssetModalDesign ? registerStyles.modalOverlay : styles.backdrop} role="presentation" onMouseDown={(event) => {
+    <div className={useSharedAssetModalDesign ? registerStyles.modalOverlay : styles.backdrop} data-website-overlay role="presentation" onMouseDown={(event) => {
       if (event.target === event.currentTarget && !busy && !reportBusy) onClose();
     }}>
       {useSharedAssetModalDesign ? (
-        <div className={registerStyles.modalBackdrop} onClick={() => {
+        <div className={registerStyles.modalBackdrop} data-website-overlay onClick={() => {
           if (!busy && !reportBusy) onClose();
         }} />
       ) : null}
@@ -1191,3 +1194,4 @@ export default function AssetGroupManagerModal({
     </div>
   );
 }
+

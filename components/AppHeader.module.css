@@ -17,12 +17,12 @@
   display: grid;
   grid-template-columns: minmax(16rem, 1fr) auto minmax(16rem, 1fr);
   align-items: center;
-  gap: clamp(1.45rem, 2.4vw, 2.75rem);
+  gap: clamp(1.45rem, calc(var(--website-design-vw, 1vw) * 2.4), 2.75rem);
 }
 
 .innerDealer {
   grid-template-columns: minmax(13rem, 1fr) auto minmax(13rem, 1fr);
-  gap: clamp(1rem, 1.8vw, 2rem);
+  gap: clamp(1rem, calc(var(--website-design-vw, 1vw) * 1.8), 2rem);
 }
 
 .brand {
@@ -36,7 +36,7 @@
 
 .brandLogo {
   display: block;
-  width: clamp(10.6rem, 12.6vw, 12.25rem);
+  width: clamp(10.6rem, calc(var(--website-design-vw, 1vw) * 12.6), 12.25rem);
   height: auto;
   max-height: 3.25rem;
   object-fit: contain;
@@ -48,7 +48,7 @@
   align-items: center;
   justify-content: center;
   justify-self: center;
-  gap: clamp(0.18rem, 0.5vw, 0.46rem);
+  gap: clamp(0.18rem, calc(var(--website-design-vw, 1vw) * 0.5), 0.46rem);
 }
 
 .navRail {
@@ -71,7 +71,7 @@
   align-items: center;
   justify-content: center;
   min-height: 3.28rem;
-  min-width: clamp(6.55rem, 7.2vw, 8.15rem);
+  min-width: clamp(6.55rem, calc(var(--website-design-vw, 1vw) * 7.2), 8.15rem);
   padding: 0 1.16rem;
   border-radius: 1rem;
   border: 1px solid transparent;
@@ -119,7 +119,7 @@
   background: transparent;
   color: rgba(7, 59, 48, 0.32);
   font: inherit;
-  font-size: clamp(1.56rem, 1.92vw, 1.96rem);
+  font-size: clamp(1.56rem, calc(var(--website-design-vw, 1vw) * 1.92), 1.96rem);
   font-weight: 820;
   line-height: 1;
   cursor: pointer;
@@ -489,7 +489,7 @@
   inset: 0;
   z-index: 10000;
   box-sizing: border-box;
-  min-height: 100dvh;
+  min-height: calc(var(--website-visible-height, 100dvh) * 1);
   display: grid;
   place-items: center;
   padding: 2rem 1.25rem;
@@ -504,8 +504,8 @@
 }
 
 .notificationModal {
-  width: min(51rem, calc(100vw - 2rem));
-  max-height: min(48rem, calc(100dvh - 3rem));
+  width: min(51rem, calc(calc(var(--website-design-vw, 1vw) * 100) - 2rem));
+  max-height: min(48rem, calc(calc(var(--website-visible-height, 100dvh) * 1) - 3rem));
   box-sizing: border-box;
   display: grid;
   grid-template-rows: auto auto minmax(0, 1fr) auto;
@@ -539,7 +539,7 @@
 .notificationTitle {
   display: block;
   color: #17362c;
-  font-size: clamp(1.56rem, 2.08vw, 1.86rem);
+  font-size: clamp(1.56rem, calc(var(--website-design-vw, 1vw) * 2.08), 1.86rem);
   line-height: 1.02;
   font-weight: 900;
   letter-spacing: -0.04em;
@@ -926,9 +926,9 @@
   top: calc(100% + 0.6rem);
   right: 0;
   left: auto;
-  width: min(21rem, calc(100vw - 2rem));
+  width: min(21rem, calc(calc(var(--website-design-vw, 1vw) * 100) - 2rem));
   min-width: 0;
-  max-width: min(21rem, calc(100vw - 2rem));
+  max-width: min(21rem, calc(calc(var(--website-design-vw, 1vw) * 100) - 2rem));
   box-sizing: border-box;
   z-index: 120;
   padding: 0.6rem;
@@ -1123,7 +1123,7 @@
   inset: 0;
   z-index: 10020;
   box-sizing: border-box;
-  min-height: 100dvh;
+  min-height: calc(var(--website-visible-height, 100dvh) * 1);
   display: grid;
   place-items: center;
   padding: 2rem 1.25rem;
@@ -1137,8 +1137,8 @@
 }
 
 .notificationDetailModal {
-  width: min(43rem, calc(100vw - 2rem));
-  max-height: min(46rem, calc(100dvh - 3rem));
+  width: min(43rem, calc(calc(var(--website-design-vw, 1vw) * 100) - 2rem));
+  max-height: min(46rem, calc(calc(var(--website-visible-height, 100dvh) * 1) - 3rem));
   box-sizing: border-box;
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto;
@@ -1153,13 +1153,13 @@
 }
 
 .leaveAccountModal {
-  width: min(47rem, calc(100vw - 2rem));
+  width: min(47rem, calc(calc(var(--website-design-vw, 1vw) * 100) - 2rem));
   grid-template-rows: auto auto;
 }
 
 .leaveAccountHeader {
   gap: 1.5rem;
-  padding: clamp(1.75rem, 3.2vw, 2.35rem);
+  padding: clamp(1.75rem, calc(var(--website-design-vw, 1vw) * 3.2), 2.35rem);
 }
 
 .leaveAccountHeaderText {
@@ -1170,14 +1170,14 @@
 .leaveAccountHeaderText p {
   max-width: none;
   margin: 0;
-  font-size: clamp(1rem, 1.6vw, 1.08rem);
+  font-size: clamp(1rem, calc(var(--website-design-vw, 1vw) * 1.6), 1.08rem);
   line-height: 1.55;
   text-wrap: pretty;
 }
 
 .leaveAccountActions {
   gap: 0.85rem;
-  padding: 1.25rem clamp(1.75rem, 3.2vw, 2.35rem) clamp(1.5rem, 3vw, 2rem);
+  padding: 1.25rem clamp(1.75rem, calc(var(--website-design-vw, 1vw) * 3.2), 2.35rem) clamp(1.5rem, calc(var(--website-design-vw, 1vw) * 3), 2rem);
 }
 
 .leaveAccountActions .notificationSecondaryButton,
@@ -1189,16 +1189,16 @@
 }
 
 .notificationDiscoveryDetailModal {
-  width: min(50rem, calc(100vw - 2rem));
-  max-height: min(49rem, calc(100dvh - 3rem));
+  width: min(50rem, calc(calc(var(--website-design-vw, 1vw) * 100) - 2rem));
+  max-height: min(49rem, calc(calc(var(--website-visible-height, 100dvh) * 1) - 3rem));
 }
 
 .notificationDiscoveryDetailModal .notificationDetailHeader {
-  padding: clamp(1.45rem, 2.5vw, 2rem);
+  padding: clamp(1.45rem, calc(var(--website-design-vw, 1vw) * 2.5), 2rem);
 }
 
 .notificationDiscoveryDetailModal .notificationDetailHeader h2 {
-  font-size: clamp(1.85rem, 3vw, 2.35rem);
+  font-size: clamp(1.85rem, calc(var(--website-design-vw, 1vw) * 3), 2.35rem);
 }
 
 .notificationDiscoveryDetailModal .notificationDetailHeader p {
@@ -1210,7 +1210,7 @@
 
 .notificationDiscoveryDetailModal .notificationDetailBody {
   gap: 1.1rem;
-  padding: clamp(1.35rem, 2.3vw, 1.85rem);
+  padding: clamp(1.35rem, calc(var(--website-design-vw, 1vw) * 2.3), 1.85rem);
 }
 
 .notificationDiscoveryDetailModal .notificationDetailMetaGrid {
@@ -1235,7 +1235,7 @@
 
 .notificationDiscoveryDetailModal .notificationDetailActions {
   gap: 0.8rem;
-  padding: 1.2rem clamp(1.45rem, 2.5vw, 2rem) clamp(1.45rem, 2.5vw, 1.8rem);
+  padding: 1.2rem clamp(1.45rem, calc(var(--website-design-vw, 1vw) * 2.5), 2rem) clamp(1.45rem, calc(var(--website-design-vw, 1vw) * 2.5), 1.8rem);
 }
 
 .notificationDiscoveryDetailModal .notificationPrimaryButton,
@@ -1248,7 +1248,7 @@
 }
 
 .notificationRenewalDetailModal {
-  width: min(52rem, calc(100vw - 2rem));
+  width: min(52rem, calc(calc(var(--website-design-vw, 1vw) * 100) - 2rem));
   border-color: rgba(109, 40, 217, 0.18);
   background:
     radial-gradient(circle at 100% 0%, rgba(139, 92, 246, 0.11), transparent 20rem),
@@ -1320,11 +1320,11 @@
 }
 
 @media (max-width: 620px) {
-  .notificationRenewalShareNote {
+  :global(:where(html:not(:has([data-website-canvas])))) .notificationRenewalShareNote {
     grid-template-columns: 1fr;
   }
 
-  .notificationRenewalShareNote strong {
+  :global(:where(html:not(:has([data-website-canvas])))) .notificationRenewalShareNote strong {
     white-space: normal;
   }
 }
@@ -1334,7 +1334,7 @@
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 1rem;
   align-items: start;
-  padding: clamp(1.25rem, 2.3vw, 1.62rem);
+  padding: clamp(1.25rem, calc(var(--website-design-vw, 1vw) * 2.3), 1.62rem);
   border-bottom: 1px solid rgba(18, 45, 37, 0.09);
 }
 
@@ -1379,13 +1379,13 @@
 }
 
 .notificationOutcomeModal {
-  width: min(39rem, calc(100vw - 2rem));
+  width: min(39rem, calc(calc(var(--website-design-vw, 1vw) * 100) - 2rem));
   grid-template-rows: auto auto;
   font-family: var(--font-body, 'Inter'), ui-sans-serif, system-ui, sans-serif;
 }
 
 .notificationOutcomeModal .notificationDetailHeader {
-  padding: clamp(1.65rem, 3vw, 2.15rem);
+  padding: clamp(1.65rem, calc(var(--website-design-vw, 1vw) * 3), 2.15rem);
 }
 
 .notificationOutcomeModal .notificationDetailHeaderText {
@@ -1402,7 +1402,7 @@
 }
 
 .notificationOutcomeModal .notificationDetailActions {
-  padding: 1rem clamp(1.65rem, 3vw, 2.15rem) clamp(1.4rem, 2.6vw, 1.8rem);
+  padding: 1rem clamp(1.65rem, calc(var(--website-design-vw, 1vw) * 3), 2.15rem) clamp(1.4rem, calc(var(--website-design-vw, 1vw) * 2.6), 1.8rem);
   border-top: 1px solid rgba(18, 45, 37, 0.08);
 }
 
@@ -1413,7 +1413,7 @@
 .notificationDetailHeader h2 {
   margin: 0;
   color: #073b30;
-  font-size: clamp(1.55rem, 2.7vw, 2.08rem);
+  font-size: clamp(1.55rem, calc(var(--website-design-vw, 1vw) * 2.7), 2.08rem);
   line-height: 1.04;
   font-weight: 920;
   letter-spacing: -0.045em;
@@ -1460,7 +1460,7 @@
   display: grid;
   gap: 1rem;
   overflow: auto;
-  padding: clamp(1.1rem, 2vw, 1.5rem);
+  padding: clamp(1.1rem, calc(var(--website-design-vw, 1vw) * 2), 1.5rem);
   scrollbar-width: thin;
   scrollbar-color: rgba(23, 77, 62, 0.26) transparent;
 }
@@ -1570,7 +1570,7 @@
   display: flex;
   justify-content: flex-end;
   gap: 0.7rem;
-  padding: 1rem clamp(1.25rem, 2.3vw, 1.62rem) clamp(1.25rem, 2.3vw, 1.62rem);
+  padding: 1rem clamp(1.25rem, calc(var(--website-design-vw, 1vw) * 2.3), 1.62rem) clamp(1.25rem, calc(var(--website-design-vw, 1vw) * 2.3), 1.62rem);
   border-top: 1px solid rgba(18, 45, 37, 0.08);
   background: rgba(250, 252, 251, 0.92);
 }
@@ -1640,7 +1640,7 @@
 
 .notificationMediaStage {
   position: relative;
-  min-height: clamp(16rem, 39vh, 26rem);
+  min-height: clamp(16rem, calc(var(--website-design-vh, 1vh) * 39), 26rem);
   display: grid;
   place-items: center;
   overflow: hidden;
@@ -1662,7 +1662,7 @@
 .notificationDetailImage {
   display: block;
   width: 100%;
-  max-height: min(42vh, 24rem);
+  max-height: min(calc(var(--website-design-vh, 1vh) * 42), 24rem);
   object-fit: contain;
   border-radius: 1.05rem;
   border: 0;
@@ -1672,7 +1672,7 @@
 
 .notificationDocumentFrame {
   width: 100%;
-  min-height: clamp(16rem, 42vh, 27rem);
+  min-height: clamp(16rem, calc(var(--website-design-vh, 1vh) * 42), 27rem);
   border: 0;
   background: #ffffff;
 }
@@ -1858,68 +1858,68 @@
 }
 
 @media (max-width: 1240px) {
-  .inner {
+  :global(:where(html:not(:has([data-website-canvas])))) .inner {
     width: min(calc(100% - 2rem), 1240px);
     gap: 1.15rem;
     grid-template-columns: minmax(13rem, 1fr) auto minmax(13rem, 1fr);
   }
 
-  .navLink,
-  .signupButton,
-  .loginButton,
-  .accountButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .navLink,
+  :global(:where(html:not(:has([data-website-canvas])))) .signupButton,
+  :global(:where(html:not(:has([data-website-canvas])))) .loginButton,
+  :global(:where(html:not(:has([data-website-canvas])))) .accountButton {
     padding: 0 1rem;
   }
 
-  .navLink {
+  :global(:where(html:not(:has([data-website-canvas])))) .navLink {
     min-width: auto;
   }
 
-  .brandLogo {
+  :global(:where(html:not(:has([data-website-canvas])))) .brandLogo {
     width: clamp(10.25rem, 14vw, 11.8rem);
   }
 }
 
 @media (max-width: 1040px) {
-  .inner {
+  :global(:where(html:not(:has([data-website-canvas])))) .inner {
     grid-template-columns: 1fr;
     align-items: start;
     gap: 1rem;
     padding: 1rem 0 1.08rem;
   }
 
-  .brand,
-  .nav,
-  .actions {
+  :global(:where(html:not(:has([data-website-canvas])))) .brand,
+  :global(:where(html:not(:has([data-website-canvas])))) .nav,
+  :global(:where(html:not(:has([data-website-canvas])))) .actions {
     justify-self: start;
   }
 
-  .nav {
+  :global(:where(html:not(:has([data-website-canvas])))) .nav {
     justify-content: flex-start;
   }
 
-  .navRail {
+  :global(:where(html:not(:has([data-website-canvas])))) .navRail {
     flex-wrap: wrap;
   }
 
-  .brandLogo {
+  :global(:where(html:not(:has([data-website-canvas])))) .brandLogo {
     width: 12.2rem;
     max-height: 3.25rem;
   }
 }
 
 @media (max-width: 720px) {
-  .brandLogo {
+  :global(:where(html:not(:has([data-website-canvas])))) .brandLogo {
     width: clamp(10.6rem, 52vw, 12.25rem);
     max-height: 3.15rem;
   }
 
-  .nav,
-  .actions {
+  :global(:where(html:not(:has([data-website-canvas])))) .nav,
+  :global(:where(html:not(:has([data-website-canvas])))) .actions {
     width: 100%;
   }
 
-  .navRail {
+  :global(:where(html:not(:has([data-website-canvas])))) .navRail {
     width: 100%;
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1930,7 +1930,7 @@
     box-shadow: none;
   }
 
-  .navLink {
+  :global(:where(html:not(:has([data-website-canvas])))) .navLink {
     min-height: 3.2rem;
     padding: 0 0.95rem;
     background: rgba(255, 255, 255, 0.94);
@@ -1938,7 +1938,7 @@
     box-shadow: 0 8px 18px rgba(18, 45, 37, 0.045);
   }
 
-  .actionsRail {
+  :global(:where(html:not(:has([data-website-canvas])))) .actionsRail {
     width: 100%;
     justify-content: stretch;
     gap: 0.55rem;
@@ -1948,20 +1948,20 @@
     box-shadow: none;
   }
 
-  .accountMenu {
+  :global(:where(html:not(:has([data-website-canvas])))) .accountMenu {
     width: 100%;
     flex: 1 1 0;
   }
 
-  .notificationMenu {
+  :global(:where(html:not(:has([data-website-canvas])))) .notificationMenu {
     flex: 0 0 auto;
   }
 
-  .accountButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .accountButton {
     width: 100%;
   }
 
-  .notificationButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .notificationButton {
     width: 3.2rem;
     min-width: 3.2rem;
     min-height: 3.2rem;
@@ -1970,14 +1970,14 @@
     box-shadow: 0 8px 18px rgba(18, 45, 37, 0.045);
   }
 
-  .actionDivider {
+  :global(:where(html:not(:has([data-website-canvas])))) .actionDivider {
     flex: 0 0 auto;
     padding: 0 0.15rem;
   }
 
-  .signupButton,
-  .loginButton,
-  .accountButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .signupButton,
+  :global(:where(html:not(:has([data-website-canvas])))) .loginButton,
+  :global(:where(html:not(:has([data-website-canvas])))) .accountButton {
     flex: 1 1 0;
     min-height: 3.2rem;
     padding: 0 0.95rem;
@@ -1986,7 +1986,7 @@
     box-shadow: 0 8px 18px rgba(18, 45, 37, 0.045);
   }
 
-  .accountPopover {
+  :global(:where(html:not(:has([data-website-canvas])))) .accountPopover {
     left: calc(-3.2rem - 0.55rem);
     right: auto;
     width: calc(100% + 3.2rem + 0.55rem);
@@ -1994,111 +1994,111 @@
     max-width: none;
   }
 
-  .notificationModalBackdrop {
+  :global(:where(html:not(:has([data-website-canvas])))) .notificationModalBackdrop {
     place-items: center;
     padding: 1rem;
   }
 
-  .notificationModal {
+  :global(:where(html:not(:has([data-website-canvas])))) .notificationModal {
     width: 100%;
     max-height: calc(100dvh - 2rem);
     padding: 0.82rem;
     border-radius: 1.35rem;
   }
 
-  .notificationHeaderRow {
+  :global(:where(html:not(:has([data-website-canvas])))) .notificationHeaderRow {
     grid-template-columns: 1fr;
     gap: 0.9rem;
     padding: 1rem;
     border-radius: 1.12rem;
   }
 
-  .notificationHeaderActions {
+  :global(:where(html:not(:has([data-website-canvas])))) .notificationHeaderActions {
     justify-content: flex-end;
   }
 
-  .notificationCloseButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .notificationCloseButton {
     flex: 0 0 auto;
   }
 
-  .notificationListHeader {
+  :global(:where(html:not(:has([data-website-canvas])))) .notificationListHeader {
     align-items: flex-start;
     padding-inline: 0.2rem;
   }
 
-  .notificationListHeaderActions {
+  :global(:where(html:not(:has([data-website-canvas])))) .notificationListHeaderActions {
     flex-direction: column;
     align-items: flex-end;
     gap: 0.42rem;
   }
 
-  .notificationClearButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .notificationClearButton {
     min-height: 2.38rem;
     padding: 0 0.8rem;
   }
 
-  .notificationList {
+  :global(:where(html:not(:has([data-website-canvas])))) .notificationList {
     padding-right: 0.12rem;
     padding-left: 0.04rem;
   }
 
-  .notificationPagination {
+  :global(:where(html:not(:has([data-website-canvas])))) .notificationPagination {
     gap: 0.52rem;
     padding-inline: 0.12rem;
   }
 
-  .notificationPaginationButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .notificationPaginationButton {
     flex: 1 1 0;
     min-height: 2.5rem;
     padding: 0 0.72rem;
   }
 
-  .notificationPaginationText {
+  :global(:where(html:not(:has([data-website-canvas])))) .notificationPaginationText {
     flex: 0 0 auto;
     font-size: 0.76rem;
   }
 
-  .notificationItem {
+  :global(:where(html:not(:has([data-website-canvas])))) .notificationItem {
     grid-template-columns: 0.95rem minmax(0, 1fr);
     gap: 0.75rem;
     padding: 0.98rem;
     border-radius: 1.08rem;
   }
 
-  .notificationMetaRow {
+  :global(:where(html:not(:has([data-website-canvas])))) .notificationMetaRow {
     flex-wrap: wrap;
     gap: 0.55rem;
   }
 
-  .notificationOpenHint {
+  :global(:where(html:not(:has([data-website-canvas])))) .notificationOpenHint {
     min-height: 2.16rem;
     margin-left: auto;
   }
 
-  .notificationMediaToolbar {
+  :global(:where(html:not(:has([data-website-canvas])))) .notificationMediaToolbar {
     grid-template-columns: 1fr;
     align-items: stretch;
   }
 
-  .notificationMediaActions {
+  :global(:where(html:not(:has([data-website-canvas])))) .notificationMediaActions {
     justify-content: stretch;
   }
 
-  .notificationMediaActionButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .notificationMediaActionButton {
     flex: 1 1 0;
   }
 
-  .notificationMediaNavButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .notificationMediaNavButton {
     width: 2.55rem;
     height: 2.55rem;
     font-size: 1.28rem;
   }
 
-  .notificationMediaNavPrevious {
+  :global(:where(html:not(:has([data-website-canvas])))) .notificationMediaNavPrevious {
     left: 0.55rem;
   }
 
-  .notificationMediaNavNext {
+  :global(:where(html:not(:has([data-website-canvas])))) .notificationMediaNavNext {
     right: 0.55rem;
   }
 }
@@ -2168,78 +2168,78 @@
 
 
 @media (max-width: 720px) {
-  .notificationDetailBackdrop {
+  :global(:where(html:not(:has([data-website-canvas])))) .notificationDetailBackdrop {
     padding: 1rem;
   }
 
-  .notificationDetailModal {
+  :global(:where(html:not(:has([data-website-canvas])))) .notificationDetailModal {
     width: 100%;
     max-height: calc(100dvh - 2rem);
     border-radius: 1.32rem;
   }
 
-  .notificationDiscoveryDetailModal .notificationDetailHeader {
+  :global(:where(html:not(:has([data-website-canvas])))) .notificationDiscoveryDetailModal .notificationDetailHeader {
     padding: 1.1rem;
   }
 
-  .notificationDiscoveryDetailModal .notificationDetailHeader h2 {
+  :global(:where(html:not(:has([data-website-canvas])))) .notificationDiscoveryDetailModal .notificationDetailHeader h2 {
     font-size: clamp(1.5rem, 8vw, 1.85rem);
   }
 
-  .notificationDiscoveryDetailModal .notificationDetailHeader p {
+  :global(:where(html:not(:has([data-website-canvas])))) .notificationDiscoveryDetailModal .notificationDetailHeader p {
     font-size: 0.96rem;
   }
 
-  .notificationDiscoveryDetailModal .notificationDetailBody {
+  :global(:where(html:not(:has([data-website-canvas])))) .notificationDiscoveryDetailModal .notificationDetailBody {
     padding: 1rem;
   }
 
-  .notificationDiscoveryDetailModal .notificationDetailMetaCard {
+  :global(:where(html:not(:has([data-website-canvas])))) .notificationDiscoveryDetailModal .notificationDetailMetaCard {
     min-height: 0;
     padding: 1rem;
   }
 
-  .notificationDiscoveryDetailModal .notificationDetailActions {
+  :global(:where(html:not(:has([data-website-canvas])))) .notificationDiscoveryDetailModal .notificationDetailActions {
     padding: 1rem;
   }
 
-  .notificationDetailHeader {
+  :global(:where(html:not(:has([data-website-canvas])))) .notificationDetailHeader {
     padding: 1rem;
   }
 
-  .notificationOutcomeModal .notificationDetailHeader {
+  :global(:where(html:not(:has([data-website-canvas])))) .notificationOutcomeModal .notificationDetailHeader {
     padding: 1.25rem;
   }
 
-  .notificationOutcomeModal .notificationDetailActions {
+  :global(:where(html:not(:has([data-website-canvas])))) .notificationOutcomeModal .notificationDetailActions {
     padding: 0.9rem 1.25rem 1.25rem;
   }
 
-  .notificationDetailHeader h2 {
+  :global(:where(html:not(:has([data-website-canvas])))) .notificationDetailHeader h2 {
     font-size: clamp(1.36rem, 8vw, 1.7rem);
   }
 
-  .notificationDetailCloseButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .notificationDetailCloseButton {
     width: 2.72rem;
     height: 2.72rem;
   }
 
-  .notificationDetailBody {
+  :global(:where(html:not(:has([data-website-canvas])))) .notificationDetailBody {
     padding: 1rem;
   }
 
-  .notificationDetailMetaGrid {
+  :global(:where(html:not(:has([data-website-canvas])))) .notificationDetailMetaGrid {
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .notificationDetailActions {
+  :global(:where(html:not(:has([data-website-canvas])))) .notificationDetailActions {
     flex-direction: column-reverse;
     padding: 1rem;
   }
 
-  .notificationPrimaryButton,
-  .notificationSoftDangerButton,
-  .notificationSecondaryButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .notificationPrimaryButton,
+  :global(:where(html:not(:has([data-website-canvas])))) .notificationSoftDangerButton,
+  :global(:where(html:not(:has([data-website-canvas])))) .notificationSecondaryButton {
     width: 100%;
   }
 }
@@ -2374,7 +2374,7 @@
   box-sizing: border-box;
   width: auto;
   max-width: 100%;
-  min-height: calc(100dvh - 4.75rem);
+  min-height: calc(calc(var(--website-visible-height, 100dvh) * 1) - 4.75rem);
   overflow: hidden;
   overscroll-behavior: contain;
   pointer-events: auto;
@@ -2394,7 +2394,7 @@
   gap: 0.86rem;
   width: auto;
   max-width: none;
-  max-height: calc(100dvh - 5.45rem);
+  max-height: calc(calc(var(--website-design-vh, 1dvh) * 100) - 5.45rem);
   overflow: hidden;
   overscroll-behavior: contain;
   padding: 0.86rem;
@@ -2637,7 +2637,7 @@
 }
 
 @media (max-width: 1180px) {
-  .inner {
+  :global(:where(html:not(:has([data-website-canvas])))) .inner {
     width: min(calc(100% - 2rem), 1180px);
     min-height: auto;
     padding: 0.68rem 0 0.76rem;
@@ -2650,12 +2650,12 @@
     gap: 0.62rem 0.9rem;
   }
 
-  .brand {
+  :global(:where(html:not(:has([data-website-canvas])))) .brand {
     grid-area: brand;
     justify-self: start;
   }
 
-  .nav {
+  :global(:where(html:not(:has([data-website-canvas])))) .nav {
     grid-area: nav;
     width: 100%;
     min-width: 0;
@@ -2664,7 +2664,7 @@
     overflow: visible;
   }
 
-  .actions {
+  :global(:where(html:not(:has([data-website-canvas])))) .actions {
     grid-area: actions;
     width: auto;
     min-width: 0;
@@ -2672,12 +2672,12 @@
     justify-content: flex-end;
   }
 
-  .brandLogo {
+  :global(:where(html:not(:has([data-website-canvas])))) .brandLogo {
     width: clamp(9.3rem, 15vw, 11.3rem);
     max-height: 2.65rem;
   }
 
-  .navRail {
+  :global(:where(html:not(:has([data-website-canvas])))) .navRail {
     width: 100%;
     max-width: 100%;
     display: flex;
@@ -2690,7 +2690,7 @@
     border-radius: 1.08rem;
   }
 
-  .navLink {
+  :global(:where(html:not(:has([data-website-canvas])))) .navLink {
     flex: 1 1 9.2rem;
     min-width: 8.6rem;
     max-width: 13.75rem;
@@ -2704,7 +2704,7 @@
     overflow-wrap: anywhere;
   }
 
-  .actionsRail {
+  :global(:where(html:not(:has([data-website-canvas])))) .actionsRail {
     width: auto;
     max-width: 100%;
     justify-content: flex-end;
@@ -2713,26 +2713,26 @@
     border-radius: 1.08rem;
   }
 
-  .signupButton,
-  .loginButton,
-  .accountButton,
-  .notificationButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .signupButton,
+  :global(:where(html:not(:has([data-website-canvas])))) .loginButton,
+  :global(:where(html:not(:has([data-website-canvas])))) .accountButton,
+  :global(:where(html:not(:has([data-website-canvas])))) .notificationButton {
     min-height: 2.85rem;
     border-radius: 0.86rem;
     font-size: 0.9rem;
   }
 
-  .accountMenu {
+  :global(:where(html:not(:has([data-website-canvas])))) .accountMenu {
     width: min(11.4rem, 100%);
     flex: 0 1 11.4rem;
     min-width: 0;
   }
 
-  .accountButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .accountButton {
     min-width: 0;
   }
 
-  .accountButtonText {
+  :global(:where(html:not(:has([data-website-canvas])))) .accountButtonText {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -2740,17 +2740,17 @@
 }
 
 @media (min-width: 901px) and (max-width: 1180px) {
-  .navRail {
+  :global(:where(html:not(:has([data-website-canvas])))) .navRail {
     box-shadow:
       0 12px 28px rgba(18, 45, 37, 0.048),
       inset 0 1px 0 rgba(255, 255, 255, 0.86);
   }
 
-  .navLink {
+  :global(:where(html:not(:has([data-website-canvas])))) .navLink {
     min-width: 8.75rem;
   }
 
-  .accountPopover {
+  :global(:where(html:not(:has([data-website-canvas])))) .accountPopover {
     right: 0;
     left: auto;
     width: min(21rem, calc(100vw - 2rem));
@@ -2758,7 +2758,7 @@
 }
 
 @media (max-width: 900px) {
-  .inner {
+  :global(:where(html:not(:has([data-website-canvas])))) .inner {
     width: min(calc(100% - 1.4rem), 56rem);
     grid-template-columns: auto minmax(0, 1fr);
     grid-template-areas:
@@ -2769,21 +2769,21 @@
     gap: 0.56rem 0.7rem;
   }
 
-  .brand,
-  .actions {
+  :global(:where(html:not(:has([data-website-canvas])))) .brand,
+  :global(:where(html:not(:has([data-website-canvas])))) .actions {
     min-width: 0;
   }
 
-  .brandLogo {
+  :global(:where(html:not(:has([data-website-canvas])))) .brandLogo {
     width: clamp(8.7rem, 20vw, 10.3rem);
     max-height: 2.4rem;
   }
 
-  .nav {
+  :global(:where(html:not(:has([data-website-canvas])))) .nav {
     display: none;
   }
 
-  .actionsRail {
+  :global(:where(html:not(:has([data-website-canvas])))) .actionsRail {
     width: auto;
     min-width: 0;
     max-width: 100%;
@@ -2796,56 +2796,56 @@
     box-shadow: none;
   }
 
-  .mobileMenuButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .mobileMenuButton {
     display: inline-flex;
   }
 
-  .mobileMenuBackdrop {
+  :global(:where(html:not(:has([data-website-canvas])))) .mobileMenuBackdrop {
     display: block;
   }
 
-  .mobileMenuPanel {
+  :global(:where(html:not(:has([data-website-canvas])))) .mobileMenuPanel {
     display: grid;
     pointer-events: auto;
   }
 
-  .mobileMenuNav,
-  .mobileMenuAuthActions,
-  .mobileMenuAccountActions {
+  :global(:where(html:not(:has([data-website-canvas])))) .mobileMenuNav,
+  :global(:where(html:not(:has([data-website-canvas])))) .mobileMenuAuthActions,
+  :global(:where(html:not(:has([data-website-canvas])))) .mobileMenuAccountActions {
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .actionDivider {
+  :global(:where(html:not(:has([data-website-canvas])))) .actionDivider {
     display: none;
   }
 
-  .signupButton,
-  .loginButton,
-  .accountButton,
-  .notificationButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .signupButton,
+  :global(:where(html:not(:has([data-website-canvas])))) .loginButton,
+  :global(:where(html:not(:has([data-website-canvas])))) .accountButton,
+  :global(:where(html:not(:has([data-website-canvas])))) .notificationButton {
     min-height: 2.9rem;
     border-radius: 0.9rem;
     box-shadow: 0 8px 18px rgba(18, 45, 37, 0.055);
   }
 
-  .notificationButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .notificationButton {
     width: 2.9rem;
     min-width: 2.9rem;
     padding: 0;
   }
 
-  .notificationIcon {
+  :global(:where(html:not(:has([data-website-canvas])))) .notificationIcon {
     width: 1.08rem;
     height: 1.08rem;
   }
 
-  .accountMenu {
+  :global(:where(html:not(:has([data-website-canvas])))) .accountMenu {
     width: auto;
     flex: 0 0 auto;
     min-width: 0;
   }
 
-  .accountButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .accountButton {
     width: auto;
     min-width: 6.35rem;
     justify-content: center;
@@ -2854,28 +2854,28 @@
     padding-right: 0.82rem;
   }
 
-  .accountButton > .accountAvatar {
+  :global(:where(html:not(:has([data-website-canvas])))) .accountButton > .accountAvatar {
     display: none;
   }
 
-  .accountButtonMenuMark {
+  :global(:where(html:not(:has([data-website-canvas])))) .accountButtonMenuMark {
     order: -1;
     margin-left: 0;
   }
 
-  .accountButtonText {
+  :global(:where(html:not(:has([data-website-canvas])))) .accountButtonText {
     flex: 0 0 auto;
   }
 
-  .accountButtonTextFull {
+  :global(:where(html:not(:has([data-website-canvas])))) .accountButtonTextFull {
     display: none;
   }
 
-  .accountButtonTextCompact {
+  :global(:where(html:not(:has([data-website-canvas])))) .accountButtonTextCompact {
     display: inline;
   }
 
-  .accountPopover {
+  :global(:where(html:not(:has([data-website-canvas])))) .accountPopover {
     position: fixed;
     top: 4.95rem;
     left: 0.85rem;
@@ -2897,19 +2897,19 @@
       inset 0 1px 0 rgba(255, 255, 255, 0.95);
   }
 
-  .accountSummary {
+  :global(:where(html:not(:has([data-website-canvas])))) .accountSummary {
     min-height: 3.95rem;
     padding: 0.74rem 0.78rem;
     border-radius: 1.2rem;
   }
 
-  .accountName {
+  :global(:where(html:not(:has([data-website-canvas])))) .accountName {
     font-size: 1.08rem;
     font-weight: 900;
   }
 
-  .menuLink,
-  .menuDangerButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .menuLink,
+  :global(:where(html:not(:has([data-website-canvas])))) .menuDangerButton {
     min-height: 3.34rem;
     padding: 0 1.02rem;
     border-radius: 1.08rem;
@@ -2917,88 +2917,88 @@
     font-weight: 850;
   }
 
-  .notificationModalBackdrop,
-  .notificationDetailBackdrop {
+  :global(:where(html:not(:has([data-website-canvas])))) .notificationModalBackdrop,
+  :global(:where(html:not(:has([data-website-canvas])))) .notificationDetailBackdrop {
     padding: 0.85rem;
   }
 
-  .notificationModal,
-  .notificationDetailModal {
+  :global(:where(html:not(:has([data-website-canvas])))) .notificationModal,
+  :global(:where(html:not(:has([data-website-canvas])))) .notificationDetailModal {
     max-height: calc(100dvh - 1.7rem);
   }
 }
 
 @media (max-width: 720px) {
-  .inner {
+  :global(:where(html:not(:has([data-website-canvas])))) .inner {
     width: min(calc(100% - 1rem), 46rem);
     padding: 0.52rem 0;
     gap: 0.48rem 0.52rem;
   }
 
-  .brandLogo {
+  :global(:where(html:not(:has([data-website-canvas])))) .brandLogo {
     width: clamp(8.05rem, 34vw, 9.45rem);
     max-height: 2.32rem;
   }
 
-  .actionsRail {
+  :global(:where(html:not(:has([data-website-canvas])))) .actionsRail {
     gap: 0.3rem;
   }
 
-  .mobileMenuButton,
-  .loginButton,
-  .signupButton,
-  .accountButton,
-  .notificationButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .mobileMenuButton,
+  :global(:where(html:not(:has([data-website-canvas])))) .loginButton,
+  :global(:where(html:not(:has([data-website-canvas])))) .signupButton,
+  :global(:where(html:not(:has([data-website-canvas])))) .accountButton,
+  :global(:where(html:not(:has([data-website-canvas])))) .notificationButton {
     min-height: 2.75rem;
     border-radius: 0.84rem;
     font-size: 0.84rem;
   }
 
-  .mobileMenuButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .mobileMenuButton {
     padding: 0 0.78rem;
     gap: 0.42rem;
   }
 
-  .notificationButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .notificationButton {
     width: 2.75rem;
     min-width: 2.75rem;
   }
 
-  .loginButton,
-  .signupButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .loginButton,
+  :global(:where(html:not(:has([data-website-canvas])))) .signupButton {
     padding: 0 0.75rem;
   }
 
-  .signupButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .signupButton {
     display: none;
   }
 
-  .accountMenu {
+  :global(:where(html:not(:has([data-website-canvas])))) .accountMenu {
     width: auto;
     flex: 0 0 auto;
   }
 
-  .accountButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .accountButton {
     min-width: 6.05rem;
     gap: 0.46rem;
     padding-left: 0.68rem;
     padding-right: 0.72rem;
   }
 
-  .accountButtonTextFull {
+  :global(:where(html:not(:has([data-website-canvas])))) .accountButtonTextFull {
     display: none;
   }
 
-  .accountButtonTextCompact {
+  :global(:where(html:not(:has([data-website-canvas])))) .accountButtonTextCompact {
     display: inline;
   }
 
-  .mobileMenuBackdrop {
+  :global(:where(html:not(:has([data-website-canvas])))) .mobileMenuBackdrop {
     top: calc(env(safe-area-inset-top) + 4.35rem);
     min-height: calc(100dvh - 4.35rem);
   }
 
-  .mobileMenuPanel {
+  :global(:where(html:not(:has([data-website-canvas])))) .mobileMenuPanel {
     top: calc(env(safe-area-inset-top) + 4.35rem);
     right: max(0.55rem, env(safe-area-inset-right));
     bottom: max(0.55rem, env(safe-area-inset-bottom));
@@ -3008,61 +3008,61 @@
     border-radius: 1.18rem;
   }
 
-  .mobileMenuHeader {
+  :global(:where(html:not(:has([data-website-canvas])))) .mobileMenuHeader {
     padding: 0.72rem;
     border-radius: 0.98rem;
   }
 
-  .mobileMenuNav,
-  .mobileMenuAuthActions,
-  .mobileMenuAccountActions {
+  :global(:where(html:not(:has([data-website-canvas])))) .mobileMenuNav,
+  :global(:where(html:not(:has([data-website-canvas])))) .mobileMenuAuthActions,
+  :global(:where(html:not(:has([data-website-canvas])))) .mobileMenuAccountActions {
     grid-template-columns: minmax(0, 1fr);
     gap: 0.52rem;
   }
 
-  .mobileMenuNavLink,
-  .mobileMenuAuthLink,
-  .mobileMenuDangerButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .mobileMenuNavLink,
+  :global(:where(html:not(:has([data-website-canvas])))) .mobileMenuAuthLink,
+  :global(:where(html:not(:has([data-website-canvas])))) .mobileMenuDangerButton {
     min-height: 3.5rem;
     padding: 0 0.96rem;
     border-radius: 0.98rem;
     font-size: 0.96rem;
   }
 
-  .accountPopover {
+  :global(:where(html:not(:has([data-website-canvas])))) .accountPopover {
     top: 4.45rem;
     left: 0.65rem;
     right: 0.65rem;
     max-height: calc(100dvh - 5.1rem);
   }
 
-  .notificationModalBackdrop,
-  .notificationDetailBackdrop {
+  :global(:where(html:not(:has([data-website-canvas])))) .notificationModalBackdrop,
+  :global(:where(html:not(:has([data-website-canvas])))) .notificationDetailBackdrop {
     padding: 0.75rem;
   }
 
-  .notificationModal,
-  .notificationDetailModal {
+  :global(:where(html:not(:has([data-website-canvas])))) .notificationModal,
+  :global(:where(html:not(:has([data-website-canvas])))) .notificationDetailModal {
     max-height: calc(100dvh - 1.5rem);
   }
 }
 
 @media (max-width: 430px) {
-  .inner {
+  :global(:where(html:not(:has([data-website-canvas])))) .inner {
     width: min(calc(100% - 0.9rem), 44rem);
     gap: 0.44rem;
   }
 
-  .brandLogo {
+  :global(:where(html:not(:has([data-website-canvas])))) .brandLogo {
     width: clamp(7.85rem, 33vw, 8.25rem);
   }
 
-  .accountMenu {
+  :global(:where(html:not(:has([data-website-canvas])))) .accountMenu {
     width: auto;
     flex: 0 0 auto;
   }
 
-  .accountButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .accountButton {
     width: auto;
     min-width: 5.85rem;
     padding-left: 0.62rem;
@@ -3070,25 +3070,25 @@
     justify-content: center;
   }
 
-  .accountButtonText {
+  :global(:where(html:not(:has([data-website-canvas])))) .accountButtonText {
     display: inline-flex;
   }
 
-  .accountButtonMenuIcon {
+  :global(:where(html:not(:has([data-website-canvas])))) .accountButtonMenuIcon {
     width: 0.92rem;
     height: 0.72rem;
   }
 
-  .mobileMenuButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .mobileMenuButton {
     padding: 0 0.68rem;
   }
 
-  .mobileMenuBackdrop {
+  :global(:where(html:not(:has([data-website-canvas])))) .mobileMenuBackdrop {
     top: calc(env(safe-area-inset-top) + 4.15rem);
     min-height: calc(100dvh - 4.15rem);
   }
 
-  .mobileMenuPanel {
+  :global(:where(html:not(:has([data-website-canvas])))) .mobileMenuPanel {
     top: calc(env(safe-area-inset-top) + 4.15rem);
     right: max(0.45rem, env(safe-area-inset-right));
     bottom: max(0.45rem, env(safe-area-inset-bottom));
@@ -3096,46 +3096,46 @@
     max-height: calc(100dvh - 4.6rem);
   }
 
-  .loginButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .loginButton {
     padding: 0 0.68rem;
   }
 }
 
 @media (max-width: 390px) {
-  .inner {
+  :global(:where(html:not(:has([data-website-canvas])))) .inner {
     width: min(calc(100% - 0.74rem), 43rem);
     gap: 0.38rem;
   }
 
-  .brandLogo {
+  :global(:where(html:not(:has([data-website-canvas])))) .brandLogo {
     width: 7.8rem;
   }
 
-  .actionsRail {
+  :global(:where(html:not(:has([data-website-canvas])))) .actionsRail {
     gap: 0.25rem;
   }
 
-  .accountButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .accountButton {
     min-width: 5.62rem;
     padding-left: 0.56rem;
     padding-right: 0.6rem;
   }
 
-  .mobileMenuButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .mobileMenuButton {
     padding: 0 0.62rem;
   }
 
-  .mobileMenuBackdrop {
+  :global(:where(html:not(:has([data-website-canvas])))) .mobileMenuBackdrop {
     top: calc(env(safe-area-inset-top) + 4.05rem);
     min-height: calc(100dvh - 4.05rem);
   }
 
-  .mobileMenuPanel {
+  :global(:where(html:not(:has([data-website-canvas])))) .mobileMenuPanel {
     top: calc(env(safe-area-inset-top) + 4.05rem);
     max-height: calc(100dvh - 4.5rem);
   }
 
-  .loginButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .loginButton {
     padding: 0 0.6rem;
     font-size: 0.8rem;
   }
@@ -3164,7 +3164,7 @@
 }
 
 @media (max-width: 1180px) {
-  .accountPopover {
+  :global(:where(html:not(:has([data-website-canvas])))) .accountPopover {
     left: 0.28rem;
     right: 0.28rem;
     width: auto;
@@ -3173,7 +3173,7 @@
 }
 
 @media (max-width: 900px) {
-  .accountMenu {
+  :global(:where(html:not(:has([data-website-canvas])))) .accountMenu {
     display: none;
   }
 }
@@ -3183,18 +3183,91 @@
   display: none;
 }
 
+:global(:where([data-website-canvas])) .actionsRail {
+    overflow: visible;
+    width: max-content;
+    flex: 0 0 auto;
+  }
+
+:global(:where([data-website-canvas])) .accountMenu {
+  }
+
+:global(:where([data-website-canvas])) .accountWidthSizer {
+    box-sizing: border-box;
+    height: 0;
+    min-height: 0;
+    overflow: hidden;
+    visibility: hidden;
+    pointer-events: none;
+    display: flex;
+    align-items: center;
+    gap: 0.52rem;
+    width: max-content;
+    min-width: 100%;
+    max-width: calc(calc(var(--website-design-vw, 1vw) * 100) - 7rem);
+    padding: 0 1.35rem 0 0.65rem;
+    white-space: nowrap;
+    color: transparent;
+    font-size: 1.08rem;
+    line-height: 1;
+    font-weight: 900;
+    letter-spacing: -0.018em;
+  }
+
+:global(:where([data-website-canvas])) .accountWidthSizerIcon {
+    width: 2.05rem;
+    min-width: 2.05rem;
+    flex: 0 0 2.05rem;
+  }
+
+:global(:where([data-website-canvas])) .accountButton {
+  }
+
+:global(:where([data-website-canvas])) .accountButtonText,
+  :global(:where([data-website-canvas])) .accountButtonTextFull,
+  :global(:where([data-website-canvas])) .accountButtonTextCompact {
+    white-space: nowrap;
+    overflow: visible;
+    text-overflow: clip;
+  }
+
+:global(:where([data-website-canvas])) .accountPopover {
+    right: 0;
+    left: auto;
+    width: max-content;
+    max-width: calc(calc(var(--website-design-vw, 1vw) * 100) - 2rem);
+    overflow-x: auto;
+  }
+
+:global(:where([data-website-canvas])) .accountSummary {
+    grid-template-columns: auto max-content;
+  }
+
+:global(:where([data-website-canvas])) .accountSummaryText {
+    min-width: max-content;
+    max-width: none;
+    white-space: nowrap;
+  }
+
+:global(:where([data-website-canvas])) .accountName {
+    max-width: none;
+    white-space: nowrap;
+    overflow: visible;
+    text-overflow: clip;
+  }
+
 @media (min-width: 901px) {
-  .actionsRail {
+  :global(:where(html:not(:has([data-website-canvas])))) .actionsRail {
     overflow: visible;
   }
 
-  .accountMenu {
+  :global(:where(html:not(:has([data-website-canvas])))) .accountMenu {
     width: max-content;
     min-width: 12.25rem;
     flex: 0 0 auto;
   }
 
-  .accountWidthSizer {
+  :global(:where(html:not(:has([data-website-canvas])))) .accountWidthSizer {
     box-sizing: border-box;
     height: 0;
     min-height: 0;
@@ -3216,26 +3289,26 @@
     letter-spacing: -0.018em;
   }
 
-  .accountWidthSizerIcon {
+  :global(:where(html:not(:has([data-website-canvas])))) .accountWidthSizerIcon {
     width: 2.05rem;
     min-width: 2.05rem;
     flex: 0 0 2.05rem;
   }
 
-  .accountButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .accountButton {
     width: 100%;
     min-width: 12.25rem;
   }
 
-  .accountButtonText,
-  .accountButtonTextFull,
-  .accountButtonTextCompact {
+  :global(:where(html:not(:has([data-website-canvas])))) .accountButtonText,
+  :global(:where(html:not(:has([data-website-canvas])))) .accountButtonTextFull,
+  :global(:where(html:not(:has([data-website-canvas])))) .accountButtonTextCompact {
     white-space: nowrap;
     overflow: visible;
     text-overflow: clip;
   }
 
-  .accountPopover {
+  :global(:where(html:not(:has([data-website-canvas])))) .accountPopover {
     right: 0;
     left: auto;
     width: max-content;
@@ -3244,17 +3317,17 @@
     overflow-x: auto;
   }
 
-  .accountSummary {
+  :global(:where(html:not(:has([data-website-canvas])))) .accountSummary {
     grid-template-columns: auto max-content;
   }
 
-  .accountSummaryText {
+  :global(:where(html:not(:has([data-website-canvas])))) .accountSummaryText {
     min-width: max-content;
     max-width: none;
     white-space: nowrap;
   }
 
-  .accountName {
+  :global(:where(html:not(:has([data-website-canvas])))) .accountName {
     max-width: none;
     white-space: nowrap;
     overflow: visible;
@@ -3281,13 +3354,13 @@
 }
 
 @media (max-width: 900px) {
-  .mobileMenuBackdrop {
+  :global(:where(html:not(:has([data-website-canvas])))) .mobileMenuBackdrop {
     background: rgba(5, 22, 17, 0.38);
     backdrop-filter: blur(7px);
     animation: mobileMenuBackdropIn 180ms ease-out both;
   }
 
-  .mobileMenuPanel {
+  :global(:where(html:not(:has([data-website-canvas])))) .mobileMenuPanel {
     left: auto;
     width: min(25.5rem, calc(100% - 1rem));
     gap: 0.72rem;
@@ -3302,7 +3375,7 @@
     animation: mobileMenuPanelIn 210ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
   }
 
-  .mobileMenuHeader {
+  :global(:where(html:not(:has([data-website-canvas])))) .mobileMenuHeader {
     min-height: 5.25rem;
     padding: 0.9rem 0.95rem;
     border-radius: 1.08rem;
@@ -3315,29 +3388,29 @@
       inset 0 1px 0 rgba(255, 255, 255, 0.08);
   }
 
-  .mobileMenuHeaderCopy {
+  :global(:where(html:not(:has([data-website-canvas])))) .mobileMenuHeaderCopy {
     gap: 0.28rem;
   }
 
-  .mobileMenuKicker {
+  :global(:where(html:not(:has([data-website-canvas])))) .mobileMenuKicker {
     color: #a9dfca;
     font-size: 0.67rem;
     letter-spacing: 0.1em;
   }
 
-  .mobileMenuTitle {
+  :global(:where(html:not(:has([data-website-canvas])))) .mobileMenuTitle {
     color: #ffffff;
     font-size: 1.24rem;
     line-height: 1.1;
     letter-spacing: -0.035em;
   }
 
-  .mobileMenuAccountName {
+  :global(:where(html:not(:has([data-website-canvas])))) .mobileMenuAccountName {
     color: rgba(232, 245, 239, 0.74);
     font-size: 0.78rem;
   }
 
-  .mobileMenuCloseButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .mobileMenuCloseButton {
     width: 2.7rem;
     min-width: 2.7rem;
     height: 2.7rem;
@@ -3349,7 +3422,7 @@
     backdrop-filter: blur(10px);
   }
 
-  .mobileMenuCloseButton svg {
+  :global(:where(html:not(:has([data-website-canvas])))) .mobileMenuCloseButton svg {
     width: 1.2rem;
     height: 1.2rem;
     fill: none;
@@ -3358,18 +3431,18 @@
     stroke-linecap: round;
   }
 
-  .mobileMenuCloseButton:hover {
+  :global(:where(html:not(:has([data-website-canvas])))) .mobileMenuCloseButton:hover {
     color: #ffffff;
     border-color: rgba(255, 255, 255, 0.3);
     background: rgba(255, 255, 255, 0.16);
   }
 
-  .mobileMenuNav {
+  :global(:where(html:not(:has([data-website-canvas])))) .mobileMenuNav {
     gap: 0.48rem;
     padding: 0.08rem 0.1rem 0.08rem 0;
   }
 
-  .mobileMenuNavLink {
+  :global(:where(html:not(:has([data-website-canvas])))) .mobileMenuNavLink {
     min-height: 3.62rem;
     gap: 0.72rem;
     padding: 0.48rem 0.62rem;
@@ -3381,7 +3454,7 @@
     box-shadow: 0 7px 18px rgba(15, 54, 42, 0.045);
   }
 
-  .mobileMenuNavIcon {
+  :global(:where(html:not(:has([data-website-canvas])))) .mobileMenuNavIcon {
     width: 2.46rem;
     min-width: 2.46rem;
     height: 2.46rem;
@@ -3399,17 +3472,17 @@
       transform 180ms ease;
   }
 
-  .mobileMenuNavIcon svg {
+  :global(:where(html:not(:has([data-website-canvas])))) .mobileMenuNavIcon svg {
     width: 1.23rem;
     height: 1.23rem;
   }
 
-  .mobileMenuNavLabel {
+  :global(:where(html:not(:has([data-website-canvas])))) .mobileMenuNavLabel {
     min-width: 0;
     flex: 1 1 auto;
   }
 
-  .mobileMenuNavArrow {
+  :global(:where(html:not(:has([data-website-canvas])))) .mobileMenuNavArrow {
     width: 1.9rem;
     min-width: 1.9rem;
     height: 1.9rem;
@@ -3425,7 +3498,7 @@
       transform 180ms ease;
   }
 
-  .mobileMenuNavArrow svg {
+  :global(:where(html:not(:has([data-website-canvas])))) .mobileMenuNavArrow svg {
     width: 0.92rem;
     height: 0.92rem;
     fill: none;
@@ -3435,11 +3508,11 @@
     stroke-linejoin: round;
   }
 
-  .mobileMenuNavLink:hover .mobileMenuNavArrow {
+  :global(:where(html:not(:has([data-website-canvas])))) .mobileMenuNavLink:hover .mobileMenuNavArrow {
     transform: translateX(0.1rem);
   }
 
-  .mobileMenuNavLinkActive {
+  :global(:where(html:not(:has([data-website-canvas])))) .mobileMenuNavLinkActive {
     color: #ffffff;
     border-color: rgba(12, 80, 59, 0.85);
     background: linear-gradient(180deg, #1e7e5e 0%, #125d47 100%);
@@ -3448,27 +3521,27 @@
       inset 0 1px 0 rgba(255, 255, 255, 0.14);
   }
 
-  .mobileMenuNavLinkActive .mobileMenuNavIcon {
+  :global(:where(html:not(:has([data-website-canvas])))) .mobileMenuNavLinkActive .mobileMenuNavIcon {
     color: #ffffff;
     border-color: rgba(255, 255, 255, 0.14);
     background: rgba(255, 255, 255, 0.13);
   }
 
-  .mobileMenuNavLinkActive .mobileMenuNavArrow {
+  :global(:where(html:not(:has([data-website-canvas])))) .mobileMenuNavLinkActive .mobileMenuNavArrow {
     color: #ffffff;
     background: rgba(255, 255, 255, 0.12);
   }
 
-  .mobileMenuAuthActions,
-  .mobileMenuAccountActions {
+  :global(:where(html:not(:has([data-website-canvas])))) .mobileMenuAuthActions,
+  :global(:where(html:not(:has([data-website-canvas])))) .mobileMenuAccountActions {
     gap: 0.5rem;
     padding-top: 0.68rem;
     border-top-color: rgba(16, 59, 46, 0.1);
   }
 
-  .mobileMenuAuthLink,
-  .mobileMenuActionButton,
-  .mobileMenuDangerButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .mobileMenuAuthLink,
+  :global(:where(html:not(:has([data-website-canvas])))) .mobileMenuActionButton,
+  :global(:where(html:not(:has([data-website-canvas])))) .mobileMenuDangerButton {
     min-height: 3.4rem;
     justify-content: center;
     padding: 0 0.85rem;
@@ -3477,24 +3550,24 @@
     text-align: center;
   }
 
-  .mobileMenuButtonActive .mobileMenuIcon::before {
+  :global(:where(html:not(:has([data-website-canvas])))) .mobileMenuButtonActive .mobileMenuIcon::before {
     top: 50%;
     transform: translateY(-50%) rotate(45deg);
   }
 
-  .mobileMenuButtonActive .mobileMenuIconLine {
+  :global(:where(html:not(:has([data-website-canvas])))) .mobileMenuButtonActive .mobileMenuIconLine {
     opacity: 0;
     transform: translateY(-50%) scaleX(0.4);
   }
 
-  .mobileMenuButtonActive .mobileMenuIcon::after {
+  :global(:where(html:not(:has([data-website-canvas])))) .mobileMenuButtonActive .mobileMenuIcon::after {
     bottom: 50%;
     transform: translateY(50%) rotate(-45deg);
   }
 }
 
 @media (max-width: 430px) {
-  .mobileMenuPanel {
+  :global(:where(html:not(:has([data-website-canvas])))) .mobileMenuPanel {
     right: max(0.35rem, env(safe-area-inset-right));
     bottom: max(0.35rem, env(safe-area-inset-bottom));
     width: min(25.5rem, calc(100% - 0.7rem));
@@ -3503,18 +3576,18 @@
     border-radius: 1.22rem;
   }
 
-  .mobileMenuHeader {
+  :global(:where(html:not(:has([data-website-canvas])))) .mobileMenuHeader {
     min-height: 4.9rem;
     padding: 0.78rem 0.82rem;
     border-radius: 0.98rem;
   }
 
-  .mobileMenuNavLink {
+  :global(:where(html:not(:has([data-website-canvas])))) .mobileMenuNavLink {
     min-height: 3.45rem;
     padding: 0.42rem 0.54rem;
   }
 
-  .mobileMenuNavIcon {
+  :global(:where(html:not(:has([data-website-canvas])))) .mobileMenuNavIcon {
     width: 2.32rem;
     min-width: 2.32rem;
     height: 2.32rem;
@@ -3530,16 +3603,16 @@
 
 /* === Primary navigation carousel refinement === */
 @media (max-width: 1180px) {
-  .nav {
+  :global(:where(html:not(:has([data-website-canvas])))) .nav {
     gap: 0.26rem;
   }
 
-  .navRail {
+  :global(:where(html:not(:has([data-website-canvas])))) .navRail {
     width: auto;
     flex: 1 1 auto;
   }
 
-  .navWindowButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .navWindowButton {
     width: 1.22rem;
     min-width: 1.22rem;
     height: 2.85rem;
@@ -3583,15 +3656,45 @@
   overflow-x: visible;
 }
 
+:global(:where([data-website-canvas])) .accountMenu {
+    max-width: 12.25rem;
+    width: 10.25rem;
+    min-width: 10.25rem;
+    flex: 0 0 10.25rem;
+  }
+
+:global(:where([data-website-canvas])) .accountButton {
+    justify-content: center;
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+    padding-left: 0.86rem;
+    padding-right: 0.94rem;
+    gap: 0.62rem;
+  }
+
+:global(:where([data-website-canvas])) .accountButton > .accountAvatar {
+    left: 0.95rem;
+  }
+
+:global(:where([data-website-canvas])) .accountPopover {
+    left: 0;
+    right: 0;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: visible;
+    min-width: max(18rem, 100%);
+  }
+
 @media (min-width: 901px) {
-  .accountMenu {
+  :global(:where(html:not(:has([data-website-canvas])))) .accountMenu {
     width: 12.25rem;
     min-width: 12.25rem;
     max-width: 12.25rem;
     flex: 0 0 12.25rem;
   }
 
-  .accountButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .accountButton {
     width: 100%;
     min-width: 0;
     justify-content: center;
@@ -3600,11 +3703,11 @@
     padding-right: 1rem;
   }
 
-  .accountButton > .accountAvatar {
+  :global(:where(html:not(:has([data-website-canvas])))) .accountButton > .accountAvatar {
     left: 0.95rem;
   }
 
-  .accountPopover {
+  :global(:where(html:not(:has([data-website-canvas])))) .accountPopover {
     left: 0;
     right: 0;
     width: 100%;
@@ -3723,8 +3826,8 @@
 
 /* === Notification modal spacing and alignment refinement === */
 .notificationModal {
-  width: min(54rem, calc(100vw - 2rem));
-  max-height: min(50rem, calc(100dvh - 2.5rem));
+  width: min(54rem, calc(calc(var(--website-design-vw, 1vw) * 100) - 2rem));
+  max-height: min(50rem, calc(calc(var(--website-visible-height, 100dvh) * 1) - 2.5rem));
   grid-template-rows: auto auto auto minmax(0, 1fr) auto;
   gap: 0.85rem;
   padding: 1.15rem;
@@ -3862,11 +3965,11 @@
 }
 
 @media (max-width: 720px) {
-  .notificationModalBackdrop {
+  :global(:where(html:not(:has([data-website-canvas])))) .notificationModalBackdrop {
     padding: 0.65rem;
   }
 
-  .notificationModal {
+  :global(:where(html:not(:has([data-website-canvas])))) .notificationModal {
     width: min(36rem, 100%);
     max-height: calc(100dvh - 1.3rem);
     gap: 0.65rem;
@@ -3874,7 +3977,7 @@
     border-radius: 1.5rem;
   }
 
-  .notificationHeaderRow {
+  :global(:where(html:not(:has([data-website-canvas])))) .notificationHeaderRow {
     grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
     gap: 0.75rem;
@@ -3882,52 +3985,52 @@
     border-radius: 1.08rem;
   }
 
-  .notificationHeaderActions {
+  :global(:where(html:not(:has([data-website-canvas])))) .notificationHeaderActions {
     align-self: center;
   }
 
-  .notificationTitle {
+  :global(:where(html:not(:has([data-website-canvas])))) .notificationTitle {
     font-size: clamp(1.48rem, 7vw, 1.72rem);
   }
 
-  .notificationSubtitle {
+  :global(:where(html:not(:has([data-website-canvas])))) .notificationSubtitle {
     font-size: 0.86rem;
     line-height: 1.38;
   }
 
-  .notificationCloseButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .notificationCloseButton {
     width: 2.7rem;
     min-width: 2.7rem;
     height: 2.7rem;
   }
 
-  .notificationInboxControls {
+  :global(:where(html:not(:has([data-website-canvas])))) .notificationInboxControls {
     gap: 0.65rem;
     padding: 0.75rem;
     border-radius: 1.08rem;
   }
 
-  .notificationSearchBox {
+  :global(:where(html:not(:has([data-website-canvas])))) .notificationSearchBox {
     min-height: 3rem;
     padding-inline: 0.8rem;
   }
 
-  .notificationViewTabs {
+  :global(:where(html:not(:has([data-website-canvas])))) .notificationViewTabs {
     gap: 0.5rem;
   }
 
-  .notificationViewTabs button {
+  :global(:where(html:not(:has([data-website-canvas])))) .notificationViewTabs button {
     min-height: 2.75rem;
     border-radius: 0.86rem;
   }
 
-  .notificationListHeader {
+  :global(:where(html:not(:has([data-website-canvas])))) .notificationListHeader {
     grid-template-columns: minmax(0, 1fr);
     gap: 0.55rem;
     padding: 0.15rem 0.15rem 0;
   }
 
-  .notificationListHeaderActions {
+  :global(:where(html:not(:has([data-website-canvas])))) .notificationListHeaderActions {
     width: 100%;
     flex-direction: row;
     align-items: center;
@@ -3935,83 +4038,83 @@
     gap: 0.65rem;
   }
 
-  .notificationClearButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .notificationClearButton {
     min-width: 7.8rem;
     min-height: 2.55rem;
     padding-inline: 0.8rem;
   }
 
-  .notificationList {
+  :global(:where(html:not(:has([data-website-canvas])))) .notificationList {
     gap: 0.65rem;
     padding: 0.1rem 0.18rem 0.3rem 0.05rem;
   }
 
-  .notificationItem {
+  :global(:where(html:not(:has([data-website-canvas])))) .notificationItem {
     grid-template-columns: 0.8rem minmax(0, 1fr);
     gap: 0.72rem;
     padding: 1rem 0.95rem;
     border-radius: 1.08rem;
   }
 
-  .notificationCopy strong {
+  :global(:where(html:not(:has([data-website-canvas])))) .notificationCopy strong {
     font-size: 0.98rem;
   }
 
-  .notificationCopy span {
+  :global(:where(html:not(:has([data-website-canvas])))) .notificationCopy span {
     font-size: 0.88rem;
     line-height: 1.46;
   }
 
-  .notificationMetaRow {
+  :global(:where(html:not(:has([data-website-canvas])))) .notificationMetaRow {
     min-height: 2.4rem;
     gap: 0.55rem;
     padding-top: 0.55rem;
   }
 
-  .notificationOpenHint {
+  :global(:where(html:not(:has([data-website-canvas])))) .notificationOpenHint {
     margin-left: auto;
   }
 
-  .notificationPagination {
+  :global(:where(html:not(:has([data-website-canvas])))) .notificationPagination {
     gap: 0.55rem;
     padding: 0.65rem 0.1rem 0;
   }
 
-  .notificationPaginationButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .notificationPaginationButton {
     min-width: 0;
     min-height: 2.55rem;
   }
 }
 
 @media (max-width: 390px) {
-  .notificationModalBackdrop {
+  :global(:where(html:not(:has([data-website-canvas])))) .notificationModalBackdrop {
     padding: 0.45rem;
   }
 
-  .notificationModal {
+  :global(:where(html:not(:has([data-website-canvas])))) .notificationModal {
     max-height: calc(100dvh - 0.9rem);
     padding: 0.55rem;
     border-radius: 1.25rem;
   }
 
-  .notificationHeaderRow {
+  :global(:where(html:not(:has([data-website-canvas])))) .notificationHeaderRow {
     padding: 0.85rem;
   }
 
-  .notificationInboxControls {
+  :global(:where(html:not(:has([data-website-canvas])))) .notificationInboxControls {
     padding: 0.65rem;
   }
 
-  .notificationListHeaderActions {
+  :global(:where(html:not(:has([data-website-canvas])))) .notificationListHeaderActions {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
   }
 
-  .notificationClearButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .notificationClearButton {
     min-width: 7rem;
   }
 
-  .notificationPaginationText {
+  :global(:where(html:not(:has([data-website-canvas])))) .notificationPaginationText {
     font-size: 0.72rem;
   }
 }
@@ -4032,7 +4135,7 @@
 }
 
 @media (min-width: 761px) and (max-width: 1180px) {
-  .inner {
+  :global(:where(html:not(:has([data-website-canvas])))) .inner {
     width: var(--shell-width, min(calc(100% - 2.3rem), 1180px));
     grid-template-columns: auto minmax(0, 1fr);
     grid-template-areas:
@@ -4042,20 +4145,20 @@
     padding: 0.65rem 0 0.72rem;
   }
 
-  .brand {
+  :global(:where(html:not(:has([data-website-canvas])))) .brand {
     grid-area: brand;
   }
 
-  .brandLogo {
+  :global(:where(html:not(:has([data-website-canvas])))) .brandLogo {
     width: clamp(8.8rem, 16vw, 10.8rem);
   }
 
-  .actions {
+  :global(:where(html:not(:has([data-website-canvas])))) .actions {
     grid-area: actions;
     justify-self: end;
   }
 
-  .nav {
+  :global(:where(html:not(:has([data-website-canvas])))) .nav {
     grid-area: nav;
     width: 100%;
     display: grid;
@@ -4065,7 +4168,7 @@
     overflow: visible;
   }
 
-  .navRail {
+  :global(:where(html:not(:has([data-website-canvas])))) .navRail {
     width: 100%;
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -4073,7 +4176,7 @@
     padding: 0.3rem;
   }
 
-  .navLink {
+  :global(:where(html:not(:has([data-website-canvas])))) .navLink {
     min-width: 0;
     max-width: none;
     min-height: 2.85rem;
@@ -4084,25 +4187,25 @@
     font-size: clamp(0.78rem, 1.6vw, 0.92rem);
   }
 
-  .navWindowButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .navWindowButton {
     width: var(--tap-target-min, 44px);
     min-width: var(--tap-target-min, 44px);
     height: auto;
     min-height: var(--tap-target-min, 44px);
   }
 
-  .actionsRail {
+  :global(:where(html:not(:has([data-website-canvas])))) .actionsRail {
     width: auto;
     overflow: visible;
   }
 
-  .mobileMenuButton,
-  .mobileMenuBackdrop,
-  .mobileMenuPanel {
+  :global(:where(html:not(:has([data-website-canvas])))) .mobileMenuButton,
+  :global(:where(html:not(:has([data-website-canvas])))) .mobileMenuBackdrop,
+  :global(:where(html:not(:has([data-website-canvas])))) .mobileMenuPanel {
     display: none;
   }
 
-  .accountMenu {
+  :global(:where(html:not(:has([data-website-canvas])))) .accountMenu {
     display: block;
     width: clamp(10.75rem, 24vw, 12.25rem);
     min-width: 10.75rem;
@@ -4110,16 +4213,16 @@
     flex: 0 1 12.25rem;
   }
 
-  .accountButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .accountButton {
     width: 100%;
     min-width: 0;
   }
 
-  .accountButton > .accountAvatar {
+  :global(:where(html:not(:has([data-website-canvas])))) .accountButton > .accountAvatar {
     display: grid;
   }
 
-  .accountPopover {
+  :global(:where(html:not(:has([data-website-canvas])))) .accountPopover {
     position: absolute;
     top: calc(100% + 0.6rem);
     right: 0;
@@ -4133,7 +4236,7 @@
 }
 
 @media (max-width: 760px) {
-  .inner {
+  :global(:where(html:not(:has([data-website-canvas])))) .inner {
     width: var(--shell-width, min(calc(100% - 1.7rem), 48rem));
     grid-template-columns: auto minmax(0, 1fr);
     grid-template-areas: "brand actions";
@@ -4141,27 +4244,27 @@
     padding: 0.48rem 0 0.55rem;
   }
 
-  .brand {
+  :global(:where(html:not(:has([data-website-canvas])))) .brand {
     grid-area: brand;
   }
 
-  .brandLogo {
+  :global(:where(html:not(:has([data-website-canvas])))) .brandLogo {
     width: clamp(5.4rem, 24vw, 7.4rem);
     max-height: 2.15rem;
   }
 
-  .actions {
+  :global(:where(html:not(:has([data-website-canvas])))) .actions {
     grid-area: actions;
     justify-self: end;
   }
 
-  .actionsRail {
+  :global(:where(html:not(:has([data-website-canvas])))) .actionsRail {
     width: auto;
     gap: 0.24rem;
     overflow: visible;
   }
 
-  .innerPublic .actionsRail {
+  :global(:where(html:not(:has([data-website-canvas])))) .innerPublic .actionsRail {
     width: clamp(11rem, 51vw, 13rem);
     display: grid;
     grid-template-columns: minmax(3.5rem, 0.72fr) minmax(7rem, 1.28fr);
@@ -4169,8 +4272,8 @@
     padding: 0.28rem;
   }
 
-  .innerPublic .loginButton,
-  .innerPublic .signupButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .innerPublic .loginButton,
+  :global(:where(html:not(:has([data-website-canvas])))) .innerPublic .signupButton {
     width: 100%;
     min-width: 0;
     min-height: var(--tap-target-min, 44px);
@@ -4178,15 +4281,15 @@
     font-size: clamp(0.74rem, 3vw, 0.82rem);
   }
 
-  .nav {
+  :global(:where(html:not(:has([data-website-canvas])))) .nav {
     display: none;
   }
 
-  .mobileMenuButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .mobileMenuButton {
     display: none;
   }
 
-  .accountMenu {
+  :global(:where(html:not(:has([data-website-canvas])))) .accountMenu {
     display: block;
     width: clamp(6.9rem, 31vw, 8.75rem);
     min-width: 6.9rem;
@@ -4194,7 +4297,7 @@
     flex: 0 1 8.75rem;
   }
 
-  .accountButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .accountButton {
     width: 100%;
     min-width: 0;
     justify-content: flex-start;
@@ -4202,61 +4305,61 @@
     padding: 0.28rem 0.55rem;
   }
 
-  .accountButton > .accountAvatar {
+  :global(:where(html:not(:has([data-website-canvas])))) .accountButton > .accountAvatar {
     position: static;
     display: grid;
     transform: none;
   }
 
-  .accountButtonText {
+  :global(:where(html:not(:has([data-website-canvas])))) .accountButtonText {
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
   }
 
-  .accountPopover {
+  :global(:where(html:not(:has([data-website-canvas])))) .accountPopover {
     top: calc(env(safe-area-inset-top) + 6.45rem);
     max-height: calc(100dvh - 7.1rem);
   }
 
-  .actionDivider {
+  :global(:where(html:not(:has([data-website-canvas])))) .actionDivider {
     display: none;
   }
 
-  .signupButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .signupButton {
     display: inline-flex;
   }
 
-  .loginButton,
-  .signupButton,
-  .accountButton,
-  .notificationButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .loginButton,
+  :global(:where(html:not(:has([data-website-canvas])))) .signupButton,
+  :global(:where(html:not(:has([data-website-canvas])))) .accountButton,
+  :global(:where(html:not(:has([data-website-canvas])))) .notificationButton {
     min-height: 2.55rem;
     border-radius: 0.78rem;
     font-size: clamp(0.68rem, 2.45vw, 0.8rem);
   }
 
-  .loginButton,
-  .signupButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .loginButton,
+  :global(:where(html:not(:has([data-website-canvas])))) .signupButton {
     padding-inline: clamp(0.48rem, 2vw, 0.72rem);
   }
 }
 
 @media (max-width: 390px) {
-  .inner {
+  :global(:where(html:not(:has([data-website-canvas])))) .inner {
     gap: 0.38rem 0.45rem;
   }
 
-  .brandLogo {
+  :global(:where(html:not(:has([data-website-canvas])))) .brandLogo {
     width: clamp(5rem, 23vw, 5.8rem);
   }
 
-  .accountMenu {
+  :global(:where(html:not(:has([data-website-canvas])))) .accountMenu {
     width: 6.7rem;
     min-width: 6.7rem;
   }
 
-  .accountButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .accountButton {
     padding-inline: 0.42rem;
   }
 
@@ -4276,7 +4379,7 @@
 
 /* Keep every account action reachable when the menu grows beyond the viewport. */
 .accountPopover {
-  max-height: calc(100dvh - 7rem);
+  max-height: calc(calc(var(--website-visible-height, 100dvh) * 1) - 7rem);
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;
@@ -4304,7 +4407,7 @@
 /* Standalone black Aim4price mark used in the global header. */
 .headerBrandLogo {
   display: block;
-  width: clamp(4.25rem, 4.6vw, 4.8rem);
+  width: clamp(4.25rem, calc(var(--website-design-vw, 1vw) * 4.6), 4.8rem);
   height: auto;
   max-height: 3.9rem;
   object-fit: contain;
@@ -4313,41 +4416,68 @@
 }
 
 @media (max-width: 1180px) {
-  .headerBrandLogo {
+  :global(:where(html:not(:has([data-website-canvas])))) .headerBrandLogo {
     width: clamp(3.9rem, 7vw, 4.5rem);
     max-height: 3.6rem;
   }
 }
 
 @media (max-width: 760px) {
-  .headerBrandLogo {
+  :global(:where(html:not(:has([data-website-canvas])))) .headerBrandLogo {
     width: clamp(3.15rem, 13vw, 3.8rem);
     max-height: 3.1rem;
   }
 }
 
 @media (max-width: 390px) {
-  .headerBrandLogo {
+  :global(:where(html:not(:has([data-website-canvas])))) .headerBrandLogo {
     width: clamp(2.9rem, 13vw, 3.3rem);
     max-height: 2.7rem;
   }
 }
 
 /* Bring the mark close to the working columns without narrowing the header. */
+:global(:where([data-website-canvas])) .innerBrandAligned {
+    container-type: inline-size;
+  }
 @media (min-width: 1181px) {
-  .innerBrandAligned {
+  :global(:where(html:not(:has([data-website-canvas])))) .innerBrandAligned {
     container-type: inline-size;
   }
 }
 
 @media (min-width: 1181px) and (max-width: 1240px) {
-  .brandWorkingColumn {
+  :global(:where(html:not(:has([data-website-canvas])))) .brandWorkingColumn {
     transform: translateX(8px);
   }
 }
 
+:global(:where([data-website-canvas])) .brandWorkingColumn {
+    transform: translateX(clamp(0px, calc((100cqi - 1240px) / 2), 60px));
+  }
+
 @media (min-width: 1241px) {
-  .brandWorkingColumn {
+  :global(:where(html:not(:has([data-website-canvas])))) .brandWorkingColumn {
     transform: translateX(clamp(0px, calc((100cqi - 1240px) / 2), 60px));
   }
 }
+
+:global(:where([data-website-canvas])) .inner:has(.accountButton) {
+  position: relative;
+  left: -1rem;
+}
+
+:global(:where([data-website-canvas])) .accountButton > span:first-child {
+  margin-right: 0.18rem;
+}
+
+@media (min-width: 1181px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .inner:has(.accountButton) { position: relative; left: -1rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .accountMenu { min-width: 14.75rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .accountButton { min-width: 14.75rem; gap: .95rem; padding-inline: 1.08rem; }
+  :global(:where(html:not(:has([data-website-canvas])))) .accountPopover { min-width: max(18rem, 100%); }
+}
+
+:global(:where([data-website-canvas])) .actions { min-width: max-content; }
+
+:global(:where([data-website-canvas])) .inner { grid-template-columns: minmax(0, 1fr) auto max-content; }

@@ -3,7 +3,7 @@
   z-index: 70;
   right: 1rem;
   bottom: 1rem;
-  max-width: min(44rem, calc(100vw - 2rem));
+  max-width: min(44rem, calc(calc(var(--website-design-vw, 1vw) * 100) - 2rem));
   min-height: 4.1rem;
   padding: 0.65rem 0.72rem 0.65rem 0.82rem;
   border: 1px solid rgba(23, 108, 80, 0.28);
@@ -116,7 +116,7 @@
 }
 
 @media (max-width: 980px) {
-  .bar {
+  :global(:where(html:not(:has([data-website-canvas])))) .bar {
     right: 0.65rem;
     bottom: 0.65rem;
     left: 0.65rem;
@@ -125,21 +125,22 @@
     gap: 0.55rem;
   }
 
-  .timer {
+  :global(:where(html:not(:has([data-website-canvas])))) .timer {
     grid-column: 3;
     grid-row: 1;
   }
 
-  .reviewLink,
-  .stopButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .reviewLink,
+  :global(:where(html:not(:has([data-website-canvas])))) .stopButton {
     grid-row: 2;
   }
 
-  .reviewLink {
+  :global(:where(html:not(:has([data-website-canvas])))) .reviewLink {
     grid-column: 2;
   }
 
-  .stopButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .stopButton {
     grid-column: 3;
   }
 }
+

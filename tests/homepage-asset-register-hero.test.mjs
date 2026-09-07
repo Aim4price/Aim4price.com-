@@ -1,3 +1,4 @@
+import { assertNoWebsiteReflow } from './helpers/site-layout-audit.mjs';
 import assert from 'node:assert/strict';
 import { readFile, stat } from 'node:fs/promises';
 import test from 'node:test';
@@ -72,10 +73,10 @@ test('homepage plays one slower timed tour, returns to its brand frame, then fol
     assert.match(hero, new RegExp(`${question}: HERO_FEATURE_DURATION_MS`));
   }
   assert.match(hero, /window\.matchMedia\(REDUCED_MOTION_QUERY\)/);
-  assert.match(hero, /window\.matchMedia\(DESKTOP_STORY_QUERY\)/);
-  assert.match(hero, /desktopStoryMedia\.matches && !reducedMotionMedia\.matches/);
+  assert.doesNotMatch(hero, /DESKTOP_STORY_QUERY/);
+  assert.match(hero, /supportsStory = !reducedMotionMedia\.matches/);
   assert.match(hero, /reducedMotionMedia\.addEventListener\('change', syncStoryCapability\)/);
-  assert.match(hero, /desktopStoryMedia\.addEventListener\('change', syncStoryCapability\)/);
+  assert.match(hero, /reducedMotionMedia\.addEventListener\('change', syncStoryCapability\)/);
   assert.match(hero, /if \(!supportsStory\) \{[\s\S]*?setIsAutoplaying\(false\)[\s\S]*?setIsManuallyControlled\(true\)[\s\S]*?updateStoryStep\(FEATURE_START_INDEX\)/);
   assert.match(hero, /const storyStep = HERO_STORY_STEPS\[storyStepIndex\]/);
   assert.match(hero, /window\.setTimeout\([\s\S]*?STORY_DURATIONS\[storyStep\]/);
@@ -107,7 +108,7 @@ test('homepage plays one slower timed tour, returns to its brand frame, then fol
   assert.match(hero, /const sectionRect = section\.getBoundingClientRect\(\)/);
   assert.match(hero, /const stickyRect = sticky\.getBoundingClientRect\(\)/);
   assert.match(hero, /sectionTop = currentScrollY \+ sectionRect\.top/);
-  assert.match(hero, /stickyTop =\s*Number\.parseFloat\(window\.getComputedStyle\(sticky\)\.top\) \|\| 0/);
+  assert.match(hero, /stickyTop =\s*\(Number\.parseFloat\(window\.getComputedStyle\(sticky\)\.top\) \|\| 0\) \* currentWebsiteScale\(\)/);
   assert.match(hero, /trackStart = sectionTop - stickyTop/);
   assert.match(hero, /trackTravel = Math\.max\([\s\S]*?1,[\s\S]*?sectionRect\.height - stickyRect\.height,[\s\S]*?\)/);
   assert.match(hero, /localScroll = Math\.max\([\s\S]*?0,[\s\S]*?Math\.min\(trackTravel, currentScrollY - trackStart\),[\s\S]*?\)/);
@@ -390,7 +391,7 @@ test('homepage plays one slower timed tour, returns to its brand frame, then fol
 
   assert.match(storyHeroStyles, /\.heroSection\[data-story-step='brand'\] \.heroBrandCopy,[\s\S]*?\.heroSection\[data-story-step='preview'\] \.heroPromiseCopy \{[\s\S]*?filter: blur\(0\)/);
   assert.match(storyHeroStyles, /\.heroSection\[data-story-step='brand'\] \.storyHeroLogo,[\s\S]*?\.heroSection\[data-story-step='promise'\] \.storyHeroLogo \{[\s\S]*?filter: blur\(0\)[\s\S]*?scale\(1\)/);
-  assert.match(storyHeroStyles, /\.heroPromiseTitle \{[\s\S]*?font-size: clamp\(2\.65rem, 2\.95vw, 2\.95rem\);[\s\S]*?line-height: 1\.01/);
+  assert.match(storyHeroStyles, /\.heroPromiseTitle \{[\s\S]*?font-size: clamp\(2\.65rem, calc\(var\(--website-design-vw\) \* 2\.95\), 2\.95rem\);[\s\S]*?line-height: 1\.01/);
   assert.match(storyHeroStyles, /\.heroPromiseText \{[\s\S]*?max-width: 33\.5rem;[\s\S]*?margin-top: 1\.85rem;[\s\S]*?line-height: 1\.6/);
   assert.match(styles, /\.heroStory \.heroActions \{[\s\S]*?gap: 1rem;[\s\S]*?margin-top: 1\.85rem/);
   assert.doesNotMatch(storyHeroStyles, /data-autoplay-finished='true'[^{]*\.storyHeroLogo/);
@@ -400,53 +401,25 @@ test('homepage plays one slower timed tour, returns to its brand frame, then fol
   assert.match(storyHeroStyles, /data-autoplay='true'[\s\S]*?assetStoryProgressActive::after \{[\s\S]*?animation-duration: 4800ms/);
   assert.match(storyHeroStyles, /\.featureNarrativeCount \{[\s\S]*?position: absolute;[\s\S]*?top: 0\.35rem;[\s\S]*?bottom: auto/);
 
-  const desktopStoryStyles = storyHeroStyles.slice(
-    storyHeroStyles.indexOf('@media (min-width: 1181px) and (min-height: 640px)'),
-    storyHeroStyles.indexOf('@media (min-width: 1181px) and (max-width: 1360px)'),
-  );
-  assert.match(desktopStoryStyles, /\.heroStory \{[\s\S]*?min-height: 440svh/);
+  const desktopStoryStyles = storyHeroStyles;
+  assert.match(desktopStoryStyles, /\.heroStory \{[\s\S]*?min-height: calc\(var\(--website-design-vh\) \* 440\)/);
   assert.doesNotMatch(storyHeroStyles, /--hero-story-height|data-story-complete/);
-  assert.match(desktopStoryStyles, /\.heroSticky \{[\s\S]*?position: sticky;[\s\S]*?top: 5\.75rem;[\s\S]*?height: calc\(100dvh - 5\.75rem\);[\s\S]*?overflow: hidden/);
-  assert.match(desktopStoryStyles, /\.heroStory \.heroMedia \{[\s\S]*?min-height: 0;[\s\S]*?\}[\s\S]*?\.heroStory \.heroMedia\.heroSticky \{[\s\S]*?height: calc\(100dvh - 5\.75rem\)/);
+  assert.match(desktopStoryStyles, /\.heroSticky \{[\s\S]*?position: sticky;[\s\S]*?top: 5\.75rem;[\s\S]*?height: calc\(calc\(var\(--website-design-vh\) \* 100\) - 5\.75rem\);[\s\S]*?overflow: hidden/);
+  assert.match(desktopStoryStyles, /\.heroStory \.heroMedia \{[\s\S]*?min-height: 0;[\s\S]*?\}[\s\S]*?\.heroStory \.heroMedia\.heroSticky \{[\s\S]*?height: calc\(calc\(var\(--website-design-vh\) \* 100\) - 5\.75rem\)/);
   assert.doesNotMatch(desktopStoryStyles, /\.heroStory \.heroMedia \{[^}]*height: 100%/s);
-  assert.match(desktopStoryStyles, /\.storyHeroGrid \{[\s\S]*?--hero-working-inset: clamp\(0px, calc\(\(100% - 1240px\) \/ 2\), 60px\);[\s\S]*?width: calc\(100% - var\(--hero-working-inset\)\);[\s\S]*?height: 100%;[\s\S]*?grid-template-columns: minmax\(31rem, 1fr\) minmax\(39rem, 49\.5rem\);[\s\S]*?gap: clamp\(2\.5rem, 3vw, 3\.5rem\);[\s\S]*?margin-inline-start: var\(--hero-working-inset\)/);
+  assert.match(desktopStoryStyles, /\.storyHeroGrid \{[\s\S]*?--hero-working-inset: clamp\(0px, calc\(\(100% - 1240px\) \/ 2\), 60px\);[\s\S]*?width: calc\(100% - var\(--hero-working-inset\)\);[\s\S]*?height: 100%;[\s\S]*?grid-template-columns: minmax\(446\.4px, 1fr\) minmax\(619\.2px, 49\.5rem\);[\s\S]*?gap: 64\.8px/);
   assert.match(desktopStoryStyles, /\.heroCopyDeck \{[\s\S]*?grid-column: 1;[\s\S]*?grid-row: 1/);
   assert.match(desktopStoryStyles, /\.storyHeroLogo,[\s\S]*?\.assetStageMotion,[\s\S]*?\.featureNarrative \{[\s\S]*?grid-column: 2;[\s\S]*?grid-row: 1/);
-  assert.match(desktopStoryStyles, /\.assetStageMotion \{[\s\S]*?--asset-preview-center-inset: 2\.325rem;[\s\S]*?width: min\(45\.5rem, calc\(100% \+ 7rem\)\);[\s\S]*?justify-self: end/);
-  assert.match(desktopStoryStyles, /\.featureNarrative \{[\s\S]*?--feature-copy-inset: clamp\(5\.5rem, 8vw, 7\.75rem\)/);
+  assert.match(desktopStoryStyles, /\.assetStageMotion \{[\s\S]*?--asset-preview-center-inset: 2\.325rem;[\s\S]*?width: min\(45\.5rem, calc\(100% \+ 5rem\)\);[\s\S]*?justify-self: end/);
+  assert.match(desktopStoryStyles, /\.featureNarrative \{[\s\S]*?--feature-copy-inset: 7\.75rem/);
   assert.match(desktopStoryStyles, /\.featureNarrativeLayer h2,[\s\S]*?\.featureNarrativeLayer > p:last-child \{[\s\S]*?inset-inline-start: calc\(0rem - var\(--feature-copy-inset\)\)/);
   assert.match(desktopStoryStyles, /\.heroStory \.assetQuestionGroup,[\s\S]*?\.heroStory \.assetPreviewCard \{[\s\S]*?top: var\(--asset-preview-center-inset\);[\s\S]*?bottom: var\(--asset-preview-center-inset\)/);
   assert.match(desktopStoryStyles, /\.heroStory \.assetActiveQuestion \{[\s\S]*?top: calc\(-4\.25rem \+ var\(--asset-preview-center-inset\)\);[\s\S]*?bottom: auto/);
   assert.match(desktopStoryStyles, /\.heroStory \.assetPreviewCard,[\s\S]*?\.heroStory \.assetActiveQuestion \{[\s\S]*?right: 3\.25rem;[\s\S]*?left: 5rem/);
 
-  const mediumDesktopStoryStyles = storyHeroStyles.slice(
-    storyHeroStyles.indexOf('@media (min-width: 1181px) and (max-width: 1360px)'),
-    storyHeroStyles.indexOf('@media (min-width: 1181px) and (max-width: 1240px)'),
-  );
-  assert.match(mediumDesktopStoryStyles, /\.heroStory \.heroMedia \.shell \{[\s\S]*?width: min\(calc\(100% - 3rem\), 1360px\)/);
-  assert.match(mediumDesktopStoryStyles, /\.storyHeroGrid \{[\s\S]*?grid-template-columns: minmax\(27rem, 31rem\) minmax\(34rem, 44rem\)/);
-  assert.match(mediumDesktopStoryStyles, /\.assetStageMotion \{[\s\S]*?width: min\(44rem, calc\(100% \+ 6rem\)\);[\s\S]*?justify-self: end/);
-  assert.match(storyHeroStyles, /@media \(min-width: 1181px\) and \(max-width: 1240px\) and \(min-height: 640px\)[\s\S]*?\.storyHeroGrid \{[\s\S]*?--hero-working-inset: 8px/);
-  assert.match(storyHeroStyles, /@media \(min-width: 1181px\) and \(min-height: 640px\) and \(max-height: 759px\)[\s\S]*?\.assetStageMotion \{[\s\S]*?width: min\(43rem, calc\(100% \+ 5rem\)\)/);
+  assertNoWebsiteReflow(storyHeroStyles);
+  assert.doesNotMatch(storyHeroStyles, /@media[^\{]*(?:width|height)\s*:/);
 
-  const compactStoryStyles = storyHeroStyles.slice(
-    storyHeroStyles.indexOf('@media (max-width: 1180px), (max-height: 639px)'),
-    storyHeroStyles.indexOf('@media (max-width: 760px)'),
-  );
-  assert.match(compactStoryStyles, /\.heroStory \{[\s\S]*?min-height: 0 !important/);
-  assert.match(compactStoryStyles, /\.heroSticky \{[\s\S]*?position: relative;[\s\S]*?top: auto;[\s\S]*?height: auto/);
-  assert.match(compactStoryStyles, /\.storyHeroGrid \{[\s\S]*?grid-template-columns: minmax\(0, 1fr\)/);
-  assert.match(compactStoryStyles, /\.heroBrandCopy \{[\s\S]*?opacity: 1;[\s\S]*?filter: none/);
-  assert.match(compactStoryStyles, /\.heroPromiseCopy \{[\s\S]*?display: none/);
-  assert.match(compactStoryStyles, /\.storyHeroLogo \{[\s\S]*?order: 2;[\s\S]*?opacity: 1;[\s\S]*?filter: none/);
-  assert.match(compactStoryStyles, /\.storyHeroLogo::before \{[\s\S]*?display: none/);
-  assert.match(compactStoryStyles, /\.assetStageMotion \{[\s\S]*?order: 3;[\s\S]*?opacity: 1;[\s\S]*?transform: none !important/);
-  assert.match(compactStoryStyles, /\.featureNarrative \{[\s\S]*?order: 4;[\s\S]*?opacity: 1;[\s\S]*?filter: none/);
-  assert.match(compactStoryStyles, /\.compactHeroActions \{[\s\S]*?display: flex;[\s\S]*?order: 5/);
-  assert.match(compactStoryStyles, /\.storyPauseControl \{[\s\S]*?display: none/);
-
-  assert.match(storyHeroStyles, /@media \(max-width: 760px\)[\s\S]*?\.compactHeroActions \{[\s\S]*?grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
-  assert.match(storyHeroStyles, /@media \(max-width: 640px\)[\s\S]*?\.compactHeroActions \{[\s\S]*?grid-template-columns: minmax\(0, 1fr\)/);
   assert.doesNotMatch(storyHeroStyles, /scroll-snap|overscroll-behavior/);
 
   const reducedMotionStyles = storyHeroStyles.slice(
@@ -455,8 +428,9 @@ test('homepage plays one slower timed tour, returns to its brand frame, then fol
   );
   assert.match(reducedMotionStyles, /\.storyCopyLayer,[\s\S]*?\.storyPauseControl \{[\s\S]*?animation: none !important;[\s\S]*?transition: none !important/);
   assert.match(reducedMotionStyles, /\.storyCopyLayer,[\s\S]*?\.featureNarrativeLayer \{[\s\S]*?filter: none !important/);
-  assert.match(storyHeroStyles, /@media \(prefers-reduced-motion: reduce\) and \(min-width: 1181px\)[\s\S]*?\.heroBrandCopy \{[\s\S]*?opacity: 1;[\s\S]*?\.storyHeroLogo \{[\s\S]*?opacity: 1;[\s\S]*?\.assetStageMotion \{[\s\S]*?transform: none !important;[\s\S]*?\.compactHeroActions \{[\s\S]*?display: flex/);
-  assert.match(storyHeroStyles, /@media \(prefers-reduced-motion: reduce\) and \(min-width: 1181px\)[\s\S]*?\.storyHeroLogo::before \{[\s\S]*?display: none/);
-  assert.match(storyHeroStyles, /@media \(prefers-reduced-motion: reduce\) and \(min-width: 1181px\)[\s\S]*?\.heroStory \.heroMedia\.heroSticky \{[\s\S]*?height: auto;[\s\S]*?overflow: hidden/);
+  assert.match(storyHeroStyles, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.heroBrandCopy \{[\s\S]*?opacity: 1;[\s\S]*?\.storyHeroLogo \{[\s\S]*?opacity: 1;[\s\S]*?\.assetStageMotion \{[\s\S]*?transform: none !important;[\s\S]*?\.compactHeroActions \{[\s\S]*?display: flex/);
+  assert.match(storyHeroStyles, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.storyHeroLogo::before \{[\s\S]*?display: none/);
+  assert.match(storyHeroStyles, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.heroStory \.heroMedia\.heroSticky \{[\s\S]*?height: auto;[\s\S]*?overflow: hidden/);
   assert.match(storyHeroStyles, /@media \(forced-colors: active\)[\s\S]*?\.storyPauseControl \{[\s\S]*?border: 1px solid CanvasText/);
 });
+

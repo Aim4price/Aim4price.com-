@@ -1,3 +1,4 @@
+import { assertNoWebsiteReflow } from './helpers/site-layout-audit.mjs';
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
@@ -180,10 +181,7 @@ test("styling keeps the original layout while improving map clarity", () => {
     assetMapStyles,
     /\.mapStageCollapsed \{[^}]*3\.7rem/,
   );
-  assert.match(
-    assetMapStyles,
-    /@media \(max-width: 620px\)[\s\S]*?max-height: 65%;/,
-  );
+  assertNoWebsiteReflow(assetMapStyles);
   assert.match(
     assetMapStyles,
     /\.aim4priceMapMarkerPin\)[\s\S]*?color: #0f5840;[\s\S]*?border: 3px solid #0f5840;/,
@@ -193,3 +191,4 @@ test("styling keeps the original layout while improving map clarity", () => {
     /\.aim4priceMapMarker--active \.aim4priceMapMarkerPin\)[\s\S]*?background: #0f5840;/,
   );
 });
+

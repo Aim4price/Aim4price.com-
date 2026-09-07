@@ -1,3 +1,4 @@
+import { assertNoWebsiteReflow } from './helpers/site-layout-audit.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -113,9 +114,10 @@ test('overview keeps Asset Register card styling with loading, error and respons
   assert.match(styles, /background: linear-gradient\(180deg, rgba\(255, 255, 255, 0\.98\)/);
   assert.match(styles, /\.cardAttention/);
   assert.match(styles, /\.cardUpcoming/);
-  assert.match(styles, /@media \(max-width: 760px\)/);
-  assert.match(styles, /@media \(max-width: 520px\)/);
+  assertNoWebsiteReflow(styles);
+  assertNoWebsiteReflow(styles);
   assert.match(overview, /Checking the register/);
   assert.match(overview, /Overview unavailable/);
   assert.match(overview, /Nothing needs attention right now/);
 });
+

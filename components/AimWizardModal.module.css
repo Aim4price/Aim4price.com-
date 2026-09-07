@@ -15,8 +15,8 @@
   box-sizing: border-box;
   display: flex !important;
   flex-direction: column;
-  width: min(1120px, 100%) !important;
-  max-height: min(880px, calc(100dvh - 48px)) !important;
+  width: min(1120px, var(--website-dialog-reference-width, 100%)) !important;
+  max-height: min(880px, calc(calc(var(--website-visible-height, 100dvh) * 1) - 48px)) !important;
   margin: 0 !important;
   padding: 0 !important;
   overflow: hidden;
@@ -27,7 +27,7 @@
 }
 
 .dialog.wideDialog {
-  width: min(1280px, 100%) !important;
+  width: min(1280px, var(--website-dialog-reference-width, 100%)) !important;
 }
 
 .dialog > form {
@@ -61,7 +61,7 @@
   color: #063f33;
   font-family:
     var(--font-heading, "Montserrat"), var(--font-body, "Inter"), sans-serif;
-  font-size: clamp(28px, 4vw, 38px) !important;
+  font-size: clamp(28px, calc(var(--website-design-vw, 1vw) * 4), 38px) !important;
   font-weight: 900;
   line-height: 1.04 !important;
   letter-spacing: -0.035em !important;
@@ -389,109 +389,170 @@
 
 /* Keep the umbrella rhythm while reserving enough room for form content on
    common laptop-height viewports. */
+:global(:where([data-website-canvas])) .overlay {
+    padding: 16px;
+  }
+:global(:where([data-website-canvas])) .dialog {
+    max-height: calc(calc(var(--website-visible-height, 100dvh) * 1) - 32px) !important;
+  }
+:global(:where([data-website-canvas])) .dialog .header {
+    padding-top: 22px !important;
+    padding-bottom: 18px !important;
+  }
+:global(:where([data-website-canvas])) .dialog .header h2 {
+    font-size: clamp(27px, calc(var(--website-design-vw, 1vw) * 3.4), 35px) !important;
+  }
+:global(:where([data-website-canvas])) .dialog .closeButton {
+    width: 50px !important;
+    min-width: 50px;
+    height: 50px !important;
+    flex-basis: 50px;
+  }
+:global(:where([data-website-canvas])) .dialog .body {
+    padding-top: 20px !important;
+    padding-bottom: 22px !important;
+  }
+:global(:where([data-website-canvas])) .intro {
+    font-size: 15px;
+    line-height: 1.48;
+  }
+:global(:where([data-website-canvas])) .progress {
+    margin-top: 18px !important;
+  }
+:global(:where([data-website-canvas])) .progressItem > span {
+    width: 40px !important;
+    height: 40px !important;
+    flex-basis: 40px;
+  }
+:global(:where([data-website-canvas])) .progressItem > strong {
+    font-size: 13px !important;
+  }
+:global(:where([data-website-canvas])) .dialog .panel {
+    gap: 16px !important;
+    margin-top: 18px;
+    padding: 20px 24px !important;
+  }
+:global(:where([data-website-canvas])) .panelNumber {
+    width: 42px;
+    height: 42px;
+    border-radius: 14px;
+    font-size: 16px;
+  }
+:global(:where([data-website-canvas])) .panelHeading h3 {
+    font-size: 18px !important;
+  }
+:global(:where([data-website-canvas])) .dialog .footer {
+    min-height: 72px;
+    padding-top: 12px !important;
+    padding-bottom: max(16px, env(safe-area-inset-bottom)) !important;
+  }
+:global(:where([data-website-canvas])) .dialog .secondaryAction,
+  :global(:where([data-website-canvas])) .dialog .primaryAction {
+    min-height: 46px !important;
+  }
 @media (min-width: 721px) and (max-height: 900px) {
-  .overlay {
+  :global(:where(html:not(:has([data-website-canvas])))) .overlay {
     padding: 16px;
   }
 
-  .dialog {
+  :global(:where(html:not(:has([data-website-canvas])))) .dialog {
     max-height: calc(100dvh - 32px) !important;
   }
 
-  .dialog .header {
+  :global(:where(html:not(:has([data-website-canvas])))) .dialog .header {
     padding-top: 22px !important;
     padding-bottom: 18px !important;
   }
 
-  .dialog .header h2 {
+  :global(:where(html:not(:has([data-website-canvas])))) .dialog .header h2 {
     font-size: clamp(27px, 3.4vw, 35px) !important;
   }
 
-  .dialog .closeButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .dialog .closeButton {
     width: 50px !important;
     min-width: 50px;
     height: 50px !important;
     flex-basis: 50px;
   }
 
-  .dialog .body {
+  :global(:where(html:not(:has([data-website-canvas])))) .dialog .body {
     padding-top: 20px !important;
     padding-bottom: 22px !important;
   }
 
-  .intro {
+  :global(:where(html:not(:has([data-website-canvas])))) .intro {
     font-size: 15px;
     line-height: 1.48;
   }
 
-  .progress {
+  :global(:where(html:not(:has([data-website-canvas])))) .progress {
     margin-top: 18px !important;
   }
 
-  .progressItem > span {
+  :global(:where(html:not(:has([data-website-canvas])))) .progressItem > span {
     width: 40px !important;
     height: 40px !important;
     flex-basis: 40px;
   }
 
-  .progressItem > strong {
+  :global(:where(html:not(:has([data-website-canvas])))) .progressItem > strong {
     font-size: 13px !important;
   }
 
-  .dialog .panel {
+  :global(:where(html:not(:has([data-website-canvas])))) .dialog .panel {
     gap: 16px !important;
     margin-top: 18px;
     padding: 20px 24px !important;
   }
 
-  .panelNumber {
+  :global(:where(html:not(:has([data-website-canvas])))) .panelNumber {
     width: 42px;
     height: 42px;
     border-radius: 14px;
     font-size: 16px;
   }
 
-  .panelHeading h3 {
+  :global(:where(html:not(:has([data-website-canvas])))) .panelHeading h3 {
     font-size: 18px !important;
   }
 
-  .dialog .footer {
+  :global(:where(html:not(:has([data-website-canvas])))) .dialog .footer {
     min-height: 72px;
     padding-top: 12px !important;
     padding-bottom: max(16px, env(safe-area-inset-bottom)) !important;
   }
 
-  .dialog .secondaryAction,
-  .dialog .primaryAction {
+  :global(:where(html:not(:has([data-website-canvas])))) .dialog .secondaryAction,
+  :global(:where(html:not(:has([data-website-canvas])))) .dialog .primaryAction {
     min-height: 46px !important;
   }
 }
 
 @media (max-width: 720px) {
-  .overlay {
+  :global(:where(html:not(:has([data-website-canvas])))) .overlay {
     align-items: end;
     padding: 0;
   }
 
-  .dialog {
+  :global(:where(html:not(:has([data-website-canvas])))) .dialog {
     width: 100% !important;
     max-height: 94dvh !important;
     border-radius: 24px 24px 0 0 !important;
   }
 
-  .dialog .header,
-  .dialog .body,
-  .dialog .footer {
+  :global(:where(html:not(:has([data-website-canvas])))) .dialog .header,
+  :global(:where(html:not(:has([data-website-canvas])))) .dialog .body,
+  :global(:where(html:not(:has([data-website-canvas])))) .dialog .footer {
     padding-left: 18px !important;
     padding-right: 18px !important;
   }
 
-  .progress {
+  :global(:where(html:not(:has([data-website-canvas])))) .progress {
     display: grid !important;
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
-  .progressItem {
+  :global(:where(html:not(:has([data-website-canvas])))) .progressItem {
     display: grid !important;
     flex: initial;
     justify-items: center;
@@ -499,7 +560,7 @@
     text-align: center;
   }
 
-  .progressItem:not(:last-child)::after {
+  :global(:where(html:not(:has([data-website-canvas])))) .progressItem:not(:last-child)::after {
     position: absolute;
     top: 21px;
     right: -50%;
@@ -508,11 +569,11 @@
     margin: 0;
   }
 
-  .progressItem:last-child {
+  :global(:where(html:not(:has([data-website-canvas])))) .progressItem:last-child {
     flex: initial;
   }
 
-  .progressItem > strong {
+  :global(:where(html:not(:has([data-website-canvas])))) .progressItem > strong {
     min-width: 0;
     padding: 0 4px;
     background: transparent;
@@ -520,50 +581,50 @@
     white-space: normal;
   }
 
-  .dialog .panel {
+  :global(:where(html:not(:has([data-website-canvas])))) .dialog .panel {
     padding: 18px !important;
     border-radius: 18px !important;
   }
 
-  .dialog .footer {
+  :global(:where(html:not(:has([data-website-canvas])))) .dialog .footer {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .dialog .secondaryAction,
-  .dialog .primaryAction {
+  :global(:where(html:not(:has([data-website-canvas])))) .dialog .secondaryAction,
+  :global(:where(html:not(:has([data-website-canvas])))) .dialog .primaryAction {
     width: 100%;
   }
 }
 
 @media (max-width: 480px) {
-  .dialog .header {
+  :global(:where(html:not(:has([data-website-canvas])))) .dialog .header {
     gap: 12px;
   }
 
-  .dialog .closeButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .dialog .closeButton {
     width: 46px !important;
     min-width: 46px;
     height: 46px !important;
     flex-basis: 46px;
   }
 
-  .panelHeading {
+  :global(:where(html:not(:has([data-website-canvas])))) .panelHeading {
     align-items: start;
   }
 
-  .panelNumber {
+  :global(:where(html:not(:has([data-website-canvas])))) .panelNumber {
     width: 40px;
     height: 40px;
     border-radius: 13px;
     font-size: 15px;
   }
 
-  .panelHeading h3 {
+  :global(:where(html:not(:has([data-website-canvas])))) .panelHeading h3 {
     font-size: 17px !important;
   }
 
-  .dialog .panel {
+  :global(:where(html:not(:has([data-website-canvas])))) .dialog .panel {
     padding: 16px !important;
   }
 }
@@ -573,3 +634,4 @@
     animation: none;
   }
 }
+

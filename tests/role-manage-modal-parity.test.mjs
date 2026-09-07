@@ -96,7 +96,7 @@ test('role manage layouts match the owner 3-2-1 responsive grid', () => {
   const trackerCommandCss = trackerStyles.slice(trackerStyles.indexOf('/* === Dealer asset management matches the owner command centre === */'));
 
   for (const css of [ownerCommandCss, roleCommandCss, trackerCommandCss]) {
-    assert.match(css, /width:\s*min\(97vw, 84rem\)\s*!important;/);
+    assert.match(css, /width:\s*min\(calc\(var\(--website-design-vw(?:, 1vw)?\) \* 97\), 84rem\)\s*!important;/);
     assert.match(css, /grid-template-columns:\s*repeat\(3, minmax\(0, 1fr\)\)\s*!important;/);
     assert.match(css, /grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\)\s*!important;/);
     assert.match(css, /grid-template-columns:\s*minmax\(0, 1fr\)\s*!important;/);
@@ -107,12 +107,12 @@ test('role manage layouts match the owner 3-2-1 responsive grid', () => {
   assert.match(roleCommandCss, /@media \(min-width: 701px\) and \(max-width: 1180px\)/);
   assert.match(roleCommandCss, /@media \(min-width: 901px\)[\s\S]*?white-space:\s*nowrap\s*!important;/);
   assert.match(roleCommandCss, /@media \(max-width: 700px\)/);
-  assert.match(roleCommandCss, /padding:\s*clamp\(1\.35rem, 2\.15vw, 1\.75rem\)\s*!important;/);
+  assert.match(roleCommandCss, /padding:\s*clamp\(1\.35rem, calc\(var\(--website-design-vw(?:, 1vw)?\) \* 2\.15\), 1\.75rem\)\s*!important;/);
   assert.match(roleCommandCss, /padding:\s*0 0 1\.05rem\s*!important;/);
   assert.match(trackerCommandCss, /@media \(min-width: 701px\) and \(max-width: 1180px\)/);
   assert.match(trackerCommandCss, /@media \(min-width: 901px\)[\s\S]*?white-space:\s*nowrap\s*!important;/);
   assert.match(trackerCommandCss, /@media \(max-width: 700px\)/);
-  assert.match(trackerCommandCss, /padding:\s*clamp\(1\.35rem, 2\.15vw, 1\.75rem\)\s*!important;/);
+  assert.match(trackerCommandCss, /padding:\s*clamp\(1\.35rem, calc\(var\(--website-design-vw(?:, 1vw)?\) \* 2\.15\), 1\.75rem\)\s*!important;/);
   assert.match(trackerCommandCss, /padding:\s*0 0 1\.05rem\s*!important;/);
 });
 
@@ -122,3 +122,4 @@ test('accountant subviews keep their form layout outside the owner-style menu', 
   assert.doesNotMatch(accountantModal, /styles\.accountantFinanceModal[^\n]*styles\.ownerCommandModal/);
   assert.match(accountantMenu, /styles\.optionDangerButton[^\n]*styles\.ownerCommandDangerAction/);
 });
+

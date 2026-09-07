@@ -1,3 +1,4 @@
+import { assertNoWebsiteReflow } from './helpers/site-layout-audit.mjs';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
@@ -55,7 +56,7 @@ test('filter launchers do not show a decorative dropdown icon', () => {
 test('Asset Register Filters matches the Summary and Download heading size', () => {
   assert.match(
     assetRegisterStyles,
-    /\.registerHeader \.headerActions \.secondaryButton,\s*\.registerHeader \.headerActions \.filterTriggerButton\s*\{[\s\S]*?min-height:\s*clamp\(3\.45rem, 4\.2vw, 3\.9rem\)[\s\S]*?font-size:\s*clamp\(0\.98rem, 1\.15vw, 1\.08rem\)/,
+    /\.registerHeader \.headerActions \.secondaryButton,\s*\.registerHeader \.headerActions \.filterTriggerButton\s*\{[\s\S]*?min-height:\s*clamp\(3\.45rem, calc\(var\(--website-design-vw(?:, 1vw)?\) \* 4\.2\), 3\.9rem\)[\s\S]*?font-size:\s*clamp\(0\.98rem, calc\(var\(--website-design-vw(?:, 1vw)?\) \* 1\.15\), 1\.08rem\)/,
   );
 
   const sizingRefinement = assetRegisterStyles.slice(
@@ -68,7 +69,7 @@ test('Asset Register Filters matches the Summary and Download heading size', () 
 test('Filter assets and Export asset register use identical heading typography', () => {
   assert.match(
     assetRegisterStyles,
-    /\.assetFilterModalHeader h3,\s*\.exportModalHeader h3\s*\{[\s\S]*?font-family:\s*var\(--font-heading, 'Montserrat'\), var\(--font-body, 'Inter'\), sans-serif !important;[\s\S]*?font-size:\s*clamp\(2rem, 3vw, 2\.75rem\) !important;[\s\S]*?font-weight:\s*900 !important;[\s\S]*?line-height:\s*1\.02 !important;[\s\S]*?letter-spacing:\s*-0\.065em !important;/,
+    /\.assetFilterModalHeader h3,\s*\.exportModalHeader h3\s*\{[\s\S]*?font-family:\s*var\(--font-heading, 'Montserrat'\), var\(--font-body, 'Inter'\), sans-serif !important;[\s\S]*?font-size:\s*clamp\(2rem, calc\(var\(--website-design-vw(?:, 1vw)?\) \* 3\), 2\.75rem\) !important;[\s\S]*?font-weight:\s*900 !important;[\s\S]*?line-height:\s*1\.02 !important;[\s\S]*?letter-spacing:\s*-0\.065em !important;/,
   );
 });
 
@@ -109,5 +110,6 @@ test('quick export choices reuse the filter wording and exact option typography'
     assetRegisterStyles,
     /\.assetFilterOptionGrid \.assetFilterOptionText strong,\s*\.exportModal \.pdfReportChoices \.pdfReportQuickLabel\s*\{[\s\S]*?font-family:\s*var\(--font-body, 'Montserrat'\), sans-serif !important;[\s\S]*?font-size:\s*0\.94rem !important;[\s\S]*?font-weight:\s*720 !important;[\s\S]*?line-height:\s*1\.16 !important;[\s\S]*?letter-spacing:\s*-0\.018em !important;/,
   );
-  assert.match(assetRegisterStyles, /@media \(max-width: 900px\)\s*\{\s*\.assetFilterModalHeader h3,\s*\.exportModalHeader h3\s*\{\s*font-size:\s*1\.62rem !important;/);
+  assertNoWebsiteReflow(assetRegisterStyles);
 });
+

@@ -110,7 +110,7 @@ test('inside choices remain compact while the simplified outside layout has bala
 
   assert.equal((client.match(/styles\.assetShareInsideModal/g) ?? []).length, 2);
   assert.match(pageStyles, /\.assetQuoteModal\.assetShareInsideModal:not\(\.assetQuotePartnerPickerModal\) \.assetQuoteChoiceGrid,[\s\S]*?grid-template-columns: repeat\(2, minmax\(0, 1fr\)\) !important/);
-  assert.match(pageStyles, /\.assetShareInsideModal \.assetQuoteChoiceGrid \.assetQuoteChoiceCard[\s\S]*?min-height: clamp\(7\.8rem, 14dvh, 8\.8rem\) !important/);
+  assert.match(pageStyles, /\.assetShareInsideModal \.assetQuoteChoiceGrid \.assetQuoteChoiceCard[\s\S]*?min-height: clamp\(7\.8rem, (?:calc\(var\(--website-design-vh(?:, 1dvh)?\) \* 14\)|calc\(var\(--website-visible-height(?:, 100dvh)?\) \* 0\.14\)), 8\.8rem\) !important/);
   assert.match(pageStyles, /@media \(max-width: 820px\)[\s\S]*?\.assetQuoteModal\.assetShareInsideModal:not\(\.assetQuotePartnerPickerModal\) \.assetQuoteChoiceGrid,[\s\S]*?grid-template-columns: minmax\(0, 1fr\) !important/);
 
   const insideScrollRule = pageStyles.match(/\.assetShareInsideModal \.assetQuoteScrollBody,\n\.assetShareInsideModal \.registerShareModalBody \{\n([\s\S]*?)\n\}/);
@@ -131,3 +131,4 @@ test('inside choices remain compact while the simplified outside layout has bala
   assert.match(componentStyles, /\.whatsappButton \.sendIcon svg \{[\s\S]*?width: 1\.72rem;[\s\S]*?height: 1\.72rem/);
   assert.match(component, /tabIndex=\{0\}[\s\S]*?aria-label="External asset details message preview"/);
 });
+

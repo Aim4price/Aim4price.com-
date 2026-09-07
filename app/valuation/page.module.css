@@ -1,5 +1,5 @@
 .page {
-  min-height: 100vh;
+  min-height: calc(var(--website-design-vh, 1vh) * 100);
   padding-bottom: 4rem;
   background:
     radial-gradient(circle at top left, rgba(23, 77, 62, 0.05), transparent 28%),
@@ -187,7 +187,7 @@
 }
 
 .replacementNoticeModal {
-  width: min(520px, 100%);
+  width: min(520px, var(--website-dialog-reference-width, 100%));
   padding: 1.5rem;
   border: 1px solid rgba(5, 94, 74, 0.16);
   border-radius: 20px;
@@ -206,7 +206,7 @@
 .replacementNoticeModal h2 {
   margin: 0.45rem 0 0.65rem;
   color: #063f31;
-  font-size: clamp(1.35rem, 3vw, 1.75rem);
+  font-size: clamp(1.35rem, calc(var(--website-design-vw, 1vw) * 3), 1.75rem);
 }
 
 .replacementNoticeModal p {
@@ -223,25 +223,25 @@
 }
 
 @media (max-width: 760px) {
-  .dealerAssessmentOptions {
+  :global(:where(html:not(:has([data-website-canvas])))) .dealerAssessmentOptions {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .replacementNoticeActions {
+  :global(:where(html:not(:has([data-website-canvas])))) .replacementNoticeActions {
     display: grid;
     grid-template-columns: 1fr;
   }
 
-  .replacementNoticeActions button {
+  :global(:where(html:not(:has([data-website-canvas])))) .replacementNoticeActions button {
     width: 100%;
   }
 
-  .detailedAssessmentEntry {
+  :global(:where(html:not(:has([data-website-canvas])))) .detailedAssessmentEntry {
     align-items: stretch;
     flex-direction: column;
   }
 
-  .detailedAssessmentToggle {
+  :global(:where(html:not(:has([data-website-canvas])))) .detailedAssessmentToggle {
     width: 100%;
   }
 }
@@ -290,7 +290,7 @@
   margin: 0.9rem 0 0.58rem;
   max-width: 10.5ch;
   color: #ffffff;
-  font-size: clamp(2.6rem, 5vw, 4.2rem);
+  font-size: clamp(2.6rem, calc(var(--website-design-vw, 1vw) * 5), 4.2rem);
   line-height: 0.96;
   letter-spacing: -0.065em;
 }
@@ -406,7 +406,7 @@
 .stepTitle {
   margin: 0;
   text-align: center;
-  font-size: clamp(2rem, 3vw, 2.7rem);
+  font-size: clamp(2rem, calc(var(--website-design-vw, 1vw) * 3), 2.7rem);
   line-height: 1.08;
   font-weight: 700;
   letter-spacing: -0.05em;
@@ -1460,7 +1460,7 @@
 
 .resultTitle {
   margin: 0;
-  font-size: clamp(2rem, 3vw, 2.55rem);
+  font-size: clamp(2rem, calc(var(--website-design-vw, 1vw) * 3), 2.55rem);
   line-height: 1.05;
   letter-spacing: -0.045em;
   color: #1f342d;
@@ -1511,7 +1511,7 @@
 
 .valueAmount {
   margin-top: 0.35rem;
-  font-size: clamp(2.5rem, 5vw, 3.65rem);
+  font-size: clamp(2.5rem, calc(var(--website-design-vw, 1vw) * 5), 3.65rem);
   line-height: 0.95;
   letter-spacing: -0.06em;
   font-weight: 800;
@@ -1754,124 +1754,124 @@
 }
 
 @media (max-width: 1100px) {
-  .typeGrid,
-  .brandGrid,
-  .methodGrid,
-  .conditionGrid {
+  :global(:where(html:not(:has([data-website-canvas])))) .typeGrid,
+  :global(:where(html:not(:has([data-website-canvas])))) .brandGrid,
+  :global(:where(html:not(:has([data-website-canvas])))) .methodGrid,
+  :global(:where(html:not(:has([data-website-canvas])))) .conditionGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .resultsLayout {
+  :global(:where(html:not(:has([data-website-canvas])))) .resultsLayout {
     grid-template-columns: 1fr;
   }
 }
 
 @media (max-width: 860px) {
-  .container {
+  :global(:where(html:not(:has([data-website-canvas])))) .container {
     width: var(--shell-width);
     padding-top: 1.25rem;
   }
 
-  .stepContent {
+  :global(:where(html:not(:has([data-website-canvas])))) .stepContent {
     padding: 1.6rem 1rem 1.3rem;
   }
 
-  .stepper {
+  :global(:where(html:not(:has([data-website-canvas])))) .stepper {
     grid-template-columns: 1fr;
   }
 
-  .stepperLine {
+  :global(:where(html:not(:has([data-website-canvas])))) .stepperLine {
     display: none;
   }
 
-  .typeGrid,
-  .brandGrid,
-  .conditionGrid,
-  .methodGrid,
-  .inputGrid,
-  .selectionCardGrid {
+  :global(:where(html:not(:has([data-website-canvas])))) .typeGrid,
+  :global(:where(html:not(:has([data-website-canvas])))) .brandGrid,
+  :global(:where(html:not(:has([data-website-canvas])))) .conditionGrid,
+  :global(:where(html:not(:has([data-website-canvas])))) .methodGrid,
+  :global(:where(html:not(:has([data-website-canvas])))) .inputGrid,
+  :global(:where(html:not(:has([data-website-canvas])))) .selectionCardGrid {
     grid-template-columns: 1fr;
   }
 
-  .filterToolbar {
+  :global(:where(html:not(:has([data-website-canvas])))) .filterToolbar {
     flex-direction: column;
   }
 
-  .filterGroup {
+  :global(:where(html:not(:has([data-website-canvas])))) .filterGroup {
     flex-basis: auto;
     width: 100%;
     min-height: 0;
   }
 
-  .sectionHeader,
-  .filterSummary {
+  :global(:where(html:not(:has([data-website-canvas])))) .sectionHeader,
+  :global(:where(html:not(:has([data-website-canvas])))) .filterSummary {
     flex-direction: column;
     align-items: flex-start;
   }
 
-  .panelHeader {
+  :global(:where(html:not(:has([data-website-canvas])))) .panelHeader {
     grid-template-columns: 1fr;
     align-items: start;
     min-height: 0;
   }
 
-  .panelToggle,
-  .panelBadge {
+  :global(:where(html:not(:has([data-website-canvas])))) .panelToggle,
+  :global(:where(html:not(:has([data-website-canvas])))) .panelBadge {
     width: 100%;
     max-width: none;
     min-width: 0;
     justify-self: stretch;
   }
 
-  .panelBadge {
+  :global(:where(html:not(:has([data-website-canvas])))) .panelBadge {
     justify-content: flex-start;
   }
 
-  .dropdownMenu {
+  :global(:where(html:not(:has([data-website-canvas])))) .dropdownMenu {
     padding: 0.75rem;
   }
 
-  .dropdownOption {
+  :global(:where(html:not(:has([data-website-canvas])))) .dropdownOption {
     align-items: flex-start;
     flex-direction: column;
   }
 
-  .fieldHint {
+  :global(:where(html:not(:has([data-website-canvas])))) .fieldHint {
     min-height: 0;
   }
 
-  .filterSummaryText {
+  :global(:where(html:not(:has([data-website-canvas])))) .filterSummaryText {
     text-align: left;
   }
 
-  .typePicker {
+  :global(:where(html:not(:has([data-website-canvas])))) .typePicker {
     grid-template-columns: 2.9rem minmax(0, 1fr) 2.9rem;
     gap: 0.75rem;
   }
 
-  .wizardFooter,
-  .resultsTopbar,
-  .heroTop,
-  .heroIdentity,
-  .valuePanelTop {
+  :global(:where(html:not(:has([data-website-canvas])))) .wizardFooter,
+  :global(:where(html:not(:has([data-website-canvas])))) .resultsTopbar,
+  :global(:where(html:not(:has([data-website-canvas])))) .heroTop,
+  :global(:where(html:not(:has([data-website-canvas])))) .heroIdentity,
+  :global(:where(html:not(:has([data-website-canvas])))) .valuePanelTop {
     flex-direction: column;
     align-items: stretch;
   }
 
-  .wizardFooter {
+  :global(:where(html:not(:has([data-website-canvas])))) .wizardFooter {
     padding: 1rem;
   }
 
-  .selectionImageBox,
-  .heroImageBox {
+  :global(:where(html:not(:has([data-website-canvas])))) .selectionImageBox,
+  :global(:where(html:not(:has([data-website-canvas])))) .heroImageBox {
     width: 100%;
     min-width: 0;
     height: 180px;
   }
 
-  .secondaryButton,
-  .primaryButton,
-  .assetButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .secondaryButton,
+  :global(:where(html:not(:has([data-website-canvas])))) .primaryButton,
+  :global(:where(html:not(:has([data-website-canvas])))) .assetButton {
     width: 100%;
   }
 }
@@ -1947,7 +1947,7 @@
 }
 
 .resultTitle {
-  font-size: clamp(1.9rem, 2.9vw, 2.5rem);
+  font-size: clamp(1.9rem, calc(var(--website-design-vw, 1vw) * 2.9), 2.5rem);
 }
 
 .heroMeta {
@@ -2022,7 +2022,7 @@
 
 .valueAmount {
   margin-top: 0.3rem;
-  font-size: clamp(2.45rem, 4.6vw, 3.45rem);
+  font-size: clamp(2.45rem, calc(var(--website-design-vw, 1vw) * 4.6), 3.45rem);
   color: var(--value-amount-color);
 }
 
@@ -2448,58 +2448,58 @@
 }
 
 @media (max-width: 1180px) {
-  .resultsLayout {
+  :global(:where(html:not(:has([data-website-canvas])))) .resultsLayout {
     grid-template-columns: 1fr;
   }
 }
 
 @media (max-width: 860px) {
-  .heroIdentity,
-  .valuePanelTop,
-  .actionHeader,
-  .rangeCardHead,
-  .marketListingsHead,
-  .listingCardTop {
+  :global(:where(html:not(:has([data-website-canvas])))) .heroIdentity,
+  :global(:where(html:not(:has([data-website-canvas])))) .valuePanelTop,
+  :global(:where(html:not(:has([data-website-canvas])))) .actionHeader,
+  :global(:where(html:not(:has([data-website-canvas])))) .rangeCardHead,
+  :global(:where(html:not(:has([data-website-canvas])))) .marketListingsHead,
+  :global(:where(html:not(:has([data-website-canvas])))) .listingCardTop {
     flex-direction: column;
     align-items: stretch;
   }
 
-  .heroImageBox {
+  :global(:where(html:not(:has([data-website-canvas])))) .heroImageBox {
     width: 100%;
     min-width: 0;
     height: 180px;
   }
 
-  .actionGrid,
-  .methodGrid,
-  .breakdownRow {
+  :global(:where(html:not(:has([data-website-canvas])))) .actionGrid,
+  :global(:where(html:not(:has([data-website-canvas])))) .methodGrid,
+  :global(:where(html:not(:has([data-website-canvas])))) .breakdownRow {
     grid-template-columns: 1fr;
   }
 
-  .actionPrimary {
+  :global(:where(html:not(:has([data-website-canvas])))) .actionPrimary {
     grid-column: auto;
   }
 
-  .breakdownValue {
+  :global(:where(html:not(:has([data-website-canvas])))) .breakdownValue {
     text-align: left;
   }
 
-  .summaryConfidenceBadge {
+  :global(:where(html:not(:has([data-website-canvas])))) .summaryConfidenceBadge {
     margin-left: 0;
   }
 
-  .rangeCurrentLink,
-  .listingLink,
-  .listingLinkMuted {
+  :global(:where(html:not(:has([data-website-canvas])))) .rangeCurrentLink,
+  :global(:where(html:not(:has([data-website-canvas])))) .listingLink,
+  :global(:where(html:not(:has([data-website-canvas])))) .listingLinkMuted {
     white-space: normal;
     overflow-wrap: anywhere;
   }
 
-  .listingList {
+  :global(:where(html:not(:has([data-website-canvas])))) .listingList {
     max-height: none;
   }
 
-  .listingCardFooterMeta {
+  :global(:where(html:not(:has([data-website-canvas])))) .listingCardFooterMeta {
     flex-direction: column;
     align-items: flex-start;
   }
@@ -2688,7 +2688,7 @@
 
 .currentTitle {
   margin: 0.48rem 0 0;
-  font-size: clamp(1.34rem, 2vw, 1.82rem);
+  font-size: clamp(1.34rem, calc(var(--website-design-vw, 1vw) * 2), 1.82rem);
   line-height: 1.06;
   letter-spacing: -0.03em;
   color: #1d3831;
@@ -2956,73 +2956,73 @@
 }
 
 @media (max-width: 980px) {
-  .miniStepper {
+  :global(:where(html:not(:has([data-website-canvas])))) .miniStepper {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .choiceGrid,
-  .gpsDetailGrid {
+  :global(:where(html:not(:has([data-website-canvas])))) .choiceGrid,
+  :global(:where(html:not(:has([data-website-canvas])))) .gpsDetailGrid {
     grid-template-columns: 1fr;
   }
 
-  .inlineFieldRow {
+  :global(:where(html:not(:has([data-website-canvas])))) .inlineFieldRow {
     grid-template-columns: 1fr;
   }
 
-  .currentCardActions {
+  :global(:where(html:not(:has([data-website-canvas])))) .currentCardActions {
     justify-content: stretch;
   }
 
-  .currentCardActions > * {
+  :global(:where(html:not(:has([data-website-canvas])))) .currentCardActions > * {
     flex: 1 1 220px;
   }
 }
 
 @media (max-width: 720px) {
-  .flowTopline,
-  .focusContext,
-  .currentCard {
+  :global(:where(html:not(:has([data-website-canvas])))) .flowTopline,
+  :global(:where(html:not(:has([data-website-canvas])))) .focusContext,
+  :global(:where(html:not(:has([data-website-canvas])))) .currentCard {
     padding: 1rem;
   }
 
-  .miniStepper {
+  :global(:where(html:not(:has([data-website-canvas])))) .miniStepper {
     grid-template-columns: 1fr;
   }
 
-  .answerRow {
+  :global(:where(html:not(:has([data-website-canvas])))) .answerRow {
     grid-template-columns: 1fr;
     align-items: stretch;
   }
 
-  .choiceGrid {
+  :global(:where(html:not(:has([data-website-canvas])))) .choiceGrid {
     grid-template-columns: 1fr;
   }
 
-  .choiceCard {
+  :global(:where(html:not(:has([data-website-canvas])))) .choiceCard {
     min-height: 6.6rem;
   }
 
-  .currentTitle {
+  :global(:where(html:not(:has([data-website-canvas])))) .currentTitle {
     font-size: 1.28rem;
   }
 
-  .lockedFamilyCallout {
+  :global(:where(html:not(:has([data-website-canvas])))) .lockedFamilyCallout {
     align-items: flex-start;
   }
 }
 
 @media (max-width: 860px) {
-  .heroIntro {
+  :global(:where(html:not(:has([data-website-canvas])))) .heroIntro {
     padding: 1.25rem 1.15rem;
     border-radius: 1.4rem;
   }
 
-  .heroIntroTitle {
+  :global(:where(html:not(:has([data-website-canvas])))) .heroIntroTitle {
     max-width: 12ch;
     font-size: clamp(2.2rem, 8vw, 3.2rem);
   }
 
-  .heroIntroText {
+  :global(:where(html:not(:has([data-website-canvas])))) .heroIntroText {
     font-size: 0.98rem;
     line-height: 1.65;
   }
@@ -3370,7 +3370,7 @@
 }
 
 @media (max-width: 860px) {
-  .saveMethodGrid {
+  :global(:where(html:not(:has([data-website-canvas])))) .saveMethodGrid {
     grid-template-columns: 1fr;
   }
 }
@@ -3574,7 +3574,7 @@
 }
 
 .valueAmount {
-  font-size: clamp(2.7rem, 4.9vw, 3.75rem);
+  font-size: clamp(2.7rem, calc(var(--website-design-vw, 1vw) * 4.9), 3.75rem);
 }
 
 .valueMeta {
@@ -3691,26 +3691,26 @@
 }
 
 @media (max-width: 980px) {
-  .valueHighlightGrid {
+  :global(:where(html:not(:has([data-website-canvas])))) .valueHighlightGrid {
     grid-template-columns: 1fr;
   }
 }
 
 @media (max-width: 860px) {
-  .heroIntro,
-  .wizardShell {
+  :global(:where(html:not(:has([data-website-canvas])))) .heroIntro,
+  :global(:where(html:not(:has([data-website-canvas])))) .wizardShell {
     width: 100%;
   }
 
-  .heroIntro {
+  :global(:where(html:not(:has([data-website-canvas])))) .heroIntro {
     padding: 1.35rem 1.2rem;
   }
 
-  .methodButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .methodButton {
     min-height: 0;
   }
 
-  .valuePanel {
+  :global(:where(html:not(:has([data-website-canvas])))) .valuePanel {
     padding: 1.1rem;
   }
 }
@@ -3761,7 +3761,7 @@
 .heroIntroTitle {
   max-width: 11ch;
   margin: 0.18rem 0 0;
-  font-size: clamp(2.8rem, 5.1vw, 4.35rem);
+  font-size: clamp(2.8rem, calc(var(--website-design-vw, 1vw) * 5.1), 4.35rem);
   line-height: 0.94;
   letter-spacing: -0.07em;
 }
@@ -4003,51 +4003,51 @@
 }
 
 @media (max-width: 980px) {
-  .heroIntroGrid {
+  :global(:where(html:not(:has([data-website-canvas])))) .heroIntroGrid {
     grid-template-columns: 1fr;
   }
 
-  .heroPanel {
+  :global(:where(html:not(:has([data-website-canvas])))) .heroPanel {
     max-width: none;
   }
 }
 
 @media (max-width: 860px) {
-  .heroIntro {
+  :global(:where(html:not(:has([data-website-canvas])))) .heroIntro {
     padding: 1.25rem 1.05rem;
     border-radius: 1.55rem;
   }
 
-  .heroIntroTitle {
+  :global(:where(html:not(:has([data-website-canvas])))) .heroIntroTitle {
     max-width: 10ch;
     font-size: clamp(2.3rem, 8vw, 3.35rem);
   }
 
-  .heroIntroText {
+  :global(:where(html:not(:has([data-website-canvas])))) .heroIntroText {
     max-width: 100%;
     font-size: 0.97rem;
   }
 
-  .heroPanel {
+  :global(:where(html:not(:has([data-website-canvas])))) .heroPanel {
     padding: 0.92rem;
   }
 
-  .stepMetaRow {
+  :global(:where(html:not(:has([data-website-canvas])))) .stepMetaRow {
     justify-content: flex-start;
   }
 
-  .stepTitle,
-  .stepText {
+  :global(:where(html:not(:has([data-website-canvas])))) .stepTitle,
+  :global(:where(html:not(:has([data-website-canvas])))) .stepText {
     text-align: left;
     margin-left: 0;
     margin-right: 0;
   }
 
-  .stepContent {
+  :global(:where(html:not(:has([data-website-canvas])))) .stepContent {
     padding: 1.55rem 1rem 1.2rem;
   }
 
-  .wizardFooter {
+  :global(:where(html:not(:has([data-website-canvas])))) .wizardFooter {
     padding: 1rem;
   }
 }
@@ -4126,7 +4126,7 @@
   max-width: none;
   margin: 0;
   color: #15362d;
-  font-size: clamp(2.2rem, 3.7vw, 3.55rem);
+  font-size: clamp(2.2rem, calc(var(--website-design-vw, 1vw) * 3.7), 3.55rem);
   line-height: 1.02;
   letter-spacing: -0.055em;
   white-space: nowrap;
@@ -4344,7 +4344,7 @@
   max-width: none;
   margin: 0;
   color: #16372f;
-  font-size: clamp(2rem, 3vw, 3rem);
+  font-size: clamp(2rem, calc(var(--website-design-vw, 1vw) * 3), 3rem);
   line-height: 1.04;
   letter-spacing: -0.05em;
   text-align: left;
@@ -4361,67 +4361,67 @@
 }
 
 @media (max-width: 1120px) {
-  .heroIntroGrid {
+  :global(:where(html:not(:has([data-website-canvas])))) .heroIntroGrid {
     grid-template-columns: 1fr;
   }
 
-  .heroGuide {
+  :global(:where(html:not(:has([data-website-canvas])))) .heroGuide {
     max-width: none;
   }
 }
 
 @media (max-width: 860px) {
-  .heroToggleRow {
+  :global(:where(html:not(:has([data-website-canvas])))) .heroToggleRow {
     margin-bottom: 0.85rem;
   }
 
-  .howItWorksButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .howItWorksButton {
     width: 100%;
   }
 
-  .heroIntro {
+  :global(:where(html:not(:has([data-website-canvas])))) .heroIntro {
     padding: 1rem;
     border-radius: 1.45rem;
   }
 
-  .heroIntroTitle {
+  :global(:where(html:not(:has([data-website-canvas])))) .heroIntroTitle {
     font-size: clamp(1.85rem, 6.3vw, 2.75rem);
   }
 
-  .heroPills {
+  :global(:where(html:not(:has([data-website-canvas])))) .heroPills {
     gap: 0.55rem;
   }
 
-  .heroPill {
+  :global(:where(html:not(:has([data-website-canvas])))) .heroPill {
     min-height: 2.15rem;
     padding: 0 0.75rem;
     font-size: 0.82rem;
   }
 
-  .stepContent {
+  :global(:where(html:not(:has([data-website-canvas])))) .stepContent {
     padding: 1.45rem 1rem 1.15rem;
   }
 
-  .stepTitle {
+  :global(:where(html:not(:has([data-website-canvas])))) .stepTitle {
     font-size: clamp(1.7rem, 5.9vw, 2.3rem);
   }
 
-  .wizardFooter {
+  :global(:where(html:not(:has([data-website-canvas])))) .wizardFooter {
     padding: 1rem;
   }
 }
 
 @media (max-width: 640px) {
-  .heroIntroContent {
+  :global(:where(html:not(:has([data-website-canvas])))) .heroIntroContent {
     gap: 0.75rem;
   }
 
-  .heroIntroTitle,
-  .stepTitle {
+  :global(:where(html:not(:has([data-website-canvas])))) .heroIntroTitle,
+  :global(:where(html:not(:has([data-website-canvas])))) .stepTitle {
     font-size: 1.72rem;
   }
 
-  .heroGuideItem {
+  :global(:where(html:not(:has([data-website-canvas])))) .heroGuideItem {
     grid-template-columns: 1.85rem minmax(0, 1fr);
     gap: 0.6rem;
     padding: 0.72rem;
@@ -4439,23 +4439,23 @@
 }
 
 @media (max-width: 720px) {
-  .appValuation {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation {
     min-height: 100dvh;
     padding-bottom: calc(5.35rem + env(safe-area-inset-bottom));
   }
 
-  .appValuation .container {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .container {
     width: 100%;
     padding-top: 0.55rem;
   }
 
-  .appValuation .wizardCard,
-  .appValuation .sectorWizardCard {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .wizardCard,
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .sectorWizardCard {
     overflow: visible;
     border-radius: 1.15rem;
   }
 
-  .appValuation .wizardHeader {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .wizardHeader {
     position: sticky;
     top: 0;
     z-index: 35;
@@ -4466,7 +4466,7 @@
     box-shadow: 0 8px 18px rgba(17, 63, 50, 0.06);
   }
 
-  .appValuation .mobileStepSummary {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .mobileStepSummary {
     display: flex;
     align-items: baseline;
     justify-content: center;
@@ -4474,7 +4474,7 @@
     padding-inline: 0.12rem;
   }
 
-  .appValuation .mobileStepSummary span {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .mobileStepSummary span {
     color: #577068;
     font-size: 0.68rem;
     font-weight: 850;
@@ -4482,22 +4482,22 @@
     text-transform: uppercase;
   }
 
-  .appValuation .mobileStepSummary strong {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .mobileStepSummary strong {
     color: #153e32;
     font-size: 0.78rem;
     font-weight: 850;
     text-align: right;
   }
 
-  .appValuation .stepper {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .stepper {
     display: grid;
     grid-template-columns: repeat(6, minmax(0, 1fr));
     gap: 0.42rem;
     overflow: visible;
   }
 
-  .appValuation .stepperItem,
-  .appValuation .stepperItemActive {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .stepperItem,
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .stepperItemActive {
     width: 100%;
     min-width: 0;
     min-height: 2.35rem;
@@ -4505,70 +4505,70 @@
     padding: 0.18rem;
   }
 
-  .appValuation .stepperLabel {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .stepperLabel {
     display: none !important;
   }
 
-  .appValuation .stepperBullet {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .stepperBullet {
     width: 2rem;
     height: 2rem;
   }
 
-  .appValuation .stepContent,
-  .appValuation .sectorStepContent {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .stepContent,
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .sectorStepContent {
     padding: 0.85rem 0.72rem 1rem;
   }
 
-  .appValuation .sectorStart {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .sectorStart {
     gap: 0.75rem;
   }
 
-  .appValuation .sectorIntro .stepTitle,
-  .appValuation .stepTitle {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .sectorIntro .stepTitle,
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .stepTitle {
     font-size: clamp(1.72rem, 8vw, 2.15rem);
   }
 
-  .appValuation .sectorIntro .stepText,
-  .appValuation .stepText {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .sectorIntro .stepText,
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .stepText {
     margin-top: 0.38rem;
     font-size: 0.9rem;
   }
 
-  .appValuation .sectorLargeGrid {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .sectorLargeGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 0.65rem;
   }
 
-  .appValuation .sectorBigCard {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .sectorBigCard {
     min-height: 8.35rem;
     border-radius: 1rem;
   }
 
-  .appValuation .sectorBigCardContent {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .sectorBigCardContent {
     padding: 0.78rem;
   }
 
-  .appValuation .sectorLabel,
-  .appValuation .sectorBigCard .sectorLabel {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .sectorLabel,
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .sectorBigCard .sectorLabel {
     font-size: clamp(1.12rem, 5.5vw, 1.42rem);
     line-height: 1.02;
   }
 
-  .appValuation .equipmentPickerCard {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .equipmentPickerCard {
     gap: 0.6rem;
     padding: 0.82rem;
     box-shadow: none;
   }
 
-  .appValuation .equipmentPickerHead {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .equipmentPickerHead {
     align-items: baseline;
   }
 
-  .appValuation .equipmentPickerCard .equipmentDropdownTrigger {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .equipmentPickerCard .equipmentDropdownTrigger {
     display: none;
   }
 
-  .appValuation .equipmentPickerCard .equipmentDropdownMenu {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .equipmentPickerCard .equipmentDropdownMenu {
     max-height: min(20rem, 49dvh);
     padding: 0.28rem;
     border: 0;
@@ -4577,7 +4577,7 @@
     box-shadow: none;
   }
 
-  .appValuation .equipmentPickerCard .equipmentDropdownOption {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .equipmentPickerCard .equipmentDropdownOption {
     min-height: 3.15rem;
     padding: 0.72rem 0.78rem;
     border-radius: 0.75rem;
@@ -4585,81 +4585,81 @@
     box-shadow: none;
   }
 
-  .appValuation .pathChoiceDeck {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .pathChoiceDeck {
     grid-template-columns: 1fr;
     gap: 0.7rem;
   }
 
-  .appValuation .pathChoiceCard {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .pathChoiceCard {
     min-height: 5.4rem;
     padding: 0.88rem 3rem 0.88rem 0.9rem;
   }
 
-  .appValuation .pathSetupPage,
-  .appValuation .pathSetupContent {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .pathSetupPage,
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .pathSetupContent {
     display: block;
     min-width: 0;
   }
 
-  .appValuation .pathSetupContent > .currentCard {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .pathSetupContent > .currentCard {
     margin-top: 0 !important;
   }
 
-  .appValuation .tractorSetupCard,
-  .appValuation .inlineSetupGroup {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .tractorSetupCard,
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .inlineSetupGroup {
     padding: 0.75rem;
     box-shadow: none;
   }
 
-  .appValuation .tractorSetupProgress {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .tractorSetupProgress {
     gap: 0.58rem;
   }
 
-  .appValuation .inlineSetupGroup:not(:last-child) {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .inlineSetupGroup:not(:last-child) {
     margin-bottom: 0;
   }
 
-  .appValuation .specStepCard {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .specStepCard {
     grid-template-columns: 2.45rem minmax(0, 1fr) auto;
     min-height: 4.2rem;
     padding: 0.72rem;
   }
 
-  .appValuation .specStepAction {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .specStepAction {
     align-self: center;
     white-space: nowrap;
   }
 
-  .appValuation .detailedAssessmentPanel {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .detailedAssessmentPanel {
     display: grid;
     gap: 0.55rem;
     margin-top: 0.1rem;
     padding: 0.7rem;
   }
 
-  .appValuation .detailedAssessmentHeader {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .detailedAssessmentHeader {
     padding: 0.2rem 0 0.6rem;
   }
 
-  .appValuation .detailedAssessmentHeader span {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .detailedAssessmentHeader span {
     font-size: 0.8rem;
   }
 
-  .appValuation .dealerAssessmentGroup {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .dealerAssessmentGroup {
     margin: 0;
     padding: 0.7rem 0 0;
   }
 
-  .appValuation .dealerAssessmentOptions {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .dealerAssessmentOptions {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 0.45rem;
   }
 
-  .appValuation .dealerAssessmentOption {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .dealerAssessmentOption {
     min-height: 3rem;
   }
 
-  .appValuation .detailedAssessmentSummary {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .detailedAssessmentSummary {
     display: grid;
     grid-template-columns: 1.8rem minmax(0, 1fr) auto;
     align-items: center;
@@ -4675,7 +4675,7 @@
     text-align: left;
   }
 
-  .appValuation .detailedAssessmentSummary > span:first-child {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .detailedAssessmentSummary > span:first-child {
     display: grid;
     place-items: center;
     width: 1.7rem;
@@ -4686,50 +4686,50 @@
     font-size: 0.72rem;
   }
 
-  .appValuation .detailedAssessmentSummary > span:nth-child(2) {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .detailedAssessmentSummary > span:nth-child(2) {
     display: grid;
     gap: 0.12rem;
   }
 
-  .appValuation .detailedAssessmentSummary small {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .detailedAssessmentSummary small {
     color: #65766e;
     font-size: 0.74rem;
   }
 
-  .appValuation .detailedAssessmentSummary > span:last-child {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .detailedAssessmentSummary > span:last-child {
     font-size: 0.74rem;
     font-weight: 850;
   }
 
-  .appValuation .popularityStars {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .popularityStars {
     display: grid;
     grid-template-columns: repeat(5, minmax(0, 1fr));
     gap: 0.42rem;
   }
 
-  .appValuation .popularityStars button {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .popularityStars button {
     width: 100%;
     min-width: 0;
     min-height: 3rem;
   }
 
-  .appValuation .tractorExtrasGrid {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .tractorExtrasGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 0.55rem;
   }
 
-  .appValuation .tractorExtrasGrid .choiceCard {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .tractorExtrasGrid .choiceCard {
     min-height: 4.2rem;
     padding: 0.72rem 2.2rem 0.72rem 0.65rem;
   }
 
-  .appValuation .detailsModalOverlay {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .detailsModalOverlay {
     align-items: flex-end;
     padding: 0;
   }
 
-  .appValuation .detailsModal,
-  .appValuation .yearDetailsModal {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .detailsModal,
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .yearDetailsModal {
     width: 100%;
     max-height: calc(100dvh - 0.35rem);
     overflow-y: auto;
@@ -4740,7 +4740,7 @@
     -webkit-overflow-scrolling: touch;
   }
 
-  .appValuation .detailsModalHeader {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .detailsModalHeader {
     position: sticky;
     top: -0.9rem;
     z-index: 4;
@@ -4748,7 +4748,7 @@
     background: rgba(255, 255, 255, 0.97);
   }
 
-  .appValuation .detailsModalActions {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .detailsModalActions {
     position: sticky;
     bottom: calc(-0.9rem - env(safe-area-inset-bottom));
     z-index: 4;
@@ -4758,15 +4758,15 @@
     box-shadow: 0 -8px 20px rgba(17, 63, 50, 0.06);
   }
 
-  .appValuation .yearSliderReadout {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .yearSliderReadout {
     min-height: 7.2rem;
   }
 
-  .appValuation :is(input, select, textarea) {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation :is(input, select, textarea) {
     font-size: 16px;
   }
 
-  .appValuation .wizardFooter {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .wizardFooter {
     position: sticky;
     bottom: 0;
     z-index: 34;
@@ -4780,45 +4780,45 @@
     backdrop-filter: blur(12px);
   }
 
-  .appValuation .wizardFooter[data-has-disclaimer='true'] .preEstimateDisclaimer {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .wizardFooter[data-has-disclaimer='true'] .preEstimateDisclaimer {
     grid-column: 1 / -1;
     grid-row: 1;
   }
 
-  .appValuation .resultHero {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .resultHero {
     padding: 0.9rem;
   }
 
-  .appValuation .resultHeroTopline {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .resultHeroTopline {
     align-items: center;
   }
 
-  .appValuation .resultValue {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .resultValue {
     font-size: clamp(2.2rem, 11.5vw, 3rem);
   }
 
-  .appValuation .resultConfidenceNote {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .resultConfidenceNote {
     font-size: 0.84rem;
     line-height: 1.45;
   }
 
-  .appValuation .resultFactsGrid {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .resultFactsGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 0.5rem;
   }
 
-  .appValuation .resultFactCard {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .resultFactCard {
     min-height: 3.8rem;
     padding: 0.65rem 0.7rem;
     border-radius: 0.75rem;
   }
 
-  .appValuation .resultAccordionToggle {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .resultAccordionToggle {
     min-height: 4.25rem;
     padding: 0.82rem;
   }
 
-  .appValuation .resultAccordionTitleGroup small {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .resultAccordionTitleGroup small {
     display: -webkit-box;
     overflow: hidden;
     -webkit-box-orient: vertical;
@@ -4826,44 +4826,44 @@
     font-size: 0.78rem;
   }
 
-  .appValuation .resultAccordionAction {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .resultAccordionAction {
     min-width: 4.5rem;
     padding-inline: 0.65rem;
     font-size: 0.76rem;
   }
 
-  .appValuation .resultFinalActions {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .resultFinalActions {
     gap: 0.8rem;
     padding: 0.9rem;
   }
 
-  .appValuation .resultFinalActionsCopy p {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .resultFinalActionsCopy p {
     font-size: 0.86rem;
   }
 
-  .appValuation .replacementNoticeOverlay {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .replacementNoticeOverlay {
     align-items: center;
     padding: 0.75rem;
   }
 
-  .appValuation .replacementNoticeModal {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .replacementNoticeModal {
     max-height: calc(100dvh - 1.5rem);
     padding: 1.05rem;
   }
 }
 
 @media (max-width: 370px) {
-  .appValuation .sectorLargeGrid {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .sectorLargeGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 0.5rem;
   }
 
-  .appValuation .sectorBigCard {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .sectorBigCard {
     min-height: 7rem;
   }
 
-  .appValuation .sectorLabel,
-  .appValuation .sectorBigCard .sectorLabel {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .sectorLabel,
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .sectorBigCard .sectorLabel {
     font-size: 1rem;
   }
 }
@@ -4923,7 +4923,7 @@
 }
 
 .resultTitle {
-  font-size: clamp(2rem, 3vw, 2.65rem);
+  font-size: clamp(2rem, calc(var(--website-design-vw, 1vw) * 3), 2.65rem);
   line-height: 1.02;
 }
 
@@ -4984,7 +4984,7 @@
 }
 
 .valueAmount {
-  font-size: clamp(2.6rem, 4.5vw, 3.55rem);
+  font-size: clamp(2.6rem, calc(var(--website-design-vw, 1vw) * 4.5), 3.55rem);
 }
 
 .valueMeta {
@@ -5117,58 +5117,58 @@
 }
 
 @media (max-width: 1180px) {
-  .resultsLayout {
+  :global(:where(html:not(:has([data-website-canvas])))) .resultsLayout {
     grid-template-columns: 1fr;
   }
 
-  .actionGrid {
+  :global(:where(html:not(:has([data-website-canvas])))) .actionGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
 @media (max-width: 860px) {
-  .resultsTopbar,
-  .heroIdentity,
-  .valuePanelTop,
-  .actionHeader,
-  .rangeCardHead,
-  .marketListingsHead,
-  .listingCardTop {
+  :global(:where(html:not(:has([data-website-canvas])))) .resultsTopbar,
+  :global(:where(html:not(:has([data-website-canvas])))) .heroIdentity,
+  :global(:where(html:not(:has([data-website-canvas])))) .valuePanelTop,
+  :global(:where(html:not(:has([data-website-canvas])))) .actionHeader,
+  :global(:where(html:not(:has([data-website-canvas])))) .rangeCardHead,
+  :global(:where(html:not(:has([data-website-canvas])))) .marketListingsHead,
+  :global(:where(html:not(:has([data-website-canvas])))) .listingCardTop {
     flex-direction: column;
     align-items: stretch;
   }
 
-  .heroCard,
-  .assetCard,
-  .sideCard {
+  :global(:where(html:not(:has([data-website-canvas])))) .heroCard,
+  :global(:where(html:not(:has([data-website-canvas])))) .assetCard,
+  :global(:where(html:not(:has([data-website-canvas])))) .sideCard {
     padding: 1rem;
   }
 
-  .heroImageBox {
+  :global(:where(html:not(:has([data-website-canvas])))) .heroImageBox {
     width: 100%;
     min-width: 0;
     height: 180px;
   }
 
-  .methodGrid,
-  .actionGrid,
-  .breakdownRow {
+  :global(:where(html:not(:has([data-website-canvas])))) .methodGrid,
+  :global(:where(html:not(:has([data-website-canvas])))) .actionGrid,
+  :global(:where(html:not(:has([data-website-canvas])))) .breakdownRow {
     grid-template-columns: 1fr;
   }
 
-  .actionPrimary {
+  :global(:where(html:not(:has([data-website-canvas])))) .actionPrimary {
     grid-column: auto;
   }
 
-  .breakdownValue {
+  :global(:where(html:not(:has([data-website-canvas])))) .breakdownValue {
     text-align: left;
   }
 
-  .summaryConfidenceBadge {
+  :global(:where(html:not(:has([data-website-canvas])))) .summaryConfidenceBadge {
     margin-left: 0;
   }
 
-  .listingList {
+  :global(:where(html:not(:has([data-website-canvas])))) .listingList {
     max-height: none;
   }
 }
@@ -5473,57 +5473,57 @@
 }
 
 @media (max-width: 900px) {
-  .slidePane {
+  :global(:where(html:not(:has([data-website-canvas])))) .slidePane {
     padding-right: 0.35rem;
   }
 
-  .slidePane + .slidePane {
+  :global(:where(html:not(:has([data-website-canvas])))) .slidePane + .slidePane {
     padding-left: 0.35rem;
   }
 
-  .carouselShell {
+  :global(:where(html:not(:has([data-website-canvas])))) .carouselShell {
     grid-template-columns: 1fr;
   }
 
-  .carouselArrow {
+  :global(:where(html:not(:has([data-website-canvas])))) .carouselArrow {
     width: 2.8rem;
     height: 2.8rem;
   }
 
-  .carouselViewportRail {
+  :global(:where(html:not(:has([data-website-canvas])))) .carouselViewportRail {
     order: -1;
     --carousel-card-width: min(100%, 21rem);
   }
 
-  .carouselShell > .carouselArrow:first-child,
-  .carouselShell > .carouselArrow:last-child {
+  :global(:where(html:not(:has([data-website-canvas])))) .carouselShell > .carouselArrow:first-child,
+  :global(:where(html:not(:has([data-website-canvas])))) .carouselShell > .carouselArrow:last-child {
     justify-self: center;
   }
 
-  .slideMetaRow {
+  :global(:where(html:not(:has([data-website-canvas])))) .slideMetaRow {
     align-items: flex-start;
   }
 }
 
 @media (max-width: 720px) {
-  .slideTabs {
+  :global(:where(html:not(:has([data-website-canvas])))) .slideTabs {
     width: 100%;
   }
 
-  .slideTab {
+  :global(:where(html:not(:has([data-website-canvas])))) .slideTab {
     flex: 1 1 0;
     justify-content: center;
   }
 
-  .carouselViewportRail {
+  :global(:where(html:not(:has([data-website-canvas])))) .carouselViewportRail {
     --carousel-card-width: min(100%, 19rem);
   }
 
-  .carouselCard {
+  :global(:where(html:not(:has([data-website-canvas])))) .carouselCard {
     min-height: 12rem;
   }
 
-  .carouselSummary {
+  :global(:where(html:not(:has([data-website-canvas])))) .carouselSummary {
     padding: 0.9rem 0.95rem;
   }
 }
@@ -5586,11 +5586,11 @@
 }
 
 @media (max-width: 900px) {
-  .setupStageCard {
+  :global(:where(html:not(:has([data-website-canvas])))) .setupStageCard {
     gap: 0.95rem;
   }
 
-  .setupSelectionSummary {
+  :global(:where(html:not(:has([data-website-canvas])))) .setupSelectionSummary {
     padding: 0.9rem 0.95rem;
   }
 }
@@ -5679,26 +5679,26 @@
 }
 
 @media (max-width: 720px) {
-  .stepTitle {
+  :global(:where(html:not(:has([data-website-canvas])))) .stepTitle {
     text-align: left;
   }
 
-  .stepText {
+  :global(:where(html:not(:has([data-website-canvas])))) .stepText {
     text-align: left;
     margin-inline: 0;
   }
 
-  .compactChoiceGrid,
-  .brandChoiceGrid,
-  .sectorChoiceGrid {
+  :global(:where(html:not(:has([data-website-canvas])))) .compactChoiceGrid,
+  :global(:where(html:not(:has([data-website-canvas])))) .brandChoiceGrid,
+  :global(:where(html:not(:has([data-website-canvas])))) .sectorChoiceGrid {
     grid-template-columns: 1fr;
   }
 
-  .currentCardHead {
+  :global(:where(html:not(:has([data-website-canvas])))) .currentCardHead {
     display: grid;
   }
 
-  .selectedSummaryPill {
+  :global(:where(html:not(:has([data-website-canvas])))) .selectedSummaryPill {
     justify-self: start;
   }
 }
@@ -5731,7 +5731,7 @@
 .sectorBigCard {
   position: relative;
   overflow: hidden;
-  min-height: clamp(10.5rem, 18vw, 13.5rem);
+  min-height: clamp(10.5rem, calc(var(--website-design-vw, 1vw) * 18), 13.5rem);
   padding: 1.25rem;
   border-radius: 1.45rem;
   border: 1px solid rgba(17, 56, 45, 0.12);
@@ -5773,7 +5773,7 @@
 
 .sectorBigCard strong {
   max-width: 8ch;
-  font-size: clamp(1.55rem, 2.4vw, 2.25rem);
+  font-size: clamp(1.55rem, calc(var(--website-design-vw, 1vw) * 2.4), 2.25rem);
   line-height: 1;
   letter-spacing: -0.045em;
   color: #16372f;
@@ -5898,40 +5898,40 @@
 }
 
 @media (max-width: 900px) {
-  .sectorLargeGrid {
+  :global(:where(html:not(:has([data-website-canvas])))) .sectorLargeGrid {
     grid-template-columns: 1fr;
   }
 
-  .sectorBigCard {
+  :global(:where(html:not(:has([data-website-canvas])))) .sectorBigCard {
     min-height: 8.8rem;
   }
 
-  .sectorBigCard strong {
+  :global(:where(html:not(:has([data-website-canvas])))) .sectorBigCard strong {
     max-width: none;
   }
 }
 
 @media (max-width: 640px) {
-  .container {
+  :global(:where(html:not(:has([data-website-canvas])))) .container {
     padding-top: 1.4rem;
   }
 
-  .sectorStart {
+  :global(:where(html:not(:has([data-website-canvas])))) .sectorStart {
     gap: 1.2rem;
   }
 
-  .sectorBigCard {
+  :global(:where(html:not(:has([data-website-canvas])))) .sectorBigCard {
     min-height: 7.8rem;
     border-radius: 1.2rem;
   }
 
-  .comingSoonBanner {
+  :global(:where(html:not(:has([data-website-canvas])))) .comingSoonBanner {
     min-width: 10rem;
     min-height: 2.2rem;
     font-size: 0.8rem;
   }
 
-  .equipmentStageTop {
+  :global(:where(html:not(:has([data-website-canvas])))) .equipmentStageTop {
     align-items: flex-start;
   }
 }
@@ -5963,7 +5963,7 @@
 }
 
 .sectorStart .stepTitle {
-  font-size: clamp(2.65rem, 4.2vw, 3.55rem);
+  font-size: clamp(2.65rem, calc(var(--website-design-vw, 1vw) * 4.2), 3.55rem);
 }
 
 .sectorLargeGrid {
@@ -5971,7 +5971,7 @@
 }
 
 .sectorBigCard {
-  min-height: clamp(11rem, 17vw, 14.4rem);
+  min-height: clamp(11rem, calc(var(--website-design-vw, 1vw) * 17), 14.4rem);
   padding: 1.35rem 1.45rem;
   border-radius: 1.55rem;
   background:
@@ -6010,7 +6010,7 @@
 
 .sectorBigCard strong {
   max-width: 9ch;
-  font-size: clamp(1.75rem, 2.65vw, 2.45rem);
+  font-size: clamp(1.75rem, calc(var(--website-design-vw, 1vw) * 2.65), 2.45rem);
   letter-spacing: -0.055em;
 }
 
@@ -6059,7 +6059,7 @@
 }
 
 .equipmentStage .stepTitle {
-  font-size: clamp(2.55rem, 4vw, 3.45rem);
+  font-size: clamp(2.55rem, calc(var(--website-design-vw, 1vw) * 4), 3.45rem);
 }
 
 .equipmentStage .stepText {
@@ -6256,35 +6256,35 @@
 }
 
 @media (max-width: 900px) {
-  .sectorStart .stepTitle,
-  .equipmentStage .stepTitle {
+  :global(:where(html:not(:has([data-website-canvas])))) .sectorStart .stepTitle,
+  :global(:where(html:not(:has([data-website-canvas])))) .equipmentStage .stepTitle {
     white-space: normal;
   }
 
-  .equipmentPickerHead {
+  :global(:where(html:not(:has([data-website-canvas])))) .equipmentPickerHead {
     display: grid;
   }
 
-  .equipmentCountPill {
+  :global(:where(html:not(:has([data-website-canvas])))) .equipmentCountPill {
     justify-self: start;
   }
 }
 
 @media (max-width: 640px) {
-  .stepContent {
+  :global(:where(html:not(:has([data-website-canvas])))) .stepContent {
     padding: 1.35rem 1rem 1.1rem;
   }
 
-  .sectorBigCard {
+  :global(:where(html:not(:has([data-website-canvas])))) .sectorBigCard {
     min-height: 8.4rem;
   }
 
-  .equipmentPickerCard {
+  :global(:where(html:not(:has([data-website-canvas])))) .equipmentPickerCard {
     padding: 1rem;
   }
 
-  .equipmentPickerCard .searchInput,
-  .equipmentDropdownTrigger {
+  :global(:where(html:not(:has([data-website-canvas])))) .equipmentPickerCard .searchInput,
+  :global(:where(html:not(:has([data-website-canvas])))) .equipmentDropdownTrigger {
     min-height: 3.55rem;
   }
 }
@@ -6407,17 +6407,17 @@
 }
 
 @media (max-width: 900px) {
-  .pathChoiceGrid {
+  :global(:where(html:not(:has([data-website-canvas])))) .pathChoiceGrid {
     grid-template-columns: 1fr;
   }
 
-  .inlineSetupHeader {
+  :global(:where(html:not(:has([data-website-canvas])))) .inlineSetupHeader {
     align-items: flex-start;
     flex-direction: column;
     gap: 0.35rem;
   }
 
-  .inlineOptionButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .inlineOptionButton {
     flex: 1 1 140px;
   }
 }
@@ -6632,7 +6632,7 @@
 .detailsModal {
   position: relative;
   width: min(100%, 720px);
-  max-height: min(760px, calc(100vh - 2.5rem));
+  max-height: min(760px, calc(calc(var(--website-visible-height, 100vh) * 1) - 2.5rem));
   overflow: auto;
   display: grid;
   gap: 1rem;
@@ -6653,7 +6653,7 @@
 .detailsModalTitle {
   margin: 0.5rem 0 0;
   color: #17372f;
-  font-size: clamp(1.55rem, 2.4vw, 2rem);
+  font-size: clamp(1.55rem, calc(var(--website-design-vw, 1vw) * 2.4), 2rem);
   line-height: 1.08;
   letter-spacing: -0.04em;
 }
@@ -6807,34 +6807,34 @@
 }
 
 @media (max-width: 860px) {
-  .specStepCard {
+  :global(:where(html:not(:has([data-website-canvas])))) .specStepCard {
     grid-template-columns: auto minmax(0, 1fr);
   }
 
-  .specStepAction {
+  :global(:where(html:not(:has([data-website-canvas])))) .specStepAction {
     grid-column: 2;
     width: fit-content;
   }
 
-  .conditionButtonGrid,
-  .yearOptionGrid {
+  :global(:where(html:not(:has([data-website-canvas])))) .conditionButtonGrid,
+  :global(:where(html:not(:has([data-website-canvas])))) .yearOptionGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .detailsModal {
+  :global(:where(html:not(:has([data-website-canvas])))) .detailsModal {
     padding: 1rem;
     border-radius: 1.25rem;
   }
 
-  .detailsModalHeader,
-  .detailsModalActions,
-  .percentScale {
+  :global(:where(html:not(:has([data-website-canvas])))) .detailsModalHeader,
+  :global(:where(html:not(:has([data-website-canvas])))) .detailsModalActions,
+  :global(:where(html:not(:has([data-website-canvas])))) .percentScale {
     flex-direction: column;
     align-items: stretch;
   }
 
-  .detailsModalActions .secondaryButton,
-  .detailsModalActions .primaryButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .detailsModalActions .secondaryButton,
+  :global(:where(html:not(:has([data-website-canvas])))) .detailsModalActions .primaryButton {
     width: 100%;
   }
 }
@@ -6932,7 +6932,7 @@
 
 .resultValue {
   color: #0d5a3c;
-  font-size: clamp(3rem, 5.8vw, 4.6rem);
+  font-size: clamp(3rem, calc(var(--website-design-vw, 1vw) * 5.8), 4.6rem);
   line-height: 0.9;
   letter-spacing: -0.07em;
   font-weight: 900;
@@ -7239,47 +7239,47 @@
 }
 
 @media (max-width: 1180px) {
-  .resultsLayout {
+  :global(:where(html:not(:has([data-website-canvas])))) .resultsLayout {
     grid-template-columns: 1fr;
   }
 
-  .resultsSide {
+  :global(:where(html:not(:has([data-website-canvas])))) .resultsSide {
     order: 2;
   }
 }
 
 @media (max-width: 860px) {
-  .resultHero {
+  :global(:where(html:not(:has([data-website-canvas])))) .resultHero {
     padding: 1rem;
   }
 
-  .resultHeroTopline,
-  .resultAccordionToggle {
+  :global(:where(html:not(:has([data-website-canvas])))) .resultHeroTopline,
+  :global(:where(html:not(:has([data-website-canvas])))) .resultAccordionToggle {
     flex-direction: column;
     align-items: stretch;
   }
 
-  .resultValue {
+  :global(:where(html:not(:has([data-website-canvas])))) .resultValue {
     font-size: clamp(2.45rem, 14vw, 3.6rem);
   }
 
-  .resultFactsGrid,
-  .resultMethodGrid,
-  .replacementOptionGrid,
-  .replacementInputPanel {
+  :global(:where(html:not(:has([data-website-canvas])))) .resultFactsGrid,
+  :global(:where(html:not(:has([data-website-canvas])))) .resultMethodGrid,
+  :global(:where(html:not(:has([data-website-canvas])))) .replacementOptionGrid,
+  :global(:where(html:not(:has([data-website-canvas])))) .replacementInputPanel {
     grid-template-columns: 1fr;
   }
 
-  .replacementStepGrid {
+  :global(:where(html:not(:has([data-website-canvas])))) .replacementStepGrid {
     grid-template-columns: 1fr;
   }
 
-  .replacementInputPanel .assetButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .replacementInputPanel .assetButton {
     width: 100%;
     min-width: 0;
   }
 
-  .resultAccordionAction {
+  :global(:where(html:not(:has([data-website-canvas])))) .resultAccordionAction {
     width: 100%;
   }
 }
@@ -7494,25 +7494,25 @@
 }
 
 @media (max-width: 860px) {
-  .marketEvidenceHeader,
-  .marketEvidenceSummary,
-  .marketEvidenceItemHeader {
+  :global(:where(html:not(:has([data-website-canvas])))) .marketEvidenceHeader,
+  :global(:where(html:not(:has([data-website-canvas])))) .marketEvidenceSummary,
+  :global(:where(html:not(:has([data-website-canvas])))) .marketEvidenceItemHeader {
     align-items: flex-start;
     flex-direction: column;
   }
 
-  .marketEvidenceCount,
-  .marketEvidencePrice {
+  :global(:where(html:not(:has([data-website-canvas])))) .marketEvidenceCount,
+  :global(:where(html:not(:has([data-website-canvas])))) .marketEvidencePrice {
     align-self: flex-start;
   }
 
-  .resultActionGroup {
+  :global(:where(html:not(:has([data-website-canvas])))) .resultActionGroup {
     width: 100%;
     flex-direction: column;
   }
 
-  .resultActionGroup .secondaryButton,
-  .resultActionGroup .primaryButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .resultActionGroup .secondaryButton,
+  :global(:where(html:not(:has([data-website-canvas])))) .resultActionGroup .primaryButton {
     width: 100%;
   }
 }
@@ -7521,7 +7521,7 @@
 .resultFinalActions {
   display: grid;
   gap: 1.15rem;
-  padding: clamp(1.15rem, 2vw, 1.45rem);
+  padding: clamp(1.15rem, calc(var(--website-design-vw, 1vw) * 2), 1.45rem);
   border: 1px solid rgba(23, 77, 62, 0.12);
   border-radius: 1.35rem;
   background: linear-gradient(135deg, rgba(245, 250, 247, 0.98) 0%, rgba(255, 255, 255, 0.98) 100%);
@@ -7546,7 +7546,7 @@
 .resultFinalActionsCopy h3 {
   margin: 0;
   color: #123f34;
-  font-size: clamp(1.35rem, 2.2vw, 1.85rem);
+  font-size: clamp(1.35rem, calc(var(--website-design-vw, 1vw) * 2.2), 1.85rem);
   font-weight: 850;
   letter-spacing: -0.045em;
 }
@@ -7672,10 +7672,10 @@
   position: relative;
   display: grid;
   gap: 1.05rem;
-  width: min(96vw, 45rem);
-  max-height: min(90dvh, 48rem);
+  width: min(calc(var(--website-design-vw, 1vw) * 96), 45rem);
+  max-height: min(calc(var(--website-visible-height, 100dvh) * 0.9), 48rem);
   overflow-y: auto;
-  padding: clamp(1.25rem, 2.4vw, 2rem);
+  padding: clamp(1.25rem, calc(var(--website-design-vw, 1vw) * 2.4), 2rem);
   border: 1px solid rgba(201, 220, 233, 0.96);
   border-radius: 1.75rem;
   background: rgba(255, 255, 255, 0.99);
@@ -7714,7 +7714,7 @@
 .finalSaveHeader h2 {
   margin: 0;
   color: #0b3f34;
-  font-size: clamp(1.85rem, 4vw, 2.75rem);
+  font-size: clamp(1.85rem, calc(var(--website-design-vw, 1vw) * 4), 2.75rem);
   font-weight: 850;
   line-height: 1;
   letter-spacing: -0.065em;
@@ -7750,7 +7750,7 @@
 
 .finalSaveSummaryCard strong {
   color: #0b3f34;
-  font-size: clamp(1.15rem, 2.2vw, 1.55rem);
+  font-size: clamp(1.15rem, calc(var(--website-design-vw, 1vw) * 2.2), 1.55rem);
   font-weight: 850;
   letter-spacing: -0.035em;
 }
@@ -7863,28 +7863,28 @@
 }
 
 @media (max-width: 760px) {
-  .resultFinalActionsButtons,
-  .resultSignedOutNotice,
-  .finalSaveActions {
+  :global(:where(html:not(:has([data-website-canvas])))) .resultFinalActionsButtons,
+  :global(:where(html:not(:has([data-website-canvas])))) .resultSignedOutNotice,
+  :global(:where(html:not(:has([data-website-canvas])))) .finalSaveActions {
     align-items: stretch;
     flex-direction: column;
   }
 
-  .resultPrimaryActionButton,
-  .resultAlternateActionButton,
-  .resultSignedOutNotice a,
-  .resultSignedOutNotice button,
-  .finalSaveActions .secondaryButton,
-  .finalSaveActions .primaryButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .resultPrimaryActionButton,
+  :global(:where(html:not(:has([data-website-canvas])))) .resultAlternateActionButton,
+  :global(:where(html:not(:has([data-website-canvas])))) .resultSignedOutNotice a,
+  :global(:where(html:not(:has([data-website-canvas])))) .resultSignedOutNotice button,
+  :global(:where(html:not(:has([data-website-canvas])))) .finalSaveActions .secondaryButton,
+  :global(:where(html:not(:has([data-website-canvas])))) .finalSaveActions .primaryButton {
     width: 100%;
   }
 
-  .finalSaveSummaryGrid,
-  .finalReplacementPanel {
+  :global(:where(html:not(:has([data-website-canvas])))) .finalSaveSummaryGrid,
+  :global(:where(html:not(:has([data-website-canvas])))) .finalReplacementPanel {
     grid-template-columns: 1fr;
   }
 
-  .finalReplacementRecalculateButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .finalReplacementRecalculateButton {
     width: 100%;
   }
 }
@@ -8022,7 +8022,7 @@
 
 .sectorLabel {
   color: #ffffff;
-  font-size: clamp(2rem, 3vw, 2.55rem);
+  font-size: clamp(2rem, calc(var(--website-design-vw, 1vw) * 3), 2.55rem);
   line-height: 0.96;
   letter-spacing: -0.055em;
   text-shadow: 0 8px 28px rgba(12, 22, 18, 0.34);
@@ -8236,7 +8236,7 @@
 }
 
 .detailsModalTitle {
-  font-size: clamp(2rem, 3vw, 2.6rem);
+  font-size: clamp(2rem, calc(var(--website-design-vw, 1vw) * 3), 2.6rem);
   letter-spacing: -0.055em;
 }
 
@@ -8248,43 +8248,43 @@
 }
 
 @media (max-width: 900px) {
-  .sectorBigCard {
+  :global(:where(html:not(:has([data-website-canvas])))) .sectorBigCard {
     min-height: 15.5rem;
   }
 
-  .pathChoiceCard {
+  :global(:where(html:not(:has([data-website-canvas])))) .pathChoiceCard {
     min-height: auto;
   }
 
-  .inlineOptionRow,
-  .conditionButtonGrid {
+  :global(:where(html:not(:has([data-website-canvas])))) .inlineOptionRow,
+  :global(:where(html:not(:has([data-website-canvas])))) .conditionButtonGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
 @media (max-width: 640px) {
-  .sectorBigCard {
+  :global(:where(html:not(:has([data-website-canvas])))) .sectorBigCard {
     min-height: 14rem;
   }
 
-  .sectorBigCardContent {
+  :global(:where(html:not(:has([data-website-canvas])))) .sectorBigCardContent {
     padding: 1rem;
   }
 
-  .sectorLabel {
+  :global(:where(html:not(:has([data-website-canvas])))) .sectorLabel {
     font-size: 1.8rem;
   }
 
-  .inlineOptionRow,
-  .conditionButtonGrid {
+  :global(:where(html:not(:has([data-website-canvas])))) .inlineOptionRow,
+  :global(:where(html:not(:has([data-website-canvas])))) .conditionButtonGrid {
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .specStepCard {
+  :global(:where(html:not(:has([data-website-canvas])))) .specStepCard {
     padding: 1rem;
   }
 
-  .specStepAction {
+  :global(:where(html:not(:has([data-website-canvas])))) .specStepAction {
     min-width: 6.6rem;
   }
 }
@@ -8400,7 +8400,7 @@
 .yearSliderReadout strong {
   margin-top: 0.35rem;
   color: #ffffff;
-  font-size: clamp(3rem, 6vw, 4.5rem);
+  font-size: clamp(3rem, calc(var(--website-design-vw, 1vw) * 6), 4.5rem);
   line-height: 0.92;
   letter-spacing: -0.08em;
 }
@@ -8538,20 +8538,20 @@
 }
 
 @media (max-width: 720px) {
-  .yearDetailsModal {
+  :global(:where(html:not(:has([data-website-canvas])))) .yearDetailsModal {
     overflow: auto;
   }
 
-  .yearSliderPanel,
-  .yearSecondaryControls {
+  :global(:where(html:not(:has([data-website-canvas])))) .yearSliderPanel,
+  :global(:where(html:not(:has([data-website-canvas])))) .yearSecondaryControls {
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .yearFineTuneRow {
+  :global(:where(html:not(:has([data-website-canvas])))) .yearFineTuneRow {
     grid-column: auto;
   }
 
-  .yearSliderReadout {
+  :global(:where(html:not(:has([data-website-canvas])))) .yearSliderReadout {
     min-height: 8.6rem;
   }
 }
@@ -8709,7 +8709,7 @@
 }
 
 .yearSliderReadout strong {
-  font-size: clamp(3.25rem, 5.7vw, 4.35rem);
+  font-size: clamp(3.25rem, calc(var(--website-design-vw, 1vw) * 5.7), 4.35rem);
   letter-spacing: -0.055em;
   font-variant-numeric: tabular-nums;
 }
@@ -8751,21 +8751,21 @@
 }
 
 @media (max-width: 900px) {
-  .pathChoiceCardEyebrow {
+  :global(:where(html:not(:has([data-website-canvas])))) .pathChoiceCardEyebrow {
     width: calc(100% - 3.1rem);
   }
 }
 
 @media (max-width: 720px) {
-  .sectorBigCard {
+  :global(:where(html:not(:has([data-website-canvas])))) .sectorBigCard {
     min-height: 13.2rem;
   }
 
-  .yearSliderPanel {
+  :global(:where(html:not(:has([data-website-canvas])))) .yearSliderPanel {
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .yearSliderReadout {
+  :global(:where(html:not(:has([data-website-canvas])))) .yearSliderReadout {
     min-width: 0;
   }
 }
@@ -8888,17 +8888,17 @@
 }
 
 @media (max-width: 900px) {
-  .pathChoiceCardEyebrow {
+  :global(:where(html:not(:has([data-website-canvas])))) .pathChoiceCardEyebrow {
     width: calc(100% - 3.35rem);
   }
 }
 
 @media (max-width: 720px) {
-  .sectorBigCard {
+  :global(:where(html:not(:has([data-website-canvas])))) .sectorBigCard {
     min-height: 13.2rem;
   }
 
-  .pathChoiceCardEyebrow {
+  :global(:where(html:not(:has([data-website-canvas])))) .pathChoiceCardEyebrow {
     width: calc(100% - 3.05rem);
   }
 }
@@ -8993,7 +8993,7 @@
 }
 
 @media (max-width: 720px) {
-  .pathChoiceCardEyebrow {
+  :global(:where(html:not(:has([data-website-canvas])))) .pathChoiceCardEyebrow {
     min-width: 9.4rem;
     max-width: calc(100% - 2.8rem);
   }
@@ -9006,7 +9006,7 @@
 }
 
 .container {
-  padding-bottom: clamp(1.2rem, 2.4vw, 2rem);
+  padding-bottom: clamp(1.2rem, calc(var(--website-design-vw, 1vw) * 2.4), 2rem);
 }
 
 .page + :global(footer) {
@@ -9056,7 +9056,7 @@
   top: calc(100% + 0.6rem);
   right: 0;
   z-index: 20;
-  width: min(21rem, 70vw);
+  width: min(21rem, calc(var(--website-design-vw, 1vw) * 70));
   padding: 0.8rem 0.9rem;
   border-radius: 0.95rem;
   border: 1px solid rgba(17, 56, 45, 0.11);
@@ -9082,11 +9082,11 @@
 }
 
 @media (max-width: 860px) {
-  .marketEvidenceHeaderActions {
+  :global(:where(html:not(:has([data-website-canvas])))) .marketEvidenceHeaderActions {
     align-self: flex-start;
   }
 
-  .marketEvidenceInfo::after {
+  :global(:where(html:not(:has([data-website-canvas])))) .marketEvidenceInfo::after {
     right: auto;
     left: 0;
   }
@@ -9096,14 +9096,14 @@
 /* === Final VAT display and footer spacing pass === */
 .page {
   min-height: auto;
-  padding-bottom: clamp(4.5rem, 7vw, 6.5rem);
+  padding-bottom: clamp(4.5rem, calc(var(--website-design-vw, 1vw) * 7), 6.5rem);
   background:
     radial-gradient(circle at top left, rgba(23, 77, 62, 0.08), transparent 30%),
     linear-gradient(180deg, #f4f7f5 0%, #e9efec 100%);
 }
 
 .container {
-  padding-bottom: clamp(2.2rem, 4.8vw, 4.2rem);
+  padding-bottom: clamp(2.2rem, calc(var(--website-design-vw, 1vw) * 4.8), 4.2rem);
 }
 
 .page + :global(footer) {
@@ -9113,7 +9113,7 @@
 .resultValueLine {
   display: flex;
   align-items: baseline;
-  gap: clamp(0.45rem, 1.1vw, 0.82rem);
+  gap: clamp(0.45rem, calc(var(--website-design-vw, 1vw) * 1.1), 0.82rem);
   max-width: 100%;
   min-width: 0;
   white-space: nowrap;
@@ -9123,7 +9123,7 @@
 .resultValueLine .resultValue {
   display: inline-block;
   min-width: 0;
-  font-size: clamp(2.75rem, 5.45vw, 4.6rem);
+  font-size: clamp(2.75rem, calc(var(--website-design-vw, 1vw) * 5.45), 4.6rem);
   line-height: 0.9;
   letter-spacing: -0.072em;
   white-space: nowrap;
@@ -9132,7 +9132,7 @@
 .resultVatLabel {
   flex: 0 0 auto;
   color: #0d5a3c;
-  font-size: clamp(1.2rem, 2.15vw, 1.95rem);
+  font-size: clamp(1.2rem, calc(var(--website-design-vw, 1vw) * 2.15), 1.95rem);
   line-height: 0.95;
   letter-spacing: -0.045em;
   font-weight: 900;
@@ -9141,21 +9141,21 @@
 }
 
 .resultValueLineCompact .resultValue {
-  font-size: clamp(2.45rem, 4.8vw, 4rem);
+  font-size: clamp(2.45rem, calc(var(--website-design-vw, 1vw) * 4.8), 4rem);
   letter-spacing: -0.066em;
 }
 
 .resultValueLineCompact .resultVatLabel {
-  font-size: clamp(1.05rem, 1.85vw, 1.55rem);
+  font-size: clamp(1.05rem, calc(var(--website-design-vw, 1vw) * 1.85), 1.55rem);
 }
 
 .resultValueLineTight .resultValue {
-  font-size: clamp(2.1rem, 4.1vw, 3.35rem);
+  font-size: clamp(2.1rem, calc(var(--website-design-vw, 1vw) * 4.1), 3.35rem);
   letter-spacing: -0.058em;
 }
 
 .resultValueLineTight .resultVatLabel {
-  font-size: clamp(0.95rem, 1.62vw, 1.3rem);
+  font-size: clamp(0.95rem, calc(var(--website-design-vw, 1vw) * 1.62), 1.3rem);
 }
 
 .resultHeroMedium .resultVatLabel {
@@ -9180,7 +9180,7 @@
   top: calc(100% + 0.65rem);
   right: 0;
   z-index: 30;
-  width: min(23rem, 72vw);
+  width: min(23rem, calc(var(--website-design-vw, 1vw) * 72));
   display: grid;
   gap: 0.38rem;
   padding: 0.95rem 1rem;
@@ -9221,19 +9221,19 @@
 }
 
 @media (max-width: 860px) {
-  .resultValueLine {
+  :global(:where(html:not(:has([data-website-canvas])))) .resultValueLine {
     gap: 0.42rem;
   }
 
-  .resultValueLine .resultValue {
+  :global(:where(html:not(:has([data-website-canvas])))) .resultValueLine .resultValue {
     font-size: clamp(2rem, 10.5vw, 3.45rem);
   }
 
-  .resultVatLabel {
+  :global(:where(html:not(:has([data-website-canvas])))) .resultVatLabel {
     font-size: clamp(0.9rem, 4.2vw, 1.35rem);
   }
 
-  .marketEvidenceInfoTooltip {
+  :global(:where(html:not(:has([data-website-canvas])))) .marketEvidenceInfoTooltip {
     right: auto;
     left: 0;
     width: min(21rem, 78vw);
@@ -9248,7 +9248,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: clamp(1rem, 3vw, 1.7rem);
+  padding: clamp(1rem, calc(var(--website-design-vw, 1vw) * 3), 1.7rem);
   background: rgba(18, 31, 36, 0.52);
   backdrop-filter: blur(12px);
 }
@@ -9257,8 +9257,8 @@
   position: relative;
   display: grid;
   gap: 0.88rem;
-  width: min(94vw, 46rem);
-  padding: clamp(1.45rem, 3vw, 2.25rem);
+  width: min(calc(var(--website-design-vw, 1vw) * 94), 46rem);
+  padding: clamp(1.45rem, calc(var(--website-design-vw, 1vw) * 3), 2.25rem);
   border: 1px solid rgba(192, 216, 207, 0.95);
   border-radius: 1.75rem;
   background:
@@ -9308,7 +9308,7 @@
   margin: 0;
   padding-right: 2.8rem;
   color: #0c3f33;
-  font-size: clamp(2rem, 4.2vw, 3.15rem);
+  font-size: clamp(2rem, calc(var(--website-design-vw, 1vw) * 4.2), 3.15rem);
   font-weight: 840;
   line-height: 0.98;
   letter-spacing: -0.07em;
@@ -9366,14 +9366,14 @@
 
 .marketplacePublishModal {
   position: relative;
-  width: min(96vw, 82rem);
-  max-height: min(90dvh, 53rem);
+  width: min(calc(var(--website-design-vw, 1vw) * 96), 82rem);
+  max-height: min(calc(var(--website-visible-height, 100dvh) * 0.9), 53rem);
   overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-gutter: stable;
   scrollbar-width: thin;
   scrollbar-color: rgba(22, 83, 64, 0.62) rgba(16, 60, 48, 0.08);
-  padding: clamp(1.35rem, 2.4vw, 2.15rem);
+  padding: clamp(1.35rem, calc(var(--website-design-vw, 1vw) * 2.4), 2.15rem);
   border: 1px solid rgba(201, 220, 233, 0.96);
   border-radius: 1.85rem;
   background: rgba(255, 255, 255, 0.99);
@@ -9445,7 +9445,7 @@
 .marketplacePublishHeader h2 {
   margin: 0;
   color: #0b3f34;
-  font-size: clamp(2rem, 4.4vw, 3.25rem);
+  font-size: clamp(2rem, calc(var(--website-design-vw, 1vw) * 4.4), 3.25rem);
   font-weight: 840;
   line-height: 0.98;
   letter-spacing: -0.07em;
@@ -9492,7 +9492,7 @@
 
 .marketplaceTitlePreview strong {
   color: #113b32;
-  font-size: clamp(1.05rem, 1.8vw, 1.35rem);
+  font-size: clamp(1.05rem, calc(var(--website-design-vw, 1vw) * 1.8), 1.35rem);
   line-height: 1.25;
 }
 
@@ -9513,7 +9513,7 @@
 
 .marketplaceEstimateValueCard strong {
   color: #0b3f34;
-  font-size: clamp(1.35rem, 2.4vw, 1.85rem);
+  font-size: clamp(1.35rem, calc(var(--website-design-vw, 1vw) * 2.4), 1.85rem);
   font-weight: 840;
 }
 
@@ -9648,7 +9648,7 @@
   outline: 0;
   padding: 0 1rem;
   color: #113b32;
-  font-size: clamp(2rem, 5vw, 3.4rem);
+  font-size: clamp(2rem, calc(var(--website-design-vw, 1vw) * 5), 3.4rem);
   font-weight: 820;
   letter-spacing: -0.06em;
 }
@@ -9797,22 +9797,22 @@
 }
 
 @media (max-width: 680px) {
-  .marketplacePhotoGrid {
+  :global(:where(html:not(:has([data-website-canvas])))) .marketplacePhotoGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .marketplacePhotoButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .marketplacePhotoButton {
     width: 100%;
     min-height: 3.15rem;
     justify-self: stretch;
   }
 
-  .marketplacePhotoControls button {
+  :global(:where(html:not(:has([data-website-canvas])))) .marketplacePhotoControls button {
     width: 2.35rem;
     height: 2.35rem;
   }
 
-  .marketplaceAdvertSuccessModal .marketplaceIntroActions {
+  :global(:where(html:not(:has([data-website-canvas])))) .marketplaceAdvertSuccessModal .marketplaceIntroActions {
     align-items: stretch;
     flex-direction: column;
   }
@@ -9869,50 +9869,50 @@
 }
 
 @media (max-width: 980px) {
-  .marketplaceSummaryGrid,
-  .marketplacePublishGrid {
+  :global(:where(html:not(:has([data-website-canvas])))) .marketplaceSummaryGrid,
+  :global(:where(html:not(:has([data-website-canvas])))) .marketplacePublishGrid {
     grid-template-columns: 1fr;
   }
 
-  .marketplaceEstimateValueCard {
+  :global(:where(html:not(:has([data-website-canvas])))) .marketplaceEstimateValueCard {
     text-align: left;
   }
 }
 
 @media (max-width: 680px) {
-  .marketplaceIntroOverlay {
+  :global(:where(html:not(:has([data-website-canvas])))) .marketplaceIntroOverlay {
     align-items: flex-start;
     padding: 0.75rem;
   }
 
-  .marketplaceIntroModal {
+  :global(:where(html:not(:has([data-website-canvas])))) .marketplaceIntroModal {
     border-radius: 1.25rem;
   }
 
-  .marketplaceIntroModal h2 {
+  :global(:where(html:not(:has([data-website-canvas])))) .marketplaceIntroModal h2 {
     padding-right: 2.2rem;
   }
 
-  .marketplaceIntroActions {
+  :global(:where(html:not(:has([data-website-canvas])))) .marketplaceIntroActions {
     flex-direction: column-reverse;
   }
 
-  .marketplacePublishOverlay {
+  :global(:where(html:not(:has([data-website-canvas])))) .marketplacePublishOverlay {
     align-items: flex-start;
     padding: 0.75rem;
   }
 
-  .marketplacePublishModal {
+  :global(:where(html:not(:has([data-website-canvas])))) .marketplacePublishModal {
     max-height: calc(100dvh - 1.5rem);
     border-radius: 1.25rem;
   }
 
-  .marketplaceSellerGrid,
-  .marketplacePhotoGrid {
+  :global(:where(html:not(:has([data-website-canvas])))) .marketplaceSellerGrid,
+  :global(:where(html:not(:has([data-website-canvas])))) .marketplacePhotoGrid {
     grid-template-columns: 1fr;
   }
 
-  .marketplacePublishActions {
+  :global(:where(html:not(:has([data-website-canvas])))) .marketplacePublishActions {
     flex-direction: column-reverse;
   }
 }
@@ -9922,11 +9922,11 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
   width: min(100%, 980px);
   margin: 0.35rem auto 0;
-  gap: clamp(1rem, 1.45vw, 1.35rem);
+  gap: clamp(1rem, calc(var(--website-design-vw, 1vw) * 1.45), 1.35rem);
 }
 
 .sectorBigCard {
-  min-height: clamp(15.5rem, 20vw, 18rem);
+  min-height: clamp(15.5rem, calc(var(--website-design-vw, 1vw) * 20), 18rem);
   border-radius: 1.75rem;
   border-color: rgba(255, 255, 255, 0.1);
   background:
@@ -9949,7 +9949,7 @@
 }
 
 .sectorBigCardContent {
-  padding: clamp(1.2rem, 1.8vw, 1.55rem);
+  padding: clamp(1.2rem, calc(var(--website-design-vw, 1vw) * 1.8), 1.55rem);
 }
 
 .sectorLabelWrap {
@@ -9959,14 +9959,14 @@
 .sectorLabel,
 .sectorBigCard .sectorLabel {
   max-width: none;
-  font-size: clamp(2rem, 3.2vw, 3rem);
+  font-size: clamp(2rem, calc(var(--website-design-vw, 1vw) * 3.2), 3rem);
   line-height: 0.96;
   letter-spacing: -0.065em;
 }
 
 .sectorCardHint,
 .sectorBigCard .sectorCardHint {
-  font-size: clamp(0.95rem, 1.2vw, 1.08rem);
+  font-size: clamp(0.95rem, calc(var(--website-design-vw, 1vw) * 1.2), 1.08rem);
   font-weight: 800;
 }
 
@@ -10019,39 +10019,39 @@
 }
 
 @media (max-width: 900px) {
-  .sectorLargeGrid {
+  :global(:where(html:not(:has([data-website-canvas])))) .sectorLargeGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     width: min(100%, 760px);
   }
 
-  .sectorBigCard {
+  :global(:where(html:not(:has([data-website-canvas])))) .sectorBigCard {
     min-height: 14.5rem;
   }
 }
 
 @media (max-width: 720px) {
-  .sectorLargeGrid {
+  :global(:where(html:not(:has([data-website-canvas])))) .sectorLargeGrid {
     grid-template-columns: 1fr;
     width: min(100%, 520px);
     gap: 0.95rem;
   }
 
-  .sectorStart .stepTitle,
-  .sectorStart .stepText {
+  :global(:where(html:not(:has([data-website-canvas])))) .sectorStart .stepTitle,
+  :global(:where(html:not(:has([data-website-canvas])))) .sectorStart .stepText {
     text-align: left;
   }
 
-  .sectorBigCard {
+  :global(:where(html:not(:has([data-website-canvas])))) .sectorBigCard {
     min-height: 13.2rem;
     border-radius: 1.45rem;
   }
 
-  .sectorBigCardContent {
+  :global(:where(html:not(:has([data-website-canvas])))) .sectorBigCardContent {
     padding: 1.1rem;
   }
 
-  .sectorLabel,
-  .sectorBigCard .sectorLabel {
+  :global(:where(html:not(:has([data-website-canvas])))) .sectorLabel,
+  :global(:where(html:not(:has([data-website-canvas])))) .sectorBigCard .sectorLabel {
     font-size: clamp(2rem, 11vw, 2.75rem);
   }
 }
@@ -10067,14 +10067,14 @@
 }
 
 .sectorStepContent {
-  padding: clamp(1.55rem, 2.1vw, 2.25rem) clamp(1.15rem, 2.35vw, 2rem) 1.45rem;
+  padding: clamp(1.55rem, calc(var(--website-design-vw, 1vw) * 2.1), 2.25rem) clamp(1.15rem, calc(var(--website-design-vw, 1vw) * 2.35), 2rem) 1.45rem;
 }
 
 .sectorStart {
   width: 100%;
   display: grid;
   justify-items: center;
-  gap: clamp(1.25rem, 1.7vw, 1.75rem);
+  gap: clamp(1.25rem, calc(var(--website-design-vw, 1vw) * 1.7), 1.75rem);
 }
 
 .sectorIntro {
@@ -10089,7 +10089,7 @@
   max-width: none;
   text-align: left;
   white-space: normal;
-  font-size: clamp(2.7rem, 4.35vw, 4rem);
+  font-size: clamp(2.7rem, calc(var(--website-design-vw, 1vw) * 4.35), 4rem);
   line-height: 0.96;
   letter-spacing: -0.068em;
 }
@@ -10099,22 +10099,22 @@
   margin: 0;
   text-align: left;
   color: #53645d;
-  font-size: clamp(0.98rem, 1.05vw, 1.08rem);
+  font-size: clamp(0.98rem, calc(var(--website-design-vw, 1vw) * 1.05), 1.08rem);
   line-height: 1.6;
 }
 
 .sectorLargeGrid {
   width: min(100%, 980px);
   margin: 0 auto;
-  gap: clamp(1rem, 1.45vw, 1.35rem);
+  gap: clamp(1rem, calc(var(--website-design-vw, 1vw) * 1.45), 1.35rem);
 }
 
 .sectorBigCard {
-  min-height: clamp(13.6rem, 16vw, 15.9rem);
+  min-height: clamp(13.6rem, calc(var(--website-design-vw, 1vw) * 16), 15.9rem);
 }
 
 .sectorBigCardContent {
-  padding: clamp(1.1rem, 1.65vw, 1.45rem);
+  padding: clamp(1.1rem, calc(var(--website-design-vw, 1vw) * 1.65), 1.45rem);
 }
 
 .sectorCardTopRow {
@@ -10127,7 +10127,7 @@
 
 .sectorLabel,
 .sectorBigCard .sectorLabel {
-  font-size: clamp(2rem, 2.9vw, 2.75rem);
+  font-size: clamp(2rem, calc(var(--website-design-vw, 1vw) * 2.9), 2.75rem);
 }
 
 .wizardFooterSingle {
@@ -10135,44 +10135,44 @@
 }
 
 @media (max-width: 900px) {
-  .sectorStepContent {
+  :global(:where(html:not(:has([data-website-canvas])))) .sectorStepContent {
     padding: 1.35rem 1rem 1.15rem;
   }
 
-  .sectorLargeGrid {
+  :global(:where(html:not(:has([data-website-canvas])))) .sectorLargeGrid {
     width: min(100%, 760px);
     gap: 0.95rem;
   }
 
-  .sectorBigCard {
+  :global(:where(html:not(:has([data-website-canvas])))) .sectorBigCard {
     min-height: 13.25rem;
   }
 }
 
 @media (max-width: 720px) {
-  .sectorStart {
+  :global(:where(html:not(:has([data-website-canvas])))) .sectorStart {
     gap: 1rem;
   }
 
-  .sectorIntro {
+  :global(:where(html:not(:has([data-website-canvas])))) .sectorIntro {
     gap: 0.35rem;
   }
 
-  .sectorIntro .stepTitle {
+  :global(:where(html:not(:has([data-website-canvas])))) .sectorIntro .stepTitle {
     font-size: clamp(2.15rem, 11vw, 3rem);
   }
 
-  .sectorIntro .stepText {
+  :global(:where(html:not(:has([data-website-canvas])))) .sectorIntro .stepText {
     font-size: 0.96rem;
     line-height: 1.55;
   }
 
-  .sectorLargeGrid {
+  :global(:where(html:not(:has([data-website-canvas])))) .sectorLargeGrid {
     width: min(100%, 520px);
     gap: 0.85rem;
   }
 
-  .sectorBigCard {
+  :global(:where(html:not(:has([data-website-canvas])))) .sectorBigCard {
     min-height: 12rem;
     border-radius: 1.35rem;
   }
@@ -10198,7 +10198,7 @@
 .equipmentStageIntro .stepTitle {
   max-width: 15ch;
   margin: 0;
-  font-size: clamp(2.65rem, 4.25vw, 3.8rem);
+  font-size: clamp(2.65rem, calc(var(--website-design-vw, 1vw) * 4.25), 3.8rem);
   line-height: 0.96;
   letter-spacing: -0.072em;
 }
@@ -10207,7 +10207,7 @@
   max-width: 55rem;
   margin: 0;
   color: #53645d;
-  font-size: clamp(0.98rem, 1.05vw, 1.08rem);
+  font-size: clamp(0.98rem, calc(var(--website-design-vw, 1vw) * 1.05), 1.08rem);
   line-height: 1.62;
 }
 
@@ -10216,7 +10216,7 @@
 }
 
 .equipmentPickerCard {
-  padding: clamp(1.18rem, 1.75vw, 1.55rem);
+  padding: clamp(1.18rem, calc(var(--website-design-vw, 1vw) * 1.75), 1.55rem);
   gap: 1.02rem;
   border-radius: 1.58rem;
   border-color: rgba(17, 56, 45, 0.12);
@@ -10332,33 +10332,33 @@
 }
 
 @media (max-width: 900px) {
-  .equipmentStageTopSolo {
+  :global(:where(html:not(:has([data-website-canvas])))) .equipmentStageTopSolo {
     min-height: auto;
   }
 
-  .equipmentPickerHead {
+  :global(:where(html:not(:has([data-website-canvas])))) .equipmentPickerHead {
     align-items: flex-start;
   }
 }
 
 @media (max-width: 640px) {
-  .equipmentStageIntro .stepTitle {
+  :global(:where(html:not(:has([data-website-canvas])))) .equipmentStageIntro .stepTitle {
     max-width: none;
     font-size: clamp(2.15rem, 11vw, 3rem);
   }
 
-  .equipmentPickerCard {
+  :global(:where(html:not(:has([data-website-canvas])))) .equipmentPickerCard {
     padding: 1rem;
     border-radius: 1.32rem;
   }
 
-  .equipmentPickerCard .searchInput,
-  .equipmentDropdownTrigger {
+  :global(:where(html:not(:has([data-website-canvas])))) .equipmentPickerCard .searchInput,
+  :global(:where(html:not(:has([data-website-canvas])))) .equipmentDropdownTrigger {
     min-height: 3.65rem;
     border-radius: 1.02rem;
   }
 
-  .equipmentDropdownChevron {
+  :global(:where(html:not(:has([data-website-canvas])))) .equipmentDropdownChevron {
     flex-basis: 2.3rem;
     width: 2.3rem;
     height: 2.3rem;
@@ -10367,7 +10367,7 @@
 
 /* === Equipment and brand dropdown scrollbar refinement === */
 .equipmentDropdownMenu {
-  max-height: min(19rem, 52vh);
+  max-height: min(19rem, calc(var(--website-design-vh, 1vh) * 52));
   padding-right: 0.58rem;
   overflow-y: auto;
   overscroll-behavior: contain;
@@ -10456,23 +10456,23 @@
 }
 
 @media (max-width: 640px) {
-  .equipmentDropdownMenu {
+  :global(:where(html:not(:has([data-website-canvas])))) .equipmentDropdownMenu {
     max-height: min(18rem, 48vh);
     padding-right: 0.46rem;
     scrollbar-gutter: auto;
   }
 
-  .equipmentDropdownMenu::-webkit-scrollbar {
+  :global(:where(html:not(:has([data-website-canvas])))) .equipmentDropdownMenu::-webkit-scrollbar {
     width: 0.54rem;
     height: 0.54rem;
   }
 
-  .equipmentDropdownMenu::-webkit-scrollbar-track,
-  .equipmentDropdownMenu::-webkit-scrollbar-track-piece {
+  :global(:where(html:not(:has([data-website-canvas])))) .equipmentDropdownMenu::-webkit-scrollbar-track,
+  :global(:where(html:not(:has([data-website-canvas])))) .equipmentDropdownMenu::-webkit-scrollbar-track-piece {
     margin: 0.68rem 0.06rem;
   }
 
-  .equipmentDropdownMenu::-webkit-scrollbar-thumb {
+  :global(:where(html:not(:has([data-website-canvas])))) .equipmentDropdownMenu::-webkit-scrollbar-thumb {
     border-width: 0.13rem;
   }
 }
@@ -10482,7 +10482,7 @@
   max-width: none;
   margin: 0;
   text-align: left;
-  font-size: clamp(2.45rem, 4vw, 3.45rem);
+  font-size: clamp(2.45rem, calc(var(--website-design-vw, 1vw) * 4), 3.45rem);
   line-height: 1.02;
   letter-spacing: -0.058em;
   text-wrap: balance;
@@ -10519,14 +10519,14 @@
 .equipmentStageIntro {
   margin: 0;
   gap: 0.46rem;
-  padding-right: clamp(8.5rem, 18vw, 13rem);
+  padding-right: clamp(8.5rem, calc(var(--website-design-vw, 1vw) * 18), 13rem);
 }
 
 .equipmentStageIntro .stepTitle {
   max-width: none;
   margin: 0;
   text-align: left;
-  font-size: clamp(2.7rem, 4.35vw, 3.85rem);
+  font-size: clamp(2.7rem, calc(var(--website-design-vw, 1vw) * 4.35), 3.85rem);
   line-height: 1.02;
   letter-spacing: -0.064em;
 }
@@ -10682,7 +10682,7 @@
 }
 
 @media (max-width: 900px) {
-  .equipmentStageTopSolo {
+  :global(:where(html:not(:has([data-website-canvas])))) .equipmentStageTopSolo {
     position: static;
     height: auto;
     min-height: auto;
@@ -10690,36 +10690,36 @@
     margin-bottom: 0.25rem;
   }
 
-  .equipmentStageIntro {
+  :global(:where(html:not(:has([data-website-canvas])))) .equipmentStageIntro {
     padding-right: 0;
   }
 
-  .resultSignedOutNotice,
-  .resultSignedOutActions {
+  :global(:where(html:not(:has([data-website-canvas])))) .resultSignedOutNotice,
+  :global(:where(html:not(:has([data-website-canvas])))) .resultSignedOutActions {
     flex-direction: column;
     align-items: stretch;
   }
 
-  .resultSignedOutActions button,
-  .resultPdfActionButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .resultSignedOutActions button,
+  :global(:where(html:not(:has([data-website-canvas])))) .resultPdfActionButton {
     width: 100%;
   }
 }
 
 @media (max-width: 640px) {
-  .stepContent > div:not(.sectorStart) > .stepTitle,
-  .equipmentStageIntro .stepTitle {
+  :global(:where(html:not(:has([data-website-canvas])))) .stepContent > div:not(.sectorStart) > .stepTitle,
+  :global(:where(html:not(:has([data-website-canvas])))) .equipmentStageIntro .stepTitle {
     font-size: clamp(2.1rem, 11vw, 3rem);
     line-height: 1.04;
   }
 
-  .stepContent > div:not(.sectorStart) > .stepText,
-  .equipmentStageIntro .stepText {
+  :global(:where(html:not(:has([data-website-canvas])))) .stepContent > div:not(.sectorStart) > .stepText,
+  :global(:where(html:not(:has([data-website-canvas])))) .equipmentStageIntro .stepText {
     font-size: 0.98rem;
     line-height: 1.55;
   }
 
-  .pathChoiceGrid .choiceCard {
+  :global(:where(html:not(:has([data-website-canvas])))) .pathChoiceGrid .choiceCard {
     min-height: auto;
   }
 }
@@ -10759,36 +10759,36 @@
 }
 
 @media (max-width: 1100px) {
-  .resultActionGroup {
+  :global(:where(html:not(:has([data-website-canvas])))) .resultActionGroup {
     gap: 0.65rem;
   }
 
-  .resultActionGroup .resultAlternateActionButton,
-  .resultActionGroup .resultPrimaryActionButton,
-  .resultActionGroup .resultPdfActionButton,
-  .resultActionGroup .secondaryButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .resultActionGroup .resultAlternateActionButton,
+  :global(:where(html:not(:has([data-website-canvas])))) .resultActionGroup .resultPrimaryActionButton,
+  :global(:where(html:not(:has([data-website-canvas])))) .resultActionGroup .resultPdfActionButton,
+  :global(:where(html:not(:has([data-website-canvas])))) .resultActionGroup .secondaryButton {
     min-width: 11.5rem;
   }
 }
 
 @media (max-width: 900px) {
-  .wizardFooter {
+  :global(:where(html:not(:has([data-website-canvas])))) .wizardFooter {
     flex-direction: column;
     align-items: stretch;
   }
 
-  .resultActionGroup {
+  :global(:where(html:not(:has([data-website-canvas])))) .resultActionGroup {
     width: 100%;
     margin-left: 0;
     justify-content: stretch;
     flex-direction: column;
   }
 
-  .resultActionGroup > button,
-  .resultActionGroup .resultAlternateActionButton,
-  .resultActionGroup .resultPrimaryActionButton,
-  .resultActionGroup .resultPdfActionButton,
-  .resultActionGroup .secondaryButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .resultActionGroup > button,
+  :global(:where(html:not(:has([data-website-canvas])))) .resultActionGroup .resultAlternateActionButton,
+  :global(:where(html:not(:has([data-website-canvas])))) .resultActionGroup .resultPrimaryActionButton,
+  :global(:where(html:not(:has([data-website-canvas])))) .resultActionGroup .resultPdfActionButton,
+  :global(:where(html:not(:has([data-website-canvas])))) .resultActionGroup .secondaryButton {
     width: 100%;
     min-width: 0;
   }
@@ -10894,11 +10894,11 @@
 }
 
 @media (max-width: 980px) {
-  .resultsLayout {
+  :global(:where(html:not(:has([data-website-canvas])))) .resultsLayout {
     grid-template-columns: 1fr;
   }
 
-  .resultFinalActions {
+  :global(:where(html:not(:has([data-website-canvas])))) .resultFinalActions {
     position: static;
   }
 }
@@ -10950,10 +10950,10 @@
 
 .completionToast {
   position: fixed;
-  top: clamp(5.6rem, 8vw, 7.2rem);
+  top: clamp(5.6rem, calc(var(--website-design-vw, 1vw) * 8), 7.2rem);
   left: 50%;
   z-index: 80;
-  width: min(calc(100vw - 2rem), 34rem);
+  width: min(calc(calc(var(--website-design-vw, 1vw) * 100) - 2rem), 34rem);
   padding: 0.85rem 1rem;
   border: 1px solid rgba(33, 129, 85, 0.24);
   border-radius: 999px;
@@ -10988,36 +10988,40 @@
   align-content: start;
 }
 
+:global(:where([data-website-canvas])) .resultFinalActions {
+    height: 100%;
+  }
+
 @media (min-width: 981px) {
-  .resultFinalActions {
+  :global(:where(html:not(:has([data-website-canvas])))) .resultFinalActions {
     height: 100%;
   }
 }
 
 @media (max-width: 980px) {
-  .resultsLayout {
+  :global(:where(html:not(:has([data-website-canvas])))) .resultsLayout {
     align-items: start;
   }
 
-  .resultsSide {
+  :global(:where(html:not(:has([data-website-canvas])))) .resultsSide {
     display: block;
     align-self: auto;
   }
 
-  .resultFinalActions {
+  :global(:where(html:not(:has([data-website-canvas])))) .resultFinalActions {
     height: auto;
     min-height: 0;
   }
 }
 
 @media (max-width: 720px) {
-  .pathChoiceCardEyebrow {
+  :global(:where(html:not(:has([data-website-canvas])))) .pathChoiceCardEyebrow {
     width: fit-content;
     min-width: 0;
     max-width: none;
   }
 
-  .completionToast {
+  :global(:where(html:not(:has([data-website-canvas])))) .completionToast {
     top: 5rem;
     width: min(calc(100vw - 1.5rem), 30rem);
     border-radius: 1rem;
@@ -11079,32 +11083,32 @@
 
 .equipmentDropdownMenu,
 .specDropdownMenu {
-  max-height: min(18rem, 46dvh);
+  max-height: min(18rem, calc(var(--website-design-vh, 1dvh) * 46));
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
 }
 
 @media (min-width: 721px) and (max-width: 900px) {
-  .sectorLargeGrid {
+  :global(:where(html:not(:has([data-website-canvas])))) .sectorLargeGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 1rem;
   }
 
-  .sectorBigCard {
+  :global(:where(html:not(:has([data-website-canvas])))) .sectorBigCard {
     min-height: 13.5rem;
   }
 }
 
 @media (max-width: 900px) {
-  .container {
+  :global(:where(html:not(:has([data-website-canvas])))) .container {
     padding-top: 1.15rem;
   }
 
-  .wizardHeader {
+  :global(:where(html:not(:has([data-website-canvas])))) .wizardHeader {
     padding: 0.7rem 0.75rem;
   }
 
-  .stepper {
+  :global(:where(html:not(:has([data-website-canvas])))) .stepper {
     width: 100%;
     display: flex;
     flex-wrap: nowrap;
@@ -11117,174 +11121,174 @@
     padding-bottom: 0.05rem;
   }
 
-  .stepper::-webkit-scrollbar {
+  :global(:where(html:not(:has([data-website-canvas])))) .stepper::-webkit-scrollbar {
     display: none;
   }
 
-  .stepperItem {
+  :global(:where(html:not(:has([data-website-canvas])))) .stepperItem {
     flex: 0 0 auto;
     min-width: max-content;
     padding: 0.28rem 0.48rem;
   }
 
-  .stepperBullet {
+  :global(:where(html:not(:has([data-website-canvas])))) .stepperBullet {
     width: 1.84rem;
     height: 1.84rem;
   }
 
-  .stepperLabel {
+  :global(:where(html:not(:has([data-website-canvas])))) .stepperLabel {
     max-width: 8rem;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
   }
 
-  .resultsLayout {
+  :global(:where(html:not(:has([data-website-canvas])))) .resultsLayout {
     grid-template-columns: 1fr;
   }
 
-  .resultsSide,
-  .resultFinalActions {
+  :global(:where(html:not(:has([data-website-canvas])))) .resultsSide,
+  :global(:where(html:not(:has([data-website-canvas])))) .resultFinalActions {
     width: 100%;
   }
 
-  .marketplacePublishGrid,
-  .marketplaceSellerGrid {
+  :global(:where(html:not(:has([data-website-canvas])))) .marketplacePublishGrid,
+  :global(:where(html:not(:has([data-website-canvas])))) .marketplaceSellerGrid {
     grid-template-columns: 1fr;
   }
 }
 
 @media (max-width: 720px) {
-  .container {
+  :global(:where(html:not(:has([data-website-canvas])))) .container {
     width: min(calc(100% - 1rem), 48rem);
     padding-top: 0.95rem;
   }
 
-  .wizardCard,
-  .sectorWizardCard,
-  .currentCard,
-  .equipmentPickerCard {
+  :global(:where(html:not(:has([data-website-canvas])))) .wizardCard,
+  :global(:where(html:not(:has([data-website-canvas])))) .sectorWizardCard,
+  :global(:where(html:not(:has([data-website-canvas])))) .currentCard,
+  :global(:where(html:not(:has([data-website-canvas])))) .equipmentPickerCard {
     border-radius: 1.28rem;
   }
 
-  .stepContent,
-  .specStepContent {
+  :global(:where(html:not(:has([data-website-canvas])))) .stepContent,
+  :global(:where(html:not(:has([data-website-canvas])))) .specStepContent {
     padding: 1.05rem 0.9rem;
   }
 
-  .sectorStepContent {
+  :global(:where(html:not(:has([data-website-canvas])))) .sectorStepContent {
     padding: 1rem 0.8rem;
   }
 
-  .stepTitle {
+  :global(:where(html:not(:has([data-website-canvas])))) .stepTitle {
     font-size: clamp(1.9rem, 9vw, 2.55rem);
     line-height: 1.02;
   }
 
-  .stepText,
-  .sectorIntro {
+  :global(:where(html:not(:has([data-website-canvas])))) .stepText,
+  :global(:where(html:not(:has([data-website-canvas])))) .sectorIntro {
     font-size: 0.98rem;
     line-height: 1.5;
   }
 
-  .sectorLargeGrid {
+  :global(:where(html:not(:has([data-website-canvas])))) .sectorLargeGrid {
     grid-template-columns: 1fr;
     gap: 0.82rem;
     width: 100%;
   }
 
-  .sectorBigCard {
+  :global(:where(html:not(:has([data-website-canvas])))) .sectorBigCard {
     min-height: 11.2rem;
     border-radius: 1.18rem;
   }
 
-  .sectorBigCardContent {
+  :global(:where(html:not(:has([data-website-canvas])))) .sectorBigCardContent {
     padding: 0.95rem;
   }
 
-  .sectorLabel {
+  :global(:where(html:not(:has([data-website-canvas])))) .sectorLabel {
     font-size: clamp(1.55rem, 8vw, 2rem);
     line-height: 1;
   }
 
-  .liveBadge,
-  .soonBadge {
+  :global(:where(html:not(:has([data-website-canvas])))) .liveBadge,
+  :global(:where(html:not(:has([data-website-canvas])))) .soonBadge {
     min-height: 1.72rem;
     padding: 0 0.68rem;
     font-size: 0.68rem;
   }
 
-  .pathChoiceGrid,
-  .choiceGrid,
-  .conditionButtonGrid,
-  .replacementOptionGrid,
-  .finalSaveSummaryGrid,
-  .finalReplacementPanel,
-  .inputGrid,
-  .inlineOptionRow,
-  .yearSecondaryControls,
-  .marketplaceSummaryGrid,
-  .marketplacePhotoGrid {
+  :global(:where(html:not(:has([data-website-canvas])))) .pathChoiceGrid,
+  :global(:where(html:not(:has([data-website-canvas])))) .choiceGrid,
+  :global(:where(html:not(:has([data-website-canvas])))) .conditionButtonGrid,
+  :global(:where(html:not(:has([data-website-canvas])))) .replacementOptionGrid,
+  :global(:where(html:not(:has([data-website-canvas])))) .finalSaveSummaryGrid,
+  :global(:where(html:not(:has([data-website-canvas])))) .finalReplacementPanel,
+  :global(:where(html:not(:has([data-website-canvas])))) .inputGrid,
+  :global(:where(html:not(:has([data-website-canvas])))) .inlineOptionRow,
+  :global(:where(html:not(:has([data-website-canvas])))) .yearSecondaryControls,
+  :global(:where(html:not(:has([data-website-canvas])))) .marketplaceSummaryGrid,
+  :global(:where(html:not(:has([data-website-canvas])))) .marketplacePhotoGrid {
     grid-template-columns: 1fr;
   }
 
-  .pathChoiceCard,
-  .choiceCard,
-  .replacementOptionCard,
-  .conditionChoiceButton,
-  .inlineOptionButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .pathChoiceCard,
+  :global(:where(html:not(:has([data-website-canvas])))) .choiceCard,
+  :global(:where(html:not(:has([data-website-canvas])))) .replacementOptionCard,
+  :global(:where(html:not(:has([data-website-canvas])))) .conditionChoiceButton,
+  :global(:where(html:not(:has([data-website-canvas])))) .inlineOptionButton {
     min-height: 2.9rem;
   }
 
-  .pathChoiceCard {
+  :global(:where(html:not(:has([data-website-canvas])))) .pathChoiceCard {
     padding: 1rem;
     gap: 0.42rem;
   }
 
-  .pathChoiceCard::after,
-  .pathChoiceCard.choiceCardActive::after {
+  :global(:where(html:not(:has([data-website-canvas])))) .pathChoiceCard::after,
+  :global(:where(html:not(:has([data-website-canvas])))) .pathChoiceCard.choiceCardActive::after {
     top: 1.4rem;
     right: 0.9rem;
   }
 
-  .progressiveQuestionStack {
+  :global(:where(html:not(:has([data-website-canvas])))) .progressiveQuestionStack {
     gap: 0.72rem;
   }
 
-  .progressiveQuestionCard,
-  .specStepCard,
-  .tractorSetupCard,
-  .replacementInputPanel,
-  .yearSliderPanel {
+  :global(:where(html:not(:has([data-website-canvas])))) .progressiveQuestionCard,
+  :global(:where(html:not(:has([data-website-canvas])))) .specStepCard,
+  :global(:where(html:not(:has([data-website-canvas])))) .tractorSetupCard,
+  :global(:where(html:not(:has([data-website-canvas])))) .replacementInputPanel,
+  :global(:where(html:not(:has([data-website-canvas])))) .yearSliderPanel {
     border-radius: 1.05rem;
   }
 
-  .equipmentDropdownTrigger,
-  .specDropdownTrigger,
-  .searchInput,
-  .field input,
-  .field select,
-  .field textarea,
-  .modalInputField input,
-  .marketplaceField input,
-  .marketplaceField textarea {
+  :global(:where(html:not(:has([data-website-canvas])))) .equipmentDropdownTrigger,
+  :global(:where(html:not(:has([data-website-canvas])))) .specDropdownTrigger,
+  :global(:where(html:not(:has([data-website-canvas])))) .searchInput,
+  :global(:where(html:not(:has([data-website-canvas])))) .field input,
+  :global(:where(html:not(:has([data-website-canvas])))) .field select,
+  :global(:where(html:not(:has([data-website-canvas])))) .field textarea,
+  :global(:where(html:not(:has([data-website-canvas])))) .modalInputField input,
+  :global(:where(html:not(:has([data-website-canvas])))) .marketplaceField input,
+  :global(:where(html:not(:has([data-website-canvas])))) .marketplaceField textarea {
     min-height: var(--tap-target-min, 44px);
   }
 
-  .detailsModalOverlay,
-  .finalSaveOverlay,
-  .marketplaceIntroOverlay,
-  .marketplacePublishOverlay {
+  :global(:where(html:not(:has([data-website-canvas])))) .detailsModalOverlay,
+  :global(:where(html:not(:has([data-website-canvas])))) .finalSaveOverlay,
+  :global(:where(html:not(:has([data-website-canvas])))) .marketplaceIntroOverlay,
+  :global(:where(html:not(:has([data-website-canvas])))) .marketplacePublishOverlay {
     align-items: center;
     padding: 0.75rem;
     overflow: hidden;
   }
 
-  .detailsModal,
-  .yearDetailsModal,
-  .finalSaveModal,
-  .marketplaceIntroModal,
-  .marketplacePublishModal {
+  :global(:where(html:not(:has([data-website-canvas])))) .detailsModal,
+  :global(:where(html:not(:has([data-website-canvas])))) .yearDetailsModal,
+  :global(:where(html:not(:has([data-website-canvas])))) .finalSaveModal,
+  :global(:where(html:not(:has([data-website-canvas])))) .marketplaceIntroModal,
+  :global(:where(html:not(:has([data-website-canvas])))) .marketplacePublishModal {
     width: min(100%, 48rem);
     max-height: calc(100dvh - 1.5rem);
     display: flex;
@@ -11293,66 +11297,66 @@
     border-radius: 1.25rem;
   }
 
-  .detailsModalText,
-  .finalSaveSummaryCard,
-  .marketplacePublishPanel,
-  .marketplacePhotoPanel {
+  :global(:where(html:not(:has([data-website-canvas])))) .detailsModalText,
+  :global(:where(html:not(:has([data-website-canvas])))) .finalSaveSummaryCard,
+  :global(:where(html:not(:has([data-website-canvas])))) .marketplacePublishPanel,
+  :global(:where(html:not(:has([data-website-canvas])))) .marketplacePhotoPanel {
     overflow-wrap: anywhere;
   }
 
-  .detailsModalActions,
-  .finalSaveActions,
-  .marketplaceIntroActions,
-  .marketplacePublishActions,
-  .wizardFooter {
+  :global(:where(html:not(:has([data-website-canvas])))) .detailsModalActions,
+  :global(:where(html:not(:has([data-website-canvas])))) .finalSaveActions,
+  :global(:where(html:not(:has([data-website-canvas])))) .marketplaceIntroActions,
+  :global(:where(html:not(:has([data-website-canvas])))) .marketplacePublishActions,
+  :global(:where(html:not(:has([data-website-canvas])))) .wizardFooter {
     display: grid;
     grid-template-columns: 1fr;
     gap: 0.7rem;
   }
 
-  .primaryButton,
-  .secondaryButton,
-  .resultPdfActionButton,
-  .resultAlternateActionButton,
-  .resultPrimaryActionButton,
-  .detailsModalActions button,
-  .marketplaceIntroActions a,
-  .marketplacePublishActions button,
-  .finalSaveActions button {
+  :global(:where(html:not(:has([data-website-canvas])))) .primaryButton,
+  :global(:where(html:not(:has([data-website-canvas])))) .secondaryButton,
+  :global(:where(html:not(:has([data-website-canvas])))) .resultPdfActionButton,
+  :global(:where(html:not(:has([data-website-canvas])))) .resultAlternateActionButton,
+  :global(:where(html:not(:has([data-website-canvas])))) .resultPrimaryActionButton,
+  :global(:where(html:not(:has([data-website-canvas])))) .detailsModalActions button,
+  :global(:where(html:not(:has([data-website-canvas])))) .marketplaceIntroActions a,
+  :global(:where(html:not(:has([data-website-canvas])))) .marketplacePublishActions button,
+  :global(:where(html:not(:has([data-website-canvas])))) .finalSaveActions button {
     width: 100%;
     min-height: var(--tap-target-min, 44px);
   }
 
-  .resultHero {
+  :global(:where(html:not(:has([data-website-canvas])))) .resultHero {
     padding: 1rem;
     border-radius: 1.25rem;
   }
 
-  .resultValue {
+  :global(:where(html:not(:has([data-website-canvas])))) .resultValue {
     font-size: clamp(2.25rem, 12vw, 3.2rem);
   }
 
-  .resultFactsGrid,
-  .resultMethodGrid,
-  .resultFinalActionsButtons {
+  :global(:where(html:not(:has([data-website-canvas])))) .resultFactsGrid,
+  :global(:where(html:not(:has([data-website-canvas])))) .resultMethodGrid,
+  :global(:where(html:not(:has([data-website-canvas])))) .resultFinalActionsButtons {
     grid-template-columns: 1fr;
   }
 
-  .resultFinalActions {
+  :global(:where(html:not(:has([data-website-canvas])))) .resultFinalActions {
     border-radius: 1.18rem;
   }
 }
 
 @media (max-width: 640px) {
-  .stepperItem:not(.stepperItemActive) .stepperLabel {
+  :global(:where(html:not(:has([data-website-canvas])))) .stepperItem:not(.stepperItemActive) .stepperLabel {
     display: none;
   }
 
-  .stepperItem {
+  :global(:where(html:not(:has([data-website-canvas])))) .stepperItem {
     padding-right: 0.32rem;
   }
 
-  .stepperItemActive {
+  :global(:where(html:not(:has([data-website-canvas])))) .stepperItemActive {
     padding-right: 0.58rem;
   }
 }
@@ -11370,7 +11374,7 @@
   border-radius: 999px;
   border: 1px solid rgba(13, 90, 60, 0.16);
   background: rgba(255, 255, 255, 0.72);
-  font-size: clamp(0.78rem, 1.3vw, 0.95rem);
+  font-size: clamp(0.78rem, calc(var(--website-design-vw, 1vw) * 1.3), 0.95rem);
   letter-spacing: 0.035em;
   line-height: 1;
 }
@@ -11472,20 +11476,20 @@
 }
 
 @media (max-width: 860px) {
-  .resultVatToggle {
+  :global(:where(html:not(:has([data-website-canvas])))) .resultVatToggle {
     width: 100%;
     justify-content: stretch;
   }
 
-  .resultVatToggleButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .resultVatToggleButton {
     flex: 1 1 0;
   }
 
-  .advancedAssumptionsGrid {
+  :global(:where(html:not(:has([data-website-canvas])))) .advancedAssumptionsGrid {
     grid-template-columns: 1fr;
   }
 
-  .preEstimateDisclaimer {
+  :global(:where(html:not(:has([data-website-canvas])))) .preEstimateDisclaimer {
     flex-basis: auto;
     max-width: none;
     width: 100%;
@@ -11552,8 +11556,13 @@
   align-self: start;
 }
 
+:global(:where([data-website-canvas])) .resultFinalActions {
+    height: auto;
+    min-height: 0;
+  }
+
 @media (min-width: 981px) {
-  .resultFinalActions {
+  :global(:where(html:not(:has([data-website-canvas])))) .resultFinalActions {
     height: auto;
     min-height: 0;
   }
@@ -11578,7 +11587,7 @@
 .resultValueLine {
   align-items: center;
   justify-content: space-between;
-  gap: clamp(0.85rem, 2vw, 1.4rem);
+  gap: clamp(0.85rem, calc(var(--website-design-vw, 1vw) * 2), 1.4rem);
 }
 
 .resultValueLine .resultValue {
@@ -11616,24 +11625,24 @@
 }
 
 @media (max-width: 860px) {
-  .resultValueLine {
+  :global(:where(html:not(:has([data-website-canvas])))) .resultValueLine {
     align-items: flex-start;
   }
 
-  .resultVatToggleInline {
+  :global(:where(html:not(:has([data-website-canvas])))) .resultVatToggleInline {
     width: auto;
     justify-content: flex-start;
   }
 }
 
 @media (max-width: 640px) {
-  .resultValueLine {
+  :global(:where(html:not(:has([data-website-canvas])))) .resultValueLine {
     flex-direction: column;
     align-items: stretch;
     white-space: normal;
   }
 
-  .resultVatToggleInline {
+  :global(:where(html:not(:has([data-website-canvas])))) .resultVatToggleInline {
     width: 100%;
     justify-content: stretch;
   }
@@ -11714,15 +11723,20 @@
   box-shadow: 0 16px 34px rgba(88, 38, 31, 0.11);
 }
 
+:global(:where([data-website-canvas])) .pathChoiceCard .choiceCardNote {
+    max-width: calc(100% - 2rem);
+    white-space: nowrap;
+  }
+
 @media (min-width: 900px) {
-  .pathChoiceCard .choiceCardNote {
+  :global(:where(html:not(:has([data-website-canvas])))) .pathChoiceCard .choiceCardNote {
     max-width: calc(100% - 2rem);
     white-space: nowrap;
   }
 }
 
 @media (max-width: 640px) {
-  .advancedLockedCopy {
+  :global(:where(html:not(:has([data-website-canvas])))) .advancedLockedCopy {
     width: min(92%, 24rem);
   }
 }
@@ -11757,7 +11771,7 @@
 }
 
 .container {
-  padding-top: clamp(1rem, 1.7vw, 1.45rem);
+  padding-top: clamp(1rem, calc(var(--website-design-vw, 1vw) * 1.7), 1.45rem);
 }
 
 .wizardHeader {
@@ -11824,22 +11838,22 @@
 }
 
 .stepContent {
-  padding: clamp(1.2rem, 2vw, 1.55rem);
+  padding: clamp(1.2rem, calc(var(--website-design-vw, 1vw) * 2), 1.55rem);
 }
 
 .sectorStepContent {
-  padding: clamp(1.25rem, 1.9vw, 1.75rem);
+  padding: clamp(1.25rem, calc(var(--website-design-vw, 1vw) * 1.9), 1.75rem);
 }
 
 .sectorStart {
-  gap: clamp(0.9rem, 1.35vw, 1.25rem);
+  gap: clamp(0.9rem, calc(var(--website-design-vw, 1vw) * 1.35), 1.25rem);
 }
 
 .sectorIntro .stepTitle,
 .equipmentStageIntro .stepTitle,
 .stepTitle {
   max-width: none;
-  font-size: clamp(2.3rem, 3.7vw, 3.35rem);
+  font-size: clamp(2.3rem, calc(var(--website-design-vw, 1vw) * 3.7), 3.35rem);
   line-height: 1;
   letter-spacing: -0.052em;
   text-wrap: pretty;
@@ -11853,21 +11867,21 @@
 }
 
 .sectorLargeGrid {
-  gap: clamp(0.75rem, 1.1vw, 1rem);
+  gap: clamp(0.75rem, calc(var(--website-design-vw, 1vw) * 1.1), 1rem);
 }
 
 .sectorBigCard {
-  min-height: clamp(11.9rem, 14.5vw, 13.8rem);
+  min-height: clamp(11.9rem, calc(var(--website-design-vw, 1vw) * 14.5), 13.8rem);
   border-radius: 1.35rem;
 }
 
 .sectorBigCardContent {
-  padding: clamp(1rem, 1.35vw, 1.2rem);
+  padding: clamp(1rem, calc(var(--website-design-vw, 1vw) * 1.35), 1.2rem);
 }
 
 .sectorLabel,
 .sectorBigCard .sectorLabel {
-  font-size: clamp(1.8rem, 2.55vw, 2.45rem);
+  font-size: clamp(1.8rem, calc(var(--website-design-vw, 1vw) * 2.55), 2.45rem);
   letter-spacing: -0.05em;
 }
 
@@ -11938,7 +11952,7 @@
 
 .equipmentPickerCard {
   gap: 0.72rem;
-  padding: clamp(0.95rem, 1.35vw, 1.15rem);
+  padding: clamp(0.95rem, calc(var(--website-design-vw, 1vw) * 1.35), 1.15rem);
   border-radius: 1.15rem;
 }
 
@@ -12170,31 +12184,31 @@
 }
 
 @media (max-width: 900px) {
-  .tractorExtrasGrid,
-  .replacementFieldsGrid {
+  :global(:where(html:not(:has([data-website-canvas])))) .tractorExtrasGrid,
+  :global(:where(html:not(:has([data-website-canvas])))) .replacementFieldsGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
 @media (max-width: 640px) {
-  .pathSelectionPlaceholder {
+  :global(:where(html:not(:has([data-website-canvas])))) .pathSelectionPlaceholder {
     align-items: flex-start;
     min-height: 7rem;
     padding: 1rem;
   }
 
-  .tractorExtrasGrid,
-  .replacementFieldsGrid {
+  :global(:where(html:not(:has([data-website-canvas])))) .tractorExtrasGrid,
+  :global(:where(html:not(:has([data-website-canvas])))) .replacementFieldsGrid {
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .replacementInputPanel {
+  :global(:where(html:not(:has([data-website-canvas])))) .replacementInputPanel {
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .replacementInputActions,
-  .replacementInputActions .assetButton,
-  .replacementResetButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .replacementInputActions,
+  :global(:where(html:not(:has([data-website-canvas])))) .replacementInputActions .assetButton,
+  :global(:where(html:not(:has([data-website-canvas])))) .replacementResetButton {
     width: 100%;
   }
 }
@@ -12212,7 +12226,7 @@
 
 .detailsModalTitle {
   margin-top: 0.3rem;
-  font-size: clamp(1.65rem, 2.6vw, 2.2rem);
+  font-size: clamp(1.65rem, calc(var(--website-design-vw, 1vw) * 2.6), 2.2rem);
   line-height: 1.04;
   letter-spacing: -0.045em;
   text-wrap: pretty;
@@ -12241,14 +12255,14 @@
 }
 
 .replacementNoticeModal {
-  width: min(590px, 100%);
+  width: min(590px, var(--website-dialog-reference-width, 100%));
   padding: 1.35rem;
   border-radius: 1.15rem;
 }
 
 .replacementNoticeModal h2 {
   margin-top: 0.35rem;
-  font-size: clamp(1.45rem, 2.5vw, 1.9rem);
+  font-size: clamp(1.45rem, calc(var(--website-design-vw, 1vw) * 2.5), 1.9rem);
   line-height: 1.08;
   letter-spacing: -0.035em;
 }
@@ -12258,34 +12272,34 @@
 }
 
 @media (max-width: 900px) {
-  .stepperItem {
+  :global(:where(html:not(:has([data-website-canvas])))) .stepperItem {
     width: auto;
   }
 }
 
 @media (max-width: 720px) {
-  .stepTitle,
-  .sectorIntro .stepTitle,
-  .equipmentStageIntro .stepTitle {
+  :global(:where(html:not(:has([data-website-canvas])))) .stepTitle,
+  :global(:where(html:not(:has([data-website-canvas])))) .sectorIntro .stepTitle,
+  :global(:where(html:not(:has([data-website-canvas])))) .equipmentStageIntro .stepTitle {
     font-size: clamp(1.9rem, 8.5vw, 2.5rem);
     line-height: 1.04;
   }
 
-  .sectorBigCard {
+  :global(:where(html:not(:has([data-website-canvas])))) .sectorBigCard {
     min-height: 10.25rem;
   }
 
-  .sectorCardTopRow {
+  :global(:where(html:not(:has([data-website-canvas])))) .sectorCardTopRow {
     min-height: 0;
   }
 
-  .stepContent,
-  .sectorStepContent {
+  :global(:where(html:not(:has([data-website-canvas])))) .stepContent,
+  :global(:where(html:not(:has([data-website-canvas])))) .sectorStepContent {
     padding: 0.95rem 0.85rem;
   }
 
-  .conditionButtonGrid,
-  .dealerAssessmentOptions {
+  :global(:where(html:not(:has([data-website-canvas])))) .conditionButtonGrid,
+  :global(:where(html:not(:has([data-website-canvas])))) .dealerAssessmentOptions {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
@@ -12348,8 +12362,8 @@
 }
 
 .replacementNoticeModal {
-  width: min(680px, 100%);
-  max-height: calc(100dvh - 2rem);
+  width: min(680px, var(--website-dialog-reference-width, 100%));
+  max-height: calc(calc(var(--website-visible-height, 100dvh) * 1) - 2rem);
   padding: 1.75rem;
   overflow-y: auto;
   border-color: #e4a39d;
@@ -12415,24 +12429,24 @@
 }
 
 @media (max-width: 640px) {
-  .dealerAssessmentGroup + .dealerAssessmentGroup {
+  :global(:where(html:not(:has([data-website-canvas])))) .dealerAssessmentGroup + .dealerAssessmentGroup {
     margin-top: 0.85rem;
   }
 
-  .replacementFieldsGrid,
-  .replacementOtherFields {
+  :global(:where(html:not(:has([data-website-canvas])))) .replacementFieldsGrid,
+  :global(:where(html:not(:has([data-website-canvas])))) .replacementOtherFields {
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .replacementField {
+  :global(:where(html:not(:has([data-website-canvas])))) .replacementField {
     grid-template-rows: auto minmax(3.35rem, auto) auto;
   }
 
-  .frontLoaderFields {
+  :global(:where(html:not(:has([data-website-canvas])))) .frontLoaderFields {
     max-width: none;
   }
 
-  .replacementNoticeModal {
+  :global(:where(html:not(:has([data-website-canvas])))) .replacementNoticeModal {
     padding: 1.3rem;
   }
 }
@@ -12441,7 +12455,7 @@
 .appValuation .sectorBigCardApp {
   display: grid;
   place-items: center;
-  min-height: clamp(7rem, 22vw, 10rem);
+  min-height: clamp(7rem, calc(var(--website-design-vw, 1vw) * 22), 10rem);
   border: 1px solid rgba(105, 177, 147, 0.46);
   background: #1d5742;
   box-shadow:
@@ -12482,7 +12496,7 @@
 
 .appValuation .sectorBigCardApp .sectorLabel {
   color: #ffffff;
-  font-size: clamp(1.05rem, 4.7vw, 1.4rem);
+  font-size: clamp(1.05rem, calc(var(--website-design-vw, 1vw) * 4.7), 1.4rem);
   line-height: 1.12;
   letter-spacing: -0.025em;
   text-align: center;
@@ -12496,21 +12510,21 @@
 }
 
 @media (max-width: 720px) {
-  .appValuation .conditionStepCard {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .conditionStepCard {
     gap: 0.85rem;
     padding: 0.9rem;
   }
 
-  .appValuation .conditionStepCard .currentCardHead {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .conditionStepCard .currentCardHead {
     align-items: start;
   }
 
-  .appValuation .conditionButtonGrid {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .conditionButtonGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 0.6rem;
   }
 
-  .appValuation .conditionChoiceButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .conditionChoiceButton {
     position: relative;
     display: grid;
     grid-template-columns: 1.45rem minmax(0, 1fr);
@@ -12528,11 +12542,11 @@
     box-shadow: 0 5px 14px rgba(18, 53, 45, 0.035);
   }
 
-  .appValuation .conditionButtonGrid > .conditionChoiceButton:last-child:nth-child(odd) {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .conditionButtonGrid > .conditionChoiceButton:last-child:nth-child(odd) {
     grid-column: 1 / -1;
   }
 
-  .appValuation .conditionChoiceIndicator {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .conditionChoiceIndicator {
     display: grid;
     place-items: center;
     width: 1.35rem;
@@ -12545,25 +12559,25 @@
     line-height: 1;
   }
 
-  .appValuation .conditionChoiceLabel {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .conditionChoiceLabel {
     min-width: 0;
     text-align: left;
   }
 
-  .appValuation .conditionChoiceButtonActive {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .conditionChoiceButtonActive {
     border-color: #1d5742;
     background: #1d5742;
     color: #ffffff;
     box-shadow: 0 10px 22px rgba(24, 75, 57, 0.18);
   }
 
-  .appValuation .conditionChoiceButtonActive .conditionChoiceIndicator {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .conditionChoiceButtonActive .conditionChoiceIndicator {
     border-color: #ffffff;
     background: #ffffff;
     color: #1d5742;
   }
 
-  .appValuation .detailedAssessmentEntry {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .detailedAssessmentEntry {
     display: grid;
     gap: 0.75rem;
     margin-top: 0.1rem;
@@ -12573,20 +12587,20 @@
     background: #f0f7f3;
   }
 
-  .appValuation .detailedAssessmentEntry > div {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .detailedAssessmentEntry > div {
     gap: 0.3rem;
   }
 
-  .appValuation .detailedAssessmentEntry strong {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .detailedAssessmentEntry strong {
     font-size: 0.92rem;
   }
 
-  .appValuation .detailedAssessmentEntry span {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .detailedAssessmentEntry span {
     font-size: 0.8rem;
     line-height: 1.45;
   }
 
-  .appValuation .detailedAssessmentToggle {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .detailedAssessmentToggle {
     width: 100%;
     min-height: 3rem;
     border-color: #1d5742;
@@ -12596,12 +12610,12 @@
     font-size: 0.82rem;
   }
 
-  .appValuation .detailedAssessmentToggle[aria-expanded='true'] {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .detailedAssessmentToggle[aria-expanded='true'] {
     border-color: rgba(29, 87, 66, 0.18);
     background: #e6f0eb;
   }
 
-  .appValuation .detailedAssessmentPanel {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .detailedAssessmentPanel {
     gap: 0.65rem;
     margin-top: 0;
     padding: 0.85rem;
@@ -12609,36 +12623,36 @@
     background: #ffffff;
   }
 
-  .appValuation .detailedAssessmentHeader {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .detailedAssessmentHeader {
     gap: 0.3rem;
     padding: 0 0 0.7rem;
     border-bottom: 1px solid rgba(23, 77, 62, 0.1);
   }
 
-  .appValuation .detailedAssessmentHeader strong {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .detailedAssessmentHeader strong {
     font-size: 0.95rem;
   }
 
-  .appValuation .dealerAssessmentGroup {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .dealerAssessmentGroup {
     padding: 0.7rem 0 0;
   }
 
-  .appValuation .detailedAssessmentSummary + .dealerAssessmentGroup {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .detailedAssessmentSummary + .dealerAssessmentGroup {
     margin-top: 0.75rem;
   }
 
-  .appValuation .dealerAssessmentGroup legend {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .dealerAssessmentGroup legend {
     margin: 0 0 0.65rem;
     font-size: 0.9rem;
     line-height: 1.3;
   }
 
-  .appValuation .dealerAssessmentOptions {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .dealerAssessmentOptions {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 0.5rem;
   }
 
-  .appValuation .dealerAssessmentOption {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .dealerAssessmentOption {
     min-height: 3.25rem;
     padding: 0.65rem 0.5rem;
     border: 1px solid rgba(23, 77, 62, 0.16);
@@ -12649,7 +12663,7 @@
     line-height: 1.25;
   }
 
-  .appValuation .dealerAssessmentOptionActive {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .dealerAssessmentOptionActive {
     border-color: #1d5742;
     background: #1d5742;
     color: #ffffff;
@@ -12659,57 +12673,57 @@
 
 /* Mobile detail cards and final estimate refinement. */
 @media (max-width: 720px) {
-  .appValuation .specStepCard {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .specStepCard {
     grid-template-columns: 2.45rem minmax(0, 1fr);
     column-gap: 0.7rem;
     row-gap: 0.3rem;
   }
 
-  .appValuation .specStepCard > .specStepNumber {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .specStepCard > .specStepNumber {
     grid-row: 1 / span 2;
     align-self: center;
   }
 
-  .appValuation .specStepContent {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .specStepContent {
     align-self: center;
     padding: 0;
   }
 
-  .appValuation .specStepAction {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .specStepAction {
     grid-column: 2;
     justify-self: start;
     align-self: start;
     white-space: nowrap;
   }
 
-  .appValuation .specStepCardComplete {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .specStepCardComplete {
     grid-template-columns: 2.45rem minmax(0, 1fr) auto;
     row-gap: 0;
   }
 
-  .appValuation .specStepCardComplete > .specStepNumber {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .specStepCardComplete > .specStepNumber {
     grid-row: 1;
   }
 
-  .appValuation .specStepCardComplete > .specStepAction {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .specStepCardComplete > .specStepAction {
     grid-column: 3;
     grid-row: 1;
     justify-self: end;
     align-self: center;
   }
 
-  .appValuation .resultsLayout,
-  .appValuation .resultsMain {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .resultsLayout,
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .resultsMain {
     gap: 0.75rem;
   }
 
-  .appValuation .resultHero {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .resultHero {
     gap: 0.66rem;
     padding: 0.85rem;
     border-radius: 1.15rem;
   }
 
-  .appValuation .resultHeroTopline {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .resultHeroTopline {
     flex-direction: row;
     flex-wrap: wrap;
     justify-content: flex-start;
@@ -12717,43 +12731,43 @@
     gap: 0.45rem;
   }
 
-  .appValuation .resultValueLine .resultValue {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .resultValueLine .resultValue {
     font-size: clamp(2.85rem, 13.2vw, 3.3rem);
   }
 
-  .appValuation .resultValueLineCompact .resultValue {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .resultValueLineCompact .resultValue {
     font-size: clamp(2.55rem, 12.3vw, 3.05rem);
   }
 
-  .appValuation .resultValueLineTight .resultValue {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .resultValueLineTight .resultValue {
     font-size: clamp(2rem, 10vw, 2.55rem);
   }
 
-  .appValuation .resultKicker,
-  .appValuation .resultConfidenceBadge {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .resultKicker,
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .resultConfidenceBadge {
     min-height: 1.75rem;
     padding-inline: 0.62rem;
     font-size: 0.7rem;
   }
 
-  .appValuation .resultConfidenceNote + .resultConfidenceNote {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .resultConfidenceNote + .resultConfidenceNote {
     margin-top: -0.45rem;
   }
 
-  .appValuation .resultAccordion {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .resultAccordion {
     border-radius: 1rem;
     box-shadow: 0 10px 26px rgba(16, 42, 34, 0.05);
   }
 
-  .appValuation .resultAccordionToggle {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .resultAccordionToggle {
     gap: 0.65rem;
   }
 
-  .appValuation .resultAccordionAction {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .resultAccordionAction {
     min-height: 2.75rem;
   }
 
-  .appValuation .wizardFooter {
+  :global(:where(html:not(:has([data-website-canvas])))) .appValuation .wizardFooter {
     border-top: 1px solid rgba(17, 56, 45, 0.08);
   }
 }
@@ -12815,19 +12829,19 @@
 }
 
 @media (max-width: 640px) {
-  .saleabilitySummary {
+  :global(:where(html:not(:has([data-website-canvas])))) .saleabilitySummary {
     align-items: stretch;
     flex-direction: column;
     padding: 15px;
   }
 
-  .saleabilitySummary button {
+  :global(:where(html:not(:has([data-website-canvas])))) .saleabilitySummary button {
     width: 100%;
   }
 }
 .dealerClientRegisterPicker {
-  width: min(820px, calc(100vw - 32px));
-  max-height: min(780px, calc(100vh - 40px));
+  width: min(820px, calc(calc(var(--website-design-vw, 1vw) * 100) - 32px));
+  max-height: min(780px, calc(calc(var(--website-design-vh, 1vh) * 100) - 40px));
   overflow: hidden;
 }
 
@@ -12930,15 +12944,15 @@
 }
 
 @media (max-width: 680px) {
-  .dealerClientRegisterPickerRow {
+  :global(:where(html:not(:has([data-website-canvas])))) .dealerClientRegisterPickerRow {
     grid-template-columns: 1fr auto;
   }
 
-  .dealerClientRegisterPickerRow > span:nth-child(2) {
+  :global(:where(html:not(:has([data-website-canvas])))) .dealerClientRegisterPickerRow > span:nth-child(2) {
     grid-column: 1;
   }
 
-  .dealerClientRegisterPickerRow b {
+  :global(:where(html:not(:has([data-website-canvas])))) .dealerClientRegisterPickerRow b {
     grid-column: 2;
     grid-row: 1 / span 2;
   }
@@ -13036,7 +13050,7 @@
 
 .finalSaveHeader h2 {
   color: #18364b;
-  font-size: clamp(1.7rem, 3.4vw, 2.4rem);
+  font-size: clamp(1.7rem, calc(var(--website-design-vw, 1vw) * 3.4), 2.4rem);
   line-height: 1.05;
   letter-spacing: -0.05em;
 }
@@ -13047,7 +13061,7 @@
 }
 
 .dealerClientRegisterPicker {
-  width: min(820px, calc(100vw - 32px));
+  width: min(820px, calc(calc(var(--website-design-vw, 1vw) * 100) - 32px));
   gap: 1rem;
 }
 
@@ -13110,7 +13124,7 @@
 }
 
 .dealerRegisterDestinationModal {
-  width: min(45rem, calc(100vw - 2rem));
+  width: min(45rem, calc(calc(var(--website-design-vw, 1vw) * 100) - 2rem));
 }
 
 .dealerRegisterDestinationGrid {
@@ -13217,21 +13231,21 @@
 }
 
 @media (max-width: 680px) {
-  .dealerRegisterDestinationGrid {
+  :global(:where(html:not(:has([data-website-canvas])))) .dealerRegisterDestinationGrid {
     grid-template-columns: 1fr;
   }
 
-  .dealerRegisterDestinationOption {
+  :global(:where(html:not(:has([data-website-canvas])))) .dealerRegisterDestinationOption {
     min-height: 0;
   }
 
-  .finalSaveDestination {
+  :global(:where(html:not(:has([data-website-canvas])))) .finalSaveDestination {
     align-items: flex-start;
     flex-direction: column;
     gap: 0.25rem;
   }
 
-  .finalSaveDestination strong {
+  :global(:where(html:not(:has([data-website-canvas])))) .finalSaveDestination strong {
     text-align: left;
   }
 }
@@ -13442,7 +13456,7 @@
 }
 
 .replacementSliderReadout strong {
-  font-size: clamp(1.6rem, 2.2vw, 2.2rem);
+  font-size: clamp(1.6rem, calc(var(--website-design-vw, 1vw) * 2.2), 2.2rem);
   white-space: nowrap;
   letter-spacing: -0.05em;
   overflow-wrap: anywhere;
@@ -13494,37 +13508,37 @@
 }
 
 @media (max-width: 1020px) {
-  .basicIdentityIntro {
+  :global(:where(html:not(:has([data-website-canvas])))) .basicIdentityIntro {
     white-space: normal;
   }
 
-  .stepper {
+  :global(:where(html:not(:has([data-website-canvas])))) .stepper {
     gap: 0.45rem;
   }
 
-  .stepperLabel {
+  :global(:where(html:not(:has([data-website-canvas])))) .stepperLabel {
     font-size: 0.76rem;
   }
 
-  .basicLevelGrid,
-  .basicExtrasGrid {
+  :global(:where(html:not(:has([data-website-canvas])))) .basicLevelGrid,
+  :global(:where(html:not(:has([data-website-canvas])))) .basicExtrasGrid {
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .basicLevelCard {
+  :global(:where(html:not(:has([data-website-canvas])))) .basicLevelCard {
     min-height: 7.4rem;
   }
 }
 
 @media (max-width: 900px) {
-  .replacementSliderPanel {
+  :global(:where(html:not(:has([data-website-canvas])))) .replacementSliderPanel {
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: auto;
     gap: 1rem;
     padding: 1rem;
   }
 
-  .replacementPriceStack {
+  :global(:where(html:not(:has([data-website-canvas])))) .replacementPriceStack {
     grid-row: auto;
     grid-template-rows: auto auto;
     width: min(100%, 29rem);
@@ -13532,45 +13546,45 @@
     align-self: auto;
   }
 
-  .replacementSliderPanel .yearSliderControl,
-  .replacementSliderPanel .yearFineTuneRow {
+  :global(:where(html:not(:has([data-website-canvas])))) .replacementSliderPanel .yearSliderControl,
+  :global(:where(html:not(:has([data-website-canvas])))) .replacementSliderPanel .yearFineTuneRow {
     grid-column: 1;
     width: 100%;
     margin-inline: 0;
   }
 
-  .replacementSliderPanel .yearSliderControl {
+  :global(:where(html:not(:has([data-website-canvas])))) .replacementSliderPanel .yearSliderControl {
     padding-inline: 0.15rem;
   }
 
-  .replacementSliderPanel .yearFineTuneRow {
+  :global(:where(html:not(:has([data-website-canvas])))) .replacementSliderPanel .yearFineTuneRow {
     gap: 0.75rem;
   }
 }
 
 @media (max-width: 760px) {
-  .estimateModeGrid {
+  :global(:where(html:not(:has([data-website-canvas])))) .estimateModeGrid {
     grid-template-columns: minmax(0, 1fr);
   }
 
 
-  .replacementBreakdown {
+  :global(:where(html:not(:has([data-website-canvas])))) .replacementBreakdown {
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .replacementBreakdownSymbol {
+  :global(:where(html:not(:has([data-website-canvas])))) .replacementBreakdownSymbol {
     display: none;
   }
 
-  .replacementSliderReadout strong {
+  :global(:where(html:not(:has([data-website-canvas])))) .replacementSliderReadout strong {
     font-size: clamp(1.5rem, 7vw, 2rem);
   }
 
-  .replacementPriceStack {
+  :global(:where(html:not(:has([data-website-canvas])))) .replacementPriceStack {
     gap: 0.6rem;
   }
 
-  .replacementVatToggle button {
+  :global(:where(html:not(:has([data-website-canvas])))) .replacementVatToggle button {
     min-height: 2.8rem;
     font-size: 0.8rem;
   }
@@ -13668,22 +13682,22 @@
 }
 
 @media (max-width: 900px) {
-  .equipmentStageTopSolo {
+  :global(:where(html:not(:has([data-website-canvas])))) .equipmentStageTopSolo {
     width: 100%;
     justify-content: flex-end;
   }
 
-  .equipmentStageTopSolo .selectedSummaryPill {
+  :global(:where(html:not(:has([data-website-canvas])))) .equipmentStageTopSolo .selectedSummaryPill {
     margin-left: auto;
   }
 }
 
 @media (max-width: 760px) {
-  .estimateModeIntro {
+  :global(:where(html:not(:has([data-website-canvas])))) .estimateModeIntro {
     position: static;
   }
 
-  .estimateModeSectorLabel {
+  :global(:where(html:not(:has([data-website-canvas])))) .estimateModeSectorLabel {
     position: static;
     display: flex;
     width: 100%;
@@ -13691,12 +13705,12 @@
     margin-bottom: 0.05rem;
   }
 
-  .estimateModeAdvancedCard .sectorCardTopRow {
+  :global(:where(html:not(:has([data-website-canvas])))) .estimateModeAdvancedCard .sectorCardTopRow {
     top: 0.6rem;
     right: 0.6rem;
   }
 
-  .exclusiveBadge {
+  :global(:where(html:not(:has([data-website-canvas])))) .exclusiveBadge {
     min-height: 2rem;
     padding-inline: 0.72rem;
     font-size: 0.64rem;
@@ -13706,7 +13720,7 @@
 
 /* Basic Estimate Specs modal flow */
 .specChoiceModal {
-  max-height: min(90vh, 860px);
+  max-height: min(calc(var(--website-visible-height, 100vh) * 0.9), 860px);
   overflow-y: auto;
 }
 
@@ -13744,7 +13758,7 @@
 }
 
 @media (max-width: 700px) {
-  .conditionModeGrid {
+  :global(:where(html:not(:has([data-website-canvas])))) .conditionModeGrid {
     grid-template-columns: 1fr;
   }
 }
@@ -13781,7 +13795,7 @@
 }
 
 .conditionRouteModal {
-  width: min(760px, calc(100vw - 2rem));
+  width: min(760px, calc(calc(var(--website-design-vw, 1vw) * 100) - 2rem));
 }
 
 .conditionRouteGrid {
@@ -13874,8 +13888,8 @@
 }
 
 .conditionOptionsModal {
-  width: min(800px, calc(100vw - 2rem));
-  max-height: min(88vh, 820px);
+  width: min(800px, calc(calc(var(--website-design-vw, 1vw) * 100) - 2rem));
+  max-height: min(calc(var(--website-visible-height, 100vh) * 0.88), 820px);
   overflow-y: auto;
   overscroll-behavior: contain;
 }
@@ -13926,7 +13940,7 @@
 }
 
 .conditionAdvancedPanel {
-  max-height: min(55vh, 520px);
+  max-height: min(calc(var(--website-design-vh, 1vh) * 55), 520px);
   margin-top: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
@@ -13946,7 +13960,7 @@
 }
 
 .popularityModal {
-  width: min(720px, calc(100vw - 2rem));
+  width: min(720px, calc(calc(var(--website-design-vw, 1vw) * 100) - 2rem));
 }
 
 .popularityModalPanel {
@@ -14084,66 +14098,66 @@
 }
 
 @media (max-width: 700px) {
-  .conditionRouteGrid {
+  :global(:where(html:not(:has([data-website-canvas])))) .conditionRouteGrid {
     grid-template-columns: 1fr;
   }
 
-  .conditionRouteCard {
+  :global(:where(html:not(:has([data-website-canvas])))) .conditionRouteCard {
     min-height: 108px;
   }
 
-  .basicConditionOptionGrid {
+  :global(:where(html:not(:has([data-website-canvas])))) .basicConditionOptionGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .conditionOptionsModal,
-  .conditionRouteModal,
-  .popularityModal {
+  :global(:where(html:not(:has([data-website-canvas])))) .conditionOptionsModal,
+  :global(:where(html:not(:has([data-website-canvas])))) .conditionRouteModal,
+  :global(:where(html:not(:has([data-website-canvas])))) .popularityModal {
     width: 100%;
   }
 
-  .popularityModalPanel {
+  :global(:where(html:not(:has([data-website-canvas])))) .popularityModalPanel {
     padding: 0.9rem;
   }
 
-  .popularityModalStars {
+  :global(:where(html:not(:has([data-website-canvas])))) .popularityModalStars {
     gap: 0.4rem;
   }
 
-  .popularityModalStarButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .popularityModalStarButton {
     min-height: 64px;
     border-radius: 12px;
   }
 
-  .popularityModalStarGlyph {
+  :global(:where(html:not(:has([data-website-canvas])))) .popularityModalStarGlyph {
     font-size: 1.45rem;
   }
 }
 
 @media (max-width: 460px) {
-  .basicConditionOptionGrid {
+  :global(:where(html:not(:has([data-website-canvas])))) .basicConditionOptionGrid {
     grid-template-columns: 1fr;
   }
 
-  .conditionRouteCard {
+  :global(:where(html:not(:has([data-website-canvas])))) .conditionRouteCard {
     grid-template-columns: 2.7rem minmax(0, 1fr) 1.7rem;
     padding: 0.9rem;
   }
 
-  .conditionRouteNumber {
+  :global(:where(html:not(:has([data-website-canvas])))) .conditionRouteNumber {
     width: 2.7rem;
     height: 2.7rem;
   }
 
-  .popularityModalStars {
+  :global(:where(html:not(:has([data-website-canvas])))) .popularityModalStars {
     gap: 0.28rem;
   }
 
-  .popularityModalStarButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .popularityModalStarButton {
     min-height: 58px;
   }
 
-  .popularityScaleLabels {
+  :global(:where(html:not(:has([data-website-canvas])))) .popularityScaleLabels {
     font-size: 0.64rem;
   }
 }
@@ -14181,7 +14195,7 @@
 }
 
 .conditionBasicModal {
-  width: min(900px, calc(100vw - 2rem));
+  width: min(900px, calc(calc(var(--website-design-vw, 1vw) * 100) - 2rem));
   max-height: none;
   overflow: hidden;
 }
@@ -14237,7 +14251,7 @@
 }
 
 .conditionProgressiveModal {
-  width: min(760px, calc(100vw - 2rem));
+  width: min(760px, calc(calc(var(--website-design-vw, 1vw) * 100) - 2rem));
   max-height: none;
   overflow: hidden;
 }
@@ -14343,39 +14357,39 @@
 }
 
 @media (max-width: 860px) {
-  .conditionBasicModal .basicConditionOptionGrid {
+  :global(:where(html:not(:has([data-website-canvas])))) .conditionBasicModal .basicConditionOptionGrid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
 @media (max-width: 700px) {
-  .conditionRouteModal .conditionRouteGrid,
-  .conditionBasicModal .basicConditionOptionGrid {
+  :global(:where(html:not(:has([data-website-canvas])))) .conditionRouteModal .conditionRouteGrid,
+  :global(:where(html:not(:has([data-website-canvas])))) .conditionBasicModal .basicConditionOptionGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .conditionQuestionProgressTop {
+  :global(:where(html:not(:has([data-website-canvas])))) .conditionQuestionProgressTop {
     align-items: flex-start;
     flex-direction: column;
     gap: 0.25rem;
   }
 
-  .conditionQuestionProgressTop strong {
+  :global(:where(html:not(:has([data-website-canvas])))) .conditionQuestionProgressTop strong {
     text-align: left;
   }
 
-  .conditionQuestionCard .dealerAssessmentOptions {
+  :global(:where(html:not(:has([data-website-canvas])))) .conditionQuestionCard .dealerAssessmentOptions {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
 @media (max-width: 460px) {
-  .conditionRouteModal .conditionRouteGrid,
-  .conditionBasicModal .basicConditionOptionGrid {
+  :global(:where(html:not(:has([data-website-canvas])))) .conditionRouteModal .conditionRouteGrid,
+  :global(:where(html:not(:has([data-website-canvas])))) .conditionBasicModal .basicConditionOptionGrid {
     grid-template-columns: 1fr;
   }
 
-  .conditionBasicModal .conditionChoiceButton {
+  :global(:where(html:not(:has([data-website-canvas])))) .conditionBasicModal .conditionChoiceButton {
     min-height: 66px;
   }
 }
@@ -14384,7 +14398,7 @@
 /* === Condition modal size and spacing parity === */
 .conditionBasicModal,
 .conditionProgressiveModal {
-  width: min(900px, calc(100vw - 2rem));
+  width: min(900px, calc(calc(var(--website-design-vw, 1vw) * 100) - 2rem));
 }
 
 .conditionProgressiveModal .detailsModalHeader {
@@ -14449,13 +14463,14 @@
 }
 
 @media (max-width: 760px) {
-  .conditionBasicModal,
-  .conditionProgressiveModal {
+  :global(:where(html:not(:has([data-website-canvas])))) .conditionBasicModal,
+  :global(:where(html:not(:has([data-website-canvas])))) .conditionProgressiveModal {
     width: 100%;
   }
 
-  .conditionProgressiveModal .conditionQuestionProgressTop strong,
-  .conditionProgressiveModal .conditionQuestionCard .dealerAssessmentOption {
+  :global(:where(html:not(:has([data-website-canvas])))) .conditionProgressiveModal .conditionQuestionProgressTop strong,
+  :global(:where(html:not(:has([data-website-canvas])))) .conditionProgressiveModal .conditionQuestionCard .dealerAssessmentOption {
     white-space: normal;
   }
 }
+

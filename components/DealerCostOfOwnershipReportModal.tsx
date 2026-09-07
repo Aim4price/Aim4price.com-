@@ -247,8 +247,8 @@ export default function DealerCostOfOwnershipReportModal({
   }
 
   return (
-    <div className={`${assetStyles.modalOverlay} ${assetStyles.subModalOverlay}`}>
-      <div className={assetStyles.modalBackdrop} onClick={onClose} />
+    <div className={`${assetStyles.modalOverlay} ${assetStyles.subModalOverlay}`} data-website-overlay>
+      <div className={assetStyles.modalBackdrop} data-website-overlay onClick={onClose} />
       <div
         className={`${assetStyles.modalCard} ${assetStyles.assetReportModal} ${assetStyles.assetFuelReportModal}`}
         role="dialog"
@@ -398,4 +398,5 @@ export default function DealerCostOfOwnershipReportModal({
     </div>
   );
 }
+
 

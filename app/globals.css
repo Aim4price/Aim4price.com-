@@ -51,7 +51,7 @@ body {
 }
 
 .appRoot {
-  min-height: 100vh;
+  min-height: calc(var(--website-design-vh, 1vh) * 100);
   display: flex;
   flex-direction: column;
 }
@@ -89,8 +89,8 @@ textarea {
 }
 
 [data-asset-choice-modal='true'] {
-  width: min(96vw, 72rem) !important;
-  max-height: min(91vh, calc(100dvh - 1.5rem)) !important;
+  width: min(calc(var(--website-design-vw, 1vw) * 96), 72rem) !important;
+  max-height: min(calc(var(--website-visible-height, 100vh) * 0.91), calc(calc(var(--website-visible-height, 100dvh) * 1) - 1.5rem)) !important;
   overflow: hidden !important;
   border: 1px solid rgba(203, 217, 227, 0.96) !important;
   border-radius: 1.95rem !important;
@@ -105,7 +105,7 @@ textarea {
   margin-block: 0 !important;
   color: var(--asset-choice-text) !important;
   font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif !important;
-  font-size: clamp(2rem, 3vw, 2.75rem) !important;
+  font-size: clamp(2rem, calc(var(--website-design-vw, 1vw) * 3), 2.75rem) !important;
   font-weight: 900 !important;
   line-height: 1.02 !important;
   letter-spacing: -0.065em !important;
@@ -238,7 +238,7 @@ textarea {
 
 [data-asset-choice-copy='true'] > strong {
   color: #073b30 !important;
-  font-size: clamp(1rem, 1.08vw, 1.12rem) !important;
+  font-size: clamp(1rem, calc(var(--website-design-vw, 1vw) * 1.08), 1.12rem) !important;
   font-weight: 900 !important;
   line-height: 1.2 !important;
   overflow-wrap: anywhere !important;
@@ -285,28 +285,28 @@ textarea {
 }
 
 @media (max-width: 900px) {
-  [data-asset-choice-modal='true'] {
+  :where(html:not(:has([data-website-canvas]))) [data-asset-choice-modal='true'] {
     width: min(100%, calc(100vw - 1rem)) !important;
     max-height: calc(100dvh - 1rem) !important;
     border-radius: 1.3rem !important;
   }
 
-  [data-asset-choice-header='true'] h2,
-  [data-asset-choice-header='true'] h3 {
+  :where(html:not(:has([data-website-canvas]))) [data-asset-choice-header='true'] h2,
+  :where(html:not(:has([data-website-canvas]))) [data-asset-choice-header='true'] h3 {
     font-size: 1.62rem !important;
   }
 
-  [data-asset-choice-toolbar='true'] {
+  :where(html:not(:has([data-website-canvas]))) [data-asset-choice-toolbar='true'] {
     grid-template-columns: 1fr !important;
     align-items: stretch !important;
   }
 
-  [data-asset-choice-toolbar='true'] button,
-  [data-asset-choice-footer='true'] button {
+  :where(html:not(:has([data-website-canvas]))) [data-asset-choice-toolbar='true'] button,
+  :where(html:not(:has([data-website-canvas]))) [data-asset-choice-footer='true'] button {
     width: 100% !important;
   }
 
-  [data-asset-choice-value='true'] {
+  :where(html:not(:has([data-website-canvas]))) [data-asset-choice-value='true'] {
     min-width: 0 !important;
     justify-items: start !important;
     text-align: left !important;
@@ -405,19 +405,19 @@ textarea {
 }
 
 @media (max-width: 1180px) {
-  :root {
+  :root:where(:not(:has([data-website-canvas]))) {
     --shell-gutter: var(--tablet-gutter);
   }
 }
 
 @media (max-width: 720px) {
-  :root {
+  :root:where(:not(:has([data-website-canvas]))) {
     --shell-gutter: var(--mobile-gutter);
   }
 }
 
 @media (max-width: 420px) {
-  :root {
+  :root:where(:not(:has([data-website-canvas]))) {
     --shell-gutter: 0.68rem;
   }
 }
@@ -427,7 +427,8 @@ textarea {
  * The body-child selector outranks single CSS-module menu classes that also use !important.
  */
 [data-dropdown-overlay='true'],
-body > [data-dropdown-overlay='true'] {
+body > [data-dropdown-overlay='true'],
+#aim4price-website-overlays > [data-dropdown-overlay='true'] {
   position: fixed !important;
   inset: auto !important;
   left: var(--dropdown-overlay-left) !important;
@@ -436,7 +437,7 @@ body > [data-dropdown-overlay='true'] {
   bottom: auto !important;
   width: var(--dropdown-overlay-width) !important;
   min-width: var(--dropdown-overlay-width) !important;
-  max-width: calc(100dvw - 24px) !important;
+  max-width: calc(calc(var(--website-design-vw, 1dvw) * 100) - 24px) !important;
   max-height: var(--dropdown-overlay-max-height) !important;
   margin: 0 !important;
   overflow-x: hidden !important;
@@ -452,6 +453,14 @@ body > [data-dropdown-overlay='true'] {
 
 /* Existing body portals use their own geometry but share the same topmost layer. */
 [data-dropdown-overlay-portal='true'],
-body > [data-dropdown-overlay-portal='true'] {
+body > [data-dropdown-overlay-portal='true'],
+#aim4price-website-overlays > [data-dropdown-overlay-portal='true'] {
   z-index: 2147483647 !important;
 }
+[data-website-canvas] {
+  --layout-section-gap: clamp(0.9rem, calc(var(--website-design-vw) * 1.4), 1.35rem);
+  --layout-card-gap: clamp(0.7rem, calc(var(--website-design-vw) * 1.1), 1rem);
+}
+/* The document remains the website scroll owner, including intentional manual overflow. */
+html:has([data-website-canvas]) { overflow-x: auto; }
+body:has([data-website-canvas]) { overflow-x: visible; }

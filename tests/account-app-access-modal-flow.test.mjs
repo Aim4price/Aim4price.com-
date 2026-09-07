@@ -170,10 +170,10 @@ test('access launcher and dialogs stay large, focused and responsive', async () 
   ]);
 
   assert.match(styles, /\.actionGrid \{[\s\S]*?grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
-  assert.match(styles, /\.actionButton \{[\s\S]*?min-height: clamp\(9rem, 14vw, 11\.5rem\)/);
+  assert.match(styles, /\.actionButton \{[\s\S]*?min-height: clamp\(9rem, calc\(var\(--website-design-vw, 1vw\) \* 14\), 11\.5rem\)/);
   assert.match(styles, /\.modalOverlay \{[\s\S]*?position: fixed;[\s\S]*?z-index: 12000/);
   assert.match(styles, /\.modalBody \{[\s\S]*?overflow-y: auto/);
-  assert.match(styles, /\.modalWide \{[\s\S]*?width: min\(100%, 72rem\)/);
+  assert.match(styles, /\.modalWide \{[\s\S]*?width: min\(var\(--website-dialog-reference-width, 100%\), 72rem\)/);
   assert.match(styles, /\.modalHeader p \{[\s\S]*?font-size: 1rem/);
   assert.match(styles, /\.surfaceHeader h3 \{[\s\S]*?font-size: 1\.2rem/);
   assert.match(styles, /\.directoryHeader strong \{[\s\S]*?font-size: 1\.05rem/);
@@ -184,3 +184,4 @@ test('access launcher and dialogs stay large, focused and responsive', async () 
   assert.match(shared, /if \(event\.key === 'Escape' && !closeDisabledRef\.current\) onCloseRef\.current\(\)/);
   assert.match(shared, /\}, \[open\]\);/);
 });
+

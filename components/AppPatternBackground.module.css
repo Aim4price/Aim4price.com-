@@ -4,8 +4,8 @@
   flex: 1 0 auto;
   width: 100%;
   min-width: 0;
-  min-height: 100vh;
-  min-height: 100dvh;
+  min-height: calc(var(--website-design-vh, 1vh) * 100);
+  min-height: calc(var(--website-design-vh, 1dvh) * 100);
   overflow: clip;
   isolation: isolate;
   background:
@@ -42,8 +42,8 @@
   z-index: 1;
   width: 100%;
   min-width: 0;
-  min-height: 100vh;
-  min-height: 100dvh;
+  min-height: calc(var(--website-design-vh, 1vh) * 100);
+  min-height: calc(var(--website-design-vh, 1dvh) * 100);
 }
 
 .content > * {
@@ -59,8 +59,8 @@
 
 .arcs {
   position: absolute;
-  width: clamp(250px, 31vw, 470px);
-  height: clamp(250px, 31vw, 470px);
+  width: clamp(250px, calc(var(--website-design-vw, 1vw) * 31), 470px);
+  height: clamp(250px, calc(var(--website-design-vw, 1vw) * 31), 470px);
   fill: none;
   stroke: #78b99b;
   stroke-width: 1.25;
@@ -88,18 +88,18 @@
 }
 
 .dotGridTopRight {
-  top: calc(env(safe-area-inset-top, 0px) + clamp(88px, 12vh, 138px));
-  right: calc(env(safe-area-inset-right, 0px) + clamp(12px, 4vw, 64px));
+  top: calc(env(safe-area-inset-top, 0px) + clamp(88px, calc(var(--website-design-vh, 1vh) * 12), 138px));
+  right: calc(env(safe-area-inset-right, 0px) + clamp(12px, calc(var(--website-design-vw, 1vw) * 4), 64px));
 }
 
 .dotGridBottomLeft {
-  bottom: calc(env(safe-area-inset-bottom, 0px) + clamp(78px, 11vh, 132px));
-  left: calc(env(safe-area-inset-left, 0px) + clamp(10px, 4vw, 62px));
+  bottom: calc(env(safe-area-inset-bottom, 0px) + clamp(78px, calc(var(--website-design-vh, 1vh) * 11), 132px));
+  left: calc(env(safe-area-inset-left, 0px) + clamp(10px, calc(var(--website-design-vw, 1vw) * 4), 62px));
 }
 
 .mintCircle {
   position: absolute;
-  width: clamp(150px, 20vw, 300px);
+  width: clamp(150px, calc(var(--website-design-vw, 1vw) * 20), 300px);
   aspect-ratio: 1;
   border-radius: 50%;
   background: #a9dcc4;
@@ -119,39 +119,53 @@
 }
 
 @media (max-width: 600px) {
-  .arcs {
+  :global(:where(html:not(:has([data-website-canvas])))) .arcs {
     width: 270px;
     height: 270px;
     opacity: 0.17;
   }
 
-  .dotGrid {
+  :global(:where(html:not(:has([data-website-canvas])))) .dotGrid {
     width: 56px;
     height: 56px;
   }
 
-  .dotGridTopRight {
+  :global(:where(html:not(:has([data-website-canvas])))) .dotGridTopRight {
     top: calc(env(safe-area-inset-top, 0px) + 104px);
     right: calc(env(safe-area-inset-right, 0px) + 5px);
   }
 
-  .dotGridBottomLeft {
+  :global(:where(html:not(:has([data-website-canvas])))) .dotGridBottomLeft {
     bottom: calc(env(safe-area-inset-bottom, 0px) + 76px);
     left: calc(env(safe-area-inset-left, 0px) + 4px);
   }
 
-  .mintCircle {
+  :global(:where(html:not(:has([data-website-canvas])))) .mintCircle {
     width: 164px;
     opacity: 0.12;
   }
 }
 
-@media (min-width: 900px) {
-  .mintCircleLeft {
+:global(:where([data-website-canvas])) .mintCircleLeft {
     top: 42%;
   }
 
-  .mintCircleRight {
+:global(:where([data-website-canvas])) .mintCircleRight {
     top: 62%;
   }
+
+@media (min-width: 900px) {
+  :global(:where(html:not(:has([data-website-canvas])))) .mintCircleLeft {
+    top: 42%;
+  }
+
+  :global(:where(html:not(:has([data-website-canvas])))) .mintCircleRight {
+    top: 62%;
+  }
+}
+
+:global(:where([data-website-canvas])) .decoration {
+  inset: 0 auto auto var(--website-canvas-left, 0px);
+  width: var(--website-design-width);
+  height: var(--website-design-height);
 }

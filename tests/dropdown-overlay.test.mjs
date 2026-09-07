@@ -1,3 +1,4 @@
+import { typescript, nativeFile } from './helpers/site-layout-audit.mjs';
 import assert from 'node:assert/strict';
 import { readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
@@ -190,7 +191,7 @@ test('dropdown geometry cannot be overridden by modal CSS modules', () => {
   assert.deepEqual(declarations.get('pointer-events'), { value: 'none', priority: 'important' });
 });
 
-test('shared overlay is body-portalled, viewport-aware, and always above modal layers', async () => {
+test('shared overlay uses a canvas-aware portal, logical viewport geometry and topmost modal layers', async () => {
   const [component, styles] = await Promise.all([
     read('components/DropdownOverlay.tsx'),
     read('app/globals.css'),
@@ -201,6 +202,9 @@ test('shared overlay is body-portalled, viewport-aware, and always above modal l
   assert.match(component, /window\.addEventListener\('scroll', schedulePositionUpdate, true\)/);
   assert.match(component, /window\.visualViewport\?\.addEventListener\('resize'/);
   assert.match(component, /resolveFallbackAnchor/);
+  assert.match(component, /WebsitePortal/);
+  assert.match(component, /websiteLogicalRect/);
+  assert.match(component, /websiteVisibleViewport/);
   assert.match(component, /\[role="combobox"\]\[aria-expanded="true"\]/);
   assert.match(component, /applyDropdownOverlayGeometry\(menu\.style/);
   assert.match(component, /ref=\{attachMenuRef\}/);
@@ -209,6 +213,21 @@ test('shared overlay is body-portalled, viewport-aware, and always above modal l
   assert.match(styles, /body > \[data-dropdown-overlay='true'\][\s\S]*z-index: 2147483647 !important;/);
   assert.match(styles, /body > \[data-dropdown-overlay-portal='true'\][\s\S]*z-index: 2147483647 !important;/);
 });
+
+function hasSharedOverlayAncestor(source, offset) {
+  const ast = typescript.createSourceFile('overlay.tsx', source, typescript.ScriptTarget.Latest, true, typescript.ScriptKind.TSX);
+  let target = ast;
+  function visit(node) {
+    if (node.pos > offset || node.end < offset) return;
+    target = node;
+    typescript.forEachChild(node, visit);
+  }
+  visit(ast);
+  for (let node = target; node; node = node.parent) {
+    if (typescript.isJsxElement(node) && node.openingElement.tagName.getText(ast) === 'DropdownOverlay') return true;
+  }
+  return false;
+}
 
 test('every custom listbox uses the shared overlay or a verified body portal', async () => {
   const sourceFiles = [
@@ -224,7 +243,7 @@ test('every custom listbox uses the shared overlay or a verified body portal', a
       listboxCount += 1;
       const tag = openingTagAt(source, match.index);
       const tagName = /^<([A-Za-z][A-Za-z0-9.]*)/.exec(tag)?.[1] ?? '';
-      const sharedOverlay = tagName === 'DropdownOverlay';
+      const sharedOverlay = tagName === 'DropdownOverlay' || hasSharedOverlayAncestor(source, match.index);
       const verifiedPortal = /data-dropdown-overlay-(?:portal|contained)="true"/.test(tag)
         && source.includes('createPortal')
         && source.includes('document.body');
@@ -284,5 +303,29 @@ test('report, modal, maintenance, fuel, invoice, and document dropdowns are migr
   for (const relativePath of criticalFiles) {
     const source = await read(relativePath);
     assert.match(source, /<DropdownOverlay/, `${relativePath} must render dropdowns in the global overlay`);
+  }
+});
+
+
+test('rendered anchor coordinates convert once into the website logical coordinate system', async () => {
+  const { websiteLogicalRect, websiteVisibleViewport } = (await import('./helpers/site-layout-audit.mjs')).websiteCanvas;
+  const originalDocument = globalThis.document, originalWindow = globalThis.window;
+  try {
+    for (const scale of [.15, 430 / 1440, .7, 1, 1.2, 1.5]) {
+      globalThis.document = { querySelector: () => ({ dataset: { websiteScale: String(scale) } }) };
+      globalThis.window = { visualViewport: { offsetLeft: 20 * scale, offsetTop: 30 * scale, width: 1000 * scale, height: 800 * scale } };
+      const logical = websiteLogicalRect(rect({left:100*scale,top:100*scale,width:220*scale,height:44*scale}));
+      const viewport = websiteVisibleViewport();
+      const position = calculateDropdownOverlayPosition({anchor:logical,viewport,contentWidth:220,contentHeight:180,gap:8,gutter:12,maxHeight:360,matchAnchorWidth:true});
+      assert.ok(Math.abs(position.left-100)<.001);
+      assert.ok(Math.abs(position.top-152)<.001);
+      assert.ok(Math.abs(position.width-220)<.001);
+      for (const [key, expected] of Object.entries({left:20,top:30,width:1000,height:800})) assert.ok(Math.abs(viewport[key]-expected)<.001);
+    }
+    globalThis.document = { querySelector: () => null };
+    assert.deepEqual(websiteLogicalRect(rect({left:10,top:20,width:30,height:40})), rect({left:10,top:20,width:30,height:40}));
+  } finally {
+    if(originalDocument===undefined) delete globalThis.document; else globalThis.document=originalDocument;
+    if(originalWindow===undefined) delete globalThis.window; else globalThis.window=originalWindow;
   }
 });

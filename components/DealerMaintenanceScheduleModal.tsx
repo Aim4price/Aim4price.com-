@@ -456,7 +456,7 @@ export default function DealerMaintenanceScheduleModal({
 
   if (loading || !asset) {
     return (
-      <div className={`${styles.page} ${styles.modalBackdrop}`} role="dialog" aria-modal="true" aria-labelledby="dealer-schedule-loading-title">
+      <div className={`${styles.page} ${styles.modalBackdrop}`} data-website-overlay role="dialog" aria-modal="true" aria-labelledby="dealer-schedule-loading-title">
         <section className={`${styles.formModal} ${styles.maintenanceStepModal}`}>
           <header className={styles.modalHeader}>
             <div>
@@ -481,7 +481,7 @@ export default function DealerMaintenanceScheduleModal({
 
   if (step === 'maintenance-type') {
     return (
-      <div className={`${styles.page} ${styles.modalBackdrop}`} role="dialog" aria-modal="true" aria-labelledby="dealer-maintenance-type-title">
+      <div className={`${styles.page} ${styles.modalBackdrop}`} data-website-overlay role="dialog" aria-modal="true" aria-labelledby="dealer-maintenance-type-title">
         <section className={`${styles.formModal} ${styles.maintenanceStepModal}`}>
           <header className={styles.modalHeader}>
             <div>
@@ -532,7 +532,7 @@ export default function DealerMaintenanceScheduleModal({
 
   if (step === 'trigger-type') {
     return (
-      <div className={`${styles.page} ${styles.modalBackdrop}`} role="dialog" aria-modal="true" aria-labelledby="dealer-maintenance-trigger-title">
+      <div className={`${styles.page} ${styles.modalBackdrop}`} data-website-overlay role="dialog" aria-modal="true" aria-labelledby="dealer-maintenance-trigger-title">
         <section className={`${styles.formModal} ${styles.maintenanceStepModal}`}>
           <header className={styles.modalHeader}>
             <div>
@@ -582,7 +582,7 @@ export default function DealerMaintenanceScheduleModal({
   }
 
   return (
-    <div className={`${styles.page} ${styles.modalBackdrop}`} role="dialog" aria-modal="true" aria-labelledby="dealer-maintenance-form-title">
+    <div className={`${styles.page} ${styles.modalBackdrop}`} data-website-overlay role="dialog" aria-modal="true" aria-labelledby="dealer-maintenance-form-title">
       <section className={`${styles.formModal} ${styles.maintenanceStepModal}`}>
         <header className={styles.modalHeader}>
           <div>
@@ -702,4 +702,5 @@ export default function DealerMaintenanceScheduleModal({
     </div>
   );
 }
+
 

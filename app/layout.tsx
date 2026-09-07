@@ -5,9 +5,7 @@ import AppFooter from '../components/AppFooter';
 import AppPatternBackground from '../components/AppPatternBackground';
 import SiteWorkspaceZoom from '../components/SiteWorkspaceZoom';
 import './globals.css';
-import './header-manage-tuning.css';
 import './asset-register-view-tuning.css';
-import './compact-desktop-continuity.css';
 
 const brandTitle = 'Aim4price | Asset Intelligence, Management & Pricing';
 const brandDescription =
@@ -44,11 +42,8 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  // Keep normal website routes on a strict desktop canvas and let mobile
-  // browsers shrink the complete 980px layout to fit the physical screen.
-  // The installable apps override this in their nested layouts.
-  width: 980,
-  initialScale: -1,
+  width: 'device-width',
+  initialScale: 1,
   userScalable: true,
 };
 
@@ -65,13 +60,12 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       </head>
       <body>
         <div className="appRoot">
-          <SiteWorkspaceZoom>
+          <SiteWorkspaceZoom footer={<AppFooter />} operational={<AdminWorkTrackerBar />}>
             <AppPatternBackground>{children}</AppPatternBackground>
           </SiteWorkspaceZoom>
-          <AdminWorkTrackerBar />
-          <AppFooter />
         </div>
       </body>
     </html>
   );
 }
+

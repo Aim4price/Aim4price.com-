@@ -1,3 +1,4 @@
+import { assertNoWebsiteReflow } from './helpers/site-layout-audit.mjs';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
@@ -201,7 +202,7 @@ test('manager child dialogs provide names, Escape handling, focus containment an
 test('manager and two-step wizard stay usable on desktop and mobile viewports', () => {
   const redesignStyles = styles.slice(styles.indexOf('/* Fuel-slip wizard parity and high-volume manager */'));
   assert.match(redesignStyles, /\.fuelSlipManagerModal\.fuelSlipManagerModal \.fuelSlipManagerBody\s*\{[\s\S]*?grid-template-rows:\s*auto auto minmax\(0, 1fr\)/);
-  assert.match(redesignStyles, /\.fuelSlipManagerModal\.fuelSlipManagerModal\s*\{[\s\S]*?width:\s*min\(1320px, 100%\)[\s\S]*?height:\s*auto !important[\s\S]*?min-height:\s*0 !important/);
+  assert.match(redesignStyles, /\.fuelSlipManagerModal\.fuelSlipManagerModal\s*\{[\s\S]*?width:\s*min\(1320px, var\(--website-dialog-reference-width, 100%\)\)[\s\S]*?height:\s*auto !important[\s\S]*?min-height:\s*0 !important/);
   assert.match(redesignStyles, /\.fuelSlipManagerPanel\s*\{[\s\S]*?max-height:\s*590px/);
   assert.match(redesignStyles, /\.fuelSlipManagerList\s*\{[\s\S]*?overflow-y:\s*auto/);
   assert.match(redesignStyles, /\.fuelSlipManagerModal \.fuelSlipManagerToolbarButtons\s*\{[\s\S]*?repeat\(auto-fit, minmax\(148px, 1fr\)\)/);
@@ -210,14 +211,11 @@ test('manager and two-step wizard stay usable on desktop and mobile viewports', 
   assert.match(redesignStyles, /\.fuelSlipManagerRowMain \.fuelSlipManagerStatusBadge\s*\{[\s\S]*?min-height:\s*42px[\s\S]*?border-radius:\s*10px/);
   assert.match(redesignStyles, /\.fuelSlipManagerModal \.fuelSlipManagerExpanded \.fuelSlipManagerRowActions button,[\s\S]*?min-height:\s*52px !important/);
   assert.match(redesignStyles, /\.fuelSlipManagerRowMain\s*\{[\s\S]*?grid-template-columns:\s*var\(--fuel-slip-manager-columns\)/);
-  assert.match(redesignStyles, /@media \(max-width: 1120px\)[\s\S]*?grid-template-areas:/);
-  assert.match(redesignStyles, /"identity status"\s*"date details"\s*"fuel litres"\s*"amount amount"/);
-  assert.match(redesignStyles, /@media \(max-width: 720px\)[\s\S]*?\.fuelSlipWizardProgress\s*\{[\s\S]*?grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\)/);
-  assert.match(redesignStyles, /\.fuelSlipManagerBackdrop\s*\{[\s\S]*?align-items:\s*flex-end;[\s\S]*?padding:\s*0;/);
-  assert.match(redesignStyles, /@media \(max-width: 720px\)[\s\S]*?\.fuelSlipManagerModal\.fuelSlipManagerModal \.fuelSlipManagerBody\s*\{[\s\S]*?flex:\s*1 1 auto/);
-  assert.match(redesignStyles, /@media \(max-width: 480px\)[\s\S]*?\.fuelSlipManagerPanel\s*\{[\s\S]*?min-height:\s*10rem/);
+  assertNoWebsiteReflow(redesignStyles);
+  assert.doesNotMatch(redesignStyles, /"identity status"\s*"date details"\s*"fuel litres"\s*"amount amount"/);
+  assert.doesNotMatch(redesignStyles, /\.fuelSlipManagerBackdrop\s*\{[\s\S]*?align-items:\s*flex-end;[\s\S]*?padding:\s*0;/);
   assert.match(redesignStyles, /@media \(prefers-reduced-motion: reduce\)/);
-  assert.match(redesignStyles, /\.fuelSlipManagerFilterModal\.fuelSlipManagerFilterModal\s*\{[\s\S]*?width:\s*min\(100%, 960px\)[\s\S]*?border-radius:\s*2rem/);
+  assert.match(redesignStyles, /\.fuelSlipManagerFilterModal\.fuelSlipManagerFilterModal\s*\{[\s\S]*?width:\s*min\(var\(--website-dialog-reference-width, 100%\), 960px\)[\s\S]*?border-radius:\s*2rem/);
   assert.match(redesignStyles, /\.fuelSlipManagerFilterModal \.fuelSlipFilterGrid\s*\{[\s\S]*?grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\)/);
-  assert.match(redesignStyles, /@media \(max-width: 900px\)[\s\S]*?\.fuelSlipManagerFilterModal \.fuelSlipFilterGrid\s*\{[\s\S]*?grid-template-columns:\s*1fr/);
 });
+

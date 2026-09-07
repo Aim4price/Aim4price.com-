@@ -1,3 +1,4 @@
+import { assertNoWebsiteReflow } from './helpers/site-layout-audit.mjs';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
@@ -228,11 +229,11 @@ test('Documents follows Cost Ledger in owner navigation and remains in the owner
 });
 
 test('the account dropdown scrolls when its actions exceed the viewport', () => {
-  assert.match(headerStyles, /\.accountPopover\s*\{[\s\S]*?max-height:\s*calc\(100dvh - 7rem\)/);
+  assert.match(headerStyles, /\.accountPopover\s*\{[\s\S]*?max-height:\s*calc\(calc\(var\(--website-visible-height, 100dvh\) \* 1\) - 7rem\)/);
   assert.match(headerStyles, /overflow-y:\s*auto/);
   assert.match(headerStyles, /overscroll-behavior:\s*contain/);
   assert.match(headerStyles, /scrollbar-gutter:\s*auto/);
-  assert.doesNotMatch(headerStyles, /max-height:\s*min\(36rem, calc\(100dvh - 7rem\)\)/);
+  assert.doesNotMatch(headerStyles, /max-height:\s*min\(36rem, calc\(calc\(var\(--website-visible-height, 100dvh\) \* 1\) - 7rem\)\)/);
 });
 
 test('Documents activates the full vault with the Asset Register visual system', () => {
@@ -246,8 +247,8 @@ test('Documents activates the full vault with the Asset Register visual system',
   assert.match(client, /Filters/);
   assert.match(client, /Upload document/);
   assert.match(styles, /\.shell\s*\{[\s\S]*?1320px/);
-  assert.match(styles, /\.vaultCanvas\s*\{[\s\S]*?padding:\s*clamp\(1\.15rem, 1\.9vw, 1\.7rem\)/);
-  assert.match(styles, /\.hero h1\s*\{[\s\S]*?font-size:\s*clamp\(2\.35rem, 4\.15vw, 3\.55rem\)/);
+  assert.match(styles, /\.vaultCanvas\s*\{[\s\S]*?padding:\s*clamp\(1\.15rem, calc\(var\(--website-design-vw\) \* 1\.9\), 1\.7rem\)/);
+  assert.match(styles, /\.hero h1\s*\{[\s\S]*?font-size:\s*clamp\(2\.35rem, calc\(var\(--website-design-vw\) \* 4\.15\), 3\.55rem\)/);
   assert.match(styles, /\.hero h1\s*\{[\s\S]*?font-weight:\s*900/);
   assert.match(styles, /\.topActions\s*\{[\s\S]*?repeat\(4, minmax\(0, 1fr\)\)/);
   assert.match(styles, /\.recycleButton\s*\{[\s\S]*?#fff0e3/);
@@ -264,10 +265,8 @@ test('Documents activates the full vault with the Asset Register visual system',
   assert.match(client, /hidden=\{!summaryNavigation\.hasOverflow\}/);
   assert.match(styles, /\.summaryViewport\s*\{[\s\S]*?scroll-snap-type:\s*x mandatory/);
   assert.match(styles, /flex:\s*0 0 calc\(\(100% - \(var\(--summary-gap\) \* 2\)\) \/ 3\)/);
-  assert.match(styles, /@media \(max-width: 1180px\)[\s\S]*?flex-basis:\s*calc\(\(100% - var\(--summary-gap\)\) \/ 2\)/);
-  assert.match(styles, /@media \(max-width: 760px\)[\s\S]*?flex-basis:\s*100%/);
-  assert.match(styles, /@media \(max-width: 760px\)[\s\S]*?\.summaryNav\s*\{[\s\S]*?display:\s*none/);
   assert.match(styles, /\.documentCard\s*\{[\s\S]*?rgba\(198, 216, 223, 0\.98\)/);
+  assertNoWebsiteReflow(styles);
   assert.doesNotMatch(styles, /comingSoon/i);
   assert.match(styles, /@media \(prefers-reduced-motion: reduce\)/);
 });
@@ -354,7 +353,7 @@ test('Document Vault refinements use guided modal flows instead of pills and bro
   assert.doesNotMatch(documentStore, /\bequipment_family_label\b/);
   assert.doesNotMatch(client, /className=\{`\$\{styles\.assetPicker\}/);
   assert.match(styles, /\.assetSelectionModal\s*\{[\s\S]*?grid-template-rows:\s*auto minmax\(0, 1fr\) auto/);
-  assert.match(styles, /\.assetSelectionModal\s*\{[\s\S]*?width:\s*min\(100%, 1320px\)[\s\S]*?padding:\s*clamp\(1\.65rem, 2\.5vw, 2\.25rem\)/);
+  assert.match(styles, /\.assetSelectionModal\s*\{[\s\S]*?width:\s*min\(var\(--website-dialog-reference-width, 100%\), 1320px\)[\s\S]*?padding:\s*clamp\(1\.65rem, calc\(var\(--website-design-vw\) \* 2\.5\), 2\.25rem\)/);
   assert.match(styles, /\.assetSelectionHeader\s*\{[\s\S]*?border-bottom:/);
   assert.match(styles, /\.assetSelectionRow\s*\{[\s\S]*?grid-template-columns:\s*auto minmax\(0, 1fr\) auto/);
   assert.match(styles, /\.assetSelectionValue\s*\{[\s\S]*?justify-items:\s*end[\s\S]*?min-width:\s*9\.5rem/);
@@ -381,3 +380,4 @@ test('upload document notes stay contained inside the details panel', () => {
   assert.match(styles, /\.uploadWizardFields \.formGrid\s*\{[^}]*min-height:\s*0;[^}]*margin:\s*0/);
   assert.match(styles, /\.uploadWizardFields \.notesField textarea\s*\{[^}]*box-sizing:\s*border-box;[^}]*display:\s*block;[^}]*min-height:\s*6\.5rem/);
 });
+

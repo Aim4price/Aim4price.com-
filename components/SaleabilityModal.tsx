@@ -190,7 +190,7 @@ export default function SaleabilityModal({
   const secondStepComplete = Boolean(answers.currentDemand && answers.modelFamiliarity && answers.desiredTimeline && answers.sellingPriority);
 
   return (
-    <div className={styles.backdrop} role="presentation" onMouseDown={(event) => {
+    <div className={styles.backdrop} data-website-overlay role="presentation" onMouseDown={(event) => {
       if (event.target === event.currentTarget) onClose();
     }}>
       <section className={styles.modal} role="dialog" aria-modal="true" aria-labelledby="saleability-title">
@@ -345,3 +345,4 @@ export default function SaleabilityModal({
     </div>
   );
 }
+

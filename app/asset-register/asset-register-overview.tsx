@@ -1,6 +1,6 @@
 'use client';
 
-import { createPortal } from 'react-dom';
+import { createPortal } from '../../components/WebsitePortal';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import registerStyles from './page.module.css';
 import styles from './asset-register-overview.module.css';
@@ -726,3 +726,4 @@ export default function AssetRegisterOverview() {
     portalHost,
   );
 }
+

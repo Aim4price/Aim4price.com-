@@ -1,15 +1,14 @@
-name: Site workspace zoom validation
+name: Canonical website canvas validation
 
 on:
   pull_request:
     paths:
-      - "app/layout.tsx"
-      - "app/compact-desktop-continuity.css"
-      - "components/SiteWorkspaceZoom.tsx"
-      - "components/SiteWorkspaceZoom.module.css"
-      - "components/AppHeader.tsx"
-      - "tests/site-workspace-zoom.test.mjs"
-      - "tests/compact-desktop-continuity.test.mjs"
+      - "app/**"
+      - "components/**"
+      - "lib/website-canvas.ts"
+      - "lib/dropdown-overlay-position.ts"
+      - "tests/**"
+      - "scripts/verify-website-canvas.cjs"
       - ".github/workflows/asset-register-workspace-validation.yml"
   workflow_dispatch:
 
@@ -17,29 +16,37 @@ permissions:
   contents: read
 
 concurrency:
-  group: site-workspace-zoom-${{ github.workflow }}-${{ github.ref }}
+  group: website-canvas-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   validate:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
-
+    timeout-minutes: 25
     steps:
-      - name: Check out repository
-        uses: actions/checkout@v4
-
-      - name: Use Node.js 22
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Type check
-        run: npm run typecheck
-
-      - name: Test shared page zoom and compact desktop continuity
-        run: node --test tests/site-workspace-zoom.test.mjs tests/compact-desktop-continuity.test.mjs
+      - run: npm ci
+      - run: npm run typecheck
+      - name: Canonical layout, overlays and native boundaries
+        run: node --experimental-strip-types --test tests/site-workspace-zoom.test.mjs tests/responsive-foundation.test.mjs tests/desktop-site-viewport.test.mjs tests/dropdown-overlay.test.mjs tests/compact-desktop-continuity.test.mjs tests/homepage-asset-register-hero.test.mjs
+      - name: Shared workflow regression tests
+        run: |
+          npm run test:asset-card-ui
+          npm run test:umbrella-modal-design
+          npm run test:signup-flow
+          npm run test:account-app-access
+          npm run test:owner-app-operations
+          npm run test:dealer-fast-loading
+          npm run test:app-umbrella-access
+      - name: Browser scale, interaction and mobile isolation checks
+        run: node scripts/verify-website-canvas.cjs
+      - name: Save browser evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: website-canvas-browser-evidence
+          path: .next/canvas-validation

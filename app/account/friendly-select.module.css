@@ -170,9 +170,3 @@
 .option:not(.optionActive) .check {
   visibility: hidden;
 }
-
-@media (max-width: 620px) {
-  .buttonCopy small {
-    white-space: normal;
-  }
-}

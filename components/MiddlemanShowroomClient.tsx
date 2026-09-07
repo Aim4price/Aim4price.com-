@@ -608,7 +608,7 @@ export function MiddlemanShowroomManager({
 
       {manageListingTarget ? (
         <div
-          className={styles.listingManagerBackdrop}
+          className={styles.listingManagerBackdrop} data-website-overlay
           onMouseDown={(event) => {
             if (event.target === event.currentTarget) setManageListingTarget(null);
           }}
@@ -715,7 +715,7 @@ export function MiddlemanShowroomManager({
       />
 
       {deleteDialogOpen ? (
-        <div className={styles.deleteBackdrop} onClick={() => !deletingShowroom && setDeleteDialogOpen(false)}>
+        <div className={styles.deleteBackdrop} data-website-overlay onClick={() => !deletingShowroom && setDeleteDialogOpen(false)}>
           <section className={styles.deleteDialog} role="dialog" aria-modal="true" aria-labelledby="delete-showroom-title" onClick={(event) => event.stopPropagation()}>
             <span className={styles.deleteIcon}>!</span>
             <h2 id="delete-showroom-title">Delete showroom?</h2>
@@ -828,3 +828,4 @@ export function PublicMiddlemanShowroom({ showroom, listings }: {
     </div>
   );
 }
+

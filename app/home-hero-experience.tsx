@@ -1,5 +1,7 @@
 'use client';
 
+import { currentWebsiteScale } from '../lib/website-canvas';
+
 import Image from 'next/image';
 import Link from 'next/link';
 import {
@@ -13,7 +15,6 @@ import HomeAssetPreview, { type QuestionKey } from './home-asset-preview';
 import styles from './page.module.css';
 
 const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
-const DESKTOP_STORY_QUERY = '(min-width: 1181px) and (min-height: 640px)';
 const FEATURE_START_INDEX = 3;
 
 export const HERO_FEATURE_DURATION_MS = 4800;
@@ -132,10 +133,9 @@ export default function HomeHeroExperience() {
 
   useEffect(() => {
     const reducedMotionMedia = window.matchMedia(REDUCED_MOTION_QUERY);
-    const desktopStoryMedia = window.matchMedia(DESKTOP_STORY_QUERY);
 
     const syncStoryCapability = () => {
-      const supportsStory = desktopStoryMedia.matches && !reducedMotionMedia.matches;
+      const supportsStory = !reducedMotionMedia.matches;
       setCanAutoplay(supportsStory);
       setIsDesktopStory(supportsStory);
 
@@ -148,11 +148,9 @@ export default function HomeHeroExperience() {
 
     syncStoryCapability();
     reducedMotionMedia.addEventListener('change', syncStoryCapability);
-    desktopStoryMedia.addEventListener('change', syncStoryCapability);
 
     return () => {
       reducedMotionMedia.removeEventListener('change', syncStoryCapability);
-      desktopStoryMedia.removeEventListener('change', syncStoryCapability);
     };
   }, [updateStoryStep]);
 
@@ -241,7 +239,7 @@ export default function HomeHeroExperience() {
         const stickyRect = sticky.getBoundingClientRect();
         const sectionTop = currentScrollY + sectionRect.top;
         const stickyTop =
-          Number.parseFloat(window.getComputedStyle(sticky).top) || 0;
+          (Number.parseFloat(window.getComputedStyle(sticky).top) || 0) * currentWebsiteScale();
         const trackStart = sectionTop - stickyTop;
         // Use rendered geometry rather than offsetHeight. CSS `zoom` changes
         // the physical scroll distance but offsetHeight remains unzoomed,
@@ -281,6 +279,7 @@ export default function HomeHeroExperience() {
 
     window.addEventListener('scroll', handleScroll, { passive: true });
     window.addEventListener('resize', handleResize);
+    window.addEventListener('aim4price:canvas-geometry', handleResize);
     window.addEventListener('pageshow', handlePageShow);
 
     if (window.scrollY > 4) scheduleStorySync(true);
@@ -288,6 +287,7 @@ export default function HomeHeroExperience() {
     return () => {
       window.removeEventListener('scroll', handleScroll);
       window.removeEventListener('resize', handleResize);
+      window.removeEventListener('aim4price:canvas-geometry', handleResize);
       window.removeEventListener('pageshow', handlePageShow);
       if (scrollFrameRef.current !== null) {
         window.cancelAnimationFrame(scrollFrameRef.current);

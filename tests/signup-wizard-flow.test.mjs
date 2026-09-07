@@ -1,3 +1,4 @@
+import { assertNoWebsiteReflow } from './helpers/site-layout-audit.mjs';
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
@@ -28,6 +29,7 @@ test("signup uses a three-step umbrella-style progress flow", async () => {
   assert.match(source, /isComplete \? "✓" : step/);
   assert.match(source, /Complete one short step at a time\. Your account is created on the final step\./);
 
+  assertNoWebsiteReflow(styles);
   assert.match(styles, /\.signupShell\s*\{[\s\S]*?52rem/);
   assert.match(styles, /\.signupProgressStep:not\(:last-child\)::after[\s\S]*?height: 2px/);
   assert.match(styles, /\.signupProgressStepCurrent > span[\s\S]*?box-shadow: 0 0 0 5px/);
@@ -35,15 +37,9 @@ test("signup uses a three-step umbrella-style progress flow", async () => {
   assert.match(styles, /\.signupStepCard[\s\S]*?border-radius: 1\.3rem/);
   assert.match(styles, /\.signupStepCard:focus[\s\S]*?outline: 3px solid #168660/);
   assert.match(styles, /\.signupFieldGrid[\s\S]*?repeat\(2, minmax\(0, 1fr\)\)/);
-  assert.match(
-    styles,
-    /@media \(max-width: 720px\)[\s\S]*?\.signupProgress[\s\S]*?repeat\(3, minmax\(0, 1fr\)\)/,
-  );
+  assert.match(styles, /\.signupProgress\s*\{[^}]*display: flex/);
   assert.match(styles, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?animation: none/);
-  assert.match(
-    styles,
-    /@media \(max-width: 360px\)[\s\S]*?\.signupFooter[\s\S]*?grid-template-columns: minmax\(0, 1fr\)/,
-  );
+  assert.match(styles, /\.signupFooter\s*\{[^}]*display: flex/);
 });
 
 test("signup renders one focused panel at a time", async () => {
@@ -122,3 +118,4 @@ test("the staged flow preserves signup account and activation rules", async () =
   assert.match(source, /Free workspace for valuation-backed adverts and your public showroom/);
   assert.match(source, /awaiting payment\/admin approval/);
 });
+

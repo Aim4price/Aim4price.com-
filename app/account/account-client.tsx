@@ -1,5 +1,7 @@
 "use client";
 
+import { currentWebsiteScale } from '../../lib/website-canvas';
+
 import Link from "next/link";
 import {
   useEffect,
@@ -936,7 +938,7 @@ function AccountModalScroller({ children }: AccountModalScrollerProps) {
     event.preventDefault();
 
     const railRect = rail.getBoundingClientRect();
-    const pointerTop = event.clientY - railRect.top;
+    const pointerTop = (event.clientY - railRect.top) / currentWebsiteScale();
     const maxScrollTop = Math.max(
       0,
       viewport.scrollHeight - viewport.clientHeight,
@@ -992,7 +994,7 @@ function AccountModalScroller({ children }: AccountModalScrollerProps) {
 
     event.preventDefault();
 
-    const deltaY = event.clientY - dragState.startY;
+    const deltaY = (event.clientY - dragState.startY) / currentWebsiteScale();
     const nextScrollTop =
       dragState.startScrollTop +
       (deltaY / dragState.maxThumbTop) * dragState.maxScrollTop;
@@ -2544,7 +2546,7 @@ export default function AccountClient({
       </section>
 
       {activeAccountModal === "password" ? (
-        <div className={styles.modalBackdrop} onClick={closeActionModal}>
+        <div className={styles.modalBackdrop} data-website-overlay onClick={closeActionModal}>
           <section
             ref={activeDialogRef}
             className={`${styles.modalCard} ${styles.accountActionModalCardNarrow} ${styles.accountScrollableModalCard} ${styles.passwordModalCard}`}
@@ -2683,7 +2685,7 @@ export default function AccountClient({
       ) : null}
 
       {activeAccountModal === "business" ? (
-        <div className={styles.modalBackdrop} onClick={closeActionModal}>
+        <div className={styles.modalBackdrop} data-website-overlay onClick={closeActionModal}>
           <section
             ref={activeDialogRef}
             className={`${styles.modalCard} ${styles.accountActionModalCard} ${styles.accountScrollableModalCard} ${styles.businessDetailsModalCard}`}
@@ -2843,7 +2845,7 @@ export default function AccountClient({
       ) : null}
 
       {activeAccountModal === "scanPin" ? (
-        <div className={styles.modalBackdrop} onClick={closeActionModal}>
+        <div className={styles.modalBackdrop} data-website-overlay onClick={closeActionModal}>
           <section
             ref={activeDialogRef}
             className={`${styles.modalCard} ${styles.accountActionModalCard} ${styles.accountActionModalCardNarrow} ${styles.accountScrollableModalCard} ${styles.scanPinModalCard}`}
@@ -2950,7 +2952,7 @@ export default function AccountClient({
       ) : null}
 
       {activeAccountModal === "marketplace" ? (
-        <div className={styles.modalBackdrop} onClick={closeActionModal}>
+        <div className={styles.modalBackdrop} data-website-overlay onClick={closeActionModal}>
           <section
             ref={activeDialogRef}
             className={`${styles.modalCard} ${styles.accountActionModalCard} ${styles.accountScrollableModalCard} ${styles.marketplaceModalCard}`}
@@ -3063,7 +3065,7 @@ export default function AccountClient({
 
       {activeAccountModal === "discovery" && isOwnerAccount ? (
         <div
-          className={styles.modalBackdrop}
+          className={styles.modalBackdrop} data-website-overlay
           onClick={closeActionModal}
         >
           <section
@@ -3152,7 +3154,7 @@ export default function AccountClient({
       ) : null}
 
       {activeAccountModal === "partnerDirectory" && showPartnerDirectory ? (
-        <div className={styles.modalBackdrop} onClick={closeActionModal}>
+        <div className={styles.modalBackdrop} data-website-overlay onClick={closeActionModal}>
           <section
             ref={activeDialogRef}
             className={`${styles.modalCard} ${styles.accountActionModalCard} ${styles.accountScrollableModalCard} ${styles.partnerDirectoryModalCard}`}
@@ -3301,7 +3303,7 @@ export default function AccountClient({
       ) : null}
 
       {isDeleteDialogOpen ? (
-        <div className={styles.modalBackdrop} onClick={closeDeleteDialog}>
+        <div className={styles.modalBackdrop} data-website-overlay onClick={closeDeleteDialog}>
           <section
             ref={deleteDialogRef}
             className={`${styles.modalCard} ${styles.accountActionModalCardNarrow} ${styles.accountScrollableModalCard} ${styles.deleteAccountModalCard}`}

@@ -1,5 +1,5 @@
 .page {
-  min-height: 100vh;
+  min-height: calc(var(--website-design-vh) * 100);
   color: var(--text-strong);
   font-family: var(--font-heading, "Montserrat"), var(--font-body, "Inter"), sans-serif;
   background:
@@ -11,9 +11,9 @@
 .shell {
   width: var(--shell-width);
   margin: 0 auto;
-  padding: clamp(1rem, 1.8vw, 1.45rem) 0 clamp(3.5rem, 5vw, 5rem);
+  padding: clamp(1rem, calc(var(--website-design-vw) * 1.8), 1.45rem) 0 clamp(3.5rem, calc(var(--website-design-vw) * 5), 5rem);
   display: grid;
-  gap: clamp(0.9rem, 1.45vw, 1.2rem);
+  gap: clamp(0.9rem, calc(var(--website-design-vw) * 1.45), 1.2rem);
 }
 
 .backButton {
@@ -62,13 +62,13 @@
   position: relative;
   isolation: isolate;
   overflow: hidden;
-  min-height: clamp(12rem, 18vw, 15rem);
+  min-height: clamp(12rem, calc(var(--website-design-vw) * 18), 15rem);
   display: grid;
   grid-template-columns: minmax(0, 1.04fr) minmax(20rem, 0.74fr);
   align-items: stretch;
-  gap: clamp(1rem, 2vw, 1.35rem);
+  gap: clamp(1rem, calc(var(--website-design-vw) * 2), 1.35rem);
   border-radius: 1.18rem;
-  padding: clamp(1.25rem, 2vw, 1.65rem);
+  padding: clamp(1.25rem, calc(var(--website-design-vw) * 2), 1.65rem);
   color: #ffffff;
   background:
     radial-gradient(circle at 10% 0%, rgba(49, 197, 142, 0.28) 0, transparent 23rem),
@@ -119,7 +119,7 @@
 .heroCard h1 {
   max-width: 42rem;
   color: #ffffff;
-  font-size: clamp(2rem, 3.4vw, 3.35rem);
+  font-size: clamp(2rem, calc(var(--website-design-vw) * 3.4), 3.35rem);
   line-height: 0.98;
   font-weight: 900;
 }
@@ -128,7 +128,7 @@
   max-width: 56ch;
   margin: 0;
   color: rgba(235, 244, 241, 0.88);
-  font-size: clamp(0.94rem, 1.2vw, 1rem);
+  font-size: clamp(0.94rem, calc(var(--website-design-vw) * 1.2), 1rem);
   font-weight: 500;
   line-height: 1.55;
 }
@@ -140,7 +140,7 @@
   gap: 0.9rem;
   border: 1px solid rgba(255, 255, 255, 0.16);
   border-radius: 1rem;
-  padding: clamp(0.95rem, 1.5vw, 1.15rem);
+  padding: clamp(0.95rem, calc(var(--website-design-vw) * 1.5), 1.15rem);
   background: rgba(255, 255, 255, 0.08);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.18),
@@ -213,7 +213,7 @@
 .grid {
   display: grid;
   grid-template-columns: minmax(19rem, 0.72fr) minmax(0, 1.28fr);
-  gap: clamp(0.9rem, 1.45vw, 1.15rem);
+  gap: clamp(0.9rem, calc(var(--website-design-vw) * 1.45), 1.15rem);
   align-items: start;
 }
 
@@ -223,7 +223,7 @@
   overflow: hidden;
   border-radius: 1.35rem;
   background: rgba(255, 255, 255, 0.97);
-  padding: clamp(1.05rem, 1.75vw, 1.35rem);
+  padding: clamp(1.05rem, calc(var(--website-design-vw) * 1.75), 1.35rem);
 }
 
 .cardHeader {
@@ -234,7 +234,7 @@
 
 .cardHeader h2 {
   color: #12362d;
-  font-size: clamp(1.12rem, 1.5vw, 1.35rem);
+  font-size: clamp(1.12rem, calc(var(--website-design-vw) * 1.5), 1.35rem);
   line-height: 1.1;
   font-weight: 900;
 }
@@ -954,52 +954,6 @@
   box-shadow: none;
 }
 
-@media (max-width: 960px) {
-  .heroCard,
-  .grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-@media (max-width: 720px) {
-  .shell {
-    padding-top: 0.85rem;
-  }
-
-  .heroCard,
-  .card {
-    border-radius: 1.05rem;
-  }
-
-  .shareRow,
-  .managerActions {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .shareRow > *,
-  .managerActions > * {
-    width: 100%;
-  }
-
-  .managerSummary {
-    grid-template-columns: 1fr;
-    align-items: start;
-  }
-
-  .managerSummaryMeta {
-    min-width: 0;
-  }
-
-  .statusText {
-    justify-self: start;
-  }
-
-  .manageButton {
-    width: 100%;
-  }
-}
-
 
 .focusMuted,
 .managerCardMuted {
@@ -1014,14 +968,6 @@
 .managerCardExpanded {
   position: relative;
   z-index: 2;
-}
-
-@media (max-width: 760px) {
-  .focusMuted,
-  .managerCardMuted {
-    opacity: 0.2;
-    filter: blur(1.4px);
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1091,14 +1037,4 @@
   margin-top: 1rem;
   padding-top: 1rem;
   border-top: 1px solid rgba(18, 45, 37, 0.09);
-}
-
-@media (max-width: 720px) {
-  .managerActions {
-    align-items: stretch;
-  }
-
-  .managerCloseRow .manageCloseButton {
-    width: 100%;
-  }
 }

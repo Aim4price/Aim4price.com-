@@ -21,8 +21,8 @@
 .modal {
   position: relative;
   display: flex;
-  width: min(880px, 100%);
-  max-height: calc(100vh - 56px);
+  width: min(880px, var(--website-dialog-reference-width, 100%));
+  max-height: calc(calc(var(--website-visible-height, 100vh) * 1) - 56px);
   flex-direction: column;
   overflow: hidden;
   border: 1px solid #d5e2df;
@@ -59,7 +59,7 @@
   margin: 0;
   color: #073b30;
   font-family: var(--font-heading, 'Montserrat'), var(--font-body, 'Inter'), sans-serif;
-  font-size: clamp(1.72rem, 2.55vw, 2.28rem);
+  font-size: clamp(1.72rem, calc(var(--website-design-vw, 1vw) * 2.55), 2.28rem);
   font-weight: 780;
   letter-spacing: -.052em;
   line-height: 1.02;
@@ -460,15 +460,16 @@
 }
 
 @media (max-width: 700px) {
-  .overlay { padding: 0; place-items: stretch; }
-  .modal { width: 100%; max-height: 100dvh; border: 0; border-radius: 0; }
-  .header { padding: 18px; }
-  .header p { max-width: 76vw; }
-  .body { padding: 16px; }
-  .section { padding: 15px; }
-  .fieldGrid, .checklist, .choiceComparison { grid-template-columns: 1fr; }
-  .sectionHeading { grid-template-columns: 30px minmax(0, 1fr); }
-  .selectedCount { grid-column: 2; justify-self: start; }
-  .footer { padding: 14px 16px; }
-  .cancelButton, .submitButton { flex: 1; padding: 0 12px; }
+  :global(:where(html:not(:has([data-website-canvas])))) .overlay { padding: 0; place-items: stretch; }
+  :global(:where(html:not(:has([data-website-canvas])))) .modal { width: 100%; max-height: 100dvh; border: 0; border-radius: 0; }
+  :global(:where(html:not(:has([data-website-canvas])))) .header { padding: 18px; }
+  :global(:where(html:not(:has([data-website-canvas])))) .header p { max-width: 76vw; }
+  :global(:where(html:not(:has([data-website-canvas])))) .body { padding: 16px; }
+  :global(:where(html:not(:has([data-website-canvas])))) .section { padding: 15px; }
+  :global(:where(html:not(:has([data-website-canvas])))) .fieldGrid, :global(:where(html:not(:has([data-website-canvas])))) .checklist, :global(:where(html:not(:has([data-website-canvas])))) .choiceComparison { grid-template-columns: 1fr; }
+  :global(:where(html:not(:has([data-website-canvas])))) .sectionHeading { grid-template-columns: 30px minmax(0, 1fr); }
+  :global(:where(html:not(:has([data-website-canvas])))) .selectedCount { grid-column: 2; justify-self: start; }
+  :global(:where(html:not(:has([data-website-canvas])))) .footer { padding: 14px 16px; }
+  :global(:where(html:not(:has([data-website-canvas])))) .cancelButton, :global(:where(html:not(:has([data-website-canvas])))) .submitButton { flex: 1; padding: 0 12px; }
 }
+

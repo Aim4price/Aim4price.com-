@@ -1,5 +1,5 @@
 .page {
-  min-height: 100vh;
+  min-height: calc(var(--website-design-vh) * 100);
   color: var(--text-strong);
   background:
     radial-gradient(
@@ -18,9 +18,9 @@
 .shell {
   width: var(--shell-width);
   margin: 0 auto;
-  padding: clamp(1rem, 1.8vw, 1.45rem) 0 clamp(3.5rem, 5vw, 5rem);
+  padding: clamp(1rem, calc(var(--website-design-vw) * 1.8), 1.45rem) 0 clamp(3.5rem, calc(var(--website-design-vw) * 5), 5rem);
   display: grid;
-  gap: clamp(0.9rem, 1.45vw, 1.2rem);
+  gap: clamp(0.9rem, calc(var(--website-design-vw) * 1.45), 1.2rem);
 }
 
 .card,
@@ -36,7 +36,7 @@
 .card {
   position: relative;
   overflow: hidden;
-  padding: clamp(1.05rem, 1.75vw, 1.35rem);
+  padding: clamp(1.05rem, calc(var(--website-design-vw) * 1.75), 1.35rem);
   border-radius: 1.35rem;
   background: rgba(255, 255, 255, 0.97);
 }
@@ -45,8 +45,8 @@
   position: relative;
   isolation: isolate;
   overflow: hidden;
-  min-height: clamp(8.1rem, 11vw, 9.7rem);
-  padding: clamp(1.25rem, 2vw, 1.6rem);
+  min-height: clamp(8.1rem, calc(var(--website-design-vw) * 11), 9.7rem);
+  padding: clamp(1.25rem, calc(var(--website-design-vw) * 2), 1.6rem);
   border-radius: 1.12rem;
   display: flex;
   align-items: center;
@@ -104,14 +104,14 @@
   min-width: 0;
   display: flex;
   align-items: center;
-  gap: clamp(0.9rem, 1.5vw, 1.15rem);
+  gap: clamp(0.9rem, calc(var(--website-design-vw) * 1.5), 1.15rem);
 }
 
 .heroAvatar {
   position: relative;
   flex: 0 0 auto;
-  width: clamp(5.4rem, 7.4vw, 6.75rem);
-  height: clamp(5.4rem, 7.4vw, 6.75rem);
+  width: clamp(5.4rem, calc(var(--website-design-vw) * 7.4), 6.75rem);
+  height: clamp(5.4rem, calc(var(--website-design-vw) * 7.4), 6.75rem);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -160,7 +160,7 @@
 .heroAvatar span {
   font-family:
     var(--font-heading, "Montserrat"), var(--font-body, "Inter"), sans-serif;
-  font-size: clamp(1.45rem, 2.4vw, 2rem);
+  font-size: clamp(1.45rem, calc(var(--website-design-vw) * 2.4), 2rem);
   font-weight: 900;
   letter-spacing: -0.04em;
 }
@@ -184,7 +184,7 @@
   max-width: 42rem;
   overflow-wrap: anywhere;
   color: #ffffff;
-  font-size: clamp(1.65rem, 2.5vw, 2.35rem);
+  font-size: clamp(1.65rem, calc(var(--website-design-vw) * 2.5), 2.35rem);
   line-height: 1.02;
   letter-spacing: -0.055em;
   font-weight: 900;
@@ -276,7 +276,7 @@
 .topGrid {
   display: grid;
   grid-template-columns: minmax(0, 1.08fr) minmax(22rem, 0.92fr);
-  gap: clamp(0.9rem, 1.45vw, 1.15rem);
+  gap: clamp(0.9rem, calc(var(--website-design-vw) * 1.45), 1.15rem);
   align-items: stretch;
 }
 
@@ -294,7 +294,7 @@
 .modalHeader h2 {
   margin: 0;
   color: #12362d;
-  font-size: clamp(1.05rem, 1.25vw, 1.22rem);
+  font-size: clamp(1.05rem, calc(var(--website-design-vw) * 1.25), 1.22rem);
   line-height: 1.1;
   letter-spacing: -0.032em;
   font-weight: 900;
@@ -315,7 +315,7 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 1rem;
-  margin-bottom: clamp(0.9rem, 1.4vw, 1.1rem);
+  margin-bottom: clamp(0.9rem, calc(var(--website-design-vw) * 1.4), 1.1rem);
 }
 
 .metricGrid {
@@ -564,7 +564,7 @@
 .marketplaceGrid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(16rem, 0.43fr);
-  gap: clamp(1rem, 1.75vw, 1.3rem);
+  gap: clamp(1rem, calc(var(--website-design-vw) * 1.75), 1.3rem);
   align-items: stretch;
 }
 
@@ -635,7 +635,7 @@
 .pinSummaryCard > strong {
   margin-top: 0.55rem;
   color: #102f28;
-  font-size: clamp(1.7rem, 3vw, 2.3rem);
+  font-size: clamp(1.7rem, calc(var(--website-design-vw) * 3), 2.3rem);
   line-height: 1;
   letter-spacing: -0.055em;
   font-weight: 950;
@@ -955,7 +955,7 @@
 
 .partnerMapHeader strong {
   color: #12362d;
-  font-size: clamp(1.08rem, 1.35vw, 1.24rem);
+  font-size: clamp(1.08rem, calc(var(--website-design-vw) * 1.35), 1.24rem);
   line-height: 1.12;
   letter-spacing: -0.026em;
 }
@@ -988,7 +988,7 @@
   isolation: isolate;
   overflow: hidden;
   width: 100%;
-  height: clamp(16rem, 27vw, 21rem);
+  height: clamp(16rem, calc(var(--website-design-vw) * 27), 21rem);
   min-height: 16rem;
   border-radius: 1.08rem;
   border: 1px solid rgba(18, 45, 37, 0.12);
@@ -1126,7 +1126,7 @@
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 1rem;
-  padding: clamp(1rem, 1.65vw, 1.3rem);
+  padding: clamp(1rem, calc(var(--website-design-vw) * 1.65), 1.3rem);
   border-color: rgba(198, 75, 75, 0.16);
   background:
     radial-gradient(
@@ -1140,7 +1140,7 @@
 .accountDeleteCard h2 {
   margin: 0;
   color: #913636;
-  font-size: clamp(1.18rem, 1.75vw, 1.55rem);
+  font-size: clamp(1.18rem, calc(var(--website-design-vw) * 1.75), 1.55rem);
   line-height: 1.1;
   letter-spacing: -0.04em;
   font-weight: 900;
@@ -1176,7 +1176,7 @@
 }
 
 .modalCard {
-  width: min(100%, 36rem);
+  width: min(var(--website-dialog-reference-width, 100%), 36rem);
   padding: 1.3rem;
   border-radius: 1.35rem;
   background: rgba(255, 255, 255, 0.98);
@@ -1188,7 +1188,7 @@
 }
 
 .modalHeader h2 {
-  font-size: clamp(1.5rem, 2vw, 1.9rem);
+  font-size: clamp(1.5rem, calc(var(--website-design-vw) * 2), 1.9rem);
 }
 
 .modalForm {
@@ -1223,117 +1223,6 @@
   gap: 0.7rem;
   flex-wrap: wrap;
   margin-top: 0.15rem;
-}
-
-@media (max-width: 1080px) {
-  .topGrid,
-  .detailGrid,
-  .marketplaceGrid {
-    grid-template-columns: 1fr;
-  }
-
-  .accountHero {
-    align-items: flex-start;
-  }
-}
-
-@media (max-width: 760px) {
-  .shell {
-    padding-top: 0.8rem;
-  }
-
-  .accountHero {
-    display: grid;
-    gap: 0.9rem;
-    border-radius: 1rem;
-  }
-
-  .statusBadge {
-    justify-self: start;
-    order: -1;
-  }
-
-  .heroIdentityGroup {
-    align-items: flex-start;
-  }
-
-  .heroCopy small {
-    margin-top: 0.45rem;
-  }
-
-  .card {
-    border-radius: 1.05rem;
-  }
-
-  .metricGrid,
-  .form,
-  .marketplaceFields,
-  .pinGrid {
-    grid-template-columns: 1fr;
-  }
-
-  .halfField,
-  .thirdField,
-  .fullWidth,
-  .marketplaceFields .field:nth-of-type(3),
-  .marketplaceFields .field:nth-of-type(4),
-  .actionsRow,
-  .marketplaceActions {
-    grid-column: 1 / -1;
-  }
-
-  .detailRow {
-    grid-template-columns: 1fr;
-    gap: 0.2rem;
-  }
-
-  .actionsRow,
-  .marketplaceActions,
-  .inlineActions,
-  .partnerMapHeader,
-  .partnerMapFooter,
-  .accountDeleteCard {
-    display: grid;
-    grid-template-columns: 1fr;
-  }
-
-  .actionsRow .primaryButton,
-  .actionsRow .ghostButton,
-  .marketplaceActions .primaryButton,
-  .marketplaceActions .ghostButton,
-  .inlineActions .primaryButton,
-  .inlineActions .secondaryButton,
-  .accountDeleteCard .dangerButton,
-  .partnerMapActions .secondaryButton,
-  .partnerMapActions .ghostButton {
-    width: 100%;
-    min-width: 0;
-  }
-
-  .partnerMapActions {
-    display: grid;
-    grid-template-columns: 1fr;
-    width: 100%;
-  }
-
-  .partnerMapCanvas {
-    height: 16rem;
-    min-height: 16rem;
-  }
-
-  .partnerMapFooter strong {
-    justify-self: start;
-  }
-
-  .modalActions {
-    display: grid;
-    grid-template-columns: 1fr;
-  }
-
-  .modalActions .ghostButton,
-  .modalActions .dangerButton {
-    width: 100%;
-  }
 }
 
 /* === Owner Account-aligned dealership account === */
@@ -1379,7 +1268,7 @@
 }
 
 .dealerAccountPage .heroCopy h1 {
-  font-size: clamp(1.85rem, 2.8vw, 2.55rem);
+  font-size: clamp(1.85rem, calc(var(--website-design-vw) * 2.8), 2.55rem);
   font-weight: 800;
   letter-spacing: -0.045em;
 }
@@ -1428,7 +1317,7 @@
 
 .dealerAccountPage .compactCardHeader h2 {
   color: var(--owner-ink);
-  font-size: clamp(1.35rem, 2vw, 1.7rem);
+  font-size: clamp(1.35rem, calc(var(--website-design-vw) * 2), 1.7rem);
   font-weight: 800;
   letter-spacing: -0.035em;
 }
@@ -1519,7 +1408,7 @@
   --owner-ink: #12352d;
   --owner-muted: #64746a;
   --owner-line: rgba(37, 71, 51, 0.15);
-  width: min(100%, 64rem) !important;
+  width: min(var(--website-dialog-reference-width, 100%), 64rem) !important;
   border: 1px solid var(--owner-line) !important;
   border-radius: 22px !important;
   background: #ffffff !important;
@@ -1548,7 +1437,7 @@
 
 .partnerDirectoryModalCard .modalHeader h2 {
   color: var(--owner-ink);
-  font-size: clamp(1.65rem, 2.5vw, 2.1rem);
+  font-size: clamp(1.65rem, calc(var(--website-design-vw) * 2.5), 2.1rem);
   font-weight: 800;
   letter-spacing: -0.04em;
 }
@@ -1744,7 +1633,7 @@
 }
 
 .partnerDirectoryModalCard .partnerMapCanvas {
-  height: clamp(14rem, 24vw, 17rem);
+  height: clamp(14rem, calc(var(--website-design-vw) * 24), 17rem);
   min-height: 14rem;
   border-radius: 17px;
   box-shadow: none;
@@ -1819,44 +1708,6 @@
   border-top: 1px solid var(--owner-line);
   background: rgba(255, 255, 255, 0.96);
   backdrop-filter: blur(12px);
-}
-
-@media (max-width: 760px) {
-  .dealerAccountPage .accountHero {
-    border-radius: 18px !important;
-  }
-
-  .heroStatusGroup {
-    justify-content: flex-start;
-  }
-
-  .dealerAccountPage .metricTile:last-child {
-    grid-column: 1;
-  }
-
-  .partnerDirectoryTopGrid,
-  .partnerPreviewDetails {
-    grid-template-columns: 1fr;
-  }
-
-  .partnerRadiusField,
-  .partnerBrandField,
-  .partnerServicesField {
-    grid-column: 1 / -1;
-  }
-
-  .partnerDirectoryModalCard .partnerMapCanvas {
-    height: 14rem;
-  }
-
-  .partnerDirectoryModalCard .directoryForm .actionsRow {
-    position: static;
-    margin: 0;
-    padding: 0;
-    border-top: 0;
-    background: transparent;
-    backdrop-filter: none;
-  }
 }
 
 .overviewCard,
@@ -1953,7 +1804,7 @@
 
 .compactCardHeader h2,
 .cardTitleRow h2 {
-  font-size: clamp(1.24rem, 1.65vw, 1.55rem);
+  font-size: clamp(1.24rem, calc(var(--website-design-vw) * 1.65), 1.55rem);
   line-height: 1.08;
 }
 
@@ -2096,7 +1947,7 @@
 }
 
 .pinSummaryCard > strong {
-  font-size: clamp(2.1rem, 3.35vw, 2.7rem);
+  font-size: clamp(2.1rem, calc(var(--website-design-vw) * 3.35), 2.7rem);
 }
 
 .form,
@@ -2159,7 +2010,7 @@
 }
 
 .partnerMapCanvas {
-  height: clamp(18rem, 30vw, 24rem);
+  height: clamp(18rem, calc(var(--website-design-vw) * 30), 24rem);
   min-height: 18rem;
   border-radius: 1.15rem;
   border-color: var(--account-line-strong);
@@ -2185,60 +2036,6 @@
 
 .accountDeleteCard {
   border-color: rgba(198, 75, 75, 0.16);
-}
-
-@media (max-width: 1080px) {
-  .topGrid,
-  .detailGrid,
-  .marketplaceGrid {
-    grid-template-columns: 1fr;
-  }
-
-  .detailGridSingle {
-    grid-template-columns: 1fr;
-  }
-}
-
-@media (max-width: 760px) {
-  .shell {
-    width: min(calc(100% - 1.7rem), 1320px);
-    padding-top: 0.85rem;
-  }
-
-  .card {
-    padding: 1.05rem;
-    border-radius: 1.25rem;
-  }
-
-  .accountHero {
-    padding: 1.1rem;
-    border-radius: 1.25rem;
-  }
-
-  .metricGrid,
-  .form,
-  .marketplaceFields,
-  .pinGrid {
-    grid-template-columns: 1fr;
-  }
-
-  .marketplaceFields .field:nth-of-type(1),
-  .marketplaceFields .field:nth-of-type(2),
-  .marketplaceFields .field:nth-of-type(3),
-  .marketplaceFields .field:nth-of-type(4),
-  .halfField,
-  .thirdField,
-  .fullWidth,
-  .actionsRow,
-  .marketplaceActions {
-    grid-column: 1 / -1;
-  }
-
-  .detailRow {
-    grid-template-columns: 1fr;
-    gap: 0.25rem;
-    align-items: start;
-  }
 }
 
 /* === Account page edit-button + typography refinements === */
@@ -2313,12 +2110,6 @@
   font-weight: 600;
 }
 
-@media (max-width: 760px) {
-  .heroCopy small {
-    margin-top: 0.12rem;
-  }
-}
-
 /* === Business logo field for dealer, finance and insurance accounts === */
 .mediaUploadField {
   display: grid;
@@ -2385,8 +2176,8 @@
   grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
   align-content: center;
-  gap: clamp(0.95rem, 2vw, 1.35rem);
-  padding: clamp(1.05rem, 2vw, 1.45rem);
+  gap: clamp(0.95rem, calc(var(--website-design-vw) * 2), 1.35rem);
+  padding: clamp(1.05rem, calc(var(--website-design-vw) * 2), 1.45rem);
   border-radius: 1.1rem;
   border: 1px solid var(--account-line, rgba(18, 45, 37, 0.08));
   background: rgba(255, 255, 255, 0.86);
@@ -2395,8 +2186,8 @@
 .businessLogoPreview {
   overflow: hidden;
   grid-row: span 2;
-  width: clamp(10.4rem, 17vw, 13.2rem);
-  height: clamp(10.4rem, 17vw, 13.2rem);
+  width: clamp(10.4rem, calc(var(--website-design-vw) * 17), 13.2rem);
+  height: clamp(10.4rem, calc(var(--website-design-vw) * 17), 13.2rem);
   display: inline-grid;
   place-items: center;
   border-radius: 1.25rem;
@@ -2595,36 +2386,6 @@
   background: #eef3f5;
 }
 
-@media (max-width: 900px) {
-  .businessMediaEditorGrid {
-    grid-template-columns: 1fr;
-  }
-
-  .businessLogoPreview {
-    width: clamp(9.2rem, 34vw, 11rem);
-    height: clamp(9.2rem, 34vw, 11rem);
-  }
-}
-
-@media (max-width: 760px) {
-  .mediaUploadHeader,
-  .businessLogoPanel,
-  .businessMediaControls {
-    display: grid;
-    grid-template-columns: 1fr;
-  }
-
-  .businessMediaControls .ghostButton,
-  .businessMediaControls .uploadButton {
-    width: 100%;
-  }
-
-  .businessPhotoGrid,
-  .businessPhotoStrip {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
 /* === Account quick-action icon refinements === */
 .quickActionButton {
   grid-template-columns: 2.34rem minmax(0, 1fr);
@@ -2719,33 +2480,14 @@
   border-color: rgba(198, 75, 75, 0.18);
 }
 
-@media (max-width: 760px) {
-  .quickActionButton {
-    grid-template-columns: 2.22rem minmax(0, 1fr);
-    min-height: 3.35rem;
-    gap: 0.78rem;
-  }
-
-  .quickActionIcon {
-    width: 2.22rem;
-    height: 2.22rem;
-    border-radius: 0.8rem;
-  }
-
-  .quickActionIcon svg {
-    width: 1.26rem;
-    height: 1.26rem;
-  }
-}
-
 /* === Account quick-action modal layout === */
 .accountActionModalCard {
-  width: min(100%, 64rem);
-  max-height: calc(100dvh - 2rem);
+  width: min(var(--website-dialog-reference-width, 100%), 64rem);
+  max-height: calc(calc(var(--website-visible-height) * 1) - 2rem);
   overflow: auto;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
-  padding: clamp(1.1rem, 1.8vw, 1.45rem);
+  padding: clamp(1.1rem, calc(var(--website-design-vw) * 1.8), 1.45rem);
 }
 
 .accountScrollableModalCard {
@@ -2805,8 +2547,8 @@
 
 .accountModalScrollContent {
   min-width: 0;
-  padding: clamp(1.1rem, 1.8vw, 1.45rem);
-  padding-right: clamp(1.75rem, 2.2vw, 2.15rem);
+  padding: clamp(1.1rem, calc(var(--website-design-vw) * 1.8), 1.45rem);
+  padding-right: clamp(1.75rem, calc(var(--website-design-vw) * 2.2), 2.15rem);
 }
 
 .accountModalScrollRail {
@@ -2911,41 +2653,12 @@
   cursor: grabbing;
 }
 
-@media (max-width: 760px) {
-  .accountModalScrollContent {
-    padding: 1rem 1.45rem 1rem 1rem;
-  }
-
-  .accountModalScrollRail {
-    top: 0.78rem;
-    right: 0.32rem;
-    bottom: 0.78rem;
-    width: 0.56rem;
-  }
-
-  .accountModalScrollRailVisible:hover {
-    right: 0.3rem;
-    width: 0.62rem;
-  }
-
-  .accountModalScrollThumb {
-    width: 0.34rem;
-    margin-left: -0.17rem;
-  }
-
-  .accountModalScrollRailVisible:hover .accountModalScrollThumb,
-  .accountModalScrollThumb:active {
-    width: 0.42rem;
-    margin-left: -0.21rem;
-  }
-}
-
 .accountActionModalCardNarrow {
-  width: min(100%, 42rem);
+  width: min(var(--website-dialog-reference-width, 100%), 42rem);
 }
 
 .partnerDirectoryModalCard {
-  width: min(100%, 74rem);
+  width: min(var(--website-dialog-reference-width, 100%), 74rem);
 }
 
 .accountActionModalCard .modalHeader {
@@ -2974,14 +2687,14 @@
   min-width: 0;
   overflow-wrap: anywhere;
   color: #17362c;
-  font-size: clamp(1.08rem, 1.45vw, 1.25rem);
+  font-size: clamp(1.08rem, calc(var(--website-design-vw) * 1.45), 1.25rem);
   line-height: 1.15;
   font-weight: 850;
   letter-spacing: -0.03em;
 }
 
 .pinModalStatus strong {
-  font-size: clamp(1.8rem, 3vw, 2.35rem);
+  font-size: clamp(1.8rem, calc(var(--website-design-vw) * 3), 2.35rem);
   line-height: 1;
   letter-spacing: -0.055em;
 }
@@ -3001,22 +2714,6 @@
   font-size: 0.86rem;
   line-height: 1.48;
   font-weight: 650;
-}
-
-@media (max-width: 760px) {
-  .accountActionModalCard {
-    width: 100%;
-    max-height: calc(100dvh - 1.25rem);
-    padding: 1rem;
-    border-radius: 1.25rem;
-  }
-
-  .accountActionIntro,
-  .pinModalStatus {
-    margin-top: 0.85rem;
-    padding: 0.95rem;
-    border-radius: 1rem;
-  }
 }
 
 .securityCard {
@@ -3073,17 +2770,6 @@
   min-width: 12rem;
 }
 
-@media (max-width: 860px) {
-  .securityGrid {
-    grid-template-columns: 1fr;
-  }
-
-  .securityActions .primaryButton,
-  .securitySidePanel .ghostButton {
-    width: 100%;
-  }
-}
-
 /* === Account responsive consolidation pass === */
 .page,
 .shell,
@@ -3129,105 +2815,6 @@
   overflow-wrap: anywhere;
 }
 
-@media (max-width: 1080px) {
-  .topGrid,
-  .securityGrid,
-  .businessMediaEditorGrid,
-  .marketplaceFields,
-  .directoryForm,
-  .partnerMapCanvas {
-    grid-template-columns: 1fr !important;
-  }
-
-  .metricGrid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-@media (max-width: 760px) {
-  .shell {
-    width: min(calc(100% - 1rem), 48rem) !important;
-    padding-top: 0.95rem;
-  }
-
-  .accountHero,
-  .card,
-  .overviewCard,
-  .quickActionsCard,
-  .securityCard {
-    border-radius: 1.2rem !important;
-  }
-
-  .accountHero {
-    grid-template-columns: 1fr !important;
-    gap: 0.9rem !important;
-    padding: 1rem !important;
-  }
-
-  .heroCopy h1 {
-    font-size: clamp(1.8rem, 9vw, 2.35rem) !important;
-  }
-
-  .metricGrid,
-  .pinGrid,
-  .businessMediaControls,
-  .securityActions,
-  .actionsRow,
-  .modalActions,
-  .marketplaceActions,
-  .partnerMapActions,
-  .partnerMapFooter {
-    grid-template-columns: 1fr !important;
-    display: grid !important;
-    width: 100%;
-  }
-
-  .primaryButton,
-  .secondaryButton,
-  .ghostButton,
-  .dangerButton,
-  .uploadButton,
-  .quickActionButton,
-  .modalActions > *,
-  .actionsRow > *,
-  .securityActions > *,
-  .businessMediaControls > *,
-  .marketplaceActions > *,
-  .partnerMapActions > * {
-    width: 100%;
-    min-height: var(--tap-target-min, 44px);
-  }
-
-  .modalBackdrop {
-    padding: 0.75rem !important;
-    align-items: center !important;
-    overflow: hidden !important;
-  }
-
-  .modalCard,
-  .accountScrollableModalCard,
-  .partnerDirectoryModalCard,
-  .accountActionModalCard,
-  .accountActionModalCardNarrow {
-    width: min(100%, 48rem) !important;
-    max-height: calc(100dvh - 1.5rem) !important;
-    border-radius: 1.25rem !important;
-    overflow: hidden !important;
-  }
-
-  .accountModalScrollContent,
-  .accountModalScrollViewport,
-  .accountModalScrollShell,
-  .modalForm,
-  .form,
-  .compactEditForm {
-    max-height: calc(100dvh - 10rem);
-    overflow-y: auto;
-    overscroll-behavior: contain;
-    -webkit-overflow-scrolling: touch;
-  }
-}
-
 /* Account modal viewport safety and workflow layout. */
 .dealerAccountPage {
   font-family: var(--font-body, 'Inter'), ui-sans-serif, system-ui, sans-serif;
@@ -3243,14 +2830,14 @@
 .modalBackdrop {
   align-items: center !important;
   overflow: hidden !important;
-  padding: clamp(0.75rem, 2vw, 1.5rem) !important;
+  padding: clamp(0.75rem, calc(var(--website-design-vw) * 2), 1.5rem) !important;
 }
 
 .modalCard,
 .accountActionModalCard,
 .accountScrollableModalCard,
 .partnerDirectoryModalCard {
-  max-height: calc(100dvh - clamp(1.5rem, 4vw, 3rem)) !important;
+  max-height: calc(calc(var(--website-visible-height) * 1) - clamp(1.5rem, calc(var(--website-design-vw) * 4), 3rem)) !important;
 }
 
 .accountScrollableModalCard {
@@ -3351,33 +2938,6 @@
   min-height: 4.55rem;
 }
 
-@media (max-width: 760px) {
-  .modalHeader {
-    padding-right: 3.15rem;
-  }
-
-  .modalCloseButton {
-    width: 2.6rem;
-    min-width: 2.6rem;
-    height: 2.6rem;
-    border-radius: 12px;
-  }
-
-  .accountModalScrollContent {
-    padding: 1rem 1.35rem 1rem 1rem !important;
-  }
-
-  .accountScrollableModalCard .modalActions,
-  .accountScrollableModalCard .marketplaceActions,
-  .accountScrollableModalCard .actionsRow {
-    bottom: -1rem;
-    margin-right: -1.35rem;
-    margin-bottom: -1rem;
-    margin-left: -1rem;
-    padding: 0.8rem 1.35rem 1rem 1rem;
-  }
-}
-
 /* === Dealer account uses the same visual hierarchy as the Owner account === */
 .dealerAccountPage {
   background:
@@ -3387,8 +2947,8 @@
 }
 
 .dealerAccountPage .accountHero {
-  min-height: clamp(8.1rem, 11vw, 9.7rem);
-  padding: clamp(1.25rem, 2vw, 1.6rem);
+  min-height: clamp(8.1rem, calc(var(--website-design-vw) * 11), 9.7rem);
+  padding: clamp(1.25rem, calc(var(--website-design-vw) * 2), 1.6rem);
   border: 1px solid rgba(18, 45, 37, 0.08);
   border-radius: 1.12rem;
   background:
@@ -3406,14 +2966,14 @@
 }
 
 .dealerAccountPage .heroAvatar {
-  width: clamp(5.4rem, 7.4vw, 6.75rem);
-  height: clamp(5.4rem, 7.4vw, 6.75rem);
+  width: clamp(5.4rem, calc(var(--website-design-vw) * 7.4), 6.75rem);
+  height: clamp(5.4rem, calc(var(--website-design-vw) * 7.4), 6.75rem);
   border: 1px solid rgba(255, 255, 255, 0.18);
   box-shadow: 0 16px 30px rgba(3, 15, 24, 0.22);
 }
 
 .dealerAccountPage .heroCopy h1 {
-  font-size: clamp(1.65rem, 2.5vw, 2.35rem);
+  font-size: clamp(1.65rem, calc(var(--website-design-vw) * 2.5), 2.35rem);
   font-weight: 900;
   letter-spacing: -0.055em;
 }
@@ -3435,7 +2995,7 @@
 }
 
 .dealerAccountPage .card {
-  padding: clamp(1.05rem, 1.75vw, 1.35rem);
+  padding: clamp(1.05rem, calc(var(--website-design-vw) * 1.75), 1.35rem);
   border: 1px solid rgba(18, 45, 37, 0.08);
   border-radius: 1.35rem;
   background: rgba(255, 255, 255, 0.97);
@@ -3447,7 +3007,7 @@
 
 .dealerAccountPage .compactCardHeader h2 {
   color: #12362d;
-  font-size: clamp(1.05rem, 1.25vw, 1.22rem);
+  font-size: clamp(1.05rem, calc(var(--website-design-vw) * 1.25), 1.22rem);
   font-weight: 900;
   letter-spacing: -0.032em;
 }
@@ -3521,21 +3081,15 @@
   background: #fff8f8;
 }
 
-@media (max-width: 760px) {
-  .dealerAccountPage .metricTile:last-child {
-    grid-column: 1 / -1;
-  }
-}
-
 /* === Restored account modal workflow: spacing and alignment refinement === */
 .modalBackdrop {
-  padding: clamp(1rem, 2.5vw, 2rem) !important;
+  padding: clamp(1rem, calc(var(--website-design-vw) * 2.5), 2rem) !important;
   background: rgba(12, 24, 35, 0.42) !important;
   backdrop-filter: blur(12px) saturate(0.9) !important;
 }
 
 .accountScrollableModalCard {
-  max-height: min(54rem, calc(100dvh - 3rem)) !important;
+  max-height: min(54rem, calc(calc(var(--website-visible-height) * 1) - 3rem)) !important;
   border: 1px solid rgba(18, 45, 37, 0.12) !important;
   border-radius: 1.55rem !important;
   background: #ffffff !important;
@@ -3545,27 +3099,27 @@
 }
 
 .businessDetailsModalCard {
-  width: min(100%, 70rem) !important;
+  width: min(var(--website-dialog-reference-width, 100%), 70rem) !important;
 }
 
 .marketplaceModalCard {
-  width: min(100%, 58rem) !important;
+  width: min(var(--website-dialog-reference-width, 100%), 58rem) !important;
 }
 
 .scanPinModalCard,
 .discoveryModalCard,
 .deleteAccountModalCard {
-  width: min(100%, 41rem) !important;
+  width: min(var(--website-dialog-reference-width, 100%), 41rem) !important;
 }
 
 .partnerDirectoryModalCard {
-  width: min(100%, 72rem) !important;
+  width: min(var(--website-dialog-reference-width, 100%), 72rem) !important;
 }
 
 .accountScrollableModalCard .accountModalScrollContent,
 .partnerDirectoryModalCard .accountModalScrollContent {
-  padding: clamp(1.35rem, 2.2vw, 2rem) !important;
-  padding-right: clamp(1.75rem, 2.6vw, 2.35rem) !important;
+  padding: clamp(1.35rem, calc(var(--website-design-vw) * 2.2), 2rem) !important;
+  padding-right: clamp(1.75rem, calc(var(--website-design-vw) * 2.6), 2.35rem) !important;
 }
 
 .accountScrollableModalCard .modalHeader {
@@ -3580,7 +3134,7 @@
 
 .accountScrollableModalCard .modalHeader h2 {
   margin: 0;
-  font-size: clamp(1.55rem, 2.3vw, 2rem);
+  font-size: clamp(1.55rem, calc(var(--website-design-vw) * 2.3), 2rem);
   line-height: 1.08;
 }
 
@@ -3668,8 +3222,8 @@
 }
 
 .businessDetailsModalCard .businessLogoPreview {
-  width: clamp(7.5rem, 11vw, 8.75rem);
-  height: clamp(7.5rem, 11vw, 8.75rem);
+  width: clamp(7.5rem, calc(var(--website-design-vw) * 11), 8.75rem);
+  height: clamp(7.5rem, calc(var(--website-design-vw) * 11), 8.75rem);
   border-radius: 1rem;
 }
 
@@ -3718,7 +3272,7 @@
 }
 
 .partnerDirectoryModalCard .partnerMapCanvas {
-  height: clamp(16rem, 34vh, 20rem);
+  height: clamp(16rem, calc(var(--website-design-vh) * 34), 20rem);
   min-height: 16rem;
   border-radius: 1rem;
 }
@@ -3731,11 +3285,11 @@
 .accountScrollableModalCard .marketplaceActions,
 .accountScrollableModalCard .actionsRow,
 .partnerDirectoryModalCard .directoryForm .actionsRow {
-  bottom: clamp(-2rem, -2.2vw, -1.35rem) !important;
+  bottom: clamp(-2rem, calc(var(--website-design-vw) * -2.2), -1.35rem) !important;
   justify-content: flex-end;
   gap: 0.65rem;
-  margin: 0.4rem clamp(-2.35rem, -2.6vw, -1.75rem) clamp(-2rem, -2.2vw, -1.35rem) -2rem !important;
-  padding: 1rem clamp(2.35rem, 2.6vw, 2.35rem) clamp(1.35rem, 1.8vw, 1.7rem) 2rem !important;
+  margin: 0.4rem clamp(-2.35rem, calc(var(--website-design-vw) * -2.6), -1.75rem) clamp(-2rem, calc(var(--website-design-vw) * -2.2), -1.35rem) -2rem !important;
+  padding: 1rem clamp(2.35rem, calc(var(--website-design-vw) * 2.6), 2.35rem) clamp(1.35rem, calc(var(--website-design-vw) * 1.8), 1.7rem) 2rem !important;
   border-top: 1px solid rgba(18, 45, 37, 0.11);
   background: rgba(255, 255, 255, 0.97);
   box-shadow: 0 -12px 28px rgba(18, 45, 37, 0.045);
@@ -3754,78 +3308,13 @@
   bottom: 1rem;
 }
 
-@media (max-width: 760px) {
-  .modalBackdrop {
-    padding: 0.65rem !important;
-  }
-
-  .accountScrollableModalCard,
-  .businessDetailsModalCard,
-  .marketplaceModalCard,
-  .scanPinModalCard,
-  .discoveryModalCard,
-  .deleteAccountModalCard,
-  .partnerDirectoryModalCard {
-    width: 100% !important;
-    max-height: calc(100dvh - 1.3rem) !important;
-    border-radius: 1.15rem !important;
-  }
-
-  .accountScrollableModalCard .accountModalScrollContent,
-  .partnerDirectoryModalCard .accountModalScrollContent {
-    padding: 1rem 1.35rem 1rem 1rem !important;
-  }
-
-  .accountScrollableModalCard .modalHeader {
-    min-height: 4.2rem;
-    margin-bottom: 1rem !important;
-    padding: 0 3.25rem 0.9rem 0 !important;
-  }
-
-  .accountScrollableModalCard .modalHeader h2 {
-    font-size: 1.42rem;
-  }
-
-  .businessDetailsModalCard .businessLogoPanel {
-    grid-template-columns: 1fr;
-  }
-
-  .businessDetailsModalCard .businessLogoPreview {
-    grid-row: auto;
-    width: 7rem;
-    height: 7rem;
-  }
-
-  .accountScrollableModalCard .modalActions,
-  .accountScrollableModalCard .marketplaceActions,
-  .accountScrollableModalCard .actionsRow,
-  .partnerDirectoryModalCard .directoryForm .actionsRow {
-    bottom: -1rem !important;
-    grid-template-columns: 1fr !important;
-    margin: 0.3rem -1.35rem -1rem -1rem !important;
-    padding: 0.85rem 1.35rem 1rem 1rem !important;
-  }
-
-  .accountScrollableModalCard .modalActions > button,
-  .accountScrollableModalCard .marketplaceActions > button,
-  .accountScrollableModalCard .actionsRow > button {
-    width: 100%;
-    min-width: 0;
-  }
-
-  .partnerDirectoryModalCard .partnerMapCanvas {
-    height: 15rem;
-    min-height: 15rem;
-  }
-}
-
 /* === Three-step account workflows and security action refinement === */
 .businessDetailsModalCard {
-  width: min(100%, 60rem) !important;
+  width: min(var(--website-dialog-reference-width, 100%), 60rem) !important;
 }
 
 .partnerDirectoryModalCard {
-  width: min(100%, 66rem) !important;
+  width: min(var(--website-dialog-reference-width, 100%), 66rem) !important;
 }
 
 .modalStepProgress {
@@ -3910,7 +3399,7 @@
 }
 
 .wizardStepPanel {
-  min-height: clamp(18rem, 38vh, 25rem);
+  min-height: clamp(18rem, calc(var(--website-design-vh) * 38), 25rem);
   display: grid;
   align-content: start;
   gap: 1rem;
@@ -3985,7 +3474,7 @@
 }
 
 .partnerDirectoryModalCard .wizardStepPanel .partnerMapCanvas {
-  height: clamp(18rem, 40vh, 24rem);
+  height: clamp(18rem, calc(var(--website-design-vh) * 40), 24rem);
   min-height: 18rem;
 }
 
@@ -4127,81 +3616,6 @@
   margin-top: auto;
 }
 
-@media (max-width: 860px) {
-  .securityGrid,
-  .partnerDecisionGrid,
-  .partnerAdditionalGrid {
-    grid-template-columns: 1fr;
-  }
-
-  .partnerAdditionalGrid .partnerDirectoryPreview {
-    position: static;
-  }
-}
-
-@media (max-width: 760px) {
-  .modalStepProgress {
-    margin-bottom: 1rem;
-  }
-
-  .modalStep {
-    display: grid;
-    justify-items: center;
-    gap: 0.35rem;
-    text-align: center;
-  }
-
-  .modalStep:not(:last-child)::after {
-    top: 1.05rem;
-    right: -50%;
-    left: 50%;
-  }
-
-  .modalStep > strong {
-    padding: 0 0.2rem;
-    background: transparent;
-    font-size: 0.66rem;
-  }
-
-  .wizardStepPanel {
-    min-height: 0;
-  }
-
-  .wizardFieldGrid {
-    grid-template-columns: 1fr;
-  }
-
-  .wizardActions {
-    display: grid !important;
-    grid-template-columns: 1fr 1fr !important;
-  }
-
-  .wizardActions > :first-child {
-    grid-column: 1 / -1;
-    grid-row: 2;
-  }
-
-  .wizardActions > :only-child,
-  .wizardActions > :nth-child(2):last-child {
-    grid-column: 1 / -1;
-    grid-row: 1;
-  }
-
-  .partnerDirectoryModalCard .wizardStepPanel .partnerMapCanvas {
-    height: 16rem;
-    min-height: 16rem;
-  }
-
-  .securityPanel {
-    padding: 1rem;
-  }
-
-  .securityActions .primaryButton,
-  .securitySidePanel .ghostButton {
-    width: 100%;
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
   .wizardStepPanel {
     animation: none;
@@ -4210,8 +3624,8 @@
 
 /* === Account dashboard refinement, August 2026 === */
 .accountHero {
-  min-height: clamp(7.5rem, 9vw, 8.2rem);
-  padding: clamp(1.05rem, 1.65vw, 1.3rem) clamp(1.15rem, 1.8vw, 1.45rem);
+  min-height: clamp(7.5rem, calc(var(--website-design-vw) * 9), 8.2rem);
+  padding: clamp(1.05rem, calc(var(--website-design-vw) * 1.65), 1.3rem) clamp(1.15rem, calc(var(--website-design-vw) * 1.8), 1.45rem);
   border-radius: 1.45rem;
 }
 
@@ -4221,8 +3635,8 @@
 }
 
 .heroAvatar {
-  width: clamp(4.8rem, 6.2vw, 5.75rem);
-  height: clamp(4.8rem, 6.2vw, 5.75rem);
+  width: clamp(4.8rem, calc(var(--website-design-vw) * 6.2), 5.75rem);
+  height: clamp(4.8rem, calc(var(--website-design-vw) * 6.2), 5.75rem);
 }
 
 .heroAvatar::after {
@@ -4265,12 +3679,12 @@
   grid-template-areas:
     "overview quick"
     "security quick";
-  gap: clamp(0.9rem, 1.45vw, 1.15rem);
+  gap: clamp(0.9rem, calc(var(--website-design-vw) * 1.45), 1.15rem);
   align-items: start;
 }
 
 .accountDashboard > .card {
-  padding: clamp(1.05rem, 1.55vw, 1.3rem);
+  padding: clamp(1.05rem, calc(var(--website-design-vw) * 1.55), 1.3rem);
   border-radius: 1.5rem;
 }
 
@@ -4492,7 +3906,7 @@
 }
 
 .passwordModalCard {
-  width: min(100%, 46rem);
+  width: min(var(--website-dialog-reference-width, 100%), 46rem);
 }
 
 .passwordModalIntro {
@@ -4565,87 +3979,6 @@
 .accountScrollableModalCard .modalCloseButton:disabled {
   opacity: 0.55;
   cursor: not-allowed;
-}
-
-@media (max-width: 1080px) {
-  .accountDashboard {
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-areas:
-      "overview"
-      "quick"
-      "security";
-  }
-
-  .securityActionsGrid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-@media (max-width: 760px) {
-  .accountHero {
-    display: flex !important;
-    min-height: 0;
-    flex-direction: column;
-    align-items: flex-start;
-    padding: 1rem !important;
-  }
-
-  .heroIdentityGroup {
-    width: 100%;
-  }
-
-  .heroAvatar {
-    width: 4.7rem;
-    height: 4.7rem;
-  }
-
-  .accountDashboard {
-    gap: 0.85rem;
-  }
-
-  .accountDashboard > .card {
-    padding: 1rem;
-    border-radius: 1.2rem;
-  }
-
-  .overviewCard .metricGrid {
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-  }
-
-  .overviewCard .metricTile {
-    min-height: 5.7rem;
-    padding: 0.78rem;
-  }
-
-  .quickActionGroups,
-  .securityActionsGrid {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .quickActionGroup .quickActionButton,
-  .securityActionCard,
-  .dangerZoneButton {
-    min-height: var(--tap-target-min, 44px);
-  }
-
-  .dangerZone {
-    grid-template-columns: minmax(0, 1fr);
-    align-items: start;
-    gap: 0.85rem;
-  }
-
-  .dangerZoneButton {
-    width: 100%;
-    justify-content: center;
-  }
-
-  .passwordModalIntro {
-    align-items: flex-start;
-  }
-
-  .passwordModalCard .modalField input {
-    font-size: 1rem;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {

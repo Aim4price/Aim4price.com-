@@ -1419,7 +1419,7 @@ export default function MaintenanceClient({
       </main>
 
       {modalMode === 'asset-picker' ? (
-        <div className={styles.modalBackdrop} role="dialog" aria-modal="true" aria-labelledby="asset-picker-title">
+        <div className={styles.modalBackdrop} data-website-overlay role="dialog" aria-modal="true" aria-labelledby="asset-picker-title">
           <section className={styles.assetModal} data-asset-choice-surface="true" data-asset-choice-modal="true">
             <header className={styles.modalHeader} data-asset-choice-header="true">
               <div>
@@ -1467,7 +1467,7 @@ export default function MaintenanceClient({
 
 
       {modalMode === 'maintenance-type' && draft ? (
-        <div className={styles.modalBackdrop} role="dialog" aria-modal="true" aria-labelledby="maintenance-type-title">
+        <div className={styles.modalBackdrop} data-website-overlay role="dialog" aria-modal="true" aria-labelledby="maintenance-type-title">
           <section className={`${styles.formModal} ${styles.maintenanceStepModal}`}>
             <header className={styles.modalHeader}>
               <div>
@@ -1504,7 +1504,7 @@ export default function MaintenanceClient({
       ) : null}
 
       {modalMode === 'trigger-type' && draft ? (
-        <div className={styles.modalBackdrop} role="dialog" aria-modal="true" aria-labelledby="maintenance-trigger-title">
+        <div className={styles.modalBackdrop} data-website-overlay role="dialog" aria-modal="true" aria-labelledby="maintenance-trigger-title">
           <section className={`${styles.formModal} ${styles.maintenanceStepModal}`}>
             <header className={styles.modalHeader}>
               <div>
@@ -1539,7 +1539,7 @@ export default function MaintenanceClient({
       ) : null}
 
       {modalMode === 'form' && draft ? (
-        <div className={styles.modalBackdrop} role="dialog" aria-modal="true" aria-labelledby="maintenance-form-title">
+        <div className={styles.modalBackdrop} data-website-overlay role="dialog" aria-modal="true" aria-labelledby="maintenance-form-title">
           <section className={styles.formModal}>
             <header className={styles.modalHeader}>
               <div>
@@ -1650,7 +1650,7 @@ export default function MaintenanceClient({
       ) : null}
 
       {modalMode === 'quick-clear' && recordPendingQuickClear ? (
-        <div className={styles.modalBackdrop} role="dialog" aria-modal="true" aria-labelledby="maintenance-quick-clear-title" aria-describedby="maintenance-quick-clear-description">
+        <div className={styles.modalBackdrop} data-website-overlay role="dialog" aria-modal="true" aria-labelledby="maintenance-quick-clear-title" aria-describedby="maintenance-quick-clear-description">
           <section className={`${styles.deleteConfirmModal} ${styles.maintenanceQuickClearModal}`}>
             <header className={styles.modalHeader}>
               <div>
@@ -1726,7 +1726,7 @@ export default function MaintenanceClient({
       ) : null}
 
       {modalMode === 'delete' && recordPendingDelete ? (
-        <div className={styles.modalBackdrop} role="dialog" aria-modal="true" aria-labelledby="maintenance-delete-title">
+        <div className={styles.modalBackdrop} data-website-overlay role="dialog" aria-modal="true" aria-labelledby="maintenance-delete-title">
           <section className={styles.deleteConfirmModal}>
             <header className={styles.modalHeader}>
               <div>
@@ -1756,7 +1756,7 @@ export default function MaintenanceClient({
       ) : null}
 
       {modalMode === 'filter' ? (
-        <div className={styles.modalBackdrop} role="dialog" aria-modal="true" aria-labelledby="maintenance-filter-title">
+        <div className={styles.modalBackdrop} data-website-overlay role="dialog" aria-modal="true" aria-labelledby="maintenance-filter-title">
           <section className={styles.filterModal}>
             <header className={styles.modalHeader}>
               <div>
@@ -1806,7 +1806,7 @@ export default function MaintenanceClient({
       ) : null}
 
       {modalMode === 'download' ? (
-        <div className={styles.modalBackdrop} role="dialog" aria-modal="true" aria-labelledby="maintenance-download-title">
+        <div className={styles.modalBackdrop} data-website-overlay role="dialog" aria-modal="true" aria-labelledby="maintenance-download-title">
           <section
             className={`${styles.downloadModal} ${styles.maintenanceExportModal}`}
             data-asset-choice-surface={downloadStep === 'asset' ? 'true' : undefined}
@@ -1966,4 +1966,5 @@ export default function MaintenanceClient({
     </div>
   );
 }
+
 

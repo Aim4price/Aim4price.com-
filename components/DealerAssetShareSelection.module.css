@@ -144,11 +144,12 @@
 }
 
 @media (max-width: 560px) {
-  .header {
+  :global(:where(html:not(:has([data-website-canvas])))) .header {
     align-items: flex-start;
   }
 
-  .list {
+  :global(:where(html:not(:has([data-website-canvas])))) .list {
     max-height: 12rem;
   }
 }
+

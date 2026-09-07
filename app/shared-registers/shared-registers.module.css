@@ -1,5 +1,5 @@
 .page {
-  min-height: 100vh;
+  min-height: calc(var(--website-design-vh) * 100);
   color: #073b30;
   background: linear-gradient(180deg, #f5f8f8 0%, #edf4f5 100%);
 }
@@ -13,7 +13,7 @@
 .shell {
   width: min(calc(100% - 2rem), 1640px);
   margin: 0 auto;
-  padding: clamp(1.35rem, 2vw, 2rem) 0 4rem;
+  padding: clamp(1.35rem, calc(var(--website-design-vw) * 2), 2rem) 0 4rem;
 }
 
 .notice {
@@ -30,13 +30,13 @@
 .noticeError { border-color: #f0c6c6; color: #9b2f2f; background: #fff0f0; }
 
 .hero {
-  min-height: clamp(7.5rem, 10vw, 9rem);
+  min-height: clamp(7.5rem, calc(var(--website-design-vw) * 10), 9rem);
   display: flex;
   align-items: center;
-  margin-bottom: clamp(1rem, 1.4vw, 1.25rem);
-  padding: clamp(1.3rem, 3vw, 2.35rem);
+  margin-bottom: clamp(1rem, calc(var(--website-design-vw) * 1.4), 1.25rem);
+  padding: clamp(1.3rem, calc(var(--website-design-vw) * 3), 2.35rem);
   border: 1.5px solid rgba(188, 211, 220, 0.98);
-  border-radius: clamp(1.45rem, 2vw, 2rem);
+  border-radius: clamp(1.45rem, calc(var(--website-design-vw) * 2), 2rem);
   background:
     radial-gradient(circle at 2% 10%, rgba(25, 116, 84, 0.08), transparent 35%),
     linear-gradient(180deg, #ffffff 0%, #f8fbfc 100%);
@@ -46,7 +46,7 @@
 .hero h1 {
   margin: 0;
   color: #073b30;
-  font-size: clamp(2.65rem, 5vw, 4.75rem);
+  font-size: clamp(2.65rem, calc(var(--website-design-vw) * 5), 4.75rem);
   font-weight: 900;
   line-height: 0.96;
   letter-spacing: -0.065em;
@@ -58,7 +58,7 @@
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  margin-bottom: clamp(1rem, 1.4vw, 1.25rem);
+  margin-bottom: clamp(1rem, calc(var(--website-design-vw) * 1.4), 1.25rem);
   padding: 0 1.25rem;
   border: 1.5px solid rgba(190, 211, 224, 0.98);
   border-radius: 1.35rem;
@@ -114,7 +114,7 @@
 .clientCopy h2, .clientCopy p { margin: 0; }
 .clientCopy h2 {
   color: #073b30;
-  font-size: clamp(1.45rem, 2vw, 1.9rem);
+  font-size: clamp(1.45rem, calc(var(--website-design-vw) * 2), 1.9rem);
   font-weight: 900;
   line-height: 1.05;
   letter-spacing: -0.045em;
@@ -177,8 +177,8 @@
   backdrop-filter: blur(5px);
 }
 .deleteModal {
-  width: min(100%, 34rem);
-  padding: clamp(1.35rem, 3vw, 2rem);
+  width: min(var(--website-dialog-reference-width, 100%), 34rem);
+  padding: clamp(1.35rem, calc(var(--website-design-vw) * 3), 2rem);
   border: 1px solid rgba(218, 228, 233, 0.98);
   border-radius: 1.75rem;
   background: #ffffff;
@@ -202,16 +202,3 @@
 .modalActions button { min-height: 3.4rem; border: 1.5px solid #c9d6dd; border-radius: 1rem; color: #29443d; background: #ffffff; font-weight: 850; }
 .modalActions .confirmDeleteButton { border-color: #e8928e; color: #a82222; background: #fff0f0; }
 
-@media (max-width: 720px) {
-  .shell { width: min(calc(100% - 1rem), 1640px); }
-  .hero { min-height: 6.5rem; padding: 1.15rem; border-radius: 1.25rem; }
-  .registerCard { grid-template-columns: 1fr; padding: 1rem; border-radius: 1.2rem; }
-  .clientHeading { display: grid; }
-  .renewalBadge, .urgentBadge { width: fit-content; }
-  .cardActions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .cardActions button, .cardActions a { min-width: 0; width: 100%; }
-}
-
-@media (max-width: 420px) {
-  .cardActions, .modalActions { grid-template-columns: 1fr; }
-}
