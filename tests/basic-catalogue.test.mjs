@@ -68,7 +68,9 @@ test('thirds cover the whole interval without gaps or changing the researched en
     }
   }
   assert.throws(() => resolveCatalogueGuide({ minimumExVat: 10, maximumExVat: 5 }, 'entry'));
-  assert.throws(() => resolveCatalogueGuide({ minimumExVat: 0, maximumExVat: 100 }, 'luxury'));
+  for (const invalid of ['luxury', '__proto__', 'constructor', null]) {
+    assert.throws(() => resolveCatalogueGuide({ minimumExVat: 0, maximumExVat: 100 }, invalid));
+  }
 });
 
 test('catalogue is disabled by default and rejects unavailable or different releases', async () => {

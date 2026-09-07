@@ -21,8 +21,10 @@ export function resolveCatalogueGuide(
   if (!Number.isFinite(min) || !Number.isFinite(max) || min < 0 || max <= min) {
     throw new Error('Invalid Basic catalogue price range.');
   }
+  if (level !== 'entry' && level !== 'standard' && level !== 'premium') {
+    throw new Error('Choose Entry, Standard or Quality.');
+  }
   const index = { entry: 0, standard: 1, premium: 2 }[level];
-  if (index === undefined) throw new Error('Choose Entry, Standard or Quality.');
   const span = max - min;
   const lower = min + span * index / 3;
   const upper = index === 2 ? max : min + span * (index + 1) / 3;
