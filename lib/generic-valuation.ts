@@ -1,3 +1,6 @@
+import { getBasicCatalogueFamily } from './basic-catalogue';
+import { resolveCatalogueGuide } from './basic-catalogue-guide';
+import type { BasicSpecificationLevel } from './basic-estimate';
 import { getDb } from './db';
 import {
   DEFAULT_ENGINE_FLOOR_PERCENT,
@@ -144,7 +147,7 @@ export type GenericValuationResult = {
   catalogModeUsed: CatalogMode;
   sector: { id: number; key: SectorKey; label: string };
   family: {
-    id: number;
+    id: number | null;
     key: EquipmentFamilyKey;
     label: string;
     usageMetricType: UsageMetricType;
@@ -973,6 +976,12 @@ async function fetchFamilyContext(sectorKey: SectorKey, familyKey: EquipmentFami
   };
 }
 
+async function fetchBasicBrandContext(slug: string): Promise<BrandContext | null> {
+  const result = await getDb().query('select id, slug, name from public.brands where slug = $1 and is_active = true limit 1', [slug]);
+  const row = result.rows[0];
+  return row ? { id: Number(row.id), slug: row.slug, name: row.name } : null;
+}
+
 async function fetchBrandContext(familyId: number, brandSlug: string): Promise<BrandContext | null> {
   const db = getDb();
   const result = await db.query<DbRecord>(
@@ -1104,7 +1113,7 @@ function buildMotorPricingBand(row: MotorPricingMatrixRow, family: FamilyContext
     id: 0,
     sectorId: family.sectorId,
     sectorKey: family.sectorKey,
-    familyId: family.id,
+    familyId: family.id!,
     familyKey: family.key,
     brandId: brand.id,
     brandSlug: brand.slug,
@@ -1733,12 +1742,37 @@ export async function runGenericValuation(input: GenericValuationInput): Promise
       : {}),
   };
 
-  const family = await fetchFamilyContext(input.sectorKey, input.familyKey);
+  const basicRelease = rawSpecsJson.basic_catalogue_release;
+  const basicRecord = basicRelease == null ? null
+    : await getBasicCatalogueFamily(input.sectorKey, input.familyKey, basicRelease);
+  const basicCatalogue = basicRecord?.basicCatalogue;
+  const basicGuide = basicCatalogue
+    ? resolveCatalogueGuide(basicCatalogue, rawSpecsJson.basic_specification_level as BasicSpecificationLevel)
+    : null;
+  if (basicCatalogue) {
+    if (input.lifeWorkedPercent == null || !Number.isFinite(input.lifeWorkedPercent) || lifeWorkedPercent === null || Number(input.lifeWorkedPercent) > 100) throw new Error('Enter the percentage of useful life worked.');
+    if (!Number.isFinite(input.userReplacementPriceExVat) || Number(input.userReplacementPriceExVat) <= 0) {
+      throw new Error('Confirm a positive replacement price.');
+    }
+    // Do not accept model links or a caller-supplied catalogue snapshot as evidence.
+    for (const key of ['catalog_model_id', 'equipment_model_id', 'equipmentModelId', 'aim4_model_key', 'selected_model_key']) delete specsJson[key];
+    specsJson = { ...specsJson, basic_catalogue_release: basicCatalogue.releaseKey,
+      basic_catalogue: basicCatalogue, basic_family_label: basicCatalogue.familyLabel,
+      basic_calculation_profile: 'user_life_worked_v1',
+      valuation_mode: 'percent_used', valuationMode: 'percent_used' };
+  }
+  const family: FamilyContext | null = basicRecord ? {
+    id: null, key: basicRecord.familyKey, label: basicRecord.familyLabel,
+    sectorId: basicRecord.sectorId, sectorKey: basicRecord.sectorKey, sectorLabel: basicRecord.sectorLabel,
+    usageMetricType: basicRecord.usageMetricType, valuationMode: basicRecord.valuationMode,
+    isPropelled: basicRecord.isPropelled, catalogMode: basicRecord.catalogMode,
+  } : await fetchFamilyContext(input.sectorKey, input.familyKey);
   if (!family) throw new Error('FAMILY_NOT_FOUND');
 
   const advancedAssumptions = normalizeAdvancedAssumptions(input.advancedAssumptions, family.usageMetricType);
 
-  const brand = await fetchBrandContext(family.id, input.brandSlug);
+  const brand = basicRecord ? await fetchBasicBrandContext(input.brandSlug)
+    : await fetchBrandContext(family.id!, input.brandSlug);
   if (!brand) throw new Error('BRAND_NOT_FOUND_FOR_FAMILY');
 
   let typedModelName = cleanText(input.typedModelName) || null;
@@ -1746,7 +1780,7 @@ export async function runGenericValuation(input: GenericValuationInput): Promise
   const userReplacementPriceExVat = userReplacementPriceExVatRaw && userReplacementPriceExVatRaw > 0 ? userReplacementPriceExVatRaw : null;
   const userReplacementPriceYear = toInteger(input.userReplacementPriceYear) ?? null;
 
-  const selectedEquipmentModel = await fetchEquipmentModelContext({
+  const selectedEquipmentModel = basicRecord ? null : await fetchEquipmentModelContext({
     sectorKey: input.sectorKey,
     familyKey: input.familyKey,
     brandSlug: input.brandSlug,
@@ -1774,7 +1808,7 @@ export async function runGenericValuation(input: GenericValuationInput): Promise
 
     if (motorPricingRow) {
       motorUsageProfile = await fetchMotorUsageProfile({
-        familyId: family.id,
+        familyId: family.id!,
         familyKey: family.key,
         typeKey: motorPricingRow.typeKey,
       });
@@ -1797,7 +1831,7 @@ export async function runGenericValuation(input: GenericValuationInput): Promise
     }
   }
 
-  const replacementBand = motorPricingRow
+  const replacementBand = basicRecord ? null : motorPricingRow
     ? buildMotorPricingBand(motorPricingRow, family, brand)
     : await findReplacementBand({
         sectorKey: input.sectorKey,
@@ -1806,10 +1840,10 @@ export async function runGenericValuation(input: GenericValuationInput): Promise
         specsJson,
       });
 
-  const replacementPriceMinExVat = replacementBand?.replacementMinExVat ?? null;
-  const replacementPriceMaxExVat = replacementBand?.replacementMaxExVat ?? null;
+  const replacementPriceMinExVat = basicCatalogue?.minimumExVat ?? replacementBand?.replacementMinExVat ?? null;
+  const replacementPriceMaxExVat = basicCatalogue?.maximumExVat ?? replacementBand?.replacementMaxExVat ?? null;
   const matrixMid = motorPricingRow ? getMotorReplacementMid(motorPricingRow) : null;
-  const bandMid = matrixMid ?? (
+  const bandMid = basicGuide?.suggestedExVat ?? matrixMid ?? (
     replacementPriceMinExVat !== null && replacementPriceMaxExVat !== null
       ? Math.round((replacementPriceMinExVat + replacementPriceMaxExVat) / 2)
       : null
@@ -1825,7 +1859,7 @@ export async function runGenericValuation(input: GenericValuationInput): Promise
     sectorKey: family.sectorKey,
     year: inputYear,
     yearModelUnknown: input.yearModelUnknown,
-    usageAmount: toNumber(input.usageAmount),
+    usageAmount: basicRecord ? null : toNumber(input.usageAmount),
     lifeWorkedPercent,
     usageMetricType: family.usageMetricType,
     valuationMode: family.valuationMode,
@@ -1857,7 +1891,7 @@ export async function runGenericValuation(input: GenericValuationInput): Promise
   const valuationLowExVat = selectedCalculation.valuationLowExVat;
   const valuationMidExVat = selectedCalculation.valuationMidExVat;
   const valuationHighExVat = selectedCalculation.valuationHighExVat;
-  const usageAmountUsed = toNumber(input.usageAmount);
+  const usageAmountUsed = basicRecord ? null : toNumber(input.usageAmount);
   const selectedLifeWorkedPercent = selectedCalculation.lifeWorkedPercent;
   const usesPercentageBasis =
     selectedCalculation.depreciationMethodUsed === 'percentage_depreciation' ||
@@ -1929,11 +1963,12 @@ export async function runGenericValuation(input: GenericValuationInput): Promise
   }
 
   const confidenceScore = aim4priceValueExVat !== null
-    ? clamp(motorPricingRow?.confidenceScore ?? replacementBand?.confidence ?? 0.58, 0.18, 0.95)
+    ? clamp(basicCatalogue ? (basicCatalogue.confidence === 'medium' ? 0.6 : 0.4) : motorPricingRow?.confidenceScore ?? replacementBand?.confidence ?? 0.58, 0.18, 0.95)
     : 0.28;
   const calculatedConfidenceLabel = confidenceLabel(confidenceScore);
 
   const notes: string[] = [];
+  if (basicCatalogue) notes.push('Rounded Basic ballpark pricing; useful life worked was supplied by the user.');
   if (!replacementBand && !userReplacementPriceExVat) notes.push('No replacement price matched yet. Add pricing data or enter a user replacement price.');
   if (motorPricingRow) {
     notes.push(`Motor pricing matrix matched: ${motorPricingRow.typeLabel}, ${motorPricingRow.specLevel} specification.`);
@@ -1991,7 +2026,7 @@ export async function runGenericValuation(input: GenericValuationInput): Promise
     }
   }
 
-  if (typedModelName && input.saveModelCandidate && !selectedEquipmentModel) {
+  if (!basicRecord && typedModelName && input.saveModelCandidate && !selectedEquipmentModel) {
     await saveModelCandidate({
       sectorKey: input.sectorKey,
       familyKey: input.familyKey,
@@ -2014,7 +2049,7 @@ export async function runGenericValuation(input: GenericValuationInput): Promise
     specsJson,
     year: inputYear,
     yearModelUnknown: input.yearModelUnknown,
-    usageAmount: toNumber(input.usageAmount),
+    usageAmount: basicRecord ? null : toNumber(input.usageAmount),
     condition: normalizeCondition(input.condition),
     replacementPriceBand: replacementBand,
     replacementPriceMinExVat,
@@ -2050,3 +2085,4 @@ export async function runGenericValuation(input: GenericValuationInput): Promise
 export function getGenericSelectedMethodValue(result: GenericValuationResult, _method: GenericSelectedMethod): number | null {
   return result.valuationMidExVat ?? result.aim4priceValueExVat;
 }
+

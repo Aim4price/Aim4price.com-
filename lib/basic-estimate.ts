@@ -168,7 +168,7 @@ export function getBasicConditionTemplate(input: {
   usageMetricType?: UsageMetricType | null;
 }): BasicConditionTemplate {
   const haystack = `${normalizeText(input.familyKey)} ${normalizeText(input.familyLabel)}`;
-  const trailerLike = /(trailer|implement|plough|plow|harrow|planter|seeder|spreader|baler|rake|mower|cultivator)/.test(haystack);
+  const trailerLike = /(mounted|trailed|drawn|trailer|implement|plough|plow|harrow|planter|seeder|spreader|baler|rake|mower|cultivator)/.test(haystack);
   const vehicleLike = input.usageMetricType === 'km' || /(car|suv|bakkie|ldv|truck|bus|motorcycle|quadbike|side by side)/.test(haystack);
   const heavyMobile = Boolean(input.isPropelled) || /(excavator|loader|dozer|grader|telehandler|forklift|harvester|sprayer|roller|compactor|tlb|backhoe)/.test(haystack);
 
@@ -214,7 +214,7 @@ export function getBasicConditionTemplate(input: {
 export function getBasicFamilyExtra(familyKey?: string | null, familyLabel?: string | null): BasicFamilyExtra | null {
   const haystack = `${normalizeText(familyKey)} ${normalizeText(familyLabel)}`;
 
-  if (/tractor/.test(haystack)) return { key: 'front_loader', label: 'Front Loader' };
+  if (/tractor/.test(haystack) && !/(mounted|trailed|drawn|attachment|implement)/.test(haystack)) return { key: 'front_loader', label: 'Front Loader' };
   if (/excavator/.test(haystack)) return { key: 'hammer_attachment', label: 'Hammer attachment' };
   if (/(tlb|backhoe)/.test(haystack)) return { key: 'hydraulic_hammer', label: 'Hydraulic hammer' };
   if (/telehandler/.test(haystack)) return { key: 'fork_carriage', label: 'Fork carriage' };
@@ -226,3 +226,4 @@ export function getBasicFamilyExtra(familyKey?: string | null, familyLabel?: str
 
   return null;
 }
+
